@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import {
+  ancreDepuisAssignation,
+  authorizePortail,
+  resolveProtocoleDiffuse,
+} from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import type { ProtocolActionType } from '@/lib/clinical-engine/types';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
@@ -28,10 +32,51 @@ type VueProtocole = {
   adviceSheetRef: string | null;
   actionPrincipale: ActionPrincipale | null;
   boussoles: PatientFoodCompassSafeView[];
+  /**
+   * Référence opaque du cycle diffusé (préfixe du hash d'ancrage du protocole) :
+   * elle ne porte aucun contenu clinique et sert à donner au carnet alimentaire
+   * un identifiant d'épisode distinct d'un cycle à l'autre.
+   */
+  cycleRef: string;
+  /** Date d'approbation de la diffusion — début du cycle vécu par le patient. */
+  debutCycle: string;
 };
 
+const LONGUEUR_CYCLE_REF = 16;
+
+/**
+ * L'ancre est l'assignation du patient, réduite aux caractères sûrs : elle est
+ * stable tant que le suivi l'est, et le serveur peut la recalculer pour vérifier
+ * une transmission — le client ne choisit pas l'identité de son épisode.
+ */
+async function ancreCalibrage(idAssignation: string): Promise<AncreCalibrage> {
+  // Le début vient de l'assignation, pas de l'horloge : un début recalculé
+  // chaque jour ferait glisser la fenêtre du bilan sous les pieds du patient.
+  const assignation = await prisma.assignation.findUnique({
+    where: { idAssignation },
+    select: { dateAssignation: true },
+  });
+  return {
+    ancre: ancreDepuisAssignation(idAssignation),
+    debut: (assignation?.dateAssignation ?? new Date()).toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * Ancre du bilan de calibrage : servie UNIQUEMENT tant qu'aucun protocole n'est
+ * diffusé. Elle donne au carnet une identité d'épisode avant le protocole, sans
+ * quoi la saisie du patient reste locale et intransmissible.
+ */
+type AncreCalibrage = { ancre: string; debut: string };
+
 type GetResponse =
-  | { ok: true; protocoleDiffuse: boolean; finDeCycle: boolean; vue: VueProtocole | null }
+  | {
+      ok: true;
+      protocoleDiffuse: boolean;
+      finDeCycle: boolean;
+      vue: VueProtocole | null;
+      calibrage: AncreCalibrage | null;
+    }
   | ErrorResponse;
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
@@ -51,7 +96,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const diffuse = await resolveProtocoleDiffuse(auth.idPatient);
     if (!diffuse) {
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, finDeCycle: false, vue: null });
+      return NextResponse.json({
+        ok: true,
+        protocoleDiffuse: false,
+        finDeCycle: false,
+        vue: null,
+        calibrage: await ancreCalibrage(auth.idAssignation),
+      });
     }
 
     const row = await prisma.protocolDraft.findUnique({
@@ -60,7 +111,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     });
     if (!row) {
       // Approbation orpheline (ne devrait pas arriver) : dégradation propre.
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, finDeCycle: false, vue: null });
+      return NextResponse.json({
+        ok: true,
+        protocoleDiffuse: false,
+        finDeCycle: false,
+        vue: null,
+        calibrage: await ancreCalibrage(auth.idAssignation),
+      });
     }
 
     // Intégrité du payload re-vérifiée en lecture (défense en profondeur).
@@ -99,12 +156,14 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         ? { type: principale.type, title: principale.title, minimalPlan: principale.minimalPlan }
         : null,
       boussoles,
+      cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
+      debutCycle: diffuse.approvedAt.toISOString(),
     };
 
     const finDeCycle =
       (new Date().getTime() - diffuse.approvedAt.getTime()) / JOUR_MS > JOURS_FIN_DE_CYCLE;
 
-    return NextResponse.json({ ok: true, protocoleDiffuse: true, finDeCycle, vue });
+    return NextResponse.json({ ok: true, protocoleDiffuse: true, finDeCycle, vue, calibrage: null });
   } catch (err) {
     if (err instanceof ProtocolPayloadIntegrityError) {
       // Payload incohérent : ne rien exposer plutôt qu'une vue douteuse.

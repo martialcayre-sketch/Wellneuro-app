@@ -10,10 +10,22 @@
 // Réutilise le socle déjà mergé : resoudreIntentions (grades GRADE + forme
 // préférée par intention), evaluerSentinelle (cumuls / dépassements de seuils),
 // construireTableauCompatibilite (lecture de compatibilité protocole).
+//
+// Sélection, tri, comptage et pagination se font DANS POSTGRES ; les huit
+// dimensions ne sont calculées que pour la page servie (≤ 50 fiches). Le
+// catalogue de production compte 140 148 fiches : les charger toutes pour
+// filtrer en mémoire dépassait la limite de réponse de la fonction (~4,5 Mo)
+// et l'écran ne se chargeait plus du tout.
+//
+// Règle qui découle de la pagination, non négociable : AUCUN filtre ne
+// s'applique après elle. Une facette est exprimée en base, ou elle est
+// indisponible (grisée à l'écran) — un filtre appliqué en mémoire sur la page
+// produirait des pages à trous et un total faux.
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from './featureFlag';
 import { resoudreIntentions } from './resolution';
-import { evaluerSentinelle } from './sentinelle';
+import { evaluerSentinelle, sentinelleADeQuoiConclure } from './sentinelle';
 import { construireTableauCompatibilite } from './compatibilite';
 import {
   labelGradePreuve,
@@ -24,7 +36,18 @@ import {
   type ValeurQualiteFormulation,
 } from './types';
 
-export const C4_CATALOGUE_VERSION = 'c4-catalogue-v1' as const;
+// v4 (2026-07-31) : `composition[].doseParPortion` devient `doseParDjr`. La
+// source déclare une quantité par dose journalière recommandée, pas par unité
+// de prise — le champ portait un nom qui trompait son prochain lecteur.
+export const C4_CATALOGUE_VERSION = 'c4-catalogue-v4' as const;
+
+// Bornes de pagination. 50 fiches × ~5 Ko ≈ 250 Ko : marge large sous la limite
+// de réponse de la fonction. L'offset est plafonné parce que personne ne
+// feuillette la page 401 d'un catalogue — au-delà, on demande d'affiner.
+export const PAR_PAGE_DEFAUT = 25;
+export const PAR_PAGE_MAX = 50;
+export const OFFSET_MAX = 10_000;
+export const RECHERCHE_MAX = 200;
 
 // Vocabulaire fermé aligné sur les CHECK de la migration catalogue
 // (20260724133000_c4_supplement_product_catalogue). Le niveau de complétude du
@@ -47,12 +70,31 @@ export type ValeurInteractions = 'signalees' | 'aucune_connue' | 'non_evaluee';
 export type ValeurCumul = 'signale' | 'aucun' | 'non_evaluee';
 export type ValeurDonneesManquantes = 'liste_explicite' | 'aucune' | 'non_evaluee';
 
+/**
+ * Ce que l'on sait de la composition d'une fiche — jamais un booléen.
+ *
+ * `absente`   aucune ligne de composition n'est enregistrée ;
+ * `partielle` des lignes existent, sans preuve qu'elles soient TOUTES là ;
+ * `integre`   toutes les lignes actives de la source sont résolues.
+ *
+ * La distinction n'est pas cosmétique. La résolution nominatif→ingrédient se
+ * fera par vagues : une vague de 289 libellés laisse 30,8 % des fiches
+ * partiellement résolues, une vague de 453 en laisse 18,5 % (mesure du corpus
+ * source, 141 388 fiches). Une fiche partielle A des compositions : lue par un
+ * simple `compositions.length > 0`, elle repasserait « connue » et rendrait de
+ * nouveau « Compatible » et « Aucun cumul » alors qu'un ingrédient sur cinq lui
+ * est invisible — exactement le feu vert tiré du vide fermé en #482.
+ */
+export type CompletudeComposition = 'absente' | 'partielle' | 'integre';
+
 export type CompositionFiche = {
   ingredientCode: string;
   ingredientNomFr: string;
   formeCode: string | null;
   formeLabelFr: string | null;
-  doseParPortion: number | null;
+  // Par DOSE JOURNALIÈRE RECOMMANDÉE, jamais par unité de prise : c'est ce que
+  // la source déclare (voir 20260731200000_c4_composition_dose).
+  doseParDjr: number | null;
   unite: string | null;
 };
 
@@ -126,6 +168,13 @@ export type FicheComplement = {
   statutFiche: string;
   statutLabel: string;
   composition: CompositionFiche[];
+  /**
+   * Ce que vaut `composition` ci-dessus. À lire AVANT les dimensions : sur
+   * `partielle`, la liste des ingrédients est incomplète, donc le compteur
+   * `reglesCorrespondantes` est sous-estimé et toute absence de signal est sans
+   * valeur.
+   */
+  completudeComposition: CompletudeComposition;
   dimensions: DimensionsFiche;
   // Compteur FACTUEL — nombre de règles cliniques validées correspondant à la
   // composition de la fiche. Ce n'est PAS un score : aucune pondération, aucun
@@ -155,26 +204,89 @@ export const FACETTES = {
   statut: ['importee', 'verifiee'] as string[],
 } as const;
 
+// Facettes SERVIES : celles dont le prédicat s'exprime en base sur des colonnes
+// de la fiche. Les autres dépendent des RÈGLES CLINIQUES et des SEUILS
+// FONCTIONNELS — deux tables vides, et que le transport des compositions ne
+// remplit pas. Les servir donnerait un filtre qui a l'air de marcher et ne
+// filtre rien : elles sont refusées explicitement, jamais ignorées.
+//
+// `interactions` REJOINT LES INDISPONIBLES (2026-08-01), avant que la
+// composition n'arrive. Ses trois valeurs étaient inoffensives sur une table
+// vide et deviennent trompeuses sur une table pleine :
+//
+//   - `signalees` traverse un prédicat qui a désormais de la matière
+//     (`compositions.some.ingredient.functionalThresholds.some`) et rend
+//     pourtant 0 fiche, faute de seuil. Le praticien lit « aucune fiche ne
+//     correspond » sur un catalogue composé, et conclut que le catalogue est
+//     propre. C'est le faux vert le plus large que ce code puisse produire :
+//     pas sur une fiche, sur les 140 148.
+//   - `non_evaluee` est un `none:`, vrai par vacuité : il matche TOUT le
+//     catalogue et fait franchir en un clic le mur d'entrée que
+//     `RayonComplementsPanel` déclare interdit.
+//   - `aucune_connue` était déjà refusée.
+//
+// Une facette dont aucune valeur n'est fiable n'est pas « une facette servie à
+// valeurs grisées » : c'est une facette indisponible. Les prédicats et leur
+// condition de réouverture sont conservés plus bas, inertes.
+export const FACETTES_SERVIES = ['qualite', 'statut', 'donneesManquantes'] as const;
+export const FACETTES_INDISPONIBLES = [
+  'grade',
+  'biodisponibilite',
+  'compatibilite',
+  'cumul',
+  'interactions',
+] as const;
+export type CleFacetteServie = (typeof FACETTES_SERVIES)[number];
+
 // Tri MONO-DIMENSION explicite (§5). L'ordre par défaut est NEUTRE
 // (alphabétique par nom commercial) — jamais un tri « meilleur produit ».
-export const TRIS = ['neutre', 'marque', 'statut', 'fraicheur', 'reglesCorrespondantes'] as const;
+export const TRIS = ['neutre', 'marque', 'statut', 'fraicheur'] as const;
 export type CleTri = (typeof TRIS)[number];
+// Même raison que les facettes ci-dessus : trier par nombre de règles
+// correspondantes suppose des règles cliniques ; il n'y en a aucune en base.
+export const TRIS_INDISPONIBLES = ['reglesCorrespondantes'] as const;
+
+// Ce message promettait « après l'import de la composition ». L'import a lieu,
+// et les critères restent indisponibles — ce ne sont pas les compositions qui
+// leur manquent, ce sont les règles cliniques et les seuils. Une promesse datée
+// qui ne se réalise pas au terme annoncé use la confiance dans toutes les autres.
+export const MESSAGE_INDISPONIBLE =
+  'Ce critère sera disponible quand les règles cliniques et les seuils fonctionnels des ingrédients seront renseignés.';
+
+/**
+ * Valeurs d'une facette PAR AILLEURS servie dont le prédicat SQL n'est pas
+ * fiable.
+ *
+ * VIDE depuis le 2026-08-01 : son seul occupant, `interactions.aucune_connue`,
+ * a suivi sa facette entière chez les indisponibles (voir `FACETTES_SERVIES`).
+ * Le mécanisme reste en place — c'est le seul moyen de refuser UNE valeur d'une
+ * facette par ailleurs saine, et la distinction entre `facette_indisponible` et
+ * `valeur_facette_indisponible` reste servie au client.
+ */
+export const VALEURS_FACETTE_INDISPONIBLES: Partial<Record<CleFacetteServie, readonly string[]>> = {};
+
+export const MESSAGE_VALEUR_INDISPONIBLE =
+  "Ce critère ne sera fiable qu'une fois la composition des produits entièrement résolue.";
 
 export type FiltresCatalogue = {
   qualite?: ValeurQualiteFormulation[];
-  biodisponibilite?: ValeurBiodisponibilite[];
-  grade?: GradePreuveScientifique[];
-  compatibilite?: ValeurCompatibiliteProtocole[];
-  interactions?: ValeurInteractions[];
-  cumul?: ValeurCumul[];
+  // `interactions` retirée le 2026-08-01 avec la bascule de sa facette : la
+  // laisser ici la rendrait constructible par un appelant, et
+  // `construireWhere` — qui n'itère que sur `FACETTES_SERVIES` — l'ignorerait
+  // sans un mot. Le typage ferme la porte, la garde runtime de
+  // `listerCatalogue` ferme la fenêtre.
   donneesManquantes?: ValeurDonneesManquantes[];
   statut?: string[];
 };
 
 export type OptionsCatalogue = {
   intentionCode?: string | null;
+  /** Recherche libre sur le nom commercial ou la marque (insensible à la casse). */
+  recherche?: string | null;
   filtres?: FiltresCatalogue;
   tri?: CleTri;
+  page?: number;
+  parPage?: number;
 };
 
 export type CatalogueResult = {
@@ -184,10 +296,27 @@ export type CatalogueResult = {
   intentionFiltre: { code: string; labelFr: string } | null;
   codesInconnus: string[];
   tri: CleTri;
+  recherche: string;
+  page: number;
+  parPage: number;
+  /** Total des fiches correspondant aux critères — PAS la taille de la page. */
   total: number;
   fiches: FicheComplement[];
   facettes: typeof FACETTES;
+  facettesServies: typeof FACETTES_SERVIES;
+  facettesIndisponibles: typeof FACETTES_INDISPONIBLES;
 };
+
+/**
+ * Requête refusée pour une raison exprimable à l'utilisateur (pagination hors
+ * bornes). La route la traduit en 400 ; elle ne signale JAMAIS une panne.
+ */
+export class CatalogueRequeteInvalide extends Error {
+  constructor(readonly raison: string, message: string) {
+    super(message);
+    this.name = 'CatalogueRequeteInvalide';
+  }
+}
 
 // ─── Libellés honnêtes de statut de fiche ───────────────────────────────────
 
@@ -206,7 +335,7 @@ function statutLabel(statut: string): string {
 type LigneComposition = {
   ingredient: { id: string; code: string; nomFr: string };
   forme: { id: string; code: string; labelFr: string } | null;
-  doseParPortion: number | null;
+  doseParDjr: number | null;
   unite: string | null;
   position: number;
 };
@@ -225,6 +354,9 @@ type LigneFiche = {
     statutFiche: string;
     niveauCompletude: string;
     donneesManquantes: string[];
+    // Nombre de lignes actives déclarées par la source ; NULL = inconnu, donc
+    // aucune preuve d'exhaustivité (voir lireCompletudeComposition).
+    compositionSourceLignes: number | null;
     versionFormulation: number;
     compositions: LigneComposition[];
   };
@@ -292,15 +424,38 @@ function calculerBiodisponibilite(
     valeurs.push({ ingredientCode: ligne.ingredient.code, valeur, formeFiche, formePreferee });
   }
   const valeursPresentes = [...new Set(valeurs.map((v) => v.valeur))];
+  // TROIS CAS, pas deux. Le discriminant d'origine était `valeurs.length`,
+  // c'est-à-dire la longueur de la COMPOSITION — et il devient faux dès que la
+  // composition se remplit sans qu'aucune règle clinique n'existe : le texte
+  // affirmerait « comparaison … à la forme préférée des règles cliniques »
+  // alors que `clinical_rules` est vide et qu'aucune comparaison n'a eu lieu.
+  // Sur 100 % du catalogue, et à côté d'un badge « Non évaluée » qui, lui, dit
+  // vrai : le texte et le badge se contrediraient.
+  //
+  // On discrimine donc sur ce qui a RÉELLEMENT été comparé — une forme préférée
+  // gouvernée — et non sur ce qu'on a lu. Cela couvre aussi le cas où des
+  // règles existent mais ne gouvernent aucune forme (`formePreferee === null`,
+  // valeur `acceptable`) : là non plus rien n'a été comparé.
+  const comparees = valeurs.filter((v) => v.formePreferee !== null).length;
   return {
     valeurs,
     valeursPresentes,
     justification:
       valeurs.length === 0
-        ? 'Aucune composition connue : biodisponibilité non évaluable.'
-        : 'Comparaison, ingrédient par ingrédient, de la forme de la fiche à la forme préférée des règles cliniques. Jamais fondue en une note unique.',
+        ? JUSTIF_BIODISPO_SANS_COMPOSITION
+        : comparees === 0
+          ? JUSTIF_BIODISPO_SANS_FORME_GOUVERNEE
+          : JUSTIF_BIODISPO,
   };
 }
+
+const JUSTIF_BIODISPO_SANS_COMPOSITION =
+  'Aucune composition connue : biodisponibilité non évaluable.';
+const JUSTIF_BIODISPO_SANS_FORME_GOUVERNEE =
+  "Aucune forme préférée gouvernée pour ces ingrédients : la forme de la fiche n'est comparée à rien. " +
+  "L'absence de signal ne vaut pas absence de risque.";
+const JUSTIF_BIODISPO =
+  'Comparaison, ingrédient par ingrédient, de la forme de la fiche à la forme préférée des règles cliniques. Jamais fondue en une note unique.';
 
 function calculerGrades(composition: LigneComposition[], vue: VueIntentions): DimensionsFiche['gradePreuveParIntention'] {
   const codes = new Set(composition.map((c) => c.ingredient.code));
@@ -402,6 +557,142 @@ function calculerCumul(
   };
 }
 
+// ─── Complétude de composition ──────────────────────────────────────────────
+
+/**
+ * Lit ce que l'on sait de la composition d'une fiche.
+ *
+ * `integre` exige une PREUVE POSITIVE que toutes les lignes actives de la
+ * source ont été résolues — le nombre de lignes attendu, à comparer au nombre
+ * de lignes écrites. La colonne qui la porte, `composition_source_lignes` sur
+ * `supplement_products`, existe depuis 20260731200000 ; **rien ne l'écrit
+ * encore**, elle vaut donc NULL sur les 140 148 fiches et toute fiche portant
+ * des compositions reste `partielle`.
+ *
+ * C'est fail-closed, et c'est le sens correct de l'erreur : une fiche partielle
+ * traitée comme intègre rend un feu vert infondé, quand l'inverse ne fait que
+ * s'abstenir.
+ *
+ * UN COMPTE ATTENDU ≤ 0 NE PROUVE RIEN. `0 lignes attendues` comparé à
+ * `n ≥ 1 résolues` satisferait `n >= attendues` et déclarerait intègre une
+ * fiche dont on ne sait rien — le CHECK en base interdit le négatif, mais rien
+ * n'interdit le zéro, qui est une valeur légitime (406 fiches de la source ne
+ * déclarent aucun actif). Un compte nul ou négatif est donc traité comme une
+ * absence de preuve, pas comme une preuve d'exhaustivité. Le jour où `integre`
+ * deviendra atteignable, ce sera par une preuve, jamais par un trou.
+ */
+export function lireCompletudeComposition(
+  nombreLignesResolues: number,
+  lignesSourceAttendues: number | null,
+): CompletudeComposition {
+  if (nombreLignesResolues === 0) return 'absente';
+  if (
+    lignesSourceAttendues !== null &&
+    lignesSourceAttendues > 0 &&
+    nombreLignesResolues >= lignesSourceAttendues
+  ) {
+    return 'integre';
+  }
+  return 'partielle';
+}
+
+const RAISON_COMPLETUDE: Record<Exclude<CompletudeComposition, 'integre'>, string> = {
+  absente: 'Composition inconnue pour cette fiche',
+  partielle: 'Composition partiellement résolue : les ingrédients non résolus restent invisibles',
+};
+
+const MENTION_LISTE_PARTIELLE =
+  ' Liste établie sur une composition partiellement résolue : elle est incomplète.';
+
+/**
+ * Applique la complétude aux dimensions qui se lisent par INTERSECTION avec la
+ * composition. Point de conception du lot, et seul endroit où la règle vit.
+ *
+ * L'asymétrie est délibérée : **un signal trouvé reste un signal**, même sur une
+ * composition incomplète — le taire masquerait un risque réel, et un positif ne
+ * dépend pas de ce qu'on ignore. **Une absence de signal, elle, ne vaut rien**
+ * tant que la composition n'est pas intègre : c'est l'ignorance qui produit
+ * l'intersection vide, jamais l'absence de conflit. Non renseigné n'est pas
+ * zéro (leçon Q_ALI_01), et l'absence de signal ne vaut pas absence de risque.
+ *
+ * Sur `integre`, identité — les calculateurs font foi.
+ *
+ * CETTE IDENTITÉ N'EST SÛRE QUE PARCE QUE LE VIDE DU RÉFÉRENTIEL EST INTERCEPTÉ
+ * PLUS HAUT. Elle ne raisonne que sur la composition ; or « Compatible » et
+ * « Aucun cumul » ne dépendent pas d'elle mais de `clinical_rules` et de
+ * `ingredient_functional_thresholds`. Une fiche à composition intègre et un
+ * référentiel clinique vide donneraient ici deux feux verts infondés — d'où la
+ * garde `sentinelleADeQuoiConclure` dans `listerCatalogue`, qui laisse
+ * `candidatsSentinelle` à `null` et fait dire « non évaluée » aux calculateurs
+ * eux-mêmes. Ne jamais faire de cette fonction le seul rempart : elle ne voit
+ * pas ce qui manque au référentiel.
+ */
+export function appliquerCompletude(
+  dimensions: DimensionsFiche,
+  completude: CompletudeComposition,
+): DimensionsFiche {
+  if (completude === 'integre') return dimensions;
+  const raison = RAISON_COMPLETUDE[completude];
+
+  // Cumul vs seuils — « signale » survit, « aucun » s'abstient.
+  const cumulVsSeuils: DimensionsFiche['cumulVsSeuils'] =
+    dimensions.cumulVsSeuils.valeur === 'signale'
+      ? dimensions.cumulVsSeuils
+      : {
+        valeur: 'non_evaluee',
+        signaux: [],
+        justification: `${raison} : cumuls et seuils ne sont pas évaluables. L'absence de signal ne vaut pas absence de risque.`,
+      };
+
+  // Compatibilité protocole — les deux lectures de vigilance survivent, seul le
+  // feu vert « compatible » exige une composition intègre.
+  const compatibiliteProtocole: DimensionsFiche['compatibiliteProtocole'] =
+    dimensions.compatibiliteProtocole.valeur === 'vigilance_requise'
+    || dimensions.compatibiliteProtocole.valeur === 'compatible_avec_vigilance'
+      ? dimensions.compatibiliteProtocole
+      : {
+        valeur: 'non_evaluee',
+        justification: `${raison} : la compatibilité protocole ne se lit que sur une composition connue.`,
+      };
+
+  // Interactions — « signalees » survit, « aucune_connue » s'abstient.
+  const interactionsSignalees: DimensionsFiche['interactionsSignalees'] =
+    dimensions.interactionsSignalees.valeur === 'signalees'
+      ? dimensions.interactionsSignalees
+      : {
+        ...dimensions.interactionsSignalees,
+        valeur: 'non_evaluee',
+        signalements: [],
+        justification: `${raison} : les interactions ne sont pas évaluables. L'absence de signal ne vaut pas absence de risque.`,
+      };
+
+  // Énumérations, pas des verdicts : la liste reste, mais elle est annoncée
+  // incomplète. Sur « absente » les calculateurs disent déjà le vide.
+  //
+  // MARQUAGE INCONDITIONNEL, y compris sur une liste vide. Conditionner la
+  // mention à « la liste a quelque chose à dire » paraît plus soigné et retire
+  // l'avertissement exactement là où il porte le plus : une liste vide n'est
+  // pas un silence, c'est une AFFIRMATION D'ABSENCE — « aucune règle validée
+  // pour cette composition ». Sur une composition partiellement résolue, cette
+  // absence peut n'être due qu'aux ingrédients non résolus, et sans la mention
+  // le praticien la lit comme un fait sur le produit.
+  //
+  // Le vrai remède à la phrase bancale qui avait motivé cette condition est
+  // ailleurs, et il est en place : la justification de biodisponibilité se
+  // qualifie désormais elle-même (trois cas, `calculerBiodisponibilite`).
+  const marquerListe = <T extends { justification: string }>(bloc: T): T =>
+    completude === 'partielle' ? { ...bloc, justification: bloc.justification + MENTION_LISTE_PARTIELLE } : bloc;
+
+  return {
+    ...dimensions,
+    biodisponibiliteForme: marquerListe(dimensions.biodisponibiliteForme),
+    gradePreuveParIntention: marquerListe(dimensions.gradePreuveParIntention),
+    compatibiliteProtocole,
+    interactionsSignalees,
+    cumulVsSeuils,
+  };
+}
+
 function calculerDonneesManquantes(donnees: string[]): DimensionsFiche['donneesManquantes'] {
   if (donnees.length === 0) {
     return {
@@ -417,65 +708,181 @@ function calculerDonneesManquantes(donnees: string[]): DimensionsFiche['donneesM
   };
 }
 
-// ─── Filtrage à FACETTES INDÉPENDANTES ──────────────────────────────────────
-// Chaque facette est un test d'appartenance ; aucune ne pondère les autres.
-// Une fiche passe une facette si l'une de ses valeurs pour cette dimension est
-// sélectionnée (OU intra-facette) ; les facettes se combinent en ET.
-
-function passeFacette<T>(selection: T[] | undefined, valeursFiche: T[]): boolean {
-  if (!selection || selection.length === 0) return true;
-  return valeursFiche.some((v) => selection.includes(v));
-}
-
-function fichePasseFiltres(fiche: FicheComplement, filtres: FiltresCatalogue): boolean {
-  return (
-    passeFacette(filtres.qualite, [fiche.dimensions.qualiteFormulation.valeur])
-    && passeFacette(filtres.biodisponibilite, fiche.dimensions.biodisponibiliteForme.valeursPresentes)
-    && passeFacette(filtres.grade, fiche.dimensions.gradePreuveParIntention.valeurs.map((v) => v.grade))
-    && passeFacette(filtres.compatibilite, [fiche.dimensions.compatibiliteProtocole.valeur])
-    && passeFacette(filtres.interactions, [fiche.dimensions.interactionsSignalees.valeur])
-    && passeFacette(filtres.cumul, [fiche.dimensions.cumulVsSeuils.valeur])
-    && passeFacette(filtres.donneesManquantes, [fiche.dimensions.donneesManquantes.valeur])
-    && passeFacette(filtres.statut, [fiche.statutFiche])
-  );
-}
-
-// ─── Tri mono-dimension (ordre neutre par défaut) ───────────────────────────
-
 function comparerTexte(a: string, b: string): number {
   return a.localeCompare(b, 'fr');
 }
 
-function trierFiches(fiches: FicheComplement[], tri: CleTri): FicheComplement[] {
-  const parNom = (a: FicheComplement, b: FicheComplement) =>
-    comparerTexte(a.nomCommercial, b.nomCommercial) || comparerTexte(a.produitId, b.produitId);
-  const copie = [...fiches];
+// ─── Facettes INDÉPENDANTES, exprimées en base ──────────────────────────────
+// Chaque facette est un test d'appartenance ; aucune ne pondère les autres.
+// Intra-facette les valeurs se combinent en OU, les facettes entre elles en ET
+// — sémantique identique à celle qui était calculée en mémoire, mais évaluée
+// AVANT la pagination.
+
+// ─── Prédicats d'interactions — INERTES depuis le 2026-08-01 ────────────────
+//
+// Conservés parce qu'ils portent la seule définition écrite de ce qu'est une
+// interaction « signalée », et les conditions de réouverture de la facette.
+// Trois conditions, distinctes, à inscrire dans le code le jour venu :
+//
+//   1. `signalees` se rouvre quand `ingredient_functional_thresholds` est
+//      peuplée ET couvre les ingrédients servis — sinon le 0 reste structurel
+//      et se lit comme une innocuité, sur tout le catalogue.
+//   2. `aucune_connue` ne se rouvre qu'avec la preuve de complétude
+//      (`composition_source_lignes`) : sur une fiche partiellement résolue,
+//      l'ingrédient porteur du signal peut être précisément celui qui manque.
+//   3. `non_evaluee` exige 1 ET 2, plus une conjonction à
+//      `compositions: { some: {} }` — sans quoi le `none:` reste vrai par
+//      vacuité et sert le catalogue entier.
+/** Le seuil qui rend une interaction « signalée » : actif, bascule, alerte. */
+const SEUIL_SIGNALANT = { actif: true, basculeRisque: true, safetyAlertId: { not: null } } as const;
+const SEUIL_ACTIF = { actif: true } as const;
+
+function porteUnSeuil(seuil: Prisma.IngredientFunctionalThresholdWhereInput): Prisma.SupplementProductWhereInput {
+  return { compositions: { some: { ingredient: { functionalThresholds: { some: seuil } } } } };
+}
+
+function neePorteAucunSeuil(
+  seuil: Prisma.IngredientFunctionalThresholdWhereInput,
+): Prisma.SupplementProductWhereInput {
+  return { compositions: { none: { ingredient: { functionalThresholds: { some: seuil } } } } };
+}
+
+/**
+ * Rend les prédicats d'interactions à qui veut les éprouver, sans les servir.
+ *
+ * Un test doit pouvoir figer leur forme — c'est ce qui garantit qu'ils seront
+ * rouverts tels qu'ils ont été pensés, et non réinventés. Les exporter est
+ * aussi ce qui empêche le compilateur de les déclarer morts et de les faire
+ * disparaître au prochain nettoyage.
+ */
+export const PREDICATS_INTERACTIONS_INERTES = {
+  signalees: () => porteUnSeuil(SEUIL_SIGNALANT),
+  nonEvaluee: () => neePorteAucunSeuil(SEUIL_ACTIF),
+} as const;
+
+/**
+ * Traduit une valeur de facette en prédicat. `null` = valeur qu'aucune fiche ne
+ * peut porter (le calcul en mémoire ne la produit jamais) : elle n'ajoute pas
+ * un prédicat toujours vrai, elle retire simplement une branche du OU.
+ */
+function predicatFacette(cle: CleFacetteServie, valeur: string): Prisma.SupplementProductWhereInput | null {
+  switch (cle) {
+    case 'qualite':
+      return { niveauCompletude: valeur };
+    case 'statut':
+      return { statutFiche: valeur };
+    case 'donneesManquantes':
+      if (valeur === 'aucune') return { donneesManquantes: { isEmpty: true } };
+      if (valeur === 'liste_explicite') return { donneesManquantes: { isEmpty: false } };
+      // « non_evaluee » : calculerDonneesManquantes ne la produit jamais.
+      return null;
+    // `interactions` a rejoint les facettes indisponibles : elle n'atteint plus
+    // ce point, ni par le typage (`CleFacetteServie`), ni à l'exécution (garde
+    // de `listerCatalogue`), ni par la route (refus en 400). Ses prédicats
+    // vivent dans `PREDICATS_INTERACTIONS_INERTES`, avec leurs conditions de
+    // réouverture.
+  }
+}
+
+/**
+ * Neutralise les jokers de `ILIKE` saisis par le praticien. Sans cela, chercher
+ * « B_12 » remonte aussi « B-12 » et « B912 », et « 100% » remonte tout ce qui
+ * commence par « 100 » : le champ cherche autre chose que ce qui y est écrit.
+ * L'antislash est l'échappement par défaut de `LIKE` en PostgreSQL — il se
+ * neutralise donc lui-même en premier.
+ */
+function echapperJokers(saisie: string): string {
+  return saisie.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Construit le `where` complet. Rend `null` quand une facette sélectionnée ne
+ * retient AUCUNE valeur satisfiable : le résultat est alors vide par
+ * construction, sans interroger la base — jamais un filtre silencieusement
+ * ignoré (qui servirait tout le catalogue).
+ */
+function construireWhere(
+  filtres: FiltresCatalogue,
+  recherche: string,
+): Prisma.SupplementProductWhereInput | null {
+  const conditions: Prisma.SupplementProductWhereInput[] = [
+    // Le pointeur de version courante EST la source des fiches servies.
+    { versionCourante: { isNot: null } },
+    { statutFiche: { not: 'inactive' } },
+  ];
+
+  if (recherche) {
+    const motif = echapperJokers(recherche);
+    conditions.push({
+      OR: [
+        { nomCommercial: { contains: motif, mode: 'insensitive' } },
+        { marque: { contains: motif, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  for (const cle of FACETTES_SERVIES) {
+    const selection = filtres[cle];
+    if (!selection || selection.length === 0) continue;
+    const branches = selection
+      .map((valeur) => predicatFacette(cle, valeur))
+      .filter((p): p is Prisma.SupplementProductWhereInput => p !== null);
+    if (branches.length === 0) return null;
+    conditions.push(branches.length === 1 ? branches[0] : { OR: branches });
+  }
+
+  return { AND: conditions };
+}
+
+// ─── Tri mono-dimension (ordre neutre par défaut) ───────────────────────────
+// Toujours départagé par l'identifiant : sans clé totale, deux pages
+// successives peuvent réafficher ou sauter une fiche.
+
+function construireOrderBy(tri: CleTri): Prisma.SupplementProductOrderByWithRelationInput[] {
   switch (tri) {
     case 'marque':
-      return copie.sort((a, b) => comparerTexte(a.marque, b.marque) || parNom(a, b));
+      return [{ marque: 'asc' }, { nomCommercial: 'asc' }, { id: 'asc' }];
     case 'statut':
-      return copie.sort((a, b) => comparerTexte(a.statutFiche, b.statutFiche) || parNom(a, b));
+      return [{ statutFiche: 'asc' }, { nomCommercial: 'asc' }, { id: 'asc' }];
     case 'fraicheur':
       // Plus récent d'abord ; une fiche sans date de vérification passe en fin.
-      return copie.sort((a, b) => {
-        const da = a.dimensions.fraicheurProvenance.dateDerniereVerification;
-        const db = b.dimensions.fraicheurProvenance.dateDerniereVerification;
-        if (da && db) return db.localeCompare(da) || parNom(a, b);
-        if (da) return -1;
-        if (db) return 1;
-        return parNom(a, b);
-      });
-    case 'reglesCorrespondantes':
-      // Compteur factuel décroissant — clé de tri explicite choisie par le
-      // praticien, jamais un tri « meilleur produit » par défaut.
-      return copie.sort((a, b) => b.reglesCorrespondantes - a.reglesCorrespondantes || parNom(a, b));
+      return [
+        { dateDerniereVerification: { sort: 'desc', nulls: 'last' } },
+        { nomCommercial: 'asc' },
+        { id: 'asc' },
+      ];
     case 'neutre':
     default:
-      return copie.sort(parNom);
+      return [{ nomCommercial: 'asc' }, { id: 'asc' }];
   }
 }
 
 // ─── Point d'entrée ─────────────────────────────────────────────────────────
+
+function resultatVide(params: {
+  tri: CleTri;
+  recherche: string;
+  page: number;
+  parPage: number;
+  intentionFiltre: { code: string; labelFr: string } | null;
+  codesInconnus: string[];
+}): CatalogueResult {
+  return {
+    contractVersion: C4_CATALOGUE_VERSION,
+    aucunScoreGlobal: true,
+    intentionFiltre: params.intentionFiltre,
+    codesInconnus: params.codesInconnus,
+    tri: params.tri,
+    recherche: params.recherche,
+    page: params.page,
+    parPage: params.parPage,
+    total: 0,
+    fiches: [],
+    facettes: FACETTES,
+    facettesServies: FACETTES_SERVIES,
+    facettesIndisponibles: FACETTES_INDISPONIBLES,
+  };
+}
 
 export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<CatalogueResult> {
   if (!isC4Enabled()) {
@@ -487,6 +894,43 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   const tri: CleTri = options.tri && TRIS.includes(options.tri) ? options.tri : 'neutre';
   const filtres = options.filtres ?? {};
   const intentionCode = options.intentionCode?.trim() || null;
+  const recherche = (options.recherche ?? '').trim().slice(0, RECHERCHE_MAX);
+
+  // Facette INDISPONIBLE : refus, y compris si l'appelant contourne le typage.
+  //
+  // `construireWhere` n'itère que sur `FACETTES_SERVIES` : une facette sortie de
+  // cette liste serait donc SILENCIEUSEMENT IGNORÉE — la route rendrait 200 avec
+  // des fiches hors critère, en laissant croire que le filtre s'est appliqué.
+  // `FiltresCatalogue` l'interdit à la compilation, mais le service est aussi
+  // appelé depuis une route qui construit ses filtres à partir de paramètres
+  // d'URL. La garde de type ne suffit donc pas ; celle-ci mord à l'exécution.
+  const filtresBruts = filtres as Record<string, readonly string[] | undefined>;
+  for (const cle of FACETTES_INDISPONIBLES) {
+    if (filtresBruts[cle]?.length) {
+      throw new CatalogueRequeteInvalide('facette_indisponible', MESSAGE_INDISPONIBLE);
+    }
+  }
+
+  // Valeur de facette non fiable : refus AVANT toute requête, y compris avant
+  // la résolution d'intention. Refuser, jamais ignorer (précédent #482) : un
+  // critère silencieusement écarté rendrait des fiches hors critère en laissant
+  // croire qu'il s'était appliqué.
+  for (const [cle, interdites] of Object.entries(VALEURS_FACETTE_INDISPONIBLES)) {
+    const selection = filtres[cle as CleFacetteServie];
+    if (selection?.some((valeur) => interdites.includes(valeur))) {
+      throw new CatalogueRequeteInvalide('valeur_facette_indisponible', MESSAGE_VALEUR_INDISPONIBLE);
+    }
+  }
+
+  const parPage = Math.max(1, Math.min(Math.trunc(options.parPage ?? PAR_PAGE_DEFAUT), PAR_PAGE_MAX));
+  const page = Math.max(1, Math.trunc(options.page ?? 1));
+  const offset = (page - 1) * parPage;
+  if (offset > OFFSET_MAX) {
+    throw new CatalogueRequeteInvalide(
+      'offset_trop_loin',
+      'Cette page est trop loin dans le catalogue — affinez la recherche.',
+    );
+  }
 
   // Entrée par intention clinique : résolution une fois, partagée par toutes
   // les fiches (grades, forme préférée, sentinelle). Aucune intention → aucune
@@ -497,48 +941,77 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   const codesInconnus: string[] = [];
   if (intentionCode) {
     resolution = await resoudreIntentions([intentionCode]);
-    candidatsSentinelle = await evaluerSentinelle(resolution);
     const trouvee = resolution.intentions[0]?.intention ?? null;
     intentionFiltre = trouvee ? { code: trouvee.code, labelFr: trouvee.labelFr } : null;
     codesInconnus.push(...resolution.codesInconnus);
+    // Une intention NON RÉSOLUE n'ouvre aucune lecture : sans elle, la
+    // sentinelle rend une liste vide, que les dimensions liraient comme
+    // « aucun signal » — soit un feu vert tiré d'un code saisi au hasard.
+    //
+    // Une intention RÉSOLUE QUE NULLE RÈGLE NE GOUVERNE n'en ouvre pas
+    // davantage, et c'est le cas de TOUTES tant que `clinical_rules` est vide.
+    // La sentinelle rendrait `[]`, lu « aucun cumul » et « compatible » — deux
+    // feux verts tirés d'une table vide. `appliquerCompletude` les intercepte
+    // aujourd'hui, mais seulement parce qu'aucune fiche n'est `integre` : le
+    // jour où le transport écrit `composition_source_lignes`, elle rend les
+    // dimensions à l'identique et les deux badges s'allument sur les 140 148
+    // fiches. La garde doit donc vivre ICI, où le vide se constate, et non
+    // dans une fonction qui ne raisonne que sur la composition.
+    if (trouvee && sentinelleADeQuoiConclure(resolution)) {
+      candidatsSentinelle = await evaluerSentinelle(resolution);
+    }
   }
   const vue = projeterResolution(resolution);
 
-  // Le pointeur de version courante EST la source des fiches servies.
-  const lignes = (await prisma.supplementProductVersionCourante.findMany({
-    select: {
-      productId: true,
-      product: {
-        select: {
-          id: true,
-          nomCommercial: true,
-          marque: true,
-          marche: true,
-          sourceProvenance: true,
-          sourceIdentifiant: true,
-          sourceUrl: true,
-          dateDerniereVerification: true,
-          statutFiche: true,
-          niveauCompletude: true,
-          donneesManquantes: true,
-          versionFormulation: true,
-          compositions: {
-            orderBy: { position: 'asc' },
-            select: {
-              doseParPortion: true,
-              unite: true,
-              position: true,
-              ingredient: { select: { id: true, code: true, nomFr: true } },
-              forme: { select: { id: true, code: true, labelFr: true } },
-            },
+  const where = construireWhere(filtres, recherche);
+  // Facette dont aucune valeur n'est satisfiable : résultat vide PAR
+  // CONSTRUCTION, sans requête. Ne jamais retomber sur un where absent, qui
+  // servirait le catalogue entier.
+  if (where === null) {
+    return resultatVide({ tri, recherche, page, parPage, intentionFiltre, codesInconnus });
+  }
+
+  // Sélection, tri, comptage et pagination en base : seule la page traverse
+  // ensuite le calcul des dimensions.
+  const [total, produits] = await Promise.all([
+    prisma.supplementProduct.count({ where }),
+    prisma.supplementProduct.findMany({
+      where,
+      orderBy: construireOrderBy(tri),
+      skip: offset,
+      take: parPage,
+      select: {
+        id: true,
+        nomCommercial: true,
+        marque: true,
+        marche: true,
+        sourceProvenance: true,
+        sourceIdentifiant: true,
+        sourceUrl: true,
+        dateDerniereVerification: true,
+        statutFiche: true,
+        niveauCompletude: true,
+        donneesManquantes: true,
+        compositionSourceLignes: true,
+        versionFormulation: true,
+        compositions: {
+          orderBy: { position: 'asc' },
+          select: {
+            doseParDjr: true,
+            unite: true,
+            position: true,
+            ingredient: { select: { id: true, code: true, nomFr: true } },
+            forme: { select: { id: true, code: true, labelFr: true } },
           },
         },
       },
-    },
-  })) as LigneFiche[];
+    }),
+  ]);
 
-  // Fiches inactives exclues ; catalogue vide géré proprement en amont.
-  const fichesActives = lignes.filter((l) => l.product.statutFiche !== 'inactive');
+  const fichesActives = (produits as LigneFiche['product'][]).map((product) => ({
+    productId: product.id,
+    product,
+  }));
 
   // Seuils fonctionnels des ingrédients présents — pour les interactions
   // (signalement) au niveau fiche, indépendamment de toute intention.
@@ -574,9 +1047,19 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       ingredientNomFr: c.ingredient.nomFr,
       formeCode: c.forme?.code ?? null,
       formeLabelFr: c.forme?.labelFr ?? null,
-      doseParPortion: c.doseParPortion,
+      doseParDjr: c.doseParDjr,
       unite: c.unite,
     }));
+
+    // Ce que l'on sait de la composition gouverne ce que l'on ose en dire.
+    // `compositionSourceLignes` est NULL sur les 140 148 fiches — rien ne
+    // l'écrit encore — donc toute fiche portant des compositions reste
+    // « partielle ». La colonne est câblée ici pour que son remplissage soit un
+    // geste de DONNÉE, sans retoucher ce chemin de lecture clinique.
+    const completudeComposition = lireCompletudeComposition(
+      p.compositions.length,
+      p.compositionSourceLignes,
+    );
 
     const qualiteValeur = QUALITE_PAR_COMPLETUDE[p.niveauCompletude] ?? 'non_evaluee';
     const biodisponibiliteForme = calculerBiodisponibilite(p.compositions, vue);
@@ -586,7 +1069,9 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
     const donneesManquantes = calculerDonneesManquantes(p.donneesManquantes ?? []);
 
     // Compatibilité protocole : lecture RÉUTILISÉE de construireTableauCompatibilite,
-    // alimentée par les signaux de la sentinelle touchant CETTE fiche.
+    // alimentée par les signaux de la sentinelle touchant CETTE fiche. Le
+    // filtrage par complétude n'est PAS fait ici : il est centralisé dans
+    // appliquerCompletude, seul endroit où vit l'asymétrie.
     const candidatsFiche = candidatsSentinelle === null
       ? null
       : candidatsSentinelle.filter((candidat) =>
@@ -610,7 +1095,7 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       0,
     );
 
-    const dimensions: DimensionsFiche = {
+    const dimensionsBrutes: DimensionsFiche = {
       qualiteFormulation: {
         valeur: qualiteValeur,
         justification:
@@ -644,23 +1129,29 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       statutFiche: p.statutFiche,
       statutLabel: statutLabel(p.statutFiche),
       composition,
-      dimensions,
+      completudeComposition,
+      dimensions: appliquerCompletude(dimensionsBrutes, completudeComposition),
       reglesCorrespondantes,
       referencesScientifiques: [...refMap.values()].sort((a, b) => comparerTexte(a.citation, b.citation)),
     };
   });
 
-  const filtrees = fiches.filter((fiche) => fichePasseFiltres(fiche, filtres));
-  const triees = trierFiches(filtrees, tri);
-
+  // Les fiches arrivent déjà filtrées et triées par la base : aucun filtre, ni
+  // aucun tri, ne s'applique ici — il porterait sur la page seule et rendrait
+  // le total incohérent avec ce qui est affiché.
   return {
     contractVersion: C4_CATALOGUE_VERSION,
     aucunScoreGlobal: true,
     intentionFiltre,
     codesInconnus,
     tri,
-    total: triees.length,
-    fiches: triees,
+    recherche,
+    page,
+    parPage,
+    total,
+    fiches,
     facettes: FACETTES,
+    facettesServies: FACETTES_SERVIES,
+    facettesIndisponibles: FACETTES_INDISPONIBLES,
   };
 }

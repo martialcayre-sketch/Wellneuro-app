@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { readCampaignTruth } from "./wn-state.mjs";
+import { auditerSkills } from "./lib/skill-cross-invocation.mjs";
 
 const root = process.cwd();
 const mode = process.argv[2] || "check";
@@ -223,6 +224,26 @@ function checkTools() {
 
   c.add("scripts/wn-campaign.mjs", fileExists("scripts/wn-campaign.mjs"));
   c.add("scripts/wn-kit-doctor.mjs", fileExists("scripts/wn-kit-doctor.mjs"));
+
+  // Une consigne impérative d'un skill vers un autre ne vaut que si la cible
+  // est exposée à l'outil `Skill`. Sinon la prose reste valide et la capacité
+  // est absente — le défaut de la PR #529, invisible d'un CI vert.
+  const skills = [];
+  if (dirExists(".claude/skills")) {
+    for (const nom of fs.readdirSync(skillDir)) {
+      const texte = readFile(`.claude/skills/${nom}/SKILL.md`);
+      if (texte !== null) skills.push({ nom, texte });
+    }
+  }
+  const audit = auditerSkills(skills);
+  for (const v of audit.violations) {
+    log("✗", `${v.source}/SKILL.md:${v.ligne} ordonne d'invoquer /${v.cible}, qui porte disable-model-invocation`);
+  }
+  c.add(
+    "Invocations croisées entre skills",
+    audit.violations.length === 0,
+    `${audit.scannes} skills, ${audit.violations.length} consigne(s) morte(s)`
+  );
 
   return c;
 }

@@ -9,8 +9,8 @@ effort: medium
 
 ## Contexte
 
-!`git status --short`
-!`test -f docs/claude/SESSION_LOG.md && tail -n 40 docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 40 docs/claude/SESSION_LOG.md || true`
 
 Arguments : `$ARGUMENTS`
 

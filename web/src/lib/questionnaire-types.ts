@@ -19,6 +19,24 @@ export type Question = {
   /** Groupe d'appartenance d'un item pour les scorings `group_majority`
    * (ex. Q_STR_01 : A=dopaminergique, B=sérotoninergique, C=mixte). */
   groupe?: string;
+  /**
+   * Item SERVI mais HORS BARÈME : la source le pose, aucun score ne le lit.
+   *
+   * `conditionnel` ne dit pas cela et ne peut pas en tenir lieu — il est lu dans
+   * deux sens opposés dans le dépôt. Le formulaire patient en fait un item
+   * FACULTATIF (`GenericQuestionnaire`), tandis que le prédicat de complétude du
+   * moteur clinique (`clinicalSnapshot.hasExploitableRawAnswers`) le rend
+   * OBLIGATOIRE dès que sa condition est remplie. Un item non coté marqué du seul
+   * `conditionnel` sortait donc le questionnaire entier du bilan clinique quand
+   * le patient ne le renseignait pas — et un item non coté SANS condition
+   * (le cas de `Q10` du PSQI) en sortait aussi toutes les passations
+   * historiques, qui ne peuvent pas le porter.
+   *
+   * Ce drapeau nomme l'intention une bonne fois : ce que le patient répond ici
+   * atteint le praticien par les réponses lisibles et la synthèse, jamais par un
+   * score, et son absence n'invalide jamais l'instrument.
+   */
+  horsBareme?: boolean;
 };
 
 export type Section = { id: string; titre?: string; description?: string; questions: Question[] };

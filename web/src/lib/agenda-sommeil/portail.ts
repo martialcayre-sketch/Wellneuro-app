@@ -12,7 +12,7 @@ type AssignationRow = Awaited<ReturnType<typeof prisma.assignation.findUnique>>;
 
 export type AgendaAuthError = {
   ok: false;
-  reason: 'unauthenticated' | 'not_found' | 'wrong_instrument';
+  reason: 'unauthenticated' | 'not_found' | 'wrong_instrument' | 'annulee';
   error: string;
   status: number;
 };
@@ -42,17 +42,27 @@ export async function authorizeAgendaPortail(
       status: 409,
     };
   }
+  // Annulée par le praticien (Fil A) : l'agenda est une chaîne de saisie
+  // parallèle au questionnaire standard ; elle doit honorer l'annulation ici,
+  // point de convergence de la vue (GET) et de la saisie d'une nuit (POST).
+  if (assignation.statut === 'Annulée') {
+    return {
+      ok: false,
+      reason: 'annulee',
+      error: 'Cet agenda du sommeil a été annulé par votre praticien.',
+      status: 410,
+    };
+  }
   return { idPatient: session.idPatient, assignation };
 }
 
 // Date du jour AAAA-MM-JJ dans le fuseau Europe/Paris — gère l'heure d'été sans
 // dépendre du fuseau du conteneur Vercel (UTC). C'est la référence de
 // `estDateSaisissable` et de la fenêtre : jamais la date du client (non fiable).
-export function dateJourParis(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('fr-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-}
+//
+// La DÉFINITION a déménagé dans `@/lib/dateParis` : elle sert désormais deux
+// agendas (sommeil et alimentaire) et trois routes praticien, dont aucune ne
+// relève du sommeil. La recopier aurait posé une seconde horloge — voir
+// l'en-tête de `lib/dateParis.ts`. Le réexport est conservé pour ne toucher
+// aucun des appelants existants.
+export { dateJourParis } from '@/lib/dateParis';

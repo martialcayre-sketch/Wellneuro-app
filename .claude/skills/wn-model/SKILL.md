@@ -9,8 +9,8 @@ effort: low
 
 ## Contexte
 
-!`git status --short`
-!`test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
 
 Demande : `$ARGUMENTS`
 
@@ -36,7 +36,23 @@ Rappels techniques (à ne pas réexpliquer, seulement appliquer) :
 
 Correspondance sous-agents (déjà épinglés) : `wn-debugger` et `wn-reviewer` → `opus` ; `wn-doc-auditor` → `sonnet` ; `wn-explorer` → `haiku`.
 
-Routage spécialisé : si la demande concerne le nettoyage documentaire multi-dépôts, l’archivage de snapshots datés, ou l’exécution de `scripts/repo-hygiene.sh`, recommander explicitement la route `/wn-hygiene` (puis le mode `audit-only`, `apply-safe --dry-run` ou `report-pr` selon la demande).
+Routage spécialisé : si la demande concerne le nettoyage documentaire multi-dépôts, l’archivage de snapshots datés, ou l’exécution de `scripts/repo-hygiene.sh`, recommander explicitement la route `/wn-hygiene` (puis le mode `audit-only`, `apply-safe --dry-run` ou `report-pr` selon la demande). <!-- mention-seule: wn-hygiene -->
+
+## Ce mapping optimise la qualité du verdict, pas la dépense
+
+Mesuré le 2026-08-01 sur 35 194 appels : **la lecture pure ne représente que
+3,5 % de la consommation**, et 93 % de celle-ci est du contexte relu — 202 000
+tokens par requête en moyenne, pour ~600 tokens de réponse.
+
+Choisir Haiku plutôt qu'Opus divise le tarif par 5 sur un poste marginal.
+**Déléguer la même lecture à un sous-agent la divise par 28**, parce que son
+contexte est jeté et n'est jamais repayé. Le levier est l'isolement du contexte,
+pas le tarif — et ce mapping ne le fournit pas.
+
+Descendre en modèle pour économiser est donc un faux calcul ; descendre sur une
+revue clinique ou une migration est un vrai risque. Choisir ici sur la qualité
+attendue, et traiter la dépense par la délégation (`CLAUDE.md`, « Économie de
+contexte »).
 
 ## Overrides forçables
 
@@ -55,5 +71,5 @@ Un override explicite prime toujours sur le mapping par défaut.
 1. Contexte détecté (une phrase).
 2. Recommandation : modèle + alias, effort, mot-clé de réflexion.
 3. Commande exacte à coller (`/model …` et/ou délégation sous-agent).
-	Si le cas relève de l’hygiène documentaire multi-dépôts, inclure aussi la commande `/wn-hygiene ...` adaptée.
+	Si le cas relève de l’hygiène documentaire multi-dépôts, inclure aussi la commande `/wn-hygiene ...` adaptée. <!-- mention-seule: wn-hygiene -->
 4. Alternative si l'utilisateur veut monter en puissance (`fable`) ou réduire le coût (`haiku`).

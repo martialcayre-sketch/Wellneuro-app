@@ -5,49 +5,26 @@ import { useParams, useRouter } from 'next/navigation';
 import type { PortailAssignationsResponse } from '@/app/api/portail/assignations/route';
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { hasDraft } from '@/lib/questionnaire-draft';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { PatientCard, patientCardClassName } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
+import {
+  affichage,
+  calculerActionRecommandee,
+  GROUPES,
+  GROUPES_SECONDAIRES,
+  type AgendaAliPortail,
+  type AgendaPortail,
+  type Groupe,
+} from '@/lib/portail/hubQuestionnaires';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
-
-type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
-
-type Affichage = {
-  groupe: Groupe;
-  badge: string;
-  badgeVariant: BadgeVariant;
-  action: string | null; // libellé du bouton, null si non cliquable
-  ghost?: boolean;
-};
-
-// Dérive l'affichage patient à partir des statuts de l'assignation.
-function affichage(a: AssignationPatient, avecBrouillon: boolean): Affichage {
-  if (a.statutReponses === 'verrouille') {
-    return { groupe: 'transmis', badge: 'Transmis au praticien', badgeVariant: 'info', action: 'Consulter', ghost: true };
-  }
-  if (a.statutReponses === 'modification_demandee') {
-    return { groupe: 'correction', badge: 'Correction demandée', badgeVariant: 'warning', action: 'Consulter', ghost: true };
-  }
-  if (a.statutReponses === 'deverrouille') {
-    return { groupe: 'a_completer', badge: 'Déverrouillé par le praticien', badgeVariant: 'warning', action: 'Corriger' };
-  }
-  if (!a.estEnAttenteSaisie) {
-    return { groupe: 'expire', badge: 'Expiré', badgeVariant: 'neutral', action: null };
-  }
-  return {
-    groupe: 'a_completer',
-    badge: avecBrouillon ? 'Brouillon enregistré' : 'À compléter',
-    badgeVariant: 'neutral',
-    action: avecBrouillon ? 'Reprendre' : 'Commencer',
-  };
-}
 
 // Extrait le nombre de minutes d'une durée catalogue du type "5 min".
 function parseDureeMinutes(duree: string | null): number {
@@ -56,47 +33,21 @@ function parseDureeMinutes(duree: string | null): number {
   return m ? parseInt(m[1], 10) : 0;
 }
 
-const GROUPES: { cle: Groupe; titre: string }[] = [
-  { cle: 'a_completer', titre: 'À compléter' },
-  { cle: 'correction', titre: 'Correction demandée' },
-  { cle: 'transmis', titre: 'Transmis au praticien' },
-  { cle: 'expire', titre: 'Expiré' },
-];
-
-// Groupes affichés en sections secondaires (repliables) : "à compléter"
-// reste toujours visible en premier plan, le reste est du détail consultable.
-const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'transmis', 'expire']);
-
-type Enrichi = { a: AssignationPatient; aff: Affichage };
-type ActionRecommandee = EtapeDuMoment;
-
-// Une seule action mise en avant, en priorité une reprise de brouillon, sinon
-// le premier "à compléter" (Commencer/Corriger déverrouillé confondus,
-// tous deux réellement actionnables), sinon une correction demandée en
-// attente (non actionnable tant que le praticien ne l'a pas déverrouillée —
-// présentée en information, pas en CTA), sinon un état stable sans action.
-function calculerActionRecommandee(enriched: Enrichi[], brouillons: Set<string>): ActionRecommandee {
-  if (enriched.length === 0) return { kind: 'vide' };
-  const brouillon = enriched.find(e => e.aff.groupe === 'a_completer' && brouillons.has(e.a.idAssignation));
-  const cible = brouillon ?? enriched.find(e => e.aff.groupe === 'a_completer');
-  if (cible) {
-    const titre = cible.a.titre || cible.a.idQuestionnaire;
-    return { kind: 'action', idAssignation: cible.a.idAssignation, cta: `${cible.aff.action} « ${titre} »` };
-  }
-  const enAttente = enriched.find(e => e.aff.groupe === 'correction');
-  if (enAttente) {
-    const titre = enAttente.a.titre || enAttente.a.idQuestionnaire;
-    return { kind: 'attente', texte: `Votre demande de correction sur « ${titre} » est en attente de traitement par votre praticien.` };
-  }
-  return { kind: 'stable' };
-}
-
 export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
+  // Agendas du sommeil en cours : compte de nuits et position dans la fenêtre,
+  // rien d'autre. En cas d'échec de lecture, tableau vide — le hub retombe sur
+  // son comportement d'avant, jamais sur une supposition.
+  const [agendas, setAgendas] = useState<AgendaPortail[]>([]);
+  // Agendas alimentaires en cours : compte de journées et position dans la
+  // fenêtre, rien d'autre. Même résilience que ci-dessus — en cas d'échec de
+  // lecture, tableau vide : le hub retombe sur son comportement d'avant
+  // l'agenda alimentaire, jamais sur une supposition.
+  const [agendasAli, setAgendasAli] = useState<AgendaAliPortail[]>([]);
   const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
@@ -159,6 +110,8 @@ export default function QuestionnairesHubPage() {
       }
       setPatient(data.patient);
       setAssignations(data.assignations);
+      setAgendas(data.agendas ?? []);
+      setAgendasAli(data.agendasAlimentaires ?? []);
       setDerniereReponseLe(data.derniereReponseLe);
       setSignauxParcours(data.parcours ?? { consultationStatut: null, bookletEnvoye: false });
       // Protocole diffusé / fin de cycle : route existante, lecture résiliente
@@ -226,11 +179,19 @@ export default function QuestionnairesHubPage() {
     );
   }
 
-  const enriched = assignations.map(a => ({ a, aff: affichage(a, brouillons.has(a.idAssignation)) }));
+  const enriched = assignations.map(a => ({
+    a,
+    aff: affichage(
+      a,
+      brouillons.has(a.idAssignation),
+      agendas.find(g => g.idAssignation === a.idAssignation),
+      agendasAli.find(g => g.idAssignation === a.idAssignation),
+    ),
+  }));
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
-  const actionRecommandee = calculerActionRecommandee(enriched, brouillons);
+  const actionRecommandee = calculerActionRecommandee(enriched, brouillons, agendas, agendasAli);
 
   // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
   // dérivées du contrat partagé sur les seuls signaux que le portail sert

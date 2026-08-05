@@ -28,9 +28,12 @@ vi.mock('@/lib/anthropic', () => ({
   sanitizeAuditError: (message: string) => message,
   CORPUS_CLINIQUE_ACTIF: '',
 }));
+// `sha256` : depuis le LOT-06 la route atteint `orientationRulesV1`, qui signe
+// sa table avec cette fonction. Un mock qui ne l'expose pas casse l'import.
 vi.mock('@/lib/clinical/corpusSyntheseV1', () => ({
   CORPUS_CLINIQUE_METADATA: {},
   CORPUS_CLINIQUE_SHA256: 'sha-test',
+  sha256: (texte: string) => `sha256(${texte.length})`,
 }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), security: vi.fn() },

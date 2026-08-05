@@ -8,14 +8,22 @@
 // ailleurs), et les instruments à passation praticien (définis mais jamais
 // proposés à l'auto-remplissage : tests cliniciens ou journaux).
 
-import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 
 export type DefinitionCatalogue = QuestionnaireDef & {
-  scoring?: { maxTotal?: number; certification?: { status?: string } };
+  scoring?: { maxTotal?: number; sansTotalGlobal?: boolean; certification?: { status?: string } };
   administrationMode?: string;
 };
+
+export type StatutCertificationRuntime =
+  | 'certifie'
+  | 'ambigu'
+  | 'a_verifier'
+  | 'non_score'
+  | 'non_certifie'
+  | 'inconnu';
 
 export const CATALOGUE_DEFINITIONS = QUESTIONNAIRE_CATALOGUE as Record<
   string,
@@ -34,9 +42,71 @@ export const ALIAS_HISTORIQUES: Record<string, string> = {
 // consultation (clinicien/informant/journal), jamais auto-administrés.
 export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   { id: 'Q_GEO_03', categorie: 'Gérontologie' },
+  // `Q_GEO_04` (MMSE) REVIENT le 2026-07-31, sur arbitrage praticien. Son
+  // retrait du 2026-07-29 fermait l'usage en consultation d'un instrument dont
+  // les droits ne sont pas dégagés (« © PAR, licence requise »). La décision est
+  // reprise pour une raison d'asymétrie : six instruments portant la même
+  // classe de réserve sont, eux, ENVOYÉS AU PATIENT — ce qui expose davantage
+  // que d'afficher une grille au praticien qui porte la déclaration d'usage.
+  //
+  // `actif: false` est CONSERVÉ au catalogue : la route d'assignation reste
+  // fermée, et le MMSE ne part chez personne. C'est un test administré par le
+  // clinicien ; les deux gestes de #460 restent indépendants, seul celui-ci est
+  // repris.
+  //
+  // Point tranché le 2026-08-01, sur déclaration expresse du praticien : la
+  // déclaration d'usage exclut « la publication du verbatim », et cette exclusion
+  // ne vise PAS l'affichage de la grille au praticien en consultation — sans quoi
+  // elle contredirait « l'administration aux patients du cabinet » qu'elle couvre
+  // expressément. C'est cette ligne-ci qui en dépendait.
+  //
+  // La réserve « © PAR, licence requise » ne se lève PAS pour autant, et le
+  // registre la porte. Elle n'est pas non plus d'une nature à part : une
+  // première rédaction affirmait ici que PAR serait le seul ayant droit de cette
+  // population à vendre activement sa licence — c'est FAUX, QualityMetric
+  // (HIT-6) et GL Assessment (HAD) sont dans le même cas, et tous deux sont déjà
+  // ENVOYÉS AU PATIENT. Le fait rectifié renforce l'asymétrie qui motive cette
+  // ligne au lieu de l'affaiblir.
   { id: 'Q_GEO_04', categorie: 'Gérontologie' },
+  // `Q_GEO_04` (MMSE) est sorti d'ici le 2026-07-29, sur arbitrage praticien :
+  // droits non dégagés (« © PAR, licence requise »). Cette ligne portait son
+  // AFFICHAGE et l'aperçu de sa grille — le seul accès, dans l'application, aux
+  // 30 items pour une passation en consultation. La retirer retire donc l'usage
+  // lui-même, et c'est bien l'objet de la décision : fermer un instrument à la
+  // seule assignation, tout en continuant d'en afficher la grille, laisserait
+  // l'usage licencié se poursuivre sur papier.
+  //
+  // Les deux gestes sont INDÉPENDANTS, et une rédaction antérieure les avait
+  // confondus : elle justifiait ce retrait par un doublon d'affichage qui
+  // n'existe pas — `listeBibliotheque` ne montre jamais une entrée inactive, le
+  // MMSE ne serait donc apparu qu'une fois. Relevé en revue adversariale,
+  // contre-épreuve à l'appui. Le retrait tient, la raison change.
   { id: 'Q_GEO_05', categorie: 'Gérontologie' },
   { id: 'Q_GEO_06', categorie: 'Gérontologie' },
+  // `Q_NEU_06` (MMT) ENTRE ici le 2026-07-31, et pour un motif levé sur pièce.
+  //
+  // Il était fermé parce que « le registre ne nomme aucun auteur, on ne sait pas
+  // dire ce qu'il est ». La recherche bibliographique du 2026-07-31 l'instruit :
+  // c'est le « MMT ou Mini Mental Test » diffusé par l'IEDM (Institut Européen
+  // de Diététique et Micronutrition), document de 2005 — dix items au mot près,
+  // mêmes options, même cotation 0/1/2, mêmes quatre bandes que le servi.
+  //
+  // Et il n'est PAS le MMSE, contrairement à ce que la parenté de ses six
+  // premières épreuves laissait craindre : sa propre bande 5-10 ordonne « Faire
+  // MMS ». Un instrument qui prescrit le MMSE n'est pas le MMSE, et la réserve
+  // « © PAR » ne le concerne pas.
+  //
+  // Il ne peut pas être auto-administré, et c'est indépendant de ses droits :
+  // trois de ses items forment un enregistrement de trois mots puis deux
+  // rappels. Dans un formulaire rempli seul, le patient remonte la page et les
+  // deux items les plus discriminants deviennent des points offerts.
+  { id: 'Q_NEU_06', categorie: 'Gérontologie' },
+  // `Q_PED_02` ENTRE ici le 2026-08-01, avec sa débaptisation. Sa place n'est pas
+  // au portail patient : la grille est renseignée par un ENSEIGNANT. L'y envoyer
+  // ferait remplir le parent à la place de l'informant annoncé, ou ferait
+  // transiter le lien magique du patient vers un tiers — qui accéderait alors à
+  // tout son portail. Même position que `Q_GEO_03`, renseigné avec l'informant.
+  { id: 'Q_PED_02', categorie: 'Pédiatrie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },
 ];
 
@@ -45,13 +115,37 @@ export function nbQuestions(def: DefinitionCatalogue | undefined): number | null
   return def.sections.reduce((n, s) => n + (s.questions?.length ?? 0), 0);
 }
 
+// `sansTotalGlobal` PRIME sur `maxTotal` depuis le 2026-08-01. Le rayon et
+// l'aperçu lisent le dénominateur dans la DÉFINITION, pas dans le retour du
+// moteur : un instrument dont le moteur a cessé de rendre un total continuait
+// d'annoncer « · /36 » au praticien. Mesuré sur `Q_TAB_04`, dont le registre
+// déclare pourtant « AUCUN total global ». Le praticien lisait un dénominateur,
+// assignait, ne recevait rien — et n'avait plus qu'à refaire à la main la somme
+// que le lot venait de déclarer non reconstructible.
 export function scoreMax(def: DefinitionCatalogue | undefined): number | null {
+  if (def?.scoring?.sansTotalGlobal === true) return null;
   const max = def?.scoring?.maxTotal;
   return typeof max === 'number' ? max : null;
 }
 
 export function estCertifie(def: DefinitionCatalogue | undefined): boolean {
   return def?.scoring?.certification?.status === 'certifie';
+}
+
+export function statutCertificationRuntime(def: DefinitionCatalogue | undefined): StatutCertificationRuntime {
+  const status = def?.scoring?.certification?.status;
+  if (status === 'certifie') return 'certifie';
+  if (status === 'ambigu') return 'ambigu';
+  if (status === 'a_verifier') return 'a_verifier';
+  if (status === 'non_score') return 'non_score';
+  if (typeof status === 'string' && status.length > 0) return 'non_certifie';
+  return 'inconnu';
+}
+
+// Prédicat d'administrabilité côté route : une définition doit exister, et
+// l'instrument ne doit pas être suspendu au catalogue.
+export function estAdministrableParLaRoute(idQuestionnaire: string): boolean {
+  return Boolean(CATALOGUE_DEFINITIONS[idQuestionnaire]) && !IDS_SUSPENDUS.has(idQuestionnaire);
 }
 
 // Les ids réellement assignables depuis la bibliothèque : actifs à
@@ -71,6 +165,7 @@ export type BibliothequeEntree = {
   nbQuestions: number | null;
   scoreMax: number | null;
   certifie: boolean;
+  statutCertification: StatutCertificationRuntime;
   assignable: boolean;
   aliasVers: string | null;
   passationPraticien: boolean;
@@ -92,6 +187,7 @@ export function listeBibliotheque(): BibliothequeEntree[] {
       nbQuestions: nbQuestions(def),
       scoreMax: scoreMax(def),
       certifie: estCertifie(def),
+      statutCertification: statutCertificationRuntime(def),
       assignable: IDS_ASSIGNABLES.has(q.id),
       aliasVers,
       passationPraticien: false,
@@ -110,6 +206,7 @@ export function listeBibliotheque(): BibliothequeEntree[] {
         nbQuestions: nbQuestions(def),
         scoreMax: scoreMax(def),
         certifie: estCertifie(def),
+        statutCertification: statutCertificationRuntime(def),
         assignable: false,
         aliasVers: null,
         passationPraticien: true,

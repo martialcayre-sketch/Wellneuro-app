@@ -1,6 +1,6 @@
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import type { Question, QuestionOption } from './questionnaire-types';
-import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
+import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_ALI_09, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
 // Dr Martial Cayre — 23/06/2026
@@ -232,13 +232,22 @@ Q_SOM_02: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     certification:{source:'drive',status:'ambigu'},
     maxTotal:24,
+    // Les trous à 6 et à 15 sont des trous DE LA SOURCE elle-même (« < 6 »,
+    // « == 7 », « == 8 », « >= 9 », « <= 14 », « > 15 ») : aucune bande n'y est
+    // écrite. Ils sont comblés le 2026-07-30 par ARBITRAGE PRATICIEN — pas par
+    // alignement, la source n'ayant rien à aligner — avec la règle la moins
+    // affirmante : 6 est hors normalité (« < 6 ») sans être « >= 9 », il reçoit
+    // la bande moyenne ; 15 n'est pas « excessive » (« > 15 »), il reste dans la
+    // bande 9-15. Une première rédaction de ce lot présentait le comblement de 6
+    // comme « conforme à la source » et refusait 15 « faute de source » : les
+    // deux trous étaient identiques, et la revue l'a montré.
     interpretation:[
       {min:0,max:5,label:'Pas de somnolence diurne ; sommeil vraisemblablement satisfaisant',color:'success'},
-      {min:7,max:8,label:'Score moyen ; pas de dette de sommeil évidente, mais le sommeil peut éventuellement être amélioré',color:'warning'},
-      {min:9,max:14,label:'Somnolence diurne ; pathologies possibles ; déficit de sommeil très probable',color:'danger'},
+      {min:6,max:8,label:'Score moyen ; pas de dette de sommeil évidente, mais le sommeil peut éventuellement être amélioré',color:'warning'},
+      {min:9,max:15,label:'Somnolence diurne ; pathologies possibles ; déficit de sommeil très probable',color:'danger'},
       {min:16,max:24,label:"Somnolence diurne excessive ; syndrome d'apnées du sommeil possible",color:'danger'},
     ]
   }
@@ -261,7 +270,7 @@ Q_SOM_06: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     certification:{source:'drive',status:'certifie'},
     maxTotal:32,
     interpretation:[
@@ -320,7 +329,7 @@ Q_INF_01: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:96,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -355,7 +364,7 @@ Q_INF_02: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:52,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -464,7 +473,7 @@ Q_INF_04: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:78,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -575,6 +584,11 @@ Q_GAS_01: {
   ],
   scoring:{
     type:'tfd',
+    // `severiteCroissante` : les grilles d'axe comme la globale montent avec le
+    // score (« A — Absence de troubles fonctionnels » en bas, « C — majeurs » en
+    // haut), et les items sont cotés 0 à 3 — aucune réponse ajoutée ne peut faire
+    // baisser un total. L'instrument est éligible au plancher garanti.
+    severiteCroissante:true,
     certification:{source:'drive',status:'ambigu'},
     subScores:[
       {id:'C1',label:'Digestif supérieur',items:['C1_1','C1_2','C1_3','C1_4','C1_5','C1_6','C1_7','C1_8'],max:24,
@@ -622,7 +636,7 @@ Q_FIB_01: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:6,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -744,7 +758,7 @@ Q_TAB_02: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10, certification:{source:'drive',status:'certifie'},
+    type:'sum', severiteCroissante:true, maxTotal:10, certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,  max:2,  label:'Pas de dépendance à la nicotine',       color:'success'},
       {min:3,  max:4,  label:'Faible dépendance à la nicotine',       color:'info'},
@@ -946,6 +960,9 @@ Q_ALI_02,
 Q_ALI_03,
 
 
+Q_ALI_09,
+
+
 
 // ════════════════════════════════════════════════════════
 // GASTRO-ENTÉROLOGIE
@@ -1124,7 +1141,7 @@ Q_STR_03: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:55,
+    type:'sum', severiteCroissante:true, maxTotal:55,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:9,label:'Niveau de stress très bas',color:'success'},
@@ -1304,7 +1321,7 @@ Q_GEO_02: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10,
+    type:'sum', severiteCroissante:true, maxTotal:10,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:3, label:'Risque de sarcopénie faible',color:'success',protocol:'Maintenir activité physique et apports protéiques adaptés à l\'âge (≥ 1,2 g/kg/j). Refaire le test si la situation s\'aggrave.'},
@@ -1363,7 +1380,7 @@ Q_TAB_05: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10, certification:{source:'drive',status:'certifie'},
+    type:'sum', severiteCroissante:true, maxTotal:10, certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:3, label:"Pas de perte d'autonomie selon le seuil fourni",color:'success'},
       {min:4,max:10,label:"Perte d'autonomie",color:'danger'},
@@ -1517,14 +1534,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return parseFloat(raw);
   }
 
-  // Somme d'un sous-ensemble d'items
+  // Somme d'un sous-ensemble d'items.
+  //
+  // `repondus` compte les items RÉELLEMENT renseignés. `missing` ne suffit pas à le
+  // déduire : un item conditionnel dont la condition n'est pas remplie sort de la
+  // boucle sans être compté nulle part, si bien que `missing === items.length` est
+  // faux dès qu'un conditionnel est en jeu.
   function sumItems(items: any, reversed: any) {
-    let total = 0, missing = 0;
+    let total = 0, missing = 0, repondus = 0;
     items.forEach((id: any) => {
       const q = allQ.find(q => q.id === id);
       if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) return;
       const v = getVal(id);
       if (v === null) { missing++; return; }
+      repondus++;
       let minV = 0, maxV = 4;
       if (q && q.options && q.options.length) {
         const vals = q.options.map((o: any) => o.v !== undefined ? o.v : o.value).map(Number);
@@ -1533,46 +1556,419 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       }
       total += (reversed && reversed.includes(id)) ? (minV + maxV - v) : v;
     });
-    return {total, missing};
+    return {total, missing, repondus};
   }
 
-  // Interpréter un score selon des plages
+  /**
+   * Total d'un SOUS-SCORE : `null` quand aucun de ses items n'a été renseigné.
+   *
+   * GARDE — « non mesuré », jamais 0.
+   *
+   * Un axe auquel personne n'a répondu valait zéro, et zéro est une valeur : il
+   * décrochait une bande, déclenchait les seuils « faible si < X », et entrait dans
+   * le total global. Mesuré le 2026-07-29 sur le catalogue entier — une passation
+   * ne renseignant que le PREMIER sous-score de chaque instrument produisait
+   * **37 sous-scores à zéro, 16 bandes d'interprétation fabriquées et 2 `atRisk`**,
+   * dans les deux directions : « Iso-Strain — risque burnout élevé » (Karasek) et
+   * « Risque élevé de chute » (Tinetti) d'un côté, « B — Troubles fonctionnels »
+   * sur une section de cinq (`Q_GAS_01`) de l'autre.
+   *
+   * La garde de passation vide (#451) ne mordait que sur l'instrument ENTIER ; ce
+   * défaut-ci vit un étage plus bas, par axe.
+   */
+  function totalSousScore(items: any, reversed: any) {
+    const {total, missing, repondus} = sumItems(items, reversed);
+    return {total: repondus === 0 ? null : total, missing, repondus};
+  }
+
+  /**
+   * Un axe est MESURÉ dès qu'UN SEUL de ses items est renseigné.
+   *
+   * Même frontière que `totalSousScore`, pour les moteurs qui ne passent pas par
+   * `sumItems` — ceux dont le découpage est codé en dur plutôt que déclaré
+   * (`psqi`, `francis`, `qif`, `berlin`, `idtas_ae`, `sigh_sad_sa`). Ils lisaient
+   * leurs items en `getVal(x) || 0`, si bien que l'absence entrait dans le calcul
+   * sous la valeur la plus basse, indiscernable d'un vrai zéro.
+   *
+   * La frontière est « au moins un item », pas « tous » : un axe partiellement
+   * répondu reste une mesure, sous-estimée mais réelle, et c'est le contrat déjà
+   * posé le 2026-07-29 sur les six moteurs à `subScores`. La compléter en
+   * « incomplet ⇒ non mesuré » serait un autre lot, et un autre arbitrage.
+   */
+  function aUneMesure(ids: any[]) {
+    return (ids || []).some((id: any) => getVal(id) !== null);
+  }
+
+  /**
+   * Tous les items d'un axe sont-ils renseignés ?
+   *
+   * Complète `aUneMesure` sans la remplacer. La frontière « au moins un item »
+   * dit si un axe est MESURÉ ; celle-ci dit si une GRILLE peut y être lue. Les
+   * deux ne se confondent pas : un total partiel est toujours biaisé vers le
+   * bas, et une grille lue par le bas conclut — c'est la doctrine posée sur le
+   * Karasek le 2026-07-29 (« un seuil ne se lit que sur un axe complet »), qui
+   * ne s'appliquait qu'aux moteurs à `subScores`.
+   *
+   * `ids.length > 0` : `every` rend `true` sur une liste vide, qui passerait
+   * alors pour complète.
+   */
+  function estComplet(ids: any[]) {
+    return (ids || []).length > 0 && ids.every((id: any) => getVal(id) !== null);
+  }
+
+  /**
+   * Verdict d'un seuil MONOTONE croissant, sur un comptage peut-être incomplet.
+   *
+   * Un comptage ne peut que monter quand une réponse s'ajoute. Le franchissement
+   * observé est donc DÉFINITIF — six « oui » sur neuf items dépassent un seuil de
+   * cinq, que les trois derniers soient renseignés ou non. Le NON-franchissement,
+   * lui, ne vaut que sur un comptage complet.
+   *
+   * Sans cette asymétrie, deux « oui » sur neuf rendaient
+   * `probableMajorDepression: false` : un dépistage dépressif déclaré négatif sur
+   * sept items jamais posés. Rendre `false` faute de données, c'est répondre à la
+   * place du patient ; rendre `null` dit qu'on ne sait pas. Exiger la complétude
+   * dans les deux sens, à l'inverse, effacerait un dépistage POSITIF — l'erreur
+   * symétrique, et la plus coûteuse des deux.
+   */
+  function seuilMonotone(atteint: boolean, complet: boolean) {
+    return atteint ? true : (complet ? false : null);
+  }
+
+  /**
+   * Bande PLANCHER d'un recueil partiel — le pendant de `seuilMonotone` pour les
+   * grilles d'interprétation.
+   *
+   * `D-014` a fermé le faux négatif rassurant : sur un recueil partiel, plus de
+   * bande. Sa justification était déjà l'asymétrie — « l'erreur est à sens
+   * unique : SOUS-classement, jamais sur-classement ». Mais si l'erreur ne peut
+   * aller que vers le bas, la bande décrochée par les seules réponses cotées est
+   * un PLANCHER : la bande finale sera celle-là ou pire, jamais meilleure. La
+   * supprimer éteint donc, avec le faux négatif visé, les vrais positifs DÉJÀ
+   * ACQUIS. Sur `Q_GAS_01`, dont les items sont cotés 0 à 3 et dont la bande B
+   * s'ouvre à 24, huit réponses au maximum suffisent à l'atteindre — et les
+   * vingt-trois items restants ne peuvent qu'ajouter.
+   *
+   * DEUX CONDITIONS, et aucune ne se présume — d'où le paramètre `eligible`,
+   * qui vient d'une DÉCLARATION du questionnaire et jamais d'une déduction :
+   *
+   *   1. MONOTONIE — une réponse de plus ne peut jamais faire baisser le total.
+   *      Vraie d'un moteur purement additif dont les items sont positifs ; fausse
+   *      dès qu'une absence se complète par un défaut qui n'est pas la valeur la
+   *      plus favorable de son échelle (le cas de `Q2` sur le PSQI, corrigé dans
+   *      le même lot).
+   *   2. SENS DE LA GRILLE — la sévérité doit CROÎTRE avec le score. QUATRE
+   *      instruments `sum` vont dans l'autre sens : `Q_TAB_01` (« peu ou pas
+   *      motivé » en bas, « fortement motivé » en haut), `Q_ALI_01`, `Q_ALI_02`
+   *      et `Q_GEO_04` (MMSE). Un score haut y est FAVORABLE. Le compte est celui
+   *      du catalogue RÉSOLU, drapeau `WN_ALI_01_SIIN57` éteint ; allumé,
+   *      `Q_ALI_01` bascule sur `seuils_points` et quitte ce moteur — ils ne sont
+   *      alors plus que trois. Un plancher de SCORE y serait un plafond de
+   *      SÉVÉRITÉ, et
+   *      servir la bande y produirait exactement le faux positif rassurant que
+   *      `D-014` combat — en pire, puisqu'il porterait la marque du garanti.
+   *
+   * Le sens de la grille ne se lit ni dans l'ordre d'écriture des bandes ni dans
+   * leurs couleurs : plusieurs grilles du catalogue sont rédigées en `min`
+   * DÉCROISSANT, et `Q_TAB_01` inverse les deux à la fois.
+   *
+   * LA BANDE LA PLUS BASSE NE FAIT PAS UN PLANCHER. « Au moins la bande la plus
+   * basse » est une information vide — c'est le cas que `D-014` protège, et il ne
+   * change pas. La comparaison porte donc sur `min`, et non sur l'index dans le
+   * tableau, qui dépendrait de l'ordre de rédaction.
+   *
+   * Les deux comportements de `interpretRanges` restent justes ici, et pour la
+   * même raison : dans un trou de grille il rend `null` — pas de plancher plutôt
+   * qu'un plancher inventé —, et au-dessus de toute la grille il rend la bande au
+   * `max` le plus haut, qui sur une grille croissante est la plus sévère. Aucun
+   * des deux ne peut rendre un plancher plus rassurant qu'il ne devrait.
+   */
+  function estEligibleAuPlancher(sc: any) {
+    // UNE seule définition, lue par les trois moteurs. Une première rédaction en
+    // avait deux — `sum` ajoutait `sansTotalGlobal` dans une variable locale,
+    // `psqi` et `tfd` testaient `severiteCroissante` nu — et un concept à deux
+    // orthographes finit toujours par diverger sur l'une des deux.
+    //
+    // `sansTotalGlobal` : un instrument qui ne sert pas son total ne peut pas
+    // servir de plancher, qui est une lecture de ce total. Sans cette clause,
+    // « au moins Risque aigu » partirait dans la note sans le nombre qui le
+    // fonde — la garde doit fermer les DEUX chemins, le champ et la phrase.
+    return sc?.severiteCroissante === true && sc?.sansTotalGlobal !== true;
+  }
+
+  function bandePlancher(total: any, recueilIncomplet: boolean, ranges: any, eligible: boolean) {
+    if (eligible !== true || !recueilIncomplet) return null;
+    if (!Array.isArray(ranges) || ranges.length === 0) return null;
+    const bande = interpretRanges(total, ranges);
+    if (!bande) return null;
+    const borneLaPlusBasse = ranges.reduce(
+      (m: number, r: any) => (typeof r?.min === 'number' && r.min < m ? r.min : m), Infinity);
+    if (!(bande.min > borneLaPlusBasse)) return null;
+    // LA CONDUITE NE SORT PAS PAR ICI. Une bande dit ce que VAUT la mesure, une
+    // conduite ce qu'il faut FAIRE, et le dépôt les sépare à un endroit unique
+    // (`separerConduite`) par lequel les dix-sept moteurs passent tous. Or cet
+    // entonnoir sort immédiatement quand `interpretation` vaut `null` — c'est-à-dire
+    // exactement sur le recueil partiel, le seul état où un plancher existe. Un
+    // `{...bande}` nu ouvrait donc une SECONDE porte, non filtrée : cinq
+    // instruments éligibles (`Q_NEU_02`, `Q_GEO_03`, `Q_CAR_01`, `Q_SOM_04`,
+    // `Q_GEO_02`) portent un `protocol` sur leur bande la plus sévère, et
+    // « Orientation psychiatrique urgente » serait parti dans `scoresJson` sous
+    // une clé que rien ne rend. Relevé en revue adversariale, invisible du garde
+    // `conduite.guard.test.ts` qui ne sature que des passations COMPLÈTES.
+    //
+    // La conduite est donc RETIRÉE, pas déplacée : servir une conduite sur un
+    // instrument incomplet est un autre arbitrage que celui de ce lot.
+    const {protocol: _conduiteNonServie, ...bandeSansConduite} = bande as Record<string, unknown>;
+    return {...bandeSansConduite, garanti: true};
+  }
+
+  /**
+   * Phrase qui ACCOMPAGNE un plancher dans la note de recueil.
+   *
+   * La note est le seul canal déjà servi partout — fiche praticien, synthèse,
+   * PDF, prompts. Y écrire le plancher le porte jusqu'au lecteur sans toucher un
+   * seul consommateur ; le champ `bandePlancher`, lui, reste la forme structurée
+   * pour ceux qui voudront le lire plus tard.
+   *
+   * « Au moins », et la raison dans la même phrase : une bande sans son « au
+   * moins » se relit comme une mesure, et c'est précisément la confusion que le
+   * champ distinct existe pour empêcher.
+   */
+  function phrasePlancher(plancher: any) {
+    return plancher ? `Au moins « ${plancher.label} » : les items sans réponse ne peuvent qu'aggraver le score.` : null;
+  }
+
+  /**
+   * Total global agrégé depuis des sous-scores.
+   *
+   * Si UN SEUL axe contributeur n'a pas été mesuré, le total n'est plus celui de
+   * l'instrument : son dénominateur (`maxTotal`) compte tous les axes, pas
+   * seulement ceux qui ont répondu. Sommer les axes mesurés produirait un nombre
+   * juste sur un dénominateur faux — c'est précisément ce qui faisait passer
+   * `Q_GAS_01` à 3 items sur 31 pour « 0,978 de couverture » d'une fondation
+   * critique de « Mon équilibre ».
+   *
+   * Les sous-scores mesurés, eux, restent servis avec leur propre bande : on ne
+   * perd que le nombre qui n'en était pas un.
+   */
+  function totalGlobalDepuisSousScores(contributeurs: any[]) {
+    if (contributeurs.length === 0) return null;
+    if (contributeurs.some((r: any) => r.total === null)) return null;
+    return contributeurs.reduce((s: number, r: any) => s + r.total, 0);
+  }
+
+  // Interpréter un score selon des plages.
+  //
+  // GARDE — pas de bande correspondante ⇒ AUCUNE bande, jamais la dernière.
+  //
+  // Le repli sur `ranges[ranges.length - 1]` rendait la bande écrite en dernier,
+  // qui n'a aucune raison d'être la bonne : mesuré le 2026-07-29 sur le catalogue
+  // entier, il tombe sur la plus SÉVÈRE ici et sur la plus RASSURANTE là.
+  //   · `Q_SOM_02` (Epworth) ne couvre ni 6 ni 15 — deux totaux parfaitement
+  //     atteignables sur 8 items cotés 0 à 3. Un patient à 6, donc sans somnolence,
+  //     recevait « Somnolence diurne excessive ; syndrome d'apnées du sommeil
+  //     possible ».
+  //   · `Q_MOD_01` ne couvre pas 9 sur quatre de ses sous-échelles, et sa dernière
+  //     bande est la rassurante : un score entre « non réparateur » (0-8) et
+  //     « insuffisant » (10-14) ressortait « satisfaisant ».
+  //   · Cinq jeux de bandes ne couvrent pas 0 (`Q_STR_02` 10-50, `Q_STR_08` 25-100,
+  //     `Q_STR_05` et `Q_GAS_03` 1-7, `Q_MOD_03` 1-10) : un instrument entièrement
+  //     non répondu y tombait, et recevait « Addiction élevée au travail » ou
+  //     « Intensité très élevée ».
+  //
+  // Rendre `null` dit « pas de bande pour ce score » — ce que les consommateurs
+  // savent déjà lire : la colonne `interpretation` est nullable en base, et les
+  // routes praticien comme patient rendent une chaîne vide sur une valeur absente.
+  // Une bande fausse, elle, se propage jusqu'à la fiche patient.
   function interpretRanges(score: any, ranges: any) {
+    if (!Array.isArray(ranges) || ranges.length === 0) return null;
+    // `null >= 0` vaut `true` en JavaScript : sans ce test, une valeur absente
+    // décrocherait la première bande dont le plancher est 0.
+    if (typeof score !== 'number' || !Number.isFinite(score)) return null;
     for (const r of ranges) {
       if (score >= r.min && score <= r.max) return r;
     }
-    return ranges[ranges.length - 1];
+    // AU-DESSUS de toute la grille : la bande de tête est terminale, et un score
+    // qui la dépasse en relève au moins. Ce cas-là n'est PAS un trou — c'est un
+    // plafond de grille écrit sous le maximum atteignable, et l'ancien repli y
+    // rendait la bonne réponse. Deux grilles sont dans ce cas : `Q_TAB_04`
+    // (plafond 32, total atteignable 36 — le résultat le plus sévère du
+    // questionnaire cannabis, avec son orientation en addictologie) et
+    // `Q_MOD_01/ADAPTATION_STRESS` (plafond 24, atteignable 28 — le patient le
+    // MIEUX adapté). Trouvé par la revue adversariale du 2026-07-29 : la mesure
+    // qui a fondé ce lot cherchait les trous et les planchers, jamais les
+    // plafonds.
+    //
+    // IL N'EN RESTE QU'UNE depuis le 2026-07-31 : le plafond de `Q_TAB_04` a été
+    // porté à 36, son maximum réellement atteignable, en même temps que sa grille
+    // s'alignait sur la source. Ce repli n'est donc plus exercé que par
+    // `Q_MOD_01`. Le garder n'en est pas moins nécessaire — il protège d'un
+    // défaut, pas d'un instrument.
+    //
+    // On prend la bande au `max` le plus haut, et non la dernière écrite : la
+    // règle reste vraie quel que soit l'ordre de rédaction de la grille.
+    //
+    // Rien de symétrique par le BAS, délibérément. Sous le plancher d'une grille,
+    // on ne trouve pas un score extrême mais une absence de mesure : le minimum
+    // atteignable de `Q_STR_02` est 10 et celui de `Q_STR_08` est 25 — un 0 n'y
+    // signifie pas « stress nul », il signifie « rien n'a été répondu ».
+    const tete = ranges.reduce((a: any, b: any) => (typeof b?.max === 'number' && b.max > a.max ? b : a));
+    if (typeof tete?.max === 'number' && score > tete.max) return tete;
+    return null;
+  }
+
+  // ── GARDE GÉNÉRALE — une passation vide n'est pas un résultat ─────────
+  //
+  // Deux moteurs portaient déjà cette garde (`sum` depuis le 2026-07-28,
+  // `seuils_points` depuis #436). Le catalogue en sert 27 : les vingt-cinq autres
+  // ne l'avaient pas. Mesuré le 2026-07-29 en appelant `calculateScore(id, {})` sur
+  // le catalogue entier, **40 verdicts cliniques sortaient de 22 instruments sans
+  // une seule réponse**.
+  //
+  // Trente en direction rassurante — « Pas de trouble du sommeil » (PSQI),
+  // « Absence de symptomatologie » (HAD), « Risque faible d'apnée du sommeil »
+  // (Berlin) : un questionnaire blanc se lisait comme un bilan propre. Dix en
+  // direction alarmante — les sept sous-échelles de `Q_MOD_01` en rouge,
+  // « Risque élevé de chute » (Tinetti), « Tout à fait du soir » (Horne), et
+  // `Q_GEO_06` annonçant « Trouble de la mémoire épisodique — consultation
+  // neurologique » sur un test non répondu.
+  //
+  // Aucune des deux directions n'est moins fausse que l'autre : la question n'est
+  // pas la sévérité du verdict, c'est qu'il n'y a rien à juger.
+  //
+  // Ce n'est PAS un cas d'école. Les identifiants d'un instrument changent — le
+  // cas `Q_ALI_01` (`AL*` contre `SIIN*`) l'a montré en production. Une passation
+  // relue sous une définition dont elle ne porte aucune clé tombe exactement ici,
+  // et sortait avec un verdict.
+  //
+  // Forme du retour reprise à l'identique des deux gardes existantes, `type`
+  // compris : `equilibre/evidence.ts` lit déjà `scored: false`, et les routes
+  // praticien comme patient savent rendre une interprétation absente.
+  // `agenda_sommeil` et `journal` portent DÉJÀ leur propre `scored: false`, avec un
+  // motif que celui-ci ne saurait pas dire — le nombre de nuits recueillies pour
+  // l'un, « recueil sans score global » pour l'autre. Les préempter remplacerait un
+  // motif juste par un motif générique, et perdrait `nbNuits`.
+  const PORTE_SON_PROPRE_NON_SCORE = ['agenda_sommeil', 'journal'];
+  if (!PORTE_SON_PROPRE_NON_SCORE.includes(sc.type)
+      && allQ.length > 0 && allQ.every((q: any) => getVal(q.id) === null)) {
+    return {
+      // Même règle que la branche `sum` plus bas : `sansTotalGlobal` retire le
+      // dénominateur. Sans cela une passation VIDE rendait `maxTotal: 36` et une
+      // passation remplie n'en rendait aucun — deux formes contradictoires pour
+      // le même instrument, toutes deux persistées dans `scores_json`.
+      type: sc.type, scored: false, total: null,
+      maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
+      interpretation: null, note: sc.note || null,
+      certification: sc.certification || null,
+      raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
+    };
   }
 
   // ── SUM ──────────────────────────────────────────────
   if (sc.type === 'sum') {
     const items = allQ.map(q => q.id);
 
-    // GARDE — « non scoré », jamais 0 par défaut.
+    /**
+     * GARDE — une bande d'interprétation ne se lit que sur l'instrument COMPLET.
+     *
+     * `sumItems` rend `{total, missing, repondus}` ; ce moteur ne captait que
+     * `total` et jetait les deux autres. Un item non répondu n'est donc pas
+     * compté comme 0 : il est IGNORÉ. Le total sort plus bas qu'il ne devrait,
+     * et décroche une bande calibrée sur la forme complète. L'erreur est à sens
+     * unique — SOUS-classement, jamais sur-classement, c'est-à-dire le faux
+     * négatif sur un dépistage.
+     *
+     * COMBIEN D'INSTRUMENTS — recompté sur le catalogue RÉSOLU le 2026-08-04,
+     * et non relevé au grep : `sum` en sert **26 drapeau `WN_ALI_01_SIIN57`
+     * éteint, 25 allumé**. Le drapeau est allumé en production depuis le
+     * 2026-07-28, où `Q_ALI_01` résout vers `Q_ALI_01_SIIN_57` et bascule sur
+     * `seuils_points` : c'est 25 qui décrit la production. Deux pièges de
+     * comptage, tous deux déjà tombés :
+     *   · les trois `type:'sum'` de `questionnaires/neuropsychologie.ts` sont
+     *     des `parts` d'un `composite_multi_parties`, PAS des instruments — un
+     *     comptage textuel les ajoute ;
+     *   · un chiffre nu se périme au premier basculement de drapeau. D'où les
+     *     deux valeurs, et la position du drapeau écrite avec.
+     * Trois des 26 sont par ailleurs suspendus (`Q_GEO_03`, `Q_GEO_04`,
+     * `Q_NEU_06`) : ils ne sont plus assignables, mais leurs passations
+     * existantes se relisent encore par ce moteur.
+     *
+     * PORTÉE — le trou est RÉEL côté serveur ; ce qui est nul, c'est ce qui a
+     * déjà été écrit en base. La distinction n'est pas cosmétique : elle décide
+     * si cette garde protège l'avenir ou seulement le passé.
+     *
+     * Aucun de ces instruments n'a d'item conditionnel (vérifié, pas supposé),
+     * et `GenericQuestionnaire.tsx` refuse le passage à la section suivante tant
+     * qu'une question reste vide. Mais cette barrière-là est la SEULE, et elle
+     * est dans le NAVIGATEUR :
+     *   · elle exempte déjà les questions conditionnelles
+     *     (`GenericQuestionnaire.tsx`, `if (q.conditionnel) return true`) ;
+     *   · côté serveur, `api/patient/submit` n'exige la complétude que pour
+     *     `def.cabinet` — et **aucun** des instruments servis par `sum` n'est
+     *     un instrument de cabinet. Un POST partiel authentifié sur l'un d'eux
+     *     est donc accepté aujourd'hui, et produisait une bande fausse.
+     * C'est le trou que ce fichier nomme déjà plus bas, sur `apports_ponderes` :
+     * « rien côté serveur n'exige la complétude d'un questionnaire du
+     * catalogue ». Cette branche n'est donc pas du code défensif : elle est le
+     * seul endroit où la complétude est exigée pour ces 25 instruments.
+     *
+     * Ce qui est MESURÉ, et qui suffit à fermer sans rien déplacer : aucune
+     * réponse déjà en base n'est partielle — les 21 réponses `sum` de production
+     * portent toutes exactement le nombre d'items attendu (lecture
+     * `execute_sql` du 2026-08-04). Aucun résultat existant ne bouge donc ; ce
+     * que cette garde change est l'écriture suivante, pas les précédentes.
+     *
+     * FRONTIÈRE ASSUMÉE, plus stricte que celle des sous-scores. `aUneMesure`
+     * (plus haut) tient un axe pour MESURÉ dès qu'UN item est renseigné ; ici
+     * il faut TOUS les items. Les deux ne disent pas la même chose : un
+     * sous-score DÉTAILLE un total qui reste vérifiable à côté, une bande
+     * AFFIRME — « Fatigue excessive », « Somnolence diurne excessive » — et elle
+     * est calibrée sur la forme complète. Le total, lui, reste servi : ce qui
+     * tombe est la lecture, pas la mesure.
+     *
+     * Cette dernière phrase avait une exception, et c'est elle qui mordait :
+     * `equilibre/score.ts` RELISAIT ce total comme une lecture — couverture =
+     * total ÷ `max` de la forme complète — si bien qu'un recueil partiel sur une
+     * source `inverser: true` remontait la couverture au lieu de la baisser. Le
+     * total y était la lecture. Fermé au même endroit que cette garde, en
+     * écartant la source sur `missing > 0` (voir `extraireValeurBrute`).
+     *
+     * DIVERGENCE ASSUMÉE avec `plaintes_actuelles` (plus bas), qui répond à la
+     * même question en mettant `total: null` sur recueil partiel là où `sum`
+     * sert le total. Ce n'est pas un oubli. Là-bas chaque domaine EST un item et
+     * la valeur interprétée est une MOYENNE qui divise par le nombre d'items :
+     * un total partiel s'y lit directement comme une intensité, et rien ne dit
+     * au lecteur combien d'items le fondent. Ici le total sort À CÔTÉ de
+     * `missing` et `repondus`, qui le rendent vérifiable. Aligner les deux
+     * changerait des valeurs servies — ce serait un autre lot, pas une
+     * correction de celui-ci.
+     *
+     * `repondus === 0` : chemin résiduel. La garde générale de passation vide
+     * (plus haut) le couvre déjà quand AUCUNE réponse n'existe, mais pas quand
+     * les seules réponses présentes portent sur des items écartés par leur
+     * conditionnel — `repondus` vaut alors 0 sans que la garde ait mordu, et
+     * `total: 0` décrocherait la bande la plus basse.
+     */
+    const {total, missing, repondus} = sumItems(items, []);
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const interp = recueilIncomplet ? null : interpretRanges(total, sc.interpretation);
+    // PLANCHER — ce que le recueil partiel a DÉJÀ acquis, quand la grille le
+    // permet. L'éligibilité est une DÉCLARATION de l'instrument : le moteur ne
+    // peut pas la déduire, QUATRE de ses instruments (`Q_TAB_01`, `Q_ALI_01`,
+    // `Q_ALI_02`, `Q_GEO_04`) ayant une grille où le score haut est FAVORABLE.
+    // Un cinquième, `Q_TAB_04`, n'est pas éligible non plus, mais pour un autre
+    // motif : il ne déclare aucune grille.
     //
-    // Symétrique de celle du moteur `seuils_points`, et posée ici pour la même
-    // raison : une passation dont AUCUNE réponse ne correspond aux items de la
-    // définition rendait `total: 0`, donc la bande la plus basse ET sa conduite
-    // clinique — « bilan approfondi nécessaire » sur un dossier illisible. Et
-    // `equilibre/score.ts` accepte 0 comme une valeur : sur une source de
-    // fondation critique, cela plafonne le score global à 50.
-    //
-    // Le cas n'est pas théorique : `Q_ALI_01` a deux formes aux identifiants
-    // disjoints (`AL*` et `SIIN*`). Servir l'une après avoir recueilli l'autre
-    // — dans un sens comme dans l'autre — tombe exactement ici. Trouvé par la
-    // revue adversariale du 2026-07-28, qui a relevé que le lot n'avait écrit
-    // la garde que dans le sens qui l'arrangeait.
-    if (items.length > 0 && items.every(id => getVal(id) === null)) {
-      return {
-        type: 'sum', scored: false, total: null, maxTotal: sc.maxTotal,
-        interpretation: null, note: sc.note || null,
-        certification: sc.certification || null,
-        raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
-      };
-    }
-
-    const {total} = sumItems(items, []);
-    const interp = interpretRanges(total, sc.interpretation);
+    // Le cas `repondus === 0` se ferme tout seul — `total` y vaut 0, qui ne
+    // dépasse jamais la borne la plus basse d'une grille.
+    const plancher = bandePlancher(total, recueilIncomplet, sc.interpretation, estEligibleAuPlancher(sc));
+    // La note s'AJOUTE à celle de l'instrument, elle ne la remplace pas : la
+    // note de `sc` porte souvent une harmonisation de seuils qu'on perdrait.
+    const noteRecueil = !recueilIncomplet ? null
+      : [missing > 0
+          ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+          : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`,
+         phrasePlancher(plancher)].filter(Boolean).join(' ');
     // `dimensions` : découpage DESCRIPTIF déclaré par l'instrument. Il n'entre
     // pas dans le total — celui-ci reste la somme de tous les items — et sert
     // uniquement à ne plus masquer un profil derrière un score global. Ajouté
@@ -1583,14 +1979,47 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // propre bande d'interprétation et remplace le score global à l'affichage,
     // une dimension ne fait que détailler un total qui reste la mesure. Les
     // confondre effacerait le total et l'interprétation de la fiche patient.
+    //
+    // `total: null` quand aucun item de la dimension n'est renseigné, comme
+    // partout ailleurs. Une dimension n'entre pas dans le total global : son
+    // absence de mesure ne peut donc pas le faire tomber, et `total` reste la
+    // somme de tous les items répondus.
     const dimensions = (sc.dimensions || []).map((d: any) => {
-      const {total: sousTotal} = sumItems(d.items, []);
+      const {total: sousTotal} = totalSousScore(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
+    // `sansTotalGlobal` VAUT AUSSI ICI depuis le 2026-08-01, et il ne valait que
+    // pour `subscore` jusque-là. Un drapeau qui ne fait rien sur la moitié des
+    // moteurs est pire qu'un drapeau absent : on le pose, on croit avoir agi, et
+    // le total continue de partir. Il a été posé exactement ainsi sur `Q_TAB_04`,
+    // et c'est en le mesurant qu'on l'a vu.
+    //
+    // Ce qu'il dit est le même dans les deux moteurs : l'instrument ne produit
+    // AUCUN score global, et la somme de ses items n'en est pas un. Sur une
+    // grille dont on vient de retirer les bandes, un « 24 » nu s'afficherait
+    // « Score brut » à la fiche, sans dénominateur ni lecture — c'est-à-dire une
+    // sévérité qu'aucun barème ne définit.
+    const totalServi = sc.sansTotalGlobal === true ? null : total;
     return {
-      type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp,
+      type:'sum', total: totalServi, maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
+      // La bande tombe AVEC le total. Un instrument qui garderait ses bandes
+      // sous `sansTotalGlobal` rendrait « Risque aigu » avec `total: null` : un
+      // verdict privé du nombre qui le fonde, donc invérifiable par le praticien.
+      // C'est la même classe de défaut que le drapeau qui ne faisait rien sur la
+      // moitié des moteurs — elle survivait dans la branche qu'on venait de réparer.
+      interpretation: sc.sansTotalGlobal === true ? null : interp,
+      // ABSENT plutôt que `null`, comme `dimensions` juste en dessous : un champ
+      // servi à `null` sur les vingt-six instruments `sum` partirait au modèle
+      // sur chacun d'eux, alors qu'il n'a de sens que là où un plancher existe.
+      // `promptAlimentaire.guard.test.ts` l'a dit avant moi, sur `Q_ALI_02`.
+      ...(plancher ? {bandePlancher: plancher} : {}),
       ...(dimensions.length > 0 ? {dimensions} : {}),
-      note: sc.note || null, certification: sc.certification || null,
+      // Deux COMPTES d'items, comme `sum_items` en rend depuis toujours : ils
+      // disent pourquoi la bande manque, là où un `interpretation: null` nu
+      // laisse croire à un trou de grille.
+      missing, repondus,
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null,
     };
   }
 
@@ -1654,10 +2083,14 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     }
 
     const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
-    // Découpage descriptif — même contrat que `dimensions` sur `sum` : il ne
-    // touche pas au total et n'est lu par aucun besoin (`BESOIN_SOURCES` lit
-    // `subScores`, jamais `dimensions`).
-    const dimensions = (sc.dimensions || []).map((d: any) => {
+    // Agrégat d'un sous-ensemble d'items du barème, partagé par les deux usages
+    // ci-dessous : `dimensions` (descriptif, affiché) et `scoresBesoins` (servi
+    // à Mon équilibre). Le partage est LOCAL à ce moteur : la branche `sum` a sa
+    // propre implémentation de `dimensions`, qui rend `total: sousTotal` sans
+    // parade anti-zéro et recopie le `max` déclaré au lieu de le recalculer.
+    // Les unifier est un autre lot — les deux moteurs ne portent pas la même
+    // doctrine, et l'aligner changerait des valeurs servies.
+    const agregerItems = (d: any) => {
       let sousTotal = 0, sousMax = 0, sousRepondus = 0;
       for (const id of d.items) {
         const entree = bareme.find((e: any) => e.id === id);
@@ -1670,16 +2103,45 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       }
       return {
         id: d.id, label: d.label,
+        // Jamais 0 par défaut : aucun item répondu n'est pas « zéro point »,
+        // c'est « pas de mesure ». Même doctrine que le total.
         total: sousRepondus > 0 ? sousTotal : null,
+        // `max` recalculé depuis le barème, jamais recopié d'une déclaration :
+        // un littéral divergeant du barème serait silencieux.
         max: sousMax, repondus: sousRepondus, items: d.items.length,
         interpretation: null,
       };
+    };
+
+    // Découpage descriptif — il ne touche pas au total, et il est rendu à part
+    // dans la fiche patient.
+    const dimensions = (sc.dimensions || []).map(agregerItems);
+
+    // Sous-scores SERVIS à un besoin de Mon équilibre. Clé distincte de
+    // `subScores` À DESSEIN : `check_questionnaire_certification.js` interdit
+    // qu'un instrument déclarant des `dimensions` émette des `subScores`, parce
+    // que la fiche patient bascule alors ses colonnes Score et Interprétation
+    // en mode sous-scores et REMPLACE le total et sa bande. Distincte de
+    // `dimensions` aussi : le découpage d'affichage et la mesure d'un besoin
+    // n'ont aucune raison de coïncider — ici le rythme s'affiche sur 6 items
+    // (/10) et n'en sert que 4 au besoin 3 (/7), ceux que le guide nomme.
+    // Un sous-score SERVI n'est une mesure que s'il est COMPLET. La parade
+    // anti-zéro d'`agregerItems` s'arrête à « aucun item répondu » : elle suffit
+    // sur un total à 57 items, où un manquant est du bruit, mais pas ici — sur
+    // 4 items, un seul répondu au repère rendait 2/7, soit 29 % de couverture,
+    // SOUS le seuil d'effondrement, pour un patient qu'on n'a presque pas
+    // interrogé. La sensibilité est ~14 fois celle du besoin 1. Partiel vaut
+    // donc « pas de mesure », jamais une mesure basse.
+    const scoresBesoins = (sc.sousScoresBesoins || []).map((d: any) => {
+      const agrege = agregerItems(d);
+      return { ...agrege, total: agrege.repondus === agrege.items ? agrege.total : null };
     });
 
     return {
       type: 'seuils_points', scored: true, total, maxTotal: sc.maxTotal,
       interpretation: interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
+      ...(scoresBesoins.length > 0 ? {scoresBesoins} : {}),
       missing: missingIds.length,
       ...(missingIds.length > 0 ? {missingIds} : {}),
       note: sc.note || null, certification: sc.certification || null,
@@ -1697,9 +2159,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── PLAINTES ACTUELLES (source Drive) ─────────────────
   if (sc.type === 'plaintes_actuelles') {
     const items = allQ.map(q => q.id);
-    const {total} = sumItems(items, []);
-    const average = Number((total / items.length).toFixed(1));
-    const interp = interpretRanges(average, sc.interpretation);
     const subScores = (sc.domains || []).map((domain: any) => {
       const value = getVal(domain.item);
       return {
@@ -1710,6 +2169,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         interpretation: value === null ? null : interpretRanges(value, sc.interpretation),
       };
     });
+    // Chaque domaine EST un item : « axe non mesuré » et « item manquant » se
+    // confondent ici, et les sept domaines couvrent les sept items. Le total et
+    // la moyenne tombent donc dès qu'une plainte manque.
+    //
+    // Ce que ce moteur faisait : trois plaintes sur sept à 8/10 rendaient 24/70,
+    // moyenne 3,4 — « Intensité faible ou absente », en vert. La moyenne divise
+    // par le nombre d'items, pas par le nombre de réponses : chaque plainte non
+    // renseignée tirait le résultat vers le bas. La consigne de synthèse v10
+    // décrit ce comportement comme un fait acquis ; il cesse d'exister ici, et
+    // v11 la corrige.
+    const {total: brut, missing} = sumItems(items, []);
+    const total = missing > 0 ? null : brut;
+    const average = total === null ? null : Number((total / items.length).toFixed(1));
+    const interp = interpretRanges(average, sc.interpretation);
     return {
       type:'plaintes_actuelles',
       total,
@@ -1725,6 +2198,116 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
 
   // ── SUM_ITEMS (source Drive) ─────────────────────────
+  // ── EORTC ────────────────────────────────────────────────────────────────
+  //
+  // Cotation officielle des questionnaires du groupe Qualité de Vie de l'EORTC,
+  // relevée dans les deux manuels : QLQ-C30 Scoring Manual (3e éd., 2001) et
+  // QLQ-BR23 Scoring Manual (version révisée). Elle remplace la somme brute que
+  // WellNeuro servait, laquelle produisait un nombre que la littérature EORTC ne
+  // décrit nulle part et des bandes locales sans étalonnage.
+  //
+  // Deux étapes, identiques pour toutes les échelles :
+  //   1. score brut  RS = moyenne des items de l'échelle ;
+  //   2. transformation linéaire vers 0–100 —
+  //        fonctionnelle       S = (1 − (RS − 1) / étendue) × 100
+  //        symptôme / globale  S = ((RS − 1) / étendue) × 100
+  //
+  // L'étendue vaut 3 partout (items cotés 1 à 4), sauf la santé globale du C30
+  // dont les deux items sont cotés 1 à 7 : étendue 6.
+  //
+  // TROIS POINTS QU'IL A FALLU ALLER CHERCHER À LA SOURCE, et qu'une
+  // implémentation de mémoire aurait manqués :
+  //
+  //  1. `inverser`. Le manuel BR23 exige que « the scoring of questions 44, 45
+  //     and 46 must be reversed prior to statistical analysis » — soit, chez
+  //     nous, BR14, BR15 et BR16 (fonctionnement et plaisir sexuels). Les traiter
+  //     comme les autres échelles fonctionnelles INVERSE le résultat de la
+  //     patiente : celle qui déclare le plus d'intérêt reçoit le score le plus
+  //     bas. L'inversion se fait sur l'item, AVANT la moyenne, et vaut `5 − v`
+  //     sur une cotation 1–4.
+  //  2. La règle des données manquantes est « au moins la MOITIÉ des items »
+  //     (`XNUM >= NITEMS / 2` dans le code SAS du manuel), et l'échelle qui n'y
+  //     satisfait pas est MANQUANTE — pas nulle. C'est la même frontière que
+  //     celle posée le 2026-07-29 sur les moteurs à sous-scores : une absence ne
+  //     se lit jamais comme la valeur la plus basse.
+  //  3. La non-applicabilité conditionnelle est celle des questionnaires, pas une
+  //     invention : le plaisir sexuel ne s'applique pas si l'activité sexuelle
+  //     est « pas du tout », la contrariété due à la perte de cheveux ne
+  //     s'applique pas s'il n'y a pas eu de perte. Ces items portent déjà leur
+  //     garde `conditionnel` ; l'échelle correspondante rend `null`.
+  //
+  // Un score élevé se lit selon le SENS de l'échelle : fonctionnement élevé pour
+  // une fonctionnelle, qualité de vie élevée pour la globale, symptômes élevés
+  // pour une échelle de symptômes. Aucun total unique n'est rendu — l'EORTC n'en
+  // définit pas, et en fabriquer un était précisément le défaut corrigé ici.
+  if (sc.type === 'eortc') {
+    const missingIds: string[] = [];
+    const notApplicable: string[] = [];
+    const echelles = (sc.echelles || []).map((e: any) => {
+      const retenues: number[] = [];
+      let inapplicables = 0;
+      for (const id of e.items) {
+        const q = allQ.find(x => x.id === id);
+        // « SANS OBJET » EXIGE UNE RÉPONSE, PAS UNE ABSENCE.
+        //
+        // `evalConditionnel` rend `false` aussi bien quand le déclencheur est
+        // répondu par la négative que lorsqu'il n'est PAS RÉPONDU — les deux
+        // tombaient dans la même branche, et l'échelle sortait « sans objet pour
+        // cette patiente ». Cette phrase part dans la charge du modèle de
+        // synthèse : on affirmait en français qu'une patiente n'avait pas eu
+        // d'activité sexuelle, ou pas perdu ses cheveux, alors qu'elle n'avait
+        // rien dit. C'est la symétrie exacte du défaut du 2026-07-29 — là une
+        // absence devenait la valeur la plus basse, ici elle devenait un fait
+        // positif. Le manuel dit « not applicable IF ITEM 45 IS "not at all" » :
+        // une réponse donnée.
+        const declencheur = q?.conditionnel ? String(q.conditionnel).match(/^(\w+)/)?.[1] : null;
+        if (declencheur && getVal(declencheur) === null) {
+          // Le déclencheur manque : l'item n'est ni applicable ni inapplicable,
+          // il est INDÉTERMINÉ. On le compte donc comme manquant — il l'est, et
+          // le badge « N manquant(s) » de la fiche le relançait en moins.
+          if (!missingIds.includes(id)) missingIds.push(id);
+          continue;
+        }
+        if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) {
+          inapplicables++;
+          if (!notApplicable.includes(id)) notApplicable.push(id);
+          continue;
+        }
+        const v = getVal(id);
+        if (v === null) {
+          if (!missingIds.includes(id)) missingIds.push(id);
+          continue;
+        }
+        retenues.push(e.inverser ? (e.max ?? 4) + (e.min ?? 1) - v : v);
+      }
+      const commun = {id: e.id, label: e.label, max: 100, sens: e.sens};
+      // Une échelle dont TOUS les items sont hors protocole n'est pas manquante :
+      // elle ne s'applique pas. La distinction se perdait dans un `null` unique.
+      if (inapplicables === e.items.length) {
+        return {...commun, total: null, notApplicable: true, raisonNonScore: 'sans objet pour cette patiente'};
+      }
+      if (retenues.length * 2 < e.items.length) {
+        return {...commun, total: null, raisonNonScore: 'moins de la moitié des items renseignés'};
+      }
+      const rs = retenues.reduce((a, b) => a + b, 0) / retenues.length;
+      const brut = e.sens === 'fonctionnelle'
+        ? (1 - (rs - 1) / e.range) * 100
+        : ((rs - 1) / e.range) * 100;
+      return {...commun, total: Math.round(brut * 10) / 10};
+    });
+    return {
+      type: 'eortc',
+      // Pas de `total` : l'EORTC ne définit aucun score global d'instrument.
+      total: null,
+      subScores: echelles,
+      missing: missingIds.length,
+      missingIds,
+      notApplicable,
+      note: sc.note || null,
+      certification: sc.certification || null,
+    };
+  }
+
   if (sc.type === 'sum_items') {
     const items = sc.items || allQ.map(q => q.id);
     let total = 0;
@@ -1757,13 +2340,25 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const q15 = getVal('SIGH_Q015') || 0;
     const q16 = getVal('SIGH_Q016') || 0;
     const q17 = getVal('SIGH_Q017') || 0;
-    const dualRawMax = Math.max(q15, q16, q17);
-    let scoreDual1517 = dualRawMax;
-    if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
-    else if (dualRawMax === 2) scoreDual1517 = 1;
-    const scoreGroupeA = sumIds(sc.groupA || []) + scoreDual1517;
-    const scoreGroupeB = sumIds(sc.groupB || []) + scoreDual1517;
-    const total = scoreGroupeA + scoreGroupeB;
+    // Le score corrigé 15-17 est REPORTÉ dans les deux groupes : ses items
+    // appartiennent donc à l'axe A comme à l'axe B, et chacun des deux est
+    // mesuré dès qu'un item de son groupe OU un item 15-17 est renseigné.
+    const dualIds = sc.dualItems || ['SIGH_Q015','SIGH_Q016','SIGH_Q017'];
+    const dualMesure = aUneMesure(dualIds);
+    const dualRawMax = dualMesure ? Math.max(q15, q16, q17) : null;
+    let scoreDual1517: number | null = dualRawMax;
+    if (dualMesure) {
+      if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
+      else if (dualRawMax === 2) scoreDual1517 = 1;
+    }
+    const scoreGroupeA = (aUneMesure(sc.groupA || []) || dualMesure)
+      ? sumIds(sc.groupA || []) + (scoreDual1517 ?? 0) : null;
+    const scoreGroupeB = (aUneMesure(sc.groupB || []) || dualMesure)
+      ? sumIds(sc.groupB || []) + (scoreDual1517 ?? 0) : null;
+    // Les deux groupes RECOUPENT leurs items (15-17 compte des deux côtés) : le
+    // total ne se recompose pas par addition de sous-scores disjoints, mais il
+    // tombe pour la même raison qu'ailleurs — un axe non mesuré n'est pas zéro.
+    const total = totalGlobalDepuisSousScores([{total: scoreGroupeA}, {total: scoreGroupeB}]);
     return {
       type:'sigh_sad_sa',
       scoreGroupeA,
@@ -1787,10 +2382,44 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── BMS_AVERAGE ──────────────────────────────────────
   if (sc.type === 'bms_average') {
     const items = allQ.map(q => q.id);
-    const {total} = sumItems(items, []);
-    const average = parseFloat((total / items.length).toFixed(1));
-    const interp = interpretRanges(average, sc.interpretation);
-    return {type:'bms_average', total, average, minTotal: sc.minTotal, maxTotal: sc.maxTotal, interpretation: interp, certification: sc.certification || null};
+    /**
+     * GARDE — même défaut que `sum` (voir le commentaire de cette branche), en
+     * pire : la moyenne divise par `items.length`, donc par des items que
+     * personne n'a renseignés. Six réponses sur dix à « Souvent » (5) rendaient
+     * `30 / 10 = 3,0` — « Faible » — là où le patient n'a rien dit qui soit
+     * faible. Le biais est le même, vers le BAS, et il traverse en plus deux
+     * bandes de la grille BMS-10.
+     *
+     * `average: null` plutôt qu'un dénominateur « corrigé ». Diviser par
+     * `repondus` produirait une moyenne partielle que la source du BMS-10 ne
+     * définit pas, et dont la grille 1,0-7,0 n'a jamais été calibrée : ce serait
+     * remplacer un nombre faux par un nombre inventé. `total` reste servi — la
+     * somme des items répondus est ce qu'elle dit être.
+     *
+     * `interpretation: null` INDÉPENDAMMENT de `average`. `interpretRanges`
+     * rejette déjà une valeur non finie, si bien que la bande tomberait « toute
+     * seule » avec la moyenne ; s'appuyer là-dessus ferait dépendre une garde
+     * clinique d'un effet de bord d'une autre fonction, invisible à qui relit
+     * cette branche.
+     *
+     * PORTÉE — exactement celle de `sum`, et pour les mêmes raisons : lire ce
+     * paragraphe là-bas plutôt que de le résumer ici. En un mot, la seule
+     * barrière de complétude est dans le navigateur ; `api/patient/submit` ne
+     * l'exige que pour `def.cabinet`, et `Q_STR_05` — seul instrument servi par
+     * ce moteur, dix items, aucun conditionnel — n'est pas un instrument de
+     * cabinet. Un POST partiel est donc accepté. Ce qui est nul, c'est le
+     * déjà-écrit : aucune réponse en base n'est partielle (mesure du
+     * 2026-08-04).
+     */
+    const {total, missing, repondus} = sumItems(items, []);
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const average = recueilIncomplet ? null : parseFloat((total / items.length).toFixed(1));
+    const interp = recueilIncomplet ? null : interpretRanges(average, sc.interpretation);
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. La moyenne et les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : la moyenne et les bandes d'interprétation ne sont pas calculables.`;
+    return {type:'bms_average', total, average, missing, repondus, minTotal: sc.minTotal, maxTotal: sc.maxTotal, interpretation: interp, note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null, certification: sc.certification || null};
   }
 
   // ── COUNT_THRESHOLD ───────────────────────────────────
@@ -1829,21 +2458,191 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   }
 
   // ── SUBSCORE ─────────────────────────────────────────
+  // ── APPORTS PONDÉRÉS ────────────────────────────────────────────────────
+  //
+  // Un coefficient PAR ITEM, et une périodicité par item. Aucune branche
+  // existante ne sait faire cela : `subscore` ne pondère qu'une sous-échelle
+  // entière (`sub.multiplier`), et toutes les autres additionnent des réponses
+  // brutes. Écrit pour `Q_ALI_03`, dont la source est une feuille de calcul —
+  // « Nombre de portions » × « Protéines par portion », puis une conversion en
+  // calories.
+  //
+  // CE QUE CE MOTEUR NE FAIT PAS, et c'est délibéré : aucune bande. La source
+  // ne donne aucun seuil, et une valeur d'apport sans population de référence
+  // ne se lit pas comme un verdict. Le total est rendu brut, avec sa note.
+  //
+  // GARDE — une passation sans aucune réponse ne rend AUCUN chiffre. Sans elle,
+  // un dossier vide sortirait « 0 g de protéines par jour », c'est-à-dire un
+  // signal de dénutrition sévère fabriqué à partir de rien. C'est exactement le
+  // défaut qu'un bloc `monnier` fantôme a produit ici jusqu'au 2026-07-27, en
+  // cherchant des sous-scores inexistants : quatre valeurs à zéro, invariantes
+  // aux réponses, persistées en base et transmises au modèle de synthèse. La
+  // leçon n'est pas « ne calcule pas », c'est « ne calcule pas sur rien ».
+  //
+  // La garde générale de passation vide (#451, plus haut dans cette fonction)
+  // couvre la passation TOTALEMENT vide, et elle seule : elle exige que TOUS les
+  // items soient nuls. Elle ne couvre donc PAS le cas qui produit vraiment le
+  // chiffre dangereux — une passation où seules des lignes CALORIQUES sont
+  // renseignées. `{ AP14: 0 }` suffisait à sortir « 0 g de protéines par jour »,
+  // et rien côté serveur n'exige la complétude d'un questionnaire du catalogue
+  // (`patient/submit` ne le fait que pour les instruments de cabinet).
+  //
+  // La garde porte donc sur la PARTIE PROTÉIQUE, qui est la seule à pouvoir se
+  // lire comme un signal de dénutrition — et non sur « au moins une réponse »,
+  // qui aurait laissé passer exactement ce cas.
+  if (sc.type === 'apports_ponderes') {
+    const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
+      const v = getVal(ligne.id);
+      if (v === null) return somme;
+      // `parJour: false` déclare une ligne HEBDOMADAIRE. La source additionne
+      // les deux bases sans règle de conversion ; le servi ramène tout au jour,
+      // écart déclaré au registre.
+      const parJour = ligne.parJour === false ? v / 7 : v;
+      return somme + parJour * ligne.coefficient;
+    }, 0);
+    const proteinesG = cumul(sc.proteines ?? []);
+    // LE ZÉRO NE SE TESTE PAS SUR LA PRÉSENCE DES RÉPONSES, MAIS SUR LE RÉSULTAT.
+    //
+    // Une première rédaction exigeait « au moins une ligne protéique
+    // renseignée ». Elle ratait le cas exact qu'elle visait : `getVal` rend `0`
+    // pour une réponse à zéro, pas `null`, et `{ AP1: 0 }` sortait donc
+    // « 0 g de protéines par jour » — affiché depuis ce lot sur la fiche, en
+    // unité physique et sous un libellé d'autorité.
+    //
+    // Un zéro est ici DÉMONTRABLEMENT fabriqué, sans arbitrage clinique : le
+    // forfait selon le sexe est une ligne protéique dont aucune option ne vaut
+    // zéro (15 g ou 10 g). Une passation complète rend donc au moins 10 g, et
+    // `proteinesG <= 0` signifie « passation incomplète », jamais « ne mange
+    // aucune protéine » — un état qui, lui, n'existe pas chez un vivant.
+    if (!(proteinesG > 0)) {
+      return {
+        type: 'apports_ponderes', scored: false, total: null,
+        proteinesG: null, caloriesKcal: null, interpretation: null,
+        note: sc.note || null, certification: sc.certification || null,
+        raisonNonScore: 'apport protéique nul — passation incomplète',
+      };
+    }
+    // « Conversion en calories : X 24 » — le facteur de la source, appliqué au
+    // total protéique, auquel s'ajoutent les calories directes de sa partie 2.
+    const caloriesKcal = proteinesG * (sc.facteurCalorique ?? 0) + cumul(sc.calories ?? []);
+    const arrondi = (x: number) => Math.round(x * 10) / 10;
+    return {type:'apports_ponderes',
+      proteinesG: arrondi(proteinesG),
+      caloriesKcal: Math.round(caloriesKcal),
+      // LES DEUX GRANDEURS, SOUS UN PORTEUR QUE LA FICHE SAIT RENDRE.
+      //
+      // Les deux clés ci-dessus ne sont lues par aucune surface : la fiche
+      // praticien balaie des porteurs nommés (`dimensions`, `components`,
+      // `categories`, `parts`, `phases`), et un moteur qui invente ses propres
+      // clés n'y apparaît nulle part. Sans ce bloc, l'instrument calculait
+      // exactement ce que sa description promet au patient — et ne l'affichait
+      // à personne, colonne Score à « — ». C'est le défaut du 2026-07-26
+      // retourné : hier le titre promettait ce que le moteur ne produisait pas,
+      // aujourd'hui le moteur produirait ce que rien n'affiche.
+      apports: [
+        {id:'PROT', label:'Apports protéiques estimés', total: arrondi(proteinesG), unite:'g/jour'},
+        {id:'KCAL', label:'Apports caloriques estimés', total: Math.round(caloriesKcal), unite:'kcal/jour'},
+      ],
+      // Pas de score global : ces deux grandeurs ont des unités différentes et
+      // ne s'additionnent pas. `total: null` le dit au lieu de le laisser deviner.
+      total: null,
+      note: sc.note || null, certification: sc.certification || null};
+  }
+
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
-      const scaled = sub.multiplier ? total * sub.multiplier : total;
+      // `sub.reversed` et non plus `[]` en dur. DANS CETTE BRANCHE, la liste
+      // d'inversions était une liste vide écrite dans le code : un `reversed`
+      // déclaré par une définition à `type: 'subscore'` n'aurait rien fait, en
+      // silence, et sans qu'aucun test ne s'y oppose.
+      //
+      // PORTÉE EXACTE, corrigée en revue : une première rédaction écrivait
+      // « aucune sous-échelle du catalogue ne pouvait inverser un item ».
+      // C'était faux — la branche `upps` passait déjà `sub.reversed` et inverse
+      // 25 items de l'UPPS, et `karasek` passe `sub.reversedItems`. Le défaut
+      // était local à `subscore`, ce qui ne le rendait pas moins coûteux : c'est
+      // là que vivait le MFI-20.
+      //
+      // Ce que cela coûtait, mesuré sur lui : sa source impose d'inverser dix de
+      // ses vingt items (« 6 – réponse »), et le servi n'en inversait aucun.
+      // Additionner sans inverser revient à sommer la fatigue et la vigueur dans
+      // le même sens — « je me sens en forme » comptant comme un symptôme. Le
+      // total enregistré n'était pas une mesure de fatigue.
+      //
+      // Additif : `sub.reversed` absent vaut `undefined`, que `sumItems` traite
+      // exactement comme la liste vide d'avant. Ce qui rend le correctif sûr
+      // pour les autres instruments à `subScores` n'est donc pas une inspection,
+      // c'est un invariant — aucun d'eux ne déclare `reversed` — et
+      // `inversionsDeclarees.guard.test.ts` le tient, pour ceux-là comme pour
+      // les sept autres branches restées à `[]`.
+      // LA COMPLÉTUDE DE L'AXE DEVIENT LISIBLE — `repondus` et `items`.
+      //
+      // `totalSousScore` compte depuis toujours ce qui a été répondu et ce qui
+      // manque ; cette branche jetait les deux. Le sous-score servi disait
+      // « 12 » sans dire sur combien d'items. Or sa frontière de mesure est
+      // « au moins un item » (voir sa doctrine plus haut) : un axe
+      // partiellement répondu rend un total RÉEL mais BIAISÉ VERS LE BAS,
+      // indiscernable d'un axe complet et bas pour qui ne lit que `total`.
+      //
+      // Ce que cette cécité coûtait, mesuré : le moteur d'orientation
+      // (`clinical/orientationEngine.ts`) compare ce total à des seuils, dont
+      // sept en `<=` sur `Q_MOD_01`, échelle INVERSÉE. Trois items répondus à
+      // leur MEILLEURE option, puis abandon, produisaient trois axes très bas
+      // — donc « dégradés » — et sept recommandations dont deux packs, au motif
+      // d'un « sommeil non réparateur » que le patient venait de déclarer
+      // excellent. Rien dans le sous-score ne disait que la passation était
+      // incomplète.
+      //
+      // POURQUOI `repondus`/`items` ET NON `missing`. Les trois sont
+      // équivalents (`items = repondus + missing`) et `missing` serait le plus
+      // direct — mais ces sous-scores partent aussi au modèle de synthèse, et
+      // `promptSousScores.guard.test.ts` exige que TOUT champ livré soit décrit
+      // dans la consigne. `items` et `repondus` y sont nommés, avec exactement
+      // ce sens (« combien la catégorie en contient, combien ont reçu une
+      // réponse ») ; `missing` ne l'est pas, et l'y ajouter imposerait de
+      // bumper `VERSION_PROMPT_SYNTHESE` et son empreinte — un acte visible qui
+      // n'appartient pas à ce lot. Le champ le plus court aurait donc coûté un
+      // versionnement de consigne ; les deux champs déjà décrits ne coûtent
+      // rien et disent la même chose.
+      //
+      // `items` = `repondus + missing`, JAMAIS `sub.items.length` : `sumItems`
+      // écarte les questions dont le conditionnel n'est pas satisfait (le
+      // QLQ-BR23 en porte deux). Une question légitimement non posée n'est pas
+      // une question sans réponse, et la compter ferait passer pour incomplet
+      // un axe qui ne l'est pas.
+      //
+      // Ce qui NE change PAS ici : `total`, `scaled` et `interpretation`. La
+      // frontière de mesure du 2026-07-29 reste celle des sous-scores, et
+      // d'autres consommateurs lisent `total`. On rend la complétude LISIBLE ;
+      // qui doit la faire RESPECTER le décide chez lui — même partage que
+      // `sum`, qui sert ses comptes d'items à côté de son total depuis #561.
+      const {total, missing, repondus} = totalSousScore(sub.items, sub.reversed);
+      // `null * multiplier` vaut 0 : sans ce test, l'axe non mesuré revenait par
+      // la porte du score pondéré.
+      const scaled = total === null ? null : (sub.multiplier ? total * sub.multiplier : total);
       let interp = null;
       if (sc.interpretation) {
         const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
         if (interpDef) interp = interpretRanges(scaled, interpDef.ranges);
       }
-      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
+      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, repondus, items: repondus + missing, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
     });
     // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
     // s'additionne pas au score global (question de qualité de vie de l'IPSS).
     // Drapeau déclaratif, additif : sans lui, le comportement est inchangé.
-    const globalTotal = subResults.filter((r: any) => !r.horsTotal).reduce((s: any, r: any) => s + r.total, 0);
+    //
+    // `sansTotalGlobal` dit autre chose, et il fallait le dire à part : que
+    // l'instrument N'A PAS de score global, du tout. Le MFI-20 est dans ce cas —
+    // sa source écrit « Il n'y a pas de barème interprétation » et ne totalise
+    // jamais ses cinq sous-échelles. Marquer les cinq en `horsTotal` aurait
+    // produit le même `null` par accident, en détournant un drapeau qui veut
+    // dire « rapportée à part » et en faisant rougir la garde qui épingle son
+    // unique porteur. Une somme sur 100 affichée là où l'instrument n'en définit
+    // aucune se lirait comme une sévérité, et c'est précisément ce que la source
+    // refuse.
+    const globalTotal = sc.sansTotalGlobal === true
+      ? null
+      : totalGlobalDepuisSousScores(subResults.filter((r: any) => !r.horsTotal));
 
     // Un bloc `monnier` était calculé ici pour `Q_ALI_03`, censé rendre des
     // protéines en g/j et des calories en kcal/j. Il cherchait des sous-scores
@@ -1861,60 +2660,32 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {type:'subscore', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
-  // ── EORTC QLQ ───────────────────────────────────────
-  // Source : EORTC scoring manuals. Raw score = moyenne des items renseignés ;
-  // score 0-100 direct = ((RS-1)/range)*100 ; inverse = (1-(RS-1)/range)*100.
-  if (sc.type === 'eortc') {
-    const subResults = sc.subScores.map((sub: any) => {
-      const activeItems = sub.items.filter((id: any) => {
-        const q = allQ.find(q => q.id === id);
-        return !(q && q.conditionnel && !evalConditionnel(q.conditionnel));
-      });
-      let rawTotal = 0;
-      let answered = 0;
-      activeItems.forEach((id: any) => {
-        const v = getVal(id);
-        if (v === null) return;
-        rawTotal += v;
-        answered++;
-      });
-      const rawMean = answered ? rawTotal / answered : null;
-      const range = sub.range || 3;
-      let score = null;
-      if (rawMean !== null) {
-        const direct = ((rawMean - 1) / range) * 100;
-        score = sub.transform === 'inverse' ? 100 - direct : direct;
-        score = Number(Math.max(0, Math.min(100, score)).toFixed(1));
-      }
-      return {
-        id: sub.id,
-        label: sub.label,
-        total: score,
-        score,
-        rawTotal,
-        rawMean: rawMean === null ? null : Number(rawMean.toFixed(2)),
-        answered,
-        missing: activeItems.length - answered,
-        max: 100,
-        transform: sub.transform
-      };
-    });
-    const scored = subResults.filter((r: any) => r.score !== null);
-    const total = scored.length
-      ? Number((scored.reduce((sum: any, r: any) => sum + r.score, 0) / scored.length).toFixed(1))
-      : null;
-    return {type:'eortc', subScores: subResults, total, maxTotal:100};
-  }
+  // Un SECOND bloc `if (sc.type === 'eortc')` vivait ici jusqu'au 2026-07-30 :
+  // même discriminant que celui du haut, contrat incompatible (il lisait
+  // `sc.subScores` et `sub.transform === 'inverse'`, et rendait une moyenne des
+  // échelles comme score global). Il était mort — aucun instrument ne déclarait
+  // ce type — mais c'était un piège armé : le prochain moteur écrit sur SA forme
+  // serait tombé dans le bloc du haut, qui aurait lu `sc.echelles || []` et rendu
+  // `subScores: []` avec `total: null`, sans erreur ni item manquant. Supprimé
+  // plutôt que renommé : deux contrats pour un nom se retrouvent toujours.
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
+      const {total} = totalSousScore(sub.items, []);
       return {id: sub.id, label: sub.label, total, max: sub.max};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     let interp = interpretRanges(globalTotal, sc.interpretation);
-    if (globalTotal >= 5 && globalTotal <= 14) {
+    // Le protocole ne se greffe que sur une bande RÉELLE : sans ce test, étaler
+    // `null` fabriquerait un objet n'ayant qu'un protocole et aucune bande, qui se
+    // lirait comme une interprétation là où il n'y en a pas.
+    if (interp && globalTotal >= 5 && globalTotal <= 14) {
+      // Aucun filtre sur les axes non mesurés ici, et ce n'est pas un oubli : on
+      // n'atteint ce bloc que si `interp` est non nul, ce qui exige un total global
+      // non nul, ce qui exige — par `totalGlobalDepuisSousScores` — que TOUS les
+      // axes contributeurs soient mesurés. Un filtre serait du code mort qu'aucune
+      // mutation ne pourrait faire rougir.
       const dominant = subResults.reduce((a: any, b: any) => a.total >= b.total ? a : b);
       const proto: Record<string, string> = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
       interp = {...interp, dominant: dominant.id, protocol: `Protocole ${proto[dominant.id] || dominant.id}`};
@@ -1924,8 +2695,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── HAD ──────────────────────────────────────────────
   if (sc.type === 'had') {
-    const {total: scoreA} = sumItems(sc.subscalesA, []);
-    const {total: scoreD} = sumItems(sc.subscalesD, []);
+    // HAD porte ses axes sous `subscalesA`/`subscalesD`, et non sous
+    // `scoring.subScores` : il échappait donc à la garde des sous-scores, et le
+    // balayage qui la vérifiait — bâti sur la DÉCLARATION plutôt que sur ce que le
+    // moteur ÉMET — était aveugle au même endroit. Relevé en revue.
+    //
+    // L'enjeu n'est pas théorique : `Q_NEU_11/D` est la source UNIQUE du besoin 8
+    // de « Mon équilibre », en `inverser: true`. Zéro item de dépression rendait
+    // donc un ratio de 0, inversé en **1,000 de couverture** et un grade de preuve
+    // **A**, avec « Absence de symptomatologie » servi en vert à la fiche patient.
+    const {total: scoreA} = totalSousScore(sc.subscalesA, []);
+    const {total: scoreD} = totalSousScore(sc.subscalesD, []);
     function interpHad(score: any, sub: any) {
       const def = sc.interpretation.find((i: any) => i.subscale === sub);
       return def ? interpretRanges(score, def.ranges) : null;
@@ -1936,7 +2716,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'A', label:'Anxiété', total: scoreA, max:21, interpretation: interpHad(scoreA,'A')},
         {id:'D', label:'Dépression', total: scoreD, max:21, interpretation: interpHad(scoreD,'D')},
       ],
-      total: scoreA + scoreD,
+      total: totalGlobalDepuisSousScores([{total: scoreA}, {total: scoreD}]),
       note: sc.note || null,
       certification: sc.certification || null
     };
@@ -1944,32 +2724,186 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── PSQI ─────────────────────────────────────────────
   if (sc.type === 'psqi') {
-    const hCoucher = getVal('Q1') || 23;
-    const minEndorm = getVal('Q2') || 30;
-    const hLever   = getVal('Q3') || 7;
-    const hDormies = getVal('Q4') || 7;
+    // GARDE — une composante sans aucun de ses items vaut « non mesurée ».
+    //
+    // Les défauts ci-dessous (23 h, 30 min, 7 h) ne fabriquent plus une
+    // composante entière : ils ne complètent qu'une composante PARTIELLEMENT
+    // renseignée. Sans cette frontière, une seule réponse suffisait à passer la
+    // garde de passation vide (#451), et les six autres composantes retombaient
+    // sur leurs défauts : Q6 seul, à sa PIRE valeur, rendait 3 + 1 + 1 + 0 + 0 +
+    // 0 + 0 = 5 sur 21, « Troubles du sommeil légers ». Un verdict d'ensemble
+    // tiré d'un septième de l'instrument, et rassurant là où la seule réponse
+    // disponible ne l'était pas.
+    const ITEMS_C1 = ['Q6'];
+    const ITEMS_C2 = ['Q2','Q5a'];
+    const ITEMS_C3 = ['Q4'];
+    const ITEMS_C4 = ['Q1','Q3','Q4'];
+    const ITEMS_C6 = ['Q7'];
+    const ITEMS_C7 = ['Q8','Q9'];
+    const c5Items = ['Q5b','Q5c','Q5d','Q5e','Q5f','Q5g','Q5h','Q5i','Q5j'];
+
+    // `??` et non `||` : un défaut ne doit remplacer qu'une ABSENCE de réponse.
+    //
+    // `0` est falsy en JavaScript, et les quatre items concernés admettent tous
+    // `0` comme réponse LÉGITIME — et grave. Un coucher à minuit (`Q1 = 0`) se
+    // lisait donc 23 h, un endormissement immédiat (`Q2 = 0`) se lisait trente
+    // minutes, et **zéro heure de sommeil (`Q4 = 0`) se lisait sept**. Sur
+    // `Q4 = 0`, `C3` sortait à 1 (« 6 à 7 h ») au lieu de 3 et `C4` à 0, la
+    // MEILLEURE valeur : la réponse la plus grave de l'échelle rendait la plus
+    // rassurante. Le défaut complétait bien une composante partiellement
+    // renseignée, comme annoncé — mais il écrasait aussi celles qui l'étaient.
+    //
+    // UN DÉFAUT ATTEIGNABLE EST TOUJOURS LA VALEUR LA PLUS FAVORABLE DE SON
+    // ÉCHELLE — sans quoi le total partiel n'est pas une borne inférieure du
+    // total complet, et le plancher garanti (`bandePlancher`) serait faux.
+    //
+    // Trois de ces quatre défauts sont INATTEIGNABLES, et c'est ce qui les rend
+    // inoffensifs : `Q4` est le seul item de `ITEMS_C3` et appartient à
+    // `ITEMS_C4`, dont les trois items sont exigés — `C3` comme `C4` sont donc
+    // `null` sans lui, et `totalGlobalDepuisSousScores` annule alors le total.
+    // `Q1` et `Q3` ne servent que `tLit`, lui-même réservé à `efficiency`, qui
+    // exige les mêmes trois items.
+    //
+    // `Q2` ÉTAIT LE QUATRIÈME, et le seul atteignable : `ITEMS_C2` vaut
+    // `['Q2','Q5a']` sous la frontière « au moins un item », si bien que `Q5a`
+    // seul renseigné faisait calculer `C2` avec un `Q2` absent. Son défaut de
+    // trente minutes rendait `lat = 1` ; la vraie réponse à dix minutes rend
+    // `lat = 0`. RÉPONDRE FAISAIT BAISSER LE TOTAL — la monotonie tombait, et
+    // avec elle la seule chose qui autorise à lire un plancher. Le défaut passe
+    // donc à `0`, la meilleure valeur de l'échelle de latence.
+    //
+    // Ce que cela change de servi : sur une passation à qui il manque `Q2`, le
+    // `total` baisse de 0 ou 1 point. La BANDE, elle, ne bouge pas — elle était
+    // déjà `null`, la garde de recueil partiel ayant mordu. `monotonieMoteurs.guard.test.ts`
+    // rougit si ce `0` redevient un `30`.
+    const hCoucher = getVal('Q1') ?? 23;
+    const minEndorm = getVal('Q2') ?? 0;
+    const hLever   = getVal('Q3') ?? 7;
+    const hDormies = getVal('Q4') ?? 7;
     let tLit = hLever - hCoucher;
     if (tLit <= 0) tLit += 24;
-    const efficiency = tLit > 0 ? (hDormies / tLit) * 100 : 0;
-    const C1 = getVal('Q6') || 0;
+    // L'efficacité est un RAPPORT, et « au moins un item » n'est pas la bonne
+    // frontière pour un rapport : son numérateur (`Q4`, heures dormies) et son
+    // dénominateur (`Q1`/`Q3`, horaires) sont deux quantités indépendantes.
+    // Relevé en revue adversariale, sur la première rédaction de ce lot : avec
+    // `aUneMesure`, l'heure du coucher renseignée SEULE rendait encore 88 % —
+    // 7 h dormies pour 8 h au lit, tirées des défauts — et `C4` valait 0, la
+    // MEILLEURE valeur de la composante. Le correctif fermait le cas « aucun des
+    // trois » et laissait ouvert le cas « un des trois », qui est précisément
+    // celui du 88 %. Les trois items sont donc exigés.
+    const horairesMesures = ITEMS_C4.every(id => getVal(id) !== null);
+    const efficiency = horairesMesures && tLit > 0 ? (hDormies / tLit) * 100 : null;
+    const C1 = aUneMesure(ITEMS_C1) ? (getVal('Q6') ?? 0) : null;
     const lat = minEndorm <= 15 ? 0 : minEndorm <= 30 ? 1 : minEndorm <= 60 ? 2 : 3;
-    const q5a = getVal('Q5a') || 0;
+    const q5a = getVal('Q5a') ?? 0;
     const latSum = lat + q5a;
-    const C2 = latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3;
-    const C3 = hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3;
-    const C4 = efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
-    const c5Items = ['Q5b','Q5c','Q5d','Q5e','Q5f','Q5g','Q5h','Q5i','Q5j'];
-    const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) || 0), 0);
-    const C5 = c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3;
-    const C6 = getVal('Q7') || 0;
-    const c7Sum = (getVal('Q8') || 0) + (getVal('Q9') || 0);
-    const C7 = c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3;
-    const total = C1 + C2 + C3 + C4 + C5 + C6 + C7;
-    const interp = total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
-                 : total <= 10 ? {label:'Troubles du sommeil légers',color:'info'}
-                 : total <= 16 ? {label:'Troubles du sommeil modérés',color:'warning'}
-                 : {label:'Troubles du sommeil sévères',color:'danger'};
+    const C2 = aUneMesure(ITEMS_C2) ? (latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3) : null;
+    const C3 = aUneMesure(ITEMS_C3) ? (hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3) : null;
+    const C4 = efficiency === null ? null
+             : efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
+    const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) ?? 0), 0);
+    const C5 = aUneMesure(c5Items) ? (c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3) : null;
+    const C6 = aUneMesure(ITEMS_C6) ? (getVal('Q7') ?? 0) : null;
+    const c7Sum = (getVal('Q8') ?? 0) + (getVal('Q9') ?? 0);
+    const C7 = aUneMesure(ITEMS_C7) ? (c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3) : null;
+    // Le total du PSQI est sur 21, sept composantes comprises : il ne se somme
+    // pas sur celles qui ont répondu.
+    const total = totalGlobalDepuisSousScores([C1, C2, C3, C4, C5, C6, C7].map(v => ({total: v})));
+    // GARDE DE RECUEIL PARTIEL — au niveau ITEM, parce que le niveau composante
+    // ne suffit pas. Fermeture du trou nommé (et laissé ouvert) par #565.
+    //
+    // CE QUI ÉTAIT DÉJÀ COUVERT, et qu'il ne faut pas confondre avec le reste :
+    // `totalGlobalDepuisSousScores` rend `null` dès qu'UNE composante est vide.
+    // Une passation à qui il manque une composante entière ne produit donc ni
+    // total ni bande. Ce n'est PAS le cas ouvert.
+    //
+    // LE CAS OUVERT est celui où les sept composantes ont chacune au moins un
+    // item — `aUneMesure` les déclare mesurées — mais pas tous les leurs. Trois
+    // composantes se complètent alors par un défaut de `0`, la valeur la plus
+    // FAVORABLE de leur échelle : `Q5a` dans `C2`, les neuf `Q5b..Q5j` dans
+    // `C5`, `Q9` dans `C7`. Le total /21 est biaisé vers le bas, et la bande
+    // qu'il décroche est rassurante — sur un instrument à moitié rempli.
+    //
+    // Concrètement : `Q1 Q2 Q3 Q4 Q5b Q6 Q7 Q8` répondus, soit 8 items sur 18,
+    // suffisent à mesurer les sept composantes. Avec `Q5b` à sa PIRE valeur (3)
+    // et le reste au mieux, le total sortait à 1 sur 21 — « Pas de trouble du
+    // sommeil » — alors que dix items, dont presque tout le volet perturbations,
+    // sont sans réponse. Le chiffre est celui du banc, pas d'une estimation : il
+    // a été annoncé à 2 par une première rédaction, et le banc l'épingle
+    // désormais à l'unité près pour qu'il ne redérive pas.
+    //
+    // POURQUOI L'INTERPRÉTATION SEULE TOMBE, et pas le total. Même arbitrage que
+    // `sum` depuis #561 : le total part À CÔTÉ de `missing` et `repondus`, qui le
+    // rendent vérifiable ; c'est la BANDE qui conclut, et une bande ne se lit que
+    // sur l'instrument complet (`D-014`). Les sept composantes restent servies
+    // pour la même raison : elles décrivent le recueil, elles ne le jugent pas.
+    //
+    // LES 18 ITEMS COTÉS, et eux seuls. `Q10` et `Q11a-e` — le volet conjoint —
+    // sont `horsBareme` : Buysse 1989 construit les sept composantes et le total
+    // sur les seules questions 1 à 9. Les compter ici sortirait du barème toute
+    // passation sans conjoint, ce que `psqiVoletPartenaire.guard.test.ts`
+    // interdit par ailleurs. Aucun des 18 n'est conditionnel : la liste est fixe,
+    // et le compte se lit sans le détour de `sumItems`.
+    //
+    // DIX-HUIT, pas dix-neuf : `Q5` est éclatée en `Q5a` PLUS les neuf `Q5b..Q5j`
+    // de `c5Items`. Le compte se dérive de la liste, il ne s'écrit pas à la main.
+    const ITEMS_COTES = ['Q1','Q2','Q3','Q4','Q5a', ...c5Items, 'Q6','Q7','Q8','Q9'];
+    const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
+    const missing = ITEMS_COTES.length - repondus;
+    const recueilIncomplet = missing > 0;
+    // L'échelle de Buysse 1989, sortie de la cascade de ternaires où elle vivait
+    // pour prendre la forme `{min, max}` du reste du catalogue. Ce n'est pas un
+    // reformatage : `bandePlancher` a besoin des BORNES pour savoir laquelle est
+    // la plus basse — la seule qui ne fasse pas un plancher —, et une cascade ne
+    // les expose pas. Les quatre bandes et leurs coupures sont inchangées.
+    const BANDES_PSQI = [
+      {min: 0,  max: 4,  label: 'Pas de trouble du sommeil',    color: 'success'},
+      {min: 5,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
+      {min: 11, max: 16, label: 'Troubles du sommeil modérés',  color: 'warning'},
+      {min: 17, max: 21, label: 'Troubles du sommeil sévères',  color: 'danger'},
+    ];
+    const interp = recueilIncomplet ? null : interpretRanges(total, BANDES_PSQI);
+    // L'éligibilité se lit sur l'INSTRUMENT, ici comme dans `sum` et `tfd`, alors
+    // même que la grille est écrite dans ce fichier : un `true` en dur ferait de
+    // ce moteur le seul dont l'éligibilité ne se relit pas au même endroit que
+    // les autres, et l'inventaire épinglé (`eligibilitePlancher.guard.test.ts`)
+    // n'aurait plus une source unique à lire.
+    //
+    // Ce qui fonde la déclaration côté PSQI : grille croissante, et monotonie des
+    // sept composantes établie plus haut (défauts toujours les plus favorables,
+    // ou inatteignables). Les composantes étant indépendantes, leur monotonie
+    // individuelle suffit à celle du total — c'est ainsi que le banc la prouve,
+    // et non par énumération globale, que `C5` seule rendrait déraisonnable.
+    const plancher = bandePlancher(total, recueilIncomplet, BANDES_PSQI, estEligibleAuPlancher(sc));
+    const noteRecueil = !recueilIncomplet ? null
+      // « ne peut qu'abaisser le total » plutôt que « toujours le plus favorable » :
+      // c'est l'invariant que le code garantit vraiment. Trois des quatre défauts
+      // littéraux du moteur (`Q1 = 23`, `Q3 = 7`, `Q4 = 7`) ne sont PAS les plus
+      // favorables de leur échelle — ils sont seulement inatteignables, faute de
+      // quoi le total serait nul. Écrire « toujours » servait au praticien une
+      // affirmation plus forte que ce qui est prouvé.
+      : [`Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${ITEMS_COTES.length}. Les bandes du PSQI supposent la forme complète ; un item sans réponse est remplacé par un défaut qui ne peut qu'abaisser le total. L'interprétation n'est pas calculable.`,
+         phrasePlancher(plancher)].filter(Boolean).join(' ');
     return {type:'psqi', total, maxTotal:21,
+      // Deux COMPTES d'items, même contrat que `sum` : ils disent POURQUOI la
+      // bande manque, là où un `interpretation: null` nu laisse croire à un trou
+      // de grille. Ce sont aussi les deux clés que lisent les gardes en aval —
+      // `recueilIncomplet` dans `clinical/orientationEngine.ts` et
+      // `extraireValeurBrute` dans `equilibre/score.ts` —, qui rendaient `false`
+      // faute de savoir quoi lire tant que le PSQI ne publiait aucun compte.
+      missing, repondus,
+      // Absent plutôt que `null` — même raison que dans `sum`.
+      ...(plancher ? {bandePlancher: plancher} : {}),
+      // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
+      // pas — même forme que `sum` et `bms_average`. `Q_SOM_01` ne déclare
+      // aujourd'hui aucune `scoring.note`, donc rien n'est perdu ; écrire
+      // `note: noteRecueil` seul aurait posé un piège pour le jour où un lot de
+      // certification en ajoute une, qui serait alors silencieusement écrasée
+      // sur les passations COMPLÈTES — c'est-à-dire là où elle sert.
+      // `certification` est propagé pour la même raison, `francis` et `qif` le
+      // faisant déjà.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null,
       components:[
         {id:'C1',label:'Qualité subjective',val:C1},
         {id:'C2',label:'Latence du sommeil',val:C2},
@@ -1979,33 +2913,130 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'C6',label:'Médication hypnotique',val:C6},
         {id:'C7',label:'Dysfonction diurne',val:C7},
       ],
-      efficiency: Math.round(efficiency),
+      efficiency: efficiency === null ? null : Math.round(efficiency),
       interpretation: interp
     };
   }
 
   // ── TFD ──────────────────────────────────────────────────
   if (sc.type === 'tfd') {
+    // GARDE — une bande du TFD ne se lit que sur le recueil COMPLET, au grain de
+    // l'axe comme au grain de l'instrument.
+    //
+    // `totalGlobalDepuisSousScores` ne ferme que le cas d'un axe ENTIÈREMENT vide.
+    // Un seul item répondu par axe suffisait donc à produire un total : cinq
+    // réponses sur trente-et-une, cotées à leur PIRE valeur, donnent 15 sur 93 et
+    // décrochaient « A — Absence de troubles fonctionnels » (0-23). Le biais du
+    // recueil partiel est à sens unique — un item non répondu n'est pas compté 0,
+    // il est IGNORÉ, donc le total sort trop bas —, et sur cette grille le bas est
+    // le rassurant. Même classe que le PSQI, fermée au lot de signature.
+    //
+    // ÉCART ASSUMÉ AU PRÉCÉDENT `subscore`, qui rend la complétude seulement
+    // LISIBLE et laisse vivre la bande d'axe (voir sa doctrine plus haut). Ici la
+    // bande d'axe tombe aussi, parce qu'elle est calibrée sur l'axe COMPLET — `C1`
+    // lit « Absence » de 0 à 7 sur ses huit items — et qu'elle est AFFICHÉE sur la
+    // fiche praticien. La laisser vivre écrivait « A — Absence de troubles
+    // fonctionnels » sous un axe renseigné à un item sur huit. Le total, lui,
+    // reste servi : c'est une mesure réelle, biaisée bas, et d'autres
+    // consommateurs le lisent.
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
-      const interp = interpretRanges(total, sub.ranges);
-      return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp};
+      // `[]` et non `sub.reversed` : aucune branche `tfd` ne déclare d'inversion,
+      // et `inversionsDeclarees.guard.test.ts` tient cette liste vide écrite en
+      // dur. Le jour où l'une en déclarera une, le CI le dira.
+      const {total, missing, repondus} = totalSousScore(sub.items, []);
+      const interp = missing > 0 ? null : interpretRanges(total, sub.ranges);
+      // Plancher d'AXE. Les grilles d'axe du TFD sont croissantes comme la
+      // globale, et les items sont cotés 0 à 3 : un axe où les seules réponses
+      // cotées franchissent déjà sa bande B ne peut plus revenir en A.
+      const plancherAxe = bandePlancher(total, missing > 0, sub.ranges, estEligibleAuPlancher(sc));
+      // `repondus`/`items` et non `missing` : même forme exacte que la branche
+      // `subscore`, dont ce sont les deux clés que lisent `recueilIncomplet`
+      // (`clinical/orientationEngine.ts`) et la consigne de synthèse, qui les
+      // décrit déjà toutes deux. `items` = `repondus + missing`, JAMAIS
+      // `sub.items.length` : `sumItems` écarte les questions dont le conditionnel
+      // n'est pas satisfait, et une question légitimement non posée n'est pas une
+      // question sans réponse.
+      return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp,
+              ...(plancherAxe ? {bandePlancher: plancherAxe} : {}),
+              repondus, items: repondus + missing};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
-    const globalInterp = interpretRanges(globalTotal, sc.globalInterpretation);
-    return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93, interpretation: globalInterp, note: sc.note || null, certification: sc.certification || null};
+    // Comptes de la racine DÉRIVÉS des axes, jamais réécrits à la main : le
+    // découpage est la seule source qui sache combien d'items l'instrument cote
+    // réellement (même leçon que `ITEMS_COTES` sur le PSQI).
+    const repondus = subResults.reduce((n: number, r: any) => n + r.repondus, 0);
+    const missing = subResults.reduce((n: number, r: any) => n + (r.items - r.repondus), 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
+    const globalInterp = missing > 0 ? null : interpretRanges(globalTotal, sc.globalInterpretation);
+    // Plancher GLOBAL. C'est le cas qui a motivé le lot : les items sont cotés 0
+    // à 3 et la bande B s'ouvre à 24, si bien que HUIT réponses au maximum
+    // suffisent à l'atteindre — et les vingt-trois restantes ne peuvent
+    // qu'ajouter. La garde de #567 éteignait cette bande avec le faux négatif
+    // qu'elle visait ; le plancher la rallume sans jamais la faire passer pour
+    // une mesure complète.
+    //
+    // CE QU'IL N'ATTEINT PAS, et qu'il ne faut pas croire couvert :
+    // `totalGlobalDepuisSousScores` rend `null` dès qu'un axe est ENTIÈREMENT
+    // vide, et un plancher se lit sur un nombre. Huit réponses maximales
+    // concentrées sur un seul axe ne produisent donc aucun plancher, alors
+    // qu'elles en fondent un — la somme des items répondus est une borne
+    // inférieure du total final, que le dénominateur soit complet ou non. Servir
+    // ce cas-là demanderait de calculer le plancher SANS passer par le total
+    // global, c'est-à-dire de servir une bande là où aucun nombre n'est servi :
+    // un autre arbitrage, et un autre lot.
+    const plancherGlobal = bandePlancher(globalTotal, missing > 0, sc.globalInterpretation, estEligibleAuPlancher(sc));
+    const noteRecueil = missing === 0 ? null
+      : [`Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${repondus + missing}. Les bandes du TFD supposent la forme complète ; les items sans réponse sont ignorés, ce qui abaisse les totaux. L'interprétation n'est pas calculable.`,
+         phrasePlancher(plancherGlobal)].filter(Boolean).join(' ');
+    return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93,
+      // Les deux comptes partent À CÔTÉ du total, même contrat que `sum`, `psqi` et
+      // `bms_average` : ils disent POURQUOI la bande manque, là où un
+      // `interpretation: null` nu laisse croire à un trou de grille. Ce sont aussi
+      // les clés que lisent les gardes en aval — `recueilIncomplet` dans
+      // `clinical/orientationEngine.ts` et `extraireValeurBrute` dans
+      // `equilibre/score.ts`, qui rendaient l'un `false` et l'autre un total
+      // faute de savoir quoi lire tant que `tfd` ne publiait aucun compte.
+      missing, repondus,
+      interpretation: globalInterp,
+      // Absent plutôt que `null` — même raison que dans `sum`.
+      ...(plancherGlobal ? {bandePlancher: plancherGlobal} : {}),
+      // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
+      // pas. Ce n'est pas une précaution théorique ici : `Q_GAS_01` DÉCLARE une
+      // `scoring.note` (les valeurs frontières non couvertes par les seuils
+      // source), qu'un `note: noteRecueil` nu aurait effacée.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null};
   }
 
   // ── FRANCIS ─────────────────────────────────────────────────
   if (sc.type === 'francis') {
-    const fr2 = getVal('FR_Q002') || getVal('FR1') || 0;
-    const fr3 = (getVal('FR_Q003') || getVal('FR2') || 0) * 10;
-    const fr5 = getVal('FR_Q005') || getVal('FR3') || 0;
-    const fr6 = getVal('FR_Q006');
-    const fr4Legacy = getVal('FR4');
-    const fr6Score = fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : 0);
-    const fr7 = getVal('FR_Q007') || getVal('FR5') || 0;
-    const total = fr2 + fr3 + fr5 + fr6Score + fr7;
+    // GARDE — une composante non renseignée vaut « non mesurée », pas 0.
+    //
+    // Chaque composante est UNE échelle visuelle de 0 à 100 (deux identifiants
+    // possibles : la forme courante `FR_Q00x` et la forme héritée `FRx`). Sans
+    // cette garde, chaque absence entrait dans le total sous sa valeur la plus
+    // basse : un score de Francis calculé sur deux composantes de cinq sortait
+    // dans la bande la plus rassurante de l'échelle de sévérité du côlon
+    // irritable — une réassurance produite par ce que le patient n'a PAS dit.
+    const mesuree = (ids: string[], calcul: () => number) => aUneMesure(ids) ? calcul() : null;
+    // `premiereReponse` et non une chaîne de `||` : `0` est une réponse
+    // LÉGITIME de ces échelles visuelles — « aucune douleur ». Enchaînée en
+    // `||`, elle retombait sur l'identifiant hérité, et une absence de douleur
+    // déclarée pouvait ressortir sous la valeur d'une autre question.
+    const premiereReponse = (...ids: string[]) => {
+      for (const id of ids) { const v = getVal(id); if (v !== null) return v; }
+      return 0;
+    };
+    const fr2 = mesuree(['FR_Q002','FR1'], () => premiereReponse('FR_Q002', 'FR1'));
+    const fr3 = mesuree(['FR_Q003','FR2'], () => premiereReponse('FR_Q003', 'FR2') * 10);
+    const fr5 = mesuree(['FR_Q005','FR3'], () => premiereReponse('FR_Q005', 'FR3'));
+    const fr6Score = mesuree(['FR_Q006','FR4'], () => {
+      const fr6 = getVal('FR_Q006');
+      const fr4Legacy = getVal('FR4');
+      return fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : 0);
+    });
+    const fr7 = mesuree(['FR_Q007','FR5'], () => premiereReponse('FR_Q007', 'FR5'));
+    const total = totalGlobalDepuisSousScores(
+      [fr2, fr3, fr5, fr6Score, fr7].map(v => ({total: v})));
     const interp = interpretRanges(total, sc.interpretation);
     return {type:'francis', total, maxTotal:500,
       components:[
@@ -2023,10 +3054,18 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── BRISTOL ───────────────────────────────────────────────
   if (sc.type === 'bristol') {
-    // `as any` : BR1 absent rend null, que les comparaisons historiques
-    // coercent (null <= 2) — comportement conservé à l'identique.
+    // GARDE — pas de réponse ⇒ pas d'interprétation.
+    //
+    // Ce bloc portait la note « BR1 absent rend null, que les comparaisons
+    // historiques coercent (null <= 2) — comportement conservé à l'identique ».
+    // Le comportement en question : une question non répondue ressortait
+    // « Constipation », en rouge. Conservé parce qu'il était connu, pas parce
+    // qu'il était juste. Trouvé le 2026-07-29 par le balayage du banc de bandes,
+    // que les cas écrits à la main avaient manqué : ce moteur n'appelle pas
+    // `interpretRanges`, la garde posée là ne le couvrait donc pas.
     const v = getVal('BR1') as any;
-    const interp = v <= 2 ? {label:'Constipation',color:'danger'}
+    const interp = (v === null || !Number.isFinite(v)) ? null
+                 : v <= 2 ? {label:'Constipation',color:'danger'}
                  : v <= 4 ? {label:'Normal',color:'success'}
                  : {label:'Selles molles / diarrhée',color:'warning'};
     return {type:'bristol', total: v, interpretation: interp};
@@ -2035,10 +3074,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── UPPS ─────────────────────────────────────────────────
   if (sc.type === 'upps') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, sub.reversed);
+      const {total} = totalSousScore(sub.items, sub.reversed);
       return {id: sub.id, label: sub.label, total, max: sub.items.length * 4};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     return {type:'upps', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
@@ -2049,36 +3088,148 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       if (value === null) return 0;
       return reversedItems.includes(id) ? 5 - value : value;
     };
-    const sumKarasek = (items: any, reversedItems: any[] = []) =>
-      items.reduce((sum: any, id: any) => sum + karasekValue(id, reversedItems), 0);
+    // `karasekValue` rend 0 sur une réponse absente : ce moteur ne peut donc pas
+    // s'appuyer sur `sumItems`. Il compte ses répondus lui-même.
+    const sumKarasek = (items: any, reversedItems: any[] = []) => {
+      let total = 0, repondus = 0;
+      for (const id of items) {
+        if (getVal(id) !== null) repondus++;
+        total += karasekValue(id, reversedItems);
+      }
+      return {total, repondus};
+    };
 
     const latDef = sc.weightedLatitude || null;
     let latWeighted = null;
     if (latDef) {
       const auto = sumKarasek(latDef.autonomieItems || [], latDef.reversedAutonomieItems || []);
       const usage = sumKarasek(latDef.usageItems || [], latDef.reversedUsageItems || []);
-      latWeighted = (4 * auto) + (2 * usage);
+      latWeighted = (auto.repondus + usage.repondus) === 0
+        ? null : (4 * auto.total) + (2 * usage.total);
     }
 
     const subResults = sc.subScores.map((sub: any) => {
-      const rawTotal = sumKarasek(sub.items, sub.reversedItems || []);
+      const brut = sumKarasek(sub.items, sub.reversedItems || []);
+      const rawTotal = brut.repondus === 0 ? null : brut.total;
       const total = sub.id === 'LAT' && latWeighted !== null ? latWeighted : rawTotal;
-      let atRisk = false;
+      // Un seuil ne se lit que sur un axe COMPLET. `karasekValue` rend 0 sur une
+      // absence, et la latitude pondère jusqu'à 4 : deux items sautés retiraient
+      // 16 points sur 96, pour un seuil à 72. Un patient déclarant une autonomie
+      // MAXIMALE sur 7 items de 9 ressortait « Job Strain ». Relevé en revue.
+      const complet = brut.repondus === sub.items.length;
+      // GARDE — `null < 72` vaut `true` en JavaScript. Sans ce test, une
+      // sous-échelle à laquelle personne n'a répondu déclenchait tous les seuils
+      // « faible si < X », et trois d'entre eux suffisaient à annoncer un
+      // « Iso-Strain — risque burnout élevé ».
+      //
+      // Et il vaut `null`, jamais `false`, quand l'axe n'est pas JUGEABLE : un
+      // `false` y affirmerait « pas à risque » sur un axe que personne n'a
+      // rempli. Mesuré le 2026-07-29 : une passation ne renseignant que la
+      // demande psychologique rendait `LAT`, `SOU` et `REC` à `total: null` ET
+      // `atRisk: false` — trois verdicts rassurants sur des questions jamais
+      // posées. C'est le dernier résidu du contrat « non mesuré » posé le même
+      // jour sur seize moteurs.
+      //
+      // Les DEUX conditions portent. `complet` refuse le seuil sur un axe partiel ;
+      // `total !== null` refuse le cas de l'axe déclaré SANS items, où
+      // `repondus === items.length` vaut `0 === 0` et donnerait « complet » sur une
+      // absence — et c'est aussi ce qui permet à TypeScript d'affiner le type.
+      let atRisk: boolean | null = false;
       if (typeof sub.seuil === 'number' && sub.seuilDir) {
-        atRisk = sub.seuilDir === 'gte' ? total >= sub.seuil
+        atRisk = (total === null || !complet) ? null
+              : sub.seuilDir === 'gte' ? total >= sub.seuil
               : sub.seuilDir === 'gt'  ? total > sub.seuil
               : total < sub.seuil;
       }
+      // Sans seuil publié, `atRisk` reste `false` PAR DÉFAUT et ne signifie rien
+      // (`Q_STR_06/REC`). Comportement inchangé, et la consigne de synthèse le
+      // décrit déjà mot pour mot : le corriger demanderait un bump de version
+      // pour une ambiguïté qui est déjà nommée au modèle.
       return {id:sub.id, label:sub.label, total, rawTotal, max:sub.max, seuil:sub.seuil, atRisk, seuilLabel:sub.seuilLabel};
     });
     const dem = subResults.find((s: any) => s.id==='DEM'), lat = subResults.find((s: any) => s.id==='LAT'),
           sou = subResults.find((s: any) => s.id==='SOU');
-    const jobStrain = dem&&lat ? dem.atRisk && lat.atRisk : false;
-    const isoStrain = jobStrain && sou && sou.atRisk;
-    const interp = isoStrain ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
-                 : jobStrain ? {label:'Job Strain — stress professionnel',color:'warning'}
-                 : dem&&dem.atRisk ? {label:'Forte demande psychologique',color:'info'}
-                 : {label:'Situation professionnelle équilibrée',color:'success'};
+    // ET à TROIS valeurs, parce que `atRisk` en a désormais trois. La règle est
+    // monotone, comme celle du Berlin : un « et » est ÉTABLI faux dès qu'un seul
+    // opérande est faux — peu importe ce qu'on ignore de l'autre —, établi vrai
+    // si les deux le sont, et indéterminé sinon.
+    //
+    // `false && null` vaut `false` en JavaScript, mais `true && null` vaut
+    // `null` : s'en remettre à l'opérateur natif donnerait le bon résultat ici et
+    // le mauvais ailleurs. On l'écrit, plutôt que de dépendre d'une coïncidence.
+    const et = (a: boolean | null, b: boolean | null): boolean | null =>
+      (a === false || b === false) ? false
+      : (a === true && b === true) ? true
+      : null;
+    const jobStrain = (dem && lat) ? et(dem.atRisk, lat.atRisk) : null;
+    const isoStrain = et(jobStrain, sou ? sou.atRisk : null);
+    // Chaque verdict exige les axes QU'IL nomme, ni plus ni moins :
+    //   · Iso-Strain et Job Strain se lisent sur DEM et LAT (plus SOU pour le
+    //     premier) — déjà acquis, `atRisk` ne peut plus valoir vrai sans mesure ;
+    //   · « Forte demande psychologique » ne parle que de DEM, qui est mesuré : le
+    //     supprimer perdrait une information VRAIE ;
+    //   · « Situation professionnelle équilibrée » est le seul à conclure de
+    //     l'ABSENCE de risque — il lui faut donc les deux axes mesurés. Sans ce
+    //     test, une passation ne renseignant que « reconnaissance », le seul axe
+    //     sans seuil, ressortait « équilibrée », en vert. Relevé en revue.
+    //
+    // Les `=== true` disent l'INTENTION — un drapeau à trois valeurs se lit sur
+    // sa valeur établie — mais ils ne gardent rien : `null` et `false` sont tous
+    // deux falsy, le test truthy serait strictement équivalent. Aucune mutation
+    // ne peut les faire rougir, et c'est écrit ici plutôt que laissé croire à une
+    // sécurité. La garde réelle est la ligne suivante.
+    //
+    // « Équilibrée » exige les deux axes MESURÉS **et** établis hors risque. Les
+    // deux moitiés portent, et pour des raisons différentes :
+    //   · `atRisk === false` refuse l'axe incomplet ou vide, dont le verdict est
+    //     désormais `null` — c'est le défaut que ce lot ferme, et c'est aussi le
+    //     cas où `karasekValue` sous-estime le plus, comptant l'absence pour zéro ;
+    //   · `mesure()` refuse l'axe SANS SEUIL PUBLIÉ, dont l'`atRisk` reste `false`
+    //     par défaut et ne signifie rien. Une première rédaction de ce lot avait
+    //     remplacé `mesure()` par le seul test d'`atRisk` : un axe sans seuil et
+    //     sans une réponse ressortait alors « Situation professionnelle
+    //     équilibrée ». Aucun instrument du catalogue n'est dans ce cas — `DEM` et
+    //     `LAT` publient tous deux leur seuil —, mais le prochain le sera peut-être.
+    //     Relevé en revue adversariale, sur définition forgée.
+    //
+    // Et il exige le SOUTIEN SOCIAL hors risque, sur arbitrage praticien du
+    // 2026-07-29. Le verdict portait jusque-là sur les deux seuls axes du Job
+    // Strain : un patient à demande basse, latitude haute et soutien social à
+    // 8 sur 32 pour un seuil à 24 ressortait « équilibrée », en vert, à côté d'un
+    // axe ÉTABLI à risque. C'était le dernier verdict rassurant du moteur, et le
+    // seul qui contredisait encore son propre `atRisk`. `SOU` n'entre pas dans le
+    // Job Strain — il n'entre que dans l'Iso-Strain — mais « équilibrée » est le
+    // seul énoncé qui conclue à l'ABSENCE de risque : il lui faut tous les axes
+    // qui en portent un.
+    const mesure = (s: any) => Boolean(s) && s.total !== null;
+    // La règle est écrite sur TOUS les axes émis, et non sur trois nommés. Une
+    // règle nominative ferme le cas qu'on vient de voir et laisse les autres :
+    // la revue de ce lot a montré qu'exiger `DEM`, `LAT` et `SOU` hors risque
+    // laissait sortir le vert sur une reconnaissance au plus bas (12 sur 24) —
+    // « on me traite injustement » et « ma sécurité d'emploi est menacée » au
+    // maximum — et même sur une section reconnaissance ENTIÈREMENT VIDE.
+    //
+    // Deux conditions, et elles ne portent pas sur les mêmes axes :
+    //   · TOUS les axes doivent être mesurés. « Équilibrée » parle de la
+    //     situation professionnelle entière ; elle ne se prononce pas sur une
+    //     section jamais remplie. C'est le contrat « non mesuré », appliqué à un
+    //     énoncé plutôt qu'à une valeur.
+    //   · Ceux qui PUBLIENT UN SEUIL doivent être établis hors risque. `REC` n'en
+    //     publie aucun (`seuil: null`) : son `atRisk` vaut `false` par défaut et
+    //     ne signifie rien — l'inclure dans le test de risque ferait passer une
+    //     valeur vide pour un verdict. Lui donner un seuil est une décision
+    //     clinique, portée en réserve.
+    // La non-vacuité est exigée dans les deux cas : un instrument sans axe, ou
+    // sans axe à seuil, ne conclut pas à l'absence de risque par défaut.
+    const aSeuil = subResults.filter((s: any) => typeof s.seuil === 'number');
+    const equilibree = subResults.length > 0 && subResults.every(mesure)
+                    && aSeuil.length > 0 && aSeuil.every((s: any) => s.atRisk === false);
+    const interp = isoStrain === true ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
+                 : jobStrain === true ? {label:'Job Strain — stress professionnel',color:'warning'}
+                 : dem?.atRisk === true ? {label:'Forte demande psychologique',color:'info'}
+                 : equilibree
+                   ? {label:'Situation professionnelle équilibrée',color:'success'}
+                   : null;
     return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp, note: sc.note || null, certification: sc.certification || null};
   }
 
@@ -2136,23 +3287,55 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const countOui = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) === 1 ? 1 : 0), 0);
     const sumVals = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) || 0), 0);
 
-    const partie1 = countOui(['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9']);
-    const gssScore = sumVals(['IG1','IG2','IG3','IG4','IG5','IG6']);
-    const partie3A = sumVals(['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12']);
-    const partie3B = sumVals(['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12']);
-    const partie4 = countOui(['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9']);
+    // GARDE — une partie sans aucun de ses items vaut « non mesurée », pas 0.
+    //
+    // `countOui` et `sumVals` lisaient l'absence comme un « non » et comme un
+    // zéro. Les cinq parties tombaient donc à 0, et le score GSS à 0 décrochait
+    // la bande « Le problème n'est probablement pas saisonnier », en vert : le
+    // verdict le plus rassurant de l'instrument, rendu sur rien.
+    const ITEMS_P1 = ['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9'];
+    const ITEMS_P2 = ['IG1','IG2','IG3','IG4','IG5','IG6'];
+    const ITEMS_P3A = ['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12'];
+    const ITEMS_P3B = ['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12'];
+    const ITEMS_P4 = ['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9'];
 
-    const gssInterpretation = (() => {
+    const partie1 = aUneMesure(ITEMS_P1) ? countOui(ITEMS_P1) : null;
+    const gssScore = aUneMesure(ITEMS_P2) ? sumVals(ITEMS_P2) : null;
+    const partie3A = aUneMesure(ITEMS_P3A) ? sumVals(ITEMS_P3A) : null;
+    const partie3B = aUneMesure(ITEMS_P3B) ? sumVals(ITEMS_P3B) : null;
+    const partie4 = aUneMesure(ITEMS_P4) ? countOui(ITEMS_P4) : null;
+
+    const gssInterpretation = gssScore === null ? null : (() => {
       for (const r of sc.interpretation || []) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) return r;
       }
       return null;
     })();
 
-    const winterHits = (sc.winterMonthsA || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const inverseHits = (sc.springSummerMonthsB || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const winterPatternLikely = winterHits >= (sc.monthlyPatternMinMonths || 3);
-    const inversePatternLikely = inverseHits >= (sc.monthlyPatternMinMonths || 3);
+    // Un drapeau dont la prémisse n'est pas mesurée vaut `null`, pas `false` :
+    // `false` affirme « pas d'idéation suicidaire », « pas de dépression
+    // probable », « pas de profil hivernal ». Trois affirmations sur des
+    // questions qui n'ont jamais été posées — et la première est celle que la
+    // source Drive assortit d'une appréciation clinique immédiate.
+    //
+    // Le DÉCOMPTE tombe avec son drapeau, et pas seulement le drapeau : sur un
+    // instrument de trouble affectif SAISONNIER, « zéro mois d'hiver au-dessus
+    // du seuil » est le signal rassurant central. Le laisser à 0 à côté d'un
+    // `total: null` disait « non mesuré » et « zéro mois » dans le même objet.
+    const compter = (ids: any) => (ids || [])
+      .filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
+    const winterHits = partie3A === null ? null : compter(sc.winterMonthsA);
+    const inverseHits = partie3B === null ? null : compter(sc.springSummerMonthsB);
+    // Seuils MONOTONES : `true` s'affirme dès le franchissement, `false` exige
+    // le comptage complet. Trois mois au-dessus du seuil font un motif hivernal
+    // quels que soient les neuf autres ; deux mois sur quatre renseignés n'en
+    // font pas une absence de motif, sur un instrument SAISONNIER.
+    const minMois = sc.monthlyPatternMinMonths || 3;
+    const winterPatternLikely = winterHits === null ? null
+      : seuilMonotone(winterHits >= minMois, estComplet(sc.winterMonthsA));
+    const inversePatternLikely = inverseHits === null ? null
+      : seuilMonotone(inverseHits >= minMois, estComplet(sc.springSummerMonthsB));
+    const ia9 = getVal('IA9');
 
     return {
       type:'idtas_ae',
@@ -2162,8 +3345,9 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
           label:'Dépistage dépressif',
           total: partie1,
           maxTotal: 9,
-          probableMajorDepression: partie1 > (sc.partie1DepressionThreshold || 5),
-          suicidalIdeation: getVal('IA9') === 1,
+          probableMajorDepression: partie1 === null ? null
+            : seuilMonotone(partie1 > (sc.partie1DepressionThreshold || 5), estComplet(ITEMS_P1)),
+          suicidalIdeation: ia9 === null ? null : ia9 === 1,
         },
         {
           id:'P2',
@@ -2205,10 +3389,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── WEIGHTED_PER_AXIS (Tinetti Q_GEO_01) ─────────────
   if (sc.type === 'weighted_per_axis') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
+      const {total} = totalSousScore(sub.items, []);
       return {id:sub.id, label:sub.label, total, max:sub.max};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {type:'weighted_per_axis', subScores:subResults, total:globalTotal, maxTotal:sc.maxTotal||28, interpretation:interp, certification: sc.certification || null};
   }
@@ -2220,22 +3404,41 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const be2 = getVal('BE2') || 0;
     const be3 = getVal('BE3') || 0;
     const be4 = getVal('BE4') || 0;
-    const cat1Score = be2 + be3 + be4;
-    const cat1Positive = be1 === 1 && cat1Score >= 2;
+    // GARDE — une catégorie sans aucun de ses items est INDÉTERMINÉE, pas
+    // négative. Ce moteur n'appelle pas `interpretRanges` : la garde de #450 ne
+    // le couvrait pas, exactement comme Bristol. Il rendait une bande dans TOUS
+    // les cas, et celle de l'absence était « Risque faible d'apnée du
+    // sommeil — surveillance clinique ». Une seule réponse suffisait à passer la
+    // garde de passation vide, et le Berlin sortait alors rassurant.
+    const cat1Mesuree = aUneMesure(['BE1','BE2','BE3','BE4']);
+    const cat1Score = cat1Mesuree ? be2 + be3 + be4 : null;
+    const cat1Positive = cat1Mesuree ? (be1 === 1 && (cat1Score as number) >= 2) : null;
 
-    // Catégorie 2 — Somnolence diurne (items BE5-BE7)
+    // Catégorie 2 — Somnolence diurne (items BE5-BE7). La source exige AU MOINS
+    // DEUX réponses positives parmi les trois ; le servi se contentait d'UNE
+    // seule — un patient positif au seul « fatigue au réveil », avec une HTA,
+    // sortait « Risque élevé d'apnée — polysomnographie recommandée ». Relevé
+    // par les deux lectures du banc, aligné le 2026-07-30 sur arbitrage
+    // praticien (famille des seuils, dossier #469).
     const be5 = getVal('BE5') || 0;
     const be6 = getVal('BE6') || 0;
     const be7 = getVal('BE7') || 0;
-    const cat2Positive = be5 >= 1 || be6 >= 1 || be7 === 1;
+    const cat2Positive = aUneMesure(['BE5','BE6','BE7'])
+      ? ([be5 >= 1, be6 >= 1, be7 === 1].filter(Boolean).length >= 2) : null;
 
     // Catégorie 3 — Facteurs de risque (HTA + IMC)
     const be8 = getVal('BE8') || 0;
     const be9 = getVal('BE9') || 0;
-    const cat3Positive = be8 === 1 || be9 > 30;
+    const cat3Positive = aUneMesure(['BE8','BE9']) ? (be8 === 1 || be9 > 30) : null;
 
-    const posCount = [cat1Positive, cat2Positive, cat3Positive].filter(Boolean).length;
-    const highRisk  = posCount >= 2;
+    // La règle de Berlin est « au moins DEUX catégories positives ». Elle reste
+    // donc CONCLUANTE dans un sens même incomplète : deux positives établissent
+    // le risque élevé quelle que soit la troisième. L'inverse est faux — « moins
+    // de deux » ne se conclut que si les trois catégories ont été mesurées.
+    const categories = [cat1Positive, cat2Positive, cat3Positive];
+    const posCount = categories.filter(c => c === true).length;
+    const indeterminees = categories.filter(c => c === null).length;
+    const highRisk = posCount >= 2 ? true : (indeterminees === 0 ? false : null);
 
     return {
       type: 'berlin',
@@ -2244,9 +3447,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'C2', label:'Somnolence diurne',   positive: cat2Positive},
         {id:'C3', label:'Facteurs de risque',  positive: cat3Positive},
       ],
-      positiveCategoryCount: posCount,
+      // Un décompte n'a de sens que sur un dénominateur connu : « 0 catégorie
+      // positive » sur trois indéterminées se lit comme un résultat négatif.
+      positiveCategoryCount: indeterminees === 0 ? posCount : null,
       highRisk,
-      interpretation: highRisk
+      interpretation: highRisk === null
+        ? null
+        : highRisk
         ? {label:"Risque élevé d'apnée obstructive du sommeil", color:'danger',
            protocol:'Consultation pneumologue — polysomnographie recommandée'}
         : {label:"Risque faible d'apnée du sommeil",            color:'success',
@@ -2264,6 +3471,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       total < 30 ? {label:'Tout à fait du soir', color:'danger'}
     : total <= 41 ? {label:'Modérément du soir', color:'warning'}
     : total <= 58 ? {label:'Neutre', color:'success'}
+    // 70 : la source porte un TROU (« modérément 59–69 », « tout à fait > 70 »).
+    // La table publiée de Horne & Östberg met 70–86 en « tout à fait du matin »,
+    // et c'est elle que le servi suit — écart assumé avec le « > 70 » de la
+    // traduction du support, consigné au registre le 2026-07-30. Une première
+    // rédaction de ce lot avait déplacé 70 vers « modérément » sur la foi du
+    // seul « > 70 » : cela contredisait le « <= 69 » de la même source.
     : total <= 69 ? {label:'Modérément du matin', color:'info'}
     :              {label:'Tout à fait du matin', color:'primary'};
     return {type:'horne', total, maxTotal: sc.maxTotal || 86, interpretation: interp, certification: sc.certification || null};
@@ -2284,25 +3497,45 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         funcCount += 1;
       }
     });
-    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : 0;
-    const funcScaled = parseFloat((funcAverage * 3.3).toFixed(1));
+    // GARDE — une composante sans aucun de ses items vaut « non mesurée ».
+    //
+    // Les quatre composantes retombaient à 0, et la bande de tête du QIF est
+    // `total === 0` : « Score peu compatible avec le diagnostic de
+    // fibromyalgie, sauf guérison ou très bonne évolution ». Un questionnaire
+    // laissé vide écartait donc activement le diagnostic qu'il sert à mesurer.
+    // Q12 rend le cas indiscernable pire encore : `(7 - n) × 1.43` vaut 0 pour
+    // un patient qui s'est senti bien les sept jours, exactement comme pour un
+    // patient qui n'a pas répondu.
+    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : null;
+    const funcScaled = funcAverage === null ? null : parseFloat((funcAverage * 3.3).toFixed(1));
 
     // Q12 — Jours ressentis bien (0-7) → (7 - n) × 1.43
     const q12 = getVal('Q12');
-    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : 0;
+    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : null;
 
     // Q13 — Jours d'absentéisme (0-7) → n × 1.43
     const q13 = getVal('Q13');
-    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : 0;
+    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : null;
 
     // Q14-Q20 — EVA directs 0 à 10
     const evaItems = ['Q14','Q15','Q16','Q17','Q18','Q19','Q20'];
-    let evaSum = 0;
-    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaSum += v; });
+    let evaBrut = 0;
+    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaBrut += v; });
+    const evaSum = aUneMesure(evaItems) ? evaBrut : null;
 
-    const total = parseFloat((funcScaled + q12Score + q13Score + evaSum).toFixed(1));
+    const totalBrut = totalGlobalDepuisSousScores(
+      [funcScaled, q12Score, q13Score, evaSum].map(v => ({total: v})));
+    const total = totalBrut === null ? null : parseFloat(totalBrut.toFixed(1));
 	    const interp =
-	      total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	      total === null ? null
+	    // La bande du ZÉRO est une lecture de PLANCHER : elle exige la passation
+	    // entière, et non les quatre composantes seulement mesurées. Une réponse
+	    // dans chacune, toutes au minimum — quatre sur vingt — rendait `total = 0`
+	    // et « guérison ou très bonne évolution ». La garde des composantes ne
+	    // pouvait pas l'attraper : aucune n'est vide dans ce cas.
+	    : total === 0 ? (estComplet(allQ.map(q => q.id))
+	        ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	        : null)
 	    : total < 35  ? {label:"Tranche 1 à 34 non explicitement interprétée dans le module professionnel fourni", color:'info'}
 	    : total <= 50 ? {label:"Score qui ne doit pas décevoir si la personne pense être dans une bonne phase ; moins de 40 n'est pas un mauvais score", color:'warning'}
 	    : total <= 65 ? {label:"Peut correspondre à une mauvaise semaine ; re-tester régulièrement et consulter si le score ne s'améliore pas ou s'aggrave", color:'danger'}
@@ -2341,15 +3574,23 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // Requis pour Q_GEO_06 — Phase 1 (/5) + Phase 2 (/5) → total /10
   // Note clinique : rappel différé ≤ 2/5 → évocateur MA (sensibilité 85 %, spécificité 90 %)
   if (sc.type === 'sum_two_phases') {
+    // GARDE — une phase non administrée vaut « non mesurée », pas 0.
+    //
+    // Le test des 5 mots se passe EN DEUX TEMPS séparés par un délai : entre
+    // les deux, la phase de rappel différé n'a normalement pas de réponse. Elle
+    // valait alors 0 sur 5, c'est-à-dire « ≤ 2 » — et l'alerte se déclenchait :
+    // « Rappel différé ≤ 2/5 — évocateur de maladie d'Alzheimer ». Un test
+    // simplement inachevé rendait donc le résultat que ce test sert à chercher.
     const phaseResults = sc.phases.map((ph: any) => {
-      const {total} = sumItems(ph.items, []);
+      const {total} = totalSousScore(ph.items, []);
       return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal};
     });
-    const globalTotal = phaseResults.reduce((s: any, p: any) => s + p.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(phaseResults);
 
-    // Alerte clinique si rappel différé ≤ 2
+    // Alerte clinique si rappel différé ≤ 2 — et `null`, jamais `false`, quand
+    // la phase n'a pas été administrée : `false` affirmerait un rappel préservé.
     const phaseD   = phaseResults.find((p: any) => p.id === 'phase2');
-    const alertMA  = phaseD ? phaseD.total <= 2 : false;
+    const alertMA  = (phaseD && phaseD.total !== null) ? phaseD.total <= 2 : null;
 
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {
@@ -2358,7 +3599,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       total:       globalTotal,
       maxTotal:    sc.maxTotal,
       alertMA,
-      alertLabel:  alertMA ? 'Rappel différé ≤ 2/5 — évocateur de maladie d\'Alzheimer (Dubois 2002)' : null,
+      alertLabel:  alertMA === true ? 'Rappel différé ≤ 2/5 — évocateur de maladie d\'Alzheimer (Dubois 2002)' : null,
       interpretation: interp
     };
   }
@@ -2386,47 +3627,132 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── AGENDA_SOMMEIL — agenda du sommeil 21 nuits (Q_SOM_09) ──────────────
   // Lit les agrégats produits à la clôture (cf. lib/agenda-sommeil/agregats.ts),
-  // rangés dans `rawAnswers`. Sous le seuil de nuits, recueil transmis SANS score
-  // (scored:false, jamais un 0 par défaut). Barème /100 = 4 sous-indices /25,
-  // rampes linéaires bornées. Barème validé cliniquement par le praticien le 2026-07-26.
+  // rangés dans `rawAnswers`. Ce total est un INDICE LONGITUDINAL WellNeuro,
+  // niveau de preuve D : il sert à comparer un patient à lui-même dans le temps,
+  // jamais à poser un diagnostic ni à situer un patient dans une population.
+  //
+  // Quatre sous-indices MUTUELLEMENT INDÉPENDANTS (v2, 2026-07-27). Le barème v1
+  // comptait la latence trois fois — dans Durée via TST = TIB − latence − WASO,
+  // dans Efficacité via TST/TIB, et une troisième fois dans Continuité — et
+  // n'utilisait nulle part la qualité vécue, pourtant l'item le mieux renseigné.
+  // La latence et le compte de réveils restent produits et affichés au praticien
+  // comme métriques brutes ; ils sortent seulement du calcul du total, où ils
+  // étaient déjà présents à travers l'efficacité.
   if (sc.type === 'agenda_sommeil') {
-    const minNuits = sc.minNuits || 5;
+    const minNuits = sc.minNuits || 14;
     const n = getVal('AGD_NB_NUITS');
-    if (n === null || n < minNuits) {
+    // `AGD_INDICE_ELIGIBLE` porte la règle de couverture week-end : quatorze
+    // nuits toutes ouvrables donnent une régularité excellente et fausse.
+    // Absent des agendas d'avant la v2 — on ne bloque alors que sur le compte.
+    const eligible = getVal('AGD_INDICE_ELIGIBLE');
+    if (n === null || n < minNuits || eligible === 0) {
+      // La note dit POURQUOI l'indice manque — `sc.note` décrit le barème, pas
+      // la couverture ; la laisser gagner ici priverait le praticien du motif.
+      const motif = n === null || n < minNuits
+        ? `Moins de ${minNuits} nuits exploitables`
+        : 'Couverture week-end insuffisante (14 nuits dont 4 de week-end requises)';
       return {
         type:'agenda_sommeil',
         scored:false,
         nbNuits: n || 0,
-        note: sc.note || `Moins de ${minNuits} nuits renseignées — recueil transmis sans agrégation.`,
+        note: `${motif} — recueil transmis sans indice global.`,
         certification: sc.certification || null,
       };
     }
     const clampR = (x: number) => Math.max(0, Math.min(1, x));
-    const tst = getVal('AGD_TST_MOY') ?? 0;
-    const eff = getVal('AGD_EFF_MOY') ?? 0;
-    const latMed = getVal('AGD_LAT_MED') ?? 0;
-    const revMoy = getVal('AGD_REV_MOY') ?? 0;
-    const regEct = getVal('AGD_REG_ECT') ?? 0;
-    // Durée : plateau [420,540] min → 25 ; 0 à ≤240 ou ≥720 min.
-    const scoreDuree = tst >= 420 && tst <= 540
-      ? 25
-      : tst < 420
-        ? clampR((tst - 240) / (420 - 240)) * 25
-        : clampR((720 - tst) / (720 - 540)) * 25;
-    // Efficacité : ≥85 % → 25 ; ≤65 % → 0.
-    const scoreEff = clampR((eff - 65) / (85 - 65)) * 25;
-    // Continuité : latence (≤15 min plein, ≥60 nul) + réveils (≤1 plein, ≥3 nul).
-    const scoreCont = clampR((60 - latMed) / (60 - 15)) * 12.5 + clampR((3 - revMoy) / (3 - 1)) * 12.5;
-    // Régularité : ≤30 min → 25 ; ≥120 min → 0.
-    const scoreReg = clampR((120 - regEct) / (120 - 30)) * 25;
-    const subScores = [
-      { id:'DUREE', label:'Durée', total: Math.round(scoreDuree), max:25 },
-      { id:'EFF', label:'Efficacité', total: Math.round(scoreEff), max:25 },
-      { id:'CONT', label:'Continuité', total: Math.round(scoreCont), max:25 },
-      { id:'REG', label:'Régularité', total: Math.round(scoreReg), max:25 },
+    const tst = getVal('AGD_TST_MOY');
+    const eff = getVal('AGD_EFF_MOY');
+    const regEct = getVal('AGD_REG_ECT');
+    const qual = getVal('AGD_QUAL_MOY');
+    const tibMoy = getVal('AGD_TIB_MOY');
+
+    // PLANCHER DE COUVERTURE PAR AXE. Le seuil de `minNuits` porte sur le
+    // nombre de nuits du recueil, pas sur celui des nuits qui alimentent CHAQUE
+    // axe — et ces nombres divergent dès qu'une fenêtre mélange des nuits
+    // d'avant et d'après un changement de contrat. Sans ce plancher, un recueil
+    // de 21 nuits dont une seule porte les champs nécessaires produit une durée
+    // et une efficacité calculées sur n = 1 : le total variait de 50 points
+    // selon cette unique nuit, sans que rien ne le signale. Un axe trop peu
+    // soutenu est traité comme non couvert, donc renormalisé — jamais deviné.
+    const minAxe = sc.minNuitsAxe || 7;
+    const couvert = (id: string): boolean => {
+      const n = getVal(id);
+      return n === null || n >= minAxe; // absent = agenda d'avant les compteurs
+    };
+    const couvertTst = couvert('AGD_NB_NUITS_TST');
+    const couvertEff = couvert('AGD_NB_NUITS_EFF');
+
+    // Un axe dont la métrique n'est pas couverte vaut `null` et sort du total,
+    // qui est alors renormalisé sur les axes disponibles — jamais complété par
+    // un 0, qui se lirait comme « mauvais » au lieu de « inconnu ».
+    const axes = [
+      // Durée : 0 à ≤ 240 min, plein à ≥ 420 min. AUCUNE pénalité au-delà :
+      // l'AASM recommande ≥ 7 h sans fixer de borne haute, et un sommeil long
+      // relève d'une lecture clinique (récupération, dette, maladie), pas d'une
+      // perte automatique de points. Le temps AU LIT long est traité en drapeau.
+      { id:'DUREE', label:'Durée', ratio: tst === null || !couvertTst ? null : clampR((tst - 240) / 180) },
+      // Efficacité : ≤ 65 % → 0, ≥ 85 % → plein. Contient déjà la latence et
+      // l'éveil nocturne — c'est pourquoi ils ne sont plus scorés à part.
+      { id:'EFF', label:'Efficacité', ratio: eff === null || !couvertEff ? null : clampR((eff - 65) / 20) },
+      // Régularité : écart-type du milieu de sommeil, plein ≤ 30 min, nul ≥ 120.
+      { id:'REG', label:'Régularité', ratio: regEct === null ? null : clampR((120 - regEct) / 90) },
+      // Qualité vécue : 1 → 0, 5 → plein. Le ressenti du patient est une donnée,
+      // pas un ornement ; il n'entrait dans aucun sous-score en v1.
+      { id:'QUAL', label:'Qualité vécue', ratio: qual === null ? null : clampR((qual - 1) / 4) },
     ];
-    const total = Math.round(scoreDuree + scoreEff + scoreCont + scoreReg);
+    const couverts = axes.filter((a): a is typeof a & { ratio: number } => a.ratio !== null);
+    if (couverts.length < 3) {
+      return {
+        type:'agenda_sommeil',
+        scored:false,
+        nbNuits: n,
+        note: 'Métriques trop incomplètes — recueil transmis sans indice global.',
+        certification: sc.certification || null,
+      };
+    }
+    const subScores = axes.map(a => ({
+      id: a.id,
+      label: a.label,
+      total: a.ratio === null ? null : Math.round(a.ratio * 25),
+      max: 25,
+    }));
+    const total = Math.round(
+      (couverts.reduce((s, a) => s + a.ratio, 0) / couverts.length) * 100
+    );
     const interp = interpretRanges(total, sc.interpretation);
+
+    // Drapeaux cliniques, JAMAIS des points.
+    const drapeaux: string[] = [];
+    // Un temps au lit long associé à une efficacité basse est la cible de la
+    // restriction de sommeil. Le retrancher du total le confondrait avec un
+    // sommeil insuffisant, qui appelle exactement la conduite inverse. Le temps
+    // au lit court désormais de la MISE AU LIT au lever : le drapeau attrape
+    // donc aussi le patient qui passe une heure au lit avant d'éteindre, ce qui
+    // est précisément la conduite visée.
+    if (tibMoy !== null && tibMoy >= 540 && eff !== null && eff < 80) {
+      drapeaux.push('Temps au lit long avec efficacité basse — restriction de sommeil à discuter.');
+    }
+    // L'aide au sommeil n'entre PAS dans le total : c'est une exposition, pas un
+    // résultat, et la scorer répéterait l'erreur de catégorie consistant à
+    // mélanger prédicteurs et variable expliquée. Mais un indice calculé sur des
+    // nuits sous hypnotique ne se lit pas comme un indice sans — d'où ce drapeau,
+    // pour que le total ne soit jamais lu nu.
+    const nuitsAide = getVal('AGD_NB_NUITS_AIDE');
+    if (nuitsAide !== null && nuitsAide > 0) {
+      drapeaux.push(
+        `Indice calculé sur ${n} nuits, dont ${nuitsAide} sous aide au sommeil — à interpréter avec le traitement en cours.`,
+      );
+    }
+    // Fréquence : le critère clinique usuel est un nombre de nuits par semaine
+    // au-dessus de 30 minutes, que les moyennes effacent. La convention de
+    // recherche est NOMMÉE, jamais conclue — on rapporte, on ne diagnostique pas.
+    const freq = getVal('AGD_FREQ_CRITERE_SEM');
+    if (freq !== null && freq >= 3) {
+      drapeaux.push(
+        `${freq} nuits/semaine avec plus de 30 min d’endormissement ou d’éveil (convention de recherche : ≥ 3).`,
+      );
+    }
+
     return {
       type:'agenda_sommeil',
       scored:true,
@@ -2435,6 +3761,8 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       subScores,
       interpretation: interp,
       nbNuits: n,
+      nbAxesCouverts: couverts.length,
+      drapeaux,
       note: sc.note || null,
       certification: sc.certification || null,
     };
@@ -2448,14 +3776,18 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // Collecter les items de cette partie
       const partItems = allQ.filter(q => part.items.includes(q.id));
 
+      // Même contrat que partout : une partie sans aucun de ses items vaut
+      // « non mesurée ». Ce moteur n'est servi par AUCUN instrument du
+      // catalogue aujourd'hui — `Q_NEU_12` passe par `idtas_ae` — et la garde
+      // y est donc préventive, épinglée par un test sur définition forgée.
       if (part.type === 'count_oui') {
         let count = 0;
         part.items.forEach((id: any) => { const v = getVal(id); if (v === 1) count++; });
         return {id: part.id, label: part.label || part.id, type:'count_oui',
-                count, maxTotal: part.maxTotal};
+                count: aUneMesure(part.items) ? count : null, maxTotal: part.maxTotal};
       }
       if (part.type === 'sum') {
-        const {total} = sumItems(part.items, []);
+        const {total} = totalSousScore(part.items, []);
         return {id: part.id, label: part.label || part.id, type:'sum',
                 total, maxTotal: part.maxTotal};
       }
@@ -2464,13 +3796,21 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
     // Interprétation basée sur le score GSS (P2)
     const gssResult = partResults.find((p: any) => p.id === 'P2');
-    const gssScore  = gssResult ? (gssResult.total || 0) : 0;
+    const gssScore  = gssResult && gssResult.total !== undefined ? gssResult.total : null;
+    // La GRILLE exige le comptage complet, comme celle d'`idtas_ae` : une somme
+    // partielle est biaisée vers le bas, et la borne basse de cette grille-ci est
+    // la rassurante. Aucun instrument du catalogue ne sert ce moteur aujourd'hui,
+    // mais il est à une entrée de catalogue de revenir en production.
+    const itemsP2 = (sc.parts || []).find((p: any) => p.id === 'P2')?.items ?? [];
     let interp = null;
-    if (sc.interpretation) {
+    if (sc.interpretation && gssScore !== null && estComplet(itemsP2)) {
       for (const r of sc.interpretation) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) { interp = r; break; }
       }
-      if (!interp) interp = sc.interpretation[sc.interpretation.length - 1];
+      // Second repli sur la dernière bande, sur des bornes à deux dimensions cette
+      // fois. Retiré pour la même raison que celui d'`interpretRanges` : rendre une
+      // bande faute d'en trouver une vaut affirmation, et le score GSS vaut 0 quand
+      // la partie P2 n'a pas été renseignée.
     }
 
     return {

@@ -1,7 +1,12 @@
 ---
-description: Point d'entrée automatique WellNeuro — combine route (/wn), modèle (/wn-model) et mode d'exécution (/wn-ultra) en une décision unique, appliquée en début de session ou juste après /clear, avec le plan hiérarchisé d'agents/skills à appeler.
+description: Point d'entrée automatique WellNeuro — combine route (/wn), modèle (/wn-model) et mode d'exécution (/wn-ultra) en une décision unique, appliquée en début de session ou juste après /clear, avec le plan hiérarchisé d'agents/skills à appeler. À n'invoquer qu'UNE FOIS, au tout premier passage d'une session — jamais sur les messages suivants, qui sont déjà routés.
 argument-hint: "[demande de l'utilisateur]"
-disable-model-invocation: true
+# EXCEPTION DÉLIBÉRÉE — ne pas rétablir `disable-model-invocation: true` ici.
+# Les 27 autres skills `wn` le portent ; celui-ci est le seul à en être exempt,
+# parce que `CLAUDE.md` demande de l'invoquer sans qu'on le tape, au tout premier
+# passage d'une session. Le drapeau rendait cette consigne inapplicable : elle n'a
+# jamais pu s'exécuter une seule fois depuis qu'elle est écrite. Uniformiser la
+# suite `wn` sur ce point la remettrait en panne, silencieusement.
 effort: low
 ---
 
@@ -9,62 +14,136 @@ effort: low
 
 ## Contexte
 
-!`git status --short`
-!`test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
-!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`cat .claude/skills/wn/SKILL.md 2>/dev/null`
-!`cat .claude/skills/wn-model/SKILL.md 2>/dev/null`
-!`cat .claude/skills/wn-ultra/SKILL.md 2>/dev/null`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Demande : `$ARGUMENTS`
 
 ## Rôle
 
-`wn-route` ne remplace ni `/wn`, ni `/wn-model`, ni `/wn-ultra` — il les combine en une
-seule passe au lieu de trois invocations séquentielles. Ces trois skills restent
-utilisables séparément en cours de session pour re-router explicitement. `wn-route`
-sert au tout premier passage : démarrage de session, ou juste après `/clear`, avant de
-traiter la première demande — une fois par session, pas à chaque message.
+`wn-route` combine `/wn`, `/wn-model` et `/wn-ultra` en une passe au lieu de trois <!-- mention-seule: wn, wn-model, wn-ultra -->
+invocations. Il sert au **tout premier passage** — démarrage de session ou juste après
+`/clear` —, une fois par session, pas à chaque message. Les trois skills restent
+invocables séparément pour re-router en cours de route.
 
 Ne jamais interpréter ce skill comme une autorisation de migration, d'écriture
 Supabase, de déploiement ou de modification clinique : les garde-fous restent ceux de
-`CLAUDE.md`, pas ceux de ce skill.
+`CLAUDE.md`.
+
+## Les grilles ci-dessous sont des résumés — les complètes coûtent et attendent
+
+Ce fichier portait les trois grilles **en entier**, chargées par `cat` à chaque
+démarrage : ~2 700 tokens payés avant même de savoir si la demande justifiait un
+routage, alors que la règle d'économie plus bas dit que la plupart tombent sur le
+défaut. On payait la grille pour découvrir qu'on n'en avait pas besoin.
+
+Les condensés suffisent aux cas courants. **Dès qu'une demande ne tombe dans aucune
+ligne, lire la grille complète** — `.claude/skills/wn/SKILL.md`, `wn-model/SKILL.md`
+ou `wn-ultra/SKILL.md` — plutôt que de trancher au jugé. C'est le seul cas qui
+justifie de la charger.
+
+Un `Read` ciblé, et non une invocation de ces trois skills : ils portent
+`disable-model-invocation: true`, donc seul l'utilisateur peut les taper. La consigne
+précédente demandait de les invoquer et ne pouvait pas s'exécuter — lire le fichier
+obtient la même grille sans dépendre d'une capacité absente.
+
+### Route — la demande vers son skill
+
+| La demande… | Route |
+|---|---|
+| est trop floue pour qu'on sache ce qui aura changé une fois faite | `/wn-reprompt`, **avant** de router |
+| cadre une tâche avant de coder | `/wn-plan` <!-- mention-seule: wn-plan -->|
+| ouvre une série de développements | `/wn-campaign` <!-- mention-seule: wn-campaign -->|
+| reprend un lot de campagne | `/wn-lot` (pilote complet) ou `/wn-campaign-run` <!-- mention-seule: wn-lot, wn-campaign-run -->|
+| signale un bug ou une erreur | `/wn-debug` <!-- mention-seule: wn-debug -->|
+| demande de valider | `/wn-test` <!-- mention-seule: wn-test -->|
+| demande une revue de diff | `/wn-review` <!-- mention-seule: wn-review -->|
+| ouvre ou termine une PR | `/wn-pr` puis `/wn-merge` <!-- mention-seule: wn-pr, wn-merge -->|
+| porte sur la documentation | `/wn-docs` ; multi-dépôts : `/wn-hygiene` <!-- mention-seule: wn-docs, wn-hygiene -->|
+| porte sur les fichiers de règles ou les définitions d'agents | `/wn-conventions` <!-- mention-seule: wn-conventions -->|
+| apporte un contenu d'instructions IA tiers | `/wn-tiers` <!-- mention-seule: wn-tiers -->|
+| clôt un lot | `/wn-finish` <!-- mention-seule: wn-finish -->|
+| reprend le contexte (affichage seul) | `/wn-context` <!-- mention-seule: wn-context -->|
+| écrit un document de reprise | `/wn-handoff` <!-- mention-seule: wn-handoff -->|
+| compacte le journal | `/wn-compact-sessionlog` <!-- mention-seule: wn-compact-sessionlog -->|
+
+Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
+explicitement le passage en mode Plan.
+
+**Reformuler avant de router — mais rarement.** Une demande qu'on ne peut pas router
+sans deviner passe d'abord par `/wn-reprompt` : contexte isolé, sortie ≤ 180 mots. Un
+tour de reformulation coûte moins que les tours de rattrapage d'un routage à côté. Le
+test est celui du skill et il est falsifiable : **si deux lectures de la demande mènent
+au même diff, router directement.** Le défaut reste donc « pas de reformulation » — un
+reformulage inutile dépense exactement ce qu'il prétend économiser.
+
+### Modèle — contexte vers couple modèle/effort
+
+| Contexte | Alias | Effort | Réflexion |
+|---|---|---|---|
+| Refonte transverse, raisonnement long-cours | `fable` | high | `think hard` |
+| Débogage, revue, clinique, sécurité | `opus` | high | `think hard` |
+| Développement courant, docs, cadrage | `sonnet` | medium | `think` |
+| Exploration, reprise de contexte, routage | `haiku` | low | — |
+
+La ligne `fable` (`/model claude-fable-5`) ne se prend pas par défaut : c'est le
+modèle le plus coûteux — **$10/$50 par MTok, deux fois Opus** — et il ne se
+justifie que si la tâche tient sur plusieurs heures ou traverse tout le dépôt.
+Sur un lot ordinaire, `opus` suffit.
+
+Overrides nommables par l'utilisateur : `fable`, `opus`, `sonnet`, `haiku`,
+`plan` (`/model opusplan`). Déléguer à un sous-agent `wn-*` bascule de modèle : ils
+sont déjà épinglés.
+
+### Délégation — le seul réflexe qui change la dépense
+
+Avant de lire plus de deux ou trois fichiers **soi-même**, déléguer à
+`wn-explorer` (ou à l'agent adapté). Son contexte est jeté à la fin ; ce qu'il
+lit n'est jamais repayé, alors qu'un fichier lu dans la session est relu à
+chaque tour suivant. Mesuré le 2026-08-01 : **28 fois moins cher par appel**.
+
+Ce qui remonte est la conclusion, pas les fichiers. Voir `CLAUDE.md`,
+« Économie de contexte ».
+
+### Mode d'exécution — solo par défaut
+
+| Situation | Mode |
+|---|---|
+| Aucun signal fort de largeur ni de confiance critique | **Solo** (défaut) |
+| Un seul axe borné : largeur modérée, ou une passe de vérification indépendante | **Multi-agent léger** — réutiliser une brique existante |
+| Plusieurs signaux : ≥ ~5 unités parallélisables, exhaustivité demandée, échelle > un contexte, **et** enjeu où un faux résultat coûte cher | **Ultracode** |
+
+Ultracode exige un **opt-in explicite** (mot-clé `ultracode`, réglage de session, ou
+demande de Workflow). Sans opt-in : ne rien lancer, proposer. C'est un mode
+d'exécution, jamais une autorisation.
 
 ## Décision
 
-À partir de la demande et des trois grilles chargées ci-dessus en contexte, produire en
-une passe :
+Produire en une passe : **route**, **modèle**, **mode**, et une **séquence** seulement
+si plus d'une étape est nécessaire (ordre des appels, modèle de chaque étape).
 
-1. **Route** — quel skill ou agent principal traite la demande (grille `/wn`).
-2. **Modèle** — alias `/model`, effort, mot-clé de réflexion (grille `/wn-model`).
-3. **Mode d'exécution** — solo / multi-agent léger / ultracode (grille `/wn-ultra`).
-4. **Séquence**, seulement si plus d'une étape est nécessaire — ordre des appels
-   (agent puis skill, skill puis revue, etc.), avec le modèle de chaque étape.
-
-Un override explicite de l'utilisateur (modèle nommé, `ultracode`/`leger`/`solo`, ou
-skill `/wn-*` précis) prime sur toute grille.
+Un override explicite de l'utilisateur — modèle nommé, `ultracode`/`leger`/`solo`, ou
+skill `/wn-*` précis — prime sur toute grille. <!-- mention-seule: wn -->
 
 ## Règle d'économie — sortie courte par défaut
 
-La majorité des demandes tombent sur le défaut : route = traitement direct, modèle
-Sonnet, solo, aucune délégation. Dans ce cas, **appliquer sans l'afficher**. N'afficher
-le routage que s'il change quelque chose d'observable :
+La majorité des demandes tombent sur le défaut : traitement direct, Sonnet, solo,
+aucune délégation. Dans ce cas, **appliquer sans afficher**. N'afficher le routage que
+s'il change quelque chose d'observable :
 
-- changement de modèle recommandé (`opus`, `haiku`, `fable`) ;
+- modèle autre que Sonnet ;
 - délégation à un sous-agent, ou déclenchement d'un skill spécialisé ;
-- mode d'exécution autre que solo ;
+- mode autre que solo ;
 - un garde-fou de `CLAUDE.md` s'applique (migration, Supabase, auth, clinique).
 
-Une demande conversationnelle simple (question directe, sans tâche ni changement de
-code) ne justifie jamais un plan affiché.
+Une question conversationnelle ne justifie jamais un plan affiché.
 
 ## Sortie (uniquement si non par défaut)
 
 1. Nature détectée (une phrase).
-2. Décision : route + modèle/alias/effort/réflexion + mode d'exécution, sur une seule
-   ligne si possible.
-3. Séquence hiérarchisée si plusieurs étapes (numérotée, un agent/skill par ligne,
-   modèle inclus).
-4. Garde-fous applicables (seulement ceux qui s'appliquent réellement à cette demande).
-5. Commande(s) exactes à exécuter, ou instruction explicite de passage en mode Plan si
-   des edits sont envisagés.
+2. Décision : route + modèle/effort/réflexion + mode, sur une ligne si possible.
+3. Séquence hiérarchisée si plusieurs étapes (un agent/skill par ligne, modèle inclus).
+4. Garde-fous qui s'appliquent réellement à cette demande.
+5. Commande(s) exactes, ou instruction de passage en mode Plan si des edits sont
+   envisagés.

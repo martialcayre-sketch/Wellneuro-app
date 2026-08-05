@@ -67,12 +67,131 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // qui n'a pas encore été appliqué. Une étiquette de version qui ment est pire
 // qu'une étiquette absente — c'est toute la leçon de la frontière ci-dessus.
 //
+// v6 → v7 (besoin 3 « Rythme alimentaire ») : le besoin 3, non évaluable depuis
+// l'origine, gagne une source — le sous-score `RYTHME_CHRONO` de l'Enquête SIIN
+// (SIIN52/53/54/55, 7 points), qui couvre exactement les deux variables
+// d'entrée que le guide des 12 besoins lui donne (ratio protéines/glucides des
+// repas, durée du jeûne nocturne). Le mapping change, donc l'étiquette change.
+//
+// v6 ne peut pas être partagée, pour la raison déjà écrite deux fois plus haut :
+// elle désigne le barème /90 SANS le besoin 3, et une étiquette qui recouvre
+// deux définitions rend le comparateur inopérant. v6 n'a jamais été écrite en
+// base — vérifié le 2026-07-28, `assessment_episodes` est vide — le bump ne
+// gèle donc aucune comparaison existante.
+//
+// Comme v6, v7 SUIT LE DRAPEAU : la forme courte ne déclare pas ce sous-score,
+// le besoin 3 reste non mesuré tant que `WN_ALI_01_SIIN57` est éteint, et
+// l'étiquette reste v5.
+//
 // NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
 // lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v6' : 'v5';
+//
+// v7 → v8 / v9 (2026-07-28, regroupement du besoin 5) : le besoin 5 passe d'une
+// moyenne simple de ses trois sources à deux groupes à parts égales (mouvement /
+// repos). Un patient SANS agenda clôturé garde exactement son score — le repos
+// se réduit alors au PSQI, et la moyenne des deux groupes redonne la moyenne
+// simple d'avant. Seuls les patients dont l'agenda est clôturé changent : le
+// sommeil y pesait 2/3 du besoin, il en pèse désormais la moitié.
+//
+// Ce changement de mapping s'applique dans LES DEUX positions du drapeau
+// alimentaire, il fait donc avancer chaque branche d'un cran : la branche forme
+// courte v5 → v8, la branche SIIN /90 + besoin 3 v7 → v9. On saute v6, réservée
+// par la note ci-dessus à un intermédiaire jamais servi. La règle de non-partage
+// d'étiquette impose ce bump : au merge, ce regroupement et la « règle de
+// nouveauté » de main revendiquaient tous deux v5 — deux définitions sous une
+// même étiquette, exactement ce que ce fichier interdit. Doctrine inchangée : un
+// épisode figé sous l'ancienne étiquette ne se compare pas aux nouvelles.
+// v8/v9 → v10/v11 (garde de recueil partiel du PSQI, 2026-08-04) : `Q_SOM_01`
+// cesse d'alimenter le besoin 5 quand sa passation est incomplète. Aucun poids
+// ni seuil ne bouge — c'est la DISPONIBILITÉ d'une source qui change, et le
+// fichier range explicitement le mapping parmi ce qui impose un bump.
+//
+// LA DIRECTION DE L'EFFET, parce qu'elle n'est pas celle qu'on croit. `Q_SOM_01`
+// est une source `inverser: true` : retirer une mesure BASSE y est
+// RASSURANT, pas protecteur. Un PSQI à 14/21 renseigné à 17 items sur 18 donnait
+// une couverture repos de 1 − 14/21 = 0,333, sous le seuil d'effondrement 0,34
+// du besoin 5 — donc fondation critique, donc score global plafonné à 50. La
+// garde le rend « non mesuré » : plus de fondation critique, plus de plafond, et
+// le score global REMONTE. Relevé en revue adversariale ; c'est précisément
+// pourquoi l'étiquette ne peut pas rester la même.
+//
+// Le précédent est dans ce fichier : v3 → v4 retirait `Q_SOM_06` du besoin 2
+// pour ce même plafond. Doctrine inchangée — un épisode figé en v8/v9 ne se
+// compare pas à un épisode v10/v11.
+//
+// CE QUE LE BUMP COÛTE, et c'est la seule conséquence VISIBLE par le praticien :
+// `versionScore` est stocké et gouverne les comparaisons (`trajectoire-partagee`,
+// `protocol/cabinet`). Le bump COUPE donc l'historique de momentum de tous les
+// patients — un T0 figé en v9 ne se soustrait plus à un T1 v11 —, et l'agrégat
+// cabinet retombe à `nTotal = 0`, donc masqué, jusqu'à ce que deux cycles v11
+// existent. Coût assumé, déjà payé à v3 → v4 ; il est écrit ici pour qu'il ne se
+// redécouvre pas dans un tableau de bord vide.
+//
+// ⚠ AMBIGUÏTÉ CRÉÉE, à qualifier désormais : le dépôt porte DEUX séries `v11`
+// simultanées — la consigne de synthèse (`anthropic.ts`) et ce score. Un `v11` nu
+// dans un log ou une conversation ne désigne plus rien. Même piège que le préfixe
+// `R` des campagnes, décrit dans `CLAUDE.md`.
+//
+// v10/v11 → v12/v13 (garde de recueil partiel du TFD, 2026-08-04) : `Q_GAS_01`
+// cesse d'alimenter le besoin 4 quand sa passation est incomplète. Même forme que
+// le bump précédent — c'est la DISPONIBILITÉ d'une source qui change, aucun poids
+// ni seuil ne bouge —, et `Q_GAS_01` est lui aussi une source `inverser: true`
+// (`max: 93`).
+//
+// L'EFFET VA DANS LES DEUX SENS, et une première rédaction n'en écrivait qu'un.
+// Relevé en revue adversariale ; c'est la seule chose que ce bloc doit dire sans
+// se tromper.
+//
+//   · TFD partiel et BAS (le cas qui motive la garde) — cinq items sur
+//     trente-et-un rendaient un total effondré, donc `1 − ratio` très HAUT :
+//     « besoin bien couvert » établi sur ce que le patient n'a pas dit. La garde
+//     le rend non mesuré, et la couverture BAISSE. C'est la correction.
+//   · TFD partiel et DÉJÀ SÉVÈRE — au-delà de `total ≥ 62`, la couverture tombe
+//     sous `SEUIL_EFFONDREMENT` (0,34) et le besoin 4 est une FONDATION CRITIQUE
+//     (voir `BESOINS_FONDATIONS_CRITIQUES`), ce qui plafonne le score global à 50.
+//     Le rendre non mesuré le sort aussi de cette liste : le plafond se lève et le
+//     score global REMONTE. Trente items sur trente-et-un, tous au maximum,
+//     tombent dans ce cas. Le seuil de 62 vaut **quand `Q_GAS_01` est la seule
+//     source répondue du besoin 4** : `Q_INF_01` l'alimente aussi, et la moyenne
+//     de groupe déplace alors le point de bascule. C'est le cas courant, pas le
+//     cas général — l'incise vient de la revue adversariale.
+//
+// La seconde branche est le COÛT assumé de D-014, pas un effet secondaire : une
+// bande ne se lit que sur l'instrument complet, y compris quand l'incomplet
+// accusait déjà. Elle est du même ordre que la perte de `R-GAS-01` décrite dans
+// `clinical/orientationRulesV1.ts`. Mesuré le 2026-08-04 avant de fermer le lot :
+// la production ne porte que DEUX passations `Q_GAS_01`, toutes deux complètes
+// (31/31) — aucun dossier vivant n'est dans l'une ou l'autre branche.
+//
+// La mécanique du bump est celle décrite plus haut et son coût est le même :
+// historique de momentum coupé, agrégat cabinet masqué jusqu'à deux cycles v13.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v13' : 'v12';
+
+/**
+ * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
+ *
+ * Même raison que le `max` du besoin 1 : un littéral (`7`) serait faux dans une
+ * des deux positions du drapeau sans qu'aucun test tournant dans l'autre ne le
+ * voie. Vaut 0 quand la forme servie ne déclare pas ce sous-score — la forme
+ * courte — et c'est sans conséquence : le moteur n'émet alors aucune valeur,
+ * `calculerCouvertureSource` rend `null` avant toute division.
+ */
+export const MAX_RYTHME_CHRONO = (() => {
+  const scoring = Q_ALI_01.scoring as {
+    bareme?: Array<{ id: string; points: number }>;
+    sousScoresBesoins?: Array<{ id: string; items: string[] }>;
+  };
+  const declaration = (scoring.sousScoresBesoins ?? []).find(s => s.id === 'RYTHME_CHRONO');
+  if (!declaration) return 0;
+  const bareme = scoring.bareme ?? [];
+  return declaration.items.reduce(
+    (somme, id) => somme + (bareme.find(e => e.id === id)?.points ?? 0),
+    0
+  );
+})();
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -108,9 +227,13 @@ export const SEUIL_EFFONDREMENT = 0.34;
 export const PLAFOND_FONDATION_CRITIQUE = 50;
 
 // Mapping besoin → questionnaire(s) existants (web/src/lib/questions.ts).
-// Besoins 2, 3, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
+// Besoins 2, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
 // catalogue actuel — non évaluables (retournent une couverture null), plutôt
-// que d'inventer une source. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
+// que d'inventer une source. Le besoin 2 en particulier ne peut PAS l'être par
+// un questionnaire : le guide lui donne des biomarqueurs pour seules variables
+// d'entrée (ferritine, zinc, magnésium, iode, sélénium, vitamine D, B9, B12).
+// Le besoin 3 a quitté cette liste le 2026-07-28 ; un test la fige désormais,
+// pour qu'un branchement futur ne s'y fasse pas en silence. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
 // pour la justification clinique de chaque source retenue.
 //
 // Toute entrée ajoutée ou retirée ici doit être répercutée sur le champ
@@ -122,18 +245,34 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
   // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
   2: [],
-  3: [],
+  // Besoin 3 « Rythme alimentaire (chronobiologie) ». Sous-score dédié, DISTINCT
+  // de la catégorie d'affichage `RYTHME_ALIMENTAIRE` (6 items, /10) : il ne
+  // porte que les 4 items correspondant aux variables d'entrée que le guide
+  // nomme. `inverser: false` — les points sont acquis quand le repère est
+  // atteint, plus haut vaut mieux.
+  3: [{ idQuestionnaire: 'Q_ALI_01', sousScore: 'RYTHME_CHRONO', max: MAX_RYTHME_CHRONO, inverser: false }],
   4: [
     { idQuestionnaire: 'Q_GAS_01', max: 93, inverser: true },
     { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true },
   ],
+  // Besoin 5 « Bouger et se reposer » — deux groupes à parts égales, MOUVEMENT
+  // et REPOS. Le repos se partage entre le questionnaire validé et l'agenda
+  // (2 / 1). Sans regroupement, la moyenne simple des trois sources donnait 2/3
+  // du besoin au sommeil : l'ajout d'une troisième source sommeil en v3 avait
+  // déplacé l'équilibre sans que ce soit une décision.
+  //
+  // Le groupe, et non des poids plats, parce qu'une pondération plate ne tient
+  // pas sa promesse quand une source manque : avec 3/2/1 et un agenda absent —
+  // le cas de presque tous les patients — le repos serait retombé à 2/5. Groupé,
+  // il garde son demi, et le score d'un patient sans agenda est inchangé.
   5: [
-    { idQuestionnaire: 'Q_SOM_01', max: 21, inverser: true },
-    { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false },
-    // Agenda du sommeil 21 nuits : score composite /100 (plus haut = mieux).
-    // Complète le PSQI ; absent tant que l'agenda n'est pas clôturé (couverture
-    // null, jamais 0). Barème /100 validé cliniquement le 2026-07-26.
-    { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false },
+    { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false, groupe: 'mouvement' },
+    { idQuestionnaire: 'Q_SOM_01', max: 21, inverser: true, groupe: 'repos', poids: 2 },
+    // Agenda du sommeil 21 nuits : indice longitudinal /100 (plus haut = mieux),
+    // niveau de preuve D. Il COMPLÈTE le PSQI, il ne le remplace pas — d'où un
+    // poids moindre dans le repos. Absent tant que l'agenda n'est pas clôturé,
+    // ou quand la couverture ne permet pas l'indice (couverture null, jamais 0).
+    { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false, groupe: 'repos', poids: 1 },
   ],
   6: [],
   7: [],
@@ -183,9 +322,14 @@ export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_INF_01: 'B',
   Q_SOM_01: 'A',
   Q_MOD_01: 'B',
-  // Agenda du sommeil : outil standard francophone, mais l'indice composite /100
-  // est une construction WellNeuro (pas de validation psychométrique tierce) → B.
-  Q_SOM_09: 'B',
+  // Agenda du sommeil. Le SUPPORT est un instrument standard (SIIN, Consensus
+  // Sleep Diary) ; l'INDICE composite /100 qui alimente « Mon équilibre » ne
+  // l'est pas — ni validation psychométrique tierce, ni cohorte de calibration,
+  // ni seuil publié pour l'écart-type du milieu de sommeil. C'est la valeur
+  // consommée ici, donc D (hypothèse WellNeuro) et non B : classer l'indice au
+  // niveau de son support ferait passer une construction maison pour un
+  // référentiel. Corrigé le 2026-07-27.
+  Q_SOM_09: 'D',
   Q_NEU_11: 'A',
   Q_STR_01: 'B',
   Q_STR_02: 'A',

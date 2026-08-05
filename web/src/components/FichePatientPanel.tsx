@@ -62,6 +62,74 @@ function getArrayField(scores: Record<string, unknown> | null, key: string): str
   return Array.isArray(value) ? value.map(String) : [];
 }
 
+/**
+ * Les SIX porteurs d'un découpage descriptif, ramenés à une même ligne.
+ *
+ * `dimensions` était seul rendu ; `components` (PSQI, QIF, Francis),
+ * `categories` (Berlin), `parts` (IDTAS-AE) et `phases` (5 mots de Dubois) ne
+ * l'étaient nulle part. Tant que ces moteurs fabriquaient un total, la colonne
+ * Score affichait au moins ce total. Depuis que le total tombe avec l'axe non
+ * mesuré (2026-07-29), elle n'affiche plus rien — un « — » qui se lit comme un
+ * incident technique, alors que les composantes réellement mesurées sont là.
+ *
+ * Deux formes de valeur (`total` ou `val`) et deux de dénominateur (`max` ou
+ * `maxTotal`) selon le moteur. Les catégories du Berlin, elles, ne portent pas
+ * de nombre du tout : leur mesure EST leur positivité.
+ */
+type AxeDescriptif = { cle: string; id: string; label: string; texte: string };
+
+function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescriptif[] {
+  // `apports` (2026-07-31) : deux grandeurs en UNITÉS PHYSIQUES, sans
+  // dénominateur — des grammes et des kilocalories par jour, pas un x/y. Sans
+  // ce porteur, un instrument qui calcule ce que sa description promet
+  // n'afficherait rien du tout au praticien.
+  const PORTEURS = ['dimensions', 'components', 'categories', 'parts', 'phases', 'apports'];
+  const sortie: AxeDescriptif[] = [];
+  for (const cle of PORTEURS) {
+    const axes = scores?.[cle];
+    if (!Array.isArray(axes)) continue;
+    for (const axe of axes as Array<Record<string, unknown>>) {
+      const valeur = [axe.total, axe.val, axe.count, axe.score]
+        .find(v => typeof v === 'number') as number | undefined;
+      const max = [axe.max, axe.maxTotal].find(v => typeof v === 'number') as number | undefined;
+      let texte: string;
+      if (typeof valeur === 'number') {
+        // Une unité écrite l'emporte sur le dénominateur : « 86,6 g/jour » est
+        // une mesure, « 86,6 » un nombre nu que le praticien devrait deviner.
+        const unite = typeof axe.unite === 'string' ? axe.unite : null;
+        if (unite) texte = `${valeur} ${unite}`;
+        else texte = typeof max === 'number' ? `${valeur}/${max}` : String(valeur);
+      } else if (axe.positive === true) {
+        texte = 'positive';
+      } else if (axe.positive === false) {
+        texte = 'négative';
+      } else {
+        // Jamais « — » : la distinction entre « pas de mesure » et « pas de
+        // donnée » est exactement ce que ce lot rend visible.
+        texte = 'non mesuré';
+      }
+
+      sortie.push({
+        cle,
+        id: `${cle}:${String(axe.id ?? sortie.length)}`,
+        label: String(axe.label ?? axe.id ?? ''),
+        texte,
+      });
+    }
+  }
+  return sortie;
+}
+
+function syntheseSansRedondanceSousScores(texte: string, aDesSousScores: boolean): string {
+  if (!aDesSousScores || !texte) return texte;
+  const marqueurs = ['. Détail — ', '. Rubriques à noter — '];
+  for (const marqueur of marqueurs) {
+    const idx = texte.indexOf(marqueur);
+    if (idx > 0) return texte.slice(0, idx).trim();
+  }
+  return texte;
+}
+
 function certificationBadge(certification: ScoreCertification | null) {
   if (!certification) return null;
   if (certification.source === 'drive' && certification.status === 'certifie') {
@@ -69,6 +137,12 @@ function certificationBadge(certification: ScoreCertification | null) {
   }
   if (certification.source === 'drive' && certification.status === 'ambigu') {
     return { label: 'Drive ambigu', variant: 'warning' as BadgeVariant };
+  }
+  if (certification.source === 'manuel_eortc' && certification.status === 'certifie') {
+    // Sans cette branche, le badge tombait sur « Non certifié » alors que le
+    // registre porte `scoring_verifie` et que le moteur suit le manuel officiel :
+    // la fiche contredisait le dossier.
+    return { label: 'Certifié manuel EORTC', variant: 'success' as BadgeVariant };
   }
   if (certification.status === 'a_verifier') {
     return { label: 'À vérifier', variant: 'warning' as BadgeVariant };
@@ -253,6 +327,19 @@ export function FichePatientPanel({
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
   const [loadingReponses, setLoadingReponses] = useState(true);
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
+  // Un échec de lecture n'est JAMAIS rendu comme « aucune demande » : ce serait
+  // la même affirmation fausse que celle corrigée ici, et elle laisserait le
+  // questionnaire verrouillé côté patient sans que rien ne le signale. Même
+  // discipline que `etatTrajectoire` plus bas.
+  const [etatCorrections, setEtatCorrections] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
+  // Vrai seulement si le serveur a confirmé avoir appliqué NOS filtres et
+  // compte en base plus de lignes qu'il n'en a rendues.
+  const [correctionsTronquees, setCorrectionsTronquees] = useState(false);
+  // Garde de fraîcheur : la lecture se relance au changement de patient et au
+  // clic de « Réessayer ». Sans elle, une réponse lente concernant le patient
+  // précédent écraserait celle du patient affiché — soit les demandes de
+  // correction d'un autre dossier, avec leur bouton « Débloquer ».
+  const generationCorrections = useRef(0);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
@@ -322,16 +409,55 @@ export function FichePatientPanel({
       .then((d: ReponsesApiResponse) => setReponses(d.reponses ?? []))
       .catch(() => setReponses([]))
       .finally(() => setLoadingReponses(false));
-
-    fetch('/api/praticien/patients')
-      .then(r => r.json())
-      .then((d: PatientsApiResponse) => {
-        setAssignationsModif(
-          (d.assignations ?? []).filter(a => a.emailPatient === email && a.statutReponses === 'modification_demandee')
-        );
-      })
-      .catch(() => setAssignationsModif([]));
   }, [data]);
+
+  // Demandes de correction du dossier affiché. Les deux filtres partent au
+  // serveur : appliqués en mémoire, ils l'étaient APRÈS la troncature à 40 de la
+  // route, et sur les assignations de TOUS les patients — une demande hors des
+  // 40 assignations les plus récentes du cabinet n'apparaissait nulle part et
+  // n'était donc jamais débloquée. La route trie par `dateAssignation desc` :
+  // ce sont précisément les dossiers anciens, ceux qu'on corrige le plus tard,
+  // qui tombaient hors fenêtre.
+  //
+  // Ne dépend plus de `data` : l'identifiant du patient suffit, et faire
+  // attendre ce signal la lecture de l'équilibre le retardait sans raison.
+  const chargerCorrections = useCallback(async () => {
+    const generation = ++generationCorrections.current;
+    setEtatCorrections('chargement');
+    const params = new URLSearchParams({ idPatient, statutReponses: 'modification_demandee' });
+    try {
+      const reponse = await fetch(`/api/praticien/patients?${params.toString()}`);
+      const payload = (await reponse.json()) as PatientsApiResponse;
+      if (!reponse.ok || payload.unavailable) throw new Error(payload.reason ?? 'exception');
+      if (generation !== generationCorrections.current) return;
+
+      // Second passage EN DÉFENSE, pas en filtre : c'est le serveur qui
+      // restreint, et c'est lui qui supprime la troncature. Celui-ci garantit
+      // seulement qu'aucune ligne d'un autre dossier ne s'affiche si la requête
+      // n'a pas été honorée (serveur antérieur à ces paramètres) ; il ne peut
+      // rien masquer que le serveur ait correctement rendu.
+      const liste = (payload.assignations ?? []).filter(
+        a => a.idPatient === idPatient && a.statutReponses === 'modification_demandee',
+      );
+      const meta = payload.assignationsMeta;
+      const filtresHonores =
+        meta !== undefined
+        && meta.idPatient === idPatient
+        && meta.statutReponses === 'modification_demandee';
+      setAssignationsModif(liste);
+      setCorrectionsTronquees(filtresHonores && meta.total > liste.length);
+      setEtatCorrections('chargees');
+    } catch {
+      if (generation !== generationCorrections.current) return;
+      setAssignationsModif([]);
+      setCorrectionsTronquees(false);
+      setEtatCorrections('erreur');
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void chargerCorrections();
+  }, [chargerCorrections]);
 
   // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
   // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
@@ -388,7 +514,13 @@ export function FichePatientPanel({
     (id: IdPhase): StatutPhase => {
       if (!data || 'unavailable' in data) return 'inconnu';
       const priorites = data.priorites;
-      if (id === 'patient') return assignationsModif.length > 0 ? 'en_attente' : 'fait';
+      // Une lecture en échec ne vaut pas « rien en attente » : sans cette
+      // branche, le rail affirmerait « renseignée » alors que l'état réel des
+      // demandes de correction n'a pas pu être établi.
+      if (id === 'patient') {
+        if (etatCorrections === 'erreur') return 'inconnu';
+        return assignationsModif.length > 0 ? 'en_attente' : 'fait';
+      }
       if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
       if (id === 'comprehension') {
         return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
@@ -414,7 +546,7 @@ export function FichePatientPanel({
       if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
       return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
     },
-    [data, assignationsModif, reponses, etatRuntime],
+    [data, assignationsModif, etatCorrections, reponses, etatRuntime],
   );
 
   // Navigation praticien : le choix manuel prime définitivement sur la
@@ -638,10 +770,21 @@ export function FichePatientPanel({
                   : [];
                 // Les dimensions DÉTAILLENT un total qui reste la mesure — elles
                 // ne le remplacent pas, contrairement aux sous-scores.
-                const dimensions = Array.isArray(scores?.dimensions)
-                  ? (scores!.dimensions as ScoreSubScore[])
-                  : [];
-                const miniSynthese = buildMiniSynthese(scores);
+                //
+                // Quatre autres porteurs disent la même chose sous d'autres noms
+                // — `components` (PSQI, QIF, Francis), `categories` (Berlin),
+                // `parts` (IDTAS-AE), `phases` (5 mots de Dubois) — et n'étaient
+                // rendus NULLE PART. Tant que leur moteur fabriquait un total,
+                // la ligne affichait au moins ce total ; depuis que le total
+                // tombe avec l'axe non mesuré (2026-07-29), elle n'affichait plus
+                // rien : un « — » qui se lit comme un incident technique, alors
+                // que les composantes RÉELLEMENT mesurées existent dans
+                // `scores_json`. Relevé en revue adversariale du même lot.
+                const axesDescriptifs = descriptifsDeScores(scores);
+                const miniSynthese = syntheseSansRedondanceSousScores(
+                  buildMiniSynthese(scores),
+                  subScores.length > 0,
+                );
                 return (
                   <tr key={r.idReponse} className="border-t border-border align-top">
                     <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
@@ -682,6 +825,21 @@ export function FichePatientPanel({
                               <span className="text-xs text-muted-foreground w-28 truncate" title={sub.label}>
                                 {sub.label}
                               </span>
+                              {/* La direction, quand l'instrument la définit. Sans elle,
+                                  « Fatigue 100/100 » et « Fonctionnement physique 100/100 »
+                                  s'affichent à l'identique alors qu'ils disent le contraire
+                                  l'un de l'autre. La consigne du modèle décrit ce champ
+                                  depuis la v12 ; le praticien y a droit aussi. */}
+                              {sub.sens && (
+                                <span
+                                  className="text-[10px] px-1 rounded bg-muted text-muted-foreground"
+                                  title={sub.sens === 'symptome'
+                                    ? 'Score élevé = symptômes plus importants'
+                                    : 'Score élevé = meilleur fonctionnement'}
+                                >
+                                  {sub.sens === 'symptome' ? '↑ symptômes' : '↑ mieux'}
+                                </span>
+                              )}
                               {typeof sub.total === 'number' && typeof sub.max === 'number' && (
                                 <ScoreZones
                                   value={sub.total}
@@ -708,15 +866,12 @@ export function FichePatientPanel({
                           s'afficher. Aucun instrument n'émet aujourd'hui les
                           deux clés, mais l'oubli inverse est exactement ce qui
                           a effacé le total du MMSE avant correction. */}
-                      {dimensions.length > 0 && (
+                      {axesDescriptifs.length > 0 && (
                         <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                          {dimensions.map(dim => (
-                            <div key={dim.id} className="flex items-baseline gap-1.5 whitespace-nowrap">
-                              <span className="w-28 truncate" title={dim.label}>{dim.label}</span>
-                              <span className="tabular-nums">
-                                {dim.total ?? '—'}
-                                {typeof dim.max === 'number' ? `/${dim.max}` : ''}
-                              </span>
+                          {axesDescriptifs.map(axe => (
+                            <div key={axe.id} className="flex items-baseline gap-1.5 whitespace-nowrap">
+                              <span className="w-28 truncate" title={axe.label}>{axe.label}</span>
+                              <span className="tabular-nums">{axe.texte}</span>
                             </div>
                           ))}
                         </div>
@@ -941,6 +1096,30 @@ export function FichePatientPanel({
         </div>
       )}
 
+      {/* Un échec de lecture ne se tait pas : sans ce bandeau, l'absence de
+          signal serait indiscernable d'une absence de demande — et le
+          questionnaire resterait verrouillé côté patient. Libellé de bouton
+          distinct de celui de la trajectoire : deux nœuds portant le même nom
+          accessible casseraient le mode strict des E2E. */}
+      {etatCorrections === 'erreur' && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">
+            Les demandes de correction n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
+          </span>
+          <button
+            type="button"
+            onClick={() => void chargerCorrections()}
+            className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Réessayer la lecture des corrections
+          </button>
+        </div>
+      )}
+
       {/* Signal permanent (B2) : une demande de correction patient doit rester
           perceptible quel que soit l'ONGLET affiché (« Les 12 besoins »,
           « Alimentation », « Trajectoire »…) et pas seulement dans le cockpit —
@@ -958,6 +1137,15 @@ export function FichePatientPanel({
               ? '1 demande de correction en attente de déblocage.'
               : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
           </span>
+          {/* Le plafond de la route s'applique désormais aux seules demandes de
+              CE dossier — inatteignable en pratique (18 assignations pour le
+              patient le plus fourni au 2026-07-29). S'il l'était un jour, le
+              dire vaut mieux qu'afficher un compte partiel comme un total. */}
+          {correctionsTronquees && (
+            <span className="min-w-0 font-medium">
+              Liste tronquée : ce dossier compte d’autres demandes, non affichées ici.
+            </span>
+          )}
           {!(ongletActif === 'cockpit' && phaseActive === 'patient') && (
             <button
               type="button"
@@ -1252,6 +1440,10 @@ export function FichePatientPanel({
               trajectoire={trajectoire}
               idPatient={idPatient}
               nomComplet={nomComplet}
+              // L'e-mail n'est passé que s'il désigne LE patient affiché : il
+              // sert à déclencher un envoi au patient, et `data` peut porter
+              // brièvement le dossier précédent après une navigation A→B.
+              emailPatient={data?.patient?.idPatient === idPatient ? data.patient.email : undefined}
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
             />

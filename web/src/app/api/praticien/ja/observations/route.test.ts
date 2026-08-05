@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma, listSnapshots, saveSnapshot } = vi.hoisted(() => ({
+const { getServerSession, prisma, listSnapshots, readSnapshot, saveSnapshot } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
   listSnapshots: vi.fn(),
+  readSnapshot: vi.fn(),
   saveSnapshot: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/food-observation/persistence', () => ({
   listJaObservationSnapshots: listSnapshots,
+  readJaObservationSnapshot: readSnapshot,
   saveJaObservationSnapshot: saveSnapshot,
 }));
 
@@ -66,6 +68,28 @@ describe('api/praticien/ja/observations', () => {
     getServerSession.mockResolvedValue(null);
     const res = await GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST'));
     expect(res.status).toBe(401);
+  });
+
+  // H-A : le filtre d'acteur est posé EN BASE. Appliqué après coup sur une
+  // fenêtre de 10 lignes tous acteurs — chaque activation praticien en écrivant
+  // deux — le panneau conclurait « aucune transmission du patient » alors qu'il
+  // en existe.
+  it('GET borne la liste à l’acteur demandé, en base', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    listSnapshots.mockResolvedValue([]);
+
+    await GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST&actor=patient'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, 'patient');
+  });
+
+  it('GET ignore un acteur inconnu plutôt que de le passer au domaine', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    listSnapshots.mockResolvedValue([]);
+
+    await GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST&actor=nimporte'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, undefined);
   });
 
   it('GET liste les snapshots si patient autorisé', async () => {
@@ -137,5 +161,83 @@ describe('api/praticien/ja/observations', () => {
     });
     expect(saveSnapshot).not.toHaveBeenCalled();
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+});
+
+// Lot 4 — le praticien lisait des compteurs ; il lit désormais ce que le patient
+// a écrit. Deux gardes tiennent cette lecture : le cloisonnement par patient, et
+// la distinction entre « introuvable » et « rien écrit ».
+describe('GET ?draftId — le contenu d’une transmission', () => {
+  beforeEach(() => {
+    getServerSession.mockResolvedValue({ user: { email: 'pro@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'pro@wellneuro.fr' });
+    prisma.journalAccesDossier.create.mockResolvedValue({});
+    readSnapshot.mockReset();
+    listSnapshots.mockReset();
+  });
+
+  const get = (query: string) =>
+    GET(new Request(`http://localhost/api/praticien/ja/observations?${query}`));
+
+  it('rend le contenu, mots libres compris', async () => {
+    readSnapshot.mockResolvedValue({
+      draftId: 'JA_1',
+      idPatient: 'PAT_TEST',
+      actor: 'patient',
+      tracesCount: 1,
+      journeesCount: 1,
+      traces: [{ traceId: 't1', localDate: '2026-07-28', issue: 'fait', motLibre: 'plus simple la veille' }],
+      journees: [{ journeeId: 'j1', localDate: '2026-07-28', typeJournee: 'repos' }],
+      pauses: [],
+      plans: [],
+      solutions: [],
+    });
+
+    const res = await get('idPatient=PAT_TEST&draftId=JA_1');
+    const json = (await res.json()) as { ok: boolean; snapshot: { traces: { motLibre?: string }[] } };
+
+    expect(res.status).toBe(200);
+    expect(json.snapshot.traces[0].motLibre).toBe('plus simple la veille');
+    expect(readSnapshot).toHaveBeenCalledWith('PAT_TEST', 'JA_1');
+  });
+
+  // « Introuvable » et « ce patient n'a rien écrit » ne se lisent pas de la même
+  // façon en consultation : un 200 vide serait le second.
+  it('rend 404 — jamais un 200 vide — quand la transmission n’est pas celle de ce patient', async () => {
+    readSnapshot.mockResolvedValue(null);
+    const res = await get('idPatient=PAT_TEST&draftId=JA_AUTRE');
+    const json = (await res.json()) as { ok: boolean; reason: string };
+    expect(res.status).toBe(404);
+    expect(json.reason).toBe('snapshot_introuvable');
+  });
+
+  it('refuse un patient hors périmètre avant même de lire', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+    const res = await get('idPatient=PAT_TEST&draftId=JA_1');
+    expect(res.status).toBe(403);
+    expect(readSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET — la troncature est dite', () => {
+  beforeEach(() => {
+    getServerSession.mockResolvedValue({ user: { email: 'pro@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'pro@wellneuro.fr' });
+    prisma.journalAccesDossier.create.mockResolvedValue({});
+    listSnapshots.mockReset();
+  });
+
+  const get = () => GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST'));
+
+  it('signale une fenêtre saturée', async () => {
+    listSnapshots.mockResolvedValue(Array.from({ length: 10 }, (_, i) => ({ draftId: `JA_${i}` })));
+    const json = (await (await get()).json()) as { tronquee: boolean };
+    expect(json.tronquee).toBe(true);
+  });
+
+  it('ne signale rien quand la fenêtre ne l’est pas', async () => {
+    listSnapshots.mockResolvedValue([{ draftId: 'JA_1' }, { draftId: 'JA_2' }]);
+    const json = (await (await get()).json()) as { tronquee: boolean };
+    expect(json.tronquee).toBe(false);
   });
 });

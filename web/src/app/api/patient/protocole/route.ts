@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
 
 // Lecture patient minimale du protocole (C2A LOT-02). Prouve le chemin d'accès
 // patient protégé et l'absence d'accès inter-patient, sans exposer le contenu
@@ -44,7 +45,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientProtocoleRe
 
     // Scopé au patient de l'assignation vérifiée : aucun accès inter-patient.
     const draft = await prisma.protocolDraft.findFirst({
-      where: { idPatient: ass.idPatient, status: 'practitioner_reviewed' },
+      where: { idPatient: ass.idPatient, status: 'practitioner_reviewed', ...EXCLURE_INSTANTANES_JA },
       orderBy: { createdAt: 'desc' },
       select: { status: true, reviewedAt: true },
     });

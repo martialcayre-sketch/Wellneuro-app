@@ -29,6 +29,10 @@ const allowedStatuses = new Set(['certifié', 'mappé', 'ambigu', 'n/a', 'absent
 
 const certifiedFixtures = new Set([
   'Q_CAN_01',
+  // `Q_PED_02` entre ici le 2026-08-01, avec sa débaptisation : il porte
+  // désormais une fixture qui vérifie l'ABSENCE de total global et le calcul de
+  // ses quatre axes. Elle est plus bas dans ce fichier.
+  'Q_PED_02',
   'Q_CAN_02',
   'Q_GEO_01',
   'Q_GEO_02',
@@ -55,7 +59,6 @@ const certifiedFixtures = new Set([
   'Q_NEU_10',
   'Q_NEU_12',
   'Q_PED_01',
-  'Q_PED_03',
   'Q_PNE_01',
   'Q_SOM_02',
   'Q_SOM_05',
@@ -185,13 +188,16 @@ const verdictRegistre = verifierRegistreInstruments({
   constantsSource: fs.readFileSync(path.join(root, 'web/src/lib/equilibre/constants.ts'), 'utf8'),
   matriceDrive: mapping,
   evidence,
+  catalogueSource: fs.readFileSync(path.join(root, 'web/src/lib/questionnaires-catalog.ts'), 'utf8'),
+  bibliothequeSource: fs.readFileSync(path.join(root, 'web/src/lib/bibliotheque.ts'), 'utf8'),
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
-console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter, ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
+console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter dont ${verdictRegistre.aCompleterSansPublicationPossible} sans publication d'origine possible (instruments créés localement), ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
 
 const supportedScoringTypes = new Set([
   'agenda_sommeil',
+  'apports_ponderes',
   'audit',
   'berlin',
   'bms_average',
@@ -201,6 +207,7 @@ const supportedScoringTypes = new Set([
   'ecab',
   'francis',
   'group_majority',
+  'eortc',
   'had',
   'horne',
   'idtas_ae',
@@ -228,6 +235,41 @@ const unknownScoringTypes = ids
   .filter(type => type && !supportedScoringTypes.has(type));
 assertEqual([...new Set(unknownScoringTypes)], [], 'chaque scoring.type déclaré doit être connu du check');
 
+// Les tables de cotation EORTC sont recopiées à la main depuis les manuels : une
+// coquille d'identifiant y est invisible — l'item disparaît de sa moyenne sans
+// erreur, et le score de l'échelle glisse en silence. Trois contrôles de forme,
+// tous vérifiables sans le manuel :
+//   - chaque item d'une échelle existe dans le questionnaire ;
+//   - aucun item ne sert deux échelles (« no item occurs in more than one
+//     scale », manuel C30) ;
+//   - aucun item du questionnaire n'est oublié de toutes les échelles.
+ids.filter(id => QUESTIONNAIRE_CATALOGUE[id].scoring?.type === 'eortc').forEach(id => {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const auQuestionnaire = new Set(
+    (def.sections || []).flatMap(s => (s.questions || []).map(q => q.id))
+  );
+  const vus = new Map();
+  (def.scoring.echelles || []).forEach(e => {
+    assert(
+      !auQuestionnaire.has(e.id),
+      `${id} : l'échelle '${e.id}' porte le même identifiant qu'un ITEM du questionnaire — `
+      + `deux grandeurs sans rapport se retrouveraient sous un même nom dans la charge du modèle`
+    );
+    assert(e.range === 3 || e.range === 6, `${id}/${e.id} : étendue ${e.range} inattendue (3 ou 6)`);
+    assert(
+      ['fonctionnelle', 'symptome', 'globale'].includes(e.sens),
+      `${id}/${e.id} : sens '${e.sens}' inconnu`
+    );
+    (e.items || []).forEach(item => {
+      assert(auQuestionnaire.has(item), `${id}/${e.id} : item '${item}' absent du questionnaire`);
+      assert(!vus.has(item), `${id} : l'item '${item}' sert deux échelles (${vus.get(item)} et ${e.id})`);
+      vus.set(item, e.id);
+    });
+  });
+  const orphelins = [...auQuestionnaire].filter(item => !vus.has(item));
+  assertEqual(orphelins, [], `${id} : items du questionnaire rattachés à aucune échelle EORTC`);
+});
+
 ids.forEach(id => {
   const result = calculateScore(id, defaultAnswers(id));
   assert(!result.error, `${id} ne doit pas retourner une erreur avec des réponses synthétiques`);
@@ -236,33 +278,62 @@ ids.forEach(id => {
 
 function assertCertification(result, expectedStatus, idQuestionnaire) {
   assert(result.certification, `${idQuestionnaire} doit exposer une métadonnée certification`);
-  assertEqual(result.certification.source, 'drive', `${idQuestionnaire} doit être sourcé Drive`);
+  // La provenance n'est plus « Drive ou rien » depuis le 2026-07-30 : la cotation
+  // des deux EORTC vient de leurs manuels officiels, pas du support de formation
+  // qui les reproduit. Confondre les deux effacerait justement la distinction que
+  // la campagne de certification cherche à établir — d'où le nom propre.
+  const provenances = ['drive', 'manuel_eortc'];
+  assert(
+    provenances.includes(result.certification.source),
+    `${idQuestionnaire} : provenance '${result.certification.source}' inconnue (attendu ${provenances.join(' ou ')})`
+  );
   assertEqual(result.certification.status, expectedStatus, `${idQuestionnaire} statut certification incorrect`);
 }
 
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 1)).total, 28, 'Q_CAN_01 score minimal');
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 4)).total, 112, 'Q_CAN_01 score maximal');
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 2)).total, 56, 'Q_CAN_01 score médian');
+// Les deux EORTC ne rendent plus de somme brute depuis le 2026-07-30 : le manuel
+// officiel ne définit aucun score global d'instrument, et celui que WellNeuro
+// fabriquait portait une bande de tête inatteignable côté BR23. Les assertions
+// qui suivent portent donc sur les ÉCHELLES 0-100, pas sur un total.
+// Le détail des formules et de l'inversion des items 44-46 est prouvé dans
+// `web/src/lib/eortc.guard.test.ts` ; ici on garde le contrat de sortie.
+const c30Bas = calculateScore('Q_CAN_01', fill('Q_CAN_01', 1));
+assertEqual(c30Bas.total, null, 'Q_CAN_01 ne rend aucun score global');
+assertEqual(
+  c30Bas.subScores.find(s => s.id === 'C30PF2').total, 100,
+  'Q_CAN_01 fonctionnement physique au maximum quand rien ne gêne'
+);
+assertEqual(
+  c30Bas.subScores.find(s => s.id === 'C30FA').total, 0,
+  'Q_CAN_01 fatigue au minimum quand rien ne gêne'
+);
 const c30Missing = fill('Q_CAN_01', 1);
 delete c30Missing.QL1;
 assertEqual(calculateScore('Q_CAN_01', c30Missing).missingIds, ['QL1'], 'Q_CAN_01 missingIds');
-assertCertification(calculateScore('Q_CAN_01', fill('Q_CAN_01', 1)), 'ambigu', 'Q_CAN_01');
+assertCertification(c30Bas, 'certifie', 'Q_CAN_01');
 
 const brMasked = fill('Q_CAN_02', 1);
 brMasked.BR4 = 1;
 brMasked.BR15 = 1;
 const brMaskedScore = calculateScore('Q_CAN_02', brMasked);
-assertEqual(brMaskedScore.total, 21, 'Q_CAN_02 conditionnels masqués total');
-assertEqual(brMaskedScore.notApplicable, ['BR5', 'BR16'], 'Q_CAN_02 notApplicable');
-assertEqual(calculateScore('Q_CAN_02', fill('Q_CAN_02', 4)).total, 92, 'Q_CAN_02 score maximal');
-assertEqual(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)).total, 46, 'Q_CAN_02 score médian');
-assertCertification(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)), 'ambigu', 'Q_CAN_02');
+assertEqual(brMaskedScore.total, null, 'Q_CAN_02 ne rend aucun score global');
+// L'ordre suit désormais celui des échelles, pas celui des items : on compare des ensembles.
+assertEqual([...brMaskedScore.notApplicable].sort(), ['BR16', 'BR5'], 'Q_CAN_02 notApplicable');
+// Sans objet, et pas manquant : la distinction est celle du manuel.
+assertEqual(
+  brMaskedScore.subScores.find(s => s.id === 'BRSEE').notApplicable, true,
+  'Q_CAN_02 plaisir sexuel sans objet quand il n’y a pas eu d’activité'
+);
+assertEqual(
+  calculateScore('Q_CAN_02', fill('Q_CAN_02', 4)).subScores.find(s => s.id === 'BRSEF').total, 100,
+  'Q_CAN_02 fonctionnement sexuel maximal quand l’intérêt est maximal (items inversés)'
+);
+assertCertification(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)), 'certifie', 'Q_CAN_02');
 
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 0)).total, 0, 'Q_PED_03 score minimal');
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 3)).total, 324, 'Q_PED_03 score maximal');
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 1)).total, 108, 'Q_PED_03 score médian');
 assertEqual(questions('Q_PED_03').length, 108, 'Q_PED_03 doit contenir 108 items scorés');
-assertCertification(calculateScore('Q_PED_03', fill('Q_PED_03', 0)), 'certifie', 'Q_PED_03');
+assertCertification(calculateScore('Q_PED_03', fill('Q_PED_03', 0)), 'ambigu', 'Q_PED_03');
 
 assertEqual(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 'min')).total, 0, 'Q_NEU_03 score minimal');
 assertEqual(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 'max')).total, 74, 'Q_NEU_03 score maximal');
@@ -761,6 +832,74 @@ assertCertification(uroJournal, 'certifie', 'Q_URO_02');
 // découpage : le profil affiché serait faux SOUS un total juste, et rien ne le
 // signalerait. Ces invariants sont génériques : ils couvrent tout instrument
 // qui déclarera des dimensions, pas seulement les deux d'aujourd'hui.
+// ── Sous-scores SERVIS à un besoin (`sousScoresBesoins`) ────────────────────
+//
+// Clé distincte de `dimensions` (profil affiché) et de `subScores` (que le mur
+// ci-dessous interdit ici). Elle alimente `BESOIN_SOURCES` : une déclaration
+// muette rendrait un besoin définitivement non évaluable, sans erreur nulle
+// part — le `max` étant dérivé de la même déclaration, il resterait cohérent.
+// Sa jumelle `dimensions` a ce garde depuis l'origine ; elle ne l'avait pas.
+const instrumentsASousScoresBesoins = Object.entries(QUESTIONNAIRE_CATALOGUE)
+  .filter(([, def]) => Array.isArray(def?.scoring?.sousScoresBesoins) && def.scoring.sousScoresBesoins.length > 0)
+  .map(([id]) => id);
+
+// Anti-vacuité, liée au drapeau : la déclaration n'existe que sur la forme SIIN,
+// donc ce garde est légitimement vide en position éteinte — mais il doit mordre
+// dans l'autre, sinon il ne garde rien là où il compte.
+if (process.env.WN_ALI_01_SIIN57 === 'true') {
+  assert(instrumentsASousScoresBesoins.length > 0, 'position SIIN : aucun sous-score servi déclaré — ce garde ne garderait rien');
+}
+
+for (const id of instrumentsASousScoresBesoins) {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const declares = def.scoring.sousScoresBesoins;
+  const itemsServis = questions(id).map(question => question.id);
+
+  const ids = declares.map(sousScore => sousScore.id);
+  assertEqual(ids.filter((x, i) => ids.indexOf(x) !== i), [], `${id} : deux sous-scores servis portent le même identifiant`);
+  const idsDimensions = (def.scoring.dimensions || []).map(dimension => dimension.id);
+  assertEqual(ids.filter(x => idsDimensions.includes(x)), [], `${id} : un sous-score servi porte l'identifiant d'une dimension — la lecture par BESOIN_SOURCES deviendrait ambiguë`);
+
+  for (const sousScore of declares) {
+    assert(sousScore.items.length > 0, `${id} : sous-score servi \`${sousScore.id}\` sans aucun item`);
+    assertEqual(sousScore.items.filter(item => !itemsServis.includes(item)), [], `${id} : sous-score servi \`${sousScore.id}\` déclarant un item inexistant`);
+    const doublons = sousScore.items.filter((item, index) => sousScore.items.indexOf(item) !== index);
+    assertEqual(doublons, [], `${id} : sous-score servi \`${sousScore.id}\` répète un item — son maximum dérivé serait faux`);
+  }
+
+  // Déclaré ⇒ réellement calculé. Seule la branche `seuils_points` les rend :
+  // les déclarer ailleurs les rendrait muets, et le besoin non évaluable.
+  const resultat = calculateScore(id, fillByOptionBoundary(id, 'max'));
+  assert(Array.isArray(resultat.scoresBesoins), `${id} : sousScoresBesoins déclarés mais non calculés — seul le scoring \`seuils_points\` les rend (type servi : \`${resultat.type}\`)`);
+  assertEqual(
+    resultat.scoresBesoins.map(sousScore => sousScore.id).sort(),
+    ids.slice().sort(),
+    `${id} : les sous-scores calculés ne correspondent pas aux sous-scores déclarés`
+  );
+  for (const sousScore of resultat.scoresBesoins) {
+    assert(typeof sousScore.max === 'number' && sousScore.max > 0, `${id} : sous-score servi \`${sousScore.id}\` sans maximum dérivé — une couverture y serait calculée par division par zéro`);
+  }
+
+  // Un sous-score servi n'a qu'UN porteur. `extraireValeurBrute`
+  // (`equilibre/score.ts`) lit `subScores` ET `scoresBesoins` : émettre les
+  // deux rendrait la lecture ambiguë, et le `max` de `BESOIN_SOURCES` —
+  // calibré sur un seul — donnerait une couverture fausse sur l'autre. Le
+  // runtime refuse désormais de trancher (il rend « pas de mesure ») ; ce
+  // garde rend le cas inatteignable plutôt que seulement inoffensif.
+  //
+  // Jeu complet ET jeu partiel, comme le garde jumeau des `dimensions` : le
+  // moteur a un retour anticipé « aucune réponse correspondante », et un
+  // porteur qui n'apparaîtrait que sur cette branche échapperait à une passe
+  // qui ne remplit qu'au maximum.
+  for (const [libelle, reponses] of [
+    ['jeu complet', fillByOptionBoundary(id, 'max')],
+    ['jeu partiel', Object.fromEntries(Object.entries(fillByOptionBoundary(id, 'max')).filter((_, index) => index % 3 !== 0))],
+  ]) {
+    const servi = calculateScore(id, reponses);
+    assert(!servi.subScores, `${id} (${libelle}) : émet \`scoresBesoins\` ET \`subScores\` — un sous-score servi doit avoir un seul porteur, sinon sa lecture par BESOIN_SOURCES devient ambiguë`);
+  }
+}
+
 const instrumentsADimensions = Object.entries(QUESTIONNAIRE_CATALOGUE)
   .filter(([, def]) => Array.isArray(def?.scoring?.dimensions) && def.scoring.dimensions.length > 0)
   .map(([id]) => id);
@@ -863,17 +1002,46 @@ for (const id of instrumentsADimensions) {
   const ALI01_SERT_UNE_CONDUITE = QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.maxTotal !== 90;
   const porteursAttendus = [
     ...(ALI01_SERT_UNE_CONDUITE ? ['Q_ALI_01'] : []),
+    // `Q_NEU_06` (MMT) est SORTI de cette liste le 2026-07-31, et c'est une
+    // perte voulue : sa reconstruction depuis la source a supprimé ses quatre
+    // `protocol:`. Ils portaient des conduites du cabinet ; celles de la source
+    // — « Faire un MMSE », « avis spécialisé demandé » — sont désormais les
+    // libellés de bande eux-mêmes. La conduite n'a pas disparu, elle a cessé
+    // d'être un ajout local voyageant avec l'instrument.
+    // `Q_TAB_04` est SORTI le 2026-08-01, et c'est une perte voulue de la même
+    // famille : ses quatre conduites vivaient dans ses bandes d'interprétation,
+    // et les bandes ont été retirées. Elles avaient été alignées le 2026-07-31
+    // sur celles de sa source — qui sont bien les siennes, 0-5 / 6-15 / 16-36 se
+    // lisant à la dernière page de WN-SRC-0495 — mais appliquées à des items qui
+    // ne sont PAS ceux pour lesquels elles ont été établies : sur les 32 items
+    // relevés un à un, le servi ne partage AUCUN item avec le Know Cannabis Test
+    // au sens strict — zéro paire de même question ET mêmes modalités, neuf de
+    // même construit seulement, sept items propres à chaque côté (9 + 7 = 16).
+    // Une grille de lecture validée sur un instrument, posée sur un autre, ne
+    // mesure rien.
     'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
-    'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
+    'Q_NEU_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01',
   ].sort();
   assertEqual(
     porteursServis.sort(),
     porteursAttendus,
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
-  // 12 déclarants avec le dépistage court, 11 avec l'Enquête SIIN : même
-  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier.
-  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 12 : 11;
+  // ATTENTION AU MOT : les 11 / 10 ci-dessous sont les PORTEURS SERVIS comptés
+  // juste au-dessus, pas les DÉCLARANTS que l'assertion qui suit attend (10 / 9).
+  // L'écart d'un vient de `Q_SOM_03`, expliqué douze lignes plus haut. Une
+  // rédaction antérieure disait « déclarants » ici, à trois lignes du compteur
+  // qu'elle décrivait.
+  // 11 porteurs servis avec le dépistage court, 10 avec l'Enquête SIIN : même
+  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier. DEUX de moins
+  // dans les deux positions qu'avant le 2026-07-31, et les deux départs sont de
+  // DATES DIFFÉRENTES — les quatre `protocol:` de `Q_NEU_06` ont disparu avec sa
+  // reconstruction depuis la source LE 2026-07-31, ceux de `Q_TAB_04` avec le
+  // retrait de ses bandes empruntées LE 2026-08-01. Le compte n'a donc baissé
+  // que d'UN chacun de ces deux jours. Une rédaction antérieure datait les deux
+  // du 2026-08-01 : elle faisait chercher deux départs là où il n'y en avait
+  // qu'un, et c'est le genre d'écart qui fait rouvrir un banc pour rien.
+  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 10 : 9;
   assert(
     attendusPorteurs.size === declarantsAttendus,
     `${declarantsAttendus} instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`,
@@ -892,7 +1060,45 @@ assertEqual(porteursHorsTotal, ['Q_URO_01'], '`horsTotal` sort une sous-échelle
 // un `horsTotal` posé par erreur amputerait leur score sans qu'un test bronche.
 assertEqual(calculateScore('Q_MOD_01', fillByOptionBoundary('Q_MOD_01', 'max')).total, 180, 'Q_MOD_01 total maximal');
 assertEqual(calculateScore('Q_TAB_03', fillByOptionBoundary('Q_TAB_03', 'max')).total, 84, 'Q_TAB_03 total maximal');
-assertEqual(calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max')).total, 84, 'Q_PED_02 total maximal');
-assertEqual(calculateScore('Q_ALI_03', fillByOptionBoundary('Q_ALI_03', 'max')).total, 36, 'Q_ALI_03 total maximal');
+// `Q_PED_02` ne rend PLUS de total depuis le 2026-08-01 : débaptisé, il déclare
+// `sansTotalGlobal`. Aucune source ne donne de sens à un /84 sur cette grille, et
+// ce nombre partait en `scorePrincipal`, s'affichait « Score brut : 62 » au Fil —
+// sans dénominateur ni bande — et arrivait au modèle de synthèse. La fixture
+// vérifie donc l'ABSENCE de total, et que les quatre axes se calculent quand
+// même : sans la seconde moitié, un moteur qui ne rendrait plus rien passerait.
+const pedMax = calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max'));
+assertEqual(pedMax.total, null, 'Q_PED_02 ne rend aucun total global');
+assertEqual(pedMax.subScores.map(s => s.total), [15, 27, 18, 24], 'Q_PED_02 totaux par axe');
+// `Q_ALI_03` n'est plus un `subscore` depuis le 2026-07-31 : reconstruit depuis
+// sa source, il rend deux GRANDEURS d'unités différentes (g de protéines,
+// kilocalories) et AUCUN total global — les additionner n'aurait pas de sens.
+// La fixture est donc un cas RÉALISTE, calculé à la main, plutôt qu'un plafond :
+// le maximum de cette grille est un patient qui mangerait dix grandes portions
+// de viande par jour, il ne prouve rien d'utile.
+//
+// Un homme : une portion moyenne de viande par jour (25 g), trois portions de
+// deux œufs et deux de poisson par semaine (3/7 × 13 et 2/7 × 30), un lait, un
+// yaourt, un fromage, trois pains, et le forfait masculin de 15 g.
+{
+  const cas = { AP2: 1, AP4: 3, AP5: 2, AP6: 1, AP7: 1, AP8: 1, AP10: 3, AP13: 15,
+                AP14: 150, AP15: 1, AP20: 1, AP21: 1, AP23: 1 };
+  const r = calculateScore('Q_ALI_03', cas);
+  assertEqual(r.proteinesG, 86.6, 'Q_ALI_03 apport protéique du cas de référence');
+  assertEqual(r.caloriesKcal, 2342, 'Q_ALI_03 apport calorique du cas de référence');
+  assertEqual(r.total, null, 'Q_ALI_03 ne rend AUCUN total global — deux unités ne s’additionnent pas');
+  // Et sur une passation vide, aucun chiffre : « 0 g de protéines par jour » est
+  // un signal de dénutrition sévère, et le fabriquer est le défaut qui a fait
+  // retirer le bloc `monnier` le 2026-07-27. Deux gardes se superposent ici — la
+  // garde générale de passation vide (#451) répond AVANT le moteur, et le moteur
+  // porte la sienne pour le cas où une réponse existe sans qu'aucune ligne du
+  // barème ne soit renseignée. On éprouve les deux.
+  const vide = calculateScore('Q_ALI_03', {});
+  assertEqual(vide.scored, false, 'Q_ALI_03 passation vide — aucune mesure');
+  assert(vide.proteinesG === undefined || vide.proteinesG === null,
+    'Q_ALI_03 passation vide — aucun apport protéique ne doit sortir');
+  const horsBareme = calculateScore('Q_ALI_03', { AP99: 3 });
+  assert(horsBareme.proteinesG === undefined || horsBareme.proteinesG === null,
+    'Q_ALI_03 réponse étrangère au barème — aucun apport ne doit sortir');
+}
 
 console.log(`[questionnaires] OK — ${ids.length} questionnaires documentés, fixtures scoring certifiées validées.`);

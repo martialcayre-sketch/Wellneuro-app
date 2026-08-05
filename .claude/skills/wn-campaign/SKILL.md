@@ -28,6 +28,11 @@ Options utiles (`create`) :
 
 ## Création
 
+**Un texte libre passe d'abord par `/wn-reprompt`.** C'est ici que la reformulation
+rend le plus : les lots héritent de l'ambiguïté du brief, et une campagne mal cadrée la
+répète sur chacun de ses trois à huit lots au lieu d'une fois. Passer directement à
+l'extraction si le brainstorming nomme déjà objectif, périmètre et résultat attendu.
+
 1. Extraire un titre court, l’objectif, les contraintes, décisions, questions ouvertes et dépendances.
 2. Choisir entre 3 et 8 lots atomiques.
 3. Exécuter `node scripts/wn-campaign.mjs create "<titre>" --lots <N>`.

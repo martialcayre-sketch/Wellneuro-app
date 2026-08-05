@@ -13183,7 +13183,7 @@
     "prescriptive": false,
     "primaryNotebook": "13 — Instruments du cabinet",
     "secondaryNotebooks": [],
-    "sourceVersion": null,
+    "sourceVersion": "Know Cannabis Test (Roel Kerssemakers, clinique Jellinek, Amsterdam, 2000) — traduction française du support S.I.I.N., sans numéro ni date de version au document ; le français ne figure pas parmi les langues déclarées par l'éditeur.",
     "contentHash": null,
     "rightsStatus": "to_verify",
     "clinicalReviewStatus": "not_reviewed",
@@ -13191,8 +13191,8 @@
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
     "requiredAction": "Certifier questionnaire",
-    "comment": "Domaine Tabacologie, volet patient. Instrument rattaché à Q_TAB_04 (rapprochement thématique, version à confirmer). Version, licence, population, items, seuils et scoring à comparer à la définition servie.",
-    "auditDate": "2026-07-25"
+    "comment": "Domaine Tabacologie, volet patient. IDENTIFIÉ SUR PIÈCE le 2026-08-01 : c'est le KNOW CANNABIS TEST, de Roel Kerssemakers, clinique Jellinek, Amsterdam — questionnaire d'entretien structuré en 16 items, publié en 2000. Pièce : OFDT / Fédération Addiction, « Guide pratique des principaux outils de repérage de l'usage problématique de cannabis chez les adolescents », synthèse d'Ivana Obradovic, janvier 2013, fiche p. 32 — https://www.ofdt.fr/sites/ofdt/files/2023-11/field_media_document-4486-doc_num--explnum_id-17230-.pdf. Le guide donne le score total de 0 à 36 et ses trois bandes (0-5 « Pas de risque spécifique », 6-15 « Risque avéré », 16-36 « Risque sérieux »), et reproduit l'original anglais, dont l'item 1 — « How often do you smoke cannabis? A few times a year » — est la contrepartie exacte du « Quelques fois par an » de ce document (traduction fidèle, non un mot-pour-mot : les deux textes ne sont pas dans la même langue). CE VOLET NE PORTE PAS la grille de résultats : elle n'est qu'au volet pro (WN-SRC-0495). TROIS FAITS DE LA PIÈCE, à ne pas perdre : population-cible « jeunes » ; passation par ENTRETIEN STRUCTURÉ, non auto-administrée ; langues déclarées néerlandais, flamand, norvégien, anglais — LE FRANÇAIS N'Y EST PAS. Ce document est donc une traduction française non listée d'un instrument tiers sous droits. `rightsStatus` est LAISSÉ à `to_verify` sur arbitrage praticien du 2026-08-01 : l'identité est établie, les droits de la traduction ne le sont pas, et le registre ne doit pas dire acquis ce qui ne l'est pas. `authorityClass` reste `INTERNAL_SOURCE_TO_CLASSIFY` faute d'une valeur au vocabulaire décrivant un instrument tiers reproduit dans un support de cours — à trancher séparément, pas par effet de bord. Rattaché à Q_TAB_04 par l'HISTOIRE, non par le contenu : le servi a été débaptisé le 2026-08-01 précisément parce qu'il n'est pas cet instrument (relevé item par item au registre des instruments).",
+    "auditDate": "2026-08-01"
   },
   {
     "sourceId": "WN-SRC-0495",
@@ -13209,7 +13209,7 @@
     "prescriptive": false,
     "primaryNotebook": "13 — Instruments du cabinet",
     "secondaryNotebooks": [],
-    "sourceVersion": null,
+    "sourceVersion": "Know Cannabis Test (Roel Kerssemakers, clinique Jellinek, Amsterdam, 2000) — traduction française du support S.I.I.N., sans numéro ni date de version au document ; le français ne figure pas parmi les langues déclarées par l'éditeur.",
     "contentHash": null,
     "rightsStatus": "to_verify",
     "clinicalReviewStatus": "not_reviewed",
@@ -13217,8 +13217,8 @@
     "lifecycleStatus": "raw",
     "vigilance": "Élevée",
     "requiredAction": "Certifier questionnaire",
-    "comment": "Domaine Tabacologie, volet pro. Instrument rattaché à Q_TAB_04 (rapprochement thématique, version à confirmer). Version, licence, population, items, seuils et scoring à comparer à la définition servie.",
-    "auditDate": "2026-07-25"
+    "comment": "Domaine Tabacologie, volet pro. IDENTIFIÉ SUR PIÈCE le 2026-08-01 : c'est le KNOW CANNABIS TEST, de Roel Kerssemakers, clinique Jellinek, Amsterdam — questionnaire d'entretien structuré en 16 items, publié en 2000. Pièce : OFDT / Fédération Addiction, « Guide pratique des principaux outils de repérage de l'usage problématique de cannabis chez les adolescents », synthèse d'Ivana Obradovic, janvier 2013, fiche p. 32 — https://www.ofdt.fr/sites/ofdt/files/2023-11/field_media_document-4486-doc_num--explnum_id-17230-.pdf. CE VOLET PORTE LA GRILLE de résultats à sa dernière page (« De 0 à 5 points : Risque faible. De 6 à 15 : Risque réel. De 16 à 36 : Risque aigu. ») — mêmes bornes que la pièce, LIBELLÉS TRADUITS : le guide écrit « Pas de risque spécifique / Risque avéré / Risque sérieux ». Entre les 16 items et cette grille, le document ne donne AUCUN point par option — c'est ce qui a fait abandonner la reconstruction du servi le 2026-08-01. TROIS FAITS DE LA PIÈCE, à ne pas perdre : population-cible « jeunes » ; passation par ENTRETIEN STRUCTURÉ, non auto-administrée ; langues déclarées néerlandais, flamand, norvégien, anglais — LE FRANÇAIS N'Y EST PAS. Ce document est donc une traduction française non listée d'un instrument tiers sous droits. `rightsStatus` est LAISSÉ à `to_verify` sur arbitrage praticien du 2026-08-01 : l'identité est établie, les droits de la traduction ne le sont pas, et le registre ne doit pas dire acquis ce qui ne l'est pas. `authorityClass` reste `INTERNAL_SOURCE_TO_CLASSIFY` faute d'une valeur au vocabulaire décrivant un instrument tiers reproduit dans un support de cours — à trancher séparément, pas par effet de bord. Rattaché à Q_TAB_04 par l'HISTOIRE, non par le contenu : le servi a été débaptisé le 2026-08-01 précisément parce qu'il n'est pas cet instrument (relevé item par item au registre des instruments).",
+    "auditDate": "2026-08-01"
   },
   {
     "sourceId": "WN-SRC-0496",

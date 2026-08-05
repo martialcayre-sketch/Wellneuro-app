@@ -14,3 +14,5 @@ handoffs:
 Commence en audit. Vérifie chaque affirmation contre le dépôt. Avec une demande explicite d’application, corrige seulement les documents.
 
 Ne supprime, déplace, fusionne ou archive aucun fichier sans confirmation distincte. Ne réécris jamais l’historique de SESSION_LOG.
+
+Pour tracer un changement, pose un fragment `changelog.d/AAAA-MM-JJ-slug.md` ; n’édite jamais le haut de `CHANGELOG.md`.

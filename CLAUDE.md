@@ -102,20 +102,65 @@ entière et non pour la migration qui l'avait motivée.
 ## Documentation de référence
 
 - Vue d'ensemble : `docs/claude/README.md`
+- Handoffs de lot (un fragment daté par lot, jamais de fichier partagé) : `docs/claude/handoffs/README.md`
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
 - Règles de sécurité et clinique : `docs/claude/REGLES_CRITIQUES.md`
 - Workflow de dev : `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
 - Rôles des machines et des sessions (worktrees, garde-fous de test) : `docs/ROLES_MACHINES.md`
-- Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
+- Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
+- Historique des chantiers techniques (lots R0→R10) : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Roadmap produit (séries D/R/E, priorités) : `docs/ROADMAP_PRODUIT.md`
 
-Les deux coexistent, aucune n'est dépréciée : périmètres disjoints, frontière
-écrite en tête de chacune. **Le préfixe `R` désigne trois séries sans rapport**
-— technique (R6 = stabilisation build/tests), produit (R6 = workflow RDV) et
-réserves d'audit (R6 = double source roadmap). Toujours qualifier la série ; un
-`R6` nu est ambigu.
+Aucune des trois n'est dépréciée : périmètres disjoints, frontière écrite en
+tête de chacune. **Le préfixe `R` désigne trois séries sans rapport** —
+technique (R6 = stabilisation build/tests, historique dans
+`HISTORIQUE_CHANTIERS_TECHNIQUES.md`), produit (R6 = workflow RDV) et réserves
+d'audit (R6 = double source roadmap). Toujours qualifier la série ; un `R6` nu
+est ambigu.
+
+## Économie de contexte — le poste de dépense réel
+
+Mesuré le 2026-08-01 sur 13 jours et 35 194 appels : **chaque requête relit
+~202 000 tokens de contexte pour produire ~600 tokens de réponse.** 93 % de la
+consommation est côté entrée, dont **0,03 % de texte neuf** — tout le reste est
+du contexte déjà lu, relu à chaque tour.
+
+D'où la seule règle qui compte : **un token entré dans le contexte est repayé à
+chaque tour suivant** (~37 tours par session). Un fichier de 50 000 tokens lu au
+tour 3 coûte 34 relectures, pas une lecture.
+
+Trois gestes, par rendement décroissant :
+
+1. **Ne pas faire entrer le volume.** `Grep`/`Glob` pour localiser *avant* de
+   lire ; `Read` avec `offset`/`limit` sur un gros fichier ; rediriger une sortie
+   volumineuse vers un fichier et n'en lire que la partie utile.
+2. **Déléguer l'investigation volumineuse à un sous-agent.** Son contexte est
+   jeté à la fin : rien de ce qu'il a lu n'est jamais repayé. Mesuré — un appel
+   `wn-explorer` (44 k de contexte) coûte **28 fois moins** qu'un appel Opus
+   (224 k). C'est le contexte isolé qui paie, pas le tarif du modèle.
+3. **`/clear` entre deux sujets sans rapport.** Une session longue repaie son
+   début à chaque tour.
+
+**Ce qui ne paie pas :** raccourcir les réponses (la sortie est 8,5 % du coût),
+et router les lectures vers un modèle bon marché sans les isoler (la lecture pure
+est 3,5 %). Écrire court reste utile pour la lisibilité — pas pour la dépense.
+
+## Parcours type d'une tâche
+
+| Étape | Geste | Qui |
+|---|---|---|
+| 1. Situer | localiser les fichiers, vérifier les hypothèses contre le dépôt | **sous-agent** (`wn-explorer`) dès que ça dépasse deux ou trois fichiers |
+| 2. Cadrer | périmètre, risques, palier de test, gardes applicables | session (`/wn-plan`, ou `/wn-lot` sur un lot de campagne) |
+| 3. Écrire | mode Plan, puis édition bornée au périmètre | session |
+| 4. Valider | palier T1/T2/T3, sortie redirigée puis relue | session |
+| 5. Revoir | diff, sécurité, clinique | `/wn-review` ; sous-agent `wn-reviewer` si migration/auth |
+| 6. Clore | statut, journal, promotions, fragment `docs/claude/handoffs/` | `/wn-finish` puis `/wn-handoff write` |
+| 7. Livrer | PR, CI, merge | `/wn-pr` puis `/wn-merge` |
+
+L'étape 1 est celle qui décide du coût de toutes les autres : ce qu'elle fait
+entrer dans le contexte est relu jusqu'à la fin de la session.
 
 ## Commandes utiles
 
@@ -129,6 +174,8 @@ cd web && npm run test:e2e         # parcours E2E Playwright seuls (démarre nex
 cd web && npm run test:worktree    # réplique locale du job CI verify, E2E inclus
 bash scripts/check_no_secrets.sh          # anti-secrets, dépôt entier
 bash scripts/check_no_secrets.sh --staged # anti-secrets, lignes indexées seules
+node scripts/wn-cycle.mjs                 # phase du cycle de lot et geste suivant
+node scripts/wn-cycle.mjs --appliquer     # + resynchronise ACTIVE_CAMPAIGN.md et .wn/state.json
 ```
 
 ### Trois paliers de validation
@@ -168,6 +215,20 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
   `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
   sur les parcours**, elle n'exécute pas Playwright.
+- **Handoff par fragments, comme le changelog.** Ne pas réécrire un fichier de
+  reprise partagé : `/wn-handoff write` pose
+  `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, et le handoff courant est le
+  dernier au tri. Même motif que `changelog.d/` — un créneau unique que deux
+  branches réécrivent entre en conflit à tous les coups, et le 2026-08-04 en a
+  perdu trois. Convention : `docs/claude/handoffs/README.md`.
+- **La clôture passe avant la PR, pas après le merge.** `/wn-finish` puis
+  `/wn-handoff write` s'écrivent sur la branche vivante, et partent dans la PR du
+  lot. Le merge est un squash (`--squash --delete-branch`) : ce qui s'écrit
+  ensuite n'est plus dans l'ascendance de `main` et coûte une seconde PR de doc —
+  c'est ce qui a produit les PR #547 et #548 le 2026-08-03, après #545. En cas de
+  doute sur la phase, `node scripts/wn-cycle.mjs` ; il sort en échec quand la
+  fenêtre est déjà fermée. Une fois fermée, écrire depuis `main`, **jamais** en
+  rebranchant sur la branche squashée.
 - Ouvrir la PR avec un corps via `--body-file` et un diff d'une seule finalité,
   puis **attendre son CI sans le sonder en boucle** (idiome ci-dessous) ; avant
   d'annoncer une PR prête à merger, en **lire** le résultat — les E2E n'y sont pas
@@ -178,17 +239,41 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   c'est ce qui a fait échouer cinq merges le 2026-07-21. Repli : `node
   scripts/changelog-collate.mjs`. Détail : `changelog.d/README.md`.
 
-### Attendre le CI d'une PR sans le sonder (idiome, ex-`/wn-pr`)
-
-Un seul appel bloquant en tâche de fond, qui rend la main dès que les checks se
-figent — plutôt que des `gh pr checks` / `gh pr view` répétés (le 2026-07-20, une
-session a produit 81 appels de sondage pour l'information que cette boucle rend en
-un seul) :
+### Attendre le CI d'une PR — un script, plus un idiome
 
 ```bash
-until [ -z "$(gh pr checks <N> --json bucket --jq '.[]|select(.bucket=="pending")' 2>/dev/null)" ]; do sleep 20; done
-gh pr checks <N>
+node scripts/wn-attendre-ci.mjs <N>     # un seul appel bloquant, en tâche de fond
 ```
+
+Un seul appel bloquant remplace le sondage répété (le 2026-07-20, une session a
+produit 81 appels de `gh pr checks` pour l'information que cet appel rend en un
+seul). Mais la boucle `until … bucket=="pending"` qui tenait ce rôle jusqu'au
+2026-08-03 **ne distinguait pas « aucun check en attente » de « aucun check du
+tout »** : elle rendait la main sur deux checks Vercel verts quand `verify`
+n'avait jamais été créé. C'est arrivé sur la PR #550, et le correctif a dû être
+refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
+
+| Code | Sens | Geste |
+|---|---|---|
+| `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
+| `1` | un check obligatoire a échoué | lire le log, corriger |
+| `2` | un check obligatoire **n'a pas tourné** — absent, ou gelé en `action_required` | le script nomme **toutes** les causes applicables ; ne pas merger |
+| `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
+| `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
+| `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
+
+**`0` est le seul code qui autorise à annoncer une PR prête.** Les cinq autres
+disent, chacun à sa façon, qu'on ne peut pas l'affirmer — y compris `4`, qui
+couvre le cas où la liste des checks obligatoires n'a pas pu être lue : ne
+sachant plus ce qu'il fallait attendre, le script se tait plutôt que de replier
+en silence sur `verify`.
+
+La liste des checks attendus vient de la **protection de branche** (`verify`
+aujourd'hui), pas d'une constante : un second check rendu obligatoire est suivi
+sans toucher au script. Ce qu'il ne fait pas : merger, ou dire s'il faut merger.
+Un même nom porté par **deux runs** (le cas des branches `campaign/**`, que
+`ci.yml` déclenche sur `push` *et* sur `pull_request`) n'est vert que si les
+deux le sont — le rouge ne se laisse pas écraser par l'ordre du tableau.
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).

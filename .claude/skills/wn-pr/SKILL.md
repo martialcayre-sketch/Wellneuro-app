@@ -7,7 +7,7 @@ effort: medium
 
 # WellNeuro — préparation de PR
 
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`git diff --stat`
 !`git log -n 5 --oneline`
 
@@ -25,21 +25,40 @@ Sans `apply` : ne créer ni branche, ni commit, ni push, ni PR.
 
 Avec `apply` : branche et commit locaux autorisés. Le push, la création ou le merge d’une PR nécessitent encore une demande explicite claire.
 
+**Modèle et réflexion selon le diff.** Si les fichiers du diff relèvent d'une
+classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration, <!-- mention-seule: wn-lot -->
+Auth), rédiger la section « risques » via `Agent(subagent_type: "wn-reviewer")`
+avec le mot-clé `think hard`/`think harder` dans le prompt, plutôt qu'en
+session — la description d'une PR de migration mérite le même effort que sa
+revue.
+
 ## Attendre le CI sans le sonder en boucle
 
-Un seul appel, en tâche de fond, qui rend la main dès que les checks se figent :
+Un seul appel, en tâche de fond :
 
 ```bash
-until [ -z "$(gh pr checks <N> --json bucket --jq '.[]|select(.bucket=="pending")' 2>/dev/null)" ]; do sleep 20; done
-gh pr checks <N>
+node scripts/wn-attendre-ci.mjs <N>
 ```
 
 Ne pas enchaîner `gh pr checks` / `gh pr view` manuellement : le 2026-07-20 la
-session a produit 81 appels de sondage pour l'information que cette boucle rend
-en un seul.
+session a produit 81 appels de sondage pour l'information que cet appel rend en
+un seul.
+
+Et ne pas revenir à la boucle `until … bucket=="pending"` qu'il remplace : elle
+confondait « aucun check en attente » avec « aucun check du tout », et rendait
+donc la main sur deux checks Vercel verts quand `verify` n'avait jamais été créé
+(PR #550, le 2026-08-03). Le script sort en **`2`** dans ce cas et nomme toutes
+les causes applicables ; **`0` est le seul code qui autorise à annoncer une PR
+prête** — les cinq autres, `4` et `5` compris, disent chacun à sa façon qu'on ne
+peut pas l'affirmer. Codes de sortie et périmètre : `CLAUDE.md`, section
+« Attendre le CI d'une PR ».
 
 Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test`
 n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
+
+Une fois la PR ouverte, la suite du cycle (CI, régime de merge courant, exception
+migration/auth, merge et nettoyage) est du ressort de `/wn-merge`, pas de ce <!-- mention-seule: wn-merge -->
+skill.
 
 ## Corps de PR
 

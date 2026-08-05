@@ -29,7 +29,7 @@
   (`/portail/[token]`, flux principal) fonctionnels ; le flux
   `/patient/[idAssignation]` est conservé en compatibilité legacy.
 - Synthèse IA (Anthropic SDK, prompt caching préparé) et envoi booklet livrés.
-- 67 questionnaires portés avec moteur de scoring (`web/src/lib/questions.ts`).
+- 64 questionnaires portés avec moteur de scoring (`web/src/lib/questions.ts`).
 - Pilotage opérationnel actif : architecture campagnes C0/C0-UX/C1…C5
   (`docs/claude/campagnes/README.md`, `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`).
 

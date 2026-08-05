@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FichePatientPanel } from './FichePatientPanel';
 import { estOngletFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
@@ -55,10 +55,21 @@ function decisionCard(surcharges: Partial<DecisionCard> = {}): DecisionCard {
 type Options = {
   runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
   assignationsModif?: boolean;
+  // Comportement de `GET /api/praticien/patients` :
+  // - `erreur` : charge d'indisponibilité (session expirée) ;
+  // - `tronque` : le serveur a honoré les filtres mais compte plus de lignes
+  //   en base qu'il n'en rend ;
+  // - `filtresIgnores` : serveur antérieur aux paramètres — il rend la ligne
+  //   d'un AUTRE dossier et n'écho aucun filtre.
+  patients?: 'defaut' | 'erreur' | 'tronque' | 'filtresIgnores';
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
+  // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
+  // où un bouton d'assignation peut exister — donc la seule où le garde
+  // d'identité du destinataire est observable.
+  orientation?: 'inactif' | 'actif';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
-  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable';
+  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable' | 'subscores-detail';
 };
 
 // Passation dont le résultat enregistré n'est pas une mesure (réservoir
@@ -154,6 +165,47 @@ const REPONSES_A_DIMENSIONS_DEGRADEES = {
   ],
 };
 
+const REPONSES_A_SUBSCORES_AVEC_DETAIL = {
+  reponses: [
+    {
+      idReponse: 'REP005',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_C',
+      titre: 'Instrument à sous-scores avec détail global',
+      dateSoumission: '2026-07-05T10:00:00.000Z',
+      scorePrincipal: 14,
+      interpretation: 'Perturbation modérée',
+      scoresParsed: {
+        type: 'subscore',
+        interpretation: { label: 'Perturbation modérée', color: 'warning' },
+        subScores: [
+          { id: 'S1', label: 'Axe 1', total: 8, max: 10, interpretation: { label: 'Perturbation modérée', color: 'warning' } },
+          { id: 'S2', label: 'Axe 2', total: 6, max: 10, interpretation: { label: 'Perturbation légère', color: 'warning' } },
+        ],
+      },
+      subScoreRanges: null,
+    },
+    {
+      idReponse: 'REP006',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_D',
+      titre: 'Instrument à sous-scores avec rubriques à noter',
+      dateSoumission: '2026-07-06T10:00:00.000Z',
+      scorePrincipal: 16,
+      interpretation: 'Perturbation modérée',
+      scoresParsed: {
+        type: 'subscore',
+        interpretation: { label: 'Perturbation modérée', color: 'warning' },
+        subScores: [
+          { id: 'S1', label: 'Axe alpha', total: 9, max: 10, interpretation: { label: 'Perturbation majeure', color: 'danger' } },
+          { id: 'S2', label: 'Axe beta', total: 7, max: 10, interpretation: { label: 'Perturbation légère', color: 'warning' } },
+        ],
+      },
+      subScoreRanges: null,
+    },
+  ],
+};
+
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
 // Un T0 confirmé seul ne constitue PAS une réévaluation (A8-2).
 function cycleTrajectoire(j21Mesure: boolean) {
@@ -170,6 +222,19 @@ function cycleTrajectoire(j21Mesure: boolean) {
     momentum: null,
   };
 }
+
+// Demande de correction du patient fictif Sophie Nicola. `idPatient` est la clé
+// sur laquelle la fiche restreint désormais — côté serveur, et en défense côté
+// client : sans lui, la ligne d'un autre dossier passerait.
+const ASSIGNATION_MODIF = {
+  idAssignation: 'ASG001',
+  idPatient: 'PAT001',
+  emailPatient: 'sophie.nicola@example.test',
+  statutReponses: 'modification_demandee',
+  titre: 'Questionnaire sommeil',
+  idQuestionnaire: 'NEU_03',
+  correctionCommentaire: 'Je me suis trompée sur une question.',
+};
 
 function stubFetch(options: Options = {}) {
   const runtime = options.runtime ?? 'unavailable';
@@ -196,20 +261,31 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
       if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
+      if (options.reponses === 'subscores-detail') return ok(REPONSES_A_SUBSCORES_AVEC_DETAIL);
       return ok(REPONSES);
     }
     if (url.includes('/api/praticien/patients')) {
+      const scenario = options.patients ?? 'defaut';
+      if (scenario === 'erreur') {
+        return ok({ patients: [], assignations: [], unavailable: true, reason: 'unauthenticated' }, 401);
+      }
+      // Serveur antérieur aux paramètres : il rend la ligne d'un AUTRE dossier
+      // et n'écho aucun filtre. Rien de tout cela ne doit atteindre l'écran.
+      if (scenario === 'filtresIgnores') {
+        return ok({ assignations: [{ ...ASSIGNATION_MODIF, idPatient: 'PAT999' }] });
+      }
+      const assignations = assignationsModif ? [ASSIGNATION_MODIF] : [];
       return ok({
-        assignations: assignationsModif
-          ? [{
-              idAssignation: 'ASG001',
-              emailPatient: 'sophie.nicola@example.test',
-              statutReponses: 'modification_demandee',
-              titre: 'Questionnaire sommeil',
-              idQuestionnaire: 'NEU_03',
-              correctionCommentaire: 'Je me suis trompée sur une question.',
-            }]
-          : [],
+        assignations,
+        assignationsMeta: {
+          // `total` > lignes rendues = plafond atteint, d'autres demandes
+          // existent en base pour ce dossier.
+          total: scenario === 'tronque' ? assignations.length + 3 : assignations.length,
+          plafond: 40,
+          statut: null,
+          statutReponses: 'modification_demandee',
+          idPatient: 'PAT001',
+        },
       });
     }
     if (url.includes('/api/praticien/trajectoire')) {
@@ -250,6 +326,30 @@ function stubFetch(options: Options = {}) {
       if (runtime === 'unauthenticated') return ok({ status: 'unavailable', reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       return ok({ status: 'unavailable', reason: 'exception', error: 'Indisponible.' });
     }
+    if (url.includes('/api/praticien/orientation')) {
+      if ((options.orientation ?? 'inactif') === 'inactif') {
+        return ok({ ok: true, actif: false, version: 'v1', message: 'Orientation en cours de constitution.' });
+      }
+      return ok({
+        ok: true,
+        actif: true,
+        version: 'v1',
+        sha256: 'sha-test',
+        recommandations: [
+          {
+            cible: { type: 'pack', packId: 'pack_sommeil_chronobiologie' },
+            idPackBase: 'PACK_SOMMEIL_CHRONO',
+            priorite: 1,
+            niveau: 'approfondissement',
+            objectifs: [],
+            needIds: [],
+            dejaAssigne: false,
+            dejaRepondu: false,
+            motifs: [{ regleId: 'R-SOM-01', conditions: ['PSQI élevé'], claims: [] }],
+          },
+        ],
+      });
+    }
     if (url.includes('/api/praticien/protocoles/versions')) return ok({ ok: true, active: null, history: [] });
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
     if (url.includes('/api/praticien/protocoles/checkins')) return ok({ ok: true, resume: null });
@@ -263,13 +363,21 @@ function stubFetch(options: Options = {}) {
 }
 
 async function rendreFiche(options: Options = {}) {
-  stubFetch(options);
+  const fetchMock = stubFetch(options);
   render(
     <C5FeatureProvider enabled={false}>
       <FichePatientPanel idPatient="PAT001" />
     </C5FeatureProvider>,
   );
   await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+  return fetchMock;
+}
+
+/** URLs demandées à `GET /api/praticien/patients`, dans l'ordre d'appel. */
+function urlsPatients(fetchMock: ReturnType<typeof stubFetch>): string[] {
+  return fetchMock.mock.calls
+    .map(appel => String(appel[0]))
+    .filter(url => url.includes('/api/praticien/patients'));
 }
 
 describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
@@ -650,6 +758,23 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     expect(within(ligneSansTotal).getByText('3/4')).toBeTruthy();
   });
 
+  it('sous-scores : la synthèse n’affiche pas la clause de détail déjà visible en colonnes', async () => {
+    await rendreFiche({ reponses: 'subscores-detail' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligneDetail = (await screen.findByText('Instrument à sous-scores avec détail global')).closest('tr')!;
+    expect(ligneDetail.textContent).toContain('Synthèse : Perturbation modérée');
+    expect(ligneDetail.textContent).not.toContain('Détail —');
+    expect(within(ligneDetail).getByText('Axe 1')).toBeTruthy();
+    expect(within(ligneDetail).getByText('8/10')).toBeTruthy();
+
+    const ligneRubriques = (await screen.findByText('Instrument à sous-scores avec rubriques à noter')).closest('tr')!;
+    expect(ligneRubriques.textContent).toContain('Synthèse : Perturbation modérée');
+    expect(ligneRubriques.textContent).not.toContain('Rubriques à noter —');
+    expect(within(ligneRubriques).getByText('Axe alpha')).toBeTruthy();
+    expect(within(ligneRubriques).getByText('9/10')).toBeTruthy();
+  });
+
   it('passation non interprétable : la ligne DIT pourquoi, au lieu de trois tirets muets', async () => {
     await rendreFiche({ reponses: 'non-interpretable' });
     fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
@@ -683,5 +808,197 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     expect(estOngletFiche('inconnu')).toBe(false);
     expect(estOngletFiche(undefined)).toBe(false);
     expect(estOngletFiche(42)).toBe(false);
+  });
+});
+
+// Les demandes de correction étaient filtrées EN MÉMOIRE (dossier + statut de
+// réponse) après la troncature à 40 de `GET /api/praticien/patients`, sur les
+// assignations de tous les patients. Une demande hors des 40 assignations les
+// plus récentes du cabinet n'apparaissait nulle part et n'était donc jamais
+// débloquée — le questionnaire restait verrouillé côté patient, sans signal.
+describe('FichePatientPanel — demandes de correction (filtre serveur)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('les deux filtres partent au serveur, jamais après la troncature', async () => {
+    const fetchMock = await rendreFiche({ assignationsModif: true });
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+
+    const urls = urlsPatients(fetchMock);
+    expect(urls.length).toBeGreaterThan(0);
+    for (const url of urls) {
+      const params = new URL(url, 'http://test.local').searchParams;
+      expect(params.get('idPatient')).toBe('PAT001');
+      expect(params.get('statutReponses')).toBe('modification_demandee');
+    }
+  });
+
+  it('un échec de lecture n’est pas « aucune demande » — il le dit, et le rail n’affirme rien', async () => {
+    await rendreFiche({ patients: 'erreur' });
+
+    expect(await screen.findByText(/n’ont pas pu être lues/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Réessayer la lecture des corrections' })).toBeTruthy();
+    // Sans cette discipline, le rail afficherait « renseignée » : une affirmation
+    // d'absence alors que l'état réel n'a pas pu être établi.
+    const patient = screen.getByRole('tab', { name: /Patient/i });
+    expect(patient.textContent).toContain('indéterminée');
+    expect(patient.textContent).not.toContain('renseignée');
+  });
+
+  it('« Réessayer » relance la lecture et lève le bandeau d’échec', async () => {
+    const base = stubFetch({ assignationsModif: true });
+    let appels = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.includes('/api/praticien/patients')) {
+          appels += 1;
+          if (appels === 1) return Promise.reject(new Error('coupure réseau'));
+        }
+        return base(input);
+      }),
+    );
+
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+    expect(await screen.findByText(/n’ont pas pu être lues/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer la lecture des corrections' }));
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    expect(screen.queryByText(/n’ont pas pu être lues/i)).toBeNull();
+  });
+
+  it('une réponse tardive concernant l’autre dossier n’écrase pas celui affiché', async () => {
+    // La garde de fraîcheur est seule à couvrir ce cas : le second filtrage
+    // client se referme sur l'idPatient de SA requête, donc la réponse périmée
+    // passe son propre filtre sans difficulté.
+    const base = stubFetch();
+    let appels = 0;
+    let libererPremiere: (() => void) | null = null;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: unknown) => {
+        const url = String(input);
+        if (!url.includes('/api/praticien/patients')) return base(input);
+        appels += 1;
+        if (appels === 1) await new Promise<void>(resolve => { libererPremiere = resolve; });
+        const cible = new URL(url, 'http://test.local').searchParams.get('idPatient');
+        const assignations = cible === 'PAT001' ? [ASSIGNATION_MODIF] : [];
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            assignations,
+            assignationsMeta: {
+              total: assignations.length,
+              plafond: 40,
+              statut: null,
+              statutReponses: 'modification_demandee',
+              idPatient: cible,
+            },
+          }),
+        };
+      }),
+    );
+
+    const { rerender } = render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(appels).toBe(1));
+
+    // Le praticien ouvre un autre dossier avant que la première lecture aboutisse.
+    rerender(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT002" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(appels).toBe(2));
+    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+
+    // …puis la réponse du premier dossier arrive. Elle ne doit rien afficher :
+    // ce serait la demande de correction d'un patient sur la fiche d'un autre,
+    // avec son bouton « Débloquer ».
+    await act(async () => {
+      libererPremiere!();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+  });
+
+  it('la troncature est dite au lieu d’être tue', async () => {
+    await rendreFiche({ assignationsModif: true, patients: 'tronque' });
+
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    expect(screen.getByText(/Liste tronquée/i)).toBeTruthy();
+  });
+
+  it('contrôle négatif — rien n’est dit d’une troncature quand le compte correspond', async () => {
+    // Sans lui, afficher la mention inconditionnellement passerait au vert.
+    await rendreFiche({ assignationsModif: true });
+
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    expect(screen.queryByText(/Liste tronquée/i)).toBeNull();
+  });
+
+  it('serveur qui ignore les paramètres : la ligne d’un autre dossier n’atteint pas l’écran', async () => {
+    await rendreFiche({ assignationsModif: true, patients: 'filtresIgnores' });
+
+    await waitFor(() => expect(screen.getByRole('tablist', { name: 'Cycle clinique' })).toBeTruthy());
+    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+    // Et l'on n'affirme rien sur la troncature : les filtres n'ayant pas été
+    // honorés, le `total` rendu ne parle pas du même ensemble que la liste.
+    expect(screen.queryByText(/Liste tronquée/i)).toBeNull();
+  });
+});
+
+// Garde d'identité du destinataire (LOT-06, relevé à la relecture de clôture).
+//
+// Le panneau d'orientation calcule ses recommandations sur `idPatient` ; le seul
+// point d'assignation, lui, identifie le patient par son EMAIL. Les deux
+// viennent de deux sources, et rien ne vérifiait qu'elles désignent le même
+// dossier — or ce bouton déclenche un e-mail. Sur une navigation A→B, une
+// réponse `equilibre` en retard laisse `data` sur A pendant que `idPatient` vaut
+// déjà B : l'e-mail serait parti au patient précédent.
+describe('FichePatientPanel — destinataire de l’assignation depuis l’orientation', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('propose l’assignation quand le dossier chargé EST le patient affiché', async () => {
+    stubFetch({ orientation: 'actif' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" ongletInitial="trajectoire" />
+      </C5FeatureProvider>,
+    );
+
+    expect(await screen.findByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
+  });
+
+  it('retire le bouton quand le dossier chargé n’est PAS le patient affiché', async () => {
+    // Le stub rend toujours PAT001 : rendre la fiche de PAT002 simule exactement
+    // la fenêtre où `data` porte encore le dossier précédent.
+    stubFetch({ orientation: 'actif' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT002" ongletInitial="trajectoire" />
+      </C5FeatureProvider>,
+    );
+
+    // La recommandation s'affiche — elle est en lecture seule et sans danger.
+    await screen.findByRole('region', { name: 'Orientation des explorations' });
+    // Le geste sortant, lui, disparaît plutôt que de viser le mauvais patient.
+    expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
   });
 });

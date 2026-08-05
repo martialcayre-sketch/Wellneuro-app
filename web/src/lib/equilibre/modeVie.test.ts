@@ -64,16 +64,22 @@ describe('construireModeVieDate (SP-TRAJ LOT-02)', () => {
     expect(sommeilApres.interpretation?.color).toBe('warning');
   });
 
-  it('l’interprétation est celle du moteur, passée telle quelle (y compris son repli de trou de grille)', () => {
+  it('l’interprétation est celle du moteur, passée telle quelle — y compris son absence sur un trou de grille', () => {
     // SOMMEIL à 9 : entre la zone 0-8 et la zone 10-14 de la grille SIIN.
-    // interpretRanges (moteur clinique) retombe alors sur la DERNIÈRE zone —
-    // comportement du moteur, jamais re-jugé par cette lib : on vérifie le
-    // passthrough, pas une opinion.
+    //
+    // Cette assertion disait `{ label: 'Sommeil satisfaisant', color: 'success' }`
+    // jusqu'au 2026-07-29 : le moteur retombait sur la DERNIÈRE zone écrite, la
+    // rassurante, pour un score qui se situe entre « non réparateur » et
+    // « insuffisant ». Elle documentait donc un défaut du moteur, corrigé depuis —
+    // un score sans zone rend maintenant `null`.
+    //
+    // Ce que le test vérifie n'a pas changé : cette lib passe l'interprétation du
+    // moteur telle quelle et n'en juge jamais. Elle passe aussi son absence.
     const etat = construireModeVieDate([
       ligne('2026-06-01T00:00:00.000Z', { ...reponsesToutesA(0), SOMMEIL_Q005: 9 }),
     ]);
     const sommeil = etat!.domaines.find((d) => d.id === 'SOMMEIL')!;
     expect(sommeil.total).toBe(9);
-    expect(sommeil.interpretation).toEqual({ label: 'Sommeil satisfaisant', color: 'success' });
+    expect(sommeil.interpretation).toBeNull();
   });
 });

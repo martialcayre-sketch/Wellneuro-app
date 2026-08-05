@@ -102,7 +102,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const reponses = ensureNuitReponses(body.reponses);
+    const reponses = ensureNuitReponses(body.reponses, { exigerObligatoires: true });
     const supersedesNuitId = typeof body.supersedesNuitId === 'string' ? body.supersedesNuitId : undefined;
 
     const created = await saveNuit({

@@ -29,7 +29,7 @@ const ficheValide = {
   sourceProvenance: 'complalim',
   sourceIdentifiant: 'complalim-12345',
   niveauCompletude: 'partielle',
-  compositions: [{ ingredientId: 'ing_magnesium', doseParPortion: 300, unite: 'mg' }],
+  compositions: [{ ingredientId: 'ing_magnesium', doseParDjr: 300, unite: 'mg' }],
 };
 
 describe('POST /api/internal/supplements/ingest', () => {
@@ -50,6 +50,7 @@ describe('POST /api/internal/supplements/ingest', () => {
     });
     const res = await POST(requete({ fiches: [ficheValide] }));
     expect(res.status).toBe(503);
+    expect((await res.json()).ok).toBe(false);
     expect(ingest).not.toHaveBeenCalled();
   });
 
@@ -57,6 +58,7 @@ describe('POST /api/internal/supplements/ingest', () => {
     isAuthorized.mockReturnValue(false);
     const res = await POST(requete({ fiches: [ficheValide] }));
     expect(res.status).toBe(401);
+    expect((await res.json()).ok).toBe(false);
     expect(ingest).not.toHaveBeenCalled();
   });
 

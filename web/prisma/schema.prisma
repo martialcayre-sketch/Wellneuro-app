@@ -65,6 +65,7 @@ model Patient {
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
   agendaSommeilNuits         AgendaSommeilNuit[]
+  agendaAlimentaireJours     AgendaAlimentaireJour[]
 
   @@map("patients")
 }
@@ -133,8 +134,9 @@ model Assignation {
   correctionDemandeeDate DateTime? @map("correction_demandee_date")
 
   patient            Patient             @relation(fields: [idPatient], references: [idPatient])
-  protocolCheckins   ProtocolCheckin[]
-  agendaSommeilNuits AgendaSommeilNuit[]
+  protocolCheckins       ProtocolCheckin[]
+  agendaSommeilNuits     AgendaSommeilNuit[]
+  agendaAlimentaireJours AgendaAlimentaireJour[]
 
   @@map("assignations")
 }
@@ -462,6 +464,15 @@ model SupplementIngredient {
   code      String   @unique @map("code")
   nomFr     String   @map("nom_fr")
   actif     Boolean  @default(true) @map("actif")
+  // Provenance de l'entrée quand elle vient d'un référentiel externe
+  // (`complalim` + identifiant officiel). NULLABLES à dessein : une entrée
+  // créée à la main par le praticien n'en a pas, et PostgreSQL ne fait pas
+  // conflit entre deux NULL — l'unicité ci-dessous ne les gêne donc pas.
+  // C'est la clé de RE-SYNCHRONISATION : sans elle, un réalignement devrait
+  // deviner l'appariement par le nom. `code` reste lisible (« selenium »),
+  // parce que c'est lui que les règles cliniques manipulent.
+  sourceProvenance  String? @map("source_provenance")
+  sourceIdentifiant String? @map("source_identifiant")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -470,6 +481,7 @@ model SupplementIngredient {
   functionalThresholds IngredientFunctionalThreshold[]
   compositions         SupplementProductComposition[]
 
+  @@unique([sourceProvenance, sourceIdentifiant], map: "supplement_ingredients_source_key")
   @@map("supplement_ingredients")
 }
 
@@ -479,6 +491,14 @@ model SupplementIngredientForme {
   code         String   @map("code")
   labelFr      String   @map("label_fr")
   actif        Boolean  @default(true) @map("actif")
+  // Traçabilité SEULEMENT — pas une clé, contrairement à l'ingrédient.
+  // Une même forme d'apport officielle relève parfois de PLUSIEURS substances
+  // (mesuré : 69 cas, dont « D-pantothénate de calcium » → vitamine B5 ET
+  // calcium). Elle apparaît donc légitimement sous plusieurs ingrédients, et
+  // un index unique sur (provenance, identifiant) bloquerait l'ingestion.
+  // L'unicité réelle reste `[ingredientId, code]`, qui la décrit exactement.
+  sourceProvenance  String? @map("source_provenance")
+  sourceIdentifiant String? @map("source_identifiant")
   createdAt    DateTime @default(now()) @map("created_at")
 
   ingredient    SupplementIngredient @relation(fields: [ingredientId], references: [id])
@@ -486,6 +506,7 @@ model SupplementIngredientForme {
   compositions  SupplementProductComposition[]
 
   @@unique([ingredientId, code])
+  @@index([sourceProvenance, sourceIdentifiant], map: "supplement_ingredient_formes_source_idx")
   @@map("supplement_ingredient_formes")
 }
 
@@ -671,6 +692,10 @@ model SupplementProduct {
   contenuSha256            String?   @map("contenu_sha256")
   donneesManquantes        String[]  @default([]) @map("donnees_manquantes")
   incertitudes             String?   @map("incertitudes")
+  // Nombre de lignes ACTIVES déclarées par la source. NULL = on ne sait pas
+  // (fail-closed : `integre` reste hors d'atteinte) ; 0 = la source ne déclare
+  // aucun actif, ce qui est une information et non une ignorance.
+  compositionSourceLignes  Int?      @map("composition_source_lignes")
   labels                   String[]  @default([]) @map("labels")
   allergenes               String[]  @default([]) @map("allergenes")
   excipients               String[]  @default([]) @map("excipients")
@@ -694,7 +719,10 @@ model SupplementProductComposition {
   productId      String   @map("product_id")
   ingredientId   String   @map("ingredient_id")
   formeId        String?  @map("forme_id")
-  doseParPortion Float?   @map("dose_par_portion")
+  // `doseParDjr`, et non « par portion » : la source déclare une quantité par
+  // DOSE JOURNALIÈRE RECOMMANDÉE. Les deux grandeurs diffèrent d'un facteur
+  // égal au nombre de prises — voir 20260731200000_c4_composition_dose.
+  doseParDjr     Float?   @map("dose_par_djr")
   unite          String?  @map("unite")
   position       Int      @default(0) @map("position")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -945,6 +973,45 @@ model AgendaSommeilNuit {
   @@index([idPatient, dateNuit], map: "agd_som_patient_date_idx")
   @@index([idAssignation, dateNuit], map: "agd_som_assignation_date_idx")
   @@map("agenda_sommeil_nuits")
+}
+
+// Agenda alimentaire 21 jours (Q_ALI_09) — une ligne = une journée déclarée par
+// le patient. Patron AgendaSommeilNuit : append-only chaîné (supersedesJourId),
+// écriture via session portail uniquement.
+//
+// `dateJour` = journée LOCALE ANCRÉE À 04:00 (AAAA-MM-JJ) : une prise à 00:30
+// appartient à la veille. Sans cette ancre, une prise nocturne casserait à la
+// fois l'ordre des prises et le calcul du jeûne. Les heures sont des chaînes
+// HH:MM locales dans `reponses` — aucune conversion de fuseau (cf.
+// lib/agenda-alimentaire).
+//
+// FRONTIÈRE JA : ce JSONB ne porte AUCUNE quantité, aucun gramme, aucune kcal,
+// et aucun aliment identifié au-delà des trois présences déclarées. Aucun
+// agrégat, aucun score, aucun indice n'y vit — le scorer reste `journal`
+// (scored:false) tant qu'aucune donnée observée n'existe.
+//
+// AUCUNE CONTRAINTE UNIQUE sur (id_assignation, date_jour), délibérément : les
+// lignes supplantées restent, et « lignes − dates distinctes » est le taux de
+// correction, seul signal de friction lisible sans nouvelle migration.
+//
+// Toute nouvelle table fille de `patients` doit entrer dans la transaction
+// d'effacement IDP2 (lib/patient/effacement.ts).
+model AgendaAlimentaireJour {
+  id               String   @id @default(cuid()) @map("id")
+  idPatient        String   @map("id_patient")
+  idAssignation    String   @map("id_assignation")
+  dateJour         String   @map("date_jour") // AAAA-MM-JJ (journée 04:00 → 03:59)
+  reponses         Json     @map("reponses") // contrat agenda-alimentaire-v1
+  canal            String   @default("portail") @map("canal")
+  supersedesJourId String?  @map("supersedes_jour_id")
+  soumisLe         DateTime @default(now()) @map("soumis_le")
+
+  patient     Patient     @relation(fields: [idPatient], references: [idPatient])
+  assignation Assignation @relation(fields: [idAssignation], references: [idAssignation])
+
+  @@index([idPatient, dateJour], map: "agd_ali_patient_date_idx")
+  @@index([idAssignation, dateJour], map: "agd_ali_assignation_date_idx")
+  @@map("agenda_alimentaire_jours")
 }
 
 // Approbation praticien « pour diffusion » (C2A LOT-03 Part B). Mapping 1:1 du

@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import { ALIAS_HISTORIQUES, nbQuestions, scoreMax } from '@/lib/bibliotheque';
+import { ALIAS_HISTORIQUES, PASSATION_PRATICIEN, nbQuestions, scoreMax } from '@/lib/bibliotheque';
+import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 import type { Section } from '@/lib/questionnaire-types';
@@ -53,6 +54,28 @@ export async function GET(request: Request) {
         { status: 404 },
       );
     }
+    // UN INSTRUMENT FERMÉ NE LIVRE PAS SON VERBATIM.
+    //
+    // `resolveDefinition` rend le catalogue TEL QUEL pour tout id non-cabinet :
+    // cette route servait donc `def.sections` — le texte intégral des items et
+    // des options — de n'importe quel instrument porteur d'une définition,
+    // suspendu ou non. Le rayon n'affiche jamais une entrée inactive, mais un
+    // appel direct avec l'identifiant suffisait. C'est la classe « invisible
+    // mais servi », voisine des deux « invisible et assignable » déjà corrigées.
+    //
+    // Le critère est une CONJONCTION, et c'est elle qui porte le sens depuis que
+    // `actif: false` a cessé de vouloir dire une seule chose : suspendu ET hors
+    // consultation. Un test administré par le clinicien est `actif: false` à vie
+    // — c'est ce qui ferme sa route d'assignation — et il DOIT rester servi ici,
+    // sans quoi le praticien ne peut pas l'administrer.
+    const enConsultation = PASSATION_PRATICIEN.some(p => p.id === id);
+    if (IDS_SUSPENDUS.has(id) && !enConsultation) {
+      return NextResponse.json<ApercuApiResponse>(
+        { apercu: null, reason: 'not_found' },
+        { status: 404 },
+      );
+    }
+
     const def = await resolveDefinition(id, {
       praticienEmail: emailSession ?? undefined,
       inclureNonPublies: true,

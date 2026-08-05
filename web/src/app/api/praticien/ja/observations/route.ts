@@ -3,8 +3,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import {
   listJaObservationSnapshots,
+  readJaObservationSnapshot,
   saveJaObservationSnapshot,
   type JaObservationSnapshot,
+  type JaObservationSnapshotDetail,
   type JaObservationSnapshotInput,
 } from '@/lib/food-observation/persistence';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
@@ -12,8 +14,14 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/ja/observations';
 
+/** Fenêtre de la liste des transmissions. Sa saturation est dite au praticien. */
+const LIMITE_LISTE = 10;
+
 type ErrorResponse = { ok: false; reason: string; error: string };
-type ListResponse = { ok: true; snapshots: JaObservationSnapshot[] } | ErrorResponse;
+type ListResponse =
+  | { ok: true; snapshots: JaObservationSnapshot[]; tronquee: boolean }
+  | { ok: true; snapshot: JaObservationSnapshotDetail }
+  | ErrorResponse;
 type SaveResponse = { ok: true; snapshot: JaObservationSnapshot } | ErrorResponse;
 
 function sanitizePatientId(value: unknown): string | null {
@@ -69,8 +77,37 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
-    const snapshots = await listJaObservationSnapshots(idPatient);
-    return NextResponse.json({ ok: true, snapshots });
+    // Le filtre d'acteur est appliqué EN BASE : filtrer après coup sur une
+    // fenêtre de 10 lignes tous acteurs confondus ferait disparaître les
+    // transmissions du patient dès quelques activations praticien.
+    // `draftId` demande le CONTENU d'un instantané ; sans lui, la liste des
+    // comptes. Deux formes sur une route parce que les gardes d'accès sont les
+    // mêmes, et qu'un second fichier les dupliquerait — donc les ferait diverger.
+    const draftId = searchParams.get('draftId');
+    if (draftId) {
+      const snapshot = await readJaObservationSnapshot(idPatient, draftId);
+      if (!snapshot) {
+        // 404, jamais un 200 vide : « introuvable » et « ce patient n'a rien
+        // écrit » ne se lisent pas de la même façon en consultation.
+        return NextResponse.json(
+          { ok: false, reason: 'snapshot_introuvable', error: 'Transmission introuvable.' },
+          { status: 404 },
+        );
+      }
+      return NextResponse.json({ ok: true, snapshot });
+    }
+
+    const actorParam = searchParams.get('actor');
+    const actor = actorParam === 'patient' || actorParam === 'praticien' ? actorParam : undefined;
+    const snapshots = await listJaObservationSnapshots(idPatient, LIMITE_LISTE, actor);
+    // La fenêtre est plafonnée : une liste pleine ne prouve pas qu'elle est
+    // complète, et l'afficher sans le dire ferait conclure au praticien qu'il a
+    // tout vu (précédent #449).
+    return NextResponse.json({
+      ok: true,
+      snapshots,
+      tronquee: snapshots.length === LIMITE_LISTE,
+    });
   } catch (error) {
     console.error('[praticien/ja/observations GET]', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

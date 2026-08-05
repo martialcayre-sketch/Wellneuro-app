@@ -214,6 +214,33 @@
   Validé → Envoyé), pas de gamification patient, pas de score de risque
   chiffré ni pronostic nominatif, toute proposition du copilote sourcée
   (instrument, date, version de scoring).
+- **Ce que « pas de relance » interdit, et ce qu'il n'interdit pas**
+  (arbitrage daté du 2026-07-30, PR #477/#478/#480). L'interdit porte sur la
+  relance **automatique ou autonome**, jamais sur le geste praticien. Trois
+  appuis : les deux migrations qui posent la règle opposent le cron et le clic
+  **dans la même phrase** (`bibliotheque_file_envoi_v1` : « l'envoi reste un
+  clic praticien explicite … Pas de cron, pas de relance automatique ») ; le
+  garde-fou ci-dessus dit « jamais d'envoi **automatique** », et nomme la
+  chaîne humaine Relu → Validé → Envoyé comme le motif attendu ; enfin
+  « Renvoyer le lien » (`PatientRow`) est **déjà** une relance praticien en
+  production. La phrase « jamais de relance ni de notification patient » de
+  `propositions/2026-07-24-rayon-complements-bibliotheque` est **scopée à
+  l'observance** — prise au pied de la lettre, elle interdirait l'e-mail
+  d'invitation à un questionnaire, c'est-à-dire le cœur du produit.
+  Trois invariants opposables à tout lot de relance : **aucune tâche
+  planifiée ni relance déduite d'un état** ; **un envoi = un clic praticien
+  identifié, sur un patient nommé, à un instant qu'il choisit** ; **aucun
+  score de décrochage** — une vue de suivi ne sert que des faits datés, et
+  n'emprunte pas le vocabulaire trois états de SP-MET. S'y ajoutent, pour tout
+  chemin d'envoi : un plafond de cadence opposable **côté serveur**, comptant
+  **toutes** les tentatives quel que soit leur statut (un échec SMTP n'est pas
+  la preuve d'une non-livraison), et aucune donnée de santé dans le corps.
+- **Ce que « reprise sans pression » n'interdit pas** : rendre visible, à
+  l'ouverture de l'espace patient, une tâche **périssable**. L'agenda du
+  sommeil en est une — `estDateSaisissable` referme la porte à J-2 — et il
+  passe donc devant un brouillon, qui attend sans rien perdre. Un recueil
+  **jamais commencé** n'est pas périssable (la fenêtre s'ancre sur la première
+  nuit) : il ne prend jamais la première place.
 - **Où passe la frontière de la gamification** (arbitrage du 2026-07-21,
   réserve R2 de l'audit 5.0). Un indicateur d'avancement **interne à la tâche en
   cours** — « X % complété » d'un questionnaire ouvert, « X réponses sur Y » —

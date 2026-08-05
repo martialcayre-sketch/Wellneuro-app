@@ -20,7 +20,7 @@
 
 ## Fichiers cœur
 
-- `web/src/lib/questions.ts` — 67 questionnaires + scoring
+- `web/src/lib/questions.ts` — 64 questionnaires + scoring
 - `web/src/lib/auth.ts` — NextAuth config
 - `web/prisma/schema.prisma` — Patient, Assignation, QuestionnaireReponse, etc.
 - `web/src/lib/consultation/packRegistry.ts` — registry questionnaires/packs

@@ -26,7 +26,7 @@
 
 ### Questionnaires
 
-67 questionnaires hébergés dans `web/src/lib/questions.ts` (migré depuis `Questions.gs`). Scoring déterministe par questionnaire.
+64 questionnaires hébergés dans `web/src/lib/questions.ts` (migré depuis `Questions.gs`). Scoring déterministe par questionnaire.
 
 ### Synthèse IA enrichie
 

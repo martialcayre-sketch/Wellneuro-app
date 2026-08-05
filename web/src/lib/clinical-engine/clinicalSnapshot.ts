@@ -2,7 +2,7 @@ import { BESOINS, BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from '../equilibre/c
 import { construireReponsesParQuestionnaire } from '../equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '../equilibre/evidence';
 import { calculerObjetsCliniques, SOURCES_STABILITE_METABOLIQUE } from '../equilibre/objetsCliniques';
-import { calculerEquilibre } from '../equilibre/score';
+import { calculerCouvertureSource, calculerEquilibre } from '../equilibre/score';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
 import { motifNonInterpretable } from '../scoring/passationsNonInterpretables';
 import { canonicalSha256 } from './canonical';
@@ -63,9 +63,18 @@ function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean
   // Le catalogue mêle fabriques typées et littéraux bruts (levée @ts-nocheck
   // par vagues, lot G-TRUST-04) : on ne dépend ici que de `id`/`conditionnel`.
   const questions = definition.sections.flatMap(
-    section => section.questions as ReadonlyArray<{ id: string; conditionnel?: string }>,
+    section => section.questions as ReadonlyArray<{ id: string; conditionnel?: string; horsBareme?: boolean }>,
   );
+  // Les items HORS BARÈME sortent du prédicat, et il faut qu'ils en sortent :
+  // aucun score ne les lit, donc leur absence ne rend pas la passation
+  // inexploitable. Sans ce filtre, le volet « conjoint » ajouté au PSQI le
+  // 2026-07-31 faisait tomber l'instrument hors du bilan clinique dans deux cas
+  // ordinaires — un patient qui déclare un conjoint sans l'avoir interrogé, et
+  // TOUTES les passations antérieures, qui ne portent pas la question 10.
+  // `conditionnel` ne pouvait pas jouer ce rôle : ici il rend l'item
+  // obligatoire, quand le formulaire patient le rend facultatif.
   return questions
+    .filter(question => question.horsBareme !== true)
     .filter(question => conditionApplies((question as { conditionnel?: string }).conditionnel, answers))
     .every(question => answers[question.id] !== undefined && answers[question.id] !== '');
 }
@@ -152,7 +161,7 @@ export function buildClinicalSnapshot(input: {
     // L'ordre compte : une passation non interprétable l'est quel que soit
     // l'état de ses réponses brutes. La dire « calculable » laisserait le C1
     // annoncer une mesure disponible là où il n'y en a pas.
-    const motifNonMesure = motifNonInterpretable(response.questionnaireId);
+    const motifNonMesure = motifNonInterpretable(response.questionnaireId, response.observedAt);
     if (motifNonMesure) {
       return {
         responseId: response.responseId,
@@ -227,7 +236,21 @@ export function buildClinicalSnapshot(input: {
       strata: equilibre.strates.map(strate => ({ code: strate.strate, measurement: ratio(strate.couverture) })),
       needs: BESOINS.map(besoin => {
         const sources = BESOIN_SOURCES[besoin.id] ?? [];
-        const answered = sources.filter(source => Boolean(reponsesParQuestionnaire[source.idQuestionnaire])).length;
+        // `evaluability` compte les sources EXPLOITABLES, plus seulement celles
+        // dont un objet de réponses existe. Le prédicat était
+        // `Boolean(reponsesParQuestionnaire[id])` : il ignorait `sousScore` et
+        // ignorait l'échec de scoring, si bien qu'un besoin pouvait se
+        // contredire dans un seul objet — `evaluability: 'measured'` à côté
+        // d'une `measurement.value` nulle et d'une preuve `NON_MESURE`. C'est
+        // `evidence.ts` qui a adopté le bon prédicat en premier (#434) ; ce site
+        // était le dernier porteur de l'ancien.
+        //
+        // Conséquence assumée : `clinicalReview` retrouve des findings
+        // `missing_data` sur les besoins dont une source est répondue mais
+        // inexploitable. C'est l'information juste — elle manquait.
+        const answered = sources.filter(
+          source => calculerCouvertureSource(source, reponsesParQuestionnaire) !== null
+        ).length;
         return {
           needId: besoin.id,
           strata: besoin.strate,

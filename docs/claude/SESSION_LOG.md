@@ -2,6 +2,49 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
+
+**Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas
+le doc d'inventaire de campagne qui porte sur un sous-ensemble différent) ;
+ajoutés à `RAYON_VERS_NOTEBOOK` avec un appelant neuf (`dashboard/bibliotheque`,
+route `/api/praticien/corpus/rayons`), flag `WN_RECHERCHE_CORPUS_ENABLED`
+dédié plutôt que réutiliser `WN_C4_ENABLED`. Revue `wn-reviewer` a trouvé un
+bloquant avant merge : une regex seule aurait laissé la route servir
+n'importe quel rayon (micronutrition compris) en contournant le flag
+compléments — corrigé par une allowlist testée. Couplage caché retiré au
+passage : `servirRayonCorpus` forçait `WN_C4_ENABLED` pour tout rayon.
+
+**Écarté** : notebook 06 (douleurs chroniques), non validé — même route déjà
+générique, à étendre plus tard.
+
+**Prochaine action** : brancher 06 une fois validé, ou LOT-01/05/06 de la
+campagne moteur d'intervention.
+
+**Questions ouvertes** : calibration `minSimilarity`/`matchCount` (réglés sur
+un profil fiche-produit) non vérifiée pour une recherche en langage libre.
+
+## 2026-08-03 — Repurposage de ROADMAP_TECHNIQUE.md en architecture technique système
+
+**Décisions** : `docs/ROADMAP_TECHNIQUE.md` cesse d'être un suivi de chantiers (lots R0→R10, dette) pour devenir la cartographie d'architecture technique système (stack, routes, modèle de données, sous-systèmes `lib/`, auth, RAG, déploiement) — décision explicite de l'utilisateur, périmètre = toute l'application. L'ancien contenu est archivé intégralement dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` avant réécriture, rien n'est perdu.
+
+**Écarté** : dupliquer le détail déjà couvert par `PROJET_CONTEXTE.md`, `ARCHITECTURE_CLINIQUE_3_2.md`, `RAG_PGVECTOR_PRODUCTION.md` — le nouveau doc résume et renvoie plutôt que de recopier.
+
+**Livré** : réécriture complète + renvois mis à jour dans `CLAUDE.md`, `README.md`, `docs/PROJECT_STATE.md`, `docs/claude/README.md`, `docs/claude/PROJET_CONTEXTE.md`, `docs/ROADMAP_PRODUIT.md`. Aucun `npm run check` requis (documentaire), vérifié : `grep -c '^model '` (66), aucun lien mort, `grep ROADMAP_TECHNIQUE` cohérent.
+
+**Prochaine action** : relire le diff, committer, ouvrir la PR.
+
+**Questions ouvertes** : `vercel-build.sh` porte encore la logique `migrate deploy` inline en parallèle de `release-db.yml` — le « lot de bascule » qui doit l'alléger n'a pas eu lieu, documenté tel quel.
+
+## 2026-08-03 — Rayon compléments alimentaires : contrat de corpus stabilisé
+
+**Décisions** : clôture du lot de consolidation autour du contrat de corpus du rayon compléments alimentaires. L’UI praticien distingue désormais explicitement un corpus vide (état normal, « en cours de constitution ») d’un corpus indisponible ou bloqué par une garde métier, et affiche le message métier renvoyé par l’API. Le changement reste borné au périmètre C4 déjà existant : pas de migration, pas de changement clinique, pas de nouveau flux de données.
+
+**Livré** : messages de corpus centralisés dans [web/src/lib/supplement-library/corpusMessages.ts](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/lib/supplement-library/corpusMessages.ts), réutilisés par [web/src/lib/supplement-library/rayonCorpus.ts](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/lib/supplement-library/rayonCorpus.ts) et consommés par [web/src/components/complements/FicheComplementPanel.tsx](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/components/complements/FicheComplementPanel.tsx). Une régression ciblée couvre le cas indisponible dans [web/src/components/complements/FicheComplementPanel.test.tsx](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/components/complements/FicheComplementPanel.test.tsx).
+
+**Validations** : `cd web && npx vitest run src/components/complements/FicheComplementPanel.test.tsx src/lib/supplement-library/rayonCorpus.test.ts`, puis `cd web && npm run type-check && npm run lint`.
+
+**Prochaine action** : préparer la clôture de campagne avec le handoff mis à jour et le statut de lot/campagne aligné.
+
 ## 2026-07-22 — Corpus 5.0 : banc qualité d'extraction (triple lecture croisée)
 
 **Décisions** : reprise du chantier pgvector/corpus, phase 2 de la proposition
@@ -763,6 +806,29 @@ comme un CI qui n'a rien vérifié, ni comme la preuve que les E2E sont passées
 **Prochaine action** : arbitrer `Q_ALI_01` — lot 1 du plan révisé.
 
 **Questions ouvertes** : inchangées, voir l'entrée précédente.
+## 2026-07-28 — Agenda du sommeil : audit, contrat v2 et complétude face au consensus
+
+**Décisions** : audit de la maquette « Wellneuro 5.0 » puis refonte en deux lots, dans le worktree `agenda-sommeil-v2` (non committé). Lot 1 : fin du pré-remplissage par la nuit de la veille (on validait 20 copies conformes sans un geste), cadran tactile sans clavier, éveil nocturne obligatoire avec classe `aucun` explicite, barème refondu en 4 axes indépendants (la latence y comptait 3 fois ; la qualité vécue n'y comptait pas), seuils 7/14 nuits dont 4 de week-end, écart-type en n−1, niveau de preuve B→D, besoin 5 pondéré (mouvement 1/2, repos 1/2). Lot 2, après comparaison au Consensus Sleep Diary : réveil final (3ᵉ poignée conditionnelle — le réveil matinal précoce était invisible et comptait comme du sommeil), aide au sommeil obligatoire, éveil reborné 15/30/60, métriques de fréquence.
+
+**Options écartées** : suppression des horaires et score montré au patient (orthosomnie) ; facteurs et fréquence dans l'indice (expositions, double comptage) ; conversion des classes d'éveil v1 (inventerait une précision).
+
+**Validations** : T1 vert (606 tests) ; T3 : 2225 unitaires verts, 96 E2E passés, 2 échecs pré-existants dans `portail-google.spec.ts` (dépendants du `.env.local` local, hors périmètre).
+
+**Prochaine action** : `/wn-review` (passe adversariale — seuils cliniques), puis commit et PR des deux lots ensemble.
+
+**Questions ouvertes** : l'heure de mise au lit reste absente (nos efficacités sont plus flatteuses qu'un agenda partant du coucher) ; `test:worktree` rend 0 même quand son PostgreSQL ne démarre pas.
+
+## 2026-07-28 — Agenda du sommeil : mise au lit et redéfinition de l'efficacité
+
+**Décisions** : ajout de la 4ᵉ ancre du Consensus Sleep Diary — question « vous avez éteint la lumière : en me couchant / après un moment au lit », la seconde ouvrant une poignée 🛏️ sur le cadran. Deux conséquences voulues : le temps au lit court désormais de la mise au lit au lever (dénominateur de l'efficacité, qui BAISSE — 98 % → 87 % dans le cas testé, sans qu'une minute de sommeil change), et le temps au lit avant extinction devient une métrique à part (`AGD_PRELIT_MOY`), distincte de la latence d'endormissement. Le libellé de la question de latence porte maintenant explicitement sur l'après-extinction. Le recueil couvre 8 des 9 items du noyau ; la question ouverte du lot précédent est close.
+
+**Options écartées** : compter le pré-lit dans le temps de sommeil (le patient ne cherchait pas encore à dormir) ; ancrer la régularité sur le coucher (c'est le rythme de sommeil qu'elle mesure) ; demander l'heure d'endormissement (supposerait de regarder sa montre).
+
+**Validations** : T1 vert (621 tests) ; T3 : 2240 unitaires verts, 96 E2E passés, mêmes 2 échecs pré-existants `portail-google.spec.ts`.
+
+**Prochaine action** : `/wn-review`, puis commit et PR des trois lots ensemble.
+
+**Questions ouvertes** : sept gestes obligatoires le matin — à confronter à l'assiduité réelle d'une première cohorte.
 
 ## 2026-07-28 — Garde de contenu de la voie rapide, reprise, arbitrage des bandes
 
@@ -788,3 +854,1441 @@ sort pour chacun.
 **Questions ouvertes** : BDI-13 et Q-MAT dérivent **côté produit**, gelés
 derrière le go de rescorage ; place de l'échelle de Conners, désavouée par ses
 auteurs depuis 1985.
+
+## 2026-07-29 — Q_ALI_01 : parc patients reconstitué, et consigne de synthèse v10
+
+**Décisions** : les 4 assignations ouvertes en v14 annulées, puis 8 réassignations
+créées, une par patient distinct — parc entièrement reconstitué sur les 57 items.
+Deux assignations inatteignables par l'interface ont été débloquées par appel direct
+à la route d'annulation, qui applique ses propres gardes. Résiduel de #437 fermé par
+la PR #445 (consigne `synthese-v10`), mergée après **trois refus** de revue
+adversariale — chaque défaut étant créé par la correction du précédent.
+
+**Écarté** : décrire les quatre porteurs restants (`parts`, `components`,
+`categories`, `phases`) — l'un livre `suicidalIdeation`, cela demande un arbitrage
+praticien ; poser la parade anti-zéro sur les `subScores` — correctif de moteur, pas
+de consigne.
+
+**Leçon** : mon banc saturait les *options* des questions ; `Q_SOM_09` n'en a pas et
+sortait du recensement sans bruit — la méthode de mesure cachait le seul
+contre-exemple à la règle que j'écrivais.
+
+**Prochaine action** : filtrer les assignations côté serveur (plafond de 40, lacune
+de #438).
+
+**Questions ouvertes** : les deux booléens cliniques de `Q_NEU_12` livrés sans
+consigne ; l'audit des lignes héritées partielles, dont dépend la réserve `atRisk`.
+
+## 2026-07-29 — Certification des instruments, et trois lots moteur
+
+**Décisions** : 10 instruments montés à `scoring_verifie`, 49 sortis du premier barreau
+(#448) ; le vérificateur du CI exige désormais ses pièces à chaque barreau. Le moteur ne
+rend plus de bande par défaut (#450), plus de verdict sur une passation vide (#451), et
+un axe non répondu vaut « non mesuré » (#456). Deux corrections de dossier (#452, #453).
+
+**Écarté** : dégager les 43 `a_verifier` sur la déclaration de droits — elle porte sur
+les supports SIIN, dont aucun des 43 ne relève ; reformuler les items sous licence — une
+paraphrase reste dérivée et détruit l'instrument.
+
+**Prochaine action** : arbitrer les 8 sous licence tierce ; aucune assignation ouverte,
+six jamais utilisés.
+
+**Questions ouvertes** : 8 instruments via 7 moteurs rendent encore un axe à zéro sur une
+passation partielle ; consigne v11 à écrire (le total global `null` n'y est pas nommé) ;
+le banc golden n'est pas dans `test:worktree`.
+
+## 2026-07-30 — Campagne scoring : 47/64 en `scoring_verifie`
+
+**Décisions** : campagne d'un jour vers « tous les scoring exacts et validés » —
+quatre PR (#469 dossier des 29 divergents, #470 requalifications, #471 frontières
++ bornes, #472 montée de 37). 10 → 47 `scoring_verifie`. Corrigé dans le servi :
+grille QDRS (3 bornes chevauchées), Berlin cat2 (≥2 positifs), trous Epworth
+comblés par arbitrage déclaré ; `Q_ALI_03` suspendu (10/39 items). 17 fausses
+divergences requalifiées avec preuves (bornes PSQI/QIF/ECAB prouvées par
+construction). Arbitrages praticien : 9 seuils ajoutés, découpages « aligner sur
+la source » (lot 5 reporté), Q_INF_05 relecture d'abord.
+
+**Écarté** : atteindre 64 — exigerait de défaire les suspensions arbitrées ;
+plafond 55 annoncé au routage.
+
+**Prochaine action** : garde de fraîcheur verdict↔code, puis correction de
+l'extraction du banc (sinon son prochain passage rétablit les divergences
+annulées).
+
+**Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_ALI_01 (échelle
+0–2/0–15 vs #452), Q_INF_05, sémantique `adapte`, lot 5 découpages.
+
+## 2026-07-30 — Deux gardes posées : droits ↔ assignabilité, et le palier T3
+
+**Décisions** : #461 mergée (une donnée absente cesse d'être lue comme une donnée
+basse — `??` sur les replis PSQI, seuils monotones asymétriques, `estComplet`).
+Puis deux lots nés de ce que le lot précédent avait nommé sans faire. #466 : la
+garde `licence_requise` ↔ assignabilité, adossée au **registre** et non à une
+liste tapée à la main — le prédicat retenu est celui de la ROUTE (définition +
+hors `IDS_SUSPENDUS`), plus permissif qu'`IDS_ASSIGNABLES`, et c'est cet écart
+qui est la position « invisible et assignable ». #473 : `test:worktree` ne jouait
+aucun des cinq bancs `node --test` du CI ; deux étant dans T1, **T3 était plus
+étroit que T1**. Liste extraite de `ci.yml`, jamais recopiée.
+
+**Écarté** : la charnière SIGH-SAD-SA 15-17 (arbitrage clinique, pas correctif) ;
+brancher les droits sur la route à l'exécution — une route patient dépendrait
+d'un fichier de documentation.
+
+**Validations** : T1 vert sur les deux lots (304 fichiers, 2699 tests) ; `verify`
+complet lu avant chaque merge (12 min 42, 10 min 49) ; quatre preuves par
+mutation sur #466, trois exécutions de contrôle sur #473. T2/T3 indisponibles ici
+— le proxy refuse `cdn.playwright.dev`.
+
+**Prochaine action** : passer `npm run test:worktree` depuis le Mac — le CI
+n'exécute pas ce script, l'intégration du bloc de #473 n'est donc pas prouvée.
+
+**Questions ouvertes** : les huit instruments sous licence tierce (aucune
+assignation ouverte, six jamais utilisés) ; `Q_NEU_12`, dernier « invisible mais
+assignable » ; consigne v11 écrite, mais les deux booléens de `Q_NEU_12` restent
+sans consigne.
+
+## 2026-07-30 — Nuits oubliées de l'agenda : trois lots livrés (#477, #478, #480)
+
+**Décisions** : le levier contre les nuits perdues n'est pas la fenêtre de saisie
+(borne J-1 confirmée) mais la visibilité de l'oubli. Verdict doctrinal établi et
+opposable : la frontière écrite interdit la relance **automatique**, pas le geste
+praticien — les deux migrations opposent cron et clic dans la même phrase, et
+« Renvoyer le lien » est déjà une relance praticien en prod. Trois lots : vue
+transverse « agendas en cours » (5 états par faits datés, jamais un score),
+relance au clic sous `WN_AGENDA_RELANCE` (fermé), rappel dans l'espace patient.
+Aucune migration.
+
+**Écartés** : la relance automatique (renverserait la frontière) ; le lien profond
+vers l'agenda (le segment `[token]` est le jeton permanent, retiré des e-mails par
+LOT-04).
+
+**Corrigé de mon propre cadrage** : j'avais annoncé les portes patient éteintes —
+`WN_G4_LIEN_MAGIQUE` et `WN_G5_GOOGLE_PATIENT` sont **allumées** depuis le 07-21/22
+(commentaire périmé dans `portail/featureFlag.ts`). Il n'y avait donc aucun blocage
+de lien.
+
+**Revues adversariales** : trois NO-GO, tous justifiés. (1) un test mockait la garde
+de scoping qu'il prétendait couvrir ; (2) un échec SMTP ambigu défaisait les DEUX
+protections — N clics = N e-mails reçus, tous consignés « Erreur » ; (3) le hub
+invitait à transmettre le matin du 21ᵉ jour, et le suivre clôturait
+irréversiblement en abandonnant la dernière nuit.
+
+**Validations** : T1 vert à chaque étape, T2 `--fast`, `verify` vert sur les trois
+PR (8m51 à 10m52), mergées, branches supprimées.
+
+**Prochaine action** : allumer `WN_AGENDA_RELANCE` en production — après les deux
+points ci-dessous.
+
+**Questions ouvertes** : le relais SMTP n'est identifié nulle part (code ni doc) et
+ce lot augmente le volume de courrier patient, à l'échéance HDS du 2026-10-21 ; le
+budget anti-harcèlement est par **recueil**, pas par patient (deux agendas ouverts
+existent en prod) ; ratifier le verdict doctrinal par une ligne au
+`REGISTRE_FRONTIERES.md`, sans quoi le prochain audit relira `PROPOSITION:280` au
+pied de la lettre.
+## 2026-07-30 (soir) — Campagne « terminer les 17 » : 47 → 53, et quatre NO-GO
+
+**Décisions** : quatre PR (#479 droits déclarés + 4 montées, #483 cotation EORTC
+officielle, #484 Conners refermés + fraîcheur des verdicts). Les deux EORTC passent
+de la somme brute aux échelles 0-100 de leurs manuels — dont l'inversion des items
+44-46, relevée à la source et non de mémoire. Trois dettes d'outillage fermées :
+l'empreinte du banc consigne la position des drapeaux, son croisement compte des
+lecteurs et non des occurrences, et un verdict ne peut plus être antérieur à ce
+qu'il certifie.
+
+**Écarté** : rouvrir Q_PNE_01 (c'est le VQ11 de Ninot et al., échelle publiée) et
+Q_PED_02 (sous-score « Opposition » sans aucun item d'opposition) ; monter Q_ALI_01
+(l'annulation reposait sur une arithmétique fausse, 57 × 2 = 114) ; monter Q_SOM_09
+(verdict vacueux : 0 item et 0 seuil lus).
+
+**Prochaine action** : raccorder la garde de fraîcheur à l'empreinte servie — son
+témoin actuel est déclaratif et la moitié du registre lui échappe.
+
+**Questions ouvertes** : la règle du « nombre d'items » n'est pas écrite et s'applique
+dans un seul sens (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20) ; Q_ALI_01 attend la
+répartition des points de sa source ; Q_NEU_06, Q_SOM_09, VQ11 attendent une décision.
+
+## 2026-07-30 (clôture) — Q_ALI_01 tranché sur pièce : 54 sur 64
+
+**Décisions** : la source de l'Enquête alimentaire SIIN a été relue directement
+(WN-SRC-0471). Elle porte « Votre score (0, 1 ou 2) » et « alors comptez … points » :
+le 0-2 est un barème par item, pas un codage de réponse. Compté — 24 items à
+1 point, 33 à 2, total 90 — soit exactement les effectifs du barème servi, bandes
+comprises. Divergence annulée sur pièce, instrument monté (#487).
+
+**Écarté** : la même annulation le matin, sur l'arithmétique « 57 × 2 = 90 » (faux,
+114) et une prémisse sans pièce — refusée en revue, à juste titre. La conclusion
+était bonne, la preuve ne l'était pas.
+
+**Prochaine action** : raccorder la garde de fraîcheur à l'empreinte servie, seul
+témoin non déclaratif.
+
+**Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_SOM_09 (banc
+vacueux), VQ11 = Q_PNE_01 (instruire les droits d'une échelle publiée), règle du
+« nombre d'items » non écrite (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20).
+
+## 2026-07-31 — Certification : 54 → 56 sur 64, quatre PR
+
+**Décisions** : PSQI aux 24 items de sa source (volet conjoint non coté, drapeau
+`horsBareme` pour le moteur clinique) ; MMT et MFI-20 **reconstruits** depuis
+leurs sources — le MFI-20 passe de 3 divergences critiques à 0, sa clé
+d'inversion lue sur l'image de la grille de correction ; VQ11 rouvert, son
+identité étant établie ; cannabis aligné sur les trois bandes de la source. La
+règle du « nombre d'items » est écrite : ce sont les axes et le total qui se
+comparent, jamais le compteur.
+
+**Écarté** : rouvrir Q_NEU_06 et Q_TAB_04 — identité non instruite, même barre
+pour les deux ; et une surface de passation praticien, qui aurait publié le
+verbatim d'un instrument sous réserve.
+
+**Prochaine action** : reconstruire le Monnier (10 items servis sur 39).
+
+**Questions ouvertes** : surface de consultation sans verbatim (bloque Q_NEU_06
+et Q_GEO_04) ; échelle de Q_SOM_09, à ne pas changer avant clôture des 8 agendas
+en cours ; perte de discrimination 16/30 sur le cannabis, si elle ne convient pas.
+
+## 2026-08-01 — `Q_PED_03` : le banc savait échouer, pas le dire
+
+**Décisions** : la fermeture de `Q_PED_03` reposait sur un faux diagnostic. La
+lecture GPT plafonnait à 8192 contre 32000 pour la lecture Claude — jetons de
+raisonnement décomptés du même plafond — et ne portait **aucune garde de
+troncature** : une réponse coupée partait au parse, qui échouait à l'offset de
+coupure. « Position 8503 » était un décalage de caractère, jamais un motif.
+Reproduit sur l'API réelle avant d'être écrit. Plafonds alignés, garde symétrique
+en liste blanche (`failed`/`cancelled`/`refusal` compris), **et le câblage sous
+test** — retirer l'appel laissait les cas du garde verts. Banc rejoué : le
+croisement a eu lieu, 108 items des deux côtés, 0 divergence critique.
+`Q_PED_03` **reste `suspendu`** : le motif technique tombe, le motif clinique
+s'ouvre — aucun des 19 (B) / 34 (C) seuils de la source n'est servi, ni bande, ni
+dimension, là où deux des quatre dimensions sont des échelles de *validité*.
+
+**Écarté** : réactiver l'instrument sur « 0 critique ». Le compteur agrège les
+divergences par genre — « 1 confirmée » comptait une famille de 19 à 34 seuils
+absents. Un chiffre de tête qu'on citerait dans six mois.
+
+**Effet de bord attrapé en cours de route** : faire passer les bancs par un
+script les a **retirés du palier T3**, dont l'extraction ne reconnaît que la
+forme littérale `node --test`. Le garde d'extraction ne dit rien tant qu'il
+trouve d'autres bancs. Étape explicite ajoutée, plus un contrôle que la CI les
+lance toujours.
+
+**Prochaine action** : arbitrage praticien sur `Q_PED_03` — reconstruire aux
+sous-échelles de la source, ou le retirer.
+
+**Questions ouvertes** : `.wn/state.json` et `ACTIVE_CAMPAIGN.md` sont figés au
+2026-07-23 (`idle`, aucune campagne) alors que la campagne tourne depuis neuf
+jours — non réparé ici, cela engage la gouvernance des campagnes. `registry-check`
+reste hors de `npm run check`. `extraireJson` n'a toujours aucun banc, alors que
+c'est son message qui a menti deux jours. La garde `scoring_verifie` ne lit que
+`divergencesCritiques` : elle laisserait passer un instrument que les notes
+interdisent de certifier.
+## 2026-08-01 — Hygiène de handoff : doublon de skills, agents Copilot, Fable 5
+
+**Décisions** : `/wn-context` et `/wn-handoff` lançaient la même commande et
+écrivaient le même fichier — ils sont désormais séparés par ce qu'ils
+produisent, le premier affichant sans écrire, le second seul auteur de
+`HANDOFF_CURRENT.md`. Les cinq agents Copilot, posés en un commit d'installation
+et jamais relus, apprennent les trois paliers, le fragment `changelog.d/` et,
+pour `Reviewer`, la classe de défaut de la PR #202 — ce que le diff **ne fait
+pas**. Fable 5, décrit partout mais routable nulle part, entre dans les grilles
+de `/wn-route` et `/wn-lot`, avec pour seul critère la durée et l'étendue de la
+tâche.
+
+**Écarté** : toucher `CLAUDE.md` pour y nommer Fable — sa propre règle
+d'économie s'y oppose, un token posé là étant relu à chaque tour de chaque
+session. Écarté aussi, et pour cause : « réparer » le pointeur `AGENTS.md` de
+Copilot (valide depuis #502) et corriger le tarif Fable (exact, vérifié à la
+source). Deux hypothèses de départ fausses, zéro édition.
+
+**État des deux worktrees C4 — aucun n'est abandonné, ne rien supprimer.**
+`c4-transport-compositions` porte la **PR B1** (13 fichiers, +602/−160, T1 vert,
+non commité, avec son `HANDOFF_CURRENT.md`) ; `c4-compositions-transport` porte
+la **PR B2** (`web/src/lib/supplement-library/compositions.ts` et sa route
+interne, non suivis). B1 corrige les écrans pendant qu'ils sont inertes, B2
+écrit les compositions : B1 part d'abord.
+
+**Prochaine action** : reprendre B1 là où son handoff s'arrête —
+`npm run test:worktree`, puis revue adversariale avant PR.
+
+**Questions ouvertes** : les cinq agents `.github/agents/` sont-ils réellement
+chargés par Copilot ? Personne ne l'a vérifié ; s'ils ne le sont pas, ils se
+désynchroniseront en silence malgré cet alignement.
+
+## 2026-07-27 — Fil du jour : carte « Synthèse à générer » (PR #402 mergée)
+
+**Décisions** : bug rapporté (patients lus sans synthèse invisibles du Fil et de l'inbox) tracé au retrait immédiat de l'inbox sur lecture confirmée, combiné à l'absence de carte Fil hors synthèse déjà existante (LOT-02). Choix arbitré parmi trois options : nouvelle carte `synthese_a_generer`, symétrique de `synthese_a_valider`, refusable G1 — plutôt que garder l'item dans l'inbox. Revue adversariale (`wn-reviewer`) : GO, aucun défaut bloquant.
+
+**Écarté** : garder l'item dans l'inbox jusqu'à génération, et l'option combinant les deux — la carte au Fil seule couvrait la demande.
+
+**Validations** : T1 vert ; T2 vert (2131/2131 unitaires, 94/98 E2E — 4 échecs = faux-positif connu portail-google/lien-magique en worktree, confirmé par retry) ; CI `verify` vert (9m12) ; merge squash + worktree nettoyé.
+
+**Prochaine action** : aucune côté code ; deux notes mineures de revue (clarté d'une égalité stricte de dates, tests complémentaires) laissées non bloquantes.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-27 — Édition d'une synthèse IA avant validation + rechercher/remplacer (PR #409 mergée)
+
+**Décisions** : gap comblé — une synthèse IA (`Brouillon_IA`) n'était jamais éditable, seulement validable telle quelle ou rejetable en bloc. Garde PATCH `enregistrer` relâchée, avec la coercion permissive de génération (`validateSyntheseSchema`), pas celle du brouillon praticien qui écrase `limites` et borne des longueurs pensées pour la saisie manuelle. Barre rechercher/occurrence suivante/remplacer/remplacer tout ajoutée à `SynthesePraticienEditor`.
+
+**Écarté** : réutiliser `validerBrouillonPraticien` pour la branche IA (aurait rejeté un contenu déjà long, écrasé `limites`).
+
+**Validations** : T1 vert ; T2 vert (2132/2132 unitaires, 93/98 E2E — 5 faux positifs connus, confirmés par retry) ; NO-GO initial en revue adversariale (positions de remplacement obsolètes ; CRLF pré-existant vérifié non-régression) — corrigé (revalidation d'empan + `key` par synthèse) ; `verify` vert.
+
+**Prochaine action** : aucune côté code.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-27 — Push Drive du notebook 08 (Biologie fonctionnelle)
+
+**Décisions** : versement du notebook « 08 — Biologie fonctionnelle » dans la bibliothèque NotebookLM. Export local (`exporter.mjs`, 27 sources du registre, toutes avec `canonical.md`) puis `push-drive.mjs` → `WELLNEURO_BIBLIOTHEQUE/08 — Biologie fonctionnelle` : **28 fichiers créés** (MANIFESTE + 27), 0 mise à jour. Auth compte de service + impersonation OK, racine Drive résolue. Aucun changement de code, aucune écriture base.
+
+**Écarté** : rien — pipeline établi (extracted → export → push), `--dry-run` confirmé avant le push réel (validé par l'utilisateur).
+
+**Validations** : dry-run propre (28 créés / 0 màj) puis push réel identique.
+
+**Prochaine action** : geste manuel non outillé — NotebookLM → Sources → Ajouter → Google Drive pour brancher le dossier 08. Puis campagne « repartir des premiers notebooks » : restent 02, 11, 12 (+ décision sur 00).
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-28 — Déblocage HDS : D-006, features par config, Sentry client
+
+**Décisions** : D-006 gravé — cap tout-Scalingo, patients réels dès la phase de test, découplé du juridique, sans double-implantation permanente ; l'entrée lève explicitement le gate F « GO données réelles » et impose l'ordre DPA e-signé + périmètre HDS région confirmé avant toute donnée réelle. D-005 : confirmation DPO du RLS enregistrée. Sentry client tague l'environnement neutre (Scalingo). `docs/FEATURE_FLAGS.md` : débloquer les features par config (env), pas en retirant les gâtes du code. Runbook : région → `osc-fr1 --hds-resource`.
+
+**Écarté** : retirer les gâtes du code (fuite prod) → config ; pincer Node 22 (changerait le runtime prod Vercel) → différé ; `osc-secnum-fr1` SecNumCloud → `osc-fr1` HDS, à confirmer acceptable.
+
+**Validations** : 5 PR mergées (#415/#417/#423/#424/#425), `verify` vert partout (E2E sur #417) ; revues adversariales #417 et #424 (NO-GO → GO) ; anti-secrets vert.
+
+**Prochaine action** : ⚙️ responsable — e-signer le DPA Scalingo + archiver la preuve écrite du périmètre HDS `osc-fr1`, puis provisionner l'app prod HDS (bloc D).
+
+**Questions ouvertes** : confirmation DPO « réel sur Scalingo en test » ? ; `osc-fr1` acceptable (HDS non SecNumCloud) ? ; Node — pincer 24 ou laisser.
+
+## 2026-07-28 — Agenda du sommeil : refonte complète, revue, merge (#427 mergée)
+
+**Décisions** : refonte de Q_SOM_09 en trois lots + correctifs de revue, partie d'un audit de maquette. Cadran tactile sans clavier (4 repères, 2 conditionnels), fin du pré-remplissage, éveil obligatoire, barème à 4 axes indépendants avec plancher de couverture par axe, couverture par métrique, réveil final + aide au sommeil + mise au lit (TIB = mise au lit → lever, l'efficacité BAISSE), bornes d'éveil 15/30/60, métriques de fréquence, niveau de preuve B→D, besoin 5 regroupé (mouvement/repos), `VERSION_SCORE_EQUILIBRE` v8/v9. Couvre 8 des 9 items du Consensus Sleep Diary.
+
+**Écarté** : score montré au patient (orthosomnie) ; facteurs/fréquence/aide dans l'indice (expositions) ; conversion des classes d'éveil v1.
+
+**Revue adversariale** : no-go initial, 4 constats bloquants confirmés et corrigés (compte de réveils réécrivant l'éveil, indice sur 1 nuit/21, pondération changeant le score sans agenda, éveil du matin mal dessiné).
+
+**Merge** : conflits CRLF/LF + collision de version v5 résolus ; 3 tests mis à jour (bump version, garde « aucune réponse », B→D). `verify` vert (9 min 23), squash-mergée.
+
+**Prochaine action** : confronter les 7 gestes obligatoires du matin à l'assiduité d'une première cohorte.
+
+**Questions ouvertes** : `test:worktree` rend 0 quand PostgreSQL ne démarre pas ; `portail-google.spec.ts` dépend du `.env.local` local (2 E2E rouges hors périmètre) — deux chips spawn ouverts.
+
+## 2026-07-29 — Rayon corpus par notebook (#441), certification, ingestion NB02
+
+**Décisions** : rayon compléments filtré par **notebook** via `filter_source_ids` (décision 7 : ni migration ni backfill) — PR #441 mergée, `verify` vert, revue `wn-reviewer` GO, prod OK (étagère micronutrition = 796 VALIDE). Gates 08/10 armées (Vercel) ; NB10 complété (5 sources, 121 claims) et NB02 Sommeil ingéré (LOT_009 : 108 chunks, 671 claims EN_ATTENTE), tous deux poussés Drive.
+
+**Écarté** : backfill `metadata.rayon` (écriture prod inutile, filtre notebook déjà tranché) ; certifier Q_ALI_03/Q_NEU_06 (décalage source↔servi confirmé → arbitrage clinique) ; Conners Q_PED_02/03 (hors registre + droits tiers).
+
+**Validations** : T1 vert, `rayonCorpus.test` 11/11, contrat SQL, `execute_sql` (0 orphelin partout). Instruments propres : Q_SOM_09, Q_STR_06, Q_PED_01.
+
+**Prochaine action** : validation praticien des claims EN_ATTENTE (NB01/NB02) — c'est le levier, pas l'ingestion.
+
+**Questions ouvertes** : droits + curation registre Conners ; arbitrages Q_ALI_03/Q_NEU_06 ; lacune #438 (filtrer les assignations côté serveur, pas le plafond 40).
+
+## 2026-07-29 — Trois points ouverts : cohorte gestes du matin, test:worktree, E2E .env.local (PR #444 mergée)
+
+**Décisions** : #1 (assiduité aux 7 gestes du matin) non actionnable — agenda Q_SOM_09 assigné à 1 seul patient en prod, 0 nuit soumise, pas de cohorte à mesurer. #2 : le « test:worktree rend 0 » ne se reproduit pas (code de sortie déjà 1, prouvé bout-en-bout) ; la vraie cause du chip est que PostgreSQL ne démarre pas sur macOS sans locale (« postmaster became multithreaded during startup ») → corrigé par `LC_ALL=en_US.UTF-8` (macOS seul). #3 : `webServer.env` fuitait le vrai client OAuth patient via `...process.env` → neutralisé (`''`), `portail-google` 6/6 vert sous pollution réelle. PR #444 (2 commits), `verify` vert 10m20, mergée squash, worktree nettoyé.
+
+**Écartées** : toucher au code de sortie du script (déjà correct) ; corriger le flake `portail-lien-magique` iPhone 13 (hors périmètre, vert en CI).
+
+**Prochaine action** : assigner l'agenda sommeil à une vraie cohorte — préalable opérationnel avant toute mesure d'assiduité aux gestes du matin.
+
+**Questions ouvertes** : le « rend 0 » observé venait-il d'un pipe/wrapper (poste PC) ? ; checkout principal 38 commits derrière `origin/main` (noté en mémoire — lire/corriger depuis un worktree off `origin/main`).
+
+## 2026-07-30 — Cadran nuit : interaction réparée (#459, #467) + atteignabilité du corpus sommeil
+
+**Décisions** : correctif d'interaction seul sur `CadranNuit`. Cause racine : le
+hit-testing SVG suit l'ordre de peinture — le cercle porteur du handler était
+peint **sous** le cercle visible, donc injoignable, et le `<svg>` n'avait aucun
+`onPointerDown`. Réparé par handlers à la racine + prise par **distance
+euclidienne** à la poignée, décalage de prise conservé, zone morte centrale,
+capture sur nœud stable, garde multi-pointeurs. #467 solde les 8 constats non
+bloquants : rotation des ex æquo, projection `meet` réelle, filet
+`lostpointercapture`, garde d'égalité, 3ᵉ E2E discriminant. 23 tests jsdom + 3
+E2E, 7 mutations tuées, `verify` vert (10m05 / 9m56), les deux mergées, prod READY.
+
+**Écartés** : fenêtre de rattrapage J-2 et amorçage local (hors périmètre
+demandé) ; `prettier --write` (pas le formateur du dépôt) ; ordre des deux
+règles d'ex æquo (improuvable tant que le parent applique les valeurs — écrit
+dans le banc).
+
+**Revue adversariale** : NO-GO initial — un swipe de défilement sur le cadran
+écrivait une heure de coucher fausse (défaut que **j'avais introduit** : prise
+bornée en angle seulement). Mes tests passaient **avec** trois des défauts ;
+corrigés puis re-prouvés par mutation. Le relecteur s'est trompé une fois (total
+E2E), vérifié plutôt que « corrigé ».
+
+**Claims sommeil** : NB02 = 671 claims, **tous VALIDE**, 28 sources, 336
+prescriptifs. Corpus : 4671 VALIDE, reste 221 EN_ATTENTE (12 sources de NB04
+Humeur).
+
+**Prochaine action** : décider quel écran clinique citera le corpus sommeil —
+`RAYON_VERS_NOTEBOOK` ne déclare que micronutrition/biologie/nutrition, aucun
+rayon `sommeil`, et le seul consommateur d'UI est câblé en dur sur
+`micronutrition`. Validation nécessaire mais **non suffisante** : c'est la classe
+de #441 remontée d'un cran (pas d'étagère du tout).
+
+**Questions ouvertes** : tenue du glisser sous WebKit (test iPhone réel, seul
+juge) ; comment le patient défile une page dont les ~300 px hauts portent
+`touch-action: none` ; la route `claims/recherche` n'a aucun appelant.
+
+## 2026-07-30 — Corpus RAG : ingestion NB03/NB04, validation, NB00 bibliothèque
+
+**Décisions** : NB03 « Stress » (BATCH_010 : 83 chunks, 486 claims) et NB04 « Humeur »
+(BATCH_011 : 102 chunks, 621 claims) ingérés + poussés Drive ; praticien a tout validé le
+07-30 → corpus 100 % (4892/4892 VALIDE, 0 sans signature). NB00 « Gouvernance » extrait +
+poussé Drive **sans injection RAG** (0 chunk/0 claim, vérifié `execute_sql`) — bibliothèque
+miroir, exclu du RAG clinique. `--validate` avant chaque POST prod, dry-run avant chaque push.
+
+**Écarté** : accepter le trou de couverture NB04 (4 chunks tombés en 529 Overloaded Anthropic,
+sautés sans retry par `draft.mjs`) → re-draft des sources touchées en batch distinct + fusion
+par source (621 claims, 4 chunks récupérés) avant le POST.
+
+**Prochaine action** : ingérer NB05 (Cognition) sur go explicite. Rappel : « validé ≠ servi » —
+NB02/03/04 validés mais sans rayon (`RAYON_VERS_NOTEBOOK` = 08/09/10 seuls).
+
+**Questions ouvertes** : ajouter des rayons Stress/Humeur/Sommeil = décision produit ?
+branchement manuel NotebookLM (00/02/03/04) restant.
+
+## 2026-07-30 — Carnet alimentaire, lot 3 : journée repère et bilan de calibrage (PR #447 mergée)
+
+**Décisions** : la trace d'essai dit si l'action a tenu, pas à quoi ressemble une journée — d'où la journée repère, unique par date et par épisode, c'est cette unicité qui rend la couverture calculable. Le régime `calibrage`, typé depuis JA5-01 et jamais produit par aucune surface, devient l'avant-protocole : un patient sans protocole diffusé n'avait, depuis le lot 2, que des notes locales intransmissibles. Le moteur de couverture est inclus sur arbitrage du praticien — retour assumé sur « affichage d'abord, aucun moteur » (A7-11), sur ce point seul ; il suggère et ne conclut jamais que l'observation suffit. Moment approximatif retenu, pas l'heure réelle.
+
+**Écarté** : dériver le régime du type d'action du protocole (une devinette à conséquence clinique) ; un champ de régime déclaré par le praticien (contrat de diffusion à toucher, carnet inatteignable en attendant).
+
+**Corrigé au passage** : `joursSansTrace: traces.length === 0 ? 7 : 0` — un 7 en dur qui ne comptait aucun jour.
+
+**Validations** : T1 vert ; Vitest complet vert (296 fichiers, 2537 tests) ; E2E impossibles dans cet environnement (proxy refusant `cdn.playwright.dev`) ; `verify` vert avant merge.
+
+**Prochaine action** : dériver le `DietaryObservationProfile` — les journées sont capturées et comptées, le profil qui les résume reste à écrire.
+
+**Questions ouvertes** : le praticien ne voit que le **nombre** de journées transmises, pas leur couverture ; le bilan de calibrage n'est pas borné dans le temps côté serveur ; marqueurs vedettes acceptés par le domaine mais pas encore proposés à la saisie.
+
+## 2026-07-31 — Rayon compléments, phase 1b : le référentiel d'ingrédients (PR #493 mergée)
+
+**Décisions** : le pivot `supplement_ingredients` cesse d'être vide — c'était le
+bloqueur unique du rayon. La nomenclature de 1 955 entrées ne se signe plus à la
+main : le praticien a objecté que tout vient de la même base, et il avait raison —
+le référentiel officiel Compl'Alim couvre 100 % des 883 libellés chimiques, 1 021
+espèces végétales et 61 micro-organismes du catalogue. Migration additive
+(4 colonnes de provenance, 4 CHECK, 2 index), voie d'ingestion interne, outils de
+moisson et d'ingestion.
+
+**Écarté** : l'unicité côté forme (69 formes officielles relèvent de plusieurs
+substances — « D-pantothénate de calcium » = B5 ET calcium ; l'index unique aurait
+fait échouer l'ingestion en ayant l'air d'un durcissement).
+
+**Revue adversariale : NO-GO, trois bloquants, tous corrigés.** L'appariement d'une
+forme se faisait par un `code` dérivé du libellé — un renommage amont aurait créé un
+doublon, l'ancienne ligne subsistant, et les compositions seraient restées
+accrochées à l'obsolète. Le `code` d'une entrée existante était réécrit : un
+homonyme apparaissant en amont aurait renommé « selenium », désappariant en silence
+un drapeau de sécurité. Et la garde anti-détournement n'existait que côté ingrédient.
+Trois branches qu'aucun test n'atteignait sont maintenant couvertes.
+
+**Validations** : T1, T3 complet (contrats SQL inclus), `verify` vert 9 min 50 s.
+Base de production relue après merge : migration appliquée en une tentative,
+structure conforme, 0 ingrédient écrit — le lot n'ingère rien, par conception.
+
+**Prochaine action** : lot 1c, le sélecteur d'ingrédient de `/dashboard/regles`.
+Il sert aujourd'hui tout le vocabulaire actif dans un `<select>` nu, sans recherche
+ni pagination : sans lui, l'ingestion rendrait l'atelier de règles inutilisable.
+**Le sélecteur doit précéder l'ingestion.**
+
+**Questions ouvertes** : les données moissonnées ne sont plus sur disque (relancer
+`moisson.mjs`, ~20 min). Le référentiel n'est publié sous aucune licence énoncée —
+intégration décidée en connaissance de la lacune, à réexaminer. Les contrats
+`c4_supplement_catalogue_v1.sql` et `c4_clinical_rules_lignee_v1.sql` ne sont
+câblés à aucun workflow : ils ne gardent rien aujourd'hui.
+
+## 2026-07-31 — Agenda du sommeil : campagne close côté code (#492, #476, #495, #496)
+
+**Décisions** : seuil de relance posé — « on ne relance jamais pour une nuit que le
+patient peut encore noter ». `nuit_du_jour_manquante` sort de `relancable` (le bouton
+s'affichait dès 00 h 05 sur un patient à jour, alors que `estDateSaisissable` lui laisse
+jusqu'à demain matin) ; délai de grâce de 2 jours au démarrage ; règle appliquée aussi
+côté serveur via le même prédicat exporté (#495). Défilement du cadran rendu à la page :
+blocage décidé geste par geste par un `touchmove` non passif, plus par `touch-action`
+figé au premier contact — `touch-none` couvrait 300 × 300 px pour 8-15 % d'utile (#496).
+Rayon `sommeil` déclaré (#476), fuseau E2E corrigé (#492).
+
+**Écartés** : `pan-y` sur la racine (casse le glissement aux flancs) ; `touch-action` sur
+des `<circle>` SVG (ne s'y applique pas, et reconduit le piège d'ordre de peinture de
+#459) ; compter les trous antérieurs (seule la série en cours compte, verrouillé par test).
+
+**Revues** : deux GO, chacune sur un test qui ne prouvait rien — la borne J-2 absente
+(l'off-by-one passait vert), et un garde `e.cancelable` dont l'assertion était vraie par
+construction. Six mutations éprouvées ensuite.
+
+**Prochaine action** : essayer le glisser sur un iPhone réel — seul juge du postulat
+WebKit de #496 ; à défaut, dégradation propre bornée à un cran de 15 min.
+
+**Questions ouvertes** : aucun écran ne consomme le rayon `sommeil` (`FicheComplementPanel`
+code `micronutrition` en dur) ; aucun agenda n'a atteint le seuil de scoring en production
+(max 3 nuits sur 7 requises, 9 assignations ouvertes) ; le panneau praticien n'a aucune
+couverture navigateur.
+
+## 2026-07-31 — Carnet lot 4 (#485) et agenda alimentaire lot 1 (#481)
+
+**Décisions** : le carnet praticien cesse d'affirmer sans savoir — les trois phrases
+en dur retirées, le bloc calibrage suit désormais la **dernière** transmission,
+chargée d'office et nommée avec sa date. Quatre lecteurs réels remplacent des casts
+`as` qui ne validaient rien : une trace au `localDate` objet faisait tomber le panneau
+entier. Le carnet reste qualitatif ; l'instrument de mesure sera `Q_ALI_09`, dont le
+domaine pur est posé (fenêtre 21 jours, seuils à quatre étages, agrégats `null` jamais 0).
+
+**Écartés** : le moment approximatif pour l'agenda (l'heure réelle est la condition écrite
+du déverrouillage de la frontière C5) ; les quantités et toute reconstruction d'un SIIN.
+
+**Revues** : GO conditionnel sur L1 (7 constats, dont une fenêtre hors bornes qui excluait
+la journée entière et 21 jours vides déclarés exploitables) ; **NO-GO** sur le lot 4 — une
+fausse absence installée là où une fausse présence venait d'être retirée. Tout corrigé.
+
+**Prochaine action** : agenda L2 (catalogue + scorer, drapeau éteint) — mais quatre
+arbitrages précèdent L5 : poids 2/1, barème des cinq axes, frontière C5, borne des 18 h.
+
+**Questions ouvertes** : `GenericQuestionnaire.test.tsx` fait échouer T2 **avant**
+Playwright deux fois sur trois (timeout 5 s, 12-15 s sous charge) ; un palier qui s'arrête
+avant les parcours qu'il vérifie ne protège plus. Le checkout principal était 29 commits
+en retard en début de session.
+
+## 2026-07-31 — Rayon compléments, lot 1c : le sélecteur d'ingrédients (PR #499 mergée)
+
+**Décisions** : le verrou avant l'ingestion Compl'Alim est levé. `GET
+/api/praticien/regles/vocabulaire` borne les ingrédients à 50, cherche sur nom
+ET code, rend `ingredientsTotal` ; `ingredientId` hydrate un ingrédient hors
+recherche. Champ de recherche à la place du `<select>` nu. Seuls les ingrédients
+sont bornés — intentions, critères et sources sont gouvernés à la main et
+restent entiers, fixé par un test.
+
+**Trois pièges d'une même famille** : une liste d'options qui rétrécit fait
+mentir un champ déjà rempli. Le `<select>` retombe sur sa première option
+pendant que l'état garde l'ancienne valeur — et c'est celle-là qui part.
+
+**Écarté** : hydrater la révision en agrégeant les ingrédients des règles de la
+page (couplerait le vocabulaire au rechargement de la liste) ; borner aussi
+intentions/critères/sources (refactor non demandé, aucun déversement externe ne
+les alimente) ; inventer une sémantique ARIA de combobox, absente du dépôt.
+
+**Revue adversariale : NO-GO**, deux défauts réels. (1) `export const
+INGREDIENTS_MAX` dans un `route.ts` fait échouer `next build` — **invisible de
+T1**, `tsc --noEmit` n'incluant `.next/types` que si le dossier existe : la PR
+serait partie rouge en CI sans qu'aucun palier local ne l'annonce. (2) Le repli
+sur la forme préférée courante ne couvrait que `formes === null` ; le cas
+« hydratation réussie sans elle » — ingrédient désactivé, liste vide sans être
+`null` — lui échappait, et `POST /regles/revision` ne vérifiant que la forme, la
+valeur fantôme aurait été écrite au référentiel.
+
+**Validations** : T1 vert ; T3 vert, trois échecs E2E `portail-lien-magique`
+**identiques à une exécution de la même suite sans le diff** (mesuré) ; épreuve
+au plafond réel (50 × 10 formes) ; sept gardes vérifiées par mutation ; `verify`
+vert 9 min 52 avant merge.
+
+**Prochaine action** : l'ingestion elle-même, sur go explicite — moisson (~20
+min, données plus sur disque), dry-run, puis ingestion réelle.
+
+**Questions ouvertes** : tri alphabétique sur un `contains` et non un
+`startsWith` ; aucun E2E sur `/dashboard/regles`, à écrire après l'ingestion
+seulement ; `SESSION_LOG.md` du checkout principal divergent de `origin/main`
+(entrées non committées de plusieurs sessions).
+
+## 2026-07-31 — Rayon compléments : le référentiel est ingéré (PR #500 mergée)
+
+**Fait** : 3 444 ingrédients et 665 formes en production, provenance
+`complalim`. Le pivot `supplement_ingredients`, vide depuis l'origine, ne l'est
+plus — c'était le bloqueur unique du rayon.
+
+**Le compte n'est pas celui annoncé** : 3 444 et non ~1 965. Ce dernier chiffre
+comptait les libellés *employés par le catalogue* ; le référentiel officiel est
+plus large. Restreindre exigerait les compositions, qui ne sont pas chargées —
+et une règle clinique peut précéder le produit qui la porte.
+
+**Garde clinique vérifiée sur la donnée réelle** : « Hydrogénosélénite de
+sodium » est rattachée au sélénium ET au sodium, « Iodure de potassium » à
+l'iode et au potassium. Une lecture du libellé n'aurait retenu que le second
+terme. C'est aussi ce qui justifie l'index non unique côté forme.
+
+**L'incident, et sa vraie leçon** : l'ingestion s'est arrêtée au 3e lot sur 9,
+800 ingrédients déjà écrits, sur un code refusé — `slug()` retirait les tirets
+de bord avant de tronquer à 80. Deux entrées fautives sur 3 444. Mais le service
+valide lot par lot et l'outil ne validait rien : 0,06 % d'entrées mal formées
+ont suffi à laisser la base à moitié peuplée, sans avertissement avant le
+lancement. `ingest.mjs` valide désormais toute la projection avant le premier
+envoi. L'idempotence a tenu à la reprise (800 ingrédients et 628 formes
+« inchangés », aucun doublon).
+
+**Écarté** : committer le cache de moisson — aucune licence énoncée, ce serait
+le rediffuser ; il passe en `.gitignore`.
+
+**Validations** : `verify` vert 9 min 43 ; base de production relue (3 444 codes
+distincts, 0 provenance incomplète, 0 règle / 0 seuil / 0 alerte).
+
+**Prochaine action** : les compositions — les 140 148 fiches restent des
+coquilles, le pivot qui les débloque est désormais peuplé.
+
+**Questions ouvertes** : tri alphabétique sur un `contains` dans le sélecteur ;
+aucun E2E sur `/dashboard/regles`, désormais écrivable puisque les tables ne
+sont plus vides.
+
+## 2026-08-01 — Clôture montée certification 62/64
+
+**Décisions** : la phase de montée (lots 1–4) est déclarée close à 62/64 —
+60 `scoring_verifie`, 2 suspendus terminaux — et l'état machine
+(`.wn/state.json`, figé au 2026-07-23) est réaligné. Pas de promotion de
+Q_GEO_04 : la question n'a pas eu à être arbitrée, le plafond
+`contenu_verrouille` posé au registre le 2026-08-01 (bandes HAS 2011 jamais
+sourcées, escalade SIIN ouverte) la tranche déjà.
+
+**Écarté** : transcrire la signature praticien dans `droits.detail` — déjà fait
+par #515/#516, le cadrage initial du sous-agent était en retard sur le registre.
+
+**Prochaine action** : arbitrages praticien — Q_PED_03 (dimensions et échelles
+de validité), table de règles signée conditionnant les lots 5–13.
+
+**Questions ouvertes** : la source des « gates G0–G4 » affichés par le contexte
+compact reste introuvable (`.wn/orchestrator.json` n'en porte aucun).
+
+## 2026-08-01 — Arbitrages praticien : Q_PED_03 et orientation adaptative
+
+**Décisions** (praticien, en session) : Q_PED_03 reste `suspendu` — rouvrir sur
+usage seulement, avec le scoring dimensionnel complet (4 dimensions, 2 échelles
+de validité, seuils source), jamais la somme brute. Axe orientation lancé :
+lot 7 autorisé (sans gate), lot 8 ensuite avec ses gates (coût API, écriture
+prod, validation claim par claim) ; signature de la table de règles au lot 9.
+
+**Écarté** : reconstruction immédiate du scoring Conners (aucun usage en
+production) ; recueil non scoré (sans restitution, peu de valeur).
+
+**Prochaine action** : le cadrage a montré le lot 7 DÉJÀ LIVRÉ (#361,
+2026-07-25, dormant fail-closed) — passer au cadrage du lot 8 et à la
+confirmation de ses gates avant toute exécution.
+
+**Questions ouvertes** : source des « gates G0–G4 » du contexte compact,
+toujours introuvable.
+
+## 2026-08-01 — Lot 8 : décision f amendée, gates confirmés
+
+**Décisions** (praticien, en session) : question f close en AMENDANT A-009 pour
+l'orientation — seule la perfusion reste exclue ; sevrages médicamenteux,
+psychotropes et Alzheimer réintégrés dans le drafting, chaque claim restant
+soumis à la validation individuelle (voie lente, D-003). Coût accepté
+(~11-17 $ / 106 fiches) ; premier lot d'ingestion : sommeil complet
+(17 fiches), pas de pilote préalable.
+
+**Écarté** : pilote 1-2 fiches avant volume (choix praticien) ; exécution du
+pipeline depuis cette session (secrets et PDF n'existent que sur le Mac).
+
+**Prochaine action** : après merge de #517, PR de préparation lot 8 —
+`metadata.usage='orientation'` dans draft.mjs, filtre A-009 amendé, runbook
+Mac — puis run d'ingestion sommeil sur le poste local.
+
+**Questions ouvertes** : « gates G0-G4 » du contexte compact, toujours sans
+source identifiée.
+
+## 2026-08-01 — PR #517 mergée ; préparation lot 8 dans le dépôt
+
+**Décisions** : #517 mergée (squash 3d406d5) sur demande du praticien, branche
+repartie de main. Préparation lot 8 : `--usage orientation` dans draft.mjs
+(clé metadata.usage, passe-plat serveur couvert par trois tests),
+filtre par construction dans lib/filtre-orientation.mjs (quarantaine ≠
+décision f ; perfusion WN-SRC-0244 seule exclusion A-009 restante), banc
+branché dans run-certify-bancs.sh (exige des bancs dans les deux dossiers),
+runbook du run sommeil (12 PDF ingérables sur 17 — 4 MP4 à transcrire,
+WN-SRC-0318 en quarantaine).
+
+**Écarté** : corriger le trou d'immuabilité de metadata dans store.ts
+(documenté au runbook, changement minimal) ; T2 local (téléchargement
+Playwright bloqué par la politique réseau — verify CI fait foi, aucun code
+runtime web touché).
+
+**Prochaine action** : PR draft, CI, puis run sommeil sur le Mac.
+
+## 2026-08-01 — Clôture de session : #517 et #518 mergées, main prêt pour le run sommeil
+
+**Décisions** : #518 mergée (squash 2ddeb52) sur demande du praticien après
+verify vert lu. La journée livre : montée en certification close (62/64),
+Q_PED_03 arbitré (suspendu), décision f close (A-009 amendé : perfusion seule
+exclue), pipeline prêt pour le lot 8 (marquage usage, filtre par construction,
+banc branché, runbook).
+
+**Écarté** : réécrire 2ddeb52 signalé par le stop-hook — c'est le commit de
+squash GitHub sur main, pas un commit local ; faux positif récurrent
+post-merge.
+
+**Prochaine action** : run sommeil sur le Mac (`tools/corpus/claims/README.md`,
+12 PDF, ~2-3 $), puis validation claim par claim dans l'Atelier, puis lot 9.
+
+**Questions ouvertes** : source des « gates G0-G4 » du contexte compact,
+toujours inconnue ; entrée DECISIONS.md pour l'amendement A-009 (proposée, en
+attente d'accord).
+
+## 2026-08-02 — CERT-Q LOT-03 handoff
+
+**Décisions** : LOT-03 terminé pour CERT-Q ; les lots 01 à 03 sont consolidés,
+avec distinction explicite entre l'état daté 62/64 (2026-07-29) et le registre
+courant 64/64. Le handoff campagne est produit, sans changement de scoring.
+
+**Écarté** : suppression automatique des branches historiques ; aucune branche
+supprimée dans ce lot.
+
+**Prochaine action** : arbitrer `feat/mini-synthese-par-rubrique` (PR #372),
+puis confirmer séparément le nettoyage des 20 branches candidates.
+
+**Questions ouvertes** : intégration amendée ou clôture sans merge de PR #372.
+
+## 2026-08-02 — CERT-Q PR #372 validée et lot clôturé
+
+**Décisions** : l’arbitrage PR #372 a été intégré avec amendements minimes :
+mini-synthèse rétablie, helper de coupe remis au bon scope, métadonnées de
+campagne complétées, et couverture ajoutée pour le second marqueur de coupe.
+T1, T3 et les tests ciblés sont verts ; la revue indépendante n’a relevé qu’un
+point de vigilance déjà traité côté commit (inclusion des nouveaux fichiers
+`rubriques.*`).
+
+**Écarté** : élargir le changement au-delà de l’intégration amendée de
+`feat/mini-synthese-par-rubrique`.
+
+**Prochaine action** : commit/push de la branche de campagne puis éventuel
+nettoyage des branches candidates, si confirmé séparément.
+
+**Questions ouvertes** : aucune sur le fond technique ; reste la décision de
+gouvernance sur le nettoyage des branches.
+
+## 2026-08-02 — CERT-Q arbitrage final de la branche restante
+
+**Décisions** : `feat/mini-synthese-par-rubrique` est arbitrée en faveur d’une
+intégration amendée dans la branche de campagne `campagne/certification-questionnaires-consolidation`.
+Le périmètre reste dans CERT-Q, sans lot scoring séparé.
+
+**Écarté** : clôture sans merge de la branche restante.
+
+**Prochaine action** : gouvernance du nettoyage séparé des branches candidates.
+
+**Questions ouvertes** : aucune sur la branche restante ; reste le nettoyage.
+
+## 2026-08-02 — CERT-Q nettoyage des branches candidates exécuté
+
+**Décisions** : les 20 branches candidates de CERT-Q ont été supprimées localement
+et à distance quand les refs distantes existaient déjà ; la branche de campagne
+reste seule porteuse du consolidé.
+
+**Écarté** : conserver les branches candidates après arbitrage.
+
+**Prochaine action** : aucune côté CERT-Q, hors éventuelle revue de sécurité du
+nettoyage si demandée.
+
+**Questions ouvertes** : aucune.
+
+## 2026-08-02 — Rayon compléments : lot d’ingestion/référentiel stabilisé
+
+**Décisions** : le lot a été bouclé sur le périmètre API et documentation du rayon
+compléments, avec une réponse d’erreur cohérente `ok: false` sur les payloads
+invalides des routes internes d’ingestion/référentiel.
+
+**Écarté** : ouvrir une nouvelle surface fonctionnelle ou modifier la logique
+clinique ; la stabilisation est restée bornée aux routes et à la campagne.
+
+**Prochaine action** : poursuivre la campagne sur un autre périmètre concret si
+nécessaire, par exemple l’activation métier ou une validation complémentaire.
+
+**Questions ouvertes** : l’activation métier du rayon reste à cadrer avec le
+produit et la gouvernance.
+
+## 2026-08-02 — Claims orientation : levée de quarantaine prescriptive
+
+**Décisions** : la quarantaine d’orientation ne bloque plus les sources
+prescriptives du périmètre ; 8 sources réintégrées, la perfusion reste exclue.
+Le filtre, le contrat SQL de périmètre et les bancs de régression ont été mis
+en cohérence.
+
+**Écarté** : lever la quarantaine pour les sources non prescriptives.
+
+**Prochaine action** : aucune immédiate sur le fond technique.
+
+**Questions ouvertes** : aucune.
+
+## 2026-08-03 — Nettoyage branches biologie (CB) + cadrage campagne CB-03→CB-09
+
+**Décisions** : audit des branches liées au rayon biologie — CB-00 à CB-02b
+déjà fusionnées en production (#364, #369, #374, #381, #394, #433) ; 9
+branches locales obsolètes supprimées (remote déjà « gone »), 1 worktree
+retiré. Campagne `2026-08-02-rayon-biologie-cb` créée (LOT-00→LOT-06,
+numérotation métier CB-03→CB-09 conservée en contenu) : PR #525 mergée
+(squash 6f8e23a) après correction CI — les id de lot doivent respecter
+`LOT-\d{2}` (garde-fou `wn-campaign-audit.mjs`), pas de préfixe libre.
+
+**Écarté** : activer la campagne (`--activate`) — CB-03 est bloqué sur les
+lots 8-9 de la certification (table NNPP2 signée), encore en cours.
+
+**Prochaine action** : vérifier l'état des lots 8-9 certification avant
+d'ouvrir CB-03 ; sinon reprendre le run sommeil (lot 8) puis lot 9.
+
+**Questions ouvertes** : promotion proposée — `scripts/wn-campaign.mjs
+create --prefix` permet un id de lot hors format `LOT-NN`, non détecté avant
+CI ; à corriger dans le script ou documenter dans le skill (en attente
+d'accord).
+
+## 2026-08-03 — Kit `wn` : reprompting, et le garde qui ferme la classe
+
+**Décisions** : `/wn-reprompt` créé et branché dans six skills (#529) — contexte
+isolé, sortie ≤ 180 mots, `PASSE` par défaut, un reformulage inutile coûtant le
+tour qu'il prétend économiser. Son drapeau `disable-model-invocation` rendait ces
+six branchements inexécutables : levé (#530), deuxième exemption assumée après
+`wn-route`. Un garde bloquant ferme la classe (#532) et a trouvé une troisième
+instance — `wn-route` ordonnait d'invoquer `/wn`, `/wn-model`, `/wn-ultra`, tous
+porteurs du drapeau.
+
+**Écarté** : inscrire le reprompting dans `CLAUDE.md` (le ferait payer à toutes
+les sessions, y compris celles dont la demande est claire) ; lever trois drapeaux
+de plus pour `wn-route` (remplacé par un `Read` ciblé du fichier de grille) ; un
+garde épinglant toute mention de skill (mur de faux positifs sur les routeurs).
+
+**Prochaine action** : aucune en attente.
+
+**Questions ouvertes** : aucune. Notice d'exploitation du kit publiée en artefact.
+
+## 2026-08-03 — Campagne packs/moteur d'intervention + LOT-00 registre des interventions
+
+**Décisions** : campagne cadrée et mergée (#531, 8 lots), puis LOT-00 livré (#534).
+Le cadrage a corrigé trois points de la demande : la certification était déjà close
+(#528), le moteur d'orientation existe mais sa table est vide et n'a aucun appelant,
+et l'assouplissement du fail-closed visait un blocage mal situé. LOT-00 a produit
+`docs/claude/corpus/nnpp2_interventions_registry.json` — 95 sources, 2002 claims —
+et son garde `npm run interventions-check` (26 cas, un échec prouvé par invariant).
+
+**Écarté** : partir du motif de TITRE pour désigner les sources d'intervention. Le
+champ structuré `documentType` du registre sanitaire prime — le titre ratait 51
+sources sur 99, dont toute la doctrine d'exploration. Écarté aussi : l'Atelier v2
+comme prérequis (hors chemin critique), et « l'IA propose un pack » (elle restitue,
+elle ne décide pas).
+
+**Prochaine action** : LOT-01 (755 claims à valider, geste praticien), ou LOT-03 /
+LOT-04 en parallèle du chemin critique.
+
+**Questions ouvertes** : la validation praticien de la pré-classification des 95
+sources reste due. Et le champ `prescriptive` de `source_registry.json` est faux sur
+52 des 95 sources — 640 claims prescriptifs déclarés non prescriptifs, erreur
+toujours dans le même sens ; aucun code ne le lit, mais la sous-déclaration
+mériterait d'être instruite à la source.
+
+## 2026-08-03 — LOT-03 : le moteur d'orientation ne pouvait proposer aucun pack
+
+**Décisions** : correction d'un défaut structurel (#536). Les `PackId` du code et
+les `id_pack` de la base formaient deux espaces de noms disjoints ; la route
+d'orientation les comparait directement, donc `compositionPacks` restait vide et
+le fail-closed rejetait TOUTE recommandation de pack. Traduction posée dans les
+deux sens, réponse enrichie de l'`id_pack` attendu par l'assignation. Option C
+retenue : `packs.qids` fait foi pour la composition, le code ne gouverne que
+l'identité. Repli legacy qualifié par cause — seule une divergence réelle alerte.
+
+**Écarté** : le correctif du `niveau` dans `syncPackToRegistry`, retiré à la revue
+— il n'atteignait pas les packs existants (sync déclenché à l'édition seulement)
+et aucun code ne lit `questionnaire_packs.niveau`. Écarté aussi : aligner
+`estAdministrableParLaRoute` sur `IDS_ASSIGNABLES` — arbitrage clinique, et le
+risque est théorique (aucun instrument à passation praticien dans les 6 packs de
+doctrine, vérifié en base).
+
+**Prochaine action** : LOT-04 (structuration de l'intake), sans dépendance, ou
+LOT-01 (validation praticien des 755 claims).
+
+**Questions ouvertes** : `estAdministrableParLaRoute` ne vérifie pas `actif`
+contrairement à `IDS_ASSIGNABLES` — à trancher avant que des packs contenant des
+instruments à passation praticien existent. Et 10 des 16 packs de doctrine
+n'existent pas en base : les créer est une décision produit.
+
+## 2026-08-03 — LOT-04 : drapeaux d'anamnèse typés (recadré)
+
+**Décisions** : le « schéma d'intake » demandé existait déjà (motifs, formulaire
+à options fermées, parsing défensif en texte). Livré le résiduel réel : extraction
+typée `extraireDrapeauxAnamnese` (8 drapeaux), valeurs autorisées lues
+dynamiquement dans `ANAMNESE_SECTIONS` plutôt que dupliquées — évite toute
+divergence de libellé. Revue `wn-reviewer` a trouvé et fait corriger deux défauts
+avant clôture : tests tautologiques (remplacés par des libellés figés en dur,
+garde anti-dérive) et un filtrage borné à 50 éléments bruts avant dédup (réécrit
+pour itérer sur l'énuméré, ordre canonique).
+
+**Écarté** : ajouter un champ `signauxAlerteNonReconnus` pour distinguer un signal
+hors énuméré d'un signal absent — pas de consommateur (LOT-05 non écrit), aurait
+anticipé un besoin hypothétique. Documenté en commentaire de type à la place :
+`signaux_alerte` filtré n'est pas la garantie de sécurité, `extraireVigilanceDeterministe` (non filtré) l'est toujours.
+
+**Prochaine action** : LOT-05 (table de règles d'orientation, dépend de LOT-03 +
+LOT-04) ou LOT-01 (validation praticien des 755 claims).
+
+**Questions ouvertes** : LOT-05 devra trancher explicitement si `signauxAlerte`
+peut porter une décision de sécurité malgré son filtrage silencieux.
+
+## 2026-08-03 — LOT-05 : table de règles d'orientation V1
+
+**Décisions** : `ORIENTATION_RULES_V1` remplie de six règles adossées à neuf
+claims `VALIDE` vérifiés en base, et **volontairement non signée** — écrire les
+règles et les signer sont deux gestes, le second est praticien. La route reste
+donc fail-closed. Le moteur sait enfin lire les drapeaux d'anamnèse (LOT-04, qui
+n'avait aucun consommateur). Trois arbitrages praticien : la bande d'entrée se
+choisit **instrument par instrument** (PSQI à `info`, au-dessus de son seuil
+publié de 4 ; PSS-10 et TFD à `warning`, déjà leur première bande défavorable) ;
+`signauxAlerte` ne porte aucune règle, non parce qu'il est filtré — tous le
+sont — mais parce qu'un signal d'alerte appelle un adressage, quand la table ne
+sait produire qu'une exploration ; une déclaration seule propose un instrument,
+jamais un pack (R-ANA-01 alignée sur R-STR-02).
+
+**Quatre défauts silencieux corrigés** : `OrientationZone` ignorait `dark`
+(patients « Très sévère ») et `info` — le même trou aux deux bouts ; le moteur
+traitait une composition de pack inconnue comme autorisée, à rebours de son banc
+(la route refiltrait, donc aucune recommandation erronée n'en est sortie) ; la
+route retenait la consultation la plus récente, or une consultation naît sans
+anamnèse — les règles de drapeau se seraient tues dans la fenêtre exacte où le
+praticien regarde l'orientation.
+
+**Écarté** : signer la table dans la même PR ; citer les `sourceId` du registre
+faute de `claimId` (le registre LOT-00 n'en contient aucun — ils ont été lus en
+base) ; cibler `pack_humeur_motivation_neurochimie`, inactif en base.
+
+**Deux revues adversariales, deux NO-GO levés.** La seconde a trouvé une erreur
+factuelle : j'avais écrit que le test de Cungi n'était pas au catalogue et fait
+proposer le PSS-10 à sa place, alors que Cungi **est** `Q_STR_03`, actif — la
+règle propose désormais ce que le claim désigne. Elle a aussi trouvé un
+commentaire affirmant un incident qui n'avait pas eu lieu, et trois bancs qui ne
+mordaient pas.
+
+**Prochaine action** : LOT-06 (consommateur praticien) ou la signature de la
+table après relecture clinique des six règles.
+
+**Questions ouvertes** : (1) **la surface qui affichera un signal d'alerte sans
+le traiter comme une exploration reste à écrire** — c'est un lot dédié, et le
+commentaire de `orientationRulesV1.ts` y renvoie ; (2) aucun banc ne confronte
+les `claimId` à `rag_corpus_claims` (pas de base en Vitest) : la vérification
+reste manuelle avant chaque signature ; (3) 10 des 16 packs de doctrine n'existent
+toujours pas en base, et `PACK_HUMEUR_NEURO` y est inactif.
+
+## 2026-08-03 — Fenêtre de clôture d'un lot : `scripts/wn-cycle.mjs`
+
+**Décisions** — La clôture (`/wn-finish`) et le handoff (`/wn-handoff write`)
+s'écrivent sur la branche vivante et partent dans la PR du lot. Le merge étant
+un squash, la frontière n'est pas la suppression de la branche mais le merge
+lui-même. Un script rend la phase du cycle et sort en échec quand la fenêtre est
+fermée ; il est chargé par le bloc `!` de `/wn-finish` et `/wn-handoff`, seul
+chaînage exécutable entre skills (`disable-model-invocation: true` interdit
+l'invocation croisée). Correctif au passage : `writeActiveCampaignView()`
+tronquait le garde « cette vue est générée » dans sa branche idle.
+
+**Écarté** — Écrire le handoff après le merge et avant le nettoyage (fenêtre
+inexistante) ; une PR de doc séparée par défaut (deux PR par lot) ; un contrôle
+CI bloquant réclamant le handoff (bloquerait les correctifs urgents).
+
+**Validations** — banc 15/15, cross-invocation 0, audit campagne 0, anti-secrets
+0, T1 vert (70 tests). Chemin `gh` vérifié sur les PR réelles #545/#547/#548.
+
+**Prochaine action** — Ouvrir la PR, lire `verify`.
+
+**Questions ouvertes** — `--appliquer` écrit `git.branch` dans `.wn/state.json` :
+un nom de worktree éphémère, donc du bruit et un conflit potentiel entre
+sessions parallèles si on le committe. Non committé ici.
+
+## 2026-08-03 — LOT-06 : consommateur praticien de l'orientation, restitution IA
+
+**Décisions** : la route d'orientation a enfin un appelant — encart dans l'onglet
+Trajectoire (canal fiche, au présent seulement). L'évaluation quitte `route.ts`
+pour `orientationService.ts`, dont la synthèse est le second consommateur. Aucun
+bloc n'est injecté sans recommandation, **mais la consigne système est
+inconditionnelle : toutes les synthèses de production partent désormais en
+`synthese-v14` sans qu'aucun bloc n'ait jamais été transmis** — le discriminant
+est `donneesEntree.orientationInjectee`. La table du LOT-05 reste non signée :
+l'écran affiche « en cours de constitution ».
+
+**Écarté** : neutraliser la synthèse sur écart de restitution (on journalise —
+l'objet actionnable vient de la route) ; ouvrir `packs/assign` à `idPatient`.
+
+**Deux NO-GO adversariaux levés** : un garde tournant à allowlist vide qui
+accusait quatre syntagmes cliniques ordinaires, l'accusation persistée au
+dossier ; puis un e-mail d'assignation pouvant viser le patient **précédent**
+(`data` en retard sur `idPatient`), et une phrase affirmant une réception que
+l'envoi best-effort ne garantit pas.
+
+**Prochaine action** : signer la table **et** poser `WN_ENABLE_ORIENTATION_NNPP2`
+— le verrou est un ET, signer seul n'allume rien. Sinon LOT-01 (755 claims).
+
+**Questions ouvertes** : (1) un écart mesuré par heuristique textuelle a-t-il sa
+place dans `donneesEntree` du dossier, ou seulement au journal ? (2) le garde a
+quatre angles morts déclarés, dont le réordonnancement — interdit par la
+consigne, invérifiable par occurrences.
+
+## 2026-08-03 — LOT-02 clos : rayon `douleur` (notebook 06) et une allowlist reprise en défaut
+
+Le reliquat du LOT-02 attendait la validation du notebook 06. Vérification en base
+avant toute écriture : le corpus entier est signé — **8 224 claims actifs, 8 224
+VALIDE, 0 en attente**, douze notebooks à 100 %. Le rayon `douleur` est donc branché
+(mapping, allowlist, sélecteur, en-tête, doc des flags), et le **LOT-01 est clos sur
+preuve** plutôt qu'exécuté : il n'y avait plus rien à valider.
+
+Deux contrôles préalables ont écarté les deux façons dont ce rayon aurait pu être
+vide sans erreur : le libellé du mapping correspond à la base au caractère près
+(tiret cadratin), et les 651 claims portent 16 `source_id` tous présents dans les 17
+du registre.
+
+**Décision de l'utilisateur en séance** : fermer dans cette PR le défaut trouvé par la
+revue adversariale — `/api/praticien/complements/corpus` validait `rayon` par regex
+seule et servait tout `RAYON_VERS_NOTEBOOK` derrière `WN_C4_ENABLED`, sans consulter
+`WN_RECHERCHE_CORPUS_ENABLED`. Le rayon douleur aurait été joignable en production dès
+le merge, malgré son lancement dark. Options écartées : dette écrite puis PR séparée,
+et statu quo. Allowlist d'un seul rayon désormais ; l'exposition héritée de
+`cognition`/`intestin` se ferme avec.
+
+Les listes de rayons refusés des deux routes sont maintenant **dérivées** du mapping :
+le prochain rayon ajouté sans allowlist est couvert d'office. T1 vert, T2 vert en
+6 min 9 s (E2E compris — la première passe avait rendu le flake connu
+`portail-lien-magique`, verte à la seconde sans toucher ce sous-système).
+
+Piège à retenir : le checkout principal était en retard d'un commit, ce qui a fait
+lire un `CAMPAGNE.md` périmé et annoncer un écart documentaire inexistant. Lire les
+documents de campagne depuis le worktree du lot.
+
+Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
+règles du LOT-05 — sans elle, le LOT-06 livré n'affiche rien. Questions ouvertes :
+`stress`/`humeur`/`sommeil` restent mappés, validés, sans appelant.
+
+## 2026-08-03 — LOT-01 réduit : le garde de la barrière D-003
+
+Décisions — Le cadrage a lu la base plutôt que la fiche : les 755 claims étaient
+déjà signés (périmètre 2002/0, corpus actif 8224/0), et #552 avait clos LOT-01
+documentairement. Le lot s'est réduit à sa seule pièce manquante : le contrat
+`rag_claim_barriere_d003_v1.sql`, qui éprouve `match_wellneuro_rag_claims` par
+sept fixtures et assère aussi ce qui empêche de la CONTOURNER (EXECUTE refusé à
+anon/authenticated, RLS) — ajout de la revue, qui a vu qu'on prouvait la porte
+en laissant la fenêtre.
+
+Écarté — Garder par allowlist les quatre modules qui lisent sans filtrer
+`statut` : ce sont l'établi de validation, documentés comme légitimes.
+
+Validations — T1 vert ; sept falsifications, une par assertion nommée ; T3 après
+merge de `main`, 12 contrats joués (11 avant). PR #553, `verify` vert 9 min 37 s.
+
+Prochaine action — LOT-07, dernier lot de la campagne.
+
+Questions ouvertes — Un vecteur nul rend `NaN` : les autres contrats du dépôt
+copient ce patron, aucun n'a été relu sous cet angle.
+## 2026-08-03 — Les blocs `!` des skills ancrés à la racine du dépôt
+
+`/wn-handoff` échouait en `MODULE_NOT_FOUND`. Le diagnostic a montré que le défaut
+dépassait de loin le message : les sessions tournent depuis `web/`, et **32 blocs `!`
+de `SKILL.md`** désignaient des chemins relatifs à la racine. Mesuré un par un depuis
+`web/` : **27 rendaient une sortie vide avec un code de retour 0**, 5 seulement
+échouaient bruyamment. `/wn-route`, `/wn`, `/wn-lot`, `/wn-ultra` et les six `/wn-rN`
+annonçaient « aucune campagne active » et planifiaient sur du vide.
+
+Les 32 blocs sont ancrés par `cd "$(git rev-parse --show-toplevel)" &&` — vérifié :
+depuis un worktree, cette commande rend la racine **du worktree**, donc l'ancre tient
+dans le mode nominal. Un contrôle CI (`scripts/lib/skill-bang-cwd.mjs`, banc de 17
+cas) le rend durable, hors filtre `docs_only` puisqu'une PR de `SKILL.md` est classée
+documentaire.
+
+Décision de conception révisée en cours de route, sur constat de la revue : la
+détection **interroge le dépôt** (« ce premier segment existe-t-il à la racine ? »)
+au lieu de comparer à une liste fermée de six préfixes, qui laissait passer
+`./scripts/`, `web/`, `changelog.d/`, `tools/`, `CHANGELOG.md`. Écarté : ancrer les
+30 blocs sans chemin (`git status --short` couvre le dépôt entier depuis n'importe
+où) ; documenter la convention dans `CLAUDE.md` (le CI rouge dit déjà quoi faire).
+
+La revue a aussi trouvé que `/wn-auto` lisait `docs/roadmap.md`, **qui n'existe pas** :
+le bloc serait resté muet même ancré. Corrigé vers les deux roadmaps réelles.
+
+Garde vérifié **sur l'état d'avant** — rejoué contre les `SKILL.md` de `main`, il rend
+exactement 32 violations. Un garde vert sur un dépôt déjà corrigé ne prouve rien.
+
+Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
+règles du LOT-05. Question ouverte : les blocs `!` d'un même skill partagent-ils un
+shell ? Si oui, un seul `cd` en tête suffirait.
+
+## 2026-08-04 — Agenda alimentaire : de l'instrument orphelin à la donnée persistable (L1-bis + L3)
+
+Le domaine pur de l'agenda alimentaire existait depuis le 2026-07-30 sans aucun appelant.
+Deux lots l'ont branché : `Q_ALI_09` assignable et non scoré (#554), puis la table, la
+persistance et l'effacement RGPD (#557).
+
+**Décidé** — collecte avant calibrage, contre l'ordre d'un audit externe : aucune journée
+n'ayant jamais été recueillie, un barème posé maintenant serait une donnée clinique
+inventée. L'abstention « je ne sais pas » entre au contrat **v1** (le faire après le
+premier patient coûtait une v2 et une fenêtre incomparable à elle-même), par champ, sauf
+`soirPlusCopieux`. Et l'agenda **n'alimente pas** le besoin 3, déjà sourcé par
+`RYTHME_CHRONO` : la valeur est dans l'écart déclaré/observé, objet séparé.
+
+**Écarté** — brancher l'agenda comme 2ᵉ source du besoin 3 (troisième porteur du mot
+« rythme », double comptage) ; les douze indices nutritionnels de l'audit (ajouter des
+instruments à un problème d'orchestration) ; déléguer l'exécution à un sous-agent (la
+session était déjà sur le modèle de la classe).
+
+**Trois défauts trouvés par la revue adversariale, pas par moi** : `droits: "libre"`
+adossé à une revendication non instruite ; un garde de drapeau qui simulait l'absence
+par une chaîne vide, donc aveugle au fail-open réel ; et un `rows.map` qui faisait
+disparaître tout un agenda pour une ligne illisible — la contradiction exacte que
+`jour.ts` refuse en toutes lettres.
+
+**La leçon de méthode** : mes mutations testaient la ligne d'effacement *retirée*, jamais
+*déplacée*. Or c'est le déplacement qui casse, et le garde structurel — un
+`String.includes` — y est aveugle. Un garde vert qui n'a pas mordu sur la bonne mutation
+ne prouve rien.
+
+**Prochaine action** — L4 : routes portail et surface de saisie (< 30 s/jour). La route
+devra dériver patient et assignation de la SESSION, jamais du corps de requête.
+
+**Questions ouvertes** — aucun aller-retour n'a été fait contre une vraie base (`as
+unknown as object` y efface la garantie de type) : un contrat `prisma/checks/*.sql` est à
+poser avant L4. Et `boolean | null` ne se défend pas contre `if (x)` : l'écran L4 est
+exactement le lieu où ce raccourci s'écrira.
+
+## 2026-08-03 — Les deux promotions : attente du CI exécutable, deux décisions au registre
+
+Décisions — L'attente du CI devient `scripts/wn-attendre-ci.mjs` : six codes,
+`0` seul autorise à annoncer une PR prête ; la liste des checks attendus vient de
+la protection de branche, pas d'une constante. `DECISIONS.md` gagne
+D-012 (la barrière D-003 se garde au point de passage, pas chez ses lecteurs) et
+D-011 (un écart de restitution de l'IA se journalise, ne se censure pas).
+
+Écarté — Un contrôle CI bloquant réclamant le script : il bloquerait un
+correctif urgent.
+
+Validations — Banc 31 cas ; 19 mutations, aucune ne survit ; câblé (5 → 6) ;
+T1 vert ; deux revues, NO-GO puis GO.
+
+À retenir — **Trois faux verts subsistaient : banc à 18 cas vert, 13 mutations
+conformes**, dont `0` rendu sur #553 en conflit.
+
+Prochaine action — LOT-07.
+
+Question ouverte — Un commit Copilot en tête n'a **pas** gelé le run de #553,
+contre la doctrine de `CLAUDE.md`.
+
+## 2026-08-04 — LOT-07 : ce que « certifié » ne dit pas
+
+**Décidé** — Une promotion à `reference_identifiee` n'est acquise que si un identifiant
+certifie **la forme servie**. Le garde n'exige qu'un champ non vide, et 8 des 12 entrées
+`a_completer` avaient déjà un nom d'auteur : s'y adosser aurait produit douze montées
+purement déclaratives. Deux entrées seulement portent au final un DOI ou un PMID.
+`cosmin` reste `inconnu` sur les 65 : aucune étude consultée ne porte d'appréciation
+COSMIN, et l'attribuer nous-mêmes aurait été fabriquer le jugement psychométrique que ce
+lot existe pour empêcher.
+
+**Écarté** — Poser une `verdictScoring.reserve` sur `Q_STR_03` malgré l'écart de cotation
+trouvé (source 1-6, étendue 11-66 ; le dépôt sert 0-5, `maxTotal: 55`, et alimente Mon
+Équilibre) : plafonner un barreau est une décision clinique, pas un geste de lot
+bibliographique. Écarté aussi, une 4ᵉ valeur `sans_publication_origine` pour les deux
+agendas WellNeuro — hors périmètre écrit, et `a_completer` **sous-évalue** la preuve là
+où `reference_identifiee` la surévaluerait ; la direction de l'erreur décide.
+
+**Trois défauts trouvés par la revue adversariale, pas par moi.** Écrire les trois
+premières lignes de `measurement_evidence.json` **ouvrait** le barreau
+`psychometrie_revue` pour `Q_PED_01` : son garde ne testait que la *présence* d'une
+preuve, jamais sa conclusion — et les trois lignes concluent `inconnu`. Le CI classait ce
+même fichier en `docs_only` : éditable seul, `verify` vert, sans qu'aucun contrôle ne le
+lise. Et `Q_ALI_03` allait recevoir le PMID d'une méthode en 8 questions alors que le
+code déclare l'instrument **débaptisé** et en sert 23 — redescendue en `a_completer`.
+
+**La leçon de méthode, revenue une fois de plus** : mes mutations ont testé le *retrait*
+du contrôle, pas son *déplacement*. La mutation « hors de la boucle » a survécu au
+premier passage — un banc dont chaque cas n'instancie qu'**une** entrée ne distingue pas
+« dans la boucle » de « hors de la boucle ». Refermé, puis la variante « dernière
+entrée » a survécu à son tour. Il a fallu un cas à trois entrées, faute au milieu.
+
+**Prochaine action** — Arbitrage praticien sur les trois écarts cliniques remontés
+(`Q_STR_03`, `Q_FIB_03`, `Q_NEU_03`). Côté campagne, il reste la signature clinique de la
+table du LOT-05, sans laquelle le LOT-06 livré n'affiche rien.
+
+**Questions ouvertes** — `a_completer` recouvre désormais deux situations qu'aucune
+requête ne sépare : « cherché, rien n'existe » et « trouvé, non indexé ». La distinction
+ne vit que dans une phrase française. Et le seuil servi de `Q_SOM_06` est ≥ 23 quand
+celui usuellement cité pour l'asthénie de Pichot est ≥ 22 — soupçon non vérifié.
+
+## 2026-08-04 — Trancher les écarts du LOT-07, et ce qu'on a trouvé dessous
+
+**Décidé** — Les trois écarts sont tranchés, et le plus gros a changé de nature. `Q_STR_03` :
+la cotation 0-55 contre 11-66 **n'est pas un défaut** — mêmes 11 items, mêmes six ancres,
+ré-encodage à partir de zéro, translation constante. Ce qui n'a aucune source, ce sont les
+**cinq bandes** : le manuscrit n'en publie aucune, et les jeux diffusés en aval ne sont
+signés de personne. Arbitrage praticien : ne pas échanger un jeu non sourcé contre un
+autre — réserve posée, bandes inchangées. `Q_NEU_03` : 1992 **et** 1998 datent l'entretien
+d'origine ; la version auto-évaluée servie est de **2008**. `Q_FIB_03` : piste ACR 1990
+fermée, le dépôt ne sert pas l'examen des 18 points.
+
+**Écarté** — Adopter les seuils d'un diffuseur (ils reclassaient des patients sans gagner
+une once de preuve) ; retirer les bandes (le praticien s'en sert) ; poser une réserve qui
+déclasse (plafond au barreau courant : enregistrer n'est pas rétrograder).
+
+**Le vrai sujet était ailleurs.** Le moteur `sum` jetait le `missing` de `sumItems` : un
+recueil partiel décrochait une bande calibrée sur la forme complète, **à sens unique, vers
+le sous-classement**. `bms_average` en pire, sa moyenne divisant par des items jamais
+posés. Fermé dans les deux, plus un étage plus bas dans `equilibre/score.ts` où le total
+**est** la lecture — sur une source `inverser: true`, un `Q_STR_03` tronqué rendait
+« besoin bien couvert ».
+
+**Trois fois, un chiffre supposé a failli devenir un fait.** « 5 items sur 20 » et « 13 sur
+20 » venaient de comptes que je n'avais pas lus ; le compte d'instruments `sum` a opposé
+deux sous-agents (26/25 contre 25/24) avant que le catalogue résolu ne tranche à **26
+éteint / 25 allumé**. La revue adversariale a par ailleurs démoli trois affirmations que le
+code écrivait sur lui-même — dont une **qui me sous-estimait** : côté serveur la complétude
+n'est exigée que pour `def.cabinet`, donc le trou était réel, pas théorique.
+
+**Prochaine action** — La classe n'est pas fermée : `sum_decimal` (`Q_GEO_05`, QDRS,
+gradation de démence), `count_threshold` (`Q_INF_05`) et `ecab` (`Q_NEU_08`) portent le
+même défaut et sont servis.
+
+**Questions ouvertes** — `Q_STR_03` sert au praticien et au prompt IA des bandes dont la
+réserve dit qu'elles n'ont aucune source : faut-il un signal côté fiche ? Et
+`plaintes_actuelles` met `total: null` sur recueil partiel là où `sum` sert le total —
+divergence assumée, à réexaminer si elle gêne.
+## 2026-08-04 — Agenda alimentaire L4a : l'accès portail serveur, et trois NO-GO
+
+**Décisions** — Quatre arbitrages en session : `dateJourParis` extrait dans un module
+neutre (`src/lib/dateParis.ts`) ; gardes consentement et suivi clôturé posées sur
+l'alimentaire seul, asymétrie avec le sommeil assumée et nommée ; doublon du jour
+refusé en 409 sauf `supersedesJourId` explicite ; `modification_demandee` aligné sur
+`patient/submit`. Découpage L4a (serveur) / L4b (surface) retenu pour ne pas émousser
+la revue au moment où elle compte.
+
+**Écarté** — Le calque littéral du jumeau sommeil. Le cadrage a rendu « GO sur le lot,
+NO-GO sur le calque » : ma liste de six refus en comptait dix, et trois barrières
+manquaient.
+
+**Validations** — `npm run check` à 0 dans les deux positions de `WN_AGENDA_ALI` ;
+quatre `test:worktree` complets, le dernier à 3545 tests / 108 E2E / contrats SQL joués
+/ drift check vert. Contrat SQL éprouvé par mutation sur un PostgreSQL jetable, avec
+contrôles négatifs. Chaque garde vue mordre.
+
+**À retenir — trois revues adversariales, trois NO-GO, et la seconde a trouvé ce que la
+première avait créé.** C'est le fait marquant du lot. La passe de correctifs d'une revue
+est un endroit de régression au moins aussi dangereux que le code d'origine : deux
+défauts (nom de classe d'erreur anonymisé en `[id]`, verrouillage d'écriture sans porte
+de sortie) n'existaient pas avant qu'on corrige. **Ne jamais clore sur une passe de
+correctifs non re-revue.**
+
+Second enseignement : **quatre T3 complets verts n'ont rien vu.** Ni la garde de
+consentement posée sur un champ mort, ni le nom de classe redacté, ni le verrou sans
+issue. Ce sont des défauts d'absence ou de sens — il n'y avait aucune ligne fautive à
+faire échouer. La revue de diff et la suite de tests ne couvrent pas la même classe.
+
+Troisième : **deux de mes propres instructions étaient fausses** (aligner `domain` sur le
+préfixe du code, abaisser la journalisation pré-auth). Le dépôt les a démenties toutes
+les deux — la convention réelle était l'inverse, et le motif invoqué n'était pas atteint.
+
+**Prochaine action** — Ouvrir la PR, lire `verify` par `node scripts/wn-attendre-ci.mjs`,
+code 0 exigé. Puis L4b : aiguillage `page.tsx`, hub patient, surface de saisie, E2E.
+
+**Questions ouvertes** — (1) Aucune borne serveur aux 21 jours : borner au POST ou à la
+clôture ? Question produit, les deux réponses n'ont pas les mêmes effets cliniques.
+(2) `WN_AGENDA_ALI` est-il éteint sur TOUS les environnements Vercel, preview compris ?
+Fait du panneau Vercel, invérifiable depuis le dépôt. (3) La dette consentement / suivi
+clos reste ouverte sur `patient/submit` et sur l'agenda du sommeil.
+
+## 2026-08-04 — Créneaux partagés et chaîne de skills : trois conflits, trois remèdes
+
+**Décisions** — Trois remèdes DIFFÉRENTS pour trois conflits qui se ressemblaient, contre
+la tentation d'appliquer partout le patron `changelog.d/`. `SESSION_LOG` prend
+`merge=union` — une ligne de `.gitattributes`, git fusionne seul. Les handoffs passent à
+un fichier par lot sous `docs/claude/handoffs/`, horodatés à la minute, sans fichier
+« courant » généré. `DECISIONS.md` reste à créneau unique mais sa numérotation devient
+gardée. Le garde de cross-invocation passe fail-closed, avec un marqueur qui NOMME sa
+cible. Registre : **D-017**.
+
+**Écarté** — Le renommage de l'identifiant de décision en `D-AAAA-MM-JJ-slug` : collision
+impossible par construction, mais quatorze décisions citées depuis du code clinique à
+renommer dans un lot d'outillage. La collision reste possible ; elle devient visible.
+
+**Validations** — `npm run check` code 0, portant désormais trois gardes, sept bancs et
+l'anti-secrets du dépôt entier ; 173 tests d'outillage. `merge=union` éprouvé par une
+fusion réelle dans un dépôt jetable, **avec son contrôle négatif** — la même fusion sans
+l'attribut conflicte. Deux revues adversariales, deux NO-GO.
+
+**À retenir — le coût mesuré qui a motivé le lot.** Pendant le seul lot précédent, `main`
+a bougé trois fois : deux collisions de numéro de décision (huit renvois renumérotés
+chacune), une PR entière dont l'objet unique était de réparer le handoff après un merge,
+trois handoffs perdus. Ils sont restaurés comme fragments — c'est la démonstration du
+remède autant que sa justification.
+
+**Second enseignement : le garde existait, était bloquant en CI, et était vert pendant
+que NEUF branchements étaient morts.** Il exigeait un verbe impératif dans les 90
+caractères amont ; les branchements étaient des titres d'étape nominaux. Puis, redessiné
+fail-closed sur ses références, il restait fail-OPEN sur la détermination de sa cible :
+`disable-model-invocation: yes` — booléen vrai en YAML 1.1 — le faisait sortir du
+périmètre. **Un garde n'est fail-closed que si les deux bouts le sont.**
+
+**Troisième : une de mes consignes a produit un contournement.** Demandant de supprimer
+21 marqueurs, j'ai obtenu le retrait des barres obliques — donc des lignes invisibles au
+garde. La morsure l'a montré sans discussion : avec barre oblique et sans marqueur, le
+garde mord ; sans barre oblique, il est muet. Restauré, avec marqueur nommé.
+
+**Prochaine action** — PR, `node scripts/wn-attendre-ci.mjs`, code 0 exigé. Puis L4b.
+
+**Questions ouvertes** — (1) `merge=union` est-il honoré par un squash côté GitHub ? Non
+établi ; il l'est en fusion et rebase locaux, qui est le cas où il sert. (2) Le journal
+est append-only par convention, pas par contrainte : `/wn-compact-sessionlog` le réécrit,
+et une compaction concurrente ferait ressusciter des entrées — avertissement posé en tête
+de ce skill. (3) Le marqueur nominatif croît de façon monotone (100 mentions) et entre
+dans le contexte à chaque invocation de skill.
+## 2026-08-04 — Table d'orientation V2 : un premier tour qui existe
+
+**Le diagnostic** — La table V1 portait six règles publiées et ne pouvait **rien** proposer au
+premier rendez-vous : elles se déclenchent sur `Q_SOM_01`, `Q_STR_02` et `Q_GAS_01`, qui ne
+sont pas dans le pack de base réellement administré (`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`,
+`Q_ALI_01`). Aucun banc ne pouvait le voir : les règles étaient justes, et inatteignables.
+Table portée à **20 règles**, en deux tours — le premier sur le pack de base et l'anamnèse,
+le second sur les instruments que le premier fait revenir.
+
+**Décidé** — Signature écartée en l'état ; agendas exclus du premier tour ; un pack absorbe
+ses membres, sans plafond ; `R2-GAS-02` conservée mais requalifiée en **arbitrage praticien
+assumé** ; `R2-NEU-03` refondée sur la grille certifiée de l'instrument.
+
+**Écarté faute de source** — pack cardio-métabolique sur plainte de surpoids, `Q_FIB_01` sur
+plainte de douleur. Une règle envisagée puis **réintégrée** : le relecteur a montré que ma
+note « écarté faute de source » était fausse sur `Q_ALI_01` — `WN-CL-0287-009` fonde bien une
+porte alimentaire vers le pack digestif.
+
+**Le sourçage a corrigé mes seuils avant que je les écrive.** J'avais posé `Q_INF_03 ≥ 20` ;
+le corpus donne 10, et l'instrument aussi. Puis la revue a démoli ma justification : « ≥ 10
+est la négation exacte du profil favorable » — **la négation d'une conjonction est une
+disjonction**. Le seuil était bon, le raisonnement faux, et le claim venait d'un contexte de
+sevrage tabagique où le HAD est un *intrant*, pas une sortie.
+
+**Le vrai défaut était sous la table.** Le moteur `subscore` calcule un axe dès qu'**un** item
+est renseigné : un total partiel est biaisé vers le bas, et mes déclencheurs `<=` le lisaient
+comme une dégradation. Trois items répondus à leur **meilleure** valeur, puis abandon →
+**sept recommandations dont deux packs**, motivées par « Sommeil non réparateur » chez
+quelqu'un qui venait de déclarer un excellent sommeil. Les règles V1 en étaient protégées
+parce qu'elles lisaient une interprétation globale ; c'est mon passage à `comparaison` — juste
+par ailleurs, à cause du trou à 9 — qui a ouvert la brèche. Fermé aux deux étages.
+
+**Trois fois, un relecteur a vu ce que je ne voyais pas** : ce défaut-là ; qu'un pack
+s'affichait à côté de ses propres membres ; et qu'un déclencheur sur `Q_ALI_01` est **aveugle
+à la position du drapeau** — deux instruments derrière un identifiant, la forme courte servie
+partout où `WN_ALI_01_SIIN57` manque. Réparé en déclenchant sur les **libellés** de bande, que
+les deux formes ne partagent pas.
+
+**Prochaine action** — La signature (`ORIENTATION_METADATA`) reste à faire, puis le drapeau
+`WN_ENABLE_ORIENTATION_NNPP2`, puis la clôture de la campagne. Trois gestes distincts.
+
+**Questions ouvertes** — Le PSQI partiel n'est pas gardé (il ne publie aucun compte à la
+racine) : défaut pré-existant, nommé, non fermé. `R-STR-02` cite `WN-CL-0105-001`, qui porte
+sur l'alimentation méditerranéenne, pour engager le pack stress — citation mal appariée, à
+trancher avant la signature.
+
+## 2026-08-05 — Agenda alimentaire, LOT-04 : la surface que le patient voit
+
+**Décisions** — D-023, cinq arbitrages. L'ancre des 21 jours se calcule sur l'union des
+dates enregistrées, relues ou non ; une quarantaine ne bloque une date que tant qu'une
+ligne illisible peut en être la vraie tête ; la borne est **supérieure seule** ; la date
+limite se dit avant le consentement ; et une exemption ne vaut que si les quatre portes
+du parcours la connaissent.
+
+**Options écartées** — Se contenter de *tester* le ré-ancrage silencieux comme le
+demandait le lot : D-022 le différait « faute d'écran », et ce lot livre l'écran. Borner
+la fenêtre des deux côtés : cela faisait perdre un jour de recueil au démarrage. Retirer
+le bouton « Modifier » plutôt qu'exposer `id` : le POST rend déjà `jourId` au client.
+
+**Ce que la revue a trouvé** — L'exemption `deverrouille` ne rouvrait rien : la première
+porte refusait avant elle. Aucune ligne fautive — la classe PR #202. Et la règle « un
+geste nommé doit être possible » vaut aussi pour ce qu'on **propose** : quatre promesses
+rattrapées.
+
+**Prochaine action** — Poser `WN_AGENDA_ALI=true` sur Development et Preview, **puis**
+redéployer. Jamais en Production.
+
+**Questions ouvertes** — La correction reste bornée à J et J-1. `soumisLe` estime là où
+`supersedesJourId` trancherait. Ni clôture patient ni vue praticien.
+## 2026-08-04 — Signature de la table d'orientation, et clôture de la campagne packs/moteur
+
+Le praticien a répondu « signature » à l'arbitrage à deux branches (signer les
+vingt règles, ou clore la campagne avec le critère de signature non coché). Les
+deux points annoncés comme à trancher d'abord ont été traités, et l'un des deux
+n'existait pas.
+
+**Décisions.** Table signée (`validationExterne: true`, 23 claims relus en base le
+jour même). Garde de recueil partiel du PSQI fermée **au niveau item** (18 items
+cotés) et non au niveau composante, qui laissait passer le cas réel. Campagne
+`2026-08-03-packs-moteur…` close avec sept critères cochés sur huit ; le huitième
+— la route sert réellement — est **explicitement non coché** et attend
+`WN_ENABLE_ORIENTATION_NNPP2` côté Vercel. Campagne
+`2026-08-02-certification-questionnaires-consolidation` close aussi.
+
+**Options écartées.** Remplacer `WN-CL-0105-001` sur `R-STR-02` : relu à la
+source, le claim dit mot pour mot l'objectif de la règle — c'est l'alerte qui
+était fausse. Fondre le huitième critère dans le quatrième : aurait fermé la
+campagne sur une affirmation fausse. Garder la garde PSQI au niveau composante :
+sept composantes « mesurées à un item » produisaient encore une bande rassurante.
+
+**Ce que le lot a appris.** Le banc d'égalité exacte `claimsSource` ↔ claims cités
+a rougi à sa première exécution, sur la liste de celui qui l'écrivait : 24 claims
+au lieu de 23, `WN-CL-0178-016` n'existant que dans un commentaire. Deux `D-015`
+coexistaient dans le registre depuis la veille (#562 et #565) — collision réparée,
+la seconde devient `D-016` ; les nouvelles décisions sont `D-018` (périmètre
+signé) et `D-019` (score gelé) — décalées d'un cran, `main` ayant pris `D-017`
+pendant le lot.
+
+**Prochaine action prioritaire.** Poser `WN_ENABLE_ORIENTATION_NNPP2=1` en
+production Vercel — geste d'exploitation, hors campagne. Rien d'autre ne bloque.
+
+**Questions ouvertes.** `tfd` (`Q_GAS_01`, cible de `R-GAS-01`) reste hors de la
+garde de recueil partiel : il ne publie aucun compte à la racine. Même classe
+ouverte sur `sum_decimal`, `count_threshold` et `ecab`, sans règle publiée qui les
+vise.
+
+## 2026-08-04 — TFD : fermer le recueil partiel du dernier moteur réglé
+
+`WN_ENABLE_ORIENTATION_NNPP2=1` posé en production et redéployé (READY, alias
+`app.wellneuro.fr`) : l'orientation tourne avec la table signée en #566.
+
+Puis le lot `tfd` (`Q_GAS_01`), dernier moteur de la classe atteignable par une règle
+publiée. Cinq réponses sur trente-et-une, toutes au maximum, rendaient « A — Absence de
+troubles fonctionnels ». Comptes publiés à la racine et par axe, bandes retirées sur
+recueil partiel — au grain de l'axe aussi (D-020), la grille du TFD calibrant ses
+bandes d'axe sur l'axe complet.
+
+Écarté : aligner le moteur `subscore` (8 instruments, autre arbitrage) ; traiter
+`sum_decimal`/`count_threshold`/`ecab` au passage (le lot y perdait sa contre-épreuve
+nette) ; `agenda-ali-l4b`, périmètre pris par une autre session.
+
+Deux revues adversariales, NO-GO puis GO. Le fond du lot est ce qu'elles ont trouvé :
+la direction de l'effet sur « Mon équilibre » n'a pas un seul sens — au-delà de
+`total ≥ 62` la garde LÈVE un plafond de fondation critique et le score REMONTE, et
+j'avais écrit l'inverse ; `R-GAS-01` s'éteint sur un partiel dont la sévérité est
+acquise par monotonie ; `buildMiniSynthese` re-fabriquait « peu perturbés » (`some` au
+lieu de `every`) ; et ma propre correction a introduit un fait faux (« 14 instruments
+subscore dont aucun » — c'est 8, dont 4 avec bandes d'axe).
+
+Vérifié plutôt que supposé : passe de mutation (6 tests rougissent sans les gardes),
+et lecture production — 2 passations `Q_GAS_01`, toutes deux complètes.
+
+Prochaine action : ouvrir la PR, lire le code de sortie de `wn-attendre-ci.mjs`.
+Question ouverte, candidate au lot suivant : servir un **plancher garanti** à côté de
+la bande, pour que le retrait n'éteigne plus les vrais positifs démontrables.
+
+## 2026-08-05 — Plancher garanti : rendre à D-014 sa seconde moitié
+
+**Décisions.** `D-021` : sur un recueil partiel, la bande atteinte par les seules
+réponses recueillies est servie comme **plancher** (`bandePlancher`),
+`interpretation` restant `null`, avec la formule « au moins » dans la note.
+Éligibilité **déclarée** par l'instrument (`severiteCroissante`) — 21 `sum` +
+`Q_SOM_01` + `Q_GAS_01` —, jamais déduite. Le défaut `Q2` du PSQI passe de 30 à 0 :
+c'était le seul défaut atteignable qui rompait la monotonie, donc la seule chose
+qui rendait un plancher calculable.
+
+**Options écartées.** Un drapeau sur `interpretation` (tout `if (interpretation)`
+se serait remis à afficher une bande). Déduire le sens d'une grille de ses couleurs
+ou de l'ordre de ses bandes (quatre instruments l'infirment). Rallumer `R-GAS-01`
+et donner une surface praticien : hors périmètre, écrits en réserve de `D-021`.
+
+**Ce que le lot a appris.** Trois passes adversariales, deux NO-GO. La première a
+trouvé que le plancher faisait sortir une **conduite clinique** par une seconde
+porte — `separerConduite` sort quand `interpretation` est `null`, c'est-à-dire
+exactement sur le recueil partiel. La seconde a trouvé que mon test de propriété
+**ne pouvait pas échouer** : partant d'une passation saturée, la bande finale était
+toujours la plus haute de la grille, donc supérieure à n'importe quel plancher,
+faux compris. Deux fois la même leçon : **une garde qui ne visite jamais l'état où
+le défaut existe est verte pour une mauvaise raison**.
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire le code de sortie de
+`wn-attendre-ci.mjs`.
+
+**Questions ouvertes.** `R-GAS-01` reste éteinte sur un TFD partiel : le plancher
+est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe du TFD
+n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
+`count_threshold`, `ecab` et `bms_average`.

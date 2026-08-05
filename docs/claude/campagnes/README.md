@@ -1,6 +1,6 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-07-18. Les frontières, invariants et arbitrages sont
+> Mis à jour le 2026-08-02. Les frontières, invariants et arbitrages sont
 > dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
 > active est dans **`PROGRAMME_WELLNEURO_5_0.md`** (qui réintègre les
 > campagnes cadrées du programme 3.2 sans les dupliquer). Statuts « cadrée »
@@ -13,12 +13,14 @@
 | HC-F | Hybrid Clinical Foundation | **terminée** (2026-07-14, GO avec dettes — `DETTE_UX_RESIDUELLE.md`) | C0-UX | 6 |
 | C1 | Décision clinique 21 jours V1 | **terminée** (2026-07-14 — GO technique ; runtime/activation/diffusion : NO-GO, repris par SP-RUN) | HC-F LOT-02 | 7 |
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
+| **CERT-Q** | Certification questionnaires — consolidation 62/64 | **terminée** (LOT-03 terminé, branche restante arbitrée et branches candidates nettoyées) | QX ✓ + registre 64 questionnaires | 4 |
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
 | C2A | Points d'étape + persistance minimale | **terminée** (2026-07-18 — 7 lots en prod, gate migration levé) | C1 ✓ | 7 |
 | C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod ; gate modèle multi-cycles **levé le 2026-07-19** : G2, migration `c2b_cycle_identity_v1`) | C2A ✓ | 3 |
 | C3 | Documents contextuels (→ fil de correspondance) | **terminée** (2026-07-18 — V1 + montage cockpit en prod, 6 lots sans migration ; fil médecin 5.0 et persistance (b) reportés) | C1 ✓ | 6 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
+| **C4-RAYON** | Rayon compléments alimentaires — consolidation C4A/C4B | **cadrée** | C4 | 5 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | **terminée** (2026-07-18 — 8 lots en prod, gates migration et import levés ; `WN_C5_ENABLED` actif, mesuré le 2026-07-21) | C5A : référentiel Ciqual après gates migration/import ; C5B : C1/C2 actifs | 8 |
 | JA | Ma spirale alimentaire (journal recadré 5.0) | recadrée 5.0 + adaptation contrepoint (2026-07-16, A7 — trois régimes : calibrage/essai/silence), règles candidates | audit JA-00 + terrain JA-0T ; domaine pur ; persistance : C2A + gate | N+1 |
 | TRUST | Information patient, consentements et sécurité relationnelle V1 | **terminée** (2026-07-16 — V1 en production, dettes DETTE_TRUST.md) | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
@@ -30,6 +32,7 @@
 | **SP-CONV** | Convergence Spirale 5.0 : trajectoire partagée | **en cours** (activée le 2026-07-22 en campagne parallèle — g-trust-04 reste principale ; LOT-01 courant) | cycles G2 ✓ + SP-TT ✓ + signaux portail existants ; sans migration | 7 |
 | SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | SP-CAB : `n ≥ 5` épisodes clos ; SP-AMB : **gate CNIL/RGPD bloquant** | — |
 | WN-AUTO | Orchestration | terminée | — | — |
+| **REPRISE** | [Reprise des chantiers en suspens](2026-08-04-reprise-chantiers-en-suspens/CAMPAGNE.md) — travail sauvé de worktrees orphelins | **ouverte** (2026-08-04) — trois branches poussées, aucune validée ni revue ; chaque lot se clôt par « livrer » ou « clore par écrit » | aucune ; LOT-01 porte une migration et un défaut clinique | 3 |
 
 ## Campagne active
 

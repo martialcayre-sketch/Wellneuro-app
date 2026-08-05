@@ -24,7 +24,18 @@ const assignationAgenda = {
   dateLimite: null as string | null,
 };
 
-const reponses = { heureCoucher: '23:00', heureLever: '07:00', latence: 'lt15', qualite: 4 };
+// Nuit v2 : la durée d'éveil nocturne est obligatoire en écriture. `aucun` est
+// une réponse (« nuit continue »), pas un défaut inféré.
+const reponses = {
+  heureCoucher: '23:00',
+  heureLever: '07:00',
+  latence: 'lt15',
+  qualite: 4,
+  reveils: { dureeTotale: 'aucun' },
+  aideSommeil: 'aucune',
+  extinctionImmediate: true,
+  leverImmediat: true,
+};
 
 function cookieFor(idPatient = OWNER.idPatient, email = OWNER.email): string {
   return signPatientSession({ idPatient, email });
@@ -70,6 +81,16 @@ describe('POST /api/portail/agenda-sommeil', () => {
   it('refuse sans session portail (401)', async () => {
     const res = await POST(req('POST', undefined, { body: { idAssignation: 'ASS_AGD', reponses } }));
     expect(res.status).toBe(401);
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse la saisie d’une nuit sur une assignation annulée (Fil A) : 410, aucune écriture', async () => {
+    // L'agenda honore l'annulation à son point d'auth commun (vue + saisie nuit).
+    mockOwner();
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignationAgenda, statut: 'Annulée' });
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    expect(res.status).toBe(410);
+    expect((await res.json()).reason).toBe('annulee');
     expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
   });
 
@@ -130,7 +151,72 @@ describe('POST /api/portail/agenda-sommeil', () => {
   it('rejette une nuit mal formée (400)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();
-    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: { heureCoucher: '23:07', heureLever: '07:00', latence: 'lt15', qualite: 4 } } }));
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: { ...reponses, heureCoucher: '23:07' } } }));
+    expect(res.status).toBe(400);
+  });
+
+  it('refuse une écriture sans éveil nocturne (400) — jamais un zéro inféré', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    const { reveils: _sansReveils, ...sansEveil } = reponses;
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: sansEveil } }));
+    expect(res.status).toBe(400);
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une écriture sans aide au sommeil ni mode de lever (400)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    for (const champ of ['aideSommeil', 'leverImmediat'] as const) {
+      const { [champ]: _absent, ...incomplet } = reponses;
+      const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: incomplet } }));
+      expect(res.status).toBe(400);
+    }
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une classe d’éveil héritée en écriture, tout en la lisant en base (400)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: { idAssignation: 'ASS_AGD', reponses: { ...reponses, reveils: { dureeTotale: 'e15_45' } } },
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('refuse un réveil final incohérent avec le mode de lever (400)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    // Levé dès le réveil ET une heure de réveil : contradiction.
+    const contradictoire = { ...reponses, heureReveilFinal: '05:00' };
+    expect(
+      (await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: contradictoire } }))).status,
+    ).toBe(400);
+    // Resté au lit, mais aucune heure de réveil : incomplet.
+    const sansHeure = { ...reponses, leverImmediat: false };
+    expect(
+      (await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: sansHeure } }))).status,
+    ).toBe(400);
+    // Réveil APRÈS la sortie du lit : produirait un éveil au lit négatif.
+    const apresLever = { ...reponses, leverImmediat: false, heureReveilFinal: '08:00' };
+    expect(
+      (await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses: apresLever } }))).status,
+    ).toBe(400);
+  });
+
+  it('refuse « rien de particulier » coché avec un autre facteur (400)', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
+    mockOwner();
+    const res = await POST(
+      req('POST', cookieFor(), {
+        body: {
+          idAssignation: 'ASS_AGD',
+          reponses: { ...reponses, facteurs: { rienDeParticulier: true, alcool: true } },
+        },
+      }),
+    );
     expect(res.status).toBe(400);
   });
 });

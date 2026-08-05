@@ -26,7 +26,8 @@ import { createRequire } from 'node:module';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { empreinteServie } from './lib/servi.mjs';
-import { comparer } from './lib/comparaison.mjs';
+import { comparer, croiserLectures } from './lib/comparaison.mjs';
+import { verifierReponseClaude, verifierReponseGpt } from './lib/troncature.mjs';
 
 const require = createRequire(import.meta.url);
 const home = os.homedir();
@@ -121,7 +122,7 @@ async function lectureStructuranteClaude(verbatim) {
     })
     .finalMessage();
   const texte = rep.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
-  if (rep.stop_reason === 'max_tokens') throw new Error('réponse tronquée (max_tokens) — spécification incomplète');
+  verifierReponseClaude(rep);
   return extraireJson(texte);
 }
 
@@ -129,10 +130,17 @@ async function lectureStructuranteGpt(verbatim) {
   const rep = await new OpenAI().responses.create({
     model: MODELE_OPENAI,
     reasoning: { effort: 'medium' },
-    max_output_tokens: 8192,
+    // Même budget que la lecture B, et pour deux raisons qui se cumulent : une
+    // spécification de 108 items est longue, et sur l'API Responses les jetons
+    // de RAISONNEMENT sont décomptés de ce même plafond. À 8192, le
+    // raisonnement consommait le budget avant que la spécification ne soit
+    // écrite — c'est ce qui a coupé les deux lectures de `Q_PED_03` le
+    // 2026-07-30, sans qu'aucun garde ne sache le dire.
+    max_output_tokens: 32000,
     instructions: CONSIGNE,
     input: [{ role: 'user', content: [{ type: 'input_text', text: `Source :\n\n${verbatim}` }] }],
   });
+  verifierReponseGpt(rep);
   return extraireJson(rep.output_text || '');
 }
 
@@ -164,6 +172,12 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
 
   l.push('## Ce que sert l\'application');
   l.push('');
+  // La position des drapeaux en TÊTE du relevé : c'est elle qui dit de quelle
+  // forme parle tout ce qui suit.
+  const drapeaux = Object.entries(empreinte.drapeaux ?? {});
+  if (drapeaux.length) {
+    l.push(`- drapeaux de forme : ${drapeaux.map(([k, v]) => `\`${k}\`=${v ? 'ALLUMÉ' : 'éteint'}`).join(' · ')}`);
+  }
   l.push(`- items : ${empreinte.items.length}`);
   l.push(`- sections (écran) : ${empreinte.sections.length} (${empreinte.sections.map((s) => s.titre || s.id).join(' · ')})`);
   l.push(`- dimensions **calculées** : ${empreinte.dimensions.noms.length} via \`${empreinte.dimensions.origine}\`${empreinte.dimensions.noms.length ? ` (${empreinte.dimensions.noms.join(' · ')})` : ''}`);
@@ -206,7 +220,6 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
 }
 
 /** Clé d'identité d'une divergence : le même écart doit se reconnaître d'une lecture à l'autre. */
-const cleDivergence = (d) => `${d.code}|${d.item ?? ''}`;
 
 async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   const empreinte = empreinteServie(instrument, entree, calculateScore);
@@ -218,24 +231,7 @@ async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   const verdicts = specs.filter((s) => s.spec).map((s) => ({ lecteur: s.lecteur, resultat: comparer(empreinte, s.spec) }));
   if (verdicts.length === 0) throw new Error('aucune spécification exploitable');
 
-  // Croisement : confirmée = vue par toutes les lectures disponibles.
-  const parCle = new Map();
-  for (const v of verdicts) {
-    for (const d of v.resultat.divergences) {
-      const cle = cleDivergence(d);
-      if (!parCle.has(cle)) parCle.set(cle, { divergence: d, lecteurs: [] });
-      parCle.get(cle).lecteurs.push(v.lecteur);
-    }
-  }
-  // Le croisement n'a de sens qu'à deux lectures. Si l'une a échoué, RIEN
-  // n'est « confirmé » : une divergence vue une seule fois reste à confirmer,
-  // sans quoi une lecture solitaire se présenterait comme une lecture croisée.
-  const croiseeEffective = verdicts.length >= 2;
-  const croisement = { croiseeEffective, confirmees: [], aConfirmer: [] };
-  for (const { divergence, lecteurs } of parCle.values()) {
-    if (croiseeEffective && lecteurs.length === verdicts.length) croisement.confirmees.push(divergence);
-    else croisement.aConfirmer.push({ ...divergence, vuePar: lecteurs.join(', ') });
-  }
+  const croisement = croiserLectures(verdicts);
 
   const dossier = path.join(SORTIE, instrument);
   await fs.mkdir(dossier, { recursive: true });

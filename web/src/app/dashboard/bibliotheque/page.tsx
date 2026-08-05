@@ -1,7 +1,13 @@
 import { BibliothequePanel } from '@/components/BibliothequePanel';
 import { RayonComplementsPanel } from '@/components/complements/RayonComplementsPanel';
+import { RechercheCorpusRayonPanel } from '@/components/corpus/RechercheCorpusRayonPanel';
 import { listeBibliotheque } from '@/lib/bibliotheque';
-import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
+import {
+  getC4DisabledMessage,
+  getRechercheCorpusDisabledMessage,
+  isC4Enabled,
+  isRechercheCorpusEnabled,
+} from '@/lib/supplement-library/featureFlag';
 
 export const metadata = { title: 'Wellneuro — Bibliothèque' };
 // Le rayon compléments lit son drapeau à la requête : rendu dynamique.
@@ -22,6 +28,7 @@ export default function BibliothequePage() {
   const entrees = listeBibliotheque();
   const domaines = new Set(entrees.map(e => e.categorie)).size;
   const rayonComplementsActif = isC4Enabled();
+  const rechercheCorpusActive = isRechercheCorpusEnabled();
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -62,9 +69,37 @@ export default function BibliothequePage() {
             role="status"
             className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
           >
-            Le rayon compléments n&apos;est pas encore ouvert sur cet environnement. Le catalogue et
-            les fiches justificatives s&apos;afficheront ici dès son ouverture — rien n&apos;est
-            perdu, le référentiel reste intact.
+            {getC4DisabledMessage()} Le catalogue et les fiches justificatives s&apos;afficheront ici dès
+            son ouverture — rien n&apos;est perdu, le référentiel reste intact.
+          </div>
+        )}
+      </section>
+
+      <section aria-labelledby="recherche-corpus-titre" className="flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+            Recherche corpus clinique · cognition, douleurs chroniques, axe intestin-cerveau
+          </p>
+          <h3
+            id="recherche-corpus-titre"
+            className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground"
+          >
+            Recherche corpus
+          </h3>
+          <p className="mt-1 max-w-2xl text-base text-muted-foreground">
+            Claims validés du corpus, filtrés par rayon — statut et date de validation
+            affichés quand ils sont connus.
+          </p>
+        </div>
+
+        {rechercheCorpusActive ? (
+          <RechercheCorpusRayonPanel />
+        ) : (
+          <div
+            role="status"
+            className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
+          >
+            {getRechercheCorpusDisabledMessage()}
           </div>
         )}
       </section>

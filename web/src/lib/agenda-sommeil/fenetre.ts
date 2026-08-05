@@ -35,7 +35,19 @@ function diffJours(depuis: string, jusqu: string): number {
 // `resolveNuitsActives`) et de la date du jour locale du patient. Sans nuit
 // saisie, la fenêtre est vide (aucun ancrage) : la première saisie l'amorcera.
 export function calculerFenetre(nuitsActives: NuitRow[], aujourdHui: string): FenetreAgenda {
-  if (nuitsActives.length === 0) {
+  return calculerFenetreDepuisDates(
+    nuitsActives.map((n) => n.dateNuit),
+    aujourdHui,
+  );
+}
+
+// Même arithmétique, à partir des seules dates de nuits. C'est la forme que
+// consomme la vue de suivi du cabinet : elle ne charge jamais le JSONB des
+// réponses, seulement `date_nuit`. Une correction porte la même date que la
+// ligne qu'elle supplante (garde `saveNuit`), donc passer les dates brutes —
+// sans résoudre les chaînes — donne la même fenêtre : le Set déduplique.
+export function calculerFenetreDepuisDates(dates: string[], aujourdHui: string): FenetreAgenda {
+  if (dates.length === 0) {
     return {
       dateDebut: null,
       emplacements: [],
@@ -45,9 +57,9 @@ export function calculerFenetre(nuitsActives: NuitRow[], aujourdHui: string): Fe
     };
   }
 
-  const dates = nuitsActives.map((n) => n.dateNuit).sort();
-  const dateDebut = dates[0];
-  const renseignees = new Set(dates);
+  const triees = [...dates].sort();
+  const dateDebut = triees[0];
+  const renseignees = new Set(triees);
 
   const emplacements: EmplacementFenetre[] = [];
   for (let index = 1; index <= NB_JOURS_AGENDA; index += 1) {

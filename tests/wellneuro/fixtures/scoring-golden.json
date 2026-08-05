@@ -30,10 +30,10 @@
       "total": 0,
       "interpretation": {
         "label": "Oriente vers les conseils de vie antistress",
-        "color": "success",
-        "protocol": "Conseils de vie antistress"
+        "color": "success"
       },
-      "miniSynthese": "Oriente vers les conseils de vie antistress — Orientation : Conseils de vie antistress"
+      "conduite": "Conseils de vie antistress",
+      "miniSynthese": "Oriente vers les conseils de vie antistress — Orientation : Conseils de vie antistress. Détail — Groupe A — Épuisement / protocole dopaminergique 0/14, Groupe B — Tension / protocole sérotoninergique 0/14, Groupe C — Somatisation / protocole mixte 0/14."
     }
   },
   {

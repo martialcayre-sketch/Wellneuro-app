@@ -8,19 +8,19 @@
 
 // ─── helpers de lecture défensive ───────────────────────────────────────────
 
-function asRecord(input: unknown): Record<string, unknown> {
+export function asRecord(input: unknown): Record<string, unknown> {
   return input && typeof input === 'object' && !Array.isArray(input)
     ? (input as Record<string, unknown>)
     : {};
 }
 
 // Chaîne non vide, tronquée par sécurité.
-function texte(v: unknown, max = 2000): string {
+export function texte(v: unknown, max = 2000): string {
   return typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : '';
 }
 
 // Liste de libellés (checkbox-multi) — les valeurs stockées sont déjà lisibles.
-function liste(v: unknown, max = 50): string[] {
+export function liste(v: unknown, max = 50): string[] {
   if (!Array.isArray(v)) return [];
   return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, max);
 }

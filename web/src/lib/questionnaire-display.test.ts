@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import type { QuestionnaireDef } from './questionnaire-types';
 import { calculateScore, QUESTIONNAIRE_CATALOGUE } from './questions';
@@ -7,6 +9,7 @@ import {
   getEnabledRenderer,
   getMicroBatches,
   getRendererPourDefinition,
+  resoudreRenderer,
   type OptionOrderPolicy,
 } from './questionnaire-display';
 import { Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from './questionnaires/alimentaire';
@@ -35,6 +38,76 @@ describe('registre d’affichage questionnaires', () => {
       optionOrder: { mode: 'fixed' },
       activation: 'enabled',
     });
+  });
+
+  it('le résolveur ne connaît AUCUN identifiant d’instrument', () => {
+    // Garde de style, portée au corps de la fonction seule : le registre du même
+    // fichier n'est QUE des littéraux `Q_*`, une regex sur le fichier entier
+    // serait rouge dès l'écriture. Il double le garde comportemental ci-dessous,
+    // qui est le seul à prouver quelque chose : celui-ci interdit une
+    // orthographe, pas un comportement.
+    expect(resoudreRenderer.toString()).not.toMatch(/Q_[A-Z]{3}_\d{2}/);
+  });
+
+  it('le résolveur lit la levée conditionnelle, sur des policies fabriquées', () => {
+    // Aucun instrument nommé nulle part : c'est ce qui distingue la levée du
+    // contournement qu'elle remplace.
+    const bloquee = {
+      administration: 'strict', renderer: 'guided_sections', itemOrder: 'fixed',
+      optionOrder: { mode: 'fixed' }, activation: 'blocked',
+      leveeConditionnelle: { discriminant: 'scoring.maxTotal', valeur: 90, motif: 'test' },
+    } as const;
+    expect(resoudreRenderer(bloquee, { scoring: { maxTotal: 90 } })).toBe('guided_sections');
+    expect(resoudreRenderer(bloquee, { scoring: { maxTotal: 42 } })).toBe('standard');
+    expect(resoudreRenderer(bloquee, { scoring: {} })).toBe('standard');
+    expect(resoudreRenderer(bloquee, null)).toBe('standard');
+    // Une policy bloquée SANS levée ne rend jamais son renderer, quelle que soit
+    // la définition — sinon la levée n'aurait rien à lever.
+    const { leveeConditionnelle: _, ...sansLevee } = bloquee;
+    expect(resoudreRenderer(sansLevee as any, { scoring: { maxTotal: 90 } })).toBe('standard');
+  });
+
+  it('un discriminant INCONNU ne lève rien — jamais fail-open', () => {
+    // Sans la vérification du champ `discriminant`, il serait décoratif :
+    // déclarer `{discriminant:'items.count', valeur:57}` ferait quand même
+    // comparer `scoring.maxTotal === 57`, et un instrument coté /57 ouvrirait la
+    // grille. Une levée qu'on ne sait pas interpréter ne lève rien.
+    const exotique = {
+      administration: 'strict', renderer: 'guided_sections', itemOrder: 'fixed',
+      optionOrder: { mode: 'fixed' }, activation: 'blocked',
+      leveeConditionnelle: { discriminant: 'items.count', valeur: 57, motif: 'test' },
+    } as any;
+    expect(resoudreRenderer(exotique, { scoring: { maxTotal: 57 } })).toBe('standard');
+  });
+
+  it('toute page montant GenericQuestionnaire transmet le renderer du serveur', () => {
+    // Le défaut réparé ici était un chemin patient qui NE passait PAS la prop :
+    // le repli client retombe alors sur l'identifiant seul et sert la
+    // disposition de l'autre forme. Un garde nominatif sur les deux pages
+    // connues laisserait un troisième chemin s'ouvrir sans témoin ; celui-ci
+    // balaie tous les sites de montage.
+    const racine = join(__dirname, '..');
+    const sites: string[] = [];
+    const sansRenderer: string[] = [];
+    const parcourir = (dossier: string) => {
+      for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+        const chemin = join(dossier, entree.name);
+        if (entree.isDirectory()) { parcourir(chemin); continue; }
+        if (!entree.name.endsWith('.tsx') || entree.name.includes('.test.')) continue;
+        const source = readFileSync(chemin, 'utf8');
+        let i = source.indexOf('<GenericQuestionnaire');
+        while (i !== -1) {
+          const bloc = source.slice(i, source.indexOf('/>', i) + 2);
+          sites.push(chemin);
+          if (!/\brenderer=/.test(bloc)) sansRenderer.push(chemin);
+          i = source.indexOf('<GenericQuestionnaire', i + 1);
+        }
+      }
+    };
+    parcourir(racine);
+    // Anti-vacuité : un balayage qui ne trouve aucun site passerait au vert.
+    expect(sites.length, 'aucun montage de GenericQuestionnaire trouvé').toBeGreaterThanOrEqual(2);
+    expect(sansRenderer, `pages sans prop renderer : ${sansRenderer.join(', ')}`).toEqual([]);
   });
 
   it('n’active que le pilote Q_NEU_03', () => {
@@ -133,6 +206,29 @@ describe('getRendererPourDefinition', () => {
   it('reste tolérante à une définition absente', () => {
     expect(getRendererPourDefinition('Q_ALI_01', null)).toBe('standard');
     expect(getRendererPourDefinition('Q_ALI_01', undefined)).toBe('standard');
+  });
+
+  it('un identifiant ABSENT du registre reste au rendu standard', () => {
+    // Le contrôle négatif ci-dessus n'exerce que des identifiants PRÉSENTS au
+    // registre : il ne prouve pas que la policy par défaut refuse. Sans cette
+    // ligne, une policy par défaut portant une levée passerait inaperçue.
+    expect(getRendererPourDefinition('Q_INCONNU', Q_ALI_01_SIIN_57)).toBe('standard');
+  });
+
+  it('le gate de `Q_ALI_01` reste BLOQUÉ — il est levé, pas retiré', () => {
+    // La distinction est tout l'objet du lot : le registre continue de dire que
+    // l'identifiant est bloqué, et déclare à côté la condition qui le lève. Le
+    // passer à `enabled` ouvrirait la grille à la forme courte non certifiée.
+    const policy = getDisplayPolicy('Q_ALI_01');
+    expect(policy.activation).toBe('blocked');
+    expect(policy.leveeConditionnelle).toEqual({
+      discriminant: 'scoring.maxTotal',
+      valeur: 90,
+      motif: expect.any(String),
+    });
+    // Et le gate nomme les DEUX formes, pas seulement celle qui passe.
+    expect(policy.gate).toContain('57');
+    expect(policy.gate).toContain('14');
   });
 
   it('n’altère pas `getEnabledRenderer`, qui garde son contrat par identifiant', () => {

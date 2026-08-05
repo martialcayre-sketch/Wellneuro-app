@@ -7,11 +7,11 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "2026-07-23-spirale-fiche-trajectoire/LOT-06",
+  "last_completed_lot": "2026-07-25-certification-corpus-questionnaires/montee-lots-1-4 (62/64)",
   "git": {
-    "branch": null,
-    "last_commit": null,
-    "dirty": null
+    "branch": "worktree-signature-table-orientation",
+    "last_commit": "d9aac3b1",
+    "dirty": true
   },
   "validation": {
     "overall_status": "passed",
@@ -19,18 +19,18 @@
     "checks": {
       "orchestration": "audit campagnes vert à la clôture G-TRUST-04 (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
       "type_check": "vert — @ts-nocheck levé 17/17 sur le catalogue clinique, tsc 0 erreur projet entier",
-      "scoring_certification": "vert — juge transpile le TS avant eval (prouvé neutre sur catalogue inchangé) ; 63 questionnaires, fixtures certifiées, rejoué à chaque vague",
+      "scoring_certification": "vert — banc rejoué 2026-08-01 ; 60/64 en scoring_verifie, 2 suspendus terminaux (Q_FIB_03 fermé, Q_PED_03 arbitrage clinique ouvert), Q_SOM_09 en droits_verifies (recueil en cours), Q_GEO_04 plafonné contenu_verrouille (bandes HAS 2011 non sourcées, escalade SIIN ouverte)",
       "no_secrets": "vert",
       "e2e": "T3 test:worktree complet vert à la clôture G-TRUST-04 (dont portail-parcours, preuve de la requalification onboarding) ; baselines visuelles SP-CONV actives depuis #298",
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "AUCUNE CAMPAGNE ACTIVE — SP-TRAJ livrée et mergée le 2026-07-23 (#311, #313→#317 ; merges par l'assistant, Copilot en dépassement de forfait). Maintenance faite le même jour : #301/#318 (journaux, conflit d'append résolu) et #308 (accueil-observatoire — frontmatter de lot corrigé, revue adversariale GO, VuesRapides rattrapées vers /dashboard/trajectoires dans #315) mergées. EN ATTENTE HUMAINE (reconduites) : invitations aux 12 patients (précondition IDP2 LOT-04), visibilité patient du fil médecin, dérogation G-TRUST-04 au 2026-10-21, D-TRUST-02, registre EX-3. Notes locales : purger web/.next si fiche-trajectoire:12 timeout ; portail-lien-magique:45 échoue en local même sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des nouveaux écrans trajectoires différées (captures de revue seules).",
+  "next_action": "MONTÉE EN CERTIFICATION CLOSE le 2026-08-01 à 62/64 — 60 scoring_verifie + 2 suspendus terminaux (campagne 2026-07-25-certification-corpus-questionnaires, lots 1-4). EN VOL : Q_SOM_09 (droits_verifies — attendre la fin du recueil de données, décision praticien avant tout scoring) ; Q_GEO_04 (contenu_verrouille par plafond adversarial du 2026-08-01 — ne monter qu'après vérification des bandes 27-30/21-26/10-20/0-9 contre la HAS 2011 ou retour de l'escalade SIIN du 2026-07-25, toujours ouverte). ARBITRAGES DU 2026-08-01 (praticien, en session) : Q_PED_03 reste suspendu — rouvrir sur usage seulement, avec le scoring dimensionnel complet, jamais la somme brute ; ORIENTATION ADAPTATIVE LANCÉE — constat au cadrage : le lot 7 est DÉJÀ LIVRÉ depuis le 2026-07-25 (#361 : orientationRulesV1 contrat v2 table vide, orientationEngine pur, route GET double verrou fail-closed WN_ENABLE_ORIENTATION_NNPP2 + tableSignee, tests) et dort en fail-closed ; LOT 8 CADRÉ ET GATES CONFIRMÉS le 2026-08-01 : décision f close AMENDÉE (seule la perfusion reste exclue du moteur d'orientation ; sevrages médicamenteux, psychotropes et Alzheimer réintégrés — validation claim par claim et barrière D-003 inchangées), coût accepté (~11-17 USD sur les 106 fiches, estimation ±2-3x sur le drafting), premier lot : SOMMEIL COMPLET (17 fiches, notebook 02). EXÉCUTION SUR LE MAC UNIQUEMENT (web/.env.local : ANTHROPIC_API_KEY, OPENAI_API_KEY, RAG_INTERNAL_SECRET ; PDF sous ~/.wellneuro/corpus/). Préparation dépôt AVANT le run, en PR séparée après merge de #517 : marquer metadata.usage='orientation' dans tools/corpus/claims/draft.mjs, matérialiser le filtre A-009 amendé (perfusion seule), runbook. Puis lot 9 (compilation de la table par PR revue + signature praticien). Q_FIB_03 fermé définitivement — ne rouvrir que sur usage. EN ATTENTE HUMAINE (reconduites) : invitations aux 12 patients (précondition IDP2 LOT-04), visibilité patient du fil médecin, dérogation G-TRUST-04 au 2026-10-21, D-TRUST-02, registre EX-3. Notes locales : purger web/.next si fiche-trajectoire:12 timeout ; portail-lien-magique:45 échoue en local même sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des nouveaux écrans trajectoires différées (captures de revue seules).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T17:55:00Z",
+  "updated_at": "2026-08-04T17:42:27Z",
   "parallel_campaigns": []
 }

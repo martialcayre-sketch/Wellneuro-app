@@ -104,6 +104,34 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (ass.idQuestionnaire === 'Q_SOM_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }
+    // L'agenda alimentaire (Q_ALI_09) est fermé ici pour une raison VOISINE mais
+    // pas identique. Sa définition ne porte AUCUN item (`sections: []`) : la
+    // saisie passe par un composant dédié, jour par jour. Sans ce refus, une
+    // soumission par l'écran générique créerait une `QuestionnaireReponse` à
+    // `rawAnswers: {}` en passant l'assignation à `Complété` / `verrouille` —
+    // c'est-à-dire une PASSATION FABRIQUÉE au dossier du patient, pas seulement
+    // une fenêtre de recueil fermée trop tôt.
+    //
+    // Ne pas justifier ce refus par « irrécupérable » : un déverrouillage
+    // praticien existe (`PUT /api/praticien/assignations`), et il fonctionne
+    // précisément dans la position où le scénario peut se produire — drapeau
+    // allumé. Ce qui ne se rattrape pas, c'est la ligne fausse au dossier.
+    if (ass.idQuestionnaire === 'Q_ALI_09') {
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda alimentaire se remplit jour par jour, il ne se soumet pas ici." }, { status: 409 }), requestContext);
+    }
+    // Assignation annulée par le praticien (Fil A) : soumission refusée. Refus
+    // défensif symétrique à celui de `patient/questionnaire` — une annulée ne se
+    // remplit ni ne se soumet, quel que soit le chemin. 409 : un retrait, pas une
+    // expiration.
+    if (ass.statut === 'Annulée') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : assignation annulée',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 409 }), requestContext);
+    }
     if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_ALREADY_DONE,
@@ -192,6 +220,59 @@ export async function POST(req: Request): Promise<NextResponse> {
         return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Réponses incomplètes : toutes les questions sont requises.' }, { status: 400 }), requestContext);
       }
     }
+    // BORNES DES SAISIES CHIFFRÉES, contrôlées CÔTÉ SERVEUR.
+    //
+    // `min` et `max` d'un item `type: 'number'` n'étaient jusqu'ici que des
+    // attributs HTML : le navigateur les respecte, une requête directe non. Tant
+    // qu'aucun questionnaire du catalogue ne demandait de nombre, cela ne se
+    // voyait pas. `Q_ALI_03`, reconstruit le 2026-07-31, en demande 21 — et son
+    // moteur MULTIPLIE chaque saisie par un coefficient : « 999999 portions »
+    // rendait 20 millions de grammes de protéines, persistés en base et
+    // renvoyés au modèle de synthèse comme une déclaration du patient.
+    //
+    // On REFUSE plutôt qu'on ne borne : ramener 999999 à 10 en silence
+    // inventerait une déclaration que le patient n'a pas faite — la faute même
+    // que toute la chaîne alimentaire cherche à empêcher.
+    // Le contrôle porte sur les DEUX formes de saisie, et non sur le seul
+    // `type: 'number'`. Un garde calibré sur le type de l'item plutôt que sur ce
+    // que l'item ALIMENTE laisse passer exactement la même faute par l'autre
+    // porte : `Q_ALI_03` a deux items à choix unique dont la valeur d'option EST
+    // la quantité (15 ou 10 g de forfait, 0/150/300 kcal de grignotage), et
+    // `{ AP13: 9999 }` rendait 9 999 g de protéines par jour. Ailleurs au
+    // catalogue, une valeur d'option est un poids de points, borné par son
+    // barème ; ici elle est une grandeur physique. Dans les deux cas, une valeur
+    // que la définition ne propose pas n'est pas une réponse.
+    if (def) {
+      const horsBornes = def.sections
+        .flatMap(s => s.questions)
+        .filter((q: any) => {
+          const brute = (answers as Record<string, unknown>)[q.id];
+          if (brute === undefined || brute === null || brute === '') return false;
+          if (q.type === 'number') {
+            const valeur = Number(brute);
+            if (!Number.isFinite(valeur)) return true;
+            if (typeof q.min === 'number' && valeur < q.min) return true;
+            return typeof q.max === 'number' && valeur > q.max;
+          }
+          // Comparaison en CHAÎNE : deux instruments portent des options non
+          // numériques (`'oui'`/`'non'`), et le corps JSON peut livrer un
+          // nombre là où la définition écrit une chaîne, ou l'inverse.
+          const options = Array.isArray(q.options) ? q.options : null;
+          if (!options || options.length === 0) return false;
+          return !options.some((o: any) => String(o.v) === String(brute));
+        })
+        .map((q: any) => q.id);
+      if (horsBornes.length > 0) {
+        logger.warn({
+          event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD,
+          domain: 'QUESTIONNAIRE',
+          message: 'Saisie chiffrée hors bornes déclarées',
+          context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+        });
+        return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Une valeur saisie sort des limites autorisées. Vérifiez les nombres indiqués.' }, { status: 400 }), requestContext);
+      }
+    }
+
     // Sans définition (questionnaire fonctionnel ou id retiré du catalogue),
     // les réponses brutes restent la donnée clinique : persistées avec un
     // champ error, comme avant ce lot.

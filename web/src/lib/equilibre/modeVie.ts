@@ -20,7 +20,8 @@ export type ZoneModeVie = {
 export type DomaineModeVie = {
   id: string;
   label: string;
-  total: number;
+  /** `null` quand aucun item du domaine n'a été renseigné — jamais 0. */
+  total: number | null;
   max: number;
   // Interprétation du MOTEUR, passée telle quelle (calculateScore/interpretRanges
   // retombe sur la dernière zone pour un score dans un trou de grille — c'est
@@ -35,7 +36,8 @@ export type ModeVieDate = { domaines: DomaineModeVie[] };
 type SousScoreCalcule = {
   id: string;
   label: string;
-  scaled: number;
+  /** `null` quand l'axe n'a pas été mesuré (cf. moteur de scoring). */
+  scaled: number | null;
   maxScaled: number;
   interpretation: { label: string; color: string } | null;
 };

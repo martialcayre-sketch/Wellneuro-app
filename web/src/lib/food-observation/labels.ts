@@ -4,7 +4,9 @@ import type {
   DirectFindingCode,
   EpisodeRegime,
   EpisodeStatut,
+  MomentPrise,
   TraceIssue,
+  TypeJournee,
 } from './types';
 
 /**
@@ -64,6 +66,22 @@ export const LABELS_CONSTATS_DIRECTS: Record<DirectFindingCode, string> = {
 };
 
 /** Terme acté pour toute action proposée au patient (R4). */
+/** Types de journée du bilan de calibrage (lot 3), en français patient. */
+export const LABELS_TYPE_JOURNEE: Record<TypeJournee, string> = {
+  travail_matin: 'Journée de travail, poste du matin',
+  travail_apres_midi: 'Journée de travail, poste d’après-midi',
+  repos: 'Journée sans travail',
+  week_end: 'Week-end',
+};
+
+/** Moments approximatifs — jamais une heure. */
+export const LABELS_MOMENT_PRISE: Record<MomentPrise, string> = {
+  matin: 'Matin',
+  midi: 'Midi',
+  soir: 'Soir',
+  hors_repas: 'En dehors des repas',
+};
+
 export const LABEL_RECOMMANDATION = 'recommandation';
 
 /** Silence utile explicite côté patient (droit au silence, JA-0T 5/5). */

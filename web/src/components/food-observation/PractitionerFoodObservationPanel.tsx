@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   C5B_RECOMMENDED_PLATES,
@@ -11,12 +11,19 @@ import {
   FRICTIONS,
   LABELS_CONSTATS_DIRECTS,
   LABELS_ISSUE_TRACE,
+  LABELS_MOMENT_PRISE,
+  LABELS_TYPE_JOURNEE,
   type FrictionCode,
-  createAttentionBudget,
-  createEpisode,
+  buildEpisodeDepuisProtocole,
+  couvertureJournees,
   createTrialTrace,
+  joursObservables,
   listDirectFindings,
   type FoodObservationEpisode,
+  type IntraEpisodeSolution,
+  type JourneeRepere,
+  type MinimalPlanEvent,
+  type PatientPauseEvent,
   type TraceIssue,
   type TrialTrace,
 } from '@/lib/food-observation';
@@ -25,36 +32,41 @@ function dateLocale(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function plusDays(value: Date, days: number): Date {
-  const clone = new Date(value);
-  clone.setDate(clone.getDate() + days);
-  return clone;
-}
-
 function makeId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function buildEpisode(patientId: string): FoodObservationEpisode {
-  const start = new Date();
-  return createEpisode({
-    episodeId: `ja_praticien_${patientId}`,
-    patientId,
-    startDate: dateLocale(start),
-    endDate: dateLocale(plusDays(start, 6)),
-    budget: createAttentionBudget(3),
-    content: {
-      regime: 'essai',
-      hypothese: 'Observer la praticabilite de l’action alimentaire sans surcharge de saisie.',
-      action: {
-        actionId: 'action_ja5_02',
-        labelPatient: 'Action alimentaire de la semaine',
-        idealPlan: 'Version ideale decidee en consultation.',
-        simplePlan: 'Version simple decidee en consultation.',
-      },
-    },
-  });
-}
+// L'épisode praticien n'est plus un gabarit (lot 2, item 5) : il vient du
+// protocole diffusé, via `GET /api/praticien/ja/cycle`, et porte le MÊME
+// `episodeId` que celui du panneau patient. Sans protocole diffusé, il n'y a
+// pas d'épisode — l'ancien gabarit annonçait « Version ideale decidee en
+// consultation » sans que rien ne l'y relie.
+type VueCyclePraticien = {
+  purpose: string;
+  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
+  cycleRef: string;
+  debutCycle: string;
+};
+
+type JaSnapshotRecu = {
+  draftId: string;
+  createdAt: string;
+  actor: 'praticien' | 'patient';
+  tracesCount: number;
+  pausesCount: number;
+  solutionsCount: number;
+  journeesCount: number;
+};
+
+/** Contenu d'une transmission — ce que le patient a réellement écrit. */
+type JaSnapshotDetail = JaSnapshotRecu & {
+  traces: TrialTrace[];
+  pauses: PatientPauseEvent[];
+  plans: MinimalPlanEvent[];
+  solutions: IntraEpisodeSolution[];
+  journees: JourneeRepere[];
+  elementsEcartes: number;
+};
 
 type PractitionerFoodObservationDraft = {
   traces: TrialTrace[];
@@ -166,7 +178,18 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     if (!initialDraft) return false;
     return initialDraft.traces.length > 0 || initialDraft.decisionNote.length > 0;
   });
-  const [episode] = useState<FoodObservationEpisode>(() => buildEpisode(idPatient));
+  const [episode, setEpisode] = useState<FoodObservationEpisode | null>(null);
+  const [cycleCharge, setCycleCharge] = useState(false);
+  const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
+  const [listeTronquee, setListeTronquee] = useState(false);
+  const [detailOuvert, setDetailOuvert] = useState<string | null>(null);
+  const [calibrage, setCalibrage] = useState<JaSnapshotDetail | null>(null);
+  // Dernière ouverture demandée. Comparer la réponse à l'argument de l'appel ne
+  // sert à rien — il correspond toujours ; c'est à l'ouverture COURANTE qu'il
+  // faut la comparer, et l'état React est périmé dans la clôture.
+  const detailDemande = useRef<string | null>(null);
+  const [detail, setDetail] = useState<JaSnapshotDetail | null>(null);
+  const [detailErreur, setDetailErreur] = useState('');
   const [traces, setTraces] = useState<TrialTrace[]>(() => initialDraft?.traces ?? []);
   const [decisionMode, setDecisionMode] = useState<'accepter' | 'modifier'>(
     () => initialDraft?.decisionMode ?? 'accepter'
@@ -193,16 +216,115 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
   const momentsToExplore = useMemo(() => topMomentsToExplore(traces), [traces]);
 
+  // Jours DISTINCTS sans trace sur la fenêtre de l'épisode. Le 7 en dur qui
+  // tenait cette place ne comptait aucun jour : il affirmait « 7 jours sans
+  // trace » dès que la liste était vide, et « 0 » dès qu'une trace existait,
+  // fût-elle du premier jour d'une période de trois semaines.
+  //
+  // BORNE À CONNAÎTRE : `traces` est le brouillon LOCAL du praticien, jamais ce
+  // que le patient a transmis — la route de lecture ne rend que des compteurs,
+  // sans les dates. Le constat ne vaut donc que du carnet de ce poste. Il est
+  // tu dès qu'une transmission patient existe, plutôt que d'affirmer une
+  // absence que cette surface ne peut pas constater.
+  const joursSansTrace = useMemo(() => {
+    if (!episode || transmissions.length > 0) return 0;
+    const datesTracees = new Set(traces.map(t => t.localDate));
+    return joursObservables(episode.startDate, episode.endDate, dateLocale(new Date()))
+      .filter(jour => !datesTracees.has(jour)).length;
+  }, [episode, traces, transmissions]);
+
   const constats = useMemo(() => listDirectFindings({
-    joursSansTrace: traces.length === 0 ? 7 : 0,
+    joursSansTrace,
     occasionAbsente: traces.some(trace => trace.occasionPresentee === false),
     planMinimalActif: false,
     actionDeclareeImpossible: traces.some(trace => trace.issue === 'partiel_empeche'),
-  }), [traces]);
+  }), [joursSansTrace, traces]);
 
   useEffect(() => {
     writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
   }, [idPatient, traces, decisionMode, decisionNote, assietteCode]);
+
+  // Transmissions reçues du patient (lot 2, item 4). Sans ce lecteur, le bouton
+  // « Transmettre à mon praticien » promettait un partage sans destinataire.
+  useEffect(() => {
+    let mounted = true;
+
+    const chargerTransmissions = async () => {
+      try {
+        const res = await fetch(
+          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&actor=patient`,
+          { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+        );
+        const json = (await res.json()) as {
+          ok: boolean;
+          snapshots?: JaSnapshotRecu[];
+          tronquee?: boolean;
+        };
+        if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
+        // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
+        // ceinture, il ne porte plus la fenêtre de lecture.
+        const duPatient = json.snapshots.filter(s => s.actor === 'patient');
+        setTransmissions(duPatient);
+        setListeTronquee(json.tronquee === true);
+
+        // Le bilan de calibrage porte l'ÉTAT DU RECUEIL, pas ce que le
+        // praticien a déplié. Il suit donc la transmission la plus récente, et
+        // elle seule : les transmissions sont cumulatives par cycle — le
+        // patient renvoie tout son brouillon — donc la dernière est la plus
+        // complète, et sommer les instantanés compterait deux fois les mêmes
+        // journées.
+        const derniere = duPatient[0];
+        if (derniere) {
+          const resDetail = await fetch(
+            `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&draftId=${encodeURIComponent(derniere.draftId)}`,
+            { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+          );
+          const jsonDetail = (await resDetail.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
+          if (mounted && resDetail.ok && jsonDetail.ok && jsonDetail.snapshot) {
+            setCalibrage(jsonDetail.snapshot);
+          }
+        }
+      } catch {
+        // Repli silencieux : la revue praticien reste utilisable.
+      }
+    };
+
+    void chargerTransmissions();
+    return () => { mounted = false; };
+  }, [idPatient]);
+
+  // Épisode dérivé du protocole diffusé, identique à celui du panneau patient.
+  useEffect(() => {
+    let mounted = true;
+
+    const chargerCycle = async () => {
+      try {
+        const res = await fetch(`/api/praticien/ja/cycle?idPatient=${encodeURIComponent(idPatient)}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const json = (await res.json()) as {
+          ok: boolean;
+          protocoleDiffuse?: boolean;
+          vue?: VueCyclePraticien | null;
+        };
+        if (!mounted) return;
+        if (!res.ok || !json.ok || !json.protocoleDiffuse || !json.vue) {
+          setEpisode(null);
+          return;
+        }
+        setEpisode(buildEpisodeDepuisProtocole({ idPatient, protocole: json.vue }));
+      } catch {
+        if (mounted) setEpisode(null);
+      } finally {
+        if (mounted) setCycleCharge(true);
+      }
+    };
+
+    void chargerCycle();
+    return () => { mounted = false; };
+  }, [idPatient]);
 
   useEffect(() => {
     let mounted = true;
@@ -243,7 +365,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     try {
       const trace = createTrialTrace({
         traceId: makeId('trace_praticien'),
-        episodeId: episode.episodeId,
+        episodeId: episode?.episodeId ?? `ja_praticien_${idPatient}_hors_cycle`,
         localDate: dateLocale(new Date()),
         occasionPresentee: true,
         faisable: issue === 'fait' || issue === 'adapte',
@@ -281,6 +403,52 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     }
   };
 
+  // Le contenu n'est chargé qu'à l'ouverture : la liste sert à choisir, pas à
+  // tout rapatrier.
+  const basculerDetail = async (draftId: string) => {
+    setDetailErreur('');
+    if (detailOuvert === draftId) {
+      detailDemande.current = null;
+      setDetailOuvert(null);
+      setDetail(null);
+      return;
+    }
+    detailDemande.current = draftId;
+    setDetailOuvert(draftId);
+    setDetail(null);
+    try {
+      const res = await fetch(
+        `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&draftId=${encodeURIComponent(draftId)}`,
+        { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+      );
+      const json = (await res.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
+      if (!res.ok || !json.ok || !json.snapshot) {
+        if (detailDemande.current === draftId) {
+          setDetailErreur('Cette transmission n’a pas pu être ouverte.');
+        }
+        return;
+      }
+      // Deux ouvertures rapprochées peuvent revenir dans le désordre : sans ce
+      // contrôle, le mot libre d'une transmission s'affichait sous la date
+      // d'une autre.
+      if (detailDemande.current !== draftId || json.snapshot.draftId !== draftId) return;
+      setDetail(json.snapshot);
+    } catch {
+      setDetailErreur('Cette transmission n’a pas pu être ouverte.');
+    }
+  };
+
+  // Ce que le praticien voit du calibrage vient de la DERNIÈRE transmission,
+  // chargée d'office — jamais de ce qu'il a déplié. Faire dépendre ce bloc du
+  // dépliant faisait dire « aucune journée décrite » au-dessus d'une liste
+  // annonçant douze journées, et faisait sous-estimer la couverture dès qu'une
+  // transmission ancienne était ouverte.
+  const journeesTransmises = calibrage?.journees ?? [];
+  const couvertureTransmise = useMemo(
+    () => couvertureJournees(journeesTransmises),
+    [journeesTransmises],
+  );
+
   const validerRevue = () => {
     if (decisionMode === 'modifier' && decisionNote.trim().length < 10) {
       setError('En mode Modifier, ajoute une note de décision plus précise (10 caractères minimum).');
@@ -289,7 +457,10 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     setError('');
     const assiette = getRecommendedPlate(assietteCode);
     const modeLabel = decisionMode === 'accepter' ? 'Accepté' : 'Modifié';
-    setReviewSummary(`${modeLabel} — ${assiette?.label ?? 'Aucune assiette proposée'}. ${decisionNote}`);
+    setReviewSummary(
+      `${modeLabel} — ${assiette?.label ?? 'Aucune assiette proposée'}. ${decisionNote}`
+      + ' · Préparée, non transmise : cliquez sur « Activer la décision » pour l’envoyer au patient.',
+    );
   };
 
   const activerDecision = async () => {
@@ -299,6 +470,13 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     }
     if (feedbackPatient.trim().length < 10) {
       setError('Ajoutez un retour patient de 10 caractères minimum.');
+      return;
+    }
+
+    // Sans protocole diffusé, il n'y a pas d'épisode à figer : l'activation
+    // écrirait un instantané rattaché à un épisode inventé.
+    if (!episode) {
+      setError('Aucun protocole diffusé : diffusez un protocole avant d’activer une décision JA.');
       return;
     }
 
@@ -397,6 +575,186 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         </Link>
       </div>
 
+      {cycleCharge && (
+        episode && episode.content.regime === 'essai' ? (
+          <section
+            className="bg-surface border border-border rounded-xl p-4 space-y-1"
+            data-testid="ja-praticien-cycle"
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Action du protocole diffusé
+            </h3>
+            <p className="text-sm font-medium text-foreground">{episode.content.action.labelPatient}</p>
+            <p className="text-sm text-muted-foreground">{episode.content.action.simplePlan}</p>
+            <p className="text-xs text-muted-foreground">
+              Période du {episode.startDate} au {episode.endDate}.
+            </p>
+          </section>
+        ) : (
+          <p
+            className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10"
+            data-testid="ja-praticien-sans-cycle"
+          >
+            Aucun protocole diffusé pour ce patient : la saisie reste locale et aucune décision JA
+            ne peut être activée.
+          </p>
+        )
+      )}
+
+      <section
+        className="bg-surface border border-border rounded-xl p-4 space-y-2"
+        data-testid="ja-praticien-transmissions"
+      >
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Ce que le patient a transmis
+        </h3>
+        {listeTronquee && (
+          <p className="text-xs text-muted-foreground">
+            Les transmissions les plus récentes. Il peut en exister d’autres, plus anciennes.
+          </p>
+        )}
+        {transmissions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune transmission du patient à ce jour.</p>
+        ) : (
+          <ul className="space-y-2 text-sm text-foreground">
+            {transmissions.map((snapshot) => (
+              <li key={snapshot.draftId} className="border-t border-border pt-2 first:border-0 first:pt-0">
+                <button
+                  type="button"
+                  data-testid={`ja-praticien-transmission-${snapshot.draftId}`}
+                  onClick={() => basculerDetail(snapshot.draftId)}
+                  className="text-left w-full hover:underline"
+                  aria-expanded={detailOuvert === snapshot.draftId}
+                >
+                  {dateLocale(new Date(snapshot.createdAt))} — {snapshot.tracesCount} trace(s),{' '}
+                  {snapshot.pausesCount} pause(s), {snapshot.solutionsCount} solution(s),{' '}
+                  {snapshot.journeesCount} journée(s) décrite(s)
+                  <span className="text-muted-foreground">
+                    {detailOuvert === snapshot.draftId ? ' — masquer' : ' — ouvrir'}
+                  </span>
+                </button>
+
+                {detailOuvert === snapshot.draftId && (
+                  <div className="mt-2 space-y-2" data-testid="ja-praticien-transmission-detail">
+                    {detailErreur ? (
+                      <p className="text-sm text-destructive">{detailErreur}</p>
+                    ) : !detail ? (
+                      <p className="text-sm text-muted-foreground">Ouverture…</p>
+                    ) : (
+                      <>
+                        {detail.journees.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-muted-foreground">
+                                  <th className="text-left pr-3 font-medium">Date</th>
+                                  <th className="text-left pr-3 font-medium">Type de journée</th>
+                                  <th className="text-left pr-3 font-medium">Prises</th>
+                                  <th className="text-left font-medium">Moments</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {detail.journees.map((journee) => (
+                                  <tr key={journee.journeeId}>
+                                    <td className="pr-3 py-1">{journee.localDate}</td>
+                                    <td className="pr-3 py-1">
+                                      {LABELS_TYPE_JOURNEE[journee.typeJournee]}
+                                    </td>
+                                    <td className="pr-3 py-1">
+                                      {journee.rienDeParticulier
+                                        ? '—'
+                                        : (journee.nombrePrises ?? '—')}
+                                    </td>
+                                    <td className="py-1">
+                                      {journee.rienDeParticulier
+                                        ? 'Rien de particulier'
+                                        : journee.momentsObserves
+                                            .map((m) => LABELS_MOMENT_PRISE[m])
+                                            .join(' · ') || '—'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {detail.traces.length > 0 && (
+                          <ul className="space-y-1 text-xs text-muted-foreground">
+                            {detail.traces.map((trace) => (
+                              <li key={trace.traceId}>
+                                {trace.localDate} · {LABELS_ISSUE_TRACE[trace.issue]}
+                                {trace.frictionCode
+                                  ? ` · friction : ${FRICTIONS[trace.frictionCode]}`
+                                  : ''}
+                                {trace.motLibre ? ` — « ${trace.motLibre} »` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {detail.pauses.length > 0 && (
+                          <ul className="space-y-1 text-xs text-muted-foreground">
+                            {detail.pauses.map((pause) => (
+                              <li key={pause.eventId}>
+                                Semaine du {pause.semaineDu} · pause déclarée par le patient
+                                {pause.motifCode ? ` — ${FRICTIONS[pause.motifCode]}` : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {detail.solutions.length > 0 && (
+                          <ul className="space-y-1 text-xs text-muted-foreground">
+                            {detail.solutions.map((solution) => (
+                              <li key={solution.solutionId}>
+                                Solution : {solution.labelPatient} — {solution.contexte}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {detail.plans.length > 0 && (
+                          <ul className="space-y-1 text-xs text-muted-foreground">
+                            {detail.plans.map((plan) => (
+                              <li key={plan.eventId}>
+                                {plan.from} · plan minimal de {plan.dureeJours} jour(s), activé par{' '}
+                                {plan.activatedBy === 'patient' ? 'le patient' : 'le praticien'}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {detail.elementsEcartes > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {detail.elementsEcartes} élément(s) illisible(s), non affiché(s) — le
+                            décompte ci-dessus les inclut.
+                          </p>
+                        )}
+
+                        {detail.journees.length === 0
+                          && detail.traces.length === 0
+                          && detail.pauses.length === 0
+                          && detail.plans.length === 0
+                          && detail.solutions.length === 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Cette transmission ne porte aucun élément lisible.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Comptes de ce qui a été transmis, sans interprétation. Une transmission patient
+          n’alimente aucune dérivation clinique tant que vous n’avez pas activé de décision.
+        </p>
+      </section>
+
       {draftRestored && (
         <p className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10" data-testid="ja-praticien-restored-info">
           Brouillon local restauré sur cet appareil.
@@ -489,11 +847,37 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         )}
       </section>
 
+      {/* Ce bloc affichait trois phrases écrites en dur — « 3 prises principales,
+          variabilité surtout le soir » — identiques pour tout patient, qu'il ait
+          transmis vingt journées ou aucune. Le praticien y lisait une
+          observation qui n'existait pas, au moment où il décide. Il ne rend plus
+          que ce que le patient a effectivement décrit. */}
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage restitué</h3>
-        <p className="text-base text-foreground">Structure observée: 3 prises principales, variabilité surtout le soir.</p>
-        <p className="text-base text-foreground">Charge supportable déclarée: 3 traces par semaine.</p>
-        <p className="text-base text-muted-foreground">Marqueurs saillants: petit-déjeuner sauté, dîner tardif, collation de fatigue.</p>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage</h3>
+        {journeesTransmises.length === 0 ? (
+          <p className="text-base text-muted-foreground">
+            Aucune journée décrite à ce jour.
+          </p>
+        ) : (
+          <>
+            <p className="text-base text-foreground">
+              {couvertureTransmise.compte} journée(s) décrite(s),{' '}
+              {couvertureTransmise.typesCouverts.length} type(s) de journée sur 4.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              D’après la transmission du {calibrage ? dateLocale(new Date(calibrage.createdAt)) : '—'}.
+            </p>
+            {couvertureTransmise.typesAbsents.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Non décrites à ce jour :{' '}
+                {couvertureTransmise.typesAbsents.map((t) => LABELS_TYPE_JOURNEE[t]).join(', ')}.
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Ouvrez une transmission ci-dessus pour lire le détail de chaque journée.
+            </p>
+          </>
+        )}
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-moments-explorer">
@@ -571,7 +955,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           onClick={validerRevue}
           className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90"
         >
-          Valider la revue locale
+          Préparer la décision
         </button>
 
         {reviewSummary && (

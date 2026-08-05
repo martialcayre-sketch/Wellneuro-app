@@ -59,6 +59,26 @@ function collecterOccurrences(resolution: ResolutionIntentions): Map<string, Occ
   return parIngredient;
 }
 
+/**
+ * La sentinelle a-t-elle de quoi conclure quoi que ce soit sur cette
+ * résolution ?
+ *
+ * FAUX quand aucune règle VALIDÉE n'atteint le moindre ingrédient — ce qui est
+ * le cas de toute résolution tant que `clinical_rules` est vide, alors même que
+ * l'intention, elle, se résout : `clinical_intent_tags` et `clinical_rules`
+ * sont deux tables distinctes, et la première est peuplée.
+ *
+ * Sans cette distinction, `evaluerSentinelle` rend `[]` — et `[]` se lit
+ * « aucun conflit » là où il faut lire « rien n'a été examiné ». C'est le
+ * troisième visage du même défaut : `[]` ≠ `null`, déjà corrigé sur la
+ * composition vide (#482) puis sur la composition partiellement résolue (#489).
+ * Ici la composition peut être INTÈGRE et le feu vert rester infondé, parce
+ * qu'il ne dépend pas d'elle mais du référentiel clinique.
+ */
+export function sentinelleADeQuoiConclure(resolution: ResolutionIntentions): boolean {
+  return collecterOccurrences(resolution).size > 0;
+}
+
 function decrireDoses(occurrences: readonly DoseEnPresence[]): string {
   return occurrences
     .map(occurrence =>

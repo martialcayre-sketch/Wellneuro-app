@@ -84,8 +84,12 @@ export const Q_TAB_03 = {
   }
 };
 export const Q_TAB_04 = {
-  id:'Q_TAB_04', titre:'Questionnaire d\'évaluation de la consommation de cannabis',
-  instructions:'Ce questionnaire évalue votre consommation de cannabis et ses conséquences. Répondez honnêtement — vos réponses sont confidentielles.',
+  id:'Q_TAB_04', titre:'Repérage des conduites de consommation de cannabis (grille WellNeuro)',
+  // La garde interdit « évaluation » dans le TITRE ; le mot vivait juste en
+  // dessous, dans la phrase que le patient lit. Un instrument qui ne rend ni
+  // score ni bande n'évalue rien, et le lui annoncer promet une mesure qu'il ne
+  // fera pas. Corrigé le 2026-08-01, avec le relevé qui l'a débaptisé.
+  instructions:'Ce questionnaire situe vos conduites de consommation de cannabis. Il ne calcule aucun score et ne conclut rien : vos réponses servent à préparer l\'entretien avec votre praticien. Répondez librement — elles sont confidentielles.',
   sections:[
     { id:'A', titre:'Consommation',
       questions:[
@@ -125,12 +129,59 @@ export const Q_TAB_04 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:32,
-    interpretation:[
-      {min:0, max:6,  label:'Usage expérimental ou occasionnel — risque faible',color:'success',protocol:'Information et prévention'},
-      {min:7, max:14, label:'Usage à risque',color:'warning',protocol:'Counseling motivationnel — réduction des risques — suivi régulier'},
-      {min:15,max:21, label:'Usage nocif probable',color:'danger',protocol:'Consultation addictologue — accompagnement au sevrage progressif'},
-      {min:22,max:32, label:'Dépendance probable',color:'danger',protocol:'Prise en charge spécialisée addictologie — TCC + accompagnement pharmacologique si nécessaire'},
-    ]
+    // DÉBAPTISÉ LE 2026-08-01, ET SES BANDES RETIRÉES. Le geste tient en deux
+    // constats, tous deux vérifiés sur les pièces primaires.
+    //
+    // 1. LA SOURCE EST LE KNOW CANNABIS TEST (Roel Kerssemakers, clinique
+    //    Jellinek, Amsterdam, 2000), que l'OFDT fiche p. 32 de son « Guide
+    //    pratique des principaux outils de repérage de l'usage problématique de
+    //    cannabis chez les adolescents » (janvier 2013). Les deux lectures du banc
+    //    concordent item par item avec le support du cabinet, et celui-ci recoupe
+    //    l'original anglais. Or LE SERVI NE PARTAGE AUCUN ITEM AVEC LUI AU SENS
+    //    STRICT : sur les 32 items relevés un à un, ZÉRO paire ne présente la même
+    //    question ET les mêmes modalités. NEUF partagent le construit sans les
+    //    modalités — CA1/S1 fréquence, CA5/S9 capacité d'arrêt, CA6/S13 manque,
+    //    CA7/S4 escalade pour l'effet, CA9/S11 retentissement, CA10/S6 moment,
+    //    CA11/S16 inquiétude d'un tiers, CA12/S7 motif d'usage, CA13/S15 mémoire.
+    //    SEPT n'appartiennent qu'au servi — âge de début, ancienneté, quantité par
+    //    occasion, persistance, symptômes respiratoires, paranoïa, aggravation —
+    //    et SEPT qu'à la source : somme dépensée par semaine, fréquence d'ivresse
+    //    cannabique, poly-consommation, entourage, intention d'arrêter, report
+    //    d'obligations, inquiétude pour soi-même. LE COMPTE FERME : 9 + 7 = 16 de
+    //    chaque côté.
+    //
+    //    DEUX RÉDACTIONS ONT ÉCHOUÉ ICI AVANT CELLE-CI, toutes deux données pour
+    //    vérifiées. « Il ne partage qu'un item », avec « le manque » en exemple :
+    //    faux, CA6 a pour contrepartie l'item 13 de la source. Puis « six paires,
+    //    sept propres au servi, six propres à la source » : 13 et 12 items classés
+    //    sur 16, sept orphelins muets. AVANT DE RÉÉCRIRE CE BLOC, FAIRE
+    //    L'ADDITION — un recensement qui ne totalise pas son propre effectif n'est
+    //    pas une mesure. C'est le ZÉRO strict, non le décompte des paires, qui
+    //    interdit de transporter un barème. C'est le cas Q_PED_02 à l'identique — 16 items des deux
+    //    côtés, /36 des deux côtés, mêmes trois bandes, ZÉRO divergence critique,
+    //    et un autre instrument. Le seul cas que le compteur déclare conforme.
+    //
+    // 2. LA SOURCE NE DONNE AUCUN POINT PAR OPTION. Elle porte ses 16 items avec
+    //    leurs modalités, puis une grille de résultats sur 0-36 — et rien entre
+    //    les deux. Reconstruire le servi sur elle exigerait donc d'INVENTER la
+    //    cotation qui mène à ce /36. C'est ce que cette campagne refuse partout
+    //    ailleurs, et il n'y avait pas de raison d'en faire ici la première
+    //    exception. Arbitrage praticien du 2026-08-01, sur ce constat.
+    //
+    // LES BANDES PARTENT DONC, et c'est le cœur du lot. Elles avaient été
+    // alignées le 2026-07-31 (#497) sur « les trois bandes de la source » — ce
+    // qu'elles sont bien : 0-5, 6-15, 16-36 se lisent à la dernière page de
+    // WN-SRC-0495. Mais elles s'appliquaient à des items qui ne sont pas ceux
+    // pour lesquels elles ont été établies. Une grille de lecture validée sur un
+    // instrument, posée sur un autre, ne mesure rien — et c'est ce que #497 a
+    // fait sans le savoir, sur ma recommandation.
+    //
+    // Il ne reste donc AUCUN seuil, AUCUNE bande, AUCUN total global — ce moteur
+    // est une somme, et c'est la somme elle-même qui est retirée. Le praticien
+    // lit les réponses, et rien qui puisse se lire comme un verdict. Même issue
+    // que le repérage TDAH enseignant, pour la même raison.
+    type:'sum', maxTotal:36,
+    sansTotalGlobal:true,
+    note:"Repérage local des conduites de consommation, bâti sur les critères d'usage problématique. Il ne reprend aucune grille d'interprétation publiée : aucun seuil n'y est attaché. Les réponses orientent l'entretien, elles ne concluent pas.",
   }
 };

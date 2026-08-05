@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient } = vi.hoisted(() => ({
+const {
+  prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient,
+  resolveProtocoleDiffuse, authorizePortail,
+} = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
+    assignation: { findFirst: vi.fn() },
   },
   listSnapshots: vi.fn(),
   saveSnapshot: vi.fn(),
   readPatientSession: vi.fn(),
   isSessionValideForPatient: vi.fn(),
+  resolveProtocoleDiffuse: vi.fn(),
+  authorizePortail: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -19,12 +25,18 @@ vi.mock('@/lib/patient-session', () => ({
   readPatientSession,
   isSessionValideForPatient,
 }));
+vi.mock('@/lib/protocol/portailProtocol', () => ({
+  resolveProtocoleDiffuse,
+  authorizePortail,
+  // Dérivation réelle : c'est elle qui doit rendre la MÊME ancre des deux côtés.
+  ancreDepuisAssignation: (id: string) => id.replace(/[^A-Za-z0-9_-]/g, ''),
+}));
 
 import { GET, POST } from './route';
 
 const payload = {
   episode: {
-    episodeId: 'ja_episode_1',
+    episodeId: 'ja_PAT_TEST_abcdef0123456789',
     patientId: 'PAT_TEST',
     startDate: '2026-07-17',
     endDate: '2026-07-24',
@@ -61,6 +73,12 @@ describe('api/portail/ja/observations', () => {
       email: 'sophie.nicola@example.test',
     });
     isSessionValideForPatient.mockReturnValue(true);
+    authorizePortail.mockResolvedValue({ idPatient: 'PAT_TEST', idAssignation: 'ASS_1' });
+    resolveProtocoleDiffuse.mockResolvedValue({
+      protocolDraftId: 'PD_1',
+      protocolDraftInputHash: 'abcdef0123456789ZZZZ',
+      approvedAt: new Date('2026-07-20T08:00:00.000Z'),
+    });
   });
 
   it('GET refuse sans session portail', async () => {
@@ -94,6 +112,166 @@ describe('api/portail/ja/observations', () => {
     expect(json.ok).toBe(true);
     expect(json.snapshot.draftId).toBe('JA_DRAFT_2');
     expect(saveSnapshot).toHaveBeenCalled();
+  });
+
+  // Le client patient chaîne ses transmissions ; la route doit passer la tête
+  // de chaîne au domaine, et l'`idPatient` doit venir de la session, jamais du
+  // corps de requête.
+  it('POST transmet supersedesDraftId et impose l’idPatient de la session', async () => {
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_3' });
+    await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          supersedesDraftId: 'JA_DRAFT_2',
+          idPatient: 'PAT_AUTRE',
+          actor: 'praticien',
+        }),
+      }),
+    );
+
+    expect(saveSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      idPatient: 'PAT_TEST',
+      actor: 'patient',
+      supersedesDraftId: 'JA_DRAFT_2',
+    }));
+  });
+
+  it('POST refuse un corps incomplet sans appeler le domaine', async () => {
+    const { actionCareer: _omis, ...incomplet } = payload;
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomplet),
+      }),
+    );
+    const json = (await res.json()) as { ok: boolean; reason: string };
+
+    expect(res.status).toBe(400);
+    expect(json.reason).toBe('invalid_payload');
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Garde d'appartenance du domaine : un épisode rattaché à un autre patient
+  // ressort en 400, pas en 500 — et n'est jamais persisté.
+  it('POST rend 400 quand l’épisode n’appartient pas au patient de la session', async () => {
+    saveSnapshot.mockRejectedValue(new TypeError('L’épisode JA n’appartient pas au patient demandé.'));
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, episode: { ...payload.episode, patientId: 'PAT_AUTRE' } }),
+      }),
+    );
+    const json = (await res.json()) as { ok: boolean; reason: string; error: string };
+
+    expect(res.status).toBe(400);
+    expect(json.reason).toBe('invalid_payload');
+    expect(json.error).toMatch(/n’appartient pas au patient/);
+  });
+
+  // Autorité serveur : la cohérence interne du corps ne suffit pas. Un onglet
+  // resté ouvert au travers d'une nouvelle diffusion enverrait un instantané
+  // parfaitement cohérent avec lui-même, rattaché au cycle périmé.
+  it('POST refuse un instantané rattaché à un cycle qui n’est plus diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue({
+      protocolDraftId: 'PD_2',
+      protocolDraftInputHash: '9999999999999999ZZZZ',
+      approvedAt: new Date('2026-08-01T08:00:00.000Z'),
+    });
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    );
+    const json = (await res.json()) as { reason: string; error: string };
+
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('cycle_perime');
+    expect(json.error).toMatch(/Rechargez la page/);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Sans protocole diffusé, l'identité légitime est celle du bilan de calibrage
+  // — et elle seule : un épisode de cycle n'a plus cours.
+  it('POST refuse un épisode de cycle quand plus aucun protocole n’est diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // L'ancre ne vient jamais du client : une identité forgée est refusée.
+  it('POST refuse une ancre de calibrage forgée', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_FORGEE' },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Accord GET ↔ POST : les deux passent par la même résolution d'assignation.
+  it('POST élit l’assignation par la résolution partagée du portail', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_D' });
+    await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_1' },
+        }),
+      }),
+    );
+    expect(authorizePortail).toHaveBeenCalled();
+  });
+
+  it('POST accepte le bilan de calibrage tant qu’aucun protocole n’est diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_CAL' });
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_1' },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(saveSnapshot).toHaveBeenCalled();
+  });
+
+  // Le patient ne chaîne que sur ses propres transmissions : le filtre est posé
+  // EN BASE, une fenêtre tous acteurs pouvant les masquer entièrement.
+  it('GET borne la liste aux instantanés du patient, en base', async () => {
+    listSnapshots.mockResolvedValue([]);
+    await GET(new Request('http://localhost/api/portail/ja/observations'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, 'patient');
   });
 
   it('POST refuse si la session n’est plus valide pour le compte', async () => {

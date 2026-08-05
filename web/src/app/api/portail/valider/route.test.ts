@@ -85,14 +85,34 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, count: 2 });
     expect(prisma.assignation.create).toHaveBeenCalledTimes(2);
-    expect(logger.warn).not.toHaveBeenCalled();
+    // L'assertion porte sur le code d'événement, pas sur « aucun warn » : la
+    // fixture n'a pas de registre relationnel (`questionnairePack` rend null),
+    // donc le repli legacy est légitimement pris et journalisé depuis le
+    // LOT-03. Un « jamais de warn » confondrait les deux signaux.
+    expect(
+      vi.mocked(logger.warn).mock.calls
+        .filter(([payload]) => payload.event === EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU),
+    ).toEqual([]);
   });
 
-  // Cas réel : le pack « Florence 1 » enregistré en production contient encore
-  // `Q_SOM_07`. Rien ne retire le qid de `pack.qids` — la garde doit donc agir
-  // à la validation, sur un chemin où le patient est seul.
+  // Le cas réel qui a motivé cette garde était le pack « Florence 1 » de
+  // production, qui contenait `Q_SOM_07` : rien ne retire un qid de
+  // `pack.qids`, la garde doit donc agir à la validation, sur un chemin où le
+  // patient est seul.
+  //
+  // Le témoin est `Q_FIB_03` depuis le 2026-07-31 — `Q_SOM_07` a été reconstruit
+  // depuis sa source puis rouvert, il n'illustre plus rien ici. Une première
+  // rédaction de ce commentaire a été obtenue par substitution mécanique et
+  // affirmait que « Florence 1 » contenait `Q_FIB_03` : c'était un fait de
+  // production INVENTÉ, relevé en revue. Le mécanisme testé, lui, est le même
+  // quel que soit l'instrument suspendu.
+  //
+  // CONSÉQUENCE À CONNAÎTRE, hors de ce test : la réouverture de `Q_SOM_07`
+  // réarme « Florence 1 », qui recommence donc à envoyer le MFI-20 à chaque
+  // validation de consultation. C'est cohérent — l'instrument est réparé — mais
+  // c'est un effet de la réactivation, pas une décision distincte.
   it('écarte l’instrument suspendu et n’en assigne pas l’assignation', async () => {
-    const response = await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    const response = await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, count: 1 });
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
@@ -105,12 +125,12 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // invisible sur le seul chemin qui n'a aucun praticien pour lire un écart
   // de comptage.
   it('journalise le qid écarté, sous son propre code d’événement', async () => {
-    await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
-        message: expect.stringContaining('Q_SOM_07'),
+        message: expect.stringContaining('Q_FIB_03'),
       })
     );
   });
@@ -119,7 +139,7 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // rempli son anamnèse, la lui refaire refaire pour un défaut de catalogue
   // serait le punir d'une décision clinique qui n'est pas la sienne.
   it('valide quand même la consultation', async () => {
-    await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(prisma.consultation.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { idConsultation: 'CONS_TEST' },

@@ -14,11 +14,12 @@ vi.mock('@/lib/supplement-library/rayonCorpus', async (importActual) => {
 });
 
 import { GET } from './route';
+import { RAYON_MICRONUTRITION, RAYON_VERS_NOTEBOOK } from '@/lib/supplement-library/rayonCorpus';
 
 const URL_BASE = 'http://localhost/api/praticien/complements/corpus';
 
 const VIDE = {
-  contractVersion: 'c4-rayon-corpus-v1',
+  contractVersion: 'c4-rayon-corpus-v2',
   rayon: 'micronutrition',
   disponible: true,
   corpusVide: true,
@@ -55,6 +56,22 @@ describe('/api/praticien/complements/corpus', () => {
     expect((await res.json()).reason).toBe('rayon_invalide');
     expect(servirRayonCorpus).not.toHaveBeenCalled();
   });
+
+  // Cette route ne sert QUE micronutrition. Une validation syntaxique (l'ancienne
+  // regex) laissait passer tout rayon de RAYON_VERS_NOTEBOOK : les rayons de la
+  // recherche corpus clinique (cognition, douleur, intestin), gardés par
+  // WN_RECHERCHE_CORPUS_ENABLED, devenaient joignables derrière WN_C4_ENABLED
+  // seul — leur drapeau cessait d'être un interrupteur. Liste DÉRIVÉE du mapping :
+  // un rayon ajouté demain est couvert sans toucher ce test.
+  it.each(Object.keys(RAYON_VERS_NOTEBOOK).filter((r) => r !== RAYON_MICRONUTRITION))(
+    'refuse le rayon « %s » (hors allowlist de cette route, malgré sa présence dans RAYON_VERS_NOTEBOOK)',
+    async (rayon) => {
+      const res = await GET(new Request(`${URL_BASE}?requete=magnésium&rayon=${rayon}`));
+      expect(res.status).toBe(400);
+      expect((await res.json()).reason).toBe('rayon_invalide');
+      expect(servirRayonCorpus).not.toHaveBeenCalled();
+    },
+  );
 
   it('sert le rayon corpus (corpus vide géré sans erreur, 200)', async () => {
     const res = await GET(new Request(`${URL_BASE}?requete=magnésium%20sommeil`));

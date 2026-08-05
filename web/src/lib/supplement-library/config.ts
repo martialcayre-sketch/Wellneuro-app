@@ -14,11 +14,26 @@ export const SUPPLEMENTS_MAX_BATCH_SIZE = 500;
 // ensembles est rejetée à la validation (jamais laissée à la base).
 export const SUPPLEMENTS_PROVENANCES = ['complalim', 'dgccrf', 'saisie_praticien'] as const;
 export const SUPPLEMENTS_NIVEAUX_COMPLETUDE = ['bien_documentee', 'partielle', 'lacunaire'] as const;
-export const SUPPLEMENTS_UNITES = ['µg', 'mg', 'g', 'mL', 'UI'] as const;
+// `UFC` (2026-07-31) : les 21 805 lignes de micro-organismes de Compl'Alim
+// portent une quantité et AUCUNE unité — l'UFC y est implicite. Sans elle au
+// vocabulaire, le CHECK qui apparie dose et unité ne laisse qu'une issue :
+// jeter la dose, et perdre 21 478 dosages probiotiques en silence.
+// Élargissement, pas assouplissement — le vocabulaire reste clos, et reste la
+// garde qui empêche de rapprocher des grandeurs incomparables.
+export const SUPPLEMENTS_UNITES = ['µg', 'mg', 'g', 'mL', 'UI', 'UFC'] as const;
 
 // Seul statut que la voie d'ingestion écrit : décision n°11 du moteur
 // d'intention clinique — une source externe ne produit que des brouillons.
 export const SUPPLEMENTS_STATUT_IMPORT = 'importee' as const;
+
+// Longueur maximale de la requête du rayon corpus (route
+// `api/praticien/complements/corpus`), au-delà de laquelle elle répond 400.
+//
+// ELLE VIT ICI ET NON DANS LA ROUTE. Next.js valide les exports d'un
+// `route.ts` contre une liste fermée (`GET`, `runtime`, `dynamic`…) : y
+// exporter une valeur fait échouer `next build` avec « is not a valid Route
+// export field ». Le type-check de T1 ne le voit pas, seul le build l'attrape.
+export const REQUETE_CORPUS_MAX = 500;
 
 export type SupplementProvenance = (typeof SUPPLEMENTS_PROVENANCES)[number];
 export type SupplementNiveauCompletude = (typeof SUPPLEMENTS_NIVEAUX_COMPLETUDE)[number];

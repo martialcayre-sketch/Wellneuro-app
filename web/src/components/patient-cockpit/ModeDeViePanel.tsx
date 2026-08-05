@@ -39,8 +39,18 @@ function fondZones(domaine: DomaineModeVie): string {
   return `linear-gradient(90deg, ${segments.join(', ')})`;
 }
 
-function positionPourcent(valeur: number, max: number): number {
-  if (max <= 0) return 0;
+/**
+ * Position du repère sur la piste, ou `null` s'il n'y a rien à placer.
+ *
+ * `(null / max) * 100` vaut **0** en JavaScript : un domaine non mesuré se
+ * dessinait donc au point 0 de sa piste — c'est-à-dire dans son segment `danger`,
+ * toutes les grilles de `Q_MOD_01` ayant le rouge en bas. L'en-tête de ce fichier
+ * promet l'inverse depuis A8-2 ; la promesse ne tenait qu'au niveau de
+ * l'instrument entier, jusqu'à ce que le moteur sache dire « non mesuré » par
+ * domaine (2026-07-29).
+ */
+function positionPourcent(valeur: number | null, max: number): number | null {
+  if (valeur === null || !Number.isFinite(valeur) || max <= 0) return null;
   return Math.max(0, Math.min(100, (valeur / max) * 100));
 }
 
@@ -88,19 +98,21 @@ export function ModeDeViePanel({
                     className="relative block h-2.5 rounded-full"
                     style={{ background: fondZones(domaine) }}
                   >
-                    {fantome && (
+                    {fantome && positionPourcent(fantome.total, fantome.max) !== null && (
                       <span
                         className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/60 bg-surface"
                         style={{ left: `${positionPourcent(fantome.total, fantome.max)}%` }}
                       />
                     )}
-                    <span
-                      className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
-                      style={{ left: `${positionPourcent(domaine.total, domaine.max)}%` }}
-                    />
+                    {positionPourcent(domaine.total, domaine.max) !== null && (
+                      <span
+                        className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
+                        style={{ left: `${positionPourcent(domaine.total, domaine.max)}%` }}
+                      />
+                    )}
                   </span>
                   <span className="text-right font-mono text-sm text-foreground">
-                    {domaine.total}/{domaine.max}
+                    {domaine.total === null ? 'non mesuré' : `${domaine.total}/${domaine.max}`}
                   </span>
                   {domaine.interpretation ? (
                     <Badge variant={variantBadge(domaine.interpretation.color)}>{domaine.interpretation.label}</Badge>

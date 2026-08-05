@@ -1,10 +1,31 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
+// DÉBAPTISÉ LE 2026-08-01, sur arbitrage praticien du 2026-07-31.
+//
+// Cet instrument s'appelait « Échelle de Conners — Version Enseignant ». Il ne
+// l'était pas : le banc du 2026-07-30 a lu 28 items des deux côtés, 0 divergence
+// critique — et 27 divergences « mineures » dont DIX-SEPT à similarité 0,00. Le
+// servi porte les critères diagnostiques du TDAH ; la source porte les items de
+// Conners, dont ses six items d'opposition, absents ici.
+//
+// C'est le cas que la règle du « nombre d'items » désigne comme le plus
+// dangereux : un comptage IDENTIQUE à contenus différents est une substitution,
+// et c'est le seul cas que le compteur déclare conforme.
+//
+// Deux options étaient ouvertes — reconstruire sur les 28 items de Conners, ou
+// débaptiser. La seconde a été retenue : le servi n'est pas un Conners abîmé,
+// c'est une grille cohérente avec elle-même. La reconstruire jetterait un
+// instrument utilisable pour en fabriquer un autre dont les droits (© MHS) ne
+// sont pas dégagés.
 export const Q_PED_02 = {
-  id:'Q_PED_02', titre:'Échelle de Conners — Version Enseignant (TDAH, forme courte)',
+  id:'Q_PED_02', titre:'Repérage du TDAH par l’enseignant (grille WellNeuro)',
   instructions:'Ce questionnaire est destiné aux ENSEIGNANTS. Évaluez le comportement de l\'élève au cours du dernier mois. 0 = Pas du tout · 1 = Un peu · 2 = Souvent · 3 = Très souvent.',
   sections:[
-    { id:'A', titre:'Opposition et comportement',
+    // « Opposition et comportement » jusqu'au 2026-08-01. Aucun de ces sept items
+    // ne porte sur l'opposition — refus d'obéir, colères, provocation : ils
+    // portent sur l'impulsivité et l'agitation motrice, plus deux items
+    // attentionnels (CE3, CE4) que le barème rattache d'ailleurs à `INA`.
+    { id:'A', titre:'Impulsivité et agitation',
       questions:[
         q('CE1','Est excitable, impulsif(ve)',           [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE2','A du mal à rester assis(e) — se lève souvent',   [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -14,7 +35,7 @@ export const Q_PED_02 = {
         q('CE6','Répond sans réfléchir aux questions — avant la fin de la question', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE7','A du mal à attendre son tour',         [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
       ]},
-    { id:'B', titre:'Inattention et cognitif',
+    { id:'B', titre:'Inattention',
       questions:[
         q('CE8','Ne fait pas attention aux détails / fait des erreurs d\'étourderie', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE9','A du mal à soutenir l\'attention sur une tâche ou un jeu', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -33,7 +54,11 @@ export const Q_PED_02 = {
         q('CE19','Parle trop',                            [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE20','Agit comme si il/elle était "sur la brèche"', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
       ]},
-    { id:'D', titre:'Index TDAH — Items clés',
+    // « Index TDAH — Items clés » jusqu'au 2026-08-01. Le premier membre était le
+    // « Conners' ADHD Index » au mot près — celui-là même qui venait d'être retiré
+    // du libellé d'axe pour ce motif. Le praticien lisait donc l'emprunt en tête
+    // de section pendant que l'axe correspondant portait un autre nom.
+    { id:'D', titre:'Items clés de repérage',
       questions:[
         q('CE21','Ses résultats scolaires sont en dessous de ses capacités', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE22','Manque d\'attention — se perd facilement dans sa rêverie', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -47,11 +72,47 @@ export const Q_PED_02 = {
   ],
   scoring:{
     type:'subscore',
+    // AUCUN TOTAL GLOBAL, et il fallait le DÉCLARER pour que ce soit vrai.
+    //
+    // Sans ce drapeau, le moteur additionne les quatre axes et rend 84 sur une
+    // grille saturée. Ce nombre partait ensuite en `scorePrincipal`, s'affichait
+    // au Fil praticien « Score brut : 62 » — sans dénominateur, sans bande — et
+    // arrivait au modèle de synthèse. Or aucune source ne donne de sens à un /84
+    // sur cette grille : il se lirait comme une sévérité qu'aucun barème ne
+    // définit. Même parade que pour le MFI-20, et pour la même raison.
+    sansTotalGlobal:true,
     subScores:[
-      {id:'OPP',label:'Opposition / Impulsivité',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
-      {id:'INA',label:'Inattention / Cognitif',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
+      // `OPP` → `IMP`, et « Opposition / Impulsivité » → « Impulsivité ». LE POINT
+      // LE PLUS IMPORTANT DE CE LOT, et il était indépendant du nom de
+      // l'instrument : les cinq items sont excitable, mal à rester assis,
+      // interrompt, répond sans réfléchir, mal à attendre son tour. Les cinq
+      // mesurent l'impulsivité, AUCUN ne mesure l'opposition. Un praticien
+      // lisant « Opposition / Impulsivité : 13/15 » aurait conclu à un trouble
+      // oppositionnel chez un enfant à qui la question n'a jamais été posée.
+      //
+      // L'identifiant change AUSSI, et c'est possible sans précaution : la
+      // production porte zéro assignation et zéro réponse pour cet instrument
+      // (lu le 2026-08-01). Aucune passation enregistrée ne porte la clé `OPP`.
+      // « Impulsivité et agitation », comme le titre de sa section : CE2 (« mal à
+      // rester assis ») est un item d'agitation motrice, pas d'impulsivité pure.
+      // L'étiquette doit couvrir ses cinq items, pas quatre.
+      {id:'IMP',label:'Impulsivité et agitation',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
+      // Les trois libellés ci-dessous étaient les traductions littérales des
+      // échelles publiées du CTRS-R:S — « Cognitive Problems/Inattention »,
+      // « Hyperactivity », « Conners' ADHD Index ». L'arbitrage demandait de
+      // retirer « ni le nom Conners NI LES INTITULÉS empruntés » : seul celui qui
+      // était cliniquement faux l'avait été. « Index TDAH » en particulier est
+      // l'index de Conners au mot près ; il est remplacé par ce que ses huit
+      // items mesurent réellement.
+      {id:'INA',label:'Inattention',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
       {id:'HYP',label:'Hyperactivité',            items:['CE15','CE16','CE17','CE18','CE19','CE20'],max:18},
-      {id:'IDX',label:'Index TDAH',               items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
+      // `IDX` : « Retentissement scolaire et relationnel » couvrait CE21, CE24,
+      // CE26, CE27 et CE28 — mais pas CE22 (rêverie : de l'inattention, comptée
+      // HORS de l'axe « Inattention »), ni CE23 (tolérance à la frustration), ni
+      // CE25 (labilité de l'humeur). C'était remplacer un emprunt par une
+      // approximation, la même mécanique en mineur. Un libellé neutre est plus
+      // honnête que l'un ou l'autre.
+      {id:'IDX',label:'Items clés de repérage', items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
     ]
   }
 };
@@ -182,9 +243,9 @@ export const Q_PED_03 = {
   ],
   scoring:{
     type:'sum_items',
-    certification:{source:'drive',status:'certifie'},
+    certification:{source:'drive',status:'ambigu'},
     items:['CP001','CP002','CP003','CP004','CP005','CP006','CP007','CP008','CP009','CP010','CP011','CP012','CP013','CP014','CP015','CP016','CP017','CP018','CP019','CP020','CP021','CP022','CP023','CP024','CP025','CP026','CP027','CP028','CP029','CP030','CP031','CP032','CP033','CP034','CP035','CP036','CP037','CP038','CP039','CP040','CP041','CP042','CP043','CP044','CP045','CP046','CP047','CP048','CP049','CP050','CP051','CP052','CP053','CP054','CP055','CP056','CP057','CP058','CP059','CP060','CP061','CP062','CP063','CP064','CP065','CP066','CP067','CP068','CP069','CP070','CP071','CP072','CP073','CP074','CP075','CP076','CP077','CP078','CP079','CP080','CP081','CP082','CP083','CP084','CP085','CP086','CP087','CP088','CP089','CP090','CP091','CP092','CP093','CP094','CP095','CP096','CP097','CP098','CP099','CP100','CP101','CP102','CP103','CP104','CP105','CP106','CP107','CP108'],
     maxTotal:324,
-    note:"Source Drive Conners 3 Parent : 108 items cotés 0-3 en somme brute. Les deux questions ouvertes Q109/Q110 et les informations administratives ne sont pas codées ici car l'UI patient ne prend pas en charge les champs texte dans le catalogue. Aucune conversion T-score automatisée sans tables normatives validées."
+    note:"Source Drive Conners 3 Parent : 108 items cotés 0-3 en somme brute. Les deux questions ouvertes Q109/Q110 et les informations administratives ne sont pas codées ici car l'UI patient ne prend pas en charge les champs texte dans le catalogue. Aucune conversion T-score automatisée sans tables normatives validées. Arbitrage du 2026-08-01 : cette somme brute reste un comportement interne non certifié ; la réouverture exige le scoring dimensionnel complet, avec échelles de validité."
   }
 };

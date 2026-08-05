@@ -24,6 +24,8 @@ datée **par feature**.
 | `WN_C4_ENABLED` | `true` | rayon compléments | fermé |
 | `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
+| `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé |
+| `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
 | `WN_CLAIMS_QUESTIONNAIRE_STREAM` | `true` | claims questionnaire en SSE | réponse JSON |
 | `RAG_PGVECTOR_ENABLED` | `true` | RAG de production — exige aussi `RAG_INTERNAL_SECRET` + clés OpenAI | throw / fermé |
@@ -46,13 +48,27 @@ clinique soit validé/signé dans le code (`validationExterne`, date, claims). C
 n'est pas une gâte « juridique » ni un confort de dev : c'est la **validation
 clinique**. Ne pas forcer la métadonnée de validation pour « voir » la feature.
 
-| Flag | Valeur ON | 2ᵉ condition | État au 2026-07-28 |
+| Flag | Valeur ON | 2ᵉ condition | État au 2026-08-04 |
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
-| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | table vide, `validationExterne: false` → **fermé** |
+| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
+
+**⚠ L'orientation a changé d'état le 2026-08-04.** Jusque-là, la valeur du
+drapeau était sans effet : `tableSignee()` était faux, donc le ET aussi, dans
+tous les environnements. Depuis la signature, **poser `WN_ENABLE_ORIENTATION_NNPP2=1`
+suffit à ouvrir la route** — y compris là où la variable vaudrait déjà `1` sans
+que personne s'en souvienne. Vérifier les trois scopes Vercel (Production,
+Preview, Development) et les `.env.local` de poste avant de considérer la route
+comme fermée. Rien ne la pose côté dépôt (CI, Playwright, scripts) : le risque
+est entièrement côté Vercel et postes.
 
 Débloquer ces deux-là = **valider le contenu clinique** (décision clinique,
 documentée au `CHANGELOG`), pas flipper un flag.
+
+**Et signer ne suffit pas non plus** : le verrou est un ET. Sur l'orientation,
+signer la table sans poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production laisse
+l'écran praticien du LOT-06 sur « en cours de constitution ». Les deux gestes
+vont ensemble, dans cet ordre : validation clinique d'abord, flag ensuite.
 
 ## D. Gate dur HDS — ne jamais ouvrir avant l'attestation HDS
 

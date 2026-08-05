@@ -112,12 +112,13 @@ Les paramètres cliniques non sourcés restent bloqués. Voir
   activable ; gates G0–G6 obligatoires.
 - Génération PDF native (actuellement HTML + impression navigateur), signature électronique du booklet.
 - Coaching patient autonome, SSO praticien multi-établissement.
-- Séquencement complet : voir la roadmap de reprise **R0 → R6** dans `docs/ROADMAP_TECHNIQUE.md`.
+- Séquencement complet : voir la roadmap de reprise **R0 → R6** dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`.
 
 ## Où regarder pour aller plus loin
 
 - Règles de travail détaillées : `docs/claude/REGLES_CRITIQUES.md`, `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
-- Roadmap et dette technique : `docs/ROADMAP_TECHNIQUE.md`
+- Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
+- Historique des chantiers et dette technique : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Checklist de test manuel E2E : `docs/checklist_tests_end_to_end.md`
 - Historique des changements fonctionnels : `CHANGELOG.md`

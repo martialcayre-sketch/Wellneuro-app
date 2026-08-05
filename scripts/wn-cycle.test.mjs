@@ -1,0 +1,250 @@
+// Banc de `scripts/wn-cycle.mjs`.
+//
+// Les faits sont injectés : aucun appel git, aucun réseau, aucun dépôt requis.
+// Ce qui est vérifié ici est la seule chose que le script décide vraiment —
+// dans quelle phase du cycle on se trouve, et si la fenêtre de clôture est
+// passée. Le cas qui a motivé le script est `apres-merge` sans clôture
+// embarquée : c'est lui qui doit sortir en échec, pas en simple constat.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  cheminsDuPorcelain,
+  diagnostiquer,
+  estFragmentDeHandoff,
+  SORTIE_OK,
+  SORTIE_FENETRE_RATEE,
+  SORTIE_PRECONDITION,
+} from './wn-cycle.mjs';
+
+const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
+// Un handoff est désormais un fragment daté du dossier, jamais un chemin
+// littéral partagé : c'est ce créneau unique qui produisait un conflit de merge
+// par lot parallèle, et deux handoffs perdus le 2026-08-04.
+const HANDOFF = 'docs/claude/handoffs/2026-08-04-1254-agenda-alimentaire-l4a.md';
+
+function faits(surcharge = {}) {
+  return {
+    dansUnDepot: true,
+    branche: 'wn/lot-06',
+    brancheParDefaut: 'main',
+    arbrePropre: true,
+    fichiersDuLot: ['web/src/lib/questions.ts'],
+    prOuverte: null,
+    prMergee: null,
+    ghDisponible: true,
+    ...surcharge,
+  };
+}
+
+test('hors dépôt git : précondition absente, aucun verdict', () => {
+  const v = diagnostiquer({ dansUnDepot: false });
+  assert.equal(v.phase, 'hors-depot');
+  assert.equal(v.sortie, SORTIE_PRECONDITION);
+});
+
+test('sur la branche par défaut : hors-lot', () => {
+  const v = diagnostiquer(faits({ branche: 'main', fichiersDuLot: [] }));
+  assert.equal(v.phase, 'hors-lot');
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('branche de lot sans clôture ni PR : travail, la clôture est annoncée avant la PR', () => {
+  const v = diagnostiquer(faits());
+  assert.equal(v.phase, 'travail');
+  assert.deepEqual(v.cloture, { sessionLog: false, handoff: false });
+  assert.equal(v.sortie, SORTIE_OK);
+  assert.ok(v.suivant.some((l) => l.includes('/wn-handoff write')));
+});
+
+test('SESSION_LOG seul ne suffit pas : le handoff manquant maintient la phase travail', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG] }));
+  assert.equal(v.phase, 'travail');
+  assert.deepEqual(v.cloture, { sessionLog: true, handoff: false });
+});
+
+test('clôture complète sur la branche, aucune PR : pret-pr', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] }));
+  assert.equal(v.phase, 'pret-pr');
+  assert.equal(v.sortie, SORTIE_OK);
+  assert.ok(v.suivant.some((l) => l.includes('/wn-pr apply')));
+});
+
+test('PR ouverte avec la clôture embarquée : pr-ouverte, cap sur le merge', () => {
+  const v = diagnostiquer(
+    faits({ fichiersDuLot: [SESSION_LOG, HANDOFF], prOuverte: { numero: 545 } }),
+  );
+  assert.equal(v.phase, 'pr-ouverte');
+  assert.ok(v.suivant.some((l) => l.includes('/wn-merge apply')));
+});
+
+test('PR ouverte sans la clôture : dernière fenêtre, la clôture est réclamée avant le merge', () => {
+  const v = diagnostiquer(faits({ prOuverte: { numero: 545 } }));
+  assert.equal(v.phase, 'pr-ouverte');
+  assert.equal(v.fenetreRatee, false);
+  assert.ok(v.suivant.some((l) => l.includes('/wn-finish')));
+  assert.ok(v.suivant.some((l) => l.includes('fenêtre')));
+});
+
+test('PR mergée avec la clôture embarquée : rien à reprendre', () => {
+  const v = diagnostiquer(
+    faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts', SESSION_LOG, HANDOFF] } }),
+  );
+  assert.equal(v.phase, 'apres-merge');
+  assert.equal(v.fenetreRatee, false);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('PR mergée sans la clôture : fenêtre ratée, sortie en échec', () => {
+  const v = diagnostiquer(faits({ prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts'] } }));
+  assert.equal(v.phase, 'apres-merge');
+  assert.equal(v.fenetreRatee, true);
+  assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
+  assert.ok(v.suivant.some((l) => l.includes('depuis `main`')));
+  assert.ok(v.suivant.some((l) => l.includes('Ne pas rebrancher')));
+});
+
+test('PR mergée aux fichiers inconnus : on ne conclut pas à la fenêtre ratée', () => {
+  const v = diagnostiquer(faits({ prMergee: { numero: 545, fichiers: null } }));
+  assert.equal(v.phase, 'apres-merge');
+  assert.equal(v.fenetreRatee, false);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('la preuve de merge prime sur le diff local : une branche squashée reste apres-merge', () => {
+  // Sous squash-merge la branche locale survit intacte ; rien dans git seul ne
+  // la distingue d'une branche de travail. Si le diff décidait, on rendrait
+  // « travail » et le skill écrirait dans le vide.
+  const v = diagnostiquer(
+    faits({
+      fichiersDuLot: ['web/src/lib/questions.ts'],
+      prMergee: { numero: 545, fichiers: ['web/src/lib/questions.ts'] },
+    }),
+  );
+  assert.equal(v.phase, 'apres-merge');
+});
+
+test('gh indisponible : verdict partiel rendu, jamais une erreur', () => {
+  const v = diagnostiquer(faits({ ghDisponible: false }));
+  assert.equal(v.phase, 'travail');
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+// `/wn-finish` et `/wn-handoff` écrivent avant le commit : si seul le diff
+// committé comptait, la clôture serait déclarée absente une seconde après
+// avoir été écrite, et le verdict renverrait sur lui-même.
+test('porcelain : un fichier écrit mais non committé compte', () => {
+  const chemins = cheminsDuPorcelain(` M web/src/lib/questions.ts\n?? ${HANDOFF}\nA  ${SESSION_LOG}`);
+  assert.deepEqual(chemins, ['web/src/lib/questions.ts', HANDOFF, SESSION_LOG]);
+});
+
+// Régression du 2026-08-03, trouvée par le script sur lui-même : le wrapper git
+// appliquait un `.trim()` global, qui mange l'espace de tête de la PREMIÈRE
+// ligne (` M chemin`). Le découpage par position emportait alors le premier
+// caractère du chemin — `docs/…` devenait `ocs/…` — et la clôture disparaissait
+// du verdict, en silence et sur la seule première ligne.
+test('porcelain : une première ligne dont l’espace de tête a été rogné reste intacte', () => {
+  assert.deepEqual(cheminsDuPorcelain(`M ${HANDOFF}\n M ${SESSION_LOG}`), [HANDOFF, SESSION_LOG]);
+});
+
+test('porcelain : un renommage compte par sa destination', () => {
+  assert.deepEqual(cheminsDuPorcelain('R  docs/vieux.md -> docs/neuf.md'), ['docs/neuf.md']);
+});
+
+test('porcelain vide ou nul : aucun chemin', () => {
+  assert.deepEqual(cheminsDuPorcelain(''), []);
+  assert.deepEqual(cheminsDuPorcelain(null), []);
+});
+
+// ── Le handoff n'est plus un chemin, c'est un fragment ──────────────────────
+//
+// Ce que ces cas protègent : le contrôle doit reconnaître **n'importe quel**
+// fragment daté, sinon on aurait juste déplacé le créneau unique d'un cran.
+
+test('un fragment de handoff, quel que soit son nom, clôt la fenêtre', () => {
+  const v = diagnostiquer(
+    faits({
+      fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/2027-01-09-0803-un-autre-lot.md'],
+    }),
+  );
+  assert.equal(v.cloture.handoff, true);
+  assert.equal(v.phase, 'pret-pr');
+});
+
+test('le README du dossier n’est pas un handoff : la fenêtre reste ouverte', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/README.md'] }));
+  assert.equal(v.cloture.handoff, false);
+  assert.equal(v.phase, 'travail');
+});
+
+// `git status --porcelain` sans `-uall` collapse un répertoire entièrement non
+// suivi en une seule ligne. Le dossier ne doit alors PAS passer pour un
+// fragment : c'est le collecteur qui demande `--untracked-files=all`, et si un
+// jour il l'oubliait, le verdict doit dire « handoff absent » plutôt que de
+// compter un dossier vide pour une clôture.
+test('un répertoire collapsé par porcelain ne vaut pas un fragment', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/'), false);
+  const v = diagnostiquer(faits({ fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/'] }));
+  assert.equal(v.cloture.handoff, false);
+});
+
+test('l’ancien créneau unique ne compte plus pour un handoff', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/HANDOFF_CURRENT.md'), false);
+});
+
+test('estFragmentDeHandoff : ni sous-dossier, ni non-markdown, ni voisin de nom', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-0150-l3.md'), true);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/archive/2026-01-01-x.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/notes.txt'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs-archives/2026-08-04-x.md'), false);
+});
+
+// ── MORSURE — la règle « le plus récent = le dernier au tri » ───────────────
+//
+// Le README du dossier désigne le handoff courant par un `ls … | tail -1`.
+// Cette règle n'est vraie que si TOUT fichier accepté porte un horodatage :
+// en tri C, les lettres passent après les chiffres, donc un `notes.md` déposé
+// là serait à la fois accepté comme handoff et désigné comme le plus récent.
+test('estFragmentDeHandoff : un nom sans horodatage est refusé', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/notes.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/brouillon-lot-07.md'), false);
+  // La date seule ne suffit pas : c'est l'heure qui ordonne les lots d'un même
+  // jour, et le 2026-08-04 en a porté quatre.
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-l3.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-0150-l3.md'), true);
+});
+
+test('les fragments réellement présents dans le dépôt passent le motif', () => {
+  // Un motif qui refuserait les fichiers existants ferait échouer la clôture
+  // du lot suivant, et se découvrirait au pire moment.
+  const dossier = 'docs/claude/handoffs';
+  for (const nom of readdirSync(join(RACINE, dossier))) {
+    if (nom === 'README.md') continue;
+    assert.equal(estFragmentDeHandoff(`${dossier}/${nom}`), true, nom);
+  }
+});
+
+test('PR mergée avec un fragment de handoff embarqué : rien à reprendre', () => {
+  const v = diagnostiquer(
+    faits({
+      prMergee: {
+        numero: 562,
+        fichiers: ['web/src/lib/questions.ts', SESSION_LOG, 'docs/claude/handoffs/2026-08-04-1254-x.md'],
+      },
+    }),
+  );
+  assert.equal(v.fenetreRatee, false);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('PR mergée avec le SESSION_LOG mais aucun fragment : fenêtre ratée', () => {
+  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: [SESSION_LOG] } }));
+  assert.equal(v.fenetreRatee, true);
+  assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
+});

@@ -41,6 +41,31 @@ export const EVENT_CODES = {
   DOSSIER_EFFACE: 'SECURITY.CYCLE_DE_VIE.EFFACE',
   DOSSIER_CYCLE_DE_VIE_EXCEPTION: 'SECURITY.CYCLE_DE_VIE.EXCEPTION',
 
+  // Agenda alimentaire (Q_ALI_09), surface PORTAIL. Le jumeau du sommeil ne
+  // trace RIEN : une énumération d'`idAssignation` y est invisible, alors que
+  // `patient/submit` la trace depuis toujours. On ne reproduit pas ce trou.
+  //
+  // Le préfixe est `PORTAIL_PATIENT.` et non `AGENDA_ALIMENTAIRE.` : `EventCode`
+  // vaut `${LogDomain}.${string}`, et `AGENDA_ALIMENTAIRE` n'est pas un
+  // `LogDomain`. En ajouter un élargirait le contrat de journalisation de toute
+  // l'application pour un lot d'une seule route ; le domaine est bien le portail
+  // patient, l'agenda n'en est qu'une surface.
+  AGENDA_ALIMENTAIRE_PORTAIL_FORBIDDEN: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.FORBIDDEN',
+  AGENDA_ALIMENTAIRE_PORTAIL_UNAVAILABLE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.UNAVAILABLE',
+  AGENDA_ALIMENTAIRE_JOUR_REJETE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.JOUR_REJETE',
+  // Refus de FORME rendu AVANT toute barrière (413, JSON illisible). Code
+  // DISTINCT de `JOUR_REJETE`, qui suppose une session portail valide : les
+  // deux populations ne se comptent pas ensemble, et le seul NIVEAU ne suffit
+  // pas à les départager — le `413` est tracé en `WARN` comme les refus
+  // post-authentification.
+  AGENDA_ALIMENTAIRE_FORME_REJETEE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.FORME_REJETEE',
+  AGENDA_ALIMENTAIRE_JOUR_ENREGISTRE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.JOUR_ENREGISTRE',
+  AGENDA_ALIMENTAIRE_PORTAIL_EXCEPTION: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.EXCEPTION',
+  // Anomalie d'INTÉGRITÉ, distincte d'un refus patient : une ligne en base que
+  // la lecture n'a pas su relire (version de contrat inconnue). Le compte
+  // remonte au patient par le GET, mais c'est ce code qui ouvre un incident.
+  AGENDA_ALIMENTAIRE_LIGNE_ILLISIBLE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.LIGNE_ILLISIBLE',
+
   QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD: 'QUESTIONNAIRE.SUBMIT.VALIDATION_FAILED',
   QUESTIONNAIRE_SUBMIT_FORBIDDEN: 'QUESTIONNAIRE.SUBMIT.FORBIDDEN',
   QUESTIONNAIRE_SUBMIT_ALREADY_DONE: 'QUESTIONNAIRE.SUBMIT.ALREADY_DONE',
@@ -71,6 +96,13 @@ export const EVENT_CODES = {
 
   SYNTHESE_GET_EXCEPTION: 'SYNTHESE_IA.GET.QUERY_FAILED',
   SYNTHESE_POST_CONTEXT_UNAVAILABLE: 'SYNTHESE_IA.GENERATION.CONTEXT_UNAVAILABLE',
+  // LOT-06 — le modèle a cité un pack absent de la recommandation déterministe
+  // qu'on lui a transmise. Code DISTINCT de CONTEXT_UNAVAILABLE : le premier dit
+  // qu'une donnée a manqué, celui-ci qu'une donnée a été inventée. Les
+  // confondre rendrait l'écart de restitution invisible dans les journaux, ce
+  // qui est exactement ce qu'on cherche à mesurer.
+  SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE: 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+  SYNTHESE_ORIENTATION_INDISPONIBLE: 'SYNTHESE_IA.ORIENTATION.INDISPONIBLE',
   SYNTHESE_POST_EXCEPTION: 'SYNTHESE_IA.GENERATION.FAILED',
   SYNTHESE_PATCH_EXCEPTION: 'SYNTHESE_IA.UPDATE.FAILED',
 
@@ -78,6 +110,14 @@ export const EVENT_CODES = {
   BOOKLET_SEND_EXCEPTION: 'BOOKLET.SEND.FAILED',
 
   DOCUMENT_COMPOSE_EXCEPTION: 'PRATICIEN.DOCUMENT_C3.COMPOSE_FAILED',
+
+  // LOT-03. `resolvePackQuestionnaireIds` retombe sur `packs.qids` quand le
+  // registre relationnel ne couvre pas exactement le même ensemble. Ce repli
+  // est le comportement de SÉCURITÉ voulu — il ne bloque rien — mais il était
+  // muet : le pack par défaut était en dérive (5 qids legacy contre 4 au
+  // registre) sans que personne puisse le savoir. Un repli silencieux finit par
+  // se lire comme une absence de repli.
+  PACK_REGISTRE_REPLI_LEGACY: 'ASSIGNATION.PACK.REGISTRE_REPLI_LEGACY',
 } as const satisfies Record<string, EventCode>;
 
 export type KnownEventCode = (typeof EVENT_CODES)[keyof typeof EVENT_CODES];

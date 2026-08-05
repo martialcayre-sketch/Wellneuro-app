@@ -28,7 +28,7 @@ La migration depuis le MVP Google Apps Script (GAS) a débuté le 2026-06-29 et 
 cd web
 npm install
 npm run prisma:generate
-cp .env.local.example .env.local   # puis renseigner les valeurs (jamais commiter .env.local)
+cp ../.env.example .env.local   # puis renseigner les valeurs (jamais commiter .env.local)
 npm run dev                        # http://localhost:3000
 ```
 
@@ -89,7 +89,8 @@ Contrôle OAuth Google Cloud Console (production) :
 ## Documentation
 
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
-- Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
+- Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
+- Historique des chantiers techniques (lots R0→R10) : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Roadmap produit (séries D/R/E) : `docs/ROADMAP_PRODUIT.md`
 - Sécurité RGPD : `docs/securite_rgpd.md`
 - Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`

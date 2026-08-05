@@ -2,8 +2,9 @@
 # Réplique locale du job CI `verify` (.github/workflows/ci.yml) dans le
 # worktree courant, avec un PostgreSQL éphémère isolé par worktree.
 # Ordre fail-fast — contrôles statiques d'abord, base ensuite :
-#   anti-secrets → audit campagnes → prisma generate → scoring → type-check
-#   → vitest → lint → PostgreSQL éphémère → migrate deploy → dérive
+#   anti-secrets → audit campagnes → bancs `node --test` → prisma generate
+#   → scoring → type-check → vitest → vitest SIIN 57 → lint → PostgreSQL
+#   éphémère → migrate deploy → dérive
 #   schéma↔migrations → contrats SQL (prisma/checks) → seed → build
 #   → Playwright (Chromium + WebKit) contre
 #   le build de production (`next start`), le même artefact que Vercel déploie.
@@ -22,7 +23,9 @@
 # Usage, depuis web/ de n'importe quel worktree (ou du checkout principal) :
 #   npm run test:worktree               # séquence CI complète
 #   npm run test:worktree -- --fast     # saute anti-secrets, audit, scoring,
-#                                       # lint, build (e2e sur `next dev`)
+#                                       # vitest SIIN 57, lint, build (e2e sur
+#                                       # `next dev`). Les bancs `node --test`
+#                                       # y restent : ~4 s à eux cinq.
 #   npm run test:worktree -- --keep-db  # conserve la base après le run
 #
 # Isolation : port PostgreSQL (5500-5599) et port applicatif (3100-3199)
@@ -292,6 +295,19 @@ export PORT="$APP_PORT"
 export VITEST_MAX_FORKS="${VITEST_MAX_FORKS:-4}"
 export VITEST_MAX_THREADS="${VITEST_MAX_THREADS:-4}"
 
+# macOS + PostgreSQL 15 : sans locale valide dans l'environnement, le postmaster
+# refuse de démarrer — « postmaster became multithreaded during startup », HINT
+# « Set the LC_ALL environment variable to a valid locale ». Certaines sessions
+# arrivent avec LANG/LC_ALL vides (shell non interactif, cron, agents) : initdb,
+# lui, réussit car on lui passe --locale explicitement, mais le postmaster hérite
+# de l'environnement au démarrage et échoue. On aligne son exécution sur la même
+# locale que le cluster, sans écraser une locale valide déjà héritée. Réservé à
+# Darwin : le symptôme est propre à macOS et en_US.UTF-8 y est toujours présent
+# (sur Debian il faudrait la générer — ne pas l'imposer au runner Linux/CI).
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+fi
+
 # Un environnement shell hérité peut exporter NODE_ENV globalement ; la CI ne
 # le définit pas. Un NODE_ENV non standard pendant `next build` mélange les
 # builds React dev/prod et fait planter le prerender (useContext null) —
@@ -319,6 +335,69 @@ if [[ "$FAST" == 0 ]]; then
     missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields)
 fi
 
+# ── Bancs `node --test` du CI ───────────────────────────────────────────────
+# Cinq bancs vivent hors de Vitest et le CI les lance un par un : le banc de
+# l'anti-secrets, le dossier des droits, le validateur du registre des
+# instruments, le comparateur de certification, le banc golden de scoring.
+# Ce palier n'en jouait AUCUN.
+#
+# Deux d'entre eux sont pourtant dans T1 (`secrets-check`,
+# `dossier-droits-check`) : T3 était donc plus ÉTROIT que T1 sur ce point, et
+# lancer la séquence longue avant une PR passait à côté de ce que la séquence
+# courte vérifiait. C'est le motif exact qui a fait entrer le lint dans T1 le
+# 2026-07-21 (LOT-01b) et les contrats SQL dans ce palier — un palier qui ne
+# couvre pas ce que le CI vérifie ne protège de rien.
+#
+# Hors du bloc `--fast` à dessein : les cinq réunis tiennent en ~4 s, et le banc
+# golden est précisément celui qui a laissé une dérive de fixture s'accumuler
+# (PR #389) faute d'être branché à un runner.
+#
+# Après `ensure_node_modules` (plus haut) et non avant : le chargeur du banc
+# golden transpile les sources TS via le compilateur, devDependency de `web/`.
+# Sans node_modules il échoue sur `Cannot find module 'typescript'` — vérifié.
+#
+# La liste est EXTRAITE de ci.yml, jamais recopiée — même raison que les
+# contrats SQL plus bas : une copie diverge au premier banc ajouté, et la
+# divergence est silencieuse. `sed` plutôt que `grep -o`, pour la même raison
+# de portabilité macOS/runner.
+step "Bancs Node du CI (extraits de ci.yml)"
+bancs=$(sed -n 's|.*node --test \([A-Za-z0-9_./-]*\.mjs\).*|\1|p' \
+  "$ROOT/.github/workflows/ci.yml" | sort -u)
+if [[ -z "$bancs" ]]; then
+  die "aucun banc \`node --test\` trouvé dans .github/workflows/ci.yml — l'extraction a cessé de fonctionner, elle ne rendrait plus silence que succès."
+fi
+bancs_attendus=$(printf '%s\n' "$bancs" | wc -l | tr -d ' ')
+bancs_joues=0
+while IFS= read -r banc; do
+  [[ -f "$ROOT/$banc" ]] || die "banc $banc référencé par le CI mais absent du dépôt."
+  printf '  %s\n' "$banc"
+  # Depuis la racine : ces bancs résolvent leurs fixtures relativement à elle.
+  # `< /dev/null` pour la même raison que les contrats SQL — un jour où l'un
+  # d'eux lirait stdin, il avalerait le reste du here-string et la boucle
+  # s'arrêterait après UN banc, verte.
+  (cd "$ROOT" && node --test "$banc" > /dev/null < /dev/null) \
+    || die "banc en échec : $banc — le relancer seul pour en lire la sortie (\`node --test $banc\`)."
+  bancs_joues=$((bancs_joues + 1))
+done <<< "$bancs"
+[[ "$bancs_joues" == "$bancs_attendus" ]] \
+  || die "$bancs_joues banc(s) joué(s) pour $bancs_attendus extrait(s) de ci.yml — la boucle s'est interrompue sans le dire."
+
+# Les bancs que le CI lance par un SCRIPT et non par un `node --test` littéral
+# échappent à l'extraction ci-dessus — elle ne reconnaît que la forme littérale.
+# Le 2026-08-01, faire passer les bancs de certification par
+# `run-certify-bancs.sh` les a retirés de ce palier sans un bruit : l'extraction
+# trouvait encore d'autres bancs, donc le garde de la ligne 366 ne disait rien.
+# Une extraction qui ne voit qu'une forme d'appel doit être complétée à la main
+# pour les autres — ou bien elle prétend couvrir ce qu'elle ne couvre plus.
+step "Bancs de certification (script dédié du CI)"
+(cd "$ROOT" && bash scripts/run-certify-bancs.sh > /dev/null < /dev/null) \
+  || die "bancs de certification en échec — les relancer seuls pour en lire la sortie (\`bash scripts/run-certify-bancs.sh\`)."
+
+# Le CI doit bien les lancer, lui aussi : sans ce contrôle, retirer le pas de
+# ci.yml laisserait ce palier vert et seul à les jouer.
+grep -q 'run-certify-bancs.sh' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus scripts/run-certify-bancs.sh — les bancs de certification ne tourneraient qu'en local."
+
 cd "$WEB"
 
 step "Client Prisma (generate)"
@@ -336,6 +415,12 @@ step "Tests unitaires (Vitest)"
 npm run test
 
 if [[ "$FAST" == 0 ]]; then
+  # Le CI rejoue toute la suite sous `WN_ALI_01_SIIN57=true` : `Q_ALI_01` y
+  # prend sa forme 57 items, celle du parc de production depuis le 2026-07-29.
+  # Deuxième contrôle que T1 avait et que ce palier n'avait pas.
+  step "Tests unitaires (Vitest, forme SIIN 57 items)"
+  npm run test:siin57
+
   step "Lint"
   npm run lint
 fi

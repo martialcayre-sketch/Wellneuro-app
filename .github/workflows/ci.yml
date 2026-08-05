@@ -75,9 +75,26 @@ jobs:
           # certification scoring la vérifie contre le catalogue, et cette
           # certification vit désormais sur le chemin code (elle transpile le
           # TS du catalogue, donc a besoin de web/node_modules).
+          # Le REGISTRE DES INSTRUMENTS est classé CODE pour la même raison, et
+          # elle est plus tranchante encore : il vit sous `docs/` mais il fait
+          # autorité — statut de droits, barreau de certification, date de
+          # vérification. Une PR qui ne toucherait que lui obtenait `docs_only`,
+          # donc un `verify` vert SANS qu'aucun contrôle du registre ne s'exécute :
+          # les deux étapes qui le lisent (`Scoring certification`, `Registre des
+          # instruments`) sont toutes deux gatées. Deux merges de l'historique ont
+          # exactement cette forme, dont un qui éditait des statuts de droits.
+          # Relevé en revue adversariale le 2026-07-29, quand le retrait d'un banc
+          # ad hoc a laissé le fichier sans aucun filet.
+          # Le FICHIER DE PREUVES psychométriques (`measurement_evidence.json`)
+          # rejoint le registre pour exactement la même raison depuis le
+          # 2026-08-04 : il commande le barreau `psychometrie_revue`, donc il fait
+          # autorité, et il était classé « docs » alors que les deux mêmes étapes
+          # gatées sont les seules à le lire.
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
           mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
-          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ]; then
+          registre="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/instrument_registry\.json$' || true)"
+          preuves="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/measurement_evidence\.json$' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
@@ -96,8 +113,131 @@ jobs:
       - name: Anti-secrets (banc du contrôle)
         run: node --test scripts/check_no_secrets.test.mjs
 
+      # L'étape « Dossier des droits (chiffres contre le registre) » a été
+      # RETIRÉE le 2026-07-29, dans la PR qui applique l'arbitrage qu'elle
+      # gardait. C'est la procédure que son banc décrivait lui-même : le dossier
+      # est un instantané daté, le registre a bougé, le banc devait partir avec
+      # sa raison d'être plutôt que d'être rafistolé pour rester vert.
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
+
+      # Une consigne impérative d'un skill vers un AUTRE skill ne vaut que si
+      # la cible est exposée à l'outil `Skill`. `disable-model-invocation: true`
+      # l'en retire : la consigne reste une prose valide qui désigne une
+      # capacité absente, et rien ne la voit. Deux fois le cas ici — la consigne
+      # de `CLAUDE.md` vers `wn-route`, puis les six branchements vers
+      # `/wn-reprompt` (PR #529, verte de bout en bout).
+      #
+      # SANS le filtre `docs_only`, délibérément : une PR qui ne touche que des
+      # `SKILL.md` est classée documentaire par l'étape « Périmètre du diff »
+      # (tout finit en `.md`). La gater reviendrait à ne jamais l'exécuter sur
+      # exactement les PR qu'elle vise. Ni npm ni build : node suffit.
+      - name: Invocations croisées entre skills (blocking)
+        run: node scripts/lib/skill-cross-invocation.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve qu'il épingle une consigne morte,
+      # et surtout qu'il se tait sur les trois formes qui le feraient
+      # débrancher : la mention en table d'un routeur, l'interdiction qui cite
+      # le même verbe, et le drapeau cité en commentaire de frontmatter. Un
+      # garde devenu permissif — ou bavard — resterait vert sans lui.
+      - name: Invocations croisées entre skills (banc du contrôle)
+        run: node --test scripts/lib/skill-cross-invocation.test.mjs
+
+      # Un bloc `!` de skill qui désigne un chemin relatif à la RACINE n'est
+      # exécutable que si la session tourne depuis la racine. Lancée depuis
+      # `web/` — le cas courant — la même ligne échoue, ou pire se tait :
+      # mesuré le 2026-08-03 sur les 32 blocs fautifs, **27 rendaient une sortie
+      # VIDE avec un code de retour 0**, et 5 seulement échouaient bruyamment.
+      # Le skill croyait avoir lu l'état du dépôt et planifiait sur du vide,
+      # sans un message ni un code d'erreur.
+      # Même absence de filtre `docs_only` que les deux étapes ci-dessus, et
+      # pour la même raison. Ni npm ni build : node suffit.
+      - name: 'Blocs `!` des skills ancrés à la racine (blocking)'
+        run: node scripts/lib/skill-bang-cwd.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve qu'il attrape le cas silencieux,
+      # et surtout qu'il se tait sur ce qui le ferait débrancher : les commandes
+      # git sans chemin de racine, `--stat`/`--show-toplevel` qu'on ne doit pas
+      # confondre avec un `--` de pathspec, et les chemins qui ne visent pas la
+      # racine (`web/docs/…`).
+      # Ce commentaire affirmait que « `git status --short` rend la même chose
+      # depuis n'importe où » : c'est FAUX au pied de la lettre — lancé depuis
+      # `web/`, il rapporte bien tout le dépôt, mais préfixe les chemins de
+      # `../`. Le garde ne les épingle pas (aucun chemin de racine dans la
+      # commande) ; les 20 blocs `!` de skills qui l'utilisaient ont pourtant
+      # été ancrés le 2026-08-04, en même temps qu'ils recevaient
+      # `--untracked-files=all` — sans quoi un répertoire entièrement non suivi
+      # est collapsé en une ligne et un handoff neuf passe inaperçu.
+      - name: 'Blocs `!` des skills ancrés à la racine (banc du contrôle)'
+        run: node --test scripts/lib/skill-bang-cwd.test.mjs
+
+      # Banc de `scripts/wn-cycle.mjs`, le verdict de phase chargé par le bloc
+      # `!` de `/wn-finish` et `/wn-handoff`. Ce qu'il protège tient en un cas :
+      # une PR mergée en squash SANS sa clôture doit sortir en échec, pas en
+      # constat — sinon le skill écrit sur une branche dont plus rien ne remonte
+      # vers `main`. Même absence de filtre `docs_only` que l'étape ci-dessus, et
+      # pour la même raison. Ni npm ni build : node suffit.
+      - name: Phase du cycle de lot (banc du verdict)
+        run: node --test scripts/wn-cycle.test.mjs
+
+      # Banc de `scripts/wn-attendre-ci.mjs`, le verdict qui décide si le CI
+      # d'une PR a RÉELLEMENT tourné. Ce qu'il protège : l'idiome qu'il remplace
+      # attendait que plus rien ne soit `pending` et rendait donc la main sur
+      # deux checks Vercel verts quand `verify` n'avait jamais été créé — cas
+      # rencontré sur la PR #550 le 2026-08-03. Les cas qui doivent tomber sont
+      # ceux où un verdict vert serait faux : check absent, run gelé en
+      # `action_required`, délai dépassé. Un garde qui rend 0 en expirant ne
+      # prouve que sa propre patience. Même absence de filtre `docs_only` que
+      # les étapes ci-dessus, et pour la même raison. Ni npm ni build : node
+      # suffit.
+      - name: Attente du CI d'une PR (banc du verdict)
+        run: node --test scripts/wn-attendre-ci.test.mjs
+
+      # `docs/DECISIONS.md` reste délibérément à créneau unique : une décision
+      # se lit dans la suite des autres et huit renvois croisés pointent vers
+      # des `D-NNN` précis. On ne supprime donc pas le conflit — on rend la
+      # collision impossible à manquer. Deux branches parallèles qui posent
+      # chacune leur décision en tête prennent le MÊME numéro : `D-013` le
+      # 2026-08-03, `D-014` le 2026-08-04, huit renvois à renuméroter chaque
+      # fois. Un conflit de merge est bruyant et se résout ; un doublon de
+      # numéro est silencieux et se propage.
+      # Même absence de filtre `docs_only` que les étapes ci-dessus, et pour la
+      # même raison — le fichier gardé EST un `.md`. Ni npm ni build.
+      - name: Numérotation du registre des décisions (blocking)
+        run: node scripts/lib/decisions-numerotation.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve les trois morsures séparément —
+      # doublon, trou, désordre — et le silence sur l'état réel du dépôt. Un
+      # garde qui n'attrape qu'une des trois ressemblerait aux deux fois où la
+      # collision est passée.
+      - name: Numérotation du registre des décisions (banc du contrôle)
+        run: node --test scripts/lib/decisions-numerotation.test.mjs
+
+      # Banc de `scripts/changelog-collate.mjs`, qui replie les fragments de
+      # `changelog.d/` dans `CHANGELOG.md`. Il ne tournait NULLE PART : ni en
+      # CI, ni dans `npm run check`. Un banc qu'aucune passe n'exécute ne
+      # protège de rien — c'est la même classe de défaut que le lint hors du
+      # palier T1. Ni npm ni build : node suffit.
+      - name: Repli des fragments de changelog (banc du script)
+        run: node --test scripts/changelog-collate.test.mjs
+
+      # Banc de `scripts/wn-campaign.mjs`, qui tient `.wn/state.json` et
+      # régénère `ACTIVE_CAMPAIGN.md`. Même motif que ci-dessus : il existait
+      # sans jamais être exécuté, alors que `wn-cycle.mjs --appliquer` appelle
+      # `wn-campaign.mjs sync` pour resynchroniser la vue humaine.
+      - name: État de campagne et vue humaine (banc du script)
+        run: node --test scripts/wn-campaign.test.mjs
+
+      # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
+      # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
+      # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
+      # revenue à l'identique le 2026-08-04 quand sept bancs ont été câblés ici
+      # et laissés hors de `check`. Ce banc échoue dès qu'une étape bloquante du
+      # CI manque à `check` — y compris lui-même. L'inverse n'est pas contrôlé,
+      # et n'a pas à l'être : `check` fait légitimement plus (lint, type-check,
+      # Vitest).
+      - name: Parité `npm run check` / CI (banc de la liste)
+        run: node --test scripts/parite-check-ci.test.mjs
 
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'
@@ -140,9 +280,46 @@ jobs:
       # inversion absente ou partielle, un barème sans source — et qu'il se
       # tait quand l'inversion est portée par la clé de réponse. Un
       # comparateur permissif certifierait n'importe quoi en silence.
-      - name: Comparateur de certification (banc du comparateur)
+      #
+      # TOUS les bancs de `lib/`, et non un fichier nommé :
+      # `troncature.test.mjs`, posé le 2026-08-01, n'aurait jamais tourné ici
+      # sans qu'on y repense. Un banc qu'il faut penser à brancher finit par ne
+      # pas l'être.
+      #
+      # Le script, et pas un motif écrit ici : un motif sans correspondance rend
+      # `# tests 0` avec un code de retour 0 sous bash comme sous sh. Le script
+      # refuse explicitement d'être vert sur zéro banc.
+      - name: Bancs du banc de certification (comparateur, gardes de troncature)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node --test tools/corpus/certify/lib/comparaison.test.mjs
+        run: bash scripts/run-certify-bancs.sh
+
+      # Résolution des compositions Compl'Alim vers le référentiel. Le libellé
+      # n'atteint jamais le serveur — c'est l'outil qui lit le CSV, résout, et
+      # n'envoie que des identifiants officiels — donc cette logique clinique
+      # vit hors de Vitest et doit être branchée ici pour tourner.
+      #
+      # Ce que ses cas verrouillent : « Huile de poisson » rend UN actif et non
+      # les sept constituants dont elle est la forme d'apport ; une forme à deux
+      # parents (« D-pantothénate de calcium » → calcium ET vitamine B5) n'est
+      # pas écrite mais rapportée ; une ligne « plantes » ne s'accroche jamais à
+      # une substance ; aucune unité n'est devinée. Le banc relit aussi
+      # `SUPPLEMENTS_UNITES` dans config.ts et refuse une recopie divergente.
+      - name: Résolution des compositions (banc du résolveur)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test tools/supplements/compositions/lib/resolution.test.mjs
+
+      # Banc golden de scoring : verrouille calculateScore/buildMiniSynthese
+      # contre quatre fixtures représentatives + un cas d'erreur. Débranché de
+      # tout runner jusqu'ici — son chargeur (concaténation des sources TS de
+      # questions.ts et exécution via `new Function`) cassait sur une syntaxe
+      # de type trop récente pour son ancien strip par regex. Une dérive
+      # réelle du fixture (protocol → conduite, PR #389) s'y était accumulée
+      # sans qu'aucun run ne s'en aperçoive — exactement ce que le brancher ici
+      # referme. Après `npm ci` : son chargeur transpile le TS via le
+      # compilateur, devDependency de web/.
+      - name: Scoring golden bench (banc de régression)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test tests/wellneuro/golden/scoring-golden.test.mjs
 
       - name: Generate Prisma client
         if: steps.scope.outputs.docs_only != 'true'
@@ -203,6 +380,40 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_reprise_bornes_v1.sql
 
+      # Le marquage `usage = orientation` (20260801200000) écrit lui aussi des
+      # données de production, et il est tout aussi invisible sur la base vide
+      # du CI. Ce banc éprouve la fonction de périmètre sur ce qui porte une
+      # décision clinique — la perfusion exclue, la quarantaine qui exclut même
+      # un domaine réintégré par la décision f — et sur les deux propriétés que
+      # le marquage doit tenir : idempotence, et refus d'écraser un usage
+      # existant.
+      - name: RAG claim usage orientation contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_usage_orientation_v1.sql
+
+      # La barrière D-003 (aucun claim non signé ne sort du corpus RAG) tient
+      # à match_wellneuro_rag_claims (20260722150000) : ce banc éprouve ses
+      # cinq conditions par fixture (contrôle positif A, puis B/C/D/E qui
+      # doivent chacun échouer isolément), et assère structurellement les deux
+      # CHECK qu'aucune fixture ne peut violer sans échouer à l'INSERT.
+      - name: RAG claim barrière D-003 contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_barriere_d003_v1.sql
+
+      # Le rayon corpus filtre PAR NOTEBOOK (rayonCorpus.ts, décision 7 des
+      # arbitrages 2026-07-27) : ce contrat éprouve que le notebook d'une source
+      # est un fait univoque et présent en base. Sur la base CI (vide) il passe
+      # trivialement ; sa fixture annulée prouve que le détecteur d'orphelin
+      # n'est pas un no-op. Sa portée réelle est la prod (SELECT rejoués en
+      # lecture seule post-merge) : la moitié « registre » de la garde de
+      # divergence est tenue au runtime (sourcesDuNotebook lit le registre).
+      - name: RAG rayon notebook coherence contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_rayon_notebook_coherence_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
       # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend
@@ -211,6 +422,34 @@ jobs:
       # rejoue DANS sa transaction avant COMMIT (`prisma/importNabm.ts`) : une
       # violation structurelle annule alors l'import au lieu d'être constatée
       # après coup.
+      # C4 — provenance du référentiel d'ingrédients. Le fichier existe depuis
+      # #493 et son changelog affirmait « câblé au CI » : il ne l'était pas, et
+      # n'a donc JAMAIS tourné, ni ici ni dans wn-test-worktree.sh (qui dérive
+      # sa liste de ce fichier). Ce qu'il vérifie : la nullabilité APPARIÉE de
+      # (source_provenance, source_identifiant) — sans elle, une demi-clé
+      # échappe à la fois à l'index unique et au findFirst de l'ingestion, et le
+      # même identifiant officiel s'insère indéfiniment ; le vocabulaire clos
+      # des provenances ; la RLS ; et surtout que l'index côté FORME n'est PAS
+      # unique — assertion inversée, délibérée : le rendre unique refuserait la
+      # seconde attache d'une forme multi-substances en ayant l'air d'un
+      # durcissement.
+      - name: C4 référentiel provenance contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c4_referentiel_provenance_v1.sql
+
+      # C4 — structure du catalogue produits et de leurs compositions. Inerte
+      # depuis le LOT-01 ; c'est la table de ce lot qu'il garde. Il vérifie
+      # notamment l'index partiel `..._produit_ingredient_sans_forme`, sans
+      # lequel PostgreSQL laisserait réinsérer sans fin un couple
+      # (produit, ingrédient) sans forme — deux NULL n'entrant jamais en
+      # conflit — et l'absence de colonne produit dans `clinical_rules`, qui
+      # est la frontière entre le vocabulaire et le jugement.
+      - name: C4 supplement catalogue contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c4_supplement_catalogue_v1.sql
+
       - name: CB-01 biology structure contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -242,7 +481,31 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
 
-      # Les deux contrats ci-dessus éprouvent la STRUCTURE ; ce banc éprouve le
+      # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
+      # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
+      # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la
+      # RLS, l'action référentielle des deux clés étrangères (RESTRICT, sans
+      # lequel la suppression nommée de `patient/effacement.ts` deviendrait du
+      # code mort en silence), et le VERROU DE PÉRIMÈTRE qui refuse une colonne
+      # de gramme, de kcal, de score ou de quantité — la frontière « journal
+      # alimentaire, pas carnet de pesée » cesse d'être un commentaire. Le même
+      # verrou existe côté JSONB (clés de premier niveau de `reponses`), mais il
+      # est VACUE ICI : la base du CI est vide, donc sans clé à parcourir. C'est
+      # le chemin le moins coûteux pour ranger un agrégat, donc celui à rejouer
+      # à la main sur la production.
+      # Il porte aussi une assertion INVERSÉE, délibérée : AUCUN index unique
+      # sur (id_assignation, date_jour). En poser un ressemblerait à un
+      # durcissement et casserait le modèle append-only — les lignes supplantées
+      # restent, et `lignes − dates distinctes` est le taux de correction.
+      # Ses trois invariants de DONNÉES (verrou de périmètre JSONB ci-dessus,
+      # version de contrat, chaînage de correction) sont vacués sur la base CI,
+      # vide : ils sont là pour être rejoués en lecture seule sur la production.
+      - name: Agenda alimentaire contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/agenda_alimentaire_v1.sql
+
+      # Les contrats ci-dessus éprouvent la STRUCTURE ; ce banc éprouve le
       # CHEMIN D'ÉCRITURE de l'import CB-02a, que les tests Vitest ne touchent
       # pas (ils couvrent la logique pure). Il rejoue une rotation de millésime
       # sur fixtures : c'est le seul contexte où se manifeste le défaut trouvé

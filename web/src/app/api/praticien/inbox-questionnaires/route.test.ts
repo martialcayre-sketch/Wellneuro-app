@@ -101,10 +101,14 @@ describe('GET /api/praticien/inbox-questionnaires', () => {
     expect(payload.reponses[0].rawAnswers).toEqual({ MM1: 2 });
     expect(payload.reponses[0].scorePrincipal).toBe(7);
     expect(payload.reponses[0].reponsesLisibles).toEqual([
+      // Libellés du MMT reconstruit depuis sa source le 2026-07-31 : le servi
+      // porte désormais les épreuves administrées, cotées 0-2 dans le sens des
+      // troubles. `MM1 = 2` se lit donc « Inexacte ou pas de réponse », et non
+      // plus « Rarement » sur une échelle 0-3 de sens inverse.
       expect.objectContaining({
         idQuestion: 'MM1',
-        libelleQuestion: "J'oublie des informations récentes (noms, rendez-vous, mots)",
-        libelleReponse: 'Rarement',
+        libelleQuestion: '« Quel âge avez-vous ? » (si la réponse est une année, redemandez : « Cela vous fait quel âge ? »)',
+        libelleReponse: 'Inexacte ou pas de réponse',
         valeurBrute: '2',
       }),
     ]);

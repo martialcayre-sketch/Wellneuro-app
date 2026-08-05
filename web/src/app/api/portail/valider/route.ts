@@ -35,6 +35,10 @@ async function resoudrePackBase() {
 // POST /api/portail/valider — enregistre l'anamnèse, valide l'onboarding et
 // assigne automatiquement le pack de base.
 export async function POST(req: Request): Promise<NextResponse<PortailValiderResponse>> {
+  // Un seul contexte pour toute la requête : deux appels produiraient deux
+  // `correlationId` distincts, et un onboarding émettant les deux warns
+  // deviendrait impossible à recoudre dans le journal.
+  const requestContext = createRequestContext(req);
   const session = readPatientSession(req);
   if (!session) {
     return NextResponse.json({ ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' }, { status: 401 });
@@ -85,7 +89,23 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     }
 
     // Assignation du pack de base (consentement déjà donné au niveau consultation).
-    const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+    const { qids, raison, registryCount } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+
+    // Le pack de base est celui qui part à CHAQUE onboarding : c'est là que la
+    // dérive compte le plus, et c'est justement là qu'elle était muette (5 qids
+    // legacy contre 4 au registre, mesuré le 2026-08-03).
+    //
+    // Seule `ensembles_divergents` alerte. Un registre absent ou vide est le cas
+    // d'un pack jamais synchronisé : le signaler ici allumerait l'alarme en
+    // permanence, ce qui revient à ne rien signaler.
+    if (raison === 'ensembles_divergents') {
+      logger.warn({
+        event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
+        domain: 'ASSIGNATION',
+        message: `Dérive du pack de base ${pack.idPack} : ${pack.qids.length} qids côté packs.qids contre ${registryCount} au registre relationnel. Composition legacy retenue.`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
 
     // Ce chemin n'a aucun praticien pour lire un écart de comptage : le patient
     // valide son onboarding et reçoit ce qui reste. Sans cette trace,
@@ -96,7 +116,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
         message: `Questionnaires suspendus écartés du pack de base : ${ecartes.join(', ')}`,
-        context: finalizeLogContext(createRequestContext(req), { retryable: false }),
+        context: finalizeLogContext(requestContext, { retryable: false }),
       });
     }
 

@@ -4,6 +4,11 @@ import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-ses
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { consultationCourante } from '@/lib/consultation/portail';
+import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
+import { calculerFenetreDepuisDates } from '@/lib/agenda-sommeil/fenetre';
+import { dateJourParis } from '@/lib/agenda-sommeil/portail';
+import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
+import { calculerFenetreAliDepuisDates } from '@/lib/agenda-alimentaire/fenetre';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -31,6 +36,41 @@ export type PortailAssignationsResponse =
       // qu'un booklet a été envoyé au patient (il l'a reçu par e-mail). Jamais
       // de score, de discordance ni de donnée réservée au praticien.
       parcours: { consultationStatut: string | null; bookletEnvoye: boolean };
+      // Agendas du sommeil en cours (recueil quotidien). STRICTEMENT ce que le
+      // journal de l'agenda montre déjà au patient : le compte de nuits et la
+      // position dans la fenêtre. Jamais un agrégat (durée, efficacité,
+      // latence), jamais un score, jamais une interprétation — l'assertion
+      // négative est au banc.
+      agendas: {
+        idAssignation: string;
+        nbRenseignees: number;
+        jourCourant: number | null;
+        nuitDuJourNotee: boolean;
+        cloturablePatient: boolean;
+      }[];
+      // Agendas ALIMENTAIRES en cours (`Q_ALI_09`). Un SECOND tableau, et non
+      // un champ discriminant dans `agendas[]` : les deux recueils n'ont ni le
+      // même vocabulaire (nuit / journée) ni la même sémantique de présence
+      // (voir `journeeDuJourEnregistree`), et la branche sommeil reste ainsi
+      // strictement intacte — pas de collision de clés, pas de champ optionnel
+      // à interpréter côté client. Mêmes interdits : jamais un agrégat (jeûne,
+      // fenêtre alimentaire, indice), jamais un score, jamais une
+      // interprétation.
+      agendasAlimentaires: {
+        idAssignation: string;
+        nbRenseignees: number;
+        jourCourant: number | null;
+        /**
+         * « Une ligne existe en base pour aujourd'hui », LISIBLE OU NON : la
+         * requête ne sélectionne pas le JSONB `reponses`, le hub ne peut donc
+         * pas distinguer une journée relue d'une journée en quarantaine. Le nom
+         * dit ce qu'il mesure ; la décision est la même dans les deux lectures
+         * (rien à faire aujourd'hui), une date en quarantaine étant refusée en
+         * 409 par le POST de la route agenda.
+         */
+        journeeDuJourEnregistree: boolean;
+        cloturablePatient: boolean;
+      }[];
     }
   | { ok: false; reason: 'unauthorized' | 'exception'; error: string };
 
@@ -129,10 +169,120 @@ export async function GET(req: Request): Promise<NextResponse> {
       }),
     ]);
 
+    // Agendas du sommeil encore ouverts : une seule requête sur les dates de
+    // nuits, jamais le JSONB des réponses. La fenêtre est recalculée avec la
+    // MÊME arithmétique que le journal (calculerFenetreDepuisDates), donc le
+    // hub et l'agenda ne peuvent pas se contredire.
+    const idsAgendas = assignationsDb
+      .filter(
+        a =>
+          a.idQuestionnaire === AGENDA_SOMMEIL_ID &&
+          a.statutReponses !== 'verrouille' &&
+          // Un agenda annulé n'a plus d'écran : `authorizeAgendaPortail` rend
+          // 410. L'exclure ici plutôt que de compter sur un invariant logé
+          // dans un autre module.
+          a.statut !== 'Annulée',
+      )
+      .map(a => a.idAssignation);
+    const nuitsAgendas = idsAgendas.length
+      ? await prisma.agendaSommeilNuit.findMany({
+          // `idPatient` en défense de profondeur : les ids viennent déjà des
+          // assignations de la session, mais c'est le seul accès aux nuits du
+          // dépôt qui n'aurait pas sa garde patient (cf. `listNuits`).
+          where: { idAssignation: { in: idsAgendas }, idPatient: session.idPatient },
+          select: { idAssignation: true, dateNuit: true },
+        })
+      : [];
+    const aujourdHuiParis = dateJourParis();
+    const datesParAgenda = new Map<string, string[]>();
+    for (const n of nuitsAgendas) {
+      const liste = datesParAgenda.get(n.idAssignation);
+      if (liste) liste.push(n.dateNuit);
+      else datesParAgenda.set(n.idAssignation, [n.dateNuit]);
+    }
+    const agendas = idsAgendas.map(idAssignation => {
+      const dates = datesParAgenda.get(idAssignation) ?? [];
+      const fenetre = calculerFenetreDepuisDates(dates, aujourdHuiParis);
+      return {
+        idAssignation,
+        nbRenseignees: fenetre.nbRenseignees,
+        jourCourant: fenetre.jourCourant,
+        nuitDuJourNotee: dates.includes(aujourdHuiParis),
+        cloturablePatient: fenetre.cloturablePatient,
+      };
+    });
+
+    // Agendas ALIMENTAIRES encore ouverts. Requête symétrique de celle du
+    // sommeil : les seules DATES, jamais le JSONB `reponses`, et la même
+    // arithmétique de fenêtre que le journal (`calculerFenetreAliDepuisDates`)
+    // — le hub et l'agenda ne peuvent donc pas se contredire.
+    //
+    // ── AUCUNE OPTION `datesIllisibles` N'EST PASSÉE, ET C'EST VOULU ────────
+    // L'option sert à REVERSER dans l'ancre des dates qu'une lecture du JSONB a
+    // mises en quarantaine, donc absentes de `dates`. Ici il n'y a pas de
+    // lecture du JSONB : `dates` porte DÉJÀ toutes les lignes, quarantaine
+    // comprise. L'ancre du hub coïncide donc avec celle de la route agenda,
+    // sans option — et la lui passer reverserait deux fois les mêmes dates.
+    //
+    // ── DIVERGENCE RÉSIDUELLE CONNUE ET ACCEPTÉE ───────────────────────────
+    // `nbRenseignees` n'est PAS le même des deux côtés : ici il compte les
+    // dates en quarantaine, la route agenda non (elle sait, elle, distinguer
+    // une ligne relue d'une ligne illisible). Le hub peut donc annoncer une
+    // journée de plus que le journal. Incorrigible sans parser le JSONB côté
+    // hub — ce qui est exclu par le contrat de cette route. L'écart est
+    // pré-existant (même construction côté sommeil) et n'est pas introduit ici.
+    const idsAgendasAli = assignationsDb
+      .filter(
+        a =>
+          a.idQuestionnaire === AGENDA_ALI_ID &&
+          // VERROU DE BOUT EN BOUT DU LOT : `WN_AGENDA_ALI` pilote le champ
+          // `actif` de `Q_ALI_09` au catalogue, dont `IDS_SUSPENDUS` dérive.
+          // Drapeau éteint, l'instrument sort déjà de `assignations` plus haut
+          // — il ne doit pas rentrer par la porte du hub. Filtre volontairement
+          // plus strict que celui de `assignations` (pas d'exemption pour une
+          // passation `Complété`) : un agenda complété est verrouillé, donc
+          // déjà exclu par la condition suivante.
+          !IDS_SUSPENDUS.has(a.idQuestionnaire) &&
+          a.statutReponses !== 'verrouille' &&
+          // Un agenda annulé n'a plus d'écran : `authorizeAgendaAlimentairePortail`
+          // rend 410. L'exclure ici plutôt que de compter sur un invariant logé
+          // dans un autre module.
+          a.statut !== 'Annulée',
+      )
+      .map(a => a.idAssignation);
+    const joursAgendasAli = idsAgendasAli.length
+      ? await prisma.agendaAlimentaireJour.findMany({
+          // `idPatient` en défense de profondeur : les ids viennent déjà des
+          // assignations de la session, mais c'est le seul accès aux journées
+          // du dépôt qui n'aurait pas sa garde patient.
+          where: { idAssignation: { in: idsAgendasAli }, idPatient: session.idPatient },
+          select: { idAssignation: true, dateJour: true },
+        })
+      : [];
+    const datesParAgendaAli = new Map<string, string[]>();
+    for (const j of joursAgendasAli) {
+      const liste = datesParAgendaAli.get(j.idAssignation);
+      if (liste) liste.push(j.dateJour);
+      else datesParAgendaAli.set(j.idAssignation, [j.dateJour]);
+    }
+    const agendasAlimentaires = idsAgendasAli.map(idAssignation => {
+      const dates = datesParAgendaAli.get(idAssignation) ?? [];
+      const fenetre = calculerFenetreAliDepuisDates(dates, aujourdHuiParis);
+      return {
+        idAssignation,
+        nbRenseignees: fenetre.nbRenseignees,
+        jourCourant: fenetre.jourCourant,
+        journeeDuJourEnregistree: dates.includes(aujourdHuiParis),
+        cloturablePatient: fenetre.cloturablePatient,
+      };
+    });
+
     return withCorrelationHeader(NextResponse.json({
       ok: true,
       patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
+      agendas,
+      agendasAlimentaires,
       derniereReponseLe: derniereReponse._max.dateReponse?.toISOString() ?? null,
       parcours: {
         consultationStatut: consultation?.statut ?? null,

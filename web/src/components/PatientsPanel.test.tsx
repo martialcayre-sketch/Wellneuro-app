@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PatientsPanel } from './PatientsPanel';
 
@@ -49,10 +49,21 @@ afterEach(() => {
 function stubFetch(options?: {
   surToken?: (body: unknown) => unknown;
   surCycleDeVie?: (body: unknown) => unknown;
+  surAnnulation?: (body: unknown) => unknown;
   patient?: typeof PATIENT;
   patients?: (typeof PATIENT)[];
+  /** Assignations exposées par le tableau « Assignations récentes » (Fil A). */
+  assignations?: Record<string, unknown>[];
+  /** Compte serveur du même ensemble : c'est lui qui révèle une troncature. */
+  assignationsMeta?: { total: number; plafond: number; statut: string | null };
   /** Diffère la réponse du cycle de vie, pour éprouver la double soumission. */
   delaiCycleDeVie?: number;
+  /**
+   * Prend la main sur `GET /api/praticien/patients` : reçoit l'URL appelée et
+   * rend la charge, ou lève pour simuler une panne réseau. Nécessaire dès que
+   * la réponse doit DÉPENDRE de la requête — course entre deux statuts, échec.
+   */
+  surPatients?: (url: string) => unknown;
 }) {
   const appels: { url: string; method?: string; body?: unknown }[] = [];
   vi.stubGlobal(
@@ -75,10 +86,22 @@ function stubFetch(options?: {
           json: async () => options?.surToken?.(body) ?? { success: true },
         } as unknown as Response;
       }
+      if (String(url).startsWith('/api/praticien/assignations/annulation')) {
+        return {
+          ok: true,
+          json: async () => options?.surAnnulation?.(body) ?? { ok: true },
+        } as unknown as Response;
+      }
+      if (options?.surPatients && String(url).startsWith('/api/praticien/patients')) {
+        const charge = await options.surPatients(String(url));
+        return { ok: true, json: async () => charge } as unknown as Response;
+      }
       return {
         ok: true,
         json: async () => ({
           patients: options?.patients ?? [options?.patient ?? PATIENT],
+          assignations: options?.assignations ?? [],
+          ...(options?.assignationsMeta ? { assignationsMeta: options.assignationsMeta } : {}),
           questionnaires: [],
           packs: [],
           categories: [],
@@ -566,5 +589,230 @@ describe('PatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByText(/Consultation créée, lien d’accès envoyé au patient/)).toBeTruthy();
+  });
+});
+
+describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const ASSIGNATION_OUVERTE = {
+    idAssignation: 'ASS_OUVERTE',
+    idPatient: PATIENT.idPatient,
+    emailPatient: PATIENT.email,
+    idQuestionnaire: 'Q_NEU_03',
+    titre: 'Questionnaire ouvert',
+    statut: 'En attente',
+    statutReponses: 'non_rempli',
+    dateAssignation: '2026-07-28T10:00:00.000Z',
+    dateLimite: null,
+  };
+  const ASSIGNATION_SOUMISE = {
+    ...ASSIGNATION_OUVERTE,
+    idAssignation: 'ASS_SOUMISE',
+    titre: 'Questionnaire soumis',
+    statut: 'Complété',
+    statutReponses: 'verrouille',
+  };
+
+  it('seule une assignation ouverte porte un bouton « Annuler »', async () => {
+    stubFetch({ assignations: [ASSIGNATION_OUVERTE, ASSIGNATION_SOUMISE] });
+    render(<PatientsPanel />);
+    const ligneOuverte = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+    const ligneSoumise = screen.getByText('Questionnaire soumis').closest('tr')!;
+    expect(within(ligneOuverte).getByRole('button', { name: 'Annuler' })).toBeTruthy();
+    // Une soumise porte une passation : pas d'action d'annulation.
+    expect(within(ligneSoumise).queryByRole('button', { name: 'Annuler' })).toBeNull();
+  });
+
+  it('confirmer l’annulation appelle la route puis rafraîchit le tableau', async () => {
+    const appels = stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+    render(<PatientsPanel />);
+    const ligne = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+    fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+
+    // La modale dédiée s'ouvre en nommant le questionnaire.
+    await screen.findByRole('dialog');
+    expect(screen.getByText(/Annuler l’assignation « Questionnaire ouvert » \?/)).toBeTruthy();
+
+    const nbGetAvant = appels.filter(
+      a => a.url.startsWith('/api/praticien/patients') && !a.url.includes('cycle-de-vie'),
+    ).length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler l’assignation' }));
+
+    await waitFor(() =>
+      expect(
+        appels.some(a => a.url.startsWith('/api/praticien/assignations/annulation') && a.method === 'POST'),
+      ).toBe(true),
+    );
+    const appel = appels.find(a => a.url.startsWith('/api/praticien/assignations/annulation'));
+    expect((appel?.body as { idAssignation?: string })?.idAssignation).toBe('ASS_OUVERTE');
+
+    // Rafraîchissement : un GET /api/praticien/patients de plus après l'annulation.
+    await waitFor(() =>
+      expect(
+        appels.filter(a => a.url.startsWith('/api/praticien/patients') && !a.url.includes('cycle-de-vie')).length,
+      ).toBeGreaterThan(nbGetAvant),
+    );
+  });
+
+  // Le filtre par statut s'appliquait en mémoire, sur une liste que le serveur
+  // avait déjà plafonnée à 40 : tout ce qui dépassait était masqué en silence,
+  // et le compte affiché se présentait comme un total.
+  describe('filtre de statut et troncature', () => {
+    it('change de statut par une requête serveur, jamais par un tri en mémoire', async () => {
+      const appels = stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+      render(<PatientsPanel />);
+      await screen.findByText('Questionnaire ouvert');
+
+      fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'Complété' } });
+
+      // L'URL exacte, accents percent-encodés : c'est ce que le serveur relit.
+      await waitFor(() =>
+        expect(
+          appels.some(a => a.url === `/api/praticien/patients?statut=${encodeURIComponent('Complété')}`),
+        ).toBe(true),
+      );
+    });
+
+    it('dit qu’elle tronque quand le total dépasse ce qu’elle affiche', async () => {
+      stubFetch({
+        assignations: [ASSIGNATION_OUVERTE],
+        assignationsMeta: { total: 48, plafond: 40, statut: null },
+      });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).toContain('1 sur 48');
+    });
+
+    // Une troncature affirmée sans troncature réelle serait le défaut inverse.
+    it('n’invente pas une troncature quand tout est affiché', async () => {
+      stubFetch({
+        assignations: [ASSIGNATION_OUVERTE],
+        assignationsMeta: { total: 1, plafond: 40, statut: null },
+      });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).toContain('1');
+      expect(compte.textContent).not.toContain('sur');
+    });
+
+    // Compte manquant ≠ compte nul : sans réponse du serveur, on n'affirme rien.
+    it('reste muet sur la troncature quand le serveur ne rend aucun compte', async () => {
+      stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).not.toContain('sur');
+    });
+
+    // Le message d'absence portait sur l'ensemble du dossier alors qu'un filtre
+    // était actif : « Aucune assignation. » sous « En attente » se lit comme
+    // « ce patient n'a rien », ce que la surface ne sait pas.
+    it('nomme le filtre quand elle ne trouve rien sous ce filtre', async () => {
+      stubFetch({
+        surPatients: url => ({
+          patients: [PATIENT],
+          assignations: [],
+          assignationsMeta: { total: 0, plafond: 40, statut: url.includes('statut=') ? 'Annulée' : null },
+        }),
+      });
+      render(<PatientsPanel />);
+      await screen.findByText('Aucune assignation.');
+      fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'Annulée' } });
+      await screen.findByText('Aucune assignation « Annulée ».');
+    });
+
+    // B1 — sans debounce, deux changements dans un aller-retour lancent deux
+    // requêtes concurrentes. Sans garde, la dernière ARRIVÉE gagne : la table
+    // listerait des « Complété » sous un sélecteur affichant « En attente ».
+    it('jette une réponse qui ne correspond plus au statut affiché', async () => {
+      const resolveurs: (() => void)[] = [];
+      stubFetch({
+        surPatients: async url => {
+          const statut = new URL(url, 'http://x').searchParams.get('statut');
+          const charge = {
+            patients: [PATIENT],
+            assignations: statut === 'Complété' ? [ASSIGNATION_SOUMISE] : [ASSIGNATION_OUVERTE],
+            assignationsMeta: { total: 1, plafond: 40, statut },
+          };
+          // La réponse « Complété » est retenue, puis relâchée en dernier.
+          if (statut === 'Complété') {
+            await new Promise<void>(r => resolveurs.push(r));
+          }
+          return charge;
+        },
+      });
+      render(<PatientsPanel />);
+      await screen.findByText('Questionnaire ouvert');
+
+      const select = screen.getByDisplayValue('Tous les statuts');
+      fireEvent.change(select, { target: { value: 'Complété' } });
+      fireEvent.change(select, { target: { value: 'En attente' } });
+      await screen.findByText('Questionnaire ouvert');
+
+      resolveurs.forEach(r => r());
+      // La réponse tardive ne doit RIEN changer : le sélecteur dit « En attente ».
+      await waitFor(() => expect(screen.queryByText('Questionnaire soumis')).toBeNull());
+      expect(screen.getByText('Questionnaire ouvert')).toBeTruthy();
+    });
+
+    // B2 — seul chemin de chargement déclenché par un geste d'UI. Sans `.catch`,
+    // le rejet est silencieux et la table garde l'ensemble précédent.
+    it('dit l’échec d’un changement de statut au lieu de se figer en silence', async () => {
+      stubFetch({
+        surPatients: url => {
+          if (url.includes('statut=')) throw new Error('réseau coupé');
+          return { patients: [PATIENT], assignations: [ASSIGNATION_OUVERTE] };
+        },
+      });
+      render(<PatientsPanel />);
+      await screen.findByText('Questionnaire ouvert');
+
+      fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'Complété' } });
+
+      const erreur = await screen.findByTestId('assignations-erreur');
+      expect(erreur.textContent).toContain('Impossible de recharger les assignations');
+      // Le panneau reste debout : le tableau patients n'a pas disparu.
+      expect(screen.getByText('Questionnaire ouvert')).toBeTruthy();
+    });
+
+    // B2, second visage : une session expirée remplaçait TOUT le panneau
+    // praticien — au chargement initial c'est voulu, sur un filtre non.
+    it('ne fait pas disparaître le panneau quand le serveur répond indisponible', async () => {
+      stubFetch({
+        surPatients: url =>
+          url.includes('statut=')
+            ? { patients: [], assignations: [], unavailable: true, reason: 'unauthenticated' }
+            : { patients: [PATIENT], assignations: [ASSIGNATION_OUVERTE] },
+      });
+      render(<PatientsPanel />);
+      await screen.findByText('Questionnaire ouvert');
+
+      fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'Complété' } });
+
+      await screen.findByTestId('assignations-erreur');
+      expect(screen.getByText('Questionnaire ouvert')).toBeTruthy();
+    });
+  });
+
+  // M1 — le paramètre par défaut `statut = statutFilterRef.current` est la
+  // seule chose qui empêche un rafraîchissement de rendre la liste NON filtrée,
+  // donc tronquée à 40 : le bug d'origine, ressuscité par un geste ordinaire.
+  it('conserve le filtre lors du rafraîchissement qui suit une annulation', async () => {
+    const appels = stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+    render(<PatientsPanel />);
+    await screen.findByText('Questionnaire ouvert');
+
+    fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'En attente' } });
+    await waitFor(() => expect(appels.some(a => a.url.includes('statut='))).toBe(true));
+
+    const ligne = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+    fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+    await screen.findByRole('dialog');
+    const nbAvant = appels.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler l’assignation' }));
+
+    const attendue = `/api/praticien/patients?statut=${encodeURIComponent('En attente')}`;
+    await waitFor(() => expect(appels.slice(nbAvant).some(a => a.url === attendue)).toBe(true));
   });
 });

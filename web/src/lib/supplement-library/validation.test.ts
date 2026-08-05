@@ -19,8 +19,8 @@ function ficheBrute(overrides: Record<string, unknown> = {}) {
     allergenes: [],
     excipients: ['stéarate de magnésium'],
     compositions: [
-      { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg', position: 0 },
-      { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg', position: 1 },
+      { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 300, unite: 'mg', position: 0 },
+      { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg', position: 1 },
     ],
     ...overrides,
   };
@@ -32,6 +32,55 @@ describe('validation ingestion compléments', () => {
     expect(payload.fiches).toHaveLength(1);
     expect(payload.fiches[0].contenuSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(payload.fiches[0].marche).toBe('FR');
+  });
+
+  // L'empreinte sérialise ses CLÉS : les renommer change le hash. Le renommage
+  // `doseParPortion` → `doseParDjr` (2026-07-31) a pu être répercuté ici sans
+  // coût, et le test suivant dit pourquoi. Valeur calculée par une
+  // implémentation indépendante ; elle ne doit plus bouger sans décision.
+  it('empreinte FIGÉE : la valeur exacte ne change pas au gré des renommages', () => {
+    const payload = parseSupplementIngestPayload({ fiches: [ficheBrute()] });
+    expect(payload.fiches[0].contenuSha256).toBe(
+      '5e738fd10391be7bceae6e4c83cb42e83da030eb764859895c82e3bc3fb95ca2',
+    );
+  });
+
+  // La fenêtre qui a rendu le renommage gratuit, et qui se referme. Les 140 148
+  // fiches en base ont TOUTES été ingérées avec `compositions: []` : le JSON
+  // haché y contient `"composition":[]`, et aucun nom de clé de composition n'y
+  // figure. Aucune empreinte stockée n'a donc bougé. Dès la première
+  // composition écrite, ce test décrira encore la vérité mais le renommage,
+  // lui, coûtera 140 148 fiches « modifiées » sans qu'aucune formulation ait
+  // changé.
+  it('une fiche SANS composition garde l’empreinte qu’elle avait AVANT le renommage', () => {
+    const sansComposition = parseSupplementIngestPayload({
+      fiches: [ficheBrute({ compositions: [] })],
+    });
+    // Valeur produite par le code d'AVANT le renommage, et inchangée après :
+    // c'est la preuve que les empreintes stockées n'ont pas bougé.
+    expect(sansComposition.fiches[0].contenuSha256).toBe(
+      '81d3aafbc108bd10b712da829b064fa686261f281c1ab1270f051d452b5b464e',
+    );
+  });
+
+  // Les 21 805 lignes de micro-organismes de Compl'Alim portent une quantité
+  // sans unité (l'UFC y est implicite) : sans cette unité au vocabulaire, le
+  // CHECK qui apparie dose et unité n'a d'autre issue que de jeter la dose.
+  it('accepte UFC — sinon 21 478 dosages probiotiques sont inécrivables', () => {
+    const fiche = ficheBrute({
+      compositions: [{ ingredientId: 'ing_l_rhamnosus', doseParDjr: 2e9, unite: 'UFC' }],
+    });
+    const payload = parseSupplementIngestPayload({ fiches: [fiche] });
+    expect(payload.fiches[0].compositions[0]).toMatchObject({ doseParDjr: 2e9, unite: 'UFC' });
+  });
+
+  // `ml` minuscule couvre 19 330 lignes de la source. La base n'admet qu'une
+  // graphie : c'est à l'import de normaliser, pas au vocabulaire de s'élargir.
+  it('refuse `ml` minuscule — la normalisation est le travail de l’import', () => {
+    const fiche = ficheBrute({
+      compositions: [{ ingredientId: 'ing_x', doseParDjr: 10, unite: 'ml' }],
+    });
+    expect(() => parseSupplementIngestPayload({ fiches: [fiche] })).toThrow(/unite.*hors vocabulaire/);
   });
 
   it('refuse une provenance hors vocabulaire', () => {
@@ -48,13 +97,13 @@ describe('validation ingestion compléments', () => {
 
   it('refuse une unité de composition hors vocabulaire', () => {
     const fiche = ficheBrute({
-      compositions: [{ ingredientId: 'ing_x', doseParPortion: 10, unite: 'cuillère' }],
+      compositions: [{ ingredientId: 'ing_x', doseParDjr: 10, unite: 'cuillère' }],
     });
     expect(() => parseSupplementIngestPayload({ fiches: [fiche] })).toThrow(/unite.*hors vocabulaire/);
   });
 
   it('refuse une dose sans unité (et réciproquement)', () => {
-    const doseSeule = ficheBrute({ compositions: [{ ingredientId: 'ing_x', doseParPortion: 10 }] });
+    const doseSeule = ficheBrute({ compositions: [{ ingredientId: 'ing_x', doseParDjr: 10 }] });
     expect(() => parseSupplementIngestPayload({ fiches: [doseSeule] })).toThrow(/dose et unité/);
     const uniteSeule = ficheBrute({ compositions: [{ ingredientId: 'ing_x', unite: 'mg' }] });
     expect(() => parseSupplementIngestPayload({ fiches: [uniteSeule] })).toThrow(/dose et unité/);
@@ -63,8 +112,8 @@ describe('validation ingestion compléments', () => {
   it('refuse une composition en double (même ingrédient + forme)', () => {
     const fiche = ficheBrute({
       compositions: [
-        { ingredientId: 'ing_x', doseParPortion: 10, unite: 'mg' },
-        { ingredientId: 'ing_x', doseParPortion: 20, unite: 'mg' },
+        { ingredientId: 'ing_x', doseParDjr: 10, unite: 'mg' },
+        { ingredientId: 'ing_x', doseParDjr: 20, unite: 'mg' },
       ],
     });
     expect(() => parseSupplementIngestPayload({ fiches: [fiche] })).toThrow(/en double/);
@@ -94,8 +143,8 @@ describe('validation ingestion compléments', () => {
       fiches: [
         ficheBrute({
           compositions: [
-            { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg', position: 1 },
-            { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg', position: 0 },
+            { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg', position: 1 },
+            { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 300, unite: 'mg', position: 0 },
           ],
         }),
       ],
@@ -110,16 +159,16 @@ describe('validation ingestion compléments', () => {
     const base = parseSupplementIngestPayload({
       fiches: [ficheBrute({
         compositions: [
-          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg' },
-          { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg' },
+          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 300, unite: 'mg' },
+          { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg' },
         ],
       })],
     }).fiches[0];
     const inverse = parseSupplementIngestPayload({
       fiches: [ficheBrute({
         compositions: [
-          { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg' },
-          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg' },
+          { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg' },
+          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 300, unite: 'mg' },
         ],
       })],
     }).fiches[0];
@@ -160,8 +209,8 @@ describe('validation ingestion compléments', () => {
       fiches: [
         ficheBrute({
           compositions: [
-            { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 200, unite: 'mg', position: 0 },
-            { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg', position: 1 },
+            { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 200, unite: 'mg', position: 0 },
+            { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg', position: 1 },
           ],
         }),
       ],

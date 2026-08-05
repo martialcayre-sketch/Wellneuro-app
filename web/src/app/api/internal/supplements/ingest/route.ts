@@ -17,20 +17,20 @@ export async function POST(req: Request) {
     // Fail-closed : avant authentification, aucun détail sur la cause exacte.
     console.error('Ingestion compléments : configuration invalide —', error);
     return NextResponse.json(
-      { error: "Voie d'ingestion des compléments non configurée." },
+      { ok: false, error: "Voie d'ingestion des compléments non configurée." },
       { status: 503 },
     );
   }
 
   if (!isAuthorizedSupplementsRequest(req)) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'Non autorisé.' }, { status: 401 });
   }
 
   let rawBody: unknown;
   try {
     rawBody = await req.json();
   } catch {
-    return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'JSON invalide.' }, { status: 400 });
   }
 
   let payload;
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     payload = parseSupplementIngestPayload(rawBody);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payload d'ingestion invalide.";
-    return NextResponse.json({ error: message }, { status: 422 });
+    return NextResponse.json({ ok: false, error: message }, { status: 422 });
   }
 
   try {
@@ -52,6 +52,6 @@ export async function POST(req: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Échec d'ingestion du catalogue.";
     console.error('Ingestion compléments : écriture échouée —', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

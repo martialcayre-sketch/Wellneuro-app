@@ -9,7 +9,23 @@ import type { RecommendedPlateRef } from '@/lib/food-compass/types';
  * aucun mécanisme de rappel.
  */
 
-export const VERSION_SCHEMA_FOOD_OBSERVATION = 'ja-domaine-v1' as const;
+/**
+ * Version du schéma du domaine JA. Passée à v2 au lot 3 : l'instantané porte
+ * désormais des **journées repères** en plus des traces d'essai, et le sens de
+ * ce qu'il décrit change avec elles.
+ *
+ * `VERSIONS_LUES` n'est pas un ornement. `readFoodObservationEpisode` refuse
+ * tout littéral différent du courant : sans cette liste, les instantanés déjà
+ * transmis en v1 deviendraient illisibles du jour au lendemain — un épisode
+ * relu lèverait, la faisabilité disparaîtrait de la boussole praticien sans
+ * message (l'exception y est avalée). Même patron que
+ * `AGENDA_CONTRACT_VERSIONS_LUES` côté sommeil.
+ */
+export const VERSION_SCHEMA_FOOD_OBSERVATION = 'ja-domaine-v2' as const;
+export const VERSIONS_SCHEMA_FOOD_OBSERVATION_LUES = [
+  'ja-domaine-v1',
+  'ja-domaine-v2',
+] as const;
 export const VERSION_REGISTRE_FRICTIONS = 'frictions-v1' as const;
 export const VERSION_REGISTRE_MARQUEURS = 'marqueurs-ja-v1' as const;
 
@@ -27,6 +43,47 @@ export type FrictionCode = 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'F7' | 'F8'
 
 /** Moments approximatifs d'une prise (marqueur structurel, JA-00 A1 — jamais d'heure exacte exigée). */
 export type MomentPrise = 'matin' | 'midi' | 'soir' | 'hors_repas';
+
+/**
+ * Types de journée du bilan de calibrage (lot 3). Le week-end se dérive du
+ * calendrier ; les trois autres se déclarent — le patient est seul à savoir
+ * s'il était de poste, et un samedi travaillé reste une journée de travail.
+ */
+export type TypeJournee = 'travail_matin' | 'travail_apres_midi' | 'repos' | 'week_end';
+
+/**
+ * Journée repère : ce que la trace d'essai ne peut pas porter. Unique par date
+ * et par épisode — c'est cette unicité qui rend la couverture calculable.
+ *
+ * Aucune heure (moment approximatif seulement), aucune quantité, aucune valeur
+ * nutritionnelle. `rienDeParticulier` est une réponse explicite, exclusive des
+ * moments et marqueurs ; l'absence de réponse laisse les champs `undefined`.
+ */
+export type JourneeRepere = {
+  journeeId: string;
+  episodeId: string;
+  localDate: string;
+  typeJournee: TypeJournee;
+  nombrePrises?: number;
+  momentsObserves: MomentPrise[];
+  contexte?: string;
+  marqueursPresents: string[];
+  rienDeParticulier?: true;
+  schemaVersion: string;
+  marqueursVersion: string;
+};
+
+/**
+ * Couverture du bilan par types de journées. `profilPossible` exige compte ET
+ * composition : un volume seul ne dit rien de ce qui change d'un type de
+ * journée à l'autre.
+ */
+export type CouvertureJournees = {
+  compte: number;
+  typesCouverts: TypeJournee[];
+  typesAbsents: TypeJournee[];
+  profilPossible: boolean;
+};
 
 /** Étapes de la carrière d'action à travers les tours (A7-14). */
 export type ActionCareerStage =
@@ -53,7 +110,14 @@ export type TrialAction = {
   actionId: string;
   /** Libellé patient en français ; vocabulaire « essai », jamais « prescription » (R4). */
   labelPatient: string;
-  idealPlan: string;
+  /**
+   * Version idéale — facultative. La vue patient du protocole diffusé exclut
+   * délibérément `idealPlan` et `rescuePlan` (`api/portail/protocole/route.ts`) :
+   * un épisode dérivé du dossier côté patient n'en dispose pas, et l'exiger est
+   * ce qui obligeait le gabarit à en inventer un. Les épisodes rédigés par le
+   * praticien continuent de la porter.
+   */
+  idealPlan?: string;
   simplePlan: string;
   secoursPlan?: string;
   /** Référence C5B optionnelle ; son absence conserve la compatibilité JA V1. */

@@ -87,11 +87,15 @@ describe('source unique des questionnaires', () => {
   });
 
   it('aucune régression du nombre de questionnaires modulaires', () => {
-    // 37 questionnaires servis depuis leur module (shorthand). Ce compte ne doit
+    // 38 questionnaires servis depuis leur module (shorthand). Ce compte ne doit
     // évoluer que par un ajout/retrait volontaire, jamais par surprise.
     // 37 depuis l'ajout de Q_SOM_09 (agenda du sommeil, 2026-07-25). Compté sur
     // les seules définitions servies : les formes alternatives déclarées ne
     // gonflent pas ce chiffre, qui garde donc exactement le sens qu'il avait.
-    expect(defsServies.length).toBe(37);
+    // 38 depuis l'ajout de Q_ALI_09 (agenda alimentaire, 2026-08-03). Le compte
+    // est INDÉPENDANT de `WN_AGENDA_ALI` : le drapeau pilote le champ `actif` de
+    // l'entrée de `questionnaires-catalog.ts`, pas l'appartenance au catalogue
+    // de scoring — l'instrument est donc « servi » ici dans les deux positions.
+    expect(defsServies.length).toBe(38);
   });
 });

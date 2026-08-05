@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Prisma } from '@/generated/prisma';
 
 const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -7,6 +8,9 @@ const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
+    pack: { findMany: vi.fn() },
+    // Anamnèse la plus récente : source des déclencheurs `drapeau` (LOT-05).
+    consultation: { findFirst: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -31,6 +35,16 @@ vi.mock('@/lib/clinical/orientationRulesV1', () => ({
 
 import { GET } from './route';
 
+// PSS-10 complet, total 33 — bande « Niveau élevé de stress et désadaptation ».
+//
+// `rawAnswers` EST OBLIGATOIRE depuis le 2026-08-04 : la route ne relit plus le
+// score stocké, elle le RECALCULE depuis les réponses brutes (voir
+// `orientationService`). Une fixture réduite à `{ total: 33 }` décrit un dossier
+// que le service écarte — et c'est voulu : un score dont on ne peut pas
+// re-dériver la provenance sous la doctrine courante ne fonde aucune
+// recommandation. Les six items directs au maximum, les quatre inversés à 3/2/2/2.
+const PSS10_COMPLET_33 = { P1: 4, P2: 4, P3: 4, P6: 4, P9: 4, P10: 4, P4: 3, P5: 2, P7: 2, P8: 2 };
+
 function getRequest(query = '?idPatient=PAT_SEED_03') {
   return new Request(`http://test.local/api/praticien/orientation${query}`);
 }
@@ -49,6 +63,10 @@ describe('GET /api/praticien/orientation', () => {
     prisma.journalAccesDossier.deleteMany.mockResolvedValue({ count: 0 });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.pack.findMany.mockResolvedValue([]);
+    // Par défaut aucune consultation : les déclencheurs `drapeau` ne portent
+    // pas, ce qui est le cas fail-closed attendu.
+    prisma.consultation.findFirst.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -127,9 +145,7 @@ describe('GET /api/praticien/orientation', () => {
       erreur.mockRestore();
     });
 
-    it("ne passe ni composition de packs ni filtre d'administrabilité tant que le lot 10 ne les fournit pas", async () => {
-      // Test de contrat : si le lot 10 branche le registre des instruments, il
-      // doit modifier ce test — l'oubli ne peut pas passer inaperçu.
+    it("filtre un pack recommandé si sa composition contient un questionnaire non administrable", async () => {
       mockRegles.push({
         id: 'R-TEST-02',
         statut: 'publiee',
@@ -138,12 +154,14 @@ describe('GET /api/praticien/orientation', () => {
         justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
         niveau: 'approfondissement',
       });
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_PED_03'] },
+      ]);
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
       ]);
       const payload = await (await GET(getRequest())).json();
-      expect(payload.recommandations[0].dejaAssigne).toBe(false);
-      expect(payload.recommandations[0].dejaRepondu).toBeNull();
+      expect(payload.recommandations).toEqual([]);
     });
 
     it('évalue les règles sur les scores stockés et journalise la lecture', async () => {
@@ -158,7 +176,14 @@ describe('GET /api/praticien/orientation', () => {
         niveau: 'approfondissement',
       });
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
+      ]);
+      // `idPack` porte la valeur RÉELLE de la base (`PACK_STRESS_BURNOUT`), pas
+      // le slug de doctrine. Jusqu'au LOT-03 cette fixture inventait un
+      // `id_pack` égal au slug : le test passait au vert alors que la route ne
+      // pouvait rien produire en production.
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
       ]);
       const payload = await (await GET(getRequest())).json();
       expect(payload.ok).toBe(true);
@@ -170,12 +195,172 @@ describe('GET /api/praticien/orientation', () => {
         priorite: 1,
         dejaAssigne: false,
       });
+      expect(prisma.pack.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
     });
 
     it('aucune réponse : recommandations vides, jamais une erreur', async () => {
       const payload = await (await GET(getRequest())).json();
       expect(payload).toMatchObject({ ok: true, actif: true, recommandations: [] });
+    });
+
+    // --- Correspondance base ↔ doctrine (LOT-03) ---
+    //
+    // Les `id_pack` de la base et les `PackId` du code sont deux espaces de noms
+    // disjoints. Sans traduction, aucune recommandation de pack ne pouvait
+    // sortir — et aucun test ne le voyait, faute de fixture réaliste.
+    //
+    // Attention à ce que chaque cas garde RÉELLEMENT. Seuls les deux premiers
+    // ci-dessous rougissent si l'on remet la comparaison directe ; les deux
+    // suivants gardent le fail-closed, qui passait déjà avant. Les compter
+    // comme garde anti-retour serait se rassurer à bon compte.
+
+    function regleVersStress() {
+      mockRegles.push({
+        id: 'R-TEST-03',
+        statut: 'publiee',
+        declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } }],
+        suggestions: [{ packId: 'pack_stress_chronique_burnout', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'approfondissement',
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
+      ]);
+    }
+
+    it("un id_pack de production est traduit et la recommandation sort", async () => {
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toHaveLength(1);
+      expect(payload.recommandations[0].cible).toEqual({ type: 'pack', packId: 'pack_stress_chronique_burnout' });
+    });
+
+    it("la recommandation porte l'id_pack attendu par l'assignation", async () => {
+      // Sans ce champ, un praticien qui clique « assigner » enverrait le slug de
+      // doctrine à `/api/praticien/packs/assign`, qui cherche un `id_pack` :
+      // 404. Une recommandation qu'on ne peut pas suivre n'est pas une
+      // recommandation.
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations[0].idPackBase).toBe('PACK_STRESS_BURNOUT');
+    });
+
+    it("un slug de doctrine trouvé tel quel en base n'est PAS traité comme un id_pack", async () => {
+      // Garde anti-retour : si un jour la traduction redevenait une comparaison
+      // directe, ce cas repasserait au vert et le défaut reviendrait sans bruit.
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("un pack composé par le praticien n'est jamais une cible d'orientation", async () => {
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_-bG21yeIvVYRhrdlYuWIMnFz', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    // --- Drapeaux d'anamnèse (LOT-04 branché par LOT-05) ---
+    //
+    // `extraireDrapeauxAnamnese` n'avait aucun consommateur avant ce lot. Ces
+    // bancs prouvent que la route lit bien l'anamnèse et la passe au moteur —
+    // le banc unitaire du moteur, lui, ne dit rien du câblage.
+
+    function regleSurAttenteSommeil() {
+      mockRegles.push({
+        id: 'R-TEST-ANA',
+        statut: 'publiee',
+        declencheurs: [{ type: 'drapeau', champ: 'attentes', valeurs: ['Améliorer le sommeil'] }],
+        suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'socle',
+      });
+    }
+
+    it("une attente déclarée en anamnèse déclenche une recommandation", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Améliorer le sommeil'] },
+      });
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toHaveLength(1);
+      expect(payload.recommandations[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_SOM_01' });
+    });
+
+    // Ces deux-là épinglent le contrat sans prouver de différence observable :
+    // aucune anamnèse et une anamnèse vide donnent aujourd'hui le même vide.
+    it("sans consultation, une règle de drapeau ne déclenche pas", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue(null);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("une consultation sans anamnèse ne déclenche pas non plus", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({ anamnese: null });
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    // Celui-ci, lui, mord : il échouerait si la route retenait la consultation
+    // la plus récente au lieu de la plus récente PORTEUSE d'une anamnèse — le
+    // défaut trouvé en revue. La sélection se lit dans l'argument passé à
+    // Prisma, seul endroit où elle est observable depuis un banc mocké.
+    it("retient la dernière consultation qui porte une anamnèse, pas la dernière", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Améliorer le sommeil'] },
+      });
+      await GET(getRequest());
+      const critere = prisma.consultation.findFirst.mock.calls[0][0];
+      // Égalité stricte au sentinel : `Prisma.JsonNull` à la place de
+      // `Prisma.DbNull` cesserait d'exclure les NULL SQL et ferait revenir le
+      // défaut, sans qu'une assertion « NOT est défini » s'en aperçoive.
+      expect(critere.where.NOT).toEqual({ anamnese: { equals: Prisma.DbNull } });
+      expect(critere.orderBy).toEqual({ createdAt: 'desc' });
+    });
+
+    it("un libellé d'attente hors énuméré est ignoré, jamais deviné", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Ameliorer le sommeil'] },
+      });
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("un pack de doctrine sans existence en base n'est jamais recommandé", async () => {
+      mockRegles.push({
+        id: 'R-TEST-04',
+        statut: 'publiee',
+        declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } }],
+        // `pack_migraine_cephalees` porte `idPackBase: null` : déclaré en
+        // doctrine, jamais créé en base, donc non assignable.
+        suggestions: [{ packId: 'pack_migraine_cephalees', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'approfondissement',
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
+      ]);
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
     });
   });
 });

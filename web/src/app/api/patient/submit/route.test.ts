@@ -99,6 +99,18 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     expect(data.scoresJson.rawAnswers).toEqual({ NEU3_Q001: 2, NEU3_Q002: 1 });
   });
 
+  // Fil A : refus défensif symétrique à `patient/questionnaire`. Une annulée ne
+  // se soumet par aucun chemin — 409 (un retrait, pas une expiration), sans
+  // calcul ni écriture.
+  it('refuse la soumission d’une assignation annulée : 409, sans rien écrire', async () => {
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statut: 'Annulée' });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'annulee' });
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
   // Le portail ne propose plus un instrument suspendu, mais un refus qui ne vit
   // que dans l'écran se contourne par un appel direct — mot pour mot la leçon
   // du lot #406 sur les trois chemins d'assignation. 409 et non 410 : ce n'est
@@ -106,7 +118,7 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
   it('refuse la soumission d’un instrument suspendu, sans rien calculer ni écrire', async () => {
     prisma.assignation.findUnique.mockResolvedValue({
       ...assignation,
-      idQuestionnaire: 'Q_SOM_07',
+      idQuestionnaire: 'Q_FIB_03',
     });
     const res = await postSubmit(requeteSoumission());
     expect(res.status).toBe(409);
@@ -238,6 +250,79 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
   });
 });
 
+// BORNES DES SAISIES CHIFFRÉES — ajoutées le 2026-07-31 avec `Q_ALI_03`.
+//
+// `min`/`max` d'un item `type: 'number'` n'étaient que des attributs HTML : le
+// navigateur les respecte, une requête directe non. Le moteur de `Q_ALI_03`
+// MULTIPLIE chaque saisie par un coefficient, donc une valeur aberrante ne reste
+// pas aberrante — elle devient une estimation d'apport aberrante, persistée en
+// base et renvoyée au modèle de synthèse comme une déclaration du patient.
+describe('POST /api/patient/submit — bornes des saisies chiffrées', () => {
+  function requeteApports(answers: Record<string, unknown>): Request {
+    const cookie = signPatientSession({
+      idPatient: assignation.idPatient,
+      email: assignation.emailPatient,
+    });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+      body: JSON.stringify({
+        idAssignation: assignation.idAssignation,
+        idQuestionnaire: 'Q_ALI_03',
+        answers,
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, idQuestionnaire: 'Q_ALI_03' });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+  });
+
+  it.each([
+    ['au-dessus du maximum déclaré', { AP1: 999999 }],
+    ['négative', { AP1: -50 }],
+    ['non numérique', { AP1: 'beaucoup' }],
+  ])('refuse une valeur %s : 400, aucune persistance ni verrouillage', async (_libelle, answers) => {
+    const res = await postSubmit(requeteApports(answers));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('limites autorisées');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['un forfait hors des options proposées', { AP1: 1, AP13: 9999 }],
+    ['un grignotage hors des options proposées', { AP1: 1, AP14: 999999 }],
+  ])('refuse %s : 400, aucune persistance', async (_libelle, answers) => {
+    // Les deux items à CHOIX UNIQUE dont la valeur d'option EST la quantité —
+    // 15 ou 10 g de forfait, 0/150/300 kcal de grignotage. Un garde calibré sur
+    // `type: 'number'` les laissait passer, et `{ AP13: 9999 }` rendait 9 999 g
+    // de protéines par jour, affichés sur la fiche avec leur unité.
+    const res = await postSubmit(requeteApports(answers));
+    expect(res.status).toBe(400);
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
+  it('accepte une valeur dans les bornes (contrôle négatif)', async () => {
+    // Sans lui, un refus inconditionnel ferait passer les trois cas ci-dessus.
+    const res = await postSubmit(requeteApports({ AP1: 2 }));
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+  });
+});
+
 // Les questionnaires fonctionnels — `Q_PLAINTES` — n'ont pas de définition dans
 // QUESTIONNAIRE_CATALOGUE : leur donnée clinique est la réponse brute, persistée
 // avec un champ error depuis toujours. Le 409 défensif est réservé aux CAB_ —
@@ -304,5 +389,65 @@ describe('POST /api/patient/submit — questionnaires fonctionnels sans définit
     expect(data.scoresJson.rawAnswers).toEqual({ plainte_1: 'Fatigue au réveil' });
     expect(data.scorePrincipal).toBeNull();
     expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Les DEUX agendas sont refusés par cette route, et rien d'autre ne le garantit.
+//
+// Ce refus était non couvert : `Q_SOM_09` depuis son ajout, `Q_ALI_09` en
+// héritait. Drapeau éteint, `IDS_SUSPENDUS` masque le trou en empêchant
+// l'assignation ; drapeau ALLUMÉ, ces quelques lignes de `route.ts` sont la
+// seule chose qui empêche une passation fabriquée — et les supprimer ne faisait
+// rougir aucun test. C'est exactement la classe de défaut que ce dépôt traque :
+// une protection dont la disparition est silencieuse.
+//
+// Ce qu'une soumission générique produirait sans elles : une
+// `QuestionnaireReponse` à `rawAnswers: {}` et une assignation passée à
+// `Complété` / `verrouille`, sur un agenda à zéro journée saisie.
+describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+  });
+
+  it.each([
+    ['Q_SOM_09', /nuit par nuit/],
+    ['Q_ALI_09', /jour par jour/],
+  ])('%s est refusé en 409 sans rien écrire', async (idQuestionnaire, motif) => {
+    const agenda = { ...assignation, idQuestionnaire, statutReponses: 'en_cours' };
+    prisma.assignation.findUnique.mockResolvedValue(agenda);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: agenda.idPatient,
+      actif: true,
+      email: agenda.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+
+    const cookie = signPatientSession({ idPatient: agenda.idPatient, email: agenda.emailPatient });
+    const res = await postSubmit(
+      new Request('http://localhost/api/patient/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+        body: JSON.stringify({
+          idAssignation: agenda.idAssignation,
+          idQuestionnaire,
+          // Une charge NON VIDE : la route refuse pour l'instrument, pas parce
+          // que le corps serait vide (un corps vide part en 400 bien plus haut,
+          // et le test passerait alors pour une raison qui n'est pas la sienne).
+          answers: { AGD_NB_NUITS: 21 },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    const corps = await res.json();
+    expect(corps.reason).toBe('unavailable');
+    expect(corps.error).toMatch(motif);
+    // LE point du test : aucune écriture. Un 409 qui aurait déjà persisté la
+    // réponse ne protégerait rien.
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
   });
 });

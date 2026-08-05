@@ -49,9 +49,40 @@ function reponsesALaBorne(id: string, borne: 'min' | 'max'): Record<string, numb
   );
 }
 
+/**
+ * La même passation saturée, PRIVÉE de sa dernière réponse.
+ *
+ * Toutes les gardes de ce fichier saturaient l'intégralité des items, donc ne
+ * visitaient que des passations COMPLÈTES. C'est ce qui les a rendues aveugles,
+ * le 2026-08-05, au champ `bandePlancher` : il n'existe QUE sur un recueil
+ * incomplet, et il copiait alors la bande entière — `protocol` compris — hors de
+ * l'entonnoir `separerConduite`, lequel sort immédiatement quand
+ * `interpretation` vaut `null`. Cinq instruments déclarent une conduite sur leur
+ * bande la plus sévère : « Orientation psychiatrique urgente » partait dans
+ * `scoresJson` sous une clé que rien ne rend.
+ *
+ * Une garde qui ne visite jamais l'état où le défaut existe est verte pour une
+ * mauvaise raison.
+ */
+function reponsesPartielles(id: string, borne: 'min' | 'max'): Record<string, number> {
+  const toutes = reponsesALaBorne(id, borne);
+  const cles = Object.keys(toutes);
+  if (cles.length < 2) return toutes;
+  delete toutes[cles[cles.length - 1]];
+  return toutes;
+}
+
 describe('Synthèse IA — aucune conduite clinique dans le prompt (structurel)', () => {
   it('le bloc `scores` du message utilisateur passe par `scoresPourPrompt`', () => {
-    expect(SOURCE).toMatch(/scores:\s*scoresPourPrompt\(r\.scores\)/);
+    // Depuis `synthese-v8`, le filtre est ENVELOPPÉ par la traduction des
+    // réponses alimentaires en tranches cochées. L'ordre importe et reste
+    // vérifié ici : `scoresPourPrompt` s'applique d'ABORD (il retire), la
+    // traduction ensuite (elle réécrit ce qui reste). L'inverse ferait traduire
+    // des blocs destinés à disparaître.
+    expect(SOURCE).toMatch(/scoresPourPrompt\(r\.scores\)/);
+    expect(SOURCE).toMatch(
+      /scores:\s*reponsesLisiblesPourPrompt\(\s*r\.idQuestionnaire,\s*scoresPourPrompt\(r\.scores\)\s*\)/
+    );
     expect(SOURCE).not.toMatch(/^\s*scores:\s*r\.scores\s*,/m);
   });
 
@@ -151,6 +182,35 @@ describe('Balayage du catalogue servi — aucune conduite ne survit à la séria
     expect(
       horsRacine,
       `conduites hors de portée de la mini-synthèse : ${horsRacine.join(' | ')}`
+    ).toEqual([]);
+  });
+
+  it('aucune conduite ne se loge hors racine sur un recueil PARTIEL non plus', () => {
+    // Même contrôle, sur l'état que les autres gardes de ce fichier ne visitent
+    // jamais. Un recueil incomplet fait tomber `interpretation` à `null` — donc
+    // `separerConduite` ne filtre plus rien — et fait apparaître `bandePlancher`,
+    // le seul objet du moteur qui puisse alors porter un `protocol`.
+    const PORTEES = new Set(['conduite', 'interpretation.protocol']);
+    const horsRacine: string[] = [];
+    let instrumentsVisites = 0;
+    for (const id of ids) {
+      for (const borne of ['min', 'max'] as const) {
+        let scores: unknown;
+        try {
+          scores = calculateScore(id, reponsesPartielles(id, borne));
+        } catch {
+          continue;
+        }
+        instrumentsVisites++;
+        for (const chemin of cheminsDeConduite(scores)) {
+          if (!PORTEES.has(chemin)) horsRacine.push(`${id} (${borne}, partiel) → ${chemin}`);
+        }
+      }
+    }
+    expect(instrumentsVisites, 'aucun instrument visité : le balayage ne prouve rien').toBeGreaterThan(40);
+    expect(
+      horsRacine,
+      `conduites hors de portée sur recueil partiel : ${horsRacine.join(' | ')}`
     ).toEqual([]);
   });
 

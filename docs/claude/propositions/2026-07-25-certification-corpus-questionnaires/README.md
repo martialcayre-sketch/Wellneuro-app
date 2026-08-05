@@ -51,7 +51,8 @@ Axe 3 : fiches de synthèse NNPP2 (déjà au registre) → claims d'orientation 
   questionnaire : questions, scoring, interprétation et provenance » — l'axe 1
   la matérialise. Décision **A-009** : perfusion, sevrages médicamenteux,
   psychotropes, Alzheimer = **hors moteur** — reprise par l'axe 3 (aucune
-  règle d'orientation issue de ces sources).
+  règle d'orientation issue de ces sources). *Amendée le 2026-08-01 pour
+  l'orientation (décision f, §5) : seule la perfusion reste exclue.*
 - Catalogue : 63 questionnaires dans `web/src/lib/questions.ts` (source unique,
   PR #355). Certification actuelle `certification:{source:'drive', status}` —
   aucune référence bibliographique machine-lisible. Garde :
@@ -230,9 +231,9 @@ praticien ; 12/13 ensuite. **La priorité immédiate est la certification
 | ~~c~~ | ~~Hiérarchie en cas de divergence Drive ↔ source primaire~~ — **close le 2026-07-27** ([décision 1](../2026-07-27-arbitrages-praticien/README.md) : la **publication primaire fait foi**) | — |
 | d | Validation des niveaux de preuve A/B/C/D (`NIVEAU_PREUVE_PAR_SOURCE`) | Lot 5 |
 | e | Besoins 3/6/7/11 : rester à couverture null, ou mapper de nouvelles sources (⇒ bump v3) | Lot 6 |
-| f | Confirmation du périmètre A-009 appliqué à l'orientation | Lot 8 |
+| ~~f~~ | ~~Confirmation du périmètre A-009 appliqué à l'orientation~~ — **close le 2026-08-01, périmètre AMENDÉ** : seule la **perfusion** reste exclue du moteur d'orientation ; sevrages médicamenteux, psychotropes et Alzheimer sont **réintégrés** dans le drafting (chaque claim reste soumis à la validation praticien claim par claim, barrière D-003 inchangée). Lancement acté le même jour : **lot sommeil complet** (17 fiches) en premier | — |
 | ~~g~~ | ~~Sortie des champs `protocol` des bandes d'interprétation (IRLS…)~~ — **close le 2026-07-27** ([décision 5](../2026-07-27-arbitrages-praticien/README.md) : champ praticien distinct, non transmis au prompt patient, 11 instruments) | — |
-| h | Libellés chiffrés du catalogue (« sensibilité 90,5 % »…) : adosser à une référence ou marquer provisoires | Lot 4 |
+| ~~h~~ | ~~Libellés chiffrés du catalogue (« sensibilité 90,5 % »…) : adosser à une référence ou marquer provisoires~~ — **close le 2026-08-02 : MARQUER PROVISOIRES**. L'audit ne trouve que **deux** affirmations chiffrées de performance dans tout le catalogue : Q_FIB_01 (FiRST, « sensibilité 90,5 % » — `questionnaires-catalog.ts`) et Q_GEO_06 (Test des 5 mots, « 85 % / 90 % » attribuées à Dubois 2002 — `questionnaires/gerontologie.ts`). Aucune des deux n'a de `doi`, `pmid` ni `dateVerification` au registre. Les deux textes servis portent désormais la mention « non vérifiée contre la source primaire », et le registre une `reserveMetrologique`. Même doctrine que le plafond de Q_GEO_04 : l'application n'affirme pas ce qu'elle n'a pas vérifié | — |
 
 **Veille réglementaire** : la « validation pour l'usage WellNeuro » reste
 distincte d'une qualification de logiciel médical (MDCG 2019-11 rév. 2025). Si

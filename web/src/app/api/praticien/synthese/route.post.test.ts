@@ -36,7 +36,13 @@ vi.mock('@/lib/anthropic', () => ({
   sanitizeAuditError: (m: string) => m,
   CORPUS_CLINIQUE_ACTIF: '',
 }));
-vi.mock('@/lib/clinical/corpusSyntheseV1', () => ({ CORPUS_CLINIQUE_METADATA: {}, CORPUS_CLINIQUE_SHA256: 'sha' }));
+// `sha256` : depuis le LOT-06 la route atteint `orientationRulesV1`, qui signe
+// sa table avec cette fonction. Un mock qui ne l'expose pas casse l'import.
+vi.mock('@/lib/clinical/corpusSyntheseV1', () => ({
+  CORPUS_CLINIQUE_METADATA: {},
+  CORPUS_CLINIQUE_SHA256: 'sha',
+  sha256: (texte: string) => `sha256(${texte.length})`,
+}));
 vi.mock('@/lib/scoring/miniSynthese', () => ({ buildMiniSynthese: () => ({}) }));
 vi.mock('@/lib/consultation/contexteClinique', () => ({
   buildContexteClinique: () => '',
@@ -72,7 +78,14 @@ beforeEach(() => {
     // la consigne système désigne les questionnaires alimentaires par leur
     // identifiant. La fixture doit le porter, sinon `JSON.stringify` élide la
     // clé et aucun test n'observe jamais l'identifiant réellement transmis.
-    { idQuestionnaire: 'Q_ALI_03', titre: 'BDI', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
+    //
+    // L'identifiant porté ici est `Q_ALI_02`. Il portait `Q_ALI_03` jusqu'au
+    // 2026-07-31 : cet instrument est depuis inscrit au registre des passations
+    // non interprétables pour ses passations ANTÉRIEURES à sa reconstruction, et
+    // la fixture est datée du 2026-07-10 — le contrôle négatif d'en bas
+    // (« un questionnaire courant garde ses chiffres ») se serait donc mis à
+    // observer une mesure retirée, c'est-à-dire l'inverse de ce qu'il garde.
+    { idQuestionnaire: 'Q_ALI_02', titre: 'Diète méditerranéenne', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
   ]);
   prisma.consultation.findFirst.mockResolvedValue(null);
   validateSyntheseSchema.mockReturnValue({ points_de_vigilance: [] });
@@ -137,7 +150,7 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     // `JSON.stringify`, là où une clé absente du type disparaît sans bruit.
     await POST(req(CORPS));
     const message = anthropicCreate.mock.calls[0][0].messages[0].content;
-    expect(message).toContain('"idQuestionnaire": "Q_ALI_03"');
+    expect(message).toContain(`"idQuestionnaire": "Q_ALI_02"`);
   });
 
   it('ne passe AUCUNE option Anthropic (défauts SDK inchangés, Vercel intact)', async () => {
@@ -185,6 +198,45 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(message).toContain('"miniSynthese": ""');
   });
 
+  it('une réponse alimentaire part en TRANCHE COCHÉE, jamais en code de barème', async () => {
+    // Le code enregistré n'est pas la quantité : `MO1: 2` vaut « 3-4 » portions
+    // de viande par semaine. Livré nu sous une consigne autorisant la
+    // restitution « dans l'unité de la question », il faisait écrire au modèle
+    // « 2 portions » — une déclaration que le patient n'a jamais faite.
+    //
+    // Fixture sur `Q_ALI_02`, indépendante de `WN_ALI_01_SIIN57` : ce test
+    // observe le BRANCHEMENT de la route, qui ne doit dépendre d'aucun drapeau.
+    // Elle portait sur `Q_ALI_03` jusqu'au 2026-07-31 ; reconstruit depuis sa
+    // feuille de calcul source, cet instrument ne pose plus de tranches mais des
+    // nombres de portions, et ne peut donc plus témoigner d'une tranche cochée.
+    // La charge produite pour `Q_ALI_03` — quantité déclarée, unité, libellé
+    // qui nomme encore l'aliment — est éprouvée par
+    // `apportsPonderesReconstruit.guard.test.ts`, et non « juste en dessous » :
+    // le test qui suit ici est le contrôle négatif sur `Q_ALI_02`.
+    // Les libellés des deux formes de `Q_ALI_01` sont gardés séparément, dans
+    // les deux positions, par `promptAlimentaire.guard.test.ts`.
+    //
+    // Ce test observe la charge APRÈS `JSON.stringify` : c'est le seul endroit
+    // où l'on voit ce que le modèle reçoit vraiment. Un module de traduction
+    // parfait que la route n'appellerait pas passerait tous les autres tests —
+    // c'est exactement « l'interdiction dont le critère n'arrive jamais » (#408).
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_ALI_02',
+        titre: 'Diète méditerranéenne',
+        dateReponse: new Date('2026-07-22'),
+        scoresJson: { type: 'sum', total: 7, maxTotal: 14, rawAnswers: { MD1: 1 } },
+        scorePrincipal: 7,
+        interpretation: null,
+      },
+    ]);
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"question"');
+    // Et le code nu ne doit plus être ce que porte la réponse.
+    expect(message).not.toMatch(/"MD1":\s*1/);
+  });
+
   it('un questionnaire courant garde ses chiffres (contrôle négatif)', async () => {
     // Sans lui, vider inconditionnellement scores et interprétation ferait
     // passer le test ci-dessus au vert.
@@ -192,6 +244,49 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
     expect(message).toContain('"scorePrincipal": 12');
     expect(message).not.toContain('mesureNonInterpretable');
+  });
+
+  it('n’envoie pas un questionnaire suspendu au modèle quand une mesure administrable existe', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_PED_03',
+        titre: 'Conners Parent',
+        dateReponse: new Date('2026-07-20'),
+        scoresJson: { total: 108 },
+        scorePrincipal: 108,
+        interpretation: null,
+      },
+      {
+        idQuestionnaire: 'Q_ALI_02',
+        titre: 'Diète méditerranéenne',
+        dateReponse: new Date('2026-07-22'),
+        scoresJson: { total: 7 },
+        scorePrincipal: 7,
+        interpretation: null,
+      },
+    ]);
+
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"idQuestionnaire": "Q_ALI_02"');
+    expect(message).not.toContain('"idQuestionnaire": "Q_PED_03"');
+  });
+
+  it('retourne 422 si toutes les réponses du dossier sont non administrables', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_PED_03',
+        titre: 'Conners Parent',
+        dateReponse: new Date('2026-07-20'),
+        scoresJson: { total: 108 },
+        scorePrincipal: 108,
+        interpretation: null,
+      },
+    ]);
+
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(422);
+    expect(anthropicCreate).not.toHaveBeenCalled();
   });
 
   it('échec du modèle : 500, aucune synthèse persistée', async () => {

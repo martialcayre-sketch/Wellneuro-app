@@ -1,7 +1,9 @@
 export * from './actionCareer';
 export * from './decisionDelta';
 export * from './episode';
+export * from './episodeDepuisProtocole';
 export * from './frictionRegistry';
+export * from './journee';
 // './feasibility' n'est volontairement PAS réexporté ici : il dépend de
 // node:crypto (canonicalSha256) et ce barrel est importé par des composants
 // client. Les consommateurs serveur importent './feasibility' en direct.

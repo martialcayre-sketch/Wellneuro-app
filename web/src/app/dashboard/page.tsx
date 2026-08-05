@@ -1,5 +1,6 @@
 import { FilDuJour } from '@/components/fil/FilDuJour';
 import { MeteoAdhesionAside } from '@/components/fil/MeteoAdhesionAside';
+import { AgendasEnCoursAside } from '@/components/agenda-sommeil/AgendasEnCoursAside';
 import { InboxQuestionnaires } from '@/components/fil/InboxQuestionnaires';
 import { CorrespondanceRecente } from '@/components/fil/CorrespondanceRecente';
 
@@ -44,6 +45,7 @@ export default function DashboardPage() {
             états — rien n'est inventé, rien ne bloque le Fil. */}
         <aside className="flex flex-col gap-4">
           <MeteoAdhesionAside />
+          <AgendasEnCoursAside />
           <InboxQuestionnaires />
           <CorrespondanceRecente />
         </aside>

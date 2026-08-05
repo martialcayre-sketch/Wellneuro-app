@@ -8,8 +8,8 @@ effort: medium
 # WellNeuro — validation ciblée
 
 !`git diff --stat`
-!`git diff --name-only`
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git diff --name-only`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 
 Argument : `$ARGUMENTS`
 
@@ -40,6 +40,36 @@ tail -30 /tmp/vitest.txt          # puis grep/Read sur LE MÊME fichier
 reste intégral dans le fichier. Le 2026-07-20, six exécutions complètes du même
 fichier de test se sont enchaînées avec `| tail -N` croissant (6→12→20→25→30→45)
 faute de cette redirection.
+
+**La redirection économise deux fois, et la seconde est la plus grosse.** Elle
+évite de réexécuter — et surtout elle empêche une sortie de suite entière
+d'entrer dans le contexte, où elle serait relue à **chaque tour suivant** de la
+session (mesuré le 2026-08-01 : ~202 000 tokens relus par requête, ~37 tours par
+session). Sur un `test:worktree` complet, c'est la différence entre lire 30
+lignes une fois et repayer des milliers de lignes trente fois.
+
+Ne jamais faire entrer une sortie complète : rediriger, lire la queue, puis
+`grep` sur **le même fichier** pour tout détail supplémentaire.
+
+## Un palier sauté se dit — il ne se compte pas comme vert
+
+Rendre la **commande** et sa **sortie**, pas leur résumé : « vert » n'est pas
+une observation tant que le code de retour n'a pas été lu. Ne jamais annoncer
+un succès qui n'a pas été observé dans cette session.
+
+Un contrôle qui ne peut pas s'exécuter — outil absent, base indisponible,
+palier hors de portée de la machine — est un contrôle **non exécuté**, jamais
+un contrôle réussi. Le compter comme vert produit exactement le rapport
+rassurant qui a permis de rater ce qu'il annonçait couvrir : le 2026-07-31, le
+`selfcheck` d'un dépôt tiers a rendu « all checks passed » alors qu'il avait
+sauté l'intégralité de ses tests, faute de l'outil qui les lance.
+
+En pratique, dans la sortie :
+
+- palier exécuté → commande, code de retour, résumé de la sortie ;
+- palier sauté → dire lequel, pourquoi, et **ce qui reste donc non vérifié** ;
+- E2E non joués (PC, ou run concurrent) → le parcours n'est pas vérifié, quel
+  que soit l'état de Vitest.
 
 ## Règles
 

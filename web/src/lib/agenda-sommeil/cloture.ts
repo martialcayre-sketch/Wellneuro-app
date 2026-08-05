@@ -23,6 +23,13 @@ export async function cloturerAgenda(input: { idAssignation: string }): Promise<
   if (ass.idQuestionnaire !== AGENDA_SOMMEIL_ID) {
     throw new TypeError("Cette assignation n'est pas un agenda du sommeil.");
   }
+  // Annulée par le praticien (Fil A) : la clôture PRODUIT une QuestionnaireReponse
+  // et repasse `statut` à 'Complété'. Sans ce refus, une annulation serait
+  // silencieusement écrasée et une donnée clinique fabriquée pour un instrument
+  // retiré. Chemin UNIQUE de clôture (patient comme praticien) : le garde y suffit.
+  if (ass.statut === 'Annulée') {
+    throw new TypeError('Cet agenda du sommeil a été annulé et ne peut pas être clôturé.');
+  }
 
   // Idempotence : déjà clôturé → renvoyer la réponse existante sans en recréer.
   if (ass.statutReponses === 'verrouille') {
@@ -44,12 +51,18 @@ export async function cloturerAgenda(input: { idAssignation: string }): Promise<
   if (nuitsActives.length === 0) {
     throw new TypeError('Aucune nuit renseignée : rien à clôturer.');
   }
-  const reponsesNuits = nuitsActives.map((n) => n.reponses);
-  const agregats = calculerAgregats(reponsesNuits);
-  const nbPlausibles = compterNuitsPlausibles(reponsesNuits);
+  // `NuitRow` porte déjà `dateNuit` et `reponses` : l'agrégation a besoin des
+  // deux (la règle de couverture week-end lit la date).
+  const agregats = calculerAgregats(nuitsActives);
+  const nbPlausibles = compterNuitsPlausibles(nuitsActives);
   // Agrégats complets si ≥ seuil ; sinon au moins le compte, pour que le scoring
-  // rende scored:false avec la bonne note (jamais un 0 par défaut).
-  const rawAnswers = (agregats ?? { AGD_NB_NUITS: nbPlausibles }) as Record<string, number>;
+  // rende scored:false avec la bonne note (jamais un 0 par défaut). Une métrique
+  // non couverte reste `null` jusque dans `rawAnswers` — le scoring la traite
+  // comme inconnue, il ne la lit pas comme un zéro.
+  const rawAnswers = (agregats ?? { AGD_NB_NUITS: nbPlausibles }) as Record<
+    string,
+    number | null
+  >;
 
   const def = await resolveDefinition(AGENDA_SOMMEIL_ID, { pourPassation: true });
   const scores = (def ? computeScoreFromDef(def, rawAnswers) : { error: 'Définition introuvable' }) as Record<
