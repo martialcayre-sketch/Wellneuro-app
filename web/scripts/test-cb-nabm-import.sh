@@ -180,11 +180,12 @@ grep -q "deux bases différentes" "$SORTIE" || {
   cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ --base doit nommer l'hôte réellement visé"
 
-# Les deux cas suivants gardent le CÂBLAGE DANS LE BUILD VERCEL, où l'import
-# n'a plus d'opérateur devant lui : ce sont les épingles posées en constantes
-# de `scripts/vercel-build.sh` qui tiennent lieu de relecture. Sans elles, la
-# variable d'armement oubliée en place ferait importer, au prochain déploiement
-# venu, le millésime que l'ANS aura publié entre-temps.
+# Les deux cas suivants gardent le CÂBLAGE AUTOMATISÉ, où l'import n'a plus
+# d'opérateur qui relit son contenu : ce sont les épingles posées en constantes
+# dans `.github/workflows/release-db.yml` (leur unique lieu de définition depuis
+# que le build Vercel n'écrit plus) qui tiennent lieu de relecture. Sans elles,
+# un déclenchement de routine importerait le millésime que l'ANS aura publié
+# entre-temps.
 echo "── 9. Le millésime servi ne change pas sans PR ──"
 echec_attendu "millésime non épinglé" "V106 attendu" \
   --source "$FIXTURES/v105" --version V106

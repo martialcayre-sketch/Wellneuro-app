@@ -22,12 +22,14 @@
  *
  * `--base` demande à l'opérateur de NOMMER la base qu'il vise, et refuse si ce
  * nom ne se retrouve pas dans la chaîne de connexion. On ne peut plus se
- * tromper de base sans l'avoir écrit. Ce garde reste le bon depuis que
- * `scripts/vercel-build.sh` appelle cet import (2026-07-26) : il ne dépend
- * d'aucune variable de plateforme, donc il vaut aussi bien pour le build que
- * pour un lancement à la main, et il vaudra encore après le cutover Scalingo.
+ * tromper de base sans l'avoir écrit. Ce garde reste le bon maintenant que
+ * `.github/workflows/release-db.yml` appelle cet import (le build Vercel ne
+ * l'appelle plus) : il ne dépend d'aucune variable de plateforme, donc il vaut
+ * aussi bien pour un lancement en Actions que pour un lancement à la main, et
+ * il vaudra encore après le cutover Scalingo.
  *
- * Épingles de contenu, employées par `scripts/vercel-build.sh` :
+ * Épingles de contenu, employées par `.github/workflows/release-db.yml` (leur
+ * unique lieu de définition) :
  *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
  *   --sha256 <empreinte>   échoue si le contenu canonique n'a pas cette
  *                          empreinte. Les deux ensemble rendent l'import
@@ -234,13 +236,32 @@ function verifierPreuves(): string {
 
 // Le catalogue sert-il DÉJÀ ce millésime, avec exactement ce contenu ?
 //
-// Le prédicat est délibérément AU MOINS AUSSI FORT que le contrat rejoué juste
-// après par `vercel-build.sh` : il vérifie le pointeur, son empreinte, son
-// compte d'entrées, ET que ce compte est bien celui des actes réellement en
-// base. Un prédicat plus faible ferait sortir l'import sur « rien à faire »
-// devant un état que le contrat déclare aussitôt invalide — transformant un
-// catalogue tronqué, aujourd'hui réparé par un simple rejeu, en déploiements
-// de production bloqués jusqu'à intervention manuelle.
+// Le prédicat reprend DEUX DES SIX conditions du contrat de DONNÉES
+// `prisma/checks/cb_biologie_catalogue_v1.sql` — celles qui portent sur le volume
+// et le pointeur : `nombre_entrees` égal au compte des actes réellement en base,
+// et pointeur adossé à un snapshot de même empreinte. C'est cette classe-là, et
+// elle seule, qu'il ne doit jamais laisser sortir sur « rien à faire ».
+//
+// Les quatre autres conditions du contrat — référence `code_incompatible`
+// pendante, correspondance signée non résolue, et la barrière D-003 en deux
+// volets (plage fonctionnelle puis lien clinique actifs sans claim VALIDE) —
+// portent sur des tables que ce prédicat ne lit même pas, peuplées par d'autres
+// lots. Un « rien à faire » n'atteste RIEN à leur sujet.
+//
+// Ce que coûte un prédicat plus faible a changé de nature. Le build rejouait ce
+// contrat après l'import ; il n'écrit plus, et `release-db` ne le reprend pas —
+// il ne tourne donc PLUS JAMAIS sur la production, seulement en CI, sur base
+// éphémère. L'appel de cette fonction (dans `main()`, plus bas) précède en outre
+// l'ouverture de la transaction, donc aussi la relecture in-transaction.
+// Affaibli, le prédicat ferait sortir l'import en silence sur un catalogue
+// tronqué, là où il produit aujourd'hui un échec bruyant. Sur la production, il
+// est désormais la SEULE chose qui regarde cet état — dans son périmètre, qui
+// est celui des deux conditions ci-dessus.
+//
+// Ne pas le confondre avec le contrat STRUCTUREL (`cb_biologie_structure_v1.sql`),
+// lui bien rejoué dans la transaction : il ne porte que des invariants de schéma
+// et ne dépend d'aucune donnée importée. Les deux ensembles sont disjoints —
+// « plus fort » n'a pas de sens entre eux.
 async function millesimeDejaServi(
   url: string,
   version: string,

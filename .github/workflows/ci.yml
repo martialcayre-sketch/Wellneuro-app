@@ -332,7 +332,7 @@ jobs:
         run: npx prisma migrate deploy
 
       # Gate avant déploiement : en production, seul le SQL des migrations
-      # committées est appliqué (web/scripts/vercel-build.sh). Si schema.prisma
+      # committées est appliqué (workflow release-db). Si schema.prisma
       # a évolué sans migration, le client Prisma déployé attendrait un schéma
       # que la base n'aura jamais. La base CI vient d'être construite uniquement
       # par `migrate deploy` : l'introspecter (--from-config-datasource lit

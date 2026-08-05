@@ -31,7 +31,7 @@ Configurer dans Development, Preview et Production selon le besoin :
 Ne **pas** créer de variable `DIRECT_URL` dans Vercel : les migrations de
 production passent par `MIGRATE_DATABASE_URL` (URL Supabase en session mode,
 port 5432), appliquée **hors du build** par le workflow GitHub Actions
-`release-db` (déclenché à la main, gaté par l'environnement protégé `production`).
+`release-db` (déclenché à la main, gaté par l'environnement protégé `release-db`).
 Le build Vercel ne migre plus. C'est le seul chemin autorisé — voir « La base de
 production ne se modifie que par une migration relue » (`CLAUDE.md`) et
 `docs/DEPLOIEMENT_RELEASE_DB.md`.

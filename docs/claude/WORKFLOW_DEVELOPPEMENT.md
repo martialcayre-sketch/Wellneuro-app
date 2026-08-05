@@ -53,7 +53,7 @@ cd web && npm run type-check
   client Prisma et construit Next. Il N'ECRIT PLUS EN BASE.
 - Les migrations Prisma committees (relues en PR) et l'import NABM s'appliquent
   HORS du build, via le workflow GitHub Actions `release-db` (declenche a la
-  main, gate par l'environnement protege `production` = second gate humain, en
+  main, gate par l'environnement protege `release-db` = second gate humain, en
   plus de la revue de PR). Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
 - Prerequis du workflow : secret d'environnement `MIGRATE_DATABASE_URL` (URL
   Supabase en session mode, port 5432 — le pooler transaction ne convient pas a

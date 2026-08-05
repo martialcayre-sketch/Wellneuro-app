@@ -80,9 +80,8 @@ sans se contaminer. Ordre fail-fast : contrôles statiques (anti-secrets,
 audit campagnes, scoring, type-check, Vitest, lint) avant toute base, puis
 migrations, seed, build et Playwright.
 
-Gates de sûreté alignés sur la chaîne de déploiement
-(`web/scripts/vercel-build.sh` applique `migrate deploy` en production au
-build Vercel) :
+Gates de sûreté alignés sur la chaîne de déploiement (le workflow GitHub Actions
+`release-db` applique `migrate deploy` en production, hors du build Vercel) :
 
 - **dérive schéma↔migrations** : `prisma migrate diff` compare la base
   éphémère (construite uniquement par `migrate deploy`) à `schema.prisma` et

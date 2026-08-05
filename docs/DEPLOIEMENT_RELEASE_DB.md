@@ -7,15 +7,32 @@ import de nomenclature NABM) du **build applicatif Vercel**.
 ## Pourquoi
 
 `web/scripts/vercel-build.sh` appliquait historiquement les migrations et les
-imports **au build**. Deux défauts :
+imports **au build**.
 
-1. **Fail-open** — `MIGRATE_DATABASE_URL` absente : le build avertissait puis
-   **continuait**. Du code pouvait se déployer sur une base en retard, sans échec.
+**Ce que le workflow corrige.** Deux choses :
+
+1. **L'écriture sans approbation** — toute PR mergée écrivait en production au
+   déploiement suivant, sans autre gate que la revue de code. L'écriture est
+   désormais un acte explicite, déclenché à la main et approuvé dans un
+   environnement protégé.
 2. **Rouge ≠ rien écrit** — le contrat CB-02a s'exécutait **après le COMMIT** de
    l'import : un échec de contrat laissait la donnée écrite et le build rouge.
+   Les invariants structurels sont maintenant rejoués **dans** la transaction
+   d'import ; une violation l'annule.
 
-Le workflow `release-db` porte l'écriture ; le build redevient un pur `next build`
-sans effet de bord (voir le lot de bascule qui allège `vercel-build.sh`). Il
+**Ce que le workflow déplace, et qu'il ne faut pas croire fermé.** L'alignement
+code↔schéma. Avant, `migrate deploy` tournait avant `next build` : la migration
+partait avec le code, et un échec rendait le build rouge — l'alignement était
+garanti **par construction** (le fail-open `MIGRATE_DATABASE_URL` absente en
+était l'exception connue). Désormais il repose sur un geste humain, et
+**rien ne rappelle une release oubliée** : merger une PR de migration sans
+déclencher `release-db` sert du code contre une base en retard, en silence. La
+garantie est passée du mécanique au procédural — d'où l'ordre expand/contract
+plus bas, qui n'est plus une bonne pratique mais la seule protection restante.
+
+Le workflow `release-db` porte l'écriture ; le build est redevenu un pur
+`next build` sans effet de bord (bascule « le build Vercel n'écrit plus en
+base », 2026-07-28). Il
 s'aligne sur le modèle déjà en place côté Scalingo (`web/scripts/db-deploy.sh` +
 `postdeploy` du Procfile), où les migrations tournent **après** le build sur un
 conteneur dédié.
@@ -23,11 +40,11 @@ conteneur dédié.
 ## Ce que le workflow fait
 
 Déclenché à la main (`workflow_dispatch`), gaté par l'environnement protégé
-`production` (required reviewers = **second gate humain**, en plus de la revue de
-la PR qui a mergé la migration). Séquence, reprise telle quelle du build :
+`release-db` (required reviewers = **second gate humain**, en plus de la revue de
+la PR qui a mergé la migration). Séquence :
 
 ```
-préflight (lecture seule) → migrate deploy → [import-cb] advisors → import NABM → contrat
+préflight (lecture seule) → migrate deploy → [import-cb] advisors → import NABM
 ```
 
 Deux modes :
@@ -35,11 +52,24 @@ Deux modes :
 | Mode | Effet |
 |---|---|
 | `migrate-only` | préflight + `prisma migrate deploy` |
-| `import-cb` | idem + advisors Supabase (`--fail-on warn`) + import NABM CB-02a + contrat catalogue |
+| `import-cb` | idem + advisors Supabase (`--fail-on warn`) + import NABM CB-02a |
 
 `migrate deploy` n'invente jamais de SQL : il applique les migrations committées
 (relues en PR). L'import NABM est **transactionnel et idempotent** : rejouable
 sans risque, il sort sans écrire si le millésime+empreinte sont déjà servis.
+
+> **Aucun contrat de catalogue ne tourne sur la production.** Le workflow n'en
+> rejoue pas après l'import — c'est écrit en toutes lettres dans
+> `release-db.yml`. Ce qui est vérifié *dans* la transaction d'import
+> (`prisma/importNabm.ts`) : les invariants **structurels** (CHECK, RLS, index
+> partiels, verrou HDS) et une relecture des données importées ; une violation
+> annule l'import. Ce qui n'est vérifié **nulle part sur la production** : le
+> contrat de catalogue `prisma/checks/cb_biologie_catalogue_v1.sql` — donc la
+> barrière D-003, les incompatibilités pendantes, les correspondances signées non
+> résolues. Il porte sur des plages et des liens peuplés par **d'autres** lots,
+> hors du chemin d'import ; il est joué **en CI, sur une base éphémère**, plus le
+> banc `web/scripts/test-cb-nabm-import.sh`. Ne pas lire un `import-cb` vert
+> comme une attestation D-003 en production.
 
 ### Pourquoi l'import C5 CIQUAL n'est PAS câblé ici
 
@@ -56,10 +86,20 @@ donc sans besoin immédiat d'un chemin d'exécution.
 
 Ces gestes se font dans l'interface, hors code :
 
-1. **GitHub → Settings → Environments → `production`** : créer l'environnement,
+1. **GitHub → Settings → Environments → `release-db`** : créer l'environnement,
    activer **Required reviewers** (les personnes autorisées à approuver une
-   écriture prod).
-2. **Secrets de l'environnement `production`** :
+   écriture prod). **Pourquoi ce nom dédié, et pas `production`** : l'environnement
+   `Production` existe déjà — c'est celui de l'intégration Vercel, et les noms
+   d'environnement GitHub sont insensibles à la casse. Y attacher des required
+   reviewers gaterait tous les déploiements Vercel. Ne pas « simplifier » ce nom.
+   Dans le même écran, **Deployment branches and tags → Selected branches →
+   `main`** : un environnement GitHub accepte **toutes** les branches par défaut,
+   et `release-db` se déclenche par `workflow_dispatch` avec la ref choisie au
+   déclenchement — sans cette restriction, le SQL d'une branche jamais relue ni
+   mergée pourrait s'appliquer à la production, et la doctrine « migration
+   committée → PR relue → merge sur `main` » perdrait son ressort mécanique au
+   moment même où ce chemin devient unique.
+2. **Secrets de l'environnement `release-db`** :
    - `MIGRATE_DATABASE_URL` — URL directe Supabase (session mode, port 5432).
    - `WN_CB_NABM_IMPORT_CONFIRMATION` — jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`
      (doit être **identique** à la constante épinglée dans le code, sinon l'import
@@ -70,10 +110,12 @@ Ces gestes se font dans l'interface, hors code :
    retrait est de l'hygiène (ne pas laisser traîner la connexion de prod), pas une
    condition de correction.
 
-> **Ordre de bascule.** `release-db` est désormais l'**unique** chemin d'écriture :
-> le build ne migre plus. Les étapes 1–2 (environnement + secrets) doivent donc
-> être faites **avant** de merger le lot qui allège `vercel-build.sh` — sinon
-> aucune migration future n'a de chemin d'application et la base fige. Le workflow
+> **Ordre de bascule.** `release-db` est l'**unique** chemin d'écriture : le
+> build ne migre plus. Les étapes 1–2 (environnement `release-db` + secrets)
+> conditionnent la bascule « le build Vercel n'écrit plus en base » : elles
+> devaient être faites **avant** son merge, et sans elles plus aucun chemin
+> n'applique les migrations — la base fige. Si ce document est lu alors que le
+> workflow n'a jamais tourné, c'est la première chose à vérifier. Le workflow
 > étant manuel, il ne fait rien tant qu'on ne le déclenche pas.
 
 ## Déclencher une release
@@ -90,14 +132,20 @@ gh workflow run release-db.yml -f mode=import-cb -f nabm_base=<hote-de-MIGRATE_D
 ```
 
 L'exécution reste **en attente d'approbation** tant qu'un reviewer de
-l'environnement `production` ne l'a pas approuvée.
+l'environnement `release-db` ne l'a pas approuvée.
 
 ## Ordonnancement — expand/contract
 
 Une migration **additive** s'applique via `release-db` **avant** le déploiement du
 code qui en dépend (garder la PR de migration séparée de la PR fonctionnelle,
-comme déjà pratiqué). Le build tolère une base « en avance » ; jamais une base
-« en retard » sur du code qui exige le nouveau schéma. Ordre type :
+comme déjà pratiqué). Le code déployé tolère une base « en avance » **à condition
+que la migration soit additive** — colonnes nullables, rien de retiré ni renommé ;
+jamais une base « en retard » sur du code qui exige le nouveau schéma.
+La condition n'est pas théorique : `20260731200000_c4_composition_dose`
+renomme `dose_par_portion` en `dose_par_djr`, et son en-tête décrit le 500
+(erreur 42703) que l'ancien code prend en pleine face pendant la fenêtre où il
+sert encore. Une migration non additive impose donc de synchroniser release et
+déploiement, ou d'accepter une indisponibilité annoncée. Ordre type :
 
 1. Merger la PR de migration → déclencher `release-db` (`migrate-only`) → approuver.
 2. Vérifier la base (ci-dessous).

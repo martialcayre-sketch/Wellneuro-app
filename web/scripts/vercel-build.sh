@@ -3,7 +3,7 @@
 #
 # Les migrations Prisma et l'import de nomenclature NABM (CB-02a) s'appliquent
 # désormais HORS du build, via le workflow GitHub Actions `release-db` (déclenché
-# à la main, gaté par l'environnement protégé `production`). Chemin, runbook et
+# à la main, gaté par l'environnement protégé `release-db`). Chemin, runbook et
 # étapes ops : docs/DEPLOIEMENT_RELEASE_DB.md.
 #
 # POURQUOI CE SCRIPT N'ÉCRIT PLUS. Il appliquait `migrate deploy` + imports au

@@ -500,7 +500,7 @@ le contrat du dépôt déclare invalide.
 > **Mise à jour (2026-07-28) — l'import ne passe plus par le build Vercel.** La
 > section 3 a sorti l'écriture du build : l'import NABM s'exécute désormais via le
 > workflow GitHub Actions `release-db` (mode `import-cb`), gaté par l'environnement
-> protégé `production`. Les variables `WN_CB_NABM_*` décrites ci-dessous ne sont
+> protégé `release-db`. Les variables `WN_CB_NABM_*` décrites ci-dessous ne sont
 > **plus lues par le build** ; leurs valeurs deviennent l'entrée `nabm_base` et les
 > secrets d'environnement du workflow. Chemin à jour :
 > `docs/DEPLOIEMENT_RELEASE_DB.md`. Le texte ci-dessous est conservé comme trace de

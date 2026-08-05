@@ -2,8 +2,11 @@ name: Release DB
 
 # Applique les migrations Prisma et l'import de nomenclature NABM (CB-02a) sur la
 # BASE DE PRODUCTION, HORS du build applicatif Vercel. Déclenché À LA MAIN et gaté
-# par l'environnement protégé `production` (required reviewers) : c'est un SECOND
-# gate humain, en plus de la revue de PR qui a mergé la migration.
+# par l'environnement protégé `release-db` (required reviewers) : c'est un SECOND
+# gate humain, en plus de la revue de PR qui a mergé la migration. L'environnement
+# porte un nom DÉDIÉ : `Production` existe déjà et appartient à l'intégration
+# Vercel (les noms d'environnement GitHub sont insensibles à la casse) — y attacher
+# des required reviewers gaterait les déploiements Vercel.
 #
 # POURQUOI CE WORKFLOW. Historiquement, web/scripts/vercel-build.sh appliquait les
 # migrations et les imports AU BUILD. Deux défauts en découlaient : un build
@@ -48,16 +51,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # N'écrire que ce qui est passé par une PR relue et mergée.
+  #
+  # `workflow_dispatch` accepte n'importe quelle ref, et un environnement GitHub
+  # accepte TOUTES les branches par défaut. Sans ce garde, un dispatch depuis une
+  # branche appliquerait à la production un SQL jamais relu — et l'approbateur ne
+  # verrait pas la ref, que l'interface Actions ne met pas en avant. La doctrine
+  # « migration committée → PR relue → merge sur `main` » était mécanique tant que
+  # le build de `main` était le seul écrivain ; elle deviendrait déclarative au
+  # moment précis où ce chemin devient unique.
+  #
+  # Le garde tient en DEUX jobs, et il faut les deux. Le `if:` ci-dessous empêche
+  # d'écrire — porté par le job, il est évalué AVANT les règles de l'environnement,
+  # donc il ne consomme aucune approbation. Mais un job non éligible est *skipped*
+  # : rien n'est écrit, et rien n'est DIT. Le job `ref-refusee` porte la condition
+  # inverse et échoue bruyamment, pour que « release refusée » ne se lise pas comme
+  # « rien à faire ». Ailleurs dans ce fichier, « fail-closed » désigne un `exit 1`
+  # nommé sur stderr : c'est ce que fait ce second job, et pas le premier seul.
+  #
+  # Troisième clé, côté plateforme : la restriction de branche de l'environnement
+  # (runbook, étape ops). Elle survit à une réécriture de ce fichier, là où les
+  # deux jobs se relisent en PR.
   release:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     # L'environnement protégé porte les required reviewers et les secrets de prod.
-    environment: production
+    environment: release-db
     defaults:
       run:
         working-directory: web
     env:
       # URL directe (session mode, port 5432) : `migrate deploy` ne supporte pas
-      # le pooler transaction. Secret d'environnement `production`, jamais committé.
+      # le pooler transaction. Secret d'environnement `release-db`, jamais committé.
       MIGRATE_DATABASE_URL: ${{ secrets.MIGRATE_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +102,7 @@ jobs:
       - name: "Garde — MIGRATE_DATABASE_URL requise (fail-closed)"
         run: |
           if [ -z "${MIGRATE_DATABASE_URL:-}" ]; then
-            echo "❌ MIGRATE_DATABASE_URL absente du secret d'environnement 'production'." >&2
+            echo "❌ MIGRATE_DATABASE_URL absente du secret d'environnement 'release-db'." >&2
             echo "   Release refusée : aucune écriture ne doit partir sans cible explicite." >&2
             exit 1
           fi
@@ -85,7 +110,7 @@ jobs:
       # `nabm_base` est un input libre : il passe par `env:` et n'est JAMAIS
       # interpolé (`${{ }}`) dans un bloc `run:`. GitHub substitue `${{ }}`
       # textuellement AVANT le shell — une valeur piégée s'exécuterait comme du
-      # code, avec les secrets de l'environnement `production` en portée. Via
+      # code, avec les secrets de l'environnement `release-db` en portée. Via
       # une variable shell (`"$NABM_BASE"`), le runner ne la ré-interprète pas.
       - name: "Garde — nabm_base requis pour import-cb"
         if: ${{ inputs.mode == 'import-cb' }}
@@ -110,15 +135,21 @@ jobs:
         run: DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
 
       # ── Import NABM CB-02a ────────────────────────────────────────────────────
-      # Désarmé hors du mode import-cb. Reproduit EXACTEMENT l'invocation de
-      # web/scripts/vercel-build.sh : advisors → import (jeton/version/sha épinglés
-      # ci-dessous, hôte nommé au déclenchement) → contrat sur les données.
+      # Désarmé hors du mode import-cb. Reprend la séquence que le build Vercel
+      # exécutait : advisors → import (jeton/version/sha épinglés ci-dessous, hôte
+      # nommé au déclenchement). PAS de contrat après l'import — il est rejoué
+      # dans la transaction, voir le bloc en fin de job.
       #
-      # Les trois épingles ci-dessous (jeton, millésime, empreinte) sont l'UNIQUE
-      # source de vérité depuis que le build Vercel n'écrit plus. Un bump de
-      # millésime les change toutes les trois, ET le secret
-      # WN_CB_NABM_IMPORT_CONFIRMATION, ET rouvre une PR relue. Le modèle « deux
-      # clés qui bougent ensemble » : le jeton (épinglé + secret) et l'hôte (input).
+      # Millésime et empreinte n'ont plus qu'UN lieu opérationnel depuis que le
+      # build Vercel n'écrit plus : ici. Le jeton, lui, en a DEUX — le littéral
+      # ci-dessous et la constante qui fait autorité, `NABM_IMPORT_CONFIRMATION`
+      # dans web/prisma/nabmImport.ts. Un bump de millésime doit donc changer les
+      # trois littéraux d'ici, cette constante, ET le secret
+      # WN_CB_NABM_IMPORT_CONFIRMATION, ET rouvrir une PR relue. Oublier la
+      # constante fait échouer l'import en « Confirmation CLI invalide » — fermé,
+      # donc sans danger, mais autant le savoir avant de chercher.
+      # Le modèle « deux clés qui bougent ensemble » : le jeton (épinglé + secret)
+      # et l'hôte (input).
       # Une divergence échoue fermé (le garde --version/--sha256 de importNabm.ts
       # rejette), jamais un import silencieux d'un mauvais contenu.
       - name: "Advisors Supabase (fail-on warn, avant import)"
@@ -150,4 +181,24 @@ jobs:
       # fenêtre « rouge mais données écrites ». Les invariants de DONNÉES de
       # l'import sont vérifiés par sa relecture in-transaction ; la barrière D-003
       # (plages/liens d'AUTRES lots) reste un contrat de catalogue, hors du chemin
-      # d'import (voir prisma/checks/cb_biologie_catalogue_v1.sql, joué en CI).
+      # d'import (voir prisma/checks/cb_biologie_catalogue_v1.sql, joué en CI sur
+      # base éphémère — donc jamais contre les données de production).
+
+  # Le pendant bruyant du `if:` porté par `release` : sans lui, un dispatch hors
+  # `main` se terminerait en *skipped*, sans un mot, et se lirait comme « la base
+  # était déjà à jour ». Pas d'`environment:` ici — aucun reviewer n'est sollicité
+  # pour apprendre qu'on s'est trompé de branche.
+  ref-refusee:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Garde — release refusée hors de main (fail-closed)"
+        env:
+          # Par env, jamais interpolé dans le `run:` — même idiome que NABM_BASE.
+          REF: ${{ github.ref }}
+        run: |
+          echo "❌ release-db refuse la ref « $REF »." >&2
+          echo "   La base de production ne s'écrit qu'avec du SQL relu en PR et" >&2
+          echo "   mergé sur main. Relancer depuis main :" >&2
+          echo "     gh workflow run release-db.yml --ref main -f mode=migrate-only" >&2
+          exit 1
