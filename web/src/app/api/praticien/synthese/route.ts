@@ -173,7 +173,20 @@ function buildBlocOrientation(orientation: ResultatOrientation | null): string {
       .map(motif => `${motif.regleId} : ${motif.conditions.join(' ; ')}`)
       .join(' | ');
     const objectifs = recommandation.objectifs.length > 0 ? ` Objectifs : ${recommandation.objectifs.join(', ')}.` : '';
-    return `${index + 1}. ${cible} (niveau ${recommandation.niveau}).${objectifs} Motifs — ${motifs}`;
+    // L'antériorité voyage avec la recommandation, sinon le modèle propose au
+    // praticien de faire passer ce qui est déjà en attente chez le patient. Le
+    // panneau praticien porte ces trois états ; le modèle doit lire les mêmes,
+    // « inconnu » compris — un fait inconnu ne se présente pas comme négatif.
+    const etat = [
+      recommandation.dejaAssigne ? 'DÉJÀ ASSIGNÉ (en attente de réponse)' : null,
+      recommandation.dejaRepondu === true
+        ? 'DÉJÀ RENSEIGNÉ'
+        : recommandation.dejaRepondu === null
+          ? 'couverture inconnue'
+          : null,
+    ].filter(Boolean);
+    const antecedent = etat.length > 0 ? ` État : ${etat.join(', ')}.` : '';
+    return `${index + 1}. ${cible} (niveau ${recommandation.niveau}).${objectifs}${antecedent} Motifs — ${motifs}`;
   });
 
   return [

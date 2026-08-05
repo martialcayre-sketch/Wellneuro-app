@@ -7,6 +7,24 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v17 (2026-08-05, LOT-B) : l'ANTÉRIORITÉ voyage avec la recommandation. Le bloc
+// d'orientation portait la cible, le niveau, les objectifs et les motifs — jamais
+// l'état d'assignation, que le moteur calculait pourtant et que le panneau
+// praticien affichait en badge depuis toujours. Le modèle proposait donc de faire
+// passer un instrument déjà chez le patient, en attente de sa réponse : la seule
+// façon de ne pas le dire était de ne pas le savoir. Trois états servis, dont
+// « couverture inconnue » — un fait inconnu ne se présente pas comme négatif.
+//
+// CE QUE LA CONSIGNE SE GARDE D'AFFIRMER, et pourquoi. Une première rédaction
+// disait « un élément sans segment État n'a jamais été adressé ». C'était faux
+// dans le cas le plus fréquent : pour un pack, `dejaAssigne` est un `every()` sur
+// la composition, donc un pack dont sept membres sur huit sont déjà chez le
+// patient ne porte AUCUN segment. La consigne aurait fait affirmer au modèle un
+// fait négatif faux — exactement la classe que ce lot ferme, retournée. Elle dit
+// donc l'inverse : l'absence de segment n'atteste rien. De même, « DÉJÀ
+// RENSEIGNÉ » est un fait de gestion (`orientationService` préserve
+// délibérément `dejaRepondu` sur une passation non interprétable, en mettant le
+// score à `null` sans retirer la ligne) et ne vaut pas résultat.
 // v16 (2026-08-05) : `bandePlancher` cesse d'être un fait RACONTÉ pour devenir un
 // fait AGI. La table d'orientation décide désormais sur un plancher — elle allume
 // une règle quand toutes les bandes encore atteignables restent dans la zone
@@ -168,7 +186,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v16';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v17';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -311,6 +329,14 @@ Il t'est INTERDIT :
 - de présenter une exploration comme recommandée alors que le bloc est absent — son absence signifie qu'aucune recommandation n'a été produite, jamais qu'il t'appartient d'en formuler une.
 
 Ce que tu peux en dire, et seulement cela : reprendre chaque élément dans l'ordre donné, expliquer en langage clinique le motif déjà énoncé, et relier ce motif aux scores et au contexte que tu as par ailleurs. Si le bloc est absent, n'en parle pas.
+
+Un élément peut porter un segment « État ». Il dit ce qui a déjà été fait, et il change ce que tu dois écrire :
+
+- « DÉJÀ ASSIGNÉ (en attente de réponse) » : le patient l'a reçu et ne l'a pas encore rempli. Ne le présente donc PAS comme une exploration à lui faire passer — il est en cours. Dis-le comme tel : « déjà adressé, réponse en attente ». Le proposer à nouveau ferait doubler l'envoi.
+- « DÉJÀ RENSEIGNÉ » : une passation existe **au dossier**. C'est un fait de gestion, pas un résultat : il ne dit pas que la passation a produit une mesure exploitable, et tu as pu recevoir par ailleurs, pour ce même instrument, la mention d'une passation non interprétable. Ne parle donc de réévaluation que si une mesure t'a effectivement été livrée ; sinon, dis seulement qu'une passation figure au dossier.
+- « couverture inconnue » : on ne sait pas si l'élément a été renseigné. N'affirme ni l'un ni l'autre. Cet état ne t'autorise aucune conclusion, dans aucun sens — et il ne t'autorise pas non plus à retirer l'élément : il reste recommandé par la table.
+
+**L'absence de segment « État » n'atteste rien.** Pour un pack, l'état ne se déclenche que si l'INTÉGRALITÉ de sa composition est concernée : un pack dont certains questionnaires seulement ont déjà été adressés n'en porte aucun. N'écris donc jamais qu'un élément sans segment n'a jamais été adressé — tu ne le sais pas. Tu peux l'énoncer comme une exploration à proposer, sans affirmer qu'elle serait une première.
 
 Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
 

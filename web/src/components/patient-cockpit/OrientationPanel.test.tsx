@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OrientationPanel } from './OrientationPanel';
+import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 
 afterEach(() => {
   cleanup();
@@ -142,6 +143,34 @@ describe('OrientationPanel', () => {
     await screen.findByText(/Sommeil et chronobiologie/i);
     // Un bouton présent puis voué au `pack_not_found` est pire qu'un bouton absent.
     expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
+  });
+
+  // LOT-B — le badge « déjà assigné » existait depuis toujours, mais le bouton
+  // restait actif à côté : le praticien pouvait déclencher un envoi que la
+  // route refuse désormais en 409. Le refus est porté ici aussi, et il nomme le
+  // geste réellement possible plutôt que de retirer le bouton en silence.
+  it('ne propose pas d’assigner un pack déjà assigné, et dit quoi faire à la place', async () => {
+    const dejaAssigne = { ...RECOMMANDATION_PACK, dejaAssigne: true };
+    stubFetch({ ...ACTIF, recommandations: [dejaAssigne] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
+    // Un bouton absent sans explication se lit comme un défaut de droits. Le
+    // texte est celui de la route, pas une reformulation : l'écran et le 409
+    // doivent dire la même chose, et ce test échoue si l'un des deux dérive.
+    expect(await screen.findByText(MESSAGE_DEJA_ASSIGNE)).toBeTruthy();
+  });
+
+  // Contrôle négatif : la garde ne doit pas éteindre le bouton hors du doublon.
+  it('propose toujours l’assignation quand le pack n’est pas déjà assigné', async () => {
+    stubFetch(ACTIF);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    expect(await screen.findByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
   });
 
   it('n’assigne rien par le seul affichage, et demande une confirmation avant d’envoyer', async () => {

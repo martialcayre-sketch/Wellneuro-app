@@ -10,10 +10,11 @@ import type { Prisma, PrismaClient } from '@/generated/prisma';
  */
 export const STATUTS_ASSIGNATION_TERMINAL = ['Complété', 'Annulée'] as const;
 
-export const RAISON_DEJA_ASSIGNE = 'deja_assigne';
-export const MESSAGE_DEJA_ASSIGNE =
-  'Ce questionnaire est déjà assigné à ce patient et en attente de réponse. ' +
-  'Pour le renvoyer, annulez l’assignation existante puis réassignez-le.';
+// Réexportés depuis `messages.ts` : les écrans ont besoin du même texte de
+// refus que la route. Ils POURRAIENT importer ce module-ci — son import Prisma
+// est un `import type`, effacé à la compilation — mais un module de messages
+// sans dépendance serveur ne dépend pas de cette propriété pour le rester.
+export { MESSAGE_DEJA_ASSIGNE, RAISON_DEJA_ASSIGNE } from './messages';
 
 type ClientLecture = PrismaClient | Prisma.TransactionClient;
 
