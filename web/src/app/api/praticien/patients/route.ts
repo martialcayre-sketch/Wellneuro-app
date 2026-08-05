@@ -63,6 +63,13 @@ type Assignation = {
   statutReponses: string;
   correctionCommentaire: string | null;
   correctionDemandeeDate: string | null;
+  // Fait, pas verdict : « au moins une QuestionnaireReponse existe pour cette
+  // assignation », jamais « annulable » — la décision d'autorisation reste
+  // dans `estAnnulable` (lib/praticien/annulabilite.ts), pas dans ce DTO de
+  // liste. Optionnel comme `assignationsMeta` (cf. commentaire plus bas) : un
+  // client déployé avant ce champ doit pouvoir constater son absence plutôt
+  // que la supposer.
+  aPassation?: boolean;
 };
 
 export type PatientsPagination = {
@@ -218,10 +225,11 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
         }),
         prisma.assignation.count({ where: whereAssignations }),
       ]);
+      const idsAvecPassation = await idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation));
 
       return NextResponse.json({
         patients: dbPatients.map(patientToDto),
-        assignations: dbAssignations.map(assignationToDto),
+        assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassation)),
         assignationsMeta: {
           total: totalAssignations,
           plafond: MAX_ASSIGNATIONS,
@@ -242,10 +250,11 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       }),
       prisma.assignation.count({ where: whereAssignations }),
     ]);
+    const idsAvecPassationNonPaginee = await idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation));
 
     return NextResponse.json({
       patients: dbPatients.map(patientToDto),
-      assignations: dbAssignations.map(assignationToDto),
+      assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassationNonPaginee)),
       assignationsMeta: {
         total: totalAssignations,
         plafond: MAX_ASSIGNATIONS,
@@ -285,18 +294,21 @@ function patientToDto(p: {
   };
 }
 
-function assignationToDto(a: {
-  idAssignation: string;
-  idPatient: string;
-  emailPatient: string;
-  idQuestionnaire: string;
-  titre: string;
-  dateAssignation: Date;
-  statut: string;
-  statutReponses: string;
-  correctionCommentaire: string | null;
-  correctionDemandeeDate: Date | null;
-}): Assignation {
+function assignationToDto(
+  a: {
+    idAssignation: string;
+    idPatient: string;
+    emailPatient: string;
+    idQuestionnaire: string;
+    titre: string;
+    dateAssignation: Date;
+    statut: string;
+    statutReponses: string;
+    correctionCommentaire: string | null;
+    correctionDemandeeDate: Date | null;
+  },
+  idsAvecPassation: Set<string>,
+): Assignation {
   return {
     idAssignation: a.idAssignation,
     idPatient: a.idPatient,
@@ -308,7 +320,22 @@ function assignationToDto(a: {
     statutReponses: a.statutReponses,
     correctionCommentaire: a.correctionCommentaire ?? null,
     correctionDemandeeDate: a.correctionDemandeeDate ? a.correctionDemandeeDate.toISOString() : null,
+    aPassation: idsAvecPassation.has(a.idAssignation),
   };
+}
+
+// Une seule requête pour toute la page, jamais un `count` par ligne : sur
+// `MAX_ASSIGNATIONS` lignes, N requêtes contre 1 est le genre de coût qui ne
+// se voit qu'en prod. `distinct` suffit — seule l'EXISTENCE d'au moins une
+// réponse compte, pas leur nombre exact.
+async function idsAssignationsAvecPassation(idsAssignation: string[]): Promise<Set<string>> {
+  if (idsAssignation.length === 0) return new Set();
+  const reponses = await prisma.questionnaireReponse.findMany({
+    where: { idAssignation: { in: idsAssignation } },
+    select: { idAssignation: true },
+    distinct: ['idAssignation'],
+  });
+  return new Set(reponses.map(r => r.idAssignation).filter((id): id is string => id !== null));
 }
 
 export async function POST(req: Request): Promise<NextResponse<CreatePatientResponse>> {

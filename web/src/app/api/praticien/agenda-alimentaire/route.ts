@@ -36,14 +36,16 @@ export type EpisodeAgendaAli = {
   titre: string;
   /**
    * `'annulee'` PRIME sur les deux autres. `web/src/app/api/praticien/assignations/annulation/route.ts`
-   * accepte l'annulation (`statut: 'Annulée'`) précisément quand
-   * `statutReponses === 'non_rempli'` — c'est-à-dire tant qu'aucune écriture
-   * n'a repositionné `statutReponses`. Pour `Q_ALI_09`, cela vaut tant
-   * qu'aucun `PUT /api/praticien/assignations` n'a posé `deverrouille` : ce
-   * chemin n'est pas atteignable par l'écran (le bouton « Débloquer » ne se
-   * rend que sur `modification_demandee`, état inaccessible à cet
-   * instrument), mais il l'est par appel direct, et il retire alors
-   * silencieusement l'annulabilité d'un agenda encore vivant. Sans cette
+   * accepte l'annulation (`statut: 'Annulée'`) tant qu'aucune PASSATION n'est
+   * attestée — c'est-à-dire tant qu'aucune `QuestionnaireReponse` ne porte
+   * cette assignation. Ce n'était pas le cas avant `LOT-07` : la garde lisait
+   * alors `statutReponses === 'non_rempli'`, si bien qu'un
+   * `PATCH /api/praticien/assignations` posant `deverrouille` retirait
+   * silencieusement l'annulabilité d'un agenda encore vivant. Ce n'est plus
+   * vrai : `deverrouille` n'atteste rien et reste annulable
+   * (`lib/praticien/annulabilite.ts`). Les journées notées, elles, n'ont
+   * jamais compté comme passation — un agenda vivant est annulable, c'est le
+   * geste voulu. Sans cette
    * priorité, une
    * assignation annulée après 12 journées notées se lirait « En cours »
    * alors que le portail patient répond déjà 410 « annulé par votre

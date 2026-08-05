@@ -613,6 +613,24 @@ describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
     statut: 'Complété',
     statutReponses: 'verrouille',
   };
+  // Réouverte par le praticien (`deverrouille`), sans passation : c'est un
+  // geste de réouverture, pas une soumission — annulable.
+  const ASSIGNATION_DEVERROUILLEE_SANS_PASSATION = {
+    ...ASSIGNATION_OUVERTE,
+    idAssignation: 'ASS_DEVERROUILLEE_SANS',
+    titre: 'Questionnaire déverrouillé sans réponse',
+    statutReponses: 'deverrouille',
+    aPassation: false,
+  };
+  // Même statut, mais le serveur a trouvé une `QuestionnaireReponse` : une
+  // réouverture peut recouvrir une soumission réelle — pas d'action.
+  const ASSIGNATION_DEVERROUILLEE_AVEC_PASSATION = {
+    ...ASSIGNATION_OUVERTE,
+    idAssignation: 'ASS_DEVERROUILLEE_AVEC',
+    titre: 'Questionnaire déverrouillé avec réponse',
+    statutReponses: 'deverrouille',
+    aPassation: true,
+  };
 
   it('seule une assignation ouverte porte un bouton « Annuler »', async () => {
     stubFetch({ assignations: [ASSIGNATION_OUVERTE, ASSIGNATION_SOUMISE] });
@@ -622,6 +640,41 @@ describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
     expect(within(ligneOuverte).getByRole('button', { name: 'Annuler' })).toBeTruthy();
     // Une soumise porte une passation : pas d'action d'annulation.
     expect(within(ligneSoumise).queryByRole('button', { name: 'Annuler' })).toBeNull();
+  });
+
+  it('une assignation déverrouillée sans passation porte un bouton « Annuler »', async () => {
+    stubFetch({ assignations: [ASSIGNATION_DEVERROUILLEE_SANS_PASSATION] });
+    render(<PatientsPanel />);
+    const ligne = (await screen.findByText('Questionnaire déverrouillé sans réponse')).closest('tr')!;
+    expect(within(ligne).getByRole('button', { name: 'Annuler' })).toBeTruthy();
+  });
+
+  it('une assignation déverrouillée AVEC passation n’a pas de bouton « Annuler »', async () => {
+    stubFetch({ assignations: [ASSIGNATION_DEVERROUILLEE_AVEC_PASSATION] });
+    render(<PatientsPanel />);
+    const ligne = (await screen.findByText('Questionnaire déverrouillé avec réponse')).closest('tr')!;
+    expect(within(ligne).queryByRole('button', { name: 'Annuler' })).toBeNull();
+  });
+
+  // Le SEUL cas client qui échoue sur le code d'avant : l'ancien prédicat en
+  // dur n'autorisait que `non_rempli` et ignorait `aPassation`, donc il aurait
+  // proposé un bouton voué au 409. C'est la course avec `submit` vue de
+  // l'écran ; les deux tests `deverrouille` ci-dessus, eux, rendaient déjà le
+  // même verdict avant ce lot pour le cas AVEC passation.
+  it('non_rempli mais une passation attestée : pas de bouton « Annuler »', async () => {
+    stubFetch({
+      assignations: [
+        {
+          ...ASSIGNATION_OUVERTE,
+          idAssignation: 'ASS_NON_REMPLI_AVEC',
+          titre: 'Questionnaire non rempli mais soumis',
+          aPassation: true,
+        },
+      ],
+    });
+    render(<PatientsPanel />);
+    const ligne = (await screen.findByText('Questionnaire non rempli mais soumis')).closest('tr')!;
+    expect(within(ligne).queryByRole('button', { name: 'Annuler' })).toBeNull();
   });
 
   it('confirmer l’annulation appelle la route puis rafraîchit le tableau', async () => {

@@ -5,6 +5,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     assignation: { findMany: vi.fn(), count: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn() },
   },
 }));
 
@@ -37,6 +38,7 @@ describe('GET /api/praticien/patients', () => {
     prisma.patient.count.mockResolvedValue(0);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
 
   it('refuse sans session (401)', async () => {
@@ -96,6 +98,71 @@ describe('GET /api/praticien/patients', () => {
   });
 });
 
+// `aPassation` doit porter les DEUX branches de construction de réponse : la
+// paginée (page= présent) et la non paginée (comportement historique). C'est
+// l'erreur naturelle ici — n'en traiter qu'une — d'où deux tests jumeaux,
+// un par branche, plutôt qu'un seul.
+describe('GET /api/praticien/patients — aPassation (LOT-07)', () => {
+  const ASSIGNATION_AVEC_REPONSE = {
+    idAssignation: 'ASS_AVEC_REPONSE',
+    idPatient: 'PAT001',
+    emailPatient: 'a@wellneuro.fr',
+    idQuestionnaire: 'Q_ALI_09',
+    titre: 'Agenda',
+    dateAssignation: new Date('2026-08-01T00:00:00.000Z'),
+    statut: 'En attente',
+    statutReponses: 'deverrouille',
+    correctionCommentaire: null,
+    correctionDemandeeDate: null,
+  };
+  const ASSIGNATION_SANS_REPONSE = {
+    ...ASSIGNATION_AVEC_REPONSE,
+    idAssignation: 'ASS_SANS_REPONSE',
+    statutReponses: 'non_rempli',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([ASSIGNATION_AVEC_REPONSE, ASSIGNATION_SANS_REPONSE]);
+    prisma.assignation.count.mockResolvedValue(2);
+    // Une seule ligne pour ASS_AVEC_REPONSE : c'est l'EXISTENCE qui compte.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([{ idAssignation: 'ASS_AVEC_REPONSE' }]);
+  });
+
+  it('branche non paginée : porte aPassation correctement sur les deux lignes', async () => {
+    const json = (await (await GET(get())).json()) as {
+      assignations: { idAssignation: string; aPassation?: boolean }[];
+    };
+    expect(prisma.questionnaireReponse.findMany).toHaveBeenCalledWith({
+      where: { idAssignation: { in: ['ASS_AVEC_REPONSE', 'ASS_SANS_REPONSE'] } },
+      select: { idAssignation: true },
+      distinct: ['idAssignation'],
+    });
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AVEC_REPONSE')?.aPassation).toBe(true);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_SANS_REPONSE')?.aPassation).toBe(false);
+  });
+
+  it('branche paginée : porte aPassation correctement sur les deux lignes', async () => {
+    const json = (await (await GET(get('page=1'))).json()) as {
+      assignations: { idAssignation: string; aPassation?: boolean }[];
+    };
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AVEC_REPONSE')?.aPassation).toBe(true);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_SANS_REPONSE')?.aPassation).toBe(false);
+  });
+
+  // Contrôle négatif : sans assignation, la requête `questionnaireReponse` ne
+  // part pas — `in: []` interrogerait la base pour rien.
+  it('aucune assignation : n’émet pas de requête questionnaireReponse', async () => {
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.assignation.count.mockResolvedValue(0);
+    await GET(get());
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+  });
+});
+
 // Le filtre par statut vivait côté client, appliqué APRÈS la troncature à 40.
 // Filtrer une liste déjà tronquée ne cache pas des lignes en trop : il en cache
 // en moins, et sans le dire. Au 2026-07-29, 8 assignations « En attente »
@@ -110,6 +177,7 @@ describe('GET /api/praticien/patients — filtre de statut des assignations', ()
     prisma.patient.count.mockResolvedValue(0);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
 
   // LE test du défaut. Sans filtre serveur, la requête ne porte que la portée
@@ -196,6 +264,7 @@ describe('GET /api/praticien/patients — filtre par dossier et statut de répon
     prisma.patient.count.mockResolvedValue(0);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
 
   // LE test du défaut : sans ces deux clés dans le `where`, aucune ligne au-delà
