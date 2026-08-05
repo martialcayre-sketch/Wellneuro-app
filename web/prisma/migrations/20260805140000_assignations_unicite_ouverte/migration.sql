@@ -31,6 +31,18 @@
 -- migrations » est verte. `migrate diff` compare les colonnes et les contraintes
 -- déclaratives ; un index supplémentaire n'en est pas une.
 
+-- ── 0. VERROU ─────────────────────────────────────────────────────────────
+--
+-- Prisma enveloppe ce fichier dans UNE transaction, mais PostgreSQL est en READ
+-- COMMITTED : chaque instruction prend un instantané neuf. Entre le rattachement
+-- et l'annulation, un praticien qui annule le minimum d'un couple — geste
+-- autorisé, les nuits d'agenda ne comptant pas comme passation — ferait
+-- conserver l'AUTRE ligne, et les données qui viennent d'être déplacées se
+-- retrouveraient sous une assignation annulée : exactement ce que le
+-- rattachement existe pour éviter. La table fait quelques centaines de lignes,
+-- le verrou coûte le temps de la migration.
+LOCK TABLE "assignations" IN SHARE MODE;
+
 -- ── 1. RATTACHEMENT DES DONNÉES — avant toute annulation ───────────────────
 --
 -- MESURE DU 2026-08-05 : 7 couples (patient, questionnaire) portent plus d'une
@@ -138,6 +150,15 @@ WHERE j."id_assignation" = a."id_assignation"
 -- les deux exemplaires n'affichera que la saisie la plus récemment soumise.
 -- L'autre reste en base, jamais détruite. C'est le comportement déjà en vigueur
 -- pour toute correction.
+--
+-- UN EFFET QU'AUCUN RÉSOLVEUR NE RATTRAPE, celui-là : la fenêtre de recueil est
+-- ancrée sur la date la PLUS ANCIENNE (`lib/agenda-sommeil/fenetre.ts`,
+-- `dateDebut = triees[0]`), et hériter des dates de l'autre exemplaire peut donc
+-- la faire reculer. Elle gouverne le jour courant et `cloturablePatient` (21
+-- jours). Vérifié sur le seul couple concerné : l'ancre passe du 2026-07-30 au
+-- 2026-07-29, soit un offset de 7 jours au 2026-08-05 — la fenêtre reste
+-- ouverte, aucun effet. Deux exemplaires distants de trois semaines auraient en
+-- revanche déclaré le recueil écoulé.
 
 -- ── 3. BACKFILL — annuler les doublons désormais vides ─────────────────────
 --
