@@ -136,7 +136,7 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 | LOT-01 | Vue de vérité générée — état réel du dépôt | livré (#575, 2026-08-05) | — |
 | LOT-02 | Packs : observer le repli legacy avant de le fermer | livré (#581, 2026-08-05) | LOT-01 |
 | LOT-03 | Fermer `sum_decimal`, `count_threshold`, `ecab` | livré (#583, 2026-08-05) | — |
-| LOT-04 | Un seul parcours patient | à_faire | LOT-01 |
+| LOT-04 | Un seul parcours patient | code prêt — PR à ouvrir | LOT-01 |
 | LOT-05 | Matrice de consommation du savoir | à_faire | LOT-01 |
 | LOT-06 | Dettes psychométriques et exigences RGPD | à_faire | — |
 | LOT-07 | Clôture : PR ouvertes soldées, déclaration 5.0 | à_faire | LOT-00…06 |

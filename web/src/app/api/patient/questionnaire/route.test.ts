@@ -30,6 +30,19 @@ function request(query = '', cookie?: string): Request {
   });
 }
 
+/**
+ * Requête du PROPRIÉTAIRE, cookie de session portail en main. Depuis le LOT-04
+ * c'est le seul chemin d'entrée : le repli email est retiré des six routes
+ * `api/patient/*`, et tous les cas ci-dessous qui passaient auparavant
+ * `&email=…` sans cookie recevraient désormais 401.
+ */
+function requeteProprietaire(): Request {
+  return request(
+    '',
+    signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient }),
+  );
+}
+
 describe('GET /api/patient/questionnaire — propriété session', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,10 +69,21 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     expect((await GET(request('', cookie))).status).toBe(404);
   });
 
-  it('conserve le fallback legacy avec email correct', async () => {
+  it('refuse l’adresse exacte SANS cookie : le repli email est retiré (401)', async () => {
+    // Ce test remplace « conserve le fallback legacy avec email correct », qui
+    // vérifiait le contraire — et dont l'assertion `patient.findUnique` JAMAIS
+    // APPELÉ était précisément le défaut : comparer une adresse ne dit rien de
+    // `actif` ni de `accessTokenRevoked`. Le repli n'a pas été rapiécé, il a été
+    // supprimé : plus aucun appelant légitime ne l'atteignait depuis que
+    // `/patient/[idAssignation]` redirige vers `/portail/connexion`.
+    //
+    // 401, pas 404 : le client (`portail/[token]/questionnaires/[idAssignation]`)
+    // ne redirige vers le gate que sur 400/401 — une session absente doit
+    // rester récupérable, pas se présenter comme un lien mort.
     const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
-    expect(response.status).toBe(200);
-    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    expect(response.status).toBe(401);
+    expect(await response.json()).toMatchObject({ ok: false, reason: 'unauthorized' });
+    expect(prisma.assignation.findUnique).not.toHaveBeenCalled();
   });
 
   it('une assignation DÉVERROUILLÉE et périmée reste ouverte : 200, jamais 410', async () => {
@@ -73,7 +97,7 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       statutReponses: 'deverrouille',
       dateLimite: '2020-01-01',
     });
-    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    const response = await GET(requeteProprietaire());
     expect(response.status).toBe(200);
   });
 
@@ -85,7 +109,7 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
       statutReponses: 'non_rempli',
       dateLimite: '2020-01-01',
     });
-    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    const response = await GET(requeteProprietaire());
     expect(response.status).toBe(410);
     expect(await response.json()).toMatchObject({ ok: false, reason: 'expired' });
   });
@@ -98,7 +122,7 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
         statutReponses,
         dateLimite: '2020-01-01',
       });
-      const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+      const response = await GET(requeteProprietaire());
       expect(response.status).toBe(200);
     },
   );
@@ -111,7 +135,7 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
   describe('consentementPossible', () => {
     async function verdict(over: Record<string, unknown>): Promise<boolean> {
       prisma.assignation.findUnique.mockResolvedValue({ ...assignation, ...over });
-      const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+      const response = await GET(requeteProprietaire());
       return ((await response.json()) as { consentementPossible: boolean }).consentementPossible;
     }
 
@@ -137,9 +161,9 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
 
   it('une assignation annulée est indisponible : 410 reason annulee', async () => {
     // Fil A : refus dans la route, pas seulement dans l'écran. Le propriétaire
-    // légitime (email correct) ne peut pas ouvrir la saisie d'une annulée.
+    // légitime (session portail) ne peut pas ouvrir la saisie d'une annulée.
     prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statut: 'Annulée' });
-    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    const response = await GET(requeteProprietaire());
     expect(response.status).toBe(410);
     expect(await response.json()).toMatchObject({ ok: false, reason: 'annulee' });
   });

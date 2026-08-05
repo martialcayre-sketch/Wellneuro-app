@@ -1,5 +1,23 @@
 'use client';
 
+// PARCOURS INATTEIGNABLE — RETRAIT PRÉVU (LOT-04, 2026-08-05).
+//
+// Deux gestes ont été posés ensemble : la navigation vers
+// `/patient/[idAssignation]` est redirigée vers `/portail/connexion`
+// (web/next.config.mjs), et le REPLI EMAIL des six routes `api/patient/*` a été
+// RETIRÉ — elles n'acceptent plus que le cookie de session portail. L'`EmailGate`
+// ci-dessous ne peut donc plus aboutir : la première requête qu'il émet reçoit
+// 401. Ce composant n'est plus un chemin d'accès, c'est un reste.
+//
+// Il reste dans le dépôt parce que la mesure du 2026-08-05 (61 réponses,
+// 8 patients distincts sur 30 jours hors session) dit que ce parcours servait
+// encore, et que son retrait doit être vérifié plutôt que supposé : la page
+// portait aussi le recueil du consentement RGPD (`ConsentScreen`) et la
+// consultation des réponses verrouillées (`ConsultationScreen`). Vérifier que
+// le portail couvre ces deux gestes, puis supprimer le répertoire — dans un lot
+// nommé au prochain cadrage de la campagne
+// 2026-08-05-cloture-des-dettes-wellneuro-5-0.
+
 import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import type { PatientQuestionnaireResponse } from '@/app/api/patient/questionnaire/route';

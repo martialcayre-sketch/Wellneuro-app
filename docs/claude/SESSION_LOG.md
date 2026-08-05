@@ -2649,3 +2649,24 @@ cours de passe — un `pgrep` préalable ne garde pas une fenêtre de 10 minutes
 Seul le CI rend un verdict. Réserve LOT-02 non corrigée : 1 420 fiches ont des
 lignes source mais aucune résolue. Une seconde app Scalingo `wellneuro` existe au
 statut `new`, non instruite.
+
+## 2026-08-05 — LOT-04 : parcours patient unique, et un contournement de révocation fermé
+
+**Décisions.** Cadrage débordé le périmètre écrit : 6 des 7 routes
+`api/patient/*` avaient un repli sans session ignorant
+`actif`/`accessTokenRevoked` — un patient révoqué gardait un accès complet.
+Repli **retiré entièrement**, une fois vérifié — logs Vercel du 2026-08-05,
+hors dépôt, non rejouables — que `/portail/connexion` fonctionne réellement
+(3 drapeaux actifs). Une version intermédiaire du lot rendait 404/403 sur
+session absente ; corrigée en 401 uniforme après une 2ᵉ revue, le hub ne
+redirigeant vers le gate que sur 400/401.
+
+**Écarté.** Patcher le repli plutôt que le retirer — plus aucun appelant
+légitime ne l'atteint une fois la redirection posée.
+
+**Prochaine action.** `/wn-handoff write`, puis PR.
+
+**Questions ouvertes.** Retrait du répertoire `page.tsx` legacy laissé à un lot
+nommé (`page.test.tsx` teste encore l'`EmailGate` mort) — vérifier que le
+portail couvre consentement RGPD et consultation verrouillée d'abord.
+

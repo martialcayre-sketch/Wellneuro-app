@@ -23,6 +23,31 @@ const enTetesSansIndexation = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow,
 
 const nextConfig = {
   reactStrictMode: true,
+  // Parcours patient unique : toute navigation vers le parcours legacy
+  // `/patient/[idAssignation]` est renvoyée sur l'entrée du portail.
+  //
+  // 307 (`permanent: false`) et pas 308 : la redirection est une mesure de
+  // convergence, pas une réécriture d'URL définitive. Un 308 est mis en cache
+  // durablement par les navigateurs et les intermédiaires — si le retrait du
+  // legacy devait être reporté ou partiellement défait, un 301/308 déjà en
+  // cache resterait actif sur les postes patients sans aucun moyen de le
+  // rappeler. Le retrait définitif du répertoire est prévu après une nouvelle
+  // mesure d'usage (voir `src/app/patient/[idAssignation]/page.tsx`).
+  //
+  // Aucun email n'est transmis en query string vers `/portail/connexion` :
+  // l'adresse du patient est une donnée de santé indirecte, et une redirection
+  // la déposerait dans les journaux serveur, l'historique du navigateur et les
+  // barres d'URL partagées. `/portail/connexion` redemande l'adresse — c'est le
+  // coût assumé d'une reprise sans fuite.
+  async redirects() {
+    return [
+      {
+        source: '/patient/:idAssignation*',
+        destination: '/portail/connexion',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: enTetesSecurite },
