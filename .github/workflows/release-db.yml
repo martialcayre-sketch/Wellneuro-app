@@ -1,9 +1,12 @@
 name: Release DB
 
 # Applique les migrations Prisma et l'import de nomenclature NABM (CB-02a) sur la
-# BASE DE PRODUCTION, HORS du build applicatif Vercel. Déclenché À LA MAIN et gaté
-# par l'environnement protégé `release-db` (required reviewers) : c'est un SECOND
-# gate humain, en plus de la revue de PR qui a mergé la migration. L'environnement
+# BASE DE PRODUCTION, HORS du build applicatif Vercel. PROPOSÉ AUTOMATIQUEMENT dès
+# qu'une migration atterrit sur `main`, déclenchable à la main pour l'import NABM,
+# et dans les deux cas gaté par l'environnement protégé `release-db` (required
+# reviewers) : c'est un SECOND gate humain, en plus de la revue de PR qui a mergé
+# la migration. L'automatisation porte sur le DÉCLENCHEMENT, jamais sur
+# l'APPROBATION. L'environnement
 # porte un nom DÉDIÉ : `Production` existe déjà et appartient à l'intégration
 # Vercel (les noms d'environnement GitHub sont insensibles à la casse) — y attacher
 # des required reviewers gaterait les déploiements Vercel.
@@ -30,6 +33,38 @@ name: Release DB
 # docs/DEPLOIEMENT_RELEASE_DB.md.
 
 on:
+  # DÉCLENCHEMENT AUTOMATIQUE — proposer la release, jamais l'approuver.
+  #
+  # Une migration qui atterrit sur `main` crée le run toute seule. Le gate humain
+  # n'est PAS contourné pour autant : le job porte `environment: release-db`, dont
+  # les required reviewers mettent le run en `waiting` au lieu de l'exécuter. Ce
+  # qui change n'est pas qui décide, c'est qui doit y penser — auparavant,
+  # personne ne le rappelait, et « rien ne détecte une release oubliée » était une
+  # question ouverte laissée par le lot qui a créé ce workflow.
+  #
+  # Le mode n'a pas à être dérivé : sur un événement `push`, le contexte `inputs`
+  # est vide, donc `inputs.mode == 'import-cb'` ne peut pas être vrai. Un
+  # déclenchement automatique EST un `migrate-only`.
+  #
+  # Ce raisonnement seul aurait suffi, et il n'est pas seul — même motif « deux
+  # clés » que le reste du fichier. Les trois étapes d'import portent AUSSI
+  # `github.event_name == 'workflow_dispatch'`, parce que la première clé repose
+  # sur une sémantique de plateforme (« `inputs` est vide hors dispatch ») que ce
+  # dépôt ne vérifie nulle part : aucun lint de workflow ne tourne en CI, et une
+  # erreur d'expression ici ne se révélerait qu'à l'exécution — c'est-à-dire avec
+  # une migration en attente. La seule chose qui ne doit JAMAIS partir toute seule
+  # est l'import NABM ; il ne dépend donc pas d'un raisonnement, même juste.
+  #
+  # Le filtre `paths` ne voit que les migrations : un push qui ne touche pas
+  # `prisma/migrations/**` ne crée aucun run, donc aucune approbation à donner
+  # pour rien. Corollaire à connaître : une migration introduite AUTREMENT que par
+  # un fichier de ce dossier n'est pas vue — il n'y en a pas d'autre chemin
+  # légitime, c'est précisément la doctrine « registre canonique ».
+  push:
+    branches: [main]
+    paths:
+      - 'web/prisma/migrations/**'
+
   workflow_dispatch:
     inputs:
       mode:
@@ -51,6 +86,116 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # CE QUE L'APPROBATEUR APPROUVE, écrit avant qu'on le lui demande.
+  #
+  # Ce job n'a PAS d'`environment:`, et c'est tout son intérêt : il tourne donc
+  # AVANT le gate, et `release` en dépend, si bien que le résumé est déjà dans
+  # l'onglet Summary au moment où la demande d'approbation s'affiche. Le mettre
+  # dans le job gaté l'aurait rendu lisible seulement après l'approbation — c'est
+  # -à-dire trop tard pour éclairer la décision qu'il documente.
+  #
+  # Il ne lit PAS la base : sans secret, il ne peut pas dire ce qui est réellement
+  # en attente côté `_prisma_migrations`, seulement ce que ce push apporte. La
+  # liste des migrations effectivement appliquées reste celle que `migrate deploy`
+  # imprime dans le job suivant, et la vérification d'après-coup se fait en base.
+  #
+  # PAS de `continue-on-error`, et c'est un arbitrage : si le résumé ne peut pas
+  # être produit, `release` ne part pas. Un résumé cassé bloque donc une migration
+  # — le prix assumé pour ne jamais demander d'approuver à l'aveugle, ce qui est
+  # exactement le défaut que ce job existe pour fermer.
+  resume:
+    runs-on: ubuntu-latest
+    # Même condition que `release`. Sans elle, un dispatch hors `main` produirait
+    # un résumé engageant — « voici ce qui est proposé » — pendant que
+    # `ref-refusee` refuse la ref. Deux messages contradictoires sur la même page.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `github.event.before` n'est atteignable qu'avec l'historique ; le
+          # défaut (profondeur 1) ferait échouer le diff sur tout push de plus
+          # d'un commit.
+          fetch-depth: 0
+
+      - name: "Résumé pour l'approbateur"
+        env:
+          AVANT: ${{ github.event.before }}
+          APRES: ${{ github.sha }}
+          EVENEMENT: ${{ github.event_name }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          {
+            echo "## Release DB — ce qui est proposé"
+            echo
+            if [ "$EVENEMENT" = "push" ]; then
+              echo "Déclenchement **automatique** : une migration est arrivée sur \`main\`."
+              echo "Portée : \`migrate-only\` (l'import NABM reste manuel)."
+              echo
+              echo "### Migrations apportées par ce push"
+              echo
+              echo "> ⚠️ **Cette liste n'est PAS la liste de ce qui sera appliqué.**"
+              echo "> \`migrate deploy\` applique TOUTES les migrations en attente dans"
+              echo "> \`_prisma_migrations\`, y compris celles d'un push antérieur dont la"
+              echo "> release n'a jamais été approuvée. Ce résumé dit ce que ce push"
+              echo "> AJOUTE, pas ce qui partira. La liste réelle est celle que"
+              echo "> \`migrate deploy\` imprime — après l'approbation."
+              echo
+              # Un `before` de zéros (première poussée) ou un commit devenu
+              # inatteignable après réécriture : se rabattre sur le commit de tête
+              # plutôt que de faire échouer le résumé.
+              if [ -n "$AVANT" ] && git cat-file -e "$AVANT^{commit}" 2>/dev/null; then
+                PLAGE="$AVANT..$APRES"
+              else
+                echo "> \`before\` inatteignable — seul le commit de tête est inspecté."
+                echo
+                PLAGE="$APRES^..$APRES"
+              fi
+              # `--diff-filter=d` écarte les SUPPRESSIONS : le revert d'une migration
+              # se lirait sinon « migration apportée », et l'approbation qui suivrait
+              # ferait échouer `migrate deploy` sur la dérive. `grep -v` écarte
+              # `migration_lock.toml`, qui vit à la racine du dossier et remonterait
+              # comme s'il était une migration.
+              # Le `if` capture le statut de `git diff` SEUL, et c'est le point :
+              # dans un pipeline, sans `pipefail`, le statut rendu est celui de la
+              # DERNIÈRE commande — ici `sort`, qui réussit toujours. Un `git diff`
+              # en échec passerait donc pour « aucune migration ». Isolé, il
+              # distingue « rien à signaler » de « on ne sait pas ».
+              #
+              # Le `|| true` du filtrage, lui, ne sert à rien aujourd'hui : `grep -v`
+              # rend bien 1 quand il ne reste aucune ligne (push ne touchant que
+              # `migration_lock.toml`), mais `sort` termine le pipeline et avale ce
+              # statut. Il est là pour le jour où quelqu'un ajoutera
+              # `set -o pipefail` : sans lui, ce jour-là, un push sans rien à
+              # signaler bloquerait une release.
+              if BRUT=$(git diff --name-only --diff-filter=d "$PLAGE" -- web/prisma/migrations/); then
+                TROUVEES=$(printf '%s\n' "$BRUT" \
+                  | sed 's|web/prisma/migrations/||;s|/.*||' \
+                  | grep -v -e '^$' -e '^migration_lock\.toml$' \
+                  | sort -u || true)
+                if [ -n "$TROUVEES" ]; then
+                  echo "$TROUVEES" | sed 's/^/- `/;s/$/`/'
+                else
+                  echo "_Aucune migration ajoutée par ce push — suppression seule, ou"
+                  echo "\`migration_lock.toml\` seul. Rien de neuf à appliquer de ce fait ;"
+                  echo "un reliquat antérieur peut néanmoins partir (voir l'avertissement)._"
+                fi
+              else
+                # Distinct du cas « aucune migration » : là, on ne SAIT pas.
+                echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
+                echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
+              fi
+            else
+              echo "Déclenchement **manuel** (\`workflow_dispatch\`), mode : \`${MODE:-non précisé}\`."
+            fi
+            echo
+            echo "### Avant d'approuver"
+            echo
+            echo "- Ces migrations sont-elles passées par une PR relue et mergée ? Ce workflow"
+            echo "  ne part que de \`main\`, mais il n'a aucun moyen de le vérifier lui-même."
+            echo "- Le code qui dépend de ces colonnes est-il déjà déployé ? L'ordre attendu est"
+            echo "  l'inverse (migration d'abord) — voir \`docs/DEPLOIEMENT_RELEASE_DB.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # N'écrire que ce qui est passé par une PR relue et mergée.
   #
   # `workflow_dispatch` accepte n'importe quelle ref, et un environnement GitHub
@@ -74,6 +219,7 @@ jobs:
   # deux jobs se relisent en PR.
   release:
     runs-on: ubuntu-latest
+    needs: resume
     if: github.ref == 'refs/heads/main'
     # L'environnement protégé porte les required reviewers et les secrets de prod.
     environment: release-db
@@ -113,7 +259,7 @@ jobs:
       # code, avec les secrets de l'environnement `release-db` en portée. Via
       # une variable shell (`"$NABM_BASE"`), le runner ne la ré-interprète pas.
       - name: "Garde — nabm_base requis pour import-cb"
-        if: ${{ inputs.mode == 'import-cb' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
         env:
           NABM_BASE: ${{ inputs.nabm_base }}
         run: |
@@ -153,7 +299,7 @@ jobs:
       # Une divergence échoue fermé (le garde --version/--sha256 de importNabm.ts
       # rejette), jamais un import silencieux d'un mauvais contenu.
       - name: "Advisors Supabase (fail-on warn, avant import)"
-        if: ${{ inputs.mode == 'import-cb' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
         run: |
           npx --yes supabase@2.109.1 db advisors \
             --db-url "$MIGRATE_DATABASE_URL" \
@@ -163,7 +309,7 @@ jobs:
             --output-format json
 
       - name: "Import NABM CB-02a (transactionnel, idempotent)"
-        if: ${{ inputs.mode == 'import-cb' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
         env:
           WN_CB_NABM_IMPORT_CONFIRMATION: ${{ secrets.WN_CB_NABM_IMPORT_CONFIRMATION }}
           # Passé par env, jamais interpolé dans le `run:` (cf. garde ci-dessus).

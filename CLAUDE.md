@@ -27,7 +27,8 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - **Pas de migration Prisma sans demande explicite** : ne jamais lancer `prisma migrate dev`, `prisma db push`, ou modifier `schema.prisma` sans confirmation explicite dans la conversation.
 - **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande explicite et documentation dans `CHANGELOG.md`.
-- **La base de production ne se modifie que par une migration relue** : migration committée → PR relue → merge sur `main` → application **hors du build** via le workflow GitHub Actions `release-db` (déclenché à la main, gaté par l'environnement protégé `release-db`). **Le build Vercel n'écrit plus en base.** Aucun autre chemin. Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
+- **La base de production ne se modifie que par une migration relue** : migration committée → PR relue → merge sur `main` → application **hors du build** via le workflow GitHub Actions `release-db`, **proposé automatiquement** dès qu'une migration atterrit sur `main` et gaté par l'environnement protégé `release-db`. L'automatisation porte sur le *déclenchement*, jamais sur l'*approbation* : le run attend un relecteur requis. **Le build Vercel n'écrit plus en base.** Aucun autre chemin. Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
+- **Une migration et le code qui en dépend ne voyagent pas dans la même PR** — ou alors ce code part derrière un drapeau éteint. L'ordre attendu est « migration d'abord, code ensuite », mais le merge qui pose la migration sur `main` **déclenche aussi le déploiement Vercel** : dans une PR unique, le code dépendant est en production avant que la release ait pu être approuvée. C'est arrivé le 2026-08-05 (#574, page « Mon bilan » sans drapeau).
 
 ## Lire la base de production
 
