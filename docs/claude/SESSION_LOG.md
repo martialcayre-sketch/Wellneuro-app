@@ -2408,3 +2408,36 @@ branches restreintes à `main`), puis merge.
 **Questions ouvertes.** D-003 n'a jamais rencontré les données de production ;
 rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
 migration est additive, et rien ne le garde.
+
+## 2026-08-05 — LOT-01 : vue de vérité générée depuis le code
+
+**Décisions.** `wn-etat-reel.mjs` rapporte, `wn-cycle --appliquer` répare — deux
+verbes disjoints. Migrations lues sur disque, jamais de connexion base
+(`verifieEnBase: null` + requête à rejouer via MCP). `--appliquer` doit se jouer
+**depuis `main`**, jamais en cours de lot : il traite `branche === 'main'` comme
+sa propre phase, et l'écrire depuis une branche de travail réécrit `git.branch`
+avec un nom promis à mourir au squash-merge — vraisemblablement l'origine du bug
+initial. `active_campaign`/`active_lot` réactivés via la commande existante
+`wn-campaign.mjs activate`, qui a révélé que `lot_courant` de `CAMPAGNE.md`
+n'avait pas été avancé après le merge de LOT-00.
+
+**Options écartées.** Éditer `.wn/state.json` à la main pour `active_campaign` —
+la commande sanctionnée existe déjà. Corriger le geste `--appliquer` en cours de
+lot plutôt que de le reporter au post-merge.
+
+**Ce que le lot a appris.** Revue adversariale NO-GO : le script rendait un faux
+« 0 écart » en code 0 depuis `web/` — le cwd par défaut de toute session — parce
+qu'il résolvait sa racine par `process.cwd()`. Grave : ce script est cité comme
+critère de clôture de campagne (LOT-07). Deux autres bloquants : mauvais registre
+de certification (507 sources bibliographiques au lieu de 65 questionnaires), et
+le banc absent de tout palier — ses gardes de sûreté étaient inertes. Les trois
+vérifiés indépendamment avant et après correction, pas pris sur parole.
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger, puis depuis
+`main` : `node scripts/wn-cycle.mjs --appliquer`.
+
+**Questions ouvertes.** `comparerEtat` ne confronte que 3 des 6 dimensions
+collectées (PR ouvertes, worktrees, parcours patient rapportés mais jamais
+comparés) — `ACTIVE_CAMPAIGN.md` affirmait « aucune campagne parallèle » sans que
+l'outil puisse le voir. `validation.last_checked_at` reste signalé périmé sans
+qu'aucun outil ne le rafraîchisse.
