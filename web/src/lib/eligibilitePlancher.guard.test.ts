@@ -18,7 +18,7 @@
 // échappe à l'arbitrage. Il ne peut pas être « oublié » — il n'est dans aucune
 // des deux listes, et le banc rougit.
 import { describe, expect, it } from 'vitest';
-import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 
 /**
  * Grilles CROISSANTES : la sévérité monte avec le score. Relevé sur le catalogue
@@ -146,6 +146,78 @@ describe('éligibilité au plancher garanti', () => {
     // aurait deux endroits où la lire.
     expect((QUESTIONNAIRE_CATALOGUE as any).Q_SOM_01.scoring.severiteCroissante).toBe(true);
     expect((QUESTIONNAIRE_CATALOGUE as any).Q_GAS_01.scoring.severiteCroissante).toBe(true);
+  });
+
+  /**
+   * Couleurs que le TYPE `OrientationZone` sait nommer, plus `success`.
+   *
+   * `OrientationZone` n'admet que les quatre couleurs DÉFAVORABLES — une zone
+   * favorable ne déclenche pas d'exploration. `success` s'ajoute ici parce
+   * qu'une grille en émet légitimement une : elle ne peut jamais figurer dans
+   * une zone, donc sa présence dans une fermeture ÉTEINT la règle, ce qui est
+   * le comportement voulu.
+   */
+  const COULEURS_CONNUES = new Set(['success', 'info', 'warning', 'danger', 'dark']);
+
+  it('aucune fermeture ne peut porter une couleur inconnue du type `OrientationZone`', () => {
+    // POURQUOI CE BANC EXISTE. Depuis le 2026-08-05, l'orientation décide sur la
+    // FERMETURE d'un plancher — `couleursPossibles`, dérivée de la grille — et
+    // son prédicat est une inclusion dans les couleurs de la zone. Une couleur
+    // inconnue du type fait donc échouer l'inclusion et ÉTEINT la règle : c'est
+    // le bon repli, mais il est SILENCIEUX. Une grille qui introduirait demain
+    // une couleur `purple` ferait taire des règles sans qu'aucun test ne rougisse
+    // et sans qu'aucun praticien ne puisse le voir. Ce banc préfère le CI.
+    //
+    // Deux contrôles, parce qu'aucun des deux ne couvre l'autre : les grilles
+    // DÉCLARÉES sur l'instrument (`sum`, `tfd`), et les fermetures réellement
+    // PRODUITES par le moteur — seul chemin pour le PSQI, dont la grille est
+    // écrite dans le moteur et non sur l'instrument.
+    const couleursDeGrille = (valeur: unknown, trouvees: Set<string>) => {
+      if (Array.isArray(valeur)) { valeur.forEach(v => couleursDeGrille(v, trouvees)); return; }
+      if (!valeur || typeof valeur !== 'object') return;
+      const objet = valeur as Record<string, unknown>;
+      if (typeof objet.min === 'number' && typeof objet.color === 'string') trouvees.add(objet.color);
+      for (const sousValeur of Object.values(objet)) couleursDeGrille(sousValeur, trouvees);
+    };
+
+    let fermeturesVues = 0;
+    for (const def of tousEligibles()) {
+      const declarees = new Set<string>();
+      couleursDeGrille(def.scoring, declarees);
+      for (const couleur of declarees) {
+        expect(
+          COULEURS_CONNUES.has(couleur),
+          `${def.id} — bande de couleur « ${couleur} », inconnue du type \`OrientationZone\`. Une fermeture qui la porte éteint la règle en silence : ajouter la couleur au type, ou corriger la grille.`,
+        ).toBe(true);
+      }
+
+      // Production réelle : passation saturée moins un item, ce qui met le
+      // plancher sur la bande de tête. Le contenu de la fermeture n'est pas ce
+      // qui est éprouvé ici — seulement le VOCABULAIRE des couleurs servies.
+      const questions = (def.sections || []).flatMap((s: any) => s.questions || []);
+      const saturee: Record<string, number> = {};
+      for (const q of questions) {
+        const v = (q.options || []).map((o: any) => Number(o.v)).filter(Number.isFinite);
+        saturee[q.id] = v.length ? Math.max(...v) : 0;
+      }
+      const ids = Object.keys(saturee);
+      const partiel = { ...saturee };
+      delete partiel[ids[ids.length - 1]];
+      const r: any = calculateScore(def.id, partiel);
+      for (const p of [r.bandePlancher, ...((r.subScores || []).map((s: any) => s.bandePlancher))]) {
+        if (!p) continue;
+        fermeturesVues++;
+        expect(Array.isArray(p.couleursPossibles), `${def.id} — un plancher sans fermeture de couleurs`).toBe(true);
+        for (const couleur of p.couleursPossibles) {
+          expect(
+            COULEURS_CONNUES.has(couleur),
+            `${def.id} — fermeture servie avec la couleur inconnue « ${couleur} »`,
+          ).toBe(true);
+        }
+      }
+    }
+    // Anti-vacuité : sans fermeture produite, le second contrôle ne contrôle rien.
+    expect(fermeturesVues).toBeGreaterThan(10);
   });
 
   it('le classement couvre le catalogue tel qu\'il est résolu aujourd\'hui', () => {

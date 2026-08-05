@@ -198,15 +198,33 @@ export type OrientationRule = {
 //     CONSERVÉE — l'alerte qui la disait mal appariée était fausse (détail sur
 //     la règle elle-même) ;
 //   · le trou du PSQI partiel, nommé et laissé ouvert par le lot précédent, est
-//     FERMÉ dans le moteur `psqi` (`questions.ts`) : il publie désormais
-//     `missing`/`repondus` et retire sa bande sur recueil partiel. `R-SOM-01` ne
-//     peut plus s'allumer sur un instrument à moitié rempli ;
+//     FERMÉ dans le moteur `psqi` (`questions.ts`, 2026-08-04) : il publie
+//     désormais `missing`/`repondus` et retire sa BANDE sur recueil partiel ;
 //   · `tfd` (`Q_GAS_01`), cible de `R-GAS-01` au second tour, était la réserve
 //     connue de cette signature. Il est FERMÉ à son tour (2026-08-04) : le moteur
 //     publie `missing`/`repondus` à la racine comme sur chaque axe, et retire ses
 //     bandes — celle de l'instrument ET celle de l'axe — sur recueil partiel.
 //     Cinq réponses sur trente-et-une, toutes au maximum de leur échelle,
 //     rendaient « A — Absence de troubles fonctionnels ».
+//
+// RÉ-OUVERT LE 2026-08-05, ET IL FAUT LE LIRE ICI. Une rédaction antérieure de
+// ces deux puces concluait que « `R-SOM-01` ne peut plus s'allumer sur un
+// instrument à moitié rempli ». C'était vrai le 2026-08-04 ; c'est FAUX depuis
+// que le plancher garanti est agi (D-021 a posé le plancher en RÉSERVANT
+// l'orientation ; c'est D-024 qui lève cette réserve — le registre est
+// append-only, la réserve de D-021 se lit donc encore telle qu'écrite) — un PSQI partiel dont
+// le plancher est `warning` allume bel et bien `R-SOM-01`.
+//
+// Ce qui reste vrai, et qui n'a pas bougé d'un pouce : la bande MESURÉE exige
+// toujours l'instrument complet, et `interpretation` reste `null` sur tout
+// recueil partiel. Ce qui a changé : il existe désormais une SECONDE voie, qui
+// n'est pas une mesure. Une règle `zone` s'allume sur un plancher quand toutes
+// les bandes encore atteignables sont contenues dans sa zone —
+// `zoneGarantieParLePlancher` (`orientationEngine.ts`) —, et le motif transmis
+// au praticien porte alors « au moins ». Quatre règles sont concernées :
+// `R-SOM-01`, `R-STR-01`, `R-STR-02` et `R-GAS-01` ; chacune motive sa fermeture
+// sur place. Aucun objet de la table n'a été modifié pour cela, et la signature
+// n'a donc pas été rouverte.
 //
 // CE QUI RESTE OUVERT, et ne doit pas se lire comme clos : `sum_decimal`,
 // `count_threshold` et `ecab` portent la même classe. Aucune règle publiée ne les
@@ -1014,6 +1032,20 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // à 10, donc au-dessus du seuil de 4 que l'instrument publie lui-même.
     // Commencer à `warning` aurait laissé dehors des patients que le PSQI
     // considère déjà comme mauvais dormeurs.
+    //
+    // RECUEIL PARTIEL — cette règle s'allume sur un PLANCHER GARANTI depuis le
+    // 2026-08-05, et sa condition d'allumage est la FERMETURE : la zone doit
+    // contenir toutes les bandes que le score final peut encore atteindre. Elle
+    // la contient ici quel que soit le plancher, puisqu'elle cite les quatre
+    // couleurs défavorables et que le PSQI n'en émet que trois (`info` 5-10,
+    // `warning` 11-16, `danger` 17-21). Un plancher en `info` allume donc la
+    // règle, et le motif servi au praticien porte « au moins ».
+    //
+    // Ce n'est PAS une propriété de la règle, c'est une propriété du couple
+    // règle/grille : reserrer la zone sur `['warning', 'danger', 'dark']`
+    // laisserait un plancher en `info` sans garantie — le score final pouvant
+    // rester dans `info`, hors zone —, et cette règle cesserait de voir les
+    // recueils partiels de la bande d'entrée qu'elle a délibérément choisie.
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'couleur', couleurs: ['info', 'warning', 'danger', 'dark'] } },
     ],
@@ -1044,6 +1076,18 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // trois bandes sont `success` (10-20), `warning` (21-26) et `danger`
     // (27-50). `warning` y est donc déjà sa première bande défavorable, et non
     // un choix de resserrer.
+    //
+    // RECUEIL PARTIEL — allumage sur PLANCHER GARANTI depuis le 2026-08-05, sous
+    // condition de FERMETURE : la zone doit contenir toutes les bandes encore
+    // atteignables. Sur le PSS-10 il n'y a qu'un plancher possible — `warning`,
+    // `success` étant la bande la plus basse et ne faisant jamais plancher — et
+    // sa fermeture est `{warning, danger}`, que la zone couvre. Un partiel déjà
+    // à 21 rallume donc cette règle, avec un motif en « au moins ».
+    //
+    // La contre-épreuve est immédiate ici : une zone écrite `['warning']` seule
+    // ne serait PAS garantie par ce même plancher, le score final pouvant encore
+    // monter en `danger`. C'est ce cas qui prouve que la condition est bien une
+    // inclusion, et non « la couleur du plancher figure dans la zone ».
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],
@@ -1088,6 +1132,15 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     //
     // Ce que l'épisode laisse : une citation ne se juge pas sur son numéro ni
     // sur la mémoire qu'on en a, mais sur son texte relu à la source.
+    //
+    // RECUEIL PARTIEL — même fermeture que `R-STR-01`, sur la même grille : le
+    // plancher `warning` du PSS-10 a pour fermeture `{warning, danger}`, que la
+    // zone couvre, et le déclencheur s'allume avec un motif en « au moins ».
+    //
+    // MAIS L'ET LOGIQUE RESTE ENTIER, et c'est ce qui compte sur une règle qui
+    // engage un PACK : le drapeau d'anamnèse doit être atteint AUSSI. Un partiel
+    // déjà sévère ne suffit donc pas à lui seul — la mesure garantie ne remplace
+    // pas le facteur déclenchant, elle le complète.
     declencheurs: [
       { type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] },
       { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
@@ -1110,27 +1163,35 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // n'émet pas de bande `info` — `warning` (bande B, 24-49) est sa première
     // bande défavorable.
     //
-    // CE QUE LA GARDE DE RECUEIL PARTIEL COÛTE À CETTE RÈGLE, et il faut le lire
-    // ici parce que c'est ici qu'il se paie. Depuis le 2026-08-04, un TFD
-    // incomplet ne publie plus de bande : cette règle ne s'allume donc plus, y
-    // compris sur un partiel DÉJÀ défavorable. Huit réponses cotées 3 atteignent
-    // 24 — bande B —, et trente items sur trente-et-un en atteignent 90.
+    // CE QUE LE RECUEIL PARTIEL FAIT À CETTE RÈGLE — et il faut le lire ici
+    // parce que c'est ici que ça se joue. Un TFD incomplet ne publie AUCUNE
+    // bande (D-014, 2026-08-04) : la mesure est refusée, dans les deux sens.
+    // Mais depuis le 2026-08-05, il publie à côté un PLANCHER GARANTI, et cette
+    // règle s'allume dessus quand — et seulement quand — la zone qu'elle vise
+    // CONTIENT toutes les bandes encore atteignables (`zoneGarantieParLePlancher`
+    // dans `orientationEngine.ts`).
     //
-    // Ce coût est symétrique et VOULU (D-014). Il n'est pas gratuit pour autant :
-    // les items de `O_TFD` sont cotés 0 à 3, donc un item non répondu ne peut
-    // qu'AJOUTER au total. Un partiel qui atteint déjà la bande B y est donc
-    // acquis — l'incertitude ne porte que sur le fait d'être en B ou en C, jamais
-    // sur le fait d'être au-dessus de A. La règle demande « warning ou pire », un
-    // prédicat que cette monotonie suffirait à trancher, et le moteur lui passe
-    // une ÉTIQUETTE de bande, pas un prédicat.
+    // Ici, la fermeture est exactement ce qu'il faut : le plancher B ne laisse
+    // atteignables que B (`warning`) et C (`danger`), et la zone les couvre
+    // toutes les deux. Huit réponses cotées 3 atteignent 24 — bande B — et
+    // rallument donc cette règle ; trente items sur trente-et-un en atteignent 90.
+    // Le motif servi au praticien porte « au moins » : il dit un minimum acquis,
+    // jamais une mesure.
     //
-    // Le dépôt sait déjà écrire cette asymétrie — `seuilMonotone` dans
-    // `questions.ts` (« le franchissement observé est DÉFINITIF, le
-    // non-franchissement ne vaut que sur un comptage complet »). L'appliquer aux
-    // bandes demanderait de servir un plancher garanti à côté de la bande, ce qui
-    // touche tous les moteurs à recueil partiel et non le seul TFD : c'est un lot
-    // à part, pas une ligne à ajouter ici. Écrit pour que le manque soit une
-    // décision et non un oubli.
+    // CE QUI LE FONDE, et qui n'est pas une commodité : les items de `O_TFD` sont
+    // cotés 0 à 3, donc un item sans réponse ne peut qu'AJOUTER au total. Un
+    // partiel qui atteint déjà la bande B y est acquis — l'incertitude ne porte
+    // que sur le fait d'être en B ou en C, jamais sur le fait d'être au-dessus
+    // de A. C'est la même asymétrie que `seuilMonotone` dans `questions.ts` :
+    // « le franchissement observé est DÉFINITIF, le non-franchissement ne vaut
+    // que sur un comptage complet ».
+    //
+    // CE QUI RESTE ÉTEINT, pour que la condition d'allumage ne se lise pas comme
+    // un acquis : une zone qui s'arrêterait à `['warning']` ne serait PAS
+    // garantie par ce plancher — le score final peut encore monter en `danger`,
+    // donc sortir de la zone. Élargir ou restreindre les couleurs de cette règle
+    // change donc ce qu'elle voit d'un recueil partiel, et pas seulement sa
+    // sévérité d'entrée.
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],
