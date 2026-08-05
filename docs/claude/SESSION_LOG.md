@@ -2173,14 +2173,14 @@ trancher avant la signature.
 
 ## 2026-08-05 — Agenda alimentaire, LOT-04 : la surface que le patient voit
 
-**Décisions** — D-022, cinq arbitrages. L'ancre des 21 jours se calcule sur l'union des
+**Décisions** — D-023, cinq arbitrages. L'ancre des 21 jours se calcule sur l'union des
 dates enregistrées, relues ou non ; une quarantaine ne bloque une date que tant qu'une
 ligne illisible peut en être la vraie tête ; la borne est **supérieure seule** ; la date
 limite se dit avant le consentement ; et une exemption ne vaut que si les quatre portes
 du parcours la connaissent.
 
 **Options écartées** — Se contenter de *tester* le ré-ancrage silencieux comme le
-demandait le lot : D-018 le différait « faute d'écran », et ce lot livre l'écran. Borner
+demandait le lot : D-022 le différait « faute d'écran », et ce lot livre l'écran. Borner
 la fenêtre des deux côtés : cela faisait perdre un jour de recueil au démarrage. Retirer
 le bouton « Modifier » plutôt qu'exposer `id` : le POST rend déjà `jourId` au client.
 
@@ -2194,3 +2194,101 @@ redéployer. Jamais en Production.
 
 **Questions ouvertes** — La correction reste bornée à J et J-1. `soumisLe` estime là où
 `supersedesJourId` trancherait. Ni clôture patient ni vue praticien.
+## 2026-08-04 — Signature de la table d'orientation, et clôture de la campagne packs/moteur
+
+Le praticien a répondu « signature » à l'arbitrage à deux branches (signer les
+vingt règles, ou clore la campagne avec le critère de signature non coché). Les
+deux points annoncés comme à trancher d'abord ont été traités, et l'un des deux
+n'existait pas.
+
+**Décisions.** Table signée (`validationExterne: true`, 23 claims relus en base le
+jour même). Garde de recueil partiel du PSQI fermée **au niveau item** (18 items
+cotés) et non au niveau composante, qui laissait passer le cas réel. Campagne
+`2026-08-03-packs-moteur…` close avec sept critères cochés sur huit ; le huitième
+— la route sert réellement — est **explicitement non coché** et attend
+`WN_ENABLE_ORIENTATION_NNPP2` côté Vercel. Campagne
+`2026-08-02-certification-questionnaires-consolidation` close aussi.
+
+**Options écartées.** Remplacer `WN-CL-0105-001` sur `R-STR-02` : relu à la
+source, le claim dit mot pour mot l'objectif de la règle — c'est l'alerte qui
+était fausse. Fondre le huitième critère dans le quatrième : aurait fermé la
+campagne sur une affirmation fausse. Garder la garde PSQI au niveau composante :
+sept composantes « mesurées à un item » produisaient encore une bande rassurante.
+
+**Ce que le lot a appris.** Le banc d'égalité exacte `claimsSource` ↔ claims cités
+a rougi à sa première exécution, sur la liste de celui qui l'écrivait : 24 claims
+au lieu de 23, `WN-CL-0178-016` n'existant que dans un commentaire. Deux `D-015`
+coexistaient dans le registre depuis la veille (#562 et #565) — collision réparée,
+la seconde devient `D-016` ; les nouvelles décisions sont `D-018` (périmètre
+signé) et `D-019` (score gelé) — décalées d'un cran, `main` ayant pris `D-017`
+pendant le lot.
+
+**Prochaine action prioritaire.** Poser `WN_ENABLE_ORIENTATION_NNPP2=1` en
+production Vercel — geste d'exploitation, hors campagne. Rien d'autre ne bloque.
+
+**Questions ouvertes.** `tfd` (`Q_GAS_01`, cible de `R-GAS-01`) reste hors de la
+garde de recueil partiel : il ne publie aucun compte à la racine. Même classe
+ouverte sur `sum_decimal`, `count_threshold` et `ecab`, sans règle publiée qui les
+vise.
+
+## 2026-08-04 — TFD : fermer le recueil partiel du dernier moteur réglé
+
+`WN_ENABLE_ORIENTATION_NNPP2=1` posé en production et redéployé (READY, alias
+`app.wellneuro.fr`) : l'orientation tourne avec la table signée en #566.
+
+Puis le lot `tfd` (`Q_GAS_01`), dernier moteur de la classe atteignable par une règle
+publiée. Cinq réponses sur trente-et-une, toutes au maximum, rendaient « A — Absence de
+troubles fonctionnels ». Comptes publiés à la racine et par axe, bandes retirées sur
+recueil partiel — au grain de l'axe aussi (D-020), la grille du TFD calibrant ses
+bandes d'axe sur l'axe complet.
+
+Écarté : aligner le moteur `subscore` (8 instruments, autre arbitrage) ; traiter
+`sum_decimal`/`count_threshold`/`ecab` au passage (le lot y perdait sa contre-épreuve
+nette) ; `agenda-ali-l4b`, périmètre pris par une autre session.
+
+Deux revues adversariales, NO-GO puis GO. Le fond du lot est ce qu'elles ont trouvé :
+la direction de l'effet sur « Mon équilibre » n'a pas un seul sens — au-delà de
+`total ≥ 62` la garde LÈVE un plafond de fondation critique et le score REMONTE, et
+j'avais écrit l'inverse ; `R-GAS-01` s'éteint sur un partiel dont la sévérité est
+acquise par monotonie ; `buildMiniSynthese` re-fabriquait « peu perturbés » (`some` au
+lieu de `every`) ; et ma propre correction a introduit un fait faux (« 14 instruments
+subscore dont aucun » — c'est 8, dont 4 avec bandes d'axe).
+
+Vérifié plutôt que supposé : passe de mutation (6 tests rougissent sans les gardes),
+et lecture production — 2 passations `Q_GAS_01`, toutes deux complètes.
+
+Prochaine action : ouvrir la PR, lire le code de sortie de `wn-attendre-ci.mjs`.
+Question ouverte, candidate au lot suivant : servir un **plancher garanti** à côté de
+la bande, pour que le retrait n'éteigne plus les vrais positifs démontrables.
+
+## 2026-08-05 — Plancher garanti : rendre à D-014 sa seconde moitié
+
+**Décisions.** `D-021` : sur un recueil partiel, la bande atteinte par les seules
+réponses recueillies est servie comme **plancher** (`bandePlancher`),
+`interpretation` restant `null`, avec la formule « au moins » dans la note.
+Éligibilité **déclarée** par l'instrument (`severiteCroissante`) — 21 `sum` +
+`Q_SOM_01` + `Q_GAS_01` —, jamais déduite. Le défaut `Q2` du PSQI passe de 30 à 0 :
+c'était le seul défaut atteignable qui rompait la monotonie, donc la seule chose
+qui rendait un plancher calculable.
+
+**Options écartées.** Un drapeau sur `interpretation` (tout `if (interpretation)`
+se serait remis à afficher une bande). Déduire le sens d'une grille de ses couleurs
+ou de l'ordre de ses bandes (quatre instruments l'infirment). Rallumer `R-GAS-01`
+et donner une surface praticien : hors périmètre, écrits en réserve de `D-021`.
+
+**Ce que le lot a appris.** Trois passes adversariales, deux NO-GO. La première a
+trouvé que le plancher faisait sortir une **conduite clinique** par une seconde
+porte — `separerConduite` sort quand `interpretation` est `null`, c'est-à-dire
+exactement sur le recueil partiel. La seconde a trouvé que mon test de propriété
+**ne pouvait pas échouer** : partant d'une passation saturée, la bande finale était
+toujours la plus haute de la grille, donc supérieure à n'importe quel plancher,
+faux compris. Deux fois la même leçon : **une garde qui ne visite jamais l'état où
+le défaut existe est verte pour une mauvaise raison**.
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire le code de sortie de
+`wn-attendre-ci.mjs`.
+
+**Questions ouvertes.** `R-GAS-01` reste éteinte sur un TFD partiel : le plancher
+est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe du TFD
+n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
+`count_threshold`, `ecab` et `bms_average`.

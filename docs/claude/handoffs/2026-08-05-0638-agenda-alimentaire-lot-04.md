@@ -4,7 +4,7 @@
 - Campagne : `docs/claude/campagnes/2026-08-04-agenda-alimentaire/`
 - Lot : `lots/LOT-04-portail-saisie.md` (ancien « L4b ») — **livré**
 - Branche : `worktree-agenda-ali-l4b`
-- Décision posée : **D-022**
+- Décision posée : **D-023**
 - Fragment de changelog : `changelog.d/2026-08-05-agenda-alimentaire-l4-portail-saisie.md`
 
 ## Où en est la campagne
@@ -19,7 +19,7 @@ rien à calibrer. C'est l'ordre « collecte d'abord, calibrage ensuite » tenu d
 
 **`WN_AGENDA_ALI=true` sur Development et Preview, puis redéploiement.** Dans cet
 ordre, jamais l'un sans l'autre : `IDS_SUSPENDUS` est un `const` de module calculé à
-l'import, la variable seule ne suffit pas. **Jamais en Production** (D-018). Le drapeau
+l'import, la variable seule ne suffit pas. **Jamais en Production** (D-022). Le drapeau
 ne figure aujourd'hui dans aucune des 53 variables du projet Vercel.
 
 Tant qu'il est éteint, `Q_ALI_09` disparaît du hub et de la bibliothèque praticien, et

@@ -46,7 +46,7 @@ pas d'écran ; la saisie patient reste au lot suivant (LOT-04), et
   elle-même (nom de classe d'erreur anonymisé à tort, refus sur `illisibles`
   verrouillant tout l'agenda). Leçon retenue : ne jamais clore sur une passe
   de correctifs non re-revue.
-- Problèmes ouverts, repris explicitement au LOT-04 (voir D-018) : aucune
+- Problèmes ouverts, repris explicitement au LOT-04 (voir D-022) : aucune
   borne serveur aux 21 jours ; impasse d'ordre « date limite dépassée ×
   consentement absent » (paramètre `verifierDateLimite` porté par le seul
   POST, plus exemption `deverrouille` côté `api/patient/consentement`) ; la

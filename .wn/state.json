@@ -9,9 +9,9 @@
   "active_lot": null,
   "last_completed_lot": "2026-07-25-certification-corpus-questionnaires/montee-lots-1-4 (62/64)",
   "git": {
-    "branch": null,
-    "last_commit": null,
-    "dirty": null
+    "branch": "worktree-signature-table-orientation",
+    "last_commit": "d9aac3b1",
+    "dirty": true
   },
   "validation": {
     "overall_status": "passed",
@@ -31,6 +31,6 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-01T19:10:00Z",
+  "updated_at": "2026-08-04T17:42:27Z",
   "parallel_campaigns": []
 }

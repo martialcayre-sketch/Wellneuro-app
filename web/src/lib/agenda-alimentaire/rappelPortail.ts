@@ -104,7 +104,7 @@ export function deriverRappelAgendaAli(etat: EtatAgendaAliPortail): RappelAgenda
 
   // La journée du jour manque et la fenêtre est ouverte : cet état passe AVANT
   // « recueil terminé », y compris le matin du 21e jour où `cloturablePatient`
-  // est déjà vrai — la case est ATTEINTE, pas remplie (D-018). Sinon le hub
+  // est déjà vrai — la case est ATTEINTE, pas remplie (D-022). Sinon le hub
   // annoncerait un recueil terminé pendant que le journal ouvre le formulaire
   // de la dernière journée, et le patient qui suit le hub la laisserait vide.
   // L'ordre porte aujourd'hui sur une phrase ; il portera sur un geste

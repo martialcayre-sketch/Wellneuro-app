@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Table de règles d'orientation V1 — remplir et signer"
-statut: "livré_partiel"
+statut: "livré — table refondue en 20 règles (#565) puis signée le 2026-08-04 (LOT-08)"
 dépend_de: "LOT-03 + LOT-04"
 palier: "T3"
 ---

@@ -55,7 +55,7 @@ correspondance vers les noms encore cités par le code, les décisions
 | `LOT-01-catalogue.md` | L1-bis | livré (PR #554) | `changelog.d/2026-08-03-agenda-alimentaire-l1bis-catalogue.md` |
 | `LOT-02-persistance.md` | L3 | livré (PR #557) | `changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md`, `docs/claude/handoffs/2026-08-04-0150-agenda-alimentaire-l3.md` |
 | `LOT-03-acces-portail-serveur.md` | L4a | livré (PR #562) | `changelog.d/2026-08-04-agenda-alimentaire-l4a.md`, `docs/claude/handoffs/2026-08-04-1254-agenda-alimentaire-l4a.md` |
-| `LOT-04-portail-saisie.md` | L4b | livré | `changelog.d/2026-08-05-agenda-alimentaire-l4-portail-saisie.md`, `docs/DECISIONS.md` (D-022) |
+| `LOT-04-portail-saisie.md` | L4b | livré | `changelog.d/2026-08-05-agenda-alimentaire-l4-portail-saisie.md`, `docs/DECISIONS.md` (D-023) |
 
 ## Contraintes non négociables
 
@@ -73,8 +73,8 @@ correspondance vers les noms encore cités par le code, les décisions
 
 Les arbitrages structurants de la série sont tracés dans `docs/DECISIONS.md` :
 **D-015** (consentement, clôture de suivi, doublon au chemin d'écriture — lot
-`LOT-03`), **D-018** (borne des 21 jours par la date, drapeau posé après la
-surface — arbitrage pris avant `LOT-04`) et **D-022** (ancre calculée sur les
+`LOT-03`), **D-022** (borne des 21 jours par la date, drapeau posé après la
+surface — arbitrage pris avant `LOT-04`) et **D-023** (ancre calculée sur les
 dates enregistrées et non sur les seules relues, quarantaine bornée à la vraie
 tête de chaîne, borne supérieure seule, et l'exemption qui ne vaut que si les
 quatre portes du parcours la connaissent — lot `LOT-04`).

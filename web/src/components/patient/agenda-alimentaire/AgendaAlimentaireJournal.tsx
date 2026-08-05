@@ -91,7 +91,7 @@ type EtatSaisieDate = 'saisie' | 'correction' | 'bloquee';
  * dates.
  *
  * ── AUCUNE BORNE INFÉRIEURE, ICI NON PLUS ───────────────────────────────────
- * `estAvantFinFenetreAli` ne borne QUE la fin (D-018). Une date ANTÉRIEURE à
+ * `estAvantFinFenetreAli` ne borne QUE la fin (D-022). Une date ANTÉRIEURE à
  * l'ancre est donc écrivable, et le POST la fera RECULER : c'est ce qui rend au
  * patient le premier jour de son recueil quand il note la veille juste après
  * avoir noté aujourd'hui. Garder ici le refus qu'on vient de retirer de la route

@@ -5,9 +5,17 @@ import type { OrientationDeclencheur, OrientationRule, OrientationZone } from '.
 // Moteur d'orientation déterministe (campagne certification corpus, lot 7,
 // contrat v2).
 //
-// Fonction pure : évalue les règles d'orientation NNPP2 sur les scores DÉJÀ
-// calculés et stockés (`QuestionnaireReponse.scoresJson`) — aucune logique de
-// scoring nouvelle, aucun accès base, aucun appel IA. Une règle ne s'applique
+// Fonction pure : évalue les règles d'orientation NNPP2 sur des scores qu'on lui
+// donne — aucune logique de scoring nouvelle, aucun accès base, aucun appel IA.
+//
+// CE QU'ON LUI DONNE A CHANGÉ le 2026-08-04, et ce module n'en sait rien : son
+// appelant (`orientationService`) ne lui passe plus le `scoresJson` STOCKÉ mais
+// le score RECALCULÉ depuis `rawAnswers`. Un score stocké est un instantané de
+// la doctrine qui avait cours à la soumission ; une garde de scoring ajoutée
+// ensuite ne l'atteignait jamais. Ce module reste pur, et c'est justement ce qui
+// rendait le défaut invisible ici.
+//
+// Une règle ne s'applique
 // que si TOUS ses déclencheurs sont atteints (ET logique) et si son statut est
 // `publiee`. La recommandation est une proposition au praticien : rien n'est
 // jamais auto-assigné, et le LLM de synthèse ne recevra que des cibles issues
@@ -148,20 +156,37 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
  * `comparaison` sur des SOUS-SCORES qui a ouvert la brèche traitée ici, un étage
  * plus bas que la garde existante.
  *
- * MAIS `psqi` NE REND PAS `null` SUR PASSATION INCOMPLÈTE, contrairement à ce
- * que ce commentaire affirmait jusqu'au 2026-08-04. Son total ne tombe à `null`
- * que si les SEPT composantes sont vides (`totalGlobalDepuisSousScores`) ; une
- * composante se calcule dès qu'un de ses items est renseigné. Un PSQI à 8
- * réponses sur 24 rend donc `total: 14`, bande « Troubles du sommeil modérés »,
- * et `R-SOM-01` s'allume sur un instrument à un tiers rempli.
+ * `psqi` EST DÉSORMAIS COUVERT — trou fermé au lot de signature, à la source.
+ * Il ne l'était pas quand ces lignes ont été écrites : son total ne tombe à
+ * `null` que si une composante entière est vide, et sept composantes mesurées
+ * « à au moins un item » suffisaient à produire un total /21 biaisé vers le bas
+ * — les items manquants de `C2`, `C5` et `C7` étant comptés à leur valeur la
+ * plus FAVORABLE. Huit réponses sur dix-huit rendaient « Pas de trouble du
+ * sommeil », et `R-SOM-01` lisait cette bande.
  *
- * LE TROU, NOMMÉ : la garde ci-dessous ne l'attrape pas. `psqi` ne publie AUCUN
- * compte à la racine — ni `repondus`/`items`, ni `missing` —, si bien que
- * `recueilIncomplet` rend `false` faute de savoir quoi lire, exactement comme il
- * le fait pour `tfd`. C'est un défaut PRÉ-EXISTANT, de la même classe que celui
- * que ce lot ferme, et ce lot NE LE FERME PAS : le fermer suppose de faire
- * publier une complétude par ces deux moteurs, ce qui touche des scores servis
- * ailleurs. Ne pas lire cette garde comme la clôture de la classe.
+ * Le moteur publie maintenant `missing`/`repondus` sur ses 18 items cotés et
+ * retire sa bande sur recueil partiel : la garde ci-dessous l'attrape par la
+ * branche `missing`, sans rien de spécifique au PSQI.
+ *
+ * ET CELA VAUT AUSSI POUR LES PASSATIONS DÉJÀ ENREGISTRÉES — ce qui n'allait pas
+ * de soi et a failli ne pas être vrai. Le score est figé à la soumission : une
+ * garde ajoutée après coup ne touche aucune ligne existante. C'est
+ * `orientationService` qui referme ce trou-là, en recalculant depuis
+ * `rawAnswers` ; sans lui, cette garde n'aurait protégé que l'avenir.
+ *
+ * `tfd` (`Q_GAS_01`) EST COUVERT DEPUIS LE 2026-08-04 — il était le dernier de la
+ * classe atteignable par une règle publiée. Il ne publiait aucun compte, si bien
+ * que `recueilIncomplet` rendait `false` faute de savoir quoi lire, et qu'un seul
+ * item répondu par axe suffisait à produire un total /93 biaisé vers le bas : cinq
+ * réponses sur trente-et-une, TOUTES au maximum de leur échelle, rendaient
+ * « A — Absence de troubles fonctionnels », et `R-GAS-01` lisait cette bande.
+ * Le moteur publie maintenant `missing`/`repondus` à la racine et `repondus`/
+ * `items` sur chaque axe : la garde ci-dessous l'attrape par ses deux branches,
+ * sans rien de spécifique au TFD.
+ *
+ * NE PAS LIRE CETTE GARDE COMME LA CLÔTURE DE LA CLASSE pour autant.
+ * `sum_decimal`, `count_threshold` et `ecab` la portent encore ; ce qui les
+ * distingue n'est pas d'être protégés, c'est qu'aucune règle publiée ne les vise.
  *
  * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
  * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de
@@ -227,13 +252,13 @@ function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   // `R2-ALI-01` y engagerait un PACK. C'est le scénario du dessus, transposé du
   // sous-score au score global.
   //
-  // Aucune règle existante ne change de comportement : `psqi` (`Q_SOM_01`) et
-  // `tfd` (`Q_GAS_01`) ne publient aucun compte d'items au niveau global, et
-  // `Q_STR_02` (`sum`) rend déjà `interpretation: null` sur recueil partiel.
-  //
-  // « Ne publient aucun compte » n'est PAS « sont protégés » — voir le trou
-  // nommé en tête de `recueilIncomplet` : un PSQI partiel passe ici sans être
-  // vu. Ce lot ne le ferme pas.
+  // `psqi` (`Q_SOM_01`) publie `missing`/`repondus` depuis le lot de signature
+  // et passe donc par cette garde ; `Q_STR_02` (`sum`) rend déjà
+  // `interpretation: null` sur recueil partiel ; `tfd` (`Q_GAS_01`) publie ses
+  // comptes depuis le 2026-08-04 et y passe à son tour. Les trois porteurs de
+  // règles publiées sont donc couverts — ce qui ne vaut PAS pour les moteurs
+  // sans règle, voir le rappel en tête de `recueilIncomplet` : « ne publie aucun
+  // compte » n'est pas « est protégé ».
   if (recueilIncomplet(scores)) return { valeur: null, interpretation: null };
   const total = (scores as { total?: unknown }).total;
   return {

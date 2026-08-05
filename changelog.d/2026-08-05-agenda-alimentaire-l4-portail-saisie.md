@@ -4,7 +4,7 @@ L4a avait ouvert l'accès serveur sans qu'aucun écran ne le consomme : `Q_ALI_0
 assigné menait à une impasse, et `WN_AGENDA_ALI` restait éteint pour cette raison.
 Ce lot livre la surface — aiguillage, hub, saisie, relecture — et la borne des
 21 jours au chemin d'écriture. Le drapeau ne s'allume qu'après, sur Development et
-Preview, jamais en Production ([D-018](../docs/DECISIONS.md)).
+Preview, jamais en Production ([D-022](../docs/DECISIONS.md)).
 
 Le patient voit l'agenda dans son hub avec son avancement, y entre depuis le
 portail, note une journée sans clavier, la relit et la corrige.

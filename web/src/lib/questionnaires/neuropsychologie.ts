@@ -158,7 +158,7 @@ export const Q_NEU_01 = {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:39,
     certification:{source:'drive',status:'certifie'},
     note:'Source Drive BDI : la table d’interprétation commence à 1 ; le score calculable 0 est rattaché au premier niveau pour éviter un résultat non interprété.',
@@ -185,7 +185,7 @@ export const Q_NEU_04 = {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:5,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -345,7 +345,7 @@ export const Q_NEU_09 = {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:88,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -386,7 +386,7 @@ export const Q_NEU_10 = {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:100,
     certification:{source:'drive',status:'certifie'},
     note:'Source Drive : questionnaire adulte centré sur Internet pour les loisirs ; à interpréter avec prudence et avec l’entretien clinique.',
@@ -429,7 +429,7 @@ export const Q_NEU_02 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:60,
+    type:'sum', severiteCroissante:true, maxTotal:60,
     certification:{source:'drive',status:'certifie'},
     note:'Source Drive : les scores 7 et 19 ne sont pas explicitement classés par la grille source (0-6, 8-18, 20-35, 36-60) ; ils restent donc sans interprétation attribuée. Point de vigilance clinique Drive : tout item Q010 positif nécessite une appréciation clinique immédiate, indépendamment du score total.',
     interpretation:[
@@ -548,7 +548,7 @@ export const Q_NEU_06 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:20,
+    type:'sum', severiteCroissante:true, maxTotal:20,
     // Bandes de la source, à un arbitrage près, DÉCLARÉ. Elle écrit « De 0 à 1 :
     // Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels » — les deux
     // revendiquent la valeur 1. L'arbitrage donne 1 à la bande la plus sévère,

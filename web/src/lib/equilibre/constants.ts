@@ -104,7 +104,71 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // nouveauté » de main revendiquaient tous deux v5 — deux définitions sous une
 // même étiquette, exactement ce que ce fichier interdit. Doctrine inchangée : un
 // épisode figé sous l'ancienne étiquette ne se compare pas aux nouvelles.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v9' : 'v8';
+// v8/v9 → v10/v11 (garde de recueil partiel du PSQI, 2026-08-04) : `Q_SOM_01`
+// cesse d'alimenter le besoin 5 quand sa passation est incomplète. Aucun poids
+// ni seuil ne bouge — c'est la DISPONIBILITÉ d'une source qui change, et le
+// fichier range explicitement le mapping parmi ce qui impose un bump.
+//
+// LA DIRECTION DE L'EFFET, parce qu'elle n'est pas celle qu'on croit. `Q_SOM_01`
+// est une source `inverser: true` : retirer une mesure BASSE y est
+// RASSURANT, pas protecteur. Un PSQI à 14/21 renseigné à 17 items sur 18 donnait
+// une couverture repos de 1 − 14/21 = 0,333, sous le seuil d'effondrement 0,34
+// du besoin 5 — donc fondation critique, donc score global plafonné à 50. La
+// garde le rend « non mesuré » : plus de fondation critique, plus de plafond, et
+// le score global REMONTE. Relevé en revue adversariale ; c'est précisément
+// pourquoi l'étiquette ne peut pas rester la même.
+//
+// Le précédent est dans ce fichier : v3 → v4 retirait `Q_SOM_06` du besoin 2
+// pour ce même plafond. Doctrine inchangée — un épisode figé en v8/v9 ne se
+// compare pas à un épisode v10/v11.
+//
+// CE QUE LE BUMP COÛTE, et c'est la seule conséquence VISIBLE par le praticien :
+// `versionScore` est stocké et gouverne les comparaisons (`trajectoire-partagee`,
+// `protocol/cabinet`). Le bump COUPE donc l'historique de momentum de tous les
+// patients — un T0 figé en v9 ne se soustrait plus à un T1 v11 —, et l'agrégat
+// cabinet retombe à `nTotal = 0`, donc masqué, jusqu'à ce que deux cycles v11
+// existent. Coût assumé, déjà payé à v3 → v4 ; il est écrit ici pour qu'il ne se
+// redécouvre pas dans un tableau de bord vide.
+//
+// ⚠ AMBIGUÏTÉ CRÉÉE, à qualifier désormais : le dépôt porte DEUX séries `v11`
+// simultanées — la consigne de synthèse (`anthropic.ts`) et ce score. Un `v11` nu
+// dans un log ou une conversation ne désigne plus rien. Même piège que le préfixe
+// `R` des campagnes, décrit dans `CLAUDE.md`.
+//
+// v10/v11 → v12/v13 (garde de recueil partiel du TFD, 2026-08-04) : `Q_GAS_01`
+// cesse d'alimenter le besoin 4 quand sa passation est incomplète. Même forme que
+// le bump précédent — c'est la DISPONIBILITÉ d'une source qui change, aucun poids
+// ni seuil ne bouge —, et `Q_GAS_01` est lui aussi une source `inverser: true`
+// (`max: 93`).
+//
+// L'EFFET VA DANS LES DEUX SENS, et une première rédaction n'en écrivait qu'un.
+// Relevé en revue adversariale ; c'est la seule chose que ce bloc doit dire sans
+// se tromper.
+//
+//   · TFD partiel et BAS (le cas qui motive la garde) — cinq items sur
+//     trente-et-un rendaient un total effondré, donc `1 − ratio` très HAUT :
+//     « besoin bien couvert » établi sur ce que le patient n'a pas dit. La garde
+//     le rend non mesuré, et la couverture BAISSE. C'est la correction.
+//   · TFD partiel et DÉJÀ SÉVÈRE — au-delà de `total ≥ 62`, la couverture tombe
+//     sous `SEUIL_EFFONDREMENT` (0,34) et le besoin 4 est une FONDATION CRITIQUE
+//     (voir `BESOINS_FONDATIONS_CRITIQUES`), ce qui plafonne le score global à 50.
+//     Le rendre non mesuré le sort aussi de cette liste : le plafond se lève et le
+//     score global REMONTE. Trente items sur trente-et-un, tous au maximum,
+//     tombent dans ce cas. Le seuil de 62 vaut **quand `Q_GAS_01` est la seule
+//     source répondue du besoin 4** : `Q_INF_01` l'alimente aussi, et la moyenne
+//     de groupe déplace alors le point de bascule. C'est le cas courant, pas le
+//     cas général — l'incise vient de la revue adversariale.
+//
+// La seconde branche est le COÛT assumé de D-014, pas un effet secondaire : une
+// bande ne se lit que sur l'instrument complet, y compris quand l'incomplet
+// accusait déjà. Elle est du même ordre que la perte de `R-GAS-01` décrite dans
+// `clinical/orientationRulesV1.ts`. Mesuré le 2026-08-04 avant de fermer le lot :
+// la production ne porte que DEUX passations `Q_GAS_01`, toutes deux complètes
+// (31/31) — aucun dossier vivant n'est dans l'une ou l'autre branche.
+//
+// La mécanique du bump est celle décrite plus haut et son coût est le même :
+// historique de momentum coupé, agrégat cabinet masqué jusqu'à deux cycles v13.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v13' : 'v12';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

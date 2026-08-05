@@ -126,7 +126,7 @@ describe('deriverRappelAgendaAli — les quatre états', () => {
   });
 
   // Le matin du 21e jour, `cloturablePatient` est DÉJÀ vrai alors que
-  // l'emplacement 21 est vide : la case est atteinte, pas remplie (D-018). Sans
+  // l'emplacement 21 est vide : la case est atteinte, pas remplie (D-022). Sans
   // cet ordre, le hub annoncerait un recueil terminé pendant que le journal
   // ouvre le formulaire de la dernière journée. L'enjeu est aujourd'hui une
   // phrase ; il deviendra un geste irréversible quand la clôture patient

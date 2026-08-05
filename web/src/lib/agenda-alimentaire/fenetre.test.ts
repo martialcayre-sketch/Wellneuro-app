@@ -190,7 +190,7 @@ describe('estAvantFinFenetreAli', () => {
   // Le prédicat bornait des DEUX côtés. Effet, sur un agenda qui démarre :
   // l'écran ouvre sur aujourd'hui, le patient note, l'ancre vaut J — et noter la
   // veille était alors refusé par « votre recueil couvre déjà ses 21 jours »,
-  // alors qu'il en couvrait UNE. D-018 motive la borne par « une 22ᵉ case
+  // alors qu'il en couvrait UNE. D-022 motive la borne par « une 22ᵉ case
   // n'existe jamais » : c'est la FIN de fenêtre qui est en jeu, jamais son début.
   it('accepte une date ANTÉRIEURE à l’ancre : elle la fera reculer', () => {
     const debut = '2026-07-20';

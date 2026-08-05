@@ -383,3 +383,91 @@ describe('fondations critiques sans source (invariants v4)', () => {
     expect(seulPichot.scoreGlobalAvantPlafond).toBeNull();
   });
 });
+
+// ── PSQI partiel et besoin 5 ────────────────────────────────────────────────
+//
+// EFFET DE BORD DU LOT DE SIGNATURE (2026-08-04), relevé en revue adversariale
+// et resté sans aucune assertion jusqu'ici.
+//
+// `Q_SOM_01` est source du besoin 5, en `inverser: true` et `max: 21`. Depuis que
+// le moteur `psqi` publie `missing`, `extraireValeurBrute` écarte une passation
+// partielle — et la DIRECTION de cet effet n'est pas celle qu'on attend. Sur une
+// source inversée, retirer une mesure basse est RASSURANT : le besoin 5 est une
+// fondation critique, un PSQI dégradé l'effondre, et un PSQI partiel ne
+// l'effondre plus. Le score global remonte au lieu de baisser.
+//
+// C'est ce qui a imposé le bump `VERSION_SCORE_EQUILIBRE` v8/v9 → v10/v11 : deux
+// définitions du besoin 5 ne peuvent pas partager une étiquette.
+describe('besoin 5 — le PSQI partiel n’est plus une mesure', () => {
+  /** Les 18 items cotés. Total 0/21 : sommeil au mieux, couverture 1. */
+  const PSQI_COMPLET_AU_MIEUX: Record<string, number> = {
+    Q1: 23, Q2: 10, Q3: 7, Q4: 8,
+    Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0,
+    Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+    Q6: 0, Q7: 0, Q8: 0, Q9: 0,
+  };
+
+  it('une passation COMPLÈTE renseigne toujours le besoin 5', () => {
+    // Contre-épreuve : sans elle, une garde qui écarterait TOUTE passation
+    // passerait le test suivant sans rien protéger.
+    const couverture = calculerCouvertureBesoin(5, { Q_SOM_01: PSQI_COMPLET_AU_MIEUX });
+    expect(couverture).toBeCloseTo(1, 6);
+  });
+
+  it('un SEUL item manquant rend le besoin 5 non mesuré, et non mieux couvert', () => {
+    const { Q5j, ...dixSeptSurDixHuit } = PSQI_COMPLET_AU_MIEUX;
+    void Q5j;
+    expect(calculerCouvertureBesoin(5, { Q_SOM_01: dixSeptSurDixHuit })).toBeNull();
+  });
+
+  it('LE PLAFOND DE FONDATION CRITIQUE TOMBE — c’est ce qui impose le bump', () => {
+    // LA contre-épreuve du bump de version, et elle manquait : les trois autres
+    // bancs s'arrêtent à « la couverture devient null », alors que la phrase qui
+    // motive tout est « la fondation critique disparaît, le plafond de 50 tombe,
+    // le score global REMONTE ». Sans cette assertion, la justification du bump
+    // n'est tenue par rien.
+    //
+    // Même patient, mêmes réponses aux autres besoins. Seul change le PSQI :
+    // complet et dégradé d'un côté, amputé d'un item de l'autre.
+    const autresBesoins: Record<number, number> = {};
+    for (const id of [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12]) autresBesoins[id] = 1;
+
+    // PSQI complet à 16/21 → couverture repos 1 − 16/21 = 0,238, sous le seuil
+    // d'effondrement 0,34 du besoin 5. Le total est celui du moteur, mesuré :
+    // une première rédaction de ce banc visait 14 et sortait à 10, donc au-dessus
+    // du seuil — le test rougissait pour la bonne raison.
+    const psqiDegrade = {
+      Q1: 0, Q2: 60, Q3: 7, Q4: 4,
+      Q5a: 3, Q5b: 3, Q5c: 2, Q5d: 1, Q5e: 1,
+      Q5f: 1, Q5g: 1, Q5h: 1, Q5i: 2, Q5j: 0,
+      Q6: 2, Q7: 1, Q8: 2, Q9: 2,
+    };
+    const couvertureDegradee = calculerCouvertureBesoin(5, { Q_SOM_01: psqiDegrade });
+    expect(couvertureDegradee).not.toBeNull();
+    expect(couvertureDegradee as number).toBeLessThan(0.34);
+
+    const avec = agregerEquilibre({ ...autresBesoins, 5: couvertureDegradee });
+    expect(avec.plafondApplique).toBe(true);
+    expect(avec.scoreGlobal).toBe(PLAFOND_FONDATION_CRITIQUE);
+
+    // Le MÊME patient, à qui il manque un seul item : le besoin 5 n'est plus
+    // mesuré, la fondation critique ne peut plus s'effondrer, et le score passe
+    // au-dessus du plafond. C'est une remontée, pas une protection.
+    const { Q5j, ...ampute } = psqiDegrade;
+    void Q5j;
+    expect(calculerCouvertureBesoin(5, { Q_SOM_01: ampute })).toBeNull();
+
+    const sans = agregerEquilibre({ ...autresBesoins, 5: null });
+    expect(sans.plafondApplique).toBe(false);
+    expect(sans.scoreGlobal as number).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
+  });
+
+  it('un PSQI partiel DÉGRADÉ ne remonte pas la couverture — il la retire', () => {
+    // LE cas qui compte. Huit items sur dix-huit, `Q5b` au pire : le moteur rend
+    // un total de 1/21, qui se lirait « 1 − 1/21 = 0,95 » — un sommeil presque
+    // parfait, tiré d'un instrument à moitié rempli et d'un patient qui déclare
+    // se réveiller trois fois ou plus par semaine.
+    const partielDegrade = { Q1: 23, Q2: 10, Q3: 7, Q4: 8, Q5b: 3, Q6: 0, Q7: 0, Q8: 0 };
+    expect(calculerCouvertureBesoin(5, { Q_SOM_01: partielDegrade })).toBeNull();
+  });
+});

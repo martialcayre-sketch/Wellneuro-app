@@ -24,7 +24,7 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
 - **Hub patient** — l'agenda apparaît dans la liste des questionnaires, avec son avancement.
 - **Surface de saisie** — une journée par écran, cible < 30 s/jour, consommant la route L4a.
 - **Borne des 21 jours** — le `POST` refuse toute `dateJour` hors de `[dateDebut, dateDebut + 20]`
-  (arbitrage [D-018](../../../../DECISIONS.md)).
+  (arbitrage [D-022](../../../../DECISIONS.md)).
 - **Deux dettes L4a explicitement datées L4b par [D-015](../../../../DECISIONS.md)** :
   - un paramètre `{ verifierDateLimite: true }` porté par le **seul** `POST`, pour que
     « date limite dépassée » (`410`) morde avant le `403` de consentement ;
@@ -67,7 +67,7 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
   - `dateDebut + 20` → accepté ; `dateDebut + 21` → refusé ;
   - correction d'une journée déjà notée dans la fenêtre avec `supersedesJourId` → acceptée ;
   - **journée d'ancre en quarantaine** → l'ancre **ne glisse pas**, et la borne avec elle
-    ([D-022](../../../../DECISIONS.md)). Le report de [D-018](../../../../DECISIONS.md)
+    ([D-023](../../../../DECISIONS.md)). Le report de [D-022](../../../../DECISIONS.md)
     (réserve 1) tenait à l'absence d'écran rendant le glissement visible ; ce lot livrant cet
     écran, le correctif est fait ici et le test doit **prouver la correction**, pas exercer le
     défaut — il attend un refus là où l'ancre glissante acceptait.

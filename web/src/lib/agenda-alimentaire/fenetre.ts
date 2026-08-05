@@ -153,7 +153,7 @@ export function calculerFenetreAliDepuisDates(
  * 21 jours », alors qu'il en couvrait UNE. Un jour de recueil perdu au
  * démarrage, et une capacité que L4a acceptait retirée sans décision.
  *
- * D-018 motive la borne par « une 22ᵉ case n'existe jamais » : c'est la FIN de
+ * D-022 motive la borne par « une 22ᵉ case n'existe jamais » : c'est la FIN de
  * fenêtre qui est en jeu, jamais son début. Une date ANTÉRIEURE à l'ancre est
  * donc acceptée, et elle RECULE l'ancre.
  *

@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v13`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v15`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -64,7 +64,24 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // sha256 d'une table relue, et la consigne lui interdit d'en proposer un autre,
 // d'en changer l'ordre ou d'en inventer la justification. Le bump est ce qui
 // distingue une synthèse rédigée sous ce garde d'une rédigée sans.
-const EMPREINTE_V14 = '828c5ed28738ed94';
+// v15 (2026-08-05) : le champ `bandePlancher` — un minimum garanti de sévérité
+// servi sur recueil incomplet, là où `interpretation` est absente. Une bande qui
+// réapparaît là où le lot précédent l'avait retirée se lirait comme le résultat
+// de la passation si la consigne ne disait pas « au moins ».
+//
+// CE QUI A EXIGÉ CES LIGNES, exactement — parce que créditer le mauvais garde
+// désigne comme couvert ce qui ne l'est pas. Une première rédaction du lot
+// servait `bandePlancher: null` sur tous les instruments ; la clé existait donc
+// même sur une passation SATURÉE, et les deux gardes de champs l'ont vue —
+// `promptSousScores.guard.test.ts` (« aucun champ livré n'échappe à la
+// consigne ») et le contrôle de clés de ce fichier sur `Q_ALI_02`. Le champ est
+// devenu conditionnel ensuite, pour ne pas partir au modèle sur vingt-six
+// instruments qui n'ont pas de plancher — et depuis, AUCUN des deux gardes ne
+// peut plus le voir : tous deux ne balaient que des passations saturées, où par
+// définition aucun plancher n'existe. La description ne tient donc plus que par
+// cette empreinte et par la relecture. C'est écrit ici pour que la prochaine
+// passe le sache.
+const EMPREINTE_V15 = '5da8b16eb6cb1f60';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -178,7 +195,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v14', empreinte: EMPREINTE_V14 });
+    ).toEqual({ version: 'synthese-v15', empreinte: EMPREINTE_V15 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {

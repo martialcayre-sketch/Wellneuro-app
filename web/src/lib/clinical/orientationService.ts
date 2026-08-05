@@ -9,6 +9,8 @@ import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinic
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { calculateScore } from '@/lib/questions';
+import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
 
 // Évaluation de l'orientation NNPP2 pour un patient — LECTURE SEULE, et le seul
 // endroit où cette évaluation existe.
@@ -75,6 +77,43 @@ export function resultatInactif(): ResultatOrientationInactif {
 }
 
 /**
+ * Score utilisable par l'orientation, ou `null` — jamais l'instantané stocké.
+ *
+ * Voir les quatre motifs de mise à `null` sur l'appelant. Rendre `null` plutôt
+ * que retirer la ligne préserve `dejaRepondu`, qui est un fait administratif.
+ */
+function scoresPourOrientation(
+  idQuestionnaire: string,
+  stocke: Record<string, unknown> | null,
+  dateReponse: Date,
+): Record<string, unknown> | null {
+  // 4. registre des passations non interprétables — d'abord, parce qu'il porte
+  //    sur le RECUEIL et non sur le calcul : recalculer n'y change rien.
+  if (motifNonInterpretable(idQuestionnaire, dateReponse) !== null) return null;
+  // 3. non administrable : le moteur écarte déjà ces cibles.
+  if (!estAdministrableParLaRoute(idQuestionnaire)) return null;
+  // 1. rien à recalculer.
+  const brutes = stocke?.rawAnswers;
+  if (!brutes || typeof brutes !== 'object' || Array.isArray(brutes)) return null;
+  const scores = calculateScore(idQuestionnaire, brutes as Record<string, unknown>) as
+    | Record<string, unknown>
+    | null;
+  // 2. `calculateScore` ne rend JAMAIS de valeur falsy sur le catalogue : ses
+  //    deux chemins d'échec passent par `{error: …}` — instrument hors catalogue,
+  //    ou type de scoring non implémenté. Le premier test seul serait donc inerte.
+  //
+  //    GARDE DÉFENSIVE, ET NON PROUVÉE — dit ici parce que le contraire se
+  //    supposerait. La retirer laisse le banc VERT : un objet `{error}` n'a ni
+  //    `total` ni `interpretation`, donc aucun déclencheur ne peut mordre de
+  //    toute façon. Elle ne protège d'aucun défaut observable aujourd'hui ; elle
+  //    protège du jour où un moteur rendrait un objet d'erreur PORTANT un total.
+  //    Les trois autres motifs, eux, sont tenus par un banc dont la mutation a
+  //    été vue rougir.
+  if (!scores || scores.error) return null;
+  return scores;
+}
+
+/**
  * Évalue la table de règles signée sur le dossier déjà stocké du patient.
  *
  * Ne propose rien d'autre que des explorations : aucune assignation n'est
@@ -135,13 +174,73 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     compositionPacks[packId] = pack.qids;
   }
 
+  // RECALCUL À LA LECTURE — et non le score figé en base.
+  //
+  // POURQUOI, ET CE QUE ÇA RÉPARE. `api/patient/submit` calcule le score UNE
+  // FOIS à la soumission et le persiste dans `scoresJson`. Une garde de scoring
+  // ajoutée ensuite ne touche donc AUCUNE passation déjà enregistrée : le
+  // moteur d'orientation relisait un instantané produit par une doctrine qui
+  // n'existe plus. C'est la classe de défaut de la PR #202 — pas une ligne
+  // fautive, un rattrapage absent —, relevée en revue adversariale sur ce lot :
+  // la garde de recueil partiel du PSQI ne mordait que sur les passations à
+  // venir, alors que trois documents affirmaient le trou fermé.
+  //
+  // Le geste ci-dessous ferme la CLASSE, pas le cas : toute garde de scoring
+  // future s'applique d'office aux passations passées, sans backfill et sans
+  // migration. « Mon équilibre » recalcule déjà ainsi (`equilibre/depuisPrisma`)
+  // — deux consommateurs cliniques du même score qui ne lisent pas la même
+  // chose était en soi un défaut.
+  //
+  // FAIL-CLOSED SUR L'IRRÉCUPÉRABLE — mais la passation N'EST PAS RETIRÉE de la
+  // liste : c'est son SCORE qui tombe à `null`.
+  //
+  // Deux faits distincts vivent dans la même ligne, et les confondre coûte.
+  // « Une réponse existe » est un fait ADMINISTRATIF : c'est lui qui alimente
+  // `dejaRepondu`, le badge « déjà renseigné » de l'écran praticien. « Une
+  // réponse est cotable » est un fait CLINIQUE : c'est lui qui autorise un
+  // déclencheur. Une première rédaction de ce lot écartait la ligne entière, si
+  // bien qu'une seule passation ancienne faisait disparaître le badge — et,
+  // pour un pack, le faisait disparaître pour le pack ENTIER
+  // (`composition.every(...)`). Relevé en seconde revue adversariale.
+  //
+  // Un score `null` traverse `extraireCible` en `{valeur: null, interpretation:
+  // null}` : aucun déclencheur ne peut mordre, et `dernieres` garde la ligne.
+  //
+  // QUATRE MOTIFS DE MISE À `null`, et ils sont tous vérifiés ici plutôt que
+  // supposés — une première rédaction affirmait que `calculateScore` rendait
+  // `null` sur un instrument inconnu ou suspendu. C'est FAUX, et mesuré : il
+  // rend `{error: 'Questionnaire introuvable'}`, un objet truthy, et il cote
+  // sans broncher un instrument suspendu. Une phrase qui affirme une fermeture
+  // inexistante, dans un module dont toute la doctrine est le fail-closed, est
+  // exactement le défaut que ce lot a déjà corrigé une fois.
+  //
+  //   1. pas de `rawAnswers` — rien à recalculer. Mesuré en production le
+  //      2026-08-04 : 15 lignes sur 99, toutes d'une forme antérieure au moteur
+  //      actuel, donc déjà inertes. Le servi ne change pas ; il devient voulu.
+  //   2. `calculateScore` rend un objet `error` — instrument hors catalogue, ou
+  //      type de scoring non implémenté.
+  //   3. l'instrument n'est plus administrable par la route (suspendu, droits,
+  //      certification) : le moteur écarte déjà ces CIBLES, il n'y a pas de
+  //      raison d'accepter leurs MESURES.
+  //   4. la passation est déclarée NON INTERPRÉTABLE par le registre
+  //      (`Q_SOM_07`, `Q_ALI_03`…). Ce point ne pouvait pas se poser tant qu'on
+  //      relayait un instantané ; il se pose dès qu'on FABRIQUE un score. Le
+  //      registre dit de `Q_SOM_07` que « le total et la bande enregistrés ne
+  //      sont pas une mesure de fatigue » — recalculer ses réponses brutes
+  //      produirait un nombre que le dépôt affirme ne pas devoir exister.
+  const reponsesRecalculees = reponses.map(reponse => ({
+    idQuestionnaire: reponse.idQuestionnaire,
+    dateReponse: reponse.dateReponse.toISOString(),
+    idReponse: reponse.idReponse,
+    scores: scoresPourOrientation(
+      reponse.idQuestionnaire,
+      reponse.scoresJson as Record<string, unknown> | null,
+      reponse.dateReponse,
+    ),
+  }));
+
   const recommandations = evaluerOrientation({
-    reponses: reponses.map(reponse => ({
-      idQuestionnaire: reponse.idQuestionnaire,
-      dateReponse: reponse.dateReponse.toISOString(),
-      idReponse: reponse.idReponse,
-      scores: reponse.scoresJson as Record<string, unknown>,
-    })),
+    reponses: reponsesRecalculees,
     idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
     regles: ORIENTATION_RULES_V1,
     compositionPacks,

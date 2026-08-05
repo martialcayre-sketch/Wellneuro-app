@@ -775,7 +775,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const fenetre = calculerFenetreAli(joursActifs, aujourdHui, {
       datesIllisibles: datesRefusees,
     });
-    // BORNE SUPÉRIEURE SEULE (D-018) : une date ANTÉRIEURE à l'ancre est
+    // BORNE SUPÉRIEURE SEULE (D-022) : une date ANTÉRIEURE à l'ancre est
     // acceptée et la RECULE — noter la veille juste après avoir noté aujourd'hui
     // rend au patient le premier jour du recueil. `estDateSaisissable` (barrière
     // 5) borne ce recul à un jour, et seulement au démarrage.

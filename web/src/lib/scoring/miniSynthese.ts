@@ -168,9 +168,23 @@ export function buildMiniSynthese(scores: ScoreInput): string {
         .join(' ; ');
     }
     // Une rubrique interprétée mais non perturbée : le propos existe, il est
-    // rassurant. Aucune rubrique interprétée du tout : énumérer plutôt que
-    // conclure « peu perturbé » sur des axes qu'on n'a pas su lire.
-    if (rubriques.some((r) => r.interpretation)) {
+    // rassurant. Une seule rubrique non interprétée : énumérer plutôt que
+    // conclure « peu perturbé » sur un axe qu'on n'a pas su lire.
+    //
+    // `every` et non `some`, corrigé le 2026-08-04. Le commentaire ci-dessus
+    // décrivait déjà la bonne règle ; le code implémentait la faible, et la
+    // phrase dit « TOUS les axes explorés » — elle généralise donc à des axes
+    // dont l'un au moins n'a aucune bande. Inoffensif tant que les seuls axes
+    // sans bande étaient des trous de grille ; la garde de recueil partiel du
+    // TFD rend le cas systématique, un axe partiel gardant son total et perdant
+    // son étiquette. Mesuré sur `Q_GAS_01` : quatre axes complets à 0 plus un
+    // `C5` renseigné à un item sur cinq, coté au MAXIMUM (« crampes
+    // intestinales douloureuses — très fréquemment »), produisaient « Tous les
+    // axes explorés sont peu perturbés » et effaçaient les cinq totaux.
+    //
+    // Le repli `clauseRubriques` énumère : il ne peut qu'en dire PLUS, jamais
+    // rassurer davantage.
+    if (rubriques.every((r) => r.interpretation)) {
       return 'Tous les axes explorés sont peu perturbés.';
     }
     return clauseRubriques(rubriques);
