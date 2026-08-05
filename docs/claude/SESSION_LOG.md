@@ -2534,3 +2534,55 @@ L'index `@@index([idAssignation])` sur `QuestionnaireReponse` reste absent, et c
 lot ajoute une lecture sur cette colonne à la route praticien la plus appelée
 (sans gravité à 99 lignes, mesuré). `agenda-sommeil/relance` porte la même racine,
 nommée non traitée.
+## [2026-08-05] — LOT-02 : observer le repli legacy des packs
+
+**Décisions.** Hypothèse de cadrage infirmée : `ensembles_divergents` était déjà
+journalisé (WARN, depuis LOT-03) ; le vrai trou était `registre_absent`/
+`registre_vide`, muets. Ajout d'une branche `logger.info` dans les deux
+appelants (`packs/assign`, `portail/valider`), résolveur intact, même event
+code, niveau distinct pour préserver la décision anti-alarme-permanente déjà
+prise. Constat production (`execute_sql`) : 7/8 packs conformes, 1 dérive
+réelle sur le pack de base (`Q_SOM_09` absent du registre) — repli **non
+fermé**, recommandation datée : le fermer aujourd'hui viderait l'agenda du
+sommeil de chaque onboarding.
+
+**Options écartées.** Fonction de log partagée entre les deux routes (2
+call-sites seulement, duplication déjà le style du dépôt). Résynchroniser le
+pack de base dans ce lot (correction de donnée, hors périmètre observation).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Puis LOT-03
+(`sum_decimal`, `count_threshold`, `ecab`). Réconciliation `CAMPAGNE.md`
+(`lot_courant`, tableau des lots) volontairement **non faite ici** — suit le
+même patron que LOT-01 : geste séparé, post-merge, depuis `main`, via l'outil
+sanctionné.
+
+**Questions ouvertes.** Aucune côté LOT-02. Celles héritées de LOT-01 (gates
+G0-G4, conflits de corpus) restent hors du périmètre de ce lot.
+
+## [2026-08-05] — LOT-03 : fermer sum_decimal, count_threshold, ecab
+
+**Décisions.** Cadrage (`wn-reviewer`) a trouvé le lot rédigé sur deux erreurs
+de fait : mauvais fichier (`instruments.ts` au lieu de `questions.ts`) et garde
+de référence périmée d'une version (#568 a ajouté un « plancher garanti »
+distinct de la garde de base #566/#567). Résolu en distinguant les deux
+mécanismes : la garde de base seule (gabarit `bms_average`) suffit au résultat
+observable exigé, sans arbitrage clinique sur `severiteCroissante` — laissé
+hors périmètre, conforme à l'interdit du lot. Les trois moteurs ne produisent
+plus de bande sur recueil incomplet ; total/count inchangés. Constat production :
+défaut théorique, 1 seule passation existante et complète.
+
+**Options écartées.** Reproduire le « plancher garanti » (aurait exigé un
+arbitrage clinique praticien sur le sens de chaque grille, hors périmètre).
+Basculer vers `sumItems()` partagé (comportement sur items conditionnels non
+vérifié pour ces trois moteurs — changement minimal préféré).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Depuis
+`main` : `node scripts/wn-campaign.mjs activate LOT-04` puis `node
+scripts/wn-cycle.mjs --appliquer` (même geste que pour LOT-02→LOT-03).
+
+**Questions ouvertes.** Trois mineurs relevés en revue, non corrigés
+(changements minimaux) : commentaires périmés dans `orientationEngine.ts`/
+`orientationRulesV1.ts` ; absence d'`evalConditionnel` dans les trois boucles
+(latent) ; `noteRecueil` dupliqué texte-pour-texte dans les trois blocs.
+Non vérifié : l'UI praticien affiche-t-elle le champ `note` pour ces trois
+instruments (mécanisme pré-existant partagé avec PSQI/TFD).

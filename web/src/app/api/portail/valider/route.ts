@@ -104,6 +104,15 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         domain: 'ASSIGNATION',
         message: `Dérive du pack de base ${pack.idPack} : ${pack.qids.length} qids côté packs.qids contre ${registryCount} au registre relationnel. Composition legacy retenue.`,
         context: finalizeLogContext(requestContext, { retryable: false }),
+        metadata: { raison, registryCount },
+      });
+    } else if (raison === 'registre_absent' || raison === 'registre_vide') {
+      logger.info({
+        event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
+        domain: 'ASSIGNATION',
+        message: `Repli legacy du pack de base ${pack.idPack} (${raison}) : composition legacy retenue.`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+        metadata: { raison, registryCount },
       });
     }
 

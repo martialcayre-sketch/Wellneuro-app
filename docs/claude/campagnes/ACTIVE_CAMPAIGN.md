@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-05-cloture-des-dettes-wellneuro-5-0
 **Titre** : Clôture des dettes Wellneuro 5.0
 **Statut** : active
-**Lot actif** : LOT-02
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 
