@@ -4,9 +4,9 @@ titre: "Clôture des dettes Wellneuro 5.0"
 statut: "en_cours"
 créée_le: "2026-08-05"
 mise_à_jour: "2026-08-05"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "campaign/2026-08-05-cloture-des-dettes-wellneuro-5-0/integration"
-branche_lot_courant: "worktree-lot01-vue-verite"
+branche_lot_courant: "aucune"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -133,7 +133,7 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Un seul chemin d'écriture en base (PR #435) | livré (#435, 2026-08-05) | — (dépendance ops externe) |
-| LOT-01 | Vue de vérité générée — état réel du dépôt | en_cours | — |
+| LOT-01 | Vue de vérité générée — état réel du dépôt | livré (#575, 2026-08-05) | — |
 | LOT-02 | Packs : observer le repli legacy avant de le fermer | à_faire | LOT-01 |
 | LOT-03 | Fermer `sum_decimal`, `count_threshold`, `ecab` | à_faire | — |
 | LOT-04 | Un seul parcours patient | à_faire | LOT-01 |
