@@ -56,7 +56,7 @@ on:
   # est l'import NABM ; il ne dépend donc pas d'un raisonnement, même juste.
   #
   # Le filtre `paths` ne voit que les migrations : un push qui ne touche pas
-  # `prisma/migrations/**` ne crée aucun run, donc aucune approbation à donner
+  # `web/prisma/migrations/**` ne crée aucun run, donc aucune approbation à donner
   # pour rien. Corollaire à connaître : une migration introduite AUTREMENT que par
   # un fichier de ce dossier n'est pas vue — il n'y en a pas d'autre chemin
   # légitime, c'est précisément la doctrine « registre canonique ».
