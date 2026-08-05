@@ -1719,7 +1719,62 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // La conduite est donc RETIRÉE, pas déplacée : servir une conduite sur un
     // instrument incomplet est un autre arbitrage que celui de ce lot.
     const {protocol: _conduiteNonServie, ...bandeSansConduite} = bande as Record<string, unknown>;
-    return {...bandeSansConduite, garanti: true};
+    // FERMETURE VERS LE HAUT — la liste des bandes que le score final peut
+    // ENCORE atteindre, plancher compris. C'est elle, et rien d'autre, qui
+    // permet à un consommateur de trancher « au moins aussi sévère que » sans
+    // jamais déduire un ordre de sévérité.
+    //
+    // ELLE SE CALCULE ICI PARCE QUE C'EST ICI QU'EST LA GRILLE. Un consommateur
+    // qui voudrait la reconstruire n'aurait que la couleur du plancher : il lui
+    // faudrait une table `RANG_COULEUR` écrite à la main, c'est-à-dire une
+    // seconde source de vérité sur l'ordre des bandes — or plusieurs grilles
+    // n'émettent pas toutes les couleurs, et certaines sont rédigées en `min`
+    // DÉCROISSANT. Une liste dérivée du mapping ne peut pas diverger de lui ;
+    // une liste écrite à côté, si (leçon des PR #546/#552).
+    //
+    // La comparaison porte sur `min`, jamais sur l'index dans le tableau —
+    // même arbitrage qu'au-dessus, et pour la même raison. `>=` et non `>` : le
+    // plancher lui-même est atteignable, c'est même la seule bande dont on soit
+    // certain qu'elle est atteinte.
+    //
+    // UNE FERMETURE INCOMPLÈTE N'EST PAS UNE FERMETURE — et l'amputer
+    // silencieusement transforme la garde en passe-droit. Une première rédaction
+    // filtrait les bandes sans `min` numérique, puis ne retenait que les valeurs
+    // qui étaient des chaînes : une bande atteignable SANS `color` disparaissait
+    // donc de la liste, ce qui rend l'inclusion PLUS FACILE à satisfaire, pas
+    // plus dure. Sur `[{min:0,color:'success'},{min:10,color:'warning'},{min:20}]`
+    // et un plancher à 10, la fermeture rendue était `['warning']` — et une règle
+    // visant `['warning']` seul s'allumait, alors que le score final peut encore
+    // atteindre la bande à 20, dont la sévérité n'est écrite nulle part.
+    //
+    // Le fail-closed est donc au NIVEAU DE LA LISTE, jamais de l'élément : au
+    // premier trou, le champ n'est pas servi du tout, et son absence fait rendre
+    // `null` à `zoneGarantieParLePlancher`, c'est-à-dire éteint la règle. Les
+    // deux listes sont jugées INDÉPENDAMMENT — une grille peut légitimement
+    // porter des libellés sans couleurs, ou l'inverse, et le trou de l'une ne
+    // doit pas emporter l'autre.
+    //
+    // Latent au 2026-08-05 : toutes les grilles éligibles portent `min`, `color`
+    // et `label` sur chacune de leurs bandes. Cette garde protège l'avenir, et
+    // l'état qu'elle vise n'existe que dans son banc.
+    const grilleComparable = (ranges as any[]).every((r: any) => typeof r?.min === 'number');
+    const atteignables = grilleComparable
+      ? (ranges as any[]).filter((r: any) => r.min >= bande.min).sort((a: any, b: any) => a.min - b.min)
+      : null;
+    const fermeture = (cle: 'color' | 'label'): string[] | null => {
+      if (!atteignables || atteignables.length === 0) return null;
+      const valeurs = atteignables.map((r: any) => r[cle]);
+      if (!valeurs.every((v: unknown) => typeof v === 'string')) return null;
+      return [...new Set(valeurs as string[])];
+    };
+    const couleursPossibles = fermeture('color');
+    const labelsPossibles = fermeture('label');
+    return {
+      ...bandeSansConduite,
+      garanti: true,
+      ...(couleursPossibles ? {couleursPossibles} : {}),
+      ...(labelsPossibles ? {labelsPossibles} : {}),
+    };
   }
 
   /**

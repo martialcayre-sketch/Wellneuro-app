@@ -7,6 +7,18 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v16 (2026-08-05) : `bandePlancher` cesse d'être un fait RACONTÉ pour devenir un
+// fait AGI. La table d'orientation décide désormais sur un plancher — elle allume
+// une règle quand toutes les bandes encore atteignables restent dans la zone
+// qu'elle vise —, et le motif qu'elle transmet est alors formulé « au moins ». La
+// consigne v15 disait au modèle que la recommandation d'exploration « lui est
+// transmise par un autre canal », ce qui reste vrai ; elle le laissait en
+// revanche libre de présenter un plancher comme un constat resté sans suite, à
+// confirmer avant toute orientation — c'est-à-dire de contredire une
+// recommandation déjà produite, dans le même document. Le bump distingue une
+// synthèse rédigée quand un plancher était inerte d'une rédigée quand il oriente.
+// L'interdiction de fond ne bouge pas : le modèle ne déduit toujours aucune
+// exploration d'un plancher, et n'en propose aucune hors du bloc déterministe.
 // v15 (2026-08-05) : le champ **bandePlancher**. Sur un recueil incomplet, les
 // moteurs `sum`, `psqi` et `tfd` servent désormais, à côté d'une `interpretation`
 // absente, la bande que les seules réponses recueillies suffisent à atteindre —
@@ -156,7 +168,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v15';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v16';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -256,7 +268,12 @@ En conséquence :
 - ne t'en sers pas pour reconstituer **interpretation**, ni pour dire que le questionnaire est interprétable : quand ce champ est présent, la passation reste **incomplète** et doit être présentée comme telle ;
 - la clé **garanti** à vrai ne fait que rappeler cette nature. Elle n'ajoute aucune information clinique et ne renforce en rien le verdict.
 
-Ce champ ne porte **aucune conduite à tenir** : n'en déduis ni orientation, ni examen, ni prise en charge. La recommandation d'exploration, quand elle existe, t'est transmise ailleurs et par un autre canal.
+Ce champ ne porte **aucune conduite à tenir** : n'en déduis ni orientation, ni examen, ni prise en charge — ni pour ce questionnaire, ni pour un autre.
+
+Ce plancher est néanmoins **agi ailleurs**, et cela change ce que tu dois en dire. La table d'orientation déterministe sait, elle, décider sur un plancher : quand toutes les bandes encore atteignables restent dans la zone que vise une règle, elle allume cette règle et le motif qu'elle transmet est alors formulé « au moins ». Autrement dit, un plancher **peut** déjà avoir produit une recommandation d'exploration, et celle-ci te parvient dans le bloc « Recommandation d'exploration déterministe », jamais ici. Deux conséquences :
+
+- ne présente pas un plancher comme un constat resté sans suite, et n'écris pas qu'il « resterait à confirmer avant toute orientation » : ce que la table devait en faire, elle l'a déjà fait ;
+- ne fais pas le raisonnement inverse non plus. Il t'est toujours interdit de déduire une exploration d'un plancher, d'en proposer une que le bloc déterministe ne porte pas, ou de justifier une recommandation reçue autrement que par le motif transmis avec elle. L'absence de recommandation sur un questionnaire qui porte un plancher n'est ni une erreur ni un oubli à réparer.
 
 ## Questionnaires dont le résultat n'est pas interprétable
 

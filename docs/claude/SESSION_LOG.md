@@ -2269,3 +2269,39 @@ le défaut existe est verte pour une mauvaise raison**.
 est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe du TFD
 n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
 `count_threshold`, `ecab` et `bms_average`.
+
+## 2026-08-05 — Le plancher agi : quatre règles d'orientation rallumées
+
+**Décisions.** `D-022` : une règle `zone` s'allume sur un `bandePlancher` si et
+seulement si **toutes** les bandes encore atteignables sont dans la zone visée.
+Quatre règles publiées entrent dans ce cas — `R-GAS-01`, `R-SOM-01`, `R-STR-01`,
+`R-STR-02`. Le plancher entre par un **troisième champ** d'`extraireCible` :
+`valeur` et `interpretation` restent `null`, les deux gardes de complétude ne sont
+pas touchées, et l'immunité de `Q_MOD_01` reste vraie par construction. La fermeture
+est dérivée de `ranges` là où la grille se trouve déjà, jamais d'un ordre de couleurs.
+Trois arbitrages rendus : allumer dès le plancher le plus faible, zone de `R-SOM-01`
+inchangée, avenant daté plutôt que re-signature — le sha de la table n'a pas bougé.
+
+**Options écartées.** Marquer `interpretation` d'un drapeau `garanti` : le défaut
+serait redevenu fail-open et il aurait fallu modifier les lignes qui protègent les
+échelles inversées. Une table `RANG_COULEUR`. Resserrer la zone de `R-SOM-01` (change
+un objet signé, et le comportement sur passation complète). Une surface praticien
+dédiée : le motif d'orientation *est* déjà cette surface.
+
+**Ce que le lot a appris.** Deux passes adversariales, deux NO-GO, et **la même leçon
+deux fois** : la première a trouvé qu'une bande atteignable sans couleur était retirée
+de la fermeture au lieu de l'éteindre — l'inverse exact du fail-closed annoncé, et la
+seconde passe a prouvé cet état **atteignable** par le repli de plafond. La seconde a
+trouvé que la branche `interpretation` n'avait **aucun** cas capable de la réfuter :
+les deux seules zones du dépôt valaient exactement la fermeture, si bien que la
+« réparation naïve » que son commentaire prétendait interdire laissait toute la suite
+verte. Un prédicat que rien ne peut réfuter n'est pas gardé.
+
+**Prochaine action prioritaire.** LOT-01 « Mon bilan » — rebaser `feat/portail-bilan`
+sur `main` (78 commits d'écart) et **mesurer** avant de décider reprise ou abandon.
+
+**Questions ouvertes.** L'audit ne distingue pas les deux comportements : version et
+sha de la table couvrent désormais deux moteurs. La divergence gelé/recalculé change
+de sens au lieu de disparaître. `detail` n'est pas amputé comme `protocol`. Le
+dénominateur d'axe exclut les questions conditionnelles. Classe toujours ouverte sur
+`sum_decimal`, `count_threshold`, `ecab`, `bms_average`.

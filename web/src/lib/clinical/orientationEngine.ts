@@ -34,6 +34,31 @@ type SousScoreLu = {
   missing?: unknown;
 };
 
+/**
+ * PLANCHER GARANTI tel que `bandePlancher` (`questions.ts`) le sert — un
+ * minimum de sévérité déjà acquis par les seules réponses recueillies, servi
+ * SANS `interpretation` et sans conduite à tenir.
+ *
+ * `couleursPossibles` et `labelsPossibles` sont la FERMETURE VERS LE HAUT :
+ * toutes les bandes que le score final peut encore atteindre, plancher compris.
+ * Elles sont dérivées de la grille par le producteur ; ce module ne les
+ * recalcule pas et n'en déduit aucun ordre de sévérité.
+ */
+type PlancherLu = {
+  label?: unknown;
+  color?: unknown;
+  couleursPossibles?: unknown;
+  labelsPossibles?: unknown;
+  garanti?: unknown;
+};
+
+/** Un plancher et l'état du recueil dont il est tiré — les deux vont ensemble. */
+type PlancherContexte = {
+  bande: PlancherLu;
+  /** Comptes du recueil, ou `null` si le porteur n'en publie aucun. */
+  comptes: { manquants: number; total: number | null } | null;
+};
+
 /** Résultat de scoring tel que stocké — typage défensif, JSON non garanti. */
 export type ScoresStockes = Record<string, unknown> | null | undefined;
 
@@ -211,38 +236,102 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
  * fabrique pas une complétude qu'on ne sait pas lire, on constate qu'on ne
  * sait rien en dire.
  */
-function recueilIncomplet(porteur: unknown): boolean {
-  if (!porteur || typeof porteur !== 'object') return false;
+function comptesDuRecueil(porteur: unknown): { manquants: number; total: number | null } | null {
+  if (!porteur || typeof porteur !== 'object') return null;
   const nombre = (cle: 'repondus' | 'items' | 'missing') => {
     const brut = (porteur as Record<string, unknown>)[cle];
     return typeof brut === 'number' && Number.isFinite(brut) ? brut : null;
   };
   const repondus = nombre('repondus');
   const items = nombre('items');
-  if (repondus !== null && items !== null) return repondus < items;
+  // Forme des moteurs à sous-scores : `items` EST le dénominateur, et il n'est
+  // pas `repondus + missing` — les questions écartées par un conditionnel n'y
+  // sont pas. C'est donc lui qu'on sert quand il existe.
+  if (repondus !== null && items !== null) return { manquants: items - repondus, total: items };
   const missing = nombre('missing');
-  return missing !== null && missing > 0;
+  if (missing === null) return null;
+  // Forme des moteurs à score global : le dénominateur se reconstitue, et
+  // seulement si l'autre moitié est publiée. Sinon `null` — un compte sans
+  // dénominateur se dit sans dénominateur, il ne s'en invente pas un.
+  return { manquants: missing, total: repondus !== null ? repondus + missing : null };
 }
 
-/** Valeur numérique et interprétation visées (score global ou sous-score). */
+/**
+ * UNE SEULE LECTURE DES COMPTES, dérivée du COMPTE et non l'inverse.
+ *
+ * Le motif praticien doit dire combien d'items manquent ET sur combien ; la
+ * garde doit dire si le recueil est incomplet. Ce sont trois questions posées à
+ * la même donnée, et `comptesDuRecueil` ci-dessus est la seule à la lire —
+ * c'est la mise en garde de ce fichier contre le « concept à deux
+ * orthographes », appliquée à lui-même. Un porteur qui ne publie NI
+ * `repondus`/`items` NI `missing` rend `null` là-haut, donc `false` ici : on ne
+ * fabrique pas une complétude qu'on ne sait pas lire, et on n'annonce pas un
+ * compte qu'on n'a pas.
+ */
+function recueilIncomplet(porteur: unknown): boolean {
+  const comptes = comptesDuRecueil(porteur);
+  return comptes !== null && comptes.manquants > 0;
+}
+
+/**
+ * Plancher porté par un porteur de scores, avec son CONTEXTE, ou `null`.
+ *
+ * `garanti !== true` ferme la lecture : le champ n'est servi que par
+ * `bandePlancher`, qui le marque toujours, et un objet qui ne le porte pas
+ * n'est pas un plancher — c'est une bande ordinaire arrivée là par erreur.
+ *
+ * Les `comptes` voyagent AVEC la bande parce que le motif praticien doit dire
+ * les deux choses qu'un plancher est : une garantie basse, ET une garantie
+ * tirée d'un recueil incomplet. Les séparer en deux champs frères aurait laissé
+ * un appelant transporter l'un sans l'autre.
+ */
+function plancherLu(porteur: unknown): PlancherContexte | null {
+  if (!porteur || typeof porteur !== 'object') return null;
+  const brut = (porteur as Record<string, unknown>).bandePlancher;
+  if (!brut || typeof brut !== 'object') return null;
+  if ((brut as Record<string, unknown>).garanti !== true) return null;
+  return { bande: brut as PlancherLu, comptes: comptesDuRecueil(porteur) };
+}
+
+/**
+ * Valeur numérique, interprétation et PLANCHER visés (score global ou
+ * sous-score).
+ *
+ * TROIS CHAMPS, ET LE TROISIÈME EST À PART. `valeur` et `interpretation` sont
+ * la MESURE : elles tombent toutes les deux sur un recueil partiel, et les
+ * deux lignes qui les annulent ci-dessous ne changent pas — c'est d'elles que
+ * dépend l'immunité de `Q_MOD_01` (échelle inversée, sept déclencheurs en
+ * `<=`), qui reste ainsi vraie par construction et non par relecture.
+ *
+ * `plancher` n'est PAS une mesure : c'est un minimum de sévérité déjà acquis,
+ * et il n'est servi que là où la mesure manque. Marquer `interpretation` d'un
+ * drapeau `garanti` aurait rouvert exactement le trou que la garde ferme —
+ * toute comparaison numérique, tout consommateur d'étiquette l'aurait relu
+ * comme une bande.
+ */
 function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   valeur: number | null;
   interpretation: InterpretationLue;
+  plancher: PlancherContexte | null;
 } {
-  if (!scores || typeof scores !== 'object') return { valeur: null, interpretation: null };
+  if (!scores || typeof scores !== 'object') return { valeur: null, interpretation: null, plancher: null };
   if (sousScore) {
     const bruts = (scores as { subScores?: unknown }).subScores;
-    if (!Array.isArray(bruts)) return { valeur: null, interpretation: null };
+    if (!Array.isArray(bruts)) return { valeur: null, interpretation: null, plancher: null };
     // Deux passes : l'id prime toujours sur le libellé. Une passe unique
     // laisserait un label égal à l'id d'un autre axe capter la règle.
     const axes = bruts as SousScoreLu[];
     const cible = axes.find(s => s?.id === sousScore) ?? axes.find(s => s?.label === sousScore);
-    if (!cible) return { valeur: null, interpretation: null };
+    if (!cible) return { valeur: null, interpretation: null, plancher: null };
     // Voir `recueilIncomplet` : un axe incomplet n'est pas une mesure basse.
-    if (recueilIncomplet(cible)) return { valeur: null, interpretation: null };
+    if (recueilIncomplet(cible)) return { valeur: null, interpretation: null, plancher: plancherLu(cible) };
     return {
       valeur: typeof cible.total === 'number' && Number.isFinite(cible.total) ? cible.total : null,
       interpretation: cible.interpretation ?? null,
+      // Recueil COMPLET : la mesure existe, le plancher n'a plus rien à dire —
+      // et un plancher servi à côté d'une bande pleine ferait deux verdicts
+      // pour une seule mesure. Le producteur n'en sert d'ailleurs aucun ici.
+      plancher: null,
     };
   }
   // MÊME GARDE AU NIVEAU GLOBAL, et elle n'est pas décorative : `seuils_points`
@@ -259,16 +348,122 @@ function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   // règles publiées sont donc couverts — ce qui ne vaut PAS pour les moteurs
   // sans règle, voir le rappel en tête de `recueilIncomplet` : « ne publie aucun
   // compte » n'est pas « est protégé ».
-  if (recueilIncomplet(scores)) return { valeur: null, interpretation: null };
+  if (recueilIncomplet(scores)) return { valeur: null, interpretation: null, plancher: plancherLu(scores) };
   const total = (scores as { total?: unknown }).total;
   return {
     valeur: typeof total === 'number' && Number.isFinite(total) ? total : null,
     interpretation: ((scores as { interpretation?: InterpretationLue }).interpretation) ?? null,
+    plancher: null,
   };
 }
 
-/** Description lisible de la zone atteinte, ou null si la zone ne matche pas. */
-function evaluerZone(zone: OrientationZone, valeur: number | null, interpretation: InterpretationLue): string | null {
+/**
+ * Zone GARANTIE par un plancher, ou `null`.
+ *
+ * LE PRÉDICAT, et il est tout le lot : un plancher `P` garantit une zone `Z` si
+ * et seulement si TOUTES les bandes que le score final peut encore atteindre
+ * sont dans `Z`. C'est la formulation exacte de « au moins aussi sévère », et
+ * elle interdit d'elle-même le cas redouté — une zone visant `['warning']` seul
+ * quand `danger` et `dark` sont au-dessus échoue l'inclusion, puisque le score
+ * final peut encore y monter. Aucune règle « ne pas viser vers le bas » n'est
+ * écrite nulle part : elle tombe de la dérivation.
+ *
+ * FAIL-CLOSED PAR CONSTRUCTION, sur DEUX défauts distincts qu'il ne faut pas
+ * confondre — une première rédaction les confondait et donnait `success` en
+ * exemple, alors que ce cas est inatteignable : sur une grille à sévérité
+ * croissante `success` est la bande la plus basse, et une fermeture ne contient
+ * jamais que des bandes AU-DESSUS du plancher.
+ *
+ *  · COULEUR INCONNUE — une couleur servie par une grille et absente de l'union
+ *    d'`OrientationZone` (une couleur ajoutée demain au catalogue). Elle est
+ *    PRÉSENTE dans la fermeture, l'inclusion échoue, la règle s'éteint.
+ *  · FERMETURE ABSENTE — le producteur refuse de servir une liste dès qu'une
+ *    bande atteignable n'a pas de couleur (ou de libellé) exploitable, plutôt
+ *    que de l'amputer en silence (voir `bandePlancher` dans `questions.ts`).
+ *    `fermeture()` ci-dessous rend alors `null`, et la règle s'éteint aussi.
+ *
+ * Le second est le plus perfide des deux : une liste amputée reste une liste
+ * bien formée, et l'inclusion y devient PLUS FACILE à satisfaire. C'est voulu
+ * dans les deux cas — on préfère taire un vrai positif que produire un motif sur
+ * un ordre de sévérité qu'on ne connaît pas.
+ */
+function zoneGarantieParLePlancher(zone: OrientationZone, plancher: PlancherContexte): string | null {
+  // UNE PLAGE N'EST JAMAIS GARANTIE. Un plancher borne par le BAS ; une plage
+  // exige aussi une borne HAUTE, que les items sans réponse peuvent franchir —
+  // ils ne peuvent qu'ajouter au score. « Score entre 21 et 26 » n'est donc
+  // jamais acquis sur un recueil partiel, même quand 21 est déjà atteint.
+  if (zone.type === 'plage') return null;
+
+  const bande = plancher.bande;
+
+  /** Fermeture servie par le producteur, ou `null` si elle est inexploitable. */
+  const fermeture = (cle: 'couleursPossibles' | 'labelsPossibles'): string[] | null => {
+    const brut = bande[cle];
+    if (!Array.isArray(brut) || brut.length === 0) return null;
+    if (!brut.every((v): v is string => typeof v === 'string')) return null;
+    return brut;
+  };
+
+  // LE MOTIF DIT LES DEUX CHOSES QU'UN PLANCHER EST — une garantie basse, ET une
+  // garantie tirée d'un recueil incomplet. Arbitrage de la revue du 2026-08-05,
+  // et il ne relève pas du confort de lecture : le libellé `warning` de
+  // `Q_STR_02` commence par « Adaptation satisfaisante mais inconstante », si
+  // bien que `R-STR-02` proposerait un pack burn-out sous une phrase qui
+  // commence par « satisfaisante ». Le « au moins » seul rend ce libellé PLUS
+  // trompeur, pas moins : il annonce un minimum sans dire qu'on l'a tiré d'une
+  // passation à trous. La mention rétablit ce que le praticien doit savoir pour
+  // relire la phrase — d'où le compte, qui dit l'ampleur du trou.
+  //
+  // LE DÉNOMINATEUR EN FAIT PARTIE : « 23 items sans réponse » et « 23 sur 31 »
+  // ne se lisent pas pareil, et seul le second permet de décider s'il faut
+  // relancer le patient plutôt que lui proposer un pack. Il n'est servi que
+  // quand il est CALCULABLE — jamais supposé —, la phrase se repliant alors sur
+  // la forme sans dénominateur.
+  //
+  // Les comptes ne sont jamais inventés : ils viennent de `comptesDuRecueil`, la
+  // même et seule lecture que la garde de complétude. S'ils manquaient, la
+  // mention sort nue plutôt qu'avec un nombre supposé — cas inatteignable en
+  // pratique, un plancher n'étant servi que là où cette lecture a rendu un
+  // compte strictement positif.
+  const comptes = plancher.comptes;
+  const mention = comptes && comptes.manquants > 0
+    ? ` — recueil partiel, ${comptes.manquants} item${comptes.manquants > 1 ? 's' : ''} sans réponse`
+      + (comptes.total !== null ? ` sur ${comptes.total}` : '')
+    : ' — recueil partiel';
+
+  if (zone.type === 'interpretation') {
+    // BRANCHE SYMÉTRIQUE, et aucune des quatre règles du lot ne l'utilise. Elle
+    // existe parce qu'une asymétrie non motivée finit par être « réparée » par
+    // quelqu'un qui n'a pas la fermeture en tête — et la réparation naturelle
+    // (« le label du plancher est dans la liste ») est précisément le défaut
+    // que ce prédicat existe pour empêcher. La mention de recueil partiel suit
+    // la même règle : une branche qui l'oublierait servirait au praticien un
+    // motif moins complet selon la forme de la zone, ce qu'aucune clinique ne
+    // justifie.
+    const labels = fermeture('labelsPossibles');
+    if (!labels || !labels.every(l => zone.labels.includes(l))) return null;
+    const label = typeof bande.label === 'string' ? bande.label : null;
+    return label ? `au moins interprétation « ${label} »${mention}` : null;
+  }
+
+  const couleurs = fermeture('couleursPossibles');
+  if (!couleurs || !couleurs.every(c => (zone.couleurs as string[]).includes(c))) return null;
+  const couleur = typeof bande.color === 'string' ? bande.color : null;
+  if (!couleur) return null;
+  const label = typeof bande.label === 'string' ? bande.label : null;
+  // « AU MOINS » N'EST PAS COSMÉTIQUE : cette chaîne sort en clair au praticien
+  // (`OrientationPanel` rend `motif.conditions.join(' ; ')`). Sans elle, un
+  // motif fondé sur un plancher se relirait comme une mesure — c'est-à-dire
+  // comme la bande que la garde de recueil partiel vient de retirer. Le préfixe
+  // reste donc en tête : c'est ce que la fermeture GARANTIT, et la mention qui
+  // suit dit d'où la garantie est tirée.
+  return label
+    ? `au moins zone ${couleur} (« ${label} »)${mention}`
+    : `au moins zone ${couleur}${mention}`;
+}
+
+/** Description lisible de la zone atteinte sur la MESURE, ou null. */
+function evaluerZoneMesuree(zone: OrientationZone, valeur: number | null, interpretation: InterpretationLue): string | null {
   if (zone.type === 'plage') {
     if (valeur === null || valeur < zone.min || valeur > zone.max) return null;
     return `score ${valeur} dans la plage ${zone.min}–${zone.max}`;
@@ -285,6 +480,27 @@ function evaluerZone(zone: OrientationZone, valeur: number | null, interpretatio
   }
   if (!couleur || !(zone.couleurs as string[]).includes(couleur)) return null;
   return label ? `zone ${couleur} (« ${label} »)` : `zone ${couleur}`;
+}
+
+/**
+ * Description lisible de la zone atteinte, ou null si la zone ne matche pas.
+ *
+ * DEUX CHEMINS, DANS CET ORDRE, et le second ne s'ouvre que là où le premier
+ * s'est tu. La mesure prime toujours : quand elle existe, le plancher n'est pas
+ * servi (voir `extraireCible`), et le motif rendu est celui de la mesure. Le
+ * chemin du plancher est donc strictement additif — il ne peut ni modifier ni
+ * masquer un verdict existant, seulement rallumer une règle qui restait éteinte
+ * faute de bande sur un recueil partiel.
+ */
+function evaluerZone(
+  zone: OrientationZone,
+  valeur: number | null,
+  interpretation: InterpretationLue,
+  plancher: PlancherContexte | null,
+): string | null {
+  const mesuree = evaluerZoneMesuree(zone, valeur, interpretation);
+  if (mesuree) return mesuree;
+  return plancher ? zoneGarantieParLePlancher(zone, plancher) : null;
 }
 
 function comparer(valeur: number, operateur: '>=' | '<=' | '>' | '<' | '==', reference: number): boolean {
@@ -325,14 +541,20 @@ function evaluerDeclencheur(
 
   const reponse = dernieres.get(declencheur.idQuestionnaire);
   if (!reponse) return null;
-  const { valeur, interpretation } = extraireCible(reponse.scores, declencheur.sousScore);
+  const { valeur, interpretation, plancher } = extraireCible(reponse.scores, declencheur.sousScore);
   const prefixe = declencheur.sousScore
     ? `${declencheur.idQuestionnaire} (${declencheur.sousScore})`
     : declencheur.idQuestionnaire;
   if (declencheur.type === 'zone') {
-    const atteinte = evaluerZone(declencheur.zone, valeur, interpretation);
+    const atteinte = evaluerZone(declencheur.zone, valeur, interpretation, plancher);
     return atteinte ? `${prefixe} : ${atteinte}` : null;
   }
+  // LE PLANCHER NE PASSE PAS PAR ICI, et c'est structurel plutôt que gardé : la
+  // branche `comparaison` ne reçoit pas `plancher`, elle ne compare que
+  // `valeur`, et `valeur` reste `null` sur tout recueil partiel. Une comparaison
+  // numérique sur un plancher n'aurait d'ailleurs aucun sens dans les deux sens
+  // à la fois — un `<=` sur une échelle inversée (`Q_MOD_01`) s'allumerait sur
+  // le biais du recueil, ce que la garde de complétude existe pour empêcher.
   if (valeur === null || !comparer(valeur, declencheur.operateur, declencheur.valeur)) return null;
   return `${prefixe} : score ${valeur} ${declencheur.operateur} ${declencheur.valeur}`;
 }
