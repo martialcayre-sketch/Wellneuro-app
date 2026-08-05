@@ -2409,6 +2409,35 @@ branches restreintes à `main`), puis merge.
 rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
 migration est additive, et rien ne le garde.
 
+## 2026-08-05 — Le pilote avait démarré, et personne ne pouvait le lire
+
+**Décisions.** `D-027` : `WN_AGENDA_ALI` ferme ce qui s'écrit, pas ce qui se
+relit — la lecture praticien de l'agenda n'est pas gardée par le drapeau. Le
+modèle est append-only (`D-015`) ; fermer le lecteur avec le drapeau rendrait
+illisible la donnée déjà recueillie, au moment précis où le barème en a besoin.
+Renumérotation : `LOT-05` devient le dossier de contrôle, le barème descend en
+`LOT-06` — un `LOT-04b` aurait rendu l'ordinal `LOT-04` à l'audit, donc un CI
+rouge.
+
+**Options écartées.** Réécrire `D-025`, dont le « 0 ligne » est dépassé : une
+décision est un enregistrement daté, le fait nouveau vit dans le runbook. Servir
+la position du drapeau au panneau pour distinguer « pas assigné » de « recueil
+fermé » : cela rouvrait le point tranché ; l'état vide a seulement cessé de
+nommer un geste impossible.
+
+**Ce que le lot a appris.** Trois des dix premiers constats étaient des gardes
+**vertes pour une mauvaise raison** — test de drapeau sur dossier vide, fixture
+d'ancrage qui ne pouvait pas bouger, scan de frontière sans agrégats. Et le
+constat sans ligne fautive : `statut` décalqué du sommeil rendait « En cours »
+sur un agenda annulé, la branche `cloture` étant morte pour cet instrument.
+
+**Prochaine action prioritaire.** Débloquer `git push` (règle Bash), ouvrir la
+PR, lire le code de sortie de `wn-attendre-ci.mjs`.
+
+**Questions ouvertes.** Aucune bannière ne dit que le recueil est fermé. Le
+déverrouillage praticien d'un `Q_ALI_09` par appel direct retire silencieusement
+l'annulabilité. Le taux de correction, dont `LOT-06` aura besoin, se lit encore
+par `execute_sql`.
 ## 2026-08-05 — `release-db` se propose tout seul, sans s'approuver tout seul
 
 **Décisions.** Une migration qui atteint `main` crée son run de release

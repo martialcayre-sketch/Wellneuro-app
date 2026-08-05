@@ -4,18 +4,22 @@ titre: "Agenda alimentaire 21 jours (Q_ALI_09)"
 statut: "en_cours"
 créée_le: "2026-08-04"
 mise_à_jour: "2026-08-05"
-lot_courant: "LOT-04"
+lot_courant: "LOT-05"
 ---
 
 # Agenda alimentaire 21 jours (Q_ALI_09)
 
 > Campagne créée rétroactivement le 2026-08-04 pour rapatrier une série de lots
 > qui a vécu jusqu'ici hors de `docs/claude/campagnes/`, dans
-> `docs/claude/handoffs/` puis `docs/claude/lots/`. Les cinq lots sont désormais
-> livrés — `LOT-04` (surface de saisie patient) l'a été le 2026-08-05. Ce qui
-> reste est le **barème** (`LOT-05`), délibérément reporté jusqu'à ce qu'un
-> premier recueil réel existe : c'est l'ordre « collecte d'abord, calibrage
-> ensuite » tenu depuis `LOT-01`.
+> `docs/claude/handoffs/` puis `docs/claude/lots/`. Les cinq premiers lots sont
+> désormais livrés — `LOT-04` (surface de saisie patient) l'a été le
+> 2026-08-05. Le même jour, le drapeau a été allumé en Production et un recueil
+> pilote démarré sur un dossier de contrôle (`RUNBOOK-allumage-drapeau.md`) :
+> le premier jour est noté. `LOT-05` consigne ce recueil et ouvre un lecteur
+> praticien ; le **barème** descend en `LOT-06`, toujours reporté jusqu'à ce
+> qu'un recueil suffisant pour calibrer existe — c'est l'ordre « collecte
+> d'abord, calibrage ensuite » tenu depuis `LOT-01`. Le recueil a démarré ; il
+> n'est pas encore suffisant.
 
 ## Objectif
 
@@ -30,11 +34,11 @@ première distribution réelle existe.
 - Un patient à qui l'agenda est assigné le voit dans son hub, y entre depuis le
   portail, note une journée en moins de 30 s, et le serveur refuse toute date
   hors de la fenêtre de 21 jours.
-- `WN_AGENDA_ALI` reste éteint tant que la surface de saisie n'est pas livrée.
-  `LOT-04` étant fait, l'allumage est devenu un **geste d'exploitation hors lot**
-  — Production seule, en deux temps, décrit par `RUNBOOK-allumage-drapeau.md`
-  (**D-025**). Il n'est le dernier geste d'aucun lot : il n'y a pas de PR à
-  écrire pour lui.
+- Le drapeau `WN_AGENDA_ALI` est allumé en Production depuis le 2026-08-05,
+  `LOT-04` étant livré (`D-025`) — l'allumage était conditionné à la surface de
+  saisie, et cette condition est tombée. Le geste, décrit par
+  `RUNBOOK-allumage-drapeau.md`, s'est fait en deux temps, hors lot : il n'est
+  le dernier geste d'aucun lot, il n'y a pas eu de PR à écrire pour lui.
 
 ## Correspondance des lots
 
@@ -42,15 +46,19 @@ première distribution réelle existe.
 **barème**, et il est reporté *par conception* : « il ne livre ni saisie (L4) ni
 barème (L2) : l'ordre reste **collecte d'abord, calibrage ensuite** »
 (`changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md`). Calibrer avant
-d'avoir recueilli une seule journée n'aurait rien à calibrer — la production
-compte aujourd'hui **0 ligne** dans `agenda_alimentaire_jours`.
+d'avoir recueilli une seule journée n'aurait rien à calibrer — c'était vrai au
+moment où c'était écrit : la production comptait **0 ligne** dans
+`agenda_alimentaire_jours` jusqu'au recueil pilote du 2026-08-05, qui en a
+posé la première (`RUNBOOK-allumage-drapeau.md`, section « Rejeu du
+2026-08-05 »).
 
 La renumérotation `LOT-00` → `LOT-04` est donc **positionnelle, pas
 chronologique** : elle ordonne ce qui est livré, elle ne déclare pas la série
-close. **Le barème reste à faire et prendra `LOT-05`**, après le premier recueil
-réel — c'est précisément l'ordre que L3 a posé. La table ci-dessous fait la
-correspondance vers les noms encore cités par le code, les décisions
-(`docs/DECISIONS.md`) et les handoffs.
+close. **Le barème reste à faire et prend désormais `LOT-06`** — `LOT-05`
+consigne le recueil pilote et ouvre un lecteur praticien — c'est précisément
+l'ordre que L3 a posé. La table ci-dessous fait la correspondance vers les
+noms encore cités par le code, les décisions (`docs/DECISIONS.md`) et les
+handoffs.
 
 | Fichier | Ancien nom | État | Source |
 |---|---|---|---|
@@ -59,6 +67,12 @@ correspondance vers les noms encore cités par le code, les décisions
 | `LOT-02-persistance.md` | L3 | livré (PR #557) | `changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md`, `docs/claude/handoffs/2026-08-04-0150-agenda-alimentaire-l3.md` |
 | `LOT-03-acces-portail-serveur.md` | L4a | livré (PR #562) | `changelog.d/2026-08-04-agenda-alimentaire-l4a.md`, `docs/claude/handoffs/2026-08-04-1254-agenda-alimentaire-l4a.md` |
 | `LOT-04-portail-saisie.md` | L4b | livré | `changelog.d/2026-08-05-agenda-alimentaire-l4-portail-saisie.md`, `docs/DECISIONS.md` (D-023) |
+
+Cette table renvoie vers les noms encore cités par le code, les décisions et
+les handoffs — mais elle ne couvre pas la renumérotation du 2026-08-05 :
+avant cette date, « LOT-05 » désigne le **barème** dans `D-025` et les
+handoffs antérieurs ; ce lot est devenu `LOT-06`, et `LOT-05` désigne
+désormais le dossier de contrôle et le lecteur praticien.
 
 ## Contraintes non négociables
 
@@ -86,8 +100,9 @@ amende le point 2 de D-022, hors lot).
 
 ## Hors périmètre
 
-- Le barème et l'indice de l'agenda (dépendent d'une distribution réelle,
-  inexistante).
+- Le barème et l'indice de l'agenda — `LOT-06`. Une distribution réelle existe
+  depuis le 2026-08-05 (un dossier de contrôle, une journée), insuffisante
+  pour calibrer.
 - L'agenda du sommeil (série distincte, patron déjà livré).
 - Toute activation de `WN_AGENDA_ALI` avant la fin de `LOT-04` — condition
   **satisfaite** depuis la livraison de `LOT-04`, et non levée. La position du
@@ -104,17 +119,19 @@ amende le point 2 de D-022, hors lot).
 | LOT-02 | Persistance et abstention au contrat | livré | LOT-01 |
 | LOT-03 | Accès portail serveur et contrat SQL | livré | LOT-02 |
 | LOT-04 | Portail patient : aiguillage, hub, saisie, borne des 21 jours | livré | LOT-03 |
-| LOT-05 | Barème et indice — **pas avant un premier recueil réel** | à écrire | recueil pilote (`RUNBOOK-allumage-drapeau.md`) |
+| LOT-05 | Dossier de contrôle et lecteur praticien | livré | LOT-04 |
+| LOT-06 | Barème et indice — **pas avant un recueil suffisant pour calibrer (clôture des 21 jours)** | à écrire | recueil pilote (`RUNBOOK-allumage-drapeau.md`) |
 
-**Ce qui bloque `LOT-05` n'est pas une attente, c'est un geste.** La lecture du
-2026-08-05 donne 0 ligne dans `agenda_alimentaire_jours` **et 0 assignation** de
-`Q_ALI_09` sur 113 : l'agenda n'a jamais été distribué. Le déblocage passe donc
-par `RUNBOOK-allumage-drapeau.md` — allumer le drapeau en Production, redéployer,
-assigner un recueil pilote à un **dossier de contrôle portant une adresse du
-praticien** — et non par du code. Aucun des trois patients de graine ne convient,
-et le runbook dit pourquoi pour chacun.
+**Le recueil qui bloquait le barème a démarré, sans être encore suffisant pour
+calibrer.** Le drapeau a été allumé en Production, le pilote assigné au
+dossier de contrôle `PAT006` (`ASS_Ip45TpzqWujWgkOdEex-wxRj`), et une première
+journée notée le 2026-08-05. `LOT-06` reste à écrire — un jour de recueil ne
+calibre rien à lui seul — et `LOT-05` en est le préalable documentaire et
+outillé : consigner le pilote, rejouer les assertions, donner au praticien un
+lecteur avant de poser un seuil sur ce qu'il lit.
 
 ## Consigne finale
 
 Passer en mode Plan avant toute modification de code sur les lots de cette
-campagne. `LOT-05` ne s'ouvre qu'après le recueil pilote.
+campagne. `LOT-06` ne s'ouvre qu'après un recueil suffisant pour calibrer, pas
+après la seule première journée qui a débloqué `LOT-05`.
