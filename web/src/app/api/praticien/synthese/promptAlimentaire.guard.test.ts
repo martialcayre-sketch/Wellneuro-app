@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v16`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v17`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -89,7 +89,19 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // contredire, dans le même document, une recommandation déjà produite. Le bump
 // distingue une synthèse rédigée quand le plancher était inerte d'une rédigée
 // quand il oriente ; l'interdiction de fond, elle, ne bouge pas.
-const EMPREINTE_V16 = '77fbe825ce4acf1c';
+// v17 (2026-08-05, LOT-B) : l'état d'antériorité d'une recommandation — déjà
+// assigné, déjà renseigné, couverture inconnue — entre dans le bloc
+// d'orientation, et la consigne dit ce que chacun change à la rédaction. Le
+// bump distingue une synthèse rédigée quand le modèle ignorait ce que le
+// patient avait déjà reçu d'une rédigée quand il le sait.
+//
+// CE QUE CETTE VERSION SE GARDE D'AFFIRMER. Une première rédaction concluait
+// « un élément sans segment État n'a jamais été adressé ». Faux, et dans le cas
+// le plus fréquent : `dejaAssigne` est un `every()` sur la composition du pack,
+// donc un pack largement entamé n'en porte aucun. La consigne dit désormais que
+// l'absence de segment n'atteste rien — le lot fermait un fait tu, il aurait
+// ouvert un fait faux.
+const EMPREINTE_V17 = '0bce1cbbf51f404f';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -203,7 +215,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v16', empreinte: EMPREINTE_V16 });
+    ).toEqual({ version: 'synthese-v17', empreinte: EMPREINTE_V17 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
