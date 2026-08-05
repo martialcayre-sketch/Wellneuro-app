@@ -709,6 +709,112 @@ describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
     );
   });
 
+  // La modale ne dit pas combien de journées un recueil d'agenda alimentaire
+  // emporte : le praticien retire un recueil qui porte des données sans que
+  // l'écran le lui dise (LOT-08). `nbJourneesAgenda` est un fait d'affichage
+  // seul — il n'entre dans AUCUNE décision d'autorisation.
+  describe('nbJourneesAgenda dans la modale de confirmation (LOT-08)', () => {
+    const ASSIGNATION_AGENDA_AVEC_JOURS = {
+      ...ASSIGNATION_OUVERTE,
+      idAssignation: 'ASS_AGENDA_AVEC_JOURS',
+      idQuestionnaire: 'Q_ALI_09',
+      titre: 'Agenda alimentaire — 21 jours',
+      nbJourneesAgenda: 3,
+    };
+    const ASSIGNATION_AGENDA_SANS_JOUR = {
+      ...ASSIGNATION_OUVERTE,
+      idAssignation: 'ASS_AGENDA_SANS_JOUR',
+      idQuestionnaire: 'Q_ALI_09',
+      titre: 'Agenda alimentaire — 21 jours',
+      nbJourneesAgenda: 0,
+    };
+
+    const ASSIGNATION_AGENDA_UNE_JOURNEE = {
+      ...ASSIGNATION_OUVERTE,
+      idAssignation: 'ASS_AGENDA_UNE_JOURNEE',
+      idQuestionnaire: 'Q_ALI_09',
+      titre: 'Agenda alimentaire — 21 jours',
+      nbJourneesAgenda: 1,
+    };
+
+    it('N > 1 : la modale nomme le nombre de journées de saisie', async () => {
+      stubFetch({ assignations: [ASSIGNATION_AGENDA_AVEC_JOURS] });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Agenda alimentaire — 21 jours')).closest('tr')!;
+      fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+      await screen.findByRole('dialog');
+      expect(screen.getByText(/Ce recueil contient 3 journées de saisie\. Elles restent/)).toBeTruthy();
+    });
+
+    // N = 1 est l'état RÉEL du recueil pilote en production (D-027 : « une
+    // journée sur vingt et une ») : la première fois que cette modale sert,
+    // elle sert le singulier. Le verbe et le pronom doivent s'accorder aussi,
+    // pas seulement le substantif.
+    it('N = 1 : accord au singulier sur toute la phrase, verbe et pronom compris', async () => {
+      stubFetch({ assignations: [ASSIGNATION_AGENDA_UNE_JOURNEE] });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Agenda alimentaire — 21 jours')).closest('tr')!;
+      fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+      await screen.findByRole('dialog');
+      expect(screen.getByText(/Ce recueil contient 1 journée de saisie\. Elle reste enregistrée et lisible/)).toBeTruthy();
+      expect(screen.queryByText(/Elles restent/)).toBeNull();
+    });
+
+    it('0 : la modale dit qu’aucune journée de saisie n’est enregistrée', async () => {
+      stubFetch({ assignations: [ASSIGNATION_AGENDA_SANS_JOUR] });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Agenda alimentaire — 21 jours')).closest('tr')!;
+      fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+      await screen.findByRole('dialog');
+      expect(screen.getByText(/Aucune journée de saisie n’est encore enregistrée/)).toBeTruthy();
+    });
+
+    // Le mot n'est pas « journée notée », et c'est délibéré : le panneau de la
+    // fiche affiche « N journées notées » = `fenetre.nbRenseignees`, qui
+    // compte les lignes RELUES, hors quarantaine. Ce compte-ci porte sur les
+    // dates distinctes de TOUTES les lignes. Deux nombres derrière le même mot
+    // se contrediraient pendant un incident d'intégrité — précisément quand le
+    // praticien a besoin de croire l'écran.
+    it('ne réemploie pas le mot « journée notée » du panneau de la fiche', async () => {
+      stubFetch({ assignations: [ASSIGNATION_AGENDA_AVEC_JOURS] });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Agenda alimentaire — 21 jours')).closest('tr')!;
+      fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+      await screen.findByRole('dialog');
+      expect(screen.queryByText(/journées? notées?/)).toBeNull();
+    });
+
+    // `ASSIGNATION_OUVERTE` ne porte pas `nbJourneesAgenda` (pas un agenda
+    // alimentaire) : la modale doit rester identique à avant ce lot.
+    it('null (pas un agenda alimentaire) : aucune des deux phrases', async () => {
+      stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+      fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+      await screen.findByRole('dialog');
+      expect(screen.queryByText(/journée/)).toBeNull();
+    });
+
+    // Non-régression LOT-07 : `nbJourneesAgenda` n'entre dans aucune décision
+    // d'autorisation. Une passation attestée masque toujours le bouton, même
+    // sur un agenda qui porte des journées notées.
+    it('n’entre dans aucune décision d’autorisation : une passation attestée masque toujours le bouton', async () => {
+      stubFetch({
+        assignations: [
+          {
+            ...ASSIGNATION_AGENDA_AVEC_JOURS,
+            idAssignation: 'ASS_AGENDA_AVEC_PASSATION',
+            statutReponses: 'deverrouille',
+            aPassation: true,
+          },
+        ],
+      });
+      render(<PatientsPanel />);
+      const ligne = (await screen.findByText('Agenda alimentaire — 21 jours')).closest('tr')!;
+      expect(within(ligne).queryByRole('button', { name: 'Annuler' })).toBeNull();
+    });
+  });
+
   // Le filtre par statut s'appliquait en mémoire, sur une liste que le serveur
   // avait déjà plafonnée à 40 : tout ce qui dépassait était masqué en silence,
   // et le compte affiché se présentait comme un total.

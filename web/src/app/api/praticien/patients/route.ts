@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -70,6 +71,13 @@ type Assignation = {
   // client déployé avant ce champ doit pouvoir constater son absence plutôt
   // que la supposer.
   aPassation?: boolean;
+  // Tri-état, `null` n'est PAS `0` : `null` = cette assignation n'est pas un
+  // agenda alimentaire (`Q_ALI_09`), il n'y a rien à dire ; `0` = c'en est un,
+  // sans aucune journée notée — et ça se dit. Compte de DATES distinctes, pas
+  // de lignes : le modèle est append-only, une journée corrigée porte deux
+  // lignes `agenda_alimentaire_jours` pour une seule date. Fait d'affichage
+  // seul, comme `aPassation` : n'entre dans aucune décision d'autorisation.
+  nbJourneesAgenda?: number | null;
 };
 
 export type PatientsPagination = {
@@ -225,11 +233,19 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
         }),
         prisma.assignation.count({ where: whereAssignations }),
       ]);
-      const idsAvecPassation = await idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation));
+      // Les deux comptages sont indépendants : en série ils ajouteraient deux
+      // allers-retours à la page au lieu d'un. Même raison que le `Promise.all`
+      // ci-dessus — le coût d'une requête de plus ne se voit qu'en prod.
+      const [idsAvecPassation, nbJourneesParAssignation] = await Promise.all([
+        idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation)),
+        nbJourneesAgendaParAssignation(
+          dbAssignations.filter(a => a.idQuestionnaire === AGENDA_ALI_ID).map(a => a.idAssignation),
+        ),
+      ]);
 
       return NextResponse.json({
         patients: dbPatients.map(patientToDto),
-        assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassation)),
+        assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassation, nbJourneesParAssignation)),
         assignationsMeta: {
           total: totalAssignations,
           plafond: MAX_ASSIGNATIONS,
@@ -250,11 +266,17 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       }),
       prisma.assignation.count({ where: whereAssignations }),
     ]);
-    const idsAvecPassationNonPaginee = await idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation));
+    // Même parallélisation que la branche paginée ci-dessus.
+    const [idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee] = await Promise.all([
+      idsAssignationsAvecPassation(dbAssignations.map(a => a.idAssignation)),
+      nbJourneesAgendaParAssignation(
+        dbAssignations.filter(a => a.idQuestionnaire === AGENDA_ALI_ID).map(a => a.idAssignation),
+      ),
+    ]);
 
     return NextResponse.json({
       patients: dbPatients.map(patientToDto),
-      assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassationNonPaginee)),
+      assignations: dbAssignations.map(a => assignationToDto(a, idsAvecPassationNonPaginee, nbJourneesParAssignationNonPaginee)),
       assignationsMeta: {
         total: totalAssignations,
         plafond: MAX_ASSIGNATIONS,
@@ -308,6 +330,7 @@ function assignationToDto(
     correctionDemandeeDate: Date | null;
   },
   idsAvecPassation: Set<string>,
+  nbJourneesParAssignation: Map<string, number>,
 ): Assignation {
   return {
     idAssignation: a.idAssignation,
@@ -321,6 +344,7 @@ function assignationToDto(
     correctionCommentaire: a.correctionCommentaire ?? null,
     correctionDemandeeDate: a.correctionDemandeeDate ? a.correctionDemandeeDate.toISOString() : null,
     aPassation: idsAvecPassation.has(a.idAssignation),
+    nbJourneesAgenda: a.idQuestionnaire === AGENDA_ALI_ID ? (nbJourneesParAssignation.get(a.idAssignation) ?? 0) : null,
   };
 }
 
@@ -336,6 +360,51 @@ async function idsAssignationsAvecPassation(idsAssignation: string[]): Promise<S
     distinct: ['idAssignation'],
   });
   return new Set(reponses.map(r => r.idAssignation).filter((id): id is string => id !== null));
+}
+
+// Sœur de `idsAssignationsAvecPassation` juste au-dessus, même raison : une
+// seule requête groupée pour toute la page, jamais un `count` par assignation
+// — sur `MAX_ASSIGNATIONS` lignes, N requêtes contre 1 est le genre de coût
+// qui ne se voit qu'en prod. N'est appelée qu'avec des ids d'agenda alimentaire
+// (`idQuestionnaire === AGENDA_ALI_ID`) déjà filtrés par l'appelant.
+//
+// Compte des DATES distinctes, pas des lignes : la table est append-only, une
+// journée corrigée porte deux lignes `agenda_alimentaire_jours` pour une seule
+// date (`supersedesJourId` chaîne la correction) — le praticien veut le nombre
+// de journées de saisie, pas le nombre d'écritures.
+//
+// **Ce compte n'est PAS celui de `fenetre.nbRenseignees`**, qui alimente
+// « N journées notées » sur la fiche : celui-là ne retient que les lignes
+// RELUES (JSONB valide, date au format), quarantaine exclue. Celui-ci prend
+// toutes les lignes enregistrées — c'est le bon chiffre pour « qu'est-ce que
+// l'annulation emporte ? », et c'en est un autre. D'où un libellé distinct
+// côté modale (« journée de saisie »), pour que deux nombres ne se
+// contredisent pas derrière le même mot.
+//
+// Le `WHERE id_assignation IN (…)` s'appuie sur l'index
+// `agd_ali_assignation_date_idx`, déjà présent : aucune dette d'index créée.
+// En revanche, où Prisma applique `distinct` — en base ou dans le moteur de
+// requête — n'est vérifié par rien ici, d'où la déduplication applicative
+// ci-dessous, qui rend le résultat vrai dans les deux hypothèses.
+async function nbJourneesAgendaParAssignation(idsAgenda: string[]): Promise<Map<string, number>> {
+  if (idsAgenda.length === 0) return new Map();
+  const jours = await prisma.agendaAlimentaireJour.findMany({
+    where: { idAssignation: { in: idsAgenda } },
+    select: { idAssignation: true, dateJour: true },
+    distinct: ['idAssignation', 'dateJour'],
+  });
+  // Déduplication applicative : c'est ELLE qui porte la correction, `distinct`
+  // n'étant pas garanti côté base (voir l'en-tête). Le test du comptage prouve
+  // donc cette moitié-là, pas l'autre.
+  const vues = new Set<string>();
+  const compte = new Map<string, number>();
+  for (const j of jours) {
+    const cle = `${j.idAssignation}::${j.dateJour}`;
+    if (vues.has(cle)) continue;
+    vues.add(cle);
+    compte.set(j.idAssignation, (compte.get(j.idAssignation) ?? 0) + 1);
+  }
+  return compte;
 }
 
 export async function POST(req: Request): Promise<NextResponse<CreatePatientResponse>> {

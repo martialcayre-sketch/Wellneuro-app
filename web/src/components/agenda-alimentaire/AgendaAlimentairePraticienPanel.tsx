@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/route';
 import type { AgregatsAgendaAli } from '@/lib/agenda-alimentaire/agregats';
-import type { JourReponses, PriseJour } from '@/lib/agenda-alimentaire/types';
+import type { JourRow, PriseJour } from '@/lib/agenda-alimentaire/types';
 import { MIN_JOURS_AGREGATS, NB_JOURS_AGENDA_ALI } from '@/lib/agenda-alimentaire/types';
+import { useAgendaAliEnabled } from './AgendaAliFeatureProvider';
 
 // Même conversion que le panneau du sommeil (`minutesEnHeures`,
 // `AgendaSommeilPraticienPanel.tsx`) : « 660 min » n'est pas une grandeur
@@ -51,11 +52,35 @@ function naturePriseLabel(nature: PriseJour['nature']): string {
   return nature === 'repas' ? 'repas' : 'hors repas';
 }
 
-function JourneeCard({ dateJour, reponses }: { dateJour: string; reponses: JourReponses }) {
+const formatSoumisLe = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris',
+  dateStyle: 'short',
+  timeStyle: 'short',
+});
+
+function JourneeCard({ jour }: { jour: JourRow }) {
+  const { dateJour, reponses, soumisLe, supersedesJourId, canal } = jour;
   const prises = reponses.prises ?? [];
   return (
     <section className="flex flex-col gap-2 rounded-lg border border-border bg-background p-3">
-      <p className="text-sm font-semibold text-foreground">{dateJour}</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <p className="text-sm font-semibold text-foreground">{dateJour}</p>
+        <p className="text-xs text-muted-foreground">Noté le {formatSoumisLe.format(new Date(soumisLe))}</p>
+      </div>
+
+      {supersedesJourId !== null && (
+        <p className="text-xs text-muted-foreground">Journée corrigée — remplace une version antérieure.</p>
+      )}
+
+      {/*
+       * `canal` n'est affiché que s'il diffère de `'portail'`. `CANAUX`
+       * (`persistence.ts:41`) est aujourd'hui une liste fermée à
+       * `['portail']` : cette branche est donc DORMANTE PAR CONSTRUCTION,
+       * et c'est délibéré — le champ existe pour un second canal à venir.
+       * L'afficher inconditionnellement poserait la même ligne 21 fois par
+       * épisode pour une valeur qui ne varie jamais aujourd'hui.
+       */}
+      {canal !== 'portail' && <p className="text-xs text-muted-foreground">Saisie hors portail : {canal}</p>}
 
       {reponses.aucunePrise ? (
         <p className="text-sm text-muted-foreground">Aucune prise notée ce jour.</p>
@@ -90,6 +115,18 @@ function CouvertureInsuffisante({ nbJours }: { nbJours: number }) {
   return (
     <p className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted-foreground">
       Couverture insuffisante pour des moyennes — {nbJours}/{MIN_JOURS_AGREGATS} journées.
+    </p>
+  );
+}
+
+// Réserve nommée de D-027 (« L'écran ne dit pas que le recueil est fermé »),
+// fermée ici. Ce panneau *rapporte* la position du drapeau, il ne s'y *garde*
+// pas : la route reste lisible drapeau éteint (append-only, D-015), et cette
+// bannière n'ajoute aucune condition d'accès — seulement un texte informatif.
+function BanniereRecueilFerme() {
+  return (
+    <p className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted-foreground">
+      Recueil fermé — le patient ne peut plus noter de journée. Les journées déjà notées restent lisibles ici.
     </p>
   );
 }
@@ -149,6 +186,7 @@ function FriseJours({ episode }: { episode: EpisodeAgendaAli }) {
 }
 
 export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: string }) {
+  const drapeauActif = useAgendaAliEnabled();
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [episodes, setEpisodes] = useState<EpisodeAgendaAli[]>([]);
   const [message, setMessage] = useState('');
@@ -200,6 +238,13 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
   return (
     <div className="flex flex-col gap-6">
       {message && <p className="text-sm text-status-danger">{message}</p>}
+      {/*
+       * `=== false` et non `!drapeauActif` : le contexte est à TROIS états et
+       * `null` (position inconnue, provider absent) ne doit rien affirmer. Un
+       * `!` aplatirait « je ne sais pas » en « fermé », c'est-à-dire en une
+       * affirmation fausse sur l'état du dossier. Voir D-028.
+       */}
+      {drapeauActif === false && <BanniereRecueilFerme />}
       {episodes.map((ep) => (
         <section key={ep.idAssignation} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
           <div>
@@ -230,7 +275,7 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
 
           <div className="flex flex-col gap-2">
             {ep.jours.map((j) => (
-              <JourneeCard key={j.id} dateJour={j.dateJour} reponses={j.reponses} />
+              <JourneeCard key={j.id} jour={j} />
             ))}
           </div>
         </section>
