@@ -5,8 +5,8 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
-  "active_lot": "LOT-04",
+  "active_campaign": "2026-08-04-agenda-alimentaire",
+  "active_lot": "LOT-08",
   "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-03 (#583)",
   "git": {
     "branch": "main",
@@ -31,6 +31,6 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-05T11:35:00Z",
+  "updated_at": "2026-08-05T12:55:44Z",
   "parallel_campaigns": []
 }

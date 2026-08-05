@@ -4,7 +4,7 @@ titre: "Agenda alimentaire 21 jours (Q_ALI_09)"
 statut: "en_cours"
 créée_le: "2026-08-04"
 mise_à_jour: "2026-08-05"
-lot_courant: "LOT-07"
+lot_courant: "LOT-08"
 ---
 
 # Agenda alimentaire 21 jours (Q_ALI_09)
@@ -122,17 +122,20 @@ amende le point 2 de D-022, hors lot).
 | LOT-05 | Dossier de contrôle et lecteur praticien | livré | LOT-04 |
 | LOT-06 | Barème et indice — **pas avant un recueil suffisant pour calibrer (clôture des 21 jours)** | à écrire | recueil pilote (`RUNBOOK-allumage-drapeau.md`) |
 | LOT-07 | Déverrouiller ne doit pas coûter l'annulation | livré | LOT-05 |
-| LOT-08 | Le recueil dit son état : bannière drapeau éteint, tiroir non muet | à écrire | LOT-05 |
+| LOT-08 | Le recueil dit son état : bannière drapeau éteint, tiroir non muet, modale qui dit ce qu'elle emporte | livré | LOT-05 |
 
 **Les deux derniers ordinaux ne datent rien.** Les reliquats nommés à la clôture
 de `LOT-05` prennent les premiers numéros libres *après* `LOT-06`, qui reste
 réservé au barème et attend la clôture des 21 jours : le numéro ordonne les
 fichiers, il n'ordonne pas le calendrier — la renumérotation du 2026-08-05 était
 déjà « positionnelle, pas chronologique ». `LOT-07` ferme le déverrouillage qui
-rend un agenda vivant inannulable. `LOT-08` porte les deux reliquats de lecture :
-aucune bannière ne dit au praticien que le recueil est fermé quand le drapeau est
-éteint, et le tiroir tait `canal`, `soumisLe` et `supersedesJourId` — donc le
-taux de correction dont `LOT-06` aura besoin.
+rend un agenda vivant inannulable. `LOT-08` a porté les reliquats de lecture —
+**trois et non deux** : la bannière qui manquait quand le drapeau est éteint, le
+tiroir qui taisait `canal`, `soumisLe` et `supersedesJourId` (donc le taux de
+correction dont `LOT-06` aura besoin), et la modale d'annulation muette sur le
+nombre de journées qu'elle emporte. Le troisième ne vivait que dans la section
+« ce que ce lot ne fait pas » de `LOT-07` : c'est là qu'un reliquat survit quand
+il n'est pas remonté ici.
 
 **Le recueil qui bloquait le barème a démarré, sans être encore suffisant pour
 calibrer.** Le drapeau a été allumé en Production, le pilote assigné au

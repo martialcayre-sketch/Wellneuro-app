@@ -1,10 +1,24 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import { AgendaAlimentairePraticienPanel } from './AgendaAlimentairePraticienPanel';
+import { AgendaAliFeatureProvider } from './AgendaAliFeatureProvider';
 import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/route';
 import type { JourRow } from '@/lib/agenda-alimentaire/types';
 import { MIN_JOURS_AGREGATS, NB_JOURS_AGENDA_ALI } from '@/lib/agenda-alimentaire/types';
+
+const BANNIERE_RECUEIL_FERME =
+  'Recueil fermé — le patient ne peut plus noter de journée. Les journées déjà notées restent lisibles ici.';
+
+// Les tests de cette suite portent sur le panneau lui-même, pas sur le
+// drapeau : les rendus qui n'ont rien à voir avec `WN_AGENDA_ALI` passent par
+// ce helper, drapeau ALLUMÉ, pour ne pas polluer leurs assertions avec la
+// bannière « recueil fermé ». Le troisième état du contexte — position
+// inconnue, hors provider — a son propre test dédié, plus bas.
+function renderPret(ui: ReactElement, enabled = true) {
+  return render(<AgendaAliFeatureProvider enabled={enabled}>{ui}</AgendaAliFeatureProvider>);
+}
 
 afterEach(cleanup);
 
@@ -78,18 +92,22 @@ beforeEach(() => {
 });
 
 describe('AgendaAlimentairePraticienPanel', () => {
-  it('affiche un état vide DESCRIPTIF, sans geste impossible (D-027)', async () => {
+  it('affiche un état vide DESCRIPTIF, sans geste impossible (D-027), et aucune bannière', async () => {
     mockFetch([]);
     render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     // Sans impératif : drapeau éteint, IDS_SUSPENDUS retire Q_ALI_09 de la
     // bibliothèque ET de la route d'assignation — « Assignez l'instrument »
     // nommerait un geste qui n'existe alors nulle part.
     await waitFor(() => screen.getByText('Aucun agenda alimentaire n’est assigné à ce patient.'));
+    // Zéro épisode : la bannière n'a pas lieu d'être, même drapeau éteint —
+    // D-027 a rendu cet état vide descriptif exprès, une bannière par-dessus
+    // n'y ajouterait rien.
+    expect(screen.queryByText(BANNIERE_RECUEIL_FERME)).toBeNull();
   });
 
   it('rend une journée avec ses horaires de prises', async () => {
     mockFetch([episode()]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.getByText('07:30')).toBeTruthy();
     expect(screen.getByText('12:30')).toBeTruthy();
@@ -101,7 +119,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
       jour({ id: `J${i}`, dateJour: `2026-08-0${i + 1}` }),
     );
     mockFetch([episode({ jours, agregats: null })]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() =>
       screen.getByText(new RegExp(`Couverture insuffisante.*3/${MIN_JOURS_AGREGATS}`)),
     );
@@ -109,7 +127,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
 
   it('distingue les trois états de `boolean | null` (Oui / Non / Sans réponse)', async () => {
     mockFetch([episode()]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     // premierePriseProteines = true, ultraTransformes = true (deux « Oui »
     // distincts), soirPlusCopieux = false, fruitsOuOleagineux = false
@@ -134,7 +152,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
       },
     });
     mockFetch([episode({ jours: [j] })]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.getByText('Non renseigné')).toBeTruthy();
   });
@@ -157,7 +175,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
       },
     });
     mockFetch([episode({ jours: [j] })]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
 
     const ligneDe = (libelle: string) => screen.getByText(libelle).closest('div') as HTMLElement;
@@ -171,7 +189,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
 
   it("affiche 'Annulée' pour une assignation au statut 'annulee' rendu par la route", async () => {
     mockFetch([episode({ statut: 'annulee' })]);
-    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText(/Annulée/));
   });
 
@@ -187,7 +205,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
         fenetre: { dateDebut: '2026-08-01', emplacements: emp, nbRenseignees: 1, jourCourant: 1, cloturablePatient: false },
       }),
     ]);
-    const { container } = render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    const { container } = renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.getByText(/1 ligne en quarantaine, illisible/)).toBeTruthy();
     const cellules = container.querySelectorAll('[title]');
@@ -200,11 +218,15 @@ describe('AgendaAlimentairePraticienPanel', () => {
       .mockResolvedValueOnce({ json: async () => ({ ok: false, error: 'Chargement impossible.' }) })
       .mockResolvedValueOnce({ json: async () => ({ ok: true, episodes: [episode()] }) });
     vi.stubGlobal('fetch', fetchMock);
-    const { rerender } = render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    const { rerender } = renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('Chargement impossible.'));
     // Un changement de patient redéclenche `charger` (dépendance `idPatient`
     // du `useCallback`) : c'est le second chargement, celui qui réussit.
-    rerender(<AgendaAlimentairePraticienPanel idPatient="PAT_2" />);
+    rerender(
+      <AgendaAliFeatureProvider enabled>
+        <AgendaAlimentairePraticienPanel idPatient="PAT_2" />
+      </AgendaAliFeatureProvider>,
+    );
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.queryByText('Chargement impossible.')).toBeNull();
   });
@@ -240,11 +262,90 @@ describe('AgendaAlimentairePraticienPanel', () => {
         },
       }),
     ]);
-    const { container } = render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    const { container } = renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     const texte = container.textContent?.toLowerCase() ?? '';
     for (const motif of ['score', 'indice', 'gramme', 'kcal', 'quantite', 'quantité']) {
       expect(texte).not.toContain(motif);
     }
+  });
+
+  it('drapeau éteint + au moins un épisode → bannière « recueil fermé » présente', async () => {
+    mockFetch([episode()]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />, false);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.getByText(BANNIERE_RECUEIL_FERME)).toBeTruthy();
+  });
+
+  it('drapeau allumé + au moins un épisode → bannière absente', async () => {
+    mockFetch([episode()]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />, true);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByText(BANNIERE_RECUEIL_FERME)).toBeNull();
+  });
+
+  it('panneau monté HORS provider → AUCUNE bannière (position inconnue, on n’affirme rien)', async () => {
+    // Le contexte est à trois états : `null` = position inconnue. Se taire
+    // est le seul défaut qui ne ment jamais — un défaut `false` affirmerait
+    // « recueil fermé » sur un recueil ouvert, et le drapeau est ALLUMÉ en
+    // production (D-025/D-028). Le câblage réel, lui, est épinglé par
+    // `src/app/dashboard/patients/[idPatient]/page.test.tsx`.
+    mockFetch([episode()]);
+    render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByText(BANNIERE_RECUEIL_FERME)).toBeNull();
+  });
+
+  it('drapeau éteint : la bannière passe aussi la garde de frontière de campagne', async () => {
+    // La garde des mots interdits plus haut tourne drapeau ALLUMÉ, donc sans
+    // bannière : sans ce cas, le texte ajouté par ce lot n'est jamais passé au
+    // crible dont les Interdits du lot se réclament.
+    mockFetch([episode()]);
+    const { container } = renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />, false);
+    await waitFor(() => screen.getByText(BANNIERE_RECUEIL_FERME));
+    const texte = container.textContent?.toLowerCase() ?? '';
+    for (const motif of ['score', 'indice', 'gramme', 'kcal', 'quantite', 'quantité']) {
+      expect(texte).not.toContain(motif);
+    }
+  });
+
+  it('rend `soumisLe` formaté en date et heure de Paris', async () => {
+    // Attendu LITTÉRAL, jamais recalculé avec le même `Intl.DateTimeFormat`
+    // que le composant : un attendu dérivé de la même formule reste vert si
+    // `timeZone: 'Europe/Paris'` disparaît du composant, sur une machine déjà
+    // réglée sur Paris — c'est-à-dire sur le Mac de développement. 09:00 UTC
+    // en août = 11:00 à Paris ; en UTC la valeur serait « 09:00 ».
+    mockFetch([episode({ jours: [jour({ soumisLe: '2026-08-01T09:00:00.000Z' })] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.getByText('Noté le 01/08/2026 11:00')).toBeTruthy();
+  });
+
+  it('`supersedesJourId` non nul → mention « corrigée » présente ; nul → absente', async () => {
+    mockFetch([episode({ jours: [jour({ supersedesJourId: 'JOUR_0' })] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.getByText('Journée corrigée — remplace une version antérieure.')).toBeTruthy();
+  });
+
+  it('`supersedesJourId` nul → aucune mention « corrigée »', async () => {
+    mockFetch([episode({ jours: [jour({ supersedesJourId: null })] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByText('Journée corrigée — remplace une version antérieure.')).toBeNull();
+  });
+
+  it('`canal` « portail » → aucune mention de canal', async () => {
+    mockFetch([episode({ jours: [jour({ canal: 'portail' })] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByText(/Saisie hors portail/)).toBeNull();
+  });
+
+  it('`canal` autre que « portail » → mention affichée', async () => {
+    mockFetch([episode({ jours: [jour({ canal: 'praticien' })] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.getByText('Saisie hors portail : praticien')).toBeTruthy();
   });
 });

@@ -13,9 +13,35 @@ import { Button } from '@/components/ui/Button';
 // document, un message rendu ailleurs serait derrière l'overlay et muet pour un
 // lecteur d'écran (même raison que `DossierConfirmDialog`).
 
+/**
+ * Phrase du compte de journées, accordée sur TOUTE la longueur — verbe et
+ * pronom compris. L'accord partiel (« 1 journée notée. **Elles** restent… »)
+ * n'était pas un cas de bord : le recueil pilote en production est à UNE
+ * journée sur vingt et une (`D-027`), donc la toute première fois que cette
+ * modale sert, elle sert le singulier.
+ *
+ * « Journée de saisie » et non « journée notée », délibérément. Le panneau de
+ * la fiche affiche « N journées notées » = `fenetre.nbRenseignees`, qui compte
+ * les dates des lignes RELUES, hors quarantaine. Ce compte-ci porte sur les
+ * dates DISTINCTES de toutes les lignes enregistrées, quarantaine comprise :
+ * c'est le bon chiffre pour la question posée ici (« qu'est-ce que ce geste
+ * emporte ? »), et c'est un autre chiffre. Deux nombres derrière le même mot,
+ * à deux clics d'écart, se contrediraient précisément pendant un incident
+ * d'intégrité — c'est-à-dire au moment où le praticien a besoin de croire
+ * l'écran.
+ */
+export function phraseJourneesAgenda(n: number): string {
+  if (n <= 0) return 'Aucune journée de saisie n’est encore enregistrée dans ce recueil.';
+  if (n === 1) {
+    return 'Ce recueil contient 1 journée de saisie. Elle reste enregistrée et lisible au dossier après l’annulation.';
+  }
+  return `Ce recueil contient ${n} journées de saisie. Elles restent enregistrées et lisibles au dossier après l’annulation.`;
+}
+
 export function AnnulationAssignationDialog({
   titreQuestionnaire,
   emailPatient,
+  nbJourneesAgenda = null,
   open,
   onOpenChange,
   onConfirm,
@@ -24,6 +50,11 @@ export function AnnulationAssignationDialog({
 }: {
   titreQuestionnaire: string;
   emailPatient: string;
+  // Fait d'affichage seul (LOT-08), tri-état : `null` = cette assignation n'est
+  // pas un agenda alimentaire, rien à en dire — la modale reste identique à
+  // avant ce champ. N'entre dans AUCUNE décision : le geste reste réversible
+  // (réassignation possible), pas de saisie de confirmation supplémentaire.
+  nbJourneesAgenda?: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
@@ -49,6 +80,9 @@ export function AnnulationAssignationDialog({
                 ce questionnaire si besoin. Seules les assignations non encore
                 remplies peuvent être annulées.
               </p>
+              {nbJourneesAgenda !== null && (
+                <p className="mt-2 text-muted-foreground">{phraseJourneesAgenda(nbJourneesAgenda)}</p>
+              )}
             </div>
           </Dialog.Description>
 

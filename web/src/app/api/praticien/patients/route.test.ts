@@ -6,6 +6,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     assignation: { findMany: vi.fn(), count: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    agendaAlimentaireJour: { findMany: vi.fn() },
   },
 }));
 
@@ -39,6 +40,7 @@ describe('GET /api/praticien/patients', () => {
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
   });
 
   it('refuse sans session (401)', async () => {
@@ -130,6 +132,7 @@ describe('GET /api/praticien/patients — aPassation (LOT-07)', () => {
     prisma.assignation.count.mockResolvedValue(2);
     // Une seule ligne pour ASS_AVEC_REPONSE : c'est l'EXISTENCE qui compte.
     prisma.questionnaireReponse.findMany.mockResolvedValue([{ idAssignation: 'ASS_AVEC_REPONSE' }]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
   });
 
   it('branche non paginée : porte aPassation correctement sur les deux lignes', async () => {
@@ -163,6 +166,110 @@ describe('GET /api/praticien/patients — aPassation (LOT-07)', () => {
   });
 });
 
+// `nbJourneesAgenda` (LOT-08) : tri-état — `null` pour une assignation qui
+// n'est pas un agenda alimentaire, `0` pour un agenda sans journée notée, un
+// entier sinon. Comme `aPassation`, les DEUX branches (paginée et non
+// paginée) doivent le porter — même leçon LOT-07, même fichier.
+describe('GET /api/praticien/patients — nbJourneesAgenda (LOT-08)', () => {
+  const ASSIGNATION_AGENDA_AVEC_JOURS = {
+    idAssignation: 'ASS_AGENDA_AVEC_JOURS',
+    idPatient: 'PAT001',
+    emailPatient: 'a@wellneuro.fr',
+    idQuestionnaire: 'Q_ALI_09',
+    titre: 'Agenda alimentaire — 21 jours',
+    dateAssignation: new Date('2026-08-01T00:00:00.000Z'),
+    statut: 'En attente',
+    statutReponses: 'deverrouille',
+    correctionCommentaire: null,
+    correctionDemandeeDate: null,
+  };
+  const ASSIGNATION_AGENDA_SANS_JOUR = {
+    ...ASSIGNATION_AGENDA_AVEC_JOURS,
+    idAssignation: 'ASS_AGENDA_SANS_JOUR',
+  };
+  const ASSIGNATION_NON_AGENDA = {
+    ...ASSIGNATION_AGENDA_AVEC_JOURS,
+    idAssignation: 'ASS_NON_AGENDA',
+    idQuestionnaire: 'Q_NEU_03',
+    titre: 'Autre questionnaire',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([
+      ASSIGNATION_AGENDA_AVEC_JOURS,
+      ASSIGNATION_AGENDA_SANS_JOUR,
+      ASSIGNATION_NON_AGENDA,
+    ]);
+    prisma.assignation.count.mockResolvedValue(3);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    // Trois lignes en base pour ASS_AGENDA_AVEC_JOURS : deux dates distinctes,
+    // dont une CORRIGÉE (deux lignes, une seule date — `supersedesJourId`
+    // chaîne la correction). Le compte attendu est 2, pas 3 : des DATES, pas
+    // des écritures.
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_AGENDA_AVEC_JOURS', dateJour: '2026-08-01' },
+      { idAssignation: 'ASS_AGENDA_AVEC_JOURS', dateJour: '2026-08-02' },
+    ]);
+  });
+
+  it('branche non paginée : entier sur un agenda avec journées, 0 sans journée, null hors agenda', async () => {
+    const json = (await (await GET(get())).json()) as {
+      assignations: { idAssignation: string; nbJourneesAgenda?: number | null }[];
+    };
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AGENDA_AVEC_JOURS')?.nbJourneesAgenda).toBe(2);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AGENDA_SANS_JOUR')?.nbJourneesAgenda).toBe(0);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_NON_AGENDA')?.nbJourneesAgenda).toBeNull();
+  });
+
+  it('branche paginée : porte le même tri-état', async () => {
+    const json = (await (await GET(get('page=1'))).json()) as {
+      assignations: { idAssignation: string; nbJourneesAgenda?: number | null }[];
+    };
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AGENDA_AVEC_JOURS')?.nbJourneesAgenda).toBe(2);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AGENDA_SANS_JOUR')?.nbJourneesAgenda).toBe(0);
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_NON_AGENDA')?.nbJourneesAgenda).toBeNull();
+  });
+
+  // Une journée corrigée porte deux lignes pour une seule date : comptée UNE
+  // fois. Vérifié séparément de la lecture du DTO ci-dessus, sur la forme
+  // exacte de la requête groupée.
+  it('une journée corrigée (deux lignes, une date) est comptée une seule fois', async () => {
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_AGENDA_AVEC_JOURS', dateJour: '2026-08-01' },
+      { idAssignation: 'ASS_AGENDA_AVEC_JOURS', dateJour: '2026-08-01' },
+    ]);
+    const json = (await (await GET(get())).json()) as {
+      assignations: { idAssignation: string; nbJourneesAgenda?: number | null }[];
+    };
+    expect(json.assignations.find(a => a.idAssignation === 'ASS_AGENDA_AVEC_JOURS')?.nbJourneesAgenda).toBe(1);
+  });
+
+  // Une seule requête groupée pour toute la page, jamais un `count` par ligne
+  // — même défaut que celui payé sur `aPassation` (LOT-07).
+  it('une seule requête groupée pour toute la page, pas une par assignation', async () => {
+    await GET(get());
+    expect(prisma.agendaAlimentaireJour.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.agendaAlimentaireJour.findMany).toHaveBeenCalledWith({
+      where: { idAssignation: { in: ['ASS_AGENDA_AVEC_JOURS', 'ASS_AGENDA_SANS_JOUR'] } },
+      select: { idAssignation: true, dateJour: true },
+      distinct: ['idAssignation', 'dateJour'],
+    });
+  });
+
+  // Contrôle négatif, symétrique de celui d'`aPassation` : sans aucune
+  // assignation d'agenda alimentaire dans la page, la requête ne part pas.
+  it('aucune assignation d’agenda alimentaire : n’émet pas de requête agendaAlimentaireJour', async () => {
+    prisma.assignation.findMany.mockResolvedValue([ASSIGNATION_NON_AGENDA]);
+    prisma.assignation.count.mockResolvedValue(1);
+    await GET(get());
+    expect(prisma.agendaAlimentaireJour.findMany).not.toHaveBeenCalled();
+  });
+});
+
 // Le filtre par statut vivait côté client, appliqué APRÈS la troncature à 40.
 // Filtrer une liste déjà tronquée ne cache pas des lignes en trop : il en cache
 // en moins, et sans le dire. Au 2026-07-29, 8 assignations « En attente »
@@ -178,6 +285,7 @@ describe('GET /api/praticien/patients — filtre de statut des assignations', ()
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
   });
 
   // LE test du défaut. Sans filtre serveur, la requête ne porte que la portée
@@ -265,6 +373,7 @@ describe('GET /api/praticien/patients — filtre par dossier et statut de répon
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.assignation.count.mockResolvedValue(0);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
   });
 
   // LE test du défaut : sans ces deux clés dans le `where`, aucune ligne au-delà

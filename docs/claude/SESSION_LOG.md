@@ -2649,3 +2649,31 @@ cours de passe — un `pgrep` préalable ne garde pas une fenêtre de 10 minutes
 Seul le CI rend un verdict. Réserve LOT-02 non corrigée : 1 420 fiches ont des
 lignes source mais aucune résolue. Une seconde app Scalingo `wellneuro` existe au
 statut `new`, non instruite.
+
+## 2026-08-05 — LOT-08 agenda alimentaire, « le recueil dit son état »
+
+**Décisions.** Campagne active basculée des dettes 5.0 vers l'agenda alimentaire
+(LOT-04 non entamé, repris ensuite). LOT-06, le barème, reste fermé — mesuré, pas
+supposé. LOT-08 s'est révélé porter **trois** reliquats et non deux : le
+troisième, la modale d'annulation muette sur ce qu'elle emporte, ne vivait que
+dans la section « ce que ce lot ne fait pas » de LOT-07. La bannière « recueil
+fermé » passe par un **provider de page**, motif déjà présent deux lignes au-dessus
+du point de montage pour le drapeau C5 (D-028).
+
+**Options écartées.** Un champ `recueilOuvert` dans la réponse de la route
+praticien : il aurait fallu rouvrir D-027 pour un résultat identique. Le défaut
+`false` du contexte, remplacé par un tri-état après la revue — le fail-closed vaut
+pour une garde, pas pour un énoncé, et le drapeau est allumé en production.
+
+**Prochaine action prioritaire.** Suivre le CI de la PR, puis reprendre LOT-04 des
+dettes 5.0. LOT-06 pas avant J+7.
+
+**Questions ouvertes.** T2 verte à la troisième passe (120 E2E, aucun échec) ; les
+deux rouges antérieures portaient des jeux d'échecs *différents* à code identique,
+sur des surfaces portail hors périmètre — un rouge qui se déplace n'est pas une
+régression. CI vert sur #590, `verify` a bien tourné. Trois réserves nommées et
+non fermées : la modale promet
+« vous pourrez réassigner », faux drapeau éteint ; la déduplication `distinct`
+côté base n'est prouvée par rien ; l'argument `process.env.WN_AGENDA_ALI` au point
+de montage est décoratif — le paramètre par défaut absorbe une faute de frappe,
+vérifié par mutation, et le même angle mort vaut pour `isC5Enabled`.
