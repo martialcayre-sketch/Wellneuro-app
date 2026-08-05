@@ -18,6 +18,7 @@ import type { CreateConsultationResponse } from '@/app/api/praticien/consultatio
 import type { TokenActionResponse } from '@/app/api/praticien/token/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { estAnnulable } from '@/lib/praticien/annulabilite';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow, type ActionDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog, type ModeConfirmation } from '@/components/ui/DossierConfirmDialog';
@@ -1096,10 +1097,23 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
                 </td></tr>
               )}
               {filteredAssignations.map(a => {
-                // Annulable : seulement une assignation ouverte, jamais remplie
-                // (cf. garde de portée serveur). Une soumise ou annulée n'a pas
-                // d'action.
-                const annulable = a.statut !== 'Complété' && a.statut !== 'Annulée' && a.statutReponses === 'non_rempli';
+                // Annulable : prédicat PARTAGÉ avec la route (`estAnnulable`,
+                // lib/praticien/annulabilite.ts) — c'est justement leur
+                // divergence qui produisait ce lot. `estAnnulable` ne connaît
+                // pas `Annulée` (l'idempotence côté route accepte un renvoi
+                // sur une assignation déjà annulée, elle ne le refuse pas) ;
+                // l'exclusion d'écran reste donc ICI, explicite : une ligne
+                // déjà annulée n'a rien à proposer, sans que la route ait
+                // besoin de le refuser en 409.
+                //
+                // `aPassation ?? false` : le seul cas où le champ manque est
+                // un client neuf servi par une API ancienne (transitoire d'un
+                // déploiement). `?? true` masquerait le bouton sur toutes les
+                // lignes en attendant le redeploy ; `?? false` le laisse
+                // proposé, et le 409 de la route tranche si besoin.
+                const annulable =
+                  a.statut !== 'Annulée' &&
+                  estAnnulable({ statut: a.statut, statutReponses: a.statutReponses, aPassation: a.aPassation ?? false });
                 return (
                 <tr key={a.idAssignation} className="border-t border-border">
                   <td className="px-4 py-2">{a.dateAssignation ? new Date(a.dateAssignation).toLocaleDateString('fr-FR') : '—'}</td>

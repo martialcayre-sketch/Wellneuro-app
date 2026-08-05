@@ -2502,6 +2502,38 @@ comparés) — `ACTIVE_CAMPAIGN.md` affirmait « aucune campagne parallèle » s
 l'outil puisse le voir. `validation.last_checked_at` reste signalé périmé sans
 qu'aucun outil ne le rafraîchisse.
 
+## 2026-08-05 — LOT-07 : l'annulabilité se décide sur une passation réelle
+
+**Décisions.** `LOT-06` (barème) reste bloqué et c'est mesuré : `MIN_JOURS_AGREGATS = 7`,
+une journée sur vingt et une recueillies. Le lot prend l'un des trois reliquats
+de `LOT-05`. Un seul prédicat (`lib/praticien/annulabilite.ts`) importé par la
+route **et** par l'écran — c'est leur divergence qui a produit le défaut. Forme
+positive, fail-closed : `statutReponses` est un `String` libre sans enum.
+`aPassation` exposé comme un **fait**, jamais `annulable` comme un verdict.
+
+**Options écartées.** Fermer le `PATCH` de déverrouillage : chemin sans appelant
+d'écran, et refuser `non_rempli` supprimerait une exemption de date limite que
+quatre routes portent. Assouplir `wn-campaign-audit.mjs` pour accepter `LOT-05b` :
+le reliquat prend un ordinal libre, le garde ne bouge pas.
+
+**Ce que le lot a appris.** Revue adversariale NO-GO sur un bloquant réel :
+l'`updateMany` avait sa garde répétée dans le `where` *pour pouvoir ne rien
+matcher*, et son résultat était jeté — la route rendait `ok: true` sur zéro ligne
+écrite, refaisant sous un autre nom le défaut qu'elle supprime. Aucun test ne le
+couvrait, la fixture `{ count: 1 }` étant armée dans le `beforeEach` et jamais
+remplacée. Deux tests « négatifs » ajoutés ne discriminaient rien : ils rendaient
+le même verdict avant et après. Et un commentaire d'un fichier tiers décrivait
+toujours le défaut comme actuel — un lot suivant l'aurait lu comme un trou ouvert.
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Puis
+`LOT-08` (bannière drapeau éteint + tiroir muet), ou `LOT-06` après J+7.
+
+**Questions ouvertes.** `node scripts/wn-cycle.mjs` **écrit** `.wn/state.json`
+sans `--appliquer`, alors que les deux verbes sont censés être disjoints.
+L'index `@@index([idAssignation])` sur `QuestionnaireReponse` reste absent, et ce
+lot ajoute une lecture sur cette colonne à la route praticien la plus appelée
+(sans gravité à 99 lignes, mesuré). `agenda-sommeil/relance` porte la même racine,
+nommée non traitée.
 ## 2026-08-05 — Transport des compositions : le manque n'était pas là où le lot le cherchait
 
 **Décisions.** Le lot livre la **capacité et la mesure**, pas le chargement :
