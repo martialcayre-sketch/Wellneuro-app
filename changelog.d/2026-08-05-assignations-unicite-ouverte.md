@@ -14,9 +14,18 @@
   les déplacer les aurait rendues illisibles de toutes les surfaces sans les
   effacer de la base. Un patient avait effectivement saisi deux nuits sur deux
   exemplaires différents du même agenda ; les deux sont conservées sous
-  l'exemplaire retenu. Si deux saisies de même date devaient se retrouver
-  réunies, la migration s'interrompt au lieu de trancher à la place du praticien.
+  l'exemplaire retenu, chaînes de correction comprises.
 
-  Un contrat SQL et un banc lient désormais le prédicat de l'index à la constante
-  du code : l'accord entre les deux définitions de « ouvert » n'est plus une
-  phrase de commentaire.
+  Une garde interrompt la migration si, **sur les assignations qu'elle touche**,
+  une date se retrouvait portée par deux saisies actives non chaînées — un cas
+  qu'elle ne saurait pas arbitrer. Elle ne compte que les têtes de chaîne : les
+  agendas sont append-only, une correction ajoute une ligne de même date et
+  n'est donc pas une collision. Une première rédaction ignorait ces deux points
+  et aurait fait échouer la migration à coup sûr, sur des lignes qu'elle ne
+  modifie même pas.
+
+  Un contrat SQL et un banc rendent tout cela exécutable : le prédicat de
+  l'index est comparé à la constante du code, et le rattachement comme la garde
+  sont rejoués sur une fixture qui reproduit le cas de production. Sans elle,
+  rien ne les exécutait jamais — la migration s'applique sur une base vide au
+  moment où les contrats tournent.

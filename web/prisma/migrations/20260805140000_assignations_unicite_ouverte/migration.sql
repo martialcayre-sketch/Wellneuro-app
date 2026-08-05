@@ -27,7 +27,7 @@
 -- 2026-07-23 qu'un tel index « ferait dériver le contrôle schéma ↔ migrations »,
 -- et un lot y avait renoncé pour cette raison. C'était une prudence, jamais une
 -- mesure : le palier complet a été joué dans un worktree avec cette migration
--- appliquée (51 migrations, dont celle-ci), et l'étape « Dérive schéma ↔
+-- appliquée (50 migrations, dont celle-ci), et l'étape « Dérive schéma ↔
 -- migrations » est verte. `migrate diff` compare les colonnes et les contraintes
 -- déclaratives ; un index supplémentaire n'en est pas une.
 
@@ -109,26 +109,63 @@ WHERE j."id_assignation" = a."id_assignation"
 
 -- ── 2. GARDE — la mesure devient un invariant ──────────────────────────────
 --
--- Le rattachement ci-dessus déplace deux saisies de dates DIFFÉRENTES sous une
--- même assignation. Vérifié le 2026-08-05 : aucun couple concerné ne porte deux
--- saisies de même date. Mais cette migration ne s'applique pas le jour où la
--- mesure est prise — `release-db` attend une approbation —, et le patient peut
--- saisir entre-temps. Si deux saisies de même date se retrouvaient réunies, on
--- ne saurait pas laquelle fait foi : la migration s'arrête plutôt que de
--- trancher à la place du praticien. Échouer bruyamment, jamais en silence.
+-- Le rattachement ci-dessus réunit sous une même assignation des saisies qui
+-- vivaient sous deux. Vérifié le 2026-08-05 : sur les couples concernés, aucune
+-- date n'est portée deux fois. Mais cette migration ne s'applique pas le jour de
+-- la mesure — `release-db` attend une approbation — et le patient peut saisir
+-- entre-temps. La garde échoue alors bruyamment plutôt qu'en silence.
+--
+-- DEUX PRÉCAUTIONS, l'une et l'autre apprises d'une rédaction fautive de cette
+-- même garde, qui aurait fait échouer la migration À COUP SÛR :
+--
+-- 1. ELLE NE COMPTE QUE LES TÊTES DE CHAÎNE. Les deux agendas sont append-only
+--    par conception (`lib/agenda-sommeil/persistence.ts`, `lib/agenda-
+--    alimentaire/persistence.ts` : « create SEUL — jamais d'update ») : CORRIGER
+--    une nuit ajoute une seconde ligne de MÊME date, chaînée par
+--    `supersedes_nuit_id`. Une correction n'est donc pas une collision, c'est le
+--    fonctionnement nominal — et `resolveNuitsActives` sait déjà laquelle fait
+--    foi. Mesuré le 2026-08-05 : 4 couples (assignation, date) portent deux
+--    lignes en base ; en ne gardant que les têtes, il en reste 3.
+--
+-- 2. ELLE EST BORNÉE AUX ASSIGNATIONS QUE CETTE MIGRATION TOUCHE. Ces 3 cas
+--    restants sont tous HORS du périmètre traité ici — d'autres patients,
+--    d'autres assignations, une anomalie de données préexistante qui mérite un
+--    examen mais qui n'a rien à voir avec ce lot. Une garde qui lit les tables
+--    entières se serait déclenchée sur eux et aurait annulé la migration pour
+--    des lignes qu'elle ne modifie même pas.
 DO $$
 DECLARE collisions integer;
 BEGIN
+  WITH survivantes AS (
+    SELECT g."id_assignation"
+    FROM "assignations" g
+    WHERE g."statut" NOT IN ('Complété', 'Annulée')
+      AND EXISTS (
+        SELECT 1 FROM "assignations" a
+        WHERE a."id_patient" = g."id_patient"
+          AND a."id_questionnaire" = g."id_questionnaire"
+          AND a."id" <> g."id"
+          AND a."statut" NOT IN ('Complété', 'Annulée')
+      )
+  )
   SELECT count(*) INTO collisions FROM (
-    SELECT 1 FROM "agenda_sommeil_nuits"
-    GROUP BY "id_assignation", "date_nuit" HAVING count(*) > 1
+    SELECT 1 FROM "agenda_sommeil_nuits" n
+    WHERE n."id_assignation" IN (SELECT "id_assignation" FROM survivantes)
+      AND NOT EXISTS (
+        SELECT 1 FROM "agenda_sommeil_nuits" s WHERE s."supersedes_nuit_id" = n."id"
+      )
+    GROUP BY n."id_assignation", n."date_nuit" HAVING count(*) > 1
     UNION ALL
-    SELECT 1 FROM "agenda_alimentaire_jours"
-    GROUP BY "id_assignation", "date_jour" HAVING count(*) > 1
+    SELECT 1 FROM "agenda_alimentaire_jours" j
+    WHERE j."id_assignation" IN (SELECT "id_assignation" FROM survivantes)
+      AND NOT EXISTS (
+        SELECT 1 FROM "agenda_alimentaire_jours" s WHERE s."supersedes_jour_id" = j."id"
+      )
+    GROUP BY j."id_assignation", j."date_jour" HAVING count(*) > 1
   ) t;
   IF collisions > 0 THEN
     RAISE EXCEPTION
-      'Rattachement impossible : % couple(s) (assignation, date) portent deux saisies. Arbitrage praticien requis avant de rejouer cette migration.', collisions;
+      'Rattachement impossible : % date(s) portent deux saisies actives (non chaînées) sur une assignation concernée. Arbitrage praticien requis avant de rejouer cette migration.', collisions;
   END IF;
 END $$;
 
