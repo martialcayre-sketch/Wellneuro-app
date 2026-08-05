@@ -11,7 +11,7 @@ statut: prêt pour PR
 ## Où on en est
 
 Le lot est écrit, T3 est vert trois fois, deux passes adversariales indépendantes ont
-été passées et leurs deux NO-GO sont levés. `D-022` est écrite, le fragment de
+été passées et leurs deux NO-GO sont levés. `D-024` est écrite, le fragment de
 changelog est posé, les deux fragments antérieurs qui affirmaient le contraire ont été
 amendés. Reste : commit, PR, lecture du CI.
 

@@ -211,7 +211,7 @@ export type OrientationRule = {
 // ces deux puces concluait que « `R-SOM-01` ne peut plus s'allumer sur un
 // instrument à moitié rempli ». C'était vrai le 2026-08-04 ; c'est FAUX depuis
 // que le plancher garanti est agi (D-021 a posé le plancher en RÉSERVANT
-// l'orientation ; c'est D-022 qui lève cette réserve — le registre est
+// l'orientation ; c'est D-024 qui lève cette réserve — le registre est
 // append-only, la réserve de D-021 se lit donc encore telle qu'écrite) — un PSQI partiel dont
 // le plancher est `warning` allume bel et bien `R-SOM-01`.
 //

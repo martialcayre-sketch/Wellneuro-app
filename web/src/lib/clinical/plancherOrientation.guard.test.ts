@@ -6,10 +6,10 @@
 // `null`. Sa réserve disait « le vrai positif est raconté, pas agi ». Ce lot le
 // fait agir, et ce banc dit à quelle condition exactement.
 //
-// LA RÉFÉRENCE À SUIVRE EST `D-022`, pas `D-021`. Le registre est append-only :
+// LA RÉFÉRENCE À SUIVRE EST `D-024`, pas `D-021`. Le registre est append-only :
 // la réserve de `D-021` se lit encore mot pour mot (« R-GAS-01 n'est PAS
 // rallumée »), et un relecteur qui s'arrête là conclut l'inverse de ce que fait
-// ce banc. C'est `D-022` qui la lève.
+// ce banc. C'est `D-024` qui la lève.
 //
 // LE PRÉDICAT, qui est tout le lot. Un plancher `P` garantit une zone `Z` si et
 // seulement si TOUTES les bandes que le score final peut encore atteindre sont
@@ -755,7 +755,7 @@ describe('7. aucune conduite ne sort par la porte de l\'orientation', () => {
     }
     expect(instrumentsVisites, 'aucun instrument éligible n\'a produit de plancher : le contrôle est vide').toBeGreaterThan(5);
     // Le lot ne serait pas fermé si la table publiée ne voyait AUCUN plancher.
-    expect(conditionsVues, 'aucune règle publiée ne s\'allume sur un plancher : D-022 ne ferme plus la réserve de D-021').toBeGreaterThan(0);
+    expect(conditionsVues, 'aucune règle publiée ne s\'allume sur un plancher : D-024 ne ferme plus la réserve de D-021').toBeGreaterThan(0);
   });
 
   it('LES DEUX BRANCHES du chemin plancher disent « au moins » ET le recueil partiel', () => {

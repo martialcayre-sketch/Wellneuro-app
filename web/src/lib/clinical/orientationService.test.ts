@@ -415,7 +415,7 @@ describe('evaluerOrientationPourPatient — le recueil partiel du TFD', () => {
   };
 
   it('un partiel DÉJÀ SÉVÈRE rallume la règle, sur son plancher et en « au moins »', () => {
-    // D-022 vu depuis le service — c'est lui qui lève la réserve de D-021, dont
+    // D-024 vu depuis le service — c'est lui qui lève la réserve de D-021, dont
     // le texte (append-only) dit encore « R-GAS-01 n'est PAS rallumée ». La
     // bande reste absente, le
     // plancher B est servi à côté, et ses bandes encore atteignables

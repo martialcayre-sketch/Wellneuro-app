@@ -62,6 +62,79 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
   });
 
+  it('une assignation DÉVERROUILLÉE et périmée reste ouverte : 200, jamais 410', async () => {
+    // LE DÉFAUT CORRIGÉ. Cette route est la PREMIÈRE porte : l'écran l'appelle
+    // avant `consentement` et avant `submit`. Tant qu'elle ne connaissait pas
+    // l'exemption `deverrouille`, l'exemption des trois autres portes était
+    // inatteignable depuis l'UI — le hub affichait « Corriger », le clic rendait
+    // 410, et le praticien avait déverrouillé pour rien.
+    prisma.assignation.findUnique.mockResolvedValue({
+      ...assignation,
+      statutReponses: 'deverrouille',
+      dateLimite: '2020-01-01',
+    });
+    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    expect(response.status).toBe(200);
+  });
+
+  it('non_rempli et périmé reste refusé : 410 reason expired (non-régression)', async () => {
+    // L'exemption ne vaut QUE pour `deverrouille`. Sans cette borne, elle
+    // rouvrirait toutes les assignations périmées du portail.
+    prisma.assignation.findUnique.mockResolvedValue({
+      ...assignation,
+      statutReponses: 'non_rempli',
+      dateLimite: '2020-01-01',
+    });
+    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    expect(response.status).toBe(410);
+    expect(await response.json()).toMatchObject({ ok: false, reason: 'expired' });
+  });
+
+  it.each(['verrouille', 'modification_demandee'])(
+    '%s et périmé : 200, droit de consultation permanent inchangé',
+    async statutReponses => {
+      prisma.assignation.findUnique.mockResolvedValue({
+        ...assignation,
+        statutReponses,
+        dateLimite: '2020-01-01',
+      });
+      const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+      expect(response.status).toBe(200);
+    },
+  );
+
+  // ── `consentementPossible` : le VERDICT vient du serveur ───────────────────
+  // `isDeadlineExpired` parse `AAAA-MM-JJT23:59:59.999` SANS fuseau : évaluée
+  // par un composant `'use client'`, elle se lisait dans le fuseau du navigateur
+  // et non dans celui du serveur. Le champ existe pour que l'écran n'ait plus à
+  // recomposer la règle.
+  describe('consentementPossible', () => {
+    async function verdict(over: Record<string, unknown>): Promise<boolean> {
+      prisma.assignation.findUnique.mockResolvedValue({ ...assignation, ...over });
+      const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+      return ((await response.json()) as { consentementPossible: boolean }).consentementPossible;
+    }
+
+    it('vrai sans date limite', async () => {
+      expect(await verdict({ dateLimite: null })).toBe(true);
+    });
+
+    it('vrai sur une date limite à venir', async () => {
+      expect(await verdict({ dateLimite: '2999-12-31' })).toBe(true);
+    });
+
+    it('FAUX sur une date limite dépassée', async () => {
+      // C'est ce cas-là qui pilote le garde des deux écrans.
+      expect(await verdict({ statutReponses: 'verrouille', dateLimite: '2020-01-01' })).toBe(false);
+    });
+
+    it('vrai sur une assignation DÉVERROUILLÉE, date limite dépassée comprise', async () => {
+      // Miroir exact du refus 410 de `api/patient/consentement` : le
+      // déverrouillage rouvre le consentement.
+      expect(await verdict({ statutReponses: 'deverrouille', dateLimite: '2020-01-01' })).toBe(true);
+    });
+  });
+
   it('une assignation annulée est indisponible : 410 reason annulee', async () => {
     // Fil A : refus dans la route, pas seulement dans l'écran. Le propriétaire
     // légitime (email correct) ne peut pas ouvrir la saisie d'une annulée.

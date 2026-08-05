@@ -184,6 +184,79 @@ describe('lecture — la ligne illisible est mise en quarantaine, pas l’agenda
     expect(datesIllisibles).toEqual(['2026-08-02', '2026-08-03']);
   });
 
+  it('remonte, POUR CHAQUE ligne en quarantaine, sa date ET son `soumisLe`', async () => {
+    // La DATE seule ne dit pas si la ligne en quarantaine est une supplantée
+    // sans conséquence ou la VRAIE tête de chaîne que la lecture n'a pas vue.
+    // `soumis_le` est une COLONNE comme `date_jour` : le départage — celui de
+    // `resolveJoursActifs` — est disponible sans requête supplémentaire.
+    const illisible = { contractVersion: 'agenda-alimentaire-v9', ...REPONSES };
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ligne({ id: 'J1' }),
+      ligne({
+        id: 'J2',
+        dateJour: '2026-08-02',
+        reponses: illisible,
+        soumisLe: new Date('2026-08-02T07:00:00.000Z'),
+      }),
+    ]);
+    const { jours, illisibles, lignesIllisibles, datesIllisibles } = await listJours(
+      ENTREE.idPatient,
+    );
+    expect(jours.map((j) => j.id)).toEqual(['J1']);
+    expect(illisibles).toBe(1);
+    // Chaîne ISO 8601 UTC, comme `JourRow.soumisLe` : les deux se comparent
+    // directement, et lexicographiquement.
+    expect(lignesIllisibles).toEqual([
+      { dateJour: '2026-08-02', soumisLe: '2026-08-02T07:00:00.000Z' },
+    ]);
+    expect(datesIllisibles).toEqual(['2026-08-02']);
+  });
+
+  it('deux lignes illisibles de MÊME date remontent CHACUNE son `soumisLe`', async () => {
+    // Dédoublonner ici perdrait le seul renseignement qui décide du blocage : la
+    // PLUS RÉCENTE des lignes en quarantaine. `datesIllisibles` reste, lui,
+    // dédoublonné — trois grandeurs distinctes, pas interchangeables.
+    const illisible = { contractVersion: 'agenda-alimentaire-v9', ...REPONSES };
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ligne({
+        id: 'J1',
+        dateJour: '2026-08-02',
+        reponses: illisible,
+        soumisLe: new Date('2026-08-02T07:00:00.000Z'),
+      }),
+      ligne({
+        id: 'J2',
+        dateJour: '2026-08-02',
+        reponses: illisible,
+        soumisLe: new Date('2026-08-02T21:30:00.000Z'),
+      }),
+    ]);
+    const { illisibles, lignesIllisibles, datesIllisibles } = await listJours(ENTREE.idPatient);
+    expect(illisibles).toBe(2);
+    expect(lignesIllisibles).toEqual([
+      { dateJour: '2026-08-02', soumisLe: '2026-08-02T07:00:00.000Z' },
+      { dateJour: '2026-08-02', soumisLe: '2026-08-02T21:30:00.000Z' },
+    ]);
+    expect(datesIllisibles).toEqual(['2026-08-02']);
+  });
+
+  it('un `soumisLe` inexploitable remonte `null`, jamais un horodatage inventé', async () => {
+    // La ligne est en quarantaine PARCE QU'on n'a pas su la relire : on ne
+    // suppose rien de ce qui l'entoure. Un repli fabriqué départagerait des
+    // têtes de chaîne avec une valeur qui ne vient pas de la base ; `null` dit
+    // « je ne sais pas », et se lit fail-closed chez l'appelant.
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ligne({
+        id: 'J1',
+        reponses: { contractVersion: 'agenda-alimentaire-v9', ...REPONSES },
+        soumisLe: new Date('pas une date'),
+      }),
+    ]);
+    const { illisibles, lignesIllisibles } = await listJours(ENTREE.idPatient);
+    expect(illisibles).toBe(1);
+    expect(lignesIllisibles).toEqual([{ dateJour: ENTREE.dateJour, soumisLe: null }]);
+  });
+
   it('tolère une ligne sans version — elle doit rester relisible', async () => {
     prisma.agendaAlimentaireJour.findMany.mockResolvedValue([ligne({ reponses: REPONSES })]);
     const { jours, illisibles } = await listJours(ENTREE.idPatient);

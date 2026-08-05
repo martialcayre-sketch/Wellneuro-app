@@ -10,9 +10,11 @@ import { ConsentScreen } from '@/components/patient/ConsentScreen';
 import { ConsultationScreen } from '@/components/patient/ConsultationScreen';
 import { PlaintesForm } from '@/components/patient/PlaintesForm';
 import { AgendaSommeilJournal } from '@/components/patient/agenda-sommeil/AgendaSommeilJournal';
+import { AgendaAlimentaireJournal } from '@/components/patient/agenda-alimentaire/AgendaAlimentaireJournal';
 import { GenericQuestionnaire } from '@/components/patient/GenericQuestionnaire';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 
 type VerifiedData = Extract<PatientQuestionnaireResponse, { ok: true }>;
 
@@ -103,7 +105,51 @@ export default function PortailQuestionnairePage() {
   const retourHub = () => router.push(`/portail/${token}/questionnaires`);
 
   // 1) Consentement non encore donné (assignation hors pack).
+  //
+  // ── LA PÉRIODE FERMÉE PASSE AVANT LE CONSENTEMENT ───────────────────────
+  // Sans ce garde, une assignation périmée et sans consentement affichait
+  // « donnez votre consentement », le patient posait le geste, et
+  // `api/patient/consentement` répondait 410 : un geste IMPOSSIBLE était
+  // proposé, et le patient n'apprenait le refus qu'après l'avoir fait.
+  //
+  // ── LE VERDICT VIENT DU SERVEUR, IL N'EST PLUS RECALCULÉ ICI ────────────
+  // Ce garde évaluait `isDeadlineExpired` lui-même. Ce composant est
+  // `'use client'`, et `isDeadlineExpired` construit
+  // `new Date(`${dateLimite}T23:59:59.999`) SANS fuseau : l'expiration se lisait
+  // donc dans le fuseau du NAVIGATEUR — à Paris l'été, ~2 h avant le serveur ; à
+  // l'ouest d'UTC, plusieurs heures après. Le commentaire précédent affirmait
+  // « la condition est celle de la route, mot pour mot » : le TEXTE l'était,
+  // l'ÉVALUATION non, et c'est l'évaluation qui décide. `consentementPossible`
+  // est calculé par `api/patient/questionnaire` avec le même `isDeadlineExpired`
+  // que les routes d'écriture — un seul fuseau, un seul verdict.
+  //
+  // ÉLARGISSEMENT DÉLIBÉRÉ : ce garde vaut pour TOUS les questionnaires, pas
+  // seulement l'agenda alimentaire. Le défaut y est identique et le correctif y
+  // est le même ; le borner à un instrument aurait laissé l'impasse ouverte
+  // partout ailleurs. Le MÊME garde est posé sur l'autre écran porteur du
+  // `ConsentScreen` (`app/patient/[idAssignation]/page.tsx`), qui passe par la
+  // même route : deux écrans, un seul verdict.
   if (assignation.consentement !== 'donne') {
+    if (!data.consentementPossible) {
+      // ── LE MESSAGE NE PRÉJUGE PAS DE CE QUI A ÉTÉ FAIT ──────────────────
+      // Depuis que `api/patient/questionnaire` exempte `deverrouille` à son
+      // tour, ce garde n'est atteignable que sur `verrouille` et
+      // `modification_demandee` périmés — des questionnaires DÉJÀ REMPLIS ET
+      // TRANSMIS. « ne peut plus être rempli » y était faux. Ce qui est vrai
+      // dans TOUS les cas où l'écran s'affiche : la période est close et le
+      // consentement ne s'enregistre plus.
+      return (
+        <div className="w-full max-w-2xl">
+          <EnTete token={token} titre={assignation.titre} />
+          <PatientCard className="text-center">
+            <PatientErrorState
+              message="La période est terminée : votre consentement ne peut plus être enregistré."
+              aide="Contactez votre praticien pour la suite de votre suivi."
+            />
+          </PatientCard>
+        </div>
+      );
+    }
     return (
       <div className="w-full max-w-2xl">
         <EnTete token={token} titre={assignation.titre} />
@@ -129,6 +175,36 @@ export default function PortailQuestionnairePage() {
           badge={assignation.statutReponses === 'verrouille' ? 'Transmis au praticien' : undefined}
         />
         <AgendaSommeilJournal idAssignation={assignation.idAssignation} onRetourHub={retourHub} />
+      </div>
+    );
+  }
+
+  // 1 ter) Agenda alimentaire (`Q_ALI_09`) : recueil journée par journée. Même
+  // placement que son jumeau du sommeil, et pour les mêmes deux raisons.
+  //
+  // AVANT le bloc « verrouillé » : une fois clôturé, le composant affiche sa
+  // propre frise en consultation, au lieu de l'écran générique de lecture seule.
+  //
+  // AVANT le test `!data.questionnaire` : la page passe par
+  // `/api/patient/questionnaire`, dont le resolver ne connaît pas `Q_ALI_09` —
+  // l'écran générique rendrait « pas encore disponible en ligne » sur un
+  // instrument qui existe et fonctionne.
+  //
+  // Le test porte sur `AGENDA_ALI_ID`, JAMAIS sur le littéral `'Q_ALI_09'` : le
+  // bloc voisin du sommeil utilise encore un littéral, et ce raccourci n'est pas
+  // recopié ici — l'identifiant a une source, autant s'y brancher.
+  if (assignation.idQuestionnaire === AGENDA_ALI_ID) {
+    return (
+      <div className="w-full max-w-2xl">
+        <EnTete
+          token={token}
+          titre={assignation.titre}
+          badge={assignation.statutReponses === 'verrouille' ? 'Transmis au praticien' : undefined}
+        />
+        <AgendaAlimentaireJournal
+          idAssignation={assignation.idAssignation}
+          onRetourHub={retourHub}
+        />
       </div>
     );
   }
