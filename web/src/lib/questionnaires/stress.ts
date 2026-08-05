@@ -24,7 +24,7 @@ export const Q_STR_02 = {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:50,
     certification:{source:'drive',status:'certifie'},
     note:'Source Drive : les items inversés portent directement les valeurs 5-1. Le score 27 est rattaché au niveau élevé pour lever la borne non explicitement couverte par la mention >27.',
@@ -73,7 +73,7 @@ export const Q_STR_08 = {
       ]},
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     minTotal:25,
     maxTotal:100,
     certification:{source:'drive',status:'certifie'},

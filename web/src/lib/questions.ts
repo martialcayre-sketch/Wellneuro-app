@@ -232,7 +232,7 @@ Q_SOM_02: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     certification:{source:'drive',status:'ambigu'},
     maxTotal:24,
     // Les trous à 6 et à 15 sont des trous DE LA SOURCE elle-même (« < 6 »,
@@ -270,7 +270,7 @@ Q_SOM_06: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     certification:{source:'drive',status:'certifie'},
     maxTotal:32,
     interpretation:[
@@ -329,7 +329,7 @@ Q_INF_01: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:96,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -364,7 +364,7 @@ Q_INF_02: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:52,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -473,7 +473,7 @@ Q_INF_04: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:78,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -584,6 +584,11 @@ Q_GAS_01: {
   ],
   scoring:{
     type:'tfd',
+    // `severiteCroissante` : les grilles d'axe comme la globale montent avec le
+    // score (« A — Absence de troubles fonctionnels » en bas, « C — majeurs » en
+    // haut), et les items sont cotés 0 à 3 — aucune réponse ajoutée ne peut faire
+    // baisser un total. L'instrument est éligible au plancher garanti.
+    severiteCroissante:true,
     certification:{source:'drive',status:'ambigu'},
     subScores:[
       {id:'C1',label:'Digestif supérieur',items:['C1_1','C1_2','C1_3','C1_4','C1_5','C1_6','C1_7','C1_8'],max:24,
@@ -631,7 +636,7 @@ Q_FIB_01: {
       ]}
   ],
   scoring:{
-    type:'sum',
+    type:'sum', severiteCroissante:true,
     maxTotal:6,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
@@ -753,7 +758,7 @@ Q_TAB_02: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10, certification:{source:'drive',status:'certifie'},
+    type:'sum', severiteCroissante:true, maxTotal:10, certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,  max:2,  label:'Pas de dépendance à la nicotine',       color:'success'},
       {min:3,  max:4,  label:'Faible dépendance à la nicotine',       color:'info'},
@@ -1136,7 +1141,7 @@ Q_STR_03: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:55,
+    type:'sum', severiteCroissante:true, maxTotal:55,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:9,label:'Niveau de stress très bas',color:'success'},
@@ -1316,7 +1321,7 @@ Q_GEO_02: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10,
+    type:'sum', severiteCroissante:true, maxTotal:10,
     certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:3, label:'Risque de sarcopénie faible',color:'success',protocol:'Maintenir activité physique et apports protéiques adaptés à l\'âge (≥ 1,2 g/kg/j). Refaire le test si la situation s\'aggrave.'},
@@ -1375,7 +1380,7 @@ Q_TAB_05: {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:10, certification:{source:'drive',status:'certifie'},
+    type:'sum', severiteCroissante:true, maxTotal:10, certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:3, label:"Pas de perte d'autonomie selon le seuil fourni",color:'success'},
       {min:4,max:10,label:"Perte d'autonomie",color:'danger'},
@@ -1631,6 +1636,109 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   }
 
   /**
+   * Bande PLANCHER d'un recueil partiel — le pendant de `seuilMonotone` pour les
+   * grilles d'interprétation.
+   *
+   * `D-014` a fermé le faux négatif rassurant : sur un recueil partiel, plus de
+   * bande. Sa justification était déjà l'asymétrie — « l'erreur est à sens
+   * unique : SOUS-classement, jamais sur-classement ». Mais si l'erreur ne peut
+   * aller que vers le bas, la bande décrochée par les seules réponses cotées est
+   * un PLANCHER : la bande finale sera celle-là ou pire, jamais meilleure. La
+   * supprimer éteint donc, avec le faux négatif visé, les vrais positifs DÉJÀ
+   * ACQUIS. Sur `Q_GAS_01`, dont les items sont cotés 0 à 3 et dont la bande B
+   * s'ouvre à 24, huit réponses au maximum suffisent à l'atteindre — et les
+   * vingt-trois items restants ne peuvent qu'ajouter.
+   *
+   * DEUX CONDITIONS, et aucune ne se présume — d'où le paramètre `eligible`,
+   * qui vient d'une DÉCLARATION du questionnaire et jamais d'une déduction :
+   *
+   *   1. MONOTONIE — une réponse de plus ne peut jamais faire baisser le total.
+   *      Vraie d'un moteur purement additif dont les items sont positifs ; fausse
+   *      dès qu'une absence se complète par un défaut qui n'est pas la valeur la
+   *      plus favorable de son échelle (le cas de `Q2` sur le PSQI, corrigé dans
+   *      le même lot).
+   *   2. SENS DE LA GRILLE — la sévérité doit CROÎTRE avec le score. QUATRE
+   *      instruments `sum` vont dans l'autre sens : `Q_TAB_01` (« peu ou pas
+   *      motivé » en bas, « fortement motivé » en haut), `Q_ALI_01`, `Q_ALI_02`
+   *      et `Q_GEO_04` (MMSE). Un score haut y est FAVORABLE. Le compte est celui
+   *      du catalogue RÉSOLU, drapeau `WN_ALI_01_SIIN57` éteint ; allumé,
+   *      `Q_ALI_01` bascule sur `seuils_points` et quitte ce moteur — ils ne sont
+   *      alors plus que trois. Un plancher de SCORE y serait un plafond de
+   *      SÉVÉRITÉ, et
+   *      servir la bande y produirait exactement le faux positif rassurant que
+   *      `D-014` combat — en pire, puisqu'il porterait la marque du garanti.
+   *
+   * Le sens de la grille ne se lit ni dans l'ordre d'écriture des bandes ni dans
+   * leurs couleurs : plusieurs grilles du catalogue sont rédigées en `min`
+   * DÉCROISSANT, et `Q_TAB_01` inverse les deux à la fois.
+   *
+   * LA BANDE LA PLUS BASSE NE FAIT PAS UN PLANCHER. « Au moins la bande la plus
+   * basse » est une information vide — c'est le cas que `D-014` protège, et il ne
+   * change pas. La comparaison porte donc sur `min`, et non sur l'index dans le
+   * tableau, qui dépendrait de l'ordre de rédaction.
+   *
+   * Les deux comportements de `interpretRanges` restent justes ici, et pour la
+   * même raison : dans un trou de grille il rend `null` — pas de plancher plutôt
+   * qu'un plancher inventé —, et au-dessus de toute la grille il rend la bande au
+   * `max` le plus haut, qui sur une grille croissante est la plus sévère. Aucun
+   * des deux ne peut rendre un plancher plus rassurant qu'il ne devrait.
+   */
+  function estEligibleAuPlancher(sc: any) {
+    // UNE seule définition, lue par les trois moteurs. Une première rédaction en
+    // avait deux — `sum` ajoutait `sansTotalGlobal` dans une variable locale,
+    // `psqi` et `tfd` testaient `severiteCroissante` nu — et un concept à deux
+    // orthographes finit toujours par diverger sur l'une des deux.
+    //
+    // `sansTotalGlobal` : un instrument qui ne sert pas son total ne peut pas
+    // servir de plancher, qui est une lecture de ce total. Sans cette clause,
+    // « au moins Risque aigu » partirait dans la note sans le nombre qui le
+    // fonde — la garde doit fermer les DEUX chemins, le champ et la phrase.
+    return sc?.severiteCroissante === true && sc?.sansTotalGlobal !== true;
+  }
+
+  function bandePlancher(total: any, recueilIncomplet: boolean, ranges: any, eligible: boolean) {
+    if (eligible !== true || !recueilIncomplet) return null;
+    if (!Array.isArray(ranges) || ranges.length === 0) return null;
+    const bande = interpretRanges(total, ranges);
+    if (!bande) return null;
+    const borneLaPlusBasse = ranges.reduce(
+      (m: number, r: any) => (typeof r?.min === 'number' && r.min < m ? r.min : m), Infinity);
+    if (!(bande.min > borneLaPlusBasse)) return null;
+    // LA CONDUITE NE SORT PAS PAR ICI. Une bande dit ce que VAUT la mesure, une
+    // conduite ce qu'il faut FAIRE, et le dépôt les sépare à un endroit unique
+    // (`separerConduite`) par lequel les dix-sept moteurs passent tous. Or cet
+    // entonnoir sort immédiatement quand `interpretation` vaut `null` — c'est-à-dire
+    // exactement sur le recueil partiel, le seul état où un plancher existe. Un
+    // `{...bande}` nu ouvrait donc une SECONDE porte, non filtrée : cinq
+    // instruments éligibles (`Q_NEU_02`, `Q_GEO_03`, `Q_CAR_01`, `Q_SOM_04`,
+    // `Q_GEO_02`) portent un `protocol` sur leur bande la plus sévère, et
+    // « Orientation psychiatrique urgente » serait parti dans `scoresJson` sous
+    // une clé que rien ne rend. Relevé en revue adversariale, invisible du garde
+    // `conduite.guard.test.ts` qui ne sature que des passations COMPLÈTES.
+    //
+    // La conduite est donc RETIRÉE, pas déplacée : servir une conduite sur un
+    // instrument incomplet est un autre arbitrage que celui de ce lot.
+    const {protocol: _conduiteNonServie, ...bandeSansConduite} = bande as Record<string, unknown>;
+    return {...bandeSansConduite, garanti: true};
+  }
+
+  /**
+   * Phrase qui ACCOMPAGNE un plancher dans la note de recueil.
+   *
+   * La note est le seul canal déjà servi partout — fiche praticien, synthèse,
+   * PDF, prompts. Y écrire le plancher le porte jusqu'au lecteur sans toucher un
+   * seul consommateur ; le champ `bandePlancher`, lui, reste la forme structurée
+   * pour ceux qui voudront le lire plus tard.
+   *
+   * « Au moins », et la raison dans la même phrase : une bande sans son « au
+   * moins » se relit comme une mesure, et c'est précisément la confusion que le
+   * champ distinct existe pour empêcher.
+   */
+  function phrasePlancher(plancher: any) {
+    return plancher ? `Au moins « ${plancher.label} » : les items sans réponse ne peuvent qu'aggraver le score.` : null;
+  }
+
+  /**
    * Total global agrégé depuis des sous-scores.
    *
    * Si UN SEUL axe contributeur n'a pas été mesuré, le total n'est plus celui de
@@ -1844,12 +1952,23 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const {total, missing, repondus} = sumItems(items, []);
     const recueilIncomplet = missing > 0 || repondus === 0;
     const interp = recueilIncomplet ? null : interpretRanges(total, sc.interpretation);
+    // PLANCHER — ce que le recueil partiel a DÉJÀ acquis, quand la grille le
+    // permet. L'éligibilité est une DÉCLARATION de l'instrument : le moteur ne
+    // peut pas la déduire, QUATRE de ses instruments (`Q_TAB_01`, `Q_ALI_01`,
+    // `Q_ALI_02`, `Q_GEO_04`) ayant une grille où le score haut est FAVORABLE.
+    // Un cinquième, `Q_TAB_04`, n'est pas éligible non plus, mais pour un autre
+    // motif : il ne déclare aucune grille.
+    //
+    // Le cas `repondus === 0` se ferme tout seul — `total` y vaut 0, qui ne
+    // dépasse jamais la borne la plus basse d'une grille.
+    const plancher = bandePlancher(total, recueilIncomplet, sc.interpretation, estEligibleAuPlancher(sc));
     // La note s'AJOUTE à celle de l'instrument, elle ne la remplace pas : la
     // note de `sc` porte souvent une harmonisation de seuils qu'on perdrait.
     const noteRecueil = !recueilIncomplet ? null
-      : missing > 0
-        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
-        : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`;
+      : [missing > 0
+          ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+          : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`,
+         phrasePlancher(plancher)].filter(Boolean).join(' ');
     // `dimensions` : découpage DESCRIPTIF déclaré par l'instrument. Il n'entre
     // pas dans le total — celui-ci reste la somme de tous les items — et sert
     // uniquement à ne plus masquer un profil derrière un score global. Ajouté
@@ -1889,6 +2008,11 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // C'est la même classe de défaut que le drapeau qui ne faisait rien sur la
       // moitié des moteurs — elle survivait dans la branche qu'on venait de réparer.
       interpretation: sc.sansTotalGlobal === true ? null : interp,
+      // ABSENT plutôt que `null`, comme `dimensions` juste en dessous : un champ
+      // servi à `null` sur les vingt-six instruments `sum` partirait au modèle
+      // sur chacun d'eux, alors qu'il n'a de sens que là où un plancher existe.
+      // `promptAlimentaire.guard.test.ts` l'a dit avant moi, sur `Q_ALI_02`.
+      ...(plancher ? {bandePlancher: plancher} : {}),
       ...(dimensions.length > 0 ? {dimensions} : {}),
       // Deux COMPTES d'items, comme `sum_items` en rend depuis toujours : ils
       // disent pourquoi la bande manque, là où un `interpretation: null` nu
@@ -2628,8 +2752,32 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // MEILLEURE valeur : la réponse la plus grave de l'échelle rendait la plus
     // rassurante. Le défaut complétait bien une composante partiellement
     // renseignée, comme annoncé — mais il écrasait aussi celles qui l'étaient.
+    //
+    // UN DÉFAUT ATTEIGNABLE EST TOUJOURS LA VALEUR LA PLUS FAVORABLE DE SON
+    // ÉCHELLE — sans quoi le total partiel n'est pas une borne inférieure du
+    // total complet, et le plancher garanti (`bandePlancher`) serait faux.
+    //
+    // Trois de ces quatre défauts sont INATTEIGNABLES, et c'est ce qui les rend
+    // inoffensifs : `Q4` est le seul item de `ITEMS_C3` et appartient à
+    // `ITEMS_C4`, dont les trois items sont exigés — `C3` comme `C4` sont donc
+    // `null` sans lui, et `totalGlobalDepuisSousScores` annule alors le total.
+    // `Q1` et `Q3` ne servent que `tLit`, lui-même réservé à `efficiency`, qui
+    // exige les mêmes trois items.
+    //
+    // `Q2` ÉTAIT LE QUATRIÈME, et le seul atteignable : `ITEMS_C2` vaut
+    // `['Q2','Q5a']` sous la frontière « au moins un item », si bien que `Q5a`
+    // seul renseigné faisait calculer `C2` avec un `Q2` absent. Son défaut de
+    // trente minutes rendait `lat = 1` ; la vraie réponse à dix minutes rend
+    // `lat = 0`. RÉPONDRE FAISAIT BAISSER LE TOTAL — la monotonie tombait, et
+    // avec elle la seule chose qui autorise à lire un plancher. Le défaut passe
+    // donc à `0`, la meilleure valeur de l'échelle de latence.
+    //
+    // Ce que cela change de servi : sur une passation à qui il manque `Q2`, le
+    // `total` baisse de 0 ou 1 point. La BANDE, elle, ne bouge pas — elle était
+    // déjà `null`, la garde de recueil partiel ayant mordu. `monotonieMoteurs.guard.test.ts`
+    // rougit si ce `0` redevient un `30`.
     const hCoucher = getVal('Q1') ?? 23;
-    const minEndorm = getVal('Q2') ?? 30;
+    const minEndorm = getVal('Q2') ?? 0;
     const hLever   = getVal('Q3') ?? 7;
     const hDormies = getVal('Q4') ?? 7;
     let tLit = hLever - hCoucher;
@@ -2703,13 +2851,39 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
     const missing = ITEMS_COTES.length - repondus;
     const recueilIncomplet = missing > 0;
-    const interp = total === null || recueilIncomplet ? null
-                 : total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
-                 : total <= 10 ? {label:'Troubles du sommeil légers',color:'info'}
-                 : total <= 16 ? {label:'Troubles du sommeil modérés',color:'warning'}
-                 : {label:'Troubles du sommeil sévères',color:'danger'};
+    // L'échelle de Buysse 1989, sortie de la cascade de ternaires où elle vivait
+    // pour prendre la forme `{min, max}` du reste du catalogue. Ce n'est pas un
+    // reformatage : `bandePlancher` a besoin des BORNES pour savoir laquelle est
+    // la plus basse — la seule qui ne fasse pas un plancher —, et une cascade ne
+    // les expose pas. Les quatre bandes et leurs coupures sont inchangées.
+    const BANDES_PSQI = [
+      {min: 0,  max: 4,  label: 'Pas de trouble du sommeil',    color: 'success'},
+      {min: 5,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
+      {min: 11, max: 16, label: 'Troubles du sommeil modérés',  color: 'warning'},
+      {min: 17, max: 21, label: 'Troubles du sommeil sévères',  color: 'danger'},
+    ];
+    const interp = recueilIncomplet ? null : interpretRanges(total, BANDES_PSQI);
+    // L'éligibilité se lit sur l'INSTRUMENT, ici comme dans `sum` et `tfd`, alors
+    // même que la grille est écrite dans ce fichier : un `true` en dur ferait de
+    // ce moteur le seul dont l'éligibilité ne se relit pas au même endroit que
+    // les autres, et l'inventaire épinglé (`eligibilitePlancher.guard.test.ts`)
+    // n'aurait plus une source unique à lire.
+    //
+    // Ce qui fonde la déclaration côté PSQI : grille croissante, et monotonie des
+    // sept composantes établie plus haut (défauts toujours les plus favorables,
+    // ou inatteignables). Les composantes étant indépendantes, leur monotonie
+    // individuelle suffit à celle du total — c'est ainsi que le banc la prouve,
+    // et non par énumération globale, que `C5` seule rendrait déraisonnable.
+    const plancher = bandePlancher(total, recueilIncomplet, BANDES_PSQI, estEligibleAuPlancher(sc));
     const noteRecueil = !recueilIncomplet ? null
-      : `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${ITEMS_COTES.length}. Les bandes du PSQI supposent la forme complète ; les items sans réponse sont remplacés par un défaut, le plus souvent le plus favorable de leur échelle. L'interprétation n'est pas calculable.`;
+      // « ne peut qu'abaisser le total » plutôt que « toujours le plus favorable » :
+      // c'est l'invariant que le code garantit vraiment. Trois des quatre défauts
+      // littéraux du moteur (`Q1 = 23`, `Q3 = 7`, `Q4 = 7`) ne sont PAS les plus
+      // favorables de leur échelle — ils sont seulement inatteignables, faute de
+      // quoi le total serait nul. Écrire « toujours » servait au praticien une
+      // affirmation plus forte que ce qui est prouvé.
+      : [`Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${ITEMS_COTES.length}. Les bandes du PSQI supposent la forme complète ; un item sans réponse est remplacé par un défaut qui ne peut qu'abaisser le total. L'interprétation n'est pas calculable.`,
+         phrasePlancher(plancher)].filter(Boolean).join(' ');
     return {type:'psqi', total, maxTotal:21,
       // Deux COMPTES d'items, même contrat que `sum` : ils disent POURQUOI la
       // bande manque, là où un `interpretation: null` nu laisse croire à un trou
@@ -2718,6 +2892,8 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // `extraireValeurBrute` dans `equilibre/score.ts` —, qui rendaient `false`
       // faute de savoir quoi lire tant que le PSQI ne publiait aucun compte.
       missing, repondus,
+      // Absent plutôt que `null` — même raison que dans `sum`.
+      ...(plancher ? {bandePlancher: plancher} : {}),
       // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
       // pas — même forme que `sum` et `bms_average`. `Q_SOM_01` ne déclare
       // aujourd'hui aucune `scoring.note`, donc rien n'est perdu ; écrire
@@ -2769,6 +2945,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // dur. Le jour où l'une en déclarera une, le CI le dira.
       const {total, missing, repondus} = totalSousScore(sub.items, []);
       const interp = missing > 0 ? null : interpretRanges(total, sub.ranges);
+      // Plancher d'AXE. Les grilles d'axe du TFD sont croissantes comme la
+      // globale, et les items sont cotés 0 à 3 : un axe où les seules réponses
+      // cotées franchissent déjà sa bande B ne peut plus revenir en A.
+      const plancherAxe = bandePlancher(total, missing > 0, sub.ranges, estEligibleAuPlancher(sc));
       // `repondus`/`items` et non `missing` : même forme exacte que la branche
       // `subscore`, dont ce sont les deux clés que lisent `recueilIncomplet`
       // (`clinical/orientationEngine.ts`) et la consigne de synthèse, qui les
@@ -2777,6 +2957,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // n'est pas satisfait, et une question légitimement non posée n'est pas une
       // question sans réponse.
       return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp,
+              ...(plancherAxe ? {bandePlancher: plancherAxe} : {}),
               repondus, items: repondus + missing};
     });
     // Comptes de la racine DÉRIVÉS des axes, jamais réécrits à la main : le
@@ -2786,8 +2967,26 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const missing = subResults.reduce((n: number, r: any) => n + (r.items - r.repondus), 0);
     const globalTotal = totalGlobalDepuisSousScores(subResults);
     const globalInterp = missing > 0 ? null : interpretRanges(globalTotal, sc.globalInterpretation);
+    // Plancher GLOBAL. C'est le cas qui a motivé le lot : les items sont cotés 0
+    // à 3 et la bande B s'ouvre à 24, si bien que HUIT réponses au maximum
+    // suffisent à l'atteindre — et les vingt-trois restantes ne peuvent
+    // qu'ajouter. La garde de #567 éteignait cette bande avec le faux négatif
+    // qu'elle visait ; le plancher la rallume sans jamais la faire passer pour
+    // une mesure complète.
+    //
+    // CE QU'IL N'ATTEINT PAS, et qu'il ne faut pas croire couvert :
+    // `totalGlobalDepuisSousScores` rend `null` dès qu'un axe est ENTIÈREMENT
+    // vide, et un plancher se lit sur un nombre. Huit réponses maximales
+    // concentrées sur un seul axe ne produisent donc aucun plancher, alors
+    // qu'elles en fondent un — la somme des items répondus est une borne
+    // inférieure du total final, que le dénominateur soit complet ou non. Servir
+    // ce cas-là demanderait de calculer le plancher SANS passer par le total
+    // global, c'est-à-dire de servir une bande là où aucun nombre n'est servi :
+    // un autre arbitrage, et un autre lot.
+    const plancherGlobal = bandePlancher(globalTotal, missing > 0, sc.globalInterpretation, estEligibleAuPlancher(sc));
     const noteRecueil = missing === 0 ? null
-      : `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${repondus + missing}. Les bandes du TFD supposent la forme complète ; les items sans réponse sont ignorés, ce qui abaisse les totaux. L'interprétation n'est pas calculable.`;
+      : [`Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${repondus + missing}. Les bandes du TFD supposent la forme complète ; les items sans réponse sont ignorés, ce qui abaisse les totaux. L'interprétation n'est pas calculable.`,
+         phrasePlancher(plancherGlobal)].filter(Boolean).join(' ');
     return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93,
       // Les deux comptes partent À CÔTÉ du total, même contrat que `sum`, `psqi` et
       // `bms_average` : ils disent POURQUOI la bande manque, là où un
@@ -2798,6 +2997,8 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // faute de savoir quoi lire tant que `tfd` ne publiait aucun compte.
       missing, repondus,
       interpretation: globalInterp,
+      // Absent plutôt que `null` — même raison que dans `sum`.
+      ...(plancherGlobal ? {bandePlancher: plancherGlobal} : {}),
       // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
       // pas. Ce n'est pas une précaution théorique ici : `Q_GAS_01` DÉCLARE une
       // `scoring.note` (les valeurs frontières non couvertes par les seuils
