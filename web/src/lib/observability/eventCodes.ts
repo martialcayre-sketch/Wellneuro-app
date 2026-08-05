@@ -84,6 +84,10 @@ export const EVENT_CODES = {
   // envoi nominal et un échec dur deviendraient indiscernables, et un pack
   // entièrement suspendu émettrait deux fois le même code dans une requête.
   ASSIGNATION_PACK_INSTRUMENT_SUSPENDU: 'ASSIGNATION.PACK.INSTRUMENT_SUSPENDU',
+  // Même logique que INSTRUMENT_SUSPENDU, autre cause : le qid porte déjà une
+  // assignation ouverte. Code distinct — sous le même code, la télémétrie de
+  // suspension compterait des écartés qui n'ont rien à voir avec elle.
+  ASSIGNATION_DEJA_ASSIGNE_ECARTE: 'ASSIGNATION.DEJA_ASSIGNE.ECARTE',
 
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',

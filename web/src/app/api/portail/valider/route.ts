@@ -129,7 +129,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
       });
     }
 
-    const cree = await assignPackToPatient({
+    const { cree, dejaOuverts } = await assignPackToPatient({
       idPatientBusiness: patient.idPatient,
       emailPatient: patient.email,
       qids,
@@ -140,6 +140,17 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         idConsultation: consultation.idConsultation,
       },
     });
+    // Seconde cause d'amputation, même doctrine que les suspendus ci-dessus :
+    // sans trace, un pack de base réduit par une assignation préexistante
+    // serait strictement invisible.
+    if (dejaOuverts.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
+        domain: 'ASSIGNATION',
+        message: `Questionnaires déjà assignés (ouverts) écartés du pack de base : ${dejaOuverts.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
 
     await prisma.consultation.update({
       where: { idConsultation: consultation.idConsultation },
