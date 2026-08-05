@@ -84,12 +84,19 @@ fait passer au rouge.
 **T1 vert** : 4 062 tests unitaires sur 368 fichiers, lint et anti-secrets verts.
 Audit de campagnes : 0 erreur, 1 avertissement préexistant.
 
-**T2 non conclusive en local, et c'est la conclusion.** Deux passes complètes à
-code identique ont rendu deux jeux d'échecs **différents** —
+**T2 vert à la troisième passe** : 4 062 unitaires, **120 E2E passés, aucun
+échec**. Les deux premières, jouées avant les correctifs de revue et à code
+identique entre elles, avaient rendu deux jeux d'échecs **différents** —
 `portail-lien-magique.spec.ts:48` (gigue d'horloge, 819 et 1 032 ms contre un
 seuil de 800) sur les deux projets, puis `portail-parcours.spec.ts:281` (fixture
-`PAT_SEED_03`) sur un seul. Aucune ne touche une surface de ce lot ; la revue a
-cherché un chemin causal et n'en a trouvé aucun. Signature connue d'un second
-poste jouant Playwright sur la base partagée. **Seul le CI rend un verdict** — ne
-pas interpréter une passe locale rouge comme une régression, ni une passe verte
-comme une preuve.
+`PAT_SEED_03`) sur un seul. Aucun ne se reproduit, aucun ne touche une surface de
+ce lot, et la revue a cherché un chemin causal sans en trouver.
+
+**La leçon à garder, elle, ne dépend pas de l'issue** : un jeu d'échecs qui se
+*déplace* à code figé n'est pas une régression, c'est la signature d'un second
+poste jouant Playwright sur la base partagée. Un `pgrep` préalable est nécessaire
+et pas suffisant — le voisin peut redémarrer en cours de passe.
+
+**CI vert sur la PR #590**, `verify` ayant réellement tourné
+(`node scripts/wn-attendre-ci.mjs 590` → code `0`, le seul qui autorise à
+l'annoncer prête).

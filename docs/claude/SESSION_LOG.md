@@ -2668,9 +2668,11 @@ pour une garde, pas pour un énoncé, et le drapeau est allumé en production.
 **Prochaine action prioritaire.** Suivre le CI de la PR, puis reprendre LOT-04 des
 dettes 5.0. LOT-06 pas avant J+7.
 
-**Questions ouvertes.** T2 non conclusive en local : deux passes à code identique,
-deux jeux d'échecs différents, tous sur des surfaces portail hors périmètre — seul
-le CI rend un verdict. Trois réserves nommées et non fermées : la modale promet
+**Questions ouvertes.** T2 verte à la troisième passe (120 E2E, aucun échec) ; les
+deux rouges antérieures portaient des jeux d'échecs *différents* à code identique,
+sur des surfaces portail hors périmètre — un rouge qui se déplace n'est pas une
+régression. CI vert sur #590, `verify` a bien tourné. Trois réserves nommées et
+non fermées : la modale promet
 « vous pourrez réassigner », faux drapeau éteint ; la déduplication `distinct`
 côté base n'est prouvée par rien ; l'argument `process.env.WN_AGENDA_ALI` au point
 de montage est décoratif — le paramètre par défaut absorbe une faute de frappe,

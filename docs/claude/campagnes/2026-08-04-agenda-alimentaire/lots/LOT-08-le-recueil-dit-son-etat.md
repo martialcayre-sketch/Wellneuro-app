@@ -331,12 +331,19 @@ réassigner » reste fausse drapeau éteint, la déduplication côté base n'est
 prouvée par rien, et la fonction de comptage n'a pas de garde de portée propre.
 Toutes trois en section « ce que ce lot ne fait pas ».
 
-**Validation.** T1 vert : 4 056 tests unitaires sur 367 fichiers, lint et
-anti-secrets verts. **T2 non conclusive en local** : deux passes complètes à code
-identique ont rendu deux jeux d'échecs *différents* — d'abord
+**Validation.** T1 vert : 4 062 tests unitaires sur 368 fichiers, lint et
+anti-secrets verts. Audit de campagnes : 0 erreur, 1 avertissement préexistant.
+
+**T2 vert à la troisième passe** — 4 062 unitaires, **120 E2E passés, aucun
+échec**. Les deux passes précédentes, jouées avant les correctifs de revue,
+avaient rendu deux jeux d'échecs *différents* à code identique entre elles :
 `portail-lien-magique.spec.ts:48` (assertion de gigue d'horloge, 819 et 1 032 ms
 contre un seuil de 800) sur les deux projets, puis `portail-parcours.spec.ts:281`
-(fixture `PAT_SEED_03`) sur un seul. Signature connue d'un second poste jouant
-Playwright sur la base partagée ; aucune des deux ne touche une surface de ce lot
-— la revue a cherché un chemin causal et n'en a trouvé aucun. **Seul le CI rend
-un verdict.**
+(fixture `PAT_SEED_03`) sur un seul. Aucun ne se reproduit, aucun ne touche une
+surface de ce lot, et la revue a cherché un chemin causal sans en trouver.
+Signature connue d'un second poste jouant Playwright sur la base partagée : **un
+jeu d'échecs qui se déplace à code figé n'est pas une régression**, et une passe
+locale rouge ne se lit pas comme telle.
+
+**CI vert sur la PR #590**, `verify` ayant réellement tourné
+(`node scripts/wn-attendre-ci.mjs 590` → code `0`).
