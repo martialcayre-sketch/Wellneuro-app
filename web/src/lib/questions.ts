@@ -2744,14 +2744,66 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── TFD ──────────────────────────────────────────────────
   if (sc.type === 'tfd') {
+    // GARDE — une bande du TFD ne se lit que sur le recueil COMPLET, au grain de
+    // l'axe comme au grain de l'instrument.
+    //
+    // `totalGlobalDepuisSousScores` ne ferme que le cas d'un axe ENTIÈREMENT vide.
+    // Un seul item répondu par axe suffisait donc à produire un total : cinq
+    // réponses sur trente-et-une, cotées à leur PIRE valeur, donnent 15 sur 93 et
+    // décrochaient « A — Absence de troubles fonctionnels » (0-23). Le biais du
+    // recueil partiel est à sens unique — un item non répondu n'est pas compté 0,
+    // il est IGNORÉ, donc le total sort trop bas —, et sur cette grille le bas est
+    // le rassurant. Même classe que le PSQI, fermée au lot de signature.
+    //
+    // ÉCART ASSUMÉ AU PRÉCÉDENT `subscore`, qui rend la complétude seulement
+    // LISIBLE et laisse vivre la bande d'axe (voir sa doctrine plus haut). Ici la
+    // bande d'axe tombe aussi, parce qu'elle est calibrée sur l'axe COMPLET — `C1`
+    // lit « Absence » de 0 à 7 sur ses huit items — et qu'elle est AFFICHÉE sur la
+    // fiche praticien. La laisser vivre écrivait « A — Absence de troubles
+    // fonctionnels » sous un axe renseigné à un item sur huit. Le total, lui,
+    // reste servi : c'est une mesure réelle, biaisée bas, et d'autres
+    // consommateurs le lisent.
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = totalSousScore(sub.items, []);
-      const interp = interpretRanges(total, sub.ranges);
-      return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp};
+      // `[]` et non `sub.reversed` : aucune branche `tfd` ne déclare d'inversion,
+      // et `inversionsDeclarees.guard.test.ts` tient cette liste vide écrite en
+      // dur. Le jour où l'une en déclarera une, le CI le dira.
+      const {total, missing, repondus} = totalSousScore(sub.items, []);
+      const interp = missing > 0 ? null : interpretRanges(total, sub.ranges);
+      // `repondus`/`items` et non `missing` : même forme exacte que la branche
+      // `subscore`, dont ce sont les deux clés que lisent `recueilIncomplet`
+      // (`clinical/orientationEngine.ts`) et la consigne de synthèse, qui les
+      // décrit déjà toutes deux. `items` = `repondus + missing`, JAMAIS
+      // `sub.items.length` : `sumItems` écarte les questions dont le conditionnel
+      // n'est pas satisfait, et une question légitimement non posée n'est pas une
+      // question sans réponse.
+      return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp,
+              repondus, items: repondus + missing};
     });
+    // Comptes de la racine DÉRIVÉS des axes, jamais réécrits à la main : le
+    // découpage est la seule source qui sache combien d'items l'instrument cote
+    // réellement (même leçon que `ITEMS_COTES` sur le PSQI).
+    const repondus = subResults.reduce((n: number, r: any) => n + r.repondus, 0);
+    const missing = subResults.reduce((n: number, r: any) => n + (r.items - r.repondus), 0);
     const globalTotal = totalGlobalDepuisSousScores(subResults);
-    const globalInterp = interpretRanges(globalTotal, sc.globalInterpretation);
-    return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93, interpretation: globalInterp, note: sc.note || null, certification: sc.certification || null};
+    const globalInterp = missing > 0 ? null : interpretRanges(globalTotal, sc.globalInterpretation);
+    const noteRecueil = missing === 0 ? null
+      : `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${repondus + missing}. Les bandes du TFD supposent la forme complète ; les items sans réponse sont ignorés, ce qui abaisse les totaux. L'interprétation n'est pas calculable.`;
+    return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93,
+      // Les deux comptes partent À CÔTÉ du total, même contrat que `sum`, `psqi` et
+      // `bms_average` : ils disent POURQUOI la bande manque, là où un
+      // `interpretation: null` nu laisse croire à un trou de grille. Ce sont aussi
+      // les clés que lisent les gardes en aval — `recueilIncomplet` dans
+      // `clinical/orientationEngine.ts` et `extraireValeurBrute` dans
+      // `equilibre/score.ts`, qui rendaient l'un `false` et l'autre un total
+      // faute de savoir quoi lire tant que `tfd` ne publiait aucun compte.
+      missing, repondus,
+      interpretation: globalInterp,
+      // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
+      // pas. Ce n'est pas une précaution théorique ici : `Q_GAS_01` DÉCLARE une
+      // `scoring.note` (les valeurs frontières non couvertes par les seuils
+      // source), qu'un `note: noteRecueil` nu aurait effacée.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null};
   }
 
   // ── FRANCIS ─────────────────────────────────────────────────

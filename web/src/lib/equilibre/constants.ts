@@ -134,7 +134,41 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // simultanées — la consigne de synthèse (`anthropic.ts`) et ce score. Un `v11` nu
 // dans un log ou une conversation ne désigne plus rien. Même piège que le préfixe
 // `R` des campagnes, décrit dans `CLAUDE.md`.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v11' : 'v10';
+//
+// v10/v11 → v12/v13 (garde de recueil partiel du TFD, 2026-08-04) : `Q_GAS_01`
+// cesse d'alimenter le besoin 4 quand sa passation est incomplète. Même forme que
+// le bump précédent — c'est la DISPONIBILITÉ d'une source qui change, aucun poids
+// ni seuil ne bouge —, et `Q_GAS_01` est lui aussi une source `inverser: true`
+// (`max: 93`).
+//
+// L'EFFET VA DANS LES DEUX SENS, et une première rédaction n'en écrivait qu'un.
+// Relevé en revue adversariale ; c'est la seule chose que ce bloc doit dire sans
+// se tromper.
+//
+//   · TFD partiel et BAS (le cas qui motive la garde) — cinq items sur
+//     trente-et-un rendaient un total effondré, donc `1 − ratio` très HAUT :
+//     « besoin bien couvert » établi sur ce que le patient n'a pas dit. La garde
+//     le rend non mesuré, et la couverture BAISSE. C'est la correction.
+//   · TFD partiel et DÉJÀ SÉVÈRE — au-delà de `total ≥ 62`, la couverture tombe
+//     sous `SEUIL_EFFONDREMENT` (0,34) et le besoin 4 est une FONDATION CRITIQUE
+//     (voir `BESOINS_FONDATIONS_CRITIQUES`), ce qui plafonne le score global à 50.
+//     Le rendre non mesuré le sort aussi de cette liste : le plafond se lève et le
+//     score global REMONTE. Trente items sur trente-et-un, tous au maximum,
+//     tombent dans ce cas. Le seuil de 62 vaut **quand `Q_GAS_01` est la seule
+//     source répondue du besoin 4** : `Q_INF_01` l'alimente aussi, et la moyenne
+//     de groupe déplace alors le point de bascule. C'est le cas courant, pas le
+//     cas général — l'incise vient de la revue adversariale.
+//
+// La seconde branche est le COÛT assumé de D-014, pas un effet secondaire : une
+// bande ne se lit que sur l'instrument complet, y compris quand l'incomplet
+// accusait déjà. Elle est du même ordre que la perte de `R-GAS-01` décrite dans
+// `clinical/orientationRulesV1.ts`. Mesuré le 2026-08-04 avant de fermer le lot :
+// la production ne porte que DEUX passations `Q_GAS_01`, toutes deux complètes
+// (31/31) — aucun dossier vivant n'est dans l'une ou l'autre branche.
+//
+// La mécanique du bump est celle décrite plus haut et son coût est le même :
+// historique de momentum coupé, agrégat cabinet masqué jusqu'à deux cycles v13.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v13' : 'v12';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

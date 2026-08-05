@@ -2207,3 +2207,33 @@ production Vercel — geste d'exploitation, hors campagne. Rien d'autre ne bloqu
 garde de recueil partiel : il ne publie aucun compte à la racine. Même classe
 ouverte sur `sum_decimal`, `count_threshold` et `ecab`, sans règle publiée qui les
 vise.
+
+## 2026-08-04 — TFD : fermer le recueil partiel du dernier moteur réglé
+
+`WN_ENABLE_ORIENTATION_NNPP2=1` posé en production et redéployé (READY, alias
+`app.wellneuro.fr`) : l'orientation tourne avec la table signée en #566.
+
+Puis le lot `tfd` (`Q_GAS_01`), dernier moteur de la classe atteignable par une règle
+publiée. Cinq réponses sur trente-et-une, toutes au maximum, rendaient « A — Absence de
+troubles fonctionnels ». Comptes publiés à la racine et par axe, bandes retirées sur
+recueil partiel — au grain de l'axe aussi (D-020), la grille du TFD calibrant ses
+bandes d'axe sur l'axe complet.
+
+Écarté : aligner le moteur `subscore` (8 instruments, autre arbitrage) ; traiter
+`sum_decimal`/`count_threshold`/`ecab` au passage (le lot y perdait sa contre-épreuve
+nette) ; `agenda-ali-l4b`, périmètre pris par une autre session.
+
+Deux revues adversariales, NO-GO puis GO. Le fond du lot est ce qu'elles ont trouvé :
+la direction de l'effet sur « Mon équilibre » n'a pas un seul sens — au-delà de
+`total ≥ 62` la garde LÈVE un plafond de fondation critique et le score REMONTE, et
+j'avais écrit l'inverse ; `R-GAS-01` s'éteint sur un partiel dont la sévérité est
+acquise par monotonie ; `buildMiniSynthese` re-fabriquait « peu perturbés » (`some` au
+lieu de `every`) ; et ma propre correction a introduit un fait faux (« 14 instruments
+subscore dont aucun » — c'est 8, dont 4 avec bandes d'axe).
+
+Vérifié plutôt que supposé : passe de mutation (6 tests rougissent sans les gardes),
+et lecture production — 2 passations `Q_GAS_01`, toutes deux complètes.
+
+Prochaine action : ouvrir la PR, lire le code de sortie de `wn-attendre-ci.mjs`.
+Question ouverte, candidate au lot suivant : servir un **plancher garanti** à côté de
+la bande, pour que le retrait n'éteigne plus les vrais positifs démontrables.

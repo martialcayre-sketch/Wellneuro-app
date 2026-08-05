@@ -201,9 +201,16 @@ export type OrientationRule = {
 //     FERMÉ dans le moteur `psqi` (`questions.ts`) : il publie désormais
 //     `missing`/`repondus` et retire sa bande sur recueil partiel. `R-SOM-01` ne
 //     peut plus s'allumer sur un instrument à moitié rempli ;
-//   · `tfd` (`Q_GAS_01`) reste, lui, non couvert par cette classe de garde. Il
-//     est cible de `R-GAS-01`, au second tour. C'est la réserve connue de cette
-//     signature, écrite ici pour qu'elle ne se redécouvre pas.
+//   · `tfd` (`Q_GAS_01`), cible de `R-GAS-01` au second tour, était la réserve
+//     connue de cette signature. Il est FERMÉ à son tour (2026-08-04) : le moteur
+//     publie `missing`/`repondus` à la racine comme sur chaque axe, et retire ses
+//     bandes — celle de l'instrument ET celle de l'axe — sur recueil partiel.
+//     Cinq réponses sur trente-et-une, toutes au maximum de leur échelle,
+//     rendaient « A — Absence de troubles fonctionnels ».
+//
+// CE QUI RESTE OUVERT, et ne doit pas se lire comme clos : `sum_decimal`,
+// `count_threshold` et `ecab` portent la même classe. Aucune règle publiée ne les
+// vise aujourd'hui — c'est la seule raison pour laquelle ils attendent.
 //
 // TRAÇABILITÉ DES CLAIMS — ce que le CI vérifie, et ce qu'il ne peut pas.
 // Le banc n'atteint que le FORMAT d'un `claimId` : les claims vivent dans
@@ -1102,6 +1109,28 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // TFD SIIN : interprétation globale sur 93 (A / B / C). Comme le PSS-10, il
     // n'émet pas de bande `info` — `warning` (bande B, 24-49) est sa première
     // bande défavorable.
+    //
+    // CE QUE LA GARDE DE RECUEIL PARTIEL COÛTE À CETTE RÈGLE, et il faut le lire
+    // ici parce que c'est ici qu'il se paie. Depuis le 2026-08-04, un TFD
+    // incomplet ne publie plus de bande : cette règle ne s'allume donc plus, y
+    // compris sur un partiel DÉJÀ défavorable. Huit réponses cotées 3 atteignent
+    // 24 — bande B —, et trente items sur trente-et-un en atteignent 90.
+    //
+    // Ce coût est symétrique et VOULU (D-014). Il n'est pas gratuit pour autant :
+    // les items de `O_TFD` sont cotés 0 à 3, donc un item non répondu ne peut
+    // qu'AJOUTER au total. Un partiel qui atteint déjà la bande B y est donc
+    // acquis — l'incertitude ne porte que sur le fait d'être en B ou en C, jamais
+    // sur le fait d'être au-dessus de A. La règle demande « warning ou pire », un
+    // prédicat que cette monotonie suffirait à trancher, et le moteur lui passe
+    // une ÉTIQUETTE de bande, pas un prédicat.
+    //
+    // Le dépôt sait déjà écrire cette asymétrie — `seuilMonotone` dans
+    // `questions.ts` (« le franchissement observé est DÉFINITIF, le
+    // non-franchissement ne vaut que sur un comptage complet »). L'appliquer aux
+    // bandes demanderait de servir un plancher garanti à côté de la bande, ce qui
+    // touche tous les moteurs à recueil partiel et non le seul TFD : c'est un lot
+    // à part, pas une ligne à ajouter ici. Écrit pour que le manque soit une
+    // décision et non un oubli.
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],

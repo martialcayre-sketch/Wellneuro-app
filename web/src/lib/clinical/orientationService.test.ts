@@ -328,3 +328,74 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
     });
   });
 });
+
+// ── Le TFD, dernier de la classe ────────────────────────────────────────────
+//
+// Le lot du PSQI a fermé le recueil partiel sur son moteur et a NOMMÉ `tfd`
+// comme le dernier trou atteignable par une règle publiée. Ce bloc est la
+// contre-épreuve BOUT EN BOUT de sa fermeture : la garde vit dans
+// `questions.ts`, mais ce qui compte cliniquement est ce que le SERVICE fait des
+// dossiers déjà en base, dont le score est figé à la soumission.
+describe('evaluerOrientationPourPatient — le recueil partiel du TFD', () => {
+  const REGLE_TFD = {
+    id: 'R-TEST-GAS',
+    statut: 'publiee',
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['success', 'info', 'warning', 'danger', 'dark'] } },
+    ],
+    suggestions: [{ questionnaireId: 'Q_GAS_03', priorite: 1, objectif: 'Préciser la forme des selles.' }],
+    justificationClaims: [{ claimId: 'WN-CL-0000-004', versionClaim: 'v1.0' }],
+    niveau: 'socle',
+  };
+
+  /** Cinq items sur trente-et-un — les cinq axes mesurés, la bande faussée. */
+  const PARTIEL = { C1_1: 3, C2_1: 3, C3_1: 3, C4_1: 3, C5_1: 3 };
+
+  function dossierTfd(scoresJson: unknown) {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idReponse: 'REP-G', idQuestionnaire: 'Q_GAS_01', dateReponse: new Date('2026-07-01T10:00:00Z'), scoresJson },
+    ]);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.pack.findMany.mockResolvedValue([]);
+    prisma.consultation.findFirst.mockResolvedValue(null);
+  }
+
+  beforeEach(() => {
+    signerLaTable();
+    mockRegles.push(REGLE_TFD);
+  });
+
+  it('une bande PÉRIMÉE stockée en base ne déclenche plus rien', () => {
+    // Le dossier tel qu'il existe avant ce lot : la bande calculée par l'ancien
+    // moteur — « A — Absence de troubles fonctionnels » sur cinq items dont
+    // TOUS sont au maximum de leur échelle —, sans aucun compte, à côté des
+    // réponses brutes. La règle ci-dessus s'allume sur N'IMPORTE quelle couleur :
+    // si le service relisait l'instantané, elle sortirait.
+    dossierTfd({
+      type: 'tfd', total: 15, maxTotal: 93,
+      interpretation: { label: 'A — Absence de troubles fonctionnels', color: 'success' },
+      rawAnswers: PARTIEL,
+    });
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      expect(resultat.actif).toBe(true);
+      expect(resultat.actif === true && resultat.recommandations).toEqual([]);
+    });
+  });
+
+  it('une passation COMPLÈTE déclenche bien — contre-épreuve', () => {
+    // Sans ce cas, un service qui écarterait TOUT passerait le test précédent.
+    const complet = Object.fromEntries(
+      ['C1_1','C1_2','C1_3','C1_4','C1_5','C1_6','C1_7','C1_8',
+       'C2_1','C2_2','C2_3','C2_4','C2_5','C2_6','C2_7',
+       'C3_1','C3_2','C3_3','C3_4','C3_5',
+       'C4_1','C4_2','C4_3','C4_4','C4_5','C4_6',
+       'C5_1','C5_2','C5_3','C5_4','C5_5'].map(id => [id, 3]),
+    );
+    dossierTfd({ type: 'tfd', total: null, interpretation: null, rawAnswers: complet });
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.recommandations).toHaveLength(1);
+      expect(resultat.recommandations[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_03' });
+    });
+  });
+});
