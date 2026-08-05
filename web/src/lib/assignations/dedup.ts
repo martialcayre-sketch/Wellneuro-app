@@ -1,22 +1,27 @@
 import type { Prisma, PrismaClient } from '@/generated/prisma';
 
 /**
- * Statuts qui rendent une assignation « ouverte » au sens de la déduplication.
- * `Complété` et `Annulée` sont terminaux : ils n'empêchent jamais une
- * repassation (réévaluation instrument par instrument).
+ * Statuts TERMINAUX d'une assignation : ils n'empêchent jamais une repassation
+ * (réévaluation instrument par instrument). Tout autre statut — connu ou
+ * inconnu — est traité comme ouvert et bloque un doublon (fail-closed) : même
+ * convention d'exclusion que `agenda-sommeil/suivi` (`not: 'Annulée'`) et
+ * `portail/session` (`not: 'Complété'`), et un statut ajouté demain resserre
+ * le garde au lieu de le trouer.
  */
-export const STATUTS_ASSIGNATION_OUVERTE = ['En attente'] as const;
+export const STATUTS_ASSIGNATION_TERMINAL = ['Complété', 'Annulée'] as const;
 
 export const RAISON_DEJA_ASSIGNE = 'deja_assigne';
 export const MESSAGE_DEJA_ASSIGNE =
-  'Ce questionnaire est déjà assigné à ce patient et en attente de réponse.';
+  'Ce questionnaire est déjà assigné à ce patient et en attente de réponse. ' +
+  'Pour le renvoyer, annulez l’assignation existante puis réassignez-le.';
 
 type ClientLecture = PrismaClient | Prisma.TransactionClient;
 
 /**
- * Rend les qids qui portent déjà une assignation ouverte pour ce patient.
- * À appeler sous le verrou de la ligne patient (FOR UPDATE) quand la création
- * suit dans la même transaction — sans quoi la fenêtre TOCTOU réapparaît.
+ * Rend les qids qui portent déjà une assignation ouverte (statut non terminal)
+ * pour ce patient. À appeler sous le verrou de la ligne patient (FOR UPDATE)
+ * quand la création suit dans la même transaction — sans quoi la fenêtre
+ * TOCTOU réapparaît.
  */
 export async function qidsDejaOuverts(
   client: ClientLecture,
@@ -28,17 +33,24 @@ export async function qidsDejaOuverts(
     where: {
       idPatient,
       idQuestionnaire: { in: qids },
-      statut: { in: [...STATUTS_ASSIGNATION_OUVERTE] },
+      statut: { notIn: [...STATUTS_ASSIGNATION_TERMINAL] },
     },
     select: { idQuestionnaire: true },
   });
   return new Set(ouvertes.map(a => a.idQuestionnaire));
 }
 
-/** Verrouille la ligne patient pour sérialiser vérification + création. */
+/**
+ * Verrouille la ligne patient pour sérialiser vérification + création.
+ * Lève si la ligne n'existe pas : un SELECT FOR UPDATE sans ligne réussit
+ * sans rien verrouiller, et la fenêtre TOCTOU reviendrait en silence.
+ */
 export async function verrouillerPatient(
   tx: Prisma.TransactionClient,
   idPatient: string,
 ): Promise<void> {
-  await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
+  const lignes = await tx.$queryRaw<unknown[]>`SELECT id FROM patients WHERE id_patient = ${idPatient} FOR UPDATE`;
+  if (lignes.length !== 1) {
+    throw new Error(`Verrou patient impossible : ${lignes.length} ligne(s) pour ${idPatient}`);
+  }
 }

@@ -63,7 +63,7 @@ describe('file-envoi/envoyer POST', () => {
     tx.envoiBrouillon.updateMany.mockResolvedValue({ count: 1 });
     // Dédup : aucune assignation ouverte par défaut.
     tx.assignation.findMany.mockResolvedValue([]);
-    tx.$queryRaw.mockResolvedValue([]);
+    tx.$queryRaw.mockResolvedValue([{ id: 1 }]);
   });
 
   it('crée une assignation par questionnaire, passe le brouillon à parti, un seul mail portail', async () => {

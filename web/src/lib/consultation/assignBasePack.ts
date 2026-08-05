@@ -37,10 +37,21 @@ export type PackAssignmentOptions = {
 
 export type CreatedAssignation = { idAssignation: string; titre: string };
 
+export type BasePackAssignmentResult = {
+  cree: CreatedAssignation[];
+  /**
+   * Qids écartés parce qu'une assignation ouverte les porte déjà. Rendus à
+   * l'appelant pour la même raison que `qidsSuspendus` : ce chemin n'a aucun
+   * praticien pour lire un écart de comptage, la route est celle qui trace.
+   */
+  dejaOuverts: string[];
+};
+
 /**
  * Assigne tous les questionnaires d'un pack à un patient : une `Assignation`
- * par `qid` valide (ids inconnus du catalogue ignorés). Renvoie les
- * assignations créées. Ne gère pas l'email (laissé à l'appelant).
+ * par `qid` valide (ids inconnus du catalogue ignorés, qids déjà ouverts
+ * écartés). Renvoie les assignations créées et les qids écartés pour
+ * antériorité. Ne gère pas l'email (laissé à l'appelant).
  */
 export async function assignPackToPatient(params: {
   idPatientBusiness: string;
@@ -48,15 +59,17 @@ export async function assignPackToPatient(params: {
   qids: string[];
   packNom: string;
   options?: PackAssignmentOptions;
-}): Promise<CreatedAssignation[]> {
+}): Promise<BasePackAssignmentResult> {
   const { idPatientBusiness, emailPatient, qids, packNom, options } = params;
   const notes = options?.notes?.trim() || `Pack ${packNom}`;
   const dateLimite = options?.dateLimite?.trim() || null;
   const now = new Date();
+  if (qids.length === 0) return { cree: [], dejaOuverts: [] };
 
   // Vérification + créations sous verrou de la ligne patient : un qid déjà
-  // porté par une assignation ouverte est ignoré (idempotence — une
-  // revalidation d'onboarding ne double pas le pack de base).
+  // porté par une assignation ouverte est écarté (idempotence — une
+  // revalidation d'onboarding ne double pas le pack de base) et rendu à
+  // l'appelant pour qu'il le trace.
   return prisma.$transaction(async tx => {
     await verrouillerPatient(tx, idPatientBusiness);
     const ouvertes = await qidsDejaOuverts(tx, idPatientBusiness, qids);
@@ -95,6 +108,6 @@ export async function assignPackToPatient(params: {
       cree.push({ idAssignation, titre });
     }
 
-    return cree;
+    return { cree, dejaOuverts: [...ouvertes].sort() };
   });
 }

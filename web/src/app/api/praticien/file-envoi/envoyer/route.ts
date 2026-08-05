@@ -18,6 +18,9 @@ import {
   qidsDejaOuverts,
   verrouillerPatient,
 } from '@/lib/assignations/dedup';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 
 // « Préparer les envois » — l'envoi au clic d'un brouillon de la file
 // (arbitrage 2026-07-23). Patron packs/assign : N assignations créées dans une
@@ -50,6 +53,7 @@ class BrouillonDejaParti extends Error {}
 class ToutDejaAssigne extends Error {}
 
 export async function POST(request: Request) {
+  const requestContext = createRequestContext(request);
   const session = await getServerSession(authOptions);
   const emailSession = emailPraticien(session);
   if (!session || !emailSession) {
@@ -152,6 +156,16 @@ export async function POST(request: Request) {
         await verrouillerPatient(tx, patient.idPatient);
         const ouvertes = await qidsDejaOuverts(tx, patient.idPatient, aCreer.map(i => i.idQuestionnaire));
         const aInserer = aCreer.filter(item => !ouvertes.has(item.idQuestionnaire));
+        // L'amputation sans trace serait invisible : le praticien lirait
+        // « N questionnaires envoyés » sans savoir lequel manque ni pourquoi.
+        if (ouvertes.size > 0) {
+          logger.warn({
+            event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
+            domain: 'ASSIGNATION',
+            message: `Questionnaires déjà assignés (ouverts) écartés de l'envoi groupé : ${[...ouvertes].sort().join(', ')}`,
+            context: finalizeLogContext(requestContext, { retryable: false }),
+          });
+        }
         if (aInserer.length === 0) {
           throw new ToutDejaAssigne();
         }

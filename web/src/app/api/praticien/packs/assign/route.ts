@@ -241,11 +241,11 @@ export async function POST(req: Request): Promise<NextResponse> {
           },
         });
       }
-      return { aInserer, ecartes: [...ouvertes] };
+      return { aInserer, ecartes: [...ouvertes].sort() };
     });
     if (crees.ecartes.length > 0) {
       logger.warn({
-        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
+        event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
         domain: 'ASSIGNATION',
         message: `Questionnaires déjà assignés (ouverts) écartés du pack : ${crees.ecartes.join(', ')}`,
         context: finalizeLogContext(requestContext, { retryable: false }),

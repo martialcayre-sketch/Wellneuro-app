@@ -26,6 +26,7 @@ import { POST } from './route';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -56,7 +57,7 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     prisma.assignation.create.mockResolvedValue({});
     // Dédup : aucune assignation ouverte par défaut.
     prisma.assignation.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     // Transaction interactive : le callback reçoit le client mocké lui-même.
     prisma.$transaction.mockImplementation(
       (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
@@ -125,6 +126,20 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
     const cree = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
     expect(cree.data.idQuestionnaire).toBe('Q_NEU_03');
+    // Le mail ne liste que les retenus — pas le questionnaire écarté.
+    const titreEcarte = (QUESTIONNAIRE_CATALOGUE as Record<string, { titre: string }>)['Q_SOM_06'].titre;
+    const message = sendMail.mock.calls[0][0] as { text: string };
+    expect(message.text).not.toContain(titreEcarte);
+    // Et l'écart est journalisé sous son propre code — pas celui des suspendus.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
+        message: expect.stringContaining('Q_SOM_06'),
+      })
+    );
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU })
+    );
   });
 
   it('refuse en 409 deja_assigne quand tout le pack est déjà ouvert, sans mail', async () => {

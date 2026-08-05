@@ -94,7 +94,7 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     // Dédup : aucune assignation ouverte par défaut ; la transaction
     // interactive passe le client mocké lui-même comme tx.
     prisma.assignation.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     prisma.$transaction.mockImplementation(
       (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
     );

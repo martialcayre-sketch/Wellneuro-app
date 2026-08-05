@@ -111,6 +111,18 @@ describe('evaluerOrientationPourPatient', () => {
     expect(prisma.questionnaireReponse.findMany).toHaveBeenCalledOnce();
   });
 
+  it('ne compte comme « déjà assigné » que les assignations ouvertes', async () => {
+    signerLaTable();
+    lecturesVides();
+
+    await evaluerOrientationPourPatient('PAT_SEED_03');
+
+    // Une assignation annulée ou complétée ne doit pas badger « déjà
+    // assigné » : la repassation redeviendrait invisible au praticien.
+    const argument = prisma.assignation.findMany.mock.calls[0][0];
+    expect(argument.where.statut).toEqual({ notIn: ['Complété', 'Annulée'] });
+  });
+
   it('ne lit que les consultations PORTANT une anamnèse', async () => {
     signerLaTable();
     lecturesVides();

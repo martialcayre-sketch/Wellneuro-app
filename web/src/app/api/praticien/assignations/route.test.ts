@@ -42,7 +42,7 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     // Dédup : aucune assignation ouverte par défaut ; la transaction
     // interactive passe le client mocké lui-même comme tx.
     prisma.assignation.findMany.mockResolvedValue([]);
-    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
     prisma.$transaction.mockImplementation(
       (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
     );
@@ -97,13 +97,13 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(sendMail).not.toHaveBeenCalled();
   });
 
-  it('contrôle négatif — la requête de dédup ne regarde que les statuts ouverts', async () => {
+  it('contrôle négatif — la dédup exclut les statuts terminaux, un statut inconnu bloque', async () => {
     const response = await POST(request());
     expect(response.status).toBe(200);
     const whereDedup = prisma.assignation.findMany.mock.calls[0][0] as {
-      where: { statut: { in: string[] } };
+      where: { statut: { notIn: string[] } };
     };
-    expect(whereDedup.where.statut.in).toEqual(['En attente']);
+    expect(whereDedup.where.statut.notIn).toEqual(['Complété', 'Annulée']);
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
   });
 });
