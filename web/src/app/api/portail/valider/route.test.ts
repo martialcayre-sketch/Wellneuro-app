@@ -5,7 +5,9 @@ const { prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     consultation: { findFirst: vi.fn(), update: vi.fn() },
     pack: { findFirst: vi.fn() },
-    assignation: { create: vi.fn() },
+    assignation: { create: vi.fn(), findMany: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
     // Interrogé par le vrai `resolvePackQuestionnaireIds` : `null` fait
     // retomber la résolution sur `pack.qids` (source « legacy »), c'est-à-dire
     // exactement la liste que le cas de test pose.
@@ -89,6 +91,13 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     prisma.consultation.update.mockResolvedValue({});
     prisma.assignation.create.mockResolvedValue({});
     prisma.questionnairePack.findUnique.mockResolvedValue(null);
+    // Dédup : aucune assignation ouverte par défaut ; la transaction
+    // interactive passe le client mocké lui-même comme tx.
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
   });
 
   it('assigne tout le pack lorsque aucun instrument n’est suspendu', async () => {

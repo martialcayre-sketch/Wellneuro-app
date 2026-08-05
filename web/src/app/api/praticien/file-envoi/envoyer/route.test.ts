@@ -12,8 +12,9 @@ const { sendMail, prisma } = vi.hoisted(() => ({
 }));
 
 const tx = {
-  assignation: { create: vi.fn() },
+  assignation: { create: vi.fn(), findMany: vi.fn() },
   envoiBrouillon: { updateMany: vi.fn() },
+  $queryRaw: vi.fn(),
 };
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -60,6 +61,9 @@ describe('file-envoi/envoyer POST', () => {
     prisma.patient.findFirst.mockResolvedValue(PATIENT);
     prisma.$transaction.mockImplementation((op: (t: typeof tx) => unknown) => op(tx));
     tx.envoiBrouillon.updateMany.mockResolvedValue({ count: 1 });
+    // Dédup : aucune assignation ouverte par défaut.
+    tx.assignation.findMany.mockResolvedValue([]);
+    tx.$queryRaw.mockResolvedValue([]);
   });
 
   it('crée une assignation par questionnaire, passe le brouillon à parti, un seul mail portail', async () => {
@@ -123,6 +127,32 @@ describe('file-envoi/envoyer POST', () => {
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('dossier_cloture');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // Dédup : un qid déjà porté par une assignation ouverte est écarté ; si tout
+  // le brouillon l'est, la transaction est annulée (le brouillon reste
+  // éditable) et aucun mail ne part.
+  it('écarte un questionnaire déjà assigné (ouvert), le reste part avec le bon compte', async () => {
+    tx.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_STR_02' }]);
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ success: true, count: 1 });
+    expect(tx.assignation.create).toHaveBeenCalledOnce();
+    const cree = tx.assignation.create.mock.calls[0][0].data as { idQuestionnaire: string };
+    expect(cree.idQuestionnaire).toBe('Q_SOM_02');
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse en 409 deja_assigne quand tout le brouillon est déjà ouvert, sans mail', async () => {
+    tx.assignation.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_STR_02' },
+      { idQuestionnaire: 'Q_SOM_02' },
+    ]);
+    const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('deja_assigne');
+    expect(tx.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('brouillon inconnu : 404', async () => {

@@ -17,6 +17,12 @@ import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
 } from '@/lib/correspondance/patient';
+import {
+  MESSAGE_DEJA_ASSIGNE,
+  RAISON_DEJA_ASSIGNE,
+  qidsDejaOuverts,
+  verrouillerPatient,
+} from '@/lib/assignations/dedup';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -40,6 +46,8 @@ export type CreateAssignationResponse = {
     // `questionnaire_not_found`, sinon le praticien croirait à une faute de
     // frappe alors que le questionnaire existe et a été retiré à dessein.
     | 'questionnaire_suspendu'
+    // Une assignation ouverte existe déjà pour ce couple patient×questionnaire.
+    | 'deja_assigne'
     // Suivi clôturé : distinct de `patient_not_found`, sinon le praticien
     // chercherait un dossier disparu au lieu de le rouvrir.
     | 'dossier_cloture'
@@ -169,19 +177,33 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       }, { status: 409 });
     }
 
-    await prisma.assignation.create({
-      data: {
-        idAssignation,
-        idPatient,
-        emailPatient,
-        idQuestionnaire,
-        titre,
-        dateAssignation: new Date(nowIso),
-        dateLimite: dateLimite || null,
-        statut: 'En attente',
-        notes: notes || null,
-      },
+    // Vérification + création sous verrou de la ligne patient : sans lui, deux
+    // requêtes concurrentes passeraient toutes deux la vérification (TOCTOU).
+    const dejaOuverte = await prisma.$transaction(async tx => {
+      await verrouillerPatient(tx, idPatient);
+      const ouvertes = await qidsDejaOuverts(tx, idPatient, [idQuestionnaire]);
+      if (ouvertes.has(idQuestionnaire)) return true;
+      await tx.assignation.create({
+        data: {
+          idAssignation,
+          idPatient,
+          emailPatient,
+          idQuestionnaire,
+          titre,
+          dateAssignation: new Date(nowIso),
+          dateLimite: dateLimite || null,
+          statut: 'En attente',
+          notes: notes || null,
+        },
+      });
+      return false;
     });
+    if (dejaOuverte) {
+      return NextResponse.json(
+        { success: false, reason: RAISON_DEJA_ASSIGNE, error: MESSAGE_DEJA_ASSIGNE },
+        { status: 409 }
+      );
+    }
     const portalUrl = buildGoogleConnexionUrl();
 
     // Email patient avec lien questionnaire (best-effort)

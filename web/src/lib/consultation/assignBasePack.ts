@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+import { qidsDejaOuverts, verrouillerPatient } from '@/lib/assignations/dedup';
 
 /**
  * Les qids écartés parce que l'instrument est suspendu. Rendu à l'appelant
@@ -52,39 +53,48 @@ export async function assignPackToPatient(params: {
   const notes = options?.notes?.trim() || `Pack ${packNom}`;
   const dateLimite = options?.dateLimite?.trim() || null;
   const now = new Date();
-  const cree: CreatedAssignation[] = [];
 
-  for (const idQuestionnaire of qids) {
-    const questionnaire = catalogue[idQuestionnaire];
-    // Un instrument suspendu est écarté comme un id inconnu. Ce chemin est le
-    // plus sensible des trois : il part de l'onboarding portail, donc sans clic
-    // praticien sur le questionnaire lui-même.
-    if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) continue;
-    const idAssignation = createPublicId('ASS');
-    const titre = questionnaire.titre || idQuestionnaire;
-    await prisma.assignation.create({
-      data: {
-        idAssignation,
-        idPatient: idPatientBusiness,
-        emailPatient,
-        idQuestionnaire,
-        titre,
-        dateAssignation: now,
-        dateLimite,
-        statut: 'En attente',
-        notes,
-        idConsultation: options?.idConsultation ?? null,
-        ...(options?.consentementDonne
-          ? {
-              consentement: 'donne',
-              consentementHorodatage: now,
-              consentementVersion: options.consentementVersion ?? null,
-            }
-          : {}),
-      },
-    });
-    cree.push({ idAssignation, titre });
-  }
+  // Vérification + créations sous verrou de la ligne patient : un qid déjà
+  // porté par une assignation ouverte est ignoré (idempotence — une
+  // revalidation d'onboarding ne double pas le pack de base).
+  return prisma.$transaction(async tx => {
+    await verrouillerPatient(tx, idPatientBusiness);
+    const ouvertes = await qidsDejaOuverts(tx, idPatientBusiness, qids);
+    const cree: CreatedAssignation[] = [];
 
-  return cree;
+    for (const idQuestionnaire of qids) {
+      const questionnaire = catalogue[idQuestionnaire];
+      // Un instrument suspendu est écarté comme un id inconnu. Ce chemin est le
+      // plus sensible des trois : il part de l'onboarding portail, donc sans clic
+      // praticien sur le questionnaire lui-même.
+      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) continue;
+      if (ouvertes.has(idQuestionnaire)) continue;
+      const idAssignation = createPublicId('ASS');
+      const titre = questionnaire.titre || idQuestionnaire;
+      await tx.assignation.create({
+        data: {
+          idAssignation,
+          idPatient: idPatientBusiness,
+          emailPatient,
+          idQuestionnaire,
+          titre,
+          dateAssignation: now,
+          dateLimite,
+          statut: 'En attente',
+          notes,
+          idConsultation: options?.idConsultation ?? null,
+          ...(options?.consentementDonne
+            ? {
+                consentement: 'donne',
+                consentementHorodatage: now,
+                consentementVersion: options.consentementVersion ?? null,
+              }
+            : {}),
+        },
+      });
+      cree.push({ idAssignation, titre });
+    }
+
+    return cree;
+  });
 }

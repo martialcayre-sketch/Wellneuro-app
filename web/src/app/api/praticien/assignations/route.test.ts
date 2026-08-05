@@ -4,7 +4,9 @@ const { sendMail, prisma } = vi.hoisted(() => ({
   sendMail: vi.fn(),
   prisma: {
     patient: { findFirst: vi.fn() },
-    assignation: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    assignation: { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), update: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -37,6 +39,13 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
     prisma.patient.findFirst.mockResolvedValue(patient);
     prisma.assignation.create.mockResolvedValue({});
+    // Dédup : aucune assignation ouverte par défaut ; la transaction
+    // interactive passe le client mocké lui-même comme tx.
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
     sendMail.mockResolvedValue(undefined);
   });
 
@@ -74,6 +83,28 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(await response.json()).toMatchObject({ success: false, reason: 'portal_revoked' });
     expect(prisma.assignation.create).not.toHaveBeenCalled();
     expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  // Dédup : une assignation OUVERTE du même questionnaire bloque la création
+  // et l'e-mail. Le filtre porte sur le statut, pas sur l'existence : une
+  // assignation annulée ou complétée ne bloque jamais une repassation.
+  it('refuse en 409 deja_assigne si une assignation ouverte existe déjà', async () => {
+    prisma.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_NEU_03' }]);
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: 'deja_assigne' });
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('contrôle négatif — la requête de dédup ne regarde que les statuts ouverts', async () => {
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    const whereDedup = prisma.assignation.findMany.mock.calls[0][0] as {
+      where: { statut: { in: string[] } };
+    };
+    expect(whereDedup.where.statut.in).toEqual(['En attente']);
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
   });
 });
 

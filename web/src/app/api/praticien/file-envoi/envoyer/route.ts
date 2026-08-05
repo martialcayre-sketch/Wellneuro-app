@@ -12,6 +12,12 @@ import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
 } from '@/lib/correspondance/patient';
+import {
+  MESSAGE_DEJA_ASSIGNE,
+  RAISON_DEJA_ASSIGNE,
+  qidsDejaOuverts,
+  verrouillerPatient,
+} from '@/lib/assignations/dedup';
 
 // « Préparer les envois » — l'envoi au clic d'un brouillon de la file
 // (arbitrage 2026-07-23). Patron packs/assign : N assignations créées dans une
@@ -30,12 +36,18 @@ export type EnvoyerFileResponse = {
     | 'portal_revoked'
     | 'dossier_cloture'
     | 'deja_envoye'
+    | 'deja_assigne'
     | 'exception';
 };
 
 // Levée quand le brouillon a déjà été réclamé par un envoi concurrent :
 // la transaction est annulée, aucune assignation ni mail ne part en double.
 class BrouillonDejaParti extends Error {}
+
+// Levée quand tous les questionnaires du brouillon portent déjà une
+// assignation ouverte : la transaction est annulée, le brouillon reste
+// en l'état, aucun mail ne part.
+class ToutDejaAssigne extends Error {}
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -121,8 +133,9 @@ export async function POST(request: Request) {
       );
     }
 
+    let retenus: typeof aCreer = [];
     try {
-      await prisma.$transaction(async (tx) => {
+      retenus = await prisma.$transaction(async (tx) => {
         // Claim atomique : ce updateMany gardé sur le statut fait qu'un second
         // envoi (double-clic, second onglet, retry) trouve count=0 et abandonne
         // sans créer d'assignation ni envoyer de mail.
@@ -133,7 +146,16 @@ export async function POST(request: Request) {
         if (claim.count === 0) {
           throw new BrouillonDejaParti();
         }
-        for (const item of aCreer) {
+        // Dédup sous verrou patient : un qid déjà porté par une assignation
+        // ouverte est écarté ; si tout le brouillon l'est, la transaction est
+        // annulée et le brouillon reste éditable.
+        await verrouillerPatient(tx, patient.idPatient);
+        const ouvertes = await qidsDejaOuverts(tx, patient.idPatient, aCreer.map(i => i.idQuestionnaire));
+        const aInserer = aCreer.filter(item => !ouvertes.has(item.idQuestionnaire));
+        if (aInserer.length === 0) {
+          throw new ToutDejaAssigne();
+        }
+        for (const item of aInserer) {
           await tx.assignation.create({
             data: {
               ...item,
@@ -146,11 +168,18 @@ export async function POST(request: Request) {
             },
           });
         }
+        return aInserer;
       });
     } catch (err) {
       if (err instanceof BrouillonDejaParti) {
         return NextResponse.json<EnvoyerFileResponse>(
           { success: false, reason: 'deja_envoye', error: 'Ce brouillon a déjà été envoyé.' },
+          { status: 409 },
+        );
+      }
+      if (err instanceof ToutDejaAssigne) {
+        return NextResponse.json<EnvoyerFileResponse>(
+          { success: false, reason: RAISON_DEJA_ASSIGNE, error: MESSAGE_DEJA_ASSIGNE },
           { status: 409 },
         );
       }
@@ -164,7 +193,7 @@ export async function POST(request: Request) {
       idPatient: patient.idPatient,
       idBrouillon,
       emailPatient: patient.email,
-      titres: aCreer.map(item => item.titre),
+      titres: retenus.map(item => item.titre),
       dateLimite: brouillon.dateLimite,
       notes: brouillon.notes,
       portalUrl,
@@ -172,7 +201,7 @@ export async function POST(request: Request) {
       // Best-effort : le lien portail reste récupérable côté praticien.
     });
 
-    return NextResponse.json<EnvoyerFileResponse>({ success: true, count: aCreer.length });
+    return NextResponse.json<EnvoyerFileResponse>({ success: true, count: retenus.length });
   } catch {
     return NextResponse.json<EnvoyerFileResponse>(
       { success: false, reason: 'exception', error: 'Erreur inattendue.' },

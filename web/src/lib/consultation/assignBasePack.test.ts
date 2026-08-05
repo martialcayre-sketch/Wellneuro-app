@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
-  prisma: { assignation: { create: vi.fn() } },
+  prisma: {
+    assignation: { create: vi.fn(), findMany: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
+  },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
@@ -16,6 +20,13 @@ describe('assignPackToPatient — instruments suspendus', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.assignation.create.mockResolvedValue({});
+    // Dédup : aucune assignation ouverte par défaut ; la transaction
+    // interactive passe le client mocké lui-même comme tx.
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
   });
 
   async function assigner(qids: string[]) {
@@ -53,6 +64,25 @@ describe('assignPackToPatient — instruments suspendus', () => {
   it('expose les qids écartés, pour que l’appelant puisse les tracer', () => {
     expect(qidsSuspendus(['Q_NEU_03', 'Q_FIB_03'])).toEqual(['Q_FIB_03']);
     expect(qidsSuspendus(['Q_NEU_03'])).toEqual([]);
+  });
+
+  // Idempotence onboarding : un qid déjà porté par une assignation ouverte est
+  // ignoré — une revalidation ne double pas le pack de base.
+  it('ignore un questionnaire déjà assigné (ouvert), sans doubler la ligne', async () => {
+    prisma.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_NEU_03' }]);
+    const cree = await assigner(['Q_NEU_03', 'Q_SOM_06']);
+    expect(cree).toHaveLength(1);
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
+    expect(arg.data.idQuestionnaire).toBe('Q_SOM_06');
+  });
+
+  it('la dédup ne regarde que les statuts ouverts — une repassation reste possible', async () => {
+    await assigner(['Q_NEU_03']);
+    const whereDedup = prisma.assignation.findMany.mock.calls[0][0] as {
+      where: { statut: { in: string[] } };
+    };
+    expect(whereDedup.where.statut.in).toEqual(['En attente']);
   });
 
   it('n’écrit rien si le pack ne contient que des instruments suspendus', async () => {
