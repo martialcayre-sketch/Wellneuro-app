@@ -2472,3 +2472,28 @@ collectées (PR ouvertes, worktrees, parcours patient rapportés mais jamais
 comparés) — `ACTIVE_CAMPAIGN.md` affirmait « aucune campagne parallèle » sans que
 l'outil puisse le voir. `validation.last_checked_at` reste signalé périmé sans
 qu'aucun outil ne le rafraîchisse.
+
+## [2026-08-05] — LOT-02 : observer le repli legacy des packs
+
+**Décisions.** Hypothèse de cadrage infirmée : `ensembles_divergents` était déjà
+journalisé (WARN, depuis LOT-03) ; le vrai trou était `registre_absent`/
+`registre_vide`, muets. Ajout d'une branche `logger.info` dans les deux
+appelants (`packs/assign`, `portail/valider`), résolveur intact, même event
+code, niveau distinct pour préserver la décision anti-alarme-permanente déjà
+prise. Constat production (`execute_sql`) : 7/8 packs conformes, 1 dérive
+réelle sur le pack de base (`Q_SOM_09` absent du registre) — repli **non
+fermé**, recommandation datée : le fermer aujourd'hui viderait l'agenda du
+sommeil de chaque onboarding.
+
+**Options écartées.** Fonction de log partagée entre les deux routes (2
+call-sites seulement, duplication déjà le style du dépôt). Résynchroniser le
+pack de base dans ce lot (correction de donnée, hors périmètre observation).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Puis LOT-03
+(`sum_decimal`, `count_threshold`, `ecab`). Réconciliation `CAMPAGNE.md`
+(`lot_courant`, tableau des lots) volontairement **non faite ici** — suit le
+même patron que LOT-01 : geste séparé, post-merge, depuis `main`, via l'outil
+sanctionné.
+
+**Questions ouvertes.** Aucune côté LOT-02. Celles héritées de LOT-01 (gates
+G0-G4, conflits de corpus) restent hors du périmètre de ce lot.
