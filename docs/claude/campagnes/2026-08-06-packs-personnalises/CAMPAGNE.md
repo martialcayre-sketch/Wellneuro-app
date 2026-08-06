@@ -4,7 +4,7 @@ titre: "Envoi personnalisé par patient — retrait des packs figés"
 statut: "en_cours"
 créée_le: "2026-08-06"
 mise_à_jour: "2026-08-06"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "campaign/2026-08-06-packs-personnalises/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -57,15 +57,19 @@ l'orientation et l'UI dessus, puis retire les packs.
 
 Arbitrages utilisateur du 2026-08-06 (session de cadrage) :
 
-1. **Les 2 packs créés par le praticien** (hors doctrine, jamais ciblés par
-   l'orientation) **sont désactivés aussi** — un seul pack actif restant.
+1. **Le second pack créé par le praticien (« Florence 1 ») est désactivé
+   aussi** (hors doctrine, jamais ciblé par l'orientation) — « Base de
+   consultation », elle aussi créée par le praticien, **n'est jamais
+   désactivée** et reste le seul pack actif. Précision d'inventaire LOT-01
+   (D-030) : la formulation initiale « les 2 packs praticien », lue
+   littéralement, aurait désactivé le pack de base et cassé l'onboarding.
 2. **Le geste d'envoi depuis l'orientation est l'ajout à la file d'envoi**
    (réutilisation de `POST /api/praticien/file-envoi`), pas l'assignation
    directe ligne à ligne.
-3. **La campagne passe entière avant la reprise des dettes 5.0** (LOT-06/07),
-   basculées en activité parallèle.
+3. **Cette campagne devient l'activité primaire** ; la reprise des dettes 5.0
+   (LOT-06/07) attend sa clôture.
 
-La décision produit formelle (D-0xx) s'écrit au LOT-01, sur pièces
+La décision produit formelle (D-030) s'écrit au LOT-01, sur pièces
 d'inventaire.
 
 ## Questions ouvertes
@@ -99,7 +103,7 @@ d'inventaire.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Resynchroniser le pack de base (la question des questionnaires) | livré (#596, 2026-08-06) | — |
-| LOT-01 | Inventaire des surfaces + décision produit D-0xx | à_faire | LOT-00 |
+| LOT-01 | Inventaire des surfaces + décision produit D-030 | livré (2026-08-06) | LOT-00 |
 | LOT-02 | L'orientation propose des ensembles personnalisés (⚠ clinique) | à_faire | LOT-01 |
 | LOT-03 | Retrait effectif des packs non-base | à_faire | LOT-02 |
 | LOT-04 | Clôture : E2E, changelog, vérification prod, reprise des dettes | à_faire | LOT-03 |

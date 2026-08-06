@@ -79,6 +79,14 @@ règles signée.
 - T2 avant commit (UI touchée).
 - Mutation ciblée : une suggestion re-ciblée dont on retire un questionnaire
   doit faire échouer le banc (pas de garde de forme faible).
+- `orientationRulesV1.test.ts` gagne un cas « aucune règle publiée sans cible
+  résoluble » — banc structurel qui balaie les 20 règles publiées et échoue si
+  l'une porte un `packId` sans composition connue ou un tableau `suggestions`
+  vide après re-ciblage (ajouté en revue adversariale du LOT-01).
+- Mutation-test étendu à la fixture `COMPOSITION_PACKS` complétée (voir
+  critère de done ci-dessous) : un qid retiré de la composition doit faire
+  échouer un cas d'absorption existant, pas seulement le nouveau banc de
+  re-ciblage (ajouté en revue adversariale du LOT-01).
 
 ## Critères de done
 
@@ -86,6 +94,13 @@ règles signée.
 - Parcours praticien : recommandation → file d'envoi → envoi groupé fonctionne
   avec la dédup existante.
 - CHANGELOG porté, revue adversariale passée (GO explicite).
+- La fixture `COMPOSITION_PACKS` d'`orientationRulesV1.test.ts:391-395` est
+  mise à jour avec la composition complète des 3 packs, pas seulement un
+  sous-ensemble : constatée partielle par le LOT-01 (2026-08-06) —
+  `pack_sommeil_chronobiologie` y porte ses 8 qids réels, mais
+  `pack_stress_chronique_burnout` n'en porte que 2 sur 9
+  (`['Q_STR_02','Q_STR_05']`) et `pack_digestif_intestin_cerveau` que 1 sur 8
+  (`['Q_GAS_01']`) — vérifié par lecture SQL de production le 2026-08-06.
 
 ## Résultats
 
