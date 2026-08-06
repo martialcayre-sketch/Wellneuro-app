@@ -93,7 +93,19 @@ function orientationInjectee(orientation: ResultatOrientation | null): boolean {
   return orientation?.actif === true && orientation.recommandations.length > 0;
 }
 
-/** Les packs effectivement transmis au modèle — l'allowlist du garde de restitution. */
+/**
+ * Les packs effectivement transmis au modèle — l'allowlist du garde de
+ * restitution.
+ *
+ * VIDE DEPUIS LE 2026-08-06, ET C'EST VOULU (LOT-02, D-030). Plus aucune règle
+ * publiée ne cible un pack : cette fonction rend donc `[]` sur une orientation
+ * pourtant active et non vide, et le garde de restitution interdit alors TOUTE
+ * mention de pack dans la synthèse. C'est le comportement recherché — le
+ * praticien ne se voit plus proposer d'ensembles préfabriqués, et le modèle ne
+ * doit pas en réintroduire par sa prose. La fonction est conservée, non
+ * inlinée à `[]` : la réintroduction d'une règle à `packId` doit rallumer
+ * l'allowlist sans qu'on ait à réécrire le garde.
+ */
 function packsTransmis(orientation: ResultatOrientation | null): PackId[] {
   if (!orientation || !orientation.actif) return [];
   return orientation.recommandations

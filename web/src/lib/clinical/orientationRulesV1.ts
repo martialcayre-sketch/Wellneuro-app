@@ -277,19 +277,42 @@ export type OrientationRule = {
 //   pas mortes, elles sont EN AVAL.
 //
 // La règle de doctrine de V1 est conservée telle quelle : UN DRAPEAU DÉCLARÉ
-// SEUL NE PROPOSE JAMAIS UN PACK, SEULEMENT UN INSTRUMENT. Une case cochée dit
-// ce que le patient redoute, pas ce qu'on a mesuré chez lui, et engager un pack
-// entier là-dessus ferait dire à l'outil plus qu'il ne sait. `R2-NEU-02` est la
+// SEUL NE PROPOSE JAMAIS UN ENSEMBLE D'INSTRUMENTS, SEULEMENT UN INSTRUMENT.
+// Une case cochée dit
+// ce que le patient redoute, pas ce qu'on a mesuré chez lui, et engager plusieurs
+// instruments là-dessus ferait dire à l'outil plus qu'il ne sait. `R2-NEU-02` est la
 // SEULE règle de cette table à déclencheur unique de drapeau — et elle propose
-// bien un questionnaire (`Q_NEU_11`). Les trois règles qui proposent un pack SUR
-// UN DRAPEAU (`R2-SOM-05`, `R2-STR-02`, `R2-GAS-02`) exigent toutes, en plus du
-// drapeau, une mesure du pack de base.
+// bien un questionnaire unique (`Q_NEU_11`). Les trois règles qui proposent un
+// ENSEMBLE SUR UN DRAPEAU (`R2-SOM-05`, `R2-STR-02`, `R2-GAS-02`) exigent toutes,
+// en plus du drapeau, une mesure du pack de base.
 //
-// `R2-ALI-01` propose elle aussi un pack, et ne porte AUCUN drapeau : elle
+// `R2-ALI-01` propose elle aussi un ensemble, et ne porte AUCUN drapeau : elle
 // s'allume sur la seule bande globale d'un instrument certifié du pack de base.
 // Ce n'est pas une exception à la doctrine — celle-ci n'interdit que le
 // drapeau NU, et exige partout ailleurs qu'une mesure l'accompagne. Une mesure
 // seule est le cas où il n'y a rien à accompagner.
+//
+// ── PLUS AUCUNE RÈGLE NE CIBLE UN PACK (2026-08-06, LOT-02, D-030) ──────────
+//
+// Les SIX suggestions qui portaient un `packId` — `R2-SOM-05`, `R2-STR-02`,
+// `R2-GAS-02`, `R2-ALI-01`, `R-STR-02`, `R-GAS-01` — ciblent désormais des
+// QUESTIONNAIRES, deux à trois par règle, pris au cœur de l'ancienne
+// composition du pack. Le geste praticien qui en découle n'est plus une
+// assignation de pack mais un ajout à la file d'envoi, instrument par
+// instrument.
+//
+// CE QUI N'A PAS BOUGÉ : aucun déclencheur, aucun seuil, aucune zone, aucun
+// `justificationClaims`, aucun `niveau`, aucune `priorite` de tête. Le compte
+// reste de VINGT règles. Ce qui a bougé : les cibles, et les OBJECTIFS — les
+// anciens décrivaient l'ensemble du pack (« exploration complète », « prise en
+// charge globale ») et seraient devenus faux appliqués à un instrument. Chaque
+// objectif dit maintenant ce que SON instrument mesure.
+//
+// Le type `OrientationSuggestion` accepte toujours un `packId`, et le moteur
+// sait toujours l'absorber : c'est de la capacité conservée, pas une cible
+// vivante. Une règle à `packId` réintroduite ici demanderait de rouvrir la
+// question du geste praticien, qui ne sait plus assigner un pack depuis le
+// panneau d'orientation.
 //
 // ── UN AXE INCOMPLET N'EST PAS UNE MESURE BASSE, ET LES DEUX INSTRUMENTS DU
 //    PACK DE BASE NE SONT PAS LOGÉS À LA MÊME ENSEIGNE ────────────────────────
@@ -534,20 +557,56 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   {
     id: 'R2-SOM-05',
     statut: 'publiee',
-    // La seule règle de sommeil qui engage un PACK, et elle exige donc les deux
-    // : l'attente déclarée ET la mesure. Une attente cochée dit ce que le
-    // patient veut, pas ce qu'on a constaté — la doctrine en tête de table
-    // interdit d'engager un pack là-dessus seul.
+    // La règle de sommeil la plus engageante — un ENSEMBLE de deux
+    // instruments —, et elle exige donc les deux : l'attente déclarée ET la
+    // mesure. Une attente cochée dit ce que le patient veut, pas ce qu'on a
+    // constaté — la doctrine en tête de table interdit d'engager un ensemble
+    // là-dessus seul.
     //
     // `WN-CL-0178-017` décrit l'exploration du sommeil du bilan complet comme un
     // ENSEMBLE — « associe le PSQI, un agenda de sommeil et le chronotype de
-    // Horne » —, et c'est un pack, non un instrument, qui correspond à cet
-    // ensemble. `WN-CL-0323-023` en fonde la pièce maîtresse.
+    // Horne » —, et c'est bien un ensemble d'instruments, non une pièce unique,
+    // qui y correspond. `WN-CL-0323-023` en fonde la pièce maîtresse.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : la cible
+    // `pack_sommeil_chronobiologie` est remplacée par LES DEUX INSTRUMENTS QUE
+    // LE CLAIM NOMME et que cette table sait proposer — le PSQI (`Q_SOM_01`) et
+    // le chronotype de Horne (`Q_SOM_05`). C'est la composition arbitrée par le
+    // praticien le 2026-08-06, après la revue adversariale du même jour.
+    //
+    // CE QUE LA RÈGLE NE PROPOSE PAS, ET POURQUOI — les trois cas sont
+    // différents, et les confondre est ce que la première rédaction avait fait.
+    //
+    //   L'AGENDA DE SOMMEIL (`Q_SOM_09`), troisième pièce nommée par le claim,
+    //   n'est pas une passation ponctuelle : c'est un RECUEIL LONGITUDINAL sur
+    //   vingt-et-une nuits, avec son propre parcours et sa propre clôture
+    //   (`lib/agenda-sommeil/`). Il n'appartenait pas non plus à la composition
+    //   du pack que cette règle remplace. L'engager depuis une ligne
+    //   d'orientation reviendrait à traiter un suivi de trois semaines comme un
+    //   questionnaire de quinze minutes — c'est un geste d'une autre nature, et
+    //   il ne relève pas de cette table.
+    //
+    //   L'ÉCHELLE D'EPWORTH (`Q_SOM_02`) et LE QUESTIONNAIRE DE BERLIN
+    //   (`Q_SOM_03`) ont été RETIRÉS de cette règle le 2026-08-06, et le motif
+    //   n'est pas le même pour les deux. Aucun des deux n'est nommé par
+    //   `WN-CL-0178-017` : les proposer ici les aurait fait reposer sur un claim
+    //   qui ne les couvre pas. Et pour Berlin, s'ajoute le défaut le plus grave
+    //   des deux — `R2-SOM-04` conditionne le dépistage d'apnées à un ANTÉCÉDENT
+    //   RESPIRATOIRE déclaré ; le proposer ici sur la seule attente de sommeil
+    //   aurait CONTOURNÉ cette porte, sans que rien ne le signale. Les deux
+    //   instruments restent portés par leurs règles dédiées : Epworth par
+    //   `R2-SOM-06` (plainte de fatigue intense, sur `WN-CL-0314-012`), Berlin
+    //   par `R2-SOM-04`.
+    //
+    // La leçon est celle que cette table paie régulièrement : une composition ne
+    // se choisit pas sur ce qu'un pack contenait, mais sur ce que les claims de
+    // la règle nomment — et une porte posée par une règle sœur ne se contourne
+    // pas par une cible ajoutée ailleurs.
     //
     // POURQUOI `<= 8` ICI, ET NON `<= 14`. Ce seuil ne vise QUE la bande la plus
-    // sévère, « Sommeil non réparateur » (0-8). Engager un pack entier n'est pas
-    // proposer un questionnaire : le coût pour le patient n'est pas le même, et
-    // le seuil se resserre en conséquence. Effet de bord voulu : le trou à 9
+    // sévère, « Sommeil non réparateur » (0-8). Engager deux instruments n'est
+    // pas en proposer un : le coût pour le patient n'est pas le même, et le
+    // seuil se resserre en conséquence. Effet de bord voulu : le trou à 9
     // tombe ici du côté NON déclenchant, et un patient à 9 relève de
     // `R2-SOM-01`, qui lui propose le PSQI seul.
     declencheurs: [
@@ -555,7 +614,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'comparaison', idQuestionnaire: 'Q_MOD_01', sousScore: 'SOMMEIL', operateur: '<=', valeur: 8 },
     ],
     suggestions: [
-      { packId: 'pack_sommeil_chronobiologie', priorite: 1, objectif: "Engager l'exploration complète du sommeil et des rythmes quand le patient la demande et que le sommeil est non réparateur." },
+      { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: "Mesurer la qualité du sommeil par le PSQI quand le patient demande à l'améliorer et que le sommeil est non réparateur." },
+      { questionnaireId: 'Q_SOM_05', priorite: 2, objectif: "Situer le chronotype par le questionnaire de Horne quand le patient demande à améliorer un sommeil non réparateur." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
@@ -630,14 +690,28 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     id: 'R2-STR-02',
     statut: 'publiee',
     // DÉCLARÉ ET MESURÉ, comme `R-STR-02` le fait au second tour avec le PSS-10.
-    // Ici c'est le pack de base qui fournit la mesure, et le pack de stress qui
-    // est proposé — `WN-CL-0314-008` fonde l'évaluation du stress chronique
-    // complétée du risque de burnout, et `WN-CL-0243-005` nomme les instruments
-    // de ce second volet (« BMS (questionnaire de Maslach-Pine) en 10 items ou
-    // le questionnaire de Karasek »), que le pack embarque.
+    // Ici c'est le pack de base qui fournit la mesure, et un ensemble
+    // d'instruments du stress qui est proposé. `WN-CL-0314-008` fonde
+    // l'évaluation du stress chronique complétée du risque de burnout : c'est
+    // le SEUL claim de cette règle, et il couvre bien les trois cibles servies —
+    // mesurer l'intensité du stress (PSS-10) et la préciser (DASS-21, Cungi).
     //
-    // Le facteur déclenchant seul ne suffit pas à engager un pack entier : c'est
-    // la ligne de doctrine, tenue ici comme en V1.
+    // `WN-CL-0243-005` A ÉTÉ RETIRÉ D'ICI LE 2026-08-06, à la revue
+    // adversariale. Il nomme le BMS-10 et le questionnaire de KARASEK — deux
+    // instruments qu'aucune cible de cette règle ne sert. Il était cité au titre
+    // du pack, dont la composition les embarquait ; le pack disparu, la citation
+    // ne pointait plus rien, et un claim qui ne fonde aucune cible de sa règle
+    // est une justification a posteriori. Il vit désormais sur `R-STR-02`, qui
+    // propose Karasek pour de bon. Le jeu des 23 claims de la table est
+    // inchangé : `R2-STR-03` le cite toujours, au titre du BMS-10.
+    //
+    // Le facteur déclenchant seul ne suffit pas à engager un ensemble entier :
+    // c'est la ligne de doctrine, tenue ici comme en V1.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : `pack_stress_chronique_burnout`
+    // est remplacé par trois questionnaires du cœur de son ancienne composition.
+    // Chaque objectif dit ce que son instrument mesure ; aucun ne promet plus la
+    // couverture d'un pack. Déclencheurs, seuils et niveau inchangés.
     //
     // `<= 17` : même seuil et même raison que `R2-STR-01` — la bande
     // « Adaptation insuffisante » de cet axe monte jusqu'à 17.
@@ -646,11 +720,12 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'comparaison', idQuestionnaire: 'Q_MOD_01', sousScore: 'ADAPTATION_STRESS', operateur: '<=', valeur: 17 },
     ],
     suggestions: [
-      { packId: 'pack_stress_chronique_burnout', priorite: 1, objectif: "Engager la prise en charge globale du stress quand un burn-out est déclaré comme facteur déclenchant et que l'adaptation est insuffisante." },
+      { questionnaireId: 'Q_STR_02', priorite: 1, objectif: "Mesurer l'intensité du stress perçu par le PSS-10 quand un burn-out est déclaré comme facteur déclenchant et que l'adaptation est insuffisante." },
+      { questionnaireId: 'Q_STR_04', priorite: 2, objectif: 'Situer dépression, anxiété et stress par le DASS-21 devant un burn-out déclaré comme facteur déclenchant.' },
+      { questionnaireId: 'Q_STR_03', priorite: 3, objectif: "Préciser le vécu du stress par le questionnaire de Cungi quand l'adaptation au stress est insuffisante." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
-      { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
     ],
     niveau: 'approfondissement',
   },
@@ -877,12 +952,16 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     //
     // CE QUE LA TABLE AJOUTE, ET QUI N'EST DANS AUCUN CLAIM : le FAISCEAU
     // « antécédent digestif déclaré + plainte digestive au moins modérée »
-    // comme porte d'entrée du même pack, dès le premier tour, avant que le TFD
+    // comme porte d'entrée du même axe, dès le premier tour, avant que le TFD
     // ne soit revenu. C'est un raccourci clinique assumé, pris ici, et il se
-    // défend sur deux appuis — le pack qu'il engage est celui que
-    // `WN-CL-0287-009` indique, et l'instrument qu'il contient est celui que
+    // défend sur deux appuis — l'axe qu'il engage est celui que
+    // `WN-CL-0287-009` indique, et l'instrument de tête est celui que
     // `WN-CL-0228-010` place au socle. Les claims restent donc cités : ils
     // disent où mène la règle, pas d'où elle part.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : `pack_digestif_intestin_cerveau`
+    // est remplacé par trois questionnaires du cœur de son ancienne composition.
+    // Déclencheurs, seuils, claims et niveau inchangés.
     //
     // POURQUOI `>= 4`, ALORS QUE `R2-GAS-01` EXIGE `>= 7`. Le seuil descend
     // volontairement d'une bande, à « Intensité modérée » (4-6), PARCE QU'UN
@@ -898,7 +977,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'comparaison', idQuestionnaire: 'Q_MOD_03', sousScore: 'digestion', operateur: '>=', valeur: 4 },
     ],
     suggestions: [
-      { packId: 'pack_digestif_intestin_cerveau', priorite: 1, objectif: "Approfondir l'axe intestin-cerveau quand un antécédent digestif est déclaré et que la plainte digestive est au moins modérée." },
+      { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: 'Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand un antécédent digestif est déclaré et que la plainte est au moins modérée.' },
+      { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol devant un antécédent digestif déclaré et une plainte au moins modérée." },
+      { questionnaireId: 'Q_INF_01', priorite: 3, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand un antécédent digestif est déclaré et que la plainte est au moins modérée." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
@@ -984,10 +1065,17 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // bandes une à une rend la question sans objet. C'est un bénéfice, pas la
     // raison du choix : la raison est le drapeau.
     //
-    // UN PACK SUR UNE MESURE SEULE. La doctrine de la table interdit d'engager
-    // un pack sur un DRAPEAU seul ; cette règle n'a aucun drapeau. Elle repose
-    // sur une mesure globale d'un instrument certifié du pack de base, ce qui
-    // est précisément ce que la doctrine réclamait en plus du drapeau ailleurs.
+    // UN ENSEMBLE SUR UNE MESURE SEULE. La doctrine de la table interdit
+    // d'engager un ensemble sur un DRAPEAU seul ; cette règle n'a aucun drapeau.
+    // Elle repose sur une mesure globale d'un instrument certifié du pack de
+    // base, ce qui est précisément ce que la doctrine réclamait en plus du
+    // drapeau ailleurs.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : `pack_digestif_intestin_cerveau`
+    // est remplacé par les deux instruments digestifs de tête de son ancienne
+    // composition. L'assiette de détoxication que `WN-CL-0287-009` indique n'est
+    // PAS un questionnaire : elle relève de la prise en charge, et l'objectif ne
+    // la promet donc plus. Déclencheur, libellés, claim et niveau inchangés.
     declencheurs: [
       {
         type: 'zone',
@@ -1005,7 +1093,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       },
     ],
     suggestions: [
-      { packId: 'pack_digestif_intestin_cerveau', priorite: 1, objectif: "Engager l'axe intestin-cerveau, dont l'assiette de détoxication, quand le score global de l'enquête alimentaire SIIN est défavorable." },
+      { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: "Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand le score global de l'enquête alimentaire SIIN est défavorable." },
+      { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol quand le score global de l'enquête alimentaire SIIN est défavorable." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
@@ -1106,11 +1195,16 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   {
     id: 'R-STR-02',
     statut: 'publiee',
-    // SECOND TOUR — même pack que `R2-STR-02`, mais sur le PSS-10 revenu plutôt
+    // SECOND TOUR — même axe que `R2-STR-02`, mais sur le PSS-10 revenu plutôt
     // que sur le questionnaire contextuel. Le drapeau est le même : ce qui
     // change entre les deux tours, c'est la qualité de la mesure qui l'accompagne.
     // Déclaré ET mesuré : le facteur déclenchant seul ne suffit pas à engager un
-    // pack entier. C'est l'ET logique du moteur qui l'impose.
+    // ensemble entier. C'est l'ET logique du moteur qui l'impose.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : `pack_stress_chronique_burnout`
+    // est remplacé par trois questionnaires. Le PSS-10 n'y figure pas — il vient
+    // d'être lu par le déclencheur, le reproposer serait redemander ce qu'on a.
+    // Déclencheurs, zone, claims et niveau inchangés.
     //
     // CITATION TRANCHÉE À LA SIGNATURE — `WN-CL-0105-001` RESTE, et l'alerte
     // qui le contestait était FAUSSE. Une note portée ici le 2026-08-04
@@ -1123,12 +1217,28 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // cette règle. L'appariement est exact, et c'était l'alerte qui ne l'était
     // pas.
     //
-    // Les deux claims se répartissent le travail, et ce n'est pas un doublon :
-    // `WN-CL-0314-008` fonde le DÉCLENCHEUR (évaluer le stress chronique
-    // complété du risque de burnout), `WN-CL-0105-001` fonde ce que le pack
-    // PROPOSE une fois engagé. `R2-STR-02` n'a pas ce second besoin — au premier
-    // tour c'est le contenu du volet burnout qui est en jeu, d'où
-    // `WN-CL-0243-005` là-bas et pas ici.
+    // TROIS CLAIMS, ET CHACUN FONDE QUELQUE CHOSE DE DIFFÉRENT — répartition
+    // revue le 2026-08-06, à la revue adversariale.
+    //
+    //   `WN-CL-0314-008` fonde le DÉCLENCHEUR : évaluer le stress chronique,
+    //   complété du risque de burnout.
+    //
+    //   `WN-CL-0243-005` fonde une CIBLE, et c'est nouveau ici. Il nomme « le
+    //   BMS (questionnaire de Maslach-Pine) en 10 items OU LE QUESTIONNAIRE DE
+    //   KARASEK » — or cette règle propose désormais Karasek (`Q_STR_06`). Le
+    //   claim était jusqu'ici sur `R2-STR-02`, qui ne sert aucun des deux
+    //   instruments qu'il nomme : il y était une justification a posteriori,
+    //   héritée du pack dont la composition les embarquait. Il a suivi
+    //   l'instrument.
+    //
+    //   `WN-CL-0105-001` fonde la prise en charge vers laquelle mène cette
+    //   évaluation — bilan personnalisé, rééquilibrage, suivi. Depuis le
+    //   re-ciblage du 2026-08-06, ce n'est plus un pack qui la porte : les trois
+    //   instruments proposés ici sont ce qui la PRÉPARE, et le claim reste cité
+    //   à ce titre.
+    //
+    // Le jeu des 23 claims de la table ne bouge pas pour autant :
+    // `WN-CL-0243-005` était et reste cité par `R2-STR-03`, au titre du BMS-10.
     //
     // Ce que l'épisode laisse : une citation ne se juge pas sur son numéro ni
     // sur la mémoire qu'on en a, mais sur son texte relu à la source.
@@ -1138,7 +1248,7 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // zone couvre, et le déclencheur s'allume avec un motif en « au moins ».
     //
     // MAIS L'ET LOGIQUE RESTE ENTIER, et c'est ce qui compte sur une règle qui
-    // engage un PACK : le drapeau d'anamnèse doit être atteint AUSSI. Un partiel
+    // engage TROIS instruments : le drapeau d'anamnèse doit être atteint AUSSI. Un partiel
     // déjà sévère ne suffit donc pas à lui seul — la mesure garantie ne remplace
     // pas le facteur déclenchant, elle le complète.
     declencheurs: [
@@ -1146,10 +1256,13 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],
     suggestions: [
-      { packId: 'pack_stress_chronique_burnout', priorite: 1, objectif: 'Engager la prise en charge globale du stress : bilan personnalisé, puis rééquilibrage et suivi.' },
+      { questionnaireId: 'Q_STR_04', priorite: 1, objectif: 'Situer dépression, anxiété et stress par le DASS-21 quand le stress perçu est élevé et qu\'un burn-out est déclaré.' },
+      { questionnaireId: 'Q_STR_06', priorite: 2, objectif: 'Évaluer la contrainte professionnelle par le questionnaire de Karasek quand un burn-out est déclaré et que le stress perçu est élevé.' },
+      { questionnaireId: 'Q_STR_08', priorite: 3, objectif: "Évaluer le surinvestissement au travail par le WART quand un burn-out est déclaré et que le stress perçu est élevé." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
     ],
     niveau: 'approfondissement',
@@ -1158,7 +1271,13 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     id: 'R-GAS-01',
     statut: 'publiee',
     // SECOND TOUR — attend le retour du TFD que `R2-GAS-01` propose au premier.
-    // C'est la chaîne complète en deux temps : plainte digestive → TFD → pack.
+    // C'est la chaîne complète en deux temps : plainte digestive → TFD →
+    // approfondissement de l'axe.
+    //
+    // RE-CIBLÉE LE 2026-08-06 (LOT-02, D-030) : `pack_digestif_intestin_cerveau`
+    // est remplacé par les deux questionnaires qui approfondissent l'axe SANS
+    // redemander le TFD, que le déclencheur vient précisément de lire.
+    // Déclencheur, zone, claim et niveau inchangés.
     // TFD SIIN : interprétation globale sur 93 (A / B / C). Comme le PSS-10, il
     // n'émet pas de bande `info` — `warning` (bande B, 24-49) est sa première
     // bande défavorable.
@@ -1196,7 +1315,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],
     suggestions: [
-      { packId: 'pack_digestif_intestin_cerveau', priorite: 1, objectif: 'Approfondir l\'axe intestin-cerveau quand le score de troubles fonctionnels intestinaux est élevé.' },
+      { questionnaireId: 'Q_GAS_03', priorite: 1, objectif: "Caractériser le transit par l'échelle de Bristol quand le score de troubles fonctionnels intestinaux est élevé." },
+      { questionnaireId: 'Q_INF_01', priorite: 2, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand le score de troubles fonctionnels intestinaux est élevé." },
     ],
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
@@ -1273,7 +1393,14 @@ export type OrientationMetadata = {
 export const ORIENTATION_METADATA: OrientationMetadata = {
   version: 'orientation-nnpp2-v1',
   validationExterne: true,
-  dateValidation: '2026-08-04',
+  // RE-SIGNÉE LE 2026-08-06 (LOT-02) : les six suggestions à `packId` sont
+  // devenues des suggestions à `questionnaireId`. Une table qui change de
+  // cibles change de contenu clinique, donc de signature. Les 23 claims de
+  // `claimsSource` ont été RELUS EN BASE ce jour-là (`execute_sql` sur
+  // `rag_corpus_claims`) : tous en `statut = 'VALIDE'`, `prescriptif = true`,
+  // `active = true`, `version_claim = 'v1.0'` — 23/23. Aucun claim ajouté ni
+  // retiré : seules les cibles et les objectifs ont changé.
+  dateValidation: '2026-08-06',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

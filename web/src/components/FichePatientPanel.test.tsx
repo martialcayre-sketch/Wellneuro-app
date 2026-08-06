@@ -337,8 +337,8 @@ function stubFetch(options: Options = {}) {
         sha256: 'sha-test',
         recommandations: [
           {
-            cible: { type: 'pack', packId: 'pack_sommeil_chronobiologie' },
-            idPackBase: 'PACK_SOMMEIL_CHRONO',
+            cible: { type: 'questionnaire', questionnaireId: 'Q_SOM_01' },
+            idPackBase: null,
             priorite: 1,
             niveau: 'approfondissement',
             objectifs: [],
@@ -964,18 +964,23 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
 // Garde d'identité du destinataire (LOT-06, relevé à la relecture de clôture).
 //
 // Le panneau d'orientation calcule ses recommandations sur `idPatient` ; le seul
-// point d'assignation, lui, identifie le patient par son EMAIL. Les deux
+// point d'écriture, lui, identifie le patient par son EMAIL. Les deux
 // viennent de deux sources, et rien ne vérifiait qu'elles désignent le même
-// dossier — or ce bouton déclenche un e-mail. Sur une navigation A→B, une
-// réponse `equilibre` en retard laisse `data` sur A pendant que `idPatient` vaut
-// déjà B : l'e-mail serait parti au patient précédent.
-describe('FichePatientPanel — destinataire de l’assignation depuis l’orientation', () => {
+// dossier. Sur une navigation A→B, une réponse `equilibre` en retard laisse
+// `data` sur A pendant que `idPatient` vaut déjà B : le questionnaire serait
+// posé dans la file du patient précédent.
+//
+// LA GARDE RESTE, ET SON ENJEU A BAISSÉ (2026-08-06, LOT-02). Le geste
+// n'envoie plus d'e-mail : il pose un brouillon, rattrapable depuis la
+// Bibliothèque. Écrire dans le dossier du mauvais patient reste néanmoins une
+// écriture dans le mauvais dossier — la garde ne se relâche pas pour autant.
+describe('FichePatientPanel — destinataire de l’ajout à la file depuis l’orientation', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
   });
 
-  it('propose l’assignation quand le dossier chargé EST le patient affiché', async () => {
+  it('propose l’ajout à la file quand le dossier chargé EST le patient affiché', async () => {
     stubFetch({ orientation: 'actif' });
     render(
       <C5FeatureProvider enabled={false}>
@@ -983,7 +988,7 @@ describe('FichePatientPanel — destinataire de l’assignation depuis l’orien
       </C5FeatureProvider>,
     );
 
-    expect(await screen.findByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /ajouter à la file d’envoi/i })).toBeTruthy();
   });
 
   it('retire le bouton quand le dossier chargé n’est PAS le patient affiché', async () => {
@@ -999,6 +1004,6 @@ describe('FichePatientPanel — destinataire de l’assignation depuis l’orien
     // La recommandation s'affiche — elle est en lecture seule et sans danger.
     await screen.findByRole('region', { name: 'Orientation des explorations' });
     // Le geste sortant, lui, disparaît plutôt que de viser le mauvais patient.
-    expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /ajouter à la file d’envoi/i })).toBeNull();
   });
 });

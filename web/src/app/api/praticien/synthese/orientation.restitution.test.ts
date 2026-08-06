@@ -290,6 +290,35 @@ describe('métadonnées d’audit', () => {
     expect(meta.orientationVersion).toBe('orientation-nnpp2-v1');
   });
 
+  // LE CAS DE LA TABLE DU 2026-08-06 (LOT-02, D-030) — et il fallait l'écrire,
+  // parce qu'il ressemble à un bug sans en être un. Plus aucune règle publiée ne
+  // cible un pack : l'orientation est ACTIVE, elle recommande, un bloc part au
+  // modèle — et `orientationPacksTransmis` est pourtant VIDE. C'est l'allowlist
+  // du garde de restitution : vide, elle interdit au modèle TOUTE mention de
+  // pack, ce qui est exactement le comportement voulu. Un futur lecteur qui la
+  // verrait vide pourrait conclure à une régression de la persistance ; ce banc
+  // dit que non, et qu'un bloc est bien parti.
+  it('un bloc PARTI sans aucune cible pack persiste une allowlist VIDE', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [
+        {
+          ...ORIENTATION_ACTIVE.recommandations[0],
+          cible: { type: 'questionnaire' as const, questionnaireId: 'Q_SOM_01' },
+          idPackBase: null,
+        },
+      ],
+    });
+    await POST(req());
+    expect(messageEnvoye()).toContain("Recommandation d'exploration déterministe");
+    const meta = metadonneesPersistees();
+    // Le bloc est bien parti : `injectee` et le sha en témoignent.
+    expect(meta.orientationInjectee).toBe(true);
+    expect(meta.orientationSha256).toBe('abc123def456');
+    // Et l'allowlist est vide — aucun pack n'a été proposé, aucun ne peut être cité.
+    expect(meta.orientationPacksTransmis).toEqual([]);
+  });
+
   it('n’inscrit rien non plus sur une table signée qui ne recommande rien', async () => {
     evaluerOrientationPourPatient.mockResolvedValue({ ...ORIENTATION_ACTIVE, recommandations: [] });
     await POST(req());

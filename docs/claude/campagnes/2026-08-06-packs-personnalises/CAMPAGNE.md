@@ -4,7 +4,7 @@ titre: "Envoi personnalisé par patient — retrait des packs figés"
 statut: "en_cours"
 créée_le: "2026-08-06"
 mise_à_jour: "2026-08-06"
-lot_courant: "LOT-02"
+lot_courant: "LOT-03"
 branche_campagne: "campaign/2026-08-06-packs-personnalises/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -104,7 +104,7 @@ d'inventaire.
 |---|---|---|---|
 | LOT-00 | Resynchroniser le pack de base (la question des questionnaires) | livré (#596, 2026-08-06) | — |
 | LOT-01 | Inventaire des surfaces + décision produit D-030 | livré (2026-08-06) | LOT-00 |
-| LOT-02 | L'orientation propose des ensembles personnalisés (⚠ clinique) | à_faire | LOT-01 |
+| LOT-02 | L'orientation propose des ensembles personnalisés (⚠ clinique) | livré (2026-08-06) | LOT-01 |
 | LOT-03 | Retrait effectif des packs non-base | à_faire | LOT-02 |
 | LOT-04 | Clôture : E2E, changelog, vérification prod, reprise des dettes | à_faire | LOT-03 |
 

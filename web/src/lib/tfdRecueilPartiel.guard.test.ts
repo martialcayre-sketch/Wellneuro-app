@@ -234,7 +234,12 @@ describe('TFD — recueil partiel', () => {
       idsQuestionnairesAssignes: [],
       regles: [rGas01!],
     });
-    expect(recos).toHaveLength(1);
+    // DEUX recommandations depuis le re-ciblage du 2026-08-06 (LOT-02) :
+    // `R-GAS-01` ne propose plus un pack mais l'échelle de Bristol et le
+    // questionnaire d'hyperexcitabilité. Un seul motif, porté par les deux.
+    expect(recos).toHaveLength(2);
+    expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_03' });
+    expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_INF_01' });
     // Le SINGULIER, sur le seul cas du dépôt qui n'a qu'un item manquant : la
     // mention se construit sur un compte réel, pas sur une formule figée.
     expect(recos[0].motifs[0].conditions[0]).toBe(
