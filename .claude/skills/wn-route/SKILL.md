@@ -67,6 +67,9 @@ obtient la même grille sans dépendre d'une capacité absente.
 | reprend le contexte (affichage seul) | `/wn-context` <!-- mention-seule: wn-context -->|
 | écrit un document de reprise | `/wn-handoff` <!-- mention-seule: wn-handoff -->|
 | compacte le journal | `/wn-compact-sessionlog` <!-- mention-seule: wn-compact-sessionlog -->|
+| veut vérifier visuellement une UI locale (navigateur piloté, captures, logs console) | skill `webapp-testing` (tiers audité, auto-invocable) |
+| travaille la direction visuelle d'une UI (palette, typographie, mise en page) | skill `frontend-design` (tiers audité, auto-invocable) |
+| met en forme une maquette ou un artifact avec un thème | skill `theme-factory` (tiers audité, auto-invocable) |
 
 Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
 explicitement le passage en mode Plan.

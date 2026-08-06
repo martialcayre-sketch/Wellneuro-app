@@ -21,6 +21,8 @@ node_modules/
 .next/
 dist/
 build/
+__pycache__/
+*.pyc
 # Données sensibles et exports
 exports/
 data/private/
