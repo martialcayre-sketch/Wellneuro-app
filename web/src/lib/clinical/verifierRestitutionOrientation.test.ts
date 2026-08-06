@@ -166,3 +166,80 @@ describe('le vocabulaire reste fermé', () => {
     expect(PACKS_REGISTRY).toHaveLength(16);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// L'ALLOWLIST VIDE — le régime nominal depuis le 2026-08-06 (LOT-02, D-030).
+//
+// Plus aucune règle d'orientation ne cible un pack : `packsTransmis` rend `[]`
+// sur une orientation pourtant active et non vide, et ce garde tourne donc
+// TOUJOURS avec `packs: []`. Ce n'est pas un cas dégradé, c'est le cas courant,
+// et il méritait ses deux bancs — un positif et un contrôle négatif.
+//
+// Sans le contrôle négatif, le positif ne prouverait rien : un garde qui
+// signalerait TOUT texte parlant de stress ou de sommeil le passerait aussi.
+describe('allowlist vide — plus aucun pack n’est proposé (2026-08-06)', () => {
+  const AUCUN_PACK = { packs: [] as const, questionnaires: ['Q_SOM_01', 'Q_SOM_05'] };
+
+  it('POSITIF — un pack cité en clair est un écart, puisque aucun n’a été transmis', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Au vu du sommeil non réparateur, je propose le pack Sommeil et chronobiologie.',
+    };
+    expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([
+      { type: 'pack', identifiant: 'pack_sommeil_chronobiologie' },
+    ]);
+  });
+
+  it('POSITIF — le slug seul suffit, sans le mot « pack » devant', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Orientation retenue : pack_stress_chronique_burnout.',
+    };
+    expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([
+      { type: 'pack', identifiant: 'pack_stress_chronique_burnout' },
+    ]);
+  });
+
+  // LE CONTRÔLE NÉGATIF, ET C'EST LUI QUI DONNE SA VALEUR AU POSITIF.
+  // « stress chronique et burnout » EST le titre d'un pack, au mot près. Mais
+  // employé comme description clinique, sans « pack » adjacent, ce n'est pas
+  // une citation de pack — c'est du français. Un garde qui le signalerait
+  // journaliserait un écart à chaque synthèse parlant de burn-out, et le code
+  // d'événement serait noyé avant d'être observable.
+  it('NÉGATIF — une prose clinique ordinaire ne déclenche aucun écart', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Le tableau associe un stress chronique et burnout professionnel à un sommeil '
+        + 'non réparateur ; le PSQI (Q_SOM_01) et le chronotype de Horne (Q_SOM_05) sont proposés.',
+      narratif_patient:
+        'Votre sommeil et votre niveau de stress méritent d’être mesurés avant toute conclusion.',
+    };
+    expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([]);
+  });
+
+  // FAUX POSITIF ASSUMÉ, ÉPINGLÉ TEL QUEL (contre-revue du 2026-08-06). Quand
+  // le mot « pack » apparaît à moins de 40 caractères d'un titre — y compris
+  // pour dire qu'on n'en retient AUCUN —, la fenêtre d'adjacence signale un
+  // écart. C'est le prix accepté d'un garde simple : journal seul, aucune
+  // censure, aucun effet patient. Ce banc n'approuve pas ce comportement, il
+  // le rend VISIBLE — l'élargir ou le corriger devra faire rougir cette ligne,
+  // pas passer en silence.
+  it('FAUX POSITIF ASSUMÉ — « pack » adjacent à un titre signale, même pour dire qu’aucun pack n’est retenu', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Je ne retiens pas de pack : le sommeil et chronobiologie du patient sont à explorer.',
+    };
+    expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([
+      { type: 'pack', identifiant: 'pack_sommeil_chronobiologie' },
+    ]);
+  });
+
+  // Les questionnaires transmis, eux, restent citables : l'allowlist vide ne
+  // porte que sur les packs. Sans ce banc, on pourrait « réparer » le garde en
+  // le rendant muet, et les trois cas ci-dessus resteraient verts.
+  it('NÉGATIF — un questionnaire NON transmis reste, lui, un écart', () => {
+    const synthese: TexteSynthese = { resume_praticien: 'Je propose aussi le HAD (Q_NEU_11).' };
+    expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([
+      { type: 'questionnaire', identifiant: 'Q_NEU_11' },
+    ]);
+  });
+});

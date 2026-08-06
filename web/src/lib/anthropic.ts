@@ -186,7 +186,13 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v17';
+// v18 (2026-08-06, LOT-02/D-030) : la phrase « Pour un pack, l'état ne se
+// déclenche que si l'INTÉGRALITÉ de sa composition est concernée » est RETIRÉE.
+// Aucune règle publiée ne cible plus un pack : la consigne décrivait un cas que
+// le modèle ne peut plus rencontrer, et l'y laisser aurait entretenu l'idée
+// qu'un pack est encore une cible d'orientation. Ce que la version garde, mot
+// pour mot : « l'absence de segment État n'atteste rien ».
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v18';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -336,7 +342,7 @@ Un élément peut porter un segment « État ». Il dit ce qui a déjà été fa
 - « DÉJÀ RENSEIGNÉ » : une passation existe **au dossier**. C'est un fait de gestion, pas un résultat : il ne dit pas que la passation a produit une mesure exploitable, et tu as pu recevoir par ailleurs, pour ce même instrument, la mention d'une passation non interprétable. Ne parle donc de réévaluation que si une mesure t'a effectivement été livrée ; sinon, dis seulement qu'une passation figure au dossier.
 - « couverture inconnue » : on ne sait pas si l'élément a été renseigné. N'affirme ni l'un ni l'autre. Cet état ne t'autorise aucune conclusion, dans aucun sens — et il ne t'autorise pas non plus à retirer l'élément : il reste recommandé par la table.
 
-**L'absence de segment « État » n'atteste rien.** Pour un pack, l'état ne se déclenche que si l'INTÉGRALITÉ de sa composition est concernée : un pack dont certains questionnaires seulement ont déjà été adressés n'en porte aucun. N'écris donc jamais qu'un élément sans segment n'a jamais été adressé — tu ne le sais pas. Tu peux l'énoncer comme une exploration à proposer, sans affirmer qu'elle serait une première.
+**L'absence de segment « État » n'atteste rien.** N'écris donc jamais qu'un élément sans segment n'a jamais été adressé — tu ne le sais pas. Tu peux l'énoncer comme une exploration à proposer, sans affirmer qu'elle serait une première.
 
 Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
 

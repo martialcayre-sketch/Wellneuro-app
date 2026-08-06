@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
-import { ORIENTATION_METADATA, ORIENTATION_RULES_SHA256, ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import {
+  ORIENTATION_METADATA,
+  ORIENTATION_RULES_SHA256,
+  ORIENTATION_RULES_V1,
+  type OrientationRule,
+} from './orientationRulesV1';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import { extraireDrapeauxAnamnese, type DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
-import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { IDS_ASSIGNABLES, estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { MOTIFS_PASSATION_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { calculateScore } from '@/lib/questions';
 
@@ -23,7 +28,10 @@ describe('orientationRulesV1 — verrou v1', () => {
     expect(ORIENTATION_RULES_V1.length).toBeGreaterThan(0);
     // Trois marqueurs, pas un : la route exige les trois pour s'ouvrir.
     expect(ORIENTATION_METADATA.validationExterne).toBe(true);
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-08-04');
+    // RE-SIGNÉE le 2026-08-06 (LOT-02) : les six suggestions à `packId` sont
+    // devenues des suggestions à `questionnaireId`, et les 23 claims ont été
+    // relus en base ce jour-là — 23/23 VALIDE, prescriptif, actif, v1.0.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-08-06');
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
     expect(ORIENTATION_METADATA.version).toBe('orientation-nnpp2-v1');
   });
@@ -102,7 +110,30 @@ describe('orientationRulesV1 — verrou v1', () => {
   // La sortie de secours n'est pas de mettre le sha à jour en silence : c'est de
   // RE-SIGNER — relire les claims en base, poser une nouvelle `dateValidation`,
   // puis seulement épingler le nouveau sha. C'est ce que `D-018` décrit.
-  const SHA_SIGNE_2026_08_04 = '528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603';
+  //
+  // RE-SIGNÉE LE 2026-08-06 (LOT-02), et la procédure a été suivie dans cet
+  // ordre : les six suggestions à `packId` re-ciblées et leurs objectifs
+  // réécrits, les bancs comportementaux re-ciblés, les 23 claims RELUS EN BASE
+  // (`execute_sql` sur `rag_corpus_claims` — 23/23 en `statut = 'VALIDE'`,
+  // `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`),
+  // `dateValidation` portée au 2026-08-06, et le sha épinglé EN DERNIER.
+  //
+  // SIGNATURE REPRISE LE MÊME JOUR, APRÈS UNE REVUE ADVERSARIALE EN NO-GO, et
+  // c'est le geste que `D-018` décrit : la table a changé, donc la signature se
+  // refait — on ne rattrape pas un sha. Trois arbitrages cliniques du praticien
+  // l'ont motivée :
+  //   · `R2-SOM-05` ramenée à `Q_SOM_01` + `Q_SOM_05` — Epworth et Berlin
+  //     retirés, le second parce qu'il contournait la porte de `R2-SOM-04` ;
+  //   · `WN-CL-0243-005` déplacé de `R2-STR-02` (où il ne fondait aucune cible)
+  //     vers `R-STR-02`, qui propose Karasek, l'instrument qu'il nomme ;
+  //   · deux objectifs de `Q_INF_01` renommaient l'instrument.
+  // La DATE ne bouge pas — même journée, même relecture de claims, et le jeu
+  // des 23 identifiants est resté identique (vérifié par le banc d'égalité
+  // `claimsSource` ↔ union des `justificationClaims`, plus haut).
+  //
+  // Ancien sha signé (2026-08-04) :
+  // `528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603`.
+  const SHA_SIGNE_2026_08_06 = '547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d';
 
   it('le sha publié correspond au contenu de la table', () => {
     expect(ORIENTATION_RULES_SHA256).toBe(sha256(JSON.stringify(ORIENTATION_RULES_V1)));
@@ -110,23 +141,204 @@ describe('orientationRulesV1 — verrou v1', () => {
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_08_04);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_08_06);
   });
 
-  // Vacant tant que la table est vide — et c'est exactement pourquoi il est
-  // écrit MAINTENANT. Au lot 9, une règle citant un pack sans existence en base
-  // (`idPackBase: null`) ne recommanderait rien, en silence : le fail-closed
-  // rejette une composition absente sans rien dire. Ce banc transforme ce
-  // silence en échec de CI.
-  it('chaque pack cité par une règle existe réellement en base', () => {
-    const inassignables = ORIENTATION_RULES_V1.flatMap(regle =>
-      (regle.suggestions ?? [])
-        .map(suggestion => suggestion.packId)
-        .filter((packId): packId is PackId => Boolean(packId))
-        .filter(packId => idBaseDepuisPackId(packId) === null)
-        .map(packId => `${regle.id} → ${packId}`),
-    );
-    expect(inassignables).toEqual([]);
+  // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP
+  //
+  // Ils remplacent, depuis le 2026-08-06, le banc « chaque pack cité existe
+  // réellement en base » — vacant depuis toujours, et définitivement sans objet
+  // depuis qu'aucune règle ne cible plus un pack. Un banc qui ne peut plus
+  // rougir n'est pas une garantie, c'est une ligne verte.
+  //
+  // (a) RÉSOLUBILITÉ. Une règle publiée dont AUCUNE suggestion ne se résout —
+  // questionnaire non assignable, pack sans correspondance en base — ne
+  // recommande rien, en silence : le moteur écarte la cible sans rien dire. Ce
+  // banc transforme ce silence en échec de CI.
+  //
+  // LE PRÉDICAT EST CELUI DE LA ROUTE D'ÉCRITURE, ET PAS UN AUTRE — corrigé le
+  // 2026-08-06 à la revue adversariale. Ce banc utilisait
+  // `estAdministrableParLaRoute` (définition présente ET non suspendu), qui
+  // n'est PAS ce que consomme le geste praticien : `POST /file-envoi` filtre sur
+  // `idsAssignablesPour()`, dont la part catalogue est `IDS_ASSIGNABLES` —
+  // laquelle exige EN PLUS `actif === true` (`bibliotheque.ts`). Un instrument
+  // dépublié (`actif: false`) sans être suspendu passait donc le banc et
+  // échouait au clic.
+  //
+  // Les deux prédicats coïncident sur les données d'AUJOURD'HUI — aucun
+  // instrument du catalogue n'est à la fois défini, non suspendu et inactif —,
+  // et c'est exactement pour cela que l'erreur ne se voyait pas. Le banc de
+  // mutation qui suit démonte cette coïncidence.
+  const cibleResoluble = (
+    suggestion: OrientationRule['suggestions'][number],
+    assignables: ReadonlySet<string>,
+  ): boolean => {
+    if (suggestion.questionnaireId) return assignables.has(suggestion.questionnaireId);
+    if (suggestion.packId) return idBaseDepuisPackId(suggestion.packId) !== null;
+    return false;
+  };
+
+  it('BANC (a) — aucune règle publiée sans cible résoluble', () => {
+    const muettes = ORIENTATION_RULES_V1
+      .filter(regle => regle.statut === 'publiee')
+      .filter(regle => !regle.suggestions.some(s => cibleResoluble(s, IDS_ASSIGNABLES)))
+      .map(regle => regle.id);
+    expect(muettes).toEqual([]);
+  });
+
+  // MUTATION DU BANC (a) — la preuve que le prédicat corrigé attrape bien la
+  // classe que l'ancien laissait passer.
+  //
+  // On dépublie un instrument RÉELLEMENT CIBLÉ par une règle (`actif: false`,
+  // sans le suspendre), on recalcule `IDS_ASSIGNABLES` à partir du catalogue
+  // muté, et l'on vérifie les deux moitiés de l'énoncé : le prédicat de la
+  // route l'écarte (donc la règle qui n'a que lui devient muette et le banc
+  // rougirait), tandis que `estAdministrableParLaRoute` — l'ancien prédicat —
+  // l'accepte encore. Sans cette seconde assertion, le test passerait aussi
+  // avec le mauvais prédicat.
+  it('BANC (a) — un instrument dépublié (actif: false, non suspendu) fait rougir le banc', async () => {
+    vi.resetModules();
+    const { QUESTIONNAIRES_CATALOG } = await import('@/lib/questionnaires-catalog');
+    // `Q_SOM_05` est la cible propre de `R2-SOM-03` et de `R2-SOM-05`.
+    const cible = 'Q_SOM_05';
+    const mute = QUESTIONNAIRES_CATALOG.map(q => (q.id === cible ? { ...q, actif: false } : q));
+    expect(mute.find(q => q.id === cible)?.actif, 'la mutation doit porter').toBe(false);
+    vi.doMock('@/lib/questionnaires-catalog', async importer => ({
+      ...(await importer<typeof import('@/lib/questionnaires-catalog')>()),
+      QUESTIONNAIRES_CATALOG: mute,
+    }));
+    const biblio = await import('@/lib/bibliotheque');
+
+    // Le prédicat de la ROUTE écarte l'instrument dépublié…
+    expect(biblio.IDS_ASSIGNABLES.has(cible)).toBe(false);
+    // …et `R2-SOM-03`, qui n'a que lui, devient muette : le banc rougit.
+    const r2som03 = ORIENTATION_RULES_V1.find(r => r.id === 'R2-SOM-03')!;
+    expect(r2som03.suggestions.some(s => cibleResoluble(s, biblio.IDS_ASSIGNABLES))).toBe(false);
+
+    // L'ANCIEN prédicat, lui, l'accepte encore — c'est la coïncidence que la
+    // mutation démonte, et la raison pour laquelle ce banc existe.
+    expect(biblio.estAdministrableParLaRoute(cible)).toBe(true);
+
+    vi.doUnmock('@/lib/questionnaires-catalog');
+    vi.resetModules();
+  });
+
+  // (b) NON-REDONDANCE — et c'est LUI qui ferme la classe de défaut nommée au
+  // cadrage du 2026-08-06. Une règle peut être parfaitement résoluble ET
+  // définitivement muette : il suffit qu'une règle sœur au déclencheur PLUS
+  // LARGE vise déjà toutes ses cibles. Le moteur déduplique alors
+  // (`orientationEngine.ts`, `parCible`), la règle n'ajoute jamais rien, et le
+  // banc (a) reste vert. C'est le risque exact des suggestions
+  // mono-questionnaire écartées au cadrage : trois des six règles re-ciblées
+  // seraient nées mortes.
+  //
+  // Le banc construit, POUR CHAQUE RÈGLE, un jeu d'entrées dérivé de ses PROPRES
+  // déclencheurs — jamais écrit à la main, sinon il dériverait de la table à la
+  // première modification de seuil —, puis compare la sortie du moteur AVEC et
+  // SANS la règle. Si l'ensemble des cibles est identique, la règle n'apporte
+  // rien même dans le scénario qui lui est le plus favorable : elle est
+  // redondante.
+  //
+  // Ce que le banc n'affirme PAS : que le scénario dérivé soit clinique. Il ne
+  // sert qu'à faire s'allumer la règle ; les seuils et les bandes sont épinglés
+  // par les cas nommés plus bas.
+  const CHAMPS_LISTE = new Set([
+    'signauxAlerte', 'antecedentsDomaines', 'facteursDeclenchants', 'attentes', 'automedication',
+  ]);
+
+  function valeurQuiSatisfait(operateur: '>=' | '<=' | '>' | '<' | '==', reference: number): number {
+    switch (operateur) {
+      case '>': return reference + 1;
+      case '<': return reference - 1;
+      default: return reference;
+    }
+  }
+
+  /** Un jeu d'entrées dérivé des déclencheurs d'une règle — de quoi l'allumer. */
+  function scenarioPour(regle: (typeof ORIENTATION_RULES_V1)[number]) {
+    const drapeaux: DrapeauxAnamnese = {
+      signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
+      attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
+    };
+    // Un `scores` par questionnaire visé : une règle peut porter plusieurs
+    // déclencheurs sur le même instrument, à des étages différents.
+    const scores = new Map<string, { subScores: Record<string, unknown>[]; global: Record<string, unknown> }>();
+    const porteurPour = (id: string) => {
+      const connu = scores.get(id);
+      if (connu) return connu;
+      const neuf = { subScores: [] as Record<string, unknown>[], global: {} as Record<string, unknown> };
+      scores.set(id, neuf);
+      return neuf;
+    };
+
+    for (const declencheur of regle.declencheurs) {
+      if (declencheur.type === 'drapeau') {
+        const valeur = declencheur.valeurs[0];
+        if (CHAMPS_LISTE.has(declencheur.champ)) {
+          (drapeaux[declencheur.champ] as string[]) = [valeur];
+        } else {
+          (drapeaux as Record<string, unknown>)[declencheur.champ] = valeur;
+        }
+        continue;
+      }
+      const porteur = porteurPour(declencheur.idQuestionnaire);
+      // Ce que le déclencheur exige de la mesure, traduit en score servi. Aucun
+      // compte d'items n'est publié : la garde de complétude ne lit alors rien
+      // et laisse passer — c'est bien un recueil complet qu'on décrit ici.
+      const contenu: Record<string, unknown> = {};
+      if (declencheur.type === 'comparaison') {
+        contenu.total = valeurQuiSatisfait(declencheur.operateur, declencheur.valeur);
+      } else if (declencheur.zone.type === 'plage') {
+        contenu.total = declencheur.zone.min;
+      } else if (declencheur.zone.type === 'interpretation') {
+        contenu.total = 0;
+        contenu.interpretation = { label: declencheur.zone.labels[0] };
+      } else {
+        contenu.total = 0;
+        contenu.interpretation = { color: declencheur.zone.couleurs[0] };
+      }
+      if (declencheur.sousScore) {
+        porteur.subScores.push({ id: declencheur.sousScore, label: declencheur.sousScore, ...contenu });
+      } else {
+        Object.assign(porteur.global, contenu);
+      }
+    }
+
+    const reponses: ReponseOrientation[] = [...scores.entries()].map(([idQuestionnaire, porteur]) => ({
+      idQuestionnaire,
+      dateReponse: '2026-08-06T10:00:00.000Z',
+      scores: porteur.subScores.length > 0
+        ? { ...porteur.global, subScores: porteur.subScores }
+        : porteur.global,
+    }));
+    return { reponses, drapeaux };
+  }
+
+  it('BANC (b) — aucune règle publiée redondante', () => {
+    const publiees = ORIENTATION_RULES_V1.filter(regle => regle.statut === 'publiee');
+    // Le banc ne prouverait rien sur une table vide de règles publiées.
+    expect(publiees.length).toBeGreaterThan(0);
+
+    const cles = (recos: ReturnType<typeof evaluerOrientation>) => new Set(recos.map(r =>
+      r.cible.type === 'questionnaire' ? `q:${r.cible.questionnaireId}` : `p:${r.cible.packId}`));
+
+    const inutiles: string[] = [];
+    for (const regle of publiees) {
+      const { reponses, drapeaux } = scenarioPour(regle);
+      const avec = cles(evaluerOrientation({
+        reponses, drapeaux, idsQuestionnairesAssignes: [], regles: ORIENTATION_RULES_V1,
+      }));
+      const sans = cles(evaluerOrientation({
+        reponses, drapeaux, idsQuestionnairesAssignes: [],
+        regles: ORIENTATION_RULES_V1.filter(autre => autre.id !== regle.id),
+      }));
+      // Contre-épreuve : un scénario qui n'allume même pas sa propre règle ne
+      // dirait rien de sa redondance. Une règle absente de sa propre sortie est
+      // aussi grave qu'une règle redondante, et se signale ici.
+      const propres = [...avec].filter(cle => !sans.has(cle));
+      if (propres.length === 0) inutiles.push(regle.id);
+    }
+    expect(inutiles).toEqual([]);
   });
 });
 
@@ -212,6 +424,22 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
       .filter(({ declencheur }) => declencheur.type === 'drapeau' && declencheur.champ === 'signauxAlerte')
       .map(({ regleId }) => regleId);
     expect(fautives).toEqual([]);
+  });
+
+  // ARBITRAGE DU 2026-08-06 (LOT-02, D-030), épinglé ici pour qu'il ne se
+  // défasse pas par inadvertance. Le geste praticien de l'orientation est
+  // devenu « ajouter à la file d'envoi », instrument par instrument : le
+  // panneau ne sait plus assigner un pack, et le garde de restitution de la
+  // synthèse interdit toute mention de pack tant que l'allowlist est vide.
+  // Réintroduire une suggestion à `packId` produirait donc une ligne sans geste
+  // possible — c'est une décision produit, pas une correction de code, et ce
+  // banc l'oblige à passer par une modification explicite.
+  it('aucune règle publiée ne cible un pack', () => {
+    const avecPack = ORIENTATION_RULES_V1
+      .filter(regle => regle.statut === 'publiee')
+      .filter(regle => regle.suggestions.some(suggestion => Boolean(suggestion.packId)))
+      .map(regle => regle.id);
+    expect(avecPack).toEqual([]);
   });
 
   it('chaque questionnaire cité existe au catalogue et est administrable', () => {
@@ -307,24 +535,37 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
     expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_05' });
   });
 
-  it('R-STR-02 : le pack stress exige le drapeau ET la mesure', () => {
+  // RE-CIBLÉE le 2026-08-06 : plus de pack stress, trois questionnaires. Le
+  // DASS-21 (`Q_STR_04`) est la cible de tête, et elle est PROPRE à cette règle
+  // sur ce scénario — `R-STR-01`, qui s'allume aussi, vise `Q_STR_05`.
+  it('R-STR-02 : les instruments du stress exigent le drapeau ET la mesure', () => {
     const mesure = reponse('Q_STR_02', { total: 30, interpretation: { label: 'Élevé', color: 'danger' } });
-    const cible = { type: 'pack', packId: 'pack_stress_chronique_burnout' };
-    // Mesure seule : pas de pack.
+    const cible = { type: 'questionnaire', questionnaireId: 'Q_STR_04' };
+    // Mesure seule : rien.
     expect(evaluer([mesure]).map(r => r.cible)).not.toContainEqual(cible);
-    // Drapeau seul : pas de pack non plus.
+    // Drapeau seul : rien non plus.
     expect(evaluer([], { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] })
       .map(r => r.cible)).not.toContainEqual(cible);
-    // Les deux : le pack sort.
-    expect(evaluer([mesure], { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] })
-      .map(r => r.cible)).toContainEqual(cible);
+    // Les deux : les trois instruments sortent.
+    const cibles = evaluer([mesure], { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] })
+      .map(r => r.cible);
+    expect(cibles).toContainEqual(cible);
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_06' });
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_08' });
+    // Aucun pack, plus jamais : c'est le sens du lot.
+    expect(cibles.filter(c => c.type === 'pack')).toEqual([]);
   });
 
-  it('R-GAS-01 : un TFD défavorable propose le pack digestif', () => {
+  it('R-GAS-01 : un TFD défavorable propose Bristol et l’hyperexcitabilité', () => {
     const recos = evaluer([
       reponse('Q_GAS_01', { total: 55, interpretation: { label: 'C — Prédominance', color: 'danger' } }),
     ]);
-    expect(recos.map(r => r.cible)).toContainEqual({ type: 'pack', packId: 'pack_digestif_intestin_cerveau' });
+    const cibles = recos.map(r => r.cible);
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_03' });
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_INF_01' });
+    // Le TFD ne se repropose pas : le déclencheur vient de le lire.
+    expect(cibles).not.toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_01' });
+    expect(cibles.filter(c => c.type === 'pack')).toEqual([]);
   });
 
   // Héritier direct du banc `R-ANA-01 et R-ANA-02` de V1. `R-ANA-02` est
@@ -384,14 +625,21 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
   };
 
-  // Composition RÉELLE des trois packs de doctrine que cette table peut
-  // proposer, relue en base le 2026-08-04. Elle sert à deux choses : exercer
-  // l'absorption pack ⊃ membre, et refuser silencieusement toute recommandation
-  // qui doublerait un pack par un de ses propres instruments.
+  // Composition RÉELLE des trois packs de doctrine, relue en base le
+  // 2026-08-06 — COMPLÉTÉE ce jour-là. La version précédente était partielle
+  // (`pack_digestif_intestin_cerveau: ['Q_GAS_01']` pour huit membres réels), ce
+  // qui rendait les bancs d'absorption plus faciles à satisfaire qu'ils
+  // n'auraient dû : un membre absent de la fixture ne pouvait pas être absorbé,
+  // donc pas non plus manquer à l'appel.
+  //
+  // Elle ne décrit plus AUCUNE règle publiée depuis le re-ciblage du 2026-08-06 :
+  // c'est le matériel des règles SYNTHÉTIQUES d'absorption plus bas, et le
+  // moteur reste seul à savoir absorber. La capacité est conservée, elle n'est
+  // simplement plus exercée par la table.
   const COMPOSITION_PACKS: Partial<Record<PackId, string[]>> = {
-    pack_sommeil_chronobiologie: ['Q_SOM_01', 'Q_SOM_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_SOM_05', 'Q_SOM_06', 'Q_INF_03', 'Q_NEU_11'],
-    pack_stress_chronique_burnout: ['Q_STR_02', 'Q_STR_05'],
-    pack_digestif_intestin_cerveau: ['Q_GAS_01'],
+    pack_sommeil_chronobiologie: ['Q_SOM_01', 'Q_SOM_02', 'Q_SOM_03', 'Q_SOM_05', 'Q_SOM_04', 'Q_SOM_06', 'Q_INF_03', 'Q_NEU_11'],
+    pack_stress_chronique_burnout: ['Q_STR_02', 'Q_STR_04', 'Q_STR_03', 'Q_STR_06', 'Q_STR_05', 'Q_STR_08', 'Q_SOM_01', 'Q_INF_01', 'Q_INF_03'],
+    pack_digestif_intestin_cerveau: ['Q_GAS_01', 'Q_GAS_03', 'Q_ALI_01', 'Q_STR_02', 'Q_SOM_01', 'Q_INF_03', 'Q_INF_01', 'Q_MOD_03'],
   };
 
   function evaluer(
@@ -406,11 +654,6 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
       drapeaux,
       compositionPacks,
     });
-  }
-
-  /** Avec la composition réelle des packs : l'absorption pack ⊃ membre joue. */
-  function evaluerAvecPacks(reponses: ReponseOrientation[], drapeaux = anamneseVide) {
-    return evaluer(reponses, drapeaux, COMPOSITION_PACKS);
   }
 
   // Forme RÉELLE des `scoresJson` d'un moteur à sous-scores : la clé est
@@ -440,6 +683,13 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
       })),
     },
   });
+
+  /** Avec la composition réelle des packs — sans effet sur la table du
+   *  2026-08-06, qui ne cible plus aucun pack : conservé parce que le cas
+   *  d'abandon plus bas décrit un patient RÉEL, composition fournie comprise. */
+  function evaluerAvecPacks(reponses: ReponseOrientation[], drapeaux = anamneseVide) {
+    return evaluer(reponses, drapeaux, COMPOSITION_PACKS);
+  }
 
   /** Les règles qui ont motivé une cible donnée — `[]` si la cible est absente. */
   function reglesPour(recos: ReturnType<typeof evaluer>, cible: { type: string; questionnaireId?: string; packId?: string }) {
@@ -633,14 +883,54 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     expect(reglesPour(evaluer([mesure], drapeau), { type: 'questionnaire', questionnaireId: 'Q_SOM_03' })).toContain('R2-SOM-04');
   });
 
-  it('R2-SOM-05 — une attente de sommeil ET un sommeil non réparateur engagent le pack', () => {
+  // RE-CIBLÉE le 2026-08-06, puis RESSERRÉE le même jour à la revue
+  // adversariale : DEUX questionnaires — le PSQI et le chronotype de Horne, les
+  // deux instruments que `WN-CL-0178-017` nomme et que cette table sait
+  // proposer. Le banc s'asserte sur `Q_SOM_05` (Horne), cible PROPRE à cette
+  // règle sur ce scénario — `Q_SOM_01` est déjà servi par `R2-SOM-01`, qui
+  // s'allume aussi à 8.
+  it('R2-SOM-05 — une attente de sommeil ET un sommeil non réparateur proposent PSQI et Horne', () => {
     const mesure = sousScores('Q_MOD_01', [
       { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
     ]);
     const drapeau = { ...anamneseVide, attentes: ['Améliorer le sommeil'] };
-    expect(reglesPour(evaluer([mesure]), { type: 'pack', packId: 'pack_sommeil_chronobiologie' })).toEqual([]);
-    expect(reglesPour(evaluer([], drapeau), { type: 'pack', packId: 'pack_sommeil_chronobiologie' })).toEqual([]);
-    expect(reglesPour(evaluer([mesure], drapeau), { type: 'pack', packId: 'pack_sommeil_chronobiologie' })).toContain('R2-SOM-05');
+    const cible = { type: 'questionnaire', questionnaireId: 'Q_SOM_05' };
+    expect(reglesPour(evaluer([mesure]), cible)).toEqual([]);
+    expect(reglesPour(evaluer([], drapeau), cible)).toEqual([]);
+    const recos = evaluer([mesure], drapeau);
+    expect(reglesPour(recos, cible)).toContain('R2-SOM-05');
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_SOM_01' })).toContain('R2-SOM-05');
+  });
+
+  // LE RETRAIT DE BERLIN EST UNE DÉCISION CLINIQUE, ET IL SE GARDE.
+  //
+  // Une rédaction du 2026-08-06 proposait `Q_SOM_03` (Berlin) sur cette règle.
+  // `R2-SOM-04` conditionne le dépistage d'apnées à un ANTÉCÉDENT RESPIRATOIRE
+  // déclaré : le proposer ici sur la seule attente de sommeil CONTOURNAIT cette
+  // porte. Ce banc échoue si quelqu'un le réintroduit — et la seconde assertion
+  // vérifie que la porte, elle, laisse toujours passer qui de droit.
+  it('R2-SOM-05 — ne contourne PAS la porte de R2-SOM-04 (antécédent respiratoire)', () => {
+    const mesure = sousScores('Q_MOD_01', [
+      { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
+    ]);
+    const attenteSeule = { ...anamneseVide, attentes: ['Améliorer le sommeil'] };
+    // Sans antécédent respiratoire : Berlin n'est proposé par personne.
+    expect(reglesPour(evaluer([mesure], attenteSeule), { type: 'questionnaire', questionnaireId: 'Q_SOM_03' }))
+      .toEqual([]);
+    // Avec l'antécédent : c'est `R2-SOM-04`, et elle seule, qui l'ouvre.
+    const avecAntecedent = { ...attenteSeule, antecedentsDomaines: ['Respiratoire / apnée du sommeil'] };
+    expect(reglesPour(evaluer([mesure], avecAntecedent), { type: 'questionnaire', questionnaireId: 'Q_SOM_03' }))
+      .toEqual(['R2-SOM-04']);
+  });
+
+  // Epworth suit la même logique, par un autre motif : il n'est pas nommé par
+  // `WN-CL-0178-017`, et reste porté par `R2-SOM-06` (plainte de fatigue).
+  it('R2-SOM-05 — ne propose pas Epworth, qui reste à R2-SOM-06', () => {
+    const mesure = sousScores('Q_MOD_01', [
+      { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
+    ]);
+    const recos = evaluer([mesure], { ...anamneseVide, attentes: ['Améliorer le sommeil'] });
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_SOM_02' })).toEqual([]);
   });
 
   it('R2-SOM-06 — une plainte de fatigue intense propose Epworth PUIS Pichot', () => {
@@ -656,14 +946,20 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     expect(pichot?.priorite).toBe(2);
   });
 
-  it('R2-STR-02 — un burn-out déclaré ET une adaptation insuffisante engagent le pack stress', () => {
+  // RE-CIBLÉE le 2026-08-06. Assertion sur `Q_STR_04` (DASS-21) : cible PROPRE
+  // à cette règle — `Q_STR_02` est aussi servi par `R2-STR-01`, qui s'allume à 17.
+  it('R2-STR-02 — un burn-out déclaré ET une adaptation insuffisante engagent les trois instruments', () => {
     const mesure = sousScores('Q_MOD_01', [
       { id: 'ADAPTATION_STRESS', total: 17, interpretation: { label: 'Adaptation insuffisante', color: 'warning' } },
     ]);
     const drapeau = { ...anamneseVide, facteursDeclenchants: ['Stress aigu / burn-out'] };
-    expect(reglesPour(evaluer([mesure]), { type: 'pack', packId: 'pack_stress_chronique_burnout' })).toEqual([]);
-    expect(reglesPour(evaluer([], drapeau), { type: 'pack', packId: 'pack_stress_chronique_burnout' })).toEqual([]);
-    expect(reglesPour(evaluer([mesure], drapeau), { type: 'pack', packId: 'pack_stress_chronique_burnout' })).toContain('R2-STR-02');
+    const cible = { type: 'questionnaire', questionnaireId: 'Q_STR_04' };
+    expect(reglesPour(evaluer([mesure]), cible)).toEqual([]);
+    expect(reglesPour(evaluer([], drapeau), cible)).toEqual([]);
+    const recos = evaluer([mesure], drapeau);
+    expect(reglesPour(recos, cible)).toContain('R2-STR-02');
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_STR_03' })).toContain('R2-STR-02');
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_STR_02' })).toContain('R2-STR-02');
   });
 
   it('R2-STR-03 — une adaptation perturbée propose le BMS-10 sans attendre', () => {
@@ -709,14 +1005,21 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     expect(had[0].motifs.map(m => m.regleId).sort()).toEqual(['R2-NEU-03', 'R2-NEU-04']);
   });
 
-  it('R2-GAS-02 — un antécédent digestif ET une plainte modérée engagent le pack digestif', () => {
+  // RE-CIBLÉE le 2026-08-06 : trois questionnaires. À `digestion = 4`,
+  // `R2-GAS-01` (qui exige `>= 7`) ne s'allume pas : les trois cibles sont
+  // PROPRES à cette règle sur ce scénario.
+  it('R2-GAS-02 — un antécédent digestif ET une plainte modérée engagent les trois instruments', () => {
     const mesure = sousScores('Q_MOD_03', [
       { id: 'digestion', total: 4, interpretation: { label: 'Intensité modérée', color: 'warning' } },
     ]);
     const drapeau = { ...anamneseVide, antecedentsDomaines: ['Digestif (SII, reflux, MICI…)'] };
-    expect(reglesPour(evaluer([mesure]), { type: 'pack', packId: 'pack_digestif_intestin_cerveau' })).toEqual([]);
-    expect(reglesPour(evaluer([], drapeau), { type: 'pack', packId: 'pack_digestif_intestin_cerveau' })).toEqual([]);
-    expect(reglesPour(evaluer([mesure], drapeau), { type: 'pack', packId: 'pack_digestif_intestin_cerveau' })).toContain('R2-GAS-02');
+    const cible = { type: 'questionnaire', questionnaireId: 'Q_GAS_03' };
+    expect(reglesPour(evaluer([mesure]), cible)).toEqual([]);
+    expect(reglesPour(evaluer([], drapeau), cible)).toEqual([]);
+    const recos = evaluer([mesure], drapeau);
+    expect(reglesPour(recos, cible)).toContain('R2-GAS-02');
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_GAS_01' })).toContain('R2-GAS-02');
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_INF_01' })).toContain('R2-GAS-02');
   });
 
   // La SECONDE porte de `WN-CL-0287-009`, câblée le 2026-08-04. Déclencheur
@@ -732,12 +1035,12 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
   // Trois règles descendent SOUS le seuil de leur voisine, et chacune le motive.
   // Un seuil qu'aucun test ne borne se laisse « harmoniser » sans rien casser.
 
-  it('BORNE — SOMMEIL à 9 : pas de pack sommeil (R2-SOM-05 exige <= 8)', () => {
+  it('BORNE — SOMMEIL à 9 : pas de chronotype de Horne (R2-SOM-05 exige <= 8)', () => {
     const recos = evaluer(
       [sousScores('Q_MOD_01', [{ id: 'SOMMEIL', total: 9, interpretation: null }])],
       { ...anamneseVide, attentes: ['Améliorer le sommeil'] },
     );
-    expect(reglesPour(recos, { type: 'pack', packId: 'pack_sommeil_chronobiologie' })).toEqual([]);
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_SOM_05' })).toEqual([]);
     // Le patient n'est pas laissé sans rien : `R2-SOM-01` lui propose le PSQI
     // seul. C'est l'effet de bord voulu du seuil resserré.
     expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_SOM_01' })).toContain('R2-SOM-01');
@@ -751,35 +1054,119 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_STR_02' })).toContain('R2-STR-01');
   });
 
-  it('BORNE — digestion à 3 : pas de pack digestif (R2-GAS-02 exige >= 4)', () => {
+  it('BORNE — digestion à 3 : aucun instrument digestif (R2-GAS-02 exige >= 4)', () => {
     const recos = evaluer(
       [sousScores('Q_MOD_03', [{ id: 'digestion', total: 3, interpretation: { label: 'Intensité faible ou absente', color: 'success' } }])],
       { ...anamneseVide, antecedentsDomaines: ['Digestif (SII, reflux, MICI…)'] },
     );
-    expect(reglesPour(recos, { type: 'pack', packId: 'pack_digestif_intestin_cerveau' })).toEqual([]);
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_GAS_01' })).toEqual([]);
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_GAS_03' })).toEqual([]);
+    expect(reglesPour(recos, { type: 'questionnaire', questionnaireId: 'Q_INF_01' })).toEqual([]);
   });
 
   // ── UN PACK ABSORBE SES MEMBRES (arbitrage praticien du 2026-08-04) ────────
+  //
+  // RÉÉCRITS SUR RÈGLES SYNTHÉTIQUES le 2026-08-06. Ces quatre bancs tournaient
+  // sur `R2-SOM-05` & consorts, qui ciblaient un pack ; depuis le re-ciblage,
+  // AUCUNE règle publiée ne cible plus un pack, et les écrire sur la table
+  // vivante n'était plus possible — les laisser tomber aurait retiré du CI la
+  // seule couverture de l'absorption, une capacité que le moteur garde et qu'un
+  // lot futur peut rallumer.
+  //
+  // Les règles ci-dessous n'ont donc PAS d'existence clinique : elles ne sont
+  // pas dans `ORIENTATION_RULES_V1`, ne sont pas signées, ne citent leurs claims
+  // que pour franchir l'invariant de traçabilité du moteur. Ce qu'elles
+  // exercent, c'est le moteur — jamais la doctrine.
+  const CLAIM_FICTIF = [{ claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' }];
+  const DECLENCHEUR_ATTENTE_SOMMEIL = {
+    type: 'drapeau' as const, champ: 'attentes' as const, valeurs: ['Améliorer le sommeil'],
+  };
+
+  const REGLE_SYNTH_PACK_SOMMEIL: OrientationRule = {
+    id: 'SYNTH-PACK-SOMMEIL',
+    statut: 'publiee',
+    declencheurs: [DECLENCHEUR_ATTENTE_SOMMEIL],
+    suggestions: [{
+      packId: 'pack_sommeil_chronobiologie', priorite: 1,
+      objectif: "Engager l'exploration complète du sommeil et des rythmes.",
+    }],
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'approfondissement',
+  };
+  const REGLE_SYNTH_MEMBRE_PSQI: OrientationRule = {
+    id: 'SYNTH-MEMBRE-PSQI',
+    statut: 'publiee',
+    declencheurs: [DECLENCHEUR_ATTENTE_SOMMEIL],
+    suggestions: [{
+      questionnaireId: 'Q_SOM_01', priorite: 1,
+      objectif: 'Mesurer la qualité du sommeil par le PSQI.',
+    }],
+    // `socle` DÉLIBÉRÉMENT, contre l'`approfondissement` du pack : c'est ce qui
+    // rend observable le report du niveau le plus fondamental.
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'socle',
+  };
+  const REGLE_SYNTH_PACK_STRESS: OrientationRule = {
+    id: 'SYNTH-PACK-STRESS',
+    statut: 'publiee',
+    declencheurs: [{ type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] }],
+    suggestions: [{ packId: 'pack_stress_chronique_burnout', priorite: 1, objectif: 'Engager le volet stress.' }],
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'approfondissement',
+  };
+  const REGLE_SYNTH_MEMBRE_PSS: OrientationRule = {
+    id: 'SYNTH-MEMBRE-PSS',
+    statut: 'publiee',
+    declencheurs: [{ type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] }],
+    suggestions: [{ questionnaireId: 'Q_STR_02', priorite: 1, objectif: 'Mesurer le stress perçu.' }],
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'socle',
+  };
+  const REGLE_SYNTH_PACK_DIGESTIF: OrientationRule = {
+    id: 'SYNTH-PACK-DIGESTIF',
+    statut: 'publiee',
+    declencheurs: [{ type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Digestif (SII, reflux, MICI…)'] }],
+    suggestions: [{ packId: 'pack_digestif_intestin_cerveau', priorite: 1, objectif: "Engager l'axe digestif." }],
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'approfondissement',
+  };
+  const REGLE_SYNTH_MEMBRE_TFD: OrientationRule = {
+    id: 'SYNTH-MEMBRE-TFD',
+    statut: 'publiee',
+    declencheurs: [{ type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Digestif (SII, reflux, MICI…)'] }],
+    suggestions: [{ questionnaireId: 'Q_GAS_01', priorite: 1, objectif: 'Mesurer les troubles fonctionnels digestifs.' }],
+    justificationClaims: CLAIM_FICTIF,
+    niveau: 'socle',
+  };
+
+  // `compositionPacks` explicite à chaque appel, jamais par défaut : un défaut
+  // ferait passer `undefined` — le cas « composition inconnue », celui qu'un des
+  // bancs teste — pour un oubli d'argument, et le banc en question ne pourrait
+  // pas s'écrire.
+  function evaluerSynth(
+    regles: OrientationRule[],
+    drapeaux: DrapeauxAnamnese,
+    compositionPacks: Partial<Record<PackId, string[]>> | undefined,
+  ) {
+    return evaluerOrientation({ reponses: [], idsQuestionnairesAssignes: [], regles, drapeaux, compositionPacks });
+  }
+
+  const ATTENTE_SOMMEIL: DrapeauxAnamnese = { ...anamneseVide, attentes: ['Améliorer le sommeil'] };
+
   it('ABSORPTION — un pack recommandé masque ses propres membres', () => {
-    const recos = evaluerAvecPacks(
-      [sousScores('Q_MOD_01', [
-        { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
-      ])],
-      { ...anamneseVide, attentes: ['Améliorer le sommeil'] },
-    );
+    const recos = evaluerSynth([REGLE_SYNTH_PACK_SOMMEIL, REGLE_SYNTH_MEMBRE_PSQI], ATTENTE_SOMMEIL, COMPOSITION_PACKS);
     const cibles = recos.map(r => r.cible);
     expect(cibles).toContainEqual({ type: 'pack', packId: 'pack_sommeil_chronobiologie' });
-    // `Q_SOM_01` est un membre de ce pack : `R2-SOM-01` le proposait en ligne
-    // distincte, il ne s'affiche plus.
+    // `Q_SOM_01` est un membre de ce pack : la règle membre le proposait en
+    // ligne distincte, il ne s'affiche plus.
     expect(cibles).not.toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_SOM_01' });
     // Le motif absorbé ne DISPARAÎT pas : il remonte sur le pack.
     const pack = recos.find(r => r.cible.type === 'pack');
-    expect(pack?.motifs.map(m => m.regleId).sort()).toEqual(['R2-SOM-01', 'R2-SOM-05']);
+    expect(pack?.motifs.map(m => m.regleId).sort()).toEqual(['SYNTH-MEMBRE-PSQI', 'SYNTH-PACK-SOMMEIL']);
     // Sans la composition, l'absorption ne peut pas jouer — on ne devine pas ce
     // qu'un pack contient.
-    const sansComposition = evaluer(
-      [sousScores('Q_MOD_01', [{ id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } }])],
-      { ...anamneseVide, attentes: ['Améliorer le sommeil'] },
+    const sansComposition = evaluerSynth(
+      [REGLE_SYNTH_PACK_SOMMEIL, REGLE_SYNTH_MEMBRE_PSQI], ATTENTE_SOMMEIL, undefined,
     );
     expect(sansComposition.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_SOM_01' });
   });
@@ -789,15 +1176,10 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
   // voyait sa sortie tomber à des packs tous `approfondissement` et PLUS RIEN au
   // `socle`, alors que des règles `socle` avaient déclenché.
   it('ABSORPTION — le pack porte le niveau le plus fondamental de ce qu\'il absorbe', () => {
-    const recos = evaluerAvecPacks(
-      [sousScores('Q_MOD_01', [
-        { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
-      ])],
-      { ...anamneseVide, attentes: ['Améliorer le sommeil'] },
-    );
+    const recos = evaluerSynth([REGLE_SYNTH_PACK_SOMMEIL, REGLE_SYNTH_MEMBRE_PSQI], ATTENTE_SOMMEIL, COMPOSITION_PACKS);
     const pack = recos.find(r => r.cible.type === 'pack' && r.cible.packId === 'pack_sommeil_chronobiologie');
-    // Le pack est `approfondissement` au registre ; `R2-SOM-01`, qui proposait
-    // `Q_SOM_01` (membre absorbé), est `socle`. C'est le socle qui l'emporte.
+    // Le pack est `approfondissement` au registre ; la règle membre est `socle`.
+    // C'est le socle qui l'emporte.
     expect(pack?.niveau).toBe('socle');
     // Et le socle n'a pas disparu de la sortie : c'est tout l'enjeu.
     expect(recos.some(r => r.niveau === 'socle')).toBe(true);
@@ -807,14 +1189,9 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
   // aussi au modèle de synthèse. Elle est reportée PRÉFIXÉE par la cible : ainsi
   // préfixée, elle ne peut pas se lire comme une description du pack.
   it('ABSORPTION — les objectifs des membres remontent, préfixés par la cible', () => {
-    const recos = evaluerAvecPacks(
-      [sousScores('Q_MOD_01', [
-        { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
-      ])],
-      { ...anamneseVide, attentes: ['Améliorer le sommeil'] },
-    );
+    const recos = evaluerSynth([REGLE_SYNTH_PACK_SOMMEIL, REGLE_SYNTH_MEMBRE_PSQI], ATTENTE_SOMMEIL, COMPOSITION_PACKS);
     const pack = recos.find(r => r.cible.type === 'pack' && r.cible.packId === 'pack_sommeil_chronobiologie');
-    // L'objectif propre au pack (`R2-SOM-05`) est toujours là, sans préfixe.
+    // L'objectif propre au pack est toujours là, sans préfixe.
     expect(pack?.objectifs.some(o => o.startsWith("Engager l'exploration complète du sommeil"))).toBe(true);
     // Celui de la cible absorbée est là aussi, et il dit de qui il parle.
     const reporte = pack?.objectifs.find(o => o.startsWith('via Q_SOM_01 : '));
@@ -824,38 +1201,27 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     const membres = COMPOSITION_PACKS.pack_sommeil_chronobiologie ?? [];
     for (const objectif of pack?.objectifs ?? []) {
       const vientDunMembre = membres.some(qid => objectif.startsWith(`via ${qid} : `));
-      const propreAuPack = pack?.motifs.some(m => m.regleId === 'R2-SOM-05') && !objectif.startsWith('via ');
+      const propreAuPack = pack?.motifs.some(m => m.regleId === 'SYNTH-PACK-SOMMEIL') && !objectif.startsWith('via ');
       expect(vientDunMembre || propreAuPack).toBe(true);
     }
   });
 
-  // L'invariant général, sur un patient qui allume presque tout : aucune
+  // L'invariant général, sur un patient qui allume les trois packs : aucune
   // recommandation de questionnaire ne doit être membre d'un pack recommandé.
   it('ABSORPTION — aucun pack recommandé ne coexiste avec un de ses membres', () => {
-    const recos = evaluerAvecPacks(
+    const recos = evaluerSynth(
       [
-        sousScores('Q_MOD_01', [
-          { id: 'SOMMEIL', total: 8, interpretation: { label: 'Sommeil non réparateur', color: 'danger' } },
-          { id: 'RYTHME_BIOLOGIQUE', total: 8, interpretation: { label: 'Rythme non réparateur', color: 'danger' } },
-          { id: 'ADAPTATION_STRESS', total: 8, interpretation: { label: 'Adaptation perturbée', color: 'danger' } },
-        ]),
-        sousScores('Q_MOD_03', [
-          { id: 'sommeil', total: 9, interpretation: { label: 'Intensité très élevée', color: 'danger' } },
-          { id: 'fatigue', total: 9, interpretation: { label: 'Intensité très élevée', color: 'danger' } },
-          { id: 'moral', total: 9, interpretation: { label: 'Intensité très élevée', color: 'danger' } },
-          { id: 'digestion', total: 9, interpretation: { label: 'Intensité très élevée', color: 'danger' } },
-        ]),
-        sousScores('Q_INF_03', [
-          { id: 'DA', total: 25, interpretation: { label: 'Fortement perturbé', color: 'danger' } },
-          { id: 'SE', total: 25, interpretation: { label: 'Fortement perturbé', color: 'danger' } },
-        ]),
+        REGLE_SYNTH_PACK_SOMMEIL, REGLE_SYNTH_MEMBRE_PSQI,
+        REGLE_SYNTH_PACK_STRESS, REGLE_SYNTH_MEMBRE_PSS,
+        REGLE_SYNTH_PACK_DIGESTIF, REGLE_SYNTH_MEMBRE_TFD,
       ],
       {
         ...anamneseVide,
         attentes: ['Améliorer le sommeil'],
         facteursDeclenchants: ['Stress aigu / burn-out'],
-        antecedentsDomaines: ['Digestif (SII, reflux, MICI…)', 'Respiratoire / apnée du sommeil'],
+        antecedentsDomaines: ['Digestif (SII, reflux, MICI…)'],
       },
+      COMPOSITION_PACKS,
     );
 
     // Le banc ne prouverait rien sur un patient à qui on ne propose rien.
@@ -863,7 +1229,7 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
     const packsRecommandes = recos
       .filter(r => r.cible.type === 'pack')
       .map(r => (r.cible as { packId: keyof typeof COMPOSITION_PACKS }).packId);
-    expect(packsRecommandes.length).toBeGreaterThan(0);
+    expect(packsRecommandes).toHaveLength(3);
 
     const membres = new Set<string>(packsRecommandes.flatMap(packId => COMPOSITION_PACKS[packId] ?? []));
     const doublons = recos
@@ -1018,9 +1384,13 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
     });
   }
 
-  const PACK_DIGESTIF = { type: 'pack', packId: 'pack_digestif_intestin_cerveau' };
+  // RE-CIBLÉE le 2026-08-06 : la règle ne vise plus le pack digestif mais le
+  // TFD et l'échelle de Bristol. Ce que ce banc épingle n'a pas changé — c'est
+  // la SOLIDARITÉ de la règle avec la forme SIIN57 de `Q_ALI_01`.
+  const TFD = { type: 'questionnaire', questionnaireId: 'Q_GAS_01' };
+  const BRISTOL = { type: 'questionnaire', questionnaireId: 'Q_GAS_03' };
 
-  it('DRAPEAU ALLUMÉ — une bande défavorable de la forme SIIN57 engage le pack digestif', async () => {
+  it('DRAPEAU ALLUMÉ — une bande défavorable de la forme SIIN57 engage les instruments digestifs', async () => {
     const { scorer, items } = await formeServie('true');
     expect(items, 'la forme allumée doit être celle à 57 items').toHaveLength(57);
 
@@ -1028,13 +1398,15 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
     const severe = scorer(passationLaPlusBasse(items, scorer));
     expect(severe.missing, 'la passation doit être complète').toBe(0);
     expect(severe.interpretation?.label).toBe('Alimentation très déséquilibrée et défavorable');
-    expect(evaluerSur(severe).map(r => r.cible)).toContainEqual(PACK_DIGESTIF);
+    expect(evaluerSur(severe).map(r => r.cible)).toContainEqual(TFD);
+    expect(evaluerSur(severe).map(r => r.cible)).toContainEqual(BRISTOL);
 
     // Bande défavorable intermédiaire (26-50), l'autre libellé cité par la règle.
     const intermediaire = scorer(passationAuDessusDe(26, items, scorer));
     expect(intermediaire.interpretation?.label)
       .toBe('Alimentation déséquilibrée, ne contribuant pas au maintien du capital santé');
-    expect(evaluerSur(intermediaire).map(r => r.cible)).toContainEqual(PACK_DIGESTIF);
+    expect(evaluerSur(intermediaire).map(r => r.cible)).toContainEqual(TFD);
+    expect(evaluerSur(intermediaire).map(r => r.cible)).toContainEqual(BRISTOL);
   });
 
   it('DRAPEAU ALLUMÉ — la bande `info` (« plutôt équilibrée ») ne déclenche PAS', async () => {
@@ -1077,7 +1449,7 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
   // points sur 90, donc la bande la plus sévère. C'est la garde de complétude
   // d'`extraireCible` qui l'arrête, et elle est exercée ici sur l'instrument
   // réel — pas sur un `missing` posé à la main.
-  it('DRAPEAU ALLUMÉ — une enquête SIIN abandonnée n’engage aucun pack', async () => {
+  it('DRAPEAU ALLUMÉ — une enquête SIIN abandonnée n’engage rien', async () => {
     const { scorer, items } = await formeServie('true');
     const complete = passationLaPlusBasse(items, scorer);
     const troisItems = Object.fromEntries(

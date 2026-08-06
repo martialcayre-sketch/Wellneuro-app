@@ -2742,3 +2742,23 @@ re-signature D-018, revue `wn-reviewer` obligatoire.
 `PATCH parDefaut` sans garde → gestes LOT-03 ; `dejaAssigne`, absorption,
 `packsTransmis` vide → réserves D-030 ; campagne dettes 5.0 encore `en_cours`
 sans trace de la mise en attente.
+
+## 2026-08-06 — LOT-02 packs-personnalisés : l'orientation propose des ensembles, table re-signée
+
+**Décisions.** Les 6 règles à `packId` re-ciblées en suggestions questionnaires
+multi-instruments ; table re-signée D-018 (sha `547119c6…`, `dateValidation`
+2026-08-06, 23 claims relus en base : 23/23 VALIDE). Geste du panneau : « Ajouter
+à la file d'envoi », un clic, sans double temps. Trois arbitrages praticien après
+revue NO-GO : R2-SOM-05 → PSQI + Horne (Berlin retiré — il contournait la porte
+antécédent respiratoire de R2-SOM-04) ; le claim Karasek suit l'instrument vers
+R-STR-02 ; R-GAS-01 assumé.
+
+**Options écartées.** Candidats mono-cible du LOT-01 (3 règles devenaient
+no-op par la dédup du moteur) ; mise à jour du sha sans relecture de claims.
+
+**Prochaine action.** LOT-03 : retrait effectif des packs + gestes hérités
+(repli `resoudrePackBase` mort, garde `parDefaut`, `IDS_SUSPENDUS`).
+
+**Questions ouvertes.** Bruit du garde de restitution (faux positif « pack »
+adjacent, épinglé) ; valeur prod du drapeau orientation non lue (chiffrée) —
+vérifier le panneau après merge.

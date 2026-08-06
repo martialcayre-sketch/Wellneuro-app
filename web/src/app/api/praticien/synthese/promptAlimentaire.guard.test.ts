@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v17`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v18`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -101,7 +101,12 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // donc un pack largement entamé n'en porte aucun. La consigne dit désormais que
 // l'absence de segment n'atteste rien — le lot fermait un fait tu, il aurait
 // ouvert un fait faux.
-const EMPREINTE_V17 = '0bce1cbbf51f404f';
+//
+// v18, le 2026-08-06 (LOT-02) : la phrase sur l'état d'un PACK est retirée —
+// plus aucune règle d'orientation ne cible un pack, et le modèle ne peut donc
+// plus en rencontrer un dans son bloc. Ce que la consigne garde inchangé :
+// « l'absence de segment État n'atteste rien ».
+const EMPREINTE_V18 = '5433d1358707bab5';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -215,7 +220,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v17', empreinte: EMPREINTE_V17 });
+    ).toEqual({ version: 'synthese-v18', empreinte: EMPREINTE_V18 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
