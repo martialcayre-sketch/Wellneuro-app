@@ -101,8 +101,11 @@ export function OrientationPanel({
   // La valeur COURANTE du patient affiché, lisible depuis un callback créé
   // pour un patient précédent : c'est elle qui périme une relecture en vol
   // (clic « Ajouter » puis navigation avant le retour du POST + GET).
-  const idPatientRef = useRef(idPatient);
+  // Au démontage, la ref est vidée pour qu'une réponse lente déjà en vol
+  // soit considérée obsolète et n'appelle plus `setDansLaFile`.
+  const idPatientRef = useRef<string | null>(idPatient);
   idPatientRef.current = idPatient;
+  useEffect(() => () => { idPatientRef.current = null; }, []);
 
   const chargerFile = useCallback(async (estObsolete: () => boolean = () => false) => {
     try {

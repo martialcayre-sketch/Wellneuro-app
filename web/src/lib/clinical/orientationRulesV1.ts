@@ -1381,7 +1381,7 @@ export type OrientationMetadata = {
  * une règle était ajoutée sans re-signature, et c'est précisément ce qu'un banc
  * doit voir (voir `orientationRulesV1.test.ts`).
  *
- * Les vingt-trois ont été relus en base le 2026-08-04 : `statut = 'VALIDE'`,
+ * Les vingt-trois ont été relus en base le 2026-08-06 : `statut = 'VALIDE'`,
  * `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`.
  *
  * CE QUE SIGNER N'ALLUME PAS. `orientationActive()` exige AUSSI
