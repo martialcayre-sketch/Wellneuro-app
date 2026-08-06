@@ -2721,3 +2721,24 @@ d'écriture. Fermé par `backfill:pack-registry:apply` (autorisation explicite) 
 
 **Questions ouvertes.** Risque latent E2E : `Q_SOM_09` refusé par `submit`, le
 remplisseur générique casserait s'il itérait tout le pack. PR #372 dormante.
+
+## 2026-08-06 — LOT-01 packs-personnalisés : inventaire des surfaces + D-030
+
+**Décisions.** Matrice livrée (~70 surfaces, chaque ligne chemin:ligne relue ;
+unité : une ligne = une surface de code) et D-030 écrite : seul le second pack
+praticien « Florence 1 » est désactivé avec les 5 packs de doctrine actifs
+(6 au total) — « Base de consultation » ne l'est jamais ; geste d'envoi = file
+d'envoi ; campagne primaire. Trois lectures SQL production ancrent la matrice.
+
+**Options écartées.** Références par numéro de ligne dans `DECISIONS.md`
+(append-en-tête : périmées à chaque insertion) — remplacées par la citation de
+la phrase ; fixture `COMPOSITION_PACKS` comme source des compositions
+(partielle : 2/9 et 1/8).
+
+**Prochaine action.** LOT-02 via `/wn-lot` — re-ciblage des 6 règles,
+re-signature D-018, revue `wn-reviewer` obligatoire.
+
+**Questions ouvertes.** Repli par nom de `resoudrePackBase` mort (casse) et
+`PATCH parDefaut` sans garde → gestes LOT-03 ; `dejaAssigne`, absorption,
+`packsTransmis` vide → réserves D-030 ; campagne dettes 5.0 encore `en_cours`
+sans trace de la mise en attente.
