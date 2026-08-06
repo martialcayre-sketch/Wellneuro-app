@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Consolidation de la branche de campagne"
-statut: "en cours"
+statut: "fait — refermé le 2026-08-06 : campagne close depuis le 2026-08-03, lots livrés par PR individuelles depuis main, la branche de campagne dédiée n'a pas servi"
 dépend_de: "—"
 ---
 

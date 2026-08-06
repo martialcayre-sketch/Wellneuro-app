@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Un seul chemin d'écriture en base"
-statut: "code prêt — merge bloqué sur les étapes ops (environnement release-db)"
+statut: "livré (#435, 2026-08-05) — environnement release-db en place, le build Vercel n'écrit plus en base"
 dépend_de: "aucun (dépendance ops externe bloquante)"
 ---
 
