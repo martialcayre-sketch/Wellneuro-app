@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Resynchroniser le pack de base — la question des questionnaires"
-statut: "à_faire"
+statut: "en cours — code livré et validé (T2 vert, revue GO) ; reste le geste prod (réenregistrer le pack de base dans l'UI) et son constat par lecture SQL"
 dépend_de: "aucun"
 ---
 
@@ -85,4 +85,31 @@ utilisateur du 2026-08-06.
 
 ## Résultats
 
-À compléter à la clôture.
+**2026-08-06 — volet code livré, volet production en attente.**
+
+- **État avant, prouvé en production** (lecture SQL du 2026-08-06) : legacy 5 qids
+  (`Q_MOD_03, Q_MOD_01, Q_INF_03, Q_SOM_09, Q_ALI_01`), registre relationnel
+  **4 lignes** aux ordres 0, 1, 2, 4 — le trou de l'ordre 3 est `Q_SOM_09`. La
+  jointure registre passe par l'id **interne** (`questionnaire_packs.id` →
+  `pack_questionnaires.pack_id`), pas par l'`id_pack` public.
+- **Code** : `web/prisma/seed.ts` aligné sur l'état réel (5 qids, ordre exact de
+  production), commentaire remis à jour. T2 vert (120 E2E passés, 2 skippés,
+  5 min 11). Revue indépendante : GO.
+- **Question ouverte tranchée** : le seed n'écrit **pas** le registre
+  relationnel — il ne crée aucune `QuestionnaireDefinition`, donc
+  `syncPackToRegistry` produirait un registre vide ; le repli legacy est le
+  filet prévu pour les environnements seedés.
+- **Trois constats de revue, non bloquants** : (a) l'alignement ne vaut que
+  pour les bases provisionnées à neuf — une base de dev/CI déjà seedée garde
+  ses 4 qids (garde `parDefautExistant` + `update: {}`), cohérent avec « pas de
+  migration » ; (b) en environnement seedé la raison journalisée est
+  `registre_absent`, pas `registre_vide` ; (c) **risque latent E2E** :
+  `Q_SOM_09` a un chemin UI dédié et est refusé par `POST /api/patient/submit`
+  — le remplisseur générique de `portail-parcours.spec.ts` casserait le jour où
+  l'E2E itérera sur toutes les assignations du pack (aujourd'hui il n'en prend
+  que deux).
+- **Reste ouvert** : le geste de production (réenregistrer « Base de
+  consultation » dans Questionnaires & packs → `PATCH` → `syncPackToRegistry`)
+  et son constat par lecture (registre 4 → 5, ordres 0..4 sans trou). Vérifié
+  encore à 4 lignes le 2026-08-06 à 16 h 14. Repli si le geste UI ne suffit
+  pas : `backfill:pack-registry:apply`, sur autorisation explicite seulement.
