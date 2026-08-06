@@ -2,29 +2,27 @@
 
 **Campagne** : `2026-08-06-packs-personnalises` (primaire, lot_courant LOT-00).
 
-## Statut
+## Statut — lot entièrement livré (mis à jour 16 h 50)
 
-Volet **code livré et validé** : `web/prisma/seed.ts` aligné sur l'état réel de
-production — 5 qids, ordre exact `Q_MOD_03, Q_MOD_01, Q_INF_03, Q_SOM_09,
-Q_ALI_01` — commentaire remis à jour. T2 vert (120 E2E passés, 2 skippés,
-5 min 11, worktree isolé). Revue indépendante : GO.
+Volet **code** : `web/prisma/seed.ts` aligné sur l'état réel de production —
+5 qids, ordre exact `Q_MOD_03, Q_MOD_01, Q_INF_03, Q_SOM_09, Q_ALI_01` —
+commentaire remis à jour. T2 vert (120 E2E passés, 2 skippés, 5 min 11,
+worktree isolé). Revue indépendante : GO.
 
-Volet **production en attente** : le registre relationnel du pack de base est
-toujours à **4 lignes** (ordres 0,1,2,4 — vérifié par lecture SQL à 16 h 14).
+Volet **production** : dérive fermée. **Le diagnostic d'origine était faux** —
+le geste UI praticien a tourné (lignes recréées à 14:19 UTC) sans rien changer,
+car `Q_SOM_09` n'avait aucune `QuestionnaireDefinition` et
+`syncPackToRegistry` filtre en silence tout qid sans définition (le trou
+d'ordre 0,1,2,4 en était la signature). Fermé par
+`backfill:pack-registry` dry-run puis apply, **sur autorisation explicite
+utilisateur** : 15 catégories + 67 définitions upsertées, **8/8 packs en MATCH
+exact**, constat final SQL 5 lignes ordres 0..4 sans trou.
 
 ## Prochaine action exacte
 
-1. **Geste praticien** (2 clics, aucun code) : Questionnaires & packs → éditer
-   « Base de consultation » → réenregistrer. Le `PATCH` rejoue
-   `syncPackToRegistry` en transaction.
-2. Constat par lecture SQL : 5 lignes, ordres 0..4 sans trou. Attention, la
-   jointure passe par l'id **interne** du registre
-   (`questionnaire_packs.id` = `cmreseb0v003p99qmpbp1gcin` →
-   `pack_questionnaires.pack_id`), pas par l'`id_pack` public.
-3. Clore le statut du lot, puis ouvrir LOT-01 (inventaire des surfaces +
-   décision D-0xx).
-4. Repli si le geste UI ne suffit pas : `npm run backfill:pack-registry:apply`
-   — **écrit en production, autorisation explicite obligatoire**.
+Ouvrir **LOT-01** (inventaire des surfaces consommatrices + décision D-0xx
+dans `docs/DECISIONS.md`) via `/wn-lot` — lot documentaire, aucun code.
+`lot_courant` avancé à LOT-01 dans cette même PR ; état machine synchronisé.
 
 ## À savoir
 

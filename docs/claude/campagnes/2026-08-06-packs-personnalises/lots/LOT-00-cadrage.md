@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Resynchroniser le pack de base — la question des questionnaires"
-statut: "en cours — code livré et validé (T2 vert, revue GO) ; reste le geste prod (réenregistrer le pack de base dans l'UI) et son constat par lecture SQL"
+statut: "livré (#596, 2026-08-06) — dérive fermée en production, 8/8 packs en MATCH exact"
 dépend_de: "aucun"
 ---
 
@@ -108,8 +108,20 @@ utilisateur du 2026-08-06.
   — le remplisseur générique de `portail-parcours.spec.ts` casserait le jour où
   l'E2E itérera sur toutes les assignations du pack (aujourd'hui il n'en prend
   que deux).
-- **Reste ouvert** : le geste de production (réenregistrer « Base de
-  consultation » dans Questionnaires & packs → `PATCH` → `syncPackToRegistry`)
-  et son constat par lecture (registre 4 → 5, ordres 0..4 sans trou). Vérifié
-  encore à 4 lignes le 2026-08-06 à 16 h 14. Repli si le geste UI ne suffit
-  pas : `backfill:pack-registry:apply`, sur autorisation explicite seulement.
+- **Cause racine — le diagnostic d'origine était faux.** Le geste UI a bien
+  tourné (lignes du registre recréées le 2026-08-06 à 14:19 UTC) et n'a rien
+  changé : `Q_SOM_09` n'avait **aucune ligne `QuestionnaireDefinition`**
+  (table `questionnaires`), et `syncPackToRegistry` filtre silencieusement
+  tout qid sans définition — le trou se recréait à chaque synchronisation.
+  Ce n'était pas un « oubli de synchronisation » mais une **définition
+  manquante** : un trou d'ordre (0,1,2,4) dans un registre dérivé désigne un
+  filtrage silencieux, pas une écriture oubliée.
+- **Fermeture** : `backfill:pack-registry` (dry-run puis apply), **autorisé
+  explicitement par l'utilisateur** le 2026-08-06 — 15 catégories et 67
+  définitions upsertées depuis le catalogue (aucune donnée patient),
+  **8/8 packs en MATCH exact**. Constat final par lecture SQL : 5 lignes,
+  ordres 0..4 sans trou, `Q_SOM_09` à l'ordre 3.
+- **Règle promue** : toute entrée ajoutée au catalogue d'affichage après le
+  backfill initial n'a pas de `QuestionnaireDefinition` tant que le backfill
+  n'est pas rejoué — et tout pack qui la référence perdra cette entrée au
+  registre, silencieusement, à chaque sauvegarde.

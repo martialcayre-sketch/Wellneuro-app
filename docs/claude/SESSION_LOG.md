@@ -2711,8 +2711,13 @@ un registre vide. Dédup LOT-A/B/C vérifiée en prod (index d'unicité présent
 **Options écartées.** Seed → registre (élargissement pour gain nul) ; backfill
 `apply` sans nécessité.
 
-**Prochaine action.** Geste praticien : réenregistrer « Base de consultation »
-(registre encore 4/5 à 16 h 14), constat SQL, puis LOT-01 (inventaire + D-0xx).
+**Re-diagnostic.** Le geste UI praticien a tourné (14:19 UTC) sans rien fermer :
+`Q_SOM_09` n'avait aucune `QuestionnaireDefinition`, et `syncPackToRegistry`
+filtre en silence — un trou d'ordre désigne un filtrage, pas un oubli
+d'écriture. Fermé par `backfill:pack-registry:apply` (autorisation explicite) :
+67 définitions upsertées, **8/8 packs MATCH**, constat SQL 5/5 sans trou.
+
+**Prochaine action.** LOT-01 : inventaire des surfaces + décision D-0xx.
 
 **Questions ouvertes.** Risque latent E2E : `Q_SOM_09` refusé par `submit`, le
 remplisseur générique casserait s'il itérait tout le pack. PR #372 dormante.
