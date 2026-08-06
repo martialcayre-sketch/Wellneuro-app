@@ -1,9 +1,9 @@
 ---
 id: "2026-07-23-accueil-observatoire"
 titre: "Accueil Observatoire — alignement maquette + enrichissement du Fil"
-statut: "en cours"
+statut: "livrée — 4/4 lots en production ; statut rétabli le 2026-08-06"
 créée_le: "2026-07-23"
-mise_à_jour: "2026-07-23"
+mise_à_jour: "2026-08-06"
 lot_courant: "LOT-01"
 ---
 

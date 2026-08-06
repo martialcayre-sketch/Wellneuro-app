@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Vue de vérité générée — état réel du dépôt"
-statut: "code prêt — comparaison des 3 dimensions restantes en réserve"
+statut: "livré (#575, 2026-08-05) — comparaison des 3 dimensions restantes en réserve"
 dépend_de: "aucun"
 ---
 

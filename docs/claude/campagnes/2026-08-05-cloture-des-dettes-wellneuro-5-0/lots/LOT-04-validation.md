@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Un seul parcours patient"
-statut: "code prêt — 3 passes wn-reviewer (2 NO-GO corrigés), T1/T3 verts, PR à ouvrir"
+statut: "livré (#591, 2026-08-05)"
 dépend_de: "LOT-01"
 ---
 
