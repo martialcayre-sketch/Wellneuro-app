@@ -5,8 +5,8 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
-  "active_lot": "LOT-06",
+  "active_campaign": "2026-08-06-packs-personnalises",
+  "active_lot": "LOT-00",
   "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-05 (#593)",
   "git": {
     "branch": "main",
@@ -25,18 +25,23 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Geste post-merge : node scripts/wn-cycle.mjs --appliquer depuis main (réconcilie git.*, jamais fait après les merges du 2026-08-05). Assainissement du 2026-08-06 : statuts de lots réalignés sur les PR mergées — dettes 5.0 LOT-00 (#435), LOT-01 (#575), LOT-04 (#591), LOT-05 (#593) tous livrés. Campagne dettes 5.0, reste : LOT-06 (notices psychométriques + exigences RGPD indépendantes de l'hébergeur) puis LOT-07 (déclaration 5.0 — exige de solder la PR #372, dormante depuis le 2026-07-25). Agenda alimentaire : 8/8 lots livrés, LOT-06 (lecture praticien J7+) à écrire quand le recueil aura des journées — bloqué données, pas code. EN ATTENTE D'ARBITRAGE UTILISATEUR : PR #372 (finir ou fermer) ; campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée). EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 (2026-07-25, sans réponse). Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI.",
+  "next_action": "Campagne active : 2026-08-06-packs-personnalises (cadrée le 2026-08-06, trois arbitrages utilisateur dans CAMPAGNE.md). Prochain geste : LOT-00 — resynchroniser le pack de base (dérive Q_SOM_09, geste UI praticien possible sans code) — via /wn-lot. Ordre arbitré : campagne packs entière, PUIS reprise dettes 5.0 en primaire (LOT-06 notices psychométriques + exigences RGPD, LOT-07 déclaration 5.0 — exige de solder la PR #372, dormante depuis le 2026-07-25). Geste post-merge toujours dû : node scripts/wn-cycle.mjs --appliquer depuis main (réconcilie git.*). Agenda alimentaire : 8/8 lots livrés, LOT-06 (lecture praticien J7+) à écrire quand le recueil aura des journées — bloqué données, pas code. EN ATTENTE D'ARBITRAGE UTILISATEUR : PR #372 (finir ou fermer) ; campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée). EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 (2026-07-25, sans réponse). Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI.",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-06T06:04:32Z",
+  "updated_at": "2026-08-06T12:31:01Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
       "active_lot": null,
       "status": "en attente de recueil — LOT-06 (lecture praticien J7+) à écrire quand l'agenda aura des journées"
+    },
+    {
+      "campaign_id": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
+      "active_lot": "LOT-06",
+      "status": "reprend en primaire à la clôture de 2026-08-06-packs-personnalises (arbitrage du 2026-08-06)"
     }
   ]
 }
