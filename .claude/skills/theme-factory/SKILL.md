@@ -1,6 +1,6 @@
 ---
 name: theme-factory
-description: Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reportings, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been creating, or can generate a new theme on-the-fly.
+description: Toolkit for styling artifacts with a theme. These artifacts can be slides, docs, reports, HTML landing pages, etc. There are 10 pre-set themes with colors/fonts that you can apply to any artifact that has been created, or can generate a new theme on-the-fly.
 license: Complete terms in LICENSE.txt
 source: anthropics/skills@b29e7cf65e5cb78a5ac33d582270551bc74a14eb, audit /wn-tiers du 2026-08-06, verdict ACTIVER — re-contrôler theme-showcase.pdf à toute mise à jour (voir changelog)
 ---
@@ -8,7 +8,7 @@ source: anthropics/skills@b29e7cf65e5cb78a5ac33d582270551bc74a14eb, audit /wn-ti
 
 # Theme Factory Skill
 
-This skill provides a curated collection of professional font and color themes themes, each with carefully selected color palettes and font pairings. Once a theme is chosen, it can be applied to any artifact.
+This skill provides a curated collection of professional font and color themes, each with carefully selected color palettes and font pairings. Once a theme is chosen, it can be applied to any artifact.
 
 ## Purpose
 
