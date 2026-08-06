@@ -2697,3 +2697,27 @@ non fermées : la modale promet
 côté base n'est prouvée par rien ; l'argument `process.env.WN_AGENDA_ALI` au point
 de montage est décoratif — le paramètre par défaut absorbe une faute de frappe,
 vérifié par mutation, et le même angle mort vaut pour `isC5Enabled`.
+
+## 2026-08-06 — LOT-00 packs-personnalises : seed du pack de base aligné
+
+**Décisions.** Assainissement documentaire mergé (#594) ; campagne « packs
+personnalisés » cadrée et activée (#595) sur trois arbitrages utilisateur
+(packs praticien désactivés aussi, geste = file d'envoi, campagne entière avant
+dettes). LOT-00 : seed aligné sur la production (5 qids, `Q_SOM_09` inclus,
+ordre exact), T2 vert (120 E2E), revue GO. Question tranchée : le seed n'écrit
+pas le registre — aucune `QuestionnaireDefinition` seedée, un sync produirait
+un registre vide. Dédup LOT-A/B/C vérifiée en prod (index d'unicité présent).
+
+**Options écartées.** Seed → registre (élargissement pour gain nul) ; backfill
+`apply` sans nécessité.
+
+**Re-diagnostic.** Le geste UI praticien a tourné (14:19 UTC) sans rien fermer :
+`Q_SOM_09` n'avait aucune `QuestionnaireDefinition`, et `syncPackToRegistry`
+filtre en silence — un trou d'ordre désigne un filtrage, pas un oubli
+d'écriture. Fermé par `backfill:pack-registry:apply` (autorisation explicite) :
+67 définitions upsertées, **8/8 packs MATCH**, constat SQL 5/5 sans trou.
+
+**Prochaine action.** LOT-01 : inventaire des surfaces + décision D-0xx.
+
+**Questions ouvertes.** Risque latent E2E : `Q_SOM_09` refusé par `submit`, le
+remplisseur générique casserait s'il itérait tout le pack. PR #372 dormante.

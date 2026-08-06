@@ -254,15 +254,20 @@ const REPONSES_MICHEL = [
 ];
 
 // Pack de base assigné automatiquement en fin d'onboarding portail
-// (`/api/portail/valider`). Reflète le pack `parDefaut` réel (contenu figé
-// R2, 2026-07-10) — sans lui, une base fraîchement provisionnée (CI, nouvel
+// (`/api/portail/valider`). La composition reflète l'état réel de production
+// (5 qids, `Q_SOM_09` inclus depuis son ajout au pack ; réaligné le
+// 2026-08-06) — sans lui, une base fraîchement provisionnée (CI, nouvel
 // environnement de dev) n'a aucun pack et l'onboarding échoue.
+// Ce seed n'écrit volontairement pas le registre relationnel : il ne crée
+// aucune QuestionnaireDefinition, donc `syncPackToRegistry` produirait un
+// registre vide. Le repli legacy de `resolvePackQuestionnaireIds` est le
+// filet prévu pour ces environnements seedés.
 const PACK_BASE = {
   idPack: 'PACK_SEED_BASE',
   nom: 'Base de consultation',
   thematique: null,
   description: null,
-  qids: ['Q_MOD_03', 'Q_MOD_01', 'Q_ALI_01', 'Q_INF_03'],
+  qids: ['Q_MOD_03', 'Q_MOD_01', 'Q_INF_03', 'Q_SOM_09', 'Q_ALI_01'],
   actif: true,
   parDefaut: true,
 };

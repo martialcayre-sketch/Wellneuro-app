@@ -6,7 +6,7 @@
   },
   "status": "active",
   "active_campaign": "2026-08-06-packs-personnalises",
-  "active_lot": "LOT-00",
+  "active_lot": "LOT-01",
   "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-05 (#593)",
   "git": {
     "branch": "main",
@@ -31,7 +31,7 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-06T12:31:01Z",
+  "updated_at": "2026-08-06T15:01:23Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
