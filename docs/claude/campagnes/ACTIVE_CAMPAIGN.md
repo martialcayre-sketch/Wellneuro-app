@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-06-packs-personnalises
 **Titre** : Envoi personnalisé par patient — retrait des packs figés
 **Statut** : active
-**Lot actif** : LOT-01
+**Lot actif** : LOT-02
 
 ## Activités parallèles
 
