@@ -27,8 +27,8 @@ ou afficher le prochain lot :
 /wn-plan
 ```
 
-Les commandes historiques `/wn-r0` à `/wn-r6` sont conservées en compatibilité mais redirigées vers le flux
-campagnes. Elles ne sont plus le chemin principal.
+Les commandes historiques `/wn-r0` à `/wn-r6` ont été supprimées le 2026-08-07 (chantier R0→R6 clos
+le 2026-07-10, stubs de redirection sans contenu). Le flux campagnes est le seul chemin.
 
 Pour entretenir la base documentaire :
 
@@ -83,29 +83,8 @@ Charge la campagne active, affiche le prochain lot et cadre l'exécution bornée
 ### `/wn-plan`
 Prépare le plan d'implémentation détaillé avant toute modification.
 
-### `/wn-r0`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r1`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r2`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r3`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r4`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r5`
-Commande legacy redirigée vers le flux campagnes.
-
-### `/wn-r6`
-Commande legacy redirigée vers le flux campagnes.
-
 ### `/wn-docs`
-Entretien documentaire récurrent, indépendant des lots R0-R6 :
+Entretien documentaire récurrent, indépendant des lots :
 
 - `/wn-docs` ou `/wn-docs audit` réalise un audit en lecture seule ;
 - `/wn-docs apply` applique uniquement les corrections documentaires sûres ;
