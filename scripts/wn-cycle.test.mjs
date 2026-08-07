@@ -330,7 +330,8 @@ test('extraireDecisionsRecentes : registre vide ou absent', () => {
 // ── `reparer()` : ce qu'il écrit, et surtout ce qu'il n'écrit plus ───────────
 //
 // La fonction n'était ni exportée ni couverte : c'est elle qui écrivait le bloc
-// `git`, toujours faux par construction (`--appliquer` tourne AVANT le commit).
+// `git`, dont `dirty` valait toujours `true` par construction (`--appliquer`
+// tourne AVANT le commit) — donc toujours à côté de la réalité.
 // Ces cas fixent le contrat après son retrait.
 
 function racineTemporaire(etatInitial) {

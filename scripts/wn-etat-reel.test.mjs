@@ -66,7 +66,8 @@ test('état figé : la validation trop vieille est signalée ; le bloc git ne se
     active_lot: null,
     // Un bloc `git` résiduel d'un état ancien : il ne doit RIEN produire.
     // Ces champs ne sont plus écrits depuis le 2026-08-07 — `dirty` était
-    // toujours faux (écrit avant le commit) et `branch` nommait souvent le
+    // toujours `true` — écrit avant le commit, donc systématiquement démenti
+    // par ce commit même — et `branch` nommait souvent le
     // worktree d'une autre session. Ce qui ne se stocke plus ne dérive plus.
     git: {
       branch: 'worktree-fantome-de-test',

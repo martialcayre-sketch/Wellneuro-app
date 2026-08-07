@@ -181,7 +181,15 @@ bash scripts/check_no_secrets.sh          # anti-secrets, dépôt entier
 bash scripts/check_no_secrets.sh --staged # anti-secrets, lignes indexées seules
 node scripts/wn-cycle.mjs                 # phase du cycle de lot et geste suivant
 node scripts/wn-cycle.mjs --appliquer     # + resynchronise ACTIVE_CAMPAIGN.md et .wn/state.json
+node scripts/wn-etat-reel.mjs             # rapporte l'état réel du dépôt — ne répare JAMAIS
 ```
+
+**Deux outils d'état, une frontière.** `wn-etat-reel.mjs` **rapporte** : il
+observe six dimensions du dépôt (drapeaux référencés, migrations sur disque,
+certification, PR, branches, routes) et signale les écarts avec `.wn/state.json`
+— il n'écrit rien, jamais. `wn-cycle.mjs --appliquer` **répare**. Le premier
+s'invoque à la main, quand on doute de ce qui est vrai ; il n'est branché dans
+aucun skill exprès, un appel coûtant `gh` et un balayage de `web/src`.
 
 ### Trois paliers de validation
 
