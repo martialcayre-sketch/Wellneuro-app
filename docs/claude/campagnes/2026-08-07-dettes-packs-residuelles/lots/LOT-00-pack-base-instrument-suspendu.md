@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint"
-statut: "en_cours (2026-08-07) — moitié code livrée ; le retrait de Q_ALI_09 en production reste dû (geste praticien différé après merge, décision utilisateur)"
+statut: "livré (2026-08-07) — les deux moitiés : code mergé (PR #608) et donnée retirée en production par geste praticien le 2026-08-07 15:46, pack de base à 5 qids"
 dépend_de: "aucun"
 ---
 
@@ -21,11 +21,12 @@ en attente d'être satisfait.**
 `../../2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53` fait de
 « **Aucun pack ne référence `Q_ALI_09`** » un **prérequis bloquant** de
 l'allumage de `WN_AGENDA_ALI` (`SELECT nom, par_defaut, actif FROM packs WHERE
-'Q_ALI_09' = ANY(qids);` — attendu 0 ligne ; la production en rend **1**, le pack
-de base). Motif du runbook : c'est **le seul chemin qui assignerait l'agenda sans
-clic praticien**, `assignPackToPatient` — appelé par l'onboarding portail —
-n'écartant que `IDS_SUSPENDUS`, et rien ne validant les `qids` d'un pack contre
-cette liste.
+'Q_ALI_09' = ANY(qids);` — attendu 0 ligne ; **au cadrage du 2026-08-07 la
+production en rendait 1**, le pack de base ; elle en rend **0** depuis le retrait
+du 2026-08-07 15:46, voir « Résultats »). Motif du runbook : c'est **le seul
+chemin qui assignerait l'agenda sans clic praticien**, `assignPackToPatient` —
+appelé par l'onboarding portail — n'écartant que `IDS_SUSPENDUS`, et rien ne
+validant les `qids` d'un pack contre cette liste.
 
 **La chronologie compte, et elle inverse la lecture spontanée.** Le prérequis
 **était satisfait le 2026-08-05**, jour de l'allumage : le drapeau
@@ -125,14 +126,17 @@ qui le suspend.
 
 ## Résultat observable
 
-**Statut au 2026-08-07 : une moitié faite, une moitié due.** Le geste de donnée
-est **différé après le merge de cette PR** (décision utilisateur du 2026-08-07).
-**Le lot n'est donc pas livré** — seule sa moitié *code* l'est, et le risque
-d'auto-assignation décrit ci-dessus **court jusqu'au geste**.
+**Statut au 2026-08-07 : les deux moitiés sont faites.** Le code est mergé
+(PR #608) ; le geste de donnée a été exécuté en production par le praticien le
+**2026-08-07 à 15:46** (`packs.updated_at = 2026-08-07 15:46:34.011`) et vérifié
+par lecture SQL. **Le lot est livré**, et le risque d'auto-assignation décrit
+ci-dessus est **fermé**.
 
-- **RESTE DÛ** — Le pack de base ne porte plus `Q_ALI_09` : lecture SQL de
-  production, `packs` et `pack_questionnaires` alignés à 5 qids. Non fait ; le
-  geste est différé après merge.
+- **FAIT** — Le pack de base ne porte plus `Q_ALI_09` : lecture SQL de
+  production du 2026-08-07, « Base de consultation » porte **5 qids**
+  (`Q_MOD_03, Q_MOD_01, Q_INF_03, Q_SOM_09, Q_ALI_01`) et
+  `pack_questionnaires` **5 lignes**, `ordre` `[0,1,2,3,4]` sans trou —
+  `syncPackToRegistry` a purgé puis reconstruit. 1 seul pack actif, inchangé.
 - **FAIT** — un geste praticien existe pour ôter d'un pack un qid de
   `IDS_SUSPENDUS` : bloc dédié dans la modale d'édition
   (`web/src/components/PacksPanel.tsx:635-649`), bâti sur l'instantané des qids
@@ -141,23 +145,24 @@ d'auto-assignation décrit ci-dessus **court jusqu'au geste**.
   actifs (`web/src/app/api/praticien/questionnaires/route.ts:32`, `:48`, `:68-72`).
   Cette moitié-là est **indépendante du drapeau** : elle vaut pour tout
   instrument suspendu sans drapeau pour le rallumer.
-- **RESTE DÛ** — **Aucun onboarding n'auto-assigne l'agenda alimentaire.** C'est
+- **FAIT** — **Aucun onboarding n'auto-assigne l'agenda alimentaire.** C'est
   l'énoncé qui tient dans les deux positions du drapeau, et c'est celui qui
   compte en production, où `WN_AGENDA_ALI` est allumé
   (`../../2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:227-231`).
-  Tant que le pack de base porte `Q_ALI_09`, le chemin d'assignation sans clic
-  praticien existe. Fait rassurant et daté, à ne pas confondre avec une
-  fermeture : **0 assignation créée depuis le 2026-08-06 18:02** — le risque est
-  **prospectif**, il porte sur le **prochain** onboarding.
+  Le pack de base ne porte plus `Q_ALI_09` depuis le 2026-08-07 15:46 : le
+  chemin d'assignation sans clic praticien n'existe plus. **Le risque, resté
+  prospectif, ne s'est jamais réalisé — 0 assignation créée entre la dérive
+  (2026-08-06 18:02) et le retrait : aucun patient n'a été touché.**
 - Corollaire, vrai **seulement drapeau éteint** :
   `ASSIGNATION_PACK_INSTRUMENT_SUSPENDU` ne se déclenche plus sur l'onboarding du
   pack de base. Drapeau allumé, cet événement n'a jamais été émis pour
   `Q_ALI_09` — ne pas prendre son absence pour une preuve.
-- **RESTE DÛ** — Le prérequis du runbook `WN_AGENDA_ALI`, **cassé après coup le
+- **FAIT** — Le prérequis du runbook `WN_AGENDA_ALI`, **cassé après coup le
   2026-08-06** sur un pilote déjà lancé, est de nouveau satisfait :
   `SELECT nom, par_defaut, actif FROM packs WHERE 'Q_ALI_09' = ANY(qids);` rend
-  **0 ligne** (`../../2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53`).
-  Il en rend **1** aujourd'hui.
+  **0 ligne** depuis le 2026-08-07 15:46
+  (`../../2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53`). Il
+  en rendait **1** depuis le 2026-08-06 18:02.
 
 ## Périmètre
 
@@ -216,13 +221,16 @@ d'auto-assignation décrit ci-dessus **court jusqu'au geste**.
 - [x] Lecture SQL avant geste : qids du pack de base, `pack_questionnaires` —
       **6 qids**, `Q_ALI_09` inclus ; 0 assignation créée depuis le
       2026-08-06 18:02.
-- [ ] **Geste praticien en production : retirer `Q_ALI_09`. RESTE DÛ — différé
-      après le merge de cette PR (décision utilisateur du 2026-08-07).**
-      **`WN_AGENDA_ALI` y étant allumé, l'instrument est `actif`** : il se décoche
-      depuis la liste principale de la modale, pas depuis le bloc « suspendus » —
-      lequel ne s'affiche qu'aux environnements où le drapeau est éteint.
-- [ ] **Lecture SQL après geste, consignée dans « Résultats ». RESTE DÛ** — elle
-      ne peut pas précéder le geste.
+- [x] **Geste praticien en production : retirer `Q_ALI_09`.** Fait le
+      **2026-08-07 à 15:46** (`packs.updated_at = 2026-08-07 15:46:34.011`),
+      après le merge de la PR #608 (décision utilisateur du 2026-08-07).
+      **`WN_AGENDA_ALI` y étant allumé, l'instrument est `actif`** : il s'est
+      décoché depuis la liste principale de la modale, pas depuis le bloc
+      « suspendus » — lequel ne s'affiche qu'aux environnements où le drapeau est
+      éteint.
+- [x] **Lecture SQL après geste, consignée dans « Résultats ».** Quatre lectures
+      du 2026-08-07 : 5 qids au pack, 5 lignes de registre en `ordre` `[0..4]`,
+      0 ligne au prérequis du runbook, 0 assignation créée depuis la dérive.
 - [x] Réaligner `seed.ts` et poser le fragment `changelog.d/`. `seed.ts` était
       **déjà** aligné sur l'état visé (`web/prisma/seed.ts:270` porte 5 qids,
       sans `Q_ALI_09`) : abstention constatée sur pièce, pas oubli. Fragment posé
@@ -247,11 +255,32 @@ d'auto-assignation décrit ci-dessus **court jusqu'au geste**.
 
 ## Résultats
 
-**Le lot n'est pas livré.** Sa moitié *code* l'est ; sa moitié *donnée* — retirer
-`Q_ALI_09` du pack de base en production — reste due, **différée après le merge**
-(décision utilisateur du 2026-08-07). Tant qu'elle n'est pas faite, le prochain
-patient onboardé reçoit l'agenda alimentaire sans décision praticien, ce que
-[[D-025]] protège.
+**Le lot est livré sur ses deux moitiés.** La moitié *code* a été mergée
+(PR #608) ; la moitié *donnée* — retirer `Q_ALI_09` du pack de base en
+production — a été exécutée par le praticien via l'UI le **2026-08-07 à 15:46**
+(`packs.updated_at = 2026-08-07 15:46:34.011`), conformément à la décision
+utilisateur du 2026-08-07 de la différer après le merge. Le chemin qui aurait
+assigné l'agenda alimentaire sans décision praticien — ce que [[D-025]] protège —
+est fermé.
+
+### Les quatre lectures SQL d'après geste (2026-08-07)
+
+1. **Le pack porte 5 qids** : « Base de consultation » rend
+   `Q_MOD_03, Q_MOD_01, Q_INF_03, Q_SOM_09, Q_ALI_01`. Ces cinq identifiants sont
+   **identiques, qid pour qid, à `web/prisma/seed.ts:270`** : la dérive du
+   2026-08-06 est refermée et **le seed redevient le reflet de la production**.
+   L'abstention constatée au cadrage (« `seed.ts` était déjà aligné sur l'état
+   visé ») est donc validée après coup, et non par anticipation.
+2. **Le registre relationnel a suivi** : `pack_questionnaires` du pack de base
+   rend **5 lignes**, `ordre` `[0,1,2,3,4]`, **sans trou** — `syncPackToRegistry`
+   a purgé puis reconstruit, il n'a pas retiré une ligne au milieu.
+3. **Le prérequis du runbook est satisfait** :
+   `SELECT nom, par_defaut, actif FROM packs WHERE 'Q_ALI_09' = ANY(qids);` rend
+   **0 ligne** (`../../2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53`).
+   Il en rendait **1** depuis le 2026-08-06 18:02.
+4. **Aucun patient n'a été touché** : **0 assignation créée** entre la dérive
+   (2026-08-06 18:02) et le retrait (2026-08-07 15:46). Le risque était
+   prospectif ; il ne s'est jamais réalisé. **1 seul pack actif, inchangé.**
 
 ### Validations
 
@@ -301,13 +330,24 @@ il aurait certifié une fermeture qui n'est pas celle par laquelle le défaut pa
   n'est suspendu, et l'assertion porte sur le **code d'événement**, pas sur
   « aucun warn ».
 
-### Ce qui reste dû, et l'ordre
+### La séquence, faite dans l'ordre
 
-1. Merge de la PR.
-2. Geste praticien en production : ouvrir « Questionnaires & packs », éditer
-   « Base de consultation », décocher `Q_ALI_09` **depuis la liste principale**
-   (le drapeau étant allumé, l'instrument y est `actif`), enregistrer.
-3. Deux lectures SQL de contrôle, à consigner ici :
-   `SELECT nom, par_defaut, actif, qids FROM packs WHERE 'Q_ALI_09' = ANY(qids);`
-   — attendu **0 ligne** ; et le compte de `pack_questionnaires` du pack de base
-   — attendu **5**.
+1. **Merge de la PR #608** — fait.
+2. **Geste praticien en production** — fait le 2026-08-07 à 15:46 : ouvrir
+   « Questionnaires & packs », éditer « Base de consultation », décocher
+   `Q_ALI_09` **depuis la liste principale** (le drapeau étant allumé,
+   l'instrument y est `actif`), enregistrer.
+3. **Lectures SQL de contrôle** — faites, les quatre ci-dessus. Les deux attendus
+   annoncés au cadrage sont vérifiés : **0 ligne** au prérequis du runbook, et
+   **5** lignes de `pack_questionnaires` pour le pack de base.
+
+### Ce que ce lot ne ferme pas
+
+**Rien ne re-vérifie un prérequis de runbook après l'allumage.** C'est ce qui a
+laissé la dérive du 2026-08-06 18:02 vivre 21 heures sans alerte, sur un pilote
+déjà lancé. **Aucun contrat SQL de `web/prisma/checks/` n'assère « aucun pack
+actif ne référence un qid de `IDS_SUSPENDUS` »** — l'assertion qui aurait mordu.
+Elle reste **sans lot ouvert**, et son écriture n'est pas triviale : « suspendu »
+étant un état de drapeau (`web/src/lib/questionnaires-catalog.ts:83`), un tel
+contrat doit se lire **dans la position du drapeau de son environnement**, sinon
+il rougit en CI sur un état sain en production.
