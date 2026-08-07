@@ -4,6 +4,24 @@
 
 ## Décisions actives
 
+### D-033 — « Suspendu » est un état de drapeau, pas une propriété de l'instrument
+
+- Date : 2026-08-07
+- Statut : accepté (décision utilisateur du 2026-08-07, LOT-00 de la campagne `2026-08-07-dettes-packs-residuelles`)
+- Domaine : produit et clinique (packs de questionnaires, agenda alimentaire), et méthode documentaire
+- Décision : deux arbitrages, pris ensemble.
+  1. **Le geste de donnée est différé après le merge.** Retirer `Q_ALI_09` du pack de base « Base de consultation » par l'UI praticien ne se fait pas avant la PR du LOT-00, mais après son merge (décision utilisateur). Conséquence à ne pas adoucir : **le lot n'est pas livré** — seule sa moitié *code* l'est (bloc de retrait dans la modale d'édition, `web/src/components/PacksPanel.tsx:635-649` sur l'instantané `:69`, `:187` ; `suspendus` servis à part des actifs par `web/src/app/api/praticien/questionnaires/route.ts:32,48,68-72`) ; sa moitié *donnée* reste due, et **le risque d'auto-assignation court jusqu'à ce geste**.
+  2. **Le titre du lot est réécrit, parce qu'il n'était vrai que dans une position du drapeau.** « `Q_ALI_09` soudé au pack de base — un geste nécessaire est impossible » décrit exactement le dépôt (drapeau éteint) et **rien** de la production. Le titre retenu nomme les deux moitiés : « Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint ».
+- Conséquences :
+  - **« Suspendu » est un état de drapeau, pas une propriété de l'instrument.** `Q_ALI_09` est déclaré `actif: isAgendaAlimentaireEnabled()` (`web/src/lib/questionnaires-catalog.ts:83`), fonction qui lit `process.env.WN_AGENDA_ALI` (`web/src/lib/agenda-alimentaire/featureFlag.ts:36-37`), et `IDS_SUSPENDUS` est **dérivé** de `!q.actif` (`web/src/lib/questionnaires-catalog.ts:518-520`). L'appartenance bascule donc avec le drapeau — **allumé en production depuis le 2026-08-05** (`docs/claude/campagnes/2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:227-231`, « le drapeau a été allumé et le pilote lancé » ; variable créée côté Vercel en Production ce jour-là), **éteint dans le dépôt**, donc en CI, en local et sur les bancs.
+  - **Donc un diagnostic écrit sur `IDS_SUSPENDUS` n'a pas la même valeur de vérité en production et dans le dépôt** — et il s'inverse : drapeau éteint, `web/src/app/api/portail/valider/route.ts:144-152` **ampute** le pack en silence ; drapeau allumé, il **ne fait rien** et le pack part entier, agenda compris. **Un document qui ne dit pas dans quelle position il se lit est faux la moitié du temps.** Le fait qui commande le lot est celui de la colonne allumée : le prochain patient onboardé reçoit l'agenda **sans décision praticien**, exactement ce que [[D-025]] protège. Fait rassurant et daté, à ne pas prendre pour une fermeture : **0 assignation créée depuis le 2026-08-06 18:02** — le risque est **prospectif**, pas réalisé.
+  - **La moitié *code* du lot, elle, est indépendante du drapeau** : le geste de retrait vaut pour tout instrument réellement suspendu, sans drapeau pour le rallumer. C'est pourquoi elle se livre séparément sans mentir sur ce qui reste dû.
+- Réserves :
+  - **Un prérequis de runbook vérifié à l'allumage n'est re-vérifié par rien ensuite.** Celui de `WN_AGENDA_ALI` — « aucun pack ne référence `Q_ALI_09` » (`docs/claude/campagnes/2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53`, `SELECT nom, par_defaut, actif FROM packs WHERE 'Q_ALI_09' = ANY(qids);`, attendu 0 ligne) — **était satisfait le 2026-08-05** à l'allumage, et a été **cassé le lendemain** par une écriture sur le pack de base (`packs.updated_at` = 2026-08-06 18:02:38.913, dérive documentée en [[D-032]]), **sans aucune alerte**. Le runbook ne repasse pas par ses prérequis une fois exécuté.
+  - **Aucun contrat SQL de `web/prisma/checks/` n'assère « aucun pack actif ne référence un qid de `IDS_SUSPENDUS` ».** C'est l'assertion qui aurait mordu le 2026-08-06 à 18:02 — la seule qui transforme un prérequis vérifié une fois en invariant tenu en continu. Elle **reste sans lot ouvert** ; cette décision ne l'ouvre pas. Note de conception : un tel contrat doit se lire **dans la position du drapeau de l'environnement où il tourne**, sinon il rougirait en CI (drapeau éteint) sur un état parfaitement sain en production.
+  - La garde `IDS_SUSPENDUS` de `PATCH /api/praticien/packs` ne prévient pas cette dérive : elle ne juge que les qids **ajoutés** (`web/src/app/api/praticien/packs/route.ts:307`, diff calculé contre l'existant) — ce qui est le choix qui rend le retrait possible, et n'est donc pas à affaiblir.
+- Référence : `docs/claude/campagnes/2026-08-07-dettes-packs-residuelles/lots/LOT-00-pack-base-instrument-suspendu.md`, `docs/claude/campagnes/2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md`, [[D-025]], [[D-032]]
+
 ### D-032 — Une campagne se clôt sur ce qui est prouvé, et les dettes sans lot sont nommées comme telles
 
 - Date : 2026-08-07

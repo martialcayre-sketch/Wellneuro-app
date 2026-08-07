@@ -57,6 +57,25 @@ const PACK_INACTIF: PackFixture = {
   parDefaut: false,
 };
 
+// Pack portant un instrument SUSPENDU hérité (le cas réel du pack de base et
+// de `Q_ALI_09`). C'est le seul pack depuis lequel la modale doit offrir un
+// retrait.
+const PACK_AVEC_SUSPENDU: PackFixture = {
+  idPack: 'PACK_TEST_HERITE',
+  nom: 'Hérité (test)',
+  thematique: null,
+  description: null,
+  qids: ['Q_TEST_01', 'Q_TEST_SUSPENDU'],
+  actif: true,
+  parDefaut: false,
+};
+
+// Deux suspendus servis par l'API : l'un présent dans le pack, l'autre non.
+// Sans le second, le cas (c) ne pourrait pas distinguer « filtré sur
+// l'instantané » de « la liste des suspendus est vide ».
+const SUSPENDU_PRESENT = { id: 'Q_TEST_SUSPENDU', titre: 'Instrument suspendu de test' };
+const SUSPENDU_ABSENT = { id: 'Q_TEST_SUSPENDU_AUTRE', titre: 'Autre instrument suspendu' };
+
 const QUESTIONNAIRE = {
   id: 'Q_TEST_01',
   titre: 'Questionnaire de test',
@@ -81,14 +100,19 @@ afterEach(() => {
  * Le tableau rendu recense TOUS les appels, méthode comprise : c'est lui qui
  * permet de distinguer « le bouton est grisé » de « le réseau n'a pas bougé ».
  */
-function stubFetch(packs: PackFixture[]) {
-  const appels: { url: string; method?: string }[] = [];
+function stubFetch(packs: PackFixture[], suspendus: { id: string; titre: string }[] = []) {
+  const appels: { url: string; method?: string; body?: string }[] = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string, init?: { method?: string }) => {
-      appels.push({ url: String(url), method: init?.method });
+    vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
+      appels.push({ url: String(url), method: init?.method, body: init?.body });
       if (init?.method === 'DELETE' || init?.method === 'PATCH') {
         return { ok: true, json: async () => ({ success: true }) } as unknown as Response;
+      }
+      // Le panneau charge lui-même les instruments suspendus : ils ne peuvent
+      // pas arriver par la prop `questionnaires`, qui ne porte que les actifs.
+      if (String(url).includes('/api/praticien/questionnaires')) {
+        return { ok: true, json: async () => ({ questionnaires: [], suspendus }) } as unknown as Response;
       }
       return { ok: true, json: async () => ({ packs }) } as unknown as Response;
     }),
@@ -96,8 +120,8 @@ function stubFetch(packs: PackFixture[]) {
   return appels;
 }
 
-function monter(packs: PackFixture[]) {
-  const appels = stubFetch(packs);
+function monter(packs: PackFixture[], suspendus: { id: string; titre: string }[] = []) {
+  const appels = stubFetch(packs, suspendus);
   render(
     <PacksPanel
       questionnaires={[QUESTIONNAIRE]}
@@ -189,5 +213,174 @@ describe('PacksPanel — les deux portes du pack de base (LOT-03)', () => {
     expect(boutonAbsent(li, /désactiver/i)).toBeNull();
     expect(boutonAbsent(li, /par défaut/i)).toBeNull();
     expect(boutonAbsent(li, /réactiver|activer/i)).toBeNull();
+  });
+});
+
+// ── Retrait d'un instrument suspendu depuis la modale d'édition ──────────────
+//
+// Avant ce lot, un qid suspendu présent dans un pack était INAMOVIBLE : la
+// route `/api/praticien/questionnaires` filtre `actif`, donc aucune case à
+// cocher ne le représentait, et la soumission renvoyait `pack.qids` en entier —
+// le suspendu repartait à chaque enregistrement.
+//
+// L'asymétrie « retirable mais pas ajoutable » ne vient d'aucune garde : le
+// bloc est bâti sur l'INSTANTANÉ des qids pris à l'ouverture de la modale, donc
+// un suspendu absent du pack n'y figure jamais. C'est le cas (c) qui l'épingle.
+
+/** Ouvre la modale d'édition sur le pack nommé et rend son conteneur. */
+async function ouvrirModale(nom: string): Promise<HTMLElement> {
+  const li = await ligne(nom);
+  fireEvent.click(bouton(li, /modifier/i));
+  const titre = await screen.findByText(/modifier un pack de questionnaires/i);
+  const modale = titre.closest('div')?.parentElement;
+  if (!modale) throw new Error('Modale d’édition introuvable');
+  return modale as HTMLElement;
+}
+
+/** La case à cocher portée par le label qui contient ce texte. */
+function caseDuLabel(racine: HTMLElement, texte: RegExp): HTMLInputElement | null {
+  const libelle = within(racine).queryByText(texte);
+  const label = libelle?.closest('label');
+  return (label?.querySelector('input[type="checkbox"]') as HTMLInputElement) ?? null;
+}
+
+describe('PacksPanel — retirer un instrument suspendu d’un pack', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('(a) un suspendu PRÉSENT dans le pack est rendu dans la modale, avec une case à cocher', async () => {
+    monter([PACK_AVEC_SUSPENDU], [SUSPENDU_PRESENT, SUSPENDU_ABSENT]);
+    const modale = await ouvrirModale(PACK_AVEC_SUSPENDU.nom);
+
+    await waitFor(() => {
+      expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    });
+
+    const coche = caseDuLabel(modale, new RegExp(SUSPENDU_PRESENT.titre));
+    expect(coche).not.toBeNull();
+    // Coché : il est dans le pack. C'est le décochage qui vaut retrait.
+    expect(coche!.checked).toBe(true);
+  });
+
+  it('(b) le décocher puis enregistrer émet un PATCH dont `qids` ne le contient plus', async () => {
+    const appels = monter([PACK_AVEC_SUSPENDU], [SUSPENDU_PRESENT, SUSPENDU_ABSENT]);
+    const modale = await ouvrirModale(PACK_AVEC_SUSPENDU.nom);
+
+    await waitFor(() => {
+      expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    });
+
+    const coche = caseDuLabel(modale, new RegExp(SUSPENDU_PRESENT.titre))!;
+    fireEvent.click(coche);
+
+    // La ligne SURVIT au décochage : le bloc est bâti sur l'instantané, pas sur
+    // la sélection courante. Sans cela le geste serait irréversible dans la
+    // modale — on ne pourrait plus recocher ce qu'on vient de décocher.
+    expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    expect(caseDuLabel(modale, new RegExp(SUSPENDU_PRESENT.titre))!.checked).toBe(false);
+
+    fireEvent.click(within(modale).getByRole('button', { name: /enregistrer les modifications/i }));
+
+    await waitFor(() => {
+      expect(appels.filter(a => a.method === 'PATCH')).toHaveLength(1);
+    });
+    const corps = JSON.parse(appels.find(a => a.method === 'PATCH')!.body as string);
+    expect(corps.idPack).toBe(PACK_AVEC_SUSPENDU.idPack);
+    // Les deux assertions : le suspendu est parti, et le reste du pack a suivi.
+    expect(corps.qids).not.toContain(SUSPENDU_PRESENT.id);
+    expect(corps.qids).toContain('Q_TEST_01');
+  });
+
+  it('(c) un suspendu ABSENT du pack n’est jamais rendu dans la modale', async () => {
+    monter([PACK_AVEC_SUSPENDU], [SUSPENDU_PRESENT, SUSPENDU_ABSENT]);
+    const modale = await ouvrirModale(PACK_AVEC_SUSPENDU.nom);
+
+    // Attendre que le bloc soit peuplé, sinon l'absence serait celle du
+    // chargement et non celle du filtre.
+    await waitFor(() => {
+      expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    });
+
+    expect(within(modale).queryByText(SUSPENDU_ABSENT.titre)).toBeNull();
+    expect(screen.queryByText(SUSPENDU_ABSENT.titre)).toBeNull();
+  });
+
+  // (d) L'INSTANTANÉ est réécrit à chaque ouverture, jamais accumulé. Les cas
+  // (a) à (c) n'ouvrent la modale qu'UNE fois : une mutation qui remplacerait
+  // `setEditQidsInitiaux(new Set(pack.qids))` par
+  // `setEditQidsInitiaux(prev => new Set([...prev, ...pack.qids]))` les
+  // laisserait tous verts, tout en faisant fuiter le suspendu d'un pack dans la
+  // modale du pack suivant — c'est-à-dire en le rendant AJOUTABLE là où il
+  // n'était pas.
+  it('(d) rouvrir la modale sur un AUTRE pack après un enregistrement ne conserve pas le suspendu du précédent', async () => {
+    const appels = monter([PACK_AVEC_SUSPENDU, PACK_ORDINAIRE], [SUSPENDU_PRESENT, SUSPENDU_ABSENT]);
+
+    const premiere = await ouvrirModale(PACK_AVEC_SUSPENDU.nom);
+    await waitFor(() => {
+      expect(within(premiere).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    });
+
+    // Fermer par ENREGISTREMENT, pas par « Fermer » ni « Annuler » : ces deux-là
+    // repassent par `onCancelEditPack`, qui remet l'instantané à vide et
+    // masquerait donc une accumulation. Le chemin nominal — je modifie un pack,
+    // je sauve, j'en ouvre un autre — ne le remet pas.
+    fireEvent.click(within(premiere).getByRole('button', { name: /enregistrer les modifications/i }));
+    await waitFor(() => {
+      expect(appels.filter(a => a.method === 'PATCH')).toHaveLength(1);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(/modifier un pack de questionnaires/i)).toBeNull();
+    });
+
+    const seconde = await ouvrirModale(PACK_ORDINAIRE.nom);
+    // Le pack ordinaire ne porte aucun suspendu : ni la ligne, ni le bloc qui
+    // la porte ne doivent exister.
+    expect(within(seconde).queryByText(SUSPENDU_PRESENT.titre)).toBeNull();
+    expect(screen.queryByText(SUSPENDU_PRESENT.titre)).toBeNull();
+    expect(screen.queryByText(/ces instruments sont/i)).toBeNull();
+  });
+});
+
+// ── Non-contamination du compte annoncé ─────────────────────────────────────
+//
+// `titreParId` est bâti sur la prop `questionnaires` SEULE (les actifs). C'est
+// lui qui décide du compteur de la ligne de pack, du badge « Non envoyé » et du
+// libellé du `<select>` d'assignation. Le fondre avec `suspendus` — « pour
+// afficher un titre au lieu d'un qid nu » — rétablirait le contresens
+// « 6 annoncés / 5 envoyés » que ces trois affichages existent pour empêcher.
+// Aucun autre banc ne rougirait.
+describe('PacksPanel — un suspendu ne compte pas comme un questionnaire envoyé', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('le pack portant un suspendu annonce 1 questionnaire, un badge « Non envoyé », et « (1) » à l’assignation', async () => {
+    monter([PACK_AVEC_SUSPENDU], [SUSPENDU_PRESENT, SUSPENDU_ABSENT]);
+
+    // La liste des suspendus doit être CHARGÉE avant d'asserter — sinon le
+    // compte juste serait celui d'un `suspendus` encore vide, et la mutation
+    // passerait au vert. Ouvrir puis refermer la modale le prouve : le titre du
+    // suspendu n'y apparaît qu'une fois la réponse arrivée.
+    const modale = await ouvrirModale(PACK_AVEC_SUSPENDU.nom);
+    await waitFor(() => {
+      expect(within(modale).queryByText(SUSPENDU_PRESENT.titre)).not.toBeNull();
+    });
+    fireEvent.click(within(modale).getByRole('button', { name: /^fermer$/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/modifier un pack de questionnaires/i)).toBeNull();
+    });
+
+    const li = await ligne(PACK_AVEC_SUSPENDU.nom);
+
+    // Le pack stocke 2 qids ; un seul est envoyable.
+    expect(li.textContent).toContain('1 questionnaire(s)');
+    expect(li.textContent).not.toContain('2 questionnaire(s)');
+    expect(within(li).getByText('Non envoyé')).toBeTruthy();
+    // Le qid suspendu est nommé tel quel, sans titre : il n'est pas dans
+    // `titreParId`.
+    expect(li.textContent).toContain(SUSPENDU_PRESENT.id);
+    expect(li.textContent).not.toContain(SUSPENDU_PRESENT.titre);
+
+    // Le compte annoncé au moment de choisir est celui qui partira.
+    const options = Array.from(document.querySelectorAll('option')).map(o => o.textContent);
+    expect(options).toContain(`${PACK_AVEC_SUSPENDU.nom} (1)`);
+    expect(options).not.toContain(`${PACK_AVEC_SUSPENDU.nom} (2)`);
   });
 });

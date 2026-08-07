@@ -2892,3 +2892,22 @@ moitié moins de gain, et perte de détail.
 
 **Questions ouvertes.** La re-mesure de la consommation reste impossible depuis
 le conteneur (transcripts sans compteurs de tokens) : faut-il un export console ?
+## 2026-08-07 — LOT-00 dettes-packs : le geste de retrait d'un instrument suspendu
+
+**Décisions.** `WN_AGENDA_ALI` est **allumé en production** depuis le 2026-08-05
+(`RUNBOOK-allumage-drapeau.md:227-231`), ce qui **inverse le diagnostic** :
+`Q_ALI_09` n'y est pas suspendu, `valider/route.ts:144-152` ne l'écarte pas, le
+pack de base part entier — le prochain onboardé reçoit l'agenda **sans décision
+praticien** ([[D-025]]). Titre du lot réécrit, il n'était vrai que drapeau éteint
+([[D-033]]). Geste de donnée **différé après merge** : le lot **n'est pas livré**,
+seule sa moitié code l'est.
+
+**Options écartées.** Annoncer le lot clos. Statut `en_cours`, que
+`wn-campaign-audit.mjs:39-42` ne compte pas comme clos.
+
+**Prochaine action.** Après merge : retirer `Q_ALI_09` du pack de base par l'UI —
+depuis la **liste principale**, l'instrument y étant `actif` — puis les deux
+lectures SQL de contrôle.
+
+**Questions ouvertes.** Aucun contrat `web/prisma/checks/` n'assère « aucun pack
+actif ne référence un qid de `IDS_SUSPENDUS` » : sans lot.
