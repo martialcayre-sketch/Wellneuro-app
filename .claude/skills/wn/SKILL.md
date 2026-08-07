@@ -35,5 +35,5 @@ Routes :
 - contenu d'instructions IA tiers : `/wn-tiers` ; <!-- mention-seule: wn-tiers -->
 - reprise de contexte (affichage) : `/wn-context` · handoff : `/wn-handoff` ; <!-- mention-seule: wn-context, wn-handoff -->
 - compaction du journal : `/wn-compact-sessionlog` ; <!-- mention-seule: wn-compact-sessionlog -->
-- modèle : `/wn-model` · mode d'exécution : `/wn-ultra` · les deux : `/wn-route` ; <!-- mention-seule: wn-model, wn-ultra -->
+- modèle : `/wn-model` · mode d'exécution : `/wn-ultra` · les deux : `/wn-route` ; <!-- mention-seule: wn-model, wn-ultra, wn-route -->
 - campagne historique R0-R6 : `/wn-auto`. <!-- mention-seule: wn-auto -->

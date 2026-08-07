@@ -120,8 +120,8 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    `node scripts/wn-cycle.mjs` rend la phase courante.
 7. **PR** — `--body-file`, diff d'une seule finalité, CI lu par
    `node scripts/wn-attendre-ci.mjs <N>` (code `0` seul autorise à l'annoncer
-   prête), merge selon le régime de `CLAUDE.md`. Gabarits dans `/wn-pr` et
-   `/wn-merge`, invoqués à la main. <!-- mention-seule: wn-pr, wn-merge -->
+   prête), merge selon le régime de `CLAUDE.md`. Gabarits dans `/wn-pr` <!-- mention-seule: wn-pr -->
+   et `/wn-merge`, invoqués à la main. <!-- mention-seule: wn-merge -->
 
 ## Sortie de la proposition (mode par défaut)
 

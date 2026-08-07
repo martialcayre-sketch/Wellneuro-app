@@ -24,11 +24,11 @@ Règle unique :
 - Profondeur **et** largeur exceptionnelles simultanées : Fable + Ultracode.
 
 Un override nommé par l'utilisateur (modèle, `ultracode`/`leger`/`solo`, skill
-`/wn-*`) prime sur la règle.
+`/wn-*`) prime sur la règle. <!-- mention-seule: wn -->
 
 Sortie — uniquement si la décision dévie du défaut : une ligne
 (modèle/effort/mode + raison) et la commande exacte (`/model …`, délégation
 `Agent(...)`, ou invitation à opter `ultracode`). Ce skill n'autorise ni
 migration, ni écriture Supabase, ni changement clinique. Tables détaillées :
-`/wn` (routes), `/wn-model` (modèles), `/wn-ultra` (modes) — à taper par
+`/wn` (routes), `/wn-model` (modèles), `/wn-ultra` (modes) — à taper par <!-- mention-seule: wn, wn-model, wn-ultra -->
 l'utilisateur.
