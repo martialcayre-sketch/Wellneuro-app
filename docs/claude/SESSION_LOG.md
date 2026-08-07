@@ -2722,6 +2722,28 @@ d'écriture. Fermé par `backfill:pack-registry:apply` (autorisation explicite) 
 **Questions ouvertes.** Risque latent E2E : `Q_SOM_09` refusé par `submit`, le
 remplisseur générique casserait s'il itérait tout le pack. PR #372 dormante.
 
+## 2026-08-05 — Clôture de la campagne « reprise des chantiers en suspens »
+
+**Décisions.** Trois lots livrés, trois PR mergées, CI vert à chaque fois : LOT-01
+« Mon bilan » (#574), LOT-02 transport des compositions (#585), LOT-03 runbook HDS
+(#587). LOT-02 livre la capacité et le chiffre — 138 728 fiches sur 140 148 —
+mais **ne charge rien** : l'écriture en production reste un geste séparé. LOT-03
+verse le runbook par retouches ciblées sur `main`.
+
+**Options écartées.** Merger `sauvegarde/runbook-scalingo-staging` : forkée du
+2026-07-24, elle supprimerait 28 332 lignes et annulerait la PR #425, qui porte
+la correction qu'elle prétend apporter. Sortir tous les doublons du dénominateur
+de complétude : cela inversait un signal clinique (2 912 cas divergents).
+
+**Prochaine action prioritaire.** Arbitrer entre LOT-04 des dettes 5.0 et les lots
+de la campagne questionnaires — les deux ont été évoqués, ce ne sont pas les mêmes.
+
+**Questions ouvertes.** Aucune passe T2 locale isolée n'a pu être obtenue : la
+session voisine relance Playwright en continu sur la base partagée, y compris en
+cours de passe. Seul le CI rend un verdict. Statuts LOT-00/LOT-01 des dettes 5.0
+périmés (mergés, encore notés « merge bloqué »). Réserve LOT-02 : 1 420 fiches
+sans aucune ligne résolue.
+
 ## 2026-08-06 — LOT-01 packs-personnalisés : inventaire des surfaces + D-030
 
 **Décisions.** Matrice livrée (~70 surfaces, chaque ligne chemin:ligne relue ;
