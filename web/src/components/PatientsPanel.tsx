@@ -281,13 +281,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   }, []);
 
   const categoriesRegistry = registry?.categories ?? [];
-  const packsRegistry = registry?.packs ?? [];
   const categoryById = new Map<string, (typeof categoriesRegistry)[number]>(
     categoriesRegistry.map(c => [c.id as string, c]),
   );
-  const packById = new Map<string, (typeof packsRegistry)[number]>(
-    packsRegistry.map(p => [p.id as string, p]),
-  );
+  // `packsRegistry` / `packById` ne servaient qu'aux libellés du bloc « Packs
+  // suggérés » (retiré, LOT-03). `registry` reste passé tel quel à `PacksPanel`.
 
   const getFunctionalCategoryLabel = (id: string): string => categoryById.get(id)?.titre ?? id;
   const getFunctionalCategoryPhase = (id: string): 'mvp' | 'phase_2' => categoryById.get(id)?.phase ?? 'phase_2';
@@ -746,13 +744,9 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     )
     : questionnaires;
 
-  const questionnaireSelectionne = questionnaires.find(q => q.id === assignationForm.idQuestionnaire) ?? null;
-  const packsSuggeres = (questionnaireSelectionne?.packsRecommandes ?? []).map(packId => ({
-    id: packId,
-    titre: packById.get(packId)?.titre ?? packId,
-    phase: packById.get(packId)?.phase ?? 'phase_2',
-    niveau: packById.get(packId)?.niveau ?? 'approfondissement',
-  }));
+  // `questionnaireSelectionne` et `packsSuggeres` n'alimentaient QUE le bloc
+  // « Packs suggérés », retiré plus bas (LOT-03, D-030) : les garder ici
+  // laisserait du calcul sans lecteur.
 
   return (
     <div className="flex flex-col gap-6">
@@ -896,38 +890,21 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               </option>
             ))}
           </Select>
-          <div className="md:col-span-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-            <p className="text-xs text-muted-foreground mb-1">Packs suggérés</p>
-            {!questionnaireSelectionne ? (
-              <p className="text-xs text-muted-foreground">Sélectionnez un questionnaire pour voir les packs recommandés.</p>
-            ) : packsSuggeres.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Aucun pack recommandé pour ce questionnaire.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {packsSuggeres.map(pack => (
-                  <button
-                    key={pack.id}
-                    type="button"
-                    onClick={() => {
-                      setSuggestedPackSelection({
-                        registryPackId: pack.id,
-                        titre: pack.titre,
-                        nonce: Date.now(),
-                      });
-                      // Le tiroir se ferme : la suture s'observe sur le
-                      // panneau Packs, derrière le voile sinon.
-                      setTiroirOuvert(null);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-xs text-foreground hover:bg-muted"
-                  >
-                    <span>{pack.titre}</span>
-                    <span className="text-muted-foreground">· {pack.niveau}</span>
-                    {pack.phase === 'mvp' && <span className="text-muted-foreground">· MVP</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* LOT-03 (D-030) — LE BLOC « PACKS SUGGÉRÉS » EST RETIRÉ D'ICI.
+              Ses boutons se raccordaient au panneau Packs par TITRE NORMALISÉ
+              parmi les packs ACTIFS : après le retrait des packs, ils
+              citeraient des packs désactivés et le clic produirait un message
+              rouge « n'existe pas encore » — faux après un retrait délibéré, et
+              affiché dans un autre panneau une fois ce tiroir refermé. Le geste
+              qu'il proposait (assigner un pack) est précisément celui que D-030
+              remplace par la file d'envoi.
+
+              LA SUTURE `suggestedPackSelection` RESTE EN PLACE, MORTE (état
+              déclaré, type, passage à `PacksPanel`) : plus rien ne l'alimente,
+              donc plus rien ne l'observe. La retirer voudrait dire toucher
+              `PacksPanel` et sa prop, c'est-à-dire un refactor hors de ce lot ;
+              elle est laissée inerte, à retirer d'un seul geste le jour où le
+              raccordement par titre sera tranché. */}
           <Input type="date" value={assignationForm.dateLimite} onChange={e => setAssignationForm(p => ({ ...p, dateLimite: e.target.value }))} />
           <Input value={assignationForm.notes} onChange={e => setAssignationForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">

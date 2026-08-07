@@ -438,19 +438,36 @@ export function PacksPanel({
                   >
                     Modifier
                   </button>
+                  {/* Le pack de base est assigné à chaque nouveau patient : le
+                      démarquer ou l'éteindre casse l'accueil de TOUS les
+                      patients. L'API le refuse en 409 — l'UI n'est qu'une
+                      courtoisie, la barrière est côté route.
+                      « Retirer par défaut » disparaît donc sur le porteur : le
+                      transfert vers un autre pack actif devient l'unique
+                      chemin, et c'est le seul qui préserve l'invariant.
+                      « Désactiver » reste RENDU mais grisé — un bouton grisé
+                      enseigne la règle, un bouton disparu n'enseigne rien. */}
                   {p.actif && (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => onToggleDefaut(p.idPack, p.nom, !p.parDefaut)}
-                        className="text-xs text-foreground hover:underline"
-                      >
-                        {p.parDefaut ? 'Retirer par défaut' : 'Définir par défaut'}
-                      </button>
+                      {!p.parDefaut && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleDefaut(p.idPack, p.nom, true)}
+                          className="text-xs text-foreground hover:underline"
+                        >
+                          Définir par défaut
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => onDesactiver(p.idPack, p.nom)}
-                        className="text-xs text-status-danger hover:underline"
+                        disabled={p.parDefaut}
+                        title={
+                          p.parDefaut
+                            ? "Ce pack est le pack de base : il est assigné à chaque nouveau patient. Définissez d'abord un autre pack actif comme pack de base."
+                            : undefined
+                        }
+                        className="text-xs text-status-danger hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-not-allowed"
                       >
                         Désactiver
                       </button>

@@ -442,6 +442,44 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
     expect(avecPack).toEqual([]);
   });
 
+  // LOT-03 — CE BANC REMPLACE UNE JOURNALISATION QUI SERAIT INATTEIGNABLE.
+  //
+  // Le lot demandait de tracer la perte de cible d'orientation au moment où
+  // elle se produirait. Ce code serait MORT-NÉ : depuis le LOT-02, plus une
+  // seule entrée de la table ne porte de `packId` (le fichier source l'écrit
+  // lui-même), et `packId` ne survit que dans l'union de type. Un log serait
+  // donc vert en test et MUET À VIE en production — il ne dirait jamais rien,
+  // et son silence ne prouverait rien.
+  //
+  // Un banc, lui, empêche la réintroduction au lieu de la constater après coup.
+  //
+  // CE QU'IL AJOUTE au banc « aucune règle PUBLIÉE ne cible un pack » juste
+  // au-dessus : celui-ci ne filtre RIEN. Une règle `brouillon` ou `suspendue`
+  // portant un `packId` est invisible du banc publié, et le jour où on la
+  // publierait la cible pack reviendrait en production sans qu'aucune ligne de
+  // ce fichier ne bouge — c'est-à-dire silencieusement, ce qui est exactement
+  // ce qu'on cherche à éviter. La table ne contient que des règles publiées
+  // aujourd'hui ; c'est un état, pas une garantie.
+  it('aucune ENTRÉE de la table, quel que soit son statut, ne cible un pack', () => {
+    const avecPack = ORIENTATION_RULES_V1
+      .flatMap(regle =>
+        regle.suggestions
+          .filter(suggestion => Boolean(suggestion.packId))
+          .map(suggestion => `${regle.id} (${regle.statut}) → ${suggestion.packId}`),
+      );
+    // Message d'échec : dit POURQUOI le banc existe, à qui le fera rougir.
+    expect(
+      avecPack,
+      'Une suggestion à `packId` a été réintroduite. Le geste praticien de '
+      + "l'orientation est « ajouter à la file d'envoi », instrument par "
+      + 'instrument : le panneau ne sait plus assigner un pack, et une telle '
+      + 'suggestion produirait une ligne sans geste possible. Aucune '
+      + 'journalisation ne peut le signaler — elle serait muette à vie, la '
+      + "table n'ayant plus aucune cible pack à perdre. C'est une décision "
+      + 'produit (D-030) : la rouvrir explicitement, ou retirer le `packId`.',
+    ).toEqual([]);
+  });
+
   it('chaque questionnaire cité existe au catalogue et est administrable', () => {
     const cites = new Set<string>();
     for (const { declencheur } of declencheurs) {

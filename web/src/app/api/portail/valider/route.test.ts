@@ -192,3 +192,104 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     ).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LOT-03 — le repli par NOM de `resoudrePackBase`.
+//
+// Ce repli comparait `nom` en égalité exacte contre `'BASE DE CONSULTATION'`
+// alors que le pack réel s'appelle « Base de consultation » : l'égalité
+// Prisma/PostgreSQL étant sensible à la casse, il ne pouvait JAMAIS matcher.
+// Aucun test ne le couvrait — la suite ci-dessus mocke `pack.findFirst` sans
+// regarder ses arguments, donc elle passe le pack quelle que soit la requête,
+// et le voit toujours résolu par `parDefaut`.
+//
+// D'où le double de `findFirst` ci-dessous : il REJOUE la sémantique
+// PostgreSQL (`equals` nu = sensible à la casse, `mode: 'insensitive'` = non)
+// au lieu de rendre la fixture quoi qu'on demande. C'est ce qui rend le banc
+// falsifiable : rétablir la comparaison stricte, ou remettre la constante en
+// capitales, rend `null` et la route répond 404 `pack_not_found`.
+describe('POST /api/portail/valider — repli par nom du pack de base', () => {
+  // TROIS CASSES, et c'est ce qui rend le banc falsifiable indépendamment de la
+  // casse de la constante : une comparaison stricte, quelle que soit la forme
+  // qu'on lui donne, échoue sur au moins deux des trois. Aucun identifiant de
+  // pack de production ici — `idPack` est une valeur de test.
+  const CASSES = ['Base de consultation', 'BASE DE CONSULTATION', 'base de consultation'];
+
+  function packNomme(nom: string) {
+    return { idPack: 'PACK_TEST_NOMME', nom, qids: ['Q_NEU_03'], parDefaut: false, actif: true };
+  }
+
+  type FiltreNom = string | { equals?: string; mode?: string };
+  type ArgsFindFirst = { where: { nom?: FiltreNom; parDefaut?: boolean; actif?: boolean } };
+
+  /** Sémantique PostgreSQL du filtre `nom`, telle que Prisma la traduit. */
+  function nomCorrespond(filtre: FiltreNom | undefined, nomEnBase: string): boolean {
+    if (filtre === undefined) return true;
+    if (typeof filtre === 'string') return filtre === nomEnBase;
+    const attendu = filtre.equals ?? '';
+    return filtre.mode === 'insensitive'
+      ? attendu.toLocaleLowerCase() === nomEnBase.toLocaleLowerCase()
+      : attendu === nomEnBase;
+  }
+
+  /**
+   * Monte un catalogue d'UN pack, nommé `nom`, et AUCUN pack `parDefaut` actif :
+   * le repli par nom est alors le seul chemin qui reste, ce qui est précisément
+   * la situation qu'il prétend couvrir.
+   */
+  function monterCatalogue(nom: string) {
+    prisma.pack.findFirst.mockImplementation(async (args: ArgsFindFirst) => {
+      if (args.where.parDefaut === true) return null;
+      if (args.where.actif !== true) return null;
+      return nomCorrespond(args.where.nom, nom) ? packNomme(nom) : null;
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.patient.findUnique.mockResolvedValue(compte);
+    prisma.consultation.findFirst.mockResolvedValue(consultation);
+    prisma.consultation.update.mockResolvedValue({});
+    prisma.assignation.create.mockResolvedValue({});
+    prisma.questionnairePack.findUnique.mockResolvedValue(null);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
+  });
+
+  function requete(): Request {
+    return new Request('http://localhost/api/portail/valider', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: `wn_portail=${encodeURIComponent(signPatientSession(PATIENT))}`,
+      },
+      body: JSON.stringify({ anamnese: { motif_principal: 'Fatigue persistante depuis six mois.' } }),
+    });
+  }
+
+  for (const nom of CASSES) {
+    it(`résout le pack nommé « ${nom} », sans pack parDefaut`, async () => {
+      monterCatalogue(nom);
+      const response = await POST(requete());
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ ok: true, count: 1 });
+      expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    });
+  }
+
+  // `findFirst` sans tri rend une ligne ARBITRAIRE : deux packs homonymes
+  // feraient dépendre le pack assigné à un patient d'un ordre non spécifié.
+  it('demande un ordre déterministe, jamais la première ligne venue', async () => {
+    monterCatalogue(CASSES[0]);
+    await POST(requete());
+    const appelParNom = prisma.pack.findFirst.mock.calls
+      .map(([args]) => args as ArgsFindFirst & { orderBy?: unknown })
+      .find(args => args.where.parDefaut !== true);
+    expect(appelParNom).toBeDefined();
+    expect(appelParNom?.orderBy).toBeDefined();
+  });
+});

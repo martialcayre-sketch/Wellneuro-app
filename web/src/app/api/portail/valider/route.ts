@@ -21,14 +21,36 @@ export type PortailValiderResponse =
 
 type Payload = { anamnese?: unknown; motif?: string };
 
-const NOM_PACK_BASE = 'BASE DE CONSULTATION';
+const NOM_PACK_BASE = 'Base de consultation';
 
 // Résout le pack de base : le pack `parDefaut` actif en priorité, sinon le
-// pack actif nommé « BASE DE CONSULTATION » (fallback).
+// pack actif nommé « Base de consultation » (repli).
+//
+// LOT-03 — CE REPLI DEVIENT VIVANT POUR LA PREMIÈRE FOIS. Il comparait le nom
+// en égalité EXACTE contre `'BASE DE CONSULTATION'`, alors que le pack réel
+// s'appelle « Base de consultation » (`prisma/seed.ts`) : l'égalité Prisma /
+// PostgreSQL étant sensible à la casse, la seconde requête ne pouvait rendre
+// que `null`. Le pack `parDefaut` actif était donc, en pratique, l'unique
+// chemin de résolution. Le rendre insensible à la casse n'est pas une
+// correction de typo : c'est un CHANGEMENT DE COMPORTEMENT — en production
+// l'effet immédiat est nul (un seul pack porte ce nom), mais le repli peut
+// désormais résoudre, ce qu'il n'a jamais fait.
+//
+// D'où l'`orderBy` : `findFirst` sans tri rend une ligne arbitraire, et le
+// pack assigné à un patient dépendrait d'un ordre non spécifié s'il existait
+// des homonymes. Le plus ancien gagne, départagé par `idPack` (unique) — deux
+// exécutions rendent la même ligne.
+//
+// CE FILET NE REMPLACE PAS LE GARDE `parDefaut` : il dépend d'un libellé que
+// le praticien peut renommer depuis l'UI des packs, donc il peut cesser de
+// résoudre sans qu'aucune ligne de code ne change.
 async function resoudrePackBase() {
   const parDefaut = await prisma.pack.findFirst({ where: { parDefaut: true, actif: true } });
   if (parDefaut && parDefaut.qids.length > 0) return parDefaut;
-  const parNom = await prisma.pack.findFirst({ where: { nom: NOM_PACK_BASE, actif: true } });
+  const parNom = await prisma.pack.findFirst({
+    where: { nom: { equals: NOM_PACK_BASE, mode: 'insensitive' }, actif: true },
+    orderBy: [{ createdAt: 'asc' }, { idPack: 'asc' }],
+  });
   return parNom;
 }
 
