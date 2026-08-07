@@ -201,6 +201,12 @@ le verdict qu'ils viennent de rendre. Cette liste est gardée par
 passe de production. Dire « T3 vert aux deux positions du drapeau » reste vrai —
 mais « la suite entière deux fois », non.
 
+**T1 ne joue plus de suite complète du tout** : il porte la liste restreinte et
+les specs du diff (`test:changed`, passé lui aussi en position production). La
+passe entière est à partir de T2 — `test:worktree`, y compris en `--fast`. Un
+palier plus court reste un palier plus étroit ; c'est T2 qu'il faut lancer avant
+de conclure qu'une suite est verte.
+
 Ne jamais relancer une suite pour en relire la sortie : rediriger une fois vers
 un fichier (`--reporter=dot`), puis relire ce fichier.
 

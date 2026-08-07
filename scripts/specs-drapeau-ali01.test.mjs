@@ -37,9 +37,17 @@
 //      pas — nommer une forme précise, c'est justement ne pas dépendre de celle
 //      qui est servie).
 //
-// Limite assumée : un idiome de balayage nouveau (`for…in`, spread) qui ne
-// citerait ni `Q_ALI_01` ni les symboles passerait. C'est le prix de ne pas
-// noyer le triage ; le marqueur 4 attrape tout accès nommé.
+// Limites assumées :
+//   · un idiome de balayage nouveau (`for…in`, spread) qui ne citerait ni
+//     `Q_ALI_01` ni les symboles passerait. C'est le prix de ne pas noyer le
+//     triage ; le marqueur 4 attrape tout accès nommé ;
+//   · un spec qui dépendrait du drapeau à travers un export INTERMÉDIAIRE, sans
+//     citer aucun marqueur, serait invisible. Ce n'est pas atteignable tant que
+//     la dérivation n'a qu'une porte (`equilibre/constants.ts`) dont les trois
+//     exports sont nommés par le marqueur 2 — deux tests plus bas gardent
+//     exactement ces deux conditions, l'unicité de la porte et la complétude
+//     des marqueurs pour elle. Franchir l'une ou l'autre fait rougir le banc
+//     avant que l'angle mort n'existe.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -128,6 +136,19 @@ function racinesDeVitest() {
   return [...new Set(racines)];
 }
 
+// Seul fichier de production autorisé à dériver une valeur de la forme servie.
+const PORTE_DE_DERIVATION = 'src/lib/equilibre/constants.ts';
+
+/** Sources de production (tout `src`, tests exclus). */
+function fichiersProduction() {
+  const resultat = [];
+  for (const entree of fs.readdirSync(path.join(WEB, 'src'), { recursive: true })) {
+    const rel = path.join('src', String(entree)).split(path.sep).join('/');
+    if (/\.tsx?$/.test(rel) && !/\.test\.tsx?$/.test(rel)) resultat.push(rel);
+  }
+  return resultat;
+}
+
 function fichiersTest() {
   const resultat = [];
   for (const base of racinesDeVitest()) {
@@ -184,13 +205,36 @@ test('test:siin57 reste une passe COMPLÈTE — c’est la position de productio
   );
 });
 
+// LA PORTE. Dériver une valeur de la forme SERVIE suppose d'accéder à une
+// propriété de `Q_ALI_01` — et dans tout le code de production, un seul fichier
+// le fait. Le garde du dessous ne vérifie la complétude des marqueurs que pour
+// CE fichier ; si un second se mettait à dériver, ses exports échapperaient aux
+// marqueurs et un spec qui les importerait sans citer `Q_ALI_01` deviendrait
+// invisible. Ce test-ci refuse donc l'apparition d'une seconde porte : la
+// couverture du garde suivant vaut ce que vaut cette liste.
+// (`Q_ALI_01_SIIN_57.` / `Q_ALI_01_COURT_14.` sont neutralisés : nommer une
+// forme précise, ce n'est pas dépendre de celle qui est servie.)
+test('la dérivation de la forme servie n’a qu’une porte dans le code de production', () => {
+  const portes = [];
+  for (const rel of fichiersProduction()) {
+    const source = fs.readFileSync(path.join(WEB, rel), 'utf8').replace(/\bQ_ALI_01_(?:SIIN_57|COURT_14)\s*\./g, '');
+    if (/\bQ_ALI_01\s*[.[]/.test(source)) portes.push(rel);
+  }
+  assert.deepEqual(
+    portes,
+    [PORTE_DE_DERIVATION],
+    'un fichier de production dérive de la forme servie hors de la porte connue. Ses exports échappent aux marqueurs : ' +
+      'les y ajouter et étendre le garde de complétude, sinon un spec qui en dépend ne sera plus joué en position éteinte.',
+  );
+});
+
 // Un marqueur ne garde que ce qu'il nomme. Les trois symboles du marqueur 2
 // sont les exports de `equilibre/constants.ts` dérivés de la forme servie ; un
 // quatrième ajouté demain ouvrirait un angle mort en silence. C'est la classe
 // « un garde qui ne descend pas assez bas » : le banc vérifie donc que sa
 // propre liste de marqueurs est complète, pas seulement qu'elle mord.
-test('aucun export dérivé de Q_ALI_01 n’échappe aux marqueurs', () => {
-  const source = fs.readFileSync(path.join(WEB, 'src/lib/equilibre/constants.ts'), 'utf8');
+test(`aucun export de ${PORTE_DE_DERIVATION} dérivé de Q_ALI_01 n’échappe aux marqueurs`, () => {
+  const source = fs.readFileSync(path.join(WEB, PORTE_DE_DERIVATION), 'utf8');
   const nommes = MARQUEURS.map((m) => m.regex.source).join(' ');
   const manquants = [];
   for (const m of source.matchAll(/export const ([A-Z_][A-Z0-9_]*)\s*(?::[^=]*)?=\s*([\s\S]*?)(?=\nexport |\n\/\*\*|$)/g)) {

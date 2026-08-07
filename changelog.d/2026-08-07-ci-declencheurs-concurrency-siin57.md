@@ -13,11 +13,17 @@
   `scripts/specs-drapeau-ali01.test.mjs` dérive les candidats du code (le
   drapeau, les exports dont la valeur dépend de la forme servie, le balayage du
   catalogue sous ses deux noms, la référence à `Q_ALI_01`), exige que chacun
-  soit listé ou exclu avec un motif écrit, vérifie qu'aucun export dérivé
-  n'échappe à ses propres marqueurs, et garde que la passe de production reste
-  complète. Protocole à rejouer quand la liste change : figer `max` du besoin 1
-  à 42 et l'étiquette de version dans `equilibre/constants.ts` doit faire rougir
-  la passe restreinte et elle seule.
+  soit listé ou exclu avec un motif écrit, refuse qu'un second fichier de
+  production se mette à dériver de la forme servie (`equilibre/constants.ts` est
+  la seule porte, et c'est ce qui rend ses marqueurs suffisants), vérifie
+  qu'aucun export de cette porte n'échappe à ses marqueurs, et garde que la
+  passe de production reste complète. Protocole à rejouer quand la liste change :
+  figer `max` du besoin 1 à 42 et l'étiquette de version dans
+  `equilibre/constants.ts` doit faire rougir la passe restreinte et elle seule.
+  **T1 (`npm run check`) ne joue plus de suite complète** — il porte la liste
+  restreinte plus les specs du diff (`test:changed`, désormais en position
+  production) ; c'est T2 (`test:worktree`, même en `--fast`) qui porte la passe
+  entière.
 - **Un run de CI supplanté n'est plus payé jusqu'au bout.** `ci.yml` ne se
   déclenche plus sur `push` pour `campaign/**/integration` (le run
   `pull_request`, seul exigé par la protection de branche, suffisait ; `push`

@@ -146,6 +146,22 @@ test('verify CANCELLED + verify vert : le vert du commit de tête couvre l\'annu
   }
 });
 
+// `SKIPPED` et `NEUTRAL` satisfont la protection de branche (d'où leur place
+// dans CONCLUSIONS_VERTES), mais ne prouvent AUCUNE exécution. Les laisser
+// couvrir un annulé ferait dire « a réellement tourné, et est vert » d'une PR
+// où rien n'a tourné : le faux vert que ce script existe pour tuer. Seul
+// `SUCCESS` couvre. Aucun test ne décidait ce cas avant celui-ci.
+test('verify CANCELLED + SKIPPED ou NEUTRAL : ne couvre PAS — jamais 0', () => {
+  const annule = { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' };
+  for (const mou of ['SKIPPED', 'NEUTRAL']) {
+    const rollup = [annule, { name: 'verify', status: 'COMPLETED', conclusion: mou }];
+    const v = diagnostiquer(faits({ rollup }));
+    assert.notEqual(v.sortie, SORTIE_VERT, `${mou} ne doit pas couvrir un annulé`);
+    assert.equal(v.attendre, true);
+    assert.equal(diagnostiquer(faits({ rollup, delaiDepasse: true })).sortie, SORTIE_N_A_PAS_TOURNE);
+  }
+});
+
 // Le bloc `absents`, quinze lignes plus bas, ne temporise QUE si aucune cause
 // n'est diagnosticable. Le cas annulé posait la même question et y répondait
 // l'inverse : il attendait 900 s un run que le conflit empêche GitHub de créer,

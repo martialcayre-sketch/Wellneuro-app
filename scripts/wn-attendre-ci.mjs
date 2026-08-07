@@ -52,6 +52,10 @@ const INTERVALLE_S = 20;
 // On s'aligne plutôt que d'inventer une règle plus stricte que la protection
 // elle-même, qui est ce qui décide réellement du merge.
 const CONCLUSIONS_VERTES = new Set(['SUCCESS', 'NEUTRAL', 'SKIPPED']);
+// La seule conclusion qui prouve qu'un job a EXÉCUTÉ quelque chose. Distincte
+// de `CONCLUSIONS_VERTES`, qui dit ce que la protection de branche accepte :
+// un `SKIPPED` satisfait le merge sans avoir rien vérifié.
+const CONCLUSION_REUSSIE = 'SUCCESS';
 // `ACTION_REQUIRED` n'est pas un échec : c'est un run GELÉ, qui n'a rien
 // exécuté. Le confondre avec un échec ferait chercher un bug inexistant ;
 // le confondre avec un succès est le défaut que ce script existe pour tuer.
@@ -231,14 +235,18 @@ export function diagnostiquer(faits) {
   //
   // Deux réserves, chacune apprise d'un cas concret :
   //
-  // · un run VERT du même nom couvre l'annulé. Le rollup porte les checks du
-  //   commit de tête : si `verify` y est vert, la vérification a bien eu lieu,
-  //   quel qu'ait été le sort d'une tentative précédente. C'est l'asymétrie
-  //   entre annulé et échoué — un échec est une information (quelque chose a
-  //   cassé, et un vert ne l'efface pas), une annulation n'en est pas une.
-  //   Sans cette réserve, une PR relancée après annulation manuelle restait
-  //   bloquée INDÉFINIMENT : aucune relance ne la débloquait, le script
-  //   conseillait de pousser un commit pour repayer un cycle entier ;
+  // · un run `SUCCESS` du même nom couvre l'annulé. Le rollup porte les checks
+  //   du commit de tête : si `verify` y a réussi, la vérification a bien eu
+  //   lieu, quel qu'ait été le sort d'une tentative précédente. C'est
+  //   l'asymétrie entre annulé et échoué — un échec est une information
+  //   (quelque chose a cassé, et un vert ne l'efface pas), une annulation n'en
+  //   est pas une. Sans cette réserve, une PR relancée après annulation
+  //   manuelle restait bloquée INDÉFINIMENT : aucune relance ne la débloquait,
+  //   le script conseillait de pousser un commit pour repayer un cycle entier.
+  //   `SUCCESS` SEUL, et non `CONCLUSIONS_VERTES` : `SKIPPED` y figure parce que
+  //   la protection de branche s'en satisfait, mais un job sauté n'a rien
+  //   exécuté — le laisser couvrir un annulé ferait dire « a réellement tourné »
+  //   d'une PR où justement rien n'a tourné ;
   //
   // · si une cause EMPÊCHE le run remplaçant d'exister (PR en conflit, branche
   //   squashée), attendre ne sert à rien. Le bloc `absents` juste en dessous
@@ -247,7 +255,7 @@ export function diagnostiquer(faits) {
   const annules = requis
     .map((nom) => parNom.get(nom))
     .filter(
-      (a) => a && a.aAnnule && !a.enCours && !a.entrees.some((e) => e.termine && CONCLUSIONS_VERTES.has(e.conclusion)),
+      (a) => a && a.aAnnule && !a.enCours && !a.entrees.some((e) => e.termine && e.conclusion === CONCLUSION_REUSSIE),
     );
   if (annules.length > 0) {
     const noms = annules.map((a) => a.nom).join(', ');

@@ -53,17 +53,18 @@ test('le groupe de concurrence est unique par run sur `main`', () => {
   const bloc = blocConcurrence();
   const groupe = /group:\s*(.+)/.exec(bloc);
   assert.ok(groupe, 'ci.yml : `concurrency.group` illisible.');
+  // Assertion sur l'ORDRE des opérandes, pas sur leur présence. Une assertion
+  // de présence est satisfaite par l'inversion exacte du défaut qu'elle
+  // commémore — `… && '' || github.run_id` contient les deux motifs et donne
+  // groupe PARTAGÉ sur `main` (le run pending intermédiaire est annulé) et
+  // unique par run sur les PR (plus aucun dédoublonnage). Falsifié : cette
+  // mutation passait 5/5 avant cette forme-ci.
   assert.match(
     groupe[1],
-    /github\.run_id/,
-    'le groupe de concurrence ne contient pas `github.run_id` : deux runs de `main` pourraient le partager, ' +
-      'et GitHub annulerait le run pending intermédiaire — un commit fusionné perdrait sa seule vérification.',
-  );
-  assert.match(
-    groupe[1],
-    /refs\/heads\/main/,
-    'le groupe doit distinguer `main` des autres refs : sinon `run_id` y rendrait aussi chaque run de PR unique, ' +
-      'et plus aucun run supplanté ne serait annulé — le doublon que ce bloc existe pour supprimer.',
+    /github\.ref\s*==\s*'refs\/heads\/main'\s*&&\s*github\.run_id/,
+    "le groupe de concurrence ne rend pas `github.run_id` POUR `main` : deux runs de `main` peuvent alors partager " +
+      'le groupe, GitHub annule le run pending intermédiaire, et un commit fusionné perd sa seule vérification. ' +
+      "Attendu de la forme `${{ github.ref == 'refs/heads/main' && github.run_id || '' }}`.",
   );
 });
 
