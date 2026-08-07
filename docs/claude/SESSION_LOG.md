@@ -2979,3 +2979,31 @@ malgré son absence d'appelants (décision distincte).
 
 **Questions ouvertes.** `wn-etat-reel.mjs` n'est invoqué par aucun workflow,
 skill ni hook : le brancher ou le supprimer ?
+
+## 2026-08-07 — Pointage trié : ce qui est clos quitte next_action
+
+**Décisions.** 10 lignes closes sur 31 quittent `next_action` pour le fragment de
+handoff (−37 %, de 5 993 à 3 768 caractères), chacune vérifiée contre le dépôt et
+non sur la foi du texte ; aucune perte, prouvée par comparaison à `892a5ff`. Une
+ligne a été reclassée par le dépôt lui-même : le « geste post-merge dû pour
+réconcilier `git.*` » était sans objet depuis #612, mergée le même après-midi.
+`wn-etat-reel.mjs` est **gardé et documenté** dans les « Commandes utiles » :
+correction de ma formulation de la veille — il n'est pas orphelin, c'est un outil
+à la main par conception, et la frontière rapporter/réparer était déjà posée dans
+`PROJET_CONTEXTE.md:109`. Enfin « `dirty` était toujours faux » corrigé dans les
+**deux commentaires de banc** (`wn-etat-reel.test.mjs`, `wn-cycle.test.mjs`) : la
+valeur stockée était toujours `true`, donc toujours inexacte. **L'entrée du
+2026-08-07 sur #612 garde sa formulation d'origine** : ce journal est append-only
+(règle de `CLAUDE.md`), donc une entrée datée ne se réécrit pas — la correction
+se consigne ici, dans l'entrée suivante. Réserve soulevée par la revue Copilot
+sur cette PR, et elle avait raison.
+
+**Options écartées.** Brancher `wn-etat-reel` dans un skill (coût `gh` + balayage
+de `web/src` à chaque appel) ; le supprimer (son banc est en CI, sa génération
+est la vue de vérité du LOT-01).
+
+**Prochaine action.** PR, `verify`, merge — en attendant la revue Copilot cette
+fois, puisqu'elle a publié après le merge de #612 avec deux remarques fondées.
+
+**Questions ouvertes.** Les quatre arbitrages restés dans `next_action` (PR #372,
+trois campagnes figées) : ce sont des décisions humaines, pas des faits clos.
