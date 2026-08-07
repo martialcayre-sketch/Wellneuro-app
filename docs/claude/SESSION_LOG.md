@@ -2911,3 +2911,24 @@ lectures SQL de contrôle.
 
 **Questions ouvertes.** Aucun contrat `web/prisma/checks/` n'assère « aucun pack
 actif ne référence un qid de `IDS_SUSPENDUS` » : sans lot.
+
+## 2026-08-07 — Clôture de session : deux lots workflow livrés, et un CI fantôme
+
+**Décisions.** #607 et #609 mergées : clôture opposable, sync `origin` dans
+`wn-cycle`, `.wn/state.json` atomique, retrait de `wn-r0..r6` ; puis `CLAUDE.md`
+de 26 722 à 19 586 o (−26,7 %), la gouvernance PR/merge sortie dans
+`docs/claude/REGLES_PR_MERGE.md` que `/wn-merge` charge par `cat`. Diagnostic
+consigné dans le handoff : une PR peut rester **sans run `verify`** quand sa
+branche a été supprimée puis recréée sous le même nom — GitHub réassocie
+l'ancienne suite de checks. Seul un nouveau SHA de tête en crée une neuve ; ni
+« ready », ni fermer/rouvrir.
+
+**Options écartées.** Ajouter une étape de délégation aux skills qui portent
+déjà `context: fork` (cérémonie sans gain) ; compresser la gouvernance PR/merge
+sur place plutôt que la déplacer.
+
+**Prochaine action.** Arbitrer le `main` divergent (ahead 50 / behind 51), puis
+décider du lot `wn-attendre-ci.mjs` (sa liste de causes du code `2` ignore la
+branche recréée).
+
+**Questions ouvertes.** Que valent les 50 commits locaux jamais poussés ?
