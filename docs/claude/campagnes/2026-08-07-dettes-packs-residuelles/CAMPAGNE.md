@@ -1,10 +1,10 @@
 ---
 id: "2026-08-07-dettes-packs-residuelles"
 titre: "Dettes résiduelles des packs — l'instrument suspendu et la preuve de parcours"
-statut: "en_cours"
+statut: "terminé (2026-08-07)"
 créée_le: "2026-08-07"
 mise_à_jour: "2026-08-07"
-lot_courant: "LOT-01"
+lot_courant: "aucun"
 branche_campagne: "campaign/2026-08-07-dettes-packs-residuelles/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -120,7 +120,7 @@ praticien** — précisément ce que [[D-025]] protège.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint | livré (2026-08-07) — code (PR #608) et donnée (geste praticien du 2026-08-07 15:46) | — |
-| LOT-01 | Parcours E2E orientation → file d'envoi → envoi → déduplication | à_faire | — |
+| LOT-01 | Parcours E2E orientation → file d'envoi → envoi → déduplication | livré (2026-08-07) — PR #614, `verify` vert, sept mutations rouges | — |
 
 ## Done de campagne
 
@@ -130,10 +130,47 @@ praticien** — précisément ce que [[D-025]] protège.
 - [x] Un geste praticien retire un qid suspendu d'un pack, avec banc
       (`web/src/components/PacksPanel.tsx:635-649`,
       `web/src/components/PacksPanel.test.tsx:314` et `:351-385`).
-- [ ] Le parcours orientation → file d'envoi → envoi → déduplication a une
-      couverture E2E, verte en CI.
+- [x] Le parcours orientation → file d'envoi → envoi → déduplication a une
+      couverture E2E, verte en CI (`web/e2e/orientation-file-envoi.spec.ts`,
+      PR #614 mergée le 2026-08-07 19:16, `verify` lu vert sur le commit de
+      fusion ; sept mutations rouges, chacune sur une assertion distincte,
+      précédées d'une passe de référence verte).
 - [x] `changelog.d/` posé pour le volet clinique
       (`changelog.d/2026-08-07-packs-retirer-instrument-suspendu.md` pour le
       geste, `changelog.d/2026-08-07-pack-de-base-sans-agenda-alimentaire.md`
       pour son effet en production).
-- [ ] Handoff final produit avant la PR de clôture.
+- [x] Handoff final produit avant la PR de clôture
+      (`docs/claude/handoffs/2026-08-07-2200-cloture-campagne-packs-residuelles.md`).
+
+## Clôture — 2026-08-07
+
+**La pièce du LOT-00 a été RELUE à la clôture, pas reprise.** La campagne
+précédente s'est close le 2026-08-07 en bénissant une preuve antérieure à la
+dérive qu'elle avait elle-même produite ; ne pas refaire ce chemin coûte une
+requête. Lecture de production du **2026-08-07 en fin de journée** :
+« Base de consultation » (`PACK_-bG21yeIvVYRhrdlYuWIMnFz`) est **actif**, à
+**5 qids** (`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`, `Q_SOM_09`, `Q_ALI_01`),
+`updated_at` **inchangé à `2026-08-07 15:46:34.011`** — donc rien n'a réécrit ce
+pack depuis le geste praticien. Et **aucun pack de la base ne référence
+`Q_ALI_09`** : le prérequis d'allumage du runbook agenda tient toujours.
+
+**Ce que la campagne ferme.** Les deux dettes que le LOT-04 de
+`2026-08-06-packs-personnalises` avait nommées : l'instrument suspendu soudé au
+pack de base (LOT-00, code et donnée) et l'absence de preuve de parcours
+(LOT-01). Rien d'autre — c'était le périmètre déclaré.
+
+**Ce qu'elle ne ferme pas, et qui n'a toujours pas de lot d'accueil.** Les cinq
+dettes de packs listées au `## Hors périmètre` du LOT-01 (D-032). La réserve
+nommée au LOT-00 : **un prérequis de runbook vérifié à l'allumage n'est
+re-vérifié par rien ensuite** — celui de `WN_AGENDA_ALI`, satisfait le
+2026-08-05, a été cassé le lendemain à 18:02 sans aucune alerte, sur un pilote
+déjà lancé ; aucun contrat de `web/prisma/checks/` n'assère « aucun pack actif ne
+référence un qid de `IDS_SUSPENDUS` ». Et la question clinique ouverte sur
+`R2-SOM-05` (Horne sans la porte `RYTHME_BIOLOGIQUE`), qui est une décision
+praticien.
+
+**Les deux questions ouvertes de la campagne sont tranchées.** Le geste de
+retrait est une case décochable dans un bloc distinct, pas un bouton dédié
+(LOT-00). Et l'E2E **s'arrête à l'assignation créée** : l'envoi du mail n'est pas
+asséré, `SMTP_URL` étant vide sur le banc — c'est écrit dans le spec et dans le
+fait 2 amendé de la campagne précédente.
