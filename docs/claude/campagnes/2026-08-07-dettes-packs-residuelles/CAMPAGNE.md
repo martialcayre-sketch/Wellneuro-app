@@ -1,10 +1,10 @@
 ---
 id: "2026-08-07-dettes-packs-residuelles"
 titre: "Dettes résiduelles des packs — l'instrument suspendu et la preuve de parcours"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-08-07"
 mise_à_jour: "2026-08-07"
-lot_courant: "LOT-00"
+lot_courant: "LOT-01"
 branche_campagne: "campaign/2026-08-07-dettes-packs-residuelles/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -35,7 +35,9 @@ SELECT nom, par_defaut, actif FROM packs WHERE 'Q_ALI_09' = ANY(qids);
 -- attendu : 0 ligne
 ```
 
-La production en rend **1** — le pack de base. Motif donné par le runbook : c'est
+**Au cadrage du 2026-08-07, la production en rendait 1** — le pack de base ;
+**elle en rend 0 depuis le retrait du 2026-08-07 15:46** (LOT-00 livré,
+`packs.updated_at = 2026-08-07 15:46:34.011`). Motif donné par le runbook : c'est
 **le seul chemin qui assignerait l'agenda sans clic praticien**,
 `assignPackToPatient` (appelé par l'onboarding portail) n'écartant que
 `IDS_SUSPENDUS`, et rien ne validant les `qids` d'un pack contre cette liste. Le
@@ -101,10 +103,14 @@ praticien** — précisément ce que [[D-025]] protège.
 
 - Campagne `2026-08-06-packs-personnalises`, close le 2026-08-07 : c'est son
   LOT-04 qui nomme ces deux dettes et leurs preuves.
-- Campagne `2026-08-04-agenda-alimentaire` (en cours) : **elle dépend de ce
+- Campagne `2026-08-04-agenda-alimentaire` (en cours) : **elle dépendait de ce
   LOT-00**, pas l'inverse. Son prérequis d'allumage « aucun pack ne référence
-  `Q_ALI_09` » (`RUNBOOK-allumage-drapeau.md:44-53`) est faux en production tant
-  que le pack de base porte le qid.
+  `Q_ALI_09` » (`RUNBOOK-allumage-drapeau.md:44-53`) est **de nouveau satisfait
+  depuis le 2026-08-07 15:46** — 0 ligne. Le déblocage ne lui ouvre pas `LOT-06`
+  pour autant : `../2026-08-04-agenda-alimentaire/CAMPAGNE.md:123` et `:151`
+  gardent le barème derrière « un recueil suffisant pour calibrer (clôture des
+  21 jours) », et le recueil en est à **2 journées, toutes deux du 2026-08-05,
+  sur 1 assignation**.
 - Campagne `2026-08-05-cloture-des-dettes-wellneuro-5-0` (LOT-06/07 ouverts) :
   activité primaire depuis la clôture ci-dessus. Vérifier au cadrage qu'aucun lot
   ne se recouvre.
@@ -113,14 +119,21 @@ praticien** — précisément ce que [[D-025]] protège.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint | en_cours (2026-08-07) — moitié code livrée ; retrait en production dû | — |
+| LOT-00 | Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint | livré (2026-08-07) — code (PR #608) et donnée (geste praticien du 2026-08-07 15:46) | — |
 | LOT-01 | Parcours E2E orientation → file d'envoi → envoi → déduplication | à_faire | — |
 
 ## Done de campagne
 
-- [ ] Le pack de base ne porte plus `Q_ALI_09` (lecture SQL de production).
-- [ ] Un geste praticien retire un qid suspendu d'un pack, avec banc.
+- [x] Le pack de base ne porte plus `Q_ALI_09` (lecture SQL de production du
+      2026-08-07 : 5 qids, `pack_questionnaires` à 5 lignes en `ordre`
+      `[0,1,2,3,4]`, 0 ligne au `WHERE 'Q_ALI_09' = ANY(qids)`).
+- [x] Un geste praticien retire un qid suspendu d'un pack, avec banc
+      (`web/src/components/PacksPanel.tsx:635-649`,
+      `web/src/components/PacksPanel.test.tsx:314` et `:351-385`).
 - [ ] Le parcours orientation → file d'envoi → envoi → déduplication a une
       couverture E2E, verte en CI.
-- [ ] `changelog.d/` posé pour le volet clinique.
+- [x] `changelog.d/` posé pour le volet clinique
+      (`changelog.d/2026-08-07-packs-retirer-instrument-suspendu.md` pour le
+      geste, `changelog.d/2026-08-07-pack-de-base-sans-agenda-alimentaire.md`
+      pour son effet en production).
 - [ ] Handoff final produit avant la PR de clôture.
