@@ -4,25 +4,27 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
-  "active_lot": "LOT-06",
-  "last_completed_lot": "2026-08-07-dettes-packs-residuelles/LOT-01 — livré (PR #614, verify vert) ; la campagne est CLOSE, ses deux lots livrés",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-07 — livré ; la campagne est CLOSE, ses huit lots livrés. VERDICT : Wellneuro 5.0 N'EST PAS déclarable en bloc — 3 dettes fermées (1, 3, 7), 1 arbitrée et reportée au 2026-10-21 (8), 4 OUVERTES (2, 4, 5, 6). Détail et preuves : DECLARATION_5_0.md",
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-23T08:29:51Z",
+    "last_checked_at": "2026-08-07T22:14:00Z",
     "checks": {
-      "orchestration": "audit campagnes vert à la clôture G-TRUST-04 (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
-      "type_check": "vert — @ts-nocheck levé 17/17 sur le catalogue clinique, tsc 0 erreur projet entier",
-      "scoring_certification": "vert — banc rejoué 2026-08-01 ; 60/64 en scoring_verifie, 2 suspendus terminaux (Q_FIB_03 fermé, Q_PED_03 arbitrage clinique ouvert), Q_SOM_09 en droits_verifies (recueil en cours), Q_GEO_04 plafonné contenu_verrouille (bandes HAS 2011 non sourcées, escalade SIIN ouverte)",
+      "orchestration": "audit campagnes vert au LOT-07 (clôture 5.0)",
+      "type_check": "vert — tsc 0 erreur projet entier",
+      "scoring_certification": "vert — banc rejoué au LOT-07 (63 questionnaires) ; registre : 65 instruments, 60 en scoring_verifie, 2 suspendus terminaux (Q_FIB_03 fermé, Q_PED_03 arbitrage clinique ouvert), Q_SOM_09 en droits_verifies (recueil en cours), Q_GEO_04 plafonné contenu_verrouille, Q_ALI_09 en repere ; COSMIN inconnu pour les 65, raison écrite dans corpus/README.md",
       "no_secrets": "vert",
-      "e2e": "T3 test:worktree complet vert à la clôture G-TRUST-04 (dont portail-parcours, preuve de la requalification onboarding) ; baselines visuelles SP-CONV actives depuis #298",
+      "e2e": "T3 test:worktree COMPLET vert le 2026-08-08 au LOT-07 — séquence CI entière en 2 min 08 (PG éphémère 5502, app 3102), 122 tests E2E passés, 2 ignorés, Chromium + WebKit",
       "corpus_registry": "inchangé"
     }
   },
   "next_action": [
-    "CAMPAGNE ACTIVE : 2026-08-05-cloture-des-dettes-wellneuro-5-0, promue le 2026-08-07 à la clôture de 2026-08-07-dettes-packs-residuelles (ses deux lots livrés).",
-    "PROCHAIN GESTE : LOT-06 — notices psychométriques + exigences RGPD, puis LOT-07 (déclaration 5.0, qui exige de solder la PR #372).",
+    "AUCUNE CAMPAGNE ACTIVE. 2026-08-05-cloture-des-dettes-wellneuro-5-0 est CLOSE depuis le 2026-08-08, ses huit lots livrés.",
+    "VERDICT DE CLÔTURE : Wellneuro 5.0 N'EST PAS déclarable en bloc. 3 dettes fermées (consommation, moteurs de scoring, chemin d'écriture en base), 1 arbitrée et reportée au 2026-10-21 (HDS), 4 OUVERTES. Preuves : docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/DECLARATION_5_0.md",
+    "PROCHAIN GESTE : cadrer une campagne pour les quatre dettes ouvertes, dans cet ordre — (6) wn-etat-reel ne compare plus qu'UNE dimension sur six et ne compare PAS le lot courant, donc tout jugement sur les autres passe par lui ; (5) aucune date de retrait du parcours patient legacy n'existe, le critère du LOT-04 est coché à tort ; (4) le pack en dérive n'est pas resynchronisé et la journalisation ajoutée ne couvre aucun cas observé ; (2) la validation psychométrique elle-même reste entière.",
+    "DEUX CORRECTIONS MINEURES À PORTER : orientationEngine.ts:212 et orientationRulesV1.ts:229 déclarent encore « ouverts » trois moteurs fermés au LOT-03 ; la date d'arbitrage HDS diverge d'un jour entre CAMPAGNE.md (2026-07-22) et le dossier RGPD (2026-07-21).",
     "CAMPAGNE AGENDA ALIMENTAIRE : DÉBLOQUÉE, mais son LOT-06 reste gaté.",
     "Le prérequis technique est levé (0 ligne depuis le 2026-08-07 15:46) et WN_AGENDA_ALI est allumé en production depuis le 2026-08-05, pilote en cours sur le dossier de contrôle PAT006.",
     "LOT-06 (barème et indice) ne s'ouvre PAS pour autant : la campagne pose elle-même la porte des 21 jours (2026-08-04-agenda-alimentaire/CAMPAGNE.md:123 et :151, « pas avant un recueil suffisant pour calibrer (clôture des 21 jours) »).",
@@ -38,8 +40,8 @@
     "QUESTION CLINIQUE OUVERTE : R2-SOM-05 propose Horne sans la porte RYTHME_BIOLOGIQUE de R2-SOM-03 — choix délibéré (deux versants suffisants, ce que D-031 admet) ou angle mort du LOT-02 ?",
     "Décision praticien.",
     "CINQ DETTES NOMMÉES SANS LOT D'ACCUEIL (D-032) : seed.ts:288-294 upsert update:{} no-op au message de succès faux ; questionnaire_packs.actif jamais relu par packRegistry.ts:89-123 ; aucune réactivation de pack depuis l'UI ; schema.prisma:155-156 cite le pack en capitales ; suture suggestedPackSelection morte.",
-    "EN ATTENTE D'ARBITRAGE UTILISATEUR : PR #372 (finir ou fermer) ; campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée).",
-    "EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 (2026-07-25, sans réponse).",
+    "EN ATTENTE D'ARBITRAGE UTILISATEUR : campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée).",
+    "EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 — elle EXISTE et reste ouverte (gerontologie.ts:49, registre Q_GEO_04), mais AUCUNE pièce datée n'en porte la démarche ni de relance : tracer ou passer au plan B (sourcer les bandes HAS 2011 directement).",
     "Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI."
   ],
   "blocking_issues": [
@@ -53,7 +55,7 @@
     "D-029"
   ],
   "last_session": null,
-  "updated_at": "2026-08-07T19:24:13Z",
+  "updated_at": "2026-08-07T22:20:18Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
