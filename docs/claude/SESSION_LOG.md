@@ -2848,3 +2848,25 @@ du `main` local divergent.
 
 **Questions ouvertes.** Faut-il un lot nommé pour résorber l'ahead 50 / behind
 51 du poste principal ?
+## 2026-08-07 — LOT-04 packs-personnalisés : clôture de campagne
+
+**Décisions.** Campagne `2026-08-06-packs-personnalises` close, deux verdicts
+revus. Fait 3 : la perte de cible est impossible **pour la cible pack seulement**
+(`orientationRulesV1.test.ts:463`) ; la branche questionnaire
+(`orientationEngine.ts:627`, `orientationService.ts:262-264`) reste non
+instrumentée. Fait 4 **partiellement vérifié** : le pack de base est passé de 5 à
+6 qids le 2026-08-06 à 18:02 (`packs.updated_at`), donc **pendant** la campagne,
+auteur indéterminé, avant l'existence du garde `IDS_SUSPENDUS`. [[D-032]]
+réécrite.
+
+**Options écartées.** Étendre le LOT-04 à l'E2E manquant. Annoncer trois dettes
+sans lot : il y en a **cinq** (`LOT-03-integration.md:203-213`), la dérive
+« seed à 5 qids » passant au périmètre du LOT-00.
+
+**Prochaine action.** PR de clôture (T1, T3, audit verts ; CI non lu), puis
+LOT-00 de `2026-08-07-dettes-packs-residuelles` : il **débloque**
+`2026-08-04-agenda-alimentaire`, dont le runbook exige zéro pack référençant
+`Q_ALI_09` (prod : 1).
+
+**Questions ouvertes.** Forme du geste de retrait d'un qid suspendu ; l'E2E
+doit-il asserter l'envoi du mail.
