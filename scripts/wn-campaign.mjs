@@ -2,6 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  readMachineState as lireEtatMachine,
+  writeMachineState as ecrireEtatMachine,
+} from "./wn-state.mjs";
+
 const args = process.argv.slice(2);
 const command = args[0] || "status";
 const cwd = process.cwd();
@@ -122,17 +127,18 @@ function ensureBase() {
 function ensureStateDir() {
   fs.mkdirSync(stateDir, { recursive: true });
 }
+// Ce module portait sa propre copie de ces deux primitives, dont un
+// `writeFileSync` direct : la garantie d'atomicité de `wn-state.mjs` ne
+// couvrait donc pas l'écrivain le PLUS fréquent de `.wn/state.json`. Deux
+// sessions écrivant en même temps pouvaient y laisser un JSON tronqué, que
+// `readMachineState` rend silencieusement comme `{}` — le pointage disparaît
+// sans erreur. Une seule voie, atomique, pour tout le monde.
 function readMachineState() {
-  if (!fs.existsSync(statePath)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(statePath, "utf8"));
-  } catch {
-    return {};
-  }
+  return lireEtatMachine(cwd);
 }
 function writeMachineState(nextState) {
   ensureStateDir();
-  fs.writeFileSync(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
+  ecrireEtatMachine(cwd, nextState);
 }
 function firstHeading(text, fallback) {
   for (const line of text.split(/\r?\n/)) {

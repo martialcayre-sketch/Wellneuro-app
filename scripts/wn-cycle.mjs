@@ -99,32 +99,6 @@ export function analyserSync(sync) {
 }
 
 /**
- * Dérive du pointage : `.wn/state.json` déclare une branche et un commit qui ne
- * sont vrais qu'au moment où `--appliquer` les a écrits. Constaté le
- * 2026-08-07 : un pointage `main`/`7210df76` pendant que le dépôt était sur une
- * branche de lot à `63fcbc2`. Le signal reste un avertissement, jamais un
- * blocage — en worktrees parallèles, le pointage ne peut pas être vrai partout
- * à la fois ; ce qui compte est qu'il se voie au lieu de passer pour exact.
- */
-export function analyserPointage(faits) {
-  const pointage = faits.pointage ?? null;
-  if (!pointage) return [];
-
-  const derives = [];
-  if (pointage.branch && faits.branche && pointage.branch !== faits.branche) {
-    derives.push(`branche pointée ${pointage.branch}, réelle ${faits.branche}`);
-  }
-  if (pointage.last_commit && faits.tipCourt && pointage.last_commit !== faits.tipCourt) {
-    derives.push(`commit pointé ${pointage.last_commit}, réel ${faits.tipCourt}`);
-  }
-  if (derives.length === 0) return [];
-
-  return [
-    `Pointage .wn/state.json périmé (${derives.join(' ; ')}) — resynchroniser : \`node scripts/wn-cycle.mjs --appliquer\`.`,
-  ];
-}
-
-/**
  * Le registre `docs/DECISIONS.md` s'append en tête : les premières entrées
  * `### D-NNN` sont les plus récentes. C'est la seule structure du fichier sur
  * laquelle on s'appuie — le reste est de la prose humaine.
@@ -153,8 +127,7 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  */
 export function diagnostiquer(faits) {
   const phase = diagnostiquerPhase(faits);
-  const { sync, avertissements } = analyserSync(faits.sync);
-  return { ...phase, sync, avertissements: [...avertissements, ...analyserPointage(faits)] };
+  return { ...phase, ...analyserSync(faits.sync) };
 }
 
 function diagnostiquerPhase(faits) {
@@ -461,8 +434,6 @@ function collecterFaits() {
     prMergee,
     ghDisponible,
     sync,
-    tipCourt,
-    pointage: readMachineState(RACINE).git ?? null,
   };
 }
 
@@ -472,34 +443,44 @@ function collecterFaits() {
  * Deux réparations, et rien d'autre. `SESSION_LOG.md` et le fragment de handoff
  * ne sont jamais écrits ici : leur contenu est du raisonnement, il reste du
  * ressort des skills.
+ *
+ * **Le bloc `git` n'est plus écrit, ni lu, ni conservé.** Il l'a été jusqu'au
+ * 2026-08-07 et n'a jamais pu être vrai : `--appliquer` s'exécute *avant* le
+ * commit, donc `dirty` valait toujours `true` — démenti par le commit suivant —
+ * et `branch`/`last_commit` décrivaient la dernière session à l'avoir lancé,
+ * parfois le worktree d'une autre (`worktree-lot00-…` committé sur une PR sans
+ * rapport). Le LOT-01 (#575) avait vu le piège et l'avait contourné en
+ * repoussant le geste après le merge ; on le supprime à la source. Ce qui se
+ * recalcule en une commande ne se stocke pas.
+ *
+ * Exporté pour être testable : la fonction qui écrivait ces champs n'était
+ * couverte par aucun banc.
+ *
+ * @param {{maintenant?: string}} [options] Horodatage injectable — sans lui, le
+ *   banc ne pourrait pas asserter `updated_at`.
  */
-function reparer(faits) {
+export function reparer(racine = RACINE, options = {}) {
   const lignes = [];
 
-  // 1. L'état machine d'abord : les champs `git.*` sont restés `null` depuis
-  //    leur création, personne ne les écrit à la main dans un commit de
-  //    clôture. L'ordre compte — la vue se génère depuis cet état, la
-  //    synchroniser avant l'écriture la ferait porter la date du run précédent.
-  const etat = readMachineState(RACINE);
-  etat.git = {
-    branch: faits.branche ?? null,
-    last_commit: git(['rev-parse', '--short', 'HEAD']),
-    dirty: !faits.arbrePropre,
-  };
-  etat.updated_at = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  // 1. L'état machine d'abord. L'ordre compte — la vue se génère depuis cet
+  //    état, la synchroniser avant l'écriture la ferait porter la date du run
+  //    précédent.
+  const etat = readMachineState(racine);
+  delete etat.git;
+  etat.updated_at = (options.maintenant ?? new Date().toISOString()).replace(/\.\d{3}Z$/, 'Z');
 
   // `recent_decision_ids` était `[]` depuis sa création : personne ne le
   // remplit à la main dans un commit de clôture. Le registre fait foi.
   let decisions = [];
   try {
-    decisions = extraireDecisionsRecentes(readFileSync(join(RACINE, 'docs', 'DECISIONS.md'), 'utf8'));
+    decisions = extraireDecisionsRecentes(readFileSync(join(racine, 'docs', 'DECISIONS.md'), 'utf8'));
   } catch {
     decisions = [];
   }
   if (decisions.length > 0) etat.recent_decision_ids = decisions;
 
-  writeMachineState(RACINE, etat);
-  lignes.push('.wn/state.json      git.branch, git.last_commit, git.dirty, updated_at renseignés');
+  writeMachineState(racine, etat);
+  lignes.push('.wn/state.json      updated_at renseigné, bloc git retiré (il ne se stocke plus)');
   if (decisions.length > 0) {
     lignes.push(`.wn/state.json      recent_decision_ids ← docs/DECISIONS.md (${decisions.join(', ')})`);
   }
@@ -507,8 +488,11 @@ function reparer(faits) {
   // 2. La vue `ACTIVE_CAMPAIGN.md` est générée depuis `.wn/state.json` ; elle
   //    dérive dès que l'état bouge sans que personne ne relance la synchro.
   try {
+    // Le script vit dans le dépôt (RACINE) ; c'est le répertoire de travail qui
+    // suit `racine`, pour qu'un banc puisse pointer ailleurs. Un échec ici est
+    // rapporté, jamais fatal.
     execFileSync('node', [join(RACINE, 'scripts', 'wn-campaign.mjs'), 'sync'], {
-      cwd: RACINE,
+      cwd: racine,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -593,7 +577,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
 
   if (process.argv.includes('--appliquer')) {
     console.error('');
-    for (const ligne of reparer(faits)) console.error(ligne);
+    for (const ligne of reparer(RACINE)) console.error(ligne);
     console.error(
       'SESSION_LOG.md et les fragments de handoff ne sont pas touchés — relire le diff avant de committer.',
     );

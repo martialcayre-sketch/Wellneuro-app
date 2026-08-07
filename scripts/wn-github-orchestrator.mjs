@@ -19,6 +19,15 @@ function readJson(relativePath) {
   return text ? JSON.parse(text) : null;
 }
 
+// Les champs de prose de `.wn/state.json` (`next_action`) sont passés en tableau
+// de lignes le 2026-08-07 : en une seule chaîne de plusieurs milliers de
+// caractères, ils tenaient sur UNE ligne du fichier, et deux branches qui les
+// modifiaient conflictaient à tous les coups, sans fusion possible. Les deux
+// formes sont acceptées — l'ancienne reste lisible sans migration coordonnée.
+function texteDeProse(valeur) {
+  return Array.isArray(valeur) ? valeur.join(" ") : valeur;
+}
+
 function git(args) {
   try {
     return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -266,7 +275,7 @@ if (jsonMode) {
   console.log(`- Lot actif : ${snapshot.state?.active_lot || "aucun"}`);
   const parallelCampaigns = Array.isArray(snapshot.state?.parallel_campaigns) ? snapshot.state.parallel_campaigns : [];
   console.log(`- Campagnes parallèles : ${parallelCampaigns.length ? parallelCampaigns.map((entry) => `${entry.campaign_id}/${entry.active_lot || "aucun"}`).join(", ") : "aucune"}`);
-  console.log(`- Prochaine action : ${snapshot.state?.next_action || "non définie"}`);
+  console.log(`- Prochaine action : ${texteDeProse(snapshot.state?.next_action) || "non définie"}`);
   console.log(`\n## File GitHub\n`);
   if (snapshot.issues.open.length === 0) {
     console.log(`- Aucune issue ouverte détectée.`);

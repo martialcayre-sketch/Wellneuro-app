@@ -8,7 +8,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +18,7 @@ import {
   diagnostiquer,
   estFragmentDeHandoff,
   extraireDecisionsRecentes,
+  reparer,
   SORTIE_OK,
   SORTIE_FENETRE_RATEE,
   SORTIE_PRECONDITION,
@@ -298,41 +300,6 @@ test('fenêtre ratée et sync dégradée se cumulent sans se masquer', () => {
   assert.equal(v.avertissements.length, 1);
 });
 
-// ── Pointage : la dérive de .wn/state.json se voit, elle ne bloque pas ───────
-
-test('pointage conforme : aucun avertissement de dérive', () => {
-  const v = diagnostiquer(
-    faits({ tipCourt: 'abc1234', pointage: { branch: 'wn/lot-06', last_commit: 'abc1234', dirty: false } }),
-  );
-  assert.deepEqual(v.avertissements, []);
-});
-
-test('pointage sur une autre branche et un autre commit : périmé, signalé, sortie inchangée', () => {
-  const v = diagnostiquer(
-    faits({ tipCourt: '63fcbc2', pointage: { branch: 'main', last_commit: '7210df76', dirty: true } }),
-  );
-  assert.equal(v.sortie, SORTIE_OK);
-  assert.equal(v.avertissements.length, 1);
-  assert.ok(v.avertissements[0].includes('périmé'));
-  assert.ok(v.avertissements[0].includes('--appliquer'));
-});
-
-test('pointage absent (état vierge) : rien à signaler', () => {
-  const v = diagnostiquer(faits({ tipCourt: 'abc1234', pointage: null }));
-  assert.deepEqual(v.avertissements, []);
-});
-
-test('dérives de sync et de pointage se cumulent', () => {
-  const v = diagnostiquer(
-    faits({
-      sync: { fetchOk: true, ahead: 0, behind: 3 },
-      tipCourt: '63fcbc2',
-      pointage: { branch: 'main', last_commit: '7210df76', dirty: false },
-    }),
-  );
-  assert.equal(v.avertissements.length, 2);
-});
-
 // ── Décisions récentes : extraction depuis le registre append-en-tête ────────
 
 test('extraireDecisionsRecentes : les premières entrées du registre, dans leur ordre', () => {
@@ -358,4 +325,72 @@ test('extraireDecisionsRecentes : un D-NNN cité dans la prose ne compte pas', (
 test('extraireDecisionsRecentes : registre vide ou absent', () => {
   assert.deepEqual(extraireDecisionsRecentes(''), []);
   assert.deepEqual(extraireDecisionsRecentes(null), []);
+});
+
+// ── `reparer()` : ce qu'il écrit, et surtout ce qu'il n'écrit plus ───────────
+//
+// La fonction n'était ni exportée ni couverte : c'est elle qui écrivait le bloc
+// `git`, toujours faux par construction (`--appliquer` tourne AVANT le commit).
+// Ces cas fixent le contrat après son retrait.
+
+function racineTemporaire(etatInitial) {
+  const racine = mkdtempSync(join(tmpdir(), 'wn-cycle-reparer-'));
+  mkdirSync(join(racine, '.wn'), { recursive: true });
+  writeFileSync(join(racine, '.wn', 'state.json'), `${JSON.stringify(etatInitial, null, 2)}\n`, 'utf8');
+  return racine;
+}
+
+function etatDe(racine) {
+  return JSON.parse(readFileSync(join(racine, '.wn', 'state.json'), 'utf8'));
+}
+
+test('reparer : le bloc git est retiré, jamais réécrit', () => {
+  const racine = racineTemporaire({
+    schema_version: 2,
+    active_campaign: 'demo',
+    git: { branch: 'worktree-mort', last_commit: 'deadbee', dirty: true },
+  });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  const etat = etatDe(racine);
+  assert.equal('git' in etat, false);
+  assert.equal(etat.active_campaign, 'demo');
+});
+
+test('reparer : un état sans bloc git reste sans bloc git', () => {
+  const racine = racineTemporaire({ schema_version: 2, active_campaign: 'demo' });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  assert.equal('git' in etatDe(racine), false);
+});
+
+test('reparer : updated_at est renseigné, sans millisecondes', () => {
+  const racine = racineTemporaire({ schema_version: 2 });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  assert.equal(etatDe(racine).updated_at, '2026-08-07T18:00:00Z');
+});
+
+test('reparer : les champs de campagne ne sont jamais touchés', () => {
+  const racine = racineTemporaire({
+    schema_version: 2,
+    active_campaign: 'demo',
+    active_lot: 'LOT-03',
+    next_action: ['première ligne', 'seconde ligne'],
+    blocking_issues: ['un blocage'],
+  });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  const etat = etatDe(racine);
+  assert.equal(etat.active_lot, 'LOT-03');
+  assert.deepEqual(etat.next_action, ['première ligne', 'seconde ligne']);
+  assert.deepEqual(etat.blocking_issues, ['un blocage']);
+});
+
+test('reparer : deux appels successifs rendent le même état (idempotence)', () => {
+  const racine = racineTemporaire({
+    schema_version: 2,
+    active_campaign: 'demo',
+    git: { branch: 'x', last_commit: 'y', dirty: true },
+  });
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  const premier = etatDe(racine);
+  reparer(racine, { maintenant: '2026-08-07T18:00:00.000Z' });
+  assert.deepEqual(etatDe(racine), premier);
 });

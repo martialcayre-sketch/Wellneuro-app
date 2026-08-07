@@ -2956,3 +2956,26 @@ déduplication ; couverture nulle.
 **Questions ouvertes.** Recueil agenda arrêté : 2 journées, toutes deux du
 2026-08-05, 1 assignation. Rien ne re-vérifie un prérequis de runbook après
 l'allumage.
+
+## 2026-08-07 — Lot pointage : ne plus stocker ce qui se recalcule
+
+**Décisions.** `next_action` passe d'une chaîne de 6 023 caractères **sur une
+seule ligne** à un tableau de 31 lignes découpé aux frontières de phrase
+(réversible au caractère près) : c'était lui, et non les champs `git.*`, le
+moteur des conflits — preuve faite, deux branches modifiant des passages
+différents conflictent dans l'ancienne forme et fusionnent dans la nouvelle. Le
+bloc `git` sort du fichier : `dirty` était toujours faux (écrit avant le commit)
+et `branch` nommait souvent le worktree d'une autre session. `analyserPointage`,
+écrit le matin même, disparaît avec lui — sans stockage, pas de dérive.
+`wn-campaign.mjs` cesse de dupliquer l'écriture non atomique. `reparer()` est
+exporté et couvert (5 cas).
+
+**Options écartées.** Sortir `next_action` vers les fichiers de campagne (plus
+propre, mais touche tous les consommateurs) ; supprimer `wn-etat-reel.mjs`
+malgré son absence d'appelants (décision distincte).
+
+**Prochaine action.** PR, `verify`, merge. Puis le découpage **éditorial** de
+`next_action` (clos vs en vol), toujours dû depuis le LOT-01 #575.
+
+**Questions ouvertes.** `wn-etat-reel.mjs` n'est invoqué par aucun workflow,
+skill ni hook : le brancher ou le supprimer ?
