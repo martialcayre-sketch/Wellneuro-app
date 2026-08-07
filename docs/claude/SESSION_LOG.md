@@ -2933,3 +2933,24 @@ décider du lot `wn-attendre-ci.mjs` (sa liste de causes du code `2` ignore la
 branche recréée).
 
 **Questions ouvertes.** Que valent les 50 commits locaux jamais poussés ?
+## 2026-08-07 — LOT-00 dettes-packs : geste de donnée fait, campagne agenda débloquée
+
+**Décisions.** LOT-00 passé à `livré` sur ses **deux** moitiés : code (PR #608) et
+donnée — `Q_ALI_09` retiré du pack de base le 2026-08-07 à 15:46
+(`packs.updated_at = 15:46:34.011`). Quatre lectures : 5 qids identiques à
+`web/prisma/seed.ts:270` ; `pack_questionnaires` à 5 lignes, `ordre` `[0..4]` ;
+**0 ligne** au prérequis du runbook (1 depuis le 2026-08-06 18:02) ; **0
+assignation** entre dérive et retrait. Campagne agenda déclarée **débloquée**
+dans `.wn/state.json`, qui disait « BLOQUÉE ».
+
+**Options écartées.** Ouvrir `LOT-06` de la campagne agenda : la campagne pose
+elle-même la porte des 21 jours (`2026-08-04-agenda-alimentaire/CAMPAGNE.md:123`,
+`:151`) et le recueil est arrêté au premier jour. Clore
+`dettes-packs-residuelles` : son `LOT-01` est `à_faire`.
+
+**Prochaine action.** LOT-01 — E2E orientation → file d'envoi → envoi →
+déduplication ; couverture nulle.
+
+**Questions ouvertes.** Recueil agenda arrêté : 2 journées, toutes deux du
+2026-08-05, 1 assignation. Rien ne re-vérifie un prérequis de runbook après
+l'allumage.
