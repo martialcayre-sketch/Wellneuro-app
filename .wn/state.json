@@ -5,9 +5,9 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-08-07-dettes-packs-residuelles",
-  "active_lot": "LOT-01",
-  "last_completed_lot": "2026-08-07-dettes-packs-residuelles/LOT-00 — livré sur ses deux moitiés (code PR #608, donnée 2026-08-07 15:46)",
+  "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
+  "active_lot": "LOT-06",
+  "last_completed_lot": "2026-08-07-dettes-packs-residuelles/LOT-01 — livré (PR #614, verify vert) ; la campagne est CLOSE, ses deux lots livrés",
   "validation": {
     "overall_status": "passed",
     "last_checked_at": "2026-07-23T08:29:51Z",
@@ -21,10 +21,8 @@
     }
   },
   "next_action": [
-    "CAMPAGNE ACTIVE : 2026-08-07-dettes-packs-residuelles, TOUJOURS OUVERTE.",
-    "PROCHAIN GESTE : LOT-01 — parcours E2E orientation → file d'envoi → envoi → déduplication, sur patient fictif et envoi de mail neutralisé.",
-    "La couverture actuelle de ce parcours est NULLE.",
-    "Question à trancher à l'ouverture du lot : asserter l'envoi du mail récapitulatif, ou s'arrêter à l'assignation créée (CAMPAGNE.md, « Questions ouvertes »).",
+    "CAMPAGNE ACTIVE : 2026-08-05-cloture-des-dettes-wellneuro-5-0, promue le 2026-08-07 à la clôture de 2026-08-07-dettes-packs-residuelles (ses deux lots livrés).",
+    "PROCHAIN GESTE : LOT-06 — notices psychométriques + exigences RGPD, puis LOT-07 (déclaration 5.0, qui exige de solder la PR #372).",
     "CAMPAGNE AGENDA ALIMENTAIRE : DÉBLOQUÉE, mais son LOT-06 reste gaté.",
     "Le prérequis technique est levé (0 ligne depuis le 2026-08-07 15:46) et WN_AGENDA_ALI est allumé en production depuis le 2026-08-05, pilote en cours sur le dossier de contrôle PAT006.",
     "LOT-06 (barème et indice) ne s'ouvre PAS pour autant : la campagne pose elle-même la porte des 21 jours (2026-08-04-agenda-alimentaire/CAMPAGNE.md:123 et :151, « pas avant un recueil suffisant pour calibrer (clôture des 21 jours) »).",
@@ -35,7 +33,8 @@
     "RÉSERVE À PORTER, SANS LOT OUVERT : un prérequis de runbook vérifié À L'ALLUMAGE n'est re-vérifié par RIEN ensuite — celui de WN_AGENDA_ALI était satisfait le 2026-08-05 et a été cassé le lendemain à 18:02 par une écriture sur le pack de base, sans aucune alerte, sur un pilote déjà lancé.",
     "AUCUN contrat SQL de web/prisma/checks/ n'assère « aucun pack actif ne référence un qid de IDS_SUSPENDUS » — c'est l'assertion qui aurait mordu.",
     "Piège de conception à ne pas redécouvrir : un tel contrat doit se lire DANS LA POSITION DU DRAPEAU DE SON ENVIRONNEMENT, sinon il rougit en CI sur un état sain en production.",
-    "AUTRES CAMPAGNES : 2026-08-05-cloture-des-dettes-wellneuro-5-0 — LOT-06 (notices psychométriques + exigences RGPD) puis LOT-07 (déclaration 5.0, qui exige de solder la PR #372).",
+    "COUVERTURE E2E DU PARCOURS D'ENVOI : acquise (PR #614), MAIS bornée — une règle (R-STR-01) vers une cible (Q_STR_05), et l'envoi du MAIL n'est pas asséré (SMTP_URL vide sur le banc). Ne pas lire ce spec comme une preuve du parcours entier.",
+    "PIÈGE DE BANC À NE PAS REDÉCOUVRIR : l'orientation exige DEUX gestes indépendants pour être jouable en test — armer WN_ENABLE_ORIENTATION_NNPP2 (fait dans playwright.config.ts) ET provisionner un rawAnswers, car scoresPourOrientation IGNORE le scoresJson stocké et aucune des 14 passations du seed n'en porte.",
     "QUESTION CLINIQUE OUVERTE : R2-SOM-05 propose Horne sans la porte RYTHME_BIOLOGIQUE de R2-SOM-03 — choix délibéré (deux versants suffisants, ce que D-031 admet) ou angle mort du LOT-02 ?",
     "Décision praticien.",
     "CINQ DETTES NOMMÉES SANS LOT D'ACCUEIL (D-032) : seed.ts:288-294 upsert update:{} no-op au message de succès faux ; questionnaire_packs.actif jamais relu par packRegistry.ts:89-123 ; aucune réactivation de pack depuis l'UI ; schema.prisma:155-156 cite le pack en capitales ; suture suggestedPackSelection morte.",
@@ -54,17 +53,12 @@
     "D-029"
   ],
   "last_session": null,
-  "updated_at": "2026-08-07T18:42:30Z",
+  "updated_at": "2026-08-07T19:24:13Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
       "active_lot": null,
       "status": "DÉBLOQUÉE le 2026-08-07 — le prérequis d'allumage du runbook (RUNBOOK-allumage-drapeau.md:44-53, « aucun pack ne référence Q_ALI_09 », attendu 0 ligne) est de nouveau SATISFAIT depuis 15:46 : le LOT-00 de 2026-08-07-dettes-packs-residuelles a retiré Q_ALI_09 du pack de base (packs.updated_at = 2026-08-07 15:46:34.011 ; la requête rendait 1 ligne depuis le 2026-08-06 18:02, elle en rend 0). Le drapeau WN_AGENDA_ALI est ALLUMÉ en production depuis le 2026-08-05 et le pilote tourne sur le dossier de contrôle PAT006 (RUNBOOK-allumage-drapeau.md:227-231). MAIS LOT-06 (barème et indice) NE S'OUVRE PAS POUR AUTANT : la campagne pose elle-même la porte — CAMPAGNE.md:123 et :151, « pas avant un recueil suffisant pour calibrer (clôture des 21 jours) ». LE RECUEIL EST ARRÊTÉ AU PREMIER JOUR : lecture du 2026-08-07, 2 journées seulement, TOUTES DEUX DATÉES DU 2026-08-05, sur 1 SEULE assignation. Rien n'a été noté depuis. C'est le point à porter — la campagne n'est plus bloquée par un prérequis technique, elle est en attente de données que personne ne saisit."
-    },
-    {
-      "campaign_id": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
-      "active_lot": "LOT-06",
-      "status": "active"
     }
   ]
 }

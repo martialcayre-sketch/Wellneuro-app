@@ -3047,3 +3047,23 @@ avertissement reste crédible.
 
 **Questions ouvertes.** PR #372 et trois campagnes figées, toujours en attente
 d'arbitrage praticien.
+## 2026-08-07 — Clôture de la campagne dettes-packs-résiduelles
+
+**Décisions.** Campagne close sur ses deux lots (LOT-00 #608, LOT-01 #614).
+**Pièce relue à la clôture, pas reprise** : lecture de production en fin de
+journée — « Base de consultation » actif à 5 qids, `updated_at` inchangé à 15:46,
+aucun pack ne référence `Q_ALI_09`. Activité primaire promue à
+`2026-08-05-cloture-des-dettes-wellneuro-5-0` (LOT-06). Les lignes closes
+quittent `next_action` pour ce handoff, convention de #613.
+
+**Options écartées.** Promouvoir la campagne agenda : elle n'attend pas un
+correctif mais des données que personne ne saisit. Réécrire les commentaires
+périmés de `playwright.config.ts` sur G4/G5 : hors périmètre, l'avertissement est
+posé à côté.
+
+**Prochaine action.** LOT-06 de la campagne promue — notices psychométriques et
+exigences RGPD.
+
+**Questions ouvertes.** Cinq dettes de packs sans lot d'accueil (D-032). Un
+prérequis de runbook n'est re-vérifié par rien après l'allumage — aucun contrat
+`web/prisma/checks/` ne l'assère.
