@@ -3023,3 +3023,27 @@ sortie de la file à l'écran : deux formulations ont laissé la mutation VERTE.
 
 **Questions ouvertes.** Le mail lui-même reste sans preuve E2E. Et le seed ne
 porte aucun `rawAnswers` : toute règle d'orientation est morte sur ses données.
+
+## 2026-08-07 — Clôture : cinq lots workflow, et un faux positif dans mon propre garde
+
+**Décisions.** Cinq PR mergées (#607, #609, #610, #612, #613) : clôture opposable
+dans `/wn-pr` et `/wn-merge`, sync `origin` dans `wn-cycle`, `.wn/state.json`
+rendu atomique puis débarrassé des champs qui se recalculent, `next_action`
+rendu fusionnable puis trié (−37 %), `CLAUDE.md` allégé de 26,7 % par sortie de
+la gouvernance PR/merge dans `docs/claude/REGLES_PR_MERGE.md`.
+
+**Découverte de fin de session.** Le « `main` local ahead 50 / behind 51 »
+signalé toute la journée est une **illusion du clone superficiel** : les 50
+commits sont les squash des PR #459→#518, tous mergés, et `.git/shallow`
+empêche git de calculer la base commune. Aucun travail en danger, rien à
+arbitrer — mais l'avertissement de sync posé au LOT-B crie donc à la divergence
+à tort sur tout clone superficiel.
+
+**Options écartées.** Réaligner le `main` local : sans objet, tout lot repart
+d'`origin/main` fraîchement fetché.
+
+**Prochaine action.** Faire détecter le shallow par `wn-cycle` pour que son
+avertissement reste crédible.
+
+**Questions ouvertes.** PR #372 et trois campagnes figées, toujours en attente
+d'arbitrage praticien.
