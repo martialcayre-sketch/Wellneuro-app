@@ -46,7 +46,12 @@ export const SORTIE_NON_FUSIONNABLE = 5;
 export const CONTEXTE_PAR_DEFAUT = 'verify';
 
 const DELAI_PAR_DEFAUT_S = 900;
+// Cadence adaptative : 20 s au départ (les échecs francs tombent tôt), puis
+// +15 s par tour jusqu'à 60 s une fois l'attente installée — un CI simplement
+// en cours ne mérite pas d'être sondé toutes les 20 s. CI de ~5 min :
+// ~8 lectures au lieu de 15 à cadence fixe.
 const INTERVALLE_S = 20;
+const INTERVALLE_MAX_S = 60;
 
 // GitHub considère un check obligatoire `SKIPPED` ou `NEUTRAL` comme satisfait.
 // On s'aligne plutôt que d'inventer une règle plus stricte que la protection
@@ -462,6 +467,8 @@ function collecter(numero) {
       etat: vue.state,
       mergeable: vue.mergeable,
       mergeStateStatus: vue.mergeStateStatus,
+      base: vue.baseRefName,
+      headRefOid: vue.headRefOid,
     },
     rollup: Array.isArray(vue.statusCheckRollup) ? vue.statusCheckRollup : [],
     delaiDepasse: false,
@@ -476,26 +483,37 @@ async function principal(argv) {
     console.error('Usage : node scripts/wn-attendre-ci.mjs <n° de PR> [--delai <secondes>]');
     return SORTIE_INDETERMINE;
   }
-  if (gh(['--version']) === null) {
-    console.error('gh est indisponible. Aucun verdict rendu.');
-    return SORTIE_INDETERMINE;
-  }
+  // Plus de sonde `gh --version` : si `gh` est absent ou muet, le premier
+  // `pr view` rend `pr: null` et le verdict sort en SORTIE_INDETERMINE avec un
+  // message qui couvre ce cas.
 
   const debut = Date.now();
   let dernierMessage = '';
+  let intervalle = INTERVALLE_S;
+  let tours = 0;
   for (;;) {
     const faits = collecter(numero);
     faits.delaiDepasse = (Date.now() - debut) / 1000 >= delai;
     const verdict = diagnostiquer(faits);
     if (!verdict.attendre) {
       console.log(verdict.message);
+      // Snapshot final : les outils enchaînés (ex. /wn-merge) le lisent au
+      // lieu de refaire un `gh pr view`.
+      if (faits.pr) {
+        console.log(
+          `SNAPSHOT PR#${faits.pr.numero} etat=${faits.pr.etat} mergeable=${faits.pr.mergeable} ` +
+            `mergeState=${faits.pr.mergeStateStatus} base=${faits.pr.base ?? '?'} head=${faits.pr.headRefOid ?? '?'}`,
+        );
+      }
       return verdict.sortie;
     }
     if (verdict.message !== dernierMessage) {
       console.log(verdict.message);
       dernierMessage = verdict.message;
     }
-    await dors(INTERVALLE_S);
+    tours += 1;
+    if (tours >= 2) intervalle = Math.min(INTERVALLE_MAX_S, intervalle + 15);
+    await dors(intervalle);
   }
 }
 
