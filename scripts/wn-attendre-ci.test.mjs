@@ -68,10 +68,12 @@ test('verify en échec : sortie 1, la conclusion est nommée', () => {
   assert.match(v.message, /Ne pas merger/);
 });
 
-// SURVIVANT — `ci.yml` se déclenche sur `push` ET `pull_request` : une PR issue
-// d'une branche `campaign/**` porte DEUX runs nommés `verify` (observé sur la
-// PR #528). Un `Map` construit par `.map()` gardait la DERNIÈRE entrée, c'est-à-
-// dire l'ordre du tableau — que l'API ne garantit pas.
+// SURVIVANT — jusqu'au 2026-08-07, `ci.yml` se déclenchait sur `push` ET
+// `pull_request` : une PR issue d'une branche `campaign/**` portait DEUX runs
+// nommés `verify` (observé sur la PR #528). Un `Map` construit par `.map()`
+// gardait la DERNIÈRE entrée, c'est-à-dire l'ordre du tableau — que l'API ne
+// garantit pas. Le déclencheur `push` est parti pour ces branches ; le garde
+// reste, rien ne garantissant l'unicité d'un nom dans le rollup.
 test('deux entrées « verify », une rouge une verte : sortie 1, jamais 0', () => {
   const rouge = { name: 'verify', status: 'COMPLETED', conclusion: 'FAILURE' };
   for (const rollup of [[rouge, VERIFY_VERT], [VERIFY_VERT, rouge]]) {
@@ -99,6 +101,87 @@ test('agregerParNom cumule les entrées homonymes au lieu de les écraser', () =
   );
   assert.equal(agg.get('verify').entrees.length, 2);
   assert.equal(agg.get('verify').aEchec, true);
+});
+
+// Depuis le bloc `concurrency` de `ci.yml` (2026-08-07), un run supplanté par
+// une poussée plus récente conclut en `CANCELLED`. Le classer en échec — le
+// comportement d'avant ce bloc — annonçait « ÉCHEC, lire le log » sur un run
+// qui n'a rien exécuté ; le classer vert est le défaut que ce script tue.
+test('agregerParNom : CANCELLED lève aAnnule, pas aEchec', () => {
+  const agg = agregerParNom([{ nom: 'verify', termine: true, conclusion: 'CANCELLED' }]);
+  assert.equal(agg.get('verify').aAnnule, true);
+  assert.equal(agg.get('verify').aEchec, false);
+});
+
+test('verify CANCELLED : on attend le run remplaçant — ni 0 ni 1', () => {
+  const annule = { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' };
+  const v = diagnostiquer(faits({ rollup: [...VERCEL, annule] }));
+  assert.equal(v.sortie, null);
+  assert.equal(v.attendre, true);
+  assert.match(v.message, /ANNULÉ/);
+});
+
+test('verify CANCELLED à l\'expiration : sortie 2, décrit comme annulé et non comme un échec', () => {
+  const annule = { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' };
+  const v = diagnostiquer(faits({ rollup: [...VERCEL, annule], delaiDepasse: true }));
+  assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
+  assert.notEqual(v.sortie, SORTIE_ECHEC);
+  assert.match(v.message, /ANNULÉ/);
+  assert.match(v.message, /n'a pas eu lieu/);
+  assert.doesNotMatch(v.message, /lire le log/i);
+});
+
+// ASYMÉTRIE VOULUE, à ne pas aligner sur le cas de l'échec. Un `verify` ROUGE
+// n'est pas couvert par un vert homonyme (test plus haut) : l'échec est une
+// information, quelque chose a cassé. Un ANNULÉ n'en est pas une — et le rollup
+// porte les checks du COMMIT DE TÊTE, donc un vert du même nom prouve que la
+// vérification a bien eu lieu sur ce commit-là. Sans cette règle, une PR
+// relancée après une annulation manuelle restait bloquée indéfiniment : aucune
+// relance ne la débloquait, seul un commit inutile.
+test('verify CANCELLED + verify vert : le vert du commit de tête couvre l\'annulé', () => {
+  const annule = { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' };
+  for (const rollup of [[annule, VERIFY_VERT], [VERIFY_VERT, annule]]) {
+    assert.equal(diagnostiquer(faits({ rollup })).sortie, SORTIE_VERT, `ordre ${JSON.stringify(rollup)}`);
+    assert.equal(diagnostiquer(faits({ rollup, delaiDepasse: true })).sortie, SORTIE_VERT);
+  }
+});
+
+// Le bloc `absents`, quinze lignes plus bas, ne temporise QUE si aucune cause
+// n'est diagnosticable. Le cas annulé posait la même question et y répondait
+// l'inverse : il attendait 900 s un run que le conflit empêche GitHub de créer,
+// puis rendait 2 sans jamais nommer le conflit.
+test('verify CANCELLED + PR en conflit : sortie 2 immédiate, la cause est nommée', () => {
+  const v = diagnostiquer(
+    faits({
+      rollup: [...VERCEL, { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' }],
+      pr: { numero: 550, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
+  assert.equal(v.attendre, false);
+  assert.match(v.message, /ANNULÉ/);
+  assert.match(v.message, /en CONFLIT avec sa base/);
+});
+
+test('verify FAILURE + CANCELLED : sortie 1 — l\'échec franc est plus actionnable', () => {
+  const v = diagnostiquer(
+    faits({
+      rollup: [
+        { name: 'verify', status: 'COMPLETED', conclusion: 'FAILURE' },
+        { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' },
+      ],
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_ECHEC);
+});
+
+test('verify CANCELLED + relance en cours : on attend, et à l\'expiration sortie 3', () => {
+  const rollup = [
+    { name: 'verify', status: 'COMPLETED', conclusion: 'CANCELLED' },
+    { name: 'verify', status: 'IN_PROGRESS', conclusion: null },
+  ];
+  assert.equal(diagnostiquer(faits({ rollup })).attendre, true);
+  assert.equal(diagnostiquer(faits({ rollup, delaiDepasse: true })).sortie, SORTIE_DELAI);
 });
 
 // LE CAS QUI A MOTIVÉ LE SCRIPT — PR #550, le 2026-08-03. Deux checks Vercel

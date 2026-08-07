@@ -411,15 +411,22 @@ fi
 step "Type-check"
 npm run type-check
 
-step "Tests unitaires (Vitest)"
-npm run test
+# Passe complète dans la position de PRODUCTION : `WN_ALI_01_SIIN57` est allumé
+# sur les trois environnements depuis le 2026-07-28, donc `Q_ALI_01` y prend sa
+# forme 57 items. C'est cette passe-là qui doit être entière — jusqu'au
+# 2026-08-07 la séquence rapide jouait la suite en position ÉTEINTE, celle que
+# la production n'utilise pas.
+step "Tests unitaires (Vitest, forme SIIN 57 items)"
+npm run test:siin57
 
 if [[ "$FAST" == 0 ]]; then
-  # Le CI rejoue toute la suite sous `WN_ALI_01_SIIN57=true` : `Q_ALI_01` y
-  # prend sa forme 57 items, celle du parc de production depuis le 2026-07-29.
-  # Deuxième contrôle que T1 avait et que ce palier n'avait pas.
-  step "Tests unitaires (Vitest, forme SIIN 57 items)"
-  npm run test:siin57
+  # Position éteinte, réduite aux seuls specs dont le verdict dépend de la
+  # position du drapeau — liste dans `test:court14` (web/package.json), gardée
+  # par `scripts/specs-drapeau-ali01.test.mjs` (rejoué plus haut par
+  # l'extraction de ci.yml). Les 352 autres y rendraient le verdict qu'ils
+  # viennent de rendre au-dessus.
+  step "Tests unitaires (Vitest, forme courte 14 items)"
+  npm run test:court14
 
   step "Lint"
   npm run lint

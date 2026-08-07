@@ -31,12 +31,12 @@
     "campaign-audit-check": "cd .. && node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields",
     "skills-check": "cd .. && node scripts/lib/skill-cross-invocation.mjs && node scripts/lib/skill-bang-cwd.mjs",
     "decisions-check": "cd .. && node scripts/lib/decisions-numerotation.mjs",
-    "bancs-outillage-check": "cd .. && node --test scripts/lib/skill-cross-invocation.test.mjs scripts/lib/skill-bang-cwd.test.mjs scripts/lib/decisions-numerotation.test.mjs scripts/wn-cycle.test.mjs scripts/wn-attendre-ci.test.mjs scripts/changelog-collate.test.mjs scripts/wn-campaign.test.mjs scripts/wn-etat-reel.test.mjs scripts/wn-matrice-consommation.test.mjs scripts/parite-check-ci.test.mjs scripts/release-db-invariants.test.mjs",
+    "bancs-outillage-check": "cd .. && node --test scripts/lib/skill-cross-invocation.test.mjs scripts/lib/skill-bang-cwd.test.mjs scripts/lib/decisions-numerotation.test.mjs scripts/wn-cycle.test.mjs scripts/wn-attendre-ci.test.mjs scripts/changelog-collate.test.mjs scripts/wn-campaign.test.mjs scripts/wn-etat-reel.test.mjs scripts/wn-matrice-consommation.test.mjs scripts/parite-check-ci.test.mjs scripts/release-db-invariants.test.mjs scripts/specs-drapeau-ali01.test.mjs scripts/ci-invariants.test.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:dot": "vitest run --reporter=dot",
-    "test:changed": "vitest run --changed origin/main --reporter=dot",
-    "check": "npm run type-check && npm run lint && npm run scoring-check && npm run test:siin57 && npm run test:changed && npm run secrets-check && npm run hooks-check && npm run compositions-check && npm run registry-check && npm run interventions-check && npm run certify-check && npm run campaign-audit-check && npm run skills-check && npm run decisions-check && npm run bancs-outillage-check && bash ../scripts/check_no_secrets.sh && bash ../scripts/check_no_secrets.sh --staged",
+    "test:changed": "WN_ALI_01_SIIN57=true vitest run --changed origin/main --reporter=dot",
+    "check": "npm run type-check && npm run lint && npm run scoring-check && npm run test:court14 && npm run test:changed && npm run secrets-check && npm run hooks-check && npm run compositions-check && npm run registry-check && npm run interventions-check && npm run certify-check && npm run campaign-audit-check && npm run skills-check && npm run decisions-check && npm run bancs-outillage-check && bash ../scripts/check_no_secrets.sh && bash ../scripts/check_no_secrets.sh --staged",
     "test:e2e": "playwright test",
     "test:worktree": "bash ../scripts/wn-test-worktree.sh",
     "backfill:pack-registry:dry-run": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --dry-run",
@@ -48,7 +48,8 @@
     "cb:nabm:apply": "node prisma/runWithAlias.js prisma/importNabm.ts --apply",
     "c5:ciqual:test-integration": "bash scripts/test-c5-ciqual-import.sh",
     "prompt-cache-check": "node prisma/runWithAlias.js scripts/prompt-cache-check.ts",
-    "test:siin57": "WN_ALI_01_SIIN57=true vitest run --reporter=dot"
+    "test:siin57": "WN_ALI_01_SIIN57=true vitest run --reporter=dot",
+    "test:court14": "vitest run --reporter=dot src/lib/axeNonMesure.guard.test.ts src/lib/equilibre/formeAlimentaireServie.guard.test.ts src/lib/equilibre/score.test.ts src/lib/equilibre/evidence.test.ts src/lib/scoring/reponsesLisibles.test.ts src/lib/clinical/orientationRulesV1.test.ts src/lib/passationVide.guard.test.ts src/lib/sousScoreNonMesure.guard.test.ts src/lib/bandesInterpretation.guard.test.ts src/lib/inversionsDeclarees.guard.test.ts src/lib/eligibilitePlancher.guard.test.ts src/lib/monotonieMoteurs.guard.test.ts src/lib/clinical/plancherOrientation.guard.test.ts src/lib/plancherGaranti.guard.test.ts src/lib/questionnaires-source-unique.test.ts src/app/api/praticien/synthese/conduite.guard.test.ts src/app/api/praticien/synthese/promptSousScores.guard.test.ts src/app/api/praticien/synthese/promptAlimentaire.guard.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.107.0",
