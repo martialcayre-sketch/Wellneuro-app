@@ -248,3 +248,51 @@ test('PR mergée avec le SESSION_LOG mais aucun fragment : fenêtre ratée', () 
   assert.equal(v.fenetreRatee, true);
   assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
 });
+
+// ── Sync origin : le verdict s'enrichit, il ne change jamais de code ─────────
+
+test('sans fait de sync : verdict inchangé, aucun avertissement', () => {
+  const v = diagnostiquer(faits());
+  assert.equal(v.sync, null);
+  assert.deepEqual(v.avertissements, []);
+});
+
+test('origin frais et aligné : sync présente, silencieuse', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 0, behind: 0 } }));
+  assert.equal(v.sync.desynchronise, false);
+  assert.deepEqual(v.avertissements, []);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('défaut local en retard sur origin : signalé, sans changer la sortie', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 0, behind: 51 } }));
+  assert.equal(v.sync.desynchronise, true);
+  assert.ok(v.avertissements.some((l) => l.includes('behind 51')));
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('défaut divergent (ahead ET behind) : signalé, la réconciliation reste humaine', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 50, behind: 51 } }));
+  assert.equal(v.sync.desynchronise, true);
+  assert.ok(v.avertissements.some((l) => l.includes('arbitrage humain')));
+});
+
+test('fetch échoué : hors-ligne signalé, le verdict de phase est rendu quand même', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: false, ahead: null, behind: null } }));
+  assert.equal(v.phase, 'travail');
+  assert.equal(v.sortie, SORTIE_OK);
+  assert.ok(v.avertissements.some((l) => l.includes('hors-ligne')));
+  assert.equal(v.sync.desynchronise, false);
+});
+
+test('fenêtre ratée et sync dégradée se cumulent sans se masquer', () => {
+  const v = diagnostiquer(
+    faits({
+      prMergee: { numero: 562, fichiers: [SESSION_LOG] },
+      sync: { fetchOk: true, ahead: 2, behind: 0 },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
+  assert.equal(v.sync.desynchronise, true);
+  assert.equal(v.avertissements.length, 1);
+});

@@ -63,6 +63,41 @@ export const SORTIE_FENETRE_RATEE = 1;
 export const SORTIE_PRECONDITION = 2;
 
 /**
+ * État de synchronisation avec `origin`, analysé à part de la phase : la sync
+ * s'ajoute au verdict, elle ne le remplace jamais. Deux invariants :
+ *
+ * - **Le verdict ne dépend pas du réseau.** Un fetch échoué (hors-ligne, proxy)
+ *   est signalé, pas fatal — sinon le script devient inutilisable sans réseau.
+ * - **Constat seulement, jamais de réconciliation.** Un `main` à la fois en
+ *   avance et en retard sur `origin/main` est une décision de fusion, pas une
+ *   sync : le script alerte, l'humain arbitre. Pas de `pull`, `merge` ni
+ *   `rebase` automatique ici.
+ */
+export function analyserSync(sync) {
+  if (!sync) return { sync: null, avertissements: [] };
+
+  const avertissements = [];
+  if (sync.fetchOk === false) {
+    avertissements.push(
+      "Fetch origin impossible (hors-ligne ?) — verdict rendu sur l'origin du dernier réseau.",
+    );
+  }
+
+  const ahead = sync.ahead ?? null;
+  const behind = sync.behind ?? null;
+  const desynchronise = (ahead ?? 0) > 0 || (behind ?? 0) > 0;
+  if (desynchronise) {
+    avertissements.push(
+      `La branche par défaut locale diverge d'origin (ahead ${ahead} / behind ${behind}) — ` +
+        "ne pas s'en servir comme base ; la base de comparaison reste origin. " +
+        'Réconcilier est un arbitrage humain, pas un geste automatique.',
+    );
+  }
+
+  return { sync: { ...sync, desynchronise }, avertissements };
+}
+
+/**
  * Déduit la phase du cycle et le geste suivant à partir de faits déjà collectés.
  *
  * @param {object} faits
@@ -74,10 +109,16 @@ export const SORTIE_PRECONDITION = 2;
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
+ * @param {{fetchOk: boolean, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
- *           fenetreRatee: boolean, suivant: string[], sortie: number}}
+ *           fenetreRatee: boolean, suivant: string[], sortie: number,
+ *           sync: object|null, avertissements: string[]}}
  */
 export function diagnostiquer(faits) {
+  return { ...diagnostiquerPhase(faits), ...analyserSync(faits.sync) };
+}
+
+function diagnostiquerPhase(faits) {
   const {
     dansUnDepot,
     branche,
@@ -261,6 +302,46 @@ function baseDeComparaison(defaut) {
 }
 
 /**
+ * Rafraîchit `origin/<defaut>` puis mesure l'écart local/distant. Le fetch est
+ * borné (15 s) et son échec n'est qu'un fait parmi d'autres : sans réseau, le
+ * verdict se rend sur l'origin du dernier réseau, et le dit. `fetch` seulement —
+ * jamais `pull`, `merge` ni `rebase` : un défaut divergent (ahead ET behind) est
+ * une décision de fusion qui ne se prend pas dans un script d'état.
+ */
+function synchroniserOrigin(defaut) {
+  let fetchOk = false;
+  try {
+    execFileSync('git', ['fetch', '--quiet', 'origin', defaut], {
+      cwd: RACINE,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 15_000,
+    });
+    fetchOk = true;
+  } catch {
+    fetchOk = false;
+  }
+
+  let ahead = null;
+  let behind = null;
+  if (
+    git(['rev-parse', '--verify', '--quiet', defaut]) &&
+    git(['rev-parse', '--verify', '--quiet', `origin/${defaut}`])
+  ) {
+    const brut = git(['rev-list', '--left-right', '--count', `${defaut}...origin/${defaut}`]);
+    if (brut) {
+      const [a, b] = brut.split(/\s+/).map(Number);
+      if (Number.isInteger(a) && Number.isInteger(b)) {
+        ahead = a;
+        behind = b;
+      }
+    }
+  }
+
+  return { fetchOk, ahead, behind };
+}
+
+/**
  * Preuve de merge sous squash. Reprise de `scripts/nettoyage-branches.sh` :
  * sous squash-merge aucun tip local n'est ancêtre de `main`, donc
  * `git branch --merged` ne détecte jamais rien. La preuve se prend au niveau de
@@ -306,6 +387,7 @@ function collecterFaits() {
   if (!git(['rev-parse', '--git-dir'])) return { dansUnDepot: false };
 
   const defaut = brancheParDefaut();
+  const sync = synchroniserOrigin(defaut);
   const branche = git(['rev-parse', '--abbrev-ref', 'HEAD']);
   const tip = git(['rev-parse', 'HEAD']);
   const base = baseDeComparaison(defaut);
@@ -338,6 +420,7 @@ function collecterFaits() {
     prOuverte,
     prMergee,
     ghDisponible,
+    sync,
   };
 }
 
@@ -405,6 +488,16 @@ function rendre(faits, verdict) {
         : 'inconnue (gh indisponible — verdict partiel)';
   out.push(`PR       ${pr}`);
 
+  if (verdict.sync) {
+    const s = verdict.sync;
+    const fraicheur = s.fetchOk ? 'origin rafraîchi' : 'origin NON rafraîchi (fetch échoué)';
+    const ecart =
+      s.ahead === null || s.behind === null
+        ? 'écart local/distant non mesurable'
+        : `${faits.brancheParDefaut} ahead ${s.ahead} / behind ${s.behind}`;
+    out.push(`sync     ${s.desynchronise ? '⚠ ' : ''}${fraicheur} — ${ecart}`);
+  }
+
   const verite = readCampaignTruth(RACINE);
   if (verite.activeCampaignId || verite.activeLot) {
     out.push(`lot      ${verite.activeCampaignId || '(campagne inconnue)'} / ${verite.activeLot || '(lot non fixé)'}`);
@@ -416,6 +509,11 @@ function rendre(faits, verdict) {
     out.push(`fait     ${marque(faits.fichiersDuLot.length > 0)} diff du lot (${faits.fichiersDuLot.length} fichier(s))`);
     out.push(`         ${marque(verdict.cloture.sessionLog)} SESSION_LOG.md`);
     out.push(`         ${marque(verdict.cloture.handoff)} fragment docs/claude/handoffs/`);
+  }
+
+  if (verdict.avertissements.length > 0) {
+    out.push('');
+    for (const ligne of verdict.avertissements) out.push(`⚠        ${ligne}`);
   }
 
   out.push('');
