@@ -9,8 +9,8 @@
   "active_lot": "LOT-04",
   "last_completed_lot": "2026-08-06-packs-personnalises/LOT-03 (#604)",
   "git": {
-    "branch": "main",
-    "last_commit": "7210df76",
+    "branch": "claude/wellneuro-workflow-tokens-5x6jyy",
+    "last_commit": "51f38e0",
     "dirty": true
   },
   "validation": {
@@ -29,9 +29,15 @@
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
-  "recent_decision_ids": [],
+  "recent_decision_ids": [
+    "D-031",
+    "D-030",
+    "D-029",
+    "D-028",
+    "D-027"
+  ],
   "last_session": null,
-  "updated_at": "2026-08-07T06:04:24Z",
+  "updated_at": "2026-08-07T10:50:33Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",

@@ -21,6 +21,7 @@
 // CLI, qui collecte ces faits avec git et `gh`.
 
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -98,6 +99,42 @@ export function analyserSync(sync) {
 }
 
 /**
+ * Dérive du pointage : `.wn/state.json` déclare une branche et un commit qui ne
+ * sont vrais qu'au moment où `--appliquer` les a écrits. Constaté le
+ * 2026-08-07 : un pointage `main`/`7210df76` pendant que le dépôt était sur une
+ * branche de lot à `63fcbc2`. Le signal reste un avertissement, jamais un
+ * blocage — en worktrees parallèles, le pointage ne peut pas être vrai partout
+ * à la fois ; ce qui compte est qu'il se voie au lieu de passer pour exact.
+ */
+export function analyserPointage(faits) {
+  const pointage = faits.pointage ?? null;
+  if (!pointage) return [];
+
+  const derives = [];
+  if (pointage.branch && faits.branche && pointage.branch !== faits.branche) {
+    derives.push(`branche pointée ${pointage.branch}, réelle ${faits.branche}`);
+  }
+  if (pointage.last_commit && faits.tipCourt && pointage.last_commit !== faits.tipCourt) {
+    derives.push(`commit pointé ${pointage.last_commit}, réel ${faits.tipCourt}`);
+  }
+  if (derives.length === 0) return [];
+
+  return [
+    `Pointage .wn/state.json périmé (${derives.join(' ; ')}) — resynchroniser : \`node scripts/wn-cycle.mjs --appliquer\`.`,
+  ];
+}
+
+/**
+ * Le registre `docs/DECISIONS.md` s'append en tête : les premières entrées
+ * `### D-NNN` sont les plus récentes. C'est la seule structure du fichier sur
+ * laquelle on s'appuie — le reste est de la prose humaine.
+ */
+export function extraireDecisionsRecentes(texte, limite = 5) {
+  if (!texte) return [];
+  return [...texte.matchAll(/^### (D-\d+)\b/gm)].map((m) => m[1]).slice(0, limite);
+}
+
+/**
  * Déduit la phase du cycle et le geste suivant à partir de faits déjà collectés.
  *
  * @param {object} faits
@@ -115,7 +152,9 @@ export function analyserSync(sync) {
  *           sync: object|null, avertissements: string[]}}
  */
 export function diagnostiquer(faits) {
-  return { ...diagnostiquerPhase(faits), ...analyserSync(faits.sync) };
+  const phase = diagnostiquerPhase(faits);
+  const { sync, avertissements } = analyserSync(faits.sync);
+  return { ...phase, sync, avertissements: [...avertissements, ...analyserPointage(faits)] };
 }
 
 function diagnostiquerPhase(faits) {
@@ -390,6 +429,7 @@ function collecterFaits() {
   const sync = synchroniserOrigin(defaut);
   const branche = git(['rev-parse', '--abbrev-ref', 'HEAD']);
   const tip = git(['rev-parse', 'HEAD']);
+  const tipCourt = git(['rev-parse', '--short', 'HEAD']);
   const base = baseDeComparaison(defaut);
 
   const diff = base && branche !== defaut ? git(['diff', '--name-only', `${base}...HEAD`]) : '';
@@ -421,6 +461,8 @@ function collecterFaits() {
     prMergee,
     ghDisponible,
     sync,
+    tipCourt,
+    pointage: readMachineState(RACINE).git ?? null,
   };
 }
 
@@ -445,8 +487,22 @@ function reparer(faits) {
     dirty: !faits.arbrePropre,
   };
   etat.updated_at = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  // `recent_decision_ids` était `[]` depuis sa création : personne ne le
+  // remplit à la main dans un commit de clôture. Le registre fait foi.
+  let decisions = [];
+  try {
+    decisions = extraireDecisionsRecentes(readFileSync(join(RACINE, 'docs', 'DECISIONS.md'), 'utf8'));
+  } catch {
+    decisions = [];
+  }
+  if (decisions.length > 0) etat.recent_decision_ids = decisions;
+
   writeMachineState(RACINE, etat);
   lignes.push('.wn/state.json      git.branch, git.last_commit, git.dirty, updated_at renseignés');
+  if (decisions.length > 0) {
+    lignes.push(`.wn/state.json      recent_decision_ids ← docs/DECISIONS.md (${decisions.join(', ')})`);
+  }
 
   // 2. La vue `ACTIVE_CAMPAIGN.md` est générée depuis `.wn/state.json` ; elle
   //    dérive dès que l'état bouge sans que personne ne relance la synchro.

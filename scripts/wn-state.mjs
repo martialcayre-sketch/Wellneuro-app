@@ -57,8 +57,17 @@ export function readMachineState(root = process.cwd()) {
 }
 
 export function writeMachineState(root = process.cwd(), nextState) {
-  fs.mkdirSync(resolvePath(root, [".wn"]), { recursive: true });
-  fs.writeFileSync(resolvePath(root, [".wn", "state.json"]), `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
+  const dir = resolvePath(root, [".wn"]);
+  fs.mkdirSync(dir, { recursive: true });
+  // Écriture atomique : deux sessions peuvent écrire l'état en même temps, et
+  // un write direct entrelacé laisse un JSON tronqué que readMachineState rend
+  // silencieusement comme `{}` — le pointage disparaît sans erreur. Le rename
+  // POSIX est atomique sur un même système de fichiers : la dernière écriture
+  // gagne entière, jamais un mélange des deux. Le nom temporaire porte le pid
+  // pour que deux écrivains ne partagent pas non plus leur fichier de travail.
+  const tmp = resolvePath(root, [".wn", `state.json.tmp-${process.pid}`]);
+  fs.writeFileSync(tmp, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
+  fs.renameSync(tmp, resolvePath(root, [".wn", "state.json"]));
 }
 
 export function readActiveCampaignView(root = process.cwd()) {
