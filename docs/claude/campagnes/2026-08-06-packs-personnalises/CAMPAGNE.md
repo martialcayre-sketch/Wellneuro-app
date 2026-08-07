@@ -41,6 +41,17 @@ l'orientation et l'UI dessus, puis retire les packs.
    `api/praticien/file-envoi/envoyer/route.test.ts`). **Aucune preuve E2E** ne
    couvre le parcours orientation → file d'envoi → envoi ; c'est le LOT-01 de la
    campagne `2026-08-07-dettes-packs-residuelles`.
+   **Amendement 2026-08-07** : une preuve E2E existe désormais —
+   `web/e2e/orientation-file-envoi.spec.ts` (LOT-01 de
+   `2026-08-07-dettes-packs-residuelles`), six assertions prouvées rouges par
+   mutation. Ce qu'elle couvre exactement, et rien de plus : **une** règle
+   (`R-STR-01`) vers **une** cible questionnaire (`Q_STR_05`), de la
+   recommandation à la création de l'assignation, la sortie du brouillon de la
+   file, et la déduplication lue à l'écran (`MESSAGE_DEJA_ASSIGNE`). Restent
+   NON couverts : l'envoi du mail lui-même (`SMTP_URL` est vide sur le banc,
+   `sendFileEnvoiEmail` journalise `Non_envoye`), le refus serveur 409
+   `deja_assigne`, le cas d'une cible pack, et la seconde clause de ce fait —
+   « plus aucun bouton d'assignation de pack » — qui reste unitaire.
 3. **Aucune règle d'orientation sans cible** : les 6 suggestions qui ciblaient un
    `packId` ont des cibles questionnaires, la table signée est re-signée (sha
    `547119c6…`, 23/23 claims VALIDE), et la perte de cible **par pack** est
@@ -165,7 +176,12 @@ d'inventaire.
       soft-delete s'est propagé). Fait 2 : **unitaire seulement**
       (`OrientationPanel.test.tsx`, `api/praticien/file-envoi/route.test.ts`,
       `.../envoyer/route.test.ts`) — pas de preuve E2E, et l'énoncé est restreint
-      au panneau d'orientation. Fait 3 : `orientationRulesV1.test.ts:463`
+      au panneau d'orientation. **Amendement 2026-08-07** : preuve E2E ajoutée
+      depuis, `web/e2e/orientation-file-envoi.spec.ts` (LOT-01,
+      `2026-08-07-dettes-packs-residuelles`) — **une** règle vers **une** cible
+      questionnaire, jusqu'à l'assignation créée et la déduplication ; l'envoi
+      du mail et la restriction « au panneau d'orientation » restent, elles,
+      sans preuve E2E. Fait 3 : `orientationRulesV1.test.ts:463`
       (invariant « aucune règle ne cible un pack », publiée ou non) + sha
       `547119c6…` épinglé — **restreint à la cible pack**, la branche
       questionnaire (`orientationEngine.ts:627`, `orientationService.ts:262-264`)

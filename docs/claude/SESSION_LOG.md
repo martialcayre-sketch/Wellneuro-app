@@ -3007,3 +3007,19 @@ fois, puisqu'elle a publié après le merge de #612 avec deux remarques fondées
 
 **Questions ouvertes.** Les quatre arbitrages restés dans `next_action` (PR #372,
 trois campagnes figées) : ce sont des décisions humaines, pas des faits clos.
+## 2026-08-07 — LOT-01 dettes-packs : la première preuve E2E du parcours d'envoi
+
+**Décisions.** LOT-01 `livré`. `web/e2e/orientation-file-envoi.spec.ts` joue six
+étapes, sept mutations rouges, référence verte d'abord. Le banc arme
+`WN_ENABLE_ORIENTATION_NNPP2` (posé en prod depuis le 2026-08-04) et force
+`SMTP_URL` vide. Revue adversariale : **NO-GO**, cinq constats, tous repris —
+dont un fait faux que j'avais écrit sur l'état de G4/G5 en production.
+
+**Options écartées.** `resetPortailState` pour le nettoyage : elle filtre sur
+`idAssignation: { not: null }` et n'aurait jamais nettoyé la fixture. Prouver la
+sortie de la file à l'écran : deux formulations ont laissé la mutation VERTE.
+
+**Prochaine action.** PR, puis clôture de la campagne (LOT-00 et LOT-01 livrés).
+
+**Questions ouvertes.** Le mail lui-même reste sans preuve E2E. Et le seed ne
+porte aucun `rawAnswers` : toute règle d'orientation est morte sur ses données.

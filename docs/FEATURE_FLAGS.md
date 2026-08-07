@@ -59,8 +59,12 @@ tous les environnements. Depuis la signature, **poser `WN_ENABLE_ORIENTATION_NNP
 suffit à ouvrir la route** — y compris là où la variable vaudrait déjà `1` sans
 que personne s'en souvienne. Vérifier les trois scopes Vercel (Production,
 Preview, Development) et les `.env.local` de poste avant de considérer la route
-comme fermée. Rien ne la pose côté dépôt (CI, Playwright, scripts) : le risque
-est entièrement côté Vercel et postes.
+comme fermée. **Depuis le 2026-08-07 (LOT-01, `orientation-file-envoi.spec.ts`),
+Playwright la pose** — `webServer.env` dans `web/playwright.config.ts` arme
+`WN_ENABLE_ORIENTATION_NNPP2=1`, délibérément, pour aligner le test sur l'état
+réel de production plutôt que de le simuler. Le risque de désalignement entre
+scopes Vercel (Production, Preview, Development) et `.env.local` de poste reste
+entier, lui, et rien côté CI ne le couvre.
 
 Débloquer ces deux-là = **valider le contenu clinique** (décision clinique,
 documentée au `CHANGELOG`), pas flipper un flag.

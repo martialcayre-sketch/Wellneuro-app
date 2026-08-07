@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Parcours E2E orientation → file d'envoi → envoi → déduplication"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
@@ -118,4 +118,41 @@ supposé.
 
 ## Résultats
 
-À compléter à la clôture du lot.
+**Livré le 2026-08-07** — `web/e2e/orientation-file-envoi.spec.ts`, un test
+enchaînant six étapes sur Sophie Nicola (`PAT_SEED_01`), vert en T3 sur les deux
+projets Playwright. Sept mutations, chacune restaurée, **précédées d'une passe de
+référence verte** — sans elle, un harnais cassé aurait rendu tout rouge et
+« prouvé » les sept maillons d'un coup :
+
+| Mutation | Assertion rougie |
+|---|---|
+| `orientationActive()` → `false` | `:76` la recommandation existe |
+| `onClick` du bouton d'ajout neutralisé | `:82` la bascule « déjà dans la file » |
+| brouillon créé avec `qids: []` | `:82` (même assertion) |
+| titre d'instrument retiré du rendu de la colonne | `:96` la ligne porte le titre |
+| `assignation.create` sauté | `:115` l'assignation est ouverte |
+| le brouillon reste `brouillon` au lieu de `parti` | `:142` la file ne le sert plus |
+| `dejaAssigne` forcé à `false` | `:155` `MESSAGE_DEJA_ASSIGNE` |
+
+### Trois faits que ce lot a établis, et qui coûtaient cher à redécouvrir
+
+1. **Le parcours était injouable en E2E, pour deux raisons indépendantes.**
+   `WN_ENABLE_ORIENTATION_NNPP2` n'était posé nulle part côté dépôt (la route
+   répondait `actif: false`), et le seed ne déclenche aucune règle :
+   `scoresPourOrientation` **ignore le `scoresJson` stocké** et recalcule depuis
+   `rawAnswers`, qu'aucune des 14 réponses seedées ne porte. Armer le drapeau
+   sans provisionner une réponse — ou l'inverse — ne rend toujours rien.
+2. **Sur la colonne file d'envoi, aucune assertion d'écran ne peut prouver une
+   absence.** `brouillons` part de `[]` : l'état vide s'affiche **pendant le
+   chargement**. `toHaveCount(0)` sur les lignes ET le message « La file est
+   vide » ont tous deux laissé la mutation VERTE. Le maillon se lit au GET.
+3. **Le spec exige la base éphémère seedée.** Contre la base de dev partagée, le
+   panneau rend sa recommandation et son bouton, puis l'ajout échoue sur
+   « Patient introuvable » — le POST filtre sur l'appartenance praticien.
+
+### Ce que ce spec ne prouve pas
+
+L'envoi du **mail** (`SMTP_URL` vide sur le banc, `sendFileEnvoiEmail` journalise
+`Non_envoye`), le refus serveur 409 `deja_assigne`, le cas d'une cible **pack**,
+le cas d'un patient sans email, et le nombre d'objets envoyés (`count` n'est pas
+asserté). Une règle (`R-STR-01`) vers une cible (`Q_STR_05`), pas la table.
