@@ -10,6 +10,7 @@ effort: medium
 !`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`git diff --stat`
 !`git log -n 5 --oneline`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`
 
 Arguments : `$ARGUMENTS`
 
@@ -24,6 +25,15 @@ Toujours :
 Sans `apply` : ne créer ni branche, ni commit, ni push, ni PR.
 
 Avec `apply` : branche et commit locaux autorisés. Le push, la création ou le merge d’une PR nécessitent encore une demande explicite claire.
+
+**La clôture est opposable, dès l'ouverture.** Le verdict de cycle chargé
+ci-dessus (`fait ✓/✗`) dit si `docs/claude/SESSION_LOG.md` et un fragment
+`docs/claude/handoffs/` sont dans le diff. L'un des deux manque → ne pas ouvrir
+la PR : `/wn-finish` puis `/wn-handoff write` d'abord, la PR ensuite. Ouvrir <!-- mention-seule: wn-finish, wn-handoff -->
+sans la clôture, c'est fabriquer la « fenêtre ratée » que `/wn-merge` refusera — <!-- mention-seule: wn-merge -->
+le squash fermera la fenêtre et coûtera une seconde PR de doc depuis `main`.
+(La PR de rattrapage d'une fenêtre déjà ratée porte la clôture par construction
+et passe donc ce contrôle.)
 
 **Modèle et réflexion selon le diff.** Si les fichiers du diff relèvent d'une
 classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration, <!-- mention-seule: wn-lot -->

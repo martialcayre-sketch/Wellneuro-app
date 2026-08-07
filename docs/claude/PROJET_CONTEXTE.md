@@ -169,7 +169,7 @@ biologie fonctionnelle** — 987 actes NABM en base depuis le 2026-07-26 et
 
 ## Ce qui reste ouvert (hors périmètre sauf demande explicite)
 
-- **R6** : stabilisation build/tests/go-no-go (`.claude/skills/wn-r6/SKILL.md` fait foi, tranché en R10) — gelé jusqu'à validation de R0.
+- **R6** : stabilisation build/tests/go-no-go (définition tranchée en R10, consignée dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` — le skill `wn-r6` qui la portait a été supprimé le 2026-08-07) — gelé jusqu'à validation de R0.
 - **R8** : filet de sécurité technique (CI GitHub Actions, tests unitaires vitest, tests Playwright commités) — piste indépendante, non bloquante.
 - Calendrier de décommission de `packs.qids` : statut « surveillance », pas de date fixée (R10).
 - Curation de `QuestionnaireDefinition.niveau` / `.publicCible` : statut « surveillance », pas d'usage applicatif à ce jour (R10).

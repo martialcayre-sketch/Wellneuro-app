@@ -389,6 +389,15 @@ Avant de répondre à la toute première demande de la session — démarrage ou
 
 **Une session = un worktree.** Avant d'écrire quoi que ce soit dans le dépôt, ouvrir son propre worktree (outil `EnterWorktree`, ou `git worktree add`). Plusieurs sessions peuvent travailler en parallèle, jamais dans la même copie : le 2026-07-20, deux sessions partageant le checkout principal ont produit une PR à deux périmètres et un commit atterri sur la branche d'une autre session. Ne jamais faire `git checkout` / `git switch` dans un worktree qu'une autre session utilise. `npm run test:worktree` est déjà conçu pour ce mode (ports et base éphémère dérivés du chemin du worktree). Détail : `docs/ROLES_MACHINES.md`.
 
+**Se baser sur `origin/main` fraîchement fetché, jamais sur le `main` local.** Le
+`main` local traîne derrière `origin` dès que les merges passent par GitHub, et un
+pointage pris sur lui est faux (constaté à ahead 50 / behind 51 le 2026-08-07).
+`node scripts/wn-cycle.mjs` fait désormais ce fetch lui-même — tolérant au
+hors-ligne, il le signale au lieu d'échouer — et affiche l'écart ahead/behind.
+`git fetch` seulement : jamais de `pull`, `merge` ou `rebase` automatique, un
+`main` divergent se réconcilie par arbitrage humain. (Règle locale, sans rapport
+avec `strict`, délibérément désactivé sur la protection de branche.)
+
 ## Fin de session
 
 Sur demande d'un "résumé de session" : produire un résumé (<150 mots) — décisions prises, options écartées et pourquoi, prochaine action prioritaire, questions ouvertes — puis l'ajouter directement (append, jamais d'écrasement) à la fin de `docs/claude/SESSION_LOG.md`, précédé d'un titre `## [date] — [sujet]`. Créer le fichier s'il n'existe pas. Ne pas demander de confirmation pour cet ajout : fichier de log interne au projet, sans donnée sensible.

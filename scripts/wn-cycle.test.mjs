@@ -16,6 +16,7 @@ import {
   cheminsDuPorcelain,
   diagnostiquer,
   estFragmentDeHandoff,
+  extraireDecisionsRecentes,
   SORTIE_OK,
   SORTIE_FENETRE_RATEE,
   SORTIE_PRECONDITION,
@@ -247,4 +248,114 @@ test('PR mergée avec le SESSION_LOG mais aucun fragment : fenêtre ratée', () 
   const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: [SESSION_LOG] } }));
   assert.equal(v.fenetreRatee, true);
   assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
+});
+
+// ── Sync origin : le verdict s'enrichit, il ne change jamais de code ─────────
+
+test('sans fait de sync : verdict inchangé, aucun avertissement', () => {
+  const v = diagnostiquer(faits());
+  assert.equal(v.sync, null);
+  assert.deepEqual(v.avertissements, []);
+});
+
+test('origin frais et aligné : sync présente, silencieuse', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 0, behind: 0 } }));
+  assert.equal(v.sync.desynchronise, false);
+  assert.deepEqual(v.avertissements, []);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('défaut local en retard sur origin : signalé, sans changer la sortie', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 0, behind: 51 } }));
+  assert.equal(v.sync.desynchronise, true);
+  assert.ok(v.avertissements.some((l) => l.includes('behind 51')));
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('défaut divergent (ahead ET behind) : signalé, la réconciliation reste humaine', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: true, ahead: 50, behind: 51 } }));
+  assert.equal(v.sync.desynchronise, true);
+  assert.ok(v.avertissements.some((l) => l.includes('arbitrage humain')));
+});
+
+test('fetch échoué : hors-ligne signalé, le verdict de phase est rendu quand même', () => {
+  const v = diagnostiquer(faits({ sync: { fetchOk: false, ahead: null, behind: null } }));
+  assert.equal(v.phase, 'travail');
+  assert.equal(v.sortie, SORTIE_OK);
+  assert.ok(v.avertissements.some((l) => l.includes('hors-ligne')));
+  assert.equal(v.sync.desynchronise, false);
+});
+
+test('fenêtre ratée et sync dégradée se cumulent sans se masquer', () => {
+  const v = diagnostiquer(
+    faits({
+      prMergee: { numero: 562, fichiers: [SESSION_LOG] },
+      sync: { fetchOk: true, ahead: 2, behind: 0 },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
+  assert.equal(v.sync.desynchronise, true);
+  assert.equal(v.avertissements.length, 1);
+});
+
+// ── Pointage : la dérive de .wn/state.json se voit, elle ne bloque pas ───────
+
+test('pointage conforme : aucun avertissement de dérive', () => {
+  const v = diagnostiquer(
+    faits({ tipCourt: 'abc1234', pointage: { branch: 'wn/lot-06', last_commit: 'abc1234', dirty: false } }),
+  );
+  assert.deepEqual(v.avertissements, []);
+});
+
+test('pointage sur une autre branche et un autre commit : périmé, signalé, sortie inchangée', () => {
+  const v = diagnostiquer(
+    faits({ tipCourt: '63fcbc2', pointage: { branch: 'main', last_commit: '7210df76', dirty: true } }),
+  );
+  assert.equal(v.sortie, SORTIE_OK);
+  assert.equal(v.avertissements.length, 1);
+  assert.ok(v.avertissements[0].includes('périmé'));
+  assert.ok(v.avertissements[0].includes('--appliquer'));
+});
+
+test('pointage absent (état vierge) : rien à signaler', () => {
+  const v = diagnostiquer(faits({ tipCourt: 'abc1234', pointage: null }));
+  assert.deepEqual(v.avertissements, []);
+});
+
+test('dérives de sync et de pointage se cumulent', () => {
+  const v = diagnostiquer(
+    faits({
+      sync: { fetchOk: true, ahead: 0, behind: 3 },
+      tipCourt: '63fcbc2',
+      pointage: { branch: 'main', last_commit: '7210df76', dirty: false },
+    }),
+  );
+  assert.equal(v.avertissements.length, 2);
+});
+
+// ── Décisions récentes : extraction depuis le registre append-en-tête ────────
+
+test('extraireDecisionsRecentes : les premières entrées du registre, dans leur ordre', () => {
+  const registre = [
+    '# Registre des décisions',
+    '## Décisions actives',
+    '### D-031 — Une porte posée par une règle',
+    'prose',
+    '### D-030 — Un seul pack actif',
+    '### D-029 — Autre',
+    '### D-028 — Autre',
+    '### D-027 — Autre',
+    '### D-026 — Autre',
+  ].join('\n');
+  assert.deepEqual(extraireDecisionsRecentes(registre), ['D-031', 'D-030', 'D-029', 'D-028', 'D-027']);
+});
+
+test('extraireDecisionsRecentes : un D-NNN cité dans la prose ne compte pas', () => {
+  const registre = '### D-031 — Titre\nvoir [[D-018]] et D-025 en réserve\n';
+  assert.deepEqual(extraireDecisionsRecentes(registre), ['D-031']);
+});
+
+test('extraireDecisionsRecentes : registre vide ou absent', () => {
+  assert.deepEqual(extraireDecisionsRecentes(''), []);
+  assert.deepEqual(extraireDecisionsRecentes(null), []);
 });

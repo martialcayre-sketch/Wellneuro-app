@@ -10,7 +10,8 @@ effort: medium
 ## Contexte
 
 !`gh pr view $ARGUMENTS --json number,title,headRefName,url,files 2>/dev/null || echo "Passer le numéro de PR en argument, ou se placer sur sa branche."`
-!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^### Attendre le CI d.une PR sans le sonder/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`
+!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^### Attendre le CI d.une PR/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
 !`cd "$(git rev-parse --show-toplevel)" && sed -n '/^## Revue, merge et suppression des branches/,/^## Définition de done pour une tâche standard/p' CLAUDE.md | sed '$d'`
 !`git worktree list 2>/dev/null || true`
 
@@ -42,7 +43,7 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
    poussant un commit sous le compte du dépôt.
 4. **Déduire le régime courant** du texte chargé ci-dessus :
    - la section « Période transitoire » y est toujours présente et décrit une
-     autorisation active → cycle complet possible (étapes 6-7) ;
+     autorisation active → cycle complet possible (étapes 7-8) ;
    - elle a été retirée ou remplacée → s'arrêter après l'étape 3, annoncer
      l'état du CI, laisser la revue et le merge à Copilot.
 5. **Exception migration ou authentification** — si le diff touche
@@ -56,11 +57,21 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
    de production (`execute_sql` MCP Supabase — jamais `psql`, jamais une
    commande Bash) après. Ces deux passes s'appliquent même en régime
    transitoire ; ne jamais les sauter sur ce périmètre.
-6. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
-   présence de `verify`, régime déduit, applicabilité de l'exception — puis la
-   commande exacte à lancer.
-7. **Avec `apply`**, et seulement si l'étape 4 autorise le cycle complet et
-   l'étape 5 est satisfaite si elle s'applique :
+6. **Clôture opposable — se lit dans les `files` de la PR, pas en local.** La
+   PR doit porter `docs/claude/SESSION_LOG.md` **et** un fragment
+   `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md` (le `README.md` du dossier ne
+   compte pas). L'un des deux manque → **ne pas merger, même CI vert** :
+   demander `/wn-finish` puis `/wn-handoff write`, poussés sur la branche de la <!-- mention-seule: wn-finish, wn-handoff -->
+   PR tant qu'elle est ouverte. Il n'y a pas de dérogation à accorder : la PR de
+   doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
+   précisément cette clôture, donc elle passe le contrôle par construction — et
+   c'est la seule forme acceptée de PR de rattrapage.
+7. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
+   présence de `verify`, régime déduit, applicabilité de l'exception, verdict de
+   clôture (étape 6) — puis la commande exacte à lancer.
+8. **Avec `apply`**, et seulement si l'étape 4 autorise le cycle complet, si
+   l'étape 5 est satisfaite quand elle s'applique, et si l'étape 6 est
+   satisfaite :
    ```bash
    gh pr merge <N> --squash --delete-branch
    ```
@@ -79,5 +90,7 @@ contourner.
    `CLAUDE.md` qui le justifie.
 3. Exception migration/auth : applicable ou non ; si oui, revue adversariale
    déjà faite ou restant à faire.
-4. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
+4. Clôture opposable : `SESSION_LOG.md` et fragment de handoff présents dans la
+   PR, ou merge refusé avec le geste de rattrapage.
+5. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.

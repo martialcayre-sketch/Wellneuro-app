@@ -21,6 +21,7 @@
 // CLI, qui collecte ces faits avec git et `gh`.
 
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -63,6 +64,77 @@ export const SORTIE_FENETRE_RATEE = 1;
 export const SORTIE_PRECONDITION = 2;
 
 /**
+ * État de synchronisation avec `origin`, analysé à part de la phase : la sync
+ * s'ajoute au verdict, elle ne le remplace jamais. Deux invariants :
+ *
+ * - **Le verdict ne dépend pas du réseau.** Un fetch échoué (hors-ligne, proxy)
+ *   est signalé, pas fatal — sinon le script devient inutilisable sans réseau.
+ * - **Constat seulement, jamais de réconciliation.** Un `main` à la fois en
+ *   avance et en retard sur `origin/main` est une décision de fusion, pas une
+ *   sync : le script alerte, l'humain arbitre. Pas de `pull`, `merge` ni
+ *   `rebase` automatique ici.
+ */
+export function analyserSync(sync) {
+  if (!sync) return { sync: null, avertissements: [] };
+
+  const avertissements = [];
+  if (sync.fetchOk === false) {
+    avertissements.push(
+      "Fetch origin impossible (hors-ligne ?) — verdict rendu sur l'origin du dernier réseau.",
+    );
+  }
+
+  const ahead = sync.ahead ?? null;
+  const behind = sync.behind ?? null;
+  const desynchronise = (ahead ?? 0) > 0 || (behind ?? 0) > 0;
+  if (desynchronise) {
+    avertissements.push(
+      `La branche par défaut locale diverge d'origin (ahead ${ahead} / behind ${behind}) — ` +
+        "ne pas s'en servir comme base ; la base de comparaison reste origin. " +
+        'Réconcilier est un arbitrage humain, pas un geste automatique.',
+    );
+  }
+
+  return { sync: { ...sync, desynchronise }, avertissements };
+}
+
+/**
+ * Dérive du pointage : `.wn/state.json` déclare une branche et un commit qui ne
+ * sont vrais qu'au moment où `--appliquer` les a écrits. Constaté le
+ * 2026-08-07 : un pointage `main`/`7210df76` pendant que le dépôt était sur une
+ * branche de lot à `63fcbc2`. Le signal reste un avertissement, jamais un
+ * blocage — en worktrees parallèles, le pointage ne peut pas être vrai partout
+ * à la fois ; ce qui compte est qu'il se voie au lieu de passer pour exact.
+ */
+export function analyserPointage(faits) {
+  const pointage = faits.pointage ?? null;
+  if (!pointage) return [];
+
+  const derives = [];
+  if (pointage.branch && faits.branche && pointage.branch !== faits.branche) {
+    derives.push(`branche pointée ${pointage.branch}, réelle ${faits.branche}`);
+  }
+  if (pointage.last_commit && faits.tipCourt && pointage.last_commit !== faits.tipCourt) {
+    derives.push(`commit pointé ${pointage.last_commit}, réel ${faits.tipCourt}`);
+  }
+  if (derives.length === 0) return [];
+
+  return [
+    `Pointage .wn/state.json périmé (${derives.join(' ; ')}) — resynchroniser : \`node scripts/wn-cycle.mjs --appliquer\`.`,
+  ];
+}
+
+/**
+ * Le registre `docs/DECISIONS.md` s'append en tête : les premières entrées
+ * `### D-NNN` sont les plus récentes. C'est la seule structure du fichier sur
+ * laquelle on s'appuie — le reste est de la prose humaine.
+ */
+export function extraireDecisionsRecentes(texte, limite = 5) {
+  if (!texte) return [];
+  return [...texte.matchAll(/^### (D-\d+)\b/gm)].map((m) => m[1]).slice(0, limite);
+}
+
+/**
  * Déduit la phase du cycle et le geste suivant à partir de faits déjà collectés.
  *
  * @param {object} faits
@@ -74,10 +146,18 @@ export const SORTIE_PRECONDITION = 2;
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
+ * @param {{fetchOk: boolean, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
- *           fenetreRatee: boolean, suivant: string[], sortie: number}}
+ *           fenetreRatee: boolean, suivant: string[], sortie: number,
+ *           sync: object|null, avertissements: string[]}}
  */
 export function diagnostiquer(faits) {
+  const phase = diagnostiquerPhase(faits);
+  const { sync, avertissements } = analyserSync(faits.sync);
+  return { ...phase, sync, avertissements: [...avertissements, ...analyserPointage(faits)] };
+}
+
+function diagnostiquerPhase(faits) {
   const {
     dansUnDepot,
     branche,
@@ -261,6 +341,46 @@ function baseDeComparaison(defaut) {
 }
 
 /**
+ * Rafraîchit `origin/<defaut>` puis mesure l'écart local/distant. Le fetch est
+ * borné (15 s) et son échec n'est qu'un fait parmi d'autres : sans réseau, le
+ * verdict se rend sur l'origin du dernier réseau, et le dit. `fetch` seulement —
+ * jamais `pull`, `merge` ni `rebase` : un défaut divergent (ahead ET behind) est
+ * une décision de fusion qui ne se prend pas dans un script d'état.
+ */
+function synchroniserOrigin(defaut) {
+  let fetchOk = false;
+  try {
+    execFileSync('git', ['fetch', '--quiet', 'origin', defaut], {
+      cwd: RACINE,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 15_000,
+    });
+    fetchOk = true;
+  } catch {
+    fetchOk = false;
+  }
+
+  let ahead = null;
+  let behind = null;
+  if (
+    git(['rev-parse', '--verify', '--quiet', defaut]) &&
+    git(['rev-parse', '--verify', '--quiet', `origin/${defaut}`])
+  ) {
+    const brut = git(['rev-list', '--left-right', '--count', `${defaut}...origin/${defaut}`]);
+    if (brut) {
+      const [a, b] = brut.split(/\s+/).map(Number);
+      if (Number.isInteger(a) && Number.isInteger(b)) {
+        ahead = a;
+        behind = b;
+      }
+    }
+  }
+
+  return { fetchOk, ahead, behind };
+}
+
+/**
  * Preuve de merge sous squash. Reprise de `scripts/nettoyage-branches.sh` :
  * sous squash-merge aucun tip local n'est ancêtre de `main`, donc
  * `git branch --merged` ne détecte jamais rien. La preuve se prend au niveau de
@@ -306,8 +426,10 @@ function collecterFaits() {
   if (!git(['rev-parse', '--git-dir'])) return { dansUnDepot: false };
 
   const defaut = brancheParDefaut();
+  const sync = synchroniserOrigin(defaut);
   const branche = git(['rev-parse', '--abbrev-ref', 'HEAD']);
   const tip = git(['rev-parse', 'HEAD']);
+  const tipCourt = git(['rev-parse', '--short', 'HEAD']);
   const base = baseDeComparaison(defaut);
 
   const diff = base && branche !== defaut ? git(['diff', '--name-only', `${base}...HEAD`]) : '';
@@ -338,6 +460,9 @@ function collecterFaits() {
     prOuverte,
     prMergee,
     ghDisponible,
+    sync,
+    tipCourt,
+    pointage: readMachineState(RACINE).git ?? null,
   };
 }
 
@@ -362,8 +487,22 @@ function reparer(faits) {
     dirty: !faits.arbrePropre,
   };
   etat.updated_at = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+  // `recent_decision_ids` était `[]` depuis sa création : personne ne le
+  // remplit à la main dans un commit de clôture. Le registre fait foi.
+  let decisions = [];
+  try {
+    decisions = extraireDecisionsRecentes(readFileSync(join(RACINE, 'docs', 'DECISIONS.md'), 'utf8'));
+  } catch {
+    decisions = [];
+  }
+  if (decisions.length > 0) etat.recent_decision_ids = decisions;
+
   writeMachineState(RACINE, etat);
   lignes.push('.wn/state.json      git.branch, git.last_commit, git.dirty, updated_at renseignés');
+  if (decisions.length > 0) {
+    lignes.push(`.wn/state.json      recent_decision_ids ← docs/DECISIONS.md (${decisions.join(', ')})`);
+  }
 
   // 2. La vue `ACTIVE_CAMPAIGN.md` est générée depuis `.wn/state.json` ; elle
   //    dérive dès que l'état bouge sans que personne ne relance la synchro.
@@ -405,6 +544,16 @@ function rendre(faits, verdict) {
         : 'inconnue (gh indisponible — verdict partiel)';
   out.push(`PR       ${pr}`);
 
+  if (verdict.sync) {
+    const s = verdict.sync;
+    const fraicheur = s.fetchOk ? 'origin rafraîchi' : 'origin NON rafraîchi (fetch échoué)';
+    const ecart =
+      s.ahead === null || s.behind === null
+        ? 'écart local/distant non mesurable'
+        : `${faits.brancheParDefaut} ahead ${s.ahead} / behind ${s.behind}`;
+    out.push(`sync     ${s.desynchronise ? '⚠ ' : ''}${fraicheur} — ${ecart}`);
+  }
+
   const verite = readCampaignTruth(RACINE);
   if (verite.activeCampaignId || verite.activeLot) {
     out.push(`lot      ${verite.activeCampaignId || '(campagne inconnue)'} / ${verite.activeLot || '(lot non fixé)'}`);
@@ -416,6 +565,11 @@ function rendre(faits, verdict) {
     out.push(`fait     ${marque(faits.fichiersDuLot.length > 0)} diff du lot (${faits.fichiersDuLot.length} fichier(s))`);
     out.push(`         ${marque(verdict.cloture.sessionLog)} SESSION_LOG.md`);
     out.push(`         ${marque(verdict.cloture.handoff)} fragment docs/claude/handoffs/`);
+  }
+
+  if (verdict.avertissements.length > 0) {
+    out.push('');
+    for (const ligne of verdict.avertissements) out.push(`⚠        ${ligne}`);
   }
 
   out.push('');
