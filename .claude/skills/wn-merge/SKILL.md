@@ -11,8 +11,7 @@ effort: medium
 
 !`gh pr view $ARGUMENTS --json number,title,headRefName,url,files 2>/dev/null || echo "Passer le numéro de PR en argument, ou se placer sur sa branche."`
 !`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`
-!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^### Attendre le CI d.une PR/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
-!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^## Revue, merge et suppression des branches/,/^## Définition de done pour une tâche standard/p' CLAUDE.md | sed '$d'`
+!`cd "$(git rev-parse --show-toplevel)" && cat docs/claude/REGLES_PR_MERGE.md`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
@@ -22,9 +21,10 @@ Arguments : `$ARGUMENTS`
 Reprend le cycle là où `/wn-pr` s'arrête : une PR déjà ouverte, dont il faut lire <!-- mention-seule: wn-pr -->
 le CI, décider si elle se merge, et nettoyer derrière. Le régime qui autorise
 (ou non) le merge côté assistant n'est jamais supposé : il se lit à chaque
-invocation dans le texte de gouvernance chargé ci-dessus, pas dans ce fichier —
-l'autorisation transitoire est bornée dans le temps et peut avoir été retirée de
-`CLAUDE.md` depuis la dernière session.
+invocation dans le texte de gouvernance chargé ci-dessus
+(`docs/claude/REGLES_PR_MERGE.md`), pas dans ce fichier — l'autorisation
+transitoire est bornée dans le temps et peut avoir été retirée depuis la
+dernière session.
 
 1. **Identifier la PR.** Numéro en argument, sinon déduit de la branche
    courante. Aucune PR trouvée → s'arrêter et le dire.
