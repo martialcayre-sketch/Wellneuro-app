@@ -57,17 +57,18 @@ function initDepotMinimal(etatMachine) {
   return racine;
 }
 
-test('état figé : branche de worktree morte, dirty périmé et validation trop vieille sont tous signalés', () => {
+test('état figé : la validation trop vieille est signalée ; le bloc git ne se compare plus', () => {
   const racine = initDepotMinimal({
     schema_version: 2,
     project: { id: 'wellneuro', name: 'Wellneuro' },
     status: 'idle',
     active_campaign: null,
     active_lot: null,
+    // Un bloc `git` résiduel d'un état ancien : il ne doit RIEN produire.
+    // Ces champs ne sont plus écrits depuis le 2026-08-07 — `dirty` était
+    // toujours faux (écrit avant le commit) et `branch` nommait souvent le
+    // worktree d'une autre session. Ce qui ne se stocke plus ne dérive plus.
     git: {
-      // Ce nom n'a jamais été checkouté dans ce dépôt de test : aucun
-      // `git worktree list` ne peut le porter, exactement le cas de
-      // `worktree-signature-table-orientation` qui a motivé ce script.
       branch: 'worktree-fantome-de-test',
       last_commit: 'abcdef1',
       dirty: true,
@@ -87,9 +88,9 @@ test('état figé : branche de worktree morte, dirty périmé et validation trop
   const rapport = construireRapport(racine);
 
   const parEchamp = Object.fromEntries(rapport.ecarts.map((e) => [e.champ, e]));
-  assert.equal(parEchamp['git.branch']?.verdict, 'mort');
-  assert.equal(parEchamp['git.dirty']?.verdict, 'périmé');
   assert.equal(parEchamp['validation.last_checked_at']?.verdict, 'périmé');
+  assert.equal(parEchamp['git.branch'], undefined, 'git.branch ne se compare plus');
+  assert.equal(parEchamp['git.dirty'], undefined, 'git.dirty ne se compare plus');
 
   // Les flags posés dans la fixture doivent être lus réellement, pas codés en
   // dur, et le motif élargi (C1) doit attraper autre chose que `WN_ENABLE_`.

@@ -250,29 +250,14 @@ export function collecterParcoursPatient(racine) {
 export function comparerEtat(etatMachine, reel) {
   const ecarts = [];
 
-  const brancheEnregistree = etatMachine?.git?.branch ?? null;
-  if (brancheEnregistree) {
-    const vivante = reel.worktreesVivants.some((w) => w.branche === brancheEnregistree);
-    if (!vivante) {
-      ecarts.push({
-        champ: 'git.branch',
-        valeurStockee: brancheEnregistree,
-        valeurReelle: 'aucun worktree vivant pour cette branche',
-        verdict: 'mort',
-      });
-    }
-  }
-
-  const dirtyEnregistre = etatMachine?.git?.dirty;
-  if (typeof dirtyEnregistre === 'boolean' && typeof reel.dirty === 'boolean' && dirtyEnregistre !== reel.dirty) {
-    ecarts.push({
-      champ: 'git.dirty',
-      valeurStockee: dirtyEnregistre,
-      valeurReelle: reel.dirty,
-      verdict: 'périmé',
-    });
-  }
-
+  // Les comparaisons `git.branch` et `git.dirty` ont disparu le 2026-08-07 avec
+  // les champs qu'elles lisaient. Elles ne pouvaient rien conclure de juste :
+  // `dirty` était écrit par `wn-cycle --appliquer` AVANT le commit, donc
+  // toujours `true` puis démenti par ce commit, et `branch` nommait la dernière
+  // session à avoir lancé la commande — souvent le worktree d'une autre. Un
+  // champ qui se recalcule en une commande ne se stocke pas, donc ne dérive
+  // pas, donc n'a rien à comparer. Reste ce qui est réellement conservé : la
+  // date de dernière validation.
   const derniereValidation = etatMachine?.validation?.last_checked_at ?? null;
   if (derniereValidation) {
     const date = new Date(derniereValidation);
