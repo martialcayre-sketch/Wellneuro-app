@@ -3,8 +3,8 @@ id: "2026-08-05-cloture-des-dettes-wellneuro-5-0"
 titre: "Clôture des dettes Wellneuro 5.0"
 statut: "en_cours"
 créée_le: "2026-08-05"
-mise_à_jour: "2026-08-06"
-lot_courant: "LOT-06"
+mise_à_jour: "2026-08-07"
+lot_courant: "LOT-07"
 branche_campagne: "campaign/2026-08-05-cloture-des-dettes-wellneuro-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -107,8 +107,13 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
   #566/#567 ? (tranché en LOT-05)
 - Le repli legacy des packs a-t-il déjà été emprunté en production ? Une lecture
   `execute_sql` le dit ; elle conditionne l'urgence de LOT-02.
-- Q_GEO_04 : l'escalade SIIN du 2026-07-25 reste sans réponse. Faut-il un plan B
-  (sourcer les bandes HAS 2011 directement) ou attendre ?
+- Q_GEO_04 : ~~l'escalade SIIN du 2026-07-25 reste sans réponse.~~ **Reformulée
+  au LOT-06 (2026-08-07)** : l'escalade existe et reste ouverte
+  (`web/src/lib/questionnaires/gerontologie.ts:49`, registre `Q_GEO_04`), mais
+  **aucune pièce datée n'en porte la démarche ni de relance**. L'instrument a par
+  ailleurs été arbitré le 2026-08-03 — verrou maintenu, catalogue inactif. La
+  question qui reste est donc : tracer la démarche et relancer, ou passer au
+  plan B (sourcer les bandes HAS 2011 directement) ? Elle ne bloque plus rien.
 
 ## Dépendances
 
@@ -138,7 +143,7 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 | LOT-03 | Fermer `sum_decimal`, `count_threshold`, `ecab` | livré (#583, 2026-08-05) | — |
 | LOT-04 | Un seul parcours patient | livré (#591, 2026-08-05) | LOT-01 |
 | LOT-05 | Matrice de consommation du savoir | livré (2026-08-05) | LOT-01 |
-| LOT-06 | Dettes psychométriques et exigences RGPD | à_faire | — |
+| LOT-06 | Dettes psychométriques et exigences RGPD | livré (2026-08-07) | — |
 | LOT-07 | Clôture : PR ouvertes soldées, déclaration 5.0 | à_faire | LOT-00…06 |
 
 ## Done de campagne

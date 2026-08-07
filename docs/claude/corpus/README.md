@@ -59,3 +59,26 @@ Deux propriétés à ne pas défaire :
 - **Les compteurs de claims sont un instantané daté** (`claims.mesureLe`), lu en
   production. Le garde ne les confronte pas à la base : le CI n'y a pas accès, et
   un compteur périmé ne doit pas rougir le CI.
+
+## COSMIN : inconnu, et pourquoi (LOT-06, 2026-08-07)
+
+Le champ `cosmin` d'`instrument_registry.json` vaut **`inconnu` pour les 65
+instruments** — aucun n'est gradé A, B ou C. Ce n'est ni un oubli ni une lacune
+à combler au fil de l'eau, et cela s'écrit une fois ici plutôt que soixante-cinq
+fois dans le registre.
+
+- **`inconnu` est la valeur par défaut du vocabulaire fermé** (`A|B|C|inconnu`),
+  et c'est la seule qui **n'affirme rien**. Un grade affirme la qualité
+  psychométrique d'un instrument ; l'écrire sans l'avoir établi serait le
+  défaut que la campagne de certification s'emploie précisément à éviter.
+- **Le champ n'est pas alimentable à la main.** Le banc
+  `scripts/lib/verifier_registre_instruments.js` refuse tout grade autre
+  qu'`inconnu` qui ne soit pas adossé à une **étude concordante** de
+  `measurement_evidence.json`, et refuse également une preuve graduée sans
+  grade. Renseigner COSMIN suppose donc d'ingérer d'abord les études de
+  validation — travail exclu de la campagne de clôture des dettes, qui ne
+  produit aucune nouvelle source de savoir.
+- **Conséquence à ne pas oublier** : « certifié » au sens de ce registre veut
+  dire *le code reproduit la règle enregistrée*. Cela ne dit rien de la qualité
+  psychométrique de l'instrument (#560). L'état COSMIN est la mesure de ce
+  silence, et il est assumé comme tel.

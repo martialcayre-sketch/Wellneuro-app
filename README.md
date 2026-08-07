@@ -92,6 +92,7 @@ Contrôle OAuth Google Cloud Console (production) :
 - Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
 - Historique des chantiers techniques (lots R0→R10) : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Roadmap produit (séries D/R/E) : `docs/ROADMAP_PRODUIT.md`
-- Sécurité RGPD : `docs/securite_rgpd.md`
+- Sécurité RGPD (hygiène du dépôt) : `docs/securite_rgpd.md`
+- Dossier RGPD de l'expérimentation (rubriques et trous datés) : `docs/DOSSIER_RGPD.md`
 - Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
