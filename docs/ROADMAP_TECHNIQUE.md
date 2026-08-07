@@ -180,6 +180,10 @@ Secrets uniquement en variables d'environnement (jamais en dur), garde-fous
 `scripts/check_no_secrets.sh`. Détail : `docs/securite_rgpd.md`,
 `docs/claude/REGLES_CRITIQUES.md`, `docs/PROCEDURE_VIOLATION_DONNEES.md`.
 
+Le **dossier RGPD de l'expérimentation** — responsable, finalité, catégories de
+données, sous-traitants, transferts, conservation, droits, et le tableau daté de
+ce qui manque — est `docs/DOSSIER_RGPD.md`. Il ne lève pas le gate G-TRUST-04.
+
 ## 10. Feature flags et quality gate
 
 Les gates vivent dans le code (`lib/*/featureFlag.ts`). Détail complet :
@@ -200,6 +204,7 @@ Les gates vivent dans le code (`lib/*/featureFlag.ts`). Détail complet :
 | Exploitation générale | `docs/RUNBOOK.md` |
 | Rôles des machines et sessions | `docs/ROLES_MACHINES.md` |
 | Sécurité et RGPD | `docs/securite_rgpd.md`, `docs/claude/REGLES_CRITIQUES.md` |
+| Dossier RGPD de l'expérimentation | `docs/DOSSIER_RGPD.md` |
 | Gouvernance questionnaires/scoring | `docs/gouvernance-questionnaires-scoring.md` |
 | Feature flags | `docs/FEATURE_FLAGS.md` |
 | Quality gate | `docs/QUALITY_GATE.md` |

@@ -211,16 +211,40 @@ base (RLS ou équivalent) si la garde applicative était un jour contournée.
    (migration #273, routes A/B #278, routes C/D au lot de clôture). Reste,
    pour que l'exigence 5 soit tenue pour satisfaite : la preuve fonctionnelle
    en production (requête GD-3 au premier dossier ouvert).
+   > Note (LOT-06, 2026-08-07) : ce résidu attend un **usage réel** — qu'un
+   > dossier soit effectivement ouvert en production — puis une vérification
+   > `execute_sql`. Ce n'est pas un chantier de code ou de documentation, et
+   > aucun lot ne peut le fermer à la place de cet usage.
 5. ~~Écrire la procédure de violation de données.~~ Fait le 2026-07-22
    (`docs/PROCEDURE_VIOLATION_DONNEES.md`), **exercée sur table le même jour**
    (#281, fiche 2026-EX1). Reste, pour que l'exigence 6 soit tenue pour
    satisfaite : la confirmation par un conseil qualifié (dette
    `DETTE_TRUST.md`) et le registre physique des violations (EX-3).
+   > Note (LOT-06, 2026-08-07) : la confirmation par un conseil qualifié est
+   > une **action externe en attente**, pas un chantier de code. Aucun conseil
+   > n'est nommément engagé à ce jour. Le registre physique des violations,
+   > lui, reste à ouvrir par le responsable.
 6. **Faire réaliser une revue de sécurité externe** (exigence 7).
+   > Note (LOT-06, 2026-08-07) : **action externe en attente** — engager un
+   > prestataire de revue de sécurité. Aucun prestataire n'est nommément engagé
+   > à ce jour, et aucun lot ne peut produire ce livrable.
 7. **Constituer le dossier RGPD de l'expérimentation** : base légale,
    information des participants, DPA signés avec chaque sous-traitant réel
    (Vercel, Supabase, Anthropic, SMTP, Google) — la liste est déjà établie en
    `GATES_GO_NO_GO.md:9`.
+   > Note (LOT-06, 2026-08-07) : **la partie documentaire est produite** —
+   > `docs/DOSSIER_RGPD.md` recense responsable, finalité, catégories de
+   > personnes et de données, destinataires, transferts, conservation, droits,
+   > mesures de sécurité et information des participants, chaque rubrique étant
+   > soit sourcée dans le dépôt, soit marquée comme trou avec porteur et
+   > échéance. **Ce qui reste est externe** : la qualification de la base légale
+   > par un conseil qualifié, l'AIPD, et la signature des DPA. Le dossier ne
+   > lève pas ce gate et ne s'y substitue pas.
+   > Trois trous y sont apparus à l'écriture, et méritent d'être vus d'ici :
+   > l'information délivrée **sur l'écart d'hébergement** n'est consignée nulle
+   > part (recommandation 1 de la décision du 2026-07-21) ; le **fournisseur
+   > SMTP réel** n'est toujours pas identifié ; **Sentry** est un sous-traitant
+   > de fait absent de la liste montrée aux personnes.
 
 ## Instruction de l'hébergement — établie le 2026-07-21
 

@@ -35,6 +35,7 @@ exemplaire :**
 | État du projet et contexte à jour | `docs/claude/PROJET_CONTEXTE.md` |
 | Décisions structurantes, avec date et conséquences | `docs/DECISIONS.md` |
 | Sécurité, RGPD, données de santé | `docs/securite_rgpd.md` |
+| Dossier RGPD de l'expérimentation, et ce qui y manque | `docs/DOSSIER_RGPD.md` |
 
 ## La règle qui garde ce fichier court
 

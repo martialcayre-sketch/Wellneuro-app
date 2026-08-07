@@ -3067,3 +3067,25 @@ exigences RGPD.
 **Questions ouvertes.** Cinq dettes de packs sans lot d'accueil (D-032). Un
 prérequis de runbook n'est re-vérifié par rien après l'allumage — aucun contrat
 `web/prisma/checks/` ne l'assère.
+
+## 2026-08-07 — LOT-06 : dossier RGPD et recadrage des dettes psychométriques
+
+**Décisions.** Le lot reposait sur six faits périmés ou faux ; les corriger fait
+partie du livrable. Périmètre retenu : recadrage **plus** production effective du
+dossier RGPD — seul trou réel, les exigences 5 et 6 ayant leur code livré depuis
+juillet. `docs/DOSSIER_RGPD.md` : quatorze rubriques, chacune sourcée dans le
+dépôt ou marquée TROU avec porteur et échéance (défaut 2026-10-21), aucune valeur
+juridique inventée. COSMIN assumé inconnu **une fois pour les 65 instruments**,
+dans `corpus/README.md` — toucher le JSON déclencherait build et E2E pour une
+phrase.
+
+**Options écartées.** Reprendre le brouillon du worktree `lot06-rgpd-recadrage`
+tel quel : son diff `CAMPAGNE.md` régressait LOT-04/LOT-05. Rédiger l'AIPD, ou
+trancher la contradiction DPO (G-TRUST-02 dit « pas de DPO », D-005 dit
+« confirmé par le DPO ») : exposées, pas résolues.
+
+**Prochaine action.** LOT-07 — clôture de campagne, PR #435 et #372 à solder.
+
+**Questions ouvertes.** Trois trous découverts à l'écriture et nommés nulle part
+avant : information sur l'écart d'hébergement non consignée, fournisseur SMTP non
+identifié, Sentry sous-traitant de fait non déclaré aux personnes.

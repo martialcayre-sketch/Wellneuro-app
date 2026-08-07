@@ -1,5 +1,11 @@
 # Sécurité et RGPD
 
+> **Ce fichier est une consigne d'hygiène du dépôt, pas un dossier RGPD.** Le
+> dossier RGPD de l'expérimentation — responsable, finalité, base légale,
+> catégories de données, sous-traitants, transferts, durées de conservation,
+> droits des personnes, et le tableau daté de ce qui manque — est
+> `docs/DOSSIER_RGPD.md`.
+
 ## Données interdites dans Git
 
 Ne jamais committer :
