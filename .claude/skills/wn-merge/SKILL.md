@@ -10,7 +10,6 @@ effort: medium
 ## Contexte
 
 !`gh pr view $ARGUMENTS --json number,title,headRefName,url,files 2>/dev/null || echo "Passer le numéro de PR en argument, ou se placer sur sa branche."`
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs 2>&1 || true`
 !`cd "$(git rev-parse --show-toplevel)" && cat docs/claude/REGLES_PR_MERGE.md`
 !`git worktree list 2>/dev/null || true`
 
@@ -29,7 +28,9 @@ dernière session.
 1. **Identifier la PR.** Numéro en argument, sinon déduit de la branche
    courante. Aucune PR trouvée → s'arrêter et le dire.
 2. **Attendre et lire le CI** — `node scripts/wn-attendre-ci.mjs <N>`, un seul
-   appel en tâche de fond ; jamais de `gh pr checks` répété en boucle.
+   appel en tâche de fond ; jamais de `gh pr checks` répété en boucle. Sa
+   dernière ligne `SNAPSHOT PR#…` (état, mergeable, base, SHA de tête) sert de
+   vue à jour : ne pas refaire un `gh pr view` derrière.
 3. **Le code de sortie décide, et `0` seul autorise la suite.** Le script
    vérifie que les checks obligatoires ont *réellement tourné*, pas seulement
    que rien n'est en attente — c'est ce que l'idiome remplacé ne savait pas
@@ -52,7 +53,7 @@ dernière session.
    **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
    session, `patients.access_token`), ou plus largement tout chemin touchant
    session/token : une revue adversariale indépendante — `Agent(subagent_type:
-   "wn-reviewer")`, prompt portant `think hard`/`think harder` — est obligatoire
+   "wn-reviewer")`, agent épinglé Opus/high — est obligatoire
    avant le merge si elle n'a pas déjà eu lieu, et une vérification de la base
    de production (`execute_sql` MCP Supabase — jamais `psql`, jamais une
    commande Bash) après. Ces deux passes s'appliquent même en régime

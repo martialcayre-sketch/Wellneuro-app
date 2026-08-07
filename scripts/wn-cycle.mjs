@@ -21,8 +21,8 @@
 // CLI, qui collecte ces faits avec git et `gh`.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { readCampaignTruth, readMachineState, writeMachineState } from './wn-state.mjs';
@@ -320,18 +320,42 @@ function baseDeComparaison(defaut) {
  * jamais `pull`, `merge` ni `rebase` : un défaut divergent (ahead ET behind) est
  * une décision de fusion qui ne se prend pas dans un script d'état.
  */
+const FETCH_TTL_S = 300;
+
+/**
+ * Un fetch de moins de FETCH_TTL_S secondes (mtime de `FETCH_HEAD`, lu dans le
+ * git-dir commun que les worktrees partagent) rend un nouveau fetch inutile :
+ * plusieurs outils enchaînés dans la même fenêtre (`/wn-pr` puis `/wn-merge`)
+ * refaisaient chacun le leur.
+ */
+function fetchRecent() {
+  const commun = git(['rev-parse', '--git-common-dir']);
+  if (!commun) return false;
+  const dossier = isAbsolute(commun) ? commun : join(RACINE, commun);
+  try {
+    const age = (Date.now() - statSync(join(dossier, 'FETCH_HEAD')).mtimeMs) / 1000;
+    return age >= 0 && age < FETCH_TTL_S;
+  } catch {
+    return false;
+  }
+}
+
 function synchroniserOrigin(defaut) {
   let fetchOk = false;
-  try {
-    execFileSync('git', ['fetch', '--quiet', 'origin', defaut], {
-      cwd: RACINE,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 15_000,
-    });
+  if (fetchRecent()) {
     fetchOk = true;
-  } catch {
-    fetchOk = false;
+  } else {
+    try {
+      execFileSync('git', ['fetch', '--quiet', 'origin', defaut], {
+        cwd: RACINE,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 15_000,
+      });
+      fetchOk = true;
+    } catch {
+      fetchOk = false;
+    }
   }
 
   let ahead = null;
@@ -415,20 +439,29 @@ function collecterFaits() {
   const porcelain = gitBrut(['status', '--porcelain', '--untracked-files=all']);
   const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(porcelain)])];
 
-  const ghDisponible = gh(['--version']) !== null;
+  // La disponibilité de `gh` se déduit du premier appel réel — plus de sonde
+  // `gh --version`. Un retour non-liste (binaire absent, non authentifié,
+  // sortie illisible) est « gh indisponible », jamais un faux « aucune PR ».
+  let ghDisponible = true;
   let prOuverte = null;
   let prMergee = null;
-  if (ghDisponible && branche && branche !== defaut) {
+  if (branche && branche !== defaut) {
     const ouvertes = jsonOuNull(gh(['pr', 'list', '--state', 'open', '--head', branche, '--json', 'number']));
-    if (Array.isArray(ouvertes) && ouvertes.length > 0) prOuverte = { numero: ouvertes[0].number };
-    if (!prOuverte && tip) prMergee = chercherPrMergee(branche, tip);
+    if (!Array.isArray(ouvertes)) {
+      ghDisponible = false;
+    } else {
+      if (ouvertes.length > 0) prOuverte = { numero: ouvertes[0].number };
+      if (!prOuverte && tip) prMergee = chercherPrMergee(branche, tip);
+    }
   }
 
   return {
     dansUnDepot: true,
     branche,
     brancheParDefaut: defaut,
-    arbrePropre: (git(['status', '--porcelain']) || '') === '',
+    // Dérivé du porcelain déjà lu : `--untracked-files=all` ne change jamais
+    // la vacuité de la sortie, seulement l'éclatement des répertoires.
+    arbrePropre: (porcelain || '') === '',
     fichiersDuLot,
     prOuverte,
     prMergee,

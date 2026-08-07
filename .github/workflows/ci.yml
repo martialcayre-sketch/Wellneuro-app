@@ -97,25 +97,13 @@ jobs:
           # Volontairement PAS `grep -qv` : le grep BSD (macOS) en rend un statut
           # faux, ce qui rendrait cette logique invérifiable en local même si
           # elle passe sous le grep GNU du runner. On matérialise la liste.
-          # La matrice de mapping des questionnaires est classée CODE : la
-          # certification scoring la vérifie contre le catalogue, et cette
-          # certification vit désormais sur le chemin code (elle transpile le
-          # TS du catalogue, donc a besoin de web/node_modules).
-          # Le REGISTRE DES INSTRUMENTS est classé CODE pour la même raison, et
-          # elle est plus tranchante encore : il vit sous `docs/` mais il fait
-          # autorité — statut de droits, barreau de certification, date de
-          # vérification. Une PR qui ne toucherait que lui obtenait `docs_only`,
-          # donc un `verify` vert SANS qu'aucun contrôle du registre ne s'exécute :
-          # les deux étapes qui le lisent (`Scoring certification`, `Registre des
-          # instruments`) sont toutes deux gatées. Deux merges de l'historique ont
-          # exactement cette forme, dont un qui éditait des statuts de droits.
-          # Relevé en revue adversariale le 2026-07-29, quand le retrait d'un banc
-          # ad hoc a laissé le fichier sans aucun filet.
-          # Le FICHIER DE PREUVES psychométriques (`measurement_evidence.json`)
-          # rejoint le registre pour exactement la même raison depuis le
-          # 2026-08-04 : il commande le barreau `psychometrie_revue`, donc il fait
-          # autorité, et il était classé « docs » alors que les deux mêmes étapes
-          # gatées sont les seules à le lire.
+          # Classés CODE bien que sous `docs/` : la matrice de mapping des
+          # questionnaires, le REGISTRE DES INSTRUMENTS et le fichier de preuves
+          # psychométriques (measurement_evidence.json). Ils font autorité et ne
+          # sont vérifiés que par des étapes gatées : les classer « docs »
+          # rendrait un `verify` vert sans qu'aucun contrôle ne tourne (deux
+          # merges de l'historique ont cette forme). Récit complet :
+          # docs/adr/2026-08-07-commentaires-workflows.md.
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
           mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
           registre="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/instrument_registry\.json$' || true)"

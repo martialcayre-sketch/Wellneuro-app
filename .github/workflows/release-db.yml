@@ -1,65 +1,26 @@
 name: Release DB
 
-# Applique les migrations Prisma et l'import de nomenclature NABM (CB-02a) sur la
-# BASE DE PRODUCTION, HORS du build applicatif Vercel. PROPOSÉ AUTOMATIQUEMENT dès
-# qu'une migration atterrit sur `main`, déclenchable à la main pour l'import NABM,
-# et dans les deux cas gaté par l'environnement protégé `release-db` (required
-# reviewers) : c'est un SECOND gate humain, en plus de la revue de PR qui a mergé
-# la migration. L'automatisation porte sur le DÉCLENCHEMENT, jamais sur
-# l'APPROBATION. L'environnement
-# porte un nom DÉDIÉ : `Production` existe déjà et appartient à l'intégration
-# Vercel (les noms d'environnement GitHub sont insensibles à la casse) — y attacher
-# des required reviewers gaterait les déploiements Vercel.
-#
-# POURQUOI CE WORKFLOW. Historiquement, web/scripts/vercel-build.sh appliquait les
-# migrations et les imports AU BUILD. Deux défauts en découlaient : un build
-# pouvait réussir en laissant la base « en retard » (MIGRATE_DATABASE_URL absente
-# → avertissement, pas échec) ; et le contrat post-import s'exécutait après le
-# COMMIT (« build rouge » ne voulait pas dire « rien écrit »). Ce workflow sort
-# l'écriture du build : le build redevient un pur `next build` sans effet de bord.
-#
-# `migrate deploy` n'invente jamais de SQL : il applique uniquement les migrations
-# committées (relues en PR). Le gate humain reste la revue de PR, doublée ici de
-# l'approbation d'environnement.
-#
-# PÉRIMÈTRE. Deux modes seulement : `migrate-only` et `import-cb`. L'import C5
-# CIQUAL n'est VOLONTAIREMENT PAS câblé ici — voir docs/DEPLOIEMENT_RELEASE_DB.md :
-# son garde repose sur `VERCEL_ENV=production`, qui ne tient pas hors Vercel ; le
-# brancher exigerait de le refaire à la manière du garde `--base` de NABM. C5 est
-# par ailleurs déjà importé (append-only, idempotent) et re-semé par dump côté
-# Scalingo (web/scripts/db-deploy.sh), donc sans besoin d'un chemin d'exécution.
-#
-# Runbook de déclenchement et étapes ops (secrets, environnement) :
-# docs/DEPLOIEMENT_RELEASE_DB.md.
+# Applique les migrations Prisma et l'import NABM (CB-02a) sur la BASE DE
+# PRODUCTION, HORS du build Vercel (le build est un pur `next build` sans effet
+# de bord). PROPOSÉ AUTOMATIQUEMENT dès qu'une migration atterrit sur `main`,
+# gaté par l'environnement protégé `release-db` (required reviewers) :
+# l'automatisation porte sur le DÉCLENCHEMENT, jamais sur l'APPROBATION.
+# Le nom d'environnement est DÉDIÉ — `Production` appartient à l'intégration
+# Vercel, y attacher des reviewers gaterait ses déploiements. Deux modes :
+# `migrate-only` et `import-cb` (l'import C5 CIQUAL n'est volontairement pas
+# câblé). Runbook : docs/DEPLOIEMENT_RELEASE_DB.md · historique et
+# raisonnements complets : docs/adr/2026-08-07-commentaires-workflows.md.
 
 on:
-  # DÉCLENCHEMENT AUTOMATIQUE — proposer la release, jamais l'approuver.
-  #
-  # Une migration qui atterrit sur `main` crée le run toute seule. Le gate humain
-  # n'est PAS contourné pour autant : le job porte `environment: release-db`, dont
-  # les required reviewers mettent le run en `waiting` au lieu de l'exécuter. Ce
-  # qui change n'est pas qui décide, c'est qui doit y penser — auparavant,
-  # personne ne le rappelait, et « rien ne détecte une release oubliée » était une
-  # question ouverte laissée par le lot qui a créé ce workflow.
-  #
-  # Le mode n'a pas à être dérivé : sur un événement `push`, le contexte `inputs`
-  # est vide, donc `inputs.mode == 'import-cb'` ne peut pas être vrai. Un
-  # déclenchement automatique EST un `migrate-only`.
-  #
-  # Ce raisonnement seul aurait suffi, et il n'est pas seul — même motif « deux
-  # clés » que le reste du fichier. Les trois étapes d'import portent AUSSI
-  # `github.event_name == 'workflow_dispatch'`, parce que la première clé repose
-  # sur une sémantique de plateforme (« `inputs` est vide hors dispatch ») que ce
-  # dépôt ne vérifie nulle part : aucun lint de workflow ne tourne en CI, et une
-  # erreur d'expression ici ne se révélerait qu'à l'exécution — c'est-à-dire avec
-  # une migration en attente. La seule chose qui ne doit JAMAIS partir toute seule
-  # est l'import NABM ; il ne dépend donc pas d'un raisonnement, même juste.
-  #
-  # Le filtre `paths` ne voit que les migrations : un push qui ne touche pas
-  # `web/prisma/migrations/**` ne crée aucun run, donc aucune approbation à donner
-  # pour rien. Corollaire à connaître : une migration introduite AUTREMENT que par
-  # un fichier de ce dossier n'est pas vue — il n'y en a pas d'autre chemin
-  # légitime, c'est précisément la doctrine « registre canonique ».
+  # DÉCLENCHEMENT AUTOMATIQUE — proposer la release, jamais l'approuver : le job
+  # porte `environment: release-db`, ses required reviewers mettent le run en
+  # `waiting`. Sur un événement `push`, `inputs` est vide → un déclenchement
+  # automatique EST un `migrate-only` ; les étapes d'import portent EN PLUS
+  # `github.event_name == 'workflow_dispatch'` (motif « deux clés » : l'import
+  # NABM ne doit jamais partir seul, il ne repose pas sur un seul raisonnement).
+  # Le filtre `paths` ne voit que `web/prisma/migrations/**`, seul chemin
+  # légitime d'une migration (doctrine « registre canonique »). Détail :
+  # docs/adr/2026-08-07-commentaires-workflows.md.
   push:
     branches: [main]
     paths:

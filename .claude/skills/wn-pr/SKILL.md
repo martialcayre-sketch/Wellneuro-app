@@ -35,12 +35,11 @@ le squash fermera la fenêtre et coûtera une seconde PR de doc depuis `main`.
 (La PR de rattrapage d'une fenêtre déjà ratée porte la clôture par construction
 et passe donc ce contrôle.)
 
-**Modèle et réflexion selon le diff.** Si les fichiers du diff relèvent d'une
-classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration, <!-- mention-seule: wn-lot -->
-Auth), rédiger la section « risques » via `Agent(subagent_type: "wn-reviewer")`
-avec le mot-clé `think hard`/`think harder` dans le prompt, plutôt qu'en
-session — la description d'une PR de migration mérite le même effort que sa
-revue.
+**Modèle selon le diff.** Si les fichiers du diff relèvent d'une classe à
+risque (scoring/clinique, Prisma/migration, auth), rédiger la section
+« risques » via `Agent(subagent_type: "wn-reviewer")` — agent épinglé
+Opus/high — plutôt qu'en session : la description d'une PR de migration mérite
+le même effort que sa revue.
 
 ## Attendre le CI sans le sonder en boucle
 
