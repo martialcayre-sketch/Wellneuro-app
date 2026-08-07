@@ -191,6 +191,22 @@ node scripts/wn-cycle.mjs --appliquer     # + resynchronise ACTIVE_CAMPAIGN.md e
 le CI le lançait, `npm run check` non, et une PR verte en local cassait en CI
 (LOT-01b). Un palier qui ne couvre pas ce que le CI vérifie ne protège de rien.
 
+**Une seule passe Vitest est complète, et c'est celle de la production.** Depuis
+le 2026-08-07, la suite entière tourne sous `WN_ALI_01_SIIN57=true`
+(`test:siin57`) — le drapeau est allumé sur les trois environnements, donc c'est
+la configuration réellement servie. La position éteinte (`test:court14`) est
+réduite aux 18 specs dont le verdict dépend du drapeau ; les autres y rendraient
+le verdict qu'ils viennent de rendre. Cette liste est gardée par
+`scripts/specs-drapeau-ali01.test.mjs`, qui refuse aussi qu'on restreigne la
+passe de production. Dire « T3 vert aux deux positions du drapeau » reste vrai —
+mais « la suite entière deux fois », non.
+
+**T1 ne joue plus de suite complète du tout** : il porte la liste restreinte et
+les specs du diff (`test:changed`, passé lui aussi en position production). La
+passe entière est à partir de T2 — `test:worktree`, y compris en `--fast`. Un
+palier plus court reste un palier plus étroit ; c'est T2 qu'il faut lancer avant
+de conclure qu'une suite est verte.
+
 Ne jamais relancer une suite pour en relire la sortie : rediriger une fois vers
 un fichier (`--reporter=dot`), puis relire ce fichier.
 
@@ -258,7 +274,7 @@ refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
 |---|---|---|
 | `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
 | `1` | un check obligatoire a échoué | lire le log, corriger |
-| `2` | un check obligatoire **n'a pas tourné** — absent, ou gelé en `action_required` | le script nomme **toutes** les causes applicables ; ne pas merger |
+| `2` | un check obligatoire **n'a pas tourné** — absent, gelé en `action_required`, ou run **annulé** (`concurrency`) sans remplaçant | le script nomme **toutes** les causes applicables ; ne pas merger |
 | `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
 | `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
 | `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
@@ -272,9 +288,13 @@ en silence sur `verify`.
 La liste des checks attendus vient de la **protection de branche** (`verify`
 aujourd'hui), pas d'une constante : un second check rendu obligatoire est suivi
 sans toucher au script. Ce qu'il ne fait pas : merger, ou dire s'il faut merger.
-Un même nom porté par **deux runs** (le cas des branches `campaign/**`, que
-`ci.yml` déclenche sur `push` *et* sur `pull_request`) n'est vert que si les
-deux le sont — le rouge ne se laisse pas écraser par l'ordre du tableau.
+Un même nom porté par **deux runs** n'est vert que si les deux le sont — le
+rouge ne se laisse pas écraser par l'ordre du tableau. (Le cas venait des
+branches `campaign/**`, que `ci.yml` déclenchait sur `push` *et* sur
+`pull_request` ; le déclencheur `push` y a été retiré le 2026-08-07, le garde
+reste.) Un run **annulé** — `CANCELLED`, la trace normale d'un run supplanté
+depuis le bloc `concurrency` de `ci.yml` — n'est ni vert ni un échec : le script
+attend le run du commit de tête, puis sort en `2`.
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).

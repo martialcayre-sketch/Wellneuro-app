@@ -1,14 +1,40 @@
 name: CI
 
+# `push` ne couvre plus `campaign/**/integration` depuis le 2026-08-07 : chaque
+# poussée sur une branche de campagne avec PR ouverte payait DEUX runs `verify`
+# de ~11 min, alors que la protection de branche n'exige que le check du run
+# `pull_request`. `push` sur `main` reste — c'est la vérification du commit
+# réellement fusionné, celle qui n'a pas de PR pour la porter.
+# Revers assumé : une branche de campagne SANS PR ouverte ne déclenche plus
+# rien. Le CI d'une campagne vit dans sa PR.
 on:
   push:
     branches:
       - main
-      - "campaign/**/integration"
   pull_request:
     branches:
       - main
       - "campaign/**/integration"
+
+# Un run de PR supplanté par une poussée plus récente n'a pas à finir : seul le
+# commit de tête compte, et `wn-attendre-ci.mjs` sait lire un run `CANCELLED`
+# sans le prendre pour un échec.
+# Sur `main`, le groupe porte `github.run_id` : chaque run y est donc SEUL dans
+# son groupe, et aucun n'annule aucun autre. `cancel-in-progress: false` ne
+# suffirait PAS à l'obtenir — à groupe partagé, GitHub sérialise les runs de
+# `main` et annule le run *pending* intermédiaire dès qu'un troisième arrive.
+# Trois merges dans une fenêtre de ~15 min sont ordinaires ici ; le commit du
+# milieu perdrait sa vérification, en silence et sans que personne la regarde
+# (`wn-attendre-ci.mjs` travaille sur des PR). Or `strict` est délibérément
+# désactivé sur la protection de `main` : le run `push` est la SEULE
+# vérification du résultat fusionné.
+# NE PAS copier `release-db.yml` par analogie : son `cancel-in-progress: false`
+# à groupe FIXE sérialise des ÉCRITURES sur la base de production — la seconde
+# release attend la première. Ici le groupe par ref DÉDOUBLONNE des vérifications
+# en lecture — la seconde tue la première. Raisons opposées.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.run_id || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
@@ -269,6 +295,23 @@ jobs:
       # jour où elle naît, pas six semaines plus tard.
       - name: Matrice de consommation du savoir (banc du générateur)
         run: node --test scripts/wn-matrice-consommation.test.mjs
+
+      # La passe Vitest en position ÉTEINTE (plus bas) ne joue plus la suite
+      # entière depuis le 2026-08-07, mais la liste de `test:court14`
+      # (web/package.json). Une liste écrite à la main dérive au premier spec
+      # ajouté ; ce banc DÉRIVE les candidats du code — marqueurs statiques de
+      # dépendance au drapeau — et exige que chacun soit dans la liste, ou dans
+      # une allowlist motivée. Il garde aussi que `test:siin57`, la position de
+      # PRODUCTION, reste une passe complète. Ni npm ni build : node suffit.
+      - name: Specs dépendant du drapeau Q_ALI_01 (banc anti-dérive)
+        run: node --test scripts/specs-drapeau-ali01.test.mjs
+
+      # Invariants de ce fichier même. Le bloc `concurrency` ci-dessus porte une
+      # règle qu'un commentaire ne suffit pas à tenir : sur `main`, deux runs ne
+      # doivent JAMAIS partager un groupe, sans quoi GitHub annule le run pending
+      # intermédiaire et un commit fusionné perd sa seule vérification.
+      - name: Invariants de ci.yml (déclencheurs, concurrency)
+        run: node --test scripts/ci-invariants.test.mjs
 
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
@@ -605,10 +648,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Unit tests (Vitest)
+      # Position ÉTEINTE du drapeau — celle que la PRODUCTION n'utilise pas
+      # (`WN_ALI_01_SIIN57` y est allumé sur les trois environnements depuis le
+      # 2026-07-28). Depuis le 2026-08-07 elle ne joue donc plus les 370 fichiers
+      # mais les seuls specs dont le verdict dépend de la position du drapeau :
+      # les 352 autres rendraient le même verdict qu'en position allumée, où la
+      # suite entière tourne juste en dessous. Liste dans `test:court14`
+      # (web/package.json), gardée par `scripts/specs-drapeau-ali01.test.mjs`.
+      - name: Unit tests (Vitest, forme courte 14 items)
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
-        run: npm run test
+        run: npm run test:court14
 
       # Seconde passe, drapeau `WN_ALI_01_SIIN57` allumé. Sans elle, les gardes
       # qui dérivent une valeur du barème servi (le `max` du besoin 1,
@@ -616,6 +666,10 @@ jobs:
       # 42 et la version à sa valeur courante passe inaperçu en position
       # éteinte, où le dérivé vaut justement la valeur figée. Falsifié : ces
       # deux mutations ne faisaient tomber aucun test avant cette étape.
+      # C'est ELLE qui reste la passe complète : le drapeau est allumé en
+      # production, donc la suite entière doit tourner dans cette position-là.
+      # Restreindre celle-ci plutôt que la précédente aurait réduit la couverture
+      # de la configuration RÉELLE à quelques specs — l'inverse de ce qu'on veut.
       - name: Unit tests (Vitest, forme SIIN 57 items)
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

@@ -52,10 +52,21 @@ const INTERVALLE_S = 20;
 // On s'aligne plutôt que d'inventer une règle plus stricte que la protection
 // elle-même, qui est ce qui décide réellement du merge.
 const CONCLUSIONS_VERTES = new Set(['SUCCESS', 'NEUTRAL', 'SKIPPED']);
+// La seule conclusion qui prouve qu'un job a EXÉCUTÉ quelque chose. Distincte
+// de `CONCLUSIONS_VERTES`, qui dit ce que la protection de branche accepte :
+// un `SKIPPED` satisfait le merge sans avoir rien vérifié.
+const CONCLUSION_REUSSIE = 'SUCCESS';
 // `ACTION_REQUIRED` n'est pas un échec : c'est un run GELÉ, qui n'a rien
 // exécuté. Le confondre avec un échec ferait chercher un bug inexistant ;
 // le confondre avec un succès est le défaut que ce script existe pour tuer.
 const CONCLUSION_GELEE = 'ACTION_REQUIRED';
+// `CANCELLED` n'est pas un échec d'exécution : depuis le bloc `concurrency` de
+// `ci.yml` (2026-08-07), c'est la trace NORMALE d'un run supplanté par une
+// poussée plus récente. Le classer en échec enverrait lire le log d'un run qui
+// n'a rien prouvé ; le classer vert annoncerait prête une PR jamais vérifiée.
+// On attend le run du nouveau commit de tête ; à l'expiration, le verdict est
+// « n'a pas tourné » — jamais un succès.
+const CONCLUSION_ANNULEE = 'CANCELLED';
 
 // Un conflit rend la PR non fusionnable QUEL QUE SOIT l'état des checks : le
 // vert porte alors sur un commit qui n'est pas le résultat de la fusion.
@@ -95,20 +106,24 @@ export function normaliserCheck(entree) {
  *
  * Un `Map` construit par `checks.map(...)` garderait la DERNIÈRE entrée d'un
  * nom, c'est-à-dire l'ordre du tableau — que l'API ne garantit pas. Ce n'est
- * pas théorique : `ci.yml` se déclenche sur `push` ET sur `pull_request`, donc
- * une PR issue d'une branche `campaign/**` porte DEUX runs nommés `verify`
- * (observé sur la PR #528). Un rouge suivi d'un vert se lisait « vert ».
+ * pas théorique : jusqu'au 2026-08-07, `ci.yml` se déclenchait sur `push` ET
+ * sur `pull_request`, donc une PR issue d'une branche `campaign/**` portait
+ * DEUX runs nommés `verify` (observé sur la PR #528) ; un rouge suivi d'un vert
+ * se lisait « vert ». Le déclencheur `push` a été retiré pour ces branches, le
+ * garde reste : rien ne garantit l'unicité d'un nom dans le rollup (relance,
+ * workflow homonyme, run annulé par `concurrency` doublé de son remplaçant).
  *
  * @param {Array} checks
- * @returns {Map<string, {nom: string, entrees: Array, aEchec: boolean, aGele: boolean, enCours: boolean}>}
+ * @returns {Map<string, {nom: string, entrees: Array, aEchec: boolean, aGele: boolean, aAnnule: boolean, enCours: boolean}>}
  */
 export function agregerParNom(checks) {
   const parNom = new Map();
   for (const c of checks) {
-    const agg = parNom.get(c.nom) ?? { nom: c.nom, entrees: [], aEchec: false, aGele: false, enCours: false };
+    const agg = parNom.get(c.nom) ?? { nom: c.nom, entrees: [], aEchec: false, aGele: false, aAnnule: false, enCours: false };
     agg.entrees.push(c);
     if (!c.termine) agg.enCours = true;
     else if (c.conclusion === CONCLUSION_GELEE) agg.aGele = true;
+    else if (c.conclusion === CONCLUSION_ANNULEE) agg.aAnnule = true;
     else if (!CONCLUSIONS_VERTES.has(c.conclusion)) agg.aEchec = true;
     parNom.set(c.nom, agg);
   }
@@ -209,6 +224,59 @@ export function diagnostiquer(faits) {
       message:
         `PR #${numero} : le check obligatoire « ${geles.map((a) => a.nom).join(', ')} » est en action_required — ` +
         `le run est GELÉ, il n'a rien exécuté. Ce n'est ni un succès ni un échec : la vérification n'a pas eu lieu.`,
+    };
+  }
+
+  // 2bis. Un check obligatoire a été ANNULÉ (`concurrency` : run supplanté par
+  // une poussée plus récente, ou annulation manuelle). S'il a une relance en
+  // cours, le bloc 3 la traite ; sinon on attend le run du nouveau commit de
+  // tête — et à l'expiration, le verdict est « n'a pas tourné », jamais un
+  // échec (le log n'apprendrait rien) ni un vert (rien n'a été vérifié).
+  //
+  // Deux réserves, chacune apprise d'un cas concret :
+  //
+  // · un run `SUCCESS` du même nom couvre l'annulé. Le rollup porte les checks
+  //   du commit de tête : si `verify` y a réussi, la vérification a bien eu
+  //   lieu, quel qu'ait été le sort d'une tentative précédente. C'est
+  //   l'asymétrie entre annulé et échoué — un échec est une information
+  //   (quelque chose a cassé, et un vert ne l'efface pas), une annulation n'en
+  //   est pas une. Sans cette réserve, une PR relancée après annulation
+  //   manuelle restait bloquée INDÉFINIMENT : aucune relance ne la débloquait,
+  //   le script conseillait de pousser un commit pour repayer un cycle entier.
+  //   `SUCCESS` SEUL, et non `CONCLUSIONS_VERTES` : `SKIPPED` y figure parce que
+  //   la protection de branche s'en satisfait, mais un job sauté n'a rien
+  //   exécuté — le laisser couvrir un annulé ferait dire « a réellement tourné »
+  //   d'une PR où justement rien n'a tourné ;
+  //
+  // · si une cause EMPÊCHE le run remplaçant d'exister (PR en conflit, branche
+  //   squashée), attendre ne sert à rien. Le bloc `absents` juste en dessous
+  //   raisonne déjà ainsi ; ne pas le faire ici créerait deux réponses
+  //   opposées à la même question dans le même fichier.
+  const annules = requis
+    .map((nom) => parNom.get(nom))
+    .filter(
+      (a) => a && a.aAnnule && !a.enCours && !a.entrees.some((e) => e.termine && e.conclusion === CONCLUSION_REUSSIE),
+    );
+  if (annules.length > 0) {
+    const noms = annules.map((a) => a.nom).join(', ');
+    const causes = causesDuCheckAbsent(faits);
+    if (causes.length === 0 && !faits.delaiDepasse) {
+      return {
+        sortie: null,
+        attendre: true,
+        message:
+          `PR #${numero} : le run de « ${noms} » a été ANNULÉ (probablement supplanté par une poussée ` +
+          `plus récente) ; on attend le run du commit de tête.`,
+      };
+    }
+    const detail = causes.length > 0 ? `\nCause(s) :${causes.map((c) => `\n  · ${c}`).join('')}` : '';
+    return {
+      sortie: SORTIE_N_A_PAS_TOURNE,
+      attendre: false,
+      message:
+        `PR #${numero} : le run du check obligatoire « ${noms} » a été ANNULÉ et aucun run ne l'a remplacé. ` +
+        `Ce n'est ni un succès ni un échec : la vérification n'a pas eu lieu. ` +
+        `Relancer le run, ou pousser un commit.${detail}`,
     };
   }
 
