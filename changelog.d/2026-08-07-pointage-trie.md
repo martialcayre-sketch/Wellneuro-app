@@ -14,7 +14,11 @@
   volontairement branché dans aucun skill — un appel coûte un `gh` et un
   balayage de `web/src`. Il n'était pas « sans appelant » comme annoncé la
   veille : c'est un outil à la main, par conception.
-- **« `dirty` était toujours faux » corrigé en trois endroits.** Dans un texte
-  qui parle d'un booléen nommé `dirty`, « faux » se lit comme la valeur, alors
-  que la valeur stockée était toujours `true` — et donc toujours inexacte.
-  Retour de la revue Copilot sur #612, publiée après son merge.
+- **« `dirty` était toujours faux » corrigé dans les deux commentaires de banc.**
+  Dans un texte qui parle d'un booléen nommé `dirty`, « faux » se lit comme la
+  valeur, alors que la valeur stockée était toujours `true` — et donc toujours
+  inexacte. Retour de la revue Copilot sur #612, publiée après son merge.
+  **L'entrée de journal du même jour n'est pas réécrite** : `SESSION_LOG.md` est
+  append-only, une entrée datée dit ce qui a été pensé ce jour-là et la
+  correction se consigne dans l'entrée suivante. Réserve soulevée par la revue
+  Copilot sur la présente PR.

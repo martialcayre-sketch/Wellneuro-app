@@ -2964,8 +2964,7 @@ seule ligne** à un tableau de 31 lignes découpé aux frontières de phrase
 (réversible au caractère près) : c'était lui, et non les champs `git.*`, le
 moteur des conflits — preuve faite, deux branches modifiant des passages
 différents conflictent dans l'ancienne forme et fusionnent dans la nouvelle. Le
-bloc `git` sort du fichier : `dirty` valait toujours `true` (écrit avant le
-commit, donc démenti par lui)
+bloc `git` sort du fichier : `dirty` était toujours faux (écrit avant le commit)
 et `branch` nommait souvent le worktree d'une autre session. `analyserPointage`,
 écrit le matin même, disparaît avec lui — sans stockage, pas de dérive.
 `wn-campaign.mjs` cesse de dupliquer l'écriture non atomique. `reparer()` est
@@ -2991,9 +2990,13 @@ réconcilier `git.*` » était sans objet depuis #612, mergée le même après-m
 `wn-etat-reel.mjs` est **gardé et documenté** dans les « Commandes utiles » :
 correction de ma formulation de la veille — il n'est pas orphelin, c'est un outil
 à la main par conception, et la frontière rapporter/réparer était déjà posée dans
-`PROJET_CONTEXTE.md:109`. Enfin « `dirty` était toujours faux » corrigé en trois
-endroits (un de plus que les deux signalés) : la valeur stockée était toujours
-`true`, donc toujours inexacte.
+`PROJET_CONTEXTE.md:109`. Enfin « `dirty` était toujours faux » corrigé dans les
+**deux commentaires de banc** (`wn-etat-reel.test.mjs`, `wn-cycle.test.mjs`) : la
+valeur stockée était toujours `true`, donc toujours inexacte. **L'entrée du
+2026-08-07 sur #612 garde sa formulation d'origine** : ce journal est append-only
+(règle de `CLAUDE.md`), donc une entrée datée ne se réécrit pas — la correction
+se consigne ici, dans l'entrée suivante. Réserve soulevée par la revue Copilot
+sur cette PR, et elle avait raison.
 
 **Options écartées.** Brancher `wn-etat-reel` dans un skill (coût `gh` + balayage
 de `web/src` à chaque appel) ; le supprimer (son banc est en CI, sa génération
