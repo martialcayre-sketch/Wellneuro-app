@@ -2918,10 +2918,11 @@ actif ne référence un qid de `IDS_SUSPENDUS` » : sans lot.
 `wn-cycle`, `.wn/state.json` atomique, retrait de `wn-r0..r6` ; puis `CLAUDE.md`
 de 26 722 à 19 586 o (−26,7 %), la gouvernance PR/merge sortie dans
 `docs/claude/REGLES_PR_MERGE.md` que `/wn-merge` charge par `cat`. Diagnostic
-consigné dans le handoff : une PR peut rester **sans run `verify`** quand sa
-branche a été supprimée puis recréée sous le même nom — GitHub réassocie
-l'ancienne suite de checks. Seul un nouveau SHA de tête en crée une neuve ; ni
-« ready », ni fermer/rouvrir.
+consigné dans le handoff : une PR peut rester **sans run `verify`** sans cause
+identifiable — l'explication d'abord retenue (branche recréée sous un nom déjà
+utilisé, suite de checks réassociée) est **réfutée par #610**, qui a reproduit
+les mêmes conditions et obtenu son run aussitôt. Ce qui tient : ni « ready » ni
+fermer/rouvrir ne créent une suite ; un nouveau SHA de tête, oui.
 
 **Options écartées.** Ajouter une étape de délégation aux skills qui portent
 déjà `context: fork` (cérémonie sans gain) ; compresser la gouvernance PR/merge

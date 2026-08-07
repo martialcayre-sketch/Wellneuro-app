@@ -31,24 +31,37 @@ succès alors que rien n'a tourné. Trois hypothèses écartées sur pièces :
 3. **PR en conflit** (cause nommée par la doc) — non : `git merge-tree
    --write-tree` rendait un arbre propre.
 
-**Cause réelle** : la branche `claude/wellneuro-workflow-tokens-5x6jyy` avait été
-supprimée après le merge de #607 puis **recréée sous le même nom**. GitHub a
-ré-associé l'ancienne suite de checks (celle de #607, SHA `22e67b5`) à la
-nouvelle PR au lieu d'en créer une. Ni le passage en « ready » (`ready_for_review`
-n'est pas un déclencheur par défaut de `pull_request`), ni un cycle
-fermer/rouvrir n'y changent rien : **seul un nouveau SHA de tête force une suite
-neuve**. Remède appliqué : fusion d'`origin/main` (propre, et `main` avait de
-toute façon avancé de `e878ec2`) → `verify` créé, vert en 11 min.
+**Cause : non établie — et l'hypothèse séduisante est fausse.** Sur le moment,
+l'explication retenue était que la branche, supprimée après le merge de #607
+puis **recréée sous le même nom**, avait fait ré-associer par GitHub l'ancienne
+suite de checks (celle de #607, SHA `22e67b5`) au lieu d'en créer une neuve.
+**La PR #610 réfute cette explication** : mêmes conditions exactement — branche
+supprimée après le merge de #609, recréée sous le même nom, PR neuve — et son
+run `verify` a été créé en quelques secondes. La panne était donc
+**transitoire**, côté création de run, pas une règle de GitHub qu'on pourrait
+anticiper.
+
+Ce qui reste vrai, et seul utile :
+
+- **Ni le passage en « ready », ni un cycle fermer/rouvrir ne créent une suite**
+  (`ready_for_review` n'est pas un déclencheur par défaut de `pull_request` ;
+  `reopened` l'est, et n'a pourtant rien produit).
+- **Un nouveau SHA de tête, si.** Remède appliqué : fusion d'`origin/main`
+  (propre, et `main` avait de toute façon avancé de `e878ec2`) → `verify` créé,
+  vert en 11 min.
+- **Un `verify` absent ne se contourne jamais** : c'est le code `2`, quel qu'en
+  soit le motif.
 
 ## Problèmes ouverts
 
 - **`main` local ahead 50 / behind 51.** Signalé à chaque `node
   scripts/wn-cycle.mjs` depuis #607, jamais résolu : personne d'autre que le
   praticien ne sait ce que valent ces 50 commits locaux. Lot séparé.
-- **`wn-attendre-ci.mjs` ne nomme pas la cause ci-dessus.** Il sort bien en `2`,
-  mais sa liste de causes (PR en conflit, branche squashée, commit de tête
-  Copilot) ignore la branche recréée sous un nom déjà utilisé. Candidat à un
-  petit lot : ajouter la cause et le remède (nouveau SHA de tête).
+- **`wn-attendre-ci.mjs` ne nomme pas le remède.** Il sort bien en `2` et liste
+  des causes (PR en conflit, branche squashée, commit de tête Copilot), mais
+  aucune ne couvre « aucun run n'a été créé, sans raison identifiable ». Candidat
+  à un petit lot : ajouter ce cas et son remède — pousser un nouveau SHA de tête
+  — plutôt qu'une cause qu'on ne sait pas diagnostiquer.
 - **Re-mesure de la consommation impossible depuis un conteneur distant** : les
   transcripts locaux ne portent pas les compteurs de tokens et l'historique est
   purgé. Nécessiterait un export console, geste humain.
