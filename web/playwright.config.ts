@@ -120,6 +120,21 @@ export default defineConfig({
     // en production — c'est ce que demande le NO-GO du registre.
     env: {
       ...process.env,
+      // Orientation NNPP2 (LOT-01, orientation-file-envoi.spec.ts) — ce
+      // drapeau est posé EN PRODUCTION depuis le 2026-08-04
+      // (docs/claude/SESSION_LOG.md). L'armer ici ALIGNE donc le banc sur la
+      // production, il ne simule pas une position qu'elle n'aurait pas.
+      // ATTENTION en lisant les commentaires voisins : plusieurs décrivent
+      // leur drapeau comme « éteint en production », et c'est PÉRIMÉ pour
+      // WN_G4_*/WN_G5_*, posés sur Vercel depuis le 2026-07-21/22 (voir leurs
+      // runbooks d'activation). Ce bloc dit ce que le BANC arme, jamais ce que
+      // Vercel porte. `orientationActive()`
+      // est fail-closed sur les DEUX bras d'un ET (ce drapeau, la signature
+      // praticien de la table de règles) : sans lui ici, la route
+      // `/api/praticien/orientation` répond systématiquement `actif: false`
+      // et le panneau ne rend aucune recommandation — le spec n'a rien à
+      // cliquer.
+      WN_ENABLE_ORIENTATION_NNPP2: '1',
       WN_G4_LIEN_MAGIQUE: 'true',
       WN_G4_REDEMANDE_PATIENT: 'true',
       // Gate G5 — entrée par Google (IDP2 LOT-03c). Même raison : allumé pour
@@ -147,6 +162,16 @@ export default defineConfig({
       // vide fait rendre `null` à `configurationGoogle()`.
       WN_GOOGLE_PATIENT_CLIENT_ID: '',
       WN_GOOGLE_PATIENT_CLIENT_SECRET: '',
+      // orientation-file-envoi.spec.ts (LOT-01) va jusqu'au clic « Envoyer »
+      // de la file d'envoi (`POST /api/praticien/file-envoi/envoyer`). Sans
+      // `SMTP_URL`, `sendFileEnvoiEmail` journalise `Non_envoye` et s'arrête —
+      // c'est l'état voulu ici. Même geste défensif que les deux lignes
+      // ci-dessus : le spread `...process.env` ferait sinon fuiter un vrai
+      // `SMTP_URL` de `web/.env.local` (nécessaire à `npm run dev` pour tester
+      // un envoi réel manuellement) et le test enverrait un mail réel vers une
+      // adresse `@fictif.wellneuro.fr`, sur les seuls postes où ce
+      // `.env.local` le configure.
+      SMTP_URL: '',
     } as Record<string, string>,
     // En mode start, exiger un port libre : réutiliser un serveur déjà lancé
     // risquerait de tester silencieusement un `next dev` (autre build, voire

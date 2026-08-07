@@ -155,6 +155,89 @@ export async function closePrisma(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Fixture « orientation → file d'envoi » (LOT-01, spec
+// `orientation-file-envoi.spec.ts`). Réservée à Sophie Nicola (PAT_SEED_01) —
+// c'est le patient de tous les specs praticien de fiche-trajectoire.
+//
+// `Q_STR_02` (PSS-10) est un moteur `sum` : `computeScoreFromDefBrut` calcule
+// le total par simple SOMME des dix items (les items « inversés » du PSS-10
+// portent déjà leurs valeurs retournées dans leur propre jeu d'options,
+// `O_PSS_INVERSE` — `sumItems` ne réinverse rien ici, son second argument est
+// un tableau vide en dur). Mettre chaque item à sa valeur maximale (5) suffit
+// donc à atteindre le total maximal (50), fermement dans la bande `danger`
+// (27-50) — prouvé par un test Vitest jetable avant d'écrire ce fichier :
+// `calculateScore('Q_STR_02', RAW_ANSWERS_Q_STR_02_DANGER)` rend
+// `{total: 50, interpretation: {color: 'danger', ...}}`. La règle exploitée,
+// `R-STR-01`, se déclenche sur toute zone `warning`/`danger`/`dark` : le choix
+// du maximum n'est pas arbitraire, il évite toute ambiguïté sur la borne.
+const RAW_ANSWERS_Q_STR_02_DANGER: Record<string, number> = {
+  P1: 5, P2: 5, P3: 5, P4: 5, P5: 5, P6: 5, P7: 5, P8: 5, P9: 5, P10: 5,
+};
+
+const ID_REPONSE_ORIENTATION_E2E_PREFIX = 'E2E_ORIENT_';
+
+/**
+ * Écrit une réponse `Q_STR_02` dont le `rawAnswers` recalcule en zone
+ * `danger` — ce que `scoresPourOrientation` exige pour ne pas rendre `null`
+ * (voir `orientationService.ts`, qui IGNORE tout `scoresJson.total` déjà
+ * stocké et recalcule depuis `rawAnswers`). Sans cette réponse, la règle
+ * `R-STR-01` ne peut mordre : aucune passation du seed ne porte de
+ * `rawAnswers`.
+ *
+ * `idAssignation: null` — comme les réponses historiques du seed — pour ne
+ * pas se faire happer par le filtre `idAssignation: { not: null } }` d'autres
+ * nettoyages (`resetPortailState`), qu'on n'utilise pas ici mais qu'on ne
+ * veut pas non plus perturber.
+ */
+export async function provisionnerReponseOrientation(idPatient: string): Promise<void> {
+  const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { email: true } });
+  if (!patient) throw new Error(`provisionnerReponseOrientation : patient introuvable (${idPatient})`);
+  await prisma.questionnaireReponse.create({
+    data: {
+      idReponse: `${ID_REPONSE_ORIENTATION_E2E_PREFIX}${idPatient}`,
+      idPatient,
+      emailPatient: patient.email,
+      idAssignation: null,
+      idQuestionnaire: 'Q_STR_02',
+      titre: 'Échelle de stress perçu (PSS-10)',
+      dateReponse: new Date(),
+      scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02_DANGER },
+    },
+  });
+}
+
+/**
+ * Nettoyage chirurgical, PAS `resetPortailState` — et la raison n'est pas
+ * celle qu'on croit. `resetPortailState` filtre ses réponses sur
+ * `idAssignation: { not: null }` : elle ne supprimerait donc JAMAIS la
+ * réponse posée ci-dessus, qui porte `idAssignation: null` comme le seed.
+ * Elle est inadaptée à cette fixture, pas dangereuse pour elle — la garder
+ * aurait laissé la passation `Q_STR_02` en place d'un run à l'autre.
+ * On ne touche qu'à ce que ce spec a pu produire, dans un ordre sûr
+ * vis-à-vis des clés étrangères :
+ *   1. l'assignation `Q_STR_05` que l'étape « envoyer » a pu créer — sans ce
+ *      nettoyage, une assignation ouverte laissée par un run précédent (ou
+ *      par le projet Desktop Chromium avant que le projet iPhone 13 ne
+ *      démarre) fait rendre `dejaAssigne: true` d'entrée, et le bouton
+ *      « Ajouter à la file d'envoi » n'existe plus à cliquer ;
+ *   2. le brouillon de file d'envoi de ce patient, RESTREINT au statut
+ *      `brouillon` — l'ajout de l'étape 2 du spec. Sans ce filtre, le
+ *      nettoyage emporterait aussi les brouillons `parti`, qui sont la trace
+ *      des envois passés : inerte sur base éphémère, une perte d'historique
+ *      silencieuse sur une base partagée. Toutes les lectures et écritures de
+ *      la file filtrent déjà sur `brouillon`, le filtre n'affaiblit rien ;
+ *   3. la réponse `Q_STR_02` fabriquée par `provisionnerReponseOrientation`,
+ *      reconnue par son préfixe d'identifiant.
+ */
+export async function nettoyerOrientationFileEnvoi(idPatient: string): Promise<void> {
+  await prisma.assignation.deleteMany({ where: { idPatient, idQuestionnaire: 'Q_STR_05' } });
+  await prisma.envoiBrouillon.deleteMany({ where: { idPatient, statut: 'brouillon' } });
+  await prisma.questionnaireReponse.deleteMany({
+    where: { idPatient, idReponse: { startsWith: ID_REPONSE_ORIENTATION_E2E_PREFIX } },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Fixture « bilan transmis » — une synthèse validée ET l'envoi réussi qui la
 // rend visible au patient. Les deux lignes comptent : la page « Mon bilan » ne
 // sert QUE ce que le praticien a transmis (`BookletEnvoi.statut = 'Envoye'`),

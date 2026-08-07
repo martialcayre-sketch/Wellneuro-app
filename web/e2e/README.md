@@ -80,6 +80,21 @@ profils (Desktop Chromium + iPhone 13) :
 - Si `fiche-trajectoire:12` timeout, purger `web/.next` avant de relancer — un
   artefact de build périmé peut faire échouer spécifiquement ce test, sans
   rapport avec le code qu'il vérifie.
+- `playwright.config.ts` arme plusieurs drapeaux dans `webServer.env` pour que
+  le serveur de test les voie. **Ce bloc ne dit RIEN de l'état de Vercel, et ses
+  commentaires historiques s'y trompent** : plusieurs présentent `WN_G4_*` et
+  `WN_G5_*` comme éteints en production alors qu'ils y sont posés depuis le
+  2026-07-21/22 (`ACTIVATION_RUNBOOK_G4.md`, `ACTIVATION_RUNBOOK_G5.md`, et la
+  correction explicite de `docs/claude/SESSION_LOG.md`, entrée « Corrigé de mon
+  propre cadrage »). La position réelle d'un drapeau se lit dans
+  `docs/FEATURE_FLAGS.md` et son runbook, jamais ici.
+  Ce qui est vrai des deux drapeaux mesurés en armant ce banc :
+  `WN_ENABLE_ORIENTATION_NNPP2` (depuis le 2026-08-04) et `WN_AGENDA_ALI`
+  (depuis le 2026-08-05) sont posés en production, donc les armer ici ALIGNE le
+  test sur l'état réel. Sans `WN_ENABLE_ORIENTATION_NNPP2`,
+  `orientation-file-envoi.spec.ts` n'a rien à cliquer : la route
+  `/api/praticien/orientation` est fail-closed et ne rend jamais de
+  recommandation.
 
 ## Exécution depuis un worktree git
 
