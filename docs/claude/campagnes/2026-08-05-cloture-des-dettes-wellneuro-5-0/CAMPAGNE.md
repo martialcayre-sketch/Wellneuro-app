@@ -1,10 +1,10 @@
 ---
 id: "2026-08-05-cloture-des-dettes-wellneuro-5-0"
 titre: "Clôture des dettes Wellneuro 5.0"
-statut: "en_cours"
+statut: "terminé (2026-08-08)"
 créée_le: "2026-08-05"
-mise_à_jour: "2026-08-07"
-lot_courant: "LOT-07"
+mise_à_jour: "2026-08-08"
+lot_courant: "aucun"
 branche_campagne: "campaign/2026-08-05-cloture-des-dettes-wellneuro-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -142,19 +142,25 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 | LOT-02 | Packs : observer le repli legacy avant de le fermer | livré (#581, 2026-08-05) | LOT-01 |
 | LOT-03 | Fermer `sum_decimal`, `count_threshold`, `ecab` | livré (#583, 2026-08-05) | — |
 | LOT-04 | Un seul parcours patient | livré (#591, 2026-08-05) | LOT-01 |
-| LOT-05 | Matrice de consommation du savoir | livré (2026-08-05) | LOT-01 |
-| LOT-06 | Dettes psychométriques et exigences RGPD | livré (2026-08-07) | — |
-| LOT-07 | Clôture : PR ouvertes soldées, déclaration 5.0 | à_faire | LOT-00…06 |
+| LOT-05 | Matrice de consommation du savoir | livré (#593, 2026-08-05) | LOT-01 |
+| LOT-06 | Dettes psychométriques et exigences RGPD | livré (#617, 2026-08-07) | — |
+| LOT-07 | Clôture : PR ouvertes soldées, déclaration 5.0 | livré (2026-08-08) | LOT-00…06 |
 
 ## Done de campagne
 
-- [ ] Un seul chemin d'écriture en base, gaté par environnement protégé.
-- [ ] `.wn/state.json` régénéré par script, plus maintenu à la main.
-- [ ] Le repli legacy des packs est observé ; sa fréquence réelle est connue.
-- [ ] Les trois moteurs de scoring ouverts sont fermés, avec tests de mutation.
-- [ ] Le parcours patient legacy est daté pour retrait, ou retiré.
-- [ ] La matrice de consommation existe et est générée.
-- [ ] Aucune PR ouverte non justifiée (#435, #372 soldées).
-- [ ] Les validations T1/T2/T3 sont documentées.
-- [ ] La documentation canonique est à jour.
-- [ ] Le handoff final est produit.
+Cochées à la clôture, **et seulement sur preuve relue** — le détail dette par
+dette est dans `DECLARATION_5_0.md`.
+
+- [x] Un seul chemin d'écriture en base, gaté par environnement protégé — `vercel-build.sh` réduit à `prisma:generate` + `next build` ; `release-db.yml` porte `environment: release-db`.
+- [x] `.wn/state.json` régénéré par script, plus maintenu à la main — `wn-cycle.mjs --appliquer`, plus le bloc `git` retiré au #612.
+- [x] Le repli legacy des packs est observé ; sa fréquence réelle est connue — 8 packs, 1 en dérive.
+- [x] Les trois moteurs de scoring ouverts sont fermés — gates en place, 19 cas de test. **Réserve** : la passe de mutation est manuelle et non reproductible (aucun Stryker au dépôt).
+- [ ] **Non satisfaite** — le parcours patient legacy est inatteignable, mais **aucune date de retrait n'existe** : la date inscrite est celle de la décision. Le critère du LOT-04 est coché à tort.
+- [x] La matrice de consommation existe et est générée — script rejoué et sortie rediffée à la clôture.
+- [x] Aucune PR ouverte non justifiée — #435 mergée, #372 fermée sans merger au LOT-07, #618 mergée le 2026-08-08.
+- [x] Les validations T1/T2/T3 sont documentées — chaque lot documente son palier ; T3 complet rejoué à la clôture (122 E2E, séquence CI entière en 2 min 08).
+- [ ] **Partielle** — la documentation canonique est à jour sur le RGPD, le corpus et l'état machine, mais deux commentaires de `web/src/lib/clinical/` déclarent encore ouverts trois moteurs fermés.
+- [x] Le handoff final est produit.
+
+**Deux cases sur dix restent ouvertes, et c'est le résultat, pas un échec de la
+clôture** : les nommer était l'objet du LOT-07.

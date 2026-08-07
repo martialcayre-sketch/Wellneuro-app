@@ -3089,3 +3089,24 @@ trancher la contradiction DPO (G-TRUST-02 dit « pas de DPO », D-005 dit
 **Questions ouvertes.** Trois trous découverts à l'écriture et nommés nulle part
 avant : information sur l'écart d'hébergement non consignée, fournisseur SMTP non
 identifié, Sentry sous-traitant de fait non déclaré aux personnes.
+
+## 2026-08-08 — LOT-07 : clôture de la campagne, verdict 5.0
+
+**Décisions.** `DECLARATION_5_0.md` statue sur les huit dettes de l'audit
+d'entrée. **Verdict : 5.0 n'est pas déclarable en bloc** — 3 fermées (1, 3, 7),
+1 arbitrée et reportée au 2026-10-21 (8), **4 ouvertes** (2, 4, 5, 6). Aucun
+verdict pris sur la prose d'un lot : chaque preuve confrontée à l'artefact,
+script exécuté et sortie rediffée. **Quatre verdicts sur huit diffèrent de ce que
+le lot écrivait de lui-même.** #372 fermée sans merger. Campagne close.
+
+**Options écartées.** Poser les quatre dettes ouvertes en lots de cette
+campagne : la garde `closed_campaign_with_open_lots` l'interdit, et à raison —
+on ne pose pas une dette découverte à la fermeture dans ce qu'on ferme. Corriger
+au passage les commentaires faux de `orientationEngine.ts` : hors périmètre.
+
+**Prochaine action.** Cadrer une campagne pour les quatre dettes ouvertes, la 6
+en premier — un outil d'état qui ne compare qu'une dimension sur six rend un
+« zéro écart » qui n'engage rien, et tout jugement sur les autres passe par lui.
+
+**Questions ouvertes.** La date d'arbitrage HDS diverge d'un jour entre
+`CAMPAGNE.md` (2026-07-22) et le dossier RGPD (2026-07-21).

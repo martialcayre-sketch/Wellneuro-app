@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Clôture — déclarer 5.0, ou dire ce qui manque"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-00 à LOT-06"
 ---
 
@@ -20,6 +20,10 @@ Une campagne de clôture qui se termine par « globalement bon » n'a rien clos.
 Un document `DECLARATION_5_0.md` qui, pour chacune des huit dettes de l'audit
 d'entrée, dit : **fermée** (avec la preuve), **arbitrée et reportée** (avec la
 date de revue), ou **ouverte** (avec le lot suivant qui la porte).
+
+> **Correction de cadrage (2026-08-08).** Le « But » ci-dessus parlait de *six*
+> dettes, ce « Résultat observable » de *huit*. Ce sont **huit** — c'est la
+> numérotation de `sources/brief-dettes.md`, et la déclaration la suit.
 
 Et deux faits vérifiables, indépendants de tout jugement :
 
@@ -60,12 +64,12 @@ Et deux faits vérifiables, indépendants de tout jugement :
 
 ## Étapes
 
-- [ ] Rassembler les résultats des sept lots précédents.
-- [ ] Écrire `DECLARATION_5_0.md`, dette par dette, preuve par preuve.
-- [ ] Vérifier qu'aucune PR n'est ouverte sans justification.
-- [ ] Rejouer `wn-etat-reel.mjs` : zéro écart.
-- [ ] T3 complet.
-- [ ] `/wn-finish`, puis `/wn-handoff write`.
+- [x] Rassembler les résultats des sept lots précédents.
+- [x] Écrire `DECLARATION_5_0.md`, dette par dette, preuve par preuve.
+- [x] Vérifier qu'aucune PR n'est ouverte sans justification.
+- [x] Rejouer `wn-etat-reel.mjs` : zéro écart.
+- [x] T3 complet.
+- [x] Clôture écrite sur la branche vivante.
 
 ## Tests
 
@@ -75,12 +79,45 @@ Et deux faits vérifiables, indépendants de tout jugement :
 
 ## Critères de done
 
-- [ ] `DECLARATION_5_0.md` couvre les huit dettes, sans case vide.
-- [ ] Chaque « fermée » a sa preuve ; chaque « ouverte » a son lot suivant.
-- [ ] #435 et #372 soldées.
-- [ ] `wn-etat-reel.mjs` : zéro écart.
-- [ ] Handoff produit sur la branche vivante.
+- [x] `DECLARATION_5_0.md` couvre les huit dettes, sans case vide.
+- [x] Chaque « fermée » a sa preuve ; chaque « ouverte » a ce qui la porte — une
+      campagne à cadrer, faute de pouvoir poser un lot dans celle qu'on ferme.
+- [x] #435 et #372 soldées.
+- [x] `wn-etat-reel.mjs` : zéro écart — **et la déclaration écrit ce que ce zéro
+      ne couvre pas.**
+- [x] Handoff produit sur la branche vivante.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-08-08. T3 complet vert : séquence CI entière en 2 min 08,
+122 tests E2E passés, 2 ignorés, Chromium + WebKit.
+
+**Le verdict : Wellneuro 5.0 n'est pas déclarable en bloc.** Trois dettes
+fermées (consommation, moteurs de scoring, chemin d'écriture en base), une
+arbitrée et reportée au 2026-10-21 (HDS), **quatre ouvertes**.
+
+**Ce que ce lot a servi à empêcher.** Quatre des huit verdicts diffèrent de ce
+que le lot concerné écrivait de lui-même — et aucun de ces écarts n'aurait été vu
+en recopiant les sections `## Résultats` :
+
+- **LOT-01 déclare comparer trois dimensions sur six.** Le script n'en compare
+  plus qu'**une** : `git.branch` et `git.dirty` ont été retirées le 2026-08-07,
+  la prose du lot n'a pas suivi. Et le lot courant n'est comparé par rien — vérifié
+  en direct, `.wn/state.json` portait `LOT-06` quand `CAMPAGNE.md` disait LOT-07,
+  sans que l'outil le voie.
+- **LOT-04 coche « une date de retrait existe ».** Il n'en existe aucune : la date
+  inscrite au code est celle de la décision. La redirection est par ailleurs dans
+  `next.config.mjs`, pas dans la page, qui rend toujours l'ancien parcours entier.
+- **LOT-02 annonce le repli legacy journalisé.** Le cas qui compte était déjà en
+  `warn` avant le lot ; ce qu'il a ajouté couvre deux cas bénins dont il mesure
+  ensuite zéro occurrence.
+- **LOT-03 est juste dans le code** mais deux commentaires de
+  `web/src/lib/clinical/` déclarent toujours ses trois moteurs « ouverts ».
+
+**La règle qui en sort.** Une section `## Résultats` est une déclaration de son
+auteur, pas une preuve. Vérifier veut dire exécuter le script, lire le code,
+compter le registre — et le coût de ce lot tient presque entier dans ce geste.
+
+**Une PR a bougé pendant la rédaction** : #618 était un brouillon `BLOCKED` au
+cadrage, elle était mergée à la clôture. La déclaration le dit, et pose que
+« aucune PR ouverte » est un instantané daté, jamais une propriété.
