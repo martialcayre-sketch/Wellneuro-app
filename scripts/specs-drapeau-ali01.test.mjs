@@ -42,12 +42,14 @@
 //     `Q_ALI_01` ni les symboles passerait. C'est le prix de ne pas noyer le
 //     triage ; le marqueur 4 attrape tout accès nommé ;
 //   · un spec qui dépendrait du drapeau à travers un export INTERMÉDIAIRE, sans
-//     citer aucun marqueur, serait invisible. Ce n'est pas atteignable tant que
-//     la dérivation n'a qu'une porte (`equilibre/constants.ts`) dont les trois
-//     exports sont nommés par le marqueur 2 — deux tests plus bas gardent
-//     exactement ces deux conditions, l'unicité de la porte et la complétude
-//     des marqueurs pour elle. Franchir l'une ou l'autre fait rougir le banc
-//     avant que l'angle mort n'existe.
+//     citer aucun marqueur, serait invisible. Deux tests plus bas ferment cette
+//     porte-là en amont : la forme servie ne circule que par TROIS fichiers de
+//     production, et les exports de celui qui en dérive sont tous nommés par le
+//     marqueur 2. Un quatrième fichier, ou un export non nommé, fait rougir le
+//     banc avant que l'angle mort n'existe. La détection y est volontairement
+//     large — toute mention de la valeur, pas seulement l'accès de propriété :
+//     la destructuration, le passage en argument, le réexport et l'indexation
+//     par chaîne échappaient tous à la forme étroite.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -58,11 +60,22 @@ import { fileURLToPath } from 'node:url';
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = path.join(RACINE, 'web');
 
+// Exports de la porte de dérivation dont la VALEUR dépend de la forme servie.
+// Source unique : le marqueur 2 en dérive sa regex, et le garde de complétude
+// teste l'appartenance à cette liste — un `includes` sur des sources de regex
+// concaténées reconnaissait `SOURCES` comme « déjà nommé » parce que
+// `BESOIN_SOURCES` le contient, et laissait donc passer l'export qu'il devait
+// attraper.
+const SYMBOLES_DERIVES = ['BESOIN_SOURCES', 'VERSION_SCORE_EQUILIBRE', 'MAX_RYTHME_CHRONO'];
+
 const MARQUEURS = [
   { nom: 'drapeau WN_ALI_01_SIIN57', regex: /WN_ALI_01_SIIN57/ },
   {
     nom: 'symboles sensibles à la forme servie',
-    regex: /\b(?:BESOIN_SOURCES|VERSION_SCORE_EQUILIBRE|MAX_RYTHME_CHRONO)\b/,
+    // Dérivée de SYMBOLES_DERIVES, et non recopiée : le garde de complétude
+    // teste l'appartenance à cette liste, il faut donc que la regex et lui
+    // parlent de la même chose.
+    regex: new RegExp(`\\b(?:${SYMBOLES_DERIVES.join('|')})\\b`),
   },
   {
     nom: 'balayage du catalogue',
@@ -136,17 +149,53 @@ function racinesDeVitest() {
   return [...new Set(racines)];
 }
 
-// Seul fichier de production autorisé à dériver une valeur de la forme servie.
+// Les TROIS portes par lesquelles la définition servie circule dans le code de
+// production, et rien d'autre. Chacune est couverte par un marqueur : la
+// définition et le catalogue par les marqueurs 3 et 4, la dérivation par le
+// marqueur 2 qui nomme ses trois exports.
 const PORTE_DE_DERIVATION = 'src/lib/equilibre/constants.ts';
+const PORTES_CONNUES = [
+  'src/lib/questions.ts', // insère la forme servie dans QUESTIONNAIRE_CATALOGUE
+  PORTE_DE_DERIVATION, // seule à en dériver des valeurs
+  'src/lib/questionnaires/alimentaire.ts', // choisit la forme selon le drapeau
+];
 
-/** Sources de production (tout `src`, tests exclus). */
+/** Sources de production, sur les mêmes racines que les specs (tests exclus). */
 function fichiersProduction() {
   const resultat = [];
-  for (const entree of fs.readdirSync(path.join(WEB, 'src'), { recursive: true })) {
-    const rel = path.join('src', String(entree)).split(path.sep).join('/');
-    if (/\.tsx?$/.test(rel) && !/\.test\.tsx?$/.test(rel)) resultat.push(rel);
+  for (const base of racinesDeVitest()) {
+    const dossier = path.join(WEB, base);
+    if (!fs.existsSync(dossier)) continue;
+    for (const entree of fs.readdirSync(dossier, { recursive: true })) {
+      const rel = path.join(base, String(entree)).split(path.sep).join('/');
+      if (/\.tsx?$/.test(rel) && !/\.test\.tsx?$/.test(rel)) resultat.push(rel);
+    }
   }
   return resultat;
+}
+
+/**
+ * Le fichier utilise-t-il la VALEUR `Q_ALI_01` — celle que le drapeau choisit ?
+ *
+ * Écarté avant l'examen, parce qu'aucun de ces usages ne dépend de la forme
+ * servie : les commentaires, l'identifiant littéral `'Q_ALI_01'` (une chaîne,
+ * pas la définition), la clé d'objet `Q_ALI_01:` (table indexée par
+ * identifiant), et les formes NOMMÉES `Q_ALI_01_SIIN_57` / `Q_ALI_01_COURT_14`
+ * — les nommer, c'est précisément ne pas dépendre de celle qui est servie.
+ *
+ * Tout le reste compte. Chercher l'accès de propriété seul (`Q_ALI_01.`) était
+ * trop étroit : la destructuration, le passage en argument, le réexport et
+ * l'indexation par chaîne y échappaient tous — quatre idiomes ordinaires.
+ */
+function utiliseLaFormeServie(source) {
+  return /\bQ_ALI_01\b/.test(
+    source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+      .replace(/'Q_ALI_01'|"Q_ALI_01"|`Q_ALI_01`/g, '')
+      .replace(/\bQ_ALI_01\s*:/g, '')
+      .replace(/\bQ_ALI_01_[A-Z0-9_]+/g, ''),
+  );
 }
 
 function fichiersTest() {
@@ -214,17 +263,16 @@ test('test:siin57 reste une passe COMPLÈTE — c’est la position de productio
 // couverture du garde suivant vaut ce que vaut cette liste.
 // (`Q_ALI_01_SIIN_57.` / `Q_ALI_01_COURT_14.` sont neutralisés : nommer une
 // forme précise, ce n'est pas dépendre de celle qui est servie.)
-test('la dérivation de la forme servie n’a qu’une porte dans le code de production', () => {
-  const portes = [];
-  for (const rel of fichiersProduction()) {
-    const source = fs.readFileSync(path.join(WEB, rel), 'utf8').replace(/\bQ_ALI_01_(?:SIIN_57|COURT_14)\s*\./g, '');
-    if (/\bQ_ALI_01\s*[.[]/.test(source)) portes.push(rel);
-  }
+test('la forme servie ne circule que par les trois portes connues', () => {
+  const portes = fichiersProduction().filter((rel) =>
+    utiliseLaFormeServie(fs.readFileSync(path.join(WEB, rel), 'utf8')),
+  );
   assert.deepEqual(
-    portes,
-    [PORTE_DE_DERIVATION],
-    'un fichier de production dérive de la forme servie hors de la porte connue. Ses exports échappent aux marqueurs : ' +
-      'les y ajouter et étendre le garde de complétude, sinon un spec qui en dépend ne sera plus joué en position éteinte.',
+    portes.sort(),
+    [...PORTES_CONNUES].sort(),
+    'un fichier de production utilise la forme servie hors des portes connues. Ce qu’il en dérive échappe aux ' +
+      'marqueurs : nommer ses exports dans MARQUEURS et l’ajouter à PORTES_CONNUES, sinon un spec qui en dépend ne ' +
+      'sera plus joué en position éteinte.',
   );
 });
 
@@ -235,15 +283,16 @@ test('la dérivation de la forme servie n’a qu’une porte dans le code de pro
 // propre liste de marqueurs est complète, pas seulement qu'elle mord.
 test(`aucun export de ${PORTE_DE_DERIVATION} dérivé de Q_ALI_01 n’échappe aux marqueurs`, () => {
   const source = fs.readFileSync(path.join(WEB, PORTE_DE_DERIVATION), 'utf8');
-  const nommes = MARQUEURS.map((m) => m.regex.source).join(' ');
   const manquants = [];
-  for (const m of source.matchAll(/export const ([A-Z_][A-Z0-9_]*)\s*(?::[^=]*)?=\s*([\s\S]*?)(?=\nexport |\n\/\*\*|$)/g)) {
-    const [, nom, initialiseur] = m;
+  // `const` comme `function`, majuscules comme minuscules : un helper exporté à
+  // côté d'une IIFE n'a rien d'exotique — `MAX_RYTHME_CHRONO` en est une.
+  const declarations = /export (?:const|function) ([A-Za-z_][A-Za-z0-9_]*)\s*(?:\([^)]*\)|:[^=]*)?=?\s*([\s\S]*?)(?=\nexport |\n\/\*\*|$)/g;
+  for (const m of source.matchAll(declarations)) {
+    const [, nom, corps] = m;
     // `Q_ALI_01:` est une CLÉ (table indexée par identifiant de questionnaire),
     // pas un usage de la définition servie — `NIVEAU_PREUVE_PAR_SOURCE` en est
     // une. Tout le reste compte : accès de propriété comme passage en argument.
-    const usages = initialiseur.replace(/\bQ_ALI_01\s*:/g, '');
-    if (/\bQ_ALI_01\b/.test(usages) && !nommes.includes(nom)) manquants.push(nom);
+    if (utiliseLaFormeServie(corps) && !SYMBOLES_DERIVES.includes(nom)) manquants.push(nom);
   }
   assert.deepEqual(
     manquants,
@@ -267,13 +316,13 @@ test('tout candidat est trié : dans la liste, ou dans l’allowlist motivée', 
   assert.deepEqual(
     nonTries.map((c) => `${c} (${candidats.get(c).join(' ; ')})`),
     [],
-    'spec(s) dépendant du drapeau hors de test:siin57 — les ajouter à la liste, ou motiver leur exclusion dans ce banc.',
+    'spec(s) dépendant du drapeau hors de test:court14 — les ajouter à cette liste, ou motiver leur exclusion dans ce banc.',
   );
 });
 
 test('toute entrée de la liste existe et reste un candidat', () => {
   for (const spec of liste) {
-    assert.ok(tests.includes(spec), `${spec} est listé dans test:siin57 mais absent du dépôt — spec renommé ou supprimé ?`);
+    assert.ok(tests.includes(spec), `${spec} est listé dans test:court14 mais absent du dépôt — spec renommé ou supprimé ?`);
     assert.ok(
       candidats.has(spec),
       `${spec} est listé mais aucun marqueur ne le détecte plus — dépendance disparue (le retirer) ou marqueur à compléter.`,

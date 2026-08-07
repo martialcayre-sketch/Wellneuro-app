@@ -49,10 +49,30 @@ function branchesDuPush() {
   return [...push[1].matchAll(/^ +- +"?([^"\n]+)"?$/gm)].map((m) => m[1].trim());
 }
 
+/**
+ * Valeur EFFECTIVE de `concurrency.group`, commentaire de fin de ligne retiré.
+ *
+ * Sans cette coupe, l'assertion porte sur la ligne brute : une clé de groupe
+ * réduite à `${{ github.ref }}` suivie de ` # ${{ … github.run_id … }}` en
+ * commentaire la satisfaisait, alors que le groupe redevenait PARTAGÉ sur
+ * `main`. Le `#` d'une expression `${{ }}` n'existe pas ici — on coupe au
+ * premier ` #` hors accolades.
+ */
+function valeurDuGroupe() {
+  const brut = /group:\s*(.+)/.exec(blocConcurrence());
+  assert.ok(brut, 'ci.yml : `concurrency.group` illisible.');
+  let profondeur = 0;
+  const ligne = brut[1];
+  for (let i = 0; i < ligne.length; i += 1) {
+    if (ligne.startsWith('${{', i)) profondeur += 1;
+    else if (ligne.startsWith('}}', i) && profondeur > 0) profondeur -= 1;
+    else if (ligne[i] === '#' && profondeur === 0) return ligne.slice(0, i).trim();
+  }
+  return ligne.trim();
+}
+
 test('le groupe de concurrence est unique par run sur `main`', () => {
-  const bloc = blocConcurrence();
-  const groupe = /group:\s*(.+)/.exec(bloc);
-  assert.ok(groupe, 'ci.yml : `concurrency.group` illisible.');
+  const groupe = valeurDuGroupe();
   // Assertion sur l'ORDRE des opérandes, pas sur leur présence. Une assertion
   // de présence est satisfaite par l'inversion exacte du défaut qu'elle
   // commémore — `… && '' || github.run_id` contient les deux motifs et donne
@@ -60,11 +80,26 @@ test('le groupe de concurrence est unique par run sur `main`', () => {
   // unique par run sur les PR (plus aucun dédoublonnage). Falsifié : cette
   // mutation passait 5/5 avant cette forme-ci.
   assert.match(
-    groupe[1],
+    groupe,
     /github\.ref\s*==\s*'refs\/heads\/main'\s*&&\s*github\.run_id/,
     "le groupe de concurrence ne rend pas `github.run_id` POUR `main` : deux runs de `main` peuvent alors partager " +
       'le groupe, GitHub annule le run pending intermédiaire, et un commit fusionné perd sa seule vérification. ' +
       "Attendu de la forme `${{ github.ref == 'refs/heads/main' && github.run_id || '' }}`.",
+  );
+});
+
+// Le pendant de l'invariant précédent, et le seul qui garde le GAIN du lot :
+// `github.run_id` ne doit rendre unique que les runs de `main`. Ajouté sans
+// condition, il rendrait chaque run de PR seul dans son groupe —
+// `cancel-in-progress` ne mordrait plus jamais et le dédoublonnage qui motive
+// tout ce lot disparaîtrait en silence, sans qu'aucun autre test le dise.
+test('sur une PR, le groupe reste PARTAGÉ — sinon plus rien n’est dédoublonné', () => {
+  const sansConditionnelles = valeurDuGroupe().replace(/\$\{\{[^}]*==[\s\S]*?\}\}/g, '');
+  assert.doesNotMatch(
+    sansConditionnelles,
+    /github\.run_id/,
+    '`github.run_id` entre dans le groupe hors de la conditionnelle sur `main` : chaque run de PR serait seul dans ' +
+      'son groupe, aucun run supplanté ne serait plus annulé.',
   );
 });
 

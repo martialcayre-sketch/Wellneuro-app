@@ -18,8 +18,11 @@
   la seule porte, et c'est ce qui rend ses marqueurs suffisants), vérifie
   qu'aucun export de cette porte n'échappe à ses marqueurs, et garde que la
   passe de production reste complète. Protocole à rejouer quand la liste change :
-  figer `max` du besoin 1 à 42 et l'étiquette de version dans
-  `equilibre/constants.ts` doit faire rougir la passe restreinte et elle seule.
+  figer dans `equilibre/constants.ts` le `max` du besoin 1 à **90** et
+  l'étiquette de version à `v13` — les valeurs de la position ALLUMÉE — doit
+  faire rougir `test:court14` et elle seule. Figer les valeurs éteintes (42,
+  `v12`) ne prouverait rien : elles sont ce que le dérivé vaut déjà dans cette
+  position, la mutation y est invisible par construction.
   **T1 (`npm run check`) ne joue plus de suite complète** — il porte la liste
   restreinte plus les specs du diff (`test:changed`, désormais en position
   production) ; c'est T2 (`test:worktree`, même en `--fast`) qui porte la passe
