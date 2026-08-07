@@ -2827,3 +2827,24 @@ vers des lots nommés.
 sensible puisque sept packs sont éteints. `R2-SOM-05` propose Horne sans la porte
 `RYTHME_BIOLOGIQUE` de `R2-SOM-03` — délibéré ou angle mort du LOT-02 ? Décision
 clinique, que ni le code ni le dépôt ne tranchent.
+
+## 2026-08-07 — Hygiène du workflow : clôture opposable, sync origin, état atomique
+
+**Décisions.** Quatre lots sur une branche (A→D) : skills `wn-r0..r6` supprimés
+et références purgées ; `wn-cycle` fetch `origin`, signale un défaut local
+divergent (ahead 50 / behind 51 constaté) et un pointage périmé — constat,
+jamais de réconciliation automatique ; clôture SESSION_LOG + handoff rendue
+opposable dans `/wn-pr` (verdict de cycle) et `/wn-merge` (`files` de la PR),
+rattrapage de fenêtre ratée passant par construction ; `state.json` en écriture
+atomique, `recent_decision_ids` alimenté depuis `docs/DECISIONS.md` (option i
+du cadrage). Ancre sed « Attendre le CI » de wn-merge réparée, gardée par
+`wn-check-automation.sh`.
+
+**Options écartées.** Blocage sur dérive de pointage (faux positif garanti en
+worktrees parallèles) ; `pull` automatique (décision de fusion, pas une sync).
+
+**Prochaine action.** PR draft, CI (`verify`), puis arbitrer la réconciliation
+du `main` local divergent.
+
+**Questions ouvertes.** Faut-il un lot nommé pour résorber l'ahead 50 / behind
+51 du poste principal ?
