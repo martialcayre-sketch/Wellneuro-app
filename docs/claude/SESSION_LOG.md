@@ -2929,8 +2929,10 @@ déjà `context: fork` (cérémonie sans gain) ; compresser la gouvernance PR/me
 sur place plutôt que la déplacer.
 
 **Prochaine action.** Arbitrer le `main` divergent (ahead 50 / behind 51), puis
-décider du lot `wn-attendre-ci.mjs` (sa liste de causes du code `2` ignore la
-branche recréée).
+décider du lot `wn-attendre-ci.mjs`. Correction apportée en revue : le script
+**nomme déjà** la branche squashée puis rebranchée (`wn-attendre-ci.mjs:12,157`)
+— ce qui lui manque est le cas « aucun run créé sans raison identifiable », et
+son remède, pousser un nouveau SHA de tête.
 
 **Questions ouvertes.** Que valent les 50 commits locaux jamais poussés ?
 ## 2026-08-07 — LOT-00 dettes-packs : geste de donnée fait, campagne agenda débloquée
