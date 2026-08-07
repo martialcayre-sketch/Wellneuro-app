@@ -2,15 +2,13 @@
 description: Transforme une demande brute en demande exécutable — objectif, résultat observable, hors périmètre, questions bloquantes — avant tout routage ou cadrage. Lecture seule, contexte isolé. À NE DÉCLENCHER que si deux lectures de la demande mèneraient à deux travaux différents ; sinon ne pas invoquer — sur une demande déjà exécutable, ce skill rend PASSE et le tour est perdu.
 argument-hint: "<demande brute>"
 # EXCEPTION DÉLIBÉRÉE — ne pas rétablir `disable-model-invocation: true` ici.
-# Deuxième exemption de la famille `wn` après `wn-route`, et pour la même raison.
-# Six skills — `wn-route`, `wn`, `wn-plan`, `wn-lot`, `wn-campaign`, `wn-debug` —
+# Seule exemption de la famille `wn` (wn-route est redevenu manuel le 2026-08-07).
+# Plusieurs skills — `wn`, `wn-plan`, `wn-lot`, `wn-campaign`, `wn-debug` —
 # demandent de passer par ce skill avant de router, cadrer ou ouvrir une campagne.
-# Le drapeau rendait ces six consignes inapplicables : un skill qu'il porte n'est
+# Le drapeau rendait ces consignes inapplicables : un skill qu'il porte n'est
 # pas exposé à l'outil `Skill`, donc l'invocation demandée ne peut pas avoir lieu
-# et la consigne se lit sans jamais pouvoir s'exécuter. C'est exactement la panne
-# déjà constatée sur `wn-route`. Uniformiser la suite sur ce point remettrait les
-# six branchements en panne, silencieusement — aucun test ne voit une prose qui
-# désigne une capacité absente.
+# et la consigne se lit sans jamais pouvoir s'exécuter — aucun test ne voit une
+# prose qui désigne une capacité absente.
 # Le garde-fou n'est pas le drapeau, c'est le seuil : la `description` ci-dessus
 # porte la condition de déclenchement, et le corps rend `PASSE` par défaut.
 context: fork

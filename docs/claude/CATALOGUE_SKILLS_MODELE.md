@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | `/wn-model` | Skill (slash-command) | `.claude/skills/wn-model/SKILL.md` | — (recommande) | low |
 | `/wn-ultra` | Skill (slash-command) | `.claude/skills/wn-ultra/SKILL.md` | — (recommande le mode) | low |
-| `/wn-route` | Skill (slash-command, auto en début de session) | `.claude/skills/wn-route/SKILL.md` | — (combine route/modèle/mode) | low |
+| `/wn-route` | Skill (slash-command, manuel) | `.claude/skills/wn-route/SKILL.md` | — (combine route/modèle/mode) | low |
 | `wn-fable` | Sous-agent | `.claude/agents/wn-fable.md` | `claude-fable-5` | high |
 
 Modifications associées (épinglage de modèle sur des sous-agents existants) :
@@ -24,7 +24,7 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 
 ### `/wn-model` — routeur de modèle
 
-- **Fonction** : à partir d'une description de tâche, recommande un couple **modèle + effort + intensité de réflexion** et rend la commande exacte à appliquer (`/model …`, délégation à un sous-agent, ou mot-clé de réflexion). Ne modifie aucun fichier.
+- **Fonction** : à partir d'une description de tâche, recommande un couple **modèle + effort** et rend la commande exacte à appliquer (`/model …` ou délégation à un sous-agent). Ne modifie aucun fichier.
 - **Intérêt** : centralise une décision récurrente (« quel modèle pour cette tâche ? ») au lieu de la laisser implicite. Aligne le coût sur la complexité réelle et rend le choix traçable.
 - **Options d'appel** : `/wn-model [tâche]` (recommande), ou override explicite `fable | opus | sonnet | haiku | plan`. Un override prime toujours sur le mapping par défaut.
 
@@ -36,23 +36,23 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 
 ### `/wn-route` — routeur combiné de session
 
-- **Fonction** : combine en une seule passe les trois grilles ci-dessus (`/wn` pour la route, `/wn-model` pour le modèle, `/wn-ultra` pour le mode d'exécution) au lieu de trois invocations séquentielles, en chargeant leurs `SKILL.md` comme contexte plutôt qu'en dupliquant leur contenu. Appliqué automatiquement (via `CLAUDE.md`) à la toute première demande d'une session ou juste après `/clear` ; n'affiche un plan que si le résultat dévie du défaut (Sonnet, solo, aucune délégation).
-- **Intérêt** : évite trois passes de routage séquentielles pour une même demande, et rend le routage par défaut silencieux — l'économie de tokens vient de ne rien afficher quand rien ne change, pas d'un raisonnement de routage plus élaboré.
-- **Options d'appel** : automatique en début de session (voir `CLAUDE.md`), ou `/wn-route [tâche]` pour re-router explicitement en cours de session.
+- **Fonction** : combine route, modèle et mode d'exécution en une seule règle courte (« Défaut : Sonnet 5 + high + solo ; Opus si risque critique ; Fable si profondeur exceptionnelle ; Ultracode si largeur parallélisable »). **Le défaut de session est porté directement par `CLAUDE.md`** (section « Modèle, effort, mode d'exécution ») : il n'y a plus de passe de méta-routage automatique en début de session.
+- **Intérêt** : le routage ne coûte rien quand la demande tombe sur le défaut — aucun affichage, aucune invocation.
+- **Options d'appel** : `/wn-route [tâche]` pour re-router explicitement en cours de session (manuel uniquement).
 
 ### `wn-fable` — sous-agent haut de gamme
 
 - **Fonction** : traite en lecture seule les tâches très complexes ou long-cours (architecture, raisonnement clinique lourd, planification transverse) avec `claude-fable-5`.
 - **Intérêt** : isole l'usage du modèle le plus coûteux ($10/$50 par MTok) dans un agent dédié, qui refuse les tâches simples et renvoie vers un modèle plus léger.
 
-## 3. Mapping par défaut (version 1)
+## 3. Mapping par défaut (version 2 — 2026-08-07)
 
-| Contexte | Modèle | Alias | Effort | Réflexion |
-| --- | --- | --- | --- | --- |
-| Debug, revue, clinique, sécurité | Claude Opus 4.8 | `opus` | high | `think hard` |
-| Dev courant, docs, cadrage/plan | Claude Sonnet 5 | `sonnet` | medium | `think` |
-| Exploration, contexte, routage | Claude Haiku 4.5 | `haiku` | low | — |
-| Override haut de gamme (forçable) | Claude Fable 5 | `claude-fable-5` | high | auto (always-on) |
+| Contexte | Modèle | Alias | Effort |
+| --- | --- | --- | --- |
+| Dev courant, docs, tests, cadrage | Claude Sonnet 5 | `sonnet` (défaut) | high |
+| Debug, revue, clinique, sécurité, auth, migration | Claude Opus | `opus` | high |
+| Exploration, contexte, routage | Claude Haiku 4.5 | `haiku` | low |
+| Profondeur exceptionnelle (≥ 2 signaux forts, forçable) | Claude Fable 5 | `claude-fable-5` | high |
 
 ## 4. Conventions d'écriture
 
@@ -67,7 +67,7 @@ Frontmatter YAML puis corps Markdown en français.
 | `disable-model-invocation` | Empêche l'invocation auto par le modèle (commande manuelle) | `true` / absent |
 | `context` | Portée du contexte | ex. `fork` |
 | `agent` | Agent d'exécution associé | ex. `Explore`, `general-purpose` |
-| `effort` | Consigne d'auto-régulation (alignée sur le paramètre natif) | `low` / `medium` / `high` |
+| `effort` | Niveau d'effort natif appliqué pendant le tour du skill | `low` / `medium` / `high` / `xhigh` / `max` |
 
 Corps type : `## Contexte` (commandes `!` de collecte), `## Mission` (règles + invariants), `## Sortie` (format attendu). Toujours rappeler les invariants WellNeuro : pas de migration, de lecture `.env`, d'écriture Supabase ni de modification clinique sans demande explicite.
 
@@ -89,10 +89,10 @@ Corps : rôle en une ligne, périmètre (lecture seule, invariants), format de s
 - `/model opusplan` : bascule automatique (modèle fort en Plan, exécution allégée).
 - `/model claude-fable-5` : force Claude Fable 5.
 - Champ `model:` d'un sous-agent : déléguer à cet agent = basculer de modèle pour la tâche.
-- Effort natif : réglé par l'intensité de réflexion `think` < `think hard` < `think harder` < `ultrathink`.
+- Effort natif : `/effort low|medium|high|xhigh|max` en session, ou champ `effort:` du frontmatter d'un skill ou d'un agent. Les anciens mots-clés `think`/`think hard`/`think harder` ne sont plus reconnus par Claude Code (seul `ultrathink` subsiste, pour un surcroît de réflexion ponctuel — ce n'est pas un réglage d'`effort`).
 
 ## 6. Limites
 
 - Une skill ne change pas seule le modèle de la session : elle propose la commande `/model …` à valider.
 - Le vrai basculement automatique par contexte passe par les sous-agents (modèles épinglés) et par `/model opusplan`.
-- Le champ `effort` du frontmatter est une consigne d'auto-régulation ; il reste cohérent avec le paramètre `effort` natif (défaut `high` sur Opus 4.8 / Sonnet 5).
+- Le champ `effort` du frontmatter (skills et agents) est un champ natif de Claude Code ; défaut WellNeuro : `high`.

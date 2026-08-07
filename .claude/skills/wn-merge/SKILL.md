@@ -52,7 +52,7 @@ dernière session.
    **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
    session, `patients.access_token`), ou plus largement tout chemin touchant
    session/token : une revue adversariale indépendante — `Agent(subagent_type:
-   "wn-reviewer")`, prompt portant `think hard`/`think harder` — est obligatoire
+   "wn-reviewer")`, agent épinglé Opus/high — est obligatoire
    avant le merge si elle n'a pas déjà eu lieu, et une vérification de la base
    de production (`execute_sql` MCP Supabase — jamais `psql`, jamais une
    commande Bash) après. Ces deux passes s'appliquent même en régime
