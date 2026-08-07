@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Retrait effectif des packs non-base"
-statut: "en_cours"
+statut: "livré (2026-08-07) — code #604, geste production fait le 2026-08-07 05:59, un seul pack actif vérifié en base ; revue wn-reviewer NO-GO sur deux défauts, corrigés"
 dépend_de: "LOT-02"
 ---
 
@@ -180,13 +180,23 @@ Revue adversariale `wn-reviewer` : NO-GO sur les deux défauts ci-dessus, corrig
 position du garde avant transaction, et le filtre des qids ajoutés. Chacune rougit
 le banc attendu ; les fichiers ont été restaurés après chacune.
 
-### Reste dû — geste production
+### Geste production — fait le 2026-08-07, après déploiement du garde
 
-Six désactivations par l'UI praticien (`PACK_CARDIO_METABO`,
-`PACK_DIGESTIF_INTESTIN`, `PACK_b8sda7asd-h_B8x8061uORhc`, `PACK_SOCLE_INIT`,
-`PACK_SOMMEIL_CHRONO`, `PACK_STRESS_BURNOUT`), **après déploiement du garde**,
-puis relecture SQL « exactement un pack actif ». Ce geste appartient au praticien :
-il ne se fait ni en SQL (interdit du lot), ni par l'assistant.
+Six désactivations par l'UI praticien, horodatées entre **05:59:10 et 05:59:32** :
+`PACK_b8sda7asd-h_B8x8061uORhc` (« Florence 1 »), `PACK_CARDIO_METABO`,
+`PACK_DIGESTIF_INTESTIN`, `PACK_SOMMEIL_CHRONO`, `PACK_STRESS_BURNOUT`,
+`PACK_SOCLE_INIT`. Aucun SQL, conformément à l'interdit du lot.
+
+**Trois lectures de contrôle après le geste** :
+
+| Vérification | Résultat |
+|---|---|
+| « exactement un pack actif » | **1 actif** sur 8 — « Base de consultation », `par_defaut`, 6 qids, `updated_at` inchangé au 2026-08-06 18:02 (le pack de base n'a pas été touché) |
+| `pack-reevaluation` | **aucun patient concerné** : 15 consultations sur le pack de base (toujours actif), 10 sans pack, **zéro** sur un pack désactivé — le repli `parDefaut` n'a jamais à jouer, et la comparaison inter-passages n'est perdue pour personne |
+| registre relationnel | `questionnaire_packs` porte les mêmes 7 lignes à `actif: false`, aux mêmes horodatages : `syncPackToRegistry` a propagé dans la transaction |
+
+Le risque clinique que [[D-030]] laissait ouvert sur `pack-reevaluation` est donc
+**nul**, mesuré après le geste et non avant.
 
 ### Dettes datées, hors périmètre
 

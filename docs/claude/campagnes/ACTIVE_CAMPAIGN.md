@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-06-packs-personnalises
 **Titre** : Envoi personnalisé par patient — retrait des packs figés
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 
@@ -22,6 +22,6 @@
 **Lot actif** : LOT-06
 
 **Statut global** : active
-**Mise à jour** : 2026-08-06
+**Mise à jour** : 2026-08-07
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

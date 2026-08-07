@@ -6,11 +6,11 @@
   },
   "status": "active",
   "active_campaign": "2026-08-06-packs-personnalises",
-  "active_lot": "LOT-03",
-  "last_completed_lot": "2026-08-06-packs-personnalises/LOT-02 (#599)",
+  "active_lot": "LOT-04",
+  "last_completed_lot": "2026-08-06-packs-personnalises/LOT-03 (#604)",
   "git": {
     "branch": "main",
-    "last_commit": "a8b86c0d",
+    "last_commit": "7210df76",
     "dirty": true
   },
   "validation": {
@@ -25,13 +25,13 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne active : 2026-08-06-packs-personnalises (cadrée le 2026-08-06, trois arbitrages utilisateur dans CAMPAGNE.md). Prochain geste : LOT-03 — retrait effectif des packs (désactiver 6 packs : 5 doctrine actifs + « Florence 1 » ; « Base de consultation » JAMAIS) + gestes hérités du LOT-01/02 : repli par nom de resoudrePackBase mort (casse), garde parDefaut sur PATCH /api/praticien/packs, garde IDS_SUSPENDUS sur POST/PATCH, journalisation de la perte de cible, bloc « Packs suggérés » de PatientsPanel — via /wn-lot. LOT-00/01/02 livrés (#596, #597 matrice ~70 surfaces + D-030, #599 table re-signée sha 547119c6… : matrice ~70 surfaces + D-030 ; repli par nom de resoudrePackBase mort et garde parDefaut absent → gestes LOT-03). Ordre arbitré : campagne packs entière, PUIS reprise dettes 5.0 en primaire (LOT-06 notices psychométriques + exigences RGPD, LOT-07 déclaration 5.0 — exige de solder la PR #372, dormante depuis le 2026-07-25). Geste post-merge toujours dû : node scripts/wn-cycle.mjs --appliquer depuis main (réconcilie git.*). Agenda alimentaire : 8/8 lots livrés, LOT-06 (lecture praticien J7+) à écrire quand le recueil aura des journées — bloqué données, pas code. EN ATTENTE D'ARBITRAGE UTILISATEUR : PR #372 (finir ou fermer) ; campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée). EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 (2026-07-25, sans réponse). Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI.",
+  "next_action": "Campagne active : 2026-08-06-packs-personnalises (cadrée le 2026-08-06, trois arbitrages utilisateur dans CAMPAGNE.md). Prochain geste : LOT-04 — clôture de campagne (E2E, changelog, vérification prod, reprise des dettes) — via /wn-lot. LOT-00/01/02/03 livrés (#596 ; #597 matrice ~70 surfaces + D-030 ; #599 table re-signée sha 547119c6… ; #604 gardes du pack de base + D-031 promue en #602). RETRAIT DES PACKS FAIT le 2026-08-07 05:59 : 6 désactivations par l'UI praticien, exactement 1 pack actif vérifié en base (« Base de consultation », par_defaut, 6 qids) ; aucune consultation ne pointait un pack désactivé (15 sur le pack de base, 10 nulles) donc risque pack-reevaluation NUL ; questionnaire_packs a suivi (7/8 à actif=false). DETTES DATÉES à reprendre au LOT-04 : aucune réactivation de pack depuis l'UI (une désactivation par erreur n'a pas de retour) ; questionnaire_packs.actif que rien ne relit et que le retrait vient de peupler ; seed.ts ne répare pas un pack de base cassé (upsert update:{} — no-op qui affiche pourtant « Pack par défaut créé ») ; commentaire schema.prisma:155-156 encore en capitales (la casse qui avait tué le repli) ; suture suggestedPackSelection inerte. QUESTION CLINIQUE OUVERTE : R2-SOM-05 propose Horne sans la porte RYTHME_BIOLOGIQUE de R2-SOM-03 — choix délibéré (deux versants suffisants, ce que D-031 admet) ou angle mort du LOT-02 ? Décision praticien. Ordre arbitré : campagne packs entière, PUIS reprise dettes 5.0 en primaire (LOT-06 notices psychométriques + exigences RGPD, LOT-07 déclaration 5.0 — exige de solder la PR #372, dormante depuis le 2026-07-25). Geste post-merge toujours dû : node scripts/wn-cycle.mjs --appliquer depuis main (réconcilie git.*). Agenda alimentaire : 8/8 lots livrés, LOT-06 (lecture praticien J7+) à écrire quand le recueil aura des journées — bloqué données, pas code. EN ATTENTE D'ARBITRAGE UTILISATEUR : PR #372 (finir ou fermer) ; campagne 2026-07-11-complements-clean-label-v1 (tous lots à_faire, périmètre recouvert par 2026-08-02-rayon-complements-alimentaires, close — marquer remplacée ?) ; campagne 2026-07-13-journal-alimentaire-21j-v1 (JA5-05 figé au 2026-07-17, le carnet a continué hors campagne via #429/#447/#485 — documenter ou acter l'abandon) ; campagne boucle-clinique-producteur vivante uniquement dans le worktree arbitrage-boucle-clinique (non mergée). EN ATTENTE HUMAINE (reconduites, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3 ; escalade SIIN Q_GEO_04 (2026-07-25, sans réponse). Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI.",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-06T23:40:50Z",
+  "updated_at": "2026-08-07T06:04:24Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",

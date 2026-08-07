@@ -2806,3 +2806,24 @@ geste praticien, jamais SQL — et relire « exactement un pack actif ».
 **Questions ouvertes.** Après le retrait, aucune réactivation depuis l'UI : une
 désactivation par erreur n'a pas de retour. `questionnaire_packs.actif` restera
 `false` sur 7 lignes sur 8, champ que rien ne relit.
+
+## 2026-08-07 — Retrait des packs exécuté, campagne au LOT-04
+
+**Décisions.** Geste production fait par le praticien (6 désactivations UI,
+05:59:10 → 05:59:32), après déploiement du garde. Trois lectures de contrôle :
+exactement 1 pack actif ; aucune consultation ne pointait un pack désactivé (15
+sur le pack de base, 10 nulles) donc risque `pack-reevaluation` **nul, mesuré
+après le geste** ; `questionnaire_packs` a suivi (7/8 à `actif: false`). État
+machine passé à LOT-04, statut du lot et résultats consignés.
+
+**Options écartées.** Laisser le fichier de lot annoncer « reste dû » et l'état
+machine sur LOT-03 : c'est la dérive qui a produit #598 et #601.
+
+**Prochaine action.** LOT-04 — clôture de campagne. Son « Hors périmètre » exclut
+tout développement neuf : les cinq dettes datées y seront reprises ou renvoyées
+vers des lots nommés.
+
+**Questions ouvertes.** Aucune réactivation de pack depuis l'UI, désormais
+sensible puisque sept packs sont éteints. `R2-SOM-05` propose Horne sans la porte
+`RYTHME_BIOLOGIQUE` de `R2-SOM-03` — délibéré ou angle mort du LOT-02 ? Décision
+clinique, que ni le code ni le dépôt ne tranchent.
