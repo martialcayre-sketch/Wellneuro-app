@@ -2912,6 +2912,29 @@ lectures SQL de contrôle.
 **Questions ouvertes.** Aucun contrat `web/prisma/checks/` n'assère « aucun pack
 actif ne référence un qid de `IDS_SUSPENDUS` » : sans lot.
 
+## 2026-08-07 — Clôture de session : deux lots workflow livrés, et un CI fantôme
+
+**Décisions.** #607 et #609 mergées : clôture opposable, sync `origin` dans
+`wn-cycle`, `.wn/state.json` atomique, retrait de `wn-r0..r6` ; puis `CLAUDE.md`
+de 26 722 à 19 586 o (−26,7 %), la gouvernance PR/merge sortie dans
+`docs/claude/REGLES_PR_MERGE.md` que `/wn-merge` charge par `cat`. Diagnostic
+consigné dans le handoff : une PR peut rester **sans run `verify`** sans cause
+identifiable — l'explication d'abord retenue (branche recréée sous un nom déjà
+utilisé, suite de checks réassociée) est **réfutée par #610**, qui a reproduit
+les mêmes conditions et obtenu son run aussitôt. Ce qui tient : ni « ready » ni
+fermer/rouvrir ne créent une suite ; un nouveau SHA de tête, oui.
+
+**Options écartées.** Ajouter une étape de délégation aux skills qui portent
+déjà `context: fork` (cérémonie sans gain) ; compresser la gouvernance PR/merge
+sur place plutôt que la déplacer.
+
+**Prochaine action.** Arbitrer le `main` divergent (ahead 50 / behind 51), puis
+décider du lot `wn-attendre-ci.mjs`. Correction apportée en revue : le script
+**nomme déjà** la branche squashée puis rebranchée (`wn-attendre-ci.mjs:12,157`)
+— ce qui lui manque est le cas « aucun run créé sans raison identifiable », et
+son remède, pousser un nouveau SHA de tête.
+
+**Questions ouvertes.** Que valent les 50 commits locaux jamais poussés ?
 ## 2026-08-07 — LOT-00 dettes-packs : geste de donnée fait, campagne agenda débloquée
 
 **Décisions.** LOT-00 passé à `livré` sur ses **deux** moitiés : code (PR #608) et
