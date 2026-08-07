@@ -562,7 +562,18 @@ describe('PatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
     expect(screen.getByRole('button', { name: 'Créer le patient' })).toBeTruthy();
   });
 
-  it('le tiroir assignation garde la suture packs : cliquer un pack suggéré referme le tiroir', async () => {
+  // INVERSÉ LE 2026-08-07 (LOT-03, D-030). Ce test affirmait l'inverse — il
+  // vérifiait la PRÉSENCE de la zone « Packs suggérés » dans le tiroir. Elle est
+  // retirée : ses boutons se raccordaient au panneau Packs par titre normalisé
+  // parmi les packs ACTIFS, donc après le retrait des packs ils citeraient des
+  // packs désactivés, et le clic rendrait un « n'existe pas encore » faux. Le
+  // test est retourné plutôt que supprimé : c'est la disparition du bloc qui
+  // doit être gardée, sinon le rétablir passerait inaperçu.
+  //
+  // Ce qui reste vrai du tiroir — il s'ouvre, il porte le formulaire — est
+  // conservé ici : sans cela, le retrait pourrait emporter le tiroir entier
+  // sans faire rougir quoi que ce soit.
+  it('le tiroir assignation n’offre plus de pack suggéré, et reste un tiroir d’assignation', async () => {
     stubFetch();
     render(<PatientsPanel />);
     await screen.findAllByRole('button', { name: /gérer le dossier/i });
@@ -570,9 +581,15 @@ describe('PatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nouvelle assignation' }));
     const tiroir = await screen.findByRole('dialog', { name: 'Nouvelle assignation questionnaire' });
     expect(tiroir).toBeTruthy();
-    // Zone « Packs suggérés » présente (vide sans questionnaire sélectionné).
-    expect(screen.getByText('Packs suggérés')).toBeTruthy();
-    expect(screen.getByText(/Sélectionnez un questionnaire pour voir les packs/)).toBeTruthy();
+
+    // Le titre ET le corps de la zone ont disparu : garder le seul titre
+    // laisserait passer un bloc renommé.
+    expect(screen.queryByText('Packs suggérés')).toBeNull();
+    expect(screen.queryByText(/Sélectionnez un questionnaire pour voir les packs/)).toBeNull();
+    expect(screen.queryByText(/Aucun pack recommandé pour ce questionnaire/)).toBeNull();
+
+    // Le tiroir, lui, fait toujours son travail.
+    expect(screen.getByRole('button', { name: 'Créer l’assignation' })).toBeTruthy();
   });
 
   it('la création de consultation refermée sur succès s’annonce par la ligne de statut de la page', async () => {

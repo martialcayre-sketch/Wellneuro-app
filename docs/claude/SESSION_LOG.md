@@ -2784,3 +2784,25 @@ no-op par la dédup du moteur) ; mise à jour du sha sans relecture de claims.
 **Questions ouvertes.** Bruit du garde de restitution (faux positif « pack »
 adjacent, épinglé) ; valeur prod du drapeau orientation non lue (chiffrée) —
 vérifier le panneau après merge.
+
+## 2026-08-07 — LOT-03 packs : le garde du pack de base, et D-031 promue
+
+**Décisions.** D-031 promue au registre (PR #602), après quatre passes de revue :
+l'énoncé initial était auto-réfutant, et la distinction porte constitutive / voie
+d'entrée suffisante a dû être posée. LOT-03 : garde du pack de base sur
+`PATCH`/`DELETE`, lu sur l'**état résultant** (deux des cinq chemins de casse n'ont
+aucun champ fautif pris isolément) ; garde `IDS_SUSPENDUS` limitée aux qids
+**ajoutés** ; repli par nom de `resoudrePackBase` réparé ; bloc « Packs suggérés »
+retiré ; banc d'invariant au lieu d'un journal mort-né.
+
+**Options écartées.** Journaliser la perte de cible (vert en test, muet à vie
+depuis le LOT-02) ; refus 400 sur instrument suspendu (le dépôt rend 409, mon plan
+avait tort) ; rendre le bloc « Packs suggérés » auto-réparant (changement de
+contrat de route pour une surface que D-030 retire).
+
+**Prochaine action.** Merger, déployer, **puis** les six désactivations par l'UI —
+geste praticien, jamais SQL — et relire « exactement un pack actif ».
+
+**Questions ouvertes.** Après le retrait, aucune réactivation depuis l'UI : une
+désactivation par erreur n'a pas de retour. `questionnaire_packs.actif` restera
+`false` sur 7 lignes sur 8, champ que rien ne relit.

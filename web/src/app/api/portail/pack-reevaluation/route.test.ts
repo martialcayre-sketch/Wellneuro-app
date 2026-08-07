@@ -110,6 +110,63 @@ describe('GET /api/portail/pack-reevaluation', () => {
     await GET(get());
     expect(prisma.packProposition.create).not.toHaveBeenCalled();
   });
+
+  // LOT-03 — LE PACK DÉJÀ REMPLI A ÉTÉ DÉSACTIVÉ ENTRE-TEMPS.
+  //
+  // Aucun des cas ci-dessus ne portait sur cet état ; le retrait des packs le
+  // crée à la chaîne. La consultation validée continue de pointer son
+  // `idPackAssigne` — rien ne le réécrit —, mais le pack n'existe plus pour
+  // qui filtre sur `actif: true`. La route doit alors retomber sur le pack
+  // `parDefaut`, jamais proposer un pack retiré du catalogue.
+  //
+  // Le double de `findMany` ci-dessous REJOUE le filtre `actif` au lieu de
+  // rendre la fixture quoi qu'on demande : c'est ce qui rend le cas
+  // falsifiable. Retirer `actif: true` du `where` de la route ferait remonter
+  // le pack désactivé, `choisirPackPropose` le préférerait au pack par défaut
+  // (il est le « déjà rempli »), et l'attente ci-dessous rougirait.
+  describe('quand le pack de la dernière consultation validée est désactivé', () => {
+    const PACK_RETIRE = {
+      idPack: 'PACK_TEST_RETIRE',
+      nom: 'Ensemble retiré du catalogue',
+      description: null,
+      qids: ['Q1', 'Q2'],
+      parDefaut: false,
+      actif: false,
+    };
+    const CATALOGUE = [{ ...PACK, actif: true }, PACK_RETIRE];
+
+    type OuClause = { idPack?: string; parDefaut?: boolean };
+    type ArgsFindMany = { where: { actif?: boolean; OR?: OuClause[] } };
+
+    beforeEach(() => {
+      // La consultation validée pointe toujours le pack désactivé.
+      prisma.consultation.findFirst.mockResolvedValue({ idPackAssigne: PACK_RETIRE.idPack });
+      prisma.pack.findMany.mockImplementation(async (args: ArgsFindMany) => {
+        const ou = args.where.OR ?? [];
+        return CATALOGUE.filter(p =>
+          (args.where.actif === undefined || p.actif === args.where.actif)
+          && (ou.length === 0
+            || ou.some(c => (c.idPack !== undefined && c.idPack === p.idPack)
+              || (c.parDefaut !== undefined && c.parDefaut === p.parDefaut))),
+        );
+      });
+    });
+
+    it('propose le pack par défaut, jamais le pack désactivé', async () => {
+      const corps = await (await GET(get())).json();
+      expect(corps.proposition).not.toBeNull();
+      expect(corps.proposition.idPack).toBe(PACK.idPack);
+      expect(corps.proposition.corps).toContain(PACK.nom);
+      expect(corps.proposition.corps).not.toContain(PACK_RETIRE.nom);
+    });
+
+    // Sans pack `parDefaut` actif pour le recueillir, il n'y a plus de
+    // proposition du tout — surtout pas celle du pack retiré.
+    it('ne propose rien si le pack par défaut manque aussi', async () => {
+      prisma.pack.findMany.mockResolvedValue([]);
+      expect((await (await GET(get())).json()).proposition).toBeNull();
+    });
+  });
 });
 
 describe('POST /api/portail/pack-reevaluation', () => {
