@@ -2870,3 +2870,25 @@ LOT-00 de `2026-08-07-dettes-packs-residuelles` : il **débloque**
 
 **Questions ouvertes.** Forme du geste de retrait d'un qid suspendu ; l'E2E
 doit-il asserter l'envoi du mail.
+
+## 2026-08-07 — Dégraissage de CLAUDE.md : la gouvernance PR/merge sort du fichier toujours chargé
+
+**Décisions.** `CLAUDE.md` passe de 26 722 à 19 586 o (−26,7 %). L'essentiel du
+gain vient d'un déplacement, pas d'une coupe : la gouvernance PR/merge (7 417 o,
+27,8 %) part verbatim dans `docs/claude/REGLES_PR_MERGE.md`, que `/wn-merge`
+charge par `cat` — elle ne sert qu'au moment de merger et y était déjà rechargée,
+donc payée deux fois. Le couplage par ancres `sed`, rompu en silence le matin,
+disparaît ; le garde d'ancres devient un garde d'existence. Récits d'incident
+compressés en règle + date + lien. Deux erreurs corrigées : `patient/[idAssignation]`
+donné comme portail patient alors que le courant est `portail/[token]`, et
+l'audit du matin qui affirmait à tort « zéro prescription de délégation ».
+
+**Options écartées.** Ajouter une étape de délégation à `/wn-plan`, `/wn-debug`,
+`/wn-review` : ils portent déjà `context: fork`, l'ajout aurait été de la
+cérémonie et un saut de plus. Compresser sur place la gouvernance PR/merge :
+moitié moins de gain, et perte de détail.
+
+**Prochaine action.** PR, `verify`, merge. Puis arbitrer le `main` divergent.
+
+**Questions ouvertes.** La re-mesure de la consommation reste impossible depuis
+le conteneur (transcripts sans compteurs de tokens) : faut-il un export console ?

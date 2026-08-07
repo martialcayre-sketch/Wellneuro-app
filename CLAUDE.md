@@ -13,9 +13,7 @@ Contexte pour Claude Code sur ce dépôt. Lu automatiquement à chaque session.
 
 Wellneuro-app est une application de consultation en neuronutrition en production.
 
-Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (web app + déclencheurs arrêtés) ; le code est archivé dans `archive/gas-legacy/` à titre de référence et n'est plus exécuté.
-
-**Décommission Google Sheets terminée (2026-07-07)** : la dépendance à l'API Google Sheets a été entièrement retirée du runtime. Le scope OAuth se limite désormais à `openid email profile`, la route `migrate-historique` a été supprimée, et toutes les routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `packs`…) lisent/écrivent exclusivement PostgreSQL via Prisma. `SHEET_ID` n'est plus une variable d'environnement requise. Le code GAS reste archivé dans `archive/gas-legacy/` (référence seule) — voir `docs/claude/PROJET_CONTEXTE.md`.
+**Google Apps Script et Google Sheets sont décommissionnés** (GAS le 2026-07-03, Sheets le 2026-07-07) : plus aucune dépendance runtime, scope OAuth réduit à `openid email profile`, `SHEET_ID` n'est plus requis, tout passe par PostgreSQL via Prisma. Code GAS archivé dans `archive/gas-legacy/` (référence seule). Détail : `docs/claude/PROJET_CONTEXTE.md`.
 
 Priorité absolue : stabilité de l'application en production, pas de nouvelle migration technologique sans demande explicite.
 
@@ -93,7 +91,7 @@ entière et non pour la migration qui l'avait motivée.
 
 ## Fichiers cœur à connaître
 
-- Application Next.js : `web/src/app/` (routes `dashboard/*` praticien, `patient/[idAssignation]` portail patient, `api/*` routes serveur)
+- Application Next.js : `web/src/app/` (routes `dashboard/*` praticien, `portail/[token]` portail patient courant, `patient/[idAssignation]` flux legacy conservé, `api/*` routes serveur)
 - Schéma base de données : `web/prisma/schema.prisma`
 - Catalogue questionnaires et scoring : `web/src/lib/questions.ts`
 - Auth praticien (NextAuth, Google OAuth) : `web/src/lib/auth.ts`
@@ -123,10 +121,9 @@ est ambigu.
 
 ## Économie de contexte — le poste de dépense réel
 
-Mesuré le 2026-08-01 sur 13 jours et 35 194 appels : **chaque requête relit
-~202 000 tokens de contexte pour produire ~600 tokens de réponse.** 93 % de la
-consommation est côté entrée, dont **0,03 % de texte neuf** — tout le reste est
-du contexte déjà lu, relu à chaque tour.
+Mesuré le 2026-08-01 : **chaque requête relit ~202 000 tokens de contexte pour
+produire ~600 tokens de réponse**, dont 0,03 % de texte neuf (détail de la
+mesure : `changelog.d/2026-08-01-economie-de-contexte-mesuree.md`).
 
 D'où la seule règle qui compte : **un token entré dans le contexte est repayé à
 chaque tour suivant** (~37 tours par session). Un fichier de 50 000 tokens lu au
@@ -147,6 +144,13 @@ Trois gestes, par rendement décroissant :
 **Ce qui ne paie pas :** raccourcir les réponses (la sortie est 8,5 % du coût),
 et router les lectures vers un modèle bon marché sans les isoler (la lecture pure
 est 3,5 %). Écrire court reste utile pour la lisibilité — pas pour la dépense.
+
+**La délégation est déjà là, sous deux formes — ne pas la réinventer.** `/wn-plan`,
+`/wn-debug` et `/wn-review` portent `context: fork` dans leur frontmatter : ils <!-- mention-seule: wn-plan, wn-debug, wn-review -->
+s'exécutent en contexte isolé, leur lecture n'est jamais repayée par la session.
+`/wn-lot`, qui ne forke pas, prescrit à la place des appels `Agent(...)` <!-- mention-seule: wn-lot -->
+explicites avec modèle épinglé. Ajouter une étape de délégation dans un skill qui
+forke déjà n'économise rien et ajoute un saut.
 
 ## Parcours type d'une tâche
 
@@ -187,25 +191,19 @@ node scripts/wn-cycle.mjs --appliquer     # + resynchronise ACTIVE_CAMPAIGN.md e
 | T2 | `npm run test:worktree -- --fast` | ~1 min 20 | avant tout commit UI ou API |
 | T3 | `npm run test:worktree` | ~5 min | avant une PR portant migration, scoring ou clinique |
 
-**Le lint est dans les trois paliers depuis le 2026-07-21.** Il n'y était pas :
-le CI le lançait, `npm run check` non, et une PR verte en local cassait en CI
-(LOT-01b). Un palier qui ne couvre pas ce que le CI vérifie ne protège de rien.
+**Le lint est dans les trois paliers depuis le 2026-07-21** (LOT-01b) : un palier
+qui ne couvre pas ce que le CI vérifie ne protège de rien.
 
-**Une seule passe Vitest est complète, et c'est celle de la production.** Depuis
-le 2026-08-07, la suite entière tourne sous `WN_ALI_01_SIIN57=true`
-(`test:siin57`) — le drapeau est allumé sur les trois environnements, donc c'est
-la configuration réellement servie. La position éteinte (`test:court14`) est
-réduite aux 18 specs dont le verdict dépend du drapeau ; les autres y rendraient
-le verdict qu'ils viennent de rendre. Cette liste est gardée par
-`scripts/specs-drapeau-ali01.test.mjs`, qui refuse aussi qu'on restreigne la
-passe de production. Dire « T3 vert aux deux positions du drapeau » reste vrai —
-mais « la suite entière deux fois », non.
+**Une seule passe Vitest est complète, et c'est celle de la production** — la
+suite entière tourne sous `WN_ALI_01_SIIN57=true` (`test:siin57`), le drapeau
+étant allumé sur les trois environnements. La position éteinte (`test:court14`)
+est réduite aux 18 specs dont le verdict dépend du drapeau, liste gardée par
+`scripts/specs-drapeau-ali01.test.mjs`. « T3 vert aux deux positions du drapeau »
+reste vrai ; « la suite entière deux fois », non.
 
-**T1 ne joue plus de suite complète du tout** : il porte la liste restreinte et
-les specs du diff (`test:changed`, passé lui aussi en position production). La
-passe entière est à partir de T2 — `test:worktree`, y compris en `--fast`. Un
-palier plus court reste un palier plus étroit ; c'est T2 qu'il faut lancer avant
-de conclure qu'une suite est verte.
+**T1 ne joue plus de suite complète du tout** : liste restreinte et specs du diff
+(`test:changed`). La passe entière est à partir de T2 — `test:worktree`, `--fast`
+compris. C'est T2 qu'il faut lancer avant de conclure qu'une suite est verte.
 
 Ne jamais relancer une suite pour en relire la sortie : rediriger une fois vers
 un fichier (`--reporter=dot`), puis relire ce fichier.
@@ -218,10 +216,9 @@ exécute les 26 tests E2E source (2 projets Chromium/iPhone 13, soit jusqu'à
 52 exécutions). Prérequis et options : `web/e2e/README.md`.
 
 **Les E2E sont l'exclusivité du Mac.** `npm run test:e2e` réinitialise le patient
-fictif `PAT_SEED_03` dans la base pointée par `DATABASE_URL`, partagée entre les
-postes : deux runs simultanés s'effacent mutuellement leurs fixtures et
-produisent des échecs erratiques. Ne jamais le lancer depuis le PC, ni deux runs
-E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
+fictif `PAT_SEED_03` dans la base partagée : deux runs simultanés s'effacent
+leurs fixtures. Jamais depuis le PC, jamais deux runs en parallèle. Rôles :
+`docs/ROLES_MACHINES.md`.
 
 ## Avant de committer
 
@@ -232,148 +229,49 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
   `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
   sur les parcours**, elle n'exécute pas Playwright.
-- **Handoff par fragments, comme le changelog.** Ne pas réécrire un fichier de
-  reprise partagé : `/wn-handoff write` pose
-  `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, et le handoff courant est le
-  dernier au tri. Même motif que `changelog.d/` — un créneau unique que deux
-  branches réécrivent entre en conflit à tous les coups, et le 2026-08-04 en a
-  perdu trois. Convention : `docs/claude/handoffs/README.md`.
-- **La clôture passe avant la PR, pas après le merge.** `/wn-finish` puis
-  `/wn-handoff write` s'écrivent sur la branche vivante, et partent dans la PR du
-  lot. Le merge est un squash (`--squash --delete-branch`) : ce qui s'écrit
-  ensuite n'est plus dans l'ascendance de `main` et coûte une seconde PR de doc —
-  c'est ce qui a produit les PR #547 et #548 le 2026-08-03, après #545. En cas de
-  doute sur la phase, `node scripts/wn-cycle.mjs` ; il sort en échec quand la
-  fenêtre est déjà fermée. Une fois fermée, écrire depuis `main`, **jamais** en
-  rebranchant sur la branche squashée.
+- **Handoff par fragments, comme le changelog.** `/wn-handoff write` pose <!-- mention-seule: wn-handoff -->
+  `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md` ; le handoff courant est le
+  dernier au tri. Un créneau unique que deux branches réécrivent entre en conflit
+  à tous les coups (trois handoffs perdus le 2026-08-04). Convention :
+  `docs/claude/handoffs/README.md`.
+- **La clôture passe avant la PR, pas après le merge.** `/wn-finish` puis <!-- mention-seule: wn-finish, wn-handoff -->
+  `/wn-handoff write` s'écrivent sur la branche vivante et partent dans la PR du
+  lot. Le merge étant un squash, ce qui s'écrit ensuite n'est plus dans
+  l'ascendance de `main` et coûte une seconde PR de doc (PR #547 et #548, le
+  2026-08-03). En cas de doute sur la phase : `node scripts/wn-cycle.mjs`, qui
+  sort en échec quand la fenêtre est fermée. Une fois fermée, écrire depuis
+  `main`, **jamais** en rebranchant sur la branche squashée.
 - Ouvrir la PR avec un corps via `--body-file` et un diff d'une seule finalité,
   puis **attendre son CI sans le sonder en boucle** (idiome ci-dessous) ; avant
   d'annoncer une PR prête à merger, en **lire** le résultat — les E2E n'y sont pas
   couverts par `npm test`.
 - **Changelog par fragments.** Ne pas éditer le haut de `CHANGELOG.md` : poser un
   fichier `changelog.d/AAAA-MM-JJ-slug.md` (le bloc `###` qui irait sous
-  `## Non publié`). Deux PR n'entrent alors plus en conflit sur le même fichier —
-  c'est ce qui a fait échouer cinq merges le 2026-07-21. Repli : `node
-  scripts/changelog-collate.mjs`. Détail : `changelog.d/README.md`.
+  `## Non publié`). Deux PR n'entrent alors plus en conflit sur le même fichier
+  (cinq merges cassés le 2026-07-21). Détail : `changelog.d/README.md`.
 
-### Attendre le CI d'une PR — un script, plus un idiome
+### Attendre le CI d'une PR, revue et merge — le détail est sorti d'ici
 
 ```bash
 node scripts/wn-attendre-ci.mjs <N>     # un seul appel bloquant, en tâche de fond
 ```
 
-Un seul appel bloquant remplace le sondage répété (le 2026-07-20, une session a
-produit 81 appels de `gh pr checks` pour l'information que cet appel rend en un
-seul). Mais la boucle `until … bucket=="pending"` qui tenait ce rôle jusqu'au
-2026-08-03 **ne distinguait pas « aucun check en attente » de « aucun check du
-tout »** : elle rendait la main sur deux checks Vercel verts quand `verify`
-n'avait jamais été créé. C'est arrivé sur la PR #550, et le correctif a dû être
-refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
+Jamais de `gh pr checks` en boucle. **`0` est le seul code de sortie qui autorise
+à annoncer une PR prête** ; les cinq autres disent, chacun à sa façon, qu'on ne
+peut pas l'affirmer. `verify` est un check **obligatoire** et `enforce_admins`
+est actif : une PR gelée bloque le merge au lieu de ressembler à un succès — ne
+jamais forcer.
 
-| Code | Sens | Geste |
-|---|---|---|
-| `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
-| `1` | un check obligatoire a échoué | lire le log, corriger |
-| `2` | un check obligatoire **n'a pas tourné** — absent, gelé en `action_required`, ou run **annulé** (`concurrency`) sans remplaçant | le script nomme **toutes** les causes applicables ; ne pas merger |
-| `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
-| `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
-| `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
+**La revue, le merge et la suppression des branches appartiennent à Copilot**
+(décision du 2026-07-21), sauf autorisation transitoire en cours. Sur une PR de
+migration ou d'authentification, une revue adversariale `wn-reviewer` avant et
+une vérification de la base de production après sont dues dans tous les cas.
 
-**`0` est le seul code qui autorise à annoncer une PR prête.** Les cinq autres
-disent, chacun à sa façon, qu'on ne peut pas l'affirmer — y compris `4`, qui
-couvre le cas où la liste des checks obligatoires n'a pas pu être lue : ne
-sachant plus ce qu'il fallait attendre, le script se tait plutôt que de replier
-en silence sur `verify`.
-
-La liste des checks attendus vient de la **protection de branche** (`verify`
-aujourd'hui), pas d'une constante : un second check rendu obligatoire est suivi
-sans toucher au script. Ce qu'il ne fait pas : merger, ou dire s'il faut merger.
-Un même nom porté par **deux runs** n'est vert que si les deux le sont — le
-rouge ne se laisse pas écraser par l'ordre du tableau. (Le cas venait des
-branches `campaign/**`, que `ci.yml` déclenchait sur `push` *et* sur
-`pull_request` ; le déclencheur `push` y a été retiré le 2026-08-07, le garde
-reste.) Un run **annulé** — `CANCELLED`, la trace normale d'un run supplanté
-depuis le bloc `concurrency` de `ci.yml` — n'est ni vert ni un échec : le script
-attend le run du commit de tête, puis sort en `2`.
-
-Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
-manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).
-
-## Revue, merge et suppression des branches — le ressort de Copilot
-
-**Décision du 2026-07-21.** La revue de code, le merge des PR et la suppression
-des branches appartiennent à **Copilot**. L'assistant ouvre la PR, vérifie que le
-CI est vert, annonce l'état — et s'arrête là.
-
-Deux raisons, données ensemble : un **regard différent** sur le code (une revue
-par l'agent qui vient de l'écrire est une relecture, pas une revue), et le **coût
-en tokens** — suivre un CI, relancer, merger puis nettoyer consomme des
-allers-retours pour un travail qu'un autre outil fait sans eux.
-
-En pratique : pas de `gh pr merge`, pas de `git push origin --delete`, pas de
-suppression de worktree rattaché à une PR ouverte. Le nettoyage post-merge n'est
-pas une tâche en attente côté assistant.
-
-**Effet de bord à connaître.** Quand le commit de tête d'une PR est attribué au
-bot Copilot (un merge de `main` résolu par lui, par exemple), GitHub met le run
-`pull_request` en `action_required` et **n'exécute rien** sans approbation
-humaine. `gh pr checks` n'affiche alors que les checks Vercel, **sans `verify`** :
-la PR paraît verte alors que la vérification n'a jamais tourné. Vérifier la
-présence de `verify`, et débloquer en poussant un commit sous le compte du dépôt
-— `POST /actions/runs/{id}/approve` ne s'applique qu'aux PR issues de forks.
-
-Une PR gelée ne peut pas être mergée pour autant : `verify` est un **check
-obligatoire** de la protection de `main`, et `enforce_admins` est actif depuis le
-2026-07-21 — **personne ne passe outre, propriétaire compris**. Un run gelé
-bloque donc le merge au lieu de ressembler à un succès. Pour un correctif
-d'urgence, il faut désactiver le réglage explicitement avant de merger
-(`gh api -X DELETE repos/<dépôt>/branches/main/protection/enforce_admins`), puis
-le remettre. Ce geste doit rester visible et rare.
-
-`strict` reste **désactivé** délibérément : une PR peut être mergée sans avoir
-été remise à jour sur `main`. Peu de PR tournent en parallèle ici, et l'activer
-imposerait une resynchronisation et un nouveau CI à chaque merge concurrent —
-friction quotidienne pour un incident rare.
-
-### Période transitoire — cycle PR complet côté assistant (idiome de merge)
-
-Tant qu'une autorisation en cours confie le suivi du CI, le merge et le nettoyage
-à l'assistant (retour au ressort Copilot ci-dessus prévu à l'échéance), cet idiome
-**prime sur le « pas de `gh pr merge` » plus haut**. Une fois le CI vert lu (idiome
-d'attente dans « Avant de committer »), enchaîner en un minimum d'allers-retours :
-
-1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
-   (effet de bord `action_required` décrit plus haut) ; sans `verify`, ne pas merger.
-2. `gh pr merge <N> --squash --delete-branch` — merge et suppression de la branche
-   distante en un geste.
-3. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
-   `git worktree remove`).
-4. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
-   sinon la PR suivante ré-embarque le lot précédent, la fusion conflictue et
-   GitHub ne crée aucun run.
-
-`enforce_admins` reste actif et `verify` obligatoire (plus haut) : une PR gelée
-bloque le merge au lieu de ressembler à un succès — ne jamais forcer. Sur une PR
-de migration ou d'authentification, appliquer d'abord l'exception ci-dessous.
-
-### L'exception : migration ou authentification
-
-Copilot revoit et merge **aussi** ces PR. Mais avant de lui passer la main, sur
-une PR qui porte une migration ou touche l'authentification :
-
-1. **Une passe de revue adversariale indépendante** (sous-agent `wn-reviewer`).
-   C'est elle qui a trouvé, le 2026-07-21 sur la PR #202, un backfill manquant
-   dont l'absence défaisait silencieusement une révocation d'accès. Il n'y avait
-   aucune ligne fautive à pointer : le défaut était ce que la migration **ne
-   faisait pas**. Une revue de diff ne voit pas cette classe-là.
-2. **Après le merge, vérifier la base de production** — la migration s'est-elle
-   appliquée, et le backfill a-t-il fait ce qu'il annonçait ? Une lecture
-   `execute_sql` suffit (voir « Lire la base de production » plus haut). Sans
-   cela, un `migrate deploy` ou un import qui a échoué à mi-course lors de la
-   release (`release-db`) ne se voit nulle part ailleurs.
-
-Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
-l'authentification ou une migration se compte en accès patients rompus.
+**Tout le détail — table des six codes de sortie, effet de bord `action_required`,
+`strict` désactivé, idiome de merge de la période transitoire, exception
+migration/auth — est dans [`docs/claude/REGLES_PR_MERGE.md`](docs/claude/REGLES_PR_MERGE.md)**,
+que `/wn-merge` charge en entier. Ces règles ne servent qu'au moment de merger ; <!-- mention-seule: wn-merge -->
+les garder ici les faisait payer à chaque requête de chaque session.
 
 ## Définition de done pour une tâche standard
 
@@ -387,7 +285,7 @@ Si `docs/claude/SESSION_LOG.md` existe, lire sa dernière entrée avant de répo
 
 Avant de répondre à la toute première demande de la session — démarrage ou juste après `/clear` —, invoquer silencieusement le skill `wn-route` sur cette demande. Il combine en une passe la route (`/wn`), le modèle (`/wn-model`) et le mode d'exécution (`/wn-ultra`). Ne l'afficher que s'il dévie du défaut (règle d'économie du skill) ; une fois par session, pas à chaque message.
 
-**Une session = un worktree.** Avant d'écrire quoi que ce soit dans le dépôt, ouvrir son propre worktree (outil `EnterWorktree`, ou `git worktree add`). Plusieurs sessions peuvent travailler en parallèle, jamais dans la même copie : le 2026-07-20, deux sessions partageant le checkout principal ont produit une PR à deux périmètres et un commit atterri sur la branche d'une autre session. Ne jamais faire `git checkout` / `git switch` dans un worktree qu'une autre session utilise. `npm run test:worktree` est déjà conçu pour ce mode (ports et base éphémère dérivés du chemin du worktree). Détail : `docs/ROLES_MACHINES.md`.
+**Une session = un worktree.** Avant d'écrire quoi que ce soit dans le dépôt, ouvrir son propre worktree (outil `EnterWorktree`, ou `git worktree add`). Plusieurs sessions peuvent travailler en parallèle, jamais dans la même copie — un checkout partagé a produit le 2026-07-20 une PR à deux périmètres et un commit sur la branche d'une autre session. Ne jamais faire `git checkout` / `git switch` dans un worktree qu'une autre session utilise. `npm run test:worktree` est conçu pour ce mode. Détail : `docs/ROLES_MACHINES.md`.
 
 **Se baser sur `origin/main` fraîchement fetché, jamais sur le `main` local.** Le
 `main` local traîne derrière `origin` dès que les merges passent par GitHub, et un

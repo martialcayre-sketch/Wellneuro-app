@@ -15,19 +15,14 @@ for skill in "${skills[@]}"; do
   }
 done
 
-# Les blocs `!` de wn-merge extraient CLAUDE.md par motifs sed : un titre
-# renommé rend une plage vide, sans erreur (constaté le 2026-08-07 — l'ancre
-# « Attendre le CI » ne matchait plus depuis un renommage). Chaque ancre doit
-# exister dans CLAUDE.md.
-for ancre in \
-  '^### Attendre le CI d' \
-  '^## Revue, merge et suppression des branches' \
-  '^## Définition de done pour une tâche standard'; do
-  grep -q "$ancre" CLAUDE.md || {
-    echo "ERREUR: ancre sed absente de CLAUDE.md: $ancre"
-    exit 1
-  }
-done
+# wn-merge charge la gouvernance PR/merge par `cat` de ce fichier. L'extraction
+# se faisait avant par motifs sed sur des titres de CLAUDE.md : un titre renommé
+# rendait une plage vide, sans erreur (constaté le 2026-08-07). Le `cat` supprime
+# cette classe de panne ; reste à garantir que la cible existe et n'est pas vide.
+test -s docs/claude/REGLES_PR_MERGE.md || {
+  echo "ERREUR: docs/claude/REGLES_PR_MERGE.md absent ou vide (chargé par wn-merge)"
+  exit 1
+}
 
 node -e "JSON.parse(require('fs').readFileSync('.claude/settings.json','utf8')); console.log('settings.json OK')"
 node scripts/wn-kit-doctor.mjs

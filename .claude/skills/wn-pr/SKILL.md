@@ -60,8 +60,8 @@ donc la main sur deux checks Vercel verts quand `verify` n'avait jamais été cr
 (PR #550, le 2026-08-03). Le script sort en **`2`** dans ce cas et nomme toutes
 les causes applicables ; **`0` est le seul code qui autorise à annoncer une PR
 prête** — les cinq autres, `4` et `5` compris, disent chacun à sa façon qu'on ne
-peut pas l'affirmer. Codes de sortie et périmètre : `CLAUDE.md`, section
-« Attendre le CI d'une PR ».
+peut pas l'affirmer. Codes de sortie et périmètre :
+`docs/claude/REGLES_PR_MERGE.md`.
 
 Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test`
 n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
