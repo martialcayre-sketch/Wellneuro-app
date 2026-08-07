@@ -8,6 +8,7 @@ import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/ques
 import { Badge } from '@/components/ui/Badge';
 
 type Questionnaire = QuestionnairesApiResponse['questionnaires'][number];
+type QuestionnaireSuspendu = QuestionnairesApiResponse['suspendus'][number];
 type PatientLite = { email: string; prenom: string; nom: string };
 type SuggestedPackSelection = {
   registryPackId: string;
@@ -30,6 +31,11 @@ export function PacksPanel({
   patients: PatientLite[];
 }) {
   const [packs, setPacks] = useState<Pack[]>([]);
+  // Les instruments suspendus ne viennent PAS par la prop `questionnaires` :
+  // celle-ci ne porte que les actifs, et doit le rester (elle alimente la
+  // création de pack, `titreParId`, le compteur et le libellé d'assignation).
+  const [suspendus, setSuspendus] = useState<QuestionnaireSuspendu[]>([]);
+  const [suspendusErreur, setSuspendusErreur] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -55,6 +61,12 @@ export function PacksPanel({
   const [editCategorieFilter, setEditCategorieFilter] = useState('');
   const [editCategorieView, setEditCategorieView] = useState<'fonctionnelle' | 'historique'>('fonctionnelle');
   const [editSelectedQids, setEditSelectedQids] = useState<Set<string>>(new Set());
+  // Instantané des qids du pack AU MOMENT DE L'OUVERTURE. C'est lui qui porte
+  // l'asymétrie « retirable mais pas ajoutable » : un suspendu absent du pack
+  // n'y figure jamais, donc aucune case ne peut l'ajouter — et décocher un
+  // suspendu présent ne fait pas disparaître sa ligne, le geste reste
+  // réversible tant que la modale est ouverte.
+  const [editQidsInitiaux, setEditQidsInitiaux] = useState<Set<string>>(new Set());
   const [editOnlyPackSelection, setEditOnlyPackSelection] = useState(true);
 
   // Formulaire d'assignation groupée
@@ -72,8 +84,26 @@ export function PacksPanel({
     }
   };
 
+  const loadSuspendus = async () => {
+    try {
+      const r = await fetch('/api/praticien/questionnaires');
+      const json = (await r.json()) as QuestionnairesApiResponse;
+      setSuspendus(json.suspendus ?? []);
+      setSuspendusErreur(null);
+    } catch {
+      // Un échec silencieux rendrait « ce pack ne porte aucun suspendu » et
+      // « la liste n'a pas chargé » indiscernables : le seul geste de retrait
+      // disparaîtrait sans le dire. Le reste de l'écran n'est pas bloqué.
+      setSuspendus([]);
+      setSuspendusErreur(
+        "Impossible de charger les instruments suspendus. S'il en reste dans ce pack, ils ne peuvent pas être retirés pour l'instant — rechargez la page.",
+      );
+    }
+  };
+
   useEffect(() => {
     loadPacks();
+    loadSuspendus();
   }, []);
 
   useEffect(() => {
@@ -149,6 +179,13 @@ export function PacksPanel({
     ? editQuestionnairesFiltresBruts.filter(q => editSelectedQids.has(q.id))
     : editQuestionnairesFiltresBruts;
 
+  // Dérivée de l'INSTANTANÉ, jamais de `editSelectedQids` : décocher doit
+  // laisser la ligne en place. Volontairement soustraite au filtre de catégorie
+  // et à « questionnaires du pack seulement » — un suspendu n'a pas de
+  // métadonnée fonctionnelle fiable, et le filtrer masquerait le seul moyen de
+  // le retirer.
+  const editSuspendusPresents = suspendus.filter(s => editQidsInitiaux.has(s.id));
+
   const toggleQid = (id: string) => {
     setSelectedQids(prev => {
       const next = new Set(prev);
@@ -167,6 +204,11 @@ export function PacksPanel({
     });
   };
 
+  // Bâtie sur `questionnaires` SEULE — les actifs. Elle décide du compteur de la
+  // ligne de pack, du badge « Non envoyé » et du libellé du `<select>`
+  // d'assignation : y fondre `suspendus` (« pour afficher un titre au lieu d'un
+  // qid nu ») rétablirait le contresens « 6 annoncés / 5 envoyés ». Banc :
+  // « un suspendu ne compte pas comme un questionnaire envoyé ».
   const titreParId = new Map(questionnaires.map(q => [q.id, q.titre]));
 
   const onSubmitPack = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -308,6 +350,7 @@ export function PacksPanel({
     setEditDescription(pack.description ?? '');
     const qidsSet = new Set(pack.qids);
     setEditSelectedQids(qidsSet);
+    setEditQidsInitiaux(new Set(pack.qids));
     setEditCategorieView('fonctionnelle');
     const premierQid = pack.qids[0];
     const premiereCategorie = questionnaires.find(q => q.id === premierQid)?.categorieFonctionnellePrincipale ?? '';
@@ -326,6 +369,7 @@ export function PacksPanel({
     setEditCategorieFilter('');
     setEditCategorieView('fonctionnelle');
     setEditSelectedQids(new Set());
+    setEditQidsInitiaux(new Set());
     setEditOnlyPackSelection(true);
     setEditFeedback(null);
   };
@@ -587,6 +631,32 @@ export function PacksPanel({
                   ))
                 )}
               </div>
+
+              {/* Instruments suspendus DÉJÀ dans ce pack. Bloc distinct de la
+                  liste ci-dessus, et indépendant du filtre de catégorie comme
+                  du bouton « questionnaires du pack seulement » : c'est le seul
+                  endroit d'où le praticien peut les retirer. Rien n'est rendu
+                  si le pack n'en porte aucun. */}
+              {suspendusErreur && (
+                <p className="text-xs text-status-danger px-1">{suspendusErreur}</p>
+              )}
+
+              {editSuspendusPresents.length > 0 && (
+                <div className="border border-status-warning/40 bg-status-warning/5 rounded-lg p-2 flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground px-1">
+                    Ces instruments sont <strong>suspendus</strong> : ils figurent encore dans ce pack mais ne
+                    sont plus envoyés aux patients. Décochez-les pour les retirer du pack. Tant qu&apos;ils
+                    sont suspendus, ils ne pourront pas y être rajoutés.
+                  </p>
+                  {editSuspendusPresents.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                      <input type="checkbox" checked={editSelectedQids.has(s.id)} onChange={() => toggleEditQid(s.id)} />
+                      <span>{s.titre}</span>
+                      <span className="text-xs text-muted-foreground">(suspendu — {s.id})</span>
+                    </label>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center gap-3">
                 <button type="submit" disabled={savingEdit || editSelectedQids.size === 0 || !editNom.trim()} className={btnPrimary}>

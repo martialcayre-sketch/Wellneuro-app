@@ -113,7 +113,7 @@ praticien** — précisément ce que [[D-025]] protège.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | `Q_ALI_09` soudé au pack de base — un geste nécessaire est impossible | à_faire | — |
+| LOT-00 | Q_ALI_09 dans le pack de base — auto-assigné à l'onboarding drapeau allumé, irretirable drapeau éteint | en_cours (2026-08-07) — moitié code livrée ; retrait en production dû | — |
 | LOT-01 | Parcours E2E orientation → file d'envoi → envoi → déduplication | à_faire | — |
 
 ## Done de campagne

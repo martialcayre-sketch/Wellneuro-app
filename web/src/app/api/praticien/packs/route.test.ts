@@ -356,6 +356,18 @@ describe('/api/praticien/packs — instruments suspendus', () => {
     expect(store.get(ID_AVEC_SUSPENDU)?.qids).toContain(QID_SUSPENDU);
   });
 
+  it("16 ter. PATCH qui RETIRE un qid suspendu déjà présent : 200, et le qid a disparu", async () => {
+    // Le geste que l'écran d'édition rend enfin possible : décocher un
+    // instrument suspendu hérité. La route l'accepte DÉJÀ — elle ne juge que
+    // les qids ajoutés (`ajoutes`) — mais rien ne l'épinglait : durcir le garde
+    // en « aucun suspendu dans le payload » aurait verrouillé ces packs à
+    // jamais sans qu'un seul test bouge.
+    const res = await PATCH(patch({ idPack: ID_AVEC_SUSPENDU, qids: [QID_ACTIF] }));
+    expect(res.status).toBe(200);
+    expect(store.get(ID_AVEC_SUSPENDU)?.qids).toEqual([QID_ACTIF]);
+    expect(store.get(ID_AVEC_SUSPENDU)?.qids).not.toContain(QID_SUSPENDU);
+  });
+
   it('16 bis. PATCH sur un idPack inconnu portant un qid suspendu : 404, pas 409', async () => {
     // L'ordre des contrôles : l'existence se juge avant la composition.
     const res = await PATCH(patch({ idPack: 'PACK_TEST_INCONNU', qids: [QID_ACTIF, QID_SUSPENDU] }));
