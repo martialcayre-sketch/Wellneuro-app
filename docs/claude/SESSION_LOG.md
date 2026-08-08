@@ -3242,3 +3242,25 @@ date d'ouverture, puis poser le garde contre son retour.
 
 **Questions ouvertes.** Rien ne relie « Scoring vérifié » au barreau
 `scoring_verifie` dont il emprunte le nom — même lot que le garde anti-dérive ?
+
+## 2026-08-08 — LOT-03 : la dérive registre/packs re-mesurée, puis fermée
+
+**Décisions.** La re-mesure d'ouverture (0 divergence sur 8 packs) a trouvé le
+**générateur** : `syncPackToRegistry` jetait silencieusement tout qid sans
+définition. D'où deux gardes — le chemin d'écriture refuse (409 nommant les qids),
+et un contrat SQL en **préflight de production**. LOT-04 ouvert ; le badge muet
+reste une décision produit (`D-037`), pas un lot.
+
+**Options écartées.** La lecture planifiée : un secret de production dans GitHub
+Actions, second chemin d'accès à la base. Le contrat en CI seul : base vide, donc
+assertion vacue.
+
+**Ce que trois passes de revue ont démenti.** Deux NO-GO. Le garde refusait de
+**désactiver** le pack qu'il dénonce ; le message nommait un geste impossible ; et
+un **correctif** a rouvert la dérive — le seed miroitait la constante au lieu de
+la ligne en base.
+
+**Prochaine action.** LOT-04.
+
+**Questions ouvertes.** Une dérive « qid sans définition » bloquerait les releases
+sans chemin de correction relu.

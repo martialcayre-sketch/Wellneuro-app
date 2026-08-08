@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-08-dettes-ouvertes-5-0
 **Titre** : Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire
 **Statut** : active
-**Lot actif** : LOT-02
+**Lot actif** : LOT-03
 
 ## Activités parallèles
 

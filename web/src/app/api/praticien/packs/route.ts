@@ -7,9 +7,19 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import {
   IDS_SUSPENDUS,
   MESSAGE_QUESTIONNAIRE_SUSPENDU,
+  QUESTIONNAIRES_CATALOG,
   RAISON_QUESTIONNAIRE_SUSPENDU,
 } from '@/lib/questionnaires-catalog';
-import { syncPackToRegistry } from '@/lib/consultation/packRegistry';
+import {
+  MESSAGE_QID_SANS_DEFINITION,
+  QidsSansDefinitionError,
+  RAISON_QID_SANS_DEFINITION,
+  syncPackToRegistry,
+} from '@/lib/consultation/packRegistry';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
+import type { RequestContext } from '@/lib/observability/types';
 
 export type Pack = {
   idPack: string;
@@ -37,7 +47,8 @@ export type MutatePackResponse = {
     | 'not_found'
     | 'exception'
     | 'default_pack_protected'
-    | typeof RAISON_QUESTIONNAIRE_SUSPENDU;
+    | typeof RAISON_QUESTIONNAIRE_SUSPENDU
+    | typeof RAISON_QID_SANS_DEFINITION;
 };
 
 type CreatePackPayload = {
@@ -58,6 +69,11 @@ type PatchPackPayload = {
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
+
+// Ce que l'ÉCRAN sait montrer — et donc ce que le praticien sait décocher.
+// `api/praticien/questionnaires` ne sert que ce catalogue-ci ; il n'est pas le
+// même que celui de `normaliserQids` ci-dessous.
+const IDS_CATALOGUE_ECRAN = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
 
 // Ne garde que des ids de questionnaire existants, dédupliqués, bornés.
 function normaliserQids(input: unknown): string[] {
@@ -136,6 +152,67 @@ function refusPackDeBase(
   return null;
 }
 
+// ─── Le refus du miroir relationnel, NOMMÉ ───────────────────────────────────
+//
+// `syncPackToRegistry` lève désormais quand un qid n'a pas de
+// `QuestionnaireDefinition` : sans ce passage, les trois `catch` de cette route
+// rendraient « Erreur technique lors de la … du pack » sans rien journaliser. Le
+// garde aurait alors remplacé une dérive silencieuse par un ÉCHEC silencieux, et
+// le praticien n'aurait aucun moyen de savoir quoi retirer.
+//
+// 409, et qids nommés : exactement la forme des deux autres refus de composition
+// de cette route (instrument suspendu ci-dessus, pack de base). Le payload est
+// bien formé — c'est l'état résultant qui est refusé.
+//
+// LE MESSAGE NE PROMET PAS UN GESTE IMPOSSIBLE, et c'est pour cela qu'il se
+// scinde. « Retirer du pack » n'est offert par l'écran que pour les qids du
+// catalogue d'AFFICHAGE : `api/praticien/questionnaires` ne sert que
+// `QUESTIONNAIRES_CATALOG` (actifs + suspendus), et `PacksPanel` n'affiche de
+// case que pour ceux-là. Or `normaliserQids` filtre, lui, sur le catalogue de
+// SCORING — les deux ensembles diffèrent, et `Q_NEU_12` est exactement dans
+// l'écart (`backfillQuestionnaireRegistry.ts` le déclare en `EXTRA_DEFINITIONS`,
+// « référencé par des packs mais absent de QUESTIONNAIRES_CATALOG »).
+//
+// Conseiller « retirez-le » pour un tel qid désignerait une case qui n'existe
+// pas, sur un pack devenu inéditable. Le message nomme alors où vit réellement
+// le geste — la recréation de la définition, hors UI.
+function messageQidsSansDefinition(qids: string[]): string {
+  const retirables = qids.filter(qid => IDS_CATALOGUE_ECRAN.has(qid));
+  const horsEcran = qids.filter(qid => !IDS_CATALOGUE_ECRAN.has(qid));
+
+  const phrases = [MESSAGE_QID_SANS_DEFINITION];
+  if (retirables.length > 0) {
+    phrases.push(`À retirer du pack : ${retirables.join(', ')}.`);
+  }
+  if (horsEcran.length > 0) {
+    phrases.push(
+      `${horsEcran.join(', ')} ne figure(nt) pas au catalogue de l'écran : leur définition doit être recréée en base avant toute modification de ce pack.`
+    );
+  }
+  return phrases.join(' ');
+}
+
+function reponseEchecMutation(
+  erreur: unknown,
+  contexte: RequestContext,
+  messageGenerique: string
+): NextResponse<MutatePackResponse> {
+  if (erreur instanceof QidsSansDefinitionError) {
+    logger.warn({
+      event: EVENT_CODES.PACK_REGISTRE_QID_SANS_DEFINITION,
+      domain: 'ASSIGNATION',
+      message: `Sauvegarde du pack ${erreur.idPack} refusée : ${erreur.qids.length} questionnaire(s) sans définition au registre relationnel. Aucune écriture.`,
+      context: finalizeLogContext(contexte, { statusCode: 409, retryable: false }),
+      metadata: { idPack: erreur.idPack, qids: erreur.qids },
+    });
+    return NextResponse.json(
+      { success: false, reason: RAISON_QID_SANS_DEFINITION, error: messageQidsSansDefinition(erreur.qids) },
+      { status: 409 }
+    );
+  }
+  return NextResponse.json({ success: false, reason: 'exception', error: messageGenerique });
+}
+
 // GET /api/praticien/packs — liste des packs (récents d'abord).
 export async function GET(): Promise<NextResponse<PacksApiResponse>> {
   const session = await getServerSession(authOptions);
@@ -161,6 +238,10 @@ export async function GET(): Promise<NextResponse<PacksApiResponse>> {
 
 // POST /api/praticien/packs — création d'un pack.
 export async function POST(req: Request): Promise<NextResponse<MutatePackResponse>> {
+  // À L'ENTRÉE, jamais dans le `catch` : `finalizeLogContext` calcule
+  // `durationMs` depuis `startedAtMs`, et un contexte créé au moment de
+  // journaliser rendrait toujours 0.
+  const contexte = createRequestContext(req);
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
@@ -228,13 +309,17 @@ export async function POST(req: Request): Promise<NextResponse<MutatePackRespons
       });
     });
     return NextResponse.json({ success: true, idPack });
-  } catch {
-    return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la création du pack.' });
+  } catch (erreur) {
+    return reponseEchecMutation(erreur, contexte, 'Erreur technique lors de la création du pack.');
   }
 }
 
 // PATCH /api/praticien/packs — mise à jour (nom, contenu, activation).
 export async function PATCH(req: Request): Promise<NextResponse<MutatePackResponse>> {
+  // À L'ENTRÉE, jamais dans le `catch` : `finalizeLogContext` calcule
+  // `durationMs` depuis `startedAtMs`, et un contexte créé au moment de
+  // journaliser rendrait toujours 0.
+  const contexte = createRequestContext(req);
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
@@ -332,13 +417,17 @@ export async function PATCH(req: Request): Promise<NextResponse<MutatePackRespon
       });
     });
     return NextResponse.json({ success: true, idPack });
-  } catch {
-    return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la mise à jour du pack.' });
+  } catch (erreur) {
+    return reponseEchecMutation(erreur, contexte, 'Erreur technique lors de la mise à jour du pack.');
   }
 }
 
 // DELETE /api/praticien/packs?idPack=... — désactivation (soft delete).
 export async function DELETE(req: Request): Promise<NextResponse<MutatePackResponse>> {
+  // À L'ENTRÉE, jamais dans le `catch` : `finalizeLogContext` calcule
+  // `durationMs` depuis `startedAtMs`, et un contexte créé au moment de
+  // journaliser rendrait toujours 0.
+  const contexte = createRequestContext(req);
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
@@ -359,18 +448,23 @@ export async function DELETE(req: Request): Promise<NextResponse<MutatePackRespo
     if (refus) {
       return NextResponse.json({ success: false, reason: 'default_pack_protected', error: refus }, { status: 409 });
     }
+    // LA DÉSACTIVATION NE PROPAGE QUE `actif`, ET C'EST UN CORRECTIF DU LOT-03.
+    //
+    // Elle appelait `syncPackToRegistry`, qui reconstruit les ITEMS du miroir —
+    // alors qu'elle ne touche pas `qids` et ne peut donc créer aucune
+    // divergence. Depuis que la synchro refuse un qid sans définition, ce
+    // couplage inutile avait une conséquence absurde : **le pack en dérive
+    // devenait indésactivable**, donc restait actif et assignable. Le garde
+    // aurait interdit de retirer le pack qu'il dénonce.
+    //
+    // `updateMany` et non `update` : un pack legacy peut n'avoir aucun miroir
+    // (base seedée), et le geste ne doit pas échouer pour autant.
     await prisma.$transaction(async tx => {
-      const updated = await tx.pack.update({ where: { idPack }, data: { actif: false } });
-      await syncPackToRegistry(tx, {
-        idPack: updated.idPack,
-        nom: updated.nom,
-        description: updated.description,
-        actif: updated.actif,
-        qids: updated.qids,
-      });
+      await tx.pack.update({ where: { idPack }, data: { actif: false } });
+      await tx.questionnairePack.updateMany({ where: { packId: idPack }, data: { actif: false } });
     });
     return NextResponse.json({ success: true, idPack });
-  } catch {
-    return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la suppression du pack.' });
+  } catch (erreur) {
+    return reponseEchecMutation(erreur, contexte, 'Erreur technique lors de la suppression du pack.');
   }
 }

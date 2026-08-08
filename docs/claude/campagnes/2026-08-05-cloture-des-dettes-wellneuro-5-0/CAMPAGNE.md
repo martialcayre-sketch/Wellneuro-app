@@ -51,7 +51,12 @@ la priorité :
   `production` est déjà pris par l'intégration Vercel —, secrets, reviewers
   distincts), pas du code.
 - **Point 8 — le gate HDS n'est pas en attente, il est arbitré.** Décision du
-  2026-07-22 : rester sur l'hébergement actuel, borner la phase de test au
+  2026-07-22 — à ne pas confondre avec le **2026-07-21**, date de l'instruction
+  de l'hébergement et de la dérogation du responsable du traitement
+  (`docs/DOSSIER_RGPD.md`). Deux évènements, deux dates ; le LOT-03 de la
+  campagne suivante les avait pris pour une incohérence à corriger, elle
+  n'existe pas. Décision, donc : rester sur l'hébergement actuel, borner la
+  phase de test au
   2026-10-21, ne pas instruire de migration HDS. Ce n'est pas une dette de 5.0
   mais une échéance datée. Les dettes actionnables sont les exigences
   indépendantes de l'hébergeur : piste d'audit des accès légitimes, procédure de

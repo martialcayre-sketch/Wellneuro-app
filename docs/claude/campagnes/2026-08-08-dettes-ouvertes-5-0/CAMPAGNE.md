@@ -1,12 +1,12 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00, LOT-01 et LOT-02 livrés, un lot ouvert"
+statut: "en cours (2026-08-08) — LOT-00 à LOT-03 livrés, LOT-04 ouvert (dettes nommées par D-036)"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
-lot_courant: "LOT-02"
+lot_courant: "LOT-03"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
-branche_lot_courant: "aucune"
+branche_lot_courant: "lot-03-garde-derive-packs"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -94,7 +94,11 @@ défaut la plus fréquemment observée du dépôt sur les dix derniers jours.
 - **Les deux corrections mineures voyagent avec le lot le plus proche** : les
   commentaires de `orientationEngine.ts:212` et `orientationRulesV1.ts:229` qui
   déclarent encore ouverts trois moteurs fermés partent au LOT-01 ; la date
-  d'arbitrage HDS divergente d'un jour (2026-07-21 / 2026-07-22) part au LOT-03.
+  d'arbitrage HDS « divergente d'un jour » part au LOT-03 — **où elle s'est
+  révélée n'être pas une divergence** : le 2026-07-21 date l'instruction de
+  l'hébergement et la dérogation, le 2026-07-22 l'arbitrage qui en découle. Deux
+  évènements, pas deux versions d'un même. Le LOT-03 a donc nommé l'évènement à
+  côté de chaque date au lieu de les aligner.
 
 ## Échéance du 2026-10-21 — elle court pour deux dossiers, pas un
 
@@ -152,22 +156,38 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   le seed et poser l'assertion : geste séparé, non fait au LOT-02. Et le geste ne
   suffira pas seul — Sophie Nicola porte **cinq** passations, dont **quatre**
   déclarent `certification` ; la cinquième est le PSQI, muet.
+  **Arbitré le 2026-08-08 : LOT-04.**
 - **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
   le 2026-08-08 sur le catalogue résolu : 38 `certifie`, **21 `inconnu`**, 6
   `ambigu`. Croisés au registre : **18 des 21 portent `scoring_verifie`**, dont le
   PSQI (`Q_SOM_01`) ; les trois autres non (`Q_GEO_04` `contenu_verrouille`,
   `Q_SOM_09` `droits_verifies`, `Q_ALI_09` `repere`) — pour le MMSE, « Statut
   inconnu » est l'écho du registre, pas une divergence. Le lot traite le badge qui
-  rassure à tort ; celui qui ne dit rien reste. Dette nommée, sans lot.
+  rassure à tort ; celui qui ne dit rien reste.
+  **Arbitré le 2026-08-08 : ce n'est PAS un lot, c'est une décision produit** —
+  faire parler le badge suppose de choisir la source d'autorité d'une affirmation
+  clinique, ce que `D-034` fige. Elle se prendra **sur la liste que produit le
+  LOT-04**, et s'écrira en `D-037` : arbitrer aujourd'hui reviendrait à décider
+  sur un chiffre relevé une fois à la main.
 - **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
   vérifié » reproduit `scoring_verifie` du registre, mais lit
   `def.scoring.certification.status` du catalogue de code, et
-  `verifier_registre_instruments.js` ne compare jamais les deux. Voisin naturel
-  du garde anti-dérive du LOT-03 — à trancher à son ouverture : même lot, ou
-  dette à part ?
-- Le garde anti-dérive du LOT-03 doit-il vivre dans `web/prisma/checks/` (contrat
-  de données, rejoué en CI sur base éphémère) ou en lecture de production
-  planifiée ? Seul le second voit la vraie dérive ; seul le premier est gratuit.
+  `verifier_registre_instruments.js` ne compare jamais les deux.
+  **Arbitré le 2026-08-08 : LOT-04, et non le LOT-03.** Les deux gardent une
+  « dérive entre deux sources », mais ne partagent aucun mécanisme — deux tables
+  Postgres et `web/prisma/checks/` d'un côté, deux fichiers du dépôt et
+  `scripts/lib/` de l'autre. Ce garde est en outre l'**instrument de mesure** de
+  la dette ci-dessus : sa sortie EST la liste des divergences.
+- ~~Le garde anti-dérive du LOT-03 doit-il vivre dans `web/prisma/checks/` ou en
+  lecture de production planifiée ?~~ **Tranché le 2026-08-08 : les deux
+  hypothèses de la question étaient fausses.** Le contrat en CI n'est pas
+  « aveugle mais gratuit », il est **vacu** (base construite par `migrate deploy`
+  seul, aucun pack) ; et il ne manquait pas de mesureur —
+  `checkPackRegistryConsistency.ts` existe, hors CI. Retenu : un garde dans le
+  **chemin d'écriture** (qui ferme le générateur découvert à la re-mesure) plus un
+  **préflight de production** dans `release-db.yml`. La lecture planifiée est
+  écartée : elle exigeait un secret de production dans GitHub Actions. Détail
+  dans le fichier du LOT-03.
 
 ## Dépendances
 
@@ -190,7 +210,8 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 | LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
-| LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | à ouvrir | LOT-00 |
+| LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | en cours (2026-08-08) | LOT-00 |
+| LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | à_faire | LOT-02 |
 
 ## Done de campagne
 
@@ -226,10 +247,24 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       (assertion manquante, pas impossibilité) ; le badge est **muet pour 21 des
       65 instruments**, production comprise ; et rien ne relie le libellé au
       barreau `scoring_verifie` dont il emprunte le nom.
-- [ ] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
-      date, et un garde détecte son retour.
-- [ ] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;
-      date d'arbitrage HDS divergente d'un jour, encore à faire (LOT-03).
+- [x] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
+      date, et un garde détecte son retour. Lecture de production du
+      **2026-08-08** : **0 divergence sur 8 packs**, requête consignée dans le
+      fichier de lot (celle du 2026-08-05 ne l'était pas). La re-mesure a
+      découvert le **générateur** de la dérive : `syncPackToRegistry` jetait
+      silencieusement tout qid sans `QuestionnaireDefinition` — la définition de
+      `Q_SOM_09` n'existait que depuis le 2026-08-06 14:59. Deux gardes, non un :
+      le chemin d'écriture refuse désormais (409 nommant les qids, journalisé), et
+      `prisma/checks/packs_registre_coherence_v1.sql` tourne en **préflight de
+      production** dans `release-db.yml`. Trois mutations du prédicat, trois
+      rouges, témoin vert, sur un PostgreSQL jetable. La **lecture de production
+      planifiée est écartée** : elle exigeait un secret de production dans
+      GitHub Actions, second chemin d'accès à la base.
+- [x] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;
+      **la « divergence » de date HDS n'existe pas** — le 2026-07-21 est
+      l'instruction et la dérogation, le 2026-07-22 l'arbitrage. Deux évènements.
+      L'évènement est désormais nommé à côté de chaque date aux deux endroits
+      (LOT-03).
 - [ ] Le jalon du 2026-10-21 est rappelé à la clôture, pour le gate **et** pour
       le dossier RGPD.
 - [ ] T2 avant chaque commit UI/API, T3 avant la PR de campagne ; anti-secrets.

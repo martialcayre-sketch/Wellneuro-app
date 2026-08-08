@@ -465,6 +465,27 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/assignations_unicite_ouverte_v1.sql
 
+      # LOT-03, dette 4 — cohérence `packs.qids` ↔ miroir relationnel. LA BASE
+      # DU CI EST VIDE (construite par `migrate deploy` seul) : les assertions
+      # du contrat y sont VACUES et n'y prouvent rien de la cohérence. Elles y
+      # prouvent que le fichier parse, et rien d'autre. Ce qui éprouve qu'il
+      # MORD est le fichier négatif juste en dessous, qui pose lui-même ses
+      # fixtures. Le contrat ne voit la vraie dérive qu'en préflight de
+      # `release-db.yml`, contre la production.
+      - name: Packs ↔ registre relationnel contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql
+
+      # Huit formes de dérive doivent lever, quatre états sains doivent passer —
+      # dont le pack SANS miroir, c'est-à-dire tout pack neuf entre sa création
+      # et sa première synchro. Ce fichier ÉCRIT (fixtures annulées en fin de
+      # transaction) : il ne doit jamais être câblé dans `release-db.yml`.
+      - name: Packs ↔ registre relationnel contract (négatif)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/packs_registre_coherence_v1_negatif.sql
+
       # Le garde de contenu de la voie rapide tient à un motif d'expression
       # régulière : « rappel 55/55, précision 65 % » est une mesure faite une
       # fois en production. Ce banc l'épingle sur trente-sept cas — les textes
@@ -636,6 +657,21 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run prisma:seed
+
+      # LE MÊME CONTRAT, MAIS SUR UNE BASE PEUPLÉE — et c'est ici seulement qu'il
+      # prouve quelque chose. Joué plus haut, il porte sur une base vide : ses
+      # assertions y sont vacues. Le seed écrit désormais le miroir du pack de
+      # base (LOT-03) : il est donc le seul écrivain de miroir hors
+      # `syncPackToRegistry`, et cette étape est ce qui le tient.
+      #
+      # Elle n'est pas théorique : la première rédaction du seed miroitait la
+      # CONSTANTE `PACK_BASE.qids` au lieu de la ligne en base, ce qui
+      # fabriquait la dérive du 2026-08-05 dès que les deux divergeaient. Cette
+      # étape l'aurait attrapée seule.
+      - name: Packs ↔ registre relationnel contract (après seed)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql
 
       - name: Type-check
         if: steps.scope.outputs.docs_only != 'true'
