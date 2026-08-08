@@ -6,6 +6,7 @@
   seule au premier passage. Une couche de sélection de moins.
 - Question ouverte du journal tranchée par observation : la clé `paths:` des
   fichiers `.claude/rules/` **est honorée** — la lecture de
-  `web/prisma/schema.prisma`, d'un fichier de `clinical/` et de `auth.ts` a
-  injecté à chaque fois la règle du chemin lu, et elle seule
-  (`db-prisma`, `clinique-scoring`, `auth-securite`). Aucun changement requis.
+  `web/prisma/schema.prisma`, de `web/src/lib/clinical/orientationEngine.ts`
+  et de `web/src/lib/auth.ts` a injecté à chaque fois la règle du chemin lu,
+  et elle seule (`db-prisma`, `clinique-scoring`, `auth-securite`). Aucun
+  changement requis.
