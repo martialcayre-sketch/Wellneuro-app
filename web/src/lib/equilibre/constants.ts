@@ -256,7 +256,7 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
     { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true },
   ],
   // Besoin 5 « Bouger et se reposer » — deux groupes à parts égales, MOUVEMENT
-  // et REPOS. Le repos se partage entre le questionnaire validé et l'agenda
+  // et REPOS. Le repos se partage entre le questionnaire scoré et l'agenda
   // (2 / 1). Sans regroupement, la moyenne simple des trois sources donnait 2/3
   // du besoin au sommeil : l'ajout d'une troisième source sommeil en v3 avait
   // déplacé l'équilibre sans que ce soit une décision.

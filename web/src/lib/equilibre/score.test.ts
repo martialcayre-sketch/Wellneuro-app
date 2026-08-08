@@ -168,7 +168,7 @@ describe('calculerCouvertureBesoin', () => {
 // SIMPLE : les deux sources sommeil pesaient 2/3 du besoin « Bouger et se
 // reposer », non par décision mais parce qu'une troisième source y avait été
 // ajoutée. Ces tests fixent la structure voulue — mouvement 1/2, repos 1/2 dont
-// deux tiers pour le questionnaire validé.
+// deux tiers pour le questionnaire scoré.
 describe('besoin 5 — mouvement et repos à parts égales', () => {
   // PSQI parfait → couverture 1 ; agenda au plateau → couverture 1.
   // Sous-échelle « activité physique » de Q_MOD_01, avec ses VRAIS identifiants.
@@ -211,7 +211,7 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
     expect(couverture).toBeCloseTo(0.5, 6);
   });
 
-  it('dans le repos, le questionnaire validé pèse deux fois l’agenda', () => {
+  it('dans le repos, le questionnaire scoré pèse deux fois l’agenda', () => {
     // Sans activité renseignée, le repos se partage 2/3 PSQI + 1/3 agenda.
     const psqiSeul = calculerCouvertureBesoin(5, { Q_SOM_01: PSQI_PARFAIT });
     const agendaSeul = calculerCouvertureBesoin(5, { Q_SOM_09: AGENDA_PLATEAU });

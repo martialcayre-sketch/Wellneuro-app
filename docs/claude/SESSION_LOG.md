@@ -3110,3 +3110,29 @@ en premier — un outil d'état qui ne compare qu'une dimension sur six rend un
 
 **Questions ouvertes.** La date d'arbitrage HDS diverge d'un jour entre
 `CAMPAGNE.md` (2026-07-22) et le dossier RGPD (2026-07-21).
+
+## 2026-08-08 — Dette 2 réglée : la validation psychométrique n'entre pas au programme
+
+**Décisions.** D-034 — décision utilisateur : Wellneuro repère et prépare une
+consultation, il ne mesure pas. Un **non assumé**, qui ferme la dette 2 au lieu
+de la reporter. Conséquence exécutable : la consigne système ne revendique plus
+la validation (`synthese-v18` → `v19`), seule surface du runtime à l'affirmer, et
+un garde de banc refuse son retour. « Certifié » reçoit sa définition là où le
+mot s'emploie. Le verdict 5.0 passe à 4 fermées / 1 reportée / 3 ouvertes.
+
+**Options écartées.** Ingérer les études de validation (bornée ou intégrale) :
+une campagne, pour un statut dont le produit ne se réclame nulle part. Ajouter
+le sens de « certifié » aux badges praticien : geste d'UI, nommé comme dû dans
+D-034 plutôt que prétendu fait.
+
+**Prochaine action.** Campagne des trois dettes ouvertes, la 6 en premier —
+motif : taux de récidive, pas prérequis.
+
+**Questions ouvertes.** Les badges « Certifié » circulent sans leur définition.
+
+**Ce que deux passes de revue ont rattrapé, et qui vaut d'être retenu.** (1) Ma
+première rédaction interdisait de présenter les instruments comme validés — faux
+clinique : le catalogue sert l'EORTC QLQ-C30, le PSQI, la HAD, l'Epworth. (2) Le
+faux survivait dans l'énoncé de D-034 et dans le fragment de changelog après
+correction du prompt. (3) Mon exception de regex `par ailleurs` était un
+**passe-partout** : creusée pour un cas légitime, réutilisable par le défaut.
