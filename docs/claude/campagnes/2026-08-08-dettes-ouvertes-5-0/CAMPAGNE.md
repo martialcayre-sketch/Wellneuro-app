@@ -1,10 +1,10 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00 livré, trois lots ouverts"
+statut: "en cours (2026-08-08) — LOT-00 et LOT-01 livrés, deux lots ouverts"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
-lot_courant: "LOT-00"
+lot_courant: "LOT-01"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -28,8 +28,9 @@ relecture ne suffisait pas.
 ## Résultat observable
 
 1. Une vue dérivée qui ment sur sa source fait rougir un banc — pas une revue.
-2. Le parcours patient legacy porte une **date-cible** de retrait, et plus aucun
-   lien interne ne le vise.
+2. Le parcours patient legacy **n'existe plus** — arbitrage du 2026-08-08 :
+   retrait immédiat plutôt que date-cible. Seule subsiste la redirection 307,
+   pour les liens e-mail déjà partis.
 3. Le badge « Certifié » ne peut plus être lu par un praticien comme une
    validation psychométrique : la définition de D-034 est à portée du badge.
 4. Une dérive registre/packs qui reviendrait est **détectée**, et non retrouvée
@@ -116,9 +117,24 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   efface la récidive qu'il est censé compter ; la réparation reste un geste
   explicite, et elle n'est pas la même pour les trois gardes (le détail est dans
   l'entête de `scripts/wn-coherence-etat.test.mjs`).
-- La date-cible de retrait du parcours legacy (LOT-01) est une **décision
-  produit** : quelle échéance, et adossée à quelle mesure d'usage ?
-  `next.config.mjs:34` renvoie à « une nouvelle mesure d'usage » qui n'existe pas.
+- ~~La date-cible de retrait du parcours legacy (LOT-01)~~ **Tranchée le
+  2026-08-08 : retrait immédiat.** La mesure d'usage qu'invoquait
+  `next.config.mjs` n'existait pas, et le parcours était inatteignable depuis
+  trois jours — la produire pour dater un retrait acquis aurait coûté plus que
+  le retrait lui-même.
+- **Jusqu'à quand garder la redirection `/patient/*` ?** Le LOT-01 a retiré le
+  parcours mais laissé sa redirection **sans échéance** : la dette « une date
+  qui n'existe pas » s'est déplacée, elle ne s'est pas fermée. Elle sert des
+  liens e-mail déjà partis, dont on ignore la durée de vie réelle — une mesure
+  d'accès sur la redirection trancherait (constat de la revue du 2026-08-08).
+- **`api/patient/assignations` n'a plus d'appelant** depuis le LOT-01. Retrait
+  d'une route d'API = décision séparée ; porté ici pour ne pas le redécouvrir
+  dans six semaines.
+- **`seuils_points` reste ouvert dans la classe « recueil partiel »** : il ne
+  garde que le recueil entièrement vide, et son porteur `Q_ALI_01` est allumé en
+  production. Aucune règle d'orientation publiée ne lit sa bande — c'est la
+  seule raison pour laquelle il attend. Fermer ce moteur est un geste clinique
+  qui demande sa propre décision.
 - Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
   (« Scoring vérifié ») ou un lien vers la définition ? Le mot « Certifié » est
   employé par le praticien à l'oral : le renommer a un coût d'usage.
@@ -145,7 +161,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
-| LOT-01 | Dette 5 — une date de retrait réelle, et plus aucun lien vers le legacy | à ouvrir | — |
+| LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | à ouvrir | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | à ouvrir | LOT-00 |
 
@@ -159,15 +175,16 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 - [ ] `last_checked_at` postérieur à `updated_at` est refusé, et le test le
       prouve par mutation.
 - [ ] Le lot courant de `.wn/state.json` est confronté à `CAMPAGNE.md`.
-- [ ] Une date-cible de retrait du parcours legacy existe, dans le code et dans
-      la doc — une **échéance**, pas la date d'une décision.
-- [ ] Aucun `href` interne ne vise `/patient/:idAssignation`.
+- [x] Le parcours legacy est **retiré** (le cadrage prévoyait une date-cible ;
+      l'arbitrage du 2026-08-08 a préféré le retrait).
+- [x] Aucun `href` interne ne vise `/patient/:idAssignation` — il vivait dans
+      la page supprimée.
 - [ ] Le badge « Certifié » ne peut plus se lire comme une validation
       psychométrique, et un banc l'assère.
 - [ ] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour.
-- [ ] Les deux corrections mineures sont faites (commentaires de scoring, date
-      d'arbitrage HDS).
+- [ ] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;
+      date d'arbitrage HDS divergente d'un jour, encore à faire (LOT-03).
 - [ ] Le jalon du 2026-10-21 est rappelé à la clôture, pour le gate **et** pour
       le dossier RGPD.
 - [ ] T2 avant chaque commit UI/API, T3 avant la PR de campagne ; anti-secrets.

@@ -7,7 +7,7 @@
 Application de consultation en neuronutrition clinique, à deux portails :
 - **Portail praticien** (`/dashboard/*`) : gestion patients, assignation de questionnaires, packs, génération de synthèse IA, envoi de booklets.
 - **Portail patient permanent** (`/portail/[token]`) : espace patient unifié, accès par token révocable (non prédictible), vérification email une seule fois + cookie signé `wn_portail`, onboarding (consentement, fiche signalétique, anamnèse) puis hub « Mes questionnaires ». **Flux patient principal.**
-- **Flux patient legacy** (`/patient/[idAssignation]`) : ancien accès par lien d'assignation + email gate, conservé en compatibilité.
+- **Flux patient legacy** (`/patient/[idAssignation]`) : **retiré le 2026-08-08** (dette 5). Il n'en reste qu'une redirection 307 vers `/portail/connexion`, pour les liens e-mail déjà partis chez des patients.
 
 Production : `https://app.wellneuro.fr` (Vercel).
 
@@ -26,7 +26,6 @@ Production : `https://app.wellneuro.fr` (Vercel).
 
 - `web/src/app/dashboard/*` — pages praticien (patients, synthèse, métriques)
 - `web/src/app/portail/[token]` — portail patient permanent (onboarding + hub « Mes questionnaires » + pages autonomes par questionnaire)
-- `web/src/app/patient/[idAssignation]` — flux patient legacy (compatibilité)
 - `web/src/app/api/praticien/*` — routes serveur praticien (patients, assignations, questionnaires, reponses, synthèse, booklet, metrics, packs, consultations, token)
 - `web/src/app/api/portail/*` — routes serveur portail patient (session, consentement, fiche, assignations, valider)
 - `web/src/app/api/patient/*` — routes serveur patient legacy (questionnaire, submit, assignations, consentement, reponses)

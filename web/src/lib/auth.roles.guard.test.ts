@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { authOptions, profilPraticienAutorise } from './auth';
@@ -29,9 +29,11 @@ import { authOptions, profilPraticienAutorise } from './auth';
 const RACINE = join(__dirname, '..');
 
 /** Surfaces patient : rien de ce qui suit ne doit connaître NextAuth. */
+// `app/patient` a disparu le 2026-08-08 avec le retrait du parcours legacy
+// (dette 5). La racine n'est pas remplacée : les routes `app/api/patient`
+// restent, et c'est là que la garde compte.
 const RACINES_PATIENT = [
   'app/portail',
-  'app/patient',
   'app/api/portail',
   'app/api/patient',
   'lib/portail',
@@ -59,6 +61,19 @@ describe('séparation des rôles — NextAuth est réservé aux praticiens', () 
     // Si l'arborescence bouge et que le parcours ne trouve plus les fichiers,
     // tous les tests ci-dessous passeraient à vide. Ce plancher le signale.
     expect(SURFACES_PATIENT.length).toBeGreaterThan(25);
+  });
+
+  it('`app/patient` reste supprimé — sinon sa racine doit revenir dans la liste', () => {
+    // Le parcours legacy a été retiré le 2026-08-08 (dette 5) et sa racine
+    // sortie de `RACINES_PATIENT`. Le trou n'est pas le retrait, c'est le
+    // RETOUR : un `git revert`, ou une vieille branche qui ressort, restaure le
+    // répertoire sans restaurer l'entrée du garde — et une page patient
+    // pourrait alors obtenir une session NextAuth sans qu'aucun banc ne le
+    // dise. Ce test échoue à la résurrection et nomme le geste à faire.
+    expect(
+      existsSync(join(RACINE, 'app/patient')),
+      "app/patient est réapparu : rajouter 'app/patient' à RACINES_PATIENT",
+    ).toBe(false);
   });
 
   it.each(SURFACES_PATIENT)('%s n’importe pas NextAuth', chemin => {

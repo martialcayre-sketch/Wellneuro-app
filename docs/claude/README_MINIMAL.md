@@ -15,7 +15,7 @@
 ## Routes principales
 
 - **Praticien** : `/dashboard/*` (patients, assignations, synthèses, booklets)
-- **Patient** : `/portail/[token]` (principal, token révocable) + `/patient/[idAssignation]` (legacy)
+- **Patient** : `/portail/[token]` (unique depuis le retrait du legacy `/patient/[idAssignation]`, 2026-08-08)
 - **API** : `api/praticien/*`, `api/portail/*`, `api/patient/*` (tout PostgreSQL)
 
 ## Fichiers cœur

@@ -41,7 +41,6 @@ const SURFACES_PATIENT = [
   // module pur, hors de `components/patient` — sans cette entrée, un « 5 jours
   // d'affilée » y passerait sous le radar du garde.
   'lib/agenda-sommeil/rappelPortail.ts',
-  'app/patient',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.

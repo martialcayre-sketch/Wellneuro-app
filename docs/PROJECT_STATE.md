@@ -22,7 +22,7 @@
 
 - **Praticien** (`/dashboard/*`) : gestion patients, assignations, questionnaires, synthèse IA, booklets
 - **Patient permanent** (`/portail/[token]`) : accès par token révocable, onboarding, hub « Mes questionnaires », consultation permanente — **flux principal**
-- **Patient legacy** (`/patient/[idAssignation]`) : ancien flux, conservé en compatibilité, sans token
+- **Patient legacy** (`/patient/[idAssignation]`) : **retiré le 2026-08-08** — reste une redirection 307 vers `/portail/connexion` pour les liens e-mail déjà partis
 
 ## Données et persistance
 

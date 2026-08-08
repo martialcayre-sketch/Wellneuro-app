@@ -16,42 +16,66 @@ const enTetesSecurite = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
-// Le portail patient et le parcours legacy s'ouvrent sur un lien à jeton : si un
-// tel lien fuite vers un crawler, la page ne doit pas finir indexée. Ni l'un ni
-// l'autre n'a vocation à être trouvé par un moteur.
+// Le portail patient s'ouvre sur un lien à jeton : si un tel lien fuite vers un
+// crawler, la page ne doit pas finir indexée. L'en-tête couvre aussi
+// `/patient/:path*`, où il ne reste plus qu'une redirection (voir plus bas) —
+// c'est elle qu'un crawler rencontrerait en suivant un ancien lien e-mail.
 const enTetesSansIndexation = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }];
 
 const nextConfig = {
   reactStrictMode: true,
-  // Parcours patient unique : toute navigation vers le parcours legacy
+  // Parcours patient unique : toute navigation vers l'ancienne URL
   // `/patient/[idAssignation]` est renvoyée sur l'entrée du portail.
   //
-  // 307 (`permanent: false`) et pas 308 : la redirection est une mesure de
-  // convergence, pas une réécriture d'URL définitive. Un 308 est mis en cache
-  // durablement par les navigateurs et les intermédiaires — si le retrait du
-  // legacy devait être reporté ou partiellement défait, un 301/308 déjà en
-  // cache resterait actif sur les postes patients sans aucun moyen de le
-  // rappeler. Le retrait définitif du répertoire est prévu après une nouvelle
-  // mesure d'usage (voir `src/app/patient/[idAssignation]/page.tsx`).
+  // **Le répertoire `src/app/patient/` a été SUPPRIMÉ le 2026-08-08** (dette 5,
+  // LOT-01). Cette redirection n'est donc plus une convergence entre deux
+  // parcours vivants : elle est le seul reste du parcours legacy, et elle
+  // existe pour les liens e-mail déjà partis chez des patients. La retirer
+  // ferait tomber ces liens en 404 au lieu de les ramener au portail.
+  //
+  // 307 (`permanent: false`) et pas 308 : un 308 est mis en cache durablement
+  // par les navigateurs et les intermédiaires, et resterait actif sur les
+  // postes patients sans aucun moyen de le rappeler. Le coût d'un 307 est un
+  // aller-retour de plus ; celui d'un 308 mal placé est irrattrapable.
   //
   // Aucun email n'est transmis en query string vers `/portail/connexion` :
   // l'adresse du patient est une donnée de santé indirecte, et une redirection
   // la déposerait dans les journaux serveur, l'historique du navigateur et les
   // barres d'URL partagées. `/portail/connexion` redemande l'adresse — c'est le
   // coût assumé d'une reprise sans fuite.
-  async redirects() {
-    return [
-      {
-        source: '/patient/:idAssignation*',
-        destination: '/portail/connexion',
-        permanent: false,
-      },
-    ];
-  },
+  //
+  // LA REDIRECTION N'EST PLUS ICI — elle vit dans `web/src/middleware.ts`, et
+  // ce déplacement est ce qui rend vrai le paragraphe ci-dessus.
+  //
+  // Deux faits mesurés le 2026-08-08, aucun des deux documenté jusque-là :
+  //
+  // 1. **Un `redirects()` recopie la query string d'origine dans la
+  //    destination**, et rien de déclaratif ne l'en empêche — une query portée
+  //    par la destination est *fusionnée*, pas substituée
+  //    (`/patient/ASS_x?email=…` rendait `/portail/connexion?email=…`, puis
+  //    `?email=…&depuis=lien-ancien` à l'essai suivant). La phrase « aucun
+  //    email n'est transmis en query string » était donc juste sur l'intention
+  //    et fausse sur le fait depuis le 2026-08-05 (LOT-04) ; rien ne
+  //    l'éprouvait.
+  // 2. **`redirects()` s'exécute AVANT le middleware.** Le garder « en filet »
+  //    ne coûtait pas seulement un doublon : il gagnait la course et
+  //    neutralisait entièrement le middleware. Un filet placé en amont n'est
+  //    pas un filet, c'est le chemin réel.
+  //
+  // Contrepartie assumée : plus de repli déclaratif. Si le middleware disparaît
+  // ou que son `matcher` dérive, un ancien lien tombe en 404 au lieu d'atterrir
+  // sur le portail. C'est ce que `e2e/parcours-legacy-redirection.spec.ts`
+  // surveille, sur les deux navigateurs.
   async headers() {
     return [
       { source: '/:path*', headers: enTetesSecurite },
       { source: '/portail/:path*', headers: enTetesSansIndexation },
+      // Conservé après la suppression du répertoire, mais SANS l'effet qu'on
+      // lui prêtait : Next n'applique pas ces en-têtes à la réponse 307 d'un
+      // `redirects()` — mesuré, `X-Robots-Tag` y est absent. Ce qui protège
+      // réellement, c'est que la destination `/portail/:path*` les porte, et
+      // c'est cette page-là qu'un crawler indexerait. L'entrée reste pour le
+      // jour où une route servirait de nouveau sous `/patient/`.
       { source: '/patient/:path*', headers: enTetesSansIndexation },
     ];
   },

@@ -209,9 +209,29 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
  * `items` sur chaque axe : la garde ci-dessous l'attrape par ses deux branches,
  * sans rien de spécifique au TFD.
  *
- * NE PAS LIRE CETTE GARDE COMME LA CLÔTURE DE LA CLASSE pour autant.
- * `sum_decimal`, `count_threshold` et `ecab` la portent encore ; ce qui les
- * distingue n'est pas d'être protégés, c'est qu'aucune règle publiée ne les vise.
+ * LES TROIS MOTEURS NOMMÉS SONT FERMÉS DEPUIS LE 2026-08-05 (PR #583).
+ * `sum_decimal`, `count_threshold` et `ecab` portaient le même défaut ; les
+ * trois ont reçu la même garde dans `web/src/lib/questions.ts` — recueil
+ * incomplet → `interpretation: null` et note explicite (`count_threshold`
+ * L2517, `ecab` L3357, `sum_decimal` L3706), couverte par trois bancs dédiés
+ * (`qInf05RecueilPartiel`, `ecabRecueilPartiel`, `qdrsRecueilPartiel`).
+ * Ce commentaire les a déclarés « encore ouverts » pendant trois jours après
+ * leur fermeture, ici et dans `orientationRulesV1.ts` : le dépôt contredisait
+ * sa propre correction à deux endroits (dette 3 de la déclaration 5.0).
+ *
+ * MAIS LA CLASSE, ELLE, N'EST PAS FERMÉE — et l'écrire serait le défaut
+ * inverse. `seuils_points` (`questions.ts:2140`) ne garde que le recueil
+ * ENTIÈREMENT vide (`repondus === 0`, L2131) : sur un recueil partiel il sert
+ * la bande. Son porteur est `Q_ALI_01`, l'Enquête SIIN 57 items, **allumée en
+ * production**, dont l'instrument n'est pas `cabinet` — un envoi partiel est
+ * donc accepté. Les items muets ne rapportant pas de points, la bande servie
+ * tend vers le bas : c'est le sens le moins dangereux de l'erreur, pas son
+ * absence. L'arbitrage écrit L2183-2189 (« sur un total à 57 items, un
+ * manquant est du bruit ») porte sur les SOUS-SCORES SERVIS, pas sur la bande.
+ * Constat de la revue adversariale du 2026-08-08, hors périmètre du lot qui
+ * l'a trouvé : aucune règle d'orientation publiée ne lit cette bande
+ * aujourd'hui, et fermer `seuils_points` est un geste clinique qui demande sa
+ * propre décision.
  *
  * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
  * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de

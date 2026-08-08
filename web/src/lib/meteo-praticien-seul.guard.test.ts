@@ -17,7 +17,6 @@ const SURFACES_PATIENT = [
   'components/patient-food-observation',
   'components/food-observation',
   'app/portail',
-  'app/patient',
   'app/api/portail',
   'app/api/patient',
 ];
