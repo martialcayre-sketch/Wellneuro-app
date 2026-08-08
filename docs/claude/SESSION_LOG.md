@@ -3205,3 +3205,40 @@ l'écran praticien, toute la famille des libellés (arbitrage du 2026-08-08).
 
 **Questions ouvertes.** Jusqu'à quand garder la redirection `/patient/*` ?
 `api/patient/assignations` n'a plus d'appelant.
+
+## 2026-08-08 — LOT-02 : « Certifié » devient « Scoring vérifié »
+
+**Décisions.** Renommer le libellé plutôt qu'ajouter une infobulle ou un lien, et
+sur **toute la famille** — « Non certifié » se lit aussi bien comme « non validé
+psychométriquement » (D-036). Aucune donnée renommée : l'écart écran/dossier est
+assumé et écrit.
+
+**Options écartées.** L'infobulle native : hover-only, et `UX_WELLNEURO_3_0.md`
+la remplace explicitement par un bouton d'information ; aucun composant
+réutilisable n'existe. Le lien : fait quitter l'écran. Ne qualifier que les trois
+badges verts : échelle incohérente.
+
+**Ce que deux passes de revue adversariale ont rattrapé, dont trois défauts
+survivant au premier correctif.** (1) Un garde qui interdit un **mot** n'épingle
+pas une **affirmation** : la prose cabinet inversée passait verte. (2) La surface
+principale n'avait **aucun** rendu asséré — la page mocke le panneau. (3) Le
+libellé n'est que la moitié du badge : `variant="success"` en dur rendait tous les
+états **en vert**, d'où `data-variant` sur `Badge`. (4) Une fixture qui accorde
+deux champs cesse d'exercer la seconde moitié d'un `||`. (5) Un banc qui ne couvre
+que les états servis aujourd'hui rate `inconnu`, l'état de 21 instruments.
+
+**Ce qui est mesuré, non estimé.** 65 instruments : 38 `certifie`, **21
+`inconnu`**, 6 `ambigu` — et **18 des 21 sont `scoring_verifie` au registre**,
+donc l'écran taît une vérification qui a eu lieu. Le MMSE n'en fait pas partie
+(`contenu_verrouille`) : le citer comme divergence était faux.
+
+**La classe de défaut que ce lot a payée trois fois.** Un chiffre se relève sur la
+base qu'on annonce : « 131 E2E » venait d'une passe portant un banc jetable (130),
+deux comptes de rouges venaient de sélections partielles, et « 14 blocs seed »
+comptait une lecture pour une donnée (15).
+
+**Prochaine action.** LOT-03 (dette 4) : re-mesurer la dérive registre/packs à la
+date d'ouverture, puis poser le garde contre son retour.
+
+**Questions ouvertes.** Rien ne relie « Scoring vérifié » au barreau
+`scoring_verifie` dont il emprunte le nom — même lot que le garde anti-dérive ?

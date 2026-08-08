@@ -53,11 +53,13 @@ import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel'
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
 import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
+import {
+  type CertificationLue,
+  libelleCertificationPassation,
+} from '@/lib/certification-libelles';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-
-type ScoreCertification = { source?: string; status?: string };
 
 function getArrayField(scores: Record<string, unknown> | null, key: string): string[] {
   const value = scores?.[key];
@@ -130,29 +132,6 @@ function syntheseSansRedondanceSousScores(texte: string, aDesSousScores: boolean
     if (idx > 0) return texte.slice(0, idx).trim();
   }
   return texte;
-}
-
-function certificationBadge(certification: ScoreCertification | null) {
-  if (!certification) return null;
-  if (certification.source === 'drive' && certification.status === 'certifie') {
-    return { label: 'Certifié Drive', variant: 'success' as BadgeVariant };
-  }
-  if (certification.source === 'drive' && certification.status === 'ambigu') {
-    return { label: 'Drive ambigu', variant: 'warning' as BadgeVariant };
-  }
-  if (certification.source === 'manuel_eortc' && certification.status === 'certifie') {
-    // Sans cette branche, le badge tombait sur « Non certifié » alors que le
-    // registre porte `scoring_verifie` et que le moteur suit le manuel officiel :
-    // la fiche contredisait le dossier.
-    return { label: 'Certifié manuel EORTC', variant: 'success' as BadgeVariant };
-  }
-  if (certification.status === 'a_verifier') {
-    return { label: 'À vérifier', variant: 'warning' as BadgeVariant };
-  }
-  if (certification.status === 'non_score') {
-    return { label: 'Non scoré', variant: 'neutral' as BadgeVariant };
-  }
-  return { label: 'Non certifié', variant: 'neutral' as BadgeVariant };
 }
 
 function interpColorToVariant(color?: string): BadgeVariant {
@@ -763,7 +742,7 @@ export function FichePatientPanel({
             <tbody>
               {reponses.map(r => {
                 const scores = r.scoresParsed;
-                const certification = certificationBadge((scores?.certification as ScoreCertification | undefined) ?? null);
+                const certification = libelleCertificationPassation((scores?.certification as CertificationLue | undefined) ?? null);
                 const missingIds = getArrayField(scores, 'missingIds');
                 const notApplicable = getArrayField(scores, 'notApplicable');
                 const note = typeof scores?.note === 'string' ? scores.note : '';

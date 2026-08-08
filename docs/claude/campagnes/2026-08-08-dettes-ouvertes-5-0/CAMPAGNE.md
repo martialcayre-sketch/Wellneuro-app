@@ -1,10 +1,10 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00 et LOT-01 livrés, deux lots ouverts"
+statut: "en cours (2026-08-08) — LOT-00, LOT-01 et LOT-02 livrés, un lot ouvert"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -135,9 +135,36 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   production. Aucune règle d'orientation publiée ne lit sa bande — c'est la
   seule raison pour laquelle il attend. Fermer ce moteur est un geste clinique
   qui demande sa propre décision.
-- Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
-  (« Scoring vérifié ») ou un lien vers la définition ? Le mot « Certifié » est
-  employé par le praticien à l'oral : le renommer a un coût d'usage.
+- ~~Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
+  (« Scoring vérifié ») ou un lien vers la définition ?~~ **Tranchée le
+  2026-08-08 : le libellé, et sur toute la famille des libellés** (`D-036`). Le
+  coût d'usage oral est accepté ; une infobulle native est hover-only et
+  `UX_WELLNEURO_3_0.md` la remplace explicitement par un bouton d'information.
+- **Le vocabulaire de l'écran et celui du dossier ont divergé, et c'est voulu.**
+  Le LOT-02 n'a renommé aucune donnée : `instrument_registry.json`,
+  `StatutCertificationRuntime` et la valeur `'certifie'` gardent le mot. Faut-il
+  un jour aligner le dossier sur l'écran ? Ce serait une campagne de registre, et
+  la dépendance irait dans le bon sens ; rien ne l'exige aujourd'hui.
+- **Le seed omet une clé que le moteur produit.** Les **15** blocs `scoresJson` de
+  `web/prisma/seed.ts` ne portent aucune `certification`, alors que les moteurs la
+  propagent. Aucun E2E n'assère donc les libellés de passation — mais **rien ne
+  l'en empêche** : c'est une assertion qui manque, pas une impossibilité. Étendre
+  le seed et poser l'assertion : geste séparé, non fait au LOT-02. Et le geste ne
+  suffira pas seul — Sophie Nicola porte **cinq** passations, dont **quatre**
+  déclarent `certification` ; la cinquième est le PSQI, muet.
+- **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
+  le 2026-08-08 sur le catalogue résolu : 38 `certifie`, **21 `inconnu`**, 6
+  `ambigu`. Croisés au registre : **18 des 21 portent `scoring_verifie`**, dont le
+  PSQI (`Q_SOM_01`) ; les trois autres non (`Q_GEO_04` `contenu_verrouille`,
+  `Q_SOM_09` `droits_verifies`, `Q_ALI_09` `repere`) — pour le MMSE, « Statut
+  inconnu » est l'écho du registre, pas une divergence. Le lot traite le badge qui
+  rassure à tort ; celui qui ne dit rien reste. Dette nommée, sans lot.
+- **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
+  vérifié » reproduit `scoring_verifie` du registre, mais lit
+  `def.scoring.certification.status` du catalogue de code, et
+  `verifier_registre_instruments.js` ne compare jamais les deux. Voisin naturel
+  du garde anti-dérive du LOT-03 — à trancher à son ouverture : même lot, ou
+  dette à part ?
 - Le garde anti-dérive du LOT-03 doit-il vivre dans `web/prisma/checks/` (contrat
   de données, rejoué en CI sur base éphémère) ou en lecture de production
   planifiée ? Seul le second voit la vraie dérive ; seul le premier est gratuit.
@@ -162,7 +189,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 |---|---|---|---|
 | LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
-| LOT-02 | « Certifié » à l'écran sans la définition de D-034 | à ouvrir | — |
+| LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | à ouvrir | LOT-00 |
 
 ## Done de campagne
@@ -179,8 +206,26 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       l'arbitrage du 2026-08-08 a préféré le retrait).
 - [x] Aucun `href` interne ne vise `/patient/:idAssignation` — il vivait dans
       la page supprimée.
-- [ ] Le badge « Certifié » ne peut plus se lire comme une validation
-      psychométrique, et un banc l'assère.
+- [x] Le badge « Certifié » ne peut plus se lire comme une validation
+      psychométrique, et un banc l'assère. **Renommé « Scoring vérifié »**, sur
+      les neuf libellés de la famille et les trois proses du tiroir cabinet
+      (`D-036`). Preuve relue le 2026-08-08 :
+      `certificationLibelles.guard.test.ts` (table écrite à la main,
+      exhaustivité par le typage, refus de `/certifi/i` sur les valeurs rendues,
+      auto-test du motif), **neuf mutations rendues rouges** — dont **cinq
+      trouvées par deux passes de revue adversariale, et trois qui passaient
+      encore vertes après le premier correctif** : le SENS de la prose cabinet
+      inversé sans le mot interdit, un libellé nu posé directement dans le
+      composant, `variant="success"` codé en dur (tous les états en vert), la
+      clause `statutCertification === 'certifie'` retirée du `||`, et le badge
+      masqué pour l'état `inconnu`. S'y ajoutent deux bancs de rendu qui assèrent
+      le texte **et la couleur** (`BibliothequePanel.test.tsx` pour les **six**
+      états du catalogue, `FichePatientPanel.test.tsx` pour la colonne
+      « Qualité ») et le sélecteur E2E du badge cabinet.
+      Réserves à ne pas effacer : le seed omet une clé que le moteur **produit**
+      (assertion manquante, pas impossibilité) ; le badge est **muet pour 21 des
+      65 instruments**, production comprise ; et rien ne relie le libellé au
+      barreau `scoring_verifie` dont il emprunte le nom.
 - [ ] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour.
 - [ ] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;

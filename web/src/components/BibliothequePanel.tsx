@@ -8,6 +8,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { ECHELLES_NOMMEES, type EchelleNommee } from '@/lib/echelles-cabinet';
+import {
+  LIBELLE_INSTRUMENT_CABINET,
+  TEXTE_INSTRUMENTS_CABINET,
+  libelleCertificationBibliotheque,
+} from '@/lib/certification-libelles';
 import type { BibliothequeEntree } from '@/lib/bibliotheque';
 import type { BibliothequeApiResponse } from '@/app/api/praticien/bibliotheque/route';
 import type { ApercuApiResponse } from '@/app/api/praticien/bibliotheque/apercu/route';
@@ -28,25 +33,6 @@ import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer
 type Rayon = 'questionnaires' | 'analyses' | 'conseils';
 
 type PatientOption = { email: string; prenom: string; nom: string };
-
-function badgeCertification(entree: BibliothequeEntree): { label: string; variant: 'success' | 'warning' | 'neutral' } {
-  if (entree.certifie || entree.statutCertification === 'certifie') {
-    return { label: 'Certifié', variant: 'success' };
-  }
-  if (entree.statutCertification === 'ambigu') {
-    return { label: 'Certification ambiguë', variant: 'warning' };
-  }
-  if (entree.statutCertification === 'a_verifier') {
-    return { label: 'Certification à vérifier', variant: 'warning' };
-  }
-  if (entree.statutCertification === 'non_score') {
-    return { label: 'Non scoré', variant: 'neutral' };
-  }
-  if (entree.statutCertification === 'inconnu') {
-    return { label: 'Statut inconnu', variant: 'neutral' };
-  }
-  return { label: 'Non certifié', variant: 'neutral' };
-}
 
 // Rayon Questionnaires de la Bibliothèque (arbitrages 2026-07-23) :
 // chercher → prévisualiser tel que le patient le verra → ajouter à la file →
@@ -380,7 +366,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 </Button>
               }
               titre={editionInitiale ? 'Modifier l’instrument' : 'Créer un questionnaire'}
-              description="Instrument privé au cabinet — jamais certifié automatiquement : la grille est relue puis publiée avant tout envoi."
+              description="Instrument privé au cabinet — son scoring n’est jamais vérifié par WellNeuro : la grille est relue puis publiée avant tout envoi."
               ouvert={tiroirEditeur}
               onOpenChange={setTiroirEditeur}
             >
@@ -465,7 +451,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
               <ul className="max-h-[520px] overflow-y-auto p-2">
                 {filtres.map(e => {
                   // Badge explicite : évite de laisser « sans badge » ambigu sur un instrument actif.
-                  const badgeCertif = badgeCertification(e);
+                  const badgeCertif = libelleCertificationBibliotheque(e);
                   return (
                     <li key={e.id}>
                       <button
@@ -491,7 +477,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                           <Badge variant={badgeCertif.variant}>{badgeCertif.label}</Badge>
                           {e.passationPraticien && <Badge variant="warning">Passation praticien</Badge>}
                           {e.aliasVers && <Badge variant="neutral">Alias historique</Badge>}
-                          {e.cabinet && <Badge variant="warning">Cabinet — non certifié</Badge>}
+                          {e.cabinet && <Badge variant="warning">{LIBELLE_INSTRUMENT_CABINET}</Badge>}
                           {e.cabinet && e.cabinet.statutRelecture !== 'valide' && (
                             <BadgeStatutInstrument statut={e.cabinet.statutRelecture} />
                           )}
@@ -515,10 +501,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                     {instrumentsCabinet.length}
                   </span>
                 </div>
-                <p className="mt-1 text-2xs text-muted-foreground">
-                  Privés à votre cabinet — jamais certifiés ; publication après relecture de la
-                  grille.
-                </p>
+                <p className="mt-1 text-2xs text-muted-foreground">{TEXTE_INSTRUMENTS_CABINET}</p>
                 {erreurInstruments ? (
                   <p role="alert" className="mt-3 text-xs text-status-danger">
                     Impossible de charger les instruments — réessayez.
@@ -1229,8 +1212,8 @@ function EditeurInstrument({
         </Button>
       </div>
       <p className="text-2xs text-muted-foreground">
-        Jamais certifié automatiquement : la grille doit être relue puis publiée avant tout envoi.
-        Toute modification repasse l’instrument en brouillon.
+        Son scoring n’est jamais vérifié par WellNeuro : la grille doit être relue puis publiée
+        avant tout envoi. Toute modification repasse l’instrument en brouillon.
       </p>
     </div>
   );
@@ -1419,7 +1402,8 @@ function RelectureGrille({
           Grille relue — publier
         </Button>
         <p className="mt-2 text-2xs text-muted-foreground">
-          La publication rend l’instrument assignable via la file d’envoi. Il reste non certifié.
+          La publication rend l’instrument assignable via la file d’envoi. Son scoring reste non
+          vérifié par WellNeuro.
         </p>
       </div>
     </div>

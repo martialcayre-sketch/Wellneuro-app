@@ -69,7 +69,13 @@ type Options = {
   orientation?: 'inactif' | 'actif';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
-  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable' | 'subscores-detail';
+  reponses?:
+    | 'defaut'
+    | 'dimensions'
+    | 'dimensions-degradees'
+    | 'non-interpretable'
+    | 'subscores-detail'
+    | 'certification';
 };
 
 // Passation dont le résultat enregistré n'est pas une mesure (réservoir
@@ -92,6 +98,60 @@ const REPONSES_NON_INTERPRETABLE = {
       scoresParsed: { rawAnswers: { M1: 2 } },
       subScoreRanges: null,
       nonInterpretable: MOTIF_TEST,
+    },
+  ],
+};
+
+// Colonne « Qualité » — les trois libellés de vérification de scoring que la
+// fiche peut rendre (D-036, LOT-02). La fixture par défaut porte
+// `scoresParsed: null`, donc « Historique » : sans ces trois lignes, le
+// renommage de « Certifié Drive » en « Scoring vérifié (Drive) » n'était asséré
+// par AUCUN rendu — seulement par le mapper, qui ne prouve pas que l'écran
+// l'emploie.
+const REPONSES_CERTIFICATION = {
+  reponses: [
+    {
+      idReponse: 'REP_CERT_DRIVE',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_SOM_01',
+      titre: 'Instrument scoré sur grille Drive',
+      dateSoumission: '2026-07-03T10:00:00.000Z',
+      scorePrincipal: 9,
+      interpretation: 'Vigilance modérée',
+      scoresParsed: { type: 'sum', total: 9, certification: { source: 'drive', status: 'certifie' } },
+      subScoreRanges: null,
+    },
+    {
+      idReponse: 'REP_CERT_EORTC',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_ONC_01',
+      titre: 'Instrument scoré sur le manuel officiel',
+      dateSoumission: '2026-07-04T10:00:00.000Z',
+      scorePrincipal: 70,
+      interpretation: 'Fonctionnement conservé',
+      scoresParsed: {
+        type: 'subscore',
+        total: 70,
+        certification: { source: 'manuel_eortc', status: 'certifie' },
+      },
+      subScoreRanges: null,
+    },
+    {
+      idReponse: 'REP_CERT_INCONNU',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_C',
+      titre: 'Instrument dont la règle scorée n’est pas vérifiée',
+      dateSoumission: '2026-07-05T10:00:00.000Z',
+      scorePrincipal: 4,
+      interpretation: 'Sans particularité',
+      // `historique` est un membre DÉCLARÉ de `CertificationSource`
+      // (`lib/scoring/types.ts:5`) qu'aucun moteur n'écrit — la vraie forme
+      // d'une passation ancienne est l'absence de clé `certification`, qui rend
+      // « Historique » et non ce badge. Une première rédaction employait
+      // `source: 'cabinet'`, qui n'appartient même pas à l'union : le contrôle
+      // négatif prouvait alors le défaut sur une entrée impossible.
+      scoresParsed: { type: 'sum', total: 4, certification: { source: 'historique' } },
+      subScoreRanges: null,
     },
   ],
 };
@@ -262,6 +322,7 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
       if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
       if (options.reponses === 'subscores-detail') return ok(REPONSES_A_SUBSCORES_AVEC_DETAIL);
+      if (options.reponses === 'certification') return ok(REPONSES_CERTIFICATION);
       return ok(REPONSES);
     }
     if (url.includes('/api/praticien/patients')) {
@@ -799,6 +860,43 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     expect(ligne.textContent).not.toContain('Interprétation retirée');
     expect(ligne.textContent).not.toContain('Non interprétable');
     expect(within(ligne).getByText('Démence modérée')).toBeTruthy();
+  });
+
+  it('colonne Qualité : le badge dit que le SCORING est vérifié, jamais que l’instrument est validé', async () => {
+    // D-036 (LOT-02) : « Certifié » se lisait comme une validation
+    // psychométrique, que WellNeuro ne revendique pas (D-034). Le mapper est
+    // gardé à part (`lib/certificationLibelles.guard.test.ts`) ; ce test-ci
+    // prouve que l'ÉCRAN l'emploie — un mapper renommé qu'un composant
+    // n'appellerait pas laisserait l'ancien libellé à l'affichage.
+    await rendreFiche({ reponses: 'certification' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligneDrive = (await screen.findByText('Instrument scoré sur grille Drive')).closest('tr')!;
+    const badgeDrive = within(ligneDrive).getByText('Scoring vérifié (Drive)');
+    expect(badgeDrive).toBeTruthy();
+    // La COULEUR autant que le mot : un `variant` codé en dur ferait passer
+    // « Scoring non vérifié » en vert sur une fiche patient sans que le libellé
+    // change. Relevé en revue adversariale.
+    expect(badgeDrive.getAttribute('data-variant')).toBe('success');
+
+    // La source de la règle scorée reste nommée : le moteur EORTC suit le manuel
+    // officiel, pas la grille Drive. Les deux libellés doivent différer à
+    // l'écran, sinon la fiche cesse de dire d'où vient ce qui a été vérifié.
+    const ligneEortc = screen.getByText('Instrument scoré sur le manuel officiel').closest('tr')!;
+    expect(within(ligneEortc).getByText('Scoring vérifié (manuel EORTC)')).toBeTruthy();
+
+    // Contrôle négatif : une source sans statut vérifié ne doit PAS hériter du
+    // badge vert. Ce qu'il attrape, précisément, c'est un mapper dont la branche
+    // par défaut aurait basculé côté `success` — les deux assertions ci-dessus
+    // ne le verraient pas, puisqu'elles cherchent un texte exact et le
+    // trouveraient encore.
+    const ligneInconnu = screen
+      .getByText('Instrument dont la règle scorée n’est pas vérifiée')
+      .closest('tr')!;
+    const badgeInconnu = within(ligneInconnu).getByText('Scoring non vérifié');
+    expect(badgeInconnu).toBeTruthy();
+    expect(badgeInconnu.getAttribute('data-variant')).toBe('neutral');
+    expect(ligneInconnu.textContent).not.toContain('Scoring vérifié');
   });
 
   it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {
