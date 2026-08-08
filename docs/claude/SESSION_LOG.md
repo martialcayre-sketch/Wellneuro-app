@@ -3169,3 +3169,19 @@ SESSION_LOG → roadmaps, lecture seule).
 (#618, #620, cette PR).
 
 **Questions ouvertes.** Néant.
+
+## 2026-08-08 — Fin de session : refonte environnement Claude Code close
+
+**Décisions.** Chantier livré en trois PR mergées : refonte (#618), suites et
+corrections du contre-audit externe (#620), fusion `wn-auto` → `/wn` et
+confirmation de la clé `paths:` (#622). Revue Copilot de #622 intégrée :
+`wn-check-automation.sh` nettoyé de `wn-auto` (contrôle 42/42), chemins du
+changelog précisés.
+
+**Options écartées.** Étendre le « merge si green » de #620 à #622 sans
+instruction : le merge est resté à la main de l'utilisateur.
+
+**Prochaine action.** Aucune sur cet outillage. Développement courant sous le
+nouveau régime : Sonnet 5 + high + solo, rules path-scopées actives.
+
+**Questions ouvertes.** Néant.
