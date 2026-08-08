@@ -4,7 +4,10 @@
   : un verdict par dette de l'audit d'entrée — *fermée* avec sa preuve,
   *arbitrée et reportée* avec sa date de revue, ou *ouverte* avec ce qui la
   porte. **Verdict : 5.0 n'est pas déclarable en bloc** — 3 dettes fermées, 1
-  reportée au 2026-10-21, **4 ouvertes**.
+  reportée au 2026-10-21, **4 ouvertes**. *(Décompte du jour de la clôture.
+  Révisé le même jour par D-034, qui ferme la dette 2 : voir le fragment
+  `2026-08-08-d034-non-validation-psychometrique.md`, qui fait foi — **4 fermées,
+  1 reportée, 3 ouvertes**.)*
 
 ### Ce que la vérification a changé
 

@@ -22,14 +22,24 @@ c'est la seule raison d'être de ce document.
 
 | | Dettes |
 |---|---|
-| **Fermées** | 1 (consommation), 3 (moteurs de scoring), 7 (chemin d'écriture en base) |
+| **Fermées** | 1 (consommation), **2 (validation psychométrique — par décision, D-034)**, 3 (moteurs de scoring), 7 (chemin d'écriture en base) |
 | **Arbitrée et reportée** | 8 (HDS) — revue au **2026-10-21** |
-| **Ouvertes** | 2 (validation psychométrique), 4 (double source des packs), 5 (deux parcours patients), 6 (état réel) |
+| **Ouvertes** | 4 (double source des packs), 5 (deux parcours patients), 6 (état réel) |
 
-Trois fermées, une reportée, quatre ouvertes. La campagne a fait ce qu'elle
-annonçait — rendre observable et consommable ce qui est livré — mais **quatre
+Quatre fermées, une reportée, trois ouvertes. La campagne a fait ce qu'elle
+annonçait — rendre observable et consommable ce qui est livré — mais **trois
 dettes demandent un travail qu'aucun lot de cette campagne n'a exécuté**, et
 deux d'entre elles se croyaient plus avancées qu'elles ne le sont.
+
+> **Mise à jour du 2026-08-08.** Ce document a été écrit le jour de la clôture,
+> puis corrigé **trois fois**. **La dette 2 a été fermée par une décision** prise
+> après coup (D-034). **La dette 4 portait une mesure périmée** : celle du
+> LOT-02, datée du 2026-08-05, démentie par une lecture de production du
+> 2026-08-08. Et **le motif qui plaçait la dette 6 en tête était surestimé** —
+> corrigé en fin de document. Les trois vont dans des sens différents : une
+> dette fermée, une urgence abaissée, un raisonnement rectifié. Un document de
+> clôture cite des mesures ; une mesure a une date, et une clôture n'arrête pas
+> le monde.
 
 ---
 
@@ -50,7 +60,35 @@ dormantes portent chacune un arbitrage daté du 2026-08-05 dans
 
 ## Dette 2 — Certification du calcul ≠ validation psychométrique
 
-**Verdict : ouverte.** LOT-06, PR #617 — travail réel, dette non fermée.
+**Verdict : fermée par décision, le 2026-08-08 — D-034.**
+
+> **Ce verdict a changé après la clôture.** Il disait *ouverte*, et la suite de
+> cette section explique pourquoi c'était juste : le LOT-06 avait soldé la
+> **traçabilité** de l'écart, pas l'écart. Ce qui manquait n'était pas du travail
+> mais **une décision**, et elle a été rendue : la validation psychométrique
+> **n'entre pas au programme**. Wellneuro repère et prépare une consultation ; il
+> ne mesure pas. Une dette qu'on décide de ne pas contracter est fermée, pas
+> ouverte.
+>
+> **Preuve, et elle n'est pas seulement déclarative.** `D-034` dans
+> `docs/DECISIONS.md` ; la définition de « certifié » écrite là où le mot
+> s'emploie (`docs/claude/corpus/README.md`) ; et surtout **une ligne de code** :
+> la consigne système de synthèse disait « organiser les résultats de
+> questionnaires **validés** » — seule surface du runtime à revendiquer la
+> validation, et celle qui fabrique le texte clinique lu par le praticien puis
+> remis au patient. Elle porte désormais l'énoncé exact — *WellNeuro n'a
+> évalué la validité d'aucun instrument qu'il sert et ne s'en réclame pas*, ce
+> qui ne nie pas la validité de ceux qui le sont par ailleurs —
+> (`synthese-v18` → `synthese-v19`), avec un garde de banc qui refuse le retour
+> de la revendication **et** exige la présence du démenti.
+>
+> **Réversible, et à un prix connu** : le vocabulaire fermé `A|B|C|inconnu` et le
+> banc qui interdit un grade sans étude concordante restent en place. Rouvrir
+> demande une campagne d'ingestion, rien à défaire.
+
+Ce qui suit est l'analyse du 2026-08-08 au matin, conservée telle quelle.
+
+**Verdict d'alors : ouverte.** LOT-06, PR #617 — travail réel, dette non fermée.
 
 **Preuve de ce qui est fait.** Les 65 instruments portent `cosmin: inconnu`, et
 la raison est écrite une fois (`docs/claude/corpus/README.md`). Le banc
@@ -109,9 +147,25 @@ dont il mesure ensuite **zéro occurrence en production**. Le geste livré ne
 couvre donc aucun cas observé, et le lot le reconnaît : son hypothèse de départ
 était fausse.
 
-Reste concret : 1 pack sur 8 en dérive réelle
-(`PACK_-bG21yeIvVYRhrdlYuWIMnFz`, `Q_SOM_09` absent du registre), non
-resynchronisé.
+> **Correction du 2026-08-08 — la mesure citée était périmée.** Cette section
+> affirmait, d'après le LOT-02 : « 1 pack sur 8 en dérive réelle
+> (`PACK_-bG21yeIvVYRhrdlYuWIMnFz`, `Q_SOM_09` absent du registre), non
+> resynchronisé ». **Lecture de production du 2026-08-08 : 0 divergence sur 8
+> packs**, `Q_SOM_09` présent des deux côtés du pack de base. Une écriture d'une
+> **autre** campagne (`packs.updated_at = 2026-08-07 15:46`) l'avait
+> resynchronisé au passage.
+>
+> Le fait était vrai à sa mesure — 2026-08-05 — et faux à sa publication. Il a
+> franchi T3, deux passes de revue adversariale et le CI, parce qu'on relit la
+> **valeur** d'une mesure citée, jamais sa **date**. Une mesure de production
+> reprise d'un lot antérieur porte toujours *sa* date, pas celle du document qui
+> la cite.
+
+**Reste concret, au 2026-08-08 : aucune dérive.** Ce qui manque n'est plus une
+resynchronisation mais **un garde contre le retour de la dérive** — les deux
+sources s'accordent aujourd'hui par l'effet d'une écriture qui ne visait pas cet
+objectif, pas par un mécanisme. C'est ce qui maintient le verdict *ouverte*, et
+ce qui en abaisse l'urgence.
 
 ## Dette 5 — Deux parcours patients
 
@@ -241,19 +295,30 @@ Les deux ont été trouvés par une revue adversariale, pas par les tests.
 
 ## Ce qui doit devenir une campagne
 
-Les quatre dettes ouvertes n'entrent **pas** dans celle-ci : on ne pose pas au
-moment de fermer une dette découverte à la fermeture. Elles demandent leur propre
-cadrage, et voici ce qu'il devra porter :
+Les dettes ouvertes n'entrent **pas** dans celle-ci : on ne pose pas au moment de
+fermer une dette découverte à la fermeture. Elles demandent leur propre cadrage,
+et voici ce qu'il devra porter — **ordre révisé le 2026-08-08 après audit**.
 
-1. **Dette 6 d'abord** — un outil d'état qui ne compare qu'une dimension sur six
-   rend un « zéro écart » qui n'engage rien. Tout jugement sur les autres dettes
-   passe par lui.
-2. **Dette 5** — poser une date de retrait réelle, et retirer le lien interne
-   survivant.
-3. **Dette 4** — resynchroniser le pack en dérive, ou fermer le repli en
-   connaissance de cause.
-4. **Dette 2** — décider si la validation psychométrique entre au programme, ou
-   écrire qu'elle n'y entre pas.
+1. **Dette 6 d'abord.** Le motif d'origine était surestimé : la déclaration
+   écrivait « tout jugement sur les autres dettes passe par lui », et c'est
+   faux — aucun des huit verdicts n'a utilisé `wn-etat-reel`, tous ont été
+   rendus en exécutant les scripts et en lisant le code. Le vrai motif est
+   étroit et tient quand même : **cette campagne a produit quatre
+   auto-déclarations fausses**, et les deux défauts de la PR de clôture
+   elle-même sont exactement ce que les deux gardes proposés attraperaient
+   (confronter `ACTIVE_CAMPAIGN.md` à sa source ; refuser un
+   `last_checked_at` postérieur à `updated_at`). C'est un argument de **taux de
+   récidive**, pas de prérequis : il justifie « tôt et pas cher ».
+2. **Dette 5, avec elle** — poser une date de retrait réelle et retirer le lien
+   interne survivant. Petite et bornée ; voyage dans n'importe quel lot.
+3. **Dette 4 en dernier, re-mesurée d'abord.** Il n'y a plus de dérive en
+   production (lecture du 2026-08-08) ; ce qui reste est l'absence de garde
+   contre son retour.
+
+**La dette 2 ne figure plus dans cette liste** : elle était une *décision*, pas
+une tâche, et elle a été rendue le 2026-08-08 — D-034, elle n'entre pas au
+programme. C'était le défaut de forme de la liste d'origine, qui la mettait
+quatrième d'une file de lots quand elle coûtait quelques minutes d'arbitrage.
 
 Plus deux corrections mineures : les commentaires de `orientationEngine.ts` et
 `orientationRulesV1.ts` qui déclarent faussement trois moteurs ouverts, et la

@@ -192,14 +192,27 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // le modèle ne peut plus rencontrer, et l'y laisser aurait entretenu l'idée
 // qu'un pack est encore une cible d'orientation. Ce que la version garde, mot
 // pour mot : « l'absence de segment État n'atteste rien ».
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v18';
+// v19 (2026-08-08, D-034) : la première phrase disait « questionnaires
+// **validés** » — seule surface du runtime à revendiquer la validation
+// psychométrique, et la plus lourde puisqu'elle fabrique le texte lu par le
+// praticien puis remis au patient, pendant que le registre porte
+// `cosmin: inconnu` pour les 65 instruments. Remplacée par « structurés », plus
+// une puce déontologique. **Cette puce a dû être corrigée avant merge** : sa
+// première rédaction interdisait de présenter les instruments comme validés —
+// or le catalogue sert l'EORTC QLQ-C30, le PSQI, la HAD, l'Epworth, qui le sont
+// par ailleurs. Nier leur validité aurait été un faux clinique. L'interdit
+// porte donc sur **notre revendication** (« WellNeuro n'a évalué… et ne s'en
+// réclame pas »), jamais sur la nature de l'instrument. Bump : une synthèse
+// rédigée sous v18 a pu s'appuyer sur une validation que rien n'établissait.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v19';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
-export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires validés remplis par un patient avant sa consultation.
+export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires structurés remplis par un patient avant sa consultation.
 
 ## Cadre déontologique
 
+- **Ces questionnaires servent au repérage et à la préparation de la consultation. WellNeuro n'a évalué la validation psychométrique d'aucun instrument qu'il sert, et ne s'en réclame pas.** Certains sont des échelles publiées et validées par ailleurs, d'autres non : ne fonde aucune conclusion sur ce statut, ne qualifie jamais un score de mesure validée, et n'invoque ni norme ni étalonnage de population que les données transmises ne portent pas.
 - Tu ne poses pas de diagnostic médical.
 - Tu formules des hypothèses, des priorités cliniques et des questions d'entretien.
 - Tu t'appuies uniquement sur les scores et interprétations fournis ET sur le contexte anamnestique et signalétique du patient, sans rien extrapoler au-delà des données transmises.

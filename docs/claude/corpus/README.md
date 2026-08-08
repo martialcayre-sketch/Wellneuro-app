@@ -60,6 +60,22 @@ Deux propriétés à ne pas défaire :
   production. Le garde ne les confronte pas à la base : le CI n'y a pas accès, et
   un compteur périmé ne doit pas rougir le CI.
 
+## Ce que « certifié » veut dire ici (D-034, 2026-08-08)
+
+`statutCertification: scoring_verifie` dans `instrument_registry.json` signifie
+**une seule chose** : le code reproduit fidèlement la règle enregistrée — items
+servis conformes à la source, moteur de scoring vérifié par le banc `certify`.
+
+Cela ne dit **rien** de la qualité psychométrique de l'instrument : ni validité
+de construit, ni fidélité, ni étalonnage des seuils sur une population. Un
+instrument peut être `scoring_verifie` et n'avoir jamais été validé — c'est
+d'ailleurs le cas des 65.
+
+**Et c'est une décision, pas une lacune.** D-034 (2026-08-08) tranche : la
+validation psychométrique **n'entre pas au programme**. Wellneuro sert ces
+instruments pour **repérer et préparer une consultation**, pas pour mesurer. Ce
+qui suit sur COSMIN en découle et n'est plus une dette ouverte.
+
 ## COSMIN : inconnu, et pourquoi (LOT-06, 2026-08-07)
 
 Le champ `cosmin` d'`instrument_registry.json` vaut **`inconnu` pour les 65

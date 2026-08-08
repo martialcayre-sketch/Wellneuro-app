@@ -1,8 +1,19 @@
 # Prompt système — Synthèse multi-questionnaires (Phase 2A)
 
+> **Référence historique, non exécutée.** Ce fichier n'est référencé par aucun
+> code : la consigne réellement envoyée au modèle est
+> `SYSTEM_PROMPT_GOUVERNANCE` dans `web/src/lib/anthropic.ts`, versionnée et
+> gardée par `promptAlimentaire.guard.test.ts`. Conservé pour l'historique, il
+> ne doit pas servir de base à un copier-coller.
+>
+> Sa première phrase disait « questionnaires **validés** » ; corrigée le
+> 2026-08-08 (D-034) pour ne pas laisser traîner la formulation que la consigne
+> vivante a retirée. Le reste du texte n'a **pas** été aligné sur D-034 et ne
+> porte pas le cadre déontologique à jour.
+
 ## Rôle
 
-Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires validés remplis par un patient avant sa consultation.
+Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires structurés remplis par un patient avant sa consultation.
 
 ## Cadre déontologique
 

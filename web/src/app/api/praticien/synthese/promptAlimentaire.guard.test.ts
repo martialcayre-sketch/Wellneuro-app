@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v18`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v19`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -106,7 +106,15 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // plus aucune règle d'orientation ne cible un pack, et le modèle ne peut donc
 // plus en rencontrer un dans son bloc. Ce que la consigne garde inchangé :
 // « l'absence de segment État n'atteste rien ».
-const EMPREINTE_V18 = '5433d1358707bab5';
+const EMPREINTE_V19 = 'c492a641fa62743e';
+
+/**
+ * La seule phrase de la consigne autorisée à attribuer une validité — parce
+ * qu'elle dit vrai : certains instruments servis (EORTC QLQ-C30, PSQI, HAD,
+ * Epworth) sont validés hors de WellNeuro. Elle est retirée du texte avant que
+ * le garde D-034 y cherche la revendication interdite.
+ */
+const NUANCE_VALIDITE_EXTERNE = 'Certains sont des échelles publiées et validées par ailleurs';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -220,7 +228,69 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v18', empreinte: EMPREINTE_V18 });
+    ).toEqual({ version: 'synthese-v19', empreinte: EMPREINTE_V19 });
+  });
+
+  it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {
+    // La consigne affirmait « questionnaires validés » (v18 et antérieures).
+    // C'était la seule surface du RUNTIME à revendiquer la validation
+    // psychométrique — et la plus lourde, puisqu'elle fabrique le texte
+    // clinique lu par le praticien puis remis au patient, pendant que le
+    // registre porte `cosmin: inconnu` pour les 65 instruments. (Le fichier
+    // `prompts/synthese_multi_questionnaires.md` portait la même phrase, mais
+    // n'est référencé par rien : c'est une pièce historique, pas une surface.)
+    //
+    // Il faut une absence ET une présence : l'absence seule serait satisfaite
+    // par une consigne muette, où le modèle reprendrait la formulation qu'on
+    // lui retire — classe de défaut que ce fichier documente déjà deux fois
+    // (« une consigne purement prohibitive laisse le modèle inventer une
+    // formulation de repli »).
+    //
+    // PREMIÈRE RÉDACTION DE CE GARDE, REFUSÉE EN REVUE : elle assérait
+    // `not.toContain('questionnaires validés')` plus deux mots isolés
+    // (« validation psychométrique », « repérage »). La phrase suivante la
+    // passait VERTE en réintroduisant exactement la revendication —
+    // « Ces questionnaires sont des instruments validés ; leur validation
+    // psychométrique est établie, et ils servent aussi au repérage. » Une
+    // sous-chaîne exacte se contourne par un synonyme ou un singulier, et deux
+    // mots isolés sont satisfaits par l'inversion exacte du démenti.
+    //
+    // D'où la forme retenue : la PHRASE ENTIÈRE du démenti, et un motif qui
+    // couvre les variantes de la revendication.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(
+      "WellNeuro n'a évalué la validation psychométrique d'aucun instrument qu'il sert, et ne s'en réclame pas",
+    );
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('repérage et à la préparation de la consultation');
+    // L'interdit porte sur NOTRE revendication, jamais sur la nature de
+    // l'instrument : le catalogue sert l'EORTC QLQ-C30, le PSQI, la HAD,
+    // l'Epworth — validés par ailleurs. Une consigne qui le nierait ferait
+    // écrire un faux au modèle. Ce marqueur garde la nuance.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(NUANCE_VALIDITE_EXTERNE);
+
+    // DEUXIÈME RÉDACTION, REFUSÉE AUSSI : le motif portait une exception
+    // `(?!\s+par\s+ailleurs)` pour épargner la nuance ci-dessus. Mais un
+    // lookahead s'applique au PROMPT ENTIER, pas à la phrase pour laquelle il a
+    // été taillé — « Ces questionnaires sont validés par ailleurs, tu peux donc
+    // t'en prévaloir » le passait vert. **Une échappatoire creusée pour un cas
+    // légitime est réutilisable par le défaut.** D'où la forme retenue : retirer
+    // la phrase de nuance CONNUE, puis appliquer un motif SANS exception. C'est
+    // l'assertion de présence ci-dessus qui protège la nuance, pas le motif.
+    //
+    // L'ancrage de fin de mot n'est pas décoratif, et il ne peut pas être un
+    // `\b` : en JavaScript, `\w` est `[A-Za-z0-9_]`, donc **`é` n'est pas un
+    // caractère de mot**. Après « validé » suivi d'une espace, il n'y a aucune
+    // frontière — deux non-mots se suivent — et le garde laissait passer tout
+    // le singulier (« chaque questionnaire validé »). D'où l'ancrage explicite :
+    // pas suivi d'une lettre, accents compris.
+    //
+    // CE QUE CE MOTIF NE COUVRE PAS, dit plutôt que tu : trois mots intercalés
+    // (« ces instruments ont tous été validés ») et le substantif
+    // (« la validité psychométrique est établie »). Et il rougirait sur
+    // « un questionnaire validé par le praticien » — formulation naturelle,
+    // absente de la consigne aujourd'hui, qui rougirait pour la mauvaise raison.
+    expect(SYSTEM_PROMPT_GOUVERNANCE.replace(NUANCE_VALIDITE_EXTERNE, '')).not.toMatch(
+      /(questionnaires?|instruments?|échelles?|outils?)(\s+\S+){0,2}\s+validé[es]*(?![a-zàâäéèêëïîôöùûüç])/i,
+    );
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
