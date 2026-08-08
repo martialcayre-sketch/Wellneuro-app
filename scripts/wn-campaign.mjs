@@ -6,6 +6,7 @@ import {
   readMachineState as lireEtatMachine,
   writeMachineState as ecrireEtatMachine,
 } from "./wn-state.mjs";
+import { rendreVueCampagnesActives } from "./lib/vue-campagnes-actives.mjs";
 
 const args = process.argv.slice(2);
 const command = args[0] || "status";
@@ -417,30 +418,12 @@ function campaignActivity(campaignId, state = readMachineState()) {
 }
 function writeActiveCampaignView() {
   ensureBase();
-  const machineState = readMachineState();
-  const campaigns = readCampaigns();
-  const activeCampaignId = machineState.active_campaign || "";
-  const primary = campaigns.find((campaign) => campaign.name === activeCampaignId);
-  const parallels = normalizedParallelCampaigns(machineState).map((entry) => ({
-    ...entry,
-    campaign: campaigns.find((campaign) => campaign.name === entry.campaign_id)
-  }));
-  const hasActivity = Boolean(activeCampaignId || parallels.length);
-  const status = machineState.status || (hasActivity ? "active" : "idle");
-  const updatedAt = (machineState.updated_at || new Date().toISOString()).slice(0, 10);
-  const primaryBlock = activeCampaignId
-    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : active\n**Lot actif** : ${machineState.active_lot || "aucun"}\n`
-    : "## Activité primaire\n\nAucune campagne primaire active.\n";
-  const parallelBlock = parallels.length
-    ? parallels.map((entry) => `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || "active"}\n**Lot actif** : ${entry.active_lot || "aucun"}`).join("\n\n")
-    : "Aucune campagne parallèle active.";
-  const content = hasActivity
-    ? `# Campagnes actives\n\n${primaryBlock}\n## Activités parallèles\n\n${parallelBlock}\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`
-    // Même pied de page que la branche active : la phrase « cette vue est
-    // générée » est ce qui dissuade de l'éditer à la main. La tronquer quand
-    // la campagne est idle retirait le garde exactement là où le fichier est
-    // le plus court, donc le plus tentant à corriger à la main.
-    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`;
+  // Le rendu vit dans `scripts/lib/vue-campagnes-actives.mjs` : un garde doit
+  // pouvoir régénérer la vue attendue sans exécuter ce CLI (dont le seul import
+  // déclenche la commande). L'écriture reste ici.
+  const content = rendreVueCampagnesActives(readMachineState(), readCampaigns(), {
+    updatedAtParDefaut: new Date().toISOString()
+  });
   fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {
