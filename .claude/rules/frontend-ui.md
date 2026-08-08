@@ -3,10 +3,6 @@ paths:
   - "web/src/app/**"
   - "web/src/components/**"
   - "web/src/**/*.css"
-globs:
-  - "web/src/app/**"
-  - "web/src/components/**"
-  - "web/src/**/*.css"
 ---
 
 # Frontend et UI
