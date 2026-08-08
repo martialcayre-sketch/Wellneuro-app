@@ -3110,3 +3110,22 @@ en premier — un outil d'état qui ne compare qu'une dimension sur six rend un
 
 **Questions ouvertes.** La date d'arbitrage HDS diverge d'un jour entre
 `CAMPAGNE.md` (2026-07-22) et le dossier RGPD (2026-07-21).
+
+## 2026-08-08 — Refonte de l'environnement Claude Code (PR #618, mergée)
+
+**Décisions.** CLAUDE.md 309 → 191 lignes ; règles spécialisées en
+`.claude/rules/` path-scopées ; défaut « Sonnet 5 + high + solo » porté par
+CLAUDE.md, fin du méta-routage automatique (`wn-route` manuel) ; échelle
+`think*` supprimée partout ; `wn-cycle`/`wn-attendre-ci` allégés (~15 appels
+`gh` par cycle PR au lieu de ~26-28, polling adaptatif 20→60 s) ; hook de log
+`async: true` ; commentaires CI déplacés en ADR. Suite : orchestrateur GitHub
+orphelin archivé (`archive/scripts/`).
+
+**Options écartées.** Supprimer `wn-explorer` (coût nul, épinglage haiku
+utile) ; trancher `paths:` vs `globs:` sur les rules — test d'injection non
+concluant en session distante, les deux clés restent posées.
+
+**Prochaine action.** Observer en session locale fraîche quelle clé de scoping
+charge réellement les rules, puis retirer l'autre.
+
+**Questions ouvertes.** `wn-auto` sans usage mesuré — fusion dans `/wn` ?

@@ -104,32 +104,13 @@ l'en-tête du script.
 
 ## Orchestration WN
 
-### `wn-github-orchestrator.mjs` - socle d'orchestration GitHub
+### `wn-github-orchestrator.mjs` — archivé (2026-08-08)
 
-Produit un état local de triage à partir de `.wn/state.json`, `.wn/orchestrator.json` et, si disponible, de `gh`.
-Le script ne modifie rien.
-
-Usage:
-
-```bash
-node scripts/wn-github-orchestrator.mjs
-```
-
-Mode JSON:
-
-```bash
-node scripts/wn-github-orchestrator.mjs --json
-```
-
-Sans accès GitHub:
-
-```bash
-node scripts/wn-github-orchestrator.mjs --no-gh
-```
-
-| File | Purpose | Status | Commit? |
-|------|---------|--------|---------|
-| `.wn/orchestrator.json` | Politique machine-readable du socle d'orchestration | ✓ Safe | **YES** |
+Socle de triage en lecture seule jamais branché : aucun skill, hook, workflow
+ni script ne l'invoquait, et il n'avait pas de banc de test. Déplacé vers
+`archive/scripts/wn-github-orchestrator.mjs` (référence seule) avec sa
+politique `.wn/orchestrator.json`, conservée en place tant qu'un successeur ne
+la reprend pas.
 
 ### `wn-campaign-audit.mjs` - audit de conformité des campagnes
 
