@@ -4,6 +4,20 @@
 
 ## Décisions actives
 
+### D-035 — Le parcours patient legacy est retiré, sa redirection reste
+
+- Date : 2026-08-08
+- Statut : accepté (décision utilisateur du 2026-08-08, LOT-01 de la campagne `2026-08-08-dettes-ouvertes-5-0`)
+- Domaine : parcours patient, dette 5 de la déclaration 5.0
+- Décision : **supprimer `web/src/app/patient/` immédiatement**, plutôt que lui poser une date-cible de retrait comme le cadrage le prévoyait. La redirection 307 vers `/portail/connexion` est **conservée sans échéance**.
+- Ce que cette décision renverse, et assume : le LOT-04 de la campagne close avait refusé la suppression **sans mesure d'usage préalable** (`next.config.mjs` invoquait « une nouvelle mesure d'usage »). Cette mesure n'a jamais existé, et la produire pour dater un retrait déjà acquis aurait coûté plus que le retrait. Le risque a été signalé avant exécution et la décision maintenue : le parcours était inatteignable depuis le 2026-08-05, plus aucun lien interne ne le visait, et les 406 lignes supprimées ne portaient aucune règle que le portail ne porte déjà.
+- Conséquences :
+  - **La conséquence d'une panne de redirection a changé** : avant, un patient tombait sur l'ancien parcours (dégradé mais fonctionnel) ; désormais, sur un 404. La redirection est donc devenue critique, et un banc E2E l'emprunte enfin (`web/e2e/parcours-legacy-redirection.spec.ts`) — elle n'en avait aucun.
+  - **La redirection n'a pas de date de fin de vie**, et c'est une dette assumée, pas un oubli : elle sert des liens e-mail déjà partis chez des patients, dont on ne connaît pas la durée de vie réelle. La question « jusqu'à quand » reste ouverte dans `CAMPAGNE.md`.
+  - `web/src/app/api/patient/assignations/route.ts` n'a plus d'appelant. Non retirée : le retrait d'une route d'API se décide séparément.
+  - Trois gardes structurelles listaient `app/patient` parmi leurs racines : une a rougi, **deux se sont tues** (leur `readdirSync` avalait l'erreur). Les trois sont purgées, et `auth.roles.guard.test.ts` refuse désormais la résurrection du répertoire sans réinscription de sa racine.
+- Réversibilité : `git revert` restaure la page. Ce qui ne revient pas tout seul, c'est l'entrée `app/patient` des gardes — d'où le test de non-résurrection.
+
 ### D-034 — La validation psychométrique n'entre pas au programme : Wellneuro repère et prépare, il ne mesure pas
 
 - Date : 2026-08-08

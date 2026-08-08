@@ -129,7 +129,7 @@ et `lib/rag/claims/store.ts`. Détail complet : `docs/RAG_PGVECTOR_PRODUCTION.md
 |---|---|
 | Praticien | NextAuth, provider Google OAuth unique, scope `openid email profile`, session JWT 8h, page `/login` custom. `profilPraticienAutorise` (`lib/auth.ts`) applique 3 contrôles cumulatifs : domaine email dans `ALLOWED_DOMAINS=['wellneuro.fr']`, `email_verified === true`, et `hd` (si présent) dans le domaine autorisé — non exigé si absent, pour ne pas fermer l'accès si Google cesse de le renvoyer |
 | Portail patient (`/portail/[token]`) | Token révocable + cookie signé HMAC (`lib/patient-session.ts`), indépendant de NextAuth |
-| Legacy (`/patient/[idAssignation]`) | Email gate sans session (`lib/patient-access.ts`), vérification de deadline d'accès |
+| Legacy (`/patient/[idAssignation]`) | **Retiré le 2026-08-08** : plus de page, seule subsiste une redirection 307 vers `/portail/connexion`. `lib/patient-access.ts` reste utilisé par les routes `api/patient/*` |
 
 ## 7. Pipeline RAG et corpus clinique
 

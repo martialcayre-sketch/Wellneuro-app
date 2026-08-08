@@ -33,9 +33,39 @@ rien ne le vise.
   qui consomme la même route serveur. Vérifié avant la suppression, pas supposé.
 - `web/src/app/patient/layout.tsx`.
 
+## Ce que la revue adversariale a trouvé, et qui n'était pas dans le périmètre
+
+Le lot affirmait que « les E2E sont le seul lieu où la redirection est
+empruntée ». **Aucun test ne l'empruntait.** Le retrait avait pourtant changé la
+conséquence d'une panne : avant, une redirection cassée laissait la page legacy
+rendre — dégradé mais fonctionnel ; depuis, c'est un 404 sur un lien reçu par
+e-mail. La règle la plus chère du lot était celle sans témoin.
+
+Le banc écrit pour combler ce trou (`e2e/parcours-legacy-redirection.spec.ts`) a
+immédiatement démenti **deux** affirmations du dépôt :
+
+1. **La query string était recopiée.** `next.config.mjs` jurait depuis le
+   2026-08-05 qu'« aucun email n'est transmis en query string vers
+   `/portail/connexion` », l'adresse d'un patient étant une donnée de santé
+   indirecte. Un `redirects()` recopie pourtant la query d'origine :
+   `/patient/ASS_x?email=…` rendait `/portail/connexion?email=…`. Aucune
+   écriture déclarative ne l'empêche — une query portée par la destination est
+   *fusionnée*, pas substituée. La redirection est passée dans
+   `web/src/middleware.ts`, qui la jette.
+2. **`redirects()` s'exécute avant le middleware.** Le garder « en filet » ne
+   coûtait pas un doublon : il gagnait la course et neutralisait le correctif.
+   Un filet placé en amont n'est pas un filet, c'est le chemin réel. Il est
+   retiré, et la contrepartie est assumée : plus de repli déclaratif, donc un
+   404 si le middleware dérive — ce que le banc surveille sur deux navigateurs.
+
+Et un troisième, mineur : `X-Robots-Tag` **n'est pas** appliqué à la réponse 307
+(Next ne pose pas les en-têtes de `headers()` sur une redirection). Ce qui
+protège d'une indexation est que la page d'arrivée les porte. Le commentaire est
+corrigé, l'assertion déplacée sur la destination.
+
 ## Ce qui est conservé, et pourquoi
 
-- **La redirection 307** de `web/next.config.mjs`. Elle n'est plus une
+- **La redirection 307**, désormais portée par `web/src/middleware.ts`. Elle n'est plus une
   convergence entre deux parcours vivants : elle est le seul reste du legacy, et
   elle existe pour les **liens e-mail déjà partis chez des patients**. La
   retirer ferait tomber ces liens en 404 au lieu de les ramener au portail.

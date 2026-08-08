@@ -45,7 +45,7 @@
 - Code GAS archivé dans `archive/gas-legacy/` — gelé, ne jamais modifier.
 - Portail praticien (`/dashboard/*`) et portail patient permanent
   (`/portail/[token]`, flux principal) fonctionnels ; le flux
-  `/patient/[idAssignation]` est conservé en compatibilité legacy.
+  `/patient/[idAssignation]` a été retiré le 2026-08-08 ; seule une redirection 307 subsiste.
 - Synthèse IA (Anthropic SDK, prompt caching préparé) et envoi booklet livrés.
 - 64 questionnaires portés avec moteur de scoring (`web/src/lib/questions.ts`).
 - Pilotage opérationnel actif : architecture campagnes C0/C0-UX/C1…C5

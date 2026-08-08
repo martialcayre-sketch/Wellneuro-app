@@ -42,12 +42,16 @@ Critères de validation :
 - [ ] Rendu mobile utilisable (téléphone réel). *(Émulation iPhone 13 validée le 2026-07-10 : aucun débordement horizontal, boutons ≥ 38 px, badges textuels lisibles ; titres de questionnaires tronqués sur mobile — amélioration UX à considérer en R4. Le passage sur téléphone réel reste à faire.)*
 - [x] Aucune donnée réelle exportée ou committée.
 
-## Phase 1 — Parcours questionnaire (flux patient legacy `/patient/[idAssignation]`)
+## Phase 1 — Parcours questionnaire (portail patient)
+
+> **Le flux legacy `/patient/[idAssignation]` a été retiré le 2026-08-08** (dette 5).
+> Les gestes qui l'empruntaient sont remplacés par le parcours portail ; suivre un
+> ancien lien ne donne plus qu'une redirection vers `/portail/connexion`, ce que
+> couvre `web/e2e/parcours-legacy-redirection.spec.ts`.
 
 - [ ] Créer un patient fictif depuis `/dashboard/patients`.
 - [ ] Assigner un questionnaire au patient fictif.
-- [ ] Ouvrir le lien `/patient/[idAssignation]` généré.
-- [ ] Vérifier l'email gate (email attendu vs assignation en base).
+- [ ] Ouvrir le portail du patient (`/portail/[token]`) et sa file « Mes questionnaires ».
 - [ ] Soumettre des réponses fictives.
 - [ ] Vérifier le calcul du score sans modifier les seuils cliniques.
 - [ ] Vérifier la remontée du résultat côté praticien (`/dashboard/patients`).

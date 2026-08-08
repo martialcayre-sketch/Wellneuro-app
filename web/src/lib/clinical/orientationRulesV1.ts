@@ -227,10 +227,14 @@ export type OrientationRule = {
 // n'a donc pas été rouverte.
 //
 // CE QUI EST CLOS DEPUIS LE 2026-08-05 (PR #583) : `sum_decimal`,
-// `count_threshold` et `ecab` portaient la même classe et ont reçu la même
-// garde dans `web/src/lib/questions.ts` — recueil incomplet →
-// `interpretation: null` et note explicite —, avec trois bancs dédiés. Ils
-// n'« attendent » plus. Le motif du détail est dans `orientationEngine.ts`.
+// `count_threshold` et `ecab` ont reçu la même garde dans
+// `web/src/lib/questions.ts` — recueil incomplet → `interpretation: null` et
+// note explicite —, avec trois bancs dédiés. Ils n'« attendent » plus.
+//
+// CE QUI RESTE OUVERT dans la même classe : `seuils_points`, qui ne garde que
+// le recueil entièrement vide, et dont le porteur `Q_ALI_01` est allumé en
+// production. Aucune règle publiée ne lit sa bande — c'est la seule raison
+// pour laquelle il attend. Motif complet dans `orientationEngine.ts`.
 //
 // TRAÇABILITÉ DES CLAIMS — ce que le CI vérifie, et ce qu'il ne peut pas.
 // Le banc n'atteint que le FORMAT d'un `claimId` : les claims vivent dans

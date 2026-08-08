@@ -16,9 +16,10 @@ const enTetesSecurite = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
-// Le portail patient et le parcours legacy s'ouvrent sur un lien à jeton : si un
-// tel lien fuite vers un crawler, la page ne doit pas finir indexée. Ni l'un ni
-// l'autre n'a vocation à être trouvé par un moteur.
+// Le portail patient s'ouvre sur un lien à jeton : si un tel lien fuite vers un
+// crawler, la page ne doit pas finir indexée. L'en-tête couvre aussi
+// `/patient/:path*`, où il ne reste plus qu'une redirection (voir plus bas) —
+// c'est elle qu'un crawler rencontrerait en suivant un ancien lien e-mail.
 const enTetesSansIndexation = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }];
 
 const nextConfig = {
@@ -42,22 +43,39 @@ const nextConfig = {
   // la déposerait dans les journaux serveur, l'historique du navigateur et les
   // barres d'URL partagées. `/portail/connexion` redemande l'adresse — c'est le
   // coût assumé d'une reprise sans fuite.
-  async redirects() {
-    return [
-      {
-        source: '/patient/:idAssignation*',
-        destination: '/portail/connexion',
-        permanent: false,
-      },
-    ];
-  },
+  //
+  // LA REDIRECTION N'EST PLUS ICI — elle vit dans `web/src/middleware.ts`, et
+  // ce déplacement est ce qui rend vrai le paragraphe ci-dessus.
+  //
+  // Deux faits mesurés le 2026-08-08, aucun des deux documenté jusque-là :
+  //
+  // 1. **Un `redirects()` recopie la query string d'origine dans la
+  //    destination**, et rien de déclaratif ne l'en empêche — une query portée
+  //    par la destination est *fusionnée*, pas substituée
+  //    (`/patient/ASS_x?email=…` rendait `/portail/connexion?email=…`, puis
+  //    `?email=…&depuis=lien-ancien` à l'essai suivant). La phrase « aucun
+  //    email n'est transmis en query string » était donc juste sur l'intention
+  //    et fausse sur le fait depuis le 2026-08-05 (LOT-04) ; rien ne
+  //    l'éprouvait.
+  // 2. **`redirects()` s'exécute AVANT le middleware.** Le garder « en filet »
+  //    ne coûtait pas seulement un doublon : il gagnait la course et
+  //    neutralisait entièrement le middleware. Un filet placé en amont n'est
+  //    pas un filet, c'est le chemin réel.
+  //
+  // Contrepartie assumée : plus de repli déclaratif. Si le middleware disparaît
+  // ou que son `matcher` dérive, un ancien lien tombe en 404 au lieu d'atterrir
+  // sur le portail. C'est ce que `e2e/parcours-legacy-redirection.spec.ts`
+  // surveille, sur les deux navigateurs.
   async headers() {
     return [
       { source: '/:path*', headers: enTetesSecurite },
       { source: '/portail/:path*', headers: enTetesSansIndexation },
-      // Conservé après la suppression du répertoire : l'en-tête part avec la
-      // réponse 307 elle-même, et c'est elle qu'un crawler rencontrerait en
-      // suivant un ancien lien e-mail.
+      // Conservé après la suppression du répertoire, mais SANS l'effet qu'on
+      // lui prêtait : Next n'applique pas ces en-têtes à la réponse 307 d'un
+      // `redirects()` — mesuré, `X-Robots-Tag` y est absent. Ce qui protège
+      // réellement, c'est que la destination `/portail/:path*` les porte, et
+      // c'est cette page-là qu'un crawler indexerait. L'entrée reste pour le
+      // jour où une route servirait de nouveau sous `/patient/`.
       { source: '/patient/:path*', headers: enTetesSansIndexation },
     ];
   },

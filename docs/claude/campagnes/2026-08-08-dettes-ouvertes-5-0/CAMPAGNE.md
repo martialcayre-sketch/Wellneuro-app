@@ -1,7 +1,7 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00 livré, trois lots ouverts"
+statut: "en cours (2026-08-08) — LOT-00 et LOT-01 livrés, deux lots ouverts"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
 lot_courant: "LOT-01"
@@ -122,6 +122,19 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   `next.config.mjs` n'existait pas, et le parcours était inatteignable depuis
   trois jours — la produire pour dater un retrait acquis aurait coûté plus que
   le retrait lui-même.
+- **Jusqu'à quand garder la redirection `/patient/*` ?** Le LOT-01 a retiré le
+  parcours mais laissé sa redirection **sans échéance** : la dette « une date
+  qui n'existe pas » s'est déplacée, elle ne s'est pas fermée. Elle sert des
+  liens e-mail déjà partis, dont on ignore la durée de vie réelle — une mesure
+  d'accès sur la redirection trancherait (constat de la revue du 2026-08-08).
+- **`api/patient/assignations` n'a plus d'appelant** depuis le LOT-01. Retrait
+  d'une route d'API = décision séparée ; porté ici pour ne pas le redécouvrir
+  dans six semaines.
+- **`seuils_points` reste ouvert dans la classe « recueil partiel »** : il ne
+  garde que le recueil entièrement vide, et son porteur `Q_ALI_01` est allumé en
+  production. Aucune règle d'orientation publiée ne lit sa bande — c'est la
+  seule raison pour laquelle il attend. Fermer ce moteur est un geste clinique
+  qui demande sa propre décision.
 - Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
   (« Scoring vérifié ») ou un lien vers la définition ? Le mot « Certifié » est
   employé par le praticien à l'oral : le renommer a un coût d'usage.

@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import { describe, expect, it } from 'vitest';
 import type { QuestionnaireDef } from './questionnaire-types';
 import { calculateScore, QUESTIONNAIRE_CATALOGUE } from './questions';
@@ -89,11 +89,13 @@ describe('registre d’affichage questionnaires', () => {
     const racine = join(__dirname, '..');
     const sites: string[] = [];
     const sansRenderer: string[] = [];
+    let fichiersLus = 0;
     const parcourir = (dossier: string) => {
       for (const entree of readdirSync(dossier, { withFileTypes: true })) {
         const chemin = join(dossier, entree.name);
         if (entree.isDirectory()) { parcourir(chemin); continue; }
         if (!entree.name.endsWith('.tsx') || entree.name.includes('.test.')) continue;
+        fichiersLus += 1;
         const source = readFileSync(chemin, 'utf8');
         let i = source.indexOf('<GenericQuestionnaire');
         while (i !== -1) {
@@ -105,13 +107,25 @@ describe('registre d’affichage questionnaires', () => {
       }
     };
     parcourir(racine);
-    // Anti-vacuité : un balayage qui ne trouve aucun site passerait au vert.
-    // Le plancher était de 2 tant que le parcours legacy `app/patient` montait
-    // le second : il a été retiré le 2026-08-08 (dette 5), et il ne reste que
-    // l'écran portail. Le plancher descend donc à 1 — c'est le nombre de
-    // montages réels, et abaisser un plancher sans le dire est la manière dont
-    // un garde anti-vacuité cesse silencieusement de garder.
-    expect(sites.length, 'aucun montage de GenericQuestionnaire trouvé').toBeGreaterThanOrEqual(1);
+    // Anti-vacuité — et ce qu'elle doit prouver a changé le 2026-08-08.
+    //
+    // Le plancher était « au moins 2 montages » tant que le parcours legacy
+    // `app/patient` montait le second. Il a été retiré (dette 5) et il ne reste
+    // que l'écran portail : descendre le plancher à 1 aurait rendu le garde
+    // aveugle au défaut qu'il surveille vraiment — restreindre `racine` à
+    // `app/portail` laissait alors 1 site trouvé, donc VERT, et le prochain
+    // montage ailleurs sans prop `renderer` serait passé sans témoin.
+    //
+    // On n'assère donc plus un COMPTE de trouvailles mais deux faits
+    // indépendants : le site connu est bien dans la liste (appartenance, pas
+    // sous-chaîne), et le balayage a réellement couvert l'arbre — 157 fichiers .tsx hors tests
+    // aujourd'hui ; le plancher à 120 rougit bien avant qu'un sous-arbre
+    // (app/portail : 11 fichiers) ne remplace la racine.
+    expect(fichiersLus, 'le balayage ne couvre plus l’arbre entier').toBeGreaterThan(120);
+    expect(
+      sites.map((chemin) => relative(racine, chemin)),
+      'le montage portail n’a pas été trouvé : le balayage ne regarde plus au bon endroit',
+    ).toContain(join('app', 'portail', '[token]', 'questionnaires', '[idAssignation]', 'page.tsx'));
     expect(sansRenderer, `pages sans prop renderer : ${sansRenderer.join(', ')}`).toEqual([]);
   });
 

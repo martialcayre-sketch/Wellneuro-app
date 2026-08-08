@@ -126,9 +126,10 @@ export default function PortailQuestionnairePage() {
   // ÉLARGISSEMENT DÉLIBÉRÉ : ce garde vaut pour TOUS les questionnaires, pas
   // seulement l'agenda alimentaire. Le défaut y est identique et le correctif y
   // est le même ; le borner à un instrument aurait laissé l'impasse ouverte
-  // partout ailleurs. Le MÊME garde est posé sur l'autre écran porteur du
-  // `ConsentScreen` (`app/patient/[idAssignation]/page.tsx`), qui passe par la
-  // même route : deux écrans, un seul verdict.
+  // partout ailleurs. Le même garde était posé sur l'autre écran porteur du
+  // `ConsentScreen`, le parcours legacy `app/patient/[idAssignation]` —
+  // **supprimé le 2026-08-08** (dette 5). Cet écran est désormais le SEUL, et
+  // son banc reprend les cinq cas que gardait celui du legacy.
   if (assignation.consentement !== 'donne') {
     if (!data.consentementPossible) {
       // ── LE MESSAGE NE PRÉJUGE PAS DE CE QUI A ÉTÉ FAIT ──────────────────

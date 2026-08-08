@@ -9,7 +9,7 @@
 
 1. **Praticien** → `/dashboard/*` (patients, questionnaires, synthèses IA, booklets)
 2. **Patient** → `/portail/[token]` (onboarding: consentement+fiche+anamnèse, hub questionnaires, révision)
-3. **Patient legacy** → `/patient/[idAssignation]` (compatibilité, email gate)
+3. ~~**Patient legacy** → `/patient/[idAssignation]`~~ — retiré le 2026-08-08, redirection 307 seule
 
 ### Architecture donnée
 
