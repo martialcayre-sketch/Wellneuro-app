@@ -19,6 +19,12 @@ export function Badge({
 }) {
   return (
     <span
+      // `data-variant` expose la COULEUR aux bancs. Sans lui, un badge ne
+      // s'assère que par son texte — et un `variant="success"` codé en dur
+      // rendrait « Scoring non vérifié » en vert sans qu'aucun test ne rougisse
+      // (relevé en revue adversariale au LOT-02). L'alternative serait d'asserter
+      // la classe Tailwind, qui lie les bancs à la feuille de style.
+      data-variant={variant}
       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${VARIANT_CLASSES[variant]}`}
     >
       {children}

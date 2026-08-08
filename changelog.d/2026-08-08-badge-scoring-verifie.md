@@ -58,22 +58,36 @@
   (`FichePatientPanel.test.tsx`), avec son contrôle négatif : un mapper renommé
   qu'un composant n'appellerait pas laisserait l'ancien libellé à l'affichage.
 
-**Six mutations vérifiées, six rouges** — les deux dernières trouvées par la
-revue adversariale, et ce sont les plus instructives :
+- L'attribut `data-variant` sur `web/src/components/ui/Badge.tsx`, pour que la
+  **couleur** du badge soit assérable. Sans lui, un badge ne se prouve que par son
+  texte : `variant="success"` codé en dur rendait « Scoring non vérifié » et
+  « Statut inconnu » **en vert** sans qu'aucun test ne rougisse — or D-036 nomme
+  les badges verts comme ceux qui rassurent à tort.
 
-| Mutation | Rouge |
-|---|---|
-| libellé nu remis dans le module | 5 tests |
-| motif remplacé par `/xyzzy/i` | 10 tests |
-| ancien libellé réintroduit dans un composant | 1 test |
-| source de la règle scorée effacée (EORTC → Drive) | 1 test |
-| **sens de la prose cabinet inversé, sans le mot interdit** | 1 test |
-| **libellé nu posé directement dans le badge du catalogue** | 6 tests |
+**Neuf mutations vérifiées, neuf rouges.** Quatre à l'écriture ; **cinq trouvées
+par deux passes de revue adversariale**, dont trois qui passaient encore vertes
+après le premier correctif. Comptes relevés **sur une même base** — les trois
+bancs du lot en une passe, 101 tests ; les mesurer sur des sélections partielles
+donnait des chiffres plus bas, et deux l'ont été avant correction :
 
-Les deux dernières passaient **vertes** avant correction : un garde qui interdit
-un mot n'épingle pas une affirmation (« leur scoring **est** vérifié par
-WellNeuro » ne porte pas `certifi`), et un contrôle de source ne prouve pas un
-affichage.
+| Mutation | Rouges | Trouvée par |
+|---|---|---|
+| libellé nu remis dans le module | 6 | écriture |
+| motif remplacé par `/xyzzy/i` | 10 | écriture |
+| ancien libellé réintroduit dans un composant | 1 | écriture |
+| source de la règle scorée effacée (EORTC → Drive) | 3 | écriture |
+| sens de la prose cabinet inversé, sans le mot interdit | 1 | revue 1 |
+| libellé nu posé directement dans le badge du catalogue | 9 | revue 1 |
+| `variant="success"` codé en dur — tous les états en vert | 6 | revue 2 |
+| clause `statutCertification === 'certifie'` retirée du `\|\|` | 1 | revue 2 |
+| badge masqué pour l'état `inconnu` (21 instruments) | 3 | revue 2 |
+
+Ce que chacune enseigne : un garde qui interdit un **mot** n'épingle pas une
+**affirmation** ; un contrôle de source ne prouve pas un **affichage** ; un
+libellé juste dans la mauvaise **couleur** dit le contraire de lui-même ; une
+fixture qui accorde deux champs cesse d'exercer la seconde moitié d'un `||` ; et
+un banc qui ne couvre que les états **servis aujourd'hui** cesse de garder au
+prochain changement de registre.
 
 ### Mesuré, et nommé comme dette
 
@@ -81,9 +95,12 @@ affichage.
   le 2026-08-08 sur le catalogue résolu : **38 `certifie`, 21 `inconnu`, 6
   `ambigu`**. Les 21 ne déclarent aucune `certification` (`questionnaires/sommeil.ts`,
   `gerontologie.ts` n'en portent pas une), donc « Statut inconnu » à la
-  bibliothèque et « Historique » sur la fiche, **partout**. PSQI (`Q_SOM_01`) et
-  MMSE (`Q_GEO_04`) sont du nombre, que le registre couvre pourtant. Ce lot traite
-  le badge qui rassure à tort ; celui qui ne dit rien reste.
+  bibliothèque et « Historique » sur la fiche, **partout**. Croisés au registre :
+  **18 des 21 portent `scoring_verifie`**, dont le PSQI (`Q_SOM_01`) ; les trois
+  autres non — `Q_GEO_04` est `contenu_verrouille`, `Q_SOM_09` `droits_verifies`,
+  `Q_ALI_09` `repere`. Pour le MMSE, « Statut inconnu » est donc l'écho fidèle du
+  registre, pas une divergence. Ce lot traite le badge qui rassure à tort ; celui
+  qui ne dit rien reste, sur 18 instruments que le registre certifie.
 - **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
   vérifié » reproduit `scoring_verifie` de `instrument_registry.json` mais lit
   `def.scoring.certification.status`, écrit à la main dans le catalogue de code ;
@@ -91,10 +108,12 @@ affichage.
   divergence rendait un mot vague faux ; désormais elle rend une affirmation
   vérifiable fausse.
 - **Le seed omet une clé que le moteur produit.** Les moteurs propagent la
-  métadonnée et `api/patient/submit` la persiste, mais les 14 blocs `scoresJson`
-  de `prisma/seed.ts` n'en portent aucune — alors que les quatre instruments de
-  Sophie Nicola la déclarent au catalogue. Aucun E2E n'assère donc les libellés de
-  passation : il manque **une assertion, pas une possibilité**.
+  métadonnée et `api/patient/submit` la persiste, mais les **15** blocs `scoresJson`
+  de `prisma/seed.ts` n'en portent aucune. Aucun E2E n'assère donc les libellés de
+  passation : il manque **une assertion, pas une possibilité**. À ne pas adoucir :
+  Sophie Nicola porte **cinq** passations seedées, dont **quatre** déclarent
+  `certification` au catalogue — la cinquième est le PSQI, l'un des 21 muets.
+  Même seed étendu, une passation sur cinq restera « Historique ».
 
 ### Non modifié, et c'est le point
 

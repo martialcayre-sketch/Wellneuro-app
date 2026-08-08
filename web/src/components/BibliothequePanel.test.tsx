@@ -22,6 +22,20 @@ import type { BibliothequeEntree } from '@/lib/bibliotheque';
 // Le contrôle de source du garde ne peut pas fermer ce trou : il refuse les
 // ANCIENS libellés, à la casse près, donc `'Instrument certifié'` en minuscule
 // lui échappe. Seul le rendu le ferme.
+//
+// LE LIBELLÉ N'EST QUE LA MOITIÉ DU BADGE — la seconde est sa COULEUR, et une
+// première rédaction de ce fichier ne l'assérait pas. `<Badge variant="success">`
+// codé en dur rendait alors « Scoring non vérifié », « Scoring ambigu » et
+// « Statut inconnu » **en vert**, sans qu'aucun des 4 200 tests ne rougisse — or
+// D-036 nomme les badges verts comme « ceux qui rassurent à tort ». D'où
+// l'assertion sur `data-variant`, posé par `components/ui/Badge.tsx` pour cela.
+//
+// DEUX ATTENDUS VIENNENT DU MODULE (`LIBELLE_INSTRUMENT_CABINET`,
+// `TEXTE_INSTRUMENTS_CABINET`) : ils prouvent l'ACHEMINEMENT, pas le sens. Le
+// sens est épinglé au mot près par `ATTENDUS_CONSTANTES` dans
+// `lib/certificationLibelles.guard.test.ts`. La preuve tient donc à DEUX
+// fichiers : supprimer là-bas le test de sens rendrait ceux d'ici
+// auto-réalisateurs.
 
 const ENTREE_BASE: BibliothequeEntree = {
   id: 'Q_TEST_01',
@@ -42,25 +56,58 @@ function entree(surcharges: Partial<BibliothequeEntree>): BibliothequeEntree {
   return { ...ENTREE_BASE, ...surcharges };
 }
 
-// Les quatre états qui couvrent les quatre variantes de badge servies par la
-// liste. Attendus **écrits à la main** : les dériver du module rendrait ce banc
-// vrai par construction, et il ne dirait plus rien de l'affichage.
-const ENTREES: Array<{ entree: BibliothequeEntree; libelleAttendu: string }> = [
+// LES SIX ÉTATS, dans l'ordre de `StatutCertificationRuntime`, avec leur libellé
+// ET leur couleur. Attendus **écrits à la main** : les dériver du module rendrait
+// ce banc vrai par construction, et il ne dirait plus rien de l'affichage.
+//
+// Une première rédaction n'en couvrait que quatre et annonçait « les quatre
+// états servis par la liste » — doublement faux, et la mesure du lot le dit :
+// sur les 65 clés du catalogue, aucune ne produit `a_verifier`, `non_score` ni
+// `non_certifie` (celui-là n'existe que pour les entrées cabinet, fabriquées par
+// `api/praticien/bibliotheque/route.ts`), et **21 produisent `inconnu`** — l'état
+// justement absent du banc, celui du PSQI. Masquer le badge pour `inconnu` faisait
+// alors perdre son badge à un tiers du catalogue, tests verts, en contredisant le
+// commentaire du composant (« évite de laisser “sans badge” ambigu »).
+//
+// Les six y sont donc, servis ou non : l'état d'un instrument change avec le
+// registre, et un banc qui ne couvre que l'état du jour cesse de garder au
+// prochain.
+const ENTREES: Array<{
+  entree: BibliothequeEntree;
+  libelleAttendu: string;
+  couleurAttendue: string;
+}> = [
   {
     entree: entree({ id: 'Q_VERT', titre: 'Instrument vérifié', certifie: true, statutCertification: 'certifie' }),
     libelleAttendu: 'Scoring vérifié',
+    couleurAttendue: 'success',
   },
   {
     entree: entree({ id: 'Q_AMBIGU', titre: 'Instrument ambigu', certifie: false, statutCertification: 'ambigu' }),
     libelleAttendu: 'Scoring ambigu',
+    couleurAttendue: 'warning',
   },
   {
     entree: entree({ id: 'Q_AVERIF', titre: 'Instrument à vérifier', certifie: false, statutCertification: 'a_verifier' }),
     libelleAttendu: 'Scoring à vérifier',
+    couleurAttendue: 'warning',
+  },
+  {
+    entree: entree({ id: 'Q_NONSCORE', titre: 'Instrument non scoré', certifie: false, statutCertification: 'non_score' }),
+    libelleAttendu: 'Non scoré',
+    couleurAttendue: 'neutral',
   },
   {
     entree: entree({ id: 'Q_NON', titre: 'Instrument non vérifié', certifie: false, statutCertification: 'non_certifie' }),
     libelleAttendu: 'Scoring non vérifié',
+    couleurAttendue: 'neutral',
+  },
+  {
+    // L'état de 21 instruments sur 65, PSQI compris. Le plus exposé, et le seul
+    // qu'aucun banc ne voyait.
+    entree: entree({ id: 'Q_INCONNU', titre: 'Instrument au statut inconnu', certifie: false, statutCertification: 'inconnu' }),
+    libelleAttendu: 'Statut inconnu',
+    couleurAttendue: 'neutral',
   },
 ];
 
@@ -94,14 +141,33 @@ afterEach(() => {
 });
 
 describe('BibliothequePanel — libellés de vérification de scoring (D-036)', () => {
+  it('couvre les six états de `StatutCertificationRuntime`, sans en perdre un', () => {
+    // Anti-vacuité : les boucles ci-dessous sont satisfaites par un tableau
+    // réduit. Retirer un état sans le dire est la manière dont un banc cesse
+    // silencieusement de garder — c'est le principe que le garde voisin applique
+    // déjà à sa propre table.
+    expect(ENTREES.map(c => c.entree.statutCertification)).toEqual([
+      'certifie',
+      'ambigu',
+      'a_verifier',
+      'non_score',
+      'non_certifie',
+      'inconnu',
+    ]);
+  });
+
   it.each(ENTREES)(
-    'la liste du catalogue rend « $libelleAttendu » pour $entree.id',
-    async ({ entree: e, libelleAttendu }) => {
+    'la liste du catalogue rend « $libelleAttendu » en $couleurAttendue pour $entree.id',
+    async ({ entree: e, libelleAttendu, couleurAttendue }) => {
       stubFetch();
       render(<BibliothequePanel entrees={[e]} />);
 
       const ligne = (await screen.findByText(e.titre)).closest('li')!;
-      expect(within(ligne).getByText(libelleAttendu)).toBeTruthy();
+      const badge = within(ligne).getByText(libelleAttendu);
+      expect(badge).toBeTruthy();
+      // La COULEUR, pas seulement le mot : un `variant` codé en dur rendrait
+      // « Scoring non vérifié » en vert sans rien casser d'autre.
+      expect(badge.getAttribute('data-variant')).toBe(couleurAttendue);
     },
   );
 
@@ -120,12 +186,30 @@ describe('BibliothequePanel — libellés de vérification de scoring (D-036)', 
     }
   });
 
+  it('aucun état ne perd son badge — « sans badge » est aussi ambigu que le mot nu', async () => {
+    // Le composant rend un badge dans TOUS les cas, `inconnu` compris
+    // (`BibliothequePanel.tsx`, « évite de laisser “sans badge” ambigu sur un
+    // instrument actif »). Sans cette assertion, masquer le badge des 21
+    // instruments `inconnu` passait vert.
+    stubFetch();
+    render(<BibliothequePanel entrees={ENTREES.map(c => c.entree)} />);
+
+    for (const { entree: e, libelleAttendu, couleurAttendue } of ENTREES) {
+      const ligne = (await screen.findByText(e.titre)).closest('li')!;
+      const badges = within(ligne).getAllByText(libelleAttendu);
+      expect(badges.length, `${e.id} : aucun badge de vérification`).toBe(1);
+      expect(badges[0].getAttribute('data-variant')).toBe(couleurAttendue);
+    }
+  });
+
   it('le badge d’un instrument du cabinet dit que son scoring n’est pas vérifié', async () => {
     stubFetch();
     render(<BibliothequePanel entrees={[ENTREE_CABINET]} />);
 
     const ligne = (await screen.findByText(ENTREE_CABINET.titre)).closest('li')!;
-    expect(within(ligne).getByText(LIBELLE_INSTRUMENT_CABINET)).toBeTruthy();
+    const badge = within(ligne).getByText(LIBELLE_INSTRUMENT_CABINET);
+    expect(badge).toBeTruthy();
+    expect(badge.getAttribute('data-variant')).toBe('warning');
     expect(ligne.textContent ?? '').not.toMatch(/certifi/i);
   });
 

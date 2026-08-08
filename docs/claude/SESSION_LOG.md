@@ -3218,16 +3218,24 @@ la remplace explicitement par un bouton d'information ; aucun composant
 réutilisable n'existe. Le lien : fait quitter l'écran. Ne qualifier que les trois
 badges verts : échelle incohérente.
 
-**Ce que la revue adversariale a rattrapé.** Deux mutations passaient vertes : le
-**sens** de la prose cabinet inversé sans le mot interdit (un garde qui interdit
-un mot n'épingle pas une affirmation), et un libellé nu posé dans le composant —
-la surface principale n'avait **aucun** rendu asséré, la page mockant le panneau.
-Et ma réserve était fausse : le seed omet une clé que le moteur **produit**, donc
-il manquait une assertion, pas une possibilité.
+**Ce que deux passes de revue adversariale ont rattrapé, dont trois défauts
+survivant au premier correctif.** (1) Un garde qui interdit un **mot** n'épingle
+pas une **affirmation** : la prose cabinet inversée passait verte. (2) La surface
+principale n'avait **aucun** rendu asséré — la page mocke le panneau. (3) Le
+libellé n'est que la moitié du badge : `variant="success"` en dur rendait tous les
+états **en vert**, d'où `data-variant` sur `Badge`. (4) Une fixture qui accorde
+deux champs cesse d'exercer la seconde moitié d'un `||`. (5) Un banc qui ne couvre
+que les états servis aujourd'hui rate `inconnu`, l'état de 21 instruments.
 
 **Ce qui est mesuré, non estimé.** 65 instruments : 38 `certifie`, **21
-`inconnu`**, 6 `ambigu`. Le badge est donc muet pour un tiers du catalogue,
-PSQI et MMSE compris, **en production aussi**.
+`inconnu`**, 6 `ambigu` — et **18 des 21 sont `scoring_verifie` au registre**,
+donc l'écran taît une vérification qui a eu lieu. Le MMSE n'en fait pas partie
+(`contenu_verrouille`) : le citer comme divergence était faux.
+
+**La classe de défaut que ce lot a payée trois fois.** Un chiffre se relève sur la
+base qu'on annonce : « 131 E2E » venait d'une passe portant un banc jetable (130),
+deux comptes de rouges venaient de sélections partielles, et « 14 blocs seed »
+comptait une lecture pour une donnée (15).
 
 **Prochaine action.** LOT-03 (dette 4) : re-mesurer la dérive registre/packs à la
 date d'ouverture, puis poser le garde contre son retour.

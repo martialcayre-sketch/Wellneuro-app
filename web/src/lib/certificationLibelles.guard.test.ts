@@ -28,7 +28,7 @@ import type { StatutCertificationRuntime } from '@/lib/bibliotheque';
 //
 // POURQUOI LE MOTIF PORTE SUR LES VALEURS RENDUES, ET NON SUR LE SOURCE. Les
 // deux composants contiennent légitimement `libelleCertificationBibliotheque`,
-// `ScoreCertification` et la valeur de donnée `'certifie'` — le vocabulaire du
+// `CertificationLue` et la valeur de donnée `'certifie'` — le vocabulaire du
 // **dossier** ne change pas, seul celui de l'écran change. Un `/certifi/i`
 // appliqué au source rougirait sur ces identifiants et exigerait une exception ;
 // or une échappatoire creusée pour un cas légitime est réutilisable par le
@@ -142,10 +142,14 @@ const ATTENDUS_PASSATION: Array<{
     attendu: { label: 'Non scoré', variant: 'neutral' },
   },
   {
-    // `historique` est une valeur RÉELLE de `CertificationSource`
-    // (`lib/scoring/types.ts`), et sans `status` : c'est la forme que porte une
-    // passation ancienne. Le défaut doit la couvrir.
-    cas: 'source historique sans statut — défaut',
+    // `historique` est un membre DÉCLARÉ de `CertificationSource`
+    // (`lib/scoring/types.ts`) qu'**aucun moteur n'écrit** — vérifié : la valeur
+    // n'apparaît nulle part ailleurs dans le dépôt. Ce n'est donc pas « la forme
+    // d'une passation ancienne » comme une première rédaction l'affirmait : la
+    // vraie forme ancienne est l'ABSENCE de clé `certification`, couverte par le
+    // cas `null` ci-dessous. Le cas reste utile — `CertificationLue` est laxiste
+    // exprès, et la branche par défaut doit tenir sur une source sans statut.
+    cas: 'source déclarée mais jamais écrite, sans statut — défaut',
     certification: { source: 'historique' },
     attendu: { label: 'Scoring non vérifié', variant: 'neutral' },
   },
@@ -189,8 +193,15 @@ const SOURCE_FICHE = readFileSync(join(RACINE_COMPOSANTS, 'FichePatientPanel.tsx
 /**
  * Entrée de bibliothèque **telle que `listeBibliotheque()` la produit** : les deux
  * champs dérivent du même `def.scoring.certification.status`, donc ils s'accordent.
- * Fabriquer un état où ils divergent serait un cas que la production ne peut pas
- * servir — la divergence a son propre test, plus bas, et elle y est explicite.
+ *
+ * ATTENTION, ET C'EST LA RAISON DU TEST DE DIVERGENCE PLUS BAS. Accorder les deux
+ * champs **retire** une couverture : sur l'état `certifie`, `entree.certifie` vaut
+ * `true`, donc la première moitié du `||` suffit et la seconde
+ * (`statutCertification === 'certifie'`) n'est plus exercée par cette table. Une
+ * première rédaction de ce fichier appelait le mapper sans `certifie` et couvrait
+ * donc la seconde moitié ; le passage à `Pick` l'a fait disparaître, et retirer
+ * la clause laissait alors les 4 200 tests verts. Relevé en revue adversariale.
+ * Les DEUX directions de divergence sont désormais testées à part.
  */
 function entreeReelle(etat: StatutCertificationRuntime) {
   return { certifie: etat === 'certifie', statutCertification: etat };
@@ -220,15 +231,24 @@ describe('libellés de certification — la table attendue', () => {
     ]);
   });
 
-  it('le booléen `certifie` l’emporte sur un statut qui le contredit', () => {
-    // Deux entrées pour une seule vérité : `entree.certifie` est dérivé de
-    // `def.scoring.certification.status` par `estCertifie()`, comme
-    // `statutCertification` l'est par `statutCertificationRuntime()`. Le
-    // composant lisait déjà les deux en `||`. Le cas qui exerce vraiment ce `||`
-    // est celui où ils DIVERGENT — sur `{certifie: true}` seul, la branche
-    // passerait aussi bien avec un `&&`.
+  it('les DEUX moitiés du `||` sont exercées, chacune seule', () => {
+    // `entree.certifie` dérive de `def.scoring.certification.status` par
+    // `estCertifie()`, comme `statutCertification` par
+    // `statutCertificationRuntime()` : en production ils s'accordent, et
+    // `entreeReelle` les accorde donc. Mais c'est précisément pour cela que la
+    // table n'exerce plus qu'une moitié du `||`. Les deux cas ci-dessous sont
+    // **défensifs** : ils ne décrivent pas un état que la production sert, ils
+    // gardent chaque moitié de la condition contre son retrait.
+    //
+    // Sans le second, retirer `|| entree.statutCertification === 'certifie'` du
+    // mapper laissait toute la suite verte.
     expect(
       libelleCertificationBibliotheque({ certifie: true, statutCertification: 'non_certifie' }),
+      'le booléen seul doit suffire',
+    ).toEqual(ATTENDUS_BIBLIOTHEQUE.certifie);
+    expect(
+      libelleCertificationBibliotheque({ certifie: false, statutCertification: 'certifie' }),
+      'l’état seul doit suffire',
     ).toEqual(ATTENDUS_BIBLIOTHEQUE.certifie);
     // Et la réciproque : le booléen faux ne force rien, l'état décide.
     expect(
@@ -274,7 +294,10 @@ describe('libellés de certification — aucun texte d’écran ne porte plus le
     // manière dont un garde de refus cesse silencieusement de garder. Et un
     // texte vide passe `/certifi/i` : compter les éléments ne suffit pas, il
     // faut compter les caractères.
-    expect(textesRendus.length).toBeGreaterThanOrEqual(14);
+    // Compte EXACT, pas un plancher : un `>=` laisse disparaître un attendu sans
+    // rougir, ce qui est la manière dont une anti-vacuité cesse de garder.
+    // 6 états de bibliothèque + 7 libellés de passation non nuls + 2 constantes.
+    expect(textesRendus).toHaveLength(15);
     for (const texte of textesRendus) {
       expect(texte.trim().length, `texte vide dans la liste examinée`).toBeGreaterThan(0);
     }

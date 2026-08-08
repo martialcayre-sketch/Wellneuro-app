@@ -81,14 +81,15 @@ de la donnée n'a été renommé** — l'écart écran/dossier est nommé dans `
 ## Ce que la relecture d'écran et la revue adversariale ont appris
 
 **Le seed omet une clé que le moteur produit.** La colonne « Qualité » ne rend un
-badge que si `scores_json` porte une `certification` ; les 14 blocs `scoresJson`
+badge que si `scores_json` porte une `certification` ; les **15** blocs `scoresJson`
 de `web/prisma/seed.ts` n'en portent aucune, alors que les moteurs la propagent
-(`questions.ts`, `certification: sc.certification || null`), que
-`api/patient/submit` persiste le résultat entier et que les quatre instruments de
-Sophie Nicola la déclarent au catalogue. Une première rédaction de ce lot en
-concluait « aucun E2E ne PEUT témoigner » : **c'est faux** — il manque une
+(`questions.ts`, `certification: sc.certification || null`) et que
+`api/patient/submit` persiste le résultat entier. Une première rédaction de ce lot
+en concluait « aucun E2E ne PEUT témoigner » : **c'est faux** — il manque une
 assertion, pas une possibilité. Étendre le seed et poser l'assertion : geste
-séparé, non fait ici, mais nommé comme un manque.
+séparé, non fait ici, mais nommé comme un manque. Et il ne suffira pas seul :
+Sophie Nicola porte **cinq** passations, dont **quatre** déclarent `certification`
+au catalogue — la cinquième est le PSQI, l'un des muets ci-dessous.
 
 **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré le
 2026-08-08 sur le catalogue résolu (`statutCertificationRuntime` appliqué à
@@ -96,8 +97,12 @@ séparé, non fait ici, mais nommé comme un manque.
 ne déclarent aucune `certification` — `questionnaires/sommeil.ts` et
 `gerontologie.ts` n'en contiennent pas une —, donc « Statut inconnu » à la
 bibliothèque et « Historique » sur la fiche, **en production comme en local**.
-PSQI (`Q_SOM_01`) et MMSE (`Q_GEO_04`) sont du nombre, que le registre couvre
-pourtant. Le lot traite le badge qui rassure à tort ; celui qui ne dit rien reste.
+Croisés au registre : **18 des 21 portent `scoring_verifie`**, dont le PSQI
+(`Q_SOM_01`) ; les trois autres non — `Q_GEO_04` est `contenu_verrouille`,
+`Q_SOM_09` `droits_verifies`, `Q_ALI_09` `repere`. Citer le MMSE comme une
+divergence avec le registre était **faux** : pour lui, « Statut inconnu » en est
+l'écho fidèle. Le lot traite le badge qui rassure à tort ; celui qui ne dit rien
+reste, sur 18 instruments que le registre certifie.
 
 **Le libellé emprunte le nom d'un barreau qu'il ne lit pas.** « Scoring vérifié »
 reproduit `scoring_verifie` de `instrument_registry.json` mais lit
@@ -141,18 +146,25 @@ plutôt que passé sous silence.
 ## Validation
 
 - T1 vert (296 bancs d'outillage, type-check, lint, anti-secrets).
-- **T2 vert après les correctifs de revue** — 130 tests Playwright passés, 2
-  ignorés (Chromium + WebKit), dont `dashboard-praticien.spec.ts:94` qui emprunte
-  le badge cabinet renommé, plus **4 200 tests Vitest sur 372 fichiers** (+10
-  tests, +1 fichier : le banc `BibliothequePanel`).
+- **T2 vert après les DEUX tours de correctifs de revue** — 130 tests Playwright
+  passés, 2 ignorés (Chromium + WebKit), dont `dashboard-praticien.spec.ts:94` qui
+  emprunte le badge cabinet renommé, plus **4 204 tests Vitest sur 372 fichiers**
+  (+14 tests, +1 fichier : le banc `BibliothequePanel`).
   Le chiffre de 131 qu'une première rédaction annonçait venait des passes
   portant le spec de **capture jetable** ; sur le code livré, c'est 130.
-- **Six mutations, six rouges** — quatre trouvées à l'écriture, deux par la revue
-  adversariale : libellé nu remis dans le module (5 tests, dont le couplage qui
-  attrape une régression du module que la table attendue ne suivrait pas), motif
-  cassé (10), ancien libellé réintroduit dans un composant (1), source de la
-  règle scorée effacée (1), **sens de la prose cabinet inversé sans le mot
-  interdit** (1), **libellé nu posé directement dans le badge du catalogue** (6).
+- **Neuf mutations, neuf rouges** — quatre trouvées à l'écriture, **cinq par deux
+  passes de revue adversariale, dont trois qui passaient encore vertes après le
+  premier correctif**. Comptes pris sur une **même base**, les trois bancs du lot
+  en une passe (101 tests) : libellé nu remis dans le module **6**, motif cassé
+  **10**, ancien libellé réintroduit dans un composant **1**, source de la règle
+  scorée effacée **3**, sens de la prose cabinet inversé sans le mot interdit
+  **1**, libellé nu posé directement dans le badge du catalogue **9**,
+  `variant="success"` codé en dur (tous les états en vert) **6**, clause
+  `statutCertification === 'certifie'` retirée du `||` **1**, badge masqué pour
+  l'état `inconnu` **3**.
+  Deux de ces comptes avaient d'abord été relevés sur une sélection partielle de
+  fichiers, et étaient donc trop bas — **un compte de rouges se mesure sur la même
+  base que celle qu'on annonce**.
 - Écran réel relu sur les deux surfaces (capture Playwright jetable, supprimée) :
   badges et prose du cabinet corrects et sans débordement ; c'est cette
   relecture qui a montré que la colonne « Qualité » ne sert que « Historique »

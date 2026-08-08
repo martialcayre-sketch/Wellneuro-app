@@ -144,11 +144,12 @@ const REPONSES_CERTIFICATION = {
       dateSoumission: '2026-07-05T10:00:00.000Z',
       scorePrincipal: 4,
       interpretation: 'Sans particularité',
-      // `historique` est une valeur RÉELLE de `CertificationSource`
-      // (`lib/scoring/types.ts:5`), et une passation ancienne la porte sans
-      // `status`. Une première rédaction employait `source: 'cabinet'`, qui
-      // n'appartient pas à l'union : le contrôle négatif prouvait alors le
-      // défaut sur une entrée que la production ne peut pas produire.
+      // `historique` est un membre DÉCLARÉ de `CertificationSource`
+      // (`lib/scoring/types.ts:5`) qu'aucun moteur n'écrit — la vraie forme
+      // d'une passation ancienne est l'absence de clé `certification`, qui rend
+      // « Historique » et non ce badge. Une première rédaction employait
+      // `source: 'cabinet'`, qui n'appartient même pas à l'union : le contrôle
+      // négatif prouvait alors le défaut sur une entrée impossible.
       scoresParsed: { type: 'sum', total: 4, certification: { source: 'historique' } },
       subScoreRanges: null,
     },
@@ -871,7 +872,12 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
 
     const ligneDrive = (await screen.findByText('Instrument scoré sur grille Drive')).closest('tr')!;
-    expect(within(ligneDrive).getByText('Scoring vérifié (Drive)')).toBeTruthy();
+    const badgeDrive = within(ligneDrive).getByText('Scoring vérifié (Drive)');
+    expect(badgeDrive).toBeTruthy();
+    // La COULEUR autant que le mot : un `variant` codé en dur ferait passer
+    // « Scoring non vérifié » en vert sur une fiche patient sans que le libellé
+    // change. Relevé en revue adversariale.
+    expect(badgeDrive.getAttribute('data-variant')).toBe('success');
 
     // La source de la règle scorée reste nommée : le moteur EORTC suit le manuel
     // officiel, pas la grille Drive. Les deux libellés doivent différer à
@@ -887,7 +893,9 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     const ligneInconnu = screen
       .getByText('Instrument dont la règle scorée n’est pas vérifiée')
       .closest('tr')!;
-    expect(within(ligneInconnu).getByText('Scoring non vérifié')).toBeTruthy();
+    const badgeInconnu = within(ligneInconnu).getByText('Scoring non vérifié');
+    expect(badgeInconnu).toBeTruthy();
+    expect(badgeInconnu.getAttribute('data-variant')).toBe('neutral');
     expect(ligneInconnu.textContent).not.toContain('Scoring vérifié');
   });
 

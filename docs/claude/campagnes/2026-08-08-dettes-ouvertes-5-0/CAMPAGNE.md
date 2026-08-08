@@ -145,17 +145,20 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   `StatutCertificationRuntime` et la valeur `'certifie'` gardent le mot. Faut-il
   un jour aligner le dossier sur l'écran ? Ce serait une campagne de registre, et
   la dépendance irait dans le bon sens ; rien ne l'exige aujourd'hui.
-- **Le seed omet une clé que le moteur produit.** Les 14 blocs `scoresJson` de
+- **Le seed omet une clé que le moteur produit.** Les **15** blocs `scoresJson` de
   `web/prisma/seed.ts` ne portent aucune `certification`, alors que les moteurs la
-  propagent et que les quatre instruments de Sophie Nicola la déclarent au
-  catalogue. Aucun E2E n'assère donc les libellés de passation — mais **rien ne
+  propagent. Aucun E2E n'assère donc les libellés de passation — mais **rien ne
   l'en empêche** : c'est une assertion qui manque, pas une impossibilité. Étendre
-  le seed (4 lignes) et poser l'assertion : geste séparé, non fait au LOT-02.
+  le seed et poser l'assertion : geste séparé, non fait au LOT-02. Et le geste ne
+  suffira pas seul — Sophie Nicola porte **cinq** passations, dont **quatre**
+  déclarent `certification` ; la cinquième est le PSQI, muet.
 - **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
   le 2026-08-08 sur le catalogue résolu : 38 `certifie`, **21 `inconnu`**, 6
-  `ambigu`. Les 21 ne déclarent aucune `certification` — PSQI (`Q_SOM_01`) et
-  MMSE (`Q_GEO_04`) inclus, que le registre couvre pourtant. Le lot traite le
-  badge qui rassure à tort ; celui qui ne dit rien reste. Dette nommée, sans lot.
+  `ambigu`. Croisés au registre : **18 des 21 portent `scoring_verifie`**, dont le
+  PSQI (`Q_SOM_01`) ; les trois autres non (`Q_GEO_04` `contenu_verrouille`,
+  `Q_SOM_09` `droits_verifies`, `Q_ALI_09` `repere`) — pour le MMSE, « Statut
+  inconnu » est l'écho du registre, pas une divergence. Le lot traite le badge qui
+  rassure à tort ; celui qui ne dit rien reste. Dette nommée, sans lot.
 - **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
   vérifié » reproduit `scoring_verifie` du registre, mais lit
   `def.scoring.certification.status` du catalogue de code, et
@@ -209,11 +212,15 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       (`D-036`). Preuve relue le 2026-08-08 :
       `certificationLibelles.guard.test.ts` (table écrite à la main,
       exhaustivité par le typage, refus de `/certifi/i` sur les valeurs rendues,
-      auto-test du motif), **six mutations rendues rouges** — dont deux trouvées
-      par la revue adversariale : le SENS de la prose cabinet inversé sans le mot
-      interdit, et un libellé nu posé directement dans le composant. S'y ajoutent
-      deux bancs de rendu (`BibliothequePanel.test.tsx` pour le catalogue dans
-      ses quatre états, `FichePatientPanel.test.tsx` pour la colonne
+      auto-test du motif), **neuf mutations rendues rouges** — dont **cinq
+      trouvées par deux passes de revue adversariale, et trois qui passaient
+      encore vertes après le premier correctif** : le SENS de la prose cabinet
+      inversé sans le mot interdit, un libellé nu posé directement dans le
+      composant, `variant="success"` codé en dur (tous les états en vert), la
+      clause `statutCertification === 'certifie'` retirée du `||`, et le badge
+      masqué pour l'état `inconnu`. S'y ajoutent deux bancs de rendu qui assèrent
+      le texte **et la couleur** (`BibliothequePanel.test.tsx` pour les **six**
+      états du catalogue, `FichePatientPanel.test.tsx` pour la colonne
       « Qualité ») et le sélecteur E2E du badge cabinet.
       Réserves à ne pas effacer : le seed omet une clé que le moteur **produit**
       (assertion manquante, pas impossibilité) ; le badge est **muet pour 21 des

@@ -54,28 +54,54 @@ libellés qui emploient le mot, pas seulement les trois badges verts.
 - **Le seed omet une clé que le moteur PRODUIT** — pas une impossibilité de banc,
   comme une première rédaction l'écrivait. Les moteurs propagent la métadonnée
   (`questions.ts`, `certification: sc.certification || null`),
-  `api/patient/submit` persiste le résultat entier, `portail-parcours.spec.ts`
-  complète déjà une soumission réelle, et les quatre instruments de Sophie Nicola
-  la déclarent au catalogue. Il manque **une assertion**, et 4 lignes de seed.
+  `api/patient/submit` persiste le résultat entier et `portail-parcours.spec.ts`
+  complète déjà une soumission réelle. Il manque **une assertion**, pas une
+  possibilité. Mais l'étendre ne suffira pas seul : Sophie Nicola porte **cinq**
+  passations seedées, dont **quatre** déclarent `certification` au catalogue — la
+  cinquième est le PSQI, muet. Une passation sur cinq restera « Historique ».
 - **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
-  le 2026-08-08 : 38 `certifie`, 21 `inconnu`, 6 `ambigu`. PSQI (`Q_SOM_01`) et
-  MMSE (`Q_GEO_04`) inclus, que le registre couvre. Le lot traite le badge qui
-  rassure à tort ; celui qui ne dit rien reste.
+  le 2026-08-08 : 38 `certifie`, 21 `inconnu`, 6 `ambigu`. Croisés au registre,
+  **18 des 21 portent `scoring_verifie`** (dont le PSQI) ; les trois autres non —
+  `Q_GEO_04` est `contenu_verrouille`, `Q_SOM_09` `droits_verifies`, `Q_ALI_09`
+  `repere`. **Citer le MMSE comme une divergence était faux** : pour lui, « Statut
+  inconnu » est l'écho fidèle du registre. Le lot traite le badge qui rassure à
+  tort ; celui qui ne dit rien reste, sur 18 instruments que le registre certifie.
 - **Le garde n'attrape pas un mot neuf.** Son contrôle de source refuse la
   réintroduction d'un **ancien** libellé — liste fermée de dix, **à la casse
   près** : `'Instrument certifié'` en minuscule lui échappe. Écrit dans son
   en-tête, avec le piège corollaire : le scan lit les fichiers **entiers**,
   commentaires compris — ne pas documenter un ancien libellé dans un commentaire
   des deux composants scannés.
-- **Six mutations, six rouges** : libellé nu dans le module (5 tests), motif
-  cassé (10), ancien libellé réintroduit dans un composant (1), source de la
-  règle scorée effacée (1), **sens de la prose cabinet inversé (1)**, **libellé
-  nu posé directement dans le badge du catalogue (6)**. Les rejouer si le garde
-  est retouché.
-- **Un chiffre de passe se relève sur la passe du code LIVRÉ.** Une première
-  rédaction annonçait « 131 tests E2E » : c'était le compte des passes qui
-  portaient le spec de **capture jetable**. Sur le code livré, T2 rend **130
-  passés, 2 ignorés** et 4 200 Vitest sur 372 fichiers. Rejouer avant de citer.
+- **LE LIBELLÉ N'EST QUE LA MOITIÉ DU BADGE : l'autre est sa COULEUR.** Aucun
+  banc ne l'assérait. `<Badge variant="success">` codé en dur rendait « Scoring
+  non vérifié » et « Statut inconnu » **en vert**, tests verts — or D-036 nomme
+  les badges verts comme ceux qui rassurent à tort. `components/ui/Badge.tsx`
+  expose désormais `data-variant`, et les deux bancs assèrent texte **et**
+  couleur. **Ne pas retirer cet attribut** : il n'a pas d'effet visuel, il est la
+  seule prise des bancs sur la couleur.
+- **Une fixture qui accorde deux champs cesse d'exercer la seconde moitié d'un
+  `||`.** `entreeReelle` accorde `certifie` et `statutCertification` comme la
+  production le fait — et retirait du coup la seule couverture de
+  `statutCertification === 'certifie'` : la clause pouvait être supprimée du
+  mapper, 4 200 tests verts. Les **deux** directions de divergence ont désormais
+  leur cas, explicitement défensif.
+- **Un banc qui ne couvre que les états servis aujourd'hui cesse de garder au
+  prochain.** Le banc de la bibliothèque couvre les **six** états de
+  `StatutCertificationRuntime`, et non les quatre d'une première rédaction — qui
+  omettait `inconnu`, l'état de 21 instruments réels. Masquer le badge pour
+  `inconnu` passait alors vert, en privant un tiers du catalogue de tout badge.
+- **Neuf mutations, neuf rouges**, comptes pris sur une **même base** — les trois
+  bancs du lot en une passe (101 tests) : module 6, motif 10, ancien libellé dans
+  un composant 1, source de la règle effacée 3, sens de la prose inversé 1,
+  libellé nu dans le badge du catalogue 9, `variant="success"` en dur 6, clause
+  du `||` retirée 1, badge masqué pour `inconnu` 3. Les rejouer si le garde bouge.
+- **Un chiffre se relève sur la base qu'on annonce.** Trois fois ce lot l'a
+  appris : « 131 tests E2E » venait d'une passe portant un banc de **capture
+  jetable** (c'est 130 passés / 2 ignorés) ; deux comptes de rouges venaient de
+  sélections **partielles** de fichiers ; et « 14 blocs `scoresJson` » comptait
+  une occurrence de lecture pour un bloc de données (il y en a **15**).
+  État final mesuré : T1 vert, T2 vert — **130 E2E passés / 2 ignorés** et
+  **4 204 Vitest sur 372 fichiers**.
 - **`next-env.d.ts` est régénéré par `npm run check`** avec un contenu différent
   de celui committé : le restaurer (`git checkout --`) avant d'indexer, sinon il
   pollue le diff du lot.
@@ -107,8 +133,9 @@ précisément ce qui a périmé la mesure précédente.
   sur la colonne « Qualité » ? Geste séparé, non fait ici — mais il coûte 4
   lignes, et le seed est aujourd'hui **moins fidèle que le moteur**.
 - **Le badge muet sur 21 des 65 instruments** est-il la lecture voulue, ou une
-  dette à ouvrir maintenant qu'elle est mesurée ? Elle touche des instruments que
-  le registre certifie (PSQI, MMSE).
+  dette à ouvrir maintenant qu'elle est mesurée ? **18 des 21 sont
+  `scoring_verifie` au registre** — l'écran taît donc une vérification qui a bien
+  eu lieu.
 - **Le garde de divergence code ↔ registre** — `def.scoring.certification.status`
   contre le barreau `scoring_verifie` — entre-t-il au périmètre du LOT-03 (dette
   4, anti-dérive) ou fait-il l'objet d'une dette à part ?
