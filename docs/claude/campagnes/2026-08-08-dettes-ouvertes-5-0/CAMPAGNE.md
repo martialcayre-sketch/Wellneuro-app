@@ -1,10 +1,10 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00 et LOT-01 livrés, deux lots ouverts"
+statut: "en cours (2026-08-08) — LOT-00, LOT-01 et LOT-02 livrés, un lot ouvert"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -135,9 +135,20 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   production. Aucune règle d'orientation publiée ne lit sa bande — c'est la
   seule raison pour laquelle il attend. Fermer ce moteur est un geste clinique
   qui demande sa propre décision.
-- Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
-  (« Scoring vérifié ») ou un lien vers la définition ? Le mot « Certifié » est
-  employé par le praticien à l'oral : le renommer a un coût d'usage.
+- ~~Le badge du LOT-02 doit-il porter une infobulle, un libellé plus long
+  (« Scoring vérifié ») ou un lien vers la définition ?~~ **Tranchée le
+  2026-08-08 : le libellé, et sur toute la famille des libellés** (`D-036`). Le
+  coût d'usage oral est accepté ; une infobulle native est hover-only et
+  `UX_WELLNEURO_3_0.md` la remplace explicitement par un bouton d'information.
+- **Le vocabulaire de l'écran et celui du dossier ont divergé, et c'est voulu.**
+  Le LOT-02 n'a renommé aucune donnée : `instrument_registry.json`,
+  `StatutCertificationRuntime` et la valeur `'certifie'` gardent le mot. Faut-il
+  un jour aligner le dossier sur l'écran ? Ce serait une campagne de registre, et
+  la dépendance irait dans le bon sens ; rien ne l'exige aujourd'hui.
+- **Aucun E2E ne peut témoigner des libellés de passation** : le seed ne produit
+  aucune clé `certification` dans `scores_json`, donc la colonne « Qualité » sert
+  « Historique » sur les cinq passations seedées, en local comme en CI. Étendre
+  le seed pour ouvrir ce chemin est un geste séparé, non fait au LOT-02.
 - Le garde anti-dérive du LOT-03 doit-il vivre dans `web/prisma/checks/` (contrat
   de données, rejoué en CI sur base éphémère) ou en lecture de production
   planifiée ? Seul le second voit la vraie dérive ; seul le premier est gratuit.
@@ -162,7 +173,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 |---|---|---|---|
 | LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
-| LOT-02 | « Certifié » à l'écran sans la définition de D-034 | à ouvrir | — |
+| LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | à ouvrir | LOT-00 |
 
 ## Done de campagne
@@ -179,8 +190,17 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       l'arbitrage du 2026-08-08 a préféré le retrait).
 - [x] Aucun `href` interne ne vise `/patient/:idAssignation` — il vivait dans
       la page supprimée.
-- [ ] Le badge « Certifié » ne peut plus se lire comme une validation
-      psychométrique, et un banc l'assère.
+- [x] Le badge « Certifié » ne peut plus se lire comme une validation
+      psychométrique, et un banc l'assère. **Renommé « Scoring vérifié »**, sur
+      les neuf libellés de la famille et les trois proses du tiroir cabinet
+      (`D-036`). Preuve relue le 2026-08-08 :
+      `certificationLibelles.guard.test.ts` (table écrite à la main,
+      exhaustivité par le typage, refus de `/certifi/i` sur les valeurs rendues,
+      auto-test du motif), **quatre mutations rendues rouges**, plus une
+      assertion de rendu jsdom et le sélecteur E2E du badge cabinet.
+      Réserve à ne pas effacer : aucun E2E ne voit les libellés de **passation**
+      — le seed ne produit aucune clé `certification`, donc la colonne
+      « Qualité » sert « Historique » partout hors production.
 - [ ] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour.
 - [ ] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;

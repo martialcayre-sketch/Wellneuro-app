@@ -129,10 +129,14 @@ test.describe('Praticien Dashboard', () => {
       await expect(relecture).toBeHidden({ timeout: 10000 });
       await expect(ligne.getByText('Publié')).toBeVisible({ timeout: 10000 });
 
-      // Le catalogue porte l'entrée cabinet, badge « Cabinet — non certifié ».
+      // Le catalogue porte l'entrée cabinet, badge « Cabinet — scoring non
+      // vérifié » (D-036, LOT-02 : le badge disait « non certifié », qui se lit
+      // comme « non validé psychométriquement »). Assertion de PRÉSENCE du
+      // libellé courant, jamais d'absence de l'ancien : une absence est
+      // satisfaite par une liste qui n'a pas fini de charger.
       await page.getByLabel('Rechercher dans le catalogue').fill(titre);
       await expect(
-        page.locator('li', { hasText: titre }).filter({ hasText: 'Cabinet — non certifié' }),
+        page.locator('li', { hasText: titre }).filter({ hasText: 'Cabinet — scoring non vérifié' }),
       ).toBeVisible({ timeout: 10000 });
 
       // Désactivation par l'UI : le bouton fait partie du parcours testé.

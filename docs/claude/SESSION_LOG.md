@@ -3205,3 +3205,27 @@ l'écran praticien, toute la famille des libellés (arbitrage du 2026-08-08).
 
 **Questions ouvertes.** Jusqu'à quand garder la redirection `/patient/*` ?
 `api/patient/assignations` n'a plus d'appelant.
+
+## 2026-08-08 — LOT-02 : « Certifié » devient « Scoring vérifié »
+
+**Décisions.** Renommer le libellé plutôt qu'ajouter une infobulle ou un lien, et
+sur **toute la famille** — « Non certifié » se lit aussi bien comme « non validé
+psychométriquement » (D-036). Aucune donnée renommée : l'écart écran/dossier est
+assumé et écrit.
+
+**Options écartées.** L'infobulle native : hover-only, et `UX_WELLNEURO_3_0.md`
+la remplace explicitement par un bouton d'information ; aucun composant
+réutilisable n'existe. Le lien : fait quitter l'écran. Ne qualifier que les trois
+badges verts : échelle incohérente.
+
+**Ce que la relecture d'écran a appris.** La colonne « Qualité » n'affiche que
+« Historique » sur données seedées — le seed ne pose aucune clé `certification`.
+Aucun E2E ne peut donc voir les libellés de passation ; le banc jsdom est le seul
+témoin, et le garde porte sur les valeurs rendues, jamais sur le source (un
+`/certifi/i` y aurait exigé une exception, donc un passe-partout).
+
+**Prochaine action.** LOT-03 (dette 4) : re-mesurer la dérive registre/packs à la
+date d'ouverture, puis poser le garde contre son retour.
+
+**Questions ouvertes.** Faut-il un jour aligner le registre sur l'écran ? Le
+garde n'attrape pas un mot neuf, seulement le revert d'un ancien libellé.

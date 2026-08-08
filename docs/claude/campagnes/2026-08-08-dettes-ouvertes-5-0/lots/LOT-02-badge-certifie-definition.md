@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "« Certifié » à l'écran sans la définition de D-034"
-statut: "à ouvrir"
+statut: "livré (2026-08-08) — libellés renommés « Scoring vérifié », garde mutation-testé"
 dépend_de: "aucun"
 ---
 
@@ -31,13 +31,63 @@ construit, de la fidélité, ni de l'étalonnage des seuils. Un praticien qui li
 « Certifié » en vert sur une fiche patient n'a, à l'écran, aucun moyen de faire
 cette différence.
 
-## Statut de cette dette — nommée, pas réglée
+## Ce qui a été décidé, et qui a élargi le périmètre
 
-**Ce lot n'est pas fait.** D-034 a fermé la dette 2 *de la campagne close* : la
-décision de ne pas entrer la validation psychométrique au programme, et
-l'alignement de la consigne de synthèse. Elle n'a **pas** traité l'affichage
-praticien, qui n'était pas dans son périmètre et que la clôture n'a pas relevé.
-La campagne le porte comme **dû**, et ne s'en prévaudra pas avant livraison.
+**Arbitrage du 2026-08-08, deux réponses à la question ouverte ci-dessous**
+(consigné en `D-036`) :
+
+1. **Le libellé change** — « Scoring vérifié » —, plutôt qu'une infobulle ou un
+   lien. Une infobulle native est hover-only, et `UX_WELLNEURO_3_0.md:88-90` la
+   remplace explicitement par un bouton d'information ; aucun composant
+   d'infobulle réutilisable n'existe (seul `@radix-ui/react-dialog` est
+   installé). Un lien fait quitter l'écran, ce que la preuve attendue interdit.
+2. **Toute la famille des libellés**, pas les trois badges verts seuls : « Non
+   certifié » se lit tout aussi bien comme « non validé psychométriquement ».
+   C'est le mot qui est ambigu, pas l'état vert.
+
+Le coût est réel et assumé : « Certifié » est employé à l'oral, et il reste dans
+le registre, dans le type `StatutCertificationRuntime` et dans le corpus. **Rien
+de la donnée n'a été renommé** — l'écart écran/dossier est nommé dans `D-036`.
+
+## Ce qui est fait
+
+- `web/src/lib/certification-libelles.ts` — les deux mappers, jusqu'ici **locaux
+  et non exportés** dans leurs composants : aucun banc ne pouvait asserter ce
+  qu'ils rendaient. S'y ajoutent les deux littéraux d'écran qui ne passaient par
+  aucun mapper (badge et prose des instruments du cabinet) ; hors du module, ils
+  auraient échappé au garde.
+- Neuf libellés renommés : `Certifié` → `Scoring vérifié`, `Certification
+  ambiguë` → `Scoring ambigu`, `Certification à vérifier` / `À vérifier` →
+  `Scoring à vérifier`, `Non certifié` → `Scoring non vérifié`, `Certifié Drive`
+  → `Scoring vérifié (Drive)`, `Drive ambigu` → `Scoring ambigu (Drive)`,
+  `Certifié manuel EORTC` → `Scoring vérifié (manuel EORTC)`, `Cabinet — non
+  certifié` → `Cabinet — scoring non vérifié`. `Non scoré`, `Statut inconnu` et
+  `Historique` ne portaient pas le mot et n'ont pas bougé.
+- **Trois proses trouvées à l'exécution et absentes du cadrage** :
+  `BibliothequePanel.tsx:369` (description du tiroir d'édition), `:1215`
+  (pied de l'éditeur) et `:1405` (pied de la relecture) employaient le même mot
+  trois lignes sous un badge renommé. Les laisser aurait rendu l'échelle
+  incohérente à l'écran.
+- `web/src/lib/certificationLibelles.guard.test.ts` — table écrite à la main,
+  exhaustivité **par le typage** (`Record<StatutCertificationRuntime, …>` ne
+  compile pas si un état s'ajoute sans attendu), refus de `/certifi/i` sur les
+  valeurs rendues, auto-test du motif sur les dix anciens libellés.
+- Assertion de **rendu** sur la colonne « Qualité » avec son contrôle négatif
+  (`FichePatientPanel.test.tsx`) et sélecteur E2E reporté sur le nouveau libellé
+  du badge cabinet (`e2e/dashboard-praticien.spec.ts`).
+
+## Ce que la relecture d'écran a appris, et qui vaut réserve
+
+La colonne « Qualité » ne rend un badge de vérification que si `scores_json`
+porte une clé `certification`. **Le seed n'en produit aucune** : les cinq
+passations de Sophie Nicola affichent toutes « Historique », en local comme en
+CI. Aucun E2E ne peut donc témoigner des libellés de passation ; le seul témoin
+est le banc jsdom avec sa fixture dédiée. Étendre le seed est un geste séparé,
+non fait ici.
+
+Et le garde ne ferme pas tout : son contrôle de source refuse la réintroduction
+d'un **ancien** libellé, liste fermée — il attrape le revert, pas un mot neuf
+inventé ailleurs.
 
 ## Hors périmètre
 
@@ -59,8 +109,24 @@ La campagne le porte comme **dû**, et ne s'en prévaudra pas avant livraison.
   du défaut.
 - Textes en français ; T2 avant commit (changement UI).
 
-## Question à trancher à l'ouverture
+## Question tranchée à l'ouverture
 
-Infobulle, libellé plus long (« Scoring vérifié »), ou lien vers la définition ?
-Le mot « Certifié » est employé à l'oral par le praticien : le renommer a un coût
-d'usage réel, à peser contre l'ambiguïté qu'il porte.
+~~Infobulle, libellé plus long (« Scoring vérifié »), ou lien vers la
+définition ?~~ **Tranchée le 2026-08-08 : le libellé, sur toute la famille**
+(`D-036`). Le coût d'usage oral est accepté ; il est écrit dans la décision
+plutôt que passé sous silence.
+
+## Validation
+
+- T1 vert (296 bancs d'outillage, type-check, lint, anti-secrets).
+- **T2 vert** — 131 tests Playwright (Chromium + iPhone 13), dont
+  `dashboard-praticien.spec.ts:94` qui emprunte le badge cabinet renommé, plus
+  4 190 tests Vitest sur 371 fichiers.
+- **Quatre mutations, quatre rouges** : libellé nu remis dans le module (3
+  tests, dont le couplage qui attrape une régression du module que la table
+  attendue ne suivrait pas), motif cassé (10), ancien libellé réintroduit dans un
+  composant (1), source de la règle scorée effacée (le banc de rendu).
+- Écran réel relu sur les deux surfaces (capture Playwright jetable, supprimée) :
+  badges et prose du cabinet corrects et sans débordement ; c'est cette
+  relecture qui a montré que la colonne « Qualité » ne sert que « Historique »
+  sur données seedées.
