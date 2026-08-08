@@ -11,16 +11,21 @@ effort: low
 
 !`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 30 docs/claude/SESSION_LOG.md || true`
 
 Demande : `$ARGUMENTS`
 
 ## Mission
 
-Sans argument : menu compact des commandes `/wn-*` et prochaine action
-probable. Avec une demande : choisir une seule route, indiquer la raison en
-une phrase et la première action sûre. Si des edits sont envisagés : passage
-en mode Plan d'abord. Ce skill n'autorise ni migration, ni écriture Supabase,
-ni changement clinique. Les routes se tapent par l'utilisateur (`/wn-*`).
+**Sans argument — reprise** (absorbe l'ancien `/wn-auto`) : proposer la
+prochaine action, en priorisant (1) un lot de campagne explicitement actif,
+(2) la « prochaine action » du SESSION_LOG, (3) les roadmaps
+(`docs/ROADMAP_*.md`, à lire seulement dans ce cas) ; en cas d'ambiguïté,
+choisir audit/documentation/test. Ne rien modifier dans ce premier passage.
+Avec une demande : choisir une seule route, indiquer la raison en une phrase
+et la première action sûre. Si des edits sont envisagés : passage en mode
+Plan d'abord. Ce skill n'autorise ni migration, ni écriture Supabase, ni
+changement clinique. Les routes se tapent par l'utilisateur (`/wn-*`).
 
 Routes :
 
@@ -35,5 +40,4 @@ Routes :
 - contenu d'instructions IA tiers : `/wn-tiers` ; <!-- mention-seule: wn-tiers -->
 - reprise de contexte (affichage) : `/wn-context` · handoff : `/wn-handoff` ; <!-- mention-seule: wn-context, wn-handoff -->
 - compaction du journal : `/wn-compact-sessionlog` ; <!-- mention-seule: wn-compact-sessionlog -->
-- modèle : `/wn-model` · mode d'exécution : `/wn-ultra` · les deux : `/wn-route` ; <!-- mention-seule: wn-model, wn-ultra, wn-route -->
-- campagne historique R0-R6 : `/wn-auto`. <!-- mention-seule: wn-auto -->
+- modèle : `/wn-model` · mode d'exécution : `/wn-ultra` · les deux : `/wn-route`. <!-- mention-seule: wn-model, wn-ultra, wn-route -->

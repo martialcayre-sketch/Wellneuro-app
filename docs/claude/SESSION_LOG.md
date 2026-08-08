@@ -3154,3 +3154,18 @@ clinique : le catalogue sert l'EORTC QLQ-C30, le PSQI, la HAD, l'Epworth. (2) Le
 faux survivait dans l'énoncé de D-034 et dans le fragment de changelog après
 correction du prompt. (3) Mon exception de regex `par ailleurs` était un
 **passe-partout** : creusée pour un cas légitime, réutilisable par le défaut.
+
+## 2026-08-08 — Suites : clé paths confirmée, wn-auto fusionné
+
+**Décisions.** Test d'observation en contexte neuf : la clé `paths:` des
+`.claude/rules/` est honorée (injection ciblée par fichier lu — db-prisma,
+clinique-scoring, auth-securite). Question ouverte close, rien à changer.
+`wn-auto` supprimé : `/wn` sans argument porte la reprise (lot actif →
+SESSION_LOG → roadmaps, lecture seule).
+
+**Options écartées.** Garder `wn-auto` en doublon de `/wn` sans argument.
+
+**Prochaine action.** Aucune sur l'environnement Claude Code — chantier clos
+(#618, #620, cette PR).
+
+**Questions ouvertes.** Néant.
