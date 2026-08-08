@@ -40,19 +40,42 @@ libellés qui emploient le mot, pas seulement les trois badges verts.
   `Record<StatutCertificationRuntime, LibelleCertification>` ne compile pas si un
   état s'ajoute sans son libellé attendu. Les libellés, eux, sont **écrits à la
   main** — un attendu dérivé du module testé bougerait avec lui.
-- **Aucun E2E ne peut voir les libellés de passation, et ce n'est pas un oubli
-  de banc.** La colonne « Qualité » ne rend un badge que si `scores_json` porte
-  une clé `certification` ; le seed n'en produit aucune, donc les cinq passations
-  de Sophie Nicola affichent **toutes « Historique »**, en local comme en CI.
-  C'est la relecture d'écran qui l'a montré, pas la lecture du code. Le seul
-  témoin du renommage sur cette surface est le banc jsdom avec sa fixture.
+- **Un garde qui interdit un MOT n'épingle pas un SENS.** Première rédaction
+  refusée en revue : les deux constantes n'avaient aucun attendu écrit à la main.
+  `TEXTE_INSTRUMENTS_CABINET` réécrit en « leur scoring **est** vérifié par
+  WellNeuro » ne porte pas le mot interdit et **passait vert**, en affirmant à
+  l'écran l'inverse de D-034 ; la chaîne vide aussi. D'où `ATTENDUS_CONSTANTES`.
+  C'est le piège connu du dépôt pris par l'autre bout.
+- **La surface principale n'avait AUCUN rendu asséré.**
+  `app/dashboard/bibliotheque/page.test.tsx` **mocke** `BibliothequePanel`, et
+  l'E2E ne touchait que le badge cabinet : un composant calculant le libellé par
+  le module puis en affichant un autre passait tout le CI, sur l'écran qui porte
+  les 64 instruments. `BibliothequePanel.test.tsx` ferme ce trou.
+- **Le seed omet une clé que le moteur PRODUIT** — pas une impossibilité de banc,
+  comme une première rédaction l'écrivait. Les moteurs propagent la métadonnée
+  (`questions.ts`, `certification: sc.certification || null`),
+  `api/patient/submit` persiste le résultat entier, `portail-parcours.spec.ts`
+  complète déjà une soumission réelle, et les quatre instruments de Sophie Nicola
+  la déclarent au catalogue. Il manque **une assertion**, et 4 lignes de seed.
+- **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
+  le 2026-08-08 : 38 `certifie`, 21 `inconnu`, 6 `ambigu`. PSQI (`Q_SOM_01`) et
+  MMSE (`Q_GEO_04`) inclus, que le registre couvre. Le lot traite le badge qui
+  rassure à tort ; celui qui ne dit rien reste.
 - **Le garde n'attrape pas un mot neuf.** Son contrôle de source refuse la
-  réintroduction d'un **ancien** libellé — liste fermée de dix. Il attrape le
-  revert, pas un « Certifié » inventé ailleurs. Écrit dans son en-tête.
-- **Quatre mutations, quatre rouges** : libellé nu remis dans le module (3
-  tests), motif cassé (10), ancien libellé réintroduit dans un composant (1),
-  source de la règle scorée effacée (le banc de rendu). Les rejouer si le garde
+  réintroduction d'un **ancien** libellé — liste fermée de dix, **à la casse
+  près** : `'Instrument certifié'` en minuscule lui échappe. Écrit dans son
+  en-tête, avec le piège corollaire : le scan lit les fichiers **entiers**,
+  commentaires compris — ne pas documenter un ancien libellé dans un commentaire
+  des deux composants scannés.
+- **Six mutations, six rouges** : libellé nu dans le module (5 tests), motif
+  cassé (10), ancien libellé réintroduit dans un composant (1), source de la
+  règle scorée effacée (1), **sens de la prose cabinet inversé (1)**, **libellé
+  nu posé directement dans le badge du catalogue (6)**. Les rejouer si le garde
   est retouché.
+- **Un chiffre de passe se relève sur la passe du code LIVRÉ.** Une première
+  rédaction annonçait « 131 tests E2E » : c'était le compte des passes qui
+  portaient le spec de **capture jetable**. Sur le code livré, T2 rend **130
+  passés, 2 ignorés** et 4 200 Vitest sur 372 fichiers. Rejouer avant de citer.
 - **`next-env.d.ts` est régénéré par `npm run check`** avec un contenu différent
   de celui committé : le restaurer (`git checkout --`) avant d'indexer, sinon il
   pollue le diff du lot.
@@ -81,7 +104,14 @@ précisément ce qui a périmé la mesure précédente.
   campagne de registre, et la dépendance irait dans le bon sens ; rien ne l'exige
   aujourd'hui.
 - **Étendre le seed** pour poser une clé `certification` et ouvrir un chemin E2E
-  sur la colonne « Qualité » ? Geste séparé, non fait ici.
+  sur la colonne « Qualité » ? Geste séparé, non fait ici — mais il coûte 4
+  lignes, et le seed est aujourd'hui **moins fidèle que le moteur**.
+- **Le badge muet sur 21 des 65 instruments** est-il la lecture voulue, ou une
+  dette à ouvrir maintenant qu'elle est mesurée ? Elle touche des instruments que
+  le registre certifie (PSQI, MMSE).
+- **Le garde de divergence code ↔ registre** — `def.scoring.certification.status`
+  contre le barreau `scoring_verifie` — entre-t-il au périmètre du LOT-03 (dette
+  4, anti-dérive) ou fait-il l'objet d'une dette à part ?
 
 ## Interdits encore actifs
 

@@ -1,5 +1,5 @@
 import type { BadgeVariant } from '@/components/ui/Badge';
-import type { StatutCertificationRuntime } from '@/lib/bibliotheque';
+import type { BibliothequeEntree, StatutCertificationRuntime } from '@/lib/bibliotheque';
 
 // Libellés praticien de la vérification de scoring — D-034 (2026-08-08) puis
 // D-036 (LOT-02).
@@ -35,8 +35,20 @@ import type { StatutCertificationRuntime } from '@/lib/bibliotheque';
 
 export type LibelleCertification = { label: string; variant: BadgeVariant };
 
-/** Métadonnée `certification` d'un `scores_json` : `{source, status}`. */
-export type ScoreCertification = { source?: string; status?: string };
+/**
+ * Métadonnée `certification` telle qu'elle est **relue** d'un `scores_json`.
+ *
+ * Volontairement plus laxiste que `ScoreCertification` de
+ * `@/lib/scoring/types` (`source` et `status` y sont requis, sur des unions
+ * fermées) : ce type-ci décrit une valeur venant d'une colonne JSON de la base,
+ * écrite par des versions antérieures du moteur. Une passation enregistrée avant
+ * l'existence de `manuel_eortc` porte ce que portait le moteur de son époque, et
+ * le mapper doit lui rendre un libellé plutôt que de la refuser.
+ *
+ * Nom distinct à dessein : deux types homonymes de requiredness différente,
+ * l'un au bord de la base et l'autre dans le moteur, se confondraient.
+ */
+export type CertificationLue = { source?: string; status?: string };
 
 /**
  * Instruments du cabinet : privés, et leur scoring n'est vérifié par personne
@@ -56,10 +68,15 @@ export const TEXTE_INSTRUMENTS_CABINET =
  * instrument actif « sans badge » est ambigu, et c'était la raison d'être de la
  * branche par défaut avant ce déplacement.
  */
-export function libelleCertificationBibliotheque(entree: {
-  certifie?: boolean;
-  statutCertification?: StatutCertificationRuntime;
-}): LibelleCertification {
+export function libelleCertificationBibliotheque(
+  // `Pick` et non un type structurel à champs optionnels : dans
+  // `BibliothequeEntree`, les deux champs sont **requis**, et `listeBibliotheque()`
+  // les remplit toujours. Les rendre optionnels ici rendait `{}` légal et
+  // l'envoyait au défaut — donc affirmait « Scoring non vérifié » d'une entrée
+  // qui ne porte aucune information, là où le domaine a un état pour cela
+  // (`inconnu` → « Statut inconnu »). Affaiblir le contrat était gratuit.
+  entree: Pick<BibliothequeEntree, 'certifie' | 'statutCertification'>,
+): LibelleCertification {
   if (entree.certifie || entree.statutCertification === 'certifie') {
     return { label: 'Scoring vérifié', variant: 'success' };
   }
@@ -90,7 +107,7 @@ export function libelleCertificationBibliotheque(entree: {
  * contredisait le dossier.
  */
 export function libelleCertificationPassation(
-  certification: ScoreCertification | null,
+  certification: CertificationLue | null,
 ): LibelleCertification | null {
   if (!certification) return null;
   if (certification.source === 'drive' && certification.status === 'certifie') {

@@ -144,7 +144,12 @@ const REPONSES_CERTIFICATION = {
       dateSoumission: '2026-07-05T10:00:00.000Z',
       scorePrincipal: 4,
       interpretation: 'Sans particularité',
-      scoresParsed: { type: 'sum', total: 4, certification: { source: 'cabinet' } },
+      // `historique` est une valeur RÉELLE de `CertificationSource`
+      // (`lib/scoring/types.ts:5`), et une passation ancienne la porte sans
+      // `status`. Une première rédaction employait `source: 'cabinet'`, qui
+      // n'appartient pas à l'union : le contrôle négatif prouvait alors le
+      // défaut sur une entrée que la production ne peut pas produire.
+      scoresParsed: { type: 'sum', total: 4, certification: { source: 'historique' } },
       subScoreRanges: null,
     },
   ],
@@ -874,9 +879,11 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     const ligneEortc = screen.getByText('Instrument scoré sur le manuel officiel').closest('tr')!;
     expect(within(ligneEortc).getByText('Scoring vérifié (manuel EORTC)')).toBeTruthy();
 
-    // Contrôle négatif : un statut que le mapper ne connaît pas ne doit PAS
-    // hériter du badge vert. Sans lui, rendre inconditionnellement « Scoring
-    // vérifié » passerait les deux assertions ci-dessus.
+    // Contrôle négatif : une source sans statut vérifié ne doit PAS hériter du
+    // badge vert. Ce qu'il attrape, précisément, c'est un mapper dont la branche
+    // par défaut aurait basculé côté `success` — les deux assertions ci-dessus
+    // ne le verraient pas, puisqu'elles cherchent un texte exact et le
+    // trouveraient encore.
     const ligneInconnu = screen
       .getByText('Instrument dont la règle scorée n’est pas vérifiée')
       .closest('tr')!;

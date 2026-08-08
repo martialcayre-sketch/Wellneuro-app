@@ -70,24 +70,46 @@ de la donnée n'a été renommé** — l'écart écran/dossier est nommé dans `
   incohérente à l'écran.
 - `web/src/lib/certificationLibelles.guard.test.ts` — table écrite à la main,
   exhaustivité **par le typage** (`Record<StatutCertificationRuntime, …>` ne
-  compile pas si un état s'ajoute sans attendu), refus de `/certifi/i` sur les
-  valeurs rendues, auto-test du motif sur les dix anciens libellés.
-- Assertion de **rendu** sur la colonne « Qualité » avec son contrôle négatif
-  (`FichePatientPanel.test.tsx`) et sélecteur E2E reporté sur le nouveau libellé
-  du badge cabinet (`e2e/dashboard-praticien.spec.ts`).
+  compile pas si un état s'ajoute sans attendu), attendus **épinglés au mot près**
+  pour les deux constantes, refus de `/certifi/i` sur les valeurs rendues,
+  auto-test du motif sur les dix anciens libellés.
+- Deux bancs de **rendu** : `BibliothequePanel.test.tsx` (créé — badge du
+  catalogue dans ses quatre états, badge cabinet, prose du tiroir) et
+  `FichePatientPanel.test.tsx` (colonne « Qualité » avec son contrôle négatif).
+  Plus le sélecteur E2E du badge cabinet (`e2e/dashboard-praticien.spec.ts`).
 
-## Ce que la relecture d'écran a appris, et qui vaut réserve
+## Ce que la relecture d'écran et la revue adversariale ont appris
 
-La colonne « Qualité » ne rend un badge de vérification que si `scores_json`
-porte une clé `certification`. **Le seed n'en produit aucune** : les cinq
-passations de Sophie Nicola affichent toutes « Historique », en local comme en
-CI. Aucun E2E ne peut donc témoigner des libellés de passation ; le seul témoin
-est le banc jsdom avec sa fixture dédiée. Étendre le seed est un geste séparé,
-non fait ici.
+**Le seed omet une clé que le moteur produit.** La colonne « Qualité » ne rend un
+badge que si `scores_json` porte une `certification` ; les 14 blocs `scoresJson`
+de `web/prisma/seed.ts` n'en portent aucune, alors que les moteurs la propagent
+(`questions.ts`, `certification: sc.certification || null`), que
+`api/patient/submit` persiste le résultat entier et que les quatre instruments de
+Sophie Nicola la déclarent au catalogue. Une première rédaction de ce lot en
+concluait « aucun E2E ne PEUT témoigner » : **c'est faux** — il manque une
+assertion, pas une possibilité. Étendre le seed et poser l'assertion : geste
+séparé, non fait ici, mais nommé comme un manque.
 
-Et le garde ne ferme pas tout : son contrôle de source refuse la réintroduction
-d'un **ancien** libellé, liste fermée — il attrape le revert, pas un mot neuf
-inventé ailleurs.
+**Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré le
+2026-08-08 sur le catalogue résolu (`statutCertificationRuntime` appliqué à
+`QUESTIONNAIRE_CATALOGUE`) : **38 `certifie`, 21 `inconnu`, 6 `ambigu`**. Les 21
+ne déclarent aucune `certification` — `questionnaires/sommeil.ts` et
+`gerontologie.ts` n'en contiennent pas une —, donc « Statut inconnu » à la
+bibliothèque et « Historique » sur la fiche, **en production comme en local**.
+PSQI (`Q_SOM_01`) et MMSE (`Q_GEO_04`) sont du nombre, que le registre couvre
+pourtant. Le lot traite le badge qui rassure à tort ; celui qui ne dit rien reste.
+
+**Le libellé emprunte le nom d'un barreau qu'il ne lit pas.** « Scoring vérifié »
+reproduit `scoring_verifie` de `instrument_registry.json` mais lit
+`def.scoring.certification.status` du catalogue de code, et
+`scripts/lib/verifier_registre_instruments.js` ne compare jamais les deux. Avant
+ce lot, une divergence rendait un mot vague faux ; désormais elle rend une
+affirmation vérifiable fausse.
+
+**Et le garde ne ferme pas tout** : son contrôle de source refuse la
+réintroduction d'un **ancien** libellé, liste fermée et à la casse près —
+`'Instrument certifié'` en minuscule lui échappe. Ce sont les deux bancs de rendu
+qui réduisent ce trou, pas lui.
 
 ## Hors périmètre
 
@@ -119,13 +141,18 @@ plutôt que passé sous silence.
 ## Validation
 
 - T1 vert (296 bancs d'outillage, type-check, lint, anti-secrets).
-- **T2 vert** — 131 tests Playwright (Chromium + iPhone 13), dont
-  `dashboard-praticien.spec.ts:94` qui emprunte le badge cabinet renommé, plus
-  4 190 tests Vitest sur 371 fichiers.
-- **Quatre mutations, quatre rouges** : libellé nu remis dans le module (3
-  tests, dont le couplage qui attrape une régression du module que la table
-  attendue ne suivrait pas), motif cassé (10), ancien libellé réintroduit dans un
-  composant (1), source de la règle scorée effacée (le banc de rendu).
+- **T2 vert après les correctifs de revue** — 130 tests Playwright passés, 2
+  ignorés (Chromium + WebKit), dont `dashboard-praticien.spec.ts:94` qui emprunte
+  le badge cabinet renommé, plus **4 200 tests Vitest sur 372 fichiers** (+10
+  tests, +1 fichier : le banc `BibliothequePanel`).
+  Le chiffre de 131 qu'une première rédaction annonçait venait des passes
+  portant le spec de **capture jetable** ; sur le code livré, c'est 130.
+- **Six mutations, six rouges** — quatre trouvées à l'écriture, deux par la revue
+  adversariale : libellé nu remis dans le module (5 tests, dont le couplage qui
+  attrape une régression du module que la table attendue ne suivrait pas), motif
+  cassé (10), ancien libellé réintroduit dans un composant (1), source de la
+  règle scorée effacée (1), **sens de la prose cabinet inversé sans le mot
+  interdit** (1), **libellé nu posé directement dans le badge du catalogue** (6).
 - Écran réel relu sur les deux surfaces (capture Playwright jetable, supprimée) :
   badges et prose du cabinet corrects et sans débordement ; c'est cette
   relecture qui a montré que la colonne « Qualité » ne sert que « Historique »

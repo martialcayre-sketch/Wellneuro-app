@@ -15,11 +15,19 @@
   `Scoring vérifié (Drive)`, `Drive ambigu` → `Scoring ambigu (Drive)`,
   `Certifié manuel EORTC` → `Scoring vérifié (manuel EORTC)`, `À vérifier` →
   `Scoring à vérifier`, `Cabinet — non certifié` → `Cabinet — scoring non
-  vérifié`. `Non scoré`, `Statut inconnu` et `Historique` ne portaient pas le
-  mot et ne changent pas.
-- Les **trois proses** du tiroir des instruments du cabinet, qui employaient le
-  même mot trois lignes sous le badge renommé (« jamais certifiés », « jamais
-  certifié automatiquement », « Il reste non certifié »).
+  vérifié`. **Le critère n'est pas la présence du mot mais la cohérence de
+  l'échelle** — « Drive ambigu » et « À vérifier » ne portaient pas le mot et ont
+  changé quand même, parce qu'une échelle mi-« Scoring », mi-autre chose ne se
+  lit pas. `Non scoré`, `Statut inconnu` et `Historique` restent : ils ne portent
+  pas le mot **et** se lisent sans friction à côté des nouveaux.
+- **Trois proses en ligne** du rayon Questionnaires, qui employaient le même mot
+  à quelques lignes d'un badge renommé : `BibliothequePanel.tsx:369`
+  (description du tiroir d'édition) et `:1215` (pied de l'éditeur) disaient
+  toutes deux « jamais certifié automatiquement », `:1405` (pied de la
+  relecture) disait « Il reste non certifié ». La quatrième — « jamais
+  certifiés », prose du tiroir des instruments du cabinet — n'est pas de ce
+  compte : elle est devenue la constante `TEXTE_INSTRUMENTS_CABINET`, comptée
+  ci-dessous avec les littéraux d'écran.
 - **La source de la règle scorée reste nommée** : le moteur EORTC suit le manuel
   officiel, les autres la grille Drive. Les deux libellés verts diffèrent —
   les fondre aurait fait perdre à la fiche ce qui distingue les deux
@@ -38,14 +46,55 @@
   rendaient** ; c'est la raison du déplacement, pas un rangement.
 - `web/src/lib/certificationLibelles.guard.test.ts` — table de libellés écrite à
   la main, exhaustivité **par le typage** (`Record<StatutCertificationRuntime,…>`
-  ne compile pas si un état est ajouté sans attendu), refus de `/certifi/i` sur
-  les valeurs rendues, et auto-test du motif sur les dix anciens libellés.
-  Quatre mutations vérifiées, quatre rouges : libellé nu remis dans le module
-  (3 tests), motif cassé (10), ancien libellé réintroduit dans un composant (1),
-  source de la règle effacée (le banc de rendu).
+  ne compile pas si un état est ajouté sans attendu), attendus **épinglés au mot
+  près** pour les deux littéraux d'écran, refus de `/certifi/i` sur les valeurs
+  rendues, et auto-test du motif sur les dix anciens libellés.
+- `web/src/components/BibliothequePanel.test.tsx` — badge du catalogue dans ses
+  **quatre** états, badge cabinet, prose du tiroir. Il n'existait aucun banc sur
+  ce composant : `app/dashboard/bibliotheque/page.test.tsx` le **mocke**, et
+  l'E2E ne touchait que le badge cabinet — la surface qui porte les 64
+  instruments n'avait donc aucun rendu asséré.
 - Une assertion de **rendu** sur la colonne « Qualité »
   (`FichePatientPanel.test.tsx`), avec son contrôle négatif : un mapper renommé
   qu'un composant n'appellerait pas laisserait l'ancien libellé à l'affichage.
+
+**Six mutations vérifiées, six rouges** — les deux dernières trouvées par la
+revue adversariale, et ce sont les plus instructives :
+
+| Mutation | Rouge |
+|---|---|
+| libellé nu remis dans le module | 5 tests |
+| motif remplacé par `/xyzzy/i` | 10 tests |
+| ancien libellé réintroduit dans un composant | 1 test |
+| source de la règle scorée effacée (EORTC → Drive) | 1 test |
+| **sens de la prose cabinet inversé, sans le mot interdit** | 1 test |
+| **libellé nu posé directement dans le badge du catalogue** | 6 tests |
+
+Les deux dernières passaient **vertes** avant correction : un garde qui interdit
+un mot n'épingle pas une affirmation (« leur scoring **est** vérifié par
+WellNeuro » ne porte pas `certifi`), et un contrôle de source ne prouve pas un
+affichage.
+
+### Mesuré, et nommé comme dette
+
+- **Le badge est muet pour 21 des 65 instruments — production comprise.** Mesuré
+  le 2026-08-08 sur le catalogue résolu : **38 `certifie`, 21 `inconnu`, 6
+  `ambigu`**. Les 21 ne déclarent aucune `certification` (`questionnaires/sommeil.ts`,
+  `gerontologie.ts` n'en portent pas une), donc « Statut inconnu » à la
+  bibliothèque et « Historique » sur la fiche, **partout**. PSQI (`Q_SOM_01`) et
+  MMSE (`Q_GEO_04`) sont du nombre, que le registre couvre pourtant. Ce lot traite
+  le badge qui rassure à tort ; celui qui ne dit rien reste.
+- **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
+  vérifié » reproduit `scoring_verifie` de `instrument_registry.json` mais lit
+  `def.scoring.certification.status`, écrit à la main dans le catalogue de code ;
+  `verifier_registre_instruments.js` ne compare jamais les deux. Avant ce lot, une
+  divergence rendait un mot vague faux ; désormais elle rend une affirmation
+  vérifiable fausse.
+- **Le seed omet une clé que le moteur produit.** Les moteurs propagent la
+  métadonnée et `api/patient/submit` la persiste, mais les 14 blocs `scoresJson`
+  de `prisma/seed.ts` n'en portent aucune — alors que les quatre instruments de
+  Sophie Nicola la déclarent au catalogue. Aucun E2E n'assère donc les libellés de
+  passation : il manque **une assertion, pas une possibilité**.
 
 ### Non modifié, et c'est le point
 

@@ -145,10 +145,23 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   `StatutCertificationRuntime` et la valeur `'certifie'` gardent le mot. Faut-il
   un jour aligner le dossier sur l'écran ? Ce serait une campagne de registre, et
   la dépendance irait dans le bon sens ; rien ne l'exige aujourd'hui.
-- **Aucun E2E ne peut témoigner des libellés de passation** : le seed ne produit
-  aucune clé `certification` dans `scores_json`, donc la colonne « Qualité » sert
-  « Historique » sur les cinq passations seedées, en local comme en CI. Étendre
-  le seed pour ouvrir ce chemin est un geste séparé, non fait au LOT-02.
+- **Le seed omet une clé que le moteur produit.** Les 14 blocs `scoresJson` de
+  `web/prisma/seed.ts` ne portent aucune `certification`, alors que les moteurs la
+  propagent et que les quatre instruments de Sophie Nicola la déclarent au
+  catalogue. Aucun E2E n'assère donc les libellés de passation — mais **rien ne
+  l'en empêche** : c'est une assertion qui manque, pas une impossibilité. Étendre
+  le seed (4 lignes) et poser l'assertion : geste séparé, non fait au LOT-02.
+- **Le badge est muet pour 21 des 65 instruments, production comprise.** Mesuré
+  le 2026-08-08 sur le catalogue résolu : 38 `certifie`, **21 `inconnu`**, 6
+  `ambigu`. Les 21 ne déclarent aucune `certification` — PSQI (`Q_SOM_01`) et
+  MMSE (`Q_GEO_04`) inclus, que le registre couvre pourtant. Le lot traite le
+  badge qui rassure à tort ; celui qui ne dit rien reste. Dette nommée, sans lot.
+- **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
+  vérifié » reproduit `scoring_verifie` du registre, mais lit
+  `def.scoring.certification.status` du catalogue de code, et
+  `verifier_registre_instruments.js` ne compare jamais les deux. Voisin naturel
+  du garde anti-dérive du LOT-03 — à trancher à son ouverture : même lot, ou
+  dette à part ?
 - Le garde anti-dérive du LOT-03 doit-il vivre dans `web/prisma/checks/` (contrat
   de données, rejoué en CI sur base éphémère) ou en lecture de production
   planifiée ? Seul le second voit la vraie dérive ; seul le premier est gratuit.
@@ -196,11 +209,16 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       (`D-036`). Preuve relue le 2026-08-08 :
       `certificationLibelles.guard.test.ts` (table écrite à la main,
       exhaustivité par le typage, refus de `/certifi/i` sur les valeurs rendues,
-      auto-test du motif), **quatre mutations rendues rouges**, plus une
-      assertion de rendu jsdom et le sélecteur E2E du badge cabinet.
-      Réserve à ne pas effacer : aucun E2E ne voit les libellés de **passation**
-      — le seed ne produit aucune clé `certification`, donc la colonne
-      « Qualité » sert « Historique » partout hors production.
+      auto-test du motif), **six mutations rendues rouges** — dont deux trouvées
+      par la revue adversariale : le SENS de la prose cabinet inversé sans le mot
+      interdit, et un libellé nu posé directement dans le composant. S'y ajoutent
+      deux bancs de rendu (`BibliothequePanel.test.tsx` pour le catalogue dans
+      ses quatre états, `FichePatientPanel.test.tsx` pour la colonne
+      « Qualité ») et le sélecteur E2E du badge cabinet.
+      Réserves à ne pas effacer : le seed omet une clé que le moteur **produit**
+      (assertion manquante, pas impossibilité) ; le badge est **muet pour 21 des
+      65 instruments**, production comprise ; et rien ne relie le libellé au
+      barreau `scoring_verifie` dont il emprunte le nom.
 - [ ] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour.
 - [ ] Les corrections mineures : commentaires de scoring **faits** (LOT-01) ;

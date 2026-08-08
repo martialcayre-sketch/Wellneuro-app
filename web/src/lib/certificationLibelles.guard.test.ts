@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   LIBELLE_INSTRUMENT_CABINET,
   TEXTE_INSTRUMENTS_CABINET,
+  type CertificationLue,
   type LibelleCertification,
-  type ScoreCertification,
   libelleCertificationBibliotheque,
   libelleCertificationPassation,
 } from '@/lib/certification-libelles';
@@ -40,16 +40,41 @@ import type { StatutCertificationRuntime } from '@/lib/bibliotheque';
 // caractère de mot et `\bcertifié\b` ne borne rien. `/certifi/i` couvre sans
 // ancrage « Certifié », « certification », « certifiés », « certifiée ».
 //
+// UN MOT INTERDIT NE SUFFIT PAS : IL FAUT UN SENS ÉPINGLÉ. Première rédaction de
+// ce fichier, refusée en revue adversariale : les deux constantes n'avaient
+// aucun attendu écrit à la main, seulement le passage au motif. Or
+// `TEXTE_INSTRUMENTS_CABINET` réécrit en « leur scoring **est** vérifié par
+// WellNeuro » ne porte pas le mot interdit et **passait le garde vert** — en
+// affirmant à l'écran l'inverse exact de D-034 pour un instrument du cabinet.
+// La chaîne vide passait aussi. C'est le pendant du piège connu du dépôt (« un
+// garde qui assère une présence est satisfait par l'inversion exacte du
+// défaut »), pris par l'autre bout : une absence de mot est satisfaite par une
+// affirmation inversée. D'où `ATTENDUS_CONSTANTES` plus bas.
+//
 // CE QUE CE GARDE NE COUVRE PAS, dit plutôt que tu :
 //  - un nouveau littéral « Certifié » posé **directement** dans un composant,
 //    hors de ce module. Le contrôle de source plus bas n'écarte que les anciens
-//    libellés, nommément ; il ne peut pas deviner un mot neuf. Ce qui réduit ce
-//    trou est le rendu réellement asséré — `FichePatientPanel.test.tsx` pour la
-//    colonne « Qualité », `e2e/dashboard-praticien.spec.ts` pour le badge
-//    cabinet.
+//    libellés, **nommément et à la casse près** : `'Instrument certifié'`
+//    (minuscule) ne contient aucune des chaînes de `ANCIENS_LIBELLES` et
+//    passerait. Ce qui réduit ce trou est le rendu réellement asséré —
+//    `BibliothequePanel.test.tsx` pour le badge du catalogue, le badge cabinet
+//    et la prose du tiroir, `FichePatientPanel.test.tsx` pour la colonne
+//    « Qualité », `e2e/dashboard-praticien.spec.ts` pour le parcours cabinet.
 //  - le vocabulaire du dossier : `instrument_registry.json`,
 //    `StatutCertificationRuntime`, le corpus. Il garde le mot, et c'est le prix
 //    assumé de D-036 — l'écran et le dossier ne disent plus la même chose.
+//  - **la divergence entre le champ que l'UI lit et le barreau du registre.**
+//    « Scoring vérifié » reproduit le nom `scoring_verifie` de
+//    `instrument_registry.json`, mais il est piloté par
+//    `def.scoring.certification.status`, écrit à la main dans le catalogue de
+//    code. Rien ne relie les deux — dette nommée dans D-036.
+//
+// PIÈGE POUR QUI ÉDITERA CES DEUX COMPOSANTS : le contrôle de source lit les
+// fichiers ENTIERS, commentaires compris. Documenter un ancien libellé dans un
+// commentaire de `BibliothequePanel.tsx` ou `FichePatientPanel.tsx` fait rougir
+// le garde pour une raison légitime — et invite l'exception que l'en-tête
+// interdit. Écrire ce commentaire ailleurs (le banc, le spec E2E, le changelog),
+// pas dans les deux fichiers scannés.
 
 /** Le mot qu'aucun texte d'écran ne doit plus porter. */
 const MOTIF_MOT_NU = /certifi/i;
@@ -71,10 +96,24 @@ const ATTENDUS_BIBLIOTHEQUE: Record<StatutCertificationRuntime, LibelleCertifica
   inconnu: { label: 'Statut inconnu', variant: 'neutral' },
 };
 
+/**
+ * Attendus des deux littéraux d'écran, **au mot près**. Ce ne sont pas des
+ * doublons du motif : le motif interdit un mot, ceux-ci épinglent un SENS. Sans
+ * eux, « leur scoring **est** vérifié par WellNeuro » passait vert.
+ *
+ * Toute reformulation légitime de ces textes fait rougir ce banc, et c'est
+ * voulu : elle demande alors de relire ce que la phrase affirme.
+ */
+const ATTENDUS_CONSTANTES = {
+  LIBELLE_INSTRUMENT_CABINET: 'Cabinet — scoring non vérifié',
+  TEXTE_INSTRUMENTS_CABINET:
+    'Privés à votre cabinet — leur scoring n’est pas vérifié par WellNeuro ; publication après relecture de la grille.',
+} as const;
+
 /** Attendus de la colonne « Qualité » de la fiche patient, écrits à la main. */
 const ATTENDUS_PASSATION: Array<{
   cas: string;
-  certification: ScoreCertification | null;
+  certification: CertificationLue | null;
   attendu: LibelleCertification | null;
 }> = [
   {
@@ -103,7 +142,18 @@ const ATTENDUS_PASSATION: Array<{
     attendu: { label: 'Non scoré', variant: 'neutral' },
   },
   {
-    cas: 'statut inconnu du mapper — défaut',
+    // `historique` est une valeur RÉELLE de `CertificationSource`
+    // (`lib/scoring/types.ts`), et sans `status` : c'est la forme que porte une
+    // passation ancienne. Le défaut doit la couvrir.
+    cas: 'source historique sans statut — défaut',
+    certification: { source: 'historique' },
+    attendu: { label: 'Scoring non vérifié', variant: 'neutral' },
+  },
+  {
+    // Une valeur qu'aucune version du moteur n'a écrite : le mapper lit une
+    // colonne JSON, il doit rendre un libellé plutôt que de laisser passer
+    // `undefined` à l'affichage.
+    cas: 'statut inattendu en base — défaut',
     certification: { source: 'drive', status: 'quelque_chose_de_neuf' },
     attendu: { label: 'Scoring non vérifié', variant: 'neutral' },
   },
@@ -136,11 +186,21 @@ const RACINE_COMPOSANTS = join(__dirname, '..', 'components');
 const SOURCE_BIBLIOTHEQUE = readFileSync(join(RACINE_COMPOSANTS, 'BibliothequePanel.tsx'), 'utf8');
 const SOURCE_FICHE = readFileSync(join(RACINE_COMPOSANTS, 'FichePatientPanel.tsx'), 'utf8');
 
+/**
+ * Entrée de bibliothèque **telle que `listeBibliotheque()` la produit** : les deux
+ * champs dérivent du même `def.scoring.certification.status`, donc ils s'accordent.
+ * Fabriquer un état où ils divergent serait un cas que la production ne peut pas
+ * servir — la divergence a son propre test, plus bas, et elle y est explicite.
+ */
+function entreeReelle(etat: StatutCertificationRuntime) {
+  return { certifie: etat === 'certifie', statutCertification: etat };
+}
+
 describe('libellés de certification — la table attendue', () => {
   it('rend le libellé et la variante de chaque état de bibliothèque', () => {
     for (const [etat, attendu] of Object.entries(ATTENDUS_BIBLIOTHEQUE)) {
       expect(
-        libelleCertificationBibliotheque({ statutCertification: etat as StatutCertificationRuntime }),
+        libelleCertificationBibliotheque(entreeReelle(etat as StatutCertificationRuntime)),
         `état ${etat}`,
       ).toEqual(attendu);
     }
@@ -160,16 +220,29 @@ describe('libellés de certification — la table attendue', () => {
     ]);
   });
 
-  it('le raccourci booléen `certifie` mène au même libellé que l’état', () => {
+  it('le booléen `certifie` l’emporte sur un statut qui le contredit', () => {
     // Deux entrées pour une seule vérité : `entree.certifie` est dérivé de
-    // `def.scoring.certification.status` par `estCertifie()`, et le composant
-    // lisait déjà les deux. Si les deux chemins divergeaient, un instrument
-    // s'afficherait vérifié sur une donnée et non vérifié sur l'autre.
-    expect(libelleCertificationBibliotheque({ certifie: true })).toEqual(
-      ATTENDUS_BIBLIOTHEQUE.certifie,
-    );
-    // Et le défaut, quand rien n'est renseigné : jamais « sans badge ».
-    expect(libelleCertificationBibliotheque({})).toEqual(ATTENDUS_BIBLIOTHEQUE.non_certifie);
+    // `def.scoring.certification.status` par `estCertifie()`, comme
+    // `statutCertification` l'est par `statutCertificationRuntime()`. Le
+    // composant lisait déjà les deux en `||`. Le cas qui exerce vraiment ce `||`
+    // est celui où ils DIVERGENT — sur `{certifie: true}` seul, la branche
+    // passerait aussi bien avec un `&&`.
+    expect(
+      libelleCertificationBibliotheque({ certifie: true, statutCertification: 'non_certifie' }),
+    ).toEqual(ATTENDUS_BIBLIOTHEQUE.certifie);
+    // Et la réciproque : le booléen faux ne force rien, l'état décide.
+    expect(
+      libelleCertificationBibliotheque({ certifie: false, statutCertification: 'a_verifier' }),
+    ).toEqual(ATTENDUS_BIBLIOTHEQUE.a_verifier);
+  });
+
+  it('épingle le SENS des deux littéraux d’écran, pas seulement leur vocabulaire', () => {
+    // Le motif plus bas interdit un mot ; ces deux assertions interdisent une
+    // affirmation inversée. « leur scoring EST vérifié par WellNeuro » ne porte
+    // pas le mot interdit et passait le garde vert avant elles — en affirmant à
+    // l'écran l'inverse de D-034. La chaîne vide passait aussi.
+    expect(LIBELLE_INSTRUMENT_CABINET).toBe(ATTENDUS_CONSTANTES.LIBELLE_INSTRUMENT_CABINET);
+    expect(TEXTE_INSTRUMENTS_CABINET).toBe(ATTENDUS_CONSTANTES.TEXTE_INSTRUMENTS_CABINET);
   });
 
   it.each(ATTENDUS_PASSATION)('passation — $cas', ({ certification, attendu }) => {
@@ -196,10 +269,15 @@ describe('libellés de certification — aucun texte d’écran ne porte plus le
     TEXTE_INSTRUMENTS_CABINET,
   ];
 
-  it('anti-vacuité : il y a bien des textes à examiner', () => {
+  it('anti-vacuité : il y a bien des textes à examiner, et aucun n’est vide', () => {
     // Une liste vide passerait le test suivant sans rien prouver — c'est la
-    // manière dont un garde de refus cesse silencieusement de garder.
-    expect(textesRendus.length).toBeGreaterThanOrEqual(13);
+    // manière dont un garde de refus cesse silencieusement de garder. Et un
+    // texte vide passe `/certifi/i` : compter les éléments ne suffit pas, il
+    // faut compter les caractères.
+    expect(textesRendus.length).toBeGreaterThanOrEqual(14);
+    for (const texte of textesRendus) {
+      expect(texte.trim().length, `texte vide dans la liste examinée`).toBeGreaterThan(0);
+    }
   });
 
   it.each(textesRendus)('« %s » ne porte pas /certifi/i', texte => {
@@ -214,9 +292,7 @@ describe('libellés de certification — aucun texte d’écran ne porte plus le
     // réellement produites, y compris les deux constantes.
     const produits = [
       ...Object.keys(ATTENDUS_BIBLIOTHEQUE).map(
-        etat =>
-          libelleCertificationBibliotheque({ statutCertification: etat as StatutCertificationRuntime })
-            .label,
+        etat => libelleCertificationBibliotheque(entreeReelle(etat as StatutCertificationRuntime)).label,
       ),
       ...ATTENDUS_PASSATION.map(c => libelleCertificationPassation(c.certification)?.label).filter(
         (l): l is string => Boolean(l),
@@ -237,6 +313,10 @@ describe('libellés de certification — aucun texte d’écran ne porte plus le
 
 describe('libellés de certification — les deux écrans passent par le module', () => {
   it('les composants importent le module et n’ont plus de mapper local', () => {
+    // Contrôle STRUCTUREL, et il ne prouve pas l'affichage : un composant qui
+    // calculerait le libellé puis en afficherait un autre le passerait. C'est
+    // `BibliothequePanel.test.tsx` et `FichePatientPanel.test.tsx` qui
+    // établissent le rendu.
     expect(SOURCE_BIBLIOTHEQUE).toContain("from '@/lib/certification-libelles'");
     expect(SOURCE_BIBLIOTHEQUE).toContain('libelleCertificationBibliotheque(e)');
     expect(SOURCE_BIBLIOTHEQUE).toContain('{LIBELLE_INSTRUMENT_CABINET}');

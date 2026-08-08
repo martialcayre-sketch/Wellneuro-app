@@ -54,7 +54,7 @@ import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaS
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
 import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import {
-  type ScoreCertification,
+  type CertificationLue,
   libelleCertificationPassation,
 } from '@/lib/certification-libelles';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
@@ -742,7 +742,7 @@ export function FichePatientPanel({
             <tbody>
               {reponses.map(r => {
                 const scores = r.scoresParsed;
-                const certification = libelleCertificationPassation((scores?.certification as ScoreCertification | undefined) ?? null);
+                const certification = libelleCertificationPassation((scores?.certification as CertificationLue | undefined) ?? null);
                 const missingIds = getArrayField(scores, 'missingIds');
                 const notApplicable = getArrayField(scores, 'notApplicable');
                 const note = typeof scores?.note === 'string' ? scores.note : '';

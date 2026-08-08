@@ -3218,14 +3218,19 @@ la remplace explicitement par un bouton d'information ; aucun composant
 réutilisable n'existe. Le lien : fait quitter l'écran. Ne qualifier que les trois
 badges verts : échelle incohérente.
 
-**Ce que la relecture d'écran a appris.** La colonne « Qualité » n'affiche que
-« Historique » sur données seedées — le seed ne pose aucune clé `certification`.
-Aucun E2E ne peut donc voir les libellés de passation ; le banc jsdom est le seul
-témoin, et le garde porte sur les valeurs rendues, jamais sur le source (un
-`/certifi/i` y aurait exigé une exception, donc un passe-partout).
+**Ce que la revue adversariale a rattrapé.** Deux mutations passaient vertes : le
+**sens** de la prose cabinet inversé sans le mot interdit (un garde qui interdit
+un mot n'épingle pas une affirmation), et un libellé nu posé dans le composant —
+la surface principale n'avait **aucun** rendu asséré, la page mockant le panneau.
+Et ma réserve était fausse : le seed omet une clé que le moteur **produit**, donc
+il manquait une assertion, pas une possibilité.
+
+**Ce qui est mesuré, non estimé.** 65 instruments : 38 `certifie`, **21
+`inconnu`**, 6 `ambigu`. Le badge est donc muet pour un tiers du catalogue,
+PSQI et MMSE compris, **en production aussi**.
 
 **Prochaine action.** LOT-03 (dette 4) : re-mesurer la dérive registre/packs à la
 date d'ouverture, puis poser le garde contre son retour.
 
-**Questions ouvertes.** Faut-il un jour aligner le registre sur l'écran ? Le
-garde n'attrape pas un mot neuf, seulement le revert d'un ancien libellé.
+**Questions ouvertes.** Rien ne relie « Scoring vérifié » au barreau
+`scoring_verifie` dont il emprunte le nom — même lot que le garde anti-dérive ?
