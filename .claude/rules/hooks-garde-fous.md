@@ -2,9 +2,6 @@
 paths:
   - ".claude/hooks/**"
   - ".claude/settings.json"
-globs:
-  - ".claude/hooks/**"
-  - ".claude/settings.json"
 ---
 
 # Garde-fous d'écriture — détail des hooks

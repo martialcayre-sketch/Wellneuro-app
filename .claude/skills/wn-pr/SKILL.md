@@ -41,33 +41,21 @@ risque (scoring/clinique, Prisma/migration, auth), rédiger la section
 Opus/high — plutôt qu'en session : la description d'une PR de migration mérite
 le même effort que sa revue.
 
-## Attendre le CI sans le sonder en boucle
+## L'attente CI appartient à `/wn-merge`, pas à ce skill <!-- mention-seule: wn-merge -->
 
-Un seul appel, en tâche de fond :
+Ce skill **ouvre** la PR et s'arrête là. Ne pas lancer `wn-attendre-ci` ici :
+la lecture du CI, le régime de merge courant, l'exception migration/auth, le
+merge et le nettoyage sont du ressort de `/wn-merge` — qui fait cette attente <!-- mention-seule: wn-merge -->
+en un seul appel (`node scripts/wn-attendre-ci.mjs <N>`) et dont **le code `0`
+est le seul qui autorise à annoncer une PR prête**. Lancer l'attente deux fois
+(ici puis dans le merge) coûtait ~4 appels `gh` pour rien.
 
-```bash
-node scripts/wn-attendre-ci.mjs <N>
-```
-
-Ne pas enchaîner `gh pr checks` / `gh pr view` manuellement : le 2026-07-20 la
-session a produit 81 appels de sondage pour l'information que cet appel rend en
-un seul.
-
-Et ne pas revenir à la boucle `until … bucket=="pending"` qu'il remplace : elle
-confondait « aucun check en attente » avec « aucun check du tout », et rendait
-donc la main sur deux checks Vercel verts quand `verify` n'avait jamais été créé
-(PR #550, le 2026-08-03). Le script sort en **`2`** dans ce cas et nomme toutes
-les causes applicables ; **`0` est le seul code qui autorise à annoncer une PR
-prête** — les cinq autres, `4` et `5` compris, disent chacun à sa façon qu'on ne
-peut pas l'affirmer. Codes de sortie et périmètre :
-`docs/claude/REGLES_PR_MERGE.md`.
-
-Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test`
-n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
-
-Une fois la PR ouverte, la suite du cycle (CI, régime de merge courant, exception
-migration/auth, merge et nettoyage) est du ressort de `/wn-merge`, pas de ce <!-- mention-seule: wn-merge -->
-skill.
+Ne jamais enchaîner `gh pr checks` / `gh pr view` manuellement (81 appels de
+sondage le 2026-07-20), ni revenir à la boucle `until … bucket=="pending"`
+qu'un code `2` du script a remplacée (PR #550 : deux checks Vercel verts,
+`verify` jamais créé). Codes et périmètre : `docs/claude/REGLES_PR_MERGE.md`.
+Ne jamais annoncer une PR « prête » sur une suite Vitest verte : seul le CI
+fait foi, et sa lecture appartient à `/wn-merge`. <!-- mention-seule: wn-merge -->
 
 ## Corps de PR
 

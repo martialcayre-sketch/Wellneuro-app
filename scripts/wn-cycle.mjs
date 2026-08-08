@@ -323,18 +323,25 @@ function baseDeComparaison(defaut) {
 const FETCH_TTL_S = 300;
 
 /**
- * Un fetch de moins de FETCH_TTL_S secondes (mtime de `FETCH_HEAD`, lu dans le
- * git-dir commun que les worktrees partagent) rend un nouveau fetch inutile :
+ * Un fetch de moins de FETCH_TTL_S secondes rend un nouveau fetch inutile :
  * plusieurs outils enchaînés dans la même fenêtre (`/wn-pr` puis `/wn-merge`)
- * refaisaient chacun le leur.
+ * refaisaient chacun le leur. Le mtime seul ne suffit pas : `FETCH_HEAD`
+ * (dans le git-dir commun que les worktrees partagent) est réécrit par
+ * N'IMPORTE quel fetch — une autre branche, un tag. Son contenu ne décrit que
+ * le dernier fetch : exiger qu'il mentionne la branche par défaut garantit
+ * qu'on ne déclare jamais frais le fetch d'une autre ref. Un FETCH_HEAD vide
+ * (observé sur certains environnements) désactive simplement l'optimisation —
+ * coût : un fetch, jamais un état faux.
  */
-function fetchRecent() {
+function fetchRecent(defaut) {
   const commun = git(['rev-parse', '--git-common-dir']);
   if (!commun) return false;
   const dossier = isAbsolute(commun) ? commun : join(RACINE, commun);
   try {
-    const age = (Date.now() - statSync(join(dossier, 'FETCH_HEAD')).mtimeMs) / 1000;
-    return age >= 0 && age < FETCH_TTL_S;
+    const chemin = join(dossier, 'FETCH_HEAD');
+    const age = (Date.now() - statSync(chemin).mtimeMs) / 1000;
+    if (!(age >= 0 && age < FETCH_TTL_S)) return false;
+    return readFileSync(chemin, 'utf8').includes(`branch '${defaut}' of`);
   } catch {
     return false;
   }
@@ -342,7 +349,7 @@ function fetchRecent() {
 
 function synchroniserOrigin(defaut) {
   let fetchOk = false;
-  if (fetchRecent()) {
+  if (fetchRecent(defaut)) {
     fetchOk = true;
   } else {
     try {

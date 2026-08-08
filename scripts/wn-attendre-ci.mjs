@@ -407,17 +407,18 @@ function jsonOuNull(texte) {
   }
 }
 
-// Ce qui ne dépend que du SHA de tête est lu UNE fois. Sans ce cache, une
+// Deux caches séparés, chargés à des moments différents. Sans cache, une
 // attente de 15 minutes coûtait 4 appels toutes les 20 s, soit 180 appels —
 // plus que les 81 appels de sondage qui ont motivé la règle d'économie.
 //
-// La clé porte la base ET le SHA : `contextesRequis` dépend de la branche
-// cible, qui peut changer à SHA de tête constant.
-const cacheParSha = new Map();
+// La PROTECTION sert à chaque verdict : lue immédiatement, mémoïsée par
+// branche cible (elle ne dépend que d'elle ; on ne mémoïse jamais un échec —
+// une erreur transitoire sur le point le plus sensible aux droits rendrait
+// `4` jusqu'au bout, là où un tour de boucle suffisait à s'en remettre).
+const cacheProtection = new Map();
 
-function faitsDuSha(sha, baseRefName) {
-  const cle = `${baseRefName}@${sha}`;
-  if (cacheParSha.has(cle)) return cacheParSha.get(cle);
+function contextesRequisDe(baseRefName) {
+  if (cacheProtection.has(baseRefName)) return cacheProtection.get(baseRefName);
   const protection = jsonOuNull(
     gh([
       'api',
@@ -428,21 +429,32 @@ function faitsDuSha(sha, baseRefName) {
       '{c: ([.checks[]?.context] + (.contexts // []) | unique)}',
     ]),
   );
+  const contextes = Array.isArray(protection?.c) ? protection.c : null;
+  if (contextes !== null) cacheProtection.set(baseRefName, contextes);
+  return contextes;
+}
+
+// L'AUTEUR du commit de tête et l'EXISTENCE des runs ne servent qu'aux
+// diagnostics d'un check absent ou annulé (SORTIE_N_A_PAS_TOURNE) : ils se
+// chargent PARESSEUSEMENT, quand ce verdict tombe — 1 appel api par SHA sur
+// une CI normale au lieu de 3. Mémoïsation par valeur : l'auteur ne change
+// pas ; `runsExistent=false` peut devenir vrai au tour suivant (runs en cours
+// d'enregistrement) — le figer accusait à tort une « branche squashée ».
+const cacheDiagnosticParSha = new Map();
+
+function faitsDeDiagnostic(sha) {
+  const connu = cacheDiagnosticParSha.get(sha);
+  if (connu) return connu;
   const commit = jsonOuNull(gh(['api', `repos/:owner/:repo/commits/${sha}`, '--jq', '{login: .author.login}']));
   const runs = jsonOuNull(gh(['api', `repos/:owner/:repo/actions/runs?head_sha=${sha}`, '--jq', '{n: .total_count}']));
   const faits = {
-    contextesRequis: Array.isArray(protection?.c) ? protection.c : null,
     auteurCommitTete: commit?.login ?? null,
     // `null` (appel en échec) n'est PAS `false` (aucun run) : seul `false`
     // permet d'accuser une branche squashée.
     runsExistent: runs === null ? null : runs.n > 0,
   };
-  // On ne mémoïse QUE ce qui a été lu. Cacher un échec figerait une défaillance
-  // transitoire pour tout le run : une seule erreur sur la lecture de la
-  // protection — le point le plus sensible aux droits — rendrait `4` jusqu'au
-  // bout, là où un simple tour de boucle suffisait à s'en remettre.
-  if (faits.contextesRequis !== null && faits.auteurCommitTete !== null && faits.runsExistent !== null) {
-    cacheParSha.set(cle, faits);
+  if (faits.auteurCommitTete !== null && faits.runsExistent === true) {
+    cacheDiagnosticParSha.set(sha, faits);
   }
   return faits;
 }
@@ -459,9 +471,11 @@ function collecter(numero) {
   );
   if (!vue) return { pr: null };
   return {
-    // Étalé EN TÊTE : une quatrième clé ajoutée un jour à `faitsDuSha` ne
-    // pourra pas écraser `pr` ni `rollup`, qui sont relus à chaque tour.
-    ...faitsDuSha(vue.headRefOid, vue.baseRefName),
+    contextesRequis: contextesRequisDe(vue.baseRefName),
+    // Chargés paresseusement par la boucle (faitsDeDiagnostic) quand le
+    // verdict tombe en SORTIE_N_A_PAS_TOURNE — seuls chemins qui les lisent.
+    auteurCommitTete: null,
+    runsExistent: null,
     pr: {
       numero: vue.number,
       etat: vue.state,
@@ -492,9 +506,16 @@ async function principal(argv) {
   let intervalle = INTERVALLE_S;
   let tours = 0;
   for (;;) {
-    const faits = collecter(numero);
+    let faits = collecter(numero);
     faits.delaiDepasse = (Date.now() - debut) / 1000 >= delai;
-    const verdict = diagnostiquer(faits);
+    let verdict = diagnostiquer(faits);
+    if (!verdict.attendre && verdict.sortie === SORTIE_N_A_PAS_TOURNE && faits.pr) {
+      // Le seul verdict qui consomme l'auteur du commit et l'existence des
+      // runs : les charger maintenant et re-rendre le verdict, dont le
+      // message nommera toutes les causes applicables (Copilot, squash…).
+      faits = { ...faits, ...faitsDeDiagnostic(faits.pr.headRefOid) };
+      verdict = diagnostiquer(faits);
+    }
     if (!verdict.attendre) {
       console.log(verdict.message);
       // Snapshot final : les outils enchaînés (ex. /wn-merge) le lisent au

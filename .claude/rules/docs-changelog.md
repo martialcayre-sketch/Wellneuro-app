@@ -2,9 +2,6 @@
 paths:
   - "**/*.md"
   - "changelog.d/**"
-globs:
-  - "**/*.md"
-  - "changelog.d/**"
 ---
 
 # Documentation, changelog, handoffs

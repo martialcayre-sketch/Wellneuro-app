@@ -1,15 +1,18 @@
 ---
 paths:
   - "web/src/lib/questions*"
-  - "web/src/lib/questions/**"
+  - "web/src/lib/questionnaires/**"
+  - "web/src/lib/scoring/**"
+  - "web/src/lib/clinical/**"
+  - "web/src/lib/clinical-engine/**"
   - "web/src/lib/equilibre/**"
   - "web/src/lib/consultation/**"
-  - "prompts/**"
-globs:
-  - "web/src/lib/questions*"
-  - "web/src/lib/questions/**"
-  - "web/src/lib/equilibre/**"
-  - "web/src/lib/consultation/**"
+  - "web/src/lib/instruments.ts"
+  - "web/src/lib/bibliotheque.ts"
+  - "web/src/lib/echelles-cabinet.ts"
+  - "web/src/lib/questionnaires-catalog.ts"
+  - "web/src/lib/plaintes.ts"
+  - "web/src/lib/*.guard.test.ts"
   - "prompts/**"
 ---
 

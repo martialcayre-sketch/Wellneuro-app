@@ -1,11 +1,5 @@
 ---
-# Deux clés de scoping pour couvrir les variantes de Claude Code (l'inconnue est ignorée).
 paths:
-  - "web/prisma/**"
-  - "supabase/**"
-  - "web/src/lib/prisma.ts"
-  - "web/src/app/api/**"
-globs:
   - "web/prisma/**"
   - "supabase/**"
   - "web/src/lib/prisma.ts"

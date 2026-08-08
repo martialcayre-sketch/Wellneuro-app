@@ -13,17 +13,19 @@ Tâche : `$ARGUMENTS`
 
 ## Règles
 
-- **Si la tâche n’est pas exécutable telle qu’écrite** — aucun résultat observable, terme ambigu dans ce dépôt, ou deux lectures menant à deux diffs différents —, rendre la reformulation (`/wn-reprompt`) au lieu de bâtir un plan sur une hypothèse. Un plan cadré sur la mauvaise demande fait payer l’erreur au lot entier, pas au cadrage.
+- **Si la tâche n’est pas exécutable telle qu’écrite** — aucun résultat observable, terme ambigu dans ce dépôt, ou deux lectures menant à deux diffs différents —, ne pas bâtir de plan sur une hypothèse : rendre « PASSE — demande ambiguë, la faire d'abord reformuler via `/wn-reprompt` » et s'arrêter. Un plan cadré sur la mauvaise demande fait payer l’erreur au lot entier, pas au cadrage. <!-- mention-seule: wn-reprompt -->
 - Lire d’abord `CLAUDE.md`, la dernière entrée de `SESSION_LOG.md` et uniquement les fichiers nécessaires.
 - Ne modifier aucun fichier.
 - Ce skill cadre la tâche ; il ne remplace pas le mode Plan pour la planification technique détaillée.
 - Vérifier l’état réel du dépôt avant d’accepter une hypothèse.
 - Choisir le changement minimal.
 - Identifier explicitement toute migration, logique clinique, donnée sensible ou dépendance production.
-- **Le fork `Explore` ci-dessus est le défaut.** Si les fichiers visés
-  relèvent d'une classe à risque (scoring/clinique, Prisma/migration, auth),
-  déléguer le cadrage via `Agent(subagent_type: "wn-reviewer")` — agent épinglé
-  Opus/high — plutôt que le fork par défaut.
+- **Ce corps s'exécute dans le fork `Explore` (lecture seule, sans outil
+  `Agent`) : ne déléguer à personne d'ici.** Si les fichiers visés relèvent
+  d'une classe à risque (scoring/clinique, Prisma/migration, auth), l'écrire
+  EN TÊTE de la sortie : « Classe à risque — faire relire ce cadrage par
+  `Agent(subagent_type: "wn-reviewer")` avant le plan technique ». C'est la
+  session, au retour du fork, qui délègue.
 - Ne pas cumuler ce skill et le mode Plan natif sur la même tâche : ce skill
   cadre le périmètre ; le plan technique détaillé revient au mode Plan natif.
 

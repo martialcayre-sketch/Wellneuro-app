@@ -61,9 +61,11 @@ si elles apparaissent dans un fichier ouvert ou un log collé par erreur.
 - Ne pas réexpliquer ce qui est déjà établi ; ne pas commenter ses évidences.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
 - Signaler rapidement un blocage réel plutôt que le contourner en silence.
-- `/clear` entre deux sujets sans rapport ; déléguer à un sous-agent toute
-  investigation qui dépasse deux ou trois fichiers — son contexte est jeté,
-  ce qu'il lit n'est jamais repayé, et ce qui remonte est la conclusion.
+- `/clear` entre deux sujets sans rapport. Le développement courant reste
+  solo ; déléguer à un sous-agent quand l'investigation est réellement
+  volumineuse (nombreux fichiers, sorties longues) ou porte une classe à
+  risque — son contexte est jeté, ce qu'il lit n'est jamais repayé, et ce qui
+  remonte est la conclusion.
 
 ## Modèle, effort, mode d'exécution
 

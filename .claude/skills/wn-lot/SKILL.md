@@ -51,30 +51,36 @@ Classer sur les fichiers probables — la classe la plus haute l'emporte :
 
 | Classe | Modèle | Palier | Revue | Garde particulier |
 |---|---|---|---|---|
-| **Docs** — `.md`, `docs/`, `changelog.d/` | `sonnet` | T1 | fork `Explore` | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
-| **UI** — `web/src/app/**`, `components/**`, `.css` | `sonnet` | **T2** | fork `Explore` | une suite Vitest verte ne prouve rien sur les parcours |
-| **API** — `web/src/app/api/**`, `lib/` hors scoring | `opus` si contrôle d'accès en jeu, sinon `sonnet` | **T2** | fork `Explore` | contrôle d'accès **avant** la lecture des données |
+| **Docs** — `.md`, `docs/`, `changelog.d/` | `sonnet` | T1 | `/code-review` en session | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
+| **UI** — `web/src/app/**`, `components/**`, `.css` | `sonnet` | **T2** | `/code-review` en session | une suite Vitest verte ne prouve rien sur les parcours |
+| **API** — `web/src/app/api/**`, `lib/` hors scoring | `opus` si contrôle d'accès en jeu, sinon `sonnet` | **T2** | `/code-review` en session | contrôle d'accès **avant** la lecture des données |
 | **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | `opus` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
 | **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
 | **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
-**Une seule chose déborde la classe** : un lot dont le raisonnement traverse
-le dépôt ou tient sur plusieurs jours (refonte transverse, architecture) monte
-à `fable` (`claude-fable-5`) quel que soit le type de ses fichiers, et
-redescend dès que la conception est arrêtée. Un lot ordinaire, même clinique,
-reste à `opus`. Le modèle du tableau vaut pour la **qualité du verdict** :
-descendre sur une revue clinique est un vrai risque.
+**Une seule chose déborde la classe** : le gate Fable de `CLAUDE.md`, et lui
+seul — **au moins deux signaux forts** (architecture transverse, arbitrage
+difficile entre solutions plausibles, cause racine introuvable, décision
+engageant plusieurs lots). Un seul signal, même « ça traverse le dépôt » ou
+« ça durera plusieurs jours », ne suffit pas ; le lot redescend dès que la
+conception est arrêtée. Un lot ordinaire, même clinique, reste à `opus`. Le
+modèle du tableau vaut pour la **qualité du verdict** : descendre sur une
+revue clinique est un vrai risque.
 
-## Comment le modèle s'applique
+## Comment le modèle s'applique — solo d'abord
 
-Un skill ne change pas le modèle de la session. Chaque étape sensible au
-modèle se confie donc à un appel de l'outil `Agent` : paramètre `model`
-explicite, ou sous-agent déjà épinglé (`wn-explorer`=haiku,
-`wn-doc-auditor`=sonnet, `wn-reviewer`=opus, `wn-fable`=fable — leur
-frontmatter porte aussi l'effort). Le paramètre `model` d'un appel prime sur
-l'épinglage du sous-agent. Aucun sous-agent WN ne peut éditer (outils
-`Read, Grep, Glob, Bash`) ; l'exécution passe par
-`Agent(subagent_type: "general-purpose", model: <classe>)`.
+**Classes Docs/UI/API : tout se fait en session, solo.** La session est déjà
+au défaut `sonnet` + effort high (`.claude/settings.json`) — cadrer, exécuter
+et revoir (`/code-review`) sans sous-agent. On ne délègue que si le périmètre
+est réellement volumineux (nombreux fichiers à lire, sorties longues) :
+`Agent(wn-explorer)` pour l'investigation seulement.
+
+**Classes Scoring/Migration/Auth : le changement de modèle passe par
+l'outil `Agent`** (un skill ne change pas le modèle de la session) — sous-agent
+épinglé (`wn-reviewer`=opus, `wn-fable`=fable ; leur frontmatter porte aussi
+l'effort) ou paramètre `model` explicite, qui prime sur l'épinglage. Aucun
+sous-agent WN ne peut éditer (outils `Read, Grep, Glob, Bash`) ; une exécution
+déléguée passe par `Agent(subagent_type: "general-purpose", model: <classe>)`.
 
 **Exception : le mode Plan.** `EnterPlanMode` est un mode de la session, avec
 sa porte d'approbation humaine (`ExitPlanMode`) — jamais délégué. Si la classe
@@ -96,19 +102,22 @@ un skill.
 N'inclure que les étapes qui servent — un lot documentaire n'a pas besoin de
 T2, un lot sans migration n'a pas besoin de la revue préalable.
 
-1. **Cadrage** — `Agent(wn-explorer)` pour Docs/UI/API,
+1. **Cadrage** — en session pour Docs/UI/API (`Grep`/`Glob` puis lectures
+   bornées ; `Agent(wn-explorer)` seulement si le périmètre est volumineux) ;
    `Agent(wn-reviewer)` pour Scoring/Migration/Auth : écarts entre le lot et
    le dépôt réel, périmètre confirmé, hors périmètre nommé.
 2. **Plan technique** — mode Plan natif (`EnterPlanMode`, jamais délégué).
    Si la classe exige `opus`, le dire et laisser l'utilisateur basculer
    (`/model opusplan`) avant cette étape.
-3. **Exécution** — `Agent(subagent_type: "general-purpose", model: <modèle de
-   la classe>)`, prompt borné aux fichiers du lot ; ne pas élargir.
+3. **Exécution** — en session pour Docs/UI/API (la session est déjà au modèle
+   de la classe) ; `Agent(subagent_type: "general-purpose", model: <modèle de
+   la classe>)` pour Scoring/Migration/Auth. Prompt et périmètre bornés aux
+   fichiers du lot ; ne pas élargir.
 4. **Validation** — le palier de la classe, sortie redirigée une fois puis
    relue.
 5. **Revue** — un regard qui n'a pas écrit le code : `Agent(wn-reviewer)` pour
-   Scoring/Migration/Auth (**avant** de passer la main), fork `Explore` ou
-   `/code-review` pour Docs/UI/API. Le skill `/wn-review` produit la même <!-- mention-seule: wn-review -->
+   Scoring/Migration/Auth (**avant** de passer la main), `/code-review` en
+   session pour Docs/UI/API. Le skill `/wn-review` produit la même <!-- mention-seule: wn-review -->
    chose et s'invoque à la main par l'utilisateur.
 6. **Clôture** — sur la **branche vivante**, avant la PR : (a) statut du lot,
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle
