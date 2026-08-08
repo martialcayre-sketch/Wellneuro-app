@@ -106,7 +106,12 @@ describe('registre d’affichage questionnaires', () => {
     };
     parcourir(racine);
     // Anti-vacuité : un balayage qui ne trouve aucun site passerait au vert.
-    expect(sites.length, 'aucun montage de GenericQuestionnaire trouvé').toBeGreaterThanOrEqual(2);
+    // Le plancher était de 2 tant que le parcours legacy `app/patient` montait
+    // le second : il a été retiré le 2026-08-08 (dette 5), et il ne reste que
+    // l'écran portail. Le plancher descend donc à 1 — c'est le nombre de
+    // montages réels, et abaisser un plancher sans le dire est la manière dont
+    // un garde anti-vacuité cesse silencieusement de garder.
+    expect(sites.length, 'aucun montage de GenericQuestionnaire trouvé').toBeGreaterThanOrEqual(1);
     expect(sansRenderer, `pages sans prop renderer : ${sansRenderer.join(', ')}`).toEqual([]);
   });
 

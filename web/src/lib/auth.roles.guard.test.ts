@@ -29,9 +29,11 @@ import { authOptions, profilPraticienAutorise } from './auth';
 const RACINE = join(__dirname, '..');
 
 /** Surfaces patient : rien de ce qui suit ne doit connaître NextAuth. */
+// `app/patient` a disparu le 2026-08-08 avec le retrait du parcours legacy
+// (dette 5). La racine n'est pas remplacée : les routes `app/api/patient`
+// restent, et c'est là que la garde compte.
 const RACINES_PATIENT = [
   'app/portail',
-  'app/patient',
   'app/api/portail',
   'app/api/patient',
   'lib/portail',

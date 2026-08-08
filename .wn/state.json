@@ -6,7 +6,7 @@
   },
   "status": "active",
   "active_campaign": "2026-08-08-dettes-ouvertes-5-0",
-  "active_lot": "LOT-00",
+  "active_lot": "LOT-01",
   "last_completed_lot": "Dette 2 réglée hors campagne le 2026-08-08 (D-034 — la validation psychométrique n'entre pas au programme). Avant cela : 2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-07, campagne CLOSE, huit lots livrés. VERDICT COURANT : Wellneuro 5.0 N'EST PAS déclarable en bloc — 4 dettes fermées (1, 2, 3, 7), 1 arbitrée et reportée au 2026-10-21 (8), 3 OUVERTES (4, 5, 6). Détail et preuves : DECLARATION_5_0.md",
   "validation": {
     "overall_status": "passed",

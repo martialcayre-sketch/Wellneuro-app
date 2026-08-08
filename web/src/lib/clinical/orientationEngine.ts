@@ -209,9 +209,15 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
  * `items` sur chaque axe : la garde ci-dessous l'attrape par ses deux branches,
  * sans rien de spécifique au TFD.
  *
- * NE PAS LIRE CETTE GARDE COMME LA CLÔTURE DE LA CLASSE pour autant.
- * `sum_decimal`, `count_threshold` et `ecab` la portent encore ; ce qui les
- * distingue n'est pas d'être protégés, c'est qu'aucune règle publiée ne les vise.
+ * LA CLASSE EST FERMÉE DEPUIS LE 2026-08-05 (PR #583). `sum_decimal`,
+ * `count_threshold` et `ecab` portaient le même défaut ; les trois ont reçu la
+ * même garde dans `web/src/lib/questions.ts` — recueil incomplet →
+ * `interpretation: null` et note explicite (`count_threshold` L2517, `ecab`
+ * L3357, `sum_decimal` L3706), couverte par trois bancs dédiés
+ * (`qInf05RecueilPartiel`, `ecabRecueilPartiel`, `qdrsRecueilPartiel`).
+ * Ce commentaire les a déclarés « encore ouverts » pendant trois jours après
+ * leur fermeture, ici et dans `orientationRulesV1.ts` : le dépôt contredisait
+ * sa propre correction à deux endroits (dette 3 de la déclaration 5.0).
  *
  * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
  * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de

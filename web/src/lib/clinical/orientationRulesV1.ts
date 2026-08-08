@@ -226,9 +226,11 @@ export type OrientationRule = {
 // sur place. Aucun objet de la table n'a été modifié pour cela, et la signature
 // n'a donc pas été rouverte.
 //
-// CE QUI RESTE OUVERT, et ne doit pas se lire comme clos : `sum_decimal`,
-// `count_threshold` et `ecab` portent la même classe. Aucune règle publiée ne les
-// vise aujourd'hui — c'est la seule raison pour laquelle ils attendent.
+// CE QUI EST CLOS DEPUIS LE 2026-08-05 (PR #583) : `sum_decimal`,
+// `count_threshold` et `ecab` portaient la même classe et ont reçu la même
+// garde dans `web/src/lib/questions.ts` — recueil incomplet →
+// `interpretation: null` et note explicite —, avec trois bancs dédiés. Ils
+// n'« attendent » plus. Le motif du détail est dans `orientationEngine.ts`.
 //
 // TRAÇABILITÉ DES CLAIMS — ce que le CI vérifie, et ce qu'il ne peut pas.
 // Le banc n'atteint que le FORMAT d'un `claimId` : les claims vivent dans

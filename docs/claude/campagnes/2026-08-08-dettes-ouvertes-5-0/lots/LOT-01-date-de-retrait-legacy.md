@@ -1,59 +1,87 @@
 ---
 id: "LOT-01"
-titre: "Dette 5 — une date de retrait réelle, et plus aucun lien vers le legacy"
-statut: "à ouvrir"
+titre: "Dette 5 — le parcours patient legacy est retiré, pas daté"
+statut: "livré (2026-08-08) — répertoire supprimé, redirection conservée"
 dépend_de: "aucun"
 ---
 
-# LOT-01 — Dette 5 : une date de retrait réelle, et plus aucun lien vers le legacy
+# LOT-01 — Dette 5 : le parcours patient legacy est retiré, pas daté
 
-## But
+## Ce qui a été décidé, et qui change le lot
 
-Petit et borné, comme la déclaration le dit. Deux gestes :
+Le cadrage proposait de **poser une date-cible** de retrait — le critère du
+LOT-04 de la campagne close étant coché à tort, faute d'échéance réelle.
+**Arbitrage du 2026-08-08 : retrait immédiat.** Le répertoire
+`web/src/app/patient/` est supprimé dans ce lot ; il n'y a donc plus de date à
+poser, ni de lien interne à retirer — il vivait dans la page supprimée.
 
-1. **Poser une date-cible de retrait** du parcours patient legacy. Le code porte
-   `// PARCOURS INATTEIGNABLE — RETRAIT PRÉVU (LOT-04, 2026-08-05)` : **2026-08-05
-   est la date de la décision, pas une échéance**. Le texte renvoie à « un lot
-   nommé au prochain cadrage » et `web/next.config.mjs:34` à « une nouvelle
-   mesure d'usage ». Aucune date-cible nulle part — c'est ce qui a fait cocher à
-   tort le critère du LOT-04 (`LOT-04-validation.md:80`).
-2. **Retirer le lien interne survivant** :
-   `web/src/app/patient/[idAssignation]/page.tsx:191-192` porte encore
-   `href={/patient/${encodeURIComponent(a.idAssignation)}}` (bouton « Ouvrir »).
-   Vérifié présent au cadrage du 2026-08-08.
+Le risque a été signalé avant l'exécution : c'est précisément ce que le LOT-04
+avait refusé de faire sans preuve de non-usage, et 406 lignes de parcours
+partent sans filet. La décision a été maintenue, et elle est défendable — le
+parcours est **inatteignable depuis le 2026-08-05** (redirection 307), et plus
+rien ne le vise.
 
-Correction mineure rattachée : les commentaires de
-`web/src/lib/clinical/orientationEngine.ts:212` et
-`orientationRulesV1.ts:229` déclarent encore **ouverts** `sum_decimal`,
-`count_threshold` et `ecab` — fermés au LOT-03 de la campagne close (PR #583,
-trois gates, 19 cas). Le dépôt contredit sa propre correction à deux endroits.
+## Ce qui est supprimé
 
-## Ce qui est déjà fait, et ne se refait pas
+- `web/src/app/patient/[idAssignation]/page.tsx` (406 lignes) — l'ancien
+  parcours entier, avec le `href={/patient/…}` interne (L191-192) que le lot
+  devait retirer.
+- `web/src/app/patient/[idAssignation]/page.test.tsx` — son banc. **La règle
+  qu'il gardait n'est pas perdue** : `consentementPossible` sur recueil périmé
+  est couvert par
+  `web/src/app/portail/[token]/questionnaires/[idAssignation]/page.test.tsx`,
+  qui consomme la même route serveur. Vérifié avant la suppression, pas supposé.
+- `web/src/app/patient/layout.tsx`.
 
-Le risque est fermé : redirection 307 (`permanent: false`, choisi contre le 308
-pour ne pas graver un cache navigateur —
-`web/next.config.mjs:30-41`) de `/patient/:idAssignation*` vers
-`/portail/connexion`, plus le retrait du repli e-mail sur six routes
-`api/patient/*`. **L'inatteignabilité repose sur `next.config.mjs:42-50`, pas sur
-la page** : `page.tsx` (406 lignes) ne redirige pas, il rend toujours l'ancien
-parcours entier. Le lot ne touche pas à ce choix.
+## Ce qui est conservé, et pourquoi
 
-## Hors périmètre
+- **La redirection 307** de `web/next.config.mjs`. Elle n'est plus une
+  convergence entre deux parcours vivants : elle est le seul reste du legacy, et
+  elle existe pour les **liens e-mail déjà partis chez des patients**. La
+  retirer ferait tomber ces liens en 404 au lieu de les ramener au portail.
+  Le choix du 307 contre le 308 tient toujours, et pour la même raison : un 308
+  en cache sur un poste patient est irrattrapable.
+- **L'en-tête `X-Robots-Tag` sur `/patient/:path*`** : il part avec la réponse
+  307 elle-même, et c'est elle qu'un crawler rencontrerait en suivant un ancien
+  lien.
+- **Les routes `api/patient/*`** : `api/patient/questionnaire` est appelée par
+  l'écran **portail**, elle n'a rien de legacy.
 
-- **Supprimer le répertoire `web/src/app/patient/`.** Ce lot pose la date ; il ne
-  l'exécute pas. Supprimer sans mesure d'usage est exactement ce que le LOT-04
-  avait refusé de faire.
-- Modifier la redirection ou son code HTTP.
+## Correction rattachée — deux commentaires qui mentaient
 
-## Preuve attendue
+`orientationEngine.ts` et `orientationRulesV1.ts` déclaraient encore
+`sum_decimal`, `count_threshold` et `ecab` « ouverts » / « en attente », alors
+que la PR #583 les a fermés le 2026-08-05. Les trois gardes existent bien dans
+`web/src/lib/questions.ts` (L2517, L3357, L3706) avec trois bancs dédiés —
+vérifié ligne à ligne, pas repris de la prose du lot. Le dépôt contredisait sa
+propre correction à deux endroits ; c'est réparé.
 
-- Une **échéance** (date calendaire) dans le code et dans la doc, distincte de
-  toute date de décision, avec la mesure d'usage à laquelle elle est adossée —
-  ou l'aveu écrit qu'elle n'est adossée à rien.
-- `grep` sur le dépôt : zéro `href` interne vers `/patient/`.
-- E2E existants rejoués (T2) — la page reste rendue, seul le bouton disparaît.
+## Ce que ce lot laisse derrière lui, et qui est nommé
 
-## Question à trancher à l'ouverture
+**`web/src/app/api/patient/assignations/route.ts` n'a plus d'appelant.** Elle
+n'était consommée que par la page supprimée. C'est du code mort à compter de ce
+lot — pas retiré ici (une route d'API a une surface publique, son retrait se
+décide séparément), mais il ne faut pas le découvrir dans six semaines.
 
-Quelle échéance, adossée à quoi ? C'est une **décision produit**, pas un choix
-technique : à porter à l'utilisateur si aucune mesure d'usage n'existe.
+## Deux bancs cassés par le retrait, et c'est le bon signe
+
+T1 était vert ; **T3 a rougi sur deux bancs**, tous deux par leur garde
+anti-vacuité — exactement leur raison d'être :
+
+- `src/lib/auth.roles.guard.test.ts` énumérait `app/patient` parmi les racines
+  patient à balayer, et `readdirSync` a levé sur le dossier disparu. La racine
+  est retirée, **pas remplacée** : `app/api/patient` reste, et c'est là que la
+  garde compte.
+- `src/lib/questionnaire-display.test.ts` exigeait **au moins deux** montages de
+  `GenericQuestionnaire` ; il n'en reste qu'un, l'écran portail. Plancher
+  descendu à 1, avec le motif écrit sur place — abaisser un plancher sans le
+  dire est la manière dont un garde anti-vacuité cesse silencieusement de
+  garder.
+
+## Validation
+
+- T1 vert.
+- **T3 complet vert** (1 min 58 : lint, build de production, migrations,
+  contrats SQL, E2E Chromium + WebKit) — pas T2 : la suppression d'un répertoire
+  de route ne se voit ni au `tsc --noEmit` ni à Vitest, seul `next build` la
+  sanctionne, et les E2E sont le seul lieu où la redirection est empruntée.
