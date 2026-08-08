@@ -3185,3 +3185,23 @@ instruction : le merge est resté à la main de l'utilisateur.
 nouveau régime : Sonnet 5 + high + solo, rules path-scopées actives.
 
 **Questions ouvertes.** Néant.
+
+## 2026-08-08 — LOT-01 : le parcours patient legacy retiré, la redirection reste
+
+**Décisions.** Retrait immédiat de `web/src/app/patient/` plutôt qu'une
+date-cible : le parcours était inatteignable depuis le 2026-08-05 (D-035). La
+redirection 307 passe de `next.config.mjs` à `web/src/middleware.ts`.
+
+**Options écartées.** Une date-cible — la mesure d'usage qui l'aurait datée
+coûtait plus que le retrait. Garder `redirects()` « en filet » : il s'exécute
+**avant** le middleware, gagnait la course et neutralisait le correctif.
+
+**Ce qu'un banc a démenti.** Aucun test n'empruntait la redirection ; le premier
+écrit a montré que `redirects()` recopiait la query — un email de patient
+partait dans l'URL du portail, contre ce que `next.config.mjs` jurait.
+
+**Prochaine action.** LOT-02 : « Certifié » devient « Scoring vérifié » à
+l'écran praticien, toute la famille des libellés (arbitrage du 2026-08-08).
+
+**Questions ouvertes.** Jusqu'à quand garder la redirection `/patient/*` ?
+`api/patient/assignations` n'a plus d'appelant.
