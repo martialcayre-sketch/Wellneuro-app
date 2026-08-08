@@ -273,6 +273,26 @@ jobs:
       - name: État de campagne et vue humaine (banc du script)
         run: node --test scripts/wn-campaign.test.mjs
 
+      # Les deux bancs de `scripts/wn-etat-reel.mjs` : l'observation des six
+      # dimensions, et les trois gardes de cohérence qui en confrontent trois
+      # (vue `ACTIVE_CAMPAIGN.md` contre `.wn/state.json`, cohérence des deux
+      # dates de l'état, lot courant contre `CAMPAGNE.md`). C'est ICI qu'ils
+      # deviennent opposables : `wn-attendre-ci.mjs` est le seul verdict que le
+      # dépôt accepte, et un garde qui ne tourne qu'en T1 dépend de la
+      # discipline de la session qui l'oublie. Les deux fichiers étaient dans
+      # `npm run check` sans être dans ce workflow — trou trouvé par la revue
+      # adversariale du 2026-08-08, que `parite-check-ci` ne pouvait pas voir
+      # (elle vérifie CI → `check`, jamais l'inverse).
+      #
+      # NE PAS exporter `GH_TOKEN`/`GITHUB_TOKEN` sur cette étape. Le banc de
+      # `wn-etat-reel` compare deux exécutions du script et exige des rapports
+      # identiques ; le rapport contient `gh pr list`. Sans authentification,
+      # `gh` échoue à l'identique et la comparaison est stable — avec un jeton,
+      # elle deviendrait une égalité entre deux instantanés d'API pris à une
+      # seconde d'intervalle, et flaquerait sur des PR sans rapport.
+      - name: État réel du dépôt et gardes de cohérence (bancs des scripts)
+        run: node --test scripts/wn-etat-reel.test.mjs scripts/wn-coherence-etat.test.mjs
+
       # Banc de `scripts/wn-matrice-consommation.mjs`, qui dérive du code la
       # matrice « source de savoir → surface qui la consomme ». Le garde utile
       # n'est pas « le script tourne » : c'est qu'une source SANS appelant

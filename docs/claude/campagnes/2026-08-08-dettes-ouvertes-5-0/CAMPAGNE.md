@@ -1,7 +1,7 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "cadrée (2026-08-08)"
+statut: "en cours (2026-08-08) — LOT-00 livré, trois lots ouverts"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-08"
 lot_courant: "LOT-00"
@@ -46,7 +46,8 @@ Le motif retenu est un **taux de récidive** :
 
 - la campagne close a produit **quatre auto-déclarations fausses** sur huit lots ;
 - et les **deux défauts de sa propre PR de clôture** sont exactement ce que les
-  deux gardes ci-dessous attraperaient :
+  deux premiers gardes ci-dessous attraperaient — un troisième s'y ajoute, sur
+  le lot courant, que la déclaration nomme comme comparé par rien :
   - `ACTIVE_CAMPAIGN.md` régénéré **avant** l'édition de `.wn/state.json` dont il
     dérive, donc publiant « Lot actif : LOT-06 » sous une source qui disait
     LOT-07 → **garde 1 : confronter la vue dérivée à sa source** ;
@@ -56,7 +57,7 @@ Le motif retenu est un **taux de récidive** :
     depuis la dernière écriture d'état.
 
 Cet argument ne dit pas « d'abord parce que le reste en dépend ». Il dit **tôt et
-pas cher** : deux gardes qui coûtent une demi-journée protègent la classe de
+pas cher** : des gardes qui coûtent une demi-journée protègent la classe de
 défaut la plus fréquemment observée du dépôt sur les dix derniers jours.
 
 ## Contraintes non négociables
@@ -110,9 +111,11 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 
 ## Questions ouvertes
 
-- Le garde de cohérence vue/source du LOT-00 doit-il **échouer** le banc ou
-  **régénérer** la vue ? (à trancher à l'ouverture — un garde qui répare masque
-  la récidive qu'il est censé compter).
+- ~~Le garde de cohérence vue/source du LOT-00 doit-il **échouer** ou
+  **régénérer** ?~~ **Tranché au LOT-00 : il échoue.** Un garde qui répare
+  efface la récidive qu'il est censé compter ; la réparation reste un geste
+  explicite, et elle n'est pas la même pour les trois gardes (le détail est dans
+  l'entête de `scripts/wn-coherence-etat.test.mjs`).
 - La date-cible de retrait du parcours legacy (LOT-01) est une **décision
   produit** : quelle échéance, et adossée à quelle mesure d'usage ?
   `next.config.mjs:34` renvoie à « une nouvelle mesure d'usage » qui n'existe pas.
@@ -141,7 +144,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Dette 6 — deux gardes contre la récidive d'auto-déclaration | à ouvrir | — |
+| LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
 | LOT-01 | Dette 5 — une date de retrait réelle, et plus aucun lien vers le legacy | à ouvrir | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | à ouvrir | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | à ouvrir | LOT-00 |

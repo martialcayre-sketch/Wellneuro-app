@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { lireCampagnesSurDisque } from './lib/campagnes-sur-disque.mjs';
 import { rendreVueCampagnesActives } from './lib/vue-campagnes-actives.mjs';
 import { readCampaignTruth, readMachineState } from './wn-state.mjs';
 
@@ -249,35 +250,15 @@ export function collecterParcoursPatient(racine) {
 }
 
 /**
- * Les campagnes sur disque, réduites à ce dont le rendu de la vue a besoin :
- * `name` (nom du dossier) et `title` (frontmatter `titre`). Plus `lotCourant`,
- * lu du frontmatter `lot_courant`, pour confronter le lot actif de l'état.
+ * Les campagnes sur disque — le MÊME lecteur que celui de `wn-campaign.mjs`,
+ * qui écrit la vue (`scripts/lib/campagnes-sur-disque.mjs`). Deux lecteurs
+ * distincts rendraient la comparaison vue/source fausse : le garde rougirait
+ * sur un fichier correctement généré, et le geste qu'il conseille ne changerait
+ * rien. Ce n'est pas de la mutualisation d'agrément — c'est la condition pour
+ * que « régénérer et comparer » veuille dire quelque chose.
  */
 export function collecterCampagnes(racine) {
-  const base = path.join(racine, 'docs', 'claude', 'campagnes');
-  let entrees = [];
-  try {
-    entrees = fs.readdirSync(base, { withFileTypes: true }).filter((entree) => entree.isDirectory());
-  } catch {
-    return [];
-  }
-  const campagnes = [];
-  for (const entree of entrees) {
-    const chemin = path.join(base, entree.name, 'CAMPAGNE.md');
-    if (!fs.existsSync(chemin)) continue;
-    let texte = '';
-    try {
-      texte = fs.readFileSync(chemin, 'utf8');
-    } catch {
-      continue;
-    }
-    campagnes.push({
-      name: entree.name,
-      title: texte.match(/^titre:\s*"?([^"\n]+)"?/m)?.[1]?.trim() ?? entree.name,
-      lotCourant: texte.match(/^lot_courant:\s*"?([^"\n]+)"?/m)?.[1]?.trim() ?? null,
-    });
-  }
-  return campagnes;
+  return lireCampagnesSurDisque(path.join(racine, 'docs', 'claude', 'campagnes'));
 }
 
 export function lireVueSurDisque(racine) {
@@ -370,9 +351,20 @@ export function comparerEtat(etatMachine, reel) {
   // l'outil ne l'a pas vu. Comparaison par ORDINAL (`LOT-07`), le fichier
   // portant un suffixe libre (`LOT-07-cloture.md`) ; comparer les chaînes
   // entières rendrait rouge toute campagne dont le lot est nommé.
+  //
+  // Le cas UNILATÉRAL est le plus probable, et il compte : `active_lot:
+  // "LOT-03"` sous un `lot_courant: "aucun"` (7 campagnes sur 35 portent
+  // « aucun »), ou l'inverse. `ordinalDeLot` rend `null` d'un côté, l'ordinal de
+  // l'autre : l'inégalité suffit, aucune clause de présence à ajouter — en
+  // ajouter une aveuglerait le garde exactement là.
+  //
+  // Périmètre assumé : la campagne PRIMAIRE seulement. Les entrées de
+  // `parallel_campaigns` ne sont pas confrontées (elles portent aujourd'hui
+  // `active_lot: null` face à des `lot_courant` renseignés, et trancher si cet
+  // état est légitime est une décision de cycle, pas de script).
   const lotStocke = ordinalDeLot(etatMachine?.active_lot ?? null);
   const lotDeclare = ordinalDeLot(reel.lotCourantDeclare ?? null);
-  if (etatMachine?.active_campaign && (lotStocke || lotDeclare) && lotStocke !== lotDeclare) {
+  if (etatMachine?.active_campaign && lotStocke !== lotDeclare) {
     ecarts.push({
       champ: 'active_lot',
       valeurStockee: etatMachine?.active_lot ?? null,
@@ -385,14 +377,17 @@ export function comparerEtat(etatMachine, reel) {
 }
 
 /**
- * `LOT-07-cloture.md`, `LOT-07`, `lot-07` → `LOT-07`. Rend `null` pour « aucun »
- * et pour tout ce qui ne nomme pas un ordinal — un lot non nommé des deux côtés
- * ne doit pas se comparer à lui-même par accident.
+ * `LOT-07-cloture.md`, `LOT-07`, `lot-7` → `LOT-07`. Rend `null` pour « aucun »
+ * et pour tout ce qui ne nomme pas un ordinal.
+ *
+ * Le chiffre est normalisé sur deux positions : `LOT-7` écrit à la main dans un
+ * `CAMPAGNE.md` désignerait le même lot que `LOT-07` et ne doit pas produire un
+ * écart dont le message ressemblerait à un bug du garde.
  */
 export function ordinalDeLot(valeur) {
   if (typeof valeur !== 'string') return null;
   const trouve = valeur.match(/LOT-(\d+)/i);
-  return trouve ? `LOT-${trouve[1]}` : null;
+  return trouve ? `LOT-${trouve[1].padStart(2, '0')}` : null;
 }
 
 /** La première ligne où deux textes divergent — de quoi lire l'écart sans dumper deux fichiers. */

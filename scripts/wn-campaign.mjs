@@ -6,6 +6,7 @@ import {
   readMachineState as lireEtatMachine,
   writeMachineState as ecrireEtatMachine,
 } from "./wn-state.mjs";
+import { lireCampagnesSurDisque } from "./lib/campagnes-sur-disque.mjs";
 import { rendreVueCampagnesActives } from "./lib/vue-campagnes-actives.mjs";
 
 const args = process.argv.slice(2);
@@ -68,24 +69,6 @@ function has(name) {
 }
 function normalizeSpaces(value) {
   return value.replace(/\s+/g, " ").trim();
-}
-function parseFrontmatter(text) {
-  if (!text.startsWith("---\n")) return {};
-  const end = text.indexOf("\n---", 4);
-  if (end < 0) return {};
-  const block = text.slice(4, end);
-  const data = {};
-  for (const rawLine of block.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const sep = line.indexOf(":");
-    if (sep < 0) continue;
-    const key = line.slice(0, sep).trim();
-    let value = line.slice(sep + 1).trim();
-    value = value.replace(/^['\"]/, "").replace(/['\"]$/, "");
-    data[key] = value;
-  }
-  return data;
 }
 function lotBranchName(campaignBranch, lotId) {
   const suffix = String(lotId || "lot-00").toLowerCase().replace(/[^a-z0-9-]+/g, "-");
@@ -347,49 +330,11 @@ function writeActiveCampaign(campaignName) {
 }
 function readCampaigns() {
   ensureBase();
-  const campaigns = [];
-  const stack = [baseDir];
-  while (stack.length) {
-    const current = stack.pop();
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === "lots") continue;
-        stack.push(full);
-        const campaign = path.join(full, "CAMPAGNE.md");
-        if (!fs.existsSync(campaign)) continue;
-        const text = fs.readFileSync(campaign, "utf8");
-        const frontmatter = parseFrontmatter(text);
-        const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
-        const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
-        const lotsDir = path.join(full, "lots");
-        const lots = fs.existsSync(lotsDir)
-          ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
-          : [];
-        const lotData = lots.map((file) => {
-          const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
-          return {
-            file,
-            status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
-            title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
-          };
-        });
-        campaigns.push({
-          dir: full,
-          name: frontmatter.id || entry.name,
-          status,
-          title,
-          lots: lotData,
-          lotCourant: frontmatter.lot_courant || "",
-          brancheCampagne: frontmatter.branche_campagne || "",
-          brancheLotCourant: frontmatter.branche_lot_courant || "",
-          ciblePrLot: frontmatter.cible_pr_lot || "",
-          ciblePrCampagne: frontmatter.cible_pr_campagne || ""
-        });
-      }
-    }
-  }
-  return campaigns.sort((a, b) => b.name.localeCompare(a.name));
+  // La lecture elle-même vit dans `scripts/lib/campagnes-sur-disque.mjs` :
+  // le garde de cohérence de `wn-etat-reel.mjs` régénère la vue et doit lire
+  // les campagnes EXACTEMENT comme l'écrivain, sans quoi il rougit sur un
+  // fichier correctement généré.
+  return lireCampagnesSurDisque(baseDir);
 }
 function activeCampaign() {
   const campaigns = readCampaigns();

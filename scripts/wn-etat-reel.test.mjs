@@ -28,7 +28,61 @@ import { construireRapport, lireRegistreCertification } from './wn-etat-reel.mjs
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'wn-etat-reel.mjs');
 const REPO_ROOT = path.join(path.dirname(SCRIPT), '..');
-const SOURCE = fs.readFileSync(SCRIPT, 'utf8');
+/**
+ * Le texte du script ET celui de ses imports locaux, concaténés.
+ *
+ * Les deux gardes textuelles ci-dessous (« aucune connexion base », « jamais
+ * d'écriture ») ne portaient que sur `wn-etat-reel.mjs`. Depuis qu'il importe
+ * `lib/campagnes-sur-disque.mjs` et `lib/vue-campagnes-actives.mjs`, un
+ * `writeFileSync` posé dans l'un de ces deux modules ferait écrire le
+ * rapporteur avec les deux gardes vertes — la classe « un garde qui ne descend
+ * pas assez bas », déjà rencontrée sur ce dépôt.
+ *
+ * La descente s'arrête aux modules de `scripts/lib/` : `wn-state.mjs`, aussi
+ * importé, EXPOSE `writeMachineState` pour `wn-cycle.mjs` qui répare l'état —
+ * l'y inclure ferait rougir la garde sur une écriture légitime que ce script
+ * n'appelle pas. Ce qui protège ce cas-là reste en place et n'a pas changé : le
+ * texte du script lui-même ne doit contenir `writeMachineState` nulle part, pas
+ * même dans un import.
+ */
+function sourceAvecLibsLocaux(chemin, vus = new Set()) {
+  const reel = path.resolve(chemin);
+  if (vus.has(reel)) return '';
+  vus.add(reel);
+  const texte = fs.readFileSync(reel, 'utf8');
+  const dossier = path.dirname(reel);
+  const textes = [texte];
+  // Trois formes, parce que deux d'entre elles suffiraient à faire sortir un
+  // module du périmètre en silence : `import … from`, `export … from`, et
+  // `await import(…)`. La descente est RÉCURSIVE — un lib qui en importe un
+  // autre resterait invisible autrement, et la borne annoncée serait plus large
+  // que ce que le code atteint.
+  const motifs = [
+    /^(?:import|export)[^'"]*['"](\.[^'"]+)['"]/gm,
+    /import\(\s*['"](\.[^'"]+)['"]\s*\)/g,
+  ];
+  for (const motif of motifs) {
+    for (const trouve of texte.matchAll(motif)) {
+      if (!trouve[1].startsWith('./lib/') && !trouve[1].startsWith('../lib/')) continue;
+      const cible = path.join(dossier, trouve[1]);
+      if (fs.existsSync(cible)) textes.push(sourceAvecLibsLocaux(cible, vus));
+    }
+  }
+  return textes.join('\n');
+}
+
+const SOURCE = sourceAvecLibsLocaux(SCRIPT);
+
+// Non-vacuité : les deux gardes ci-dessous sont des `doesNotMatch`, donc un
+// `SOURCE` qui RÉTRÉCIT les rend plus faciles à satisfaire, jamais rouges. Ici,
+// et seulement ici, c'est la PRÉSENCE qu'il faut asserter — sinon une forme
+// d'import non reconnue sortirait un module du périmètre sans que rien ne le
+// dise.
+test('le texte gardé couvre bien le script ET ses libs — sinon les deux gardes ci-dessous seraient vides', () => {
+  assert.match(SOURCE, /export function construireRapport/, 'le script lui-même');
+  assert.match(SOURCE, /export function rendreVueCampagnesActives/, 'lib/vue-campagnes-actives.mjs');
+  assert.match(SOURCE, /export function lireCampagnesSurDisque/, 'lib/campagnes-sur-disque.mjs');
+});
 
 /**
  * Dépôt git minimal, committé, avec juste assez de structure pour que les six

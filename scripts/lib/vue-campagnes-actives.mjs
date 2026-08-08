@@ -8,9 +8,10 @@
 //
 // Pourquoi ce garde existe : à la clôture 5.0 (2026-08-08), la vue a été
 // régénérée AVANT l'édition de la source dont elle dérive. Elle a donc publié
-// « Lot actif : LOT-06 » sous un état qui disait LOT-07. Ni T3, ni deux passes
-// de revue adversariale, ni le CI ne l'ont vu — c'est une relecture humaine qui
-// l'a trouvé, dans le paragraphe même qui dénonçait cette dette.
+// « Lot actif : LOT-06 » sous un état qui disait LOT-07. Ni T3, ni le CI, ni
+// aucun test ne l'ont vu — c'est la revue adversariale qui l'a trouvé
+// (`DECLARATION_5_0.md`, « Trouvée par la revue adversariale, pas par un
+// test »), dans le paragraphe même qui dénonçait cette dette.
 
 /**
  * Rend le contenu attendu de `ACTIVE_CAMPAIGN.md`.
