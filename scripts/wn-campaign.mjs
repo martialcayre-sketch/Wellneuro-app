@@ -6,6 +6,8 @@ import {
   readMachineState as lireEtatMachine,
   writeMachineState as ecrireEtatMachine,
 } from "./wn-state.mjs";
+import { lireCampagnesSurDisque } from "./lib/campagnes-sur-disque.mjs";
+import { rendreVueCampagnesActives } from "./lib/vue-campagnes-actives.mjs";
 
 const args = process.argv.slice(2);
 const command = args[0] || "status";
@@ -67,24 +69,6 @@ function has(name) {
 }
 function normalizeSpaces(value) {
   return value.replace(/\s+/g, " ").trim();
-}
-function parseFrontmatter(text) {
-  if (!text.startsWith("---\n")) return {};
-  const end = text.indexOf("\n---", 4);
-  if (end < 0) return {};
-  const block = text.slice(4, end);
-  const data = {};
-  for (const rawLine of block.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const sep = line.indexOf(":");
-    if (sep < 0) continue;
-    const key = line.slice(0, sep).trim();
-    let value = line.slice(sep + 1).trim();
-    value = value.replace(/^['\"]/, "").replace(/['\"]$/, "");
-    data[key] = value;
-  }
-  return data;
 }
 function lotBranchName(campaignBranch, lotId) {
   const suffix = String(lotId || "lot-00").toLowerCase().replace(/[^a-z0-9-]+/g, "-");
@@ -346,49 +330,11 @@ function writeActiveCampaign(campaignName) {
 }
 function readCampaigns() {
   ensureBase();
-  const campaigns = [];
-  const stack = [baseDir];
-  while (stack.length) {
-    const current = stack.pop();
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === "lots") continue;
-        stack.push(full);
-        const campaign = path.join(full, "CAMPAGNE.md");
-        if (!fs.existsSync(campaign)) continue;
-        const text = fs.readFileSync(campaign, "utf8");
-        const frontmatter = parseFrontmatter(text);
-        const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
-        const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
-        const lotsDir = path.join(full, "lots");
-        const lots = fs.existsSync(lotsDir)
-          ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
-          : [];
-        const lotData = lots.map((file) => {
-          const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
-          return {
-            file,
-            status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
-            title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
-          };
-        });
-        campaigns.push({
-          dir: full,
-          name: frontmatter.id || entry.name,
-          status,
-          title,
-          lots: lotData,
-          lotCourant: frontmatter.lot_courant || "",
-          brancheCampagne: frontmatter.branche_campagne || "",
-          brancheLotCourant: frontmatter.branche_lot_courant || "",
-          ciblePrLot: frontmatter.cible_pr_lot || "",
-          ciblePrCampagne: frontmatter.cible_pr_campagne || ""
-        });
-      }
-    }
-  }
-  return campaigns.sort((a, b) => b.name.localeCompare(a.name));
+  // La lecture elle-même vit dans `scripts/lib/campagnes-sur-disque.mjs` :
+  // le garde de cohérence de `wn-etat-reel.mjs` régénère la vue et doit lire
+  // les campagnes EXACTEMENT comme l'écrivain, sans quoi il rougit sur un
+  // fichier correctement généré.
+  return lireCampagnesSurDisque(baseDir);
 }
 function activeCampaign() {
   const campaigns = readCampaigns();
@@ -417,30 +363,12 @@ function campaignActivity(campaignId, state = readMachineState()) {
 }
 function writeActiveCampaignView() {
   ensureBase();
-  const machineState = readMachineState();
-  const campaigns = readCampaigns();
-  const activeCampaignId = machineState.active_campaign || "";
-  const primary = campaigns.find((campaign) => campaign.name === activeCampaignId);
-  const parallels = normalizedParallelCampaigns(machineState).map((entry) => ({
-    ...entry,
-    campaign: campaigns.find((campaign) => campaign.name === entry.campaign_id)
-  }));
-  const hasActivity = Boolean(activeCampaignId || parallels.length);
-  const status = machineState.status || (hasActivity ? "active" : "idle");
-  const updatedAt = (machineState.updated_at || new Date().toISOString()).slice(0, 10);
-  const primaryBlock = activeCampaignId
-    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : active\n**Lot actif** : ${machineState.active_lot || "aucun"}\n`
-    : "## Activité primaire\n\nAucune campagne primaire active.\n";
-  const parallelBlock = parallels.length
-    ? parallels.map((entry) => `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || "active"}\n**Lot actif** : ${entry.active_lot || "aucun"}`).join("\n\n")
-    : "Aucune campagne parallèle active.";
-  const content = hasActivity
-    ? `# Campagnes actives\n\n${primaryBlock}\n## Activités parallèles\n\n${parallelBlock}\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`
-    // Même pied de page que la branche active : la phrase « cette vue est
-    // générée » est ce qui dissuade de l'éditer à la main. La tronquer quand
-    // la campagne est idle retirait le garde exactement là où le fichier est
-    // le plus court, donc le plus tentant à corriger à la main.
-    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`;
+  // Le rendu vit dans `scripts/lib/vue-campagnes-actives.mjs` : un garde doit
+  // pouvoir régénérer la vue attendue sans exécuter ce CLI (dont le seul import
+  // déclenche la commande). L'écriture reste ici.
+  const content = rendreVueCampagnesActives(readMachineState(), readCampaigns(), {
+    updatedAtParDefaut: new Date().toISOString()
+  });
   fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {

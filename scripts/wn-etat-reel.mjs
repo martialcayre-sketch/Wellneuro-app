@@ -8,6 +8,16 @@
 // existe déjà (`node scripts/wn-cycle.mjs --appliquer`) et n'est ni remplacée
 // ni appelée ici.
 //
+// Il OBSERVE six dimensions et en CONFRONTE trois — c'est écrit ici, dans le
+// résumé et dans le banc, parce que confondre les deux est exactement la dette
+// que ce script portait : le 2026-08-08 il n'en comparait plus qu'UNE
+// (`validation.last_checked_at`) tout en annonçant six, et son « zéro écart »
+// se lisait comme un état sain. Les trois comparaisons sont : la vue
+// `ACTIVE_CAMPAIGN.md` contre `.wn/state.json` dont elle dérive, la cohérence
+// des deux dates de l'état, et le lot courant contre `CAMPAGNE.md`. Le verdict
+// qui BLOQUE vit dans `scripts/wn-coherence-etat.test.mjs` (T1 et CI) : ce CLI
+// reste un observateur, il sort 0 même avec des écarts.
+//
 // Contrainte de sûreté : CLAUDE.md réserve la lecture de la base de production
 // à l'outil MCP Supabase (« jamais psql, ni une commande Bash »). La dimension
 // « migrations » se limite donc à lister les dossiers sous
@@ -19,6 +29,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { lireCampagnesSurDisque } from './lib/campagnes-sur-disque.mjs';
+import { rendreVueCampagnesActives } from './lib/vue-campagnes-actives.mjs';
 import { readCampaignTruth, readMachineState } from './wn-state.mjs';
 
 const SEPT_JOURS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -237,6 +249,27 @@ export function collecterParcoursPatient(racine) {
   return [...scannerNiveau(''), ...scannerNiveau('api')];
 }
 
+/**
+ * Les campagnes sur disque — le MÊME lecteur que celui de `wn-campaign.mjs`,
+ * qui écrit la vue (`scripts/lib/campagnes-sur-disque.mjs`). Deux lecteurs
+ * distincts rendraient la comparaison vue/source fausse : le garde rougirait
+ * sur un fichier correctement généré, et le geste qu'il conseille ne changerait
+ * rien. Ce n'est pas de la mutualisation d'agrément — c'est la condition pour
+ * que « régénérer et comparer » veuille dire quelque chose.
+ */
+export function collecterCampagnes(racine) {
+  return lireCampagnesSurDisque(path.join(racine, 'docs', 'claude', 'campagnes'));
+}
+
+export function lireVueSurDisque(racine) {
+  const chemin = path.join(racine, 'docs', 'claude', 'campagnes', 'ACTIVE_CAMPAIGN.md');
+  try {
+    return fs.readFileSync(chemin, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
 // ── Comparaison à `.wn/state.json` ──────────────────────────────────────────
 
 /**
@@ -271,10 +304,100 @@ export function comparerEtat(etatMachine, reel) {
           verdict: 'périmé',
         });
       }
+
+      // GARDE 2 — une validation ne peut pas être postérieure à la dernière
+      // écriture de l'état qui la porte. `wn-cycle --appliquer` écrit
+      // `updated_at` APRÈS avoir relu les paliers : `last_checked_at` en avance
+      // signifie soit un tampon posé à la main, soit une validation dont le
+      // résultat n'a jamais été réinscrit dans l'état. Les deux se lisent
+      // « validé » alors que rien ne le prouve.
+      //
+      // Ce garde ne dépend pas de l'horloge — il compare deux champs du MÊME
+      // fichier — contrairement au « périmé » ci-dessus. C'est ce qui le rend
+      // exécutable en CI sans devenir rouge avec le temps.
+      const ecritureEtat = etatMachine?.updated_at ?? null;
+      const dateEcriture = ecritureEtat ? new Date(ecritureEtat) : null;
+      if (dateEcriture && !Number.isNaN(dateEcriture.getTime()) && date.getTime() > dateEcriture.getTime()) {
+        ecarts.push({
+          // Champ distinct de celui du « périmé » ci-dessus : les deux verdicts
+          // portent sur la même date et peuvent tomber ensemble ; un champ
+          // partagé en ferait disparaître un dans toute lecture indexée.
+          champ: 'validation.last_checked_at vs updated_at',
+          valeurStockee: derniereValidation,
+          valeurReelle: `postérieur à updated_at (${ecritureEtat})`,
+          verdict: 'incohérent',
+        });
+      }
     }
   }
 
+  // GARDE 1 — la vue dérivée contre sa source. `ACTIVE_CAMPAIGN.md` est généré
+  // depuis `.wn/state.json` ; régénérée AVANT l'édition de sa source, elle
+  // publie l'état précédent sans que rien ne le signale. C'est arrivé le
+  // 2026-08-08, dans le document de clôture qui dénonçait cette dette.
+  if (typeof reel.vueSurDisque === 'string' && typeof reel.vueAttendue === 'string') {
+    if (reel.vueSurDisque !== reel.vueAttendue) {
+      ecarts.push({
+        champ: 'ACTIVE_CAMPAIGN.md',
+        valeurStockee: premiereLigneDivergente(reel.vueSurDisque, reel.vueAttendue),
+        valeurReelle: premiereLigneDivergente(reel.vueAttendue, reel.vueSurDisque),
+        verdict: 'vue désynchronisée de .wn/state.json',
+      });
+    }
+  }
+
+  // GARDE 3 — le lot courant n'était confronté à RIEN : `.wn/state.json`
+  // portait `active_lot: "LOT-06"` quand `CAMPAGNE.md` disait LOT-07, et
+  // l'outil ne l'a pas vu. Comparaison par ORDINAL (`LOT-07`), le fichier
+  // portant un suffixe libre (`LOT-07-cloture.md`) ; comparer les chaînes
+  // entières rendrait rouge toute campagne dont le lot est nommé.
+  //
+  // Le cas UNILATÉRAL est le plus probable, et il compte : `active_lot:
+  // "LOT-03"` sous un `lot_courant: "aucun"` (7 campagnes sur 35 portent
+  // « aucun »), ou l'inverse. `ordinalDeLot` rend `null` d'un côté, l'ordinal de
+  // l'autre : l'inégalité suffit, aucune clause de présence à ajouter — en
+  // ajouter une aveuglerait le garde exactement là.
+  //
+  // Périmètre assumé : la campagne PRIMAIRE seulement. Les entrées de
+  // `parallel_campaigns` ne sont pas confrontées (elles portent aujourd'hui
+  // `active_lot: null` face à des `lot_courant` renseignés, et trancher si cet
+  // état est légitime est une décision de cycle, pas de script).
+  const lotStocke = ordinalDeLot(etatMachine?.active_lot ?? null);
+  const lotDeclare = ordinalDeLot(reel.lotCourantDeclare ?? null);
+  if (etatMachine?.active_campaign && lotStocke !== lotDeclare) {
+    ecarts.push({
+      champ: 'active_lot',
+      valeurStockee: etatMachine?.active_lot ?? null,
+      valeurReelle: reel.lotCourantDeclare ?? null,
+      verdict: 'lot courant divergent de CAMPAGNE.md',
+    });
+  }
+
   return ecarts;
+}
+
+/**
+ * `LOT-07-cloture.md`, `LOT-07`, `lot-7` → `LOT-07`. Rend `null` pour « aucun »
+ * et pour tout ce qui ne nomme pas un ordinal.
+ *
+ * Le chiffre est normalisé sur deux positions : `LOT-7` écrit à la main dans un
+ * `CAMPAGNE.md` désignerait le même lot que `LOT-07` et ne doit pas produire un
+ * écart dont le message ressemblerait à un bug du garde.
+ */
+export function ordinalDeLot(valeur) {
+  if (typeof valeur !== 'string') return null;
+  const trouve = valeur.match(/LOT-(\d+)/i);
+  return trouve ? `LOT-${trouve[1].padStart(2, '0')}` : null;
+}
+
+/** La première ligne où deux textes divergent — de quoi lire l'écart sans dumper deux fichiers. */
+function premiereLigneDivergente(texte, autre) {
+  const lignes = texte.split('\n');
+  const lignesAutre = autre.split('\n');
+  for (let i = 0; i < Math.max(lignes.length, lignesAutre.length); i += 1) {
+    if (lignes[i] !== lignesAutre[i]) return `L${i + 1}: ${lignes[i] ?? '(absente)'}`;
+  }
+  return '(identiques)';
 }
 
 // ── Orchestration ────────────────────────────────────────────────────────────
@@ -286,7 +409,26 @@ export function construireRapport(racine) {
   const worktreesVivants = collecterWorktreesVivants(racine);
   const dirty = estArbreSale(racine);
 
-  const ecarts = comparerEtat(etatMachine, { worktreesVivants, dirty, maintenant: new Date() });
+  const campagnes = collecterCampagnes(racine);
+  const vueSurDisque = lireVueSurDisque(racine);
+  // Sans `updated_at`, le rendu attendu devrait inventer une date : la
+  // comparaison n'apprendrait rien et rougirait sur du bruit. On ne compare
+  // alors pas — et l'absence de ce champ est déjà l'anomalie à corriger.
+  const vueAttendue =
+    etatMachine?.updated_at && vueSurDisque !== null
+      ? rendreVueCampagnesActives(etatMachine, campagnes)
+      : null;
+  const lotCourantDeclare =
+    campagnes.find((campagne) => campagne.name === etatMachine?.active_campaign)?.lotCourant ?? null;
+
+  const ecarts = comparerEtat(etatMachine, {
+    worktreesVivants,
+    dirty,
+    maintenant: new Date(),
+    vueSurDisque,
+    vueAttendue,
+    lotCourantDeclare,
+  });
 
   return {
     genereLe: new Date().toISOString(),
@@ -315,8 +457,12 @@ export function construireRapport(racine) {
 
 function resumerSurStderr(rapport) {
   const lignes = [];
+  // « 6 dimensions observées » sans dire combien sont CONFRONTÉES est ce qui a
+  // laissé lire « zéro écart » comme « tout est cohérent » (dette 6 de la
+  // déclaration 5.0). Le compte des comparaisons est donc affiché avec celui
+  // des observations.
   lignes.push(
-    `wn-etat-reel : 6 dimensions observées, ${rapport.ecarts.length} écart(s) avec .wn/state.json`,
+    `wn-etat-reel : 6 dimensions observées, 3 confrontées (vue dérivée, cohérence des dates, lot courant), ${rapport.ecarts.length} écart(s) avec .wn/state.json`,
   );
   lignes.push(`  flags référencés     : ${rapport.flags.referencesDansLeCode.length} (valeur d'environnement non lue)`);
   lignes.push(`  migrations (disque)  : ${rapport.migrations.noms.length} (base non vérifiée ici)`);

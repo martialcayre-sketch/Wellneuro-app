@@ -115,12 +115,25 @@ tâche, avec des rôles disjoints :
   (`docs/claude/corpus/instrument_registry.json`, 65 instruments — pas
   `source_registry.json`, qui est un registre disjoint de 507 sources
   bibliographiques du corpus clinique), PR ouvertes via `gh`, worktrees et
-  branches, routes patient/portail présentes — les compare à `.wn/state.json`,
-  et liste les écarts. **Il n'écrit jamais rien.**
-- **`node scripts/wn-cycle.mjs --appliquer`** *répare* deux champs précis
-  (`git.*`, `updated_at` de `.wn/state.json`, puis `ACTIVE_CAMPAIGN.md`) — et
-  seulement ça, jamais `SESSION_LOG.md` ni un fragment de handoff, qui restent
-  du raisonnement humain.
+  branches, routes patient/portail présentes. **Il n'écrit jamais rien.**
+  Il en **confronte trois** — et la distinction compte, elle est la dette 6 de
+  la déclaration 5.0 : la vue `docs/claude/campagnes/ACTIVE_CAMPAIGN.md` contre
+  `.wn/state.json` dont elle dérive, la cohérence des deux dates de l'état
+  (`validation.last_checked_at` jamais postérieur à `updated_at`), et le lot
+  courant de l'état contre le `lot_courant` de `CAMPAGNE.md` (campagne primaire
+  seulement). Le verdict qui **bloque** n'est pas ce CLI — qui sort 0 même avec
+  des écarts — mais `scripts/wn-coherence-etat.test.mjs`, joué par T1 et par le
+  CI.
+- **`node scripts/wn-cycle.mjs --appliquer`** *répare* trois choses, et
+  seulement trois : `updated_at` de `.wn/state.json`, `recent_decision_ids`
+  réalimenté depuis `docs/DECISIONS.md` quand ce registre rend des décisions, et
+  `ACTIVE_CAMPAIGN.md` régénéré. Il ne
+  touche plus `git.*` (ces champs ne se stockent plus depuis le 2026-08-07), ne
+  touche **jamais** `active_lot` — l'aligner sur `CAMPAGNE.md` reste un geste
+  humain (`wn-campaign.mjs activate <id> --lot LOT-xx`) —, et jamais
+  `SESSION_LOG.md` ni un fragment de handoff, qui restent du raisonnement
+  humain. **Il ne lève pas le garde des dates** : il pousse `updated_at`, donc
+  éteindrait le signal sans qu'aucune validation ait été rejouée.
 
 **Piège découvert en écrivant ce lot, à ne pas reproduire** : `wn-cycle.mjs`
 traite explicitement `branche === 'main'` comme sa propre phase (`hors-lot`) —
