@@ -181,6 +181,28 @@ const instrumentRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/clau
 const evidence = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/measurement_evidence.json'), 'utf8'));
 const sourceRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/source_registry.json'), 'utf8'));
 
+// Le statut de certification SERVI, par identifiant, depuis le catalogue déjà
+// ÉVALUÉ plus haut — pas depuis `questionnaires-catalog.ts`, qui est un autre
+// fichier et ne porte aucune `certification`. C'est ce qui permet au garde de
+// rester une fonction pure, sans extraction de texte à écrire ni à maintenir.
+const certificationsCatalogue = new Map(
+  ids.map(id => [id, QUESTIONNAIRE_CATALOGUE[id]?.scoring?.certification?.status ?? null])
+);
+
+// LA SEULE VALEUR QUE LE CONTRÔLE BLOQUANT REGARDE, et donc la seule dont sa
+// présence le rend non vacu. Le validateur refuse déjà une carte vide, partielle
+// ou hors vocabulaire ; il ne peut pas exiger un `certifie` sans rendre ses
+// propres fixtures contradictoires (un `certifie` d'écran sous un barreau bas
+// est exactement ce qu'il bloque). C'est une propriété de la DISTRIBUTION du
+// catalogue réel, elle s'assère donc ici : une carte uniformément `ambigu` —
+// complète et licite — passerait tous les gardes en rendant la comparaison
+// définitivement vraie. Relevé en revue adversariale le 2026-08-09.
+assert(
+  [...certificationsCatalogue.values()].includes('certifie'),
+  'aucun instrument du catalogue ne porte `certification.status: certifie` — le contrôle écran ↔ '
+  + 'registre serait vacu, puisque `certifie` est la seule valeur qu\'il regarde'
+);
+
 const verdictRegistre = verifierRegistreInstruments({
   registre: instrumentRegistry,
   idsCatalogue: ids,
@@ -190,10 +212,47 @@ const verdictRegistre = verifierRegistreInstruments({
   evidence,
   catalogueSource: fs.readFileSync(path.join(root, 'web/src/lib/questionnaires-catalog.ts'), 'utf8'),
   bibliothequeSource: fs.readFileSync(path.join(root, 'web/src/lib/bibliotheque.ts'), 'utf8'),
+  certificationsCatalogue,
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
 console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter dont ${verdictRegistre.aCompleterSansPublicationPossible} sans publication d'origine possible (instruments créés localement), ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
+
+// L'INVENTAIRE ÉCRAN ↔ REGISTRE — la mesure que le lot D-036/LOT-04 produit, et
+// sa raison d'être principale. NON BLOQUANT, au même titre que le compteur
+// `a_completer` : ce n'est pas une faute, c'est la matière sur laquelle D-037
+// doit être arbitré. Imprimé plutôt que compté seulement — un chiffre de tête ne
+// porte pas cette décision, il faut les identifiants ET ce que le catalogue dit
+// de chacun.
+//
+// LE REGROUPEMENT PAR STATUT N'EST PAS COSMÉTIQUE. Les deux familles ne se
+// valent pas à l'écran : sans certification, l'écran se TAIT ; avec `ambigu`, il
+// AFFIRME un doute contre un registre qui déclare le scoring vérifié. Arbitrer
+// les deux ensemble, sous un compte unique, serait décider sans avoir vu la
+// différence.
+const divergences = verdictRegistre.divergencesEcranRegistre;
+const parStatutEcran = new Map();
+divergences.forEach(d => {
+  const cle = d.statutEcran ?? 'aucune certification déclarée';
+  if (!parStatutEcran.has(cle)) parStatutEcran.set(cle, []);
+  parStatutEcran.get(cle).push(d.questionnaireId);
+});
+console.log(
+  `[questionnaires] écran ↔ registre : ${divergences.length} instrument(s) que le registre déclare au `
+  + `moins 'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie'. Matière de D-037, non `
+  + `bloquant.`
+);
+[...parStatutEcran.entries()]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .forEach(([statut, listeIds]) => {
+    // Les libellés d'écran ne sont pas recopiés ici : ils vivent dans
+    // `certification-libelles.ts` et y sont gardés (LOT-02). Ce qui est dit,
+    // c'est ce que le statut FAIT — l'écran se tait, ou il affirme.
+    const effet = statut === 'aucune certification déclarée'
+      ? 'silence'
+      : `l'écran AFFIRME '${statut}' là où le registre déclare le scoring vérifié`;
+    console.log(`[questionnaires]   ${statut} (${listeIds.length}, ${effet}) : ${listeIds.join(', ')}`);
+  });
 
 const supportedScoringTypes = new Set([
   'agenda_sommeil',
