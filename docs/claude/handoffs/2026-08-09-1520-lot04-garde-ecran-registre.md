@@ -3,7 +3,8 @@
 ## Branche et état Git
 
 `campaign/2026-08-08-dettes-ouvertes-5-0/LOT-04`, branchée sur `origin/main`
-fraîchement fetché (`f047792b`). PR non ouverte.
+fraîchement fetché (`f047792b`). **Mergée en squash le 2026-08-09** — PR #630,
+commit `921b75f7`, branche supprimée.
 
 ## Objectif
 
@@ -12,7 +13,7 @@ vérifié » empruntait son nom au barreau `scoring_verifie` sans qu'aucun code 
 relie les deux, et le seed n'écrivait pas la clé `certification` que tous les
 moteurs produisent. Et surtout **produire une mesure** : la liste des
 instruments dont l'écran taît une vérification que le registre déclare — la
-matière de `D-037`.
+matière de la décision produit sur le badge muet.
 
 ## Décisions prises
 
@@ -24,7 +25,7 @@ matière de `D-037`.
    compte.
 2. **Pas de cliquet.** Figer les 22 identifiants du jour dans le garde aurait
    inscrit en dur la liste que tout ce fichier refuse par ailleurs. L'inventaire
-   constate ; `D-037` décide.
+   constate ; la décision produit décide.
 3. **Pas de 16e bloc au seed** pour exercer la branche `ambigu` : les six
    libellés restent couverts unitairement par `certificationLibelles.guard.test.ts`.
 
@@ -69,7 +70,7 @@ portait sur la logique du garde — les deux portaient sur ce que le lot **dit**
 1. La sortie livrable attribuait à la fiche patient le libellé de la
    **bibliothèque** (« Statut inconnu » vs « Historique ») et rangeait les
    4 `ambigu` sous le mot « muet », alors que l'écran y **affirme un doute**.
-   Sur la sortie même qui doit fonder `D-037`. Corrigé, champ renommé
+   Sur la sortie même qui doit fonder cette décision. Corrigé, champ renommé
    `divergencesEcranRegistre`, inventaire regroupé par effet d'écran.
 2. Le seed est **inerte sur une base déjà seedée** (`update: {}`) : les 13 clés
    ne s'écrivent que sur une base neuve, et l'E2E est rouge sur la base de dev
@@ -113,14 +114,17 @@ certification du scoring ; une suspension peut être motivée hors scoring.
 
 ## Prochaine action exacte
 
-Lire le job `verify` de la PR #630 sur le second commit (les correctifs de revue
-n'ont pas encore été soumis au CI au moment où ces lignes sont écrites), puis
-merge. `D-037` s'arbitre ensuite **sur la liste**, en séparant les 18 silences
-des 4 affirmations de doute.
+**Fait** : PR #630 mergée (`921b75f7`), `verify` vert sur les trois commits. La
+décision du badge muet s'arbitre ensuite **sur la liste**, en séparant les
+18 silences des 4 affirmations de doute — et elle prendra **le prochain numéro
+libre** du registre, pas `D-037` : ce numéro est parti à la décision HDS le même
+jour, et `decisions-numerotation.mjs` refuse tout trou dans la suite. Une
+réservation de numéro n'existe pas.
 
 ## Interdits encore actifs
 
-- Ne pas écrire `D-037` : la décision se prend **sur** la liste produite ici.
+- Ne pas écrire la décision du badge muet ici : elle se prend **sur** la liste
+  produite ici, et sous le numéro libre du jour où elle s'écrira.
 - Ne pas toucher un `certification.status` du catalogue pour réduire l'écart —
   c'est une affirmation clinique.
 - Ne pas figer d'identifiants dans le garde ; ne pas creuser d'exception.

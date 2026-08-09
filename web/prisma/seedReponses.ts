@@ -89,7 +89,7 @@ export const REPONSES_SOPHIE = [
     // AUCUNE certification pour `Q_SOM_01` — il fait partie des 18 instruments
     // que le registre déclare `scoring_verifie` et dont l'écran ne dit rien
     // (l'inventaire de `check_questionnaire_certification.js`, matière de
-    // D-037). Sa ligne affiche donc « Historique », et un E2E l'assère : c'est
+    // décision produit à venir sur le badge muet). Sa ligne affiche donc « Historique », et un E2E l'assère : c'est
     // ce qui empêche un futur seed généreux de poser ici une certification que
     // le catalogue ne porte pas.
     scoresJson: {

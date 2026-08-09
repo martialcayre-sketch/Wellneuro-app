@@ -220,8 +220,16 @@ console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.ins
 
 // L'INVENTAIRE ÉCRAN ↔ REGISTRE — la mesure que le lot D-036/LOT-04 produit, et
 // sa raison d'être principale. NON BLOQUANT, au même titre que le compteur
-// `a_completer` : ce n'est pas une faute, c'est la matière sur laquelle D-037
-// doit être arbitré. Imprimé plutôt que compté seulement — un chiffre de tête ne
+// `a_completer` : ce n'est pas une faute, c'est la matière sur laquelle la
+// DÉCISION PRODUIT SUR LE BADGE MUET doit être arbitrée.
+//
+// Aucun numéro de décision n'est cité, et c'est délibéré : ce lot annonçait
+// `D-037`, numéro qu'une autre décision a pris le 2026-08-09. Une réservation de
+// numéro n'existe pas — `scripts/lib/decisions-numerotation.mjs` refuse tout
+// trou dans la suite, donc le numéro va à la décision qui S'ÉCRIT. Nommer ici un
+// numéro futur, c'est promettre ce qu'on ne contrôle pas.
+//
+// Imprimé plutôt que compté seulement — un chiffre de tête ne
 // porte pas cette décision, il faut les identifiants ET ce que le catalogue dit
 // de chacun.
 //
@@ -239,8 +247,8 @@ divergences.forEach(d => {
 });
 console.log(
   `[questionnaires] écran ↔ registre : ${divergences.length} instrument(s) que le registre déclare au `
-  + `moins 'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie'. Matière de D-037, non `
-  + `bloquant.`
+  + `moins 'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie'. Matière de la décision `
+  + `produit sur le badge muet, non bloquant.`
 );
 [...parStatutEcran.entries()]
   .sort(([a], [b]) => a.localeCompare(b))

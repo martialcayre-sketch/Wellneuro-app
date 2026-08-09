@@ -967,7 +967,7 @@ test('le registre déclare, l’écran se tait : inventorié, jamais bloquant', 
   // LES DEUX FORMES DU MUTISME, et elles ne se valent pas à l'écran : sans
   // certification la fiche affiche « Statut inconnu », avec `ambigu` elle
   // affiche « Scoring ambigu ». L'inventaire doit donc rendre le statut, pas
-  // seulement l'identifiant — c'est ce qui rend D-037 arbitrable.
+  // seulement l'identifiant — c'est ce qui rend la décision du badge muet arbitrable.
   //
   // Le second instrument n'est pas décoratif : une carte dont AUCUNE entrée ne
   // porte de statut est refusée par le garde anti-mutisme, et ce cas-ci
@@ -994,7 +994,7 @@ test('le registre déclare, l’écran se tait : inventorié, jamais bloquant', 
 test('écran et registre d’accord : aucune ligne d’inventaire', () => {
   // Contrôle négatif du précédent : un inventaire qui compterait TOUT le
   // registre se lirait exactement pareil sur la sortie du garde, et le chiffre
-  // porté en D-037 serait faux sans que rien ne le dise.
+  // porté à la décision produit serait faux sans que rien ne le dise.
   const { divergencesEcranRegistre } = verifier({
     registre: { instruments: [entree({ ...SOCLE_VERIFIE, statutCertification: 'scoring_verifie' })] },
     certificationsCatalogue: new Map([['Q_ALI_01', 'certifie']]),

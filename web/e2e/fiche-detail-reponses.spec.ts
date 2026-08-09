@@ -23,7 +23,7 @@
 // SUR UNE BASE DÉJÀ SEEDÉE, CE BANC EST ROUGE, et ce n'est pas une régression :
 // `prisma/seed.ts` upserte les passations avec `update: {}`, donc les clés
 // `certification` ne s'écrivent que sur une base neuve (`test:worktree`, CI).
-// Le remède est de faire re-créer les six lignes concernées — bornées aux DEUX
+// Le remède est de faire re-créer les huit lignes concernées — bornées aux DEUX
 // patients fictifs, jamais un effacement large :
 //   DELETE FROM "QuestionnaireReponse"
 //    WHERE "idReponse" IN ('REP_S01_STR01','REP_S01_STR02','REP_S01_STR05',
@@ -94,8 +94,8 @@ test.describe('Fiche patient — colonne « Qualité » du détail des réponses
 
     // LE PLAFOND, et il est aussi important que le cas nominal. `Q_SOM_01`
     // (PSQI) est l'un des 18 instruments que le registre déclare
-    // `scoring_verifie` et dont le catalogue ne dit rien — le badge muet que
-    // D-037 doit trancher. Tant que la décision n'est pas prise, sa ligne
+    // `scoring_verifie` et dont le catalogue ne dit rien — le badge muet qu'une
+    // décision produit doit trancher. Tant qu'elle n'est pas prise, sa ligne
     // affiche « Historique », et c'est cette assertion qui interdit d'y poser
     // une certification que le catalogue ne porte pas.
     await attendreBadgeQualite(table, /PSQI/, 'Historique', 'neutral');

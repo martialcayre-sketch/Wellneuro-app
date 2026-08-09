@@ -1,12 +1,12 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-09) — LOT-00 à LOT-03 livrés, LOT-04 écrit et validé, PR à ouvrir"
+statut: "en cours (2026-08-09) — LOT-00 à LOT-04 livrés ; reste la clôture de campagne"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-09"
 lot_courant: "LOT-04"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
-branche_lot_courant: "campaign/2026-08-08-dettes-ouvertes-5-0/LOT-04"
+branche_lot_courant: "aucune"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -220,7 +220,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | livré (2026-08-09) — PR #627 | LOT-00 |
-| LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | en_cours (2026-08-09) — écrit et validé, PR à ouvrir | LOT-02 |
+| LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | livré (2026-08-09) — PR #630 | LOT-02 |
 
 ## Done de campagne
 
@@ -262,7 +262,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       « 21 instruments » mais **22**, dont 18 sans certification et 4 ambigus,
       inventoriés à chaque `npm run check`. Le compte de 21 relevait les entrées
       du catalogue ; celui-ci croise le catalogue au registre, ce qui n'est pas
-      la même question. Le geste reste **hors périmètre** : `D-037` décide sur
+      la même question. Le geste reste **hors périmètre** : la décision produit sur le badge muet décide sur
       cette liste.
 - [x] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour. Lecture de production du
