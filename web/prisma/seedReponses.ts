@@ -34,8 +34,10 @@
 // 2026-08-09. Deux blocs restent nus, et pour deux raisons différentes — voir
 // `Q_SOM_01` et `Q_SOM_07` ci-dessous.
 
-/** Ce que le catalogue déclare pour les instruments certifiés d'origine Drive. */
-export const CERTIFIE_DRIVE = { source: 'drive', status: 'certifie' } as const;
+/** Ce que le catalogue déclare pour les instruments certifiés d'origine Drive.
+ *  Non exporté : aucun consommateur hors de ce fichier, et une surface publique
+ *  gratuite invite à recopier la valeur plutôt qu'à la lire du catalogue. */
+const CERTIFIE_DRIVE = { source: 'drive', status: 'certifie' } as const;
 
 // Sophie Nicola : burnout + stress élevé + sommeil perturbé
 export const REPONSES_SOPHIE = [

@@ -14,11 +14,26 @@ const STATUTS_CERTIFICATION = new Set([
   'psychometrie_revue', 'mapping_clinique_approuve', 'publie', 'suspendu', 'remplace',
 ]);
 const STATUTS_DROITS = new Set(['a_verifier', 'libre', 'licence_requise', 'permission_obtenue', 'restreint']);
-// Le vocabulaire de `scoring.certification.status` du CATALOGUE servi — celui
-// que `statutCertificationRuntime` (`web/src/lib/bibliotheque.ts`) traduit en
-// libellés d'écran. Sans rapport avec `STATUTS_CERTIFICATION` ci-dessus, qui est
-// le cycle de vie du REGISTRE : les confondre est précisément la faute que le
-// contrôle écran ↔ registre attrape.
+// Le vocabulaire de `scoring.certification.status` du CATALOGUE servi. Sans
+// rapport avec `STATUTS_CERTIFICATION` ci-dessus, qui est le cycle de vie du
+// REGISTRE : les confondre est précisément la faute que le contrôle écran ↔
+// registre attrape.
+//
+// LA SOURCE EST `CertificationStatus` (`web/src/lib/scoring/types.ts`), et le
+// pointeur compte. Une première rédaction renvoyait à
+// `statutCertificationRuntime` (`bibliotheque.ts`) : cette fonction-là énumère
+// SIX valeurs et accepte délibérément n'importe quelle chaîne non vide, parce
+// qu'elle traduit vers des libellés d'écran. Un mainteneur qui aurait suivi ce
+// pointeur aurait ajouté `non_certifie` et `inconnu` ici — et rouvert
+// exactement le trou de vacuité que ce garde vient de fermer, puisqu'une carte
+// bâtie sur `statutCertificationRuntime` serait alors acceptée. Relevé en revue
+// adversariale le 2026-08-09, sur le correctif d'une revue précédente.
+//
+// La liste est en dur, et c'est assumé : ce fichier ne peut pas importer du
+// TypeScript. La dérive est donc gardée ailleurs, par un banc qui relit
+// l'union de `types.ts` et la compare à ce Set
+// (`verifier_registre_instruments.test.mjs`) — le garde n'est pas laissé à la
+// vigilance de qui édite `types.ts`.
 const STATUTS_CERTIFICATION_ECRAN = new Set(['certifie', 'ambigu', 'a_verifier', 'non_score']);
 
 // L'échelle de certification, DANS L'ORDRE. Sert au contrôle de cohérence : un
@@ -301,6 +316,18 @@ function verifierRegistreInstruments({
     // Le contrôle bloquant ci-dessous deviendrait alors définitivement vrai —
     // vert pour toujours — et l'inventaire enflerait d'un coup à tout le
     // registre. Même forme que le contrôle `sourcesEquilibre.size === 0`.
+    //
+    // CE QUE CE GARDE-CI NE COUVRE PAS, et où c'est couvert : une carte
+    // COMPLÈTE, de vocabulaire LICITE, mais où aucune valeur ne vaut 'certifie'
+    // — uniformément `ambigu`, par exemple — passe ici, et rend pourtant le
+    // contrôle bloquant définitivement vrai, puisque celui-ci ne se déclenche
+    // que sur 'certifie'. L'exiger ICI coûterait trop cher : la fonction est
+    // pure et ses fixtures portent un seul instrument à barreau bas, sur lequel
+    // un `certifie` d'écran déclenche précisément le contrôle bloquant —
+    // aucune fixture ne pourrait satisfaire les deux. C'est une propriété de la
+    // DISTRIBUTION du vrai catalogue, pas de cette fonction : elle est donc
+    // assérée chez l'appelant, sur la donnée réelle
+    // (`check_questionnaire_certification.js`). Relevé en revue le 2026-08-09.
     if (!idsCatalogue.some(id => certificationsEcran.get(id) != null)) {
       erreurs.push(
         'aucun instrument du catalogue ne porte de statut de certification — extraction cassée, '
@@ -315,8 +342,9 @@ function verifierRegistreInstruments({
     // enflerait, et il n'assère rien. Une coquille accentuée ('certifié') se
     // range dans la même famille. Relevé en revue adversariale le 2026-08-09.
     //
-    // Le vocabulaire est celui du CATALOGUE, pas du registre : c'est
-    // `statutCertificationRuntime` (`web/src/lib/bibliotheque.ts`) qui l'énumère.
+    // Le vocabulaire est celui du CATALOGUE, pas du registre : c'est l'union
+    // `CertificationStatus` (`web/src/lib/scoring/types.ts`) — voir la note du
+    // Set, le pointeur a déjà été faux une fois.
     const horsVocabulaire = [...new Set(
       idsCatalogue
         .map(id => certificationsEcran.get(id))
@@ -938,4 +966,11 @@ function verifierRegistreInstruments({
   return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible, divergencesEcranRegistre };
 }
 
-module.exports = { verifierRegistreInstruments, extraireSourcesEquilibre, extraireIdsSuspendus };
+module.exports = {
+  verifierRegistreInstruments,
+  extraireSourcesEquilibre,
+  extraireIdsSuspendus,
+  // Exporté pour le seul banc qui l'attache à son union TypeScript source — un
+  // Set recopié à la main qui ne serait relié à rien dériverait en silence.
+  STATUTS_CERTIFICATION_ECRAN,
+};

@@ -18,6 +18,7 @@
 // ce que le catalogue tait, ni taire ce que le catalogue déclare. Sans le
 // second, poser la clé sur 3 blocs au lieu de 13 passerait — et la colonne
 // « Qualité » retomberait sur « Historique » sans qu'aucun banc ne bouge.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { REPONSES_SOPHIE, REPONSES_JENNIFER, REPONSES_MICHEL } from './seedReponses';
@@ -57,17 +58,37 @@ describe('seed : la certification recopie le catalogue, dans les deux sens', () 
     expect(muets).toEqual([]);
   });
 
-  // LE PLAFOND, assumé et nommé. Ces deux-là restent nus pour deux raisons
-  // DIFFÉRENTES, et les confondre écrirait une ligne fausse : `Q_SOM_01` parce
-  // que le catalogue ne déclare rien, `Q_SOM_07` parce que sa passation est
-  // antérieure à la reconstruction du MFI-20 et que la fiche l'affiche
-  // « Non interprétable » quoi qu'on écrive. Le cas est fixé par identifiant
-  // pour qu'étendre le seed reste une décision, jamais un effet de bord.
+  // LE PLAFOND, assumé et nommé. Les deux blocs sont nus pour LA MÊME raison —
+  // le catalogue ne déclare rien pour l'un comme pour l'autre — et c'est ce que
+  // ce cas assère. Ce qui diffère est l'EFFET À L'ÉCRAN, et il ne se teste pas
+  // ici : `Q_SOM_01` affiche « Historique », `Q_SOM_07` « Non interprétable »,
+  // sa passation étant antérieure à la reconstruction du MFI-20. Les deux sont
+  // couverts par `e2e/fiche-detail-reponses`. (Une première rédaction de ce
+  // commentaire disait « deux raisons différentes », ce que l'assertion
+  // dessous dément — relevé en revue le 2026-08-09.)
+  //
+  // Le plafond est fixé par identifiant pour qu'étendre le seed reste une
+  // décision, jamais un effet de bord ; il est doublé de la vérification
+  // DÉRIVÉE (`toBeNull`), qui est ce qui le rend légitime. L'ordre, lui, ne
+  // porte aucun sens : on compare des ensembles, sans quoi réordonner deux
+  // blocs — geste sans effet — rendrait ce banc rouge.
   it('les deux blocs nus le sont parce que le catalogue ne déclare rien', () => {
     const nus = BLOCS
       .filter(bloc => (bloc.scoresJson as Record<string, unknown>).certification === undefined)
       .map(bloc => bloc.idQuestionnaire);
-    expect(nus).toEqual(['Q_SOM_01', 'Q_SOM_07']);
+    expect([...nus].sort()).toEqual(['Q_SOM_01', 'Q_SOM_07']);
     nus.forEach(id => expect(certificationDuCatalogue(id)).toBeNull());
+  });
+
+  // LE SEED DOIT ÊTRE CONSOMMÉ EN ENTIER. Les trois tableaux vivent dans un
+  // module à part depuis que ce banc existe ; rien n'obligerait un futur
+  // `seed.ts` à les importer tous les trois, et ce banc resterait vert en
+  // testant des blocs que la base ne verrait jamais.
+  it('les trois tableaux sont importés par le seed, et lui seul les écrit', () => {
+    const seed = readFileSync(new URL('./seed.ts', import.meta.url), 'utf8');
+    ['REPONSES_SOPHIE', 'REPONSES_JENNIFER', 'REPONSES_MICHEL'].forEach(nom => {
+      expect(seed).toContain(nom);
+    });
+    expect(BLOCS).toHaveLength(15);
   });
 });

@@ -33,7 +33,8 @@ matière de `D-037`.
 - `scripts/lib/verifier_registre_instruments.js` — paramètre
   `certificationsCatalogue`, contrôle bloquant, inventaire, trois gardes
   anti-mutisme (absente, sans statut, hors vocabulaire).
-- `scripts/lib/verifier_registre_instruments.test.mjs` — 10 cas (75 verts).
+- `scripts/lib/verifier_registre_instruments.test.mjs` — 11 cas (76 verts), dont
+  celui qui attache le Set de vocabulaire à `CertificationStatus`.
 - `scripts/check_questionnaire_certification.js` — construit la carte depuis le
   catalogue **évalué**, imprime l'inventaire groupé par effet d'écran.
 - `web/prisma/seedReponses.ts` — **nouveau**, module de données pur.
@@ -78,6 +79,15 @@ Et le trou le plus sérieux, moyen mais structurel : **rien ne tenait l'égalit�
 seed ↔ catalogue**. `seedCertification.guard.test.ts` la tient désormais dans les
 deux sens ; les données de réponses ont dû sortir de `seed.ts` (qui s'exécute au
 chargement) vers `seedReponses.ts`, un module pur.
+
+**Une SECONDE passe a été lancée sur ces correctifs** — motif : un correctif est
+du code neuf, non revu, et le dépôt a un antécédent. Verdict GO, et deux énoncés
+faux de plus, tous deux écrits par le premier correctif : le garde de vocabulaire
+**nommait la mauvaise source de vérité** (un mainteneur suivant le pointeur
+aurait rouvert le trou qu'il venait de fermer — un banc attache maintenant le Set
+à `CertificationStatus`), et le correctif E2E **réfutait l'en-tête de son propre
+fichier sans le corriger**. La leçon de méthode tient en une ligne : relancer la
+revue sur les correctifs n'est pas une précaution de forme.
 
 ## Problèmes ouverts
 

@@ -11,7 +11,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const require = createRequire(import.meta.url);
-const { verifierRegistreInstruments, extraireSourcesEquilibre, extraireIdsSuspendus } = require('./verifier_registre_instruments.js');
+const {
+  verifierRegistreInstruments,
+  extraireSourcesEquilibre,
+  extraireIdsSuspendus,
+  STATUTS_CERTIFICATION_ECRAN,
+} = require('./verifier_registre_instruments.js');
 
 // Extrait du catalogue servi, dans sa forme réelle : une entrée active, une
 // suspendue — et, comme dans le vrai fichier, un COMMENTAIRE qui parle de
@@ -1030,12 +1035,33 @@ test('carte ne portant AUCUN statut : refusée — c’est le renommage silencie
   // catalogue ne casse rien et ne lève rien. Tous les statuts deviennent nuls,
   // le contrôle bloquant devient vrai POUR TOUJOURS, et l'inventaire enfle d'un
   // coup à tout le registre — vert de bout en bout.
+  //
+  // Le cas ÉTROIT (carte licite mais sans aucun `certifie`) n'est pas ici : il
+  // porte sur la distribution du vrai catalogue, pas sur cette fonction, et il
+  // est asséré chez l'appelant. Voir le commentaire du garde.
   const { erreurs } = verifier({
     idsCatalogue: ['Q_ALI_01', 'Q_STR_02'],
     registre: { instruments: [entree(), entree({ questionnaireId: 'Q_STR_02', sourceMonEquilibre: true, driveMd: null })] },
     certificationsCatalogue: new Map([['Q_ALI_01', null], ['Q_STR_02', null]]),
   });
   assert.ok(erreurs.some(e => /aucun instrument du catalogue ne porte de statut/.test(e)));
+});
+
+// LE SET DE VOCABULAIRE EST EN DUR, ET C'EST CE BANC QUI L'EMPÊCHE DE DÉRIVER.
+//
+// `verifier_registre_instruments.js` est du CommonJS : il ne peut pas importer
+// l'union TypeScript qu'il recopie. Laisser cette recopie à la vigilance de qui
+// édite `types.ts` serait exactement le « relevé » que tout ce fichier refuse au
+// profit d'une propriété dérivée — d'autant que le pointeur du commentaire, lui,
+// a DÉJÀ été faux une fois (il désignait `statutCertificationRuntime`, qui
+// énumère six valeurs et en accepte n'importe laquelle).
+test('le vocabulaire d’écran recopie exactement l’union `CertificationStatus` de types.ts', () => {
+  const types = readFileSync(new URL('../../web/src/lib/scoring/types.ts', import.meta.url), 'utf8');
+  const declaration = types.match(/export type CertificationStatus\s*=\s*([^;]+);/);
+  assert.ok(declaration, 'CertificationStatus introuvable dans types.ts — le garde ne peut pas rester muet');
+  const deLUnion = [...declaration[1].matchAll(/'([a-z_]+)'/g)].map(m => m[1]).sort();
+  assert.ok(deLUnion.length > 0, 'union CertificationStatus vide — extraction cassée');
+  assert.deepEqual(deLUnion, [...STATUTS_CERTIFICATION_ECRAN].sort());
 });
 
 test('carte bâtie sur la MAUVAISE SOURCE : refusée par le vocabulaire', () => {

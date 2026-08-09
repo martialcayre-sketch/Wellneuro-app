@@ -189,6 +189,20 @@ const certificationsCatalogue = new Map(
   ids.map(id => [id, QUESTIONNAIRE_CATALOGUE[id]?.scoring?.certification?.status ?? null])
 );
 
+// LA SEULE VALEUR QUE LE CONTRÔLE BLOQUANT REGARDE, et donc la seule dont sa
+// présence le rend non vacu. Le validateur refuse déjà une carte vide, partielle
+// ou hors vocabulaire ; il ne peut pas exiger un `certifie` sans rendre ses
+// propres fixtures contradictoires (un `certifie` d'écran sous un barreau bas
+// est exactement ce qu'il bloque). C'est une propriété de la DISTRIBUTION du
+// catalogue réel, elle s'assère donc ici : une carte uniformément `ambigu` —
+// complète et licite — passerait tous les gardes en rendant la comparaison
+// définitivement vraie. Relevé en revue adversariale le 2026-08-09.
+assert(
+  [...certificationsCatalogue.values()].includes('certifie'),
+  'aucun instrument du catalogue ne porte `certification.status: certifie` — le contrôle écran ↔ '
+  + 'registre serait vacu, puisque `certifie` est la seule valeur qu\'il regarde'
+);
+
 const verdictRegistre = verifierRegistreInstruments({
   registre: instrumentRegistry,
   idsCatalogue: ids,

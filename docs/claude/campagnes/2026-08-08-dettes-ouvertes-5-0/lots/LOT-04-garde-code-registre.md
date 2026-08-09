@@ -124,13 +124,24 @@ La revue adversariale du 2026-08-09 a repris une première rédaction qui les
 rangeait toutes deux sous le mot « muet » et attribuait à la fiche patient un
 libellé qui est celui de la **bibliothèque** :
 
-| Famille | Bibliothèque | Fiche patient | Ce que ça vaut |
+| Famille | Bibliothèque | Fiche patient, pour une passation | Ce que ça vaut |
 | --- | --- | --- | --- |
 | **Aucune certification (18)** | « Statut inconnu » | « Historique » | un vrai **silence** |
 | **`ambigu` (4)** | « Scoring ambigu » | « Scoring ambigu (Drive) » | l'écran **AFFIRME un doute** contre un registre qui déclare le scoring vérifié |
 
 Les 4 sont peut-être la divergence la plus embarrassante des 22 : ce n'est pas
 une taisance. `D-037` doit les arbitrer séparément.
+
+**Deux réserves sur ce tableau, faute de quoi il généralise à son tour** (la
+première a été relevée en revue sur une version précédente de ces lignes) :
+
+- la colonne « fiche patient » décrit ce que rend le badge **quand rien ne le
+  précède**. Une passation `nonInterpretable` affiche « Non interprétable »
+  quelle que soit sa certification — c'est le cas de `Q_SOM_07`, l'un des 18, et
+  le banc E2E de ce lot l'assère ;
+- la bibliothèque lit le **catalogue**, la fiche lit le `scores_json` **figé à la
+  soumission**. Un instrument sans passation ne montre donc rien nulle part, et
+  une passation ancienne garde ce que le moteur écrivait à son époque.
 
 **Aucune certification déclarée (18)** : `Q_NEU_06 Q_SOM_01 Q_SOM_03 Q_SOM_04
 Q_SOM_07 Q_GAS_03 Q_CAR_01 Q_TAB_03 Q_TAB_04 Q_PED_02 Q_MOD_01 Q_MOD_02
@@ -150,7 +161,7 @@ ce fichier.
 
 ### Mutations jouées
 
-Sept sur le garde, chacune isolément, banc restauré entre deux :
+Neuf sur le garde, chacune isolément, banc restauré entre deux :
 
 | Mutation | Verdict |
 | --- | --- |
@@ -164,17 +175,27 @@ Sept sur le garde, chacune isolément, banc restauré entre deux :
 | retirer le garde de vocabulaire | rouge (1 cas) |
 | élargir le vocabulaire au cycle de vie du registre | rouge (1 cas) |
 
-**Toutes sont des mutations de BANC**, et deux d'entre elles n'ont aucun effet
-sur les données du jour — c'est écrit à côté du code plutôt que laissé à
-deviner : le refus de carte partielle est décoratif tant que l'appelant bâtit sa
-carte depuis les identifiants qu'il passe, et le `barreau !== -1` ne change rien
-tant que les deux `suspendu` du registre portent `ambigu` au catalogue.
+**Toutes sont des mutations de BANC**, et **trois** d'entre elles n'ont aucun
+effet sur les données du jour — mesuré (`0 erreur / 22 lignes` avant comme
+après), et écrit à côté du code plutôt que laissé à deviner : le refus de carte
+partielle est décoratif tant que l'appelant bâtit sa carte depuis les
+identifiants qu'il passe ; le `barreau !== -1` ne change rien tant que les deux
+`suspendu` du registre portent `ambigu` au catalogue ; et le garde de vocabulaire
+est lui aussi purement prospectif. Ce sont des protections **de classe**, pas des
+constats sur l'état actuel — la distinction a déjà été perdue une fois dans ce
+fichier.
 
 Quatre mutations de plus sur le **seed**, contre `seedCertification.guard.test.ts` :
 un statut faux, une provenance fausse, une clé retirée, une certification posée
 sur le PSQI. Les quatre rougissent.
 
-**Une huitième mutation a SURVÉCU à la première rédaction**, et c'est le constat
+Trois enfin sur la **liaison** entre le Set de vocabulaire (recopié en dur dans
+un fichier CommonJS, qui ne peut pas importer du TypeScript) et son union source
+`CertificationStatus` : élargir le Set seul, élargir l'union seule, renommer
+l'union. Les trois rougissent — la troisième parce que le banc refuse une
+extraction qui ne trouve plus rien, plutôt que de se taire.
+
+**Une mutation de plus a SURVÉCU à la première rédaction**, et c'est le constat
 utile : le contrôle sortait les états terminaux par une branche
 `ETATS_TERMINAUX` nommée, doublée d'un `barreau !== -1` dans la condition. La
 branche nommée ne portait **rien** — la retirer ne faisait tomber aucun cas.
@@ -215,11 +236,45 @@ instrument à l'état terminal dont le catalogue déclare encore `certifie` éch
 aux deux sorties, et ses passations passées continueraient d'afficher « Scoring
 vérifié » — zéro cas aujourd'hui, arbitrage à prendre.
 
+### Ce que la SECONDE passe de revue a repris
+
+Le reviewer a été relancé **sur les correctifs de la première passe** — motif
+explicite : sur une PR précédente de ce dépôt, un correctif de revue avait
+introduit un chiffre faux. Verdict **GO**, et deux énoncés faux de plus, tous
+deux dans la prose que le premier correctif venait d'écrire :
+
+1. **Le nouveau garde de vocabulaire nommait la mauvaise source de vérité.** Le
+   commentaire renvoyait à `statutCertificationRuntime` (`bibliotheque.ts`) —
+   qui énumère SIX valeurs et accepte n'importe quelle chaîne non vide, parce
+   qu'elle traduit vers des libellés d'écran. Un mainteneur suivant ce pointeur
+   aurait ajouté `non_certifie` et `inconnu` au Set, **rouvrant exactement le
+   trou que ce garde venait de fermer**. La source est `CertificationStatus`
+   (`scoring/types.ts`), et un banc l'y attache désormais plutôt que de s'en
+   remettre à la vigilance.
+2. **Le correctif E2E réfutait l'en-tête de son propre fichier sans le
+   corriger** : « ces dossiers sont en lecture seule » y cohabitait, 45 lignes
+   plus haut, avec la découverte que `provisionnerReponseOrientation` écrit pour
+   Sophie. C'était la garantie de sûreté qui était fausse.
+
+Cinq mineurs corrigés aussi, dont trois comptes périmés dans ce fichier même
+(« sept » mutations au-dessus d'un tableau de neuf ; « deux » protections
+prospectives alors qu'il y en a trois, mesuré) et **une généralisation de plus
+dans le tableau bibliothèque/fiche** — il annonçait « Historique » pour les 18,
+ce qui est faux de `Q_SOM_07`, que le banc E2E de ce lot affiche
+« Non interprétable ». Le tableau porte maintenant ses réserves.
+
+Une question du reviewer a été tranchée **en refusant** ce qu'elle suggérait :
+exiger qu'au moins un instrument porte `certifie` est juste, mais pas dans la
+fonction pure — ses fixtures portent un seul instrument à barreau bas, sur lequel
+un `certifie` d'écran est précisément ce que le contrôle bloquant refuse. Aucune
+fixture ne pourrait satisfaire les deux. C'est une propriété de la DISTRIBUTION
+du catalogue réel : elle est assérée chez l'appelant.
+
 ### Ce que la validation dit, et ce qu'elle ne dit pas
 
-T1 vert. Banc du validateur : **75 cas verts**. Banc seed ↔ catalogue : 3 verts,
-4 mutations tuées. Les deux positions du garde de certification : code de sortie
-`0`, inventaire à 22.
+T1 vert. Banc du validateur : **76 cas verts**. Banc seed ↔ catalogue : 4 verts,
+4 mutations tuées. Liaison Set ↔ `types.ts` : 3 mutations tuées. Les deux
+positions du garde de certification : code de sortie `0`, inventaire à 22.
 
 **Les E2E rendent 133 verts et 1 rouge, et ce rouge n'appartient pas à ce lot.**
 Un test de `visual.spec.ts` bloque 120 s sur un `page.goto` dans le projet

@@ -23,12 +23,25 @@
 // SUR UNE BASE DÉJÀ SEEDÉE, CE BANC EST ROUGE, et ce n'est pas une régression :
 // `prisma/seed.ts` upserte les passations avec `update: {}`, donc les clés
 // `certification` ne s'écrivent que sur une base neuve (`test:worktree`, CI).
-// Le remède est de supprimer les lignes `REP_*`, pas de toucher au seed.
+// Le remède est de faire re-créer les six lignes concernées — bornées aux DEUX
+// patients fictifs, jamais un effacement large :
+//   DELETE FROM "QuestionnaireReponse"
+//    WHERE "idReponse" IN ('REP_S01_STR01','REP_S01_STR02','REP_S01_STR05',
+//                          'REP_S01_INF03','REP_J02_NEU11','REP_J02_SOM06',
+//                          'REP_J02_INF02','REP_J02_STR04');
+// puis `npm run prisma:seed`. Ne jamais toucher à l'`update: {}` du seed : il
+// protège le travail en cours sur une base de dev.
 //
 // Patients fictifs Sophie Nicola (PAT_SEED_01) et Jennifer Martin (PAT_SEED_02),
-// déjà seedés — aucun parcours à jouer. Les helpers `e2e/helpers/db.ts`
-// n'agissent que sur Michel Dogné : ces deux dossiers-ci sont en lecture seule
-// pour toute la suite.
+// déjà seedés — aucun parcours à jouer.
+//
+// ATTENTION, CES DOSSIERS NE SONT PAS EN LECTURE SEULE. Une première rédaction
+// l'affirmait, sur la foi de l'en-tête de `helpers/db.ts` (« n'agit que sur
+// Michel Dogné ») — c'est faux depuis que `provisionnerReponseOrientation`
+// écrit une seconde passation `Q_STR_02` pour SOPHIE
+// (`orientation-file-envoi.spec.ts`). D'où l'ancrage des lignes plus bas :
+// c'est la conséquence concrète, et l'affirmation contraire aurait fait
+// conclure à un bug là où il n'y a qu'un doublon attendu.
 import { test, expect, type Page } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
 
