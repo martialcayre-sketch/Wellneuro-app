@@ -3291,3 +3291,24 @@ les secrets et flags posés par le responsable.
 
 **Questions ouvertes.** Rollback sans critère ni fenêtre ; aucun GO/NO-GO de
 migration ; `osc-secnum-fr1` inaccessible sur le compte.
+
+## 2026-08-09 — Clôture de la campagne des dettes ouvertes 5.0, Done vérifié plutôt qu'hérité
+
+**Décisions.** La campagne `2026-08-08-dettes-ouvertes-5-0` est close sur ses
+cinq lots. Les trois cases restantes du Done ont été **re-prouvées par mutation
+à la clôture** (trois rouges, témoin 24/24 vert) — pas cochées sur la prose des
+lots. Aucune campagne promue : l'état porte trois fils à arbitrer (décision
+badge muet, chantier HDS, jalon 2026-10-21), l'agenda reste parallèle.
+
+**Options écartées.** Promouvoir l'agenda alimentaire en activité primaire
+(mécanique de `deactivate`) : il est gaté par un recueil arrêté au premier
+jour — une « activité primaire » qui n'ouvre aucun lot mentirait. La vue rend
+proprement « Aucune campagne primaire active », l'audit reste vert.
+
+**Prochaine action.** Arbitrage utilisateur entre les trois fils ; côté HDS, le
+contrat SQL pgvector en CI puis la recette staging (secrets/flags au
+responsable).
+
+**Questions ouvertes.** Reprises dans le handoff de clôture : badge muet (22
+instruments), redirection `/patient/*` sans échéance, `seuils_points`,
+instrument terminal encore `certifie`.
