@@ -1,10 +1,10 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-09) — LOT-00 à LOT-04 livrés ; reste la clôture de campagne"
+statut: "terminé (2026-08-09) — cinq lots livrés (LOT-00 à LOT-04), Done vérifié à la clôture"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-09"
-lot_courant: "LOT-04"
+lot_courant: "aucun"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -227,11 +227,19 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 À cocher **sur preuve relue**, jamais sur la prose d'un lot — et en vérifiant la
 **date** de chaque mesure citée, pas seulement sa valeur.
 
-- [ ] Une vue dérivée désynchronisée de sa source fait rougir un banc, démontré
-      par mutation (désynchroniser volontairement, le banc rougit).
-- [ ] `last_checked_at` postérieur à `updated_at` est refusé, et le test le
-      prouve par mutation.
-- [ ] Le lot courant de `.wn/state.json` est confronté à `CAMPAGNE.md`.
+- [x] Une vue dérivée désynchronisée de sa source fait rougir un banc, démontré
+      par mutation (désynchroniser volontairement, le banc rougit). **Rejoué à la
+      clôture (2026-08-09), pas hérité du lot** : « Lot actif » muté dans
+      `ACTIVE_CAMPAIGN.md` → 1 rouge sur les 24 cas de
+      `wn-coherence-etat.test.mjs` ; restauration → 24 verts.
+- [x] `last_checked_at` postérieur à `updated_at` est refusé, et le test le
+      prouve par mutation. **Rejoué à la clôture** : `last_checked_at` poussé à
+      09:30 contre un `updated_at` à 07:35 → 1 rouge ; restauration → 24 verts.
+- [x] Le lot courant de `.wn/state.json` est confronté à `CAMPAGNE.md`.
+      **Rejoué à la clôture** : `active_lot` muté en LOT-03 contre un
+      `lot_courant` LOT-04 → 2 rouges (le garde du lot, et la vue dérivée qui
+      diverge par ricochet — les deux nomment la même mutation) ; restauration
+      → 24 verts.
 - [x] Le parcours legacy est **retiré** (le cadrage prévoyait une date-cible ;
       l'arbitrage du 2026-08-08 a préféré le retrait).
 - [x] Aucun `href` interne ne vise `/patient/:idAssignation` — il vivait dans
@@ -282,6 +290,18 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       l'instruction et la dérogation, le 2026-07-22 l'arbitrage. Deux évènements.
       L'évènement est désormais nommé à côté de chaque date aux deux endroits
       (LOT-03).
-- [ ] Le jalon du 2026-10-21 est rappelé à la clôture, pour le gate **et** pour
-      le dossier RGPD.
-- [ ] T2 avant chaque commit UI/API, T3 avant la PR de campagne ; anti-secrets.
+- [x] Le jalon du 2026-10-21 est rappelé à la clôture, pour le gate **et** pour
+      le dossier RGPD — **le voici** : sans reconduction écrite au 2026-10-21,
+      G-TRUST-04 **et** le dossier RGPD (préambule et tableau §14 de
+      `docs/DOSSIER_RGPD.md`, le tableau faisant foi) reprennent la règle du
+      dépôt le même jour ; l'information des personnes, « au plus tôt », est
+      déjà échue. `D-037` (2026-08-09) avance la revue de la dette HDS à la
+      réponse de Scalingo — l'échéance de la dérogation, elle, n'a pas bougé.
+- [x] T2 avant chaque commit UI/API, T3 avant la PR de campagne ; anti-secrets.
+      La campagne n'a pas de PR d'intégration — chaque lot est parti seul sur
+      `main`. Les paliers ont donc été joués **par lot** : T3 complet vert le
+      2026-08-08 au LOT-03 (4 229 Vitest, 130 E2E) ; au LOT-04, E2E rejoués
+      (133 verts, 1 rouge démontré étranger au lot — fragilité locale macOS au
+      67e test, bissection consignée dans le fichier de lot) et job `verify`
+      vert sur la PR #630. La clôture elle-même est un diff documentaire :
+      T1 + audit de campagne + anti-secrets.
