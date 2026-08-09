@@ -23,7 +23,7 @@
   },
   "next_action": [
     "AUCUNE CAMPAGNE PRIMAIRE ACTIVE : 2026-08-08-dettes-ouvertes-5-0 CLOSE le 2026-08-09. Rien n'a été promu — le prochain chantier s'arbitre entre les trois fils ci-dessous, et l'agenda alimentaire reste parallèle, gaté par le recueil. Le récit de clôture est dans le fragment de handoff du 2026-08-09.",
-    "FIL 1 — DÉCISION PRODUIT EN ATTENTE, LE BADGE MUET (suite de D-036) : à écrire AU PROCHAIN NUMÉRO LIBRE du registre (D-037 est pris par la décision HDS ; un numéro ne se réserve pas, decisions-numerotation.mjs refuse tout trou), SUR LA LISTE que le garde du LOT-04 imprime à chaque `npm run check` : 22 instruments muets — 18 sans certification déclarée, 4 ambigus (le compte de 21 relevait le catalogue seul ; celui-ci croise catalogue et registre). Faire parler l'écran suppose de choisir la source d'autorité d'une affirmation clinique, ce que D-034 fige.",
+    "FIL 1 — TRANCHÉ le 2026-08-09 : D-038. Le badge muet se remplit DEPUIS LE CATALOGUE, aligné À LA MAIN — le registre ne pilote pas l'écran. Reste À OUVRIR : le lot d'alignement — déclarer `certification` instrument par instrument (relecture adossée au banc certify, jamais une copie du registre) pour les 18 muets, et RÉEXAMINER un par un les 4 « ambigu » (Q_SOM_02, Q_GAS_01, Q_FIB_02, Q_URO_01) avant tout changement. L'inventaire du garde (`npm run check`, sortie écran ↔ registre) est l'instrument de mesure de l'avancement ; changement d'UI → T2.",
     "FIL 2 — CHANTIER HDS (D-006 confirmée par D-037) : prochaine action posée au SESSION_LOG du 2026-08-09 — contrat SQL pgvector en CI, puis recette staging une fois les secrets et flags posés par le responsable. Questions ouvertes du même jour : rollback sans critère ni fenêtre, aucun GO/NO-GO de migration, osc-secnum-fr1 inaccessible sur le compte. La revue de la dette HDS est avancée à la réponse de Scalingo (ticket du 2026-08-09).",
     "FIL 3 — JALON 2026-10-21, rappelé à la clôture comme la campagne s'y engageait : sans reconduction écrite, G-TRUST-04 ET le dossier RGPD (préambule et tableau §14 de docs/DOSSIER_RGPD.md, le tableau faisant foi) reprennent la règle du dépôt le même jour ; l'information des personnes, « au plus tôt », est déjà échue. L'échéance de la DÉROGATION ne bouge pas — seule la revue de la dette HDS est avancée par D-037.",
     "DETTES DÉPLACÉES PAR LE LOT-01, à ne pas redécouvrir : la redirection /patient/* n'a AUCUNE échéance (elle sert des liens e-mail déjà partis, durée de vie inconnue — une mesure d'accès sur la redirection trancherait) ; api/patient/assignations n'a plus d'appelant — retrait d'une route d'API = décision séparée.",
@@ -49,14 +49,14 @@
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. MIGRATION HDS DÉCIDÉE (D-006 du 2026-07-28, confirmée par D-037 du 2026-08-09), NON EXÉCUTÉE — l'orientation du 2026-07-22 « rester sur l'hébergement actuel » lui est antérieure de six jours et n'est plus courante ; la dérogation, elle, court inchangée jusqu'au 2026-10-21. Avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [
+    "D-038",
     "D-037",
     "D-036",
     "D-035",
-    "D-034",
-    "D-033"
+    "D-034"
   ],
   "last_session": null,
-  "updated_at": "2026-08-09T17:10:00Z",
+  "updated_at": "2026-08-09T18:20:00Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",

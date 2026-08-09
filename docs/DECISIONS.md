@@ -4,6 +4,24 @@
 
 ## Décisions actives
 
+### D-038 — Le badge muet se remplit depuis le catalogue, aligné à la main — le registre ne pilote pas l'écran
+
+- Date : 2026-08-09
+- Statut : accepté (décision utilisateur du 2026-08-09, sur la liste produite par le garde du LOT-04 de la campagne `2026-08-08-dettes-ouvertes-5-0`, close le même jour)
+- Domaine : UI praticien, vocabulaire clinique, et source d'autorité d'une affirmation clinique
+- Numérotation : cette décision est celle que la campagne annonçait en `D-037` — numéro parti le 2026-08-09 à la décision HDS, une réservation n'existant pas ([[D-037]], « Numérotation »). Elle prend le suivant libre, comme écrit.
+- Décision : **le catalogue de code reste la source d'autorité du badge, et il s'aligne à la main, instrument par instrument.** L'écran continue de lire `def.scoring.certification.status` ; le registre audité (`instrument_registry.json`) ne pilote pas l'écran. Un lot dédié déclare `certification` pour chacun des instruments que le registre certifie et que l'écran tait — **chaque déclaration est une relecture adossée au banc certify, jamais une copie du registre**. Les quatre instruments où l'écran affirme « ambigu » (`Q_SOM_02`, `Q_GAS_01`, `Q_FIB_02`, `Q_URO_01`) sont réexaminés un par un avant tout changement : le doute posé dans le catalogue a peut-être un motif que le barreau du registre ne porte pas.
+- La liste de référence, mesurée le 2026-08-09 sur `main` (sortie de `check_questionnaire_certification.js`, après #632) : **22 instruments** que le registre déclare au moins `scoring_verifie` et dont le catalogue servi ne dit pas `certifie` — 4 « ambigu » ci-dessus, et 18 muets : `Q_NEU_06`, `Q_SOM_01`, `Q_SOM_03`, `Q_SOM_04`, `Q_SOM_07`, `Q_GAS_03`, `Q_CAR_01`, `Q_TAB_03`, `Q_TAB_04`, `Q_PED_02`, `Q_MOD_01`, `Q_MOD_02`, `Q_ALI_01`, `Q_ALI_02`, `Q_ALI_03`, `Q_GEO_03`, `Q_GEO_05`, `Q_GEO_06`. Le chiffre n'est pas un compteur à maintenir ici : la sortie du garde fait foi à chaque `npm run check`, et c'est elle qui mesurera l'avancement du lot.
+- Conséquences :
+  - **Le garde écran ↔ registre du LOT-04 garde son objet.** Deux sources restent confrontées : le sens menteur (un `certifie` d'écran au-dessus du barreau du registre) reste bloquant, l'inventaire du sens silencieux devient l'instrument de mesure de l'alignement — il décroît déclaration par déclaration, et ne peut décroître qu'honnêtement.
+  - **Ce que chaque badge affirmera reste borné par [[D-034]]** : « Scoring vérifié » dit que le code reproduit fidèlement la règle enregistrée, rien de psychométrique. L'alignement ne fait dire à l'écran que ce que le banc certify prouve déjà.
+  - **Cette décision n'exécute rien.** L'alignement est un lot à ouvrir, avec son propre palier (changement d'UI → T2, et revue de la famille `certification` du catalogue) ; les proses et libellés restent ceux de [[D-036]].
+- Options écartées :
+  - **Le registre pilote l'écran.** Une seule source, les 22 passent d'un coup — mais la nuance « ambigu » posée dans le catalogue pour quatre instruments serait écrasée sans réexamen, et le garde écran ↔ registre perdrait son objet le jour même où il vient d'être posé : plus deux sources à confronter, plus de dérive détectable.
+  - **Le silence assumé.** Décider que le badge ne parle que si le catalogue déclare, sans lot d'alignement, laissait 18 instruments que le registre certifie muets au praticien et 4 affirmant « ambigu » contre le registre — la moitié silencieuse du tableau que [[D-036]] nommait déjà comme dette.
+- Réversibilité : les déclarations du catalogue sont des littéraux de code, `git revert` suffit ; le garde, lui, refuserait une affirmation au-dessus du registre — c'est son objet.
+- Référence : `docs/claude/campagnes/2026-08-08-dettes-ouvertes-5-0/CAMPAGNE.md`, `docs/claude/campagnes/2026-08-08-dettes-ouvertes-5-0/lots/LOT-04-garde-code-registre.md`, `scripts/check_questionnaire_certification.js` (sortie « écran ↔ registre »), [[D-034]], [[D-036]], [[D-037]]
+
 ### D-037 — [[D-006]] est confirmée, et la revue de la dette HDS quitte le 2026-10-21 pour la réponse de Scalingo
 
 - Date : 2026-08-09

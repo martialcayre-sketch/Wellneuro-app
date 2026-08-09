@@ -3312,3 +3312,22 @@ responsable).
 **Questions ouvertes.** Reprises dans le handoff de clôture : badge muet (22
 instruments), redirection `/patient/*` sans échéance, `seuils_points`,
 instrument terminal encore `certifie`.
+
+## 2026-08-09 — D-038 : le badge muet parlera depuis le catalogue, aligné à la main
+
+**Décisions.** `D-038` (décision utilisateur) tranche le fil 1 de la clôture :
+le catalogue de code reste la source d'autorité du badge « Scoring vérifié ».
+Alignement à la main, instrument par instrument, adossé au banc certify —
+jamais une copie du registre. Les 4 « ambigu » (Q_SOM_02, Q_GAS_01, Q_FIB_02,
+Q_URO_01) se réexaminent un par un. Liste de référence : la sortie du garde du
+2026-08-09 (22 instruments), qui fait foi à chaque `npm run check`.
+
+**Options écartées.** Le registre pilotant l'écran : écrasait la nuance
+« ambigu » sans réexamen et vidait le garde écran ↔ registre de son objet. Le
+silence assumé : 18 instruments certifiés muets, 4 contredisant le registre.
+
+**Prochaine action.** Ouvrir le lot d'alignement (changement d'UI → T2) ; les
+fils 2 (HDS pgvector/staging) et 3 (jalon 2026-10-21) restent ouverts.
+
+**Questions ouvertes.** Le motif du doute des 4 « ambigu » — à instruire au
+lot, pas ici.
