@@ -3353,6 +3353,7 @@ navigateur épinglé 1228 vs 1194 préinstallé, téléchargement bloqué). Fils
 (HDS) et 3 (jalon 2026-10-21) ouverts.
 
 **Questions ouvertes.** Voir le fragment de changelog du lot.
+
 ## 2026-08-09 — Contrat SQL pgvector : le socle RAG tenu en CI et en préflight de release
 
 **Décisions.** Le contrat (`rag_pgvector_structure_v1.sql`, lecture seule)
