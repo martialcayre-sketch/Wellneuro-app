@@ -139,10 +139,15 @@ PostgreSQL **Business** (2 nœuds « multi-node », SLA 99,96 %, PITR 7 j).
 - Pas de ticket d'entrée : annexe HDS contractuelle sans frais propre, support
   Basic inclus. Obligations client : désigner une personne habilitée aux
   décisions données de santé (art. 10.2 de l'annexe) et un contact
-  professionnel de santé pour les accès (art. 9.4/10.3, carte CPS) ; PGSSI-S ;
-  jamais de donnée de santé dans les tickets. Accès à `osc-secnum-fr1` sur
-  demande au support (délai à provisionner). Préproduction possible en région
-  standard (+ ~22 €/mois), patients fictifs seulement.
+  professionnel de santé pour les accès (art. 9.4/10.3, carte CPS — **voir le
+  correctif du 2026-08-09 au § « Ce qu'il reste à décider », point 2 : la
+  qualification du responsable écarte cette exigence, et le point n'a pas encore
+  été posé au fournisseur**) ; PGSSI-S ; jamais de donnée de santé dans les
+  tickets. Accès à `osc-secnum-fr1` sur demande au support (délai à
+  provisionner) — **relevé le 2026-08-09 : la région n'apparaît pas dans
+  `scalingo regions` sur ce compte**, la demande est donc un préalable et non un
+  choix de commande. Préproduction possible en région standard (+ ~22 €/mois),
+  patients fictifs seulement.
 - Variante économe à faire confirmer par écrit : si le plan PostgreSQL
   **Starter** était contractuellement admis en HDS (le badge « HDS » de la page
   pricing n'apparaît que sur Business), le total tomberait à ≈ 26 € HT/mois —
@@ -240,14 +245,38 @@ Le critère de succès de l'audit est explicitement : au 2026-10-21, écrire
 
    Cet arbitrage retire le principal aléa juridique du dossier ; la revue
    D-TRUST-02 le consigne sans avoir à le trancher.
-2. **Accès à la production après migration** : l'annexe HDS Scalingo réserve
-   l'accès aux données de santé à un professionnel de santé (carte CPS). Le
-   mode actuel — requêtes SQL depuis le poste de dev, Prisma Studio, outil MCP
-   — doit être requalifié en politique d'accès écrite, sinon la migration crée
-   une non-conformité contractuelle immédiate. Même traitement pour les
-   **copies locales** : le dump de migration (chiffré, puis effacé avec trace),
-   les dumps existants éventuels, et la base de dev partagée entre postes (à
-   vérifier : patients fictifs seulement).
+2. **Accès à la production après migration** : le mode actuel — requêtes SQL
+   depuis le poste de dev, Prisma Studio, outil MCP — doit être requalifié en
+   **politique d'accès écrite** (qui accède, par quel canal, avec quelle
+   traçabilité, et selon quel principe de minimisation). Même traitement pour
+   les **copies locales** : le dump de migration (chiffré, puis effacé avec
+   trace), les dumps existants éventuels, et la base de dev partagée entre
+   postes (à vérifier : patients fictifs seulement).
+
+   **Correctif du 2026-08-09 — la version initiale de ce point n'est pas
+   établie.** Elle déduisait de l'annexe HDS un accès réservé à un professionnel de santé
+   **porteur de carte CPS**, et en tirait que la migration créerait « une
+   non-conformité contractuelle immédiate ». Le responsable de traitement a
+   qualifié le point : l'activité de Wellneuro **n'est pas une activité
+   réglementée** — précédent invoqué : Pronutriconsult, plateforme équivalente
+   exploitée par des praticiens non médecins, sans CPS. **L'exigence de carte
+   CPS n'est donc pas retenue** — sous la réserve du paragraphe suivant —, et ce
+   point n'est pas un bloqueur de calendrier. Ce qui
+   subsiste est la politique d'accès écrite ci-dessus, due sous la dérogation
+   actuelle comme après la bascule, et qui n'engendre aucun lot d'ingénierie.
+   Consigné en `docs/DECISIONS.md` D-037. Un faux bloqueur laissé dans un
+   document d'audit est ressorti deux fois comme s'il était établi : le
+   correctif reste écrit ici plutôt que la phrase simplement supprimée — et
+   il est **rappelé à la source**, au § « Grille comparative », ligne des
+   obligations client, où l'exigence CPS avait été relevée.
+
+   **Portée de ce correctif, et ce qu'il ne prouve pas.** La qualification
+   repose sur le statut de l'activité et sur un précédent de place, **pas sur
+   une lecture contradictoire des art. 9.4/10.3 de l'annexe HDS de Scalingo ni
+   sur un avis de conseil**. Le ticket envoyé au fournisseur le 2026-08-09 porte
+   six questions et **ne contient pas celle-ci**. Le point est donc requalifié
+   **sous réserve de confirmation du fournisseur ou d'un conseil qualifié** — à
+   poser au prochain échange, et à ne pas traiter comme définitivement clos.
 3. **Anthropic** : vérifier et archiver le DPA API, la rétention d'inférence
    (le prompt caching est activé), l'existence contractuelle d'une inférence
    UE ; rédiger la TIA. Si blocage : chiffrer l'alternative (LLM chez

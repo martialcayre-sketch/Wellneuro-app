@@ -8,26 +8,57 @@ tant que Scalingo n'est pas provisionné (défauts = comportement Vercel actuel)
 
 ## État du staging — provisionné le 2026-07-24, revérifié le 2026-08-05
 
-**Documenter ce staging n'est pas décider d'y aller.** L'orientation arrêtée le
-2026-07-22 est de rester sur l'hébergement actuel et de borner la phase de test ;
-la dérogation G-TRUST-04 court jusqu'au 2026-10-21. Ces faits sont le point de
-départ du jour où cette orientation sera reprise — les redécouvrir coûterait un
-second provisionnement, les écrire coûte une relecture.
+**La migration est décidée.** `docs/DECISIONS.md` D-006 (2026-07-28) pose la
+cible « Scalingo seul », et **D-037 (2026-08-09) la confirme** en avançant la
+revue de la dette HDS du 2026-10-21 à la réponse de Scalingo au ticket du
+2026-08-09. Ce runbook a longtemps ouvert sur l'inverse — « l'orientation
+arrêtée le 2026-07-22 est de rester sur l'hébergement actuel » —, formulation au
+présent d'un arbitrage **antérieur de six jours à D-006** et jamais consigné au
+registre. L'évènement reste vrai et daté (le 2026-07-21 instruit l'hébergement et
+la dérogation, le 2026-07-22 arbitre) ; il n'est plus l'orientation courante.
 
-Provisionné et **validé de bout en bout sur données fictives**, avant toute
-migration de données réelles :
+La dérogation G-TRUST-04, elle, **court toujours jusqu'au 2026-10-21** — D-037
+n'y touche pas.
+
+**Ce qui suit décrit un boot technique, pas une recette.** La formule « validé de
+bout en bout » employée ici a été lue comme une validation fonctionnelle : elle
+ne l'est pas, et la ligne « reste à poser » ci-dessous le disait déjà. Les trois
+items fonctionnels de `CHECKLIST_FINALISATION.md` §A (login praticien réel,
+synthèse IA en SSE, parcours Fil/fiche/RAG) **ne sont pas cochés**, et aucun
+rapport de recette sur staging n'existe.
+
+Provisionné et **validé au boot sur données fictives**, avant toute migration de
+données réelles :
 
 - App `wellneuro-staging`, région `osc-fr1`, `HDS: true`.
 - Add-on `postgresql-business-512` (`running`), 2 containers `web` en taille `S`.
 - Intégration GitHub liée, déploiement auto sur `main`.
 - **Déploiement de `main` réussi** : build compilé, **35 migrations Prisma
-  appliquées sans erreur sur base vierge** (elles sont 49 au 2026-08-05),
-  postdeploy accepté, `https://wellneuro-staging.osc-fr1.scalingo.io` répond
+  appliquées sans erreur sur base vierge**, postdeploy accepté,
+  `https://wellneuro-staging.osc-fr1.scalingo.io` répond
   (`/login` → 200, `/api/internal/rag/health` → 503 attendu, secrets pas encore
   posés).
 - **Reste à poser** avant validation fonctionnelle complète (login réel, synthèse
   IA, RAG) : les variables secrètes du tableau §3 — par le responsable, jamais en
-  les faisant transiter par l'assistant.
+  les faisant transiter par l'assistant. S'y ajoutent les **flags produit de la
+  production** : sans eux, le staging n'exerce pas le périmètre fonctionnel de la
+  prod et sa recette ne prouve rien de ce qui compte.
+- **L'état de schéma du staging n'est pas mesuré** depuis le 2026-07-24, où 35
+  migrations avaient été appliquées sur base vierge. `main` en porte davantage
+  aujourd'hui — mais on ne peut **rien en conclure** : l'intégration GitHub
+  déploie automatiquement sur `main` (ci-dessus), donc le `postdeploy` a rejoué
+  `db:deploy` à chaque merge. Les revérifications du 2026-08-05 et du 2026-08-09
+  se sont faites par `apps-info`, `addons` et `ps` — **aucun des trois ne lit
+  l'état des migrations**. Le seul contrôle valable est
+  `prisma migrate status` rendant « up to date », sur un conteneur `scalingo run`
+  (il exige un TTY : ni une session d'assistant ni un script non interactif ne
+  peuvent le lancer).
+- **Le compteur de migrations ne s'écrit pas à la main.** Une rédaction
+  antérieure portait « elles sont 49 au 2026-08-05 » : le chiffre était **exact
+  à sa date** (49 répertoires au commit `0c52cc1d`) et a **périmé en quatre
+  jours**. Ce n'est pas la valeur qui était en cause mais le procédé — un
+  compteur figé sert de contrôle à la bascule (« toutes appliquées sans erreur »)
+  et dérive en silence.
 
 **Revérification du 2026-08-05** (`scalingo apps-info`, `addons`, `ps`) : l'app
 tourne toujours, `HDS: true`, add-on `running`, 2 containers `web:S`. Deux écarts
@@ -36,7 +67,9 @@ avec le texte d'origine, notés sans être interprétés : la stack est
 n'a pas été instruite ici.
 
 ## Prérequis
-- Compte Scalingo, région **`osc-fr1` + `--hds-resource`** (conforme HDS — c'est ce qui est réellement provisionné). L'audit recommandait `osc-secnum-fr1` (Outscale **SecNumCloud**, souveraine, plus strict) ; le choix `osc-fr1` reste HDS mais **non SecNumCloud** — arbitrage et réserve « périmètre HDS à confirmer par écrit » consignés dans `docs/DECISIONS.md` D‑006. DPA + annexe HDS Scalingo à **e‑signer** avant toute donnée réelle.
+
+- Compte Scalingo, région **`osc-fr1` + `--hds-resource`** (conforme HDS — c'est ce qui est réellement provisionné). L'audit recommandait `osc-secnum-fr1` (Outscale **SecNumCloud**, souveraine, plus strict) ; le choix `osc-fr1` reste HDS mais **non SecNumCloud** — arbitrage et réserve « périmètre HDS à confirmer par écrit » consignés dans `docs/DECISIONS.md` D‑006 et D‑037. **`osc-secnum-fr1` n'est pas accessible sur ce compte** : `scalingo regions` ne rend qu'`osc-fr1` (relevé le 2026-08-09), l'y basculer suppose donc une demande d'accès préalable, pas un choix de commande.
+- **Le DPA ne s'e‑signe pas chez ce fournisseur** — lecture du 2026-08-09, **non confirmée : la question de forme n'a PAS été posée au ticket du 2026-08-09**, à poser au prochain échange. Certification HDS et accord de sous‑traitance vivent dans les **documents généraux** de Scalingo, acceptés à la souscription — laquelle existe déjà. Ce qui reste dû serait alors une **copie horodatée à archiver** au dossier RGPD, et non une signature à obtenir (D‑037). Tant que la forme n'est pas confirmée et la pièce non reçue, **la réserve reste ouverte** : une souscription inférée n'est pas une preuve produite.
 - CLI Scalingo installée et authentifiée (`scalingo login`) — via Homebrew
   (`brew install scalingo`, formule core, pas de tap tiers).
 - Dépôt connecté par **intégration GitHub** plutôt que par remote git + push :

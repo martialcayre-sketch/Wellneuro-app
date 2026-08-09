@@ -102,11 +102,17 @@ défaut la plus fréquemment observée du dépôt sur les dix derniers jours.
 
 ## Échéance du 2026-10-21 — elle court pour deux dossiers, pas un
 
-La dette 8 est **arbitrée et reportée** au 2026-10-21, et cette date n'est pas
-seulement celle du gate G-TRUST-04 : `docs/DOSSIER_RGPD.md:20` borne la
-dérogation au **2026-10-21**, et **les quinze trous du dossier portent tous cette
-même date d'échéance** (`docs/DOSSIER_RGPD.md:290-304`), dont neuf attendent une
-décision du responsable et trois un conseil qualifié.
+La dette 8 était **arbitrée et reportée** au 2026-10-21. **Amendé le 2026-08-09
+par `docs/DECISIONS.md` D-037** : sa date de revue passe à la **réponse de
+Scalingo** au ticket du même jour. Ce qui ne bouge pas, et qui est l'objet de
+cette section, c'est l'**échéance de la dérogation** — elle reste au 2026-10-21.
+
+Cette date n'est pas seulement celle du gate G-TRUST-04 : le préambule de
+`docs/DOSSIER_RGPD.md` borne la dérogation au **2026-10-21**, et **la plupart des
+trous du dossier portent cette même échéance** (tableau §14) — **pas tous** :
+plusieurs y échappent, dont l'information des personnes, **« au plus tôt »**,
+donc déjà échue. Le tableau fait foi ; le compter ici le périmerait à la
+prochaine ligne ajoutée — ce qui vient d'arriver le 2026-08-09.
 
 **Conséquence pour cette campagne** : aucun de ses lots ne lève le gate, et aucun
 ne comble un trou RGPD — ce sont des décisions hors code. Mais l'échéance est
@@ -167,8 +173,11 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
   **Arbitré le 2026-08-08 : ce n'est PAS un lot, c'est une décision produit** —
   faire parler le badge suppose de choisir la source d'autorité d'une affirmation
   clinique, ce que `D-034` fige. Elle se prendra **sur la liste que produit le
-  LOT-04**, et s'écrira en `D-037` : arbitrer aujourd'hui reviendrait à décider
-  sur un chiffre relevé une fois à la main.
+  LOT-04** : arbitrer aujourd'hui reviendrait à décider sur un chiffre relevé une
+  fois à la main. **Elle ne s'écrira pas en `D-037`** — ce numéro est pris depuis
+  le 2026-08-09 par la décision HDS. Une réservation de numéro n'existe pas :
+  `decisions-numerotation.mjs` refuse tout trou dans la suite, donc le numéro va
+  à la décision qui s'écrit la première.
 - **Rien ne relie le libellé au barreau dont il emprunte le nom.** « Scoring
   vérifié » reproduit `scoring_verifie` du registre, mais lit
   `def.scoring.certification.status` du catalogue de code, et

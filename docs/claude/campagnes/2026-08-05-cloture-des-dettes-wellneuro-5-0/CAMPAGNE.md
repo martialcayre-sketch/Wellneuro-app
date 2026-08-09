@@ -61,6 +61,15 @@ la priorité :
   mais une échéance datée. Les dettes actionnables sont les exigences
   indépendantes de l'hébergeur : piste d'audit des accès légitimes, procédure de
   violation de données, dossier RGPD.
+
+  > **Avenant du 2026-08-09 — `docs/DECISIONS.md` D-037.** Ce point est vrai à
+  > sa date et n'est pas réécrit. Mais « ne pas instruire de migration HDS »
+  > **n'est plus l'orientation courante** : D-006 (2026-07-28) — six jours après
+  > l'arbitrage cité ci-dessus, et que ce point n'a pas confronté — décide la
+  > migration vers Scalingo, et D-037 la confirme en avançant la revue de la
+  > dette à la réponse de Scalingo. **L'échéance de la dérogation reste au
+  > 2026-10-21.** Cet avenant est posé ici parce que `docs/DOSSIER_RGPD.md`
+  > désigne ce point comme sa source sur les deux dates.
 - **Point 2 — l'écart est déjà nommé.** #560 (« ce que “certifié” ne dit pas »)
   a écrit la distinction calcul/psychométrie. Reste à la solder : notices
   bibliographiques, COSMIN, escalade SIIN ouverte depuis le 2026-07-25.

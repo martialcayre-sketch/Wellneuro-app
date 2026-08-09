@@ -5,7 +5,7 @@
   données, destinataires et sous-traitants, transferts, durées de conservation,
   droits, sécurité, information des participants, hébergement, AIPD — chacune
   **sourcée dans le dépôt** ou **marquée TROU** avec porteur et échéance, plus un
-  tableau récapitulatif des quinze trous. Il ferme l'item 7 du reste-à-faire de
+  tableau récapitulatif des trous. Il ferme l'item 7 du reste-à-faire de
   G-TRUST-04 pour sa **partie documentaire seulement** : la qualification de la
   base légale, l'AIPD et la signature des DPA restent externes. **Il ne lève pas
   le gate.**

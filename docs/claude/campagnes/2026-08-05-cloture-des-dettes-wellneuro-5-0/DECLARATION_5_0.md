@@ -238,10 +238,20 @@ secrets — non vérifiable depuis le dépôt.
 
 **Verdict : arbitrée et reportée. Date de revue : 2026-10-21.**
 
+> **Avenant du 2026-08-09 — `docs/DECISIONS.md` D-037.** Ce verdict est vrai à
+> sa date et n'est pas réécrit. Il est **amendé** : D-006 (2026-07-28) décidait
+> déjà la migration vers Scalingo — six jours **après** l'arbitrage cité en
+> preuve ci-dessous, que la présente déclaration a repris sans le confronter.
+> D-037 confirme D-006 et **avance la date de revue de cette dette du
+> 2026-10-21 à la réponse de Scalingo** au ticket du 2026-08-09. L'échéance de
+> la dérogation, elle, reste au 2026-10-21 — c'est elle qu'évoque « ce qui
+> reste » plus bas, et elle n'est pas touchée.
+
 **Preuve.** Décision du responsable du traitement : rester sur l'hébergement
 actuel, borner la phase de test, ne pas instruire de migration HDS. Sa part
 actionnable — indépendante de l'hébergeur — est traitée au LOT-06 :
-`docs/DOSSIER_RGPD.md`, quatorze rubriques, quinze trous datés et portés.
+`docs/DOSSIER_RGPD.md`, quatorze rubriques, ses trous datés et portés
+(tableau §14 ; le compter ici le périmerait à la prochaine ligne).
 
 **Ce qui reste.** Le gate G-TRUST-04 **n'est pas levé**, et rien dans cette
 campagne ne le lève. Sans reconduction écrite au 2026-10-21, la règle du dépôt

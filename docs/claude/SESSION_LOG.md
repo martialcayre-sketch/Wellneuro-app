@@ -3264,3 +3264,30 @@ la ligne en base.
 
 **Questions ouvertes.** Une dérive « qid sans définition » bloquerait les releases
 sans chemin de correction relu.
+
+## 2026-08-09 — HDS : la décision tranchée, le certificat consigné, deux prémisses non établies retirées
+
+**Décisions.** `D-037` confirme `D-006` et avance la revue de la dette HDS du
+2026-10-21 à la **réponse de Scalingo** (ticket envoyé ce jour). L'échéance de la
+dérogation, elle, ne bouge pas. L'ordre imposé de `D-006` tient : aucune donnée
+réelle avant archivage du DPA et confirmation écrite du périmètre HDS de la
+région. Le certificat LNE 38436-2 entre au dossier RGPD.
+
+**Deux prémisses non établies, qualifiées par le responsable.** L'exigence d'une carte
+**CPS** — l'activité n'est pas réglementée ; et le DPA **à e-signer** — il vit
+dans les documents généraux, acceptés à la souscription. Elles plaçaient une
+latence contractuelle inexistante sur le chemin critique. Le correctif reste
+écrit dans l'audit, ces faux bloqueurs étant ressortis deux fois.
+
+**Options écartées.** Suspendre `D-006` jusqu'en octobre (deux mois pour une
+information que le ticket rend en jours) ; la révoquer (aucun fait contraire).
+
+**Correction.** L'entrée précédente annonce `D-037` pour le badge muet : ce
+numéro est pris. `decisions-numerotation.mjs` refuse tout trou — une réservation
+n'existe pas.
+
+**Prochaine action.** Contrat SQL pgvector en CI, puis recette staging une fois
+les secrets et flags posés par le responsable.
+
+**Questions ouvertes.** Rollback sans critère ni fenêtre ; aucun GO/NO-GO de
+migration ; `osc-secnum-fr1` inaccessible sur le compte.

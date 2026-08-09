@@ -26,6 +26,12 @@ par une dérogation datée du 2026-07-21, bornée au **2026-10-21**.
 > l'hébergement actuel, borner la phase de test, n'instruire aucune migration
 > HDS (`docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/CAMPAGNE.md`,
 > point 8). L'échéance, elle, est la même partout : **2026-10-21**.
+>
+> **Cet arbitrage n'est plus l'orientation courante.** `docs/DECISIONS.md`
+> D-006 (2026-07-28, six jours plus tard) décide la migration vers Scalingo, et
+> D-037 (2026-08-09) la confirme. Les deux dates ci-dessus restent vraies comme
+> évènements ; la conséquence « n'instruire aucune migration HDS » ne l'est
+> plus. **La dérogation, elle, court inchangée jusqu'au 2026-10-21.**
 
 ---
 
@@ -141,6 +147,13 @@ partage à un tiers (médecin traitant compris) sans choix explicite du patient
 1. **Aucun DPA n'est signé**, avec aucun de ces sous-traitants
    (`CHECKLIST_ACTIVATION_G_TRUST_04.md` item 7 ;
    `docs/claude/propositions/2026-07-24-audit-migration-hds/CHECKLIST_FINALISATION.md:67`).
+   **Nuance posée le 2026-08-09 (D-037)** : pour Scalingo, il n'y a pas de
+   signature à obtenir — l'accord de sous-traitance vit dans les documents
+   généraux, acceptés à la souscription. Ce qui manque au dossier est la
+   **copie horodatée de la version acceptée**, demandée au fournisseur le
+   2026-08-09 — **question de forme non posée à ce ticket**, à poser au
+   prochain échange (D-037). Cette nuance vaut pour Scalingo seul ; les autres
+   sous-traitants de la liste ci-dessus restent sans DPA archivé.
 2. Le **fournisseur SMTP réel n'est pas identifié** — ni son nom, ni sa
    localisation (`CHECKLIST_FINALISATION.md:68`).
 3. **Sentry est un sous-traitant de fait non déclaré au patient.**
@@ -150,9 +163,42 @@ partage à un tiers (médecin traitant compris) sans choix explicite du patient
    liste ci-dessus, qui est celle affichée aux personnes. Écart à trancher :
    soit il ne traite aucune donnée personnelle et cela s'écrit, soit la liste
    patient est incomplète et se corrige.
-4. **Scalingo** est décidé (D-006, 2026-07-28) mais **pas en service** : il
-   n'entre dans cette liste qu'au basculement, et la décision subordonne
-   explicitement toute donnée réelle à la signature préalable de son DPA.
+4. **Scalingo** est décidé (D-006, 2026-07-28 ; confirmé par D-037,
+   2026-08-09) mais **pas en service** : il n'entre dans cette liste qu'au
+   basculement, et la décision subordonne toute donnée réelle à deux conditions
+   préalables — l'accord de sous-traitance en vigueur et archivé, et le
+   périmètre HDS de la région confirmé par écrit.
+
+### Certification HDS de Scalingo — pièce au dossier
+
+Lue le 2026-08-09. Le document est conservé sur Drive (dossier « Scalingo »,
+déposé le 2026-07-28) ; il est par ailleurs public.
+
+| Élément | Valeur |
+|---|---|
+| Numéro de certificat | **LNE n° 38436-2** (renouvelle le 38436-1) |
+| Titulaire | **SCALINGO**, 13 rue Jacques Peirotes, 67000 Strasbourg |
+| Référentiel | Hébergeur de Données de Santé **version 2.0** |
+| Validité | **2025-09-12 → 2028-09-11** |
+| Activités couvertes | **les six**, dont la **5** (administration et exploitation du SI) et la **6** (sauvegardes externalisées) |
+| Déclaration d'applicabilité | ISO/IEC 27001:2022 et HDS 2.0, v1.0.0 du 2025-04-14 |
+| Organisme certificateur | LNE, accréditation Cofrac n° 4-0038 |
+| Sites couverts | 9 rue de la Krutenau, 67000 Strasbourg ; sites virtuels / bureaux distants |
+
+Trois points à ne pas perdre :
+
+- **La validité est conditionnelle.** Le certificat n'est valide que sous
+  réserve de la validité, **à isopérimètre**, du certificat **ISO/IEC 27001
+  n° 38435**. Le dossier doit porter les deux numéros ; avec le seul 38436-2, la
+  pièce est incomplète pour un auditeur.
+- **Les activités 5 et 6 sont couvertes**, ce qui place le PostgreSQL managé
+  **et ses sauvegardes** dans le périmètre — le motif exact pour lequel l'audit
+  du 2026-07-24 avait écarté un autre fournisseur.
+- **Le certificat ne nomme aucune région.** Il **ne suffit donc pas** à établir
+  que les ressources créées `--hds-resource` en `osc-fr1` sont couvertes : cela
+  relève des conditions de l'offre, demandées par écrit au fournisseur le
+  2026-08-09. Élément à charge côté plateforme : `scalingo apps-info` rend
+  `HDS: true` sur l'application. **TROU ouvert** jusqu'à la réponse écrite.
 
 ## 7. Transferts hors Union européenne
 
@@ -275,10 +321,13 @@ personnes réelles, **décision datée du 2026-07-21**, **bornée au 2026-10-21*
 (`CHECKLIST_ACTIVATION_G_TRUST_04.md`, relayée par
 `docs/claude/REGISTRE_FRONTIERES.md` §1).
 
-Une migration vers **Scalingo** (certifié HDS) est décidée (D-006, 2026-07-28)
-et non exécutée. Elle est subordonnée, dans l'ordre : DPA Scalingo e-signé,
-puis confirmation du périmètre HDS de la région cible, puis seulement données
-réelles.
+Une migration vers **Scalingo** (certifié HDS) est décidée (D-006, 2026-07-28 ;
+confirmée par D-037, 2026-08-09) et non exécutée. Elle est subordonnée, dans
+l'ordre : accord de sous-traitance **en vigueur et archivé** (D-037 : la pièce
+s'archive, elle ne s'e-signe pas — et elle n'est pas au dossier au 2026-08-09),
+puis confirmation écrite du périmètre HDS de la région cible, puis seulement
+données réelles. **Les cinq réserves de D-006 restent entières**, dont la (3),
+confirmation DPO — elle-même suspendue à la contradiction DPO de la rubrique 1.
 
 **Ce n'est pas une conformité. C'est un écart assumé, compté et daté.**
 
@@ -299,7 +348,8 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA signé | Responsable | avant bascule Scalingo | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — pour Scalingo, la pièce s'archive et ne s'e-signe pas selon la lecture du 2026-08-09 (D-037) — **forme non posée au ticket du 2026-08-09, à poser au prochain échange** | Responsable | avant bascule Scalingo | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Périmètre HDS de la région `osc-fr1` non confirmé — le certificat ne nomme aucune région | Responsable | réponse Scalingo | ici, rubrique 6 |
 | 6 | Sous-traitants | Fournisseur SMTP réel non identifié | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
