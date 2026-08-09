@@ -80,7 +80,7 @@ export const Q_SOM_01 = {
   // (0-4 « Pas de trouble » → 17-21 « sévères »), et ses sept composantes sont
   // monotones. L'instrument est donc éligible au plancher garanti servi sur
   // recueil partiel. La grille elle-même reste dans le moteur (Buysse 1989).
-  scoring:{type:'psqi', severiteCroissante:true}
+  scoring:{type:'psqi', severiteCroissante:true, certification:{source:'drive',status:'certifie'}}
 };
 // MFI-20 (Q_SOM_07). RECONSTRUIT le 2026-07-31 depuis sa source
 // (WN-SRC-0397, « Echelle multidimensionnelle de fatigue pro def.pdf »), sur la
@@ -141,6 +141,7 @@ export const Q_SOM_07 = {
   ],
   scoring:{
     type:'subscore',
+    certification:{source:'drive',status:'certifie'},
     // AUCUN SCORE GLOBAL, et c'est la source qui l'impose : elle ne totalise
     // jamais ses cinq sous-échelles et écrit « Il n'y a pas de barème
     // interprétation ». Une somme sur 100 se lirait comme une sévérité.
@@ -190,7 +191,7 @@ export const Q_SOM_03 = {
         qn('BE9','Quelle est votre indice de masse corporelle approximatif (poids en kg / taille² en m) ?',10,60,0.5,'kg/m²'),
       ]},
   ],
-  scoring:{type:'berlin'}
+  scoring:{type:'berlin', certification:{source:'drive',status:'certifie'}}
 };
 // Agenda du sommeil — 21 nuits (Q_SOM_09). Instrument de RECUEIL longitudinal :
 // le patient saisit une nuit par matin via un composant dédié (jamais le rendu
@@ -291,6 +292,7 @@ export const Q_SOM_04 = {
   ],
   scoring:{
     type:'sum', severiteCroissante:true, maxTotal:40,
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0, max:0,  label:'Absence de syndrome des jambes sans repos',color:'success',protocol:''},
       {min:1, max:10, label:'SJSR léger',color:'info',protocol:'Correction déficits : fer, magnésium, vitamine D, folates — hygiène de vie'},

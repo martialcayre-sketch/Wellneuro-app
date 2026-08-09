@@ -233,7 +233,7 @@ Q_SOM_02: {
   ],
   scoring:{
     type:'sum', severiteCroissante:true,
-    certification:{source:'drive',status:'ambigu'},
+    certification:{source:'drive',status:'certifie'},
     maxTotal:24,
     // Les trous à 6 et à 15 sont des trous DE LA SOURCE elle-même (« < 6 »,
     // « == 7 », « == 8 », « >= 9 », « <= 14 », « > 15 ») : aucune bande n'y est
@@ -589,7 +589,7 @@ Q_GAS_01: {
     // haut), et les items sont cotés 0 à 3 — aucune réponse ajoutée ne peut faire
     // baisser un total. L'instrument est éligible au plancher garanti.
     severiteCroissante:true,
-    certification:{source:'drive',status:'ambigu'},
+    certification:{source:'drive',status:'certifie'},
     subScores:[
       {id:'C1',label:'Digestif supérieur',items:['C1_1','C1_2','C1_3','C1_4','C1_5','C1_6','C1_7','C1_8'],max:24,
         ranges:[{min:0,max:7,label:'A — Absence de troubles fonctionnels',color:'success'},{min:8,max:13,label:'B — Troubles fonctionnels modérés à importants',color:'warning'},{min:14,max:24,label:'C — Prédominance de troubles fonctionnels majeurs',color:'danger'}]},
@@ -678,7 +678,7 @@ Q_FIB_02: {
         qn('Q20',"Vous êtes-vous senti(e) déprimé(e) ?",0,10,1,'/ 10'),
       ]}
   ],
-  scoring:{type:'qif', certification:{source:'drive',status:'ambigu'}}
+  scoring:{type:'qif', certification:{source:'drive',status:'certifie'}}
 },
 
 // ════════════════════════════════════════════════════════
@@ -841,7 +841,7 @@ Q_URO_01: {
   ],
   scoring:{
     type:'subscore',
-    certification:{source:'drive',status:'ambigu'},
+    certification:{source:'drive',status:'certifie'},
     subScores:[
       {id:'IPSS', label:'Score IPSS total (symptômes)',  items:['U1','U2','U3','U4','U5','U6','U7'], max:35},
       // L'IPSS rapporte la question de qualité de vie SÉPARÉMENT : elle ne

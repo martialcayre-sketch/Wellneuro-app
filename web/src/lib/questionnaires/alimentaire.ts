@@ -186,6 +186,7 @@ export const Q_ALI_01_SIIN_57 = {
   ],
   scoring:{
     type:'seuils_points',
+    certification:{source:'drive',status:'certifie'},
     maxTotal:90,
     // Un item = un seuil et une valeur. La somme des 57 valeurs vaut 90 ;
     // `scoring-check` le vérifie, plutôt que de faire confiance à ce commentaire.
@@ -443,6 +444,7 @@ export const Q_ALI_02 = {
   ],
   scoring:{
     type:'sum', maxTotal:14,
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:10,max:14,label:'Bonne adhérence méditerranéenne',color:'success',protocol:'Maintenir ces habitudes protectrices'},
       {min:7, max:9, label:'Adhérence modérée',color:'info',protocol:'Renforcer les catégories déficitaires identifiées'},
@@ -563,6 +565,7 @@ export const Q_ALI_03 = {
   ],
   scoring:{
     type:'apports_ponderes',
+    certification:{source:'drive',status:'certifie'},
     // `coefficient` : la valeur de la colonne « Protéines par portion » (g) ou
     // « Apports en calories » (kcal) de la source. `parJour: false` déclare une
     // ligne hebdomadaire, ramenée au jour par le moteur.

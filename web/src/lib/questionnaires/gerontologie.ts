@@ -34,6 +34,7 @@ export const Q_GEO_03 = {
   ],
   scoring:{
     type:'sum', severiteCroissante:true, maxTotal:21,
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,  max:4,  label:'Cognition normale ou doute mineur',   color:'success', protocol:'Suivi annuel recommandé'},
       {min:5,  max:14, label:'Déclin cognitif léger à modéré (MCI probable)', color:'warning', protocol:'Évaluation neuropsychologique + bilan biologique'},
@@ -157,6 +158,7 @@ export const Q_GEO_05 = {
   ],
   scoring:{
     type:'sum_decimal',
+    certification:{source:'drive',status:'certifie'},
     maxTotal:30,
     // Grille alignée sur la source le 2026-07-30 (arbitrage praticien, Galvin
     // 2015, relevée à l'identique par les DEUX lectures du banc) : 0–1 / 1,5–5,5
@@ -207,6 +209,7 @@ export const Q_GEO_06 = {
   ],
   scoring:{
     type:'sum_two_phases',
+    certification:{source:'drive',status:'certifie'},
     phases:[
       {id:'phase1', items:['DU1a','DU2a','DU3a','DU4a','DU5a'], maxTotal:5, label:'Rappel immédiat'},
       {id:'phase2', items:['DU1b','DU2b','DU3b','DU4b','DU5b'], maxTotal:5, label:'Rappel différé'},

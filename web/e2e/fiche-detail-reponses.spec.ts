@@ -9,16 +9,26 @@
 // ne portait la clé `certification` : la colonne retombait TOUJOURS sur
 // « Historique », et aucun E2E ne voyait un seul des six libellés.
 //
-// Les trois lignes assérées sont les trois états que le seed peut produire.
-// CE QUE CHACUNE RÉFUTE, et elles ne se valent pas :
+// Les trois lignes assérées sont les états que le seed peut produire — ils ont
+// changé au lot D-038 (alignement du catalogue). CE QUE CHACUNE RÉFUTE :
 //   · PSS-10 → tombe si la clé `certification` disparaît du seed ;
-//   · PSQI → tombe si un futur seed y pose une certification que le catalogue ne
-//     porte pas. C'est la seule des trois qui garde contre un seed généreux ;
+//   · PSQI → certifié depuis D-038 : tombe si l'alignement régresse (clé
+//     retirée du catalogue ou du seed). Le garde contre un seed généreux n'est
+//     plus une ligne d'E2E : `seedCertification.guard.test.ts` refuse au niveau
+//     unitaire toute clé que le catalogue n'accorde pas, bloc par bloc ;
 //   · MFI-20 → ne tombe PAS si on y pose une certification : la branche
 //     `nonInterpretable` gagne, et la route retire même la clé avant l'écran
 //     (`passationsNonInterpretables.ts`). Elle fixe ce comportement-là, pas le
 //     plafond du seed. (Relevé en revue le 2026-08-09 : une première rédaction
 //     attribuait aux deux dernières la même vertu.)
+//
+// NON-COUVERTURE NOMMÉE depuis D-038 : « Historique » n'est plus atteignable
+// depuis le seed — 14 blocs certifiés, le 15e non interprétable. L'état existe
+// toujours en production (passations d'instruments sans certification au
+// catalogue : variante courte de `Q_ALI_01` drapeau éteint, barreaux non
+// vérifiés du registre). Le libellé et sa couleur restent gardés par
+// `certificationLibelles.guard.test.ts` et `FichePatientPanel.test.tsx` ;
+// aucun E2E ne le voit plus.
 //
 // SUR UNE BASE DÉJÀ SEEDÉE, CE BANC EST ROUGE, et ce n'est pas une régression :
 // `prisma/seed.ts` upserte les passations avec `update: {}`, donc les clés
@@ -76,13 +86,13 @@ async function attendreBadgeQualite(
 }
 
 test.describe('Fiche patient — colonne « Qualité » du détail des réponses', () => {
-  test('une passation certifiée au catalogue affiche son libellé, une passation muette reste « Historique »', async ({ page, context }) => {
+  test('les passations certifiées au catalogue affichent leur libellé, PSQI compris depuis l’alignement D-038', async ({ page, context }) => {
     await context.addCookies([await praticienSessionCookie()]);
     const table = await ouvrirDetailDesReponses(page, 'PAT_SEED_01');
 
     // Le cas nominal : `Q_STR_02` est `certifie`/`drive` au catalogue, et le
     // registre le déclare `scoring_verifie`. C'est la seule des six formes que
-    // le seed puisse produire aujourd'hui — les 13 blocs certifiés le sont tous
+    // le seed puisse produire aujourd'hui — les 14 blocs certifiés le sont tous
     // par la même provenance.
     //
     // La ligne est ancrée sur son INTERPRÉTATION et non sur « PSS-10 » seul :
@@ -92,13 +102,14 @@ test.describe('Fiche patient — colonne « Qualité » du détail des réponses
     // lignes résolues violeraient le mode strict de Playwright.
     await attendreBadgeQualite(table, /PSS-10.*risque cardio-métabolique/, 'Scoring vérifié (Drive)', 'success');
 
-    // LE PLAFOND, et il est aussi important que le cas nominal. `Q_SOM_01`
-    // (PSQI) est l'un des 18 instruments que le registre déclare
-    // `scoring_verifie` et dont le catalogue ne dit rien — le badge muet qu'une
-    // décision produit doit trancher. Tant qu'elle n'est pas prise, sa ligne
-    // affiche « Historique », et c'est cette assertion qui interdit d'y poser
-    // une certification que le catalogue ne porte pas.
-    await attendreBadgeQualite(table, /PSQI/, 'Historique', 'neutral');
+    // L'ANCIEN PLAFOND, devenu preuve de l'alignement. `Q_SOM_01` (PSQI) était
+    // l'un des 18 instruments que le registre déclarait `scoring_verifie` et
+    // dont le catalogue ne disait rien — sa ligne affichait « Historique » et
+    // cette assertion interdisait un seed généreux. D-038 a fait déclarer le
+    // catalogue (verdict certify du 2026-07-31, 0 divergence critique) : cette
+    // ligne prouve désormais que l'alignement atteint l'écran, et elle tombe si
+    // la clé régresse d'un côté ou de l'autre.
+    await attendreBadgeQualite(table, /PSQI/, 'Scoring vérifié (Drive)', 'success');
   });
 
   test('une passation antérieure à la reconstruction de son instrument reste « Non interprétable »', async ({ page, context }) => {
