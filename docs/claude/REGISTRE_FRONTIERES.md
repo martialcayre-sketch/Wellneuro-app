@@ -52,8 +52,11 @@
   vérifié le 2026-07-21). Le responsable du traitement a autorisé une phase de
   test malgré cet écart, **bornée au 2026-10-21**. Ce n'est pas une mise en
   conformité : l'invariant reste vrai, il est enfreint sciemment et pour un
-  temps compté. Migration vers un hébergeur certifié à instruire — équivalents
-  disponibles (Scalingo, Clever Cloud : six activités, référentiel v2.0).
+  temps compté. **La migration n'est plus « à instruire » : elle est décidée**
+  — Scalingo (D-006 du 2026-07-28, confirmée par D-037 du 2026-08-09 ;
+  certificat LNE n° 38436-2, six activités, valable jusqu'au 2028-09-11). Elle
+  n'est pas exécutée pour autant, et l'écart ci-dessus court **inchangé
+  jusqu'au 2026-10-21**.
 - 1 tâche = 1 branche courte = 1 PR = 1 périmètre. Jamais de mélange
   design / clinique / IA / corpus / infra dans une même PR.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande

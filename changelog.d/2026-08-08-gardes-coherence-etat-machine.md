@@ -35,5 +35,6 @@
   ouvertes par la déclaration 5.0 (état réel, deux parcours patients, double
   source des packs), plus le badge « Certifié » de l'UI praticien qui n'emporte
   pas la définition posée par D-034. L'échéance du 2026-10-21 y est portée comme
-  jalon pour le gate HDS **et** pour le dossier RGPD, dont les quinze trous
-  portent la même date.
+  jalon pour le gate HDS **et** pour le dossier RGPD, dont la plupart des trous
+  portent la même date — pas tous (tableau §14 ; amendé le 2026-08-09, D-037 en
+  a ajouté un à échéance « réponse Scalingo »).

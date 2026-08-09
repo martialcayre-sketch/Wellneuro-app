@@ -9,9 +9,14 @@
 
   Ils sont désormais dans `main`, **revérifiés le 2026-08-05** par `scalingo
   apps-info`, `addons` et `ps` : l'app tourne toujours, dans la configuration
-  décrite. Documenter ce staging n'est pas décider d'y aller — l'orientation du
-  2026-07-22 (rester sur l'hébergement actuel, borner la phase de test) tient, et
-  le runbook le dit en tête.
+  décrite.
+
+  **Amendé le 2026-08-09, avant publication** (les deux fragments sortiront dans
+  la même release) : ce texte disait « l'orientation du 2026-07-22 — rester sur
+  l'hébergement actuel — tient ». Elle ne tient plus : `docs/DECISIONS.md` D-006
+  (2026-07-28) puis D-037 (2026-08-09) décident la migration. Et « validé de bout
+  en bout » désignait un **boot technique**, pas une recette : les trois items
+  fonctionnels de la checklist ne sont pas cochés.
 
   S'y ajoutent neuf gestes opérationnels appris au provisionnement, dont trois
   pièges qui coûtent une app à refaire ou un secret exposé : `--hds-resource` ne

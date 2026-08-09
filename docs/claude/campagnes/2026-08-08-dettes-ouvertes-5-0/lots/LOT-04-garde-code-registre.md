@@ -65,9 +65,11 @@ restera « Historique » même seed étendu — c'est l'un des instruments muets
 
 - **Faire parler le badge** pour les 18 instruments que le registre déclare
   `scoring_verifie` et que l'écran laisse en « Statut inconnu ». C'est une
-  décision produit, à prendre **sur la liste que ce lot produit**, et à écrire en
-  `D-037` : elle suppose de choisir la source d'autorité d'une affirmation
-  clinique, ce que `D-034` fige.
+  décision produit, à prendre **sur la liste que ce lot produit**, et à écrire au
+  **prochain numéro libre du registre** : elle suppose de choisir la source
+  d'autorité d'une affirmation clinique, ce que `D-034` fige. (Elle visait
+  `D-037` ; ce numéro est pris depuis le 2026-08-09 par la décision HDS — un
+  numéro ne se réserve pas, `decisions-numerotation.mjs` refuse tout trou.)
 - Renommer quelque valeur de donnée que ce soit pour aligner le dossier sur
   l'écran (`D-034` : `instrument_registry.json`, le champ `cosmin`).
 - La cohérence packs ↔ miroir relationnel — LOT-03.
@@ -83,5 +85,5 @@ restera « Historique » même seed étendu — c'est l'un des instruments muets
 - Le garde est **mutation-testé** : introduire une divergence
   `certification.status` ↔ barreau fait rougir ; l'inverse aussi.
 - La liste des divergences est **consignée avec sa date** dans `## Résultats` —
-  c'est la matière de `D-037`.
+  c'est la matière de la décision produit ci-dessus.
 - T2 avant commit ; T3 si le seed bouge (il change les données des parcours).
