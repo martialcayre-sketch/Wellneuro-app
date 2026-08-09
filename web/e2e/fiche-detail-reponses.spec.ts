@@ -9,9 +9,21 @@
 // ne portait la clé `certification` : la colonne retombait TOUJOURS sur
 // « Historique », et aucun E2E ne voyait un seul des six libellés.
 //
-// Les trois lignes assérées sont les trois états que le seed peut produire, et
-// les deux dernières sont ce qui empêche un futur seed généreux de mentir :
-// poser une certification sur le PSQI rendrait ce banc rouge.
+// Les trois lignes assérées sont les trois états que le seed peut produire.
+// CE QUE CHACUNE RÉFUTE, et elles ne se valent pas :
+//   · PSS-10 → tombe si la clé `certification` disparaît du seed ;
+//   · PSQI → tombe si un futur seed y pose une certification que le catalogue ne
+//     porte pas. C'est la seule des trois qui garde contre un seed généreux ;
+//   · MFI-20 → ne tombe PAS si on y pose une certification : la branche
+//     `nonInterpretable` gagne, et la route retire même la clé avant l'écran
+//     (`passationsNonInterpretables.ts`). Elle fixe ce comportement-là, pas le
+//     plafond du seed. (Relevé en revue le 2026-08-09 : une première rédaction
+//     attribuait aux deux dernières la même vertu.)
+//
+// SUR UNE BASE DÉJÀ SEEDÉE, CE BANC EST ROUGE, et ce n'est pas une régression :
+// `prisma/seed.ts` upserte les passations avec `update: {}`, donc les clés
+// `certification` ne s'écrivent que sur une base neuve (`test:worktree`, CI).
+// Le remède est de supprimer les lignes `REP_*`, pas de toucher au seed.
 //
 // Patients fictifs Sophie Nicola (PAT_SEED_01) et Jennifer Martin (PAT_SEED_02),
 // déjà seedés — aucun parcours à jouer. Les helpers `e2e/helpers/db.ts`
@@ -59,7 +71,13 @@ test.describe('Fiche patient — colonne « Qualité » du détail des réponses
     // registre le déclare `scoring_verifie`. C'est la seule des six formes que
     // le seed puisse produire aujourd'hui — les 13 blocs certifiés le sont tous
     // par la même provenance.
-    await attendreBadgeQualite(table, /PSS-10/, 'Scoring vérifié (Drive)', 'success');
+    //
+    // La ligne est ancrée sur son INTERPRÉTATION et non sur « PSS-10 » seul :
+    // `helpers/db.ts` (`provisionnerReponseOrientation`) écrit pour ce même
+    // patient une seconde passation `Q_STR_02` au titre identique. Elle est
+    // nettoyée en run nominal, mais un run interrompu la laisse — et deux
+    // lignes résolues violeraient le mode strict de Playwright.
+    await attendreBadgeQualite(table, /PSS-10.*risque cardio-métabolique/, 'Scoring vérifié (Drive)', 'success');
 
     // LE PLAFOND, et il est aussi important que le cas nominal. `Q_SOM_01`
     // (PSQI) est l'un des 18 instruments que le registre déclare

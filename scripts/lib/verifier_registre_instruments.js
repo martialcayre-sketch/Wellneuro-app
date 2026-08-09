@@ -14,6 +14,12 @@ const STATUTS_CERTIFICATION = new Set([
   'psychometrie_revue', 'mapping_clinique_approuve', 'publie', 'suspendu', 'remplace',
 ]);
 const STATUTS_DROITS = new Set(['a_verifier', 'libre', 'licence_requise', 'permission_obtenue', 'restreint']);
+// Le vocabulaire de `scoring.certification.status` du CATALOGUE servi — celui
+// que `statutCertificationRuntime` (`web/src/lib/bibliotheque.ts`) traduit en
+// libellés d'écran. Sans rapport avec `STATUTS_CERTIFICATION` ci-dessus, qui est
+// le cycle de vie du REGISTRE : les confondre est précisément la faute que le
+// contrôle écran ↔ registre attrape.
+const STATUTS_CERTIFICATION_ECRAN = new Set(['certifie', 'ambigu', 'a_verifier', 'non_score']);
 
 // L'échelle de certification, DANS L'ORDRE. Sert au contrôle de cohérence : un
 // barreau ne vaut que si les pièces des barreaux d'en dessous sont au dossier.
@@ -184,7 +190,7 @@ function extraireIdsSuspendus(catalogueSource) {
  *   aucun. L'appelant le construit depuis le catalogue **évalué**
  *   (`chargerCatalogue()`), pas depuis une source lue comme du texte.
  * @returns {{erreurs: string[], sourcesEquilibre: Set<string>|null, aCompleter: number,
- *            divergencesEcranMuet: {questionnaireId: string, statutCertification: string, statutEcran: string|null}[]}}
+ *            divergencesEcranRegistre: {questionnaireId: string, statutCertification: string, statutEcran: string|null}[]}}
  */
 function verifierRegistreInstruments({
   registre,
@@ -208,7 +214,7 @@ function verifierRegistreInstruments({
       erreurs: ['instrument_registry.json : `instruments` doit être un tableau'],
       sourcesEquilibre: null,
       aCompleter: 0,
-      divergencesEcranMuet: [],
+      divergencesEcranRegistre: [],
     };
   }
 
@@ -276,6 +282,12 @@ function verifierRegistreInstruments({
     // Une carte PARTIELLE dirait « pas de certification » là où elle n'a
     // simplement rien lu : indistinguable, côté contrôle, d'un instrument que
     // le catalogue laisse muet.
+    //
+    // DÉCORATIF CÔTÉ PRODUCTION, et il faut le dire : l'appelant actuel bâtit la
+    // carte depuis les mêmes identifiants que ceux qu'il passe en `idsCatalogue`
+    // — `manquants` y est vide par construction, et la mutation qui retire ce
+    // contrôle ne rougit que sur le banc. Il garde un appelant FUTUR, ce qui est
+    // sa seule raison d'être.
     const manquants = idsCatalogue.filter(id => !certificationsEcran.has(id));
     if (manquants.length > 0) {
       erreurs.push(
@@ -295,9 +307,32 @@ function verifierRegistreInstruments({
         + 'la comparaison écran ↔ registre serait vacue'
       );
     }
+    // ET SON REVERS, sans lequel le contrôle ci-dessus se contente de « non nul ».
+    // Une carte construite depuis la MAUVAISE SOURCE — les `statutCertification`
+    // de ce même registre, par exemple — porte des valeurs bien non nulles, passe
+    // le garde précédent, et rend le contrôle bloquant vacu pour toujours :
+    // aucune de ces valeurs ne vaut jamais 'certifie'. Seul l'inventaire
+    // enflerait, et il n'assère rien. Une coquille accentuée ('certifié') se
+    // range dans la même famille. Relevé en revue adversariale le 2026-08-09.
+    //
+    // Le vocabulaire est celui du CATALOGUE, pas du registre : c'est
+    // `statutCertificationRuntime` (`web/src/lib/bibliotheque.ts`) qui l'énumère.
+    const horsVocabulaire = [...new Set(
+      idsCatalogue
+        .map(id => certificationsEcran.get(id))
+        .filter(statut => statut != null && !STATUTS_CERTIFICATION_ECRAN.has(statut))
+    )];
+    if (horsVocabulaire.length > 0) {
+      erreurs.push(
+        `certificationsCatalogue porte ${horsVocabulaire.length} statut(s) hors du vocabulaire du `
+        + `catalogue (${horsVocabulaire.map(s => JSON.stringify(s)).join(', ')}) — attendu parmi `
+        + `${[...STATUTS_CERTIFICATION_ECRAN].join(', ')}. Une carte bâtie sur une autre source `
+        + `passerait le contrôle de non-nullité tout en rendant la comparaison vacue`
+      );
+    }
   }
   /** Inventaire non bloquant : voir le commentaire au point de collecte. */
-  const divergencesEcranMuet = [];
+  const divergencesEcranRegistre = [];
 
   instruments.forEach(entry => {
     const id = entry.questionnaireId;
@@ -743,8 +778,16 @@ function verifierRegistreInstruments({
     // l'autre ne sont SOUS un barreau, ils sont hors échelle. Écrite sans ce
     // test — `barreau < ECHELLE.indexOf('scoring_verifie')` seul — la
     // comparaison rangerait un instrument SUSPENDU « sous scoring_verifie » et
-    // lui reprocherait son `certifie` d'écran. `Q_FIB_03` et `Q_PED_03` sont
-    // exactement dans cette position au registre.
+    // lui reprocherait son `certifie` d'écran.
+    //
+    // MESURÉ, et pas seulement affirmé : les deux `suspendu` du registre
+    // (`Q_FIB_03`, `Q_PED_03`) portent `ambigu` au catalogue, pas `certifie`.
+    // Retirer ce test ne change donc RIEN sur les données du jour — 0 erreur,
+    // 22 lignes d'inventaire avant comme après. La protection est PROSPECTIVE :
+    // c'est le banc qui la tient, pas la production. Une première rédaction
+    // écrivait « ces deux-là sont exactement dans cette position », ce qui
+    // faisait croire le risque vivant — et c'est le genre d'affirmation qui
+    // décide de ce qu'un relecteur suivant ose retirer.
     //
     // C'est le renversement de sens du -1 qu'il faut voir : partout ailleurs
     // dans ce fichier, les contrôles sont armés par `barreau >= …`, où le -1
@@ -764,10 +807,22 @@ function verifierRegistreInstruments({
         );
       }
       // LE SENS INVERSE N'EST PAS UNE FAUTE, et il ne doit surtout pas être
-      // traité comme telle : le registre déclare le scoring vérifié, le
-      // catalogue ne dit rien, et la fiche patient retombe sur « Statut
-      // inconnu ». C'est une TAISANCE, pas un mensonge — l'écran promet moins
-      // que le dossier, jamais l'inverse.
+      // traité comme telle : le registre déclare le scoring vérifié et le
+      // catalogue dit moins. L'écran promet moins que le dossier, jamais
+      // l'inverse.
+      //
+      // MAIS « MOINS » RECOUVRE DEUX CHOSES QUI NE SE VALENT PAS, et les
+      // confondre fausserait la décision qui se prendra sur cette liste :
+      //   · aucune certification déclarée — la bibliothèque affiche « Statut
+      //     inconnu » et la fiche patient « Historique » : un vrai silence ;
+      //   · `ambigu` — la bibliothèque affiche « Scoring ambigu » et la fiche
+      //     « Scoring ambigu (Drive) » : l'écran AFFIRME un doute, contre un
+      //     registre qui déclare le scoring vérifié. Ce n'est pas une taisance.
+      // D'où `statutEcran` rendu à côté de l'identifiant, et non un simple
+      // compte : l'appelant regroupe par statut et le lecteur voit la
+      // différence. (Relevé en revue adversariale le 2026-08-09 : une première
+      // rédaction attribuait à la fiche le libellé de la BIBLIOTHÈQUE et
+      // rangeait les deux familles sous le mot « muet ».)
       //
       // Elle se mesure au lieu de se garder : faire parler ces badges suppose
       // de choisir la source d'autorité d'une affirmation clinique, ce que
@@ -777,8 +832,20 @@ function verifierRegistreInstruments({
       // inscrirait dans le garde la liste en dur que tout ce fichier refuse
       // par ailleurs. L'inventaire est donc rendu nu, à l'appelant, qui
       // l'imprime.
+      //
+      // CE QUE CE CONTRÔLE NE COUVRE PAS, et il faut le lire avant de s'y fier :
+      // un instrument à l'état TERMINAL dont le catalogue continue de déclarer
+      // `certifie` échappe aux deux sorties — `barreau === -1` le sort de la
+      // comparaison, et `barreau >= scoring_verifie` de l'inventaire. Ce n'est
+      // pourtant pas une taisance mais un MENSONGE : le badge de passation relit
+      // `scores_json`, donc toutes ses passations passées continuent d'afficher
+      // « Scoring vérifié » alors que l'instrument est retiré. Zéro cas
+      // aujourd'hui (les deux `suspendu` sont `ambigu` au catalogue). En faire un
+      // contrôle bloquant suppose de trancher si une suspension doit emporter la
+      // certification du scoring — une suspension peut être motivée hors scoring.
+      // Relevé en revue le 2026-08-09, laissé à l'arbitrage plutôt que décidé ici.
       if (barreau >= ECHELLE.indexOf('scoring_verifie') && statutEcran !== 'certifie') {
-        divergencesEcranMuet.push({
+        divergencesEcranRegistre.push({
           questionnaireId: id,
           statutCertification: entry.statutCertification,
           statutEcran,
@@ -868,7 +935,7 @@ function verifierRegistreInstruments({
   const aCompleter = entreesACompleter.length;
   const aCompleterSansPublicationPossible = entreesACompleter
     .filter(entry => entry.versionServie?.statutContenu === 'cree_localement').length;
-  return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible, divergencesEcranMuet };
+  return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible, divergencesEcranRegistre };
 }
 
 module.exports = { verifierRegistreInstruments, extraireSourcesEquilibre, extraireIdsSuspendus };

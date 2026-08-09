@@ -969,7 +969,7 @@ test('le registre déclare, l’écran se tait : inventorié, jamais bloquant', 
   // éprouve un instrument muet parmi d'autres qui parlent — la situation
   // réelle, où 18 se taisent sur 65.
   for (const statutEcran of [null, 'ambigu']) {
-    const { erreurs, divergencesEcranMuet } = verifier({
+    const { erreurs, divergencesEcranRegistre } = verifier({
       idsCatalogue: ['Q_ALI_01', 'Q_STR_02'],
       registre: {
         instruments: [
@@ -980,7 +980,7 @@ test('le registre déclare, l’écran se tait : inventorié, jamais bloquant', 
       certificationsCatalogue: new Map([['Q_ALI_01', statutEcran], ['Q_STR_02', 'certifie']]),
     });
     assert.deepEqual(erreurs, [], `un écran muet ne doit pas bloquer (statut ${statutEcran})`);
-    assert.deepEqual(divergencesEcranMuet, [
+    assert.deepEqual(divergencesEcranRegistre, [
       { questionnaireId: 'Q_ALI_01', statutCertification: 'scoring_verifie', statutEcran },
     ]);
   }
@@ -990,11 +990,11 @@ test('écran et registre d’accord : aucune ligne d’inventaire', () => {
   // Contrôle négatif du précédent : un inventaire qui compterait TOUT le
   // registre se lirait exactement pareil sur la sortie du garde, et le chiffre
   // porté en D-037 serait faux sans que rien ne le dise.
-  const { divergencesEcranMuet } = verifier({
+  const { divergencesEcranRegistre } = verifier({
     registre: { instruments: [entree({ ...SOCLE_VERIFIE, statutCertification: 'scoring_verifie' })] },
     certificationsCatalogue: new Map([['Q_ALI_01', 'certifie']]),
   });
-  assert.deepEqual(divergencesEcranMuet, []);
+  assert.deepEqual(divergencesEcranRegistre, []);
 });
 
 test('état terminal : hors comparaison ET hors inventaire', () => {
@@ -1006,13 +1006,13 @@ test('état terminal : hors comparaison ET hors inventaire', () => {
   //
   // C'est ce cas qui tient le `barreau !== -1` du garde : retirer ce test rend
   // ce cas-ci rouge, mesuré le 2026-08-09.
-  const { erreurs, divergencesEcranMuet } = verifier({
+  const { erreurs, divergencesEcranRegistre } = verifier({
     registre: { instruments: [entree({ questionnaireId: 'Q_SOM_07', statutCertification: 'suspendu', sourceMonEquilibre: false, driveMd: null })] },
     idsCatalogue: ['Q_SOM_07'],
     certificationsCatalogue: new Map([['Q_SOM_07', 'certifie']]),
   });
   assert.deepEqual(erreurs.filter(e => /Scoring vérifié/.test(e)), []);
-  assert.deepEqual(divergencesEcranMuet, []);
+  assert.deepEqual(divergencesEcranRegistre, []);
 });
 
 test('carte de certifications absente ou mal typée : le garde échoue au lieu de rester muet', () => {
@@ -1036,6 +1036,33 @@ test('carte ne portant AUCUN statut : refusée — c’est le renommage silencie
     certificationsCatalogue: new Map([['Q_ALI_01', null], ['Q_STR_02', null]]),
   });
   assert.ok(erreurs.some(e => /aucun instrument du catalogue ne porte de statut/.test(e)));
+});
+
+test('carte bâtie sur la MAUVAISE SOURCE : refusée par le vocabulaire', () => {
+  // Le garde « aucun statut » ne teste que la non-nullité. Une carte construite
+  // depuis les `statutCertification` du REGISTRE porte des valeurs bien non
+  // nulles, le passe — et rend le contrôle bloquant vacu pour toujours, puisque
+  // aucune de ces valeurs ne vaut jamais 'certifie'. Une coquille accentuée est
+  // de la même famille. Relevé en revue adversariale le 2026-08-09.
+  for (const statut of ['scoring_verifie', 'certifié', 'verified']) {
+    const { erreurs } = verifier({ certificationsCatalogue: new Map([['Q_ALI_01', statut]]) });
+    assert.ok(
+      erreurs.some(e => /hors du vocabulaire du catalogue/.test(e)),
+      `le statut ${JSON.stringify(statut)} doit être refusé — erreurs : ${JSON.stringify(erreurs)}`
+    );
+  }
+});
+
+test('vocabulaire du catalogue : les quatre valeurs licites passent (contrôle négatif)', () => {
+  // Sans lui, un motif trop strict refuserait le vocabulaire réel et personne ne
+  // le verrait tant que le catalogue ne sert que `certifie` et `ambigu`.
+  for (const statut of ['certifie', 'ambigu', 'a_verifier', 'non_score']) {
+    const { erreurs } = verifier({ certificationsCatalogue: new Map([['Q_ALI_01', statut]]) });
+    assert.deepEqual(
+      erreurs.filter(e => /hors du vocabulaire/.test(e)), [],
+      `le statut ${statut} est licite au catalogue`
+    );
+  }
 });
 
 test('carte PARTIELLE : refusée — une absence de lecture se lit comme une absence de certification', () => {

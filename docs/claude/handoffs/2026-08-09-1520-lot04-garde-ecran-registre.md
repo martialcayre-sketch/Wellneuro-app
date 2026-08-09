@@ -31,12 +31,15 @@ matière de `D-037`.
 ## Fichiers modifiés
 
 - `scripts/lib/verifier_registre_instruments.js` — paramètre
-  `certificationsCatalogue`, contrôle bloquant, inventaire, deux gardes
-  anti-mutisme.
-- `scripts/lib/verifier_registre_instruments.test.mjs` — 8 cas (73 verts).
+  `certificationsCatalogue`, contrôle bloquant, inventaire, trois gardes
+  anti-mutisme (absente, sans statut, hors vocabulaire).
+- `scripts/lib/verifier_registre_instruments.test.mjs` — 10 cas (75 verts).
 - `scripts/check_questionnaire_certification.js` — construit la carte depuis le
-  catalogue **évalué**, imprime l'inventaire.
-- `web/prisma/seed.ts` — 13 clés `certification` sur 15 blocs.
+  catalogue **évalué**, imprime l'inventaire groupé par effet d'écran.
+- `web/prisma/seedReponses.ts` — **nouveau**, module de données pur.
+- `web/prisma/seedCertification.guard.test.ts` — **nouveau**, l'égalité seed ↔
+  catalogue dans les deux sens.
+- `web/prisma/seed.ts` — 13 clés `certification` sur 15 blocs, données déplacées.
 - `web/e2e/fiche-detail-reponses.spec.ts` — nouveau, 3 badges assérés.
 - `docs/claude/campagnes/.../lots/LOT-04-garde-code-registre.md` — `## Résultats`.
 - `changelog.d/2026-08-09-garde-ecran-registre-certification.md`.
@@ -57,25 +60,53 @@ matière de `D-037`.
   toujours et fait passer l'inventaire de 22 à 60 sans un bruit. C'est ce que
   garde le contrôle « aucun statut ».
 
+## Ce que la revue adversariale a repris
+
+`wn-reviewer` : **GO sous conditions**. Aucun des deux constats majeurs ne
+portait sur la logique du garde — les deux portaient sur ce que le lot **dit** :
+
+1. La sortie livrable attribuait à la fiche patient le libellé de la
+   **bibliothèque** (« Statut inconnu » vs « Historique ») et rangeait les
+   4 `ambigu` sous le mot « muet », alors que l'écran y **affirme un doute**.
+   Sur la sortie même qui doit fonder `D-037`. Corrigé, champ renommé
+   `divergencesEcranRegistre`, inventaire regroupé par effet d'écran.
+2. Le seed est **inerte sur une base déjà seedée** (`update: {}`) : les 13 clés
+   ne s'écrivent que sur une base neuve, et l'E2E est rouge sur la base de dev
+   partagée avec un symptôme qui ne dit rien du code. Écrit aux deux endroits.
+
+Et le trou le plus sérieux, moyen mais structurel : **rien ne tenait l'égalité
+seed ↔ catalogue**. `seedCertification.guard.test.ts` la tient désormais dans les
+deux sens ; les données de réponses ont dû sortir de `seed.ts` (qui s'exécute au
+chargement) vers `seedReponses.ts`, un module pur.
+
 ## Problèmes ouverts
 
-**Un test E2E rouge, qui n'appartient pas à ce lot.** Sur le projet iPhone 13
-(WebKit, macOS), le **67e** test de la passe bloque 120 s sur un `page.goto`.
-Bissection sur base et build figés : suite sans les deux tests de ce lot →
-66 tests, 28,9 s, tout vert ; avec → le 67e bloque ; **deux tests témoins
-triviaux** posés à leur place → même échec, même rang ; quatre témoins → encore
-le 67e, mais un autre test ; la même suite de 66 jouée **deux fois** (132 tests,
-56,4 s) → tout vert. Ni le seed ni le contenu du spec ne sont en cause : la suite
-vivait **exactement à 66 tests**, au bord d'une fragilité que le premier lot
-ajoutant un test devait rencontrer. Cause non trouvée — ni compte de contextes,
-ni temps écoulé. **Le verdict appartient au CI (Linux).**
+**Un test E2E rouge sur Mac, qui n'appartient pas à ce lot — et que le CI ne
+reproduit pas.** Sur le projet iPhone 13 (WebKit, macOS), le **67e** test de la
+passe bloque 120 s sur un `page.goto`. Bissection sur base et build figés : suite
+sans les deux tests de ce lot → 66 tests, 28,9 s, tout vert ; avec → le 67e
+bloque ; **deux tests témoins triviaux** posés à leur place → même échec, même
+rang ; quatre témoins → encore le 67e, mais un autre test ; la même suite de 66
+jouée **deux fois** (132 tests, 56,4 s) → tout vert. Ni le seed ni le contenu du
+spec ne sont en cause : la suite vivait **exactement à 66 tests**, au bord d'une
+fragilité que le premier lot ajoutant un test devait rencontrer. Cause non
+trouvée — ni compte de contextes, ni temps écoulé. **Le job `verify` de la
+PR #630 est vert** : la fragilité est locale à macOS. Elle mordra la prochaine
+session qui jouera T3 sur Mac.
+
+**Une non-couverture nommée, à arbitrer** : un instrument à l'état terminal
+(`suspendu`, `remplace`) dont le catalogue déclare encore `certifie` échappe aux
+deux sorties du garde — or ses passations passées continueraient d'afficher
+« Scoring vérifié », le badge relisant `scores_json`. Zéro cas aujourd'hui. En
+faire un contrôle bloquant suppose de trancher si une suspension emporte la
+certification du scoring ; une suspension peut être motivée hors scoring.
 
 ## Prochaine action exacte
 
-`bash scripts/check_no_secrets.sh --staged`, commit, revue `wn-reviewer` (classe
-scoring/clinique), puis PR — et **lire le résultat du job `verify` avant toute
-annonce** : si le CI rouge sur le même symptôme, la fragilité de la suite devient
-un lot à part entière, à ouvrir avant celui-ci.
+Lire le job `verify` de la PR #630 sur le second commit (les correctifs de revue
+n'ont pas encore été soumis au CI au moment où ces lignes sont écrites), puis
+merge. `D-037` s'arbitre ensuite **sur la liste**, en séparant les 18 silences
+des 4 affirmations de doute.
 
 ## Interdits encore actifs
 

@@ -204,28 +204,40 @@ assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instrume
 
 console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter dont ${verdictRegistre.aCompleterSansPublicationPossible} sans publication d'origine possible (instruments créés localement), ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
 
-// L'INVENTAIRE DE L'ÉCRAN MUET — la mesure que le lot D-036/LOT-04 produit, et
+// L'INVENTAIRE ÉCRAN ↔ REGISTRE — la mesure que le lot D-036/LOT-04 produit, et
 // sa raison d'être principale. NON BLOQUANT, au même titre que le compteur
 // `a_completer` : ce n'est pas une faute, c'est la matière sur laquelle D-037
-// (« le badge muet ») doit être arbitré. Imprimé plutôt que compté seulement —
-// un chiffre de tête ne porte pas cette décision, il faut les identifiants et
-// ce que le catalogue dit de chacun.
-const muets = verdictRegistre.divergencesEcranMuet;
+// doit être arbitré. Imprimé plutôt que compté seulement — un chiffre de tête ne
+// porte pas cette décision, il faut les identifiants ET ce que le catalogue dit
+// de chacun.
+//
+// LE REGROUPEMENT PAR STATUT N'EST PAS COSMÉTIQUE. Les deux familles ne se
+// valent pas à l'écran : sans certification, l'écran se TAIT ; avec `ambigu`, il
+// AFFIRME un doute contre un registre qui déclare le scoring vérifié. Arbitrer
+// les deux ensemble, sous un compte unique, serait décider sans avoir vu la
+// différence.
+const divergences = verdictRegistre.divergencesEcranRegistre;
 const parStatutEcran = new Map();
-muets.forEach(d => {
+divergences.forEach(d => {
   const cle = d.statutEcran ?? 'aucune certification déclarée';
   if (!parStatutEcran.has(cle)) parStatutEcran.set(cle, []);
   parStatutEcran.get(cle).push(d.questionnaireId);
 });
 console.log(
-  `[questionnaires] écran muet : ${muets.length} instrument(s) que le registre déclare au moins `
-  + `'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie' — la fiche patient y affiche `
-  + `« Statut inconnu ». Matière de D-037, non bloquant.`
+  `[questionnaires] écran ↔ registre : ${divergences.length} instrument(s) que le registre déclare au `
+  + `moins 'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie'. Matière de D-037, non `
+  + `bloquant.`
 );
 [...parStatutEcran.entries()]
   .sort(([a], [b]) => a.localeCompare(b))
   .forEach(([statut, listeIds]) => {
-    console.log(`[questionnaires]   ${statut} (${listeIds.length}) : ${listeIds.join(', ')}`);
+    // Les libellés d'écran ne sont pas recopiés ici : ils vivent dans
+    // `certification-libelles.ts` et y sont gardés (LOT-02). Ce qui est dit,
+    // c'est ce que le statut FAIT — l'écran se tait, ou il affirme.
+    const effet = statut === 'aucune certification déclarée'
+      ? 'silence'
+      : `l'écran AFFIRME '${statut}' là où le registre déclare le scoring vérifié`;
+    console.log(`[questionnaires]   ${statut} (${listeIds.length}, ${effet}) : ${listeIds.join(', ')}`);
   });
 
 const supportedScoringTypes = new Set([

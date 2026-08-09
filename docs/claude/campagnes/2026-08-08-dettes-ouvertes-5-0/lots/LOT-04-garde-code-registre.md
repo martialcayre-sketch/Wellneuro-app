@@ -119,6 +119,19 @@ registre (65 entrées), **identique dans les deux positions de
 | **Sens inverse** — barreau ≥ `scoring_verifie`, écran muet | **18** |
 | idem, écran `ambigu` | **4** |
 
+**Les deux familles ne se valent pas, et les confondre fausserait `D-037`.**
+La revue adversariale du 2026-08-09 a repris une première rédaction qui les
+rangeait toutes deux sous le mot « muet » et attribuait à la fiche patient un
+libellé qui est celui de la **bibliothèque** :
+
+| Famille | Bibliothèque | Fiche patient | Ce que ça vaut |
+| --- | --- | --- | --- |
+| **Aucune certification (18)** | « Statut inconnu » | « Historique » | un vrai **silence** |
+| **`ambigu` (4)** | « Scoring ambigu » | « Scoring ambigu (Drive) » | l'écran **AFFIRME un doute** contre un registre qui déclare le scoring vérifié |
+
+Les 4 sont peut-être la divergence la plus embarrassante des 22 : ce n'est pas
+une taisance. `D-037` doit les arbitrer séparément.
+
 **Aucune certification déclarée (18)** : `Q_NEU_06 Q_SOM_01 Q_SOM_03 Q_SOM_04
 Q_SOM_07 Q_GAS_03 Q_CAR_01 Q_TAB_03 Q_TAB_04 Q_PED_02 Q_MOD_01 Q_MOD_02
 Q_ALI_01 Q_ALI_02 Q_ALI_03 Q_GEO_03 Q_GEO_05 Q_GEO_06`.
@@ -148,6 +161,18 @@ Sept sur le garde, chacune isolément, banc restauré entre deux :
 | retirer le garde « carte partielle » | rouge (1 cas) |
 | accepter une carte absente | rouge (1 cas) |
 | inventorier même quand écran et registre sont d'accord | rouge (2 cas) |
+| retirer le garde de vocabulaire | rouge (1 cas) |
+| élargir le vocabulaire au cycle de vie du registre | rouge (1 cas) |
+
+**Toutes sont des mutations de BANC**, et deux d'entre elles n'ont aucun effet
+sur les données du jour — c'est écrit à côté du code plutôt que laissé à
+deviner : le refus de carte partielle est décoratif tant que l'appelant bâtit sa
+carte depuis les identifiants qu'il passe, et le `barreau !== -1` ne change rien
+tant que les deux `suspendu` du registre portent `ambigu` au catalogue.
+
+Quatre mutations de plus sur le **seed**, contre `seedCertification.guard.test.ts` :
+un statut faux, une provenance fausse, une clé retirée, une certification posée
+sur le PSQI. Les quatre rougissent.
 
 **Une huitième mutation a SURVÉCU à la première rédaction**, et c'est le constat
 utile : le contrôle sortait les états terminaux par une branche
@@ -164,10 +189,37 @@ valeurs. Et le renommage silencieux de la clé `certification` — le cas
 réellement dangereux — est attrapé : sans le garde, l'inventaire passerait de
 **22 à 60** sans un bruit.
 
+### Ce que la revue adversariale a repris
+
+Verdict `wn-reviewer` : **GO sous conditions**, deux constats majeurs, tous deux
+corrigés — et aucun ne portait sur la logique du garde, les deux portaient sur ce
+que le lot **dit** :
+
+1. **La sortie livrable nommait un libellé qui n'existe pas sur l'écran qu'elle
+   désigne** — « Statut inconnu » est le badge de la bibliothèque, la fiche rend
+   « Historique » — et rangeait les 4 `ambigu` sous le mot « muet » alors que
+   l'écran y affirme un doute. C'est précisément la sortie sur laquelle `D-037`
+   sera arbitré. Corrigé aux trois endroits, et le champ renommé
+   `divergencesEcranRegistre`.
+2. **Le seed est inerte sur une base déjà seedée** (`upsert` avec `update: {}`) :
+   les 13 clés ne s'écrivent que sur une base neuve, et l'E2E est donc rouge sur
+   la base de dev partagée, avec un symptôme qui ne dit rien du code. Écrit dans
+   le seed et dans l'en-tête du spec.
+
+Trois constats moyens corrigés aussi : **rien ne tenait l'égalité seed ↔
+catalogue** (le trou le plus sérieux — un `status` qui bougerait laissait le seed
+mentir et l'E2E vert : `seedCertification.guard.test.ts` le ferme, dans les deux
+sens) ; deux commentaires faisaient croire vivant un risque **prospectif**. Une
+non-couverture est désormais **nommée** plutôt que découverte plus tard : un
+instrument à l'état terminal dont le catalogue déclare encore `certifie` échappe
+aux deux sorties, et ses passations passées continueraient d'afficher « Scoring
+vérifié » — zéro cas aujourd'hui, arbitrage à prendre.
+
 ### Ce que la validation dit, et ce qu'elle ne dit pas
 
-T1 vert. Banc du validateur : **73 cas verts**. Les deux positions du garde de
-certification : code de sortie `0`, inventaire à 22.
+T1 vert. Banc du validateur : **75 cas verts**. Banc seed ↔ catalogue : 3 verts,
+4 mutations tuées. Les deux positions du garde de certification : code de sortie
+`0`, inventaire à 22.
 
 **Les E2E rendent 133 verts et 1 rouge, et ce rouge n'appartient pas à ce lot.**
 Un test de `visual.spec.ts` bloque 120 s sur un `page.goto` dans le projet
@@ -188,3 +240,8 @@ macOS/WebKit que le premier lot ajoutant un test devait rencontrer. Le test qui
 suit immédiatement celui qui bloque ouvre **la même page pour le même patient**
 en 287 ms. Ce n'est ni un compte de contextes, ni un temps écoulé — la cause
 reste à trouver, et elle est hors du périmètre de ce lot.
+
+**Le CI (Linux) ne la reproduit pas** : le job `verify` de la PR #630 a
+réellement tourné et est vert. La fragilité est donc **locale à macOS**, et elle
+ne bloque rien — mais elle mordra la prochaine session qui jouera T3 sur Mac, ce
+qui est la raison d'être de ce relevé.
