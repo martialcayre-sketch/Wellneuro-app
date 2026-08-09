@@ -854,7 +854,8 @@ function verifierRegistreInstruments({
       //
       // Elle se mesure au lieu de se garder : faire parler ces badges suppose
       // de choisir la source d'autorité d'une affirmation clinique, ce que
-      // D-034 fige et ce qu'une décision produit (D-037) doit trancher SUR
+      // D-034 fige et ce qu'une décision produit — celle du badge muet, dont le
+      // numéro sera attribué le jour où elle s'écrira — doit trancher SUR
       // cette liste. Un garde qui rougirait ici forcerait la décision à coups
       // de CI rouge ; un cliquet qui figerait les identifiants du jour
       // inscrirait dans le garde la liste en dur que tout ce fichier refuse

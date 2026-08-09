@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Le libellé emprunte le nom d'un barreau qu'il ne lit pas — et le seed omet une clé que le moteur produit"
-statut: "en_cours"
+statut: "livré"
 dépend_de: "LOT-02"
 ---
 
@@ -107,7 +107,7 @@ Trois corrections au texte ci-dessus, toutes vérifiées sur le dépôt :
    passe AVANT celle du badge de certification. Y poser une certification serait
    inerte à l'écran. Le plafond est donc de **13 blocs sur 15**.
 
-### L'inventaire — la mesure que ce lot produit (matière de D-037)
+### L'inventaire — la mesure que ce lot produit (matière de la décision produit sur le badge muet)
 
 Croisement du catalogue **résolu** (`chargerCatalogue()`, 65 instruments) et du
 registre (65 entrées), **identique dans les deux positions de
@@ -121,7 +121,7 @@ registre (65 entrées), **identique dans les deux positions de
 | **Sens inverse** — barreau ≥ `scoring_verifie`, écran muet | **18** |
 | idem, écran `ambigu` | **4** |
 
-**Les deux familles ne se valent pas, et les confondre fausserait `D-037`.**
+**Les deux familles ne se valent pas, et les confondre fausserait la décision à venir.**
 La revue adversariale du 2026-08-09 a repris une première rédaction qui les
 rangeait toutes deux sous le mot « muet » et attribuait à la fiche patient un
 libellé qui est celui de la **bibliothèque** :
@@ -132,7 +132,7 @@ libellé qui est celui de la **bibliothèque** :
 | **`ambigu` (4)** | « Scoring ambigu » | « Scoring ambigu (Drive) » | l'écran **AFFIRME un doute** contre un registre qui déclare le scoring vérifié |
 
 Les 4 sont peut-être la divergence la plus embarrassante des 22 : ce n'est pas
-une taisance. `D-037` doit les arbitrer séparément.
+une taisance. la décision produit doit les arbitrer séparément.
 
 **Deux réserves sur ce tableau, faute de quoi il généralise à son tour** (la
 première a été relevée en revue sur une version précédente de ces lignes) :
@@ -153,7 +153,7 @@ Q_ALI_01 Q_ALI_02 Q_ALI_03 Q_GEO_03 Q_GEO_05 Q_GEO_06`.
 
 **Le point dur du lot, et l'arbitrage qui en découle.** L'assertion bloquante
 que ce périmètre décrit comme sa preuve est **vraie aujourd'hui** : sa sortie
-serait vide, et le lot ne produirait donc pas la liste dont `D-037` a besoin. Le
+serait vide, et le lot ne produirait donc pas la liste dont cette décision a besoin. Le
 garde porte pour cette raison **deux sorties de natures différentes** — une
 assertion bloquante (sens menteur) et un **inventaire non bloquant** (sens
 inverse), imprimé avec son compte à chaque `npm run check`. Arbitré le
@@ -221,7 +221,7 @@ que le lot **dit** :
 1. **La sortie livrable nommait un libellé qui n'existe pas sur l'écran qu'elle
    désigne** — « Statut inconnu » est le badge de la bibliothèque, la fiche rend
    « Historique » — et rangeait les 4 `ambigu` sous le mot « muet » alors que
-   l'écran y affirme un doute. C'est précisément la sortie sur laquelle `D-037`
+   l'écran y affirme un doute. C'est précisément la sortie sur laquelle la décision produit
    sera arbitré. Corrigé aux trois endroits, et le champ renommé
    `divergencesEcranRegistre`.
 2. **Le seed est inerte sur une base déjà seedée** (`upsert` avec `update: {}`) :
