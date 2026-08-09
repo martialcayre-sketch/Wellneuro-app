@@ -19,6 +19,14 @@
 **Ce dossier ne lève rien.** Le gate G-TRUST-04 reste non levé ; il est couvert
 par une dérogation datée du 2026-07-21, bornée au **2026-10-21**.
 
+> **Deux dates, deux évènements — ne pas les confondre ni les « aligner ».** Le
+> **2026-07-21** est celui de l'instruction de l'hébergement (Supabase et Vercel
+> absents de l'annuaire ANS) et de la dérogation ci-dessus. Le **2026-07-22** est
+> celui de l'**arbitrage** qui en a tiré la conséquence — rester sur
+> l'hébergement actuel, borner la phase de test, n'instruire aucune migration
+> HDS (`docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/CAMPAGNE.md`,
+> point 8). L'échéance, elle, est la même partout : **2026-10-21**.
+
 ---
 
 ## 1. Responsable du traitement

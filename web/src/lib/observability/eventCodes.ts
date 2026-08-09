@@ -122,6 +122,13 @@ export const EVENT_CODES = {
   // registre) sans que personne puisse le savoir. Un repli silencieux finit par
   // se lire comme une absence de repli.
   PACK_REGISTRE_REPLI_LEGACY: 'ASSIGNATION.PACK.REGISTRE_REPLI_LEGACY',
+
+  // LOT-03 (dette 4). Le pendant AMONT du repli ci-dessus : une sauvegarde de
+  // pack refusée parce que le miroir relationnel ne pourrait pas la porter
+  // (qid sans `QuestionnaireDefinition`). Le repli ci-dessus constate la dérive
+  // à la lecture ; celui-ci l'empêche à l'écriture, et c'est la seule trace
+  // serveur d'un refus que le praticien voit, lui, à l'écran.
+  PACK_REGISTRE_QID_SANS_DEFINITION: 'ASSIGNATION.PACK.REGISTRE_QID_SANS_DEFINITION',
 } as const satisfies Record<string, EventCode>;
 
 export type KnownEventCode = (typeof EVENT_CODES)[keyof typeof EVENT_CODES];

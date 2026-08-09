@@ -238,6 +238,31 @@ jobs:
           DATABASE_URL="$MIGRATE_DATABASE_URL" \
             npx prisma db execute --file prisma/checks/c5_ciqual_production_preflight.sql
 
+      # LOT-03, dette 4 — cohérence `packs.qids` ↔ miroir relationnel. C'est la
+      # SEULE lecture de la vraie dérive : la base du CI est vide, le contrat y
+      # est vacu. `BEGIN READ ONLY … ROLLBACK` dans le fichier — aucune écriture.
+      #
+      # FAIL-CLOSED ASSUMÉ : une release ne se déploie pas sur une base en
+      # dérive. LA CORRECTION N'EST PAS LA MÊME SELON L'ASSERTION, et le message
+      # d'échec nomme le pack fautif :
+      #  • « derive » / « miroir orphelin » → geste PRATICIEN : ré-enregistrer le
+      #    pack depuis l'écran, ce qui rejoue `syncPackToRegistry`. Jamais un
+      #    UPDATE à la main.
+      #  • « qid sans definition » → ce geste-là NE MARCHE PAS : depuis le
+      #    LOT-03, ré-enregistrer un tel pack est précisément ce que
+      #    `syncPackToRegistry` refuse (409). Il faut créer la définition
+      #    manquante, c'est-à-dire `npm run backfill:pack-registry:apply` — qui
+      #    n'a AUCUN chemin sanctionné vers la production (ce workflow n'offre
+      #    que `migrate-only` et `import-cb`, et le build Vercel n'écrit pas).
+      #    RÉSERVE NOMMÉE, pas un oubli : cet état ne peut plus naître de
+      #    l'application, seulement d'une écriture hors application. S'il
+      #    survient, il bloque les releases jusqu'à une décision humaine — et
+      #    c'est le comportement voulu, faute de chemin d'écriture relu.
+      - name: "Préflight production — packs ↔ registre relationnel (lecture seule)"
+        run: |
+          DATABASE_URL="$MIGRATE_DATABASE_URL" \
+            npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql
+
       - name: "Migrations Prisma (migrate deploy)"
         run: DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
 

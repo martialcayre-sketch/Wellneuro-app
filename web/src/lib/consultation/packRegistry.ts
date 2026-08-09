@@ -4,11 +4,52 @@ import { resolveQidsLogic } from './packRegistryLogic';
 
 export const DEFAULT_REGISTRY_PACK_NIVEAU = 'approfondissement';
 
+// ─── Le refus qui ferme le générateur de la dérive ───────────────────────────
+//
+// Jusqu'au 2026-08-08, cette fonction IGNORAIT silencieusement tout qid sans
+// `QuestionnaireDefinition`. C'est le mécanisme qui a produit la dérive du
+// 2026-08-05 : le pack de base portait `Q_SOM_09`, dont la ligne de définition
+// n'a été créée que le 2026-08-06 14:59 — le miroir ne POUVAIT pas le porter, et
+// `resolvePackQuestionnaireIds` retombait sur le legacy en `ensembles_divergents`
+// à chaque onboarding. La resynchronisation du 2026-08-07 15:46 est venue d'une
+// écriture d'une AUTRE campagne, par accident : rien ne l'avait provoquée.
+//
+// `backfillQuestionnaireRegistry.ts` avait déjà le bon réflexe — il abandonne
+// avant toute écriture sur ce cas, en le nommant « précisément le type de trou
+// qui a rendu syncPackToRegistry silencieusement vide ». Ce garde est ce
+// pré-contrôle, posé cette fois sur le chemin d'écriture praticien.
+//
+// PORTÉE, ET CE QU'ELLE N'EST PAS. Le garde ferme le chemin applicatif, pas la
+// table : une écriture SQL hors application peut toujours créer la dérive. C'est
+// le rôle du contrat `prisma/checks/packs_registre_coherence_v1.sql`, rejoué en
+// préflight de production par `release-db.yml`.
+export const RAISON_QID_SANS_DEFINITION = 'qid_sans_definition';
+
+export const MESSAGE_QID_SANS_DEFINITION =
+  'Ce pack référence un questionnaire absent du registre relationnel : il serait enregistré incomplet.';
+
+// Erreur portée jusqu'aux appelants POUR ÊTRE NOMMÉE À L'ÉCRAN. Une erreur nue
+// serait avalée par le `catch` des routes, qui rend « Erreur technique » sans
+// journaliser : le garde aurait remplacé une dérive silencieuse par un échec
+// silencieux, et le praticien n'aurait aucun moyen de savoir quoi retirer.
+export class QidsSansDefinitionError extends Error {
+  readonly qids: string[];
+  readonly idPack: string;
+
+  constructor(idPack: string, qids: string[]) {
+    super(`${MESSAGE_QID_SANS_DEFINITION} Pack ${idPack} — questionnaires sans définition : ${qids.join(', ')}.`);
+    this.name = 'QidsSansDefinitionError';
+    this.idPack = idPack;
+    this.qids = qids;
+  }
+}
+
 // Miroir le pack legacy (qids) dans le registre relationnel
-// (QuestionnairePack / QuestionnairePackQuestionnaire). Ids sans
-// QuestionnaireDefinition correspondante sont ignorés (silencieusement, comme
-// avant l'extraction) : voir resolvePackQuestionnaireIds pour le filet de
-// sécurité côté lecture.
+// (QuestionnairePack / QuestionnairePackQuestionnaire). Un id sans
+// QuestionnaireDefinition correspondante fait désormais ÉCHOUER la
+// synchronisation (`QidsSansDefinitionError`), donc la transaction appelante :
+// voir le bloc ci-dessus. `resolvePackQuestionnaireIds` reste le filet de
+// sécurité côté lecture, pour l'état déjà en base.
 export async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
   idPack: string;
   nom: string;
@@ -48,9 +89,26 @@ export async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
   });
 
   const definitionIdByQid = new Map(definitions.map(d => [d.questionnaireId, d.id]));
-  const items = pack.qids
+
+  // Le refus se lit sur l'ENSEMBLE des qids, pas sur la longueur du tableau :
+  // `pack.qids` peut porter des doublons (la route les déduplique, le backfill
+  // relit la base telle quelle), et comparer `items.length` à `pack.qids.length`
+  // rendrait alors un faux positif.
+  const sansDefinition = Array.from(new Set(pack.qids)).filter(qid => !definitionIdByQid.has(qid));
+  if (sansDefinition.length > 0) {
+    throw new QidsSansDefinitionError(pack.idPack, sansDefinition);
+  }
+
+  // DÉDUPLIQUÉ, comme le refus ci-dessus. `pack_questionnaires` porte
+  // `@@unique([packId, questionnaireId])` : un doublon dans `pack.qids` faisait
+  // jusqu'ici échouer `createMany` en P2002, donc « Erreur technique ». La route
+  // déduplique déjà (`normaliserQids`), le backfill non — il relit la base telle
+  // quelle. L'ordre reste celui de la PREMIÈRE occurrence.
+  const items = Array.from(new Set(pack.qids))
     .map((qid, index) => {
       const questionnaireId = definitionIdByQid.get(qid);
+      // Branche devenue INATTEIGNABLE depuis le refus ci-dessus : elle reste
+      // pour narrower le type sans assertion non-nulle, pas comme filet.
       if (!questionnaireId) return null;
       return {
         packId: registryPack.id,

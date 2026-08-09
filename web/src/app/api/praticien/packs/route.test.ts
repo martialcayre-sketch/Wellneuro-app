@@ -16,6 +16,11 @@ const { getServerSession, prisma, syncPackToRegistry } = vi.hoisted(() => ({
       updateMany: vi.fn(),
       create: vi.fn(),
     },
+    // Depuis le LOT-03, `DELETE` ne passe plus par `syncPackToRegistry` : il ne
+    // propage que `actif` au miroir. Voir le cas 20.
+    questionnairePack: {
+      updateMany: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }));
@@ -25,11 +30,23 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 // La synchro du registre n'est pas l'objet de ces tests : on la mocke plutôt
 // que de stuber les modèles qu'elle touche.
-vi.mock('@/lib/consultation/packRegistry', () => ({ syncPackToRegistry }));
+//
+// MAIS on garde le MODULE RÉEL pour tout le reste — `QidsSansDefinitionError`
+// en particulier. La route la reconnaît par `instanceof` : une classe factice
+// rendrait le test vert sur un `instanceof` qui ne serait pas celui de la
+// production, et le garde du LOT-03 ne serait pas éprouvé.
+vi.mock('@/lib/consultation/packRegistry', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/consultation/packRegistry')>(
+    '@/lib/consultation/packRegistry',
+  );
+  return { ...actual, syncPackToRegistry };
+});
 
 import { GET, POST, PATCH, DELETE } from './route';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
-import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+import { QidsSansDefinitionError } from '@/lib/consultation/packRegistry';
+import { logger } from '@/lib/observability/logger';
 
 // `IDS_SUSPENDUS` est DÉRIVÉ du catalogue (`filter(q => !q.actif)`) : on n'y
 // code aucun identifiant en dur, il bouge avec les arbitrages cliniques et avec
@@ -39,6 +56,13 @@ import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 const catalogueScoring = QUESTIONNAIRE_CATALOGUE as Record<string, unknown>;
 const QID_SUSPENDU = Array.from(IDS_SUSPENDUS).find(id => catalogueScoring[id]) as string;
 const QID_ACTIF = 'Q_NEU_03';
+
+// L'ÉCART ENTRE LES DEUX CATALOGUES, dérivé et non codé en dur : un qid que le
+// scoring connaît et que l'écran ne montre pas. `Q_NEU_12` est le cas réel
+// (`backfillQuestionnaireRegistry.ts`, EXTRA_DEFINITIONS), mais le prendre
+// nommément figerait le test sur un état du catalogue.
+const catalogueEcran = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
+const QID_HORS_ECRAN = Object.keys(catalogueScoring).find(id => !catalogueEcran.has(id)) as string;
 
 type PackRow = {
   idPack: string;
@@ -383,5 +407,169 @@ describe('/api/praticien/packs — instruments suspendus', () => {
     // toute lecture. Documente au passage que le pack de base ne peut pas être
     // vidé de ses qids.
     expect(prisma.pack.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+// ─── LOT-03 (dette 4) — le refus du miroir relationnel, nommé à l'écran ──────
+//
+// `syncPackToRegistry` lève désormais `QidsSansDefinitionError` plutôt que de
+// jeter silencieusement un qid sans `QuestionnaireDefinition`. Ces cas éprouvent
+// LE PASSAGE, c'est-à-dire ce que le praticien voit : sans lui, les trois
+// `catch` de la route rendraient « Erreur technique », et le garde aurait
+// remplacé une dérive silencieuse par un échec silencieux.
+describe('/api/praticien/packs — qid sans définition au registre relationnel', () => {
+  const QIDS_FAUTIFS = [QID_ACTIF];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    seed();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.pack.findUnique.mockImplementation(
+      async ({ where }: { where: { idPack: string } }) => store.get(where.idPack) ?? null,
+    );
+    prisma.pack.update.mockImplementation(
+      async ({ where, data }: { where: { idPack: string }; data: Partial<PackRow> }) => {
+        const ligne = { ...(store.get(where.idPack) as PackRow), ...data };
+        store.set(where.idPack, ligne);
+        return ligne;
+      },
+    );
+    prisma.pack.updateMany.mockResolvedValue({ count: 0 });
+    prisma.pack.create.mockImplementation(
+      async ({ data }: { data: Partial<PackRow> & { idPack: string } }) => ligneCreee(data),
+    );
+    prisma.$transaction.mockImplementation((fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma));
+    syncPackToRegistry.mockRejectedValue(new QidsSansDefinitionError(ID_AUTRE, QIDS_FAUTIFS));
+  });
+
+  // Le message doit NOMMER les qids : « erreur technique » ne dit pas quoi
+  // retirer, et retirer est le seul geste que l'écran offre.
+  it('18. POST : 409 qid_sans_definition, et les qids fautifs sont nommés', async () => {
+    const res = await POST(post({ nom: 'Pack neuf', qids: [QID_ACTIF] }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.reason).toBe('qid_sans_definition');
+    expect(json.success).toBe(false);
+    for (const qid of QIDS_FAUTIFS) expect(json.error).toContain(qid);
+    // Le geste nommé doit être POSSIBLE depuis l'écran : « retirer du pack »
+    // l'est, « créer la définition manquante » ne l'est pas (c'est le backfill).
+    expect(json.error).toMatch(/retirer du pack/i);
+    expect(json.error).not.toMatch(/erreur technique/i);
+  });
+
+  it('19. PATCH : 409 qid_sans_definition, et les qids fautifs sont nommés', async () => {
+    const res = await PATCH(patch({ idPack: ID_AUTRE, qids: [QID_ACTIF] }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.reason).toBe('qid_sans_definition');
+    for (const qid of QIDS_FAUTIFS) expect(json.error).toContain(qid);
+  });
+
+  // LE SENS DU REFUS COMPTE AUTANT QUE SON EXISTENCE. La désactivation ne
+  // touche pas `qids` : elle ne peut créer aucune divergence. La refuser
+  // rendrait le pack en dérive INDÉSACTIVABLE — donc actif, donc assignable :
+  // le garde interdirait de retirer le pack qu'il dénonce. `DELETE` ne passe
+  // donc plus par `syncPackToRegistry`, il ne propage que `actif`.
+  it('20. DELETE d’un pack en dérive : la désactivation ABOUTIT', async () => {
+    const res = await DELETE(del(ID_AUTRE));
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
+    expect(store.get(ID_AUTRE)?.actif).toBe(false);
+    // Et la synchro des items n'est pas même tentée : c'est ce qui rend le
+    // refus inatteignable, pas un `catch` qui l'avalerait.
+    expect(syncPackToRegistry).not.toHaveBeenCalled();
+    expect(prisma.questionnairePack.updateMany).toHaveBeenCalledWith({
+      where: { packId: ID_AUTRE },
+      data: { actif: false },
+    });
+    // Les deux écritures sont dans la MÊME transaction : sorties de là, un pack
+    // pourrait être éteint côté legacy et actif au miroir.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  // CONTRÔLE NÉGATIF. Sans lui, remplacer le `instanceof` par un `catch` rendant
+  // TOUJOURS 409 qid_sans_definition passerait les trois cas ci-dessus.
+  it('21. une panne quelconque reste « exception » — le refus ne se généralise pas', async () => {
+    syncPackToRegistry.mockRejectedValue(new Error('connexion perdue'));
+    const res = await POST(post({ nom: 'Pack neuf', qids: [QID_ACTIF] }));
+    const json = await res.json();
+    expect(json.reason).toBe('exception');
+    expect(json.error).toMatch(/erreur technique/i);
+  });
+
+  // CONTRÔLE NÉGATIF. Sans lui, un `throw` inconditionnel dans
+  // `syncPackToRegistry` passerait tout ce bloc en vert.
+  it('22. synchro réussie : la sauvegarde passe, aucun 409', async () => {
+    syncPackToRegistry.mockResolvedValue(undefined);
+    const res = await POST(post({ nom: 'Pack neuf', qids: [QID_ACTIF] }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).success).toBe(true);
+  });
+
+  // UN GESTE NOMMÉ DOIT ÊTRE POSSIBLE. `normaliserQids` filtre sur le catalogue
+  // de SCORING ; l'écran, lui, ne montre que le catalogue d'AFFICHAGE. Les deux
+  // ensembles diffèrent, et le dépôt sait que `Q_NEU_12` est dans l'écart
+  // (`backfillQuestionnaireRegistry.ts`, EXTRA_DEFINITIONS). Conseiller de
+  // « retirer du pack » un tel qid désignerait une case qui n'existe pas.
+  it('23. un qid absent du catalogue d’écran n’est pas annoncé comme retirable', async () => {
+    // `Set.has(undefined)` rend `false` : sans le contrôle de type, ce garde
+    // serait satisfait par une fixture INEXISTANTE, le jour où les deux
+    // catalogues convergeraient.
+    expect(QID_HORS_ECRAN, 'les deux catalogues ont convergé : plus de fixture hors écran').toBeTypeOf('string');
+    expect(catalogueEcran.has(QID_HORS_ECRAN), 'la fixture doit rester hors écran').toBe(false);
+    syncPackToRegistry.mockRejectedValue(new QidsSansDefinitionError(ID_AUTRE, [QID_HORS_ECRAN]));
+
+    const res = await PATCH(patch({ idPack: ID_AUTRE, qids: [QID_ACTIF] }));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.error).toContain(QID_HORS_ECRAN);
+    expect(json.error).not.toMatch(/retirer du pack/i);
+    expect(json.error).toMatch(/recréée en base/i);
+  });
+
+  it('24. les deux classes de qids se lisent séparément dans le même message', async () => {
+    syncPackToRegistry.mockRejectedValue(new QidsSansDefinitionError(ID_AUTRE, [QID_ACTIF, QID_HORS_ECRAN]));
+
+    const json = await (await PATCH(patch({ idPack: ID_AUTRE, qids: [QID_ACTIF] }))).json();
+
+    // Le retirable est annoncé retirable, l'autre non : un message qui les
+    // fondrait promettrait un geste impossible sur la moitié de sa liste.
+    expect(json.error).toMatch(new RegExp(`retirer du pack : ${QID_ACTIF}`, 'i'));
+    expect(json.error).toMatch(new RegExp(`${QID_HORS_ECRAN}[^.]*recréée en base`, 'i'));
+  });
+
+  // La journalisation est la seule trace serveur du refus. Sans assertion, elle
+  // peut disparaître sans qu'un test bouge — et le refus redeviendrait muet
+  // côté exploitation.
+  it('25. le refus est journalisé une fois, sans donnée patient', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    // LE TEMPS EST FAUX, ET C'EST LE SEUL MOYEN DE PINCER `durationMs`. Le
+    // contexte est créé à l'ENTRÉE du handler ; construit dans le `catch`,
+    // `durationMs` vaudrait 0 et le champ mentirait — mais un handler mocké dure
+    // moins d'une milliseconde, donc 0 est aussi la valeur honnête. On fait donc
+    // s'écouler du temps DANS le handler : seule la création à l'entrée le voit.
+    // `mockImplementationOnce` : `vi.clearAllMocks()` efface les appels, pas les
+    // implémentations. Installée durablement, celle-ci ferait appeler
+    // `advanceTimersByTime` sous horloge réelle au prochain test ajouté.
+    vi.useFakeTimers();
+    getServerSession.mockImplementationOnce(async () => {
+      vi.advanceTimersByTime(120);
+      return { user: { email: 'praticien@wellneuro.fr' } };
+    });
+    try {
+      await POST(post({ nom: 'Pack neuf', qids: [QID_ACTIF] }));
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const charge = warn.mock.calls[0][0];
+      expect(charge.event).toBe('ASSIGNATION.PACK.REGISTRE_QID_SANS_DEFINITION');
+      expect(charge.metadata).toEqual({ idPack: ID_AUTRE, qids: QIDS_FAUTIFS });
+      expect(charge.context.statusCode).toBe(409);
+      expect(charge.context.durationMs).toBeGreaterThanOrEqual(120);
+      expect(JSON.stringify(charge)).not.toMatch(/@|patient/i);
+    } finally {
+      vi.useRealTimers();
+      warn.mockRestore();
+    }
   });
 });

@@ -11,6 +11,14 @@
  * Code de sortie non nul si au moins un MISMATCH est trouvé (EMPTY-REGISTRY
  * n'est qu'un avertissement : resolvePackQuestionnaireIds retombe sur le
  * legacy dans ce cas, sans casser l'assignation).
+ *
+ * TROISIÈME ÉCRITURE DU MÊME PRÉDICAT, ET ELLE DIVERGE DÉLIBÉRÉMENT (LOT-03).
+ * `prisma/checks/packs_registre_coherence_v1.sql` — le préflight de production
+ * de `release-db.yml` — traite le miroir PRÉSENT MAIS VIDE face à un pack non
+ * vide comme un ÉCHEC DUR, là où ce script n'en fait qu'un avertissement. Ce
+ * n'est pas une incohérence : ce script sert à CONSTATER après un backfill, le
+ * contrat sert à BARRER une release. Un audit et une porte n'ont pas le même
+ * seuil. Ne pas « aligner » l'un sur l'autre sans décider lequel fait autorité.
  */
 import { PrismaClient } from '@/generated/prisma';
 import { Pool } from 'pg';
