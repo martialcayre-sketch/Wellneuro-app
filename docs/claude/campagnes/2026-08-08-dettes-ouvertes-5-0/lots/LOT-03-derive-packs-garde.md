@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Dette 4 — re-mesurer, puis garder contre le retour de la dérive"
-statut: "en cours (2026-08-08) — re-mesure faite, garde d'écriture et contrat de production posés"
+statut: "livré (2026-08-09) — PR #627 ; re-mesure d'ouverture ET relecture de production après merge, 0 divergence sur 8 packs les deux fois"
 dépend_de: "LOT-00"
 ---
 
@@ -316,5 +316,10 @@ sans avoir été balayée, la troisième de cette forme dans ce lot.
 - [x] Prémisse HDS vérifiée et corrigée aux deux endroits.
 - [x] T1, T2 et T3 verts — **4 229 Vitest sur 374 fichiers**, 340 au banc courte
       forme, **130 E2E passés**, build de production.
-- [x] Revue `wn-reviewer` (NO-GO, 4 bloquants + 5 majeurs), correctifs, revue
-      relancée sur les correctifs.
+- [x] Revue `wn-reviewer` : **trois passes, deux NO-GO**, GO au troisième. Le
+      second bloquant venait d'un correctif — la classe que ce lot a payée.
+- [x] **Relecture de production APRÈS merge** (2026-08-09, PR #627 fusionnée en
+      `b5d32efa`) : **0 divergence sur 8 packs**, verdict `ok` pour les huit,
+      aucune écriture de pack depuis le `2026-08-07 15:46:34`. Le merge n'a rien
+      changé en base, ce qui est l'attendu — aucune migration, et le build Vercel
+      n'écrit pas.
