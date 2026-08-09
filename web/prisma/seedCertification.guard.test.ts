@@ -66,6 +66,10 @@ describe('seed : la certification recopie le catalogue, dans les deux sens', () 
     const muets = BLOCS.filter(bloc => {
       const declaree = (bloc.scoresJson as Record<string, unknown>).certification;
       return (
+        // `== null` à dessein : le runtime produit `ScoreCertification | null`,
+        // et `libelleCertificationPassation` traite `null` comme l'absence — un
+        // bloc à `certification: null` serait tout aussi muet à l'écran
+        // (relevé en revue Copilot le 2026-08-09).
         declaree == null
         && certificationDuCatalogue(bloc.idQuestionnaire) !== null
         && motifNonInterpretable(bloc.idQuestionnaire, bloc.dateReponse) === null
