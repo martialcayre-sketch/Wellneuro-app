@@ -66,7 +66,11 @@ describe('seed : la certification recopie le catalogue, dans les deux sens', () 
     const muets = BLOCS.filter(bloc => {
       const declaree = (bloc.scoresJson as Record<string, unknown>).certification;
       return (
-        declaree === undefined
+        // `== null` à dessein : le runtime produit `ScoreCertification | null`,
+        // et `libelleCertificationPassation` traite `null` comme l'absence — un
+        // bloc à `certification: null` serait tout aussi muet à l'écran
+        // (relevé en revue Copilot le 2026-08-09).
+        declaree == null
         && certificationDuCatalogue(bloc.idQuestionnaire) !== null
         && motifNonInterpretable(bloc.idQuestionnaire, bloc.dateReponse) === null
       );
@@ -88,7 +92,7 @@ describe('seed : la certification recopie le catalogue, dans les deux sens', () 
   // justifie), qui est ce qui le rend légitime.
   it('le seul bloc nu est la passation non interprétable, et l’exemption est sa seule justification', () => {
     const nus = BLOCS
-      .filter(bloc => (bloc.scoresJson as Record<string, unknown>).certification === undefined);
+      .filter(bloc => (bloc.scoresJson as Record<string, unknown>).certification == null);
     expect(nus.map(bloc => bloc.idQuestionnaire)).toEqual(['Q_SOM_07']);
     nus.forEach(bloc => {
       expect(motifNonInterpretable(bloc.idQuestionnaire, bloc.dateReponse)).not.toBeNull();
