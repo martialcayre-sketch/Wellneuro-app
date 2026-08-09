@@ -263,6 +263,17 @@ jobs:
           DATABASE_URL="$MIGRATE_DATABASE_URL" \
             npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql
 
+      # Socle pgvector du RAG : extension, index HNSW cosinus valides, signatures
+      # et droits des deux match_*. `BEGIN READ ONLY … ROLLBACK` dans le fichier —
+      # aucune écriture. FAIL-CLOSED ASSUMÉ : ces objets ne naissent et ne meurent
+      # que par migration ; s'ils manquent en production, quelque chose a écrit
+      # hors du chemin sanctionné, et la release attend une décision humaine.
+      # Vérifié conforme sur la production le 2026-08-09 avant ce câblage.
+      - name: "Préflight production — socle pgvector RAG (lecture seule)"
+        run: |
+          DATABASE_URL="$MIGRATE_DATABASE_URL" \
+            npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql
+
       - name: "Migrations Prisma (migrate deploy)"
         run: DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
 

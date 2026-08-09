@@ -3353,3 +3353,23 @@ navigateur épinglé 1228 vs 1194 préinstallé, téléchargement bloqué). Fils
 (HDS) et 3 (jalon 2026-10-21) ouverts.
 
 **Questions ouvertes.** Voir le fragment de changelog du lot.
+## 2026-08-09 — Contrat SQL pgvector : le socle RAG tenu en CI et en préflight de release
+
+**Décisions.** Le contrat (`rag_pgvector_structure_v1.sql`, lecture seule)
+assère extension, index HNSW cosinus valides, signatures et droits des deux
+`match_*` ; câblé dans `ci.yml` ET en préflight fail-closed de
+`release-db.yml` — la production a été lue conforme avant ce câblage. PR #634
+mergée.
+
+**Options écartées.** Le contrat en CI seul : la vraie perte d'index est un
+geste de production, que seul le préflight voit. Un test de plan d'exécution :
+sur base vide, le planificateur ignore l'index de toute façon.
+
+**Preuve qu'il mord.** Trois dérives provoquées sur base éphémère lèvent :
+index supprimé, rebuild en L2, `GRANT EXECUTE TO PUBLIC`.
+
+**Prochaine action.** Mardi 2026-08-12 : recette staging, après pose des
+secrets et flags par le responsable.
+
+**Questions ouvertes.** Rollback sans critère ni fenêtre ; aucun GO/NO-GO de
+migration ; réponse Scalingo attendue.

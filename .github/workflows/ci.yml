@@ -543,6 +543,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_rayon_notebook_coherence_v1.sql
 
+      # Le socle pgvector vit en SQL brut, invisible du drift check : extension
+      # `vector`, deux index HNSW cosinus, signatures des deux match_*. Un index
+      # perdu ou invalide dégraderait la recherche RAG en scan séquentiel sans
+      # qu'aucune suite ne rougisse ; un CREATE OR REPLACE oubliant le REVOKE
+      # rouvrirait EXECUTE à PUBLIC (leçon de 20260721230000). Lecture seule —
+      # le même fichier est rejoué en préflight de release-db.yml, contre la
+      # production, où un drop manuel serait la seule origine possible.
+      - name: RAG pgvector structure contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
       # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend
