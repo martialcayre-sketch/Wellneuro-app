@@ -177,7 +177,14 @@ function extraireIdsSuspendus(catalogueSource) {
 }
 
 /**
- * @returns {{erreurs: string[], sourcesEquilibre: Set<string>|null, aCompleter: number}}
+ * @param {object} params
+ * @param {Map<string, string|null>} params.certificationsCatalogue Statut de
+ *   certification SERVI, par identifiant : `QUESTIONNAIRE_CATALOGUE[id]
+ *   .scoring.certification.status`, ou `null` quand le catalogue n'en déclare
+ *   aucun. L'appelant le construit depuis le catalogue **évalué**
+ *   (`chargerCatalogue()`), pas depuis une source lue comme du texte.
+ * @returns {{erreurs: string[], sourcesEquilibre: Set<string>|null, aCompleter: number,
+ *            divergencesEcranMuet: {questionnaireId: string, statutCertification: string, statutEcran: string|null}[]}}
  */
 function verifierRegistreInstruments({
   registre,
@@ -188,6 +195,7 @@ function verifierRegistreInstruments({
   evidence,
   catalogueSource,
   bibliothequeSource,
+  certificationsCatalogue,
 }) {
   const erreurs = [];
   const ajouter = (condition, message) => {
@@ -196,7 +204,12 @@ function verifierRegistreInstruments({
 
   const instruments = Array.isArray(registre?.instruments) ? registre.instruments : null;
   if (!instruments) {
-    return { erreurs: ['instrument_registry.json : `instruments` doit être un tableau'], sourcesEquilibre: null, aCompleter: 0 };
+    return {
+      erreurs: ['instrument_registry.json : `instruments` doit être un tableau'],
+      sourcesEquilibre: null,
+      aCompleter: 0,
+      divergencesEcranMuet: [],
+    };
   }
 
   const registryIds = instruments.map(entry => entry.questionnaireId);
@@ -233,6 +246,58 @@ function verifierRegistreInstruments({
   if (!idsPassationPraticien) {
     erreurs.push('PASSATION_PRATICIEN introuvable dans bibliotheque.ts — l\'exemption des instruments de consultation ne peut pas rester muette');
   }
+
+  // LE LIBELLÉ D'ÉCRAN ET LE BARREAU DU REGISTRE, enfin reliés.
+  //
+  // D-036 a renommé le badge praticien « Certifié » en « Scoring vérifié » : le
+  // mot est emprunté au barreau `scoring_verifie`, et jusqu'ici AUCUN code ne
+  // reliait les deux. `certification.status` (catalogue de scoring,
+  // `web/src/lib/questions.ts`, écrit à la main) et `statutCertification` (ce
+  // registre) pouvaient donc dériver l'un de l'autre sans un bruit.
+  //
+  // Les deux échelles ne sont pas la même et la correspondance n'est PAS une
+  // bijection : ce qui se contrôle est la divergence qui MENT — un `certifie` à
+  // l'écran sous un barreau qui n'atteint pas `scoring_verifie`. Le sens
+  // inverse (le registre déclare, l'écran se tait) n'est pas une faute : c'est
+  // un inventaire, rendu à part et non bloquant, plus bas.
+  //
+  // La carte vient du catalogue ÉVALUÉ, pas d'une extraction de texte : rien à
+  // parser ici, donc rien qui puisse se casser en silence sur une mise en
+  // forme. Mais deux mutismes restent possibles, et ce sont eux qui rendraient
+  // le contrôle vacu sans une ligne rouge — même motif que les trois
+  // extractions ci-dessus, `null` = erreur bruyante, jamais un silence.
+  const certificationsEcran = certificationsCatalogue instanceof Map ? certificationsCatalogue : null;
+  if (!certificationsEcran) {
+    erreurs.push(
+      'certificationsCatalogue absent ou mal typé (Map attendue) — la comparaison écran ↔ registre '
+      + 'ne peut pas rester muette'
+    );
+  } else {
+    // Une carte PARTIELLE dirait « pas de certification » là où elle n'a
+    // simplement rien lu : indistinguable, côté contrôle, d'un instrument que
+    // le catalogue laisse muet.
+    const manquants = idsCatalogue.filter(id => !certificationsEcran.has(id));
+    if (manquants.length > 0) {
+      erreurs.push(
+        `certificationsCatalogue ne couvre pas tout le catalogue (${manquants.length} identifiant(s) `
+        + `absent(s), dont ${manquants.slice(0, 3).join(', ')}) — une carte partielle se lit comme `
+        + `une absence de certification`
+      );
+    }
+    // LE CAS RÉELLEMENT DANGEREUX : un renommage de la clé `certification` dans
+    // le catalogue ne casse rien, ne lève rien, et rend TOUS les statuts nuls.
+    // Le contrôle bloquant ci-dessous deviendrait alors définitivement vrai —
+    // vert pour toujours — et l'inventaire enflerait d'un coup à tout le
+    // registre. Même forme que le contrôle `sourcesEquilibre.size === 0`.
+    if (!idsCatalogue.some(id => certificationsEcran.get(id) != null)) {
+      erreurs.push(
+        'aucun instrument du catalogue ne porte de statut de certification — extraction cassée, '
+        + 'la comparaison écran ↔ registre serait vacue'
+      );
+    }
+  }
+  /** Inventaire non bloquant : voir le commentaire au point de collecte. */
+  const divergencesEcranMuet = [];
 
   instruments.forEach(entry => {
     const id = entry.questionnaireId;
@@ -668,6 +733,58 @@ function verifierRegistreInstruments({
         + `(verdictScoring ${v == null ? 'absent' : `divergencesCritiques ${v.divergencesCritiques}`})`
       );
     }
+
+    // LA COMPARAISON ÉCRAN ↔ REGISTRE, dans ses deux sens (cf. l'en-tête du
+    // contrôle, avant la boucle).
+    //
+    // LE `barreau !== -1` N'EST PAS DÉCORATIF, et c'est le piège de ce
+    // contrôle-ci. `ECHELLE.indexOf` rend -1 pour les états terminaux
+    // (`suspendu`, `remplace`) comme pour un vocabulaire inconnu : ni les uns ni
+    // l'autre ne sont SOUS un barreau, ils sont hors échelle. Écrite sans ce
+    // test — `barreau < ECHELLE.indexOf('scoring_verifie')` seul — la
+    // comparaison rangerait un instrument SUSPENDU « sous scoring_verifie » et
+    // lui reprocherait son `certifie` d'écran. `Q_FIB_03` et `Q_PED_03` sont
+    // exactement dans cette position au registre.
+    //
+    // C'est le renversement de sens du -1 qu'il faut voir : partout ailleurs
+    // dans ce fichier, les contrôles sont armés par `barreau >= …`, où le -1
+    // EXEMPTE gratuitement. Ici la comparaison est un `<` : le même -1
+    // ACCUSERAIT. Une première rédaction doublait ce test d'une branche
+    // `ETATS_TERMINAUX` nommée ; le banc de mutation du 2026-08-09 a montré
+    // qu'elle ne portait rien — retirée, aucun cas ne tombait. Ce qui protège
+    // est ici, et le cas terminal du banc le prouve en tombant quand on l'ôte.
+    if (certificationsEcran) {
+      const statutEcran = certificationsEcran.get(id) ?? null;
+      if (statutEcran === 'certifie' && barreau !== -1 && barreau < ECHELLE.indexOf('scoring_verifie')) {
+        erreurs.push(
+          `${id} : le catalogue servi déclare certification.status 'certifie' — que la fiche patient `
+          + `affiche « Scoring vérifié » — alors que le registre en est à `
+          + `'${entry.statutCertification}', sous le barreau 'scoring_verifie' dont ce libellé emprunte `
+          + `le nom (D-036). L'écran affirme une vérification que le dossier ne porte pas`
+        );
+      }
+      // LE SENS INVERSE N'EST PAS UNE FAUTE, et il ne doit surtout pas être
+      // traité comme telle : le registre déclare le scoring vérifié, le
+      // catalogue ne dit rien, et la fiche patient retombe sur « Statut
+      // inconnu ». C'est une TAISANCE, pas un mensonge — l'écran promet moins
+      // que le dossier, jamais l'inverse.
+      //
+      // Elle se mesure au lieu de se garder : faire parler ces badges suppose
+      // de choisir la source d'autorité d'une affirmation clinique, ce que
+      // D-034 fige et ce qu'une décision produit (D-037) doit trancher SUR
+      // cette liste. Un garde qui rougirait ici forcerait la décision à coups
+      // de CI rouge ; un cliquet qui figerait les identifiants du jour
+      // inscrirait dans le garde la liste en dur que tout ce fichier refuse
+      // par ailleurs. L'inventaire est donc rendu nu, à l'appelant, qui
+      // l'imprime.
+      if (barreau >= ECHELLE.indexOf('scoring_verifie') && statutEcran !== 'certifie') {
+        divergencesEcranMuet.push({
+          questionnaireId: id,
+          statutCertification: entry.statutCertification,
+          statutEcran,
+        });
+      }
+    }
     if (barreau >= ECHELLE.indexOf('psychometrie_revue')) {
       // UNE PREUVE PRÉSENTE N'EST PAS UNE PREUVE CONCLUANTE.
       //
@@ -751,7 +868,7 @@ function verifierRegistreInstruments({
   const aCompleter = entreesACompleter.length;
   const aCompleterSansPublicationPossible = entreesACompleter
     .filter(entry => entry.versionServie?.statutContenu === 'cree_localement').length;
-  return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible };
+  return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible, divergencesEcranMuet };
 }
 
 module.exports = { verifierRegistreInstruments, extraireSourcesEquilibre, extraireIdsSuspendus };

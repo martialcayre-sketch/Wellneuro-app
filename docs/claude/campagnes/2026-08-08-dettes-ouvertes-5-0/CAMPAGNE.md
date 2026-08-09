@@ -1,12 +1,12 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-09) — LOT-00 à LOT-03 livrés, LOT-04 ouvert (dettes nommées par D-036)"
+statut: "en cours (2026-08-09) — LOT-00 à LOT-03 livrés, LOT-04 écrit et validé, PR à ouvrir"
 créée_le: "2026-08-08"
 mise_à_jour: "2026-08-09"
 lot_courant: "LOT-04"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
-branche_lot_courant: "aucune"
+branche_lot_courant: "campaign/2026-08-08-dettes-ouvertes-5-0/LOT-04"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -211,7 +211,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
 | LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | livré (2026-08-09) — PR #627 | LOT-00 |
-| LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | à_faire | LOT-02 |
+| LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | en_cours (2026-08-09) — écrit et validé, PR à ouvrir | LOT-02 |
 
 ## Done de campagne
 
@@ -247,6 +247,14 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
       (assertion manquante, pas impossibilité) ; le badge est **muet pour 21 des
       65 instruments**, production comprise ; et rien ne relie le libellé au
       barreau `scoring_verifie` dont il emprunte le nom.
+      **Les trois réserves sont levées au LOT-04 (2026-08-09)**, la deuxième
+      autrement qu'annoncé : le garde relie désormais le libellé au barreau, le
+      seed porte la clé sur 13 blocs sur 15 — et le badge muet n'est pas
+      « 21 instruments » mais **22**, dont 18 sans certification et 4 ambigus,
+      inventoriés à chaque `npm run check`. Le compte de 21 relevait les entrées
+      du catalogue ; celui-ci croise le catalogue au registre, ce qui n'est pas
+      la même question. Le geste reste **hors périmètre** : `D-037` décide sur
+      cette liste.
 - [x] La dérive registre/packs est re-mesurée à l'ouverture du LOT-03, avec sa
       date, et un garde détecte son retour. Lecture de production du
       **2026-08-08** : **0 divergence sur 8 packs**, requête consignée dans le

@@ -52,6 +52,26 @@ const PATIENTS = [
 ];
 
 // ─── Réponses questionnaires fictives ────────────────────────────────────────
+//
+// LA CLÉ `certification` EST CELLE QUE LE MOTEUR PRODUIT, et le seed la porte
+// depuis le LOT-04 de la campagne 2026-08-08 (D-036).
+//
+// Tous les moteurs de `questions.ts` posent `certification: sc.certification ||
+// null` dans leur résultat, et `api/patient/submit` la persiste dans
+// `scores_json` ; la colonne « Qualité » de la fiche patient la relit
+// (`libelleCertificationPassation`). Aucun bloc du seed ne la portait : la
+// colonne retombait donc TOUJOURS sur « Historique », et aucun E2E ne voyait un
+// seul des six libellés de passation — un seed qui ne peut pas mentir parce
+// qu'il ne dit rien.
+//
+// Les valeurs sont RECOPIÉES du catalogue servi, jamais choisies : les 13 blocs
+// concernés portent tous `{ source: 'drive', status: 'certifie' }` au
+// 2026-08-09. Deux blocs restent nus, et pour deux raisons différentes — voir
+// `Q_SOM_01` et `Q_SOM_07` ci-dessous.
+
+/** Ce que le catalogue déclare pour les instruments certifiés d'origine Drive. */
+const CERTIFIE_DRIVE = { source: 'drive', status: 'certifie' } as const;
+
 // Sophie Nicola : burnout + stress élevé + sommeil perturbé
 const REPONSES_SOPHIE = [
   {
@@ -64,6 +84,7 @@ const REPONSES_SOPHIE = [
       B: { total: 9, max: 12, label: 'Tension & anxiété' },
       C: { total: 7, max: 10, label: 'Somatisation' },
       global: 32,
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 32,
     interpretation: 'Stress élevé — protocole mixte dopaminergique + sérotoninergique (10 jours)',
@@ -75,6 +96,7 @@ const REPONSES_SOPHIE = [
     dateReponse: new Date('2026-06-10'),
     scoresJson: {
       A: { total: 28, max: 40 },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 28,
     interpretation: 'Niveau élevé de stress — désadaptation (risque cardio-métabolique)',
@@ -86,6 +108,7 @@ const REPONSES_SOPHIE = [
     dateReponse: new Date('2026-06-10'),
     scoresJson: {
       A: { total: 54, max: 70, label: 'Épuisement & Burnout' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 54,
     interpretation: 'Burnout sévère — épuisement professionnel avancé',
@@ -95,6 +118,13 @@ const REPONSES_SOPHIE = [
     idQuestionnaire: 'Q_SOM_01',
     titre: 'PSQI — Index de qualité du sommeil de Pittsburgh',
     dateReponse: new Date('2026-06-12'),
+    // NU, ET C'EST LE PLAFOND DU SEED, pas un oubli. Le catalogue ne déclare
+    // AUCUNE certification pour `Q_SOM_01` — il fait partie des 18 instruments
+    // que le registre déclare `scoring_verifie` et dont l'écran ne dit rien
+    // (l'inventaire de `check_questionnaire_certification.js`, matière de
+    // D-037). Sa ligne affiche donc « Historique », et un E2E l'assère : c'est
+    // ce qui empêche un futur seed généreux de poser ici une certification que
+    // le catalogue ne porte pas.
     scoresJson: {
       habitudes: { heureCoucher: '00h30', heureLever: '07h00', latence: 45, duree: 5.5 },
       perturbations: { total: 8, max: 18 },
@@ -114,6 +144,7 @@ const REPONSES_SOPHIE = [
       NA: { total: 6, max: 15, label: 'Noradrénaline — Confiance & persévérance' },
       SE: { total: 12, max: 15, label: 'Sérotonine — Humeur & impulsivité' },
       ME: { total: 11, max: 15, label: 'Mélatonine — Rythme & socialisation' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: null,
     interpretation:
@@ -130,6 +161,7 @@ const REPONSES_JENNIFER = [
     dateReponse: new Date('2026-06-15'),
     scoresJson: {
       AD: { anxiete: 13, depression: 7 },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 13,
     interpretation:
@@ -142,6 +174,7 @@ const REPONSES_JENNIFER = [
     dateReponse: new Date('2026-06-15'),
     scoresJson: {
       A: { total: 19, max: 24, label: 'Évaluation de la fatigue' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 19,
     interpretation: 'Fatigue sévère (≥ 12) — asthénie marquée nécessitant une prise en charge',
@@ -151,6 +184,15 @@ const REPONSES_JENNIFER = [
     idQuestionnaire: 'Q_SOM_07',
     titre: 'MFI-20 — Inventaire multidimensionnel de la fatigue',
     dateReponse: new Date('2026-06-15'),
+    // NU AUSSI, mais pour une TOUTE AUTRE raison que `Q_SOM_01` — et la
+    // confondre ferait écrire une ligne fausse au registre. Le catalogue ne
+    // déclare rien pour `Q_SOM_07` non plus, mais surtout : cette passation est
+    // datée du 2026-06-15, donc ANTÉRIEURE à la reconstruction du MFI-20 du
+    // 2026-07-31 (`passationsNonInterpretables.ts`). La route la rend
+    // `nonInterpretable`, et cette branche PASSE AVANT celle du badge de
+    // certification : sa ligne affiche « Non interprétable », jamais
+    // « Historique », quoi qu'on écrive ici. Y poser une certification serait
+    // inerte à l'écran et faux au dossier.
     scoresJson: {
       GF: { total: 17, max: 20, label: 'Fatigue générale & physique' },
       AM: { total: 14, max: 20, label: 'Fatigue mentale & motivation' },
@@ -166,6 +208,7 @@ const REPONSES_JENNIFER = [
     dateReponse: new Date('2026-06-16'),
     scoresJson: {
       A: { total: 14, max: 24, label: 'Symptômes de déficit en magnésium' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 14,
     interpretation: 'Déficit probable en magnésium (≥ 10) — spasmophilie latente',
@@ -179,6 +222,7 @@ const REPONSES_JENNIFER = [
       D: { total: 10, max: 21, label: 'Humeur & vitalité — Dépression' },
       A: { total: 14, max: 21, label: "Sensations d'anxiété" },
       S: { total: 18, max: 21, label: 'Tension & stress' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: null,
     interpretation:
@@ -195,6 +239,7 @@ const REPONSES_MICHEL = [
     dateReponse: new Date('2026-06-18'),
     scoresJson: {
       A: { total: 58, max: 78 },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 58,
     interpretation:
@@ -207,6 +252,7 @@ const REPONSES_MICHEL = [
     dateReponse: new Date('2026-06-18'),
     scoresJson: {
       A: { total: 31, max: 40 },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 31,
     interpretation: 'Niveau élevé de stress — désadaptation majeure',
@@ -218,6 +264,7 @@ const REPONSES_MICHEL = [
     dateReponse: new Date('2026-06-18'),
     scoresJson: {
       1: { total: 68, max: 100, label: 'Questions 1 à 25 — Addiction au travail' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 68,
     interpretation: 'Workaholisme probable (≥ 67) — profil à risque élevé d\'épuisement professionnel',
@@ -232,6 +279,7 @@ const REPONSES_MICHEL = [
       B: { total: 7, max: 10, label: 'Symptômes cardio-respiratoires & sensoriels' },
       C: { total: 6, max: 10, label: 'Sensibilité & terrain allergique' },
       global: 22,
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 22,
     interpretation: 'Hyperexcitabilité neuromusculaire sévère — terrain magnésio-dépendant probable',
@@ -246,6 +294,7 @@ const REPONSES_MICHEL = [
       NA: { total: 13, max: 15, label: 'Noradrénaline — Confiance & persévérance' },
       SE: { total: 9, max: 15, label: 'Sérotonine — Humeur & impulsivité' },
       ME: { total: 7, max: 15, label: 'Mélatonine — Rythme & socialisation' },
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: null,
     interpretation:

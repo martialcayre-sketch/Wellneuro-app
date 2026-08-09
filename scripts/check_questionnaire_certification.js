@@ -181,6 +181,14 @@ const instrumentRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/clau
 const evidence = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/measurement_evidence.json'), 'utf8'));
 const sourceRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/source_registry.json'), 'utf8'));
 
+// Le statut de certification SERVI, par identifiant, depuis le catalogue déjà
+// ÉVALUÉ plus haut — pas depuis `questionnaires-catalog.ts`, qui est un autre
+// fichier et ne porte aucune `certification`. C'est ce qui permet au garde de
+// rester une fonction pure, sans extraction de texte à écrire ni à maintenir.
+const certificationsCatalogue = new Map(
+  ids.map(id => [id, QUESTIONNAIRE_CATALOGUE[id]?.scoring?.certification?.status ?? null])
+);
+
 const verdictRegistre = verifierRegistreInstruments({
   registre: instrumentRegistry,
   idsCatalogue: ids,
@@ -190,10 +198,35 @@ const verdictRegistre = verifierRegistreInstruments({
   evidence,
   catalogueSource: fs.readFileSync(path.join(root, 'web/src/lib/questionnaires-catalog.ts'), 'utf8'),
   bibliothequeSource: fs.readFileSync(path.join(root, 'web/src/lib/bibliotheque.ts'), 'utf8'),
+  certificationsCatalogue,
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
 console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter dont ${verdictRegistre.aCompleterSansPublicationPossible} sans publication d'origine possible (instruments créés localement), ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
+
+// L'INVENTAIRE DE L'ÉCRAN MUET — la mesure que le lot D-036/LOT-04 produit, et
+// sa raison d'être principale. NON BLOQUANT, au même titre que le compteur
+// `a_completer` : ce n'est pas une faute, c'est la matière sur laquelle D-037
+// (« le badge muet ») doit être arbitré. Imprimé plutôt que compté seulement —
+// un chiffre de tête ne porte pas cette décision, il faut les identifiants et
+// ce que le catalogue dit de chacun.
+const muets = verdictRegistre.divergencesEcranMuet;
+const parStatutEcran = new Map();
+muets.forEach(d => {
+  const cle = d.statutEcran ?? 'aucune certification déclarée';
+  if (!parStatutEcran.has(cle)) parStatutEcran.set(cle, []);
+  parStatutEcran.get(cle).push(d.questionnaireId);
+});
+console.log(
+  `[questionnaires] écran muet : ${muets.length} instrument(s) que le registre déclare au moins `
+  + `'scoring_verifie' et dont le catalogue servi ne dit pas 'certifie' — la fiche patient y affiche `
+  + `« Statut inconnu ». Matière de D-037, non bloquant.`
+);
+[...parStatutEcran.entries()]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .forEach(([statut, listeIds]) => {
+    console.log(`[questionnaires]   ${statut} (${listeIds.length}) : ${listeIds.join(', ')}`);
+  });
 
 const supportedScoringTypes = new Set([
   'agenda_sommeil',
