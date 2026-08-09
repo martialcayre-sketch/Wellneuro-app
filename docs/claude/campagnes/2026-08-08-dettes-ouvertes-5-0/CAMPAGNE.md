@@ -1,12 +1,12 @@
 ---
 id: "2026-08-08-dettes-ouvertes-5-0"
 titre: "Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire"
-statut: "en cours (2026-08-08) — LOT-00 à LOT-03 livrés, LOT-04 ouvert (dettes nommées par D-036)"
+statut: "en cours (2026-08-09) — LOT-00 à LOT-03 livrés, LOT-04 ouvert (dettes nommées par D-036)"
 créée_le: "2026-08-08"
-mise_à_jour: "2026-08-08"
-lot_courant: "LOT-03"
+mise_à_jour: "2026-08-09"
+lot_courant: "LOT-04"
 branche_campagne: "campaign/2026-08-08-dettes-ouvertes-5-0/integration"
-branche_lot_courant: "lot-03-garde-derive-packs"
+branche_lot_courant: "aucune"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -210,7 +210,7 @@ comme **jalon**, à rappeler à sa clôture, pas comme lot.
 | LOT-00 | Dette 6 — trois gardes contre la récidive d'auto-déclaration | livré (2026-08-08) | — |
 | LOT-01 | Dette 5 — le parcours legacy retiré (arbitrage : retrait immédiat) | livré (2026-08-08) | — |
 | LOT-02 | « Certifié » à l'écran sans la définition de D-034 | livré (2026-08-08) — renommé « Scoring vérifié » | — |
-| LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | en cours (2026-08-08) | LOT-00 |
+| LOT-03 | Dette 4 — re-mesurer, puis garder contre le retour de la dérive | livré (2026-08-09) — PR #627 | LOT-00 |
 | LOT-04 | Le libellé « Scoring vérifié » relié au barreau `scoring_verifie`, et le seed aussi fidèle que le moteur | à_faire | LOT-02 |
 
 ## Done de campagne

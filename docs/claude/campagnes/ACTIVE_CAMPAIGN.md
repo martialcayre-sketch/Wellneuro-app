@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-08-dettes-ouvertes-5-0
 **Titre** : Les trois dettes ouvertes de 5.0 — et ce que « certifié » affiche sans le dire
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 
@@ -16,6 +16,6 @@
 **Lot actif** : aucun
 
 **Statut global** : active
-**Mise à jour** : 2026-08-08
+**Mise à jour** : 2026-08-09
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
