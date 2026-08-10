@@ -4,6 +4,23 @@
 
 ## Décisions actives
 
+### D-039 — La clôture de l'agenda alimentaire transmet tous les agrégats calculés — sans poids, sans seuil, sans sélection
+
+- Date : 2026-08-10
+- Statut : accepté (décision utilisateur du 2026-08-10, à l'ouverture de la campagne `2026-08-10-chaine-alimentaire`, LOT-00)
+- Domaine : agenda alimentaire, forme du dossier patient
+- Décision : **la clôture d'un recueil d'agenda alimentaire transmet au dossier la totalité des agrégats que le domaine calcule** (`AgregatsAgendaAli`, `web/src/lib/agenda-alimentaire/agregats.ts`), avec leurs dénominateurs de couverture, sous forme de pseudo-items dans le `rawAnswers` d'une `QuestionnaireReponse` standard `scored:false` — sur le gabarit du jumeau sommeil (`web/src/lib/agenda-sommeil/cloture.ts`). **Aucune sélection, aucun poids, aucun seuil** : transmettre n'est pas coter, et le tri clinique appartient au barème (LOT-02), qui ne s'écrira qu'après la porte des 21 jours, sur distribution réelle.
+- Ce que la décision amende, et dans quelle limite : la position du catalogue (« un barème posé avant la première passation serait une donnée clinique inventée », `web/src/lib/questionnaires/alimentaire.ts`) reste entière — `Q_ALI_09` garde `scoring:{type:'journal'}` et ne rend aucun score. Ce qui change est strictement la **visibilité** : le recueil clôturé devient une réponse lisible par la fiche, la synthèse et tout lecteur du dossier, au lieu de rester enfermé dans sa table.
+- Conséquences :
+  - La liste des pseudo-items est **dérivée du domaine, jamais recopiée** : une clé d'agrégat ajoutée sans son pseudo-item doit rougir (garde du LOT-00). Une liste écrite à la main dirait ce qu'on croyait le jour où on l'a écrite.
+  - La clôture est idempotente, vraie dans les deux positions de `WN_AGENDA_ALI` ([[D-033]]), et n'exige aucune migration.
+  - Aucune revendication au-delà du descriptif : niveau de preuve D, longitudinal, jamais diagnostique ([[D-034]]).
+- Options écartées :
+  - **Le sous-ensemble resserré** (jeûne médian, fenêtre, régularité, couverture seuls) : plus lisible en synthèse, mais la sélection est déjà un jugement clinique — prématuré sans distribution réelle — et les agrégats écartés auraient exigé une nouvelle décision et une re-clôture pour entrer au dossier.
+  - **Différer** : l'agenda restait invisible du dossier et de la synthèse IA, alors que le maillon manquant est précisément la visibilité, pas la mesure.
+- Réversibilité : la clôture est du code sans migration, `git revert` suffit ; les réponses déjà écrites restent des lectures datées légitimes du recueil tel qu'il était.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-alimentaire/CAMPAGNE.md`, `NOTE_CADRAGE.md` (même dossier), `web/src/lib/agenda-sommeil/cloture.ts`, [[D-033]], [[D-034]]
+
 ### D-038 — Le badge muet se remplit depuis le catalogue, aligné à la main — le registre ne pilote pas l'écran
 
 - Date : 2026-08-09

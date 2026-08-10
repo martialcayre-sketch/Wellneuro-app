@@ -3374,3 +3374,21 @@ secrets et flags par le responsable.
 
 **Questions ouvertes.** Rollback sans critère ni fenêtre ; aucun GO/NO-GO de
 migration ; réponse Scalingo attendue.
+
+## 2026-08-10 — La chaîne alimentaire devient une campagne, D-039 posée
+
+**Décisions.** Synthèse de la question alimentaire consolidée (note de
+cadrage ancrée chemin:ligne, désormais dans le dossier de campagne) ; campagne
+`2026-08-10-chaine-alimentaire` ouverte en activité primaire, cinq lots.
+`D-039` (décision utilisateur) : la clôture de l'agenda transmet tous les
+agrégats calculés, sans poids ni seuil, liste dérivée du domaine.
+
+**Options écartées.** Sous-ensemble resserré d'agrégats (curation = jugement
+clinique prématuré) ; différer la clôture (l'agenda restait invisible).
+
+**Prochaine action.** LOT-00 : `agenda-alimentaire/cloture.ts` calqué sur le
+jumeau sommeil, banc de bijection dérivée, idempotence, T2 — PR séparée de
+cette ouverture.
+
+**Questions ouvertes.** Dégel de JA5-05 ; relance humaine du recueil ; liste
+des règles candidates du LOT-03 (claims + décisions cliniques à venir).
