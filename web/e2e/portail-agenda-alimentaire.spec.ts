@@ -330,10 +330,15 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     // Rechargé après clôture : le statut passe à « Clôturé », le bouton s'en va.
     await expect(tiroir.getByText('Clôturé', { exact: false })).toBeVisible();
     await expect(tiroir.getByRole('button', { name: 'Clôturer et verser au dossier' })).toHaveCount(0);
-    // Fermer le tiroir avant d'en ouvrir un autre.
-    await tiroir.getByRole('button', { name: /Fermer l’instrument/ }).click();
 
     // ── La passation clôturée est au dossier, en « Historique » ─────────────
+    // Recharger la fiche : le tableau « Détail des réponses » lit un état
+    // chargé UNE FOIS à l'ouverture de la fiche (`/api/praticien/reponses`),
+    // que la clôture dans le tiroir de l'agenda ne rafraîchit pas — les deux
+    // tiroirs ont des cycles de données indépendants (le jumeau sommeil ne
+    // recroise pas non plus). La passation EST au dossier dès la clôture ; elle
+    // paraît à la prochaine ouverture de la fiche, ce que fait ce rechargement.
+    await page.goto(`/dashboard/patients/${PATIENT.idPatient}`);
     await page.getByRole('button', { name: 'Détail des réponses' }).click();
     const table = page.getByRole('dialog').getByRole('table');
     const ligne = table.getByRole('row', { name: /Agenda alimentaire/ });
