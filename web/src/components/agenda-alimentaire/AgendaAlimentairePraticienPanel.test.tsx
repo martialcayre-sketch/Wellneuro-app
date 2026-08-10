@@ -477,19 +477,40 @@ describe('AgendaAlimentairePraticienPanel', () => {
 
   // ── Lecture de discordance rythme déclaré vs observé (LOT-01, D-040) ──────
 
+  // La lecture n'est rendue que sur un épisode CLÔTURÉ (D-040, contrat
+  // « clôturé »). Ce helper donne un épisode clôturé et couvert.
+  function episodeCloture(over: Partial<EpisodeAgendaAli> = {}): EpisodeAgendaAli {
+    return episode({ statut: 'cloture', agregats: agregats(), ...over });
+  }
+
   it('sans `rythmeDeclare`, le panneau ne rend aucune lecture de discordance (additif)', async () => {
     // Vrai dans les deux positions du drapeau : le prop absent (comportement
-    // d'avant ce lot) ⇒ pas d'entête. Prouve l'additivité de la surface.
-    mockFetch([episode({ agregats: agregats({ jeuneMedian: 480 }) })]);
+    // d'avant ce lot) ⇒ pas d'entête, même sur un clôturé couvert défavorable.
+    mockFetch([episodeCloture({ agregats: agregats({ jeuneMedian: 480 }) })]);
     renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
   });
 
   it.runIf(SIIN57_ACTIF)(
-    'déclaré favorable + observé défavorable → la lecture paraît sur l’axe en sur-déclaration, avec rappel déclaré/observé',
+    'épisode EN COURS (non clôturé), même couvert et sur-déclarant → aucune lecture (contrat « clôturé »)',
     async () => {
-      mockFetch([episode({ agregats: agregats({ jeuneMedian: 480 }) })]);
+      // La garde de statut : `ResumeAgregats` montre les médianes d'un en_cours
+      // couvert, mais la lecture DIRECTIONNELLE attend la clôture. Même agrégats
+      // défavorables + déclaré favorable, rien tant que statut ≠ 'cloture'.
+      mockFetch([episode({ statut: 'en_cours', agregats: agregats({ jeuneMedian: 480 }) })]);
+      renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText('2026-08-01'));
+      expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
+    },
+  );
+
+  it.runIf(SIIN57_ACTIF)(
+    'clôturé + déclaré favorable + observé défavorable → la lecture paraît sur l’axe en sur-déclaration, avec rappel déclaré/observé',
+    async () => {
+      mockFetch([episodeCloture({ agregats: agregats({ jeuneMedian: 480 }) })]);
       renderPret(
         <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
       );
@@ -504,9 +525,9 @@ describe('AgendaAlimentairePraticienPanel', () => {
   );
 
   it.runIf(SIIN57_ACTIF)(
-    'déclaré favorable + observé concordant → aucune lecture (rien à explorer)',
+    'clôturé + déclaré favorable + observé concordant → aucune lecture (rien à explorer)',
     async () => {
-      mockFetch([episode({ agregats: agregats() })]);
+      mockFetch([episodeCloture()]);
       renderPret(
         <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
       );
@@ -516,9 +537,9 @@ describe('AgendaAlimentairePraticienPanel', () => {
   );
 
   it.runIf(SIIN57_ACTIF)(
-    'observé non couvert (agrégats null) → aucune lecture, jamais un drapeau sur une mesure absente',
+    'clôturé + observé non couvert (agrégats null) → aucune lecture, jamais un drapeau sur une mesure absente',
     async () => {
-      mockFetch([episode({ agregats: null })]);
+      mockFetch([episodeCloture({ agregats: null })]);
       renderPret(
         <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
       );
@@ -531,7 +552,7 @@ describe('AgendaAlimentairePraticienPanel', () => {
     'la lecture rendue passe la garde de frontière de campagne (aucun score/indice/gramme/kcal)',
     async () => {
       mockFetch([
-        episode({ agregats: agregats({ jeuneMedian: 480, freqProteinesMatinSem: 2, freqSoirCopieuxSem: 5 }) }),
+        episodeCloture({ agregats: agregats({ jeuneMedian: 480, freqProteinesMatinSem: 2, freqSoirCopieuxSem: 5 }) }),
       ]);
       const { container } = renderPret(
         <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,

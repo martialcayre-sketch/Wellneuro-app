@@ -163,6 +163,12 @@ function ResumeAgregats({ a }: { a: AgregatsAgendaAli }) {
 // défavorable (D-040 ne signale que l'asymétrie actionnable). Aucun score,
 // aucun indice, aucun écart chiffré : seulement le rappel déclaré/observé porté
 // par la fonction pure, dans la frontière de campagne du panneau.
+//
+// N'est appelée QUE sur un épisode CLÔTURÉ (voir le rendu) : D-040 confronte le
+// déclaré à l'observé de l'agenda *clôturé*, pas à des agrégats partiels d'un
+// recueil en cours. `ResumeAgregats` montre déjà les médianes d'un `en_cours`
+// couvert, mais une lecture DIRECTIONNELLE sur données incomplètes tromperait —
+// la consolidation, comme au LOT-00, est le fait de la clôture.
 function LectureDiscordance({
   rythmeDeclare,
   agregats,
@@ -356,7 +362,9 @@ export function AgendaAlimentairePraticienPanel({
             <CouvertureInsuffisante nbJours={ep.fenetre.nbRenseignees} />
           )}
 
-          <LectureDiscordance rythmeDeclare={rythmeDeclare} agregats={ep.agregats} />
+          {ep.statut === 'cloture' && (
+            <LectureDiscordance rythmeDeclare={rythmeDeclare} agregats={ep.agregats} />
+          )}
 
 
           <div className="flex flex-col gap-2">

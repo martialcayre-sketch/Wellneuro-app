@@ -5,7 +5,10 @@ import { MAX_RYTHME_CHRONO } from './constants';
 //
 // Confronte le sous-score `RYTHME_CHRONO` de `Q_ALI_01` (déclaré, items
 // SIIN52-55) au rythme observé par l'agenda alimentaire clôturé (agrégats
-// `AgregatsAgendaAli`, D-039). La forme est un DRAPEAU DIRECTIONNEL de
+// `AgregatsAgendaAli`, D-039). Seuls TROIS des quatre items du sous-score ont
+// une contrepartie observée dans l'agenda — SIIN53 (protéines matin), SIIN54
+// (jeûne), SIIN55 (soir léger) —, un axe chacun. SIIN52 reste hors discordance,
+// faute d'observé à lui confronter. La forme est un DRAPEAU DIRECTIONNEL de
 // sur-déclaration, praticien-only : un axe ne se lève que si le patient
 // DÉCLARE FAVORABLE et l'agenda OBSERVE DÉFAVORABLE — jamais l'inverse. Un
 // patient lucide sur son défaut n'est pas signalé ; il n'y a rien à explorer.
@@ -85,6 +88,25 @@ export function rythmeDeclareDepuisRawAnswers(
     return null;
   }
   return declare;
+}
+
+/** Forme structurelle minimale d'une réponse portant ses `rawAnswers` — évite
+ *  d'importer le type de la route API dans cette couche. `ReponseQuestionnaire`
+ *  de `/api/praticien/reponses` la satisfait. */
+type ReponseAvecRaw = { idQuestionnaire: string; scoresParsed?: Record<string, unknown> | null };
+
+/**
+ * Le rythme déclaré de la DERNIÈRE passation `Q_ALI_01` d'une liste de
+ * réponses. S'appuie sur l'ordre de la liste : `/api/praticien/reponses` la
+ * trie par date décroissante, donc la première passation `Q_ALI_01` rencontrée
+ * est la plus récente. `null` si aucune passation `Q_ALI_01`, ou forme courte
+ * (aucun item SIIN53-55 dans ses `rawAnswers`).
+ */
+export function rythmeDeclareDeReponses(reponses: readonly ReponseAvecRaw[]): RythmeDeclare | null {
+  const derniere = reponses.find(r => r.idQuestionnaire === 'Q_ALI_01');
+  return rythmeDeclareDepuisRawAnswers(
+    derniere?.scoresParsed?.rawAnswers as Record<string, unknown> | null | undefined,
+  );
 }
 
 type SpecAxe = {

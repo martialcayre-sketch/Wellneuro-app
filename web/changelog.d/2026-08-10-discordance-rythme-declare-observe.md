@@ -21,11 +21,17 @@ insuffisante) ou un item déclaré manquant rend cet axe « non mesurable », ja
 un drapeau ni un « concordant ». Les seuils : jeûne 600 min (de la **source**,
 barème `SIIN54 {min:10}`), protéines < 4 j/7, soir > 3 j/7.
 
+La lecture ne paraît que sur un agenda **clôturé** (D-040 confronte le déclaré
+à l'observé de l'agenda clôturé, pas à des agrégats partiels d'un recueil en
+cours) — comme la consolidation du LOT-00, c'est la clôture qui fait l'observé.
+
 **Sans nouvelle API ni migration.** La fiche patient extrait le rythme déclaré
-des `rawAnswers` déjà chargés (`/api/praticien/reponses`) et le passe en prop
-additive au panneau agenda, qui ne rend que les axes en sur-déclaration —
-rappel déclaré/observé, jamais un chiffre d'écart, dans la frontière de campagne
-du panneau (aucun score/indice/gramme/kcal). La fonction de discordance est pure
-et déterministe ; ses deux specs neufs, dont le verdict dépend de la forme
-servie, sont inscrits à `test:court14` et joués dans les deux positions du
-drapeau (D-033).
+de la dernière passation `Q_ALI_01` des `rawAnswers` déjà chargés
+(`/api/praticien/reponses`) — extraction confiée à une fonction pure gardée par
+son propre banc — et le passe en prop additive au panneau agenda, qui ne rend
+que les axes en sur-déclaration : rappel déclaré/observé, jamais un chiffre
+d'écart, dans la frontière de campagne du panneau (aucun score/indice/gramme/
+kcal). La fonction de discordance est pure et déterministe ; ses seuils sont
+figés par valeur littérale (une dérive clinique rougit le banc) et ses deux
+specs neufs, dont le verdict dépend de la forme servie, sont inscrits à
+`test:court14` et joués dans les deux positions du drapeau (D-033).

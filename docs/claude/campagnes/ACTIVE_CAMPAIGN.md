@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-10-chaine-alimentaire
 **Titre** : La chaîne alimentaire reliée — de l'agenda au protocole suivi
 **Statut** : active
-**Lot actif** : LOT-00
+**Lot actif** : LOT-01
 
 ## Activités parallèles
 

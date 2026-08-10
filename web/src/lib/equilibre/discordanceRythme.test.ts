@@ -4,6 +4,7 @@ import {
   axesEnSurdeclaration,
   discordanceRythme,
   rythmeDeclareDepuisRawAnswers,
+  rythmeDeclareDeReponses,
   SEUIL_JEUNE_MIN,
   SEUIL_PROTEINES_MATIN_JOURS,
   SEUIL_SOIR_COPIEUX_JOURS,
@@ -85,6 +86,58 @@ describe('rythmeDeclareDepuisRawAnswers', () => {
   it('rend null sur rawAnswers absent', () => {
     expect(rythmeDeclareDepuisRawAnswers(null)).toBeNull();
     expect(rythmeDeclareDepuisRawAnswers(undefined)).toBeNull();
+  });
+});
+
+describe('seuils cliniques D-040 — figés par valeur littérale', () => {
+  // Règle cardinale (clinique-scoring.md) : un seuil clinique qui bouge doit
+  // rougir le banc. Les assertions relatives (`SEUIL - 1`) attrapent une
+  // mutation d'OPÉRATEUR mais pas un DÉPLACEMENT de la valeur — 600→540
+  // passerait en silence. On fige donc les trois par un littéral.
+  it('jeûne = 600 min (10 h, de la source SIIN54 {min:10})', () => {
+    expect(SEUIL_JEUNE_MIN).toBe(600);
+  });
+  it('protéines matin = 4 j/7 (rupture de majorité, arbitrage D-040)', () => {
+    expect(SEUIL_PROTEINES_MATIN_JOURS).toBe(4);
+  });
+  it('soir copieux = 3 j/7 (arbitrage D-040)', () => {
+    expect(SEUIL_SOIR_COPIEUX_JOURS).toBe(3);
+  });
+});
+
+// Le CÂBLAGE de la fiche : extraire le rythme déclaré de la LISTE de réponses.
+// Pur et indépendant du drapeau (il ne fait que lire des clés de rawAnswers).
+describe('rythmeDeclareDeReponses — extraction depuis la liste de la fiche', () => {
+  const q = (idQuestionnaire: string, rawAnswers: Record<string, unknown> | null) => ({
+    idQuestionnaire,
+    scoresParsed: rawAnswers === null ? null : { rawAnswers },
+  });
+
+  it('prend la DERNIÈRE passation Q_ALI_01 (liste triée par date décroissante)', () => {
+    // La plus récente est en tête ; une passation Q_ALI_01 plus ancienne ne doit
+    // pas la masquer. On met une valeur distincte pour prouver laquelle est lue.
+    const reponses = [
+      q('Q_SOM_01', { X: 1 }),
+      q('Q_ALI_01', { SIIN54: 12, SIIN53: 1, SIIN55: 1 }), // la plus récente
+      q('Q_ALI_01', { SIIN54: 7, SIIN53: 0, SIIN55: 0 }), // ancienne, ignorée
+    ];
+    expect(rythmeDeclareDeReponses(reponses)).toEqual({ SIIN54: 12, SIIN53: 1, SIIN55: 1 });
+  });
+
+  it('ignore les autres questionnaires et rend null si aucun Q_ALI_01', () => {
+    expect(rythmeDeclareDeReponses([q('Q_SOM_01', { SIIN54: 12 }), q('NEU_03', null)])).toBeNull();
+  });
+
+  it('rend null sur une liste vide', () => {
+    expect(rythmeDeclareDeReponses([])).toBeNull();
+  });
+
+  it('forme courte (Q_ALI_01 sans item SIIN53-55) → null', () => {
+    expect(rythmeDeclareDeReponses([q('Q_ALI_01', { AL1: '1', AL2: '2' })])).toBeNull();
+  });
+
+  it('scoresParsed null (passation non interprétable sans rawAnswers) → null', () => {
+    expect(rythmeDeclareDeReponses([q('Q_ALI_01', null)])).toBeNull();
   });
 });
 
