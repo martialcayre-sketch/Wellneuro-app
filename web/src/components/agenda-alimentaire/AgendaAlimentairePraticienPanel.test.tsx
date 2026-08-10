@@ -6,7 +6,15 @@ import { AgendaAlimentairePraticienPanel } from './AgendaAlimentairePraticienPan
 import { AgendaAliFeatureProvider } from './AgendaAliFeatureProvider';
 import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/route';
 import type { JourRow } from '@/lib/agenda-alimentaire/types';
+import type { AgregatsAgendaAli } from '@/lib/agenda-alimentaire/agregats';
+import type { RythmeDeclare } from '@/lib/equilibre/discordanceRythme';
 import { MIN_JOURS_AGREGATS, NB_JOURS_AGENDA_ALI } from '@/lib/agenda-alimentaire/types';
+
+// La lecture de discordance (D-040) n'existe qu'en forme SIIN (drapeau allumé) :
+// `MAX_RYTHME_CHRONO` vaut 0 en forme courte et `discordanceRythme` s'effondre
+// alors en « non mesurable ». Ces rendus-là ne s'exercent donc qu'en position
+// allumée, comme le banc de la fonction pure. Voir `discordanceRythme.test.ts`.
+const SIIN57_ACTIF = process.env.WN_ALI_01_SIIN57 === 'true';
 
 const BANNIERE_RECUEIL_FERME =
   'Recueil fermé — le patient ne peut plus noter de journée. Les journées déjà notées restent lisibles ici.';
@@ -77,6 +85,41 @@ function episode(over: Partial<EpisodeAgendaAli> = {}): EpisodeAgendaAli {
     ...over,
   };
 }
+
+// Agrégats complets, « favorable partout » par défaut ; on déforme un axe pour
+// lever un drapeau de discordance. Couverture ≥ MIN_JOURS pour que la carte des
+// moyennes rende — la lecture, elle, ne dépend que des champs, pas de la carte.
+function agregats(over: Partial<AgregatsAgendaAli> = {}): AgregatsAgendaAli {
+  return {
+    nbJours: 10,
+    nbJoursWeekEnd: 3,
+    nbJoursSansPrise: 0,
+    nbJoursAvecPrises: 10,
+    nbJoursFenetreConnue: 10,
+    nbPairesJeune: 9,
+    nbJoursProteinesConnu: 10,
+    nbJoursContenuConnu: 10,
+    nbJoursSoirConnu: 10,
+    jeuneMedian: 720,
+    fenetreAliMoyenne: 600,
+    regularitePremiereEcartType: 20,
+    regulariteDerniereEcartType: 25,
+    nbPrisesMoyen: 3,
+    nbRepasMoyen: 3,
+    nbHorsRepasMoyen: 0,
+    freqHorsRepasSem: 0,
+    freqMoinsDeuxRepasSem: 0,
+    freqProteinesMatinSem: 6,
+    freqLegumesSem: 5,
+    freqFruitsSem: 5,
+    freqUltraTransformesSem: 1,
+    freqSoirCopieuxSem: 1,
+    ...over,
+  };
+}
+
+const DECLARE_FAVORABLE: RythmeDeclare = { SIIN54: 12, SIIN53: 1, SIIN55: 1 };
+const ENTETE_DISCORDANCE = 'Rythme déclaré à confronter à l’observé';
 
 function mockFetch(episodes: EpisodeAgendaAli[]) {
   vi.stubGlobal(
@@ -431,4 +474,94 @@ describe('AgendaAlimentairePraticienPanel', () => {
     expect(lecture).toBe(1);
     expect(screen.getByRole('button', { name: LIBELLE_CLOTURE })).toBeTruthy();
   });
+
+  // ── Lecture de discordance rythme déclaré vs observé (LOT-01, D-040) ──────
+
+  // La lecture n'est rendue que sur un épisode CLÔTURÉ (D-040, contrat
+  // « clôturé »). Ce helper donne un épisode clôturé et couvert.
+  function episodeCloture(over: Partial<EpisodeAgendaAli> = {}): EpisodeAgendaAli {
+    return episode({ statut: 'cloture', agregats: agregats(), ...over });
+  }
+
+  it('sans `rythmeDeclare`, le panneau ne rend aucune lecture de discordance (additif)', async () => {
+    // Vrai dans les deux positions du drapeau : le prop absent (comportement
+    // d'avant ce lot) ⇒ pas d'entête, même sur un clôturé couvert défavorable.
+    mockFetch([episodeCloture({ agregats: agregats({ jeuneMedian: 480 }) })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
+  });
+
+  it.runIf(SIIN57_ACTIF)(
+    'épisode EN COURS (non clôturé), même couvert et sur-déclarant → aucune lecture (contrat « clôturé »)',
+    async () => {
+      // La garde de statut : `ResumeAgregats` montre les médianes d'un en_cours
+      // couvert, mais la lecture DIRECTIONNELLE attend la clôture. Même agrégats
+      // défavorables + déclaré favorable, rien tant que statut ≠ 'cloture'.
+      mockFetch([episode({ statut: 'en_cours', agregats: agregats({ jeuneMedian: 480 }) })]);
+      renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText('2026-08-01'));
+      expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
+    },
+  );
+
+  it.runIf(SIIN57_ACTIF)(
+    'clôturé + déclaré favorable + observé défavorable → la lecture paraît sur l’axe en sur-déclaration, avec rappel déclaré/observé',
+    async () => {
+      mockFetch([episodeCloture({ agregats: agregats({ jeuneMedian: 480 }) })]);
+      renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText(ENTETE_DISCORDANCE));
+      const ligne = screen.getByText('Jeûne nocturne').closest('li') as HTMLElement;
+      expect(within(ligne).getByText(/déclaré ≥ 10 h/)).toBeTruthy();
+      expect(within(ligne).getByText(/observé médian 8 h/)).toBeTruthy();
+      // Les axes concordants ne paraissent pas : seule l'asymétrie actionnable.
+      expect(screen.queryByText('Protéines au petit-déjeuner')).toBeNull();
+      expect(screen.queryByText('Repas du soir léger')).toBeNull();
+    },
+  );
+
+  it.runIf(SIIN57_ACTIF)(
+    'clôturé + déclaré favorable + observé concordant → aucune lecture (rien à explorer)',
+    async () => {
+      mockFetch([episodeCloture()]);
+      renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText('2026-08-01'));
+      expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
+    },
+  );
+
+  it.runIf(SIIN57_ACTIF)(
+    'clôturé + observé non couvert (agrégats null) → aucune lecture, jamais un drapeau sur une mesure absente',
+    async () => {
+      mockFetch([episodeCloture({ agregats: null })]);
+      renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText('2026-08-01'));
+      expect(screen.queryByText(ENTETE_DISCORDANCE)).toBeNull();
+    },
+  );
+
+  it.runIf(SIIN57_ACTIF)(
+    'la lecture rendue passe la garde de frontière de campagne (aucun score/indice/gramme/kcal)',
+    async () => {
+      mockFetch([
+        episodeCloture({ agregats: agregats({ jeuneMedian: 480, freqProteinesMatinSem: 2, freqSoirCopieuxSem: 5 }) }),
+      ]);
+      const { container } = renderPret(
+        <AgendaAlimentairePraticienPanel idPatient="PAT_1" rythmeDeclare={DECLARE_FAVORABLE} />,
+      );
+      await waitFor(() => screen.getByText(ENTETE_DISCORDANCE));
+      const texte = container.textContent?.toLowerCase() ?? '';
+      for (const motif of ['score', 'indice', 'gramme', 'kcal', 'quantite', 'quantité']) {
+        expect(texte).not.toContain(motif);
+      }
+    },
+  );
 });
