@@ -4,7 +4,7 @@ titre: "La chaîne alimentaire reliée — de l'agenda au protocole suivi"
 statut: "en cours (2026-08-10)"
 créée_le: "2026-08-10"
 mise_à_jour: "2026-08-10"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "aucune"
 branche_lot_courant: "claude/post-pr-631-5rmwr7"
 cible_pr_lot: "main"
@@ -96,7 +96,7 @@ recopie pas, elle l'exécute.
 |---|---|---|---|
 | LOT-00 | Clôture technique de l'agenda alimentaire (D-039) — agrégats → `rawAnswers` → `QuestionnaireReponse` `scored:false`, calquée sur le jumeau sommeil | livré (2026-08-10) | — |
 | LOT-01 | Discordance rythme déclaré vs observé — objet restitué, `null` sous forme courte | livré (2026-08-10, D-040) | LOT-00 |
-| LOT-02 | Barème et indice agenda (gabarit scorer `agenda_sommeil`) | gaté — porte des 21 jours + recueil réel | LOT-00 |
+| LOT-02 | Barème et indice agenda (gabarit scorer `agenda_sommeil`) | squelette livré (2026-08-10) — calibration gatée (porte des 21 jours) | LOT-00 |
 | LOT-03 | Moteur de propositions de parcours alimentaire — règles claims-tracées, objet parcours (migration séparée), bloc de synthèse dédié | à faire (décisions cliniques par règle) | enrichi par LOT-00/01/02 |
 | LOT-04 | Rayon fiches conseils — cadrage (nouveau rayon, distinct de C3 et du rayon compléments) | à cadrer | LOT-03 pour la diffusion |
 

@@ -1899,11 +1899,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // Forme du retour reprise à l'identique des deux gardes existantes, `type`
   // compris : `equilibre/evidence.ts` lit déjà `scored: false`, et les routes
   // praticien comme patient savent rendre une interprétation absente.
-  // `agenda_sommeil` et `journal` portent DÉJÀ leur propre `scored: false`, avec un
-  // motif que celui-ci ne saurait pas dire — le nombre de nuits recueillies pour
-  // l'un, « recueil sans score global » pour l'autre. Les préempter remplacerait un
-  // motif juste par un motif générique, et perdrait `nbNuits`.
-  const PORTE_SON_PROPRE_NON_SCORE = ['agenda_sommeil', 'journal'];
+  // `agenda_sommeil`, `agenda_alimentaire` et `journal` portent DÉJÀ leur propre
+  // `scored: false`, avec un motif que celui-ci ne saurait pas dire — le nombre de
+  // nuits ou de journées recueillies pour les deux agendas, « recueil sans score
+  // global » pour l'autre. Les préempter remplacerait un motif juste par un motif
+  // générique, et perdrait `nbNuits`/`nbJours`.
+  const PORTE_SON_PROPRE_NON_SCORE = ['agenda_sommeil', 'agenda_alimentaire', 'journal'];
   if (!PORTE_SON_PROPRE_NON_SCORE.includes(sc.type)
       && allQ.length > 0 && allQ.every((q: any) => getVal(q.id) === null)) {
     return {
@@ -3903,6 +3904,146 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       subScores,
       interpretation: interp,
       nbNuits: n,
+      nbAxesCouverts: couverts.length,
+      drapeaux,
+      note: sc.note || null,
+      certification: sc.certification || null,
+    };
+  }
+
+  // ── AGENDA_ALIMENTAIRE — indice d'agenda alimentaire 21 jours (Q_ALI_09) ─
+  // SQUELETTE (LOT-02, campagne chaîne alimentaire). La STRUCTURE du barème,
+  // sur le gabarit EXACT du jumeau sommeil (`agenda_sommeil` ci-dessus) —
+  // refus sous couverture avec motif, plancher PAR AXE, axe non couvert = `null`
+  // renormalisé (JAMAIS 0), drapeaux cliniques JAMAIS des points, indice
+  // longitudinal niveau de preuve D (comparer un patient à lui-même, jamais à
+  // une population).
+  //
+  // AUCUN SEUIL CHIFFRÉ N'EST CÂBLÉ ICI. Les axes, leurs bornes, leurs poids, le
+  // plancher de couverture et les drapeaux sont la DÉCISION CLINIQUE GATÉE de
+  // LOT-02 (« axes, poids, bornes — après observation de la distribution
+  // réelle », porte des 21 jours) : ils vivent dans la config de scoring
+  // (`sc.axes`, `sc.drapeaux`, `sc.minJours`…), VIDE tant que la calibration
+  // n'a pas eu lieu. Sans axe déclaré, le scorer REFUSE de coter — il n'invente
+  // ni total, ni borne, ni axe. Le lot de calibration ne fera qu'ajouter cette
+  // config et brancher `Q_ALI_09` sur ce type ; la plomberie et ses invariants
+  // sont ici, éprouvés sur définitions forgées.
+  if (sc.type === 'agenda_alimentaire') {
+    // `AGA_NB_JOURS` : pseudo-item du dénombrement, contrat de LOT-00
+    // (`agenda-alimentaire/cloture.ts`). Littéral pour ne pas importer `cloture`
+    // (qui importe déjà `computeScoreFromDef` — le cycle serait fermé).
+    const nbJours = getVal('AGA_NB_JOURS');
+    const axesDef: any[] = Array.isArray(sc.axes) ? sc.axes : [];
+
+    // Barème non calibré : aucun axe déclaré → rien à coter. C'est l'état du
+    // squelette tant que la distribution réelle n'a pas été observée (LOT-02,
+    // porte des 21 jours). On transmet le recueil sans indice, motif nommé.
+    if (axesDef.length === 0) {
+      return {
+        type: 'agenda_alimentaire',
+        scored: false,
+        nbJours: nbJours || 0,
+        note: 'Barème d’agenda alimentaire non calibré — recueil transmis sans indice global.',
+        certification: sc.certification || null,
+      };
+    }
+
+    // Refus sous couverture minimale de recueil (le seuil vient de la config
+    // calibrée ; absent, il n'est pas appliqué — on ne devine pas de plancher).
+    if (nbJours === null || (typeof sc.minJours === 'number' && nbJours < sc.minJours)) {
+      const motif = nbJours === null
+        ? 'Aucune journée exploitable'
+        : `Moins de ${sc.minJours} journées exploitables`;
+      return {
+        type: 'agenda_alimentaire',
+        scored: false,
+        nbJours: nbJours || 0,
+        note: `${motif} — recueil transmis sans indice global.`,
+        certification: sc.certification || null,
+      };
+    }
+
+    const clampR = (x: number) => Math.max(0, Math.min(1, x));
+    const minAxe = typeof sc.minJoursAxe === 'number' ? sc.minJoursAxe : 0;
+
+    // Plancher de couverture PAR AXE : un axe soutenu par trop peu de journées
+    // est traité comme non couvert — même parade que le jumeau sommeil, où un
+    // axe calculé sur n = 1 déplaçait le total sans que rien ne le signale.
+    const couvert = (couvertureSource?: string): boolean => {
+      if (!minAxe || !couvertureSource) return true;
+      const c = getVal(couvertureSource);
+      return c === null || c >= minAxe; // absent = dénominateur non transmis
+    };
+
+    // Ratio d'un axe depuis ses bornes `{bas, haut}` et son `sens`. Bornes
+    // absentes, source non renseignée ou axe non couvert → `null` : l'axe sort
+    // du total, jamais complété par un 0 (« mauvais » ≠ « inconnu »).
+    const ratioAxe = (a: any): number | null => {
+      if (!a || !a.bornes || typeof a.bornes.bas !== 'number' || typeof a.bornes.haut !== 'number') return null;
+      if (a.bornes.haut === a.bornes.bas) return null;
+      if (!couvert(a.couvertureSource)) return null;
+      const v = getVal(a.source);
+      if (v === null) return null;
+      const brut = (v - a.bornes.bas) / (a.bornes.haut - a.bornes.bas);
+      return clampR(a.sens === 'inverse' ? 1 - brut : brut);
+    };
+
+    const axes = axesDef.map((a: any) => ({
+      id: a.id,
+      label: a.label,
+      poids: typeof a.poids === 'number' ? a.poids : 1,
+      ratio: ratioAxe(a),
+    }));
+    const couverts = axes.filter((a): a is typeof a & { ratio: number } => a.ratio !== null);
+
+    const minCouverts = typeof sc.minAxesCouverts === 'number' ? sc.minAxesCouverts : 1;
+    if (couverts.length < minCouverts) {
+      return {
+        type: 'agenda_alimentaire',
+        scored: false,
+        nbJours,
+        note: 'Métriques trop incomplètes — recueil transmis sans indice global.',
+        certification: sc.certification || null,
+      };
+    }
+
+    // Moyenne pondérée renormalisée sur les seuls axes couverts (× 100).
+    const sommePoids = couverts.reduce((s, a) => s + a.poids, 0);
+    const total = Math.round(
+      (couverts.reduce((s, a) => s + a.ratio * a.poids, 0) / sommePoids) * 100,
+    );
+    const subScores = axes.map(a => ({
+      id: a.id,
+      label: a.label,
+      total: a.ratio === null ? null : Math.round(a.ratio * 100),
+      max: 100,
+    }));
+    const interp = interpretRanges(total, sc.interpretation);
+
+    // Drapeaux cliniques, JAMAIS des points. Déclarés en config
+    // (`source`, `comparateur`, `seuil`, `message`) : un drapeau alerte, il ne
+    // cote pas — comme le jumeau sommeil sépare ses drapeaux du total.
+    const drapeaux: string[] = [];
+    for (const d of (Array.isArray(sc.drapeaux) ? sc.drapeaux : [])) {
+      const v = getVal(d.source);
+      if (v === null || typeof d.seuil !== 'number') continue;
+      const declenche =
+        d.comparateur === '>=' ? v >= d.seuil
+        : d.comparateur === '<=' ? v <= d.seuil
+        : d.comparateur === '>' ? v > d.seuil
+        : d.comparateur === '<' ? v < d.seuil
+        : false;
+      if (declenche) drapeaux.push(d.message);
+    }
+
+    return {
+      type: 'agenda_alimentaire',
+      scored: true,
+      total,
+      maxTotal: 100,
+      subScores,
+      interpretation: interp,
+      nbJours,
       nbAxesCouverts: couverts.length,
       drapeaux,
       note: sc.note || null,
