@@ -52,6 +52,7 @@ import {
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
+import { rythmeDeclareDepuisRawAnswers } from '@/lib/equilibre/discordanceRythme';
 import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import {
   type CertificationLue,
@@ -650,6 +651,16 @@ export function FichePatientPanel({
 
   const { patient, objetsCliniques, priorites } = data;
   const derniereAssignationId = reponses[0]?.idAssignation || null;
+  // Rythme DÉCLARÉ, lu de la dernière passation Q_ALI_01 (rawAnswers déjà
+  // chargés, `reponses` trié par date décroissante) : passé au panneau agenda
+  // pour la lecture de discordance (LOT-01, D-040). `null` si aucune passation
+  // ou forme courte — le panneau n'affiche alors rien.
+  const rythmeDeclare = rythmeDeclareDepuisRawAnswers(
+    reponses.find(r => r.idQuestionnaire === 'Q_ALI_01')?.scoresParsed?.rawAnswers as
+      | Record<string, unknown>
+      | null
+      | undefined,
+  );
   const nomComplet = `${patient.prenom} ${patient.nom}`.trim();
   const derniereReponse = reponses[0]?.dateSoumission
     ? new Date(reponses[0].dateSoumission).toLocaleDateString('fr-FR')
@@ -1369,7 +1380,7 @@ export function FichePatientPanel({
                 icone={Utensils}
                 large
               >
-                <AgendaAlimentairePraticienPanel idPatient={idPatient} />
+                <AgendaAlimentairePraticienPanel idPatient={idPatient} rythmeDeclare={rythmeDeclare} />
               </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Détail des réponses"

@@ -5,6 +5,7 @@ import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/ro
 import type { AgregatsAgendaAli } from '@/lib/agenda-alimentaire/agregats';
 import type { JourRow, PriseJour } from '@/lib/agenda-alimentaire/types';
 import { MIN_JOURS_AGREGATS, NB_JOURS_AGENDA_ALI } from '@/lib/agenda-alimentaire/types';
+import { axesEnSurdeclaration, discordanceRythme, type RythmeDeclare } from '@/lib/equilibre/discordanceRythme';
 import { useAgendaAliEnabled } from './AgendaAliFeatureProvider';
 
 // Même conversion que le panneau du sommeil (`minutesEnHeures`,
@@ -156,6 +157,40 @@ function ResumeAgregats({ a }: { a: AgregatsAgendaAli }) {
   );
 }
 
+// Lecture de discordance rythme DÉCLARÉ vs OBSERVÉ (LOT-01, D-040). Ne rend QUE
+// les axes en sur-déclaration — le patient dit favorable, l'agenda observe
+// défavorable. Rien pour un axe concordant, non mesurable, ou déclaré
+// défavorable (D-040 ne signale que l'asymétrie actionnable). Aucun score,
+// aucun indice, aucun écart chiffré : seulement le rappel déclaré/observé porté
+// par la fonction pure, dans la frontière de campagne du panneau.
+function LectureDiscordance({
+  rythmeDeclare,
+  agregats,
+}: {
+  rythmeDeclare: RythmeDeclare | null | undefined;
+  agregats: AgregatsAgendaAli | null;
+}) {
+  const surdeclares = axesEnSurdeclaration(discordanceRythme(rythmeDeclare ?? null, agregats));
+  if (surdeclares.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-status-warning/50 bg-status-warning/10 px-3 py-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-status-warning">
+        Rythme déclaré à confronter à l’observé
+      </p>
+      <ul className="mt-1 flex flex-col gap-1">
+        {surdeclares.map(a => (
+          <li key={a.axe} className="text-sm text-foreground">
+            <span className="font-medium">{a.libelle}</span> — {a.declare}, {a.observe}.
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-xs text-muted-foreground">
+        À explorer en consultation — repère d’écart, non chiffré.
+      </p>
+    </div>
+  );
+}
+
 function FriseJours({ episode }: { episode: EpisodeAgendaAli }) {
   return (
     <div
@@ -185,7 +220,15 @@ function FriseJours({ episode }: { episode: EpisodeAgendaAli }) {
   );
 }
 
-export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: string }) {
+export function AgendaAlimentairePraticienPanel({
+  idPatient,
+  rythmeDeclare,
+}: {
+  idPatient: string;
+  /** Rythme déclaré (Q_ALI_01), pour la lecture de discordance D-040. Optionnel
+   *  et additif : absent, le panneau se comporte comme avant ce lot. */
+  rythmeDeclare?: RythmeDeclare | null;
+}) {
   const drapeauActif = useAgendaAliEnabled();
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [episodes, setEpisodes] = useState<EpisodeAgendaAli[]>([]);
@@ -312,6 +355,9 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
           ) : (
             <CouvertureInsuffisante nbJours={ep.fenetre.nbRenseignees} />
           )}
+
+          <LectureDiscordance rythmeDeclare={rythmeDeclare} agregats={ep.agregats} />
+
 
           <div className="flex flex-col gap-2">
             {ep.jours.map((j) => (
