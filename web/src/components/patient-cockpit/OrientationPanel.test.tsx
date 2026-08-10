@@ -33,11 +33,15 @@ function stubFetch(
   payloadOrientation: unknown,
   payloadAjout?: unknown,
   fileParAppel: Array<unknown | ReponseFile> = [{ brouillons: [] }],
+  payloadEnvoi?: unknown,
 ) {
   const appels: { url: string; init?: RequestInit }[] = [];
   let lecturesFile = 0;
   const mock = vi.fn((url: string, init?: RequestInit) => {
     appels.push({ url, init });
+    if (url.startsWith('/api/praticien/file-envoi/envoyer')) {
+      return Promise.resolve(json(payloadEnvoi ?? { success: true, count: 1 }));
+    }
     if (url.startsWith('/api/praticien/file-envoi')) {
       if (init?.method === 'POST') {
         return Promise.resolve(json(payloadAjout ?? { success: true, idBrouillon: 'ENV_1', count: 3 }));
@@ -400,5 +404,86 @@ describe('OrientationPanel', () => {
     render(<OrientationPanel idPatient="PAT_SEED_03" />);
 
     expect(await screen.findByRole('alert')).toBeTruthy();
+  });
+
+  // ── Bouton d'envoi sous les suggestions (demande propriétaire 2026-08-09) ──
+  // Le même geste que la file de la Bibliothèque, sans navigation : le clic
+  // EST la validation. Il n'apparaît que si le brouillon du patient existe.
+
+  it('n’affiche aucun bouton d’envoi quand la file du patient est vide', async () => {
+    stubFetch(ACTIF);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Pittsburgh/i);
+    expect(screen.queryByRole('button', { name: /envoyer \(/i })).toBeNull();
+  });
+
+  it('n’affiche pas le bouton d’envoi sans email patient (panneau en lecture seule)', async () => {
+    stubFetch(ACTIF, undefined, [brouillonAvec('PAT_SEED_03', ['Q_SOM_01'])]);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    await screen.findByText(/Pittsburgh/i);
+    expect(screen.queryByRole('button', { name: /envoyer \(/i })).toBeNull();
+  });
+
+  it('porte le compte du brouillon ENTIER, pas celui des seules recommandations', async () => {
+    // Q_ALI_02 vient de la Bibliothèque, pas des suggestions : il partira
+    // aussi, le libellé doit le compter.
+    stubFetch(ACTIF, undefined, [brouillonAvec('PAT_SEED_03', ['Q_SOM_01', 'Q_ALI_02'])]);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    expect(await screen.findByRole('button', { name: /envoyer \(2\) — un seul mail/i })).toBeTruthy();
+    expect(screen.getByText(/toute la file d’envoi de ce patient part d’un coup/i)).toBeTruthy();
+  });
+
+  it('envoie le brouillon au clic, dit le compte envoyé et relit l’orientation', async () => {
+    const { appels } = stubFetch(
+      ACTIF,
+      undefined,
+      [brouillonAvec('PAT_SEED_03', ['Q_SOM_01', 'Q_STR_03']), { brouillons: [] }],
+      { success: true, count: 2 },
+    );
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    const bouton = await screen.findByRole('button', { name: /envoyer \(2\)/i });
+    const lecturesOrientation = () =>
+      appels.filter(a => a.url.startsWith('/api/praticien/orientation')).length;
+    const avant = lecturesOrientation();
+
+    fireEvent.click(bouton);
+
+    expect(await screen.findByText(/2 questionnaires envoyés — un seul mail au patient/i)).toBeTruthy();
+    // Le contrat serveur : l'identifiant du brouillon, rien d'autre.
+    const envois = appels.filter(a => a.url.startsWith('/api/praticien/file-envoi/envoyer'));
+    expect(envois).toHaveLength(1);
+    expect(JSON.parse(String(envois[0]?.init?.body))).toEqual({ idBrouillon: 'ENV_1' });
+    // Les lignes envoyées sont désormais assignées : c'est l'orientation RELUE
+    // qui le dira — l'écran ne le déduit pas localement.
+    expect(lecturesOrientation()).toBe(avant + 1);
+    // Et la file relue étant vide, le bouton disparaît.
+    expect(screen.queryByRole('button', { name: /envoyer \(/i })).toBeNull();
+  });
+
+  it('reprend la phrase de la route quand l’envoi est refusé, et laisse réessayer', async () => {
+    stubFetch(
+      ACTIF,
+      undefined,
+      [brouillonAvec('PAT_SEED_03', ['Q_SOM_01'])],
+      { success: false, reason: 'portal_revoked', error: 'Accès portail révoqué pour ce patient.' },
+    );
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /envoyer \(1\)/i }));
+
+    expect(
+      await screen.findByText('Envoi impossible : Accès portail révoqué pour ce patient.'),
+    ).toBeTruthy();
+    // L'échec n'a pas consommé le brouillon : le geste reste possible.
+    expect(await screen.findByRole('button', { name: /envoyer \(1\)/i })).toBeTruthy();
   });
 });

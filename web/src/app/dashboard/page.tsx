@@ -2,6 +2,7 @@ import { FilDuJour } from '@/components/fil/FilDuJour';
 import { MeteoAdhesionAside } from '@/components/fil/MeteoAdhesionAside';
 import { AgendasEnCoursAside } from '@/components/agenda-sommeil/AgendasEnCoursAside';
 import { InboxQuestionnaires } from '@/components/fil/InboxQuestionnaires';
+import { FileEnvoiAside } from '@/components/fil/FileEnvoiAside';
 import { CorrespondanceRecente } from '@/components/fil/CorrespondanceRecente';
 
 // Accueil praticien = le Fil du jour, conforme à la maquette de référence
@@ -47,6 +48,10 @@ export default function DashboardPage() {
           <MeteoAdhesionAside />
           <AgendasEnCoursAside />
           <InboxQuestionnaires />
+          {/* Réception ci-dessus, envoi ci-dessous : deux blocs voisins,
+              volontairement séparés (arbitrage propriétaire 2026-08-09 —
+              fusion écartée, deux logiques distinctes). */}
+          <FileEnvoiAside />
           <CorrespondanceRecente />
         </aside>
       </div>

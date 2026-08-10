@@ -7,6 +7,7 @@ import type {
   FileEnvoiApiResponse,
   MutateFileEnvoiResponse,
 } from '@/app/api/praticien/file-envoi/route';
+import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 import { Badge } from '@/components/ui/Badge';
@@ -83,6 +84,14 @@ export function OrientationPanel({
   // jamais le nombre d'ajouts. « Déjà dans la file » ne peut donc venir que
   // d'une lecture, pas d'une écriture.
   const [dansLaFile, setDansLaFile] = useState<ReadonlySet<string>>(new Set());
+  // Le brouillon du patient affiché (identifiant + taille), pour le bouton
+  // d'envoi sous la liste (demande propriétaire 2026-08-09) : le même geste
+  // que la Bibliothèque, sans navigation. Le clic EST la validation — la
+  // doctrine D-030 « rien ne part sans validation » change d'écran, pas de
+  // nature.
+  const [brouillonPatient, setBrouillonPatient] = useState<{ idBrouillon: string; nb: number } | null>(null);
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const [issueEnvoi, setIssueEnvoi] = useState<{ succes: boolean; message: string } | null>(null);
 
   const [rechargement, setRechargement] = useState(0);
   const relire = useCallback(() => setRechargement(n => n + 1), []);
@@ -122,10 +131,16 @@ export function OrientationPanel({
       // Filtré sur le patient AFFICHÉ : la route sert tous les brouillons du
       // praticien, et un questionnaire posé dans la file d'un autre patient ne
       // dit rien de celui-ci.
-      const qids = brouillons
-        .filter(brouillon => brouillon.idPatient === idPatient)
-        .flatMap(brouillon => brouillon.items.map(item => item.id));
+      const duPatient = brouillons.filter(brouillon => brouillon.idPatient === idPatient);
+      const qids = duPatient.flatMap(brouillon => brouillon.items.map(item => item.id));
       setDansLaFile(new Set(qids));
+      // « Un seul brouillon actif par patient et par praticien » — invariant
+      // tenu sous verrou par la route d'écriture : le premier est LE brouillon.
+      setBrouillonPatient(
+        duPatient.length > 0 && duPatient[0].items.length > 0
+          ? { idBrouillon: duPatient[0].idBrouillon, nb: duPatient[0].items.length }
+          : null,
+      );
     } catch {
       // Même raison : on ne fabrique pas une file vide à partir d'une panne.
     }
@@ -141,7 +156,9 @@ export function OrientationPanel({
   useEffect(() => {
     let annule = false;
     setDansLaFile(new Set());
+    setBrouillonPatient(null);
     setIssue(null);
+    setIssueEnvoi(null);
     void chargerFile(() => annule);
     return () => {
       annule = true;
@@ -231,6 +248,43 @@ export function OrientationPanel({
     },
     [emailPatient, chargerFile, idPatient],
   );
+
+  const envoyerLaFile = useCallback(async () => {
+    const brouillon = brouillonPatient;
+    if (!brouillon || envoiEnCours) return;
+    setEnvoiEnCours(true);
+    setIssueEnvoi(null);
+    try {
+      const res = await fetch('/api/praticien/file-envoi/envoyer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idBrouillon: brouillon.idBrouillon }),
+      });
+      const payload = (await res.json()) as EnvoyerFileResponse;
+      if (payload?.success) {
+        const nb = payload.count ?? brouillon.nb;
+        setIssueEnvoi({
+          succes: true,
+          message: `${nb} questionnaire${nb > 1 ? 's' : ''} envoyé${nb > 1 ? 's' : ''} — un seul mail au patient.`,
+        });
+        // Les lignes envoyées sont désormais ASSIGNÉES : c'est l'orientation
+        // relue qui le dira (`dejaAssigne`), pas une déduction locale.
+        relire();
+      } else {
+        // Le texte du refus vient de la route quand elle en donne un —
+        // deux formulations du même refus divergeraient.
+        setIssueEnvoi({
+          succes: false,
+          message: payload?.error ? `Envoi impossible : ${payload.error}` : 'Envoi impossible.',
+        });
+      }
+    } catch {
+      setIssueEnvoi({ succes: false, message: 'Envoi impossible.' });
+    } finally {
+      setEnvoiEnCours(false);
+      await chargerFile(() => idPatientRef.current !== idPatient);
+    }
+  }, [brouillonPatient, envoiEnCours, chargerFile, idPatient, relire]);
 
   return (
     <section aria-label="Orientation des explorations" className="rounded-xl border border-border bg-surface p-4">
@@ -358,6 +412,36 @@ export function OrientationPanel({
               );
             })}
           </ol>
+          {/* Le même bouton que la file de la Bibliothèque, sous les
+              suggestions (demande propriétaire 2026-08-09) : il envoie TOUT le
+              brouillon du patient — y compris d'éventuels items ajoutés depuis
+              la Bibliothèque, le libellé porte donc le compte. Sans email, le
+              panneau reste en lecture seule, envoi compris. */}
+          {Boolean(emailPatient) && brouillonPatient && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <button
+                type="button"
+                disabled={envoiEnCours}
+                onClick={() => void envoyerLaFile()}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-60"
+              >
+                {envoiEnCours
+                  ? 'Envoi...'
+                  : `Envoyer (${brouillonPatient.nb}) — un seul mail`}
+              </button>
+              <span className="text-2xs text-muted-foreground">
+                Toute la file d’envoi de ce patient part d’un coup.
+              </span>
+            </div>
+          )}
+          {issueEnvoi && (
+            <p
+              role="status"
+              className={`mt-2 text-xs ${issueEnvoi.succes ? 'text-status-success' : 'text-status-danger'}`}
+            >
+              {issueEnvoi.message}
+            </p>
+          )}
           <p className="mt-3 text-2xs text-muted-foreground">
             Table {reponse.version} · SHA-256 {reponse.sha256}. Aucune assignation n’est automatique : la
             proposition est une lecture, le geste reste praticien.
