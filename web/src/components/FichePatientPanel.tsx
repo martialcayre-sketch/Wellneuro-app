@@ -380,17 +380,23 @@ export function FichePatientPanel({
       .finally(() => setLoading(false));
   }, [idPatient]);
 
+  const chargerReponses = useCallback(async (email: string) => {
+    setLoadingReponses(true);
+    try {
+      const r = await fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`);
+      const d = (await r.json()) as ReponsesApiResponse;
+      setReponses(d.reponses ?? []);
+    } catch {
+      setReponses([]);
+    } finally {
+      setLoadingReponses(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!data || 'unavailable' in data) return;
-    const email = data.patient.email;
-
-    setLoadingReponses(true);
-    fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`)
-      .then(r => r.json())
-      .then((d: ReponsesApiResponse) => setReponses(d.reponses ?? []))
-      .catch(() => setReponses([]))
-      .finally(() => setLoadingReponses(false));
-  }, [data]);
+    void chargerReponses(data.patient.email);
+  }, [chargerReponses, data]);
 
   // Demandes de correction du dossier affiché. Les deux filtres partent au
   // serveur : appliqués en mémoire, ils l'étaient APRÈS la troncature à 40 de la
@@ -1369,7 +1375,14 @@ export function FichePatientPanel({
                 icone={Utensils}
                 large
               >
-                <AgendaAlimentairePraticienPanel idPatient={idPatient} />
+                <AgendaAlimentairePraticienPanel
+                  idPatient={idPatient}
+                  onCloture={
+                    data && !('unavailable' in data)
+                      ? () => chargerReponses(data.patient.email)
+                      : undefined
+                  }
+                />
               </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Détail des réponses"

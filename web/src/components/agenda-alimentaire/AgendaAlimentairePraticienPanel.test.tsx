@@ -409,6 +409,30 @@ describe('AgendaAlimentairePraticienPanel', () => {
     expect(screen.queryByRole('button', { name: LIBELLE_CLOTURE })).toBeNull();
   });
 
+  it('succès de clôture → notifie aussi le parent pour rafraîchir le dossier', async () => {
+    const onCloture = vi.fn();
+    let lecture = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return { json: async () => ({ ok: true }) };
+        lecture += 1;
+        return {
+          json: async () => ({
+            ok: true,
+            episodes: [lecture === 1 ? episode() : episode({ statut: 'cloture' })],
+          }),
+        };
+      }),
+    );
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" onCloture={onCloture} />);
+    await waitFor(() => screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+    fireEvent.click(screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+
+    await waitFor(() => expect(onCloture).toHaveBeenCalledTimes(1));
+    expect(lecture).toBe(2);
+  });
+
   it('refus nommé du serveur (quarantaine) → le message s’affiche, pas de rechargement', async () => {
     const REFUS =
       'Recueil non clôturable : 1 ligne(s) illisible(s) en quarantaine (2026-08-05). Régler l’incident d’intégrité avant de clôturer.';

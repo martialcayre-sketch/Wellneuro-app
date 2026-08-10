@@ -185,7 +185,13 @@ function FriseJours({ episode }: { episode: EpisodeAgendaAli }) {
   );
 }
 
-export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: string }) {
+export function AgendaAlimentairePraticienPanel({
+  idPatient,
+  onCloture,
+}: {
+  idPatient: string;
+  onCloture?: () => void | Promise<void>;
+}) {
   const drapeauActif = useAgendaAliEnabled();
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [episodes, setEpisodes] = useState<EpisodeAgendaAli[]>([]);
@@ -233,7 +239,10 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
       });
       const json = (await res.json()) as { ok: boolean; error?: string };
       if (!json.ok) setMessage(json.error ?? 'Clôture impossible.');
-      else await charger();
+      else {
+        await charger();
+        await onCloture?.();
+      }
     } catch {
       setMessage('Connexion interrompue.');
     } finally {
