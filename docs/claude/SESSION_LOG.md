@@ -3413,3 +3413,23 @@ décision clinique, ou le bouton praticien comme micro-geste.
 
 **Questions ouvertes.** Clôture automatique portail à J21 (le jumeau l'a) —
 décision d'activation à part.
+
+## 2026-08-10 — Le bouton de clôture praticien, et un badge E2E retrouvé
+
+**Décisions.** Bouton « Clôturer et verser au dossier » sur le lecteur agenda
+alimentaire, patron du jumeau sommeil ; libellé « verser au dossier » (pas
+« agréger », D-039). Refus laissés au serveur, non redoublés côté client. Le
+parcours praticien E2E ré-atteint « Historique » par une vraie clôture — la
+non-couverture nommée de fiche-detail-reponses (héritée de D-038) est levée.
+
+**Options écartées.** Confirmation modale (clôture idempotente, refus nommés) ;
+garde de drapeau côté client (l'arbitrage LOT-05 tient — collecte vs
+consolidation).
+
+**Ce qu'une revue a démenti.** La première rédaction de l'E2E appelait les
+routes portail patient avec le seul cookie praticien (401). Corrigé : les deux
+cookies coexistent (noms distincts), le praticien pour la fiche, le portail
+pour consentement et saisie.
+
+**Prochaine action.** PR du lot ; puis LOT-01 (discordance), qui s'ouvre par sa
+décision clinique.

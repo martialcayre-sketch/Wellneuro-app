@@ -190,6 +190,7 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
   const [episodes, setEpisodes] = useState<EpisodeAgendaAli[]>([]);
   const [message, setMessage] = useState('');
+  const [clotureEnCours, setClotureEnCours] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     setEtat('chargement');
@@ -217,6 +218,28 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
   useEffect(() => {
     void charger();
   }, [charger]);
+
+  // Patron du jumeau sommeil (`AgendaSommeilPraticienPanel.cloturer`). Les
+  // refus restent au SERVEUR — quarantaine avec dates nommées, recueil vide,
+  // assignation annulée : les re-implémenter ici dupliquerait la règle, et
+  // c'est le message nommé de la route qui apprend au praticien quoi régler.
+  async function cloturer(idAssignation: string) {
+    setClotureEnCours(idAssignation);
+    try {
+      const res = await fetch('/api/praticien/agenda-alimentaire/cloture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, idAssignation }),
+      });
+      const json = (await res.json()) as { ok: boolean; error?: string };
+      if (!json.ok) setMessage(json.error ?? 'Clôture impossible.');
+      else await charger();
+    } catch {
+      setMessage('Connexion interrompue.');
+    } finally {
+      setClotureEnCours(null);
+    }
+  }
 
   if (etat === 'chargement') {
     return <p className="text-sm text-muted-foreground">Chargement de l’agenda alimentaire…</p>;
@@ -247,21 +270,38 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
       {drapeauActif === false && <BanniereRecueilFerme />}
       {episodes.map((ep) => (
         <section key={ep.idAssignation} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">{ep.titre}</p>
-            <p className="text-xs text-muted-foreground">
-              {ep.statut === 'annulee' ? 'Annulée' : ep.statut === 'cloture' ? 'Clôturé' : 'En cours'} ·{' '}
-              {ep.fenetre.nbRenseignees} journée{ep.fenetre.nbRenseignees > 1 ? 's' : ''} notée
-              {ep.fenetre.nbRenseignees > 1 ? 's' : ''}
-              {ep.fenetre.jourCourant !== null ? ` · jour ${ep.fenetre.jourCourant}/${NB_JOURS_AGENDA_ALI}` : ''}
-            </p>
-            {ep.illisibles > 0 && (
-              // Un dossier de contrôle qui tait ses lignes en quarantaine ment
-              // par omission : ce compte reste visible même sans détail par ligne.
-              <p className="text-xs text-status-danger">
-                {ep.illisibles} ligne{ep.illisibles > 1 ? 's' : ''} en quarantaine, illisible
-                {ep.illisibles > 1 ? 's' : ''} — signalé pour intégrité, non affiché en détail ici.
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-foreground">{ep.titre}</p>
+              <p className="text-xs text-muted-foreground">
+                {ep.statut === 'annulee' ? 'Annulée' : ep.statut === 'cloture' ? 'Clôturé' : 'En cours'} ·{' '}
+                {ep.fenetre.nbRenseignees} journée{ep.fenetre.nbRenseignees > 1 ? 's' : ''} notée
+                {ep.fenetre.nbRenseignees > 1 ? 's' : ''}
+                {ep.fenetre.jourCourant !== null ? ` · jour ${ep.fenetre.jourCourant}/${NB_JOURS_AGENDA_ALI}` : ''}
               </p>
+              {ep.illisibles > 0 && (
+                // Un dossier de contrôle qui tait ses lignes en quarantaine ment
+                // par omission : ce compte reste visible même sans détail par ligne.
+                <p className="text-xs text-status-danger">
+                  {ep.illisibles} ligne{ep.illisibles > 1 ? 's' : ''} en quarantaine, illisible
+                  {ep.illisibles > 1 ? 's' : ''} — signalé pour intégrité, non affiché en détail ici.
+                </p>
+              )}
+            </div>
+            {/* « verser au dossier », pas « agréger » : la clôture alimentaire
+                ne cote rien (D-039) — elle rend le recueil lisible du dossier.
+                Le bouton reste rendu même avec des lignes en quarantaine : le
+                serveur refuse alors en NOMMANT les dates, et c'est ce message
+                qui dit au praticien quoi régler. */}
+            {ep.statut === 'en_cours' && ep.fenetre.nbRenseignees > 0 && (
+              <button
+                type="button"
+                onClick={() => void cloturer(ep.idAssignation)}
+                disabled={clotureEnCours === ep.idAssignation}
+                className="inline-flex min-h-9 items-center rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                {clotureEnCours === ep.idAssignation ? 'Clôture…' : 'Clôturer et verser au dossier'}
+              </button>
             )}
           </div>
 

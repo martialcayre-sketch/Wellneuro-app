@@ -268,4 +268,77 @@ test.describe('Agenda alimentaire — parcours patient', () => {
       expect(corps).not.toContain(interdit);
     }
   });
+
+  // ── Clôture praticien → l'agenda entre au dossier (LOT-00 + bouton) ───────
+  // La preuve de bout en bout du LOT-00 : le praticien clôture depuis l'écran,
+  // et la passation apparaît dans « Détail des réponses ». Elle rend
+  // « Historique » — `Q_ALI_09` n'a pas de bloc `certification` au catalogue,
+  // donc `certification: null` (D-039 : la clôture ne cote rien). Ce badge
+  // était devenu inatteignable en E2E depuis D-038, où le seed ne produisait
+  // plus que des passations certifiées ; ce chemin le ré-atteint par une vraie
+  // clôture, pas par le seed.
+  test('le praticien clôture l’agenda depuis l’écran, et la passation entre au dossier en « Historique »', async ({ page }) => {
+    await resetPortailState(PATIENT.idPatient);
+    await accuserCadreTrust(PATIENT.idPatient);
+
+    await page.context().addCookies([await praticienSessionCookie()]);
+    const idAssignation = await assignerAgenda(page);
+
+    // Le consentement et la saisie passent par la SESSION PORTAIL du patient
+    // (routes `/api/patient/*` et `/api/portail/*`). Le cookie praticien
+    // (`next-auth.session-token`) et le cookie portail (`wn_portail`) portent
+    // des noms distincts : ajoutés tous deux, ils coexistent — le premier sert
+    // la fiche `/dashboard` plus bas, le second ces deux appels-ci.
+    await page.context().addCookies([
+      patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email),
+    ]);
+    const consentement = await page.request.post('/api/patient/consentement', {
+      data: { idAssignation, action: 'donner' },
+    });
+    expect(consentement.status()).toBe(200);
+
+    // Deux journées par l'API — hier et aujourd'hui, dates en Europe/Paris.
+    for (const decalage of [-1, 0]) {
+      const saisie = await page.request.post('/api/portail/agenda-alimentaire', {
+        data: {
+          idAssignation,
+          dateJour: dateParis(decalage),
+          reponses: {
+            prises: [
+              { heure: '08:00', nature: 'repas' },
+              { heure: '12:30', nature: 'repas' },
+              { heure: '19:30', nature: 'repas' },
+            ],
+            premierePriseProteines: true,
+            legumesDeuxPrises: true,
+            fruitsOuOleagineux: null,
+            ultraTransformes: false,
+          },
+        },
+      });
+      expect(saisie.ok()).toBe(true);
+    }
+
+    // ── Le praticien ouvre la fiche, le tiroir de l'agenda, et clôture ──────
+    await page.goto(`/dashboard/patients/${PATIENT.idPatient}`);
+    await page.getByRole('button', { name: 'Agenda alimentaire' }).click();
+    const tiroir = page.getByRole('dialog');
+    await expect(tiroir.getByText('En cours', { exact: false })).toBeVisible();
+
+    await tiroir.getByRole('button', { name: 'Clôturer et verser au dossier' }).click();
+
+    // Rechargé après clôture : le statut passe à « Clôturé », le bouton s'en va.
+    await expect(tiroir.getByText('Clôturé', { exact: false })).toBeVisible();
+    await expect(tiroir.getByRole('button', { name: 'Clôturer et verser au dossier' })).toHaveCount(0);
+    // Fermer le tiroir avant d'en ouvrir un autre.
+    await tiroir.getByRole('button', { name: /Fermer l’instrument/ }).click();
+
+    // ── La passation clôturée est au dossier, en « Historique » ─────────────
+    await page.getByRole('button', { name: 'Détail des réponses' }).click();
+    const table = page.getByRole('dialog').getByRole('table');
+    const ligne = table.getByRole('row', { name: /Agenda alimentaire/ });
+    const badge = ligne.getByText('Historique', { exact: true });
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute('data-variant', 'neutral');
+  });
 });
