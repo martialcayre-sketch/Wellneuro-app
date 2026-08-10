@@ -4,6 +4,28 @@
 
 ## Décisions actives
 
+### D-040 — La discordance rythme déclaré/observé est un drapeau directionnel de sur-déclaration, praticien-only, à trois axes
+
+- Date : 2026-08-10
+- Statut : accepté (décision utilisateur du 2026-08-10, LOT-01 de la campagne `2026-08-10-chaine-alimentaire`)
+- Domaine : clinique, scoring, agenda alimentaire, Mon Équilibre
+- Décision : confronter le **rythme alimentaire déclaré** — sous-score `RYTHME_CHRONO` de `Q_ALI_01` (items `SIIN52/53/54/55`, `web/src/lib/questionnaires/alimentaire.ts:303`) — au **rythme observé** par l'agenda alimentaire clôturé (agrégats `AGA_*`, `web/src/lib/agenda-alimentaire/cloture.ts`, D-039). La confrontation prend la forme d'un **drapeau DIRECTIONNEL de sur-déclaration** : il ne se lève que lorsque le patient **déclare favorable ET l'agenda observe défavorable** — jamais l'inverse (un patient lucide sur son défaut n'est pas signalé). Praticien-only, niveau de preuve D, point à explorer, jamais un diagnostic ([[D-034]]).
+- Les trois axes et leurs seuils — **fixés par l'utilisateur, révisables à la clôture des 21 jours** :
+  1. **Jeûne nocturne** — déclaré `SIIN54` « ≥ 10 h » ; observé `AGA_JEUNE_MEDIAN`. Drapeau si observé **< 600 min**. Ce seuil n'est **pas inventé** : c'est la borne de la source elle-même (10 h = 600 min), la même que le barème `SIIN54 {min:10}` (`alimentaire.ts:252`).
+  2. **Protéines au matin** — déclaré `SIIN52/53` « chaque jour / régulièrement » (oui) ; observé `AGA_FREQ_PROTEINES_MATIN_SEM` (jours/7). Drapeau si observé **< 4 j/7** (rupture de majorité face à une déclaration de régularité).
+  3. **Soir léger** — déclaré `SIIN55` « soir léger et digeste » (oui) ; observé `AGA_FREQ_SOIR_COPIEUX_SEM` (jours/7 où le soir fut le plus copieux). Drapeau si observé **> 3 j/7** (le soir fut le plus copieux la majorité des jours, contredisant « léger »).
+- Ce que les seuils 2 et 3 sont, et ce qu'ils ne sont pas : des **arbitrages cliniques explicites**, sans distribution réelle pour les étalonner (le recueil est arrêté au premier jour). La porte des 21 jours interdit qu'un seuil soit **inventé par l'assistant** ; elle n'interdit pas au responsable de traitement d'en poser un, **nommé et daté**, à réviser quand le recueil le permettra. Le seuil 1, lui, n'est pas un arbitrage : il est porté par la source.
+- Conséquences et bornes — non négociables :
+  - **`null`, jamais 0.** Sous la forme courte de `Q_ALI_01` (`WN_ALI_01_SIIN57` éteint), `RYTHME_CHRONO` n'existe pas et `MAX_RYTHME_CHRONO = 0` (`equilibre/constants.ts:182`) : le déclaré est alors absent, la discordance rend **`null`** (non mesurable), jamais un drapeau ni un « concordant ». Idem si la couverture de l'agenda est insuffisante sur l'axe (dénominateur `AGA_*` nul). Prouvé dans les **deux positions** du drapeau ([[D-033]]).
+  - **Aucune double mesure de Mon Équilibre.** La discordance **ne réalimente pas le besoin 3** : `RYTHME_CHRONO` déclaré y reste l'unique source (`equilibre/constants.ts:253`). C'est une lecture praticien à côté du besoin, pas un second porteur — le piège nommé `RYTHME_ALIMENTAIRE`/10 vs `RYTHME_CHRONO`/7 (`alimentaire.ts:645-658`) reste fermé.
+  - **Directionnel seul.** Déclaré défavorable → pas de drapeau (rien à sur-déclarer). Déclaré favorable + observé favorable → « concordant », pas de drapeau. Seul le couple (déclaré favorable, observé défavorable) lève l'axe.
+- Options écartées :
+  - **Confrontation par axe qualitative** (concordant/discordant/non mesurable, sans drapeau directionnel) : plus complète mais moins actionnable ; l'utilisateur a préféré ne signaler que l'asymétrie qui appelle un entretien.
+  - **Taux de concordance chiffré** (« 2 axes sur 3 ») : mesure dérivée exigeant un seuil d'alerte et une calibration — bute sur la porte des 21 jours et frôle la revendication psychométrique de [[D-034]].
+  - **Attendre le recueil pour tout** (y compris l'axe jeûne) : écarté, l'axe jeûne étant seuil-libre par la source et livrable sans données.
+- Réversibilité : les trois seuils sont des littéraux ; `git revert` suffit, et leur révision à la clôture des 21 jours est prévue par cette décision même.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-alimentaire/lots/LOT-01-discordance-rythme.md`, `web/src/lib/questionnaires/alimentaire.ts` (RYTHME_CHRONO, SIIN52-55), `web/src/lib/agenda-alimentaire/cloture.ts` (agrégats AGA_*), `web/src/lib/equilibre/constants.ts` (besoin 3), [[D-033]], [[D-034]], [[D-039]]
+
 ### D-039 — La clôture de l'agenda alimentaire transmet tous les agrégats calculés — sans poids, sans seuil, sans sélection
 
 - Date : 2026-08-10
