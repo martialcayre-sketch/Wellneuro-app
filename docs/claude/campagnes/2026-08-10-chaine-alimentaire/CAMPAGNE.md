@@ -94,7 +94,7 @@ recopie pas, elle l'exécute.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Clôture technique de l'agenda alimentaire (D-039) — agrégats → `rawAnswers` → `QuestionnaireReponse` `scored:false`, calquée sur le jumeau sommeil | à faire | — |
+| LOT-00 | Clôture technique de l'agenda alimentaire (D-039) — agrégats → `rawAnswers` → `QuestionnaireReponse` `scored:false`, calquée sur le jumeau sommeil | livré (2026-08-10) | — |
 | LOT-01 | Discordance rythme déclaré vs observé — objet restitué, `null` sous forme courte | à faire (décision clinique préalable) | LOT-00 |
 | LOT-02 | Barème et indice agenda (gabarit scorer `agenda_sommeil`) | gaté — porte des 21 jours + recueil réel | LOT-00 |
 | LOT-03 | Moteur de propositions de parcours alimentaire — règles claims-tracées, objet parcours (migration séparée), bloc de synthèse dédié | à faire (décisions cliniques par règle) | enrichi par LOT-00/01/02 |

@@ -3392,3 +3392,24 @@ cette ouverture.
 
 **Questions ouvertes.** Dégel de JA5-05 ; relance humaine du recueil ; liste
 des règles candidates du LOT-03 (claims + décisions cliniques à venir).
+
+## 2026-08-10 — LOT-00 : l'agenda alimentaire entre au dossier
+
+**Décisions.** La clôture livrée sur le gabarit sommeil, bornée par D-039 :
+23 pseudo-items dérivés, `scored:false`, liste épinglée à la main au banc.
+Deux gardes au-delà du jumeau : refus fail-closed sur quarantaine (dates
+nommées), résolution des corrections avant comptage. Route praticien sans
+garde de drapeau — l'arbitrage LOT-05 étendu à la consolidation, écrit dans
+la route.
+
+**Options écartées.** Clôturer par-dessus la quarantaine (agrégats sur recueil
+amputé) ; poser un bouton UI dans ce lot (geste séparé avec son E2E).
+
+**Preuves.** 20/20 au banc (clôture + route), mutation curation → 3 rouges,
+témoin vert ; T1 vert ; Vitest 4 253 ×2 positions. E2E → verify de la PR.
+
+**Prochaine action.** PR du lot ; puis LOT-01 (discordance) qui exige sa
+décision clinique, ou le bouton praticien comme micro-geste.
+
+**Questions ouvertes.** Clôture automatique portail à J21 (le jumeau l'a) —
+décision d'activation à part.
