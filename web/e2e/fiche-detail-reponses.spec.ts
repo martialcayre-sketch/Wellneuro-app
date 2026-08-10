@@ -22,13 +22,16 @@
 //     plafond du seed. (Relevé en revue le 2026-08-09 : une première rédaction
 //     attribuait aux deux dernières la même vertu.)
 //
-// NON-COUVERTURE NOMMÉE depuis D-038 : « Historique » n'est plus atteignable
-// depuis le seed — 14 blocs certifiés, le 15e non interprétable. L'état existe
-// toujours en production (passations d'instruments sans certification au
-// catalogue : variante courte de `Q_ALI_01` drapeau éteint, barreaux non
-// vérifiés du registre). Le libellé et sa couleur restent gardés par
-// `certificationLibelles.guard.test.ts` et `FichePatientPanel.test.tsx` ;
-// aucun E2E ne le voit plus.
+// « Historique » n'est plus atteignable depuis le seed depuis D-038 — 14 blocs
+// certifiés, le 15e non interprétable. L'état existe toujours en production
+// (passations d'instruments sans certification au catalogue : variante courte
+// de `Q_ALI_01` drapeau éteint, barreaux non vérifiés du registre). CE N'EST
+// PLUS UNE NON-COUVERTURE E2E : `portail-agenda-alimentaire.spec.ts` le
+// ré-atteint par une vraie clôture d'agenda alimentaire (`Q_ALI_09`, sans
+// bloc `certification` au catalogue → `certification: null` → « Historique »),
+// donc par un chemin de production, pas par le seed. Le libellé et sa couleur
+// restent aussi gardés par `certificationLibelles.guard.test.ts` et
+// `FichePatientPanel.test.tsx`.
 //
 // SUR UNE BASE DÉJÀ SEEDÉE, CE BANC EST ROUGE, et ce n'est pas une régression :
 // `prisma/seed.ts` upserte les passations avec `update: {}`, donc les clés

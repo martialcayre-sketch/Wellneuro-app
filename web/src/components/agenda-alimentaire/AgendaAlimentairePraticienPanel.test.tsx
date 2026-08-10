@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { AgendaAlimentairePraticienPanel } from './AgendaAlimentairePraticienPanel';
 import { AgendaAliFeatureProvider } from './AgendaAliFeatureProvider';
@@ -347,5 +347,88 @@ describe('AgendaAlimentairePraticienPanel', () => {
     renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     await waitFor(() => screen.getByText('2026-08-01'));
     expect(screen.getByText('Saisie hors portail : praticien')).toBeTruthy();
+  });
+
+  // ── Bouton « Clôturer et verser au dossier » (résidu du LOT-00, D-039) ────
+
+  const LIBELLE_CLOTURE = 'Clôturer et verser au dossier';
+
+  it('le bouton de clôture n’apparaît que pour un épisode en cours avec au moins une journée', async () => {
+    mockFetch([episode()]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.getByRole('button', { name: LIBELLE_CLOTURE })).toBeTruthy();
+    cleanup();
+
+    mockFetch([episode({ statut: 'cloture' })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByRole('button', { name: LIBELLE_CLOTURE })).toBeNull();
+    cleanup();
+
+    mockFetch([episode({ statut: 'annulee' })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('2026-08-01'));
+    expect(screen.queryByRole('button', { name: LIBELLE_CLOTURE })).toBeNull();
+    cleanup();
+
+    // Zéro journée : rien à verser — le serveur refuserait, le bouton se tait.
+    mockFetch([episode({ jours: [] })]);
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByText('Agenda alimentaire — 21 jours'));
+    expect(screen.queryByRole('button', { name: LIBELLE_CLOTURE })).toBeNull();
+  });
+
+  it('clic → POST vers la route de clôture avec les bons identifiants, puis rechargement (statut « Clôturé »)', async () => {
+    const appels: Array<{ url: string; init?: RequestInit }> = [];
+    let lecture = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        appels.push({ url, init });
+        if (init?.method === 'POST') return { json: async () => ({ ok: true, idReponse: 'REP_X', nbJours: 1, dejaCloture: false }) };
+        lecture += 1;
+        return {
+          json: async () => ({
+            ok: true,
+            episodes: [lecture === 1 ? episode() : episode({ statut: 'cloture' })],
+          }),
+        };
+      }),
+    );
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+    fireEvent.click(screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+
+    await waitFor(() => screen.getByText(/Clôturé/));
+    const post = appels.find((a) => a.init?.method === 'POST');
+    expect(post?.url).toBe('/api/praticien/agenda-alimentaire/cloture');
+    expect(JSON.parse(String(post?.init?.body))).toEqual({ idPatient: 'PAT_1', idAssignation: 'ASS_ALI' });
+    // Rechargé après succès : deux GET, et le bouton a disparu avec le statut.
+    expect(lecture).toBe(2);
+    expect(screen.queryByRole('button', { name: LIBELLE_CLOTURE })).toBeNull();
+  });
+
+  it('refus nommé du serveur (quarantaine) → le message s’affiche, pas de rechargement', async () => {
+    const REFUS =
+      'Recueil non clôturable : 1 ligne(s) illisible(s) en quarantaine (2026-08-05). Régler l’incident d’intégrité avant de clôturer.';
+    let lecture = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return { json: async () => ({ ok: false, reason: 'invalid', error: REFUS }) };
+        lecture += 1;
+        return { json: async () => ({ ok: true, episodes: [episode()] }) };
+      }),
+    );
+    renderPret(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
+    await waitFor(() => screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+    fireEvent.click(screen.getByRole('button', { name: LIBELLE_CLOTURE }));
+
+    await waitFor(() => screen.getByText(REFUS));
+    // Le message du serveur EST la restitution : aucun re-GET, l'épisode reste
+    // en cours et le bouton reste disponible pour un nouvel essai après remède.
+    expect(lecture).toBe(1);
+    expect(screen.getByRole('button', { name: LIBELLE_CLOTURE })).toBeTruthy();
   });
 });

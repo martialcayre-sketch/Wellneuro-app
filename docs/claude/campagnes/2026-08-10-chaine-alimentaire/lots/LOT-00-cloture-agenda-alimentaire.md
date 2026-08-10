@@ -47,7 +47,7 @@ couverture. Sans poids, sans seuil, sans sélection. `Q_ALI_09` garde
 
 Aucun barème, aucun indice, aucune migration (la table des réponses existe).
 La restitution en synthèse IA au-delà de la forme standard = LOT-01+.
-**Résidus** : le bouton « Clôturer » du lecteur praticien (l'API existe, le
-geste UI et son E2E restent à poser) ; la clôture automatique côté portail à
+**Résidus** : ~~le bouton « Clôturer » du lecteur praticien~~ **POSÉ le
+2026-08-10** (changelog `bouton-cloture-agenda-alimentaire`) ; la clôture automatique côté portail à
 la fin des 21 jours (le jumeau sommeil l'a — décision d'activation à part,
 le recueil étant piloté).
