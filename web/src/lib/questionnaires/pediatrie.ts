@@ -72,6 +72,7 @@ export const Q_PED_02 = {
   ],
   scoring:{
     type:'subscore',
+    certification:{source:'drive',status:'certifie'},
     // AUCUN TOTAL GLOBAL, et il fallait le DÉCLARER pour que ce soit vrai.
     //
     // Sans ce drapeau, le moteur additionne les quatre axes et rend 84 sur une

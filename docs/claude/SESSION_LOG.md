@@ -3332,6 +3332,28 @@ fils 2 (HDS pgvector/staging) et 3 (jalon 2026-10-21) restent ouverts.
 **Questions ouvertes.** Le motif du doute des 4 « ambigu » — à instruire au
 lot, pas ici.
 
+## 2026-08-09 — L'alignement D-038 exécuté : le badge parle, l'inventaire tombe à zéro
+
+**Décisions.** Les 18 déclarations posées sur verdicts certify existants (0
+divergence critique partout) ; les 4 « ambigu » levés après réexamen — leurs
+doutes dataient d'avant les verdicts du 2026-07-30. Q_FIB_03 (suspendu) intact.
+Le garde du seed gagne son unique exemption, dérivée de `motifNonInterpretable`
+(passation MFI-20 antérieure à la reconstruction), jamais une liste.
+
+**Options écartées.** Poser la clé sur le bloc seed MFI-20 (fausse au dossier,
+inerte à l'écran) ; éditer la matrice drive-mapping (audit daté du 2026-07-06,
+supersédé par le registre).
+
+**Ce que la vérification a montré.** L'essentiel était déjà vérifié : le lot
+est une transcription de verdicts, pas une enquête. « Historique » n'est plus
+atteignable depuis le seed — non-couverture nommée dans le spec E2E.
+
+**Prochaine action.** CI `verify` sur la PR (E2E injouables dans ce conteneur :
+navigateur épinglé 1228 vs 1194 préinstallé, téléchargement bloqué). Fils 2
+(HDS) et 3 (jalon 2026-10-21) ouverts.
+
+**Questions ouvertes.** Voir le fragment de changelog du lot.
+
 ## 2026-08-09 — Contrat SQL pgvector : le socle RAG tenu en CI et en préflight de release
 
 **Décisions.** Le contrat (`rag_pgvector_structure_v1.sql`, lecture seule)

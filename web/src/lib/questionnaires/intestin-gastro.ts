@@ -19,6 +19,7 @@ export const Q_GAS_03 = {
   ],
   scoring:{
     type:'bristol',
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:1,max:2,label:'Constipation',color:'danger'},
       {min:3,max:4,label:'Normal',color:'success'},

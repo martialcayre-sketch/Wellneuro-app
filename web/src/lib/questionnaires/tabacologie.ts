@@ -75,6 +75,7 @@ export const Q_TAB_03 = {
   ],
   scoring:{
     type:'subscore',
+    certification:{source:'drive',status:'certifie'},
     subScores:[
       {id:'D',label:'Dépendance physique',items:['QD1','QD2','QD3','QD4','QD5','QD6','QD7'],max:21},
       {id:'S',label:'Sevrage / Manque',   items:['QS1','QS2','QS3','QS4','QS5','QS6','QS7'],max:21},
@@ -181,6 +182,7 @@ export const Q_TAB_04 = {
     // lit les réponses, et rien qui puisse se lire comme un verdict. Même issue
     // que le repérage TDAH enseignant, pour la même raison.
     type:'sum', maxTotal:36,
+    certification:{source:'drive',status:'certifie'},
     sansTotalGlobal:true,
     note:"Repérage local des conduites de consommation, bâti sur les critères d'usage problématique. Il ne reprend aucune grille d'interprétation publiée : aucun seuil n'y est attaché. Les réponses orientent l'entretien, elles ne concluent pas.",
   }

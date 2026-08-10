@@ -549,6 +549,7 @@ export const Q_NEU_06 = {
   ],
   scoring:{
     type:'sum', severiteCroissante:true, maxTotal:20,
+    certification:{source:'drive',status:'certifie'},
     // Bandes de la source, à un arbitrage près, DÉCLARÉ. Elle écrit « De 0 à 1 :
     // Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels » — les deux
     // revendiquent la valeur 1. L'arbitrage donne 1 à la bande la plus sévère,

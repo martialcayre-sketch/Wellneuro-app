@@ -706,7 +706,7 @@ assertEqual(calculateScore('Q_SOM_02', fill('Q_SOM_02', 3)).total, 24, 'Q_SOM_02
 assertEqual(questions('Q_SOM_02').length, 8, 'Q_SOM_02 doit contenir 8 items');
 assertEqual(optionLabels('Q_SOM_02', 'E1'), ['Aucune chance', 'Faible chance', 'Chance moyenne', 'Forte chance'], 'Q_SOM_02 options Epworth');
 assertEqual(calculateScore('Q_SOM_02', fill('Q_SOM_02', 3)).interpretation.label, "Somnolence diurne excessive ; syndrome d'apnées du sommeil possible", 'Q_SOM_02 seuil haut');
-assertCertification(calculateScore('Q_SOM_02', fill('Q_SOM_02', 0)), 'ambigu', 'Q_SOM_02');
+assertCertification(calculateScore('Q_SOM_02', fill('Q_SOM_02', 0)), 'certifie', 'Q_SOM_02');
 
 assertEqual(calculateScore('Q_SOM_05', fillByOptionBoundary('Q_SOM_05', 'min')).total, 16, 'Q_SOM_05 score minimal');
 assertEqual(calculateScore('Q_SOM_05', fillByOptionBoundary('Q_SOM_05', 'max')).total, 86, 'Q_SOM_05 score maximal');
@@ -758,7 +758,7 @@ assertEqual(questions('Q_GAS_01').map(question => question.texte).slice(0, 3), [
   "J'ai des aphtes ou des douleurs dans la bouche qui me gênent.",
   "J'ai facilement une mauvaise haleine, une langue chargée.",
 ], 'Q_GAS_01 premiers libellés Drive');
-assertCertification(calculateScore('Q_GAS_01', fill('Q_GAS_01', 0)), 'ambigu', 'Q_GAS_01');
+assertCertification(calculateScore('Q_GAS_01', fill('Q_GAS_01', 0)), 'certifie', 'Q_GAS_01');
 
 const francisMax = {
   FR_Q001: 'oui',
@@ -828,7 +828,7 @@ assertEqual(questions('Q_FIB_02').map(question => question.texte).slice(0, 11), 
   'Conduire une voiture ?',
   'Monter les escaliers ?',
 ], 'Q_FIB_02 sous-items fonctionnels Drive');
-assertCertification(calculateScore('Q_FIB_02', qifMax), 'ambigu', 'Q_FIB_02');
+assertCertification(calculateScore('Q_FIB_02', qifMax), 'certifie', 'Q_FIB_02');
 
 assertEqual(calculateScore('Q_FIB_03', fill('Q_FIB_03', 0)).scored, false, 'Q_FIB_03 ne doit pas produire de score automatique');
 assert(calculateScore('Q_FIB_03', fill('Q_FIB_03', 0)).note.includes('non équivalent à la fiche ELFE Drive complète'), 'Q_FIB_03 doit documenter l’écart avec Drive');
@@ -886,7 +886,7 @@ assertEqual(questions('Q_URO_01').map(question => question.texte).slice(0, 2), [
 // dans le changelog et dans le commentaire de `questions.ts`).
 assert(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note.includes('0-35'), 'Q_URO_01 doit énoncer la borne du score de symptômes');
 assert(!/[Aa]rbitrage|lot 4|banc de certification|Drive/.test(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note), 'Q_URO_01 : la note ne doit pas véhiculer d’historique d’ingénierie jusqu’au prompt de synthèse');
-assertCertification(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')), 'ambigu', 'Q_URO_01');
+assertCertification(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')), 'certifie', 'Q_URO_01');
 
 const uroJournal = calculateScore('Q_URO_02', fill('Q_URO_02', 0));
 assertEqual(uroJournal.scored, false, 'Q_URO_02 ne doit pas produire de score automatique');

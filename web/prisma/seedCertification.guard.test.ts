@@ -16,11 +16,14 @@
 //
 // LES DEUX SENS, et le second n'est pas redondant : un bloc ne peut ni déclarer
 // ce que le catalogue tait, ni taire ce que le catalogue déclare. Sans le
-// second, poser la clé sur 3 blocs au lieu de 13 passerait — et la colonne
-// « Qualité » retomberait sur « Historique » sans qu'aucun banc ne bouge.
+// second, poser la clé sur 3 blocs au lieu de 14 passerait — et la colonne
+// « Qualité » retomberait sur « Historique » sans qu'aucun banc ne bouge. Le
+// second sens porte UNE exemption, datée et dérivée (voir le cas), depuis que
+// l'alignement D-038 a fait déclarer le catalogue pour `Q_SOM_07` aussi.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
 import { REPONSES_SOPHIE, REPONSES_JENNIFER, REPONSES_MICHEL } from './seedReponses';
 
 const BLOCS = [...REPONSES_SOPHIE, ...REPONSES_JENNIFER, ...REPONSES_MICHEL];
@@ -50,34 +53,51 @@ describe('seed : la certification recopie le catalogue, dans les deux sens', () 
     expect(menteurs).toEqual([]);
   });
 
-  it('aucun bloc ne tait une certification que le catalogue déclare', () => {
+  // UNE exemption, et elle n'est pas une liste : une passation non
+  // interprétable À SA DATE (`motifNonInterpretable`, frontière fermée — le
+  // prédicat même que la route applique avant la branche du badge) peut rester
+  // nue. Une passation antérieure à la reconstruction de son instrument n'a pas
+  // pu enregistrer une certification que le moteur ne posait pas encore : la
+  // clé serait fausse au dossier, et la route la retirerait de toute façon
+  // avant l'écran. Épingler ici une liste d'identifiants dirait seulement ce
+  // qu'on croyait le jour où on l'a écrite — même motif que l'attendu lu du
+  // catalogue plus haut.
+  it('aucun bloc ne tait une certification que le catalogue déclare — sauf passation non interprétable à sa date', () => {
     const muets = BLOCS.filter(bloc => {
       const declaree = (bloc.scoresJson as Record<string, unknown>).certification;
-      return declaree === undefined && certificationDuCatalogue(bloc.idQuestionnaire) !== null;
+      return (
+        // `== null` à dessein : le runtime produit `ScoreCertification | null`,
+        // et `libelleCertificationPassation` traite `null` comme l'absence — un
+        // bloc à `certification: null` serait tout aussi muet à l'écran
+        // (relevé en revue Copilot le 2026-08-09).
+        declaree == null
+        && certificationDuCatalogue(bloc.idQuestionnaire) !== null
+        && motifNonInterpretable(bloc.idQuestionnaire, bloc.dateReponse) === null
+      );
     }).map(bloc => bloc.idQuestionnaire);
     expect(muets).toEqual([]);
   });
 
-  // LE PLAFOND, assumé et nommé. Les deux blocs sont nus pour LA MÊME raison —
-  // le catalogue ne déclare rien pour l'un comme pour l'autre — et c'est ce que
-  // ce cas assère. Ce qui diffère est l'EFFET À L'ÉCRAN, et il ne se teste pas
-  // ici : `Q_SOM_01` affiche « Historique », `Q_SOM_07` « Non interprétable »,
-  // sa passation étant antérieure à la reconstruction du MFI-20. Les deux sont
-  // couverts par `e2e/fiche-detail-reponses`. (Une première rédaction de ce
-  // commentaire disait « deux raisons différentes », ce que l'assertion
-  // dessous dément — relevé en revue le 2026-08-09.)
+  // LE PLAFOND, assumé et nommé — il a changé de nature au lot D-038. Les deux
+  // blocs nus l'étaient « parce que le catalogue ne déclare rien » ; depuis que
+  // l'alignement a fait parler le catalogue, il ne reste QU'UN bloc nu, et pour
+  // l'autre raison : la passation de `Q_SOM_07` (2026-06-15) est antérieure à
+  // la reconstruction du MFI-20 (2026-07-31). L'effet à l'écran est couvert par
+  // `e2e/fiche-detail-reponses` (« Non interprétable »).
   //
   // Le plafond est fixé par identifiant pour qu'étendre le seed reste une
   // décision, jamais un effet de bord ; il est doublé de la vérification
-  // DÉRIVÉE (`toBeNull`), qui est ce qui le rend légitime. L'ordre, lui, ne
-  // porte aucun sens : on compare des ensembles, sans quoi réordonner deux
-  // blocs — geste sans effet — rendrait ce banc rouge.
-  it('les deux blocs nus le sont parce que le catalogue ne déclare rien', () => {
+  // DÉRIVÉE (le motif non interprétable existe À LA DATE de la passation, et le
+  // catalogue déclare bien — sans quoi l'exemption ne serait pas ce qui le
+  // justifie), qui est ce qui le rend légitime.
+  it('le seul bloc nu est la passation non interprétable, et l’exemption est sa seule justification', () => {
     const nus = BLOCS
-      .filter(bloc => (bloc.scoresJson as Record<string, unknown>).certification === undefined)
-      .map(bloc => bloc.idQuestionnaire);
-    expect([...nus].sort()).toEqual(['Q_SOM_01', 'Q_SOM_07']);
-    nus.forEach(id => expect(certificationDuCatalogue(id)).toBeNull());
+      .filter(bloc => (bloc.scoresJson as Record<string, unknown>).certification == null);
+    expect(nus.map(bloc => bloc.idQuestionnaire)).toEqual(['Q_SOM_07']);
+    nus.forEach(bloc => {
+      expect(motifNonInterpretable(bloc.idQuestionnaire, bloc.dateReponse)).not.toBeNull();
+      expect(certificationDuCatalogue(bloc.idQuestionnaire)).not.toBeNull();
+    });
   });
 
   // LE SEED DOIT ÊTRE CONSOMMÉ EN ENTIER. Les trois tableaux vivent dans un

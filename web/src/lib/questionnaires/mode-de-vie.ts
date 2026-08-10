@@ -103,6 +103,7 @@ export const Q_MOD_01 = {
   ],
   scoring:{
     type:'subscore',
+    certification:{source:'drive',status:'certifie'},
     subScores:[
       {id:'SOMMEIL',label:'Sommeil',items:['SOMMEIL_Q001','SOMMEIL_Q002','SOMMEIL_Q003','SOMMEIL_Q004','SOMMEIL_Q005'],max:28},
       {id:'RYTHME_BIOLOGIQUE',label:'Rythme biologique',items:['RYTHME_BIOLOGIQUE_Q001','RYTHME_BIOLOGIQUE_Q002','RYTHME_BIOLOGIQUE_Q003','RYTHME_BIOLOGIQUE_Q004','RYTHME_BIOLOGIQUE_Q005'],max:28},
@@ -137,6 +138,7 @@ export const Q_MOD_02 = {
   ],
   scoring:{
     type:'sum_no_interpretation', maxTotal:4,
+    certification:{source:'drive',status:'certifie'},
     note:'Interprétation source non linéaire : activité forte si au moins une réponse est forte; sinon activité moyenne si au moins une réponse est moyenne; sinon faible. Estimation énergétique proposée par la source : 2000/2200/2400/2600 kcal selon 0/1/2/3 critères (âge <45, sexe masculin, activité moyenne ou forte).'
   }
 };

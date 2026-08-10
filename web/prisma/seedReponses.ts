@@ -85,18 +85,17 @@ export const REPONSES_SOPHIE = [
     idQuestionnaire: 'Q_SOM_01',
     titre: 'PSQI — Index de qualité du sommeil de Pittsburgh',
     dateReponse: new Date('2026-06-12'),
-    // NU, ET C'EST LE PLAFOND DU SEED, pas un oubli. Le catalogue ne déclare
-    // AUCUNE certification pour `Q_SOM_01` — il fait partie des 18 instruments
-    // que le registre déclare `scoring_verifie` et dont l'écran ne dit rien
-    // (l'inventaire de `check_questionnaire_certification.js`, matière de
-    // décision produit à venir sur le badge muet). Sa ligne affiche donc « Historique », et un E2E l'assère : c'est
-    // ce qui empêche un futur seed généreux de poser ici une certification que
-    // le catalogue ne porte pas.
+    // Longtemps NU parce que le catalogue ne déclarait rien — c'était le
+    // plafond du seed, asséré par E2E. Le lot D-038 a levé ce silence : le
+    // catalogue déclare `certifie`/`drive` pour `Q_SOM_01` (verdict certify du
+    // 2026-07-31 au registre, 0 divergence critique), et le garde
+    // `seedCertification.guard.test.ts` exige alors que le bloc la porte.
     scoresJson: {
       habitudes: { heureCoucher: '00h30', heureLever: '07h00', latence: 45, duree: 5.5 },
       perturbations: { total: 8, max: 18 },
       qualite: { total: 4, max: 6 },
       global: 12,
+      certification: CERTIFIE_DRIVE,
     },
     scorePrincipal: 12,
     interpretation: 'Mauvais dormeur — qualité de sommeil très altérée (seuil > 5)',
@@ -151,15 +150,15 @@ export const REPONSES_JENNIFER = [
     idQuestionnaire: 'Q_SOM_07',
     titre: 'MFI-20 — Inventaire multidimensionnel de la fatigue',
     dateReponse: new Date('2026-06-15'),
-    // NU AUSSI, mais pour une TOUTE AUTRE raison que `Q_SOM_01` — et la
-    // confondre ferait écrire une ligne fausse au registre. Le catalogue ne
-    // déclare rien pour `Q_SOM_07` non plus, mais surtout : cette passation est
-    // datée du 2026-06-15, donc ANTÉRIEURE à la reconstruction du MFI-20 du
-    // 2026-07-31 (`passationsNonInterpretables.ts`). La route la rend
-    // `nonInterpretable`, et cette branche PASSE AVANT celle du badge de
-    // certification : sa ligne affiche « Non interprétable », jamais
-    // « Historique », quoi qu'on écrive ici. Y poser une certification serait
-    // inerte à l'écran et faux au dossier.
+    // NU, et il le RESTE depuis que le catalogue déclare (D-038) — seule
+    // exemption du garde `seedCertification.guard.test.ts`, ancrée sur
+    // `motifNonInterpretable` : cette passation est datée du 2026-06-15, donc
+    // ANTÉRIEURE à la reconstruction du MFI-20 du 2026-07-31
+    // (`passationsNonInterpretables.ts`). Une passation de juin n'a pas pu
+    // enregistrer une certification que le moteur ne posait pas encore — la clé
+    // ici serait fausse au dossier. Et elle serait inerte à l'écran : la route
+    // rend `nonInterpretable`, branche qui PASSE AVANT celle du badge de
+    // certification ; sa ligne affiche « Non interprétable », quoi qu'on écrive.
     scoresJson: {
       GF: { total: 17, max: 20, label: 'Fatigue générale & physique' },
       AM: { total: 14, max: 20, label: 'Fatigue mentale & motivation' },

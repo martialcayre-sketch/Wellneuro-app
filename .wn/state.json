@@ -14,7 +14,7 @@
     "checks": {
       "orchestration": "audit campagnes vert au LOT-03",
       "type_check": "vert — tsc 0 erreur projet entier",
-      "scoring_certification": "vert — banc rejoué (63 questionnaires) ; registre : 65 instruments, 60 en scoring_verifie, 2 suspendus terminaux, Q_SOM_09 en droits_verifies, Q_GEO_04 contenu_verrouille, Q_ALI_09 en repere ; COSMIN inconnu pour les 65",
+      "scoring_certification": "vert — banc rejoué le 2026-08-09 dans les deux positions du drapeau après l'alignement D-038 ; inventaire écran ↔ registre : 0 en production, 1 drapeau éteint (variante courte Q_ALI_01, sans verdict). Registre : 65 instruments, 60 en scoring_verifie, 2 suspendus terminaux, Q_SOM_09 en droits_verifies, Q_GEO_04 contenu_verrouille, Q_ALI_09 en repere ; COSMIN inconnu pour les 65",
       "no_secrets": "vert",
       "e2e": "T3 COMPLET vert le 2026-08-08 au LOT-03 — 4 229 Vitest sur 374 fichiers, 340 au banc courte forme, 130 E2E (Chromium + WebKit, build de production), contrats SQL de prisma/checks joués dont les deux du lot. Au LOT-04 : E2E rejoués (133 verts, 1 rouge démontré étranger au lot — fragilité locale macOS au 67e test), verify vert sur la PR #630.",
       "contrats_sql_packs": "packs_registre_coherence_v1 vert sur base vide, après seed, et après divergence forcée de la ligne packs ; le négatif mutation-testé — 10 mutants, 9 tués, témoin vert, le survivant démontré ÉQUIVALENT. RELECTURE DE PRODUCTION APRÈS MERGE le 2026-08-09 : 0 divergence sur 8 packs.",
@@ -23,8 +23,8 @@
   },
   "next_action": [
     "AUCUNE CAMPAGNE PRIMAIRE ACTIVE : 2026-08-08-dettes-ouvertes-5-0 CLOSE le 2026-08-09. Rien n'a été promu — le prochain chantier s'arbitre entre les trois fils ci-dessous, et l'agenda alimentaire reste parallèle, gaté par le recueil. Le récit de clôture est dans le fragment de handoff du 2026-08-09.",
-    "FIL 1 — TRANCHÉ le 2026-08-09 : D-038. Le badge muet se remplit DEPUIS LE CATALOGUE, aligné À LA MAIN — le registre ne pilote pas l'écran. Reste À OUVRIR : le lot d'alignement — déclarer `certification` instrument par instrument (relecture adossée au banc certify, jamais une copie du registre) pour les 18 muets, et RÉEXAMINER un par un les 4 « ambigu » (Q_SOM_02, Q_GAS_01, Q_FIB_02, Q_URO_01) avant tout changement. L'inventaire du garde (`npm run check`, sortie écran ↔ registre) est l'instrument de mesure de l'avancement ; changement d'UI → T2.",
-    "FIL 2 — CHANTIER HDS (D-006 confirmée par D-037) : prochaine action posée au SESSION_LOG du 2026-08-09 — contrat SQL pgvector en CI, puis recette staging une fois les secrets et flags posés par le responsable. Questions ouvertes du même jour : rollback sans critère ni fenêtre, aucun GO/NO-GO de migration, osc-secnum-fr1 inaccessible sur le compte. La revue de la dette HDS est avancée à la réponse de Scalingo (ticket du 2026-08-09).",
+    "FIL 1 — D-038 EXÉCUTÉE le 2026-08-09 : l'alignement du catalogue est fait. 18 déclarations posées (chacune adossée au verdict certify du registre, 0 divergence critique partout), 4 « ambigu » réexaminés un par un et levés (leurs doutes dataient d'avant les verdicts du 2026-07-30 qui les soldent) ; Q_FIB_03 (suspendu, 2 divergences) intact. INVENTAIRE DU GARDE : 0 en position de production, 1 drapeau éteint — la variante courte de Q_ALI_01, muette À RAISON (aucun verdict pour la forme 14 items). Seed : PSQI porte la clé, MFI-20 reste nu sous l'exemption DÉRIVÉE de motifNonInterpretable posée au garde. NON-COUVERTURE NOMMÉE : « Historique » n'est plus atteignable depuis le seed, aucun E2E ne le voit plus (bancs unitaires seuls).",
+    "FIL 2 — CHANTIER HDS (D-006 confirmée par D-037) : le contrat SQL pgvector est LIVRÉ (PR #634 du 2026-08-09 — rag_pgvector_structure_v1.sql en CI ET en préflight fail-closed de release-db.yml, production lue conforme avant câblage, trois dérives provoquées lèvent). PROCHAINE ACTION : recette staging le mardi 2026-08-12, après pose des secrets et flags par le responsable (handoff 2026-08-09-2110). Questions ouvertes : rollback sans critère ni fenêtre, aucun GO/NO-GO de migration, osc-secnum-fr1 inaccessible sur le compte, réponse Scalingo attendue.",
     "FIL 3 — JALON 2026-10-21, rappelé à la clôture comme la campagne s'y engageait : sans reconduction écrite, G-TRUST-04 ET le dossier RGPD (préambule et tableau §14 de docs/DOSSIER_RGPD.md, le tableau faisant foi) reprennent la règle du dépôt le même jour ; l'information des personnes, « au plus tôt », est déjà échue. L'échéance de la DÉROGATION ne bouge pas — seule la revue de la dette HDS est avancée par D-037.",
     "DETTES DÉPLACÉES PAR LE LOT-01, à ne pas redécouvrir : la redirection /patient/* n'a AUCUNE échéance (elle sert des liens e-mail déjà partis, durée de vie inconnue — une mesure d'accès sur la redirection trancherait) ; api/patient/assignations n'a plus d'appelant — retrait d'une route d'API = décision séparée.",
     "QUESTION CLINIQUE PORTÉE PAR LA CAMPAGNE CLOSE : seuils_points reste ouvert dans la classe « recueil partiel » — il ne garde que le recueil entièrement vide, son porteur Q_ALI_01 est allumé en production, et aucune règle d'orientation publiée ne lit sa bande. Fermer ce moteur est un geste clinique qui demande sa propre décision.",
@@ -56,7 +56,7 @@
     "D-034"
   ],
   "last_session": null,
-  "updated_at": "2026-08-09T18:20:00Z",
+  "updated_at": "2026-08-09T21:58:00Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
