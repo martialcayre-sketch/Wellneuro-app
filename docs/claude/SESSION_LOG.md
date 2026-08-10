@@ -3433,3 +3433,22 @@ pour consentement et saisie.
 
 **Prochaine action.** PR du lot ; puis LOT-01 (discordance), qui s'ouvre par sa
 décision clinique.
+## 2026-08-10 — La validation d'envoi rejoint le praticien (accueil + orientation NNPP2)
+
+**Décisions (propriétaire).** Envoi direct — le bouton « Envoyer (N) — un seul
+mail » de la Bibliothèque apparaît sur l'accueil (nouveau bloc aside « File
+d'envoi ») et sous les suggestions NNPP2 ; le clic EST la validation, D-030
+inchangée. Fusion des inbox réception/envoi **écartée** : deux logiques, deux
+blocs voisins.
+
+**Options écartées.** Un simple raccourci vers la Bibliothèque (une navigation
+de plus pour rien) ; la fusion (mélange de l'ancre de consultation et des
+brouillons dans un composant).
+
+**Livré.** PR #639 mergée — aucun changement d'API, le brouillon part entier,
+l'orientation est relue après envoi. 114 tests verts, T1 vert.
+
+**Prochaine action.** Mardi 2026-08-12 : recette staging. Au premier passage
+Mac : rejouer T2 (E2E non rejoués avant merge — seule réserve du lot).
+
+**Questions ouvertes.** Inchangées (rollback, GO/NO-GO, réponse Scalingo).
