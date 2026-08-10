@@ -4,9 +4,9 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
+  "status": "active",
+  "active_campaign": "2026-08-10-chaine-alimentaire",
+  "active_lot": "LOT-00",
   "last_completed_lot": "2026-08-08-dettes-ouvertes-5-0/LOT-04 — livré (PR #630, verify vert ; doc de livraison #631) ; la campagne est CLOSE le 2026-08-09, ses cinq lots livrés (LOT-00 #623, LOT-01 #625, LOT-02 #626, LOT-03 #627, LOT-04 #630) et son Done vérifié à la clôture — les trois gardes du LOT-00 re-prouvés par mutation le jour même (3 mutations rouges, témoin 24/24 vert). Les trois dettes ouvertes de 5.0 (4, 5, 6) sont fermées, la quatrième nommée (badge) est gardée par le banc du LOT-04.",
   "validation": {
     "overall_status": "passed",
@@ -22,7 +22,7 @@
     }
   },
   "next_action": [
-    "AUCUNE CAMPAGNE PRIMAIRE ACTIVE : 2026-08-08-dettes-ouvertes-5-0 CLOSE le 2026-08-09. Rien n'a été promu — le prochain chantier s'arbitre entre les trois fils ci-dessous, et l'agenda alimentaire reste parallèle, gaté par le recueil. Le récit de clôture est dans le fragment de handoff du 2026-08-09.",
+    "CAMPAGNE ACTIVE : 2026-08-10-chaine-alimentaire (ouverte le 2026-08-10 sur la note de cadrage du même jour, NOTE_CADRAGE.md dans le dossier de campagne), lot courant LOT-00 — clôture technique de l'agenda alimentaire, bornée par D-039 (tous les agrégats calculés, sans poids ni seuil, liste DÉRIVÉE du domaine jamais recopiée). Cinq lots : LOT-00 clôture → LOT-01 discordance rythme (décision clinique préalable) → LOT-02 barème (GATÉ porte des 21 jours + recueil réel) → LOT-03 moteur de propositions de parcours (le grand — règles claims-tracées, objet parcours en migration SÉPARÉE, synthèse v20) → LOT-04 rayon fiches conseils (cadrage). Précédent architectural du LOT-00 : agenda-sommeil/cloture.ts.",
     "FIL 1 — D-038 EXÉCUTÉE le 2026-08-09 : l'alignement du catalogue est fait. 18 déclarations posées (chacune adossée au verdict certify du registre, 0 divergence critique partout), 4 « ambigu » réexaminés un par un et levés (leurs doutes dataient d'avant les verdicts du 2026-07-30 qui les soldent) ; Q_FIB_03 (suspendu, 2 divergences) intact. INVENTAIRE DU GARDE : 0 en position de production, 1 drapeau éteint — la variante courte de Q_ALI_01, muette À RAISON (aucun verdict pour la forme 14 items). Seed : PSQI porte la clé, MFI-20 reste nu sous l'exemption DÉRIVÉE de motifNonInterpretable posée au garde. NON-COUVERTURE NOMMÉE : « Historique » n'est plus atteignable depuis le seed, aucun E2E ne le voit plus (bancs unitaires seuls).",
     "FIL 2 — CHANTIER HDS (D-006 confirmée par D-037) : le contrat SQL pgvector est LIVRÉ (PR #634 du 2026-08-09 — rag_pgvector_structure_v1.sql en CI ET en préflight fail-closed de release-db.yml, production lue conforme avant câblage, trois dérives provoquées lèvent). PROCHAINE ACTION : recette staging le mardi 2026-08-12, après pose des secrets et flags par le responsable (handoff 2026-08-09-2110). Questions ouvertes : rollback sans critère ni fenêtre, aucun GO/NO-GO de migration, osc-secnum-fr1 inaccessible sur le compte, réponse Scalingo attendue.",
     "FIL 3 — JALON 2026-10-21, rappelé à la clôture comme la campagne s'y engageait : sans reconduction écrite, G-TRUST-04 ET le dossier RGPD (préambule et tableau §14 de docs/DOSSIER_RGPD.md, le tableau faisant foi) reprennent la règle du dépôt le même jour ; l'information des personnes, « au plus tôt », est déjà échue. L'échéance de la DÉROGATION ne bouge pas — seule la revue de la dette HDS est avancée par D-037.",
@@ -49,14 +49,14 @@
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. MIGRATION HDS DÉCIDÉE (D-006 du 2026-07-28, confirmée par D-037 du 2026-08-09), NON EXÉCUTÉE — l'orientation du 2026-07-22 « rester sur l'hébergement actuel » lui est antérieure de six jours et n'est plus courante ; la dérogation, elle, court inchangée jusqu'au 2026-10-21. Avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [
+    "D-039",
     "D-038",
     "D-037",
     "D-036",
-    "D-035",
-    "D-034"
+    "D-035"
   ],
   "last_session": null,
-  "updated_at": "2026-08-09T21:58:00Z",
+  "updated_at": "2026-08-10T09:25:17Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
