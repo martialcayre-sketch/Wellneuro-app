@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-044 — Trois conséquences de la revue de clôture du LOT-01
+
+- Date : 2026-08-11
+- Statut : accepté (décision utilisateur du 2026-08-11, après revue `wn-reviewer` du dossier doctrinal)
+- Domaine : clinique, types du moteur d'interprétation, critères de campagne, CI
+- Contexte : la revue de clôture a trouvé trois écarts que ni [[D-041]] ni [[D-042]] n'avaient vus. Aucun n'est un désaccord clinique ; les trois sont tranchés ici pour que la première ligne de TypeScript du lot ne parte pas sur un contrat faux.
+- **1. Le moteur définit son propre objet ; il ne réutilise pas `DiscordanceFinding`.** Le garde non négociable de [[D-041]] (« aucun champ de certitude, de probabilité, de score ou de confiance, sous quelque nom que ce soit ») est **déjà violé** par le type que la spec désignait : `DiscordanceFinding` hérite de `ClinicalFindingBase`, qui porte `confidence: QualitativeConfidence` (`clinical-engine/types.ts:184-186`), et `clinicalReview.ts:107` le valide à l'exécution. Le banc exigé par D-041 aurait échoué le premier jour.
+  - Le moteur du LOT-01 porte donc un type propre, à trois formes, **sans aucun champ de cette famille**. `DiscordanceFinding` reste en place, inchangé et non utilisé par ce moteur.
+  - Écarté : **retirer `confidence` de `ClinicalFindingBase`** — c'est le bon geste à terme, mais le socle est partagé avec `MissingDataFinding`, `SafetyFinding` et `DecisionPriorityCandidate` : refactor d'un type clinique partagé, donc son propre `D-xxx` et son propre lot.
+  - Écarté : **amender le garde de D-041** pour tolérer une qualification qualitative de la donnée. La nuance « `confidence` qualifie la donnée, pas la conclusion » est exactement la confusion que `DC-29` existe pour empêcher ; la laisser vivre dans le type l'aurait rendue indéfendable en revue.
+  - Conséquence : l'injection cockpit convertit ; c'est le coût assumé de la coexistence de deux familles de constats voisines.
+- **2. Les critères de sortie du LOT-01 sont réduits, et l'écart est nommé.** Le critère 2 du Lot B (`sources/02-spec-lots-parcours-t0.md:119-122`) exige que la sortie « porte les deux vigilances C-STR et C-SOM » ; [[D-042]] le rend inatteignable. La fiche revendique désormais les critères **3 et 4 intégralement**, le critère **1 en partie** (mélatonine non suggérée : tenu ; contradiction de sommeil produite : non tenu) et déclare le critère **2 non tenu**, motif D-042.
+  - Écarté : **amender la spec** dans `sources/`. Ces documents sont l'original de la campagne ; les réécrire fait perdre la trace de ce qui avait été demandé. Un écart nommé dans la fiche est relisible, une spec retouchée ne l'est plus.
+- **3. Le contrat de fraîcheur des claims part sur un déclencheur CI étendu.** `release-db` ne se déclenche automatiquement que sur un `push` vers `main` touchant `web/prisma/migrations/**` (`.github/workflows/release-db.yml:24-27`), et D-042 exclut toute migration : le contrat, tel que D-042 le décrivait, n'aurait jamais démarré seul. `paths` est donc étendu à `web/src/lib/clinical/**`, de sorte que toute modification d'une table signée rejoue les contrats de lecture sur la production.
+  - **Cette modification ne voyage pas dans la PR documentaire** : elle élargit ce qui déclenche un accès à la base de production et appelle sa propre revue. Elle part avec le code du LOT-01.
+  - Le précédent est nommé : [[D-015]] avait déjà promis un rejeu production pour `agenda_alimentaire_v1.sql` — il n'a jamais été câblé. Un déclencheur automatique évite de répéter la promesse.
+  - Le banc contrôle la paire `(claim_id, version_claim)`, et **quatre** propriétés, non trois : `statut = 'VALIDE'`, `active = true`, absence de `superseded_at`, et `prescriptif = true` — c'est le jeu que la relecture du 2026-08-06 avait effectivement contrôlé (`orientationRulesV1.ts:1403-1408`). Une contrepartie négative accompagne le contrat, au patron de `packs_registre_coherence_v1_negatif.sql`.
+- Réversibilité : un type neuf, un paragraphe de critères, quatre lignes de workflow. Aucun schéma de base.
+- Référence : `web/src/lib/clinical-engine/types.ts:184-215`, `web/src/lib/clinical-engine/clinicalReview.ts:107`, `.github/workflows/release-db.yml:24-27`, `web/src/lib/clinical/orientationRulesV1.ts:1403-1408`, [[D-015]], [[D-018]], [[D-041]], [[D-042]]
+
+### D-043 — L'extrait permanent de `CLAUDE.md` est opposable ; neuf règles basculent à « acté », la dette de bancs est nommée
+
+- Date : 2026-08-11
+- Statut : accepté (décision utilisateur du 2026-08-11)
+- Domaine : gouvernance clinique, doctrine, contexte permanent des agents
+- Contexte : l'extrait permanent ajouté à `CLAUDE.md` déclare « ces règles valent », alors que onze des `DC-nn` qu'il citait portaient le statut **proposition** — que `docs/claude/doctrine/README.md` définit comme « informe une revue, ne la tranche pas ». Le lot court-circuitait le mécanisme de statut qu'il venait de créer.
+- **Décision : les règles de l'extrait sont opposables.** Neuf basculent à **acté** dans `CONSTITUTION_CLINIQUE.md` : `DC-12`, `DC-14`, `DC-17`, `DC-20`, `DC-23`, `DC-27`, `DC-30`, `DC-34`, `DC-35`.
+- **Ce que « acté » signifie ici, et ce qu'il ne signifie pas.** Ces règles sont opposables **en revue et à tout agent** : une PR qui les enfreint est refusable en citant la règle. Elles ne sont **pas** pour autant tenues à l'exécution — aucune n'est encore gardée par un banc. Chaque statut le dit sur place (« **Banc dû** : la règle ne mord pas encore à l'exécution »), et c'est la dette que ce lot reconnaît plutôt que de la laisser invisible.
+  - La distinction est nécessaire : l'acte d'intégration défini par l'audit (décision + banc + bascule du statut) vise les règles qui doivent mordre **dans le code**. Une règle de conduite peut lier une revue avant que son banc existe ; la confusion des deux aurait rendu l'extrait permanent inutilisable pendant des mois.
+- **`DC-29`, `DC-54` et `DC-55` restent « proposition »** — [[D-041]] le réserve explicitement tant que le banc qui les fait mordre n'existe pas, et une décision de gouvernance ne défait pas une réserve clinique nommée. En conséquence, la puce « conflit non résolu ⇒ escalade praticien » de `CLAUDE.md` est requalifiée : elle est signalée comme non encore opposable, au lieu d'être présentée comme une règle qui vaut.
+- Options écartées :
+  - **Restreindre l'extrait aux règles déjà actées** : cohérent, mais il perdait ses règles les plus utiles au quotidien (`DC-27` association ≠ causalité, `DC-30` discordance, `DC-20` seuil clinique ≠ technique) — c'est-à-dire précisément celles qu'un agent enfreint sans s'en apercevoir.
+  - **Retirer l'extrait de `CLAUDE.md`** : le contexte permanent restait court, mais plus rien ne rappelait la doctrine hors des chemins cliniques, où le rappel arrive trop tard.
+- Réversibilité : neuf lignes de statut et une section de `CLAUDE.md`. Aucun code.
+- Référence : `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`, `docs/claude/doctrine/README.md`, `docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md` (« L'acte d'intégration lui-même »), `CLAUDE.md`, [[D-041]]
+
+### D-042 — La table de discordances V1 part avec une seule règle, et un banc de fraîcheur garde les claims épinglés
+
+- Date : 2026-08-11
+- Statut : accepté (décision utilisateur du 2026-08-11, LOT-01 de la campagne `2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie`)
+- Domaine : clinique, moteur de discordances, corpus de claims
+- Contexte : la descente prédicat par prédicat des trois règles de la spec (`DOSSIER_REGLES_LOT-01.md`) a établi qu'elles ne sont pas dans le même état. Les trois arbitrages sont tranchés ensemble ici.
+- **C-STR — retenue, seuil `≤ 8`.** Déclencheurs : `ADAPTATION_STRESS ≤ 8` (`Q_MOD_01`) **et** DASS-21 dans la bande « Normal » sur dépression (`D ≤ 4`) et stress (`S ≤ 7`). Aucun de ces trois chiffres n'est arbitré : `≤ 8` est exactement la bande « Adaptation perturbée » de l'axe (bandes 0-8 / 10-17 / 18-24, `orientationRulesV1.ts:676-682`), `D ≤ 4` et `S ≤ 7` sont les bandes publiées du DASS-21 (`questions.ts:157-159`). `DC-19` est tenue sans réserve.
+  - **Le trou à 9 est laissé ouvert, délibérément.** Les bandes de l'axe ne couvrent pas la valeur 9. Étendre à `≤ 9` aurait fermé le trou au prix d'un point sans source. Le patient à 9 n'est pas laissé sans rien : `R2-STR-01` le couvre déjà (`≤ 17`) et lui propose le PSS-10 — il perd la vigilance de discordance, pas l'orientation.
+  - **Recoupement assumé et à écrire dans la règle** : C-STR se déclenche sur un sous-ensemble de la population de `R2-STR-01`. Les deux sorties coexisteront à l'écran ; l'une propose une mesure, l'autre nomme une contradiction. `DC-37` exige que cette justification soit portée par la règle, pas supposée.
+- **C-SOM — retirée de la V1, motif inscrit dans la table.** L'axe `ME` du DNST (`Q_INF_03`) est titré « Mélatonine — Rythme **et socialisation** » et porte **six items de sociabilité sur dix** (ME1, ME2, ME5, ME6, ME8, ME9), pesant jusqu'à 24 points sur 40. Comme la règle exige que le PSQI, l'Epworth et le Berlin soient **rassurants**, elle ne sélectionnerait pas une discordance de sommeil : elle sélectionnerait, **systématiquement et non au hasard**, des patients introvertis qui dorment bien. C'est le cas que `DC-09` et `DC-28` existent pour attraper.
+  - Écarté : **créer maintenant** le sous-score de rythme (ME3/ME4/ME7/ME10, plafond 16). La règle mesurerait enfin ce qu'elle prétend mesurer, mais ce sous-score n'existe pas au catalogue — donc un `versionScore`, un `D-xxx` propre et un périmètre qui déborde un lot de garde-fou de synthèse. **Instruit séparément.**
+  - Écarté : **maintenir C-SOM telle quelle**. La spec en fait une régression testée (section 57) ; le banc validerait alors un comportement faux.
+- **C-ALI — reportée.** Le prédicat « restriction déclarée (drapeau anamnèse) » n'a **aucun support direct**. `DrapeauxAnamnese` porte **dix** clés à `367688ad` (`drapeauxAnamnese.ts:14-31`) : les huit d'origine, plus `intolerancesAlimentaires` et `symptomesFonctionnels` ajoutées par ce même commit. Deux candidats existent donc, et **aucun des deux n'est une restriction déclarée** : `variationPoids` est proche du sujet sans le couvrir ; `intolerancesAlimentaires` (`anamnese.ts:179-181` — Gluten, Histamine, Lactose) déclare une **cause supposée**, pas un comportement d'éviction — un patient peut se déclarer intolérant sans rien évincer, et évincer sans se déclarer intolérant. Substituer l'un ou l'autre serait l'extrapolation que `DC-14` interdit. La règle dépend d'une modification du recueil d'anamnèse, qui est un autre geste dans un autre lot.
+  - **Correction d'une affirmation de la première rédaction** : le seuil `≥ 7` de la plainte surpoids **a** une provenance, contrairement à ce qui avait été écrit. `surpoids` est le sous-score `Q004` de `Q_MOD_03` (`mode-de-vie.ts:28`), dont la grille d'interprétation certifiée ouvre la bande « Intensité élevée » exactement à 7 (`mode-de-vie.ts:33-37`) ; la table d'orientation **signée** s'en sert déjà au même seuil pour `R2-NEU-01` (`orientationRulesV1.ts:775-786`). `DC-19` n'est pas en cause ici.
+- **Conséquence : la table V1 porte UNE règle**, `validationExterne: false` à la livraison — écrire une règle et la signer restent deux gestes distincts (même discipline que `orientationRulesV1.ts`). Les quatre livrables d'architecture du lot — moteur, prompt v20, schéma de sortie strict, injection cockpit — sont **inchangés**. Une règle signée juste vaut mieux que trois dont deux produisent des vigilances fausses.
+- **Banc de fraîcheur des claims épinglés — dans ce lot.** Le lot épingle de nouveaux `justificationClaims` au patron d'`orientationRulesV1`, dont l'audit a établi que le compilateur annoncé (`tools/corpus/orientation/`) n'a jamais existé. Sans banc, le lot duplique le trou dans une table neuve. Le banc vérifie que chaque claim cité **existe, est `VALIDE` et n'est pas `superseded`**, et couvre **les deux tables** d'un coup.
+  - **Réserve de conception, non négociable** : la base CI est vide. Un banc écrit comme test CI serait **vacué** — exactement le piège nommé dans [[D-015]] et [[D-012]], où la partie du contrat qui protège le plus est celle que le CI ne joue pas. Il prend donc la forme d'un contrat rejoué **en lecture seule sur la production** (patron `web/prisma/checks/`), jamais celle d'un test unitaire vert sur une base sans claims.
+- Réversibilité : une table de règles et un contrat de lecture ; aucun schéma de base, aucune migration.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/DOSSIER_REGLES_LOT-01.md`, `docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md` (§E), `web/src/lib/questions.ts` (bandes DASS-21 et DNST), `web/src/lib/clinical/orientationRulesV1.ts:676-682`, [[D-012]], [[D-015]], [[D-041]]
+
+### D-041 — Discordance, convergence et conflit de sources sont un seul objet à trois formes
+
+- Date : 2026-08-11
+- Statut : accepté (décision utilisateur du 2026-08-11, LOT-01 de la campagne `2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie`)
+- Domaine : clinique, architecture du moteur d'interprétation, synthèse IA
+- Décision : le moteur du LOT-01 produit **un objet unique**, discriminé par une `forme` à trois valeurs, et non trois objets voisins :
+  1. **`DISCORDANCE`** — deux instruments ou plus qui se contredisent sur un même axe (`DC-30`). Forme livrée par le LOT-01.
+  2. **`CONVERGENCE`** — plusieurs sources indépendantes qui pointent le même axe (`DC-29`), graduée `SIGNAL` · `CONVERGENCE_FAIBLE` · `CONVERGENCE_MODEREE` · `CONVERGENCE_FORTE`.
+  3. **`CONFLIT_SOURCES`** — deux claims ou sources du corpus qui ne disent pas la même chose (`DC-54`), avec issue d'escalade praticien (`DC-55`).
+- Motif : les trois ont la même forme — des sources, une description, une importance, des hypothèses, une action suggérée, un état résolu ou non — et diffèrent seulement par la **matière** confrontée (instruments, faisceau, corpus). Trois objets auraient produit trois vocabulaires de vigilance sur le même écran et, à terme, trois moteurs.
+- **Le garde-fou qui rend cette fusion acceptable — non négociable.** Réunir convergence et discordance dans un objet portant un champ d'importance invite à lire la convergence comme une certitude. `DC-29` l'interdit : **la convergence augmente la priorité, jamais la certitude**. En conséquence, l'objet ne porte **aucun champ de certitude, de probabilité, de score ou de confiance**, sous quelque nom que ce soit ; la graduation de la forme `CONVERGENCE` compte des **sources indépendantes**, elle ne mesure pas une vraisemblance. Un banc doit asserter l'absence d'un tel champ — sans quoi la fusion se retourne contre la doctrine qu'elle sert.
+- Conséquences :
+  - Le déterministe produit ces objets ; **le LLM les restitue et ne les crée jamais** ([[D-003]], `DC-02`). Aucune forme n'est supprimable par la sortie du modèle.
+  - Les trois formes partagent le même canal d'injection — vigilances de synthèse et panneau du cockpit — donc un seul vocabulaire pour le praticien.
+  - Seule la forme `DISCORDANCE` est peuplée par le LOT-01. Les deux autres sont **prévues par le type, vides à la livraison** : la structure évite le second moteur, elle n'anticipe aucune règle clinique.
+  - L'escalade praticien de `CONFLIT_SOURCES` (`DC-55`) est une **issue** de la politique de résolution, pas son échec.
+- Options écartées :
+  - **Trois objets distincts** : plus lisibles pris un par un, mais deux vocabulaires de vigilance cohabitant à l'écran et un second moteur à écrire dès la première convergence.
+  - **Un objet sans discriminant**, les trois cas se distinguant par leurs champs remplis : rend intestable l'absence d'un champ de certitude et laisse la forme se déduire, donc se tromper.
+- Portée de cette décision dans l'intégration doctrinale : elle est le **premier des trois actes** exigés par `DC-18`. `DC-29` et `DC-54` restent au statut **proposition** dans `CONSTITUTION_CLINIQUE.md` tant que le banc qui les fait mordre n'existe pas ; elles ne basculent à **acté** qu'à ce moment.
+- Réversibilité : un type et une table de règles, aucun schéma de base, aucune migration. `git revert` suffit.
+- Référence : `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md` (`DC-29`, `DC-30`, `DC-54`, `DC-55`), `docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md` (véhicule V1), `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-01-gardefous-synthese-contradictions.md`, [[D-003]], [[D-011]]
+
 ### D-040 — La discordance rythme déclaré/observé est un drapeau directionnel de sur-déclaration, praticien-only, à trois axes
 
 - Date : 2026-08-10

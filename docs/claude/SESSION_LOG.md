@@ -3476,3 +3476,28 @@ PR #651) ; `orientation-file-envoi` échouait sur un `POST` jamais revenu sous
 
 **Prochaine action.** Écrire la déduplication de synthèse dans le LOT-01 (elle
 y a été renvoyée sans jamais y être inscrite), puis PR de campagne.
+
+
+
+
+## 2026-08-11 — La doctrine clinique écrite, et ce qu'une revue lui a démenti
+
+**Décisions.** D-041 : discordance, convergence et conflit en un objet, sans
+champ de certitude. D-042 : table V1 à **une** règle (C-STR `≤ 8` ; C-SOM
+retirée, son axe mesure la sociabilité ; C-ALI reportée) et un banc de
+fraîcheur des claims. D-043 : extrait de `CLAUDE.md` opposable, neuf règles
+actées, dette de bancs nommée. D-044 : type propre au moteur, critères du Lot B
+réduits, déclencheur `release-db` étendu.
+
+**Écarté.** Tolérer `confidence` dans l'objet — la confusion même que `DC-29`
+vise ; retoucher la spec de `sources/`.
+
+**Ce qu'une revue a démenti.** Six affirmations fausses, revérifiées dans le
+code : table d'orientation dite non signée, `DC-26` actée sur un compilateur
+inexistant, `≥ 7` accusé d'être sans provenance alors qu'il ouvre une bande
+certifiée.
+
+**Prochaine action.** PR documentaire, puis le type du moteur et le contrat de
+fraîcheur — avant la première règle écrite.
+
+**Ouvert.** La « section 57 » et la fixture golden case sont absentes du dépôt.

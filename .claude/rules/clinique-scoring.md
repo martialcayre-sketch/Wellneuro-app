@@ -18,9 +18,19 @@ paths:
 
 # Logique clinique et scoring
 
+> Doctrine complète : `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md` (58
+> règles `DC-nn`) et son audit face au code
+> (`docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md`). La lire avant de poser
+> un seuil, une catégorie de claim, une vigilance ou une pondération. Les
+> règles ci-dessous en sont l'extrait opposable **aujourd'hui**.
+
 - Ne jamais changer une question, une cotation, un seuil ou une interprétation
   sans demande explicite ; documenter toute modification clinique dans un
   fragment `changelog.d/`.
+- **Ces fichiers sont du clinique, pas du code** (`DC-17`) : une table de
+  règles signée, les poids des douze besoins, les cut-offs d'un instrument.
+  Une ligne de TypeScript qui les touche est une modification clinique et
+  appelle une décision `D-xxx`, même si le diff tient sur un caractère.
 - La couche déterministe décide ; le LLM formule et explique seulement. Les
   vigilances déterministes ne doivent pas pouvoir être supprimées par une
   sortie LLM.
