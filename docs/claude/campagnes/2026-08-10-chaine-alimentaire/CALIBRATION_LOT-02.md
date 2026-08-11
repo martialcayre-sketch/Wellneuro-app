@@ -19,11 +19,12 @@ discordance `web/src/lib/equilibre/discordanceRythme.ts` · frontière SQL
 
 ### 1.1 Ce que l'agenda observe RÉELLEMENT (contrat `agenda-alimentaire-v1`)
 
-Horaires des prises, structure repas / hors-repas, et **cinq booléens** à trois
-états (`null` = abstention) : `premierePriseProteines`, `legumesDeuxPrises`,
-`fruitsOuOleagineux`, `ultraTransformes`, et `soirPlusCopieux` (sans abstention).
+Horaires des prises, structure repas / hors-repas, et **quatre booléens** à
+trois états (`null` = abstention) : `premierePriseProteines`,
+`legumesDeuxPrises`, `fruitsOuOleagineux`, `ultraTransformes`, plus
+`soirPlusCopieux` (sans abstention).
 **Jamais** de quantité, gramme, kcal, ni aliment identifié au-delà de ces
-présences (`types.ts:8-9`). L'indice est de **niveau de preuve D, longitudinal,
+présences (`types.ts:8-13`). L'indice est de **niveau de preuve D, longitudinal,
 jamais diagnostique** (`types.ts:18-20`).
 
 ### 1.2 Trois sorties distinctes — jamais un seul score
