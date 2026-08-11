@@ -29,7 +29,7 @@ export async function momentumJalonsParPatient(
     }),
     prisma.questionnaireReponse.findMany({
       where: { idPatient: { in: idsJalon } },
-      select: { idPatient: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idPatient: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     }),
   ]);

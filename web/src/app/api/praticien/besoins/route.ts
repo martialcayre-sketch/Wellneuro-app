@@ -68,7 +68,7 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
 
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     });
 

@@ -13,6 +13,7 @@ import {
 } from '@/lib/questionnaire-reponses';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { motifNonInterpretable, scoresSansMesure } from '@/lib/scoring/passationsNonInterpretables';
+import { validitePassationsActive } from '@/lib/scoring/validite';
 
 export type InboxQuestionnaireDetail = {
   idReponse: string;
@@ -32,6 +33,10 @@ export type InboxQuestionnaireDetail = {
    * `interpretation` déjà vidés côté serveur ; `rawAnswers` et
    * `reponsesLisibles`, eux, sont conservés. */
   nonInterpretable: string | null;
+  /* Statut de validité de la passation (LOT-00). `VALID` dans le cas courant ;
+   * `INVALID` quand le praticien l'a retirée du raisonnement clinique. */
+  statutValidite: string;
+  motifInvalidation: string | null;
 };
 
 export type InboxQuestionnairesApiResponse = {
@@ -39,6 +44,9 @@ export type InboxQuestionnairesApiResponse = {
   lignes: LigneInbox[];
   patient?: { idPatient: string; nom: string };
   reponses?: InboxQuestionnaireDetail[];
+  /* Le retrait praticien n'est proposé que si le filtre de validité est actif :
+   * sinon l'écran promettrait un retrait que rien n'applique. */
+  validiteActive?: boolean;
   unavailable?: boolean;
   error?: string;
 };
@@ -66,6 +74,8 @@ type ReponseInboxDb = {
   scoresJson: unknown;
   scorePrincipal: number | null;
   interpretation: string | null;
+  statutValidite?: string;
+  motifInvalidation?: string | null;
 };
 
 function filtrerReponsesEnAttente(
@@ -133,6 +143,8 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
           scoresJson: true,
           scorePrincipal: true,
           interpretation: true,
+          statutValidite: true,
+          motifInvalidation: true,
         }
       : {
           idReponse: true,
@@ -194,6 +206,7 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
         ok: true,
         lignes: [],
         patient: { idPatient: patient.idPatient, nom: noms.get(patient.idPatient) ?? 'Patient' },
+        validiteActive: validitePassationsActive(),
         reponses: enAttente.map(r => {
           const rawAnswers = extraireRawAnswers(r.scoresJson);
           // Même retrait qu'en fiche patient, et pour la même raison : le Fil
@@ -241,6 +254,8 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
               rawAnswers,
             ),
             nonInterpretable,
+            statutValidite: r.statutValidite ?? 'VALID',
+            motifInvalidation: r.motifInvalidation ?? null,
           };
         }),
       });
