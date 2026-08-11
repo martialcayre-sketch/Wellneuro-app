@@ -25,6 +25,37 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     expect(dedoublonnees.Q_STR_02?.P1).toBe('2');
   });
 
+  // GARDE LONGITUDINALE (LOT-00) — une re-mesure ne périme pas la mesure de
+  // départ. Ce banc échouerait si un futur lot posait SUPERSEDED automatiquement
+  // sur la passation précédente à chaque re-passation : l'ancre T0 sauterait à
+  // la date de la re-mesure, et le momentum n'aurait plus de point de départ.
+  // SUPERSEDED reste un geste praticien de REMPLACEMENT d'une passation fautive.
+  it('une re-passation ne périme pas la précédente : T0 reste ancré à la première', () => {
+    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
+    try {
+      const reponses: ReponseBrute[] = [
+        { idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 }, statutValidite: 'VALID' },
+        { idQuestionnaire: 'Q_STR_02', dateReponse: dateRecente, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 }, statutValidite: 'VALID' },
+      ];
+      expect(resoudreDateT0(reponses)?.getTime()).toBe(dateAncienne.getTime());
+    } finally {
+      delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    }
+  });
+
+  it('une passation remplacée (SUPERSEDED) sort de l’ancre T0, drapeau allumé', () => {
+    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
+    try {
+      const reponses: ReponseBrute[] = [
+        { idQuestionnaire: 'Q_STR_02', dateReponse: dateAncienne, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 }, statutValidite: 'SUPERSEDED' },
+        { idQuestionnaire: 'Q_STR_02', dateReponse: dateRecente, scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 }, statutValidite: 'VALID' },
+      ];
+      expect(resoudreDateT0(reponses)?.getTime()).toBe(dateRecente.getTime());
+    } finally {
+      delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    }
+  });
+
   it('réponse sans rawAnswers exploitable doit être ignorée', () => {
     const sansRawAnswers = construireReponsesParQuestionnaire([
       { idQuestionnaire: 'Q_STR_01', dateReponse: dateRecente, scoresJson: { A: { total: 16 }, global: 32 } },
