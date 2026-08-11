@@ -1,9 +1,9 @@
 ---
 id: "2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie"
 titre: "Chaîne T0 opérationnelle — de la donnée valide à la révision par biologie"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-08-10"
-mise_à_jour: "2026-08-10"
+mise_à_jour: "2026-08-11"
 lot_courant: "LOT-00"
 branche_campagne: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
 branche_lot_courant: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lot-00"
@@ -105,7 +105,7 @@ confirmé » et « discordance stress » sont en CI.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Validité des données cliniques — statut par passation, filtre unifié, déduplication (migration) | à_faire | — |
+| LOT-00 | Validité des données cliniques — statut par passation, filtre unifié, déduplication (migration) | en_cours | — |
 | LOT-01 | Garde-fous de synthèse et moteur de contradictions — prompt v20, schéma strict, C-STR/C-SOM/C-ALI | à_faire | LOT-00 |
 | LOT-02 | Préconditions de confirmation T0 — checklist dure/souple, justification tracée | à_faire | LOT-00 |
 | LOT-03 | Règles d'arrêt et extinction d'orientation — stop rules, `dejaRepondu` excluant, SCOFF | à_faire | LOT-01 |
