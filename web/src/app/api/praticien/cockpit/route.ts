@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lectureAsOf';
+import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { buildClinicalReview } from '@/lib/clinical-engine/clinicalReview';
 import { buildClinicalSnapshot } from '@/lib/clinical-engine/clinicalSnapshot';
@@ -80,7 +81,7 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   const [responses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: [{ dateReponse: 'asc' }, { idReponse: 'asc' }],
     }),
     prisma.consultation.findFirst({
@@ -102,8 +103,12 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   const asOf = resolution.mode === 'passe' ? resolution.date : null;
   // Le passé est RECALCULÉ depuis les données brutes tronquées, jamais relu
   // depuis un snapshot : aucune donnée postérieure ne peut fuir dans la lecture.
+  //
+  // Filtre de validité (LOT-00, drapeau éteint par défaut) sur les entrées du
+  // runtime clinique SEULEMENT : les repères as-of, eux, restent calculés sur
+  // la liste complète — un repère est un fait administratif, pas une mesure.
   return {
-    ...adaptRuntimeInputs(patient, tronquerA(responses, asOf), consultation),
+    ...adaptRuntimeInputs(patient, filtrerPassationsExploitables(tronquerA(responses, asOf)), consultation),
     asOf: asOf ? asOf.toISOString() : null,
   };
 }

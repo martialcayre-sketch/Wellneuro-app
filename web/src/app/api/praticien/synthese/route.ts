@@ -19,6 +19,7 @@ import {
 import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
@@ -629,9 +630,16 @@ export async function POST(req: Request) {
       orderBy: { dateReponse: 'desc' },
     });
 
+    // Filtre de validité (LOT-00, drapeau éteint par défaut) : une passation
+    // INVALID/SUPERSEDED/HISTORICAL_ONLY ne part ni au prompt ni dans
+    // `donneesEntree` — contrairement au registre des passations non
+    // interprétables (transmises nommées mais vidées), l'exclusion de validité
+    // retire la ligne : elle a un remplacement ou un motif praticien tracés.
+    const reponsesValides = filtrerPassationsExploitables(reponses);
+
     // Fail-closed : le prompt IA ne doit consommer que des questionnaires dont
     // l'usage runtime est explicitement autorisé.
-    const reponsesAdministrables = reponses.filter(r => estAdministrableParLaRoute(r.idQuestionnaire));
+    const reponsesAdministrables = reponsesValides.filter(r => estAdministrableParLaRoute(r.idQuestionnaire));
 
     if (reponsesAdministrables.length === 0) {
       return withCorrelationHeader(NextResponse.json(
