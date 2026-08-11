@@ -33,6 +33,11 @@ vi.mock('@/lib/anthropic', () => ({
   VERSION_PROMPT_SYNTHESE: 'v',
   VERSION_SCHEMA_SYNTHESE: 'v',
   validateSyntheseSchema,
+  // La route lit désormais la sortie du modèle par `analyserSortieSynthese`
+  // (LOT-01 étape 4). Ce mock DÉLÈGUE au mock historique : chaque test garde
+  // son `validateSyntheseSchema.mockReturnValue(...)` et son intention, sans
+  // qu'aucun n'ait à connaître la nouvelle enveloppe.
+  analyserSortieSynthese: (o: unknown) => ({ ok: true, synthese: validateSyntheseSchema(o) }),
   sanitizeAuditError: (m: string) => m,
   CORPUS_CLINIQUE_ACTIF: '',
 }));

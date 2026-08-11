@@ -13,9 +13,11 @@ import {
   VERSION_CORPUS_SYNTHESE,
   VERSION_PROMPT_SYNTHESE,
   VERSION_SCHEMA_SYNTHESE,
+  analyserSortieSynthese,
   validateSyntheseSchema,
   sanitizeAuditError,
 } from '@/lib/anthropic';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
@@ -318,48 +320,104 @@ async function genererSynthesePersistee(
   // Vercel intact) ; en SSE on borne le travail (voir l'appelant streaming).
   requestOptions?: { timeout?: number; maxRetries?: number },
 ): Promise<DonePayload> {
-  const response = await anthropic.messages.create(
-    {
-      model: CLAUDE_MODEL,
-      max_tokens: MAX_TOKENS_SYNTHESE,
-      system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: args.userMessage }],
-    },
-    requestOptions,
-  );
-
-  const usage = (response.usage ?? {}) as {
-    input_tokens?: number;
-    output_tokens?: number;
-    cache_creation_input_tokens?: number;
-    cache_read_input_tokens?: number;
-  };
+  // Métriques CUMULÉES sur les deux appels possibles. Ne compter que le dernier
+  // ferait disparaître le coût d'une relance des tableaux de bord — or c'est
+  // précisément ce coût qu'on veut voir si les rejets se multiplient.
   const metricsCache = {
-    input_tokens: usage.input_tokens ?? 0,
-    output_tokens: usage.output_tokens ?? 0,
-    cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
-    cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 0,
   };
 
-  if (response.stop_reason === 'max_tokens') {
-    throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+  // Un tour de modèle : appel, extraction du JSON, cumul des métriques. Les
+  // erreurs levées ici (troncature, réponse vide, JSON absent) restent des
+  // échecs durs, non rejouables par une relance de schéma.
+  async function unTour(messages: MessageParam[]): Promise<unknown> {
+    const response = await anthropic.messages.create(
+      {
+        model: CLAUDE_MODEL,
+        max_tokens: MAX_TOKENS_SYNTHESE,
+        system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
+        messages,
+      },
+      requestOptions,
+    );
+
+    const usage = (response.usage ?? {}) as {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+    };
+    metricsCache.input_tokens += usage.input_tokens ?? 0;
+    metricsCache.output_tokens += usage.output_tokens ?? 0;
+    metricsCache.cache_creation_input_tokens += usage.cache_creation_input_tokens ?? 0;
+    metricsCache.cache_read_input_tokens += usage.cache_read_input_tokens ?? 0;
+
+    if (response.stop_reason === 'max_tokens') {
+      throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+    }
+
+    const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    if (!text) throw new Error('Réponse vide de l\'API Claude.');
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    }
   }
 
-  const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
-  if (!text) throw new Error('Réponse vide de l\'API Claude.');
+  const messageInitial: MessageParam[] = [{ role: 'user', content: args.userMessage }];
+  let analyse = analyserSortieSynthese(await unTour(messageInitial));
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+  // REJET + UNE RELANCE, jamais servi dégradé (LOT-01, critère 3). La relance
+  // passe par un tour UTILISATEUR : le prompt système n'est pas touché, donc la
+  // garde d'empreinte reste valide et aucun bump de version n'est requis ici.
+  // Les violations transmises sont structurelles — elles nomment un champ, pas
+  // ce que le modèle a écrit.
+  if (!analyse.ok) {
+    const violationsPremierTour = analyse.violations;
+    logger.warn({
+      event: EVENT_CODES.SYNTHESE_SCHEMA_REJETE_RELANCE,
+      domain: 'SYNTHESE_IA',
+      message: `Sortie hors schéma rejetée, relance émise (${violationsPremierTour.length} violation(s) : ${violationsPremierTour.slice(0, 5).join(' ; ')})`,
+      context: finalizeLogContext(args.requestContext, { retryable: true }),
+    });
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonMatch[0]);
-  } catch {
-    const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
-    parsed = JSON.parse(cleaned);
+    analyse = analyserSortieSynthese(
+      await unTour([
+        ...messageInitial,
+        { role: 'assistant', content: JSON.stringify({ _rejete: true }) },
+        {
+          role: 'user',
+          content:
+            'Ta réponse précédente ne respecte pas le format de sortie exigé :\n' +
+            violationsPremierTour.map((v) => `- ${v}`).join('\n') +
+            '\n\nRéponds à nouveau, exclusivement en JSON valide, en respectant la structure exacte annoncée. Aucune clé supplémentaire, aucun champ vide.',
+        },
+      ]),
+    );
+
+    if (!analyse.ok) {
+      logger.error({
+        event: EVENT_CODES.SYNTHESE_SCHEMA_RELANCE_ECHOUEE,
+        domain: 'SYNTHESE_IA',
+        message: `Relance hors schéma : aucune synthèse servie (${analyse.violations.length} violation(s) : ${analyse.violations.slice(0, 5).join(' ; ')})`,
+        context: finalizeLogContext(args.requestContext, { retryable: true }),
+      });
+      throw new Error(
+        'La synthèse IA ne respecte pas le format attendu, malgré une relance. Aucune synthèse dégradée n\'est enregistrée. Réessayez.',
+      );
+    }
   }
 
-  const synthese = validateSyntheseSchema(parsed);
+  const synthese = analyse.synthese;
   // Garantit la présence des vigilances déterministes en tête, LLM ou non.
   synthese.points_de_vigilance = fusionnerVigilance(args.vigilanceDeterministe, synthese.points_de_vigilance);
 

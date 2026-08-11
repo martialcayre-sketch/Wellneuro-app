@@ -205,7 +205,12 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // réclame pas »), jamais sur la nature de l'instrument. Bump : une synthèse
 // rédigée sous v18 a pu s'appuyer sur une validation que rien n'établissait.
 export const VERSION_PROMPT_SYNTHESE = 'synthese-v19';
-export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
+// v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
+// — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
+// est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
+// dégradée. Le numéro bouge parce qu'il est persisté (`versionSchema`) et qu'il
+// doit permettre de distinguer, plus tard, ce qui a été validé strictement.
+export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v3';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
 export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires structurés remplis par un patient avant sa consultation.
@@ -443,6 +448,132 @@ export type SyntheseSchema = {
   _schema_version?: string;
 };
 
+/**
+ * Les trois seuls niveaux de priorité que le contrat JSON annonce au modèle
+ * (`SYSTEM_PROMPT_CONTRAT_JSON`). Ils sont énumérés ici pour être CONTRÔLÉS,
+ * pas seulement déclarés dans un type : `validateSyntheseSchema` castait
+ * `axes_prioritaires` sans jamais les regarder.
+ */
+export const NIVEAUX_PRIORITE = ['eleve', 'modere', 'faible'] as const;
+
+/** Clés admises à la racine. Toute autre clé fait rejeter la sortie. */
+const CLES_RACINE = [
+  'resume_praticien',
+  'axes_prioritaires',
+  'points_de_vigilance',
+  'questions_entretien',
+  'narratif_patient',
+  'limites',
+  '_schema_version',
+] as const;
+
+/** Clés admises dans un axe prioritaire. */
+const CLES_AXE = ['axe', 'niveau_priorite', 'arguments', 'points_a_confirmer'] as const;
+
+export type SortieSyntheseAnalysee =
+  | { ok: true; synthese: SyntheseSchema }
+  | { ok: false; violations: string[] };
+
+function estTableauDeChainesNonVides(valeur: unknown): valeur is string[] {
+  return Array.isArray(valeur) && valeur.every((v) => typeof v === 'string' && v.trim().length > 0);
+}
+
+/**
+ * Lecture STRICTE de la sortie du modèle : schéma fermé, énumérations
+ * contrôlées, aucun défaut de substitution ([[D-042]], étape 4 du LOT-01).
+ *
+ * POURQUOI UNE SECONDE FONCTION plutôt que durcir `validateSyntheseSchema`.
+ * Les deux ne lisent pas la même chose. Celle-ci lit ce que le MODÈLE vient de
+ * produire : une sortie non conforme est un défaut de génération, qu'on rejette
+ * et qu'on retente. `validateSyntheseSchema` lit du JSONB DÉJÀ PERSISTÉ —
+ * `bilanPatient.ts` projette des synthèses écrites sous des schémas antérieurs,
+ * et la route PATCH relit un brouillon IA. Durcir cette lecture-là ferait
+ * échouer l'affichage de bilans existants pour un défaut qu'aucune relance ne
+ * peut plus corriger : la donnée est écrite. Strict à l'entrée, tolérant à la
+ * relecture — et jamais l'inverse.
+ *
+ * LES VIOLATIONS SONT STRUCTURELLES, JAMAIS DU CONTENU. Elles partent au
+ * journal et dans la relance ; elles nomment un champ et ce qui manque, jamais
+ * ce que le modèle a écrit. Une violation qui citerait la valeur fautive
+ * exfiltrerait du contenu clinique vers les logs.
+ */
+export function analyserSortieSynthese(obj: unknown): SortieSyntheseAnalysee {
+  const violations: string[] = [];
+
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+    return { ok: false, violations: ['racine : un objet JSON est attendu'] };
+  }
+  const o = obj as Record<string, unknown>;
+
+  for (const cle of Object.keys(o)) {
+    if (!(CLES_RACINE as readonly string[]).includes(cle)) {
+      violations.push(`racine : clé inconnue "${cle}"`);
+    }
+  }
+
+  for (const cle of ['resume_praticien', 'narratif_patient', 'limites'] as const) {
+    if (typeof o[cle] !== 'string' || (o[cle] as string).trim().length === 0) {
+      violations.push(`${cle} : chaîne non vide attendue`);
+    }
+  }
+
+  for (const cle of ['points_de_vigilance', 'questions_entretien'] as const) {
+    if (!estTableauDeChainesNonVides(o[cle])) {
+      violations.push(`${cle} : tableau de chaînes non vides attendu`);
+    }
+  }
+
+  if (!Array.isArray(o.axes_prioritaires)) {
+    violations.push('axes_prioritaires : tableau attendu');
+  } else {
+    o.axes_prioritaires.forEach((axe, i) => {
+      if (axe === null || typeof axe !== 'object' || Array.isArray(axe)) {
+        violations.push(`axes_prioritaires[${i}] : objet attendu`);
+        return;
+      }
+      const a = axe as Record<string, unknown>;
+      for (const cle of Object.keys(a)) {
+        if (!(CLES_AXE as readonly string[]).includes(cle)) {
+          violations.push(`axes_prioritaires[${i}] : clé inconnue "${cle}"`);
+        }
+      }
+      if (typeof a.axe !== 'string' || a.axe.trim().length === 0) {
+        violations.push(`axes_prioritaires[${i}].axe : chaîne non vide attendue`);
+      }
+      if (!(NIVEAUX_PRIORITE as readonly string[]).includes(a.niveau_priorite as string)) {
+        violations.push(
+          `axes_prioritaires[${i}].niveau_priorite : attendu ${NIVEAUX_PRIORITE.join(' | ')}`,
+        );
+      }
+      for (const cle of ['arguments', 'points_a_confirmer'] as const) {
+        if (!estTableauDeChainesNonVides(a[cle])) {
+          violations.push(`axes_prioritaires[${i}].${cle} : tableau de chaînes non vides attendu`);
+        }
+      }
+    });
+  }
+
+  if (violations.length > 0) return { ok: false, violations };
+
+  return {
+    ok: true,
+    synthese: {
+      resume_praticien: o.resume_praticien as string,
+      axes_prioritaires: o.axes_prioritaires as SyntheseSchema['axes_prioritaires'],
+      points_de_vigilance: o.points_de_vigilance as string[],
+      questions_entretien: o.questions_entretien as string[],
+      narratif_patient: o.narratif_patient as string,
+      limites: o.limites as string,
+      _schema_version: VERSION_SCHEMA_SYNTHESE,
+    },
+  };
+}
+
+/**
+ * Lecture TOLÉRANTE, réservée au JSONB déjà persisté (`bilanPatient.ts`, PATCH
+ * d'un brouillon IA). Elle normalise et ne rejette jamais — c'est voulu ici, et
+ * seulement ici. La sortie du modèle passe par `analyserSortieSynthese`.
+ */
 export function validateSyntheseSchema(obj: unknown): SyntheseSchema {
   const o = obj as Record<string, unknown>;
   return {
