@@ -555,6 +555,23 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql
 
+      # LOT-01 chaîne T0 (D-042/D-044) — fraîcheur des claims épinglés par les
+      # tables de règles SIGNÉES. SEUL LE FICHIER NÉGATIF EST CÂBLÉ ICI, et ce
+      # n'est pas un oubli : le contrat positif cite 24 claims de production que
+      # la base du CI, construite vide par `migrate deploy`, ne porte pas — il y
+      # rougirait à chaque exécution. Sa place est le préflight de
+      # `release-db.yml`, contre un corpus réel. Le fichier négatif pose ses
+      # propres fixtures (transaction annulée), porte le MÊME prédicat au
+      # caractère près, et prouve les SEPT formes de rupture — dont la version
+      # divergente, qui tue le prédicat écrit sur `claim_id` seul, et N7, qui
+      # borne l'exemption de D-046 en éprouvant que la ligne des contradictions
+      # reste gardée sur les trois autres propriétés. Sans lui,
+      # « contrat vert » ne prouverait rien : c'est le piège de D-012/D-015.
+      - name: RAG claims épinglés — fraîcheur des tables signées (négatif)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
       # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend

@@ -133,7 +133,13 @@ const RANG_NIVEAU: Record<'socle' | 'approfondissement' | 'specialise', number> 
   specialise: 2,
 };
 
-function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<string, ReponseOrientation> {
+/**
+ * Exporté pour le moteur de contradictions (LOT-01), qui doit sélectionner les
+ * mêmes passations que celui-ci. Aucune logique n'est modifiée : c'est la même
+ * fonction, appelée depuis deux moteurs, précisément pour qu'ils ne divergent
+ * jamais sur « quelle passation fait foi ».
+ */
+export function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<string, ReponseOrientation> {
   const dernieres = new Map<string, ReponseOrientation>();
   for (const reponse of reponses) {
     const connue = dernieres.get(reponse.idQuestionnaire);
@@ -541,8 +547,15 @@ function valeursDuDrapeau(drapeaux: DrapeauxAnamnese, champ: keyof DrapeauxAnamn
   return typeof brut === 'string' && brut ? [brut] : [];
 }
 
-/** Description lisible du déclencheur atteint, ou null s'il ne matche pas. */
-function evaluerDeclencheur(
+/**
+ * Description lisible du déclencheur atteint, ou null s'il ne matche pas.
+ *
+ * Exporté pour le moteur de contradictions (LOT-01). Le partage est le but :
+ * les gardes qui vivent ici — recueil incomplet, sous-score absent, plancher
+ * jamais comparé numériquement, `DC-24` — doivent valoir à l'identique pour les
+ * deux moteurs. Les réécrire ailleurs les aurait fait diverger en silence.
+ */
+export function evaluerDeclencheur(
   declencheur: OrientationDeclencheur,
   dernieres: Map<string, ReponseOrientation>,
   drapeaux: DrapeauxAnamnese | undefined

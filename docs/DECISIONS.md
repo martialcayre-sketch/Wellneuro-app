@@ -4,6 +4,23 @@
 
 ## Décisions actives
 
+### D-046 — Un constat n'est pas une prescription : `prescriptif` est exigé des claims de l'orientation, pas de ceux des contradictions
+
+- Date : 2026-08-11
+- Statut : accepté (décision utilisateur du 2026-08-11, LOT-01 de la campagne `2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie`)
+- Domaine : clinique, corpus de claims, contrat de lecture sur la production
+- Contexte : l'écriture de C-STR bute sur une contradiction entre deux décisions du même jour. Le claim qui fonde exactement la règle est `WN-CL-0238-002` — « les symptômes de stress […] ne présentent pas de corrélation avec la gravité de la charge allostatique » —, `VALIDE`, actif, non remplacé, dans le périmètre orientation, mais **`prescriptif = false`**. Or [[D-044]] exige `prescriptif = true` de toute paire épinglée : l'épingler rendrait rouge le contrat de fraîcheur et **bloquerait toute release**.
+- **Décision : la propriété `prescriptif` n'est exigée que des claims épinglés par une table qui PRESCRIT.** Le contrat porte désormais, pour chaque paire, la table qui l'épingle : quatre propriétés pour `orientation`, trois pour `contradictions` (`statut = 'VALIDE'`, `active = true`, pas de `superseded_at`).
+- Motif : les quatre propriétés de [[D-044]] sont le jeu que la relecture du 2026-08-06 avait contrôlé **sur la table d'orientation**, dont chaque règle *suggère une exploration* — une prescription. Une règle de contradiction ne prescrit rien : elle **constate** que deux instruments ne disent pas la même chose, et ce constat se fonde sur un fait descriptif. Exiger `prescriptif` d'un claim descriptif est une erreur de catégorie, importée d'une table qui n'a pas le même objet.
+  - La distinction est celle que `DC-30` porte déjà : une discordance **se signale**, elle ne se moyenne ni ne se supprime. Signaler n'est pas prescrire.
+- Options écartées :
+  - **Épingler des claims prescriptifs adjacents** — `WN-CL-0323-028` (« il est important d'associer des questionnaires évaluant les 3 pathologies ») et `WN-CL-0236-012` (« le choix des questionnaires doit reposer sur […] la perception clinique »). La règle serait publiable et le contrat vert, mais aucun des deux ne dit que les symptômes ne corrèlent pas à la charge : la justification serait un rapprochement que la source ne porte pas, exactement ce que `DC-14` interdit. Écarté — un contrat vert obtenu en tordant une source est pire que pas de contrat.
+  - **Différer C-STR** (règle en `brouillon`, `justificationClaims` vide). Honnête, mais le lot livrerait une table sans règle et le contrat de fraîcheur n'aurait rien de neuf à garder — les deux livrables se videraient l'un l'autre.
+  - **Retirer `prescriptif` du contrat pour toutes les tables.** Plus simple, et strictement moins protecteur : la table d'orientation prescrit des explorations, et la relecture du 2026-08-06 a vérifié cette propriété-là sur ses 23 claims. La perdre pour résoudre le cas d'une autre table serait payer la simplicité avec la garantie existante.
+- Conséquence : le contrat cesse d'être une liste de paires pour devenir une liste de paires **qualifiées par leur table**. Le banc de couverture refuse une table inconnue plutôt que de lui appliquer un jeu de propriétés par défaut — un troisième moteur devra faire l'objet de son propre arbitrage, pas d'un héritage silencieux.
+- Réversibilité : une colonne du contrat SQL, une correspondance dans le banc de couverture. Aucun schéma de base, aucune migration.
+- Référence : `web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql`, `web/src/lib/clinical/claimsEpinglesFraicheur.guard.test.ts`, `web/src/lib/clinical/contradictionsV1.ts`, `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md` (`DC-14`, `DC-30`), [[D-041]], [[D-042]], [[D-044]]
+
 ### D-045 — Le moteur de propositions de parcours ouvre avec quatre règles, chacune sur un signal exact, et la dysphagie n'y devient pas une vigilance
 
 - Date : 2026-08-11
