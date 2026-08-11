@@ -109,6 +109,7 @@ export function InboxQuestionnaires() {
   }, [chargerInbox]);
 
   const ouvrirDetail = async (idPatient: string, patient: string) => {
+    setRetrait(null);
     setDetail({ idPatient, patient, payload: null, loading: true, error: '' });
     try {
       const reponse = await fetch(`/api/praticien/inbox-questionnaires?idPatient=${encodeURIComponent(idPatient)}`);
@@ -138,6 +139,7 @@ export function InboxQuestionnaires() {
         setDetail(d => d ? { ...d, error: payload.error ?? 'Confirmation impossible.' } : d);
         return;
       }
+      setRetrait(null);
       setDetail(null);
       await chargerInbox();
     } catch {
@@ -230,7 +232,7 @@ export function InboxQuestionnaires() {
           ))}
         </div>
       )}
-      <Dialog.Root open={detail !== null} onOpenChange={open => { if (!open) setDetail(null); }}>
+      <Dialog.Root open={detail !== null} onOpenChange={open => { if (!open) { setRetrait(null); setDetail(null); } }}>
         <Dialog.Portal>
           <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
           <Dialog.Content
