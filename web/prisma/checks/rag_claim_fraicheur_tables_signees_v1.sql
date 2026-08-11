@@ -1,0 +1,106 @@
+-- Contrat de fraîcheur des claims épinglés par les tables de règles SIGNÉES
+-- (LOT-01 de la campagne chaîne T0 — [[D-042]], précisé par [[D-044]]).
+--
+-- CE QU'IL GARDE. Une table de règles signée cite des claims du corpus par
+-- paire `(claim_id, version_claim)`. La signature dit qu'un humain les a relus
+-- ce jour-là ; elle ne dit rien de ce que le corpus est devenu depuis. Un claim
+-- rejeté, désactivé, remplacé ou dépouillé de son caractère prescriptif laisse
+-- la table intacte et sa signature muette. Ce contrat est le seul endroit où
+-- cet écart se voit.
+--
+-- LES QUATRE PROPRIÉTÉS, ET PAS TROIS. `statut = 'VALIDE'`, `active = true`,
+-- pas de `superseded_at`, `prescriptif = true` — c'est exactement le jeu que la
+-- relecture du 2026-08-06 a effectivement contrôlé avant de re-signer la table
+-- d'orientation (`orientationRulesV1.ts`, en-tête d'`ORIENTATION_METADATA`).
+-- En contrôler trois laisserait passer la quatrième.
+--
+-- POURQUOI CE FICHIER NE TOURNE PAS EN CI, ET CE N'EST PAS UN OUBLI. La base du
+-- CI est construite par `migrate deploy` seul, donc VIDE : les 23 claims y sont
+-- tous absents et ce contrat y rougirait à chaque exécution. Il n'a de sens que
+-- contre un corpus réel, donc contre la PRODUCTION, en préflight de
+-- `release-db.yml`. Ce qui éprouve qu'il MORD est
+-- `rag_claim_fraicheur_tables_signees_v1_negatif.sql`, qui pose ses propres
+-- fixtures et tourne, lui, en CI ([[D-012]], [[D-015]] : un banc vacué est un
+-- banc qui ment).
+--
+-- FAIL-CLOSED ASSUMÉ. Une release ne part pas sur une base où une table signée
+-- s'appuie sur un claim que le corpus ne soutient plus. La correction est un
+-- ARBITRAGE CLINIQUE — re-signer la table sans le claim, ou rétablir le claim
+-- par le chemin du corpus — jamais un `UPDATE` à la main sur `statut` ou
+-- `active` pour faire verdir un préflight.
+--
+-- Vérifié conforme sur la production le 2026-08-11 avant ce câblage : 23 paires
+-- épinglées, 23 lignes trouvées, aucune violation des quatre propriétés.
+--
+-- `BEGIN READ ONLY … ROLLBACK` : aucune écriture, rejouable sans risque.
+-- ERRCODE sentinelle WN001, jamais intercepté ici.
+BEGIN READ ONLY;
+
+DO $$
+DECLARE
+  detail text;
+BEGIN
+-- >>> PREDICAT_FRAICHEUR_CLAIMS_EPINGLES
+  -- La liste ci-dessous est la copie SQL de ce que les tables signées déclarent
+  -- en TypeScript. `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
+  -- divergent : c'est lui — et lui seul — qui force l'entrée d'une table signée
+  -- neuve dans ce contrat. Sans ce banc, une table pourrait épingler des claims
+  -- que rien ne contrôlerait jamais, ce qui est exactement le trou de l'audit
+  -- §E que ce lot existe pour ne pas recopier.
+  SELECT string_agg(
+           format('%s@%s (%s)', e.claim_id, e.version_claim,
+                  CASE
+                    WHEN c.claim_id IS NULL THEN 'absent du corpus'
+                    WHEN c.statut IS DISTINCT FROM 'VALIDE' THEN 'statut ' || coalesce(c.statut, '?')
+                    WHEN c.active IS NOT TRUE THEN 'active = false'
+                    WHEN c.superseded_at IS NOT NULL THEN 'remplacé (superseded_at)'
+                    ELSE 'non prescriptif'
+                  END),
+           ', ' ORDER BY e.claim_id)
+    INTO detail
+  FROM (VALUES
+    ('WN-CL-0047-008', 'v1.0'),
+    ('WN-CL-0105-001', 'v1.0'),
+    ('WN-CL-0136-003', 'v1.0'),
+    ('WN-CL-0136-004', 'v1.0'),
+    ('WN-CL-0154-013', 'v1.0'),
+    ('WN-CL-0178-017', 'v1.0'),
+    ('WN-CL-0228-009', 'v1.0'),
+    ('WN-CL-0228-010', 'v1.0'),
+    ('WN-CL-0234-010', 'v1.0'),
+    ('WN-CL-0234-011', 'v1.0'),
+    ('WN-CL-0243-005', 'v1.0'),
+    ('WN-CL-0287-009', 'v1.0'),
+    ('WN-CL-0312-021', 'v1.0'),
+    ('WN-CL-0314-008', 'v1.0'),
+    ('WN-CL-0314-012', 'v1.0'),
+    ('WN-CL-0315-007', 'v1.0'),
+    ('WN-CL-0319-010', 'v1.0'),
+    ('WN-CL-0323-001', 'v1.0'),
+    ('WN-CL-0323-013', 'v1.0'),
+    ('WN-CL-0323-023', 'v1.0'),
+    ('WN-CL-0323-025', 'v1.0'),
+    ('WN-CL-0339-010', 'v1.0'),
+    ('WN-CL-0359-025', 'v1.0')
+  ) AS e(claim_id, version_claim)
+  -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
+  -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
+  -- a relue — c'est le cas `N6` du fichier négatif.
+  LEFT JOIN public.rag_corpus_claims c
+    ON c.claim_id = e.claim_id AND c.version_claim = e.version_claim
+  WHERE c.claim_id IS NULL
+     OR c.statut IS DISTINCT FROM 'VALIDE'
+     OR c.active IS NOT TRUE
+     OR c.superseded_at IS NOT NULL
+     OR c.prescriptif IS NOT TRUE;
+
+  IF detail IS NOT NULL THEN
+    RAISE EXCEPTION USING ERRCODE = 'WN001',
+      MESSAGE = format(
+        'claims épinglés — fraîcheur rompue : %s. Une table de règles signée cite un claim que le corpus ne soutient plus. Correction = arbitrage clinique (re-signer la table sans ce claim, ou rétablir le claim par le chemin du corpus), jamais une écriture à la main sur le corpus pour faire verdir ce préflight.',
+        detail);
+  END IF;
+-- <<< PREDICAT_FRAICHEUR_CLAIMS_EPINGLES
+END $$;
+
+ROLLBACK;

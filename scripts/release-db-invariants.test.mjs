@@ -110,7 +110,12 @@ test("aucune étape d'import ne peut partir d'un déclenchement automatique", ()
   }
 });
 
-test('le déclencheur automatique est borné à main et aux seules migrations', () => {
+// D-044 a élargi ce filtre, DÉLIBÉRÉMENT et à un seul chemin de plus. La borne
+// n'a pas disparu, elle a changé de valeur : ce banc la tient à sa nouvelle
+// valeur exacte. Élargir encore reste une décision, pas un geste de passage —
+// chaque chemin ajouté fait proposer une release, donc demande une approbation
+// humaine, à chaque push qui le touche.
+test('le déclencheur automatique est borné à main et aux deux chemins décidés', () => {
   const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
   assert.ok(bloc, 'section `on:` introuvable');
   const declencheurs = bloc[1];
@@ -119,10 +124,18 @@ test('le déclencheur automatique est borné à main et aux seules migrations', 
   assert.match(
     declencheurs,
     /^ {6}- 'web\/prisma\/migrations\/\*\*'\s*$/m,
-    "le filtre `paths` doit ne viser que les migrations : l'élargir ferait demander une approbation à chaque push",
+    'le filtre `paths` doit viser les migrations, seul chemin légitime de leur registre canonique',
+  );
+  // Sans ce chemin, le contrat de fraîcheur des claims — qui n'a de sens que
+  // contre la production — ne démarrerait jamais seul : le LOT-01 ne porte
+  // aucune migration. C'est le précédent D-015 (rejeu promis, jamais câblé).
+  assert.match(
+    declencheurs,
+    /^ {6}- 'web\/src\/lib\/clinical\/\*\*'\s*$/m,
+    "le filtre `paths` doit viser les tables de règles cliniques (D-044), sans quoi le contrat de fraîcheur des claims ne se rejoue jamais",
   );
   const chemins = declencheurs.match(/^ {6}- '.*'$/gm) ?? [];
-  assert.equal(chemins.length, 1, `un seul chemin attendu dans \`paths\`, trouvé ${chemins.length}`);
+  assert.equal(chemins.length, 2, `deux chemins attendus dans \`paths\`, trouvé ${chemins.length}`);
 });
 
 // Le commentaire de la section `on:` explique au relecteur ce que le filtre laisse
@@ -133,25 +146,39 @@ test('le déclencheur automatique est borné à main et aux seules migrations', 
 test('le commentaire du déclencheur nomme le chemin réellement filtré', () => {
   const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
   const declencheurs = bloc[1];
-  const chemin = /^ {6}- '(.+)'$/m.exec(declencheurs)?.[1];
-  assert.ok(chemin, 'aucun chemin lisible dans `paths`');
+  const chemins = [...declencheurs.matchAll(/^ {6}- '(.+)'$/gm)].map((m) => m[1]);
+  assert.ok(chemins.length > 0, 'aucun chemin lisible dans `paths`');
 
   // Les spans sont relevés LIGNE PAR LIGNE : sur le texte entier, une regex
   // apparie la backtick fermante d'une citation avec l'ouvrante de la suivante et
   // capture la prose qui les sépare. Première rédaction de ce banc, et il rougissait
   // sur un fichier sain.
+  // Depuis D-044 le filtre porte DEUX chemins : une citation doit être l'un
+  // d'eux, pas « le » chemin. Un commentaire qui citerait un glob voisin mais
+  // faux — `migrations/**` pour `web/prisma/migrations/**` — enseignerait le
+  // faux à la seule personne qui relira ce fichier avant d'approuver une
+  // écriture en production.
   const cites = declencheurs
     .split('\n')
     .filter((l) => /^\s*#/.test(l))
     .flatMap((l) => l.match(/`[^`]+`/g) ?? [])
-    .filter((c) => c.includes('migrations/**'));
+    .filter((c) => c.includes('/**`'));
 
-  assert.ok(cites.length > 0, 'le commentaire doit citer le chemin filtré, pour que le relecteur sache');
+  assert.ok(cites.length > 0, 'le commentaire doit citer les chemins filtrés, pour que le relecteur sache');
   for (const cite of cites) {
-    assert.equal(
-      cite,
-      `\`${chemin}\``,
-      `le commentaire cite ${cite} alors que le filtre applique \`${chemin}\``,
+    assert.ok(
+      chemins.includes(cite.slice(1, -1)),
+      `le commentaire cite ${cite}, qui n'est pas un des chemins filtrés (${chemins.join(', ')})`,
+    );
+  }
+
+  // Chaque chemin réellement filtré est expliqué quelque part dans le
+  // commentaire : en ajouter un en silence est précisément ce qu'un relecteur
+  // ne doit pas avoir à découvrir en lisant le YAML.
+  for (const chemin of chemins) {
+    assert.ok(
+      cites.includes(`\`${chemin}\``),
+      `le chemin filtré \`${chemin}\` n'est expliqué par aucun commentaire`,
     );
   }
 });
