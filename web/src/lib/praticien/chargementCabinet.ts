@@ -35,7 +35,7 @@ export async function chargerTrajectoiresCabinet(emailPraticien: string): Promis
   });
   const reponses = await prisma.questionnaireReponse.findMany({
     where: { idPatient: { in: ids } },
-    select: { idPatient: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
+    select: { idPatient: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
     orderBy: { dateReponse: 'asc' },
   });
 

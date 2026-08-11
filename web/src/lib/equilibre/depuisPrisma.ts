@@ -1,3 +1,4 @@
+import { filtrerPassationsExploitables } from '../scoring/validite';
 import { BESOIN_SOURCES, JOURS_JALON } from './constants';
 import { calculerEquilibre } from './score';
 import type { JalonMomentum, LectureDatee, ReponsesParQuestionnaire } from './types';
@@ -7,10 +8,16 @@ const JOUR_MS = 24 * 60 * 60 * 1000;
 // Forme minimale attendue d'une ligne QuestionnaireReponse (Prisma) — pas de
 // dépendance directe au client Prisma pour garder ce module testable avec des
 // fixtures synthétiques, comme le reste de web/src/lib/equilibre.
+//
+// `statutValidite` (LOT-00, chaîne T0) est optionnel : les appelants qui le
+// sélectionnent permettent au filtre de validité de s'appliquer (drapeau
+// WN_ENABLE_VALIDITE_PASSATIONS) ; absent, la passation vaut VALID — les
+// fixtures existantes restent valides telles quelles.
 export type ReponseBrute = {
   idQuestionnaire: string;
   dateReponse: Date;
   scoresJson: unknown;
+  statutValidite?: string | null;
 };
 
 // Les réponses soumises via api/patient/submit portent les réponses brutes
@@ -39,8 +46,12 @@ export function construireReponsesParQuestionnaire(
   reponses: ReponseBrute[],
   dateLimite?: Date
 ): ReponsesParQuestionnaire {
+  // Filtre de validité AVANT la déduplication « plus récente » : une
+  // re-passation SUPERSEDED ne doit pas masquer la passation valide qui la
+  // remplace, et une passation INVALID ne doit pas gagner le dédoublonnage.
+  const exploitables = filtrerPassationsExploitables(reponses);
   const parQuestionnaire = new Map<string, ReponseBrute>();
-  for (const r of reponses) {
+  for (const r of exploitables) {
     if (dateLimite && r.dateReponse > dateLimite) continue;
     const existante = parQuestionnaire.get(r.idQuestionnaire);
     if (!existante || r.dateReponse > existante.dateReponse) {
@@ -64,10 +75,13 @@ export function construireReponsesParQuestionnaire(
  * moment réel où le patient a commencé à renseigner l'outil.
  */
 export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
-  if (reponses.length === 0) return null;
-  return reponses.reduce(
+  // Une passation exclue du raisonnement n'ancre pas T0 : la première réponse
+  // VALIDE fait foi (drapeau éteint → liste inchangée, comportement actuel).
+  const exploitables = filtrerPassationsExploitables(reponses);
+  if (exploitables.length === 0) return null;
+  return exploitables.reduce(
     (plusAncienne, r) => (r.dateReponse < plusAncienne ? r.dateReponse : plusAncienne),
-    reponses[0].dateReponse
+    exploitables[0].dateReponse
   );
 }
 
@@ -99,7 +113,10 @@ export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
  * nouvelle qui laisse l'indice inchangé produit bien une lecture — c'est une
  * mesure réelle qui se trouve stable, pas un silence.
  */
-export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?: Date): LectureDatee[] {
+export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: Date): LectureDatee[] {
+  // Filtre de validité en entrée : la règle de nouveauté (ci-dessous) ne doit
+  // pas rouvrir un jalon sur l'arrivée d'une passation invalidée.
+  const reponses = filtrerPassationsExploitables(brutes);
   const dateT0 = ancreT0 ?? resoudreDateT0(reponses);
   if (!dateT0) return [];
 

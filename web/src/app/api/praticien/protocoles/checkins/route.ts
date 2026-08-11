@@ -88,7 +88,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // T0, momentum = null et le résumé conserve un score null honnête.
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     });
     // LOT-08 : ancre T0 = jalon T0 confirmé le plus récent de l'épisode ; repli

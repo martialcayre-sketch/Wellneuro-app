@@ -12,6 +12,7 @@ import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { STATUTS_ASSIGNATION_TERMINAL } from '@/lib/assignations/dedup';
 import { calculateScore } from '@/lib/questions';
 import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
+import { estExclueDuRaisonnement } from '@/lib/scoring/validite';
 
 // Évaluation de l'orientation NNPP2 pour un patient — LECTURE SEULE, et le seul
 // endroit où cette évaluation existe.
@@ -87,7 +88,15 @@ function scoresPourOrientation(
   idQuestionnaire: string,
   stocke: Record<string, unknown> | null,
   dateReponse: Date,
+  statutValidite?: string | null,
 ): Record<string, unknown> | null {
+  // 5. statut de validité (LOT-00, chaîne T0) — même famille que le motif 4 :
+  //    il porte sur le RECUEIL. Nuller le score plutôt que retirer la ligne
+  //    préserve `dejaRepondu`, fait administratif. Conséquence assumée : si la
+  //    DERNIÈRE passation d'un instrument est invalidée, l'instrument s'éteint
+  //    pour l'orientation — pas de repli sur une passation antérieure, le
+  //    praticien qui invalide attend une re-passation. Drapeau éteint → inerte.
+  if (estExclueDuRaisonnement(statutValidite)) return null;
   // 4. registre des passations non interprétables — d'abord, parce qu'il porte
   //    sur le RECUEIL et non sur le calcul : recalculer n'y change rien.
   if (motifNonInterpretable(idQuestionnaire, dateReponse) !== null) return null;
@@ -131,7 +140,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   const [reponses, assignations, packs, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
-      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'desc' },
     }),
     // Seules les assignations OUVERTES comptent comme « déjà assigné » : une
@@ -239,6 +248,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       reponse.idQuestionnaire,
       reponse.scoresJson as Record<string, unknown> | null,
       reponse.dateReponse,
+      reponse.statutValidite,
     ),
   }));
 
