@@ -23,6 +23,13 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
   CLAUDE.md.
 - **silence** — tout le reste.
 
+Un hook `SessionStart` séparé exécute une seule fois `git fetch origin main`,
+enregistre le verdict pour la session, puis le hook `PreToolUse` d'édition le
+vérifie. Fetch impossible ou branche qui ne contient pas le nouvel
+`origin/main` : les outils `Edit`/`Write` restent bloqués jusqu'à une nouvelle
+session/reprise après arbitrage. Le hook ne fait jamais de pull, merge, rebase
+ou checkout.
+
 Il n'existe pas de variable d'environnement désactivant la protection des
 fichiers (`WN_ALLOW_PROTECTED_WRITE` a été supprimée : elle neutralisait le
 hook pour la session entière).
@@ -30,6 +37,6 @@ hook pour la session entière).
 Le hook PostToolUse `log-bash-command.mjs` est purement observationnel
 (journal `.claude/logs/`, secrets masqués avant écriture) — il ne décide rien.
 
-Banc de test : `node --test .claude/hooks/block-risky-commands.test.mjs`.
+Banc de test : `node --test .claude/hooks/*.test.mjs`.
 Toute modification d'un hook de sécurité se relit adversarialement et repasse
 le banc.

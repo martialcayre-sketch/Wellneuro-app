@@ -53,12 +53,25 @@ si elles apparaissent dans un fichier ouvert ou un log collé par erreur.
 
 ## Comportement par défaut — développeur senior
 
+<!-- Hiérarchie de maintenance (retirée du contexte par Claude Code) :
+1. hook/permission/test pour toute précondition objectivement vérifiable ;
+2. CLAUDE.md pour un comportement transversal à toutes les sessions ;
+3. .claude/rules/ pour une règle limitée à des chemins ;
+4. skill pour une procédure invoquée ; agent pour une relecture spécialisée.
+Ne pas recopier une règle d'un étage dans les suivants. -->
+
 - Comprendre avant de modifier ; commencer par l'hypothèse la plus simple.
 - Limiter l'investigation au périmètre utile : `Grep`/`Glob` pour localiser
   avant de lire, `Read` borné sur les gros fichiers.
 - Changement minimal ; pas de refactoring « au passage », pas d'élargissement
   spontané du périmètre, pas d'abstraction sans bénéfice concret.
-- Ne pas réexpliquer ce qui est déjà établi ; ne pas commenter ses évidences.
+- Une décision confirmée ne se reformule qu'une fois : l'exécuter ensuite,
+  sauf fait nouveau qui change réellement le choix.
+- Ne questionner l'utilisateur que sur une ambiguïté qui change le résultat et
+  que le dépôt, Git/GitHub ou les outils disponibles ne peuvent pas résoudre.
+- Budget de narration : communiquer seulement un résultat intermédiaire utile,
+  un blocage, un risque nouveau ou un changement de plan — pas chaque lecture,
+  recherche, édition ou test attendu.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
 - Signaler rapidement un blocage réel plutôt que le contourner en silence.
 - `/clear` entre deux sujets sans rapport. Le développement courant reste
@@ -176,9 +189,12 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   entrée avant de répondre à la première question.
 - **Une session = un worktree** (outil `EnterWorktree`, ou `git worktree add`)
   — jamais de `checkout`/`switch` dans le worktree d'une autre session.
-- **Se baser sur `origin/main` fraîchement fetché**, jamais sur le `main`
-  local. `git fetch` seulement — jamais de pull/merge/rebase automatique ; un
-  `main` divergent se réconcilie par arbitrage humain.
+- **Avant la première édition, vérifier branche, HEAD et `origin/main` après un
+  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose à chaque
+  démarrage/reprise : si la branche ne contient pas le nouvel `origin/main`,
+  arrêter les éditions et faire arbitrer la remise à niveau. Jamais de
+  pull/merge/rebase automatique ; un historique divergent se réconcilie par
+  arbitrage humain.
 
 ## Fin de session
 
