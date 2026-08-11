@@ -90,3 +90,24 @@ souhaitable (préconditions homogènes T0/J21). Parallélisable avec LOT-06.
 - Critères du Lot H de `sources/02-spec-lots-parcours-t0.md` (périmètre réduit
   acté : poids déclaratif en backlog).
 - Fragment `changelog.d/`.
+
+## Doctrine à porter — `DC-41` (véhicule V4 de l'audit)
+
+**Efficacité et tolérance sont deux axes distincts.** Le momentum par domaine
+lit une trajectoire de score : c'est l'axe **efficacité**. Une intervention
+efficace et mal tolérée produirait pourtant un momentum favorable et se lirait
+comme un succès — alors que la conduite à tenir (ajuster, arrêter) est
+l'inverse.
+
+Le jalon doit donc porter les deux axes séparément, sans les composer en un
+indice unique : la tolérance n'est pas un malus soustrait à l'efficacité, et
+aucune moyenne des deux ne doit exister. La recueillir suppose une saisie qui
+n'existe pas — ce lot peut donc s'arrêter à **réserver l'axe** et à interdire
+la lecture d'un momentum favorable comme succès sans lui, en nommant l'écart.
+
+Compatible avec l'interdit déjà posé ci-dessus (« aucune interprétation
+clinique automatique d'un delta ») : c'en est le corollaire côté suivi.
+
+Non couvert par le périmètre ci-dessus : la doctrine y a été inscrite après la
+rédaction de la fiche (`docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md`,
+section « Refermer les 18 »).

@@ -96,3 +96,23 @@ LOT-04 (candidats + carte de décision vivante). Ouvre LOT-06 et LOT-07.
 
 - Critères 1-4 du Lot E de `sources/02-spec-lots-parcours-t0.md`.
 - Fragment `changelog.d/`.
+
+## Doctrine à porter — `DC-39` (véhicule V4 de l'audit)
+
+**Une modification à la fois lorsque l'interprétation l'exige.** Une phase qui
+lance simultanément une action `observation`, une intention de complément et un
+changement d'hygiène de vie rend inattribuables l'amélioration comme
+l'intolérance : au jalon suivant (LOT-07), personne ne saura à quoi créditer
+l'effet.
+
+Le contrat d'action doit donc distinguer les interventions **compatibles
+simultanément** de celles **à tester séquentiellement**, et le builder de
+phases refuser — ou signaler — une phase qui empile plusieurs interventions
+séquentielles. Ce qui relève de l'une ou l'autre catégorie est un arbitrage
+clinique par type d'intervention, à instruire dans le dossier de règles du lot,
+jamais à déduire.
+
+Non couvert par le périmètre ci-dessus : la doctrine y a été inscrite après la
+rédaction de la fiche (`docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md`,
+section « Refermer les 18 »). Aucun objet nouveau — un champ sur le type
+d'action existant suffit.

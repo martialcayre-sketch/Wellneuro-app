@@ -51,6 +51,42 @@ tests ou les démos : **Sophie Nicola, Jennifer Martin, Michel Dogné**.
 Ne jamais générer, dériver ou « compléter » des données patient réelles, même
 si elles apparaissent dans un fichier ouvert ou un log collé par erreur.
 
+## Constitution clinique (extrait permanent)
+
+Ces règles valent pour tout ce qui produit, transforme ou restitue du savoir
+clinique — moteurs, prompts, tables de règles, scoring. Elles sont
+**opposables en revue** (`D-043`) ; aucune n'est encore gardée par un banc, et
+la constitution nomme cette dette règle par règle. Détail et audit :
+`docs/claude/doctrine/` (58 règles `DC-nn`) ; rappel automatique sur les
+chemins cliniques via `.claude/rules/clinique-scoring.md`.
+
+- **Aucune règle clinique sans provenance certifiée** — un LLM applique,
+  combine, hiérarchise ou explique ; il n'invente jamais (`DC-01`, `DC-02`).
+- **Aucun seuil, dose, poids ou borne clinique inventé** ; un chiffre purement
+  technique doit être identifié comme tel (`DC-19`, `DC-20`).
+- **Association ≠ causalité ; score ≠ diagnostic** (`DC-27`).
+- **Une donnée absente n'est jamais zéro ni normale** (`DC-24`).
+- **Un questionnaire isolé ne suffit pas à conclure** (`DC-28`).
+- **Une discordance se signale, jamais ne se moyenne ni ne se supprime**
+  (`DC-30`).
+- **Un signal de sécurité prime sur tout score** et n'ajoute pas de points
+  (`DC-12`, `DC-23`).
+- **Diagnostic, hypothèse et orientation sont trois objets distincts** ; le
+  diagnostic reste hors périmètre (`DC-31`, `DC-32`).
+- **Respecter la population et les limites d'un claim** ; l'absence de
+  population déclarée est une restriction (`DC-14`).
+- **Les règles cliniques vivent dans le registre, jamais seulement dans le
+  code** (`DC-26`).
+- **Toute sortie clinique importante est explicable par données + claims**, y
+  compris quand elle s'abstient (`DC-34`, `DC-35`).
+- **Données insuffisantes ⇒ réduire la conclusion, jamais l'inventer**
+  (`DC-25`).
+- Conflit non résolu entre sources ⇒ escalade praticien (`DC-54`, `DC-55`) —
+  *proposition, pas encore opposable* : `D-041` la réserve jusqu'au banc.
+- **Toute modification clinique exige une décision explicite `D-xxx` et un
+  fragment `changelog.d/`** — y compris une seule ligne de TypeScript dans une
+  table signée, des poids ou un cut-off (`DC-17`, `DC-18`).
+
 ## Comportement par défaut — développeur senior
 
 <!-- Hiérarchie de maintenance (retirée du contexte par Claude Code) :

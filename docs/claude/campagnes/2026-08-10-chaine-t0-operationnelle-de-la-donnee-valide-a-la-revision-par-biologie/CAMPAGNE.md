@@ -106,7 +106,7 @@ confirmé » et « discordance stress » sont en CI.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Validité des données cliniques — statut par passation, filtre unifié (migration) | terminé | — |
-| LOT-01 | Garde-fous de synthèse et moteur de contradictions — prompt v20, schéma strict, C-STR/C-SOM/C-ALI, marquage de la passation courante | en_cours | LOT-00 |
+| LOT-01 | Garde-fous de synthèse et moteur de contradictions — prompt v20, schéma strict, C-STR seule (D-042), contrat de fraîcheur des claims, marquage de la passation courante | en_cours | LOT-00 |
 | LOT-02 | Préconditions de confirmation T0 — checklist dure/souple, justification tracée | à_faire | LOT-00 |
 | LOT-03 | Règles d'arrêt et extinction d'orientation — stop rules, `dejaRepondu` excluant, SCOFF | à_faire | LOT-01 |
 | LOT-04 | Candidats d'intervention déterministes — chaîne C1 rebranchée, canal plainte patient, recalcul serveur | à_faire | LOT-02 |
