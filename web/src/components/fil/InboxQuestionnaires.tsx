@@ -6,6 +6,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { CheckCheck, ExternalLink, Eye, X } from 'lucide-react';
 import type { InboxQuestionnairesApiResponse } from '@/app/api/praticien/inbox-questionnaires/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
+import { MOTIF_MAX, MOTIF_MIN } from '@/lib/scoring/invalidation';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import type { ReponseQuestionnaireLisible } from '@/lib/questionnaire-reponses';
@@ -360,7 +361,7 @@ export function InboxQuestionnaires() {
                                   value={retrait.motif}
                                   onChange={e => setRetrait(r => (r ? { ...r, motif: e.target.value } : r))}
                                   rows={2}
-                                  maxLength={500}
+                                  maxLength={MOTIF_MAX}
                                   placeholder="Ex. : doublon technique, passation interrompue, réponses manifestement aléatoires."
                                   className="rounded-lg border border-border bg-background p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                                 />
@@ -371,7 +372,7 @@ export function InboxQuestionnaires() {
                                   <button
                                     type="button"
                                     onClick={() => void poserValidite(reponse.idReponse, 'INVALID', retrait.motif)}
-                                    disabled={saving || retrait.motif.trim().length < 5}
+                                    disabled={saving || retrait.motif.trim().length < MOTIF_MIN}
                                     className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                                   >
                                     {saving ? 'Enregistrement...' : 'Confirmer le retrait'}
