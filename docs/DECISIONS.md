@@ -4,6 +4,49 @@
 
 ## Décisions actives
 
+### D-047 — Réponse écrite de Scalingo (2026-08-11) : (b) est levée, (a) était mal requalifiée par D-037 et reste ouverte
+
+- Date : 2026-08-11
+- Statut : accepté (décision du **responsable de traitement** du 2026-08-11)
+- Domaine : architecture, hébergement et conformité (HDS, RGPD)
+- Contexte : réponse écrite de Scalingo au ticket ouvert le 2026-08-09
+  ([[D-037]]), reçue par courriel (Jennifer, Scalingo) le 2026-08-11,
+  consignée dans `docs/DOSSIER_RGPD.md` §6.
+- Décision : deux arbitrages sur les conditions dures de [[D-006]], relevées
+  par [[D-037]], pris ensemble.
+  1. **(b) périmètre HDS de la région — LEVÉE.** Scalingo confirme par écrit
+     que les ressources créées avec `--hds-resource` en `osc-fr1`
+     (application, add-on PostgreSQL, ses sauvegardes) sont couvertes par le
+     certificat LNE n° 38436-2, pour les six activités du référentiel dont la
+     5 (administration et exploitation) et la 6 (sauvegardes externalisées).
+     C'est exactement la pièce que [[D-037]] attendait du ticket.
+  2. **(a) DPA — la requalification de [[D-037]] était fausse ; la condition
+     reste ouverte, autrement caractérisée.** [[D-037]] posait que l'accord de
+     sous-traitance vivait dans les documents généraux acceptés à la
+     souscription, et qu'« il n'y a donc pas d'e-signature à obtenir » — sous
+     réserve explicite de confirmation du fournisseur, jamais obtenue avant ce
+     jour. Scalingo répond l'inverse, sans ambiguïté : l'accord se compose du
+     DPA et d'une **annexe HDS distincte**, et « l'acceptation des conditions
+     générales seule ne suffit pas » à activer l'option HDS — l'annexe se
+     signe séparément. (a) n'est donc pas seulement non accomplie comme le
+     disait [[D-037]] : elle était **mal caractérisée**. Ce qui reste à faire
+     n'est plus d'archiver une pièce déjà acceptée, mais d'**obtenir et signer
+     l'annexe HDS**, puis d'archiver le DPA et cette annexe signée.
+- Ce que cette décision **ne fait pas** : elle n'ouvre pas la migration des
+  données réelles. L'ordre imposé de [[D-006]] tient intégralement — aucun
+  patient réel sur Scalingo avant que (a) soit **effectivement** levée
+  (signature et archivage faits, pas seulement caractérisés).
+- État réel des deux conditions dures de [[D-006]] après cette décision :
+  - **(a) DPA + annexe HDS — ouverte.** Action restante : obtenir l'annexe HDS
+    auprès de Scalingo (ticket existant ou `support@scalingo.com`), la signer,
+    puis archiver le DPA et l'annexe signée au dossier.
+  - **(b) périmètre HDS `osc-fr1` — levée.**
+  - Les réserves (3), (4), (5) de [[D-006]] — inchangées, cf. [[D-037]].
+- Réversibilité : une décision de registre se révoque par une décision de
+  registre.
+- Référence : `docs/DOSSIER_RGPD.md` §6, courriel Scalingo (Jennifer) du
+  2026-08-11, [[D-037]], [[D-006]].
+
 ### D-046 — Un constat n'est pas une prescription : `prescriptif` est exigé des claims de l'orientation, pas de ceux des contradictions
 
 - Date : 2026-08-11

@@ -198,7 +198,40 @@ Trois points à ne pas perdre :
   que les ressources créées `--hds-resource` en `osc-fr1` sont couvertes : cela
   relève des conditions de l'offre, demandées par écrit au fournisseur le
   2026-08-09. Élément à charge côté plateforme : `scalingo apps-info` rend
-  `HDS: true` sur l'application. **TROU ouvert** jusqu'à la réponse écrite.
+  `HDS: true` sur l'application. **TROU répondu par écrit le 2026-08-11**, voir
+  ci-dessous.
+
+### Réponse écrite du fournisseur (2026-08-11)
+
+Reçue par courriel (Jennifer, Scalingo), en réponse aux questions posées le
+2026-08-09.
+
+- **Périmètre géographique — TROU fermé.** Les ressources créées avec
+  `--hds-resource` en région `osc-fr1` (application, add-on PostgreSQL et ses
+  sauvegardes) sont couvertes par le certificat **LNE n° 38436-2**, pour les
+  six activités du référentiel dont la **5** (administration et exploitation)
+  et la **6** (sauvegardes externalisées).
+- **ISO/IEC 27001 n° 38435** — certificat public,
+  <https://scalingo.com/fr/certification-iso-27001>.
+- **Forme de l'accord de sous-traitance — précisée, encore non archivée.**
+  L'accord se compose de deux pièces distinctes : le DPA
+  (<https://scalingo.com/fr/contrat-gestion-traitements-donnees-personnelles>)
+  et une **annexe HDS séparée**, à signer indépendamment — l'acceptation des
+  CGU seule ne l'active pas. La forme posée en rubrique 14 (« forme non posée
+  au ticket du 2026-08-09 ») est donc connue ; **la signature et l'archivage
+  de l'annexe HDS restent à faire** avant toute donnée réelle (condition
+  D-037).
+- **Sous-traitant ultérieur.** OUTSCALE, opérateur d'infrastructure, France
+  (région Paris), certifié HDS pour les six activités ; l'intégralité des
+  données reste dans ses datacenters français.
+- **Région `osc-secnum-fr1`** — non utilisée par ce projet. Réservée aux
+  clients demandant, en plus de HDS, la Visa SecNumCloud (accès soumis à
+  validation InfoSec Scalingo). Mentionnée ici pour mémoire, hors périmètre
+  de la migration actuelle.
+- **Journalisation Scalingo** — logs d'accès applicatifs conservés 90 jours à
+  1 an, logs d'infrastructure 1 an, les deux inclus dans le périmètre HDS
+  (activité 5). Distinct du TROU rubrique 8, qui porte sur la conservation
+  des données de santé elles-mêmes, non sur les journaux de la plateforme.
 
 ## 7. Transferts hors Union européenne
 
@@ -348,8 +381,8 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — pour Scalingo, la pièce s'archive et ne s'e-signe pas selon la lecture du 2026-08-09 (D-037) — **forme non posée au ticket du 2026-08-09, à poser au prochain échange** | Responsable | avant bascule Scalingo | `CHECKLIST_FINALISATION.md` §F |
-| 6 | Sous-traitants | Périmètre HDS de la région `osc-fr1` non confirmé — le certificat ne nomme aucune région | Responsable | réponse Scalingo | ici, rubrique 6 |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | avant bascule Scalingo | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | Fournisseur SMTP réel non identifié | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
