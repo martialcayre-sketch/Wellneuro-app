@@ -232,11 +232,12 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Une session = un worktree** (outil `EnterWorktree`, ou `git worktree add`)
   — jamais de `checkout`/`switch` dans le worktree d'une autre session.
 - **Avant la première édition, vérifier branche, HEAD et `origin/main` après un
-  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose à chaque
-  démarrage/reprise : si la branche ne contient pas le nouvel `origin/main`,
-  arrêter les éditions et faire arbitrer la remise à niveau. Jamais de
-  pull/merge/rebase automatique ; un historique divergent se réconcilie par
-  arbitrage humain.
+  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose au
+  démarrage **et rejuge à chaque tentative d'édition** : si la branche ne
+  contient pas `origin/main`, les éditions sont refusées jusqu'à la remise à
+  niveau — et le refus tombe dès qu'elle est faite, sans reprise de session.
+  Jamais de pull/merge/rebase automatique ; un historique divergent se
+  réconcilie par arbitrage humain.
 
 ## Fin de session
 
