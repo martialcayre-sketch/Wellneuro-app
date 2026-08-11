@@ -18,6 +18,30 @@
 // inconnue est impossible en base (contrainte CHECK) ; si elle apparaissait
 // malgré tout (fixture erronée), elle serait traitée comme VALID plutôt que
 // d'exclure en silence — le CHECK en base est le vrai garde.
+//
+// ── SUPERSEDED n'est PAS une re-passation ───────────────────────────────────
+//
+// À ne jamais poser automatiquement quand un patient repasse un instrument.
+// Une re-mesure à J21 n'annule pas la mesure de T0 : `construireHistoriqueEquilibre`
+// reconstruit chaque jalon depuis les passations connues À CETTE DATE-LÀ, donc
+// marquer l'ancienne ferait disparaître le point de départ et, avec lui, tout
+// le momentum. Les deux passations restent VALID, et c'est la fenêtre de jalon
+// qui choisit laquelle parle.
+//
+// SUPERSEDED désigne un REMPLACEMENT : une passation fautive (saisie erronée,
+// doublon technique, patient qui a répondu au hasard puis recommencé) que le
+// praticien remplace explicitement. Le geste est le sien, jamais celui du
+// moteur. `depuisPrisma` l'exclut de l'historique pour cette raison précise :
+// une passation remplacée n'a jamais mesuré quoi que ce soit.
+//
+// ── Ce statut ne remplace pas le registre des passations non interprétables ──
+//
+// `passationsNonInterpretables.ts` dit autre chose : la passation a bien eu
+// lieu, ses réponses brutes restent vraies, mais le RÉSULTAT calculé n'est pas
+// une mesure. Elle est donc transmise NOMMÉE-MAIS-VIDÉE — ce qui laisse au
+// praticien le signal « mesure à replanifier ». La convertir en INVALID
+// effacerait ce signal. Les deux mécanismes se complètent ; aucun n'absorbe
+// l'autre.
 
 export const STATUTS_VALIDITE = [
   'VALID',

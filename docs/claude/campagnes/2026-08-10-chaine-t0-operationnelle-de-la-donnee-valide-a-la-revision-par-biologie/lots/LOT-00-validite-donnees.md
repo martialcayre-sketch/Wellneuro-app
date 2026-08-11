@@ -20,6 +20,34 @@ Une passation marquée `INVALID` disparaît du prompt de synthèse, de
 marque l'ancienne `SUPERSEDED` ; l'inbox affiche le statut ; le registre en dur
 peut être supprimé sans changement de comportement.
 
+## Ce que l'exécution a corrigé de la spécification (2026-08-11)
+
+Trois points de `sources/02-spec-lots-parcours-t0.md` (Lot A) se sont révélés
+faux à la lecture du code. Ils sont notés ici pour que la reprise ne les
+réintroduise pas.
+
+1. **La reprise du registre en `INVALID` serait une régression.**
+   `lib/scoring/passationsNonInterpretables.ts` dit autre chose que le statut de
+   validité : la passation a eu lieu, ses réponses brutes restent vraies, seul
+   le RÉSULTAT n'est pas une mesure — d'où sa transmission *nommée-mais-vidée*,
+   qui laisse au praticien le signal « mesure à replanifier ». La convertir en
+   `INVALID` la ferait disparaître, et le signal avec elle. **Les deux
+   mécanismes se complètent ; aucun n'absorbe l'autre.** Le registre reste en
+   place ; le statut sert l'invalidation praticien, qui n'existait pas.
+2. **Une re-passation ne doit JAMAIS marquer la précédente `SUPERSEDED`.**
+   `construireHistoriqueEquilibre` reconstruit chaque jalon depuis les
+   passations connues à cette date : périmer la mesure de T0 à l'arrivée de
+   celle de J21 supprimerait le point de départ, donc tout le momentum.
+   `SUPERSEDED` = remplacement d'une passation *fautive*, geste praticien
+   explicite. Verrouillé par deux bancs dans `depuisPrisma.test.ts`.
+3. **La déduplication à la synthèse demande un arbitrage, pas un `distinct`.**
+   Retirer les passations antérieures priverait le praticien de l'évolution
+   (deux enquêtes alimentaires à trois semaines d'écart, par exemple). L'écart
+   réel avec l'orientation n'est pas le nombre de lignes mais l'absence de
+   repère : le modèle ne sait pas laquelle est courante. **Marquer** la plus
+   récente par instrument dans le bloc transmis est le geste juste — il relève
+   du prompt, donc du LOT-01.
+
 ## Périmètre
 
 - **Migration (confirmation obligatoire, PR séparée)** : `QuestionnaireReponse`
