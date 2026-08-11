@@ -41,6 +41,10 @@ import {
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
 import {
+  derniereReponseParQuestionnaire,
+  type ReponseOrientation,
+} from '@/lib/clinical/orientationEngine';
+import {
   formaterEcarts,
   verifierRestitutionOrientation,
 } from '@/lib/clinical/verifierRestitutionOrientation';
@@ -69,6 +73,17 @@ type ReponseInput = {
   scores: Record<string, unknown>;
   scorePrincipal: number | null;
   interpretation: string | null;
+  /**
+   * Cette passation est-elle la plus récente exploitable de son instrument ?
+   * (LOT-01 étape 6, renvoi du LOT-00.)
+   *
+   * Les passations antérieures RESTENT transmises — l'évolution entre deux
+   * enquêtes d'un même instrument est un signal clinique, et le modèle doit
+   * pouvoir la lire. Ce qui manquait n'était pas un filtre, c'était un repère :
+   * sans lui, deux passations du même questionnaire arrivaient indistinctes et
+   * rien ne disait laquelle fait foi. Aucun `distinct`, aucune suppression.
+   */
+  passationCourante: boolean;
 };
 
 // 4 096 tokens ne suffisent pas toujours lorsqu'un dossier cumule plusieurs
@@ -234,6 +249,10 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
         titre: r.titre,
         date: r.date,
         mesureNonInterpretable: motifNonMesure,
+        // Le repère part AUSSI sur une passation non interprétable. La taire ici
+        // ferait désigner au modèle une passation antérieure comme la courante :
+        // un repère faux est pire que pas de repère.
+        passationCourante: r.passationCourante,
         scores: null,
         scorePrincipal: null,
         interpretation: null,
@@ -244,6 +263,10 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
       idQuestionnaire: r.idQuestionnaire,
       titre: r.titre,
       date: r.date,
+      // Repère de passation courante (LOT-01 étape 6). Explicitement `false` sur
+      // les antérieures plutôt qu'absent : une clé qui n'apparaît que sur la
+      // courante se lirait, sur les autres, comme une information manquante.
+      passationCourante: r.passationCourante,
       // Scores privés de toute conduite clinique : le modèle rédige à partir
       // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
       //
@@ -706,6 +729,28 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
+    // Passation courante par instrument (LOT-01 étape 6). La sélection passe par
+    // `derniereReponseParQuestionnaire`, LA MÊME fonction que les moteurs
+    // d'orientation et de contradictions : trois consommateurs qui répondraient
+    // chacun à leur façon à « quelle passation fait foi » finiraient par se
+    // contredire dans le même dossier. Elle porte aussi le départage à
+    // horodatage égal, sans lequel le repère ne serait pas reproductible.
+    //
+    // Calculée APRÈS les deux filtres : quand le drapeau de validité est allumé,
+    // les passations exclues ont déjà quitté la liste, donc « la plus récente »
+    // est bien la plus récente VALID. Différence assumée avec
+    // `orientationService`, qui éteint l'instrument quand sa dernière passation
+    // est invalidée : ici on se replie sur la précédente encore exploitable,
+    // parce que le prompt doit nommer un repère parmi ce qu'il transmet.
+    const courantes = derniereReponseParQuestionnaire(
+      reponsesAdministrables.map(r => ({
+        idQuestionnaire: r.idQuestionnaire,
+        dateReponse: r.dateReponse.toISOString(),
+        idReponse: r.idReponse,
+        scores: (r.scoresJson ?? {}) as ReponseOrientation['scores'],
+      })),
+    );
+
     const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => ({
       idQuestionnaire: r.idQuestionnaire,
       titre: r.titre,
@@ -713,6 +758,7 @@ export async function POST(req: Request) {
       scores: r.scoresJson as Record<string, unknown>,
       scorePrincipal: r.scorePrincipal,
       interpretation: r.interpretation,
+      passationCourante: courantes.get(r.idQuestionnaire)?.idReponse === r.idReponse,
     }));
 
     // Contexte clinique (fiche signalétique + anamnèse) — une seule anamnèse par
