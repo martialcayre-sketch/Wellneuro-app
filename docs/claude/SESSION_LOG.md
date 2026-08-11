@@ -3501,3 +3501,30 @@ certifiée.
 fraîcheur — avant la première règle écrite.
 
 **Ouvert.** La « section 57 » et la fixture golden case sont absentes du dépôt.
+
+
+
+
+## 2026-08-11 — LOT-01 : la première règle de contradiction, et une exemption qui était un défaut
+
+**Décisions.** `D-046` : `prescriptif` n'est exigé que des tables qui
+PRESCRIVENT — un constat se fonde sur un claim descriptif (`DC-30`). Table
+C-STR **écrite, non signée** : une règle publiée, deux candidates écartées avec
+condition de retour. Le moteur partage ses gardes avec l'orientation au lieu de
+les réécrire (`DC-24`).
+
+**Écarté.** Exempter par nom de table : l'exemption devenait le défaut, et la
+table des parcours (`D-045`), qui prescrit, s'en serait trouvée dispensée en
+silence.
+
+**Exploitation.** `release-db` se déclenche sur `web/src/lib/clinical/**` ; le
+contrat devient un préflight fail-closed avant `migrate deploy`.
+
+**Démenti par revue.** Mon banc « aucune forme autre que DISCORDANCE » était
+tautologique — le piège que ce lot dénonce. Corrigé par règles injectables.
+
+**Prochaine action.** Étapes 3-6 ; l'étape 5 doit recalculer depuis
+`rawAnswers`, sinon C-STR se déclenche sur un total partiel.
+
+**Ouvert.** `importance` de C-STR ; émettre malgré `validationExterne: false` ?
+; aucune fenêtre temporelle.
