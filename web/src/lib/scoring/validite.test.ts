@@ -21,9 +21,13 @@ describe('validite — drapeau éteint (défaut)', () => {
   });
 
   it('rend la liste inchangée (équivalence stricte du comportement actuel)', () => {
+    // Identifiants neutres à dessein : ce banc porte sur la validité, pas sur
+    // un instrument. Citer l'enquête alimentaire — même en commentaire — le
+    // ferait compter comme spec dépendant de son drapeau de forme
+    // (scripts/specs-drapeau-ali01.test.mjs, détection littérale).
     const reponses = [
-      { idQuestionnaire: 'Q_ALI_03', statutValidite: 'INVALID' },
-      { idQuestionnaire: 'Q_ALI_01', statutValidite: 'VALID' },
+      { idQuestionnaire: 'Q_GAS_01', statutValidite: 'INVALID' },
+      { idQuestionnaire: 'Q_MOD_01', statutValidite: 'VALID' },
     ];
     expect(filtrerPassationsExploitables(reponses)).toEqual(reponses);
   });
