@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Validité des données cliniques — statut par passation, filtre unifié, déduplication"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "aucun"
 ---
 
