@@ -82,5 +82,5 @@ export function filtrerPassationsExploitables<T extends { statutValidite?: strin
   reponses: readonly T[],
 ): T[] {
   if (!validitePassationsActive()) return [...reponses];
-  return reponses.filter((r) => !estExclueDuRaisonnement(r.statutValidite));
+  return reponses.filter((r) => !r.statutValidite || !STATUTS_EXCLUS_DU_RAISONNEMENT.has(r.statutValidite));
 }
