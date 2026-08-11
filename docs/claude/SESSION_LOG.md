@@ -3452,3 +3452,27 @@ l'orientation est relue après envoi. 114 tests verts, T1 vert.
 Mac : rejouer T2 (E2E non rejoués avant merge — seule réserve du lot).
 
 **Questions ouvertes.** Inchangées (rollback, GO/NO-GO, réponse Scalingo).
+
+## 2026-08-11 — LOT-00 : la validité des passations, et ce que le banc mesurait
+
+**Décisions.** Statut `statut_validite` porté par passation (CHECK à cinq
+valeurs, migration relâchée en production) ; filtre unique appliqué à la
+synthèse, l'orientation, l'équilibre/momentum et le cockpit ; invalidation
+praticien tracée, motif obligatoire. Tout derrière `WN_ENABLE_VALIDITE_PASSATIONS`,
+éteint — l'allumage reste un geste à part.
+
+**Trois exigences de la spec refusées.** `SUPERSEDED` automatique à la
+re-passation (effacerait l'ancre T0 et tout le momentum) ; absorption du
+registre des passations non interprétables (« nommée-mais-vidée » porte un
+signal que `INVALID` détruirait) ; script de reprise, conséquence du refus
+précédent.
+
+**Ce qu'une trace a démenti.** Deux échecs E2E attribués d'abord à la charge :
+le banc anti-énumération du lien magique tombait parce que le chronomètre
+comptait la compilation `next dev` d'un palier de quantification (corrigé,
+PR #651) ; `orientation-file-envoi` échouait sur un `POST` jamais revenu sous
+`next dev` — 1,3 s en build de production. T3 complet vert en 3 min 29 s,
+**plus rapide que T2 `--fast`**.
+
+**Prochaine action.** Écrire la déduplication de synthèse dans le LOT-01 (elle
+y a été renvoyée sans jamais y être inscrite), puis PR de campagne.
