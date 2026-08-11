@@ -296,7 +296,7 @@ jobs:
 
       # LOT-01 chaîne T0 (D-042, précisé par D-044) — fraîcheur des claims que
       # les tables de règles SIGNÉES épinglent. C'est la SEULE lecture qui ait un
-      # sens : la base du CI est vide, les 23 claims n'y existent pas, et le
+      # sens : la base du CI est vide, les 24 claims n'y existent pas, et le
       # contrat y rougirait sans rien prouver. Ce qui éprouve qu'il MORD est son
       # fichier négatif, câblé en CI — jamais ici, il ÉCRIT ses fixtures.
       # `BEGIN READ ONLY … ROLLBACK` dans le fichier : aucune écriture.
@@ -309,7 +309,7 @@ jobs:
       # corpus. Jamais un UPDATE à la main sur `statut` ou `active` pour faire
       # verdir ce préflight : ce serait effacer le signal que ce contrat existe
       # pour produire.
-      # Vérifié conforme sur la production le 2026-08-11 avant ce câblage (23/23).
+      # Vérifié conforme sur la production le 2026-08-11 avant ce câblage (24/24).
       - name: "Préflight production — fraîcheur des claims épinglés (lecture seule)"
         run: |
           DATABASE_URL="$MIGRATE_DATABASE_URL" \

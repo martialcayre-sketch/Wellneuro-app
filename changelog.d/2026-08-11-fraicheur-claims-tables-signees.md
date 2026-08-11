@@ -4,11 +4,14 @@
   signée tiennent toujours.** Une signature dit qu'un humain a relu ces claims
   ce jour-là ; elle ne disait rien de ce que le corpus est devenu depuis. Un
   claim rejeté, désactivé, remplacé ou dépouillé de son caractère prescriptif
-  laissait la table intacte et sa signature muette. Les **quatre** propriétés
-  sont contrôlées — `statut = 'VALIDE'`, `active = true`, pas de
-  `superseded_at`, `prescriptif = true` — c'est-à-dire exactement le jeu que la
-  relecture du 2026-08-06 avait effectivement contrôlé ([[D-042]], précisé par
-  [[D-044]]).
+  laissait la table intacte et sa signature muette. Trois propriétés sont
+  contrôlées pour tout claim épinglé — `statut = 'VALIDE'`, `active = true`, pas
+  de `superseded_at` —, plus `prescriptif = true` pour les tables qui
+  **prescrivent** : c'est le jeu que la relecture du 2026-08-06 avait
+  effectivement contrôlé sur la table d'orientation ([[D-042]], précisé par
+  [[D-044]], borné par [[D-046]]). L'exigence est portée **ligne par ligne**,
+  jamais déduite d'un défaut : une table qui entrerait au contrat sans son
+  arbitrage fait rougir le banc au lieu d'être dispensée en silence.
 - **La jointure porte sur la paire `(claim_id, version_claim)`, pas sur
   l'identifiant seul** : sans cela, une table signée pourrait s'appuyer sur une
   version du claim qu'elle n'a jamais relue. C'est le cas `N6` du banc négatif,

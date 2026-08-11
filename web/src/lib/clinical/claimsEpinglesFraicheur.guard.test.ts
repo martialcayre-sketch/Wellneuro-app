@@ -50,11 +50,48 @@ function bloc(source: string, marqueur: string, fichier: string): string {
     .trim();
 }
 
-// Les paires d'un bloc SQL, sous leur forme `('WN-CL-0000-000', 'v1.0')`.
-function pairesSql(source: string): string[] {
-  const trouvees = [...source.matchAll(/\('(WN-CL-\d{4}-\d{3})',\s*'(v?[\d.]+)'\)/g)];
-  return trouvees.map(m => `${m[1]}@${m[2]}`).sort();
+// Les entrées d'un bloc SQL, sous leur forme
+// `('WN-CL-0000-000', 'v1.0', 'orientation', true)`.
+type EntreeSql = { cle: string; table: string; exigePrescriptif: boolean };
+
+function entreesSql(source: string): EntreeSql[] {
+  const trouvees = [
+    ...source.matchAll(/\('(WN-CL-\d{4}-\d{3})',\s*'(v?[\d.]+)',\s*'(\w+)',\s*(true|false)\)/g),
+  ];
+  return trouvees
+    .map(m => ({
+      cle: `${m[1]}@${m[2]}#${m[3]}`,
+      table: m[3],
+      exigePrescriptif: m[4] === 'true',
+    }))
+    .sort((a, b) => a.cle.localeCompare(b.cle));
 }
+
+function pairesSql(source: string): string[] {
+  return entreesSql(source).map(e => e.cle);
+}
+
+// D-046 — une table inconnue n'hérite pas d'un jeu de propriétés par défaut :
+// elle doit être arbitrée. Ce banc refuse plutôt que de deviner.
+const FICHIER_VERS_TABLE: Record<string, string> = {
+  'orientationRulesV1.ts': 'orientation',
+  'contradictionsV1.ts': 'contradictions',
+};
+
+// L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
+//
+// Le prédicat SQL lit ce booléen sur chaque ligne au lieu de tester
+// `table_signee = 'orientation'`. La différence n'est pas cosmétique : avec un
+// test sur le nom, toute table FUTURE — celle des parcours (D-045), qui
+// PRESCRIT des explorations — aurait été dispensée de `prescriptif` par le
+// simple fait de ne pas s'appeler « orientation ». Fail-open, et silencieux.
+// Ici, une table sans booléen déclaré fait rougir ce banc.
+const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
+  // Chaque règle d'orientation SUGGÈRE une exploration : c'est une prescription.
+  orientation: true,
+  // Une règle de contradiction CONSTATE que deux instruments divergent.
+  contradictions: false,
+};
 
 interface TableSignee {
   fichier: string;
@@ -108,15 +145,29 @@ function fichiersCitantDesClaimsHorsBalayage(): string[] {
 }
 
 describe('claims épinglés — le contrat couvre TOUTES les tables signées', () => {
+  // D-046 — une table de règles cliniques neuve doit être arbitrée avant
+  // d'entrer au contrat : le jeu de propriétés qu'on exige de ses claims dépend
+  // de ce qu'elle FAIT (prescrire ou constater). L'hériter en silence est
+  // exactement ce que ce banc empêche.
+  it('chaque table signée a une correspondance arbitrée', () => {
+    for (const table of tablesSignees()) {
+      expect(Object.keys(FICHIER_VERS_TABLE)).toContain(table.fichier);
+    }
+  });
+
   it('la liste du contrat est exactement celle des tables signées', () => {
     const tables = tablesSignees();
 
     // Anti-vacuité : un balayage qui ne trouve plus rien rendrait ce banc vert
     // en ne comparant que des ensembles vides — le pire des silences ici.
-    expect(tables.length).toBeGreaterThan(0);
+    expect(tables.length).toBeGreaterThan(1);
 
-    const attendus = [...new Set(tables.flatMap(t => t.claims))].sort();
-    expect(attendus.length).toBeGreaterThanOrEqual(23);
+    const attendus = [
+      ...new Set(
+        tables.flatMap(t => t.claims.map(c => `${c}#${FICHIER_VERS_TABLE[t.fichier]}`)),
+      ),
+    ].sort();
+    expect(attendus.length).toBeGreaterThanOrEqual(24);
 
     const auContrat = pairesSql(bloc(lire(CONTRAT), 'PREDICAT_FRAICHEUR_CLAIMS_EPINGLES', CONTRAT));
     expect(auContrat).toEqual(attendus);
@@ -127,6 +178,22 @@ describe('claims épinglés — le contrat couvre TOUTES les tables signées', (
   // gardés par rien, en silence.
   it('aucune table citant des claims n’échappe au balayage', () => {
     expect(fichiersCitantDesClaimsHorsBalayage()).toEqual([]);
+  });
+
+  // LE CŒUR DE D-046. Chaque ligne du contrat porte l'exigence de `prescriptif`
+  // qui lui est propre, et cette exigence doit correspondre à un arbitrage
+  // déclaré. Une table qui entrerait au contrat sans le sien serait dispensée en
+  // silence — le fail-open que D-046 prétend précisément interdire.
+  it('chaque ligne du contrat porte l’exigence arbitrée de sa table', () => {
+    const entrees = entreesSql(bloc(lire(CONTRAT), 'PREDICAT_FRAICHEUR_CLAIMS_EPINGLES', CONTRAT));
+    expect(entrees.length).toBeGreaterThanOrEqual(24);
+
+    const tables = [...new Set(entrees.map(e => e.table))].sort();
+    expect(tables).toEqual(Object.keys(TABLE_EXIGE_PRESCRIPTIF).sort());
+
+    for (const entree of entrees) {
+      expect(entree.exigePrescriptif).toBe(TABLE_EXIGE_PRESCRIPTIF[entree.table]);
+    }
   });
 
   // La même liste une troisième fois : les fixtures du négatif. Si elles
@@ -154,7 +221,11 @@ describe('claims épinglés — les deux écritures du prédicat', () => {
     expect(blocContrat).toContain("c.statut IS DISTINCT FROM 'VALIDE'");
     expect(blocContrat).toContain('c.active IS NOT TRUE');
     expect(blocContrat).toContain('c.superseded_at IS NOT NULL');
-    expect(blocContrat).toContain('c.prescriptif IS NOT TRUE');
+    // LE QUALIFICATEUR EXACT, pas la sous-chaîne. `toContain('c.prescriptif IS
+    // NOT TRUE')` serait satisfait par `e.table_signee = 'aucune' AND
+    // c.prescriptif IS NOT TRUE` — c'est-à-dire par un prédicat qui aurait
+    // entièrement neutralisé la quatrième propriété.
+    expect(blocContrat).toContain('OR (e.exige_prescriptif AND c.prescriptif IS NOT TRUE);');
     // La jointure porte sur la PAIRE : sur `claim_id` seul, une table signée
     // s'appuierait sur une version qu'elle n'a jamais relue.
     expect(blocContrat).toContain('c.version_claim = e.version_claim');
@@ -183,7 +254,7 @@ describe('claims épinglés — les contrats sont câblés', () => {
   });
 
   // LE CONTRAT POSITIF NE DOIT PAS TOURNER EN CI, et c'est une propriété, pas un
-  // oubli : la base y est vide, les 23 claims y sont absents, il y rougirait à
+  // oubli : la base y est vide, les 24 claims y sont absents, il y rougirait à
   // chaque exécution. `wn-test-worktree.sh` dérivant sa liste de ce fichier, l'y
   // câbler casserait aussi T2/T3 — sur une base sans corpus.
   it('le contrat positif ne tourne PAS en CI', () => {
