@@ -48,6 +48,18 @@ Sur décision utilisateur (2026-08-10), la **structure** du scorer est posée,
 
 ## Reste devant (le lot de calibration, gaté)
 
+**Doctrine de calibration & descente claim par claim — POSÉE le 2026-08-11** :
+voir [`CALIBRATION_LOT-02.md`](../CALIBRATION_LOT-02.md). Sur vérification du
+contrat réel de `Q_ALI_09`, la doctrine fixe **6 domaines candidats A1–A6** (pas
+5 axes figés), **trois sorties distinctes** (profil observé / indice `/100`
+optionnel / carte des discordances), la **garde de contamination** (seuils de
+donnée ≠ bornes cliniques) et `soirPlusCopieux` **drapeau, jamais des points**.
+La « seconde passe » y est faite : les **160 claims validés** du Notebook 09
+(`WN-SRC-0053`, `0067`–`0073`) sont attribués un par un — axe agenda / discordance
+/ hors-agenda-SIIN57 / interdit de projeter — avec une **ébauche de config
+`sc.axes` sans bornes chiffrées**. **Candidats seulement, aucune décision
+`D-xxx`, aucun code.**
+
 Quand un recueil réel suffisant existera : **décision clinique D-xxx** (axes,
 poids, bornes, planchers, drapeaux — après observation de la distribution),
 remplissage de la config de scoring, bascule de `Q_ALI_09` sur
