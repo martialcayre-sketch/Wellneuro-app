@@ -89,9 +89,13 @@ Usage : npm run test:worktree [-- options]   (depuis web/)
 Réplique le job CI `verify` avec un PostgreSQL éphémère isolé par worktree.
 
 Options :
-  --fast      Saute anti-secrets, audit campagnes, certification scoring,
-              lint et build (garde generate/type-check/vitest/migrate/
-              dérive schéma↔migrations/seed/e2e — e2e sur `next dev`).
+  --fast      Saute anti-secrets, audit campagnes, certification scoring et
+              lint (garde generate/type-check/vitest/migrate/dérive
+              schéma↔migrations/seed/build/e2e).
+              Le BUILD n'est plus sauté : les e2e tournent contre le build de
+              production dans les deux modes. Sur `next dev` ils étaient cinq
+              fois plus lents ET instables — voir le commentaire de la section
+              « Build et E2E ».
   --keep-db   Ne détruit pas la base à la fin ; imprime l'URL et la
               commande d'arrêt manuel.
   --help      Affiche cette aide.
@@ -494,16 +498,36 @@ step "Seed (patients fictifs uniquement)"
 npm run prisma:seed
 
 # ── Build et E2E ────────────────────────────────────────────────────────────
-if [[ "$FAST" == 0 ]]; then
-  step "Build"
-  npm run build
-  # E2E contre le build de production tout juste produit : plus rapide (pas de
-  # compilation à la demande) et plus fidèle au déploiement Vercel que next dev.
-  export PLAYWRIGHT_WEB_SERVER=start
-  step "Tests E2E (Playwright — build de production, Chromium + WebKit, port $APP_PORT)"
-else
-  step "Tests E2E (Playwright — next dev, Chromium + WebKit, port $APP_PORT)"
-fi
+# LE BUILD N'EST PLUS SAUTÉ, MÊME EN `--fast` — et c'est un gain de temps, pas
+# un coût. Mesuré le 2026-08-11 sur le même dépôt, à la même heure :
+#
+#   build + E2E sur `next start` : 0 min 46 s + 1 min 20 s = 2 min 06 s
+#   E2E sur `next dev`           :                          12 min 54 s
+#
+# `next dev` compile à la demande, page par page, à chaque première visite. Sur
+# une suite de 138 tests c'est cinq fois plus lent que de compiler une fois.
+#
+# ET SURTOUT, IL FLOTTE. Trois exécutions `--fast` le 2026-08-11 ont produit
+# trois échecs, sur trois tests DIFFÉRENTS (`visual.spec.ts` lignes 103, 115 et
+# 123), chaque fois celui qui suivait immédiatement la ligne
+# « ⚠ Server is approaching the used memory threshold, restarting... » : le
+# serveur de développement se recycle en mémoire et emporte le test en cours.
+# Chacun de ces trois tests passait dans les runs où il n'était pas la victime.
+#
+# C'était un piège à FAUX NÉGATIF, invisible en CI et en séquence complète, qui
+# jouent toutes deux le build : un `--fast` rouge se lisait comme une régression
+# et noyait le vrai signal. La leçon avait déjà été consignée deux fois au
+# journal de session sans devenir exécutable ; elle l'est ici.
+#
+# CE QUE `--fast` SAUTE ENCORE : anti-secrets, audit de campagnes, certification
+# scoring, lint. Ce qu'il ne saute plus : le build — donc une erreur de build
+# arrête désormais la séquence rapide, comme elle arrête le CI.
+step "Build"
+npm run build
+# E2E contre le build de production tout juste produit : plus rapide (pas de
+# compilation à la demande), stable, et fidèle au déploiement Vercel.
+export PLAYWRIGHT_WEB_SERVER=start
+step "Tests E2E (Playwright — build de production, Chromium + WebKit, port $APP_PORT)"
 npm run test:e2e \
   || { printf '\nRapport : %s/playwright-report/\n' "$WEB" >&2; exit 1; }
 
