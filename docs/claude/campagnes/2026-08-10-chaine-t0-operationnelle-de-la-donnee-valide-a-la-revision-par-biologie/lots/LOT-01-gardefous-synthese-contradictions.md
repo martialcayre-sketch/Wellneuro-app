@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Garde-fous de synthèse et moteur de contradictions"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-00"
 ---
 
@@ -37,6 +37,12 @@ hors schéma est rejetée et retentée, jamais servie dégradée.
 - Injection : vigilances déterministes de la synthèse (fusion en tête
   existante) + panneau discordances du cockpit (`MissingDataPanel`).
 - Persistance : SHA-256 du prompt système + `inputHash` sur `SyntheseIA`.
+- Marquage de la passation courante par instrument dans le bloc transmis au
+  prompt (renvoi du LOT-00, point 3) : les passations antérieures **restent
+  transmises** — l'évolution entre deux enquêtes d'un même instrument est un
+  signal clinique — mais la plus récente `VALID` est nommée comme telle. L'écart
+  à corriger est l'absence de repère, pas le nombre de lignes : aucun `distinct`,
+  aucune suppression.
 
 ## Hors périmètre
 
@@ -71,6 +77,7 @@ LOT-00 (les contradictions ne raisonnent que sur passations `VALID`).
 2. Prompt v20 + garde d'empreinte (patron `promptAlimentaire.guard.test.ts`).
 3. Schéma de sortie strict + chemin de rejet/relance audité.
 4. Injection vigilances + cockpit.
+5. Marquage de la passation courante par instrument dans le bloc de synthèse.
 
 ## Tests
 
@@ -80,6 +87,8 @@ LOT-00 (les contradictions ne raisonnent que sur passations `VALID`).
   proscrites (liste dans la spec §F).
 - Non-fuite `narratif_patient` : aucun score, aucun axe DNST nommé, vocabulaire
   anxiogène absent (`documents/vocabulaire.ts`).
+- Deux passations `VALID` du même instrument ⇒ les deux partent au prompt, une
+  seule est marquée courante (banc de non-régression du renvoi LOT-00).
 - T2 avant commit.
 
 ## Done

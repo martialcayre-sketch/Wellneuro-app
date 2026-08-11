@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
-titre: "Validité des données cliniques — statut par passation, filtre unifié, déduplication"
-statut: "en_cours"
+titre: "Validité des données cliniques — statut par passation, filtre unifié"
+statut: "terminé"
 dépend_de: "aucun"
 ---
 
@@ -16,9 +16,10 @@ praticien tracé, pas un déploiement.
 ## Résultat observable
 
 Une passation marquée `INVALID` disparaît du prompt de synthèse, de
-`donneesEntree`, de l'orientation et du score d'équilibre ; une re-passation
-marque l'ancienne `SUPERSEDED` ; l'inbox affiche le statut ; le registre en dur
-peut être supprimé sans changement de comportement.
+`donneesEntree`, de l'orientation et du score d'équilibre ; ~~une re-passation
+marque l'ancienne `SUPERSEDED`~~ (refusé, point 2) ; l'inbox affiche le statut ;
+~~le registre en dur peut être supprimé sans changement de comportement~~ (le
+registre reste en place, point 1).
 
 ## Ce que l'exécution a corrigé de la spécification (2026-08-11)
 
@@ -54,13 +55,15 @@ réintroduise pas.
   + `statutValidite` (`VALID` défaut | `AMBIGUOUS` | `INVALID` | `SUPERSEDED` |
   `HISTORICAL_ONLY`), `invalideLe`, `invalidePar`, `motifInvalidation`,
   `supersedesReponseId`.
-- Script de reprise : initialiser depuis le registre
-  `passationsNonInterpretables.ts` (Q_ALI_03/Q_SOM_07 antérieures au
-  `reconstruitLe` → `INVALID`).
+- ~~Script de reprise : initialiser depuis le registre
+  `passationsNonInterpretables.ts`~~ — **abandonné**, conséquence du point 1
+  ci-dessus : le registre n'est pas absorbé, il n'y a rien à reprendre.
 - Prédicat de filtre unique (nouveau module `lib/scoring/validite.ts`) appliqué
   aux quatre consommateurs : synthèse, orientation, équilibre/momentum, cockpit.
-- Déduplication à la génération de synthèse : dernière passation `VALID` par
-  instrument ; marquage `SUPERSEDED` automatique à la re-passation.
+- ~~Déduplication à la génération de synthèse ; marquage `SUPERSEDED`
+  automatique à la re-passation.~~ — le marquage automatique est **refusé**
+  (point 2) ; la déduplication est **renvoyée au LOT-01** sous forme de marquage
+  de la passation courante (point 3), et y est désormais inscrite.
 - `donneesEntree` : n'enregistrer que les données réellement transmises au
   prompt (ou marqueur d'exclusion par passation).
 - UI inbox : action « invalider cette passation » (motif obligatoire),
@@ -97,16 +100,19 @@ Aucune. Ouvre LOT-01 et LOT-02.
 1. Migration + `prisma generate` (PR migration seule, release-db).
 2. Module `validite.ts` + branchement des quatre consommateurs (drapeau éteint
    tant que la migration n'est pas relâchée).
-3. Script de reprise + test d'équivalence avec le registre en dur.
-4. Déduplication + marquage `SUPERSEDED`.
+3. ~~Script de reprise + test d'équivalence avec le registre en dur.~~ abandonné.
+4. ~~Déduplication + marquage `SUPERSEDED`.~~ marquage refusé ; déduplication
+   renvoyée au LOT-01.
 5. UI inbox + journalisation.
 
 ## Tests
 
 - Régression section 56 de la spec : `INVALID` ⇒ aucune influence (prompt,
   `donneesEntree`, orientation, équilibre, momentum, protocole).
-- Deux passations du même instrument ⇒ seule la dernière `VALID` part au prompt.
-- Équivalence avant/après suppression du registre en dur.
+- ~~Deux passations du même instrument ⇒ seule la dernière `VALID` part au
+  prompt.~~ — remplacé au LOT-01 : les deux partent, la plus récente est marquée.
+- ~~Équivalence avant/après suppression du registre en dur.~~ — sans objet, le
+  registre reste.
 - T2 avant commit UI/API.
 
 ## Done

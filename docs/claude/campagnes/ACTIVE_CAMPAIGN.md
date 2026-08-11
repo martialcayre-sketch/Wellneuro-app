@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie
 **Titre** : Chaîne T0 opérationnelle — de la donnée valide à la révision par biologie
 **Statut** : active
-**Lot actif** : LOT-00
+**Lot actif** : LOT-01
 
 ## Activités parallèles
 
