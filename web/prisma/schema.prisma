@@ -289,12 +289,16 @@ model QuestionnaireReponse {
   createdAt       DateTime @default(now()) @map("created_at")
 
   // Validité clinique de la passation (LOT-00, campagne chaîne T0).
-  // VALID par défaut. INVALID et SUPERSEDED sont exclus de tout raisonnement
-  // (synthèse, orientation, équilibre, momentum, protocole) mais la ligne
-  // reste pour l'audit — jamais de suppression, jamais d'UPDATE du contenu
-  // clinique : une correction est une re-passation qui marque l'ancienne
-  // SUPERSEDED (supersedesReponseId). L'invalidation praticien porte date,
-  // auteur et motif.
+  // VALID par défaut. Doctrine des cinq statuts : VALID et AMBIGUOUS
+  // alimentent le raisonnement clinique (AMBIGUOUS est signalé au praticien,
+  // jamais exclu en silence) ; INVALID, SUPERSEDED et HISTORICAL_ONLY en sont
+  // exclus (synthèse, orientation, équilibre, momentum, protocole) mais la
+  // ligne reste pour l'audit — jamais de suppression, jamais d'UPDATE du
+  // contenu clinique. Chaînage append-only, même sens que supersedesDraftId
+  // et supersedesNuitId : `supersedesReponseId` vit sur la passation de
+  // REMPLACEMENT et pointe vers la passation REMPLACÉE (l'ancienne), qui
+  // passe alors SUPERSEDED. L'invalidation praticien porte date, auteur et
+  // motif.
   statutValidite      String    @default("VALID") @map("statut_validite") // VALID | AMBIGUOUS | INVALID | SUPERSEDED | HISTORICAL_ONLY
   invalideLe          DateTime? @map("invalide_le")
   invalidePar         String?   @map("invalide_par")
