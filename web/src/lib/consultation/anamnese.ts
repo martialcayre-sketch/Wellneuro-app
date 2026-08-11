@@ -107,6 +107,16 @@ export const ANAMNESE_SECTIONS: AnamneseSection[] = [
           'Surentraînement',
         ],
       },
+      {
+        // Difficulté fonctionnelle actuelle, auto-rapportée. Structuré pour un
+        // moteur de règles (parcours alimentation mixée). ATTENTION : une
+        // dysphagie récente et inexpliquée est aussi un signal d'adressage —
+        // une règle qui la lit ne doit jamais court-circuiter cette vigilance.
+        id: 'symptomes_fonctionnels',
+        label: 'Difficultés fonctionnelles actuelles',
+        type: 'checkbox-multi',
+        options: ['Difficultés à avaler / troubles de la déglutition'],
+      },
     ],
   },
   {
@@ -161,6 +171,16 @@ export const ANAMNESE_SECTIONS: AnamneseSection[] = [
       { id: 'antecedents_details', label: 'Précisions sur ces antécédents', type: 'textarea' },
       { id: 'chirurgies', label: 'Chirurgies et hospitalisations', type: 'textarea' },
       { id: 'allergies', label: 'Allergies et intolérances connues', type: 'textarea' },
+      {
+        // Intolérances déclarées, sous forme énumérée (le champ libre ci-dessus
+        // reste pour tout le reste). Structuré pour qu'un moteur de règles
+        // déterministe puisse les lire — le texte libre, lui, ne remonte qu'en
+        // contexte praticien, jamais en déclencheur.
+        id: 'intolerances_alimentaires',
+        label: 'Intolérances alimentaires connues',
+        type: 'checkbox-multi',
+        options: ['Gluten', 'Histamine', 'Lactose'],
+      },
     ],
   },
   {

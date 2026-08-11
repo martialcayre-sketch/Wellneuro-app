@@ -258,7 +258,8 @@ describe('orientationRulesV1 — verrou v1', () => {
   function scenarioPour(regle: (typeof ORIENTATION_RULES_V1)[number]) {
     const drapeaux: DrapeauxAnamnese = {
       signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
-      attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
+      attentes: [], automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+      debut: null, evolution: null, variationPoids: null,
     };
     // Un `scores` par questionnaire visé : une règle peut porter plusieurs
     // déclencheurs sur le même instrument, à des étages différents.
@@ -368,6 +369,8 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
     facteursDeclenchants: 'facteurs_declenchants',
     attentes: 'attentes',
     automedication: 'automedication',
+    intolerancesAlimentaires: 'intolerances_alimentaires',
+    symptomesFonctionnels: 'symptomes_fonctionnels',
     debut: 'debut',
     evolution: 'evolution',
     variationPoids: 'variation_poids',
@@ -380,7 +383,7 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   // chercherait dans le mauvais champ et resterait verte — celle-ci rougit.
   it('CHAMP_ANAMNESE décrit bien ce que extraireDrapeauxAnamnese fait', () => {
     const drapeauxVides = extraireDrapeauxAnamnese({});
-    // Aucune clé oubliée : un neuvième drapeau forcerait la mise à jour.
+    // Aucune clé oubliée : un onzième drapeau forcerait la mise à jour.
     expect(Object.keys(CHAMP_ANAMNESE).sort()).toEqual(Object.keys(drapeauxVides).sort());
     for (const [cle, champId] of Object.entries(CHAMP_ANAMNESE)) {
       const options = optionsDuChamp(champId);
@@ -531,7 +534,8 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
 describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
   const anamneseVide: DrapeauxAnamnese = {
     signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
-    attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
+    attentes: [], automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+    debut: null, evolution: null, variationPoids: null,
   };
 
   function evaluer(reponses: ReponseOrientation[], drapeaux = anamneseVide) {
@@ -660,7 +664,8 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
 describe('orientationRulesV1 — premier tour, dans le moteur', () => {
   const anamneseVide: DrapeauxAnamnese = {
     signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
-    attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
+    attentes: [], automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+    debut: null, evolution: null, variationPoids: null,
   };
 
   // Composition RÉELLE des trois packs de doctrine, relue en base le
@@ -1349,7 +1354,8 @@ describe('R2-ALI-01 — sur l’instrument réel, dans les deux positions du dra
 
   const anamneseVide: DrapeauxAnamnese = {
     signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
-    attentes: [], automedication: [], debut: null, evolution: null, variationPoids: null,
+    attentes: [], automedication: [], intolerancesAlimentaires: [], symptomesFonctionnels: [],
+    debut: null, evolution: null, variationPoids: null,
   };
 
   afterEach(() => {

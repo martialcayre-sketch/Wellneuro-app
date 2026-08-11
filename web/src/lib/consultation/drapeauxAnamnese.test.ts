@@ -72,6 +72,8 @@ const AUTOMEDICATION = [
 const DEBUT = ['Brutal', 'Progressif'];
 const EVOLUTION = ['Ils s’aggravent', 'Ils sont stables', 'Ils sont variables'];
 const VARIATION_POIDS = ['Perte', 'Prise', 'Stable'];
+const INTOLERANCES_ALIMENTAIRES = ['Gluten', 'Histamine', 'Lactose'];
+const SYMPTOMES_FONCTIONNELS = ['Difficultés à avaler / troubles de la déglutition'];
 
 const OBJET_COMPLET_VIDE = {
   signauxAlerte: [],
@@ -79,6 +81,8 @@ const OBJET_COMPLET_VIDE = {
   facteursDeclenchants: [],
   attentes: [],
   automedication: [],
+  intolerancesAlimentaires: [],
+  symptomesFonctionnels: [],
   debut: null,
   evolution: null,
   variationPoids: null,
@@ -132,7 +136,20 @@ describe('extraireDrapeauxAnamnese', () => {
     expect(extraireDrapeauxAnamnese({ debut: ' Brutal ' }).debut).toBe('Brutal');
   });
 
-  it('tripwire : reconnaît exactement les libellés actuels de anamnese.ts sur les 8 champs (Sophie Nicola)', () => {
+  it('reconnaît les intolérances et symptômes fonctionnels déclarés (checkbox-multi neufs)', () => {
+    expect(
+      extraireDrapeauxAnamnese({ intolerances_alimentaires: ['Gluten', 'Lactose'] }).intolerancesAlimentaires,
+    ).toEqual(['Gluten', 'Lactose']);
+    expect(
+      extraireDrapeauxAnamnese({ symptomes_fonctionnels: SYMPTOMES_FONCTIONNELS }).symptomesFonctionnels,
+    ).toEqual(SYMPTOMES_FONCTIONNELS);
+    // Hors énuméré : jamais deviné.
+    expect(
+      extraireDrapeauxAnamnese({ intolerances_alimentaires: ['Fructose'] }).intolerancesAlimentaires,
+    ).toEqual([]);
+  });
+
+  it('tripwire : reconnaît exactement les libellés actuels de anamnese.ts sur les 10 champs (Sophie Nicola)', () => {
     const anamnese = {
       motif_principal: 'Fatigue chronique persistante malgré un sommeil correct',
       signaux_alerte: SIGNAUX_ALERTE,
@@ -140,6 +157,8 @@ describe('extraireDrapeauxAnamnese', () => {
       facteurs_declenchants: FACTEURS_DECLENCHANTS,
       attentes: ATTENTES,
       automedication: AUTOMEDICATION,
+      intolerances_alimentaires: INTOLERANCES_ALIMENTAIRES,
+      symptomes_fonctionnels: SYMPTOMES_FONCTIONNELS,
       debut: DEBUT[0],
       evolution: EVOLUTION[0],
       variation_poids: VARIATION_POIDS[0],
@@ -151,6 +170,8 @@ describe('extraireDrapeauxAnamnese', () => {
       facteursDeclenchants: FACTEURS_DECLENCHANTS,
       attentes: ATTENTES,
       automedication: AUTOMEDICATION,
+      intolerancesAlimentaires: INTOLERANCES_ALIMENTAIRES,
+      symptomesFonctionnels: SYMPTOMES_FONCTIONNELS,
       debut: DEBUT[0],
       evolution: EVOLUTION[0],
       variationPoids: VARIATION_POIDS[0],

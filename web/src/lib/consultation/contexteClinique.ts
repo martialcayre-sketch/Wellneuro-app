@@ -90,6 +90,8 @@ export function buildContexteClinique(fiche: unknown, anamnese: unknown): string
     pousser(lignes, 'Ce qui aggrave', texte(a.facteurs_aggravent));
     const facteurs = liste(a.facteurs_declenchants);
     if (facteurs.length) pousser(lignes, 'Facteurs de la période de début', facteurs.join(', '));
+    const symptomesFonctionnels = liste(a.symptomes_fonctionnels);
+    if (symptomesFonctionnels.length) pousser(lignes, 'Difficultés fonctionnelles', symptomesFonctionnels.join(', '));
     if (lignes.length) sections.push(`### Histoire des troubles\n${lignes.join('\n')}`);
   }
 
@@ -101,6 +103,8 @@ export function buildContexteClinique(fiche: unknown, anamnese: unknown): string
     pousser(lignes, 'Précisions', texte(a.antecedents_details));
     pousser(lignes, 'Chirurgies / hospitalisations', texte(a.chirurgies));
     pousser(lignes, 'Allergies / intolérances', texte(a.allergies));
+    const intolerances = liste(a.intolerances_alimentaires);
+    if (intolerances.length) pousser(lignes, 'Intolérances alimentaires déclarées', intolerances.join(', '));
     if (lignes.length) sections.push(`### Antécédents\n${lignes.join('\n')}`);
   }
 

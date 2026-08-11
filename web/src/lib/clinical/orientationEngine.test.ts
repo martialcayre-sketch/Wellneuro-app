@@ -394,6 +394,8 @@ describe('evaluerOrientation — drapeaux d\'anamnèse (LOT-04/LOT-05)', () => {
     facteursDeclenchants: ['Stress aigu / burn-out'],
     attentes: ['Améliorer le sommeil'],
     automedication: [],
+    intolerancesAlimentaires: [],
+    symptomesFonctionnels: [],
     debut: 'Brutal',
     evolution: null,
     variationPoids: null,
