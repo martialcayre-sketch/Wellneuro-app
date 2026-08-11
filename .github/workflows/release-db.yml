@@ -109,7 +109,10 @@ jobs:
             echo "## Release DB — ce qui est proposé"
             echo
             if [ "$EVENEMENT" = "push" ]; then
-              echo "Déclenchement **automatique** : une migration est arrivée sur \`main\`."
+              echo "Déclenchement **automatique** : une migration OU une table de règles"
+              echo "cliniques (\`web/src/lib/clinical/**\`, [[D-044]]) est arrivée sur \`main\`."
+              echo "Un push clinique SANS migration déclenche aussi cette proposition : le"
+              echo "préflight de fraîcheur des claims n'a de sens que contre la production."
               echo "Portée : \`migrate-only\` (l'import NABM reste manuel)."
               echo
               echo "### Migrations apportées par ce push"
@@ -156,9 +159,10 @@ jobs:
                 if [ -n "$TROUVEES" ]; then
                   echo "$TROUVEES" | sed 's/^/- `/;s/$/`/'
                 else
-                  echo "_Aucune migration ajoutée par ce push — suppression seule, ou"
-                  echo "\`migration_lock.toml\` seul. Rien de neuf à appliquer de ce fait ;"
-                  echo "un reliquat antérieur peut néanmoins partir (voir l'avertissement)._"
+                  echo "_Aucune migration ajoutée par ce push — push clinique seul"
+                  echo "([[D-044]]), suppression seule, ou \`migration_lock.toml\` seul. Rien"
+                  echo "de neuf à appliquer de ce fait ; un reliquat antérieur peut"
+                  echo "néanmoins partir (voir l'avertissement)._"
                 fi
               else
                 # Distinct du cas « aucune migration » : là, on ne SAIT pas.
