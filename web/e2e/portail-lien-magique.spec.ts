@@ -54,6 +54,19 @@ test('la redemande répond la même chose sur une adresse connue et une inconnue
     return { reponse, dureeMs: Date.now() - debut };
   };
 
+  // Préchauffage, non chronométré. La route quantifie sa durée par paliers de
+  // 500 ms au-dessus d'un plancher de 1500 ms : deux réponses ne peuvent donc
+  // différer que d'un multiple de 500 ms, et la garde ci-dessous en tolère un
+  // seul. Or le chronomètre part d'ICI, côté client, alors que le plancher ne
+  // couvre que le handler — sous `next dev` (T2 `--fast`), la PREMIÈRE requête
+  // vers cette route la compile à la demande et la fait sauter un palier de
+  // plus, uniquement parce qu'elle est appelée en premier. L'écart mesuré
+  // dirait alors « oracle d'énumération » là où il n'y a qu'une compilation.
+  // Une adresse inconnue suffit : elle traverse le même chemin (compilation,
+  // pool Prisma, plafond par origine réseau) sans toucher au plafond horaire
+  // du patient, qui n'admet que trois demandes.
+  await chronometrer('prechauffage@example.test');
+
   const connue = await chronometrer(PATIENT.email);
   const inconnue = await chronometrer('personne@example.test');
 
