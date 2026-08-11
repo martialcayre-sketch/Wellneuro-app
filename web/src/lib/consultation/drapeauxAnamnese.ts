@@ -24,6 +24,8 @@ export type DrapeauxAnamnese = {
   facteursDeclenchants: string[];
   attentes: string[];
   automedication: string[];
+  intolerancesAlimentaires: string[];
+  symptomesFonctionnels: string[];
   debut: string | null;
   evolution: string | null;
   variationPoids: string | null;
@@ -61,7 +63,7 @@ function radioFiltre(v: unknown, champId: string): string | null {
 
 /**
  * Construit les drapeaux d'anamnèse à partir du JSON stocké sur la
- * consultation. Toujours un objet complet (8 clés) — listes vides / `null`
+ * consultation. Toujours un objet complet (10 clés) — listes vides / `null`
  * plutôt qu'absence de clé — jamais d'exception, quelle que soit l'entrée.
  */
 export function extraireDrapeauxAnamnese(anamnese: unknown): DrapeauxAnamnese {
@@ -72,6 +74,8 @@ export function extraireDrapeauxAnamnese(anamnese: unknown): DrapeauxAnamnese {
     facteursDeclenchants: listeFiltree(a.facteurs_declenchants, 'facteurs_declenchants'),
     attentes: listeFiltree(a.attentes, 'attentes'),
     automedication: listeFiltree(a.automedication, 'automedication'),
+    intolerancesAlimentaires: listeFiltree(a.intolerances_alimentaires, 'intolerances_alimentaires'),
+    symptomesFonctionnels: listeFiltree(a.symptomes_fonctionnels, 'symptomes_fonctionnels'),
     debut: radioFiltre(a.debut, 'debut'),
     evolution: radioFiltre(a.evolution, 'evolution'),
     variationPoids: radioFiltre(a.variation_poids, 'variation_poids'),
