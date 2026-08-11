@@ -90,6 +90,10 @@ export function InboxQuestionnaires() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<DetailState | null>(null);
   const [saving, setSaving] = useState(false);
+  // Passation en cours de retrait : identifiant de la passation visée, saisie du
+  // motif, et erreur locale. Le retrait n'est jamais silencieux — il demande une
+  // raison, et cette raison reste en base.
+  const [retrait, setRetrait] = useState<{ idReponse: string; motif: string; erreur: string } | null>(null);
 
   const chargerInbox = useCallback(async () => {
     setLoading(true);
@@ -143,8 +147,36 @@ export function InboxQuestionnaires() {
     }
   };
 
+  const poserValidite = async (idReponse: string, statutDemande: 'VALID' | 'INVALID', motif?: string) => {
+    if (!detail) return;
+    setSaving(true);
+    try {
+      const reponse = await fetch('/api/praticien/questionnaires/validite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: detail.idPatient, idReponse, statutDemande, motif }),
+      });
+      const payload = (await reponse.json()) as { ok: boolean; error?: string };
+      if (!reponse.ok || !payload.ok) {
+        const message = payload.error ?? 'Enregistrement impossible.';
+        if (statutDemande === 'INVALID') setRetrait(r => (r ? { ...r, erreur: message } : r));
+        else setDetail(d => (d ? { ...d, error: message } : d));
+        return;
+      }
+      setRetrait(null);
+      await ouvrirDetail(detail.idPatient, detail.patient);
+    } catch {
+      const message = 'Enregistrement impossible.';
+      if (statutDemande === 'INVALID') setRetrait(r => (r ? { ...r, erreur: message } : r));
+      else setDetail(d => (d ? { ...d, error: message } : d));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const maintenant = new Date();
   const reponsesDetail = detail?.payload?.reponses ?? [];
+  const validiteActive = detail?.payload?.validiteActive === true;
 
   return (
     <section
@@ -287,6 +319,12 @@ export function InboxQuestionnaires() {
                         {miniSynthese && (
                           <p className="mt-2 text-sm italic text-foreground/80">Synthèse : {miniSynthese}</p>
                         )}
+                        {reponse.statutValidite === 'INVALID' && (
+                          <p className="mt-2 rounded-md border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-sm text-foreground">
+                            <span className="font-medium">Retirée du raisonnement clinique.</span>{' '}
+                            {reponse.motifInvalidation ?? 'Motif non consigné.'}
+                          </p>
+                        )}
                         <div className="mt-3">
                           <p className="mb-1 text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
                             Réponses enregistrées
@@ -296,6 +334,68 @@ export function InboxQuestionnaires() {
                             rawAnswers={reponse.rawAnswers}
                           />
                         </div>
+                        {validiteActive && (
+                          <div className="mt-3 border-t border-border pt-3">
+                            {reponse.statutValidite === 'INVALID' ? (
+                              <button
+                                type="button"
+                                onClick={() => void poserValidite(reponse.idReponse, 'VALID')}
+                                disabled={saving}
+                                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                              >
+                                Rétablir dans le raisonnement
+                              </button>
+                            ) : retrait?.idReponse === reponse.idReponse ? (
+                              <div className="flex flex-col gap-2">
+                                <label
+                                  htmlFor={`motif-${reponse.idReponse}`}
+                                  className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground"
+                                >
+                                  Motif du retrait
+                                </label>
+                                <textarea
+                                  id={`motif-${reponse.idReponse}`}
+                                  value={retrait.motif}
+                                  onChange={e => setRetrait(r => (r ? { ...r, motif: e.target.value } : r))}
+                                  rows={2}
+                                  maxLength={500}
+                                  placeholder="Ex. : doublon technique, passation interrompue, réponses manifestement aléatoires."
+                                  className="rounded-lg border border-border bg-background p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                />
+                                {retrait.erreur && (
+                                  <p className="text-sm text-status-danger">{retrait.erreur}</p>
+                                )}
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => void poserValidite(reponse.idReponse, 'INVALID', retrait.motif)}
+                                    disabled={saving || retrait.motif.trim().length < 5}
+                                    className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                  >
+                                    {saving ? 'Enregistrement...' : 'Confirmer le retrait'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRetrait(null)}
+                                    disabled={saving}
+                                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                                  >
+                                    Annuler
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setRetrait({ idReponse: reponse.idReponse, motif: '', erreur: '' })}
+                                disabled={saving}
+                                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                              >
+                                Retirer du raisonnement clinique
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </article>
                     );
                   })}
