@@ -55,7 +55,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientEquilibreRe
 
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient: ass.idPatient },
-      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     });
 
