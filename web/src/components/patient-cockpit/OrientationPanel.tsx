@@ -10,7 +10,7 @@ import type {
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
-import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesV1';
+import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesLibelles';
 import { Badge } from '@/components/ui/Badge';
 
 // Orientation NNPP2 — le premier consommateur de `/api/praticien/orientation`
@@ -356,7 +356,12 @@ export function OrientationPanel({
                         Les motifs d'origine restent affichés dessous, et c'est
                         ce qui permet de relire POURQUOI l'exploration avait été
                         proposée avant de lire pourquoi elle ne l'est plus. */}
-                    {recommandation.extinction && <Badge variant="success">exploration éteinte</Badge>}
+                    {/* NEUTRE, ET PAS `success` — relevé en revue. La consigne de synthèse
+                        écrite par ce même lot interdit au modèle de lire une
+                        extinction comme un résultat normal ou une absence de
+                        trouble ; la peindre en vert à l'écran dirait le
+                        contraire au praticien. */}
+                    {recommandation.extinction && <Badge variant="neutral">exploration éteinte</Badge>}
                   </div>
 
                   {recommandation.objectifs.length > 0 && (

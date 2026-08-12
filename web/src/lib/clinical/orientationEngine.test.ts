@@ -551,6 +551,15 @@ function arret(surcharge: Partial<StopRule>): StopRule {
   };
 }
 
+/**
+ * Une passation d'arrêt COMPLÈTE — comptes publiés, comme le fait un moteur
+ * `sum` ou `subscore`. Sans eux, la garde de complétude du moteur d'arrêt
+ * refuse d'éteindre, et c'est précisément ce qu'elle doit faire.
+ */
+function mesureArret(total: number, items = 21) {
+  return { total, repondus: items, items, missing: 0 };
+}
+
 /** Le dossier minimal qui allume `R-TEST-01` : un PSS-10 à 30. */
 function dossierAllume() {
   return {
@@ -573,7 +582,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
   it('éteint la recommandation, avec son motif, ses conditions et ses claims', () => {
     const recos = evaluerOrientation({
       ...dossierAllume(),
-      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } })],
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) })],
       reglesArret: [arret({})],
     });
     // La ligne RESTE servie : une extinction n'efface pas l'historique.
@@ -591,9 +600,9 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
       ...dossierAllume(),
       reponses: [
         reponse({ scores: { total: 30 } }),
-        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-01T10:00:00.000Z', scores: { total: 2 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-01T10:00:00.000Z', scores: mesureArret(2) }),
         // Plus récente, et dégradée : c'est elle qui fait foi.
-        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-25T10:00:00.000Z', scores: { total: 12 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-25T10:00:00.000Z', scores: mesureArret(12) }),
       ],
       reglesArret: [arret({})],
     });
@@ -624,7 +633,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
       reponses: [
         reponse({ scores: { total: 30 } }),
         reponse({ idQuestionnaire: 'Q_SOM_01', scores: { total: 9 } }),
-        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) }),
       ],
       idsQuestionnairesAssignes: [],
       regles: [regle({}), autreAxe],
@@ -644,7 +653,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
     ]) {
       const recos = evaluerOrientation({
         ...dossierAllume(),
-        reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } })],
+        reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) })],
         reglesArret: [arret(surcharge)],
       });
       expect(recos[0].extinction ?? null).toBeNull();
@@ -661,7 +670,7 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
       reponses: [
         reponse({ scores: { total: 30 } }),
         reponse({ idQuestionnaire: 'Q_SOM_01', scores: { total: 9 } }),
-        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) }),
       ],
       idsQuestionnairesAssignes: [],
       regles: [regle({}), seconde],
@@ -679,7 +688,7 @@ describe('evaluerOrientation — `dejaRepondu` excluant', () => {
 
   it('sans le drapeau, la cible déjà renseignée reste proposée', () => {
     const recos = evaluerOrientation({
-      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 }, statutValidite: 'VALID' })],
       idsQuestionnairesAssignes: [],
       regles: [cibleQuestionnaire],
     });
@@ -689,7 +698,7 @@ describe('evaluerOrientation — `dejaRepondu` excluant', () => {
 
   it('exclut la cible dont la dernière passation est EXPLOITABLE', () => {
     const recos = evaluerOrientation({
-      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 }, statutValidite: 'VALID' })],
       idsQuestionnairesAssignes: [],
       regles: [cibleQuestionnaire],
       exclureDejaRepondu: true,
@@ -703,7 +712,7 @@ describe('evaluerOrientation — `dejaRepondu` excluant', () => {
   // recommandation qu'il vient de provoquer.
   it('n\'exclut PAS sur une passation dont le score a été annulé', () => {
     const recos = evaluerOrientation({
-      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: null })],
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: null, statutValidite: 'VALID' })],
       idsQuestionnairesAssignes: [],
       regles: [cibleQuestionnaire],
       exclureDejaRepondu: true,
@@ -733,14 +742,132 @@ describe('evaluerOrientation — `dejaRepondu` excluant', () => {
     };
     const partiel = evaluerOrientation({
       ...base,
-      reponses: [reponse({ scores: { total: 30 } })],
+      reponses: [reponse({ scores: { total: 30 }, statutValidite: 'VALID' })],
     });
     expect(partiel).toHaveLength(1);
 
     const complet = evaluerOrientation({
       ...base,
-      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+      reponses: [
+        reponse({ scores: { total: 30 }, statutValidite: 'VALID' }),
+        reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 }, statutValidite: 'VALID' }),
+      ],
     });
     expect(complet).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CE QUE LA REVUE ADVERSARIALE DU 2026-08-12 A OUVERT
+//
+// Trois défauts bloquants y ont été trouvés, tous de la même famille : un test
+// de nullité pris pour un test de mesure, et une complétude supposée plutôt que
+// lue. Les bancs ci-dessous les tiennent fermés.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('exclusion `dejaRepondu` — un objet de score n\'est pas une mesure', () => {
+  const cibleQuestionnaire = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
+
+  function avec(scores: unknown, statutValidite: string | null = 'VALID') {
+    return evaluerOrientation({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_05', scores: scores as Record<string, unknown> | null, statutValidite }),
+      ],
+      idsQuestionnairesAssignes: [],
+      regles: [cibleQuestionnaire],
+      exclureDejaRepondu: true,
+    });
+  }
+
+  // LE PIÈGE DU LOT-02, REPOSÉ ICI À L'IDENTIQUE. `calculateScore` ne rend pas
+  // `null` sur une passation vide : il rend un objet truthy portant
+  // `scored:false`. Une passation ouverte et abandonnée à deux items rend, elle,
+  // un total biaisé vers le bas et AUCUNE interprétation.
+  it('une passation VIDE n\'exclut pas', () => {
+    expect(avec({ type: 'sum', scored: false, total: null, interpretation: null })).toHaveLength(1);
+  });
+
+  it('un recueil PARTIEL sans interprétation n\'exclut pas', () => {
+    expect(avec({ total: 12, missing: 8, repondus: 2, interpretation: null })).toHaveLength(1);
+  });
+
+  it('un objet de score SANS mesure ni bande n\'exclut pas', () => {
+    for (const scores of [{}, { note: 'rien' }, { total: null, interpretation: null }]) {
+      expect(avec(scores)).toHaveLength(1);
+    }
+  });
+
+  it('une mesure complète, elle, exclut — contre-épreuve', () => {
+    expect(avec({ total: 12, repondus: 10, items: 10, interpretation: { label: 'Élevé', color: 'danger' } })).toEqual([]);
+  });
+
+  // `AMBIGUOUS` N'EST JAMAIS ÉCARTÉ EN SILENCE — doctrine de `lib/scoring/
+  // validite.ts`, qui nomme `dejaRepondu` comme l'un des endroits où la ligne
+  // survit. Faire de `dejaRepondu` un filtre sans relire le statut aurait
+  // retourné cette phrase contre elle-même.
+  it('une passation AMBIGUOUS, INVALID ou de statut inconnu n\'exclut pas', () => {
+    for (const statut of ['AMBIGUOUS', 'INVALID', 'SUPERSEDED', 'HISTORICAL_ONLY', null]) {
+      expect(avec({ total: 12, interpretation: { label: 'Élevé', color: 'danger' } }, statut)).toHaveLength(1);
+    }
+  });
+});
+
+describe('extinction — un instrument qui ne dit pas sa complétude n\'éteint pas', () => {
+  // LE DÉFAUT EXACT QUI A FAIT ÉCARTER STOP-APN, retrouvé sur le déclencheur
+  // PORTEUR de STOP-STR. `group_majority` (`Q_STR_01`) ne publie ni `missing`,
+  // ni `repondus`, ni `items`, et `totalSousScore` rend un total dès un item par
+  // groupe : trois réponses sur vingt et une produisent la bande la plus
+  // favorable de la grille. Sans cette garde, l'extinction naissait d'un
+  // instrument quasi vide.
+  const arretParBande = arret({
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Oriente vers les conseils de vie antistress'] } },
+    ],
+  });
+
+  const bandeFavorable = { label: 'Oriente vers les conseils de vie antistress', color: 'success' };
+
+  it('n\'éteint pas quand le porteur ne publie AUCUN compte', () => {
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        // La forme RÉELLE de `group_majority` : total, sous-scores, bande — et
+        // pas un compte.
+        reponse({
+          idQuestionnaire: 'Q_STR_01',
+          scores: { type: 'group_majority', total: 0, subScores: [{ id: 'A', total: 0, max: 14 }], interpretation: bandeFavorable },
+        }),
+      ],
+      reglesArret: [arretParBande],
+    });
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  it('n\'éteint pas non plus sur un recueil déclaré incomplet', () => {
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 0, repondus: 3, items: 21, interpretation: bandeFavorable } }),
+      ],
+      reglesArret: [arretParBande],
+    });
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  // CONTRE-ÉPREUVE — sans elle, une garde qui refuserait TOUT passerait les deux
+  // cas ci-dessus.
+  it('éteint quand le recueil est complet ET la bande favorable', () => {
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 0, repondus: 21, items: 21, interpretation: bandeFavorable } }),
+      ],
+      reglesArret: [arretParBande],
+    });
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
   });
 });

@@ -558,6 +558,15 @@ async function genererSynthesePersistee(
               : null,
           orientationPacksTransmis: packsTransmis(args.orientation),
           orientationEcartsRestitution: ecartsRestitution,
+          // MÊME MOTIF QUE LES DEUX CHAMPS D'ORIENTATION CI-DESSUS, pour la
+          // table d'ARRÊT : deux synthèses rédigées sous deux tables d'arrêt
+          // différentes seraient autrement indiscernables à l'audit — et une
+          // extinction est précisément ce qu'on voudra pouvoir expliquer six
+          // mois plus tard. `null` quand la table n'est pas signée : elle n'a
+          // alors rien pu produire, et inscrire sa version laisserait croire
+          // qu'elle a pesé.
+          arretVersion: args.orientation?.actif === true ? args.orientation.arret?.version ?? null : null,
+          arretSha256: args.orientation?.actif === true ? args.orientation.arret?.sha256 ?? null : null,
         },
         metriquesAnthropic: metricsCache,
       } as any,

@@ -86,6 +86,77 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
     }
   });
 
+  // LE CRITÈRE N'EST PAS L'AXE, C'EST CE QUI DÉCLENCHE — relevé en revue
+  // adversariale du 2026-08-12.
+  //
+  // Une règle qui part d'un DÉPISTAGE (l'axe `ADAPTATION_STRESS` de `Q_MOD_01`,
+  // un burn-out déclaré à l'anamnèse) demande une mesure spécifique : l'éteindre
+  // quand cette mesure revient rassurante, c'est dire que la question a reçu sa
+  // réponse. Une règle qui part de la MESURE d'un instrument spécifique du même
+  // axe est d'un autre genre : l'éteindre sans lire cet instrument reviendrait à
+  // faire taire un résultat défavorable parce que d'autres sont rassurants —
+  // une discordance supprimée (`DC-30`), et un motif faux servi au praticien.
+  //
+  // Le banc pose donc la frontière au bon endroit : tout instrument SPÉCIFIQUE
+  // de l'axe stress (`Q_STR_*`) qui déclenche une règle éteinte doit être lu par
+  // la règle d'arrêt. `R-STR-01` et `R-STR-02` partent du PSS-10 : elles ne sont
+  // pas éteintes, et ce banc rougirait si on les rajoutait.
+  it('aucune règle éteinte n’est déclenchée par un instrument spécifique que la règle d’arrêt ne lit pas', () => {
+    const parId = new Map(ORIENTATION_RULES_V1.map(regle => [regle.id, regle]));
+    let verifiees = 0;
+    for (const arret of STOP_RULES_V1) {
+      const lus = new Set(
+        arret.declencheurs
+          .filter(declencheur => declencheur.type !== 'drapeau')
+          .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
+      );
+      // La famille d'instruments spécifiques que cette règle d'arrêt prétend
+      // avoir lue — dérivée de ses propres déclencheurs, jamais codée en dur.
+      const familles = new Set([...lus].map(qid => qid.slice(0, 6)));
+      for (const regleId of arret.reglesEteintes) {
+        const regle = parId.get(regleId);
+        if (!regle) continue;
+        for (const declencheur of regle.declencheurs) {
+          if (declencheur.type === 'drapeau') continue;
+          const qid = declencheur.idQuestionnaire;
+          if (!familles.has(qid.slice(0, 6))) continue;
+          verifiees += 1;
+          expect(
+            lus,
+            `${arret.id} éteint ${regleId}, déclenchée par la MESURE de ${qid} que la règle d'arrêt ne lit pas`,
+          ).toContain(qid);
+        }
+      }
+    }
+    // ANTI-VACUITÉ, PAR LA PREUVE INVERSE. La boucle ci-dessus ne visite RIEN
+    // aujourd'hui — les trois règles éteintes partent toutes d'un dépistage —,
+    // et un banc qui s'arrêterait là serait vert sans rien tenir. On vérifie
+    // donc que les règles qui, elles, partent d'un instrument spécifique non lu
+    // existent bel et bien ET restent DEHORS. Les ajouter ferait rougir ce cas.
+    expect(verifiees).toBe(0);
+    const eteintes = new Set(STOP_RULES_V1.flatMap(arret => arret.reglesEteintes));
+    const lusPartout = new Set(
+      STOP_RULES_V1.flatMap(arret =>
+        arret.declencheurs
+          .filter(declencheur => declencheur.type !== 'drapeau')
+          .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
+      ),
+    );
+    const surMesureNonLue = ORIENTATION_RULES_V1.filter(regle =>
+      regle.declencheurs.some(
+        declencheur =>
+          declencheur.type !== 'drapeau'
+          && declencheur.idQuestionnaire.startsWith('Q_STR_')
+          && !lusPartout.has(declencheur.idQuestionnaire),
+      ),
+    ).map(regle => regle.id);
+    // Le cas réel : `R-STR-01` et `R-STR-02`, déclenchées par le PSS-10.
+    expect(surMesureNonLue.length).toBeGreaterThan(0);
+    for (const regleId of surMesureNonLue) {
+      expect(eteintes, `${regleId} est déclenchée par une mesure non lue : elle ne peut pas être éteinte`).not.toContain(regleId);
+    }
+  });
+
   // Le HAD n'est éteint par aucune voie — le banc porte l'arbitrage plutôt que
   // le commentaire qui l'explique. Une règle NEU ajoutée un jour aux extinctions
   // le ferait rougir, ce qui est le but.
@@ -200,7 +271,7 @@ describe('stopRulesV1 — verrou de contenu', () => {
   // bougent ensemble : comparer l'une à l'autre ne garde rien. C'est ce
   // littéral-ci qui rougit quand une règle est retouchée, et la sortie de
   // secours est de RE-SIGNER — jamais de mettre le sha à jour en silence.
-  const SHA_CONTENU_2026_08_12 = '2497b8799fbb7c8f5eb84cc121a009393477efe9279ab046efffae87650acf14';
+  const SHA_CONTENU_2026_08_12 = 'f9ccf688d6beae301df3cbea3279e863a09870cc6020656302ede86496d8fa01';
 
   it('le sha publié correspond au contenu de la table', () => {
     expect(STOP_RULES_SHA256).toBe(sha256(JSON.stringify(STOP_RULES_V1)));

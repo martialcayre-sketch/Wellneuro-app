@@ -70,6 +70,16 @@ export type ReponseOrientation = {
   /** Départage deux réponses au même horodatage (l'ordre SQL n'est pas stable). */
   idReponse?: string;
   scores: ScoresStockes;
+  /**
+   * Statut de validité de la passation (LOT-00) — lu par la seule exclusion
+   * `dejaRepondu` ([[D-053]]), jamais par les déclencheurs.
+   *
+   * Il ne fait pas doublon avec les cinq motifs d'annulation du service : ceux-là
+   * sont gatés par `WN_ENABLE_VALIDITE_PASSATIONS`, et aucun ne couvre
+   * `AMBIGUOUS`, que la doctrine refuse d'exclure en silence. Absent = pas
+   * d'exclusion.
+   */
+  statutValidite?: string | null;
 };
 
 export type MotifOrientation = {
@@ -657,7 +667,30 @@ function estAdministrable(entree: EntreeOrientation, questionnaireId: string): b
  */
 function passationExploitable(dernieres: Map<string, ReponseOrientation>, questionnaireId: string): boolean {
   const reponse = dernieres.get(questionnaireId);
-  return reponse != null && reponse.scores != null;
+  if (!reponse) return false;
+
+  // UN OBJET DE SCORE N'EST PAS UNE MESURE — le piège déjà payé au LOT-02, et
+  // qui se reposait ici à l'identique. `calculateScore` ne rend PAS `null` sur
+  // une passation vide : il rend `{scored:false, total:null, interpretation:
+  // null, raisonNonScore:…}`, un objet truthy. Un recueil partiel rend de même
+  // `{total: 12, missing: 8, interpretation: null}`. Tester la nullité de
+  // `scores` aurait donc fait disparaître la recommandation d'un instrument
+  // ouvert et abandonné à deux items — sans badge, sans motif, sans trace, et
+  // en éteignant du même coup les règles qui attendent sa bande.
+  if ((reponse.scores as { scored?: unknown } | null)?.scored === false) return false;
+  const { valeur, interpretation } = extraireCible(reponse.scores, undefined);
+  if (valeur === null && interpretation === null) return false;
+
+  // LE STATUT DE VALIDITÉ EST RELU ICI, ET NON DÉLÉGUÉ AU SERVICE. Le service
+  // n'annule le score d'une passation `INVALID`/`SUPERSEDED` que si
+  // `WN_ENABLE_VALIDITE_PASSATIONS` est allumé — il ne l'est pas — et il
+  // n'annule JAMAIS celui d'une passation `AMBIGUOUS`, par doctrine explicite :
+  // « AMBIGUOUS est signalé au praticien, jamais exclu en silence ; la ligne
+  // reste lisible partout ailleurs (inbox, audit, dejaRepondu) ». Faire de
+  // `dejaRepondu` un filtre sans relire ce statut aurait retourné cette phrase
+  // contre elle-même. Seule une passation `VALID` retire donc une
+  // recommandation ; toute autre valeur, y compris absente, la laisse.
+  return reponse.statutValidite === 'VALID';
 }
 
 /**
@@ -896,10 +929,17 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
 
   // ── EXTINCTION PAR LES RÈGLES D'ARRÊT ─────────────────────────────────────
   //
-  // ICI, ET PAS AILLEURS. Après l'absorption pack/membre — sinon un pack ayant
-  // absorbé un membre éteint porterait le motif d'une cible qui n'est plus
-  // servie — et avant le tri, qui lit `motifs.length` : éteindre après aurait
-  // classé sur un compte périmé.
+  // ICI, ET PAS AILLEURS. Après l'absorption pack/membre : un pack absorbe les
+  // motifs de ses membres, et c'est donc seulement après l'absorption que la
+  // question « tous les motifs de cette ligne viennent-ils de règles éteintes ? »
+  // porte sur la liste définitive. L'inverse aurait éteint un pack sur ses
+  // propres motifs avant d'y verser ceux d'un membre qu'aucune règle d'arrêt ne
+  // touche.
+  //
+  // Avant le tri, en revanche, par simple hygiène de lecture : l'extinction ne
+  // modifie NI `motifs`, NI `priorite`, donc l'ordre servi est le même des deux
+  // côtés — une ligne éteinte garde sa place. Le dire ici évite de croire, plus
+  // tard, que le placement portait une garantie de tri.
   //
   // L'EXTINCTION RETIRE DES MOTIFS, PAS DES LIGNES. Une règle d'arrêt nomme des
   // RÈGLES ; on retire donc de chaque recommandation les motifs qui viennent
@@ -920,6 +960,29 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     const conditions: string[] = [];
     let tousAtteints = true;
     for (const declencheur of arret.declencheurs) {
+      // GARDE DE COMPLÉTUDE PROPRE AU MOTEUR D'ARRÊT, et elle n'est pas une
+      // redite de celle des déclencheurs.
+      //
+      // La garde générale (`extraireCible`) retire la MESURE quand le recueil se
+      // DIT incomplet. Elle ne peut rien dire d'un moteur qui ne publie AUCUN
+      // compte : `group_majority` — celui de `Q_STR_01`, l'instrument porteur de
+      // STOP-STR — ne sert ni `missing`, ni `repondus`, ni `items`, et
+      // `totalSousScore` rend un total dès UN item par groupe. Trois réponses
+      // sur vingt et une, toutes au minimum, produisent donc un total de 0,
+      // c'est-à-dire la bande la plus favorable de la grille.
+      //
+      // Pour une règle d'orientation, un tel silence est un faux négatif : la
+      // règle ne s'allume pas. Pour une règle d'ARRÊT, il serait une extinction
+      // fondée sur un instrument quasi vide — exactement le défaut pour lequel
+      // [[D-053]] écarte STOP-APN. Un instrument qui ne sait pas dire sa
+      // complétude ne peut donc pas éteindre : on refuse plutôt que de deviner.
+      if (declencheur.type !== 'drapeau') {
+        const porteur = dernieres.get(declencheur.idQuestionnaire)?.scores;
+        if (comptesDuRecueil(porteur) === null) {
+          tousAtteints = false;
+          break;
+        }
+      }
       const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
       if (!condition) {
         tousAtteints = false;

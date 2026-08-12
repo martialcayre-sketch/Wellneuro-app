@@ -48,11 +48,29 @@ conditions **additionnelles**, dont les bandes sont elles aussi publiées par le
 corpus. Les exiger rend l'extinction plus rare : le sens du fail-closed. L'axe
 `D` du DASS n'entre pas — c'est l'axe humeur, et l'arbitrage 3 y renonce.
 
-Sont éteintes les explorations de l'axe stress proposées par cette voie — PSS-10
-`Q_STR_02`, BMS-10 `Q_STR_05`, Karasek/WART. Les seuils ne sont pas écrits dans
-la table d'arrêt : ils **citent les bandes déjà publiées** de chaque grille,
-comme le fait C-STR ([[D-042]]). Aucun nombre nouveau n'entre dans le dépôt par
-ce lot (`DC-19`, `DC-20`).
+**Trois règles sont éteintes, et le critère n'est pas l'axe : c'est ce qui les
+déclenche.** `R2-STR-01`, `R2-STR-02` et `R2-STR-03` partent d'un **dépistage**
+— l'axe `ADAPTATION_STRESS` de `Q_MOD_01`, un burn-out déclaré à l'anamnèse — et
+demandent une mesure spécifique : les éteindre quand cette mesure revient
+rassurante, c'est dire que la question posée a reçu sa réponse. `R-STR-01` et
+`R-STR-02` **ne sont pas éteintes** : leur déclencheur est le PSS-10
+(`Q_STR_02`) en zone défavorable, c'est-à-dire une **mesure**, sur l'instrument
+que la table d'orientation appelle elle-même « le questionnaire habituel
+d'intensité ». Les éteindre sans lire le PSS-10 aurait fait taire un résultat
+défavorable parce que d'autres sont rassurants, et servi au praticien le motif
+« les explorations de l'axe stress n'ont pas d'objet » devant un stress perçu en
+zone danger. C'est l'objection de l'arbitrage 3, appliquée **à l'intérieur** de
+l'axe (`DC-30`). *Relevé en revue adversariale du 2026-08-12, après une première
+rédaction qui éteignait les cinq.*
+
+Les explorations concernées sont donc celles que ces trois règles proposent —
+PSS-10 `Q_STR_02`, DASS-21 `Q_STR_04`, Cungi `Q_STR_03`, BMS-10 `Q_STR_05`. Les
+seuils ne sont pas écrits dans la table d'arrêt : ils **citent les bandes déjà
+publiées** de chaque grille, comme le fait C-STR ([[D-042]]). Aucun nombre
+nouveau n'entre dans le dépôt par ce lot (`DC-19`, `DC-20`) — une réserve près,
+dite plutôt que lissée : le catalogue note que le seuil 4 de `Q_STR_01` n'est pas
+explicitement couvert par la source et a été rattaché par harmonisation à la
+bande basse, que la règle cite.
 
 **L'extinction nomme des RÈGLES, jamais des cibles.** Une cible qu'une règle
 d'un autre axe motive encore reste allumée : le Cungi est proposé par `R-SOM-01`
@@ -94,12 +112,17 @@ plutôt que de disparaître dans un ticket.
   négatif ; pour une règle d'arrêt, ce serait une extinction fondée sur un
   instrument vide.
 
-**5. Une contradiction ouverte interdit l'extinction ; elle ne la déclenche
+**5. Une contradiction ouverte interdirait l'extinction ; elle ne la déclenche
 jamais.** Le fichier de lot autorisait les deux lectures. Une discordance se
 signale (`DC-30`) : une règle d'arrêt qui éteindrait sur discordance la ferait
-disparaître. La table de contradictions du LOT-01 n'étant pas signée, ce volet
-est **inerte tant qu'elle ne l'est pas** — et son inertie est fail-closed :
-elle n'empêche que des extinctions, elle n'en produit aucune.
+disparaître. **Cet arbitrage n'a AUCUN code, et c'est une dette, pas une
+garantie** — ni le moteur ni le service ne consultent les contradictions. Dire
+qu'il serait « inerte mais fail-closed » était faux dans ce sens-là : un frein
+absent ne retient rien, il laisse passer. Ce que le lot livre à sa place est
+plus étroit et réellement tenu : l'extinction ne peut pas naître d'une
+discordance, puisque aucune contradiction n'est lue. La borne inverse — une
+contradiction ouverte qui EMPÊCHE d'éteindre — reste à écrire, et elle
+n'empêche rien aujourd'hui. *Reclassé après revue du 2026-08-12.*
 
 **6. Une recommandation éteinte reste relisible dans la sortie courante ; rien
 n'est persisté.** Elle garde ses motifs d'origine et porte en plus son motif
@@ -155,9 +178,33 @@ inconnue (`null`) n'exclut jamais — un `null` excluant serait un fail-open.
   l'interdit) ; `dejaRepondu` excluant sur toute passation existante, tel que le
   lot l'énonçait ; une fenêtre de fraîcheur bornant l'ancienneté d'une passation
   qui exclut — la borne serait un chiffre à fonder cliniquement, non disponible.
+**8. Un instrument qui ne sait pas dire sa complétude ne peut pas éteindre.**
+La garde générale retire la mesure d'un recueil qui se **déclare** incomplet ;
+elle ne peut rien dire d'un moteur qui ne publie aucun compte. C'est le cas de
+`group_majority`, celui de `Q_STR_01` — et `totalSousScore` rend un total dès un
+item par groupe : trois réponses sur vingt et une produisent la bande la plus
+favorable de la grille. Pour une règle d'orientation, ce silence est un faux
+négatif ; pour une règle d'arrêt, ce serait l'extinction sur instrument vide qui
+fait précisément écarter STOP-APN. Le moteur d'arrêt refuse donc d'éteindre sur
+tout instrument dont la complétude n'est pas lisible.
+
+**Conséquence, écrite ici plutôt que découverte le jour de la signature :
+STOP-STR ne peut pas mordre en l'état.** Son déclencheur porteur est
+précisément `Q_STR_01`. Faire publier ses comptes de recueil à `group_majority`
+— comme `psqi` le fait depuis le lot de signature — est une modification du
+moteur de scoring : elle appelle sa propre décision et son propre fragment, hors
+de ce lot. **Signer la table d'arrêt ne suffira donc pas.**
+
 - Dette nommée : aucune règle d'arrêt n'est gardée par un banc de production
   aujourd'hui ; l'existence réelle des `claimId` cités reste hors d'atteinte du
-  CI, qui n'en vérifie que le format.
+  CI, qui n'en vérifie que le format — les cinq paires ont été relues à la main
+  sur la production le 2026-08-12 (toutes `VALIDE`, actives, non remplacées, en
+  `v1.0`). Deux autres dettes, nommées par la revue : aucune borne d'ancienneté
+  ne limite l'exclusion (une passation valide et mesurée de 2024 exclut sa cible
+  — la fenêtre de fraîcheur reste écartée faute de chiffre fondé), et le garde de
+  restitution de la synthèse ne distingue pas une cible citée comme recommandée
+  d'une cible citée comme éteinte : sur ce point précis, c'est la consigne qui
+  protège, non la donnée.
 
 ### D-052 — Les préconditions de confirmation T0 : ce qu'un T0 exige, et ce que « VALID » ne prouve pas
 

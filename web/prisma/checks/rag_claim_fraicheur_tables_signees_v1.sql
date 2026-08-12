@@ -40,6 +40,9 @@
 -- Vérifié conforme sur la production le 2026-08-11 avant ce câblage : 24 paires
 -- épinglées, 24 lignes trouvées, aucune violation (les quatre propriétés pour les
 -- 23 claims d.orientation, les trois autres pour celui des contradictions).
+-- Les CINQ PAIRES `arret` ajoutées le 2026-08-12 ([[D-053]]) ont été relues le
+-- même jour, sur la production : toutes VALIDE, actives, non remplacées, en
+-- v1.0. La liste en compte donc 29.
 --
 -- `BEGIN READ ONLY … ROLLBACK` : aucune écriture, rejouable sans risque.
 -- ERRCODE sentinelle WN001, jamais intercepté ici.

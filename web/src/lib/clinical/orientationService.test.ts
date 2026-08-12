@@ -535,7 +535,11 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
 
   function dossier() {
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idReponse: 'REP-1', idQuestionnaire: 'Q_SOM_01', dateReponse: new Date('2026-07-01T10:00:00Z'), scoresJson: { rawAnswers: { Q1: 0, Q2: 90, Q3: 7, Q4: 4, Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3, Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3, Q6: 3, Q7: 3, Q8: 3, Q9: 3 } } },
+      // `statutValidite: 'VALID'` est REQUIS pour que l'exclusion morde : le
+      // moteur ne retire une recommandation que sur une passation valide ET
+      // mesurée. Sans ce champ, la ligne resterait proposée — c'est le
+      // fail-closed voulu, et le cas « statut absent » est éprouvé au moteur.
+      { idReponse: 'REP-1', idQuestionnaire: 'Q_SOM_01', dateReponse: new Date('2026-07-01T10:00:00Z'), statutValidite: 'VALID', scoresJson: { rawAnswers: { Q1: 0, Q2: 90, Q3: 7, Q4: 4, Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3, Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3, Q6: 3, Q7: 3, Q8: 3, Q9: 3 } } },
     ]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.pack.findMany.mockResolvedValue([]);

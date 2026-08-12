@@ -3,11 +3,11 @@
 -- `rag_claim_fraicheur_tables_signees_v1.sql` vérifie que l'invariant TIENT, sur
 -- la production. Ce fichier vérifie qu'il MORD, en CI. Il n'est pas décoratif :
 -- le contrat positif ne peut PAS tourner en CI — la base y est construite vide
--- par `migrate deploy`, les 24 claims épinglés y sont tous absents et le contrat
+-- par `migrate deploy`, les 29 claims épinglés y sont tous absents et le contrat
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- HUIT CAS. Sept formes de rupture doivent lever ; le huitième — joué EN
+-- NEUF CAS. Huit formes de rupture doivent lever ; le neuvième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,7 +20,8 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` GARDE L'AUTRE LIGNE. N1 à N6 mutent tous un claim d'ORIENTATION : sans
+-- `N7` ET `N8` GARDENT LES AUTRES LIGNES — contradictions, puis règles d'arrêt
+-- ([[D-053]]). N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
 -- C-STR ne serait gardé par rien. Avec N5, il borne l'exemption de [[D-046]]
@@ -28,11 +29,11 @@
 -- les trois autres propriétés restent exigées des contradictions.
 --
 -- CHAQUE CAS EXIGE SON MOTIF, jamais un rejet quelconque : un prédicat remplacé
--- par un `RAISE EXCEPTION` inconditionnel passerait les six ruptures. La
+-- par un `RAISE EXCEPTION` inconditionnel passerait les huit ruptures. La
 -- sous-chaîne distinctive de chaque cas est contrôlée.
 --
 -- UNE SEULE ÉCRITURE DU PRÉDICAT DANS CE FICHIER. Il est posé une fois dans une
--- fonction temporaire, appelée par les huit cas. Le bloc encadré par les
+-- fonction temporaire, appelée par les neuf cas. Le bloc encadré par les
 -- marqueurs `PREDICAT_FRAICHEUR_CLAIMS_EPINGLES` est repris MOT POUR MOT du
 -- contrat, et `claimsEpinglesFraicheur.guard.test.ts` refuse que les deux
 -- divergent — sans quoi ce fichier éprouverait un prédicat qui n'est plus celui
@@ -141,7 +142,7 @@ DECLARE
   msg text;
   cible text := 'WN-CL-0287-009';
 BEGIN
-  -- ── Décor : les 24 paires épinglées, toutes saines ────────────────────────
+  -- ── Décor : les 29 paires épinglées, toutes saines ────────────────────────
   -- Les identifiants sont ceux de la production, mais les lignes sont des
   -- fixtures : texte, embedding et source sont fictifs. La base du CI est
   -- éphémère et vide ; rien de réel n'est touché, et la transaction est annulée.
@@ -333,10 +334,11 @@ BEGIN
   -- précédents, et une table capable d'ÉTEINDRE une exploration s'appuierait
   -- sur des claims que rien ne contrôlerait.
   --
-  -- Ce qui rend le cas discriminant n'est pas « ça lève » — d'autres ruptures
-  -- sont déjà en place à ce stade de la transaction — mais la PRÉSENCE de ce
-  -- claim-ci dans le détail : un prédicat qui ignorerait la table ne le
-  -- nommerait pas.
+  -- Ce qui rend le cas discriminant est double, et le second point est celui
+  -- qu'on oublie : le prédicat doit LEVER, et le détail doit NOMMER ce claim-ci.
+  -- Un prédicat qui ignorerait la table d'arrêt ne le nommerait pas. (Comme les
+  -- sept cas précédents, la mutation est posée DANS le bloc qui intercepte :
+  -- l'exception la défait, et le cas suivant repart d'un corpus sain.)
   a_leve := false; msg := '';
   BEGIN
     UPDATE public.rag_corpus_claims SET active = false WHERE claim_id = 'WN-CL-0051-033';

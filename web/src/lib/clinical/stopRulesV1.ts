@@ -26,10 +26,26 @@ import { sha256 } from './corpusSyntheseV1';
 // déclencheurs sont des `OrientationDeclencheur` évalués par `evaluerDeclencheur`
 // — la même fonction, pas une copie. Les gardes qui vivent là-bas (recueil
 // incomplet, sous-score absent, plancher jamais comparé numériquement, `DC-24`)
-// valent donc ici sans être réécrites. Un bénéfice tombe en prime : un plancher
-// borne TOUJOURS par le bas, donc il ne peut jamais garantir une zone favorable
-// — une extinction ne peut pas naître d'un recueil partiel, par construction et
-// non par vigilance.
+// valent donc ici sans être réécrites. Le chemin du PLANCHER est fermé par
+// construction : un plancher borne toujours par le bas, il ne peut donc jamais
+// garantir une zone favorable.
+//
+// CE QUE CE PARTAGE NE SUFFIT PAS À FERMER, ET LA GARDE QU'IL A FALLU AJOUTER.
+// La garde générale retire la mesure d'un recueil qui se DIT incomplet ; elle ne
+// peut rien dire d'un moteur qui ne publie AUCUN compte. Le moteur
+// `group_majority` de `Q_STR_01` est dans ce cas, et `totalSousScore` rend un
+// total dès un item par groupe : trois réponses sur vingt et une suffiraient à
+// produire la bande la plus favorable. Le moteur d'arrêt refuse donc d'éteindre
+// sur tout instrument dont la complétude n'est pas lisible
+// (`orientationEngine.ts`, boucle d'extinction).
+//
+// CONSÉQUENCE À CONNAÎTRE AVANT DE SIGNER : `Q_STR_01` étant précisément cet
+// instrument, STOP-STR est écrite mais NE PEUT PAS MORDRE tant que
+// `group_majority` ne publie pas ses comptes de recueil, comme le fait déjà
+// `psqi` depuis le lot de signature. Faire publier ces comptes est une
+// modification du moteur de scoring : elle appelle sa propre décision et son
+// propre fragment, hors de ce lot. Signer cette table-ci ne suffira donc pas —
+// c'est écrit ici plutôt que découvert le jour de la signature.
 
 export type StopRuleClaimRef = {
   claimId: string;
@@ -68,11 +84,10 @@ export type StopRuleEcartee = {
   conditionDeRetour: string;
 };
 
-// Libellé générique, servi partout où une extinction s'affiche — cockpit,
-// synthèse. Il vient de la spécification du lot ; le `motif` de la règle dit
-// ensuite POURQUOI, instrument par instrument.
-export const LIBELLE_EXTINCTION =
-  'Information suffisante — pas d’exploration supplémentaire actuellement.';
+// Ré-exporté depuis un module feuille : un composant client a besoin de ce
+// libellé, et il ne doit pas tirer `crypto` ni le corpus clinique dans son
+// bundle pour l'obtenir. Voir l'en-tête de `stopRulesLibelles.ts`.
+export { LIBELLE_EXTINCTION } from './stopRulesLibelles';
 
 export const STOP_RULES_V1: StopRule[] = [
   {
@@ -104,6 +119,14 @@ export const STOP_RULES_V1: StopRule[] = [
     // faire dépendre l'extinction du stress d'un axe que cette règle n'éteint
     // pas, et rapprocherait la règle du HAD auquel `D-053` renonce.
     //
+    // UNE IMPRÉCISION DE LA SOURCE, DITE PLUTÔT QUE LISSÉE. Le catalogue note
+    // sur `Q_STR_01` que « les seuils 4 et 15 ne sont pas explicitement couverts
+    // par la source Drive » et que 4 a été rattaché aux conseils antistress par
+    // harmonisation. La bande citée ici englobe donc la valeur 4, que le claim
+    // (« un score total INFÉRIEUR à 4 ») ne couvre pas. L'écart porte sur un
+    // point de la grille, dans le sens le plus favorable — c'est le genre de
+    // détail qu'une signature doit voir, pas découvrir.
+    //
     // LES BANDES SONT CITÉES PAR LEUR LIBELLÉ, PAS PAR UN NOMBRE. Aucun seuil
     // nouveau n'entre dans le dépôt par cette table (`DC-19`, `DC-20`) : chaque
     // déclencheur nomme la bande que `questions.ts` publie déjà. Un libellé qui
@@ -115,10 +138,29 @@ export const STOP_RULES_V1: StopRule[] = [
       { type: 'zone', idQuestionnaire: 'Q_STR_04', sousScore: 'A', zone: { type: 'interpretation', labels: ['Normal'] } },
       { type: 'zone', idQuestionnaire: 'Q_STR_03', zone: { type: 'interpretation', labels: ['Niveau de stress très bas'] } },
     ],
-    // Les cinq règles de l'axe stress, et elles seules. `R-SOM-01` propose aussi
-    // le Cungi, mais depuis l'axe sommeil : elle n'est pas éteinte, et la ligne
-    // `Q_STR_03` qu'elle motive reste allumée.
-    reglesEteintes: ['R2-STR-01', 'R2-STR-02', 'R2-STR-03', 'R-STR-01', 'R-STR-02'],
+    // TROIS RÈGLES, ET LE CRITÈRE N'EST PAS L'AXE — c'est ce qui les déclenche.
+    //
+    // `R2-STR-01`, `R2-STR-02` et `R2-STR-03` partent d'un DÉPISTAGE : l'axe
+    // `ADAPTATION_STRESS` de `Q_MOD_01` (un questionnaire de mode de vie) et un
+    // burn-out déclaré à l'anamnèse. Elles demandent une mesure spécifique. Les
+    // éteindre quand la mesure spécifique est revenue rassurante, c'est dire que
+    // la question posée par le dépistage a reçu sa réponse.
+    //
+    // `R-STR-01` et `R-STR-02` sont d'un autre genre et NE SONT PAS ÉTEINTES :
+    // leur déclencheur est le PSS-10 (`Q_STR_02`) en zone défavorable —
+    // c'est-à-dire une MESURE, sur l'instrument que cette même table appelle
+    // « le questionnaire habituel d'intensité ». STOP-STR ne lit pas le PSS-10.
+    // Les éteindre reviendrait à faire taire un instrument spécifique
+    // défavorable parce que d'autres sont rassurants, et à servir au praticien
+    // un motif faux — « les explorations de l'axe stress n'ont pas d'objet » —
+    // devant un stress perçu en zone danger. C'est l'objection qui fait renoncer
+    // au HAD ([[D-053]], arbitrage 3), appliquée À L'INTÉRIEUR de l'axe : une
+    // discordance se signale, elle ne se supprime pas (`DC-30`). Relevé en revue
+    // adversariale du 2026-08-12.
+    //
+    // `R-SOM-01` propose aussi le Cungi, mais depuis l'axe sommeil : elle n'est
+    // pas éteinte non plus.
+    reglesEteintes: ['R2-STR-01', 'R2-STR-02', 'R2-STR-03'],
     motif:
       'Le questionnaire SIIN situe le stress dans la bande qui relève des conseils de vie antistress, et le DASS-21 (anxiété, stress) comme le Cungi sont dans leur bande la plus favorable. Les explorations complémentaires de l’axe stress n’ont pas d’objet en l’état.',
     justificationClaims: [

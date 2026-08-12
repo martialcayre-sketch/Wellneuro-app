@@ -196,7 +196,10 @@ describe('OrientationPanel', () => {
     render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
 
     expect(await screen.findByText(/Information suffisante/i)).toBeTruthy();
-    expect(screen.getByText(/exploration éteinte/i)).toBeTruthy();
+    // NEUTRE, ET PAS VERT : `data-variant` expose la couleur au banc — sans
+    // lui, un `variant="success"` codé en dur passerait, et l'écran dirait
+    // « tout va bien » là où la consigne du modèle l'interdit.
+    expect(screen.getByText(/exploration éteinte/i).getAttribute('data-variant')).toBe('neutral');
     expect(screen.getByText(/STOP-STR/)).toBeTruthy();
     // L'historique n'est pas effacé : le motif d'origine reste lisible, et c'est
     // ce qui permet de comprendre pourquoi l'exploration avait été proposée.

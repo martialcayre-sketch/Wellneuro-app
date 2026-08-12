@@ -6,7 +6,7 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
-import { STOP_RULES_METADATA, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
+import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
@@ -48,9 +48,24 @@ export type RecommandationServie = RecommandationExploration & { idPackBase?: st
 
 export type ResultatOrientationInactif = { actif: false; version: string; message: string };
 
+/**
+ * Provenance de la table d'ARRÊT, ou `null` quand elle n'est pas signée.
+ *
+ * Servie PAR LE SERVICE plutôt que relue par chaque appelant : le verrou vit
+ * ici, et un consommateur qui recalculerait « la table était-elle signée ? »
+ * pour horodater son audit finirait par répondre autre chose que le moteur.
+ */
+export type ProvenanceArret = { version: string; sha256: string };
+
 export type ResultatOrientation =
   | ResultatOrientationInactif
-  | { actif: true; version: string; sha256: string; recommandations: RecommandationServie[] };
+  | {
+      actif: true;
+      version: string;
+      sha256: string;
+      recommandations: RecommandationServie[];
+      arret: ProvenanceArret | null;
+    };
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
 // isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
@@ -277,6 +292,12 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     idQuestionnaire: reponse.idQuestionnaire,
     dateReponse: reponse.dateReponse.toISOString(),
     idReponse: reponse.idReponse,
+    // Transporté BRUT jusqu'au moteur, en plus des cinq motifs d'annulation
+    // ci-dessous : seule l'exclusion `dejaRepondu` le lit, et elle a besoin de
+    // distinguer ce que ces motifs ne distinguent pas — `AMBIGUOUS`, que la
+    // doctrine refuse d'écarter en silence, et les statuts que le drapeau
+    // `WN_ENABLE_VALIDITE_PASSATIONS`, éteint, laisse aujourd'hui passer.
+    statutValidite: reponse.statutValidite,
     scores: scoresRecalculesPourRaisonnement(
       reponse.idQuestionnaire,
       reponse.scoresJson as Record<string, unknown> | null,
@@ -333,5 +354,13 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     version: ORIENTATION_METADATA.version,
     sha256: ORIENTATION_RULES_SHA256,
     recommandations: recommandationsServies,
+    // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
+    // autrement indiscernables à l'audit — et une extinction est précisément ce
+    // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la
+    // table n'est pas signée : elle n'a rien pu produire, et inscrire sa
+    // version laisserait croire qu'elle a pesé.
+    arret: tableArretSignee()
+      ? { version: STOP_RULES_METADATA.version, sha256: STOP_RULES_SHA256 }
+      : null,
   };
 }
