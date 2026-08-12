@@ -84,6 +84,7 @@ function sourcesDeLaRegle(
       idQuestionnaire: declencheur.idQuestionnaire,
       ...(declencheur.sousScore ? { sousScore: declencheur.sousScore } : {}),
       reponseId: reponse.idReponse,
+      dateReponse: reponse.dateReponse,
     });
   }
   // Une règle dont TOUS les déclencheurs seraient des drapeaux d'anamnèse ne
@@ -92,6 +93,38 @@ function sourcesDeLaRegle(
   // claim, pas une déclaration d'anamnèse. Le jour où une règle en aura besoin,
   // c'est le type qu'il faudra étendre — pas ce silence qu'il faudra contourner.
   return sources.length > 0 ? sources : null;
+}
+
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Écart en jours entre la passation la plus ancienne et la plus récente parmi
+ * les sources d'instrument ([[D-048]]).
+ *
+ * COMPTE LES PASSATIONS DISTINCTES, PAS LES SOURCES. Une règle peut viser deux
+ * sous-scores du MÊME questionnaire — C-STR interroge `Q_STR_04` deux fois —
+ * et cela ne fait qu'une passation. Compter les sources rendrait `0` là où il
+ * n'y a rien à comparer, c'est-à-dire exactement le zéro trompeur que `DC-24`
+ * proscrit.
+ *
+ * Rend `null` en dessous de deux passations distinctes : « non applicable »,
+ * jamais « le même jour ».
+ */
+function ecartJoursEntreSources(sources: SourceContradiction[]): number | null {
+  const parPassation = new Map<string, number>();
+  for (const source of sources) {
+    if (source.type !== 'instrument') continue;
+    const date = Date.parse(source.dateReponse);
+    // Une date illisible ne vaut pas zéro : la passation sort du calcul, et si
+    // moins de deux subsistent l'écart devient `null`.
+    if (Number.isNaN(date)) continue;
+    parPassation.set(source.reponseId, date);
+  }
+  if (parPassation.size < 2) return null;
+  const dates = [...parPassation.values()];
+  // Arrondi au jour : convention de RESTITUTION, pas un seuil clinique — rien
+  // ne se décide sur ce nombre (`DC-20`).
+  return Math.round((Math.max(...dates) - Math.min(...dates)) / JOUR_MS);
 }
 
 /**
@@ -146,6 +179,14 @@ export function evaluerContradictions(entree: EntreeContradictions): Contradicti
       justificationClaims: regle.justificationClaims,
       regleId: regle.id,
       limitations: regle.limitations,
+      // Le constat est produit QUEL QUE SOIT l'écart ([[D-048]]) : il le porte,
+      // il ne s'en sert pas pour se taire. Aucun seuil ici, et c'est la
+      // décision — `DC-30` interdit de supprimer une discordance en silence.
+      ecartJoursEntreSources: ecartJoursEntreSources(sources),
+      // Recopié comme `importance`, sans transformation. Absent quand la règle
+      // n'en porte pas : une clé vide ne dirait pas « aucun recoupement », elle
+      // dirait « recoupement non renseigné ».
+      ...(regle.recoupementJustifie ? { recoupementJustifie: regle.recoupementJustifie } : {}),
     });
   }
 

@@ -90,6 +90,14 @@ export type SourceContradiction =
       /** Id ou libellé du sous-score visé ; absent = score global. */
       sousScore?: string;
       reponseId: string;
+      /**
+       * ISO 8601 — QUAND cette passation a eu lieu ([[D-048]]). Une discordance
+       * entre deux instruments ne se lit pas de la même façon selon qu'ils ont
+       * été remplis le même jour ou à des mois d'intervalle, et C-STR nomme
+       * elle-même cette lecture dans sa troisième hypothèse. La date était
+       * disponible et n'était pas remontée.
+       */
+      dateReponse: string;
     }
   | {
       type: 'claim';
@@ -150,6 +158,36 @@ type ContradictionFindingBase = {
    * ne s'invente pas.
    */
   limitations: string[];
+  /**
+   * Nombre de jours entre la passation la plus ancienne et la plus récente
+   * parmi les sources d'instrument ([[D-048]]).
+   *
+   * CE N'EST PAS UN DEGRÉ DE VÉRITÉ, et le garde non négociable de [[D-041]]
+   * en dépend : deux passations rapprochées ne rendent pas la contradiction
+   * plus certaine, ni deux passations éloignées plus douteuse. C'est un FAIT
+   * SUR LES DONNÉES, rendu au praticien pour qu'il puisse trancher lui-même
+   * l'hypothèse temporelle que la règle formule. Aucun tri, aucun seuil, aucun
+   * branchement ne le lit — un banc l'épingle.
+   *
+   * `null` signifie « moins de deux sources d'instrument, écart NON APPLICABLE
+   * » — jamais zéro. `DC-24` : une donnée absente n'est ni zéro ni normale, et
+   * `0` dirait à tort « les deux passations sont du même jour ».
+   *
+   * [[D-048]] a écarté d'en faire un seuil : aucune source publiée ne donne de
+   * durée de validité croisée entre deux instruments (`DC-19`), et taire une
+   * discordance parce qu'elle serait ancienne heurte `DC-30`.
+   */
+  ecartJoursEntreSources: number | null;
+  /**
+   * Reprise de `recoupementJustifie` de la règle, quand elle en porte une.
+   *
+   * Ce texte existait dans la table et n'était lu par personne ([[D-048]]) : il
+   * devient ce que le praticien lit lorsque ce constat et une règle
+   * d'orientation s'affichent ensemble pour le même patient — ce que le
+   * commentaire du champ d'origine exige déjà, « deux sorties simultanées à
+   * l'écran doivent être défendables » (`DC-37`).
+   */
+  recoupementJustifie?: string;
 };
 
 /**
