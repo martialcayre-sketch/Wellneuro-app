@@ -23,9 +23,11 @@
 # Usage, depuis web/ de n'importe quel worktree (ou du checkout principal) :
 #   npm run test:worktree               # séquence CI complète
 #   npm run test:worktree -- --fast     # saute anti-secrets, audit, scoring,
-#                                       # vitest SIIN 57, lint, build (e2e sur
-#                                       # `next dev`). Les bancs `node --test`
-#                                       # y restent : ~4 s à eux cinq.
+#                                       # vitest SIIN 57, lint. Les bancs
+#                                       # `node --test` y restent : ~4 s à eux
+#                                       # cinq. Le build N'EST PAS sauté — les
+#                                       # e2e tournent contre le build de
+#                                       # production dans les deux modes.
 #   npm run test:worktree -- --keep-db  # conserve la base après le run
 #
 # Isolation : port PostgreSQL (5500-5599) et port applicatif (3100-3199)
@@ -529,7 +531,17 @@ npm run build
 export PLAYWRIGHT_WEB_SERVER=start
 step "Tests E2E (Playwright — build de production, Chromium + WebKit, port $APP_PORT)"
 npm run test:e2e \
-  || { printf '\nRapport : %s/playwright-report/\n' "$WEB" >&2; exit 1; }
+  || {
+    # Classe l'échec avant de rendre la main : un `page.goto` expiré SANS la
+    # moindre requête réseau est un blocage du navigateur, pas un défaut de
+    # l'application (motif et preuves : scripts/wn-diagnostic-e2e.mjs). Trois
+    # fois en deux jours, ce rouge s'est d'abord lu comme une régression du code
+    # en cours. Le diagnostic ne décide de rien — `exit 1` suit dans tous les
+    # cas — et son propre échec ne doit surtout pas masquer celui de la suite.
+    node "$ROOT/scripts/wn-diagnostic-e2e.mjs" "$WEB/test-results" || true
+    printf '\nRapport : %s/playwright-report/\n' "$WEB" >&2
+    exit 1
+  }
 
 step "Terminé"
 recap

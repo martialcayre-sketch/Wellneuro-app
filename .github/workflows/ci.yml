@@ -321,6 +321,14 @@ jobs:
       - name: Invariants de ci.yml (déclencheurs, concurrency)
         run: node --test scripts/ci-invariants.test.mjs
 
+      # Le classement d'un échec E2E (blocage navigateur vs défaut applicatif)
+      # ne sert qu'en local — `wn-test-worktree.sh` ne tourne pas ici. Son BANC,
+      # lui, a sa place dans les deux passes : le banc de parité ne contrôle que
+      # le sens CI → `check`, donc un banc ajouté à `check` seul ne serait
+      # rattrapé par rien. Ni npm ni build : node suffit.
+      - name: Diagnostic d'un échec E2E (banc du classement)
+        run: node --test scripts/wn-diagnostic-e2e.test.mjs
+
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
       # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
