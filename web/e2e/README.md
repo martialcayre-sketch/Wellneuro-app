@@ -129,8 +129,16 @@ que le déploiement Vercel (bundles React prod, prerender identique) et les
 tests sont plus rapides — aucune compilation à la demande pendant le parcours.
 En mode `start`, le port doit être libre (pas de réutilisation silencieuse
 d'un `next dev` d'une autre branche). La CI et `npm run test:worktree`
-(séquence complète) utilisent ce mode ; `--fast` reste sur `next dev` car il
-ne construit pas de build.
+utilisent ce mode — **`--fast` aussi depuis le 2026-08-11**.
+
+`--fast` restait sur `next dev` parce qu'il ne construisait pas de build. La
+mesure a renversé le raisonnement : `build + start` prend 2 min 06 là où
+`next dev` prend 12 min 54 sur la même suite, la compilation à la demande étant
+refaite page par page. Et il flottait — trois exécutions le même jour, trois
+échecs sur trois tests différents, chaque fois celui qui suivait le recyclage
+mémoire du serveur de développement. Un piège à faux négatif, invisible en CI
+et en séquence complète, qui jouent toutes deux le build. `--fast` construit
+donc désormais, et une erreur de build y arrête la séquence.
 
 ## CI
 

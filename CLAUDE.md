@@ -161,13 +161,19 @@ positifs assumés) : `.claude/rules/hooks-garde-fous.md`.
 | Palier | Commande | Durée | Quand |
 |---|---|---|---|
 | T1 | `cd web && npm run check` | ~15 s | après chaque édition |
-| T2 | `npm run test:worktree -- --fast` | ~1 min 20 | avant tout commit UI ou API |
-| T3 | `npm run test:worktree` | ~5 min | avant une PR migration/scoring/clinique |
+| T2 | `npm run test:worktree -- --fast` | ~3 min | avant tout commit UI ou API |
+| T3 | `npm run test:worktree` | ~4 min | avant une PR migration/scoring/clinique |
 
 - T1 ne joue pas de suite complète ; la première passe entière est T2 — c'est
   T2 qu'il faut lancer avant de conclure qu'une suite est verte. Une suite
   Vitest verte ne prouve rien sur les parcours (Playwright est dans
   `test:worktree` seulement).
+- **T2 et T3 jouent tous deux les E2E contre le build de production** depuis le
+  2026-08-11 : `--fast` ne saute plus le build. Sur `next dev`, les E2E étaient
+  cinq fois plus lents et emportaient le test en cours à chaque recyclage
+  mémoire du serveur — un `--fast` rouge se lisait alors comme une régression.
+  L'écart entre les deux paliers est désormais le lint, l'anti-secrets, l'audit
+  de campagnes et la certification scoring, pas le build.
 - **Les E2E (`npm run test:e2e`) sont l'exclusivité du Mac** — base partagée,
   jamais deux runs en parallèle. Rôles : `docs/ROLES_MACHINES.md`.
 - Rediriger la sortie d'une suite vers un fichier (`--reporter=dot`) puis la
