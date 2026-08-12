@@ -43,7 +43,7 @@ les check-ins restent juxtaposés, jamais fusionnés.
   confirmation d'épisode ; l'obstacle connu est le peuplement (les trois
   patients autorisés sont tous centraux — peupler l'un d'eux déplace
   `orientation-file-envoi`, `fiche-detail-reponses`, la capture pixel
-  `visual.spec:93` et `seedCertification.guard`).
+  `web/e2e/visual.spec.ts:93` et `web/prisma/seedCertification.guard.test.ts`).
 
 ## Hors périmètre
 

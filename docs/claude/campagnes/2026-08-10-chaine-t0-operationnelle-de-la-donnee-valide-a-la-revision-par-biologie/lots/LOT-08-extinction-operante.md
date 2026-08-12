@@ -55,9 +55,9 @@ plutôt que de la contourner.
 ## Périmètre
 
 - **Comptes de recueil de `group_majority`** — le moteur
-  (`questions.ts:2762-2783`) publie sa complétude comme le fait déjà `psqi`,
+  (`web/src/lib/questions.ts:2762-2783`) publie sa complétude comme le fait déjà `psqi`,
   sur le patron `sumItems`/`{total, missing, repondus}` déjà en place dans le
-  fichier. Type de sortie étendu côté `questionnaire-types.ts`.
+  fichier. Type de sortie étendu côté `web/src/lib/questionnaire-types.ts`.
 - **STOP-STR mord** — la garde de complétude du moteur d'arrêt lit ces comptes ;
   un recueil incomplet ou muet n'éteint pas (fail-closed conservé, jamais
   desserré). Aucune modification de la table d'arrêt elle-même, hors ce que la
