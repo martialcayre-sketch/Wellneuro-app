@@ -36,6 +36,7 @@ import {
   validerBrouillonPraticien,
 } from '@/lib/synthese-praticien';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import {
   evaluerOrientationPourPatient,
   type ResultatOrientation,
@@ -84,6 +85,16 @@ type ReponseInput = {
    * une DONNÉE, au patron de `mesureNonInterpretable`.
    */
   statutEcarte: string | null;
+  /**
+   * Motif d'abstention du repère quand l'identifiant a désigné PLUSIEURS
+   * instruments, sinon `null` ([[D-051]]).
+   *
+   * MARQUER, PAS TAIRE — même leçon que `statutEcarte` juste au-dessus. Retirer
+   * le repère sans rien dire aurait été lu par le modèle comme le cas « aucune
+   * passation exploitable » que la consigne décrit déjà : un motif faux à la
+   * place d'un motif vrai. Le motif arrive donc comme une donnée, sur la ligne.
+   */
+  formeAmbigue: string | null;
   scores: Record<string, unknown>;
   scorePrincipal: number | null;
   interpretation: string | null;
@@ -99,6 +110,15 @@ type ReponseInput = {
    */
   passationCourante: boolean;
 };
+
+/**
+ * Motif servi au modèle quand le repère s'abstient ([[D-051]]). Constante et
+ * non phrase construite : le banc de garde de la consigne l'épingle, et un
+ * motif qui varierait rendrait le verrouillage du couple version/empreinte
+ * inopérant.
+ */
+const MOTIF_FORME_AMBIGUE =
+  "cet identifiant a désigné plusieurs questionnaires différents — ces passations ne sont pas comparables entre elles";
 
 // 4 096 tokens ne suffisent pas toujours lorsqu'un dossier cumule plusieurs
 // questionnaires : Claude peut produire un JSON valide mais le couper avant
@@ -268,6 +288,7 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
         // un repère faux est pire que pas de repère.
         passationCourante: r.passationCourante,
         ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
+        ...(r.formeAmbigue ? { formeInstrumentAmbigue: r.formeAmbigue } : {}),
         scores: null,
         scorePrincipal: null,
         interpretation: null,
@@ -285,6 +306,8 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
       // Présent SEULEMENT sur une passation écartée : une clé toujours là, à
       // `null`, se lirait comme « statut non renseigné » sur toutes les autres.
       ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
+      // Idem : présent seulement là où le repère s'abstient ([[D-051]]).
+      ...(r.formeAmbigue ? { formeInstrumentAmbigue: r.formeAmbigue } : {}),
       // Scores privés de toute conduite clinique : le modèle rédige à partir
       // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
       //
@@ -781,16 +804,54 @@ export async function POST(req: Request) {
         })),
     );
 
-    const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => ({
-      idQuestionnaire: r.idQuestionnaire,
-      titre: r.titre,
-      date: r.dateReponse.toISOString().split('T')[0],
-      scores: r.scoresJson as Record<string, unknown>,
-      scorePrincipal: r.scorePrincipal,
-      interpretation: r.interpretation,
-      passationCourante: courantes.get(r.idQuestionnaire)?.idReponse === r.idReponse,
-      statutEcarte: statutExcluDuRaisonnement(r.statutValidite) ? r.statutValidite ?? null : null,
-    }));
+    // LE REPÈRE S'ABSTIENT QUAND L'IDENTIFIANT A DÉSIGNÉ DEUX INSTRUMENTS
+    // ([[D-051]]). `Q_ALI_01` résout vers le dépistage court à 14 items ou
+    // l'Enquête SIIN à 57 selon `WN_ALI_01_SIIN57` : deux questionnaires
+    // distincts, pas deux versions du même. Le repère répond « laquelle fait
+    // foi » — une question qui n'a pas de sens entre deux instruments. Sans
+    // cette abstention, une passation sur 90 points serait donnée pour l'état
+    // actuel à la place d'une passation sur 42, et l'écart de total se lirait
+    // comme une évolution clinique.
+    //
+    // Le seuil est DEUX passations, pas une : avec une seule, il n'y a rien à
+    // départager et le repère reste vrai.
+    //
+    // COMPTÉ SUR LE MÊME SOUS-ENSEMBLE QUE `courantes` — les passations NON
+    // ÉCARTÉES —, et non sur tout ce qui est transmis. Corrigé après revue : une
+    // paire dont l'une est invalidée n'a qu'UNE mesure exploitable, donc rien à
+    // départager ; compter les deux faisait perdre un repère juste, et posait
+    // sur la ligne écartée un `formeInstrumentAmbigue` dont la consigne affirme
+    // que « ces passations restent exploitables » — faux précisément là.
+    const nombreExploitablesParInstrument = new Map<string, number>();
+    for (const r of reponsesAdministrables) {
+      if (statutExcluDuRaisonnement(r.statutValidite)) continue;
+      nombreExploitablesParInstrument.set(
+        r.idQuestionnaire,
+        (nombreExploitablesParInstrument.get(r.idQuestionnaire) ?? 0) + 1,
+      );
+    }
+    const repereAmbigu = (idQuestionnaire: string): boolean =>
+      instrumentAFormeVariable(idQuestionnaire)
+      && (nombreExploitablesParInstrument.get(idQuestionnaire) ?? 0) > 1;
+
+    const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => {
+      const statutEcarte = statutExcluDuRaisonnement(r.statutValidite) ? r.statutValidite ?? null : null;
+      return {
+        idQuestionnaire: r.idQuestionnaire,
+        titre: r.titre,
+        date: r.dateReponse.toISOString().split('T')[0],
+        scores: r.scoresJson as Record<string, unknown>,
+        scorePrincipal: r.scorePrincipal,
+        interpretation: r.interpretation,
+        passationCourante: !repereAmbigu(r.idQuestionnaire)
+          && courantes.get(r.idQuestionnaire)?.idReponse === r.idReponse,
+        statutEcarte,
+        // Jamais les deux marqueurs sur la même ligne : une passation écartée
+        // n'est pas « exploitable mais incomparable », elle n'est pas
+        // exploitable. `ecarteeDuRaisonnement` dit déjà tout d'elle.
+        formeAmbigue: statutEcarte === null && repereAmbigu(r.idQuestionnaire) ? MOTIF_FORME_AMBIGUE : null,
+      };
+    });
 
     // Contexte clinique (fiche signalétique + anamnèse) — une seule anamnèse par
     // patient, portée par sa consultation. Best-effort : la synthèse fonctionne

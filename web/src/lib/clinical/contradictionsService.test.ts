@@ -4,7 +4,19 @@ import type { ContradictionFinding } from './contradictionFinding';
 
 // Ce banc garde les deux endroits où un constat déterministe peut devenir faux
 // en changeant de forme : le VERROU (qui décide s'il sort) et la CONVERSION
-// (qui décide de ce qu'il devient). Les deux sont fail-closed.
+// (qui décide de ce qu'il devient). Les deux sont fail-closed. Depuis le
+// câblage ([[D-050]]), il garde un troisième point : que le verrou soit franchi
+// AVANT toute lecture du dossier.
+
+const { prismaMock } = vi.hoisted(() => ({
+  prismaMock: {
+    questionnaireReponse: { findMany: vi.fn() },
+    consultation: { findFirst: vi.fn() },
+  },
+}));
+
+vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
+vi.mock('@/generated/prisma', () => ({ Prisma: { DbNull: Symbol('DbNull') } }));
 
 type Discordance = Extract<ContradictionFinding, { forme: 'DISCORDANCE' }>;
 
@@ -47,6 +59,10 @@ const SIGNEE = { validationExterne: true, dateValidation: '2026-09-01', claimsSo
 
 beforeEach(() => {
   delete process.env.WN_ENABLE_CONTRADICTIONS_NNPP2;
+  prismaMock.questionnaireReponse.findMany.mockReset();
+  prismaMock.consultation.findFirst.mockReset();
+  prismaMock.questionnaireReponse.findMany.mockResolvedValue([]);
+  prismaMock.consultation.findFirst.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -222,5 +238,209 @@ describe('contradictionsPourAffichage — la traçabilité survit à la conversi
     })]);
     expect(affiche.passations.map(p => p.date)).toEqual(['2026-08-11', '2026-08-11']);
     expect(affiche.passations[0].dateLisible).toBe('11/08/2026');
+  });
+});
+
+// LE CÂBLAGE — [[D-050]]. Le LOT-01 livrait jusqu'ici une capacité qu'aucun
+// site d'appel n'utilisait ; le critère de sortie du lot n'était donc pas tenu.
+// Ce bloc garde ce que le câblage ne doit jamais perdre.
+describe('contradictionsPourPatient — le verrou passe AVANT la lecture', () => {
+  it('verrou fermé ⇒ liste vide ET aucune requête vers le dossier', async () => {
+    // Le point n'est pas la liste vide, c'est l'ABSENCE DE LECTURE. Un service
+    // qui lirait le dossier puis filtrerait à la sortie toucherait la donnée
+    // d'un patient pour un affichage qui n'a pas lieu — et le jour où le filtre
+    // de sortie s'oublie, la lecture est déjà faite.
+    const { contradictionsPourPatient } = await import('./contradictionsService');
+    expect(await contradictionsPourPatient('PAT_SEED_01')).toEqual([]);
+    expect(prismaMock.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.consultation.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('verrou ouvert ⇒ le dossier est lu, et scopé au patient demandé', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { contradictionsPourPatient } = await service(SIGNEE);
+    await contradictionsPourPatient('PAT_SEED_01');
+    expect(prismaMock.questionnaireReponse.findMany).toHaveBeenCalledTimes(1);
+    const argument = prismaMock.questionnaireReponse.findMany.mock.calls[0][0];
+    expect(argument.where).toEqual({ idPatient: 'PAT_SEED_01' });
+  });
+
+  it('le score est RECALCULÉ depuis rawAnswers, jamais l’instantané stocké', async () => {
+    // L'en-tête de `contradictionsEngine.ts` en fait une obligation de
+    // l'APPELANT. Un `scoresJson` figé porte la doctrine de scoring qui avait
+    // cours à la soumission : une garde ajoutée depuis ne mordrait sur aucune
+    // passation déjà en base — la classe de défaut trouvée en revue sur
+    // l'orientation le 2026-08-04.
+    //
+    // Ce banc regarde CE QUE LE MOTEUR REÇOIT, et non ce que le service rend :
+    // sur une table à une seule règle, un dossier qui ne la déclenche pas rend
+    // `[]` que le score soit recalculé ou relayé — un banc de sortie serait
+    // tautologique, exactement le défaut que ce lot dénonce ailleurs.
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const espion = vi.fn().mockReturnValue([]);
+    vi.resetModules();
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...SIGNEE } };
+    });
+    vi.doMock('./contradictionsEngine', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsEngine')>('./contradictionsEngine');
+      return { ...reel, evaluerContradictions: espion };
+    });
+    prismaMock.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idReponse: 'r1',
+        idQuestionnaire: 'Q_MOD_01',
+        dateReponse: new Date('2026-08-10T09:00:00.000Z'),
+        // Total délibérément aberrant : s'il était relayé, il ressortirait tel
+        // quel dans ce que le moteur reçoit.
+        scoresJson: { total: 999, rawAnswers: { MOD1: 3, MOD2: 3 } },
+        statutValidite: 'VALID',
+      },
+    ]);
+
+    const { contradictionsPourPatient } = await import('./contradictionsService');
+    await contradictionsPourPatient('PAT_SEED_01');
+
+    expect(espion).toHaveBeenCalledTimes(1);
+    const recue = espion.mock.calls[0][0].reponses[0];
+    expect(recue.idReponse).toBe('r1');
+    expect(recue.scores?.total).not.toBe(999);
+    vi.doUnmock('./contradictionsEngine');
+  });
+
+  it('aucune anamnèse ⇒ aucun drapeau inventé', async () => {
+    // `DC-24` : une donnée absente n'est ni zéro ni normale. Passer un objet aux
+    // drapeaux vides affirmerait que le patient n'a rien déclaré.
+    //
+    // Assertion sur CE QUE LE MOTEUR REÇOIT, corrigé après revue : une version
+    // antérieure attendait `[]` en sortie, ce qui est vrai que l'on passe
+    // `undefined` ou `{}` — aucune règle de la V1 n'a de déclencheur `drapeau`.
+    // Le banc ne pouvait pas rougir sur le défaut qu'il nomme.
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const espion = vi.fn().mockReturnValue([]);
+    vi.resetModules();
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...SIGNEE } };
+    });
+    vi.doMock('./contradictionsEngine', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsEngine')>('./contradictionsEngine');
+      return { ...reel, evaluerContradictions: espion };
+    });
+    prismaMock.consultation.findFirst.mockResolvedValue(null);
+
+    const { contradictionsPourPatient } = await import('./contradictionsService');
+    await contradictionsPourPatient('PAT_SEED_01');
+
+    expect(espion).toHaveBeenCalledTimes(1);
+    expect(espion.mock.calls[0][0].drapeaux).toBeUndefined();
+    expect('drapeaux' in espion.mock.calls[0][0]).toBe(true);
+    vi.doUnmock('./contradictionsEngine');
+  });
+
+  it('une passation ÉCARTÉE n’entre pas dans le raisonnement, drapeau ou pas', async () => {
+    // La classe de défaut fermée trois jours plus tôt sur le repère de synthèse,
+    // et rouverte ici par le chemin du recalcul partagé : le motif de validité
+    // de `scoresRecalculesPourRaisonnement` passe par `estExclueDuRaisonnement`,
+    // gaté par `WN_ENABLE_VALIDITE_PASSATIONS` — éteint en production. Sans le
+    // filtre sans drapeau, une passation qu'un praticien a marquée INVALID
+    // produisait un constat daté, affiché sans réserve.
+    //
+    // Un constat n'a pas de place où porter une réserve : il est vrai, ou il ne
+    // se produit pas. D'où le retrait, là où la synthèse marque.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const espion = vi.fn().mockReturnValue([]);
+    vi.resetModules();
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...SIGNEE } };
+    });
+    vi.doMock('./contradictionsEngine', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsEngine')>('./contradictionsEngine');
+      return { ...reel, evaluerContradictions: espion };
+    });
+    const ligne = (idReponse: string, statutValidite: string) => ({
+      idReponse,
+      idQuestionnaire: 'Q_MOD_01',
+      dateReponse: new Date('2026-08-10T09:00:00.000Z'),
+      scoresJson: { total: 12, rawAnswers: { MOD1: 3 } },
+      statutValidite,
+    });
+    prismaMock.questionnaireReponse.findMany.mockResolvedValue([
+      ligne('r-invalide', 'INVALID'),
+      ligne('r-saine', 'VALID'),
+      ligne('r-ambigue', 'AMBIGUOUS'),
+    ]);
+
+    const { contradictionsPourPatient } = await import('./contradictionsService');
+    await contradictionsPourPatient('PAT_SEED_01');
+
+    const recues = espion.mock.calls[0][0].reponses;
+    const parId = new Map(recues.map((r: { idReponse: string; scores: unknown }) => [r.idReponse, r.scores]));
+    // TOUTES LES LIGNES RESTENT — c'est le score de l'écartée qui tombe.
+    expect([...parId.keys()]).toEqual(['r-invalide', 'r-saine', 'r-ambigue']);
+    expect(parId.get('r-invalide')).toBeNull();
+    // `AMBIGUOUS` garde son score : ce n'est pas un statut écarté, et l'exclure
+    // serait une dérive silencieuse qu'aucun autre banc ne verrait.
+    expect(parId.get('r-ambigue')).not.toBeNull();
+  });
+
+  it('une INVALID récente ÉTEINT l’instrument — elle ne le fait pas reculer dans le temps', async () => {
+    // LE DÉFAUT QU'UN CORRECTIF AVAIT INTRODUIT, et que la revue a sondé.
+    //
+    // Une première rédaction RETIRAIT la ligne écartée au lieu de nuller son
+    // score. Conséquence : la passation antérieure devenait « la dernière » aux
+    // yeux de `derniereReponseParQuestionnaire`, et le constat se bâtissait sur
+    // une mesure de 2024 pendant que le panneau d'orientation du même écran en
+    // lisait une de 2026 — deux passations du même instrument sur le même
+    // écran, sans que rien ne le dise.
+    //
+    // `orientationService` refuse ce repli en toutes lettres : le praticien qui
+    // invalide attend une re-passation, il ne demande pas qu'on ressorte la
+    // mesure précédente. Les trois moteurs doivent répondre la même chose à
+    // « quelle passation fait foi ».
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const espion = vi.fn().mockReturnValue([]);
+    vi.resetModules();
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...SIGNEE } };
+    });
+    vi.doMock('./contradictionsEngine', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsEngine')>('./contradictionsEngine');
+      return { ...reel, evaluerContradictions: espion };
+    });
+    prismaMock.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idReponse: 'recente-invalide',
+        idQuestionnaire: 'Q_MOD_01',
+        dateReponse: new Date('2026-08-10T09:00:00.000Z'),
+        scoresJson: { total: 12, rawAnswers: { MOD1: 3 } },
+        statutValidite: 'INVALID',
+      },
+      {
+        idReponse: 'ancienne-valide',
+        idQuestionnaire: 'Q_MOD_01',
+        dateReponse: new Date('2024-01-05T09:00:00.000Z'),
+        scoresJson: { total: 12, rawAnswers: { MOD1: 3 } },
+        statutValidite: 'VALID',
+      },
+    ]);
+
+    const { contradictionsPourPatient } = await import('./contradictionsService');
+    await contradictionsPourPatient('PAT_SEED_01');
+
+    const recues = espion.mock.calls[0][0].reponses;
+    // La ligne récente est TOUJOURS LÀ : c'est elle qui reste « la dernière »,
+    // et son score nul éteint l'instrument. Si elle disparaissait, l'ancienne
+    // prendrait sa place et fonderait un constat vieux de deux ans.
+    expect(recues.map((r: { idReponse: string }) => r.idReponse)).toContain('recente-invalide');
+    const { derniereReponseParQuestionnaire } = await import('./orientationEngine');
+    const derniere = derniereReponseParQuestionnaire(recues).get('Q_MOD_01');
+    expect(derniere?.idReponse).toBe('recente-invalide');
+    expect(derniere?.scores).toBeNull();
   });
 });

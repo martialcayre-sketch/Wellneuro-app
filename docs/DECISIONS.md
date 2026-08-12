@@ -4,6 +4,171 @@
 
 ## Décisions actives
 
+### D-051 — Le repère de passation courante s'abstient sur un identifiant qui a désigné plusieurs instruments
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : clinique, synthèse IA, catalogue de questionnaires
+- Contexte : `Q_ALI_01` résout vers **deux questionnaires distincts** selon
+  `WN_ALI_01_SIIN57` — le dépistage court à 14 items (total /42) ou l'Enquête
+  alimentaire SIIN à 57 items (total /90) — sous un identifiant unique
+  (`web/src/lib/questionnaires/alimentaire.ts`). Ce ne sont pas deux versions
+  d'un même instrument : le banc de certification a comparé les libellés
+  position par position et trouve des similarités de 0,00 à 0,33. Les 8
+  passations en production portent la forme courte. Le repère
+  `passationCourante`, livré à l'étape 6 du LOT-01, répond « laquelle fait foi »
+  en groupant par `idQuestionnaire` : à l'allumage du drapeau, une passation sur
+  90 aurait été présentée au modèle comme l'état actuel à la place d'une
+  passation sur 42, et l'écart de total se serait lu comme une évolution
+  clinique. **Le défaut est antérieur à ce lot et latent** ; c'est le repère qui
+  l'aurait rendu actif.
+- Décision : sur un identifiant listé comme ayant désigné plusieurs instruments,
+  **aucune passation ne porte le repère dès qu'il en existe au moins deux
+  EXPLOITABLES**, et chaque ligne concernée porte le motif de l'abstention
+  (`formeInstrumentAmbigue`) — consigne `synthese-v24`.
+- **Marquer, pas taire** — et c'est le cœur de la décision. Retirer le repère
+  sans rien dire aurait été lu par le modèle comme le cas « aucune passation
+  exploitable » que la consigne décrit déjà : un motif faux à la place d'un
+  motif vrai, c'est-à-dire une dimension mesurée présentée comme non mesurée.
+  Le motif arrive donc comme une DONNÉE, au patron d'`ecarteeDuRaisonnement`
+  ([[D-048]], contre-revue).
+- **Seuil à deux passations, pas une.** Avec une seule, il n'y a rien à
+  départager et le repère reste vrai ; s'en abstenir coûterait un repère juste.
+- **Indépendant du drapeau, délibérément.** Le risque naît de la coexistence de
+  passations des deux époques dans un même dossier — un état que le drapeau
+  éteint n'exclut plus une fois qu'il a été allumé une fois.
+- Écarté : **déduire la forme de chaque passation depuis ses identifiants
+  d'items** (`AL1`…`AL14` pour la forme courte). Plus fin, mais cela ferait
+  dépendre un repère clinique d'une heuristique sur des clés de réponses brutes ;
+  tant qu'aucun dossier ne mélange les deux formes, la précision gagnée est nulle
+  et le risque de se tromper, réel.
+- Écarté : **abstention systématique sur `Q_ALI_01`**, passation unique comprise
+  — voir le seuil ci-dessus.
+- Écarté : **renvoyer le sujet à un lot dédié.** Le repère est livré par ce lot ;
+  laisser sortir la capacité qui rend le défaut actif en le nommant seulement au
+  handoff aurait été le publier en connaissance de cause.
+- Réserve nommée : cette décision **ne répare pas** le fond — un identifiant qui
+  désigne deux instruments reste une ambiguïté du catalogue. Elle empêche un
+  raisonnement faux, elle ne rend pas les deux formes comparables. `DC-25` :
+  données insuffisantes ⇒ réduire la conclusion, jamais l'inventer.
+- Portée : le repère de la synthèse IA **seulement**. L'orientation et les
+  contradictions passent par la même `derniereReponseParQuestionnaire` et ne
+  sont pas corrigées ici. **Elles ne sont pas exposées pour autant, et le motif
+  n'est pas celui qu'une première rédaction avait écrit** — `R2-ALI-01` est
+  publiée et cible bien `Q_ALI_01` (`orientationRulesV1.ts`), l'affirmation
+  inverse était fausse. Ce qui protège est une garde nommée, et elle nomme ce
+  cas précis : le recalcul à la lecture passe par `calculateScore`, qui rend
+  `scored: false, total: null, interpretation: null` dès qu'aucune réponse ne
+  correspond aux items de la définition servie — « c'est le cas des 8 passations
+  de la forme courte à 14 items (clés `AL1`–`AL14`), qui ne partagent aucun
+  identifiant avec les 57 items » (`web/src/lib/questions.ts`). Une passation de
+  la mauvaise époque ne peut donc pas déclencher `R2-ALI-01`, dont le
+  déclencheur porte sur l'interprétation. La garde tient dans les deux sens.
+- Ce que cette protection ne couvre pas, et qui reste ouvert : elle éteint la
+  passation d'une autre forme, elle ne la distingue pas d'une passation
+  simplement non cotable. Un moteur qui, demain, déclencherait sur autre chose
+  que l'interprétation — un nombre de passations, une date — retrouverait le
+  piège intact. Porté au handoff.
+- Réversibilité : retirer l'entrée de `INSTRUMENTS_A_FORME_VARIABLE` suffit à
+  rétablir le comportement antérieur, et **trois des cinq bancs** du bloc
+  « identifiant qui a désigné plusieurs instruments » le signaleraient — mesuré,
+  pas supposé : « aucun repère », « l'abstention est locale » et « l'abstention
+  vient d'une constante ». Les deux autres (passation unique, paire dont l'une
+  est écartée) passent aussi sans la garde : ce sont des témoins, pas des
+  gardes. **Le couple version/empreinte ne le verrait pas non plus** — le texte
+  de la consigne serait inchangé, et décrirait alors un champ que plus personne
+  n'émet.
+- Référence : `web/src/lib/questionnaires/alimentaire.ts`,
+  `web/src/app/api/praticien/synthese/route.ts`,
+  `web/src/app/api/praticien/synthese/passationCourante.test.ts`, [[D-048]]
+
+### D-050 — L'injection cockpit des contradictions : un modèle d'affichage, et un câblage réel
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12). **Ferme la réserve
+  « le câblage relève d'un lot suivant » de [[D-048]] et complète la conséquence
+  de conversion de [[D-044]]**, le reste de ces deux entrées étant intact. En
+  particulier, [[D-048]] écrivait que « la protection effective aujourd'hui
+  reste l'absence d'appelant autant que le verrou » : ce n'est plus vrai, il ne
+  reste que le double verrou — et il suffit, la table n'étant pas signée.
+- Domaine : clinique, restitution praticien, architecture
+- Contexte : [[D-044]] écrit « conséquence : l'injection cockpit convertit »
+  **sans nommer de cible**, après avoir posé que le moteur ne réutilise pas
+  `DiscordanceFinding` et pourquoi (`confidence: QualitativeConfidence`, que le
+  garde de [[D-041]] interdit). La cible restait donc à choisir, et le choix
+  n'était pas libre : `QualitativeConfidence` ne propose que `solide`,
+  `probable`, `fragile`, `à_documenter` — **aucune valeur ne dit « non
+  applicable »**. Toute cible héritant de `ClinicalFindingBase` obligerait à
+  inventer un degré de certitude. Par ailleurs, [[D-048]] a livré la capacité
+  d'affichage **sans site d'appel** : le critère de sortie du LOT-01 sur
+  l'injection cockpit n'était pas tenu, et l'entrée le disait.
+- Décision, premier volet : **la conversion a lieu vers un modèle d'AFFICHAGE**
+  (`ContradictionAffichee`), qui ne porte aucun champ de certitude, de
+  probabilité, de score ou de confiance. `DiscordanceFinding` reste en place,
+  inchangé, et ce moteur ne l'emprunte pas. Cette entrée **complète [[D-044]]**
+  — elle ne l'amende pas : [[D-044]] avait laissé la cible ouverte, elle est
+  nommée ici. Une première rédaction de cette entrée prétendait le contraire et
+  corrigeait une prescription que [[D-044]] n'a jamais portée.
+- Décision, second volet : **le câblage est fait dans ce lot**. Une étape nommée
+  « injection cockpit » qui ne livre aucun site d'appel livre un composant que
+  personne n'appelle. `POST /api/praticien/cockpit` rend désormais les constats
+  à côté de `review`, et `ClinicalRuntimeSection` les passe au panneau. **Le
+  critère de sortie du LOT-01 sur le PANNEAU cockpit est donc tenu**, et la
+  réserve ouverte par [[D-048]] sur ce point est refermée.
+- **L'étape 5 avait deux volets, et le second reste ouvert.** La spec décrit
+  « injection vigilances **et** cockpit » : les constats déterministes
+  n'alimentent pas `vigilanceDeterministe` de la route de synthèse, qui ne vient
+  toujours que de l'anamnèse. Dit ici plutôt que laissé croire — l'étape n'est
+  pas close, sa moitié cockpit l'est.
+- **Rien ne s'allume pour autant.** Le double verrou fail-closed est appliqué
+  dans le service — drapeau `WN_ENABLE_CONTRADICTIONS_NNPP2` **et** signature
+  clinique de la table —, et la table est livrée **non signée** : la liste est
+  vide quel que soit le drapeau. Le verrou est franchi **avant toute lecture du
+  dossier** ; un banc épingle qu'aucune requête ne part verrou fermé.
+- **Le recalcul depuis `rawAnswers` est partagé, pas recopié.** L'en-tête de
+  `contradictionsEngine.ts` en fait une obligation de l'appelant ; l'appelant
+  réutilise `scoresRecalculesPourRaisonnement` d'`orientationService` plutôt que
+  d'en dupliquer les cinq motifs de mise à `null`. Une fermeture clinique
+  recopiée dans deux services est une fermeture qu'on peut oublier de corriger
+  dans l'un des deux. La fonction a perdu « Orientation » de son nom à cette
+  occasion — il désignait son seul consommateur d'alors, pas ce qu'elle fait.
+- Écarté : **étendre `QualitativeConfidence` d'une valeur « non applicable »**.
+  Cela aurait ouvert le champ de certitude à tous les producteurs existants de
+  `DiscordanceFinding` pour le confort d'un seul consommateur, et fait dépendre
+  un garde clinique de la discipline de chaque appelant.
+- Écarté : **laisser la cible de conversion dans le seul fragment `changelog.d/`
+  et un commentaire de code.** Le lecteur de [[D-044]] serait resté devant une
+  conversion sans destination, au moment précis où il en cherche une ; le
+  changelog est un journal, il ne se relit pas comme le registre.
+- **Périmètre différent de `review`, nommé plutôt que supposé** :
+  `snapshot`/`review` sont calculés sur les réponses **incluses dans l'épisode
+  T0 confirmé**, alors que les contradictions sont évaluées sur le **dossier
+  entier**. Un constat peut donc reposer sur une passation laissée hors de
+  l'épisode ; ses passations sont datées à l'écran, ce qui rend l'écart lisible.
+  Réduire le moteur au périmètre de l'épisode est un arbitrage clinique qui
+  **n'a pas été rendu** — il est porté au handoff.
+- **Une passation écartée ne peut pas fonder un constat, drapeau ou pas — et sa
+  ligne reste.** Le motif de validité du recalcul partagé est gaté par
+  `WN_ENABLE_VALIDITE_PASSATIONS`, éteint en production : l'appelant applique
+  donc le prédicat sans drapeau `statutExcluDuRaisonnement` pour **nuller le
+  score**, jamais pour retirer la ligne. Le geste est celui
+  d'`orientationService`, et pour sa raison : retirer la ligne ferait de la
+  passation ANTÉRIEURE « la dernière », c'est-à-dire un repli sur une mesure que
+  le praticien n'a pas invalidée mais qu'il n'a pas non plus désignée. Un
+  praticien qui invalide attend une re-passation ; l'instrument s'éteint, il ne
+  recule pas dans le temps. Une première rédaction de ce lot filtrait, ce qui
+  violait de surcroît le contrat écrit du prédicat (« à n'utiliser que pour
+  DÉSIGNER, jamais pour FILTRER »).
+- Écarté : **renvoyer le câblage au lot suivant.** Trois lignes de liaison ne
+  justifient pas un lot, et un critère de sortie non tenu qui traverse une
+  clôture devient un critère qu'on oublie.
+- Réversibilité : le champ `contradictions` de la réponse cockpit et la liaison
+  du composant ; le verrou reste fermé dans tous les cas.
+- Référence : `web/src/lib/clinical/contradictionsService.ts`,
+  `web/src/app/api/praticien/cockpit/route.ts`,
+  `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx`, [[D-041]],
+  [[D-044]], [[D-048]]
+
 ### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
 
 - Date : 2026-08-12

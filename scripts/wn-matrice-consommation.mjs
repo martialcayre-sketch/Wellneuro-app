@@ -105,7 +105,7 @@ export const SOURCES_DE_SAVOIR = [
     // source de savoir clinique la PLUS RÉCENTE du dépôt serait la seule que la
     // matrice ne verrait pas — et c'est exactement ce qu'elle existe pour voir.
     modulesGardes: ['web/src/lib/clinical/contradictionsService.ts'],
-    decisionProduite: 'Constat de contradiction entre instruments (capacité livrée, affichage non câblé).',
+    decisionProduite: 'Constat de contradiction entre instruments, affiché au cockpit praticien (table non signée : rien ne sort).',
   },
   {
     id: 'corpus-clinique-synthese',

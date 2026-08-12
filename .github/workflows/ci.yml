@@ -314,6 +314,15 @@ jobs:
       - name: Specs dépendant du drapeau Q_ALI_01 (banc anti-dérive)
         run: node --test scripts/specs-drapeau-ali01.test.mjs
 
+      # La version de consigne écrite dans les DOCUMENTS OPPOSABLES doit être
+      # celle qui est livrée. Le couple version/empreinte est déjà verrouillé
+      # dans le code ; rien ne le reliait au registre ni aux fragments. Le
+      # 2026-08-12, la consigne a été reprise quatre fois dans un même lot et la
+      # citation documentaire est restée derrière trois fois de suite, chaque
+      # fois relevée en revue. Une règle oubliée deux fois devient exécutable.
+      - name: Version de consigne — code, registre et changelog d'accord
+        run: node --test scripts/version-prompt-documents.test.mjs
+
       # Invariants de ce fichier même. Le bloc `concurrency` ci-dessus porte une
       # règle qu'un commentaire ne suffit pas à tenir : sur `main`, deux runs ne
       # doivent JAMAIS partager un groupe, sans quoi GitHub annule le run pending

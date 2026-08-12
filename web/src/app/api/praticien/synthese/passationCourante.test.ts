@@ -91,6 +91,7 @@ function passationsTransmises(): Array<{
   date: string;
   passationCourante: boolean;
   ecarteeDuRaisonnement?: string;
+  formeInstrumentAmbigue?: string;
   scores?: unknown;
 }> {
   const message = anthropicCreate.mock.calls[0][0].messages[0].content as string;
@@ -317,6 +318,140 @@ describe('passation écartée du raisonnement, drapeau de validité ÉTEINT', ()
     const transmises = passationsTransmises();
     expect(transmises).toHaveLength(2);
     expect(transmises.filter(p => p.passationCourante)).toHaveLength(0);
+  });
+});
+
+// UN IDENTIFIANT, DEUX INSTRUMENTS — [[D-051]].
+//
+// `Q_ALI_01` résout vers le dépistage court à 14 items (total /42) ou l'Enquête
+// alimentaire SIIN à 57 items (total /90) selon `WN_ALI_01_SIIN57`. Ce ne sont
+// pas deux versions d'un même questionnaire : le banc de certification a comparé
+// les libellés position par position et trouve des similarités de 0,00 à 0,33.
+//
+// Le repère répond « laquelle fait foi », question sans objet entre deux
+// instruments : à l'allumage du drapeau, la passation sur 90 aurait été donnée
+// pour l'état actuel à la place de la passation sur 42, et l'écart de total se
+// serait lu comme une évolution clinique. Le défaut est ANTÉRIEUR à ce lot ;
+// c'est le repère qui l'aurait rendu visible et actif.
+describe('identifiant qui a désigné plusieurs instruments', () => {
+  it('deux passations Q_ALI_01 ⇒ AUCUN repère, et les deux lignes disent pourquoi', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      passation('R2', 'Q_ALI_01', '2026-08-10'),
+      passation('R1', 'Q_ALI_01', '2026-07-01'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    // Rien n'est retiré : les deux mesures restent exploitables, chacune pour
+    // sa date. Ce qui est refusé est de les mettre en relation.
+    expect(transmises).toHaveLength(2);
+    expect(transmises.filter(p => p.passationCourante)).toHaveLength(0);
+    // MARQUER, PAS TAIRE — sans ce champ, l'absence de repère se lirait comme
+    // le cas « aucune passation exploitable », un motif faux à la place d'un
+    // motif vrai. C'est la leçon de la v22, appliquée avant d'être répétée.
+    for (const ligne of transmises) {
+      expect(ligne.formeInstrumentAmbigue).toMatch(/plusieurs questionnaires différents/i);
+    }
+  });
+
+  it('une passation Q_ALI_01 UNIQUE garde son repère : il n’y a rien à départager', async () => {
+    // Contre-mesure au « refus global » : abstenir le repère sur une passation
+    // unique ne protégerait de rien et coûterait un repère vrai — la dimension
+    // se lirait comme non mesurée. Le seuil est DEUX passations.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([passation('R1', 'Q_ALI_01', '2026-08-10')]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    expect(transmises).toHaveLength(1);
+    expect(transmises[0].passationCourante).toBe(true);
+    expect(transmises[0]).not.toHaveProperty('formeInstrumentAmbigue');
+  });
+
+  it('l’abstention est LOCALE : les autres instruments gardent leur repère', async () => {
+    // Sans ce cas, une abstention qui éteindrait le repère du dossier ENTIER
+    // passerait les deux tests précédents.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      passation('R4', 'Q_ALI_01', '2026-08-10'),
+      passation('R3', 'Q_ALI_01', '2026-07-01'),
+      passation('R2', 'Q_STR_04', '2026-08-09'),
+      passation('R1', 'Q_STR_04', '2026-06-01'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    expect(transmises).toHaveLength(4);
+    const courantes = transmises.filter(p => p.passationCourante);
+    expect(courantes).toHaveLength(1);
+    expect(`${courantes[0].idQuestionnaire}@${courantes[0].date}`).toBe('Q_STR_04@2026-08-09');
+    // Et la clé ne déborde pas sur l'instrument voisin.
+    expect(transmises.filter(p => p.formeInstrumentAmbigue)).toHaveLength(2);
+  });
+
+  it('une paire dont UNE est écartée garde son repère sur la saine', async () => {
+    // Corrigé après revue. Le seuil se comptait sur toutes les passations
+    // transmises : une paire dont l'une est invalidée franchissait « deux » et
+    // déclenchait l'abstention, alors qu'une seule mesure est exploitable — il
+    // n'y avait rien à départager. Coût du défaut : un repère juste perdu, et
+    // sur la ligne écartée un `formeInstrumentAmbigue` dont la consigne affirme
+    // que « ces passations restent exploitables », ce qui est faux d'elle.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R2', 'Q_ALI_01', '2026-08-10'), statutValidite: 'INVALID' },
+      passation('R1', 'Q_ALI_01', '2026-07-01'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    const courantes = transmises.filter(p => p.passationCourante);
+    expect(courantes).toHaveLength(1);
+    expect(courantes[0].date).toBe('2026-07-01');
+    // Aucune ligne ne porte les DEUX marqueurs.
+    expect(transmises.filter(p => p.formeInstrumentAmbigue)).toHaveLength(0);
+    expect(transmises.find(p => p.date === '2026-08-10')?.ecarteeDuRaisonnement).toBe('INVALID');
+  });
+
+  it('deux exploitables ET une écartée : chaque ligne porte SON marqueur, aucun repère', async () => {
+    // Le cas qui distingue « deux passations » de « deux passations
+    // EXPLOITABLES » — c'est-à-dire la formulation que le registre a dû
+    // corriger. Sans lui, les deux lectures du seuil passaient les mêmes bancs.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R3', 'Q_ALI_01', '2026-08-10'), statutValidite: 'INVALID' },
+      passation('R2', 'Q_ALI_01', '2026-07-01'),
+      passation('R1', 'Q_ALI_01', '2026-05-02'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    expect(transmises).toHaveLength(3);
+    // Deux exploitables sous un identifiant ambigu ⇒ personne ne fait foi.
+    expect(transmises.filter(p => p.passationCourante)).toHaveLength(0);
+    // Chaque ligne dit ce qui la concerne, et rien d'autre : les deux
+    // exploitables sont incomparables entre elles, la troisième est écartée.
+    const parDate = new Map(transmises.map(p => [p.date, p]));
+    expect(parDate.get('2026-07-01')?.formeInstrumentAmbigue).toMatch(/plusieurs questionnaires/i);
+    expect(parDate.get('2026-05-02')?.formeInstrumentAmbigue).toMatch(/plusieurs questionnaires/i);
+    expect(parDate.get('2026-08-10')).not.toHaveProperty('formeInstrumentAmbigue');
+    expect(parDate.get('2026-08-10')?.ecarteeDuRaisonnement).toBe('INVALID');
+  });
+
+  it('l’abstention vient d’une constante, jamais de la forme servie', async () => {
+    // Corrigé après revue : une première rédaction posait `WN_ALI_01_SIIN57`
+    // puis rejouait la route, en croyant éprouver les deux positions. La forme
+    // est résolue AU CHARGEMENT du module (`alimentaire.ts`) — poser la variable
+    // après l'import ne bascule rien, et les deux itérations étaient
+    // identiques. Un banc qui croit tester deux positions et n'en teste qu'une
+    // est pire qu'absent : il donne la couverture pour acquise.
+    //
+    // Ce qui est réellement épinglé, et qui est le vrai motif de la décision :
+    // le prédicat est une CONSTANTE, sans aucune lecture d'environnement. Le
+    // risque naît de la coexistence de passations des deux époques dans un
+    // dossier — un état que le drapeau éteint n'exclut plus une fois qu'il a
+    // été allumé une fois.
+    const source = await import('@/lib/questionnaires/alimentaire');
+    expect(source.instrumentAFormeVariable('Q_ALI_01')).toBe(true);
+    expect(source.instrumentAFormeVariable('Q_ALI_02')).toBe(false);
+    expect(source.instrumentAFormeVariable.toString()).not.toMatch(/process\.env/);
   });
 });
 

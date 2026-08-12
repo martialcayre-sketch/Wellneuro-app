@@ -97,6 +97,11 @@ const ALLOWLIST = new Map([
     'éprouve la forme 57 par import DIRECT de Q_ALI_01_SIIN_57, quelle que soit la forme servie',
   ],
   [
+    'src/app/api/praticien/synthese/passationCourante.test.ts',
+    'le verdict ne dépend pas de la forme servie : l’abstention du repère (D-051) vient d’une CONSTANTE '
+      + '(`INSTRUMENTS_A_FORME_VARIABLE`), sans lecture d’environnement — un banc du fichier l’épingle',
+  ],
+  [
     'src/lib/agendaAlimentaireDrapeau.guard.test.ts',
     'garde le drapeau WN_AGENDA_ALI ; cite WN_ALI_01_SIIN57 en contre-exemple, sans en dépendre',
   ],

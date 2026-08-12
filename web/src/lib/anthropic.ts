@@ -233,7 +233,28 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // DONNÉE (`ecarteeDuRaisonnement`) au lieu d'être déduit de l'absence d'un
 // `true` : une inférence négative sur des chiffres livrés entiers est le patron
 // que `buildUserMessage` nomme lui-même comme insuffisant.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v22';
+// v23 (2026-08-12, arbitrage [[D-051]]) : `Q_ALI_01` résout vers DEUX
+// questionnaires distincts selon `WN_ALI_01_SIIN57` — 14 items sur 42, ou 57
+// items sur 90 — sous un identifiant unique. Le repère répond « laquelle fait
+// foi », question qui n'a pas de sens entre deux instruments : à l'allumage du
+// drapeau, une passation sur 90 aurait été donnée pour l'état actuel à la place
+// d'une passation sur 42, et l'écart de total se serait lu comme une évolution
+// clinique. Le repère s'abstient donc, et — leçon de la v22 — le motif arrive
+// comme une DONNÉE (`formeInstrumentAmbigue`) : sans lui, l'absence de `true`
+// se serait lue comme le cas « aucune passation exploitable », un motif faux à
+// la place d'un motif vrai. Bump : une synthèse rédigée sous v22 aurait pu
+// présenter deux barèmes différents comme une évolution.
+// v24 (2026-08-12, troisième revue) : la v23 avait décrit le nouveau cas en
+// tête de section sans reprendre la puce qui AUTORISE l'écart — laquelle
+// n'excluait que les passations écartées. Le modèle lisait donc « ne les
+// compare jamais entre eux » en haut, puis, dans « En conséquence », une
+// permission explicite de dater l'écart « entre deux passations d'un même
+// instrument » dont la liste d'exceptions ne citait pas le nouveau cas. C'est
+// mot pour mot la faute de la v21, sur une autre phrase : un paragraphe ajouté
+// sans reprendre celui qu'il rend faux. La puce porte désormais les deux
+// exclusions. Bump : une synthèse rédigée sous v23 aurait pu dater l'écart
+// entre deux barèmes différents.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v24';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -368,17 +389,23 @@ Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passa
 
 Certaines passations portent en plus **ecarteeDuRaisonnement** : le praticien les a écartées (mesure invalidée, remplacée, ou conservée pour mémoire seulement). Leurs chiffres te sont transmis quand même — c'est délibéré, pour que le dossier reste complet — mais **tu ne dois en tirer aucun constat d'état, aucune évolution, aucune tendance**. Une passation écartée ne porte jamais **passationCourante: true**.
 
-Un instrument peut donc n'avoir **aucun true** : cela veut dire qu'aucune de ses passations ne fait foi. Ne te rabats alors sur aucune d'elles, pas même la plus récente, et traite cette dimension comme restant à mesurer.
+D'autres passations portent **formeInstrumentAmbigue** : sous cet identifiant, le patient a pu remplir des questionnaires **différents** selon l'époque — pas deux versions du même, deux instruments distincts, avec des questions et des totaux qui ne se correspondent pas. Leurs chiffres restent exploitables **chacun pour sa propre date**, mais **ne les compare jamais entre eux** : pas d'écart, pas d'évolution, pas de « meilleur » ou « moins bon », et aucune de ces passations n'en remplace une autre.
 
-Lire un **false** demande de regarder la même ligne : si elle porte **ecarteeDuRaisonnement**, elle a été écartée ; sinon, elle a simplement été remplacée par une passation plus récente, ce qui ne la rend pas douteuse.
+Un instrument peut donc n'avoir **aucun true**, pour deux raisons qui ne se confondent pas, et la ligne te dit toujours laquelle :
+
+- ses passations portent **ecarteeDuRaisonnement**, ou il n'en a aucune d'exploitable : aucune ne fait foi. Ne te rabats sur aucune d'elles, pas même la plus récente, et traite cette dimension comme restant à mesurer ;
+- ses passations portent **formeInstrumentAmbigue** : elles restent exploitables, mais aucune ne peut être désignée comme celle qui fait foi. Rapporte-les **datées, séparément**, sans en élire une.
+
+Lire un **false** demande de regarder la même ligne : si elle porte **ecarteeDuRaisonnement**, elle a été écartée ; si elle porte **formeInstrumentAmbigue**, elle n'est simplement pas comparable aux autres ; sinon, elle a été remplacée par une passation plus récente, ce qui ne la rend pas douteuse.
 
 En conséquence :
 
 - **rapporte l'état actuel d'après la passation courante**, jamais d'après une antérieure ni d'après une passation écartée ;
-- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien. N'y fais entrer aucune passation écartée ;
+- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien. N'y fais entrer aucune passation portant **ecarteeDuRaisonnement** ni **formeInstrumentAmbigue** : la première a été écartée, la seconde ne mesure pas la même chose que sa voisine ;
 - **ne qualifie pas cet écart de progrès, d'aggravation ni d'effet d'une prise en charge.** Deux mesures qui diffèrent disent qu'elles diffèrent ; elles ne disent ni pourquoi, ni ce qui l'a causé. Association n'est pas causalité ;
 - **ne moyenne jamais deux passations**, ne les additionne pas, ne fabrique pas une valeur intermédiaire. Si elles se contredisent, dis-le : une divergence se signale, elle ne se lisse pas ;
 - une passation **non interprétable** porte elle aussi ces champs. Qu'elle soit courante ne rend pas son résultat exploitable pour autant : la section précédente continue de s'appliquer intégralement.
+- deux passations portant **formeInstrumentAmbigue** ne se contredisent jamais entre elles : des totaux différents y viennent de barèmes différents, pas d'un désaccord clinique. Ne signale pas une divergence là où il n'y a que deux instruments.
 
 Ce champ est un **repère de lecture**, pas un degré de fiabilité : il dit laquelle des passations fait foi, il ne classe pas leur qualité. Un instrument passé une seule fois, et non écartée, porte **true** sans que cela signifie quoi que ce soit de plus.
 

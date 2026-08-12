@@ -405,6 +405,41 @@ export const Q_ALI_01_COURT_14 = {
 export const Q_ALI_01 =
   process.env.WN_ALI_01_SIIN57 === 'true' ? Q_ALI_01_SIIN_57 : Q_ALI_01_COURT_14;
 
+/**
+ * Identifiants qui ont désigné PLUS D'UN INSTRUMENT au fil du temps ([[D-051]]).
+ *
+ * `Q_ALI_01` en est le seul cas : le ternaire ci-dessus résout un identifiant
+ * unique vers deux questionnaires qui ne sont pas deux versions l'un de l'autre
+ * — 14 items sur 42 contre 57 items sur 90, libellés comparés position par
+ * position par le banc de certification avec des similarités de 0,00 à 0,33,
+ * c'est-à-dire une réécriture indépendante. Les 8 passations déjà en production
+ * portent la forme courte.
+ *
+ * CE QUE CETTE LISTE SERT À REFUSER. Tout raisonnement qui compare deux
+ * passations d'un même identifiant — « la plus récente fait foi », « celle-ci
+ * remplace celle-là » — devient faux sur ces identifiants dès que le drapeau
+ * bascule : la passation de 2026 sur 90 points « remplacerait » celle de 2025
+ * sur 42, alors que ce sont deux mesures différentes. `DC-25` : données
+ * insuffisantes pour conclure ⇒ réduire la conclusion, pas l'inventer.
+ *
+ * ELLE NE DÉPEND PAS DU DRAPEAU, délibérément. Le lire ici ne dirait que la
+ * forme servie AUJOURD'HUI, alors que le risque naît de la COEXISTENCE de
+ * passations des deux époques dans un même dossier — un état que le drapeau
+ * éteint n'exclut plus une fois qu'il a été allumé une fois.
+ *
+ * Écarté : déduire la forme de chaque passation depuis ses identifiants d'items
+ * (`AL1`…`AL14` pour la forme courte). C'est faisable et ce serait plus fin,
+ * mais cela ferait dépendre un repère clinique d'une heuristique sur des clés
+ * de réponses brutes ; tant qu'aucun dossier ne mélange les deux formes, la
+ * précision gagnée serait nulle et le risque de se tromper, réel.
+ */
+export const INSTRUMENTS_A_FORME_VARIABLE: ReadonlySet<string> = new Set(['Q_ALI_01']);
+
+/** L'identifiant a-t-il désigné plusieurs instruments ? ([[D-051]]) */
+export function instrumentAFormeVariable(idQuestionnaire: string): boolean {
+  return INSTRUMENTS_A_FORME_VARIABLE.has(idQuestionnaire);
+}
+
 export const Q_ALI_02 = {
   id:'Q_ALI_02', titre:'Score d\'adhérence à la diète méditerranéenne SIIN',
   instructions:'Répondez par OUI ou NON pour chaque habitude alimentaire habituelle. Ce questionnaire évalue votre adhérence au régime méditerranéen.',

@@ -35,7 +35,18 @@ describe('consigne système — le repère de passation courante est expliqué',
     // que le praticien a précisément écartée.
     expect(CONSIGNE).toMatch(/aucun true/i);
     expect(CONSIGNE).toMatch(/pas même la plus récente/i);
-    expect(CONSIGNE).toMatch(/aucune de ses passations ne fait foi/i);
+    expect(CONSIGNE).toMatch(/aucune ne fait foi/i);
+  });
+
+  it('« aucun true » a DEUX causes distinctes, et la ligne dit laquelle (D-051)', () => {
+    // Le piège que la v23 referme, et qui est la même faute que la v22 : une
+    // absence de repère qui recouvrirait deux situations opposées — « rien
+    // d'exploitable » et « exploitable mais incomparable » — ferait traiter
+    // comme non mesurée une dimension qui l'est. Le nombre de causes est
+    // épinglé : une troisième ajoutée sans le dire ferait rougir ici.
+    expect(CONSIGNE).toMatch(/deux raisons qui ne se confondent pas/i);
+    expect(CONSIGNE).toMatch(/la ligne te dit toujours laquelle/i);
+    expect(CONSIGNE).toMatch(/restent exploitables, mais aucune ne peut être désignée/i);
   });
 
   it('le champ est nommé, littéralement, tel qu’il apparaît dans les données', () => {
@@ -104,5 +115,37 @@ describe('consigne système — le repère de passation courante est expliqué',
   it('lire un `false` renvoie à la même ligne, et distingue écartée de remplacée', () => {
     expect(CONSIGNE).toMatch(/si elle porte \*\*ecarteeDuRaisonnement\*\*/i);
     expect(CONSIGNE).toMatch(/remplacée par une passation plus récente, ce qui ne la rend pas douteuse/i);
+    // Troisième cas depuis la v23, sur la même ligne que les deux autres.
+    expect(CONSIGNE).toMatch(/si elle porte \*\*formeInstrumentAmbigue\*\*/i);
+  });
+
+  it('la forme ambiguë est nommée littéralement, et interdit la COMPARAISON (D-051)', () => {
+    // Ce que ce champ protège n'est pas la lecture d'une passation, c'est la
+    // MISE EN RELATION de deux. Chacune reste exploitable pour sa date ; ce qui
+    // est faux, c'est l'écart entre elles — deux barèmes distincts (42 et 90)
+    // sous un identifiant unique.
+    expect(CONSIGNE).toContain('formeInstrumentAmbigue');
+    expect(CONSIGNE).toMatch(/ne les compare jamais entre eux/i);
+    expect(CONSIGNE).toMatch(/aucune de ces passations n'en remplace une autre/i);
+  });
+
+  it('la PERMISSION de décrire l’écart exclut les DEUX cas, pas un seul', () => {
+    // Le constat de la troisième revue, et le seul endroit où il mordait : la
+    // section peut interdire la comparaison en tête et l'autoriser plus bas.
+    // C'est la puce « En conséquence » qui est opérante — le modèle y lit ce
+    // qu'il a le droit de faire. Une exclusion ajoutée en tête sans être
+    // reprise ici laisse la permission intacte.
+    const permission = CONSIGNE.match(/tu peux \*\*décrire l'écart\*\*[^;]*/)?.[0] ?? '';
+    expect(permission).toContain('ecarteeDuRaisonnement');
+    expect(permission).toContain('formeInstrumentAmbigue');
+  });
+
+  it('INTERDIT de lire deux formes ambiguës comme une discordance', () => {
+    // Le revers exact de la règle `DC-30` juste au-dessus : signaler une
+    // divergence est un devoir entre deux mesures du même instrument, et une
+    // erreur entre deux instruments différents. Sans cette phrase, la consigne
+    // de discordance produisait elle-même le faux constat.
+    expect(CONSIGNE).toMatch(/ne se contredisent jamais entre elles/i);
+    expect(CONSIGNE).toMatch(/barèmes différents, pas d'un désaccord clinique/i);
   });
 });

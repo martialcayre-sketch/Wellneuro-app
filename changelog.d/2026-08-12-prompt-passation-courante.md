@@ -1,7 +1,7 @@
 ### Modifié
 
 - **La consigne système explique enfin le repère de passation courante**
-  (`synthese-v22`, LOT-01 étape 3). Depuis l'étape 6, chaque ligne du bloc
+  (LOT-01 étape 3). Depuis l'étape 6, chaque ligne du bloc
   transmis au modèle porte `passationCourante` — et la consigne n'en disait
   rien. Une donnée présente et inexpliquée est pire qu'absente : le modèle
   pouvait l'ignorer, ou lui prêter un sens qu'elle n'a pas, un degré de
@@ -35,8 +35,10 @@
 - `false` est présenté comme une **information**, pas comme une absence : la
   passation a été remplacée, elle n'est pas devenue douteuse (`DC-24`).
 - **Le couple version/empreinte est reporté ensemble**, comme le verrou
-  l'exige : `synthese-v22` et `e515541e529fd058`. Un bump de l'un sans l'autre
-  fait rougir le garde.
+  l'exige. Un bump de l'un sans l'autre fait rougir le garde. La consigne a été
+  reprise quatre fois dans ce lot — trois revues et l'arbitrage `D-051` — et la
+  version livrée est celle de la dernière reprise : `synthese-v24`, empreinte
+  `799b15ff47955b39`.
 - Un banc dédié garde le contenu de la section — nom exact des champs, motif de
   la transmission des antérieures, et chacun des interdits.
 
@@ -54,6 +56,14 @@
   « consigne seule, données livrées » que le commentaire de `buildUserMessage`
   nomme lui-même comme insuffisant. Rien n'est retiré pour autant —
   l'engagement du LOT-00 tient.
+
+### Repris une troisième fois — l'arbitrage `D-051`
+
+- La v23 ajoute le cas d'un identifiant qui a désigné **plusieurs
+  instruments**, et refait sur ce cas ce que la v22 avait appris : le motif
+  arrive comme une donnée, et la section est **reprise** plutôt que complétée —
+  « aucun `true` » recouvrait sinon deux situations opposées. Détail :
+  `2026-08-12-repere-passation-identifiant-ambigu.md`.
 
 ### Ajouté — visibilité
 

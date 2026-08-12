@@ -79,12 +79,19 @@ export function resultatInactif(): ResultatOrientationInactif {
 }
 
 /**
- * Score utilisable par l'orientation, ou `null` — jamais l'instantané stocké.
+ * Score utilisable par un moteur clinique, ou `null` — jamais l'instantané stocké.
  *
- * Voir les quatre motifs de mise à `null` sur l'appelant. Rendre `null` plutôt
+ * Voir les cinq motifs de mise à `null` sur l'appelant. Rendre `null` plutôt
  * que retirer la ligne préserve `dejaRepondu`, qui est un fait administratif.
+ *
+ * EXPORTÉ AU LOT-01, pour le moteur de contradictions. Même motif que le double
+ * verrou juste au-dessus : les cinq motifs de mise à `null` sont des fermetures
+ * cliniques, et une fermeture recopiée dans deux services est une fermeture
+ * qu'on peut oublier de corriger dans l'un des deux. Le nom a perdu
+ * « Orientation » à cette occasion — il désignait le seul consommateur d'alors,
+ * pas ce que la fonction fait.
  */
-function scoresPourOrientation(
+export function scoresRecalculesPourRaisonnement(
   idQuestionnaire: string,
   stocke: Record<string, unknown> | null,
   dateReponse: Date,
@@ -218,7 +225,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // Un score `null` traverse `extraireCible` en `{valeur: null, interpretation:
   // null}` : aucun déclencheur ne peut mordre, et `dernieres` garde la ligne.
   //
-  // QUATRE MOTIFS DE MISE À `null`, et ils sont tous vérifiés ici plutôt que
+  // CINQ MOTIFS DE MISE À `null`, et ils sont tous vérifiés ici plutôt que
   // supposés — une première rédaction affirmait que `calculateScore` rendait
   // `null` sur un instrument inconnu ou suspendu. C'est FAUX, et mesuré : il
   // rend `{error: 'Questionnaire introuvable'}`, un objet truthy, et il cote
@@ -234,6 +241,11 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   //   3. l'instrument n'est plus administrable par la route (suspendu, droits,
   //      certification) : le moteur écarte déjà ces CIBLES, il n'y a pas de
   //      raison d'accepter leurs MESURES.
+  //   5. la passation est ÉCARTÉE du raisonnement par le praticien — `INVALID`,
+  //      `SUPERSEDED`, `HISTORICAL_ONLY` (LOT-00, chaîne T0). Gaté par
+  //      `WN_ENABLE_VALIDITE_PASSATIONS`, donc inerte tant qu'il est éteint.
+  //      Testé EN PREMIER dans le corps, et listé ici pour que l'énumération
+  //      soit complète : elle en annonçait cinq et n'en montrait que quatre.
   //   4. la passation est déclarée NON INTERPRÉTABLE par le registre
   //      (`Q_SOM_07`, `Q_ALI_03`…). Ce point ne pouvait pas se poser tant qu'on
   //      relayait un instantané ; il se pose dès qu'on FABRIQUE un score. Le
@@ -244,7 +256,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     idQuestionnaire: reponse.idQuestionnaire,
     dateReponse: reponse.dateReponse.toISOString(),
     idReponse: reponse.idReponse,
-    scores: scoresPourOrientation(
+    scores: scoresRecalculesPourRaisonnement(
       reponse.idQuestionnaire,
       reponse.scoresJson as Record<string, unknown> | null,
       reponse.dateReponse,

@@ -178,7 +178,7 @@ const ID_REPONSE_ORIENTATION_E2E_PREFIX = 'E2E_ORIENT_';
 
 /**
  * Écrit une réponse `Q_STR_02` dont le `rawAnswers` recalcule en zone
- * `danger` — ce que `scoresPourOrientation` exige pour ne pas rendre `null`
+ * `danger` — ce que `scoresRecalculesPourRaisonnement` exige pour ne pas rendre `null`
  * (voir `orientationService.ts`, qui IGNORE tout `scoresJson.total` déjà
  * stocké et recalcule depuis `rawAnswers`). Sans cette réponse, la règle
  * `R-STR-01` ne peut mordre : aucune passation du seed ne porte de

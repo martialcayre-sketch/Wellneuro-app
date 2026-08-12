@@ -207,7 +207,7 @@ describe('/api/praticien/cockpit', () => {
     expect(writes.consultationUpdate).not.toHaveBeenCalled();
   });
 
-  it('le POST (confirmation) ne journalise pas — sa trace datée existe déjà (GD-1)', async () => {
+  it('le POST (confirmation) ne journalise pas — GD-1 ne porte que sur les GET', async () => {
     const proposed = await proposal();
     prisma.journalAccesDossier.create.mockClear();
     await POST(postRequest({
@@ -272,5 +272,61 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     expect((await res.json()).error).toMatch(/état passé/);
     // Le refus intervient AVANT toute lecture, donc avant toute écriture.
     expect(prisma.patient.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+// LA LIAISON ROUTE → SERVICE — [[D-050]].
+//
+// Le banc de `ClinicalRuntimeSection` garde le maillon composant ← réponse,
+// mais il mocke `fetch` : il ne dit rien de ce que la ROUTE met dans cette
+// réponse. Un `contradictions: []` codé en dur ici compilerait et laisserait
+// tous les autres bancs verts — c'est précisément le défaut que le câblage
+// prétend fermer, d'un cran en amont.
+describe('/api/praticien/cockpit — les constats déterministes traversent la route', () => {
+  it('propage ce que le service rend, sans le filtrer ni le reconstruire', async () => {
+    const constat = {
+      id: 'C-STR',
+      description: 'Une contradiction que le praticien doit voir.',
+      actionSuggeree: 'Clarifier en entretien.',
+      hypotheses: [],
+      limitations: [],
+      passations: [{ idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' }],
+      ecartJours: null,
+      claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }],
+      importance: 'useful_not_urgent' as const,
+      resolution: { statut: 'ouverte' as const },
+      regleId: 'C-STR',
+    };
+    const service = await import('@/lib/clinical/contradictionsService');
+    const espion = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([constat]);
+
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    // Le service est appelé POUR CE PATIENT — pas pour un autre, pas sans
+    // argument : c'est ce qui distingue une propagation d'un décor.
+    expect(espion).toHaveBeenCalledWith('PAT_TEST');
+    expect(payload.contradictions).toEqual([constat]);
+    espion.mockRestore();
+  });
+
+  it('verrou fermé (table non signée) ⇒ la route rend une liste vide', async () => {
+    // L'état réel du dépôt : le service n'est pas doublé ici, c'est le vrai
+    // double verrou qui répond. Sans ce cas, le banc précédent prouverait la
+    // propagation sans rien dire de ce qui sort en production.
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+
+    expect((await response.json()).contradictions).toEqual([]);
   });
 });

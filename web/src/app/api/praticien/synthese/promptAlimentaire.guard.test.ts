@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v22`. À reporter en même temps
+// Empreinte de la consigne système, reportée à chaque bump. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -125,7 +125,16 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // v22, le 2026-08-12 (contre-revue) : la v21 avait ajouté un paragraphe sans
 // retirer les deux phrases qu'il rendait fausses. Section réécrite, et le
 // statut d'écartement arrive comme une donnée au lieu d'être déduit.
-const EMPREINTE_V22 = 'e515541e529fd058';
+//
+// v23, le 2026-08-12 (arbitrage D-051) : `Q_ALI_01` désigne deux instruments
+// distincts selon `WN_ALI_01_SIIN57`. Le repère s'y abstient, et le motif de
+// l'abstention arrive comme une donnée (`formeInstrumentAmbigue`) — sans elle,
+// l'absence de `true` se serait lue comme « aucune passation exploitable ».
+//
+// v24, le 2026-08-12 (troisième revue) : la v23 avait décrit le nouveau cas
+// sans reprendre la puce qui AUTORISE l'écart, laquelle n'excluait que les
+// passations écartées — la faute de la v21, sur une autre phrase.
+const EMPREINTE_V24 = '799b15ff47955b39';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -247,7 +256,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v22', empreinte: EMPREINTE_V22 });
+    ).toEqual({ version: 'synthese-v24', empreinte: EMPREINTE_V24 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

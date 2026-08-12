@@ -21,6 +21,10 @@ import type {
   DecisionCard,
   ProposedAssessmentEpisode,
 } from '@/lib/clinical-engine/types';
+import {
+  contradictionsPourPatient,
+  type ContradictionAffichee,
+} from '@/lib/clinical/contradictionsService';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
 type CockpitUnavailableReason =
@@ -44,6 +48,20 @@ export type CockpitRuntimeApiResponse =
       snapshot: ClinicalSnapshot;
       review: ClinicalReview;
       decisionCard: DecisionCard;
+      /**
+       * Constats du moteur DÉTERMINISTE de contradictions ([[D-050]]), à côté
+       * des `discordances` de `review`, qui viennent de la revue clinique LLM.
+       *
+       * Ce champ n'entre PAS dans `ClinicalReview` : ce type est celui du moteur
+       * clinique historique, dont `DiscordanceFinding` porte un `confidence` que
+       * le garde de [[D-041]] interdit à un constat déterministe. Les deux
+       * familles voyagent donc côte à côte, sans conversion de l'une vers
+       * l'autre.
+       *
+       * Liste vide tant que la table n'est pas signée — le verrou est appliqué
+       * dans le service, jamais ici ni chez le client.
+       */
+      contradictions: ContradictionAffichee[];
     }
   | {
       status: 'unavailable';
@@ -131,9 +149,12 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     const inputs = await loadRuntimeInputs(idPatient, email, asOfBrut);
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     // Journalisé ICI et non dans loadRuntimeInputs : le helper sert aussi le
-    // POST, qui laisse déjà une trace datée et attribuée (GD-1). AVANT le
-    // refus `asOf` : le dossier a été résolu et ses données lues — même
-    // principe que booklet et documents avec leur 422.
+    // POST, et GD-1 ne porte que sur les lectures de dossier nommé par un GET.
+    // (Une rédaction antérieure invoquait la dispense « une écriture laisse
+    // déjà sa trace » : elle ne s'applique pas, ce POST n'écrit rien — voir le
+    // commentaire de la confirmation plus bas.) AVANT le refus `asOf` : le
+    // dossier a été résolu et ses données lues — même principe que booklet et
+    // documents avec leur 422.
     await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
     if ('refus' in inputs) {
       // Une date hors repères n'est jamais ramenée au présent en silence : la
@@ -209,7 +230,27 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       snapshot,
       review,
     });
-    return NextResponse.json({ status: 'ready', snapshot, review, decisionCard });
+    // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
+    // praticien a été vérifiée — un patient d'un autre praticien est sorti en
+    // 404 bien avant cette ligne. Le service ne pose ni authentification, ni
+    // contrôle d'appartenance, ni journal : c'est l'appelant qui les porte.
+    //
+    // Ce POST ne journalise pas, et cette seconde lecture n'y change rien :
+    // c'est le même praticien, le même dossier et la même requête déjà
+    // autorisée, dans un POST qui n'écrit rien (`confirmAssessmentEpisode` est
+    // en mémoire). Le dire plutôt que d'invoquer la dispense d'écriture de
+    // GD-1, qui ne s'applique justement pas ici.
+    //
+    // PÉRIMÈTRE DIFFÉRENT DE CELUI DE `review`, et c'est nommé plutôt que
+    // supposé : `snapshot`/`review` sont calculés sur les réponses INCLUSES
+    // dans l'épisode T0 confirmé, alors que les contradictions sont évaluées
+    // sur le dossier entier. Un constat peut donc reposer sur une passation que
+    // le praticien a laissée hors de l'épisode. Les constats portent leurs
+    // passations datées, ce qui rend l'écart lisible à l'écran ; réduire le
+    // moteur au périmètre de l'épisode est un arbitrage clinique qui n'a pas
+    // été rendu ([[D-050]]).
+    const contradictions = await contradictionsPourPatient(idPatient);
+    return NextResponse.json({ status: 'ready', snapshot, review, decisionCard, contradictions });
   } catch (error) {
     if (error instanceof TypeError) {
       return unavailable('invalid_payload', error.message, 400);

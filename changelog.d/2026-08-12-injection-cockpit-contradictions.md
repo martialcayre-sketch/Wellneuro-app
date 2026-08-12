@@ -5,10 +5,10 @@
   et datées**, les hypothèses, les limites, les claims fondateurs, et le motif
   pour lequel il coexiste avec une suggestion d'instrument portant sur le même
   axe (`D-048`, LOT-01 étape 5).
-- **La capacité est livrée, le câblage ne l'est pas** — et c'est dit plutôt que
-  laissé croire : aucun site d'appel ne passe de constats au panneau. Le critère
-  de sortie correspondant du LOT-01 n'est donc pas tenu ; il est nommé dans
-  `D-048`.
+- Le câblage qui nourrit ce panneau est décrit à part
+  (`2026-08-12-cablage-injection-cockpit.md`, `D-050`) : la capacité a d'abord
+  été livrée seule, sans site d'appel, et le critère de sortie du LOT-01 est
+  resté ouvert le temps que l'arbitrage soit rendu.
 - **La justification de recoupement cesse d'être une note de revue.** Le texte
   qui explique pourquoi C-STR et la suggestion PSS-10 de `R2-STR-01`
   apparaissent ensemble était écrit dans la table depuis son origine et n'était
