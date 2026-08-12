@@ -37,6 +37,13 @@ les check-ins restent juxtaposés, jamais fusionnés.
   par variable (seuils = question ouverte de campagne, arbitrage praticien) ;
   le scalaire `scoreGlobal` conservé comme repère.
 - Restitution : fiche-trajectoire praticien + carte `jalon_j21` enrichie.
+- **Rattaché ici (dette du LOT-02)** : l'E2E du **parcours nominal T0**, qui
+  n'existe pas — `e2e/mode-consultation.spec.ts` asserte le refus, le nominal
+  n'est couvert que par les bancs de route. Le lot rouvre déjà le parcours de
+  confirmation d'épisode ; l'obstacle connu est le peuplement (les trois
+  patients autorisés sont tous centraux — peupler l'un d'eux déplace
+  `orientation-file-envoi`, `fiche-detail-reponses`, la capture pixel
+  `web/e2e/visual.spec.ts:93` et `web/prisma/seedCertification.guard.test.ts`).
 
 ## Hors périmètre
 

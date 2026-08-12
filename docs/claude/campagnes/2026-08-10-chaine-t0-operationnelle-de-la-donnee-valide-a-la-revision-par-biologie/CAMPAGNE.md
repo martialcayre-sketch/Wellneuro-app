@@ -82,11 +82,19 @@ confirmé » et « discordance stress » sont en CI.
 - Seuils des bandes de bruit du momentum par domaine (arbitrage praticien).
 - Règles C4 réellement disponibles et validées au moment du LOT-05 (le lot
   s'appuie sur l'atelier règles existant, il n'en crée pas le contenu).
+- Borne d'ancienneté de l'exclusion `dejaRepondu` : une passation `VALID` et
+  mesurée de 2024 exclut sa cible aujourd'hui. La fenêtre de fraîcheur a été
+  écartée au LOT-03 faute de chiffre fondé (`DC-19`, `DC-20`) — arbitrage
+  praticien, et non un choix technique. Sans lot d'accueil tant qu'aucun
+  chiffre n'est fondé.
 
 ## Dépendances
 
 - LOT-00 → LOT-01 → LOT-02 → LOT-04 → LOT-05 → LOT-06 → LOT-07 (chemin
   critique) ; LOT-03 parallélisable dès LOT-01.
+- LOT-08 dépend du LOT-03 et s'intercale **avant** le LOT-05 : les deux
+  étendent `verifierRestitutionOrientation`, et le faire deux fois de suite sur
+  le même garde coûte une reprise. Parallélisable avec le LOT-04.
 - LOT-00 et LOT-06 portent une migration : PR séparée, confirmation obligatoire,
   release-db avant activation du code dépendant (ou drapeau éteint).
 - Le contenu clinique (claims, règles C4, catalogue biologie) relève de
@@ -113,6 +121,7 @@ confirmé » et « discordance stress » sont en CI.
 | LOT-05 | Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie | à_faire | LOT-04 |
 | LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | à_faire | LOT-05 |
 | LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | à_faire | LOT-05 |
+| LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | à_faire | LOT-03 |
 
 ## Backlog ultérieur (hors campagne, nommé pour ne pas se perdre)
 
@@ -125,6 +134,10 @@ confirmé » et « discordance stress » sont en CI.
 - Agenda sommeil : jours contraints/libres déclarés, midpoint restitué, social
   jet lag.
 - Régénération des synthèses historiques contenant des données invalidées.
+- **Correction et ré-ouverture d'un T0** — le T0 reste irrévocable (identifiant
+  déterministe + `upsert update:{}`) : un T0 confirmé par contournement le
+  reste. Lot propre, classe Prisma/Auth, hors de cette campagne — la campagne
+  ouvre la porte T0, elle ne la rouvre pas.
 
 ## Done de campagne
 
