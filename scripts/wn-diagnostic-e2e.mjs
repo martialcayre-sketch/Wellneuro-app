@@ -61,11 +61,13 @@ function entreesZip(chemin) {
 
   const entrees = [];
   for (let i = 0; i < nombre; i++) {
+    if (position + 46 > buf.length) return null;
     if (buf.readUInt32LE(position) !== 0x02014b50) return null;
     const tailleDecompressee = buf.readUInt32LE(position + 24);
     const lgNom = buf.readUInt16LE(position + 28);
     const lgExtra = buf.readUInt16LE(position + 30);
     const lgCommentaire = buf.readUInt16LE(position + 32);
+    if (position + 46 + lgNom > buf.length) return null;
     entrees.push({
       nom: buf.toString('utf8', position + 46, position + 46 + lgNom),
       taille: tailleDecompressee,
