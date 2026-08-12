@@ -28,7 +28,7 @@
 // Usage : node scripts/wn-diagnostic-e2e.mjs [dossier test-results]
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 
 const racine = process.argv[2] ?? 'web/test-results';
 
@@ -125,7 +125,7 @@ for (const trace of traces) {
 
   const erreur = erreurVoisine(trace);
   const navigationExpiree = /page\.goto/.test(erreur) && /timeout/i.test(erreur);
-  const nom = trace.replace(/^.*test-results\//, '').replace(/\/trace\.zip$/, '');
+  const nom = relative(racine, trace).replace(/\/trace\.zip$/, '');
 
   if (aucuneRequete && navigationExpiree) {
     blocages++;
