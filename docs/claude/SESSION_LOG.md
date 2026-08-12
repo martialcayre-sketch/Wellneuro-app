@@ -3637,3 +3637,26 @@ rien : `group_majority` éteignait sur 3 items /21.
 
 **Ouvert.** STOP-STR ne peut pas mordre tant que `group_majority` se tait —
 signer ne suffira pas. `D-053` §5 est une dette, pas une garantie.
+
+## 2026-08-12 — Un lot d'accueil pour les dettes orphelines (LOT-08)
+
+**Décisions.** Les six dettes sans lot n'en formaient pas un : trois n'en font
+qu'une — STOP-STR ne mord pas, `D-053 §5` n'a pas de code, le garde de
+restitution ignore l'extinction. Elles deviennent le **LOT-08 « Extinction
+opérante »**, dépendant du LOT-03, à exécuter **avant le LOT-05** (les deux
+étendent `verifierRestitutionOrientation`). `D-054` exigée avant tout code.
+
+**Écarté.** Un lot fourre-tout. Les quatre autres dettes sont routées :
+ancienneté de `dejaRepondu` → question ouverte (aucun chiffre fondé,
+`DC-19`/`DC-20`) ; vigilances LOT-01 → LOT-05 ; E2E nominal T0 → LOT-07 ;
+T0 irrévocable → backlog, lot Prisma/Auth propre.
+
+**Promotion.** La PR #669 porte le titre du LOT-04 et **ne contient que son
+ouverture** — 4 fichiers de bookkeeping, zéro code. Le LOT-04 est ouvert et non
+livré ; il n'y avait aucune clôture en retard. Un titre de PR n'est pas un état
+de livraison : `git show --stat` avant de conclure.
+
+**Prochaine action.** PR documentaire, puis LOT-04 (chemin critique).
+
+**Ouvert.** `D-054` doit trancher si `total` change quand le recueil est
+incomplet — cette valeur alimente une bande déjà servie en production.

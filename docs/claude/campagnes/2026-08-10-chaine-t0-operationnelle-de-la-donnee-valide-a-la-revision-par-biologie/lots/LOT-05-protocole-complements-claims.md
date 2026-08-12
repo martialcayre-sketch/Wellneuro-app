@@ -44,6 +44,11 @@ improposables depuis les scores DNST (test négatif) ; une intention sans
   validée (question ouverte de campagne).
 - Garde de restitution étendue : le LLM ne peut nommer un complément absent des
   intentions déterministes (patron `verifierRestitutionOrientation`).
+- **Rattaché ici (renvoyé du LOT-01, 2026-08-12)** : l'injection des
+  **vigilances** de synthèse — la moitié non livrée de l'étape 5 du LOT-01 (le
+  câblage cockpit des contradictions, lui, est fait, `D-050`). Même garde LLM,
+  même interdit : une vigilance déterministe n'est pas censurable par une
+  sortie de modèle. Le LOT-08 étend le même fichier avant ce lot.
 
 ## Hors périmètre
 
