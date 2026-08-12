@@ -5,6 +5,11 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
+    // Préconditions de confirmation T0 (D-052) : lues APRÈS la garde
+    // d'appartenance, avant toute écriture.
+    questionnaireReponse: { findMany: vi.fn() },
+    consultation: { findFirst: vi.fn() },
+    syntheseIA: { findFirst: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
@@ -19,6 +24,11 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import type { DecisionCard, ProtocolAction } from '@/lib/clinical-engine/types';
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
+import {
+  CONSULTATION_VALIDEE_FIXTURE,
+  SYNTHESE_VALIDEE_FIXTURE,
+  passationsRideauT0,
+} from '@/lib/clinical-engine/dossierT0Fixture';
 import { GET, POST } from './route';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import type { FoodCompassActionRef } from '@/lib/food-compass';
@@ -127,7 +137,24 @@ describe('POST /api/praticien/protocoles/versions', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     process.env.WN_C5_ENABLED = 'false';
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
+    // posent explicitement.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
+    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(ciqualRows());
+  });
+
+  // PRÉCONDITIONS T0 (D-052) : le seul point de persistance réellement appelé
+  // par l'application. Refus AVANT la lecture du fil de versions.
+  it('refuse la persistance d’un T0 sans premier rideau, sans lire le fil (422)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    const res = await POST(postRequest({ episode, decisionCard, submission }));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'preconditions_non_remplies' });
+    expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
@@ -345,6 +372,11 @@ describe('GET /api/praticien/protocoles/versions', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
+    // posent explicitement.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
+    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.protocolDraft.findMany.mockResolvedValue([]);
     const req = new Request('http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=DEC_1');
     const res = await GET(req);

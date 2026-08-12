@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
+import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
 import type {
   ConfirmedAssessmentEpisode,
   DecisionCard,
@@ -130,6 +131,19 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },
+      );
+    }
+
+    // Préconditions T0 ([[D-052]]), APRÈS la garde d'appartenance et AVANT la
+    // lecture du fil : un épisode qui ne remplit pas ses conditions n'a pas à
+    // faire lire l'historique du patient. 422 et non 409 — sur cette route, 409
+    // porte déjà `version_stale` et `protocol_stale`, et c'est la seule
+    // discrimination que le client applique (il recharge l'historique).
+    const refusPreconditions = await refusPreconditionsPersistance(episode, emailPraticien(session) ?? '');
+    if (refusPreconditions) {
+      return NextResponse.json(
+        { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },
+        { status: 422 },
       );
     }
 

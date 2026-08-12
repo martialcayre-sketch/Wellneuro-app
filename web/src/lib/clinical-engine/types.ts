@@ -10,7 +10,26 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 // `protocol_diffusion_approvals` et `assessment_episodes` sont VIDES en
 // production, aucun hash persisté ne bouge.
 export const VERSION_MAPPING_BESOINS = 'besoins-v2' as const;
-export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
+// v1 → v2 (2026-08-12, [[D-052]]) : `ConfirmedAssessmentEpisode` gagne
+// `preconditionOverrides`, la trace des conditions souples contournées.
+//
+// CE QUE CETTE ÉTIQUETTE TOUCHE, vérifié plutôt que supposé (une première
+// rédaction invoquait `protocol_drafts.contract_version`, qui porte en réalité
+// `draft.version` et jamais cette constante — le contrôle ne pouvait rien
+// trouver). Elle entre dans `versions.clinicalObjects` du snapshot, donc dans
+// `snapshot.inputHash` → `decisionCard.inputHash` → `draft.inputHash` →
+// `versionId`, et dans `assessment_episodes.contract_version`.
+//
+// Deux raisons pour lesquelles aucun hash persisté ne bouge : en production,
+// `assessment_episodes` est VIDE (0 ligne au 2026-08-12) ; et une version de
+// protocole déjà écrite est relue par `reconstructProtocolDraft`, qui recalcule
+// son empreinte DEPUIS LE PAYLOAD STOCKÉ, sans réinjecter cette constante.
+//
+// CE QUI BOUGERAIT sur un fil déjà persisté : le premier enregistrement après
+// déploiement compterait comme changement clinique sans changement clinique
+// (`clinicalContentHash` inclut `decisionCardInputHash`). Zéro fil concerné
+// aujourd'hui — dit ici parce que ce serait invisible autrement.
+export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v2' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
@@ -59,9 +78,37 @@ export type ProposedAssessmentEpisode = AssessmentEpisodeBase & {
   status: 'proposed';
 };
 
+/**
+ * Contournement d'une condition souple de confirmation T0 ([[D-052]]).
+ *
+ * `decidePar` et `decideLe` sont POSÉS PAR LE SERVEUR à la confirmation
+ * (`api/praticien/cockpit`). L'épisode transitant ensuite par le navigateur,
+ * les deux points de persistance les RECOUPENT champ par champ contre la
+ * session — ils les vérifient plutôt qu'ils ne les réécrivent, car réécrire
+ * ferait diverger l'épisode de celui qui a été haché dans `snapshot.inputHash`.
+ * Un contournement dont l'auteur n'est pas la session, dont la date n'est pas
+ * une date, ou dont la condition n'est pas en défaut, est refusé en 422.
+ */
+export type PreconditionOverride = {
+  /** Identifiant de la condition souple contournée (`contradictions_ouvertes`…). */
+  conditionId: string;
+  /** Justification saisie par le praticien. Obligatoire, non vide. */
+  motif: string;
+  /** Adresse du praticien, issue de la session serveur. */
+  decidePar: string;
+  /** Horloge serveur, comme `confirmedAt`. */
+  decideLe: string;
+};
+
 export type ConfirmedAssessmentEpisode = AssessmentEpisodeBase & {
   status: 'confirmed';
   confirmedAt: string;
+  /**
+   * Porté par la forme CONFIRMÉE seulement, et optionnel : sur
+   * `AssessmentEpisodeBase`, `proposeAssessmentEpisode` devrait l'inventer et
+   * tous les `proposalHash` déjà émis se déplaceraient.
+   */
+  preconditionOverrides?: PreconditionOverride[];
 };
 
 export type AssessmentEpisode = ProposedAssessmentEpisode | ConfirmedAssessmentEpisode;

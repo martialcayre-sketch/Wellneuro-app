@@ -3587,3 +3587,30 @@ agent, et rappelle les tests déjà joués.
 **Prochaine action.** PR de doc de ces retouches.
 
 **Ouvert.** Rien.
+
+## 2026-08-12 — LOT-02 : les préconditions de confirmation T0
+
+**Décisions.** `D-052` écrite avant la première ligne de code. Quatre
+arbitrages : rideau en dur (quatre identifiants, `Q_SOM_09` exclu et
+l'exclusion affichée) ; condition dure sans `VALID` (105 passations de
+production le portent par défaut de colonne — l'exiger serait tautologique,
+`DC-24`) ; rideau évalué hors fenêtre ; volet souple réduit à deux conditions.
+
+**Écarté.** La condition « suggestion d'orientation écartée » : cet état
+n'existe nulle part et le créer demanderait une migration. Peupler un patient
+de seed pour couvrir le parcours nominal en E2E — le domino (orientation,
+capture pixel, garde de certification) coûtait plus que la couverture gagnée.
+
+**Promotion faite.** La revue `wn-reviewer` a rendu NO-GO avec quatre
+bloquants, tous réels et tous refermés : `scores !== null` acceptait quatre
+passations vides comme rideau complet ; la trace de contournement était
+forgeable par le navigateur ; la porte se désactivait en déclarant `J21` ; la
+synthèse était lue sans filtre de statut. **La leçon exécutable** : sur ce
+dépôt, `calculateScore` rend un objet `{scored:false,total:null}` plutôt que
+`null` — tout prédicat d'exploitabilité doit lire `scored`/`total`.
+
+**Prochaine action.** T3 de contrôle, handoff, PR.
+
+**Ouvert.** Le T0 reste irrévocable, sans lot d'accueil pour sa correction.
+Parcours nominal sans E2E. 8 dossiers de production sur 19 satisfont les
+conditions dures.

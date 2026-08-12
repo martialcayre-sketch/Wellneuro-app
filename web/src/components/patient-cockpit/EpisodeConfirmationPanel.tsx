@@ -1,26 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
+import type { PreconditionsT0 } from '@/lib/clinical-engine/preconditionsT0';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
 }
 
+export type ContournementSaisi = { conditionId: string; motif: string };
+
 export function EpisodeConfirmationPanel({
   proposal,
+  preconditions,
   submitting,
   onConfirm,
 }: {
   proposal: ProposedAssessmentEpisode;
+  /**
+   * Absente en lecture d'un état passé : l'écran n'affiche alors pas de
+   * checklist, et la confirmation reste refusée par l'API de toute façon.
+   */
+  preconditions?: PreconditionsT0;
   submitting: boolean;
-  onConfirm: (includedResponseIds: string[]) => void;
+  onConfirm: (includedResponseIds: string[], contournements: ContournementSaisi[]) => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>(proposal.inWindowResponseIds);
+  const [motifs, setMotifs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSelectedIds(proposal.inWindowResponseIds);
   }, [proposal.assessmentEpisodeId, proposal.inWindowResponseIds]);
+
+  const aContourner = useMemo(
+    () => preconditions?.contournementsRequis ?? [],
+    [preconditions],
+  );
+
+  useEffect(() => {
+    setMotifs({});
+  }, [proposal.assessmentEpisodeId]);
 
   const toggle = (responseId: string) => {
     setSelectedIds(current => current.includes(responseId)
@@ -28,18 +47,86 @@ export function EpisodeConfirmationPanel({
       : [...current, responseId]);
   };
 
+  const bloque = preconditions?.bloquant ?? false;
+  const motifsManquants = aContourner.filter(id => (motifs[id] ?? '').trim() === '');
+  const peutConfirmer = !submitting && !bloque && motifsManquants.length === 0;
+
   return (
     <section aria-labelledby="episode-confirmation-title" className="rounded-xl border border-border bg-surface p-4">
       <h3 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Confirmation de l’épisode T0
       </h3>
       <p className="mt-2 text-base text-muted-foreground">
-        Vérifiez les questionnaires à inclure. Cette confirmation reste en mémoire et ne modifie aucune donnée.
+        Vérifiez les conditions et les questionnaires à inclure. Cette confirmation reste en mémoire et ne modifie aucune donnée.
       </p>
+
+      {preconditions && (
+        <div className="mt-3 grid gap-3">
+          <div>
+            <h4 className="text-sm font-semibold text-foreground">Conditions requises</h4>
+            <ul className="mt-2 grid gap-1.5">
+              {preconditions.dures.map(condition => (
+                <li key={condition.id} className="flex items-start gap-2 text-sm">
+                  <span aria-hidden="true" className={condition.satisfaite ? 'text-status-success' : 'text-status-danger'}>
+                    {condition.satisfaite ? '✓' : '✕'}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">
+                      {condition.libelle}
+                      <span className="sr-only">{condition.satisfaite ? ' — remplie' : ' — non remplie'}</span>
+                    </span>
+                    {condition.detail && (
+                      <span className="block break-words text-muted-foreground">{condition.detail}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {preconditions.souples.some(condition => !condition.satisfaite) && (
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Avertissements</h4>
+              <ul className="mt-2 grid gap-2">
+                {preconditions.souples.filter(condition => !condition.satisfaite).map(condition => (
+                  <li key={condition.id} className="rounded-lg border border-accent bg-status-warning/10 p-3 text-sm">
+                    <span className="block font-medium text-foreground">{condition.libelle}</span>
+                    {condition.detail && (
+                      <span className="block break-words text-muted-foreground">{condition.detail}</span>
+                    )}
+                    <label className="mt-2 block">
+                      <span className="block text-muted-foreground">
+                        Je confirme malgré cet avertissement — motif obligatoire
+                      </span>
+                      <textarea
+                        value={motifs[condition.id] ?? ''}
+                        onChange={event => setMotifs(current => ({ ...current, [condition.id]: event.target.value }))}
+                        rows={2}
+                        maxLength={2000}
+                        className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground"
+                        placeholder="Pourquoi confirmer malgré cet avertissement ?"
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Dit plutôt que passé sous silence : sans cette ligne, l'absence de
+              la biologie et des agendas se lirait comme un oubli. Q_SOM_09 est
+              au pack de base et volontairement hors du rideau T0 (D-052). */}
+          <p className="text-sm text-muted-foreground">
+            Biologie, agendas et journal alimentaire ne sont <strong>pas requis</strong> pour confirmer un T0
+            (phase 1). L’agenda du sommeil (Q_SOM_09), bien qu’il figure au pack de base, court sur 21 nuits :
+            il ne peut pas conditionner une décision prise à J0.
+          </p>
+        </div>
+      )}
 
       {proposal.candidateResponses.length === 0 ? (
         <div role="status" className="mt-3 rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
-          Aucune réponse disponible. Confirmez explicitement pour produire une revue prudente des données manquantes.
+          Aucune réponse disponible pour la fenêtre T0.
         </div>
       ) : (
         <div className="mt-3 grid gap-2">
@@ -65,10 +152,19 @@ export function EpisodeConfirmationPanel({
         </div>
       )}
 
+      {bloque && (
+        <p role="status" className="mt-3 text-sm text-status-danger">
+          Une ou plusieurs conditions requises ne sont pas remplies : l’épisode T0 ne peut pas être confirmé.
+        </p>
+      )}
+
       <button
         type="button"
-        disabled={submitting}
-        onClick={() => onConfirm(selectedIds)}
+        disabled={!peutConfirmer}
+        onClick={() => onConfirm(
+          selectedIds,
+          aContourner.map(conditionId => ({ conditionId, motif: (motifs[conditionId] ?? '').trim() })),
+        )}
         className="mt-4 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
         {submitting ? 'Confirmation en cours…' : 'Confirmer l’épisode T0'}

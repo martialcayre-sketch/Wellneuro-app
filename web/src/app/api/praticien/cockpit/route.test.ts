@@ -15,6 +15,8 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
       // Lu uniquement en lecture d'un état passé (SP-TT).
       assessmentEpisode: { findMany: vi.fn() },
+      // Préconditions de confirmation T0 (D-052).
+      syntheseIA: { findFirst: vi.fn() },
       // Journal des accès (G-TRUST-04) : écriture d'audit, pas clinique.
       journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     },
@@ -25,10 +27,27 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import {
+  CONSULTATION_VALIDEE_FIXTURE,
+  SYNTHESE_VALIDEE_FIXTURE,
+  passationsRideauT0,
+} from '@/lib/clinical-engine/dossierT0Fixture';
 import { GET, POST } from './route';
 
 const patient = { idPatient: 'PAT_TEST', createdAt: new Date('2026-01-01T00:00:00.000Z') };
 const rawAnswers = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
+
+// DEUX LECTURES DISTINCTES DES PASSATIONS, et le mock les distingue comme la
+// route les distingue (D-052) : `loadRuntimeInputs` compose l'ÉPISODE (il
+// sélectionne `idReponse`), `chargerEntreesPreconditionsT0` évalue les
+// PRÉCONDITIONS (il ne le sélectionne pas). Les garder séparées permet de
+// décrire un dossier qui confirme sans gonfler la proposition d'épisode.
+/** Branche les deux lectures : l'épisode sur `rows`, les préconditions sur `dossier`. */
+function brancherPassations(rows: unknown[], dossier: unknown[] = passationsRideauT0()) {
+  prisma.questionnaireReponse.findMany.mockImplementation((args?: { select?: Record<string, unknown> }) =>
+    Promise.resolve(args?.select?.idReponse ? rows : dossier));
+}
+
 const responses = [
   {
     idReponse: 'REP_T0', idQuestionnaire: 'Q_SOM_06',
@@ -62,7 +81,8 @@ describe('/api/praticien/cockpit', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.questionnaireReponse.findMany.mockResolvedValue(responses);
+    brancherPassations(responses);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({
       anamnese: { motif_principal: 'Fatigue', objectif_prioritaire: 'Énergie', attentes: ['Comprendre'] },
     });
@@ -113,7 +133,7 @@ describe('/api/praticien/cockpit', () => {
   });
 
   it('autorise une proposition vide', async () => {
-    prisma.questionnaireReponse.findMany.mockResolvedValueOnce([]);
+    brancherPassations([]);
     const response = await GET(getRequest());
     const payload = await response.json();
     expect(response.status).toBe(200);
@@ -194,6 +214,76 @@ describe('/api/praticien/cockpit', () => {
     expect(contextChanged.status).toBe(409);
   });
 
+  // PRÉCONDITIONS T0 (D-052) — critère 1 du Lot C : le refus est porté par
+  // l'API, pas seulement par l'écran.
+  it('refuse un T0 sans premier rideau, et nomme ce qui manque', async () => {
+    brancherPassations(responses, []);
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    const payload = await response.json();
+    expect(response.status).toBe(422);
+    expect(payload).toMatchObject({ status: 'unavailable', reason: 'preconditions_non_remplies' });
+    expect(payload.error).toContain('Q_MOD_03');
+  });
+
+  it('refuse un T0 dont l’anamnèse validée ne porte pas de motif', async () => {
+    prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toContain('motif principal');
+  });
+
+  it('refuse un T0 dont la synthèse validée est antérieure au rideau', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({
+      statut: 'Validee_Praticien', dateValidation: new Date('2025-01-01T00:00:00.000Z'),
+    });
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toContain('antérieure');
+  });
+
+  // Les jalons de suivi ne sont pas gouvernés par cette porte : le lot pose les
+  // préconditions du point d'entrée, il ne touche pas aux jalons.
+  it('ne pose aucune précondition sur un jalon de suivi (J21)', async () => {
+    brancherPassations(responses, []);
+    const proposed = await proposal('J21');
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'J21',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(200);
+  });
+
+  it('la checklist voyage avec la proposition, jamais en lecture d’un état passé', async () => {
+    const present = await (await GET(getRequest())).json();
+    expect(present.preconditions.bloquant).toBe(false);
+    expect(present.preconditions.dures).toHaveLength(3);
+
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    // Le 400 « date inconnue » rendrait ce cas vert pour la mauvaise raison :
+    // on exige une lecture passée RÉUSSIE, sans checklist.
+    const reponsePassee = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-01'));
+    expect(reponsePassee.status).toBe(200);
+    const passe = await reponsePassee.json();
+    expect(passe.asOf).not.toBeNull();
+    expect(passe.preconditions).toBeUndefined();
+  });
+
   it('ne déclenche aucune écriture Prisma clinique', async () => {
     // Le journal des accès (G-TRUST-04) écrit sur le GET — écriture d'audit,
     // hors périmètre de cette assertion qui protège l'état clinique.
@@ -222,7 +312,8 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.questionnaireReponse.findMany.mockResolvedValue(responses);
+    brancherPassations(responses);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   });
@@ -283,6 +374,17 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
 // tous les autres bancs verts — c'est précisément le défaut que le câblage
 // prétend fermer, d'un cran en amont.
 describe('/api/praticien/cockpit — les constats déterministes traversent la route', () => {
+  // Dossier confirmable : sans lui, ce bloc héritait des mocks du describe
+  // précédent (anamnèse vide), que les préconditions T0 refusent désormais.
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    brancherPassations(responses);
+    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+  });
+
   it('propage ce que le service rend, sans le filtrer ni le reconstruire', async () => {
     const constat = {
       id: 'C-STR',
@@ -305,10 +407,18 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
       idPatient: 'PAT_TEST', milestone: 'T0',
       includedResponseIds: proposed.proposal.inWindowResponseIds,
       proposalHash: proposed.proposalHash,
+      // Une contradiction ouverte est une condition SOUPLE (D-052) : elle
+      // n'interdit pas la confirmation, elle exige un motif écrit.
+      overrides: [{ conditionId: 'contradictions_ouvertes', motif: 'Vue en entretien.' }],
     }));
     const payload = await response.json();
 
     expect(response.status).toBe(200);
+    // Le contournement est tracé dans l'épisode, auteur et horodatage posés
+    // par le serveur.
+    expect(payload.snapshot.assessmentEpisode.preconditionOverrides).toMatchObject([
+      { conditionId: 'contradictions_ouvertes', motif: 'Vue en entretien.', decidePar: 'praticien@wellneuro.fr' },
+    ]);
     // Le service est appelé POUR CE PATIENT — pas pour un autre, pas sans
     // argument : c'est ce qui distingue une propagation d'un décor.
     expect(espion).toHaveBeenCalledWith('PAT_TEST');

@@ -1,11 +1,26 @@
 ---
 id: "LOT-01"
 titre: "Garde-fous de synthèse et moteur de contradictions"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
 # LOT-01 — Garde-fous de synthèse et moteur de contradictions
+
+> **TERMINÉ le 2026-08-12.** Étapes 1 à 4 et 6 livrées (table C-STR et moteur,
+> contrat de fraîcheur des claims, prompt `synthese-v24` et garde d'empreinte,
+> schéma de sortie strict, marquage de la passation courante par instrument —
+> `D-050`, `D-051`).
+>
+> **RENVOYÉ, décision utilisateur du 2026-08-12** : l'étape 5 pour sa moitié
+> « injection des **vigilances** de synthèse ». Le câblage cockpit des
+> contradictions, lui, est fait (`D-050`). Les vigilances n'ont pas de lot
+> d'accueil à ce jour.
+>
+> **Écart de périmètre porté par `D-050`, non refermé** : le moteur de
+> contradictions évalue le **dossier entier**, alors que `review` porte sur
+> l'épisode T0. Un constat peut donc reposer sur une passation laissée hors de
+> l'épisode.
 
 ## But
 

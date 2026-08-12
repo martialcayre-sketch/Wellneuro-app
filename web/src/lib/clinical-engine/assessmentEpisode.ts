@@ -2,6 +2,7 @@ import { TOLERANCE_JOURS_JALON } from '../equilibre/constants';
 import type {
   AssessmentResponseRef,
   ConfirmedAssessmentEpisode,
+  PreconditionOverride,
   ProposedAssessmentEpisode,
   QuestionnaireResponseInput,
   SourceDateRange,
@@ -80,10 +81,19 @@ export function proposeAssessmentEpisode(input: {
   };
 }
 
+/**
+ * `preconditionOverrides` est OPTIONNEL et n'est posé que s'il y a quelque
+ * chose à tracer : un tableau vide serait un champ de plus dans le payload et
+ * dans son empreinte, pour dire qu'il ne s'est rien passé ([[D-052]]).
+ *
+ * Cette fonction ne VÉRIFIE pas les préconditions — elle n'a ni dossier ni
+ * session. Elle transporte la trace que l'appelant a constituée côté serveur.
+ */
 export function confirmAssessmentEpisode(
   proposal: ProposedAssessmentEpisode,
   includedResponseIds: string[],
-  confirmedAt: string
+  confirmedAt: string,
+  preconditionOverrides?: PreconditionOverride[]
 ): ConfirmedAssessmentEpisode {
   const candidates = new Map(proposal.candidateResponses.map(ref => [ref.responseId, ref]));
   const uniqueIds = [...new Set(includedResponseIds)].sort();
@@ -91,11 +101,21 @@ export function confirmAssessmentEpisode(
   if (unknown.length > 0) throw new TypeError(`Réponse inconnue dans la confirmation : ${unknown.join(', ')}.`);
   const includedRefs = uniqueIds.map(id => candidates.get(id)!);
 
+  for (const override of preconditionOverrides ?? []) {
+    if (!override.conditionId.trim() || !override.motif.trim() || !override.decidePar.trim()) {
+      throw new TypeError('Un contournement de précondition exige une condition, un motif et un auteur.');
+    }
+    isoDate(override.decideLe, 'decideLe');
+  }
+
   return {
     ...proposal,
     status: 'confirmed',
     includedResponseIds: uniqueIds,
     sourceDateRange: dateRange(includedRefs),
     confirmedAt: isoDate(confirmedAt, 'confirmedAt'),
+    ...(preconditionOverrides && preconditionOverrides.length > 0
+      ? { preconditionOverrides }
+      : {}),
   };
 }

@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
+import type { PreconditionsT0 } from '@/lib/clinical-engine/preconditionsT0';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import { ClinicalRuntimeSection } from './ClinicalRuntimeSection';
 import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
@@ -32,6 +33,17 @@ const proposalResponse: CockpitRuntimeApiResponse = {
   proposalHash: 'hash-proposal',
 };
 
+// Checklist minimale : tout est satisfait sauf ce que le cas décrit.
+function preconditions(surcharge: Partial<PreconditionsT0> = {}): PreconditionsT0 {
+  return {
+    dures: [{ id: 'rideau_t0', libelle: 'Premier rideau renseigné et cotable', satisfaite: true, detail: null }],
+    souples: [],
+    bloquant: false,
+    contournementsRequis: [],
+    ...surcharge,
+  };
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -47,23 +59,78 @@ describe('EpisodeConfirmationPanel', () => {
     fireEvent.click(screen.getByLabelText(/Q-OUT/));
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
 
-    expect(onConfirm).toHaveBeenCalledWith(['R-IN', 'R-OUT']);
+    expect(onConfirm).toHaveBeenCalledWith(['R-IN', 'R-OUT'], []);
     expect(screen.queryByText(/scoresJson/)).toBeNull();
   });
 
-  it('exige aussi une confirmation explicite pour un épisode vide', () => {
+  // REMPLACE « exige aussi une confirmation explicite pour un épisode vide ».
+  // Ce banc encodait le comportement que [[D-052]] supprime : le panneau
+  // invitait à confirmer un dossier vide, et rien côté API ne s'y opposait.
+  it('une condition dure non remplie interdit la confirmation', () => {
     const onConfirm = vi.fn();
     render(
       <EpisodeConfirmationPanel
-        proposal={{ ...proposal, candidateResponses: [], inWindowResponseIds: [], outOfWindowResponseIds: [], includedResponseIds: [], sourceDateRange: null }}
+        proposal={proposal}
+        preconditions={preconditions({
+          dures: [{
+            id: 'rideau_t0', libelle: 'Premier rideau renseigné et cotable',
+            satisfaite: false, detail: 'Premier rideau incomplet — non renseignés : Q_MOD_03, Q_MOD_01.',
+          }],
+          bloquant: true,
+        })}
         submitting={false}
         onConfirm={onConfirm}
       />,
     );
 
-    expect(screen.getByText(/Aucune réponse disponible/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
-    expect(onConfirm).toHaveBeenCalledWith([]);
+    expect(screen.getByText(/Premier rideau incomplet/)).toBeTruthy();
+    const bouton = screen.getByRole('button', { name: 'Confirmer l’épisode T0' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    fireEvent.click(bouton);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('une condition souple se contourne, mais jamais sans motif', () => {
+    const onConfirm = vi.fn();
+    render(
+      <EpisodeConfirmationPanel
+        proposal={proposal}
+        preconditions={preconditions({
+          souples: [{
+            id: 'contradictions_ouvertes', libelle: 'Aucune contradiction ouverte',
+            satisfaite: false, detail: '2 contradictions ouvertes sur ce dossier.',
+          }],
+          contournementsRequis: ['contradictions_ouvertes'],
+        })}
+        submitting={false}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const bouton = screen.getByRole('button', { name: 'Confirmer l’épisode T0' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+
+    fireEvent.change(screen.getByPlaceholderText(/Pourquoi confirmer/), {
+      target: { value: 'Discordance déjà reprise en entretien.' },
+    });
+    expect(bouton.disabled).toBe(false);
+    fireEvent.click(bouton);
+    expect(onConfirm).toHaveBeenCalledWith(
+      ['R-IN'],
+      [{ conditionId: 'contradictions_ouvertes', motif: 'Discordance déjà reprise en entretien.' }],
+    );
+  });
+
+  it('nomme ce qui n’est pas requis pour un T0, plutôt que de le taire', () => {
+    render(
+      <EpisodeConfirmationPanel
+        proposal={proposal}
+        preconditions={preconditions()}
+        submitting={false}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Q_SOM_09/)).toBeTruthy();
   });
 });
 
