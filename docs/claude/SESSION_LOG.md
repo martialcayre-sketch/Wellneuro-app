@@ -3547,3 +3547,22 @@ localement sur **toute** branche ; le CI ne l'a jamais rencontré.
 
 **Ouvert.** Cause racine hors de notre code. Les trois arbitrages cliniques du
 LOT-01 restent en attente.
+
+## 2026-08-12 — La chaîne de skills relue sur le déroulé réel du LOT-01
+
+**Décisions.** L'audit de redondance de la chaîne (routage → lot → clôture →
+PR → merge), rejoué sur le LOT-01 chaîne T0, renverse le verdict théorique :
+les recharges CLI sont des contrôles de fraîcheur réels, les passes de revue
+ont toutes payé (6 démentis de doctrine, 5 bloquants, 3 énoncés faux du
+journal). Seul gaspillage observé : un T3 complet sur le diff purement
+documentaire de la PR #656. Trois retouches : palier appliqué au diff de la
+session (pilote de lot), bloc « risques » réutilisable émis par la revue,
+préparation de PR qui distille la revue existante au lieu de relancer un
+agent, et rappelle les tests déjà joués.
+
+**Écarté.** Restructurer la chaîne ; dédupliquer les recharges `wn-cycle`
+(chacune lit un état modifié entre-temps).
+
+**Prochaine action.** PR de doc de ces retouches.
+
+**Ouvert.** Rien.
