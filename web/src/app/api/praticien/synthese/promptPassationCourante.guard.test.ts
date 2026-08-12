@@ -28,6 +28,16 @@ describe('consigne système — le repère de passation courante est expliqué',
     expect(numero).toBeGreaterThanOrEqual(20);
   });
 
+  it('le cas « aucune passation exploitable » est dit, et interdit le repli', () => {
+    // Ajouté en v21 après revue. Sans cette phrase, un instrument dont toutes
+    // les passations sont écartées n'a AUCUN `true` — et rien n'empêchait le
+    // modèle de se rabattre sur la plus récente, c'est-à-dire sur une mesure
+    // que le praticien a précisément écartée.
+    expect(CONSIGNE).toMatch(/aucun true/i);
+    expect(CONSIGNE).toMatch(/ne te rabats pas sur la plus récente/i);
+    expect(CONSIGNE).toMatch(/n'a pas de mesure qui fasse foi/i);
+  });
+
   it('le champ est nommé, littéralement, tel qu’il apparaît dans les données', () => {
     // Le nom exact, pas une paraphrase : le modèle doit pouvoir faire le lien
     // avec la clé qu'il lit dans le bloc.

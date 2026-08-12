@@ -1,10 +1,14 @@
 ### Ajouté
 
-- **Le cockpit praticien sait afficher un constat de contradiction**, avec ce
-  qui le rend défendable : l'action proposée, l'ancienneté relative des deux
-  passations, les hypothèses, les limites, et le motif pour lequel il coexiste
-  avec une suggestion d'instrument portant sur le même axe (`D-048`, LOT-01
-  étape 5).
+- **Le cockpit praticien sait rendre un constat de contradiction**, avec ce qui
+  le rend défendable : l'action proposée, **les passations confrontées nommées
+  et datées**, les hypothèses, les limites, les claims fondateurs, et le motif
+  pour lequel il coexiste avec une suggestion d'instrument portant sur le même
+  axe (`D-048`, LOT-01 étape 5).
+- **La capacité est livrée, le câblage ne l'est pas** — et c'est dit plutôt que
+  laissé croire : aucun site d'appel ne passe de constats au panneau. Le critère
+  de sortie correspondant du LOT-01 n'est donc pas tenu ; il est nommé dans
+  `D-048`.
 - **La justification de recoupement cesse d'être une note de revue.** Le texte
   qui explique pourquoi C-STR et la suggestion PSS-10 de `R2-STR-01`
   apparaissent ensemble était écrit dans la table depuis son origine et n'était
@@ -36,13 +40,19 @@
   piégé. La conversion a donc lieu vers un modèle d'**affichage**, qui ne porte
   aucun champ de cette famille ; un banc l'épingle. `DiscordanceFinding` reste
   en place, inchangé.
-- **La phrase d'ancienneté est construite côté clinique, pas côté composant** :
-  un composant ne doit pas avoir à décider comment on dit « 151 jours ». Elle ne
-  porte **aucun qualificatif** — ni « ancien », ni « récent » : ces mots
-  supposeraient un seuil que `D-048` refuse d'inventer (`DC-19`).
-- **Écart `null` ⇒ aucune ligne d'ancienneté**, alors qu'un écart de `0` affiche
-  « les deux passations datent du même jour ». Le premier veut dire « moins de
-  deux passations distinctes » ; afficher « 0 jour » dirait à tort qu'elles sont
-  du même jour (`DC-24`).
+- **Les passations sont nommées et datées, pas résumées par un delta.** Une
+  première version ne rendait qu'un écart en jours sous l'intitulé
+  « Ancienneté » : deux passations à 151 jours d'écart peuvent dater toutes deux
+  de l'an dernier, et l'intitulé invitait à décoter le constat par sa vétusté —
+  la lecture de fiabilité que `D-048` refuse, obtenue sans champ de fiabilité.
+  L'écart subsiste **en complément** des dates, jamais seul, et sans aucun
+  qualificatif : ni « ancien », ni « récent », qui supposeraient un seuil
+  (`DC-19`).
+- **L'écart se compte en jours CIVILS.** Un arrondi sur la durée brute faisait
+  dire « le même jour » à deux passations séparées par minuit, à côté de deux
+  dates différentes affichées juste au-dessus.
+- **Les claims fondateurs suivent jusqu'à l'écran** : une contradiction sans
+  source n'est pas remontable (`DC-01`, `DC-26`), et un constat clinique doit
+  être ouvrable par les données qui l'ont produit (`DC-34`, `DC-35`).
 - **Le paramètre est optionnel** : aucun appelant existant n'a à changer, et le
   reste du panneau ne dépend pas de lui.

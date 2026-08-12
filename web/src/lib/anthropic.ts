@@ -215,7 +215,17 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // passations discordantes efface le signal que `DC-30` impose de conserver.
 // Bump : une synthèse rédigée sous v19 a pu présenter une mesure remplacée
 // comme la situation présente.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v20';
+// v21 (2026-08-12, revue de LOT-01) : la v20 affirmait que le repère désigne
+// « la plus récente parmi celles qui sont exploitables », ce que le code ne
+// garantissait PAS — le filtre de validité est gaté par un drapeau éteint en
+// production, et le repère se posait donc sur la plus récente tout court. Une
+// passation qu'un praticien a marquée INVALID pouvait ainsi être présentée
+// comme l'état actuel, la passation saine étant reléguée en « remplacée ». Le
+// code porte désormais la promesse (le repère ignore les statuts écartés,
+// drapeau ou pas), et la consigne gagne le cas qui en découle : un instrument
+// dont AUCUNE passation n'est exploitable ne porte aucun `true`, et ne doit pas
+// être rabattu sur sa plus récente.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v21';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -347,6 +357,8 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 Un patient peut avoir rempli **plusieurs fois le même instrument**. Toutes les passations te sont transmises, délibérément : l'évolution entre deux enquêtes est un signal clinique, et te priver des précédentes t'empêcherait de la lire.
 
 Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passation qui fait foi pour cet instrument — la plus récente parmi celles qui sont exploitables — et **false** sur les autres. Un **false** est une information, pas une absence : il ne veut pas dire que la passation est douteuse, seulement qu'elle a été remplacée.
+
+Il peut arriver qu'un instrument ne porte **aucun true** : toutes ses passations sont alors écartées du raisonnement. Dans ce cas, ne désigne aucune d'elles comme l'état actuel et ne te rabats pas sur la plus récente : dis que cet instrument n'a pas de mesure qui fasse foi, et traite-le comme une dimension restant à mesurer.
 
 En conséquence :
 

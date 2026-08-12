@@ -127,34 +127,79 @@ describe('contradictionsPourAffichage — le verrou porte aussi sur la conversio
   });
 });
 
-describe('contradictionsPourAffichage — la phrase d’écart', () => {
+describe('contradictionsPourAffichage — la traçabilité survit à la conversion', () => {
   beforeEach(() => {
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
   });
 
-  it('écart `null` ⇒ aucune phrase, JAMAIS « 0 jour »', async () => {
+  it('les passations confrontées sont NOMMÉES et DATÉES', async () => {
+    // Le trou trouvé en revue : la première conversion jetait `sources`, donc le
+    // praticien lisait une affirmation qu'il ne pouvait pas ouvrir
+    // (`DC-34`, `DC-35`).
     const { contradictionsPourAffichage } = await service(SIGNEE);
-    const [affiche] = contradictionsPourAffichage([constat({ ecartJoursEntreSources: null })]);
-    expect(affiche.ecartPassations).toBeNull();
+    const [affiche] = contradictionsPourAffichage([constat({
+      sources: [
+        { type: 'instrument', idQuestionnaire: 'Q_STR_04', reponseId: 'r2', dateReponse: '2026-08-10T09:00:00.000Z' },
+        { type: 'instrument', idQuestionnaire: 'Q_MOD_01', reponseId: 'r1', dateReponse: '2026-03-12T09:00:00.000Z' },
+      ],
+    })]);
+
+    // Triées par date : le praticien lit une chronologie.
+    expect(affiche.passations).toEqual([
+      { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12' },
+      { idQuestionnaire: 'Q_STR_04', date: '2026-08-10' },
+    ]);
   });
 
-  it('écart 0 ⇒ « le même jour » est dit, parce que c’est ce qui écarte l’hypothèse temporelle', async () => {
+  it('les claims fondateurs survivent : sans eux rien n’est remontable', async () => {
     const { contradictionsPourAffichage } = await service(SIGNEE);
-    const [affiche] = contradictionsPourAffichage([constat({ ecartJoursEntreSources: 0 })]);
-    expect(affiche.ecartPassations).toBe('Les deux passations datent du même jour.');
+    const [affiche] = contradictionsPourAffichage([constat()]);
+    expect(affiche.claims).toEqual([{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }]);
   });
 
-  it('écart 1 ⇒ singulier', async () => {
+  it('deux sous-scores du MÊME questionnaire ne font qu’une passation à l’écran', async () => {
+    // C-STR interroge `Q_STR_04` deux fois. Afficher deux fois la même
+    // passation ferait croire à deux mesures.
     const { contradictionsPourAffichage } = await service(SIGNEE);
-    const [affiche] = contradictionsPourAffichage([constat({ ecartJoursEntreSources: 1 })]);
-    expect(affiche.ecartPassations).toBe('Les deux passations sont séparées de 1 jour.');
+    const [affiche] = contradictionsPourAffichage([constat({
+      sources: [
+        { type: 'instrument', idQuestionnaire: 'Q_STR_04', sousScore: 'D', reponseId: 'r1', dateReponse: '2026-08-10T09:00:00.000Z' },
+        { type: 'instrument', idQuestionnaire: 'Q_STR_04', sousScore: 'S', reponseId: 'r1', dateReponse: '2026-08-10T09:00:00.000Z' },
+      ],
+    })]);
+    expect(affiche.passations).toHaveLength(1);
   });
 
-  it('écart de plusieurs mois ⇒ le nombre exact, sans qualificatif', async () => {
-    // Aucun « ancien », aucun « récent » : ces mots supposeraient un seuil que
-    // [[D-048]] refuse d'inventer (`DC-19`). Le praticien lit le nombre.
+  it('TROIS passations : toutes nommées, aucune formule au duel', async () => {
+    // Le défaut relevé en revue : la phrase disait « les deux passations » quel
+    // que soit leur nombre, et l'écart max−min était présenté comme les
+    // séparant toutes les deux.
     const { contradictionsPourAffichage } = await service(SIGNEE);
-    const [affiche] = contradictionsPourAffichage([constat({ ecartJoursEntreSources: 151 })]);
-    expect(affiche.ecartPassations).toBe('Les deux passations sont séparées de 151 jours.');
+    const [affiche] = contradictionsPourAffichage([constat({
+      sources: [
+        { type: 'instrument', idQuestionnaire: 'Q_MOD_01', reponseId: 'r1', dateReponse: '2026-03-12T09:00:00.000Z' },
+        { type: 'instrument', idQuestionnaire: 'Q_STR_04', reponseId: 'r2', dateReponse: '2026-07-30T09:00:00.000Z' },
+        { type: 'instrument', idQuestionnaire: 'Q_SOM_07', reponseId: 'r3', dateReponse: '2026-08-10T09:00:00.000Z' },
+      ],
+    })]);
+    expect(affiche.passations).toHaveLength(3);
+    expect(affiche.passations.map(p => p.date)).toEqual(['2026-03-12', '2026-07-30', '2026-08-10']);
+  });
+
+  it('une date illisible n’invente pas de passation', async () => {
+    const { contradictionsPourAffichage } = await service(SIGNEE);
+    const [affiche] = contradictionsPourAffichage([constat({
+      sources: [
+        { type: 'instrument', idQuestionnaire: 'Q_MOD_01', reponseId: 'r1', dateReponse: 'pas une date' },
+        { type: 'instrument', idQuestionnaire: 'Q_STR_04', reponseId: 'r2', dateReponse: '2026-08-10T09:00:00.000Z' },
+      ],
+    })]);
+    expect(affiche.passations).toEqual([{ idQuestionnaire: 'Q_STR_04', date: '2026-08-10' }]);
+  });
+
+  it('l’écart accompagne les dates, et reste `null` quand il ne s’applique pas', async () => {
+    const { contradictionsPourAffichage } = await service(SIGNEE);
+    expect(contradictionsPourAffichage([constat({ ecartJoursEntreSources: 151 })])[0].ecartJours).toBe(151);
+    expect(contradictionsPourAffichage([constat({ ecartJoursEntreSources: null })])[0].ecartJours).toBeNull();
   });
 });

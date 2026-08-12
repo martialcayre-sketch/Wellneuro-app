@@ -58,29 +58,33 @@ export type ContradictionAffichee = {
   hypotheses: string[];
   limitations: string[];
   /**
-   * Phrase toute faite décrivant l'ancienneté relative des passations, ou
-   * `null` quand l'écart n'est pas applicable. Construite ici plutôt qu'à
-   * l'écran : c'est une donnée clinique, et un composant ne doit pas avoir à
-   * décider comment on dit « 151 jours ».
+   * LES PASSATIONS CONFRONTÉES, datées — corrigé après revue.
+   *
+   * La première version de ce type jetait `sources` et `justificationClaims`
+   * pour ne garder qu'un écart en jours. Un constat clinique doit être
+   * explicable par les données qui l'ont produit (`DC-34`, `DC-35`) : sans les
+   * passations nommées, le praticien lisait une affirmation qu'il ne pouvait
+   * pas ouvrir. Pire, l'écart nu sous un intitulé d'ancienneté invitait à
+   * décoter le constat par sa vétusté — la lecture de fiabilité que [[D-048]]
+   * refuse, obtenue sans champ de fiabilité.
    */
-  ecartPassations: string | null;
+  passations: { idQuestionnaire: string; date: string }[];
+  /**
+   * Écart en jours entre la plus ancienne et la plus récente, ou `null` s'il
+   * n'est pas applicable. Rendu EN COMPLÉMENT des dates, jamais seul : ancré
+   * par elles, c'est un fait ; nu, il se lit comme une décote de fiabilité.
+   */
+  ecartJours: number | null;
+  /** Les claims qui fondent la règle : sans eux, rien n'est traçable (`DC-01`, `DC-26`). */
+  claims: { claimId: string; versionClaim: string }[];
   /** Reprise telle quelle ; absente quand la règle n'en porte pas. */
   recoupementJustifie?: string;
 };
 
-/**
- * Rend la phrase d'écart, ou `null`.
- *
- * `null` en entrée signifie « moins de deux passations distinctes, écart NON
- * APPLICABLE » ; il ne devient pas « 0 jour » (`DC-24`). Et `0` en entrée est
- * un fait — deux passations du même jour — qui se dit, parce que « le même
- * jour » est précisément l'information qui écarte l'hypothèse temporelle.
- */
-function phraseEcart(ecartJours: number | null): string | null {
-  if (ecartJours === null) return null;
-  if (ecartJours === 0) return 'Les deux passations datent du même jour.';
-  if (ecartJours === 1) return 'Les deux passations sont séparées de 1 jour.';
-  return `Les deux passations sont séparées de ${ecartJours} jours.`;
+/** Jour civil ISO d'un horodatage, ou `null` s'il est illisible. */
+function jourCivil(iso: string): string | null {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
 /**
@@ -92,13 +96,30 @@ function phraseEcart(ecartJours: number | null): string | null {
  */
 export function contradictionsPourAffichage(constats: ContradictionFinding[]): ContradictionAffichee[] {
   if (!contradictionsActives()) return [];
-  return constats.map(constat => ({
-    id: constat.id,
-    description: constat.description,
-    actionSuggeree: constat.actionSuggeree,
-    hypotheses: constat.hypotheses,
-    limitations: constat.limitations,
-    ecartPassations: phraseEcart(constat.ecartJoursEntreSources),
-    ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
-  }));
+  return constats.map(constat => {
+    // Une passation par `reponseId`, pas une par source : une règle peut viser
+    // deux sous-scores du même questionnaire, et l'écran n'a pas à afficher
+    // deux fois la même passation.
+    const vues = new Map<string, { idQuestionnaire: string; date: string }>();
+    for (const source of constat.sources) {
+      if (source.type !== 'instrument') continue;
+      const date = jourCivil(source.dateReponse);
+      if (date === null) continue;
+      vues.set(source.reponseId, { idQuestionnaire: source.idQuestionnaire, date });
+    }
+
+    return {
+      id: constat.id,
+      description: constat.description,
+      actionSuggeree: constat.actionSuggeree,
+      hypotheses: constat.hypotheses,
+      limitations: constat.limitations,
+      // Triées par date : le praticien lit une chronologie, pas l'ordre des
+      // déclencheurs de la règle.
+      passations: [...vues.values()].sort((a, b) => a.date.localeCompare(b.date)),
+      ecartJours: constat.ecartJoursEntreSources,
+      claims: constat.justificationClaims,
+      ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
+    };
+  });
 }

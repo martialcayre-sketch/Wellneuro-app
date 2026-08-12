@@ -29,7 +29,12 @@ const constat: ContradictionAffichee = {
   actionSuggeree: 'Clarifier en entretien avant toute conclusion.',
   hypotheses: ['Une charge de stress que les échelles ne captent pas.'],
   limitations: ['Un questionnaire isolé ne suffit pas à conclure.'],
-  ecartPassations: 'Les deux passations sont séparées de 151 jours.',
+  passations: [
+    { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12' },
+    { idQuestionnaire: 'Q_STR_04', date: '2026-08-10' },
+  ],
+  ecartJours: 151,
+  claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }],
   recoupementJustifie: 'Recoupe R2-STR-01 : celle-ci propose une mesure, C-STR nomme une contradiction.',
 };
 
@@ -52,7 +57,12 @@ describe('MissingDataPanel — constats déterministes de contradiction', () => 
 
     deplierLeDetail();
     expect(screen.getByText(/Clarifier en entretien/)).toBeTruthy();
-    expect(screen.getByText(/séparées de 151 jours/)).toBeTruthy();
+    // LES PASSATIONS SONT NOMMÉES ET DATÉES : sans elles, le praticien lit une
+    // affirmation qu'il ne peut pas ouvrir (`DC-34`, `DC-35`).
+    expect(screen.getByText(/Q_MOD_01 — 2026-03-12/)).toBeTruthy();
+    expect(screen.getByText(/Q_STR_04 — 2026-08-10/)).toBeTruthy();
+    // L'écart ACCOMPAGNE les dates, il ne les remplace pas.
+    expect(screen.getByText(/151 jours d'écart/)).toBeTruthy();
     // Ce que le constat NE dit pas suit le constat jusqu'à l'écran.
     expect(screen.getByText(/Un questionnaire isolé ne suffit pas/)).toBeTruthy();
   });
@@ -74,18 +84,26 @@ describe('MissingDataPanel — constats déterministes de contradiction', () => 
     expect(screen.getByText(/Contradiction entre instruments/)).toBeTruthy();
   });
 
-  it('sans écart applicable, aucune ancienneté n’est affichée', () => {
+  it('sans écart applicable, les passations restent nommées et aucun « 0 jour » n’apparaît', () => {
     // `null` veut dire « moins de deux passations distinctes » ; afficher
-    // « 0 jour » dirait à tort qu'elles sont du même jour (`DC-24`).
+    // « 0 jour » dirait à tort qu'elles sont du même jour (`DC-24`). Les dates,
+    // elles, restent — c'est la traçabilité, pas l'écart, qui est due.
     render(
       <MissingDataPanel
         missingData={[]}
         discordances={[]}
-        contradictions={[{ ...constat, ecartPassations: null }]}
+        contradictions={[{ ...constat, ecartJours: null }]}
       />,
     );
     deplierLeDetail();
-    expect(screen.queryByText(/Ancienneté/)).toBeNull();
+    expect(screen.queryByText(/jour/)).toBeNull();
+    expect(screen.getByText(/Q_MOD_01 — 2026-03-12/)).toBeTruthy();
+  });
+
+  it('les claims fondateurs sont rendus : le constat est remontable', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/WN-CL-0238-002 v1\.0/)).toBeTruthy();
   });
 
   it('le constat reste marqué praticien seul', () => {

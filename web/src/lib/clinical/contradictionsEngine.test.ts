@@ -290,6 +290,25 @@ describe('moteur de contradictions — l’écart entre passations est porté, j
     expect(constats[0].ecartJoursEntreSources).toBe(151);
   });
 
+  it('deux passations séparées par minuit : 1 jour, pas 0', () => {
+    // Le défaut relevé en revue : un arrondi sur la durée brute rendait 0 pour
+    // 23 h 00 puis 08 h 00 le lendemain — « le même jour », à côté de deux
+    // dates civiles différentes affichées juste au-dessus.
+    const constats = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2026-08-10T23:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-11T08:00:00.000Z'),
+    ]);
+    expect(constats[0].ecartJoursEntreSources).toBe(1);
+  });
+
+  it('un jour civil et demi ne devient pas deux jours', () => {
+    const constats = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2026-08-10T09:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-11T22:00:00.000Z'),
+    ]);
+    expect(constats[0].ecartJoursEntreSources).toBe(1);
+  });
+
   it('deux passations du même jour : l’écart vaut 0, et 0 est un fait', () => {
     // Ici `0` est vrai : deux passations distinctes, à trente minutes. À ne pas
     // confondre avec le `null` du cas suivant.

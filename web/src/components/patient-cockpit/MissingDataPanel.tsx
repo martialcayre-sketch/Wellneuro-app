@@ -75,8 +75,25 @@ export function MissingDataPanel({
             detail={(
               <div className="space-y-2">
                 <p><span className="font-medium">Ce qui est proposé :</span> {constat.actionSuggeree}</p>
-                {constat.ecartPassations && (
-                  <p><span className="font-medium">Ancienneté :</span> {constat.ecartPassations}</p>
+                {/* LES PASSATIONS, DATÉES — corrigé après revue. Un delta nu
+                    sous un intitulé d'« ancienneté » n'ancre rien : deux
+                    passations à 151 jours d'écart peuvent dater toutes deux de
+                    l'an dernier, et l'intitulé invitait à décoter le constat
+                    par sa vétusté. Nommer les passations rend le constat
+                    ouvrable (`DC-34`, `DC-35`) et laisse le praticien juger de
+                    l'écart lui-même. */}
+                {constat.passations.length > 0 && (
+                  <div>
+                    <p className="font-medium">
+                      Passations confrontées
+                      {constat.ecartJours !== null && ` — ${constat.ecartJours} jour${constat.ecartJours > 1 ? 's' : ''} d'écart`}
+                    </p>
+                    <ul className="list-disc pl-5">
+                      {constat.passations.map(p => (
+                        <li key={`${p.idQuestionnaire}-${p.date}`}>{p.idQuestionnaire} — {p.date}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 {constat.hypotheses.length > 0 && (
                   <div>
@@ -102,6 +119,13 @@ export function MissingDataPanel({
                     sans savoir qu'elles ne disent pas la même chose. */}
                 {constat.recoupementJustifie && (
                   <p className="text-muted-foreground">{constat.recoupementJustifie}</p>
+                )}
+                {/* Les claims à l'appui : une contradiction sans source n'est
+                    pas remontable (`DC-01`, `DC-26`). */}
+                {constat.claims.length > 0 && (
+                  <p className="text-muted-foreground">
+                    Sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
+                  </p>
                 )}
                 <p className="text-muted-foreground">Visible uniquement par le praticien.</p>
               </div>

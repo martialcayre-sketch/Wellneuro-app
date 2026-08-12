@@ -119,10 +119,13 @@ export const CONTRADICTIONS_RULES_V1: ContradictionRule[] = [
     // dossier de règles candidates. Le défaut était l'absence de justification,
     // pas la valeur — elle est confirmée, et voici pourquoi.
     //
-    // PAS `critical_for_decision` : `DC-23` réserve la priorité haute aux red
-    // flags, qui ne se compensent avec aucun score et restent prioritaires.
-    // C-STR est un CONSTAT, pas un signal de sécurité ([[D-046]]) ; l'y hisser
-    // rendrait la priorité haute illisible le jour où un vrai red flag arrive.
+    // PAS `critical_for_decision` : le libellé servi au praticien est
+    // « Critique pour décider », et C-STR ne bloque aucune décision — elle
+    // demande une clarification en entretien. `DC-23` ne RÉSERVE aucun niveau
+    // (rédaction corrigée après revue) ; elle pose que les red flags restent
+    // prioritaires sans se compenser avec aucun score. Hisser au niveau le plus
+    // haut un constat qui n'est pas un signal de sécurité ([[D-046]])
+    // brouillerait cette hiérarchie le jour où un vrai red flag arrive.
     //
     // PAS `optional` : la règle prescrit elle-même une clarification en
     // entretien (voir `description` et `actionSuggeree`). « Optionnelle » la

@@ -65,10 +65,13 @@
   de règles candidates. Le défaut était l'absence de motif, pas la valeur : la
   règle prescrit elle-même « à clarifier en entretien », ce qui est actionnable
   sans être urgent.
-  - Écarté : **`critical_for_decision`** — `DC-23` réserve la priorité haute
-    aux red flags et pose qu'ils restent prioritaires sans se compenser ; C-STR
-    est un **constat**, pas un signal de sécurité ([[D-046]]). L'y hisser
-    aurait rendu la priorité haute illisible.
+  - Écarté : **`critical_for_decision`** — le libellé servi au praticien est
+    « Critique pour décider » (`MissingDataPanel.tsx`), et C-STR ne bloque
+    aucune décision : elle demande une clarification en entretien. `DC-23` ne
+    *réserve* aucun niveau — rédaction corrigée après revue, elle disait le
+    contraire — mais elle pose que les red flags restent prioritaires sans se
+    compenser avec aucun score ; hisser au niveau le plus haut un constat qui
+    n'est pas un signal de sécurité ([[D-046]]) brouillerait cette hiérarchie.
   - Écarté : **`optional`** — contredirait la clarification en entretien que la
     règle prescrit.
   - Conséquence : la valeur ne change pas, donc `CONTRADICTIONS_RULES_SHA256`
@@ -108,7 +111,11 @@
   Le champ `recoupementJustifie` existe déjà dans la règle, gardé par un banc,
   et **n'est lu par personne**. Il devient ce que le praticien lit quand les
   deux sorties coexistent — ce que son propre commentaire exige déjà : « deux
-  sorties simultanées à l'écran doivent être défendables » (`DC-37`).
+  sorties simultanées à l'écran doivent être défendables ». Cette phrase est
+  celle du commentaire de `contradictionsV1.ts`, **pas** de la constitution :
+  `DC-37` (« un questionnaire redondant ne s'assigne pas ») y est au statut
+  **proposition**, et cette décision ne la rend pas opposable — elle en applique
+  l'esprit à une sortie d'écran, ce que `DC-37` ne couvre pas littéralement.
   - Rappel de ce qui était déjà tranché par [[D-042]] : la coexistence est
     **voulue**. `R2-STR-01` (règle d'orientation de premier tour,
     `ADAPTATION_STRESS <= 17`) propose une **mesure**, le PSS-10 ; C-STR nomme
@@ -121,11 +128,18 @@
     déjà dans la règle ; l'afficher ne demande aucun arbitrage de
     hiérarchisation et n'empiète donc pas sur `DC-33`.
 - Ce que ces trois décisions **n'allument pas** : la table reste **non signée**
-  (`validationExterne: false`). L'injection cockpit part derrière un double
+  (`validationExterne: false`). La CAPACITÉ d'affichage part derrière un double
   verrou — drapeau d'environnement **et** signature clinique —, au patron de
   `orientationActive()`. Rien de ce lot n'atteint un praticien.
-- Réversibilité : un commentaire, deux champs sur un type que rien ne consomme
-  encore, et l'affichage d'une chaîne déjà écrite. Aucun schéma de base.
+- **Ce lot ne CÂBLE pas l'injection**, et la formulation initiale de cette
+  entrée le laissait croire : aucun site d'appel ne passe de constats au
+  panneau. Ce qui est livré est la capacité — moteur, verrou, conversion,
+  composant — et sa protection effective aujourd'hui reste l'absence d'appelant
+  autant que le verrou. Le câblage relève d'un lot suivant, et le critère de
+  sortie correspondant du LOT-01 n'est donc **pas tenu** ; il est nommé ici
+  plutôt que passé sous silence, au patron de [[D-044]] point 2.
+- Réversibilité : un commentaire, deux champs, une conversion et un bloc
+  d'affichage sans appelant. Aucun schéma de base.
 - Référence : `web/src/lib/clinical/contradictionsV1.ts`,
   `web/src/lib/clinical/contradictionFinding.ts`,
   `web/src/lib/clinical/contradictionsEngine.ts`,

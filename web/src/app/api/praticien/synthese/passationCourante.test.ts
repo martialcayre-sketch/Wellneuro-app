@@ -92,8 +92,8 @@ function passationsTransmises(): Array<{ idQuestionnaire: string; date: string; 
   return JSON.parse(json);
 }
 
-beforeEach(() => {
-  vi.clearAllMocks();
+/** Les doublures par défaut, réutilisables au milieu d'un cas qui les réinitialise. */
+function poserMocksParDefaut(): void {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   delete process.env.WN_SYNTHESE_STREAM;
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
@@ -109,6 +109,11 @@ beforeEach(() => {
     dateGeneration: new Date('2026-08-11T00:00:00Z'),
   });
   prisma.auditSynthese.create.mockResolvedValue({});
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  poserMocksParDefaut();
 });
 
 describe('deux passations VALID du même instrument', () => {
@@ -192,6 +197,67 @@ describe('plusieurs instruments', () => {
     expect(transmises[0].passationCourante).toBe(true);
     // Témoin positif : sans lui, un marqueur toujours `false` passerait les
     // assertions « une seule courante » des cas à deux passations.
+  });
+});
+
+// LE TROU QUE LA REVUE A TROUVÉ, ET QUE CE BLOC FERME.
+//
+// Toutes les fixtures ci-dessus sont `VALID`. Le repère se posait donc toujours
+// sur une passation saine, et rien ne disait ce qu'il faisait d'une passation
+// écartée. Or `filtrerPassationsExploitables` ne retire RIEN tant que
+// `WN_ENABLE_VALIDITE_PASSATIONS` est éteint — l'état de production : une
+// passation marquée INVALID par le praticien, plus récente qu'une saine,
+// partait au modèle avec `passationCourante: true` pendant que la saine portait
+// `false`. La consigne lui fait alors rapporter l'état actuel d'après la mesure
+// invalidée. Le repère ne RETIRE rien, il PROMEUT — et c'est promouvoir qui est
+// faux, drapeau ou pas.
+describe('passation écartée du raisonnement, drapeau de validité ÉTEINT', () => {
+  it('une INVALID plus récente ne prend pas le repère : la VALID antérieure le porte', async () => {
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R2', 'Q_STR_04', '2026-08-10'), statutValidite: 'INVALID' },
+      passation('R1', 'Q_STR_04', '2026-07-01'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    // Les DEUX partent toujours : le LOT-00 s'est engagé à ne rien retirer tant
+    // que le drapeau est éteint.
+    expect(transmises).toHaveLength(2);
+    const courantes = transmises.filter(p => p.passationCourante);
+    expect(courantes).toHaveLength(1);
+    expect(courantes[0].date).toBe('2026-07-01');
+  });
+
+  it('SUPERSEDED et HISTORICAL_ONLY sont écartés du repère de la même façon', async () => {
+    for (const statut of ['SUPERSEDED', 'HISTORICAL_ONLY']) {
+      vi.clearAllMocks();
+      poserMocksParDefaut();
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { ...passation('R2', 'Q_STR_04', '2026-08-10'), statutValidite: statut },
+        passation('R1', 'Q_STR_04', '2026-07-01'),
+      ]);
+      await POST(req());
+      const courantes = passationsTransmises().filter(p => p.passationCourante);
+      expect(courantes).toHaveLength(1);
+      expect(courantes[0].date).toBe('2026-07-01');
+    }
+  });
+
+  it('toutes écartées ⇒ AUCUN repère, et surtout pas un repli sur la plus récente', async () => {
+    // C'est le cas que la consigne v21 décrit : l'instrument n'a pas de mesure
+    // qui fasse foi. Se rabattre sur la plus récente désignerait précisément
+    // celle que le praticien a écartée.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R2', 'Q_STR_04', '2026-08-10'), statutValidite: 'INVALID' },
+      { ...passation('R1', 'Q_STR_04', '2026-07-01'), statutValidite: 'INVALID' },
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    expect(transmises).toHaveLength(2);
+    expect(transmises.filter(p => p.passationCourante)).toHaveLength(0);
   });
 });
 

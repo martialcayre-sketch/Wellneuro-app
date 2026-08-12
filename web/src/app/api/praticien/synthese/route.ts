@@ -21,7 +21,7 @@ import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
-import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
+import { filtrerPassationsExploitables, statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
@@ -736,19 +736,31 @@ export async function POST(req: Request) {
     // contredire dans le même dossier. Elle porte aussi le départage à
     // horodatage égal, sans lequel le repère ne serait pas reproductible.
     //
-    // Calculée APRÈS les deux filtres : quand le drapeau de validité est allumé,
-    // les passations exclues ont déjà quitté la liste, donc « la plus récente »
-    // est bien la plus récente VALID. Différence assumée avec
-    // `orientationService`, qui éteint l'instrument quand sa dernière passation
-    // est invalidée : ici on se replie sur la précédente encore exploitable,
-    // parce que le prompt doit nommer un repère parmi ce qu'il transmet.
+    // LE REPÈRE NE DÉSIGNE JAMAIS UNE PASSATION NON EXPLOITABLE, DRAPEAU OU PAS.
+    // Corrigé après revue : `filtrerPassationsExploitables` ci-dessus ne retire
+    // rien tant que `WN_ENABLE_VALIDITE_PASSATIONS` est éteint — l'état de
+    // production. Sans le second filtre ci-dessous, une passation qu'un
+    // praticien a marquée INVALID, plus récente qu'une passation saine, partait
+    // au modèle avec `passationCourante: true` pendant que la saine portait
+    // `false` : la consigne lui fait alors rapporter l'état actuel d'après la
+    // mesure invalidée. Le marqueur ne RETIRE rien (les lignes partent toutes,
+    // engagement du LOT-00) ; il se contente de ne pas PROMOUVOIR ce qui est
+    // écarté. `statutExcluDuRaisonnement` est le prédicat sans drapeau.
+    //
+    // Repli assumé, et différence avec `orientationService` qui éteint
+    // l'instrument : ici on désigne la précédente encore exploitable, parce que
+    // le prompt doit nommer un repère parmi ce qu'il transmet. Si AUCUNE
+    // passation d'un instrument n'est exploitable, aucune ne porte le repère —
+    // et la consigne dit ce que cela signifie.
     const courantes = derniereReponseParQuestionnaire(
-      reponsesAdministrables.map(r => ({
-        idQuestionnaire: r.idQuestionnaire,
-        dateReponse: r.dateReponse.toISOString(),
-        idReponse: r.idReponse,
-        scores: (r.scoresJson ?? {}) as ReponseOrientation['scores'],
-      })),
+      reponsesAdministrables
+        .filter(r => !statutExcluDuRaisonnement(r.statutValidite))
+        .map(r => ({
+          idQuestionnaire: r.idQuestionnaire,
+          dateReponse: r.dateReponse.toISOString(),
+          idReponse: r.idReponse,
+          scores: (r.scoresJson ?? {}) as ReponseOrientation['scores'],
+        })),
     );
 
     const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => ({

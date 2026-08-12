@@ -12,9 +12,11 @@
   `D-042`, `D-046` et du dossier de règles candidates. Le défaut était
   l'absence de justification, pas la valeur — `useful_not_urgent` est
   confirmée, et le fichier dit maintenant pourquoi les deux autres valeurs sont
-  écartées : `critical_for_decision` parce que `DC-23` réserve la priorité
-  haute aux red flags et qu'un constat n'en est pas un, `optional` parce que la
-  règle prescrit elle-même une clarification en entretien.
+  écartées : `critical_for_decision` parce que le libellé praticien est
+  « Critique pour décider » et qu'un constat ne bloque aucune décision — et
+  parce que hisser au plus haut un signal non sécuritaire brouillerait la
+  hiérarchie que `DC-23` protège ; `optional` parce que la règle prescrit
+  elle-même une clarification en entretien.
 
 ### Inchangé — et c'est le point
 

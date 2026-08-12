@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v20`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v21`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -114,7 +114,14 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // plutôt qu'un repère de récence. La section dit aussi ce que le champ
 // n'autorise pas : qualifier un écart de progrès ou d'effet d'une prise en
 // charge (`DC-27`), et moyenner deux passations discordantes (`DC-30`).
-const EMPREINTE_V20 = 'c67522b7b1207c39';
+//
+// v21, le 2026-08-12 (revue de LOT-01) : la v20 promettait au modèle un repère
+// posé sur « la plus récente parmi celles qui sont exploitables » — promesse
+// que le code ne tenait pas, le filtre de validité étant gaté par un drapeau
+// éteint en production. Le code la tient désormais, et la consigne gagne le cas
+// qui en découle : un instrument dont aucune passation n'est exploitable ne
+// porte aucun `true`, et ne doit pas être rabattu sur sa plus récente.
+const EMPREINTE_V21 = 'ed549768c28074a0';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -236,7 +243,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v20', empreinte: EMPREINTE_V20 });
+    ).toEqual({ version: 'synthese-v21', empreinte: EMPREINTE_V21 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

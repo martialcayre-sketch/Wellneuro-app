@@ -118,12 +118,16 @@ function ecartJoursEntreSources(sources: SourceContradiction[]): number | null {
     // Une date illisible ne vaut pas zéro : la passation sort du calcul, et si
     // moins de deux subsistent l'écart devient `null`.
     if (Number.isNaN(date)) continue;
-    parPassation.set(source.reponseId, date);
+    // Ramené à minuit UTC : c'est le JOUR CIVIL qui compte, pas l'heure.
+    parPassation.set(source.reponseId, Math.floor(date / JOUR_MS) * JOUR_MS);
   }
   if (parPassation.size < 2) return null;
   const dates = [...parPassation.values()];
-  // Arrondi au jour : convention de RESTITUTION, pas un seuil clinique — rien
-  // ne se décide sur ce nombre (`DC-20`).
+  // EN JOURS CIVILS, pas en tranches de 24 h — corrigé après revue. Un arrondi
+  // sur la durée brute faisait dire « le même jour » à deux passations séparées
+  // par minuit (23 h 00 puis 08 h 00 le lendemain : 9 h, arrondi à 0), et
+  // « 2 jours » à un écart d'un jour civil. Or l'écran nomme les DATES : un
+  // écart qui les contredit se voit.
   return Math.round((Math.max(...dates) - Math.min(...dates)) / JOUR_MS);
 }
 
