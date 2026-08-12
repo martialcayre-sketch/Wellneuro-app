@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Candidats d'intervention déterministes — chaîne C1 rebranchée"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-02"
 ---
 

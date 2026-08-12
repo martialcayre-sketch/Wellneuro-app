@@ -6,7 +6,7 @@
   },
   "status": "active",
   "active_campaign": "2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie",
-  "active_lot": "LOT-03",
+  "active_lot": "LOT-04",
   "last_completed_lot": "2026-08-10-chaine-t0-operationnelle.../LOT-03 — TERMINÉ le 2026-08-12 (PR #667), ÉTAPES 1-3 seulement. Table stopRulesV1 LIVRÉE NON SIGNÉE (patron contradictions) : verrou unique tableArretSignee() commandant extinction ET exclusion dejaRepondu, donc PRODUCTION INCHANGÉE au merge. STOP-STR seule règle publiée, éteignant TROIS règles (R2-STR-01/02/03, issues d'un dépistage) — PAS R-STR-01/R-STR-02, déclenchées par un PSS-10 défavorable que la règle ne lit pas (discordance supprimée, DC-30). Prompt synthese-v25. AUCUNE MIGRATION. BLOQUANT CONNU ET ÉCRIT : STOP-STR NE PEUT PAS MORDRE — son déclencheur porteur Q_STR_01 passe par group_majority, qui ne publie NI missing NI repondus NI items, et totalSousScore rend un total dès UN item par groupe (3 réponses sur 21 donnaient la bande la plus favorable) ; la garde de complétude du moteur d'arrêt refuse donc d'éteindre. Faire publier ces comptes = modification du moteur de scoring, décision et fragment PROPRES. SIGNER LA TABLE NE SUFFIRA PAS. Lot précédent : LOT-02 — TERMINÉ le 2026-08-12 (PR #665). Les quatre étapes livrées : module de préconditions pur, branchement API sur les trois points de persistance, checklist UI avec motif de contournement obligatoire, trace du contournement dans le payload d'épisode (D-052). Revue wn-reviewer NO-GO puis quatre bloquants refermés — `scores !== null` acceptait quatre passations vides comme rideau complet, trace de contournement forgeable par le navigateur, porte désactivable en déclarant J21, synthèse lue sans filtre de statut. RÉSIDUS NOMMÉS, SANS LOT D'ACCUEIL : le T0 reste IRRÉVOCABLE (correction/ré-ouverture hors périmètre) ; le PARCOURS NOMINAL n'a pas d'E2E (le nominal est couvert par les bancs de route, `e2e/mode-consultation.spec.ts` asserte le REFUS) ; 8 dossiers de production sur 19 satisfont les conditions dures. LOT-01 avant lui — TERMINÉ le 2026-08-12 (PR #664). Étapes 1-4 et 6 livrées : table C-STR et moteur de contradictions, contrat de fraîcheur des claims, prompt synthese-v24 + garde d'empreinte, schéma de sortie strict, marquage de la passation courante par instrument (D-050, D-051). RENVOYÉ par décision utilisateur du 2026-08-12 : la moitié « injection des VIGILANCES de synthèse » de l'étape 5 — le câblage cockpit des contradictions, lui, est fait (D-050). Les vigilances n'ont PAS de lot d'accueil. ÉCART NON REFERMÉ (D-050) : le moteur de contradictions évalue le DOSSIER ENTIER alors que `review` porte sur l'épisode T0 — un constat peut reposer sur une passation laissée hors de l'épisode.",
   "validation": {
     "overall_status": "passed",
@@ -55,11 +55,10 @@
     "D-052",
     "D-051",
     "D-050",
-    "D-049",
-    "D-048"
+    "D-049"
   ],
   "last_session": null,
-  "updated_at": "2026-08-12T19:45:00Z",
+  "updated_at": "2026-08-12T19:05:29Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",
