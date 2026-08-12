@@ -37,8 +37,11 @@
 - **Le couple version/empreinte est reporté ensemble**, comme le verrou
   l'exige. Un bump de l'un sans l'autre fait rougir le garde. La consigne a été
   reprise quatre fois dans ce lot — trois revues et l'arbitrage `D-051` — et la
-  version livrée est celle de la dernière reprise : `synthese-v24`, empreinte
-  `799b15ff47955b39`.
+  version issue de ce lot-ci est celle de la dernière reprise : `synthese-v24`,
+  empreinte `799b15ff47955b39`.
+
+- Le LOT-03 du même jour a depuis porté la consigne à `synthese-v25` pour
+  l'extinction d'orientation (`D-053`), sans toucher à la section décrite ici.
 - Un banc dédié garde le contenu de la section — nom exact des champs, motif de
   la transmission des antérieures, et chacun des interdits.
 

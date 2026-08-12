@@ -134,7 +134,14 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // v24, le 2026-08-12 (troisième revue) : la v23 avait décrit le nouveau cas
 // sans reprendre la puce qui AUTORISE l'écart, laquelle n'excluait que les
 // passations écartées — la faute de la v21, sur une autre phrase.
-const EMPREINTE_V24 = '799b15ff47955b39';
+//
+// v25, le 2026-08-12 ([[D-053]], LOT-03) : l'EXTINCTION. Une recommandation
+// peut arriver marquée « ÉTEINTE » — les instruments spécifiques sont
+// rassurants. Sans consigne, une ligne encore présente dans le bloc se lirait
+// comme recommandée : la mention aurait produit l'inverse de son effet. La
+// consigne pose en outre deux fermetures — une extinction ne clôt pas un axe
+// (une passation nouvelle la lève) et n'est pas une conclusion clinique.
+const EMPREINTE_V25 = '220dac6b288fd79b';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -256,7 +263,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v24', empreinte: EMPREINTE_V24 });
+    ).toEqual({ version: 'synthese-v25', empreinte: EMPREINTE_V25 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

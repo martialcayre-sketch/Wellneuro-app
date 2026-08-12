@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
+const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles } = vi.hoisted(() => ({
   prisma: {
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
@@ -14,6 +14,13 @@ const { prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     claimsSource: [] as unknown[],
   },
   mockRegles: [] as unknown[],
+  mockArretMeta: {
+    version: 'stop-rules-nnpp2-v1',
+    validationExterne: false,
+    dateValidation: null as string | null,
+    claimsSource: [] as unknown[],
+  },
+  mockArretRegles: [] as unknown[],
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -22,8 +29,14 @@ vi.mock('@/lib/clinical/orientationRulesV1', () => ({
   ORIENTATION_RULES_V1: mockRegles,
   ORIENTATION_RULES_SHA256: 'sha-test',
 }));
+vi.mock('@/lib/clinical/stopRulesV1', () => ({
+  STOP_RULES_METADATA: mockArretMeta,
+  STOP_RULES_V1: mockArretRegles,
+  STOP_RULES_SHA256: 'sha-arret-test',
+  LIBELLE_EXTINCTION: 'Information suffisante — pas d’exploration supplémentaire actuellement.',
+}));
 
-import { evaluerOrientationPourPatient, orientationActive } from './orientationService';
+import { evaluerOrientationPourPatient, orientationActive, tableArretSignee } from './orientationService';
 
 function signerLaTable() {
   mockMeta.validationExterne = true;
@@ -44,6 +57,10 @@ beforeEach(() => {
   mockMeta.dateValidation = null;
   mockMeta.claimsSource = [];
   mockRegles.length = 0;
+  mockArretMeta.validationExterne = false;
+  mockArretMeta.dateValidation = null;
+  mockArretMeta.claimsSource = [];
+  mockArretRegles.length = 0;
   vi.stubEnv('WN_ENABLE_ORIENTATION_NNPP2', '1');
 });
 
@@ -473,5 +490,113 @@ describe('evaluerOrientationPourPatient — le recueil partiel du TFD', () => {
       expect(resultat.actif).toBe(true);
       expect(resultat.actif === true && resultat.recommandations).toEqual([]);
     });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE VERROU DES RÈGLES D'ARRÊT — [[D-053]]
+//
+// Ce banc n'éprouve pas ce qu'une extinction vaut cliniquement : il éprouve que
+// la production ne bouge pas tant que la table n'est pas signée. C'est le seul
+// endroit où les deux positions du verrou sont observables ensemble — le moteur,
+// lui, ne connaît pas la signature.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('règles d\'arrêt — les deux positions du verrou', () => {
+  const REGLE_DRAPEAU = {
+    id: 'R-TEST-DRAPEAU',
+    statut: 'publiee',
+    declencheurs: [
+      { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Psychiatrique (anxiété, dépression, burn-out)'] },
+    ],
+    // Cible SANS passation au dossier : l'extinction reste observable même quand
+    // l'exclusion `dejaRepondu` est allumée par le même verrou.
+    suggestions: [{ questionnaireId: 'Q_SOM_05', priorite: 1, objectif: 'Explorer le chronotype.' }],
+    justificationClaims: [{ claimId: 'WN-CL-0000-010', versionClaim: 'v1.0' }],
+    niveau: 'socle',
+  };
+
+  const ARRET_DRAPEAU = {
+    id: 'STOP-TEST',
+    statut: 'publiee',
+    declencheurs: [
+      { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Psychiatrique (anxiété, dépression, burn-out)'] },
+    ],
+    reglesEteintes: ['R-TEST-DRAPEAU'],
+    motif: 'Les instruments spécifiques sont rassurants.',
+    justificationClaims: [{ claimId: 'WN-CL-0000-011', versionClaim: 'v1.0' }],
+  };
+
+  function signerLArret() {
+    mockArretMeta.validationExterne = true;
+    mockArretMeta.dateValidation = '2026-08-12';
+    mockArretMeta.claimsSource = ['WN-CL-0000-011'];
+  }
+
+  function dossier() {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      // `statutValidite: 'VALID'` est REQUIS pour que l'exclusion morde : le
+      // moteur ne retire une recommandation que sur une passation valide ET
+      // mesurée. Sans ce champ, la ligne resterait proposée — c'est le
+      // fail-closed voulu, et le cas « statut absent » est éprouvé au moteur.
+      { idReponse: 'REP-1', idQuestionnaire: 'Q_SOM_01', dateReponse: new Date('2026-07-01T10:00:00Z'), statutValidite: 'VALID', scoresJson: { rawAnswers: { Q1: 0, Q2: 90, Q3: 7, Q4: 4, Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3, Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3, Q6: 3, Q7: 3, Q8: 3, Q9: 3 } } },
+    ]);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.pack.findMany.mockResolvedValue([]);
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { antecedents_domaines: ['Psychiatrique (anxiété, dépression, burn-out)'] },
+    });
+  }
+
+  beforeEach(() => {
+    signerLaTable();
+    mockRegles.push(REGLE_DRAPEAU);
+    mockArretRegles.push(ARRET_DRAPEAU);
+    dossier();
+  });
+
+  it('le verrou est auto-portant : un booléen seul ne l\'ouvre pas', () => {
+    mockArretMeta.validationExterne = true;
+    expect(tableArretSignee()).toBe(false);
+    mockArretMeta.dateValidation = '2026-08-12';
+    expect(tableArretSignee()).toBe(false);
+    mockArretMeta.claimsSource = ['WN-CL-0000-011'];
+    expect(tableArretSignee()).toBe(true);
+  });
+
+  it('table d\'arrêt NON signée : rien n\'est éteint, rien n\'est exclu', async () => {
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+  });
+
+  it('table d\'arrêt SIGNÉE : la recommandation est éteinte, avec son motif', async () => {
+    signerLArret();
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.recommandations[0].extinction?.motif).toContain('rassurants');
+  });
+
+  // L'EXCLUSION SUIT LE MÊME VERROU, et elle porte sur une passation
+  // EXPLOITABLE. `Q_SOM_01` est au dossier avec un recueil complet : la règle qui
+  // le viserait ne le proposerait plus une fois la table signée.
+  it('table d\'arrêt SIGNÉE : un instrument déjà mesuré n\'est plus proposé', async () => {
+    signerLArret();
+    mockRegles.length = 0;
+    mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    expect(resultat.actif === true && resultat.recommandations).toEqual([]);
+  });
+
+  it('table d\'arrêt NON signée : le même instrument reste proposé', async () => {
+    mockRegles.length = 0;
+    mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].dejaRepondu).toBe(true);
   });
 });

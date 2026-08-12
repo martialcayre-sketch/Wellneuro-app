@@ -180,6 +180,46 @@ describe('OrientationPanel', () => {
     expect(await screen.findByText(/couverture inconnue/i)).toBeTruthy();
   });
 
+  // ── EXTINCTION ([[D-053]]) ───────────────────────────────────────────────
+  it('affiche une ligne éteinte SANS effacer ses motifs d’origine', async () => {
+    const eteinte = {
+      ...RECOMMANDATION_PSQI,
+      extinction: {
+        stopRuleId: 'STOP-STR',
+        conditions: ['Q_STR_01 : interprétation « Oriente vers les conseils de vie antistress »'],
+        motif: 'Les instruments spécifiques de l’axe stress sont rassurants.',
+        claims: [{ claimId: 'WN-CL-0051-033', versionClaim: 'v1.0' }],
+      },
+    };
+    stubFetch({ ...ACTIF, recommandations: [eteinte] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    expect(await screen.findByText(/Information suffisante/i)).toBeTruthy();
+    // NEUTRE, ET PAS VERT : `data-variant` expose la couleur au banc — sans
+    // lui, un `variant="success"` codé en dur passerait, et l'écran dirait
+    // « tout va bien » là où la consigne du modèle l'interdit.
+    expect(screen.getByText(/exploration éteinte/i).getAttribute('data-variant')).toBe('neutral');
+    expect(screen.getByText(/STOP-STR/)).toBeTruthy();
+    // L'historique n'est pas effacé : le motif d'origine reste lisible, et c'est
+    // ce qui permet de comprendre pourquoi l'exploration avait été proposée.
+    expect(screen.getByText(/PSQI au-dessus de son seuil publié/)).toBeTruthy();
+    // Le geste reste au praticien : le bouton n'est pas retiré.
+    expect(screen.getByRole('button', BOUTON_AJOUT)).toBeTruthy();
+  });
+
+  // Contre-épreuve : sans extinction, aucune de ces mentions n'apparaît. Sans ce
+  // cas, un rendu qui afficherait toujours le bandeau passerait le précédent.
+  it('n’affiche aucune mention d’extinction sur une recommandation allumée', async () => {
+    stubFetch({ ...ACTIF, recommandations: [RECOMMANDATION_PSQI] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Pittsburgh/i);
+    expect(screen.queryByText(/Information suffisante/i)).toBeNull();
+    expect(screen.queryByText(/exploration éteinte/i)).toBeNull();
+  });
+
   it('n’affiche aucun bouton d’ajout sans email patient', async () => {
     stubFetch(ACTIF);
 

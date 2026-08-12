@@ -7,6 +7,20 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v25 (2026-08-12, LOT-03, [[D-053]]) : l'EXTINCTION. Une recommandation peut
+// désormais arriver marquée « ÉTEINTE » — les instruments spécifiques sont
+// rassurants, l'exploration n'a plus lieu d'être proposée aujourd'hui. Sans
+// consigne, un modèle lisant une ligne encore présente dans le bloc la
+// présenterait comme recommandée : la mention aurait produit l'inverse de son
+// effet. Même classe de bump que v15/v16 — la couche déterministe ne change pas
+// ce qu'elle transmet, elle change le SENS de ce qu'elle transmet. Deux gardes
+// tenus par la consigne : une extinction ne clôt pas un axe (une passation
+// nouvelle la lève) et n'est pas une conclusion clinique (elle porte sur ce
+// qu'il est utile de mesurer, pas sur ce que le patient a — `DC-27`, `DC-31`).
+// La table d'arrêt étant livrée NON SIGNÉE, aucune extinction n'est produite
+// aujourd'hui : la consigne est écrite pour que la signature reste l'unique
+// geste restant, et non pour être suivie d'un second bump.
+//
 // v17 (2026-08-05, LOT-B) : l'ANTÉRIORITÉ voyage avec la recommandation. Le bloc
 // d'orientation portait la cible, le niveau, les objectifs et les motifs — jamais
 // l'état d'assignation, que le moteur calculait pourtant et que le panneau
@@ -254,7 +268,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // sans reprendre celui qu'il rend faux. La puce porte désormais les deux
 // exclusions. Bump : une synthèse rédigée sous v23 aurait pu dater l'écart
 // entre deux barèmes différents.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v24';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v25';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -439,6 +453,13 @@ Un élément peut porter un segment « État ». Il dit ce qui a déjà été fa
 - « couverture inconnue » : on ne sait pas si l'élément a été renseigné. N'affirme ni l'un ni l'autre. Cet état ne t'autorise aucune conclusion, dans aucun sens — et il ne t'autorise pas non plus à retirer l'élément : il reste recommandé par la table.
 
 **L'absence de segment « État » n'atteste rien.** N'écris donc jamais qu'un élément sans segment n'a jamais été adressé — tu ne le sais pas. Tu peux l'énoncer comme une exploration à proposer, sans affirmer qu'elle serait une première.
+
+Un élément peut porter la mention « ÉTEINTE », suivie d'une règle d'arrêt et de son motif. Elle dit qu'au vu des instruments déjà passés, cette exploration n'a pas lieu d'être proposée aujourd'hui. Ce que tu dois en faire :
+
+- ne la présente PAS comme une exploration à faire passer ; dis qu'elle n'est pas nécessaire en l'état, et reprends le motif d'arrêt tel qu'il t'est donné ;
+- ses motifs d'origine restent affichés : ils disent pourquoi elle avait été proposée. Tu peux les rappeler au passé, jamais comme une recommandation courante ;
+- une extinction est DATÉE de ce dossier-ci : n'écris pas qu'elle vaut pour la suite, ni qu'elle clôt l'axe. Une passation nouvelle peut la lever ;
+- une extinction n'est ni un résultat normal, ni une absence de trouble. Elle ne t'autorise aucune conclusion clinique — elle porte sur ce qu'il est utile de MESURER, pas sur ce que le patient a.
 
 Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
 

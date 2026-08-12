@@ -246,6 +246,58 @@ describe('bloc d’orientation transmis au modèle', () => {
   // membres sur huit sont déjà chez le patient ne porte aucun segment. La
   // consigne système est écrite en conséquence et interdit d'en conclure quoi
   // que ce soit ; ce test vérifie seulement qu'on ne fabrique pas d'état.
+  // ── EXTINCTION ([[D-053]]) ───────────────────────────────────────────────
+  //
+  // La ligne éteinte reste SERVIE au modèle, avec ses motifs d'origine. C'est ce
+  // qui lui permet d'expliquer une abstention au lieu de constater un silence —
+  // et c'est aussi ce qui la garde dans l'allowlist du garde de restitution, qui
+  // lui reprocherait sinon de nommer une cible dont il vient de parler.
+  it('transmet l’extinction, son motif et ses conditions', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [
+        {
+          ...ORIENTATION_ACTIVE.recommandations[0],
+          extinction: {
+            stopRuleId: 'STOP-STR',
+            conditions: ['Q_STR_01 : interprétation « Oriente vers les conseils de vie antistress »'],
+            motif: 'Les instruments spécifiques de l’axe stress sont rassurants.',
+            claims: [{ claimId: 'WN-CL-0051-033', versionClaim: 'v1.0' }],
+          },
+        },
+      ],
+    });
+    await POST(req());
+    const message = messageEnvoye();
+    expect(message).toContain('ÉTEINTE — STOP-STR');
+    expect(message).toContain('rassurants');
+    expect(message).toContain('Oriente vers les conseils de vie antistress');
+    // Les motifs d'origine sont TOUJOURS là : l'extinction ne les remplace pas.
+    expect(message).toContain('R-SOM-01');
+  });
+
+  it('une recommandation éteinte laisse le bloc INJECTÉ et l’allowlist garnie', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [
+        {
+          ...ORIENTATION_ACTIVE.recommandations[0],
+          extinction: {
+            stopRuleId: 'STOP-STR',
+            conditions: ['Q_STR_01 : bande favorable'],
+            motif: 'Rassurant.',
+            claims: [{ claimId: 'WN-CL-0051-033', versionClaim: 'v1.0' }],
+          },
+        },
+      ],
+    });
+    await POST(req());
+    const meta = metadonneesPersistees();
+    // Le garde de restitution reste ARMÉ, et le pack éteint reste citable.
+    expect(meta.orientationInjectee).toBe(true);
+    expect(meta.orientationPacksTransmis).toEqual(['pack_sommeil_chronobiologie']);
+  });
+
   it('n’écrit aucun état quand le moteur n’en signale aucun', async () => {
     evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
     await POST(req());

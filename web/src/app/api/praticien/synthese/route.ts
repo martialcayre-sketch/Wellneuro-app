@@ -250,7 +250,17 @@ function buildBlocOrientation(orientation: ResultatOrientation | null): string {
           : null,
     ].filter(Boolean);
     const antecedent = etat.length > 0 ? ` État : ${etat.join(', ')}.` : '';
-    return `${index + 1}. ${cible} (niveau ${recommandation.niveau}).${objectifs}${antecedent} Motifs — ${motifs}`;
+    // L'EXTINCTION VOYAGE AVEC LA RECOMMANDATION, ET NON À SA PLACE. La ligne
+    // reste servie au modèle avec ses motifs d'origine : c'est ce qui lui permet
+    // d'expliquer une abstention — « cette exploration avait été proposée pour
+    // ceci, elle ne l'est plus pour cela » — au lieu de constater un silence.
+    // La retirer de la liste la ferait aussi sortir de l'allowlist du garde de
+    // restitution, qui reprocherait alors au modèle de nommer une cible dont il
+    // vient de parler.
+    const extinction = recommandation.extinction
+      ? ` ÉTEINTE — ${recommandation.extinction.stopRuleId} : ${recommandation.extinction.motif} (${recommandation.extinction.conditions.join(' ; ')}).`
+      : '';
+    return `${index + 1}. ${cible} (niveau ${recommandation.niveau}).${objectifs}${antecedent}${extinction} Motifs — ${motifs}`;
   });
 
   return [
@@ -548,6 +558,15 @@ async function genererSynthesePersistee(
               : null,
           orientationPacksTransmis: packsTransmis(args.orientation),
           orientationEcartsRestitution: ecartsRestitution,
+          // MÊME MOTIF QUE LES DEUX CHAMPS D'ORIENTATION CI-DESSUS, pour la
+          // table d'ARRÊT : deux synthèses rédigées sous deux tables d'arrêt
+          // différentes seraient autrement indiscernables à l'audit — et une
+          // extinction est précisément ce qu'on voudra pouvoir expliquer six
+          // mois plus tard. `null` quand la table n'est pas signée : elle n'a
+          // alors rien pu produire, et inscrire sa version laisserait croire
+          // qu'elle a pesé.
+          arretVersion: args.orientation?.actif === true ? args.orientation.arret?.version ?? null : null,
+          arretSha256: args.orientation?.actif === true ? args.orientation.arret?.sha256 ?? null : null,
         },
         metriquesAnthropic: metricsCache,
       } as any,

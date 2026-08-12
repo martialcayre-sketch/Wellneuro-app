@@ -6,6 +6,7 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
@@ -47,9 +48,24 @@ export type RecommandationServie = RecommandationExploration & { idPackBase?: st
 
 export type ResultatOrientationInactif = { actif: false; version: string; message: string };
 
+/**
+ * Provenance de la table d'ARRÊT, ou `null` quand elle n'est pas signée.
+ *
+ * Servie PAR LE SERVICE plutôt que relue par chaque appelant : le verrou vit
+ * ici, et un consommateur qui recalculerait « la table était-elle signée ? »
+ * pour horodater son audit finirait par répondre autre chose que le moteur.
+ */
+export type ProvenanceArret = { version: string; sha256: string };
+
 export type ResultatOrientation =
   | ResultatOrientationInactif
-  | { actif: true; version: string; sha256: string; recommandations: RecommandationServie[] };
+  | {
+      actif: true;
+      version: string;
+      sha256: string;
+      recommandations: RecommandationServie[];
+      arret: ProvenanceArret | null;
+    };
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
 // isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
@@ -72,6 +88,26 @@ function tableSignee(): boolean {
  */
 export function orientationActive(): boolean {
   return process.env.WN_ENABLE_ORIENTATION_NNPP2 === '1' && tableSignee();
+}
+
+/**
+ * La table des RÈGLES D'ARRÊT est-elle signée ? ([[D-053]])
+ *
+ * Même verrou auto-portant que `tableSignee()`, et pour le même motif : un
+ * `validationExterne` seul serait un booléen qu'un flip isolé suffirait à
+ * ouvrir. Il commande DEUX comportements — l'extinction des recommandations et
+ * l'exclusion des instruments déjà renseignés de façon exploitable —, si bien
+ * qu'une table non signée laisse la production strictement inchangée.
+ *
+ * Il n'y a pas de drapeau d'environnement propre : les règles d'arrêt ne
+ * s'exercent qu'à l'intérieur d'une orientation déjà servie, donc déjà gardée
+ * par `WN_ENABLE_ORIENTATION_NNPP2`. Un second drapeau donnerait l'illusion
+ * d'un second verrou là où il n'y a qu'un seul chemin.
+ */
+export function tableArretSignee(): boolean {
+  return STOP_RULES_METADATA.validationExterne
+    && STOP_RULES_METADATA.dateValidation !== null
+    && STOP_RULES_METADATA.claimsSource.length > 0;
 }
 
 export function resultatInactif(): ResultatOrientationInactif {
@@ -256,6 +292,12 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     idQuestionnaire: reponse.idQuestionnaire,
     dateReponse: reponse.dateReponse.toISOString(),
     idReponse: reponse.idReponse,
+    // Transporté BRUT jusqu'au moteur, en plus des cinq motifs d'annulation
+    // ci-dessous : seule l'exclusion `dejaRepondu` le lit, et elle a besoin de
+    // distinguer ce que ces motifs ne distinguent pas — `AMBIGUOUS`, que la
+    // doctrine refuse d'écarter en silence, et les statuts que le drapeau
+    // `WN_ENABLE_VALIDITE_PASSATIONS`, éteint, laisse aujourd'hui passer.
+    statutValidite: reponse.statutValidite,
     scores: scoresRecalculesPourRaisonnement(
       reponse.idQuestionnaire,
       reponse.scoresJson as Record<string, unknown> | null,
@@ -277,6 +319,12 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     drapeaux: consultation?.anamnese == null
       ? undefined
       : extraireDrapeauxAnamnese(consultation.anamnese),
+    // Les deux effets des règles d'arrêt passent par le MÊME verrou, posé ici et
+    // nulle part ailleurs : tant que la table n'est pas signée, le moteur ne
+    // reçoit aucune règle et l'exclusion reste éteinte. C'est ce qui rend le
+    // merge invisible en production, où l'orientation, elle, est allumée.
+    reglesArret: tableArretSignee() ? STOP_RULES_V1 : [],
+    exclureDejaRepondu: tableArretSignee(),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune
@@ -306,5 +354,13 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     version: ORIENTATION_METADATA.version,
     sha256: ORIENTATION_RULES_SHA256,
     recommandations: recommandationsServies,
+    // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
+    // autrement indiscernables à l'audit — et une extinction est précisément ce
+    // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la
+    // table n'est pas signée : elle n'a rien pu produire, et inscrire sa
+    // version laisserait croire qu'elle a pesé.
+    arret: tableArretSignee()
+      ? { version: STOP_RULES_METADATA.version, sha256: STOP_RULES_SHA256 }
+      : null,
   };
 }
