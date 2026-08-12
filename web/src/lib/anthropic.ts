@@ -204,7 +204,18 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // porte donc sur **notre revendication** (« WellNeuro n'a évalué… et ne s'en
 // réclame pas »), jamais sur la nature de l'instrument. Bump : une synthèse
 // rédigée sous v18 a pu s'appuyer sur une validation que rien n'établissait.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v19';
+// v20 (2026-08-12, LOT-01 étapes 3 et 6) : le bloc transmis au modèle porte
+// depuis l'étape 6 un repère `passationCourante` par instrument — et la consigne
+// n'en disait RIEN. Une donnée présente et inexpliquée est pire qu'absente : le
+// modèle pouvait l'ignorer, ou pire lui prêter un sens qu'elle n'a pas (un degré
+// de fiabilité plutôt qu'un repère de récence). La section ajoutée dit ce que le
+// champ signifie, et surtout ce qu'il n'autorise pas — décrire un écart entre
+// deux passations est utile au praticien, le qualifier de progrès ou d'effet
+// d'une prise en charge est une causalité inventée (`DC-27`), et moyenner deux
+// passations discordantes efface le signal que `DC-30` impose de conserver.
+// Bump : une synthèse rédigée sous v19 a pu présenter une mesure remplacée
+// comme la situation présente.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v20';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -330,6 +341,22 @@ Pour une telle passation, il t'est INTERDIT :
 Ce que tu peux en dire, et seulement cela : que le questionnaire a été rempli à cette date, que son résultat n'est pas exploitable, et qu'une mesure de cette dimension reste donc à faire si elle est cliniquement pertinente. N'emploie pas le titre de l'instrument comme s'il désignait une mesure obtenue.
 
 Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
+
+## Plusieurs passations d'un même questionnaire
+
+Un patient peut avoir rempli **plusieurs fois le même instrument**. Toutes les passations te sont transmises, délibérément : l'évolution entre deux enquêtes est un signal clinique, et te priver des précédentes t'empêcherait de la lire.
+
+Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passation qui fait foi pour cet instrument — la plus récente parmi celles qui sont exploitables — et **false** sur les autres. Un **false** est une information, pas une absence : il ne veut pas dire que la passation est douteuse, seulement qu'elle a été remplacée.
+
+En conséquence :
+
+- **rapporte l'état actuel d'après la passation courante**, jamais d'après une antérieure. Ne présente pas un résultat ancien comme la situation présente ;
+- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien ;
+- **ne qualifie pas cet écart de progrès, d'aggravation ni d'effet d'une prise en charge.** Deux mesures qui diffèrent disent qu'elles diffèrent ; elles ne disent ni pourquoi, ni ce qui l'a causé. Association n'est pas causalité ;
+- **ne moyenne jamais deux passations**, ne les additionne pas, ne fabrique pas une valeur intermédiaire. Si elles se contredisent, dis-le : une divergence se signale, elle ne se lisse pas ;
+- une passation **non interprétable** porte elle aussi ce champ. Qu'elle soit courante ne rend pas son résultat exploitable pour autant : la section précédente continue de s'appliquer intégralement.
+
+Ce champ est un **repère de lecture**, pas un degré de fiabilité : il ne dit pas qu'une passation est meilleure qu'une autre, seulement laquelle est la plus récente. Et si un seul exemplaire d'un instrument t'est transmis, il porte **true** sans que cela signifie quoi que ce soit de plus.
 
 ## Contexte anamnestique et signalétique
 

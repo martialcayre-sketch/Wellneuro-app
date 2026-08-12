@@ -95,6 +95,19 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Orientation clinique proposée au praticien à partir des scores.',
   },
   {
+    id: 'contradictions-nnpp2',
+    libelle: 'Table de contradictions NNPP2 (règles signées)',
+    module: 'web/src/lib/clinical/contradictionsV1.ts',
+    symboles: ['CONTRADICTIONS_RULES_V1', 'CONTRADICTIONS_METADATA'],
+    // Même forme que l'orientation, et même raison de le déclarer : la garde
+    // est `contradictionsService.ts`, qui porte le ET
+    // `WN_ENABLE_CONTRADICTIONS_NNPP2` + `tableSignee()`. Sans cette ligne, la
+    // source de savoir clinique la PLUS RÉCENTE du dépôt serait la seule que la
+    // matrice ne verrait pas — et c'est exactement ce qu'elle existe pour voir.
+    modulesGardes: ['web/src/lib/clinical/contradictionsService.ts'],
+    decisionProduite: 'Constat de contradiction entre instruments, signalé au praticien.',
+  },
+  {
     id: 'corpus-clinique-synthese',
     libelle: 'Corpus clinique de synthèse V1',
     module: 'web/src/lib/clinical/corpusSyntheseV1.ts',

@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v19`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v20`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -106,7 +106,15 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // plus aucune règle d'orientation ne cible un pack, et le modèle ne peut donc
 // plus en rencontrer un dans son bloc. Ce que la consigne garde inchangé :
 // « l'absence de segment État n'atteste rien ».
-const EMPREINTE_V19 = 'c492a641fa62743e';
+//
+// v20, le 2026-08-12 (LOT-01 étapes 3 et 6) : une section décrit le repère
+// `passationCourante`, que l'étape 6 a mis dans les DONNÉES sans que la consigne
+// n'en dise rien. Une donnée présente et inexpliquée est pire qu'absente — le
+// modèle pouvait lui prêter un sens qu'elle n'a pas, un degré de fiabilité
+// plutôt qu'un repère de récence. La section dit aussi ce que le champ
+// n'autorise pas : qualifier un écart de progrès ou d'effet d'une prise en
+// charge (`DC-27`), et moyenner deux passations discordantes (`DC-30`).
+const EMPREINTE_V20 = 'c67522b7b1207c39';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -228,7 +236,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v19', empreinte: EMPREINTE_V19 });
+    ).toEqual({ version: 'synthese-v20', empreinte: EMPREINTE_V20 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

@@ -1,0 +1,83 @@
+import { describe, expect, it } from 'vitest';
+import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthropic';
+
+// LE COUPLAGE QUE CE BANC TIENT — LOT-01, étapes 3 et 6.
+//
+// L'étape 6 a mis `passationCourante` dans les DONNÉES transmises au modèle.
+// Pendant quatre jours, la consigne n'en a rien dit : le repère était présent et
+// inexpliqué, ce qui est pire qu'absent — le modèle pouvait l'ignorer, ou lui
+// prêter un sens qu'il n'a pas (un degré de fiabilité au lieu d'un repère de
+// récence). La v20 comble ce trou.
+//
+// Ce banc garde les DEUX bouts, parce que chacun seul se retire sans bruit :
+//   · la consigne nomme le champ et dit ce qu'il n'autorise pas ;
+//   · le champ est réellement serialisé dans le message utilisateur — une
+//     consigne qui décrirait un champ absent décrit un fantôme.
+// Le second bout est tenu par `passationCourante.test.ts`, qui reparse le
+// message réellement envoyé ; celui-ci tient le premier.
+
+const CONSIGNE = SYSTEM_PROMPT_GOUVERNANCE;
+
+describe('consigne système — le repère de passation courante est expliqué', () => {
+  it('la version est bien v20 ou au-delà : la section n’existe pas avant', () => {
+    // Si quelqu'un revient à v19 en gardant la section, ou l'inverse, le couple
+    // version/empreinte de `promptAlimentaire.guard.test.ts` le dira aussi.
+    // Ici on garde le sens : la section appartient à v20.
+    const numero = Number(VERSION_PROMPT_SYNTHESE.replace('synthese-v', ''));
+    expect(Number.isFinite(numero)).toBe(true);
+    expect(numero).toBeGreaterThanOrEqual(20);
+  });
+
+  it('le champ est nommé, littéralement, tel qu’il apparaît dans les données', () => {
+    // Le nom exact, pas une paraphrase : le modèle doit pouvoir faire le lien
+    // avec la clé qu'il lit dans le bloc.
+    expect(CONSIGNE).toContain('passationCourante');
+  });
+
+  it('la consigne dit que les passations antérieures sont transmises À DESSEIN', () => {
+    // Sans cette phrase, un modèle prudent pourrait traiter les antérieures
+    // comme du bruit et les taire — or l'évolution entre deux enquêtes est
+    // précisément ce que le praticien vient chercher.
+    expect(CONSIGNE).toMatch(/évolution entre deux enquêtes est un signal clinique/i);
+  });
+
+  it('`false` est présenté comme une information, pas comme une absence', () => {
+    // `DC-24` appliqué au repère lui-même : « remplacée » n'est pas « douteuse ».
+    expect(CONSIGNE).toMatch(/remplacée/i);
+  });
+
+  it('INTERDIT de lire un écart comme un progrès ou un effet de prise en charge', () => {
+    // Le cœur clinique de la section (`DC-27`) : deux mesures qui diffèrent
+    // disent qu'elles diffèrent, jamais pourquoi. Sans cet interdit, la
+    // comparaison entre deux passations fabrique de la causalité à chaque
+    // synthèse.
+    expect(CONSIGNE).toMatch(/ne qualifie pas cet écart de progrès/i);
+    expect(CONSIGNE).toMatch(/association n'est pas causalité/i);
+  });
+
+  it('INTERDIT de moyenner deux passations, et une divergence se dit', () => {
+    // `DC-30` : une discordance se signale, elle ne se lisse pas. C'est la même
+    // règle que le moteur de contradictions applique côté déterministe — les
+    // deux surfaces doivent dire la même chose.
+    expect(CONSIGNE).toMatch(/ne moyenne jamais deux passations/i);
+    expect(CONSIGNE).toMatch(/une divergence se signale, elle ne se lisse pas/i);
+  });
+
+  it('une passation non interprétable reste non interprétable, courante ou non', () => {
+    // Le piège exact : `passationCourante: true` sur une passation dont aucun
+    // résultat n'est transmis pourrait se lire comme « celle-ci fait foi, donc
+    // exploitable ». La section renvoie explicitement à la règle précédente.
+    expect(CONSIGNE).toMatch(/non interprétable[\s\S]*porte elle aussi ce champ/i);
+    expect(CONSIGNE).toMatch(/ne rend pas son résultat exploitable/i);
+  });
+
+  it('le repère n’est pas un degré de fiabilité, et le dit', () => {
+    expect(CONSIGNE).toMatch(/repère de lecture[\s\S]*pas un degré de fiabilité/i);
+  });
+
+  it('une passation unique porte `true` sans que cela signifie davantage', () => {
+    // Sans cette phrase, `true` sur un instrument passé une seule fois pourrait
+    // se lire comme une confirmation.
+    expect(CONSIGNE).toMatch(/un seul exemplaire[\s\S]*sans que cela signifie/i);
+  });
+});
