@@ -3,8 +3,8 @@ id: "2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-b
 titre: "Chaîne T0 opérationnelle — de la donnée valide à la révision par biologie"
 statut: "en_cours"
 créée_le: "2026-08-10"
-mise_à_jour: "2026-08-11"
-lot_courant: "LOT-02"
+mise_à_jour: "2026-08-12"
+lot_courant: "LOT-03"
 branche_campagne: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
 branche_lot_courant: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lot-01"
 cible_pr_lot: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
@@ -107,8 +107,8 @@ confirmé » et « discordance stress » sont en CI.
 |---|---|---|---|
 | LOT-00 | Validité des données cliniques — statut par passation, filtre unifié (migration) | terminé | — |
 | LOT-01 | Garde-fous de synthèse et moteur de contradictions — prompt v20, schéma strict, C-STR seule (D-042), contrat de fraîcheur des claims, marquage de la passation courante | terminé (vigilances de synthèse renvoyées, 2026-08-12) | LOT-00 |
-| LOT-02 | Préconditions de confirmation T0 — checklist dure/souple, justification tracée | en_cours | LOT-00 |
-| LOT-03 | Règles d'arrêt et extinction d'orientation — stop rules, `dejaRepondu` excluant, SCOFF | à_faire | LOT-01 |
+| LOT-02 | Préconditions de confirmation T0 — checklist dure/souple, justification tracée | terminé | LOT-00 |
+| LOT-03 | Règles d'arrêt et extinction d'orientation — stop rules, `dejaRepondu` excluant, SCOFF | en_cours | LOT-01 |
 | LOT-04 | Candidats d'intervention déterministes — chaîne C1 rebranchée, canal plainte patient, recalcul serveur | à_faire | LOT-02 |
 | LOT-05 | Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie | à_faire | LOT-04 |
 | LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | à_faire | LOT-05 |
