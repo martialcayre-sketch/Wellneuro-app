@@ -4,6 +4,105 @@
 
 ## Décisions actives
 
+### D-052 — Les préconditions de confirmation T0 : ce qu'un T0 exige, et ce que « VALID » ne prouve pas
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : clinique, épisode d'évaluation T0, validité des passations
+- Contexte : la confirmation d'un épisode T0 n'a aujourd'hui **aucune
+  précondition**. Le panneau invite même explicitement à confirmer un dossier
+  vide (« Aucune réponse disponible. Confirmez explicitement… »,
+  `EpisodeConfirmationPanel.tsx`), et les deux points de persistance
+  n'exigent que `status === 'confirmed'`. Or le T0 est **irrévocable** :
+  l'identifiant d'épisode est déterministe (`runtime-episode-<patient>-<jalon>`)
+  et les deux routes écrivent en `upsert(..., update: {})` — le premier T0 écrit
+  est le seul, pour toujours. Ce lot pose la porte ; il ne la rouvre pas.
+- Décision : quatre arbitrages, rendus ensemble.
+
+**1. Le rideau T0 est une table clinique, pas une composition administrative.**
+`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`, `Q_ALI_01` — quatre identifiants **en dur**,
+signés ici, découplés du pack de base. Le pack est une ligne en base éditable
+depuis l'UI, et une divergence registre↔pack a déjà été journalisée le
+2026-08-03 : dériver le rideau du pack ferait déplacer une règle clinique par un
+geste administratif (`DC-26`). `Q_SOM_09` est **exclu du rideau bien qu'il soit
+au pack de base seedé** : un agenda du sommeil sur 21 nuits ne peut pas
+conditionner un point de décision qui se prend à J0. L'écran doit l'expliquer,
+sans quoi l'exclusion se lira comme un oubli. `Q_ALI_01` est accepté **dans
+l'une ou l'autre de ses formes** : la forme longue serait plus exigeante, mais
+rendrait le T0 inconfirmable partout où `WN_ALI_01_SIIN57` est éteint — soit
+partout aujourd'hui. Le repère, lui, continue de s'abstenir sur cet identifiant
+([[D-051]]) ; une précondition qui constate une passation et un repère qui
+désigne laquelle fait foi ne demandent pas la même certitude.
+
+**2. « VALID » ne prouve rien, et c'est écrit plutôt que contourné.** La
+migration du LOT-00 a posé `statut_validite TEXT NOT NULL DEFAULT 'VALID'` :
+PostgreSQL a donc estampillé `VALID` **toutes** les lignes existantes.
+Vérification en production le 2026-08-12 : 105 passations, **toutes `VALID`,
+aucune autre valeur**, et la seule route capable d'écrire autre chose rend 503
+tant que `WN_ENABLE_VALIDITE_PASSATIONS` est éteint. Une condition dure « la
+passation est `VALID` » serait donc **tautologique** — un défaut de colonne
+présenté comme un jugement clinique, exactement ce que `DC-24` interdit.
+La condition dure retenue ne s'y appuie pas : une passation compte si elle
+**existe**, si son statut **n'est pas exclu du raisonnement**
+(`statutExcluDuRaisonnement`, indépendant du drapeau, prévu pour *désigner* et
+non pour *filtrer*) et si `scoresRecalculesPourRaisonnement` **ne rend pas
+`null`**. Ce troisième terme est le seul qui morde aujourd'hui : il refuse la
+passation « nommée-mais-vidée », c'est-à-dire précisément le signal que le
+LOT-00 s'est engagé à transmettre plutôt qu'à effacer. Un T0 confirmé sur un
+questionnaire présent mais non cotable serait un T0 sans mesure.
+
+**3. Le rideau s'évalue hors fenêtre.** `targetAt` d'un T0 vaut la date de la
+**première passation du dossier**, quelle qu'elle soit. Un patient ayant
+répondu à un questionnaire isolé six semaines avant son pack de base verrait
+donc son rideau tomber hors de la fenêtre ±8 j et son T0 refusé **alors
+qu'aucune donnée ne manque** — un refus qui ne protège de rien. La précondition
+cherche la dernière passation de chaque instrument du rideau, sans contrainte
+de date ; la fenêtre continue de gouverner la **composition** de l'épisode, qui
+est un autre objet. `TOLERANCE_JOURS_JALON` et `JOURS_JALON` ne sont pas
+touchés.
+
+**4. La fraîcheur de la synthèse se juge sur le rideau et sur la validation.**
+La synthèse doit être `Validee_Praticien` ou `Corrigee_Praticien` et sa
+`dateValidation` postérieure à la dernière passation **du rideau**, pas du
+dossier : une passation hors rideau, plus récente, ne périme pas une synthèse
+qui n'avait pas à en tenir compte. `Corrigee_Praticien` **ne rafraîchit pas**
+`dateValidation` — comportement existant, non modifié ici : une annotation
+commente une synthèse, elle ne la re-valide pas.
+
+- Conditions **souples** : contournables, avec motif obligatoire, tracées dans
+  le payload d'épisode (`preconditionOverrides` : condition, motif, auteur et
+  horodatage **posés par le serveur**, jamais reçus du client — l'épisode
+  transite par le navigateur avant d'être persisté).
+- Écarté : **la condition souple « suggestions d'orientation ni renseignées ni
+  écartées »**, retirée du lot. « Écartée » n'existe nulle part : les deux
+  seules notions de rejet du dépôt (`FilCardRejection`,
+  `PackProposition.declinee`) désignent autre chose, et la créer demanderait une
+  persistance nouvelle donc une migration, que ce lot s'interdit. La livrer
+  dégradée en « des suggestions restent non renseignées » aurait produit un
+  avertissement **non acquittable**, donc affiché à chaque T0 — un avertissement
+  qu'on ne peut pas éteindre est un avertissement qu'on apprend à ignorer.
+- Assumé, et nommé plutôt que masqué : les deux conditions souples conservées
+  (`AMBIGUOUS` sur le rideau, contradictions ouvertes) sont **muettes
+  aujourd'hui** — la première parce qu'aucune passation ne peut porter
+  `AMBIGUOUS` drapeau éteint, la seconde parce que `contradictionsActives()`
+  est faux tant que la table n'est pas signée. Elles sont câblées et prouvées
+  par bancs pour que le chemin existe le jour de l'allumage ; prétendre
+  qu'elles protègent quelque chose en production serait faux.
+- Réserve nommée : cette décision **ne rend pas le T0 corrigible**. Elle durcit
+  une porte à sens unique, et un T0 confirmé par contournement le reste. La
+  correction ou ré-ouverture d'un T0 confirmé est hors périmètre du lot et reste
+  sans lot d'accueil.
+- Réversibilité : les conditions vivent dans un module pur
+  (`preconditionsT0.ts`) et leurs refus sont trois appels dans les routes ; les
+  retirer rétablit le comportement antérieur. Les bancs du module et les trois
+  bancs de route le signaleraient.
+- Référence : `web/src/lib/clinical-engine/preconditionsT0.ts`,
+  `web/src/app/api/praticien/cockpit/route.ts`,
+  `web/src/app/api/praticien/protocoles/route.ts`,
+  `web/src/app/api/praticien/protocoles/versions/route.ts`,
+  `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-02-preconditions-t0.md`,
+  [[D-051]]
+
 ### D-051 — Le repère de passation courante s'abstient sur un identifiant qui a désigné plusieurs instruments
 
 - Date : 2026-08-12

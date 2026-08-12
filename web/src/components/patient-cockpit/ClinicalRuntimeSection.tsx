@@ -6,7 +6,7 @@ import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationEr
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
-import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
+import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
@@ -101,6 +101,9 @@ export function ClinicalRuntimeSection({
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<RuntimeError | null>(null);
+  // Message de refus des préconditions T0, distinct de `error` : il n'est pas
+  // technique et se lit tel quel.
+  const [refus, setRefus] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Versionnement persistant (C2A LOT-03) — actif hors mode fixture uniquement.
   const [versions, setVersions] = useState<ProtocolVersionItem[]>([]);
@@ -221,10 +224,11 @@ export function ClinicalRuntimeSection({
     void loadProposal();
   }, [fixture, loadProposal]);
 
-  const confirm = async (includedResponseIds: string[]) => {
+  const confirm = async (includedResponseIds: string[], contournements: ContournementSaisi[] = []) => {
     if (!runtime || runtime.status !== 'proposal_required') return;
     setSubmitting(true);
     setError(null);
+    setRefus(null);
     try {
       const response = await fetch('/api/praticien/cockpit', {
         method: 'POST',
@@ -234,6 +238,7 @@ export function ClinicalRuntimeSection({
           milestone: 'T0',
           includedResponseIds,
           proposalHash: runtime.proposalHash,
+          overrides: contournements,
         }),
       });
       const payload = await response.json() as CockpitRuntimeApiResponse;
@@ -243,6 +248,14 @@ export function ClinicalRuntimeSection({
       }
       if (!response.ok || payload.status !== 'ready') {
         const reason = payload.status === 'unavailable' ? payload.reason : 'exception';
+        // Un refus de précondition porte un message FRANÇAIS et ACTIONNABLE
+        // (ce qui manque au dossier) : le replier sur « erreur technique »
+        // laisserait le praticien sans le geste à faire (D-052).
+        if (payload.status === 'unavailable'
+          && (reason === 'preconditions_non_remplies' || reason === 'motif_contournement_manquant')) {
+          setRefus(payload.error);
+          return;
+        }
         setError(reason === 'unauthenticated' ? 'session' : reason === 'patient_not_found' ? 'patient' : 'technical');
         return;
       }
@@ -415,8 +428,16 @@ export function ClinicalRuntimeSection({
               : 'Erreur technique lors de la préparation du cockpit clinique.'}
         </div>
       )}
+      {!fixture && refus && (
+        <div role="alert" className="rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">{refus}</div>
+      )}
       {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required' && (
-        <EpisodeConfirmationPanel proposal={runtime.proposal} submitting={submitting} onConfirm={confirm} />
+        <EpisodeConfirmationPanel
+          proposal={runtime.proposal}
+          preconditions={runtime.preconditions}
+          submitting={submitting}
+          onConfirm={confirm}
+        />
       )}
       {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">

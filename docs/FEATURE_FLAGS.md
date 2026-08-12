@@ -29,6 +29,7 @@ datée **par feature**.
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
 | `WN_CLAIMS_QUESTIONNAIRE_STREAM` | `true` | claims questionnaire en SSE | réponse JSON |
 | `RAG_PGVECTOR_ENABLED` | `true` | RAG de production — exige aussi `RAG_INTERNAL_SECRET` + clés OpenAI | throw / fermé |
+| `WN_ENABLE_VALIDITE_PASSATIONS` | `1` | filtre de validité des passations (LOT-00 chaîne T0) : `INVALID`/`SUPERSEDED`/`HISTORICAL_ONLY` sortent du raisonnement, et la route d'invalidation praticien répond (sinon **503**) | filtre **inerte** — la colonne `statut_validite` existe et vaut `VALID` par défaut de migration sur **toutes** les lignes ; ce `VALID` n'est donc pas un jugement clinique ([[D-052]]) |
 
 ## B. Chemins d'accès patient — `'true'`, défaut OFF
 

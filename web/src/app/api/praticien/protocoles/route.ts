@@ -8,6 +8,7 @@ import type {
   ProtocolDraft,
 } from '@/lib/clinical-engine/types';
 import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
+import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
 import {
   deriveProtocolDraftId,
   resolveCycleId,
@@ -132,6 +133,18 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       return NextResponse.json(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 },
+      );
+    }
+
+    // Préconditions T0 ([[D-052]]), APRÈS la garde d'appartenance : on ne lit
+    // pas le dossier d'un patient qu'on n'a pas prouvé sien. 422 et non 409 —
+    // ici 409 n'est pas utilisé, et sur la route sœur il porte déjà le conflit
+    // de version, que le client traite en rechargeant l'historique.
+    const refusPreconditions = await refusPreconditionsPersistance(episode);
+    if (refusPreconditions) {
+      return NextResponse.json(
+        { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },
+        { status: 422 },
       );
     }
 

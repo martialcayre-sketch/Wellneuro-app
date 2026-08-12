@@ -15,10 +15,16 @@ import {
   isRuntimeMilestone,
   proposeRuntimeEpisode,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
+import {
+  messageRefusPreconditions,
+  type PreconditionsT0,
+} from '@/lib/clinical-engine/preconditionsT0';
+import { preconditionsT0PourPatient } from '@/lib/clinical-engine/preconditionsT0Prisma';
 import type {
   ClinicalReview,
   ClinicalSnapshot,
   DecisionCard,
+  PreconditionOverride,
   ProposedAssessmentEpisode,
 } from '@/lib/clinical-engine/types';
 import {
@@ -32,6 +38,8 @@ type CockpitUnavailableReason =
   | 'invalid_payload'
   | 'patient_not_found'
   | 'proposal_stale'
+  | 'preconditions_non_remplies'
+  | 'motif_contournement_manquant'
   | 'exception';
 
 export type CockpitRuntimeApiResponse =
@@ -39,6 +47,16 @@ export type CockpitRuntimeApiResponse =
       status: 'proposal_required';
       proposal: ProposedAssessmentEpisode;
       proposalHash: string;
+      /**
+       * Checklist de confirmation T0 ([[D-052]]) : conditions dures bloquantes,
+       * souples contournables avec motif.
+       *
+       * ABSENTE EN LECTURE D'UN ÉTAT PASSÉ, délibérément : présenter un verdict
+       * calculé sur le dossier d'aujourd'hui à côté d'une lecture datée d'hier
+       * mêlerait deux instants dans le même écran. Le mode passé ne confirme
+       * rien de toute façon (le POST y est refusé).
+       */
+      preconditions?: PreconditionsT0;
       // Instant de lecture quand la fiche est relue à une date passée (SP-TT).
       // `null` ou absent = état présent, comportement historique.
       asOf?: string | null;
@@ -74,6 +92,11 @@ export type ConfirmCockpitEpisodePayload = {
   milestone?: JalonMomentum;
   includedResponseIds?: string[];
   proposalHash?: string;
+  /**
+   * Contournements des conditions souples : la condition et son motif, rien de
+   * plus. L'auteur et l'horodatage sont posés par le serveur ([[D-052]]).
+   */
+  overrides?: { conditionId?: string; motif?: string }[];
 };
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
@@ -162,7 +185,20 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     }
     const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw);
-    return NextResponse.json({ status: 'proposal_required', proposal, proposalHash, asOf: inputs.asOf });
+    // Après `loadRuntimeInputs`, donc après la vérification d'appartenance.
+    // T0 SEULEMENT : les jalons de suivi (J21, J42, J90) ne sont pas gouvernés
+    // par cette porte — le lot pose les préconditions du point d'entrée, il ne
+    // touche pas aux jalons ([[D-052]]).
+    const preconditions = inputs.asOf || milestoneRaw !== 'T0'
+      ? undefined
+      : await preconditionsT0PourPatient(idPatient);
+    return NextResponse.json({
+      status: 'proposal_required',
+      proposal,
+      proposalHash,
+      asOf: inputs.asOf,
+      ...(preconditions ? { preconditions } : {}),
+    });
   } catch (error) {
     console.error('[cockpit GET]', error instanceof Error ? error.message : String(error));
     return unavailable('exception', 'Erreur technique.', 500);
@@ -209,7 +245,51 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     }
 
     const now = new Date().toISOString();
-    const episode = confirmAssessmentEpisode(current.proposal, includedResponseIds, now);
+
+    // PRÉCONDITIONS T0 ([[D-052]]), recalculées DEPUIS LA BASE et jamais lues
+    // dans le corps de requête. Ce POST n'écrit rien : le refus posé ici est un
+    // pré-refus d'ergonomie, qui évite au praticien de composer un protocole
+    // sur un épisode que les points de persistance rejetteront. La porte qui
+    // garde vraiment la base est dans `protocoles` et `protocoles/versions`,
+    // où le même calcul est rejoué.
+    const preconditionOverrides: PreconditionOverride[] = [];
+    if (payload.milestone === 'T0') {
+      const preconditions = await preconditionsT0PourPatient(idPatient);
+      if (preconditions.bloquant) {
+        return unavailable('preconditions_non_remplies', messageRefusPreconditions(preconditions), 422);
+      }
+      const motifsRecus = new Map(
+        (payload.overrides ?? [])
+          .filter(o => typeof o?.conditionId === 'string' && typeof o?.motif === 'string')
+          .map(o => [o.conditionId as string, (o.motif as string).trim()]),
+      );
+      for (const conditionId of preconditions.contournementsRequis) {
+        const motif = motifsRecus.get(conditionId);
+        if (!motif) {
+          return unavailable(
+            'motif_contournement_manquant',
+            'Un motif est requis pour passer outre un avertissement.',
+            422,
+          );
+        }
+        // Auteur et horodatage posés ICI, côté serveur : l'épisode voyage par
+        // le navigateur avant d'être persisté, et tracer un auteur choisi par
+        // le client ne trace rien.
+        preconditionOverrides.push({
+          conditionId,
+          motif: motif.slice(0, 2000),
+          decidePar: emailPraticien(session) ?? '',
+          decideLe: now,
+        });
+      }
+    }
+
+    const episode = confirmAssessmentEpisode(
+      current.proposal,
+      includedResponseIds,
+      now,
+      preconditionOverrides,
+    );
     const idSuffix = `${payload.milestone}-${proposalHash.slice(0, 16)}`;
     const snapshot = buildClinicalSnapshot({
       snapshotId: `runtime-snapshot-${idSuffix}`,

@@ -4,6 +4,11 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
+    // Préconditions de confirmation T0 (D-052) : lues APRÈS la garde
+    // d'appartenance, avant toute écriture.
+    questionnaireReponse: { findMany: vi.fn() },
+    consultation: { findFirst: vi.fn() },
+    syntheseIA: { findFirst: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
@@ -16,6 +21,11 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
+import {
+  CONSULTATION_VALIDEE_FIXTURE,
+  SYNTHESE_VALIDEE_FIXTURE,
+  passationsRideauT0,
+} from '@/lib/clinical-engine/dossierT0Fixture';
 import { GET, POST } from './route';
 
 const episode = {
@@ -60,6 +70,11 @@ describe('POST /api/praticien/protocoles', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     // Par défaut, le patient appartient au praticien en session (garde d'appartenance).
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
+    // posent explicitement.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
+    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
@@ -67,6 +82,49 @@ describe('POST /api/praticien/protocoles', () => {
     const res = await POST(postRequest({ episode, decisionCard, draft }));
     expect(res.status).toBe(401);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // PRÉCONDITIONS T0 (D-052). C'est ICI que la base est gardée : le POST du
+  // cockpit n'écrit rien, son refus n'est qu'un pré-refus d'ergonomie.
+  it('refuse la persistance d’un T0 sans premier rideau, sans rien écrire (422)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    const res = await POST(postRequest({ episode, decisionCard, draft }));
+    expect(res.status).toBe(422);
+    expect((await res.json())).toMatchObject({ ok: false, reason: 'preconditions_non_remplies' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // Le refus se pose APRÈS la garde d'appartenance : on ne lit pas le dossier
+  // d'un patient qu'on n'a pas prouvé sien.
+  it('un patient d’un autre praticien sort en 404 avant toute lecture de dossier', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+    const res = await POST(postRequest({ episode, decisionCard, draft }));
+    expect(res.status).toBe(404);
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+  });
+
+  // Critère 2 du Lot C : la justification est relisible dans le payload persisté.
+  it('la justification d’un contournement voyage jusqu’au payload persisté', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    const contourne = {
+      ...episode,
+      preconditionOverrides: [{
+        conditionId: 'contradictions_ouvertes',
+        motif: 'Discordance reprise en entretien.',
+        decidePar: 'praticien@wellneuro.fr',
+        decideLe: '2026-01-02T00:00:00.000Z',
+      }],
+    };
+    const res = await POST(postRequest({ episode: contourne, decisionCard, draft }));
+    expect(res.status).toBe(200);
+    const upsert = prisma.assessmentEpisode.upsert.mock.calls[0][0] as {
+      create: { payload: { preconditionOverrides?: { motif: string }[] } };
+    };
+    expect(upsert.create.payload.preconditionOverrides).toMatchObject([
+      { conditionId: 'contradictions_ouvertes', motif: 'Discordance reprise en entretien.' },
+    ]);
   });
 
   it('persiste épisode confirmé + protocole relu (idempotent par id de contrat)', async () => {
@@ -175,6 +233,11 @@ describe('GET /api/praticien/protocoles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
+    // posent explicitement.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
+    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
   });
 
   it('refuse un praticien non authentifié (401)', async () => {

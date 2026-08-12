@@ -79,20 +79,29 @@ test.describe('Mode consultation (fiche patient)', () => {
     expect(mutatingRequests).toEqual([]);
   });
 
-  test('confirme T0 et maintient le protocole indisponible sur bureau et mobile', async ({ page, context }) => {
+  // REMPLACE « confirme T0 et maintient le protocole indisponible ». Depuis
+  // [[D-052]], le dossier de seed NE PEUT PLUS confirmer un T0 : Sophie Nicola
+  // ne porte qu'un instrument du premier rideau (Q_INF_03) et le seed ne crée
+  // ni consultation validée ni synthèse. C'est le comportement attendu, et ce
+  // parcours l'asserte plutôt que de le contourner.
+  //
+  // NON-COUVERTURE NOMMÉE : le parcours NOMINAL (rideau complet, synthèse
+  // validée, confirmation sans friction) n'a pas d'E2E — le peupler
+  // déplacerait le seed partagé par l'orientation, les captures visuelles et
+  // le garde de certification. Il est couvert par les bancs de route.
+  test('un T0 dont les conditions ne sont pas remplies ne se confirme pas, sur bureau et mobile', async ({ page, context }) => {
     await context.addCookies([await praticienSessionCookie()]);
     for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);
       await page.goto(`/dashboard/patients/${PATIENT_ID}`);
       const confirm = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
       await expect(confirm).toBeVisible();
-      await confirm.click();
-      await expect(page.getByText(/Épisode T0 confirmé/)).toBeVisible();
-      await expect(page.getByText('Aucune priorité proposée')).toBeVisible();
-      // Le protocole vit dans la phase Actions : on l'ouvre pour vérifier qu'il
-      // reste indisponible tant que les bloqueurs décisionnels ne sont pas levés.
-      await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
-      await expect(page.getByText('Protocole indisponible — bloqueurs décisionnels à revoir')).toBeVisible();
+      // La checklist dit CE QUI MANQUE, et le bouton ne se clique pas.
+      await expect(page.getByText('Premier rideau complet et exploitable')).toBeVisible();
+      await expect(page.getByText(/Premier rideau incomplet/)).toBeVisible();
+      await expect(confirm).toBeDisabled();
+      // Ce qui n'est pas requis est nommé, plutôt que passé sous silence.
+      await expect(page.getByText(/ne sont pas requis/)).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     }
   });

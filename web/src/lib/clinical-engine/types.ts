@@ -10,7 +10,14 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 // `protocol_diffusion_approvals` et `assessment_episodes` sont VIDES en
 // production, aucun hash persisté ne bouge.
 export const VERSION_MAPPING_BESOINS = 'besoins-v2' as const;
-export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
+// v1 → v2 (2026-08-12, [[D-052]]) : `ConfirmedAssessmentEpisode` gagne
+// `preconditionOverrides`, la trace des conditions souples contournées. Cette
+// étiquette est persistée en colonne `contract_version` ; la laisser à v1
+// ferait porter deux formes de payload par une même étiquette. Coût mesuré
+// avant bump, en production le 2026-08-12 : `assessment_episodes` est VIDE
+// (0 ligne) et `protocol_drafts` ne porte qu'une ligne `ja-food-observation-v1`
+// — aucune ligne en `objets-cliniques-v*`, aucun hash persisté ne bouge.
+export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v2' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
@@ -59,9 +66,33 @@ export type ProposedAssessmentEpisode = AssessmentEpisodeBase & {
   status: 'proposed';
 };
 
+/**
+ * Contournement d'une condition souple de confirmation T0 ([[D-052]]).
+ *
+ * `decidePar` et `decideLe` sont POSÉS PAR LE SERVEUR, jamais reçus du corps de
+ * requête : l'épisode transite par le navigateur avant d'être persisté, et
+ * tracer un auteur choisi par le client ne trace rien.
+ */
+export type PreconditionOverride = {
+  /** Identifiant de la condition souple contournée (`contradictions_ouvertes`…). */
+  conditionId: string;
+  /** Justification saisie par le praticien. Obligatoire, non vide. */
+  motif: string;
+  /** Adresse du praticien, issue de la session serveur. */
+  decidePar: string;
+  /** Horloge serveur, comme `confirmedAt`. */
+  decideLe: string;
+};
+
 export type ConfirmedAssessmentEpisode = AssessmentEpisodeBase & {
   status: 'confirmed';
   confirmedAt: string;
+  /**
+   * Porté par la forme CONFIRMÉE seulement, et optionnel : sur
+   * `AssessmentEpisodeBase`, `proposeAssessmentEpisode` devrait l'inventer et
+   * tous les `proposalHash` déjà émis se déplaceraient.
+   */
+  preconditionOverrides?: PreconditionOverride[];
 };
 
 export type AssessmentEpisode = ProposedAssessmentEpisode | ConfirmedAssessmentEpisode;
