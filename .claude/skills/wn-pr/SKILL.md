@@ -17,7 +17,9 @@ Arguments : `$ARGUMENTS`
 Toujours :
 
 - vérifier que le diff appartient à une seule finalité ;
-- exécuter ou rappeler les tests nécessaires ;
+- rappeler les tests déjà exécutés sur le diff courant plutôt que les
+  rejouer ; n'exécuter que ce qui n'a pas tourné depuis la dernière
+  modification du diff ;
 - proposer un titre conventionnel ;
 - rédiger résumé, périmètre, validations, risques et test manuel ;
 - exclure secrets et données patient réelles.
@@ -36,10 +38,14 @@ le squash fermera la fenêtre et coûtera une seconde PR de doc depuis `main`.
 et passe donc ce contrôle.)
 
 **Modèle selon le diff.** Si les fichiers du diff relèvent d'une classe à
-risque (scoring/clinique, Prisma/migration, auth), rédiger la section
-« risques » via `Agent(subagent_type: "wn-reviewer")` — agent épinglé
-Opus/high — plutôt qu'en session : la description d'une PR de migration mérite
-le même effort que sa revue.
+risque (scoring/clinique, Prisma/migration, auth), la section « risques » se
+rédige au niveau d'effort de la revue — mais **sans relancer un agent quand la
+revue a déjà eu lieu** : des constats `wn-reviewer` du diff courant présents
+dans la conversation se distillent (la PR #659 l'a fait — sa section
+« Risques » reprend les trois passes, aucun agent relancé). Ne lancer
+`Agent(subagent_type: "wn-reviewer")` — agent épinglé Opus/high — que si
+aucune revue du diff courant n'existe : la description d'une PR de migration
+mérite le même effort que sa revue, pas une seconde revue.
 
 ## L'attente CI appartient à `/wn-merge`, pas à ce skill <!-- mention-seule: wn-merge -->
 

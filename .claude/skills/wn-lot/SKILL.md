@@ -113,12 +113,19 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    de la classe) ; `Agent(subagent_type: "general-purpose", model: <modèle de
    la classe>)` pour Scoring/Migration/Auth. Prompt et périmètre bornés aux
    fichiers du lot ; ne pas élargir.
-4. **Validation** — le palier de la classe, sortie redirigée une fois puis
-   relue.
+4. **Validation** — le palier de la classe, **appliqué au diff de la session,
+   pas au lot entier** : un diff purement documentaire (aucun fichier de code)
+   reste à T1 même dans un lot classé T2/T3 — aucun test de la suite ne lit un
+   `.md`, le run ne peut pas rougir à cause du diff, et le CI de la PR rejoue
+   tout (constaté au LOT-01 chaîne T0 : T3 complet de 3 min 47 sur la PR #656,
+   purement documentaire). Le palier de la classe redevient dû dès que le diff
+   touche du code. Sortie redirigée une fois puis relue.
 5. **Revue** — un regard qui n'a pas écrit le code : `Agent(wn-reviewer)` pour
    Scoring/Migration/Auth (**avant** de passer la main), `/code-review` en
    session pour Docs/UI/API. Le skill `/wn-review` produit la même <!-- mention-seule: wn-review -->
-   chose et s'invoque à la main par l'utilisateur.
+   chose et s'invoque à la main par l'utilisateur. Demander à la revue
+   d'émettre un bloc « risques » réutilisable : la description de PR
+   (étape 7) le distille au lieu de relancer un agent sur le même diff.
 6. **Clôture** — sur la **branche vivante**, avant la PR : (a) statut du lot,
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle
    oubliée → exécutable, décision → `docs/DECISIONS.md`), (c) fragment
