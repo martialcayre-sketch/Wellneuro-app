@@ -3614,3 +3614,26 @@ dépôt, `calculateScore` rend un objet `{scored:false,total:null}` plutôt que
 **Ouvert.** Le T0 reste irrévocable, sans lot d'accueil pour sa correction.
 Parcours nominal sans E2E. 8 dossiers de production sur 19 satisfont les
 conditions dures.
+
+## 2026-08-12 — LOT-03 : règles d'arrêt et extinction d'orientation
+
+**Décisions.** `D-053` avant le code, amendée deux fois. La lecture de
+`rag_corpus_claims` en production a renversé la spec : ni DASS-21 ni Cungi ne
+portent de claim d'extinction. C'est `Q_STR_01` (SIIN) qui l'a —
+`WN-CL-0051-033`, prescriptif. Table livrée **non signée**, verrou unique : la
+production ne bouge pas au merge.
+
+**Écarté.** STOP-SOM (elle éteindrait `R-SOM-01` à la valeur de PSQI où la table
+signée dit qu'elle doit s'allumer) ; STOP-APN (« absence de symptômes »
+inexprimable, `DC-24`) ; SCOFF (claim + re-signature) ; la fenêtre de fraîcheur
+(aucun chiffre fondé).
+
+**Promotion.** Revue NO-GO, quatre bloquants refermés. **La leçon exécutable :
+sur ce dépôt, un objet de score n'est pas une mesure** — `scores != null` a
+reposé le piège du LOT-02. Et un moteur qui ne publie pas ses comptes ne garde
+rien : `group_majority` éteignait sur 3 items /21.
+
+**Prochaine action.** PR du lot ; le bookkeeping attend le merge de #666.
+
+**Ouvert.** STOP-STR ne peut pas mordre tant que `group_majority` se tait —
+signer ne suffira pas. `D-053` §5 est une dette, pas une garantie.
