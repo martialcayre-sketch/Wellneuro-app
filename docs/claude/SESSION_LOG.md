@@ -3528,3 +3528,22 @@ tautologique — le piège que ce lot dénonce. Corrigé par règles injectables
 
 **Ouvert.** `importance` de C-STR ; émettre malgré `validationExterne: false` ?
 ; aucune fenêtre temporelle.
+
+## 2026-08-12 — Le rouge E2E qui ne parlait pas du code
+
+**Décisions.** Le blocage de `visual.spec.ts` (WebKit, portail patient) est
+**étranger à tout diff** : la trace donne `0-trace.network` vide — aucune
+requête émise, serveur jamais sollicité. Preuve close par un run rouge sur une
+branche d'outillage ne contenant aucune ligne du LOT-01. Le harnais **classe**
+désormais l'échec au lieu de le laisser lire comme une régression.
+
+**Écarté.** `retries` : il ferait de ce blocage un succès silencieux et
+emporterait avec lui les vrais échecs intermittents. Montée Playwright
+1.61 → 1.62 : rien ne la relie au blocage, ce serait un tirage au sort. Réserve
+de la veille sur `:159` : fausse — `:159` passe en 314 ms.
+
+**Prochaine action.** Arbitrer le palier T3, aujourd'hui inatteignable
+localement sur **toute** branche ; le CI ne l'a jamais rencontré.
+
+**Ouvert.** Cause racine hors de notre code. Les trois arbitrages cliniques du
+LOT-01 restent en attente.
