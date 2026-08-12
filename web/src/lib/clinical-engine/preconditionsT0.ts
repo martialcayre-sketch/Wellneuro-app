@@ -199,7 +199,11 @@ function evaluerRideau(passations: readonly PassationPourPreconditions[]): Condi
 
   return {
     id: 'rideau_t0',
-    libelle: 'Premier rideau complet et exploitable',
+    // « RENSEIGNÉ ET COTABLE », et non « complet » : le prédicat exige une
+    // mesure, pas que chaque item soit répondu. Exiger la complétude item par
+    // item serait un durcissement clinique qui n'a pas été arbitré — le dire
+    // plutôt que de laisser le libellé promettre plus que le code ne tient.
+    libelle: 'Premier rideau renseigné et cotable',
     satisfaite: manques.length === 0,
     detail: manques.length === 0 ? null : `Premier rideau incomplet — ${manques.join(' ; ')}.`,
   };

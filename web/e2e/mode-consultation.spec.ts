@@ -97,7 +97,7 @@ test.describe('Mode consultation (fiche patient)', () => {
       const confirm = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
       await expect(confirm).toBeVisible();
       // La checklist dit CE QUI MANQUE, et le bouton ne se clique pas.
-      await expect(page.getByText('Premier rideau complet et exploitable')).toBeVisible();
+      await expect(page.getByText('Premier rideau renseigné et cotable')).toBeVisible();
       await expect(page.getByText(/Premier rideau incomplet/)).toBeVisible();
       await expect(confirm).toBeDisabled();
       // Ce qui n'est pas requis est nommé, plutôt que passé sous silence.

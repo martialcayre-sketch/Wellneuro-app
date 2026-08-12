@@ -36,7 +36,7 @@ const proposalResponse: CockpitRuntimeApiResponse = {
 // Checklist minimale : tout est satisfait sauf ce que le cas décrit.
 function preconditions(surcharge: Partial<PreconditionsT0> = {}): PreconditionsT0 {
   return {
-    dures: [{ id: 'rideau_t0', libelle: 'Premier rideau complet et exploitable', satisfaite: true, detail: null }],
+    dures: [{ id: 'rideau_t0', libelle: 'Premier rideau renseigné et cotable', satisfaite: true, detail: null }],
     souples: [],
     bloquant: false,
     contournementsRequis: [],
@@ -73,7 +73,7 @@ describe('EpisodeConfirmationPanel', () => {
         proposal={proposal}
         preconditions={preconditions({
           dures: [{
-            id: 'rideau_t0', libelle: 'Premier rideau complet et exploitable',
+            id: 'rideau_t0', libelle: 'Premier rideau renseigné et cotable',
             satisfaite: false, detail: 'Premier rideau incomplet — non renseignés : Q_MOD_03, Q_MOD_01.',
           }],
           bloquant: true,
