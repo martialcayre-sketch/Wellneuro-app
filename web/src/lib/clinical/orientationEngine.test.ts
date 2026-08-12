@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import type { OrientationRule } from './orientationRulesV1';
+import type { StopRule } from './stopRulesV1';
 
 const CLAIM = { claimId: 'WN-CL-0001-001', versionClaim: 'v1' };
 
@@ -527,5 +528,219 @@ describe('evaluerOrientation — couleurs et administrabilité (correctifs LOT-0
       regles: [regle({})],
     });
     expect(recos).toHaveLength(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RÈGLES D'ARRÊT — [[D-053]]
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CLAIM_ARRET = { claimId: 'WN-CL-0002-002', versionClaim: 'v1' };
+
+function arret(surcharge: Partial<StopRule>): StopRule {
+  return {
+    id: 'STOP-TEST',
+    statut: 'publiee',
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'plage', min: 0, max: 4 } },
+    ],
+    reglesEteintes: ['R-TEST-01'],
+    motif: 'Les instruments spécifiques sont rassurants.',
+    justificationClaims: [CLAIM_ARRET],
+    ...surcharge,
+  };
+}
+
+/** Le dossier minimal qui allume `R-TEST-01` : un PSS-10 à 30. */
+function dossierAllume() {
+  return {
+    reponses: [reponse({ scores: { total: 30 } })],
+    idsQuestionnairesAssignes: [],
+    regles: [regle({})],
+  };
+}
+
+describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
+  // CONTRE-ÉPREUVE D'ANTI-VACUITÉ, en tête plutôt qu'en note : un banc
+  // d'extinction qui ne visiterait jamais l'état « allumée » serait vert pour
+  // une mauvaise raison.
+  it('sans règle d\'arrêt, la recommandation est allumée', () => {
+    const recos = evaluerOrientation(dossierAllume());
+    expect(recos).toHaveLength(1);
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  it('éteint la recommandation, avec son motif, ses conditions et ses claims', () => {
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } })],
+      reglesArret: [arret({})],
+    });
+    // La ligne RESTE servie : une extinction n'efface pas l'historique.
+    expect(recos).toHaveLength(1);
+    expect(recos[0].motifs).toHaveLength(1);
+    expect(recos[0].motifs[0].regleId).toBe('R-TEST-01');
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(recos[0].extinction?.motif).toContain('rassurants');
+    expect(recos[0].extinction?.conditions[0]).toContain('Q_STR_01');
+    expect(recos[0].extinction?.claims).toEqual([CLAIM_ARRET]);
+  });
+
+  it('RALLUME dès qu\'une passation nouvelle sort de la zone rassurante', () => {
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-01T10:00:00.000Z', scores: { total: 2 } }),
+        // Plus récente, et dégradée : c'est elle qui fait foi.
+        reponse({ idQuestionnaire: 'Q_STR_01', dateReponse: '2026-07-25T10:00:00.000Z', scores: { total: 12 } }),
+      ],
+      reglesArret: [arret({})],
+    });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  it('n\'éteint pas sur un score annulé ni sur un recueil sans mesure', () => {
+    for (const scores of [null, {}, { total: null }]) {
+      const recos = evaluerOrientation({
+        ...dossierAllume(),
+        reponses: [
+          reponse({ scores: { total: 30 } }),
+          reponse({ idQuestionnaire: 'Q_STR_01', scores: scores as Record<string, unknown> | null }),
+        ],
+        reglesArret: [arret({})],
+      });
+      expect(recos[0].extinction ?? null).toBeNull();
+    }
+  });
+
+  it('n\'éteint pas une recommandation encore motivée par une règle NON éteinte', () => {
+    const autreAxe = regle({
+      id: 'R-SOM-99',
+      declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'plage', min: 5, max: 21 } }],
+    });
+    const recos = evaluerOrientation({
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_SOM_01', scores: { total: 9 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } }),
+      ],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({}), autreAxe],
+      reglesArret: [arret({})],
+    });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].motifs.map(motif => motif.regleId).sort()).toEqual(['R-SOM-99', 'R-TEST-01']);
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  it('n\'éteint rien sans claim, sans règle nommée, ou hors statut publié', () => {
+    for (const surcharge of [
+      { justificationClaims: [] },
+      { reglesEteintes: [] },
+      { statut: 'brouillon' as const },
+      { declencheurs: [] },
+    ]) {
+      const recos = evaluerOrientation({
+        ...dossierAllume(),
+        reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } })],
+        reglesArret: [arret(surcharge)],
+      });
+      expect(recos[0].extinction ?? null).toBeNull();
+    }
+  });
+
+  it('ne déplace pas la ligne éteinte dans l\'ordre servi', () => {
+    const seconde = regle({
+      id: 'R-TEST-02',
+      declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'plage', min: 5, max: 21 } }],
+      suggestions: [{ questionnaireId: 'Q_SOM_02', priorite: 2 }],
+    });
+    const entree = {
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_SOM_01', scores: { total: 9 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 2 } }),
+      ],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({}), seconde],
+    };
+    const sansArret = evaluerOrientation(entree).map(reco => JSON.stringify(reco.cible));
+    const avecArret = evaluerOrientation({ ...entree, reglesArret: [arret({})] });
+    expect(avecArret.map(reco => JSON.stringify(reco.cible))).toEqual(sansArret);
+    expect(avecArret[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(avecArret[1].extinction ?? null).toBeNull();
+  });
+});
+
+describe('evaluerOrientation — `dejaRepondu` excluant', () => {
+  const cibleQuestionnaire = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
+
+  it('sans le drapeau, la cible déjà renseignée reste proposée', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [cibleQuestionnaire],
+    });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].dejaRepondu).toBe(true);
+  });
+
+  it('exclut la cible dont la dernière passation est EXPLOITABLE', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [cibleQuestionnaire],
+      exclureDejaRepondu: true,
+    });
+    expect(recos).toEqual([]);
+  });
+
+  // LE CŒUR DE L'ARBITRAGE 7. Le service met le score à `null` — sans retirer la
+  // ligne — quand la passation est invalidée ou non interprétable. Le praticien
+  // qui invalide ATTEND une re-passation : l'exclure serait lui retirer la
+  // recommandation qu'il vient de provoquer.
+  it('n\'exclut PAS sur une passation dont le score a été annulé', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: null })],
+      idsQuestionnairesAssignes: [],
+      regles: [cibleQuestionnaire],
+      exclureDejaRepondu: true,
+    });
+    expect(recos).toHaveLength(1);
+    // Le badge, lui, continue de dire le fait administratif.
+    expect(recos[0].dejaRepondu).toBe(true);
+  });
+
+  it('n\'exclut jamais un pack à composition inconnue', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+      exclureDejaRepondu: true,
+    });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].dejaRepondu).toBeNull();
+  });
+
+  it('n\'exclut un pack que si TOUS ses membres sont exploitables', () => {
+    const base = {
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+      compositionPacks: { pack_stress_chronique_burnout: ['Q_STR_02', 'Q_STR_05'] },
+      exclureDejaRepondu: true,
+    };
+    const partiel = evaluerOrientation({
+      ...base,
+      reponses: [reponse({ scores: { total: 30 } })],
+    });
+    expect(partiel).toHaveLength(1);
+
+    const complet = evaluerOrientation({
+      ...base,
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_05', scores: { total: 12 } })],
+    });
+    expect(complet).toEqual([]);
   });
 });

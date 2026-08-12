@@ -99,7 +99,18 @@ BEGIN
     ('WN-CL-0323-025', 'v1.0', 'orientation', true),
     ('WN-CL-0339-010', 'v1.0', 'orientation', true),
     ('WN-CL-0359-025', 'v1.0', 'orientation', true),
-    ('WN-CL-0238-002', 'v1.0', 'contradictions', false)
+    ('WN-CL-0238-002', 'v1.0', 'contradictions', false),
+    -- Table des règles d'arrêt ([[D-053]]). `exige_prescriptif = false` : une
+    -- règle d'arrêt ne prescrit pas une exploration, elle en retient une, et ce
+    -- qu'elle épingle sont les bandes publiées des instruments qui doivent être
+    -- rassurants. L'un de ces claims EST prescriptif (`WN-CL-0051-033`, la
+    -- conduite attachée à la bande basse) : la colonne dit ce qu'on EXIGE, pas
+    -- ce qu'on interdit.
+    ('WN-CL-0051-019', 'v1.0', 'arret', false),
+    ('WN-CL-0051-030', 'v1.0', 'arret', false),
+    ('WN-CL-0051-033', 'v1.0', 'arret', false),
+    ('WN-CL-0127-029', 'v1.0', 'arret', false),
+    ('WN-CL-0127-030', 'v1.0', 'arret', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle

@@ -76,6 +76,7 @@ function pairesSql(source: string): string[] {
 const FICHIER_VERS_TABLE: Record<string, string> = {
   'orientationRulesV1.ts': 'orientation',
   'contradictionsV1.ts': 'contradictions',
+  'stopRulesV1.ts': 'arret',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -91,6 +92,20 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   orientation: true,
   // Une règle de contradiction CONSTATE que deux instruments divergent.
   contradictions: false,
+  // UNE RÈGLE D'ARRÊT NE PRESCRIT PAS — elle RETIENT ([[D-053]]).
+  //
+  // L'arbitrage est neuf et il n'allait pas de soi : une table qui agit sur ce
+  // que le praticien se voit proposer ressemble à une table prescriptive. Ce
+  // qu'elle épingle, pourtant, ce sont des CONSTATS — les bandes publiées des
+  // instruments qui doivent être rassurants, et la conduite que le corpus
+  // attache lui-même à la bande basse (`WN-CL-0051-033` : « orienter vers les
+  // conseils de vie antistress »). Exiger `prescriptif = true` de toute la table
+  // rejetterait les claims de bandes, qui ne prescrivent rien et n'ont aucune
+  // raison de le faire ; ce serait exiger d'une source qu'elle dise plus que ce
+  // qu'elle dit. La prescription, ici, ne vient pas des claims : elle vient de
+  // la SIGNATURE praticien, qui assume la hiérarchisation « rassurant ⇒ ne pas
+  // explorer davantage ».
+  arret: false,
 };
 
 interface TableSignee {

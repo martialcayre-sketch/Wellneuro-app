@@ -6,6 +6,7 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import { STOP_RULES_METADATA, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
@@ -72,6 +73,26 @@ function tableSignee(): boolean {
  */
 export function orientationActive(): boolean {
   return process.env.WN_ENABLE_ORIENTATION_NNPP2 === '1' && tableSignee();
+}
+
+/**
+ * La table des RÈGLES D'ARRÊT est-elle signée ? ([[D-053]])
+ *
+ * Même verrou auto-portant que `tableSignee()`, et pour le même motif : un
+ * `validationExterne` seul serait un booléen qu'un flip isolé suffirait à
+ * ouvrir. Il commande DEUX comportements — l'extinction des recommandations et
+ * l'exclusion des instruments déjà renseignés de façon exploitable —, si bien
+ * qu'une table non signée laisse la production strictement inchangée.
+ *
+ * Il n'y a pas de drapeau d'environnement propre : les règles d'arrêt ne
+ * s'exercent qu'à l'intérieur d'une orientation déjà servie, donc déjà gardée
+ * par `WN_ENABLE_ORIENTATION_NNPP2`. Un second drapeau donnerait l'illusion
+ * d'un second verrou là où il n'y a qu'un seul chemin.
+ */
+export function tableArretSignee(): boolean {
+  return STOP_RULES_METADATA.validationExterne
+    && STOP_RULES_METADATA.dateValidation !== null
+    && STOP_RULES_METADATA.claimsSource.length > 0;
 }
 
 export function resultatInactif(): ResultatOrientationInactif {
@@ -277,6 +298,12 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     drapeaux: consultation?.anamnese == null
       ? undefined
       : extraireDrapeauxAnamnese(consultation.anamnese),
+    // Les deux effets des règles d'arrêt passent par le MÊME verrou, posé ici et
+    // nulle part ailleurs : tant que la table n'est pas signée, le moteur ne
+    // reçoit aucune règle et l'exclusion reste éteinte. C'est ce qui rend le
+    // merge invisible en production, où l'orientation, elle, est allumée.
+    reglesArret: tableArretSignee() ? STOP_RULES_V1 : [],
+    exclureDejaRepondu: tableArretSignee(),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune

@@ -101,7 +101,18 @@ BEGIN
     ('WN-CL-0323-025', 'v1.0', 'orientation', true),
     ('WN-CL-0339-010', 'v1.0', 'orientation', true),
     ('WN-CL-0359-025', 'v1.0', 'orientation', true),
-    ('WN-CL-0238-002', 'v1.0', 'contradictions', false)
+    ('WN-CL-0238-002', 'v1.0', 'contradictions', false),
+    -- Table des règles d'arrêt ([[D-053]]). `exige_prescriptif = false` : une
+    -- règle d'arrêt ne prescrit pas une exploration, elle en retient une, et ce
+    -- qu'elle épingle sont les bandes publiées des instruments qui doivent être
+    -- rassurants. L'un de ces claims EST prescriptif (`WN-CL-0051-033`, la
+    -- conduite attachée à la bande basse) : la colonne dit ce qu'on EXIGE, pas
+    -- ce qu'on interdit.
+    ('WN-CL-0051-019', 'v1.0', 'arret', false),
+    ('WN-CL-0051-030', 'v1.0', 'arret', false),
+    ('WN-CL-0051-033', 'v1.0', 'arret', false),
+    ('WN-CL-0127-029', 'v1.0', 'arret', false),
+    ('WN-CL-0127-030', 'v1.0', 'arret', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
@@ -180,7 +191,18 @@ BEGIN
     ('WN-CL-0323-025', 'v1.0', 'orientation', true),
     ('WN-CL-0339-010', 'v1.0', 'orientation', true),
     ('WN-CL-0359-025', 'v1.0', 'orientation', true),
-    ('WN-CL-0238-002', 'v1.0', 'contradictions', false)
+    ('WN-CL-0238-002', 'v1.0', 'contradictions', false),
+    -- Table des règles d'arrêt ([[D-053]]). `exige_prescriptif = false` : une
+    -- règle d'arrêt ne prescrit pas une exploration, elle en retient une, et ce
+    -- qu'elle épingle sont les bandes publiées des instruments qui doivent être
+    -- rassurants. L'un de ces claims EST prescriptif (`WN-CL-0051-033`, la
+    -- conduite attachée à la bande basse) : la colonne dit ce qu'on EXIGE, pas
+    -- ce qu'on interdit.
+    ('WN-CL-0051-019', 'v1.0', 'arret', false),
+    ('WN-CL-0051-030', 'v1.0', 'arret', false),
+    ('WN-CL-0051-033', 'v1.0', 'arret', false),
+    ('WN-CL-0127-029', 'v1.0', 'arret', false),
+    ('WN-CL-0127-030', 'v1.0', 'arret', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif);
 -- <<< PAIRES_FIXTURES
 
@@ -303,7 +325,29 @@ BEGIN
     RAISE EXCEPTION 'negatif N7: la ligne contradictions n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 7 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction non prescriptif) laisse passer.';
+  -- ── N8 — LA LIGNE `arret` EST GARDÉE, ELLE AUSSI ─────────────────────────
+  -- MÊME DÉMONSTRATION QUE N7, POUR LA TABLE DES RÈGLES D'ARRÊT ([[D-053]]).
+  -- Elle entre au contrat avec `exige_prescriptif = false`, comme les
+  -- contradictions : sans ce cas, un prédicat qui l'aurait exemptée de TOUTES
+  -- les propriétés — et pas seulement de `prescriptif` — passerait les huit
+  -- précédents, et une table capable d'ÉTEINDRE une exploration s'appuierait
+  -- sur des claims que rien ne contrôlerait.
+  --
+  -- Ce qui rend le cas discriminant n'est pas « ça lève » — d'autres ruptures
+  -- sont déjà en place à ce stade de la transaction — mais la PRÉSENCE de ce
+  -- claim-ci dans le détail : un prédicat qui ignorerait la table ne le
+  -- nommerait pas.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET active = false WHERE claim_id = 'WN-CL-0051-033';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0051-033' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N8: la ligne arret n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 8 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction et cinq claims d''arret non prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

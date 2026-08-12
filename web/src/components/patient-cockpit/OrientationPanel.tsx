@@ -10,6 +10,7 @@ import type {
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
+import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesV1';
 import { Badge } from '@/components/ui/Badge';
 
 // Orientation NNPP2 — le premier consommateur de `/api/praticien/orientation`
@@ -351,6 +352,11 @@ export function OrientationPanel({
                     {/* `null` = inconnu, et un fait inconnu ne doit pas se
                         présenter comme un fait négatif. */}
                     {recommandation.dejaRepondu === null && <Badge>couverture inconnue</Badge>}
+                    {/* Une extinction n'efface pas la ligne : elle la qualifie.
+                        Les motifs d'origine restent affichés dessous, et c'est
+                        ce qui permet de relire POURQUOI l'exploration avait été
+                        proposée avant de lire pourquoi elle ne l'est plus. */}
+                    {recommandation.extinction && <Badge variant="success">exploration éteinte</Badge>}
                   </div>
 
                   {recommandation.objectifs.length > 0 && (
@@ -373,6 +379,25 @@ export function OrientationPanel({
                       </li>
                     ))}
                   </ul>
+
+                  {recommandation.extinction && (
+                    <div className="mt-2 rounded-md bg-muted/50 p-2">
+                      <p className="text-xs font-medium text-foreground">{LIBELLE_EXTINCTION}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <span>{recommandation.extinction.stopRuleId} —</span>{' '}
+                        {recommandation.extinction.motif}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {recommandation.extinction.conditions.join(' ; ')}
+                        {recommandation.extinction.claims.length > 0 && (
+                          <span>
+                            {' '}
+                            ({recommandation.extinction.claims.map(claim => claim.claimId).join(', ')})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
 
                   {ajoutable && dejaCouvert && (
                     // Le texte vient de la route d'assignation, il n'est pas

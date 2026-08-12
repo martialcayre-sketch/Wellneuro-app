@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import type { OrientationDeclencheur, OrientationRule, OrientationZone } from './orientationRulesV1';
+import type { StopRule } from './stopRulesV1';
 
 // Moteur d'orientation déterministe (campagne certification corpus, lot 7,
 // contrat v2).
@@ -100,6 +101,28 @@ export type RecommandationExploration = {
    */
   dejaRepondu: boolean | null;
   motifs: MotifOrientation[];
+  /**
+   * Extinction par une règle d'arrêt ([[D-053]]), ou absent.
+   *
+   * CHAMP SUR LA LIGNE, ET NON LISTE SÉPARÉE. L'interdit du lot — « une
+   * extinction n'efface jamais l'historique » — est ainsi tenu par
+   * construction : la recommandation garde ses `motifs` d'origine et porte en
+   * plus le motif de son extinction. Une seconde collection aurait obligé à
+   * recopier la ligne, et aurait cassé quatre lecteurs qui comptent sur celle-ci
+   * — l'allowlist du garde de restitution de la synthèse, `orientationInjectee`
+   * (qui teste `recommandations.length > 0` et désarmerait ce garde si tout
+   * disparaissait), le filtre pack du service, et l'état vide du panneau.
+   */
+  extinction?: ExtinctionRecommandation | null;
+};
+
+export type ExtinctionRecommandation = {
+  stopRuleId: string;
+  /** Une description lisible par déclencheur d'arrêt atteint (UI praticien). */
+  conditions: string[];
+  /** Phrase française de la règle d'arrêt : POURQUOI cette extinction. */
+  motif: string;
+  claims: { claimId: string; versionClaim: string }[];
 };
 
 export type EntreeOrientation = {
@@ -120,6 +143,27 @@ export type EntreeOrientation = {
    *  aucun déclencheur `drapeau` n'est atteint (fail-closed) : une anamnèse non
    *  fournie ne vaut pas une anamnèse vide qu'on aurait le droit d'interpréter. */
   drapeaux?: DrapeauxAnamnese;
+  /**
+   * Règles d'arrêt à évaluer ([[D-053]]). Absent ou vide = aucune extinction.
+   *
+   * Le moteur reste PUR : c'est `orientationService` qui décide de fournir la
+   * table ou pas, selon qu'elle est signée. Une table non signée n'arrive donc
+   * jamais jusqu'ici, et le moteur n'a pas à connaître le verrou.
+   */
+  reglesArret?: StopRule[];
+  /**
+   * `dejaRepondu` devient EXCLUANT ([[D-053]], arbitrage 7) — commandé par le
+   * même verrou que les règles d'arrêt, pour que la production ne change pas
+   * tant que la table n'est pas signée.
+   *
+   * L'exclusion ne porte QUE sur une passation exploitable : le service met à
+   * `null` le score d'une passation `INVALID`, `SUPERSEDED`, non interprétable
+   * ou sans réponses brutes, précisément pour que le praticien qui invalide
+   * reçoive à nouveau la recommandation de faire repasser l'instrument. Le
+   * calcul de `dejaRepondu`, lui, ne bouge pas : le badge reste un fait
+   * administratif.
+   */
+  exclureDejaRepondu?: boolean;
 };
 
 const NIVEAU_PACK = new Map(PACKS_REGISTRY.map(pack => [pack.id, pack.niveau]));
@@ -600,6 +644,40 @@ function estAdministrable(entree: EntreeOrientation, questionnaireId: string): b
   return !entree.estAdministrable || entree.estAdministrable(questionnaireId);
 }
 
+/**
+ * La dernière passation de cet instrument est-elle EXPLOITABLE ?
+ *
+ * « Exploitable » ne veut pas dire « existe » : le service met le score à `null`
+ * — sans retirer la ligne — quand la passation est `INVALID`, `SUPERSEDED`,
+ * `HISTORICAL_ONLY`, déclarée non interprétable par le registre, non
+ * administrable, ou dépourvue de réponses brutes. C'est exactement la
+ * différence qui décide si une exploration reste utile : le praticien qui
+ * invalide une passation ATTEND une re-passation, et une exclusion aveugle
+ * ferait disparaître la recommandation qu'il attend ([[D-053]], arbitrage 7).
+ */
+function passationExploitable(dernieres: Map<string, ReponseOrientation>, questionnaireId: string): boolean {
+  const reponse = dernieres.get(questionnaireId);
+  return reponse != null && reponse.scores != null;
+}
+
+/**
+ * Cette cible est-elle déjà couverte par des passations exploitables ?
+ *
+ * Composition de pack inconnue = jamais couverte. Un fait inconnu ne se présente
+ * pas comme un fait acquis : l'inverse serait un fail-open, et c'est le même
+ * choix que celui qui laisse `dejaRepondu` à `null` dans ce cas.
+ */
+function cibleDejaCouverte(
+  entree: EntreeOrientation,
+  dernieres: Map<string, ReponseOrientation>,
+  cible: CibleExploration
+): boolean {
+  if (cible.type === 'questionnaire') return passationExploitable(dernieres, cible.questionnaireId);
+  const composition = entree.compositionPacks?.[cible.packId];
+  if (!Array.isArray(composition) || composition.length === 0) return false;
+  return composition.every(qid => passationExploitable(dernieres, qid));
+}
+
 /** Un pack ne passe que si TOUS ses membres connus sont administrables. */
 function packAdministrable(entree: EntreeOrientation, packId: PackId): boolean {
   if (!entree.estAdministrable) return true;
@@ -665,6 +743,15 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       }
 
       for (const cible of cibles) {
+        // `dejaRepondu` EXCLUANT — gaté, et sur la seule passation exploitable.
+        // Re-proposer un instrument dont la mesure est déjà faite et cotable
+        // n'apporte rien ; le faire disparaître parce qu'une ligne existe, alors
+        // que sa mesure a été écartée, ferait perdre le signal « mesure à
+        // replanifier ». La ligne ne porte donc pas d'extinction : elle n'est
+        // pas produite du tout, et le badge « déjà renseigné » continue de dire
+        // le fait administratif sur les cibles qui, elles, restent proposées.
+        if (entree.exclureDejaRepondu && cibleDejaCouverte(entree, dernieres, cible)) continue;
+
         const cle = cleCible(cible);
         const existante = parCible.get(cle);
         if (existante) {
@@ -807,8 +894,60 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     return false;
   });
 
+  // ── EXTINCTION PAR LES RÈGLES D'ARRÊT ─────────────────────────────────────
+  //
+  // ICI, ET PAS AILLEURS. Après l'absorption pack/membre — sinon un pack ayant
+  // absorbé un membre éteint porterait le motif d'une cible qui n'est plus
+  // servie — et avant le tri, qui lit `motifs.length` : éteindre après aurait
+  // classé sur un compte périmé.
+  //
+  // L'EXTINCTION RETIRE DES MOTIFS, PAS DES LIGNES. Une règle d'arrêt nomme des
+  // RÈGLES ; on retire donc de chaque recommandation les motifs qui viennent
+  // d'elles. Une recommandation qui garde au moins un motif reste ALLUMÉE : elle
+  // est encore justifiée par une règle que rien n'a éteinte, possiblement d'un
+  // autre axe clinique. Une recommandation qui les perd tous devient éteinte —
+  // elle reste dans la liste, avec ses motifs d'origine ET son motif
+  // d'extinction, parce qu'une extinction n'efface jamais l'historique.
+  //
+  // Une règle d'arrêt sans claim n'éteint rien : même invariant de traçabilité
+  // que pour les règles d'orientation, et pour la même raison.
+  for (const arret of entree.reglesArret ?? []) {
+    if (arret.statut !== 'publiee') continue;
+    if (arret.declencheurs.length === 0) continue;
+    if (arret.justificationClaims.length === 0) continue;
+    if (arret.reglesEteintes.length === 0) continue;
+
+    const conditions: string[] = [];
+    let tousAtteints = true;
+    for (const declencheur of arret.declencheurs) {
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
+      if (!condition) {
+        tousAtteints = false;
+        break;
+      }
+      conditions.push(condition);
+    }
+    if (!tousAtteints) continue;
+
+    const eteintes = new Set(arret.reglesEteintes);
+    for (const recommandation of retenues) {
+      // Déjà éteinte par une règle d'arrêt précédente : la première qui mord
+      // porte le motif. En ajouter un second décrirait deux fois le même état.
+      if (recommandation.extinction) continue;
+      if (recommandation.motifs.length === 0) continue;
+      if (!recommandation.motifs.every(motif => eteintes.has(motif.regleId))) continue;
+      recommandation.extinction = {
+        stopRuleId: arret.id,
+        conditions,
+        motif: arret.motif,
+        claims: arret.justificationClaims.map(claim => ({ ...claim })),
+      };
+    }
+  }
+
   // Tri déterministe : priorité croissante, puis cibles les plus motivées,
-  // puis clé stable.
+  // puis clé stable. L'extinction ne déplace RIEN dans cet ordre : une ligne
+  // éteinte garde sa place et son rang, c'est son affichage qui change.
   return retenues.sort((a, b) =>
     a.priorite - b.priorite
     || b.motifs.length - a.motifs.length

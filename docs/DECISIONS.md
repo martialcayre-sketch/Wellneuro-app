@@ -27,13 +27,37 @@ proposition superflue coûte une passation, une extinction indue coûte une
 exploration qui n'aura pas lieu, et le praticien ne voit pas ce qui ne s'affiche
 pas (`DC-25`, `DC-28`).
 
-**2. La V1 ne porte que STOP-STR, sur ses seules cibles stress.** DASS-21
-(`Q_STR_04`) et Cungi (`Q_STR_03`) rassurants éteignent les explorations de
-l'axe stress proposées par cette voie — PSS-10 `Q_STR_02`, BMS-10 `Q_STR_05`,
-Karasek/WART, Cungi lui-même. Les seuils ne sont pas écrits dans la table
-d'arrêt : ils **citent les bandes déjà publiées** de chaque grille, comme le
-fait C-STR ([[D-042]]). Aucun nombre nouveau n'entre dans le dépôt par ce lot
-(`DC-19`, `DC-20`).
+**2. La V1 ne porte que STOP-STR, sur ses seules cibles stress — et c'est
+`Q_STR_01` qui porte le claim, pas le DASS.** La rédaction initiale de cet
+arbitrage écrivait la règle sur « DASS-21 et Cungi rassurants ». La lecture de
+`rag_corpus_claims` en production le 2026-08-12 (8 224 claims `VALIDE` et actifs)
+la corrige : **ni le DASS-21 ni le Cungi ne portent de claim d'extinction**, le
+corpus n'en publie que les bandes. La seule échelle de stress dont le corpus
+attache une **conduite** à la bande rassurante est le questionnaire SIIN
+(`Q_STR_01`) — `WN-CL-0051-030` (« un score total inférieur à 4 correspond à un
+niveau de stress rassurant **relevant de l'hygiène de vie** ») et
+`WN-CL-0051-033`, prescriptif (« il est recommandé d'orienter vers les **conseils
+de vie antistress** »). La bande voisine donne son sens à celle-ci :
+`WN-CL-0051-031` réserve le « regard physiopathologique » à l'intervalle 5-14.
+`questions.ts` sert exactement cette bande sur `Q_STR_01` (0-4, « Oriente vers
+les conseils de vie antistress »).
+
+`Q_STR_01` rassurant est donc la condition **porteuse** ; le DASS-21 (axes `A` et
+`S` en bande `Normal`) et le Cungi (« Niveau de stress très bas ») restent des
+conditions **additionnelles**, dont les bandes sont elles aussi publiées par le
+corpus. Les exiger rend l'extinction plus rare : le sens du fail-closed. L'axe
+`D` du DASS n'entre pas — c'est l'axe humeur, et l'arbitrage 3 y renonce.
+
+Sont éteintes les explorations de l'axe stress proposées par cette voie — PSS-10
+`Q_STR_02`, BMS-10 `Q_STR_05`, Karasek/WART. Les seuils ne sont pas écrits dans
+la table d'arrêt : ils **citent les bandes déjà publiées** de chaque grille,
+comme le fait C-STR ([[D-042]]). Aucun nombre nouveau n'entre dans le dépôt par
+ce lot (`DC-19`, `DC-20`).
+
+**L'extinction nomme des RÈGLES, jamais des cibles.** Une cible qu'une règle
+d'un autre axe motive encore reste allumée : le Cungi est proposé par `R-SOM-01`
+(axe sommeil), et une extinction par cible le ferait disparaître d'un axe qui n'a
+rien demandé. C'est la même objection que celle qui fait renoncer au HAD.
 
 **3. STOP-STR n'éteint pas le HAD.** Le HAD (`Q_NEU_11`) n'est proposé par
 aucune règle de stress : il l'est par `R2-NEU-01` (plainte moral déclarée),
@@ -295,7 +319,9 @@ commente une synthèse, elle ne la re-valide pas.
 - Décision : sur un identifiant listé comme ayant désigné plusieurs instruments,
   **aucune passation ne porte le repère dès qu'il en existe au moins deux
   EXPLOITABLES**, et chaque ligne concernée porte le motif de l'abstention
-  (`formeInstrumentAmbigue`) — consigne `synthese-v24`.
+  (`formeInstrumentAmbigue`) — consigne `synthese-v24` à la date de cette
+  décision, portée à `synthese-v25` le même jour par [[D-053]] (l'extinction
+  d'orientation), sans que le fond de cette section change.
 - **Marquer, pas taire** — et c'est le cœur de la décision. Retirer le repère
   sans rien dire aurait été lu par le modèle comme le cas « aucune passation
   exploitable » que la consigne décrit déjà : un motif faux à la place d'un
