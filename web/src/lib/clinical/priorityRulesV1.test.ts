@@ -66,6 +66,19 @@ describe('priorityRulesV1 — statut de signature', () => {
     PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_SIMULEE;
     expect(tablePrioritesSignee()).toBe(true);
   });
+
+  // UNE DATE MAL FORMÉE FERME LE VERROU au lieu de l'ouvrir : cette chaîne
+  // devient telle quelle le `validatedAt` que `buildClinicalReview` valide en
+  // ISO canonique — sans ce terme, la table s'ouvrait puis la consommation
+  // jetait (revue PR #671). Fail-closed : silence, jamais un 500.
+  it('une dateValidation non ISO canonique laisse le verrou fermé', () => {
+    PRIORITY_RULES_METADATA.validationExterne = true;
+    for (const malFormee of ['2026-08-12', '2026-08-12T00:00:00Z', 'demain']) {
+      PRIORITY_RULES_METADATA.dateValidation = malFormee;
+      expect(tablePrioritesSignee()).toBe(false);
+      expect(reglesPrioritesValidees()).toEqual([]);
+    }
+  });
 });
 
 describe('priorityRulesV1 — traçabilité des claims', () => {

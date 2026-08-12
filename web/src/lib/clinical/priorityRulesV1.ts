@@ -368,8 +368,18 @@ export const PRIORITY_RULES_SHA256 = sha256(JSON.stringify(PRIORITY_RULES_V1));
  * qu'un seul chemin.
  */
 export function tablePrioritesSignee(): boolean {
+  // La date doit être ISO CANONIQUE : elle devient telle quelle le
+  // `validation.validatedAt` des `ValidatedClinicalRuleRef`, où
+  // `buildClinicalReview` exige cette forme. Sans ce terme, une signature à la
+  // date mal formée OUVRIRAIT le verrou puis ferait jeter la consommation — un
+  // échec bruyant en aval au lieu d'un verrou qui reste fermé (revue PR #671).
+  const dateValidation = PRIORITY_RULES_METADATA.dateValidation;
   return PRIORITY_RULES_METADATA.validationExterne
-    && PRIORITY_RULES_METADATA.dateValidation !== null
+    && dateValidation !== null
+    // Le terme `getTime()` court-circuite l'illisible : `toISOString()` JETTE
+    // sur une date invalide, et le verrou doit fermer, jamais jeter.
+    && !Number.isNaN(new Date(dateValidation).getTime())
+    && new Date(dateValidation).toISOString() === dateValidation
     && PRIORITY_RULES_METADATA.claimsSource.length > 0;
 }
 
