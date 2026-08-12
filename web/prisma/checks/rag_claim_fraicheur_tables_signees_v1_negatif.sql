@@ -3,11 +3,11 @@
 -- `rag_claim_fraicheur_tables_signees_v1.sql` vérifie que l'invariant TIENT, sur
 -- la production. Ce fichier vérifie qu'il MORD, en CI. Il n'est pas décoratif :
 -- le contrat positif ne peut PAS tourner en CI — la base y est construite vide
--- par `migrate deploy`, les 29 claims épinglés y sont tous absents et le contrat
+-- par `migrate deploy`, les 40 claims épinglés y sont tous absents et le contrat
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --
--- NEUF CAS. Huit formes de rupture doivent lever ; le neuvième — joué EN
+-- DIX CAS. Neuf formes de rupture doivent lever ; le dixième — joué EN
 -- PREMIER sous le nom `N0` — est le CONTRÔLE : un corpus sain qui ne doit
 -- jamais lever, sans quoi un prédicat inconditionnellement rouge passerait tous
 -- les autres. Le jouer en premier évite aussi que les ruptures suivantes lèvent
@@ -20,8 +20,8 @@
 -- version qu'elle n'a jamais relue. C'est la raison d'être de la jointure sur
 -- la paire.
 --
--- `N7` ET `N8` GARDENT LES AUTRES LIGNES — contradictions, puis règles d'arrêt
--- ([[D-053]]). N1 à N6 mutent tous un claim d'ORIENTATION : sans
+-- `N7`, `N8` ET `N9` GARDENT LES AUTRES LIGNES — contradictions, règles d'arrêt
+-- ([[D-053]]), puis priorités d'intervention ([[D-054]]). N1 à N6 mutent tous un claim d'ORIENTATION : sans
 -- N7, un prédicat exemptant la table de contradictions de TOUTES les propriétés
 -- — et pas seulement de `prescriptif` — les passerait tous, et le claim de
 -- C-STR ne serait gardé par rien. Avec N5, il borne l'exemption de [[D-046]]
@@ -113,7 +113,27 @@ BEGIN
     ('WN-CL-0051-030', 'v1.0', 'arret', false),
     ('WN-CL-0051-033', 'v1.0', 'arret', false),
     ('WN-CL-0127-029', 'v1.0', 'arret', false),
-    ('WN-CL-0127-030', 'v1.0', 'arret', false)
+    ('WN-CL-0127-030', 'v1.0', 'arret', false),
+    -- Table des priorités d'intervention ([[D-054]]). `exige_prescriptif =
+    -- false` : une priorité candidate est une PROPOSITION hiérarchisée soumise
+    -- au praticien, pas une prescription — à la différence d'une extinction, qui
+    -- agit sur ce que le praticien ne verra pas. Les onze claims sont
+    -- descriptifs (relus sur la production le 2026-08-12, tous `prescriptif =
+    -- false`) : ils décrivent des mécanismes — fonctions intestinales,
+    -- dysfonction de barrière, insulino-résistance — et ne recommandent aucune
+    -- conduite. Exiger `prescriptif` d'eux serait l'erreur de catégorie que
+    -- [[D-046]] nomme. Ce que la règle ajoute vient de la SIGNATURE praticien.
+    ('WN-CL-0022-005', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-007', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-012', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-013', 'v1.0', 'priorites', false),
+    ('WN-CL-0023-003', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-009', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-014', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-015', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-016', 'v1.0', 'priorites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
@@ -203,7 +223,27 @@ BEGIN
     ('WN-CL-0051-030', 'v1.0', 'arret', false),
     ('WN-CL-0051-033', 'v1.0', 'arret', false),
     ('WN-CL-0127-029', 'v1.0', 'arret', false),
-    ('WN-CL-0127-030', 'v1.0', 'arret', false)
+    ('WN-CL-0127-030', 'v1.0', 'arret', false),
+    -- Table des priorités d'intervention ([[D-054]]). `exige_prescriptif =
+    -- false` : une priorité candidate est une PROPOSITION hiérarchisée soumise
+    -- au praticien, pas une prescription — à la différence d'une extinction, qui
+    -- agit sur ce que le praticien ne verra pas. Les onze claims sont
+    -- descriptifs (relus sur la production le 2026-08-12, tous `prescriptif =
+    -- false`) : ils décrivent des mécanismes — fonctions intestinales,
+    -- dysfonction de barrière, insulino-résistance — et ne recommandent aucune
+    -- conduite. Exiger `prescriptif` d'eux serait l'erreur de catégorie que
+    -- [[D-046]] nomme. Ce que la règle ajoute vient de la SIGNATURE praticien.
+    ('WN-CL-0022-005', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-007', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-012', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-013', 'v1.0', 'priorites', false),
+    ('WN-CL-0023-003', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-009', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-014', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-015', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-016', 'v1.0', 'priorites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif);
 -- <<< PAIRES_FIXTURES
 
@@ -349,7 +389,28 @@ BEGIN
     RAISE EXCEPTION 'negatif N8: la ligne arret n''est gardee par rien — %', msg;
   END IF;
 
-  RAISE NOTICE 'fraicheur des claims epingles negatif: 8 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction et cinq claims d''arret non prescriptifs) laisse passer.';
+  -- ── N9 — LA LIGNE `priorites` EST GARDÉE, ELLE AUSSI ─────────────────────
+  -- MÊME DÉMONSTRATION QUE N7 ET N8, POUR LA TABLE DES PRIORITÉS D'INTERVENTION
+  -- ([[D-054]]). Elle entre au contrat avec `exige_prescriptif = false`, comme
+  -- les deux précédentes : sans ce cas, un prédicat qui l'aurait exemptée de
+  -- TOUTES les propriétés — et pas seulement de `prescriptif` — passerait les
+  -- neuf précédents, et une table capable de HIÉRARCHISER ce que le praticien
+  -- regarde en premier s'appuierait sur des claims que rien ne contrôlerait.
+  --
+  -- Le claim muté est `WN-CL-0025-016`, celui qui rend la priorité pondérale
+  -- actionnable (les facteurs de l'insulino-résistance) : c'est celui dont la
+  -- disparition silencieuse coûterait le plus.
+  a_leve := false; msg := '';
+  BEGIN
+    UPDATE public.rag_corpus_claims SET active = false WHERE claim_id = 'WN-CL-0025-016';
+    PERFORM pg_temp.predicat_fraicheur_claims();
+  EXCEPTION WHEN SQLSTATE 'WN001' THEN a_leve := true; msg := SQLERRM;
+  END;
+  IF NOT a_leve OR position('WN-CL-0025-016' in msg) = 0 OR position('active = false' in msg) = 0 THEN
+    RAISE EXCEPTION 'negatif N9: la ligne priorites n''est gardee par rien — %', msg;
+  END IF;
+
+  RAISE NOTICE 'fraicheur des claims epingles negatif: 9 formes de rupture detectees, 1 corpus sain (dont un claim de contradiction, cinq claims d''arret et onze claims de priorites non prescriptifs) laisse passer.';
 END $$;
 
 ROLLBACK;

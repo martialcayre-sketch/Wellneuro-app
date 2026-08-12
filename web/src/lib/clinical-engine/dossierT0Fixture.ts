@@ -27,14 +27,75 @@ export function reponsesCompletes(idQuestionnaire: string): Record<string, unkno
 
 export const DATE_RIDEAU_FIXTURE = new Date('2026-01-01T00:00:00.000Z');
 
-/** Les quatre instruments du rideau, cotables, au statut par défaut. */
-export function passationsRideauT0(dateReponse: Date = DATE_RIDEAU_FIXTURE) {
+/**
+ * CAS DE RÉFÉRENCE DU LOT-04 — `Q_MOD_03` avec deux axes en bande haute.
+ *
+ * POURQUOI IL FALLAIT UNE VARIANTE. `reponsesCompletes` met TOUS les items au
+ * minimum : sur une échelle de plainte dont 1 est l'absence de trouble, cela
+ * décrit un patient sans aucune plainte, et aucune règle de priorité ne peut s'y
+ * déclencher. La fixture partagée reste donc ce qu'elle est — un dossier qui
+ * PASSE les préconditions — et le cas de référence clinique est écrit ici, à
+ * côté, plutôt que d'être obtenu en tordant l'autre.
+ *
+ * Les valeurs citent les bandes publiées par `questions.ts` : 8 est dans
+ * « Intensité élevée » (7-8), 9 dans « Intensité très élevée » (9-10), et les
+ * cinq autres domaines restent dans « Intensité faible ou absente » (1-3). Le
+ * surpoids est délibérément AU-DESSUS de la digestion : c'est ce qui rend le
+ * classement observable — sans cet écart, le départage se ferait sur la priorité
+ * intrinsèque de la table et le banc ne dirait rien de la plainte dominante.
+ */
+export const PLAINTES_DIGESTIF_ET_PONDERAL: Record<string, number> = {
+  Q001: 2, // Fatigue
+  Q002: 2, // Douleurs
+  Q003: 8, // Digestion — « Intensité élevée »
+  Q004: 9, // Surpoids — « Intensité très élevée », plainte dominante
+  Q005: 2, // Insomnie
+  Q006: 2, // Moral
+  Q007: 1, // Mobilité
+};
+
+/**
+ * Les quatre instruments du rideau, cotables, au statut par défaut.
+ *
+ * `plaintes` remplace les réponses de `Q_MOD_03` — le canal de plainte du
+ * LOT-04. Absent, le comportement est strictement celui d'avant.
+ */
+export function passationsRideauT0(
+  dateReponse: Date = DATE_RIDEAU_FIXTURE,
+  plaintes?: Record<string, number>,
+) {
   return RIDEAU_T0.map(idQuestionnaire => ({
     idQuestionnaire,
     dateReponse,
-    scoresJson: { rawAnswers: reponsesCompletes(idQuestionnaire) },
+    scoresJson: {
+      rawAnswers: plaintes && idQuestionnaire === 'Q_MOD_03'
+        ? plaintes
+        : reponsesCompletes(idQuestionnaire),
+    },
     statutValidite: 'VALID',
   }));
+}
+
+/**
+ * Les mêmes passations, sous la forme que lit `loadRuntimeInputs` (donc avec
+ * `idReponse`) — c'est-à-dire les entrées de la chaîne C1.
+ *
+ * DEUX LECTURES DISTINCTES, UNE SEULE VÉRITÉ. Le cockpit lit les passations deux
+ * fois : une fois pour composer l'ÉPISODE (avec `idReponse`), une fois pour
+ * évaluer les PRÉCONDITIONS (sans). Le recalcul serveur relit la première.
+ * Dériver les deux du même appel garantit qu'un banc ne décrive pas un dossier
+ * qui confirme sur des données et se recalcule sur d'autres.
+ *
+ * Trié par `idReponse` : c'est l'ordre que la route demande à Prisma, et un mock
+ * qui rendrait un autre ordre éprouverait un cas qui n'existe pas.
+ */
+export function reponsesRuntimeRideauT0(
+  dateReponse: Date = DATE_RIDEAU_FIXTURE,
+  plaintes?: Record<string, number>,
+) {
+  return passationsRideauT0(dateReponse, plaintes)
+    .map(passation => ({ ...passation, idReponse: `REP_${passation.idQuestionnaire}` }))
+    .sort((gauche, droite) => gauche.idReponse.localeCompare(droite.idReponse));
 }
 
 /** Synthèse validée, postérieure au rideau ci-dessus. */

@@ -4,6 +4,209 @@
 
 ## Décisions actives
 
+### D-054 — Ce qu'une priorité candidate a le droit d'affirmer, et qui recalcule la chaîne
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : clinique, chaîne C1, cockpit praticien, intégrité de persistance
+- Contexte : après confirmation T0, le cockpit affiche « Décision suspendue :
+  l'abstention clinique n'est pas encore évaluée » — indéfiniment. Aucune
+  `ClinicalRuleRef` validée n'atteint jamais `buildClinicalReview`, si bien que
+  l'abstention retombe systématiquement sur `not_evaluated`
+  (`clinicalReview.ts`), que `buildDecisionCard` classe la décision `blocked`, et
+  qu'aucune priorité candidate n'a jamais pu exister. En regard, la plainte que
+  le patient déclare (`Q_MOD_03`) et l'objectif qu'il se donne
+  (`patientContext.priorityGoal`) traversent toute la chaîne sans être affichés
+  nulle part. Le LOT-04 rebranche cette chaîne. Neuf arbitrages, rendus avant la
+  première ligne de code (`DC-17`, `DC-18`).
+- Décision :
+
+**1. Aucune porte praticien existante n'est affaiblie.** Les conditions T0
+(`preconditionsT0.ts`) et les cinq gardes de `buildDecisionCard` — règle
+candidate stérile, `origin` obligatoirement `engine`, rangs uniques, décision
+bloquée par une abstention non levée ou un constat de sécurité, sélection
+réservée au praticien — restent à l'octet. Une chaîne qui produit enfin quelque
+chose est exactement le moment où l'on est tenté d'assouplir la porte qui la
+gardait.
+
+**2. Les claims d'un candidat sont portés par la RÈGLE, pas par le contrat C1.**
+`DecisionPriorityCandidate` et `ClinicalFindingProvenance` ne sont PAS étendus :
+ils entrent dans `decisionCard.inputHash`, donc dans `draft.inputHash`, donc dans
+`versionId` — les élargir déplacerait toutes les empreintes pour un besoin que la
+table sait déjà couvrir. La traçabilité vit dans `justificationClaims` de
+`priorityRulesV1.ts` (patron orientation), et le
+`ValidatedClinicalRuleRef.validation.sourceReference` reste une chaîne qui nomme
+la table, sa version et son SHA.
+
+**3. Un drapeau d'anamnèse et l'objectif prioritaire ne sont pas des mesures.**
+Ils ne peuvent donc pas entrer dans `provenance`, dont `validateProvenance` reste
+jetante et inchangée : cette fonction garantit qu'un constat ne cite que des
+sources réellement présentes dans le `ClinicalSnapshot`. Ce que le patient
+DÉCLARE s'exprime en `rationale` et en `limitations`, et s'affiche au cockpit —
+jamais comme une provenance. Conséquence assumée : **la V1 de la table ne porte
+aucun déclencheur de drapeau**, faute de bande publiée à citer.
+
+**4. LOT-04 ne consomme pas les règles d'arrêt.** Aucun pont
+`reglesEteintes` → priorité candidate. Motif : une extinction d'orientation dit
+qu'une EXPLORATION n'a plus d'objet ; elle ne dit rien de ce qu'il faut
+ENTREPRENDRE. Traduire l'une en l'autre serait exactement le genre d'inférence
+que `DC-01` interdit. **Écart écrit plutôt que masqué** : le critère du lot
+« stress au mieux mineur si C-STR ouvert » est donc tenu par construction — la
+V1 ne porte aucune règle d'axe stress — et non par un mécanisme. Le banc le
+vérifie et le dit.
+
+**5. Le recalcul serveur vérifie la carte SOUMISE, pas ses seules empreintes.**
+`POST /api/praticien/protocoles/versions` et `POST /api/praticien/protocoles`
+acceptaient jusqu'ici la `DecisionCard` du corps de requête TELLE QUELLE : la
+fixture du banc `versions/route.test.ts` était elle-même une carte forgée
+(`inputHash: 'HASH_DEC'`) qui passait. Le contrôle se fait désormais **en deux
+temps**, et le second ne suffit pas sans le premier :
+
+1. **La carte est recoupée contre sa PROPRE empreinte.** `decisionCardId` est le
+   seul champ exclu du hash (`decisionCard.ts`) : tout le reste doit se
+   re-hacher à l'identique. Ce premier temps est posé AVANT la lecture du
+   dossier — une carte qui ne se recoupe pas elle-même n'a pas à faire lire le
+   patient.
+2. **La chaîne est reconstruite DEPUIS LA BASE**, aux horodatages soumis (les
+   identifiants sont exclus des empreintes, `createdAt` et `asOf` y entrent).
+   Les trois `inputHash` sont comparés — nommés séparément pour dire QUEL
+   maillon a bougé —, puis les deux JSON canoniques de la carte (hors
+   `decisionCardId`). Cette dernière comparaison ferme les clés surnuméraires et
+   rend le contrôle indépendant de ce que `buildProtocolDraft` lira ensuite : ce
+   module garde la BASE, pas un consommateur.
+
+**LE PREMIER TEMPS A ÉTÉ AJOUTÉ APRÈS LA REVUE DU 2026-08-12, ET LE TROU MÉRITE
+D'ÊTRE NOMMÉ.** La première rédaction ne portait que le second : elle confrontait
+le recalcul aux empreintes **déclarées par le client**, jamais au CONTENU de la
+carte envoyée. Une carte dont l'abstention, les priorités candidates et les
+limitations étaient entièrement réécrites, mais qui transportait les trois
+empreintes honnêtes, passait donc les trois comparaisons — le serveur recalculait
+bien, comparait bien, et comparait deux nombres que le fraudeur n'avait aucune
+raison de toucher. Les deux bancs d'intrusion d'alors passaient au vert pour une
+raison ANNEXE (la carte y était fabriquée table non signée puis soumise table
+signée, si bien que le recalcul divergeait de toute façon) : ils ne disaient rien
+du cas qui compte. Les deux bancs ajoutés depuis ont été vus ROUGIR quand le
+recoupement est neutralisé.
+
+Divergence ⇒ **409 `chaine_c1_divergente`**, code choisi pour rejoindre les 409
+existants de la route (`version_stale`, `protocol_stale`), que le client traite
+déjà en rechargeant. Aucune migration, aucune colonne, aucune persistance
+nouvelle.
+
+**Une seule chose que le serveur ne peut pas recalculer, et elle est nommée :
+`selectedMainPriority`.** C'est un GESTE praticien, pas une dérivation. Le
+recalcul la réinjecte telle quelle, et `buildDecisionCard` la re-valide
+entièrement (`selectedBy: 'practitioner'`, candidat réellement classé, décision
+non bloquée). **Conséquence pour le lot qui posera la sélection** : elle devra
+transiter par une route serveur, jamais par un enrichissement de carte côté
+client — tout autre champ ajouté au navigateur fera 409.
+
+**6. Le helper de vérification garde les DEUX points de persistance.** Un
+fail-closed écrit dans une seule des deux routes est un fail-closed qu'on peut
+oublier de corriger dans l'autre — même motif que le double verrou
+d'`orientationService`. Il vit dans
+`web/src/lib/clinical-engine/verifierChaineC1.ts`, et la construction de la
+chaîne elle-même est extraite dans `chaineC1.ts`, appelée par le cockpit ET par
+le vérificateur : deux constructions divergentes rendraient 409 sur une carte
+honnête.
+
+**CE QUE CET ARBITRAGE NE COUVRE PAS, ET C'EST UNE DETTE PRÉEXISTANTE.** Sur
+`POST /api/praticien/protocoles`, le `ProtocolDraft` arrive CONSTRUIT du
+navigateur : la route en vérifie l'ancrage (`decisionCardId`,
+`decisionCardInputHash`) et la structure des compléments, mais elle ne le
+RE-DÉRIVE pas de la carte — `validateDecisionCard` n'y est pas rejouée, à la
+différence de la route sœur qui, elle, reconstruit le protocole serveur par
+`buildProtocolDraft`. **Le 409 garde donc la carte, pas le protocole.** Le lot ne
+referme pas ce trou : il est antérieur, il appelle son propre arbitrage, et
+l'écrire ici vaut mieux que laisser croire que ce point de persistance est
+entièrement gardé. *Relevé en revue du 2026-08-12 (M4).*
+
+**7. La table est livrée NON SIGNÉE — la production ne change pas au merge.**
+Même discipline que `contradictionsV1` et `stopRulesV1` : écrire une table et la
+signer sont deux gestes distincts, le second est un acte praticien.
+`tablePrioritesSignee()` reprend la triple forme auto-portante de `tableSignee()`
+— `validationExterne`, une date de validation, des claims sources non vides. Tant
+qu'elle est fermée, aucune `ClinicalRuleRef` n'atteint la revue, l'abstention
+reste `not_evaluated` et aucun candidat n'est produit : le comportement servi est
+celui d'hier. **Pas de drapeau d'environnement propre** — la chaîne C1 est déjà
+derrière l'authentification praticien et la confirmation T0 ; un second drapeau
+donnerait l'illusion d'un second verrou là où il n'y a qu'un chemin (patron
+[[D-053]], arbitrage 6).
+
+**Deux effets NE sont PAS derrière ce verrou, et c'est voulu.** L'affichage de la
+plainte dominante et de l'objectif prioritaire est la restitution d'une bande
+déjà publiée par un instrument certifié et d'un texte déjà saisi : ce n'est pas
+une sortie de règle. Le recalcul serveur (arbitrage 5) est un contrôle
+d'intégrité, pas une conclusion clinique — le subordonner à une signature
+clinique reviendrait à laisser une carte forgée passer tant que la table n'est
+pas signée.
+
+**8. Aucun seuil neuf n'entre dans le dépôt.** Les déclencheurs citent la bande
+`>= 7` de `Q_MOD_03`, celle que la table d'orientation SIGNÉE cite déjà
+(`R2-SOM-02`) et que `questions.ts` publie (1-3 « Intensité faible ou absente »,
+4-6 « modérée », 7-8 « élevée », 9-10 « très élevée ») : `>= 7` vise les deux
+bandes hautes et elles seules. Le départage de la plainte dominante — à valeur
+égale, l'ordre de publication des sept domaines par le catalogue — est un choix
+purement TECHNIQUE de stabilité d'affichage, identifié comme tel sur place
+(`DC-19`, `DC-20`) : il ne hiérarchise aucune plainte cliniquement.
+
+**9. `TABLE_EXIGE_PRESCRIPTIF = false` pour cette table.** Une priorité candidate
+est une PROPOSITION hiérarchisée soumise au praticien, pas une prescription
+d'intervention — à la différence d'une extinction, qui agit sur ce que le
+praticien ne verra pas. Les onze claims épinglés sont descriptifs
+(`prescriptif = false` en production, relu le 2026-08-12) : ils décrivent des
+mécanismes — fonctions intestinales, dysfonction de barrière, insulino-résistance
+— et ne recommandent aucune conduite. Exiger `prescriptif` d'eux serait une
+erreur de catégorie ([[D-046]]), et aurait forcé à épingler un claim voisin qui
+ne dit pas la règle (`DC-14`). Ce que la règle ajoute — « cet axe mérite d'être
+regardé en premier » — viendra de la SIGNATURE praticien, jamais des claims.
+
+**10. Une abstention REQUISE fait taire la table.** *Arbitrage rendu en revue du
+2026-08-12 (M3), après avoir constaté que le producteur de candidats ne
+consultait pas l'abstention.* Le cas n'est pas théorique : `Q_MOD_03` amputé d'un
+SEUL domaine rend `total: null`, ce qui déclare le canal de plainte non mesurable
+— donc l'abstention `required` —, et pourtant les six domaines répondus portaient
+encore leurs valeurs et déclenchaient les règles. La carte servait alors une liste
+hiérarchisée sous un bandeau de suspension : `buildDecisionCard` remettait bien la
+priorité PROPOSÉE à `null` (la décision est `blocked`), mais gardait les candidats
+classés. Données insuffisantes ⇒ on réduit la conclusion, on ne l'habille pas
+(`DC-25`). Le producteur lit le statut NORMALISÉ de la revue, et non l'intention
+locale — lire l'intention laisserait produire des candidats sous une abstention
+que `buildClinicalReview` a ramenée à `not_evaluated`.
+
+- Conséquences : `web/src/lib/clinical/priorityRulesV1.ts` (table, verrou,
+  producteur), `web/src/lib/clinical-engine/chaineC1.ts` (construction unique),
+  `verifierChaineC1.ts` (recalcul serveur), les deux routes de persistance, le
+  cockpit et son écran. Onze paires de claims entrent au contrat de fraîcheur
+  (`rag_claim_fraicheur_tables_signees_v1.sql` et son négatif) sous la table
+  `priorites`.
+- Frontière de ce que la signature couvrira : `PRIORITY_RULES_SHA256` porte sur
+  `PRIORITY_RULES_V1` SEULE — déclencheurs, claims, libellés, motifs. Le
+  producteur de candidats, le classement et la procédure d'abstention vivent dans
+  `chaineC1.ts` et relèvent des bancs ordinaires, pas du périmètre signé. Dit ici
+  parce que le contraire se supposerait.
+- **Dette BLOQUANTE POUR LA SIGNATURE (M1)** : la procédure d'abstention étant
+  hors du périmètre signé, signer `PRIORITY_RULES_METADATA` en l'état ouvrirait un
+  verdict clinique — `required` / `not_required`, servi au praticien et haché dans
+  la carte — qu'AUCUNE ligne signée ne décrit (`DC-17`, `DC-26`). Avant toute
+  signature, cette procédure doit entrer dans le périmètre signé : dans la table,
+  ou dans un document signable qu'elle référence. Le rappel vit aussi en
+  commentaire au-dessus de `PRIORITY_RULES_METADATA` et de `evaluerAbstention`.
+- Ce que la signature assumera par ailleurs (M5) : chacune des deux règles repose
+  sur UN ITEM UNIQUE de `Q_MOD_03`, un auto-déclaré de 1 à 10 sans instrument
+  spécifique à l'appui. `DC-28` (« un questionnaire isolé ne suffit pas à
+  conclure ») est mitigé par ce que la règle PRODUIT — une proposition
+  hiérarchisée, jamais une conclusion — et par les `limitations` que chaque
+  candidat porte. Ce n'est pas une objection réfutée : c'est un arbitrage qui
+  appartient au praticien qui signe.
+- Dette nommée : aucun candidat n'est encore SÉLECTIONNABLE — la sélection
+  praticien reste hors périmètre, et un protocole reste donc impossible même
+  table signée. Aucune règle ne couvre les cinq autres domaines de plainte
+  (fatigue, douleurs, sommeil, moral, mobilité) : elles sont écartées avec leur
+  motif dans `PRIORITY_RULES_ECARTEES_V1`, faute de claim relu pour l'axe.
+  Enfin, `POST /api/praticien/protocoles` ne re-dérive pas son `ProtocolDraft` de
+  la carte (arbitrage 6, M4).
+
 ### D-053 — Ce qui a le droit d'éteindre une exploration, et ce qui n'en a que l'air
 
 - Date : 2026-08-12

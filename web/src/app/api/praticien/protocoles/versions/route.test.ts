@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -22,13 +22,18 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
-import type { DecisionCard, ProtocolAction } from '@/lib/clinical-engine/types';
+import type { ProtocolAction } from '@/lib/clinical-engine/types';
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
+import { SYNTHESE_VALIDEE_FIXTURE } from '@/lib/clinical-engine/dossierT0Fixture';
 import {
-  CONSULTATION_VALIDEE_FIXTURE,
-  SYNTHESE_VALIDEE_FIXTURE,
-  passationsRideauT0,
-} from '@/lib/clinical-engine/dossierT0Fixture';
+  ANAMNESE_C1_FIXTURE,
+  CANDIDAT_RANG_1,
+  CANDIDAT_RANG_2,
+  chaineC1DeReference,
+  passationsC1Fixture,
+  retablirTablePriorites,
+  signerTablePriorites,
+} from '@/lib/clinical-engine/chaineC1Fixture';
 import { GET, POST } from './route';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import type { FoodCompassActionRef } from '@/lib/food-compass';
@@ -54,25 +59,24 @@ function ciqualRows() {
   }));
 }
 
-const episode = {
-  assessmentEpisodeId: 'EPI_1',
-  patientId: 'PAT_1',
-  milestone: 'T0',
-  targetAt: '2026-01-01T00:00:00.000Z',
-  confirmedAt: '2026-01-02T00:00:00.000Z',
-  status: 'confirmed',
-};
+// UNE CHAÎNE C1 RÉELLE, ET PLUS UNE CARTE FORGÉE ([[D-054]], arbitrage 5).
+//
+// Ce banc postait jusqu'ici `{decisionCardId: 'DEC_1', inputHash: 'HASH_DEC'}` —
+// une carte que rien ne rattachait au dossier, et qui passait. C'était la
+// démonstration du trou que le recalcul serveur referme : la fixture ne peut plus
+// être forgée, elle doit être ce que le serveur sait reproduire.
+//
+// LA TABLE DES PRIORITÉS EST SIGNÉE POUR CE BANC (et remise dans son état livré
+// après chaque cas) : sans candidat ni abstention levée, aucun protocole n'est
+// constructible — c'est justement l'état de la production d'aujourd'hui.
+signerTablePriorites();
+const reference = chaineC1DeReference({ selection: CANDIDAT_RANG_1 });
+const referenceAutrePriorite = chaineC1DeReference({ selection: CANDIDAT_RANG_2 });
+retablirTablePriorites();
 
-const decisionCard = {
-  decisionCardId: 'DEC_1',
-  inputHash: 'HASH_DEC',
-  snapshotInputHash: 'HASH_SNAP',
-  reviewInputHash: 'HASH_REV',
-  priorityCandidates: [{ candidateId: 'PRIO_1' }],
-  selectedMainPriority: { candidateId: 'PRIO_1' },
-  safetyFindingIds: [],
-  abstention: { status: 'not_required' },
-} as unknown as DecisionCard;
+const episode = reference.episode;
+const decisionCard = reference.decisionCard;
+const decisionCardId = decisionCard.decisionCardId;
 
 const action: ProtocolAction = {
   actionId: 'A1',
@@ -93,7 +97,7 @@ const submission = {
 
 // Version active préexistante, au MÊME contenu clinique que `submission`.
 const activeDraft = buildProtocolDraft({
-  protocolDraftId: deriveProtocolDraftId('DEC_1'),
+  protocolDraftId: deriveProtocolDraftId(decisionCardId),
   decisionCard,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-02T00:00:00.000Z',
@@ -104,7 +108,7 @@ const activeDraft = buildProtocolDraft({
   review: { reviewedAt: '2026-01-02T00:00:00.000Z', reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
 });
 const activeRow = {
-  id: deriveVersionId(deriveProtocolDraftId('DEC_1'), activeDraft.inputHash),
+  id: deriveVersionId(deriveProtocolDraftId(decisionCardId), activeDraft.inputHash),
   inputHash: activeDraft.inputHash,
   supersedesDraftId: null,
   createdAt: new Date('2026-01-02T00:00:00.000Z'),
@@ -137,12 +141,18 @@ describe('POST /api/praticien/protocoles/versions', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     process.env.WN_C5_ENABLED = 'false';
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
-    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
-    // posent explicitement.
-    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
-    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    // Dossier qui PASSE les préconditions T0 (D-052) ET dont la chaîne C1 se
+    // recalcule à l'identique (D-054) : les deux lectures partent des mêmes
+    // passations, et l'anamnèse est celle qui a produit `patientContext`.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(ciqualRows());
+    signerTablePriorites();
+  });
+
+  afterEach(() => {
+    retablirTablePriorites();
   });
 
   // PRÉCONDITIONS T0 (D-052) : le seul point de persistance réellement appelé
@@ -189,7 +199,7 @@ describe('POST /api/praticien/protocoles/versions', () => {
     expect(json.ok).toBe(true);
     expect(json.unchanged).toBe(false);
     expect(json.supersedesDraftId).toBeNull();
-    expect(json.versionId.startsWith('proto_DEC_1#')).toBe(true);
+    expect(json.versionId.startsWith(`${deriveProtocolDraftId(decisionCardId)}#`)).toBe(true);
     expect(prisma.protocolDraft.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: json.versionId },
@@ -321,11 +331,12 @@ describe('POST /api/praticien/protocoles/versions', () => {
     process.env.WN_C5_ENABLED = 'true';
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([activeRow]);
-    const changedPriorityCard = {
-      ...decisionCard,
-      selectedMainPriority: { candidateId: 'PRIO_2' },
-      priorityCandidates: [{ candidateId: 'PRIO_2' }],
-    } as unknown as DecisionCard;
+    // UNE SECONDE CHAÎNE RÉELLE, et non une carte retouchée : le praticien a
+    // sélectionné l'AUTRE candidat classé, ce que le recalcul serveur reproduit
+    // sans broncher. C'est bien la garde C5 qui doit refuser, pas la garde
+    // d'intégrité — une carte forgée rendrait ce cas vert pour la mauvaise
+    // raison, désormais en 409.
+    const changedPriorityCard = referenceAutrePriorite.decisionCard;
     const res = await POST(postRequest({
       episode, decisionCard: changedPriorityCard,
       submission: { ...submission, actions: [{ ...action, foodCompassRef: c5Ref() }] },
@@ -333,6 +344,93 @@ describe('POST /api/praticien/protocoles/versions', () => {
     }));
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ reason: 'draft_invalid' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // TEST D'INTRUSION — [[D-054]], arbitrage 5. Une carte de décision fabriquée
+  // côté client est rejetée par le recalcul serveur, quelle que soit sa
+  // cohérence interne.
+  it('refuse une carte de décision forgée (409 chaine_c1_divergente)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    // L'ABSTENTION EST LE CHAMP QUI COMPTE : c'est lui qui débloque la décision,
+    // et il est ici RÉÉCRIT sur une chaîne dont le serveur sait qu'elle ne le
+    // porte pas. Le reste de la carte est authentique — c'est ce qui rend le cas
+    // discriminant : une garde qui ne contrôlerait que la structure passerait.
+    retablirTablePriorites();
+    const honnete = chaineC1DeReference({ selection: null });
+    signerTablePriorites();
+    const forgee = {
+      ...honnete.decisionCard,
+      abstention: { status: 'not_required' as const, ruleIds: [], limitations: [] },
+      priorityCandidates: reference.decisionCard.priorityCandidates,
+      selectedMainPriority: reference.decisionCard.selectedMainPriority,
+    };
+    const res = await POST(postRequest({ episode: honnete.episode, decisionCard: forgee, submission }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // LE CŒUR DE LA GARDE, ET LE DÉFAUT QUE LA REVUE DU 2026-08-12 A TROUVÉ.
+  //
+  // Le cas précédent passe au vert pour une raison ANNEXE : la carte y est
+  // fabriquée table non signée puis soumise table signée, si bien que le
+  // recalcul diverge de toute façon. Il ne dit RIEN du cas qui compte — une
+  // carte fabriquée et soumise dans le MÊME état de table, dont seul le CONTENU
+  // clinique est réécrit. Les trois comparaisons d'empreintes ne le voyaient
+  // pas : elles confrontaient le recalcul aux nombres DÉCLARÉS par le client,
+  // jamais au contenu qu'il envoyait.
+  it('refuse un contenu clinique réécrit sous des empreintes honnêtes (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    // EMPREINTES INTACTES, CONTENU RÉÉCRIT : la carte se présente comme celle
+    // que le serveur a émise, et ment sur ce qu'elle contient.
+    const forgee = {
+      ...decisionCard,
+      limitations: ['Rien à signaler sur ce dossier.'],
+      abstention: { status: 'not_required' as const, ruleIds: [], limitations: [] },
+    };
+    const res = await POST(postRequest({ episode, decisionCard: forgee, submission }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // La variante qui referme la porte de service : le fraudeur RECALCULE
+  // l'empreinte de son contenu réécrit, si bien que la carte se recoupe
+  // parfaitement elle-même. Seule la confrontation au recalcul DEPUIS LA BASE
+  // l'attrape.
+  it('refuse un contenu réécrit dont l’empreinte a été refaite (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const { decisionCardId, inputHash: _ancienne, ...contenu } = decisionCard;
+    const contenuReecrit = { ...contenu, limitations: ['Rien à signaler sur ce dossier.'] };
+    const forgee = { decisionCardId, ...contenuReecrit, inputHash: canonicalSha256(contenuReecrit) };
+    const res = await POST(postRequest({ episode, decisionCard: forgee, submission }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // Le second mode de divergence, et il n'est pas frauduleux : le dossier a
+  // bougé depuis que la carte a été préparée. Le client traite déjà ce 409 en
+  // rechargeant.
+  it('refuse une carte préparée sur un dossier qui a changé (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue(
+      passationsC1Fixture().map(ligne => (
+        ligne.idQuestionnaire === 'Q_MOD_03'
+          ? { ...ligne, scoresJson: { rawAnswers: { ...ligne.scoresJson.rawAnswers, Q003: 3 } } }
+          : ligne
+      )),
+    );
+    const res = await POST(postRequest({ episode, decisionCard, submission }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -355,7 +453,7 @@ describe('GET /api/praticien/protocoles/versions', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
-    const req = new Request('http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=DEC_1');
+    const req = new Request(`http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=${decisionCardId}`);
     const res = await GET(req);
     expect(res.status).toBe(403);
     // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
@@ -374,11 +472,11 @@ describe('GET /api/praticien/protocoles/versions', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
     // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
     // posent explicitement.
-    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
-    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.protocolDraft.findMany.mockResolvedValue([]);
-    const req = new Request('http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=DEC_1');
+    const req = new Request(`http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=${decisionCardId}`);
     const res = await GET(req);
     expect(res.status).toBe(200);
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);

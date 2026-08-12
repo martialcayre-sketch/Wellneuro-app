@@ -3,7 +3,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
-import type { ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
+import type { AbstentionAssessment, ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
+import type { PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import type { PreconditionsT0 } from '@/lib/clinical-engine/preconditionsT0';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import { ClinicalRuntimeSection } from './ClinicalRuntimeSection';
@@ -150,6 +151,7 @@ describe('ClinicalRuntimeSection', () => {
       },
       // Table non signée : c'est la réponse que la production sert aujourd'hui.
       contradictions: [],
+      plainteDominante: null,
     };
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
@@ -226,6 +228,7 @@ describe('ClinicalRuntimeSection', () => {
       review: fixture.review,
       decisionCard: fixture.decisionCard,
       contradictions: [],
+      plainteDominante: null,
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
     vi.stubGlobal('fetch', fetchMock);
@@ -274,6 +277,7 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
         resolution: { statut: 'ouverte' },
         regleId: 'C-STR',
       }],
+      plainteDominante: null,
     };
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
@@ -288,5 +292,78 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
     // d'emblée — une contradiction que le praticien doit cliquer pour voir est
     // une contradiction qu'il peut manquer.
     await screen.findByText('Une contradiction que le praticien doit voir.');
+  });
+});
+
+// LE CANAL PLAINTE ET L'ÉTAT RÉEL DE LA DÉCISION — [[D-054]].
+//
+// Le bandeau annonçait « Décision suspendue : l'abstention clinique n'est pas
+// encore évaluée » QUEL QUE SOIT l'état réel : il devenait faux le jour où
+// l'abstention est évaluée, et rien ne l'aurait dit. Ce banc tient les trois
+// positions, et l'ordre d'affichage — la plainte AVANT l'agrégat, sans quoi un
+// score global honorable recouvre une plainte à 9/10.
+describe('ClinicalRuntimeSection — plainte du patient et état de la décision', () => {
+  function reponsePrete(
+    abstention: AbstentionAssessment,
+    plainteDominante: PlainteDominante | null,
+  ): CockpitRuntimeApiResponse {
+    const fixture = buildValidationErgoC1Fixture();
+    return {
+      status: 'ready',
+      snapshot: {
+        ...fixture.snapshot,
+        patientContext: { ...fixture.snapshot.patientContext, priorityGoal: 'Retrouver un confort digestif' },
+      },
+      review: { ...fixture.review, abstention },
+      decisionCard: { ...fixture.decisionCard, abstention },
+      contradictions: [],
+      plainteDominante,
+    };
+  }
+
+  async function afficher(reponse: CockpitRuntimeApiResponse) {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
+      .mockResolvedValue({ ok: true, status: 200, json: async () => reponse });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+  }
+
+  it('affiche la plainte dominante et l’objectif prioritaire en tête, avant la décision', async () => {
+    await afficher(reponsePrete(
+      { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée' },
+    ));
+
+    const panneau = await screen.findByRole('region', { name: 'Plainte et objectif du patient' });
+    expect(panneau.textContent).toContain('Surpoids — 9/10 (Intensité très élevée)');
+    expect(panneau.textContent).toContain('Retrouver un confort digestif');
+
+    // EN TÊTE, et pas seulement « présent » : la position est ce que le lot
+    // demande, et un panneau juste sous l'agrégat serait vert sans elle.
+    const bandeau = screen.getByText(/Abstention clinique évaluée/);
+    expect(panneau.compareDocumentPosition(bandeau) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('dit l’état réel de l’abstention, et non une phrase figée', async () => {
+    await afficher(reponsePrete(
+      { status: 'required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée' },
+    ));
+    expect(await screen.findByText(/l’abstention clinique est requise/)).toBeTruthy();
+    expect(screen.queryByText(/n’est pas encore évaluée/)).toBeNull();
+  });
+
+  it('conserve le message d’origine tant que l’abstention n’est pas évaluée', async () => {
+    await afficher(reponsePrete(
+      { status: 'not_evaluated', ruleIds: [], limitations: ['Règles non validées.'] },
+      null,
+    ));
+    expect(await screen.findByText(/n’est pas encore évaluée/)).toBeTruthy();
+    // La plainte est absente, l'objectif ne l'est pas : le panneau reste utile.
+    const panneau = screen.getByRole('region', { name: 'Plainte et objectif du patient' });
+    expect(panneau.textContent).toContain('Non renseignée');
   });
 });

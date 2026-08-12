@@ -395,6 +395,17 @@ export function ClinicalRuntimeSection({
   };
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
+  // Lus depuis la réponse serveur, jamais recalculés ici : l'objectif prioritaire
+  // vit dans le snapshot (donc dans son empreinte), le statut d'abstention dans
+  // la revue. Un écran qui les redériverait pourrait afficher autre chose que ce
+  // qui a été haché.
+  // Chaînage optionnel assumé : le contrat garantit `patientContext`, mais un
+  // objectif ABSENT et un snapshot partiel doivent tous deux se lire « non
+  // renseigné » plutôt que faire tomber l'écran entier du cockpit.
+  const snapshotPriorityGoal = runtime?.status === 'ready'
+    ? runtime.snapshot?.patientContext?.priorityGoal ?? null
+    : null;
+  const abstentionStatut = review?.abstention?.status ?? null;
   const activeReviewedVersion = versions.find(
     (version) => version.isActive && version.status === 'practitioner_reviewed',
   );
@@ -439,9 +450,55 @@ export function ClinicalRuntimeSection({
           onConfirm={confirm}
         />
       )}
+      {/* CANAL PLAINTE — en tête de la phase Décision, AVANT tout agrégat
+          ([[D-054]]). Ce que le patient déclare le plus intensément et
+          l'objectif qu'il se donne traversaient toute la chaîne sans être
+          affichés nulle part : un score global peut être honorable là où une
+          plainte est à 9/10, et l'agrégat ne doit jamais recouvrir la plainte. */}
+      {affiche('decision') && !fixture && runtime?.status === 'ready'
+        && (runtime.plainteDominante !== null || snapshotPriorityGoal !== null) && (
+        <section
+          aria-label="Plainte et objectif du patient"
+          className="rounded-xl border border-border bg-surface p-4 text-base"
+        >
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Ce que le patient met en avant
+          </h3>
+          <dl className="mt-3 flex flex-col gap-3">
+            <div>
+              <dt className="text-sm text-muted-foreground">Plainte la plus intense</dt>
+              <dd className="text-base text-foreground">
+                {runtime.plainteDominante
+                  ? `${runtime.plainteDominante.libelle} — ${runtime.plainteDominante.valeur}/10${
+                      runtime.plainteDominante.bande ? ` (${runtime.plainteDominante.bande})` : ''
+                    }`
+                  : 'Non renseignée — le questionnaire de plaintes actuelles ne rend aucune mesure sur cet épisode.'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm text-muted-foreground">Objectif prioritaire déclaré</dt>
+              <dd className="text-base text-foreground">
+                {snapshotPriorityGoal ?? 'Non renseigné à l’anamnèse.'}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Déclarations du patient sur une échelle descriptive : ni un diagnostic, ni une mesure d’instrument
+            spécifique.
+          </p>
+        </section>
+      )}
+      {/* ÉTAT RÉEL DE LA DÉCISION, et non plus une phrase figée. Le bandeau
+          annonçait « l'abstention clinique n'est pas encore évaluée » quel que
+          soit l'état réel : il devient faux dès que la table des priorités est
+          signée et que l'abstention est évaluée ([[D-054]]). */}
       {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
-          Épisode T0 confirmé. Décision suspendue : l&apos;abstention clinique n&apos;est pas encore évaluée.
+          {abstentionStatut === 'not_required'
+            ? 'Épisode T0 confirmé. Abstention clinique évaluée : aucune abstention requise.'
+            : abstentionStatut === 'required'
+              ? 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique est requise.'
+              : 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.'}
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -21,39 +21,65 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
+import { SYNTHESE_VALIDEE_FIXTURE } from '@/lib/clinical-engine/dossierT0Fixture';
 import {
-  CONSULTATION_VALIDEE_FIXTURE,
-  SYNTHESE_VALIDEE_FIXTURE,
-  passationsRideauT0,
-} from '@/lib/clinical-engine/dossierT0Fixture';
+  ANAMNESE_C1_FIXTURE,
+  CANDIDAT_RANG_1,
+  chaineC1DeReference,
+  passationsC1Fixture,
+  retablirTablePriorites,
+  signerTablePriorites,
+} from '@/lib/clinical-engine/chaineC1Fixture';
+import type { ConfirmedAssessmentEpisode, DecisionCard } from '@/lib/clinical-engine/types';
+import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { GET, POST } from './route';
 
-const episode = {
-  assessmentEpisodeId: 'EPI_1',
-  patientId: 'PAT_1',
-  milestone: 'T0',
-  targetAt: '2026-01-01T00:00:00.000Z',
-  confirmedAt: '2026-01-02T00:00:00.000Z',
-  status: 'confirmed',
-};
+// UNE CHAÎNE C1 RÉELLE, ET PLUS UNE CARTE FORGÉE ([[D-054]], arbitrage 5).
+//
+// Ce banc postait `{decisionCardId: 'DEC_1', inputHash: 'HASH_DEC'}` : une carte
+// que rien ne rattachait au dossier, et qui passait. C'est le trou que le
+// recalcul serveur referme, sur CETTE route aussi — un fail-closed écrit dans
+// une seule des deux routes est un fail-closed qu'on peut oublier de corriger
+// dans l'autre.
+signerTablePriorites();
+const reference = chaineC1DeReference({ selection: CANDIDAT_RANG_1 });
+retablirTablePriorites();
 
-const decisionCard = {
-  decisionCardId: 'DEC_1',
-  snapshotInputHash: 'HASH_SNAP',
-  reviewInputHash: 'HASH_REV',
-  inputHash: 'HASH_DEC',
-};
+const episode = reference.episode;
+const decisionCard = reference.decisionCard;
 
-const draft = {
-  protocolDraftId: 'DRA_1',
-  decisionCardId: 'DEC_1',
-  decisionCardInputHash: 'HASH_DEC',
-  selectedPriorityId: 'PRIO_1',
-  status: 'practitioner_reviewed',
-  version: 'c1-protocol-draft-v1',
-  inputHash: 'HASH_DRAFT',
-  updatedAt: '2026-01-03T00:00:00.000Z',
-};
+/**
+ * Le protocole relu qui accompagne une carte.
+ *
+ * Objet littéral, comme avant : cette route ne CONSTRUIT pas le protocole, elle
+ * en vérifie l'ancrage (`decisionCardId` et `decisionCardInputHash`). Le dériver
+ * de la carte est ce qui garde la fixture cohérente quand la carte change.
+ */
+function draftPour(carte: DecisionCard) {
+  return {
+    protocolDraftId: 'DRA_1',
+    decisionCardId: carte.decisionCardId,
+    decisionCardInputHash: carte.inputHash,
+    selectedPriorityId: carte.selectedMainPriority?.candidateId ?? CANDIDAT_RANG_1,
+    status: 'practitioner_reviewed',
+    version: 'c1-protocol-draft-v1',
+    inputHash: 'HASH_DRAFT',
+    updatedAt: '2026-01-03T00:00:00.000Z',
+  };
+}
+
+/**
+ * La chaîne complète pour un épisode VARIANT (contournement tracé, jalon de
+ * suivi). L'épisode entre dans les trois empreintes : le retoucher sans
+ * reconstruire la carte produirait un 409 — ce que la garde doit faire, mais pas
+ * ce que ces cas-là décrivent.
+ */
+function chainePour(episodeVariant: ConfirmedAssessmentEpisode) {
+  const chaine = chaineC1DeReference({ selection: CANDIDAT_RANG_1, episode: episodeVariant });
+  return { episode: episodeVariant, decisionCard: chaine.decisionCard, draft: draftPour(chaine.decisionCard) };
+}
+
+const draft = draftPour(decisionCard);
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/praticien/protocoles', {
@@ -70,11 +96,17 @@ describe('POST /api/praticien/protocoles', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     // Par défaut, le patient appartient au praticien en session (garde d'appartenance).
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
-    // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
-    // posent explicitement.
-    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
-    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    // Dossier qui PASSE les préconditions T0 (D-052) ET dont la chaîne C1 se
+    // recalcule à l'identique (D-054) : les cas de refus les posent
+    // explicitement.
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    signerTablePriorites();
+  });
+
+  afterEach(() => {
+    retablirTablePriorites();
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
@@ -183,7 +215,10 @@ describe('POST /api/praticien/protocoles', () => {
         decideLe: '2026-01-02T00:00:00.000Z',
       }],
     };
-    const res = await POST(postRequest({ episode: contourne, decisionCard, draft }));
+    // La trace de contournement fait PARTIE de l'épisode, donc des trois
+    // empreintes : la carte est reconstruite sur cet épisode-ci, sans quoi le
+    // recalcul serveur rendrait 409 — à raison.
+    const res = await POST(postRequest(chainePour(contourne)));
     expect(res.status).toBe(200);
     const upsert = prisma.assessmentEpisode.upsert.mock.calls[0][0] as {
       create: { payload: { preconditionOverrides?: { motif: string }[] } };
@@ -229,15 +264,17 @@ describe('POST /api/praticien/protocoles', () => {
     expect(json.ok).toBe(true);
     expect(json.protocolDraftId).toBe('DRA_1');
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'EPI_1' } }),
+      expect.objectContaining({ where: { id: episode.assessmentEpisodeId } }),
     );
     expect(prisma.protocolDraft.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'DRA_1' },
         create: expect.objectContaining({
           idPatient: 'PAT_1',
-          snapshotInputHash: 'HASH_SNAP',
-          reviewInputHash: 'HASH_REV',
+          // Les ancres de provenance sont désormais celles du RECALCUL serveur,
+          // et non deux chaînes littérales : c'est tout l'objet de [[D-054]].
+          snapshotInputHash: decisionCard.snapshotInputHash,
+          reviewInputHash: decisionCard.reviewInputHash,
           contractVersion: 'c1-protocol-draft-v1',
         }),
       }),
@@ -253,7 +290,9 @@ describe('POST /api/praticien/protocoles', () => {
     expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({ cycleId: 'EPI_1', versionScore: VERSION_SCORE_EQUILIBRE }),
+        create: expect.objectContaining({
+          cycleId: episode.assessmentEpisodeId, versionScore: VERSION_SCORE_EQUILIBRE,
+        }),
       }),
     );
   });
@@ -266,13 +305,9 @@ describe('POST /api/praticien/protocoles', () => {
       // T0 postérieur au jalon : ne doit jamais l'absorber.
       { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
     ]);
-    await POST(
-      postRequest({
-        episode: { ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' },
-        decisionCard,
-        draft,
-      }),
-    );
+    await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' }),
+    ));
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ create: expect.objectContaining({ cycleId: 'EPI_T0_B' }) }),
     );
@@ -283,13 +318,9 @@ describe('POST /api/praticien/protocoles', () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([
       { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
     ]);
-    await POST(
-      postRequest({
-        episode: { ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' },
-        decisionCard,
-        draft,
-      }),
-    );
+    await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' }),
+    ));
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ create: expect.objectContaining({ cycleId: null }) }),
     );
@@ -314,6 +345,56 @@ describe('POST /api/praticien/protocoles', () => {
     expect(json.reason).toBe('not_reviewed');
   });
 
+  // TEST D'INTRUSION — [[D-054]], arbitrage 5. LES DEUX ROUTES, jamais une
+  // seule : c'est la raison d'être du helper partagé.
+  it('refuse une carte de décision forgée (409 chaine_c1_divergente)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    // Chaîne honnête produite TABLE NON SIGNÉE — donc `not_evaluated`, décision
+    // bloquée : exactement ce que la production sert aujourd'hui. La carte est
+    // ensuite réécrite pour se déclarer débloquée.
+    retablirTablePriorites();
+    const honnete = chaineC1DeReference({ selection: null });
+    const forgee = {
+      ...honnete.decisionCard,
+      abstention: { status: 'not_required' as const, ruleIds: [], limitations: [] },
+      priorityCandidates: decisionCard.priorityCandidates,
+      selectedMainPriority: decisionCard.selectedMainPriority,
+    };
+    const res = await POST(postRequest({
+      episode: honnete.episode, decisionCard: forgee, draft: draftPour(forgee),
+    }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // LES DEUX MÊMES INTRUSIONS SUR CETTE ROUTE, jamais une seule : c'est la
+  // raison d'être du helper partagé, et le défaut relevé en revue portait sur
+  // les deux points de persistance.
+  it('refuse un contenu clinique réécrit sous des empreintes honnêtes (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    const forgee = {
+      ...decisionCard,
+      limitations: ['Rien à signaler sur ce dossier.'],
+      abstention: { status: 'not_required' as const, ruleIds: [], limitations: [] },
+    };
+    const res = await POST(postRequest({ episode, decisionCard: forgee, draft: draftPour(forgee) }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuse un contenu réécrit dont l’empreinte a été refaite (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    const { decisionCardId, inputHash: _ancienne, ...contenu } = decisionCard;
+    const contenuReecrit = { ...contenu, limitations: ['Rien à signaler sur ce dossier.'] };
+    const forgee = { decisionCardId, ...contenuReecrit, inputHash: canonicalSha256(contenuReecrit) };
+    const res = await POST(postRequest({ episode, decisionCard: forgee, draft: draftPour(forgee) }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'chaine_c1_divergente' });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejette un épisode non confirmé (400)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     const res = await POST(postRequest({ episode: { ...episode, status: 'proposed' }, decisionCard, draft }));
@@ -329,8 +410,8 @@ describe('GET /api/praticien/protocoles', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
     // Dossier qui PASSE les préconditions T0 (D-052) : les cas de refus les
     // posent explicitement.
-    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsRideauT0());
-    prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
   });
 

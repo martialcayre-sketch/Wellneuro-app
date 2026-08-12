@@ -42,7 +42,11 @@
 -- 23 claims d.orientation, les trois autres pour celui des contradictions).
 -- Les CINQ PAIRES `arret` ajoutées le 2026-08-12 ([[D-053]]) ont été relues le
 -- même jour, sur la production : toutes VALIDE, actives, non remplacées, en
--- v1.0. La liste en compte donc 29.
+-- v1.0. La liste en comptait alors 29.
+-- Les ONZE PAIRES `priorites` ajoutées le 2026-08-12 ([[D-054]]) ont été relues
+-- le même jour, sur la production : toutes VALIDE, actives, non remplacées, en
+-- v1.0, et toutes `prescriptif = false` — d'où `exige_prescriptif = false` pour
+-- cette table. La liste en compte donc 40.
 --
 -- `BEGIN READ ONLY … ROLLBACK` : aucune écriture, rejouable sans risque.
 -- ERRCODE sentinelle WN001, jamais intercepté ici.
@@ -113,7 +117,27 @@ BEGIN
     ('WN-CL-0051-030', 'v1.0', 'arret', false),
     ('WN-CL-0051-033', 'v1.0', 'arret', false),
     ('WN-CL-0127-029', 'v1.0', 'arret', false),
-    ('WN-CL-0127-030', 'v1.0', 'arret', false)
+    ('WN-CL-0127-030', 'v1.0', 'arret', false),
+    -- Table des priorités d'intervention ([[D-054]]). `exige_prescriptif =
+    -- false` : une priorité candidate est une PROPOSITION hiérarchisée soumise
+    -- au praticien, pas une prescription — à la différence d'une extinction, qui
+    -- agit sur ce que le praticien ne verra pas. Les onze claims sont
+    -- descriptifs (relus sur la production le 2026-08-12, tous `prescriptif =
+    -- false`) : ils décrivent des mécanismes — fonctions intestinales,
+    -- dysfonction de barrière, insulino-résistance — et ne recommandent aucune
+    -- conduite. Exiger `prescriptif` d'eux serait l'erreur de catégorie que
+    -- [[D-046]] nomme. Ce que la règle ajoute vient de la SIGNATURE praticien.
+    ('WN-CL-0022-005', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-007', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-012', 'v1.0', 'priorites', false),
+    ('WN-CL-0022-013', 'v1.0', 'priorites', false),
+    ('WN-CL-0023-003', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-009', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-010', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-014', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-015', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-016', 'v1.0', 'priorites', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
