@@ -4,6 +4,137 @@
 
 ## Décisions actives
 
+### D-053 — Ce qui a le droit d'éteindre une exploration, et ce qui n'en a que l'air
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : clinique, orientation, règles d'arrêt
+- Contexte : les recommandations d'exploration restent allumées indéfiniment ;
+  le moteur ne sait pas dire « information suffisante — pas d'exploration
+  supplémentaire actuellement ». Le LOT-03 pose ce geste. Le cadrage a établi
+  que **trois des quatre prédicats de la spécification ne sont pas écrivables**
+  avec le vocabulaire et les grilles du dépôt, et que l'un d'eux contredit la
+  table d'orientation signée. Cette décision précède la première ligne de code
+  (`DC-17`, `DC-18`).
+- Décision : sept arbitrages, rendus ensemble.
+
+**1. Une extinction est un acte plus exigeant qu'une proposition.** Ce qui a le
+droit de **déclencher** une exploration n'a pas pour autant le droit de la
+**taire**. Une grille descriptive, un item auto-déclaré isolé, un indice non
+validé psychométriquement et un instrument dont le moteur ne publie pas ses
+comptes de complétude peuvent proposer ; aucun ne peut éteindre. Motif : une
+proposition superflue coûte une passation, une extinction indue coûte une
+exploration qui n'aura pas lieu, et le praticien ne voit pas ce qui ne s'affiche
+pas (`DC-25`, `DC-28`).
+
+**2. La V1 ne porte que STOP-STR, sur ses seules cibles stress.** DASS-21
+(`Q_STR_04`) et Cungi (`Q_STR_03`) rassurants éteignent les explorations de
+l'axe stress proposées par cette voie — PSS-10 `Q_STR_02`, BMS-10 `Q_STR_05`,
+Karasek/WART, Cungi lui-même. Les seuils ne sont pas écrits dans la table
+d'arrêt : ils **citent les bandes déjà publiées** de chaque grille, comme le
+fait C-STR ([[D-042]]). Aucun nombre nouveau n'entre dans le dépôt par ce lot
+(`DC-19`, `DC-20`).
+
+**3. STOP-STR n'éteint pas le HAD.** Le HAD (`Q_NEU_11`) n'est proposé par
+aucune règle de stress : il l'est par `R2-NEU-01` (plainte moral déclarée),
+`R2-NEU-02` (antécédent psychiatrique), `R2-NEU-03`/`R2-NEU-04` (axes du DNST)
+et `R-SOM-01` (PSQI défavorable). L'éteindre sur un DASS rassurant reviendrait à
+**résoudre par suppression une discordance entre instruments d'axes
+différents** — précisément ce que `DC-30` interdit, et l'inverse de ce que fait
+C-STR, qui signale cette discordance au lieu de la trancher. *Arbitrage rendu
+sans préférence exprimée par l'utilisateur ; il se rouvre sur une source
+clinique qui fonderait l'extinction.*
+
+**4. STOP-SOM et STOP-APN sont écartées de la V1, et leurs motifs entrent dans
+la table.** Patron `CONTRADICTIONS_REGLES_ECARTEES_V1`, que [[D-042]] a rendu
+livrable pour cette raison : une règle écartée reste lisible avec son motif,
+plutôt que de disparaître dans un ticket.
+
+- **STOP-SOM** — la spécification l'énonce sur « PSQI 5 », valeur à laquelle la
+  table **signée** dit que `R-SOM-01` doit s'allumer, motif écrit à l'appui
+  (`orientationRulesV1.ts:173-176` : la bande `info` du PSQI est prise
+  au-dessus du seuil de 4 que l'instrument publie). L'écrire serait éteindre en
+  V1 une règle signée le mois dernier sur la même valeur, sans re-signer la
+  table. Sa seconde jambe, l'agenda `Q_SOM_09`, porte deux réserves : son
+  indice /100 est une construction WellNeuro sans validation psychométrique ni
+  cohorte de calibration, et [[D-052]] l'a déjà exclu du rideau T0 au motif
+  qu'un recueil de 21 nuits ne conditionne pas une décision prise à J0 — la
+  même objection vaut en miroir pour une extinction.
+- **STOP-APN** — son prédicat « absence de symptômes » n'est pas exprimable :
+  le vocabulaire de déclencheurs ne connaît que des tests positifs, et lire une
+  liste vide comme « absent » heurte `DC-24`. Même motif que l'écartement de
+  C-ALI en LOT-01. Défaut supplémentaire à refermer avant toute reprise : le
+  moteur Berlin (`Q_SOM_03`) ne publie ni `missing` ni `repondus`, et sa garde
+  par catégorie se contente d'un item mesuré — un Berlin à trois items sur neuf
+  peut sortir « Risque faible ». Pour une règle d'orientation c'est un faux
+  négatif ; pour une règle d'arrêt, ce serait une extinction fondée sur un
+  instrument vide.
+
+**5. Une contradiction ouverte interdit l'extinction ; elle ne la déclenche
+jamais.** Le fichier de lot autorisait les deux lectures. Une discordance se
+signale (`DC-30`) : une règle d'arrêt qui éteindrait sur discordance la ferait
+disparaître. La table de contradictions du LOT-01 n'étant pas signée, ce volet
+est **inerte tant qu'elle ne l'est pas** — et son inertie est fail-closed :
+elle n'empêche que des extinctions, elle n'en produit aucune.
+
+**6. Une recommandation éteinte reste relisible dans la sortie courante ; rien
+n'est persisté.** Elle garde ses motifs d'origine et porte en plus son motif
+d'extinction — l'interdit « une extinction n'efface jamais l'historique » est
+ainsi tenu par construction, sans table ni migration. Le rallumage est gratuit :
+tout l'étage d'orientation est recalculé à chaque lecture, une passation
+nouvelle devient mécaniquement la dernière, le déclencheur d'arrêt ne mord plus
+et la recommandation revient. **Conséquence assumée** : les synthèses déjà
+validées gardent leur instantané — la régénération des synthèses historiques est
+hors périmètre de la campagne.
+
+**7. `dejaRepondu` n'exclut que sur une passation exploitable, et le badge
+survit à l'exclusion.** Aujourd'hui `dejaRepondu` vaut `true` sur une passation
+dont le score a été annulé — le service annule le score sans retirer la ligne,
+délibérément, pour préserver ce fait administratif. Le rendre excluant sans
+garde ferait **disparaître la recommandation de refaire passer l'instrument que
+le praticien vient d'invalider**, alors qu'invalider, c'est attendre une
+re-passation. L'exclusion porte donc sur le seul cas où le recalcul rend une
+mesure ; une passation `INVALID`, `SUPERSEDED`, non interprétable ou sans
+réponses brutes n'exclut pas et laisse intact le signal « mesure à
+replanifier ». Le badge « déjà renseigné » reste affiché dans tous les cas :
+deux faits distincts en sortie, pas un booléen retourné. Une composition de pack
+inconnue (`null`) n'exclut jamais — un `null` excluant serait un fail-open.
+
+- Conséquences :
+  - Nouvelle table `stopRulesV1.ts` sur le patron d'`orientationRulesV1.ts`,
+    avec ses métadonnées, ses claims épinglés, sa constante de SHA **et** son
+    littéral épinglé au banc — une constante seule, dont les deux membres
+    bougent ensemble, est une signature décorative.
+  - Le banc de fraîcheur des claims **découvre automatiquement** tout fichier
+    de `web/src/lib/clinical/` portant un champ `claimsSource` : il rougit dès
+    la création du fichier, avant toute signature. Il faut lui déclarer la
+    table, trancher explicitement son exigence de `prescriptif` (une table qui
+    **éteint** une prescription n'est ni la table d'orientation, qui prescrit,
+    ni celle des contradictions, qui constate — arbitrage nouveau exigé par
+    [[D-046]]), et étendre le contrat SQL de production avec ses fixtures.
+  - La table d'orientation **n'est pas touchée** : l'étape SCOFF est différée
+    hors du lot, donc aucun bump ni re-signature.
+  - L'extinction est calculée dans le moteur, après l'absorption pack/membre et
+    avant le tri, jamais dans une route ni dans un composant : les deux
+    consommateurs — cockpit et synthèse — passent par le même service, et un
+    fail-closed dupliqué est un fail-closed qu'on oublie de corriger dans l'une
+    des deux copies.
+  - Dire au modèle comment lire une extinction modifie le prompt système :
+    bump `synthese-v25` et nouvelle empreinte gardée, sur le précédent v15/v16
+    (le dépôt bumpe quand la couche déterministe change le **sens** de ce qui
+    est transmis).
+- Alternatives écartées : les trois stop rules comme spécifiées (exigerait
+  d'ajouter la négation au vocabulaire de déclencheurs partagé par les trois
+  moteurs — décision d'architecture, pas détail de table) ; une trace persistée
+  et datée des extinctions et rallumages (nouvelle table, migration, PR séparée
+  du code qui en dépend — la relisibilité dans la sortie courante suffit à
+  l'interdit) ; `dejaRepondu` excluant sur toute passation existante, tel que le
+  lot l'énonçait ; une fenêtre de fraîcheur bornant l'ancienneté d'une passation
+  qui exclut — la borne serait un chiffre à fonder cliniquement, non disponible.
+- Dette nommée : aucune règle d'arrêt n'est gardée par un banc de production
+  aujourd'hui ; l'existence réelle des `claimId` cités reste hors d'atteinte du
+  CI, qui n'en vérifie que le format.
+
 ### D-052 — Les préconditions de confirmation T0 : ce qu'un T0 exige, et ce que « VALID » ne prouve pas
 
 - Date : 2026-08-12
