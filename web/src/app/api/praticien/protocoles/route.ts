@@ -140,7 +140,7 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
     // pas le dossier d'un patient qu'on n'a pas prouvé sien. 422 et non 409 —
     // ici 409 n'est pas utilisé, et sur la route sœur il porte déjà le conflit
     // de version, que le client traite en rechargeant l'historique.
-    const refusPreconditions = await refusPreconditionsPersistance(episode);
+    const refusPreconditions = await refusPreconditionsPersistance(episode, emailPraticien(session) ?? '');
     if (refusPreconditions) {
       return NextResponse.json(
         { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },

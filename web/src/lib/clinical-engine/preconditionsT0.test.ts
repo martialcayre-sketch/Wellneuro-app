@@ -100,7 +100,33 @@ describe('préconditions de confirmation T0 (D-052)', () => {
     }
   });
 
-  // Le seul des trois termes de la condition dure qui morde en production.
+  // LE DÉFAUT TROUVÉ EN REVUE LE 2026-08-12, et la raison d'être de ces deux
+  // cas : `calculateScore` rend un OBJET `{ scored: false, total: null }` sur
+  // une passation sans réponse lisible. Un prédicat qui se contentait de
+  // `scores !== null` acceptait donc quatre passations vides comme « rideau
+  // complet », et le T0 est irrévocable.
+  it('quatre passations SANS AUCUNE RÉPONSE ne font pas un rideau', () => {
+    const resultat = evaluerPreconditionsT0(entrees({
+      passations: RIDEAU_T0.map(id => passation(id, { scoresJson: { rawAnswers: {} } })),
+    }));
+    expect(resultat.bloquant).toBe(true);
+    expect(dure(resultat, 'rideau_t0').detail).toContain('sans résultat exploitable');
+    for (const id of RIDEAU_T0) expect(dure(resultat, 'rideau_t0').detail).toContain(id);
+  });
+
+  it('des réponses aux clés étrangères à la définition ne valent pas une mesure', () => {
+    // Le cas Q_ALI_01 de [[D-051]] : une passation de la forme courte (AL*)
+    // relue sous la définition SIIN ne partage aucun identifiant d'item.
+    const resultat = evaluerPreconditionsT0(entrees({
+      passations: [
+        ...rideauComplet().filter(p => p.idQuestionnaire !== 'Q_ALI_01'),
+        passation('Q_ALI_01', { scoresJson: { rawAnswers: { CLE_INEXISTANTE: 3 } } }),
+      ],
+    }));
+    expect(resultat.bloquant).toBe(true);
+    expect(dure(resultat, 'rideau_t0').detail).toContain('Q_ALI_01');
+  });
+
   it('une passation présente mais non cotable ne vaut pas une mesure', () => {
     const resultat = evaluerPreconditionsT0(entrees({
       passations: [

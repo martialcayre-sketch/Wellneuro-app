@@ -5,11 +5,19 @@ import { statutExcluDuRaisonnement } from '../scoring/validite';
 /**
  * Préconditions de confirmation d'un épisode T0 ([[D-052]]).
  *
- * Module PUR : ni Prisma, ni session, ni réseau. Les entrées lui sont fournies
- * par `preconditionsT0Prisma.ts`, qui les lit en base — jamais depuis le corps
- * d'une requête. La distinction n'est pas décorative : l'épisode qui atteint
- * les points de persistance transite par le navigateur, et un contrôle qui
- * lirait ce qu'il doit vérifier serait un contrôle client déguisé.
+ * Ce module NE LIT NI LA BASE, NI LA SESSION, NI LE RÉSEAU : ses entrées lui
+ * sont fournies par `preconditionsT0Prisma.ts`, qui les lit en base — jamais
+ * depuis le corps d'une requête. La distinction n'est pas décorative :
+ * l'épisode qui atteint les points de persistance transite par le navigateur,
+ * et un contrôle qui lirait ce qu'il doit vérifier serait un contrôle client
+ * déguisé.
+ *
+ * Il n'est pas SANS DÉPENDANCE Prisma pour autant, et le dire faux serait
+ * trompeur : `scoresRecalculesPourRaisonnement` vient d'`orientationService`,
+ * qui importe `@/lib/prisma`, dont le module instancie le client au
+ * chargement. Un banc de ce module doit donc mocker `@/lib/prisma`. Réutiliser
+ * cette fonction reste le bon choix — elle porte cinq fermetures cliniques
+ * qu'on ne veut pas recopier.
  *
  * POURQUOI CE MODULE N'EST PAS DANS `assessmentEpisode.ts` : les fonctions de
  * ce fichier-là sont des fonctions de FENÊTRE, sans dossier ni session. Une
@@ -42,10 +50,15 @@ export const RIDEAU_T0 = ['Q_MOD_03', 'Q_MOD_01', 'Q_INF_03', 'Q_ALI_01'] as con
 /** Instrument du pack de base volontairement hors rideau — motivé ci-dessus. */
 export const HORS_RIDEAU_MOTIVE = ['Q_SOM_09'] as const;
 
-const STATUTS_SYNTHESE_VALIDEE: ReadonlySet<string> = new Set([
-  'Validee_Praticien',
-  'Corrigee_Praticien',
-]);
+/**
+ * Les deux statuts qui valent validation praticien. Exporté parce que le
+ * chargeur doit filtrer la lecture avec EXACTEMENT le même ensemble : filtrer
+ * sur un ensemble et juger sur un autre laisserait passer une synthèse que la
+ * condition croit validée, ou l'inverse.
+ */
+export const STATUTS_SYNTHESE_VALIDEE = ['Validee_Praticien', 'Corrigee_Praticien'] as const;
+
+const STATUTS_SYNTHESE_VALIDEE_SET: ReadonlySet<string> = new Set(STATUTS_SYNTHESE_VALIDEE);
 
 export type PassationPourPreconditions = {
   idQuestionnaire: string;
@@ -116,14 +129,24 @@ function dernieresParInstrument(
 /**
  * La passation compte-t-elle pour le rideau ?
  *
- * TROIS TERMES, ET UN SEUL MORD AUJOURD'HUI ([[D-052]]). L'existence est
- * nécessaire. Le statut non exclu passe par `statutExcluDuRaisonnement`, la
- * porte INDÉPENDANTE DU DRAPEAU, prévue pour désigner et non pour filtrer —
- * c'est son emploi légitime : une précondition désigne. Le troisième terme est
- * le seul qui refuse quelque chose en production : `scoresRecalculesPourRaisonnement`
- * rend `null` sur une passation « nommée-mais-vidée », c'est-à-dire présente
- * mais dont le résultat n'est pas une mesure. Un T0 confirmé sur une telle
- * passation serait un T0 sans mesure.
+ * TROIS TERMES ([[D-052]]). L'existence est nécessaire. Le statut non exclu
+ * passe par `statutExcluDuRaisonnement`, la porte INDÉPENDANTE DU DRAPEAU,
+ * prévue pour désigner et non pour filtrer — c'est son emploi légitime : une
+ * précondition désigne. Le troisième terme exige que le recalcul rende une
+ * MESURE, et pas seulement un objet.
+ *
+ * `scores !== null` NE SUFFIT PAS, et c'est le défaut que la revue du
+ * 2026-08-12 a trouvé dans la première rédaction de ce fichier : depuis le
+ * 2026-07-29, `calculateScore` porte une garde générale de passation vide qui
+ * rend, sur une passation sans aucune réponse lisible,
+ * `{ scored: false, total: null, interpretation: null, raisonNonScore }` — un
+ * objet, donc non-`null`. Quatre passations SANS UNE SEULE RÉPONSE
+ * satisfaisaient ainsi « rideau complet », et le T0 est irrévocable. Le cas
+ * n'est pas d'école : une passation `Q_ALI_01` de la forme courte (`AL*`)
+ * relue sous la définition SIIN (`SIIN*`) tombe exactement là ([[D-051]]).
+ *
+ * On lit donc `scored`/`total`, les deux drapeaux que cette garde pose et que
+ * `equilibre/evidence.ts` lit déjà.
  *
  * On NE relit PAS `statutValidite === 'VALID'` : la migration du LOT-00 a
  * estampillé `VALID` toutes les lignes existantes par défaut de colonne, et la
@@ -139,7 +162,13 @@ function passationExploitable(passation: PassationPourPreconditions): boolean {
     passation.dateReponse,
     passation.statutValidite,
   );
-  return scores !== null;
+  if (scores === null) return false;
+  // Une passation que le moteur refuse de coter n'est pas une mesure. Les deux
+  // tests sont gardés séparément : `scored: false` est la garde générale,
+  // `total: null` couvre un moteur qui ne poserait pas le drapeau.
+  if (scores.scored === false) return false;
+  if (scores.total === null || scores.total === undefined) return false;
+  return true;
 }
 
 /**
@@ -216,7 +245,7 @@ function evaluerAnamnese(entrees: EntreesPreconditionsT0): ConditionPrecondition
 function evaluerSynthese(entrees: EntreesPreconditionsT0): ConditionPrecondition {
   const base = { id: 'synthese_validee', libelle: 'Synthèse validée et postérieure au rideau' };
   const synthese = entrees.synthese;
-  if (!synthese || !STATUTS_SYNTHESE_VALIDEE.has(synthese.statut)) {
+  if (!synthese || !STATUTS_SYNTHESE_VALIDEE_SET.has(synthese.statut)) {
     return { ...base, satisfaite: false, detail: 'Aucune synthèse validée par le praticien.' };
   }
   if (!synthese.dateValidation) {

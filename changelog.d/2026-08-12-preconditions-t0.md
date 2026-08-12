@@ -2,13 +2,14 @@
 
 - **Un épisode T0 ne se confirme plus sur un dossier vide** (`D-052`). L'API
   vérifie trois **conditions dures**, recalculées depuis la base et jamais lues
-  dans le corps de requête : premier rideau complet et exploitable
+  dans le corps de requête : premier rideau renseigné et cotable
   (`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`, `Q_ALI_01`), anamnèse consignée avec un
   motif principal, synthèse validée par le praticien et postérieure à la
   dernière passation du rideau. Refus en **422**, message français nommant ce
   qui manque. Deux **conditions souples** (passation ambiguë du rideau,
   contradictions ouvertes) se contournent avec un motif obligatoire, tracé dans
-  le payload d'épisode — auteur et horodatage posés par le serveur.
+  le payload d'épisode — auteur et horodatage posés par le serveur, puis
+  recoupés contre la session aux deux points de persistance.
 - Le panneau de confirmation affiche la checklist : conditions dures cochées ou
   bloquantes, avertissements avec case « je confirme malgré » et motif. Ce qui
   n'est pas requis pour un T0 (biologie, agendas, journal) est **nommé**, y
@@ -25,16 +26,49 @@
   présenté comme un jugement clinique, ce que `DC-24` interdit.
 - La condition retenue ne s'y appuie pas : la passation doit exister, son statut
   ne doit pas être exclu du raisonnement (`statutExcluDuRaisonnement`,
-  indépendant du drapeau, prévu pour **désigner** et non pour filtrer), et
-  `scoresRecalculesPourRaisonnement` ne doit pas rendre `null`. **C'est ce
-  troisième terme, et lui seul, qui mord aujourd'hui** : il refuse la passation
-  « nommée-mais-vidée », c'est-à-dire présente mais dont le résultat n'est pas
-  une mesure.
+  indépendant du drapeau, prévu pour **désigner** et non pour filtrer), et le
+  recalcul doit rendre **une mesure** — un score coté (`scored`, `total`), et
+  pas seulement un objet non-`null`. **C'est ce troisième terme, et lui seul,
+  qui mord aujourd'hui.**
+- **Ce terme a dû être écrit deux fois** : la première rédaction testait
+  `!== null`, or `calculateScore` rend `{ scored: false, total: null }` sur une
+  passation sans réponse lisible. Quatre passations **sans une seule réponse**
+  satisfaisaient donc « rideau complet » — et le T0 est irrévocable. Trouvé en
+  revue avant merge, refermé et tenu par deux bancs (passation vide ; réponses
+  aux clés étrangères à la définition, le cas `Q_ALI_01` `AL*`/`SIIN*`).
+- La condition **n'exige pas** que chaque item soit répondu : un instrument
+  partiellement renseigné mais cotable passe. Le libellé affiché dit donc
+  « renseigné et cotable », et non « complet ».
 - Les deux conditions souples sont **muettes en production**, et c'est écrit
   plutôt que masqué : aucune passation ne peut porter `AMBIGUOUS` drapeau
   éteint, et le service de contradictions rend une liste vide tant que la table
   n'est pas signée. Elles sont câblées et tenues par des bancs pour que le
   chemin existe le jour de l'allumage.
+
+### Trois autres défauts trouvés en revue avant merge
+
+- **La trace de contournement était forgeable par le navigateur.** Les deux
+  points de persistance ne vérifiaient que la présence d'un motif : l'auteur et
+  l'horodatage arrivaient du client et étaient persistés tels quels. Ils sont
+  désormais recoupés champ par champ contre la session, et un contournement
+  visant une condition qui n'est pas en défaut est refusé.
+- **La porte se désactivait en déclarant un autre jalon.** `milestone` vient du
+  corps de requête ; déclarer `J21` sur l'identifiant du T0 ouvrait la porte, et
+  l'écriture étant un `upsert(..., update: {})`, l'identifiant T0 du patient
+  était squatté définitivement. Le jalon est maintenant dérivé du suffixe de
+  `assessmentEpisodeId` quand il l'est.
+- **La condition de synthèse lisait la dernière ligne, tous statuts confondus.**
+  Régénérer une synthèse pour la relire bloquait le T0 avec « Aucune synthèse
+  validée par le praticien » — faux. La lecture porte désormais le filtre de
+  statut, partagé avec le module qui juge.
+
+### Impact mesuré sur le parc, avant merge
+
+- Au 2026-08-12, sur **19 patients** de production : **10** portent le rideau
+  complet et une anamnèse validée avec motif, **8 satisfont les trois
+  conditions dures** (les 2 autres échouent sur la fraîcheur de la synthèse).
+  Une porte qui aurait tout fermé aurait été une régression, pas une garde — le
+  chiffre est au dossier plutôt que découvert après merge.
 
 ### Écarté
 
@@ -65,8 +99,15 @@
 ### Modifié
 
 - `VERSION_OBJETS_CLINIQUES` : `objets-cliniques-v1` → `v2` (le payload
-  d'épisode gagne `preconditionOverrides`). Coût mesuré avant bump :
-  `assessment_episodes` est vide et aucun `protocol_drafts` ne porte
-  `objets-cliniques-v*` — aucun hash persisté ne bouge. Aucune migration.
+  d'épisode gagne `preconditionOverrides`). L'étiquette entre dans
+  `snapshot.inputHash` → `decisionCard.inputHash` → `draft.inputHash` →
+  `versionId`, et dans `assessment_episodes.contract_version`. Aucun hash
+  persisté ne bouge pour deux raisons : `assessment_episodes` est **vide** en
+  production, et une version de protocole déjà écrite est relue par
+  `reconstructProtocolDraft`, qui recalcule son empreinte depuis le payload
+  stocké. **Ce qui bougerait sur un fil déjà persisté** — nommé parce que ce
+  serait invisible autrement : le premier enregistrement après déploiement
+  compterait comme changement clinique sans changement clinique. Zéro fil
+  concerné aujourd'hui. Aucune migration.
 - `docs/FEATURE_FLAGS.md` documente enfin `WN_ENABLE_VALIDITE_PASSATIONS`,
   absent alors qu'il gâte quatre consommateurs cliniques.

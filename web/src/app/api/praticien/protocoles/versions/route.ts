@@ -139,7 +139,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // faire lire l'historique du patient. 422 et non 409 — sur cette route, 409
     // porte déjà `version_stale` et `protocol_stale`, et c'est la seule
     // discrimination que le client applique (il recharge l'historique).
-    const refusPreconditions = await refusPreconditionsPersistance(episode);
+    const refusPreconditions = await refusPreconditionsPersistance(episode, emailPraticien(session) ?? '');
     if (refusPreconditions) {
       return NextResponse.json(
         { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },

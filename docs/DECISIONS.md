@@ -45,11 +45,29 @@ présenté comme un jugement clinique, exactement ce que `DC-24` interdit.
 La condition dure retenue ne s'y appuie pas : une passation compte si elle
 **existe**, si son statut **n'est pas exclu du raisonnement**
 (`statutExcluDuRaisonnement`, indépendant du drapeau, prévu pour *désigner* et
-non pour *filtrer*) et si `scoresRecalculesPourRaisonnement` **ne rend pas
-`null`**. Ce troisième terme est le seul qui morde aujourd'hui : il refuse la
-passation « nommée-mais-vidée », c'est-à-dire précisément le signal que le
-LOT-00 s'est engagé à transmettre plutôt qu'à effacer. Un T0 confirmé sur un
-questionnaire présent mais non cotable serait un T0 sans mesure.
+non pour *filtrer*) et si le recalcul rend **une mesure** — c'est-à-dire un
+score coté (`scored`, `total`), et pas seulement un objet non-`null`.
+
+**Ce troisième terme a dû être écrit deux fois, et le dire évite de le
+réécrire une troisième.** La première rédaction se contentait de
+`scoresRecalculesPourRaisonnement(...) !== null`. Or `calculateScore` porte
+depuis le 2026-07-29 une garde générale de passation vide qui rend, sur une
+passation sans réponse lisible, `{ scored: false, total: null,
+interpretation: null, raisonNonScore }` — un objet. **Quatre passations sans
+une seule réponse satisfaisaient donc « rideau complet »**, et le T0 est
+irrévocable (revue du 2026-08-12). Le cas n'est pas d'école : une passation
+`Q_ALI_01` de la forme courte relue sous la définition SIIN ne partage aucun
+identifiant d'item et tombe exactement là ([[D-051]]). La condition lit
+désormais `scored` et `total`, les deux drapeaux que cette garde pose.
+
+Ce terme est le seul qui refuse quelque chose en production : le statut est
+tautologique, l'existence est triviale. Un T0 confirmé sur un questionnaire
+présent mais non coté serait un T0 sans mesure.
+
+**Ce que la condition ne dit PAS** : que chaque item est répondu. Un instrument
+partiellement renseigné mais cotable passe — exiger la complétude item par item
+serait un durcissement clinique qui n'a pas été arbitré ici. Le libellé affiché
+dit donc « renseigné et cotable », pas « complet ».
 
 **3. Le rideau s'évalue hors fenêtre.** `targetAt` d'un T0 vaut la date de la
 **première passation du dossier**, quelle qu'elle soit. Un patient ayant
@@ -70,9 +88,25 @@ qui n'avait pas à en tenir compte. `Corrigee_Praticien` **ne rafraîchit pas**
 commente une synthèse, elle ne la re-valide pas.
 
 - Conditions **souples** : contournables, avec motif obligatoire, tracées dans
-  le payload d'épisode (`preconditionOverrides` : condition, motif, auteur et
-  horodatage **posés par le serveur**, jamais reçus du client — l'épisode
-  transite par le navigateur avant d'être persisté).
+  le payload d'épisode. `preconditionOverrides` porte la condition, le motif,
+  l'auteur et l'horodatage, **posés par le serveur** à la confirmation.
+  L'épisode transitant ensuite par le navigateur, les deux points de
+  persistance les **recoupent champ par champ** contre la session : un
+  contournement dont l'auteur n'est pas celui de la session, dont la date n'est
+  pas une date, ou dont la condition n'est pas réellement en défaut, est refusé
+  en 422. Ils vérifient plutôt qu'ils ne réécrivent — réécrire ferait diverger
+  l'épisode de celui qui a été haché dans `snapshot.inputHash`.
+- **La porte ne se désactive pas en déclarant un autre jalon.** Le jalon est
+  dérivé du suffixe de `assessmentEpisodeId` quand il est dérivable, et le
+  champ `milestone` du corps de requête ne fait foi qu'à défaut. Sans cela,
+  déclarer `J21` sur l'identifiant du T0 ouvrait la porte — et l'écriture étant
+  un `upsert(..., update: {})`, l'identifiant T0 du patient était squatté
+  définitivement par une ligne de suivi.
+- **La fraîcheur se juge sur la dernière synthèse VALIDÉE, pas sur la dernière
+  ligne.** Chaque génération crée une ligne au statut `Brouillon_IA` :
+  régénérer une synthèse pour la relire aurait bloqué le T0 d'un dossier qui en
+  porte une validée, avec le message « Aucune synthèse validée par le
+  praticien » — factuellement faux, et inexplicable au sens de `DC-34`.
 - Écarté : **la condition souple « suggestions d'orientation ni renseignées ni
   écartées »**, retirée du lot. « Écartée » n'existe nulle part : les deux
   seules notions de rejet du dépôt (`FilCardRejection`,
@@ -88,6 +122,12 @@ commente une synthèse, elle ne la re-valide pas.
   est faux tant que la table n'est pas signée. Elles sont câblées et prouvées
   par bancs pour que le chemin existe le jour de l'allumage ; prétendre
   qu'elles protègent quelque chose en production serait faux.
+- **Impact mesuré sur le parc avant merge**, parce qu'une porte qui fermerait
+  tout serait une régression et non une garde : au 2026-08-12, sur 19 patients
+  de production, **10 portent le rideau complet et une anamnèse validée avec
+  motif, et 8 satisfont les trois conditions dures** (les 2 autres échouent sur
+  la fraîcheur de la synthèse). La mesure porte sur la présence des passations,
+  pas sur leur cotabilité — elle majore donc légèrement.
 - Réserve nommée : cette décision **ne rend pas le T0 corrigible**. Elle durcit
   une porte à sens unique, et un T0 confirmé par contournement le reste. La
   correction ou ré-ouverture d'un T0 confirmé est hors périmètre du lot et reste
