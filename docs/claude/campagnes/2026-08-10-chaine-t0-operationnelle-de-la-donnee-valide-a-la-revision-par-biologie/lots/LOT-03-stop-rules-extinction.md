@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Règles d'arrêt et extinction d'orientation"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-01"
 ---
 

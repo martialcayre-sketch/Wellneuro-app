@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Préconditions de confirmation T0 — checklist dure/souple"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
