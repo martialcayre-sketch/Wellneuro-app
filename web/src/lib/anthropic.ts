@@ -225,7 +225,15 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // drapeau ou pas), et la consigne gagne le cas qui en découle : un instrument
 // dont AUCUNE passation n'est exploitable ne porte aucun `true`, et ne doit pas
 // être rabattu sur sa plus récente.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v21';
+// v22 (2026-08-12, contre-revue) : la v21 avait AJOUTÉ un paragraphe sans
+// toucher aux deux phrases qu'il rendait fausses — « un seul exemplaire porte
+// `true` » et « `false` veut dire remplacée ». Sur une passation unique
+// écartée, le modèle lisait trois consignes incompatibles. La section est
+// RÉÉCRITE, pas complétée. Et le statut d'écartement arrive désormais comme une
+// DONNÉE (`ecarteeDuRaisonnement`) au lieu d'être déduit de l'absence d'un
+// `true` : une inférence négative sur des chiffres livrés entiers est le patron
+// que `buildUserMessage` nomme lui-même comme insuffisant.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v22';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -356,19 +364,23 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 
 Un patient peut avoir rempli **plusieurs fois le même instrument**. Toutes les passations te sont transmises, délibérément : l'évolution entre deux enquêtes est un signal clinique, et te priver des précédentes t'empêcherait de la lire.
 
-Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passation qui fait foi pour cet instrument — la plus récente parmi celles qui sont exploitables — et **false** sur les autres. Un **false** est une information, pas une absence : il ne veut pas dire que la passation est douteuse, seulement qu'elle a été remplacée.
+Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passation qui fait foi pour cet instrument, **false** sur les autres.
 
-Il peut arriver qu'un instrument ne porte **aucun true** : toutes ses passations sont alors écartées du raisonnement. Dans ce cas, ne désigne aucune d'elles comme l'état actuel et ne te rabats pas sur la plus récente : dis que cet instrument n'a pas de mesure qui fasse foi, et traite-le comme une dimension restant à mesurer.
+Certaines passations portent en plus **ecarteeDuRaisonnement** : le praticien les a écartées (mesure invalidée, remplacée, ou conservée pour mémoire seulement). Leurs chiffres te sont transmis quand même — c'est délibéré, pour que le dossier reste complet — mais **tu ne dois en tirer aucun constat d'état, aucune évolution, aucune tendance**. Une passation écartée ne porte jamais **passationCourante: true**.
+
+Un instrument peut donc n'avoir **aucun true** : cela veut dire qu'aucune de ses passations ne fait foi. Ne te rabats alors sur aucune d'elles, pas même la plus récente, et traite cette dimension comme restant à mesurer.
+
+Lire un **false** demande de regarder la même ligne : si elle porte **ecarteeDuRaisonnement**, elle a été écartée ; sinon, elle a simplement été remplacée par une passation plus récente, ce qui ne la rend pas douteuse.
 
 En conséquence :
 
-- **rapporte l'état actuel d'après la passation courante**, jamais d'après une antérieure. Ne présente pas un résultat ancien comme la situation présente ;
-- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien ;
+- **rapporte l'état actuel d'après la passation courante**, jamais d'après une antérieure ni d'après une passation écartée ;
+- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien. N'y fais entrer aucune passation écartée ;
 - **ne qualifie pas cet écart de progrès, d'aggravation ni d'effet d'une prise en charge.** Deux mesures qui diffèrent disent qu'elles diffèrent ; elles ne disent ni pourquoi, ni ce qui l'a causé. Association n'est pas causalité ;
 - **ne moyenne jamais deux passations**, ne les additionne pas, ne fabrique pas une valeur intermédiaire. Si elles se contredisent, dis-le : une divergence se signale, elle ne se lisse pas ;
-- une passation **non interprétable** porte elle aussi ce champ. Qu'elle soit courante ne rend pas son résultat exploitable pour autant : la section précédente continue de s'appliquer intégralement.
+- une passation **non interprétable** porte elle aussi ces champs. Qu'elle soit courante ne rend pas son résultat exploitable pour autant : la section précédente continue de s'appliquer intégralement.
 
-Ce champ est un **repère de lecture**, pas un degré de fiabilité : il ne dit pas qu'une passation est meilleure qu'une autre, seulement laquelle est la plus récente. Et si un seul exemplaire d'un instrument t'est transmis, il porte **true** sans que cela signifie quoi que ce soit de plus.
+Ce champ est un **repère de lecture**, pas un degré de fiabilité : il dit laquelle des passations fait foi, il ne classe pas leur qualité. Un instrument passé une seule fois, et non écartée, porte **true** sans que cela signifie quoi que ce soit de plus.
 
 ## Contexte anamnestique et signalétique
 

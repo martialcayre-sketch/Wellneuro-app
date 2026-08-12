@@ -31,8 +31,11 @@
   chacun à leur façon à « quelle passation fait foi » finiraient par se
   contredire dans le même dossier. Elle porte aussi le départage à horodatage
   égal, sans lequel le repère ne serait pas reproductible d'un run à l'autre.
-- **Quand le drapeau de validité est allumé**, les passations exclues ont déjà
-  quitté la liste : « la plus récente » est donc bien la plus récente `VALID`.
-  Différence assumée avec l'orientation, qui éteint l'instrument lorsque sa
-  dernière passation est invalidée — ici on se replie sur la précédente encore
-  exploitable, parce que le bloc doit nommer un repère parmi ce qu'il transmet.
+- **Une passation écartée du raisonnement ne porte jamais le repère**, que le
+  drapeau de validité soit allumé ou non — la garantie ne dépend pas de lui. Le
+  repère ne RETIRE rien (les lignes partent toutes) ; il se contente de ne pas
+  promouvoir ce que le praticien a écarté, et la ligne concernée le dit
+  elle-même. Différence assumée avec l'orientation, qui éteint l'instrument :
+  ici on désigne la précédente encore exploitable. Si aucune ne l'est,
+  l'instrument ne porte **aucun** repère, et la consigne dit que cette dimension
+  reste à mesurer.

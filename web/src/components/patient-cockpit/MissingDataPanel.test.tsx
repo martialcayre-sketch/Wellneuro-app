@@ -30,11 +30,14 @@ const constat: ContradictionAffichee = {
   hypotheses: ['Une charge de stress que les échelles ne captent pas.'],
   limitations: ['Un questionnaire isolé ne suffit pas à conclure.'],
   passations: [
-    { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12' },
-    { idQuestionnaire: 'Q_STR_04', date: '2026-08-10' },
+    { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' },
+    { idQuestionnaire: 'Q_STR_04', date: '2026-08-10', dateLisible: '10/08/2026' },
   ],
   ecartJours: 151,
   claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }],
+  importance: 'useful_not_urgent',
+  resolution: { statut: 'ouverte' },
+  regleId: 'C-STR',
   recoupementJustifie: 'Recoupe R2-STR-01 : celle-ci propose une mesure, C-STR nomme une contradiction.',
 };
 
@@ -59,8 +62,8 @@ describe('MissingDataPanel — constats déterministes de contradiction', () => 
     expect(screen.getByText(/Clarifier en entretien/)).toBeTruthy();
     // LES PASSATIONS SONT NOMMÉES ET DATÉES : sans elles, le praticien lit une
     // affirmation qu'il ne peut pas ouvrir (`DC-34`, `DC-35`).
-    expect(screen.getByText(/Q_MOD_01 — 2026-03-12/)).toBeTruthy();
-    expect(screen.getByText(/Q_STR_04 — 2026-08-10/)).toBeTruthy();
+    expect(screen.getByText(/Q_MOD_01 — 12\/03\/2026/)).toBeTruthy();
+    expect(screen.getByText(/Q_STR_04 — 10\/08\/2026/)).toBeTruthy();
     // L'écart ACCOMPAGNE les dates, il ne les remplace pas.
     expect(screen.getByText(/151 jours d'écart/)).toBeTruthy();
     // Ce que le constat NE dit pas suit le constat jusqu'à l'écran.
@@ -97,13 +100,24 @@ describe('MissingDataPanel — constats déterministes de contradiction', () => 
     );
     deplierLeDetail();
     expect(screen.queryByText(/jour/)).toBeNull();
-    expect(screen.getByText(/Q_MOD_01 — 2026-03-12/)).toBeTruthy();
+    expect(screen.getByText(/Q_MOD_01 — 12\/03\/2026/)).toBeTruthy();
   });
 
   it('les claims fondateurs sont rendus : le constat est remontable', () => {
     render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
     deplierLeDetail();
     expect(screen.getByText(/WN-CL-0238-002 v1\.0/)).toBeTruthy();
+    // La règle qui a mordu : sans elle, un faux positif n'est pas remontable.
+    expect(screen.getByText(/Règle C-STR/)).toBeTruthy();
+  });
+
+  it('l’objet minimal de `DC-30` est rendu : priorité et état de résolution', () => {
+    // `DC-30` est actée, donc opposable. Le vocabulaire est celui que le
+    // panneau affiche déjà pour les données manquantes.
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/Utile mais non urgente/)).toBeTruthy();
+    expect(screen.getByText(/non résolue/)).toBeTruthy();
   });
 
   it('le constat reste marqué praticien seul', () => {

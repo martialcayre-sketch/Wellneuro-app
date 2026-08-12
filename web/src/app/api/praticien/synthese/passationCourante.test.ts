@@ -86,7 +86,13 @@ function passation(idReponse: string, idQuestionnaire: string, jour: string) {
 }
 
 /** Le message utilisateur réellement envoyé au modèle, reparsé. */
-function passationsTransmises(): Array<{ idQuestionnaire: string; date: string; passationCourante: boolean }> {
+function passationsTransmises(): Array<{
+  idQuestionnaire: string;
+  date: string;
+  passationCourante: boolean;
+  ecarteeDuRaisonnement?: string;
+  scores?: unknown;
+}> {
   const message = anthropicCreate.mock.calls[0][0].messages[0].content as string;
   const json = message.slice(message.indexOf('['), message.lastIndexOf(']') + 1);
   return JSON.parse(json);
@@ -242,6 +248,59 @@ describe('passation écartée du raisonnement, drapeau de validité ÉTEINT', ()
       expect(courantes).toHaveLength(1);
       expect(courantes[0].date).toBe('2026-07-01');
     }
+  });
+
+  it('la ligne écartée est MARQUÉE : le statut arrive comme donnée, pas comme silence', async () => {
+    // Sans ce champ, la seule trace de l'écartement était l'ABSENCE d'un `true`
+    // ailleurs dans la liste — une inférence négative sur des chiffres livrés
+    // entiers, c'est-à-dire le patron que `buildUserMessage` déclare lui-même
+    // insuffisant (« consigne seule, données livrées »).
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R2', 'Q_STR_04', '2026-08-10'), statutValidite: 'INVALID' },
+      passation('R1', 'Q_STR_04', '2026-07-01'),
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    const ecartee = transmises.find(p => p.date === '2026-08-10');
+    expect(ecartee?.ecarteeDuRaisonnement).toBe('INVALID');
+    // MARQUER, PAS RETIRER : les chiffres partent quand même (engagement LOT-00).
+    expect(ecartee).toHaveProperty('scores');
+    // Et la ligne saine ne porte pas la clé : une clé toujours présente se
+    // lirait « statut non renseigné » partout ailleurs.
+    expect(transmises.find(p => p.date === '2026-07-01')).not.toHaveProperty('ecarteeDuRaisonnement');
+  });
+
+  it('une passation UNIQUE et écartée : aucune courante, et la ligne est marquée', async () => {
+    // Le cas que la contre-revue a nommé : un seul exemplaire, invalidé. La
+    // consigne v21 disait « un seul exemplaire porte true » — faux ici, et le
+    // modèle lisait trois consignes incompatibles.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R1', 'Q_STR_04', '2026-08-10'), statutValidite: 'INVALID' },
+    ]);
+    await POST(req());
+
+    const transmises = passationsTransmises();
+    expect(transmises).toHaveLength(1);
+    expect(transmises[0].passationCourante).toBe(false);
+    expect(transmises[0].ecarteeDuRaisonnement).toBe('INVALID');
+  });
+
+  it('AMBIGUOUS reste éligible au repère : ce n’est pas un statut écarté', async () => {
+    // Garde d'anti-dérive : un ajout accidentel d'`AMBIGUOUS` aux statuts
+    // exclus ne ferait rougir aucun autre banc du repère.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { ...passation('R2', 'Q_STR_04', '2026-08-10'), statutValidite: 'AMBIGUOUS' },
+      passation('R1', 'Q_STR_04', '2026-07-01'),
+    ]);
+    await POST(req());
+
+    const courantes = passationsTransmises().filter(p => p.passationCourante);
+    expect(courantes).toHaveLength(1);
+    expect(courantes[0].date).toBe('2026-08-10');
   });
 
   it('toutes écartées ⇒ AUCUN repère, et surtout pas un repli sur la plus récente', async () => {

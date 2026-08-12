@@ -74,6 +74,14 @@ export function MissingDataPanel({
             summary={<span><span className="font-medium">Contradiction entre instruments :</span> {constat.description}</span>}
             detail={(
               <div className="space-y-2">
+                {/* `DC-30`, ACTÉE : l'objet minimal d'une discordance porte son
+                    importance et son état de résolution. Le vocabulaire est
+                    celui que ce panneau affiche déjà pour les données
+                    manquantes — un seul langage de priorité par écran. */}
+                <p>
+                  <span className="font-medium">Priorité :</span> {PRIORITY_LABELS[constat.importance]}
+                  {constat.resolution.statut === 'ouverte' && ' — non résolue'}
+                </p>
                 <p><span className="font-medium">Ce qui est proposé :</span> {constat.actionSuggeree}</p>
                 {/* LES PASSATIONS, DATÉES — corrigé après revue. Un delta nu
                     sous un intitulé d'« ancienneté » n'ancre rien : deux
@@ -90,7 +98,9 @@ export function MissingDataPanel({
                     </p>
                     <ul className="list-disc pl-5">
                       {constat.passations.map(p => (
-                        <li key={`${p.idQuestionnaire}-${p.date}`}>{p.idQuestionnaire} — {p.date}</li>
+                        <li key={`${p.idQuestionnaire}-${p.dateLisible}-${p.date}`}>
+                          {p.idQuestionnaire} — {p.dateLisible}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -124,7 +134,7 @@ export function MissingDataPanel({
                     pas remontable (`DC-01`, `DC-26`). */}
                 {constat.claims.length > 0 && (
                   <p className="text-muted-foreground">
-                    Sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
+                    Règle {constat.regleId} · sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
                   </p>
                 )}
                 <p className="text-muted-foreground">Visible uniquement par le praticien.</p>

@@ -70,6 +70,20 @@ type ReponseInput = {
   idQuestionnaire: string;
   titre: string;
   date: string;
+  /**
+   * Statut de validité quand la passation est ÉCARTÉE du raisonnement, sinon
+   * `null`. Ajouté après revue.
+   *
+   * MARQUER, PAS RETIRER. Le LOT-00 s'est engagé à ne rien retirer tant que
+   * `WN_ENABLE_VALIDITE_PASSATIONS` est éteint, et cet engagement tient : les
+   * scores partent entiers. Mais ne pas donner le repère `passationCourante` à
+   * une passation écartée laissait le modèle DÉDUIRE son statut de l'absence
+   * d'un `true` ailleurs dans la liste — une inférence négative, c'est-à-dire
+   * exactement le patron « consigne seule, données livrées » que le commentaire
+   * de `buildUserMessage` nomme comme insuffisant. Le statut arrive donc comme
+   * une DONNÉE, au patron de `mesureNonInterpretable`.
+   */
+  statutEcarte: string | null;
   scores: Record<string, unknown>;
   scorePrincipal: number | null;
   interpretation: string | null;
@@ -253,6 +267,7 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
         // ferait désigner au modèle une passation antérieure comme la courante :
         // un repère faux est pire que pas de repère.
         passationCourante: r.passationCourante,
+        ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
         scores: null,
         scorePrincipal: null,
         interpretation: null,
@@ -267,6 +282,9 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
       // les antérieures plutôt qu'absent : une clé qui n'apparaît que sur la
       // courante se lirait, sur les autres, comme une information manquante.
       passationCourante: r.passationCourante,
+      // Présent SEULEMENT sur une passation écartée : une clé toujours là, à
+      // `null`, se lirait comme « statut non renseigné » sur toutes les autres.
+      ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
       // Scores privés de toute conduite clinique : le modèle rédige à partir
       // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
       //
@@ -771,6 +789,7 @@ export async function POST(req: Request) {
       scorePrincipal: r.scorePrincipal,
       interpretation: r.interpretation,
       passationCourante: courantes.get(r.idQuestionnaire)?.idReponse === r.idReponse,
+      statutEcarte: statutExcluDuRaisonnement(r.statutValidite) ? r.statutValidite ?? null : null,
     }));
 
     // Contexte clinique (fiche signalétique + anamnèse) — une seule anamnèse par

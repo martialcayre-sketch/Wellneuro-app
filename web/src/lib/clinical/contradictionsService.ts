@@ -1,3 +1,4 @@
+import { FUSEAU_CLINIQUE, jourCivilClinique } from './contradictionsEngine';
 import { CONTRADICTIONS_METADATA } from './contradictionsV1';
 import type { ContradictionFinding } from './contradictionFinding';
 
@@ -68,7 +69,7 @@ export type ContradictionAffichee = {
    * décoter le constat par sa vétusté — la lecture de fiabilité que [[D-048]]
    * refuse, obtenue sans champ de fiabilité.
    */
-  passations: { idQuestionnaire: string; date: string }[];
+  passations: { idQuestionnaire: string; date: string; dateLisible: string }[];
   /**
    * Écart en jours entre la plus ancienne et la plus récente, ou `null` s'il
    * n'est pas applicable. Rendu EN COMPLÉMENT des dates, jamais seul : ancré
@@ -77,14 +78,24 @@ export type ContradictionAffichee = {
   ecartJours: number | null;
   /** Les claims qui fondent la règle : sans eux, rien n'est traçable (`DC-01`, `DC-26`). */
   claims: { claimId: string; versionClaim: string }[];
+  /**
+   * `DC-30` est ACTÉE, donc opposable, et elle énumère l'objet minimal d'une
+   * discordance : « sources, description, importance, hypothèses, action
+   * suggérée, résolue ou non ». La première conversion en jetait trois. Le
+   * motif de `importance` a même fait l'objet d'un arbitrage entier ([[D-048]])
+   * pour une valeur qui n'atteignait pas l'écran.
+   */
+  importance: ContradictionFinding['importance'];
+  resolution: ContradictionFinding['resolution'];
+  /** La règle qui a mordu : sans elle, un faux positif n'est pas remontable. */
+  regleId: string;
   /** Reprise telle quelle ; absente quand la règle n'en porte pas. */
   recoupementJustifie?: string;
 };
 
-/** Jour civil ISO d'un horodatage, ou `null` s'il est illisible. */
-function jourCivil(iso: string): string | null {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+/** `JJ/MM/AAAA` dans le fuseau clinique — le format du reste du cockpit. */
+function dateLisible(iso: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU_CLINIQUE }).format(new Date(iso));
 }
 
 /**
@@ -100,12 +111,16 @@ export function contradictionsPourAffichage(constats: ContradictionFinding[]): C
     // Une passation par `reponseId`, pas une par source : une règle peut viser
     // deux sous-scores du même questionnaire, et l'écran n'a pas à afficher
     // deux fois la même passation.
-    const vues = new Map<string, { idQuestionnaire: string; date: string }>();
+    const vues = new Map<string, { idQuestionnaire: string; date: string; dateLisible: string }>();
     for (const source of constat.sources) {
       if (source.type !== 'instrument') continue;
-      const date = jourCivil(source.dateReponse);
+      const date = jourCivilClinique(source.dateReponse);
       if (date === null) continue;
-      vues.set(source.reponseId, { idQuestionnaire: source.idQuestionnaire, date });
+      vues.set(source.reponseId, {
+        idQuestionnaire: source.idQuestionnaire,
+        date,
+        dateLisible: dateLisible(source.dateReponse),
+      });
     }
 
     return {
@@ -119,6 +134,9 @@ export function contradictionsPourAffichage(constats: ContradictionFinding[]): C
       passations: [...vues.values()].sort((a, b) => a.date.localeCompare(b.date)),
       ecartJours: constat.ecartJoursEntreSources,
       claims: constat.justificationClaims,
+      importance: constat.importance,
+      resolution: constat.resolution,
+      regleId: constat.regleId,
       ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
     };
   });

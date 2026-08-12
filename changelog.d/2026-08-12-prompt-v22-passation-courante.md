@@ -1,7 +1,7 @@
 ### Modifié
 
 - **La consigne système explique enfin le repère de passation courante**
-  (`synthese-v20`, LOT-01 étape 3). Depuis l'étape 6, chaque ligne du bloc
+  (`synthese-v22`, LOT-01 étape 3). Depuis l'étape 6, chaque ligne du bloc
   transmis au modèle porte `passationCourante` — et la consigne n'en disait
   rien. Une donnée présente et inexpliquée est pire qu'absente : le modèle
   pouvait l'ignorer, ou lui prêter un sens qu'elle n'a pas, un degré de
@@ -27,19 +27,33 @@
   passation non interprétable.** Le repère dit laquelle est la plus récente, pas
   laquelle est valable : la section précédente de la consigne continue de
   s'appliquer intégralement.
-- **Prêter un sens à un `true` isolé.** Un instrument passé une seule fois porte
-  `true` sans que cela signifie quoi que ce soit de plus.
+- **Prêter un sens à un `true` isolé.** Un instrument passé une seule fois, et
+  non écartée, porte `true` sans que cela signifie quoi que ce soit de plus.
 
 ### Détails
 
 - `false` est présenté comme une **information**, pas comme une absence : la
   passation a été remplacée, elle n'est pas devenue douteuse (`DC-24`).
 - **Le couple version/empreinte est reporté ensemble**, comme le verrou
-  l'exige : `synthese-v20` et `c67522b7b1207c39`. Un bump de l'un sans l'autre
+  l'exige : `synthese-v22` et `e515541e529fd058`. Un bump de l'un sans l'autre
   fait rougir le garde.
-- Un banc dédié garde le contenu de la section — nom exact du champ, motif de la
-  transmission des antérieures, et chacun des interdits. Retirer la section fait
-  rougir huit de ses neuf cas.
+- Un banc dédié garde le contenu de la section — nom exact des champs, motif de
+  la transmission des antérieures, et chacun des interdits.
+
+### Corrigé en cours de lot, après deux revues adversariales
+
+- **La v21 s'était contredite.** Elle avait AJOUTÉ un paragraphe sans retirer
+  les deux phrases qu'il rendait fausses : « un seul exemplaire porte `true` »
+  et « `false` veut dire remplacée ». Sur une passation unique écartée, le
+  modèle lisait trois consignes incompatibles — et un banc épinglait la phrase
+  devenue fausse. La section est désormais **réécrite**, pas complétée.
+- **Le statut d'écartement arrive comme une DONNÉE**, `ecarteeDuRaisonnement`
+  sur la ligne, au patron de `mesureNonInterpretable`. La v21 le laissait
+  déduire de l'absence d'un `true` ailleurs dans la liste, alors que les scores
+  partaient entiers : une inférence négative, c'est-à-dire le patron
+  « consigne seule, données livrées » que le commentaire de `buildUserMessage`
+  nomme lui-même comme insuffisant. Rien n'est retiré pour autant —
+  l'engagement du LOT-00 tient.
 
 ### Ajouté — visibilité
 

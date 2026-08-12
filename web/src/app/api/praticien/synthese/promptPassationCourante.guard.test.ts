@@ -34,8 +34,8 @@ describe('consigne système — le repère de passation courante est expliqué',
     // modèle de se rabattre sur la plus récente, c'est-à-dire sur une mesure
     // que le praticien a précisément écartée.
     expect(CONSIGNE).toMatch(/aucun true/i);
-    expect(CONSIGNE).toMatch(/ne te rabats pas sur la plus récente/i);
-    expect(CONSIGNE).toMatch(/n'a pas de mesure qui fasse foi/i);
+    expect(CONSIGNE).toMatch(/pas même la plus récente/i);
+    expect(CONSIGNE).toMatch(/aucune de ses passations ne fait foi/i);
   });
 
   it('le champ est nommé, littéralement, tel qu’il apparaît dans les données', () => {
@@ -53,7 +53,7 @@ describe('consigne système — le repère de passation courante est expliqué',
 
   it('`false` est présenté comme une information, pas comme une absence', () => {
     // `DC-24` appliqué au repère lui-même : « remplacée » n'est pas « douteuse ».
-    expect(CONSIGNE).toMatch(/remplacée/i);
+    expect(CONSIGNE).toMatch(/remplacée par une passation plus récente/i);
   });
 
   it('INTERDIT de lire un écart comme un progrès ou un effet de prise en charge', () => {
@@ -77,17 +77,32 @@ describe('consigne système — le repère de passation courante est expliqué',
     // Le piège exact : `passationCourante: true` sur une passation dont aucun
     // résultat n'est transmis pourrait se lire comme « celle-ci fait foi, donc
     // exploitable ». La section renvoie explicitement à la règle précédente.
-    expect(CONSIGNE).toMatch(/non interprétable[\s\S]*porte elle aussi ce champ/i);
+    expect(CONSIGNE).toMatch(/non interprétable[\s\S]*porte elle aussi ces champs/i);
     expect(CONSIGNE).toMatch(/ne rend pas son résultat exploitable/i);
   });
 
   it('le repère n’est pas un degré de fiabilité, et le dit', () => {
     expect(CONSIGNE).toMatch(/repère de lecture[\s\S]*pas un degré de fiabilité/i);
+    expect(CONSIGNE).toMatch(/il ne classe pas leur qualité/i);
   });
 
-  it('une passation unique porte `true` sans que cela signifie davantage', () => {
-    // Sans cette phrase, `true` sur un instrument passé une seule fois pourrait
-    // se lire comme une confirmation.
-    expect(CONSIGNE).toMatch(/un seul exemplaire[\s\S]*sans que cela signifie/i);
+  it('une passation unique NON ÉCARTÉE porte `true` — la réserve est dite', () => {
+    // La v21 disait « un seul exemplaire porte true », sans réserve : faux dès
+    // que cet exemplaire unique est écarté, c'est-à-dire le cas même que la
+    // section traite. Ce banc épinglait donc une phrase devenue fausse.
+    expect(CONSIGNE).toMatch(/passé une seule fois, et non écartée, porte/i);
+  });
+
+  it('le statut d’écartement est nommé comme une DONNÉE, pas déduit d’un silence', () => {
+    // Le patron que `buildUserMessage` déclare insuffisant est « consigne
+    // seule, données livrées ». Le champ arrive donc sur la ligne.
+    expect(CONSIGNE).toContain('ecarteeDuRaisonnement');
+    expect(CONSIGNE).toMatch(/aucun constat d'état, aucune évolution/i);
+    expect(CONSIGNE).toMatch(/ne porte jamais \*\*passationCourante: true\*\*/i);
+  });
+
+  it('lire un `false` renvoie à la même ligne, et distingue écartée de remplacée', () => {
+    expect(CONSIGNE).toMatch(/si elle porte \*\*ecarteeDuRaisonnement\*\*/i);
+    expect(CONSIGNE).toMatch(/remplacée par une passation plus récente, ce qui ne la rend pas douteuse/i);
   });
 });

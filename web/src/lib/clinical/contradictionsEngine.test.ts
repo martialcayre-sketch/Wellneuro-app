@@ -290,23 +290,26 @@ describe('moteur de contradictions — l’écart entre passations est porté, j
     expect(constats[0].ecartJoursEntreSources).toBe(151);
   });
 
-  it('deux passations séparées par minuit : 1 jour, pas 0', () => {
-    // Le défaut relevé en revue : un arrondi sur la durée brute rendait 0 pour
-    // 23 h 00 puis 08 h 00 le lendemain — « le même jour », à côté de deux
-    // dates civiles différentes affichées juste au-dessus.
+  it('deux passations séparées par minuit À PARIS comptent pour 1 jour', () => {
+    // 23 h 00 puis 01 h 00 heure de Paris. Un arrondi sur la durée brute
+    // rendait 0 — « le même jour », à côté de deux dates différentes affichées
+    // juste au-dessus.
     const constats = evaluer([
-      modeDeVie(6, 'rep-mod-1', '2026-08-10T23:00:00.000Z'),
-      dass(2, 5, 'rep-dass-1', '2026-08-11T08:00:00.000Z'),
+      modeDeVie(6, 'rep-mod-1', '2026-08-10T21:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-10T23:00:00.000Z'),
     ]);
     expect(constats[0].ecartJoursEntreSources).toBe(1);
   });
 
-  it('un jour civil et demi ne devient pas deux jours', () => {
+  it('une passation de nuit reste au jour civil PARISIEN, pas au jour UTC', () => {
+    // 00 h 40 le 11/08 à Paris = 22 h 40 le 10/08 en UTC. Un jour civil UTC
+    // rendrait 1 jour d'écart là où le praticien a tout rempli le 11 — le même
+    // défaut que celui corrigé, avec le signe inverse.
     const constats = evaluer([
-      modeDeVie(6, 'rep-mod-1', '2026-08-10T09:00:00.000Z'),
-      dass(2, 5, 'rep-dass-1', '2026-08-11T22:00:00.000Z'),
+      modeDeVie(6, 'rep-mod-1', '2026-08-11T12:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-10T22:40:00.000Z'),
     ]);
-    expect(constats[0].ecartJoursEntreSources).toBe(1);
+    expect(constats[0].ecartJoursEntreSources).toBe(0);
   });
 
   it('deux passations du même jour : l’écart vaut 0, et 0 est un fait', () => {

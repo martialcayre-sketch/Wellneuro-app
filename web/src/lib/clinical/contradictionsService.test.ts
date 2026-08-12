@@ -146,8 +146,8 @@ describe('contradictionsPourAffichage — la traçabilité survit à la conversi
 
     // Triées par date : le praticien lit une chronologie.
     expect(affiche.passations).toEqual([
-      { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12' },
-      { idQuestionnaire: 'Q_STR_04', date: '2026-08-10' },
+      { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' },
+      { idQuestionnaire: 'Q_STR_04', date: '2026-08-10', dateLisible: '10/08/2026' },
     ]);
   });
 
@@ -194,12 +194,33 @@ describe('contradictionsPourAffichage — la traçabilité survit à la conversi
         { type: 'instrument', idQuestionnaire: 'Q_STR_04', reponseId: 'r2', dateReponse: '2026-08-10T09:00:00.000Z' },
       ],
     })]);
-    expect(affiche.passations).toEqual([{ idQuestionnaire: 'Q_STR_04', date: '2026-08-10' }]);
+    expect(affiche.passations).toEqual([
+      { idQuestionnaire: 'Q_STR_04', date: '2026-08-10', dateLisible: '10/08/2026' },
+    ]);
   });
 
-  it('l’écart accompagne les dates, et reste `null` quand il ne s’applique pas', async () => {
+  it('l’objet minimal de `DC-30` survit : importance, résolution, règle', async () => {
+    // `DC-30` est ACTÉE, donc opposable : « sources, description, importance,
+    // hypothèses, action suggérée, résolue ou non ». La première conversion en
+    // jetait trois, dont celle qui a fait l'objet d'un arbitrage entier.
     const { contradictionsPourAffichage } = await service(SIGNEE);
-    expect(contradictionsPourAffichage([constat({ ecartJoursEntreSources: 151 })])[0].ecartJours).toBe(151);
-    expect(contradictionsPourAffichage([constat({ ecartJoursEntreSources: null })])[0].ecartJours).toBeNull();
+    const [affiche] = contradictionsPourAffichage([constat()]);
+    expect(affiche.importance).toBe('useful_not_urgent');
+    expect(affiche.resolution).toEqual({ statut: 'ouverte' });
+    expect(affiche.regleId).toBe('C-STR');
+  });
+
+  it('une passation de nuit reste au bon jour civil parisien', async () => {
+    // 00 h 40 à Paris le 11/08 = 22 h 40 UTC le 10/08. Un jour civil UTC
+    // rendrait « 10/08 » là où le praticien a rempli le 11.
+    const { contradictionsPourAffichage } = await service(SIGNEE);
+    const [affiche] = contradictionsPourAffichage([constat({
+      sources: [
+        { type: 'instrument', idQuestionnaire: 'Q_SOM_07', reponseId: 'r1', dateReponse: '2026-08-10T22:40:00.000Z' },
+        { type: 'instrument', idQuestionnaire: 'Q_MOD_01', reponseId: 'r2', dateReponse: '2026-08-11T12:00:00.000Z' },
+      ],
+    })]);
+    expect(affiche.passations.map(p => p.date)).toEqual(['2026-08-11', '2026-08-11']);
+    expect(affiche.passations[0].dateLisible).toBe('11/08/2026');
   });
 });
