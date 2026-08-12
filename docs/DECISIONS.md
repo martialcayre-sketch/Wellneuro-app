@@ -4,6 +4,134 @@
 
 ## Décisions actives
 
+### D-049 — Le CI fait autorité sur le palier E2E tant que le blocage navigateur local dure
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : validation, gouvernance des PR
+- Contexte : depuis le 2026-08-11, la séquence complète locale
+  (`npm run test:worktree`) échoue à répétition sur **un seul test par run,
+  jamais le même**, dans `web/e2e/visual.spec.ts`, projet iPhone 13 (WebKit)
+  uniquement : `page.goto` expire à 120 s pendant que ses voisines immédiates
+  restent sous la seconde. Six runs, quatre blocages. La trace Playwright donne
+  `0-trace.network` **vide** — aucune requête HTTP n'est jamais partie, le
+  serveur n'a jamais été sollicité. La cause est dans le processus navigateur,
+  hors de ce dépôt, et n'est pas identifiée. Preuve d'attribution close le
+  2026-08-12 : le blocage s'est reproduit sur une branche d'outillage ne
+  contenant aucune ligne de code applicatif. Jamais observé en CI (Linux).
+- Décision : tant que ce blocage dure, **le CI tient lieu de palier E2E** pour
+  les PR de classe migration/scoring/clinique, là où `CLAUDE.md` exigeait T3
+  local.
+- **Périmètre exact — seul le segment E2E bascule.** T3 local reste exigé, et
+  reste joué, pour les contrats SQL (`web/prisma/checks/`), la dérive
+  schéma↔migrations, la certification scoring et la suite unitaire complète.
+  Cette décision ne dispense d'aucun de ces contrôles.
+- **Condition de sortie, nommée** : le blocage cesse d'être observé sur deux
+  séquences complètes consécutives, **ou** une cause racine est identifiée.
+  L'un ou l'autre referme cette décision et rétablit `CLAUDE.md` à l'identique.
+- Ce que cette décision **ne fait pas** : elle n'autorise pas à rejouer une
+  suite jusqu'au vert, ni à ajouter des `retries` à Playwright — un réessai
+  transformerait ce blocage en succès silencieux et emporterait avec lui les
+  vrais échecs intermittents.
+- Garde-fou associé : `scripts/wn-diagnostic-e2e.mjs` classe automatiquement
+  cet échec (« `page.goto` expiré, et AUCUNE requête HTTP émise ») et rappelle
+  dans son message que la séquence **reste rouge**. Sans ce classement, un
+  blocage navigateur se lit comme une régression du code en cours — c'est
+  arrivé trois fois en deux jours.
+- Écarté : **instruire la cause racine avant de décider** — la navigation
+  n'atteint jamais le réseau, l'instruction sort donc du dépôt et entre dans
+  WebKit/Playwright, pour un coût sans terme prévisible pendant que le LOT-01
+  reste bloqué.
+- Écarté : **monter Playwright 1.61.1 → 1.62.1** — rien ne relie ce blocage à
+  un correctif amont ; monter sur une supposition ne se distingue pas d'un
+  tirage au sort.
+- Réversibilité : une ligne de `CLAUDE.md` et cette entrée.
+- Référence : `scripts/wn-diagnostic-e2e.mjs`, PR #662,
+  `docs/claude/handoffs/2026-08-12-0546-diagnostic-blocage-navigateur-e2e.md`
+
+### D-048 — Les trois arbitrages cliniques du LOT-01 (importance de C-STR, fenêtre temporelle, cohabitation à l'écran)
+
+- Date : 2026-08-12
+- Statut : accepté (décision utilisateur du 2026-08-12)
+- Domaine : clinique, moteur de contradictions, restitution praticien
+- Contexte : [[D-046]] a livré la table de contradictions v1 avec une seule
+  règle publiée, C-STR, et a laissé trois points que le code ne pouvait pas
+  trancher. Les étapes 3 et 5 du LOT-01 en dépendaient. Ils sont rendus
+  ensemble parce qu'ils se tiennent : les deux derniers portent tous deux sur
+  ce que le praticien voit.
+- **1. `importance` de C-STR reste `useful_not_urgent`, et sa justification est
+  écrite.** La valeur était posée **nue** dans `contradictionsV1.ts` — aucun
+  commentaire, absente de [[D-041]], [[D-042]] et [[D-046]], absente du dossier
+  de règles candidates. Le défaut était l'absence de motif, pas la valeur : la
+  règle prescrit elle-même « à clarifier en entretien », ce qui est actionnable
+  sans être urgent.
+  - Écarté : **`critical_for_decision`** — `DC-23` réserve la priorité haute
+    aux red flags et pose qu'ils restent prioritaires sans se compenser ; C-STR
+    est un **constat**, pas un signal de sécurité ([[D-046]]). L'y hisser
+    aurait rendu la priorité haute illisible.
+  - Écarté : **`optional`** — contredirait la clarification en entretien que la
+    règle prescrit.
+  - Conséquence : la valeur ne change pas, donc `CONTRADICTIONS_RULES_SHA256`
+    non plus. Seul un commentaire s'ajoute.
+  - Réserve nommée : `DC-33` confie la hiérarchisation praticien (priorité 1,
+    2, 3) au **LOT-04**. Cette décision ne l'anticipe pas ; elle donne au champ
+    la valeur juste, elle n'invente pas de classement.
+- **2. Aucune fenêtre temporelle. Le constat porte l'écart.** Le constat est
+  émis quel que soit l'écart entre les deux passations comparées, et il porte
+  le nombre de jours qui les sépare — ce qui rend vérifiable la troisième
+  hypothèse explicative de C-STR (« une passation du DASS-21 antérieure ou
+  postérieure à l'épisode que l'axe d'adaptation reflète »).
+  - Écarté : **un seuil au-delà duquel on n'émet plus** — aucune source
+    publiée ne donne de durée de validité croisée entre `Q_MOD_01` et le
+    DASS-21. `DC-19` nomme explicitement les « fenêtres temporelles » parmi les
+    chiffres exigeant une provenance, et `DC-30` interdit de supprimer une
+    discordance en silence : taire un constat parce qu'il est « vieux » est
+    exactement ce qu'elle proscrit.
+  - Écarté : **un seuil déclaré `technical` au sens de `DC-20`** — un seuil
+    d'ingénierie qui éteint un constat clinique est la confusion même que
+    `DC-19` et `DC-20` existent pour empêcher.
+  - **Un fait à corriger au passage** : le comportement n'était pas seulement
+    ouvert, il était figé par accident. `contradictionsEngine.test.ts:137-146`
+    produit un constat entre deux passations distantes de **40 jours** (et non
+    six semaines, comme deux handoffs l'ont écrit), mais ce banc documente la
+    limite de la garde de complétude — l'écart de dates y est un effet de bord
+    **non commenté**. Il est ramené au même jour, et un cas temporel délibéré
+    est écrit à côté.
+  - Garde : l'écart est un **fait sur les données**, jamais un degré de vérité.
+    Le garde non négociable de [[D-041]] interdit tout champ de certitude, de
+    probabilité, de score ou de confiance « sous quelque nom que ce soit » ; un
+    banc épingle que l'écart n'est lu par aucun tri, aucun seuil, aucun
+    branchement.
+  - Absence : une source unique donne un écart **`null`**, jamais `0` —
+    `DC-24`, une donnée absente n'est ni zéro ni normale.
+- **3. Le constat affiche sa justification de recoupement avec `R2-STR-01`.**
+  Le champ `recoupementJustifie` existe déjà dans la règle, gardé par un banc,
+  et **n'est lu par personne**. Il devient ce que le praticien lit quand les
+  deux sorties coexistent — ce que son propre commentaire exige déjà : « deux
+  sorties simultanées à l'écran doivent être défendables » (`DC-37`).
+  - Rappel de ce qui était déjà tranché par [[D-042]] : la coexistence est
+    **voulue**. `R2-STR-01` (règle d'orientation de premier tour,
+    `ADAPTATION_STRESS <= 17`) propose une **mesure**, le PSS-10 ; C-STR nomme
+    une **contradiction** entre deux mesures déjà faites. La population de
+    C-STR est un sous-ensemble de celle de `R2-STR-01`.
+  - Écarté : **fusionner les deux sorties en une seule entrée d'écran** — on
+    perdrait soit l'instrument à administrer, soit le signal que les
+    instruments existants se contredisent.
+  - Écarté : **renvoyer le traitement d'écran au LOT-04** — le texte existe
+    déjà dans la règle ; l'afficher ne demande aucun arbitrage de
+    hiérarchisation et n'empiète donc pas sur `DC-33`.
+- Ce que ces trois décisions **n'allument pas** : la table reste **non signée**
+  (`validationExterne: false`). L'injection cockpit part derrière un double
+  verrou — drapeau d'environnement **et** signature clinique —, au patron de
+  `orientationActive()`. Rien de ce lot n'atteint un praticien.
+- Réversibilité : un commentaire, deux champs sur un type que rien ne consomme
+  encore, et l'affichage d'une chaîne déjà écrite. Aucun schéma de base.
+- Référence : `web/src/lib/clinical/contradictionsV1.ts`,
+  `web/src/lib/clinical/contradictionFinding.ts`,
+  `web/src/lib/clinical/contradictionsEngine.ts`,
+  `web/src/lib/clinical/orientationRulesV1.ts` (`R2-STR-01`), [[D-041]],
+  [[D-042]], [[D-044]], [[D-046]]
+
 ### D-047 — Réponse écrite de Scalingo (2026-08-11) : (b) est levée, (a) était mal requalifiée par D-037 et reste ouverte
 
 - Date : 2026-08-11

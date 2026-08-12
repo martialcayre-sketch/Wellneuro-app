@@ -113,6 +113,25 @@ export const CONTRADICTIONS_RULES_V1: ContradictionRule[] = [
     ],
     description:
       "Signal fonctionnel non confirmé par les instruments spécifiques — à clarifier en entretien : l'adaptation au stress déclarée est perturbée alors que le DASS-21 situe la dépression et le stress dans la bande « Normal ».",
+    // POURQUOI `useful_not_urgent`, ET PAS LES DEUX AUTRES ([[D-048]]).
+    // Cette valeur est restée NUE dans ce fichier jusqu'au 2026-08-12 : aucun
+    // motif écrit, ni ici, ni dans [[D-041]], [[D-042]], [[D-046]], ni dans le
+    // dossier de règles candidates. Le défaut était l'absence de justification,
+    // pas la valeur — elle est confirmée, et voici pourquoi.
+    //
+    // PAS `critical_for_decision` : `DC-23` réserve la priorité haute aux red
+    // flags, qui ne se compensent avec aucun score et restent prioritaires.
+    // C-STR est un CONSTAT, pas un signal de sécurité ([[D-046]]) ; l'y hisser
+    // rendrait la priorité haute illisible le jour où un vrai red flag arrive.
+    //
+    // PAS `optional` : la règle prescrit elle-même une clarification en
+    // entretien (voir `description` et `actionSuggeree`). « Optionnelle » la
+    // contredirait dans le même objet.
+    //
+    // CE QUE CETTE VALEUR N'EST PAS : un degré de vérité. C'est une PRIORITÉ —
+    // elle ordonne ce que le praticien regarde d'abord, jamais ce qui est vrai
+    // (`DC-29`, garde non négociable de [[D-041]]). Et elle n'anticipe pas le
+    // classement praticien 1/2/3 de `DC-33`, que l'audit confie au LOT-04.
     importance: 'useful_not_urgent',
     hypotheses: [
       "Une charge de stress réelle que les échelles de dépression et de stress ne captent pas — les symptômes de stress ne corrèlent pas à la gravité de la charge allostatique (WN-CL-0238-002).",

@@ -174,6 +174,10 @@ positifs assumés) : `.claude/rules/hooks-garde-fous.md`.
   mémoire du serveur — un `--fast` rouge se lisait alors comme une régression.
   L'écart entre les deux paliers est désormais le lint, l'anti-secrets, l'audit
   de campagnes et la certification scoring, pas le build.
+- **Le segment E2E de T3 relève du CI, pas du Mac, tant que `D-049` tient** —
+  un blocage navigateur (WebKit) y fait expirer une navigation sans qu'aucune
+  requête parte ; `wn-test-worktree.sh` le classe tout seul. Le reste de T3
+  (contrats SQL, dérive schéma↔migrations, certification scoring) reste exigé.
 - **Les E2E (`npm run test:e2e`) sont l'exclusivité du Mac** — base partagée,
   jamais deux runs en parallèle. Rôles : `docs/ROLES_MACHINES.md`.
 - Rediriger la sortie d'une suite vers un fichier (`--reporter=dot`) puis la
