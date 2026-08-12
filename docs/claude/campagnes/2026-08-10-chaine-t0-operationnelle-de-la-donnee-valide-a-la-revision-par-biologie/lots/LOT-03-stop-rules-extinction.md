@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Règles d'arrêt et extinction d'orientation"
-statut: "en_cours"
+statut: "terminé (étapes 1-3 ; SCOFF différé)"
 dépend_de: "LOT-01"
 ---
 
