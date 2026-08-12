@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v19`. À reporter en même temps
+// Empreinte de la consigne système, reportée à chaque bump. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -106,7 +106,35 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // plus aucune règle d'orientation ne cible un pack, et le modèle ne peut donc
 // plus en rencontrer un dans son bloc. Ce que la consigne garde inchangé :
 // « l'absence de segment État n'atteste rien ».
-const EMPREINTE_V19 = 'c492a641fa62743e';
+//
+// v20, le 2026-08-12 (LOT-01 étapes 3 et 6) : une section décrit le repère
+// `passationCourante`, que l'étape 6 a mis dans les DONNÉES sans que la consigne
+// n'en dise rien. Une donnée présente et inexpliquée est pire qu'absente — le
+// modèle pouvait lui prêter un sens qu'elle n'a pas, un degré de fiabilité
+// plutôt qu'un repère de récence. La section dit aussi ce que le champ
+// n'autorise pas : qualifier un écart de progrès ou d'effet d'une prise en
+// charge (`DC-27`), et moyenner deux passations discordantes (`DC-30`).
+//
+// v21, le 2026-08-12 (revue de LOT-01) : la v20 promettait au modèle un repère
+// posé sur « la plus récente parmi celles qui sont exploitables » — promesse
+// que le code ne tenait pas, le filtre de validité étant gaté par un drapeau
+// éteint en production. Le code la tient désormais, et la consigne gagne le cas
+// qui en découle : un instrument dont aucune passation n'est exploitable ne
+// porte aucun `true`, et ne doit pas être rabattu sur sa plus récente.
+//
+// v22, le 2026-08-12 (contre-revue) : la v21 avait ajouté un paragraphe sans
+// retirer les deux phrases qu'il rendait fausses. Section réécrite, et le
+// statut d'écartement arrive comme une donnée au lieu d'être déduit.
+//
+// v23, le 2026-08-12 (arbitrage D-051) : `Q_ALI_01` désigne deux instruments
+// distincts selon `WN_ALI_01_SIIN57`. Le repère s'y abstient, et le motif de
+// l'abstention arrive comme une donnée (`formeInstrumentAmbigue`) — sans elle,
+// l'absence de `true` se serait lue comme « aucune passation exploitable ».
+//
+// v24, le 2026-08-12 (troisième revue) : la v23 avait décrit le nouveau cas
+// sans reprendre la puce qui AUTORISE l'écart, laquelle n'excluait que les
+// passations écartées — la faute de la v21, sur une autre phrase.
+const EMPREINTE_V24 = '799b15ff47955b39';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -228,7 +256,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v19', empreinte: EMPREINTE_V19 });
+    ).toEqual({ version: 'synthese-v24', empreinte: EMPREINTE_V24 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

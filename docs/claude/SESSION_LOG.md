@@ -3548,6 +3548,27 @@ localement sur **toute** branche ; le CI ne l'a jamais rencontré.
 **Ouvert.** Cause racine hors de notre code. Les trois arbitrages cliniques du
 LOT-01 restent en attente.
 
+## 2026-08-12 — LOT-01 : les trois arbitrages exécutés, et quatre revues
+
+**Décisions.** `D-050` : conversion cockpit vers un modèle d'**affichage** —
+`DiscordanceFinding` porte un `confidence` sans « non applicable » ; cible
+laissée ouverte par `D-044`. Câblage fait, **table non signée : rien n'atteint
+le praticien**. `D-051` : `Q_ALI_01` désignant deux instruments, le repère
+s'abstient dès deux passations exploitables, motif porté (`synthese-v24`).
+
+**Écarté.** Filtrer la passation écartée : retirer la ligne promeut
+l'antérieure — repli qu'`orientationService` refuse. Score nullé, ligne gardée.
+
+**Promotion faite.** Report du couple version/empreinte échoué trois fois dans
+les documents : `scripts/version-prompt-documents.test.mjs` le relie au registre
+et aux fragments (`check` + CI).
+
+**Prochaine action.** Handoff, puis PR.
+
+**Ouvert.** Vigilances de synthèse (étape 5) non câblées. Périmètre
+contradictions (dossier entier) ≠ `review` (épisode T0). `D-051` ne répare pas
+le catalogue. `D-049` : deux séquences sans blocage (09:24, 10:37) — fermeture
+**proposée, non prise**.
 ## 2026-08-12 — La chaîne de skills relue sur le déroulé réel du LOT-01
 
 **Décisions.** L'audit de redondance de la chaîne (routage → lot → clôture →

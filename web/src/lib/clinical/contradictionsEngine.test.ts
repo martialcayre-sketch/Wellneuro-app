@@ -13,20 +13,29 @@ function sousScore(id: string, total: number | null, extra: Record<string, unkno
 }
 
 /** Q_MOD_01 avec son axe d'adaptation au stress. */
-function modeDeVie(adaptation: number | null, idReponse = 'rep-mod-1'): ReponseOrientation {
+function modeDeVie(
+  adaptation: number | null,
+  idReponse = 'rep-mod-1',
+  dateReponse = '2026-08-10T09:00:00.000Z',
+): ReponseOrientation {
   return {
     idQuestionnaire: 'Q_MOD_01',
-    dateReponse: '2026-08-10T09:00:00.000Z',
+    dateReponse,
     idReponse,
     scores: { subScores: [sousScore('ADAPTATION_STRESS', adaptation)] },
   };
 }
 
 /** Q_STR_04 — DASS-21, ses trois axes. */
-function dass(d: number | null, s: number | null, idReponse = 'rep-dass-1'): ReponseOrientation {
+function dass(
+  d: number | null,
+  s: number | null,
+  idReponse = 'rep-dass-1',
+  dateReponse = '2026-08-10T09:30:00.000Z',
+): ReponseOrientation {
   return {
     idQuestionnaire: 'Q_STR_04',
-    dateReponse: '2026-08-10T09:30:00.000Z',
+    dateReponse,
     idReponse,
     scores: { subScores: [sousScore('D', d), sousScore('A', 2), sousScore('S', s)] },
   };
@@ -48,9 +57,27 @@ describe('moteur de contradictions — C-STR se déclenche sur la discordance, e
     });
     // Le constat nomme les passations dont il sort (`DC-34`, `DC-35`).
     expect(constats[0].sources).toEqual([
-      { type: 'instrument', idQuestionnaire: 'Q_MOD_01', sousScore: 'ADAPTATION_STRESS', reponseId: 'rep-mod-1' },
-      { type: 'instrument', idQuestionnaire: 'Q_STR_04', sousScore: 'D', reponseId: 'rep-dass-1' },
-      { type: 'instrument', idQuestionnaire: 'Q_STR_04', sousScore: 'S', reponseId: 'rep-dass-1' },
+      {
+        type: 'instrument',
+        idQuestionnaire: 'Q_MOD_01',
+        sousScore: 'ADAPTATION_STRESS',
+        reponseId: 'rep-mod-1',
+        dateReponse: '2026-08-10T09:00:00.000Z',
+      },
+      {
+        type: 'instrument',
+        idQuestionnaire: 'Q_STR_04',
+        sousScore: 'D',
+        reponseId: 'rep-dass-1',
+        dateReponse: '2026-08-10T09:30:00.000Z',
+      },
+      {
+        type: 'instrument',
+        idQuestionnaire: 'Q_STR_04',
+        sousScore: 'S',
+        reponseId: 'rep-dass-1',
+        dateReponse: '2026-08-10T09:30:00.000Z',
+      },
     ]);
     expect(constats[0].justificationClaims).toEqual([
       { claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' },
@@ -134,10 +161,17 @@ describe('moteur de contradictions — fail-closed', () => {
   // `rawAnswers` comme `orientationService` le fait depuis le 2026-08-04. Tant
   // que le moteur n'est pas câblé, rien n'est exposé — mais le jour du câblage,
   // c'est cette ligne qu'il faut lire.
+  //
+  // LA DATE EST VOLONTAIREMENT CELLE DU JOUR ([[D-048]]). Jusqu'au 2026-08-12
+  // cette passation était datée du 2026-07-01, soit 40 jours avant le DASS-21 —
+  // un écart qu'AUCUN commentaire n'expliquait et que ce banc ne teste pas. Il
+  // a pourtant été lu comme la preuve qu'un constat entre passations éloignées
+  // était un comportement voulu. Ce banc ne parle que de la garde de
+  // complétude ; la temporalité a ses cas à elle, plus bas.
   it('sans comptes publiés, la garde de complétude ne peut pas mordre (limite connue)', () => {
     const historique: ReponseOrientation = {
       idQuestionnaire: 'Q_MOD_01',
-      dateReponse: '2026-07-01T09:00:00.000Z',
+      dateReponse: '2026-08-10T09:00:00.000Z',
       idReponse: 'rep-mod-historique',
       // Forme antérieure au 2026-08-04 : aucun `repondus`, aucun `items`.
       scores: { subScores: [sousScore('ADAPTATION_STRESS', 3)] },
@@ -230,7 +264,115 @@ describe('moteur de contradictions — ce que le moteur ne produit jamais', () =
         'regleId',
         'resolution',
         'sources',
+        'ecartJoursEntreSources',
+        'recoupementJustifie',
       ].sort(),
     );
+  });
+});
+
+// L'ARBITRAGE DE [[D-048]] : aucune fenêtre temporelle. Le constat est émis
+// quel que soit l'écart, et il le PORTE. Aucune source publiée ne donne de
+// durée de validité croisée entre `Q_MOD_01` et le DASS-21 — `DC-19` nomme
+// explicitement les fenêtres temporelles parmi les chiffres à provenance — et
+// `DC-30` interdit de taire une discordance parce qu'elle serait ancienne.
+describe('moteur de contradictions — l’écart entre passations est porté, jamais utilisé pour se taire', () => {
+  it('deux passations très éloignées : le constat EST produit, et porte l’écart', () => {
+    // Cinq mois d'écart. C'est précisément la situation que la troisième
+    // hypothèse de C-STR nomme — « une passation du DASS-21 antérieure ou
+    // postérieure à l'épisode que l'axe d'adaptation reflète » — et le
+    // praticien ne peut la trancher que si le nombre lui parvient.
+    const constats = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2026-03-12T09:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-10T09:00:00.000Z'),
+    ]);
+    expect(constats).toHaveLength(1);
+    expect(constats[0].ecartJoursEntreSources).toBe(151);
+  });
+
+  it('deux passations séparées par minuit À PARIS comptent pour 1 jour', () => {
+    // 23 h 00 puis 01 h 00 heure de Paris. Un arrondi sur la durée brute
+    // rendait 0 — « le même jour », à côté de deux dates différentes affichées
+    // juste au-dessus.
+    const constats = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2026-08-10T21:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-10T23:00:00.000Z'),
+    ]);
+    expect(constats[0].ecartJoursEntreSources).toBe(1);
+  });
+
+  it('une passation de nuit reste au jour civil PARISIEN, pas au jour UTC', () => {
+    // 00 h 40 le 11/08 à Paris = 22 h 40 le 10/08 en UTC. Un jour civil UTC
+    // rendrait 1 jour d'écart là où le praticien a tout rempli le 11 — le même
+    // défaut que celui corrigé, avec le signe inverse.
+    const constats = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2026-08-11T12:00:00.000Z'),
+      dass(2, 5, 'rep-dass-1', '2026-08-10T22:40:00.000Z'),
+    ]);
+    expect(constats[0].ecartJoursEntreSources).toBe(0);
+  });
+
+  it('deux passations du même jour : l’écart vaut 0, et 0 est un fait', () => {
+    // Ici `0` est vrai : deux passations distinctes, à trente minutes. À ne pas
+    // confondre avec le `null` du cas suivant.
+    const constats = evaluer([modeDeVie(6), dass(2, 5)]);
+    expect(constats[0].ecartJoursEntreSources).toBe(0);
+  });
+
+  it('une seule passation distincte : l’écart est `null`, JAMAIS 0', () => {
+    // C-STR interroge `Q_STR_04` deux fois (axes D et S) : trois sources, deux
+    // passations. Une règle qui ne viserait qu'un seul instrument n'aurait rien
+    // à comparer — `DC-24`, une donnée absente n'est ni zéro ni normale, et `0`
+    // dirait à tort « les deux passations sont du même jour ».
+    const constats = evaluer(
+      [dass(2, 5)],
+      {
+        regles: [
+          {
+            ...CONTRADICTIONS_RULES_V1[0],
+            declencheurs: [
+              { type: 'comparaison', idQuestionnaire: 'Q_STR_04', sousScore: 'D', operateur: '<=', valeur: 4 },
+              { type: 'comparaison', idQuestionnaire: 'Q_STR_04', sousScore: 'S', operateur: '<=', valeur: 7 },
+            ],
+          },
+        ],
+      },
+    );
+    expect(constats).toHaveLength(1);
+    expect(constats[0].sources).toHaveLength(2);
+    expect(constats[0].ecartJoursEntreSources).toBeNull();
+  });
+
+  it('l’écart ne gouverne rien : mêmes scores, écarts différents, même verdict', () => {
+    // Le garde de [[D-041]] appliqué à ce champ : ce n'est pas un degré de
+    // vérité. Si un seuil s'introduisait un jour — dans le moteur ou dans un
+    // tri en aval — ce cas rougirait.
+    const proche = evaluer([modeDeVie(6), dass(2, 5)]);
+    const lointain = evaluer([
+      modeDeVie(6, 'rep-mod-1', '2020-01-01T09:00:00.000Z'),
+      dass(2, 5),
+    ]);
+    expect(lointain).toHaveLength(proche.length);
+    expect(lointain[0].description).toBe(proche[0].description);
+    expect(lointain[0].importance).toBe(proche[0].importance);
+  });
+});
+
+// [[D-048]] — la justification de recoupement cesse d'être une note de revue.
+describe('moteur de contradictions — le constat porte sa justification de recoupement', () => {
+  it('C-STR transporte `recoupementJustifie` jusqu’au constat', () => {
+    const constats = evaluer([modeDeVie(6), dass(2, 5)]);
+    expect(constats[0].recoupementJustifie).toBe(CONTRADICTIONS_RULES_V1[0].recoupementJustifie);
+    expect(constats[0].recoupementJustifie).toContain('R2-STR-01');
+  });
+
+  it('une règle sans recoupement ne porte PAS la clé', () => {
+    // Une clé vide ne dirait pas « aucun recoupement », elle dirait
+    // « recoupement non renseigné » — `DC-24` de nouveau.
+    const sansRecoupement = { ...CONTRADICTIONS_RULES_V1[0] };
+    delete (sansRecoupement as { recoupementJustifie?: string }).recoupementJustifie;
+    const constats = evaluer([modeDeVie(6), dass(2, 5)], { regles: [sansRecoupement] });
+    expect(constats).toHaveLength(1);
+    expect(constats[0]).not.toHaveProperty('recoupementJustifie');
   });
 });

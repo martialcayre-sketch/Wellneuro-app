@@ -78,7 +78,12 @@ dernière session.
    ```
    puis nettoyer le worktree rattaché (`ExitWorktree` avec `action: "remove"`,
    ou `git worktree remove`), et repartir de `main` — jamais de la branche
-   squashée — pour le lot suivant.
+   squashée — pour le lot suivant. **Le merge vient de faire avancer
+   `origin/main`** : tant que le worktree reste sur la branche squashée, le
+   garde de fraîcheur refuse toute édition, et c'est le comportement voulu. Le
+   lever ne demande **pas** de reprise de session — `git fetch origin main`
+   puis une branche qui contient `origin/main` suffisent, le garde rejuge à la
+   tentative suivante.
 
 Ne jamais forcer un merge sur une PR gelée (`enforce_admins` actif, `verify`
 obligatoire) : une PR gelée bloque, elle ne ressemble pas à un succès à

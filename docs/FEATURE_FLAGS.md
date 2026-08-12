@@ -48,10 +48,11 @@ clinique soit validé/signé dans le code (`validationExterne`, date, claims). C
 n'est pas une gâte « juridique » ni un confort de dev : c'est la **validation
 clinique**. Ne pas forcer la métadonnée de validation pour « voir » la feature.
 
-| Flag | Valeur ON | 2ᵉ condition | État au 2026-08-04 |
+| Flag | Valeur ON | 2ᵉ condition | État (daté) |
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
 | `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
+| `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (validation + date + claims) | **1 règle publiée (C-STR)**, `validationExterne: false` au 2026-08-12 → **fermé quoi qu'on pose**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) : signer la table suffirait donc à faire sortir des constats, le drapeau étant la seule autre condition |
 
 **⚠ L'orientation a changé d'état le 2026-08-04.** Jusque-là, la valeur du
 drapeau était sans effet : `tableSignee()` était faux, donc le ET aussi, dans

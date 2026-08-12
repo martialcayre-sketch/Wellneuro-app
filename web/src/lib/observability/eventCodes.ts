@@ -107,6 +107,15 @@ export const EVENT_CODES = {
   // qui est exactement ce qu'on cherche à mesurer.
   SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE: 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
   SYNTHESE_ORIENTATION_INDISPONIBLE: 'SYNTHESE_IA.ORIENTATION.INDISPONIBLE',
+  // LOT-01 étape 4 — la sortie du modèle n'a pas passé le schéma strict et une
+  // relance a été émise. Code DISTINCT de l'échec de génération : celui-ci dit
+  // que la première sortie était non conforme ET qu'on a retenté, l'autre que
+  // rien n'a été produit. Les confondre masquerait le taux de non-conformité,
+  // qui est précisément ce qu'on veut mesurer avant de toucher au prompt.
+  SYNTHESE_SCHEMA_REJETE_RELANCE: 'SYNTHESE_IA.SCHEMA.REJETE_RELANCE',
+  // La relance non plus n'a pas passé le schéma : rien n'est servi. Une sortie
+  // dégradée ne remplace jamais une sortie conforme (LOT-01, critère 3).
+  SYNTHESE_SCHEMA_RELANCE_ECHOUEE: 'SYNTHESE_IA.SCHEMA.RELANCE_ECHOUEE',
   SYNTHESE_POST_EXCEPTION: 'SYNTHESE_IA.GENERATION.FAILED',
   SYNTHESE_PATCH_EXCEPTION: 'SYNTHESE_IA.UPDATE.FAILED',
 

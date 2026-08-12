@@ -43,6 +43,15 @@ describe('questionnaire-draft', () => {
   });
 
   it('lit le format historique puis le migre seulement à la prochaine écriture', () => {
+    // TEMPS FIGÉ, comme les cas voisins de ce fichier — ce cas seul l'avait
+    // oublié. Sa fixture est datée du 2026-07-13 et les brouillons vivent 30
+    // jours (`DUREE_VIE_BROUILLON_JOURS`) : le test a viré au rouge de lui-même
+    // le 2026-08-12 à 11 h, sur une branche qui ne touche ni au brouillon ni au
+    // stockage local. Un test qui dépend de l'horloge réelle ne mesure plus le
+    // code à partir d'une date qu'il ne nomme pas.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-14T10:00:00.000Z'));
+
     localStorage.setItem(`wellneuro:draft:${idAssignation}`, JSON.stringify({ Q1: '1' }));
     localStorage.setItem(`wellneuro:draft-meta:${idAssignation}`, '2026-07-13T09:00:00.000Z');
 

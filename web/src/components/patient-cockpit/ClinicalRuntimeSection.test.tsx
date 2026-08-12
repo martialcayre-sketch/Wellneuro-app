@@ -81,6 +81,8 @@ describe('ClinicalRuntimeSection', () => {
         selectedMainPriority: null,
         abstention: { status: 'not_evaluated', ruleIds: [], limitations: ['Règles non validées.'] },
       },
+      // Table non signée : c'est la réponse que la production sert aujourd'hui.
+      contradictions: [],
     };
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
@@ -152,7 +154,11 @@ describe('ClinicalRuntimeSection', () => {
   it('n’affiche l’Observatoire que lorsque le flag serveur est actif', async () => {
     const fixture = buildValidationErgoC1Fixture();
     const ready: CockpitRuntimeApiResponse = {
-      status: 'ready', snapshot: fixture.snapshot, review: fixture.review, decisionCard: fixture.decisionCard,
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: fixture.decisionCard,
+      contradictions: [],
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
     vi.stubGlobal('fetch', fetchMock);
@@ -166,5 +172,54 @@ describe('ClinicalRuntimeSection', () => {
       </C5FeatureProvider>,
     );
     expect(await screen.findByRole('heading', { name: /Boussole alimentaire/ })).toBeTruthy();
+  });
+});
+
+// LE CÂBLAGE DE BOUT EN BOUT — [[D-050]].
+//
+// La capacité d'affichage existait depuis l'étape 5 ; aucun site d'appel ne la
+// nourrissait, et le critère de sortie du LOT-01 n'était donc pas tenu. Ce banc
+// tient le fil entier : ce que la route rend arrive à l'écran. Les bancs de
+// `MissingDataPanel.test.tsx` gardent le rendu lui-même ; celui-ci garde la
+// LIAISON, qui se coupe sans bruit — un `contradictions={[]}` codé en dur
+// laisserait tous les autres bancs verts.
+describe('ClinicalRuntimeSection — les constats déterministes atteignent l’écran', () => {
+  it('un constat rendu par la route est affiché dans le panneau', async () => {
+    const fixture = buildValidationErgoC1Fixture();
+    const ready: CockpitRuntimeApiResponse = {
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: fixture.decisionCard,
+      contradictions: [{
+        id: 'C-STR',
+        description: 'Une contradiction que le praticien doit voir.',
+        actionSuggeree: 'Clarifier en entretien avant toute conclusion.',
+        hypotheses: ['Une charge de stress que les échelles ne captent pas.'],
+        limitations: ['Un questionnaire isolé ne suffit pas à conclure.'],
+        passations: [
+          { idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' },
+          { idQuestionnaire: 'Q_STR_04', date: '2026-08-10', dateLisible: '10/08/2026' },
+        ],
+        ecartJours: 151,
+        claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }],
+        importance: 'useful_not_urgent',
+        resolution: { statut: 'ouverte' },
+        regleId: 'C-STR',
+      }],
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ready });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+
+    // Le niveau 1 du panneau, sans dépliage : la description doit se lire
+    // d'emblée — une contradiction que le praticien doit cliquer pour voir est
+    // une contradiction qu'il peut manquer.
+    await screen.findByText('Une contradiction que le praticien doit voir.');
   });
 });

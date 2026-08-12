@@ -84,6 +84,7 @@ function sourcesDeLaRegle(
       idQuestionnaire: declencheur.idQuestionnaire,
       ...(declencheur.sousScore ? { sousScore: declencheur.sousScore } : {}),
       reponseId: reponse.idReponse,
+      dateReponse: reponse.dateReponse,
     });
   }
   // Une règle dont TOUS les déclencheurs seraient des drapeaux d'anamnèse ne
@@ -92,6 +93,63 @@ function sourcesDeLaRegle(
   // claim, pas une déclaration d'anamnèse. Le jour où une règle en aura besoin,
   // c'est le type qu'il faudra étendre — pas ce silence qu'il faudra contourner.
   return sources.length > 0 ? sources : null;
+}
+
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Fuseau de référence du JOUR CIVIL clinique.
+ *
+ * Corrigé après contre-revue : un jour civil calculé en UTC fait tomber du
+ * mauvais côté toute passation remplie entre minuit et 2 h à Paris — un
+ * questionnaire de sommeil rempli le 11/08 à 00 h 40 devient « 10/08 », et
+ * l'écran affiche deux dates là où le praticien n'en voit qu'une. Le reste du
+ * cockpit formate déjà en heure locale (`TrajectoirePanel`,
+ * `EpisodeConfirmationPanel`) : ce lot s'aligne au lieu d'introduire un
+ * troisième régime.
+ */
+export const FUSEAU_CLINIQUE = 'Europe/Paris';
+
+/** Jour civil `AAAA-MM-JJ` dans le fuseau clinique, ou `null` si illisible. */
+export function jourCivilClinique(iso: string): string | null {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return null;
+  // `en-CA` rend `AAAA-MM-JJ`, seul format qui se compare et se trie tel quel.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU_CLINIQUE }).format(new Date(ms));
+}
+
+/**
+ * Écart en jours entre la passation la plus ancienne et la plus récente parmi
+ * les sources d'instrument ([[D-048]]).
+ *
+ * COMPTE LES PASSATIONS DISTINCTES, PAS LES SOURCES. Une règle peut viser deux
+ * sous-scores du MÊME questionnaire — C-STR interroge `Q_STR_04` deux fois —
+ * et cela ne fait qu'une passation. Compter les sources rendrait `0` là où il
+ * n'y a rien à comparer, c'est-à-dire exactement le zéro trompeur que `DC-24`
+ * proscrit.
+ *
+ * Rend `null` en dessous de deux passations distinctes : « non applicable »,
+ * jamais « le même jour ».
+ */
+function ecartJoursEntreSources(sources: SourceContradiction[]): number | null {
+  const parPassation = new Map<string, number>();
+  for (const source of sources) {
+    if (source.type !== 'instrument') continue;
+    // JOUR CIVIL DU FUSEAU CLINIQUE, pas tranche de 24 h ni jour UTC.
+    const jour = jourCivilClinique(source.dateReponse);
+    // Une date illisible ne vaut pas zéro : la passation sort du calcul, et si
+    // moins de deux subsistent l'écart devient `null`.
+    if (jour === null) continue;
+    parPassation.set(source.reponseId, Date.parse(`${jour}T00:00:00.000Z`));
+  }
+  if (parPassation.size < 2) return null;
+  const dates = [...parPassation.values()];
+  // Différence de jours civils : les bornes sont déjà alignées sur minuit, le
+  // quotient est donc exact. Un arrondi sur la durée brute faisait dire « le
+  // même jour » à deux passations séparées par minuit, et « 2 jours » à un
+  // écart d'un jour civil. Or l'écran nomme les DATES : un écart qui les
+  // contredit se voit.
+  return Math.round((Math.max(...dates) - Math.min(...dates)) / JOUR_MS);
 }
 
 /**
@@ -146,6 +204,14 @@ export function evaluerContradictions(entree: EntreeContradictions): Contradicti
       justificationClaims: regle.justificationClaims,
       regleId: regle.id,
       limitations: regle.limitations,
+      // Le constat est produit QUEL QUE SOIT l'écart ([[D-048]]) : il le porte,
+      // il ne s'en sert pas pour se taire. Aucun seuil ici, et c'est la
+      // décision — `DC-30` interdit de supprimer une discordance en silence.
+      ecartJoursEntreSources: ecartJoursEntreSources(sources),
+      // Recopié comme `importance`, sans transformation. Absent quand la règle
+      // n'en porte pas : une clé vide ne dirait pas « aucun recoupement », elle
+      // dirait « recoupement non renseigné ».
+      ...(regle.recoupementJustifie ? { recoupementJustifie: regle.recoupementJustifie } : {}),
     });
   }
 

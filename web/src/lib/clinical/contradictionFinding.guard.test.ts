@@ -59,7 +59,14 @@ type CleCommune =
   | 'resolution'
   | 'justificationClaims'
   | 'regleId'
-  | 'limitations';
+  | 'limitations'
+  // Ajoutés par [[D-048]], et défendus contre `DC-29` avant d'entrer ici :
+  // l'écart en jours est un FAIT sur les données — deux passations rapprochées
+  // ne rendent pas la contradiction plus certaine — et le recoupement est une
+  // phrase déjà écrite dans la règle, recopiée sans transformation. Ni l'un ni
+  // l'autre n'est lu par un tri, un seuil ou un branchement.
+  | 'ecartJoursEntreSources'
+  | 'recoupementJustifie';
 
 describe('objet de contradiction — la liste des clés est épinglée', () => {
   it('la forme DISCORDANCE ne porte que les clés communes', () => {

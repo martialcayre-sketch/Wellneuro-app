@@ -174,6 +174,10 @@ positifs assumés) : `.claude/rules/hooks-garde-fous.md`.
   mémoire du serveur — un `--fast` rouge se lisait alors comme une régression.
   L'écart entre les deux paliers est désormais le lint, l'anti-secrets, l'audit
   de campagnes et la certification scoring, pas le build.
+- **Le segment E2E de T3 relève du CI, pas du Mac, tant que `D-049` tient** —
+  un blocage navigateur (WebKit) y fait expirer une navigation sans qu'aucune
+  requête parte ; `wn-test-worktree.sh` le classe tout seul. Le reste de T3
+  (contrats SQL, dérive schéma↔migrations, certification scoring) reste exigé.
 - **Les E2E (`npm run test:e2e`) sont l'exclusivité du Mac** — base partagée,
   jamais deux runs en parallèle. Rôles : `docs/ROLES_MACHINES.md`.
 - Rediriger la sortie d'une suite vers un fichier (`--reporter=dot`) puis la
@@ -232,11 +236,12 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - **Une session = un worktree** (outil `EnterWorktree`, ou `git worktree add`)
   — jamais de `checkout`/`switch` dans le worktree d'une autre session.
 - **Avant la première édition, vérifier branche, HEAD et `origin/main` après un
-  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose à chaque
-  démarrage/reprise : si la branche ne contient pas le nouvel `origin/main`,
-  arrêter les éditions et faire arbitrer la remise à niveau. Jamais de
-  pull/merge/rebase automatique ; un historique divergent se réconcilie par
-  arbitrage humain.
+  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose au
+  démarrage **et rejuge à chaque tentative d'édition** : si la branche ne
+  contient pas `origin/main`, les éditions sont refusées jusqu'à la remise à
+  niveau — et le refus tombe dès qu'elle est faite, sans reprise de session.
+  Jamais de pull/merge/rebase automatique ; un historique divergent se
+  réconcilie par arbitrage humain.
 
 ## Fin de session
 

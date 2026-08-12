@@ -64,6 +64,24 @@ export function validitePassationsActive(): boolean {
 }
 
 /**
+ * Le statut sort-il du raisonnement, INDÉPENDAMMENT du drapeau ?
+ *
+ * POURQUOI CETTE SECONDE PORTE. `estExclueDuRaisonnement` rend `false` quand le
+ * drapeau est éteint, et c'est voulu : tant qu'il l'est, aucune passation ne
+ * doit DISPARAÎTRE du raisonnement. Mais désigner une passation `INVALID`
+ * comme celle qui FAIT FOI est une affirmation fausse même drapeau éteint —
+ * elle ne retire rien, elle promeut. Un repère neuf n'a aucune raison
+ * d'attendre l'allumage d'un filtre pour cesser de mentir.
+ *
+ * À n'utiliser que pour DÉSIGNER, jamais pour FILTRER : filtrer sans drapeau
+ * ferait disparaître des lignes que le LOT-00 s'est engagé à transmettre.
+ */
+export function statutExcluDuRaisonnement(statutValidite: string | null | undefined): boolean {
+  if (!statutValidite) return false;
+  return STATUTS_EXCLUS_DU_RAISONNEMENT.has(statutValidite);
+}
+
+/**
  * Vrai si la passation doit sortir du raisonnement clinique. Drapeau éteint ou
  * statut absent → jamais exclue.
  */

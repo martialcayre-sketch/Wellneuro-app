@@ -1,6 +1,7 @@
 'use client';
 
 import type { DiscordanceFinding, MissingDataFinding } from '@/lib/clinical-engine/types';
+import type { ContradictionAffichee } from '@/lib/clinical/contradictionsService';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 
 const PRIORITY_LABELS = {
@@ -12,9 +13,17 @@ const PRIORITY_LABELS = {
 export function MissingDataPanel({
   missingData,
   discordances,
+  contradictions = [],
 }: {
   missingData: MissingDataFinding[] | null;
   discordances: DiscordanceFinding[] | null;
+  /**
+   * Constats du moteur DÉTERMINISTE ([[D-048]]), distincts des `discordances`
+   * ci-dessus, qui viennent de la revue clinique LLM. Liste vide tant que la
+   * table n'est pas signée — le verrou est appliqué en amont, par
+   * `contradictionsPourAffichage`, jamais ici.
+   */
+  contradictions?: ContradictionAffichee[];
 }) {
   return (
     <section aria-labelledby="missing-data-title">
@@ -52,6 +61,82 @@ export function MissingDataPanel({
               <div className="space-y-2">
                 <p><span className="font-medium">Question à poser :</span> {finding.questionToExplore}</p>
                 <p><span className="font-medium">Impact possible :</span> {finding.possibleProtocolImpact}</p>
+                <p className="text-muted-foreground">Visible uniquement par le praticien.</p>
+              </div>
+            )}
+          />
+        ))}
+
+        {contradictions.map(constat => (
+          <TwoLevelReading
+            key={constat.id}
+            label="Voir le détail"
+            summary={<span><span className="font-medium">Contradiction entre instruments :</span> {constat.description}</span>}
+            detail={(
+              <div className="space-y-2">
+                {/* `DC-30`, ACTÉE : l'objet minimal d'une discordance porte son
+                    importance et son état de résolution. Le vocabulaire est
+                    celui que ce panneau affiche déjà pour les données
+                    manquantes — un seul langage de priorité par écran. */}
+                <p>
+                  <span className="font-medium">Priorité :</span> {PRIORITY_LABELS[constat.importance]}
+                  {constat.resolution.statut === 'ouverte' && ' — non résolue'}
+                </p>
+                <p><span className="font-medium">Ce qui est proposé :</span> {constat.actionSuggeree}</p>
+                {/* LES PASSATIONS, DATÉES — corrigé après revue. Un delta nu
+                    sous un intitulé d'« ancienneté » n'ancre rien : deux
+                    passations à 151 jours d'écart peuvent dater toutes deux de
+                    l'an dernier, et l'intitulé invitait à décoter le constat
+                    par sa vétusté. Nommer les passations rend le constat
+                    ouvrable (`DC-34`, `DC-35`) et laisse le praticien juger de
+                    l'écart lui-même. */}
+                {constat.passations.length > 0 && (
+                  <div>
+                    <p className="font-medium">
+                      Passations confrontées
+                      {constat.ecartJours !== null && ` — ${constat.ecartJours} jour${constat.ecartJours > 1 ? 's' : ''} d'écart`}
+                    </p>
+                    <ul className="list-disc pl-5">
+                      {constat.passations.map(p => (
+                        <li key={`${p.idQuestionnaire}-${p.dateLisible}-${p.date}`}>
+                          {p.idQuestionnaire} — {p.dateLisible}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {constat.hypotheses.length > 0 && (
+                  <div>
+                    <p className="font-medium">Ce que cela pourrait signifier</p>
+                    <ul className="list-disc pl-5">
+                      {constat.hypotheses.map(hypothese => <li key={hypothese}>{hypothese}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {/* Ce que le constat NE dit pas, jamais replié : `DC-14`,
+                    `DC-25`, `DC-28`. */}
+                {constat.limitations.length > 0 && (
+                  <div>
+                    <p className="font-medium">Limites</p>
+                    <ul className="list-disc pl-5">
+                      {constat.limitations.map(limite => <li key={limite}>{limite}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {/* Pourquoi ce constat coexiste avec une suggestion
+                    d'instrument portant sur le même axe ([[D-048]], `DC-37`).
+                    Sans cette phrase, le praticien voit deux entrées voisines
+                    sans savoir qu'elles ne disent pas la même chose. */}
+                {constat.recoupementJustifie && (
+                  <p className="text-muted-foreground">{constat.recoupementJustifie}</p>
+                )}
+                {/* Les claims à l'appui : une contradiction sans source n'est
+                    pas remontable (`DC-01`, `DC-26`). */}
+                {constat.claims.length > 0 && (
+                  <p className="text-muted-foreground">
+                    Règle {constat.regleId} · sources : {constat.claims.map(c => `${c.claimId} ${c.versionClaim}`).join(', ')}
+                  </p>
+                )}
                 <p className="text-muted-foreground">Visible uniquement par le praticien.</p>
               </div>
             )}

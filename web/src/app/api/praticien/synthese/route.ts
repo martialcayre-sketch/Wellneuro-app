@@ -13,13 +13,15 @@ import {
   VERSION_CORPUS_SYNTHESE,
   VERSION_PROMPT_SYNTHESE,
   VERSION_SCHEMA_SYNTHESE,
+  analyserSortieSynthese,
   validateSyntheseSchema,
   sanitizeAuditError,
 } from '@/lib/anthropic';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
-import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
+import { filtrerPassationsExploitables, statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
@@ -34,10 +36,15 @@ import {
   validerBrouillonPraticien,
 } from '@/lib/synthese-praticien';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
 import {
   evaluerOrientationPourPatient,
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
+import {
+  derniereReponseParQuestionnaire,
+  type ReponseOrientation,
+} from '@/lib/clinical/orientationEngine';
 import {
   formaterEcarts,
   verifierRestitutionOrientation,
@@ -64,10 +71,54 @@ type ReponseInput = {
   idQuestionnaire: string;
   titre: string;
   date: string;
+  /**
+   * Statut de validité quand la passation est ÉCARTÉE du raisonnement, sinon
+   * `null`. Ajouté après revue.
+   *
+   * MARQUER, PAS RETIRER. Le LOT-00 s'est engagé à ne rien retirer tant que
+   * `WN_ENABLE_VALIDITE_PASSATIONS` est éteint, et cet engagement tient : les
+   * scores partent entiers. Mais ne pas donner le repère `passationCourante` à
+   * une passation écartée laissait le modèle DÉDUIRE son statut de l'absence
+   * d'un `true` ailleurs dans la liste — une inférence négative, c'est-à-dire
+   * exactement le patron « consigne seule, données livrées » que le commentaire
+   * de `buildUserMessage` nomme comme insuffisant. Le statut arrive donc comme
+   * une DONNÉE, au patron de `mesureNonInterpretable`.
+   */
+  statutEcarte: string | null;
+  /**
+   * Motif d'abstention du repère quand l'identifiant a désigné PLUSIEURS
+   * instruments, sinon `null` ([[D-051]]).
+   *
+   * MARQUER, PAS TAIRE — même leçon que `statutEcarte` juste au-dessus. Retirer
+   * le repère sans rien dire aurait été lu par le modèle comme le cas « aucune
+   * passation exploitable » que la consigne décrit déjà : un motif faux à la
+   * place d'un motif vrai. Le motif arrive donc comme une donnée, sur la ligne.
+   */
+  formeAmbigue: string | null;
   scores: Record<string, unknown>;
   scorePrincipal: number | null;
   interpretation: string | null;
+  /**
+   * Cette passation est-elle la plus récente exploitable de son instrument ?
+   * (LOT-01 étape 6, renvoi du LOT-00.)
+   *
+   * Les passations antérieures RESTENT transmises — l'évolution entre deux
+   * enquêtes d'un même instrument est un signal clinique, et le modèle doit
+   * pouvoir la lire. Ce qui manquait n'était pas un filtre, c'était un repère :
+   * sans lui, deux passations du même questionnaire arrivaient indistinctes et
+   * rien ne disait laquelle fait foi. Aucun `distinct`, aucune suppression.
+   */
+  passationCourante: boolean;
 };
+
+/**
+ * Motif servi au modèle quand le repère s'abstient ([[D-051]]). Constante et
+ * non phrase construite : le banc de garde de la consigne l'épingle, et un
+ * motif qui varierait rendrait le verrouillage du couple version/empreinte
+ * inopérant.
+ */
+const MOTIF_FORME_AMBIGUE =
+  "cet identifiant a désigné plusieurs questionnaires différents — ces passations ne sont pas comparables entre elles";
 
 // 4 096 tokens ne suffisent pas toujours lorsqu'un dossier cumule plusieurs
 // questionnaires : Claude peut produire un JSON valide mais le couper avant
@@ -232,6 +283,12 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
         titre: r.titre,
         date: r.date,
         mesureNonInterpretable: motifNonMesure,
+        // Le repère part AUSSI sur une passation non interprétable. La taire ici
+        // ferait désigner au modèle une passation antérieure comme la courante :
+        // un repère faux est pire que pas de repère.
+        passationCourante: r.passationCourante,
+        ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
+        ...(r.formeAmbigue ? { formeInstrumentAmbigue: r.formeAmbigue } : {}),
         scores: null,
         scorePrincipal: null,
         interpretation: null,
@@ -242,6 +299,15 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrient
       idQuestionnaire: r.idQuestionnaire,
       titre: r.titre,
       date: r.date,
+      // Repère de passation courante (LOT-01 étape 6). Explicitement `false` sur
+      // les antérieures plutôt qu'absent : une clé qui n'apparaît que sur la
+      // courante se lirait, sur les autres, comme une information manquante.
+      passationCourante: r.passationCourante,
+      // Présent SEULEMENT sur une passation écartée : une clé toujours là, à
+      // `null`, se lirait comme « statut non renseigné » sur toutes les autres.
+      ...(r.statutEcarte ? { ecarteeDuRaisonnement: r.statutEcarte } : {}),
+      // Idem : présent seulement là où le repère s'abstient ([[D-051]]).
+      ...(r.formeAmbigue ? { formeInstrumentAmbigue: r.formeAmbigue } : {}),
       // Scores privés de toute conduite clinique : le modèle rédige à partir
       // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
       //
@@ -318,48 +384,104 @@ async function genererSynthesePersistee(
   // Vercel intact) ; en SSE on borne le travail (voir l'appelant streaming).
   requestOptions?: { timeout?: number; maxRetries?: number },
 ): Promise<DonePayload> {
-  const response = await anthropic.messages.create(
-    {
-      model: CLAUDE_MODEL,
-      max_tokens: MAX_TOKENS_SYNTHESE,
-      system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: args.userMessage }],
-    },
-    requestOptions,
-  );
-
-  const usage = (response.usage ?? {}) as {
-    input_tokens?: number;
-    output_tokens?: number;
-    cache_creation_input_tokens?: number;
-    cache_read_input_tokens?: number;
-  };
+  // Métriques CUMULÉES sur les deux appels possibles. Ne compter que le dernier
+  // ferait disparaître le coût d'une relance des tableaux de bord — or c'est
+  // précisément ce coût qu'on veut voir si les rejets se multiplient.
   const metricsCache = {
-    input_tokens: usage.input_tokens ?? 0,
-    output_tokens: usage.output_tokens ?? 0,
-    cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
-    cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_creation_input_tokens: 0,
+    cache_read_input_tokens: 0,
   };
 
-  if (response.stop_reason === 'max_tokens') {
-    throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+  // Un tour de modèle : appel, extraction du JSON, cumul des métriques. Les
+  // erreurs levées ici (troncature, réponse vide, JSON absent) restent des
+  // échecs durs, non rejouables par une relance de schéma.
+  async function unTour(messages: MessageParam[]): Promise<unknown> {
+    const response = await anthropic.messages.create(
+      {
+        model: CLAUDE_MODEL,
+        max_tokens: MAX_TOKENS_SYNTHESE,
+        system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
+        messages,
+      },
+      requestOptions,
+    );
+
+    const usage = (response.usage ?? {}) as {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+    };
+    metricsCache.input_tokens += usage.input_tokens ?? 0;
+    metricsCache.output_tokens += usage.output_tokens ?? 0;
+    metricsCache.cache_creation_input_tokens += usage.cache_creation_input_tokens ?? 0;
+    metricsCache.cache_read_input_tokens += usage.cache_read_input_tokens ?? 0;
+
+    if (response.stop_reason === 'max_tokens') {
+      throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+    }
+
+    const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    if (!text) throw new Error('Réponse vide de l\'API Claude.');
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch {
+      const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(cleaned);
+    }
   }
 
-  const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
-  if (!text) throw new Error('Réponse vide de l\'API Claude.');
+  const messageInitial: MessageParam[] = [{ role: 'user', content: args.userMessage }];
+  let analyse = analyserSortieSynthese(await unTour(messageInitial));
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+  // REJET + UNE RELANCE, jamais servi dégradé (LOT-01, critère 3). La relance
+  // passe par un tour UTILISATEUR : le prompt système n'est pas touché, donc la
+  // garde d'empreinte reste valide et aucun bump de version n'est requis ici.
+  // Les violations transmises sont structurelles — elles nomment un champ, pas
+  // ce que le modèle a écrit.
+  if (!analyse.ok) {
+    const violationsPremierTour = analyse.violations;
+    logger.warn({
+      event: EVENT_CODES.SYNTHESE_SCHEMA_REJETE_RELANCE,
+      domain: 'SYNTHESE_IA',
+      message: `Sortie hors schéma rejetée, relance émise (${violationsPremierTour.length} violation(s) : ${violationsPremierTour.slice(0, 5).join(' ; ')})`,
+      context: finalizeLogContext(args.requestContext, { retryable: true }),
+    });
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonMatch[0]);
-  } catch {
-    const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
-    parsed = JSON.parse(cleaned);
+    analyse = analyserSortieSynthese(
+      await unTour([
+        ...messageInitial,
+        { role: 'assistant', content: JSON.stringify({ _rejete: true }) },
+        {
+          role: 'user',
+          content:
+            'Ta réponse précédente ne respecte pas le format de sortie exigé :\n' +
+            violationsPremierTour.map((v) => `- ${v}`).join('\n') +
+            '\n\nRéponds à nouveau, exclusivement en JSON valide, en respectant la structure exacte annoncée. Aucune clé supplémentaire, aucun champ vide.',
+        },
+      ]),
+    );
+
+    if (!analyse.ok) {
+      logger.error({
+        event: EVENT_CODES.SYNTHESE_SCHEMA_RELANCE_ECHOUEE,
+        domain: 'SYNTHESE_IA',
+        message: `Relance hors schéma : aucune synthèse servie (${analyse.violations.length} violation(s) : ${analyse.violations.slice(0, 5).join(' ; ')})`,
+        context: finalizeLogContext(args.requestContext, { retryable: true }),
+      });
+      throw new Error(
+        'La synthèse IA ne respecte pas le format attendu, malgré une relance. Aucune synthèse dégradée n\'est enregistrée. Réessayez.',
+      );
+    }
   }
 
-  const synthese = validateSyntheseSchema(parsed);
+  const synthese = analyse.synthese;
   // Garantit la présence des vigilances déterministes en tête, LLM ou non.
   synthese.points_de_vigilance = fusionnerVigilance(args.vigilanceDeterministe, synthese.points_de_vigilance);
 
@@ -648,14 +770,88 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => ({
-      idQuestionnaire: r.idQuestionnaire,
-      titre: r.titre,
-      date: r.dateReponse.toISOString().split('T')[0],
-      scores: r.scoresJson as Record<string, unknown>,
-      scorePrincipal: r.scorePrincipal,
-      interpretation: r.interpretation,
-    }));
+    // Passation courante par instrument (LOT-01 étape 6). La sélection passe par
+    // `derniereReponseParQuestionnaire`, LA MÊME fonction que les moteurs
+    // d'orientation et de contradictions : trois consommateurs qui répondraient
+    // chacun à leur façon à « quelle passation fait foi » finiraient par se
+    // contredire dans le même dossier. Elle porte aussi le départage à
+    // horodatage égal, sans lequel le repère ne serait pas reproductible.
+    //
+    // LE REPÈRE NE DÉSIGNE JAMAIS UNE PASSATION NON EXPLOITABLE, DRAPEAU OU PAS.
+    // Corrigé après revue : `filtrerPassationsExploitables` ci-dessus ne retire
+    // rien tant que `WN_ENABLE_VALIDITE_PASSATIONS` est éteint — l'état de
+    // production. Sans le second filtre ci-dessous, une passation qu'un
+    // praticien a marquée INVALID, plus récente qu'une passation saine, partait
+    // au modèle avec `passationCourante: true` pendant que la saine portait
+    // `false` : la consigne lui fait alors rapporter l'état actuel d'après la
+    // mesure invalidée. Le marqueur ne RETIRE rien (les lignes partent toutes,
+    // engagement du LOT-00) ; il se contente de ne pas PROMOUVOIR ce qui est
+    // écarté. `statutExcluDuRaisonnement` est le prédicat sans drapeau.
+    //
+    // Repli assumé, et différence avec `orientationService` qui éteint
+    // l'instrument : ici on désigne la précédente encore exploitable, parce que
+    // le prompt doit nommer un repère parmi ce qu'il transmet. Si AUCUNE
+    // passation d'un instrument n'est exploitable, aucune ne porte le repère —
+    // et la consigne dit ce que cela signifie.
+    const courantes = derniereReponseParQuestionnaire(
+      reponsesAdministrables
+        .filter(r => !statutExcluDuRaisonnement(r.statutValidite))
+        .map(r => ({
+          idQuestionnaire: r.idQuestionnaire,
+          dateReponse: r.dateReponse.toISOString(),
+          idReponse: r.idReponse,
+          scores: (r.scoresJson ?? {}) as ReponseOrientation['scores'],
+        })),
+    );
+
+    // LE REPÈRE S'ABSTIENT QUAND L'IDENTIFIANT A DÉSIGNÉ DEUX INSTRUMENTS
+    // ([[D-051]]). `Q_ALI_01` résout vers le dépistage court à 14 items ou
+    // l'Enquête SIIN à 57 selon `WN_ALI_01_SIIN57` : deux questionnaires
+    // distincts, pas deux versions du même. Le repère répond « laquelle fait
+    // foi » — une question qui n'a pas de sens entre deux instruments. Sans
+    // cette abstention, une passation sur 90 points serait donnée pour l'état
+    // actuel à la place d'une passation sur 42, et l'écart de total se lirait
+    // comme une évolution clinique.
+    //
+    // Le seuil est DEUX passations, pas une : avec une seule, il n'y a rien à
+    // départager et le repère reste vrai.
+    //
+    // COMPTÉ SUR LE MÊME SOUS-ENSEMBLE QUE `courantes` — les passations NON
+    // ÉCARTÉES —, et non sur tout ce qui est transmis. Corrigé après revue : une
+    // paire dont l'une est invalidée n'a qu'UNE mesure exploitable, donc rien à
+    // départager ; compter les deux faisait perdre un repère juste, et posait
+    // sur la ligne écartée un `formeInstrumentAmbigue` dont la consigne affirme
+    // que « ces passations restent exploitables » — faux précisément là.
+    const nombreExploitablesParInstrument = new Map<string, number>();
+    for (const r of reponsesAdministrables) {
+      if (statutExcluDuRaisonnement(r.statutValidite)) continue;
+      nombreExploitablesParInstrument.set(
+        r.idQuestionnaire,
+        (nombreExploitablesParInstrument.get(r.idQuestionnaire) ?? 0) + 1,
+      );
+    }
+    const repereAmbigu = (idQuestionnaire: string): boolean =>
+      instrumentAFormeVariable(idQuestionnaire)
+      && (nombreExploitablesParInstrument.get(idQuestionnaire) ?? 0) > 1;
+
+    const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => {
+      const statutEcarte = statutExcluDuRaisonnement(r.statutValidite) ? r.statutValidite ?? null : null;
+      return {
+        idQuestionnaire: r.idQuestionnaire,
+        titre: r.titre,
+        date: r.dateReponse.toISOString().split('T')[0],
+        scores: r.scoresJson as Record<string, unknown>,
+        scorePrincipal: r.scorePrincipal,
+        interpretation: r.interpretation,
+        passationCourante: !repereAmbigu(r.idQuestionnaire)
+          && courantes.get(r.idQuestionnaire)?.idReponse === r.idReponse,
+        statutEcarte,
+        // Jamais les deux marqueurs sur la même ligne : une passation écartée
+        // n'est pas « exploitable mais incomparable », elle n'est pas
+        // exploitable. `ecarteeDuRaisonnement` dit déjà tout d'elle.
+        formeAmbigue: statutEcarte === null && repereAmbigu(r.idQuestionnaire) ? MOTIF_FORME_AMBIGUE : null,
+      };
+    });
 
     // Contexte clinique (fiche signalétique + anamnèse) — une seule anamnèse par
     // patient, portée par sa consultation. Best-effort : la synthèse fonctionne

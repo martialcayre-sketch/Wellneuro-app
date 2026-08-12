@@ -425,7 +425,16 @@ export function ClinicalRuntimeSection({
       )}
 
       {affiche('donnees') && (
-        <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
+        <MissingDataPanel
+          missingData={review?.missingData ?? null}
+          discordances={review?.discordances ?? null}
+          // Constats déterministes ([[D-050]]) : ils ne viennent PAS de
+          // `review`, qui est la revue clinique LLM. Le double verrou est
+          // appliqué côté serveur — cette liste est vide tant que la table de
+          // règles n'est pas signée, et le composant n'a aucune condition à
+          // porter.
+          contradictions={runtime?.status === 'ready' ? runtime.contradictions : []}
+        />
       )}
       {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
       {/* Boussole alimentaire : montée dès que les gardes métier sont

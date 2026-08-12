@@ -25,6 +25,8 @@ vi.mock('@/lib/anthropic', () => ({
   VERSION_PROMPT_SYNTHESE: 'v-test',
   VERSION_SCHEMA_SYNTHESE: 'v-test',
   validateSyntheseSchema: (value: unknown) => value,
+  // Délégation au mock historique : voir la note de `route.post.test.ts`.
+  analyserSortieSynthese: (value: unknown) => ({ ok: true, synthese: value }),
   sanitizeAuditError: (message: string) => message,
   CORPUS_CLINIQUE_ACTIF: '',
 }));

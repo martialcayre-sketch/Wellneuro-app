@@ -204,8 +204,63 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // porte donc sur **notre revendication** (« WellNeuro n'a évalué… et ne s'en
 // réclame pas »), jamais sur la nature de l'instrument. Bump : une synthèse
 // rédigée sous v18 a pu s'appuyer sur une validation que rien n'établissait.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v19';
-export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
+// v20 (2026-08-12, LOT-01 étapes 3 et 6) : le bloc transmis au modèle porte
+// depuis l'étape 6 un repère `passationCourante` par instrument — et la consigne
+// n'en disait RIEN. Une donnée présente et inexpliquée est pire qu'absente : le
+// modèle pouvait l'ignorer, ou pire lui prêter un sens qu'elle n'a pas (un degré
+// de fiabilité plutôt qu'un repère de récence). La section ajoutée dit ce que le
+// champ signifie, et surtout ce qu'il n'autorise pas — décrire un écart entre
+// deux passations est utile au praticien, le qualifier de progrès ou d'effet
+// d'une prise en charge est une causalité inventée (`DC-27`), et moyenner deux
+// passations discordantes efface le signal que `DC-30` impose de conserver.
+// Bump : une synthèse rédigée sous v19 a pu présenter une mesure remplacée
+// comme la situation présente.
+// v21 (2026-08-12, revue de LOT-01) : la v20 affirmait que le repère désigne
+// « la plus récente parmi celles qui sont exploitables », ce que le code ne
+// garantissait PAS — le filtre de validité est gaté par un drapeau éteint en
+// production, et le repère se posait donc sur la plus récente tout court. Une
+// passation qu'un praticien a marquée INVALID pouvait ainsi être présentée
+// comme l'état actuel, la passation saine étant reléguée en « remplacée ». Le
+// code porte désormais la promesse (le repère ignore les statuts écartés,
+// drapeau ou pas), et la consigne gagne le cas qui en découle : un instrument
+// dont AUCUNE passation n'est exploitable ne porte aucun `true`, et ne doit pas
+// être rabattu sur sa plus récente.
+// v22 (2026-08-12, contre-revue) : la v21 avait AJOUTÉ un paragraphe sans
+// toucher aux deux phrases qu'il rendait fausses — « un seul exemplaire porte
+// `true` » et « `false` veut dire remplacée ». Sur une passation unique
+// écartée, le modèle lisait trois consignes incompatibles. La section est
+// RÉÉCRITE, pas complétée. Et le statut d'écartement arrive désormais comme une
+// DONNÉE (`ecarteeDuRaisonnement`) au lieu d'être déduit de l'absence d'un
+// `true` : une inférence négative sur des chiffres livrés entiers est le patron
+// que `buildUserMessage` nomme lui-même comme insuffisant.
+// v23 (2026-08-12, arbitrage [[D-051]]) : `Q_ALI_01` résout vers DEUX
+// questionnaires distincts selon `WN_ALI_01_SIIN57` — 14 items sur 42, ou 57
+// items sur 90 — sous un identifiant unique. Le repère répond « laquelle fait
+// foi », question qui n'a pas de sens entre deux instruments : à l'allumage du
+// drapeau, une passation sur 90 aurait été donnée pour l'état actuel à la place
+// d'une passation sur 42, et l'écart de total se serait lu comme une évolution
+// clinique. Le repère s'abstient donc, et — leçon de la v22 — le motif arrive
+// comme une DONNÉE (`formeInstrumentAmbigue`) : sans lui, l'absence de `true`
+// se serait lue comme le cas « aucune passation exploitable », un motif faux à
+// la place d'un motif vrai. Bump : une synthèse rédigée sous v22 aurait pu
+// présenter deux barèmes différents comme une évolution.
+// v24 (2026-08-12, troisième revue) : la v23 avait décrit le nouveau cas en
+// tête de section sans reprendre la puce qui AUTORISE l'écart — laquelle
+// n'excluait que les passations écartées. Le modèle lisait donc « ne les
+// compare jamais entre eux » en haut, puis, dans « En conséquence », une
+// permission explicite de dater l'écart « entre deux passations d'un même
+// instrument » dont la liste d'exceptions ne citait pas le nouveau cas. C'est
+// mot pour mot la faute de la v21, sur une autre phrase : un paragraphe ajouté
+// sans reprendre celui qu'il rend faux. La puce porte désormais les deux
+// exclusions. Bump : une synthèse rédigée sous v23 aurait pu dater l'écart
+// entre deux barèmes différents.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v24';
+// v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
+// — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
+// est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
+// dégradée. Le numéro bouge parce qu'il est persisté (`versionSchema`) et qu'il
+// doit permettre de distinguer, plus tard, ce qui a été validé strictement.
+export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v3';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
 export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires structurés remplis par un patient avant sa consultation.
@@ -326,6 +381,34 @@ Ce que tu peux en dire, et seulement cela : que le questionnaire a été rempli 
 
 Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
 
+## Plusieurs passations d'un même questionnaire
+
+Un patient peut avoir rempli **plusieurs fois le même instrument**. Toutes les passations te sont transmises, délibérément : l'évolution entre deux enquêtes est un signal clinique, et te priver des précédentes t'empêcherait de la lire.
+
+Chaque ligne porte le champ **passationCourante**. Il vaut **true** sur la passation qui fait foi pour cet instrument, **false** sur les autres.
+
+Certaines passations portent en plus **ecarteeDuRaisonnement** : le praticien les a écartées (mesure invalidée, remplacée, ou conservée pour mémoire seulement). Leurs chiffres te sont transmis quand même — c'est délibéré, pour que le dossier reste complet — mais **tu ne dois en tirer aucun constat d'état, aucune évolution, aucune tendance**. Une passation écartée ne porte jamais **passationCourante: true**.
+
+D'autres passations portent **formeInstrumentAmbigue** : sous cet identifiant, le patient a pu remplir des questionnaires **différents** selon l'époque — pas deux versions du même, deux instruments distincts, avec des questions et des totaux qui ne se correspondent pas. Leurs chiffres restent exploitables **chacun pour sa propre date**, mais **ne les compare jamais entre eux** : pas d'écart, pas d'évolution, pas de « meilleur » ou « moins bon », et aucune de ces passations n'en remplace une autre.
+
+Un instrument peut donc n'avoir **aucun true**, pour deux raisons qui ne se confondent pas, et la ligne te dit toujours laquelle :
+
+- ses passations portent **ecarteeDuRaisonnement**, ou il n'en a aucune d'exploitable : aucune ne fait foi. Ne te rabats sur aucune d'elles, pas même la plus récente, et traite cette dimension comme restant à mesurer ;
+- ses passations portent **formeInstrumentAmbigue** : elles restent exploitables, mais aucune ne peut être désignée comme celle qui fait foi. Rapporte-les **datées, séparément**, sans en élire une.
+
+Lire un **false** demande de regarder la même ligne : si elle porte **ecarteeDuRaisonnement**, elle a été écartée ; si elle porte **formeInstrumentAmbigue**, elle n'est simplement pas comparable aux autres ; sinon, elle a été remplacée par une passation plus récente, ce qui ne la rend pas douteuse.
+
+En conséquence :
+
+- **rapporte l'état actuel d'après la passation courante**, jamais d'après une antérieure ni d'après une passation écartée ;
+- tu peux **décrire l'écart** entre deux passations d'un même instrument, en le datant explicitement — « à telle date, puis à telle date ». C'est souvent la matière la plus utile au praticien. N'y fais entrer aucune passation portant **ecarteeDuRaisonnement** ni **formeInstrumentAmbigue** : la première a été écartée, la seconde ne mesure pas la même chose que sa voisine ;
+- **ne qualifie pas cet écart de progrès, d'aggravation ni d'effet d'une prise en charge.** Deux mesures qui diffèrent disent qu'elles diffèrent ; elles ne disent ni pourquoi, ni ce qui l'a causé. Association n'est pas causalité ;
+- **ne moyenne jamais deux passations**, ne les additionne pas, ne fabrique pas une valeur intermédiaire. Si elles se contredisent, dis-le : une divergence se signale, elle ne se lisse pas ;
+- une passation **non interprétable** porte elle aussi ces champs. Qu'elle soit courante ne rend pas son résultat exploitable pour autant : la section précédente continue de s'appliquer intégralement.
+- deux passations portant **formeInstrumentAmbigue** ne se contredisent jamais entre elles : des totaux différents y viennent de barèmes différents, pas d'un désaccord clinique. Ne signale pas une divergence là où il n'y a que deux instruments.
+
+Ce champ est un **repère de lecture**, pas un degré de fiabilité : il dit laquelle des passations fait foi, il ne classe pas leur qualité. Un instrument passé une seule fois, et non écartée, porte **true** sans que cela signifie quoi que ce soit de plus.
+
 ## Contexte anamnestique et signalétique
 
 Les données patient incluent, quand elles ont été renseignées, un contexte anamnestique et signalétique (motif de consultation, attentes, histoire des troubles, antécédents, signaux d'alerte, traitements et compléments en cours, contexte de vie). Utilise-le ainsi :
@@ -443,6 +526,132 @@ export type SyntheseSchema = {
   _schema_version?: string;
 };
 
+/**
+ * Les trois seuls niveaux de priorité que le contrat JSON annonce au modèle
+ * (`SYSTEM_PROMPT_CONTRAT_JSON`). Ils sont énumérés ici pour être CONTRÔLÉS,
+ * pas seulement déclarés dans un type : `validateSyntheseSchema` castait
+ * `axes_prioritaires` sans jamais les regarder.
+ */
+export const NIVEAUX_PRIORITE = ['eleve', 'modere', 'faible'] as const;
+
+/** Clés admises à la racine. Toute autre clé fait rejeter la sortie. */
+const CLES_RACINE = [
+  'resume_praticien',
+  'axes_prioritaires',
+  'points_de_vigilance',
+  'questions_entretien',
+  'narratif_patient',
+  'limites',
+  '_schema_version',
+] as const;
+
+/** Clés admises dans un axe prioritaire. */
+const CLES_AXE = ['axe', 'niveau_priorite', 'arguments', 'points_a_confirmer'] as const;
+
+export type SortieSyntheseAnalysee =
+  | { ok: true; synthese: SyntheseSchema }
+  | { ok: false; violations: string[] };
+
+function estTableauDeChainesNonVides(valeur: unknown): valeur is string[] {
+  return Array.isArray(valeur) && valeur.every((v) => typeof v === 'string' && v.trim().length > 0);
+}
+
+/**
+ * Lecture STRICTE de la sortie du modèle : schéma fermé, énumérations
+ * contrôlées, aucun défaut de substitution ([[D-042]], étape 4 du LOT-01).
+ *
+ * POURQUOI UNE SECONDE FONCTION plutôt que durcir `validateSyntheseSchema`.
+ * Les deux ne lisent pas la même chose. Celle-ci lit ce que le MODÈLE vient de
+ * produire : une sortie non conforme est un défaut de génération, qu'on rejette
+ * et qu'on retente. `validateSyntheseSchema` lit du JSONB DÉJÀ PERSISTÉ —
+ * `bilanPatient.ts` projette des synthèses écrites sous des schémas antérieurs,
+ * et la route PATCH relit un brouillon IA. Durcir cette lecture-là ferait
+ * échouer l'affichage de bilans existants pour un défaut qu'aucune relance ne
+ * peut plus corriger : la donnée est écrite. Strict à l'entrée, tolérant à la
+ * relecture — et jamais l'inverse.
+ *
+ * LES VIOLATIONS SONT STRUCTURELLES, JAMAIS DU CONTENU. Elles partent au
+ * journal et dans la relance ; elles nomment un champ et ce qui manque, jamais
+ * ce que le modèle a écrit. Une violation qui citerait la valeur fautive
+ * exfiltrerait du contenu clinique vers les logs.
+ */
+export function analyserSortieSynthese(obj: unknown): SortieSyntheseAnalysee {
+  const violations: string[] = [];
+
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
+    return { ok: false, violations: ['racine : un objet JSON est attendu'] };
+  }
+  const o = obj as Record<string, unknown>;
+
+  for (const cle of Object.keys(o)) {
+    if (!(CLES_RACINE as readonly string[]).includes(cle)) {
+      violations.push(`racine : clé inconnue "${cle}"`);
+    }
+  }
+
+  for (const cle of ['resume_praticien', 'narratif_patient', 'limites'] as const) {
+    if (typeof o[cle] !== 'string' || (o[cle] as string).trim().length === 0) {
+      violations.push(`${cle} : chaîne non vide attendue`);
+    }
+  }
+
+  for (const cle of ['points_de_vigilance', 'questions_entretien'] as const) {
+    if (!estTableauDeChainesNonVides(o[cle])) {
+      violations.push(`${cle} : tableau de chaînes non vides attendu`);
+    }
+  }
+
+  if (!Array.isArray(o.axes_prioritaires)) {
+    violations.push('axes_prioritaires : tableau attendu');
+  } else {
+    o.axes_prioritaires.forEach((axe, i) => {
+      if (axe === null || typeof axe !== 'object' || Array.isArray(axe)) {
+        violations.push(`axes_prioritaires[${i}] : objet attendu`);
+        return;
+      }
+      const a = axe as Record<string, unknown>;
+      for (const cle of Object.keys(a)) {
+        if (!(CLES_AXE as readonly string[]).includes(cle)) {
+          violations.push(`axes_prioritaires[${i}] : clé inconnue "${cle}"`);
+        }
+      }
+      if (typeof a.axe !== 'string' || a.axe.trim().length === 0) {
+        violations.push(`axes_prioritaires[${i}].axe : chaîne non vide attendue`);
+      }
+      if (!(NIVEAUX_PRIORITE as readonly string[]).includes(a.niveau_priorite as string)) {
+        violations.push(
+          `axes_prioritaires[${i}].niveau_priorite : attendu ${NIVEAUX_PRIORITE.join(' | ')}`,
+        );
+      }
+      for (const cle of ['arguments', 'points_a_confirmer'] as const) {
+        if (!estTableauDeChainesNonVides(a[cle])) {
+          violations.push(`axes_prioritaires[${i}].${cle} : tableau de chaînes non vides attendu`);
+        }
+      }
+    });
+  }
+
+  if (violations.length > 0) return { ok: false, violations };
+
+  return {
+    ok: true,
+    synthese: {
+      resume_praticien: o.resume_praticien as string,
+      axes_prioritaires: o.axes_prioritaires as SyntheseSchema['axes_prioritaires'],
+      points_de_vigilance: o.points_de_vigilance as string[],
+      questions_entretien: o.questions_entretien as string[],
+      narratif_patient: o.narratif_patient as string,
+      limites: o.limites as string,
+      _schema_version: VERSION_SCHEMA_SYNTHESE,
+    },
+  };
+}
+
+/**
+ * Lecture TOLÉRANTE, réservée au JSONB déjà persisté (`bilanPatient.ts`, PATCH
+ * d'un brouillon IA). Elle normalise et ne rejette jamais — c'est voulu ici, et
+ * seulement ici. La sortie du modèle passe par `analyserSortieSynthese`.
+ */
 export function validateSyntheseSchema(obj: unknown): SyntheseSchema {
   const o = obj as Record<string, unknown>;
   return {

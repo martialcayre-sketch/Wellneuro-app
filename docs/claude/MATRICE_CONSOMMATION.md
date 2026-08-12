@@ -25,8 +25,9 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | **aucune — dormante** | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_RESULTS_ENABLED | — | non | a_brancher (2026-08-05) |
 | Catalogue des compléments alimentaires (C4) | `web/src/app/api/praticien/complements/route.ts` (route-api)<br>`web/src/components/complements/FicheComplementPanel.tsx` (composant)<br>`web/src/components/complements/RayonComplementsPanel.tsx` (composant) | Fiche complément : composition, cumuls, compatibilités. | WN_C4_ENABLED | — | non | — |
 | Tableau de compatibilité et de cumul entre compléments | 18 surface(s) indirecte(s) seulement | Cumul signalé ou absence de cumul, affichés sur la fiche. | WN_C4_ENABLED | — | non | — |
-| Corpus clinique de synthèse V1 | `web/src/app/api/praticien/synthese/route.ts` (route-api)<br>+ 15 indirecte(s) | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1, WN_SYNTHESE_STREAM | validationExterne | oui | — |
-| Table d’orientation NNPP2 (règles signées) | 3 surface(s) indirecte(s) seulement | Orientation clinique proposée au praticien à partir des scores. | WN_ENABLE_ORIENTATION_NNPP2 | tableSignee, validationExterne | non | — |
+| Table de contradictions NNPP2 (règles signées) | 2 surface(s) indirecte(s) seulement | Constat de contradiction entre instruments, affiché au cockpit praticien (table non signée : rien ne sort). | WN_ENABLE_CONTRADICTIONS_NNPP2 | tableSignee, validationExterne | non | — |
+| Corpus clinique de synthèse V1 | `web/src/app/api/praticien/synthese/route.ts` (route-api)<br>+ 17 indirecte(s) | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1, WN_SYNTHESE_STREAM | validationExterne | oui | — |
+| Table d’orientation NNPP2 (règles signées) | 5 surface(s) indirecte(s) seulement | Orientation clinique proposée au praticien à partir des scores. | WN_ENABLE_ORIENTATION_NNPP2 | tableSignee, validationExterne | non | — |
 | Packs de consultation (registre + repli legacy) | `web/src/app/api/portail/valider/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api) | Quels questionnaires composent une consultation. | — | — | oui | — |
 | Catalogue des questionnaires et scoring | `web/src/app/api/patient/submit/route.ts` (route-api)<br>`web/src/app/api/praticien/assignations/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api)<br>+ 40 indirecte(s) | Score et sous-scores d’un instrument passé par le patient. | WN_ALI_01_SIIN57 | — | oui | — |
 | Rayon de corpus « biologie » → notebook 08 — Biologie fonctionnelle | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
@@ -41,5 +42,5 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 3 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 17 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
 
-19 source(s) recensée(s), dont **6 dormante(s)**.
+20 source(s) recensée(s), dont **6 dormante(s)**.
 
