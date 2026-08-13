@@ -4,6 +4,128 @@
 
 ## Décisions actives
 
+### D-056 — Ce qu'une intention de complément exige avant la biologie, et pourquoi un catalogue vide doit refuser
+
+- Date : 2026-08-13
+- Statut : accepté (décision utilisateur du 2026-08-13, arbitrage de cadrage du LOT-05)
+- Domaine : clinique, contrat de protocole, rayon compléments (C4), garde de restitution
+- Contexte : le LOT-05 doit permettre une prescription-conseil de compléments
+  fondée sur claims **avant** la biologie, marquée provisoire et résolue par
+  l'arbitrage du LOT-06. La spec (Lot E, `sources/02-spec-lots-parcours-t0.md`)
+  en pose quatre conditions cumulatives, dont trois interrogent le catalogue de
+  décision C4. Cette décision précède la première ligne de code du lot
+  (`DC-17`, `DC-18`).
+- Fait relu en production le 2026-08-13 (`execute_sql`, lecture seule) : la
+  couche **matière** du catalogue est peuplée — `supplement_ingredients` 3 444,
+  `supplement_products` 140 148 — et la couche **décision** est *entièrement
+  vide* : `clinical_rules` 0, `clinical_intent_tags` 0,
+  `supplement_source_references` 0, `supplement_safety_alerts` 0,
+  `ingredient_functional_thresholds` 0, `functional_categories` 0. Aucun seed
+  ne les peuple. `clinical_rules` porte en outre des clés étrangères non nulles
+  vers `clinical_intent_tags` et `supplement_source_references` : aucune règle
+  ne peut naître avant que ces deux tables ne soient publiées.
+- Lecture de ce fait avant d'écrire : la condition 1 (règle C4 validée) est
+  **insatisfiable**, et les conditions négatives de la condition 2 (« aucune
+  alerte active », « seuils fonctionnels respectés ») sont **vraies par
+  vacuité** — elles passeraient parce que les tables sont vides, non parce que
+  le complément est sûr (`DC-24` : une donnée absente n'est jamais zéro ni
+  normale). C'est le quatrième exemplaire d'un motif déjà corrigé trois fois :
+  le `VALID` tautologique ([[D-052]]), le `group_majority` muet ([[D-053]],
+  [[D-055]]), et `[]` lu « aucun conflit » là où il faut lire « rien n'a été
+  examiné » (#482, #489).
+- Décision : six arbitrages, rendus ensemble.
+
+**1. Le lot livre le moteur, pas la permission.** La règle de décision
+« compléments avant biologie » est écrite, testée sur fixture et branchée ;
+elle reste **structurellement incapable de produire une intention en
+production** tant que le catalogue de décision n'est pas publié. Le lot ne
+peuple pas ce catalogue : son hors-périmètre le dit déjà (« le lot consomme
+l'atelier règles existant »), et le remplissage — tags d'intention, références
+sources, seuils fonctionnels, alertes de sécurité — est un travail de contenu
+clinique sourcé exigeant des claims certifiés et une validation praticien
+(`DC-01`, `DC-02`, `DC-19`). Il relève d'un lot clinique distinct, nommé ici
+comme dette et non résolu par du code. Un moteur juste qui ne peut rien dire
+vaut mieux qu'un moteur qui dit oui faute d'avoir regardé.
+
+**2. Les conditions négatives sont inversées en fail-closed.** L'absence
+d'information ne vaut jamais autorisation. La condition 2 de la spec se lit
+désormais en deux étages, distincts parce que les deux tables ne se lisent pas
+de la même manière :
+
+- **Alertes de sécurité** — garde au niveau du *catalogue*. Qu'un ingrédient ne
+  porte aucune alerte est le cas normal et ne prouve rien à lui seul ; ce qui
+  fait preuve, c'est que le catalogue d'alertes soit **publié**. Catalogue
+  d'alertes non publié ⇒ refus, pour tout ingrédient, sans exception.
+- **Seuils fonctionnels** — garde au niveau de l'*ingrédient*. Sans seuil actif
+  publié sur l'ingrédient visé, « seuils respectés » n'est pas une conclusion
+  mais une absence de vérification : la borne de dose cible portée par la règle
+  n'est comparable à rien. Aucun seuil actif sur l'ingrédient ⇒ refus pour cet
+  ingrédient.
+
+Aucun de ces refus n'est silencieux : chacun rend un motif lisible en français,
+distinct de « pas d'obstacle constaté » (`DC-34`, `DC-35`). Un refus faute de
+catalogue n'est pas une contre-indication et ne se restitue jamais comme telle.
+
+**3. La sentinelle existante est le point d'ancrage — on n'écrit pas une
+seconde primitive.** `sentinelleADeQuoiConclure` (`sentinelle.ts:78`) énonce
+déjà ce fait exact et existe pour lui : elle rend faux tant qu'aucune règle
+validée n'atteint le moindre ingrédient. La règle de décision l'appelle ;
+`evaluerSentinelle` conserve son fail-closed de flag (`WN_C4_ENABLED`), qui
+reste un **second verrou indépendant** — même catalogue publié, le rayon reste
+clos sur un environnement où le flag n'est pas ouvert. Correction documentaire
+au passage, sans changement de logique : le commentaire de cette fonction
+affirme que `clinical_intent_tags` « est peuplée » ; la production dit 0. Les
+deux tables sont vides, et le commentaire est remis à l'état réel.
+
+**4. Le déclencheur reste le tableau clinique, jamais un score seul.**
+Condition 3 de la spec, inchangée et désormais gardée : besoin dégradé +
+plainte + anamnèse. Un axe DNST ne déclenche aucune intention de complément,
+seul ou combiné à un autre axe. Test négatif dédié sur tyrosine et mélatonine —
+les deux cas où la tentation est la plus forte. `DC-27` (score ≠ diagnostic),
+`DC-28` (un questionnaire isolé ne suffit pas à conclure).
+
+**5. `conditionnelle_biologie` n'est pas une recommandation, et la restitution
+doit le rendre impossible à lire ainsi.** Une intention en attente de bilan
+n'apparaît ferme ni au praticien ni au patient ; le patient la lit « en attente
+de confirmation par votre bilan », formulation non anxiogène. La garde de
+restitution est étendue sur le patron de [[D-055]] (éteinte ≠ recommandée) :
+le LLM ne peut nommer aucun complément absent des intentions déterministes, et
+ne peut pas non plus promouvoir une intention conditionnelle en conseil ferme.
+L'approbation de diffusion praticien reste requise, inchangée (`D-003`).
+
+**6. Contrat versionné en V4, aucune migration.** Phases, statut
+d'intervention et `waitFor` entrent dans le payload JSON versionné :
+`c1-protocol-draft-v4`, à côté des V1 à V3 existantes. Aucune modification de
+`schema.prisma`, aucune migration Prisma — le lot n'en a pas besoin, et la
+règle de la campagne interdirait d'y faire voyager le code qui en dépend. La
+garde `FORBIDDEN_SUPPLEMENT_FIELDS` (`protocolDraft.ts:17`) est étendue aux
+nouveaux statuts : ni produit, ni forme, ni dose, ni marque en texte libre,
+quel que soit le statut de l'intention.
+
+- Dette nommée, non résolue par ce lot : (a) le **peuplement du catalogue de
+  décision C4**, préalable réel à toute intention de complément en production —
+  arbitrage 1 ; (b) `DC-39` (« une modification à la fois »), que la fiche de
+  lot porte sans l'avoir au périmètre : distinguer les interventions
+  compatibles simultanément de celles à tester séquentiellement est un
+  arbitrage clinique par type d'intervention, à instruire depuis des sources,
+  jamais à déduire (`DC-19`) — aucune ligne de code ne le devine, et ce lot ne
+  le devine pas ; (c) l'injection des **vigilances** de synthèse, moitié non
+  livrée de l'étape 5 du LOT-01, reprise ici sous la même garde LLM : une
+  vigilance déterministe n'est pas censurable par une sortie de modèle.
+- Conséquences : le LOT-05 est livrable et vérifiable sur fixture ; en
+  production, la règle de décision refuse, avec motif, jusqu'à publication du
+  catalogue. Aucune interprétation réellement servie aujourd'hui n'est déplacée
+  par ces arbitrages — il n'y a aucune intention de complément en production à
+  déplacer. Le LOT-06 (arbitrage biologique) reste le résolveur des intentions
+  `conditionnelle_biologie` ; il hérite du même refus fail-closed tant que le
+  catalogue est vide.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-05-protocole-complements-claims.md`,
+  `sources/02-spec-lots-parcours-t0.md` (Lot E),
+  `web/src/lib/supplement-library/sentinelle.ts`,
+  `web/src/lib/clinical-engine/types.ts`,
+  `web/src/lib/clinical/verifierRestitutionOrientation.ts`,
+  `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`
+
 ### D-055 — Ce qu'un moteur muet doit publier pour qu'une extinction devienne possible, et ce qui l'interdit
 
 - Date : 2026-08-13

@@ -47,8 +47,10 @@ import {
 } from '@/lib/clinical/orientationEngine';
 import {
   formaterEcarts,
+  verifierRestitutionComplements,
   verifierRestitutionOrientation,
 } from '@/lib/clinical/verifierRestitutionOrientation';
+import { chargerVocabulaireIngredients } from '@/lib/supplement-library/vocabulaire';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -534,6 +536,13 @@ async function genererSynthesePersistee(
   // un pack cité à tort dans la prose ne peut rien déclencher.
   // Le garde ne tourne QUE si un bloc a réellement été injecté : sans bloc, il
   // n'y a rien à restituer, donc rien à trahir (voir `orientationInjectee`).
+  //
+  // Les COMPLÉMENTS, eux, se mesurent hors de cette condition : ils ne
+  // dépendent d'aucun bloc d'orientation injecté. La liste autorisée est
+  // toujours vide ici — la synthèse précède la carte de décision dans la
+  // chaîne, donc aucune intention de complément déterministe n'existe encore
+  // au moment où le modèle écrit ([[D-056]], arbitrage 5).
+  const complements = { vocabulaire: await chargerVocabulaireIngredients() };
   const ecartsRestitution = orientationInjectee(args.orientation)
     ? verifierRestitutionOrientation(synthese, {
         packs: packsTransmis(args.orientation),
@@ -541,16 +550,19 @@ async function genererSynthesePersistee(
         // Éteinte ≠ recommandée ([[D-055]]) : le garde mesure aussi la
         // PRÉSENTATION des cibles d'orientation — même régime, journalisé.
         ...ciblesParPresentation(args.orientation, args.reponsesInput),
+        complements,
       })
-    : [];
+    : verifierRestitutionComplements(synthese, complements);
   if (ecartsRestitution.length > 0) {
     logger.warn({
       event: EVENT_CODES.SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE,
       domain: 'SYNTHESE_IA',
-      // Deux classes sous un même code : une cible citée HORS transmission
-      // (pack/questionnaire), et une cible transmise dont la PRÉSENTATION
-      // diverge (extinction). Le rendu de `formaterEcarts` porte la classe.
-      message: `Restitution d'orientation infidèle : cible hors transmission ou présentation d'extinction divergente (${formaterEcarts(ecartsRestitution)})`,
+      // Trois classes sous un même code : une cible citée HORS transmission
+      // (pack/questionnaire), une cible transmise dont la PRÉSENTATION diverge
+      // (extinction), et un complément nommé en contexte prescriptif sans
+      // intention déterministe qui le porte. Le rendu de `formaterEcarts`
+      // porte la classe.
+      message: `Restitution d'orientation infidèle : cible hors transmission, présentation d'extinction divergente ou complément conseillé hors déterministe (${formaterEcarts(ecartsRestitution)})`,
       context: finalizeLogContext(args.requestContext, { retryable: false }),
     });
   }

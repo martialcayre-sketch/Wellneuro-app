@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04"
 ---
 

@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
-import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import type {
+  DecisionCard,
+  ProtocolAction,
+  ProtocolActionType,
+  ProtocolInterventionStatus,
+  TherapeuticLoad,
+} from '@/lib/clinical-engine/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 
 // Contenu du brouillon au moment où le praticien le marque comme relu.
@@ -30,6 +36,18 @@ const ACTION_LABELS: Record<ProtocolActionType, string> = {
   advice_sheet: 'Fiche conseil',
   biological_exploration: 'Exploration biologique à discuter',
   supplement_exploration: 'Complément à explorer',
+  observation: 'Observation / recueil',
+  medical_referral: 'Orientation médecin traitant',
+};
+
+// Statut d'intervention (contrat V4, `D-056`). Aucun de ces libellés ne se lit
+// comme un conseil ferme hors « active » : une intervention suspendue le dit.
+const INTERVENTION_STATUS_LABELS: Record<ProtocolInterventionStatus, string> = {
+  active: 'En cours',
+  conditionnelle_biologie: 'En attente du bilan biologique',
+  differee: 'Différée',
+  contre_indiquee: 'Contre-indiquée',
+  non_indiquee_actuellement: 'Non indiquée actuellement',
 };
 
 const LOAD_LABELS: Record<TherapeuticLoad['level'], string> = {
@@ -229,6 +247,19 @@ export function ProtocolMiniBuilder({
                   {action.type === 'supplement_exploration' && (
                     <p className="text-xs text-muted-foreground">
                       Intention d’exploration uniquement : aucun produit, forme, marque ou dose.
+                    </p>
+                  )}
+                  {/*
+                    Statut d'intervention en LECTURE SEULE : il est posé par la
+                    règle de décision, jamais saisi à la main (`D-056`). Le
+                    praticien le voit ; il ne le choisit pas, sans quoi une
+                    intention pourrait naître « active » sans règle derrière.
+                  */}
+                  {action.interventionStatus !== undefined && action.interventionStatus !== 'active' && (
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Statut : {INTERVENTION_STATUS_LABELS[action.interventionStatus]}
+                      {action.waitFor !== undefined && ` — en attente de : ${action.waitFor.cible}`}
+                      . Cette intervention n’est pas un conseil ferme en l’état.
                     </p>
                   )}
                   {(['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {

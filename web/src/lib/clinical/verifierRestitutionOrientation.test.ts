@@ -395,3 +395,78 @@ describe('verifierRestitutionOrientation — les marqueurs suivent les textes se
     ]);
   });
 });
+
+describe('verifierRestitutionOrientation — un complément nommé en contexte prescriptif', () => {
+  // Vocabulaire minimal, choisi pour ses pièges : « fer » est un sous-mot de
+  // « ferritine » et le mot le plus fréquent de la prose biologique ; « zinc »
+  // et « magnésium » se citent constamment comme analytes.
+  const CATALOGUE = ['Fer', 'Zinc', 'Magnésium', 'Oméga-3', 'Mélatonine', 'Tyrosine'];
+  const FOURNIS = { packs: [], questionnaires: [], complements: { vocabulaire: CATALOGUE } };
+
+  const surResume = (resume_praticien: string) =>
+    verifierRestitutionOrientation({ resume_praticien }, FOURNIS);
+
+  it('signale une supplémentation conseillée', () => {
+    expect(surResume('Une supplémentation en fer serait à envisager.'))
+      .toEqual([{ type: 'complement', identifiant: 'Fer' }]);
+  });
+
+  it('signale une posologie, marqueur placé APRÈS le nom', () => {
+    expect(surResume('Oméga-3 : 1000 mg par jour pendant huit semaines.'))
+      .toEqual([{ type: 'complement', identifiant: 'Oméga-3' }]);
+  });
+
+  it('signale une cure nommée', () => {
+    expect(surResume('Débuter une cure de magnésium.'))
+      .toEqual([{ type: 'complement', identifiant: 'Magnésium' }]);
+  });
+
+  it('n’accuse pas une carence discutée comme biologie', () => {
+    expect(surResume('Une carence en fer est plausible ; le bilan la confirmera.')).toEqual([]);
+  });
+
+  it('n’accuse pas un analyte cité dans un constat', () => {
+    expect(surResume('Le statut en zinc reste à documenter avant toute conclusion.')).toEqual([]);
+  });
+
+  it('ne confond pas « ferritine » avec l’ingrédient « fer »', () => {
+    // Sans recherche par mot entier, « ferritine » contiendrait « fer » et la
+    // phrase la plus banale du dossier biologique deviendrait un écart.
+    expect(surResume('Doser la ferritine ; prescrire le bilan martial complet.')).toEqual([]);
+  });
+
+  it('n’accuse pas « complément d’information », qui n’est pas un complément', () => {
+    expect(surResume('Un complément d’information sur le fer sera utile.')).toEqual([]);
+  });
+
+  it('ne signale pas un complément porté par une intention déterministe', () => {
+    expect(verifierRestitutionOrientation(
+      { resume_praticien: 'Une supplémentation en fer est proposée.' },
+      { packs: [], questionnaires: [], complements: { vocabulaire: CATALOGUE, autorises: ['Fer'] } },
+    )).toEqual([]);
+  });
+
+  it('ne signale rien quand aucun vocabulaire n’est fourni', () => {
+    expect(verifierRestitutionOrientation(
+      { resume_praticien: 'Une supplémentation en fer est proposée.' },
+      { packs: [], questionnaires: [] },
+    )).toEqual([]);
+  });
+
+  it('ne compte qu’une fois un même ingrédient cité deux fois', () => {
+    expect(surResume('Supplémentation en zinc. Le zinc, 15 mg par jour, sera réévalué.'))
+      .toEqual([{ type: 'complement', identifiant: 'Zinc' }]);
+  });
+
+  it('couvre le narratif patient comme le résumé praticien', () => {
+    expect(verifierRestitutionOrientation(
+      { narratif_patient: 'Vous pourrez débuter une cure de mélatonine.' },
+      FOURNIS,
+    )).toEqual([{ type: 'complement', identifiant: 'Mélatonine' }]);
+  });
+
+  it('rend un écart de complément lisible au journal', () => {
+    expect(formaterEcarts(surResume('Une supplémentation en tyrosine est conseillée.')))
+      .toBe('complement:Tyrosine');
+  });
+});

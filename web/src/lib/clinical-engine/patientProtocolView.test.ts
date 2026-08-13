@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildPatientProtocolView } from './patientProtocolView';
-import type { DecisionCard, ProtocolDiffusionApproval, ProtocolDraft } from './types';
+import type {
+  DecisionCard,
+  ProtocolDiffusionApproval,
+  ProtocolDraft,
+  ProtocolInterventionStatus,
+} from './types';
 
 function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
   return {
@@ -72,5 +77,77 @@ describe('PatientProtocolView', () => {
 
   it('invalide une approbation dès que le hash du protocole change', () => {
     expect(() => buildPatientProtocolView({ decisionCard: card(), protocolDraft: protocol({ inputHash: 'protocol-revise' }), approval: approval() })).toThrow('correspond plus');
+  });
+});
+
+describe('PatientProtocolView — une intervention non ferme le dit (D-056)', () => {
+  const vueAvecStatut = (interventionStatus: ProtocolInterventionStatus) =>
+    buildPatientProtocolView({
+      decisionCard: card(),
+      protocolDraft: protocol({
+        version: 'c1-protocol-draft-v4',
+        actions: [{
+          actionId: 'action-1', type: 'supplement_exploration', title: 'Complément à explorer',
+          idealPlan: 'Plan idéal interne.', minimalPlan: 'Plan minimal patient.',
+          rescuePlan: 'Plan secours interne.', limitations: ['Interne.'],
+          interventionStatus,
+          ...(interventionStatus === 'conditionnelle_biologie'
+            ? { waitFor: { type: 'biologie' as const, cible: 'ferritine' } }
+            : {}),
+        }],
+      }),
+      approval: approval(),
+    });
+
+  it('rend « en attente de confirmation par votre bilan » sur une intention conditionnelle', () => {
+    const action = vueAvecStatut('conditionnelle_biologie').actions[0];
+    expect(action.interventionStatus).toBe('conditionnelle_biologie');
+    expect(action.attente).toBe('En attente de confirmation par votre bilan.');
+  });
+
+  it('ne fait jamais fuiter le vocabulaire praticien de l’attente', () => {
+    // `waitFor.cible` vaut « ferritine » : c'est le mot du praticien. Le patient
+    // lit « votre bilan ». Une recopie mécanique de la cible serait un jargon
+    // servi au patient, et sur certaines cibles, une inquiétude gratuite.
+    const action = vueAvecStatut('conditionnelle_biologie').actions[0];
+    expect(action.attente).not.toContain('ferritine');
+    expect(JSON.stringify(action)).not.toContain('waitFor');
+  });
+
+  it('accompagne chacun des statuts non fermes d’une phrase patient', () => {
+    for (const statut of ['differee', 'contre_indiquee', 'non_indiquee_actuellement'] as const) {
+      const action = vueAvecStatut(statut).actions[0];
+      expect(action.interventionStatus).toBe(statut);
+      expect(action.attente).toBeTruthy();
+    }
+  });
+
+  it('n’ajoute ni statut ni attente sur une intervention active', () => {
+    const action = vueAvecStatut('active').actions[0];
+    expect('interventionStatus' in action).toBe(false);
+    expect('attente' in action).toBe(false);
+  });
+
+  it('laisse les contrats antérieurs à V4 inchangés', () => {
+    const action = buildPatientProtocolView({
+      decisionCard: card(), protocolDraft: protocol(), approval: approval(),
+    }).actions[0];
+    expect('interventionStatus' in action).toBe(false);
+    expect('attente' in action).toBe(false);
+  });
+
+  it('accepte une action d’observation, refusée par la liste patient jusqu’ici', () => {
+    const vue = buildPatientProtocolView({
+      decisionCard: card(),
+      protocolDraft: protocol({
+        actions: [{
+          actionId: 'action-1', type: 'observation', title: 'Agenda du sommeil',
+          idealPlan: 'Plan idéal interne.', minimalPlan: 'Remplir l’agenda chaque matin.',
+          rescuePlan: 'Plan secours interne.', limitations: [],
+        }],
+      }),
+      approval: approval(),
+    });
+    expect(vue.actions[0].type).toBe('observation');
   });
 });
