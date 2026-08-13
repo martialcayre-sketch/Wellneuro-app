@@ -1,10 +1,12 @@
 import { canonicalSha256 } from './canonical';
-import { VERSION_PROTOCOL_DRAFT, VERSION_PROTOCOL_DRAFT_V3 } from './types';
+import { VERSION_PROTOCOL_DRAFT, VERSION_PROTOCOL_DRAFT_V3, VERSION_PROTOCOL_DRAFT_V4 } from './types';
 import type {
   DecisionCard,
   ProtocolAction,
   ProtocolDraft,
+  ProtocolPhase,
   ProtocolReview,
+  ProtocolWaitFor,
   SupplementCatalogRef,
   TherapeuticLoad,
 } from './types';
@@ -12,7 +14,13 @@ import type {
 const ACTION_TYPES = [
   'food', 'chronobiology', 'calming_routine', 'gentle_activity',
   'hydration', 'advice_sheet', 'biological_exploration', 'supplement_exploration',
+  'observation', 'medical_referral',
 ] as const;
+const INTERVENTION_STATUSES = [
+  'active', 'conditionnelle_biologie', 'differee', 'contre_indiquee', 'non_indiquee_actuellement',
+] as const;
+const WAIT_FOR_FIELDS = ['type', 'cible', 'echeance'];
+const PHASE_FIELDS = ['phaseId', 'duree', 'objectifs', 'actionIds', 'mesures', 'prerequis', 'reviewAt'];
 const LOAD_LEVELS = ['light', 'moderate', 'loaded', 'excessive'] as const;
 const FORBIDDEN_SUPPLEMENT_FIELDS = ['product', 'produit', 'form', 'forme', 'dose', 'brand', 'marque'];
 const SUPPLEMENT_CATALOG_REF_FIELDS = ['ingredientId', 'ruleId', 'ruleVersion', 'productId', 'justification'];
@@ -58,6 +66,59 @@ function validateDecisionCard(card: DecisionCard): string {
   return selectedId;
 }
 
+// Contrat V4 (`D-056`) — une attente est toujours nommée : ni cible vide, ni
+// champ surnuméraire, ni échéance approximative. Le seul type représentable est
+// `biologie` ; tout autre est refusé plutôt que traduit.
+function normalizeWaitFor(waitFor: ProtocolWaitFor): ProtocolWaitFor {
+  const unknownKey = Object.keys(waitFor as unknown as Record<string, unknown>)
+    .find(key => !WAIT_FOR_FIELDS.includes(key));
+  if (unknownKey !== undefined) {
+    throw new TypeError(`Attente d’intervention : champ inconnu « ${unknownKey} ».`);
+  }
+  if (waitFor.type !== 'biologie') {
+    throw new TypeError('Attente d’intervention : seul le type « biologie » est représentable.');
+  }
+  const cible = nonEmpty(waitFor.cible, 'cible de l’attente');
+  if (waitFor.echeance === undefined) return { type: 'biologie', cible };
+  return { type: 'biologie', cible, echeance: canonicalIso(waitFor.echeance, 'échéance de l’attente') };
+}
+
+// Le statut d'intervention ne se devine pas : requis sur toute action V4,
+// interdit avant. Une action sans statut dans un payload V4 est un refus, jamais
+// un « active » par défaut — `DC-24`, une donnée absente n'est ni zéro ni
+// normale, et « active » est précisément la valeur la plus engageante.
+function normalizeInterventionStatus(
+  action: ProtocolAction,
+  version: ProtocolDraft['version'],
+): Pick<ProtocolAction, 'interventionStatus' | 'waitFor'> {
+  if (version !== VERSION_PROTOCOL_DRAFT_V4) {
+    if (action.interventionStatus !== undefined) {
+      throw new TypeError('Un statut d’intervention exige un payload protocole V4 explicite.');
+    }
+    if (action.waitFor !== undefined) {
+      throw new TypeError('Une attente d’intervention exige un payload protocole V4 explicite.');
+    }
+    return {};
+  }
+  const status = action.interventionStatus;
+  if (status === undefined) {
+    throw new TypeError('Un payload protocole V4 exige un statut d’intervention sur chaque action.');
+  }
+  if (!(INTERVENTION_STATUSES as readonly string[]).includes(status)) {
+    throw new TypeError('Statut d’intervention inconnu.');
+  }
+  if (status === 'conditionnelle_biologie') {
+    if (action.waitFor === undefined) {
+      throw new TypeError('Une intervention conditionnelle à la biologie exige une attente explicite.');
+    }
+    return { interventionStatus: status, waitFor: normalizeWaitFor(action.waitFor) };
+  }
+  if (action.waitFor !== undefined) {
+    throw new TypeError('Une attente d’intervention n’a de sens que sur un statut « conditionnelle_biologie ».');
+  }
+  return { interventionStatus: status };
+}
+
 function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
   if (actions.length > 3) throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
   const ids = new Set<string>();
@@ -69,7 +130,9 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
     if (action.foodCompassRef !== undefined) {
       throw new TypeError('Une référence C5 exige un payload protocole V2 explicite.');
     }
-    if (action.supplementCatalogRef !== undefined && version !== VERSION_PROTOCOL_DRAFT_V3) {
+    if (action.supplementCatalogRef !== undefined
+      && version !== VERSION_PROTOCOL_DRAFT_V3
+      && version !== VERSION_PROTOCOL_DRAFT_V4) {
       throw new TypeError('Une référence catalogue de compléments exige un payload protocole V3 explicite.');
     }
     if (action.type === 'supplement_exploration') {
@@ -83,6 +146,52 @@ function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['ver
       minimalPlan: nonEmpty(action.minimalPlan, 'plan minimal'),
       rescuePlan: nonEmpty(action.rescuePlan, 'plan de secours'),
       limitations: uniqueSorted(action.limitations),
+      ...normalizeInterventionStatus(action, version),
+    };
+  });
+}
+
+// Phases V1 (`D-056`) : la phase cite des `actionId` du protocole, jamais des
+// copies d'actions — une action ne peut pas diverger d'elle-même. Une phase sans
+// action n'est pas une phase ; une phase citant une action inexistante est un
+// refus, pas un silence.
+function normalizePhases(
+  phases: ProtocolPhase[],
+  actions: ProtocolAction[],
+  version: ProtocolDraft['version'],
+): ProtocolPhase[] | undefined {
+  if (version !== VERSION_PROTOCOL_DRAFT_V4) {
+    if (phases.length > 0) throw new TypeError('Des phases exigent un payload protocole V4 explicite.');
+    return undefined;
+  }
+  if (phases.length === 0) return undefined;
+  const knownActionIds = new Set(actions.map(action => action.actionId));
+  const phaseIds = new Set<string>();
+  return phases.map(phase => {
+    const unknownKey = Object.keys(phase as unknown as Record<string, unknown>)
+      .find(key => !PHASE_FIELDS.includes(key));
+    if (unknownKey !== undefined) {
+      throw new TypeError(`Phase de protocole : champ inconnu « ${unknownKey} ».`);
+    }
+    const phaseId = nonEmpty(phase.phaseId, 'phaseId');
+    if (phaseIds.has(phaseId)) throw new TypeError(`Phase dupliquée : ${phaseId}.`);
+    phaseIds.add(phaseId);
+    if (!Array.isArray(phase.actionIds) || phase.actionIds.length === 0) {
+      throw new TypeError(`Phase « ${phaseId} » : au moins une action est requise.`);
+    }
+    const actionIds = uniqueSorted(phase.actionIds.map(id => nonEmpty(id, 'actionId de phase')));
+    const inconnu = actionIds.find(id => !knownActionIds.has(id));
+    if (inconnu !== undefined) {
+      throw new TypeError(`Phase « ${phaseId} » : action inconnue « ${inconnu} ».`);
+    }
+    return {
+      phaseId,
+      duree: nonEmpty(phase.duree, 'durée de phase'),
+      objectifs: uniqueSorted(phase.objectifs ?? []),
+      actionIds,
+      mesures: uniqueSorted(phase.mesures ?? []),
+      prerequis: uniqueSorted(phase.prerequis ?? []),
+      reviewAt: canonicalIso(phase.reviewAt, 'reviewAt de phase'),
     };
   });
 }
@@ -106,6 +215,7 @@ export function buildProtocolDraft(input: {
   followUpCriterion: string;
   adviceSheetRef?: string | null;
   actions?: ProtocolAction[];
+  phases?: ProtocolPhase[];
   therapeuticLoad: TherapeuticLoad;
   review?: ProtocolReview | null;
   limitations?: string[];
@@ -125,6 +235,7 @@ export function buildProtocolDraft(input: {
     requestedVersion = VERSION_PROTOCOL_DRAFT;
   }
   const actions = normalizeActions(input.actions ?? [], requestedVersion);
+  const phases = normalizePhases(input.phases ?? [], actions, requestedVersion);
   const therapeuticLoad = normalizeLoad(input.therapeuticLoad);
   let review = input.review ?? null;
   if (review !== null) {
@@ -149,13 +260,17 @@ export function buildProtocolDraft(input: {
     followUpCriterion: nonEmpty(input.followUpCriterion, 'critère observable à J21'),
     adviceSheetRef: input.adviceSheetRef?.trim() || null,
     actions,
+    // Clé absente hors V4 : `canonicalJson` ignore les valeurs `undefined`, donc
+    // les empreintes des payloads V1 à V3 déjà persistés restent identiques.
+    ...(phases === undefined ? {} : { phases }),
     therapeuticLoad,
     review,
     limitations: uniqueSorted(input.limitations ?? []),
   };
   const { protocolDraftId: _protocolDraftId, ...hashInput } = withoutHash;
   const builtDraft = { ...withoutHash, inputHash: canonicalSha256(hashInput) } as ProtocolDraft;
-  if (builtDraft.version === VERSION_PROTOCOL_DRAFT_V3) {
+  if (builtDraft.version === VERSION_PROTOCOL_DRAFT_V3
+    || builtDraft.version === VERSION_PROTOCOL_DRAFT_V4) {
     assertProtocolDraftSupplementStructure(builtDraft);
   }
   return builtDraft;
@@ -197,7 +312,7 @@ export function assertSupplementCatalogRef(ref: SupplementCatalogRef): void {
 // à toute version, V3 comprise.
 export function assertProtocolDraftSupplementStructure(draft: ProtocolDraft): void {
   if (!Array.isArray(draft.actions)) {
-    if (draft.version === VERSION_PROTOCOL_DRAFT_V3) {
+    if (draft.version === VERSION_PROTOCOL_DRAFT_V3 || draft.version === VERSION_PROTOCOL_DRAFT_V4) {
       throw new TypeError('Actions protocole invalides.');
     }
     return;
@@ -208,7 +323,7 @@ export function assertProtocolDraftSupplementStructure(draft: ProtocolDraft): vo
       assertNoForbiddenSupplementFields(action);
     }
     if (action.supplementCatalogRef === undefined) return;
-    if (draft.version !== VERSION_PROTOCOL_DRAFT_V3) {
+    if (draft.version !== VERSION_PROTOCOL_DRAFT_V3 && draft.version !== VERSION_PROTOCOL_DRAFT_V4) {
       throw new TypeError('Une référence catalogue de compléments exige un payload protocole V3 explicite.');
     }
     if (action.type !== 'supplement_exploration') {
@@ -237,6 +352,7 @@ export function reviseProtocolDraft(input: {
     followUpCriterion: input.followUpCriterion ?? input.existing.followUpCriterion,
     adviceSheetRef: input.adviceSheetRef === undefined ? input.existing.adviceSheetRef : input.adviceSheetRef,
     actions: input.actions ?? input.existing.actions,
+    phases: input.existing.phases,
     therapeuticLoad: input.therapeuticLoad ?? input.existing.therapeuticLoad,
     limitations: input.existing.limitations,
     review: null,

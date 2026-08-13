@@ -35,6 +35,7 @@ export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
 export const VERSION_PROTOCOL_DRAFT_V2 = 'c1-protocol-draft-v2' as const;
 export const VERSION_PROTOCOL_DRAFT_V3 = 'c1-protocol-draft-v3' as const;
+export const VERSION_PROTOCOL_DRAFT_V4 = 'c1-protocol-draft-v4' as const;
 export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
@@ -336,7 +337,36 @@ export type ProtocolActionType =
   | 'hydration'
   | 'advice_sheet'
   | 'biological_exploration'
-  | 'supplement_exploration';
+  | 'supplement_exploration'
+  /** Recueil sans intervention : agenda du sommeil, journal alimentaire. */
+  | 'observation'
+  /** Orientation vers le médecin traitant — jamais une prescription. */
+  | 'medical_referral';
+
+/**
+ * Statut d'intervention d'une action de protocole (contrat V4, `D-056`).
+ *
+ * Il ne se déduit d'aucun autre champ : une action V4 le déclare, faute de quoi
+ * la construction échoue. Une action des contrats V1 à V3 n'en porte pas — son
+ * absence se lit « contrat antérieur au statut », jamais « active » implicite.
+ */
+export type ProtocolInterventionStatus =
+  | 'active'
+  | 'conditionnelle_biologie'
+  | 'differee'
+  | 'contre_indiquee'
+  | 'non_indiquee_actuellement';
+
+/**
+ * Attente explicite qui suspend une intervention. Seule la biologie est
+ * représentable en V1 du contrat ; `cible` nomme l'analyte attendu en clair et
+ * `echeance`, quand elle est posée, est une date ISO canonique.
+ */
+export type ProtocolWaitFor = {
+  type: 'biologie';
+  cible: string;
+  echeance?: string;
+};
 
 /**
  * Référence opaque et gouvernée vers une sélection du catalogue de compléments
@@ -365,8 +395,28 @@ export type ProtocolAction = {
   limitations: string[];
   /** Référence C5 uniquement dans un payload protocole V2. */
   foodCompassRef?: FoodCompassActionRef;
-  /** Référence catalogue C4 uniquement dans un payload protocole V3, sur une action `supplement_exploration` seule. */
+  /** Référence catalogue C4 uniquement dans un payload protocole V3 ou V4, sur une action `supplement_exploration` seule. */
   supplementCatalogRef?: SupplementCatalogRef;
+  /** Requis sur toute action d'un payload V4 ; interdit avant (`D-056`). */
+  interventionStatus?: ProtocolInterventionStatus;
+  /** Requis si et seulement si `interventionStatus` vaut `conditionnelle_biologie`. */
+  waitFor?: ProtocolWaitFor;
+};
+
+/**
+ * Phase de protocole (V1 des phases, contrat V4). Les actions ne sont pas
+ * recopiées : la phase cite les `actionId` du protocole, pour qu'une action
+ * n'existe jamais en deux exemplaires divergents. `reviewAt` est la date ISO
+ * canonique à laquelle la phase est censée être relue.
+ */
+export type ProtocolPhase = {
+  phaseId: string;
+  duree: string;
+  objectifs: string[];
+  actionIds: string[];
+  mesures: string[];
+  prerequis: string[];
+  reviewAt: string;
 };
 
 export type TherapeuticLoad = {
@@ -388,12 +438,18 @@ export type ProtocolDraft = {
   selectedPriorityId: string;
   createdAt: string;
   updatedAt: string;
-  version: typeof VERSION_PROTOCOL_DRAFT | typeof VERSION_PROTOCOL_DRAFT_V2 | typeof VERSION_PROTOCOL_DRAFT_V3;
+  version:
+    | typeof VERSION_PROTOCOL_DRAFT
+    | typeof VERSION_PROTOCOL_DRAFT_V2
+    | typeof VERSION_PROTOCOL_DRAFT_V3
+    | typeof VERSION_PROTOCOL_DRAFT_V4;
   status: 'draft' | 'practitioner_reviewed';
   purpose: string;
   followUpCriterion: string;
   adviceSheetRef: string | null;
   actions: ProtocolAction[];
+  /** Phases uniquement dans un payload V4 ; absentes ailleurs (`D-056`). */
+  phases?: ProtocolPhase[];
   therapeuticLoad: TherapeuticLoad;
   review: ProtocolReview | null;
   limitations: string[];

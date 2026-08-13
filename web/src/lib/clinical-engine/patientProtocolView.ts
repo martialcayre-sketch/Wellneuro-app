@@ -7,9 +7,14 @@ import type {
   ProtocolDraft,
 } from './types';
 
+// Liste distincte de celle du builder à dessein : ce qu'un patient a le droit
+// de voir n'est pas ce qu'un praticien a le droit de composer. Les deux
+// nouveaux types V4 y entrent — sans quoi tout protocole portant une action
+// `observation` échouerait à la diffusion (`D-056`).
 const ACTION_TYPES = [
   'food', 'chronobiology', 'calming_routine', 'gentle_activity',
   'hydration', 'advice_sheet', 'biological_exploration', 'supplement_exploration',
+  'observation', 'medical_referral',
 ] as const;
 
 function canonicalIso(value: string, field: string): string {

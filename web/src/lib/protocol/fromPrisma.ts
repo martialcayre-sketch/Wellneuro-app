@@ -3,6 +3,7 @@ import {
   VERSION_PROTOCOL_DRAFT,
   VERSION_PROTOCOL_DRAFT_V2,
   VERSION_PROTOCOL_DRAFT_V3,
+  VERSION_PROTOCOL_DRAFT_V4,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
 import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
@@ -43,6 +44,7 @@ export function reconstructProtocolDraft(
     draft.version !== VERSION_PROTOCOL_DRAFT
     && draft.version !== VERSION_PROTOCOL_DRAFT_V2
     && draft.version !== VERSION_PROTOCOL_DRAFT_V3
+    && draft.version !== VERSION_PROTOCOL_DRAFT_V4
   ) {
     throw new ProtocolPayloadIntegrityError('Version de payload protocole inconnue.');
   }
