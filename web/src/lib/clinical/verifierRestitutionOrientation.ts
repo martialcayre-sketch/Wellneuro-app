@@ -71,7 +71,12 @@ export type EcartRestitution =
    * toujours vide : la synthèse précède la carte de décision dans la chaîne,
    * donc aucun complément n'y est encore déterministe.
    */
-  | { type: 'complement'; identifiant: string };
+  | { type: 'complement'; identifiant: string }
+  /**
+   * Une discordance portée en tête, CONTREDITE par la prose (`D-057`,
+   * arbitrage 3). `identifiant` est le `regleId` du constat trahi.
+   */
+  | { type: 'discordance'; identifiant: string };
 
 // Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
 // chaîne : écrits littéralement dans un littéral d'expression régulière, ces
@@ -203,6 +208,50 @@ const MARQUEURS_PRESCRIPTION = [
  */
 const FENETRE_PRESCRIPTION = 60;
 
+/**
+ * Vocabulaire fermé des affirmations de CONCORDANCE, en forme normalisée.
+ *
+ * Ce que ce vocabulaire vise est étroit et il doit le rester : une phrase qui
+ * dit que deux instruments s'accordent. Un constat de discordance dit
+ * exactement le contraire des mêmes instruments — quand les deux voisinent, le
+ * praticien lit deux affirmations opposées dont une seule fait foi.
+ *
+ * « concord » attrape concordant/concordance/concordent ; « converg » attrape
+ * converge/convergent/convergence ; « coherent » et « coherence » couvrent la
+ * forme sans accent après normalisation. Aucun terme d'accord vague
+ * (« compatible », « va dans le sens ») : ils voisinent trop de prose clinique
+ * ordinaire, et un garde qui crie tout le temps ne se lit plus — la leçon de
+ * la revue adversariale du 2026-08-03, déjà payée deux fois.
+ */
+const MARQUEURS_CONCORDANCE = [
+  'concord',
+  'converg',
+  'coherent',
+  'coherence',
+  'confirme par',
+  'confirment',
+  'vont dans le meme sens',
+];
+
+/**
+ * Séparateurs de phrase, appliqués AVANT normalisation.
+ *
+ * Pourquoi une phrase et non une fenêtre de caractères, contrairement aux deux
+ * gardes précédents : une affirmation de concordance est locale à sa phrase.
+ * Une fenêtre, elle, franchit le point — et « Le discours du patient est
+ * cohérent. Le Q_STR_01 sera rediscuté » accusait alors un constat que la
+ * prose ne trahit pas. Ce cas n'est pas exotique : « cohérent » qualifie un
+ * discours, une plainte ou une trajectoire dans presque toutes les synthèses.
+ *
+ * Le motif d'extinction, lui, DOIT franchir la frontière de phrase (son motif
+ * est cité en entier, après la cible) : les deux gardes divergent ici parce
+ * que les deux objets mesurés diffèrent, pas par inattention.
+ *
+ * `normaliser` écrase toute la ponctuation en espaces — le découpage doit donc
+ * avoir lieu avant lui, jamais après.
+ */
+const SEPARATEUR_PHRASE = /[.!?;\n]+/;
+
 /** Positions de chaque occurrence de `cible` dans `texte` (déjà normalisés). */
 function positionsDe(texte: string, cible: string): number[] {
   const positions: number[] = [];
@@ -231,6 +280,14 @@ function positionsDeMot(texte: string, cible: string): number[] {
     const apres = apresIndex >= texte.length ? ' ' : texte[apresIndex];
     return avant === ' ' && apres === ' ';
   });
+}
+
+/** Les phrases de la synthèse, découpées puis normalisées — jamais l'inverse. */
+function phrasesNormalisees(synthese: TexteSynthese): string[] {
+  return morceaux(synthese)
+    .flatMap(partie => partie.split(SEPARATEUR_PHRASE))
+    .map(normaliser)
+    .filter(Boolean);
 }
 
 /** Une formulation prescriptive vit-elle dans la fenêtre autour de ce nom ? */
@@ -436,6 +493,55 @@ export function verifierRestitutionComplements(
     if (cite) {
       vus.add(cible);
       ecarts.push({ type: 'complement', identifiant: nom });
+    }
+  }
+  return ecarts;
+}
+
+/**
+ * Une discordance portée en tête est-elle CONTREDITE par la prose ?
+ * ([[D-057]], arbitrage 3.)
+ *
+ * `fusionnerVigilance` garantit la PRÉSENCE de la vigilance déterministe en
+ * tête et son insuppressibilité. Elle ne garantit pas la FIDÉLITÉ du reste :
+ * rien n'empêche le modèle d'écrire trois paragraphes plus bas que les mêmes
+ * instruments concordent. Le praticien lit alors deux affirmations opposées,
+ * dont une seule fait foi — et la plus lisible des deux n'est pas forcément
+ * celle-là.
+ *
+ * CE QUI SE MESURE : chaque discordance nomme les instruments qu'elle a
+ * confrontés. Si une affirmation de concordance voisine l'un d'eux dans la
+ * prose, le constat est trahi. Rien d'autre n'est mesuré — la contradiction
+ * sémantique générale est indécidable ; celle-ci ne l'est pas.
+ *
+ * FONCTION SÉPARÉE, comme le contrôle des compléments : les discordances ne
+ * dépendent d'aucun bloc d'orientation injecté, et le garde d'orientation ne
+ * tourne que sur bloc injecté.
+ *
+ * FAUX POSITIF ASSUMÉ, épinglé par banc et de la même famille que celui de la
+ * fenêtre d'extinction : deux instruments cités côte à côte partagent leur
+ * fenêtre, donc une concordance affirmée de l'un accuse aussi l'autre. Le
+ * choix reste celui du garde qui parle trop plutôt que du garde muet — mais
+ * seulement parce que la sortie est journalisée, jamais censurée.
+ */
+export function verifierRestitutionDiscordances(
+  synthese: TexteSynthese,
+  discordances: readonly { regleId: string; instruments: readonly string[] }[],
+): EcartRestitution[] {
+  const phrases = phrasesNormalisees(synthese).filter(phrase =>
+    MARQUEURS_CONCORDANCE.some(marqueur => phrase.includes(marqueur)));
+  if (phrases.length === 0) return [];
+  const ecarts: EcartRestitution[] = [];
+  const vus = new Set<string>();
+  for (const discordance of discordances) {
+    if (vus.has(discordance.regleId)) continue;
+    const trahie = discordance.instruments.some(instrument => {
+      const cible = normaliser(instrument);
+      return cible !== '' && phrases.some(phrase => positionsDeMot(phrase, cible).length > 0);
+    });
+    if (trahie) {
+      vus.add(discordance.regleId);
+      ecarts.push({ type: 'discordance', identifiant: discordance.regleId });
     }
   }
   return ecarts;

@@ -48,9 +48,15 @@ import {
 import {
   formaterEcarts,
   verifierRestitutionComplements,
+  verifierRestitutionDiscordances,
   verifierRestitutionOrientation,
 } from '@/lib/clinical/verifierRestitutionOrientation';
 import { chargerVocabulaireIngredients } from '@/lib/supplement-library/vocabulaire';
+import {
+  constatsContradictionsPourDossier,
+  discordancesPourGardeRestitution,
+  vigilancesDiscordancePourSynthese,
+} from '@/lib/clinical/contradictionsService';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -410,6 +416,11 @@ type GenererArgs = {
   emailPatient: string;
   userMessage: string;
   vigilanceDeterministe: string[];
+  /**
+   * Les discordances portées en tête, pour que le garde puisse vérifier que la
+   * prose ne les contredit pas ailleurs ([[D-057]], arbitrage 3).
+   */
+  discordancesInjectees: { regleId: string; instruments: string[] }[];
   reponsesInput: ReponseInput[];
   contexteClinique: string;
   /** Recommandation déterministe transmise au modèle, `null` si aucune. */
@@ -553,16 +564,23 @@ async function genererSynthesePersistee(
         complements,
       })
     : verifierRestitutionComplements(synthese, complements);
+  // Fidélité des discordances portées en tête — hors de la condition d'injection
+  // pour la même raison que les compléments : elle ne dépend d'aucun bloc
+  // d'orientation ([[D-057]], arbitrage 3).
+  ecartsRestitution.push(
+    ...verifierRestitutionDiscordances(synthese, args.discordancesInjectees),
+  );
   if (ecartsRestitution.length > 0) {
     logger.warn({
       event: EVENT_CODES.SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE,
       domain: 'SYNTHESE_IA',
-      // Trois classes sous un même code : une cible citée HORS transmission
+      // Quatre classes sous un même code : une cible citée HORS transmission
       // (pack/questionnaire), une cible transmise dont la PRÉSENTATION diverge
-      // (extinction), et un complément nommé en contexte prescriptif sans
-      // intention déterministe qui le porte. Le rendu de `formaterEcarts`
-      // porte la classe.
-      message: `Restitution d'orientation infidèle : cible hors transmission, présentation d'extinction divergente ou complément conseillé hors déterministe (${formaterEcarts(ecartsRestitution)})`,
+      // (extinction), un complément nommé en contexte prescriptif sans
+      // intention déterministe qui le porte, et une discordance portée en tête
+      // que la prose contredit ailleurs. Le rendu de `formaterEcarts` porte la
+      // classe.
+      message: `Restitution infidèle : cible hors transmission, présentation d'extinction divergente, complément conseillé hors déterministe ou discordance contredite (${formaterEcarts(ecartsRestitution)})`,
       context: finalizeLogContext(args.requestContext, { retryable: false }),
     });
   }
@@ -928,6 +946,9 @@ export async function POST(req: Request) {
     // avec les questionnaires seuls si aucune consultation renseignée.
     let contexteClinique = '';
     let vigilanceDeterministe: string[] = [];
+    // Conservée hors du `try` : les constats de discordance en ont besoin, et
+    // ils se calculent même sans anamnèse (voir le bloc suivant).
+    let anamnesePourConstats: unknown = null;
     try {
       const consultation = await prisma.consultation.findFirst({
         where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
@@ -936,6 +957,7 @@ export async function POST(req: Request) {
       if (consultation) {
         contexteClinique = buildContexteClinique(consultation.ficheSignaletique, consultation.anamnese);
         vigilanceDeterministe = extraireVigilanceDeterministe(consultation.anamnese);
+        anamnesePourConstats = consultation.anamnese;
       }
     } catch (ctxErr) {
       logger.warn({
@@ -944,6 +966,46 @@ export async function POST(req: Request) {
         message: 'Contexte clinique indisponible, fallback questionnaires seuls',
         context: finalizeLogContext(requestContext, { retryable: true }),
         error: ctxErr,
+      });
+    }
+
+    // Vigilances de DISCORDANCE ([[D-057]], LOT-09) — la seconde moitié de
+    // l'étape 5 du LOT-01, restée sans lot d'accueil depuis le 2026-08-12.
+    //
+    // HORS du `try` ci-dessus, à dessein : un contexte clinique indisponible ne
+    // doit pas emporter les constats avec lui. Une discordance se calcule
+    // depuis les PASSATIONS ; l'anamnèse n'est qu'une entrée complémentaire, et
+    // `null` est une valeur que le moteur accepte — c'est ce que lui passe déjà
+    // le cockpit quand aucune consultation ne porte d'anamnèse.
+    //
+    // `reponses` ET NON `reponsesAdministrables` : le cockpit
+    // (`contradictionsPourPatient`) lit toutes les passations du patient, sans
+    // filtre d'exploitabilité ni d'administrabilité. Lui passer ici le
+    // sous-ensemble filtré ferait rendre au MÊME dossier moins de constats en
+    // synthèse qu'au cockpit, sans que rien ne le signale — la divergence
+    // silencieuse que l'arbitrage 1 de [[D-057]] existe pour empêcher. Le
+    // moteur applique lui-même sa doctrine de mise à `null` sur une passation
+    // écartée : filtrer en amont la lui retirerait.
+    //
+    // Best-effort comme ses voisins, et le code d'événement est celui de la
+    // famille, jamais un code inventé.
+    let discordancesInjectees: { regleId: string; instruments: string[] }[] = [];
+    try {
+      const constats = constatsContradictionsPourDossier(reponses, anamnesePourConstats);
+      vigilanceDeterministe = [
+        ...vigilanceDeterministe,
+        ...vigilancesDiscordancePourSynthese(constats),
+      ];
+      // Les MÊMES constats alimentent la vigilance et le garde : les recalculer
+      // pour le second les ferait diverger du premier au moindre changement.
+      discordancesInjectees = discordancesPourGardeRestitution(constats);
+    } catch (discErr) {
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_POST_CONTEXT_UNAVAILABLE,
+        domain: 'SYNTHESE_IA',
+        message: 'Constats de discordance indisponibles, vigilances d\'anamnèse seules',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: discErr,
       });
     }
 
@@ -971,6 +1033,7 @@ export async function POST(req: Request) {
       emailPatient: patient.email,
       userMessage,
       vigilanceDeterministe,
+      discordancesInjectees,
       reponsesInput,
       contexteClinique,
       orientation,

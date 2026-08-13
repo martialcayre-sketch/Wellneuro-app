@@ -272,3 +272,68 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
     constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
   );
 }
+
+/**
+ * Les constats non résolus, en lignes de vigilance pour la synthèse praticien
+ * ([[D-057]], LOT-09 — seconde moitié de l'étape 5 du LOT-01).
+ *
+ * TROIS CHOSES QUE CETTE FONCTION NE FAIT PAS, et chacune est un arbitrage.
+ *
+ * Elle ne REFORMULE rien. `description` est déjà « la formulation NEUTRE de ce
+ * qui est constaté, sans causalité affirmée » et `actionSuggeree` « le geste
+ * proposé au praticien » : les deux sont repris mot pour mot. Le déterministe
+ * produit la phrase, le LLM la restitue, et ce convertisseur la transporte
+ * ([[D-003]], `DC-02`). Seul le préfixe est ajouté — un intitulé, pas du
+ * contenu clinique — sur le patron des vigilances d'anamnèse.
+ *
+ * Elle ne REDÉFINIT pas « ouvert ». Le critère est `statut !== 'resolue'`,
+ * exactement celui que le moteur d'arrêt applique déjà pour interdire une
+ * extinction ([[D-053]] §5, [[D-055]]) : l'escalade praticien est donc
+ * injectée, elle aussi. Deux définitions d'« ouvert » dans le même dépôt
+ * divergeraient en silence, et le même constat bloquerait l'extinction sans
+ * atteindre la synthèse — ou l'inverse.
+ *
+ * Elle ne HIÉRARCHISE pas. Aucun plancher d'`importance` : [[D-048]] refuse
+ * déjà que ce champ serve à décoter un constat, et aucune source ne fonde un
+ * seuil (`DC-19`, `DC-20`).
+ *
+ * LE VERROU RESTE ICI, comme chez ses deux voisines : système de contradictions
+ * éteint ⇒ liste vide. Un appelant qui recevrait des constats et déciderait
+ * lui-même de les taire finirait par les servir le jour où quelqu'un oublie la
+ * condition.
+ */
+export function vigilancesDiscordancePourSynthese(
+  constats: ContradictionFinding[],
+): string[] {
+  if (!contradictionsActives()) return [];
+  return constats
+    .filter(constat => constat.resolution.statut !== 'resolue')
+    .map(constat =>
+      `Discordance entre instruments constatée par le déterministe : `
+      + `${constat.description} ${constat.actionSuggeree}`);
+}
+
+/**
+ * Ce dont le garde de restitution a besoin d'une discordance, et rien de plus
+ * ([[D-057]], arbitrage 3) : la règle qui a mordu, et les instruments qu'elle a
+ * confrontés. Les sources de type `claim` n'entrent pas — un claim n'est pas
+ * cité par son identifiant dans la prose, et l'y chercher n'accuserait jamais
+ * rien.
+ *
+ * Même verrou que ses voisines : système éteint ⇒ rien à surveiller.
+ */
+export function discordancesPourGardeRestitution(
+  constats: ContradictionFinding[],
+): { regleId: string; instruments: string[] }[] {
+  if (!contradictionsActives()) return [];
+  return constats
+    .filter(constat => constat.resolution.statut !== 'resolue')
+    .map(constat => ({
+      regleId: constat.regleId,
+      instruments: constat.sources
+        .filter((source): source is Extract<typeof source, { type: 'instrument' }> =>
+          source.type === 'instrument')
+        .map(source => source.idQuestionnaire),
+    }))
+    .filter(discordance => discordance.instruments.length > 0);
+}

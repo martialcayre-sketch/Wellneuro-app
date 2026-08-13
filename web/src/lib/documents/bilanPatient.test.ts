@@ -161,3 +161,43 @@ describe('whereEnvoiVisible', () => {
     expect(où.synthese.is.idPatient).toBe('PAT_AUTRE');
   });
 });
+
+describe('projeterBilanPatient — étanchéité praticien → patient (D-057)', () => {
+  // Cette propriété était vraie par construction ; elle devient une exigence
+  // avec le LOT-09. Jusqu'ici `points_de_vigilance` ne portait que des signaux
+  // d'anamnèse du patient lui-même — désormais il porte aussi des DISCORDANCES
+  // ENTRE INSTRUMENTS, dont le type déclare `audience: 'praticien_seul'`. Une
+  // régression sur la liste blanche de la projection ne serait plus une fuite
+  // de prose interne : elle servirait au patient un constat qui ne lui est pas
+  // destiné.
+  const avecDiscordances = (): SyntheseSchema => ({
+    ...synthese(),
+    points_de_vigilance: [
+      'Discordance entre instruments constatée par le déterministe : '
+      + 'Signal fonctionnel non confirmé par les instruments spécifiques. Clarifier en entretien.',
+      'Signal d’alerte signalé par le patient : idées noires — avis médical à évaluer en priorité.',
+    ],
+  });
+
+  const projeter = () => projeterBilanPatient({
+    syntheseJson: avecDiscordances(),
+    notesPraticien: null,
+    modele: MODELE_REDACTION_PRATICIEN,
+    transmisLe: TRANSMIS_LE,
+  });
+
+  it('ne rend aucun point de vigilance, quel qu’en soit le nombre', () => {
+    expect(JSON.stringify(projeter())).not.toContain('Discordance entre instruments');
+  });
+
+  it('ne rend aucun des trois champs réservés au praticien', () => {
+    const rendu = JSON.stringify(projeter());
+    expect(rendu).not.toContain('Résumé réservé au praticien');
+    expect(rendu).not.toContain('Depuis quand ?');
+    expect(rendu).not.toContain('idées noires');
+  });
+
+  it('rend bien le narratif patient — l’étanchéité ne vide pas le bilan', () => {
+    expect(projeter().narratif).toBe('Vos réponses évoquent un sommeil fragmenté.');
+  });
+});

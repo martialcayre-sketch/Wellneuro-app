@@ -444,3 +444,74 @@ describe('contradictionsPourPatient — le verrou passe AVANT la lecture', () =>
     expect(derniere?.scores).toBeNull();
   });
 });
+
+describe('vigilancesDiscordancePourSynthese — ce qui atteint la synthèse praticien', () => {
+  // Quatrième point gardé par ce banc depuis le LOT-09 ([[D-057]]) : ce qu'un
+  // constat devient quand il quitte le cockpit pour la synthèse. Le verrou et
+  // la conversion restent fail-closed, comme au-dessus.
+
+  it('rend une vigilance portant description ET action, mot pour mot', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const lignes = vigilancesDiscordancePourSynthese([constat()]);
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0]).toContain('Signal fonctionnel non confirmé par les instruments spécifiques.');
+    expect(lignes[0]).toContain('Clarifier en entretien.');
+  });
+
+  it('ne reformule pas — la phrase du déterministe traverse intacte', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const description = 'Phrase déterministe très particulière, à ne pas retoucher.';
+    const actionSuggeree = 'Geste précis proposé au praticien.';
+    const [ligne] = vigilancesDiscordancePourSynthese([constat({ description, actionSuggeree })]);
+    expect(ligne).toContain(description);
+    expect(ligne).toContain(actionSuggeree);
+  });
+
+  it('écarte un constat RÉSOLU', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    expect(vigilancesDiscordancePourSynthese([
+      constat({ resolution: { statut: 'resolue', motif: 'Clarifié en entretien.' } }),
+    ])).toEqual([]);
+  });
+
+  it('CONSERVE un constat escaladé — l’escalade n’est pas une résolution', async () => {
+    // Même critère d'« ouvert » que le moteur d'arrêt ([[D-053]] §5) : deux
+    // définitions dans le même dépôt divergeraient en silence.
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    expect(vigilancesDiscordancePourSynthese([
+      constat({ resolution: { statut: 'escaladee_praticien', motif: 'Avis demandé.' } }),
+    ])).toHaveLength(1);
+  });
+
+  it('ne hiérarchise pas : une importance basse passe comme les autres', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    expect(vigilancesDiscordancePourSynthese([
+      constat({ importance: 'useful_not_urgent' }),
+    ])).toHaveLength(1);
+  });
+
+  it('verrou fermé (table non signée) ⇒ rien, même sur un constat ouvert', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service({
+      validationExterne: false, dateValidation: null, claimsSource: [],
+    });
+    expect(vigilancesDiscordancePourSynthese([constat()])).toEqual([]);
+  });
+
+  it('drapeau éteint ⇒ rien, table signée ou non', async () => {
+    delete process.env.WN_ENABLE_CONTRADICTIONS_NNPP2;
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    expect(vigilancesDiscordancePourSynthese([constat()])).toEqual([]);
+  });
+
+  it('aucun constat ⇒ aucune vigilance, sans ligne vide', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    expect(vigilancesDiscordancePourSynthese([])).toEqual([]);
+  });
+});
