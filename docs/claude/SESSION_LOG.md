@@ -3702,3 +3702,29 @@ allumé, une seconde fois.
 proxy sans WebKit ici).
 
 **Ouvert.** Signature (étape 6, acte praticien) ; dettes reconduites en D-055.
+
+## 2026-08-13 — LOT-05 : protocole structuré et compléments avant biologie
+
+Lecture production avant d'écrire : la couche décision du catalogue C4 est
+entièrement vide (6 tables à zéro) alors que la matière est peuplée (3 444
+ingrédients, 140 148 produits). La condition « règle C4 validée » est donc
+insatisfiable, et les conditions négatives de la spec seraient vraies par
+vacuité — quatrième exemplaire du motif D-052 / D-053 / #482.
+
+Arbitrage utilisateur : fail-closed, livrer quand même. Écartés — réduire le
+périmètre (la règle serait repoussée sans que le danger soit nommé) et peupler
+le catalogue d'abord (contenu clinique sourcé, lot distinct). D-056 rendue,
+six arbitrages.
+
+Livré : contrat V4 (phases, statut d'intervention, waitFor) sans migration et
+à empreintes V1/V3 prouvées inchangées ; règle de décision pure fail-closed
+(alertes gardées au niveau catalogue, seuils au niveau ingrédient) ; garde LLM
+sur les compléments nommés en contexte prescriptif ; rendu patient conditionnel.
+T1 vert, 4 708 tests Vitest verts.
+
+Prochaine action : revue wn-reviewer, PR brouillon, CI. Le segment E2E n'est
+pas jouable dans ce conteneur (CDN Playwright bloqué) — il reste à jouer.
+
+Questions ouvertes : quand peupler le catalogue de décision C4 (seul déblocage
+réel) ; DC-39 laissé ouvert faute de sources ; vigilances de discordance en PR
+séparée.
