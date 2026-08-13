@@ -127,7 +127,7 @@ confirmé » et « discordance stress » sont en CI.
 | LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | à_faire | LOT-05 |
 | LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | à_faire | LOT-05 |
 | LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | terminé | LOT-03 |
-| LOT-09 | Vigilances de discordance injectées dans la synthèse — moitié non livrée de l'étape 5 du LOT-01, sans lot d'accueil depuis le 2026-08-12 | en_cours (ouvert le 2026-08-13) | LOT-01 |
+| LOT-09 | Vigilances de discordance injectées dans la synthèse — moitié non livrée de l'étape 5 du LOT-01, sans lot d'accueil depuis le 2026-08-12 | terminé (2026-08-13, table de contradictions non signée : rien n'est servi) | LOT-01 |
 
 ## Backlog ultérieur (hors campagne, nommé pour ne pas se perdre)
 

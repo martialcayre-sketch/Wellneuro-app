@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "Vigilances de discordance — ce que le moteur constate atteint la synthèse praticien"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 

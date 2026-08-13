@@ -3728,3 +3728,27 @@ pas jouable dans ce conteneur (CDN Playwright bloqué) — il reste à jouer.
 Questions ouvertes : quand peupler le catalogue de décision C4 (seul déblocage
 réel) ; DC-39 laissé ouvert faute de sources ; vigilances de discordance en PR
 séparée.
+
+## 2026-08-13 — LOT-09 : vigilances de discordance injectées dans la synthèse
+
+Ouvert pour donner un accueil à la moitié non livrée de l'étape 5 du LOT-01,
+orpheline depuis le 2026-08-12. D-057, quatre arbitrages. Travail de routage :
+la formulation neutre existait déjà, rien de clinique n'a été rédigé.
+
+Piège trouvé avant la revue : le cockpit lit toutes les passations, la route de
+synthèse un sous-ensemble filtré. Passer ce dernier aurait appauvri la synthèse
+sans rien casser. Banc structurel vérifié par mutation.
+
+Revue wn-reviewer : NO-GO, à raison. Trois défauts introduits en affirmant le
+contraire dans la doc — critère d'« ouvert » paraphrasé au lieu d'être partagé
+(convergences non exclues), garde accusant la prose fidèle (« incohérent »
+contient « cohérent »), banc dont le titre disait l'inverse de son assertion. Un
+quatrième trouvé par elle : une discordance sortait vers le courrier médecin.
+Tous refermés, prédicat extrait et partagé avec le moteur d'arrêt.
+
+Écarté : élargir l'audience au médecin (choix utilisateur : exclure).
+
+T1 vert, 4 758 tests verts. E2E non jouables ici (CDN Playwright bloqué).
+
+Prochaine action : PR, CI, merge. Ouvert : injecter la discordance dans la
+consigne — le garde n'est qu'un filet tant que le modèle ne la reçoit pas.
