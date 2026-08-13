@@ -6,7 +6,7 @@ créée_le: "2026-08-10"
 mise_à_jour: "2026-08-13"
 lot_courant: "LOT-09"
 branche_campagne: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
-branche_lot_courant: "claude/lot-05-campagne-t0"
+branche_lot_courant: "claude/lot-09-campagne-t0"
 cible_pr_lot: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
 cible_pr_campagne: "main"
 ---
