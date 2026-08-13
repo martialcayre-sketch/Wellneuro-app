@@ -5,6 +5,7 @@
 // le candidat expose les doses en présence, le praticien arbitre.
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from './featureFlag';
+import { collecterOccurrences, sentinelleADeQuoiConclure } from './sentinelleCore';
 import {
   C4B_SENTINELLE_VERSION,
   parseGradePreuveScientifique,
@@ -14,6 +15,10 @@ import {
   type ResolutionIntentions,
   type SeuilFonctionnelSource,
 } from './types';
+
+// Réexport : `sentinelleADeQuoiConclure` vit dans le noyau pur, mais reste
+// importable depuis ce module — les appelants existants ne changent pas.
+export { sentinelleADeQuoiConclure };
 
 function comparerTexte(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -26,57 +31,6 @@ function formatPlageDose(basse: number | null, haute: number | null): string {
   }
   if (basse !== null) return `dose cible à partir de ${basse}`;
   return `dose cible jusqu'à ${haute}`;
-}
-
-type OccurrencesIngredient = {
-  ingredient: IngredientResolu;
-  occurrences: DoseEnPresence[];
-};
-
-// Rassemble, dans l'ordre neutre de la résolution, chaque atteinte d'un
-// ingrédient par une règle de la sélection. Aucune agrégation de doses.
-// La sentinelle ne s'évalue que sur des règles validées : une résolution de
-// prévisualisation (`inclureNonValidees`, réservée à l'atelier de règles) ne
-// produit jamais de flag depuis une règle non validée (motif barrière D-003).
-function collecterOccurrences(resolution: ResolutionIntentions): Map<string, OccurrencesIngredient> {
-  const parIngredient = new Map<string, OccurrencesIngredient>();
-  for (const { intention, regles } of resolution.intentions) {
-    for (const regle of regles) {
-      if (!regle.regleValidee) continue;
-      const entree = parIngredient.get(regle.ingredient.id)
-        ?? { ingredient: regle.ingredient, occurrences: [] };
-      entree.occurrences.push({
-        intentionCode: intention.code,
-        intentionLabelFr: intention.labelFr,
-        regleId: regle.regleId,
-        versionRegle: regle.versionRegle,
-        doseCibleBasse: regle.doseCibleBasse,
-        doseCibleHaute: regle.doseCibleHaute,
-      });
-      parIngredient.set(regle.ingredient.id, entree);
-    }
-  }
-  return parIngredient;
-}
-
-/**
- * La sentinelle a-t-elle de quoi conclure quoi que ce soit sur cette
- * résolution ?
- *
- * FAUX quand aucune règle VALIDÉE n'atteint le moindre ingrédient — ce qui est
- * le cas de toute résolution tant que `clinical_rules` est vide, alors même que
- * l'intention, elle, se résout : `clinical_intent_tags` et `clinical_rules`
- * sont deux tables distinctes, et la première est peuplée.
- *
- * Sans cette distinction, `evaluerSentinelle` rend `[]` — et `[]` se lit
- * « aucun conflit » là où il faut lire « rien n'a été examiné ». C'est le
- * troisième visage du même défaut : `[]` ≠ `null`, déjà corrigé sur la
- * composition vide (#482) puis sur la composition partiellement résolue (#489).
- * Ici la composition peut être INTÈGRE et le feu vert rester infondé, parce
- * qu'il ne dépend pas d'elle mais du référentiel clinique.
- */
-export function sentinelleADeQuoiConclure(resolution: ResolutionIntentions): boolean {
-  return collecterOccurrences(resolution).size > 0;
 }
 
 function decrireDoses(occurrences: readonly DoseEnPresence[]): string {
