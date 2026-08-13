@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma, writes } = vi.hoisted(() => {
   const writes = {
@@ -29,9 +29,13 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
   CONSULTATION_VALIDEE_FIXTURE,
+  DATE_RIDEAU_FIXTURE,
+  PLAINTES_DIGESTIF_ET_PONDERAL,
   SYNTHESE_VALIDEE_FIXTURE,
   passationsRideauT0,
+  reponsesRuntimeRideauT0,
 } from '@/lib/clinical-engine/dossierT0Fixture';
+import { PRIORITY_RULES_METADATA } from '@/lib/clinical/priorityRulesV1';
 import { GET, POST } from './route';
 
 const patient = { idPatient: 'PAT_TEST', createdAt: new Date('2026-01-01T00:00:00.000Z') };
@@ -155,6 +159,9 @@ describe('/api/praticien/cockpit', () => {
     expect(payload.snapshot.patientContext).toMatchObject({ mainReason: 'Fatigue', priorityGoal: 'Énergie' });
     expect(payload.snapshot.versions.snapshotSchema).toBe('c1-clinical-snapshot-v1');
     expect(payload.snapshot.versions.questionnaireScoring[0].version).toBeNull();
+    // TABLE DES PRIORITÉS NON SIGNÉE : c'est l'état livré du dépôt, et ce cas
+    // décrit donc ce que la production sert. Le comportement rebranché par le
+    // LOT-04 est éprouvé plus bas, verrou simulé ouvert.
     expect(payload.review.abstention.status).toBe('not_evaluated');
     expect(payload.decisionCard).toMatchObject({
       priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: null,
@@ -163,6 +170,9 @@ describe('/api/praticien/cockpit', () => {
     expect(payload.decisionCard.limitations).toContain(
       'Aucune priorité ne peut être proposée avant une évaluation explicite de l’abstention et la revue des bloqueurs.'
     );
+    // Le canal de plainte n'est pas dans cet épisode (une seule passation
+    // `Q_SOM_06`) : `null`, jamais une plainte inventée à partir de rien.
+    expect(payload.plainteDominante).toBeNull();
   });
 
   it('accepte une correction explicite hors fenêtre et refuse un identifiant inconnu', async () => {
@@ -438,5 +448,124 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     }));
 
     expect((await response.json()).contradictions).toEqual([]);
+  });
+});
+
+// LE CRITÈRE CENTRAL DU LOT-04 ([[D-054]]) : « plus aucun `not_evaluated` après
+// confirmation T0 » — QUAND la table des priorités est signée.
+//
+// LES DEUX POSITIONS DU VERROU SONT ÉPROUVÉES, et c'est le point : le describe
+// précédent décrit la production d'aujourd'hui (table non signée, décision
+// suspendue), celui-ci décrit ce que la signature praticien déclenchera. Un banc
+// qui n'éprouverait que la position ouverte laisserait le merge sans garde ; un
+// banc qui n'éprouverait que la fermée laisserait le lot sans preuve.
+describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () => {
+  const runtimeGolden = reponsesRuntimeRideauT0(DATE_RIDEAU_FIXTURE, PLAINTES_DIGESTIF_ET_PONDERAL);
+  const dossierGolden = passationsRideauT0(DATE_RIDEAU_FIXTURE, PLAINTES_DIGESTIF_ET_PONDERAL);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    brancherPassations(runtimeGolden, dossierGolden);
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: {
+        motif_principal: 'Ballonnements et prise de poids depuis un an.',
+        objectif_prioritaire: 'Retrouver un confort digestif',
+      },
+    });
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    PRIORITY_RULES_METADATA.validationExterne = true;
+    PRIORITY_RULES_METADATA.dateValidation = '2026-08-12T00:00:00.000Z';
+  });
+
+  afterEach(() => {
+    PRIORITY_RULES_METADATA.validationExterne = false;
+    PRIORITY_RULES_METADATA.dateValidation = null;
+  });
+
+  async function confirmer(overrides: unknown[] = []) {
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+      overrides,
+    }));
+    return { statut: response.status, payload: await response.json() };
+  }
+
+  it('l’abstention est évaluée, et deux priorités justifiées sont proposées', async () => {
+    const { statut, payload } = await confirmer();
+    expect(statut).toBe(200);
+    expect(payload.review.abstention.status).toBe('not_required');
+    expect(payload.decisionCard.abstention.status).not.toBe('not_evaluated');
+    expect(payload.decisionCard.priorityCandidates.map((c: { ruleId: string }) => c.ruleId))
+      .toEqual(['PRIO-PON-01', 'PRIO-DIG-01']);
+    // La sélection reste un geste praticien : la route en PROPOSE une, elle n'en
+    // sélectionne aucune.
+    expect(payload.decisionCard.proposedMainPriorityId).toBe('priority:PRIO-PON-01');
+    expect(payload.decisionCard.selectedMainPriority).toBeNull();
+  });
+
+  it('la plainte dominante et l’objectif prioritaire traversent la route', async () => {
+    const { payload } = await confirmer();
+    expect(payload.plainteDominante).toEqual({
+      domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée',
+    });
+    // L'objectif prioritaire voyage dans le snapshot, où il est haché : l'écran
+    // le lit là, jamais dans un champ recalculé côté navigateur.
+    expect(payload.snapshot.patientContext.priorityGoal).toBe('Retrouver un confort digestif');
+  });
+
+  // ÉCART DU LOT, ÉPROUVÉ PLUTÔT QU'AFFIRMÉ ([[D-054]], arbitrage 4). Le critère
+  // « stress au mieux mineur si C-STR ouvert » est tenu PAR CONSTRUCTION : la V1
+  // ne porte aucune règle d'axe stress et aucun pont ne relie les règles d'arrêt
+  // aux priorités. Une contradiction ouverte ne fait donc apparaître aucune
+  // priorité de stress — ni en tête, ni ailleurs.
+  it('une contradiction de stress ouverte ne produit aucune priorité de stress', async () => {
+    const service = await import('@/lib/clinical/contradictionsService');
+    const espion = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([{
+      id: 'C-STR',
+      description: 'Une contradiction que le praticien doit voir.',
+      actionSuggeree: 'Clarifier en entretien.',
+      hypotheses: [], limitations: [],
+      passations: [{ idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' }],
+      ecartJours: null,
+      claims: [{ claimId: 'WN-CL-0238-002', versionClaim: 'v1.0' }],
+      importance: 'useful_not_urgent' as const,
+      resolution: { statut: 'ouverte' as const },
+      regleId: 'C-STR',
+    }]);
+
+    // Une contradiction ouverte est une condition SOUPLE : elle exige un motif,
+    // elle n'interdit pas la confirmation.
+    const { statut, payload } = await confirmer([
+      { conditionId: 'contradictions_ouvertes', motif: 'Vue en entretien.' },
+    ]);
+    expect(statut).toBe(200);
+    expect(espion).toHaveBeenCalledWith('PAT_TEST');
+    expect(payload.contradictions).toHaveLength(1);
+    for (const candidat of payload.decisionCard.priorityCandidates) {
+      expect(candidat.ruleId).not.toMatch(/STR/);
+      expect(String(candidat.label).toLowerCase()).not.toContain('stress');
+    }
+    espion.mockRestore();
+  });
+
+  // Un dossier dont le canal de plainte est retiré de l'épisode : la table ne
+  // peut RIEN évaluer, et l'absence ne devient pas une normalité (`DC-24`).
+  it('canal de plainte hors épisode ⇒ abstention requise, décision toujours bloquée', async () => {
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds.filter(id => id !== 'REP_Q_MOD_03'),
+      proposalHash: proposed.proposalHash,
+    }));
+    const payload = await response.json();
+    expect(response.status).toBe(200);
+    expect(payload.review.abstention.status).toBe('required');
+    expect(payload.decisionCard.priorityCandidates).toEqual([]);
+    expect(payload.plainteDominante).toBeNull();
   });
 });

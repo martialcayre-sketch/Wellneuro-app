@@ -3660,3 +3660,24 @@ de livraison : `git show --stat` avant de conclure.
 
 **Ouvert.** `D-054` doit trancher si `total` change quand le recueil est
 incomplet — cette valeur alimente une bande déjà servie en production.
+
+## 2026-08-12 — LOT-04 livré : chaîne C1 rebranchée (candidats déterministes)
+
+**Décisions.** `D-054` (10 arbitrages) : canal plainte = `Q_MOD_03` ; table
+`priorityRulesV1` livrée **non signée** (verrou `tablePrioritesSignee()`,
+production inchangée au merge) ; recalcul serveur anti-forge en deux temps
+(carte recoupée contre sa propre empreinte, puis reconstruction depuis la base,
+409 `chaine_c1_divergente` sur les deux routes) ; abstention `required` ⇒ zéro
+candidat (`DC-25`) ; pas de pont depuis les stop rules.
+
+**Écarté.** Claims de causalité (`DC-27`) ; déclencheurs d'anamnèse sans bande
+publiée ; `Q_PLAINTES` (affichage legacy sans score).
+
+**Revue.** wn-reviewer NO-GO puis bloquant B1 refermé (l'anti-forge comparait
+des empreintes déclarées par le client) — bancs vus rougir sous mutation.
+
+**Prochaine action.** CI de la PR feat(lot-04) ; dettes M1/M4 nommées en D-054.
+
+**Ouvert.** Signer la table ne suffira pas (procédure d'abstention hors
+périmètre signé) ; la décision attendue du LOT-08 devient D-055 (D-054 prise
+par ce lot).

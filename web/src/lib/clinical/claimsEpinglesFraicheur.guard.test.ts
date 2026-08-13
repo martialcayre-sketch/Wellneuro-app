@@ -77,6 +77,7 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   'orientationRulesV1.ts': 'orientation',
   'contradictionsV1.ts': 'contradictions',
   'stopRulesV1.ts': 'arret',
+  'priorityRulesV1.ts': 'priorites',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -106,6 +107,22 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // la SIGNATURE praticien, qui assume la hiérarchisation « rassurant ⇒ ne pas
   // explorer davantage ».
   arret: false,
+  // UNE PRIORITÉ CANDIDATE NE PRESCRIT PAS — elle PROPOSE ([[D-054]]).
+  //
+  // L'arbitrage se distingue de celui des règles d'arrêt, et il faut le dire :
+  // une extinction agit sur ce que le praticien NE VERRA PAS, une priorité sur
+  // l'ORDRE dans lequel il regarde ce qu'il voit déjà. La seconde est donc moins
+  // exigeante que la première, qui l'était déjà moins que l'orientation.
+  //
+  // Les onze claims épinglés sont descriptifs (`prescriptif = false` en
+  // production, relu le 2026-08-12) : ils décrivent des mécanismes — fonctions
+  // intestinales, dysfonction de barrière intestinale, insulino-résistance et
+  // ses facteurs — et ne recommandent aucune conduite. Exiger `prescriptif` de
+  // toute la table rejetterait des claims qui ne prescrivent rien et n'ont
+  // aucune raison de le faire ; ce serait exiger d'une source qu'elle dise plus
+  // que ce qu'elle dit (`DC-14`). La hiérarchisation « cet axe d'abord » ne vient
+  // pas des claims : elle vient de la SIGNATURE praticien.
+  priorites: false,
 };
 
 interface TableSignee {

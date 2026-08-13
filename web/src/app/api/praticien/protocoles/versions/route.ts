@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import type {
   ConfirmedAssessmentEpisode,
   DecisionCard,
@@ -144,6 +145,21 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },
         { status: 422 },
+      );
+    }
+
+    // INTÉGRITÉ DE LA CHAÎNE C1 ([[D-054]], arbitrage 5), APRÈS les
+    // préconditions et AVANT la lecture du fil : une carte qui ne correspond pas
+    // au dossier n'a pas à faire lire l'historique du patient.
+    //
+    // 409 et non 422 : sur cette route, 409 porte déjà `version_stale` et
+    // `protocol_stale`, et c'est la seule discrimination que le client applique —
+    // il recharge. Une carte périmée est exactement ce cas-là.
+    const refusChaine = await refusChaineC1(episode, decisionCard);
+    if (refusChaine) {
+      return NextResponse.json(
+        { ok: false, reason: RAISON_DIVERGENCE, error: refusChaine },
+        { status: 409 },
       );
     }
 

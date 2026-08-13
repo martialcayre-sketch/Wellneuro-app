@@ -9,6 +9,7 @@ import type {
 } from '@/lib/clinical-engine/types';
 import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
 import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import {
   deriveProtocolDraftId,
   resolveCycleId,
@@ -145,6 +146,22 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       return NextResponse.json(
         { ok: false, reason: 'preconditions_non_remplies', error: refusPreconditions },
         { status: 422 },
+      );
+    }
+
+    // INTÉGRITÉ DE LA CHAÎNE C1 ([[D-054]], arbitrage 5) — LES DEUX POINTS DE
+    // PERSISTANCE, jamais un seul : un fail-closed écrit dans une seule des deux
+    // routes est un fail-closed qu'on peut oublier de corriger dans l'autre.
+    // Cette route-ci reçoit en plus un `draft` déjà construit côté client, ce qui
+    // rend le contrôle d'autant plus nécessaire — la cohérence draft ↔ carte
+    // vérifiée plus haut ne dit rien de la cohérence carte ↔ dossier.
+    //
+    // 409 : la sémantique est celle de la route sœur, où le client recharge.
+    const refusChaine = await refusChaineC1(episode, decisionCard);
+    if (refusChaine) {
+      return NextResponse.json(
+        { ok: false, reason: RAISON_DIVERGENCE, error: refusChaine },
+        { status: 409 },
       );
     }
 

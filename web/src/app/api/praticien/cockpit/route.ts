@@ -7,9 +7,7 @@ import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lectureAsOf';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
-import { buildClinicalReview } from '@/lib/clinical-engine/clinicalReview';
-import { buildClinicalSnapshot } from '@/lib/clinical-engine/clinicalSnapshot';
-import { buildDecisionCard } from '@/lib/clinical-engine/decisionCard';
+import { construireChaineC1, type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import {
   adaptRuntimeInputs,
   isRuntimeMilestone,
@@ -80,6 +78,18 @@ export type CockpitRuntimeApiResponse =
        * dans le service, jamais ici ni chez le client.
        */
       contradictions: ContradictionAffichee[];
+      /**
+       * Le domaine de plainte que le patient déclare le plus intensément
+       * ([[D-054]]), ou `null` si le canal de plainte n'est pas mesurable sur
+       * l'épisode confirmé.
+       *
+       * PAS DERRIÈRE LE VERROU DE SIGNATURE, contrairement aux candidats : ce
+       * n'est pas une sortie de règle, mais la restitution d'une bande déjà
+       * publiée par un instrument certifié. Elle voyage à côté de la carte de
+       * décision plutôt qu'à l'intérieur : la carte est hachée et persistée, et
+       * y ajouter un champ d'affichage déplacerait toutes les empreintes.
+       */
+      plainteDominante: PlainteDominante | null;
     }
   | {
       status: 'unavailable';
@@ -291,24 +301,25 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       preconditionOverrides,
     );
     const idSuffix = `${payload.milestone}-${proposalHash.slice(0, 16)}`;
-    const snapshot = buildClinicalSnapshot({
+    // UN SEUL CHEMIN DE CONSTRUCTION, partagé avec le recalcul des deux points
+    // de persistance ([[D-054]], arbitrage 6) : deux constructions divergentes
+    // rendraient 409 sur une carte que ce POST vient d'émettre.
+    //
+    // UN SEUL HORODATAGE (`now`) pour l'épisode, le snapshot, la revue et la
+    // carte : `createdAt` et `asOf` entrent dans les empreintes, et le
+    // vérificateur les réutilise tels qu'ils ont été soumis.
+    const { snapshot, review, decisionCard, plainteDominante } = construireChaineC1({
       snapshotId: `runtime-snapshot-${idSuffix}`,
+      reviewId: `runtime-review-${idSuffix}`,
+      decisionCardId: `runtime-decision-${idSuffix}`,
       patientId: idPatient,
-      asOf: now,
-      assessmentEpisode: episode,
+      horodatage: now,
+      episode,
       patientContext: inputs.patientContext,
       responses: inputs.responses,
-    });
-    const review = buildClinicalReview({
-      reviewId: `runtime-review-${idSuffix}`,
-      createdAt: now,
-      snapshot,
-    });
-    const decisionCard = buildDecisionCard({
-      decisionCardId: `runtime-decision-${idSuffix}`,
-      createdAt: now,
-      snapshot,
-      review,
+      // Une confirmation d'épisode ne sélectionne RIEN : la sélection d'une
+      // priorité est un geste praticien distinct, hors périmètre du LOT-04.
+      selectionPraticien: null,
     });
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
     // praticien a été vérifiée — un patient d'un autre praticien est sorti en
@@ -330,7 +341,9 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // moteur au périmètre de l'épisode est un arbitrage clinique qui n'a pas
     // été rendu ([[D-050]]).
     const contradictions = await contradictionsPourPatient(idPatient);
-    return NextResponse.json({ status: 'ready', snapshot, review, decisionCard, contradictions });
+    return NextResponse.json({
+      status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,
+    });
   } catch (error) {
     if (error instanceof TypeError) {
       return unavailable('invalid_payload', error.message, 400);
