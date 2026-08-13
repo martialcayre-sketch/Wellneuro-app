@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import type { OrientationDeclencheur, OrientationRule, OrientationZone } from './orientationRulesV1';
+import type { ContradictionFinding } from './contradictionFinding';
 import type { StopRule } from './stopRulesV1';
 
 // Moteur d'orientation déterministe (campagne certification corpus, lot 7,
@@ -161,6 +162,25 @@ export type EntreeOrientation = {
    * jamais jusqu'ici, et le moteur n'a pas à connaître le verrou.
    */
   reglesArret?: StopRule[];
+  /**
+   * Constats du moteur de contradictions ([[D-053]] §5, [[D-055]] arbitrage 4).
+   *
+   * UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION ; ELLE NE LA DÉCLENCHE
+   * JAMAIS. « Ouverte » = `resolution.statut !== 'resolue'` — une escalade
+   * praticien est une discordance que personne n'a tranchée, pas une
+   * discordance résolue. Le périmètre est le DOSSIER entier, pas l'axe : aucun
+   * vocabulaire d'axe n'existe sur ces tables, et bloquer plus large ne peut
+   * que raréfier l'extinction — le sens du fail-closed.
+   *
+   * Ces constats ne sont lus QUE dans la section extinction, pour interdire.
+   * Rien d'autre ne les consulte : une contradiction ne peut ni éteindre, ni
+   * recommander, ni déplacer une ligne (`DC-30`) — un banc compare les sorties
+   * avec et sans. Absent ou vide = comportement inchangé. C'est le service qui
+   * décide de les fournir, selon que le système de contradictions est actif
+   * (drapeau + table signée) : un système éteint ne produit aucun constat,
+   * donc rien d'« ouvert ».
+   */
+  contradictions?: readonly ContradictionFinding[];
   /**
    * `dejaRepondu` devient EXCLUANT ([[D-053]], arbitrage 7) — commandé par le
    * même verrou que les règles d'arrêt, pour que la production ne change pas
@@ -351,6 +371,38 @@ function comptesDuRecueil(porteur: unknown): { manquants: number; total: number 
 function recueilIncomplet(porteur: unknown): boolean {
   const comptes = comptesDuRecueil(porteur);
   return comptes !== null && comptes.manquants > 0;
+}
+
+/**
+ * Comptes de recueil AU GRAIN DU DÉCLENCHEUR — l'axe visé quand il y en a un,
+ * la racine sinon.
+ *
+ * POURQUOI CE GRAIN, ET PAS LA RACINE SEULE — trouvé en écrivant le banc de
+ * bout en bout du LOT-08, pas en relisant le code. La garde du moteur d'arrêt
+ * lisait `comptesDuRecueil` sur la RACINE du porteur pour tous les
+ * déclencheurs. Or les moteurs à sous-scores (`subscore` — le DASS-21 de
+ * STOP-STR) ne publient AUCUN compte racine : leur complétude vit sur chaque
+ * axe (`repondus`/`items`, campagne du 2026-08-04). Un déclencheur sur
+ * `Q_STR_04/S` échouait donc la garde même sur une passation COMPLÈTE, et
+ * STOP-STR ne pouvait pas mordre davantage après la publication des comptes de
+ * `Q_STR_01` qu'avant — le verrou avait seulement changé d'instrument.
+ *
+ * La recherche de l'axe est CELLE d'`extraireCible` (l'id prime toujours sur le
+ * libellé), pas une variante : deux résolutions d'axe divergentes feraient lire
+ * à la garde un autre axe que celui que le déclencheur mesure. Axe introuvable
+ * ⇒ `null` — illisible, donc refus, jamais un repli sur la racine.
+ */
+function comptesDuPorteurVise(
+  scores: ScoresStockes,
+  sousScore: string | undefined,
+): { manquants: number; total: number | null } | null {
+  if (!scores || typeof scores !== 'object') return null;
+  if (!sousScore) return comptesDuRecueil(scores);
+  const bruts = (scores as { subScores?: unknown }).subScores;
+  if (!Array.isArray(bruts)) return null;
+  const axes = bruts as SousScoreLu[];
+  const cible = axes.find(s => s?.id === sousScore) ?? axes.find(s => s?.label === sousScore);
+  return cible ? comptesDuRecueil(cible) : null;
 }
 
 /**
@@ -951,7 +1003,19 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
   //
   // Une règle d'arrêt sans claim n'éteint rien : même invariant de traçabilité
   // que pour les règles d'orientation, et pour la même raison.
-  for (const arret of entree.reglesArret ?? []) {
+  //
+  // UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION — [[D-053]] §5, câblé par
+  // [[D-055]] (arbitrage 4). Une extinction dit « information suffisante — pas
+  // d'exploration supplémentaire » ; une discordance ouverte dans le dossier
+  // dit précisément que l'information n'est pas cohérente. Le blocage est posé
+  // ICI, avant toute évaluation de règle d'arrêt : il ne retire aucun motif,
+  // ne déplace aucune ligne, n'écrit rien — il empêche seulement l'extinction
+  // de naître. Le sens inverse est garanti par construction : les constats ne
+  // sont lus nulle part ailleurs dans ce moteur, une contradiction ne peut donc
+  // jamais DÉCLENCHER une extinction (`DC-30`).
+  const contradictionOuverte = (entree.contradictions ?? [])
+    .some(constat => constat.resolution.statut !== 'resolue');
+  for (const arret of contradictionOuverte ? [] : entree.reglesArret ?? []) {
     if (arret.statut !== 'publiee') continue;
     if (arret.declencheurs.length === 0) continue;
     if (arret.justificationClaims.length === 0) continue;
@@ -976,9 +1040,20 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       // fondée sur un instrument quasi vide — exactement le défaut pour lequel
       // [[D-053]] écarte STOP-APN. Un instrument qui ne sait pas dire sa
       // complétude ne peut donc pas éteindre : on refuse plutôt que de deviner.
+      //
+      // « MUET OU INCOMPLET », EXPLICITEMENT ([[D-055]], arbitrage 3). Le refus
+      // sur recueil partiel était déjà obtenu par ricochet — la garde générale
+      // d'`extraireCible` retire la mesure, le déclencheur ne mord pas — mais
+      // une extinction ne se refuse pas par ricochet : la borne se lit ici,
+      // dans le moteur d'arrêt lui-même, et un futur déclencheur qui lirait
+      // autre chose que la mesure (un drapeau de forme, une note) ne la
+      // contournerait pas.
+      // AU GRAIN DU DÉCLENCHEUR : l'axe visé quand il y en a un, la racine
+      // sinon — voir `comptesDuPorteurVise`, et le défaut qu'il ferme.
       if (declencheur.type !== 'drapeau') {
         const porteur = dernieres.get(declencheur.idQuestionnaire)?.scores;
-        if (comptesDuRecueil(porteur) === null) {
+        const comptes = comptesDuPorteurVise(porteur, declencheur.sousScore);
+        if (comptes === null || comptes.manquants > 0) {
           tousAtteints = false;
           break;
         }

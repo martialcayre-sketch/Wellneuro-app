@@ -160,6 +160,68 @@ export function contradictionsPourAffichage(constats: ContradictionFinding[]): C
  * d'appartenance, ni journalisation d'accès. Ces gestes appartiennent à
  * l'appelant, qui les pose AVANT d'appeler ici.
  */
+/**
+ * La ligne de passation telle que les deux services la lisent — le même
+ * `select` Prisma dans `orientationService` et ici.
+ */
+export type LignePassationDossier = {
+  idReponse: string;
+  idQuestionnaire: string;
+  dateReponse: Date;
+  scoresJson: unknown;
+  statutValidite: string | null;
+};
+
+/**
+ * Les constats BRUTS du dossier, verrou compris — liste vide quand le système
+ * de contradictions n'est pas actif.
+ *
+ * EXTRAIT DE `contradictionsPourPatient` AU LOT-08, pour un second
+ * consommateur : `orientationService` doit savoir si une contradiction OUVERTE
+ * existe, parce qu'elle interdit l'extinction ([[D-053]] §5, [[D-055]]).
+ * Recopier chez lui le recalcul et la doctrine de mise à `null` aurait fait
+ * diverger les deux lectures en silence — même motif que l'extraction de
+ * `scoresRecalculesPourRaisonnement` au LOT-01.
+ *
+ * LE VERROU RESTE ICI : un appelant qui recevrait des constats et déciderait
+ * lui-même de les taire (ou de les lire table non signée) finirait par se
+ * tromper de sens. Système éteint ⇒ aucun constat, donc rien d'« ouvert » —
+ * la hiérarchie de verrous de [[D-055]], pas un verrou nouveau.
+ */
+export function constatsContradictionsPourDossier(
+  reponses: LignePassationDossier[],
+  anamnese: unknown,
+): ContradictionFinding[] {
+  if (!contradictionsActives()) return [];
+
+  // RECALCUL À LA LECTURE, jamais l'instantané figé — doctrine détaillée sur
+  // `contradictionsPourPatient`, qui portait ce bloc avant l'extraction.
+  // UNE PASSATION ÉCARTÉE NE FONDE PAS UN CONSTAT, DRAPEAU OU PAS : le score
+  // tombe à `null` (`statutExcluDuRaisonnement`, sans drapeau), la ligne reste.
+  const reponsesRecalculees = reponses.map(reponse => ({
+    idQuestionnaire: reponse.idQuestionnaire,
+    dateReponse: reponse.dateReponse.toISOString(),
+    idReponse: reponse.idReponse,
+    scores: statutExcluDuRaisonnement(reponse.statutValidite)
+      ? null
+      : scoresRecalculesPourRaisonnement(
+          reponse.idQuestionnaire,
+          reponse.scoresJson as Record<string, unknown> | null,
+          reponse.dateReponse,
+          reponse.statutValidite,
+        ),
+  }));
+
+  return evaluerContradictions({
+    reponses: reponsesRecalculees,
+    // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
+    // objet aux drapeaux vides. Des drapeaux absents n'atteignent aucun
+    // déclencheur ; des drapeaux vides affirmeraient que le patient n'a rien
+    // déclaré (`DC-24`).
+    drapeaux: anamnese == null ? undefined : extraireDrapeauxAnamnese(anamnese),
+  });
+}
+
 export async function contradictionsPourPatient(idPatient: string): Promise<ContradictionAffichee[]> {
   if (!contradictionsActives()) return [];
 
@@ -180,22 +242,20 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
   ]);
 
   // RECALCUL À LA LECTURE, jamais l'instantané figé en base — l'en-tête de
-  // `contradictionsEngine.ts` en fait une obligation de l'APPELANT, et c'est
-  // ici que l'appelant existe pour la première fois. Un moteur qui relirait
-  // `scoresJson` évaluerait une doctrine de scoring qui n'existe plus : c'est
-  // la classe de défaut trouvée en revue sur l'orientation le 2026-08-04, où la
-  // garde de recueil partiel du PSQI ne mordait que sur les passations à venir.
-  // La fonction est celle de l'orientation, pas une copie.
+  // `contradictionsEngine.ts` en fait une obligation de l'APPELANT. Un moteur
+  // qui relirait `scoresJson` évaluerait une doctrine de scoring qui n'existe
+  // plus : c'est la classe de défaut trouvée en revue sur l'orientation le
+  // 2026-08-04, où la garde de recueil partiel du PSQI ne mordait que sur les
+  // passations à venir. La fonction est celle de l'orientation, pas une copie.
   //
   // UNE PASSATION ÉCARTÉE NE PEUT PAS FONDER UN CONSTAT, DRAPEAU OU PAS — et sa
   // ligne RESTE. Corrigé deux fois, la seconde après revue.
   //
   // Le motif de validité de `scoresRecalculesPourRaisonnement` passe par
   // `estExclueDuRaisonnement`, gaté par `WN_ENABLE_VALIDITE_PASSATIONS`, éteint
-  // en production : sans le geste ci-dessous, une passation qu'un praticien a
-  // marquée INVALID pouvait fonder un constat affiché avec sa date, sans que
-  // rien ne dise qu'elle a été écartée. `statutExcluDuRaisonnement` est le
-  // prédicat sans drapeau créé par la revue du repère de synthèse.
+  // en production : sans `statutExcluDuRaisonnement` (le prédicat sans drapeau
+  // créé par la revue du repère de synthèse), une passation qu'un praticien a
+  // marquée INVALID pouvait fonder un constat affiché avec sa date.
   //
   // ON NULLE LE SCORE, ON NE RETIRE PAS LA LIGNE — et la première rédaction
   // faisait l'inverse, ce qui avait deux torts. D'abord elle violait le contrat
@@ -203,37 +263,12 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
   // FILTRER ». Ensuite et surtout, retirer la ligne fait de la passation
   // ANTÉRIEURE « la dernière » aux yeux de `derniereReponseParQuestionnaire` :
   // le constat se serait alors bâti sur une mesure de 2024 pendant que le
-  // panneau d'orientation du même écran en lisait une de 2026. C'est
-  // exactement le repli qu'`orientationService` refuse en toutes lettres — « si
-  // la DERNIÈRE passation d'un instrument est invalidée, l'instrument s'éteint
-  // pour l'orientation, pas de repli sur une passation antérieure, le praticien
-  // qui invalide attend une re-passation ». Un score `null` traverse le moteur
-  // sans qu'aucun déclencheur puisse mordre, et la ligne garde sa place dans la
-  // sélection : l'instrument s'éteint au lieu de reculer dans le temps.
-  const reponsesRecalculees = reponses.map(reponse => ({
-    idQuestionnaire: reponse.idQuestionnaire,
-    dateReponse: reponse.dateReponse.toISOString(),
-    idReponse: reponse.idReponse,
-    scores: statutExcluDuRaisonnement(reponse.statutValidite)
-      ? null
-      : scoresRecalculesPourRaisonnement(
-          reponse.idQuestionnaire,
-          reponse.scoresJson as Record<string, unknown> | null,
-          reponse.dateReponse,
-          reponse.statutValidite,
-        ),
-  }));
-
+  // panneau d'orientation du même écran en lisait une de 2026. Un score `null`
+  // traverse le moteur sans qu'aucun déclencheur puisse mordre, et la ligne
+  // garde sa place dans la sélection : l'instrument s'éteint au lieu de
+  // reculer dans le temps. Tout ce bloc vit désormais dans
+  // `constatsContradictionsPourDossier`, partagé avec `orientationService`.
   return contradictionsPourAffichage(
-    evaluerContradictions({
-      reponses: reponsesRecalculees,
-      // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
-      // objet aux drapeaux vides. Des drapeaux absents n'atteignent aucun
-      // déclencheur ; des drapeaux vides affirmeraient que le patient n'a rien
-      // déclaré (`DC-24`).
-      drapeaux: consultation?.anamnese == null
-        ? undefined
-        : extraireDrapeauxAnamnese(consultation.anamnese),
-    }),
+    constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
   );
 }

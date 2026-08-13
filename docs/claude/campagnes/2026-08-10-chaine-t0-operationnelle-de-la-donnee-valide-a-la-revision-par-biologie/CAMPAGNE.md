@@ -4,7 +4,7 @@ titre: "Chaîne T0 opérationnelle — de la donnée valide à la révision par 
 statut: "en_cours"
 créée_le: "2026-08-10"
 mise_à_jour: "2026-08-13"
-lot_courant: "LOT-04"
+lot_courant: "LOT-08"
 branche_campagne: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
 branche_lot_courant: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lot-01"
 cible_pr_lot: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
@@ -121,7 +121,7 @@ confirmé » et « discordance stress » sont en CI.
 | LOT-05 | Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie | à_faire | LOT-04 |
 | LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | à_faire | LOT-05 |
 | LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | à_faire | LOT-05 |
-| LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | à_faire | LOT-03 |
+| LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | en_cours | LOT-03 |
 
 ## Backlog ultérieur (hors campagne, nommé pour ne pas se perdre)
 

@@ -274,3 +274,70 @@ describe('calculateScore', () => {
     expect(bms.interpretation).toBeNull();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `group_majority` (Q_STR_01) — comptes de recueil et bande sur recueil complet
+// seulement ([[D-055]], LOT-08).
+//
+// LE CAS QUI A MOTIVÉ LE LOT : ce moteur ne publiait ni `missing` ni `repondus`,
+// et `totalSousScore` rend un total dès UN item par groupe — trois réponses sur
+// vingt et une, rassurantes, décrochaient la bande la plus favorable de la
+// grille, affichée fiche praticien et lue par le déclencheur porteur de
+// STOP-STR. Les bancs ci-dessous jouent le VRAI `Q_STR_01`, pas une définition
+// forgée : c'est l'instrument de production qui est l'objet de la décision.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('group_majority (Q_STR_01) — la complétude est publiée, la bande exige le recueil complet', () => {
+  const ITEMS = [
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
+    'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14',
+    'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
+  ];
+
+  function toutes(valeur: number): Record<string, number> {
+    return Object.fromEntries(ITEMS.map(id => [id, valeur]));
+  }
+
+  it('trois items sur vingt et un : total servi, comptes publiés, AUCUNE bande', () => {
+    // Un item par groupe, au minimum — le scénario exact des trois réponses qui
+    // produisaient « Oriente vers les conseils de vie antistress ».
+    const result: any = calculateScore('Q_STR_01', { A1: 0, B8: 0, C15: 0 });
+    expect(result.total).toBe(0);
+    expect(result.repondus).toBe(3);
+    expect(result.missing).toBe(18);
+    expect(result.interpretation).toBeNull();
+    // La note dit le trou en français, SANS effacer la note de l'instrument
+    // (seuils 4 et 15 harmonisés) — même contrat que le TFD sur Q_GAS_01.
+    expect(result.note).toContain('seuils 4 et 15');
+    expect(result.note).toContain('Recueil partiel : 18 items sans réponse sur 21');
+  });
+
+  it('un groupe entièrement vide : pas de total global (inchangé), comptes publiés', () => {
+    const result: any = calculateScore('Q_STR_01', { A1: 1, B8: 1 });
+    expect(result.total).toBeNull();
+    expect(result.interpretation).toBeNull();
+    expect(result.repondus).toBe(2);
+    expect(result.missing).toBe(19);
+  });
+
+  it('recueil complet rassurant : bande servie, comptes à zéro manquant — contre-épreuve', () => {
+    const result: any = calculateScore('Q_STR_01', { ...toutes(0), A1: 2 });
+    expect(result.total).toBe(2);
+    expect(result.repondus).toBe(21);
+    expect(result.missing).toBe(0);
+    expect(result.interpretation?.label).toBe('Oriente vers les conseils de vie antistress');
+    expect(result.note).toContain('seuils 4 et 15');
+    expect(result.note).not.toContain('Recueil partiel');
+  });
+
+  it('recueil complet intermédiaire : le groupe dominant et son protocole restent servis', () => {
+    // 5-14 : le bloc du dominant n'est atteignable que sur recueil complet
+    // désormais — la contre-épreuve que la garde n'a pas emporté le protocole.
+    const result: any = calculateScore('Q_STR_01', { ...toutes(0), B8: 2, B9: 2, B10: 2 });
+    expect(result.total).toBe(6);
+    expect(result.interpretation?.dominant).toBe('B');
+    // `separerConduite` sort la conduite de l'interprétation : elle est servie à
+    // la racine, jamais dans la bande.
+    expect(result.conduite).toBe('Protocole sérotoninergique');
+  });
+});

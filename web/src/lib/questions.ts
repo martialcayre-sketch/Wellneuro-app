@@ -2760,26 +2760,56 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
+    // LA COMPLÉTUDE DEVIENT LISIBLE — `missing`/`repondus` à la racine ([[D-055]]).
+    //
+    // Ce moteur ne publiait aucun compte : la garde de complétude d'aval
+    // (`comptesDuRecueil`, `clinical/orientationEngine.ts`) ne pouvait rien en
+    // lire, et le moteur d'arrêt refusait — à raison — d'éteindre sur son
+    // porteur (`Q_STR_01`, STOP-STR). La forme est celle des moteurs à score
+    // global (`sum`, `psqi`, `tfd`) : les deux champs sont déjà décrits dans la
+    // consigne de synthèse, aucun bump de prompt. Sommés depuis `totalSousScore`
+    // par groupe, jamais recopiés d'une déclaration.
+    let missing = 0, repondus = 0;
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = totalSousScore(sub.items, []);
-      return {id: sub.id, label: sub.label, total, max: sub.max};
+      const compte = totalSousScore(sub.items, []);
+      missing += compte.missing;
+      repondus += compte.repondus;
+      return {id: sub.id, label: sub.label, total: compte.total, max: sub.max};
     });
     const globalTotal = totalGlobalDepuisSousScores(subResults);
-    let interp = interpretRanges(globalTotal, sc.interpretation);
+    // GARDE — la bande ne se lit que sur le recueil COMPLET ([[D-055]],
+    // arbitrage 2). `totalGlobalDepuisSousScores` ne ferme que le cas d'un
+    // groupe ENTIÈREMENT vide : un item répondu par groupe suffisait à produire
+    // un total, et trois réponses sur vingt et une — n'ajoutant presque rien —
+    // décrochaient la bande la plus FAVORABLE de la grille, affichée fiche
+    // praticien et lue par le déclencheur porteur de STOP-STR. Le total, lui,
+    // reste servi : mesure réelle, biaisée bas — même partage que `tfd`.
+    let interp = missing > 0 ? null : interpretRanges(globalTotal, sc.interpretation);
     // Le protocole ne se greffe que sur une bande RÉELLE : sans ce test, étaler
     // `null` fabriquerait un objet n'ayant qu'un protocole et aucune bande, qui se
     // lirait comme une interprétation là où il n'y en a pas.
     if (interp && globalTotal >= 5 && globalTotal <= 14) {
       // Aucun filtre sur les axes non mesurés ici, et ce n'est pas un oubli : on
-      // n'atteint ce bloc que si `interp` est non nul, ce qui exige un total global
-      // non nul, ce qui exige — par `totalGlobalDepuisSousScores` — que TOUS les
-      // axes contributeurs soient mesurés. Un filtre serait du code mort qu'aucune
-      // mutation ne pourrait faire rougir.
+      // n'atteint ce bloc que si `interp` est non nul, ce qui exige désormais un
+      // recueil complet (`missing === 0`), donc trois groupes intégralement
+      // mesurés. Un filtre serait du code mort qu'aucune mutation ne pourrait
+      // faire rougir.
       const dominant = subResults.reduce((a: any, b: any) => a.total >= b.total ? a : b);
       const proto: Record<string, string> = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
       interp = {...interp, dominant: dominant.id, protocol: `Protocole ${proto[dominant.id] || dominant.id}`};
     }
-    return {type:'group_majority', subScores: subResults, total: globalTotal, interpretation: interp, note: sc.note || null, certification: sc.certification || null};
+    const noteRecueil = missing === 0 ? null
+      : `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse sur ${repondus + missing}. Les bandes de cette grille supposent la forme complète ; les items sans réponse sont ignorés, ce qui abaisse le total. L'interprétation n'est pas calculable.`;
+    return {type:'group_majority', subScores: subResults, total: globalTotal, interpretation: interp,
+      // Les deux comptes partent À CÔTÉ du total, même contrat que `sum`, `psqi`
+      // et `tfd` : ils disent POURQUOI la bande manque, et ce sont les clés que
+      // lisent `recueilIncomplet` et la garde du moteur d'arrêt en aval.
+      missing, repondus,
+      // La note de recueil s'AJOUTE à celle de l'instrument : `Q_STR_01` déclare
+      // une `scoring.note` (seuils 4 et 15 harmonisés) qu'un remplacement nu
+      // aurait effacée — même piège que `Q_GAS_01` sur le TFD.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null};
   }
 
   // ── HAD ──────────────────────────────────────────────

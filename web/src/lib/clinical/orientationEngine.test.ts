@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ContradictionFinding } from './contradictionFinding';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import type { OrientationRule } from './orientationRulesV1';
 import type { StopRule } from './stopRulesV1';
@@ -680,6 +681,67 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
     expect(avecArret.map(reco => JSON.stringify(reco.cible))).toEqual(sansArret);
     expect(avecArret[0].extinction?.stopRuleId).toBe('STOP-TEST');
     expect(avecArret[1].extinction ?? null).toBeNull();
+  });
+});
+
+describe('evaluerOrientation — une contradiction ouverte interdit l\'extinction ([[D-053]] §5, [[D-055]])', () => {
+  /** Un constat minimal du moteur de contradictions, au statut choisi. */
+  function constat(statut: 'ouverte' | 'escaladee_praticien' | 'resolue'): ContradictionFinding {
+    return {
+      forme: 'DISCORDANCE',
+      id: 'C-TEST',
+      audience: 'praticien_seul',
+      sources: [{ type: 'instrument', idQuestionnaire: 'Q_STR_02', reponseId: 'r-c', dateReponse: '2026-08-01T10:00:00.000Z' }],
+      description: 'Discordance de test.',
+      importance: 'critical_for_decision',
+      hypotheses: ['hypothèse'],
+      actionSuggeree: 'clarifier en entretien',
+      resolution: statut === 'ouverte' ? { statut } : { statut, motif: 'motif' },
+      justificationClaims: [CLAIM_ARRET],
+      regleId: 'C-TEST',
+      limitations: [],
+      ecartJoursEntreSources: null,
+    };
+  }
+
+  /** Le dossier qui ÉTEINDRAIT sans contradiction — celui du banc d'extinction. */
+  function entreeEligible() {
+    return {
+      ...dossierAllume(),
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) })],
+      reglesArret: [arret({})],
+    };
+  }
+
+  it('une contradiction OUVERTE empêche l\'extinction — et une ESCALADÉE aussi', () => {
+    for (const statut of ['ouverte', 'escaladee_praticien'] as const) {
+      const recos = evaluerOrientation({ ...entreeEligible(), contradictions: [constat(statut)] });
+      expect(recos).toHaveLength(1);
+      expect(recos[0].extinction ?? null).toBeNull();
+      // La ligne ne perd RIEN d'autre : motifs et place intacts.
+      expect(recos[0].motifs.map(motif => motif.regleId)).toEqual(['R-TEST-01']);
+    }
+  });
+
+  it('une contradiction RÉSOLUE n\'empêche rien — contre-épreuve', () => {
+    const recos = evaluerOrientation({ ...entreeEligible(), contradictions: [constat('resolue')] });
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+  });
+
+  it('liste vide ou absente : le comportement d\'extinction est inchangé — anti-vacuité', () => {
+    for (const contradictions of [undefined, [] as ContradictionFinding[]]) {
+      const recos = evaluerOrientation({ ...entreeEligible(), contradictions });
+      expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    }
+  });
+
+  it('une contradiction ne DÉCLENCHE jamais rien : hors extinction, la sortie est identique', () => {
+    // Le sens unique de DC-30, mesuré plutôt qu'affirmé : sur un dossier SANS
+    // règle d'arrêt, ajouter une contradiction ouverte ne change pas un octet
+    // de la sortie — ni ligne, ni motif, ni ordre.
+    const sans = evaluerOrientation(dossierAllume());
+    const avec = evaluerOrientation({ ...dossierAllume(), contradictions: [constat('ouverte')] });
+    expect(avec).toEqual(sans);
   });
 });
 

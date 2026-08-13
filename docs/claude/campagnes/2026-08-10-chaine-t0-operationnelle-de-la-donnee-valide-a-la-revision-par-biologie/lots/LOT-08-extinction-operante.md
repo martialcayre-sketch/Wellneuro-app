@@ -1,7 +1,7 @@
 ---
 id: "LOT-08"
 titre: "Extinction opérante — comptes de recueil, contradiction bloquante, garde de restitution"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-03"
 ---
 

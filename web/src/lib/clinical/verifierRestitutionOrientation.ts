@@ -30,6 +30,15 @@ import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 // - un RÉORDONNANCEMENT de la recommandation, qui est pourtant interdit par la
 //   consigne. Cela demanderait de comparer des positions dans une prose, pas
 //   des occurrences.
+//
+// Angles morts propres au volet éteinte ≠ recommandée ([[D-055]]), du même
+// aveu : une paraphrase d'extinction hors du vocabulaire fermé des marqueurs
+// (« je ne la propose plus ») compte comme un écart alors qu'elle est fidèle ;
+// deux cibles dans la même fenêtre de 200 caractères partagent leurs marqueurs
+// — une éteinte peut être blanchie par la phrase d'à côté, une recommandée
+// accusée par elle. Le régime reste le même que le garde d'origine : on
+// journalise, on ne censure pas, et l'objet actionnable vient toujours de la
+// route déterministe.
 
 /** Les champs de `SyntheseSchema` qui portent du texte libre. */
 export type TexteSynthese = {
@@ -43,7 +52,19 @@ export type TexteSynthese = {
 
 export type EcartRestitution =
   | { type: 'pack'; identifiant: PackId }
-  | { type: 'questionnaire'; identifiant: string };
+  | { type: 'questionnaire'; identifiant: string }
+  /**
+   * Éteinte ≠ recommandée ([[D-053]] §5 pour la dette, [[D-055]] arbitrage 5
+   * pour le critère). Deux sens : une cible ÉTEINTE citée sans marqueur
+   * d'extinction à proximité (présentée comme une exploration courante), ou
+   * une cible RECOMMANDÉE vivante citée avec un marqueur à proximité
+   * (présentée comme éteinte).
+   */
+  | {
+      type: 'extinction';
+      identifiant: string;
+      sens: 'eteinte_presentee_recommandee' | 'recommandee_presentee_eteinte';
+    };
 
 // Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
 // chaîne : écrits littéralement dans un littéral d'expression régulière, ces
@@ -96,6 +117,65 @@ function normaliser(texte: string): string {
     .trim();
 }
 
+/**
+ * Vocabulaire fermé des marqueurs d'extinction, en forme NORMALISÉE.
+ *
+ * Ce sont les formulations que la consigne v25 impose déjà au modèle quand il
+ * mentionne une exploration éteinte — « dis qu'elle n'est pas nécessaire en
+ * l'état, et reprends le motif d'arrêt tel qu'il t'est donné » — plus le
+ * libellé servi (`LIBELLE_EXTINCTION`, « pas d'exploration supplémentaire »)
+ * et le motif de STOP-STR (« n'ont pas d'objet en l'état »). Aucun bump de
+ * consigne : le garde mesure ce que la consigne exige déjà ([[D-055]]).
+ *
+ * « eteint » attrape par préfixe éteinte/éteints/éteintes ; « extinction » se
+ * couvre lui-même.
+ */
+const MARQUEURS_EXTINCTION = [
+  'eteint',
+  'extinction',
+  'pas d objet',
+  'pas necessaire',
+  'plus necessaire',
+  'pas lieu',
+  'plus lieu',
+  'pas d exploration supplementaire',
+];
+
+/**
+ * Fenêtre, en caractères normalisés de part et d'autre d'une citation, dans
+ * laquelle un marqueur d'extinction est cherché.
+ *
+ * 200 est un arbitrage de la même famille que `FENETRE_ADJACENCE_PACK` : assez
+ * large pour que « Le BMS-10 avait été proposé. Il n'est plus nécessaire en
+ * l'état. » tienne dans la fenêtre malgré la frontière de phrase, assez étroite
+ * pour qu'un marqueur portant sur une AUTRE cible du même paragraphe ne blanchisse
+ * pas — ou n'accuse pas — celle-ci à coup sûr. Les angles morts sont en tête de
+ * module.
+ */
+const FENETRE_EXTINCTION = 200;
+
+/** Positions de chaque occurrence de `cible` dans `texte` (déjà normalisés). */
+function positionsDe(texte: string, cible: string): number[] {
+  const positions: number[] = [];
+  if (!cible) return positions;
+  let depuis = 0;
+  for (;;) {
+    const position = texte.indexOf(cible, depuis);
+    if (position === -1) return positions;
+    positions.push(position);
+    depuis = position + 1;
+  }
+}
+
+/** Un marqueur d'extinction vit-il dans la fenêtre autour de cette citation ? */
+function marqueurPresDe(texte: string, position: number, longueur: number): boolean {
+  const fenetre = texte.slice(
+    Math.max(0, position - FENETRE_EXTINCTION),
+    Math.min(texte.length, position + longueur + FENETRE_EXTINCTION),
+  );
+  return MARQUEURS_EXTINCTION.some(marqueur => fenetre.includes(marqueur));
+}
+
 function morceaux(synthese: TexteSynthese): string[] {
   const out: string[] = [
     synthese.resume_praticien ?? '',
@@ -130,6 +210,19 @@ export function verifierRestitutionOrientation(
   fournis: {
     packs: readonly PackId[];
     questionnaires: readonly string[];
+    /**
+     * Cibles dont la recommandation est ÉTEINTE, parmi celles transmises —
+     * l'appelant n'y met PAS les instruments déjà passés du dossier : une
+     * passation se cite comme un résultat, sans marqueur d'extinction, et
+     * l'y laisser ferait accuser la prose clinique normale.
+     */
+    eteints?: { packs: readonly PackId[]; questionnaires: readonly string[] };
+    /**
+     * Cibles RECOMMANDÉES vivantes — même restriction : pas les instruments
+     * déjà passés, dont le résultat peut légitimement voisiner une phrase
+     * d'extinction portant sur une autre cible.
+     */
+    recommandes?: { packs: readonly PackId[]; questionnaires: readonly string[] };
   },
 ): EcartRestitution[] {
   const parties = morceaux(synthese);
@@ -162,10 +255,79 @@ export function verifierRestitutionOrientation(
     }
   }
 
+  // ── ÉTEINTE ≠ RECOMMANDÉE ([[D-055]], arbitrage 5) ─────────────────────────
+  //
+  // Une cible ÉTEINTE reste citable — la retirer de l'allowlist ci-dessus
+  // reprocherait au modèle de parler de ce qu'on lui a transmis. Ce qui se
+  // mesure ici est la PRÉSENTATION : chaque citation d'une cible éteinte doit
+  // voisiner un marqueur d'extinction (la consigne l'exige), et aucune citation
+  // d'une cible recommandée vivante ne doit en voisiner un. La fenêtre court
+  // sur le texte joint : un marqueur en début de morceau suivant compte — le
+  // choix le moins accusateur des deux.
+  const positionsCitationQuestionnaire = (id: string) => {
+    const cible = normaliser(id);
+    return positionsDe(texte, cible).map(position => ({ position, longueur: cible.length }));
+  };
+  const positionsCitationPack = (packId: PackId) => {
+    const pack = PACKS_REGISTRY.find(candidat => candidat.id === packId);
+    const citations: { position: number; longueur: number }[] = [];
+    if (!pack) return citations;
+    const titre = normaliser(pack.titre);
+    if (titre) {
+      // Même adjacence que l'allowlist : un titre sans « pack » en amont est un
+      // syntagme clinique, pas une citation de pack.
+      for (const position of positionsDe(texte, titre)) {
+        const amont = texte.slice(Math.max(0, position - FENETRE_ADJACENCE_PACK), position);
+        if (MOT_PACK.test(amont)) citations.push({ position, longueur: titre.length });
+      }
+    }
+    const slug = normaliser(packId);
+    for (const position of positionsDe(texte, slug)) {
+      citations.push({ position, longueur: slug.length });
+    }
+    return citations;
+  };
+
+  if (texte) {
+    for (const identifiant of fournis.eteints?.questionnaires ?? []) {
+      const citations = positionsCitationQuestionnaire(identifiant);
+      if (citations.some(citation => !marqueurPresDe(texte, citation.position, citation.longueur))) {
+        ecarts.push({ type: 'extinction', identifiant, sens: 'eteinte_presentee_recommandee' });
+      }
+    }
+    for (const identifiant of fournis.eteints?.packs ?? []) {
+      const citations = positionsCitationPack(identifiant);
+      if (citations.some(citation => !marqueurPresDe(texte, citation.position, citation.longueur))) {
+        ecarts.push({ type: 'extinction', identifiant, sens: 'eteinte_presentee_recommandee' });
+      }
+    }
+    for (const identifiant of fournis.recommandes?.questionnaires ?? []) {
+      const citations = positionsCitationQuestionnaire(identifiant);
+      if (citations.some(citation => marqueurPresDe(texte, citation.position, citation.longueur))) {
+        ecarts.push({ type: 'extinction', identifiant, sens: 'recommandee_presentee_eteinte' });
+      }
+    }
+    for (const identifiant of fournis.recommandes?.packs ?? []) {
+      const citations = positionsCitationPack(identifiant);
+      if (citations.some(citation => marqueurPresDe(texte, citation.position, citation.longueur))) {
+        ecarts.push({ type: 'extinction', identifiant, sens: 'recommandee_presentee_eteinte' });
+      }
+    }
+  }
+
   return ecarts;
 }
 
-/** Rendu court pour un journal : `pack:slug`, `questionnaire:Q_SOM_09`. */
+/**
+ * Rendu court pour un journal : `pack:slug`, `questionnaire:Q_SOM_09`,
+ * `extinction:eteinte_presentee_recommandee:Q_STR_05`.
+ */
 export function formaterEcarts(ecarts: readonly EcartRestitution[]): string {
-  return ecarts.map(ecart => `${ecart.type}:${ecart.identifiant}`).join(', ');
+  return ecarts
+    .map(ecart =>
+      ecart.type === 'extinction'
+        ? `extinction:${ecart.sens}:${ecart.identifiant}`
+        : `${ecart.type}:${ecart.identifiant}`,
+    )
+    .join(', ');
 }

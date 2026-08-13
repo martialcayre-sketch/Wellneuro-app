@@ -243,3 +243,94 @@ describe('allowlist vide — plus aucun pack n’est proposé (2026-08-06)', () 
     ]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ÉTEINTE ≠ RECOMMANDÉE — [[D-055]], arbitrage 5 (LOT-08).
+//
+// Le garde mesure la PRÉSENTATION : une cible éteinte doit voisiner un marqueur
+// d'extinction à chaque citation, une cible recommandée vivante ne doit jamais
+// en voisiner. Les angles morts sont en tête de module ; ces bancs couvrent le
+// contrat, ses contre-épreuves, et un faux positif assumé.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('verifierRestitutionOrientation — éteinte ≠ recommandée', () => {
+  const FOURNIS_EXTINCTION = {
+    packs: [] as const,
+    // L'allowlist de citation garde TOUTES les cibles transmises, éteintes
+    // comprises : la séparation ne retire pas le droit de citer.
+    questionnaires: ['Q_STR_05', 'Q_STR_02'] as const,
+    eteints: { packs: [] as const, questionnaires: ['Q_STR_05'] as const },
+    recommandes: { packs: [] as const, questionnaires: ['Q_STR_02'] as const },
+  };
+
+  it('POSITIF — une cible éteinte citée sans marqueur est présentée comme recommandée', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose de faire passer le BMS-10 (Q_STR_05) pour évaluer le burnout.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
+    ]);
+  });
+
+  it('NÉGATIF — la formulation que la consigne exige ne déclenche rien, même sur deux phrases', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Le BMS-10 (Q_STR_05) avait été proposé pour le dépistage. Il n’est plus nécessaire en l’état, les instruments spécifiques étant rassurants.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('NÉGATIF — le mot « éteinte » lui-même suffit comme marqueur', () => {
+    const synthese: TexteSynthese = {
+      points_de_vigilance: ['Recommandation Q_STR_05 éteinte : information suffisante.'],
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('POSITIF — une cible recommandée vivante voisinant un marqueur est présentée comme éteinte', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Le PSS-10 (Q_STR_02) n’est pas nécessaire en l’état.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_02', sens: 'recommandee_presentee_eteinte' },
+    ]);
+  });
+
+  it('NÉGATIF — une cible recommandée citée sans marqueur, et une éteinte non citée : rien', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose le PSS-10 (Q_STR_02) pour mesurer l’intensité du stress.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('sans les listes eteints/recommandes, le comportement historique est inchangé — anti-vacuité', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose de faire passer le BMS-10 (Q_STR_05).',
+    };
+    expect(
+      verifierRestitutionOrientation(synthese, { packs: [], questionnaires: ['Q_STR_05'] }),
+    ).toEqual([]);
+  });
+
+  // FAUX POSITIF ASSUMÉ, ÉPINGLÉ TEL QUEL — même régime que celui de
+  // l'adjacence pack : deux cibles dans la même fenêtre de 200 caractères
+  // partagent leurs marqueurs. Journal seul, aucune censure ; l'élargir ou le
+  // corriger devra faire rougir cette ligne, pas passer en silence.
+  it('FAUX POSITIF ASSUMÉ — une recommandée vivante dans la fenêtre du marqueur d’une éteinte signale', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Le BMS-10 (Q_STR_05) n’est plus nécessaire en l’état. Je propose le PSS-10 (Q_STR_02).',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_02', sens: 'recommandee_presentee_eteinte' },
+    ]);
+  });
+
+  it('formaterEcarts rend le sens de l’écart', () => {
+    expect(
+      formaterEcarts([
+        { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
+      ]),
+    ).toBe('extinction:eteinte_presentee_recommandee:Q_STR_05');
+  });
+});

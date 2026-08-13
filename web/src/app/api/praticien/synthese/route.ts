@@ -209,6 +209,39 @@ function questionnairesTransmis(
   ];
 }
 
+/**
+ * Les cibles d'orientation SÉPARÉES par présentation attendue — éteintes d'un
+ * côté, recommandées vivantes de l'autre ([[D-055]], arbitrage 5).
+ *
+ * LES INSTRUMENTS DÉJÀ PASSÉS SORTENT DES DEUX LISTES, et c'est le contrat du
+ * garde : une passation se cite comme un RÉSULTAT — « le PSS-10 revient
+ * élevé » — sans marqueur d'extinction, et son résultat peut voisiner une
+ * phrase d'extinction portant sur une autre cible. L'y laisser ferait accuser
+ * la prose clinique normale dans les deux sens. L'allowlist de citation
+ * (`questionnairesTransmis`), elle, ne change pas.
+ */
+function ciblesParPresentation(
+  orientation: ResultatOrientation | null,
+  reponses: ReponseInput[],
+): {
+  eteints: { packs: PackId[]; questionnaires: string[] };
+  recommandes: { packs: PackId[]; questionnaires: string[] };
+} {
+  const eteints = { packs: [] as PackId[], questionnaires: [] as string[] };
+  const recommandes = { packs: [] as PackId[], questionnaires: [] as string[] };
+  if (orientation?.actif !== true) return { eteints, recommandes };
+  const dejaPasses = new Set(reponses.map(reponse => reponse.idQuestionnaire));
+  for (const recommandation of orientation.recommandations) {
+    const camp = recommandation.extinction ? eteints : recommandes;
+    if (recommandation.cible.type === 'pack') {
+      camp.packs.push(recommandation.cible.packId as PackId);
+    } else if (!dejaPasses.has(recommandation.cible.questionnaireId)) {
+      camp.questionnaires.push(recommandation.cible.questionnaireId);
+    }
+  }
+  return { eteints, recommandes };
+}
+
 // Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
 // vers l'API Anthropic. Le nom n'apporte rien au raisonnement clinique, et
 // `buildContexteClinique` exclut l'identité par construction — seule cette
@@ -505,6 +538,9 @@ async function genererSynthesePersistee(
     ? verifierRestitutionOrientation(synthese, {
         packs: packsTransmis(args.orientation),
         questionnaires: questionnairesTransmis(args.orientation, args.reponsesInput),
+        // Éteinte ≠ recommandée ([[D-055]]) : le garde mesure aussi la
+        // PRÉSENTATION des cibles d'orientation — même régime, journalisé.
+        ...ciblesParPresentation(args.orientation, args.reponsesInput),
       })
     : [];
   if (ecartsRestitution.length > 0) {
