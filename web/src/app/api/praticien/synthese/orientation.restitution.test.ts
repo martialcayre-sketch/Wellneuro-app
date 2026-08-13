@@ -507,6 +507,113 @@ describe('garde de restitution', () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ÉTEINTE ≠ RECOMMANDÉE, AU NIVEAU DE LA ROUTE — [[D-055]], revue du
+// 2026-08-13 (M3). Le découpage `ciblesParPresentation` — qui va dans
+// `eteints`, qui va dans `recommandes`, et qui n'entre dans AUCUN des deux —
+// n'était tenu par aucun banc de route : le filtre des instruments déjà
+// passés pouvait disparaître sans rien de rouge.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('garde de restitution — présentation des cibles éteintes', () => {
+  const EXTINCTION_STOP_STR = {
+    stopRuleId: 'STOP-STR',
+    conditions: ['SIIN rassurant'],
+    motif: 'Les explorations complémentaires de l’axe stress n’ont pas d’objet en l’état.',
+    claims: [{ claimId: 'WN-CL-0051-033', versionClaim: 'v1.0' }],
+  };
+
+  function reco(questionnaireId: string, extinction?: typeof EXTINCTION_STOP_STR) {
+    return {
+      cible: { type: 'questionnaire' as const, questionnaireId },
+      priorite: 1,
+      niveau: 'approfondissement' as const,
+      objectifs: [],
+      needIds: [9],
+      dejaAssigne: false,
+      dejaRepondu: false,
+      motifs: [
+        {
+          regleId: 'R2-STR-03',
+          conditions: ['axe dégradé'],
+          claims: [{ claimId: 'WN-CLM-0001', versionClaim: 'v1.0' }],
+        },
+      ],
+      ...(extinction ? { extinction } : {}),
+    };
+  }
+
+  it('une cible éteinte NON passée, citée sans marqueur, est journalisée', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [reco('Q_STR_05', EXTINCTION_STOP_STR)],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Je propose de faire passer le BMS-10 (Q_STR_05).',
+    });
+
+    await POST(req());
+
+    const ecart = loggerWarn.mock.calls.find(
+      appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+    );
+    expect(ecart?.[0].message).toContain('extinction:eteinte_presentee_recommandee:Q_STR_05');
+  });
+
+  it('la même cible, présentée comme la consigne l\'exige, ne journalise rien', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [reco('Q_STR_05', EXTINCTION_STOP_STR)],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Le BMS-10 (Q_STR_05) n’est pas nécessaire en l’état, les instruments spécifiques étant rassurants.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+
+  it('une cible recommandée VIVANTE voisinant un marqueur est journalisée dans l\'autre sens', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [reco('Q_STR_02')],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Le PSS-10 (Q_STR_02) n’est pas nécessaire en l’état.',
+    });
+
+    await POST(req());
+
+    const ecart = loggerWarn.mock.calls.find(
+      appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+    );
+    expect(ecart?.[0].message).toContain('extinction:recommandee_presentee_eteinte:Q_STR_02');
+  });
+
+  it('un instrument DÉJÀ PASSÉ sort des deux listes — citer son résultat n\'accuse personne', async () => {
+    // LE CONTRAT DU DÉCOUPAGE, et le banc qui manquait : `Q_ALI_02` est la
+    // passation de la fixture. Sa ligne éteinte reste transmise et citable,
+    // mais un résultat se cite sans marqueur d'extinction — retirer le filtre
+    // `dejaPasses` de `ciblesParPresentation` rougit ici.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [reco('Q_ALI_02', EXTINCTION_STOP_STR)],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Le Q_ALI_02 montre une exposition faible aux légumineuses.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+});
+
 describe('transport SSE (WN_SYNTHESE_STREAM)', () => {
   it('transmet le même bloc d’orientation que le transport JSON', async () => {
     process.env.WN_SYNTHESE_STREAM = 'true';

@@ -3681,3 +3681,24 @@ des empreintes déclarées par le client) — bancs vus rougir sous mutation.
 **Ouvert.** Signer la table ne suffira pas (procédure d'abstention hors
 périmètre signé) ; la décision attendue du LOT-08 devient D-055 (D-054 prise
 par ce lot).
+
+## 2026-08-13 — LOT-08 livré : l'extinction devient opérante
+
+**Décisions.** `D-055` (6 arbitrages) : `group_majority` publie
+`missing`/`repondus` racine, bande sur recueil complet seul, `total` intact ;
+garde d'arrêt « muet OU incomplet » **au grain du déclencheur** ; contradiction
+ouverte (`statut !== 'resolue'`, dossier entier) interdit l'extinction sans
+jamais la déclencher ; garde de restitution éteinte ≠ recommandée (fenêtre 200,
+marqueurs de la consigne v25, journalisé). Table d'arrêt toujours NON signée.
+
+**Écarté.** Comptes par groupe, `bandePlancher`, blocage par axe, bump de
+consigne, toucher `total`.
+
+**Promotion.** Le banc de bout en bout a trouvé le second verrou : la garde
+lisait la racine, le DASS-21 ne publie que par axe — signer n'aurait rien
+allumé, une seconde fois.
+
+**Prochaine action.** Revue wn-reviewer, PR, CI (`verify` porte base + E2E,
+proxy sans WebKit ici).
+
+**Ouvert.** Signature (étape 6, acte praticien) ; dettes reconduites en D-055.

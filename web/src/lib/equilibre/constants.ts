@@ -168,7 +168,35 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 //
 // La mécanique du bump est celle décrite plus haut et son coût est le même :
 // historique de momentum coupé, agrégat cabinet masqué jusqu'à deux cycles v13.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v13' : 'v12';
+//
+// v12/v13 → v14/v15 (comptes de recueil de `group_majority`, 2026-08-13,
+// [[D-055]] / LOT-08) : `Q_STR_01` cesse d'alimenter le besoin 9 quand sa
+// passation est incomplète. Troisième occurrence de la même classe que les deux
+// bumps ci-dessus — c'est la DISPONIBILITÉ d'une source qui change, aucun poids
+// ni seuil ne bouge —, et `Q_STR_01` est lui aussi une source `inverser: true`
+// (`max: 42`). Le bump est commandé depuis `questions.ts`, exactement comme
+// pour le TFD : le moteur publie désormais `missing` à la racine, et
+// `extraireValeurBrute` refuse la valeur d'un recueil partiel.
+//
+// L'EFFET VA DANS LES DEUX SENS, comme pour ses deux prédécesseurs :
+//   · `Q_STR_01` partiel et BAS (le cas qui motive la garde) — trois items sur
+//     vingt et un rendaient un total effondré, donc `1 − ratio` très HAUT :
+//     « stress bien géré » établi sur ce que le patient n'a pas dit. La garde
+//     le rend non mesuré, et la couverture BAISSE. C'est la correction.
+//   · `Q_STR_01` partiel et DÉJÀ SÉVÈRE — au-delà de `total ≥ 28`, la
+//     couverture tombe sous `SEUIL_EFFONDREMENT` (0,34) et le besoin 9 est une
+//     FONDATION CRITIQUE : le score global était plafonné à 50. Le rendre non
+//     mesuré le sort de cette liste : le plafond se lève et le score global
+//     REMONTE. Le seuil de 28 vaut **quand `Q_STR_01` est la seule source
+//     répondue du besoin 9** : `Q_STR_02` et `Q_STR_03` l'alimentent aussi, et
+//     la moyenne déplace alors le point de bascule.
+//
+// Relevé en revue `wn-reviewer` du 2026-08-13 (B1) : une première rédaction du
+// lot ne décrivait que la première branche et ne bumpait pas. Mesuré avant de
+// fermer : la production ne porte qu'UNE passation `Q_STR_01`, sans
+// `rawAnswers`, que `depuisPrisma` écarte déjà — le STOCK ne bouge pas, c'est
+// le FLUX qui change de définition, et c'est lui que l'étiquette gouverne.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v15' : 'v14';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

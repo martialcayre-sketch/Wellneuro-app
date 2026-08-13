@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ContradictionFinding } from './contradictionFinding';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import type { OrientationRule } from './orientationRulesV1';
 import type { StopRule } from './stopRulesV1';
@@ -683,6 +684,85 @@ describe('evaluerOrientation — extinction par une règle d\'arrêt', () => {
   });
 });
 
+describe('evaluerOrientation — une contradiction ouverte interdit l\'extinction ([[D-053]] §5, [[D-055]])', () => {
+  /** Un constat minimal du moteur de contradictions, au statut choisi. */
+  function constat(statut: 'ouverte' | 'escaladee_praticien' | 'resolue'): ContradictionFinding {
+    return {
+      forme: 'DISCORDANCE',
+      id: 'C-TEST',
+      audience: 'praticien_seul',
+      sources: [{ type: 'instrument', idQuestionnaire: 'Q_STR_02', reponseId: 'r-c', dateReponse: '2026-08-01T10:00:00.000Z' }],
+      description: 'Discordance de test.',
+      importance: 'critical_for_decision',
+      hypotheses: ['hypothèse'],
+      actionSuggeree: 'clarifier en entretien',
+      resolution: statut === 'ouverte' ? { statut } : { statut, motif: 'motif' },
+      justificationClaims: [CLAIM_ARRET],
+      regleId: 'C-TEST',
+      limitations: [],
+      ecartJoursEntreSources: null,
+    };
+  }
+
+  /** Le dossier qui ÉTEINDRAIT sans contradiction — celui du banc d'extinction. */
+  function entreeEligible() {
+    return {
+      ...dossierAllume(),
+      reponses: [reponse({ scores: { total: 30 } }), reponse({ idQuestionnaire: 'Q_STR_01', scores: mesureArret(2) })],
+      reglesArret: [arret({})],
+    };
+  }
+
+  it('une contradiction OUVERTE empêche l\'extinction — et une ESCALADÉE aussi', () => {
+    for (const statut of ['ouverte', 'escaladee_praticien'] as const) {
+      const recos = evaluerOrientation({ ...entreeEligible(), contradictions: [constat(statut)] });
+      expect(recos).toHaveLength(1);
+      expect(recos[0].extinction ?? null).toBeNull();
+      // La ligne ne perd RIEN d'autre : motifs et place intacts.
+      expect(recos[0].motifs.map(motif => motif.regleId)).toEqual(['R-TEST-01']);
+    }
+  });
+
+  it('une contradiction RÉSOLUE n\'empêche rien — contre-épreuve', () => {
+    const recos = evaluerOrientation({ ...entreeEligible(), contradictions: [constat('resolue')] });
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+  });
+
+  it('une CONVERGENCE non résolue n\'empêche rien — un accord de sources n\'est pas une contradiction', () => {
+    // Le type prévoit trois formes ; seule une INCOHÉRENCE ouverte bloque
+    // (DISCORDANCE, CONFLIT_SOURCES). Figé ici avant que CONVERGENCE soit
+    // peuplée — sans ce banc, le partage se déciderait le jour où elle l'est.
+    const convergence: ContradictionFinding = {
+      ...constat('ouverte'),
+      forme: 'CONVERGENCE',
+      graduation: 'CONVERGENCE_FORTE',
+    };
+    const recos = evaluerOrientation({ ...entreeEligible(), contradictions: [convergence] });
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+
+    // Et un CONFLIT_SOURCES ouvert bloque comme une discordance.
+    const conflit: ContradictionFinding = { ...constat('ouverte'), forme: 'CONFLIT_SOURCES' };
+    const bloque = evaluerOrientation({ ...entreeEligible(), contradictions: [conflit] });
+    expect(bloque[0].extinction ?? null).toBeNull();
+  });
+
+  it('liste vide ou absente : le comportement d\'extinction est inchangé — anti-vacuité', () => {
+    for (const contradictions of [undefined, [] as ContradictionFinding[]]) {
+      const recos = evaluerOrientation({ ...entreeEligible(), contradictions });
+      expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    }
+  });
+
+  it('une contradiction ne DÉCLENCHE jamais rien : hors extinction, la sortie est identique', () => {
+    // Le sens unique de DC-30, mesuré plutôt qu'affirmé : sur un dossier SANS
+    // règle d'arrêt, ajouter une contradiction ouverte ne change pas un octet
+    // de la sortie — ni ligne, ni motif, ni ordre.
+    const sans = evaluerOrientation(dossierAllume());
+    const avec = evaluerOrientation({ ...dossierAllume(), contradictions: [constat('ouverte')] });
+    expect(avec).toEqual(sans);
+  });
+});
+
 describe('evaluerOrientation — `dejaRepondu` excluant', () => {
   const cibleQuestionnaire = regle({ suggestions: [{ questionnaireId: 'Q_STR_05', priorite: 1 }] });
 
@@ -867,6 +947,120 @@ describe('extinction — un instrument qui ne dit pas sa complétude n\'éteint 
         reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 0, repondus: 21, items: 21, interpretation: bandeFavorable } }),
       ],
       reglesArret: [arretParBande],
+    });
+    expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+  });
+
+  // LA SECONDE MOITIÉ DE LA GARDE « muet OU incomplet » ([[D-055]] arbitrage 3),
+  // et le SEUL chemin où elle n'est pas une redite de la garde générale : la
+  // zone garantie par un `bandePlancher` atteint un déclencheur SANS mesure,
+  // sur un recueil incomplet — c'est sa raison d'être. Une règle d'arrêt ne
+  // doit jamais s'appuyer dessus. Retirer `comptes.manquants > 0` de la garde
+  // fait rougir CE banc et lui seul.
+  it('un plancher n\'éteint JAMAIS — même sur une zone qu\'il garantit', () => {
+    const arretSurPlancher = arret({
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Élevé'] } },
+      ],
+    });
+    const porteurAvecPlancher = {
+      total: 30,
+      repondus: 15,
+      items: 21,
+      interpretation: null,
+      bandePlancher: {
+        garanti: true,
+        label: 'Élevé',
+        color: 'danger',
+        labelsPossibles: ['Élevé'],
+        couleursPossibles: ['danger'],
+      },
+    };
+    // Le déclencheur EST atteint par le plancher — contre-épreuve d'abord, sur
+    // une règle d'ORIENTATION : sans elle, ce banc serait vert même si le
+    // plancher ne garantissait rien.
+    const regleOrientation = regle({
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Élevé'] } },
+      ],
+    });
+    const allumee = evaluerOrientation({
+      reponses: [reponse({ idQuestionnaire: 'Q_STR_01', scores: porteurAvecPlancher })],
+      idsQuestionnairesAssignes: [],
+      regles: [regleOrientation],
+    });
+    expect(allumee).toHaveLength(1);
+    expect(allumee[0].motifs[0].conditions[0]).toContain('au moins');
+
+    // La MÊME zone, portée par une règle d'ARRÊT : la garde de complétude lit
+    // `manquants > 0` et refuse — un plancher propose, il n'éteint pas.
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: porteurAvecPlancher }),
+      ],
+      reglesArret: [arretSurPlancher],
+    });
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+});
+
+describe('extinction — la garde de complétude lit l\'axe visé, avec la résolution d\'extraireCible', () => {
+  const bandeNormale = { label: 'Normal', color: 'success' };
+
+  function arretSurAxe(sousScore: string) {
+    return arret({
+      declencheurs: [
+        { type: 'zone' as const, idQuestionnaire: 'Q_STR_04', sousScore, zone: { type: 'interpretation' as const, labels: ['Normal'] } },
+      ],
+    });
+  }
+
+  it('un axe visé INTROUVABLE refuse — jamais de repli sur les comptes de la racine', () => {
+    // La racine publie des comptes COMPLETS : un repli racine conclurait
+    // « complet » et laisserait le déclencheur trancher. L'axe `S` n'existe
+    // pas chez ce porteur : illisible, donc refus.
+    //
+    // HONNÊTETÉ DE BANC : ce cas est DOUBLEMENT fermé — le déclencheur échoue
+    // aussi, `extraireCible` ne trouvant pas l'axe. La mutation « repli
+    // racine » ne rougit donc pas ici (mesuré) ; ce qui la rattrape est le
+    // banc suivant, où l'ORDRE de résolution est le seul juge. Celui-ci épingle
+    // le comportement, il ne prouve pas la garde seule.
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({
+          idQuestionnaire: 'Q_STR_04',
+          scores: { total: 0, repondus: 21, items: 21, subScores: [{ id: 'D', total: 0, repondus: 7, items: 7, interpretation: bandeNormale }] },
+        }),
+      ],
+      reglesArret: [arretSurAxe('S')],
+    });
+    expect(recos[0].extinction ?? null).toBeNull();
+  });
+
+  it('l\'id prime sur le libellé — la garde lit le MÊME axe que le déclencheur', () => {
+    // Un axe `S` complet et favorable, et un axe voisin dont le LABEL vaut
+    // « S », incomplet. Si la garde résolvait par libellé d'abord — ou dans un
+    // autre ordre qu'`extraireCible` —, elle lirait l'axe incomplet et
+    // refuserait une extinction légitime.
+    const recos = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({
+          idQuestionnaire: 'Q_STR_04',
+          scores: {
+            subScores: [
+              { id: 'X', label: 'S', total: 1, repondus: 1, items: 7, interpretation: null },
+              { id: 'S', label: 'Stress', total: 0, repondus: 7, items: 7, interpretation: bandeNormale },
+            ],
+          },
+        }),
+      ],
+      reglesArret: [arretSurAxe('S')],
     });
     expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
   });

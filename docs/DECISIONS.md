@@ -4,6 +4,169 @@
 
 ## Décisions actives
 
+### D-055 — Ce qu'un moteur muet doit publier pour qu'une extinction devienne possible, et ce qui l'interdit
+
+- Date : 2026-08-13
+- Statut : accepté (décision utilisateur du 2026-08-13, approbation du plan du LOT-08)
+- Domaine : clinique, moteur de scoring (`group_majority`), règles d'arrêt, garde de restitution
+- Contexte : le LOT-03 a livré STOP-STR inerte, et l'a écrit ([[D-053]],
+  arbitrage 8) : son déclencheur porteur `Q_STR_01` passe par `group_majority`,
+  qui ne publie aucun compte de recueil, et `totalSousScore` rend un total dès
+  un item par groupe — trois réponses sur vingt et une produisaient la bande la
+  plus favorable de la grille. La garde de complétude du moteur d'arrêt refuse
+  donc d'éteindre, à raison. S'y ajoutent deux dettes nommées par [[D-053]] :
+  le §5 (« une contradiction ouverte interdit l'extinction ») n'a aucun code,
+  et le garde de restitution ne distingue pas une cible éteinte d'une cible
+  recommandée. Le LOT-08 lève ces trois verrous ; cette décision précède sa
+  première ligne de code (`DC-17`, `DC-18`).
+- Fait relu en production le 2026-08-13 (`execute_sql`) : **une seule
+  passation `Q_STR_01`**, sans `rawAnswers` — donc déjà inerte pour tout
+  raisonnement recalculé (motif 1 de `scoresRecalculesPourRaisonnement`), et
+  son instantané stocké n'est pas réécrit. Les arbitrages ci-dessous ne
+  déplacent **aucune** interprétation réellement servie aujourd'hui.
+- Décision : six arbitrages, rendus ensemble.
+
+**1. `group_majority` publie `missing` et `repondus` à la racine, et rien
+d'autre.** C'est la forme « moteurs à score global » que `comptesDuRecueil`
+(`orientationEngine.ts`) sait déjà lire, celle de `sum`, `psqi` et `tfd`.
+**Aucun champ nouveau n'atteint le prompt, donc aucun bump de consigne** — le
+motif exact, corrigé en revue (M11) : la consigne ne décrit `items`/`repondus`
+que sous les sous-scores, mais `sum` publie `missing`/`repondus` à la racine
+depuis #561 et l'ensemble admis du banc de consigne les contient déjà. Les
+comptes sont sommés depuis `totalSousScore` par groupe, jamais recopiés d'une
+déclaration. Pas de comptes par groupe : aucun consommateur ne
+les lit — un groupe entièrement vide rend déjà `total: null`, et le bloc
+« groupe dominant » n'est atteint que sur un total global non nul, donc sur
+trois groupes mesurés. Une note de recueil partiel dit le trou en français
+(patron `tfd`), en s'ajoutant à la note existante de l'instrument sans
+l'écraser.
+
+**2. `total` ne change pas ; la bande tombe sur recueil partiel.** Le total
+reste servi tel quel : c'est une mesure réelle, biaisée vers le bas, et
+d'autres consommateurs le lisent — le partage exact de `tfd`. La bande
+(`interpretation`, et avec elle `dominant` et `protocol`) n'est plus servie que
+sur recueil complet (`missing === 0`) : une grille calibrée sur vingt et un
+items ne se lit pas sur trois, et la bande fabriquée était la plus favorable,
+affichée sur la fiche praticien — même classe que le PSQI et le TFD, fermée par
+les mêmes précédents. Pas de `bandePlancher` pour `group_majority` : aucune
+règle d'orientation publiée ne lit cette bande, et un plancher — garantie
+basse — ne peut par construction jamais garantir la bande favorable qu'exige
+une extinction ; ce serait du code mort qu'aucune mutation ne ferait rougir.
+
+**3. La garde de complétude du moteur d'arrêt refuse « muet OU incomplet »,
+explicitement.** Elle refusait un porteur sans comptes lisibles ; elle refuse
+désormais aussi, dans la même garde, un porteur dont les comptes disent un
+manquant. Le refus sur recueil partiel était déjà obtenu par ricochet — la
+garde générale d'`extraireCible` retire la mesure, le déclencheur ne mord pas —
+mais une extinction ne se refuse pas par ricochet : la borne se lit dans le
+moteur d'arrêt lui-même. Fail-closed renforcé, jamais desserré ; aucune valeur
+clinique n'entre.
+
+**Et elle lit AU GRAIN DU DÉCLENCHEUR — fait découvert en écrivant le banc de
+bout en bout, pas en relisant le code.** La garde lisait les comptes à la
+RACINE du porteur pour tous les déclencheurs ; or les moteurs à sous-scores
+(`subscore` — le DASS-21, deux des quatre déclencheurs de STOP-STR) ne
+publient aucun compte racine, leur complétude vivant sur chaque axe
+(`repondus`/`items`). Un déclencheur sur `Q_STR_04/S` échouait donc la garde
+même sur une passation complète : publier les comptes de `Q_STR_01` n'aurait
+fait que déplacer le verrou d'un instrument à l'autre, et la signature aurait
+été un geste vide une seconde fois. La garde lit désormais l'axe visé quand le
+déclencheur en vise un, la racine sinon, avec la résolution d'axe
+d'`extraireCible` (l'id prime sur le libellé) ; axe introuvable ⇒ illisible ⇒
+refus, jamais un repli sur la racine.
+
+**4. « Contradiction ouverte » ([[D-053]] §5) : un constat du moteur de
+contradictions dont `resolution.statut !== 'resolue'`, sur le DOSSIER entier.**
+`ouverte` et `escaladee_praticien` bloquent toutes deux — une escalade est une
+discordance que personne n'a tranchée, pas une discordance résolue. Le
+périmètre est le dossier, pas l'axe : aucun vocabulaire d'axe n'existe sur ces
+tables, et en inventer un serait une structure clinique nouvelle sans source ;
+bloquer plus large ne peut que raréfier l'extinction, c'est le sens du
+fail-closed ; et en V1, C-STR (seule contradiction publiée) et STOP-STR (seule
+règle d'arrêt) portent le même axe — les deux lectures coïncident, l'arbitrage
+se rouvre si des contradictions d'autres axes gênent un jour réellement.
+L'écart [[D-050]] (le moteur de contradictions évalue le dossier là où `review`
+porte sur l'épisode T0) est constaté, non refermé : l'orientation raisonne
+elle-même sur les dernières passations du dossier. Le blocage n'existe que si
+le système de contradictions est actif (`contradictionsActives()` : drapeau ET
+table signée) — un système éteint ne produit aucun constat, donc rien
+d'« ouvert » ; c'est la hiérarchie de verrous déjà en place, pas un verrou
+nouveau. **Le sens unique est garanti par construction** : les constats ne sont
+lus que pour interdire l'extinction, jamais pour la déclencher ni pour toucher
+une recommandation (`DC-30`) — un banc compare les deux sorties. Précision de
+revue (M8), figée par banc avant que les formes vides soient peuplées : une
+`CONVERGENCE` non résolue ne bloque PAS — un accord de sources n'est pas une
+contradiction ; seules `DISCORDANCE` et `CONFLIT_SOURCES` interdisent.
+
+**5. Le garde de restitution distingue éteinte et recommandée, lexicalement,
+et journalise.** Même régime que le garde existant : log `warn`, jamais de
+censure — l'objet actionnable vient de la route déterministe, pas de la prose.
+Le critère est décidable parce que le vocabulaire l'est : autour de chaque
+citation d'une cible, une fenêtre de caractères normalisés (patron de
+l'adjacence « pack ») est fouillée pour un petit vocabulaire fermé de marqueurs
+d'extinction — famille « étein- », « extinction », « pas d'objet », « pas/plus
+nécessaire », « plus lieu », et le libellé servi (`LIBELLE_EXTINCTION`). Ces
+marqueurs sont ceux que la consigne v25 impose déjà au modèle (« dis qu'elle
+n'est pas nécessaire en l'état, et reprends le motif d'arrêt ») : **aucun bump
+de consigne**, et deux bancs les tirent des textes de production eux-mêmes —
+reformuler `LIBELLE_EXTINCTION` ou le motif de STOP-STR sans réviser le
+vocabulaire rougit. La fenêtre est ASYMÉTRIQUE, sur mesure et non sur
+intuition : 200 en amont, 420 en aval — le motif de STOP-STR, que la consigne
+fait citer après la cible, porte son unique marqueur à ~235 caractères
+normalisés de sa tête, et une fenêtre symétrique de 200 accusait la
+restitution la plus fidèle possible (trouvé par le banc dérivé du motif). Deux sens : une cible éteinte citée sans marqueur proche est un
+écart (présentée comme courante) ; une cible recommandée vivante citée avec
+marqueur proche est un écart (présentée comme éteinte). Les angles morts — une
+paraphrase sans marqueur, deux cibles dans la même fenêtre — sont documentés en
+tête de module, comme ceux du garde d'origine : un garde borné et honnête vaut
+mieux qu'une garantie prétendue.
+
+**6. Rien d'autre ne bouge.** Aucun seuil, bande ou valeur clinique nouveau
+(`DC-19`, `DC-20`) ; aucune migration, rien de persisté ; la table d'arrêt
+reste **non signée** — la production ne change pas au merge, et la signature
+demeure l'acte praticien séparé que [[D-053]] décrit (étape 6 du lot,
+confirmation distincte, après relecture du bloc « à connaître avant de
+signer » de `stopRulesV1.ts`).
+
+- Conséquence latérale, nommée puis COMPLÉTÉE en revue (B1) : « Mon équilibre »
+  lit les comptes racine (`extraireValeurBrute`, `equilibre/score.ts`) et
+  `Q_STR_01` y sert le **besoin 9** — une FONDATION CRITIQUE — en échelle
+  inversée (`inverser: true`). Un recueil partiel y produisait une valeur
+  biaisée bas, donc un bien-être surestimé après inversion ; il vaut désormais
+  « non mesuré ». L'effet va dans les deux sens : un `Q_STR_01` partiel et déjà
+  sévère (`total >= 28`, seule source répondue) effondrait le besoin 9 et
+  plafonnait le score global à 50 — le rendre non mesuré lève ce plafond, et le
+  score REMONTE. C'est un changement de définition du besoin :
+  `VERSION_SCORE_EQUILIBRE` est bumpée **v12/v13 → v14/v15**, comme aux deux
+  précédents de la même classe (PSQI/besoin 5 → v10/v11, TFD/besoin 4 →
+  v12/v13), doctrine dans `constants.ts` et banc « le plafond de fondation
+  critique tombe » dans `score.test.ts`. Stock de production nul (une
+  passation, sans `rawAnswers`) — mais les deux précédents ont bumpé sur un
+  stock aussi mince : c'est le FLUX que l'étiquette gouverne.
+- Conséquences : `web/src/lib/questions.ts` (moteur `group_majority`),
+  `web/src/lib/clinical/orientationEngine.ts` (garde d'arrêt, entrée
+  `contradictions`), `web/src/lib/clinical/orientationService.ts` (câblage des
+  constats), `web/src/lib/clinical/contradictionsService.ts` (helper partagé,
+  même verrou), `web/src/lib/clinical/verifierRestitutionOrientation.ts` et
+  `api/praticien/synthese/route.ts` (listes éteintes/recommandées). Bancs à
+  chaque étage, dont le cas « trois items sur vingt et un » en vrai
+  `calculateScore`.
+- Alternatives écartées : des comptes par groupe (aucun lecteur, et le contrat
+  du prompt exigerait de décrire des champs que personne ne consomme) ; retirer
+  ou nuller `total` sur recueil partiel (le total partiel est une mesure réelle
+  que d'autres consommateurs lisent — c'est la bande qui ment, pas le nombre) ;
+  une `bandePlancher` pour `group_majority` (code mort pour une règle d'arrêt,
+  cf. arbitrage 2) ; un blocage d'extinction par axe (vocabulaire d'axe
+  inexistant, arbitrage 4) ; un bump de consigne pour imposer un marqueur
+  canonique (la v25 induit déjà les marqueurs retenus ; bumper serait un acte
+  visible sans gain de garde).
+- Dettes reconduites, sans les redécouvrir : borne d'ancienneté de l'exclusion
+  `dejaRepondu` (question ouverte de campagne, aucun chiffre fondé) ;
+  complétude du moteur Berlin (`Q_SOM_03`), préalable à toute reprise de
+  STOP-APN ; régénération des synthèses historiques ([[D-053]] §6, hors
+  campagne) ; le garde de restitution reste journalisant, pas bloquant — en
+  faire un rejet serait un arbitrage nouveau sur le coût d'un faux positif.
+
 ### D-054 — Ce qu'une priorité candidate a le droit d'affirmer, et qui recalcule la chaîne
 
 - Date : 2026-08-12

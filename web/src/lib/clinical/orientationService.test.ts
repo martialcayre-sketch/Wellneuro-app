@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles } = vi.hoisted(() => ({
+const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContraMeta, mockContraRegles } = vi.hoisted(() => ({
   prisma: {
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
@@ -21,6 +21,13 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles } = vi.hois
     claimsSource: [] as unknown[],
   },
   mockArretRegles: [] as unknown[],
+  mockContraMeta: {
+    version: 'contradictions-nnpp2-v1',
+    validationExterne: false,
+    dateValidation: null as string | null,
+    claimsSource: [] as unknown[],
+  },
+  mockContraRegles: [] as unknown[],
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -34,6 +41,10 @@ vi.mock('@/lib/clinical/stopRulesV1', () => ({
   STOP_RULES_V1: mockArretRegles,
   STOP_RULES_SHA256: 'sha-arret-test',
   LIBELLE_EXTINCTION: 'Information suffisante — pas d’exploration supplémentaire actuellement.',
+}));
+vi.mock('@/lib/clinical/contradictionsV1', () => ({
+  CONTRADICTIONS_METADATA: mockContraMeta,
+  CONTRADICTIONS_RULES_V1: mockContraRegles,
 }));
 
 import { evaluerOrientationPourPatient, orientationActive, tableArretSignee } from './orientationService';
@@ -61,6 +72,10 @@ beforeEach(() => {
   mockArretMeta.dateValidation = null;
   mockArretMeta.claimsSource = [];
   mockArretRegles.length = 0;
+  mockContraMeta.validationExterne = false;
+  mockContraMeta.dateValidation = null;
+  mockContraMeta.claimsSource = [];
+  mockContraRegles.length = 0;
   vi.stubEnv('WN_ENABLE_ORIENTATION_NNPP2', '1');
 });
 
@@ -598,5 +613,54 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
     expect(resultat.recommandations).toHaveLength(1);
     expect(resultat.recommandations[0].dejaRepondu).toBe(true);
+  });
+
+  // ── UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION — [[D-053]] §5, câblé
+  // par [[D-055]]. Le service fournit au moteur les constats du dossier, par
+  // le MÊME chemin que le cockpit (`constatsContradictionsPourDossier`, verrou
+  // compris) : drapeau + table de contradictions signée. ──────────────────────
+
+  function signerLesContradictions() {
+    mockContraMeta.validationExterne = true;
+    mockContraMeta.dateValidation = '2026-08-13';
+    mockContraMeta.claimsSource = ['WN-CL-0000-012'];
+  }
+
+  // Une règle de contradiction qui mord sur le dossier du banc : le PSQI est
+  // mesuré, la comparaison `>= 0` est toujours vraie sur une mesure — et
+  // jamais atteinte sans mesure (fail-closed du vocabulaire partagé).
+  const CONTRA_SUR_DOSSIER = {
+    id: 'C-TEST',
+    statut: 'publiee',
+    forme: 'DISCORDANCE',
+    declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_SOM_01', operateur: '>=', valeur: 0 }],
+    description: 'Discordance de test.',
+    importance: 'critical_for_decision',
+    hypotheses: ['hypothèse'],
+    actionSuggeree: 'clarifier',
+    justificationClaims: [{ claimId: 'WN-CL-0000-012', versionClaim: 'v1.0' }],
+    limitations: [],
+  };
+
+  it('contradictions ACTIVES et constat ouvert : l\'extinction est refusée', async () => {
+    signerLArret();
+    signerLesContradictions();
+    vi.stubEnv('WN_ENABLE_CONTRADICTIONS_NNPP2', '1');
+    mockContraRegles.push(CONTRA_SUR_DOSSIER);
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+  });
+
+  it('système de contradictions ÉTEINT : le même dossier éteint — hiérarchie des verrous', async () => {
+    // La règle de contradiction existe et mordrait, mais le système n'est pas
+    // actif (drapeau absent) : aucun constat ne naît, donc rien d'« ouvert ».
+    signerLArret();
+    signerLesContradictions();
+    mockContraRegles.push(CONTRA_SUR_DOSSIER);
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
   });
 });

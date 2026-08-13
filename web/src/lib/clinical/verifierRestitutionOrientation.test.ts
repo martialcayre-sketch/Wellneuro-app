@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PACKS_REGISTRY } from '@/lib/questionnaires-functional';
+import { LIBELLE_EXTINCTION } from './stopRulesLibelles';
+import { STOP_RULES_V1 } from './stopRulesV1';
 import {
   formaterEcarts,
   verifierRestitutionOrientation,
@@ -240,6 +242,156 @@ describe('allowlist vide — plus aucun pack n’est proposé (2026-08-06)', () 
     const synthese: TexteSynthese = { resume_praticien: 'Je propose aussi le HAD (Q_NEU_11).' };
     expect(verifierRestitutionOrientation(synthese, AUCUN_PACK)).toEqual([
       { type: 'questionnaire', identifiant: 'Q_NEU_11' },
+    ]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ÉTEINTE ≠ RECOMMANDÉE — [[D-055]], arbitrage 5 (LOT-08).
+//
+// Le garde mesure la PRÉSENTATION : une cible éteinte doit voisiner un marqueur
+// d'extinction à chaque citation, une cible recommandée vivante ne doit jamais
+// en voisiner. Les angles morts sont en tête de module ; ces bancs couvrent le
+// contrat, ses contre-épreuves, et un faux positif assumé.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('verifierRestitutionOrientation — éteinte ≠ recommandée', () => {
+  const FOURNIS_EXTINCTION = {
+    packs: [] as const,
+    // L'allowlist de citation garde TOUTES les cibles transmises, éteintes
+    // comprises : la séparation ne retire pas le droit de citer.
+    questionnaires: ['Q_STR_05', 'Q_STR_02'] as const,
+    eteints: { packs: [] as const, questionnaires: ['Q_STR_05'] as const },
+    recommandes: { packs: [] as const, questionnaires: ['Q_STR_02'] as const },
+  };
+
+  it('POSITIF — une cible éteinte citée sans marqueur est présentée comme recommandée', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose de faire passer le BMS-10 (Q_STR_05) pour évaluer le burnout.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
+    ]);
+  });
+
+  it('NÉGATIF — la formulation que la consigne exige ne déclenche rien, même sur deux phrases', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Le BMS-10 (Q_STR_05) avait été proposé pour le dépistage. Il n’est plus nécessaire en l’état, les instruments spécifiques étant rassurants.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('NÉGATIF — le mot « éteinte » lui-même suffit comme marqueur', () => {
+    const synthese: TexteSynthese = {
+      points_de_vigilance: ['Recommandation Q_STR_05 éteinte : information suffisante.'],
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('POSITIF — une cible recommandée vivante voisinant un marqueur est présentée comme éteinte', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Le PSS-10 (Q_STR_02) n’est pas nécessaire en l’état.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_02', sens: 'recommandee_presentee_eteinte' },
+    ]);
+  });
+
+  it('NÉGATIF — une cible recommandée citée sans marqueur, et une éteinte non citée : rien', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose le PSS-10 (Q_STR_02) pour mesurer l’intensité du stress.',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([]);
+  });
+
+  it('sans les listes eteints/recommandes, le comportement historique est inchangé — anti-vacuité', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Je propose de faire passer le BMS-10 (Q_STR_05).',
+    };
+    expect(
+      verifierRestitutionOrientation(synthese, { packs: [], questionnaires: ['Q_STR_05'] }),
+    ).toEqual([]);
+  });
+
+  // FAUX POSITIF ASSUMÉ, ÉPINGLÉ TEL QUEL — même régime que celui de
+  // l'adjacence pack : deux cibles dans la même fenêtre de 200 caractères
+  // partagent leurs marqueurs. Journal seul, aucune censure ; l'élargir ou le
+  // corriger devra faire rougir cette ligne, pas passer en silence.
+  it('FAUX POSITIF ASSUMÉ — une recommandée vivante dans la fenêtre du marqueur d’une éteinte signale', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien:
+        'Le BMS-10 (Q_STR_05) n’est plus nécessaire en l’état. Je propose le PSS-10 (Q_STR_02).',
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS_EXTINCTION)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_02', sens: 'recommandee_presentee_eteinte' },
+    ]);
+  });
+
+  it('formaterEcarts rend le sens de l’écart', () => {
+    expect(
+      formaterEcarts([
+        { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
+      ]),
+    ).toBe('extinction:eteinte_presentee_recommandee:Q_STR_05');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANTI-DÉRIVE DES MARQUEURS — revue wn-reviewer du 2026-08-13 (M4, M5).
+//
+// Les marqueurs qui comptent sont ceux des textes RÉELLEMENT servis : le
+// libellé d'extinction affiché partout, et le motif de STOP-STR que la
+// consigne demande de reprendre « tel qu'il t'est donné ». Ces bancs les
+// tirent des constantes de production — reformuler `LIBELLE_EXTINCTION` ou le
+// motif de la règle sans réviser le vocabulaire du garde rougit ici, au lieu
+// de basculer toutes les extinctions en faux écarts sans rien de rouge.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('verifierRestitutionOrientation — les marqueurs suivent les textes servis', () => {
+  const FOURNIS = {
+    packs: [] as const,
+    questionnaires: ['Q_STR_05'] as const,
+    eteints: { packs: [] as const, questionnaires: ['Q_STR_05'] as const },
+    recommandes: { packs: [] as const, questionnaires: [] as const },
+  };
+
+  it('le libellé d’extinction servi (LIBELLE_EXTINCTION) blanchit une cible éteinte', () => {
+    const synthese: TexteSynthese = {
+      resume_praticien: `Q_STR_05 : ${LIBELLE_EXTINCTION}`,
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS)).toEqual([]);
+  });
+
+  it('le motif de STOP-STR, repris tel que donné, blanchit une cible éteinte', () => {
+    // La consigne v25 : « reprends le motif d'arrêt tel qu'il t'est donné ».
+    // C'est LE texte que le modèle a sous les yeux — s'il ne comptait pas comme
+    // marqueur, la sortie la plus fidèle possible serait accusée.
+    const stopStr = STOP_RULES_V1.find(regle => regle.id === 'STOP-STR');
+    expect(stopStr).toBeDefined();
+    const synthese: TexteSynthese = {
+      resume_praticien: `Le BMS-10 (Q_STR_05) n'est plus proposé. ${stopStr?.motif}`,
+    };
+    expect(verifierRestitutionOrientation(synthese, FOURNIS)).toEqual([]);
+  });
+
+  it('la fenêtre est bornée par le HAUT dans les deux sens : un marqueur trop loin ne blanchit pas', () => {
+    // 200 en amont, 420 en aval. Un remplissage clinique neutre qui pousse le
+    // marqueur au-delà de ces bornes doit laisser l'écart : élargir l'une des
+    // fenêtres — le geste qui multiplie les faux positifs sur `recommandes` —
+    // doit rougir ici, pas passer en silence.
+    const remplissage = 'Le dossier décrit un sommeil réparateur, une alimentation variée et une activité physique régulière. '.repeat(5);
+    const apres: TexteSynthese = {
+      resume_praticien: `Je retiens le Q_STR_05 pour la suite. ${remplissage} Une exploration n'est pas nécessaire en l'état.`,
+    };
+    expect(verifierRestitutionOrientation(apres, FOURNIS)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
+    ]);
+    const avant: TexteSynthese = {
+      resume_praticien: `Une exploration n'est pas nécessaire en l'état. ${remplissage.repeat(1)} Je retiens le Q_STR_05 pour la suite.`,
+    };
+    expect(verifierRestitutionOrientation(avant, FOURNIS)).toEqual([
+      { type: 'extinction', identifiant: 'Q_STR_05', sens: 'eteinte_presentee_recommandee' },
     ]);
   });
 });

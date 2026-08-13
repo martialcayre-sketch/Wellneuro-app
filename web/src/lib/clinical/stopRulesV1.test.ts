@@ -8,7 +8,9 @@ import {
   STOP_RULES_V1,
 } from './stopRulesV1';
 import { ORIENTATION_RULES_V1 } from './orientationRulesV1';
-import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 
 // Verrou de la table des règles d'arrêt ([[D-053]]) — patron
 // `orientationRulesV1.test.ts`. Ce banc n'atteint pas ce qu'une règle vaut
@@ -284,5 +286,173 @@ describe('stopRulesV1 — verrou de contenu', () => {
 
   it('le libellé d’extinction est une phrase française stable', () => {
     expect(LIBELLE_EXTINCTION).toContain('Information suffisante');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOP-STR DE BOUT EN BOUT — vrai moteur de scoring, vraie table, vraies règles
+// d'orientation ([[D-055]], LOT-08).
+//
+// Les bancs du moteur (`orientationEngine.test.ts`) jouent des objets de score
+// FORGÉS : ils prouvent le contrat de la garde, pas que la chaîne réelle le
+// remplit. C'est précisément l'écart qui a laissé STOP-STR inerte un lot
+// entier — et qui cachait un second verrou : la garde lisait les comptes à la
+// racine quand le DASS-21 (`subscore`) ne les publie que par axe. Ici, chaque
+// passation sort de `calculateScore` sur l'instrument de production, et la
+// table évaluée est `STOP_RULES_V1` elle-même (injectée : elle reste NON
+// signée, et ces bancs ne passent pas par le verrou du service).
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('STOP-STR de bout en bout — calculateScore réel, table réelle, configuration réelle du service', () => {
+  // LA CONFIGURATION EST CELLE QUE LE SERVICE ÉMET, PAS UNE VARIANTE DE
+  // CONFORT — revue wn-reviewer du 2026-08-13 (B3). `orientationService`
+  // verrouille `reglesArret` et `exclureDejaRepondu` ENSEMBLE : une table
+  // d'arrêt fournie implique l'exclusion, et `statut_validite` vaut `VALID`
+  // par défaut de colonne. Une première rédaction de ce banc jouait la table
+  // sans l'exclusion : ses deux lignes « éteintes » (PSS-10, Cungi — déjà
+  // passés) n'existent jamais en production, l'exclusion les retire avant
+  // qu'il y ait quoi que ce soit à éteindre.
+  const ITEMS_STR_01 = [
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
+    'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14',
+    'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
+  ];
+  const ITEMS_DASS = Array.from({ length: 21 }, (_, i) => `Q${String(i + 1).padStart(3, '0')}`);
+  const ITEMS_CUNGI = Array.from({ length: 11 }, (_, i) => `CU${i + 1}`);
+
+  function reponsesAZero(ids: string[]): Record<string, number> {
+    return Object.fromEntries(ids.map(id => [id, 0]));
+  }
+
+  let compteur = 0;
+  function passation(idQuestionnaire: string, brutes: Record<string, number>): ReponseOrientation {
+    compteur += 1;
+    return {
+      idQuestionnaire,
+      dateReponse: '2026-08-13T10:00:00.000Z',
+      idReponse: `r-${compteur}`,
+      // Le défaut de colonne Prisma — c'est lui que le service transporte.
+      statutValidite: 'VALID',
+      scores: calculateScore(idQuestionnaire, brutes) as Record<string, unknown>,
+    };
+  }
+
+  /**
+   * Le dossier qui éteint RÉELLEMENT, sous la configuration du service :
+   * `Q_MOD_01` avec un axe ADAPTATION_STRESS complet à 8 (bande la plus
+   * sévère — allume `R2-STR-01` `<= 17` ET `R2-STR-03` `<= 8`), PAS de PSS-10
+   * au dossier (sa cible reste donc proposable), et les trois instruments
+   * rassurants de STOP-STR. Le DASS-21 et le Cungi, passés et exploitables,
+   * sortent par l'exclusion `dejaRepondu` : les cibles restantes sont le
+   * PSS-10 (`Q_STR_02`) et le BMS-10 (`Q_STR_05`) — des cibles NON passées,
+   * précisément celles qu'une extinction concerne.
+   */
+  function dossierSansPss10(reponseStr01: ReponseOrientation) {
+    return {
+      reponses: [
+        passation('Q_MOD_01', {
+          ADAPTATION_STRESS_Q001: 2,
+          ADAPTATION_STRESS_Q002: 1,
+          ADAPTATION_STRESS_Q003: 1,
+          ADAPTATION_STRESS_Q004: 2,
+          ADAPTATION_STRESS_Q005: 2,
+        }),
+        // DASS-21 entièrement à 0 : axes S et A en « Normal ».
+        passation('Q_STR_04', reponsesAZero(ITEMS_DASS)),
+        // Cungi entièrement à 0 : « Niveau de stress très bas ».
+        passation('Q_STR_03', reponsesAZero(ITEMS_CUNGI)),
+        reponseStr01,
+      ],
+      idsQuestionnairesAssignes: [],
+      regles: ORIENTATION_RULES_V1,
+      // Drapeau burn-out : la seconde jambe de `R2-STR-02`. Extrait comme en
+      // production, depuis une anamnèse brute — pas un objet forgé à la main.
+      drapeaux: extraireDrapeauxAnamnese({ facteurs_declenchants: ['Stress aigu / burn-out'] }),
+      reglesArret: STOP_RULES_V1,
+      // Le service ne fournit JAMAIS l'un sans l'autre.
+      exclureDejaRepondu: true,
+    };
+  }
+
+  function cible(reco: ReturnType<typeof evaluerOrientation>[number]): string {
+    return reco.cible.type === 'questionnaire' ? reco.cible.questionnaireId : reco.cible.packId;
+  }
+
+  it('un Q_STR_01 complet et rassurant éteint le PSS-10 et le BMS-10 — cibles non passées, motifs et claims servis', () => {
+    const recos = evaluerOrientation(dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01))));
+    const lignesEteintes = recos.filter(reco => reco.extinction);
+    // Les deux cibles restantes après exclusion, toutes deux éteintes : le
+    // PSS-10 (motifs R2-STR-01 + R2-STR-02) et le BMS-10 (motif R2-STR-03).
+    expect(lignesEteintes.map(cible).sort()).toEqual(['Q_STR_02', 'Q_STR_05']);
+    for (const ligne of lignesEteintes) {
+      expect(ligne.extinction?.stopRuleId).toBe('STOP-STR');
+      expect(ligne.extinction?.motif).toContain('conseils de vie antistress');
+      expect(ligne.extinction?.claims.length).toBeGreaterThan(0);
+      // Chaque condition affichée nomme un des quatre déclencheurs lus.
+      expect(ligne.extinction?.conditions.length).toBe(4);
+      // Une ligne éteinte n'est motivée QUE par des règles que STOP-STR nomme.
+      for (const motif of ligne.motifs) {
+        expect(['R2-STR-01', 'R2-STR-02', 'R2-STR-03']).toContain(motif.regleId);
+      }
+      // Et ces cibles ne sont PAS passées : ce sont elles qui alimentent la
+      // liste `eteints` du garde de restitution.
+      expect(ligne.dejaRepondu).toBe(false);
+    }
+  });
+
+  it('avec un PSS-10 défavorable au dossier, RIEN ne s\'éteint — la discordance reste visible (DC-30)', () => {
+    // LE CŒUR DE [[D-053]] arbitrage 2, sous configuration réelle. Le PSS-10
+    // défavorable allume R-STR-01 et R-STR-02 — des règles de MESURE que
+    // STOP-STR ne lit pas. Sa cible BMS-10 partage sa ligne avec R2-STR-03 :
+    // le motif vivant la garde ALLUMÉE, la discordance se voit au lieu d'être
+    // supprimée.
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses.push(
+      passation('Q_STR_02', { P1: 5, P2: 5, P3: 5, P4: 5, P5: 5, P6: 5, P7: 5, P8: 5, P9: 5, P10: 5 }),
+    );
+    const recos = evaluerOrientation(entree);
+    expect(recos.every(reco => !reco.extinction)).toBe(true);
+    const bms = recos.find(reco => cible(reco) === 'Q_STR_05');
+    expect(bms).toBeDefined();
+    expect(bms?.motifs.map(motif => motif.regleId).sort()).toEqual(['R-STR-01', 'R2-STR-03']);
+  });
+
+  it('trois items sur vingt et un — rassurants — n’éteignent RIEN', () => {
+    // Le scénario fondateur du lot : un item par groupe, au minimum. Avant la
+    // publication des comptes, ce recueil décrochait la bande la plus favorable
+    // et aurait éteint dès la table signée.
+    const recos = evaluerOrientation(dossierSansPss10(passation('Q_STR_01', { A1: 0, B8: 0, C15: 0 })));
+    expect(recos.length).toBeGreaterThan(0);
+    expect(recos.every(reco => !reco.extinction)).toBe(true);
+  });
+
+  it('un DASS-21 amputé d’un item de l’axe S n’éteint rien — la garde lit l’axe visé', () => {
+    // Le second verrou du lot, trouvé par CE banc : le DASS est un moteur
+    // `subscore`, sans compte racine. Une garde qui ne lirait que la racine
+    // refuserait TOUJOURS (le banc mordant ci-dessus serait inatteignable) ;
+    // une garde qui ne lirait que le global raterait cet axe amputé. 20 items
+    // sur 21 : l'axe S est incomplet, sa bande n'existe pas, rien ne s'éteint.
+    const dassAmpute = reponsesAZero(ITEMS_DASS);
+    delete (dassAmpute as Record<string, unknown>).Q001;
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses = entree.reponses.map(reponse =>
+      reponse.idQuestionnaire === 'Q_STR_04' ? passation('Q_STR_04', dassAmpute) : reponse,
+    );
+    const recos = evaluerOrientation(entree);
+    expect(recos.every(reco => !reco.extinction)).toBe(true);
+  });
+
+  it('un Cungi seulement « bas » n’éteint rien — contre-épreuve sur la bande, pas la complétude', () => {
+    // Total 11/55 : recueil COMPLET, bande « Niveau de stress bas » — voisine
+    // de celle que la règle cite. Une garde qui n'exigerait que la complétude
+    // laisserait passer ; c'est la ZONE qui doit fermer ici.
+    const entree = dossierSansPss10(passation('Q_STR_01', reponsesAZero(ITEMS_STR_01)));
+    entree.reponses = entree.reponses.map(reponse =>
+      reponse.idQuestionnaire === 'Q_STR_03'
+        ? passation('Q_STR_03', Object.fromEntries(ITEMS_CUNGI.map(id => [id, 1])))
+        : reponse,
+    );
+    const recos = evaluerOrientation(entree);
+    expect(recos.every(reco => !reco.extinction)).toBe(true);
   });
 });

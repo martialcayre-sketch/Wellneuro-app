@@ -5,6 +5,7 @@ import {
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
+import { constatsContradictionsPourDossier } from '@/lib/clinical/contradictionsService';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -324,6 +325,13 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // reçoit aucune règle et l'exclusion reste éteinte. C'est ce qui rend le
     // merge invisible en production, où l'orientation, elle, est allumée.
     reglesArret: tableArretSignee() ? STOP_RULES_V1 : [],
+    // UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION ([[D-053]] §5,
+    // [[D-055]]). Les constats viennent du service de contradictions — même
+    // recalcul, même doctrine de mise à `null`, même verrou (drapeau + table
+    // signée) que le cockpit : un système de contradictions éteint ne produit
+    // aucun constat, donc rien d'« ouvert ». Lus sur les lignes déjà chargées
+    // ci-dessus, avec la même sélection d'anamnèse.
+    contradictions: constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
     exclureDejaRepondu: tableArretSignee(),
   });
 

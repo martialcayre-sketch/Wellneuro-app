@@ -471,3 +471,73 @@ describe('besoin 5 — le PSQI partiel n’est plus une mesure', () => {
     expect(calculerCouvertureBesoin(5, { Q_SOM_01: partielDegrade })).toBeNull();
   });
 });
+
+// ── Q_STR_01 partiel et besoin 9 ────────────────────────────────────────────
+//
+// TROISIÈME OCCURRENCE DE LA MÊME CLASSE (D-055 / LOT-08, revue wn-reviewer B1) :
+// `group_majority` publie désormais `missing` à la racine, donc
+// `extraireValeurBrute` écarte une passation partielle de `Q_STR_01` — source du
+// besoin 9, `inverser: true`, `max: 42`, fondation critique. Même direction
+// contre-intuitive que le PSQI (besoin 5) et le TFD (besoin 4) : retirer une
+// mesure basse est RASSURANT, le plafond de fondation critique peut tomber, et
+// c'est ce qui a imposé le bump v12/v13 → v14/v15.
+describe('besoin 9 — le Q_STR_01 partiel n’est plus une mesure', () => {
+  const ITEMS_STR_01 = [
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
+    'B8', 'B9', 'B10', 'B11', 'B12', 'B13', 'B14',
+    'C15', 'C16', 'C17', 'C18', 'C19', 'C20', 'C21',
+  ];
+  const COMPLET_AU_MIEUX: Record<string, number> = Object.fromEntries(
+    ITEMS_STR_01.map(id => [id, 0]),
+  );
+
+  it('une passation COMPLÈTE renseigne toujours le besoin 9 — contre-épreuve', () => {
+    expect(calculerCouvertureBesoin(9, { Q_STR_01: COMPLET_AU_MIEUX })).toBeCloseTo(1, 6);
+  });
+
+  it('un SEUL item manquant rend le besoin 9 non mesuré, et non mieux couvert', () => {
+    const { C21, ...vingtSurVingtEtUn } = COMPLET_AU_MIEUX;
+    void C21;
+    expect(calculerCouvertureBesoin(9, { Q_STR_01: vingtSurVingtEtUn })).toBeNull();
+  });
+
+  it('LE PLAFOND DE FONDATION CRITIQUE TOMBE — c’est ce qui impose le bump', () => {
+    // Même patient, mêmes réponses aux autres besoins. Seul change `Q_STR_01` :
+    // complet et sévère d'un côté, amputé d'un item de l'autre. Le seuil de
+    // bascule (total >= 28 → couverture 1 − 28/42 = 0,333 < 0,34) vaut quand
+    // `Q_STR_01` est la SEULE source répondue du besoin 9 — c'est le cas ici,
+    // ni Q_STR_02 ni Q_STR_03 ne sont fournis.
+    const autresBesoins: Record<number, number> = {};
+    for (const id of [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12]) autresBesoins[id] = 1;
+
+    // 14 items à 2 (les groupes A et B entiers), les 7 autres à 0 : total 28/42.
+    const severe: Record<string, number> = Object.fromEntries(
+      ITEMS_STR_01.map(id => [id, id.startsWith('C') ? 0 : 2]),
+    );
+    const couvertureSevere = calculerCouvertureBesoin(9, { Q_STR_01: severe });
+    expect(couvertureSevere).not.toBeNull();
+    expect(couvertureSevere as number).toBeLessThan(0.34);
+
+    const avec = agregerEquilibre({ ...autresBesoins, 9: couvertureSevere });
+    expect(avec.plafondApplique).toBe(true);
+    expect(avec.scoreGlobal).toBe(PLAFOND_FONDATION_CRITIQUE);
+
+    // Le MÊME patient, à qui il manque un seul item : plus de mesure, plus de
+    // fondation critique effondrée, le score passe au-dessus du plafond. Une
+    // remontée, pas une protection — la raison exacte du bump d'étiquette.
+    const { C21, ...ampute } = severe;
+    void C21;
+    expect(calculerCouvertureBesoin(9, { Q_STR_01: ampute })).toBeNull();
+
+    const sans = agregerEquilibre({ ...autresBesoins, 9: null });
+    expect(sans.plafondApplique).toBe(false);
+    expect(sans.scoreGlobal as number).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
+  });
+
+  it('un Q_STR_01 partiel BAS ne remonte pas la couverture — il la retire', () => {
+    // LE cas qui motive la garde : un item par groupe, à 2. Le moteur rend un
+    // total de 6/42, qui se lirait « 1 − 6/42 = 0,86 » — un stress bien géré,
+    // tiré d'un instrument rempli à trois items sur vingt et un.
+    expect(calculerCouvertureBesoin(9, { Q_STR_01: { A1: 2, B8: 2, C15: 2 } })).toBeNull();
+  });
+});
