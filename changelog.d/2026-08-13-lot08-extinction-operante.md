@@ -32,8 +32,9 @@
 - **Le garde de restitution distingue une cible éteinte d'une cible
   recommandée**, dans les deux sens : une éteinte citée sans marqueur
   d'extinction à proximité, ou une recommandée vivante citée avec — vocabulaire
-  fermé de marqueurs tirés de la consigne v25 (inchangée), fenêtre de 200
-  caractères normalisés, instruments déjà passés hors du contrôle (un résultat
+  fermé de marqueurs tirés de la consigne v25 (inchangée), fenêtre asymétrique
+  de 200 caractères normalisés en amont et 420 en aval — l'aval mesuré sur le
+  motif de STOP-STR —, instruments déjà passés hors du contrôle (un résultat
   se cite sans marqueur). Même régime que le garde d'origine : journalisé,
   jamais censuré, angles morts épinglés par bancs — dont un faux positif assumé.
 - **`VERSION_SCORE_EQUILIBRE` bumpée v12/v13 → v14/v15** (revue wn-reviewer,

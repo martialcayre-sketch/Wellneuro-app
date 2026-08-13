@@ -33,11 +33,13 @@
    `constatsContradictionsPourDossier` (extrait de `contradictionsService`,
    verrou drapeau + signature compris) — système de contradictions éteint ⇒
    rien d'« ouvert », hiérarchie de verrous existante.
-4. **Garde de restitution : éteinte ≠ recommandée**, fenêtre de 200 caractères
-   normalisés autour de chaque citation, marqueurs tirés de la consigne v25
-   (inchangée), instruments déjà passés hors du contrôle, journalisation
-   seule. Un faux positif est ASSUMÉ et épinglé par banc : deux cibles dans la
-   même fenêtre partagent leurs marqueurs.
+4. **Garde de restitution : éteinte ≠ recommandée**, fenêtre asymétrique de
+   200 caractères normalisés en amont et 420 en aval de chaque citation
+   (l'aval mesuré sur le motif de STOP-STR, dont l'unique marqueur vit à ~235
+   caractères de sa tête), marqueurs tirés de la consigne v25 (inchangée),
+   instruments déjà passés hors du contrôle, journalisation seule. Un faux
+   positif est ASSUMÉ et épinglé par banc : deux cibles dans la même fenêtre
+   partagent leurs marqueurs.
 
 ## Revue wn-reviewer : NO-GO, puis trois bloquants refermés
 
