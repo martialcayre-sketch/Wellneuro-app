@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Candidats d'intervention déterministes — chaîne C1 rebranchée"
-statut: "en_cours"
+statut: "terminé (table non signée — la signature reste un acte praticien)"
 dépend_de: "LOT-02"
 ---
 
