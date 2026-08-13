@@ -1,5 +1,15 @@
 import type { SyntheseSchema } from '@/lib/anthropic';
 
+/**
+ * Longueur maximale d'un point de vigilance ou d'une question, à
+ * l'enregistrement d'un brouillon praticien. Exportée depuis le LOT-09 : les
+ * vigilances de discordance sont composées par le déterministe, et un banc doit
+ * pouvoir vérifier qu'aucune règle de la table ne dépasse ce plafond. Le
+ * dépassement se manifesterait par un refus d'enregistrement dont le message ne
+ * nomme pas la cause.
+ */
+export const LONGUEUR_MAX_POINT = 500;
+
 export const MODELE_REDACTION_PRATICIEN = 'redaction-praticien';
 export const VERSION_SYNTHESE_PRATICIEN = 'synthese-praticien-v1';
 export const LIMITE_SYNTHESE_PRATICIEN =
@@ -85,8 +95,8 @@ export function validerBrouillonPraticien(input: unknown): ValidationBrouillon {
     });
   }
 
-  const vigilance = listeTextes(source.points_de_vigilance, 20, 500);
-  const questions = listeTextes(source.questions_entretien, 20, 500);
+  const vigilance = listeTextes(source.points_de_vigilance, 20, LONGUEUR_MAX_POINT);
+  const questions = listeTextes(source.questions_entretien, 20, LONGUEUR_MAX_POINT);
   if (!vigilance || !questions) {
     return { ok: false, error: 'Les listes du brouillon contiennent trop d’éléments ou un texte trop long.' };
   }

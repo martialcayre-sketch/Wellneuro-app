@@ -18,6 +18,20 @@ export type SyntheseSource = {
   origine?: 'ia' | 'praticien';
 };
 
+/**
+ * Une vigilance produite par le moteur de contradictions se reconnaît à son
+ * marqueur de règle — `[C-STR]`, posé par `lignesDeVigilance`. Reconnaissance
+ * par la FORME de la ligne, faute de mieux : `points_de_vigilance` est un
+ * tableau de chaînes, et le contrat de synthèse ne porte pas d'audience par
+ * point. Le jour où il en portera une, cette fonction disparaît au profit
+ * d'elle.
+ */
+const MARQUEUR_REGLE_CONTRADICTION = /\[C-[A-Z0-9_-]+\]/;
+
+function estVigilanceDiscordance(point: string): boolean {
+  return MARQUEUR_REGLE_CONTRADICTION.test(point);
+}
+
 /** Libellé de priorité côté praticien (le niveau n'est jamais exposé patient/médecin). */
 const NIVEAU_LABEL: Record<'eleve' | 'modere' | 'faible', string> = {
   eleve: 'priorité élevée',
@@ -95,7 +109,16 @@ export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
         type: 'vigilance',
         regime,
         provenance,
-        contenu: { praticien: point, medecin: `Signal à discuter : ${point}` },
+        // Le field-filter s'arrête au praticien pour une vigilance de
+        // DISCORDANCE ([[D-057]], arbitrage 4). Le type du constat déclare
+        // `audience: 'praticien_seul'` (`contradictionFinding.ts`) ; sans cette
+        // exception, la conversion en chaîne lui faisait perdre son audience et
+        // hériter du destinataire médecin du bloc — un élargissement par effet
+        // de bord, sur un document SORTANT, sans qu'aucune décision ne l'ait
+        // dit. Les vigilances d'anamnèse, elles, ne changent pas de régime.
+        contenu: estVigilanceDiscordance(point)
+          ? { praticien: point }
+          : { praticien: point, medecin: `Signal à discuter : ${point}` },
       }),
     );
   });

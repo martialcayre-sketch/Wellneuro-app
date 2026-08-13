@@ -496,9 +496,47 @@ describe('verifierRestitutionDiscordances — la prose ne contredit pas la vigil
       .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
   });
 
-  it('ne signale rien quand la prose restitue bien la discordance', () => {
+  // ── LA NÉGATION, mesurée en revue et corrigée ────────────────────────────
+  //
+  // Première version : six accusations sur sept portaient sur des phrases qui
+  // restituaient CORRECTEMENT la discordance. Un garde dont le bruit est
+  // corrélé à la fidélité est pire qu'absent, et ces écarts sont persistés en
+  // base comme fait d'audit. Chaque ligne ci-dessous rougissait alors.
+  it('n’accuse pas « n’est pas confirmé par » — la restitution la plus fidèle qui soit', () => {
     expect(sur('Le Q_STR_01 n’est pas confirmé par le Q_MOD_01 — à clarifier en entretien.'))
-      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+      .toEqual([]);
+  });
+
+  it('n’accuse pas « ne convergent pas »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 ne convergent pas.')).toEqual([]);
+  });
+
+  it('n’accuse pas « ne sont pas concordants »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 ne sont pas concordants.')).toEqual([]);
+  });
+
+  it('n’accuse pas « incohérence » — « cohérence » en est une sous-chaîne', () => {
+    expect(sur('Une incohérence apparaît entre le Q_STR_01 et le Q_MOD_01.')).toEqual([]);
+  });
+
+  it('n’accuse pas « incohérents »', () => {
+    expect(sur('Les résultats du Q_STR_01 et du Q_MOD_01 sont incohérents.')).toEqual([]);
+  });
+
+  it('n’accuse pas « divergent »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 divergent nettement.')).toEqual([]);
+  });
+
+  it('ne s’accuse pas lui-même : la vigilance injectée est exclue de son entrée', () => {
+    // La ligne déterministe porte son `regleId` entre crochets et sa
+    // description peut contenir un marqueur. Sans exclusion, le garde
+    // reprocherait au déterministe de se contredire.
+    expect(verifierRestitutionDiscordances({
+      points_de_vigilance: [
+        'Discordance entre instruments constatée par le déterministe [C-STR] : '
+        + 'Le Q_STR_01 est confirmé par le Q_MOD_01.',
+      ],
+    }, [C_STR])).toEqual([]);
   });
 
   it('n’accuse pas une cohérence portant sur autre chose que les instruments', () => {

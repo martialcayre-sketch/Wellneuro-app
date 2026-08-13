@@ -70,3 +70,41 @@ describe('Discordances — la synthèse évalue le même ensemble que le cockpit
     expect(ROUTE).toMatch(/discordancesPourGardeRestitution\(constats\)/);
   });
 });
+
+describe('Discordances — coexistence avec les vigilances d’anamnèse', () => {
+  // Exigé par la fiche du LOT-09, non livré en première rédaction (trouvé en
+  // revue). Ce que ce banc protège : que l'ajout des discordances n'ait pas
+  // remplacé les vigilances d'anamnèse au lieu de s'y ajouter, et que la fusion
+  // ne perde ni les unes ni les autres.
+
+  it('les discordances S’AJOUTENT à l’anamnèse, elles ne la remplacent pas', () => {
+    // `vigilanceDeterministe = [...vigilanceDeterministe, ...f(constats)]` :
+    // l'ancienne liste est étalée en tête, jamais écrasée.
+    expect(ROUTE).toMatch(
+      /vigilanceDeterministe = \[\s*\.\.\.vigilanceDeterministe,\s*\.\.\.vigilancesDiscordancePourSynthese/,
+    );
+  });
+
+  it('une levée du moteur laisse les vigilances d’anamnèse intactes', () => {
+    // L'affectation est évaluée AVANT d'être affectée : si `f` lève, la liste
+    // n'est pas touchée. Le `try` ne doit donc pas envelopper l'anamnèse.
+    const bloc = ROUTE.slice(ROUTE.indexOf('let anamnesePourConstats'));
+    const posAnamnese = bloc.indexOf('extraireVigilanceDeterministe');
+    const posTryDiscordance = bloc.indexOf('constatsContradictionsPourDossier');
+    expect(posAnamnese).toBeGreaterThan(-1);
+    expect(posTryDiscordance).toBeGreaterThan(posAnamnese);
+  });
+
+  it('la perte des discordances a son propre code d’événement', () => {
+    // Perdre une vigilance clinique ne se journalise pas comme dégrader la
+    // prose : une alerte doit pouvoir les séparer.
+    expect(ROUTE).toMatch(/SYNTHESE_DISCORDANCES_INDISPONIBLES/);
+  });
+
+  it('la table de contradictions est tracée dans les métadonnées de prompt', () => {
+    // Une vigilance contestée six mois plus tard doit pouvoir être rattachée à
+    // la table qui l'a produite, comme l'orientation et la table d'arrêt.
+    expect(ROUTE).toMatch(/contradictionsVersion:/);
+    expect(ROUTE).toMatch(/contradictionsSha256:/);
+  });
+});

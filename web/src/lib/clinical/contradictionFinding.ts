@@ -201,3 +201,24 @@ export type ContradictionFinding =
   | (ContradictionFindingBase & { forme: 'DISCORDANCE' })
   | (ContradictionFindingBase & { forme: 'CONVERGENCE'; graduation: GraduationConvergence })
   | (ContradictionFindingBase & { forme: 'CONFLIT_SOURCES' });
+
+/**
+ * Une contradiction est-elle OUVERTE, au sens où elle interdit une extinction
+ * et mérite d'atteindre la synthèse praticien ?
+ *
+ * PRÉDICAT UNIQUE, et c'est tout son intérêt. Il vivait en clair dans
+ * `orientationEngine` ([[D-055]]) ; le LOT-09 l'a d'abord PARAPHRASÉ pour la
+ * synthèse, en omettant l'exclusion des convergences — la revue l'a trouvé
+ * avant la signature de la table. Deux écritures d'un même critère divergent au
+ * premier changement de l'une, et personne ne le voit tant que la forme
+ * concernée n'est pas peuplée. Il n'y en a donc plus qu'une.
+ *
+ * `CONVERGENCE` est exclue : un accord de sources n'est pas une contradiction
+ * (motif d'origine, [[D-055]] M8). `DISCORDANCE` et `CONFLIT_SOURCES` disent
+ * toutes deux qu'une incohérence est ouverte. L'escalade praticien reste
+ * ouverte — c'est une ISSUE de la politique de résolution, pas son échec
+ * (`DC-55`).
+ */
+export function contradictionEstOuverte(constat: ContradictionFinding): boolean {
+  return constat.forme !== 'CONVERGENCE' && constat.resolution.statut !== 'resolue';
+}

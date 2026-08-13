@@ -234,6 +234,25 @@ const MARQUEURS_CONCORDANCE = [
 ];
 
 /**
+ * Tokens de négation, cherchés JUSTE AVANT un marqueur.
+ *
+ * Sans eux, le garde accusait la prose la plus fidèle qui soit — mesuré en
+ * revue, six accusations sur sept portaient sur des phrases qui restituaient
+ * correctement la discordance : « n'est pas confirmé par », « ne convergent
+ * pas », « ne sont pas concordants ». Un marqueur nié dit l'inverse du marqueur,
+ * et un garde dont le bruit est CORRÉLÉ À LA FIDÉLITÉ est pire qu'absent : il
+ * apprend à ignorer ses propres alertes, et ces écarts sont persistés en base
+ * comme fait d'audit.
+ *
+ * `normaliser` écrase l'apostrophe en espace, donc « n'est » devient « n est »
+ * et le token `n` suffit.
+ */
+const NEGATIONS = ['ne', 'n', 'pas', 'non', 'jamais', 'aucun', 'aucune', 'sans'];
+
+/** Fenêtre de négation, en mots, avant le marqueur : « ne sont pas concordants ». */
+const MOTS_NEGATION_AMONT = 4;
+
+/**
  * Séparateurs de phrase, appliqués AVANT normalisation.
  *
  * Pourquoi une phrase et non une fenêtre de caractères, contrairement aux deux
@@ -283,11 +302,43 @@ function positionsDeMot(texte: string, cible: string): number[] {
 }
 
 /** Les phrases de la synthèse, découpées puis normalisées — jamais l'inverse. */
-function phrasesNormalisees(synthese: TexteSynthese): string[] {
-  return morceaux(synthese)
+function phrasesNormalisees(parties: readonly string[]): string[] {
+  return parties
     .flatMap(partie => partie.split(SEPARATEUR_PHRASE))
     .map(normaliser)
     .filter(Boolean);
+}
+
+/**
+ * Une phrase AFFIRME-t-elle une concordance ?
+ *
+ * Deux exigences, chacune née d'un faux positif mesuré.
+ *
+ * Le marqueur doit ouvrir un MOT : « coherent » cherché en sous-chaîne se
+ * trouve dans « incoherent », si bien que la phrase disant exactement le
+ * contraire déclenchait. Le préfixe reste utile (« converg » couvre
+ * converge/convergent/convergence) ; c'est son début qui doit être une
+ * frontière.
+ *
+ * Et le marqueur ne doit pas être NIÉ. « Le Q_MOD_01 n'est pas confirmé par le
+ * Q_STR_04 » est la restitution la plus fidèle possible d'une discordance ;
+ * l'accuser était le défaut central de la première version.
+ */
+function affirmeConcordance(phrase: string): boolean {
+  const mots = phrase.split(' ');
+  for (const marqueur of MARQUEURS_CONCORDANCE) {
+    const premierMot = marqueur.split(' ')[0];
+    for (let index = 0; index < mots.length; index++) {
+      if (!mots[index].startsWith(premierMot)) continue;
+      // Le marqueur multi-mots doit se poursuivre tel quel.
+      const reste = mots.slice(index).join(' ');
+      if (!reste.startsWith(marqueur)) continue;
+      const amont = mots.slice(Math.max(0, index - MOTS_NEGATION_AMONT), index);
+      if (amont.some(mot => NEGATIONS.includes(mot))) continue;
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Une formulation prescriptive vit-elle dans la fenêtre autour de ce nom ? */
@@ -528,8 +579,15 @@ export function verifierRestitutionDiscordances(
   synthese: TexteSynthese,
   discordances: readonly { regleId: string; instruments: readonly string[] }[],
 ): EcartRestitution[] {
-  const phrases = phrasesNormalisees(synthese).filter(phrase =>
-    MARQUEURS_CONCORDANCE.some(marqueur => phrase.includes(marqueur)));
+  // Le garde ne se lit pas lui-même. La vigilance injectée porte son `regleId`
+  // entre crochets, et sa `description` peut contenir un marqueur (« non
+  // confirmé par les instruments spécifiques ») : sans cette exclusion, le
+  // déterministe finirait par s'accuser de se contredire dès qu'une règle
+  // citera ses instruments par identifiant — ce que `DC-34` pousse à faire.
+  const marques = discordances.map(discordance => `[${discordance.regleId}]`);
+  const parties = morceaux(synthese)
+    .filter(partie => !marques.some(marque => partie.includes(marque)));
+  const phrases = phrasesNormalisees(parties).filter(affirmeConcordance);
   if (phrases.length === 0) return [];
   const ecarts: EcartRestitution[] = [];
   const vus = new Set<string>();

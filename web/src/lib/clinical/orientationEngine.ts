@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import type { OrientationDeclencheur, OrientationRule, OrientationZone } from './orientationRulesV1';
+import { contradictionEstOuverte } from './contradictionFinding';
 import type { ContradictionFinding } from './contradictionFinding';
 import type { StopRule } from './stopRulesV1';
 
@@ -1019,8 +1020,9 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
   // mais hors décision ; DISCORDANCE et CONFLIT_SOURCES, elles, disent toutes
   // deux qu'une incohérence est ouverte. Vide en V1 pour les deux formes non
   // peuplées — un banc fige ce partage avant qu'elles le soient.
-  const contradictionOuverte = (entree.contradictions ?? [])
-    .some(constat => constat.forme !== 'CONVERGENCE' && constat.resolution.statut !== 'resolue');
+  // Prédicat partagé avec la synthèse depuis le LOT-09 : il vivait ici en
+  // clair, et le paraphraser ailleurs a suffi à le faire diverger.
+  const contradictionOuverte = (entree.contradictions ?? []).some(contradictionEstOuverte);
   for (const arret of contradictionOuverte ? [] : entree.reglesArret ?? []) {
     if (arret.statut !== 'publiee') continue;
     if (arret.declencheurs.length === 0) continue;

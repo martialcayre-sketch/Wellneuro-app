@@ -31,10 +31,15 @@
   absent.
 - Décision : trois arbitrages.
 
-**1. Seuls les constats NON RÉSOLUS deviennent vigilance.** Critère :
-`resolution.statut !== 'resolue'` — **exactement celui déjà codé au LOT-08**
-pour interdire l'extinction ([[D-053]] §5, [[D-055]]), escalade praticien
-comprise. Deux motifs, et le second pèse plus que le premier. Un critère : deux
+**1. Seuls les constats OUVERTS deviennent vigilance, au prédicat PARTAGÉ.**
+Non pas « le même critère » recopié, mais `contradictionEstOuverte`, la
+fonction unique qu'appelle aussi le moteur d'arrêt ([[D-053]] §5, [[D-055]]).
+La première rédaction du lot le paraphrasait en `statut !== 'resolue'` et
+omettait l'exclusion des convergences que le moteur applique : une règle
+`CONVERGENCE` publiée aurait été servie au praticien sous l'intitulé
+« discordance » tout en laissant l'extinction possible. Défaut trouvé en revue,
+avant la signature de la table, et refermé à la racine — il n'y a plus qu'une
+écriture du critère. Escalade praticien comprise dans « ouvert ». Deux motifs, et le second pèse plus que le premier. Un critère : deux
 définitions d'« ouvert » dans le même dépôt divergeraient en silence, et le même
 constat bloquerait l'extinction sans atteindre la synthèse, ou l'inverse. Une
 raison clinique : un constat que le praticien a explicitement résolu, resservi à
@@ -65,7 +70,35 @@ prose infidèle ne déclenche rien. Ses contrôles négatifs comptent autant que
 positifs : la revue adversariale du 2026-08-03 a déjà montré qu'un garde trop
 large accuse la prose clinique ordinaire et noie son propre signal.
 
-- Dette nommée, non résolue ici : **l'écart dossier ↔ épisode** que [[D-050]]
+La première version l'a démontré une fois de plus, et pire : **son bruit était
+corrélé à la fidélité**. « incohérent » contient « cohérent », « n'est pas
+confirmé par » contient « confirmé par » — six phrases mesurées sur sept qui
+restituaient CORRECTEMENT la discordance étaient accusées, et ces écarts sont
+persistés en base comme fait d'audit. Deux corrections : le marqueur doit
+ouvrir un mot, et il ne doit pas être nié. Le garde s'exclut en outre de sa
+propre entrée, faute de quoi le déterministe finirait par s'accuser lui-même
+dès qu'une règle citera ses instruments par identifiant.
+
+Sa portée reste **étroite et il faut le dire** : le modèle ne reçoit pas la
+discordance dans son prompt, il n'a donc guère de raison de citer des
+identifiants d'instrument au voisinage d'une affirmation de concordance. Le
+garde est un filet, pas le mécanisme principal — l'injecter dans la consigne
+serait ce mécanisme, et c'est une dette nommée, pas ce lot.
+
+**4. Une discordance ne sort pas du praticien.** Le constat déclare
+`audience: 'praticien_seul'` ; converti en chaîne de `points_de_vigilance`, il
+perdait cette audience et héritait du destinataire **médecin** du bloc
+« vigilance » — donc du courrier au médecin traitant, un document SORTANT.
+L'élargissement se faisait par effet de bord d'un field-filter existant, sans
+qu'aucune décision ne l'ait dit. Il est refermé : le bloc d'une vigilance de
+discordance ne porte que le destinataire praticien, et un banc symétrique de
+celui du patient fige la porte. Les vigilances d'anamnèse, elles, gardent leur
+régime — ce sont les propos du patient, pas un constat entre instruments.
+
+- Dettes nommées, non résolues ici : **injecter la discordance dans la consigne
+  de synthèse**, ce qui empêcherait le modèle de la contredire par ignorance et
+  rendrait au garde son rôle de filet (bump de consigne, hors de ce lot) ;
+  **l'écart dossier ↔ épisode** que [[D-050]]
   laisse ouvert — le moteur de contradictions évalue le **dossier entier** alors
   que `review` porte sur l'épisode T0, si bien qu'un constat peut reposer sur
   une passation laissée hors de l'épisode. Ce lot ne l'aggrave pas (il consomme

@@ -4,6 +4,7 @@ import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
 import { CONTRADICTIONS_METADATA } from './contradictionsV1';
+import { contradictionEstOuverte } from './contradictionFinding';
 import { scoresRecalculesPourRaisonnement } from './orientationService';
 import type { ContradictionFinding } from './contradictionFinding';
 
@@ -286,12 +287,13 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
  * ([[D-003]], `DC-02`). Seul le préfixe est ajouté — un intitulé, pas du
  * contenu clinique — sur le patron des vigilances d'anamnèse.
  *
- * Elle ne REDÉFINIT pas « ouvert ». Le critère est `statut !== 'resolue'`,
- * exactement celui que le moteur d'arrêt applique déjà pour interdire une
- * extinction ([[D-053]] §5, [[D-055]]) : l'escalade praticien est donc
- * injectée, elle aussi. Deux définitions d'« ouvert » dans le même dépôt
- * divergeraient en silence, et le même constat bloquerait l'extinction sans
- * atteindre la synthèse — ou l'inverse.
+ * Elle ne REDÉFINIT pas « ouvert ». Elle appelle `contradictionEstOuverte`, LE
+ * prédicat, celui-là même que le moteur d'arrêt applique pour interdire une
+ * extinction ([[D-053]] §5, [[D-055]]) — partagé, jamais recopié. La première
+ * rédaction du LOT-09 le paraphrasait et omettait l'exclusion des
+ * convergences : une convergence future aurait été servie au praticien sous
+ * l'intitulé « discordance », tout en laissant l'extinction possible. Trouvé en
+ * revue, avant la signature de la table.
  *
  * Elle ne HIÉRARCHISE pas. Aucun plancher d'`importance` : [[D-048]] refuse
  * déjà que ce champ serve à décoter un constat, et aucune source ne fonde un
@@ -302,15 +304,55 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
  * lui-même de les taire finirait par les servir le jour où quelqu'un oublie la
  * condition.
  */
+/**
+ * Intitulé par FORME. « Discordance entre instruments » était appliqué aux
+ * trois formes : un `CONFLIT_SOURCES`, qui oppose des claims et non des
+ * passations, aurait été servi sous une étiquette fausse. Ce sont des libellés,
+ * pas du contenu clinique — la phrase du déterministe suit, intacte.
+ */
+const INTITULE_PAR_FORME: Record<ContradictionFinding['forme'], string> = {
+  DISCORDANCE: 'Discordance entre instruments constatée par le déterministe',
+  CONFLIT_SOURCES: 'Conflit entre sources constaté par le déterministe',
+  CONVERGENCE: 'Convergence constatée par le déterministe',
+};
+
+/**
+ * Une ligne de vigilance, EXPLICABLE.
+ *
+ * `limitations` et `regleId` ne sont pas décoratifs, et les omettre reproduisait
+ * l'amputation que la revue du cockpit avait déjà fait corriger une fois. Sans
+ * les limitations, le praticien ne sait pas ce que le constat NE dit pas — pour
+ * C-STR, « la discordance dit qu'ils ne concordent pas, jamais lequel a raison »
+ * (`DC-25`, `DC-28`), et il tranchera en faveur d'un instrument. Sans le
+ * `regleId`, il n'a aucun moyen de nommer la règle qu'il conteste : un faux
+ * positif devient irremontable (`DC-34`, `DC-35`).
+ *
+ * Les passations datées restent au cockpit, où elles s'ouvrent — arbitrage 2 de
+ * [[D-057]], inchangé.
+ *
+ * DEUX POINTS, PAS UN. Un point de vigilance est plafonné à
+ * `LONGUEUR_MAX_POINT` caractères à l'enregistrement d'un brouillon praticien.
+ * Constat et limitations réunis atteignaient 730 caractères pour C-STR :
+ * l'enregistrement aurait été refusé, avec un message qui ne nomme pas la
+ * cause. Scindés, ils font 411 et 326 — et un banc fige le plafond pour toutes
+ * les règles de la table.
+ */
+export function lignesDeVigilance(constat: ContradictionFinding): string[] {
+  const lignes = [
+    `${INTITULE_PAR_FORME[constat.forme]} [${constat.regleId}] : `
+    + `${constat.description} ${constat.actionSuggeree}`,
+  ];
+  if (constat.limitations.length > 0) {
+    lignes.push(`Ce que le constat [${constat.regleId}] ne dit pas : ${constat.limitations.join(' ')}`);
+  }
+  return lignes;
+}
+
 export function vigilancesDiscordancePourSynthese(
   constats: ContradictionFinding[],
 ): string[] {
   if (!contradictionsActives()) return [];
-  return constats
-    .filter(constat => constat.resolution.statut !== 'resolue')
-    .map(constat =>
-      `Discordance entre instruments constatée par le déterministe : `
-      + `${constat.description} ${constat.actionSuggeree}`);
+  return constats.filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
 }
 
 /**
@@ -327,7 +369,7 @@ export function discordancesPourGardeRestitution(
 ): { regleId: string; instruments: string[] }[] {
   if (!contradictionsActives()) return [];
   return constats
-    .filter(constat => constat.resolution.statut !== 'resolue')
+    .filter(contradictionEstOuverte)
     .map(constat => ({
       regleId: constat.regleId,
       instruments: constat.sources

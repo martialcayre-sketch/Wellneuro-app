@@ -79,3 +79,41 @@ describe('blocsDepuisSynthese — field-filter par construction', () => {
     })).toThrow('doit être validé');
   });
 });
+
+describe('blocsDepuisSynthese — une discordance ne sort pas du praticien (D-057)', () => {
+  // Symétrique du banc patient de `bilanPatient.test.ts`. Le constat déclare
+  // `audience: 'praticien_seul'` ; converti en chaîne, il perdait son audience
+  // et héritait du destinataire médecin du bloc « vigilance » — un
+  // élargissement par effet de bord sur un document SORTANT.
+  const DISCORDANCE = 'Discordance entre instruments constatée par le déterministe [C-STR] : '
+    + 'Signal fonctionnel non confirmé par les instruments spécifiques. Clarifier en entretien.';
+  const ANAMNESE = 'Signal d’alerte signalé par le patient : idées noires — avis médical à évaluer en priorité.';
+
+  const blocsVigilance = () => blocsDepuisSynthese({
+    syntheseJson: { ...synthese(), points_de_vigilance: [DISCORDANCE, ANAMNESE] },
+    statut: 'Validee_Praticien',
+    versionPrompt: 'synthese-v3',
+    dateValidation: '2026-07-18T00:00:00.000Z',
+  }).filter(bloc => bloc.type === 'vigilance');
+
+  it('la discordance n’a aucun contenu médecin', () => {
+    const [discordance] = blocsVigilance();
+    expect(contenuPourDestinataire(discordance, 'medecin')).toBeNull();
+  });
+
+  it('elle reste entière côté praticien', () => {
+    const [discordance] = blocsVigilance();
+    expect(contenuPourDestinataire(discordance, 'praticien')).toContain('[C-STR]');
+  });
+
+  it('une vigilance d’anamnèse garde son destinataire médecin — le régime ne change que pour les discordances', () => {
+    const [, anamnese] = blocsVigilance();
+    expect(contenuPourDestinataire(anamnese, 'medecin')).toContain('Signal à discuter');
+  });
+
+  it('aucune vigilance, discordance comprise, n’atteint le patient', () => {
+    for (const bloc of blocsVigilance()) {
+      expect(contenuPourDestinataire(bloc, 'patient')).toBeNull();
+    }
+  });
+});

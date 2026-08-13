@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "Vigilances de discordance — ce que le moteur constate atteint la synthèse praticien"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-01"
 ---
 
@@ -50,9 +50,12 @@ clinique n'est à rédiger, tout existe.
   `orientationService`) produit les constats, **verrou compris**.
 - `fusionnerVigilance` (`synthese/route.ts:386`, appelée `:529`) fusionne déjà,
   et sert les vigilances d'anamnèse.
-- La route a déjà les données : `reponsesAdministrables` porte exactement la
-  forme `LignePassationDossier`, et `consultation.anamnese` est lue dans le même
-  bloc — **aucune lecture base supplémentaire**.
+- La route a déjà les données : `reponses` (l'ensemble NON filtré, ligne 820)
+  porte exactement la forme `LignePassationDossier`, et `consultation.anamnese`
+  est lue dans le même bloc — **aucune lecture base supplémentaire**. C'est bien
+  `reponses` et non `reponsesAdministrables` : ce dernier est un sous-ensemble
+  filtré, et le passer au moteur ferait diverger la synthèse du cockpit (banc
+  `discordanceMemeEnsemble.guard.test.ts`).
 
 ## Hors périmètre
 

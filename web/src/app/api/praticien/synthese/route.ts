@@ -54,9 +54,11 @@ import {
 import { chargerVocabulaireIngredients } from '@/lib/supplement-library/vocabulaire';
 import {
   constatsContradictionsPourDossier,
+  contradictionsActives,
   discordancesPourGardeRestitution,
   vigilancesDiscordancePourSynthese,
 } from '@/lib/clinical/contradictionsService';
+import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from '@/lib/clinical/contradictionsV1';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -636,6 +638,15 @@ async function genererSynthesePersistee(
           // qu'elle a pesé.
           arretVersion: args.orientation?.actif === true ? args.orientation.arret?.version ?? null : null,
           arretSha256: args.orientation?.actif === true ? args.orientation.arret?.sha256 ?? null : null,
+          // MÊME MOTIF, pour la table de CONTRADICTIONS (LOT-09) : une
+          // vigilance de discordance servie au praticien doit pouvoir être
+          // rattachée six mois plus tard à la table qui l'a produite — c'est
+          // sur elle que portera une contestation. `sha256` seulement quand la
+          // table a réellement pu produire : l'inscrire à table close
+          // laisserait croire qu'elle a pesé.
+          contradictionsVersion: CONTRADICTIONS_METADATA.version,
+          contradictionsSha256: contradictionsActives() ? CONTRADICTIONS_RULES_SHA256 : null,
+          contradictionsInjectees: args.discordancesInjectees.map(d => d.regleId),
         },
         metriquesAnthropic: metricsCache,
       } as any,
@@ -1001,7 +1012,10 @@ export async function POST(req: Request) {
       discordancesInjectees = discordancesPourGardeRestitution(constats);
     } catch (discErr) {
       logger.warn({
-        event: EVENT_CODES.SYNTHESE_POST_CONTEXT_UNAVAILABLE,
+        // Code PROPRE, et non celui du contexte clinique : celui-là dit que la
+        // prose sera plus pauvre, celui-ci qu'une VIGILANCE CLINIQUE manque.
+        // Une alerte qui ne peut pas les distinguer ne sert ni l'un ni l'autre.
+        event: EVENT_CODES.SYNTHESE_DISCORDANCES_INDISPONIBLES,
         domain: 'SYNTHESE_IA',
         message: 'Constats de discordance indisponibles, vigilances d\'anamnèse seules',
         context: finalizeLogContext(requestContext, { retryable: true }),

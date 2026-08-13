@@ -454,7 +454,9 @@ describe('vigilancesDiscordancePourSynthese — ce qui atteint la synthèse prat
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
     const lignes = vigilancesDiscordancePourSynthese([constat()]);
-    expect(lignes).toHaveLength(1);
+    // Deux points : le constat, puis ce qu'il ne dit pas — le plafond de 500
+    // caractères par point interdit de les réunir.
+    expect(lignes).toHaveLength(2);
     expect(lignes[0]).toContain('Signal fonctionnel non confirmé par les instruments spécifiques.');
     expect(lignes[0]).toContain('Clarifier en entretien.');
   });
@@ -484,7 +486,7 @@ describe('vigilancesDiscordancePourSynthese — ce qui atteint la synthèse prat
     const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
     expect(vigilancesDiscordancePourSynthese([
       constat({ resolution: { statut: 'escaladee_praticien', motif: 'Avis demandé.' } }),
-    ])).toHaveLength(1);
+    ])[0]).toContain('[C-STR]');
   });
 
   it('ne hiérarchise pas : une importance basse passe comme les autres', async () => {
@@ -492,7 +494,7 @@ describe('vigilancesDiscordancePourSynthese — ce qui atteint la synthèse prat
     const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
     expect(vigilancesDiscordancePourSynthese([
       constat({ importance: 'useful_not_urgent' }),
-    ])).toHaveLength(1);
+    ])[0]).toContain('[C-STR]');
   });
 
   it('verrou fermé (table non signée) ⇒ rien, même sur un constat ouvert', async () => {
@@ -513,5 +515,82 @@ describe('vigilancesDiscordancePourSynthese — ce qui atteint la synthèse prat
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
     expect(vigilancesDiscordancePourSynthese([])).toEqual([]);
+  });
+});
+
+describe('Discordances — parité de critère avec le moteur d’arrêt', () => {
+  // Test réclamé en revue : comparer les PRÉDICATS, pas les paraphraser. La
+  // première version du LOT-09 recopiait `statut !== 'resolue'` en omettant
+  // l'exclusion des convergences ; les deux consommateurs auraient divergé dès
+  // qu'une règle CONVERGENCE aurait été publiée, et personne ne l'aurait vu.
+
+  it('une CONVERGENCE non résolue n’atteint pas la synthèse', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const convergence = {
+      ...constat(), forme: 'CONVERGENCE' as const, graduation: 'CONVERGENCE_MODEREE' as const,
+    };
+    expect(vigilancesDiscordancePourSynthese([convergence])).toEqual([]);
+  });
+
+  it('une CONVERGENCE n’entre pas non plus dans le garde de restitution', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { discordancesPourGardeRestitution } = await service(SIGNEE);
+    const convergence = {
+      ...constat(), forme: 'CONVERGENCE' as const, graduation: 'CONVERGENCE_MODEREE' as const,
+    };
+    expect(discordancesPourGardeRestitution([convergence])).toEqual([]);
+  });
+
+  it('le prédicat est CELUI du moteur d’arrêt, pas une copie', async () => {
+    // Si quelqu'un réécrit l'un des deux, cette égalité tombe.
+    const { contradictionEstOuverte } = await import('./contradictionFinding');
+    const cas = [
+      constat(),
+      constat({ resolution: { statut: 'resolue', motif: 'Clarifié.' } }),
+      constat({ resolution: { statut: 'escaladee_praticien', motif: 'Avis demandé.' } }),
+      { ...constat(), forme: 'CONVERGENCE' as const, graduation: 'CONVERGENCE_MODEREE' as const },
+    ];
+    expect(cas.map(contradictionEstOuverte)).toEqual([true, false, true, false]);
+  });
+
+  it('un CONFLIT_SOURCES porte son propre intitulé, jamais « entre instruments »', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const conflit = { ...constat(), forme: 'CONFLIT_SOURCES' as const };
+    const [ligne] = vigilancesDiscordancePourSynthese([conflit]);
+    expect(ligne).toContain('Conflit entre sources');
+    expect(ligne).not.toContain('entre instruments');
+  });
+
+  it('la vigilance reste explicable : elle porte sa règle et ses limitations', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const lignes = vigilancesDiscordancePourSynthese([constat()]);
+    expect(lignes).toHaveLength(2);
+    expect(lignes[0]).toContain('[C-STR]');
+    expect(lignes[1]).toContain('Un questionnaire isolé ne suffit pas à conclure.');
+  });
+
+  it('aucune ligne ne dépasse le plafond d’un point de vigilance', async () => {
+    // Constat et limitations réunis faisaient 730 caractères pour C-STR, contre
+    // un plafond de 500 à l'enregistrement d'un brouillon praticien : le refus
+    // serait tombé avec un message ne nommant pas la cause. Ce banc mesure
+    // TOUTES les règles de la table, pas seulement celle du jour.
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const { LONGUEUR_MAX_POINT } = await import('@/lib/synthese-praticien');
+    const { CONTRADICTIONS_RULES_V1 } = await import('./contradictionsV1');
+    for (const regle of CONTRADICTIONS_RULES_V1) {
+      const lignes = vigilancesDiscordancePourSynthese([constat({
+        regleId: regle.id,
+        description: regle.description,
+        actionSuggeree: regle.actionSuggeree,
+        limitations: regle.limitations,
+      })]);
+      for (const ligne of lignes) {
+        expect(ligne.length, `règle ${regle.id}`).toBeLessThanOrEqual(LONGUEUR_MAX_POINT);
+      }
+    }
   });
 });
