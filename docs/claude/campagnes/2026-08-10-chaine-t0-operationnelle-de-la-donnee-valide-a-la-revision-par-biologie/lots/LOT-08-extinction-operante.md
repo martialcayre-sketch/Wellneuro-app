@@ -30,7 +30,7 @@ recommandée, et l'inverse.
 
 ## Décision préalable — obligatoire
 
-`D-054` avant la première ligne de code (`DC-17`, `DC-18`) : publier les comptes
+`D-055` avant la première ligne de code (numéro rafraîchi le 2026-08-13 : « D-054 » a été prise par le LOT-04) (`DC-17`, `DC-18`) : publier les comptes
 de recueil de `group_majority` est une modification du moteur de scoring, et
 `D-053 §1` fait de la lisibilité de la complétude un critère d'admission à
 l'extinction. La décision tranche au minimum :
@@ -118,7 +118,7 @@ extensions concurrentes du même garde se croiseraient.
 
 ## Étapes
 
-1. `D-054` rédigée, soumise, acceptée.
+1. `D-055` rédigée, soumise, acceptée.
 2. Comptes de recueil publiés par `group_majority` + bancs (dont le cas « trois
    items sur vingt et un »).
 3. Garde de complétude du moteur d'arrêt branchée sur ces comptes ; STOP-STR
@@ -140,7 +140,7 @@ extensions concurrentes du même garde se croiseraient.
 
 ## Done
 
-- `D-054` au registre ; `D-053 §5` refermée ou amendée explicitement.
+- `D-055` au registre ; `D-053 §5` refermée ou amendée explicitement.
 - Fragment `changelog.d/` (changement de comportement d'orientation et de
   moteur de scoring).
 - Revue `wn-reviewer` refermée avant de passer la main.
