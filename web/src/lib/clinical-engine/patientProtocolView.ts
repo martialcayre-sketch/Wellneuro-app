@@ -2,10 +2,27 @@ import { canonicalSha256 } from './canonical';
 import { VERSION_PATIENT_PROTOCOL_VIEW } from './types';
 import type {
   DecisionCard,
+  PatientProtocolAction,
   PatientProtocolView,
   ProtocolDiffusionApproval,
   ProtocolDraft,
+  ProtocolInterventionStatus,
 } from './types';
+
+/**
+ * Ce qu'un patient lit d'une intervention non ferme (`D-056`, arbitrage 5).
+ *
+ * Formulations validées, non anxiogènes, et surtout NON DÉDUITES de
+ * `waitFor.cible` : « ferritine » est le vocabulaire du praticien, « votre
+ * bilan » celui du patient. Une intervention `active` n'a pas d'entrée ici —
+ * elle se lit telle quelle, sans mention de statut.
+ */
+const ATTENTE_PATIENT: Record<Exclude<ProtocolInterventionStatus, 'active'>, string> = {
+  conditionnelle_biologie: 'En attente de confirmation par votre bilan.',
+  differee: 'Prévu pour plus tard dans votre suivi.',
+  contre_indiquee: 'Écarté pour vous par votre praticien.',
+  non_indiquee_actuellement: 'Pas indiqué pour vous en ce moment.',
+};
 
 // Liste distincte de celle du builder à dessein : ce qu'un patient a le droit
 // de voir n'est pas ce qu'un praticien a le droit de composer. Les deux
@@ -75,16 +92,26 @@ export function buildPatientProtocolView(input: {
     throw new TypeError('L’aperçu patient exige entre une et trois actions.');
   }
 
-  const actions = protocolDraft.actions.map(action => {
+  const actions: PatientProtocolAction[] = protocolDraft.actions.map(action => {
     if (!(ACTION_TYPES as readonly string[]).includes(action.type)) {
       throw new TypeError('Type d’action patient inconnu.');
     }
-    return {
+    const base: PatientProtocolAction = {
       actionId: nonEmpty(action.actionId, 'actionId'),
       type: action.type,
       title: nonEmpty(action.title, 'intitulé d’action'),
       minimalPlan: nonEmpty(action.minimalPlan, 'plan minimal'),
     };
+    // Une intervention non ferme est TOUJOURS accompagnée de sa phrase
+    // d'attente : sans elle, le patient lirait un conseil là où le praticien
+    // a posé une réserve. Un statut inconnu est un refus, pas un silence.
+    const statut = action.interventionStatus;
+    if (statut === undefined || statut === 'active') return base;
+    const attente = ATTENTE_PATIENT[statut];
+    if (attente === undefined) {
+      throw new TypeError('Statut d’intervention patient inconnu.');
+    }
+    return { ...base, interventionStatus: statut, attente };
   });
   if (new Set(actions.map(action => action.actionId)).size !== actions.length) {
     throw new TypeError('Les actions patient doivent avoir des identifiants uniques.');

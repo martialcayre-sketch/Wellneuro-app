@@ -64,7 +64,14 @@ export type EcartRestitution =
       type: 'extinction';
       identifiant: string;
       sens: 'eteinte_presentee_recommandee' | 'recommandee_presentee_eteinte';
-    };
+    }
+  /**
+   * Un complément nommé EN CONTEXTE PRESCRIPTIF sans intention déterministe qui
+   * le porte (`D-056`, arbitrage 5). En synthèse, la liste autorisée est
+   * toujours vide : la synthèse précède la carte de décision dans la chaîne,
+   * donc aucun complément n'y est encore déterministe.
+   */
+  | { type: 'complement'; identifiant: string };
 
 // Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
 // chaîne : écrits littéralement dans un littéral d'expression régulière, ces
@@ -162,6 +169,40 @@ const MARQUEURS_EXTINCTION = [
 const FENETRE_EXTINCTION_AMONT = 200;
 const FENETRE_EXTINCTION_AVAL = 420;
 
+/**
+ * Vocabulaire fermé des formulations PRESCRIPTIVES, en forme normalisée.
+ *
+ * Ce que le garde vise n'est pas le NOM d'un ingrédient — « carence en fer »,
+ * « statut en zinc », « magnesemie basse » sont de la biologie légitime, et un
+ * garde qui les accuse crie tout le temps, donc ne se lit plus. Ce qui se
+ * mesure est le CONSEIL : le modèle qui passe du constat à la recommandation.
+ *
+ * « supplement » attrape par préfixe supplémentation/supplémenter/supplémenté ;
+ * « complementation » et « complement alimentaire » sont pris entiers, parce que
+ * « complement » seul attraperait « complément d'information ». Aucun verbe
+ * générique (« prendre », « conseiller ») : ils voisinent trop de prose normale
+ * — « prendre en compte le statut en fer » n'est pas un conseil de complément.
+ */
+const MARQUEURS_PRESCRIPTION = [
+  'supplement',
+  'complementation',
+  'complement alimentaire',
+  'posologie',
+  'prescrire',
+  'prescription de',
+  'cure de',
+  'mg par jour',
+  'ui par jour',
+];
+
+/**
+ * Fenêtre autour d'un nom d'ingrédient, symétrique : la formulation
+ * prescriptive précède le nom (« supplémentation en oméga-3 ») aussi souvent
+ * qu'elle le suit (« oméga-3, 1000 mg par jour »). 60 caractères normalisés
+ * couvrent les deux tournures sans franchir la phrase voisine.
+ */
+const FENETRE_PRESCRIPTION = 60;
+
 /** Positions de chaque occurrence de `cible` dans `texte` (déjà normalisés). */
 function positionsDe(texte: string, cible: string): number[] {
   const positions: number[] = [];
@@ -173,6 +214,32 @@ function positionsDe(texte: string, cible: string): number[] {
     positions.push(position);
     depuis = position + 1;
   }
+}
+
+/**
+ * Positions de `cible` en tant que MOT ENTIER dans un texte normalisé.
+ *
+ * Indispensable sur les noms d'ingrédient : le catalogue contient « fer », et
+ * une recherche par sous-chaîne le trouverait dans « ferritine » — soit
+ * exactement le faux positif que ce garde doit éviter, sur le mot le plus
+ * fréquent de la prose biologique.
+ */
+function positionsDeMot(texte: string, cible: string): number[] {
+  return positionsDe(texte, cible).filter(position => {
+    const avant = position === 0 ? ' ' : texte[position - 1];
+    const apresIndex = position + cible.length;
+    const apres = apresIndex >= texte.length ? ' ' : texte[apresIndex];
+    return avant === ' ' && apres === ' ';
+  });
+}
+
+/** Une formulation prescriptive vit-elle dans la fenêtre autour de ce nom ? */
+function prescriptionPresDe(texte: string, position: number, longueur: number): boolean {
+  const fenetre = texte.slice(
+    Math.max(0, position - FENETRE_PRESCRIPTION),
+    Math.min(texte.length, position + longueur + FENETRE_PRESCRIPTION),
+  );
+  return MARQUEURS_PRESCRIPTION.some(marqueur => fenetre.includes(marqueur));
 }
 
 /** Un marqueur d'extinction vit-il dans la fenêtre autour de cette citation ? */
@@ -231,6 +298,13 @@ export function verifierRestitutionOrientation(
      * d'extinction portant sur une autre cible.
      */
     recommandes?: { packs: readonly PackId[]; questionnaires: readonly string[] };
+    /**
+     * Compléments : `vocabulaire` est la liste des noms d'ingrédient du
+     * catalogue C4 (forme brute, normalisée ici) ; `autorises` sont ceux
+     * portés par une intention déterministe. En synthèse, `autorises` est
+     * vide — la synthèse précède la carte de décision (`D-056`).
+     */
+    complements?: { vocabulaire: readonly string[]; autorises?: readonly string[] };
   },
 ): EcartRestitution[] {
   const parties = morceaux(synthese);
@@ -323,6 +397,47 @@ export function verifierRestitutionOrientation(
     }
   }
 
+  if (fournis.complements) {
+    ecarts.push(...verifierRestitutionComplements(synthese, fournis.complements));
+  }
+
+  return ecarts;
+}
+
+/**
+ * Un complément nommé EN CONTEXTE PRESCRIPTIF, sans intention déterministe qui
+ * le porte ([[D-056]], arbitrage 5).
+ *
+ * Fonction SÉPARÉE, et pas seulement une branche de la précédente : le garde
+ * d'orientation ne tourne que si un bloc de recommandation a été injecté —
+ * sans bloc, il n'y a rien à restituer, et le lancer avec une liste blanche
+ * vide accuserait tout pack cité dans la prose. Les compléments n'ont pas
+ * cette dépendance : ils se mesurent sur toute synthèse, injectée ou non,
+ * parce que le déterministe n'en propose aucun tant que le catalogue de
+ * décision est vide.
+ *
+ * Le nom seul ne suffit jamais : il faut une formulation prescriptive dans la
+ * fenêtre.
+ */
+export function verifierRestitutionComplements(
+  synthese: TexteSynthese,
+  complements: { vocabulaire: readonly string[]; autorises?: readonly string[] },
+): EcartRestitution[] {
+  const texte = normaliser(morceaux(synthese).join(' \n '));
+  if (!texte) return [];
+  const autorises = new Set((complements.autorises ?? []).map(normaliser));
+  const vus = new Set<string>();
+  const ecarts: EcartRestitution[] = [];
+  for (const nom of complements.vocabulaire) {
+    const cible = normaliser(nom);
+    if (!cible || autorises.has(cible) || vus.has(cible)) continue;
+    const cite = positionsDeMot(texte, cible)
+      .some(position => prescriptionPresDe(texte, position, cible.length));
+    if (cite) {
+      vus.add(cible);
+      ecarts.push({ type: 'complement', identifiant: nom });
+    }
+  }
   return ecarts;
 }
 

@@ -36,7 +36,7 @@ export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
 export const VERSION_PROTOCOL_DRAFT_V2 = 'c1-protocol-draft-v2' as const;
 export const VERSION_PROTOCOL_DRAFT_V3 = 'c1-protocol-draft-v3' as const;
 export const VERSION_PROTOCOL_DRAFT_V4 = 'c1-protocol-draft-v4' as const;
-export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v1' as const;
+export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v2' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
@@ -469,6 +469,17 @@ export type PatientProtocolAction = {
   type: ProtocolActionType;
   title: string;
   minimalPlan: string;
+  /**
+   * Statut repris du protocole (`D-056`). Absent sur les contrats antérieurs
+   * à V4 ; présent, il est TOUJOURS rendu — un patient ne doit jamais lire
+   * comme ferme une intervention qui ne l'est pas.
+   */
+  interventionStatus?: ProtocolInterventionStatus;
+  /**
+   * Phrase d'attente, déjà formulée pour le patient. Non anxiogène et sans
+   * jargon : ce n'est pas `waitFor.cible` recopiée.
+   */
+  attente?: string;
 };
 
 export type PatientProtocolView = {
