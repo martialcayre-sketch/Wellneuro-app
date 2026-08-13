@@ -4,6 +4,7 @@ import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
 import { CONTRADICTIONS_METADATA } from './contradictionsV1';
+import { contradictionEstOuverte } from './contradictionFinding';
 import { scoresRecalculesPourRaisonnement } from './orientationService';
 import type { ContradictionFinding } from './contradictionFinding';
 
@@ -271,4 +272,110 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
   return contradictionsPourAffichage(
     constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
   );
+}
+
+/**
+ * Les constats non résolus, en lignes de vigilance pour la synthèse praticien
+ * ([[D-057]], LOT-09 — seconde moitié de l'étape 5 du LOT-01).
+ *
+ * TROIS CHOSES QUE CETTE FONCTION NE FAIT PAS, et chacune est un arbitrage.
+ *
+ * Elle ne REFORMULE rien. `description` est déjà « la formulation NEUTRE de ce
+ * qui est constaté, sans causalité affirmée » et `actionSuggeree` « le geste
+ * proposé au praticien » : les deux sont repris mot pour mot. Le déterministe
+ * produit la phrase, le LLM la restitue, et ce convertisseur la transporte
+ * ([[D-003]], `DC-02`). Seul le préfixe est ajouté — un intitulé, pas du
+ * contenu clinique — sur le patron des vigilances d'anamnèse.
+ *
+ * Elle ne REDÉFINIT pas « ouvert ». Elle appelle `contradictionEstOuverte`, LE
+ * prédicat, celui-là même que le moteur d'arrêt applique pour interdire une
+ * extinction ([[D-053]] §5, [[D-055]]) — partagé, jamais recopié. La première
+ * rédaction du LOT-09 le paraphrasait et omettait l'exclusion des
+ * convergences : une convergence future aurait été servie au praticien sous
+ * l'intitulé « discordance », tout en laissant l'extinction possible. Trouvé en
+ * revue, avant la signature de la table.
+ *
+ * Elle ne HIÉRARCHISE pas. Aucun plancher d'`importance` : [[D-048]] refuse
+ * déjà que ce champ serve à décoter un constat, et aucune source ne fonde un
+ * seuil (`DC-19`, `DC-20`).
+ *
+ * LE VERROU RESTE ICI, comme chez ses deux voisines : système de contradictions
+ * éteint ⇒ liste vide. Un appelant qui recevrait des constats et déciderait
+ * lui-même de les taire finirait par les servir le jour où quelqu'un oublie la
+ * condition.
+ */
+/**
+ * Intitulé par FORME. « Discordance entre instruments » était appliqué aux
+ * trois formes : un `CONFLIT_SOURCES`, qui oppose des claims et non des
+ * passations, aurait été servi sous une étiquette fausse. Ce sont des libellés,
+ * pas du contenu clinique — la phrase du déterministe suit, intacte.
+ */
+const INTITULE_PAR_FORME: Record<ContradictionFinding['forme'], string> = {
+  DISCORDANCE: 'Discordance entre instruments constatée par le déterministe',
+  CONFLIT_SOURCES: 'Conflit entre sources constaté par le déterministe',
+  CONVERGENCE: 'Convergence constatée par le déterministe',
+};
+
+/**
+ * Une ligne de vigilance, EXPLICABLE.
+ *
+ * `limitations` et `regleId` ne sont pas décoratifs, et les omettre reproduisait
+ * l'amputation que la revue du cockpit avait déjà fait corriger une fois. Sans
+ * les limitations, le praticien ne sait pas ce que le constat NE dit pas — pour
+ * C-STR, « la discordance dit qu'ils ne concordent pas, jamais lequel a raison »
+ * (`DC-25`, `DC-28`), et il tranchera en faveur d'un instrument. Sans le
+ * `regleId`, il n'a aucun moyen de nommer la règle qu'il conteste : un faux
+ * positif devient irremontable (`DC-34`, `DC-35`).
+ *
+ * Les passations datées restent au cockpit, où elles s'ouvrent — arbitrage 2 de
+ * [[D-057]], inchangé.
+ *
+ * DEUX POINTS, PAS UN. Un point de vigilance est plafonné à
+ * `LONGUEUR_MAX_POINT` caractères à l'enregistrement d'un brouillon praticien.
+ * Constat et limitations réunis atteignaient 730 caractères pour C-STR :
+ * l'enregistrement aurait été refusé, avec un message qui ne nomme pas la
+ * cause. Scindés, ils font 411 et 326 — et un banc fige le plafond pour toutes
+ * les règles de la table.
+ */
+export function lignesDeVigilance(constat: ContradictionFinding): string[] {
+  const lignes = [
+    `${INTITULE_PAR_FORME[constat.forme]} [${constat.regleId}] : `
+    + `${constat.description} ${constat.actionSuggeree}`,
+  ];
+  if (constat.limitations.length > 0) {
+    lignes.push(`Ce que le constat [${constat.regleId}] ne dit pas : ${constat.limitations.join(' ')}`);
+  }
+  return lignes;
+}
+
+export function vigilancesDiscordancePourSynthese(
+  constats: ContradictionFinding[],
+): string[] {
+  if (!contradictionsActives()) return [];
+  return constats.filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
+}
+
+/**
+ * Ce dont le garde de restitution a besoin d'une discordance, et rien de plus
+ * ([[D-057]], arbitrage 3) : la règle qui a mordu, et les instruments qu'elle a
+ * confrontés. Les sources de type `claim` n'entrent pas — un claim n'est pas
+ * cité par son identifiant dans la prose, et l'y chercher n'accuserait jamais
+ * rien.
+ *
+ * Même verrou que ses voisines : système éteint ⇒ rien à surveiller.
+ */
+export function discordancesPourGardeRestitution(
+  constats: ContradictionFinding[],
+): { regleId: string; instruments: string[] }[] {
+  if (!contradictionsActives()) return [];
+  return constats
+    .filter(contradictionEstOuverte)
+    .map(constat => ({
+      regleId: constat.regleId,
+      instruments: constat.sources
+        .filter((source): source is Extract<typeof source, { type: 'instrument' }> =>
+          source.type === 'instrument')
+        .map(source => source.idQuestionnaire),
+    }))
+    .filter(discordance => discordance.instruments.length > 0);
 }

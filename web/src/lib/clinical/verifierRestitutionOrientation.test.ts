@@ -4,6 +4,7 @@ import { LIBELLE_EXTINCTION } from './stopRulesLibelles';
 import { STOP_RULES_V1 } from './stopRulesV1';
 import {
   formaterEcarts,
+  verifierRestitutionDiscordances,
   verifierRestitutionOrientation,
   type TexteSynthese,
 } from './verifierRestitutionOrientation';
@@ -468,5 +469,133 @@ describe('verifierRestitutionOrientation — un complément nommé en contexte p
   it('rend un écart de complément lisible au journal', () => {
     expect(formaterEcarts(surResume('Une supplémentation en tyrosine est conseillée.')))
       .toBe('complement:Tyrosine');
+  });
+});
+
+describe('verifierRestitutionDiscordances — la prose ne contredit pas la vigilance', () => {
+  // Le garde du LOT-09 ([[D-057]], arbitrage 3). Comme ses deux prédécesseurs,
+  // la moitié des cas sont des CONTRÔLES NÉGATIFS : la prose clinique parle
+  // constamment de cohérence, et un garde qui l'accuse noie son signal.
+  const C_STR = { regleId: 'C-STR', instruments: ['Q_STR_01', 'Q_MOD_01'] };
+
+  const sur = (resume_praticien: string) =>
+    verifierRestitutionDiscordances({ resume_praticien }, [C_STR]);
+
+  it('signale des instruments déclarés concordants', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 convergent nettement.'))
+      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  it('signale une concordance affirmée après l’instrument', () => {
+    expect(sur('Le résultat du Q_STR_01 est cohérent avec le reste du dossier.'))
+      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  it('signale un « confirmé par » accolé à l’instrument', () => {
+    expect(sur('Le ressenti est confirmé par le Q_MOD_01.'))
+      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  // ── LA NÉGATION, mesurée en revue et corrigée ────────────────────────────
+  //
+  // Première version : six accusations sur sept portaient sur des phrases qui
+  // restituaient CORRECTEMENT la discordance. Un garde dont le bruit est
+  // corrélé à la fidélité est pire qu'absent, et ces écarts sont persistés en
+  // base comme fait d'audit. Chaque ligne ci-dessous rougissait alors.
+  it('n’accuse pas « n’est pas confirmé par » — la restitution la plus fidèle qui soit', () => {
+    expect(sur('Le Q_STR_01 n’est pas confirmé par le Q_MOD_01 — à clarifier en entretien.'))
+      .toEqual([]);
+  });
+
+  it('n’accuse pas « ne convergent pas »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 ne convergent pas.')).toEqual([]);
+  });
+
+  it('n’accuse pas « ne sont pas concordants »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 ne sont pas concordants.')).toEqual([]);
+  });
+
+  it('n’accuse pas « incohérence » — « cohérence » en est une sous-chaîne', () => {
+    expect(sur('Une incohérence apparaît entre le Q_STR_01 et le Q_MOD_01.')).toEqual([]);
+  });
+
+  it('n’accuse pas « incohérents »', () => {
+    expect(sur('Les résultats du Q_STR_01 et du Q_MOD_01 sont incohérents.')).toEqual([]);
+  });
+
+  it('n’accuse pas « divergent »', () => {
+    expect(sur('Le Q_STR_01 et le Q_MOD_01 divergent nettement.')).toEqual([]);
+  });
+
+  it('ne s’accuse pas lui-même : la vigilance injectée est exclue de son entrée', () => {
+    // La ligne déterministe porte son `regleId` entre crochets et sa
+    // description peut contenir un marqueur. Sans exclusion, le garde
+    // reprocherait au déterministe de se contredire.
+    expect(verifierRestitutionDiscordances({
+      points_de_vigilance: [
+        'Discordance entre instruments constatée par le déterministe [C-STR] : '
+        + 'Le Q_STR_01 est confirmé par le Q_MOD_01.',
+      ],
+    }, [C_STR])).toEqual([]);
+  });
+
+  it('n’accuse pas une cohérence portant sur autre chose que les instruments', () => {
+    expect(sur('Le discours du patient est cohérent. Le Q_STR_01 sera rediscuté plus tard, '
+      + 'après un délai suffisant pour que la mesure ait du sens dans ce dossier précis.'))
+      .toEqual([]);
+  });
+
+  it('n’accuse pas la mention nue d’un instrument', () => {
+    expect(sur('Le Q_STR_01 a été passé le 12 mars.')).toEqual([]);
+  });
+
+  it('n’accuse pas un instrument étranger à la discordance', () => {
+    expect(sur('Le Q_SOM_09 et le Q_ALI_02 convergent.')).toEqual([]);
+  });
+
+  it('ne compte qu’une fois une discordance trahie sur ses deux instruments', () => {
+    expect(sur('Le Q_STR_01 converge avec le Q_MOD_01, qui converge aussi avec lui.'))
+      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  it('ne signale rien sur une synthèse vide', () => {
+    expect(verifierRestitutionDiscordances({}, [C_STR])).toEqual([]);
+  });
+
+  it('ne signale rien sans discordance transmise', () => {
+    expect(verifierRestitutionDiscordances(
+      { resume_praticien: 'Le Q_STR_01 et le Q_MOD_01 convergent.' }, [],
+    )).toEqual([]);
+  });
+
+  it('couvre le narratif patient comme le résumé praticien', () => {
+    expect(verifierRestitutionDiscordances(
+      { narratif_patient: 'Vos deux questionnaires Q_STR_01 et Q_MOD_01 concordent.' }, [C_STR],
+    )).toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
+  });
+
+  it('rend un écart de discordance lisible au journal', () => {
+    expect(formaterEcarts(sur('Le Q_STR_01 converge avec le reste.')))
+      .toBe('discordance:C-STR');
+  });
+
+  it('une ponctuation forte suffit à disculper — la phrase est l’unité', () => {
+    // La concordance porte sur Q_SOM_09 ; le point-virgule ferme la phrase, et
+    // Q_STR_01 n'est plus accusé. C'est tout l'intérêt de découper avant de
+    // normaliser : une fenêtre de caractères aurait franchi ce séparateur.
+    expect(sur('Le Q_SOM_09 converge avec l’anamnèse ; le Q_STR_01 reste à discuter.'))
+      .toEqual([]);
+  });
+
+  it('FAUX POSITIF ASSUMÉ — deux instruments dans UNE MÊME phrase partagent leurs marqueurs', () => {
+    // La concordance affirmée porte sur Q_SOM_09, pas sur Q_STR_01, mais les
+    // deux vivent dans la même phrase et le garde accuse C-STR. Épinglé plutôt
+    // que masqué : même famille de limite que la fenêtre d'extinction de
+    // [[D-055]]. Le découpage par phrase réduit ce faux positif sans le
+    // supprimer — le supprimer demanderait de rattacher un marqueur à son
+    // sujet grammatical, ce qu'aucun garde de ce dépôt ne prétend faire. La
+    // sortie reste journalisée, jamais censurée.
+    expect(sur('Le Q_SOM_09 converge avec l’anamnèse et le Q_STR_01 reste à discuter.'))
+      .toEqual([{ type: 'discordance', identifiant: 'C-STR' }]);
   });
 });

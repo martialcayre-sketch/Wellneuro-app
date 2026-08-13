@@ -107,6 +107,13 @@ export const EVENT_CODES = {
   // qui est exactement ce qu'on cherche à mesurer.
   SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE: 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
   SYNTHESE_ORIENTATION_INDISPONIBLE: 'SYNTHESE_IA.ORIENTATION.INDISPONIBLE',
+  /**
+   * Les constats de discordance n'ont pas pu être calculés : la synthèse part
+   * SANS ses vigilances de discordance. Code distinct de
+   * `CONTEXT_UNAVAILABLE`, qui dégrade la prose — ici c'est une vigilance
+   * clinique qui manque, et une alerte doit pouvoir séparer les deux.
+   */
+  SYNTHESE_DISCORDANCES_INDISPONIBLES: 'SYNTHESE_IA.DISCORDANCES.INDISPONIBLES',
   // LOT-01 étape 4 — la sortie du modèle n'a pas passé le schéma strict et une
   // relance a été émise. Code DISTINCT de l'échec de génération : celui-ci dit
   // que la première sortie était non conforme ET qu'on a retenté, l'autre que

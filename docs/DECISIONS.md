@@ -4,6 +4,116 @@
 
 ## Décisions actives
 
+### D-057 — Ce qu'une discordance a le droit de dire à la synthèse, et ce que « présente en tête » ne prouve pas
+
+- Date : 2026-08-13
+- Statut : accepté (décision utilisateur du 2026-08-13, trois arbitrages tranchés à l'ouverture du LOT-09)
+- Domaine : clinique, moteur de contradictions, synthèse IA, garde de restitution
+- Contexte : l'étape 5 du LOT-01 avait deux moitiés. Le câblage cockpit des
+  contradictions est livré ([[D-050]]) ; **l'injection des vigilances dans la
+  synthèse ne l'est pas**. Elle a été renvoyée le 2026-08-12 sans lot d'accueil,
+  rattachée au LOT-05, puis ressortie le 2026-08-13 quand ce lot a été clos sur
+  un diff d'une seule finalité. Le LOT-09 est cet accueil, et cette décision
+  précède sa première ligne de code (`DC-17`, `DC-18`).
+- Fait relu dans le dépôt le 2026-08-13, et il réduit le lot : **rien de
+  clinique n'est à rédiger.** `ContradictionAffichee.description` est déjà « la
+  formulation neutre produite par le déterministe, jamais reformulée ici » ;
+  `constatsContradictionsPourDossier` produit les constats verrou compris (il a
+  été extrait au LOT-08 pour `orientationService`) ; `fusionnerVigilance`
+  fusionne déjà et sert les vigilances d'anamnèse ; et la route porte déjà les
+  données — `reponsesAdministrables` a exactement la forme
+  `LignePassationDossier`, `consultation.anamnese` est lue dans le même bloc.
+  Aucune lecture base supplémentaire, aucun texte nouveau (`DC-19`).
+- **Effet en production : nul au merge.** `contradictionsActives()` exige le
+  drapeau **et** `tableSignee()`, et `CONTRADICTIONS_METADATA.validationExterne`
+  vaut `false` — la table n'est pas signée. Troisième lot d'affilée sans effet
+  servi, et le dire ici évite qu'on le découvre en cherchant un changement
+  absent.
+- Décision : trois arbitrages.
+
+**1. Seuls les constats OUVERTS deviennent vigilance, au prédicat PARTAGÉ.**
+Non pas « le même critère » recopié, mais `contradictionEstOuverte`, la
+fonction unique qu'appelle aussi le moteur d'arrêt ([[D-053]] §5, [[D-055]]).
+La première rédaction du lot le paraphrasait en `statut !== 'resolue'` et
+omettait l'exclusion des convergences que le moteur applique : une règle
+`CONVERGENCE` publiée aurait été servie au praticien sous l'intitulé
+« discordance » tout en laissant l'extinction possible. Défaut trouvé en revue,
+avant la signature de la table, et refermé à la racine — il n'y a plus qu'une
+écriture du critère. Escalade praticien comprise dans « ouvert ». Deux motifs, et le second pèse plus que le premier. Un critère : deux
+définitions d'« ouvert » dans le même dépôt divergeraient en silence, et le même
+constat bloquerait l'extinction sans atteindre la synthèse, ou l'inverse. Une
+raison clinique : un constat que le praticien a explicitement résolu, resservi à
+chaque synthèse, apprend à survoler le bloc de vigilances — et une vigilance
+qu'on apprend à survoler ne protège plus rien. Aucun plancher d'importance n'est
+posé : [[D-048]] refuse déjà qu'`importance` serve à décoter un constat, et
+aucune source ne fonde un tel seuil (`DC-19`, `DC-20`).
+
+**2. La vigilance porte la description ET l'action suggérée, reprises telles
+quelles.** `DC-30` énumère l'objet minimal d'une discordance — « sources,
+description, importance, hypothèses, action suggérée, résolue ou non » — et
+livrer le constat sans sa suite laisse le praticien devant une alerte sans
+issue, tout en laissant le modèle libre de proposer la sienne : précisément ce
+que l'injection déterministe existe pour empêcher. Les deux champs sont repris
+**mot pour mot** ; ce moteur ne reformule pas ce qu'il transporte. Les
+passations datées restent au cockpit, où elles s'ouvrent : les recopier dans le
+bloc de vigilances l'alourdirait à chaque constat sans rien rendre de plus
+vérifiable.
+
+**3. La fusion garantit la PRÉSENCE, pas la FIDÉLITÉ — un garde mesure la
+seconde.** `fusionnerVigilance` met la vigilance déterministe en tête et
+l'empêche d'être supprimée. Elle n'empêche pas le modèle de la contredire trois
+paragraphes plus bas, et le praticien lirait alors deux affirmations opposées
+dont une seule est déterministe. Un contrôle reprend le patron d'adjacence de
+[[D-055]] et **journalise** — jamais de censure, même régime que ses deux
+prédécesseurs : l'objet actionnable vient de la route déterministe, donc une
+prose infidèle ne déclenche rien. Ses contrôles négatifs comptent autant que ses
+positifs : la revue adversariale du 2026-08-03 a déjà montré qu'un garde trop
+large accuse la prose clinique ordinaire et noie son propre signal.
+
+La première version l'a démontré une fois de plus, et pire : **son bruit était
+corrélé à la fidélité**. « incohérent » contient « cohérent », « n'est pas
+confirmé par » contient « confirmé par » — six phrases mesurées sur sept qui
+restituaient CORRECTEMENT la discordance étaient accusées, et ces écarts sont
+persistés en base comme fait d'audit. Deux corrections : le marqueur doit
+ouvrir un mot, et il ne doit pas être nié. Le garde s'exclut en outre de sa
+propre entrée, faute de quoi le déterministe finirait par s'accuser lui-même
+dès qu'une règle citera ses instruments par identifiant.
+
+Sa portée reste **étroite et il faut le dire** : le modèle ne reçoit pas la
+discordance dans son prompt, il n'a donc guère de raison de citer des
+identifiants d'instrument au voisinage d'une affirmation de concordance. Le
+garde est un filet, pas le mécanisme principal — l'injecter dans la consigne
+serait ce mécanisme, et c'est une dette nommée, pas ce lot.
+
+**4. Une discordance ne sort pas du praticien.** Le constat déclare
+`audience: 'praticien_seul'` ; converti en chaîne de `points_de_vigilance`, il
+perdait cette audience et héritait du destinataire **médecin** du bloc
+« vigilance » — donc du courrier au médecin traitant, un document SORTANT.
+L'élargissement se faisait par effet de bord d'un field-filter existant, sans
+qu'aucune décision ne l'ait dit. Il est refermé : le bloc d'une vigilance de
+discordance ne porte que le destinataire praticien, et un banc symétrique de
+celui du patient fige la porte. Les vigilances d'anamnèse, elles, gardent leur
+régime — ce sont les propos du patient, pas un constat entre instruments.
+
+- Dettes nommées, non résolues ici : **injecter la discordance dans la consigne
+  de synthèse**, ce qui empêcherait le modèle de la contredire par ignorance et
+  rendrait au garde son rôle de filet (bump de consigne, hors de ce lot) ;
+  **l'écart dossier ↔ épisode** que [[D-050]]
+  laisse ouvert — le moteur de contradictions évalue le **dossier entier** alors
+  que `review` porte sur l'épisode T0, si bien qu'un constat peut reposer sur
+  une passation laissée hors de l'épisode. Ce lot ne l'aggrave pas (il consomme
+  la même source que le cockpit et le moteur d'arrêt, sans élargir sa portée) et
+  ne le referme pas : le refermer suppose d'arbitrer ce qu'est le périmètre
+  légitime d'une discordance, ce qu'aucune source du dépôt ne tranche.
+- Conséquences : la synthèse praticien porte les discordances ouvertes dès que
+  la table sera signée ; d'ici là, `contradictionsActives()` rend faux et rien
+  n'est ajouté. La signature reste un acte praticien distinct, hors de ce lot.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-09-vigilances-discordance.md`,
+  `web/src/lib/clinical/contradictionsService.ts`,
+  `web/src/app/api/praticien/synthese/route.ts`,
+  `web/src/lib/clinical/verifierRestitutionOrientation.ts`,
+  `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`
+
 ### D-056 — Ce qu'une intention de complément exige avant la biologie, et pourquoi un catalogue vide doit refuser
 
 - Date : 2026-08-13
