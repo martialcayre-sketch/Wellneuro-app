@@ -547,7 +547,10 @@ async function genererSynthesePersistee(
     logger.warn({
       event: EVENT_CODES.SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE,
       domain: 'SYNTHESE_IA',
-      message: `Restitution d'orientation infidèle : cibles citées hors recommandation (${formaterEcarts(ecartsRestitution)})`,
+      // Deux classes sous un même code : une cible citée HORS transmission
+      // (pack/questionnaire), et une cible transmise dont la PRÉSENTATION
+      // diverge (extinction). Le rendu de `formaterEcarts` porte la classe.
+      message: `Restitution d'orientation infidèle : cible hors transmission ou présentation d'extinction divergente (${formaterEcarts(ecartsRestitution)})`,
       context: finalizeLogContext(args.requestContext, { retryable: false }),
     });
   }

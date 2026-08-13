@@ -28,10 +28,13 @@
 
 **1. `group_majority` publie `missing` et `repondus` à la racine, et rien
 d'autre.** C'est la forme « moteurs à score global » que `comptesDuRecueil`
-(`orientationEngine.ts`) sait déjà lire, celle de `sum`, `psqi` et `tfd` ; les
-deux champs sont déjà décrits dans la consigne de synthèse — **aucun bump de
-prompt**. Les comptes sont sommés depuis `totalSousScore` par groupe, jamais
-recopiés d'une déclaration. Pas de comptes par groupe : aucun consommateur ne
+(`orientationEngine.ts`) sait déjà lire, celle de `sum`, `psqi` et `tfd`.
+**Aucun champ nouveau n'atteint le prompt, donc aucun bump de consigne** — le
+motif exact, corrigé en revue (M11) : la consigne ne décrit `items`/`repondus`
+que sous les sous-scores, mais `sum` publie `missing`/`repondus` à la racine
+depuis #561 et l'ensemble admis du banc de consigne les contient déjà. Les
+comptes sont sommés depuis `totalSousScore` par groupe, jamais recopiés d'une
+déclaration. Pas de comptes par groupe : aucun consommateur ne
 les lit — un groupe entièrement vide rend déjà `total: null`, et le bloc
 « groupe dominant » n'est atteint que sur un total global non nul, donc sur
 trois groupes mesurés. Une note de recueil partiel dit le trou en français
@@ -90,7 +93,10 @@ table signée) — un système éteint ne produit aucun constat, donc rien
 d'« ouvert » ; c'est la hiérarchie de verrous déjà en place, pas un verrou
 nouveau. **Le sens unique est garanti par construction** : les constats ne sont
 lus que pour interdire l'extinction, jamais pour la déclencher ni pour toucher
-une recommandation (`DC-30`) — un banc compare les deux sorties.
+une recommandation (`DC-30`) — un banc compare les deux sorties. Précision de
+revue (M8), figée par banc avant que les formes vides soient peuplées : une
+`CONVERGENCE` non résolue ne bloque PAS — un accord de sources n'est pas une
+contradiction ; seules `DISCORDANCE` et `CONFLIT_SOURCES` interdisent.
 
 **5. Le garde de restitution distingue éteinte et recommandée, lexicalement,
 et journalise.** Même régime que le garde existant : log `warn`, jamais de
@@ -102,7 +108,13 @@ d'extinction — famille « étein- », « extinction », « pas d'objet », « 
 nécessaire », « plus lieu », et le libellé servi (`LIBELLE_EXTINCTION`). Ces
 marqueurs sont ceux que la consigne v25 impose déjà au modèle (« dis qu'elle
 n'est pas nécessaire en l'état, et reprends le motif d'arrêt ») : **aucun bump
-de consigne**. Deux sens : une cible éteinte citée sans marqueur proche est un
+de consigne**, et deux bancs les tirent des textes de production eux-mêmes —
+reformuler `LIBELLE_EXTINCTION` ou le motif de STOP-STR sans réviser le
+vocabulaire rougit. La fenêtre est ASYMÉTRIQUE, sur mesure et non sur
+intuition : 200 en amont, 420 en aval — le motif de STOP-STR, que la consigne
+fait citer après la cible, porte son unique marqueur à ~235 caractères
+normalisés de sa tête, et une fenêtre symétrique de 200 accusait la
+restitution la plus fidèle possible (trouvé par le banc dérivé du motif). Deux sens : une cible éteinte citée sans marqueur proche est un
 écart (présentée comme courante) ; une cible recommandée vivante citée avec
 marqueur proche est un écart (présentée comme éteinte). Les angles morts — une
 paraphrase sans marqueur, deux cibles dans la même fenêtre — sont documentés en
@@ -116,12 +128,21 @@ demeure l'acte praticien séparé que [[D-053]] décrit (étape 6 du lot,
 confirmation distincte, après relecture du bloc « à connaître avant de
 signer » de `stopRulesV1.ts`).
 
-- Conséquence latérale, nommée plutôt que découverte : « Mon équilibre » lit
-  les comptes racine (`extraireValeurBrute`, `equilibre/score.ts`) et `Q_STR_01`
-  y sert le besoin 3 en échelle INVERSÉE (`inverser: true`). Un recueil partiel
-  y produisait une valeur biaisée bas, donc un bien-être surestimé après
-  inversion ; il vaut désormais « non mesuré » — la direction de `DC-24`, et le
-  comportement déjà servi pour psqi et tfd. Suite `equilibre` verte inchangée.
+- Conséquence latérale, nommée puis COMPLÉTÉE en revue (B1) : « Mon équilibre »
+  lit les comptes racine (`extraireValeurBrute`, `equilibre/score.ts`) et
+  `Q_STR_01` y sert le **besoin 9** — une FONDATION CRITIQUE — en échelle
+  inversée (`inverser: true`). Un recueil partiel y produisait une valeur
+  biaisée bas, donc un bien-être surestimé après inversion ; il vaut désormais
+  « non mesuré ». L'effet va dans les deux sens : un `Q_STR_01` partiel et déjà
+  sévère (`total >= 28`, seule source répondue) effondrait le besoin 9 et
+  plafonnait le score global à 50 — le rendre non mesuré lève ce plafond, et le
+  score REMONTE. C'est un changement de définition du besoin :
+  `VERSION_SCORE_EQUILIBRE` est bumpée **v12/v13 → v14/v15**, comme aux deux
+  précédents de la même classe (PSQI/besoin 5 → v10/v11, TFD/besoin 4 →
+  v12/v13), doctrine dans `constants.ts` et banc « le plafond de fondation
+  critique tombe » dans `score.test.ts`. Stock de production nul (une
+  passation, sans `rawAnswers`) — mais les deux précédents ont bumpé sur un
+  stock aussi mince : c'est le FLUX que l'étiquette gouverne.
 - Conséquences : `web/src/lib/questions.ts` (moteur `group_majority`),
   `web/src/lib/clinical/orientationEngine.ts` (garde d'arrêt, entrée
   `contradictions`), `web/src/lib/clinical/orientationService.ts` (câblage des

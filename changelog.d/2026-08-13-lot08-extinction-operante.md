@@ -36,3 +36,10 @@
   caractères normalisés, instruments déjà passés hors du contrôle (un résultat
   se cite sans marqueur). Même régime que le garde d'origine : journalisé,
   jamais censuré, angles morts épinglés par bancs — dont un faux positif assumé.
+- **`VERSION_SCORE_EQUILIBRE` bumpée v12/v13 → v14/v15** (revue wn-reviewer,
+  B1) : `Q_STR_01` alimente le besoin 9 — fondation critique — en échelle
+  inversée, et le recueil partiel qui n'est plus une mesure change la
+  définition du besoin dans les deux sens, y compris la levée du plafond de 50
+  sur un partiel déjà sévère. Troisième bump de la même classe (PSQI/besoin 5,
+  TFD/besoin 4) ; coût connu et assumé : historique de momentum coupé, agrégat
+  cabinet masqué jusqu'à deux cycles v15.

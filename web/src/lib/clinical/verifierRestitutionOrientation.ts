@@ -142,17 +142,25 @@ const MARQUEURS_EXTINCTION = [
 ];
 
 /**
- * Fenêtre, en caractères normalisés de part et d'autre d'une citation, dans
- * laquelle un marqueur d'extinction est cherché.
+ * Fenêtre, en caractères normalisés, dans laquelle un marqueur d'extinction
+ * est cherché autour d'une citation — ASYMÉTRIQUE, et la mesure qui l'impose
+ * est dans le dépôt.
  *
- * 200 est un arbitrage de la même famille que `FENETRE_ADJACENCE_PACK` : assez
- * large pour que « Le BMS-10 avait été proposé. Il n'est plus nécessaire en
- * l'état. » tienne dans la fenêtre malgré la frontière de phrase, assez étroite
- * pour qu'un marqueur portant sur une AUTRE cible du même paragraphe ne blanchisse
- * pas — ou n'accuse pas — celle-ci à coup sûr. Les angles morts sont en tête de
- * module.
+ * Deux arbitrages de la même famille que `FENETRE_ADJACENCE_PACK` :
+ *  · 200 en AMONT — assez pour « Le BMS-10 avait été proposé. Il n'est plus
+ *    nécessaire en l'état. » malgré la frontière de phrase, assez étroit pour
+ *    qu'un marqueur portant sur une autre cible ne déborde pas à coup sûr ;
+ *  · 420 en AVAL — la consigne exige de reprendre le motif d'arrêt « tel
+ *    qu'il t'est donné », APRÈS la cible qu'il éteint, et le motif de STOP-STR
+ *    porte son unique marqueur (« n'ont pas d'objet ») à ~235 caractères
+ *    normalisés de sa tête. Une fenêtre de 200 accusait donc la restitution
+ *    la plus fidèle possible ; 420 couvre un motif de cette taille cité
+ *    entier, sans s'étendre au paragraphe suivant. Le banc des marqueurs tire
+ *    ces textes des constantes de production, et celui de la borne haute
+ *    rougit si l'une des deux fenêtres s'élargit en silence.
  */
-const FENETRE_EXTINCTION = 200;
+const FENETRE_EXTINCTION_AMONT = 200;
+const FENETRE_EXTINCTION_AVAL = 420;
 
 /** Positions de chaque occurrence de `cible` dans `texte` (déjà normalisés). */
 function positionsDe(texte: string, cible: string): number[] {
@@ -170,8 +178,8 @@ function positionsDe(texte: string, cible: string): number[] {
 /** Un marqueur d'extinction vit-il dans la fenêtre autour de cette citation ? */
 function marqueurPresDe(texte: string, position: number, longueur: number): boolean {
   const fenetre = texte.slice(
-    Math.max(0, position - FENETRE_EXTINCTION),
-    Math.min(texte.length, position + longueur + FENETRE_EXTINCTION),
+    Math.max(0, position - FENETRE_EXTINCTION_AMONT),
+    Math.min(texte.length, position + longueur + FENETRE_EXTINCTION_AVAL),
   );
   return MARQUEURS_EXTINCTION.some(marqueur => fenetre.includes(marqueur));
 }

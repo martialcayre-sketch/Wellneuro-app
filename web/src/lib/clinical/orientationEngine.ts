@@ -1013,8 +1013,14 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
   // de naître. Le sens inverse est garanti par construction : les constats ne
   // sont lus nulle part ailleurs dans ce moteur, une contradiction ne peut donc
   // jamais DÉCLENCHER une extinction (`DC-30`).
+  // `CONVERGENCE` NE BLOQUE PAS — précision de revue (2026-08-13, M8) : le
+  // type prévoit trois formes, et une convergence est un ACCORD de sources,
+  // pas une contradiction. La laisser bloquer aurait été un sur-blocage sûr
+  // mais hors décision ; DISCORDANCE et CONFLIT_SOURCES, elles, disent toutes
+  // deux qu'une incohérence est ouverte. Vide en V1 pour les deux formes non
+  // peuplées — un banc fige ce partage avant qu'elles le soient.
   const contradictionOuverte = (entree.contradictions ?? [])
-    .some(constat => constat.resolution.statut !== 'resolue');
+    .some(constat => constat.forme !== 'CONVERGENCE' && constat.resolution.statut !== 'resolue');
   for (const arret of contradictionOuverte ? [] : entree.reglesArret ?? []) {
     if (arret.statut !== 'publiee') continue;
     if (arret.declencheurs.length === 0) continue;
@@ -1027,13 +1033,13 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       // GARDE DE COMPLÉTUDE PROPRE AU MOTEUR D'ARRÊT, et elle n'est pas une
       // redite de celle des déclencheurs.
       //
-      // La garde générale (`extraireCible`) retire la MESURE quand le recueil se
-      // DIT incomplet. Elle ne peut rien dire d'un moteur qui ne publie AUCUN
-      // compte : `group_majority` — celui de `Q_STR_01`, l'instrument porteur de
-      // STOP-STR — ne sert ni `missing`, ni `repondus`, ni `items`, et
-      // `totalSousScore` rend un total dès UN item par groupe. Trois réponses
-      // sur vingt et une, toutes au minimum, produisent donc un total de 0,
-      // c'est-à-dire la bande la plus favorable de la grille.
+      // La garde générale (`extraireCible`) retire la MESURE quand le recueil
+      // se dit incomplet ; elle ne peut rien dire d'un moteur qui ne publie
+      // AUCUN compte. C'était le cas de `group_majority` (`Q_STR_01`, porteur
+      // de STOP-STR) jusqu'au LOT-08 : trois réponses sur vingt et une
+      // produisaient la bande la plus favorable de la grille. Le moteur publie
+      // ses comptes depuis [[D-055]] — cette garde reste, pour les moteurs qui
+      // ne les publient toujours pas (le Berlin, nommé par [[D-053]] §4).
       //
       // Pour une règle d'orientation, un tel silence est un faux négatif : la
       // règle ne s'allume pas. Pour une règle d'ARRÊT, il serait une extinction
@@ -1041,13 +1047,13 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       // [[D-053]] écarte STOP-APN. Un instrument qui ne sait pas dire sa
       // complétude ne peut donc pas éteindre : on refuse plutôt que de deviner.
       //
-      // « MUET OU INCOMPLET », EXPLICITEMENT ([[D-055]], arbitrage 3). Le refus
-      // sur recueil partiel était déjà obtenu par ricochet — la garde générale
-      // d'`extraireCible` retire la mesure, le déclencheur ne mord pas — mais
-      // une extinction ne se refuse pas par ricochet : la borne se lit ici,
-      // dans le moteur d'arrêt lui-même, et un futur déclencheur qui lirait
-      // autre chose que la mesure (un drapeau de forme, une note) ne la
-      // contournerait pas.
+      // « MUET OU INCOMPLET », EXPLICITEMENT ([[D-055]], arbitrage 3), et la
+      // seconde moitié N'EST PAS une redite de la garde générale : celle-ci
+      // annule la mesure, or un déclencheur peut être atteint SANS mesure — la
+      // zone garantie par un `bandePlancher` est faite exactement pour ça, sur
+      // un recueil incomplet. Une règle d'arrêt ne doit jamais s'appuyer sur un
+      // plancher : la borne se lit donc ici, dans le moteur d'arrêt lui-même,
+      // et le banc « un plancher n'éteint jamais » la fait rougir seule.
       // AU GRAIN DU DÉCLENCHEUR : l'axe visé quand il y en a un, la racine
       // sinon — voir `comptesDuPorteurVise`, et le défaut qu'il ferme.
       if (declencheur.type !== 'drapeau') {

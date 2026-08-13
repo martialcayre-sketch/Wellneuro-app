@@ -31,21 +31,35 @@ import { sha256 } from './corpusSyntheseV1';
 // garantir une zone favorable.
 //
 // CE QUE CE PARTAGE NE SUFFIT PAS À FERMER, ET LA GARDE QU'IL A FALLU AJOUTER.
-// La garde générale retire la mesure d'un recueil qui se DIT incomplet ; elle ne
-// peut rien dire d'un moteur qui ne publie AUCUN compte. Le moteur
-// `group_majority` de `Q_STR_01` est dans ce cas, et `totalSousScore` rend un
-// total dès un item par groupe : trois réponses sur vingt et une suffiraient à
-// produire la bande la plus favorable. Le moteur d'arrêt refuse donc d'éteindre
-// sur tout instrument dont la complétude n'est pas lisible
-// (`orientationEngine.ts`, boucle d'extinction).
+// La garde générale retire la mesure d'un recueil qui se DIT incomplet ; elle
+// ne peut rien dire d'un moteur qui ne publie aucun compte. Le moteur d'arrêt
+// porte donc SA garde : il refuse d'éteindre sur tout instrument dont la
+// complétude n'est pas lisible OU dit un manquant, lue AU GRAIN DU DÉCLENCHEUR
+// — l'axe visé quand il y en a un, la racine sinon (`orientationEngine.ts`,
+// `comptesDuPorteurVise`, [[D-055]] arbitrage 3). Le grain n'est pas un
+// détail : le DASS-21 (`subscore`) ne publie ses comptes que par axe, et une
+// garde qui ne lisait que la racine refusait d'éteindre même sur une passation
+// complète.
 //
-// CONSÉQUENCE À CONNAÎTRE AVANT DE SIGNER : `Q_STR_01` étant précisément cet
-// instrument, STOP-STR est écrite mais NE PEUT PAS MORDRE tant que
-// `group_majority` ne publie pas ses comptes de recueil, comme le fait déjà
-// `psqi` depuis le lot de signature. Faire publier ces comptes est une
-// modification du moteur de scoring : elle appelle sa propre décision et son
-// propre fragment, hors de ce lot. Signer cette table-ci ne suffira donc pas —
-// c'est écrit ici plutôt que découvert le jour de la signature.
+// À CONNAÎTRE AVANT DE SIGNER — mis à jour au LOT-08 ([[D-055]]), après que la
+// version précédente de ce bloc est devenue fausse :
+//
+//   1. Le verrou historique est LEVÉ : `group_majority` publie ses comptes de
+//      recueil depuis le LOT-08 (`questions.ts`, [[D-055]]), et sa bande n'est
+//      servie que sur recueil complet. STOP-STR est démontrée mordante sur un
+//      dossier rassurant complet, et muette sur recueil partiel, par le banc
+//      de bout en bout de `stopRulesV1.test.ts` (vrai `calculateScore`, cette
+//      table même, configuration réelle du service). Signer cette table est
+//      désormais le geste qui allume l'extinction ET l'exclusion
+//      `dejaRepondu` — les deux, ensemble, par le même verrou.
+//   2. L'ORDRE DES SIGNATURES N'EST GARDÉ PAR RIEN, et il a un sens clinique :
+//      la borne « une contradiction ouverte interdit l'extinction »
+//      ([[D-053]] §5) ne peut mordre que si le système de contradictions est
+//      ACTIF (drapeau `WN_ENABLE_CONTRADICTIONS_NNPP2` ET table
+//      `contradictionsV1` signée). Signer la table d'arrêt seule fait tourner
+//      l'extinction sans ce frein — aucun constat n'existe, donc rien n'est
+//      « ouvert ». C'est la hiérarchie de verrous que [[D-055]] assume, mais
+//      le signataire doit la choisir en connaissance, pas la subir.
 
 export type StopRuleClaimRef = {
   claimId: string;
