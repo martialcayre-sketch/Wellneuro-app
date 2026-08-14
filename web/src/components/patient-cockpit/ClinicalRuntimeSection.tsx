@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
@@ -20,6 +20,8 @@ import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
+import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
 import { useC5Enabled } from './C5FeatureProvider';
@@ -38,6 +40,11 @@ type DiffusionApiResponse = {
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
+
+// Identité STABLE pour « aucun besoin » : l'état observable ci-dessous entre
+// dans le tableau de dépendances d'un effet, et un `?? []` recréerait un
+// tableau neuf à chaque rendu — l'effet tirerait en boucle.
+const NEED_IDS_VIDE: number[] = [];
 
 // Phases du cycle clinique 3.x (A6-R1). Le poste de pilotage n'affiche qu'une
 // phase à la fois ; `'tout'` (défaut) conserve l'empilement historique et reste
@@ -67,6 +74,16 @@ export type EtatRuntimeClinique = {
   // Vrai tant que la lecture de la trajectoire n'a pas abouti (état initial ou
   // requête en vol) : le statut Réévaluation reste INCONNU, jamais « à ouvrir ».
   trajectoireEnLecture: boolean;
+  /**
+   * Besoins qui FONDENT la priorité visée (`provenance.needIds`), pour la
+   * re-passation ciblée au jalon (LOT-07, `D-058`). La priorité visée est la
+   * priorité SÉLECTIONNÉE par le praticien quand elle existe, à défaut la
+   * priorité PROPOSÉE par la carte (`proposedMainPriorityId`) — aucun
+   * producteur de sélection n'existe encore en production (revue LOT-07, B3),
+   * et la re-passation reste une proposition, pas un envoi. Vide sans
+   * priorité — on ne repropose jamais « le pack entier » à sa place.
+   */
+  needIdsPrioriteSelectionnee: number[];
   // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
   // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
@@ -126,6 +143,9 @@ export function ClinicalRuntimeSection({
   // comme « aucun épisode confirmé » — affirmation fausse sur l'historique.
   const [statutTrajectoire, setStatutTrajectoire] =
     useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
+  const [jalonDu, setJalonDu] = useState<JalonDu | null>(null);
+  // Le jalon effectivement demandé au serveur : évite de redemander le même.
+  const [jalonDemande, setJalonDemande] = useState<JalonMomentum>('T0');
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
@@ -193,13 +213,25 @@ export function ClinicalRuntimeSection({
     }
   }, [idPatient]);
 
-  const loadProposal = useCallback(async (stale = false) => {
+  // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
+  // plancher et le GET du jalon dû partent en parallèle, et le T0 est
+  // structurellement le plus lent (lui seul calcule les préconditions). Sans
+  // jeton, l'ordre d'arrivée pouvait afficher la proposition T0 alors que le
+  // jalon retenu était J21 — et le POST partait avec le hash de l'autre.
+  // Règle : seule la DERNIÈRE demande écrit l'état.
+  const seqProposition = useRef(0);
+
+  const loadProposal = useCallback(async (jalon: JalonMomentum, stale = false) => {
     if (fixture) return;
+    const seq = ++seqProposition.current;
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/praticien/cockpit?idPatient=${encodeURIComponent(idPatient)}&milestone=T0`);
+      const response = await fetch(
+        `/api/praticien/cockpit?idPatient=${encodeURIComponent(idPatient)}&milestone=${encodeURIComponent(jalon)}`,
+      );
       const payload = await response.json() as CockpitRuntimeApiResponse;
+      if (seq !== seqProposition.current) return;
       if (!response.ok || payload.status === 'unavailable') {
         const reason = payload.status === 'unavailable' ? payload.reason : 'exception';
         setRuntime(null);
@@ -209,23 +241,59 @@ export function ClinicalRuntimeSection({
       setRuntime(payload);
       setNotice(stale ? 'Les réponses ont changé. La proposition a été rechargée et doit être confirmée à nouveau.' : null);
     } catch {
+      if (seq !== seqProposition.current) return;
       setRuntime(null);
       setError('technical');
     } finally {
-      setLoading(false);
+      if (seq === seqProposition.current) setLoading(false);
     }
   }, [fixture, idPatient]);
 
+  // Le jalon n'est plus codé en dur ([[D-058]], LOT-07). Il se dérive de la
+  // trajectoire, désormais lue dès le montage — et non plus seulement après
+  // confirmation d'un épisode.
+  //
+  // LA PROPOSITION T0 PART TOUT DE SUITE, sans attendre la trajectoire. La
+  // première rédaction attendait, et un banc l'a prise en défaut : une lecture
+  // de trajectoire laissée EN VOL gelait le cockpit entier — plus de
+  // proposition, plus de décision, pour une requête SECONDAIRE. Le plancher
+  // reste donc le comportement d'avant ce lot ; la trajectoire ne fait que
+  // l'améliorer quand elle répond.
   useEffect(() => {
     if (fixture) {
       setLoading(false);
       return;
     }
-    void loadProposal();
-  }, [fixture, loadProposal]);
+    setJalonDemande('T0');
+    void loadProposal('T0');
+    void loadTrajectoire();
+  }, [fixture, loadProposal, loadTrajectoire]);
+
+  // Trajectoire arrivée : si le jalon dû n'est pas celui déjà demandé, on
+  // recharge sur le bon. Sinon on ne touche à rien — pas de second appel pour
+  // le même jalon. Une décision DÉJÀ AFFICHÉE (`ready`) n'est jamais écrasée
+  // par un rechargement de proposition (revue LOT-07, Mo4) : la relecture de
+  // trajectoire après confirmation ne remet pas le praticien devant un
+  // panneau de confirmation.
+  const decisionAffichee = runtime?.status === 'ready';
+  useEffect(() => {
+    if (fixture || statutTrajectoire !== 'chargee') return;
+    const du = resoudreJalonDu(trajectoire, new Date());
+    setJalonDu(du);
+    if (decisionAffichee) return;
+    if (du.statut === 'du' && du.jalon !== jalonDemande) {
+      setJalonDemande(du.jalon);
+      void loadProposal(du.jalon);
+    }
+  }, [fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee]);
 
   const confirm = async (includedResponseIds: string[], contournements: ContournementSaisi[] = []) => {
     if (!runtime || runtime.status !== 'proposal_required') return;
+    // Le jalon confirmé est celui que la proposition AFFICHÉE porte — lu sur
+    // la proposition elle-même, jamais sur un état voisin : reposter « T0 »
+    // en dur (ou un `jalonDemande` qui aurait bougé entre-temps) confirmerait
+    // un épisode qui n'est pas celui sous les yeux du praticien.
+    const jalon = runtime.proposal.milestone;
     setSubmitting(true);
     setError(null);
     setRefus(null);
@@ -235,7 +303,7 @@ export function ClinicalRuntimeSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idPatient,
-          milestone: 'T0',
+          milestone: jalon,
           includedResponseIds,
           proposalHash: runtime.proposalHash,
           overrides: contournements,
@@ -243,7 +311,7 @@ export function ClinicalRuntimeSection({
       });
       const payload = await response.json() as CockpitRuntimeApiResponse;
       if (response.status === 409 && payload.status === 'unavailable' && payload.reason === 'proposal_stale') {
-        await loadProposal(true);
+        await loadProposal(jalon, true);
         return;
       }
       if (!response.ok || payload.status !== 'ready') {
@@ -300,8 +368,26 @@ export function ClinicalRuntimeSection({
   // Remonté ici (et non plus bas avec `review`) parce que le tableau de
   // dépendances de l'effet ci-dessous est évalué au rendu : une déclaration
   // postérieure tomberait dans la zone morte temporelle.
+  // Jalon de l'épisode confirmé, pour la restitution. Repli sur « T0 » quand
+  // le jalon n'a pas pu être résolu : c'est le seul épisode qu'un patient sans
+  // trajectoire lisible puisse avoir confirmé.
+  const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const decisionBloquee = isDecisionBloquee(decisionCard);
+  // Priorité visée : la sélection praticien quand elle existe, à défaut la
+  // priorité proposée par la carte. Le seul producteur en production pose
+  // `selectionPraticien: null` (cockpit/route.ts) : sans ce repli, la
+  // re-passation ciblée était structurellement inatteignable (revue LOT-07,
+  // B3). Le repli reste sous les mêmes verrous que la carte elle-même —
+  // `proposedMainPriorityId` est nul tant que la table des priorités n'est
+  // pas signée.
+  const idCandidatVise = decisionCard
+    ? decisionCard.selectedMainPriority?.candidateId ?? decisionCard.proposedMainPriorityId
+    : null;
+  const candidatVise = idCandidatVise
+    ? decisionCard?.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
+    : null;
+  const needIdsPrioriteSelectionnee = candidatVise?.provenance.needIds ?? NEED_IDS_VIDE;
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -313,6 +399,7 @@ export function ClinicalRuntimeSection({
       trajectoireEnLecture,
       reevaluationMesuree,
       decisionBloquee,
+      needIdsPrioriteSelectionnee,
     });
   }, [
     onEtatChange,
@@ -325,6 +412,7 @@ export function ClinicalRuntimeSection({
     trajectoireEnLecture,
     reevaluationMesuree,
     decisionBloquee,
+    needIdsPrioriteSelectionnee,
   ]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
@@ -424,7 +512,8 @@ export function ClinicalRuntimeSection({
           formulaire qui ne pourra pas s'enregistrer). */}
       {!fixture && loading && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
-          Chargement de la proposition d&apos;épisode T0…
+          Chargement de la proposition d&apos;épisode
+          {jalonDu?.statut === 'du' ? ` ${jalonDu.jalon}` : ''}…
         </div>
       )}
       {!fixture && notice && (
@@ -442,12 +531,27 @@ export function ClinicalRuntimeSection({
       {!fixture && refus && (
         <div role="alert" className="rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">{refus}</div>
       )}
-      {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required' && (
+      {/* Aucun jalon confirmable : le motif se dit. Un cockpit qui n'affiche
+          simplement rien se lit comme une panne, et le praticien cherche un
+          bouton qui n'existe pas ([[D-058]]). */}
+      {affiche('decision') && !fixture && !loading && !error && jalonDu?.statut === 'aucun' && (
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          {jalonDu.motif}
+        </div>
+      )}
+      {/* HORS FENÊTRE, RIEN N'EST PROPOSÉ — le panneau aussi, pas seulement le
+          message (revue LOT-07, M1) : tant que le motif « aucun jalon
+          confirmable » est affiché, aucun bouton de confirmation n'existe.
+          `jalonDu` null (trajectoire illisible ou en vol) conserve le plancher
+          T0 historique. */}
+      {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required'
+        && jalonDu?.statut !== 'aucun' && (
         <EpisodeConfirmationPanel
           proposal={runtime.proposal}
           preconditions={runtime.preconditions}
           submitting={submitting}
           onConfirm={confirm}
+          jalon={runtime.proposal.milestone}
         />
       )}
       {/* CANAL PLAINTE — en tête de la phase Décision, AVANT tout agrégat
@@ -494,11 +598,14 @@ export function ClinicalRuntimeSection({
           signée et que l'abstention est évaluée ([[D-054]]). */}
       {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          {/* Le jalon nommé est celui qui vient d'être confirmé, jamais « T0 »
+              par défaut : depuis le LOT-07 un J21 se confirme ici aussi, et
+              annoncer « Épisode T0 confirmé » après un J21 serait faux. */}
           {abstentionStatut === 'not_required'
-            ? 'Épisode T0 confirmé. Abstention clinique évaluée : aucune abstention requise.'
+            ? `Épisode ${jalonConfirme} confirmé. Abstention clinique évaluée : aucune abstention requise.`
             : abstentionStatut === 'required'
-              ? 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique est requise.'
-              : 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.'}
+              ? `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique est requise.`
+              : `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.`}
         </div>
       )}
 

@@ -28,7 +28,10 @@ export type ReponseBrute = {
 // questionnaires sont ignorés ici plutôt que de recalculer sur des données
 // déjà agrégées — le besoin correspondant reste non évaluable, jamais 0 par
 // défaut.
-function extraireRawAnswers(scoresJson: unknown): Record<string, string | number> | null {
+// Exporté depuis le LOT-07 : la règle de nouveauté PAR BESOIN de
+// `momentumParBesoin.ts` a besoin du même prédicat d'exploitabilité que la
+// règle globale ci-dessous — le recopier les ferait diverger.
+export function extraireRawAnswers(scoresJson: unknown): Record<string, string | number> | null {
   if (!scoresJson || typeof scoresJson !== 'object') return null;
   const raw = (scoresJson as Record<string, unknown>).rawAnswers;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;

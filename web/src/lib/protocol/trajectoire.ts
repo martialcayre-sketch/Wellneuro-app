@@ -1,5 +1,10 @@
 import { construireHistoriqueEquilibre, type ReponseBrute } from '@/lib/equilibre/depuisPrisma';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
+import {
+  calculerMomentumParBesoin,
+  construireHistoriqueParBesoin,
+  type MomentumBesoin,
+} from '@/lib/equilibre/momentumParBesoin';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — objet DÉRIVÉ, lecture
@@ -41,6 +46,14 @@ export type TrajectoireCycle = {
   versionScore: string | null;
   jalons: TrajectoireJalonLecture[];
   momentum: { tendance: TendanceMomentum; delta: number } | null; // T0 → dernier jalon mesuré
+  /**
+   * Momentum PAR BESOIN (LOT-07, `D-058`) : delta factuel, jamais qualifié
+   * tant qu'aucune bande de bruit n'est publiée. Le scalaire ci-dessus reste
+   * servi tel quel pour ses consommateurs — sa sémantique (« stable » à delta
+   * exactement nul) ne s'étend pas ici. VIDE quand l'appelant n'a pas demandé
+   * le calcul (`avecMomentumParBesoin`) — un tableau vide n'affirme rien.
+   */
+  momentumParBesoin: MomentumBesoin[];
 };
 
 export type TrajectoireComparaison = {
@@ -68,6 +81,13 @@ export type Trajectoire = {
 export function construireTrajectoire(input: {
   episodes: TrajectoireEpisode[];
   reponses: ReponseBrute[];
+  /**
+   * Momentum par besoin (LOT-07) — OPT-IN : il rejoue `calculerEquilibre` à
+   * chaque jalon atteint, et seuls la fiche-trajectoire le consomme. Le
+   * chargement cabinet (tous les patients du praticien) et la carte de Fil
+   * n'en lisent rien : ils ne paient pas ce calcul. Défaut : absent (`[]`).
+   */
+  avecMomentumParBesoin?: boolean;
 }): Trajectoire {
   const episodesTriees = [...input.episodes].sort(
     (a, b) => a.confirmedAt.getTime() - b.confirmedAt.getTime(),
@@ -106,6 +126,17 @@ export function construireTrajectoire(input: {
         : null;
       const momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
 
+      // Par besoin : même ancre T0, même « maintenant » implicite que
+      // l'historique scalaire (les jalons futurs sont omis pareil). Les deux
+      // lectures d'une série viennent toujours du moteur courant : aucune
+      // garde de version intra-cycle ici (revue LOT-07 B1) — la garde A8-3
+      // inter-cycles reste `resoudreComparaison` ci-dessous.
+      const momentumParBesoin = input.avecMomentumParBesoin
+        ? calculerMomentumParBesoin({
+            series: construireHistoriqueParBesoin(input.reponses, dateT0, new Date()),
+          })
+        : [];
+
       return {
         // Le cycle d'un T0 est le sien : id stocké quand il existe, sinon son
         // propre id (repli pour les lignes antérieures au gate G2).
@@ -114,6 +145,7 @@ export function construireTrajectoire(input: {
         versionScore: t0.versionScore,
         jalons,
         momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,
+        momentumParBesoin,
       };
     });
 

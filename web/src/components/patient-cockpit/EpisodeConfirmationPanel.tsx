@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
 import type { PreconditionsT0 } from '@/lib/clinical-engine/preconditionsT0';
+import type { JalonMomentum } from '@/lib/equilibre/types';
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value));
@@ -15,6 +16,7 @@ export function EpisodeConfirmationPanel({
   preconditions,
   submitting,
   onConfirm,
+  jalon = 'T0',
 }: {
   proposal: ProposedAssessmentEpisode;
   /**
@@ -24,6 +26,12 @@ export function EpisodeConfirmationPanel({
   preconditions?: PreconditionsT0;
   submitting: boolean;
   onConfirm: (includedResponseIds: string[], contournements: ContournementSaisi[]) => void;
+  /**
+   * Jalon que ce panneau confirme (LOT-07) : depuis que le cockpit propose
+   * aussi J21/J42/J90, un panneau qui écrirait « T0 » en dur annoncerait au
+   * praticien un épisode qui n'est pas celui qu'il confirme.
+   */
+  jalon?: JalonMomentum;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>(proposal.inWindowResponseIds);
   const [motifs, setMotifs] = useState<Record<string, string>>({});
@@ -54,7 +62,7 @@ export function EpisodeConfirmationPanel({
   return (
     <section aria-labelledby="episode-confirmation-title" className="rounded-xl border border-border bg-surface p-4">
       <h3 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Confirmation de l’épisode T0
+        Confirmation de l’épisode {jalon}
       </h3>
       <p className="mt-2 text-base text-muted-foreground">
         Vérifiez les conditions et les questionnaires à inclure. Cette confirmation reste en mémoire et ne modifie aucune donnée.
@@ -126,7 +134,7 @@ export function EpisodeConfirmationPanel({
 
       {proposal.candidateResponses.length === 0 ? (
         <div role="status" className="mt-3 rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
-          Aucune réponse disponible pour la fenêtre T0.
+          Aucune réponse disponible pour la fenêtre {jalon}.
         </div>
       ) : (
         <div className="mt-3 grid gap-2">
@@ -143,7 +151,7 @@ export function EpisodeConfirmationPanel({
                 <span className="min-w-0">
                   <span className="block break-words font-medium text-foreground">{response.questionnaireId}</span>
                   <span className="block text-muted-foreground">
-                    {formatDate(response.observedAt)} · {inWindow ? 'dans la fenêtre T0' : 'hors fenêtre T0'}
+                    {formatDate(response.observedAt)} · {inWindow ? `dans la fenêtre ${jalon}` : `hors fenêtre ${jalon}`}
                   </span>
                 </span>
               </label>
@@ -154,7 +162,7 @@ export function EpisodeConfirmationPanel({
 
       {bloque && (
         <p role="status" className="mt-3 text-sm text-status-danger">
-          Une ou plusieurs conditions requises ne sont pas remplies : l’épisode T0 ne peut pas être confirmé.
+          Une ou plusieurs conditions requises ne sont pas remplies : l’épisode {jalon} ne peut pas être confirmé.
         </p>
       )}
 
@@ -167,7 +175,7 @@ export function EpisodeConfirmationPanel({
         )}
         className="mt-4 min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
       >
-        {submitting ? 'Confirmation en cours…' : 'Confirmer l’épisode T0'}
+        {submitting ? 'Confirmation en cours…' : `Confirmer l’épisode ${jalon}`}
       </button>
     </section>
   );

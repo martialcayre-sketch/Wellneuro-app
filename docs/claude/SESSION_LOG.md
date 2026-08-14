@@ -3752,3 +3752,19 @@ T1 vert, 4 758 tests verts. E2E non jouables ici (CDN Playwright bloqué).
 
 Prochaine action : PR, CI, merge. Ouvert : injecter la discordance dans la
 consigne — le garde n'est qu'un filet tant que le modèle ne la reçoit pas.
+
+## [2026-08-14] — LOT-07 : NO-GO refermé, jalons et momentum par besoin livrés
+
+Revue wn-reviewer NO-GO (B1/B2/B3, M1–M7, Mo1–Mo4) intégralement refermée :
+garde de version intra-cycle retirée (elle éteignait tout le stock v12/v13
+avec un motif faux), ancre UNIQUE des fenêtres de jalon (`confirmedAt` du T0
+confirmé, partagée cockpit/serveur + banc de contrat), re-passation rendue
+atteignable (repli priorité proposée) et POST au vrai contrat (`success`).
+Panneau de confirmation gaté hors fenêtre et nommant son jalon ; unités et
+motifs rendus ; momentum par besoin opt-in (coût cabinet évité). D-058
+amendée (needIds, ancre, garde ; dettes DC-41, producteur de sélection,
+Q_SOM_09-à-J21). Production relue : assessment_episodes vide. Écarté :
+garder la garde de version « par prudence » — indéclenchable dans le sens
+annoncé. Vitest complet vert (4 787). Prochaine action : PR + CI, puis
+ouverture du LOT-06 (migration, PR séparée). Ouvert : première bande de
+bruit à publier (acte séparé) ; E2E parcours nominal T0.

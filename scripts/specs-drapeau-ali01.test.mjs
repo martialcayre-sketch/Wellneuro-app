@@ -89,6 +89,11 @@ const MARQUEURS = [
 // pas accumuler de sédiments.
 const ALLOWLIST = new Map([
   [
+    'src/lib/protocol/repassationCiblee.test.ts',
+    'ne lit de BESOIN_SOURCES que les identifiants de questionnaire — jamais les max, seuls sensibles '
+      + 'à la forme servie : le verdict est identique sous les deux drapeaux',
+  ],
+  [
     'src/app/api/praticien/synthese/route.post.test.ts',
     'mentionne le drapeau mais score sur ses propres fixtures, indépendantes de la forme servie',
   ],

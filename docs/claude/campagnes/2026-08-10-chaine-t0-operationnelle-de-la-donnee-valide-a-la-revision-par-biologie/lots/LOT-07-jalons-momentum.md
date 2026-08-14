@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine"
-statut: "à_faire"
+statut: "termine"
 dépend_de: "LOT-05"
 ---
 
@@ -118,3 +118,41 @@ clinique automatique d'un delta ») : c'en est le corollaire côté suivi.
 Non couvert par le périmètre ci-dessus : la doctrine y a été inscrite après la
 rédaction de la fiche (`docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md`,
 section « Refermer les 18 »).
+
+## Clôture (2026-08-14)
+
+Livré sur `claude/lot-07-campagne-t0`, sous `D-058` (amendée le 2026-08-14) :
+jalons J21/J42/J90 confirmables (jalon dû dérivé de la trajectoire, hors
+fenêtre RIEN n'est proposé — panneau compris, et le panneau nomme son jalon) ;
+momentum PAR BESOIN fail-closed (`BANDES_DE_BRUIT` vide, `publiee: false` —
+aucun delta qualifié sans bande publiée), règle de nouveauté au grain du
+besoin ; re-passation ciblée dérivée de `provenance.needIds` de la priorité
+visée via `BESOIN_SOURCES` ; restitution avec jalons comparés, unités nommées
+(couverture 0–1 vs indice 0–100) et motif toujours rendu.
+
+**Écarts à la fiche, tous décidés** : la cible de re-passation vient de
+`needIds`, pas des `mesures[]` (texte libre du LOT-05 — amendement `D-058`) ;
+le momentum est par BESOIN, pas par « domaine » (les cinq noms de la fiche ne
+sont pas une taxonomie — deux vivent dans le besoin 5 ; inventer un mapping
+aurait créé une table clinique sans source, `DC-17`) ; « les deltas sous la
+bande s'affichent stable » ne vaut que bande PUBLIÉE — il n'en existe aucune.
+
+**Revue `wn-reviewer` NO-GO puis refermée** : B1 garde de version intra-cycle
+retirée (elle éteignait tout stock antérieur au bump v14/v15 avec un motif
+faux) ; B2 ancre UNIQUE des fenêtres (`confirmedAt` du T0 confirmé, partagée
+cockpit/serveur, banc de contrat inter-couches) ; B3 re-passation atteignable
+(repli priorité proposée) et POST au vrai contrat (`success`, motif de refus
+affiché) ; M1–M5, Mo1–Mo4 refermés (panneau gaté, jeton d'obsolescence,
+opt-in cabinet, rattachement `rattacherReperesAuxCycles`).
+
+**Dettes** (nommées dans `D-058` amendée) : `DC-41` (axe tolérance) réservé
+nulle part — non livré, non gardé ; producteur de `selectedMainPriority`
+inexistant (re-passation inerte tant que la table des priorités n'est pas
+signée) ; Q_SOM_09 proposable à J21 pour une mesure rendue vers J42 ; E2E du
+parcours nominal T0 toujours absent (peuplement des fixtures). La carte de Fil
+`jalon_j21` n'a pas été modifiée : elle lit les épisodes persistés, et le
+parcours de confirmation la rend soluble sans enrichissement propre.
+
+Production relue avant merge (2026-08-14) : `assessment_episodes` = 0 ligne —
+aucun stock hérité, aucune bande publiée, effet immédiat limité aux jalons et
+au momentum non qualifié.

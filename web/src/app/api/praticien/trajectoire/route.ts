@@ -91,7 +91,9 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
       orderBy: { dateReponse: 'asc' },
     });
 
-    const trajectoire = construireTrajectoire({ episodes, reponses: reponsesDb });
+    // Seule cette route sert la fiche-trajectoire : elle seule paie le
+    // momentum par besoin (opt-in, revue LOT-07 Mo3).
+    const trajectoire = construireTrajectoire({ episodes, reponses: reponsesDb, avecMomentumParBesoin: true });
 
     // Mode de vie au présent + fantôme T0 du cycle courant (LOT-02).
     const cycleCourant = trajectoire.cycles.length > 0 ? trajectoire.cycles[trajectoire.cycles.length - 1] : null;

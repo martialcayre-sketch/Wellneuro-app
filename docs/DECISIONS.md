@@ -4,6 +4,117 @@
 
 ## Décisions actives
 
+### D-058 — Ce qu'un delta a le droit d'affirmer, et pourquoi « stable » ne se déduit pas d'un zéro
+
+- Date : 2026-08-13
+- Statut : accepté (décision utilisateur du 2026-08-13, arbitrage d'ouverture du LOT-07)
+- Domaine : clinique, momentum longitudinal, restitution praticien
+- Contexte : le LOT-07 doit donner au praticien un **momentum par domaine**
+  (digestif, alimentaire, mouvement, sommeil, adaptation) au lieu du seul delta
+  d'un scalaire agrégé, et rendre les jalons J21/J42/J90 confirmables depuis
+  l'interface. Sa fiche laisse une question ouverte, et elle commande tout le
+  reste : les **bandes de bruit par variable**, sous lesquelles un écart se lit
+  « stable » plutôt qu'un mouvement. Aucune source du dépôt ne les fixe. Cette
+  décision précède la première ligne de code (`DC-17`, `DC-18`).
+- Fait relu dans le code avant d'écrire : `calculerDeltaMomentum`
+  (`equilibre/momentum.ts:36`) rend déjà `tendance: 'stable'` — **mais
+  uniquement sur un delta exactement nul**. Deux mesures qui tombent au
+  centième près produisent « stable » ; un écart d'un centième produit
+  « hausse ». Ce n'est pas un jugement de bruit, c'est une coïncidence
+  arithmétique présentée comme un constat. Le mot est déjà là ; ce qui manque,
+  c'est ce qui le fonderait.
+- Décision : quatre arbitrages.
+
+**1. Sans bande publiée, le momentum par domaine ne QUALIFIE pas.** Il rend le
+delta factuel — la mesure existe, elle est réelle — et refuse de dire
+« stable » comme « en mouvement », avec un motif lisible en français plutôt
+qu'un silence. Publier une bande pour une variable est un **acte séparé**, de
+la même famille que les trois signatures en attente. Le mécanisme est livré, la
+permission ne s'ouvre pas d'elle-même : c'est la quatrième fois de la journée
+(`D-055`, `D-056`, `D-057`), et c'est la même raison — un chiffre qui décide
+d'une lecture clinique n'apparaît pas parce qu'il fallait bien en mettre un
+(`DC-19`, `DC-20`).
+
+Ce qui aurait été plus rapide et qui est refusé : reprendre le `> 0 / < 0 / = 0`
+du scalaire. Il ne coûte rien à écrire et il rend un verdict sur tout écart,
+si petit soit-il — donc il transforme le bruit de mesure en tendance clinique,
+exactement sur l'écran où le praticien vient chercher si son protocole agit.
+
+**2. Un domaine non re-mesuré n'a pas de momentum.** Ni zéro, ni « stable », ni
+absence silencieuse : il est nommé non mesuré. Un J21 où seul le TFD a été
+repassé rend un momentum digestif et rien d'autre — et surtout ne laisse pas
+croire que le sommeil est resté stable parce que personne ne l'a mesuré
+(`DC-24`). C'est la règle qui justifie à elle seule le passage du scalaire
+agrégé aux domaines : un agrégat mélange ce qui a bougé et ce qui n'a pas été
+regardé.
+
+**3. Le momentum scalaire existant ne change pas.** Ses consommateurs actuels
+le lisent avec sa sémantique actuelle, `'stable'` à delta nul compris ; le
+modifier ferait dériver des restitutions déjà servies sans que le LOT-07 l'ait
+demandé. Mais **cette sémantique ne s'étend pas** au momentum par domaine, et
+la tautologie du zéro est **nommée ici comme dette** plutôt que reconduite en
+silence : le jour où une bande sera publiée, c'est elle qui devra décider aussi
+pour le scalaire.
+
+**4. Aucune interprétation clinique automatique d'un delta.** Une tendance est
+factuelle : « en baisse de 4 points » et jamais « amélioration significative ».
+Le mot « significatif » appartient à un test statistique qu'aucun banc ne fait
+tourner ici, et « amélioration » suppose une direction souhaitable qui dépend
+de la variable (`DC-27` : association n'est pas causalité). La re-passation au
+jalon reste une **proposition** dérivée des `mesures[]` du protocole, jamais un
+envoi automatique — geste praticien, comme toute assignation.
+
+- Dettes nommées, non résolues ici : la **tautologie du zéro** sur le scalaire
+  (arbitrage 3) ; le **peuplement des fixtures E2E** du parcours nominal T0
+  (dette du LOT-02 rattachée à ce lot) — les trois patients fictifs autorisés
+  sont tous centraux, et en peupler un déplace `orientation-file-envoi`,
+  `fiche-detail-reponses`, la capture pixel de `visual.spec.ts` et
+  `seedCertification.guard.test.ts` ; le **multi-cycle T1/T2** et les **poids
+  déclaratifs**, tous deux au backlog nommé.
+- Conséquences : le praticien voit, dès le merge, des jalons confirmables et
+  des deltas par domaine ; il ne verra « stable » sur aucun domaine tant
+  qu'aucune bande n'aura été publiée. Aucun changement de `versionScore`,
+  aucune grille touchée, aucun momentum entre cycles ni entre versions de score
+  — les gardes existantes sont préservées.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-07-jalons-momentum.md`,
+  `web/src/lib/equilibre/momentum.ts`, `web/src/lib/fil/momentumJ21.ts`,
+  `web/src/lib/protocol/trajectoire.ts`,
+  `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`
+
+**Amendement du 2026-08-14** (revue `wn-reviewer` du LOT-07, avant merge — une
+décision opposable ne se corrige pas dans un commentaire de module) :
+
+- **Arbitrage 4, cible de la re-passation** : la cible ne se dérive **pas** des
+  `mesures[]` du protocole — ce champ, tel que le LOT-05 l'a écrit, est du
+  texte libre (« Agenda rempli au moins 14 jours sur 21 »), rien de mécanique
+  ne s'en déduit sans deviner. Elle se dérive de `provenance.needIds` de la
+  priorité **visée** (sélectionnée par le praticien quand elle existe, à défaut
+  proposée par la carte), via la table signée `BESOIN_SOURCES`
+  (`repassationCiblee.ts`) : aucune correspondance nouvelle n'est inventée
+  (`DC-19`, `DC-26`). Le reste de l'arbitrage tient — proposition via la file
+  d'envoi, jamais un envoi automatique.
+- **Ancre des jalons, unique** : un jalon post-T0 se fenêtre sur le
+  `confirmedAt` du T0 confirmé le plus récent — l'ancre de la trajectoire
+  (LOT-08, A8-1). Le cockpit (`resoudreJalonDu`) et le serveur
+  (`proposeRuntimeEpisode` via `ancreCycleCourant`) partagent bornes et
+  tolérance à la milliseconde ; un banc de contrat inter-couches le tient. Le
+  T0 initial reste ancré sur la première réponse du dossier — aucun cycle
+  confirmé ne le précède.
+- **Pas de garde de version intra-cycle** sur le momentum par besoin : les deux
+  lectures d'une série sont toujours recalculées par le moteur courant, aucune
+  soustraction inter-versions n'existe par construction. Une garde d'étiquette
+  (versionScore figé vs constante) aurait affiché « non re-mesuré » sur des
+  besoins re-mesurés — l'inverse de `DC-24` — pour tout cycle antérieur au bump
+  v14/v15. La garde A8-3 reste inter-cycles (`resoudreComparaison`).
+- **Dettes ajoutées** : `DC-41` (réserver l'axe tolérance — un momentum
+  favorable ne se lit pas comme un succès de protocole) n'est ni livré ni
+  gardé ; la sélection praticien d'une priorité (`selectedMainPriority`) n'a
+  **aucun producteur** — la re-passation vise la priorité proposée tant qu'il
+  n'existe pas, et reste inerte tant que la table des priorités n'est pas
+  signée ; Q_SOM_09 (agenda du sommeil, 21 nuits) figure parmi les cibles
+  proposables à J21 alors que sa mesure ne se rend qu'au voisinage du J42 —
+  laissé à l'arbitrage praticien, rien ne part automatiquement.
+
 ### D-057 — Ce qu'une discordance a le droit de dire à la synthèse, et ce que « présente en tête » ne prouve pas
 
 - Date : 2026-08-13

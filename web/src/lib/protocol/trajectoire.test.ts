@@ -102,6 +102,7 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
       versionScore,
       jalons: [],
       momentum: null,
+      momentumParBesoin: [],
     });
     expect(resoudreComparaison([cycle('a', 'v1'), cycle('b', 'v2')])).toEqual({
       disponible: false,
@@ -135,6 +136,34 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     expect(tr.comparaison).toEqual({ disponible: false, raison: 'versions_differentes' });
   });
 
+  it('momentum par besoin : servi sur un versionScore stocké ANCIEN — l’état réel de la base', () => {
+    // Revue LOT-07 (B1) : une garde comparant la version figée sur l'épisode
+    // (ici « v1 », comme tout le stock antérieur au bump v14/v15) à la
+    // constante courante affichait « non re-mesuré » sur des besoins
+    // effectivement re-mesurés deux fois. Les deux lectures sont recalculées
+    // par le moteur courant : le momentum se rend, quelle que soit l'étiquette.
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_a', '2026-01-01T00:00:00.000Z', { versionScore: 'v1' })],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-20T00:00:00.000Z')],
+      avecMomentumParBesoin: true,
+    });
+    const besoin9 = tr.cycles[0].momentumParBesoin.find((ligne) => ligne.besoin === 9);
+    expect(besoin9).toBeTruthy();
+    expect(besoin9).toMatchObject({ mesure: true });
+    expect(besoin9?.delta).not.toBeNull();
+  });
+
+  it('momentum par besoin : OPT-IN — sans le drapeau, aucun calcul et un tableau vide', () => {
+    // Revue LOT-07 (Mo3) : le chargement cabinet et la carte de Fil ne lisent
+    // pas ce champ — ils ne doivent pas payer un recalcul d'équilibre par
+    // jalon pour chaque patient du praticien.
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_a', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-20T00:00:00.000Z')],
+    });
+    expect(tr.cycles[0].momentumParBesoin).toEqual([]);
+  });
+
   it('gate G2 : ligne héritée sans version stockée → cycle « version inconnue »', () => {
     const tr = construireTrajectoire({
       episodes: [t0('ep_legacy', '2026-01-01T00:00:00.000Z', { cycleId: null, versionScore: null })],
@@ -154,6 +183,7 @@ describe('rattacherReperesAuxCycles (index navigable)', () => {
     versionScore: 'v1',
     jalons: [],
     momentum: null,
+    momentumParBesoin: [],
   });
 
   it('rattache chaque repère au dernier T0 antérieur ou égal', () => {

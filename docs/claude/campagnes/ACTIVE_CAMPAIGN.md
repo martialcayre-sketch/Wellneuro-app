@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie
 **Titre** : Chaîne T0 opérationnelle — de la donnée valide à la révision par biologie
 **Statut** : active
-**Lot actif** : LOT-09
+**Lot actif** : LOT-07
 
 ## Activités parallèles
 
@@ -16,6 +16,6 @@
 **Lot actif** : aucun
 
 **Statut global** : active
-**Mise à jour** : 2026-08-13
+**Mise à jour** : 2026-08-14
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

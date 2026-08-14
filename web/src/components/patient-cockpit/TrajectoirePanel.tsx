@@ -14,6 +14,10 @@ import { MomentumPanel } from '@/components/patient-cockpit/MomentumPanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
+import { BESOINS } from '@/lib/equilibre/constants';
+import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
+import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
+import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // « La Spirale comme index temporel » : une liste de repères datés navigable,
@@ -37,6 +41,16 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// Arrondi d'AFFICHAGE seulement — la donnée (`MomentumBesoin.delta`) reste la
+// soustraction brute. Un mouvement réel ne s'affiche jamais « 0 » : en deçà du
+// centième, la valeur passe en chiffres significatifs plutôt que d'être écrasée.
+function formatCouverture(valeur: number): string {
+  if (valeur !== 0 && Math.abs(valeur) < 0.005) {
+    return valeur.toLocaleString('fr-FR', { maximumSignificantDigits: 2 });
+  }
+  return valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+}
+
 export function TrajectoirePanel({
   trajectoire,
   idPatient,
@@ -44,6 +58,7 @@ export function TrajectoirePanel({
   emailPatient,
   modeViePresent,
   modeVieT0CycleCourant,
+  needIdsPriorite,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
@@ -57,6 +72,11 @@ export function TrajectoirePanel({
   modeViePresent?: ModeVieDate | null;
   /** Fantôme au T0 du cycle courant. */
   modeVieT0CycleCourant?: ModeVieDate | null;
+  /**
+   * Besoins fondant la priorité sélectionnée (LOT-07) — alimente la
+   * proposition de re-passation ciblée au jalon. Absent ou vide : aucun bloc.
+   */
+  needIdsPriorite?: number[];
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -93,6 +113,55 @@ export function TrajectoirePanel({
       annule = true;
     };
   }, [idPatient, canalFiche]);
+
+  // ── Re-passation CIBLÉE au jalon (LOT-07, `D-058`) ────────────────────────
+  //
+  // Proposée seulement quand un jalon POST-T0 est dans sa fenêtre : proposer
+  // une re-mesure hors fenêtre daterait la lecture d'un moment sans jalon. La
+  // cible vient des besoins qui FONDENT la priorité (`needIds` →
+  // `BESOIN_SOURCES`), jamais du pack entier — c'est ce que la re-passation
+  // ciblée remplace. Le geste rejoint la file d'envoi ; RIEN ne part d'ici.
+  const jalonDuRepassation = useMemo(() => {
+    const du = resoudreJalonDu(trajectoire ?? null, new Date());
+    return du.statut === 'du' && du.jalon !== 'T0' ? du.jalon : null;
+  }, [trajectoire]);
+  const ciblesRepassation = useMemo(
+    () => questionnairesCiblesPourPriorite(needIdsPriorite ?? []),
+    [needIdsPriorite],
+  );
+  const [ajouts, setAjouts] = useState<Record<string, 'en_cours' | 'ajoute' | 'erreur'>>({});
+  const [erreursAjout, setErreursAjout] = useState<Record<string, string>>({});
+  const ajouterALaFile = async (qid: string) => {
+    if (!emailPatient) return;
+    setAjouts(prev => ({ ...prev, [qid]: 'en_cours' }));
+    setErreursAjout(prev => {
+      const { [qid]: _retiree, ...reste } = prev;
+      return reste;
+    });
+    try {
+      const response = await fetch('/api/praticien/file-envoi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailPatient, qids: [qid] }),
+      });
+      // MÊME contrat que `OrientationPanel` : la route rend
+      // `MutateFileEnvoiResponse { success, error? }` — pas `ok`. Lire `ok`
+      // rendait tout ajout réussi comme un échec (revue LOT-07, B3), et le
+      // motif d'un vrai refus (« Dossier clos », etc.) n'était jamais affiché.
+      const payload = (await response.json()) as { success?: boolean; error?: string };
+      if (response.ok && payload.success) {
+        setAjouts(prev => ({ ...prev, [qid]: 'ajoute' }));
+      } else {
+        setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
+        if (payload.error) {
+          const motif = payload.error;
+          setErreursAjout(prev => ({ ...prev, [qid]: motif }));
+        }
+      }
+    } catch {
+      setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
+    }
+  };
 
   // État daté du mode de vie (LOT-02) : recalculé côté serveur au repère
   // sélectionné (`etatAu`, même doctrine que SP-TT — jamais un curseur libre).
@@ -341,12 +410,96 @@ export function TrajectoirePanel({
                   <p className="mt-2 text-base text-foreground">
                     Momentum T0 → dernier jalon mesuré :{' '}
                     <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
-                    <span className="text-muted-foreground">(écart {Math.abs(cycle.momentum.delta)})</span>
+                    {/* L'unité est nommée : l'écart par besoin, trois lignes plus
+                        bas, est sur l'échelle de couverture 0–1 — deux « écart »
+                        nus se liraient comme comparables (revue LOT-07, M4). */}
+                    <span className="text-muted-foreground">
+                      (écart {Math.abs(cycle.momentum.delta)} — indice 0–100)
+                    </span>
                   </p>
+                )}
+                {/* Momentum PAR BESOIN (LOT-07, D-058). Interdits de rendu : un
+                    besoin non re-mesuré est nommé tel quel, jamais « stable » ;
+                    et le MOTIF est toujours restitué (DC-34/DC-35) — un delta,
+                    qualifié ou non, ne s'affiche jamais comme une tendance nue,
+                    et les deux jalons comparés sont nommés. */}
+                {cycle.momentumParBesoin.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Momentum par besoin
+                    </p>
+                    <ul className="mt-1 space-y-1.5">
+                      {cycle.momentumParBesoin.map((ligne) => {
+                        const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
+                          ?? `Besoin ${ligne.besoin}`;
+                        return (
+                          <li key={ligne.besoin} className="text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground">{libelle}</span>
+                            {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
+                              <>
+                                {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
+                                ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
+                                ({ligne.arrivee.jalon}) · écart{' '}
+                                {ligne.delta > 0 ? `+${formatCouverture(ligne.delta)}` : formatCouverture(ligne.delta)}
+                                {' '}— échelle de couverture 0–1
+                              </>
+                            )}
+                            <span className="block text-xs italic">{ligne.motif}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 )}
               </div>
             );
           })}
+
+          {/* Re-passation ciblée (LOT-07) : proposition au jalon dû, dérivée des
+              besoins de la priorité — jamais le pack entier. Le bouton pose
+              l'instrument dans la file d'envoi ; rien ne part d'ici, l'envoi
+              reste le geste praticien de la Bibliothèque. */}
+          {jalonDuRepassation && ciblesRepassation.length > 0 && emailPatient && (
+            <div className="rounded-lg bg-muted/40 p-3 text-base">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Re-passation ciblée — jalon {jalonDuRepassation}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Instruments visés par la priorité du protocole. L’ajout pose l’instrument dans la
+                file d’envoi ; rien n’est envoyé au patient depuis cet écran.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {ciblesRepassation.map((qid) => (
+                  <li key={qid} className="text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-foreground">
+                        {CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}
+                      </span>
+                      {ajouts[qid] === 'ajoute' ? (
+                        <span className="text-muted-foreground">Dans la file d’envoi</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void ajouterALaFile(qid)}
+                          disabled={ajouts[qid] === 'en_cours'}
+                          className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                        >
+                          {ajouts[qid] === 'erreur' ? 'Réessayer l’ajout' : 'Ajouter à la file d’envoi'}
+                        </button>
+                      )}
+                    </div>
+                    {/* Le motif du refus vient de la route (« Dossier clos. », …)
+                        — un échec muet ferait recliquer sans comprendre. */}
+                    {ajouts[qid] === 'erreur' && (
+                      <p role="status" className="mt-1 text-xs text-status-warning">
+                        {erreursAjout[qid] ?? 'L’ajout à la file d’envoi a échoué. Réessayez.'}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Comparateur multi-épisodes — s'active à partir de 2 cycles (A8-5-ii). */}
           <div className="rounded-lg bg-muted/40 p-3 text-base">

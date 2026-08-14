@@ -50,6 +50,53 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Depuis le LOT-07, le cockpit lit la TRAJECTOIRE avant de demander une
+// proposition : le jalon n'est plus codé en dur, il s'en dérive. Les mocks
+// ordonnés d'avant (`mockResolvedValueOnce` en cascade) décalaient donc d'un
+// cran. Ils répondent désormais PAR URL — plus robuste, et indifférent à
+// l'ordre comme au nombre d'appels.
+type ReponseMock = { ok: boolean; status: number; json: () => Promise<unknown> };
+const rep = (payload: unknown, ok = true, status = 200): ReponseMock => ({
+  ok, status, json: async () => payload,
+});
+
+function fetchParRoute(routes: {
+  trajectoire?: ReponseMock;
+  cockpitGet?: ReponseMock[];
+  cockpitPost?: ReponseMock[];
+}) {
+  const get = [...(routes.cockpitGet ?? [])];
+  const post = [...(routes.cockpitPost ?? [])];
+  return vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
+    if (String(url).includes('/api/praticien/trajectoire')) {
+      return routes.trajectoire ?? rep({ ok: true, trajectoire: null });
+    }
+    if (init?.method === 'POST') return post.shift() ?? rep({}, false, 500);
+    return get.shift() ?? rep({}, false, 500);
+  });
+}
+
+/** Toutes les URLs de GET cockpit, dans l'ordre d'appel. */
+function urlsCockpit(mock: { mock: { calls: unknown[][] } }): string[] {
+  return mock.mock.calls
+    .map(appel => String(appel[0]))
+    .filter(url => url.includes('/api/praticien/cockpit'));
+}
+
+/** La première d'entre elles. */
+function urlCockpit(mock: { mock: { calls: unknown[][] } }): string | undefined {
+  return urlsCockpit(mock)[0];
+}
+
+/** Le corps du POST cockpit, quel que soit son rang. */
+function corpsPoste(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> | null {
+  const appel = mock.mock.calls.find(
+    candidat => (candidat[1] as { method?: string } | undefined)?.method === 'POST',
+  );
+  const corps = (appel?.[1] as { body?: string } | undefined)?.body;
+  return corps ? (JSON.parse(corps) as Record<string, unknown>) : null;
+}
+
 describe('EpisodeConfirmationPanel', () => {
   it('sélectionne les réponses dans la fenêtre par défaut et permet une correction hors fenêtre', () => {
     const onConfirm = vi.fn();
@@ -153,9 +200,10 @@ describe('ClinicalRuntimeSection', () => {
       contradictions: [],
       plainteDominante: null,
     };
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ready });
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(ready)],
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
@@ -165,8 +213,8 @@ describe('ClinicalRuntimeSection', () => {
     await screen.findByText(/Épisode T0 confirmé/);
     expect(screen.getByText('Aucune priorité proposée')).toBeTruthy();
     expect(screen.getByText('Protocole indisponible — bloqueurs décisionnels à revoir')).toBeTruthy();
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/praticien/cockpit?idPatient=PAT_TEST&milestone=T0');
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toMatchObject({
+    expect(urlCockpit(fetchMock)).toBe('/api/praticien/cockpit?idPatient=PAT_TEST&milestone=T0');
+    expect(corpsPoste(fetchMock)).toMatchObject({
       idPatient: 'PAT_TEST', milestone: 'T0', includedResponseIds: ['R-IN'], proposalHash: 'hash-proposal',
     });
   });
@@ -174,10 +222,10 @@ describe('ClinicalRuntimeSection', () => {
   it('recharge automatiquement une proposition périmée et redemande confirmation', async () => {
     const stale: CockpitRuntimeApiResponse = { status: 'unavailable', reason: 'proposal_stale', error: 'Périmée.' };
     const refreshed = { ...proposalResponse, proposalHash: 'hash-refreshed' } satisfies CockpitRuntimeApiResponse;
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
-      .mockResolvedValueOnce({ ok: false, status: 409, json: async () => stale })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => refreshed });
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse), rep(refreshed)],
+      cockpitPost: [rep(stale, false, 409)],
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
@@ -186,7 +234,8 @@ describe('ClinicalRuntimeSection', () => {
 
     expect(await screen.findByText(/proposition a été rechargée/)).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Confirmer l’épisode T0' }) as HTMLButtonElement).disabled).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // Trajectoire + GET initial + POST périmé + GET rechargé.
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it.each([
@@ -279,9 +328,10 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
       }],
       plainteDominante: null,
     };
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ready });
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(ready)],
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
@@ -322,9 +372,10 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
   }
 
   async function afficher(reponse: CockpitRuntimeApiResponse) {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => proposalResponse })
-      .mockResolvedValue({ ok: true, status: 200, json: async () => reponse });
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(reponse)],
+    });
     vi.stubGlobal('fetch', fetchMock);
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
     await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
@@ -365,5 +416,97 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     // La plainte est absente, l'objectif ne l'est pas : le panneau reste utile.
     const panneau = screen.getByRole('region', { name: 'Plainte et objectif du patient' });
     expect(panneau.textContent).toContain('Non renseignée');
+  });
+
+  // Proposition J21 telle que la route la rendrait : même forme que le T0,
+  // jalon et hash propres. Le panneau doit NOMMER ce jalon (revue LOT-07, M2).
+  const propositionJ21: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+    proposalHash: 'hash-J21',
+  };
+
+  function trajectoireT0ConfirmeIlYA(jours: number) {
+    const dateT0 = new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
+    return rep({
+      ok: true,
+      trajectoire: {
+        index: [{ milestone: 'T0', date: dateT0, cycleId: 'cycle-1' }],
+        cycles: [{
+          cycleId: 'cycle-1', dateT0, versionScore: 'v15', jalons: [], momentum: null,
+          momentumParBesoin: [],
+        }],
+        comparaison: { disponible: false, raison: 'un_seul_cycle' },
+      },
+    });
+  }
+
+  it('demande le J21 quand sa fenêtre est ouverte, et le panneau NOMME le jalon', async () => {
+    // LE COMPORTEMENT NEUF DU LOT-07. Avant, `milestone=T0` était codé en dur :
+    // J21, J42 et J90 étaient inatteignables depuis l'interface alors que le
+    // back les acceptait déjà.
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    // Le T0 part d'abord — c'est le plancher, la trajectoire ne doit jamais
+    // retarder la proposition. Le J21 suit dès qu'elle a répondu.
+    await waitFor(() => expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true));
+    expect(urlCockpit(fetchMock)).toContain('milestone=T0');
+    // Le panneau dit « J21 » partout où il disait « T0 » en dur (M2) : un
+    // praticien qui confirme un J21 ne doit lire T0 nulle part.
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode J21' });
+    expect(screen.queryByRole('button', { name: 'Confirmer l’épisode T0' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
+  });
+
+  it('le POST porte le jalon et le hash de la proposition AFFICHÉE', async () => {
+    const fixture = buildValidationErgoC1Fixture();
+    const confirme: CockpitRuntimeApiResponse = {
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: fixture.decisionCard,
+      contradictions: [],
+      plainteDominante: null,
+    };
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
+      cockpitPost: [rep(confirme)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' }));
+    await waitFor(() => expect(corpsPoste(fetchMock)).not.toBeNull());
+    expect(corpsPoste(fetchMock)).toMatchObject({ milestone: 'J21', proposalHash: 'hash-J21' });
+  });
+
+  it('hors fenêtre : le motif se dit ET aucun bouton de confirmation n’existe', async () => {
+    // T0 confirmé il y a 31 jours : la fenêtre du J21 est fermée (29), celle du
+    // J42 pas encore ouverte (34). Le GET rend `proposal_required` — la SEULE
+    // forme que la route émette avec `unavailable`. Le banc précédent jouait un
+    // `ready` que le GET ne rend jamais, et cette fabrication masquait le
+    // défaut : le panneau de confirmation restait actif sous le message
+    // « aucun jalon confirmable » (revue LOT-07, M1).
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireT0ConfirmeIlYA(31),
+      cockpitGet: [rep(proposalResponse)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    // Le motif se dit : un cockpit muet se lirait comme une panne.
+    expect(await screen.findByText(/s’ouvrira/)).toBeTruthy();
+    // HORS FENÊTRE, RIEN N'EST PROPOSÉ — le panneau non plus, pas seulement
+    // le message. Le T0 du plancher est resté chargé : il ne doit PAS être
+    // confirmable.
+    expect(screen.queryByRole('button', { name: /Confirmer l’épisode/ })).toBeNull();
+    // Et AUCUN jalon hors fenêtre n'est demandé : seul le T0 du plancher part.
+    expect(urlsCockpit(fetchMock)).toEqual(['/api/praticien/cockpit?idPatient=PAT_TEST&milestone=T0']);
   });
 });

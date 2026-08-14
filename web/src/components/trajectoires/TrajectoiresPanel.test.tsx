@@ -31,6 +31,7 @@ const LIGNES: LigneCabinet[] = [
             { jalon: 'J90', mesure: false, valeur: null, date: null },
           ],
           momentum: null,
+          momentumParBesoin: [],
         },
       ],
       comparaison: { disponible: false, raison: 'un_seul_cycle' },

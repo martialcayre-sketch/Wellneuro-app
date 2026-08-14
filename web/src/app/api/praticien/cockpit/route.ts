@@ -164,6 +164,27 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   };
 }
 
+// Ancre du cycle courant pour un jalon post-T0 : `confirmedAt` du T0 confirmé
+// le plus récent — la même ancre que la trajectoire et `resoudreJalonDu`
+// (LOT-08 A8-1 ; revue LOT-07 B2 : deux ancres rendaient les fenêtres du
+// client et du serveur disjointes). T0 lui-même reste ancré sur la première
+// réponse du dossier : aucun cycle confirmé ne le précède. En lecture datée
+// (`asOf`), seuls les T0 confirmés à cette date comptent — un épisode
+// postérieur ne doit pas fuir dans une lecture du passé.
+async function ancreCycleCourant(
+  idPatient: string,
+  milestone: JalonMomentum,
+  asOf: string | null,
+): Promise<string | null> {
+  if (milestone === 'T0') return null;
+  const t0 = await prisma.assessmentEpisode.findFirst({
+    where: { idPatient, milestone: 'T0', ...(asOf ? { confirmedAt: { lte: new Date(asOf) } } : {}) },
+    orderBy: { confirmedAt: 'desc' },
+    select: { confirmedAt: true },
+  });
+  return t0?.confirmedAt.toISOString() ?? null;
+}
+
 // GET /api/praticien/cockpit?idPatient=PAT001&milestone=T0
 export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   const session = await getServerSession(authOptions);
@@ -194,7 +215,11 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       // lecture serait alors présentée comme passée tout en étant actuelle.
       return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     }
-    const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw);
+    const { proposal, proposalHash } = proposeRuntimeEpisode(
+      inputs,
+      milestoneRaw,
+      await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf),
+    );
     // Après `loadRuntimeInputs`, donc après la vérification d'appartenance.
     // T0 SEULEMENT : les jalons de suivi (J21, J42, J90) ne sont pas gouvernés
     // par cette porte — le lot pose les préconditions du point d'entrée, il ne
@@ -249,7 +274,11 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     if ('refus' in inputs) return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
-    const current = proposeRuntimeEpisode(inputs, payload.milestone);
+    const current = proposeRuntimeEpisode(
+      inputs,
+      payload.milestone,
+      await ancreCycleCourant(idPatient, payload.milestone, null),
+    );
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);
     }

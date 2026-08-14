@@ -35,6 +35,7 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
             { jalon: 'J90', mesure: false, valeur: null, date: null },
           ],
           momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
         },
       ],
       comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -51,8 +52,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     const trajectoire: Trajectoire = {
       index: [],
       cycles: [
-        { cycleId: 'a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null },
-        { cycleId: 'b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null },
+        { cycleId: 'a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
       ],
       comparaison: { disponible: false, raison: 'versions_differentes' },
     };
@@ -75,6 +76,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -82,6 +84,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -152,6 +155,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -159,6 +163,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -231,6 +236,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -238,6 +244,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -306,6 +313,7 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
         versionScore: 'v1',
         jalons: jalons(12, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -426,5 +434,143 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
     render(<TrajectoirePanel trajectoire={trajectoireVide} idPatient="PAT_SEED_03" modeViePresent={null} />);
     expect(await screen.findByRole('region', { name: 'Orientation des explorations' })).toBeTruthy();
     expect(appels.some(url => url.includes('praticien/orientation'))).toBe(true);
+  });
+
+  it('momentum par besoin : jalons comparés nommés, unité nommée, MOTIF toujours rendu', () => {
+    // D-058 au rendu : la valeur est réelle et se montre ; le jugement, non.
+    // Revue LOT-07 (M4/M5) : les deux jalons comparés et l'échelle (couverture
+    // 0–1, PAS l'indice 0–100 du scalaire) sont écrits, et le motif est
+    // restitué sur CHAQUE ligne — mesurée ou non (DC-34/DC-35).
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' }],
+          cycles: [{
+            cycleId: 'ep_a',
+            dateT0: '2026-01-01T00:00:00.000Z',
+            versionScore: 'v1',
+            jalons: [],
+            momentum: { tendance: 'hausse', delta: 15 },
+            momentumParBesoin: [
+              {
+                besoin: 9, mesure: true, delta: 0.2,
+                depart: { jalon: 'J21', date: new Date('2026-01-22T00:00:00.000Z'), couverture: 0.5 },
+                arrivee: { jalon: 'J42', date: new Date('2026-02-12T00:00:00.000Z'), couverture: 0.7 },
+                qualification: null,
+                motif: 'Écart non qualifié : aucune bande de bruit n’est publiée pour ce besoin.',
+              },
+              {
+                besoin: 4, mesure: false, delta: null,
+                depart: { jalon: 'T0', date: new Date('2026-01-01T00:00:00.000Z'), couverture: 0.4 },
+                arrivee: null,
+                qualification: null,
+                motif: 'Besoin lu une seule fois (T0) : aucun momentum. Ce n’est pas une stabilité.',
+              },
+            ],
+          }],
+          comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        }}
+      />,
+    );
+
+    // Les deux jalons comparés sont nommés : un J21→J42 ne se lit pas comme
+    // un T0→J90.
+    expect(screen.getByText(/couverture 0,5 \(J21\) → 0,7 \(J42\)/)).toBeTruthy();
+    // L'écart porte son unité — le scalaire au-dessus est sur l'indice 0–100.
+    expect(screen.getByText(/écart \+0,2\s*— échelle de couverture 0–1/)).toBeTruthy();
+    expect(screen.getByText(/écart 15 — indice 0–100/)).toBeTruthy();
+    // Le motif est rendu sur les DEUX lignes.
+    expect(screen.getByText(/aucune bande de bruit n’est publiée/)).toBeTruthy();
+    expect(screen.getByText(/lu une seule fois \(T0\)/)).toBeTruthy();
+    expect(screen.getByText(/n’est pas une stabilité/)).toBeTruthy();
+    // Les libellés praticien des besoins, pas des numéros nus.
+    expect(screen.getByText(/Sensations-émotions fondamentales \(stress\)/)).toBeTruthy();
+    // Aucune ligne mesurée ne se présente « non re-mesuré » (revue B1).
+    expect(screen.queryByText(/non re-mesuré/)).toBeNull();
+  });
+});
+
+describe('TrajectoirePanel — re-passation ciblée (LOT-07, D-058)', () => {
+  // Un cycle dont le J21 est DANS sa fenêtre au moment du rendu, une priorité
+  // fondée sur le besoin 4 (Q_GAS_01, Q_INF_01) et un email : les trois
+  // conditions du bloc.
+  function trajectoireJalonOuvert(): Trajectoire {
+    const dateT0 = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
+    return {
+      index: [{ milestone: 'T0', date: dateT0, cycleId: 'ep_a' }],
+      cycles: [{
+        cycleId: 'ep_a', dateT0, versionScore: 'v15', jalons: [], momentum: null,
+        momentumParBesoin: [],
+      }],
+      comparaison: { disponible: false, raison: 'un_seul_cycle' },
+    };
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('un ajout réussi s’affiche réussi — la route rend `success`, pas `ok` (revue B3)', async () => {
+    // La VRAIE forme de réponse de `/api/praticien/file-envoi` :
+    // `MutateFileEnvoiResponse { success, idBrouillon, count }`. Lire `ok`
+    // rendait tout succès comme un échec, et le praticien recliquait.
+    const posts: { url: string; body: Record<string, unknown> }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
+      if (init?.method === 'POST') {
+        posts.push({ url: String(url), body: JSON.parse(init.body ?? '{}') as Record<string, unknown> });
+        return { ok: true, json: async () => ({ success: true, idBrouillon: 'ENV1', count: 1 }) };
+      }
+      return { ok: true, json: async () => ({ ok: true }) };
+    }));
+
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[4]}
+      />,
+    );
+    expect(screen.getByText(/Re-passation ciblée — jalon J21/)).toBeTruthy();
+    const boutons = screen.getAllByRole('button', { name: 'Ajouter à la file d’envoi' });
+    fireEvent.click(boutons[0]);
+
+    expect(await screen.findByText('Dans la file d’envoi')).toBeTruthy();
+    expect(posts).toHaveLength(1);
+    expect(posts[0].url).toBe('/api/praticien/file-envoi');
+    expect(posts[0].body).toMatchObject({
+      emailPatient: 'sophie.nicola@example.com',
+      qids: ['Q_GAS_01'],
+    });
+  });
+
+  it('un refus de la route affiche SON motif — jamais un échec muet', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: { method?: string }) => {
+      if (init?.method === 'POST') {
+        return { ok: false, json: async () => ({ success: false, error: 'Dossier clos.' }) };
+      }
+      return { ok: true, json: async () => ({ ok: true }) };
+    }));
+
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[4]}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ajouter à la file d’envoi' })[0]);
+
+    expect(await screen.findByText('Dossier clos.')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Réessayer l’ajout' })[0]).toBeTruthy();
+  });
+
+  it('aucun bloc sans priorité fondée — jamais « le pack entier » à la place', () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ok: true }) })));
+    render(
+      <TrajectoirePanel
+        trajectoire={trajectoireJalonOuvert()}
+        emailPatient="sophie.nicola@example.com"
+        needIdsPriorite={[]}
+      />,
+    );
+    expect(screen.queryByText(/Re-passation ciblée/)).toBeNull();
   });
 });
