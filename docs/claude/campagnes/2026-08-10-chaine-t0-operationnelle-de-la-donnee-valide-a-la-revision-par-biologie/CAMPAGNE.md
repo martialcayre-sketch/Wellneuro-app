@@ -125,7 +125,7 @@ confirmé » et « discordance stress » sont en CI.
 | LOT-04 | Candidats d'intervention déterministes — chaîne C1 rebranchée, canal plainte patient, recalcul serveur | terminé (2026-08-13, table non signée) | LOT-02 |
 | LOT-05 | Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie | terminé (2026-08-13, catalogue de décision C4 vide : le moteur refuse, `D-056`) | LOT-04 |
 | LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | à_faire | LOT-05 |
-| LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | en_cours (ouvert le 2026-08-13) | LOT-05 |
+| LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | terminé (2026-08-14, aucune bande de bruit publiée : aucun delta qualifié, `D-058` amendée) | LOT-05 |
 | LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | terminé | LOT-03 |
 | LOT-09 | Vigilances de discordance injectées dans la synthèse — moitié non livrée de l'étape 5 du LOT-01, sans lot d'accueil depuis le 2026-08-12 | terminé (2026-08-13, table de contradictions non signée : rien n'est servi) | LOT-01 |
 

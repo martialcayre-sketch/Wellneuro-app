@@ -51,14 +51,14 @@
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. MIGRATION HDS DÉCIDÉE (D-006 du 2026-07-28, confirmée par D-037 du 2026-08-09), NON EXÉCUTÉE — l'orientation du 2026-07-22 « rester sur l'hébergement actuel » lui est antérieure de six jours et n'est plus courante ; la dérogation, elle, court inchangée jusqu'au 2026-10-21. Avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [
+    "D-058",
     "D-057",
     "D-056",
     "D-055",
-    "D-054",
-    "D-053"
+    "D-054"
   ],
   "last_session": null,
-  "updated_at": "2026-08-13T22:01:27Z",
+  "updated_at": "2026-08-14T16:05:00Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-08-04-agenda-alimentaire",

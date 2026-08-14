@@ -81,6 +81,40 @@ envoi automatique — geste praticien, comme toute assignation.
   `web/src/lib/protocol/trajectoire.ts`,
   `docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`
 
+**Amendement du 2026-08-14** (revue `wn-reviewer` du LOT-07, avant merge — une
+décision opposable ne se corrige pas dans un commentaire de module) :
+
+- **Arbitrage 4, cible de la re-passation** : la cible ne se dérive **pas** des
+  `mesures[]` du protocole — ce champ, tel que le LOT-05 l'a écrit, est du
+  texte libre (« Agenda rempli au moins 14 jours sur 21 »), rien de mécanique
+  ne s'en déduit sans deviner. Elle se dérive de `provenance.needIds` de la
+  priorité **visée** (sélectionnée par le praticien quand elle existe, à défaut
+  proposée par la carte), via la table signée `BESOIN_SOURCES`
+  (`repassationCiblee.ts`) : aucune correspondance nouvelle n'est inventée
+  (`DC-19`, `DC-26`). Le reste de l'arbitrage tient — proposition via la file
+  d'envoi, jamais un envoi automatique.
+- **Ancre des jalons, unique** : un jalon post-T0 se fenêtre sur le
+  `confirmedAt` du T0 confirmé le plus récent — l'ancre de la trajectoire
+  (LOT-08, A8-1). Le cockpit (`resoudreJalonDu`) et le serveur
+  (`proposeRuntimeEpisode` via `ancreCycleCourant`) partagent bornes et
+  tolérance à la milliseconde ; un banc de contrat inter-couches le tient. Le
+  T0 initial reste ancré sur la première réponse du dossier — aucun cycle
+  confirmé ne le précède.
+- **Pas de garde de version intra-cycle** sur le momentum par besoin : les deux
+  lectures d'une série sont toujours recalculées par le moteur courant, aucune
+  soustraction inter-versions n'existe par construction. Une garde d'étiquette
+  (versionScore figé vs constante) aurait affiché « non re-mesuré » sur des
+  besoins re-mesurés — l'inverse de `DC-24` — pour tout cycle antérieur au bump
+  v14/v15. La garde A8-3 reste inter-cycles (`resoudreComparaison`).
+- **Dettes ajoutées** : `DC-41` (réserver l'axe tolérance — un momentum
+  favorable ne se lit pas comme un succès de protocole) n'est ni livré ni
+  gardé ; la sélection praticien d'une priorité (`selectedMainPriority`) n'a
+  **aucun producteur** — la re-passation vise la priorité proposée tant qu'il
+  n'existe pas, et reste inerte tant que la table des priorités n'est pas
+  signée ; Q_SOM_09 (agenda du sommeil, 21 nuits) figure parmi les cibles
+  proposables à J21 alors que sa mesure ne se rend qu'au voisinage du J42 —
+  laissé à l'arbitrage praticien, rien ne part automatiquement.
+
 ### D-057 — Ce qu'une discordance a le droit de dire à la synthèse, et ce que « présente en tête » ne prouve pas
 
 - Date : 2026-08-13
