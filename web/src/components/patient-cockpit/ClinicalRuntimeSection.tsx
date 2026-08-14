@@ -20,6 +20,8 @@ import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
+import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
 import { useC5Enabled } from './C5FeatureProvider';
@@ -126,6 +128,9 @@ export function ClinicalRuntimeSection({
   // comme « aucun épisode confirmé » — affirmation fausse sur l'historique.
   const [statutTrajectoire, setStatutTrajectoire] =
     useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
+  const [jalonDu, setJalonDu] = useState<JalonDu | null>(null);
+  // Le jalon effectivement demandé au serveur : évite de redemander le même.
+  const [jalonDemande, setJalonDemande] = useState<JalonMomentum>('T0');
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
@@ -193,12 +198,14 @@ export function ClinicalRuntimeSection({
     }
   }, [idPatient]);
 
-  const loadProposal = useCallback(async (stale = false) => {
+  const loadProposal = useCallback(async (jalon: JalonMomentum, stale = false) => {
     if (fixture) return;
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/praticien/cockpit?idPatient=${encodeURIComponent(idPatient)}&milestone=T0`);
+      const response = await fetch(
+        `/api/praticien/cockpit?idPatient=${encodeURIComponent(idPatient)}&milestone=${encodeURIComponent(jalon)}`,
+      );
       const payload = await response.json() as CockpitRuntimeApiResponse;
       if (!response.ok || payload.status === 'unavailable') {
         const reason = payload.status === 'unavailable' ? payload.reason : 'exception';
@@ -216,16 +223,45 @@ export function ClinicalRuntimeSection({
     }
   }, [fixture, idPatient]);
 
+  // Le jalon n'est plus codé en dur ([[D-058]], LOT-07). Il se dérive de la
+  // trajectoire, désormais lue dès le montage — et non plus seulement après
+  // confirmation d'un épisode.
+  //
+  // LA PROPOSITION T0 PART TOUT DE SUITE, sans attendre la trajectoire. La
+  // première rédaction attendait, et un banc l'a prise en défaut : une lecture
+  // de trajectoire laissée EN VOL gelait le cockpit entier — plus de
+  // proposition, plus de décision, pour une requête SECONDAIRE. Le plancher
+  // reste donc le comportement d'avant ce lot ; la trajectoire ne fait que
+  // l'améliorer quand elle répond.
   useEffect(() => {
     if (fixture) {
       setLoading(false);
       return;
     }
-    void loadProposal();
-  }, [fixture, loadProposal]);
+    setJalonDemande('T0');
+    void loadProposal('T0');
+    void loadTrajectoire();
+  }, [fixture, loadProposal, loadTrajectoire]);
+
+  // Trajectoire arrivée : si le jalon dû n'est pas celui déjà demandé, on
+  // recharge sur le bon. Sinon on ne touche à rien — pas de second appel pour
+  // le même jalon.
+  useEffect(() => {
+    if (fixture || statutTrajectoire !== 'chargee') return;
+    const du = resoudreJalonDu(trajectoire, new Date());
+    setJalonDu(du);
+    if (du.statut === 'du' && du.jalon !== jalonDemande) {
+      setJalonDemande(du.jalon);
+      void loadProposal(du.jalon);
+    }
+  }, [fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal]);
 
   const confirm = async (includedResponseIds: string[], contournements: ContournementSaisi[] = []) => {
     if (!runtime || runtime.status !== 'proposal_required') return;
+    // Le jalon confirmé est celui que la proposition AFFICHÉE visait. Reposter
+    // « T0 » en dur confirmerait un épisode qui n'est pas celui sous les yeux
+    // du praticien.
+    const jalon = jalonDemande;
     setSubmitting(true);
     setError(null);
     setRefus(null);
@@ -235,7 +271,7 @@ export function ClinicalRuntimeSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idPatient,
-          milestone: 'T0',
+          milestone: jalon,
           includedResponseIds,
           proposalHash: runtime.proposalHash,
           overrides: contournements,
@@ -243,7 +279,7 @@ export function ClinicalRuntimeSection({
       });
       const payload = await response.json() as CockpitRuntimeApiResponse;
       if (response.status === 409 && payload.status === 'unavailable' && payload.reason === 'proposal_stale') {
-        await loadProposal(true);
+        await loadProposal(jalon, true);
         return;
       }
       if (!response.ok || payload.status !== 'ready') {
@@ -300,6 +336,10 @@ export function ClinicalRuntimeSection({
   // Remonté ici (et non plus bas avec `review`) parce que le tableau de
   // dépendances de l'effet ci-dessous est évalué au rendu : une déclaration
   // postérieure tomberait dans la zone morte temporelle.
+  // Jalon de l'épisode confirmé, pour la restitution. Repli sur « T0 » quand
+  // le jalon n'a pas pu être résolu : c'est le seul épisode qu'un patient sans
+  // trajectoire lisible puisse avoir confirmé.
+  const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const decisionBloquee = isDecisionBloquee(decisionCard);
   useEffect(() => {
@@ -424,7 +464,8 @@ export function ClinicalRuntimeSection({
           formulaire qui ne pourra pas s'enregistrer). */}
       {!fixture && loading && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
-          Chargement de la proposition d&apos;épisode T0…
+          Chargement de la proposition d&apos;épisode
+          {jalonDu?.statut === 'du' ? ` ${jalonDu.jalon}` : ''}…
         </div>
       )}
       {!fixture && notice && (
@@ -441,6 +482,14 @@ export function ClinicalRuntimeSection({
       )}
       {!fixture && refus && (
         <div role="alert" className="rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">{refus}</div>
+      )}
+      {/* Aucun jalon confirmable : le motif se dit. Un cockpit qui n'affiche
+          simplement rien se lit comme une panne, et le praticien cherche un
+          bouton qui n'existe pas ([[D-058]]). */}
+      {affiche('decision') && !fixture && !loading && !error && jalonDu?.statut === 'aucun' && (
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          {jalonDu.motif}
+        </div>
       )}
       {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required' && (
         <EpisodeConfirmationPanel
@@ -494,11 +543,14 @@ export function ClinicalRuntimeSection({
           signée et que l'abstention est évaluée ([[D-054]]). */}
       {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          {/* Le jalon nommé est celui qui vient d'être confirmé, jamais « T0 »
+              par défaut : depuis le LOT-07 un J21 se confirme ici aussi, et
+              annoncer « Épisode T0 confirmé » après un J21 serait faux. */}
           {abstentionStatut === 'not_required'
-            ? 'Épisode T0 confirmé. Abstention clinique évaluée : aucune abstention requise.'
+            ? `Épisode ${jalonConfirme} confirmé. Abstention clinique évaluée : aucune abstention requise.`
             : abstentionStatut === 'required'
-              ? 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique est requise.'
-              : 'Épisode T0 confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.'}
+              ? `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique est requise.`
+              : `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.`}
         </div>
       )}
 
