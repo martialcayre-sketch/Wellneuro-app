@@ -28,13 +28,31 @@ code, comme pour chaque lot de la campagne.
 - La fiche porte DEUX migrations, chacune en PR séparée avec confirmation
   explicite : le schéma `ArbitrageBiologique` (structurel) et le peuplement
   du catalogue niveau 1 (CONTENU CLINIQUE, validé par le praticien).
-- Une exploration de l'existant (biology-library, drapeaux type
-  `WN_CB_RESULTS_ENABLED`, statuts d'intervention et `waitFor` du LOT-05,
-  `correspondanceMedecin`/`assertRenduMedecinNonPrescriptif`,
-  `versioning.ts`/`diffusion.ts`, carte de Fil `jalon_j21`, effacement IDP2,
-  contrats SQL `cb_biologie_*`) a été lancée en sous-agent ; son rapport
-  n'était pas encore rendu à l'écriture de ce handoff — ne pas affirmer ce
-  qu'il dira, le relancer au besoin.
+- **Inventaire de l'existant (exploration du 2026-08-14, chemins vérifiés)** :
+  - EXISTE déjà, à réutiliser sans réécrire : `conditionnelle_biologie` et
+    `ProtocolWaitFor { type: 'biologie' }` (`clinical-engine/types.ts:354-369`,
+    validés par `protocolDraft.ts:86-119` — AUCUN bump de contractVersion
+    nécessaire) ; la mécanique de révision entière (`versioning.ts` :
+    `supersedesDraftId`, `resolveActiveVersion` ; `diffusion.ts:74` :
+    `isApprovalStale` = la caducité demandée par la fiche) ;
+    `correspondanceMedecin.ts` (domaine pur) + modèle Prisma + garde
+    `assertRenduMedecinNonPrescriptif` (`vocabulaire.ts:27`, unique appelant
+    `rendu.ts:78` — le courrier LOT-06 doit passer par ce chokepoint) ;
+    drapeaux `isCbEnabled`/`isCbResultsEnabled`
+    (`biology-library/featureFlag.ts`, zéro appelant production) ; contrats
+    SQL `cb_biologie_catalogue_v1(.negatif)/structure_v1.sql` (étendre les
+    tableaux `cas`, pas créer de fichier) ; patron de carte de Fil
+    (`fil/cartes.ts:273-302`).
+  - MANQUE : moteur de statuts (6 statuts, zéro occurrence de
+    `TriggerCondition`/`déjà_documenté` dans src/) ; gabarit/générateur de
+    courrier ; `ArbitrageBiologique` (modèle+migration+API+UI) ; **champs de
+    déclencheurs sur `BiologyPanel`** (schema.prisma:1704 n'en a aucun — une
+    migration de SCHÉMA s'ajoute à la migration de DONNÉES du catalogue) ;
+    type+générateur de carte de Fil ; ligne `arbitrageBiologique` dans
+    `effacement.ts` (à insérer AVANT `protocolDrafts`, l.73, si FK).
+  - Nuance sur la fiche : « aucune ligne de catalogue sans claim » n'est
+    imposé par le schéma QUE sur `BiologyFunctionalRange` et
+    `BiologyAnalyteLink` (NOT NULL) — pas sur les panels.
 
 ## Décisions prises
 
