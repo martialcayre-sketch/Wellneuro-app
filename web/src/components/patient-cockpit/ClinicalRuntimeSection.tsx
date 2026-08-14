@@ -41,6 +41,11 @@ type DiffusionApiResponse = {
 
 type RuntimeError = 'session' | 'patient' | 'technical';
 
+// Identité STABLE pour « aucun besoin » : l'état observable ci-dessous entre
+// dans le tableau de dépendances d'un effet, et un `?? []` recréerait un
+// tableau neuf à chaque rendu — l'effet tirerait en boucle.
+const NEED_IDS_VIDE: number[] = [];
+
 // Phases du cycle clinique 3.x (A6-R1). Le poste de pilotage n'affiche qu'une
 // phase à la fois ; `'tout'` (défaut) conserve l'empilement historique et reste
 // le comportement de référence hors cockpit.
@@ -69,6 +74,13 @@ export type EtatRuntimeClinique = {
   // Vrai tant que la lecture de la trajectoire n'a pas abouti (état initial ou
   // requête en vol) : le statut Réévaluation reste INCONNU, jamais « à ouvrir ».
   trajectoireEnLecture: boolean;
+  /**
+   * Besoins qui FONDENT la priorité sélectionnée (`provenance.needIds`), pour
+   * la re-passation ciblée au jalon (LOT-07, `D-058`). Vide tant qu'aucune
+   * priorité n'est sélectionnée — et une priorité sans provenance ne cible
+   * rien : on ne repropose jamais « le pack entier » à sa place.
+   */
+  needIdsPrioriteSelectionnee: number[];
   // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
   // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
@@ -342,6 +354,12 @@ export function ClinicalRuntimeSection({
   const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const decisionBloquee = isDecisionBloquee(decisionCard);
+  const candidatSelectionne = decisionCard?.selectedMainPriority
+    ? decisionCard.priorityCandidates.find(
+        candidat => candidat.candidateId === decisionCard.selectedMainPriority?.candidateId,
+      ) ?? null
+    : null;
+  const needIdsPrioriteSelectionnee = candidatSelectionne?.provenance.needIds ?? NEED_IDS_VIDE;
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -353,6 +371,7 @@ export function ClinicalRuntimeSection({
       trajectoireEnLecture,
       reevaluationMesuree,
       decisionBloquee,
+      needIdsPrioriteSelectionnee,
     });
   }, [
     onEtatChange,
@@ -365,6 +384,7 @@ export function ClinicalRuntimeSection({
     trajectoireEnLecture,
     reevaluationMesuree,
     decisionBloquee,
+    needIdsPrioriteSelectionnee,
   ]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais

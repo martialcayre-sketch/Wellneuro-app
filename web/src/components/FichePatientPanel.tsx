@@ -1442,6 +1442,7 @@ export function FichePatientPanel({
               emailPatient={data?.patient?.idPatient === idPatient ? data.patient.email : undefined}
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
+              needIdsPriorite={etatRuntime?.needIdsPrioriteSelectionnee}
             />
           ))}
       </div>

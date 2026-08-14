@@ -15,6 +15,9 @@ import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePane
 import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 import { BESOINS } from '@/lib/equilibre/constants';
+import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
+import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
+import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // « La Spirale comme index temporel » : une liste de repères datés navigable,
@@ -45,6 +48,7 @@ export function TrajectoirePanel({
   emailPatient,
   modeViePresent,
   modeVieT0CycleCourant,
+  needIdsPriorite,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
@@ -58,6 +62,11 @@ export function TrajectoirePanel({
   modeViePresent?: ModeVieDate | null;
   /** Fantôme au T0 du cycle courant. */
   modeVieT0CycleCourant?: ModeVieDate | null;
+  /**
+   * Besoins fondant la priorité sélectionnée (LOT-07) — alimente la
+   * proposition de re-passation ciblée au jalon. Absent ou vide : aucun bloc.
+   */
+  needIdsPriorite?: number[];
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -94,6 +103,38 @@ export function TrajectoirePanel({
       annule = true;
     };
   }, [idPatient, canalFiche]);
+
+  // ── Re-passation CIBLÉE au jalon (LOT-07, `D-058`) ────────────────────────
+  //
+  // Proposée seulement quand un jalon POST-T0 est dans sa fenêtre : proposer
+  // une re-mesure hors fenêtre daterait la lecture d'un moment sans jalon. La
+  // cible vient des besoins qui FONDENT la priorité (`needIds` →
+  // `BESOIN_SOURCES`), jamais du pack entier — c'est ce que la re-passation
+  // ciblée remplace. Le geste rejoint la file d'envoi ; RIEN ne part d'ici.
+  const jalonDuRepassation = useMemo(() => {
+    const du = resoudreJalonDu(trajectoire ?? null, new Date());
+    return du.statut === 'du' && du.jalon !== 'T0' ? du.jalon : null;
+  }, [trajectoire]);
+  const ciblesRepassation = useMemo(
+    () => questionnairesCiblesPourPriorite(needIdsPriorite ?? []),
+    [needIdsPriorite],
+  );
+  const [ajouts, setAjouts] = useState<Record<string, 'en_cours' | 'ajoute' | 'erreur'>>({});
+  const ajouterALaFile = async (qid: string) => {
+    if (!emailPatient) return;
+    setAjouts(prev => ({ ...prev, [qid]: 'en_cours' }));
+    try {
+      const response = await fetch('/api/praticien/file-envoi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailPatient, qids: [qid] }),
+      });
+      const payload = (await response.json()) as { ok?: boolean };
+      setAjouts(prev => ({ ...prev, [qid]: response.ok && payload.ok ? 'ajoute' : 'erreur' }));
+    } catch {
+      setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
+    }
+  };
 
   // État daté du mode de vie (LOT-02) : recalculé côté serveur au repère
   // sélectionné (`etatAu`, même doctrine que SP-TT — jamais un curseur libre).
@@ -382,6 +423,43 @@ export function TrajectoirePanel({
               </div>
             );
           })}
+
+          {/* Re-passation ciblée (LOT-07) : proposition au jalon dû, dérivée des
+              besoins de la priorité — jamais le pack entier. Le bouton pose
+              l'instrument dans la file d'envoi ; rien ne part d'ici, l'envoi
+              reste le geste praticien de la Bibliothèque. */}
+          {jalonDuRepassation && ciblesRepassation.length > 0 && emailPatient && (
+            <div className="rounded-lg bg-muted/40 p-3 text-base">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Re-passation ciblée — jalon {jalonDuRepassation}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Instruments visés par la priorité du protocole. L’ajout pose l’instrument dans la
+                file d’envoi ; rien n’est envoyé au patient depuis cet écran.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {ciblesRepassation.map((qid) => (
+                  <li key={qid} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-foreground">
+                      {CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}
+                    </span>
+                    {ajouts[qid] === 'ajoute' ? (
+                      <span className="text-muted-foreground">Dans la file d’envoi</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void ajouterALaFile(qid)}
+                        disabled={ajouts[qid] === 'en_cours'}
+                        className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                      >
+                        {ajouts[qid] === 'erreur' ? 'Réessayer l’ajout' : 'Ajouter à la file d’envoi'}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Comparateur multi-épisodes — s'active à partir de 2 cycles (A8-5-ii). */}
           <div className="rounded-lg bg-muted/40 p-3 text-base">
