@@ -17,8 +17,11 @@
   de contrat) ; la mécanique de révision (`supersedesDraftId`,
   `isApprovalStale`) existe en entier ; les drapeaux `isCbEnabled` /
   `isCbResultsEnabled` existent sans appelant. `BiologyPanel` ne porte
-  **aucun champ de déclencheur** : les panels conditionnels de la fiche
-  exigent une migration de SCHÉMA en plus de la migration de DONNÉES.
+  **aucun champ de déclencheur** — et n'en portera pas : la campagne prescrit
+  le patron orientation (table TS versionnée + claims + signature + SHA) pour
+  la biologie, donc les conditions vivent dans une table signée, pas dans des
+  colonnes de catalogue. La migration de schéma se réduit à
+  `ArbitrageBiologique`.
 - Décision : six arbitrages, les deux premiers tranchés par l'utilisateur.
 
 **1. Le schéma précède le code (arbitrage utilisateur).** La migration de
@@ -47,11 +50,19 @@ entier : aucune valeur d'analyse en base, contrat SQL négatif étendu.
 Résoudre une intention `conditionnelle_biologie` sans arbitrage lié est
 impossible.
 
-**5. Les déclencheurs de panels sont des données STRUCTURÉES, évaluées par
-le déterministe seul.** Jamais d'expression libre (patron `BiologyRatio`) ;
-le moteur de statuts les évalue, le LLM n'évalue aucune condition (`D-003`).
-Un déclencheur non rempli s'affiche `conditionnel` avec sa condition — pas
-absent, pas refusé en silence.
+**5. Les déclencheurs et exclusions de panels vivent dans une TABLE TS
+SIGNÉE, au patron orientation** (`orientationRulesV1` : conditions typées sur
+zones d'instruments et drapeaux d'anamnèse, claims épinglés par règle,
+`validationExterne: false` à la livraison — signer est un geste praticien
+séparé). Jamais d'expression libre, jamais une condition évaluée par le LLM
+(`D-003`, `DC-26` : les règles cliniques vivent dans une table versionnée et
+relue, pas dispersées dans des lignes de base). Le catalogue DB ne porte que
+la COMPOSITION des panels (items, niveaux) ; la table signée dit QUAND un
+panel est recommandé, conditionnel ou non indiqué. Écart à la fiche assumé et
+motivé : elle plaçait `TriggerConditions` dans la migration de données — le
+patron de campagne (« réutilisé partout ») et `DC-26` commandent la table
+signée. Un déclencheur non rempli s'affiche `conditionnel` avec sa condition
+— pas absent, pas refusé en silence.
 
 **6. Le courrier médecin passe par le chokepoint existant.** Rendu via
 `rendu.ts` (destinataire médecin), donc sous
