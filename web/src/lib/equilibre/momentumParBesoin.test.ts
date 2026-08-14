@@ -25,6 +25,17 @@ function momentum(series: Map<number, LectureBesoin[]>, metadata?: BandesMetadat
   return calculerMomentumParBesoin({ series, metadata });
 }
 
+/** La ligne d'un besoin précis — la sortie nomme TOUS les besoins mesurables. */
+function ligneBesoin(
+  besoin: number,
+  series: Map<number, LectureBesoin[]>,
+  metadata?: BandesMetadata,
+) {
+  const resultat = momentum(series, metadata).find(r => r.besoin === besoin);
+  if (!resultat) throw new Error(`besoin ${besoin} absent de la sortie`);
+  return resultat;
+}
+
 const BANDE_PUBLIEE: BandesMetadata = {
   version: MOMENTUM_PAR_BESOIN_VERSION,
   publiee: true,
@@ -52,7 +63,7 @@ describe('Bandes de bruit — la table est vide et non publiée', () => {
 
 describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de momentum', () => {
   it('un besoin à une seule lecture n’a PAS de momentum — ni 0, ni « stable »', () => {
-    const [resultat] = momentum(new Map([[4, [lecture('T0', 60)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 60)]]]));
     expect(resultat.mesure).toBe(false);
     expect(resultat.delta).toBeNull();
     expect(resultat.qualification).toBeNull();
@@ -62,14 +73,14 @@ describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de moment
   it('le motif nomme le jalon réellement lu — jamais « T0 » pour une série qui commence à J21', () => {
     // Revue LOT-07 (M5) : un patient sans lecture au T0 rendait « non
     // re-mesuré depuis le T0 » avec un départ à J21 — un T0 jamais lu, nommé.
-    const [resultat] = momentum(new Map([[4, [lecture('J21', 60)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('J21', 60)]]]));
     expect(resultat.mesure).toBe(false);
     expect(resultat.motif).toContain('J21');
     expect(resultat.motif).not.toContain('T0');
   });
 
   it('un besoin re-mesuré rend son delta factuel', () => {
-    const [resultat] = momentum(new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]));
     expect(resultat.mesure).toBe(true);
     expect(resultat.delta).toBe(12);
   });
@@ -78,7 +89,7 @@ describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de moment
     // Revue LOT-07 (M4) : `Math.round(x*100)/100` était un nombre technique
     // non déclaré (`DC-20`) qui rendait « écart 0 » tout mouvement < 0,005
     // sur l'échelle de couverture 0–1. Le delta est la soustraction brute.
-    const [resultat] = momentum(new Map([[4, [lecture('T0', 0.5), lecture('J21', 0.503)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 0.5), lecture('J21', 0.503)]]]));
     expect(resultat.delta).not.toBe(0);
     expect(resultat.delta).toBeCloseTo(0.003, 10);
   });
@@ -87,7 +98,7 @@ describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de moment
     // LE PIÈGE que `D-058` nomme : le scalaire existant appelle « stable » un
     // delta exactement nul. Ici, 0 est un delta comme un autre, et il n'est pas
     // qualifié tant qu'aucune bande ne dit ce que 0 vaut.
-    const [resultat] = momentum(new Map([[4, [lecture('T0', 60), lecture('J21', 60)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 60), lecture('J21', 60)]]]));
     expect(resultat.mesure).toBe(true);
     expect(resultat.delta).toBe(0);
     expect(resultat.qualification).toBeNull();
@@ -98,7 +109,23 @@ describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de moment
       [9, [lecture('T0', 40), lecture('J21', 45)]],
       [1, [lecture('T0', 50), lecture('J21', 55)]],
     ]));
-    expect(resultats.map(r => r.besoin)).toEqual([1, 9]);
+    const besoins = resultats.map(r => r.besoin);
+    expect(besoins).toEqual([...besoins].sort((gauche, droite) => gauche - droite));
+    expect(resultats.filter(r => r.mesure).map(r => r.besoin)).toEqual([1, 9]);
+  });
+
+  it('un besoin JAMAIS lu est nommé — jamais une absence silencieuse', () => {
+    // « Ni zéro, ni stable, ni absence silencieuse » (`D-058`, arbitrage 2).
+    // Relevé en revue Copilot : itérer sur les seules séries rendait ce cas
+    // inatteignable — un besoin jamais lu disparaissait de la sortie, le
+    // silence que ce module existe pour fermer, recréé un cran plus haut.
+    const resultats = momentum(new Map());
+    const besoin4 = resultats.find(r => r.besoin === 4);
+    expect(besoin4).toMatchObject({ mesure: false, delta: null, qualification: null });
+    expect(besoin4?.motif).toContain('sans lecture');
+    // Un besoin sans source vivante (besoin 2, retiré en v4) n'est PAS listé :
+    // aucune mesure n'en est possible, le nommer n'informerait rien.
+    expect(resultats.some(r => r.besoin === 2)).toBe(false);
   });
 });
 
@@ -112,7 +139,7 @@ describe('Momentum par besoin — sans bande publiée, rien n’est qualifié', 
   });
 
   it('donne un motif, pas un silence — y compris sur un écart énorme', () => {
-    const [resultat] = momentum(new Map([[4, [lecture('T0', 10), lecture('J21', 95)]]]));
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 10), lecture('J21', 95)]]]));
     expect(resultat.delta).toBe(85);
     expect(resultat.motif).toContain('aucune bande de bruit n’est publiée');
   });
@@ -120,15 +147,15 @@ describe('Momentum par besoin — sans bande publiée, rien n’est qualifié', 
   it('qualifie de part et d’autre de la borne dès qu’une bande est publiée', () => {
     // Le mécanisme est prouvé ici, en fixture ; la table de production reste
     // vide. C'est le même partage que pour les tables cliniques non signées.
-    const [petit] = momentum(new Map([[4, [lecture('T0', 60), lecture('J21', 63)]]]), BANDE_PUBLIEE);
+    const petit = ligneBesoin(4, new Map([[4, [lecture('T0', 60), lecture('J21', 63)]]]), BANDE_PUBLIEE);
     expect(petit).toMatchObject({ delta: 3, qualification: 'dans_la_bande' });
 
-    const [grand] = momentum(new Map([[4, [lecture('T0', 60), lecture('J21', 70)]]]), BANDE_PUBLIEE);
+    const grand = ligneBesoin(4, new Map([[4, [lecture('T0', 60), lecture('J21', 70)]]]), BANDE_PUBLIEE);
     expect(grand).toMatchObject({ delta: 10, qualification: 'au_dessus_de_la_bande' });
   });
 
   it('une bande publiée ne couvrant PAS le besoin ne qualifie pas ce besoin', () => {
-    const [resultat] = momentum(new Map([[1, [lecture('T0', 60), lecture('J21', 70)]]]), BANDE_PUBLIEE);
+    const resultat = ligneBesoin(1, new Map([[1, [lecture('T0', 60), lecture('J21', 70)]]]), BANDE_PUBLIEE);
     expect(resultat.qualification).toBeNull();
   });
 });
@@ -144,9 +171,7 @@ describe('Momentum par besoin — pas de garde de version INTRA-cycle', () => {
   it('un besoin re-mesuré rend son momentum quel que soit le versionScore stocké sur l’épisode', () => {
     // L'appel ne porte AUCUNE version : le type l'interdit désormais. Ce banc
     // fige que la signature ne réintroduit pas l'interrupteur.
-    const [resultat] = calculerMomentumParBesoin({
-      series: new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]),
-    });
+    const resultat = ligneBesoin(4, new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]));
     expect(resultat).toMatchObject({ mesure: true, delta: 12 });
   });
 });

@@ -204,9 +204,25 @@ export function calculerMomentumParBesoin(input: {
 }): MomentumBesoin[] {
   const metadata = input.metadata ?? BANDES_DE_BRUIT;
 
-  return [...input.series.entries()]
-    .sort(([gauche], [droite]) => gauche - droite)
-    .map(([besoin, serie]) => {
+  // TOUS les besoins que la table signée sait mesurer, plus ceux que la
+  // série porte. Un besoin jamais lu est NOMMÉ — « ni absence silencieuse »
+  // (`D-058`, arbitrage 2) : l'omettre recréerait un cran plus haut le
+  // silence que ce module existe pour fermer. Relevé en revue Copilot :
+  // itérer sur les seules séries rendait ce cas inatteignable, puisque
+  // `construireHistoriqueParBesoin` ne crée une entrée qu'à la première
+  // lecture. Un besoin sans source vivante (besoin 2) n'est pas listé :
+  // aucune mesure n'en est possible, le nommer n'informerait rien.
+  const besoins = new Set<number>([
+    ...Object.entries(BESOIN_SOURCES)
+      .filter(([, sources]) => sources.length > 0)
+      .map(([cle]) => Number(cle)),
+    ...input.series.keys(),
+  ]);
+
+  return [...besoins]
+    .sort((gauche, droite) => gauche - droite)
+    .map((besoin) => {
+      const serie = input.series.get(besoin) ?? [];
       const depart = serie[0] ?? null;
       const arrivee = serie.length >= 2 ? serie[serie.length - 1] : null;
 
