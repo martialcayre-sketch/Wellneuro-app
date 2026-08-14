@@ -1,5 +1,6 @@
-import { JOURS_JALON } from './constants';
-import { construireReponsesParQuestionnaire, type ReponseBrute } from './depuisPrisma';
+import { filtrerPassationsExploitables } from '../scoring/validite';
+import { BESOIN_SOURCES, JOURS_JALON } from './constants';
+import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
 import { calculerEquilibre } from './score';
 import type { JalonMomentum } from './types';
 
@@ -107,6 +108,32 @@ export function construireHistoriqueParBesoin(
   const series = new Map<number, LectureBesoin[]>();
   const jalons = Object.keys(JOURS_JALON) as JalonMomentum[];
 
+  // RÈGLE DE NOUVEAUTÉ PAR BESOIN — le point qui fait exister ce module.
+  //
+  // Sans elle, un patient qui n'a passé le Q_GAS_01 qu'au T0 rend au J21 la
+  // même couverture (la réponse T0 est toujours « connue » à J21), et le
+  // besoin 4 aurait affiché « mesure : vrai, delta : 0 » sans qu'aucune
+  // re-mesure ait eu lieu — le défaut F1 (« stable, écart 0 ») que la règle
+  // de nouveauté GLOBALE du scalaire ferme déjà, recréé un cran plus bas.
+  // Trouvé en branchant le module, avant tout consommateur.
+  //
+  // La règle est au grain du BESOIN : une lecture n'est ajoutée à sa série
+  // que si l'une de SES sources porte une réponse exploitable nouvelle depuis
+  // sa lecture précédente. Le prédicat d'exploitabilité est celui de la règle
+  // globale (`extraireRawAnswers`), jamais recopié.
+  const exploitables = filtrerPassationsExploitables(brutes);
+  const datesParBesoin = new Map<number, Date[]>();
+  for (const [besoinCle, sources] of Object.entries(BESOIN_SOURCES)) {
+    const ids = new Set(sources.map(source => source.idQuestionnaire));
+    datesParBesoin.set(
+      Number(besoinCle),
+      exploitables
+        .filter(r => ids.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
+        .map(r => r.dateReponse),
+    );
+  }
+
+  const derniereLecture = new Map<number, Date>();
   for (const jalon of jalons) {
     const dateJalon = new Date(dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS);
     if (dateJalon > maintenant) continue;
@@ -115,9 +142,18 @@ export function construireHistoriqueParBesoin(
     for (const strate of resultat.strates) {
       for (const besoin of strate.besoins) {
         if (besoin.couverture === null) continue;
+
+        const borneBasse = derniereLecture.get(besoin.besoin);
+        if (borneBasse) {
+          const nouveaute = (datesParBesoin.get(besoin.besoin) ?? [])
+            .some(date => date > borneBasse && date <= dateJalon);
+          if (!nouveaute) continue;
+        }
+
         const serie = series.get(besoin.besoin) ?? [];
         serie.push({ jalon, date: dateJalon, couverture: besoin.couverture });
         series.set(besoin.besoin, serie);
+        derniereLecture.set(besoin.besoin, dateJalon);
       }
     }
   }

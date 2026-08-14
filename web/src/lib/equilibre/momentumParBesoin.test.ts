@@ -4,6 +4,7 @@ import {
   BANDES_DE_BRUIT,
   bandePourBesoin,
   calculerMomentumParBesoin,
+  construireHistoriqueParBesoin,
   MOMENTUM_PAR_BESOIN_VERSION,
   type BandesMetadata,
   type LectureBesoin,
@@ -141,3 +142,102 @@ describe('Momentum par besoin — les versions de score ne se soustraient pas', 
     expect(resultat).toMatchObject({ mesure: false, delta: null });
   });
 });
+
+describe('Historique par besoin — la règle de nouveauté vaut au grain du besoin', () => {
+  // Reprise des sondes F1 de l'audit trajectoire (2026-07-27), un cran plus
+  // bas : sans nouveauté PAR BESOIN, un patient ayant répondu une seule fois
+  // au PSS-10 obtenait des lectures identiques à chaque jalon pour le besoin 9
+  // — « mesure : vrai, delta : 0 » sans qu'aucune re-mesure ait eu lieu.
+  // Défaut trouvé en branchant le module, avant tout consommateur.
+
+  // PSS-10 complet : source vivante du besoin 9 — la même fixture que le banc
+  // du scalaire (`depuisPrisma.test.ts`).
+  const RAW_PSS10_T0 = {
+    P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+    P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+  };
+  const RAW_PSS10_J21 = {
+    P1: '1', P2: '1', P3: '2', P4: '2', P5: '2',
+    P6: '1', P7: '2', P8: '2', P9: '1', P10: '2',
+  };
+  const BESOIN_STRESS = 9;
+  const T0 = new Date('2026-01-01T00:00:00.000Z');
+  const MAINTENANT = new Date('2026-04-15T00:00:00.000Z'); // tous les jalons atteints
+
+  it('une seule passation ⇒ UNE lecture, jamais quatre copies', () => {
+    const series = construireHistoriqueParBesoin([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+    ], T0, MAINTENANT);
+    expect(series.get(BESOIN_STRESS) ?? []).toHaveLength(1);
+  });
+
+  it('…et donc aucun momentum : le besoin n’a pas été re-mesuré', () => {
+    const series = construireHistoriqueParBesoin([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+    ], T0, MAINTENANT);
+    const resultat = calculerMomentumParBesoin({
+      series, versionScoreCycle: 'v15', versionScoreCourante: 'v15',
+    }).find(r => r.besoin === BESOIN_STRESS);
+    expect(resultat).toMatchObject({ mesure: false, delta: null });
+  });
+
+  it('une re-passation rouvre le jalon du besoin, et le delta est réel', () => {
+    const series = construireHistoriqueParBesoin([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+      {
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: new Date('2026-01-20T00:00:00.000Z'),
+        scoresJson: { rawAnswers: RAW_PSS10_J21 },
+      },
+    ], T0, MAINTENANT);
+    const serie = series.get(BESOIN_STRESS) ?? [];
+    expect(serie).toHaveLength(2);
+    const resultat = calculerMomentumParBesoin({
+      series, versionScoreCycle: 'v15', versionScoreCourante: 'v15',
+    }).find(r => r.besoin === BESOIN_STRESS);
+    expect(resultat?.mesure).toBe(true);
+    expect(resultat?.delta).not.toBe(0);
+    // Sans bande publiée, même un delta réel n'est pas qualifié.
+    expect(resultat?.qualification).toBeNull();
+  });
+
+  it('drapeau de validité allumé : une passation INVALID ne rouvre pas un jalon', () => {
+    // Même sémantique que la règle globale du scalaire, PAR CONSTRUCTION : le
+    // filtre est `filtrerPassationsExploitables`, gaté par
+    // `WN_ENABLE_VALIDITE_PASSATIONS`. Drapeau éteint — l'état de production —
+    // aucune ligne ne disparaît (engagement du LOT-00) ; ce banc prouve le
+    // mécanisme drapeau allumé, et le suivant fige le comportement éteint.
+    process.env.WN_ENABLE_VALIDITE_PASSATIONS = '1';
+    try {
+      const series = construireHistoriqueParBesoin([
+        { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+        {
+          idQuestionnaire: 'Q_STR_02',
+          dateReponse: new Date('2026-01-20T00:00:00.000Z'),
+          scoresJson: { rawAnswers: RAW_PSS10_J21 },
+          statutValidite: 'INVALID',
+        },
+      ], T0, MAINTENANT);
+      expect(series.get(BESOIN_STRESS) ?? []).toHaveLength(1);
+    } finally {
+      delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    }
+  });
+
+  it('drapeau éteint : la ligne INVALID reste lue — comme partout ailleurs', () => {
+    // L'état de production. Diverger ici du scalaire aurait fait disparaître
+    // une ligne que le LOT-00 s'est engagé à transmettre.
+    delete process.env.WN_ENABLE_VALIDITE_PASSATIONS;
+    const series = construireHistoriqueParBesoin([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
+      {
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: new Date('2026-01-20T00:00:00.000Z'),
+        scoresJson: { rawAnswers: RAW_PSS10_J21 },
+        statutValidite: 'INVALID',
+      },
+    ], T0, MAINTENANT);
+    expect(series.get(BESOIN_STRESS) ?? []).toHaveLength(2);
+  });
+});
+

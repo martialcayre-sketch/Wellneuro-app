@@ -26,6 +26,7 @@ function trajectoire(confirmes: string[] = ['T0']): Trajectoire {
       versionScore: 'equilibre-v15',
       jalons: [],
       momentum: null,
+  momentumParBesoin: [],
     }],
     comparaison: { disponible: false, raison: 'un_seul_cycle' },
   };

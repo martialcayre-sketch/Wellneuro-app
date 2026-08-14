@@ -1,5 +1,11 @@
+import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { construireHistoriqueEquilibre, type ReponseBrute } from '@/lib/equilibre/depuisPrisma';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
+import {
+  calculerMomentumParBesoin,
+  construireHistoriqueParBesoin,
+  type MomentumBesoin,
+} from '@/lib/equilibre/momentumParBesoin';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — objet DÉRIVÉ, lecture
@@ -41,6 +47,13 @@ export type TrajectoireCycle = {
   versionScore: string | null;
   jalons: TrajectoireJalonLecture[];
   momentum: { tendance: TendanceMomentum; delta: number } | null; // T0 → dernier jalon mesuré
+  /**
+   * Momentum PAR BESOIN (LOT-07, `D-058`) : delta factuel, jamais qualifié
+   * tant qu'aucune bande de bruit n'est publiée. Le scalaire ci-dessus reste
+   * servi tel quel pour ses consommateurs — sa sémantique (« stable » à delta
+   * exactement nul) ne s'étend pas ici.
+   */
+  momentumParBesoin: MomentumBesoin[];
 };
 
 export type TrajectoireComparaison = {
@@ -106,6 +119,14 @@ export function construireTrajectoire(input: {
         : null;
       const momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
 
+      // Par besoin : même ancre T0, même « maintenant » implicite que
+      // l'historique scalaire (les jalons futurs sont omis pareil).
+      const momentumParBesoin = calculerMomentumParBesoin({
+        series: construireHistoriqueParBesoin(input.reponses, dateT0, new Date()),
+        versionScoreCycle: t0.versionScore,
+        versionScoreCourante: VERSION_SCORE_EQUILIBRE,
+      });
+
       return {
         // Le cycle d'un T0 est le sien : id stocké quand il existe, sinon son
         // propre id (repli pour les lignes antérieures au gate G2).
@@ -114,6 +135,7 @@ export function construireTrajectoire(input: {
         versionScore: t0.versionScore,
         jalons,
         momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,
+        momentumParBesoin,
       };
     });
 

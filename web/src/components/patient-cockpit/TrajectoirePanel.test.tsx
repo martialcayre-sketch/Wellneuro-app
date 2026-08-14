@@ -35,6 +35,7 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
             { jalon: 'J90', mesure: false, valeur: null, date: null },
           ],
           momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
         },
       ],
       comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -51,8 +52,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     const trajectoire: Trajectoire = {
       index: [],
       cycles: [
-        { cycleId: 'a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null },
-        { cycleId: 'b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null },
+        { cycleId: 'a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
       ],
       comparaison: { disponible: false, raison: 'versions_differentes' },
     };
@@ -75,6 +76,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -82,6 +84,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -152,6 +155,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -159,6 +163,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -231,6 +236,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
+      momentumParBesoin: [],
       },
       {
         cycleId: 'ep_b',
@@ -238,6 +244,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
         versionScore: 'v1',
         jalons: jalons(48, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: true, raison: 'comparable' },
@@ -306,6 +313,7 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
         versionScore: 'v1',
         jalons: jalons(12, null),
         momentum: null,
+      momentumParBesoin: [],
       },
     ],
     comparaison: { disponible: false, raison: 'un_seul_cycle' },
@@ -426,5 +434,44 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
     render(<TrajectoirePanel trajectoire={trajectoireVide} idPatient="PAT_SEED_03" modeViePresent={null} />);
     expect(await screen.findByRole('region', { name: 'Orientation des explorations' })).toBeTruthy();
     expect(appels.some(url => url.includes('praticien/orientation'))).toBe(true);
+  });
+
+  it('momentum par besoin : un delta s’affiche NON QUALIFIÉ, un besoin non re-mesuré n’est pas « stable »', () => {
+    // D-058 au rendu : la valeur est réelle et se montre ; le jugement, non.
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' }],
+          cycles: [{
+            cycleId: 'ep_a',
+            dateT0: '2026-01-01T00:00:00.000Z',
+            versionScore: 'v1',
+            jalons: [],
+            momentum: null,
+            momentumParBesoin: [
+              {
+                besoin: 9, mesure: true, delta: 7,
+                depart: null, arrivee: null,
+                qualification: null,
+                motif: 'Écart non qualifié : aucune bande de bruit n’est publiée pour ce besoin.',
+              },
+              {
+                besoin: 4, mesure: false, delta: null,
+                depart: null, arrivee: null,
+                qualification: null,
+                motif: 'Besoin non re-mesuré depuis le T0 : aucun momentum. Ce n’est pas une stabilité.',
+              },
+            ],
+          }],
+          comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/écart \+7/)).toBeTruthy();
+    expect(screen.getByText(/non qualifié \(aucune bande de bruit publiée\)/)).toBeTruthy();
+    expect(screen.getByText(/non re-mesuré — ce n’est pas une stabilité/)).toBeTruthy();
+    // Les libellés praticien des besoins, pas des numéros nus.
+    expect(screen.getByText(/Sensations-émotions fondamentales \(stress\)/)).toBeTruthy();
   });
 });

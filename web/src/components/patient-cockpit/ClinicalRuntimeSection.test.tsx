@@ -430,6 +430,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
           index: [{ milestone: 'T0', date: ilYA21Jours, cycleId: 'cycle-1' }],
           cycles: [{
             cycleId: 'cycle-1', dateT0: ilYA21Jours, versionScore: 'v15', jalons: [], momentum: null,
+  momentumParBesoin: [],
           }],
           comparaison: { disponible: false, raison: 'un_seul_cycle' },
         },
@@ -467,6 +468,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
           index: [{ milestone: 'T0', date: ilYA31Jours, cycleId: 'cycle-1' }],
           cycles: [{
             cycleId: 'cycle-1', dateT0: ilYA31Jours, versionScore: 'v15', jalons: [], momentum: null,
+  momentumParBesoin: [],
           }],
           comparaison: { disponible: false, raison: 'un_seul_cycle' },
         },

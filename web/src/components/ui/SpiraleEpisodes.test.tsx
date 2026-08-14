@@ -11,8 +11,8 @@ afterEach(cleanup);
 const jalonsVides: TrajectoireCycle['jalons'] = [];
 
 const cycles: TrajectoireCycle[] = [
-  { cycleId: 'ep_a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: jalonsVides, momentum: null },
-  { cycleId: 'ep_b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v1', jalons: jalonsVides, momentum: null },
+  { cycleId: 'ep_a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: jalonsVides, momentum: null, momentumParBesoin: [] },
+  { cycleId: 'ep_b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v1', jalons: jalonsVides, momentum: null, momentumParBesoin: [] },
 ];
 
 const reperes = rattacherReperesAuxCycles(

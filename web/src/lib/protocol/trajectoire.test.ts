@@ -102,6 +102,7 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
       versionScore,
       jalons: [],
       momentum: null,
+        momentumParBesoin: [],
     });
     expect(resoudreComparaison([cycle('a', 'v1'), cycle('b', 'v2')])).toEqual({
       disponible: false,
@@ -154,6 +155,7 @@ describe('rattacherReperesAuxCycles (index navigable)', () => {
     versionScore: 'v1',
     jalons: [],
     momentum: null,
+        momentumParBesoin: [],
   });
 
   it('rattache chaque repère au dernier T0 antérieur ou égal', () => {

@@ -14,6 +14,7 @@ import { MomentumPanel } from '@/components/patient-cockpit/MomentumPanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
+import { BESOINS } from '@/lib/equilibre/constants';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // « La Spirale comme index temporel » : une liste de repères datés navigable,
@@ -343,6 +344,40 @@ export function TrajectoirePanel({
                     <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
                     <span className="text-muted-foreground">(écart {Math.abs(cycle.momentum.delta)})</span>
                   </p>
+                )}
+                {/* Momentum PAR BESOIN (LOT-07, D-058). Deux interdits de rendu :
+                    un besoin non re-mesuré est nommé tel quel, jamais « stable » ;
+                    et un delta sans bande publiée s'affiche avec son motif,
+                    jamais comme une tendance nue qui se lirait en jugement. */}
+                {cycle.momentumParBesoin.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Momentum par besoin
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                      {cycle.momentumParBesoin.map((ligne) => {
+                        const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
+                          ?? `Besoin ${ligne.besoin}`;
+                        return (
+                          <li key={ligne.besoin} className="text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground">{libelle}</span>{' '}
+                            {ligne.mesure && ligne.delta !== null ? (
+                              <>
+                                · écart {ligne.delta > 0 ? `+${ligne.delta}` : ligne.delta}
+                                {ligne.qualification === null
+                                  ? ' — non qualifié (aucune bande de bruit publiée)'
+                                  : ligne.qualification === 'dans_la_bande'
+                                    ? ' — dans la bande de bruit publiée'
+                                    : ' — au-dessus de la bande de bruit publiée'}
+                              </>
+                            ) : (
+                              <span className="italic">· non re-mesuré — ce n’est pas une stabilité</span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 )}
               </div>
             );
