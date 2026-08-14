@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
-import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
 import { questionnairesCiblesPourPriorite } from './repassationCiblee';
 
 // Ce que ce banc défend (LOT-07, `D-058`) : la re-passation ciblée vise ce que
@@ -14,7 +14,7 @@ describe('questionnairesCiblesPourPriorite', () => {
     const cibles = questionnairesCiblesPourPriorite([4]);
     const attendues = BESOIN_SOURCES[4]
       .map(source => source.idQuestionnaire)
-      .filter(estAdministrableParLaRoute);
+      .filter(qid => IDS_ASSIGNABLES.has(qid));
     expect(cibles).toEqual(attendues);
     expect(cibles.length).toBeGreaterThan(0);
   });
@@ -45,13 +45,14 @@ describe('questionnairesCiblesPourPriorite', () => {
     expect(unDeux).toEqual(memeAppel);
   });
 
-  it('ne propose que des instruments administrables par la route', () => {
-    // Tous les besoins d'un coup : pas un seul id hors du prédicat de la
-    // Bibliothèque — proposer un instrument refusé serait un bouton cassé.
+  it('ne propose que des instruments assignables par la file d’envoi', () => {
+    // Tous les besoins d'un coup : pas un seul id hors de `IDS_ASSIGNABLES`,
+    // LE prédicat de la route destinataire (`idsAssignablesPour`) — proposer
+    // un instrument que la file refuserait serait un bouton cassé.
     const tous = questionnairesCiblesPourPriorite(Object.keys(BESOIN_SOURCES).map(Number));
     expect(tous.length).toBeGreaterThan(0);
     for (const qid of tous) {
-      expect(estAdministrableParLaRoute(qid), qid).toBe(true);
+      expect(IDS_ASSIGNABLES.has(qid), qid).toBe(true);
     }
   });
 });

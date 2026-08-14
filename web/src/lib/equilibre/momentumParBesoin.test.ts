@@ -15,8 +15,6 @@ import {
 // QUALIFIE PAS. Et un besoin non re-mesuré n'a pas de momentum : ni zéro, ni
 // « stable », ni silence.
 
-const VERSION = 'equilibre-v15';
-
 const lecture = (jalon: LectureBesoin['jalon'], couverture: number): LectureBesoin => ({
   jalon,
   date: new Date(`2026-01-0${jalon === 'T0' ? 1 : 2}T00:00:00.000Z`),
@@ -24,12 +22,7 @@ const lecture = (jalon: LectureBesoin['jalon'], couverture: number): LectureBeso
 });
 
 function momentum(series: Map<number, LectureBesoin[]>, metadata?: BandesMetadata) {
-  return calculerMomentumParBesoin({
-    series,
-    versionScoreCycle: VERSION,
-    versionScoreCourante: VERSION,
-    metadata,
-  });
+  return calculerMomentumParBesoin({ series, metadata });
 }
 
 const BANDE_PUBLIEE: BandesMetadata = {
@@ -66,10 +59,28 @@ describe('Momentum par besoin — ce qui n’est pas mesuré n’a pas de moment
     expect(resultat.motif).toContain('n’est pas une stabilité');
   });
 
+  it('le motif nomme le jalon réellement lu — jamais « T0 » pour une série qui commence à J21', () => {
+    // Revue LOT-07 (M5) : un patient sans lecture au T0 rendait « non
+    // re-mesuré depuis le T0 » avec un départ à J21 — un T0 jamais lu, nommé.
+    const [resultat] = momentum(new Map([[4, [lecture('J21', 60)]]]));
+    expect(resultat.mesure).toBe(false);
+    expect(resultat.motif).toContain('J21');
+    expect(resultat.motif).not.toContain('T0');
+  });
+
   it('un besoin re-mesuré rend son delta factuel', () => {
     const [resultat] = momentum(new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]));
     expect(resultat.mesure).toBe(true);
     expect(resultat.delta).toBe(12);
+  });
+
+  it('aucun arrondi n’écrase un mouvement réel sous le centième', () => {
+    // Revue LOT-07 (M4) : `Math.round(x*100)/100` était un nombre technique
+    // non déclaré (`DC-20`) qui rendait « écart 0 » tout mouvement < 0,005
+    // sur l'échelle de couverture 0–1. Le delta est la soustraction brute.
+    const [resultat] = momentum(new Map([[4, [lecture('T0', 0.5), lecture('J21', 0.503)]]]));
+    expect(resultat.delta).not.toBe(0);
+    expect(resultat.delta).toBeCloseTo(0.003, 10);
   });
 
   it('un besoin re-mesuré à l’identique rend un delta de 0 — et ce n’est pas « stable »', () => {
@@ -122,24 +133,21 @@ describe('Momentum par besoin — sans bande publiée, rien n’est qualifié', 
   });
 });
 
-describe('Momentum par besoin — les versions de score ne se soustraient pas', () => {
-  it('refuse de soustraire deux lectures de versions différentes', () => {
+describe('Momentum par besoin — pas de garde de version INTRA-cycle', () => {
+  // Revue LOT-07 (B1) : les deux lectures d'une série sont toujours
+  // recalculées par le moteur COURANT — il n'existe aucun chemin où deux
+  // versions se soustraient. Une garde comparant l'étiquette figée sur
+  // l'épisode à la constante courante aurait affiché « non re-mesuré » sur
+  // tout cycle antérieur au dernier bump de version, pour des besoins
+  // effectivement re-mesurés. La garde A8-3 (inter-cycles) vit dans
+  // `resoudreComparaison` de trajectoire.ts, pas ici.
+  it('un besoin re-mesuré rend son momentum quel que soit le versionScore stocké sur l’épisode', () => {
+    // L'appel ne porte AUCUNE version : le type l'interdit désormais. Ce banc
+    // fige que la signature ne réintroduit pas l'interrupteur.
     const [resultat] = calculerMomentumParBesoin({
       series: new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]),
-      versionScoreCycle: 'equilibre-v14',
-      versionScoreCourante: VERSION,
     });
-    expect(resultat).toMatchObject({ mesure: false, delta: null });
-    expect(resultat.motif).toContain('ne se soustraient pas');
-  });
-
-  it('refuse aussi sur une version de cycle INCONNUE — jamais assimilée à la courante', () => {
-    const [resultat] = calculerMomentumParBesoin({
-      series: new Map([[4, [lecture('T0', 60), lecture('J21', 72)]]]),
-      versionScoreCycle: null,
-      versionScoreCourante: VERSION,
-    });
-    expect(resultat).toMatchObject({ mesure: false, delta: null });
+    expect(resultat).toMatchObject({ mesure: true, delta: 12 });
   });
 });
 
@@ -175,9 +183,8 @@ describe('Historique par besoin — la règle de nouveauté vaut au grain du bes
     const series = construireHistoriqueParBesoin([
       { idQuestionnaire: 'Q_STR_02', dateReponse: T0, scoresJson: { rawAnswers: RAW_PSS10_T0 } },
     ], T0, MAINTENANT);
-    const resultat = calculerMomentumParBesoin({
-      series, versionScoreCycle: 'v15', versionScoreCourante: 'v15',
-    }).find(r => r.besoin === BESOIN_STRESS);
+    const resultat = calculerMomentumParBesoin({ series })
+      .find(r => r.besoin === BESOIN_STRESS);
     expect(resultat).toMatchObject({ mesure: false, delta: null });
   });
 
@@ -192,9 +199,8 @@ describe('Historique par besoin — la règle de nouveauté vaut au grain du bes
     ], T0, MAINTENANT);
     const serie = series.get(BESOIN_STRESS) ?? [];
     expect(serie).toHaveLength(2);
-    const resultat = calculerMomentumParBesoin({
-      series, versionScoreCycle: 'v15', versionScoreCourante: 'v15',
-    }).find(r => r.besoin === BESOIN_STRESS);
+    const resultat = calculerMomentumParBesoin({ series })
+      .find(r => r.besoin === BESOIN_STRESS);
     expect(resultat?.mesure).toBe(true);
     expect(resultat?.delta).not.toBe(0);
     // Sans bande publiée, même un delta réel n'est pas qualifié.

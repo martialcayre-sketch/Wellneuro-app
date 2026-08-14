@@ -1,5 +1,5 @@
 import { BESOIN_SOURCES } from '@/lib/equilibre/constants';
-import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { IDS_ASSIGNABLES } from '@/lib/bibliotheque';
 
 // Re-passation CIBLÉE au jalon (LOT-07, `D-058`).
 //
@@ -20,8 +20,9 @@ import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
  *
  * Dédupliqués (deux besoins peuvent partager une source), dans l'ordre des
  * besoins puis des sources — déterministe, donc comparable d'un rendu à
- * l'autre. Filtrés par `estAdministrableParLaRoute` : proposer un instrument
- * que la route refuserait d'administrer serait un bouton cassé.
+ * l'autre. Filtrés par `IDS_ASSIGNABLES` — LE prédicat de la file d'envoi
+ * destinataire (`idsAssignablesPour`), pas un prédicat voisin : proposer un
+ * instrument que la route refuserait d'assigner serait un bouton cassé.
  *
  * `needIds` vide ⇒ liste vide : une priorité sans provenance de besoin ne
  * cible rien, et on ne propose pas « le pack entier » à sa place — c'est
@@ -34,7 +35,7 @@ export function questionnairesCiblesPourPriorite(needIds: readonly number[]): st
     for (const source of BESOIN_SOURCES[besoin] ?? []) {
       if (vus.has(source.idQuestionnaire)) continue;
       vus.add(source.idQuestionnaire);
-      if (!estAdministrableParLaRoute(source.idQuestionnaire)) continue;
+      if (!IDS_ASSIGNABLES.has(source.idQuestionnaire)) continue;
       cibles.push(source.idQuestionnaire);
     }
   }

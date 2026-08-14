@@ -41,6 +41,16 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// Arrondi d'AFFICHAGE seulement — la donnée (`MomentumBesoin.delta`) reste la
+// soustraction brute. Un mouvement réel ne s'affiche jamais « 0 » : en deçà du
+// centième, la valeur passe en chiffres significatifs plutôt que d'être écrasée.
+function formatCouverture(valeur: number): string {
+  if (valeur !== 0 && Math.abs(valeur) < 0.005) {
+    return valeur.toLocaleString('fr-FR', { maximumSignificantDigits: 2 });
+  }
+  return valeur.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+}
+
 export function TrajectoirePanel({
   trajectoire,
   idPatient,
@@ -120,17 +130,34 @@ export function TrajectoirePanel({
     [needIdsPriorite],
   );
   const [ajouts, setAjouts] = useState<Record<string, 'en_cours' | 'ajoute' | 'erreur'>>({});
+  const [erreursAjout, setErreursAjout] = useState<Record<string, string>>({});
   const ajouterALaFile = async (qid: string) => {
     if (!emailPatient) return;
     setAjouts(prev => ({ ...prev, [qid]: 'en_cours' }));
+    setErreursAjout(prev => {
+      const { [qid]: _retiree, ...reste } = prev;
+      return reste;
+    });
     try {
       const response = await fetch('/api/praticien/file-envoi', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailPatient, qids: [qid] }),
       });
-      const payload = (await response.json()) as { ok?: boolean };
-      setAjouts(prev => ({ ...prev, [qid]: response.ok && payload.ok ? 'ajoute' : 'erreur' }));
+      // MÊME contrat que `OrientationPanel` : la route rend
+      // `MutateFileEnvoiResponse { success, error? }` — pas `ok`. Lire `ok`
+      // rendait tout ajout réussi comme un échec (revue LOT-07, B3), et le
+      // motif d'un vrai refus (« Dossier clos », etc.) n'était jamais affiché.
+      const payload = (await response.json()) as { success?: boolean; error?: string };
+      if (response.ok && payload.success) {
+        setAjouts(prev => ({ ...prev, [qid]: 'ajoute' }));
+      } else {
+        setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
+        if (payload.error) {
+          const motif = payload.error;
+          setErreursAjout(prev => ({ ...prev, [qid]: motif }));
+        }
+      }
     } catch {
       setAjouts(prev => ({ ...prev, [qid]: 'erreur' }));
     }
@@ -383,37 +410,41 @@ export function TrajectoirePanel({
                   <p className="mt-2 text-base text-foreground">
                     Momentum T0 → dernier jalon mesuré :{' '}
                     <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
-                    <span className="text-muted-foreground">(écart {Math.abs(cycle.momentum.delta)})</span>
+                    {/* L'unité est nommée : l'écart par besoin, trois lignes plus
+                        bas, est sur l'échelle de couverture 0–1 — deux « écart »
+                        nus se liraient comme comparables (revue LOT-07, M4). */}
+                    <span className="text-muted-foreground">
+                      (écart {Math.abs(cycle.momentum.delta)} — indice 0–100)
+                    </span>
                   </p>
                 )}
-                {/* Momentum PAR BESOIN (LOT-07, D-058). Deux interdits de rendu :
-                    un besoin non re-mesuré est nommé tel quel, jamais « stable » ;
-                    et un delta sans bande publiée s'affiche avec son motif,
-                    jamais comme une tendance nue qui se lirait en jugement. */}
+                {/* Momentum PAR BESOIN (LOT-07, D-058). Interdits de rendu : un
+                    besoin non re-mesuré est nommé tel quel, jamais « stable » ;
+                    et le MOTIF est toujours restitué (DC-34/DC-35) — un delta,
+                    qualifié ou non, ne s'affiche jamais comme une tendance nue,
+                    et les deux jalons comparés sont nommés. */}
                 {cycle.momentumParBesoin.length > 0 && (
                   <div className="mt-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Momentum par besoin
                     </p>
-                    <ul className="mt-1 space-y-1">
+                    <ul className="mt-1 space-y-1.5">
                       {cycle.momentumParBesoin.map((ligne) => {
                         const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
                           ?? `Besoin ${ligne.besoin}`;
                         return (
                           <li key={ligne.besoin} className="text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">{libelle}</span>{' '}
-                            {ligne.mesure && ligne.delta !== null ? (
+                            <span className="font-medium text-foreground">{libelle}</span>
+                            {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
                               <>
-                                · écart {ligne.delta > 0 ? `+${ligne.delta}` : ligne.delta}
-                                {ligne.qualification === null
-                                  ? ' — non qualifié (aucune bande de bruit publiée)'
-                                  : ligne.qualification === 'dans_la_bande'
-                                    ? ' — dans la bande de bruit publiée'
-                                    : ' — au-dessus de la bande de bruit publiée'}
+                                {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
+                                ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
+                                ({ligne.arrivee.jalon}) · écart{' '}
+                                {ligne.delta > 0 ? `+${formatCouverture(ligne.delta)}` : formatCouverture(ligne.delta)}
+                                {' '}— échelle de couverture 0–1
                               </>
-                            ) : (
-                              <span className="italic">· non re-mesuré — ce n’est pas une stabilité</span>
                             )}
+                            <span className="block text-xs italic">{ligne.motif}</span>
                           </li>
                         );
                       })}
@@ -439,21 +470,30 @@ export function TrajectoirePanel({
               </p>
               <ul className="mt-2 space-y-1">
                 {ciblesRepassation.map((qid) => (
-                  <li key={qid} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-foreground">
-                      {CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}
-                    </span>
-                    {ajouts[qid] === 'ajoute' ? (
-                      <span className="text-muted-foreground">Dans la file d’envoi</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => void ajouterALaFile(qid)}
-                        disabled={ajouts[qid] === 'en_cours'}
-                        className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
-                      >
-                        {ajouts[qid] === 'erreur' ? 'Réessayer l’ajout' : 'Ajouter à la file d’envoi'}
-                      </button>
+                  <li key={qid} className="text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-foreground">
+                        {CATALOGUE_DEFINITIONS[qid]?.titre ?? qid}
+                      </span>
+                      {ajouts[qid] === 'ajoute' ? (
+                        <span className="text-muted-foreground">Dans la file d’envoi</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void ajouterALaFile(qid)}
+                          disabled={ajouts[qid] === 'en_cours'}
+                          className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                        >
+                          {ajouts[qid] === 'erreur' ? 'Réessayer l’ajout' : 'Ajouter à la file d’envoi'}
+                        </button>
+                      )}
+                    </div>
+                    {/* Le motif du refus vient de la route (« Dossier clos. », …)
+                        — un échec muet ferait recliquer sans comprendre. */}
+                    {ajouts[qid] === 'erreur' && (
+                      <p role="status" className="mt-1 text-xs text-status-warning">
+                        {erreursAjout[qid] ?? 'L’ajout à la file d’envoi a échoué. Réessayez.'}
+                      </p>
                     )}
                   </li>
                 ))}

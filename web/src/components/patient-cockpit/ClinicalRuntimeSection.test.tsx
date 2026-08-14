@@ -418,39 +418,52 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     expect(panneau.textContent).toContain('Non renseignée');
   });
 
-  it('demande le J21 quand sa fenêtre est ouverte, et non plus T0 en dur', async () => {
+  // Proposition J21 telle que la route la rendrait : même forme que le T0,
+  // jalon et hash propres. Le panneau doit NOMMER ce jalon (revue LOT-07, M2).
+  const propositionJ21: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+    proposalHash: 'hash-J21',
+  };
+
+  function trajectoireT0ConfirmeIlYA(jours: number) {
+    const dateT0 = new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
+    return rep({
+      ok: true,
+      trajectoire: {
+        index: [{ milestone: 'T0', date: dateT0, cycleId: 'cycle-1' }],
+        cycles: [{
+          cycleId: 'cycle-1', dateT0, versionScore: 'v15', jalons: [], momentum: null,
+          momentumParBesoin: [],
+        }],
+        comparaison: { disponible: false, raison: 'un_seul_cycle' },
+      },
+    });
+  }
+
+  it('demande le J21 quand sa fenêtre est ouverte, et le panneau NOMME le jalon', async () => {
     // LE COMPORTEMENT NEUF DU LOT-07. Avant, `milestone=T0` était codé en dur :
     // J21, J42 et J90 étaient inatteignables depuis l'interface alors que le
     // back les acceptait déjà.
-    const ilYA21Jours = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
     const fetchMock = fetchParRoute({
-      trajectoire: rep({
-        ok: true,
-        trajectoire: {
-          index: [{ milestone: 'T0', date: ilYA21Jours, cycleId: 'cycle-1' }],
-          cycles: [{
-            cycleId: 'cycle-1', dateT0: ilYA21Jours, versionScore: 'v15', jalons: [], momentum: null,
-  momentumParBesoin: [],
-          }],
-          comparaison: { disponible: false, raison: 'un_seul_cycle' },
-        },
-      }),
-      cockpitGet: [rep(proposalResponse), rep(proposalResponse)],
+      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
     });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
-    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
     // Le T0 part d'abord — c'est le plancher, la trajectoire ne doit jamais
     // retarder la proposition. Le J21 suit dès qu'elle a répondu.
     await waitFor(() => expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true));
     expect(urlCockpit(fetchMock)).toContain('milestone=T0');
+    // Le panneau dit « J21 » partout où il disait « T0 » en dur (M2) : un
+    // praticien qui confirme un J21 ne doit lire T0 nulle part.
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode J21' });
+    expect(screen.queryByRole('button', { name: 'Confirmer l’épisode T0' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
   });
 
-  it('ne demande aucune proposition hors fenêtre, et dit pourquoi', async () => {
-    // T0 confirmé il y a 31 jours : la fenêtre du J21 est fermée (29), celle du
-    // J42 pas encore ouverte (34). Le T0, lui, revient « ready » — il est
-    // confirmé.
+  it('le POST porte le jalon et le hash de la proposition AFFICHÉE', async () => {
     const fixture = buildValidationErgoC1Fixture();
     const confirme: CockpitRuntimeApiResponse = {
       status: 'ready',
@@ -460,26 +473,39 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       contradictions: [],
       plainteDominante: null,
     };
-    const ilYA31Jours = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString();
     const fetchMock = fetchParRoute({
-      trajectoire: rep({
-        ok: true,
-        trajectoire: {
-          index: [{ milestone: 'T0', date: ilYA31Jours, cycleId: 'cycle-1' }],
-          cycles: [{
-            cycleId: 'cycle-1', dateT0: ilYA31Jours, versionScore: 'v15', jalons: [], momentum: null,
-  momentumParBesoin: [],
-          }],
-          comparaison: { disponible: false, raison: 'un_seul_cycle' },
-        },
-      }),
-      cockpitGet: [rep(confirme)],
+      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
+      cockpitPost: [rep(confirme)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' }));
+    await waitFor(() => expect(corpsPoste(fetchMock)).not.toBeNull());
+    expect(corpsPoste(fetchMock)).toMatchObject({ milestone: 'J21', proposalHash: 'hash-J21' });
+  });
+
+  it('hors fenêtre : le motif se dit ET aucun bouton de confirmation n’existe', async () => {
+    // T0 confirmé il y a 31 jours : la fenêtre du J21 est fermée (29), celle du
+    // J42 pas encore ouverte (34). Le GET rend `proposal_required` — la SEULE
+    // forme que la route émette avec `unavailable`. Le banc précédent jouait un
+    // `ready` que le GET ne rend jamais, et cette fabrication masquait le
+    // défaut : le panneau de confirmation restait actif sous le message
+    // « aucun jalon confirmable » (revue LOT-07, M1).
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireT0ConfirmeIlYA(31),
+      cockpitGet: [rep(proposalResponse)],
     });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
     // Le motif se dit : un cockpit muet se lirait comme une panne.
     expect(await screen.findByText(/s’ouvrira/)).toBeTruthy();
+    // HORS FENÊTRE, RIEN N'EST PROPOSÉ — le panneau non plus, pas seulement
+    // le message. Le T0 du plancher est resté chargé : il ne doit PAS être
+    // confirmable.
+    expect(screen.queryByRole('button', { name: /Confirmer l’épisode/ })).toBeNull();
     // Et AUCUN jalon hors fenêtre n'est demandé : seul le T0 du plancher part.
     expect(urlsCockpit(fetchMock)).toEqual(['/api/praticien/cockpit?idPatient=PAT_TEST&milestone=T0']);
   });

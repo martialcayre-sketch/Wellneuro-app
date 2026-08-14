@@ -184,26 +184,25 @@ function qualifier(delta: number, besoin: number, metadata: BandesMetadata): Pic
 /**
  * Momentum de chaque besoin entre sa première et sa dernière lecture.
  *
- * `versionScore` est comparé AVANT toute soustraction : deux lectures de
- * versions différentes ne se soustraient jamais (garde A8-3, déjà portée par
- * `trajectoire.ts` — elle est reprise, pas réécrite). Le module ne reçoit
- * qu'une version parce qu'un historique reconstruit à la lecture est calculé
- * par le moteur COURANT ; le jour où deux versions coexisteront dans une même
- * série, c'est ici que le refus devra s'exprimer.
+ * PAS DE GARDE DE VERSION ICI, et c'est voulu (revue LOT-07, B1) : les deux
+ * lectures d'une série sont toujours recalculées par le moteur COURANT
+ * (`construireHistoriqueParBesoin` rejoue `calculerEquilibre` à chaque jalon)
+ * — il n'existe aucun chemin où deux versions se soustraient. Une garde qui
+ * comparerait la version FIGÉE sur l'épisode à la constante courante ne
+ * garderait rien : elle éteindrait des comparaisons correctes avec un motif
+ * faux, sur tout cycle antérieur au dernier bump. La vraie garde A8-3 est
+ * INTER-cycles et vit dans `resoudreComparaison` (`trajectoire.ts`).
+ *
+ * Le delta est la soustraction brute des deux couvertures — aucun arrondi :
+ * un arrondi serait un nombre technique non déclaré (`DC-20`) qui écraserait
+ * en « écart 0 » un mouvement réel sur une échelle 0–1. La mise en forme est
+ * l'affaire du rendu, jamais de la donnée.
  */
 export function calculerMomentumParBesoin(input: {
   series: Map<number, LectureBesoin[]>;
-  versionScoreCycle: string | null;
-  versionScoreCourante: string;
   metadata?: BandesMetadata;
 }): MomentumBesoin[] {
   const metadata = input.metadata ?? BANDES_DE_BRUIT;
-
-  // Version inconnue ou différente : aucun momentum, et le motif le dit. Une
-  // ligne héritée sans version n'est pas assimilée à la version courante — ce
-  // serait rendre la garde indéclenchable.
-  const versionsIncomparables =
-    input.versionScoreCycle === null || input.versionScoreCycle !== input.versionScoreCourante;
 
   return [...input.series.entries()]
     .sort(([gauche], [droite]) => gauche - droite)
@@ -212,6 +211,8 @@ export function calculerMomentumParBesoin(input: {
       const arrivee = serie.length >= 2 ? serie[serie.length - 1] : null;
 
       if (!depart || !arrivee) {
+        // Le motif nomme le jalon réellement lu : une série peut commencer à
+        // J21 (patient sans lecture au T0), et « depuis le T0 » serait faux.
         return {
           besoin,
           mesure: false,
@@ -219,23 +220,13 @@ export function calculerMomentumParBesoin(input: {
           depart,
           arrivee: null,
           qualification: null,
-          motif: 'Besoin non re-mesuré depuis le T0 : aucun momentum. Ce n’est pas une stabilité.',
+          motif: depart
+            ? `Besoin lu une seule fois (${depart.jalon}) : aucun momentum. Ce n’est pas une stabilité.`
+            : 'Besoin sans lecture : aucun momentum. Ce n’est pas une stabilité.',
         };
       }
 
-      if (versionsIncomparables) {
-        return {
-          besoin,
-          mesure: false,
-          delta: null,
-          depart,
-          arrivee,
-          qualification: null,
-          motif: 'Lectures issues de versions de score différentes ou inconnues : elles ne se soustraient pas.',
-        };
-      }
-
-      const delta = Math.round((arrivee.couverture - depart.couverture) * 100) / 100;
+      const delta = arrivee.couverture - depart.couverture;
       return { besoin, mesure: true, delta, depart, arrivee, ...qualifier(delta, besoin, metadata) };
     });
 }

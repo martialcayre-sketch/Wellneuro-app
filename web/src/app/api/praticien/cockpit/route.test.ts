@@ -13,8 +13,9 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       patient: { findUnique: vi.fn(), findFirst: vi.fn(), update: writes.patientUpdate },
       questionnaireReponse: { findMany: vi.fn(), create: writes.responseCreate },
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
-      // Lu uniquement en lecture d'un état passé (SP-TT).
-      assessmentEpisode: { findMany: vi.fn() },
+      // `findMany` : lecture d'un état passé (SP-TT). `findFirst` : ancre du
+      // cycle courant pour les jalons post-T0 (revue LOT-07, B2).
+      assessmentEpisode: { findMany: vi.fn(), findFirst: vi.fn() },
       // Préconditions de confirmation T0 (D-052).
       syntheseIA: { findFirst: vi.fn() },
       // Journal des accès (G-TRUST-04) : écriture d'audit, pas clinique.
@@ -85,6 +86,7 @@ describe('/api/praticien/cockpit', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({
@@ -134,6 +136,27 @@ describe('/api/praticien/cockpit', () => {
 
     const j21 = await proposal('J21');
     expect(j21.proposal.inWindowResponseIds).toEqual(['REP_J21']);
+  });
+
+  it('fenêtre un jalon post-T0 sur le T0 CONFIRMÉ, jamais sur la première réponse (B2)', async () => {
+    // Première réponse le 1er janvier, T0 confirmé le 20 : la fenêtre du J21
+    // se calcule depuis le 20 (l'ancre de la trajectoire et de
+    // `resoudreJalonDu`), pas depuis le 1er — sinon le jalon proposé à
+    // l'écran et l'épisode construit ici sont disjoints dès 16 jours d'écart.
+    prisma.assessmentEpisode.findFirst.mockResolvedValue({
+      confirmedAt: new Date('2026-01-20T00:00:00.000Z'),
+    });
+    const response = await GET(getRequest('idPatient=PAT_TEST&milestone=J21'));
+    const payload = await response.json();
+    expect(payload.proposal.targetAt).toBe('2026-02-10T00:00:00.000Z'); // 20 janv. + 21 j
+    expect(prisma.assessmentEpisode.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ milestone: 'T0' }) }),
+    );
+  });
+
+  it('le T0, lui, ne consulte jamais l’ancre de cycle — comportement historique', async () => {
+    await proposal('T0');
+    expect(prisma.assessmentEpisode.findFirst).not.toHaveBeenCalled();
   });
 
   it('autorise une proposition vide', async () => {
@@ -322,6 +345,7 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
@@ -390,6 +414,7 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(responses);
     prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
@@ -467,6 +492,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(runtimeGolden, dossierGolden);
     prisma.consultation.findFirst.mockResolvedValue({
       anamnese: {

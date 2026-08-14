@@ -92,11 +92,24 @@ export function adaptRuntimeInputs(
   return { patient, responses, patientContext };
 }
 
-export function proposeRuntimeEpisode(inputs: RuntimeInputs, milestone: JalonMomentum): RuntimeEpisodeProposal {
+export function proposeRuntimeEpisode(
+  inputs: RuntimeInputs,
+  milestone: JalonMomentum,
+  /**
+   * Ancre du cycle courant : `confirmedAt` du T0 confirmé le plus récent —
+   * LA MÊME ancre que la trajectoire (LOT-08, A8-1) et que `resoudreJalonDu`.
+   * Sans elle, la fenêtre d'un J21 se calculait depuis la première réponse du
+   * dossier : dès que la confirmation du T0 suivait cette réponse de plus de
+   * 16 jours, le jalon proposé à l'écran et l'épisode construit ici étaient
+   * DISJOINTS (revue LOT-07, B2). L'appelant la fournit pour tout jalon
+   * post-T0 quand un T0 confirmé existe ; `null` = repli historique.
+   */
+  ancreT0: string | null = null,
+): RuntimeEpisodeProposal {
   // Sans réponse, aucun T0 clinique n'existe encore. La date de création du
   // dossier sert uniquement à stabiliser l'enveloppe vide ; elle ne devient
   // ni une mesure ni une conclusion clinique.
-  const t0 = inputs.responses[0]?.observedAt ?? inputs.patient.createdAt.toISOString();
+  const t0 = ancreT0 ?? inputs.responses[0]?.observedAt ?? inputs.patient.createdAt.toISOString();
   const targetAt = new Date(new Date(t0).getTime() + JOURS_JALON[milestone] * JOUR_MS).toISOString();
   const proposal = proposeAssessmentEpisode({
     assessmentEpisodeId: `runtime-episode-${inputs.patient.idPatient}-${milestone}`,

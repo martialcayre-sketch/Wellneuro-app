@@ -1,6 +1,6 @@
 import { JOURS_JALON, TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
 import type { JalonMomentum } from '@/lib/equilibre/types';
-import type { Trajectoire } from './trajectoire';
+import { rattacherReperesAuxCycles, type Trajectoire } from './trajectoire';
 
 // Quel jalon le praticien peut-il confirmer MAINTENANT ? (LOT-07, `D-058`)
 //
@@ -9,11 +9,14 @@ import type { Trajectoire } from './trajectoire';
 // module répond à la question, et à elle seule — il ne confirme rien, ne lit
 // rien, ne décide d'aucune clinique.
 //
-// AUCUN NOMBRE NOUVEAU : les fenêtres viennent de `JOURS_JALON` et
-// `TOLERANCE_JOURS_JALON`, les mêmes que le moteur de momentum utilise pour
-// résoudre ses lectures. Deux définitions de « la fenêtre du J21 » finiraient
-// par diverger, et le praticien confirmerait un épisode que le moteur ne
-// rattacherait pas au jalon qu'il croyait viser.
+// MÊMES NOMBRES, MÊME ANCRE que le reste de la chaîne. Les fenêtres viennent
+// de `JOURS_JALON` et `TOLERANCE_JOURS_JALON`, et l'ancre est le `confirmedAt`
+// du T0 confirmé le plus récent (`cycle.dateT0`, LOT-08 A8-1) — celle que la
+// trajectoire utilise pour résoudre ses lectures ET celle que le serveur
+// utilise désormais pour bâtir la fenêtre d'un épisode post-T0
+// (`ancreCycleCourant`, revue LOT-07 B2). Deux ancres pour « la fenêtre du
+// J21 » donnaient des fenêtres disjointes dès que la confirmation du T0
+// suivait la première réponse de plus de deux tolérances.
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
 const ORDRE_JALONS: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'] as const;
@@ -22,9 +25,14 @@ export type JalonDu =
   | {
       statut: 'du';
       jalon: JalonMomentum;
-      /** Bornes de la fenêtre, ISO — affichées au praticien, jamais recalculées ailleurs. */
-      ouvertLe: string;
-      fermeLe: string;
+      /**
+       * Bornes de la fenêtre, ISO — affichées au praticien, jamais recalculées
+       * ailleurs. ABSENTES pour le T0 initial : sans cycle confirmé il n'y a
+       * pas de fenêtre calculable, et en fabriquer une de durée nulle serait
+       * affichable telle quelle.
+       */
+      ouvertLe?: string;
+      fermeLe?: string;
     }
   | {
       statut: 'aucun';
@@ -67,7 +75,7 @@ function fenetre(dateT0: Date, jalon: JalonMomentum): { debut: Date; fin: Date }
 export function resoudreJalonDu(trajectoire: Trajectoire | null, maintenant: Date): JalonDu {
   const cycle = trajectoire?.cycles.at(-1);
   if (!cycle) {
-    return { statut: 'du', jalon: 'T0', ouvertLe: maintenant.toISOString(), fermeLe: maintenant.toISOString() };
+    return { statut: 'du', jalon: 'T0' };
   }
 
   const dateT0 = new Date(cycle.dateT0);
@@ -75,11 +83,14 @@ export function resoudreJalonDu(trajectoire: Trajectoire | null, maintenant: Dat
     return { statut: 'aucun', motif: 'La date du T0 de ce cycle est illisible : aucun jalon n’est proposé.' };
   }
 
-  // Jalons déjà confirmés SUR CE CYCLE. `cycleId` est nullable sur les lignes
-  // héritées (gate G2) : on ne devine pas leur rattachement, on les compte pour
-  // ce cycle seulement si l'identifiant correspond.
+  // Jalons déjà confirmés SUR CE CYCLE. Le rattachement est celui de la
+  // Spirale — `rattacherReperesAuxCycles`, id stocké quand il existe, repli
+  // par date pour les lignes héritées (gate G2). Une règle de rattachement
+  // PROPRE à ce module ignorait les lignes à `cycleId` null : un jalon hérité
+  // déjà confirmé voyait sa fenêtre re-proposée, et la Spirale et le jalon dû
+  // pouvaient se contredire sur le même écran (revue LOT-07, Mo1).
   const confirmes = new Set(
-    (trajectoire?.index ?? [])
+    rattacherReperesAuxCycles(trajectoire?.index ?? [], trajectoire?.cycles ?? [])
       .filter(repere => repere.cycleId === cycle.cycleId)
       .map(repere => repere.milestone),
   );

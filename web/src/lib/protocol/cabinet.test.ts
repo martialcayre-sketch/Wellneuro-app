@@ -16,7 +16,7 @@ function cycle(version: string | null, t0: number | null, j21: number | null, j4
       { jalon: 'J90', mesure: false, valeur: null, date: null },
     ],
     momentum: null,
-  momentumParBesoin: [],
+    momentumParBesoin: [],
   };
 }
 
