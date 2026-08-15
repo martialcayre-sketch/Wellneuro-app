@@ -3768,3 +3768,20 @@ garder la garde de version « par prudence » — indéclenchable dans le sens
 annoncé. Vitest complet vert (4 787). Prochaine action : PR + CI, puis
 ouverture du LOT-06 (migration, PR séparée). Ouvert : première bande de
 bruit à publier (acte séparé) ; E2E parcours nominal T0.
+
+
+## [2026-08-15] — LOT-06 : catalogue biologie, déclencheurs câblés (v3)
+
+Arbitrage F.2 clos : le dépôt portait la réponse. Les douze panels
+conditionnels pointent des instruments réels en production (BDI, MADRS,
+HAD, PSS-10, PSQI, MMSE, IBS-SSS, MFI-20, QDRS…) au lieu de familles. Erreur de la v2 corrigée : humeur et anxiété étaient câblées
+sur `Q_MOD`, lue comme *mood* — c'est *mode de vie*. Le câblage a fait
+émerger un panel fondé qu'un dépouillement par analyte avait manqué : SJSR →
+ferritine (`Q_SOM_04`, trois claims VALIDE) ; il dénoue §F.5, `0112-012`
+étant une cible SJSR et non une plage générale (DC-14). Abstention douleurs
+chroniques maintenue : instruments présents, claim absent. PR #683 mergée,
+CI vert. `gh` absent en session distante : suivi CI via MCP.
+
+Prochaine action : validation ligne à ligne par le praticien. Ouvert : zones
+de déclenchement (celles de la table d'orientation, sans seuil nouveau) ;
+ferritine `0044-003` vs `0154-051` ; l'implémentation exigera D-xxx.
