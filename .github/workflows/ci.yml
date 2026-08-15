@@ -656,6 +656,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
 
+      # Arbitrage biologique sans valeurs (LOT-06, D-059 §4) : les trois CHECK
+      # de `arbitrages_biologiques` doivent MORDRE (verdict borné, note
+      # obligatoire non vide sur « infirme », note ≤ 2000), et la table ne doit
+      # porter aucune colonne de valeur d'analyse. Transaction annulée.
+      - name: CB arbitrage biologique negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_arbitrage_biologique_v1_negatif.sql
+
       # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
       # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
       # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la

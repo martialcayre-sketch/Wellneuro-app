@@ -33,6 +33,7 @@ const SOURCE_LABELS: Record<SourceBloc, string> = {
   c2_trajectoire: 'Trajectoire (C2B)',
   synthese_praticien: 'Synthèse praticien',
   synthese_ia: 'Synthèse IA',
+  biologie_proposition: 'Proposition biologie',
 };
 
 const TYPE_LABELS: Record<TypeBloc, string> = {

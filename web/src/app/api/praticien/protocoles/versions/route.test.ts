@@ -11,7 +11,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     consultation: { findFirst: vi.fn() },
     syntheseIA: { findFirst: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
-    protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
+    protocolDraft: { upsert: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
+    arbitrageBiologique: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
@@ -148,6 +149,11 @@ describe('POST /api/praticien/protocoles/versions', () => {
     prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(ciqualRows());
+    // Aucun arbitrage biologique par défaut : la garde LOT-06 ne mord que sur
+    // une résolution d'intention `conditionnelle_biologie`.
+    prisma.arbitrageBiologique.findMany.mockResolvedValue([]);
+    // Contenu de la version active (GET) : nul par défaut, l'historique reste servi.
+    prisma.protocolDraft.findUnique.mockResolvedValue(null);
     signerTablePriorites();
   });
 

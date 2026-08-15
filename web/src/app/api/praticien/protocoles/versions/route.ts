@@ -31,6 +31,8 @@ import {
 } from '@/lib/food-compass';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
+import { refusResolutionSansArbitrage } from '@/lib/biology-library/revision';
 
 // Versionnement du protocole 21 jours (C2A LOT-03). Chaque enregistrement
 // explicite d'un CHANGEMENT CLINIQUE crée une ligne append-only chaînée
@@ -310,6 +312,34 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       });
     }
 
+    // Invariant LOT-06 (D-059 §4, Lot G critère 2) : résoudre une intention
+    // `conditionnelle_biologie` de la version active exige un arbitrage
+    // biologique lié à CETTE version, et la résolution suit le verdict
+    // (`confirme` ⇒ `active`, `infirme` ⇒ `non_indiquee_actuellement`
+    // conservée). Une intention en attente ne disparaît jamais.
+    if (active && activeDraft) {
+      const arbitrages = await prisma.arbitrageBiologique.findMany({
+        where: { protocolDraftId: active.id },
+        select: { intentionId: true, verdict: true, noteCourte: true, arbitreLe: true },
+      });
+      const refusArbitrage = refusResolutionSansArbitrage({
+        actionsActives: activeDraft.actions,
+        actionsSoumises: draft.actions,
+        arbitrages: arbitrages.map(arbitrage => ({
+          intentionId: arbitrage.intentionId,
+          verdict: arbitrage.verdict as VerdictArbitrage,
+          noteCourte: arbitrage.noteCourte,
+          arbitreLe: arbitrage.arbitreLe.toISOString(),
+        })),
+      });
+      if (refusArbitrage) {
+        return NextResponse.json(
+          { ok: false, reason: 'resolution_sans_arbitrage', error: refusArbitrage },
+          { status: 422 },
+        );
+      }
+    }
+
     const versionId = deriveVersionId(protocolDraftId, draft.inputHash);
     const supersedesDraftId = active?.id ?? null;
 
@@ -430,6 +460,30 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const active = resolveActiveVersion(rows);
 
+    // Contenu de la version active (LOT-06) : ce que l'écran d'arbitrage
+    // biologique doit connaître pour préparer une révision — actions (dont
+    // intentions `conditionnelle_biologie`), finalité, critère, charge. Nul si
+    // le payload ne se reconstruit pas : l'historique reste servi, le panneau
+    // d'arbitrage s'abstient.
+    let contenuActif = null;
+    if (active) {
+      const ligneActive = await prisma.protocolDraft.findUnique({
+        where: { id: active.id },
+        select: { payload: true },
+      });
+      try {
+        const draftActif = reconstructProtocolDraft(ligneActive?.payload, active.inputHash);
+        contenuActif = {
+          purpose: draftActif.purpose,
+          followUpCriterion: draftActif.followUpCriterion,
+          therapeuticLoad: draftActif.therapeuticLoad,
+          actions: draftActif.actions,
+        };
+      } catch {
+        contenuActif = null;
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       protocolDraftId: rows.length > 0 ? deriveProtocolDraftId(decisionCardId) : null,
@@ -439,6 +493,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
             status: active.status,
             createdAt: active.createdAt.toISOString(),
             reviewedAt: active.reviewedAt ? active.reviewedAt.toISOString() : null,
+            contenu: contenuActif,
           }
         : null,
       history: rows.map((row) => ({
