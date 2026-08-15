@@ -243,9 +243,19 @@ selles, CAR, alpha-amylase salivaire, zonuline, LBP ou LPS, magnésium
 érythrocytaire, zinc sérique — `WN-CL-0346-014`.
 
 ### B.7 — Fatigue · `PANEL_FATIGUE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_SOM_07` (MFI-20,
-Multidimensional Fatigue Inventory) ou `Q_SOM_06` (échelle de fatigue de Pichot)
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_06` (échelle de
+fatigue de Pichot), zone couleur `warning` — score 23-32, seuil source > 22
+*(arbitrage praticien du 2026-08-15)*
 `condition:` « Plainte de fatigue au premier plan. »
+
+**Réserve consignée** — le corpus fonde le contenu de ce panel
+(`WN-CL-0361-009`) mais aucun claim ne fonde ce seuil comme ouverture d'une
+exploration biologique ; `WN-CL-0361-008` énonce que les marqueurs se
+sélectionnent « en fonction du contexte clinique évocateur ». Le mode
+`conditionnel` limite la portée de cette réserve : le panel s'affiche
+toujours, avec sa condition, remplie ou non (`D-059` §5) — un patient sous le
+seuil n'est donc jamais écarté en silence. `Q_SOM_07` (MFI-20) est retiré du
+déclencheur, faute de barème utilisable (voir §F.2).
 
 | ☐ | Analytes | Claims |
 |---|---|---|
@@ -426,6 +436,7 @@ toutes les plus sévères.
 | Mémoire · `Q_GEO_06` 5 mots | ☐ `danger` 0-7 (seule bande défavorable) |
 | Mémoire · `Q_NEU_06` MMT | ☐ `info` 1-4 fonctionnels · ☐ `warning` 5-10 · ☐ `danger` 11-20 organiques |
 | Digestif · `Q_GAS_02` IBS-SSS | ☐ `warning` · ☐ `danger` |
+| Fatigue · `Q_SOM_06` Pichot | ☑ **`warning` 23-32** (seuil source > 22) — *tranché le 2026-08-15* |
 | Neurodég. · `Q_GEO_03` AQ | ☐ `warning` 5-14 MCI probable · ☐ `danger` 15-21 démence probable |
 | Neurodég. · `Q_GEO_05` QDRS | ☐ `info` 1,5-5,5 MCI · ☐ `warning` 6-17 démence légère · ☐ `danger` 17,5-30 |
 | Métabolique · `Q_CAR_01` | ☐ `info` 6-10 modéré · ☐ `warning` 11-17 élevé · ☐ `danger` 18-25 très élevé |
@@ -479,11 +490,11 @@ correction des déficits en fer, reste hors déclenchement.
   L'anamnèse n'offre pas de repli : `symptomes_fonctionnels` ne porte qu'une
   option (déglutition), et aucun drapeau ne code la fatigue.
 
-  **La question n'est donc peut-être pas le seuil mais le mode.** Un panel
-  dont la source dit qu'il se sélectionne sur le contexte clinique
-  ressemble à un `optionnel` — proposé, laissé à l'appréciation — plutôt
-  qu'à un `conditionnel` suspendu à un score que rien ne fonde.
-  ☐ `conditionnel` sur Pichot · ☐ `optionnel`, sans déclencheur · ☐ Abstention
+  **Tranché le 2026-08-15 : `conditionnel` sur Pichot**, zone `warning`
+  (23-32). L'option `optionnel` — proposé sans déclencheur, au plus près de
+  ce que dit `0361-008` — a été examinée et écartée par le praticien. La
+  réserve reste consignée au panel §B.7 ; le mode `conditionnel` en limite la
+  portée, puisque le panel s'affiche toujours avec sa condition.
 
 - **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
   seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
