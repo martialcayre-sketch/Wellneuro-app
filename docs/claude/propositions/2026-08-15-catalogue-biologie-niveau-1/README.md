@@ -701,8 +701,30 @@ modifier un comportement `DC-30` délibéré — la discordance actuelle est une
 protection, pas un oubli, donc le champ doit être explicite et par règle,
 jamais un défaut.
 
-☐ Lot complet (contrat partagé) · ☐ Variante `statuts.ts` seul · ☐ Ni l'un ni
-l'autre, un instrument par panel
+**Tranché le 2026-08-15 : le lot complet, sur le contrat partagé.** Le « ou »
+doit pouvoir servir à d'autres rayons que la biologie ; la variante
+`statuts.ts` est écartée pour cette raison, non pour son coût.
+
+**Ce choix a un précédent, et il a déjà coûté.** `orientationRulesV1.ts`
+(règle sur `Q_INF_03`, correction du 2026-08-04) documente exactement ce
+manque, hors biologie : la rédaction antérieure dérivait son seuil de la
+négation de `WN-CL-0136-004`, qui est une conjonction de trois conditions.
+La négation d'une conjonction étant une disjonction — « Lagrue ≤ 6 OU
+HAD ≥ 7 OU D ≥ 10 OU S ≥ 10 » — et cette disjonction n'étant pas exprimable,
+la règle n'a pas été bloquée : **elle a été refondée sur un autre appui**, la
+bande d'entrée de la grille certifiée de l'instrument. Le commentaire le dit
+sans détour : « le déclencheur ne peut donc pas se réclamer de cette
+négation ».
+
+Le manque ne se manifeste donc pas par des règles absentes — elles existent —
+mais par des règles dont la provenance naturelle a été remplacée par un appui
+de repli. C'est un coût silencieux, et c'est l'argument le plus fort pour le
+contrat partagé plutôt que pour un correctif local.
+
+**Reste à cadrer avant d'ouvrir le lot** : la sémantique du recueil incomplet
+sous un OU (proposition *fail-closed* ci-dessus) est la décision structurante,
+et elle touche une garde de sécurité — elle mérite d'être écrite en `D-xxx`
+avant la première ligne de code, pas après.
 
 ---
 
