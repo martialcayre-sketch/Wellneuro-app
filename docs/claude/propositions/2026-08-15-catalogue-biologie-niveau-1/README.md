@@ -11,7 +11,8 @@
 > **Version 5 — zones tranchées.** Douze zones sur treize sont fixées, la
 > plage ferritine est tranchée, et l'axe cognitif est fixé par stade clinique
 > plutôt que par couleur (le MCI ne tombe pas dans la même bande selon
-> l'instrument). Restent l'IBS-SSS et la validation ligne à ligne.
+> l'instrument). Les treize zones sont désormais tranchées ; reste la
+> validation ligne à ligne.
 > **Version 4 — zones.** Trois panels reprennent une zone existante ; les neuf
 > autres reçoivent les bandes publiées par leur instrument, à trancher. Quatre
 > instruments demandent autre chose qu'une zone, dont un (MFI-20) qui n'en
@@ -452,11 +453,22 @@ une validation acquise.
 bande ; la table la cite au titre de « ne jamais s'arrêter sous la plus
 sévère ».
 
-**Zones : douze tranchées le 2026-08-15, une ouverte.** Les bandes listées
-sont celles que l'instrument publie déjà ; la case cochée vaut pour elle-même
-et toutes les plus sévères. Seul l'IBS-SSS (`Q_GAS_02`) reste à trancher — le
-panel digestif dispose déjà d'une zone par `Q_GAS_01`, reprise de la table
-d'orientation.
+**Zones : les treize sont tranchées** (2026-08-15). Les bandes listées sont
+celles que l'instrument publie déjà ; la case cochée vaut pour elle-même et
+toutes les plus sévères.
+
+L'IBS-SSS part à `warning` (≥ 70) pour une raison d'abord structurelle : le
+panel digestif porte déjà un second déclencheur, le TFD (`Q_GAS_01`), qui part
+à `warning` par reprise de `R-GAS-01`. Deux déclencheurs d'un même panel à des
+sévérités différentes feraient dépendre le déclenchement de l'instrument passé
+plutôt que de l'état du patient. La bande porte du reste le mot
+« significatifs » — c'est l'instrument qui y place son seuil.
+
+*Limite notée* : la bande `warning` de l'IBS-SSS couvre 70 à 300, une plage
+très large dont le libellé reconnaît lui-même que « l'intensité du trouble
+ressenti est proportionnelle au score ». Un patient à 75 déclenche donc comme
+un patient à 295. Affiner supposerait une borne intermédiaire qu'aucune source
+du dossier ne publie (`DC-19`).
 
 **L'axe cognitif a été fixé par stade, non par couleur.** Le MCI ne tombe pas
 dans la même bande selon l'instrument — `warning` sur l'AQ, `info` sur le MMSE
@@ -472,7 +484,7 @@ deux autres, sans que rien ne le signale.
 | Mémoire · `Q_GEO_04` MMSE | ☑ **`info`** (≤ 26) — dès le MCI, échelle inversée — *tranché le 2026-08-15* |
 | Mémoire · `Q_GEO_06` 5 mots | ☑ **`danger`** (0-7) — seule bande défavorable — *tranché le 2026-08-15* |
 | Mémoire · `Q_NEU_06` MMT | ☑ **`info`** (≥ 1) — dès les troubles fonctionnels — *tranché le 2026-08-15* |
-| Digestif · `Q_GAS_02` IBS-SSS | ☐ `warning` · ☐ `danger` |
+| Digestif · `Q_GAS_02` IBS-SSS | ☑ **`warning`** (70-500) « troubles fonctionnels significatifs » — *tranché le 2026-08-15* |
 | Fatigue · `Q_SOM_06` Pichot | ☑ **`warning` 23-32** (seuil source > 22) — *tranché le 2026-08-15* |
 | Neurodég. · `Q_GEO_03` AQ | ☑ **`warning`** (5-21) — bande portant le MCI probable — *tranché le 2026-08-15* |
 | Neurodég. · `Q_GEO_05` QDRS | ☑ **`info`** (≥ 1,5) — bande portant le MCI — *tranché le 2026-08-15* |
