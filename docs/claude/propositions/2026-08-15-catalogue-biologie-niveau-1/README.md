@@ -11,8 +11,11 @@
 > **Version 5 — zones tranchées.** Douze zones sur treize sont fixées, la
 > plage ferritine est tranchée, et l'axe cognitif est fixé par stade clinique
 > plutôt que par couleur (le MCI ne tombe pas dans la même bande selon
-> l'instrument). Les treize zones sont désormais tranchées ; reste la
-> validation ligne à ligne.
+> l'instrument). Les treize zones sont tranchées, le Karasek est retiré et le
+> BMS-10 entre au panel stress.
+> **Réserve neuve et transverse (`F.6`)** : le contrat de déclenchement ne sait
+> exprimer aucun « ou ». Cinq panels écrits « X ou Y » n'ont pas de traduction
+> en l'état — c'est le premier point à trancher avant toute implémentation.
 > **Version 4 — zones.** Trois panels reprennent une zone existante ; les neuf
 > autres reçoivent les bandes publiées par leur instrument, à trancher. Quatre
 > instruments demandent autre chose qu'une zone, dont un (MFI-20) qui n'en
@@ -219,10 +222,22 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 `WN-CL-0333-021`.
 
 ### B.3 — Stress, adaptation, surmenage · `PANEL_STRESS_1`
-`niveau: socle` · `conditionnel` · déclencheur : `Q_STR_02` (PSS-10), zone
-couleur `warning` + `danger` + `dark`, reprise de `R-STR-01`/`R-STR-02`
-*(`Q_STR_06` Karasek retiré le 2026-08-15 — aucun claim ne le fonde, voir
-§F.2 ; l'ajout du BMS-10 y est proposé à la place)*
+`niveau: socle` · `conditionnel` · déclencheurs *(2026-08-15)* : `Q_STR_02`
+(PSS-10), zone `warning` + `danger` + `dark`, reprise de `R-STR-01`/`R-STR-02`
+· `Q_STR_05` (BMS-10, Burnout Measure Short), zone `warning` et au-delà —
+moyenne ≥ 3,5, « présence du burnout »
+
+`Q_STR_06` (Karasek) est retiré : aucun claim ne le fonde (§F.2).
+
+**Forme suspendue à `F.6`** — les deux déclencheurs sont ici dans une
+intention de « ou », que le contrat actuel ne sait pas exprimer. Écrits dans
+une même règle ils seraient en ET ; écrits en deux règles ils écarteraient le
+panel. Le §F.6 pose les trois issues.
+
+| ☐ | Analytes BMS-10 | Claims |
+|---|---|---|
+| ☐ | Bandes d'interprétation du BMS-10 : 1,0-2,4 très faible · 2,5-3,4 faible · 3,5-4,4 modéré · 4,5-5,4 élevé · 5,5-7,0 très élevé | `WN-CL-0106-025` à `WN-CL-0106-029` |
+| ☐ | Bilan biologique de stadification du stress (stress d'alarme → burn out) | `WN-CL-0107-012` |
 `condition:` « Charge de stress ou tableau de surmenage repéré. »
 
 | ☐ | Analytes | Claims |
@@ -567,10 +582,9 @@ correction des déficits en fer, reste hors déclenchement.
   explicitement le bilan biologique pour situer le stade de stress, « du
   stress d'alarme […] à la menace de Burn out et au Burn out ».
 
-  *Proposition, non tranchée* : ajouter `Q_STR_05` au déclencheur du panel
-  stress, zone `warning` et au-delà (moyenne ≥ 3,5, « présence du burnout »
-  selon `WN-CL-0106-027`), en cohérence avec le départ du PSS-10.
-  ☐ Ajouter le BMS-10 · ☐ Laisser le stress au seul PSS-10
+  **Retenu le 2026-08-15 : le BMS-10 entre au panel stress**, zone `warning`
+  et au-delà — moyenne ≥ 3,5, « présence du burnout » (`WN-CL-0106-027`), en
+  cohérence avec le départ du PSS-10. Sa forme exacte dépend de `F.6`.
 - **`Q_NEU_02` (MADRS) est troué par fidélité à la source** : les scores 7 et
   19 ne sont classés par aucune bande, le code le documente. Une zone couleur
   y manquerait silencieusement un patient à 19 — soit une dépression moyenne
@@ -579,6 +593,45 @@ correction des déficits en fer, reste hors déclenchement.
 - **`Q_GEO_04` (MMSE) et `Q_GEO_06` (5 mots) sont à échelle inversée** — score
   haut favorable. Les couleurs le gèrent ; une comparaison devrait inverser
   l'opérateur. À garder en tête si l'un bascule en comparaison.
+
+### F.6 — Aucun « ou » n'est exprimable : cinq panels sont concernés
+
+**Découvert en étendant le panel stress au BMS-10** (2026-08-15), en lisant
+`statuts.ts` plutôt qu'en le supposant. Le moteur ne propose aucune
+disjonction, à deux niveaux :
+
+- **dans une règle**, les `declencheurs` sont en ET — `tousAtteints` n'est
+  vrai que si chacun est atteint ;
+- **entre règles**, deux règles publiées sur un même panel sont traitées comme
+  une discordance : le panel bascule en `non_indique_actuellement` et est
+  écarté « jusqu'à arbitrage de la table » (`DC-30`, cité sur place).
+
+Or ce document écrit « déclencheurs : X **ou** Y » pour cinq panels — humeur
+(BDI, MADRS, HAD), anxiété (HAD, `Q_INF_05`), mémoire (MMSE, 5 mots, MMT),
+digestif (TFD, IBS-SSS), neurodégénératif (AQ, QDRS) — et le stress serait le
+sixième. **Aucun n'est implémentable tel qu'écrit.** Pire qu'inopérant : deux
+règles naïvement publiées écarteraient le panel au lieu de l'élargir, soit
+l'inverse exact de l'intention.
+
+La formulation « ou » n'était pas fausse en tant que proposition clinique —
+elle décrit bien l'intention. Elle est simplement sans traduction dans le
+contrat actuel, et je ne l'avais pas vérifié en l'écrivant.
+
+**Trois issues, à trancher panel par panel ou globalement :**
+
+- **Un seul instrument par panel.** Le ET devient trivial, rien à changer au
+  moteur. Coût : on perd le déclenchement quand le patient a passé l'autre
+  questionnaire.
+- **Tous les instruments en ET.** Exige que le patient les ait tous passés et
+  tous positifs. Très restrictif, et probablement contraire à l'intention
+  clinique — un patient n'ayant passé que le BDI ne déclencherait rien.
+- **Étendre le contrat à une disjonction** (`{type:'ou', declencheurs:[…]}`),
+  avec sa garde de recueil incomplet et son banc. C'est un lot de code dédié,
+  hors de ce catalogue, mais c'est la seule issue qui préserve l'intention.
+
+☐ Un instrument par panel · ☐ ET · ☐ Lot « disjonction » puis reprise
+
+---
 
 ### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
 `DrapeauxAnamnese` ne porte ni l'un ni l'autre. Les deux panels de population du
