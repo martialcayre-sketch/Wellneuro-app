@@ -21,7 +21,7 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 
 | Source de savoir | Surface qui la consomme | Décision produite | Drapeau(x) | Verrou donnée | Patient | Arbitrage |
 |---|---|---|---|---|---|---|
-| Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 15 indirecte(s) | Lecture PRAL/densité d’un aliment servie au patient et au praticien. | WN_C5_ENABLED | — | oui | — |
+| Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 16 indirecte(s) | Lecture PRAL/densité d’un aliment servie au patient et au praticien. | WN_C5_ENABLED | — | oui | — |
 | Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | **aucune — dormante** | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_RESULTS_ENABLED | — | non | a_brancher (2026-08-05) |
 | Catalogue des compléments alimentaires (C4) | `web/src/app/api/praticien/complements/route.ts` (route-api)<br>`web/src/components/complements/FicheComplementPanel.tsx` (composant)<br>`web/src/components/complements/RayonComplementsPanel.tsx` (composant) | Fiche complément : composition, cumuls, compatibilités. | WN_C4_ENABLED | — | non | — |
 | Tableau de compatibilité et de cumul entre compléments | 19 surface(s) indirecte(s) seulement | Cumul signalé ou absence de cumul, affichés sur la fiche. | WN_C4_ENABLED | — | non | — |
