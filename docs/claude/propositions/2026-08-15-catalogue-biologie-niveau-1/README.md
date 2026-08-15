@@ -721,10 +721,14 @@ mais par des règles dont la provenance naturelle a été remplacée par un appu
 de repli. C'est un coût silencieux, et c'est l'argument le plus fort pour le
 contrat partagé plutôt que pour un correctif local.
 
-**Reste à cadrer avant d'ouvrir le lot** : la sémantique du recueil incomplet
-sous un OU (proposition *fail-closed* ci-dessus) est la décision structurante,
-et elle touche une garde de sécurité — elle mérite d'être écrite en `D-xxx`
-avant la première ligne de code, pas après.
+**Cadré : voir `D-060`** (registre des décisions, 2026-08-15). La sémantique
+du recueil incomplet sous un OU y est arrêtée *fail-closed* — une branche ne
+compte que si son instrument est complètement recueilli — avec l'interdit
+d'imbrication, la traçabilité limitée à la branche atteinte et le maintien de
+l'interdit `signauxAlerte` sous `ou`. Ce volet touchant une garde de sécurité,
+il reste **proposé jusqu'à la revue `wn-reviewer`**.
+
+La reprise des six panels de ce catalogue est la seconde PR de ce lot.
 
 ---
 
