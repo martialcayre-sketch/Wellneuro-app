@@ -631,6 +631,79 @@ contrat actuel, et je ne l'avais pas vérifié en l'écrivant.
 
 ☐ Un instrument par panel · ☐ ET · ☐ Lot « disjonction » puis reprise
 
+#### Chiffrage du lot « disjonction » (2026-08-15)
+
+**Le coût n'est pas l'évaluation du OU** — une dizaine de lignes dans
+`evaluerDeclencheur`. Il est dans une invariante que le nouveau variant casse
+et dans une signature de fonction qui doit changer.
+
+**L'invariante cassée.** Quatre sites de production supposent aujourd'hui
+« pas `drapeau` ⇒ possède `idQuestionnaire` ». Un conteneur `ou` n'en a pas :
+
+| Site | Ce qui casse |
+|---|---|
+| `orientationEngine.ts` ~1061 (moteur d'arrêt) | La garde de complétude `DC-24` lit `idQuestionnaire` pour chaque non-drapeau |
+| `contradictionsEngine.ts` 79 | Construit les `SourceContradiction` — traçabilité |
+| `chaineC1.ts` 385 | Collecte les `responseId` — traçabilité |
+| `orientationEngine.ts` 670-690 | L'évaluateur lui-même |
+
+Les trois premiers ne planteraient pas : ils produiraient un `undefined`
+silencieusement filtré, donc **une perte de traçabilité sans erreur**. C'est
+le mode de défaillance le plus coûteux à détecter après coup.
+
+**La signature qui doit changer.** `evaluerDeclencheur` retourne aujourd'hui
+`string | null` — un motif. Avec un OU, trois appelants ont besoin de savoir
+**quelle branche a été atteinte**, pas seulement qu'une l'a été. Il faut donc
+élargir le retour (`{ motif, instruments }`) et reprendre tous les appelants.
+Le dupliquer dans un helper parallèle serait plus rapide et contraire à la
+doctrine écrite sur place : « Les réécrire ailleurs les aurait fait diverger
+en silence. »
+
+**La question sémantique la plus dure** n'est pas technique : que signifie un
+recueil incomplet sous un OU ? Réponse *fail-closed* proposée — une branche ne
+compte que si **son** instrument est complètement recueilli ; le OU est vrai
+si au moins une branche complète est vraie. Sans cette règle, un OU
+transformerait la garde `DC-24` en passoire : il suffirait d'une branche non
+recueillie pour contourner la complétude.
+
+**Bancs à écrire** : OU vrai si ≥ 1 branche vraie · faux si toutes fausses ·
+faux si la seule branche vraie est sur recueil incomplet (`DC-24`) · un
+plancher n'allume jamais un OU (extension du banc existant) · la traçabilité
+ne remonte que la branche atteinte · pas d'imbrication (`ou` dans `ou`
+interdit) · l'interdit sur `signauxAlerte` survit à l'imbrication.
+
+**Découpage.** Deux PR — le cœur et les consommateurs ne peuvent pas se
+séparer, TypeScript casse à la première.
+
+1. **Contrat + évaluateur + consommateurs + bancs.** ~5 fichiers de
+   production, ~5 de test. Ordre de grandeur : 150-250 lignes de production,
+   250-350 de test. Palier T3 obligatoire (moteur clinique), revue
+   `wn-reviewer` (Opus) exigée — on touche une garde de sécurité.
+2. **Reprise des six panels** du catalogue et de la table d'indications.
+   Documentaire et table, sans risque moteur.
+
+**Estimation** : une session focalisée pour la PR 1, une courte pour la PR 2.
+Le risque n'est pas le volume, c'est la garde `DC-24` — c'est là que je
+demanderais la revue la plus dure.
+
+**Alternative nettement moins chère, à considérer avant de lancer le lot.**
+Le besoin réel est local à la biologie. Plutôt que d'ouvrir le contrat partagé
+`OrientationDeclencheur` — utilisé par l'orientation, les priorités, les
+arrêts et les contradictions — on peut traiter la disjonction **au niveau du
+jeu de règles**, dans `statuts.ts` seul : plusieurs règles sur un même panel
+cessent d'être une discordance et deviennent un OU explicite, par exemple via
+un champ `dispositionMultiRegles: 'ou' | 'discordance'`.
+
+*Blast radius* : un fichier de production au lieu de cinq, aucun changement de
+signature, aucune garde partagée touchée. *Coût* : le OU reste indisponible
+pour les tables d'orientation, de priorité et d'arrêt ; et il faut assumer de
+modifier un comportement `DC-30` délibéré — la discordance actuelle est une
+protection, pas un oubli, donc le champ doit être explicite et par règle,
+jamais un défaut.
+
+☐ Lot complet (contrat partagé) · ☐ Variante `statuts.ts` seul · ☐ Ni l'un ni
+l'autre, un instrument par panel
+
 ---
 
 ### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
