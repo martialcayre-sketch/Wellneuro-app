@@ -8,6 +8,10 @@
 > panels pointent désormais des instruments réels, déjà servis en production. Une
 > erreur de lecture y est corrigée (`Q_MOD` = *mode de vie*, pas *mood*), et un
 > panel entièrement fondé en est sorti — le SJSR (§B.10).
+> **Version 5 — zones tranchées.** Douze zones sur treize sont fixées, la
+> plage ferritine est tranchée, et l'axe cognitif est fixé par stade clinique
+> plutôt que par couleur (le MCI ne tombe pas dans la même bande selon
+> l'instrument). Restent l'IBS-SSS et la validation ligne à ligne.
 > **Version 4 — zones.** Trois panels reprennent une zone existante ; les neuf
 > autres reçoivent les bandes publiées par leur instrument, à trancher. Quatre
 > instruments demandent autre chose qu'une zone, dont un (MFI-20) qui n'en
@@ -172,8 +176,20 @@ le déclencheur n'est pas rempli. **Aucun panel n'est `recommandé`
 inconditionnellement** — `WN-CL-0387-013` l'interdit.
 
 ### B.1 — Troubles de l'humeur et dépression · `PANEL_HUMEUR_1`
-`niveau: socle` · `mode: conditionnel` · déclencheurs : `Q_NEU_01` (BDI),
-`Q_NEU_02` (MADRS) ou `Q_NEU_11` (HAD, sous-score dépression)
+`niveau: socle` · `mode: conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15)* : `Q_NEU_01` (BDI) zone `warning` et au-delà, score ≥ 17
+« cas limite de dépression clinique » · `Q_NEU_11` (HAD, sous-score
+dépression) zone `warning` et au-delà, score ≥ 8, cut-off publié de
+l'instrument · `Q_NEU_02` (MADRS) **comparaison `>= 8`**
+
+*Le MADRS échappe à la règle des zones, et c'est délibéré* : sa grille ne
+classe ni 7 ni 19 (§F.2), si bien qu'une zone couleur manquerait en silence
+un patient à 19. La comparaison `>= 8` couvre la plage sans trou et retient
+le stade « dépression légère », homogène au « cas limite » du BDI et au
+« douteux » de la HAD — la bande `warning` du MADRS (20-35) serait, elle, un
+cran plus sévère que les deux autres instruments. **Déduit de l'arbitrage du
+2026-08-15, non coché explicitement** : ☐ confirmer `>= 8` · ☐ préférer la
+zone `warning` (20-60)
 `condition:` « Tableau dépressif ou thymique repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -188,8 +204,9 @@ rapport kynurénine/tryptophane, 6-SMT urinaire, AGCC fécaux, bilan de stress
 oxydant, BDNF — `WN-CL-0336-021` (dépressions récidivantes ou chroniques).
 
 ### B.2 — Anxiété et troubles anxieux · `PANEL_ANXIETE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_NEU_11` (HAD, sous-score
-anxiété) ou `Q_INF_05` (auto-évaluation de l'anxiété, référentiel SIIN)
+`niveau: socle` · `conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15)* : `Q_NEU_11` (HAD, sous-score anxiété) zone `warning` et au-delà,
+score ≥ 8 · `Q_INF_05` (auto-évaluation SIIN) zone `warning` et au-delà
 `condition:` « Tableau anxieux repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -220,8 +237,11 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | ferritine, vitamine D, magnésium érythrocytaire | `WN-CL-0323-011` (« analyses biologiques simples ») |
 
 ### B.5 — Troubles de la mémoire et cognition · `PANEL_MEMOIRE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_GEO_04` (MMSE),
-`Q_GEO_06` (test des 5 mots de Dubois) ou `Q_NEU_06` (MMT SIIN)
+`niveau: socle` · `conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15, départ au stade MCI)* : `Q_GEO_04` (MMSE) zone `info` et au-delà,
+score ≤ 26 — échelle inversée · `Q_GEO_06` (test des 5 mots) zone `danger`,
+score ≤ 7, seule bande défavorable publiée · `Q_NEU_06` (MMT SIIN) zone
+`info` et au-delà, score ≥ 1
 `condition:` « Plainte mnésique ou cognitive repérée. »
 
 | ☐ | Analytes | Claims |
@@ -272,8 +292,16 @@ le plus large du catalogue (13 analytes) ; la source elle-même refuse qu'il soi
 prescrit en bloc. ☐ Le garder entier · ☐ Le restreindre (précisez)
 
 ### B.8 — Neurodégénératif et vieillissement cérébral · `PANEL_NEURODEG_1`
-`niveau: approfondissement` · `conditionnel` · déclencheurs : `Q_GEO_03`
-(Alzheimer's Questionnaire, Sabbagh 2010) ou `Q_GEO_05` (QDRS, Galvin 2015)
+`niveau: approfondissement` · `conditionnel` · déclencheurs *(zones tranchées
+le 2026-08-15, départ au stade MCI)* : `Q_GEO_03` (AQ, Sabbagh 2010) zone
+`warning` et au-delà, score ≥ 5 « MCI probable » · `Q_GEO_05` (QDRS, Galvin
+2015) zone `info` et au-delà, score ≥ 1,5 « MCI »
+
+*Les couleurs diffèrent d'un instrument à l'autre pour un même stade* : le MCI
+tombe en `warning` sur l'AQ mais en `info` sur le QDRS et le MMSE. Le départ a
+donc été fixé par stade, pas par couleur — une règle uniforme « départ à
+`warning` » aurait attrapé le MCI par l'AQ et l'aurait manqué par les deux
+autres.
 `condition:` « Tableau neurodégénératif ou de neurosénescence documenté. »
 
 | ☐ | Analytes | Claims |
@@ -286,8 +314,10 @@ systématiquement**, l'orientation clinique établit les choix. Ce panel ne
 s'ouvre donc jamais seul.
 
 ### B.9 — Insulinorésistance et syndrome métabolique · `PANEL_METABOLIQUE_1`
-`niveau: socle` · `conditionnel` · déclencheur : `Q_CAR_01` (questionnaire
-cardio-métabolique SIIN)
+`niveau: socle` · `conditionnel` · déclencheur *(zone tranchée le
+2026-08-15)* : `Q_CAR_01` (questionnaire cardio-métabolique SIIN), zone `info`
+et au-delà — score ≥ 6, « risque modéré » et au-delà. Départ précoce assumé :
+c'est l'axe où la biologie précède utilement le tableau clinique.
 `condition:` « Tableau d'insulinorésistance ou syndrome métabolique suspecté. »
 
 | ☐ | Analytes | Claims |
@@ -422,24 +452,31 @@ une validation acquise.
 bande ; la table la cite au titre de « ne jamais s'arrêter sous la plus
 sévère ».
 
-**Zones à trancher.** Les bandes listées sont celles que l'instrument publie
-déjà. Cocher celle où l'exploration biologique commence — la case cochée et
-toutes les plus sévères.
+**Zones : douze tranchées le 2026-08-15, une ouverte.** Les bandes listées
+sont celles que l'instrument publie déjà ; la case cochée vaut pour elle-même
+et toutes les plus sévères. Seul l'IBS-SSS (`Q_GAS_02`) reste à trancher — le
+panel digestif dispose déjà d'une zone par `Q_GAS_01`, reprise de la table
+d'orientation.
+
+**L'axe cognitif a été fixé par stade, non par couleur.** Le MCI ne tombe pas
+dans la même bande selon l'instrument — `warning` sur l'AQ, `info` sur le MMSE
+et le QDRS. Une règle uniforme l'aurait attrapé par l'un et manqué par les
+deux autres, sans que rien ne le signale.
 
 | Panel · instrument | Bandes publiées (cocher le départ) |
 |---|---|
-| Humeur · `Q_NEU_01` BDI | ☐ `info` 11-16 bénins · ☐ `warning` 17-20 cas limite · ☐ `danger` 21-39 avérée/grave |
-| Humeur · `Q_NEU_11` HAD-D | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
-| Anxiété · `Q_NEU_11` HAD-A | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
-| Anxiété · `Q_INF_05` SIIN | ☐ `warning` · ☐ `danger` · ☐ `dark` critique |
-| Mémoire · `Q_GEO_04` MMSE | ☐ `info` 21-26 légers · ☐ `warning` 10-20 modérée · ☐ `danger` 0-9 sévère |
-| Mémoire · `Q_GEO_06` 5 mots | ☐ `danger` 0-7 (seule bande défavorable) |
-| Mémoire · `Q_NEU_06` MMT | ☐ `info` 1-4 fonctionnels · ☐ `warning` 5-10 · ☐ `danger` 11-20 organiques |
+| Humeur · `Q_NEU_01` BDI | ☑ **`warning`** (17-39) « cas limite » et au-delà — *tranché le 2026-08-15* |
+| Humeur · `Q_NEU_11` HAD-D | ☑ **`warning`** (8-21) — cut-off publié de l'instrument — *tranché le 2026-08-15* |
+| Anxiété · `Q_NEU_11` HAD-A | ☑ **`warning`** (8-21) — cut-off publié — *tranché le 2026-08-15* |
+| Anxiété · `Q_INF_05` SIIN | ☑ **`warning`** + `danger` + `dark` — *tranché le 2026-08-15* |
+| Mémoire · `Q_GEO_04` MMSE | ☑ **`info`** (≤ 26) — dès le MCI, échelle inversée — *tranché le 2026-08-15* |
+| Mémoire · `Q_GEO_06` 5 mots | ☑ **`danger`** (0-7) — seule bande défavorable — *tranché le 2026-08-15* |
+| Mémoire · `Q_NEU_06` MMT | ☑ **`info`** (≥ 1) — dès les troubles fonctionnels — *tranché le 2026-08-15* |
 | Digestif · `Q_GAS_02` IBS-SSS | ☐ `warning` · ☐ `danger` |
 | Fatigue · `Q_SOM_06` Pichot | ☑ **`warning` 23-32** (seuil source > 22) — *tranché le 2026-08-15* |
-| Neurodég. · `Q_GEO_03` AQ | ☐ `warning` 5-14 MCI probable · ☐ `danger` 15-21 démence probable |
-| Neurodég. · `Q_GEO_05` QDRS | ☐ `info` 1,5-5,5 MCI · ☐ `warning` 6-17 démence légère · ☐ `danger` 17,5-30 |
-| Métabolique · `Q_CAR_01` | ☐ `info` 6-10 modéré · ☐ `warning` 11-17 élevé · ☐ `danger` 18-25 très élevé |
+| Neurodég. · `Q_GEO_03` AQ | ☑ **`warning`** (5-21) — bande portant le MCI probable — *tranché le 2026-08-15* |
+| Neurodég. · `Q_GEO_05` QDRS | ☑ **`info`** (≥ 1,5) — bande portant le MCI — *tranché le 2026-08-15* |
+| Métabolique · `Q_CAR_01` | ☑ **`info`** (6-25) — dès le risque modéré — *tranché le 2026-08-15* |
 | SJSR · `Q_SOM_04` IRLS | ☑ **`warning` 11-20 modéré** (+ `danger` 21-40) — *tranché le 2026-08-15* |
 
 **Le SJSR est tranché** (2026-08-15) : départ à `warning`, soit un score
@@ -535,9 +572,12 @@ partie** : `WN-CL-0112-012` n'est pas une plage générale concurrente, c'est un
 cible thérapeutique du SJSR. Elle rejoint donc le panel `PANEL_SJSR` (§B.10) —
 `DC-14`, on respecte la population du claim — et sort de cet arbitrage.
 
-Restent deux sources pour la population générale. Proposition : retenir
-`WN-CL-0044-003`, seule classification complète et non conditionnée à une
-pathologie. ☐ `0044-003` · ☐ `0154-051` · ☐ Aucune plage
+Restent deux sources pour la population générale. **Tranché le 2026-08-15 :
+`WN-CL-0044-003`**, seule classification complète du corpus et non
+conditionnée à une pathologie particulière. `WN-CL-0154-051` est écartée pour
+cet usage — elle n'est pas invalidée, elle n'est simplement pas la source
+retenue pour la plage affichée. La discordance reste donc signalée, jamais
+moyennée (`DC-30`).
 
 **Vitamine D** — borne basse 10 ng/mL (`WN-CL-0239-010`), cible 45 ng/mL
 (`WN-CL-0239-004` et `WN-CL-0154-054`, concordants). `WN-CL-0239-005` (60 ng/mL)
