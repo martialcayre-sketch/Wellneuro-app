@@ -4,6 +4,89 @@
 
 ## Décisions actives
 
+### D-060 — Le contrat de déclenchement apprend la disjonction, et un recueil incomplet ne l'allume jamais
+
+- Date : 2026-08-15
+- Statut : accepté (arbitrage utilisateur du 2026-08-15) — la sémantique de
+  complétude est **proposée** et attend la revue `wn-reviewer`, puisqu'elle
+  touche une garde de sécurité.
+- Domaine : moteur clinique, contrat de déclenchement, garde de complétude,
+  traçabilité
+- Contexte : découvert en étendant le panel stress du catalogue biologie au
+  BMS-10 (LOT-06). `OrientationDeclencheur` ne sait exprimer **aucune
+  disjonction**, à deux niveaux : dans une règle les `declencheurs` sont en ET
+  (`tousAtteints`), et deux règles publiées sur un même panel sont traitées
+  par `statuts.ts` comme une discordance — le panel bascule
+  `non_indique_actuellement` et est écarté (`DC-30`). Six panels du catalogue
+  sont écrits « déclencheur X ou Y » et ne sont donc pas implémentables ;
+  publier naïvement deux règles les **écarterait** au lieu de les élargir.
+
+  Le manque n'est pas propre à la biologie et il a déjà coûté. La règle sur
+  `Q_INF_03` d'`orientationRulesV1.ts` (correction du 2026-08-04) dérivait son
+  seuil de la négation de `WN-CL-0136-004`, une conjonction de trois
+  conditions dont la négation est une disjonction — « Lagrue ≤ 6 OU HAD ≥ 7 OU
+  D ≥ 10 OU S ≥ 10 ». Faute de pouvoir l'écrire, la règle n'a pas été bloquée :
+  elle a été **refondée sur un autre appui**, la bande d'entrée de la grille
+  certifiée, le commentaire concluant que « le déclencheur ne peut donc pas se
+  réclamer de cette négation ». Le manque ne produit pas des règles absentes
+  mais des règles dont la provenance naturelle est remplacée par un repli, en
+  silence — aucun banc ne le fait rougir.
+
+- Décision : cinq points.
+
+**1. La disjonction entre dans le contrat PARTAGÉ, pas dans un correctif
+local (arbitrage utilisateur).** Une variante ne touchant que `statuts.ts` —
+plusieurs règles sur un panel cessant d'être une discordance — a été chiffrée
+et **écartée** : un fichier au lieu de cinq, mais un « ou » indisponible aux
+tables d'orientation, de priorité, d'arrêt et de contradictions. Le motif du
+rejet est le périmètre, non le coût : le besoin déborde la biologie, le
+précédent `Q_INF_03` le montre.
+
+**2. Un recueil incomplet n'allume jamais une branche (`DC-24`).** Une branche
+ne compte que si **son** instrument est complètement recueilli ; la
+disjonction est vraie si au moins une branche *complète* est vraie. Sans cette
+règle, le OU transformerait la garde de complétude en passoire — il suffirait
+d'une branche non recueillie pour la contourner. *Fail-closed* : dans le doute,
+la branche ne compte pas.
+
+**3. Aucune imbrication.** Un `ou` ne contient que des déclencheurs feuilles,
+jamais un autre `ou`. Contrainte portée par le type quand c'est possible, par
+un banc sinon. Motif : une algèbre booléenne complète dans une table de règles
+cliniques serait illisible en revue, et la revue est le seul contrôle réel.
+
+**4. La traçabilité ne remonte que la branche atteinte.** `evaluerDeclencheur`
+retourne aujourd'hui `string | null` ; trois appelants
+(`contradictionsEngine`, `chaineC1`, le moteur d'arrêt) ont besoin de savoir
+**laquelle** des branches a été atteinte pour construire leurs sources et
+leurs `responseId`. Le retour est donc élargi et tous les appelants repris.
+Dupliquer la logique dans un helper parallèle est **exclu** : le commentaire
+d'`evaluerDeclencheur` énonce déjà que « les réécrire ailleurs les aurait fait
+diverger en silence ».
+
+**5. L'interdit sur `signauxAlerte` survit à l'imbrication.** Un drapeau
+d'anamnèse reste refusé comme déclencheur de signal d'alerte, qu'il soit posé
+à la racine ou sous un `ou`. Un banc le vérifie explicitement sous
+disjonction.
+
+- Conséquences : deux PR. La première porte le type, l'évaluateur, les quatre
+  consommateurs et les bancs — ils ne se séparent pas, TypeScript casse à la
+  première. Palier T3 et revue `wn-reviewer` (Opus) exigés : on touche une
+  garde de sécurité. La seconde reprend les six panels du catalogue biologie
+  et la table d'indications. Bancs neufs : OU vrai si ≥ 1 branche complète
+  vraie · faux si toutes fausses · faux si la seule branche vraie est sur
+  recueil incomplet · un plancher n'allume jamais un OU · la traçabilité ne
+  cite que la branche atteinte · pas d'imbrication · `signauxAlerte` refusé
+  sous `ou`.
+- Écarté : la variante `statuts.ts` seul (périmètre, voir point 1) ; un
+  instrument unique par panel (perd le déclenchement quand le patient a passé
+  l'autre questionnaire) ; tous les instruments en ET (exigerait que le
+  patient les ait tous passés et tous positifs, contraire à l'intention
+  clinique).
+- Dette ouverte : aucune règle existante n'est réécrite par ce lot. La
+  refondation de `Q_INF_03` reste en place ; savoir si elle doit reprendre
+  l'appui de `WN-CL-0136-004` une fois la disjonction disponible est un
+  arbitrage clinique distinct, à poser séparément.
+
 ### D-059 — La biologie devient opérante sans qu'une seule valeur n'entre en base, et le schéma précède le code
 
 - Date : 2026-08-14

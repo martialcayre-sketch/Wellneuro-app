@@ -8,6 +8,14 @@
 > panels pointent désormais des instruments réels, déjà servis en production. Une
 > erreur de lecture y est corrigée (`Q_MOD` = *mode de vie*, pas *mood*), et un
 > panel entièrement fondé en est sorti — le SJSR (§B.10).
+> **Version 5 — zones tranchées.** Douze zones sur treize sont fixées, la
+> plage ferritine est tranchée, et l'axe cognitif est fixé par stade clinique
+> plutôt que par couleur (le MCI ne tombe pas dans la même bande selon
+> l'instrument). Les treize zones sont tranchées, le Karasek est retiré et le
+> BMS-10 entre au panel stress.
+> **Réserve neuve et transverse (`F.6`)** : le contrat de déclenchement ne sait
+> exprimer aucun « ou ». Cinq panels écrits « X ou Y » n'ont pas de traduction
+> en l'état — c'est le premier point à trancher avant toute implémentation.
 > **Version 4 — zones.** Trois panels reprennent une zone existante ; les neuf
 > autres reçoivent les bandes publiées par leur instrument, à trancher. Quatre
 > instruments demandent autre chose qu'une zone, dont un (MFI-20) qui n'en
@@ -172,8 +180,20 @@ le déclencheur n'est pas rempli. **Aucun panel n'est `recommandé`
 inconditionnellement** — `WN-CL-0387-013` l'interdit.
 
 ### B.1 — Troubles de l'humeur et dépression · `PANEL_HUMEUR_1`
-`niveau: socle` · `mode: conditionnel` · déclencheurs : `Q_NEU_01` (BDI),
-`Q_NEU_02` (MADRS) ou `Q_NEU_11` (HAD, sous-score dépression)
+`niveau: socle` · `mode: conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15)* : `Q_NEU_01` (BDI) zone `warning` et au-delà, score ≥ 17
+« cas limite de dépression clinique » · `Q_NEU_11` (HAD, sous-score
+dépression) zone `warning` et au-delà, score ≥ 8, cut-off publié de
+l'instrument · `Q_NEU_02` (MADRS) **comparaison `>= 8`**
+
+*Le MADRS échappe à la règle des zones, et c'est délibéré* : sa grille ne
+classe ni 7 ni 19 (§F.2), si bien qu'une zone couleur manquerait en silence
+un patient à 19. La comparaison `>= 8` couvre la plage sans trou et retient
+le stade « dépression légère », homogène au « cas limite » du BDI et au
+« douteux » de la HAD — la bande `warning` du MADRS (20-35) serait, elle, un
+cran plus sévère que les deux autres instruments. **Déduit de l'arbitrage du
+2026-08-15, non coché explicitement** : ☐ confirmer `>= 8` · ☐ préférer la
+zone `warning` (20-60)
 `condition:` « Tableau dépressif ou thymique repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -188,8 +208,9 @@ rapport kynurénine/tryptophane, 6-SMT urinaire, AGCC fécaux, bilan de stress
 oxydant, BDNF — `WN-CL-0336-021` (dépressions récidivantes ou chroniques).
 
 ### B.2 — Anxiété et troubles anxieux · `PANEL_ANXIETE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_NEU_11` (HAD, sous-score
-anxiété) ou `Q_INF_05` (auto-évaluation de l'anxiété, référentiel SIIN)
+`niveau: socle` · `conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15)* : `Q_NEU_11` (HAD, sous-score anxiété) zone `warning` et au-delà,
+score ≥ 8 · `Q_INF_05` (auto-évaluation SIIN) zone `warning` et au-delà
 `condition:` « Tableau anxieux repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -201,8 +222,22 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 `WN-CL-0333-021`.
 
 ### B.3 — Stress, adaptation, surmenage · `PANEL_STRESS_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_STR_02` (PSS-10) ou
-`Q_STR_06` (Karasek, stress professionnel)
+`niveau: socle` · `conditionnel` · déclencheurs *(2026-08-15)* : `Q_STR_02`
+(PSS-10), zone `warning` + `danger` + `dark`, reprise de `R-STR-01`/`R-STR-02`
+· `Q_STR_05` (BMS-10, Burnout Measure Short), zone `warning` et au-delà —
+moyenne ≥ 3,5, « présence du burnout »
+
+`Q_STR_06` (Karasek) est retiré : aucun claim ne le fonde (§F.2).
+
+**Forme suspendue à `F.6`** — les deux déclencheurs sont ici dans une
+intention de « ou », que le contrat actuel ne sait pas exprimer. Écrits dans
+une même règle ils seraient en ET ; écrits en deux règles ils écarteraient le
+panel. Le §F.6 pose les trois issues.
+
+| ☐ | Analytes BMS-10 | Claims |
+|---|---|---|
+| ☐ | Bandes d'interprétation du BMS-10 : 1,0-2,4 très faible · 2,5-3,4 faible · 3,5-4,4 modéré · 4,5-5,4 élevé · 5,5-7,0 très élevé | `WN-CL-0106-025` à `WN-CL-0106-029` |
+| ☐ | Bilan biologique de stadification du stress (stress d'alarme → burn out) | `WN-CL-0107-012` |
 `condition:` « Charge de stress ou tableau de surmenage repéré. »
 
 | ☐ | Analytes | Claims |
@@ -220,8 +255,11 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | ferritine, vitamine D, magnésium érythrocytaire | `WN-CL-0323-011` (« analyses biologiques simples ») |
 
 ### B.5 — Troubles de la mémoire et cognition · `PANEL_MEMOIRE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_GEO_04` (MMSE),
-`Q_GEO_06` (test des 5 mots de Dubois) ou `Q_NEU_06` (MMT SIIN)
+`niveau: socle` · `conditionnel` · déclencheurs *(zones tranchées le
+2026-08-15, départ au stade MCI)* : `Q_GEO_04` (MMSE) zone `info` et au-delà,
+score ≤ 26 — échelle inversée · `Q_GEO_06` (test des 5 mots) zone `danger`,
+score ≤ 7, seule bande défavorable publiée · `Q_NEU_06` (MMT SIIN) zone
+`info` et au-delà, score ≥ 1
 `condition:` « Plainte mnésique ou cognitive repérée. »
 
 | ☐ | Analytes | Claims |
@@ -272,8 +310,16 @@ le plus large du catalogue (13 analytes) ; la source elle-même refuse qu'il soi
 prescrit en bloc. ☐ Le garder entier · ☐ Le restreindre (précisez)
 
 ### B.8 — Neurodégénératif et vieillissement cérébral · `PANEL_NEURODEG_1`
-`niveau: approfondissement` · `conditionnel` · déclencheurs : `Q_GEO_03`
-(Alzheimer's Questionnaire, Sabbagh 2010) ou `Q_GEO_05` (QDRS, Galvin 2015)
+`niveau: approfondissement` · `conditionnel` · déclencheurs *(zones tranchées
+le 2026-08-15, départ au stade MCI)* : `Q_GEO_03` (AQ, Sabbagh 2010) zone
+`warning` et au-delà, score ≥ 5 « MCI probable » · `Q_GEO_05` (QDRS, Galvin
+2015) zone `info` et au-delà, score ≥ 1,5 « MCI »
+
+*Les couleurs diffèrent d'un instrument à l'autre pour un même stade* : le MCI
+tombe en `warning` sur l'AQ mais en `info` sur le QDRS et le MMSE. Le départ a
+donc été fixé par stade, pas par couleur — une règle uniforme « départ à
+`warning` » aurait attrapé le MCI par l'AQ et l'aurait manqué par les deux
+autres.
 `condition:` « Tableau neurodégénératif ou de neurosénescence documenté. »
 
 | ☐ | Analytes | Claims |
@@ -286,8 +332,10 @@ systématiquement**, l'orientation clinique établit les choix. Ce panel ne
 s'ouvre donc jamais seul.
 
 ### B.9 — Insulinorésistance et syndrome métabolique · `PANEL_METABOLIQUE_1`
-`niveau: socle` · `conditionnel` · déclencheur : `Q_CAR_01` (questionnaire
-cardio-métabolique SIIN)
+`niveau: socle` · `conditionnel` · déclencheur *(zone tranchée le
+2026-08-15)* : `Q_CAR_01` (questionnaire cardio-métabolique SIIN), zone `info`
+et au-delà — score ≥ 6, « risque modéré » et au-delà. Départ précoce assumé :
+c'est l'axe où la biologie précède utilement le tableau clinique.
 `condition:` « Tableau d'insulinorésistance ou syndrome métabolique suspecté. »
 
 | ☐ | Analytes | Claims |
@@ -422,24 +470,42 @@ une validation acquise.
 bande ; la table la cite au titre de « ne jamais s'arrêter sous la plus
 sévère ».
 
-**Zones à trancher.** Les bandes listées sont celles que l'instrument publie
-déjà. Cocher celle où l'exploration biologique commence — la case cochée et
+**Zones : les treize sont tranchées** (2026-08-15). Les bandes listées sont
+celles que l'instrument publie déjà ; la case cochée vaut pour elle-même et
 toutes les plus sévères.
+
+L'IBS-SSS part à `warning` (≥ 70) pour une raison d'abord structurelle : le
+panel digestif porte déjà un second déclencheur, le TFD (`Q_GAS_01`), qui part
+à `warning` par reprise de `R-GAS-01`. Deux déclencheurs d'un même panel à des
+sévérités différentes feraient dépendre le déclenchement de l'instrument passé
+plutôt que de l'état du patient. La bande porte du reste le mot
+« significatifs » — c'est l'instrument qui y place son seuil.
+
+*Limite notée* : la bande `warning` de l'IBS-SSS couvre 70 à 300, une plage
+très large dont le libellé reconnaît lui-même que « l'intensité du trouble
+ressenti est proportionnelle au score ». Un patient à 75 déclenche donc comme
+un patient à 295. Affiner supposerait une borne intermédiaire qu'aucune source
+du dossier ne publie (`DC-19`).
+
+**L'axe cognitif a été fixé par stade, non par couleur.** Le MCI ne tombe pas
+dans la même bande selon l'instrument — `warning` sur l'AQ, `info` sur le MMSE
+et le QDRS. Une règle uniforme l'aurait attrapé par l'un et manqué par les
+deux autres, sans que rien ne le signale.
 
 | Panel · instrument | Bandes publiées (cocher le départ) |
 |---|---|
-| Humeur · `Q_NEU_01` BDI | ☐ `info` 11-16 bénins · ☐ `warning` 17-20 cas limite · ☐ `danger` 21-39 avérée/grave |
-| Humeur · `Q_NEU_11` HAD-D | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
-| Anxiété · `Q_NEU_11` HAD-A | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
-| Anxiété · `Q_INF_05` SIIN | ☐ `warning` · ☐ `danger` · ☐ `dark` critique |
-| Mémoire · `Q_GEO_04` MMSE | ☐ `info` 21-26 légers · ☐ `warning` 10-20 modérée · ☐ `danger` 0-9 sévère |
-| Mémoire · `Q_GEO_06` 5 mots | ☐ `danger` 0-7 (seule bande défavorable) |
-| Mémoire · `Q_NEU_06` MMT | ☐ `info` 1-4 fonctionnels · ☐ `warning` 5-10 · ☐ `danger` 11-20 organiques |
-| Digestif · `Q_GAS_02` IBS-SSS | ☐ `warning` · ☐ `danger` |
+| Humeur · `Q_NEU_01` BDI | ☑ **`warning`** (17-39) « cas limite » et au-delà — *tranché le 2026-08-15* |
+| Humeur · `Q_NEU_11` HAD-D | ☑ **`warning`** (8-21) — cut-off publié de l'instrument — *tranché le 2026-08-15* |
+| Anxiété · `Q_NEU_11` HAD-A | ☑ **`warning`** (8-21) — cut-off publié — *tranché le 2026-08-15* |
+| Anxiété · `Q_INF_05` SIIN | ☑ **`warning`** + `danger` + `dark` — *tranché le 2026-08-15* |
+| Mémoire · `Q_GEO_04` MMSE | ☑ **`info`** (≤ 26) — dès le MCI, échelle inversée — *tranché le 2026-08-15* |
+| Mémoire · `Q_GEO_06` 5 mots | ☑ **`danger`** (0-7) — seule bande défavorable — *tranché le 2026-08-15* |
+| Mémoire · `Q_NEU_06` MMT | ☑ **`info`** (≥ 1) — dès les troubles fonctionnels — *tranché le 2026-08-15* |
+| Digestif · `Q_GAS_02` IBS-SSS | ☑ **`warning`** (70-500) « troubles fonctionnels significatifs » — *tranché le 2026-08-15* |
 | Fatigue · `Q_SOM_06` Pichot | ☑ **`warning` 23-32** (seuil source > 22) — *tranché le 2026-08-15* |
-| Neurodég. · `Q_GEO_03` AQ | ☐ `warning` 5-14 MCI probable · ☐ `danger` 15-21 démence probable |
-| Neurodég. · `Q_GEO_05` QDRS | ☐ `info` 1,5-5,5 MCI · ☐ `warning` 6-17 démence légère · ☐ `danger` 17,5-30 |
-| Métabolique · `Q_CAR_01` | ☐ `info` 6-10 modéré · ☐ `warning` 11-17 élevé · ☐ `danger` 18-25 très élevé |
+| Neurodég. · `Q_GEO_03` AQ | ☑ **`warning`** (5-21) — bande portant le MCI probable — *tranché le 2026-08-15* |
+| Neurodég. · `Q_GEO_05` QDRS | ☑ **`info`** (≥ 1,5) — bande portant le MCI — *tranché le 2026-08-15* |
+| Métabolique · `Q_CAR_01` | ☑ **`info`** (6-25) — dès le risque modéré — *tranché le 2026-08-15* |
 | SJSR · `Q_SOM_04` IRLS | ☑ **`warning` 11-20 modéré** (+ `danger` 21-40) — *tranché le 2026-08-15* |
 
 **Le SJSR est tranché** (2026-08-15) : départ à `warning`, soit un score
@@ -496,10 +562,29 @@ correction des déficits en fer, reste hors déclenchement.
   réserve reste consignée au panel §B.7 ; le mode `conditionnel` en limite la
   portée, puisque le panel s'affiche toujours avec sa condition.
 
-- **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
-  seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
-  Une `comparaison` sur sous-score y est exprimable sans rien inventer.
-  ☐ Câbler en comparaison · ☐ Retirer Karasek du déclencheur stress
+- **`Q_STR_06` (Karasek) est retiré du déclencheur stress** — tranché le
+  2026-08-15, sur délégation. J'avais proposé de le câbler en comparaison sur
+  sous-score ; la vérification du corpus a renversé cette proposition.
+
+  **Aucun claim du corpus ne mentionne Karasek, le *job strain*, la latitude
+  décisionnelle ni la demande psychologique** (recherche du 2026-08-15). Un
+  déclencheur y serait sans provenance (`DC-01`). S'y ajoutent deux obstacles :
+  la note de l'instrument enregistre une discordance non résolue sur le seuil
+  de latitude — 70 « mention France » contre 72 pour la définition du *job
+  strain*, le calcul retenant 72 — et le *job strain* exige DEUX conditions en
+  ET, que la règle du panel ne peut pas porter sans se séparer de sa jambe
+  PSS-10, les `declencheurs` étant déjà conjonctifs.
+
+  **Le corpus fonde le stress sur un autre instrument : le BMS-10**
+  (`Q_STR_05`, Burnout Measure Short), déjà servi en production. Ses cinq
+  bandes publiées correspondent une à une à cinq claims `VALIDE` —
+  `WN-CL-0106-025` à `WN-CL-0106-029` — et `WN-CL-0107-012` fonde
+  explicitement le bilan biologique pour situer le stade de stress, « du
+  stress d'alarme […] à la menace de Burn out et au Burn out ».
+
+  **Retenu le 2026-08-15 : le BMS-10 entre au panel stress**, zone `warning`
+  et au-delà — moyenne ≥ 3,5, « présence du burnout » (`WN-CL-0106-027`), en
+  cohérence avec le départ du PSS-10. Sa forme exacte dépend de `F.6`.
 - **`Q_NEU_02` (MADRS) est troué par fidélité à la source** : les scores 7 et
   19 ne sont classés par aucune bande, le code le documente. Une zone couleur
   y manquerait silencieusement un patient à 19 — soit une dépression moyenne
@@ -508,6 +593,144 @@ correction des déficits en fer, reste hors déclenchement.
 - **`Q_GEO_04` (MMSE) et `Q_GEO_06` (5 mots) sont à échelle inversée** — score
   haut favorable. Les couleurs le gèrent ; une comparaison devrait inverser
   l'opérateur. À garder en tête si l'un bascule en comparaison.
+
+### F.6 — Aucun « ou » n'est exprimable : cinq panels sont concernés
+
+**Découvert en étendant le panel stress au BMS-10** (2026-08-15), en lisant
+`statuts.ts` plutôt qu'en le supposant. Le moteur ne propose aucune
+disjonction, à deux niveaux :
+
+- **dans une règle**, les `declencheurs` sont en ET — `tousAtteints` n'est
+  vrai que si chacun est atteint ;
+- **entre règles**, deux règles publiées sur un même panel sont traitées comme
+  une discordance : le panel bascule en `non_indique_actuellement` et est
+  écarté « jusqu'à arbitrage de la table » (`DC-30`, cité sur place).
+
+Or ce document écrit « déclencheurs : X **ou** Y » pour cinq panels — humeur
+(BDI, MADRS, HAD), anxiété (HAD, `Q_INF_05`), mémoire (MMSE, 5 mots, MMT),
+digestif (TFD, IBS-SSS), neurodégénératif (AQ, QDRS) — et le stress serait le
+sixième. **Aucun n'est implémentable tel qu'écrit.** Pire qu'inopérant : deux
+règles naïvement publiées écarteraient le panel au lieu de l'élargir, soit
+l'inverse exact de l'intention.
+
+La formulation « ou » n'était pas fausse en tant que proposition clinique —
+elle décrit bien l'intention. Elle est simplement sans traduction dans le
+contrat actuel, et je ne l'avais pas vérifié en l'écrivant.
+
+**Trois issues, à trancher panel par panel ou globalement :**
+
+- **Un seul instrument par panel.** Le ET devient trivial, rien à changer au
+  moteur. Coût : on perd le déclenchement quand le patient a passé l'autre
+  questionnaire.
+- **Tous les instruments en ET.** Exige que le patient les ait tous passés et
+  tous positifs. Très restrictif, et probablement contraire à l'intention
+  clinique — un patient n'ayant passé que le BDI ne déclencherait rien.
+- **Étendre le contrat à une disjonction** (`{type:'ou', declencheurs:[…]}`),
+  avec sa garde de recueil incomplet et son banc. C'est un lot de code dédié,
+  hors de ce catalogue, mais c'est la seule issue qui préserve l'intention.
+
+☐ Un instrument par panel · ☐ ET · ☐ Lot « disjonction » puis reprise
+
+#### Chiffrage du lot « disjonction » (2026-08-15)
+
+**Le coût n'est pas l'évaluation du OU** — une dizaine de lignes dans
+`evaluerDeclencheur`. Il est dans une invariante que le nouveau variant casse
+et dans une signature de fonction qui doit changer.
+
+**L'invariante cassée.** Quatre sites de production supposent aujourd'hui
+« pas `drapeau` ⇒ possède `idQuestionnaire` ». Un conteneur `ou` n'en a pas :
+
+| Site | Ce qui casse |
+|---|---|
+| `orientationEngine.ts` ~1061 (moteur d'arrêt) | La garde de complétude `DC-24` lit `idQuestionnaire` pour chaque non-drapeau |
+| `contradictionsEngine.ts` 79 | Construit les `SourceContradiction` — traçabilité |
+| `chaineC1.ts` 385 | Collecte les `responseId` — traçabilité |
+| `orientationEngine.ts` 670-690 | L'évaluateur lui-même |
+
+Les trois premiers ne planteraient pas : ils produiraient un `undefined`
+silencieusement filtré, donc **une perte de traçabilité sans erreur**. C'est
+le mode de défaillance le plus coûteux à détecter après coup.
+
+**La signature qui doit changer.** `evaluerDeclencheur` retourne aujourd'hui
+`string | null` — un motif. Avec un OU, trois appelants ont besoin de savoir
+**quelle branche a été atteinte**, pas seulement qu'une l'a été. Il faut donc
+élargir le retour (`{ motif, instruments }`) et reprendre tous les appelants.
+Le dupliquer dans un helper parallèle serait plus rapide et contraire à la
+doctrine écrite sur place : « Les réécrire ailleurs les aurait fait diverger
+en silence. »
+
+**La question sémantique la plus dure** n'est pas technique : que signifie un
+recueil incomplet sous un OU ? Réponse *fail-closed* proposée — une branche ne
+compte que si **son** instrument est complètement recueilli ; le OU est vrai
+si au moins une branche complète est vraie. Sans cette règle, un OU
+transformerait la garde `DC-24` en passoire : il suffirait d'une branche non
+recueillie pour contourner la complétude.
+
+**Bancs à écrire** : OU vrai si ≥ 1 branche vraie · faux si toutes fausses ·
+faux si la seule branche vraie est sur recueil incomplet (`DC-24`) · un
+plancher n'allume jamais un OU (extension du banc existant) · la traçabilité
+ne remonte que la branche atteinte · pas d'imbrication (`ou` dans `ou`
+interdit) · l'interdit sur `signauxAlerte` survit à l'imbrication.
+
+**Découpage.** Deux PR — le cœur et les consommateurs ne peuvent pas se
+séparer, TypeScript casse à la première.
+
+1. **Contrat + évaluateur + consommateurs + bancs.** ~5 fichiers de
+   production, ~5 de test. Ordre de grandeur : 150-250 lignes de production,
+   250-350 de test. Palier T3 obligatoire (moteur clinique), revue
+   `wn-reviewer` (Opus) exigée — on touche une garde de sécurité.
+2. **Reprise des six panels** du catalogue et de la table d'indications.
+   Documentaire et table, sans risque moteur.
+
+**Estimation** : une session focalisée pour la PR 1, une courte pour la PR 2.
+Le risque n'est pas le volume, c'est la garde `DC-24` — c'est là que je
+demanderais la revue la plus dure.
+
+**Alternative nettement moins chère, à considérer avant de lancer le lot.**
+Le besoin réel est local à la biologie. Plutôt que d'ouvrir le contrat partagé
+`OrientationDeclencheur` — utilisé par l'orientation, les priorités, les
+arrêts et les contradictions — on peut traiter la disjonction **au niveau du
+jeu de règles**, dans `statuts.ts` seul : plusieurs règles sur un même panel
+cessent d'être une discordance et deviennent un OU explicite, par exemple via
+un champ `dispositionMultiRegles: 'ou' | 'discordance'`.
+
+*Blast radius* : un fichier de production au lieu de cinq, aucun changement de
+signature, aucune garde partagée touchée. *Coût* : le OU reste indisponible
+pour les tables d'orientation, de priorité et d'arrêt ; et il faut assumer de
+modifier un comportement `DC-30` délibéré — la discordance actuelle est une
+protection, pas un oubli, donc le champ doit être explicite et par règle,
+jamais un défaut.
+
+**Tranché le 2026-08-15 : le lot complet, sur le contrat partagé.** Le « ou »
+doit pouvoir servir à d'autres rayons que la biologie ; la variante
+`statuts.ts` est écartée pour cette raison, non pour son coût.
+
+**Ce choix a un précédent, et il a déjà coûté.** `orientationRulesV1.ts`
+(règle sur `Q_INF_03`, correction du 2026-08-04) documente exactement ce
+manque, hors biologie : la rédaction antérieure dérivait son seuil de la
+négation de `WN-CL-0136-004`, qui est une conjonction de trois conditions.
+La négation d'une conjonction étant une disjonction — « Lagrue ≤ 6 OU
+HAD ≥ 7 OU D ≥ 10 OU S ≥ 10 » — et cette disjonction n'étant pas exprimable,
+la règle n'a pas été bloquée : **elle a été refondée sur un autre appui**, la
+bande d'entrée de la grille certifiée de l'instrument. Le commentaire le dit
+sans détour : « le déclencheur ne peut donc pas se réclamer de cette
+négation ».
+
+Le manque ne se manifeste donc pas par des règles absentes — elles existent —
+mais par des règles dont la provenance naturelle a été remplacée par un appui
+de repli. C'est un coût silencieux, et c'est l'argument le plus fort pour le
+contrat partagé plutôt que pour un correctif local.
+
+**Cadré : voir `D-060`** (registre des décisions, 2026-08-15). La sémantique
+du recueil incomplet sous un OU y est arrêtée *fail-closed* — une branche ne
+compte que si son instrument est complètement recueilli — avec l'interdit
+d'imbrication, la traçabilité limitée à la branche atteinte et le maintien de
+l'interdit `signauxAlerte` sous `ou`. Ce volet touchant une garde de sécurité,
+il reste **proposé jusqu'à la revue `wn-reviewer`**.
+
+La reprise des six panels de ce catalogue est la seconde PR de ce lot.
+
+---
 
 ### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
 `DrapeauxAnamnese` ne porte ni l'un ni l'autre. Les deux panels de population du
@@ -535,9 +758,12 @@ partie** : `WN-CL-0112-012` n'est pas une plage générale concurrente, c'est un
 cible thérapeutique du SJSR. Elle rejoint donc le panel `PANEL_SJSR` (§B.10) —
 `DC-14`, on respecte la population du claim — et sort de cet arbitrage.
 
-Restent deux sources pour la population générale. Proposition : retenir
-`WN-CL-0044-003`, seule classification complète et non conditionnée à une
-pathologie. ☐ `0044-003` · ☐ `0154-051` · ☐ Aucune plage
+Restent deux sources pour la population générale. **Tranché le 2026-08-15 :
+`WN-CL-0044-003`**, seule classification complète du corpus et non
+conditionnée à une pathologie particulière. `WN-CL-0154-051` est écartée pour
+cet usage — elle n'est pas invalidée, elle n'est simplement pas la source
+retenue pour la plage affichée. La discordance reste donc signalée, jamais
+moyennée (`DC-30`).
 
 **Vitamine D** — borne basse 10 ng/mL (`WN-CL-0239-010`), cible 45 ng/mL
 (`WN-CL-0239-004` et `WN-CL-0154-054`, concordants). `WN-CL-0239-005` (60 ng/mL)
