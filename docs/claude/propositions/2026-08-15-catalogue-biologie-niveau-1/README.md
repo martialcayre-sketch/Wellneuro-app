@@ -106,6 +106,10 @@ systémiques, `WN-SRC-0041` neurotransmetteurs).
 | ☐ | `BIO_HOMOCYSTEINE` | Homocystéine | `µmol/L` | sang | 0282-007, 0125-045, 0167-023, 0388-008 |
 | ☐ | `BIO_NFS` | Numération formule sanguine | — | sang | 0346-013, 0361-009 |
 | ☐ | `BIO_TSH_US` | TSH ultrasensible | `mUI/L` | sang | 0282-014, 0336-021, 0361-009 |
+| ☐ | `BIO_HEMOGLOBINE` | Hémoglobine | `g/L` | sang | 0346-013, 0361-009 |
+| ☐ | `BIO_BILAN_HEPATIQUE` | Bilan hépatique | — | sang | 0349-015, 0361-009 |
+| ☐ | `BIO_IONOGRAMME` | Ionogramme sanguin | — | sang | 0361-009 |
+| ☐ | `BIO_ACIDE_URIQUE` | Acide urique | `µmol/L` | sang | 0361-009 |
 | ☐ | `BIO_ANTI_TPO` | Anticorps anti-TPO | `UI/mL` | sang | 0361-011 |
 | ☐ | `BIO_T3_REVERSE` | T3 reverse | `ng/L` | sang | 0110-016, 0361-011 |
 | ☐ | `BIO_ANTI_LDL_OXYDE` | Anticorps anti-LDL oxydé | `UI/mL` | sang | 0167-023, 0178-054, 0386-003 |
@@ -137,8 +141,18 @@ systémiques, `WN-SRC-0041` neurotransmetteurs).
 | ☐ | `BIO_ZONULINE` | Zonuline | `ng/mL` | sang | 0282-012, 0346-014, 0386-005 |
 | ☐ | `BIO_LBP` | LBP (protéine porteuse du LPS) | `µg/mL` | sang | 0282-012, 0336-021, 0386-005 |
 
-**42 analytes, 0 indication.** Aucune de ces lignes ne dit à qui l'examen
+**47 analytes, 0 indication.** Aucune de ces lignes ne dit à qui l'examen
 s'adresse — c'est le rôle exclusif du §B.
+
+**Trois entrées sont des blocs, pas des analytes unitaires** :
+`BIO_NFS`, `BIO_BILAN_HEPATIQUE` et `BIO_IONOGRAMME`. Les claims les nomment
+ainsi (« bilan hépatique », « ionogramme sanguin ») et je ne les éclate pas :
+le détail ASAT / ALAT / GGT ou Na / K / Cl ne vient d'aucune source. Ils partent
+donc sans unité. Noter aussi que `WN-CL-0361-009` cite « numération formule
+sanguine **et** taux d'hémoglobine » : `BIO_HEMOGLOBINE` recoupe `BIO_NFS`, et
+c'est le claim qui les distingue, pas moi.
+☐ Garder les blocs tels quels · ☐ Les éclater (le détail serait alors de vous)
+☐ Fusionner `BIO_HEMOGLOBINE` dans `BIO_NFS`
 
 ---
 
@@ -195,7 +209,7 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | ferritine, vitamine D, magnésium érythrocytaire | `WN-CL-0323-011` (« analyses biologiques simples ») |
 
 ### B.5 — Troubles de la mémoire et cognition · `PANEL_MEMOIRE_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_GEO` (à confirmer, voir A-2)
+`niveau: socle` · `conditionnel` · déclencheur : famille `Q_GEO` (à confirmer, voir F.2)
 `condition:` « Plainte mnésique ou cognitive repérée. »
 
 | ☐ | Analytes | Claims |
@@ -216,7 +230,7 @@ selles, CAR, alpha-amylase salivaire, zonuline, LBP ou LPS, magnésium
 érythrocytaire, zinc sérique — `WN-CL-0346-014`.
 
 ### B.7 — Fatigue · `PANEL_FATIGUE_1`
-`niveau: socle` · `conditionnel` · déclencheur : à câbler (voir A-2)
+`niveau: socle` · `conditionnel` · déclencheur : à câbler (voir F.2)
 `condition:` « Plainte de fatigue au premier plan. »
 
 | ☐ | Analytes | Claims |
@@ -267,13 +281,13 @@ explicitement un bilan d'optionnel : c'est lui, et lui seul, qui fonde le mode
 
 ### C.1 — Femme · `PANEL_POP_FEMME`
 `mode: conditionnel` · `declencheurs: []` (le sexe n'est pas un drapeau
-d'anamnèse — voir A-3)
+d'anamnèse — voir F.3)
 `condition:` « Femme en population à risque de déficit martial. »
 ☐ ferritine — `WN-CL-0282-013`
 
 ### C.2 — Personne âgée · `PANEL_POP_AGEE`
 `mode: conditionnel` · `declencheurs: []` (l'âge n'est pas un drapeau
-d'anamnèse — voir A-3)
+d'anamnèse — voir F.3)
 `condition:` « Personne âgée. »
 ☐ vitamine D, zinc, sélénium, TSH, acides gras — `WN-CL-0282-014`
 
@@ -309,19 +323,19 @@ matinales. »
 | **Cœliaque** | 14 claims sur la maladie, **1 seul** touchant la sérologie (`WN-CL-0376-016`, simple mention dans une liste), **aucun ne disant quand la demander**. | Abstention. |
 | **Hormonal / SOPK** | **0 claim SOPK**, 2 sur les hormones sexuelles. | Abstention. |
 | **Douleurs chroniques** | `WN-CL-0161-008` mentionne sérologie rhumatismale et bilan thyroïdien « en cas de suspicion clinique » — sans liste d'analytes ni condition opérationnalisable. | Abstention, à rouvrir. |
-| **Plages fonctionnelles au-delà de 2** | Bornes chiffrées exploitables pour la ferritine et la vitamine D seulement (§F.2). | 2 plages, pas 42. |
+| **Plages fonctionnelles au-delà de 2** | Bornes chiffrées exploitables pour la ferritine et la vitamine D seulement (§F.5). | 2 plages, pas 42. |
 
 ---
 
 # F · Arbitrages
 
-### A-1 — Répétition annuelle : deux claims concordants
+### F.1 — Répétition annuelle : deux claims concordants
 `WN-CL-0312-018` (« au moins un bilan […] **une fois par an** ») et
 `WN-CL-0389-004` (« un bilan biologique de base et un bilan biologique
 nutritionnel **une fois par an** jusqu'à normalisation »). `delaiJours: 365`.
 ☐ Appliquer à quels panels ? (la v1 ne l'appliquait qu'à la micronutrition)
 
-### A-2 — Trois déclencheurs restent à câbler
+### F.2 — Quatre déclencheurs restent à câbler
 `PANEL_MEMOIRE_1`, `PANEL_FATIGUE_1`, `PANEL_NEURODEG_1` et
 `PANEL_METABOLIQUE_1` n'ont pas de famille de questionnaires évidente parmi
 `Q_MOD` / `Q_SOM` / `Q_STR` / `Q_GAS` / `Q_INF` / `Q_NEU` / `Q_FIB` / `Q_GEO`.
@@ -329,18 +343,18 @@ Deux voies : ☐ vous m'indiquez la correspondance · ☐ ils partent avec
 `declencheurs: []` et leur condition en clair (le moteur les affiche, le
 praticien juge) — c'est le comportement prévu par `D-059` §5.
 
-### A-3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
+### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
 `DrapeauxAnamnese` ne porte ni l'un ni l'autre. Les deux panels de population du
 §C partent donc avec `declencheurs: []`. ☐ Accepter · ☐ Retirer ces deux panels
 
-### A-4 — Niveau de preuve A/B/C/D : absent du corpus
+### F.4 — Niveau de preuve A/B/C/D : absent du corpus
 45 claims sur 8 224 en portent un, en texte libre (« élevé », « méta-analyse »,
 « p<0,001 »). Or `biology_functional_ranges.niveau_preuve` est NOT NULL et
 contraint à A/B/C/D. Je ne l'invente pas.
 ☐ Appliquer `C` (« biologie fonctionnelle interprétative », convention déjà
 écrite au dépôt) · ☐ Coter à la main
 
-### F.2 — Plages fonctionnelles : deux, dont une discordante
+### F.5 — Plages fonctionnelles : deux, dont une discordante
 
 **Ferritine** — trois sources incompatibles, et un seul intervalle actif permis
 par (analyte, population) :
@@ -358,7 +372,7 @@ classification complète et non conditionnée à une pathologie.
 (`WN-CL-0239-004` et `WN-CL-0154-054`, concordants). `WN-CL-0239-005` (60 ng/mL)
 **écarté** : il se déclare lui-même non consensuel. ☐ Accepter · ☐ Modifier
 
-### A-5 — `RequiresMedicalValidation`
+### F.6 — `RequiresMedicalValidation`
 Colonne `validation_medicale_requise BOOLEAN NOT NULL DEFAULT false` sur
 `biology_analytes` (votre arbitrage du 2026-08-15 ; vérifié : passe le verrou
 HDS, n'ajoute pas de table, `release-db` surveille `migrations/**`).
@@ -375,7 +389,7 @@ de votre produit, à poser explicitement. ☐ Insulinémie · ☐ Autres : …
 | Panels `conditionnel` | 1 | **11**, un par tableau clinique ou population |
 | Panels `optionnel` | 0 | **1**, seul claim qui qualifie un bilan d'optionnel |
 | Panels `non_indiqué_actuellement` | 1 | **2**, tous deux sourcés verbatim |
-| Analytes | 24 | **42**, sans aucune indication attachée |
+| Analytes | 24 | **47**, sans aucune indication attachée |
 | Sources dépouillées | mots-clés | notebook 08 + 89 fiches + 2 protocoles biologie |
 
 **Après validation** — migration de données (composition + 2 plages + colonne),
