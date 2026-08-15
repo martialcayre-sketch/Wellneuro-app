@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Biologie opérante — catalogue, statuts, courrier, arbitrage sans valeurs, révision de protocole"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-05"
 ---
 

@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-059 — La biologie devient opérante sans qu'une seule valeur n'entre en base, et le schéma précède le code
+
+- Date : 2026-08-14
+- Statut : accepté (deux arbitrages utilisateur du 2026-08-14, cadrage d'ouverture du LOT-06)
+- Domaine : clinique, biologie, migrations, courrier médecin, révision de protocole
+- Contexte : dernier lot de la campagne « Chaîne T0 opérationnelle ». Le
+  squelette biologie existe et est **vide** en production (relu le
+  2026-08-14 : `biology_nabm_actes` = 987 lignes de référentiel,
+  0 analyte/panel/range, 0 correspondance médecin, aucune table d'arbitrage).
+  Le LOT-05 fournit déjà `conditionnelle_biologie` et `waitFor` (aucun bump
+  de contrat) ; la mécanique de révision (`supersedesDraftId`,
+  `isApprovalStale`) existe en entier ; les drapeaux `isCbEnabled` /
+  `isCbResultsEnabled` existent sans appelant. `BiologyPanel` ne porte
+  **aucun champ de déclencheur** — et n'en portera pas : la campagne prescrit
+  le patron orientation (table TS versionnée + claims + signature + SHA) pour
+  la biologie, donc les conditions vivent dans une table signée, pas dans des
+  colonnes de catalogue. La migration de schéma se réduit à
+  `ArbitrageBiologique`.
+- Décision : six arbitrages, les deux premiers tranchés par l'utilisateur.
+
+**1. Le schéma précède le code (arbitrage utilisateur).** La migration de
+schéma (`ArbitrageBiologique` + déclencheurs de panels) part en PR SEULE,
+relue, puis `release-db` approuvé — **avant** que le moindre code qui s'en
+sert ne soit mergé. Aucun code mergé ne référence jamais une table absente.
+Coût assumé : deux allers-retours release-db avant tout écran visible.
+
+**2. Le catalogue niveau 1 est proposé, puis validé ligne à ligne (arbitrage
+utilisateur).** L'assistant rédige la proposition (socle, glucidique,
+lipides, thyroïde, micronutrition, CRPus ; panels conditionnels cœliaque et
+hormonal), chaque ligne adossée à un claim **VALIDE relu en production**
+(`DC-01`, `DC-26`) — abstention sur ce qu'aucun claim ne fonde (`DC-25`),
+jamais un remplissage. Le praticien valide ligne à ligne ; la migration de
+DONNÉES ne part qu'après cette validation, en PR séparée.
+
+**3. Sans catalogue publié, le moteur ne propose RIEN.** Même patron que les
+quatre décisions précédentes (`D-055`→`D-058`) : le moteur de statuts est
+fail-closed sur catalogue vide, avec un motif lisible en français — jamais
+une proposition « au cas où » ni un statut déduit d'une table absente.
+
+**4. L'arbitrage biologique ne porte JAMAIS de valeur.** Verdict à trois
+états (`confirme | infirme | sans_objet`), note courte OBLIGATOIRE sur
+`infirme`, auteur et horodatage posés côté serveur. Le verrou HDS reste
+entier : aucune valeur d'analyse en base, contrat SQL négatif étendu.
+Résoudre une intention `conditionnelle_biologie` sans arbitrage lié est
+impossible.
+
+**5. Les déclencheurs et exclusions de panels vivent dans une TABLE TS
+SIGNÉE, au patron orientation** (`orientationRulesV1` : conditions typées sur
+zones d'instruments et drapeaux d'anamnèse, claims épinglés par règle,
+`validationExterne: false` à la livraison — signer est un geste praticien
+séparé). Jamais d'expression libre, jamais une condition évaluée par le LLM
+(`D-003`, `DC-26` : les règles cliniques vivent dans une table versionnée et
+relue, pas dispersées dans des lignes de base). Le catalogue DB ne porte que
+la COMPOSITION des panels (items, niveaux) ; la table signée dit QUAND un
+panel est recommandé, conditionnel ou non indiqué. Écart à la fiche assumé et
+motivé : elle plaçait `TriggerConditions` dans la migration de données — le
+patron de campagne (« réutilisé partout ») et `DC-26` commandent la table
+signée. Un déclencheur non rempli s'affiche `conditionnel` avec sa condition
+— pas absent, pas refusé en silence.
+
+**6. Le courrier médecin passe par le chokepoint existant.** Rendu via
+`rendu.ts` (destinataire médecin), donc sous
+`assertRenduMedecinNonPrescriptif` — pas de second chemin de rendu ;
+consignation par `preparerCorrespondance` existant. Remise manuelle en V1,
+aucun envoi automatique.
+
+- Dettes nommées, non résolues ici : « aucune ligne de catalogue sans
+  claim » n'est imposé par le schéma QUE sur `BiologyFunctionalRange` et
+  `BiologyAnalyteLink` — pour les panels, la garantie viendra de la
+  proposition validée et du contrat SQL, pas d'une contrainte NOT NULL
+  (à réexaminer si le catalogue s'ouvre à d'autres auteurs) ; la saisie de
+  valeurs biologiques reste hors périmètre (décision HDS préalable, backlog).
+- Conséquences : au merge du lot, rien ne s'allume tant que la release de
+  schéma n'est pas approuvée ET que le catalogue n'est pas peuplé — deux
+  portes humaines distinctes, dans cet ordre.
+- Référence : `docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/lots/LOT-06-biologie-revision.md`,
+  `web/src/lib/biology-library/`, `web/prisma/checks/cb_biologie_*.sql`,
+  `docs/claude/handoffs/2026-08-14-2255-lot06-ouverture-biologie.md`
+
 ### D-058 — Ce qu'un delta a le droit d'affirmer, et pourquoi « stable » ne se déduit pas d'un zéro
 
 - Date : 2026-08-13
