@@ -104,7 +104,7 @@ describe('boucle de révision biologie (Lot G, critère 1)', () => {
       id: 'appr-1',
       protocolDraftInputHash: v1.inputHash,
       supersedesApprovalId: null,
-      approvedAt: new Date('2026-08-03T00:00:00.000Z'),
+      createdAt: new Date('2026-08-03T00:00:00.000Z'),
     };
     expect(isApprovalStale(approbationV1, v1.inputHash)).toBe(false);
 
@@ -190,7 +190,7 @@ describe('boucle de révision biologie (Lot G, critère 1)', () => {
       id: 'appr-2',
       protocolDraftInputHash: v2.inputHash,
       supersedesApprovalId: 'appr-1',
-      approvedAt: new Date('2026-08-15T11:00:00.000Z'),
+      createdAt: new Date('2026-08-15T11:00:00.000Z'),
     };
     const approbationActive = resolveActiveApproval([approbationV1, approbationV2]);
     expect(approbationActive?.id).toBe('appr-2');
