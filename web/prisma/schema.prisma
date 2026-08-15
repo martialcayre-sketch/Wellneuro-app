@@ -56,6 +56,7 @@ model Patient {
   protocolDrafts             ProtocolDraft[]
   protocolCheckins           ProtocolCheckin[]
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
+  arbitragesBiologiques      ArbitrageBiologique[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
@@ -942,10 +943,11 @@ model ProtocolDraft {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  patient            Patient                     @relation(fields: [idPatient], references: [idPatient])
-  episode            AssessmentEpisode?          @relation(fields: [assessmentEpisodeId], references: [id])
-  checkins           ProtocolCheckin[]
-  diffusionApprovals ProtocolDiffusionApproval[]
+  patient               Patient                     @relation(fields: [idPatient], references: [idPatient])
+  episode               AssessmentEpisode?          @relation(fields: [assessmentEpisodeId], references: [id])
+  checkins              ProtocolCheckin[]
+  diffusionApprovals    ProtocolDiffusionApproval[]
+  arbitragesBiologiques ArbitrageBiologique[]
 
   @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
   @@index([decisionCardId], map: "c2a_draft_decision_card_idx")
@@ -1802,4 +1804,38 @@ model BiologySourceSnapshot {
 
   @@unique([sourceProvenance, versionSource], map: "biology_source_snapshots_source_version_key")
   @@map("biology_source_snapshots")
+}
+
+// Arbitrage biologique SANS VALEURS (LOT-06, [[D-059]]) : au retour du bilan,
+// le praticien confirme ou infirme une intention `conditionnelle_biologie`
+// d'une version de protocole — un VERDICT et une note courte, JAMAIS une
+// valeur d'analyse (verrou HDS ; les CHECK de la migration tiennent le
+// verdict fermé et la note obligatoire sur `infirme`).
+//
+// `intentionId` est l'`actionId` de l'action au statut
+// `conditionnelle_biologie` dans le payload du draft visé — la résolution de
+// l'intention sans arbitrage lié est impossible par construction côté moteur.
+// Append-only : un arbitrage ne se corrige pas ; la révision qu'il ouvre est
+// une NOUVELLE version de protocole (`supersedesDraftId`), re-revue et
+// re-approuvée avant diffusion. Un seul arbitrage par intention et par draft
+// (`@@unique`) : arbitrer à nouveau se fait sur la version révisée.
+// Table fille de `patients` : entre dans la transaction d'effacement IDP2
+// (branchement dans la PR de code, après release de ce schéma).
+model ArbitrageBiologique {
+  id              String   @id @default(cuid())
+  idPatient       String   @map("id_patient")
+  protocolDraftId String   @map("protocol_draft_id")
+  intentionId     String   @map("intention_id")
+  verdict         String   @map("verdict") // confirme | infirme | sans_objet (CHECK migration)
+  noteCourte      String?  @map("note_courte") // obligatoire si `infirme` (CHECK migration), bornée à 2000
+  arbitreLe       DateTime @default(now()) @map("arbitre_le")
+  arbitrePar      String   @map("arbitre_par") // email praticien, posé côté serveur
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  patient Patient       @relation(fields: [idPatient], references: [idPatient])
+  draft   ProtocolDraft @relation(fields: [protocolDraftId], references: [id])
+
+  @@unique([protocolDraftId, intentionId], map: "cb_arbitrage_intention_unique")
+  @@index([idPatient, arbitreLe], map: "cb_arbitrage_patient_idx")
+  @@map("arbitrages_biologiques")
 }

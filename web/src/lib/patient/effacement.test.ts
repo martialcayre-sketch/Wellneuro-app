@@ -24,7 +24,7 @@ const { prisma, appels } = vi.hoisted(() => {
   };
   for (const nom of [
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
-    'protocolDraft', 'assessmentEpisode', 'syntheseIA', 'questionnaireReponse',
+    'arbitrageBiologique', 'protocolDraft', 'assessmentEpisode', 'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
     'trustRightsRequest', 'filCardRejection', 'relectureNote', 'portailMagicLink',
