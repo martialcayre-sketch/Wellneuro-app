@@ -70,6 +70,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;
+    // Arbitrages biologiques (D-059) : FK RESTRICT vers protocol_drafts ET
+    // patients — supprimés avant les brouillons, sinon l'effacement échouerait
+    // sur la contrainte.
+    supprimees.arbitragesBiologiques = (
+      await tx.arbitrageBiologique.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDrafts = (await tx.protocolDraft.deleteMany({ where: par })).count;
     supprimees.assessmentEpisodes = (await tx.assessmentEpisode.deleteMany({ where: par })).count;
 
