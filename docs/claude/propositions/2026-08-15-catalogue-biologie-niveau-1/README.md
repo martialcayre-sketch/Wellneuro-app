@@ -8,6 +8,10 @@
 > panels pointent désormais des instruments réels, déjà servis en production. Une
 > erreur de lecture y est corrigée (`Q_MOD` = *mode de vie*, pas *mood*), et un
 > panel entièrement fondé en est sorti — le SJSR (§B.10).
+> **Version 4 — zones.** Trois panels reprennent une zone existante ; les neuf
+> autres reçoivent les bandes publiées par leur instrument, à trancher. Quatre
+> instruments demandent autre chose qu'une zone, dont un (MFI-20) qui n'en
+> supporte aucune.
 
 ## Pourquoi la v1 était fausse
 
@@ -239,9 +243,19 @@ selles, CAR, alpha-amylase salivaire, zonuline, LBP ou LPS, magnésium
 érythrocytaire, zinc sérique — `WN-CL-0346-014`.
 
 ### B.7 — Fatigue · `PANEL_FATIGUE_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_SOM_07` (MFI-20,
-Multidimensional Fatigue Inventory) ou `Q_SOM_06` (échelle de fatigue de Pichot)
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_06` (échelle de
+fatigue de Pichot), zone couleur `warning` — score 23-32, seuil source > 22
+*(arbitrage praticien du 2026-08-15)*
 `condition:` « Plainte de fatigue au premier plan. »
+
+**Réserve consignée** — le corpus fonde le contenu de ce panel
+(`WN-CL-0361-009`) mais aucun claim ne fonde ce seuil comme ouverture d'une
+exploration biologique ; `WN-CL-0361-008` énonce que les marqueurs se
+sélectionnent « en fonction du contexte clinique évocateur ». Le mode
+`conditionnel` limite la portée de cette réserve : le panel s'affiche
+toujours, avec sa condition, remplie ou non (`D-059` §5) — un patient sous le
+seuil n'est donc jamais écarté en silence. `Q_SOM_07` (MFI-20) est retiré du
+déclencheur, faute de barème utilisable (voir §F.2).
 
 | ☐ | Analytes | Claims |
 |---|---|---|
@@ -288,8 +302,10 @@ explicitement un bilan d'optionnel : c'est lui, et lui seul, qui fonde le mode
 `optionnel` du moteur.
 
 ### B.10 — Syndrome des jambes sans repos · `PANEL_SJSR`
-`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_04` (IRLS, International
-Restless Legs Syndrome Rating Scale)
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_04` (IRLS), zone
+couleur `warning` + `danger` — score ≥ 11, « SJSR modéré » et au-delà
+*(arbitrage praticien du 2026-08-15 ; la grille de l'instrument publie
+« Bilan biologique complet (ferritine++) » en protocole de cette bande)*
 `condition:` « Syndrome des jambes sans repos repéré. »
 
 | ☐ | Analytes | Claims |
@@ -362,7 +378,7 @@ matinales. »
 nutritionnel **une fois par an** jusqu'à normalisation »). `delaiJours: 365`.
 ☐ Appliquer à quels panels ? (la v1 ne l'appliquait qu'à la micronutrition)
 
-### F.2 — Déclencheurs : résolu, tous câblés sur des instruments réels
+### F.2 — Déclencheurs : instruments câblés, zones pour partie tranchées
 
 **Cet arbitrage est clos.** Le dépôt portait la réponse : les familles de
 questionnaires ne sont pas des thèmes vagues, ce sont des instruments nommés et
@@ -387,14 +403,111 @@ ressenties). Les instruments d'humeur sont dans `Q_NEU`.
 | `PANEL_METABOLIQUE_1` | `Q_CAR_01` (cardio-métabolique SIIN) |
 | `PANEL_SJSR` | `Q_SOM_04` (IRLS) |
 
-**Ce qui reste à trancher n'est plus l'instrument mais la zone.** Un déclencheur
-`OrientationDeclencheur` exige, en plus de l'instrument, une zone ou une
-comparaison — `{type:'zone', idQuestionnaire, zone}`. Les seuils de ces
-instruments sont déjà publiés dans le dépôt (HAD : 0-7 normal, 8-10 léger,
-11-14 modéré, 15-21 sévère — `WN-CL-0047-016`). Je propose de reprendre les
-**zones existantes de la table d'orientation** plutôt que d'en poser de
-nouvelles : aucun seuil nouveau, aucune invention.
-☐ Reprendre les zones d'orientation · ☐ Zones spécifiques (à préciser)
+**Les zones, maintenant.** Trois panels reprennent une zone déjà écrite. Les
+autres ne le peuvent pas : la table d'orientation ne dit rien de leurs
+instruments, et le code énonce que le point de départ est « un arbitrage
+clinique par instrument, qu'aucun banc ne peut prendre ».
+
+**Reprises à l'identique de la table d'orientation.** Aucun seuil nouveau —
+mais cette table porte `validationExterne: false` : c'est un alignement, pas
+une validation acquise.
+
+| Panel | Zone reprise | Règle source |
+|---|---|---|
+| `PANEL_SOMMEIL_1` | couleur `info` `warning` `danger` `dark` | `R-SOM-01` |
+| `PANEL_STRESS_1` | couleur `warning` `danger` `dark` | `R-STR-01`, `R-STR-02` |
+| `PANEL_DIGESTIF_1` | couleur `warning` `danger` `dark` | `R-GAS-01` |
+
+`dark` est inerte sur `Q_STR_02` et `Q_GAS_01`, qui ne publient pas cette
+bande ; la table la cite au titre de « ne jamais s'arrêter sous la plus
+sévère ».
+
+**Zones à trancher.** Les bandes listées sont celles que l'instrument publie
+déjà. Cocher celle où l'exploration biologique commence — la case cochée et
+toutes les plus sévères.
+
+| Panel · instrument | Bandes publiées (cocher le départ) |
+|---|---|
+| Humeur · `Q_NEU_01` BDI | ☐ `info` 11-16 bénins · ☐ `warning` 17-20 cas limite · ☐ `danger` 21-39 avérée/grave |
+| Humeur · `Q_NEU_11` HAD-D | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
+| Anxiété · `Q_NEU_11` HAD-A | ☐ `warning` 8-10 douteuse · ☐ `danger` 11-21 certaine |
+| Anxiété · `Q_INF_05` SIIN | ☐ `warning` · ☐ `danger` · ☐ `dark` critique |
+| Mémoire · `Q_GEO_04` MMSE | ☐ `info` 21-26 légers · ☐ `warning` 10-20 modérée · ☐ `danger` 0-9 sévère |
+| Mémoire · `Q_GEO_06` 5 mots | ☐ `danger` 0-7 (seule bande défavorable) |
+| Mémoire · `Q_NEU_06` MMT | ☐ `info` 1-4 fonctionnels · ☐ `warning` 5-10 · ☐ `danger` 11-20 organiques |
+| Digestif · `Q_GAS_02` IBS-SSS | ☐ `warning` · ☐ `danger` |
+| Fatigue · `Q_SOM_06` Pichot | ☑ **`warning` 23-32** (seuil source > 22) — *tranché le 2026-08-15* |
+| Neurodég. · `Q_GEO_03` AQ | ☐ `warning` 5-14 MCI probable · ☐ `danger` 15-21 démence probable |
+| Neurodég. · `Q_GEO_05` QDRS | ☐ `info` 1,5-5,5 MCI · ☐ `warning` 6-17 démence légère · ☐ `danger` 17,5-30 |
+| Métabolique · `Q_CAR_01` | ☐ `info` 6-10 modéré · ☐ `warning` 11-17 élevé · ☐ `danger` 18-25 très élevé |
+| SJSR · `Q_SOM_04` IRLS | ☑ **`warning` 11-20 modéré** (+ `danger` 21-40) — *tranché le 2026-08-15* |
+
+**Le SJSR est tranché** (2026-08-15) : départ à `warning`, soit un score
+IRLS ≥ 11 (« SJSR modéré » et au-delà). La grille de l'instrument publie pour
+protocole de cette bande « Bilan biologique complet (ferritine++) » — le
+départ est soutenu par l'instrument, et l'arbitrage praticien l'a retenu. La
+bande `info` (1-10, « SJSR léger »), dont le protocole mentionne déjà la
+correction des déficits en fer, reste hors déclenchement.
+
+**Quatre instruments demandent autre chose qu'une zone :**
+
+- **`Q_SOM_07` (MFI-20) : le blocage n'est pas l'absence de barème.** L'écrire
+  ainsi serait inexact. La source refuse bien tout score global
+  (`sansTotalGlobal: true`), mais elle cite des seuils — pour la seule
+  sous-échelle « Fatigue générale », et **dépendants du sexe et de l'âge** :
+  hommes ≥ 9 avant 40 ans, ≥ 11 de 40 à 59, ≥ 14 dès 60 ; femmes ≥ 11, ≥ 12,
+  ≥ 14 sur les mêmes tranches. Elle les rapporte à des données allemandes
+  (25ᵉ percentile) attribuées à Schwarz 2003 et Singer 2011, **absentes du
+  dossier et non vérifiées ici**.
+
+  Deux obstacles distincts, donc. `OrientationDeclencheur` ne transporte ni
+  âge ni sexe : un `>= 9` unique s'allumerait à tort chez une femme de 65 ans,
+  un `>= 14` manquerait un homme de 30 ans — c'est `DC-14`, la population d'un
+  claim se respecte. Et les références manquent au dossier, ce qui interdit de
+  s'y adosser (`DC-01`). Le déclencheur du panel fatigue repose donc sur le
+  seul `Q_SOM_06` (Pichot, bande `warning` 23-32, seuil source > 22).
+  ☐ Accepter · ☐ Verser Schwarz 2003 / Singer 2011 au corpus, puis rouvrir ·
+  ☐ Étendre le type de déclencheur à l'âge et au sexe (lot dédié)
+
+  **Les seuils MFI ne portent que sur `GEN`**, une dimension sur cinq. Même
+  références versées, on ne débloquerait qu'un cinquième de l'instrument :
+  un déclencheur « fatigue générale », pas un déclencheur MFI. Les quatre
+  autres sous-échelles n'ont de barème d'aucune sorte.
+
+  *Note de périmètre* : le MFI-20 mesure la fatigue, pas la qualité du
+  sommeil. Sa catégorie « Sommeil » au catalogue est un regroupement par
+  domaine d'exploration ; l'instrument du sommeil est le PSQI (`Q_SOM_01`).
+- **Le corpus ne fonde aucun seuil de déclenchement pour la fatigue** —
+  recherche du 2026-08-15, et c'est un résultat, pas un échec. Il fonde
+  solidement le *contenu* du panel (`WN-CL-0361-009` énumère les marqueurs de
+  première intention : NFS, hémoglobine, CRP ultrasensible, ferritine, fer
+  sérique, coefficient de saturation) et documente abondamment le lien
+  fatigue↔déficits (`0110-004`, `0359-039`, `0358-008`). Mais aucun claim ne
+  dit à partir de quel score explorer. `WN-CL-0361-008` dit même l'inverse :
+  « les marqueurs […] doivent être sélectionnés en fonction du contexte
+  clinique évocateur » — un jugement praticien, pas un seuil.
+
+  L'anamnèse n'offre pas de repli : `symptomes_fonctionnels` ne porte qu'une
+  option (déglutition), et aucun drapeau ne code la fatigue.
+
+  **Tranché le 2026-08-15 : `conditionnel` sur Pichot**, zone `warning`
+  (23-32). L'option `optionnel` — proposé sans déclencheur, au plus près de
+  ce que dit `0361-008` — a été examinée et écartée par le praticien. La
+  réserve reste consignée au panel §B.7 ; le mode `conditionnel` en limite la
+  portée, puisque le panel s'affiche toujours avec sa condition.
+
+- **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
+  seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
+  Une `comparaison` sur sous-score y est exprimable sans rien inventer.
+  ☐ Câbler en comparaison · ☐ Retirer Karasek du déclencheur stress
+- **`Q_NEU_02` (MADRS) est troué par fidélité à la source** : les scores 7 et
+  19 ne sont classés par aucune bande, le code le documente. Une zone couleur
+  y manquerait silencieusement un patient à 19 — soit une dépression moyenne
+  non explorée. Une `comparaison >= 8` couvre la plage sans trou.
+  ☐ Comparaison `>= 8` · ☐ Zone couleur en connaissance du trou
+- **`Q_GEO_04` (MMSE) et `Q_GEO_06` (5 mots) sont à échelle inversée** — score
+  haut favorable. Les couleurs le gèrent ; une comparaison devrait inverser
+  l'opérateur. À garder en tête si l'un bascule en comparaison.
 
 ### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
 `DrapeauxAnamnese` ne porte ni l'un ni l'autre. Les deux panels de population du
