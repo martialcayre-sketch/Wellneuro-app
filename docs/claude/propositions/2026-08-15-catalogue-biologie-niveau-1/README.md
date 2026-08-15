@@ -437,11 +437,27 @@ choix praticien, pas une déduction.
 
 **Quatre instruments demandent autre chose qu'une zone :**
 
-- **`Q_SOM_07` (MFI-20) ne peut pas en porter.** La source refuse tout score
-  global (`sansTotalGlobal: true`) et écrit « il n'y a pas de barème
-  interprétation ». Ni zone ni comparaison globale n'y sont légitimes ; le
-  déclencheur du panel fatigue repose donc sur le seul `Q_SOM_06` (Pichot,
-  bande `warning` 23-32, seuil source > 22). ☐ Accepter · ☐ Retirer MFI-20
+- **`Q_SOM_07` (MFI-20) : le blocage n'est pas l'absence de barème.** L'écrire
+  ainsi serait inexact. La source refuse bien tout score global
+  (`sansTotalGlobal: true`), mais elle cite des seuils — pour la seule
+  sous-échelle « Fatigue générale », et **dépendants du sexe et de l'âge** :
+  hommes ≥ 9 avant 40 ans, ≥ 11 de 40 à 59, ≥ 14 dès 60 ; femmes ≥ 11, ≥ 12,
+  ≥ 14 sur les mêmes tranches. Elle les rapporte à des données allemandes
+  (25ᵉ percentile) attribuées à Schwarz 2003 et Singer 2011, **absentes du
+  dossier et non vérifiées ici**.
+
+  Deux obstacles distincts, donc. `OrientationDeclencheur` ne transporte ni
+  âge ni sexe : un `>= 9` unique s'allumerait à tort chez une femme de 65 ans,
+  un `>= 14` manquerait un homme de 30 ans — c'est `DC-14`, la population d'un
+  claim se respecte. Et les références manquent au dossier, ce qui interdit de
+  s'y adosser (`DC-01`). Le déclencheur du panel fatigue repose donc sur le
+  seul `Q_SOM_06` (Pichot, bande `warning` 23-32, seuil source > 22).
+  ☐ Accepter · ☐ Verser Schwarz 2003 / Singer 2011 au corpus, puis rouvrir ·
+  ☐ Étendre le type de déclencheur à l'âge et au sexe (lot dédié)
+
+  *Note de périmètre* : le MFI-20 mesure la fatigue, pas la qualité du
+  sommeil. Sa catégorie « Sommeil » au catalogue est un regroupement par
+  domaine d'exploration ; l'instrument du sommeil est le PSQI (`Q_SOM_01`).
 - **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
   seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
   Une `comparaison` sur sous-score y est exprimable sans rien inventer.
