@@ -326,10 +326,22 @@ export type PriorityRulesMetadata = {
 
 export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   version: 'priority-rules-nnpp2-v1',
-  // NON SIGNÉE — la signature est un acte praticien, jamais posé d'initiative.
-  // Le verrou correspondant est `tablePrioritesSignee()`, juste en dessous.
-  validationExterne: false,
-  dateValidation: null,
+  // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]).
+  //
+  // PASSAGE EN FORCE ASSUMÉ, ET NOMMÉ COMME TEL. Le bloc « À LIRE AVANT DE
+  // SIGNER » ci-dessus énonce une dette BLOQUANTE relevée en revue le
+  // 2026-08-12 ([[D-054]]) : le SHA ne couvre pas la procédure d'abstention,
+  // qui vit dans `lib/clinical-engine/chaineC1.ts`, si bien que la signature
+  // ouvre un verdict « required » / « not_required » dont aucune ligne signée
+  // ne décrit la règle — ce que `DC-17` et `DC-26` interdisent. La dette n'est
+  // pas close ; le praticien a signé en la connaissant, après qu'elle lui a été
+  // exposée. [[D-061]] la porte comme dette ouverte et prioritaire.
+  //
+  // La seconde chose que la signature assume — deux règles reposant sur un item
+  // unique auto-déclaré de `Q_MOD_03`, `DC-28` mitigé par ce que la règle
+  // PRODUIT — est un arbitrage clinique ordinaire, et il a été pris.
+  validationExterne: true,
+  dateValidation: '2026-08-15T00:00:00.000Z',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

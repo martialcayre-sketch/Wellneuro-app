@@ -45,10 +45,15 @@ describe('priorityRulesV1 — statut de signature', () => {
   // acte praticien, et il n'a pas eu lieu. Ce banc épingle l'état, quel qu'il
   // soit : le jour de la signature, il rougit — et c'est exactement ce qu'on lui
   // demande, parce que ce jour-là le comportement de production change.
-  it('la table est livrée NON signée', () => {
-    expect(PRIORITY_RULES_METADATA.validationExterne).toBe(false);
-    expect(PRIORITY_RULES_METADATA.dateValidation).toBeNull();
-    expect(tablePrioritesSignee()).toBe(false);
+  // SIGNÉE le 2026-08-15 ([[D-061]]). La sentinelle n'est pas supprimée, elle
+  // est INVERSÉE : elle attrape désormais une dé-signature accidentelle et une
+  // date malformée, ce que le verrou exige en forme ISO canonique.
+  it('la table est signée, et sa signature est bien formée', () => {
+    expect(PRIORITY_RULES_METADATA.validationExterne).toBe(true);
+    expect(PRIORITY_RULES_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    const d = PRIORITY_RULES_METADATA.dateValidation as string;
+    expect(new Date(d).toISOString()).toBe(d);
+    expect(tablePrioritesSignee()).toBe(true);
   });
 
   it('la version est nommée et les claims sources ne sont pas vides', () => {

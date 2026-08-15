@@ -100,7 +100,19 @@ export type IndicationsBiologieMetadata = {
 
 export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   version: 'indications-biologie-v1',
-  validationExterne: false,
+  // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]).
+  //
+  // SIGNÉE VIDE, ET C'EST UN PASSAGE EN FORCE NOMMÉ. La table ne porte aucune
+  // règle : la signature n'atteste donc aucune relecture de contenu, et
+  // `deriverStatutsBiologie` ne teste QUE ce booléen — ni date, ni SHA, ni
+  // claims, contrairement aux quatre autres tables. Toute règle ajoutée
+  // ultérieurement entrera donc sous une signature déjà posée, sans que rien ne
+  // la fasse rougir. Le renforcement du verrou (date + SHA + claims, patron
+  // `tablePrioritesSignee`) est une dette ouverte de [[D-061]].
+  //
+  // Le drapeau `WN_CB_ENABLED` reste le second terme du ET : signer n'allume
+  // pas.
+  validationExterne: true,
   dateValidation: null,
   claimsSource: [],
 };

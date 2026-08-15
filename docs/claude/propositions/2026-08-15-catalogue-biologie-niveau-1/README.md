@@ -456,9 +456,15 @@ autres ne le peuvent pas : la table d'orientation ne dit rien de leurs
 instruments, et le code énonce que le point de départ est « un arbitrage
 clinique par instrument, qu'aucun banc ne peut prendre ».
 
-**Reprises à l'identique de la table d'orientation.** Aucun seuil nouveau —
-mais cette table porte `validationExterne: false` : c'est un alignement, pas
-une validation acquise.
+**Reprises à l'identique de la table d'orientation.** Aucun seuil nouveau, et
+cette table est **signée** — `validationExterne: true`, `dateValidation`
+2026-08-06, 23 claims au périmètre.
+
+*Correction du 2026-08-15* : une version antérieure de ce paragraphe affirmait
+`validationExterne: false` et présentait la reprise comme « un alignement, pas
+une validation acquise ». C'était faux, par une lecture qui attrapait la
+première occurrence du fichier au lieu de l'objet de métadonnées. Ces trois
+zones s'adossent bien à une table signée.
 
 | Panel | Zone reprise | Règle source |
 |---|---|---|

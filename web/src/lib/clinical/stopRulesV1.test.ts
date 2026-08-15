@@ -23,9 +23,14 @@ describe('stopRulesV1 — statut de signature', () => {
   // acte praticien, et il n'a pas eu lieu. Ce banc épingle l'état, quel qu'il
   // soit : le jour de la signature, il rougit — et c'est exactement ce qu'on
   // lui demande, parce que ce jour-là le comportement de production change.
-  it('la table est livrée NON signée', () => {
-    expect(STOP_RULES_METADATA.validationExterne).toBe(false);
-    expect(STOP_RULES_METADATA.dateValidation).toBeNull();
+  // SIGNÉE le 2026-08-15 ([[D-061]]), conjointement à `contradictionsV1` —
+  // l'ordre a un sens clinique ([[D-053]] §5). Sentinelle inversée plutôt que
+  // supprimée : une dé-signature accidentelle reste attrapée.
+  it('la table est signée, et sa signature est bien formée', () => {
+    expect(STOP_RULES_METADATA.validationExterne).toBe(true);
+    expect(STOP_RULES_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    const d = STOP_RULES_METADATA.dateValidation as string;
+    expect(new Date(d).toISOString()).toBe(d);
   });
 
   it('la version est nommée et les claims sources ne sont pas vides', () => {

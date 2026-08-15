@@ -43,9 +43,13 @@ describe('table de contradictions V1 — signature et périmètre', () => {
     expect(CONTRADICTIONS_RULES_V1[0].id).toBe('C-STR');
   });
 
-  it('la table est écrite mais NON signée', () => {
-    expect(CONTRADICTIONS_METADATA.validationExterne).toBe(false);
-    expect(CONTRADICTIONS_METADATA.dateValidation).toBeNull();
+  // SIGNÉE le 2026-08-15 ([[D-061]]), conjointement à `stopRulesV1`.
+  // Sentinelle inversée plutôt que supprimée.
+  it('la table est signée, et sa signature est bien formée', () => {
+    expect(CONTRADICTIONS_METADATA.validationExterne).toBe(true);
+    expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    const d = CONTRADICTIONS_METADATA.dateValidation as string;
+    expect(new Date(d).toISOString()).toBe(d);
   });
 
   // Une règle sans claim n'est pas traçable jusqu'à sa source (`DC-01`,
