@@ -219,8 +219,10 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 `WN-CL-0333-021`.
 
 ### B.3 — Stress, adaptation, surmenage · `PANEL_STRESS_1`
-`niveau: socle` · `conditionnel` · déclencheurs : `Q_STR_02` (PSS-10) ou
-`Q_STR_06` (Karasek, stress professionnel)
+`niveau: socle` · `conditionnel` · déclencheur : `Q_STR_02` (PSS-10), zone
+couleur `warning` + `danger` + `dark`, reprise de `R-STR-01`/`R-STR-02`
+*(`Q_STR_06` Karasek retiré le 2026-08-15 — aucun claim ne le fonde, voir
+§F.2 ; l'ajout du BMS-10 y est proposé à la place)*
 `condition:` « Charge de stress ou tableau de surmenage repéré. »
 
 | ☐ | Analytes | Claims |
@@ -545,10 +547,30 @@ correction des déficits en fer, reste hors déclenchement.
   réserve reste consignée au panel §B.7 ; le mode `conditionnel` en limite la
   portée, puisque le panel s'affiche toujours avec sa condition.
 
-- **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
-  seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
-  Une `comparaison` sur sous-score y est exprimable sans rien inventer.
-  ☐ Câbler en comparaison · ☐ Retirer Karasek du déclencheur stress
+- **`Q_STR_06` (Karasek) est retiré du déclencheur stress** — tranché le
+  2026-08-15, sur délégation. J'avais proposé de le câbler en comparaison sur
+  sous-score ; la vérification du corpus a renversé cette proposition.
+
+  **Aucun claim du corpus ne mentionne Karasek, le *job strain*, la latitude
+  décisionnelle ni la demande psychologique** (recherche du 2026-08-15). Un
+  déclencheur y serait sans provenance (`DC-01`). S'y ajoutent deux obstacles :
+  la note de l'instrument enregistre une discordance non résolue sur le seuil
+  de latitude — 70 « mention France » contre 72 pour la définition du *job
+  strain*, le calcul retenant 72 — et le *job strain* exige DEUX conditions en
+  ET, que la règle du panel ne peut pas porter sans se séparer de sa jambe
+  PSS-10, les `declencheurs` étant déjà conjonctifs.
+
+  **Le corpus fonde le stress sur un autre instrument : le BMS-10**
+  (`Q_STR_05`, Burnout Measure Short), déjà servi en production. Ses cinq
+  bandes publiées correspondent une à une à cinq claims `VALIDE` —
+  `WN-CL-0106-025` à `WN-CL-0106-029` — et `WN-CL-0107-012` fonde
+  explicitement le bilan biologique pour situer le stade de stress, « du
+  stress d'alarme […] à la menace de Burn out et au Burn out ».
+
+  *Proposition, non tranchée* : ajouter `Q_STR_05` au déclencheur du panel
+  stress, zone `warning` et au-delà (moyenne ≥ 3,5, « présence du burnout »
+  selon `WN-CL-0106-027`), en cohérence avec le départ du PSS-10.
+  ☐ Ajouter le BMS-10 · ☐ Laisser le stress au seul PSS-10
 - **`Q_NEU_02` (MADRS) est troué par fidélité à la source** : les scores 7 et
   19 ne sont classés par aucune bande, le code le documente. Une zone couleur
   y manquerait silencieusement un patient à 19 — soit une dépression moyenne
