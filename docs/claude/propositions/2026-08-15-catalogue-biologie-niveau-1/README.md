@@ -4,6 +4,10 @@
 > `D-059` §2 avant toute migration de données.
 > **Version 2 — révision de méthode.** La v1 proposait six panels `recommandé`
 > pour tout patient. C'était faux, et les sources le disent elles-mêmes.
+> **Version 3 — déclencheurs câblés.** L'arbitrage F.2 est clos : les douze
+> panels pointent désormais des instruments réels, déjà servis en production. Une
+> erreur de lecture y est corrigée (`Q_MOD` = *mode de vie*, pas *mood*), et un
+> panel entièrement fondé en est sorti — le SJSR (§B.10).
 
 ## Pourquoi la v1 était fausse
 
@@ -164,7 +168,8 @@ le déclencheur n'est pas rempli. **Aucun panel n'est `recommandé`
 inconditionnellement** — `WN-CL-0387-013` l'interdit.
 
 ### B.1 — Troubles de l'humeur et dépression · `PANEL_HUMEUR_1`
-`niveau: socle` · `mode: conditionnel` · déclencheur : famille `Q_MOD`
+`niveau: socle` · `mode: conditionnel` · déclencheurs : `Q_NEU_01` (BDI),
+`Q_NEU_02` (MADRS) ou `Q_NEU_11` (HAD, sous-score dépression)
 `condition:` « Tableau dépressif ou thymique repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -179,7 +184,8 @@ rapport kynurénine/tryptophane, 6-SMT urinaire, AGCC fécaux, bilan de stress
 oxydant, BDNF — `WN-CL-0336-021` (dépressions récidivantes ou chroniques).
 
 ### B.2 — Anxiété et troubles anxieux · `PANEL_ANXIETE_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_MOD` (sous-score anxiété)
+`niveau: socle` · `conditionnel` · déclencheurs : `Q_NEU_11` (HAD, sous-score
+anxiété) ou `Q_INF_05` (auto-évaluation de l'anxiété, référentiel SIIN)
 `condition:` « Tableau anxieux repéré à l'exploration de l'humeur. »
 
 | ☐ | Analytes | Claims |
@@ -191,7 +197,8 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 `WN-CL-0333-021`.
 
 ### B.3 — Stress, adaptation, surmenage · `PANEL_STRESS_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_STR`
+`niveau: socle` · `conditionnel` · déclencheurs : `Q_STR_02` (PSS-10) ou
+`Q_STR_06` (Karasek, stress professionnel)
 `condition:` « Charge de stress ou tableau de surmenage repéré. »
 
 | ☐ | Analytes | Claims |
@@ -200,7 +207,7 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | cycle du cortisol (CAR, 8h/20h, cortisol/DHEA), alpha-amylase salivaire, IgA sécrétoire salivaire | `WN-CL-0282-015` |
 
 ### B.4 — Troubles du sommeil · `PANEL_SOMMEIL_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_SOM`
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_01` (PSQI)
 `condition:` « Trouble du sommeil repéré à l'exploration du sommeil. »
 
 | ☐ | Analytes | Claims |
@@ -209,7 +216,8 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | ferritine, vitamine D, magnésium érythrocytaire | `WN-CL-0323-011` (« analyses biologiques simples ») |
 
 ### B.5 — Troubles de la mémoire et cognition · `PANEL_MEMOIRE_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_GEO` (à confirmer, voir F.2)
+`niveau: socle` · `conditionnel` · déclencheurs : `Q_GEO_04` (MMSE),
+`Q_GEO_06` (test des 5 mots de Dubois) ou `Q_NEU_06` (MMT SIIN)
 `condition:` « Plainte mnésique ou cognitive repérée. »
 
 | ☐ | Analytes | Claims |
@@ -218,7 +226,8 @@ rapport sodium/potassium urinaire 24 h, butyrate fécal, AG érythrocytaires —
 | ☐ | ferritine, zinc, folates érythrocytaires, HVA urinaire, CAR, vitamine D, magnésium, CRP ultrasensible, homocystéine | `WN-CL-0388-008` (fiche de synthèse mémoire) |
 
 ### B.6 — Troubles fonctionnels intestinaux · `PANEL_DIGESTIF_1`
-`niveau: socle` · `conditionnel` · déclencheur : famille `Q_GAS`
+`niveau: socle` · `conditionnel` · déclencheurs : `Q_GAS_01` (TFD SIIN 2021) ou
+`Q_GAS_02` (IBS-SSS, score de Francis)
 `condition:` « Troubles fonctionnels intestinaux repérés. »
 
 | ☐ | Analytes | Claims |
@@ -230,7 +239,8 @@ selles, CAR, alpha-amylase salivaire, zonuline, LBP ou LPS, magnésium
 érythrocytaire, zinc sérique — `WN-CL-0346-014`.
 
 ### B.7 — Fatigue · `PANEL_FATIGUE_1`
-`niveau: socle` · `conditionnel` · déclencheur : à câbler (voir F.2)
+`niveau: socle` · `conditionnel` · déclencheurs : `Q_SOM_07` (MFI-20,
+Multidimensional Fatigue Inventory) ou `Q_SOM_06` (échelle de fatigue de Pichot)
 `condition:` « Plainte de fatigue au premier plan. »
 
 | ☐ | Analytes | Claims |
@@ -248,7 +258,8 @@ le plus large du catalogue (13 analytes) ; la source elle-même refuse qu'il soi
 prescrit en bloc. ☐ Le garder entier · ☐ Le restreindre (précisez)
 
 ### B.8 — Neurodégénératif et vieillissement cérébral · `PANEL_NEURODEG_1`
-`niveau: approfondissement` · `conditionnel` · déclencheur : à câbler
+`niveau: approfondissement` · `conditionnel` · déclencheurs : `Q_GEO_03`
+(Alzheimer's Questionnaire, Sabbagh 2010) ou `Q_GEO_05` (QDRS, Galvin 2015)
 `condition:` « Tableau neurodégénératif ou de neurosénescence documenté. »
 
 | ☐ | Analytes | Claims |
@@ -261,7 +272,8 @@ systématiquement**, l'orientation clinique établit les choix. Ce panel ne
 s'ouvre donc jamais seul.
 
 ### B.9 — Insulinorésistance et syndrome métabolique · `PANEL_METABOLIQUE_1`
-`niveau: socle` · `conditionnel` · déclencheur : à câbler
+`niveau: socle` · `conditionnel` · déclencheur : `Q_CAR_01` (questionnaire
+cardio-métabolique SIIN)
 `condition:` « Tableau d'insulinorésistance ou syndrome métabolique suspecté. »
 
 | ☐ | Analytes | Claims |
@@ -274,6 +286,21 @@ sécrétoires, bêta-défensines, AG érythrocytaires — `WN-CL-0178-055`
 (« bilan biologique **optionnel** »). C'est le seul claim du corpus qui qualifie
 explicitement un bilan d'optionnel : c'est lui, et lui seul, qui fonde le mode
 `optionnel` du moteur.
+
+### B.10 — Syndrome des jambes sans repos · `PANEL_SJSR`
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_04` (IRLS, International
+Restless Legs Syndrome Rating Scale)
+`condition:` « Syndrome des jambes sans repos repéré. »
+
+| ☐ | Analytes | Claims |
+|---|---|---|
+| ☐ | ferritine | `WN-CL-0320-003` (« Le syndrome des jambes sans repos comme cause d'insomnie secondaire justifie un dosage de la ferritine. ») |
+| ☐ | ferritine, cible ≥ 50 ng/mL | `WN-CL-0318-020` (« […] les valeurs devant être supérieures à 50 ng/mL au minimum ») |
+| ☐ | ferritine, cible thérapeutique > 80 ng/mL | `WN-CL-0112-012` (valeurs de référence consensuelles HAS, traitement étiologique du SJSR) |
+
+**Ce panel est né du câblage des déclencheurs**, pas du dépouillement initial :
+l'instrument `Q_SOM_04` existe déjà en production, et trois claims `VALIDE` le
+rejoignent. Il dénoue en prime la discordance ferritine du §F.5 (voir là-bas).
 
 ---
 
@@ -322,7 +349,7 @@ matinales. »
 |---|---|---|
 | **Cœliaque** | 14 claims sur la maladie, **1 seul** touchant la sérologie (`WN-CL-0376-016`, simple mention dans une liste), **aucun ne disant quand la demander**. | Abstention. |
 | **Hormonal / SOPK** | **0 claim SOPK**, 2 sur les hormones sexuelles. | Abstention. |
-| **Douleurs chroniques** | `WN-CL-0161-008` mentionne sérologie rhumatismale et bilan thyroïdien « en cas de suspicion clinique » — sans liste d'analytes ni condition opérationnalisable. | Abstention, à rouvrir. |
+| **Douleurs chroniques** | `WN-CL-0161-008` mentionne sérologie rhumatismale et bilan thyroïdien « en cas de suspicion clinique » — sans liste d'analytes ni condition opérationnalisable. **Les instruments existent pourtant** (`Q_FIB_01` FiRST, `Q_FIB_02` QIF, `Q_FIB_03` ELFE) : c'est le claim qui manque, pas le déclencheur. | Abstention, à rouvrir dès qu'une source le fonde. |
 | **Plages fonctionnelles au-delà de 2** | Bornes chiffrées exploitables pour la ferritine et la vitamine D seulement (§F.5). | 2 plages, pas 42. |
 
 ---
@@ -335,13 +362,39 @@ matinales. »
 nutritionnel **une fois par an** jusqu'à normalisation »). `delaiJours: 365`.
 ☐ Appliquer à quels panels ? (la v1 ne l'appliquait qu'à la micronutrition)
 
-### F.2 — Quatre déclencheurs restent à câbler
-`PANEL_MEMOIRE_1`, `PANEL_FATIGUE_1`, `PANEL_NEURODEG_1` et
-`PANEL_METABOLIQUE_1` n'ont pas de famille de questionnaires évidente parmi
-`Q_MOD` / `Q_SOM` / `Q_STR` / `Q_GAS` / `Q_INF` / `Q_NEU` / `Q_FIB` / `Q_GEO`.
-Deux voies : ☐ vous m'indiquez la correspondance · ☐ ils partent avec
-`declencheurs: []` et leur condition en clair (le moteur les affiche, le
-praticien juge) — c'est le comportement prévu par `D-059` §5.
+### F.2 — Déclencheurs : résolu, tous câblés sur des instruments réels
+
+**Cet arbitrage est clos.** Le dépôt portait la réponse : les familles de
+questionnaires ne sont pas des thèmes vagues, ce sont des instruments nommés et
+déjà servis en production (`docs/claude/corpus/instrument_registry.json`,
+`web/src/lib/questionnaires/`).
+
+**Une erreur de ma part a été corrigée au passage** : la v2 câblait les panels
+humeur et anxiété sur la famille `Q_MOD`, en lisant « MOD » comme *mood*. C'est
+**mode de vie** (`Q_MOD_01` contextuel, `Q_MOD_02` activité, `Q_MOD_03` plaintes
+ressenties). Les instruments d'humeur sont dans `Q_NEU`.
+
+| Panel | Déclencheur retenu |
+|---|---|
+| `PANEL_HUMEUR_1` | `Q_NEU_01` (BDI) · `Q_NEU_02` (MADRS) · `Q_NEU_11` (HAD, sous-score dépression) |
+| `PANEL_ANXIETE_1` | `Q_NEU_11` (HAD, sous-score anxiété) · `Q_INF_05` (auto-évaluation anxiété SIIN) |
+| `PANEL_STRESS_1` | `Q_STR_02` (PSS-10) · `Q_STR_06` (Karasek) |
+| `PANEL_SOMMEIL_1` | `Q_SOM_01` (PSQI) |
+| `PANEL_MEMOIRE_1` | `Q_GEO_04` (MMSE) · `Q_GEO_06` (test des 5 mots) · `Q_NEU_06` (MMT SIIN) |
+| `PANEL_DIGESTIF_1` | `Q_GAS_01` (TFD SIIN 2021) · `Q_GAS_02` (IBS-SSS) |
+| `PANEL_FATIGUE_1` | `Q_SOM_07` (MFI-20) · `Q_SOM_06` (Pichot) |
+| `PANEL_NEURODEG_1` | `Q_GEO_03` (AQ Sabbagh) · `Q_GEO_05` (QDRS Galvin) |
+| `PANEL_METABOLIQUE_1` | `Q_CAR_01` (cardio-métabolique SIIN) |
+| `PANEL_SJSR` | `Q_SOM_04` (IRLS) |
+
+**Ce qui reste à trancher n'est plus l'instrument mais la zone.** Un déclencheur
+`OrientationDeclencheur` exige, en plus de l'instrument, une zone ou une
+comparaison — `{type:'zone', idQuestionnaire, zone}`. Les seuils de ces
+instruments sont déjà publiés dans le dépôt (HAD : 0-7 normal, 8-10 léger,
+11-14 modéré, 15-21 sévère — `WN-CL-0047-016`). Je propose de reprendre les
+**zones existantes de la table d'orientation** plutôt que d'en poser de
+nouvelles : aucun seuil nouveau, aucune invention.
+☐ Reprendre les zones d'orientation · ☐ Zones spécifiques (à préciser)
 
 ### F.3 — Sexe et âge ne sont pas des drapeaux d'anamnèse
 `DrapeauxAnamnese` ne porte ni l'un ni l'autre. Les deux panels de population du
@@ -364,9 +417,14 @@ par (analyte, population) :
 - `WN-CL-0112-012` : > 80 ng/mL, mais **spécifique au SJSR** — hors population
   générale (`DC-14`).
 
-`DC-30` interdit de moyenner. Proposition : retenir `WN-CL-0044-003`, seule
-classification complète et non conditionnée à une pathologie.
-☐ `0044-003` · ☐ `0154-051` · ☐ Aucune plage
+`DC-30` interdit de moyenner. **Le câblage des déclencheurs en dénoue une
+partie** : `WN-CL-0112-012` n'est pas une plage générale concurrente, c'est une
+cible thérapeutique du SJSR. Elle rejoint donc le panel `PANEL_SJSR` (§B.10) —
+`DC-14`, on respecte la population du claim — et sort de cet arbitrage.
+
+Restent deux sources pour la population générale. Proposition : retenir
+`WN-CL-0044-003`, seule classification complète et non conditionnée à une
+pathologie. ☐ `0044-003` · ☐ `0154-051` · ☐ Aucune plage
 
 **Vitamine D** — borne basse 10 ng/mL (`WN-CL-0239-010`), cible 45 ng/mL
 (`WN-CL-0239-004` et `WN-CL-0154-054`, concordants). `WN-CL-0239-005` (60 ng/mL)
@@ -386,7 +444,7 @@ de votre produit, à poser explicitement. ☐ Insulinémie · ☐ Autres : …
 | | v1 (fausse) | v2 |
 |---|---|---|
 | Panels `recommandé` inconditionnels | 6 | **0** — interdits par `WN-CL-0387-013` |
-| Panels `conditionnel` | 1 | **11**, un par tableau clinique ou population |
+| Panels `conditionnel` | 1 | **12**, un par tableau clinique ou population |
 | Panels `optionnel` | 0 | **1**, seul claim qui qualifie un bilan d'optionnel |
 | Panels `non_indiqué_actuellement` | 1 | **2**, tous deux sourcés verbatim |
 | Analytes | 24 | **47**, sans aucune indication attachée |
