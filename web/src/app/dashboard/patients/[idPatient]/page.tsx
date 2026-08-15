@@ -9,6 +9,8 @@ import { isC5Enabled } from '@/lib/food-compass';
 import { C5FeatureProvider } from '@/components/patient-cockpit/C5FeatureProvider';
 import { isAgendaAlimentaireEnabled } from '@/lib/agenda-alimentaire/featureFlag';
 import { AgendaAliFeatureProvider } from '@/components/agenda-alimentaire/AgendaAliFeatureProvider';
+import { isCbEnabled } from '@/lib/biology-library/featureFlag';
+import { CbFeatureProvider } from '@/components/patient-cockpit/CbFeatureProvider';
 
 export default function FichePatientPage({
   params,
@@ -36,11 +38,13 @@ export default function FichePatientPage({
   return (
     <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
       <AgendaAliFeatureProvider enabled={isAgendaAlimentaireEnabled(process.env.WN_AGENDA_ALI)}>
-        <FichePatientPanel
-          idPatient={params.idPatient}
-          ongletInitial={ongletInitial}
-          fixtureValidationErgo={fixtureValidationErgo}
-        />
+        <CbFeatureProvider enabled={isCbEnabled(process.env.WN_CB_ENABLED)}>
+          <FichePatientPanel
+            idPatient={params.idPatient}
+            ongletInitial={ongletInitial}
+            fixtureValidationErgo={fixtureValidationErgo}
+          />
+        </CbFeatureProvider>
       </AgendaAliFeatureProvider>
     </C5FeatureProvider>
   );

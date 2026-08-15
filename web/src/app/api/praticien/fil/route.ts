@@ -6,6 +6,8 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { construireFil, type CarteFil } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
+import { arbitragesSansRevision } from '@/lib/fil/biologieArbitree';
+import { isCbEnabled } from '@/lib/biology-library/featureFlag';
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 import { bornesJourParis } from '@/lib/fil/fuseau';
 
@@ -119,6 +121,27 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         .map(s => [s.idPatient, s._max.dateGeneration]),
     );
 
+    // Biologie arbitrée sans révision (LOT-06) : lecture gatée par le drapeau
+    // CB — drapeau éteint, aucune requête, aucune carte (rien ne s'allume).
+    let biologiesArbitreesBrutes: ReturnType<typeof arbitragesSansRevision> = [];
+    if (isCbEnabled()) {
+      const [arbitrages, versions] = await Promise.all([
+        prisma.arbitrageBiologique.findMany({
+          select: {
+            idPatient: true,
+            protocolDraftId: true,
+            intentionId: true,
+            verdict: true,
+            arbitreLe: true,
+          },
+        }),
+        prisma.protocolDraft.findMany({
+          select: { id: true, supersedesDraftId: true },
+        }),
+      ]);
+      biologiesArbitreesBrutes = arbitragesSansRevision(arbitrages, versions);
+    }
+
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
       ...incidents.map(i => ({ id: i.id, idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
@@ -134,6 +157,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...checkinsJ21.map(c => c.idPatient),
         ...rdvs.map(r => r.idPatient),
         ...lectures.map(l => l.idPatient),
+        ...biologiesArbitreesBrutes.map(b => b.idPatient),
       ]),
     ];
     // Toute carte dont le patient n'est pas dans ce résultat est écartée
@@ -166,6 +190,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       lectures: lectures.filter(l => actifs.has(l.idPatient)),
       dernieresSyntheses,
       jalons,
+      biologiesArbitrees: biologiesArbitreesBrutes.filter(b => actifs.has(b.idPatient)),
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)

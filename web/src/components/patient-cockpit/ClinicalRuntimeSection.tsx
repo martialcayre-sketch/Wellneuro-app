@@ -25,12 +25,38 @@ import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
 import { useC5Enabled } from './C5FeatureProvider';
+import { useCbEnabled } from './CbFeatureProvider';
+import {
+  ArbitrageBiologiquePanel,
+  type ArbitrageState,
+} from './ArbitrageBiologiquePanel';
+import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
+import { appliquerArbitrages } from '@/lib/biology-library/revision';
+import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
+
+// Contenu de la version active servi par le GET versions (LOT-06) : la matière
+// d'une révision après arbitrage biologique — jamais recalculée côté client.
+type ContenuVersionActive = {
+  purpose: string;
+  followUpCriterion: string;
+  therapeuticLoad: TherapeuticLoad;
+  actions: ProtocolAction[];
+};
 
 type VersionsApiResponse = {
   ok: boolean;
-  active: { versionId: string } | null;
+  active: { versionId: string; contenu?: ContenuVersionActive | null } | null;
   history: ProtocolVersionItem[];
   error?: string;
+};
+
+type ArbitrageRow = {
+  id: string;
+  protocolDraftId: string;
+  intentionId: string;
+  verdict: string;
+  noteCourte: string | null;
+  arbitreLe: string;
 };
 
 type DiffusionApiResponse = {
@@ -114,6 +140,7 @@ export function ClinicalRuntimeSection({
   onEtatChange?: (etat: EtatRuntimeClinique) => void;
 }) {
   const c5Enabled = useC5Enabled();
+  const cbEnabled = useCbEnabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
@@ -125,6 +152,12 @@ export function ClinicalRuntimeSection({
   // Versionnement persistant (C2A LOT-03) — actif hors mode fixture uniquement.
   const [versions, setVersions] = useState<ProtocolVersionItem[]>([]);
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  // Arbitrage biologique (LOT-06) : contenu de la version active (matière de
+  // la révision) + arbitrages consignés. Inertes tant que `cbEnabled` est faux.
+  const [contenuActif, setContenuActif] = useState<ContenuVersionActive | null>(null);
+  const [arbitrages, setArbitrages] = useState<ArbitrageRow[]>([]);
+  const [arbitrageState, setArbitrageState] = useState<ArbitrageState>('idle');
+  const [arbitrageError, setArbitrageError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   // Validation « pour diffusion » (C2A LOT-03 Part B).
@@ -208,10 +241,27 @@ export function ClinicalRuntimeSection({
       if (!response.ok || !payload.ok) return;
       setVersions(payload.history);
       setActiveVersionId(payload.active?.versionId ?? null);
+      setContenuActif(payload.active?.contenu ?? null);
     } catch {
       // L'historique est indicatif : un échec de lecture ne bloque pas la saisie.
     }
   }, [idPatient]);
+
+  // Arbitrages biologiques du patient — lus seulement drapeau CB posé ; la
+  // route est de toute façon fail-closed sans lui.
+  const loadArbitrages = useCallback(async () => {
+    if (!cbEnabled) return;
+    try {
+      const response = await fetch(
+        `/api/praticien/biologie/arbitrage?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const payload = (await response.json()) as { ok: boolean; arbitrages?: ArbitrageRow[] };
+      if (!response.ok || !payload.ok) return;
+      setArbitrages(payload.arbitrages ?? []);
+    } catch {
+      // L'arbitrage est rechargeable : un échec de lecture ne bloque pas le cockpit.
+    }
+  }, [idPatient, cbEnabled]);
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
   // plancher et le GET du jalon dû partent en parallèle, et le T0 est
@@ -346,8 +396,9 @@ export function ClinicalRuntimeSection({
       void loadDiffusion(readyDecisionCardId);
       void loadCheckins(readyDecisionCardId);
       void loadTrajectoire();
+      void loadArbitrages();
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire, loadArbitrages]);
 
   useEffect(() => {
     setFoodCompassSelection(null);
@@ -480,6 +531,67 @@ export function ClinicalRuntimeSection({
       setDiffusionState('error');
       setDiffusionError('Erreur technique lors de la validation.');
     }
+  };
+
+  // Consigne un verdict d'arbitrage biologique (LOT-06). Auteur et horodatage
+  // sont posés côté serveur ; l'écran ne transmet que verdict + note.
+  const arbitrerBiologie = async (intentionId: string, verdict: VerdictArbitrage, note: string) => {
+    if (fixture || !activeVersionId) return;
+    setArbitrageState('saving');
+    setArbitrageError(null);
+    try {
+      const response = await fetch('/api/praticien/biologie/arbitrage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          protocolDraftId: activeVersionId,
+          intentionId,
+          verdict,
+          noteCourte: note.trim() === '' ? undefined : note,
+        }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (!response.ok || !payload.ok) {
+        setArbitrageState('error');
+        setArbitrageError(payload.error ?? 'Échec de l’enregistrement de l’arbitrage.');
+        // Un 409 (arbitrage existant, version dépassée) se résout en rechargeant.
+        if (response.status === 409) {
+          await loadArbitrages();
+          if (readyDecisionCardId) await loadVersions(readyDecisionCardId);
+        }
+        return;
+      }
+      setArbitrageState('idle');
+      await loadArbitrages();
+    } catch {
+      setArbitrageState('error');
+      setArbitrageError('Erreur technique lors de l’enregistrement de l’arbitrage.');
+    }
+  };
+
+  // Révision après arbitrage : les verdicts deviennent une NOUVELLE version
+  // via le chemin de versionnement existant (préconditions, chaîne C1, garde
+  // `resolution_sans_arbitrage` côté serveur). La re-validation pour diffusion
+  // redevient obligatoire d'elle-même (approbation caduque).
+  const reviserApresArbitrages = async () => {
+    if (fixture || !contenuActif || !activeVersionId) return;
+    const lies = arbitrages
+      .filter(a => a.protocolDraftId === activeVersionId)
+      .map(a => ({
+        intentionId: a.intentionId,
+        verdict: a.verdict as VerdictArbitrage,
+        noteCourte: a.noteCourte,
+        arbitreLe: a.arbitreLe,
+      }));
+    if (lies.length === 0) return;
+    await saveVersion({
+      purpose: contenuActif.purpose,
+      followUpCriterion: contenuActif.followUpCriterion,
+      actions: appliquerArbitrages(contenuActif.actions, lies),
+      therapeuticLoad: contenuActif.therapeuticLoad,
+    });
+    await loadArbitrages();
   };
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
@@ -658,6 +770,33 @@ export function ClinicalRuntimeSection({
           state={diffusionState}
           error={diffusionError}
           onApprove={approveForDiffusion}
+        />
+      )}
+      {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (
+        <ArbitrageBiologiquePanel
+          intentions={contenuActif.actions
+            .filter(action => action.interventionStatus === 'conditionnelle_biologie')
+            .map(action => ({
+              actionId: action.actionId,
+              title: action.title,
+              cible: action.waitFor?.cible ?? null,
+            }))}
+          arbitrages={arbitrages
+            .filter(a => a.protocolDraftId === activeVersionId)
+            .map(a => ({
+              intentionId: a.intentionId,
+              verdict: a.verdict,
+              noteCourte: a.noteCourte,
+              arbitreLe: a.arbitreLe,
+            }))}
+          state={saveState === 'saving' ? 'saving' : arbitrageState}
+          error={arbitrageError}
+          revisionPossible={arbitrages.some(
+            a => a.protocolDraftId === activeVersionId
+              && (a.verdict === 'confirme' || a.verdict === 'infirme'),
+          )}
+          onArbitrer={arbitrerBiologie}
+          onReviser={reviserApresArbitrages}
         />
       )}
       {affiche('suivi') && !fixture && readyDecisionCardId && (

@@ -20,6 +20,7 @@ export type TypeCarteFil =
   | 'synthese_a_valider'
   | 'synthese_a_generer'
   | 'jalon_j21'
+  | 'biologie_arbitree'
   | 'assignation_en_retard'
   | 'reprise';
 
@@ -301,6 +302,50 @@ export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): Car
     });
 }
 
+/**
+ * Ligne source d'une carte biologie (LOT-06) : une version de protocole
+ * arbitrée (`confirme`/`infirme`) qu'aucune version ne supplante — la
+ * différence entre deux artefacts persistés vit dans
+ * `biologieArbitree.ts` (`arbitragesSansRevision`), même patron que J21.
+ */
+export type BiologieArbitreeCarteRow = {
+  idPatient: string;
+  protocolDraftId: string;
+  arbitreLe: Date;
+  nbIntentions: number;
+};
+
+/**
+ * Biologie arbitrée, protocole pas encore révisé. Une carte par version
+ * arbitrée, ancrée sur `protocolDraftId` (ligne source stable → refus G1
+ * standard : une révision crée une NOUVELLE version, donc la carte disparaît
+ * d'elle-même, jamais par nettoyage).
+ */
+export function cartesBiologieArbitree(
+  lignes: BiologieArbitreeCarteRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return lignes
+    .slice()
+    .sort((a, b) => b.arbitreLe.getTime() - a.arbitreLe.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(ligne => ({
+      type: 'biologie_arbitree' as const,
+      idPatient: ligne.idPatient,
+      patient: nomPatient(noms, ligne.idPatient),
+      titre: 'Biologie arbitrée — protocole à réviser',
+      pourquoi:
+        `Bilan arbitré le ${formatDateFr(ligne.arbitreLe)} `
+        + `(${ligne.nbIntentions} intention${ligne.nbIntentions > 1 ? 's' : ''} en attente de résolution) : `
+        + 'la version diffusée ne reflète pas encore le bilan.',
+      date: ligne.arbitreLe.toISOString(),
+      href: `/dashboard/patients/${ligne.idPatient}`,
+      actionLabel: 'Ouvrir la fiche',
+      cle: cleCarte('biologie_arbitree', ligne.protocolDraftId),
+      nbElements: ligne.nbIntentions,
+    }));
+}
+
 export function cartesAssignationsEnRetard(
   assignations: AssignationRow[],
   noms: Map<string, string>,
@@ -380,6 +425,7 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
   { type: 'synthese_a_generer', singulier: 'synthèse à générer', pluriel: 'synthèses à générer' },
   { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
+  { type: 'biologie_arbitree', singulier: 'biologie arbitrée', pluriel: 'biologies arbitrées' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
@@ -428,6 +474,7 @@ export function construireFil(entrees: {
   lectures?: LectureRow[];
   dernieresSyntheses?: Map<string, Date>;
   jalons?: JalonRow[];
+  biologiesArbitrees?: BiologieArbitreeCarteRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
   noms: Map<string, string>;
@@ -440,6 +487,7 @@ export function construireFil(entrees: {
     lectures = [],
     dernieresSyntheses = new Map<string, Date>(),
     jalons = [],
+    biologiesArbitrees = [],
     assignations,
     activites,
     noms,
@@ -453,6 +501,9 @@ export function construireFil(entrees: {
     ...cartesSynthesesAValider(syntheses, noms),
     ...cartesSynthesesAGenerer(lectures, dernieresSyntheses, noms),
     ...cartesJalons(jalons, noms),
+    // Une biologie arbitrée sans révision retient une décision déjà prise :
+    // elle passe après les jalons (décision à prendre), avant les retards.
+    ...cartesBiologieArbitree(biologiesArbitrees, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
     ...cartesReprise(activites, noms, maintenant),
   ];

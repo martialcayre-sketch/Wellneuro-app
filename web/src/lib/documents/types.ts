@@ -19,7 +19,9 @@ export type SourceBloc =
   | 'c2_checkin'
   | 'c2_trajectoire'
   | 'synthese_praticien'
-  | 'synthese_ia';
+  | 'synthese_ia'
+  /** Proposition de bilan biologique dérivée de la table d'indications signée (LOT-06). */
+  | 'biologie_proposition';
 
 /**
  * Régime de contenu — jamais mélangés dans un rendu diffusé :
