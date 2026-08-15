@@ -292,8 +292,10 @@ explicitement un bilan d'optionnel : c'est lui, et lui seul, qui fonde le mode
 `optionnel` du moteur.
 
 ### B.10 — Syndrome des jambes sans repos · `PANEL_SJSR`
-`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_04` (IRLS, International
-Restless Legs Syndrome Rating Scale)
+`niveau: socle` · `conditionnel` · déclencheur : `Q_SOM_04` (IRLS), zone
+couleur `warning` + `danger` — score ≥ 11, « SJSR modéré » et au-delà
+*(arbitrage praticien du 2026-08-15 ; la grille de l'instrument publie
+« Bilan biologique complet (ferritine++) » en protocole de cette bande)*
 `condition:` « Syndrome des jambes sans repos repéré. »
 
 | ☐ | Analytes | Claims |
@@ -427,13 +429,14 @@ toutes les plus sévères.
 | Neurodég. · `Q_GEO_03` AQ | ☐ `warning` 5-14 MCI probable · ☐ `danger` 15-21 démence probable |
 | Neurodég. · `Q_GEO_05` QDRS | ☐ `info` 1,5-5,5 MCI · ☐ `warning` 6-17 démence légère · ☐ `danger` 17,5-30 |
 | Métabolique · `Q_CAR_01` | ☐ `info` 6-10 modéré · ☐ `warning` 11-17 élevé · ☐ `danger` 18-25 très élevé |
-| SJSR · `Q_SOM_04` IRLS | ☐ `info` 1-10 léger · ☐ `warning` 11-20 modéré · ☐ `danger` 21-40 sévère |
+| SJSR · `Q_SOM_04` IRLS | ☑ **`warning` 11-20 modéré** (+ `danger` 21-40) — *tranché le 2026-08-15* |
 
-**Sur le SJSR, l'instrument porte déjà la réponse** : la bande `warning`
-(11-20, « SJSR modéré ») publie pour protocole « Bilan biologique complet
-(ferritine++) », et la bande `info` (1-10) « Correction déficits : fer […] ».
-Le départ à `warning` est donc soutenu par la grille elle-même ; il reste un
-choix praticien, pas une déduction.
+**Le SJSR est tranché** (2026-08-15) : départ à `warning`, soit un score
+IRLS ≥ 11 (« SJSR modéré » et au-delà). La grille de l'instrument publie pour
+protocole de cette bande « Bilan biologique complet (ferritine++) » — le
+départ est soutenu par l'instrument, et l'arbitrage praticien l'a retenu. La
+bande `info` (1-10, « SJSR léger »), dont le protocole mentionne déjà la
+correction des déficits en fer, reste hors déclenchement.
 
 **Quatre instruments demandent autre chose qu'une zone :**
 
@@ -455,9 +458,33 @@ choix praticien, pas une déduction.
   ☐ Accepter · ☐ Verser Schwarz 2003 / Singer 2011 au corpus, puis rouvrir ·
   ☐ Étendre le type de déclencheur à l'âge et au sexe (lot dédié)
 
+  **Les seuils MFI ne portent que sur `GEN`**, une dimension sur cinq. Même
+  références versées, on ne débloquerait qu'un cinquième de l'instrument :
+  un déclencheur « fatigue générale », pas un déclencheur MFI. Les quatre
+  autres sous-échelles n'ont de barème d'aucune sorte.
+
   *Note de périmètre* : le MFI-20 mesure la fatigue, pas la qualité du
   sommeil. Sa catégorie « Sommeil » au catalogue est un regroupement par
   domaine d'exploration ; l'instrument du sommeil est le PSQI (`Q_SOM_01`).
+- **Le corpus ne fonde aucun seuil de déclenchement pour la fatigue** —
+  recherche du 2026-08-15, et c'est un résultat, pas un échec. Il fonde
+  solidement le *contenu* du panel (`WN-CL-0361-009` énumère les marqueurs de
+  première intention : NFS, hémoglobine, CRP ultrasensible, ferritine, fer
+  sérique, coefficient de saturation) et documente abondamment le lien
+  fatigue↔déficits (`0110-004`, `0359-039`, `0358-008`). Mais aucun claim ne
+  dit à partir de quel score explorer. `WN-CL-0361-008` dit même l'inverse :
+  « les marqueurs […] doivent être sélectionnés en fonction du contexte
+  clinique évocateur » — un jugement praticien, pas un seuil.
+
+  L'anamnèse n'offre pas de repli : `symptomes_fonctionnels` ne porte qu'une
+  option (déglutition), et aucun drapeau ne code la fatigue.
+
+  **La question n'est donc peut-être pas le seuil mais le mode.** Un panel
+  dont la source dit qu'il se sélectionne sur le contexte clinique
+  ressemble à un `optionnel` — proposé, laissé à l'appréciation — plutôt
+  qu'à un `conditionnel` suspendu à un score que rien ne fonde.
+  ☐ `conditionnel` sur Pichot · ☐ `optionnel`, sans déclencheur · ☐ Abstention
+
 - **`Q_STR_06` (Karasek) n'a pas de grille de couleurs** mais publie des
   seuils par sous-score (demande > 21 ; latitude < 72 pour le *job strain*).
   Une `comparaison` sur sous-score y est exprimable sans rien inventer.
