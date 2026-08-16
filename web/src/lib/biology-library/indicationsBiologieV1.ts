@@ -130,8 +130,21 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // vide, le moteur refusant déjà faute de règle publiée.
   //
   // POUR SIGNER RÉELLEMENT : poser la date ISO canonique, les claims du
-  // périmètre relu, et `shaPerimetre = INDICATIONS_BIOLOGIE_SHA256`. Geste
-  // praticien, jamais posé d'initiative.
+  // périmètre relu, et `shaPerimetre` en LITTÉRAL FIGÉ — la chaîne hex que
+  // `INDICATIONS_BIOLOGIE_SHA256` vaut au moment de la relecture, recopiée
+  // telle quelle (patron `SHA_CONTENU_…` des priorités). Geste praticien,
+  // jamais posé d'initiative.
+  //
+  // SURTOUT PAS `shaPerimetre: INDICATIONS_BIOLOGIE_SHA256` — l'instruction
+  // d'origine le prescrivait, et c'était un piège à double fond (revue du
+  // 2026-08-16, correction documentée en changelog) : (1) la constante est
+  // déclarée APRÈS cet objet, la référence lèverait un `ReferenceError` à
+  // l'import — crash, pas fail-closed ; (2) réordonner pour compiler rendrait
+  // la comparaison TAUTOLOGIQUE — le SHA est recalculé à chaque chargement
+  // depuis la table vivante, la concordance serait toujours vraie et la
+  // péremption ne serait plus jamais détectée, c'est-à-dire l'exact contraire
+  // de ce que [[D-063]] a construit. Un banc garde ce fichier contre cette
+  // écriture (`indicationsBiologieV1.guard.test.ts`).
   validationExterne: true,
   dateValidation: null,
   claimsSource: [],
