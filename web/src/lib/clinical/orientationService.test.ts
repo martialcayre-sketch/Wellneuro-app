@@ -548,6 +548,17 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     mockArretMeta.claimsSource = ['WN-CL-0000-011'];
   }
 
+  // [[D-065]] — l'arrêt n'est EXPLOITABLE que si le système de contradictions
+  // est actif : table signée ET drapeau posé. Les cas qui veulent observer une
+  // extinction doivent donc armer les deux ; ceux qui ne le font pas éprouvent
+  // précisément le frein structurel.
+  function armerLesContradictions() {
+    mockContraMeta.validationExterne = true;
+    mockContraMeta.dateValidation = '2026-08-13';
+    mockContraMeta.claimsSource = ['WN-CL-0000-012'];
+    vi.stubEnv('WN_ENABLE_CONTRADICTIONS_NNPP2', '1');
+  }
+
   function dossier() {
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       // `statutValidite: 'VALID'` est REQUIS pour que l'exclusion morde : le
@@ -586,8 +597,9 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.recommandations[0].extinction ?? null).toBeNull();
   });
 
-  it('table d\'arrêt SIGNÉE : la recommandation est éteinte, avec son motif', async () => {
+  it('table d\'arrêt SIGNÉE et contradictions actives : la recommandation est éteinte, avec son motif', async () => {
     signerLArret();
+    armerLesContradictions();
     const resultat = await evaluerOrientationPourPatient('PAT-1');
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
     expect(resultat.recommandations).toHaveLength(1);
@@ -598,8 +610,9 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
   // L'EXCLUSION SUIT LE MÊME VERROU, et elle porte sur une passation
   // EXPLOITABLE. `Q_SOM_01` est au dossier avec un recueil complet : la règle qui
   // le viserait ne le proposerait plus une fois la table signée.
-  it('table d\'arrêt SIGNÉE : un instrument déjà mesuré n\'est plus proposé', async () => {
+  it('table d\'arrêt SIGNÉE et contradictions actives : un instrument déjà mesuré n\'est plus proposé', async () => {
     signerLArret();
+    armerLesContradictions();
     mockRegles.length = 0;
     mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
     const resultat = await evaluerOrientationPourPatient('PAT-1');
@@ -644,8 +657,7 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
 
   it('contradictions ACTIVES et constat ouvert : l\'extinction est refusée', async () => {
     signerLArret();
-    signerLesContradictions();
-    vi.stubEnv('WN_ENABLE_CONTRADICTIONS_NNPP2', '1');
+    armerLesContradictions();
     mockContraRegles.push(CONTRA_SUR_DOSSIER);
     const resultat = await evaluerOrientationPourPatient('PAT-1');
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
@@ -653,14 +665,47 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.recommandations[0].extinction ?? null).toBeNull();
   });
 
-  it('système de contradictions ÉTEINT : le même dossier éteint — hiérarchie des verrous', async () => {
-    // La règle de contradiction existe et mordrait, mais le système n'est pas
-    // actif (drapeau absent) : aucun constat ne naît, donc rien d'« ouvert ».
+  // ── LE FREIN EST STRUCTUREL — [[D-065]]. Ce bloc affirmait l'inverse sous le
+  // titre « hiérarchie des verrous » : contradictions éteintes, le dossier
+  // s'éteignait quand même. C'est la configuration exacte qui a tourné en
+  // production du 2026-08-15 au 2026-08-16 ([[D-064]], `DC-30` à revers), et
+  // c'est le banc que la dette de `D-064` réclamait. « Contradictions
+  // inactives » a deux visages, et les deux sont éprouvés : le drapeau absent,
+  // et la table non signée. ────────────────────────────────────────────────
+
+  it('arrêt signé, contradictions signées mais DRAPEAU ABSENT : rien ne s\'éteint, rien n\'est exclu', async () => {
+    // La règle de contradiction existe et mordrait ; sans drapeau, aucun
+    // constat ne peut naître — le moteur ne reçoit donc AUCUNE règle d'arrêt,
+    // plutôt que de tourner sans frein.
     signerLArret();
     signerLesContradictions();
     mockContraRegles.push(CONTRA_SUR_DOSSIER);
     const resultat = await evaluerOrientationPourPatient('PAT-1');
     if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
-    expect(resultat.recommandations[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arret).toBeNull();
+  });
+
+  it('arrêt signé, drapeau posé mais table de contradictions NON signée : rien ne s\'éteint non plus', async () => {
+    signerLArret();
+    vi.stubEnv('WN_ENABLE_CONTRADICTIONS_NNPP2', '1');
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].extinction ?? null).toBeNull();
+    expect(resultat.arret).toBeNull();
+  });
+
+  it('l\'exclusion suit le même frein : contradictions inactives, l\'instrument mesuré reste proposé', async () => {
+    // Scinder les deux effets recréerait l'asymétrie de verrous que D-064 a
+    // payée : le prédicat est UN, les deux effets tombent ensemble.
+    signerLArret();
+    mockRegles.length = 0;
+    mockRegles.push({ ...REGLE_DRAPEAU, suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }] });
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table d\'orientation doit être active ici');
+    expect(resultat.recommandations).toHaveLength(1);
+    expect(resultat.recommandations[0].dejaRepondu).toBe(true);
   });
 });
