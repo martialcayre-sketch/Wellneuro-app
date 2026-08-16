@@ -681,6 +681,51 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
     expect(cibles.filter(c => c.type === 'pack')).toEqual([]);
   });
 
+  /**
+   * Les règles qui se déclenchent sur du SEUL DÉCLARATIF : toutes leurs
+   * feuilles sont des drapeaux d'anamnèse. Extraite pour être éprouvée sur une
+   * règle fabriquée à `ou` — aucune règle vivante n'en porte, et c'est ce trou
+   * qui a laissé passer la divergence commentaire/code (revue, finding B1).
+   */
+  function reglesToutDrapeau(regles: readonly OrientationRule[]): string[] {
+    return regles
+      .filter(r => {
+        const feuilles = r.declencheurs.flatMap(feuillesDuDeclencheur);
+        return feuilles.length > 0 && feuilles.every(f => f.type === 'drapeau');
+      })
+      .map(r => r.id);
+  }
+
+  // CONTRE-ÉPREUVE sur la forme que RV-4 corrige : un `ou` de DEUX drapeaux
+  // est bien compté (il se déclenche sur du déclaratif seul), et un `ou`
+  // mêlant drapeau et mesure ne l'est pas.
+  it('l’inventaire du déclaratif seul compte un `ou` de drapeaux, et lui seul', () => {
+    const base = ORIENTATION_RULES_V1[0];
+    const ouDeuxDrapeaux: OrientationRule = {
+      ...base,
+      id: 'R-FAB-DECLARATIF',
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'drapeau', champ: 'attentes', valeurs: ['a'] },
+          { type: 'drapeau', champ: 'automedication', valeurs: ['b'] },
+        ],
+      }],
+    };
+    const ouMixte: OrientationRule = {
+      ...base,
+      id: 'R-FAB-MIXTE',
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'drapeau', champ: 'attentes', valeurs: ['a'] },
+          { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } },
+        ],
+      }],
+    };
+    expect(reglesToutDrapeau([ouDeuxDrapeaux, ouMixte])).toEqual(['R-FAB-DECLARATIF']);
+  });
+
   // Héritier direct du banc `R-ANA-01 et R-ANA-02` de V1. `R-ANA-02` est
   // devenue `R2-NEU-02` à l'identique ; `R-ANA-01` est retirée — le PSQI se
   // propose désormais sur une MESURE (`R2-SOM-01`, `R2-SOM-02`) et non plus sur
@@ -699,11 +744,15 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
     // L'attente « Améliorer le sommeil » ne suffit plus : R-ANA-01 est retirée,
     // et R2-SOM-05 exige en plus une mesure de sommeil non réparateur.
     expect(cibles).not.toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_SOM_01' });
-    // R2-NEU-02 est la SEULE règle de la table à déclencheur unique de drapeau.
-    const aDeclencheurDrapeauSeul = ORIENTATION_RULES_V1
-      .filter(r => r.declencheurs.length === 1 && r.declencheurs[0].type === 'drapeau')
-      .map(r => r.id);
-    expect(aDeclencheurDrapeauSeul).toEqual(['R2-NEU-02']);
+    // R2-NEU-02 est la SEULE règle de la table dont TOUTES les feuilles sont
+    // des drapeaux (par feuilles depuis [[D-060]], réserve RV-4 : un `ou` en
+    // position 0 sortait du compte sans le dire — l'inventaire lisait la
+    // racine). `every`, et non `length === 1` : un `ou` de plusieurs drapeaux
+    // se déclenche lui aussi sur du seul déclaratif — c'est cette propriété
+    // que l'inventaire compte, pas l'arité (revue de ce lot, finding B1 : la
+    // première rédaction disait `every` en commentaire et `length === 1` en
+    // code — le `ou` multi-branches ressortait du compte en silence).
+    expect(reglesToutDrapeau(ORIENTATION_RULES_V1)).toEqual(['R2-NEU-02']);
   });
 
   it('un patient sans réponse ni anamnèse ne reçoit rien', () => {

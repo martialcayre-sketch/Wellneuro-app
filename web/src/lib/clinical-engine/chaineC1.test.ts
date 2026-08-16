@@ -30,11 +30,17 @@ const PATIENT = 'PAT_TEST';
 
 // L'état LIVRÉ est capturé, jamais écrit en dur : l'y figer rendrait
 // l'isolation mensongère au prochain changement de signature.
-const ETAT_LIVRE = {
+//
+// COPIE GELÉE (relevé L-C de la revue du 2026-08-16, même raisonnement que
+// `chaineC1Fixture`) : cet objet est la référence que les `afterEach`
+// restaurent. Non gelé, un banc pouvait y écrire — par mégarde ou en croyant
+// « ajuster l'état livré » — et graver un faux état que chaque restauration
+// aurait ensuite propagé à tous les cas suivants.
+const ETAT_LIVRE = Object.freeze({
   validationExterne: PRIORITY_RULES_METADATA.validationExterne,
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
   shaPerimetre: PRIORITY_RULES_METADATA.shaPerimetre,
-};
+});
 
 // LA DATE RÉELLEMENT LIVRÉE (finding F4, revue du 2026-08-16). Elle entre dans
 // `validation.validatedAt`, donc dans l'empreinte de la revue : simuler une
