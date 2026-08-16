@@ -92,6 +92,37 @@ signer la table sans poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production laisse
 l'écran praticien du LOT-06 sur « en cours de constitution ». Les deux gestes
 vont ensemble, dans cet ordre : validation clinique d'abord, flag ensuite.
 
+### État des signatures — **gardé, ne pas éditer à la main sans le code**
+
+Ce tableau a menti trois jours ([[D-064]]) : il annonçait « fermé quoi qu'on
+pose » sur une table déjà signée. Il est désormais **épinglé par un banc**
+(`web/src/lib/verrousSignatureDocumentes.guard.test.ts`) qui le compare aux
+métadonnées réelles. Signer une table sans corriger ce tableau fait rougir le
+CI ; une table signée neuve absente du tableau aussi.
+
+<!-- >>> ETAT_VERROUS_SIGNATURE -->
+
+| Table (fichier sous `web/src/lib/`) | `validationExterne` | `dateValidation` |
+|---|---|---|
+| `clinical/orientationRulesV1.ts` | `true` | `2026-08-06` |
+| `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
+| `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
+| `clinical/priorityRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
+| `biology-library/indicationsBiologieV1.ts` | `true` | `null` |
+| `clinical/corpusSyntheseV1.ts` | `false` | `null` |
+
+<!-- <<< ETAT_VERROUS_SIGNATURE -->
+
+Deux lignes de ce tableau demandent une lecture attentive :
+
+- **`indicationsBiologieV1.ts` porte `true` sans date** — signature délibérément
+  incomplète ([[D-063]]). Le verrou est donc FERMÉ, et la première règle
+  biologie ajoutée ne s'appliquera pas tant qu'un praticien n'aura pas posé la
+  date, les claims et le `shaPerimetre`. Ce `true` seul n'ouvre rien.
+- **`priorityRulesV1.ts` porte une date antérieure à son périmètre courant** —
+  `D-062` l'a agrandi sans re-signature. Aucun `shaPerimetre` ne le détecte sur
+  cette table ; c'est un geste praticien en attente.
+
 ## D. Gate dur HDS — ne jamais ouvrir avant l'attestation HDS
 
 | Flag | Valeur ON | Ouvre | Garde |
