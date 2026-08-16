@@ -45,6 +45,13 @@ export type QuestionnaireDef = {
   id: string;
   titre: string;
   instructions?: string;
+  /**
+   * `'clinicien'` : instrument à faire passer en consultation ([[D-066]]).
+   * Le portail patient l'affiche en bandeau — sans lui, le patient lisait des
+   * consignes adressées au praticien et remplissait seul un test dont
+   * l'auto-passation détruit la mesure (revue, finding B5).
+   */
+  administrationMode?: string;
   sections: Section[];
 };
 

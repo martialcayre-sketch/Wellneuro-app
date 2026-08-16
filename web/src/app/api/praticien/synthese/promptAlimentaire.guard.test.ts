@@ -141,7 +141,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // comme recommandée : la mention aurait produit l'inverse de son effet. La
 // consigne pose en outre deux fermetures — une extinction ne clôt pas un axe
 // (une passation nouvelle la lève) et n'est pas une conclusion clinique.
-const EMPREINTE_V25 = '220dac6b288fd79b';
+const EMPREINTE_V26 = 'f37710172eae1c60';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -263,7 +263,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v25', empreinte: EMPREINTE_V25 });
+    ).toEqual({ version: 'synthese-v26', empreinte: EMPREINTE_V26 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

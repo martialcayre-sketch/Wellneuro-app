@@ -399,6 +399,31 @@ describe('/api/praticien/packs — instruments suspendus', () => {
     expect((await res.json()).reason).toBe('not_found');
   });
 
+  // ── Instruments de consultation ([[D-066]], revue finding B3) ──────────────
+  //
+  // C'est CE refus qui rend structurel l'invariant de la décision : « un
+  // instrument de consultation s'assigne par geste praticien, jamais par envoi
+  // de routine ». Le MMSE est ACTIF depuis D-066 — le refus « suspendu » ne le
+  // voit plus, et sans celui-ci, il entrait dans n'importe quel pack, pack de
+  // base de l'onboarding compris : envoyé à CHAQUE nouveau patient.
+  it("26. POST avec un instrument de consultation ACTIF : 409, motif dédié", async () => {
+    const res = await POST(post({ nom: 'Pack fautif', qids: [QID_ACTIF, 'Q_GEO_04'] }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.reason).toBe('questionnaire_consultation');
+    expect(json.error).toContain('Q_GEO_04');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("27. PATCH qui AJOUTE un instrument de consultation : 409, même motif", async () => {
+    const res = await PATCH(patch({ idPack: ID_AUTRE, qids: [QID_ACTIF, 'Q_NEU_06'] }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.reason).toBe('questionnaire_consultation');
+    expect(json.error).toContain('Q_NEU_06');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('17. PATCH { idPack: base, qids: [] } : 400 invalid_payload, findUnique jamais appelé', async () => {
     const res = await PATCH(patch({ idPack: ID_BASE, qids: [] }));
     expect(res.status).toBe(400);

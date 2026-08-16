@@ -85,6 +85,7 @@ const QUESTIONNAIRE = {
   categoriesFonctionnellesSecondaires: [] as string[],
   packsRecommandes: [] as string[],
   phase: 'mvp' as const,
+  passationPraticien: false,
 };
 
 afterEach(() => {

@@ -3869,3 +3869,24 @@ catalogue biologie ne peuvent pas allumer leur panel** — 5 sont suspendus
 panels mémoire et neurodégénératif sont morts en l'état.
 Prochaine action : PR de ce lot, puis arbitrage praticien sur ces panels avant
 PR-2. Ouvert : RV-1 (banc d'inertie, prérequis dur PR-2), RV-2 à RV-6.
+
+## [2026-08-16] — D-066 : réactivation des cinq cognitifs, comptes de complétude
+
+Deux arbitrages praticien : réactiver `Q_GEO_03/04/05/06` et `Q_NEU_06` sur
+déclaration « usage couvert » (patron EORTC — motifs réels de suspension
+re-présentés avant le geste : droits © PAR/IEDM, instruments de consultation),
+et faire publier leurs comptes par les moteurs `had`, `sum_two_phases`,
+`francis` (prérequis des branches `D-060`).
+
+`wn-reviewer` : NO-GO puis GO sous réserve, réserves soldées. Sa trouvaille
+majeure : l'invariant « geste praticien, jamais envoi de routine » ne tenait
+qu'à l'écran — pack par défaut ouvert aux cinq, bandeau mensonger, cinq mots
+du test de rappel dans l'énoncé. Rendu structurel : packs en 409 dédié,
+onboarding en ceinture journalisée, sélecteur et file d'envoi marqués, bandeau
+portail gardé par banc. `alertMA` exige désormais une phase 2 complète.
+
+Écarté : garder la bande servie sur recueil partiel sous garde (rendu de
+production — décision distincte, documentée sur chaque moteur).
+Bloqué : connecteur MCP Supabase mort (« organization membership ») — lecture
+MAJ-4 et textes de claims PR-2 en attente de reconnexion.
+Prochaine action : PR, CI, puis PR-2.

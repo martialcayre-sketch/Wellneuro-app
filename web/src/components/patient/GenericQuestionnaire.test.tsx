@@ -378,3 +378,49 @@ describe('GenericQuestionnaire — grille guided_sections', () => {
     expect(screen.queryAllByRole('combobox').length).toBeGreaterThan(0);
   });
 });
+
+// Le bandeau « en consultation » est la SEULE protection au point de risque
+// maximal ([[D-066]] §3, revue finding MAJ-1) : l'assignation d'un instrument
+// de consultation est ouverte, aucun logiciel ne force la présence du
+// praticien, et c'est ce texte — lui seul — qui dit au patient de ne pas
+// remplir seul. Une protection assumée comme non contraignante doit au minimum
+// être garantie PRÉSENTE : sans ce banc, les six lignes du composant se
+// retirent sans qu'une ligne rougisse.
+describe('GenericQuestionnaire — bandeau de passation en consultation', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("un instrument `administrationMode: 'clinicien'` affiche l'avertissement au patient", () => {
+    render(
+      <GenericQuestionnaire
+        assignation={{ ...assignation, idQuestionnaire: 'Q_GEO_04', titre: 'MMSE' }}
+        questionnaire={QUESTIONNAIRE_CATALOGUE.Q_GEO_04 as QuestionnaireDef}
+        email={assignation.emailPatient}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/en consultation, avec votre praticien/)).toBeTruthy();
+    expect(screen.getByText(/attendez le rendez-vous/)).toBeTruthy();
+  });
+
+  it('un auto-questionnaire ordinaire ne l’affiche pas', () => {
+    // Contre-épreuve : un bandeau servi partout dirait à chaque patient
+    // d'attendre un rendez-vous — la garde doit discriminer, pas tapisser.
+    render(
+      <GenericQuestionnaire
+        assignation={assignation}
+        questionnaire={QUESTIONNAIRE_CATALOGUE.Q_NEU_03 as QuestionnaireDef}
+        email={assignation.emailPatient}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/en consultation, avec votre praticien/)).toBeNull();
+  });
+});

@@ -116,26 +116,31 @@ describe('MMT — les trois mots, et la passation qui les protège', () => {
     expect(items.get('MM10').texte).toContain('trois mots');
   });
 
-  it('garde sa route fermée, et rouvre son usage en consultation', () => {
-    // Les deux fermetures n'avaient PAS la même raison, et une seule est levée.
+  it('sa route est rouverte par décision, et le risque de mesure reste nommé', () => {
+    // Historique des deux fermetures, parce qu'elles n'avaient pas la même
+    // raison et ne sont pas tombées le même jour. Le VERBATIM a rouvert le
+    // 2026-07-31, son motif étant tombé : l'identité est instruite — document
+    // « MMT ou Mini Mental Test » diffusé par l'IEDM (2005), dix items au mot
+    // près, mêmes bandes ; sa bande 5-10 ordonne « Faire MMS », il n'est donc
+    // pas le MMSE et la réserve © PAR ne le vise pas.
     //
-    // La ROUTE reste fermée, et c'est une question de MESURE, pas de droits :
-    // trois items forment un enregistrement de trois mots puis deux rappels.
-    // Auto-rempli, le test se corrige en remontant la page, et les deux items
-    // les plus discriminants deviennent des points offerts. Aucune instruction
-    // bibliographique ne changera cela.
+    // La ROUTE a rouvert le 2026-08-16 ([[D-066]]) : déclencheur du panel
+    // mémoire du catalogue biologie, fermé il rendait le panel inerte.
     //
-    // Le VERBATIM rouvre, parce que son motif est tombé : la grille était
-    // fermée « faute d'identité instruite », et l'identité l'est depuis le
-    // 2026-07-31 — document « MMT ou Mini Mental Test » diffusé par l'IEDM
-    // (2005), dix items au mot près, mêmes bandes. Sa bande 5-10 ordonne « Faire
-    // MMS » : il n'est donc pas le MMSE, et la réserve © PAR ne le vise pas.
-    expect(IDS_SUSPENDUS.has('Q_NEU_06')).toBe(true);
-    expect(IDS_ASSIGNABLES.has('Q_NEU_06')).toBe(false);
+    // LE RISQUE DE MESURE N'EST PAS TOMBÉ, LUI : trois items forment un
+    // enregistrement de trois mots puis deux rappels — auto-rempli hors
+    // surveillance, le test se corrige en remontant la page et les deux items
+    // les plus discriminants deviennent des points offerts. La décision ne le
+    // nie pas, elle le PORTE : l'assignation est un geste praticien de
+    // consultation (le bandeau `administrationMode: 'clinicien'` reste dû),
+    // jamais un envoi de routine. Ce commentaire est la trace de ce risque ;
+    // le retirer exigerait un argument que la décision n'a pas donné.
+    expect(IDS_SUSPENDUS.has('Q_NEU_06')).toBe(false);
+    expect(IDS_ASSIGNABLES.has('Q_NEU_06')).toBe(true);
     expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_NEU_06');
     const enRayon = listeBibliotheque().find(e => e.id === 'Q_NEU_06');
     expect(enRayon?.passationPraticien).toBe(true);
-    expect(enRayon?.assignable).toBe(false);
+    expect(enRayon?.assignable).toBe(true);
 
     // Et il reste SCORABLE : c'était vrai fermé, ça le reste ouvert.
     expect(calculateScore('Q_NEU_06', toutA(0))).not.toHaveProperty('error');

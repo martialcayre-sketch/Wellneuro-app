@@ -60,9 +60,11 @@ describe('file-envoi POST', () => {
     const res = await POST(
       postRequest({
         emailPatient: 'sophie.nicola@example.com',
-        // Q_STR_02 valide (deux fois), Q_STR_07 alias historique, Q_GEO_04
-        // passation praticien, Q_FAUX inconnu : seuls les assignables passent.
-        qids: ['Q_STR_02', 'Q_STR_02', 'Q_STR_07', 'Q_GEO_04', 'Q_FAUX'],
+        // Q_STR_02 valide (deux fois), Q_STR_07 alias historique, Q_URO_02
+        // suspendu, Q_FAUX inconnu : seuls les assignables passent. (Fixture
+        // `Q_GEO_04` → `Q_URO_02` le 2026-08-16 : le MMSE est réactivé par
+        // [[D-066]] et ne peut plus incarner « non assignable ».)
+        qids: ['Q_STR_02', 'Q_STR_02', 'Q_STR_07', 'Q_URO_02', 'Q_FAUX'],
       }),
     );
     expect(res.status).toBe(200);
@@ -105,7 +107,7 @@ describe('file-envoi POST', () => {
 
   it('refuse un payload sans questionnaire assignable', async () => {
     const res = await POST(
-      postRequest({ emailPatient: 'sophie.nicola@example.com', qids: ['Q_STR_07', 'Q_GEO_04'] }),
+      postRequest({ emailPatient: 'sophie.nicola@example.com', qids: ['Q_STR_07', 'Q_URO_02'] }),
     );
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('invalid_payload');

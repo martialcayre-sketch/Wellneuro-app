@@ -355,10 +355,26 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
     expect(immediatSeul.alertLabel).toBeNull();
     expect(immediatSeul.total).toBeNull();
 
-    // Et l'alerte reste rendue quand le rappel différé, lui, a bien été mesuré.
-    const differeFaible: any = calculateScore('Q_GEO_06',
+    // L'alerte exige un rappel différé COMPLET, pas seulement entamé
+    // ([[D-066]], revue finding M1) : deux items de rappel sur cinq, cotés 0,
+    // rendaient `total = 0 ≤ 2` — « évocateur de maladie d'Alzheimer » servi
+    // sur un test aux trois cinquièmes non administré. Un rappel amputé ne
+    // peut qu'abaisser le total : c'est le biais même qui fabriquait l'alerte.
+    const differePartiel: any = calculateScore('Q_GEO_06',
       { ...Object.fromEntries(phases.phase1.map(i => [i, 1])), [phases.phase2[0]]: 1 });
-    expect(differeFaible.phases.find((p: any) => p.id === 'phase2').total).toBe(1);
+    expect(differePartiel.phases.find((p: any) => p.id === 'phase2').missing).toBe(4);
+    expect(differePartiel.alertMA).toBeNull();
+    expect(differePartiel.alertLabel).toBeNull();
+
+    // Et l'alerte reste rendue quand le rappel différé COMPLET est faible —
+    // sans cette contre-épreuve, un `alertMA` toujours nul passerait les deux
+    // cas du dessus.
+    const differeFaible: any = calculateScore('Q_GEO_06', {
+      ...Object.fromEntries(phases.phase1.map(i => [i, 1])),
+      ...Object.fromEntries(phases.phase2.map(i => [i, 0])),
+    });
+    expect(differeFaible.phases.find((p: any) => p.id === 'phase2').missing).toBe(0);
+    expect(differeFaible.phases.find((p: any) => p.id === 'phase2').total).toBe(0);
     expect(differeFaible.alertMA).toBe(true);
     expect(differeFaible.alertLabel).toContain('Alzheimer');
   });

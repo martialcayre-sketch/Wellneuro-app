@@ -886,7 +886,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             <option value="">Questionnaire *</option>
             {questionnairesFiltres.map(q => (
               <option key={q.id} value={q.id}>
-                {`${q.titre} (${categorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})`}
+                {`${q.titre} (${categorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})${q.passationPraticien ? ' — passation en consultation' : ''}`}
               </option>
             ))}
           </Select>

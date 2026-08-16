@@ -4,6 +4,94 @@
 
 ## Décisions actives
 
+### D-066 — Cinq instruments cognitifs sont réactivés sur déclaration du praticien, et trois moteurs publient leurs comptes de complétude
+
+- Date : 2026-08-16
+- Statut : accepté (deux arbitrages praticien explicites en session, le second
+  pris en connaissance des motifs réels de suspension, re-présentés avant le
+  geste) et implémenté.
+- Domaine : catalogue des questionnaires, droits, scoring (métadonnées de
+  complétude), consigne de synthèse (bump v26)
+- Contexte : sept des dix-sept instruments déclencheurs du catalogue biologie
+  niveau 1 ne pouvaient pas allumer leur panel (audit du 2026-08-16, consigné
+  dans `RESERVE-instruments-non-declenchables.md` de la proposition). Cinq
+  étaient suspendus (`actif: false`, zéro passation en production) : les panels
+  mémoire et neurodégénératif étaient morts en toutes formes. Deux moteurs ne
+  publiaient aucun compte de complétude (HAD, IBS-SSS) : leurs branches de
+  disjonction (`D-060` §2) étaient inertes à vie.
+- Décision, en deux volets :
+
+**1. Réactivation de `Q_GEO_03`, `Q_GEO_04`, `Q_GEO_05`, `Q_GEO_06` et
+`Q_NEU_06`, sur déclaration du praticien-propriétaire que l'usage est couvert**
+— patron EORTC du 2026-07-30 : la déclaration lève la suspension, jamais les
+réserves, qui restent au registre (« © PAR, licence requise » pour le MMSE ;
+identité IEDM sans ayant droit sollicitable pour le MMT). Les motifs réels de
+la suspension ont été re-présentés au praticien avant le geste, et la décision
+les porte explicitement :
+
+- ces cinq instruments sont **de consultation** (administrés par le clinicien
+  ou renseignés avec l'informant) — leur assignation est un geste praticien,
+  jamais un envoi de routine, et le bandeau `administrationMode: 'clinicien'`
+  reste ce qui le dit à l'écran ;
+- le **risque de mesure du MMT demeure nommé** (auto-rempli hors surveillance,
+  le test se corrige en remontant la page) — la décision le porte, elle ne le
+  nie pas ; la trace vit dans `mmtReconstruit.guard.test.ts` ;
+- les sentinelles qui épinglaient la fermeture sont **inversées, jamais
+  supprimées** : `droitsAssignabilite.guard.test.ts` épingle la liste exacte
+  des ouverts par décision (la prochaine ligne de `PASSATION_PRATICIEN` reste
+  fermée sans décision), `bibliotheque.test.ts` épingle chaque instrument dans
+  sa position. `Q_URO_02`, `Q_PED_02` et `Q_PED_03` restent fermés, hors
+  périmètre.
+- `listeBibliotheque()` fusionne désormais les deux sources : un instrument
+  peut être de passation praticien ET assignable — sans la jointure, les cinq
+  sortaient en double au sélecteur d'assignation.
+
+**2. Les moteurs `had`, `sum_two_phases` et `francis` publient leurs comptes de
+complétude** (`missing`/`repondus`, par axe pour HAD, à la racine pour les deux
+autres) — extension de la campagne du 2026-08-04, mêmes clés, même contrat.
+Sans eux, aucune branche de disjonction ne peut viser HAD-A, HAD-D, le test des
+5 mots ou l'IBS-SSS (`D-060` §2, fail-closed). Effet de bord assumé et voulu :
+sur un recueil partiel, la garde générale de complétude annule désormais la
+mesure de ces porteurs là où elle ne lisait rien — c'est le comportement que
+les autres moteurs ont déjà. La consigne de synthèse passe en v26 : **missing**
+rejoint **items** et **repondus** dans la phrase qui sépare les comptes de
+questions des points de score.
+
+**3. L'invariant « geste praticien, jamais envoi de routine » est STRUCTUREL,
+pas déclaratif** — ajouté après la revue `wn-reviewer` de la première
+implémentation, qui a montré qu'il ne reposait que sur la vigilance d'écran
+(pack par défaut ouvert aux cinq, bandeau affirmant « jamais envoyé au
+portail » à côté d'un bouton d'envoi actif, sélecteur sans marque, consignes
+praticien servies au patient, cinq mots du test de rappel écrits dans
+l'énoncé) :
+
+- les **packs refusent** tout instrument de `PASSATION_PRATICIEN` (409
+  `questionnaire_consultation`, POST comme PATCH), et l'assignation du pack de
+  base à l'onboarding l'écarte en ceinture — un pack est l'envoi de routine par
+  définition, pack de base compris ;
+- l'assignation DIRECTE reste ouverte : c'est elle, le geste praticien — et le
+  sélecteur la marque (« passation en consultation ») ;
+- le **portail patient** affiche à l'ouverture : « se remplit en consultation,
+  avec votre praticien » — l'auto-remplissage à domicile reste techniquement
+  possible (aucun logiciel ne force la présence), c'est le risque résiduel que
+  la décision porte ;
+- `Q_GEO_03` (AQ) et `Q_GEO_05` (QDRS) reçoivent `administrationMode:
+  'clinicien'` qui leur manquait — informant-based, l'auto-remplissage
+  répondrait à la place du proche (`DC-14`, `DC-28`) ;
+- l'alerte Alzheimer du test des 5 mots exige un rappel différé COMPLET
+  (`missing === 0`) — un rappel amputé ne peut qu'abaisser le total, le biais
+  même qui fabriquait l'alerte (finding M1).
+
+- Conséquences : les sept instruments de l'audit sont déclenchables ; les
+  panels mémoire et neurodégénératif redeviennent écrivables en PR-3 ; le banc
+  d'inertie des branches `ou` (réserve RV-1 de la revue de `D-060`) pourra
+  exiger des comptes publiés sans liste d'exception.
+- Écarté : maintenir la suspension en retenant les deux panels (proposé comme
+  option recommandée — le praticien a préféré réactiver) ; réactiver sans
+  re-présenter les motifs réels (les options initiales décrivaient le motif
+  comme inconnu, un second arbitrage a été demandé quand il s'est avéré
+  documenté) ; écrire les branches inertes avec liste d'exceptions au banc.
+
 ### D-065 — Le frein de `D-053` §5 devient structurel : pas d'extinction sans système de contradictions actif
 
 - Date : 2026-08-16

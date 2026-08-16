@@ -2823,19 +2823,30 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // de « Mon équilibre », en `inverser: true`. Zéro item de dépression rendait
     // donc un ratio de 0, inversé en **1,000 de couverture** et un grade de preuve
     // **A**, avec « Absence de symptomatologie » servi en vert à la fiche patient.
-    const {total: scoreA} = totalSousScore(sc.subscalesA, []);
-    const {total: scoreD} = totalSousScore(sc.subscalesD, []);
+    const {total: scoreA, missing: missingA, repondus: repondusA} = totalSousScore(sc.subscalesA, []);
+    const {total: scoreD, missing: missingD, repondus: repondusD} = totalSousScore(sc.subscalesD, []);
     function interpHad(score: any, sub: any) {
       const def = sc.interpretation.find((i: any) => i.subscale === sub);
       return def ? interpretRanges(score, def.ranges) : null;
     }
+    // Les comptes partent SUR CHAQUE AXE et à la racine — mêmes clés que
+    // `subscore`, `sum`, `psqi` et `group_majority` (campagne complétude du
+    // 2026-08-04, étendue ici le 2026-08-16) : `totalSousScore` les calculait
+    // déjà, ce moteur les jetait. Sans eux, aucun déclencheur ne peut exiger la
+    // complétude d'un axe HAD — une branche de disjonction ([[D-060]] §2) visant
+    // HAD-A ou HAD-D était inerte à vie, en silence. `interpHad` reste, lui,
+    // inconditionnel : la bande servie sur recueil partiel ne change pas ici —
+    // la poser sous garde serait un rendu de production modifié, geste
+    // distinct.
     return {
       type:'had',
       subScores:[
-        {id:'A', label:'Anxiété', total: scoreA, max:21, interpretation: interpHad(scoreA,'A')},
-        {id:'D', label:'Dépression', total: scoreD, max:21, interpretation: interpHad(scoreD,'D')},
+        {id:'A', label:'Anxiété', total: scoreA, max:21, missing: missingA, repondus: repondusA, interpretation: interpHad(scoreA,'A')},
+        {id:'D', label:'Dépression', total: scoreD, max:21, missing: missingD, repondus: repondusD, interpretation: interpHad(scoreD,'D')},
       ],
       total: totalGlobalDepuisSousScores([{total: scoreA}, {total: scoreD}]),
+      missing: missingA + missingD,
+      repondus: repondusA + repondusD,
       note: sc.note || null,
       certification: sc.certification || null
     };
@@ -3157,7 +3168,14 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const total = totalGlobalDepuisSousScores(
       [fr2, fr3, fr5, fr6Score, fr7].map(v => ({total: v})));
     const interp = interpretRanges(total, sc.interpretation);
+    // Comptes à la racine — cinq composantes, une mesure par composante non
+    // nulle (2026-08-16, même contrat que `sum`). Le grain est la COMPOSANTE et
+    // non l'item : c'est la frontière qu'`aUneMesure` pose déjà pour ce moteur,
+    // et compter autre chose qu'elle ferait diverger les deux lectures.
+    const composantesMesurees = [fr2, fr3, fr5, fr6Score, fr7].filter(v => v !== null).length;
     return {type:'francis', total, maxTotal:500,
+      missing: 5 - composantesMesurees,
+      repondus: composantesMesurees,
       components:[
         {id:'FR_Q002',label:'Intensité des douleurs abdominales',       val:fr2, max:100},
         {id:'FR_Q003',label:'Fréquence des douleurs ×10',               val:fr3, max:100},
@@ -3755,22 +3773,42 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // « Rappel différé ≤ 2/5 — évocateur de maladie d'Alzheimer ». Un test
     // simplement inachevé rendait donc le résultat que ce test sert à chercher.
     const phaseResults = sc.phases.map((ph: any) => {
-      const {total} = totalSousScore(ph.items, []);
-      return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal};
+      const {total, missing, repondus} = totalSousScore(ph.items, []);
+      return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal, missing, repondus};
     });
     const globalTotal = totalGlobalDepuisSousScores(phaseResults);
 
     // Alerte clinique si rappel différé ≤ 2 — et `null`, jamais `false`, quand
     // la phase n'a pas été administrée : `false` affirmerait un rappel préservé.
+    //
+    // LA PHASE DOIT ÊTRE COMPLÈTE, pas seulement entamée (revue du 2026-08-16,
+    // finding M1, [[D-066]]). `totalSousScore` ne rend `null` que sur zéro
+    // réponse : deux items de rappel sur cinq, cotés 0, rendaient `total = 0`,
+    // donc « ≤ 2 » — « évocateur de maladie d'Alzheimer » servi sur un test aux
+    // trois cinquièmes non administré. C'est la garde d'en-tête de ce moteur
+    // (« une phase non administrée vaut non mesurée, pas 0 »), étendue au
+    // partiel : un rappel amputé ne peut qu'abaisser le total, exactement le
+    // biais qui fabriquait l'alerte.
     const phaseD   = phaseResults.find((p: any) => p.id === 'phase2');
-    const alertMA  = (phaseD && phaseD.total !== null) ? phaseD.total <= 2 : null;
+    const alertMA  = (phaseD && phaseD.total !== null && phaseD.missing === 0) ? phaseD.total <= 2 : null;
 
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
+    // Comptes à la racine (somme des deux phases) — mêmes clés que `sum` et
+    // `group_majority` (2026-08-16). Ce qu'ils OUVRENT : la garde de complétude
+    // du MOTEUR D'ORIENTATION peut désormais refuser un test pris entre les
+    // deux phases, et une branche de disjonction ([[D-060]] §2) peut exiger ce
+    // recueil complet. Ce qu'ils ne changent PAS : `interp` ci-dessous reste
+    // calculée sans condition — la fiche patient et la synthèse lisent toujours
+    // la bande d'un total amputé, contrairement à `sum_decimal` juste au-dessus
+    // qui annule la sienne. Poser cette garde-là changerait un rendu servi en
+    // production : geste distinct, décision distincte.
     return {
       type:'sum_two_phases',
       phases:      phaseResults,
       total:       globalTotal,
       maxTotal:    sc.maxTotal,
+      missing:     phaseResults.reduce((somme: number, ph: any) => somme + ph.missing, 0),
+      repondus:    phaseResults.reduce((somme: number, ph: any) => somme + ph.repondus, 0),
       alertMA,
       alertLabel:  alertMA === true ? 'Rappel différé ≤ 2/5 — évocateur de maladie d\'Alzheimer (Dubois 2002)' : null,
       interpretation: interp

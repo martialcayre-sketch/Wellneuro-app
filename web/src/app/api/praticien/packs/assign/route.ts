@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
@@ -170,11 +171,15 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
     const aCreer = qids.flatMap(idQuestionnaire => {
       const questionnaire = catalogue[idQuestionnaire];
-      // Un instrument suspendu est écarté comme un id inconnu : le pack part
-      // amputé de cette ligne plutôt que d'échouer en bloc. Le filtre est ici
-      // et pas seulement dans l'écran — un pack déjà enregistré en base peut
-      // contenir un qid suspendu, et rien ne le retire de `pack.qids`.
-      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) return [];
+      // Un instrument suspendu OU de consultation est écarté comme un id
+      // inconnu : le pack part amputé de cette ligne plutôt que d'échouer en
+      // bloc. Le filtre est ici et pas seulement dans l'écran — un pack déjà
+      // enregistré en base peut contenir un qid suspendu, et rien ne le retire
+      // de `pack.qids`. La ceinture « consultation » ([[D-066]]) est la jumelle
+      // de celle de l'onboarding : le POST/PATCH de `packs` refuse ces
+      // instruments depuis la décision, mais cette route porte le repli legacy
+      // et doit tenir seule sur une composition antérieure.
+      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire) || IDS_PASSATION_PRATICIEN.has(idQuestionnaire)) return [];
       return [{
         idAssignation: createPublicId('ASS'),
         idQuestionnaire,
@@ -192,6 +197,15 @@ export async function POST(req: Request): Promise<NextResponse> {
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
         message: `Questionnaires suspendus écartés du pack : ${ecartesSuspendus.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
+    const ecartesConsultation = qids.filter(id => IDS_PASSATION_PRATICIEN.has(id));
+    if (ecartesConsultation.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
+        domain: 'ASSIGNATION',
+        message: `Instruments de consultation écartés du pack : ${ecartesConsultation.join(', ')}`,
         context: finalizeLogContext(requestContext, { retryable: false }),
       });
     }

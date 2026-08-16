@@ -307,30 +307,61 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
     });
   });
 
-  it('une passation NON ADMINISTRABLE ne fonde aucun déclencheur', () => {
-    // `Q_NEU_06` est scorable — `sum`, total 10 sur cette passation complète —
-    // mais retiré de la route (droits/certification). Le
+  it('une passation NON ADMINISTRABLE ne fonde aucun déclencheur', async () => {
+    // `Q_PED_03` est scorable — `sum_items`, somme brute sur une passation
+    // COMPLÈTE (108 items) — mais retiré de la route (droits/certification). Le
     // moteur écarte déjà ces instruments comme CIBLES ; il n'y a pas de raison
     // d'accepter leurs MESURES. Sans ce banc, la garde restait verte à la
     // mutation — c'est-à-dire qu'elle ne gardait rien de prouvé.
+    //
+    // Fixture `Q_NEU_06` → `Q_PED_03` le 2026-08-16 : le MMT est réactivé par
+    // [[D-066]]. La passation est COMPLÈTE à dessein (revue, finding B6) : une
+    // passation partielle serait aussi refusée par la garde de complétude, et
+    // le banc passerait pour deux raisons indépendantes — muter la garde
+    // d'administrabilité ne le ferait plus rougir. La contre-épreuve ci-dessous
+    // tient l'autre moitié.
+    const reponsesCompletes = Object.fromEntries(
+      Array.from({ length: 108 }, (_, i) => [`CP${String(i + 1).padStart(3, '0')}`, 1]),
+    );
     mockRegles.length = 0;
     mockRegles.push({
       id: 'R-TEST-NONADM',
       statut: 'publiee',
-      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_NEU_06', operateur: '>=', valeur: 0 }],
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_PED_03', operateur: '>=', valeur: 0 }],
       suggestions: [{ questionnaireId: 'Q_SOM_05', priorite: 1, objectif: 'Explorer le chronotype.' }],
       justificationClaims: [{ claimId: 'WN-CL-0000-004', versionClaim: 'v1.0' }],
       niveau: 'socle',
     });
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idReponse: 'REP-3', idQuestionnaire: 'Q_NEU_06', dateReponse: new Date('2026-07-01T10:00:00Z'), scoresJson: { rawAnswers: { MM1: 1, MM2: 1, MM3: 1, MM4: 1, MM5: 1, MM6: 1, MM7: 1, MM8: 1, MM9: 1, MM10: 1 } } },
+      { idReponse: 'REP-3', idQuestionnaire: 'Q_PED_03', dateReponse: new Date('2026-07-01T10:00:00Z'), scoresJson: { rawAnswers: reponsesCompletes } },
     ]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.pack.findMany.mockResolvedValue([]);
     prisma.consultation.findFirst.mockResolvedValue(null);
-    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
-      expect(resultat.actif === true && resultat.recommandations).toEqual([]);
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    expect(resultat.actif === true && resultat.recommandations).toEqual([]);
+
+    // CONTRE-ÉPREUVE : la même règle sur un porteur ADMINISTRABLE déclenche —
+    // sans elle, une garde qui refuserait tout resterait verte ci-dessus.
+    mockRegles.length = 0;
+    mockRegles.push({
+      id: 'R-TEST-ADM',
+      statut: 'publiee',
+      declencheurs: [{ type: 'comparaison', idQuestionnaire: 'Q_STR_02', operateur: '>=', valeur: 0 }],
+      suggestions: [{ questionnaireId: 'Q_SOM_05', priorite: 1, objectif: 'Explorer le chronotype.' }],
+      justificationClaims: [{ claimId: 'WN-CL-0000-004', versionClaim: 'v1.0' }],
+      niveau: 'socle',
     });
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idReponse: 'REP-4',
+        idQuestionnaire: 'Q_STR_02',
+        dateReponse: new Date('2026-07-01T10:00:00Z'),
+        scoresJson: { rawAnswers: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`P${i + 1}`, 2])) },
+      },
+    ]);
+    const temoin = await evaluerOrientationPourPatient('PAT-1');
+    expect(temoin.actif === true && temoin.recommandations.length > 0).toBe(true);
   });
 
   it('un instrument HORS CATALOGUE ne fonde aucun déclencheur', () => {

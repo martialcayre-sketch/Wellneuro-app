@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import { CATALOGUE_DEFINITIONS, IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { estInstrumentCabinet, idsAssignablesPour } from '@/lib/instruments';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -18,6 +18,9 @@ export type FileEnvoiItem = {
   /** Instrument du cabinet devenu non assignable (dépublié ou désactivé) :
    * affiché barré d'un badge, il sera filtré à l'envoi. */
   indisponible?: boolean;
+  /** Instrument de consultation ([[D-066]]) : la file est la DERNIÈRE surface
+   * avant le mail — la marque doit survivre jusqu'au bouton d'envoi. */
+  consultation?: boolean;
 };
 
 export type FileEnvoiBrouillon = {
@@ -58,7 +61,11 @@ type InfoCabinet = { titre: string; actif: boolean; statutRelecture: string };
 
 function itemDe(id: string, cabinetParId: Map<string, InfoCabinet>): FileEnvoiItem {
   if (!estInstrumentCabinet(id)) {
-    return { id, titre: CATALOGUE_DEFINITIONS[id]?.titre || id };
+    return {
+      id,
+      titre: CATALOGUE_DEFINITIONS[id]?.titre || id,
+      ...(IDS_PASSATION_PRATICIEN.has(id) ? { consultation: true } : {}),
+    };
   }
   const info = cabinetParId.get(id);
   // Un instrument du cabinet dépublié ou désactivé reste LISTÉ, marqué

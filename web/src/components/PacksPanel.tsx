@@ -159,21 +159,30 @@ export function PacksPanel({
       a.localeCompare(b, 'fr'),
     );
 
+  // Les instruments de consultation ne sont pas proposés au composeur : la
+  // route les refuse en 409 depuis [[D-066]] (« un pack est un envoi de
+  // routine »), et proposer un choix que la soumission rejette est la classe
+  // d'écart écran↔route que `questionnaires/route.ts` nomme (revue, MAJ-3).
+  const questionnairesComposables = questionnaires.filter(q => !q.passationPraticien);
   const questionnairesFiltres = categorieFilter
-    ? questionnaires.filter(q =>
+    ? questionnairesComposables.filter(q =>
       categorieView === 'fonctionnelle'
         ? q.categorieFonctionnellePrincipale === categorieFilter
         : q.categorie === categorieFilter,
     )
-    : questionnaires;
+    : questionnairesComposables;
 
+  // Même exclusion à l'édition : le PATCH refuse les AJOUTS d'instruments de
+  // consultation — un pack hérité en portant un reste éditable (le qid hérité
+  // revient dans le payload sans être « ajouté »), il n'offre simplement pas
+  // de nouvelle case à cocher pour eux.
   const editQuestionnairesFiltresBruts = editCategorieFilter
-    ? questionnaires.filter(q =>
+    ? questionnairesComposables.filter(q =>
       editCategorieView === 'fonctionnelle'
         ? q.categorieFonctionnellePrincipale === editCategorieFilter
         : q.categorie === editCategorieFilter,
     )
-    : questionnaires;
+    : questionnairesComposables;
 
   const editQuestionnairesFiltres = editOnlyPackSelection
     ? editQuestionnairesFiltresBruts.filter(q => editSelectedQids.has(q.id))
@@ -185,6 +194,14 @@ export function PacksPanel({
   // métadonnée fonctionnelle fiable, et le filtrer masquerait le seul moyen de
   // le retirer.
   const editSuspendusPresents = suspendus.filter(s => editQidsInitiaux.has(s.id));
+
+  // Instruments de consultation DÉJÀ dans ce pack (dérivé de l'instantané).
+  // Exclus de `questionnairesComposables` (le PATCH refuse les AJOUTS, pas les
+  // suppressions), ils sont affichés dans un bloc distinct pour que le praticien
+  // puisse les retirer.
+  const editConsultationPresents = questionnaires.filter(
+    q => q.passationPraticien && editQidsInitiaux.has(q.id),
+  );
 
   const toggleQid = (id: string) => {
     setSelectedQids(prev => {
@@ -653,6 +670,25 @@ export function PacksPanel({
                       <input type="checkbox" checked={editSelectedQids.has(s.id)} onChange={() => toggleEditQid(s.id)} />
                       <span>{s.titre}</span>
                       <span className="text-xs text-muted-foreground">(suspendu — {s.id})</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Instruments de consultation DÉJÀ dans ce pack. Bloc distinct :
+                  ils sont exclus du composeur (PATCH refuse les AJOUTS), mais le
+                  praticien doit pouvoir les retirer. */}
+              {editConsultationPresents.length > 0 && (
+                <div className="border border-status-info/40 bg-status-info/5 rounded-lg p-2 flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground px-1">
+                    Ces instruments sont <strong>réservés à la consultation</strong> : ils figurent encore dans
+                    ce pack. Décochez-les pour les retirer. Ils ne pourront pas y être rajoutés via un pack.
+                  </p>
+                  {editConsultationPresents.map(q => (
+                    <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                      <input type="checkbox" checked={editSelectedQids.has(q.id)} onChange={() => toggleEditQid(q.id)} />
+                      <span>{q.titre}</span>
+                      <span className="text-xs text-muted-foreground">(consultation — {q.id})</span>
                     </label>
                   ))}
                 </div>

@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { getQuestionnaireFunctionalMetadata } from '@/lib/questionnaires-functional';
 
 type Questionnaire = {
@@ -13,6 +14,8 @@ type Questionnaire = {
   categoriesFonctionnellesSecondaires: string[];
   packsRecommandes: string[];
   phase: 'mvp' | 'phase_2';
+  /** Instrument de consultation ([[D-066]]) : l'UI d'assignation l'affiche. */
+  passationPraticien: boolean;
 };
 
 // Volontairement RÉDUIT à `{ id, titre }` — pas de `categorie`, pas de
@@ -57,6 +60,11 @@ export async function GET(): Promise<NextResponse<QuestionnairesApiResponse>> {
           categoriesFonctionnellesSecondaires: functional.categoriesSecondaires,
           packsRecommandes: functional.packsRecommandes,
           phase: functional.phase,
+          // [[D-066]] — sans cette marque, les cinq instruments de consultation
+          // réactivés apparaissaient dans ce sélecteur comme des
+          // auto-questionnaires ordinaires (revue, finding B4). L'UI l'affiche ;
+          // les packs, eux, les refusent structurellement.
+          passationPraticien: IDS_PASSATION_PRATICIEN.has(q.id),
         };
       });
 
