@@ -3808,3 +3808,24 @@ biologie en passage en force nommé. Erreur corrigée — `ORIENTATION_METADATA`
 Prochaine action : procédure d'abstention dans le périmètre signé — due au
 merge de #687, les priorités étant la seule table sans drapeau. Ouvert : T3 et
 revue `wn-reviewer` injouables ici ; validation ligne à ligne du catalogue.
+
+
+## [2026-08-16] — LOT-06 : abstention signée, verrou biologie réel
+
+`D-062` : la procédure d'abstention entre dans le périmètre signé — elle vivait
+hors du SHA, si bien que signer ouvrait un verdict qu'aucune ligne signée ne
+décrivait (`DC-17`). Sa provenance est doctrinale, pas bibliographique.
+`D-063` : le verrou biologie passe d'un terme à cinq, dont un inédit —
+`shaPerimetre`, qui rend la péremption détectable. Il révèle que la signature
+posée par `D-061` n'en était pas une : ni date, ni claims. Verrou désormais
+fermé, sans effet observable, la table étant vide.
+
+Écarté : étendre `shaPerimetre` aux quatre autres tables — cela fermerait des
+verrous ouverts, donc renverserait des décisions praticien.
+
+Corrigé : j'avais dit deux fois la table d'orientation non signée ; elle
+l'était depuis le 2026-08-06.
+
+Prochaine action : compléter la signature biologie, sans quoi aucune règle ne
+s'appliquera. Ouvert : re-signature priorités, T3 et `wn-reviewer` injouables
+ici, validation ligne à ligne, lot disjonction (`D-060`).
