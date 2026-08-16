@@ -6,6 +6,7 @@ import {
 } from '@/lib/clinical/orientationEngine';
 import type { OrientationClaimRef } from '@/lib/clinical/orientationRulesV1';
 import type { Remboursement } from './remboursable';
+import { signatureIndicationsValide } from './indicationsBiologieV1';
 import type { IndicationsBiologieMetadata, RegleIndicationPanel } from './indicationsBiologieV1';
 
 // Moteur de statuts biologie (LOT-06, D-059 §3 et §5) — domaine PUR, sans I/O.
@@ -80,8 +81,19 @@ export type EntreeStatutsBiologie = {
   panels: PanelCatalogue[];
   /** Règles d'indication (la table signée en production, une fixture au banc). */
   regles: RegleIndicationPanel[];
-  /** Métadonnées de signature de la table fournie. */
-  signature: Pick<IndicationsBiologieMetadata, 'validationExterne'>;
+  /**
+   * Métadonnées de signature de la table fournie.
+   *
+   * LES CINQ TERMES, plus le seul booléen ([[D-063]]) : une signature réelle
+   * porte sa date, ses claims et le SHA du périmètre relu. Injectable pour que
+   * le banc éprouve les deux positions du verrou.
+   */
+  signature: Pick<
+    IndicationsBiologieMetadata,
+    'validationExterne' | 'dateValidation' | 'claimsSource' | 'shaPerimetre'
+  >;
+  /** SHA attendu du périmètre — la table réelle en production, une fixture au banc. */
+  shaPerimetreAttendu?: string;
   /** Passations du dossier — mêmes objets que le moteur d'orientation. */
   reponses: ReponseOrientation[];
   /** Drapeaux d'anamnèse ; absent = aucun déclencheur drapeau atteint (fail-closed). */
@@ -154,11 +166,12 @@ function statutDocumente(
  * réduire la conclusion, jamais l'inventer).
  */
 export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): PropositionBilan {
-  if (!entree.signature.validationExterne) {
+  if (!signatureIndicationsValide(entree.signature, entree.shaPerimetreAttendu)) {
     return {
       ok: false,
       motif:
-        'La table des indications biologiques n’est pas signée par le praticien : '
+        'La table des indications biologiques n’est pas signée par le praticien — '
+        + 'signature incomplète ou périmètre modifié depuis la relecture : '
         + 'aucune proposition de bilan n’est dérivée.',
     };
   }

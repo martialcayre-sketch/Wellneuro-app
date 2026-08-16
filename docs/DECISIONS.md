@@ -4,6 +4,54 @@
 
 ## Décisions actives
 
+### D-063 — Le verrou biologie devient réel, et il révèle que sa signature n'en était pas une
+
+- Date : 2026-08-16
+- Statut : accepté pour le code ; **la signature biologie reste à poser
+  réellement**, et l'extension du patron aux quatre autres tables est proposée.
+- Domaine : clinique, verrous de signature, biologie
+- Contexte : `D-061` dette (b). `deriverStatutsBiologie` ne testait QUE
+  `validationExterne` — ni date, ni claims, ni périmètre. C'était le plus
+  faible des cinq verrous, et la table venait d'être signée VIDE : la fenêtre
+  se refermait à la première règle ajoutée, qui serait entrée sous une
+  signature acquise sans que rien ne la fasse rougir.
+
+- Décision : trois points.
+
+**1. Le verrou reprend le patron `tablePrioritesSignee`, et ajoute un terme.**
+`signatureIndicationsValide()` exige les cinq : `validationExterne`, une date
+ISO CANONIQUE non nulle, des `claimsSource` non vides, et — terme que les
+quatre autres tables n'ont pas encore — la concordance de `shaPerimetre` avec
+`INDICATIONS_BIOLOGIE_SHA256`. Ce dernier rend la PÉREMPTION DÉTECTABLE : dès
+qu'une règle est ajoutée, le SHA change, la concordance tombe, le verrou se
+ferme SEUL.
+
+**2. Ce que le durcissement a révélé : la signature de `D-061` n'en était pas
+une.** Elle portait `validationExterne: true` mais `dateValidation: null` et
+`claimsSource: []`. Au standard des quatre autres tables, ce n'est pas une
+signature — elle passait uniquement parce que son verrou ne regardait que le
+booléen. L'assistant l'a posée ainsi sans relever l'asymétrie ; c'est une
+erreur de sa part, corrigée ici en la rendant visible plutôt qu'en la taisant.
+
+Conséquence : **le verrou est désormais FERMÉ.** État juste, et
+**observablement inerte** — la table est vide, le moteur refusait déjà faute
+de règle publiée. Seul le motif change, et il devient exact. Pour signer
+réellement : poser la date, les claims du périmètre relu, et
+`shaPerimetre = INDICATIONS_BIOLOGIE_SHA256`. Geste praticien.
+
+**3. Le patron devrait remonter aux quatre autres tables (proposé).** Aucune
+ne porte de `shaPerimetre` : leur péremption reste un commentaire. La plus
+concernée est la table des priorités, dont `D-062` a agrandi le périmètre sans
+que la signature du 2026-08-15 le couvre — exactement le cas que ce terme
+détecterait. Non fait ici : cela fermerait des verrous ouverts, et renverser
+ces décisions n'appartient pas à l'assistant.
+
+- Mesuré : `npm run check` vert ; banc biologie 18 tests, les deux positions du
+  verrou éprouvées. T2/T3 restent injouables dans le conteneur distant.
+- Dettes ouvertes : (a) signature biologie réelle ; (b) re-signature priorités
+  sur le périmètre de `D-062` ; (c) `shaPerimetre` aux quatre autres tables ;
+  (d) revue `wn-reviewer` et T3 hors conteneur.
+
 ### D-062 — La procédure d'abstention entre dans le périmètre signé, et la re-signature devient due
 
 - Date : 2026-08-16
