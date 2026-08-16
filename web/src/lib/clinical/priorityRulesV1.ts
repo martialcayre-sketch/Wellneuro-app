@@ -388,12 +388,17 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
  * couvre. Les retoucher fait rougir le verrou de contenu, et la sortie de
  * secours est de RE-SIGNER.
  */
+// PROFONDÉMENT EN LECTURE SEULE, et ce n'est pas cosmétique : ces données sont
+// couvertes par `PRIORITY_RULES_SHA256`. Un `as` les rendrait mutables et
+// annulerait le `as const` — la conformité se vérifie donc par `satisfies`,
+// sous la déclaration, jamais par un cast qui élargit (revue Copilot du
+// 2026-08-16).
 export type MotifAbstention = {
-  id: string;
+  readonly id: string;
   /** Règles de la constitution qui fondent ce motif. Jamais vide. */
-  doctrine: string[];
+  readonly doctrine: readonly string[];
   /** Texte français servi au praticien, tel quel. */
-  limitation: string;
+  readonly limitation: string;
 };
 
 export const ABSTENTION_PROCEDURE_V1 = {
@@ -415,7 +420,7 @@ export const ABSTENTION_PROCEDURE_V1 = {
       limitation:
         `Le canal de plainte (${CANAL_PLAINTE}) ne rend aucune mesure sur l’épisode confirmé : la table des priorités ne peut pas être évaluée, et une donnée absente n’est ni nulle ni normale.`,
     },
-  ] as MotifAbstention[],
+  ],
   /**
    * Verdict par défaut. SA PHRASE DIT L'ÉTAT DU DISPOSITIF, PAS CELUI DU
    * PATIENT : affirmer « aucun constat de sécurité n'est présent » serait servir
@@ -429,8 +434,14 @@ export const ABSTENTION_PROCEDURE_V1 = {
       'Aucun constat de sécurité n’est produit par le moteur déterministe — aucun producteur n’existe à ce jour —'
       + ` et le canal de plainte (${CANAL_PLAINTE}) rend une mesure sur l’épisode confirmé :`
       + ' la table des priorités ne retient aucun motif d’abstention.',
-  } as MotifAbstention,
+  },
 } as const;
+
+// CONFORMITÉ VÉRIFIÉE SANS ÉLARGISSEMENT. `satisfies` contrôle la forme,
+// `as const` garde l'immuabilité : un motif sans `doctrine` ou sans
+// `limitation` ne compile pas, et rien n'est rendu mutable au passage.
+void (ABSTENTION_PROCEDURE_V1.motifsRequired satisfies readonly MotifAbstention[]);
+void (ABSTENTION_PROCEDURE_V1.notRequired satisfies MotifAbstention);
 
 // LE SHA COUVRE DÉSORMAIS LA PROCÉDURE D'ABSTENTION, et c'est tout l'objet de
 // [[D-062]]. Sa valeur CHANGE de ce fait : le périmètre signé s'agrandit, donc
