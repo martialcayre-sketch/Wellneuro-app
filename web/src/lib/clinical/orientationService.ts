@@ -5,7 +5,7 @@ import {
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
-import { constatsContradictionsPourDossier } from '@/lib/clinical/contradictionsService';
+import { constatsContradictionsPourDossier, contradictionsActives } from '@/lib/clinical/contradictionsService';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -109,6 +109,30 @@ export function tableArretSignee(): boolean {
   return STOP_RULES_METADATA.validationExterne
     && STOP_RULES_METADATA.dateValidation !== null
     && STOP_RULES_METADATA.claimsSource.length > 0;
+}
+
+/**
+ * Les règles d'arrêt sont-elles EXPLOITABLES ? Signature ET système de
+ * contradictions actif ([[D-065]]).
+ *
+ * La signature seule ne suffit plus, et la production l'a prouvé : du
+ * 2026-08-15 au 2026-08-16, la table d'arrêt signée a éteint des
+ * recommandations SANS le frein de [[D-053]] §5 — le frein ne mord que sur des
+ * constats effectivement produits, et `contradictionsActives()` exige un
+ * drapeau que la signature conjointe de [[D-061]] n'apportait pas. « Aucun
+ * constat » et « système de constats éteint » étaient indiscernables du moteur
+ * ([[DC-24]]), et une discordance déclarée pouvait être supprimée sans trace
+ * ([[DC-30]]).
+ *
+ * D'où ce prédicat : PAS D'EXTINCTION SANS UN SYSTÈME DE CONTRADICTIONS
+ * CAPABLE DE PRODUIRE SES CONSTATS. Retirer le drapeau des contradictions
+ * ré-éteint désormais l'arrêt tout entier au lieu de le laisser tourner sans
+ * frein — fail-closed, comme tous les verrous de ce fichier. Les DEUX effets
+ * de la table suivent ce prédicat, pas seulement l'extinction : les scinder
+ * recréerait l'asymétrie de verrous que [[D-064]] vient de payer.
+ */
+export function tableArretExploitable(): boolean {
+  return tableArretSignee() && contradictionsActives();
 }
 
 export function resultatInactif(): ResultatOrientationInactif {
@@ -321,10 +345,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       ? undefined
       : extraireDrapeauxAnamnese(consultation.anamnese),
     // Les deux effets des règles d'arrêt passent par le MÊME verrou, posé ici et
-    // nulle part ailleurs : tant que la table n'est pas signée, le moteur ne
-    // reçoit aucune règle et l'exclusion reste éteinte. C'est ce qui rend le
-    // merge invisible en production, où l'orientation, elle, est allumée.
-    reglesArret: tableArretSignee() ? STOP_RULES_V1 : [],
+    // nulle part ailleurs : tant que la table n'est pas signée ET que le système
+    // de contradictions n'est pas actif ([[D-065]]), le moteur ne reçoit aucune
+    // règle et l'exclusion reste éteinte.
+    reglesArret: tableArretExploitable() ? STOP_RULES_V1 : [],
     // UNE CONTRADICTION OUVERTE INTERDIT L'EXTINCTION ([[D-053]] §5,
     // [[D-055]]). Les constats viennent du service de contradictions — même
     // recalcul, même doctrine de mise à `null`, même verrou (drapeau + table
@@ -332,7 +356,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // aucun constat, donc rien d'« ouvert ». Lus sur les lignes déjà chargées
     // ci-dessus, avec la même sélection d'anamnèse.
     contradictions: constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
-    exclureDejaRepondu: tableArretSignee(),
+    exclureDejaRepondu: tableArretExploitable(),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune
@@ -365,9 +389,9 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
     // autrement indiscernables à l'audit — et une extinction est précisément ce
     // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la
-    // table n'est pas signée : elle n'a rien pu produire, et inscrire sa
-    // version laisserait croire qu'elle a pesé.
-    arret: tableArretSignee()
+    // table n'est pas EXPLOITABLE ([[D-065]]) : elle n'a rien pu produire, et
+    // inscrire sa version laisserait croire qu'elle a pesé.
+    arret: tableArretExploitable()
       ? { version: STOP_RULES_METADATA.version, sha256: STOP_RULES_SHA256 }
       : null,
   };

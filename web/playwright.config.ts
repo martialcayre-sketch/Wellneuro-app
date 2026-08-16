@@ -135,6 +135,11 @@ export default defineConfig({
       // et le panneau ne rend aucune recommandation — le spec n'a rien à
       // cliquer.
       WN_ENABLE_ORIENTATION_NNPP2: '1',
+      // Posé en Production le 2026-08-16 ([[D-064]]) — même doctrine que la
+      // ligne du dessus : aligner l'E2E sur l'état réel de production. Depuis
+      // [[D-065]], ce drapeau conditionne AUSSI les règles d'arrêt : sans lui,
+      // aucune extinction ne peut être observée dans un parcours.
+      WN_ENABLE_CONTRADICTIONS_NNPP2: '1',
       WN_G4_LIEN_MAGIQUE: 'true',
       WN_G4_REDEMANDE_PATIENT: 'true',
       // Gate G5 — entrée par Google (IDP2 LOT-03c). Même raison : allumé pour

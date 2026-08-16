@@ -4,6 +4,37 @@
 
 ## Décisions actives
 
+### D-065 — Le frein de `D-053` §5 devient structurel : pas d'extinction sans système de contradictions actif
+
+- Date : 2026-08-16
+- Statut : accepté (arbitrage praticien explicite entre deux options
+  présentées) et implémenté.
+- Domaine : clinique, moteur d'orientation, règles d'arrêt, contradictions
+- Contexte : `D-064` a fermé la fenêtre par l'environnement — le drapeau des
+  contradictions est posé en production — mais la configuration piège restait
+  constructible : retirer ce drapeau, ou l'oublier dans un nouvel
+  environnement, aurait réarmé silencieusement l'extinction sans frein. Un
+  banc du dépôt gravait même ce comportement comme voulu (« hiérarchie des
+  verrous » : contradictions éteintes, le dossier s'éteint quand même).
+- Décision : `orientationService` ne passe les règles d'arrêt au moteur que si
+  `tableArretExploitable()` — signature de la table d'arrêt ET
+  `contradictionsActives()`. « Aucun constat » et « système de constats
+  éteint » cessent d'être indiscernables (`DC-24`) ; une discordance déclarée
+  ne peut plus être supprimée sans que le système capable de la constater
+  tourne (`DC-30`). Les DEUX effets de la table (extinction, exclusion
+  déjà-répondu) suivent le même prédicat : les scinder recréerait l'asymétrie
+  de verrous payée par `D-064`. Le tampon d'audit `arret` suit aussi — une
+  table qui n'a rien pu produire n'inscrit pas sa version.
+- Option écartée : statu quo documenté par un banc — c'eût été graver dans un
+  test la configuration que `D-064` venait de qualifier de `DC-30` à revers.
+- Conséquence assumée : l'extinction et l'exclusion sont couplées au système
+  de contradictions. Éteindre les contradictions éteint l'arrêt tout entier —
+  fail-closed, aucun changement observable en production où les deux sont
+  actifs.
+- La dette de banc de `D-064` est soldée : « arrêt signé + contradictions
+  inactives ⇒ rien ne s'éteint » est éprouvé sous ses deux visages (drapeau
+  absent ; table non signée), plus le couplage de l'exclusion.
+
 ### D-064 — Le frein de `D-053` §5 était inopérant en production ; les contradictions sont activées pour le rendre réel
 
 - Date : 2026-08-16
