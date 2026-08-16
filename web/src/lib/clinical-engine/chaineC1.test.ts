@@ -12,7 +12,11 @@ import {
   PLAINTES_DIGESTIF_ET_PONDERAL,
   reponsesRuntimeRideauT0,
 } from './dossierT0Fixture';
-import { PRIORITY_RULES_METADATA, PRIORITY_RULES_V1 } from '@/lib/clinical/priorityRulesV1';
+import {
+  PRIORITY_RULES_METADATA,
+  PRIORITY_RULES_V1,
+  tablePrioritesSignee,
+} from '@/lib/clinical/priorityRulesV1';
 
 // CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
 // Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
@@ -31,9 +35,17 @@ const ETAT_LIVRE = {
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
 };
 
+// LA DATE RÉELLEMENT LIVRÉE (finding F4, revue du 2026-08-16). Elle entre dans
+// `validation.validatedAt`, donc dans l'empreinte de la revue : simuler une
+// autre date faisait éprouver ces cas sur une chaîne qu'aucune production ne
+// sert. Même valeur que `DATE_SIGNATURE_SIMULEE` de `chaineC1Fixture` — une
+// SENTINELLE en fin de fichier tient les deux copies contre la métadonnée, et
+// rougira à la re-signature praticien (due depuis [[D-062]]).
+const DATE_SIGNATURE_LIVREE = '2026-08-15T00:00:00.000Z';
+
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
-  PRIORITY_RULES_METADATA.dateValidation = '2026-08-12T00:00:00.000Z';
+  PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_LIVREE;
 }
 
 /** Simule le verrou FERMÉ — position qui n'est plus celle de la production. */
@@ -271,6 +283,12 @@ describe('chaîne C1 — déterminisme', () => {
   // mêmes entrées doivent rendre les mêmes trois empreintes, sans quoi le
   // vérificateur rendrait 409 sur une carte honnête.
   it('mêmes entrées ⇒ mêmes trois empreintes, dans les deux positions du verrou', () => {
+    // LE VERROU EST FERMÉ EXPLICITEMENT, et il ne l'était pas. Ce cas partait de
+    // l'état LIVRÉ — signé depuis [[D-061]] — en le nommant « fermé » : le
+    // dernier terme ne passait que parce que la date SIMULÉE différait de la
+    // date livrée, c'est-à-dire pour une raison étrangère au verrou. Aligner les
+    // deux dates (finding F4) l'a mis au jour.
+    simulerNonSignature();
     const ferme = [chaine(), chaine()];
     expect(ferme[0].decisionCard.inputHash).toBe(ferme[1].decisionCard.inputHash);
     simulerSignature();
@@ -290,6 +308,32 @@ describe('chaîne C1 — déterminisme', () => {
 // d'une table clinique. Son garde `assertBanc()` n'était tenu par rien : un banc
 // qui ne l'éprouve pas est un garde qu'une refonte peut retirer en silence,
 // exactement le mode de panne que ce module existe pour éviter.
+// LE CAS QUE LA FIXTURE EXISTAIT POUR SIMULER, et que rien n'appelait (finding
+// F1 de la revue du 2026-08-16). `designerTablePriorites()` n'avait AUCUN
+// appelant dans le dépôt : la position « verrou fermé » n'était éprouvée que par
+// les mutations locales de ce banc, si bien qu'une fixture cassée — ou une
+// restauration qui ne restaure plus — ne se serait vue nulle part.
+describe('chaineC1Fixture — verrou fermé par la fixture partagée', () => {
+  afterEach(async () => {
+    const { retablirTablePriorites } = await import('./chaineC1Fixture');
+    retablirTablePriorites();
+  });
+
+  it('designerTablePriorites() ferme le verrou : ni règle validée, ni candidat', async () => {
+    const { designerTablePriorites } = await import('./chaineC1Fixture');
+    designerTablePriorites();
+    expect(tablePrioritesSignee()).toBe(false);
+    const { review, decisionCard } = chaine();
+    expect(review.rules).toEqual([]);
+    expect(review.abstention.status).toBe('not_evaluated');
+    expect(decisionCard.priorityCandidates).toEqual([]);
+    expect(decisionCard.proposedMainPriorityId).toBeNull();
+    // LA PLAINTE RESTE SERVIE — elle n'est pas derrière le verrou ([[D-054]],
+    // arbitrage 7) : sans ce terme, le cas passerait aussi sur une chaîne vide.
+    expect(chaine().plainteDominante?.domaine).toBe('surpoids');
+  });
+});
+
 describe('chaineC1Fixture — la signature de fixture ne s’exécute qu’en banc', () => {
   it('signerTablePriorites() jette hors de Vitest, et n’ouvre rien', async () => {
     const { signerTablePriorites } = await import('./chaineC1Fixture');
@@ -307,5 +351,19 @@ describe('chaineC1Fixture — la signature de fixture ne s’exécute qu’en ba
     // bord, pas une valeur particulière.
     expect(PRIORITY_RULES_METADATA.validationExterne).toBe(ETAT_LIVRE.validationExterne);
     expect(PRIORITY_RULES_METADATA.dateValidation).toBe(ETAT_LIVRE.dateValidation);
+  });
+});
+
+// SENTINELLE DE DATE (M-C, revue du 2026-08-16). Les deux copies en dur de la
+// date de signature simulée doivent suivre la date livrée par la métadonnée. À
+// la prochaine re-signature praticien — due depuis [[D-062]] —, ce cas rougit
+// et désigne les deux endroits à aligner ; sans lui, l'écart corrigé par F4 se
+// rouvrirait en silence, et les cas passant par `simulerSignature()`
+// éprouveraient de nouveau une chaîne qu'aucune production ne sert.
+describe('dates de signature simulées — jamais en avance ni en retard sur la métadonnée', () => {
+  it('les deux copies suivent la date livrée', async () => {
+    const { DATE_SIGNATURE_SIMULEE } = await import('./chaineC1Fixture');
+    expect(DATE_SIGNATURE_LIVREE).toBe(ETAT_LIVRE.dateValidation);
+    expect(DATE_SIGNATURE_SIMULEE).toBe(ETAT_LIVRE.dateValidation);
   });
 });

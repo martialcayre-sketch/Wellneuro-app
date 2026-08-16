@@ -17,7 +17,9 @@ import {
   evaluerPriorites,
   reglesPrioritesValidees,
   tablePrioritesSignee,
+  type MotifAbstention,
 } from './priorityRulesV1';
+import { evaluerAbstention } from '@/lib/clinical-engine/chaineC1';
 import type { ReponseOrientation } from './orientationEngine';
 import { RIDEAU_T0 } from '@/lib/clinical-engine/preconditionsT0';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
@@ -348,5 +350,70 @@ describe('priorityRulesV1 — verrou de contenu', () => {
       expect(motif.doctrine.length).toBeGreaterThan(0);
       expect(motif.limitation.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// LE MOTEUR LIT CETTE TABLE PAR IDENTITÉ, PLUS PAR POSITION (finding M1 de la
+// revue du 2026-08-16). `chaineC1.ts` déstructurait `motifsRequired` dans
+// l'ordre du tableau : permuter les deux motifs servait le texte SÉCURITÉ sur la
+// branche canal et réciproquement, et un motif inséré en tête était ignoré en
+// silence. Ces cas tiennent le contrat des deux côtés — les `id` que la table
+// porte, et le motif que le moteur sert.
+//
+// LA BRANCHE SÉCURITÉ EST INATTEIGNABLE EN PRODUCTION, et c'est dit plutôt que
+// supposé : `construireChaineC1` pose `safetyFindings: 0` en dur, aucun
+// producteur de constat déterministe n'existant. `evaluerAbstention` est donc
+// appelée directement — sans quoi la sélection du motif sécurité ne serait
+// éprouvée par rien.
+describe('procédure d’abstention — le moteur lie les motifs par identité', () => {
+  /**
+   * La table permutée ou amputée le temps d'un cas, TOUJOURS restaurée.
+   *
+   * `as const` garde l'immuabilité au type, pas au runtime : le cast est
+   * l'outil du banc, jamais celui du moteur. Sans restauration, le verrou de
+   * contenu ci-dessus rougirait — le sha porte sur cette table.
+   */
+  function surTableMutee(mutation: (motifs: MotifAbstention[]) => void, cas: () => void): void {
+    const motifs = ABSTENTION_PROCEDURE_V1.motifsRequired as unknown as MotifAbstention[];
+    const original = [...motifs];
+    try {
+      mutation(motifs);
+      cas();
+    } finally {
+      motifs.splice(0, motifs.length, ...original);
+    }
+  }
+
+  it('motifsRequired porte exactement les deux id que le moteur cite', () => {
+    expect(ABSTENTION_PROCEDURE_V1.motifsRequired.map(motif => motif.id))
+      .toEqual(['ABST-SEC-01', 'ABST-CAN-01']);
+  });
+
+  it('le motif SÉCURITÉ est servi même table permutée', () => {
+    surTableMutee(motifs => motifs.reverse(), () => {
+      // Anti-vacuité : sans cet écart, le cas passerait sur la table d'origine.
+      expect(ABSTENTION_PROCEDURE_V1.motifsRequired[0].id).toBe('ABST-CAN-01');
+      const verdict = evaluerAbstention({
+        ruleIds: ['PRIO-DIG-01'],
+        safetyFindings: 1,
+        canalMesure: true,
+      });
+      expect(verdict?.status).toBe('required');
+      expect(verdict?.limitations.join(' ')).toContain('constat de sécurité');
+      expect(verdict?.limitations.join(' ')).not.toContain(CANAL_PLAINTE);
+    });
+  });
+
+  // ERREUR DE CONSTRUCTION, PAS CAS CLINIQUE : un motif retiré de la table
+  // signée sans que le moteur suive ne doit jamais servir une limitation vide
+  // sous un verdict d'abstention.
+  it('un motif que la table ne porte plus fait jeter, jamais servir un texte vide', () => {
+    surTableMutee(motifs => { motifs.splice(0, 1); }, () => {
+      expect(() => evaluerAbstention({
+        ruleIds: ['PRIO-DIG-01'],
+        safetyFindings: 0,
+        canalMesure: true,
+      })).toThrow('ABST-SEC-01');
+    });
   });
 });

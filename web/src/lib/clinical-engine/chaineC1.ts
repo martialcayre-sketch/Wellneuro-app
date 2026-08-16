@@ -198,6 +198,40 @@ const LIMITATION_CLASSEMENT =
 const LIMITATION_OBJECTIF =
   'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.';
 
+/** Identifiants des deux motifs `required`, tels que la table signée les porte. */
+const MOTIF_SECURITE = 'ABST-SEC-01';
+const MOTIF_CANAL = 'ABST-CAN-01';
+
+/**
+ * Le motif d'abstention portant cet `id`, ou une ERREUR DE CONSTRUCTION.
+ *
+ * LIAISON PAR IDENTITÉ, JAMAIS PAR POSITION (finding M1 de la revue du
+ * 2026-08-16). La lecture précédente déstructurait `motifsRequired` dans
+ * l'ordre du tableau : permuter les deux motifs de la table signée aurait servi
+ * le texte SÉCURITÉ sur la branche canal et réciproquement, et un troisième
+ * motif inséré en tête aurait été ignoré en silence — deux mutations qu'aucun
+ * banc n'aurait vues.
+ *
+ * Les deux `id` cités ici sont du CÂBLAGE — identité, pas contenu clinique —,
+ * même statut que l'ordre d'évaluation resté dans ce module selon [[D-062]] ;
+ * le moteur n'est pas dans le périmètre haché.
+ *
+ * L'ABSENCE JETTE, et ce n'est pas un cas clinique : c'est le moteur et la
+ * table signée qui ont divergé. Servir `undefined` produirait une limitation
+ * vide sous un verdict d'abstention — exactement ce qu'un fail-closed ne doit
+ * pas faire.
+ */
+function motifRequis(id: string): (typeof ABSTENTION_PROCEDURE_V1.motifsRequired)[number] {
+  const motif = ABSTENTION_PROCEDURE_V1.motifsRequired.find(candidat => candidat.id === id);
+  if (!motif) {
+    throw new Error(
+      `Motif d’abstention introuvable dans la table signée : ${id}. `
+      + 'Le moteur et la procédure d’abstention signée ont divergé.',
+    );
+  }
+  return motif;
+}
+
 /**
  * Évaluation EXPLICITE de l'abstention ([[D-054]], [[D-062]]).
  *
@@ -216,14 +250,20 @@ const LIMITATION_OBJECTIF =
  * textes servis au praticien sont des données signées, plus des littéraux du
  * moteur. Ce qui reste ici est l'ordre d'évaluation et le câblage des entrées —
  * mécanique, non clinique.
+ *
+ * EXPORTÉE POUR LE BANC, et il faut le dire : la branche `safetyFindings > 0`
+ * est INATTEIGNABLE depuis `construireChaineC1`, qui pose `0` en dur faute de
+ * producteur de constat. Sans cet export, la sélection du motif sécurité par
+ * son `id` ne serait éprouvée par rien.
  */
-function evaluerAbstention(input: {
+export function evaluerAbstention(input: {
   ruleIds: string[];
   safetyFindings: number;
   canalMesure: boolean;
 }): AbstentionAssessment | undefined {
   if (input.ruleIds.length === 0) return undefined;
-  const [motifSecurite, motifCanal] = ABSTENTION_PROCEDURE_V1.motifsRequired;
+  const motifSecurite = motifRequis(MOTIF_SECURITE);
+  const motifCanal = motifRequis(MOTIF_CANAL);
   const cadre = [ABSTENTION_PROCEDURE_V1.cadre];
   if (input.safetyFindings > 0) {
     return {

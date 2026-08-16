@@ -4,6 +4,7 @@ import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
 import {
   INDICATIONS_BIOLOGIE_METADATA,
+  INDICATIONS_BIOLOGIE_SHA256,
   signatureIndicationsValide,
   INDICATIONS_BIOLOGIE_V1,
   type RegleIndicationPanel,
@@ -121,15 +122,23 @@ const SIGNATURE_FIXTURE = {
 };
 
 function entree(surcharge: Partial<EntreeStatutsBiologie> = {}): EntreeStatutsBiologie {
+  const regles = surcharge.regles ?? REGLES_FIXTURE;
   return {
     panels: PANELS_FIXTURE,
-    regles: REGLES_FIXTURE,
-    signature: SIGNATURE_FIXTURE,
-    shaPerimetreAttendu: SHA_PERIMETRE_FIXTURE,
     reponses: [],
     drapeaux: DRAPEAUX_FIXTURE,
     dateReference: DATE_REFERENCE,
     ...surcharge,
+    regles,
+    // LE SHA DE PÉRIMÈTRE SUIT LES RÈGLES PASSÉES — il n'est plus injecté à
+    // côté d'elles (finding M4). Un cas qui surcharge `regles` sans surcharger
+    // `signature` reste donc signé, et rougit sur ce qu'il éprouve plutôt que
+    // sur le verrou. Une signature explicitement passée n'est JAMAIS recalculée :
+    // c'est ce qui laisse les cas de refus poser un couple incohérent.
+    signature: surcharge.signature ?? {
+      ...SIGNATURE_FIXTURE,
+      shaPerimetre: sha256(JSON.stringify(regles)),
+    },
   };
 }
 
@@ -234,6 +243,23 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
     });
   });
 
+  // LE VERROU EST RELIÉ AUX RÈGLES RÉELLEMENT ÉVALUÉES (finding M4 de la revue
+  // du 2026-08-16). Le SHA attendu n'est plus injecté à côté des règles : un
+  // couple signature/sha cohérent EN LUI-MÊME — celui du périmètre de fixture —
+  // mais étranger aux règles passées ferme désormais le verrou. Auparavant il le
+  // franchissait, et les statuts dérivés n'étaient couverts par aucune relecture.
+  it('un sha de périmètre étranger aux règles passées ferme le verrou', () => {
+    const reglesEtrangeres = [regle({ id: 'BIO-ETR', panelCode: 'PANEL_SOCLE' })];
+    // Anti-vacuité : sans cet écart, le cas ne dirait rien.
+    expect(sha256(JSON.stringify(reglesEtrangeres))).not.toBe(SHA_PERIMETRE_FIXTURE);
+    const resultat = deriverStatutsBiologie(entree({
+      regles: reglesEtrangeres,
+      signature: SIGNATURE_FIXTURE,
+    }));
+    expect(resultat.ok).toBe(false);
+    if (!resultat.ok) expect(resultat.motif).toContain('n’est pas signée');
+  });
+
   it('aucune règle publiée : abstention motivée', () => {
     const resultat = deriverStatutsBiologie(entree({ regles: [] }));
     expect(resultat.ok).toBe(false);
@@ -253,6 +279,10 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
       regles: [regle({ id: 'BIO-NU', panelCode: 'PANEL_SOCLE', justificationClaims: [] })],
     }));
     expect(resultat.ok).toBe(false);
+    // LE MOTIF EST CELUI DES RÈGLES, PAS DE LA SIGNATURE : sans cette
+    // assertion, une régression du helper `entree()` (sha dérivé) ferait passer
+    // ce cas pour la mauvaise raison — refus au verrou au lieu du filtrage.
+    if (!resultat.ok) expect(resultat.motif).toContain('Aucune règle');
   });
 
   it('une règle non conditionnelle qui porte des déclencheurs est écartée (sémantique ambiguë)', () => {
@@ -264,6 +294,32 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
       })],
     }));
     expect(resultat.ok).toBe(false);
+    if (!resultat.ok) expect(resultat.motif).toContain('Aucune règle');
+  });
+
+  // L'INVARIANT DONT DÉPEND TOUT LE VERROU (M-B, revue du 2026-08-16) : le sha
+  // que `deriverStatutsBiologie` calcule depuis les règles passées retombe sur
+  // `INDICATIONS_BIOLOGIE_SHA256` pour la table canonique. Il n'était garanti
+  // que par la lecture de deux lignes dans deux fichiers ; si l'un des deux
+  // côtés gagne une canonicalisation que l'autre n'a pas, ce cas rougit. La
+  // table canonique étant vide, un verrou FRANCHI se reconnaît au motif : le
+  // refus vient des règles, plus de la signature.
+  it('la table canonique retombe sur INDICATIONS_BIOLOGIE_SHA256 — concordance de sérialisation', () => {
+    expect(sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1))).toBe(INDICATIONS_BIOLOGIE_SHA256);
+    const resultat = deriverStatutsBiologie(entree({
+      regles: INDICATIONS_BIOLOGIE_V1,
+      signature: {
+        validationExterne: true,
+        dateValidation: DATE_REFERENCE,
+        claimsSource: CLAIM_FIXTURE,
+        shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
+      },
+    }));
+    expect(resultat.ok).toBe(false);
+    if (!resultat.ok) {
+      expect(resultat.motif).toContain('Aucune règle');
+      expect(resultat.motif).not.toContain('signée');
+    }
   });
 
   it('drapeaux absents : un déclencheur drapeau n’est jamais atteint', () => {

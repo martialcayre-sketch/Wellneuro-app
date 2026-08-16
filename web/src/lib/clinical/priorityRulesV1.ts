@@ -297,23 +297,27 @@ export type PriorityRulesMetadata = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// À LIRE AVANT DE SIGNER — dette bloquante relevée en revue le 2026-08-12
-// ([[D-054]]).
+// À LIRE AVANT DE RE-SIGNER — état au 2026-08-16.
 //
-// CE QUE LE SHA COUVRE, ET CE QU'IL NE COUVRE PAS. `PRIORITY_RULES_SHA256` porte
-// sur `PRIORITY_RULES_V1` SEULE — les déclencheurs, les claims, les libellés,
-// les motifs. Il ne couvre ni le producteur de candidats, ni le classement, ni
-// la PROCÉDURE D'ABSTENTION, qui vivent dans
-// `lib/clinical-engine/chaineC1.ts` et relèvent des bancs ordinaires.
+// CE QUE LE SHA COUVRE. `PRIORITY_RULES_SHA256` porte sur `PRIORITY_RULES_V1` —
+// déclencheurs, claims, libellés, motifs — ET, depuis [[D-062]], sur
+// `ABSTENTION_PROCEDURE_V1`, cadre et textes de motifs compris.
 //
-// LA CONSÉQUENCE, DITE PLUTÔT QUE DÉCOUVERTE LE JOUR DE LA SIGNATURE. Signer
-// cette table en l'état ouvrirait un verdict d'abstention — « required » ou
-// « not_required », servi au praticien et haché dans la carte de décision — dont
-// AUCUNE LIGNE SIGNÉE ne décrit la règle. C'est exactement ce que `DC-17` et
-// `DC-26` interdisent : une règle clinique vit dans le registre, jamais
-// seulement dans le code. Avant signature, la procédure d'abstention doit entrer
-// dans le périmètre signé — dans cette table, ou dans un document signable
-// qu'elle référence.
+// LA DETTE BLOQUANTE DE [[D-054]] EST CLOSE, ET C'EST [[D-062]] QUI LA FERME.
+// La procédure d'abstention vivait dans `lib/clinical-engine/chaineC1.ts`,
+// hors du périmètre haché : signer cette table ouvrait un verdict — « required »
+// ou « not_required », servi au praticien et haché dans la carte de décision —
+// dont aucune ligne signée ne décrivait la règle, ce que `DC-17` et `DC-26`
+// interdisent. Elle est désormais décrite par des données signées. LA
+// CONSÉQUENCE MÉCANIQUE RESTE : le périmètre a grandi APRÈS la signature du
+// 2026-08-15, donc celle-ci ne le couvre plus — re-signature praticien due.
+//
+// CE QUI RESTE HORS DU SHA — DETTE RÉSIDUELLE, DITE PLUTÔT QUE SUPPOSÉE. Le
+// producteur de candidats, le CLASSEMENT (plainte dominante, puis priorité
+// intrinsèque, puis identifiant) et les textes `LIMITATION_*` servis avec chaque
+// candidat vivent dans `lib/clinical-engine/chaineC1.ts` et relèvent des bancs
+// ordinaires : aucune ligne signée ne les décrit. L'ordre d'évaluation des deux
+// motifs d'abstention est dans le même cas — mécanique, mais non relu.
 //
 // SECONDE CHOSE QUE LA SIGNATURE ASSUME. Chacune des deux règles repose sur UN
 // ITEM UNIQUE de `Q_MOD_03` — un auto-déclaré de 1 à 10, sans instrument
@@ -329,13 +333,20 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]).
   //
   // PASSAGE EN FORCE ASSUMÉ, ET NOMMÉ COMME TEL. Le bloc « À LIRE AVANT DE
-  // SIGNER » ci-dessus énonce une dette BLOQUANTE relevée en revue le
-  // 2026-08-12 ([[D-054]]) : le SHA ne couvre pas la procédure d'abstention,
-  // qui vit dans `lib/clinical-engine/chaineC1.ts`, si bien que la signature
-  // ouvre un verdict « required » / « not_required » dont aucune ligne signée
-  // ne décrit la règle — ce que `DC-17` et `DC-26` interdisent. La dette n'est
-  // pas close ; le praticien a signé en la connaissant, après qu'elle lui a été
-  // exposée. [[D-061]] la porte comme dette ouverte et prioritaire.
+  // RE-SIGNER » ci-dessus énonçait, au moment de la signature, une dette
+  // BLOQUANTE relevée en revue le 2026-08-12 ([[D-054]]) : le SHA ne couvrait
+  // pas la procédure d'abstention, qui vivait dans
+  // `lib/clinical-engine/chaineC1.ts`, si bien que la signature ouvrait un
+  // verdict « required » / « not_required » dont aucune ligne signée ne
+  // décrivait la règle — ce que `DC-17` et `DC-26` interdisent. Le praticien a
+  // signé en la connaissant, après qu'elle lui a été exposée ; [[D-061]] l'a
+  // portée comme dette ouverte et prioritaire.
+  //
+  // CETTE DETTE EST CLOSE ([[D-062]], le lendemain) : la procédure d'abstention
+  // est entrée dans le périmètre haché, et ses textes sont des données signées.
+  // Il en reste la conséquence mécanique — le périmètre a grandi après la
+  // signature, donc `dateValidation` ci-dessous porte sur l'ANCIEN périmètre et
+  // la re-signature praticien est due.
   //
   // La seconde chose que la signature assume — deux règles reposant sur un item
   // unique auto-déclaré de `Q_MOD_03`, `DC-28` mitigé par ce que la règle
