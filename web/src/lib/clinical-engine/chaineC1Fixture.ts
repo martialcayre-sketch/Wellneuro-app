@@ -28,7 +28,12 @@ import type { ConfirmedAssessmentEpisode, DecisionPrioritySelection } from './ty
 export const HORODATAGE_C1_FIXTURE = '2026-01-03T00:00:00.000Z';
 
 /** Date de signature SIMULÉE : ISO canonique, comme la vraie devra l'être. */
-export const DATE_SIGNATURE_SIMULEE = '2026-08-12T00:00:00.000Z';
+// ALIGNÉE SUR LA DATE RÉELLEMENT LIVRÉE (finding F4) : la table est signée au
+// 2026-08-15 ([[D-061]]), et une date simulée différente faisait produire aux
+// bancs une chaîne qu'aucune production ne sert — trois empreintes divergentes
+// de celles du dossier réel, pour la seule raison que la date entre dans
+// `validation.validatedAt`.
+export const DATE_SIGNATURE_SIMULEE = '2026-08-15T00:00:00.000Z';
 
 /**
  * Anamnèse de la chaîne de référence — patient fictif autorisé, aucun contenu
@@ -75,10 +80,17 @@ function assertBanc(): void {
 // désormais l'inverse — simuler le verrou FERMÉ. `retablirTablePriorites`
 // restaure l'état LIVRÉ, qui est aujourd'hui l'état signé : l'écrire en dur à
 // `false` rendrait l'isolation des bancs mensongère.
-const ETAT_LIVRE = {
+//
+// COPIE GELÉE, et ce n'est pas cosmétique (finding F3 de la revue du
+// 2026-08-16) : cet objet est la référence que TOUS les `afterEach` restaurent.
+// Non gelé, un banc pouvait y écrire — par mégarde ou en croyant « ajuster
+// l'état livré » — et graver un faux état livré que chaque restauration aurait
+// ensuite propagé à tous les cas suivants. La capture, elle, reste celle du
+// PREMIER import : ce module doit être importé avant toute simulation de verrou.
+const ETAT_LIVRE = Object.freeze({
   validationExterne: PRIORITY_RULES_METADATA.validationExterne,
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
-};
+});
 
 /** Force la signature (date simulée) — `beforeEach` d'un banc qui l'exige. */
 export function signerTablePriorites(): void {
@@ -96,6 +108,10 @@ export function designerTablePriorites(): void {
 
 /** Restaure l'état LIVRÉ, quel qu'il soit — `afterEach` obligatoire. */
 export function retablirTablePriorites(): void {
+  // MÊME GARDE QUE SES DEUX VOISINES (finding F2) : elle écrit elle aussi dans
+  // la métadonnée d'une table clinique, et son nom la rend d'autant plus
+  // appelable depuis un module de production.
+  assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
   PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
 }

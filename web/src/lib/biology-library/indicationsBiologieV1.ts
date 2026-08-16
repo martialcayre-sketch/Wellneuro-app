@@ -18,11 +18,18 @@ import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 // proposition, dans la même relecture. En attendant : zéro règle, moteur
 // fail-closed (`statuts.ts`), motif lisible en français.
 //
-// `validationExterne: false` À LA LIVRAISON. Écrire des règles et les signer
-// sont deux gestes distincts, et le second est un geste praticien explicite
-// (même discipline que `ORIENTATION_METADATA`). Le verrou de la route est un
-// ET : table signée ET `WN_CB_ENABLED === 'true'` (`featureFlag.ts`) — signer
-// est un acte clinique, déployer est un acte d'exploitation.
+// LE VERROU EST FERMÉ, ET `validationExterne` NE LE DIT PAS À LUI SEUL.
+// [[D-061]] a posé `validationExterne: true` sur instruction praticien, mais
+// sans date, sans claims et sans périmètre relu : au standard des quatre autres
+// tables, ce n'est pas une signature — et [[D-063]] a fermé le verrou en
+// conséquence, `signatureIndicationsValide` regardant les CINQ termes. Le détail
+// (ce qu'il faut poser pour signer réellement, et le piège à ne pas reproduire)
+// est écrit sur la métadonnée plus bas, jamais recopié ici : deux copies
+// divergeraient. Écrire des règles et les signer restent deux gestes distincts,
+// et le second est un geste praticien explicite (même discipline que
+// `ORIENTATION_METADATA`). Le verrou de la route est un ET : table signée ET
+// `WN_CB_ENABLED === 'true'` (`featureFlag.ts`) — signer est un acte clinique,
+// déployer est un acte d'exploitation.
 
 export type ModeIndicationPanel =
   /** Proposé d'emblée sur le tableau clinique couvert par les claims de la règle. */
@@ -111,16 +118,19 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   version: 'indications-biologie-v1',
   // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]).
   //
-  // SIGNÉE VIDE, ET C'EST UN PASSAGE EN FORCE NOMMÉ. La table ne porte aucune
-  // règle : la signature n'atteste donc aucune relecture de contenu, et
-  // `deriverStatutsBiologie` ne teste QUE ce booléen — ni date, ni SHA, ni
-  // claims, contrairement aux quatre autres tables. Toute règle ajoutée
-  // ultérieurement entrera donc sous une signature déjà posée, sans que rien ne
-  // la fasse rougir. Le renforcement du verrou (date + SHA + claims, patron
-  // `tablePrioritesSignee`) est une dette ouverte de [[D-061]].
+  // SIGNÉE VIDE, ET C'EST UN PASSAGE EN FORCE NOMMÉ. La table ne portait
+  // aucune règle : la signature n'attestait donc aucune relecture de contenu —
+  // et AU MOMENT DE LA SIGNATURE, `deriverStatutsBiologie` ne testait que ce
+  // booléen, si bien que toute règle ajoutée serait entrée sous une signature
+  // acquise. Cette dette de [[D-061]] est CLOSE depuis : [[D-063]] a porté le
+  // verrou à cinq termes, et la revue du 2026-08-16 (finding M4) a relié le
+  // SHA attendu aux règles réellement évaluées — une règle ajoutée change le
+  // sha dérivé et FERME le verrou seule. Le paragraphe suivant dit l'état
+  // courant ; celui-ci n'est que l'histoire du passage en force.
   //
   // Le drapeau `WN_CB_ENABLED` reste le second terme du ET : signer n'allume
   // pas.
+  //
   // SIGNATURE INCOMPLÈTE, ET LE VERROU LE DIT DÉSORMAIS ([[D-063]]).
   // [[D-061]] a posé `validationExterne: true` sur instruction praticien, mais
   // sans date, sans claims et sans périmètre : au standard des quatre autres

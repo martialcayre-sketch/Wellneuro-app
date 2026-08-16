@@ -5,6 +5,7 @@ import {
   type ReponseOrientation,
 } from '@/lib/clinical/orientationEngine';
 import type { OrientationClaimRef } from '@/lib/clinical/orientationRulesV1';
+import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import type { Remboursement } from './remboursable';
 import { signatureIndicationsValide } from './indicationsBiologieV1';
 import type { IndicationsBiologieMetadata, RegleIndicationPanel } from './indicationsBiologieV1';
@@ -92,8 +93,6 @@ export type EntreeStatutsBiologie = {
     IndicationsBiologieMetadata,
     'validationExterne' | 'dateValidation' | 'claimsSource' | 'shaPerimetre'
   >;
-  /** SHA attendu du périmètre — la table réelle en production, une fixture au banc. */
-  shaPerimetreAttendu?: string;
   /** Passations du dossier — mêmes objets que le moteur d'orientation. */
   reponses: ReponseOrientation[];
   /** Drapeaux d'anamnèse ; absent = aucun déclencheur drapeau atteint (fail-closed). */
@@ -166,7 +165,14 @@ function statutDocumente(
  * réduire la conclusion, jamais l'inventer).
  */
 export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): PropositionBilan {
-  if (!signatureIndicationsValide(entree.signature, entree.shaPerimetreAttendu)) {
+  // LE SHA ATTENDU SE CALCULE DEPUIS LES RÈGLES RÉELLEMENT ÉVALUÉES (finding M4
+  // de la revue du 2026-08-16). Il était auparavant INJECTÉ par l'appelant
+  // (`shaPerimetreAttendu`), à côté des `regles` : un couple signature/sha
+  // parfaitement cohérent entre eux mais ÉTRANGER aux règles passées franchissait
+  // le verrou, et la table dérivée n'était alors couverte par aucune relecture.
+  // Le contournement devient inconstructible : le périmètre haché est celui-là
+  // même que la boucle ci-dessous applique.
+  if (!signatureIndicationsValide(entree.signature, sha256(JSON.stringify(entree.regles)))) {
     return {
       ok: false,
       motif:

@@ -3829,3 +3829,17 @@ l'était depuis le 2026-08-06.
 Prochaine action : compléter la signature biologie, sans quoi aucune règle ne
 s'appliquera. Ouvert : re-signature priorités, T3 et `wn-reviewer` injouables
 ici, validation ligne à ligne, lot disjonction (`D-060`).
+
+## [2026-08-16] — Reliquats M/F de la revue clinique
+
+Lot `M1`-`M4`/`F1`-`F4` soldé : motifs d'abstention liés par `id` (un absent
+jette), verrou biologie haché depuis les règles réellement évaluées, en-têtes
+remis à l'état réel, machinerie de banc éprouvée (dates alignées, copie gelée,
+position « verrou fermé » enfin testée). Relu `wn-reviewer` : GO, réserve M-A
+(bloc historique au présent) corrigée ; sentinelle de date, concordance de
+sérialisation et motifs affirmés ajoutés sur sa prescription. Écarté : `F5`
+(métadonnée signée — praticien), `M5` (documenté au handoff). Découverte de
+l'exécution : un cas de déterminisme passait pour une mauvaise raison,
+corrigé. Aucun contenu signé modifié, les deux SHA épinglés intacts.
+Prochaine action : PR unique, CI, merge. Ouvert : contrat d'appelant de
+`deriverStatutsBiologie` à border avant le premier appelant réel (handoff).
