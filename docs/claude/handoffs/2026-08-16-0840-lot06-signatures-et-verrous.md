@@ -1,4 +1,4 @@
-# LOT-06 — signatures des tables cliniques et durcissement des verrous
+# Handoff — 2026-08-16 — LOT-06 : signatures des tables cliniques et durcissement des verrous
 
 - **État** : tout est sur `main`. Six PR mergées les 2026-08-15 et 16 (#683 à
   #689), plus cette PR de clôture. Rien en suspens dans le dépôt.
