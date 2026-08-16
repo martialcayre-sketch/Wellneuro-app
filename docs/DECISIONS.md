@@ -4,6 +4,63 @@
 
 ## Décisions actives
 
+### D-062 — La procédure d'abstention entre dans le périmètre signé, et la re-signature devient due
+
+- Date : 2026-08-16
+- Statut : accepté pour la partie code ; **la re-signature praticien reste à
+  poser**, et le durcissement du verrou est proposé, non tranché.
+- Domaine : moteur clinique, périmètre signé, doctrine
+- Contexte : `D-061` a signé la table des priorités en franchissant une dette
+  écrite (`D-054`, revue du 2026-08-12) — le SHA ne couvrait pas la procédure
+  d'abstention, si bien que la signature ouvrait un verdict `required` /
+  `not_required` servi au praticien qu'aucune ligne signée ne décrivait
+  (`DC-17`, `DC-26`). Les priorités étant la seule table SANS drapeau
+  d'exploitation, le merge de `D-061` a rendu cette dette échue, non différée.
+
+- Décision : trois points, dont un seul est exécuté.
+
+**1. La procédure devient des DONNÉES SIGNÉES (fait).**
+`ABSTENTION_PROCEDURE_V1` vit désormais dans `priorityRulesV1.ts` — cadre,
+deux motifs de `required`, verdict par défaut, chacun avec son texte français
+exact. `PRIORITY_RULES_SHA256` porte sur `{ regles, abstention }` et non plus
+sur les seules règles. `evaluerAbstention` n'énonce plus rien : elle applique.
+Ce qui reste dans `chaineC1.ts` est l'ordre d'évaluation et le câblage des
+entrées — mécanique, non clinique. Comportement servi INCHANGÉ, textes
+identiques au caractère près : 65 tests des trois bancs concernés passent.
+
+**2. La provenance est DOCTRINALE, et la question des claims reste ouverte.**
+Les deux motifs ne dérivent d'aucun claim du corpus : ils dérivent de la
+constitution — `DC-12`/`DC-23` pour le signal de sécurité qui prime sans
+ajouter de points, `DC-24`/`DC-25` pour la donnée absente qui n'est ni nulle
+ni normale. Chaque motif cite sa doctrine, et un banc l'exige non vide.
+`DC-26` demande qu'une règle vive « dans le registre » sans préciser lequel :
+celui des décisions est ici retenu. **Question ouverte au praticien** : faut-il
+en plus des claims `VALIDE` ? Ils n'existent pas et seraient à écrire.
+
+**3. La re-signature est DUE, et le durcissement du verrou est PROPOSÉ.**
+Le périmètre signé a grandi, donc le SHA a changé —
+`4b51c649…7448042` → `cfd9b876…d511ab4`. `PRIORITY_RULES_METADATA` porte
+toujours `dateValidation: '2026-08-15T00:00:00.000Z'`, posée sur l'ANCIEN
+périmètre : la signature ne couvre plus ce qu'elle prétend couvrir. Mettre le
+littéral du banc à jour ne vaut pas signature, le banc le dit lui-même.
+
+*Proposé, délibérément non fait* : épingler le SHA du périmètre dans la
+métadonnée (`shaPerimetre`) et l'ajouter aux termes de
+`tablePrioritesSignee()`. La péremption deviendrait alors DÉTECTABLE au lieu
+d'être un commentaire — le verrou se fermerait seul dès que le contenu bouge
+sans re-signature. Ce n'est pas fait ici parce que cela **éteindrait les
+priorités que le praticien vient d'allumer**, et renverser sa décision de la
+veille sans qu'il l'ait demandé n'appartient pas à l'assistant. Le même patron
+vaudrait pour le verrou biologie (`D-061` dette b).
+
+- Non joué : T2 et T3 restent injouables dans le conteneur distant
+  (installation Playwright en dur, CDN refusé par l'allowlist). `npm run check`
+  vert, et les trois bancs couvrant l'abstention joués explicitement (65
+  tests). Revue `wn-reviewer` non lancée.
+- Dettes ouvertes : (a) re-signature praticien sur le nouveau périmètre ;
+  (b) `shaPerimetre` dans le verrou, priorités et biologie ; (c) claims
+  `VALIDE` pour les motifs d'abstention, si le praticien les juge nécessaires.
+
 ### D-061 — Les quatre tables restantes sont signées, dont deux en passage en force nommé
 
 - Date : 2026-08-15
