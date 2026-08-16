@@ -69,17 +69,35 @@ function assertBanc(): void {
   }
 }
 
-/** Rend la table des priorités signée — à appeler dans le `beforeEach` du banc. */
+// LA TABLE EST SIGNÉE DEPUIS LE 2026-08-15 ([[D-061]]). Ces helpers ont donc
+// changé de sens : `signerTablePriorites` ne fait plus que forcer une date de
+// signature simulée (la table l'est déjà), et le besoin réel du banc est
+// désormais l'inverse — simuler le verrou FERMÉ. `retablirTablePriorites`
+// restaure l'état LIVRÉ, qui est aujourd'hui l'état signé : l'écrire en dur à
+// `false` rendrait l'isolation des bancs mensongère.
+const ETAT_LIVRE = {
+  validationExterne: PRIORITY_RULES_METADATA.validationExterne,
+  dateValidation: PRIORITY_RULES_METADATA.dateValidation,
+};
+
+/** Force la signature (date simulée) — `beforeEach` d'un banc qui l'exige. */
 export function signerTablePriorites(): void {
   assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = true;
   PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_SIMULEE;
 }
 
-/** Remet la table dans son état LIVRÉ (non signée) — `afterEach` obligatoire. */
-export function retablirTablePriorites(): void {
+/** Simule le verrou FERMÉ — le cas qui n'est plus celui de la production. */
+export function designerTablePriorites(): void {
+  assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = false;
   PRIORITY_RULES_METADATA.dateValidation = null;
+}
+
+/** Restaure l'état LIVRÉ, quel qu'il soit — `afterEach` obligatoire. */
+export function retablirTablePriorites(): void {
+  PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
+  PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
 }
 
 /**

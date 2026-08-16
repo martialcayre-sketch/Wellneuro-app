@@ -4,6 +4,96 @@
 
 ## Décisions actives
 
+### D-061 — Les quatre tables restantes sont signées, dont deux en passage en force nommé
+
+- Date : 2026-08-15
+- Statut : accepté (arbitrage praticien explicite du 2026-08-15, après exposé
+  des blocages)
+- Domaine : clinique, signatures de tables, verrous fail-closed, bancs
+- Contexte : demande praticien « signer toutes les tables ». La vérification
+  préalable a établi trois choses que la demande ne pouvait pas anticiper.
+
+  **`ORIENTATION_METADATA` était DÉJÀ signée** — `validationExterne: true`,
+  `dateValidation: '2026-08-06'`, 23 claims. L'assistant avait affirmé le
+  contraire deux fois le même jour (corps de la PR #685, §F.2 du catalogue
+  biologie, tous deux mergés) : une lecture fautive attrapant la première
+  occurrence du fichier au lieu de l'objet de métadonnées. Corrigé dans la
+  même PR que cette décision. Conséquence : les trois zones du catalogue
+  reprises de cette table (sommeil, stress, digestif) s'adossent à une table
+  signée, non à un alignement provisoire.
+
+  **La table des priorités porte une dette bloquante écrite** (« À LIRE AVANT
+  DE SIGNER », [[D-054]], revue du 2026-08-12).
+
+  **Le verrou biologie est le plus faible des cinq** : `deriverStatutsBiologie`
+  ne teste que le booléen, là où les quatre autres exigent aussi date et
+  claims.
+
+- Décision : quatre signatures, portées au 2026-08-15 en ISO canonique.
+
+**1. Arrêt et contradictions, signées CONJOINTEMENT.** L'ordre a un sens
+clinique et n'est gardé par rien : signer la table d'arrêt seule ferait
+tourner l'extinction sans le frein « une contradiction ouverte interdit
+l'extinction » ([[D-053]] §5), aucun constat n'existant si les contradictions
+sont inactives. Les signer ensemble ferme ce trou. Le drapeau
+`WN_ENABLE_CONTRADICTIONS_NNPP2` reste un geste d'exploitation distinct.
+
+**2. Priorités — PASSAGE EN FORCE, nommé comme tel, et SANS SECOND VERROU.**
+
+*Fait vérifié après coup, qui aggrave ce point* : les priorités sont la SEULE
+des cinq tables sans drapeau d'exploitation. L'orientation a
+`WN_ENABLE_ORIENTATION_NNPP2`, les contradictions
+`WN_ENABLE_CONTRADICTIONS_NNPP2`, la biologie `WN_CB_ENABLED` ;
+`tablePrioritesSignee()` est le verrou unique du chemin priorités
+([[D-054]] arbitrage 7 l'assume : « la chaîne C1 est déjà derrière
+l'authentification praticien et la confirmation T0 »). Pour les quatre autres
+tables, signer n'allume pas. **Pour celle-ci, si.** Le merge de la PR portant
+cette décision met donc le verdict d'abstention en production immédiatement.
+La dette (a) ci-dessous n'est pas différable : elle est due au merge. Le SHA ne couvre pas la
+procédure d'abstention, qui vit dans `chaineC1.ts` : la signature ouvre un
+verdict `required` / `not_required` servi au praticien et haché dans la carte
+de décision, dont aucune ligne signée ne décrit la règle — ce que `DC-17` et
+`DC-26` interdisent. La dette n'est PAS close. Le praticien a signé après que
+le blocage lui a été exposé mot pour mot. **Dette ouverte et prioritaire.**
+
+**3. Biologie — PASSAGE EN FORCE, table VIDE.** La signature n'atteste aucune
+relecture de contenu puisqu'il n'y a pas de contenu. Mesuré au banc : elle est
+**observablement inerte aujourd'hui** — le moteur refuse toujours de dériver,
+mais sur la seconde garde (« aucune règle publiée et sourcée ») et non plus
+sur le verrou de signature. Le risque n'est pas aujourd'hui, il est à la
+première règle ajoutée : elle entrera sous signature acquise, sans SHA ni date
+pour la faire rougir. **Dette ouverte : aligner le verrou biologie sur le
+patron `tablePrioritesSignee` (date + SHA + claims).**
+
+**4. Les sentinelles sont INVERSÉES, jamais supprimées.** Sept bancs
+affirmaient la non-signature ; les supprimer aurait retiré le fil de
+déclenchement. Ils affirment désormais la signature ET sa bonne forme (date
+ISO canonique), de sorte qu'une dé-signature accidentelle ou une date
+malformée reste attrapée. Deux positions du verrou restent éprouvées partout,
+la position fermée étant désormais SIMULÉE.
+
+**5. La machinerie de banc capturait l'état non signé en dur.**
+`chaineC1Fixture.retablirTablePriorites()` remettait `false` au nom de
+« l'état LIVRÉ » ; après signature, ce helper imposait l'ancien état au lieu
+de restaurer le vrai, rendant l'isolation mensongère. Il capture désormais
+l'état livré au chargement. Même correction dans `chaineC1.test.ts`.
+
+- Conséquences mesurées : `npm run check` vert (41 fichiers de bancs). Le
+  comportement de production CHANGE — l'abstention passe de `not_evaluated` à
+  évaluée, les priorités et l'extinction deviennent productibles dès que leurs
+  drapeaux d'exploitation sont posés. Signer n'allume pas : chaque table garde
+  son ET avec un drapeau (`WN_ENABLE_ORIENTATION_NNPP2`,
+  `WN_ENABLE_CONTRADICTIONS_NNPP2`, `WN_CB_ENABLED`).
+- Non fait, et assumé comme tel : T2 et T3 sont injouables dans le conteneur
+  distant — `wn-test-worktree.sh` installe les navigateurs Playwright en dur et
+  le CDN est refusé par l'allowlist du proxy. Le segment E2E relève du CI
+  ([[D-049]]), mais les contrats SQL et la certification scoring de T3 n'ont
+  PAS été joués ici. La revue `wn-reviewer` prescrite pour une PR clinique n'a
+  pas été lancée non plus.
+- Dettes ouvertes : (a) procédure d'abstention à faire entrer dans le
+  périmètre signé des priorités ; (b) verrou biologie à renforcer avant toute
+  première règle ; (c) T3 et revue `wn-reviewer` à jouer hors de ce conteneur.
+
 ### D-060 — Le contrat de déclenchement apprend la disjonction, et un recueil incomplet ne l'allume jamais
 
 - Date : 2026-08-15

@@ -56,6 +56,7 @@ async function service(metadata: { validationExterne: boolean; dateValidation: s
 }
 
 const SIGNEE = { validationExterne: true, dateValidation: '2026-09-01', claimsSource: [{ claimId: 'x' }] };
+const NON_SIGNEE = { validationExterne: false, dateValidation: null, claimsSource: [] };
 
 beforeEach(() => {
   delete process.env.WN_ENABLE_CONTRADICTIONS_NNPP2;
@@ -71,11 +72,21 @@ afterEach(() => {
 });
 
 describe('contradictionsActives — le double verrou', () => {
-  it('table livrée (NON signée) + drapeau allumé ⇒ éteint', async () => {
-    // L'état réel du dépôt à la livraison du LOT-01. Ce cas est le plus
-    // important du fichier : il dit que ce lot n'allume rien.
+  it('table livrée (SIGNÉE depuis [[D-061]]) + drapeau allumé ⇒ ALLUMÉ', async () => {
+    // L'état réel du dépôt a changé le 2026-08-15 : la table est signée. Ce cas
+    // reste le plus important du fichier, mais il dit maintenant l'inverse —
+    // seul le drapeau d'exploitation sépare encore la production du constat
+    // servi au praticien.
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
     const { contradictionsActives } = await import('./contradictionsService');
+    expect(contradictionsActives()).toBe(true);
+  });
+
+  it('table NON signée + drapeau allumé ⇒ éteint (verrou simulé fermé)', async () => {
+    // Le verrou de signature existe toujours : sans ce cas, plus rien ne le
+    // dirait, la table réelle étant désormais signée.
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { contradictionsActives } = await service(NON_SIGNEE);
     expect(contradictionsActives()).toBe(false);
   });
 

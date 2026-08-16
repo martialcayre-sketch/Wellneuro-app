@@ -182,13 +182,15 @@ describe('/api/praticien/cockpit', () => {
     expect(payload.snapshot.patientContext).toMatchObject({ mainReason: 'Fatigue', priorityGoal: 'Énergie' });
     expect(payload.snapshot.versions.snapshotSchema).toBe('c1-clinical-snapshot-v1');
     expect(payload.snapshot.versions.questionnaireScoring[0].version).toBeNull();
-    // TABLE DES PRIORITÉS NON SIGNÉE : c'est l'état livré du dépôt, et ce cas
-    // décrit donc ce que la production sert. Le comportement rebranché par le
-    // LOT-04 est éprouvé plus bas, verrou simulé ouvert.
-    expect(payload.review.abstention.status).toBe('not_evaluated');
+    // TABLE DES PRIORITÉS SIGNÉE depuis [[D-061]] : ce cas décrit toujours ce
+    // que la production sert, mais la production a changé. L'abstention n'est
+    // plus « non évaluée » faute de règle signée — elle est ÉVALUÉE, et elle
+    // répond `required` sur ce dossier. La chaîne reste prudente, pour une
+    // raison désormais motivée au lieu d'être un défaut de verrou.
+    expect(payload.review.abstention.status).toBe('required');
     expect(payload.decisionCard).toMatchObject({
       priorityCandidates: [], proposedMainPriorityId: null, selectedMainPriority: null,
-      abstention: { status: 'not_evaluated' },
+      abstention: { status: 'required' },
     });
     expect(payload.decisionCard.limitations).toContain(
       'Aucune priorité ne peut être proposée avant une évaluation explicite de l’abstention et la revue des bloqueurs.'

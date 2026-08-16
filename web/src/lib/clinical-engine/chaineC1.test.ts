@@ -14,22 +14,37 @@ import {
 } from './dossierT0Fixture';
 import { PRIORITY_RULES_METADATA, PRIORITY_RULES_V1 } from '@/lib/clinical/priorityRulesV1';
 
-// CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]). Ce banc éprouve la chaîne dans les
-// DEUX positions du verrou : table non signée — ce que la production sert
-// aujourd'hui — et table signée, ce que la signature praticien déclenchera.
-// Éprouver la seule position ouverte laisserait le merge sans banc.
+// CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
+// Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
+// ÉTÉ ÉCHANGÉS À LA SIGNATURE : la table des priorités est signée depuis
+// [[D-061]], donc la position SIGNÉE est désormais ce que la production sert,
+// et la position fermée doit être SIMULÉE pour rester éprouvée. Elle le reste
+// délibérément : c'est le seul banc qui dise encore que le verrou existe.
 
 const HORODATAGE = '2026-01-03T00:00:00.000Z';
 const PATIENT = 'PAT_TEST';
+
+// L'état LIVRÉ est capturé, jamais écrit en dur : l'y figer rendrait
+// l'isolation mensongère au prochain changement de signature.
+const ETAT_LIVRE = {
+  validationExterne: PRIORITY_RULES_METADATA.validationExterne,
+  dateValidation: PRIORITY_RULES_METADATA.dateValidation,
+};
 
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
   PRIORITY_RULES_METADATA.dateValidation = '2026-08-12T00:00:00.000Z';
 }
 
-afterEach(() => {
+/** Simule le verrou FERMÉ — position qui n'est plus celle de la production. */
+function simulerNonSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = false;
   PRIORITY_RULES_METADATA.dateValidation = null;
+}
+
+afterEach(() => {
+  PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
+  PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
 });
 
 function chaine(options: {
@@ -71,8 +86,9 @@ function chaine(options: {
   });
 }
 
-describe('chaîne C1 — table NON signée (production d’aujourd’hui)', () => {
+describe('chaîne C1 — table NON signée (verrou simulé fermé)', () => {
   it('l’abstention reste non évaluée et aucune priorité n’est produite', () => {
+    simulerNonSignature();
     const { review, decisionCard } = chaine();
     expect(review.rules).toEqual([]);
     expect(review.abstention.status).toBe('not_evaluated');
@@ -92,6 +108,7 @@ describe('chaîne C1 — table NON signée (production d’aujourd’hui)', () =
   // règle. Sans ce cas, on ne saurait pas que le lot livre quelque chose de
   // visible au merge.
   it('la plainte dominante est servie même table non signée', () => {
+    simulerNonSignature();
     expect(chaine().plainteDominante).toEqual({
       domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée',
     });
@@ -284,9 +301,11 @@ describe('chaineC1Fixture — la signature de fixture ne s’exécute qu’en ba
       if (marqueur === undefined) delete process.env.VITEST;
       else process.env.VITEST = marqueur;
     }
-    // Le verrou est resté FERMÉ : le refus n'a pas laissé la table à moitié
-    // signée.
-    expect(PRIORITY_RULES_METADATA.validationExterne).toBe(false);
-    expect(PRIORITY_RULES_METADATA.dateValidation).toBeNull();
+    // LE REFUS N'A RIEN MUTÉ : la table est restée dans son état LIVRÉ. Depuis
+    // [[D-061]] cet état est « signée », si bien qu'affirmer `false` ici ne
+    // dirait plus rien de la garde — ce qui compte est l'ABSENCE d'effet de
+    // bord, pas une valeur particulière.
+    expect(PRIORITY_RULES_METADATA.validationExterne).toBe(ETAT_LIVRE.validationExterne);
+    expect(PRIORITY_RULES_METADATA.dateValidation).toBe(ETAT_LIVRE.dateValidation);
   });
 });

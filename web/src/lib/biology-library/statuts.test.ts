@@ -269,13 +269,37 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
 });
 
 describe('la table réelle livrée (indicationsBiologieV1)', () => {
-  it('est vide et non signée : le moteur ne propose rien dessus', () => {
+  // SIGNÉE VIDE le 2026-08-15 ([[D-061]]) — passage en force assumé. La table
+  // ne porte aucune règle : le moteur ne propose donc toujours rien, mais pour
+  // une raison qui a CHANGÉ. Ce n'est plus le verrou de signature qui ferme,
+  // c'est l'absence de règle exploitable. La distinction est le cœur de la
+  // dette ouverte : la prochaine règle ajoutée entrera sous signature acquise.
+  it('est signée mais vide : le moteur ne propose rien, faute de règle', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toEqual([]);
-    expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(false);
+    expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toEqual([]);
     const resultat = deriverStatutsBiologie(entree({
       regles: INDICATIONS_BIOLOGIE_V1,
       signature: INDICATIONS_BIOLOGIE_METADATA,
+    }));
+    // LA SIGNATURE À VIDE EST OBSERVABLEMENT INERTE : le moteur refuse
+    // toujours, mais le motif a changé de nature — ce n'est plus le verrou de
+    // signature, c'est l'absence de règle publiée. C'est exactement la portée
+    // du passage en force, et sa limite : rien ne bouge aujourd'hui, tout
+    // bougera à la première règle ajoutée.
+    expect(resultat.ok).toBe(false);
+    if (!resultat.ok) {
+      expect(resultat.motif).toContain('Aucune règle d’indication biologique publiée');
+      expect(resultat.motif).not.toContain('n’est pas signée');
+    }
+  });
+
+  // LE VERROU DE SIGNATURE FERME TOUJOURS, éprouvé sur une signature simulée
+  // ABSENTE — sans quoi plus rien ne dirait qu'il existe.
+  it('non signée, le moteur refuse de dériver', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      regles: INDICATIONS_BIOLOGIE_V1,
+      signature: { validationExterne: false },
     }));
     expect(resultat.ok).toBe(false);
   });

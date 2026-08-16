@@ -221,10 +221,14 @@ export type StopRulesMetadata = {
 
 export const STOP_RULES_METADATA: StopRulesMetadata = {
   version: 'stop-rules-nnpp2-v1',
-  // NON SIGNÉE — la signature est un acte praticien, jamais posé d'initiative.
-  // Le verrou correspondant vit dans `orientationService.tableArretSignee()`.
-  validationExterne: false,
-  dateValidation: null,
+  // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]). Le verrou
+  // correspondant vit dans `orientationService.tableArretSignee()`. Signée
+  // CONJOINTEMENT à `contradictionsV1` : l'ordre importe cliniquement, la borne
+  // « une contradiction ouverte interdit l'extinction » ([[D-053]] §5) ne mord
+  // que si les contradictions sont actives. Voir l'avertissement en tête de
+  // fichier, point 2.
+  validationExterne: true,
+  dateValidation: '2026-08-15T00:00:00.000Z',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

@@ -199,10 +199,12 @@ export type ContradictionsMetadata = {
 
 export const CONTRADICTIONS_METADATA: ContradictionsMetadata = {
   version: 'contradictions-nnpp2-v1',
-  // NON SIGNÉE. La table est écrite et relue en PR ; la signature clinique est
-  // un acte distinct, postérieur, et elle n'a pas eu lieu.
-  validationExterne: false,
-  dateValidation: null,
+  // SIGNÉE le 2026-08-15 (arbitrage praticien explicite, [[D-061]]), et
+  // conjointement à `stopRulesV1` — sans quoi l'extinction tournerait sans le
+  // frein de [[D-053]] §5. Le drapeau `WN_ENABLE_CONTRADICTIONS_NNPP2` reste un
+  // geste d'exploitation distinct : signer n'allume pas.
+  validationExterne: true,
+  dateValidation: '2026-08-15T00:00:00.000Z',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat.
