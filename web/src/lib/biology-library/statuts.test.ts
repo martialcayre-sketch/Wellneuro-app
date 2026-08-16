@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
 import {
   INDICATIONS_BIOLOGIE_METADATA,
+  signatureIndicationsValide,
   INDICATIONS_BIOLOGIE_V1,
   type RegleIndicationPanel,
 } from './indicationsBiologieV1';
@@ -100,11 +102,30 @@ const DRAPEAUX_FIXTURE = {
   symptomesFonctionnels: ['Ballonnements'],
 } as unknown as DrapeauxAnamnese;
 
+// SIGNATURE DE FIXTURE, COMPLÈTE — les cinq termes depuis [[D-063]] : un
+// booléen seul ne suffit plus à ouvrir le verrou, et c'est tout l'objet du
+// durcissement. Le SHA de périmètre est celui des règles de fixture, pas celui
+// de la table réelle : le banc éprouve la concordance, pas une valeur figée.
+const SHA_PERIMETRE_FIXTURE = sha256(JSON.stringify(REGLES_FIXTURE));
+const SIGNATURE_ABSENTE = {
+  validationExterne: false,
+  dateValidation: null,
+  claimsSource: [],
+  shaPerimetre: null,
+};
+const SIGNATURE_FIXTURE = {
+  validationExterne: true,
+  dateValidation: '2026-08-16T00:00:00.000Z',
+  claimsSource: [{ claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' }],
+  shaPerimetre: SHA_PERIMETRE_FIXTURE,
+};
+
 function entree(surcharge: Partial<EntreeStatutsBiologie> = {}): EntreeStatutsBiologie {
   return {
     panels: PANELS_FIXTURE,
     regles: REGLES_FIXTURE,
-    signature: { validationExterne: true },
+    signature: SIGNATURE_FIXTURE,
+    shaPerimetreAttendu: SHA_PERIMETRE_FIXTURE,
     reponses: [],
     drapeaux: DRAPEAUX_FIXTURE,
     dateReference: DATE_REFERENCE,
@@ -206,7 +227,7 @@ describe('deriverStatutsBiologie — panels documentés hors outil', () => {
 
 describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
   it('table non signée : abstention motivée en français', () => {
-    const resultat = deriverStatutsBiologie(entree({ signature: { validationExterne: false } }));
+    const resultat = deriverStatutsBiologie(entree({ signature: SIGNATURE_ABSENTE }));
     expect(resultat).toEqual({
       ok: false,
       motif: expect.stringContaining('n’est pas signée'),
@@ -274,7 +295,7 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   // une raison qui a CHANGÉ. Ce n'est plus le verrou de signature qui ferme,
   // c'est l'absence de règle exploitable. La distinction est le cœur de la
   // dette ouverte : la prochaine règle ajoutée entrera sous signature acquise.
-  it('est signée mais vide : le moteur ne propose rien, faute de règle', () => {
+  it('signature incomplète : le verrou ferme, et le motif le dit', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toEqual([]);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toEqual([]);
@@ -287,11 +308,16 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
     // signature, c'est l'absence de règle publiée. C'est exactement la portée
     // du passage en force, et sa limite : rien ne bouge aujourd'hui, tout
     // bougera à la première règle ajoutée.
+    // LE MOTIF A CHANGÉ DE NATURE avec [[D-063]] : le verrou de signature ferme
+    // AVANT la garde « aucune règle ». C'est plus juste — la signature posée par
+    // [[D-061]] n'a ni date, ni claims, ni périmètre, donc au standard des
+    // quatre autres tables elle n'en est pas une. Sans effet observable pour
+    // autant : la table est vide, rien n'était dérivé de toute façon.
     expect(resultat.ok).toBe(false);
     if (!resultat.ok) {
-      expect(resultat.motif).toContain('Aucune règle d’indication biologique publiée');
-      expect(resultat.motif).not.toContain('n’est pas signée');
+      expect(resultat.motif).toContain('n’est pas signée');
     }
+    expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(false);
   });
 
   // LE VERROU DE SIGNATURE FERME TOUJOURS, éprouvé sur une signature simulée
@@ -299,7 +325,7 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   it('non signée, le moteur refuse de dériver', () => {
     const resultat = deriverStatutsBiologie(entree({
       regles: INDICATIONS_BIOLOGIE_V1,
-      signature: { validationExterne: false },
+      signature: SIGNATURE_ABSENTE,
     }));
     expect(resultat.ok).toBe(false);
   });

@@ -96,6 +96,15 @@ export type IndicationsBiologieMetadata = {
   dateValidation: string | null;
   /** Claims distincts cités par la table — le périmètre couvert par la signature. */
   claimsSource: OrientationClaimRef[];
+  /**
+   * SHA du périmètre effectivement relu au moment de la signature ([[D-063]]).
+   *
+   * C'est ce terme qui rend la PÉREMPTION DÉTECTABLE : dès qu'une règle est
+   * ajoutée ou retouchée, `INDICATIONS_BIOLOGIE_SHA256` change et ne concorde
+   * plus — le verrou se ferme SEUL, au lieu de laisser la nouvelle règle entrer
+   * sous une signature acquise. `null` tant que rien n'a été relu.
+   */
+  shaPerimetre: string | null;
 };
 
 export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
@@ -112,9 +121,49 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //
   // Le drapeau `WN_CB_ENABLED` reste le second terme du ET : signer n'allume
   // pas.
+  // SIGNATURE INCOMPLÈTE, ET LE VERROU LE DIT DÉSORMAIS ([[D-063]]).
+  // [[D-061]] a posé `validationExterne: true` sur instruction praticien, mais
+  // sans date, sans claims et sans périmètre : au standard des quatre autres
+  // tables, ce n'est pas une signature. Elle passait parce que le verrou ne
+  // regardait que le booléen. Il regarde maintenant les cinq termes, donc il
+  // est FERMÉ — état juste, et sans effet observable tant que la table est
+  // vide, le moteur refusant déjà faute de règle publiée.
+  //
+  // POUR SIGNER RÉELLEMENT : poser la date ISO canonique, les claims du
+  // périmètre relu, et `shaPerimetre = INDICATIONS_BIOLOGIE_SHA256`. Geste
+  // praticien, jamais posé d'initiative.
   validationExterne: true,
   dateValidation: null,
   claimsSource: [],
+  shaPerimetre: null,
 };
 
 export const INDICATIONS_BIOLOGIE_SHA256 = sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1));
+
+/**
+ * La table des indications est-elle RÉELLEMENT signée ? ([[D-063]])
+ *
+ * Patron `tablePrioritesSignee()`, enfin repris ici — un `validationExterne`
+ * seul était un booléen qu'un flip isolé suffisait à ouvrir, et c'était le plus
+ * faible des cinq verrous du dépôt. S'y ajoute un terme que les autres n'ont
+ * pas encore : la concordance du SHA de périmètre, qui referme le verrou dès
+ * que le contenu bouge sans re-signature.
+ *
+ * La date doit être ISO CANONIQUE — même motif qu'en priorités : une date mal
+ * formée doit FERMER le verrou, jamais le laisser ouvert puis jeter en aval.
+ */
+export function signatureIndicationsValide(
+  signature: Pick<
+    IndicationsBiologieMetadata,
+    'validationExterne' | 'dateValidation' | 'claimsSource' | 'shaPerimetre'
+  >,
+  shaAttendu: string = INDICATIONS_BIOLOGIE_SHA256,
+): boolean {
+  const date = signature.dateValidation;
+  return signature.validationExterne
+    && date !== null
+    && !Number.isNaN(new Date(date).getTime())
+    && new Date(date).toISOString() === date
+    && signature.claimsSource.length > 0
+    && signature.shaPerimetre === shaAttendu;
+}
