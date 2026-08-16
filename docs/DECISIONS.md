@@ -4,6 +4,40 @@
 
 ## Décisions actives
 
+### D-064 — Le frein de `D-053` §5 était inopérant en production ; les contradictions sont activées pour le rendre réel
+
+- Date : 2026-08-16
+- Statut : accepté et exécuté — `WN_ENABLE_CONTRADICTIONS_NNPP2=1` posé sur le
+  scope Production Vercel le 2026-08-16, sur instruction expresse du praticien.
+  **Effet au prochain déploiement de production seulement.**
+- Domaine : clinique, verrous de signature, contradictions, extinction
+- Contexte : revue `wn-reviewer` a posteriori des trois PR cliniques de
+  `D-061`/`D-062`/`D-063` (jamais revues avant merge, produites depuis un
+  conteneur distant). Finding critique confirmé : la signature CONJOINTE des
+  tables d'arrêt et de contradictions (`D-061`) ne produisait pas le frein
+  qu'elle revendiquait. La borne « une contradiction ouverte interdit
+  l'extinction » (`D-053` §5, `orientationEngine.ts`) ne mord que sur les
+  constats effectivement produits, et `contradictionsActives()` exige le
+  drapeau EN PLUS de la signature — quand `tableArretSignee()` ne teste que
+  la signature, sous un `WN_ENABLE_ORIENTATION_NNPP2` déjà posé. Le drapeau
+  des contradictions étant absent de tous les scopes Vercel, l'extinction
+  tournait donc SANS FREIN en production depuis le 2026-08-15 : sur un
+  dossier du recoupement `STOP-STR` × `C-STR`, une discordance déclarée
+  était supprimée sans constat — `DC-30` pris à revers.
+- Décision : poser le drapeau, pas dé-signer. Deux alternatives écartées :
+  dé-signer `stopRulesV1` (retire une extinction voulue et déjà signée pour
+  corriger un défaut qui n'est pas le sien) ; conditionner l'extinction à
+  `contradictionsActives()` dans le code (change la sémantique du verrou —
+  reste une piste de durcissement, non tranchée ici). Poser le drapeau
+  rétablit l'état que `D-061` croyait avoir produit : constats servis à
+  l'écran (câblage `D-050`) ET frein réel sur l'extinction.
+- Conséquence assumée : le cockpit praticien affichera les constats de
+  contradiction (`C-STR`, seule règle publiée) dès le prochain déploiement.
+- Dette nommée : aucun banc ne joue « arrêt signé + contradictions
+  inactives » — la configuration exacte qui a laissé ce trou invisible. Un
+  garde reliant `docs/FEATURE_FLAGS.md` à l'état réel des `validationExterne`
+  manque également (le document a menti trois jours sur deux tables).
+
 ### D-063 — Le verrou biologie devient réel, et il révèle que sa signature n'en était pas une
 
 - Date : 2026-08-16

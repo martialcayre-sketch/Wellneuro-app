@@ -53,18 +53,23 @@ clinique**. Ne pas forcer la métadonnée de validation pour « voir » la featu
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
 | `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
-| `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (validation + date + claims) | **1 règle publiée (C-STR)**, `validationExterne: false` au 2026-08-12 → **fermé quoi qu'on pose**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) : signer la table suffirait donc à faire sortir des constats, le drapeau étant la seule autre condition |
+| `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (validation + date + claims) | **1 règle publiée (C-STR)**, table **signée le 2026-08-15** ([[D-061]]) et **drapeau posé en Production le 2026-08-16** ([[D-064]]) → **les deux conditions sont remplies ; les constats sortent au prochain déploiement de production**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) |
 
 **Les règles d'arrêt n'ont PAS de drapeau à elles** ([[D-053]], LOT-03 du
-2026-08-12). `stopRulesV1.ts` est livrée `validationExterne: false`, et le verrou
-`tableArretSignee()` d'`orientationService.ts` commande à lui seul les deux
-effets de la table — l'extinction des recommandations et l'exclusion des
-instruments déjà renseignés de façon exploitable. Un second drapeau aurait
+2026-08-12). `stopRulesV1.ts` est **signée depuis le 2026-08-15** ([[D-061]]),
+et le verrou `tableArretSignee()` d'`orientationService.ts` commande à lui seul
+les deux effets de la table — l'extinction des recommandations et l'exclusion
+des instruments déjà renseignés de façon exploitable. Un second drapeau aurait
 donné l'illusion d'un second verrou : les règles d'arrêt ne s'exercent qu'à
 l'intérieur d'une orientation déjà servie, donc déjà gardée par
-`WN_ENABLE_ORIENTATION_NNPP2`. **Conséquence à connaître avant de signer** :
-l'orientation étant allumée en production, la signature de cette table-ci
-change l'écran praticien le jour même, sans autre geste.
+`WN_ENABLE_ORIENTATION_NNPP2`. La conséquence annoncée ici avant signature
+s'est réalisée : l'orientation étant allumée en production, **l'extinction est
+effective depuis le 2026-08-15**. Elle a même tourné trois jours sans le frein
+de [[D-053]] §5 — le frein ne mord que sur des constats effectivement
+produits, et le drapeau des contradictions manquait ([[D-064]], qui l'a posé).
+**Leçon pour la prochaine signature** : vérifier non seulement ce que la
+signature allume, mais ce dont le comportement allumé dépend pour rester
+borné.
 
 **⚠ L'orientation a changé d'état le 2026-08-04.** Jusque-là, la valeur du
 drapeau était sans effet : `tableSignee()` était faux, donc le ET aussi, dans
