@@ -195,6 +195,14 @@ export function PacksPanel({
   // le retirer.
   const editSuspendusPresents = suspendus.filter(s => editQidsInitiaux.has(s.id));
 
+  // Instruments de consultation DÉJÀ dans ce pack (dérivé de l'instantané).
+  // Exclus de `questionnairesComposables` (le PATCH refuse les AJOUTS, pas les
+  // suppressions), ils sont affichés dans un bloc distinct pour que le praticien
+  // puisse les retirer.
+  const editConsultationPresents = questionnaires.filter(
+    q => q.passationPraticien && editQidsInitiaux.has(q.id),
+  );
+
   const toggleQid = (id: string) => {
     setSelectedQids(prev => {
       const next = new Set(prev);
@@ -662,6 +670,25 @@ export function PacksPanel({
                       <input type="checkbox" checked={editSelectedQids.has(s.id)} onChange={() => toggleEditQid(s.id)} />
                       <span>{s.titre}</span>
                       <span className="text-xs text-muted-foreground">(suspendu — {s.id})</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {/* Instruments de consultation DÉJÀ dans ce pack. Bloc distinct :
+                  ils sont exclus du composeur (PATCH refuse les AJOUTS), mais le
+                  praticien doit pouvoir les retirer. */}
+              {editConsultationPresents.length > 0 && (
+                <div className="border border-status-info/40 bg-status-info/5 rounded-lg p-2 flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground px-1">
+                    Ces instruments sont <strong>réservés à la consultation</strong> : ils figurent encore dans
+                    ce pack. Décochez-les pour les retirer. Ils ne pourront pas y être rajoutés via un pack.
+                  </p>
+                  {editConsultationPresents.map(q => (
+                    <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                      <input type="checkbox" checked={editSelectedQids.has(q.id)} onChange={() => toggleEditQid(q.id)} />
+                      <span>{q.titre}</span>
+                      <span className="text-xs text-muted-foreground">(consultation — {q.id})</span>
                     </label>
                   ))}
                 </div>
