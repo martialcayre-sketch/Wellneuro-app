@@ -1,4 +1,5 @@
 import {
+  ABSTENTION_PROCEDURE_V1,
   CANAL_PLAINTE,
   evaluerPriorites,
   reglesPrioritesValidees,
@@ -198,12 +199,10 @@ const LIMITATION_OBJECTIF =
   'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.';
 
 /**
- * Évaluation EXPLICITE de l'abstention ([[D-054]]).
+ * Évaluation EXPLICITE de l'abstention ([[D-054]], [[D-062]]).
  *
  * Table non signée ⇒ `undefined` : `buildClinicalReview` retombe alors sur son
- * `not_evaluated` habituel, avec sa propre limitation (« aucune règle
- * d'abstention cliniquement validée n'est fournie »). C'est le comportement
- * d'aujourd'hui, laissé intact.
+ * `not_evaluated` habituel, avec sa propre limitation.
  *
  * DEUX MOTIFS DE `required`, ET AUCUN N'AJOUTE DE POINTS (`DC-12`, `DC-23`) :
  * un constat de sécurité, qui prime sur tout score et appelle une revue ; ou un
@@ -211,14 +210,12 @@ const LIMITATION_OBJECTIF =
  * peut RIEN évaluer et l'absence de donnée ne devient pas une normalité
  * (`DC-24`, `DC-25`).
  *
- * DETTE BLOQUANTE POUR LA SIGNATURE ([[D-054]], relevée en revue le
- * 2026-08-12). CETTE PROCÉDURE VIT ICI, hors de `PRIORITY_RULES_V1` et donc hors
- * de `PRIORITY_RULES_SHA256` : la table signée décrit ce qui DÉCLENCHE une
- * priorité, elle ne décrit pas ce qui commande l'abstention. Signer
- * `PRIORITY_RULES_METADATA` en l'état activerait donc un verdict clinique
- * qu'aucune ligne signée ne décrit (`DC-17`, `DC-26`). Avant toute signature,
- * cette procédure doit entrer dans le périmètre signé — dans la table, ou dans
- * un document signable qu'elle référence.
+ * LA DETTE BLOQUANTE DE [[D-054]] EST FERMÉE ([[D-062]]). Cette fonction ne
+ * décide plus rien par elle-même : elle APPLIQUE `ABSTENTION_PROCEDURE_V1`,
+ * qui vit dans la table signée et entre dans `PRIORITY_RULES_SHA256`. Les
+ * textes servis au praticien sont des données signées, plus des littéraux du
+ * moteur. Ce qui reste ici est l'ordre d'évaluation et le câblage des entrées —
+ * mécanique, non clinique.
  */
 function evaluerAbstention(input: {
   ruleIds: string[];
@@ -226,46 +223,26 @@ function evaluerAbstention(input: {
   canalMesure: boolean;
 }): AbstentionAssessment | undefined {
   if (input.ruleIds.length === 0) return undefined;
-  const limitations = [
-    'L’abstention porte sur la préparation de la décision par l’outil ; elle ne conclut rien sur le patient.',
-  ];
+  const [motifSecurite, motifCanal] = ABSTENTION_PROCEDURE_V1.motifsRequired;
+  const cadre = [ABSTENTION_PROCEDURE_V1.cadre];
   if (input.safetyFindings > 0) {
     return {
       status: 'required',
       ruleIds: input.ruleIds,
-      limitations: [
-        ...limitations,
-        'Au moins un constat de sécurité est présent : il prime sur tout score et exige une revue praticien avant toute priorité.',
-      ],
+      limitations: [...cadre, motifSecurite.limitation],
     };
   }
   if (!input.canalMesure) {
     return {
       status: 'required',
       ruleIds: input.ruleIds,
-      limitations: [
-        ...limitations,
-        `Le canal de plainte (${CANAL_PLAINTE}) ne rend aucune mesure sur l’épisode confirmé : la table des priorités ne peut pas être évaluée, et une donnée absente n’est ni nulle ni normale.`,
-      ],
+      limitations: [...cadre, motifCanal.limitation],
     };
   }
-  // CE QUE CETTE PHRASE DIT EXACTEMENT, et ce qu'elle se garde de promettre.
-  //
-  // Une première rédaction affirmait « aucun constat de sécurité n'est
-  // présent » : un négatif qui n'a JAMAIS été évalué, puisque aucun producteur
-  // de constat de sécurité déterministe n'existe dans le dépôt (`safetyFindings`
-  // est câblé à 0 plus bas). Servir au praticien l'absence d'un contrôle comme
-  // le résultat d'un contrôle est précisément ce que la doctrine interdit
-  // (`DC-24`). La phrase dit donc l'état du dispositif, pas l'état du patient.
   return {
     status: 'not_required',
     ruleIds: input.ruleIds,
-    limitations: [
-      ...limitations,
-      'Aucun constat de sécurité n’est produit par le moteur déterministe — aucun producteur n’existe à ce jour —'
-      + ` et le canal de plainte (${CANAL_PLAINTE}) rend une mesure sur l’épisode confirmé :`
-      + ' la table des priorités ne retient aucun motif d’abstention.',
-    ],
+    limitations: [...cadre, ABSTENTION_PROCEDURE_V1.notRequired.limitation],
   };
 }
 

@@ -364,7 +364,80 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
 // garde, c'est le littéral épinglé dans `priorityRulesV1.test.ts` — toute
 // édition d'une règle après signature y rougit, et la sortie de secours est de
 // RE-SIGNER, jamais de mettre le sha à jour en silence.
-export const PRIORITY_RULES_SHA256 = sha256(JSON.stringify(PRIORITY_RULES_V1));
+/**
+ * PROCÉDURE D'ABSTENTION — entrée dans le périmètre signé ([[D-062]]).
+ *
+ * Elle vivait dans `lib/clinical-engine/chaineC1.ts`, hors de la table et donc
+ * hors du SHA : signer `PRIORITY_RULES_METADATA` activait un verdict clinique
+ * qu'aucune ligne signée ne décrivait (`DC-17`, `DC-26`). C'était la dette
+ * bloquante de [[D-054]], franchie en connaissance au moment de la signature
+ * ([[D-061]]) et fermée ici.
+ *
+ * SA PROVENANCE EST DOCTRINALE, PAS BIBLIOGRAPHIQUE, et c'est dit plutôt que
+ * sous-entendu. Ses deux motifs ne dérivent d'aucun claim du corpus : ils
+ * dérivent de la constitution clinique — un signal de sécurité prime sur tout
+ * score et n'ajoute pas de points (`DC-12`, `DC-23`) ; une donnée absente n'est
+ * ni nulle ni normale (`DC-24`, `DC-25`). `DC-26` exige qu'une règle clinique
+ * vive « dans le registre, jamais seulement dans le code » : le registre est
+ * ici celui des décisions, non celui des claims. Si le praticien veut des
+ * claims `VALIDE` à l'appui, ils restent à écrire — la question est posée en
+ * toutes lettres dans [[D-062]].
+ *
+ * LES TEXTES SONT DES DONNÉES, jamais des littéraux du moteur : c'est ce qui
+ * les fait entrer dans `PRIORITY_RULES_SHA256`, donc dans ce que la signature
+ * couvre. Les retoucher fait rougir le verrou de contenu, et la sortie de
+ * secours est de RE-SIGNER.
+ */
+export type MotifAbstention = {
+  id: string;
+  /** Règles de la constitution qui fondent ce motif. Jamais vide. */
+  doctrine: string[];
+  /** Texte français servi au praticien, tel quel. */
+  limitation: string;
+};
+
+export const ABSTENTION_PROCEDURE_V1 = {
+  version: 'abstention-procedure-v1',
+  /** Portée, rappelée sous tout verdict — l'outil, jamais le patient. */
+  cadre:
+    'L’abstention porte sur la préparation de la décision par l’outil ; elle ne conclut rien sur le patient.',
+  /** Évalués dans cet ordre ; le premier atteint l'emporte. AUCUN n'ajoute de points. */
+  motifsRequired: [
+    {
+      id: 'ABST-SEC-01',
+      doctrine: ['DC-12', 'DC-23'],
+      limitation:
+        'Au moins un constat de sécurité est présent : il prime sur tout score et exige une revue praticien avant toute priorité.',
+    },
+    {
+      id: 'ABST-CAN-01',
+      doctrine: ['DC-24', 'DC-25'],
+      limitation:
+        `Le canal de plainte (${CANAL_PLAINTE}) ne rend aucune mesure sur l’épisode confirmé : la table des priorités ne peut pas être évaluée, et une donnée absente n’est ni nulle ni normale.`,
+    },
+  ] as MotifAbstention[],
+  /**
+   * Verdict par défaut. SA PHRASE DIT L'ÉTAT DU DISPOSITIF, PAS CELUI DU
+   * PATIENT : affirmer « aucun constat de sécurité n'est présent » serait servir
+   * l'absence d'un contrôle comme le résultat d'un contrôle (`DC-24`), aucun
+   * producteur de constat déterministe n'existant à ce jour.
+   */
+  notRequired: {
+    id: 'ABST-NR-01',
+    doctrine: ['DC-24'],
+    limitation:
+      'Aucun constat de sécurité n’est produit par le moteur déterministe — aucun producteur n’existe à ce jour —'
+      + ` et le canal de plainte (${CANAL_PLAINTE}) rend une mesure sur l’épisode confirmé :`
+      + ' la table des priorités ne retient aucun motif d’abstention.',
+  } as MotifAbstention,
+} as const;
+
+// LE SHA COUVRE DÉSORMAIS LA PROCÉDURE D'ABSTENTION, et c'est tout l'objet de
+// [[D-062]]. Sa valeur CHANGE de ce fait : le périmètre signé s'agrandit, donc
+// la signature du 2026-08-15 ne le couvre plus. Re-signature praticien requise.
+export const PRIORITY_RULES_SHA256 = sha256(
+  JSON.stringify({ regles: PRIORITY_RULES_V1, abstention: ABSTENTION_PROCEDURE_V1 }),
+);
 
 /**
  * La table des RÈGLES DE PRIORITÉ est-elle signée ? ([[D-054]])

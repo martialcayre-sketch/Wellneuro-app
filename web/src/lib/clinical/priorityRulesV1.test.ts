@@ -11,6 +11,7 @@ import {
   CANAL_PLAINTE,
   PRIORITY_RULES_ECARTEES_V1,
   PRIORITY_RULES_METADATA,
+  ABSTENTION_PROCEDURE_V1,
   PRIORITY_RULES_SHA256,
   PRIORITY_RULES_V1,
   evaluerPriorites,
@@ -306,14 +307,46 @@ describe('priorityRulesV1 — verrou de contenu', () => {
   // bougent ensemble : comparer l'une à l'autre ne garde rien. C'est ce
   // littéral-ci qui rougit quand une règle est retouchée, et la sortie de secours
   // est de RE-SIGNER, jamais de mettre le sha à jour en silence.
-  const SHA_CONTENU_2026_08_12 = '4b51c6499f88f8655699adf9acaee95adb8018d8fe9c8424a10f276ca7448042';
+  // LE PÉRIMÈTRE A GRANDI le 2026-08-16 ([[D-062]]) : la procédure d'abstention
+  // y est entrée, et le sha a donc changé. L'ancienne valeur
+  // (`4b51c649…7448042`) couvrait `PRIORITY_RULES_V1` seule.
+  //
+  // METTRE CE LITTÉRAL À JOUR NE VAUT PAS SIGNATURE. Le commentaire d'origine
+  // le dit et il reste vrai : la sortie de secours est de RE-SIGNER. La
+  // métadonnée porte encore `dateValidation: '2026-08-15T00:00:00.000Z'`, posée
+  // sur l'ANCIEN périmètre — la re-signature est due, et [[D-062]] la nomme
+  // comme dette ouverte.
+  const SHA_CONTENU_2026_08_16 = 'cfd9b876e594d3298b35890e8c4827af15d88143fe03c594ff89c93ffd511ab4';
 
-  it('le sha publié correspond au contenu de la table', () => {
-    expect(PRIORITY_RULES_SHA256).toBe(sha256(JSON.stringify(PRIORITY_RULES_V1)));
+  it('le sha publié correspond au contenu signé — règles ET procédure d’abstention', () => {
+    expect(PRIORITY_RULES_SHA256).toBe(
+      sha256(JSON.stringify({ regles: PRIORITY_RULES_V1, abstention: ABSTENTION_PROCEDURE_V1 })),
+    );
   });
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(PRIORITY_RULES_V1.length).toBe(2);
-    expect(PRIORITY_RULES_SHA256).toBe(SHA_CONTENU_2026_08_12);
+    expect(PRIORITY_RULES_SHA256).toBe(SHA_CONTENU_2026_08_16);
+  });
+
+  // CE QUE [[D-062]] FERME : le verdict d'abstention est désormais DÉCRIT par
+  // des données signées. Sans ce banc, rien ne dirait que les textes servis au
+  // praticien viennent de la table et non de littéraux du moteur.
+  it('la procédure d’abstention est couverte par le sha, motifs et textes compris', () => {
+    const avant = PRIORITY_RULES_SHA256;
+    const mute = {
+      regles: PRIORITY_RULES_V1,
+      abstention: { ...ABSTENTION_PROCEDURE_V1, cadre: 'texte retouché' },
+    };
+    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+  });
+
+  // AUCUN MOTIF SANS DOCTRINE : la provenance est doctrinale et non
+  // bibliographique, mais elle n'est jamais absente (`DC-26`).
+  it('chaque motif d’abstention cite au moins une règle de la constitution', () => {
+    for (const motif of [...ABSTENTION_PROCEDURE_V1.motifsRequired, ABSTENTION_PROCEDURE_V1.notRequired]) {
+      expect(motif.doctrine.length).toBeGreaterThan(0);
+      expect(motif.limitation.length).toBeGreaterThan(0);
+    }
   });
 });
