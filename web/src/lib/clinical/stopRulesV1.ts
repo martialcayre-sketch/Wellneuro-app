@@ -217,6 +217,14 @@ export type StopRulesMetadata = {
   validationExterne: boolean;
   dateValidation: string | null;
   claimsSource: StopRuleClaimRef[];
+  /**
+   * SHA du périmètre relu à la signature — patron [[D-063]], étendu par
+   * [[D-067]]. LITTÉRAL FIGÉ, jamais la constante : une règle d'arrêt
+   * retouchée change `STOP_RULES_SHA256` et ferme le verrou seule. Sur une
+   * table d'EXTINCTION, la péremption indétectable serait le pire défaut —
+   * une règle éteindrait sous une signature qui ne l'a jamais couverte.
+   */
+  shaPerimetre: string | null;
 };
 
 export const STOP_RULES_METADATA: StopRulesMetadata = {
@@ -229,6 +237,11 @@ export const STOP_RULES_METADATA: StopRulesMetadata = {
   // fichier, point 2.
   validationExterne: true,
   dateValidation: '2026-08-15T00:00:00.000Z',
+  // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que `STOP_RULES_SHA256`
+  // valait à la relecture, recopiée telle quelle — jamais la constante
+  // (déclarée après cet objet ; comparaison tautologique sinon). Le contenu
+  // n'a pas bougé depuis la signature du 2026-08-15 : la date reste.
+  shaPerimetre: 'f9ccf688d6beae301df3cbea3279e863a09870cc6020656302ede86496d8fa01',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.

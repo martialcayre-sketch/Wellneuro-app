@@ -32,6 +32,11 @@ describe('stopRulesV1 — statut de signature', () => {
     expect(STOP_RULES_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
     const d = STOP_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
+    // Cinquième terme ([[D-067]]) : le littéral concorde avec le contenu
+    // vivant — une règle d'arrêt retouchée casse cette égalité et ferme
+    // `tableArretSignee()` seule. Sur une table d'EXTINCTION, c'est le terme
+    // qui compte le plus.
+    expect(STOP_RULES_METADATA.shaPerimetre).toBe(STOP_RULES_SHA256);
   });
 
   it('la version est nommée et les claims sources ne sont pas vides', () => {

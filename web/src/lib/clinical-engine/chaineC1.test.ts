@@ -33,6 +33,7 @@ const PATIENT = 'PAT_TEST';
 const ETAT_LIVRE = {
   validationExterne: PRIORITY_RULES_METADATA.validationExterne,
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
+  shaPerimetre: PRIORITY_RULES_METADATA.shaPerimetre,
 };
 
 // LA DATE RÉELLEMENT LIVRÉE (finding F4, revue du 2026-08-16). Elle entre dans
@@ -41,11 +42,14 @@ const ETAT_LIVRE = {
 // sert. Même valeur que `DATE_SIGNATURE_SIMULEE` de `chaineC1Fixture` — une
 // SENTINELLE en fin de fichier tient les deux copies contre la métadonnée, et
 // rougira à la re-signature praticien (due depuis [[D-062]]).
-const DATE_SIGNATURE_LIVREE = '2026-08-15T00:00:00.000Z';
+const DATE_SIGNATURE_LIVREE = '2026-08-16T00:00:00.000Z';
 
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
   PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_LIVREE;
+  // Cinquième terme ([[D-067]]) — posé explicitement plutôt qu'hérité du
+  // littéral livré : le harnais dit ce qu'il exige (finding m6).
+  PRIORITY_RULES_METADATA.shaPerimetre = ETAT_LIVRE.shaPerimetre;
 }
 
 /** Simule le verrou FERMÉ — position qui n'est plus celle de la production. */
@@ -57,6 +61,7 @@ function simulerNonSignature(): void {
 afterEach(() => {
   PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
   PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
+  PRIORITY_RULES_METADATA.shaPerimetre = ETAT_LIVRE.shaPerimetre;
 });
 
 function chaine(options: {

@@ -46,7 +46,7 @@ const constat = (surcharge: Partial<Discordance> = {}): Discordance => ({
 });
 
 /** Recharge le module pour que le verrou relise `CONTRADICTIONS_METADATA`. */
-async function service(metadata: { validationExterne: boolean; dateValidation: string | null; claimsSource: unknown[] }) {
+async function service(metadata: { validationExterne: boolean; dateValidation: string | null; claimsSource: unknown[]; shaPerimetre?: string | null }) {
   vi.resetModules();
   vi.doMock('./contradictionsV1', async () => {
     const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
@@ -55,7 +55,15 @@ async function service(metadata: { validationExterne: boolean; dateValidation: s
   return import('./contradictionsService');
 }
 
-const SIGNEE = { validationExterne: true, dateValidation: '2026-09-01', claimsSource: [{ claimId: 'x' }] };
+// Cinq termes depuis [[D-067]] : date ISO canonique et SHA de périmètre
+// concordant avec le contenu RÉEL du module (le harnais étend la métadonnée
+// réelle, la constante `CONTRADICTIONS_RULES_SHA256` reste celle de la table
+// vivante — le littéral d'une fixture divergerait à chaque édition de règle).
+const SIGNEE = {
+  validationExterne: true,
+  dateValidation: '2026-09-01T00:00:00.000Z',
+  claimsSource: [{ claimId: 'x' }],
+};
 const NON_SIGNEE = { validationExterne: false, dateValidation: null, claimsSource: [] };
 
 beforeEach(() => {
@@ -110,6 +118,26 @@ describe('contradictionsActives — le double verrou', () => {
 
     const sansClaims = await service({ ...SIGNEE, claimsSource: [] });
     expect(sansClaims.contradictionsActives()).toBe(false);
+
+    const dateNonCanonique = await service({ ...SIGNEE, dateValidation: '2026-09-01' });
+    expect(dateNonCanonique.contradictionsActives()).toBe(false);
+  });
+
+  // LE CINQUIÈME TERME, PROUVÉ PAR LA PÉREMPTION ([[D-067]], finding M1 de la
+  // revue — VÉRIFIÉ PAR MUTATION : sans ce cas, supprimer le terme
+  // `shaPerimetre === CONTRADICTIONS_RULES_SHA256` du verrou laissait 1441
+  // tests verts, sur la SEULE table dont le drapeau est déjà posé en
+  // production. Une règle de contradiction retouchée après signature aurait
+  // servi des constats à l'écran praticien sous une signature qui ne l'a
+  // jamais couverte.
+  it('un `shaPerimetre` qui ne concorde plus ferme le verrou — la péremption se voit', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    // Témoin : la signature réelle (spread de la métadonnée vivante) ouvre.
+    const concordant = await service(SIGNEE);
+    expect(concordant.contradictionsActives()).toBe(true);
+    // Péremption : le littéral ne concorde plus ⇒ fermé, sans autre terme changé.
+    const perime = await service({ ...SIGNEE, shaPerimetre: 'sha-perime' });
+    expect(perime.contradictionsActives()).toBe(false);
   });
 
   it('drapeau à une autre valeur que « 1 » ⇒ éteint', async () => {

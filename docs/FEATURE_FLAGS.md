@@ -52,8 +52,8 @@ clinique**. Ne pas forcer la métadonnée de validation pour « voir » la featu
 | Flag | Valeur ON | 2ᵉ condition | État (daté) |
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
-| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
-| `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (validation + date + claims) | **1 règle publiée (C-STR)**, table **signée le 2026-08-15** ([[D-061]]) et **drapeau posé en Production le 2026-08-16** ([[D-064]]) → **les deux conditions sont remplies ; les constats sortent au prochain déploiement de production**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) |
+| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (5 termes depuis `D-067` : validation + date ISO canonique + claims + concordance `shaPerimetre`) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
+| `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (5 termes depuis `D-067` : validation + date ISO canonique + claims + concordance `shaPerimetre`) | **1 règle publiée (C-STR)**, table **signée le 2026-08-15** ([[D-061]]) et **drapeau posé en Production le 2026-08-16** ([[D-064]]) → **les deux conditions sont remplies ; les constats sortent au prochain déploiement de production**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) |
 
 **Les règles d'arrêt n'ont PAS de drapeau à elles** ([[D-053]], LOT-03 du
 2026-08-12) — mais depuis [[D-065]], **elles héritent de celui des
@@ -105,24 +105,30 @@ CI ; une table signée neuve absente du tableau aussi.
 
 | Table (fichier sous `web/src/lib/`) | `validationExterne` | `dateValidation` |
 |---|---|---|
-| `clinical/orientationRulesV1.ts` | `true` | `2026-08-06` |
+| `clinical/orientationRulesV1.ts` | `true` | `2026-08-06T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `clinical/priorityRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
+| `clinical/priorityRulesV1.ts` | `true` | `2026-08-16T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `null` |
 | `clinical/corpusSyntheseV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
-Deux lignes de ce tableau demandent une lecture attentive :
+Trois lectures attentives sur ce tableau :
 
 - **`indicationsBiologieV1.ts` porte `true` sans date** — signature délibérément
   incomplète ([[D-063]]). Le verrou est donc FERMÉ, et la première règle
   biologie ajoutée ne s'appliquera pas tant qu'un praticien n'aura pas posé la
   date, les claims et le `shaPerimetre`. Ce `true` seul n'ouvre rien.
-- **`priorityRulesV1.ts` porte une date antérieure à son périmètre courant** —
-  `D-062` l'a agrandi sans re-signature. Aucun `shaPerimetre` ne le détecte sur
-  cette table ; c'est un geste praticien en attente.
+- **Les quatre tables cliniques portent un `shaPerimetre` depuis `D-067`**
+  (2026-08-16) : le verrou est passé à cinq termes — booléen, date, forme ISO
+  canonique, claims, concordance du SHA de périmètre. Une règle retouchée
+  après signature ferme désormais son verrou seule. `priorityRulesV1.ts` a été
+  **re-signée le 2026-08-16** sur le périmètre agrandi par `D-062` — la dette
+  de re-signature est soldée.
+- **`orientationRulesV1.ts` garde son jour de signature du 2026-08-06** : seule
+  la FORME de la date a été portée à l'ISO canonique par `D-067` (réserve F5) —
+  le fait attesté ne change pas.
 
 ## D. Gate dur HDS — ne jamais ouvrir avant l'attestation HDS
 

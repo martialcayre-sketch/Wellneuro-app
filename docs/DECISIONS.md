@@ -4,6 +4,57 @@
 
 ## Décisions actives
 
+### D-067 — Les quatre tables cliniques passent au verrou à cinq termes, et les signatures dues sont reposées
+
+- Date : 2026-08-16
+- Statut : accepté (arbitrage praticien explicite en session — « toutes les
+  signatures praticien, sans réserves ») et implémenté.
+- Domaine : clinique, signatures des tables, verrous fail-closed
+- Contexte : `D-063` a construit sur le verrou biologie le seul verrou à cinq
+  termes du dépôt — booléen, date, forme ISO canonique, claims, concordance
+  d'un `shaPerimetre` littéral avec le SHA recalculé du contenu — et a nommé
+  l'écart : les quatre tables historiques (orientation, priorités, arrêt,
+  contradictions) restaient à trois termes, sans détection de péremption. Par
+  ailleurs `D-062` avait agrandi le périmètre haché des priorités APRÈS leur
+  signature du 2026-08-15 : la re-signature était due. Enfin la réserve F5 de
+  la revue du 2026-08-16 : la date d'orientation (`'2026-08-06'`) n'était pas
+  ISO canonique et son verrou ne contrôlait pas la forme.
+- Décision, trois gestes :
+
+**1. `shaPerimetre` entre dans les quatre métadonnées**, en littéral figé
+recopié depuis la constante calculée au moment de la relecture — jamais la
+constante elle-même (comparaison tautologique, péremption invisible ; piège
+documenté par le verrou biologie). Les quatre fonctions de validation passent
+à cinq termes (`tablePrioritesSignee`, `tableSignee` ×2, `tableArretSignee`),
+forme ISO canonique de la date comprise — une date mal formée FERME. Sur la
+table d'ARRÊT, c'est le terme qui compte le plus : une règle d'extinction
+retouchée après signature aurait éteint sous une signature qui ne l'a jamais
+couverte.
+
+**2. Les priorités sont RE-SIGNÉES au 2026-08-16** sur le périmètre agrandi
+par `D-062` (procédure d'abstention comprise) — la dette de re-signature est
+soldée. Le SHA du contenu n'a pas changé depuis `D-062` ; la date, si :
+`validation.validatedAt` change, donc la fenêtre 409 `chaine_c1_divergente`
+(constat M5) se rouvre pour toute carte préparée avant déploiement et soumise
+après. Assumé et borné, comme les deux fois précédentes.
+
+**3. La date d'orientation est portée à l'ISO canonique** (`'2026-08-06'` →
+`'2026-08-06T00:00:00.000Z'`) : le JOUR attesté ne change pas, seule la forme
+rejoint le standard que le verrou contrôle désormais (réserve F5 soldée).
+L'arrêt et les contradictions gardent leur date du 2026-08-15 — leur contenu
+n'a pas bougé, seul le `shaPerimetre` s'ajoute.
+
+- Conséquences : la sentinelle de date de la revue M/F a rougi comme prévu et
+  a désigné les deux copies à aligner (`DATE_SIGNATURE_LIVREE`,
+  `DATE_SIGNATURE_SIMULEE`) ; la date simulée désalignée de
+  `priorityRulesV1.test.ts` (dette n° 4 du handoff) est alignée au passage ;
+  `FEATURE_FLAGS.md` suit, tenu par son garde. Les bancs en escalier prouvent
+  chaque terme séparément, péremption comprise.
+- Écarté : re-dater l'orientation au 2026-08-16 (le fait attesté est la
+  relecture du 6 août — changer la date affirmerait une relecture qui n'a pas
+  eu lieu) ; poser `shaPerimetre` sans re-signer les priorités (le littéral
+  aurait figé un périmètre que la signature ne couvrait pas).
+
 ### D-066 — Cinq instruments cognitifs sont réactivés sur déclaration du praticien, et trois moteurs publient leurs comptes de complétude
 
 - Date : 2026-08-16

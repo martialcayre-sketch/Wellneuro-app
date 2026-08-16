@@ -195,6 +195,12 @@ export type ContradictionsMetadata = {
   validationExterne: boolean;
   dateValidation: string | null;
   claimsSource: ContradictionClaimRef[];
+  /**
+   * SHA du périmètre relu à la signature — patron [[D-063]], étendu par
+   * [[D-067]]. LITTÉRAL FIGÉ, jamais la constante calculée. `null` tant que
+   * rien n'a été relu.
+   */
+  shaPerimetre: string | null;
 };
 
 export const CONTRADICTIONS_METADATA: ContradictionsMetadata = {
@@ -205,6 +211,13 @@ export const CONTRADICTIONS_METADATA: ContradictionsMetadata = {
   // geste d'exploitation distinct : signer n'allume pas.
   validationExterne: true,
   dateValidation: '2026-08-15T00:00:00.000Z',
+  // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex que
+  // `CONTRADICTIONS_RULES_SHA256` valait à la relecture, recopiée telle quelle
+  // — JAMAIS la constante : déclarée après cet objet (ReferenceError), et la
+  // comparaison serait tautologique — recalculée depuis la table vivante, la
+  // concordance serait toujours vraie et la péremption jamais détectée. Le
+  // contenu n'a pas bougé depuis la signature : la date reste.
+  shaPerimetre: 'baf74c9e40c9393407b98e03f07d0c769885f16b27669978b31bd639893f38ea',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat.

@@ -12,6 +12,7 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
     validationExterne: false,
     dateValidation: null as string | null,
     claimsSource: [] as unknown[],
+    shaPerimetre: null as string | null,
   },
   mockRegles: [] as unknown[],
   mockArretMeta: {
@@ -19,6 +20,7 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
     validationExterne: false,
     dateValidation: null as string | null,
     claimsSource: [] as unknown[],
+    shaPerimetre: null as string | null,
   },
   mockArretRegles: [] as unknown[],
   mockContraMeta: {
@@ -26,6 +28,7 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
     validationExterne: false,
     dateValidation: null as string | null,
     claimsSource: [] as unknown[],
+    shaPerimetre: null as string | null,
   },
   mockContraRegles: [] as unknown[],
 }));
@@ -45,14 +48,18 @@ vi.mock('@/lib/clinical/stopRulesV1', () => ({
 vi.mock('@/lib/clinical/contradictionsV1', () => ({
   CONTRADICTIONS_METADATA: mockContraMeta,
   CONTRADICTIONS_RULES_V1: mockContraRegles,
+  CONTRADICTIONS_RULES_SHA256: 'sha-contra-test',
 }));
 
 import { evaluerOrientationPourPatient, orientationActive, tableArretSignee } from './orientationService';
 
 function signerLaTable() {
+  // Cinq termes depuis [[D-067]] : date ISO canonique et SHA de périmètre
+  // concordant avec la constante mockée — sans eux, le verrou reste fermé.
   mockMeta.validationExterne = true;
-  mockMeta.dateValidation = '2026-08-03';
+  mockMeta.dateValidation = '2026-08-03T00:00:00.000Z';
   mockMeta.claimsSource = ['WN-CLM-0001'];
+  mockMeta.shaPerimetre = 'sha-test';
 }
 
 function lecturesVides() {
@@ -67,14 +74,17 @@ beforeEach(() => {
   mockMeta.validationExterne = false;
   mockMeta.dateValidation = null;
   mockMeta.claimsSource = [];
+  mockMeta.shaPerimetre = null;
   mockRegles.length = 0;
   mockArretMeta.validationExterne = false;
   mockArretMeta.dateValidation = null;
   mockArretMeta.claimsSource = [];
+  mockArretMeta.shaPerimetre = null;
   mockArretRegles.length = 0;
   mockContraMeta.validationExterne = false;
   mockContraMeta.dateValidation = null;
   mockContraMeta.claimsSource = [];
+  mockContraMeta.shaPerimetre = null;
   mockContraRegles.length = 0;
   vi.stubEnv('WN_ENABLE_ORIENTATION_NNPP2', '1');
 });
@@ -100,13 +110,25 @@ describe('orientationActive — le double verrou', () => {
     expect(orientationActive()).toBe(false);
   });
 
-  it('reste fermé sur une validation sans claim source', () => {
+  it('reste fermé sur une validation sans claim source — le terme isolé', () => {
+    // Tout y est SAUF les claims (finding m7 : l'ancien cas laissait aussi le
+    // sha absent, et ne prouvait donc pas ce terme séparément).
     mockMeta.validationExterne = true;
-    mockMeta.dateValidation = '2026-08-03';
+    mockMeta.dateValidation = '2026-08-03T00:00:00.000Z';
+    mockMeta.shaPerimetre = 'sha-test';
     expect(orientationActive()).toBe(false);
   });
 
-  it('n’est ouvert que sur les trois conditions réunies', () => {
+  it('reste fermé sur un `shaPerimetre` absent ou périmé — le terme isolé', () => {
+    mockMeta.validationExterne = true;
+    mockMeta.dateValidation = '2026-08-03T00:00:00.000Z';
+    mockMeta.claimsSource = ['WN-CLM-0001'];
+    expect(orientationActive()).toBe(false);
+    mockMeta.shaPerimetre = 'sha-perime';
+    expect(orientationActive()).toBe(false);
+  });
+
+  it('n’est ouvert que sur les cinq conditions réunies', () => {
     signerLaTable();
     expect(orientationActive()).toBe(true);
   });
@@ -575,7 +597,8 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
 
   function signerLArret() {
     mockArretMeta.validationExterne = true;
-    mockArretMeta.dateValidation = '2026-08-12';
+    mockArretMeta.dateValidation = '2026-08-12T00:00:00.000Z';
+    mockArretMeta.shaPerimetre = 'sha-arret-test';
     mockArretMeta.claimsSource = ['WN-CL-0000-011'];
   }
 
@@ -585,7 +608,8 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
   // précisément le frein structurel.
   function armerLesContradictions() {
     mockContraMeta.validationExterne = true;
-    mockContraMeta.dateValidation = '2026-08-13';
+    mockContraMeta.dateValidation = '2026-08-13T00:00:00.000Z';
+    mockContraMeta.shaPerimetre = 'sha-contra-test';
     mockContraMeta.claimsSource = ['WN-CL-0000-012'];
     vi.stubEnv('WN_ENABLE_CONTRADICTIONS_NNPP2', '1');
   }
@@ -613,12 +637,25 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
   });
 
   it('le verrou est auto-portant : un booléen seul ne l\'ouvre pas', () => {
+    // L'escalier prouve chaque terme SÉPARÉMENT — cinq depuis [[D-067]] : le
+    // booléen, la date, sa forme ISO canonique, les claims, le SHA de
+    // périmètre. Chaque marche laisse le verrou fermé tant que la suivante
+    // manque ; retirer un terme de `tableArretSignee` fait rougir sa marche.
     mockArretMeta.validationExterne = true;
     expect(tableArretSignee()).toBe(false);
+    // Date posée mais NON canonique : la forme ferme, elle ne laisse pas
+    // passer pour jeter plus loin.
     mockArretMeta.dateValidation = '2026-08-12';
     expect(tableArretSignee()).toBe(false);
+    mockArretMeta.dateValidation = '2026-08-12T00:00:00.000Z';
+    expect(tableArretSignee()).toBe(false);
     mockArretMeta.claimsSource = ['WN-CL-0000-011'];
+    expect(tableArretSignee()).toBe(false);
+    mockArretMeta.shaPerimetre = 'sha-arret-test';
     expect(tableArretSignee()).toBe(true);
+    // Et la péremption se voit : un SHA qui ne concorde plus referme seul.
+    mockArretMeta.shaPerimetre = 'sha-perime';
+    expect(tableArretSignee()).toBe(false);
   });
 
   it('table d\'arrêt NON signée : rien n\'est éteint, rien n\'est exclu', async () => {
@@ -666,7 +703,8 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
 
   function signerLesContradictions() {
     mockContraMeta.validationExterne = true;
-    mockContraMeta.dateValidation = '2026-08-13';
+    mockContraMeta.dateValidation = '2026-08-13T00:00:00.000Z';
+    mockContraMeta.shaPerimetre = 'sha-contra-test';
     mockContraMeta.claimsSource = ['WN-CL-0000-012'];
   }
 

@@ -294,10 +294,22 @@ export type PriorityRulesMetadata = {
    */
   dateValidation: string | null;
   claimsSource: PriorityClaimRef[];
+  /**
+   * SHA du périmètre effectivement relu au moment de la signature — patron
+   * [[D-063]] (verrou biologie), étendu aux quatre tables historiques par
+   * [[D-067]]. C'est ce terme qui rend la PÉREMPTION DÉTECTABLE : dès qu'une
+   * règle ou un texte d'abstention bouge, `PRIORITY_RULES_SHA256` change et ne
+   * concorde plus — le verrou se ferme SEUL, au lieu de laisser le nouveau
+   * contenu entrer sous une signature acquise. `null` tant que rien n'a été
+   * relu. LITTÉRAL FIGÉ obligatoire, jamais la constante calculée : la
+   * comparaison serait tautologique et la péremption invisible.
+   */
+  shaPerimetre: string | null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// À LIRE AVANT DE RE-SIGNER — état au 2026-08-16.
+// À LIRE AVANT DE RE-SIGNER — état au 2026-08-16, re-signature FAITE le même
+// jour ([[D-067]], arbitrage praticien explicite en session).
 //
 // CE QUE LE SHA COUVRE. `PRIORITY_RULES_SHA256` porte sur `PRIORITY_RULES_V1` —
 // déclencheurs, claims, libellés, motifs — ET, depuis [[D-062]], sur
@@ -308,9 +320,10 @@ export type PriorityRulesMetadata = {
 // hors du périmètre haché : signer cette table ouvrait un verdict — « required »
 // ou « not_required », servi au praticien et haché dans la carte de décision —
 // dont aucune ligne signée ne décrivait la règle, ce que `DC-17` et `DC-26`
-// interdisent. Elle est désormais décrite par des données signées. LA
-// CONSÉQUENCE MÉCANIQUE RESTE : le périmètre a grandi APRÈS la signature du
-// 2026-08-15, donc celle-ci ne le couvre plus — re-signature praticien due.
+// interdisent. Elle est désormais décrite par des données signées. La
+// conséquence mécanique — un périmètre agrandi APRÈS la signature du
+// 2026-08-15 — est SOLDÉE par la re-signature du 2026-08-16, qui couvre le
+// périmètre complet et le fige par `shaPerimetre`.
 //
 // CE QUI RESTE HORS DU SHA — DETTE RÉSIDUELLE, DITE PLUTÔT QUE SUPPOSÉE. Le
 // producteur de candidats, le CLASSEMENT (plainte dominante, puis priorité
@@ -344,15 +357,26 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   //
   // CETTE DETTE EST CLOSE ([[D-062]], le lendemain) : la procédure d'abstention
   // est entrée dans le périmètre haché, et ses textes sont des données signées.
-  // Il en reste la conséquence mécanique — le périmètre a grandi après la
-  // signature, donc `dateValidation` ci-dessous porte sur l'ANCIEN périmètre et
-  // la re-signature praticien est due.
+  //
+  // RE-SIGNÉE le 2026-08-16 ([[D-067]], arbitrage praticien explicite en
+  // session — « toutes les signatures praticien, sans réserves ») : la date
+  // ci-dessous couvre le périmètre AGRANDI par [[D-062]], et `shaPerimetre` le
+  // fige — c'est la chaîne hex que `PRIORITY_RULES_SHA256` valait au moment de
+  // la relecture, recopiée telle quelle (patron [[D-063]]). Toute édition
+  // ultérieure d'une règle ou d'un motif d'abstention rouvrira le verrou seule.
   //
   // La seconde chose que la signature assume — deux règles reposant sur un item
   // unique auto-déclaré de `Q_MOD_03`, `DC-28` mitigé par ce que la règle
-  // PRODUIT — est un arbitrage clinique ordinaire, et il a été pris.
+  // PRODUIT — est un arbitrage clinique ordinaire, et il a été repris tel quel.
   validationExterne: true,
-  dateValidation: '2026-08-15T00:00:00.000Z',
+  dateValidation: '2026-08-16T00:00:00.000Z',
+  // SURTOUT PAS `shaPerimetre: PRIORITY_RULES_SHA256` — la constante est
+  // déclarée APRÈS cet objet (ReferenceError à l'import), et réordonner
+  // rendrait la comparaison tautologique : le sha est recalculé à chaque
+  // chargement depuis la table vivante, la concordance serait toujours vraie
+  // et la péremption jamais détectée (piège documenté sur le verrou biologie,
+  // changelog du 2026-08-16).
+  shaPerimetre: 'cfd9b876e594d3298b35890e8c4827af15d88143fe03c594ff89c93ffd511ab4',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -454,9 +478,10 @@ export const ABSTENTION_PROCEDURE_V1 = {
 void (ABSTENTION_PROCEDURE_V1.motifsRequired satisfies readonly MotifAbstention[]);
 void (ABSTENTION_PROCEDURE_V1.notRequired satisfies MotifAbstention);
 
-// LE SHA COUVRE DÉSORMAIS LA PROCÉDURE D'ABSTENTION, et c'est tout l'objet de
-// [[D-062]]. Sa valeur CHANGE de ce fait : le périmètre signé s'agrandit, donc
-// la signature du 2026-08-15 ne le couvre plus. Re-signature praticien requise.
+// LE SHA COUVRE LA PROCÉDURE D'ABSTENTION depuis [[D-062]] — le périmètre
+// signé s'était agrandi APRÈS la signature du 2026-08-15, et la re-signature
+// requise a été FAITE le 2026-08-16 ([[D-067]]) : `dateValidation` et
+// `shaPerimetre` ci-dessus couvrent ce périmètre complet.
 export const PRIORITY_RULES_SHA256 = sha256(
   JSON.stringify({ regles: PRIORITY_RULES_V1, abstention: ABSTENTION_PROCEDURE_V1 }),
 );
@@ -487,7 +512,12 @@ export function tablePrioritesSignee(): boolean {
     // sur une date invalide, et le verrou doit fermer, jamais jeter.
     && !Number.isNaN(new Date(dateValidation).getTime())
     && new Date(dateValidation).toISOString() === dateValidation
-    && PRIORITY_RULES_METADATA.claimsSource.length > 0;
+    && PRIORITY_RULES_METADATA.claimsSource.length > 0
+    // CINQUIÈME TERME ([[D-067]], patron [[D-063]]) : la concordance du SHA de
+    // périmètre. Une règle ou un motif d'abstention retouché après signature
+    // change `PRIORITY_RULES_SHA256` — le verrou se ferme SEUL, au lieu de
+    // laisser le nouveau contenu entrer sous une signature acquise.
+    && PRIORITY_RULES_METADATA.shaPerimetre === PRIORITY_RULES_SHA256;
 }
 
 /** Les règles évaluables : `publiee` et pourvues d'au moins un claim. */

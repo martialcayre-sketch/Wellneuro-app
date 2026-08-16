@@ -1412,6 +1412,13 @@ export type OrientationMetadata = {
   validationExterne: boolean;
   dateValidation: string | null;
   claimsSource: OrientationClaimRef[];
+  /**
+   * SHA du périmètre effectivement relu à la signature — patron [[D-063]],
+   * étendu ici par [[D-067]]. LITTÉRAL FIGÉ, jamais la constante calculée :
+   * une règle retouchée change `ORIENTATION_RULES_SHA256`, la concordance
+   * casse, le verrou se ferme seul. `null` tant que rien n'a été relu.
+   */
+  shaPerimetre: string | null;
 };
 
 /**
@@ -1448,7 +1455,17 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // `rag_corpus_claims`) : tous en `statut = 'VALIDE'`, `prescriptif = true`,
   // `active = true`, `version_claim = 'v1.0'` — 23/23. Aucun claim ajouté ni
   // retiré : seules les cibles et les objectifs ont changé.
-  dateValidation: '2026-08-06',
+  //
+  // FORME PORTÉE À L'ISO CANONIQUE le 2026-08-16 ([[D-067]], réserve F5 de la
+  // revue du 2026-08-16) : le JOUR de la signature ne change pas — le 6 août
+  // reste le fait attesté — seule la forme rejoint le standard que les quatre
+  // autres tables portent déjà et que le verrou contrôle désormais. `'2026-08-06'`
+  // nu passait un `tableSignee()` qui ne contrôlait pas la forme.
+  dateValidation: '2026-08-06T00:00:00.000Z',
+  // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex qu'`ORIENTATION_RULES_SHA256`
+  // valait à la relecture, recopiée telle quelle — JAMAIS la constante (déclarée
+  // après cet objet ; et la comparaison serait tautologique).
+  shaPerimetre: '547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

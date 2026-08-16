@@ -17,6 +17,7 @@ const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     validationExterne: false,
     dateValidation: null as string | null,
     claimsSource: [] as unknown[],
+    shaPerimetre: null as string | null,
   },
   mockRegles: [] as unknown[],
 }));
@@ -55,6 +56,7 @@ describe('GET /api/praticien/orientation', () => {
     vi.unstubAllEnvs();
     mockMeta.validationExterne = false;
     mockMeta.dateValidation = null;
+    mockMeta.shaPerimetre = null;
     mockMeta.claimsSource.length = 0;
     mockRegles.length = 0;
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
@@ -105,9 +107,14 @@ describe('GET /api/praticien/orientation', () => {
     const sansDate = await (await GET(getRequest())).json();
     expect(sansDate.actif).toBe(false);
 
-    mockMeta.dateValidation = '2026-08-01';
+    mockMeta.dateValidation = '2026-08-01T00:00:00.000Z';
     const sansClaims = await (await GET(getRequest())).json();
     expect(sansClaims.actif).toBe(false);
+
+    // Et depuis [[D-067]] : claims posés, SHA absent ⇒ toujours fermé.
+    mockMeta.claimsSource = [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }];
+    const sansSha = await (await GET(getRequest())).json();
+    expect(sansSha.actif).toBe(false);
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
   });
 
@@ -115,8 +122,10 @@ describe('GET /api/praticien/orientation', () => {
     beforeEach(() => {
       vi.stubEnv('WN_ENABLE_ORIENTATION_NNPP2', '1');
       mockMeta.validationExterne = true;
-      mockMeta.dateValidation = '2026-08-01';
+      // Cinq termes depuis [[D-067]] : date ISO canonique et SHA concordant.
+      mockMeta.dateValidation = '2026-08-01T00:00:00.000Z';
       mockMeta.claimsSource = [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }];
+      mockMeta.shaPerimetre = 'sha-test';
     });
 
     it('patient introuvable : 404, sans ligne de journal', async () => {

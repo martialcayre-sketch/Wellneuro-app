@@ -1,4 +1,4 @@
-import { PRIORITY_RULES_METADATA } from '@/lib/clinical/priorityRulesV1';
+import { PRIORITY_RULES_METADATA, PRIORITY_RULES_SHA256 } from '@/lib/clinical/priorityRulesV1';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { construireChaineC1, type ChaineC1 } from './chaineC1';
 import {
@@ -29,11 +29,11 @@ export const HORODATAGE_C1_FIXTURE = '2026-01-03T00:00:00.000Z';
 
 /** Date de signature SIMULÉE : ISO canonique, comme la vraie devra l'être. */
 // ALIGNÉE SUR LA DATE RÉELLEMENT LIVRÉE (finding F4) : la table est signée au
-// 2026-08-15 ([[D-061]]), et une date simulée différente faisait produire aux
-// bancs une chaîne qu'aucune production ne sert — trois empreintes divergentes
-// de celles du dossier réel, pour la seule raison que la date entre dans
+// 2026-08-15 ([[D-061]]) et RE-SIGNÉE au 2026-08-16 ([[D-067]], périmètre
+// agrandi par [[D-062]]) — une date simulée différente faisait produire aux
+// bancs une chaîne qu'aucune production ne sert, la date entrant dans
 // `validation.validatedAt`.
-export const DATE_SIGNATURE_SIMULEE = '2026-08-15T00:00:00.000Z';
+export const DATE_SIGNATURE_SIMULEE = '2026-08-16T00:00:00.000Z';
 
 /**
  * Anamnèse de la chaîne de référence — patient fictif autorisé, aucun contenu
@@ -90,6 +90,7 @@ function assertBanc(): void {
 const ETAT_LIVRE = Object.freeze({
   validationExterne: PRIORITY_RULES_METADATA.validationExterne,
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
+  shaPerimetre: PRIORITY_RULES_METADATA.shaPerimetre,
 });
 
 /** Force la signature (date simulée) — `beforeEach` d'un banc qui l'exige. */
@@ -97,6 +98,9 @@ export function signerTablePriorites(): void {
   assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = true;
   PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_SIMULEE;
+  // Cinquième terme ([[D-067]]) : sans concordance, le verrou resterait fermé
+  // et la simulation ne simulerait rien.
+  PRIORITY_RULES_METADATA.shaPerimetre = PRIORITY_RULES_SHA256;
 }
 
 /** Simule le verrou FERMÉ — le cas qui n'est plus celui de la production. */
@@ -104,6 +108,7 @@ export function designerTablePriorites(): void {
   assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = false;
   PRIORITY_RULES_METADATA.dateValidation = null;
+  PRIORITY_RULES_METADATA.shaPerimetre = null;
 }
 
 /** Restaure l'état LIVRÉ, quel qu'il soit — `afterEach` obligatoire. */
@@ -114,6 +119,7 @@ export function retablirTablePriorites(): void {
   assertBanc();
   PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
   PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
+  PRIORITY_RULES_METADATA.shaPerimetre = ETAT_LIVRE.shaPerimetre;
 }
 
 /**

@@ -25,16 +25,24 @@ describe('orientationRulesV1 — verrou v1', () => {
   // vingt règles. Écrire les règles et les signer restent deux gestes distincts ;
   // ce banc a changé de sens, pas de rôle — il épingle l'état de signature, quel
   // qu'il soit, pour qu'un basculement ne puisse pas passer inaperçu.
-  it('la table v1 est remplie et SIGNÉE, aux trois marqueurs', () => {
+  it('la table v1 est remplie et SIGNÉE, aux cinq marqueurs', () => {
     expect(ORIENTATION_RULES_V1.length).toBeGreaterThan(0);
-    // Trois marqueurs, pas un : la route exige les trois pour s'ouvrir.
+    // Cinq marqueurs depuis [[D-067]] : la route exige les cinq pour s'ouvrir.
     expect(ORIENTATION_METADATA.validationExterne).toBe(true);
     // RE-SIGNÉE le 2026-08-06 (LOT-02) : les six suggestions à `packId` sont
     // devenues des suggestions à `questionnaireId`, et les 23 claims ont été
     // relus en base ce jour-là — 23/23 VALIDE, prescriptif, actif, v1.0.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-08-06');
+    // Forme portée à l'ISO canonique le 2026-08-16 ([[D-067]], réserve F5) :
+    // le JOUR attesté ne change pas, seule la forme rejoint le standard que le
+    // verrou contrôle désormais.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-08-06T00:00:00.000Z');
+    const date = ORIENTATION_METADATA.dateValidation as string;
+    expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
     expect(ORIENTATION_METADATA.version).toBe('orientation-nnpp2-v1');
+    // Le SHA de périmètre est un LITTÉRAL qui concorde avec le contenu vivant —
+    // toute retouche d'une règle casse cette égalité et ferme le verrou seule.
+    expect(ORIENTATION_METADATA.shaPerimetre).toBe(ORIENTATION_RULES_SHA256);
   });
 
   // CE QUE LA SIGNATURE COUVRE, ET CE QU'ELLE NE PEUT PAS COUVRIR.
