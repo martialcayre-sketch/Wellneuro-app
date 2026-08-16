@@ -3785,3 +3785,26 @@ CI vert. `gh` absent en session distante : suivi CI via MCP.
 Prochaine action : validation ligne à ligne par le praticien. Ouvert : zones
 de déclenchement (celles de la table d'orientation, sans seuil nouveau) ;
 ferritine `0044-003` vs `0154-051` ; l'implémentation exigera D-xxx.
+
+## [2026-08-15] — LOT-06 : zones tranchées, disjonction cadrée, tables signées
+
+Catalogue biologie porté de v3 à v5 : treize zones de déclenchement tranchées,
+Karasek retiré (aucun claim ne le fonde), BMS-10 ajouté (cinq bandes adossées
+à cinq claims VALIDE), ferritine `0044-003` retenue. L'axe cognitif est fixé
+par STADE et non par couleur — le MCI tombe en `warning` sur l'AQ mais en
+`info` sur le MMSE et le QDRS, si bien qu'une règle uniforme l'aurait manqué
+sur deux instruments.
+
+Découverte transverse : le contrat de déclenchement ne sait exprimer aucun
+« ou », ni dans une règle (ET) ni entre règles (discordance ⇒ panel écarté).
+Cinq panels en dépendaient. `D-060` cadre le lot, fail-closed sur le recueil
+incomplet ; le précédent `Q_INF_03` montre que le manque a déjà coûté une
+provenance.
+
+`D-061` : quatre tables signées sur arbitrage praticien, dont priorités et
+biologie en passage en force nommé. Erreur corrigée — `ORIENTATION_METADATA`
+était déjà signée, je l'avais dite non signée deux fois.
+
+Prochaine action : procédure d'abstention dans le périmètre signé — due au
+merge de #687, les priorités étant la seule table sans drapeau. Ouvert : T3 et
+revue `wn-reviewer` injouables ici ; validation ligne à ligne du catalogue.

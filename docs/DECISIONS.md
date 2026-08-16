@@ -38,7 +38,18 @@ l'extinction » ([[D-053]] §5), aucun constat n'existant si les contradictions
 sont inactives. Les signer ensemble ferme ce trou. Le drapeau
 `WN_ENABLE_CONTRADICTIONS_NNPP2` reste un geste d'exploitation distinct.
 
-**2. Priorités — PASSAGE EN FORCE, nommé comme tel.** Le SHA ne couvre pas la
+**2. Priorités — PASSAGE EN FORCE, nommé comme tel, et SANS SECOND VERROU.**
+
+*Fait vérifié après coup, qui aggrave ce point* : les priorités sont la SEULE
+des cinq tables sans drapeau d'exploitation. L'orientation a
+`WN_ENABLE_ORIENTATION_NNPP2`, les contradictions
+`WN_ENABLE_CONTRADICTIONS_NNPP2`, la biologie `WN_CB_ENABLED` ;
+`tablePrioritesSignee()` est le verrou unique du chemin priorités
+([[D-054]] arbitrage 7 l'assume : « la chaîne C1 est déjà derrière
+l'authentification praticien et la confirmation T0 »). Pour les quatre autres
+tables, signer n'allume pas. **Pour celle-ci, si.** Le merge de la PR portant
+cette décision met donc le verdict d'abstention en production immédiatement.
+La dette (a) ci-dessous n'est pas différable : elle est due au merge. Le SHA ne couvre pas la
 procédure d'abstention, qui vit dans `chaineC1.ts` : la signature ouvre un
 verdict `required` / `not_required` servi au praticien et haché dans la carte
 de décision, dont aucune ligne signée ne décrit la règle — ce que `DC-17` et
