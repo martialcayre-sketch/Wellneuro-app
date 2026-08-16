@@ -592,7 +592,8 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                       )}
                       {apercu.administrationMode === 'clinicien' && (
                         <p className="mt-1 text-2xs text-status-warning">
-                          Instrument à faire passer en consultation — jamais envoyé au portail.
+                          Instrument à faire passer en consultation — ne l&apos;assignez que pour
+                          une passation avec vous, jamais en autonomie.
                         </p>
                       )}
                     </div>
@@ -661,11 +662,13 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                   <span className="text-2xs text-muted-foreground">
                     {selection && !selection.assignable
                       ? selection.passationPraticien
-                        ? 'Passation en consultation — jamais envoyé au portail.'
+                        ? 'Passation en consultation — cet instrument ne peut pas être envoyé.'
                         : selection.cabinet
                           ? 'Instrument du cabinet non publié — faites relire puis publiez la grille avant l’envoi.'
                           : 'Alias historique — non assignable tel quel.'
-                      : "L'ajout ne déclenche aucun envoi."}
+                      : selection?.passationPraticien
+                        ? 'Instrument de consultation — assignation pour une passation avec vous, jamais en autonomie.'
+                        : "L'ajout ne déclenche aucun envoi."}
                   </span>
                 </div>
               </div>
@@ -708,6 +711,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                               {item.indisponible && (
                                 <span className="ml-1.5 inline-flex">
                                   <Badge variant="danger">Indisponible</Badge>
+                                </span>
+                              )}
+                              {item.consultation && (
+                                <span className="ml-1.5 inline-flex">
+                                  <Badge variant="warning">Passation en consultation</Badge>
                                 </span>
                               )}
                             </span>

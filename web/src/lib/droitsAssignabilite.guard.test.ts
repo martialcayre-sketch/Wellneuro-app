@@ -122,9 +122,23 @@ const assignableParLaRoute = (id: string) =>
 //
 // La liste s'est allongée le 2026-07-30 : la déclaration de ce jour vaut aussi
 // ouverture pour les instruments qu'elle couvre et qui sont actifs au catalogue.
-// Ceux qui restent suspendus (Conners ×2, MMSE) ne figurent pas ici — leur droit
-// est déclaré, mais leur route est fermée, et c'est ce que le test constate.
+// Ceux qui restent suspendus (Conners ×2) ne figurent pas ici — leur droit est
+// déclaré, mais leur route est fermée, et c'est ce que le test constate.
 const LAISSES_ASSIGNABLES = [
+  // MMSE — « © PAR, licence requise ». Rouvert le 2026-08-16 ([[D-066]]) par
+  // déclaration du praticien-propriétaire que l'usage est couvert, patron
+  // EORTC : la déclaration lève la suspension, jamais la réserve, qui reste au
+  // registre. Motif : déclencheur du panel mémoire du catalogue biologie
+  // niveau 1 — suspendu, aucune passation ne peut naître et le panel est
+  // inerte. Le caractère « administré par un clinicien » demeure :
+  // l'assignation est un geste praticien de consultation, pas un envoi de
+  // routine.
+  'Q_GEO_04',
+  // MMT — réserve d'IDENTITÉ (document IEDM sans auteur nommé, aucun ayant
+  // droit sollicitable), conservée au registre. Rouvert le 2026-08-16
+  // ([[D-066]]) par la même déclaration : elle couvre l'usage, elle n'éteint
+  // aucun droit. Déclencheur du panel mémoire, même motif que le MMSE.
+  'Q_NEU_06',
   // EORTC QLQ-C30 et QLQ-BR23 — « © EORTC, enregistrement/autorisation requis ».
   // Rouverts le 2026-07-30 par décision du praticien-propriétaire, en même temps
   // que leur cotation est passée aux manuels officiels. L'EORTC accorde une
@@ -216,9 +230,10 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     // droits sont déjà servis plus largement que lui.
     const EN_PASSATION_ATTENDUS = [
       // MMSE (GRECO) — test administré par le clinicien : rappel différé et copie
-      // de figure n'ont aucun sens en auto-remplissage. Son entrée de catalogue
-      // reste `actif: false`, donc la route d'assignation reste fermée : c'est
-      // l'usage EN CONSULTATION qui rouvre, et lui seul.
+      // de figure n'ont aucun sens en auto-remplissage. [La route d'assignation
+      // a rouvert le 2026-08-16 ([[D-066]]) — l'assignation est un geste
+      // praticien de consultation ; les packs, eux, le refusent
+      // structurellement.]
       'Q_GEO_04',
       // MMT — sa réserve n'est pas de droits mais d'IDENTITÉ, et elle a changé de
       // nature le 2026-07-31 : la recherche bibliographique l'identifie au
@@ -228,9 +243,12 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
       // Ce qui subsiste : le document ne nomme aucun auteur, donc aucun ayant
       // droit n'est identifiable pour être sollicité.
       //
-      // Lui aussi reste hors auto-passation, et pour une raison de MESURE : trois
-      // de ses items forment un enregistrement de trois mots puis deux rappels.
-      // Rempli seul, le test se corrige en remontant la page.
+      // La raison de MESURE demeure, elle : trois de ses items forment un
+      // enregistrement de trois mots puis deux rappels — rempli seul, le test
+      // se corrige en remontant la page. [Route rouverte le 2026-08-16
+      // ([[D-066]]) ; le risque de mesure est porté par la décision, tracé dans
+      // `mmtReconstruit.guard.test.ts`, et le portail affiche le bandeau « en
+      // consultation » au patient.]
       'Q_NEU_06',
       // Repérage du TDAH par l'enseignant — DÉBAPTISÉ le 2026-08-01, et servi en
       // consultation, pas au portail. Sa réserve visait « © MHS », c'est-à-dire
@@ -296,17 +314,29 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
 // seul MMSE, en lui donnant une entrée `actif: false`. Les quatre autres l'ont
 // reçue le 2026-08-01 — et ce test est ce qui empêche la prochaine ligne de
 // `PASSATION_PRATICIEN` d'être ajoutée sans elle.
-describe('passation praticien — aucun n’est assignable par la route', () => {
-  it('les six sont fermés au prédicat que la route exécute vraiment', () => {
+describe('passation praticien — rien ne s’ouvre à la route sans décision', () => {
+  // OUVERTS le 2026-08-16 ([[D-066]]) : les cinq déclencheurs cognitifs des
+  // panels mémoire et neurodégénératif du catalogue biologie niveau 1.
+  // Suspendus, aucune passation ne pouvait naître et les panels étaient
+  // inertes. La décision assume ce que ce banc empêchait : des instruments DE
+  // CONSULTATION deviennent assignables — leur assignation est un geste
+  // praticien, pas un envoi de routine, et le bandeau `administrationMode:
+  // 'clinicien'` (gardé plus bas) reste ce qui le dit à l'écran. Q_URO_02
+  // reste fermé, hors périmètre de la décision.
+  const OUVERTS_PAR_DECISION = ['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06'].sort();
+
+  it('seuls les instruments nommés par une décision sont ouverts au prédicat que la route exécute vraiment', () => {
     // Le prédicat est celui de la route, PAS `IDS_ASSIGNABLES` : les deux
     // diffèrent, et c'est l'écart entre eux qui était le trou. `IDS_ASSIGNABLES`
     // exige une entrée de rayon active ; la route se contente d'une définition.
-    const ouverts = PASSATION_PRATICIEN.map(p => p.id).filter(assignableParLaRoute);
+    // La sentinelle est INVERSÉE, pas supprimée : la prochaine ligne de
+    // `PASSATION_PRATICIEN` reste fermée tant qu'aucune décision ne la nomme
+    // ici, et un instrument de la liste qui se refermerait se verrait aussi.
+    const ouverts = PASSATION_PRATICIEN.map(p => p.id).filter(assignableParLaRoute).sort();
     expect(
       ouverts,
-      `assignables par appel direct alors qu'ils sont administrés en consultation : `
-        + `${ouverts.join(', ')} — leur donner une entrée de catalogue \`actif: false\``,
-    ).toEqual([]);
+      `écart avec les ouvertures décidées — assignable sans décision, ou refermé sans retrait de la liste`,
+    ).toEqual(OUVERTS_PAR_DECISION);
   });
 
   it('ne se tait pas parce qu’il ne lit plus rien', () => {
@@ -331,19 +361,30 @@ describe('passation praticien — aucun n’est assignable par la route', () => 
 // raison clinique de ne pas auto-administrer ces instruments est portée jusqu'à
 // l'écran.
 describe('passation praticien — l’avertissement clinicien atteint l’écran', () => {
-  it('les instruments à rappel différé le déclarent', () => {
-    // La liste est nommée, pas dérivée : ce sont les instruments dont un item
-    // vaut zéro point s'il est lu avant d'être répondu — rappel de mots, copie
-    // de figure. Un instrument de consultation peut légitimement ne pas en
-    // porter (un catalogue mictionnel se remplit chez soi) ; ceux-ci non.
-    for (const id of ['Q_GEO_04', 'Q_NEU_06', 'Q_GEO_06']) {
+  it('les cinq instruments assignables par décision le déclarent', () => {
+    // La liste a grandi le 2026-08-16 ([[D-066]], revue finding B2) : depuis que
+    // les cinq sont ASSIGNABLES, le bandeau n'est plus un confort d'aperçu —
+    // c'est ce qui sépare, à l'écran praticien ET au portail patient, un geste
+    // de consultation d'un auto-questionnaire. Trois le portaient pour une
+    // raison de MESURE (rappel différé, copie de figure : l'item lu d'avance
+    // vaut zéro point) ; l'AQ et le QDRS le portent pour une raison de
+    // POPULATION (informant-based — auto-remplis, ils répondraient « concernant
+    // le patient » à sa place, DC-14/DC-28). Un instrument de consultation NON
+    // assignable peut légitimement ne pas en porter (un catalogue mictionnel se
+    // remplit chez soi) ; aucun des cinq assignables ne le peut.
+    // DÉRIVÉE, pas répétée (revue, MIN-1) : la population est « tout instrument
+    // de passation praticien assignable par la route » — un sixième ouvert
+    // demain entre ici tout seul, sans qu'un oubli de liste passe au vert.
+    const assignables = PASSATION_PRATICIEN.map(p => p.id).filter(assignableParLaRoute);
+    expect(assignables.length).toBeGreaterThanOrEqual(5);
+    for (const id of assignables) {
       const def = CATALOGUE_DEFINITIONS[id] as { administrationMode?: string } | undefined;
       expect(def, id).toBeDefined();
       expect(
         def?.administrationMode,
-        `${id} : sans \`administrationMode: 'clinicien'\`, l'aperçu affiche la grille `
-          + `SANS le bandeau « jamais envoyé au portail » — et ces instruments se corrigent `
-          + `d'eux-mêmes en auto-remplissage (rappel différé, copie de figure)`,
+        `${id} : sans \`administrationMode: 'clinicien'\`, ni l'aperçu praticien ni le `
+          + `portail patient n'affichent le bandeau de consultation — l'instrument passe `
+          + `pour un auto-questionnaire ordinaire alors qu'il est assignable`,
       ).toBe('clinicien');
     }
   });

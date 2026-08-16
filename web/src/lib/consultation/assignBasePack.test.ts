@@ -10,7 +10,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 
-import { assignPackToPatient, qidsSuspendus } from './assignBasePack';
+import { assignPackToPatient, qidsConsultation, qidsSuspendus } from './assignBasePack';
 
 // Ce chemin est le plus sensible des trois points d'assignation : il part de
 // l'onboarding portail (`api/portail/valider`), donc sans clic praticien sur le
@@ -64,6 +64,19 @@ describe('assignPackToPatient — instruments suspendus', () => {
   it('expose les qids écartés, pour que l’appelant puisse les tracer', () => {
     expect(qidsSuspendus(['Q_NEU_03', 'Q_FIB_03'])).toEqual(['Q_FIB_03']);
     expect(qidsSuspendus(['Q_NEU_03'])).toEqual([]);
+  });
+
+  // La ceinture « consultation » ([[D-066]], revue MIN-3) : le pack de base est
+  // l'envoi de routine par excellence — un MMSE ACTIF entré dans sa composition
+  // ne doit jamais partir à l'onboarding, et l'écartement doit être traçable.
+  it('écarte un instrument de consultation ACTIF sans faire échouer le reste du pack', async () => {
+    const { cree } = await assigner(['Q_NEU_03', 'Q_GEO_04']);
+    expect(cree).toHaveLength(1);
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
+    expect(arg.data.idQuestionnaire).toBe('Q_NEU_03');
+    // Et l'appelant peut le tracer — le pendant de `qidsSuspendus`.
+    expect(qidsConsultation(['Q_NEU_03', 'Q_GEO_04'])).toEqual(['Q_GEO_04']);
   });
 
   // Idempotence onboarding : un qid déjà porté par une assignation ouverte est

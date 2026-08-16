@@ -8,7 +8,7 @@ import {
   FINALITE_CONSENTEMENT,
 } from '@/lib/consultation/portail';
 import { normaliserAnamnese, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
-import { assignPackToPatient, qidsSuspendus } from '@/lib/consultation/assignBasePack';
+import { assignPackToPatient, qidsConsultation, qidsSuspendus } from '@/lib/consultation/assignBasePack';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { logger } from '@/lib/observability/logger';
@@ -147,6 +147,18 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
         message: `Questionnaires suspendus écartés du pack de base : ${ecartes.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
+    // Même trace pour l'écartement « consultation » ([[D-066]]) : la ceinture
+    // d'`assignPackToPatient` ampute en silence, et un pack de base amputé sans
+    // journal serait indétectable en exploitation (revue, finding MAJ-2).
+    const ecartesConsultation = qidsConsultation(qids);
+    if (ecartesConsultation.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
+        domain: 'ASSIGNATION',
+        message: `Instruments de consultation écartés du pack de base : ${ecartesConsultation.join(', ')}`,
         context: finalizeLogContext(requestContext, { retryable: false }),
       });
     }

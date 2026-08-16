@@ -4,7 +4,11 @@ export const Q_GEO_03 = {
   id:'Q_GEO_03', titre:'AQ — Questionnaire Alzheimer (Sabbagh 2010)',
   // Référence : Sabbagh MN et al. (2010). Alzheimer Dis Assoc Disord, 24(1), 64-70.
   // Version SIIN simplifiée : cotation 0/1 (vs pondérée originale) — GAP documenté
-  // Informant-based : à compléter par un proche ou le clinicien
+  // Informant-based : à compléter par un proche ou le clinicien. Le mode
+  // clinicien est posé le 2026-08-16 (revue D-066) : auto-rempli par le
+  // patient, l'instrument répondrait « concernant le patient » À SA PLACE —
+  // la population du claim n'est pas respectée (DC-14, DC-28).
+  administrationMode: 'clinicien',
   instructions:'Répondez OUI ou NON à chacune des questions suivantes concernant le patient.',
   sections:[
     { id:'1', titre:'Questions 1 à 21',
@@ -130,6 +134,10 @@ export const Q_GEO_05 = {
   // Référence : Galvin JE (2015). Alzheimers Dement, 11(4), 461-474.
   // Informant-based — 10 domaines — valeurs 0/0.5/1/2/3 — score max /30
   // NOUVEAU TYPE SCORING : sum_decimal (flottants)
+  // Mode clinicien posé le 2026-08-16 (revue D-066) : la consigne s'adresse à
+  // l'aidant — auto-rempli, la grille rendrait « Démence modérée à sévère »
+  // sur un auto-report qu'aucun informant n'a produit (DC-14, DC-28).
+  administrationMode: 'clinicien',
   instructions:'Aidant ou proche : pour chaque domaine, choisissez la description qui correspond le mieux au patient par rapport à ses capacités antérieures.',
   sections:[
     { id:'1', titre:'10 domaines fonctionnels',

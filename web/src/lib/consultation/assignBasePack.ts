@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { qidsDejaOuverts, verrouillerPatient } from '@/lib/assignations/dedup';
 
 /**
@@ -13,6 +14,17 @@ import { qidsDejaOuverts, verrouillerPatient } from '@/lib/assignations/dedup';
  */
 export function qidsSuspendus(qids: string[]): string[] {
   return qids.filter(id => IDS_SUSPENDUS.has(id));
+}
+
+/**
+ * Les qids écartés parce que l'instrument est de CONSULTATION ([[D-066]]).
+ * Ceinture du refus posé par `praticien/packs/route.ts` : le pack de base est
+ * l'envoi de routine par excellence (chaque nouveau patient, à l'onboarding),
+ * et un instrument de consultation ne doit jamais y voyager — même si une
+ * composition antérieure au refus en portait un.
+ */
+export function qidsConsultation(qids: string[]): string[] {
+  return qids.filter(id => IDS_PASSATION_PRATICIEN.has(id));
 }
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
@@ -77,10 +89,12 @@ export async function assignPackToPatient(params: {
 
     for (const idQuestionnaire of qids) {
       const questionnaire = catalogue[idQuestionnaire];
-      // Un instrument suspendu est écarté comme un id inconnu. Ce chemin est le
-      // plus sensible des trois : il part de l'onboarding portail, donc sans clic
-      // praticien sur le questionnaire lui-même.
-      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) continue;
+      // Un instrument suspendu OU de consultation est écarté comme un id
+      // inconnu. Ce chemin est le plus sensible des trois : il part de
+      // l'onboarding portail, donc sans clic praticien sur le questionnaire
+      // lui-même — exactement l'« envoi de routine » que [[D-066]] interdit
+      // aux instruments de consultation.
+      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire) || IDS_PASSATION_PRATICIEN.has(idQuestionnaire)) continue;
       if (ouvertes.has(idQuestionnaire)) continue;
       const idAssignation = createPublicId('ASS');
       const titre = questionnaire.titre || idQuestionnaire;

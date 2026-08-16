@@ -49,10 +49,12 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // classe de réserve sont, eux, ENVOYÉS AU PATIENT — ce qui expose davantage
   // que d'afficher une grille au praticien qui porte la déclaration d'usage.
   //
-  // `actif: false` est CONSERVÉ au catalogue : la route d'assignation reste
-  // fermée, et le MMSE ne part chez personne. C'est un test administré par le
-  // clinicien ; les deux gestes de #460 restent indépendants, seul celui-ci est
-  // repris.
+  // [SUPERSÉDÉ le 2026-08-16, [[D-066]] : la route d'assignation rouvre à son
+  // tour, sur déclaration du praticien-propriétaire que l'usage est couvert.
+  // L'assignation directe est le geste praticien que la décision assume ; les
+  // PACKS, eux, refusent tout instrument de cette liste — un pack est un envoi
+  // de routine, pack de base de l'onboarding compris.] L'historique ci-dessous
+  // dit ce que chaque geste a fermé et rouvert, dans l'ordre.
   //
   // Point tranché le 2026-08-01, sur déclaration expresse du praticien : la
   // déclaration d'usage exclut « la publication du verbatim », et cette exclusion
@@ -109,6 +111,16 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   { id: 'Q_PED_02', categorie: 'Pédiatrie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },
 ];
+
+/**
+ * Les identifiants de passation en consultation, en Set — le prédicat que les
+ * routes de PACKS consultent ([[D-066]]) : un instrument de cette liste ne
+ * peut jamais entrer dans un pack, pack de base de l'onboarding compris. Un
+ * pack est un envoi de routine ; l'assignation DIRECTE d'un de ces
+ * instruments reste, elle, possible quand le catalogue l'active — c'est le
+ * geste praticien que la décision assume.
+ */
+export const IDS_PASSATION_PRATICIEN: ReadonlySet<string> = new Set(PASSATION_PRATICIEN.map(p => p.id));
 
 export function nbQuestions(def: DefinitionCatalogue | undefined): number | null {
   if (!def?.sections) return null;
@@ -175,6 +187,13 @@ export type BibliothequeEntree = {
 };
 
 export function listeBibliotheque(): BibliothequeEntree[] {
+  // Un instrument peut être les DEUX à la fois depuis [[D-066]] : de passation
+  // praticien (le bandeau « à faire passer en consultation » reste dû) ET actif
+  // au catalogue, donc assignable — l'assignation étant alors un geste
+  // praticien, pas un envoi de routine. Sans cette jointure, les cinq
+  // réactivés sortiraient en double, et le sélecteur d'assignation afficherait
+  // deux lignes au même titre dont une en 404.
+  const idsPassation = new Set(PASSATION_PRATICIEN.map(p => p.id));
   const affiches: BibliothequeEntree[] = QUESTIONNAIRES_CATALOG.filter(q => q.actif).map(q => {
     const aliasVers = ALIAS_HISTORIQUES[q.id] ?? null;
     const def = CATALOGUE_DEFINITIONS[aliasVers ?? q.id];
@@ -190,10 +209,12 @@ export function listeBibliotheque(): BibliothequeEntree[] {
       statutCertification: statutCertificationRuntime(def),
       assignable: IDS_ASSIGNABLES.has(q.id),
       aliasVers,
-      passationPraticien: false,
+      passationPraticien: idsPassation.has(q.id),
     };
   });
+  const dejaAffiches = new Set(affiches.map(entree => entree.id));
   const passations: BibliothequeEntree[] = PASSATION_PRATICIEN.flatMap(({ id, categorie }) => {
+    if (dejaAffiches.has(id)) return [];
     const def = CATALOGUE_DEFINITIONS[id];
     if (!def) return [];
     return [

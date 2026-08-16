@@ -6,10 +6,13 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import {
   IDS_SUSPENDUS,
+  MESSAGE_QUESTIONNAIRE_CONSULTATION,
   MESSAGE_QUESTIONNAIRE_SUSPENDU,
   QUESTIONNAIRES_CATALOG,
+  RAISON_QUESTIONNAIRE_CONSULTATION,
   RAISON_QUESTIONNAIRE_SUSPENDU,
 } from '@/lib/questionnaires-catalog';
+import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import {
   MESSAGE_QID_SANS_DEFINITION,
   QidsSansDefinitionError,
@@ -48,6 +51,7 @@ export type MutatePackResponse = {
     | 'exception'
     | 'default_pack_protected'
     | typeof RAISON_QUESTIONNAIRE_SUSPENDU
+    | typeof RAISON_QUESTIONNAIRE_CONSULTATION
     | typeof RAISON_QID_SANS_DEFINITION;
 };
 
@@ -96,8 +100,26 @@ function normaliserQids(input: unknown): string[] {
 // suspendu y créerait une ligne qui ne pourra jamais partir (`packs/assign`
 // filtre en silence). Aucune exception `enConsultation` ici, donc, et ce n'est
 // pas un oubli.
+//
+// Depuis [[D-066]], la suspension n'est plus le seul verrou de cette route :
+// `qidsConsultation` ci-dessous refuse les instruments de consultation MÊME
+// ACTIFS — la réactivation des cinq cognitifs a ouvert leur assignation
+// directe, pas leur entrée en pack.
 function qidsSuspendus(qids: string[]): string[] {
   return qids.filter(id => IDS_SUSPENDUS.has(id));
+}
+
+// Les qids DE CONSULTATION (`PASSATION_PRATICIEN`) présents dans une liste
+// déjà normalisée. Refusés depuis [[D-066]] : la réactivation des cinq
+// instruments cognitifs a rendu leur route d'assignation directe ouverte —
+// c'est le geste praticien que la décision assume — mais un pack est un
+// véhicule d'envoi de ROUTINE, pack de base de l'onboarding compris. Sans ce
+// refus, l'invariant « l'assignation est un geste praticien, jamais un envoi
+// de routine » ne serait porté par rien de structurel : un MMSE entré dans le
+// pack par défaut partirait chez CHAQUE nouveau patient (relevé en revue,
+// finding B3).
+function qidsConsultation(qids: string[]): string[] {
+  return qids.filter(id => IDS_PASSATION_PRATICIEN.has(id));
 }
 
 // ─── Garde du pack de base ───────────────────────────────────────────────────
@@ -286,6 +308,17 @@ export async function POST(req: Request): Promise<NextResponse<MutatePackRespons
       { status: 409 }
     );
   }
+  const consultation = qidsConsultation(qids);
+  if (consultation.length > 0) {
+    return NextResponse.json(
+      {
+        success: false,
+        reason: RAISON_QUESTIONNAIRE_CONSULTATION,
+        error: `${MESSAGE_QUESTIONNAIRE_CONSULTATION} À retirer du pack : ${consultation.join(', ')}.`,
+      },
+      { status: 409 }
+    );
+  }
 
   try {
     const idPack = createPublicId('PACK');
@@ -390,6 +423,17 @@ export async function PATCH(req: Request): Promise<NextResponse<MutatePackRespon
     // rend 404 avant d'être jugé sur ses qids.
     if (data.qids) {
       const ajoutes = data.qids.filter(id => !existant.qids.includes(id));
+      const consultationAjoutes = qidsConsultation(ajoutes);
+      if (consultationAjoutes.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            reason: RAISON_QUESTIONNAIRE_CONSULTATION,
+            error: `${MESSAGE_QUESTIONNAIRE_CONSULTATION} À retirer du pack : ${consultationAjoutes.join(', ')}.`,
+          },
+          { status: 409 }
+        );
+      }
       const suspendusAjoutes = qidsSuspendus(ajoutes);
       if (suspendusAjoutes.length > 0) {
         return NextResponse.json(

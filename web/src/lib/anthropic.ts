@@ -7,6 +7,16 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v26 (2026-08-16, [[D-066]]) : **missing** rejoint **items** et **repondus**
+// dans la phrase qui sépare les comptes de questions des points de score, et la
+// phrase dit désormais LES TROIS POSITIONS où ces compteurs arrivent — sous
+// `subScores` (HAD, par axe), à la RACINE d'un instrument (test des 5 mots,
+// IBS-SSS, et les moteurs de la campagne du 2026-08-04) et sous `phases`
+// (5 mots). Une première rédaction ne couvrait que `subScores` : le modèle
+// voyait `missing: 3` à côté de `total: 250, maxTotal: 500` sans la phrase qui
+// lui interdit d'en faire un dénominateur (revue, finding M4). Bump : sans la
+// mention, un modèle pouvait prendre `missing` pour un dénominateur ou une
+// valeur clinique.
 // v25 (2026-08-12, LOT-03, [[D-053]]) : l'EXTINCTION. Une recommandation peut
 // désormais arriver marquée « ÉTEINTE » — les instruments spécifiques sont
 // rassurants, l'exploration n'a plus lieu d'être proposée aujourd'hui. Sans
@@ -268,7 +278,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // sans reprendre celui qu'il rend faux. La puce porte désormais les deux
 // exclusions. Bump : une synthèse rédigée sous v23 aurait pu dater l'écart
 // entre deux barèmes différents.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v25';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v26';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -332,7 +342,7 @@ Certains questionnaires ne te livrent pas qu'un score global : leur résultat pe
 
 Règle générale, valable pour **toutes** ces clés : lis chaque valeur contre le dénominateur qui l'accompagne dans le même bloc — jamais contre celui d'un autre sous-score, ni contre le total global du questionnaire. Si aucun dénominateur ne l'accompagne, rapporte la valeur brute et ne fabrique aucune proportion.
 
-Sous **subScores**, **dimensions** et **scoresBesoins**, ce couple est toujours le même : la valeur est **total**, son dénominateur est **max**. Les autres nombres du bloc n'en sont pas : **items** et **repondus** comptent des **questions** — combien la catégorie en contient, combien ont reçu une réponse — jamais des points. Ne les prends jamais pour un dénominateur de score : un sous-score dont le total vaut 4, le max 12 et les items 6 vaut 4 sur 12, pas 4 sur 6. Sous **ces trois clés**, **total** peut manquer — et **max** aussi, sous subScores : les champs décrits plus bas disent alors ce qu'il faut en faire.
+Sous **subScores**, **dimensions** et **scoresBesoins**, ce couple est toujours le même : la valeur est **total**, son dénominateur est **max**. Les autres nombres du bloc n'en sont pas : **items**, **repondus** et **missing** comptent des **questions** — combien la catégorie en contient, combien ont reçu une réponse, combien n'en ont pas reçu — jamais des points. Ces trois compteurs peuvent aussi apparaître **à la racine d'un instrument** ou sous **phases** : même sens, même interdit — aucun des trois n'est jamais un dénominateur de score. Ne les prends jamais pour un dénominateur de score : un sous-score dont le total vaut 4, le max 12 et les items 6 vaut 4 sur 12, pas 4 sur 6. Sous **ces trois clés**, **total** peut manquer — et **max** aussi, sous subScores : les champs décrits plus bas disent alors ce qu'il faut en faire.
 
 Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
 

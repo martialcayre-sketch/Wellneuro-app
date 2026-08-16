@@ -159,21 +159,30 @@ export function PacksPanel({
       a.localeCompare(b, 'fr'),
     );
 
+  // Les instruments de consultation ne sont pas proposés au composeur : la
+  // route les refuse en 409 depuis [[D-066]] (« un pack est un envoi de
+  // routine »), et proposer un choix que la soumission rejette est la classe
+  // d'écart écran↔route que `questionnaires/route.ts` nomme (revue, MAJ-3).
+  const questionnairesComposables = questionnaires.filter(q => !q.passationPraticien);
   const questionnairesFiltres = categorieFilter
-    ? questionnaires.filter(q =>
+    ? questionnairesComposables.filter(q =>
       categorieView === 'fonctionnelle'
         ? q.categorieFonctionnellePrincipale === categorieFilter
         : q.categorie === categorieFilter,
     )
-    : questionnaires;
+    : questionnairesComposables;
 
+  // Même exclusion à l'édition : le PATCH refuse les AJOUTS d'instruments de
+  // consultation — un pack hérité en portant un reste éditable (le qid hérité
+  // revient dans le payload sans être « ajouté »), il n'offre simplement pas
+  // de nouvelle case à cocher pour eux.
   const editQuestionnairesFiltresBruts = editCategorieFilter
-    ? questionnaires.filter(q =>
+    ? questionnairesComposables.filter(q =>
       editCategorieView === 'fonctionnelle'
         ? q.categorieFonctionnellePrincipale === editCategorieFilter
         : q.categorie === editCategorieFilter,
     )
-    : questionnaires;
+    : questionnairesComposables;
 
   const editQuestionnairesFiltres = editOnlyPackSelection
     ? editQuestionnairesFiltresBruts.filter(q => editSelectedQids.has(q.id))

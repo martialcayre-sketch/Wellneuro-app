@@ -136,10 +136,19 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   //      et un aperçu qui refuse désormais le verbatim de tout instrument
   //      suspendu ET hors consultation.
   //
-  // La réserve subsiste et n'est pas levée : le document IEDM ne nomme aucun
+  // La réserve de droits subsiste au registre : le document IEDM ne nomme aucun
   // auteur, donc aucun ayant droit n'est identifiable pour être sollicité.
+  //
+  // RÉACTIVÉ le 2026-08-16, sur déclaration du praticien-propriétaire que
+  // l'usage est couvert — patron EORTC du 2026-07-30 : la déclaration lève la
+  // suspension, jamais la réserve, qui reste écrite ci-dessus et au registre.
+  // Motif de la réouverture : Q_NEU_06 est un déclencheur du panel mémoire du
+  // catalogue biologie niveau 1 (D-066) ; suspendu, aucune passation ne peut
+  // naître et le panel est inerte. L'instrument reste administré EN
+  // CONSULTATION : l'assignation au portail est un geste praticien, pas un
+  // envoi de routine.
   { id: 'Q_NEU_06', titre: 'MMT — Mini Mental Test SIIN', categorie: 'Gérontologie',
-    description: `Test cognitif administré en consultation : âge, heure, rappel de trois mots, soustractions de 7 (10 épreuves, 0-2, score /20).`, duree: '10 min', actif: false },
+    description: `Test cognitif administré en consultation : âge, heure, rappel de trois mots, soustractions de 7 (10 épreuves, 0-2, score /20).`, duree: '10 min', actif: true },
   { id: 'Q_NEU_09', titre: `Grille de Zarit — Fardeau de l'aidant`, categorie: 'Gérontologie',
     description: `Évaluez la charge globale des proches aidants (22 questions, score de léger à sévère).`, duree: '10 min', actif: true },
 
@@ -448,13 +457,20 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // praticien qui porte la déclaration d'usage. La réserve « © PAR, licence
   // requise » n'est pas levée pour autant, et le registre la porte.
   //
-  // Suspendu sur arbitrage praticien : droits non dégagés (« © PAR, licence
-  // requise » au registre), aucun usage, et trois instruments de dépistage
-  // cognitif restent au catalogue (Q_GEO_03, Q_GEO_05, Q_GEO_06). Le MMSE est en
-  // outre un test ADMINISTRÉ PAR UN CLINICIEN : sa place dans un portail patient
-  // se pose indépendamment de la licence.
+  // [SUSPENDU du 2026-07-2x au 2026-08-16 sur arbitrage praticien : droits non
+  // dégagés (« © PAR, licence requise » au registre), aucun usage, et trois
+  // instruments de dépistage cognitif restaient au catalogue. Le MMSE est en
+  // outre un test ADMINISTRÉ PAR UN CLINICIEN : sa place dans un portail
+  // patient se pose indépendamment de la licence.]
+  //
+  // RÉACTIVÉ le 2026-08-16, sur déclaration du praticien-propriétaire que
+  // l'usage est couvert (patron EORTC du 2026-07-30) — la réserve « © PAR,
+  // licence requise » reste au registre et n'est pas levée. Motif : déclencheur
+  // du panel mémoire du catalogue biologie niveau 1 (D-066). Le caractère
+  // « administré par un clinicien » demeure : l'assignation est un geste
+  // praticien de consultation, pas un envoi de routine.
   { id: 'Q_GEO_04', titre: 'MMSE — Mini Mental State Examination (GRECO)', categorie: 'Gérontologie',
-    description: `Test cognitif administré par le clinicien : orientation, apprentissage, attention, rappel, langage, praxie (30 points).`, duree: '15 min', actif: false },
+    description: `Test cognitif administré par le clinicien : orientation, apprentissage, attention, rappel, langage, praxie (30 points).`, duree: '15 min', actif: true },
 
   // ── LES QUATRE AUTRES INSTRUMENTS DE CONSULTATION ───────────────────────────
   //
@@ -473,15 +489,23 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // fichier met en garde plus haut, et que #460 a fermée sur le seul MMSE. Sans
   // entrée au catalogue, `actif: false` ne peut pas les atteindre.
   //
-  // `actif: false` ne les retire de RIEN à l'écran : le rayon ne montrait déjà
-  // pas ces entrées, et leur affichage vient de `PASSATION_PRATICIEN`, qui est
-  // inchangé. Le seul effet est de fermer la route.
+  // `actif: false` ne les retirait de RIEN à l'écran : le rayon ne montrait
+  // déjà pas ces entrées, et leur affichage vient de `PASSATION_PRATICIEN`, qui
+  // est inchangé. Le seul effet était de fermer la route.
+  //
+  // LES TROIS COGNITIFS SONT RÉACTIVÉS le 2026-08-16 (D-066) : déclencheurs
+  // des panels mémoire et neurodégénératif du catalogue biologie niveau 1 —
+  // suspendus, aucune passation ne peut naître et les panels sont inertes.
+  // Aucune réserve de droits ne pèse sur ces trois-là ; ils restent des
+  // instruments DE CONSULTATION (renseignés avec l'informant ou administrés par
+  // le clinicien) : leur assignation est un geste praticien, assumé par la
+  // décision, pas un envoi de routine. Q_URO_02 reste fermé, hors périmètre.
   { id: 'Q_GEO_03', titre: 'AQ — Questionnaire Alzheimer (Sabbagh 2010)', categorie: 'Gérontologie',
-    description: `Repérage du risque de maladie d'Alzheimer, renseigné en consultation avec l'informant (21 items).`, duree: '10 min', actif: false },
+    description: `Repérage du risque de maladie d'Alzheimer, renseigné en consultation avec l'informant (21 items).`, duree: '10 min', actif: true },
   { id: 'Q_GEO_05', titre: 'QDRS — Quick Dementia Rating System (Galvin 2015)', categorie: 'Gérontologie',
-    description: `Évaluation rapide du retentissement cognitif et fonctionnel, renseignée en consultation (10 domaines).`, duree: '10 min', actif: false },
+    description: `Évaluation rapide du retentissement cognitif et fonctionnel, renseignée en consultation (10 domaines).`, duree: '10 min', actif: true },
   { id: 'Q_GEO_06', titre: 'Test des 5 mots — Dubois (rappel en 2 phases)', categorie: 'Gérontologie',
-    description: `Test cognitif administré par le clinicien : encodage puis rappel de cinq mots, libre et indicé, en deux phases.`, duree: '10 min', actif: false },
+    description: `Test cognitif administré par le clinicien : encodage puis rappel de cinq mots, libre et indicé, en deux phases.`, duree: '10 min', actif: true },
   { id: 'Q_URO_02', titre: 'Catalogue Mictionnel — CHU de Nice', categorie: 'Urologie',
     description: `Relevé mictionnel renseigné avec le clinicien : horaires, volumes et fuites.`, duree: '24 h', actif: false },
 
@@ -522,3 +546,10 @@ export const IDS_SUSPENDUS: ReadonlySet<string> = new Set(
 export const RAISON_QUESTIONNAIRE_SUSPENDU = 'questionnaire_suspendu';
 export const MESSAGE_QUESTIONNAIRE_SUSPENDU =
   "Ce questionnaire est suspendu et ne peut plus être envoyé.";
+
+// [[D-066]] — un instrument de consultation ne voyage jamais dans un pack :
+// un pack est un envoi de routine, et ces instruments exigent le geste
+// praticien de l'assignation directe.
+export const RAISON_QUESTIONNAIRE_CONSULTATION = 'questionnaire_consultation';
+export const MESSAGE_QUESTIONNAIRE_CONSULTATION =
+  "Cet instrument se fait passer en consultation : il s'assigne individuellement, jamais dans un pack.";

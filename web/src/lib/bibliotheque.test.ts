@@ -55,7 +55,7 @@ describe('listeBibliotheque', () => {
     }
   });
 
-  it('expose les 7 passations praticien, jamais assignables', () => {
+  it('expose les 7 passations praticien, chacune dans sa position d’assignabilité', () => {
     // SIX depuis le 2026-07-31 : `Q_GEO_04` (MMSE) y REVIENT et `Q_NEU_06` (MMT)
     // y ENTRE, tous deux sur arbitrage praticien — le premier par renversement de
     // la décision du 2026-07-29, le second parce que son identité est désormais
@@ -72,12 +72,18 @@ describe('listeBibliotheque', () => {
     // magique du patient vers un tiers.
     expect(PASSATION_PRATICIEN.map(p => p.id))
       .toEqual(['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_PED_02', 'Q_URO_02']);
+    // « Jamais assignables » a cessé d'être vrai le 2026-08-16 ([[D-066]]) :
+    // les cinq déclencheurs cognitifs des panels biologie sont réactivés, et
+    // leur assignation est un geste praticien assumé par la décision. La
+    // sentinelle est INVERSÉE, pas supprimée : chaque instrument est épinglé
+    // dans SA position, et le bandeau de consultation reste dû partout.
+    const ASSIGNABLES_PAR_DECISION = new Set(['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06']);
     for (const { id } of PASSATION_PRATICIEN) {
       const entree = parId.get(id);
       expect(entree, id).toBeDefined();
       expect(entree?.passationPraticien).toBe(true);
-      expect(entree?.assignable).toBe(false);
-      expect(IDS_ASSIGNABLES.has(id)).toBe(false);
+      expect(entree?.assignable, id).toBe(ASSIGNABLES_PAR_DECISION.has(id));
+      expect(IDS_ASSIGNABLES.has(id), id).toBe(ASSIGNABLES_PAR_DECISION.has(id));
     }
   });
 
@@ -227,11 +233,13 @@ describe('questionnaire suspendu (actif: false)', () => {
   // divergence critique » portait sur les deux seuls contrôles que la source
   // permettait, et que le servi porte des items DSM là où Conners porte les
   // siens. Le motif complet est au catalogue, à côté de l'entrée.
-  // `Q_PED_02` et `Q_GEO_04` restent tous deux dans cette liste après le
-  // 2026-08-01 : leur réouverture porte sur l'usage EN CONSULTATION, jamais sur
-  // la route. Tous deux restent `actif: false`, dans `IDS_SUSPENDUS`, non
-  // assignables — et c'est exactement ce que ces cinq assertions vérifient.
-  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
+  // `Q_PED_02` et `Q_GEO_04` restaient tous deux dans cette liste après le
+  // 2026-08-01 : leur réouverture portait sur l'usage EN CONSULTATION, jamais
+  // sur la route. `Q_GEO_04` en est SORTI le 2026-08-16 ([[D-066]]) : la route
+  // rouvre sur déclaration du praticien-propriétaire que l'usage est couvert
+  // (patron EORTC) — la décision est gardée, avec son motif, par
+  // `droitsAssignabilite.guard.test.ts`. Les Conners restent fermés.
+  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03'];
 
   it('les instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {
@@ -246,7 +254,7 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  it('le MMSE garde sa route fermée, et rouvre son usage en consultation', () => {
+  it('le MMSE est rouvert des deux côtés, et la séparation des deux gestes survit', () => {
     // Il n'avait aucune entrée au catalogue : il ne figurait qu'en
     // `PASSATION_PRATICIEN`, une liste d'AFFICHAGE que les routes d'assignation
     // ne consultent pas. Non proposé à l'écran, donc — mais accepté par un appel
@@ -267,23 +275,26 @@ describe('questionnaire suspendu (actif: false)', () => {
     // inactive. Le geste tenait, sa raison était fausse — et une raison fausse
     // ne garde rien, puisqu'elle serait retirée sans que rien ne rougisse.
     // RENVERSEMENT DU 2026-07-31, sur arbitrage praticien : des deux gestes, le
-    // second est repris. La ROUTE reste fermée — `actif: false`, `IDS_SUSPENDUS`,
-    // non assignable — et c'est elle qui protège le patient. L'USAGE EN
-    // CONSULTATION rouvre : le MMSE est un test administré par un clinicien, et
-    // six instruments portant la même classe de réserve sont, eux, ENVOYÉS AU
-    // PATIENT. Interdire le moins exposant en autorisant le plus ne tenait pas.
+    // second est repris — l'usage en consultation rouvre, la route reste fermée.
     //
-    // Ce qui suit garde donc la SÉPARATION des deux gestes, qui est le vrai
-    // acquis de #460 — pas la valeur qu'ils avaient ce jour-là.
+    // SECOND RENVERSEMENT LE 2026-08-16 ([[D-066]]) : la ROUTE rouvre à son
+    // tour, sur déclaration du praticien-propriétaire que l'usage est couvert
+    // (patron EORTC — la réserve « © PAR » reste au registre). Le MMSE est un
+    // déclencheur du panel mémoire du catalogue biologie : fermé, aucune
+    // passation ne peut naître et le panel est inerte. Ce qui SURVIT aux deux
+    // renversements, et que ce cas épingle : la séparation des deux gestes
+    // (l'acquis de #460), l'unicité de l'entrée en rayon, et le bandeau de
+    // consultation que porte `passationPraticien` — l'assignation est un geste
+    // praticien, jamais un envoi de routine.
     expect(listeBibliotheque().filter(e => e.id === 'Q_GEO_04')).toHaveLength(1);
     expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_GEO_04');
-    expect(IDS_SUSPENDUS.has('Q_GEO_04')).toBe(true);
-    expect(IDS_ASSIGNABLES.has('Q_GEO_04')).toBe(false);
-    // Affiché en consultation, JAMAIS proposé à l'auto-remplissage : c'est la
-    // distinction que porte `passationPraticien`, et elle doit être vraie ici.
+    expect(IDS_SUSPENDUS.has('Q_GEO_04')).toBe(false);
+    expect(IDS_ASSIGNABLES.has('Q_GEO_04')).toBe(true);
+    // Affiché en consultation ET assignable par geste praticien : la
+    // distinction que porte `passationPraticien` reste due à l'écran.
     const enRayon = listeBibliotheque().find(e => e.id === 'Q_GEO_04');
     expect(enRayon?.passationPraticien).toBe(true);
-    expect(enRayon?.assignable).toBe(false);
+    expect(enRayon?.assignable).toBe(true);
     // Et il reste scorable : les passations déjà enregistrées restent lisibles.
     expect(calculateScore('Q_GEO_04', {})).not.toHaveProperty('error');
   });

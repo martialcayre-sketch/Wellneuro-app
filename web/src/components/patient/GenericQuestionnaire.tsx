@@ -284,6 +284,12 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
           <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <h2 className="font-display text-lg font-bold text-foreground mt-4">{questionnaire.titre}</h2>
+        {questionnaire.administrationMode === 'clinicien' && (
+          <p className="mt-2 rounded-lg border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-sm text-foreground">
+            Ce questionnaire se remplit <strong>en consultation, avec votre praticien</strong>.
+            Merci de ne pas le compléter seul&nbsp;: attendez le rendez-vous.
+          </p>
+        )}
         {currentSection === 0 && questionnaire.instructions && (
           <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}
