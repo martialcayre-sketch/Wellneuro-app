@@ -638,6 +638,15 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
 
+      # Catalogue niveau 1 (D-068) : comptes 47/15/78 conditionnels, espaces de
+      # codes analytes∩ratios disjoints, égalité des trois vocabulaires
+      # d'unités, plages = claims fondateurs présents. Vacué à vide, mord dès
+      # que le catalogue existe.
+      - name: D-068 level-1 catalogue data contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_catalogue_niveau_1_donnees.sql
+
       # Le contrat structurel ci-dessus vérifie que les invariants sont EN PLACE ;
       # celui-ci vérifie qu'ils MORDENT — insertions interdites qui doivent toutes
       # être rejetées, et pour le bon motif. Transaction annulée : rien ne survit,
