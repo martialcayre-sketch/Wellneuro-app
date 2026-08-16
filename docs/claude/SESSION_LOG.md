@@ -3843,3 +3843,29 @@ l'exécution : un cas de déterminisme passait pour une mauvaise raison,
 corrigé. Aucun contenu signé modifié, les deux SHA épinglés intacts.
 Prochaine action : PR unique, CI, merge. Ouvert : contrat d'appelant de
 `deriverStatutsBiologie` à border avant le premier appelant réel (handoff).
+
+## [2026-08-16] — D-060 : la disjonction entre dans le contrat de déclenchement
+
+`ou` devient exprimable dans les cinq tables cliniques ; aucune n'en porte, le
+comportement en production est inchangé. Une branche ne compte que si son
+instrument est complètement recueilli (`DC-24`), ce qui exclut aussi le
+plancher ; la traçabilité ne cite que la branche qui a décidé, d'où sources de
+contradiction et `responseId` dérivés de l'atteinte, plus de la forme.
+
+`wn-reviewer` : NO-GO puis GO. Il a trouvé cinq gardes anti-dérive aveugles au
+`ou` — dont deux de sécurité patient : une règle d'arrêt sous `ou` pouvait
+éteindre sur une bande défavorable sans CI rouge — et mon banc anti-vacuité qui
+n'assertait que le `return` du helper. Recâblées et éprouvées par règles
+fabriquées ; discriminance vérifiée en retirant l'aplatissement (4 rouges).
+
+Tranché : fail-closed uniforme (`D-060` §6), pas de régime gradué — graduer
+imposerait de passer la nature de la table à l'évaluateur partagé.
+Écarté : restaurer le lien perdu de `MATRICE_CONSOMMATION` (7→5) — la perte est
+un effet de `PROFONDEUR_MAX`, réserve nommée §8.
+
+Découverte hors périmètre, bloquante pour la suite : **7 des 17 instruments du
+catalogue biologie ne peuvent pas allumer leur panel** — 5 sont suspendus
+(0 passation en production), HAD et IBS-SSS ne publient pas leurs comptes. Les
+panels mémoire et neurodégénératif sont morts en l'état.
+Prochaine action : PR de ce lot, puis arbitrage praticien sur ces panels avant
+PR-2. Ouvert : RV-1 (banc d'inertie, prérequis dur PR-2), RV-2 à RV-6.

@@ -543,6 +543,14 @@ export type PriorityRuleDeclenchee = {
   regle: PriorityRule;
   /** Une description lisible par déclencheur atteint (UI praticien). */
   conditions: string[];
+  /**
+   * Instruments réellement à l'appui de l'atteinte, dédupliqués, dans l'ordre
+   * de première citation ([[D-060]] §4). Sous un `ou`, la branche atteinte
+   * seule — c'est d'eux que `construireCandidats` tire ses `responseId`, et une
+   * dérivation statique depuis la règle citerait des passations qui n'ont rien
+   * décidé.
+   */
+  instruments: string[];
 };
 
 /**
@@ -562,6 +570,7 @@ export function evaluerPriorites(
   const declenchees: PriorityRuleDeclenchee[] = [];
   for (const regle of reglesEvaluables()) {
     const conditions: string[] = [];
+    const instruments: string[] = [];
     let atteinte = true;
     for (const declencheur of regle.declencheurs) {
       // `drapeaux` non fourni : la V1 ne porte aucun déclencheur de ce type
@@ -572,11 +581,16 @@ export function evaluerPriorites(
         atteinte = false;
         break;
       }
-      conditions.push(condition);
+      conditions.push(condition.motif);
+      for (const instrument of condition.instruments) {
+        if (!instruments.includes(instrument.idQuestionnaire)) {
+          instruments.push(instrument.idQuestionnaire);
+        }
+      }
     }
     // Une règle sans déclencheur s'allumerait sur tout dossier : elle est
     // refusée ici comme le banc de la table la refuse.
-    if (atteinte && regle.declencheurs.length > 0) declenchees.push({ regle, conditions });
+    if (atteinte && regle.declencheurs.length > 0) declenchees.push({ regle, conditions, instruments });
   }
   return declenchees;
 }

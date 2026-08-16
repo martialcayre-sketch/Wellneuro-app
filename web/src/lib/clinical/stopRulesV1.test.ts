@@ -6,8 +6,9 @@ import {
   STOP_RULES_METADATA,
   STOP_RULES_SHA256,
   STOP_RULES_V1,
+  type StopRule,
 } from './stopRulesV1';
-import { ORIENTATION_RULES_V1 } from './orientationRulesV1';
+import { feuillesDuDeclencheur, ORIENTATION_RULES_V1 } from './orientationRulesV1';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
@@ -112,8 +113,11 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
     const parId = new Map(ORIENTATION_RULES_V1.map(regle => [regle.id, regle]));
     let verifiees = 0;
     for (const arret of STOP_RULES_V1) {
+      // Par FEUILLES : sous un `ou`, chaque branche est un instrument que la
+      // règle d'arrêt prétend savoir lire ([[D-060]] §5).
       const lus = new Set(
         arret.declencheurs
+          .flatMap(feuillesDuDeclencheur)
           .filter(declencheur => declencheur.type !== 'drapeau')
           .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
       );
@@ -123,7 +127,7 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
       for (const regleId of arret.reglesEteintes) {
         const regle = parId.get(regleId);
         if (!regle) continue;
-        for (const declencheur of regle.declencheurs) {
+        for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
           if (declencheur.type === 'drapeau') continue;
           const qid = declencheur.idQuestionnaire;
           if (!familles.has(qid.slice(0, 6))) continue;
@@ -145,12 +149,13 @@ describe('stopRulesV1 — ce que la table éteint existe vraiment', () => {
     const lusPartout = new Set(
       STOP_RULES_V1.flatMap(arret =>
         arret.declencheurs
+          .flatMap(feuillesDuDeclencheur)
           .filter(declencheur => declencheur.type !== 'drapeau')
           .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
       ),
     );
     const surMesureNonLue = ORIENTATION_RULES_V1.filter(regle =>
-      regle.declencheurs.some(
+      regle.declencheurs.flatMap(feuillesDuDeclencheur).some(
         declencheur =>
           declencheur.type !== 'drapeau'
           && declencheur.idQuestionnaire.startsWith('Q_STR_')
@@ -205,23 +210,59 @@ describe('stopRulesV1 — les bandes citées sont celles que le catalogue publie
   // Le prix de ce choix est qu'un libellé retouché dans `questions.ts` ferait
   // taire la règle sans casser quoi que ce soit : plus aucune extinction, aucune
   // erreur, aucun test rouge. Ici, il en fait un échec de CI.
-  it('chaque libellé de bande cité existe dans questions.ts', () => {
+  // La garde est une FONCTION, et non une boucle inline, pour une seule
+  // raison : pouvoir l'éprouver sur une règle fabriquée ([[D-060]] §5). Depuis
+  // que le contrat admet la disjonction, un `ou` non aplati serait sauté en
+  // silence — la garde resterait verte sur une bande inconnue cachée sous une
+  // branche. Le second cas ci-dessous le prouve au lieu de le supposer.
+  function bandesInconnues(regles: readonly StopRule[]): { fautes: string[]; citees: number } {
+    const fautes: string[] = [];
     let citees = 0;
-    for (const arret of STOP_RULES_V1) {
-      for (const declencheur of arret.declencheurs) {
+    for (const arret of regles) {
+      for (const declencheur of arret.declencheurs.flatMap(feuillesDuDeclencheur)) {
         if (declencheur.type !== 'zone') continue;
         if (declencheur.zone.type !== 'interpretation') continue;
         const publies = labelsPublies(declencheur.idQuestionnaire, declencheur.sousScore);
-        expect(publies.length, `aucune bande publiée pour ${declencheur.idQuestionnaire}`).toBeGreaterThan(0);
+        if (publies.length === 0) {
+          fautes.push(`${arret.id} : aucune bande publiée pour ${declencheur.idQuestionnaire}`);
+          continue;
+        }
         for (const label of declencheur.zone.labels) {
           citees += 1;
-          expect(publies, `${arret.id} cite une bande inconnue de ${declencheur.idQuestionnaire} : ${label}`).toContain(label);
+          if (!publies.includes(label)) {
+            fautes.push(`${arret.id} cite une bande inconnue de ${declencheur.idQuestionnaire} : ${label}`);
+          }
         }
       }
     }
+    return { fautes, citees };
+  }
+
+  it('chaque libellé de bande cité existe dans questions.ts', () => {
+    const { fautes, citees } = bandesInconnues(STOP_RULES_V1);
+    expect(fautes).toEqual([]);
     // Anti-vacuité : une table dont plus aucun déclencheur ne serait de ce type
     // rendrait la boucle muette.
     expect(citees).toBeGreaterThanOrEqual(4);
+  });
+
+  // CONTRE-ÉPREUVE DE L'APLATISSEMENT. Sans `flatMap(feuillesDuDeclencheur)`,
+  // ce cas passe au vert : le nœud `ou` n'est ni `zone` ni `comparaison`, il est
+  // sauté, et la bande inventée entre en production sans rien faire rougir.
+  it("la garde attrape une bande inconnue cachée sous un `ou`", () => {
+    const fautive = {
+      ...STOP_RULES_V1[0],
+      id: 'STOP-FABRIQUEE',
+      declencheurs: [{
+        type: 'ou' as const,
+        declencheurs: [{
+          type: 'zone' as const,
+          idQuestionnaire: 'Q_STR_01',
+          zone: { type: 'interpretation' as const, labels: ['Bande qui n’existe pas'] },
+        }],
+      }],
+    };
+    expect(bandesInconnues([fautive]).fautes).not.toEqual([]);
   });
 
   // UNE EXTINCTION NE S'ADOSSE QU'À UNE BANDE FAVORABLE. Une règle d'arrêt qui
@@ -229,28 +270,59 @@ describe('stopRulesV1 — les bandes citées sont celles que le catalogue publie
   // résultat défavorable : l'inverse exact de sa raison d'être, et le genre
   // d'erreur qu'une relecture laisse passer parce que le libellé, lui, a l'air
   // juste.
-  it('les bandes citées sont toutes des bandes favorables', () => {
-    function couleurDeLaBande(idQuestionnaire: string, sousScore: string | undefined, label: string): string | null {
-      const definition = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQuestionnaire];
-      const interpretation = definition?.scoring?.interpretation;
-      if (!Array.isArray(interpretation)) return null;
-      const bandes = sousScore
-        ? (interpretation.find((entree: any) => entree?.subscale === sousScore)?.ranges ?? [])
-        : interpretation;
-      return bandes.find((bande: any) => bande?.label === label)?.color ?? null;
-    }
+  function couleurDeLaBande(idQuestionnaire: string, sousScore: string | undefined, label: string): string | null {
+    const definition = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQuestionnaire];
+    const interpretation = definition?.scoring?.interpretation;
+    if (!Array.isArray(interpretation)) return null;
+    const bandes = sousScore
+      ? (interpretation.find((entree: any) => entree?.subscale === sousScore)?.ranges ?? [])
+      : interpretation;
+    return bandes.find((bande: any) => bande?.label === label)?.color ?? null;
+  }
 
-    for (const arret of STOP_RULES_V1) {
-      for (const declencheur of arret.declencheurs) {
+  /** Les bandes citées qui ne sont pas `success` — feuilles ET branches d'un `ou`. */
+  function bandesNonFavorables(regles: readonly StopRule[]): string[] {
+    const fautes: string[] = [];
+    for (const arret of regles) {
+      for (const declencheur of arret.declencheurs.flatMap(feuillesDuDeclencheur)) {
         if (declencheur.type !== 'zone' || declencheur.zone.type !== 'interpretation') continue;
         for (const label of declencheur.zone.labels) {
-          expect(
-            couleurDeLaBande(declencheur.idQuestionnaire, declencheur.sousScore, label),
-            `${arret.id} éteint sur une bande non favorable de ${declencheur.idQuestionnaire} : ${label}`,
-          ).toBe('success');
+          if (couleurDeLaBande(declencheur.idQuestionnaire, declencheur.sousScore, label) !== 'success') {
+            fautes.push(`${arret.id} éteint sur une bande non favorable de ${declencheur.idQuestionnaire} : ${label}`);
+          }
         }
       }
     }
+    return fautes;
+  }
+
+  it('les bandes citées sont toutes des bandes favorables', () => {
+    expect(bandesNonFavorables(STOP_RULES_V1)).toEqual([]);
+  });
+
+  // LA CONTRE-ÉPREUVE LA PLUS LOURDE DU LOT. Une règle d'arrêt écrite sous `ou`
+  // sur une bande DÉFAVORABLE éteindrait l'exploration du patient le plus
+  // atteint — et sans l'aplatissement, ce banc resterait vert. C'est le risque
+  // patient de la disjonction, tenu ici par un cas et non par une relecture.
+  it("la garde attrape une bande défavorable cachée sous un `ou`", () => {
+    const publiees = (QUESTIONNAIRE_CATALOGUE as Record<string, any>).Q_STR_01?.scoring?.interpretation ?? [];
+    const defavorable = publiees.find((bande: any) => bande?.color && bande.color !== 'success');
+    // La fixture se lit sur le catalogue : une bande écrite en dur ici
+    // divergerait le jour où la grille change, et le banc mentirait.
+    expect(defavorable?.label, 'aucune bande défavorable publiée par Q_STR_01').toBeDefined();
+    const fautive = {
+      ...STOP_RULES_V1[0],
+      id: 'STOP-FABRIQUEE',
+      declencheurs: [{
+        type: 'ou' as const,
+        declencheurs: [{
+          type: 'zone' as const,
+          idQuestionnaire: 'Q_STR_01',
+          zone: { type: 'interpretation' as const, labels: [defavorable.label] },
+        }],
+      }],
+    };
+    expect(bandesNonFavorables([fautive])).not.toEqual([]);
   });
 });
 

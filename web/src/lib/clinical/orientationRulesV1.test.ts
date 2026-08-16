@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
+  feuillesDuDeclencheur,
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
@@ -273,33 +274,45 @@ describe('orientationRulesV1 — verrou v1', () => {
     };
 
     for (const declencheur of regle.declencheurs) {
-      if (declencheur.type === 'drapeau') {
-        const valeur = declencheur.valeurs[0];
-        if (CHAMPS_LISTE.has(declencheur.champ)) {
-          (drapeaux[declencheur.champ] as string[]) = [valeur];
+      // Sous un `ou`, satisfaire la PREMIÈRE branche suffit — c'est la
+      // sémantique de la disjonction. Ses comptes sont publiés complets plus
+      // bas : une branche muette ne compte pas ([[D-060]] §2), là où une
+      // feuille hors `ou` passe sans publier de comptes.
+      const feuille = declencheur.type === 'ou' ? declencheur.declencheurs[0] : declencheur;
+      if (!feuille) continue;
+      if (feuille.type === 'drapeau') {
+        const valeur = feuille.valeurs[0];
+        if (CHAMPS_LISTE.has(feuille.champ)) {
+          (drapeaux[feuille.champ] as string[]) = [valeur];
         } else {
-          (drapeaux as Record<string, unknown>)[declencheur.champ] = valeur;
+          (drapeaux as Record<string, unknown>)[feuille.champ] = valeur;
         }
         continue;
       }
-      const porteur = porteurPour(declencheur.idQuestionnaire);
+      const porteur = porteurPour(feuille.idQuestionnaire);
       // Ce que le déclencheur exige de la mesure, traduit en score servi. Aucun
       // compte d'items n'est publié : la garde de complétude ne lit alors rien
       // et laisse passer — c'est bien un recueil complet qu'on décrit ici.
       const contenu: Record<string, unknown> = {};
-      if (declencheur.type === 'comparaison') {
-        contenu.total = valeurQuiSatisfait(declencheur.operateur, declencheur.valeur);
-      } else if (declencheur.zone.type === 'plage') {
-        contenu.total = declencheur.zone.min;
-      } else if (declencheur.zone.type === 'interpretation') {
+      if (feuille.type === 'comparaison') {
+        contenu.total = valeurQuiSatisfait(feuille.operateur, feuille.valeur);
+      } else if (feuille.zone.type === 'plage') {
+        contenu.total = feuille.zone.min;
+      } else if (feuille.zone.type === 'interpretation') {
         contenu.total = 0;
-        contenu.interpretation = { label: declencheur.zone.labels[0] };
+        contenu.interpretation = { label: feuille.zone.labels[0] };
       } else {
         contenu.total = 0;
-        contenu.interpretation = { color: declencheur.zone.couleurs[0] };
+        contenu.interpretation = { color: feuille.zone.couleurs[0] };
       }
-      if (declencheur.sousScore) {
-        porteur.subScores.push({ id: declencheur.sousScore, label: declencheur.sousScore, ...contenu });
+      // La branche d'un `ou` doit prouver sa complétude : comptes publiés,
+      // rien de manquant (`comptesDuPorteurVise`).
+      if (declencheur.type === 'ou') {
+        contenu.repondus = 1;
+        contenu.items = 1;
+      }
+      if (feuille.sousScore) {
+        porteur.subScores.push({ id: feuille.sousScore, label: feuille.sousScore, ...contenu });
       } else {
         Object.assign(porteur.global, contenu);
       }
@@ -347,8 +360,12 @@ describe('orientationRulesV1 — verrou v1', () => {
 // Gardes anti-dérive (LOT-05). Chacune ferme un silence : une règle mal câblée
 // ne casse rien, elle cesse simplement de se déclencher — et personne ne le voit.
 describe('orientationRulesV1 — gardes anti-dérive', () => {
+  // À PLAT PAR FEUILLES : les gardes de ce bloc valent pour chaque branche
+  // d'une disjonction, sinon un `ou` serait la porte de service des interdits
+  // ([[D-060]] §5 — `signauxAlerte` compris, vérifié plus bas).
   const declencheurs = ORIENTATION_RULES_V1.flatMap(regle =>
-    regle.declencheurs.map(declencheur => ({ regleId: regle.id, declencheur })),
+    regle.declencheurs.flatMap(declencheur =>
+      feuillesDuDeclencheur(declencheur).map(feuille => ({ regleId: regle.id, declencheur: feuille }))),
   );
 
   function optionsDuChamp(champId: string): readonly string[] {
@@ -399,21 +416,42 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
     }
   });
 
+  /** Les valeurs de drapeau introuvables dans `ANAMNESE_SECTIONS` — feuilles comprises. */
+  function valeursDeDrapeauInconnues(regles: readonly OrientationRule[]): string[] {
+    const inconnues: string[] = [];
+    for (const regle of regles) {
+      for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
+        if (declencheur.type !== 'drapeau') continue;
+        const champId = CHAMP_ANAMNESE[declencheur.champ];
+        if (!champId) {
+          inconnues.push(`${regle.id} : champ non mappé — ${declencheur.champ}`);
+          continue;
+        }
+        const options = optionsDuChamp(champId);
+        if (options.length === 0) {
+          inconnues.push(`${regle.id} : aucune option lue pour ${champId}`);
+          continue;
+        }
+        for (const valeur of declencheur.valeurs) {
+          if (!options.includes(valeur)) inconnues.push(`${regle.id} → ${champId} : « ${valeur} »`);
+        }
+      }
+    }
+    return inconnues;
+  }
+
+  /** Les règles qui s'appuient sur `signauxAlerte`, à la racine ou sous un `ou`. */
+  function reglesSurSignauxAlerte(regles: readonly OrientationRule[]): string[] {
+    return regles
+      .filter(regle => regle.declencheurs.flatMap(feuillesDuDeclencheur)
+        .some(d => d.type === 'drapeau' && d.champ === 'signauxAlerte'))
+      .map(regle => regle.id);
+  }
+
   // LA garde du lot. Un libellé retouché dans `anamnese.ts` — une apostrophe,
   // un accent — ferait taire la règle sans rien casser. Ici, elle casse le CI.
   it("chaque valeur de drapeau existe verbatim dans ANAMNESE_SECTIONS", () => {
-    const inconnues: string[] = [];
-    for (const { regleId, declencheur } of declencheurs) {
-      if (declencheur.type !== 'drapeau') continue;
-      const champId = CHAMP_ANAMNESE[declencheur.champ];
-      expect(champId, `champ non mappé : ${declencheur.champ}`).toBeDefined();
-      const options = optionsDuChamp(champId);
-      expect(options.length, `aucune option lue pour ${champId}`).toBeGreaterThan(0);
-      for (const valeur of declencheur.valeurs) {
-        if (!options.includes(valeur)) inconnues.push(`${regleId} → ${champId} : « ${valeur} »`);
-      }
-    }
-    expect(inconnues).toEqual([]);
+    expect(valeursDeDrapeauInconnues(ORIENTATION_RULES_V1)).toEqual([]);
   });
 
   // Arbitrage praticien du 2026-08-03 : un signal d'alerte appelle un
@@ -423,10 +461,35 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   // reste à écrire (lot dédié) ; d'ici là, ce banc empêche qu'une règle
   // s'engouffre dans le trou.
   it("aucune règle ne s'appuie sur signauxAlerte", () => {
-    const fautives = declencheurs
-      .filter(({ declencheur }) => declencheur.type === 'drapeau' && declencheur.champ === 'signauxAlerte')
-      .map(({ regleId }) => regleId);
-    expect(fautives).toEqual([]);
+    expect(reglesSurSignauxAlerte(ORIENTATION_RULES_V1)).toEqual([]);
+  });
+
+  // CONTRE-ÉPREUVE DES DEUX GARDES CI-DESSUS, SOUS DISJONCTION ([[D-060]] §5).
+  //
+  // Aucune table ne porte de `ou` aujourd'hui : l'aplatissement ne visite rien
+  // de neuf, et les deux gardes resteraient vertes si on le retirait. Ce cas
+  // les exerce donc sur une règle FABRIQUÉE, en passant par le corps réel de
+  // chaque garde — une assertion sur `feuillesDuDeclencheur` seul n'aurait
+  // prouvé que son `return`, jamais son câblage.
+  it("les gardes attrapent ce qui se cache sous un `ou`", () => {
+    const fautive: OrientationRule = {
+      ...ORIENTATION_RULES_V1[0],
+      id: 'R-FABRIQUEE',
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'drapeau', champ: 'signauxAlerte', valeurs: ['Idées noires ou suicidaires'] },
+          { type: 'drapeau', champ: 'attentes', valeurs: ['Libellé qui n’existe pas'] },
+        ],
+      }],
+    };
+    // L'interdit d'adressage mord sous la branche, comme à la racine.
+    expect(reglesSurSignauxAlerte([fautive])).toEqual(['R-FABRIQUEE']);
+    // Et un libellé dérivé y est vu, alors qu'il aurait fait taire la règle.
+    expect(valeursDeDrapeauInconnues([fautive])).not.toEqual([]);
+    // Contre-épreuve de la contre-épreuve : la même règle SANS `ou` et sans
+    // faute passe — sinon ces deux gardes rougiraient sur n'importe quoi.
+    expect(reglesSurSignauxAlerte([ORIENTATION_RULES_V1[0]])).toEqual([]);
   });
 
   // ARBITRAGE DU 2026-08-06 (LOT-02, D-030), épinglé ici pour qu'il ne se
@@ -1302,9 +1365,12 @@ describe('orientationRulesV1 — premier tour, dans le moteur', () => {
 // ne la gardait. C'est ce test.
 describe('disjonction avec les passations non interprétables', () => {
   it('aucun déclencheur ne porte sur une passation dont le résultat n’est pas une mesure', () => {
+    // Par FEUILLES : une branche de `ou` déclenche autant qu'une racine, et
+    // ferait entrer le même chiffre dans le prompt ([[D-060]] §5).
     const instrumentsDeclencheurs = new Set(
       ORIENTATION_RULES_V1.flatMap(regle =>
         regle.declencheurs
+          .flatMap(feuillesDuDeclencheur)
           .filter(declencheur => declencheur.type === 'zone' || declencheur.type === 'comparaison')
           .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
       ),

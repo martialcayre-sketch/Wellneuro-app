@@ -266,10 +266,15 @@ l'état livré au chargement. Même correction dans `chaineC1.test.ts`.
 
 ### D-060 — Le contrat de déclenchement apprend la disjonction, et un recueil incomplet ne l'allume jamais
 
-- Date : 2026-08-15
-- Statut : accepté (arbitrage utilisateur du 2026-08-15) — la sémantique de
-  complétude est **proposée** et attend la revue `wn-reviewer`, puisqu'elle
-  touche une garde de sécurité.
+- Date : 2026-08-15 · **implémentée et relue le 2026-08-16**
+- Statut : accepté (arbitrage utilisateur du 2026-08-15). La sémantique de
+  complétude n'est plus « proposée » : la revue `wn-reviewer` du 2026-08-16 a
+  tenté de l'ouvrir et n'y est pas parvenue — garde de branche et garde
+  statique du moteur d'arrêt sont le même prédicat, au même grain, et un
+  plancher ne peut structurellement pas allumer une branche. Le §2 est donc
+  **opposable**. Le §5 l'est depuis le même jour, mais il a fallu recâbler cinq
+  gardes anti-dérive qui lisaient encore la racine (voir « Ce que la revue a
+  trouvé », plus bas).
 - Domaine : moteur clinique, contrat de déclenchement, garde de complétude,
   traçabilité
 - Contexte : découvert en étendant le panel stress du catalogue biologie au
@@ -346,6 +351,49 @@ disjonction.
   refondation de `Q_INF_03` reste en place ; savoir si elle doit reprendre
   l'appui de `WN-CL-0136-004` une fois la disjonction disponible est un
   arbitrage clinique distinct, à poser séparément.
+
+**Ce que la revue du 2026-08-16 a trouvé, et ce qui en découle.**
+
+**6. `{ou:[X]}` est plus restrictif que `X`, et c'est assumé.** La garde de
+complétude par branche ferme deux chemins que la RACINE d'une règle
+d'orientation laissait ouverts : un instrument qui ne publie aucun compte (le
+Berlin, nommé par `D-053` §4) allume une feuille mais jamais une branche, et le
+`bandePlancher` — construit précisément pour rattraper la sévérité sur un
+recueil partiel — est inopérant sous `ou`. Conséquence pratique : élargir une
+règle existante de `X` à `X ou Y` lui fait PERDRE le déclenchement par plancher
+sur `X`.
+
+Le point 2 justifiait le fail-closed par le sur-déclenchement ; l'effet
+symétrique — un faux négatif sur les tables non extinctives (orientation,
+priorités, biologie) — n'avait pas été nommé. Il l'est ici, et le choix ne
+change pas : **fail-closed uniforme**, pas de régime gradué par table. Motif :
+un `ou` dont la sémantique dépendrait de la table qui le porte serait
+irrelisable en revue, et c'est la revue qui est le seul contrôle réel (même
+raisonnement que le point 3 sur l'imbrication). Le coût est borné et visible —
+il ne se paie qu'au moment où quelqu'un écrit un `ou`, jamais rétroactivement.
+Conséquence opératoire : **on n'élargit pas une règle existante en `ou` sans
+vérifier que ses instruments publient leurs comptes**.
+
+**7. Les gardes anti-dérive lisent les FEUILLES, et c'est structurel.** Le
+point 5 ne se tenait pas tout seul : cinq gardes filtraient encore sur le type
+du déclencheur racine et sautaient un nœud `ou` en silence — dont deux de
+sécurité patient (bandes favorables et libellés verbatim des règles d'arrêt).
+Une règle d'arrêt écrite sous `ou` aurait pu éteindre une recommandation sur une
+bande DÉFAVORABLE sans faire rougir le CI. Toutes sont recâblées sur
+`feuillesDuDeclencheur`, et chacune est désormais éprouvée par une règle
+fabriquée portant la faute sous une branche — la vérification empirique a été
+faite en retirant l'aplatissement : les quatre contre-épreuves rougissent.
+
+**8. Réserve nommée — `MATRICE_CONSOMMATION` sous-déclare la table
+d'orientation.** Le compte passe de 7 à 5 surfaces indirectes. Aucune
+consommation n'a disparu : `chaineC1.ts` n'a plus besoin d'importer
+`OrientationDeclencheur` (les instruments lui sont fournis par
+`evaluerPriorites`), ce qui rallonge d'un saut le chemin vers
+`api/praticien/protocoles/route.ts` et `.../protocoles/versions/route.ts` et
+les fait sortir du graphe borné par `PROFONDEUR_MAX = 3`. Le découplage est un
+gain de code ; la perte de justesse de la matrice est réelle et n'a pas de
+correctif local — relever la profondeur toucherait toutes les lignes du
+document et relève d'un lot dédié.
 
 ### D-059 — La biologie devient opérante sans qu'une seule valeur n'entre en base, et le schéma précède le code
 

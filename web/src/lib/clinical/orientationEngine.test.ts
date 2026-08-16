@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ContradictionFinding } from './contradictionFinding';
-import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
-import type { OrientationRule } from './orientationRulesV1';
+import { evaluerDeclencheur, evaluerOrientation, type ReponseOrientation } from './orientationEngine';
+import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule } from './orientationRulesV1';
 import type { StopRule } from './stopRulesV1';
 
 const CLAIM = { claimId: 'WN-CL-0001-001', versionClaim: 'v1' };
@@ -1063,5 +1063,169 @@ describe('extinction — la garde de complétude lit l\'axe visé, avec la réso
       reglesArret: [arretSurAxe('S')],
     });
     expect(recos[0].extinction?.stopRuleId).toBe('STOP-TEST');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Disjonction ([[D-060]]). Les bancs listés par la décision, un par défaut
+// qu'ils ferment : la sémantique fail-closed du recueil incomplet est ce que la
+// revue doit pouvoir tenir — chaque banc rougit seul si on la relâche.
+describe('evaluerDeclencheur — disjonction (D-060)', () => {
+  const brancheStress: OrientationDeclencheurFeuille = {
+    type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 },
+  };
+  const brancheSommeil: OrientationDeclencheurFeuille = {
+    type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'plage', min: 5, max: 21 },
+  };
+  const ou: OrientationDeclencheur = { type: 'ou', declencheurs: [brancheStress, brancheSommeil] };
+  // Comptes publiés et rien de manquant : la seule forme qu'une branche accepte.
+  const complet = (total: number) => ({ total, repondus: 10, items: 10 });
+  const dernieres = (...reponses: ReponseOrientation[]) =>
+    new Map(reponses.map(r => [r.idQuestionnaire, r]));
+
+  it('vrai dès qu\'UNE branche complète est atteinte — l\'autre peut être absente', () => {
+    const atteint = evaluerDeclencheur(ou, dernieres(
+      reponse({ idQuestionnaire: 'Q_SOM_01', scores: complet(7) }),
+    ), undefined);
+    expect(atteint?.motif).toContain('Q_SOM_01');
+    expect(atteint?.instruments).toEqual([{ idQuestionnaire: 'Q_SOM_01' }]);
+  });
+
+  it('faux si toutes les branches complètes sont fausses', () => {
+    const atteint = evaluerDeclencheur(ou, dernieres(
+      reponse({ scores: complet(10) }),
+      reponse({ idQuestionnaire: 'Q_SOM_01', scores: complet(2) }),
+    ), undefined);
+    expect(atteint).toBeNull();
+  });
+
+  // FAIL-CLOSED SUR RECUEIL INCOMPLET (`DC-24`). Le cas est écrit sur une zone
+  // COULEUR garantie par un `bandePlancher`, et pas sur une plage nue : sur une
+  // plage, `extraireCible` annule déjà la mesure et le cas serait vert même
+  // sans la garde de branche — il ne prouverait rien. Ici, la feuille EST
+  // atteinte (contre-épreuve juste en dessous), et seule la garde l'éteint.
+  it('faux si la branche est sur recueil incomplet — même quand un plancher l’atteindrait', () => {
+    const zoneGarantie: OrientationDeclencheurFeuille = {
+      type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'couleur', couleurs: ['danger', 'dark'] },
+    };
+    const incompletAvecPlancher = dernieres(reponse({
+      idQuestionnaire: 'Q_STR_01',
+      scores: {
+        total: null,
+        repondus: 15,
+        items: 21,
+        interpretation: null,
+        bandePlancher: {
+          garanti: true,
+          label: 'Élevé',
+          color: 'danger',
+          labelsPossibles: ['Élevé'],
+          couleursPossibles: ['danger'],
+        },
+      },
+    }));
+    // La feuille, elle, s'allume : le plancher garantit la zone.
+    expect(evaluerDeclencheur(zoneGarantie, incompletAvecPlancher, undefined)?.motif).toContain('au moins');
+    // La même feuille en branche : éteinte. Retirer la garde fait rougir ici.
+    expect(evaluerDeclencheur(
+      { type: 'ou', declencheurs: [zoneGarantie] }, incompletAvecPlancher, undefined,
+    )).toBeNull();
+  });
+
+  // LE CAS QUI DISTINGUE LA BRANCHE DE LA FEUILLE. Un moteur qui ne publie
+  // aucun compte passe la garde générale (rien à lire) et une FEUILLE
+  // s'allume ; une BRANCHE, jamais — dans le doute, elle ne compte pas
+  // ([[D-060]] §2). Sans la contre-épreuve, ce banc serait vert même si
+  // l'évaluateur refusait tout.
+  it('un moteur muet n\'allume jamais une branche — la même feuille hors `ou` s\'allume', () => {
+    const muettes = dernieres(reponse({ scores: { total: 30 } }));
+    expect(evaluerDeclencheur(ou, muettes, undefined)).toBeNull();
+    expect(evaluerDeclencheur(brancheStress, muettes, undefined)?.motif).toContain('Q_STR_02');
+  });
+
+  // Extension du banc « un plancher n'éteint jamais » : il n'allume pas non
+  // plus une disjonction. Contre-épreuve d'abord, même discipline.
+  it('un plancher n\'allume JAMAIS un OU — même sur une zone qu\'il garantit', () => {
+    const porteurAvecPlancher = {
+      total: 30,
+      repondus: 15,
+      items: 21,
+      interpretation: null,
+      bandePlancher: {
+        garanti: true,
+        label: 'Élevé',
+        color: 'danger',
+        labelsPossibles: ['Élevé'],
+        couleursPossibles: ['danger'],
+      },
+    };
+    const feuille: OrientationDeclencheurFeuille = {
+      type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Élevé'] },
+    };
+    const reponses = dernieres(reponse({ idQuestionnaire: 'Q_STR_01', scores: porteurAvecPlancher }));
+    expect(evaluerDeclencheur(feuille, reponses, undefined)?.motif).toContain('au moins');
+    expect(evaluerDeclencheur({ type: 'ou', declencheurs: [feuille] }, reponses, undefined)).toBeNull();
+  });
+
+  it('la traçabilité ne cite que la branche atteinte — la première, dans l\'ordre de la règle', () => {
+    const atteint = evaluerDeclencheur(ou, dernieres(
+      reponse({ scores: complet(30) }),
+      reponse({ idQuestionnaire: 'Q_SOM_01', scores: complet(7) }),
+    ), undefined);
+    expect(atteint?.instruments).toEqual([{ idQuestionnaire: 'Q_STR_02' }]);
+    expect(atteint?.motif).toContain('Q_STR_02');
+    expect(atteint?.motif).not.toContain('Q_SOM_01');
+  });
+
+  it('un `ou` sans branche n\'est jamais atteint', () => {
+    expect(evaluerDeclencheur({ type: 'ou', declencheurs: [] }, dernieres(), undefined)).toBeNull();
+  });
+
+  it('une branche de drapeau d\'anamnèse s\'évalue sans instrument à citer', () => {
+    const atteint = evaluerDeclencheur(
+      { type: 'ou', declencheurs: [{ type: 'drapeau', champ: 'attentes', valeurs: ['Retrouver le sommeil'] }] },
+      dernieres(),
+      {
+        signauxAlerte: [], antecedentsDomaines: [], facteursDeclenchants: [],
+        attentes: ['Retrouver le sommeil'], automedication: [], intolerancesAlimentaires: [],
+        symptomesFonctionnels: [], debut: null, evolution: null, variationPoids: null,
+      },
+    );
+    expect(atteint?.motif).toContain('attentes');
+    expect(atteint?.instruments).toEqual([]);
+  });
+
+  // Le moteur d'arrêt délègue la complétude des branches à l'évaluateur : une
+  // branche complète éteint, une branche muette n'éteint pas — si la garde
+  // statique du moteur redevenait aveugle au `ou`, le second cas rougirait.
+  it('une règle d\'arrêt à disjonction éteint par une branche complète, jamais par une muette', () => {
+    const arretOu = arret({
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'zone', idQuestionnaire: 'Q_STR_01', zone: { type: 'interpretation', labels: ['Faible'] } },
+        ],
+      }],
+    });
+    const bandeFavorable = { label: 'Faible', color: 'success' };
+    const eteinte = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 0, repondus: 21, items: 21, interpretation: bandeFavorable } }),
+      ],
+      reglesArret: [arretOu],
+    });
+    expect(eteinte[0].extinction?.stopRuleId).toBe('STOP-TEST');
+
+    const muette = evaluerOrientation({
+      ...dossierAllume(),
+      reponses: [
+        reponse({ scores: { total: 30 } }),
+        reponse({ idQuestionnaire: 'Q_STR_01', scores: { total: 0, interpretation: bandeFavorable } }),
+      ],
+      reglesArret: [arretOu],
+    });
+    expect(muette[0].extinction ?? null).toBeNull();
   });
 });

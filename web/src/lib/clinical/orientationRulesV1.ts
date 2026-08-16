@@ -58,7 +58,12 @@ export type OrientationZone =
   // règle le motive sur place.
   | { type: 'couleur'; couleurs: Array<'info' | 'warning' | 'danger' | 'dark'> };
 
-export type OrientationDeclencheur =
+// Déclencheur FEUILLE : les trois formes historiques, seules admises sous une
+// disjonction ([[D-060]] §3 — aucune imbrication, un `ou` ne contient jamais un
+// autre `ou` ; la contrainte est portée par le type, pas par un banc). Une
+// algèbre booléenne complète dans une table de règles cliniques serait
+// illisible en revue, et la revue est le seul contrôle réel.
+export type OrientationDeclencheurFeuille =
   | {
       type: 'zone';
       idQuestionnaire: string;
@@ -105,6 +110,43 @@ export type OrientationDeclencheur =
       champ: keyof DrapeauxAnamnese;
       valeurs: string[];
     };
+
+// Disjonction ([[D-060]]) : atteinte si AU MOINS UNE branche complète l'est.
+//
+// « Complète » n'est pas décoratif, c'est le point 2 de la décision : une
+// branche ne compte que si SON instrument est complètement recueilli —
+// fail-closed, dans le doute la branche ne compte pas. Sans cette règle, le OU
+// transformerait la garde de complétude (`DC-24`) en passoire : il suffirait
+// d'une branche non recueillie pour la contourner. Corollaire acquis par
+// construction : un plancher n'allume jamais un OU, puisqu'un plancher n'est
+// servi que sur recueil incomplet.
+//
+// La traçabilité ne remonte que la branche ATTEINTE (point 4) : c'est elle, et
+// elle seule, que les consommateurs (sources de contradiction, `responseId`
+// des cartes de décision) citent. L'interdit `signauxAlerte` survit à la
+// disjonction (point 5) — un banc le vérifie sous `ou` explicitement.
+//
+// Un `ou` sans branche n'est jamais atteint (même refus qu'une règle sans
+// déclencheur : `some` sur une liste vide est faux, et c'est le bon défaut).
+export type OrientationDeclencheur =
+  | OrientationDeclencheurFeuille
+  | {
+      type: 'ou';
+      declencheurs: OrientationDeclencheurFeuille[];
+    };
+
+/**
+ * Les feuilles d'un déclencheur : lui-même, ou les branches de sa disjonction.
+ *
+ * C'est la lecture STATIQUE, pour les bancs anti-dérive : chaque interdit qui
+ * vaut sur une feuille (libellé verbatim, `signauxAlerte`, instrument au
+ * catalogue) doit valoir sur chaque branche d'un `ou`, sinon la disjonction
+ * deviendrait la porte de service des interdits ([[D-060]] §5). L'évaluation,
+ * elle, ne passe pas par ici — elle choisit une branche, jamais toutes.
+ */
+export function feuillesDuDeclencheur(declencheur: OrientationDeclencheur): OrientationDeclencheurFeuille[] {
+  return declencheur.type === 'ou' ? declencheur.declencheurs : [declencheur];
+}
 
 type SuggestionBase = {
   /** 1 = plus prioritaire ; ordonne le pack hiérarchisé présenté au praticien. */

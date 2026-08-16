@@ -1,6 +1,6 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
-import type { OrientationDeclencheur, OrientationRule, OrientationZone } from './orientationRulesV1';
+import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule, OrientationZone } from './orientationRulesV1';
 import { contradictionEstOuverte } from './contradictionFinding';
 import type { ContradictionFinding } from './contradictionFinding';
 import type { StopRule } from './stopRulesV1';
@@ -655,15 +655,41 @@ function valeursDuDrapeau(drapeaux: DrapeauxAnamnese, champ: keyof DrapeauxAnamn
 }
 
 /**
- * Description lisible du déclencheur atteint, ou null s'il ne matche pas.
+ * Déclencheur atteint : le motif lisible ET les instruments réellement à
+ * l'appui ([[D-060]] §4).
  *
- * Exporté pour le moteur de contradictions (LOT-01). Le partage est le but :
- * les gardes qui vivent ici — recueil incomplet, sous-score absent, plancher
- * jamais comparé numériquement, `DC-24` — doivent valoir à l'identique pour les
- * deux moteurs. Les réécrire ailleurs les aurait fait diverger en silence.
+ * `instruments` ne cite que ce qui a effectivement porté l'atteinte — sous un
+ * `ou`, la seule branche atteinte, jamais les branches muettes. C'est ce que
+ * les consommateurs de traçabilité (sources de contradiction, `responseId` des
+ * cartes de décision) lisent désormais, au lieu de re-dériver les instruments
+ * depuis la forme statique de la règle — une re-dérivation qui, sous `ou`,
+ * citerait des passations n'ayant rien décidé.
  */
-export function evaluerDeclencheur(
-  declencheur: OrientationDeclencheur,
+export type DeclencheurAtteint = {
+  motif: string;
+  /** Vide pour un drapeau d'anamnèse : rien d'instrumental à citer. */
+  instruments: Array<{ idQuestionnaire: string; sousScore?: string }>;
+};
+
+/** Les instruments qu'une feuille atteinte met à l'appui. */
+function instrumentsDeFeuille(feuille: OrientationDeclencheurFeuille): DeclencheurAtteint['instruments'] {
+  if (feuille.type === 'drapeau') return [];
+  return [{
+    idQuestionnaire: feuille.idQuestionnaire,
+    ...(feuille.sousScore ? { sousScore: feuille.sousScore } : {}),
+  }];
+}
+
+/**
+ * Description lisible de la feuille atteinte, ou null si elle ne matche pas.
+ *
+ * C'est le corps historique d'`evaluerDeclencheur`, inchangé : les gardes qui
+ * vivent ici — recueil incomplet, sous-score absent, plancher jamais comparé
+ * numériquement, `DC-24` — doivent valoir à l'identique pour tous les moteurs.
+ * Les réécrire ailleurs les aurait fait diverger en silence.
+ */
+function evaluerFeuille(
+  declencheur: OrientationDeclencheurFeuille,
   dernieres: Map<string, ReponseOrientation>,
   drapeaux: DrapeauxAnamnese | undefined
 ): string | null {
@@ -697,6 +723,50 @@ export function evaluerDeclencheur(
   // le biais du recueil, ce que la garde de complétude existe pour empêcher.
   if (valeur === null || !comparer(valeur, declencheur.operateur, declencheur.valeur)) return null;
   return `${prefixe} : score ${valeur} ${declencheur.operateur} ${declencheur.valeur}`;
+}
+
+/**
+ * Le déclencheur atteint — motif et instruments à l'appui — ou null.
+ *
+ * Exporté pour les moteurs de contradictions, de priorités et de statuts
+ * biologie : le partage est le but, voir `evaluerFeuille`.
+ *
+ * DISJONCTION ([[D-060]]) — les branches sont parcourues dans l'ORDRE DE LA
+ * RÈGLE, et la première branche complète et atteinte porte le verdict. C'est
+ * l'ordre d'évaluation qui est stable, pas le motif : celui-ci dit quelle
+ * branche a décidé, et varie donc d'un dossier à l'autre — c'est précisément ce
+ * qu'on attend de lui. La traçabilité est limitée à cette branche.
+ *
+ * Une branche instrumentale ne compte que si son porteur PUBLIE ses comptes et
+ * ne manque de rien (`comptesDuPorteurVise`) — un moteur muet ne compte pas,
+ * même raisonnement que la garde du moteur d'arrêt : dans le doute, la branche
+ * ne compte pas ([[D-060]] §2, fail-closed). Une branche de drapeau d'anamnèse
+ * n'a pas d'instrument : sa « complétude » est sa simple présence, l'évaluation
+ * de la feuille suffit.
+ *
+ * Un plancher n'allume jamais un OU : la garde de complétude l'exclut par
+ * construction (un plancher n'est servi que sur recueil incomplet), et le banc
+ * le vérifie plutôt que de le croire.
+ */
+export function evaluerDeclencheur(
+  declencheur: OrientationDeclencheur,
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined
+): DeclencheurAtteint | null {
+  if (declencheur.type === 'ou') {
+    for (const branche of declencheur.declencheurs) {
+      if (branche.type !== 'drapeau') {
+        const porteur = dernieres.get(branche.idQuestionnaire)?.scores;
+        const comptes = comptesDuPorteurVise(porteur, branche.sousScore);
+        if (comptes === null || comptes.manquants > 0) continue;
+      }
+      const motif = evaluerFeuille(branche, dernieres, drapeaux);
+      if (motif !== null) return { motif, instruments: instrumentsDeFeuille(branche) };
+    }
+    return null;
+  }
+  const motif = evaluerFeuille(declencheur, dernieres, drapeaux);
+  return motif === null ? null : { motif, instruments: instrumentsDeFeuille(declencheur) };
 }
 
 function cleCible(cible: CibleExploration): string {
@@ -796,7 +866,8 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     // être remontée jusqu'à sa source NNPP2. Elle ne recommande rien.
     if (regle.justificationClaims.length === 0) continue;
 
-    // ET logique : tous les déclencheurs doivent être atteints.
+    // ET logique : tous les déclencheurs doivent être atteints. Un `ou` compte
+    // pour UN déclencheur : atteint dès qu'une branche complète l'est.
     const conditions: string[] = [];
     let tousAtteints = true;
     for (const declencheur of regle.declencheurs) {
@@ -805,7 +876,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
         tousAtteints = false;
         break;
       }
-      conditions.push(condition);
+      conditions.push(condition.motif);
     }
     if (!tousAtteints) continue;
 
@@ -1058,7 +1129,15 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
       // et le banc « un plancher n'éteint jamais » la fait rougir seule.
       // AU GRAIN DU DÉCLENCHEUR : l'axe visé quand il y en a un, la racine
       // sinon — voir `comptesDuPorteurVise`, et le défaut qu'il ferme.
-      if (declencheur.type !== 'drapeau') {
+      //
+      // Un `ou` ne passe pas par cette garde, et ce n'est pas un trou : la
+      // MÊME exigence — comptes publiés, rien de manquant, donc jamais un
+      // plancher — est appliquée branche par branche DANS l'évaluateur
+      // ([[D-060]] §2), parce qu'elle y décide quelle branche compte, pas
+      // seulement si la règle mord. La reposer ici sur la forme statique de la
+      // règle exigerait la complétude de TOUTES les branches, ce qui
+      // transformerait le OU en ET.
+      if (declencheur.type !== 'drapeau' && declencheur.type !== 'ou') {
         const porteur = dernieres.get(declencheur.idQuestionnaire)?.scores;
         const comptes = comptesDuPorteurVise(porteur, declencheur.sousScore);
         if (comptes === null || comptes.manquants > 0) {
@@ -1071,7 +1150,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
         tousAtteints = false;
         break;
       }
-      conditions.push(condition);
+      conditions.push(condition.motif);
     }
     if (!tousAtteints) continue;
 
