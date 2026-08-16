@@ -3,6 +3,7 @@ import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { ContradictionFinding, SourceContradiction } from './contradictionFinding';
 import { CONTRADICTIONS_RULES_V1, type ContradictionRule } from './contradictionsV1';
 import {
+  type DeclencheurAtteint,
   derniereReponseParQuestionnaire,
   evaluerDeclencheur,
   type ReponseOrientation,
@@ -62,30 +63,46 @@ export type EntreeContradictions = {
 };
 
 /**
- * Les sources d'une règle, ou `null` si l'une d'elles ne peut pas être nommée.
+ * Les sources des déclencheurs atteints, ou `null` si l'une d'elles ne peut
+ * pas être nommée.
  *
  * FAIL-CLOSED SUR LA TRAÇABILITÉ. Une contradiction doit être explicable par les
  * données qui l'ont produite (`DC-34`, `DC-35`) : si une passation ne porte pas
  * son identifiant, le constat ne serait pas remontable jusqu'à elle et le
  * praticien ne pourrait pas vérifier ce qu'on lui affirme. On préfère ne rien
  * produire — c'est la même préférence que partout ailleurs dans cette chaîne.
+ *
+ * SOUS UN `ou`, LE REFUS PORTE SUR LA BRANCHE QUI A DÉCIDÉ, et il ne cherche
+ * pas de repli (relevé en revue le 2026-08-16). Si cette branche vient d'une
+ * passation sans identifiant, tout le constat tombe — alors qu'une autre
+ * branche, vraie et traçable, aurait pu le porter. Le choix est délibéré :
+ * l'évaluation a déjà tranché QUELLE branche est le motif, et produire le
+ * constat au nom d'une branche que le moteur n'a pas retenue ferait diverger le
+ * motif affiché de la source citée. Direction sûre, faux négatif assumé, et un
+ * banc le fige.
  */
-function sourcesDeLaRegle(
-  regle: ContradictionRule,
+function sourcesDesAtteints(
+  atteints: DeclencheurAtteint[],
   dernieres: Map<string, ReponseOrientation>,
 ): SourceContradiction[] | null {
   const sources: SourceContradiction[] = [];
-  for (const declencheur of regle.declencheurs) {
-    if (declencheur.type === 'drapeau') continue;
-    const reponse = dernieres.get(declencheur.idQuestionnaire);
-    if (!reponse?.idReponse) return null;
-    sources.push({
-      type: 'instrument',
-      idQuestionnaire: declencheur.idQuestionnaire,
-      ...(declencheur.sousScore ? { sousScore: declencheur.sousScore } : {}),
-      reponseId: reponse.idReponse,
-      dateReponse: reponse.dateReponse,
-    });
+  // Les instruments viennent des déclencheurs ATTEINTS, plus de la forme
+  // statique de la règle ([[D-060]] §4) : sous un `ou`, seule la branche qui a
+  // décidé est citée — citer les branches muettes ferait porter le constat par
+  // des passations qui n'ont rien décidé, et le praticien vérifierait la
+  // mauvaise donnée.
+  for (const atteint of atteints) {
+    for (const instrument of atteint.instruments) {
+      const reponse = dernieres.get(instrument.idQuestionnaire);
+      if (!reponse?.idReponse) return null;
+      sources.push({
+        type: 'instrument',
+        idQuestionnaire: instrument.idQuestionnaire,
+        ...(instrument.sousScore ? { sousScore: instrument.sousScore } : {}),
+        reponseId: reponse.idReponse,
+        dateReponse: reponse.dateReponse,
+      });
+    }
   }
   // Une règle dont TOUS les déclencheurs seraient des drapeaux d'anamnèse ne
   // produirait aucune source d'instrument, donc rien du tout. C'est voulu en
@@ -175,16 +192,24 @@ export function evaluerContradictions(entree: EntreeContradictions): Contradicti
     // mauvaise forme est pire que ne rien produire.
     if (regle.forme !== 'DISCORDANCE') continue;
 
-    // ET logique : un seul déclencheur non atteint éteint la règle. `every` sur
-    // une liste vide rendrait `true` — une règle sans déclencheur s'allumerait
-    // pour tout le monde, ce qui est le pire défaut possible ici.
+    // ET logique : un seul déclencheur non atteint éteint la règle. La liste
+    // vide est refusée avant — une règle sans déclencheur s'allumerait pour
+    // tout le monde, ce qui est le pire défaut possible ici. Les atteints sont
+    // COLLECTÉS, pas seulement comptés : ce sont eux qui nomment les sources.
     if (regle.declencheurs.length === 0) continue;
-    const tousAtteints = regle.declencheurs.every(
-      declencheur => evaluerDeclencheur(declencheur, dernieres, entree.drapeaux) !== null,
-    );
+    const atteints: DeclencheurAtteint[] = [];
+    let tousAtteints = true;
+    for (const declencheur of regle.declencheurs) {
+      const atteint = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
+      if (atteint === null) {
+        tousAtteints = false;
+        break;
+      }
+      atteints.push(atteint);
+    }
     if (!tousAtteints) continue;
 
-    const sources = sourcesDeLaRegle(regle, dernieres);
+    const sources = sourcesDesAtteints(atteints, dernieres);
     if (!sources) continue;
 
     constats.push({

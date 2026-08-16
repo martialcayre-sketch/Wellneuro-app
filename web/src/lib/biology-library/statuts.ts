@@ -264,7 +264,7 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
         if (atteint === null) {
           tousAtteints = false;
         } else {
-          atteints.push(atteint);
+          atteints.push(atteint.motif);
         }
       }
       declencheurRempli = tousAtteints;

@@ -6,7 +6,6 @@ import {
   tablePrioritesSignee,
 } from '@/lib/clinical/priorityRulesV1';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
-import type { OrientationDeclencheur } from '@/lib/clinical/orientationRulesV1';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
 import { buildClinicalReview } from './clinicalReview';
 import { buildClinicalSnapshot } from './clinicalSnapshot';
@@ -396,13 +395,12 @@ function construireCandidats(input: {
   });
 
   return classees.map((declenchee, index) => {
-    const instruments = new Set(
-      declenchee.regle.declencheurs
-        .filter((declencheur): declencheur is Exclude<OrientationDeclencheur, { type: 'drapeau' }> =>
-          declencheur.type !== 'drapeau')
-        .map(declencheur => declencheur.idQuestionnaire),
-    );
-    const responseIds = [...instruments]
+    // Les instruments viennent de l'ATTEINTE, plus de la forme statique de la
+    // règle ([[D-060]] §4) : `evaluerPriorites` les collecte déclencheur par
+    // déclencheur, et sous un `ou` seule la branche qui a décidé est citée.
+    // Re-dériver ici depuis `regle.declencheurs` ferait entrer dans
+    // `inputHash` des passations qui n'ont rien décidé.
+    const responseIds = declenchee.instruments
       .map(idQuestionnaire => input.dernieres.get(idQuestionnaire)?.responseId)
       .filter((responseId): responseId is string => typeof responseId === 'string');
     return {

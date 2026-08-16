@@ -18,8 +18,10 @@ import {
   reglesPrioritesValidees,
   tablePrioritesSignee,
   type MotifAbstention,
+  type PriorityRule,
 } from './priorityRulesV1';
 import { evaluerAbstention } from '@/lib/clinical-engine/chaineC1';
+import { feuillesDuDeclencheur } from './orientationRulesV1';
 import type { ReponseOrientation } from './orientationEngine';
 import { RIDEAU_T0 } from '@/lib/clinical-engine/preconditionsT0';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
@@ -154,7 +156,8 @@ describe('priorityRulesV1 — ce que les règles lisent existe vraiment', () => 
     expect(domaines.size).toBe(7);
     let cites = 0;
     for (const regle of PRIORITY_RULES_V1) {
-      for (const declencheur of regle.declencheurs) {
+      // Par FEUILLES : l'exigence vaut pour chaque branche d'un `ou` ([[D-060]] §5).
+      for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
         if (declencheur.type === 'drapeau') continue;
         expect(declencheur.idQuestionnaire).toBe(CANAL_PLAINTE);
         expect(declencheur.sousScore, `${regle.id} ne cite aucun domaine`).toBeDefined();
@@ -168,6 +171,23 @@ describe('priorityRulesV1 — ce que les règles lisent existe vraiment', () => 
     }
     expect(cites).toBeGreaterThanOrEqual(2);
   });
+
+  /**
+   * Les comparaisons qui ne citent pas la borne publiée — feuilles ET branches
+   * d'un `ou` ([[D-060]] §5). Fonction plutôt que boucle inline pour pouvoir
+   * l'éprouver sur une règle fabriquée : voir la contre-épreuve plus bas.
+   */
+  function bornesNonPubliees(regles: readonly PriorityRule[]): string[] {
+    const fautes: string[] = [];
+    for (const regle of regles) {
+      for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
+        if (declencheur.type !== 'comparaison') continue;
+        if (declencheur.operateur !== '>=') fautes.push(`${regle.id} : opérateur ${declencheur.operateur}`);
+        if (declencheur.valeur !== 7) fautes.push(`${regle.id} ne cite pas la borne publiée : ${declencheur.valeur}`);
+      }
+    }
+    return fautes;
+  }
 
   // AUCUN SEUIL NEUF N'ENTRE DANS LE DÉPÔT ([[D-054]], arbitrage 8). La valeur 7
   // n'est pas choisie ici : c'est la borne basse de la bande « Intensité
@@ -184,13 +204,29 @@ describe('priorityRulesV1 — ce que les règles lisent existe vraiment', () => 
     // ne visent PAS : sans ce second terme, un `>= 6` passerait le premier.
     expect(bandes.find(bande => bande.min <= 6 && bande.max >= 6)?.label).toBe('Intensité modérée');
 
-    for (const regle of PRIORITY_RULES_V1) {
-      for (const declencheur of regle.declencheurs) {
-        if (declencheur.type !== 'comparaison') continue;
-        expect(declencheur.operateur).toBe('>=');
-        expect(declencheur.valeur, `${regle.id} ne cite pas la borne publiée`).toBe(7);
-      }
-    }
+    expect(bornesNonPubliees(PRIORITY_RULES_V1)).toEqual([]);
+  });
+
+  // CONTRE-ÉPREUVE ([[D-060]] §5). Sans `flatMap(feuillesDuDeclencheur)`, un
+  // cut-off inventé sous une branche de `ou` entrerait en production sans faire
+  // rougir le CI — c'est-à-dire un seuil clinique sans provenance (`DC-19`),
+  // exactement ce que cette garde existe pour interdire.
+  it('la garde attrape un seuil inventé caché sous un `ou`', () => {
+    const fautive = {
+      ...PRIORITY_RULES_V1[0],
+      id: 'PRIO-FABRIQUEE',
+      declencheurs: [{
+        type: 'ou' as const,
+        declencheurs: [{
+          type: 'comparaison' as const,
+          idQuestionnaire: CANAL_PLAINTE,
+          sousScore: 'digestion',
+          operateur: '>=' as const,
+          valeur: 6,
+        }],
+      }],
+    };
+    expect(bornesNonPubliees([fautive])).not.toEqual([]);
   });
 });
 
@@ -246,6 +282,20 @@ describe('priorityRulesV1 — verrou fail-closed', () => {
     for (const declenchee of declenchees) {
       expect(declenchee.conditions.length).toBe(declenchee.regle.declencheurs.length);
       expect(declenchee.conditions[0]).toContain(CANAL_PLAINTE);
+    }
+  });
+
+  // LE CHAÎNAGE DE LA TRAÇABILITÉ ([[D-060]] §4), et ce qu'il tient vraiment :
+  // `construireCandidats` ne dérive plus les `responseId` de la forme de la
+  // règle, il lit ces `instruments`. Un champ resté vide y ferait donc une carte
+  // de décision SANS aucune passation citée — silencieusement, puisque le
+  // filtrage des `undefined` masquerait tout. Ce banc rougit dans ce cas.
+  // La table ne portant aucun `ou` à ce jour, c'est le chaînage qui est prouvé
+  // ici ; le choix de la branche l'est dans `orientationEngine.test.ts`.
+  it('les instruments à l’appui sont peuplés, dédupliqués, et cités une seule fois', () => {
+    simulerSignature();
+    for (const declenchee of evaluerPriorites(DOSSIER_QUI_DECLENCHE)) {
+      expect(declenchee.instruments, `${declenchee.regle.id} ne cite aucun instrument`).toEqual([CANAL_PLAINTE]);
     }
   });
 

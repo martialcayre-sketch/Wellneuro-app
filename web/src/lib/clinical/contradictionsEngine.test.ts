@@ -225,6 +225,86 @@ describe('moteur de contradictions — les quatre refus, éprouvés sur des règ
     expect(evaluer([], { regles: [{ ...base, declencheurs: [] }] })).toHaveLength(0);
   });
 
+  // TRAÇABILITÉ SOUS DISJONCTION ([[D-060]] §4) — le mode de panne que ce banc
+  // existe pour attraper : les sources se construisaient depuis la FORME de la
+  // règle, si bien qu'un `ou` aurait cité toutes ses branches, y compris celles
+  // qui n'ont rien décidé. Le praticien aurait alors vérifié la mauvaise
+  // passation. Elles se construisent maintenant depuis l'atteinte.
+  it('un `ou` ne cite que la passation de la branche atteinte', () => {
+    const regleOu = {
+      ...base,
+      declencheurs: [
+        declencheursCstr[0],
+        {
+          type: 'ou' as const,
+          declencheurs: [
+            // Branche fausse EN PREMIER, pour prouver que c'est bien l'atteinte
+            // qui décide et non l'ordre d'écriture.
+            { type: 'comparaison' as const, idQuestionnaire: 'Q_SOM_01', operateur: '>=' as const, valeur: 11 },
+            { type: 'comparaison' as const, idQuestionnaire: 'Q_STR_04', sousScore: 'S', operateur: '>=' as const, valeur: 5 },
+          ],
+        },
+      ],
+    };
+    const psqiComplet: ReponseOrientation = {
+      idQuestionnaire: 'Q_SOM_01',
+      dateReponse: '2026-08-10T09:15:00.000Z',
+      idReponse: 'rep-psqi-1',
+      scores: { total: 2, repondus: 19, items: 19 },
+    };
+    // Les comptes de l'axe visé sont publiés : sans eux, la branche ne
+    // compterait pas — c'est le fail-closed de [[D-060]] §2, et il vaut aussi
+    // pour la branche qu'on VEUT voir gagner.
+    const dassComplet: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_04',
+      dateReponse: '2026-08-10T09:30:00.000Z',
+      idReponse: 'rep-dass-1',
+      scores: {
+        subScores: [
+          sousScore('D', 2),
+          sousScore('A', 2),
+          sousScore('S', 5, { repondus: 7, items: 7 }),
+        ],
+      },
+    };
+    const [constat] = evaluer(
+      [modeDeVie(6), dassComplet, psqiComplet],
+      { regles: [regleOu] },
+    );
+    expect(constat).toBeDefined();
+    const citees = constat.sources
+      .filter((source): source is Extract<typeof source, { type: 'instrument' }> => source.type === 'instrument')
+      .map(source => source.reponseId);
+    expect(citees).toContain('rep-dass-1');
+    expect(citees).not.toContain('rep-psqi-1');
+  });
+
+  // FAUX NÉGATIF ASSUMÉ, FIGÉ ICI ([[D-060]], relevé en revue le 2026-08-16).
+  // La branche qui a décidé n'a pas d'identifiant de passation : le constat
+  // tombe entièrement, sans chercher de repli sur une autre branche vraie.
+  // Direction sûre — mais si quelqu'un décide un jour de rattraper ce cas, ce
+  // banc rougira et l'obligera à écrire pourquoi.
+  it('un `ou` dont la branche atteinte n’a pas d’identifiant éteint le constat', () => {
+    const regleOu = {
+      ...base,
+      declencheurs: [
+        declencheursCstr[0],
+        {
+          type: 'ou' as const,
+          declencheurs: [
+            { type: 'comparaison' as const, idQuestionnaire: 'Q_STR_04', sousScore: 'S', operateur: '>=' as const, valeur: 5 },
+          ],
+        },
+      ],
+    };
+    const dassSansId: ReponseOrientation = {
+      idQuestionnaire: 'Q_STR_04',
+      dateReponse: '2026-08-10T09:30:00.000Z',
+      scores: { subScores: [sousScore('S', 5, { repondus: 7, items: 7 })] },
+    };
+    expect(evaluer([modeDeVie(6), dassSansId], { regles: [regleOu] })).toHaveLength(0);
+  });
+
   // [[D-041]] — seule `DISCORDANCE` est peuplée par ce lot. Sans ce refus, une
   // règle déclarée `CONVERGENCE` sortirait étiquetée `DISCORDANCE`, sa
   // graduation perdue en route : produire la mauvaise forme est pire que ne

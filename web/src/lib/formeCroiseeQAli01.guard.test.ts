@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeScoreFromDef } from '@/lib/questions';
 import { Q_ALI_01_COURT_14, Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
-import { ORIENTATION_RULES_V1 } from '@/lib/clinical/orientationRulesV1';
+import { feuillesDuDeclencheur, ORIENTATION_RULES_V1, type OrientationRule } from '@/lib/clinical/orientationRulesV1';
 
 // LA GARDE SUR LAQUELLE [[D-051]] S'APPUIE, ENFIN ÉPROUVÉE.
 //
@@ -69,6 +69,25 @@ describe('Q_ALI_01 — une forme relue contre l’autre définition ne produit a
     expect(resultat.interpretation).toBeNull();
   });
 
+  // Par FEUILLES depuis [[D-060]] : un `ou` ne porte pas `idQuestionnaire`, et
+  // le test `'idQuestionnaire' in d` qui vivait ici l'aurait sauté en silence —
+  // une règle ciblant `Q_ALI_01` sous une branche serait sortie de cette garde,
+  // alors que le registre continue de la citer comme protection de `D-051`.
+  function ciblesAli01NonInterpretation(regles: readonly OrientationRule[]): string[] {
+    const fautes: string[] = [];
+    for (const regle of regles) {
+      if (regle.statut !== 'publiee') continue;
+      for (const declencheur of regle.declencheurs.flatMap(feuillesDuDeclencheur)) {
+        if (declencheur.type === 'drapeau' || declencheur.idQuestionnaire !== 'Q_ALI_01') continue;
+        const forme = 'zone' in declencheur ? declencheur.zone?.type : null;
+        if (forme !== 'interpretation') {
+          fautes.push(`${regle.id} déclenche sur ${forme ?? declencheur.type}, pas sur l'interprétation`);
+        }
+      }
+    }
+    return fautes;
+  }
+
   it('la règle publiée qui cible `Q_ALI_01` déclenche bien sur l’INTERPRÉTATION', () => {
     // Le motif de `D-051` ne tient que tant que c'est vrai. Une règle qui
     // déclencherait demain sur un total, un nombre de passations ou une date
@@ -76,18 +95,31 @@ describe('Q_ALI_01 — une forme relue contre l’autre définition ne produit a
     // la rend visible le jour où elle mordrait.
     const ciblantAli01 = ORIENTATION_RULES_V1.filter(
       regle => regle.statut === 'publiee'
-        && regle.declencheurs.some(d => 'idQuestionnaire' in d && d.idQuestionnaire === 'Q_ALI_01'),
+        && regle.declencheurs.flatMap(feuillesDuDeclencheur)
+          .some(d => d.type !== 'drapeau' && d.idQuestionnaire === 'Q_ALI_01'),
     );
     // S'il n'y en a plus aucune, ce banc ne garde plus rien : on le dit.
     expect(ciblantAli01.length).toBeGreaterThan(0);
-    for (const regle of ciblantAli01) {
-      for (const declencheur of regle.declencheurs) {
-        if (!('idQuestionnaire' in declencheur) || declencheur.idQuestionnaire !== 'Q_ALI_01') continue;
-        expect(
-          'zone' in declencheur && declencheur.zone?.type,
-          `${regle.id} déclenche sur autre chose que l'interprétation — la garde de D-051 ne le couvre plus`,
-        ).toBe('interpretation');
-      }
-    }
+    expect(ciblesAli01NonInterpretation(ORIENTATION_RULES_V1)).toEqual([]);
+  });
+
+  // CONTRE-ÉPREUVE ([[D-060]] §5). `R2-ALI-01` cible `Q_ALI_01` à la racine, si
+  // bien qu'un retour en arrière sur l'aplatissement laisserait le cas ci-dessus
+  // vert : la garde continuerait de trouver sa règle et de la juger conforme,
+  // pendant qu'une règle cachée sous un `ou` lui échapperait. Ce cas ferme
+  // l'écart en exerçant le corps réel de la garde sur la faute exacte.
+  it('la garde attrape un `Q_ALI_01` sur total caché sous un `ou`', () => {
+    const fautive: OrientationRule = {
+      ...ORIENTATION_RULES_V1[0],
+      id: 'R-ALI-FABRIQUEE',
+      statut: 'publiee',
+      declencheurs: [{
+        type: 'ou',
+        declencheurs: [
+          { type: 'comparaison', idQuestionnaire: 'Q_ALI_01', operateur: '>=', valeur: 40 },
+        ],
+      }],
+    };
+    expect(ciblesAli01NonInterpretation([fautive])).not.toEqual([]);
   });
 });
