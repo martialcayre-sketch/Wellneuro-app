@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-070 — Le drapeau `WN_CB_ENABLED` était déjà posé : quatre affirmations reviennent à l'état réel, et la table signée se découvre dormante
+
+- Date : 2026-08-17
+- Statut : accepté (constat praticien en session, panneau Vercel) et
+  implémenté.
+- Domaine : exploitation, drapeaux, documentation, état réel
+- Contexte : `D-069` §2, `FEATURE_FLAGS.md`, le fragment de changelog du même
+  jour et l'en-tête de `indicationsBiologieV1.ts` affirmaient tous que
+  `WN_CB_ENABLED` « reste éteint ». Le 2026-08-17, une tentative de création
+  de la variable en Production a été refusée par Vercel — *a variable with the
+  name `WN_CB_ENABLED` already exists for the target production* — et sa
+  valeur est `true`. Elle l'était donc avant le déploiement de `4b588d1e`
+  (créé à 09:16 UTC, en succès à 09:33), qui n'a pu que l'hériter.
+  L'affirmation était **fausse au moment où elle a été écrite** : elle a été
+  déduite de la documentation, jamais lue dans le panneau.
+
+**1. Les quatre sites reviennent à l'état réel.** Le registre ne s'efface pas
+(append-only) : la phrase de `D-069` §2 est conservée telle quelle et annotée
+d'un renvoi ici. Les trois autres sont corrigés sur place.
+
+**2. Ce que le drapeau ouvre est nommé pour ce qu'il est** : la surface
+d'**arbitrage** biologique — `CbFeatureProvider` → `ClinicalRuntimeSection`,
+`POST /api/praticien/biologie/arbitrage`, et les cartes « biologie arbitrée
+sans révision » du fil. Pas les indications. La production compte **zéro
+arbitrage** (lecture du 2026-08-17) : rien n'a jamais transité par cette
+surface, drapeau posé ou non.
+
+**3. La table signée est DORMANTE.** `deriverStatutsBiologie` n'a aucun
+appelant hors bancs : les quinze règles de `D-069` et le catalogue niveau 1 de
+`D-068` sont en place, signés, en base — et n'atteignent aucun écran. C'est un
+état cohérent, pas une régression : le lot a livré la matière, pas son
+branchement. Le premier appelant devra honorer le contrat M-B (table canonique
+passée VERBATIM, ni filtre ni tri ni reconstruction).
+
+**4. Aucun geste d'exploitation n'est posé ni retiré ici** : le drapeau reste
+tel qu'il est. Cette décision constate et corrige, elle n'allume ni n'éteint.
+
+- Hors portée : la date de pose du drapeau, qu'aucun document n'enregistre —
+  elle reste inconnue et n'est pas inventée. Aucun contenu haché n'est touché ;
+  les `shaPerimetre` des cinq tables sont intacts.
+- La leçon, de même classe que `D-064` : **un état de production ne se déduit
+  pas de la documentation**. Les deux fois, une affirmation d'état a été
+  recopiée d'un document au lieu d'être lue à la source — panneau Vercel ici,
+  base là-bas.
+
 ### D-069 — Les quinze règles d'indication biologique entrent dans la table signée, et la signature biologie devient réelle
 
 - Date : 2026-08-17
@@ -45,6 +90,8 @@ première rédaction le laissait en prose). `shaPerimetre` en littéral figé
 recopié de `INDICATIONS_BIOLOGIE_SHA256` au moment de la relecture. Le verrou
 à cinq termes est OUVERT côté signature ; `WN_CB_ENABLED` reste ÉTEINT — le
 drapeau d'exploitation est un geste praticien distinct, signer n'allume pas.
+*(Phrase conservée pour l'histoire, mais FAUSSE : `D-070` établit que le
+drapeau était déjà posé à `true` en production quand elle a été écrite.)*
 
 **Limites nommées par la revue, portées sur les règles elles-mêmes** : la
 branche IBS-SSS est inerte pour tout patient répondant « non » à une question

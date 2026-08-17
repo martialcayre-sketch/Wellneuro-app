@@ -18,8 +18,10 @@
   `0389-004` : le seul chiffre paramétrique de la table est dans le périmètre
   signé) (égalité exacte deux sens, tenue par banc),
   `shaPerimetre` en littéral figé. Le verrou à cinq termes est ouvert côté
-  signature — `WN_CB_ENABLED` reste éteint : signer n'allume pas, le drapeau
-  d'exploitation est un geste praticien distinct.
+  signature. `WN_CB_ENABLED`, lui, était **déjà posé** à `true` en production
+  — constaté le 2026-08-17 (`D-070`) : les deux termes du ET sont vrais. La
+  table signée n'atteint pour autant aucun écran, `deriverStatutsBiologie`
+  n'ayant aucun appelant.
 
 - **Les deux réserves de la revue `D-060` sont fermées** : banc d'inertie
   RV-1 — chaque instrument visé, moteur réel saturé, publie ses comptes de
