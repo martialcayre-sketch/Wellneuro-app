@@ -57,6 +57,7 @@ model Patient {
   protocolCheckins           ProtocolCheckin[]
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
   arbitragesBiologiques      ArbitrageBiologique[]
+  panelsBiologieDocumentes   PanelBiologieDocumente[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
@@ -1719,7 +1720,8 @@ model BiologyPanel {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  items BiologyPanelItem[]
+  items      BiologyPanelItem[]
+  documentes PanelBiologieDocumente[]
 
   @@map("biology_panels")
 }
@@ -1843,4 +1845,56 @@ model ArbitrageBiologique {
   @@unique([protocolDraftId, intentionId], map: "cb_arbitrage_intention_unique")
   @@index([idPatient, arbitreLe], map: "cb_arbitrage_patient_idx")
   @@map("arbitrages_biologiques")
+}
+
+// LOT-06 — panel biologique DOCUMENTÉ HORS OUTIL, déclaré par le praticien.
+//
+// Le moteur de statuts distingue « jamais exploré » de « déjà documenté »
+// (`deja_documente`, `a_repeter` — `statuts.ts`). Sans cette table, ces deux
+// statuts sont INATTEIGNABLES et l'outil repropose un bilan que le patient
+// vient de faire faire. C'est ce trou-là que la table ferme.
+//
+// SANS VALEURS (verrou HDS, comme `arbitrages_biologiques`) : l'outil connaît
+// l'EXISTENCE et la DATE d'un bilan revenu sur papier, jamais un résultat.
+// Aucune colonne de valeur ici — le contrat SQL négatif
+// `cb_panels_documentes_v1_negatif.sql` le vérifie.
+//
+// UNE déclaration par panel et par patient (`@@unique`) : le moteur ne lit
+// qu'une date par panel (`documentes.get(panelCode)`), et re-déclarer met la
+// date à jour au lieu d'empiler une histoire que rien ne consomme.
+//
+// Table fille de `patients`, donc effacée par la transaction IDP2 DÈS CETTE
+// PR : le banc de complétude d'`effacement.test.ts` se dérive du SCHÉMA, pas
+// du code, et rougit à la seconde où le modèle apparaît. Le reporter à la PR
+// de code n'est pas une option — `arbitrages_biologiques` l'a tenté (#680) et
+// a dû revenir sur ses pas. Le coût est nommé : entre le déploiement Vercel
+// de cette PR et l'approbation de `release-db`, un effacement de dossier
+// échouerait sur une table absente. Il échoue FERMÉ (transaction annulée,
+// rien de supprimé à moitié) et redevient possible après la release.
+model PanelBiologieDocumente {
+  id          String   @id @default(cuid())
+  idPatient   String   @map("id_patient")
+  panelCode   String   @map("panel_code")
+  // Date du bilan hors outil. Le moteur en calcule un ÂGE en continu (pas un
+  // jour civil) : la troncature à dix caractères de `statuts.ts` ne sert qu'au
+  // motif affiché. Sans fuseau, une date saisie « 2026-08-01 » et sérialisée
+  // en UTC peut basculer d'un jour — borné, un délai de répétition se comptant
+  // en mois, mais à savoir avant d'écrire la route.
+  documenteLe DateTime @map("documente_le")
+  declarePar  String   @map("declare_par") // email praticien, posé côté serveur (CHECK migration : non vide)
+  // `@updatedAt` : une re-déclaration REMET ce champ à l'instant courant sans
+  // que l'appelant ait à y penser. `declarePar`, lui, n'a pas d'équivalent
+  // automatique — le bloc `update` de l'upsert DOIT le réécrire, sinon la
+  // ligne attribuera au premier déclarant une date posée par un second. Sur
+  // une pièce de dossier relisible, ce serait une trace fausse.
+  declareLe   DateTime @default(now()) @updatedAt @map("declare_le")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient Patient      @relation(fields: [idPatient], references: [idPatient])
+  panel   BiologyPanel @relation(fields: [panelCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  // L'unicité commence par `idPatient` : elle sert aussi d'index pour la
+  // lecture du dossier, qui filtre sur ce seul terme. Pas de second index.
+  @@unique([idPatient, panelCode], map: "cb_panel_documente_unique")
+  @@map("panels_biologie_documentes")
 }

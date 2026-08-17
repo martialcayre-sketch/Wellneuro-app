@@ -24,7 +24,8 @@ const { prisma, appels } = vi.hoisted(() => {
   };
   for (const nom of [
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
-    'arbitrageBiologique', 'protocolDraft', 'assessmentEpisode', 'syntheseIA', 'questionnaireReponse',
+    'arbitrageBiologique', 'panelBiologieDocumente',
+    'protocolDraft', 'assessmentEpisode', 'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
     'trustRightsRequest', 'filCardRejection', 'relectureNote', 'portailMagicLink',
@@ -131,6 +132,18 @@ describe('effacerDossier', () => {
   it('un dossier introuvable échoue, et n’écrit aucun résidu', async () => {
     (prisma.patient.findUnique as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
     await expect(effacerDossier('PAT_INEXISTANT')).rejects.toThrow(/introuvable/i);
+    expect(prisma.dossierEfface.create).not.toHaveBeenCalled();
+  });
+
+  // Le seul coût nommé de la migration `panels_biologie_documentes` (D-071
+  // §3) : entre le déploiement Vercel et l'approbation `release-db`, la table
+  // n'existe pas encore et ce `deleteMany` lève (42P01 → P2021). La promesse
+  // écrite au schéma est que l'échec est FERMÉ. Ce banc la vérifie au lieu de
+  // la croire — sans lui, « rien de supprimé à moitié » reste une affirmation.
+  it('une table absente fait échouer l’effacement en entier, sans résidu', async () => {
+    (prisma.panelBiologieDocumente.deleteMany as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('The table `public.panels_biologie_documentes` does not exist'));
+    await expect(effacerDossier('PAT_SEED_03')).rejects.toThrow(/does not exist/i);
     expect(prisma.dossierEfface.create).not.toHaveBeenCalled();
   });
 });
