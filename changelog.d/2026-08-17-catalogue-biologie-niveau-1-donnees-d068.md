@@ -3,7 +3,7 @@
 - **Le catalogue biologie niveau 1 entre en base** (`D-068`, migration de
   données) : 47 analytes, 15 panels et leurs compositions, 2 plages
   fonctionnelles sourcées (ferritine 50–80 ng/mL, `WN-CL-0044-003` verbatim ;
-  vitamine D cible ≥ 45 ng/mL, `WN-CL-0239-004`). **Composition seule, zéro
+  vitamine D cible ≥ 45 ng/mL, `WN-CL-0154-054`). **Composition seule, zéro
   indication en base** : les conditions d'indication vivent dans la table
   signée du code (`D-059`), jamais en colonnes de catalogue. Aucune valeur
   biologique patient — le verrou HDS est hors du périmètre de cette migration.
