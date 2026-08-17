@@ -87,10 +87,11 @@ export type RegleIndicationPanel = {
 /**
  * LES QUINZE RÈGLES DU CATALOGUE NIVEAU 1 ([[D-069]]) — transcrites de la
  * proposition validée du 2026-08-15 (v5, zones tranchées), claims relus en
- * production (29/29 VALIDE le 2026-08-16). Chaque zone cite les bandes que
- * l'instrument PUBLIE, relues dans sa grille le 2026-08-17 — pas la sténo du
- * document (le « warning (5-21) » du §F.2 est une étendue de score, pas une
- * bande ; le §B fait foi).
+ * production (les 49 de la proposition, 49/49 VALIDE le 2026-08-16 — dont les
+ * 29 du périmètre signé, revérifiés 29/29 le 2026-08-17). Chaque zone cite les
+ * bandes que l'instrument PUBLIE, relues dans sa grille le 2026-08-17 — pas la
+ * sténo du document (le « warning (5-21) » du §F.2 est une étendue de score,
+ * pas une bande ; le §B fait foi).
  *
  * SIX RÈGLES PORTENT UNE DISJONCTION ([[D-060]]) : atteinte dès qu'UNE branche
  * complète l'est, traçabilité limitée à cette branche, un recueil incomplet

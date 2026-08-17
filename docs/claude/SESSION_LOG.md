@@ -3950,3 +3950,21 @@ perdu sous `ou` (PSS-10/TFD) vs conservé en feuille (PSQI).
 départ, réserve consignée pour 028/029). WN_CB_ENABLED reste éteint.
 Prochaine action : PR empilée sur #700, CI. Restent deux gestes praticien :
 release-db (#700) et le drapeau.
+
+## [2026-08-17] — D-068 vérifié en production après release-db
+
+`release-db` approuvé et passé (run 32010232258 sur le merge de #700) :
+migration `20260817090000` appliquée. Les sept lectures promises par la PR
+sont conformes — 47 analytes `saisie_praticien`, 15 panels, 78 items, zéro
+orphelin, `BIO_INSULINEMIE` seule sous validation médicale, intersection
+analytes∩ratios vide, et les deux plages sourcées : ferritine 50-80 sur
+`WN-CL-0044-003`, vitamine D 45-`NULL` sur `WN-CL-0154-054`, v1.0 actives. La
+barrière `D-003` n'a donc pas mordu. Le `NOTICE` final n'est pas au log :
+`prisma migrate deploy` n'imprime pas les `RAISE NOTICE` — la lecture directe
+des deux lignes le remplace, et vaut mieux que lui.
+
+Corrigé sur prescription du registre : la revue Copilot avait remplacé « 49/49
+VALIDE » par « 29/29 » dans l'en-tête des règles — deux ensembles distincts,
+et le second contredisait `D-069` (49 claims relus). Les 29 du périmètre signé
+sont revérifiés VALIDE/actifs/v1.0 ce jour ; l'en-tête porte les deux nombres.
+Prochaine action : merge de #701, puis le drapeau `WN_CB_ENABLED`.
