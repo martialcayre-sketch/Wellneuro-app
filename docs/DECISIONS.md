@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-071 — Brancher la proposition de bilan : un drapeau neuf éteint, et la table qui rend « déjà documenté » atteignable
+
+- Date : 2026-08-17
+- Statut : accepté (arbitrages praticien en session). §2 et §3 sont **portés
+  par la PR de migration, en attente de relecture puis de `release-db`** — ce
+  registre est append-only, il ne déclare pas implémenté ce qui n'est pas
+  encore relu ni appliqué (`D-070` : une affirmation déduite de la
+  documentation avait déjà été fausse). §1 et §4 portent la PR de branchement,
+  à venir.
+- Domaine : clinique, biologie, schéma, drapeaux
+
+- Contexte : `D-070` a établi que `deriverStatutsBiologie` n'a aucun appelant
+  hors bancs. Le catalogue (`D-068`) et les quinze règles signées (`D-069`)
+  sont en base et n'atteignent aucun écran. Ce lot pose le premier appelant.
+
+**1. Le branchement part derrière un drapeau NEUF et ÉTEINT**
+(`WN_CB_PROPOSITION`), ET-é avec `isCbEnabled()` au patron exact de
+`isCbResultsEnabled`. Motif : `WN_CB_ENABLED` vaut **déjà `true`** en
+production (`D-070`) — s'y adosser rendrait la proposition visible sur tous
+les dossiers du cabinet dès le déploiement, sans geste d'exploitation, ce que
+`D-070` vient précisément de constater dans l'autre sens. Écarté :
+`WN_CB_RESULTS_ENABLED`, qui est le gate dur HDS — adosser une surface
+documentaire au verrou de stockage des résultats les ouvrirait ensemble le
+jour venu.
+
+**2. La table des panels documentés hors outil s'ouvre**
+(`panels_biologie_documentes`). Sans elle, `deja_documente` et `a_repeter`
+sont **inatteignables** : le moteur reproposerait un bilan que le patient
+vient de faire faire, sans jamais signaler qu'il ignore la question. L'option
+« livrer sans, en disant la limite à l'écran » a été écartée au profit de la
+table. Trois termes de la décision :
+
+- **une déclaration par (patient, panel)**, unicité SQL — le moteur ne lit
+  qu'une date par panel ; empiler une histoire que rien ne consomme rendrait
+  le statut dépendant de l'ordre de lecture ;
+- **aucune valeur biologique** (verrou HDS) : l'outil connaît l'existence et
+  la date d'un bilan revenu sur papier, jamais un résultat. Contrat SQL
+  négatif dédié, tué par mutation avant d'être retenu ;
+- **pas de CHECK « date non future »** : Postgres refuse `now()` dans un CHECK
+  (fonction non immutable). La borne se garde côté route, à la déclaration —
+  c'est une dette nommée tant que la route n'existe pas ;
+- **deny-all RLS** posé par la migration (posture `D-005`) : la table porte un
+  lien nominatif — quel dossier a fait explorer quel panel, quand, déclaré par
+  qui — et une table neuve de `public` rejoint sinon le périmètre Data API.
+
+**2 bis. Cette PR rend atteignables deux replis fail-open du moteur, et c'est
+une dette nommée.** `statuts.ts` conclut `deja_documente` — donc RETIRE le
+panel des propositions — quand la date est illisible (`NaN`) comme quand elle
+est dans le futur. Une donnée aberrante y produit la conclusion rassurante, ce
+que `DC-24` et `DC-25` refusent. Ces deux branches étaient mortes tant
+qu'aucune source n'alimentait `documentes` ; ouvrir la table les ouvre. Elles
+ne sont couvertes par aucun banc et doivent l'être **avant le premier
+appelant** : repli = traiter comme NON documenté, avec motif.
+
+**3. La ligne d'effacement IDP2 part AVEC le schéma, pas avec le code.** Le
+banc de complétude d'`effacement.test.ts` se dérive du **schéma**, pas des
+appelants : il rougit à la seconde où un modèle portant `id_patient`
+apparaît. `arbitrages_biologiques` a tenté le report (#680, « migration
+seule ») et a dû ajouter un second commit. Le coût est nommé plutôt que
+découvert : entre le déploiement Vercel de cette PR et l'approbation de
+`release-db`, un effacement de dossier échouerait sur une table absente — il
+échoue **fermé** (transaction annulée, rien de supprimé à moitié) et redevient
+possible après la release.
+
+**4. Le premier appelant honorera le contrat M-B** : `INDICATIONS_BIOLOGIE_V1`
+et `INDICATIONS_BIOLOGIE_METADATA` passés **verbatim**, sans `filter`, `sort`,
+`map` ni aller-retour JSON — le verrou hache les règles réellement évaluées,
+et la table n'étant ni `readonly` ni gelée, un `sort()` sans copie
+empoisonnerait l'export pour tout le processus. Corollaire : l'évaluation
+reste **serveur** (le moteur importe `createHash`), seul le résultat traverse
+HTTP.
+
+Écarté : consigner le courrier médecin dans la foulée — `CorrespondanceMedecin`
+n'a aucune colonne d'ancrage, et consigner une pièce clinique sans sa
+provenance contredit `DC-34` ; l'y ajouter est une autre migration. Écarté
+aussi : passer au moteur une carte de remboursements `non_evalue` — les tables
+NABM sont vides et le moteur pose déjà ce défaut, qui est l'aveu d'ignorance
+juste (`DC-24`).
+
 ### D-070 — Le drapeau `WN_CB_ENABLED` était déjà posé : quatre affirmations reviennent à l'état réel, et la table signée se découvre dormante
 
 - Date : 2026-08-17

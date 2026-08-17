@@ -76,6 +76,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.arbitragesBiologiques = (
       await tx.arbitrageBiologique.deleteMany({ where: par })
     ).count;
+    // Panels documentés hors outil (LOT-06) : FK RESTRICT vers patients ET
+    // biology_panels — la déclaration est une pièce du dossier, elle part avec
+    // lui. Le catalogue, lui, n'est pas touché : c'est du référentiel.
+    supprimees.panelsBiologieDocumentes = (
+      await tx.panelBiologieDocumente.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDrafts = (await tx.protocolDraft.deleteMany({ where: par })).count;
     supprimees.assessmentEpisodes = (await tx.assessmentEpisode.deleteMany({ where: par })).count;
 

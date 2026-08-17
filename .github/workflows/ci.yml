@@ -674,6 +674,23 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_arbitrage_biologique_v1_negatif.sql
 
+      # Panels documentés hors outil (LOT-06, D-071). Contrat à sept termes, et
+      # chacun a été TUÉ PAR MUTATION avant d'être retenu : une déclaration
+      # valide doit être ACCEPTÉE (sans ce cas positif, un CHECK devenu trop
+      # serré passerait vert et la route casserait en production) ; un doublon
+      # (patient, panel) doit lever 23505 — l'unicité RÉELLE, pas un index qui
+      # porte le bon nom, sans quoi le statut d'un panel dépendrait de l'ordre
+      # de lecture ; les deux CHECK sur l'auteur doivent mordre ; la table doit
+      # porter EXACTEMENT sept colonnes (liste blanche : un motif ne verrait
+      # pas passer un `commentaire` ou un `payload`, chemins les moins coûteux
+      # pour ranger un résultat d'analyse) ; les deux clés étrangères doivent
+      # être en ON DELETE RESTRICT, invisible du drift check ; la RLS deny-all
+      # doit être active et sans policy. Fixtures posées et transaction annulée.
+      - name: CB panels documentés negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_panels_documentes_v1_negatif.sql
+
       # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
       # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
       # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la

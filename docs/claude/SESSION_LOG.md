@@ -3988,3 +3988,24 @@ la phrase « signer n'allume pas » masquait exactement cela.
 l'enregistre) ; poser ou retirer un geste d'exploitation.
 Prochaine action : PR de correction. Ouvert : brancher le premier appelant de
 `deriverStatutsBiologie`, au contrat M-B (table VERBATIM).
+
+## [2026-08-17] — D-071 : la table des panels documentés (migration seule)
+
+Cadrage du branchement de `deriverStatutsBiologie` : le champ `documentes` du
+moteur n'a **aucune source**, donc `deja_documente` et `a_repeter` sont
+inatteignables — l'outil repropose un bilan récent sans dire qu'il l'ignore.
+Le praticien a choisi d'ouvrir la table plutôt que d'afficher la limite, et un
+drapeau NEUF éteint (`WN_CB_ENABLED` valant déjà `true`, s'y adosser exposerait
+tout au déploiement).
+
+Deux faits ont corrigé le plan. T3 : le banc de complétude d'`effacement.ts` se
+dérive du **schéma**, pas des appelants — la ligne d'effacement ne peut pas
+attendre la PR de code (#680 avait déjà dû revenir sur ses pas). Revue
+`wn-reviewer` NO-GO : RLS deny-all absente, et le contrat comptait un index
+*par son nom* — recréé non unique, il passait vert. Contrat réécrit à sept
+termes, tué par neuf mutations.
+
+Écarté : consigner le courrier (sans ancrage de provenance, contraire à DC-34).
+Prochaine action : PR-1, puis `release-db` approuvée, puis le branchement.
+Ouvert : deux replis fail-open du moteur (date illisible, date future) que
+cette table rend atteignables, couverts par aucun banc.
