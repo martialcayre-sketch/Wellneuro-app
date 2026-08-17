@@ -4,6 +4,87 @@
 
 ## Décisions actives
 
+### D-068 — Le catalogue biologie niveau 1 entre en base : 47 analytes, 15 panels, 2 plages sourcées
+
+- Date : 2026-08-17
+- Statut : accepté (proposition du 2026-08-15 v5 validée par le praticien ;
+  arbitrages restés ouverts tranchés en session — F.1 répétition sur les
+  panels socle par choix explicite, blocs conservés tels quels, MADRS en
+  comparaison, panel fatigue entier, F.3/F.4/F.5 sur l'option portée par le
+  document) et implémenté en migration de données.
+- Domaine : catalogue biologie, migration de données, schéma (une colonne)
+- Contexte : `D-059` §2 exigeait une proposition validée ligne à ligne avant
+  toute migration. La proposition v5 existe, ses 49 claims ont été relus en
+  production (tous `VALIDE`, actifs, non superseded — 2026-08-16), et les
+  textes des claims d'arbitrage ont été relus le 2026-08-17 (ferritine
+  50-80 ng/mL verbatim ; vitamine D cible 45 sur `0239-004`, concordant
+  `0154-054`).
+- Décision :
+
+**1. Composition SEULE.** 47 analytes (§A), 15 panels (§B/§C/§D — ceux que les
+règles de PR-3 référencent), items de composition. Aucune indication en base :
+les conditions vivent dans la table signée `indicationsBiologieV1.ts` (`D-059`).
+Les panels « seconde intention » ne sont pas transcrits (compositions citant
+des analytes hors §A). `source_provenance = 'saisie_praticien'`.
+
+**2. Écarts nommés, jamais comblés.** L'apoprotéine (`0178-054`) et « les IgA
+sécrétoires » (`0178-055` — le claim ne dit pas le site de prélèvement,
+salivaire et fécales existant toutes deux) n'ont pas de code §A : lignes
+omises. Le « < 10 ng/mL » de `0239-010` est un seuil de déficit profond avec
+conduite associée, pas une borne de plage cible : non transcrit. **La plage
+vitamine D n'a pas de plafond, et c'est un écart de corpus** : aucun claim ne
+borne le haut (`0239-005`, 60 ng/mL, se déclare non consensuel — non
+prescriptif en base) ; la ligne cite `WN-CL-0154-054`, le claim qui FONDE la
+forme « > 45 » (revue, BL-1), et dit « zone souhaitée », jamais « rien n'est
+trop haut ». Les quatre entrées « rapport/indice » restent des ANALYTES (leurs
+opérandes ne sont pas tous au catalogue — les décomposer serait inventer) ;
+leurs codes occupent l'espace `BIO_RATIO_*` que la table des ratios réserve —
+l'intersection des deux espaces est désormais interdite par contrat
+(`cb_catalogue_niveau_1_donnees.sql`, finding MA-2). Trois résolutions
+générique → spécifique sont HÉRITÉES de la proposition validée (MI-7) :
+« fer » (`0334-005`) → fer sérique, « magnésium » (`0388-008`) →
+érythrocytaire, « acides gras » (`0282-018`) → érythrocytaires. Enfin le
+panel fatigue porte 14 analytes, fidèles à l'énumération de `0361-009` — la
+garde §B.7 de la proposition écrit « 13 », décompte faux d'une unité dans le
+document validé (MI-6, signalé au praticien).
+
+**3. La barrière `D-003` s'exécute À L'INSERTION.** Les deux plages
+fonctionnelles sont des `INSERT … WHERE EXISTS (claim VALIDE et actif)` : en
+CI (corpus vide) zéro ligne et le contrat reste vert par vacuité ; en
+production les claims sont vérifiés présents (`v1.0`, relus le 2026-08-17).
+Une plage qui ne s'insérerait pas est un écart à lire en vérification
+post-release, jamais un oubli silencieux.
+
+**4. La colonne `validation_medicale_requise`** (schéma + défaut `false`)
+porte l'arbitrage F.6 : l'insulinémie seule à `true` — règle de sécurité
+PRODUIT, posée explicitement, aucun claim ne la fonde et c'est dit. Le
+vocabulaire d'unités est étendu de `µg/mL` (BIO_LBP), par la voie additive que
+la migration d'origine prévoyait.
+
+**5. Choix d'exploitation écrits (revue du 2026-08-17).** `statut_fiche`
+reste `'importee'` : la vérification PAR FICHE (`verifiee` + signataire +
+date) est un geste praticien ultérieur, distinct de la validation du catalogue
+que cette décision porte — un lecteur filtrant `verifiee` voit un catalogue
+vide, et c'est exact. Le pointeur `biology_catalog_versions_courantes` reste
+VIDE pour `saisie_praticien` : ce mécanisme d'idempotence est construit pour
+les imports versionnés d'une source amont (snapshot NABM) — un catalogue saisi
+n'a pas de snapshot ; l'ancrage de version est cette décision et le contrat de
+données (47/15/78/2). La barrière d'insertion reprend le prédicat EXACT du
+contrat CI (`VALIDE` + `active`, sans `superseded_at` — lacune héritée du
+contrat, consignée, MI-8). Les deux panels non indiqués PORTENT leur motif
+(colonne `objectif`, verbatim `0242-007`/`0042-007`) : si PR-3 glisse, la
+production ne montre pas deux coquilles vides (MA-4).
+
+- Conséquences : `release-db` après merge (approbation humaine), vérification
+  de la base de production en lecture MCP ensuite (47 analytes, 15 panels,
+  78 items, 2 plages, insulinémie seule marquée — les sept lectures du bloc
+  « risques » de la PR). PR-3 (règles + signature) peut référencer les
+  `panelCode`.
+- Écarté : transcrire les panels seconde intention avec des compositions
+  amputées (misrepresentation des claims) ; poser les plages sans condition
+  d'existence du claim (le CI aurait exigé une liste d'exceptions ou un corpus
+  fixture) ; décomposer les ratios en opérandes absents du §A.
+
 ### D-067 — Les quatre tables cliniques passent au verrou à cinq termes, et les signatures dues sont reposées
 
 - Date : 2026-08-16

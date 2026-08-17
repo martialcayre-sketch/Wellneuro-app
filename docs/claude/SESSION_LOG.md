@@ -3909,3 +3909,24 @@ restaurant `shaPerimetre`, commentaire périmé « re-signature requise » recal
 n'a pas eu lieu). Assumé : fenêtre 409 `chaine_c1_divergente` à chaud
 (validatedAt change), silencieuse comme les deux fois précédentes.
 Prochaine action : PR, CI ; puis PR-5 (dettes M-B, L-A, L-C/L-D) empilée.
+
+## [2026-08-17] — D-068 : le catalogue biologie niveau 1 entre en base
+
+Migration de données : 47 analytes, 15 panels, 78 items, 2 plages sourcées,
+colonne `validation_medicale_requise` (insulinémie seule), `µg/mL` aux trois
+vocabulaires. Transcription vérifiée exacte par la revue (13/13 compositions).
+Barrière `D-003` exécutée à l'insertion (`WHERE EXISTS` claim VALIDE) : CI
+vert par vacuité, production auto-gardée, compte rapporté au log release-db.
+
+`wn-reviewer` : deux NO-GO successifs, tous soldés. Le second m'a pris en
+défaut : j'ai affirmé « nouveau contrat joué » sans vérifier que le harnais
+tire sa liste de `ci.yml` — le contrat n'avait jamais tourné, et sa regex ne
+pouvait pas passer (`IN` normalisé en `= ANY (ARRAY[...])`). Corrigé, preuve
+demandée obtenue : 19 → 20 contrats.
+
+Tranché : claim porteur de la forme vitamine D = `0154-054` (« > 45 ») ;
+plafond manquant = écart de corpus NOMMÉ ; panels non indiqués portent leur
+motif verbatim en `objectif`. Écarté : renommer les codes `BIO_RATIO_*`
+(fidélité au document validé — contrat d'intersection à la place).
+Prochaine action : PR, CI, release-db (approbation praticien), vérification
+post-release à sept lectures, puis PR-3 (règles + signature biologie).

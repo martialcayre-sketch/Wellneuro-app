@@ -1501,6 +1501,11 @@ model BiologyAnalyte {
   incertitudes        String?   @map("incertitudes")
   verifiePar          String?   @map("verifie_par")
   verifieLe           DateTime? @map("verifie_le")
+  /// Interprétation sous validation médicale obligatoire (`D-068` §4,
+  /// arbitrage F.6 du catalogue niveau 1) : règle de sécurité PRODUIT, posée
+  /// explicitement — aucun claim ne la fonde, et c'est dit. Seule
+  /// l'insulinémie la porte à la livraison.
+  validationMedicaleRequise Boolean @default(false) @map("validation_medicale_requise")
   actif               Boolean   @default(true) @map("actif")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
