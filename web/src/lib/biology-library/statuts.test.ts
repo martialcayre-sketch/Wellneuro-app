@@ -302,8 +302,9 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
   // `INDICATIONS_BIOLOGIE_SHA256` pour la table canonique. Il n'était garanti
   // que par la lecture de deux lignes dans deux fichiers ; si l'un des deux
   // côtés gagne une canonicalisation que l'autre n'a pas, ce cas rougit. La
-  // table canonique étant vide, un verrou FRANCHI se reconnaît au motif : le
-  // refus vient des règles, plus de la signature.
+  // table canonique porte quinze règles depuis [[D-069]] : un verrou FRANCHI
+  // se reconnaît désormais à un résultat OK — la signature réelle passée telle
+  // quelle avec la table telle quelle dérive une proposition.
   it('la table canonique retombe sur INDICATIONS_BIOLOGIE_SHA256 — concordance de sérialisation', () => {
     expect(sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1))).toBe(INDICATIONS_BIOLOGIE_SHA256);
     const resultat = deriverStatutsBiologie(entree({
@@ -315,11 +316,7 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
         shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
       },
     }));
-    expect(resultat.ok).toBe(false);
-    if (!resultat.ok) {
-      expect(resultat.motif).toContain('Aucune règle');
-      expect(resultat.motif).not.toContain('signée');
-    }
+    expect(resultat.ok).toBe(true);
   });
 
   it('drapeaux absents : un déclencheur drapeau n’est jamais atteint', () => {
@@ -346,34 +343,27 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
 });
 
 describe('la table réelle livrée (indicationsBiologieV1)', () => {
-  // SIGNÉE VIDE le 2026-08-15 ([[D-061]]) — passage en force assumé. La table
-  // ne porte aucune règle : le moteur ne propose donc toujours rien, mais pour
-  // une raison qui a CHANGÉ. Ce n'est plus le verrou de signature qui ferme,
-  // c'est l'absence de règle exploitable. La distinction est le cœur de la
-  // dette ouverte : la prochaine règle ajoutée entrera sous signature acquise.
-  it('signature incomplète : le verrou ferme, et le motif le dit', () => {
-    expect(INDICATIONS_BIOLOGIE_V1).toEqual([]);
+  // [Histoire : SIGNÉE VIDE le 2026-08-15 ([[D-061]], passage en force), verrou
+  // fermé par [[D-063]] faute de date/claims/sha.] SIGNÉE RÉELLEMENT le
+  // 2026-08-17 ([[D-069]]) sur les quinze règles transcrites : la sentinelle
+  // est INVERSÉE, jamais supprimée — une dé-signature, une date malformée, un
+  // sha qui ne concorde plus, ou une règle retouchée sans re-signature
+  // rougissent ici.
+  it('la table est peuplée et signée aux cinq termes — le moteur dérive', () => {
+    expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toEqual([]);
-    const resultat = deriverStatutsBiologie(entree({
-      regles: INDICATIONS_BIOLOGIE_V1,
-      signature: INDICATIONS_BIOLOGIE_METADATA,
-    }));
-    // LA SIGNATURE À VIDE EST OBSERVABLEMENT INERTE : le moteur refuse
-    // toujours, mais le motif a changé de nature — ce n'est plus le verrou de
-    // signature, c'est l'absence de règle publiée. C'est exactement la portée
-    // du passage en force, et sa limite : rien ne bouge aujourd'hui, tout
-    // bougera à la première règle ajoutée.
-    // LE MOTIF A CHANGÉ DE NATURE avec [[D-063]] : le verrou de signature ferme
-    // AVANT la garde « aucune règle ». C'est plus juste — la signature posée par
-    // [[D-061]] n'a ni date, ni claims, ni périmètre, donc au standard des
-    // quatre autres tables elle n'en est pas une. Sans effet observable pour
-    // autant : la table est vide, rien n'était dérivé de toute façon.
-    expect(resultat.ok).toBe(false);
-    if (!resultat.ok) {
-      expect(resultat.motif).toContain('n’est pas signée');
-    }
-    expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(false);
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-08-17T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toHaveLength(29);
+    expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
+    expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
+    // ÉGALITÉ EXACTE, DEUX SENS (patron orientation) : le périmètre signé est
+    // l'union des claims des règles — ni plus (un claim gardé sans règle), ni
+    // moins (une règle hors périmètre signé).
+    const cle = (c: { claimId: string; versionClaim: string }) => `${c.claimId}@${c.versionClaim}`;
+    const desRegles = [...new Set(INDICATIONS_BIOLOGIE_V1.flatMap(r => r.justificationClaims.map(cle)))].sort();
+    const declares = [...new Set(INDICATIONS_BIOLOGIE_METADATA.claimsSource.map(cle))].sort();
+    expect(desRegles.length).toBeGreaterThan(0);
+    expect(declares).toEqual(desRegles);
   });
 
   // LE VERROU DE SIGNATURE FERME TOUJOURS, éprouvé sur une signature simulée
