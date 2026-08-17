@@ -80,7 +80,22 @@ export type LignePanelProposition = {
 export type EntreeStatutsBiologie = {
   /** Panels du catalogue publié (composition seule) — vide tant que non peuplé. */
   panels: PanelCatalogue[];
-  /** Règles d'indication (la table signée en production, une fixture au banc). */
+  /**
+   * Règles d'indication — LA TABLE CANONIQUE VERBATIM, jamais une dérivée
+   * (relevé M-B de la revue du 2026-08-16, bordé ici AVANT tout premier
+   * appelant de production).
+   *
+   * Le verrou hache CE TABLEAU tel qu'il arrive (`sha256(JSON.stringify(...))`,
+   * plus bas) et exige la concordance avec `signature.shaPerimetre` : l'ordre
+   * du tableau ET l'ordre des clés de chaque objet comptent. Un appelant qui
+   * filtrerait (`statut === 'publiee'`), trierait, ou reconstruirait les
+   * règles depuis la base fermerait donc le verrou EN PERMANENCE, sous le
+   * motif trompeur « signature absente ou périmée » — fail-closed, sans danger
+   * patient, mais indébogable depuis le message. Passer
+   * `INDICATIONS_BIOLOGIE_V1` importée, telle quelle : le filtrage des règles
+   * non publiées est le travail de `reglesExploitables()`, APRÈS le hachage.
+   * En banc : une fixture, avec le sha recalculé sur elle.
+   */
   regles: RegleIndicationPanel[];
   /**
    * Métadonnées de signature de la table fournie.

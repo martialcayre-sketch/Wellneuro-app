@@ -30,10 +30,17 @@ const PATIENT = 'PAT_TEST';
 
 // L'état LIVRÉ est capturé, jamais écrit en dur : l'y figer rendrait
 // l'isolation mensongère au prochain changement de signature.
-const ETAT_LIVRE = {
+//
+// COPIE GELÉE (relevé L-C de la revue du 2026-08-16, même raisonnement que
+// `chaineC1Fixture`) : cet objet est la référence que les `afterEach`
+// restaurent. Non gelé, un banc pouvait y écrire — par mégarde ou en croyant
+// « ajuster l'état livré » — et graver un faux état que chaque restauration
+// aurait ensuite propagé à tous les cas suivants.
+const ETAT_LIVRE = Object.freeze({
   validationExterne: PRIORITY_RULES_METADATA.validationExterne,
   dateValidation: PRIORITY_RULES_METADATA.dateValidation,
-};
+  shaPerimetre: PRIORITY_RULES_METADATA.shaPerimetre,
+});
 
 // LA DATE RÉELLEMENT LIVRÉE (finding F4, revue du 2026-08-16). Elle entre dans
 // `validation.validatedAt`, donc dans l'empreinte de la revue : simuler une
@@ -41,11 +48,14 @@ const ETAT_LIVRE = {
 // sert. Même valeur que `DATE_SIGNATURE_SIMULEE` de `chaineC1Fixture` — une
 // SENTINELLE en fin de fichier tient les deux copies contre la métadonnée, et
 // rougira à la re-signature praticien (due depuis [[D-062]]).
-const DATE_SIGNATURE_LIVREE = '2026-08-15T00:00:00.000Z';
+const DATE_SIGNATURE_LIVREE = '2026-08-16T00:00:00.000Z';
 
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
   PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_LIVREE;
+  // Cinquième terme ([[D-067]]) — posé explicitement plutôt qu'hérité du
+  // littéral livré : le harnais dit ce qu'il exige (finding m6).
+  PRIORITY_RULES_METADATA.shaPerimetre = ETAT_LIVRE.shaPerimetre;
 }
 
 /** Simule le verrou FERMÉ — position qui n'est plus celle de la production. */
@@ -57,6 +67,7 @@ function simulerNonSignature(): void {
 afterEach(() => {
   PRIORITY_RULES_METADATA.validationExterne = ETAT_LIVRE.validationExterne;
   PRIORITY_RULES_METADATA.dateValidation = ETAT_LIVRE.dateValidation;
+  PRIORITY_RULES_METADATA.shaPerimetre = ETAT_LIVRE.shaPerimetre;
 });
 
 function chaine(options: {

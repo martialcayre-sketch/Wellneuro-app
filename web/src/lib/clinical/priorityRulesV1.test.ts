@@ -32,7 +32,10 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 // le statut de signature, la traçabilité des claims, l'existence réelle des
 // domaines et des bandes cités, et l'identité du contenu signé.
 
-const DATE_SIGNATURE_SIMULEE = '2026-08-12T00:00:00.000Z';
+// ALIGNÉE sur la date réellement livrée (dette n° 4 du handoff du 2026-08-16,
+// soldée à la re-signature [[D-067]]) : une date simulée différente ferait
+// produire aux bancs des chaînes qu'aucune production ne sert.
+const DATE_SIGNATURE_SIMULEE = '2026-08-16T00:00:00.000Z';
 
 /** Rend la table signée le temps d'un cas, et la remet dans son état livré. */
 function simulerSignature(): void {
@@ -40,9 +43,16 @@ function simulerSignature(): void {
   PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_SIMULEE;
 }
 
+// L'état LIVRÉ est capturé AVANT tout cas — dont le `shaPerimetre`, que
+// l'escalier de péremption désaligne : sans cette restauration, une assertion
+// qui échoue au milieu du cas laisserait tout le fichier tourner sur un sha
+// périmé, et `reglesPrioritesValidees()` rendrait `[]` en silence (finding m5).
+const SHA_PERIMETRE_LIVRE = PRIORITY_RULES_METADATA.shaPerimetre;
+
 afterEach(() => {
   PRIORITY_RULES_METADATA.validationExterne = false;
   PRIORITY_RULES_METADATA.dateValidation = null;
+  PRIORITY_RULES_METADATA.shaPerimetre = SHA_PERIMETRE_LIVRE;
 });
 
 describe('priorityRulesV1 — statut de signature', () => {
@@ -50,14 +60,17 @@ describe('priorityRulesV1 — statut de signature', () => {
   // acte praticien, et il n'a pas eu lieu. Ce banc épingle l'état, quel qu'il
   // soit : le jour de la signature, il rougit — et c'est exactement ce qu'on lui
   // demande, parce que ce jour-là le comportement de production change.
-  // SIGNÉE le 2026-08-15 ([[D-061]]). La sentinelle n'est pas supprimée, elle
-  // est INVERSÉE : elle attrape désormais une dé-signature accidentelle et une
-  // date malformée, ce que le verrou exige en forme ISO canonique.
+  // SIGNÉE le 2026-08-15 ([[D-061]]), RE-SIGNÉE le 2026-08-16 ([[D-067]]) sur
+  // le périmètre agrandi par [[D-062]]. La sentinelle n'est pas supprimée, elle
+  // est INVERSÉE : elle attrape désormais une dé-signature accidentelle, une
+  // date malformée, et depuis [[D-067]] un SHA de périmètre qui ne concorde
+  // plus — la péremption détectable.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(PRIORITY_RULES_METADATA.validationExterne).toBe(true);
-    expect(PRIORITY_RULES_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
+    expect(PRIORITY_RULES_METADATA.dateValidation).toBe('2026-08-16T00:00:00.000Z');
     const d = PRIORITY_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
+    expect(PRIORITY_RULES_METADATA.shaPerimetre).toBe(PRIORITY_RULES_SHA256);
     expect(tablePrioritesSignee()).toBe(true);
   });
 
@@ -66,15 +79,25 @@ describe('priorityRulesV1 — statut de signature', () => {
     expect(PRIORITY_RULES_METADATA.claimsSource.length).toBeGreaterThan(0);
   });
 
-  // LE VERROU EST AUTO-PORTANT : les trois termes, et pas seulement le booléen.
-  // Un `validationExterne` seul serait un drapeau qu'un flip isolé suffirait à
-  // ouvrir — c'est la propriété que `tableSignee()` et `tableArretSignee()`
-  // tiennent déjà, éprouvée ici sur les DEUX positions.
-  it('le verrou exige les trois termes, jamais le seul booléen', () => {
+  // LE VERROU EST AUTO-PORTANT : les cinq termes ([[D-067]]), et pas seulement
+  // le booléen. Un `validationExterne` seul serait un drapeau qu'un flip isolé
+  // suffirait à ouvrir — c'est la propriété que `tableSignee()` et
+  // `tableArretSignee()` tiennent au même standard.
+  it('le verrou exige les cinq termes, jamais le seul booléen', () => {
     PRIORITY_RULES_METADATA.validationExterne = true;
     expect(tablePrioritesSignee()).toBe(false);
     PRIORITY_RULES_METADATA.dateValidation = DATE_SIGNATURE_SIMULEE;
+    // Marche « claims » ISOLÉE (finding m7) : tout y est sauf les claims.
+    const claimsLivres = PRIORITY_RULES_METADATA.claimsSource;
+    PRIORITY_RULES_METADATA.claimsSource = [];
+    expect(tablePrioritesSignee()).toBe(false);
+    PRIORITY_RULES_METADATA.claimsSource = claimsLivres;
+    // `shaPerimetre` livré concordant : quatre premiers termes réunis ⇒ ouvert.
     expect(tablePrioritesSignee()).toBe(true);
+    // Et la marche du cinquième se prouve par la PÉREMPTION —
+    PRIORITY_RULES_METADATA.shaPerimetre = 'sha-perime';
+    expect(tablePrioritesSignee()).toBe(false);
+    PRIORITY_RULES_METADATA.shaPerimetre = SHA_PERIMETRE_LIVRE;
   });
 
   // UNE DATE MAL FORMÉE FERME LE VERROU au lieu de l'ouvrir : cette chaîne

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
-import { CONTRADICTIONS_METADATA } from './contradictionsV1';
+import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from './contradictionsV1';
 import { contradictionEstOuverte } from './contradictionFinding';
 import { scoresRecalculesPourRaisonnement } from './orientationService';
 import type { ContradictionFinding } from './contradictionFinding';
@@ -18,12 +18,18 @@ import type { ContradictionFinding } from './contradictionFinding';
 
 // Verrou auto-portant, calqué sur `tableSignee()` de `orientationService` :
 // `validationExterne` seul serait un booléen qu'un flip isolé suffirait à
-// ouvrir. Une table réellement signée porte aussi sa date de validation et les
-// claims qui la fondent.
+// ouvrir. Une table réellement signée porte aussi sa date de validation (ISO
+// canonique — mal formée, elle FERME), les claims qui la fondent, et le SHA du
+// périmètre relu ([[D-067]], patron [[D-063]]) : une règle retouchée après
+// signature ferme le verrou seule.
 function tableSignee(): boolean {
+  const date = CONTRADICTIONS_METADATA.dateValidation;
   return CONTRADICTIONS_METADATA.validationExterne
-    && CONTRADICTIONS_METADATA.dateValidation !== null
-    && CONTRADICTIONS_METADATA.claimsSource.length > 0;
+    && date !== null
+    && !Number.isNaN(new Date(date).getTime())
+    && new Date(date).toISOString() === date
+    && CONTRADICTIONS_METADATA.claimsSource.length > 0
+    && CONTRADICTIONS_METADATA.shaPerimetre === CONTRADICTIONS_RULES_SHA256;
 }
 
 /**

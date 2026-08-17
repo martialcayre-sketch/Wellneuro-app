@@ -3890,3 +3890,22 @@ production — décision distincte, documentée sur chaque moteur).
 Bloqué : connecteur MCP Supabase mort (« organization membership ») — lecture
 MAJ-4 et textes de claims PR-2 en attente de reconnexion.
 Prochaine action : PR, CI, puis PR-2.
+
+## [2026-08-17] — D-067 : verrous à cinq termes, signatures reposées
+
+Les quatre tables cliniques passent au verrou à cinq termes (`shaPerimetre`
+littéral, patron D-063) : la péremption devient détectable partout. Priorités
+re-signées au 2026-08-16 (périmètre D-062 — dette soldée) ; date d'orientation
+portée à l'ISO canonique en gardant le jour attesté du 6 août (F5).
+
+`wn-reviewer` : GO conditionnel, par mutation — le cinquième terme des
+contradictions n'était gardé par rien (sa suppression laissait 1441 tests
+verts, sur la seule table au drapeau déjà posé en production). Corrigé : banc
+de péremption, garde de source anti-tautologie étendu aux quatre tables
+(`shaPerimetreLitteral.guard.test.ts`), escaliers à cinq marches, afterEach
+restaurant `shaPerimetre`, commentaire périmé « re-signature requise » recalé.
+
+Écarté : re-dater l'orientation au 2026-08-16 (affirmerait une relecture qui
+n'a pas eu lieu). Assumé : fenêtre 409 `chaine_c1_divergente` à chaud
+(validatedAt change), silencieuse comme les deux fois précédentes.
+Prochaine action : PR, CI ; puis PR-5 (dettes M-B, L-A, L-C/L-D) empilée.

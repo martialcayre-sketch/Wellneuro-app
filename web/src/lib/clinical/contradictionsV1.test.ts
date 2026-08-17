@@ -50,6 +50,9 @@ describe('table de contradictions V1 — signature et périmètre', () => {
     expect(CONTRADICTIONS_METADATA.dateValidation).toBe('2026-08-15T00:00:00.000Z');
     const d = CONTRADICTIONS_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
+    // Cinquième terme ([[D-067]]) : concordance du littéral avec le contenu
+    // vivant — la péremption détectable, au standard des quatre autres tables.
+    expect(CONTRADICTIONS_METADATA.shaPerimetre).toBe(CONTRADICTIONS_RULES_SHA256);
   });
 
   // Une règle sans claim n'est pas traçable jusqu'à sa source (`DC-01`,

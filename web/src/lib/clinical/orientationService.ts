@@ -70,11 +70,18 @@ export type ResultatOrientation =
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
 // isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
-// validation et les claims qui la fondent.
+// validation (ISO canonique — une date mal formée FERME, [[D-067]]), les
+// claims qui la fondent, et le SHA du périmètre relu : une règle retouchée
+// après signature change `ORIENTATION_RULES_SHA256`, la concordance casse et
+// le verrou se ferme SEUL (patron [[D-063]]).
 function tableSignee(): boolean {
+  const date = ORIENTATION_METADATA.dateValidation;
   return ORIENTATION_METADATA.validationExterne
-    && ORIENTATION_METADATA.dateValidation !== null
-    && ORIENTATION_METADATA.claimsSource.length > 0;
+    && date !== null
+    && !Number.isNaN(new Date(date).getTime())
+    && new Date(date).toISOString() === date
+    && ORIENTATION_METADATA.claimsSource.length > 0
+    && ORIENTATION_METADATA.shaPerimetre === ORIENTATION_RULES_SHA256;
 }
 
 /**
@@ -106,9 +113,17 @@ export function orientationActive(): boolean {
  * d'un second verrou là où il n'y a qu'un seul chemin.
  */
 export function tableArretSignee(): boolean {
+  // Cinq termes depuis [[D-067]] — même standard que les quatre autres tables.
+  // Sur une table d'EXTINCTION, la concordance du SHA est le terme qui compte
+  // le plus : une règle d'arrêt retouchée après signature éteindrait des
+  // recommandations sous une signature qui ne l'a jamais couverte.
+  const date = STOP_RULES_METADATA.dateValidation;
   return STOP_RULES_METADATA.validationExterne
-    && STOP_RULES_METADATA.dateValidation !== null
-    && STOP_RULES_METADATA.claimsSource.length > 0;
+    && date !== null
+    && !Number.isNaN(new Date(date).getTime())
+    && new Date(date).toISOString() === date
+    && STOP_RULES_METADATA.claimsSource.length > 0
+    && STOP_RULES_METADATA.shaPerimetre === STOP_RULES_SHA256;
 }
 
 /**
