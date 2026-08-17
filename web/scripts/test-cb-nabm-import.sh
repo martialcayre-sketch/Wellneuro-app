@@ -335,6 +335,12 @@ const {Client} = require("pg");
   await c.query("DELETE FROM biology_catalog_versions_courantes");
   await c.query("DELETE FROM biology_source_snapshots");
   await c.query("DELETE FROM biology_nabm_actes");
+  // Supprimer les lignes dépendantes avant l'analyte (contraintes FK).
+  await c.query("DELETE FROM biology_panel_items WHERE analyte_code = $1", ["BIO_FERRITINE"]);
+  await c.query("DELETE FROM biology_functional_ranges WHERE analyte_code = $1", ["BIO_FERRITINE"]);
+  await c.query("DELETE FROM biology_reference_ranges WHERE analyte_code = $1", ["BIO_FERRITINE"]);
+  await c.query("DELETE FROM biology_preanalytics WHERE analyte_code = $1", ["BIO_FERRITINE"]);
+  await c.query("DELETE FROM biology_analyte_links WHERE analyte_code = $1", ["BIO_FERRITINE"]);
   await c.query("DELETE FROM biology_analytes WHERE code = $1", ["BIO_FERRITINE"]);
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
