@@ -3930,3 +3930,23 @@ motif verbatim en `objectif`. Écarté : renommer les codes `BIO_RATIO_*`
 (fidélité au document validé — contrat d'intersection à la place).
 Prochaine action : PR, CI, release-db (approbation praticien), vérification
 post-release à sept lectures, puis PR-3 (règles + signature biologie).
+
+## [2026-08-17] — D-069 : les règles d'indication et la signature biologie réelle
+
+Quinze règles transcrites (six en `ou` D-060 — les premiers du dépôt), zones
+relues grille par grille : la revue confirme 17/17 conformes, y compris les
+pièges (BMS-10 sur moyenne, Q_INF_05 en compte avec dark réel, échelles
+inversées, MADRS >= 8, AQ sans info). Signature réelle : 2026-08-17, 29 claims
+(la revue a fait entrer les deux claims de la répétition annuelle — le seul
+chiffre paramétrique était en prose), shaPerimetre a2f28c0b…, re-signé.
+
+RV-1 (banc d'inertie sur moteurs réels, saturation exigeant manquants = 0) et
+RV-2 (garde de forme) fermées ; banc zone↔grille ajouté sur prescription
+(couleurs citées ⊆ publiées ∪ inerties déclarées). Limites nommées sur les
+règles : branche IBS-SSS inerte sur filtre « non » (jambe TFD sert), plancher
+perdu sous `ou` (PSS-10/TFD) vs conservé en feuille (PSQI).
+
+Écarté : citer les cinq claims de bandes BMS-10 (0106-027 seul fonde le
+départ, réserve consignée pour 028/029). WN_CB_ENABLED reste éteint.
+Prochaine action : PR empilée sur #700, CI. Restent deux gestes praticien :
+release-db (#700) et le drapeau.

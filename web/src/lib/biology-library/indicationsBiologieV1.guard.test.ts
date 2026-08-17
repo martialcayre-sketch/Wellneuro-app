@@ -35,16 +35,17 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
   .filter(ligne => !ligne.trimStart().startsWith('//') && !ligne.trimStart().startsWith('*'))
   .join('\n');
 
-// SHA de la table VIDE — l'état livré par [[D-059]] §2, signé en passage en
-// force par [[D-061]]. METTRE CE LITTÉRAL À JOUR NE VAUT PAS SIGNATURE : le
-// jour où il rougit, une règle est entrée dans le périmètre, et c'est la
-// relecture praticien (date + claims + `shaPerimetre` figé) qui est due.
-const SHA_TABLE_VIDE_2026_08_16 = '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945';
+// SHA du contenu SIGNÉ — quinze règles depuis [[D-069]] (la table vide de
+// [[D-059]] §2 est l'histoire, son sha `4f53cda1…` avec elle). METTRE CE
+// LITTÉRAL À JOUR NE VAUT PAS SIGNATURE : le jour où il rougit, une règle a
+// bougé dans le périmètre, et c'est la relecture praticien (date + claims +
+// `shaPerimetre` figé) qui est due — jamais une mise à jour silencieuse.
+const SHA_CONTENU_2026_08_17 = 'a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
   it('le sha publié est celui du contenu réellement porté par la table', () => {
-    expect(INDICATIONS_BIOLOGIE_V1).toEqual([]);
-    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_TABLE_VIDE_2026_08_16);
+    expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
+    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_08_17);
   });
 
   // Le piège exact de la revue : `shaPerimetre` câblé sur la constante au lieu
@@ -57,28 +58,53 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   // L'instruction corrigée doit rester celle du littéral : si quelqu'un
   // resserre le commentaire un jour, qu'il ne ressuscite pas l'ancienne
   // consigne. On exige la mise en garde, pas une formule exacte.
-  it('l\'instruction de signature prescrit le littéral et porte la mise en garde', () => {
-    expect(SOURCE).toContain('LITTÉRAL FIGÉ');
-    expect(SOURCE).toContain('SURTOUT PAS `shaPerimetre: INDICATIONS_BIOLOGIE_SHA256`');
+  it('la signature posée prescrit le littéral et porte la mise en garde', () => {
+    expect(SOURCE).toContain('littéral figé');
+    expect(SOURCE).toContain('recopiée');
+    // La constante n'apparaît dans le code que pour être DÉFINIE et exportée —
+    // jamais comme valeur de la métadonnée (le garde du dessus le tient), et
+    // le commentaire de la signature explique la péremption.
+    expect(SOURCE).toContain('Toute règle retouchée après cette signature');
   });
 
-  // La signature livrée reste incomplète ([[D-063]]) : le verrou est FERMÉ.
-  // Si ce banc rougit ici, quelqu'un a posé date/claims/sha — geste praticien
-  // qui doit s'accompagner de la mise à jour du tableau de
-  // `docs/FEATURE_FLAGS.md` (gardé par `verrousSignatureDocumentes.guard`).
-  it('l\'état livré est bien verrou fermé, et le verdict le dit', () => {
-    expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(false);
+  // SIGNÉE le 2026-08-17 ([[D-069]]) : le verrou est OUVERT côté signature —
+  // le drapeau `WN_CB_ENABLED` reste le second terme du ET, et il est éteint.
+  // Sentinelle INVERSÉE, jamais supprimée : une dé-signature accidentelle, une
+  // date malformée ou un sha qui ne concorde plus rougissent ici, et tout
+  // changement d'état s'accompagne du tableau de `docs/FEATURE_FLAGS.md`
+  // (gardé par `verrousSignatureDocumentes.guard`).
+  it('l\'état livré est signé aux cinq termes, et le verdict le dit', () => {
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-08-17T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource.length).toBe(29);
+    expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
+    expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
   });
 
   // Ce que la signature LÉGITIME donnera : un littéral posé au moment de la
   // relecture concorde tant que la table ne bouge pas…
+  // CONTRE-ÉPREUVES DES TERMES INVERSÉS (revue D-069, finding 4) : après
+  // inversion des sentinelles, seuls « tout absent » et « sha étranger »
+  // restaient éprouvés — la date non canonique et les claims vides n'étaient
+  // tenus que par accident (l'égalité littérale à la date épinglée).
+  it('une date non canonique ou des claims vides ferment le verrou — chaque terme séparément', () => {
+    for (const malFormee of ['2026-08-17', '2026-08-17T00:00:00Z', 'demain']) {
+      expect(
+        signatureIndicationsValide({ ...INDICATIONS_BIOLOGIE_METADATA, dateValidation: malFormee }),
+        `date « ${malFormee} » acceptée`,
+      ).toBe(false);
+    }
+    expect(
+      signatureIndicationsValide({ ...INDICATIONS_BIOLOGIE_METADATA, claimsSource: [] }),
+    ).toBe(false);
+  });
+
   it('une signature au littéral figé ouvre le verrou tant que le périmètre est celui relu', () => {
     expect(
       signatureIndicationsValide({
         validationExterne: true,
         dateValidation: '2026-08-16T00:00:00.000Z',
         claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-        shaPerimetre: SHA_TABLE_VIDE_2026_08_16,
+        shaPerimetre: SHA_CONTENU_2026_08_17,
       }),
     ).toBe(true);
   });
@@ -93,7 +119,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
           validationExterne: true,
           dateValidation: '2026-08-16T00:00:00.000Z',
           claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-          shaPerimetre: SHA_TABLE_VIDE_2026_08_16,
+          shaPerimetre: SHA_CONTENU_2026_08_17,
         },
         shaApresAjout,
       ),

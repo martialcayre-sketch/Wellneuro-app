@@ -4,6 +4,78 @@
 
 ## Décisions actives
 
+### D-069 — Les quinze règles d'indication biologique entrent dans la table signée, et la signature biologie devient réelle
+
+- Date : 2026-08-17
+- Statut : accepté (arbitrage praticien explicite en session — « toutes les
+  signatures praticien, sans réserves », porté sur la table PEUPLÉE) et
+  implémenté.
+- Domaine : clinique, biologie, table d'indications signée, signature
+- Contexte : dernière marche du programme LOT-06. La table
+  `INDICATIONS_BIOLOGIE_V1` était vide par contrat (`D-059` §2-3) et sa
+  signature incomplète fermait le verrou (`D-063`). Tous les prérequis sont
+  tombés dans l'ordre : la disjonction existe (`D-060`), les sept instruments
+  inertes sont vivants (`D-066` — réactivation + comptes de complétude), le
+  catalogue est en base (`D-068`), et les grilles publiées des treize
+  instruments déclencheurs ont été relues une à une le 2026-08-17.
+- Décision :
+
+**1. Quinze règles, transcrites de la proposition v5** — 12 conditionnelles
+(dont SIX en `ou` `D-060` : humeur, anxiété, stress, mémoire, digestif,
+neurodégénératif), 1 optionnelle (`0178-055`, seul claim du corpus à qualifier
+un bilan d'optionnel), 2 non indiquées (motifs VERBATIM de `0242-007` et
+`0042-007`). Les zones citent les bandes que chaque instrument PUBLIE, relues
+dans les grilles — pas la sténo du document : le BMS-10 se juge sur la
+MOYENNE et `Q_INF_05` sur un COMPTE d'items (les zones couleur lisent la bande
+servie et neutralisent ces pièges) ; `Q_INF_05` porte la seule bande `dark` du
+périmètre ; MMSE et 5 mots sont des échelles inversées (zones couleur, jamais
+de comparaison) ; le MADRS reste en comparaison `>= 8` (sa grille ne classe ni
+7 ni 19). Le PSS-10, le PSQI et le TFD reprennent À L'IDENTIQUE les zones des
+règles signées d'orientation (`R-STR-01/02`, `R-SOM-01`, `R-GAS-01`), `dark`
+inerte compris. Répétition annuelle (`delaiJours: 365`, arbitrage F.1) sur les
+NEUF panels de tableau clinique de niveau socle — ni populations, ni
+optionnel, ni approfondissement.
+
+**2. La signature biologie est RÉELLE** : `dateValidation`
+`2026-08-17T00:00:00.000Z`, les 29 claims distincts cités par les règles
+(égalité exacte deux sens, tenue par banc) — dont `WN-CL-0312-018` et
+`WN-CL-0389-004`, qui fondent la répétition annuelle : le seul chiffre
+paramétrique de la table est DANS le périmètre signé (relevé en revue, la
+première rédaction le laissait en prose). `shaPerimetre` en littéral figé
+recopié de `INDICATIONS_BIOLOGIE_SHA256` au moment de la relecture. Le verrou
+à cinq termes est OUVERT côté signature ; `WN_CB_ENABLED` reste ÉTEINT — le
+drapeau d'exploitation est un geste praticien distinct, signer n'allume pas.
+
+**Limites nommées par la revue, portées sur les règles elles-mêmes** : la
+branche IBS-SSS est inerte pour tout patient répondant « non » à une question
+filtre du score de Francis (les items écartés comptent comme manquants —
+mesuré sur le moteur réel ; le panel digestif reste servi par sa jambe TFD ;
+corriger relève d'un lot de scoring sur instrument certifié). Et « reprise à
+l'identique » des zones d'orientation vaut pour la ZONE, pas le comportement :
+sous `ou`, le déclenchement par plancher garanti sur recueil partiel est perdu
+(`D-060` §2/§6, fail-closed uniforme assumé) là où la feuille simple du PSQI
+le conserve — asymétrie interne à la table, dite sur place.
+
+**3. Les deux réserves de la revue `D-060` sont fermées** : RV-1, banc
+d'inertie sur les moteurs RÉELS (`calculateScore` saturé, lecture au grain du
+porteur visé — un moteur qui cesse de publier ses comptes rougit au CI, pas en
+production six mois plus tard) ; RV-2, garde de forme de la table (un panel
+par règle, claims/conditions/motifs par mode, `signauxAlerte` interdit sous
+`ou`, instruments assignables, couleurs défavorables seules, borne MADRS
+épinglée, codes de panels = ceux de `D-068`).
+
+- Conséquences : les sentinelles « table vide » et « signature incomplète »
+  sont inversées, jamais supprimées ; `FEATURE_FLAGS.md` suit (gardé). La
+  proposition de bilan se dérivera dès que `WN_CB_ENABLED` sera posé ET qu'un
+  appelant de production existera (le contrat d'appelant est bordé —
+  M-B/`D-067`).
+- Écarté : transcrire les zones depuis la colonne du §F.2 (étendues de score,
+  pas des bandes — le §B fait foi) ; une zone couleur pour le MADRS (trous 7
+  et 19) ; des comparaisons pour MMSE/5 mots (échelles inversées) ; citer les
+  claims de bandes BMS-10 en plage `0106-025..029` (seuls les trois relevés
+  nommément en production sont vérifiés — la règle cite `0106-027`, la bande
+  « présence du burnout » qui fonde le départ à warning).
+
 ### D-068 — Le catalogue biologie niveau 1 entre en base : 47 analytes, 15 panels, 2 plages sourcées
 
 - Date : 2026-08-17

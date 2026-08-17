@@ -109,17 +109,19 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-16T00:00:00.000Z` |
-| `biology-library/indicationsBiologieV1.ts` | `true` | `null` |
+| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
 Trois lectures attentives sur ce tableau :
 
-- **`indicationsBiologieV1.ts` porte `true` sans date** — signature délibérément
-  incomplète ([[D-063]]). Le verrou est donc FERMÉ, et la première règle
-  biologie ajoutée ne s'appliquera pas tant qu'un praticien n'aura pas posé la
-  date, les claims et le `shaPerimetre`. Ce `true` seul n'ouvre rien.
+- **`indicationsBiologieV1.ts` est SIGNÉE aux cinq termes depuis `D-069`**
+  (2026-08-17) : quinze règles, 27 claims, `shaPerimetre` figé. Le verrou de
+  signature est OUVERT — mais la route biologie reste un ET avec
+  `WN_CB_ENABLED`, qui est ÉTEINT : rien ne se sert tant que le drapeau
+  d'exploitation n'est pas posé, et le poser reste un geste praticien
+  distinct.
 - **Les quatre tables cliniques portent un `shaPerimetre` depuis `D-067`**
   (2026-08-16) : le verrou est passé à cinq termes — booléen, date, forme ISO
   canonique, claims, concordance du SHA de périmètre. Une règle retouchée
