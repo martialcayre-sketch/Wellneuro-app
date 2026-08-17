@@ -512,8 +512,11 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // périmètre relu, et `shaPerimetre` en littéral figé — la chaîne hex que
   // `INDICATIONS_BIOLOGIE_SHA256` valait au moment de la relecture, recopiée
   // telle quelle. Toute règle retouchée après cette signature rouvrira le
-  // verrou seule. Le drapeau `WN_CB_ENABLED` reste éteint : signer n'allume
-  // pas, déployer est un acte d'exploitation distinct.
+  // verrou seule. Signer n'allume toujours pas par soi-même — mais le drapeau
+  // `WN_CB_ENABLED` était DÉJÀ posé à `true` en production quand cette
+  // signature a été écrite ([[D-070]], constat du 2026-08-17) : les deux
+  // termes du ET sont vrais. La table n'atteint pour autant aucun écran,
+  // `deriverStatutsBiologie` n'ayant aucun appelant hors bancs.
   //
   // SURTOUT PAS `shaPerimetre: INDICATIONS_BIOLOGIE_SHA256` — l'instruction
   // d'origine le prescrivait, et c'était un piège à double fond (revue du

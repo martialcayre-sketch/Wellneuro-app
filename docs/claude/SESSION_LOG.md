@@ -3968,3 +3968,23 @@ VALIDE » par « 29/29 » dans l'en-tête des règles — deux ensembles distinc
 et le second contredisait `D-069` (49 claims relus). Les 29 du périmètre signé
 sont revérifiés VALIDE/actifs/v1.0 ce jour ; l'en-tête porte les deux nombres.
 Prochaine action : merge de #701, puis le drapeau `WN_CB_ENABLED`.
+
+## [2026-08-17] — D-070 : le drapeau CB était déjà posé, la table signée est dormante
+
+Le praticien a voulu poser `WN_CB_ENABLED` : Vercel a refusé, la variable
+existait déjà à `true` — donc avant le déploiement de `4b588d1e`. Quatre sites
+affirmaient « reste éteint », dont `D-069` §2 : faux au moment de l'écriture,
+déduit de la documentation au lieu d'être lu dans le panneau (même classe que
+`D-064`). Registre append-only : la phrase de `D-069` est conservée et
+annotée, les trois autres corrigés.
+
+Découverte du coup d'œil : `deriverStatutsBiologie` n'a **aucun appelant**.
+Les quinze règles et le catalogue sont signés, en base, et n'atteignent aucun
+écran ; ce que le drapeau ouvre est la surface d'arbitrage, où la production
+compte zéro arbitrage. Le programme a livré la matière, pas son branchement —
+la phrase « signer n'allume pas » masquait exactement cela.
+
+Écarté : inventer une date de pose du drapeau (aucun document ne
+l'enregistre) ; poser ou retirer un geste d'exploitation.
+Prochaine action : PR de correction. Ouvert : brancher le premier appelant de
+`deriverStatutsBiologie`, au contrat M-B (table VERBATIM).
