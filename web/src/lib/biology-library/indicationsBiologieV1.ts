@@ -87,7 +87,7 @@ export type RegleIndicationPanel = {
 /**
  * LES QUINZE RÈGLES DU CATALOGUE NIVEAU 1 ([[D-069]]) — transcrites de la
  * proposition validée du 2026-08-15 (v5, zones tranchées), claims relus en
- * production (49/49 VALIDE le 2026-08-16). Chaque zone cite les bandes que
+ * production (29/29 VALIDE le 2026-08-16). Chaque zone cite les bandes que
  * l'instrument PUBLIE, relues dans sa grille le 2026-08-17 — pas la sténo du
  * document (le « warning (5-21) » du §F.2 est une étendue de score, pas une
  * bande ; le §B fait foi).
@@ -160,7 +160,9 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
     // prose (revue D-069, finding majeur ; DC-19, DC-34).
     justificationClaims: [
       { claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' },
-      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },{ claimId: 'WN-CL-0333-020', versionClaim: 'v1.0' }],
+      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0333-020', versionClaim: 'v1.0' },
+    ],
   },
   // ── §B.3 Stress — ou[PSS-10 ≥ warning · BMS-10 ≥ warning] ─────────────────
   // PSS-10 : reprise à l'identique de `R-STR-01`/`R-STR-02` de la table
@@ -288,7 +290,9 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
     // prose (revue D-069, finding majeur ; DC-19, DC-34).
     justificationClaims: [
       { claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' },
-      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },{ claimId: 'WN-CL-0348-013', versionClaim: 'v1.0' }],
+      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0348-013', versionClaim: 'v1.0' },
+    ],
   },
   // ── §B.7 Fatigue — Pichot zone `warning` (23-32) ──────────────────────────
   // `warning` est la bande LA PLUS SÉVÈRE que le Pichot publie (grille à deux
@@ -313,7 +317,9 @@ export const INDICATIONS_BIOLOGIE_V1: RegleIndicationPanel[] = [
     // prose (revue D-069, finding majeur ; DC-19, DC-34).
     justificationClaims: [
       { claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' },
-      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },{ claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' }],
+      { claimId: 'WN-CL-0389-004', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' },
+    ],
   },
   // ── §B.8 Neurodégénératif — ou[AQ ≥ warning · QDRS ≥ info] ────────────────
   // Départ par stade (MCI) : `warning` sur l'AQ (qui ne publie pas d'`info`),

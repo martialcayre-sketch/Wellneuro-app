@@ -117,7 +117,7 @@ CI ; une table signée neuve absente du tableau aussi.
 Trois lectures attentives sur ce tableau :
 
 - **`indicationsBiologieV1.ts` est SIGNÉE aux cinq termes depuis `D-069`**
-  (2026-08-17) : quinze règles, 27 claims, `shaPerimetre` figé. Le verrou de
+  (2026-08-17) : quinze règles, 29 claims, `shaPerimetre` figé. Le verrou de
   signature est OUVERT — mais la route biologie reste un ET avec
   `WN_CB_ENABLED`, qui est ÉTEINT : rien ne se sert tant que le drapeau
   d'exploitation n'est pas posé, et le poser reste un geste praticien
