@@ -335,7 +335,13 @@ const {Client} = require("pg");
   await c.query("DELETE FROM biology_catalog_versions_courantes");
   await c.query("DELETE FROM biology_source_snapshots");
   await c.query("DELETE FROM biology_nabm_actes");
-  await c.query("DELETE FROM biology_analytes WHERE code = $1", ["BIO_FERRITINE"]);
+  // PAR ID DE FIXTURE, jamais par code (échec CI du 2026-08-17, FK 23503) :
+  // depuis D-068, BIO_FERRITINE est une ligne du CATALOGUE, référencée par
+  // biology_panel_items (FK RESTRICT) — la supprimer par code jetait. Le banc
+  // ne nettoie que ce que LUI a créé : son insert ON CONFLICT DO NOTHING ne
+  // crée rien quand le catalogue existe, et ce DELETE ne trouve alors rien.
+  // (Aucune apostrophe dans ce commentaire : bloc shell à quotes simples.)
+  await c.query("DELETE FROM biology_analytes WHERE id = $1", ["cb-test-ferritine"]);
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
