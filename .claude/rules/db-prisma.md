@@ -36,6 +36,23 @@ SELECT migration_name FROM _prisma_migrations GROUP BY migration_name
 HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 ```
 
+## Éditer `schema.prisma`
+
+- **Ne jamais lancer `npx prisma format`.** Le fichier n'est pas au format
+  canonique : la commande réaligne une centaine de lignes étrangères au diff
+  (colonnes de `Patient`, `SupplementIngredient`, `Assignation`…), ce que la
+  règle « changements minimaux » interdit et qui noie la revue d'une PR
+  migration sous du réalignement. Éditer le bloc touché à la main, en alignant
+  seulement lui.
+- Vérifier avec **`npx prisma validate`**, jamais `format`. La parité
+  schéma↔migration se juge par `prisma migrate diff`, joué dans T3 sous
+  « Dérive schéma ↔ migrations » — attendu : *No difference detected*.
+- **La RLS n'est pas modélisée par Prisma** : une table patient neuve doit
+  porter son `ENABLE ROW LEVEL SECURITY` dans la migration, et son contrat SQL
+  doit l'assertionner. Sans cela, l'omission ne fait rougir personne — c'est
+  ainsi qu'`arbitrages_biologiques` est restée trois jours la seule table de
+  `public` sans RLS ([[D-072]]).
+
 ## Écrire (migrations)
 
 - Aucune modification de `schema.prisma`, migration ou SQL sans demande
