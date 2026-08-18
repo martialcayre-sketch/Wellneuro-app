@@ -4,6 +4,50 @@
 
 ## Décisions actives
 
+### D-073 — Le courrier médecin gardera son ancrage de provenance en colonne, pas en prose
+
+- Date : 2026-08-18
+- Statut : accepté (arbitrage praticien en session). **Migration seule** ;
+  le branchement du courrier suit dans une PR distincte, après `release-db`.
+- Domaine : clinique, traçabilité, schéma
+
+- Contexte : `genererCourrierBiologie` produit un bloc dont la `provenance`
+  porte le SHA du périmètre signé et sa version. `preparerCorrespondance` ne
+  persistait que le texte : consigner la lettre revenait à perdre ce par quoi
+  elle s'explique (`DC-34`). C'est le motif pour lequel `D-071` avait ÉCARTÉ la
+  consignation du courrier — dette nommée, aujourd'hui soldée.
+
+**1. Deux colonnes, `ancrage_sha256` et `ancrage_version`**, nullables, sur
+`correspondances_medecin`.
+
+**2. Pourquoi une colonne et non une ligne de texte.** L'option « ancre en pied
+de lettre » était plus courte d'une migration et d'un cycle de release. Elle a
+été écartée : une ancre en prose n'est vérifiable par personne, et elle se
+retouche avec le texte avant envoi. Tout le programme `D-063`→`D-067` a consisté
+à rendre la péremption DÉTECTABLE — un SHA qu'une garde compare. Une ancre
+noyée dans le corps de la lettre serait à la traçabilité ce qu'un JSDoc est à
+une garde : le relevé M-B de la revue du 2026-08-16, exactement.
+
+**3. Nullables à dessein.** Une correspondance saisie à la main n'est dérivée
+d'aucune table ; lui inventer une ancre serait pire que l'absence (`DC-24`). Le
+contrat éprouve donc AUSSI qu'une lettre sans ancre reste consignable — sans
+ce cas positif, un durcissement rendrait la saisie manuelle impossible sans que
+rien ne rougisse.
+
+**4. Les deux termes voyagent ensemble ou pas du tout** (CHECK) : un SHA sans
+version ne se rattache à rien, une version sans SHA n'atteste rien. Une moitié
+d'ancre donnerait l'apparence de la traçabilité sans la fournir. Le contrat est
+tué par quatre mutations, dont « ancre rendue obligatoire », qui casserait la
+saisie manuelle.
+
+**5. Le critère 2 du Lot F est tenu.** « Chaque ligne porte claim + niveau +
+remboursement » : le terme est présent et vaut `non_evalue` sur les 47
+analytes, faute d'appariement analyte ↔ acte. `non_evalue` n'est pas une
+absence — c'est l'aveu d'ignorance qu'exige `DC-24`, et l'écran écrit qu'il ne
+signifie pas « non remboursé ». Le critère portait sur la présence TRAÇABLE du
+terme, pas sur le peuplement du référentiel, qui reste un lot de curation
+signée.
+
 ### D-072 — Les dettes du LOT-06 sont soldées : deux replis fail-open supprimés, et la matrice cesse de compter les imports de type
 
 - Date : 2026-08-18

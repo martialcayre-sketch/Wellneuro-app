@@ -1168,6 +1168,21 @@ model CorrespondanceMedecin {
   idSynthese     String?   @map("id_synthese")
   echangeLe      DateTime? @map("echange_le")
   consigneLe     DateTime  @default(now()) @map("consigne_le")
+  // ANCRAGE DE PROVENANCE ([[D-073]]) — le SHA de la table clinique qui a
+  // produit la lettre, et sa version. Nullables : une correspondance saisie à
+  // la main n'est dérivée d'aucune table, et prétendre le contraire serait
+  // pire que l'absence.
+  //
+  // POURQUOI UNE COLONNE ET NON UNE LIGNE DE TEXTE : une ancre en prose n'est
+  // vérifiable par personne. Tout le programme [[D-063]]→[[D-067]] a consisté à
+  // rendre la péremption DÉTECTABLE — un SHA qu'une garde peut comparer. Une
+  // ancre noyée dans le corps de la lettre serait à la traçabilité ce qu'un
+  // JSDoc est à une garde (dette M-B) : lisible, et sans effet.
+  //
+  // Les deux voyagent ENSEMBLE ou pas du tout (CHECK migration) : un SHA sans
+  // version ne se rattache à rien, une version sans SHA n'atteste rien.
+  ancrageSha256  String?   @map("ancrage_sha256")
+  ancrageVersion String?   @map("ancrage_version")
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 

@@ -691,6 +691,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_panels_documentes_v1_negatif.sql
 
+      # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
+      # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
+      # longueur invalide —, une ancre COMPLÈTE doit passer, et une
+      # correspondance SANS ancre aussi (une lettre saisie à la main n'est
+      # dérivée d'aucune table : lui en inventer une serait pire que l'absence).
+      # Transaction annulée.
+      - name: C3 ancrage correspondance médecin negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c3_correspondance_ancrage_v1_negatif.sql
+
       # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
       # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
       # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la
