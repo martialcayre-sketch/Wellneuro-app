@@ -24,7 +24,7 @@ datée **par feature**.
 | `WN_C4_ENABLED` | `true` | rayon compléments | fermé |
 | `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
-| `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED` |
+| `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
 | `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé |
 | `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
@@ -126,10 +126,25 @@ Trois lectures attentives sur ce tableau :
   `deriverStatutsBiologie` a désormais un appelant de production —
   `propositionService.ts`, servi par `/api/praticien/biologie/proposition`
   ([[D-071]]) — mais il est gardé par un **troisième** terme :
-  `WN_CB_PROPOSITION`, drapeau NEUF et **éteint**. Tant qu'il n'est pas posé,
-  la table signée reste dormante, et c'est délibéré : `WN_CB_ENABLED` valant
-  déjà `true`, s'y adosser aurait exposé la proposition sur tous les dossiers
-  dès le déploiement, sans geste d'exploitation.
+  `WN_CB_PROPOSITION`. Il a été livré NEUF et ÉTEINT — délibérément :
+  `WN_CB_ENABLED` valant déjà `true`, s'y adosser aurait exposé la proposition
+  sur tous les dossiers dès le déploiement, sans geste d'exploitation. **Il est
+  POSÉ en Production depuis le 2026-08-18**, et le déploiement qui le porte est
+  `dpl_A8y6TawV` (build du 2026-08-18 12:31 UTC, aliasé `app.wellneuro.fr`).
+  Les trois termes sont donc vrais et la table signée n'est plus dormante.
+
+**POSER LA VARIABLE NE SUFFIT PAS : IL FAUT UN BUILD QUI LA PORTE.** Vercel fige
+les variables dans le déploiement. Or `web/vercel.json` porte
+`"ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."` — la construction est
+SAUTÉE quand le dernier commit ne touche rien sous `web/`. Le 2026-08-18, le
+drapeau a été posé après un merge purement outillage (#707, `scripts/` et
+`docs/` seulement) : les deux déploiements suivants ont été **annulés en trois
+secondes** par cette règle, et la production a continué de servir un build
+ANTÉRIEUR à la variable. Le drapeau existait dans le panneau et n'était porté
+par rien — même classe que [[D-064]] et [[D-070]], sous une forme neuve.
+Remède appliqué : redéployer un déploiement dont le commit touche `web/`
+(ici celui de #706). **Vérifier la date du build, pas seulement celle de la
+variable.**
 - **Les quatre tables cliniques portent un `shaPerimetre` depuis `D-067`**
   (2026-08-16) : le verrou est passé à cinq termes — booléen, date, forme ISO
   canonique, claims, concordance du SHA de périmètre. Une règle retouchée
