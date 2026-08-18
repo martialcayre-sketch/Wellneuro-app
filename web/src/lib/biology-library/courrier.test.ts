@@ -145,3 +145,49 @@ describe('rapports calculés (D-072)', () => {
     expect(texte).toMatch(/Rapports calculés/);
   });
 });
+
+describe('couplage rendu ↔ consigné (revue M1, D-073)', () => {
+  it('le texte consigné EST le contenu médecin du document rendu', () => {
+    // Le couplage n'est plus accidentel : le générateur refuse si le rendu ne
+    // porte pas le texte. Ce banc fige l'identité sur le chemin heureux.
+    const resultat = genererCourrierBiologie(entree([
+      ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' }),
+    ]));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    const bloc = resultat.courrier.document.blocs[0];
+    expect(bloc.contenu.medecin).toBe(resultat.courrier.texte);
+    expect(resultat.courrier.html).toContain('Socle');
+  });
+});
+
+describe('longueur au catalogue complet (revue B1)', () => {
+  // CALIBRÉ SUR LE CATALOGUE RÉEL, et la calibration n'est pas un détail : une
+  // première version de ce banc, aux libellés deux fois plus longs que les
+  // vrais, DÉPASSAIT la borne (8 272 > 8 000). La marge n'est donc PAS
+  // structurelle — elle tient aux libellés courts du catalogue courant. Le
+  // refus serveur est propre (409, motif honnête), mais quiconque allonge
+  // libellés ou objectifs du catalogue doit savoir que cette borne se
+  // rapproche. Dimensions ci-dessous : les maxima réels du catalogue D-068
+  // (libellé de panel ≤ 30 caractères, d'analyte ≤ 35, 47 analytes),
+  // arrondies vers le haut.
+  it('quinze panels proposés aux dimensions du catalogue tiennent sous la borne', () => {
+    const lignes = Array.from({ length: 15 }, (_, i) =>
+      ligne({
+        panelCode: `PANEL_${i}`,
+        libelle: `Panel tableau clinique ${i}`.padEnd(30, 'x'),
+        statut: 'conditionnel',
+        declencheurRempli: false,
+        condition: 'Signes cliniques d’appel persistants au questionnaire dédié.',
+        analytes: Array.from({ length: 4 }, (_, j) => ({
+          code: `BIO_${i}_${j}`,
+          libelle: `Analyte ${i}-${j}`.padEnd(35, 'x'),
+          validationMedicaleRequise: j === 0,
+          remboursement: { statut: 'non_evalue' as const, conditions: [], codesActesRetenus: [] },
+        })),
+        ratios: i < 2 ? [{ code: `RATIO_${i}`, libelle: `Rapport calculé ${i}` }] : [],
+      }));
+    const resultat = genererCourrierBiologie(entree(lignes));
+    if (!resultat.ok) throw new Error('refus inattendu');
+    expect(resultat.courrier.texte.length).toBeLessThan(8000);
+  });
+});

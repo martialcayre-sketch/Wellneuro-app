@@ -4075,3 +4075,23 @@ D-070. Remède : `vercel redeploy` du déploiement de #706, dont le commit touch
 On sait donc que la variable EXISTE et que le build lui est postérieur, pas ce
 qu'elle vaut.
 Prochaine action : preuve visuelle du panneau sur un dossier réel.
+
+## [2026-08-18] — Courrier médecin branché, campagne T0 close
+
+Dernier appelant du Lot F : POST /proposition/courrier — texte généré serveur
+sous la garde non prescriptive, consigné avec l'ancre du document RENDU (bancs
+par mutation : texte client ignoré, ancre jamais reconstruite). Garde d'accès
+partagée entre les trois routes. Campagne T0 : 10/10, état machine idle.
+
+Revue GO sous conditions, et sa trouvaille compte : le couplage rendu ↔
+consigné était accidentel — le générateur consignait l'ENTRÉE du rendu, pas sa
+sortie ; un bloc non diffusable aurait fait passer la garde à vide. Couplage
+rendu structurel (bloc_non_diffuse). Aussi refermés : consentement de partage
+exposé sur le formulaire (décision 2026-07-22), geste offert sur le prédicat du
+générateur, verrou de re-consignation, 409/201, log sans texte de lettre.
+
+Mesuré : la borne de 8 000 n'est pas confortable par construction — 4 000 au
+catalogue réel, 8 272 avec des libellés doublés. Banc calibré au réel.
+
+Écarté : lire l'ancre dans le fil (dette nommée — écriture seule aujourd'hui).
+Prochaine action : PR, CI, merge. Ouvert : E2E de la surface, ancre relue.

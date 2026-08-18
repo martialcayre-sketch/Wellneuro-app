@@ -1,4 +1,5 @@
 import { assemblerDocument } from '@/lib/documents/document';
+import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/bloc';
 import { MODELE_COURRIER_BIOLOGIE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
@@ -16,8 +17,14 @@ import type { LignePanelProposition } from './statuts';
 // transcrit, et la consignation passe par `preparerCorrespondance` existant
 // (chokepoint de `CorrespondanceMedecin`).
 
-/** Statuts qui entrent dans le courrier : ce qui est réellement proposé. */
-const STATUTS_PROPOSES = new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
+/**
+ * Statuts qui entrent dans le courrier : ce qui est réellement proposé.
+ * EXPORTÉ pour que l'écran offre le geste sur le MÊME prédicat que le
+ * générateur — un formulaire affiché là où le serveur refusera fait
+ * journaliser un accès pour un 409 (revue M5).
+ */
+export const STATUTS_PROPOSES: ReadonlySet<string> =
+  new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
 
 export type EntreeCourrierBiologie = {
   patientId: string;
@@ -33,7 +40,9 @@ export type RefusCourrierBiologie =
   /** Rien à proposer : un courrier vide n'existe pas. */
   | 'aucune_exploration_proposee'
   /** La garde non prescriptive a levé au rendu (libellé de catalogue fautif…). */
-  | 'terme_prescriptif';
+  | 'terme_prescriptif'
+  /** Le rendu médecin ne porte pas le texte à consigner : rien ne part. */
+  | 'bloc_non_diffuse';
 
 export type CourrierBiologie = {
   document: DocumentComposite;
@@ -152,6 +161,20 @@ export function genererCourrierBiologie(
     // La garde du chokepoint a levé : un libellé (catalogue, objectif) porte un
     // terme prescriptif. Refus explicite plutôt qu'un rendu contourné.
     return { ok: false, raison: 'terme_prescriptif' };
+  }
+
+  // LE TEXTE CONSIGNÉ EST LA SORTIE DU RENDU, PAS SON ENTRÉE (revue M1).
+  // `renderDocumentHtml` juge ce que `blocsPourDestinataire` laisse passer —
+  // garde de régime comprise — et rend un corps de repli quand la liste
+  // filtrée est vide. Sans cette vérification, un bloc devenu non diffusable
+  // (régime `genere_ia` sans statut valide, `contenu.medecin` perdu) ferait
+  // passer la garde À VIDE, et la route consignerait un texte que personne n'a
+  // jugé. Le couplage cesse d'être accidentel : ce qui part en base est
+  // exactement ce que la garde a lu.
+  const diffuses = blocsPourDestinataire(document.blocs, 'medecin');
+  const texteJuge = diffuses.length === 1 ? contenuPourDestinataire(diffuses[0], 'medecin') : null;
+  if (texteJuge !== texte) {
+    return { ok: false, raison: 'bloc_non_diffuse' };
   }
 
   return { ok: true, courrier: { document, html, texte } };

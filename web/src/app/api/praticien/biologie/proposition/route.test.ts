@@ -6,6 +6,7 @@ const { getServerSession, prisma, deriverPropositionPourPatient } = vi.hoisted((
     patient: { findUnique: vi.fn() },
     biologyPanel: { findUnique: vi.fn() },
     panelBiologieDocumente: { findMany: vi.fn(), upsert: vi.fn() },
+    trustChoiceEvent: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
   deriverPropositionPourPatient: vi.fn(),
@@ -44,6 +45,7 @@ beforeEach(() => {
     suiviClotureLe: null,
   });
   prisma.panelBiologieDocumente.findMany.mockResolvedValue([]);
+  prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
   prisma.biologyPanel.findUnique.mockResolvedValue({ code: 'PANEL_A' });
   deriverPropositionPourPatient.mockResolvedValue({
     ok: true,
@@ -158,10 +160,28 @@ describe('GET — la proposition', () => {
       'lignes',
       'limites',
       'ok',
+      'partageMedecinTraitant',
     ]);
     expect(brut).not.toContain('shaPerimetre');
     expect(brut).not.toContain('validationExterne');
     expect(brut).not.toContain('claimsSource');
+  });
+
+  // Décision du 2026-07-22 : le consentement de partage est EXPOSÉ, jamais
+  // opposé. Le courrier s'établit depuis cette surface — l'information s'y lit.
+  it('expose le choix « partage médecin traitant », sans jamais bloquer', async () => {
+    prisma.trustChoiceEvent.findMany.mockResolvedValue([
+      { finalite: 'partage_medecin_traitant', statut: 'refuse', enregistreLe: new Date('2026-08-01') },
+    ]);
+    const response = await GET(getRequest());
+    const payload = await response.json();
+    expect(response.status).toBe(200);
+    expect(payload.partageMedecinTraitant).toBe('refuse');
+  });
+
+  it('patient jamais exprimé : `null`, pas un statut inventé', async () => {
+    const response = await GET(getRequest());
+    expect((await response.json()).partageMedecinTraitant).toBeNull();
   });
 
   it('l’abstention du moteur rend son motif en 409, pas une erreur technique', async () => {

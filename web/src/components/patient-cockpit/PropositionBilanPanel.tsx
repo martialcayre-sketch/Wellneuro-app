@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/statuts';
+import { STATUTS_PROPOSES } from '@/lib/biology-library/courrier';
 
 // Proposition de bilan biologique ([[D-071]]) — panneau présentationnel.
 //
@@ -17,6 +18,13 @@ import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/s
 //   3. l'outil ignore les bilans qu'on ne lui a pas déclarés.
 
 export type PropositionState = 'idle' | 'saving' | 'saved' | 'error';
+
+/** Courrier établi : le texte à transcrire, et l'ancre qui l'explique. */
+export type CourrierEtabli = {
+  texte: string;
+  ancrageSha256: string;
+  ancrageVersion: string;
+};
 
 export type DocumenteAffiche = {
   panelCode: string;
@@ -69,6 +77,117 @@ function Limite({ limite }: { limite: LimiteProposition }) {
       Le panel concerné n’apparaît pas dans la liste ci-dessus (inactif au
       catalogue, ou couvert par aucune règle d’indication).
     </li>
+  );
+}
+
+const LIBELLES_PARTAGE: Record<string, string> = {
+  accepte: 'Le patient a consenti au partage avec son médecin traitant.',
+  refuse:
+    'Le patient a refusé le partage avec son médecin traitant. Cette information est '
+    + 'exposée, jamais opposée : la décision de transmettre vous appartient.',
+  retire:
+    'Le patient a retiré son consentement au partage. Cette information est exposée, '
+    + 'jamais opposée : la décision de transmettre vous appartient.',
+};
+
+function FormulaireCourrier({
+  disabled,
+  courrier,
+  erreur,
+  partageMedecinTraitant,
+  onEtablir,
+}: {
+  disabled: boolean;
+  courrier: CourrierEtabli | null;
+  erreur: string | null;
+  /** Choix TRUST du patient — exposé, jamais opposé (décision du 2026-07-22). */
+  partageMedecinTraitant: string | null;
+  onEtablir: (medecinLibelle: string) => void;
+}) {
+  const [medecin, setMedecin] = useState('');
+  // Un envoi à la fois, et pas de re-consignation du même geste (revue M4) :
+  // l'état `saving` est PARTAGÉ avec la déclaration de panel — une déclaration
+  // qui aboutit pendant le POST du courrier réarmerait le bouton en plein vol.
+  // Le verrou vit donc ICI. Il se lève quand le résultat revient (succès ou
+  // refus), et le succès n'est re-consignable qu'après modification du
+  // destinataire — deux clics rapprochés n'écrivent qu'une ligne.
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const [consigneSans, setConsigneSans] = useState<string | null>(null);
+  // Le verrou se lève au CHANGEMENT du résultat, jamais à sa simple présence :
+  // corriger le destinataire alors qu'un courrier antérieur est affiché ne
+  // doit pas déverrouiller le bouton pendant que le POST est en vol.
+  useEffect(() => {
+    setEnvoiEnCours(false);
+  }, [courrier, erreur]);
+  const dejaConsigne = courrier !== null && consigneSans === medecin.trim();
+
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3">
+      <p className="text-xs font-medium text-foreground">Courrier au médecin traitant</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Établi à partir de la proposition ci-dessus, dans un registre non prescriptif :
+        la décision de demander ces explorations, comme leur interprétation, revient au
+        médecin. <strong>Aucun envoi automatique</strong> — le courrier est à transcrire
+        ou à imprimer.
+      </p>
+      {partageMedecinTraitant !== null && LIBELLES_PARTAGE[partageMedecinTraitant] && (
+        <p
+          className={`mt-2 text-xs ${partageMedecinTraitant === 'accepte' ? 'text-muted-foreground' : 'text-status-warning'}`}
+        >
+          {LIBELLES_PARTAGE[partageMedecinTraitant]}
+        </p>
+      )}
+      {partageMedecinTraitant === null && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Le patient ne s’est pas exprimé sur le partage avec son médecin traitant.
+        </p>
+      )}
+      <label className="mt-2 block text-xs text-muted-foreground" htmlFor="courrier-medecin">
+        Nom du médecin destinataire
+      </label>
+      <input
+        id="courrier-medecin"
+        type="text"
+        value={medecin}
+        onChange={event => setMedecin(event.target.value)}
+        placeholder="Dr Nicola"
+        className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+      />
+      <button
+        type="button"
+        disabled={disabled || envoiEnCours || dejaConsigne || medecin.trim() === ''}
+        onClick={() => {
+          setEnvoiEnCours(true);
+          setConsigneSans(medecin.trim());
+          onEtablir(medecin.trim());
+        }}
+        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        Établir et consigner le courrier
+      </button>
+
+      {erreur && (
+        <p role="alert" className="mt-2 text-sm text-status-danger">
+          {erreur}
+        </p>
+      )}
+
+      {courrier && (
+        <div className="mt-3">
+          <p role="status" className="text-xs text-status-success">
+            Courrier consigné au dossier. Provenance : {courrier.ancrageVersion}, empreinte{' '}
+            {courrier.ancrageSha256.slice(0, 12)}…
+          </p>
+          <textarea
+            readOnly
+            value={courrier.texte}
+            rows={10}
+            aria-label="Texte du courrier à transcrire"
+            className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground"
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -145,6 +264,10 @@ export function PropositionBilanPanel({
   error = null,
   onDeclarer,
   onNouvelleSaisie = () => {},
+  courrier = null,
+  courrierErreur = null,
+  partageMedecinTraitant = null,
+  onEtablirCourrier,
 }: {
   lignes: LignePanelProposition[];
   limites: LimiteProposition[];
@@ -156,6 +279,12 @@ export function PropositionBilanPanel({
   onDeclarer: (panelCode: string, documenteLe: string) => void;
   /** Appelé à l'ouverture d'un formulaire : remet l'état à `idle`. */
   onNouvelleSaisie?: () => void;
+  /** Courrier établi lors de ce passage, à transcrire. */
+  courrier?: CourrierEtabli | null;
+  courrierErreur?: string | null;
+  /** Choix « partage médecin traitant » — exposé, jamais opposé. */
+  partageMedecinTraitant?: string | null;
+  onEtablirCourrier?: (medecinLibelle: string) => void;
 }) {
   const parPanel = new Map(documentes.map(doc => [doc.panelCode, doc]));
 
@@ -280,6 +409,21 @@ export function PropositionBilanPanel({
         <p role="status" className="mt-2 text-sm text-status-success">
           Déclaration consignée : la proposition a été recalculée.
         </p>
+      )}
+
+      {/* Le geste s'offre sur le MÊME prédicat que le générateur (revue M5) :
+          un dossier dont tous les panels sont déjà documentés ou non indiqués
+          n'a pas de courrier — l'offrir ferait journaliser un accès pour un
+          409. */}
+      {onEtablirCourrier && !motifIndisponible
+        && lignes.some(ligne => STATUTS_PROPOSES.has(ligne.statut)) && (
+        <FormulaireCourrier
+          disabled={state === 'saving'}
+          courrier={courrier}
+          erreur={courrierErreur}
+          partageMedecinTraitant={partageMedecinTraitant}
+          onEtablir={onEtablirCourrier}
+        />
       )}
 
       <div className="mt-3 rounded-lg border border-border p-3">
