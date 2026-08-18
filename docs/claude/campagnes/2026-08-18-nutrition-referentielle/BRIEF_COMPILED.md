@@ -13,11 +13,7 @@ _Genere le 2026-08-18 par scripts/wn-campaign.mjs._
 
 ## 1. Intention metier
 
-- Donner au carnet alimentaire son aval « conseils » : le référentiel Ciqual (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
-- avec mapping neuronutriments (R1 produit), la bibliothèque de compléments (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
-- clean label (R2), et les fiches conseils & recettes filtrées par protocole (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
-- (R3). Arc choisi par arbitrage utilisateur du 2026-08-18 (préféré à l'arc (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
-- espace patient, différé). Convergence à terme : le dashboard patient E4 (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
+- Donner au carnet alimentaire son aval « conseils » : le référentiel Ciqual avec mapping neuronutriments (R1 produit), la bibliothèque de compléments clean label (R2), et les fiches conseils & recettes filtrées par protocole (R3). Arc choisi par arbitrage utilisateur du 2026-08-18 (préféré à l'arc espace patient, différé). Convergence à terme : le dashboard patient E4 consommera ces référentiels. (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
 - R1/R2/R3 sont « à faire » sans statut déclaré (`docs/ROADMAP_PRODUIT.md` (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
 - :126, :138, :149 — réserve d'audit du 2026-07-04 : statuts laissés « À (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)
 - faire » faute de confirmation ; à revérifier au cadrage). (docs/claude/campagnes/2026-08-18-nutrition-referentielle/sources/brief-nutrition-referentielle.md)

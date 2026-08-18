@@ -4,10 +4,10 @@
 
 Donner au carnet alimentaire son aval « conseils » : le référentiel Ciqual
 avec mapping neuronutriments (R1 produit), la bibliothèque de compléments
-clean label (R2), et les fiches conseils & recettes filtrées par protocole
-(R3). Arc choisi par arbitrage utilisateur du 2026-08-18 (préféré à l'arc
-espace patient, différé). Convergence à terme : le dashboard patient E4
-consommera ces référentiels.
+clean label (R2), et les fiches conseils & recettes filtrées par protocole (R3).
+Arc choisi par arbitrage utilisateur du 2026-08-18 (préféré à l'arc espace
+patient, différé). Convergence à terme : le dashboard patient E4 consommera
+ces référentiels.
 
 ## État réel au cadrage (2026-08-18)
 

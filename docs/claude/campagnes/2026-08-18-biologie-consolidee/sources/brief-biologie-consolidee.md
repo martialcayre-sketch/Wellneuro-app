@@ -16,7 +16,7 @@ parcours joués, et le garde-fou des packs devient un contrat.
 - Aucun E2E ne couvre la proposition ni le courrier, alors que la surface est
   vivante en production.
 - Le prérequis « aucun pack actif ne référence un qid de `IDS_SUSPENDUS` »
-  n'est asséré par aucun contrat `prisma/checks` — il a déjà cassé une fois
+  n'est asserté par aucun contrat `prisma/checks` — il a déjà cassé une fois
   (2026-08-06 18:02) et sa réserve est écrite à la clôture de
   dettes-packs-residuelles (:161-170).
 - Question à confirmer comme choix, pas comme oubli : le courrier ne nomme
