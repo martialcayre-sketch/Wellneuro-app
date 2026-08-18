@@ -310,7 +310,17 @@ export function sansCommentaires(source) {
 export function chargerIndexSources(racine) {
   let liste;
   try {
-    liste = git(['ls-files', 'web/src'], racine).split('\n').filter(Boolean);
+    // `--others --exclude-standard` : les fichiers NON ENCORE SUIVIS comptent
+    // aussi. Sans eux, régénérer la matrice avant un `git add` produisait un
+    // Markdown sous-compté — vert en local, ROUGE en CI, où tout est commité.
+    // Le banc de fraîcheur passait alors pour une raison fausse, ce qui est
+    // pire qu'un banc absent. Les fichiers ignorés (`node_modules`, `.next`,
+    // client Prisma généré) restent exclus : c'est `--exclude-standard` qui
+    // le garantit, pas une liste à maintenir.
+    liste = git(
+      ['ls-files', '--cached', '--others', '--exclude-standard', 'web/src'],
+      racine,
+    ).split('\n').filter(Boolean);
   } catch {
     return [];
   }

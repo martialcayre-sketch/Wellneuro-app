@@ -689,6 +689,38 @@ test('registre de décisions absent ou invalide : statut explicite, jamais une e
   assert.deepEqual(invalide.decisions, {}, 'un registre illisible ne doit pas se confondre avec un registre vide côté forme');
 });
 
+test('un fichier NON SUIVI est indexé comme les autres', () => {
+  // Le piège que ce banc ferme : régénérer avant `git add` donnait un Markdown
+  // sous-compté, vert en local et rouge en CI (où tout est commité). Un banc de
+  // fraîcheur qui passe pour une raison fausse est pire qu'un banc absent.
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-matrice-'));
+  execFileSync('git', ['init', '--quiet'], { cwd: racine });
+  fs.mkdirSync(path.join(racine, 'web', 'src', 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(racine, 'web', 'src', 'lib', 'suivi.ts'), 'export const A = 1;\n');
+  execFileSync('git', ['add', '-A'], { cwd: racine });
+  execFileSync('git', ['-c', 'user.email=t@wellneuro.fr', '-c', 'user.name=banc', 'commit', '--quiet', '-m', 'init'], { cwd: racine });
+  // Le fichier neuf du lot en cours : écrit, pas encore ajouté.
+  fs.writeFileSync(path.join(racine, 'web', 'src', 'lib', 'non-suivi.ts'), 'export const B = 2;\n');
+
+  const chemins = chargerIndexSources(racine).map((f) => f.chemin).sort();
+  assert.deepEqual(chemins, ['web/src/lib/non-suivi.ts', 'web/src/lib/suivi.ts']);
+});
+
+test('un fichier IGNORÉ reste hors de l’index', () => {
+  // `--others` sans `--exclude-standard` ferait entrer node_modules et le
+  // client Prisma généré : l'index deviendrait ingérable, et faux.
+  const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-matrice-'));
+  execFileSync('git', ['init', '--quiet'], { cwd: racine });
+  fs.mkdirSync(path.join(racine, 'web', 'src', 'generated'), { recursive: true });
+  fs.writeFileSync(path.join(racine, '.gitignore'), 'web/src/generated\n');
+  fs.writeFileSync(path.join(racine, 'web', 'src', 'generated', 'client.ts'), 'export const G = 1;\n');
+  fs.mkdirSync(path.join(racine, 'web', 'src', 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(racine, 'web', 'src', 'lib', 'vrai.ts'), 'export const V = 1;\n');
+
+  const chemins = chargerIndexSources(racine).map((f) => f.chemin);
+  assert.deepEqual(chemins, ['web/src/lib/vrai.ts']);
+});
+
 test('un dépôt sans web/src rend une matrice vide sans lever', () => {
   const racine = fs.mkdtempSync(path.join(os.tmpdir(), 'wn-matrice-'));
   execFileSync('git', ['init', '--quiet'], { cwd: racine });
