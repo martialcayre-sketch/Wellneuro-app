@@ -7,12 +7,14 @@
 ### D-071 — Brancher la proposition de bilan : un drapeau neuf éteint, et la table qui rend « déjà documenté » atteignable
 
 - Date : 2026-08-17
-- Statut : accepté (arbitrages praticien en session). §2 et §3 sont **portés
-  par la PR de migration, en attente de relecture puis de `release-db`** — ce
-  registre est append-only, il ne déclare pas implémenté ce qui n'est pas
-  encore relu ni appliqué (`D-070` : une affirmation déduite de la
-  documentation avait déjà été fausse). §1 et §4 portent la PR de branchement,
-  à venir.
+- Statut : accepté (arbitrages praticien en session). §2 et §3 sont
+  **appliqués** — migration relue (#703) et `release-db` approuvée le
+  2026-08-17, table vérifiée en production (lecture MCP : 7 colonnes, RLS
+  active sans policy, 2 FK `RESTRICT`, 0 ligne). §1, §2 bis et §4 sont
+  **portés par la PR de branchement, en attente de relecture**. Ce registre
+  est append-only et ne déclare pas implémenté ce qui n'est pas encore relu
+  (`D-070` : une affirmation déduite de la documentation avait déjà été
+  fausse).
 - Domaine : clinique, biologie, schéma, drapeaux
 
 - Contexte : `D-070` a établi que `deriverStatutsBiologie` n'a aucun appelant
@@ -75,6 +77,32 @@ et la table n'étant ni `readonly` ni gelée, un `sort()` sans copie
 empoisonnerait l'export pour tout le processus. Corollaire : l'évaluation
 reste **serveur** (le moteur importe `createHash`), seul le résultat traverse
 HTTP.
+
+**5. Dettes nommées par la revue du branchement, et assumées.** Deux ne sont
+pas fermées par la PR de branchement, et l'être-nommé vaut mieux que
+l'omission :
+
+- **La matrice de consommation reste imprécise sur la bibliothèque NABM.** La
+  régénération la fait passer de « dormante » à « 1 surface indirecte », sur la
+  seule foi d'un `import type { Remboursement }` — un import de TYPE, effacé à
+  la compilation, alors que le service ne passe délibérément aucun
+  remboursement. La ligne *neuve* de la matrice, elle, est juste : la table
+  d'indications y entre et cesse d'être dormante. Corriger le générateur pour
+  ignorer les imports de type est un lot à part.
+- **L'état affiché n'est pas remis à zéro au changement de patient**
+  (`ClinicalRuntimeSection`) : en App Router, un changement de segment peut
+  réconcilier le composant sans démontage. Défaut PRÉEXISTANT, partagé avec les
+  arbitrages — mais la matière affichée devient plus parlante avec ce lot, donc
+  le risque perçu monte. Correctif connu : `key={idPatient}`, hors périmètre
+  d'une PR de branchement parce qu'il touche tous les panneaux du cockpit.
+
+Fermé en revanche, et non reporté : la correction d'une déclaration erronée
+(le formulaire reste offert — une date saisie de travers retirait sinon un
+panel de la proposition sans issue), le verrou de drapeau re-testé DANS le
+service (au patron d'`evaluerOrientationPourPatient`, pour qu'aucun futur
+appelant ne lise le dossier sans lui), et la frontière de fuseau (une tolérance
+d'un jour, faute de quoi la date du jour était refusée comme future chaque nuit
+entre minuit et 2 h à Paris).
 
 Écarté : consigner le courrier médecin dans la foulée — `CorrespondanceMedecin`
 n'a aucune colonne d'ancrage, et consigner une pièce clinique sans sa

@@ -22,12 +22,13 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Source de savoir | Surface qui la consomme | Décision produite | Drapeau(x) | Verrou donnée | Patient | Arbitrage |
 |---|---|---|---|---|---|---|
 | Boussole alimentaire (C5) — distribution signée des aliments | `web/src/app/api/praticien/boussole/route.ts` (route-api)<br>+ 16 indirecte(s) | Lecture PRAL/densité d’un aliment servie au patient et au praticien. | WN_C5_ENABLED | — | oui | — |
-| Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | **aucune — dormante** | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_RESULTS_ENABLED | — | non | a_brancher (2026-08-05) |
+| Bibliothèque de biologie fonctionnelle (987 actes NABM V105) | 1 surface(s) indirecte(s) seulement | Régime de remboursement d’un acte de biologie proposé. | WN_CB_ENABLED, WN_CB_PROPOSITION, WN_CB_RESULTS_ENABLED | — | non | a_brancher (2026-08-05) |
 | Catalogue des compléments alimentaires (C4) | `web/src/app/api/praticien/complements/route.ts` (route-api)<br>`web/src/components/complements/FicheComplementPanel.tsx` (composant)<br>`web/src/components/complements/RayonComplementsPanel.tsx` (composant) | Fiche complément : composition, cumuls, compatibilités. | WN_C4_ENABLED | — | non | — |
 | Tableau de compatibilité et de cumul entre compléments | 19 surface(s) indirecte(s) seulement | Cumul signalé ou absence de cumul, affichés sur la fiche. | WN_C4_ENABLED | — | non | — |
 | Table de contradictions NNPP2 (règles signées) | `web/src/app/api/praticien/synthese/route.ts` (route-api)<br>+ 4 indirecte(s) | Constat de contradiction entre instruments, affiché au cockpit praticien (table non signée : rien ne sort). | WN_ENABLE_CONTRADICTIONS_NNPP2, WN_SYNTHESE_STREAM | tableSignee, validationExterne | non | — |
-| Corpus clinique de synthèse V1 | `web/src/app/api/praticien/synthese/route.ts` (route-api)<br>+ 17 indirecte(s) | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1, WN_SYNTHESE_STREAM | validationExterne | oui | — |
-| Table d’orientation NNPP2 (règles signées) | 5 surface(s) indirecte(s) seulement | Orientation clinique proposée au praticien à partir des scores. | WN_ENABLE_ORIENTATION_NNPP2 | tableSignee, validationExterne | non | — |
+| Corpus clinique de synthèse V1 | `web/src/app/api/praticien/synthese/route.ts` (route-api)<br>+ 18 indirecte(s) | Cadrage clinique injecté dans la synthèse rédigée par le modèle. | WN_ENABLE_CORPUS_CLINIQUE_V1, WN_SYNTHESE_STREAM | validationExterne | oui | — |
+| Table d’indications biologiques (15 règles signées) | `web/src/components/patient-cockpit/ClinicalRuntimeSection.tsx` (composant) | Proposition de bilan hiérarchisée et sourcée, servie au cockpit praticien. | WN_CB_ENABLED, WN_CB_PROPOSITION, WN_CB_RESULTS_ENABLED | validationExterne | non | — |
+| Table d’orientation NNPP2 (règles signées) | 6 surface(s) indirecte(s) seulement | Orientation clinique proposée au praticien à partir des scores. | WN_ENABLE_ORIENTATION_NNPP2 | tableSignee, validationExterne | non | — |
 | Packs de consultation (registre + repli legacy) | `web/src/app/api/portail/valider/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api) | Quels questionnaires composent une consultation. | — | — | oui | — |
 | Catalogue des questionnaires et scoring | `web/src/app/api/patient/submit/route.ts` (route-api)<br>`web/src/app/api/praticien/assignations/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/assign/route.ts` (route-api)<br>`web/src/app/api/praticien/packs/route.ts` (route-api)<br>+ 41 indirecte(s) | Score et sous-scores d’un instrument passé par le patient. | WN_ALI_01_SIIN57 | — | oui | — |
 | Rayon de corpus « biologie » → notebook 08 — Biologie fonctionnelle | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
@@ -42,5 +43,5 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 3 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 18 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
 
-20 source(s) recensée(s), dont **6 dormante(s)**.
+21 source(s) recensée(s), dont **5 dormante(s)**.
 

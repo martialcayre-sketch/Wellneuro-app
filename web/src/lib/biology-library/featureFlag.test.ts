@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isCbEnabled, isCbResultsEnabled } from './featureFlag';
+import { isCbEnabled, isCbPropositionEnabled, isCbResultsEnabled } from './featureFlag';
 
 describe('isCbEnabled', () => {
   it("n'active le rayon que pour la valeur exacte « true » (fail-closed)", () => {
@@ -10,6 +10,29 @@ describe('isCbEnabled', () => {
     expect(isCbEnabled('1')).toBe(false);
     expect(isCbEnabled('TRUE')).toBe(false);
     expect(isCbEnabled(' true ')).toBe(false);
+  });
+});
+
+describe('isCbPropositionEnabled', () => {
+  it("n'ouvre la proposition que si les DEUX flags valent « true »", () => {
+    expect(isCbPropositionEnabled('true', 'true')).toBe(true);
+    expect(isCbPropositionEnabled('true', 'false')).toBe(false);
+    expect(isCbPropositionEnabled('true', undefined)).toBe(false);
+    expect(isCbPropositionEnabled('false', 'true')).toBe(false);
+    expect(isCbPropositionEnabled(undefined, 'true')).toBe(false);
+  });
+
+  // Le point qui compte : `WN_CB_ENABLED` vaut DÉJÀ « true » en production
+  // ([[D-070]]). Si la proposition s'ouvrait sur ce seul drapeau, elle serait
+  // visible sur tous les dossiers dès le déploiement.
+  it('reste FERMÉE sur le seul rayon déjà ouvert en production', () => {
+    expect(isCbPropositionEnabled(undefined, 'true')).toBe(false);
+  });
+
+  it('reste fermée sur les variantes proches de « true »', () => {
+    expect(isCbPropositionEnabled('1', 'true')).toBe(false);
+    expect(isCbPropositionEnabled('TRUE', 'true')).toBe(false);
+    expect(isCbPropositionEnabled(' true ', 'true')).toBe(false);
   });
 });
 

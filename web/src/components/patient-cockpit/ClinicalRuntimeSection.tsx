@@ -32,6 +32,13 @@ import {
 } from './ArbitrageBiologiquePanel';
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
+import {
+  PropositionBilanPanel,
+  type DocumenteAffiche,
+  type PropositionState,
+} from './PropositionBilanPanel';
+import type { LimiteProposition } from '@/lib/biology-library/propositionService';
+import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
@@ -158,6 +165,17 @@ export function ClinicalRuntimeSection({
   const [arbitrages, setArbitrages] = useState<ArbitrageRow[]>([]);
   const [arbitrageState, setArbitrageState] = useState<ArbitrageState>('idle');
   const [arbitrageError, setArbitrageError] = useState<string | null>(null);
+  // Proposition de bilan (D-071). `propositionDisponible` reste faux tant que
+  // la route n'a pas répondu `ok` : c'est LUI qui porte le drapeau
+  // `WN_CB_PROPOSITION`, sans second FeatureProvider — un 503 laisse
+  // simplement le panneau absent.
+  const [propositionDisponible, setPropositionDisponible] = useState(false);
+  const [propositionLignes, setPropositionLignes] = useState<LignePanelProposition[]>([]);
+  const [propositionLimites, setPropositionLimites] = useState<LimiteProposition[]>([]);
+  const [propositionDocumentes, setPropositionDocumentes] = useState<DocumenteAffiche[]>([]);
+  const [propositionMotif, setPropositionMotif] = useState<string | null>(null);
+  const [propositionState, setPropositionState] = useState<PropositionState>('idle');
+  const [propositionError, setPropositionError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   // Validation « pour diffusion » (C2A LOT-03 Part B).
@@ -262,6 +280,80 @@ export function ClinicalRuntimeSection({
       // L'arbitrage est rechargeable : un échec de lecture ne bloque pas le cockpit.
     }
   }, [idPatient, cbEnabled]);
+
+  // Proposition de bilan biologique — le drapeau `WN_CB_PROPOSITION` est lu
+  // côté serveur seulement : ici, une route qui refuse (503) laisse le
+  // panneau absent, et rien ne le distingue d'un rayon fermé.
+  const loadProposition = useCallback(async () => {
+    if (!cbEnabled) return;
+    try {
+      const response = await fetch(
+        `/api/praticien/biologie/proposition?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const payload = (await response.json()) as {
+        ok: boolean;
+        reason?: string;
+        error?: string;
+        lignes?: LignePanelProposition[];
+        limites?: LimiteProposition[];
+        documentes?: DocumenteAffiche[];
+      };
+      // Le moteur qui s'abstient (409) N'EST PAS une indisponibilité : son
+      // motif est écrit pour le praticien et doit s'afficher tel quel — une
+      // abstention expliquée vaut mieux qu'un panneau vide (`DC-34`).
+      if (response.status === 409 && payload.error) {
+        setPropositionDisponible(true);
+        setPropositionMotif(payload.error);
+        setPropositionLignes([]);
+        setPropositionLimites([]);
+        // Les déclarations déjà consignées NE sont PAS effacées de l'écran :
+        // l'abstention porte sur la dérivation, pas sur ce que le praticien a
+        // déclaré. Les vider ferait disparaître un fait du dossier.
+        return;
+      }
+      if (!response.ok || !payload.ok) {
+        setPropositionDisponible(false);
+        return;
+      }
+      setPropositionDisponible(true);
+      setPropositionMotif(null);
+      setPropositionLignes(payload.lignes ?? []);
+      setPropositionLimites(payload.limites ?? []);
+      setPropositionDocumentes(payload.documentes ?? []);
+    } catch {
+      // La proposition est rechargeable : un échec de lecture ne bloque pas le
+      // cockpit.
+      setPropositionDisponible(false);
+    }
+  }, [idPatient, cbEnabled]);
+
+  const declarerPanelDocumente = useCallback(
+    async (panelCode: string, documenteLe: string) => {
+      setPropositionState('saving');
+      setPropositionError(null);
+      try {
+        const response = await fetch('/api/praticien/biologie/proposition', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, panelCode, documenteLe }),
+        });
+        const payload = (await response.json()) as { ok: boolean; error?: string };
+        if (!response.ok || !payload.ok) {
+          setPropositionState('error');
+          setPropositionError(payload.error ?? 'Échec de l’enregistrement de la déclaration.');
+          return;
+        }
+        setPropositionState('idle');
+        // Relire plutôt que patcher l'état : la déclaration change les statuts
+        // dérivés du panel, et c'est le moteur qui les décide, pas l'écran.
+        await loadProposition();
+      } catch {
+        setPropositionState('error');
+        setPropositionError('Échec de l’enregistrement de la déclaration.');
+      }
+    },
+    [idPatient, loadProposition],
+  );
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
   // plancher et le GET du jalon dû partent en parallèle, et le T0 est
@@ -397,8 +489,9 @@ export function ClinicalRuntimeSection({
       void loadCheckins(readyDecisionCardId);
       void loadTrajectoire();
       void loadArbitrages();
+      void loadProposition();
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire, loadArbitrages]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire, loadArbitrages, loadProposition]);
 
   useEffect(() => {
     setFoodCompassSelection(null);
@@ -770,6 +863,17 @@ export function ClinicalRuntimeSection({
           state={diffusionState}
           error={diffusionError}
           onApprove={approveForDiffusion}
+        />
+      )}
+      {affiche('actions') && !fixture && propositionDisponible && (
+        <PropositionBilanPanel
+          lignes={propositionLignes}
+          limites={propositionLimites}
+          documentes={propositionDocumentes}
+          motifIndisponible={propositionMotif}
+          state={propositionState}
+          error={propositionError}
+          onDeclarer={declarerPanelDocumente}
         />
       )}
       {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (
