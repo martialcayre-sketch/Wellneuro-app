@@ -19,6 +19,7 @@ DO $$
 DECLARE
   refuse boolean;
   trouve text;
+  nb_rls integer;
 
   -- Chaque entrée : une insertion qui DOIT échouer sur un CHECK. Les clés
   -- étrangères citées n'existent pas, et c'est sans effet : Postgres évalue
@@ -73,7 +74,30 @@ BEGIN
       trouve;
   END IF;
 
-  RAISE NOTICE 'ARBITRAGE: % invariants vérifiés comme rejetants, table sans valeurs.',
+  -- Deny-all RLS (posture D-005). La migration d'origine l'avait OMISE, et
+  -- rien ne le disait : ce contrat existait déjà, mais il ne regardait pas la
+  -- RLS. Un an de tables patient correctement protégées, et celle-ci passait
+  -- au travers — parce qu'aucune garde ne lisait ce terme-là.
+  -- Prisma n'introspecte pas la RLS : sans cette assertion, une migration
+  -- ultérieure pourrait la retirer sans qu'un seul test ne parle.
+  SELECT count(*) INTO nb_rls
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relname = 'arbitrages_biologiques'
+    AND c.relrowsecurity;
+  IF nb_rls <> 1 THEN
+    RAISE EXCEPTION 'ARBITRAGE: RLS désactivée sur arbitrages_biologiques';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'arbitrages_biologiques'
+  ) THEN
+    RAISE EXCEPTION 'ARBITRAGE: policy inattendue (deny-all attendu)';
+  END IF;
+
+  RAISE NOTICE 'ARBITRAGE: % invariants vérifiés comme rejetants, table sans valeurs, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 

@@ -1,0 +1,24 @@
+-- Deny-all RLS sur `arbitrages_biologiques` — dette de la migration
+-- `20260815010000_arbitrage_biologique_sans_valeurs`, qui l'avait omise.
+--
+-- CE QUE LA TABLE PORTE : un lien NOMINATIF entre un dossier patient, une
+-- intention de protocole, un verdict clinique et l'e-mail du praticien qui l'a
+-- posé. Aucune valeur d'analyse — le verrou HDS tient —, mais « ce patient a
+-- fait explorer cette intention, et le praticien a conclu ceci » est une
+-- donnée de santé à part entière.
+--
+-- POURQUOI CELA COMPTE : Supabase applique par défaut
+-- `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT … TO anon, authenticated`.
+-- Une table de `public` sans RLS rejoint donc le périmètre PostgREST, et sa
+-- protection ne repose plus que sur la configuration du projet. Toutes les
+-- autres tables patient portent le deny-all depuis
+-- `20260707123710_enable_rls_security` ; au 2026-08-18, lecture MCP à l'appui,
+-- `arbitrages_biologiques` était LA SEULE table de `public` à en être privée.
+-- C'est donc une régression isolée, pas une posture — et elle se ferme.
+--
+-- L'application accède en connexion Postgres directe via Prisma : aucun accès
+-- Data API n'est requis, et aucune policy n'est posée (deny-all strict).
+--
+-- Sans effet sur les données : la table compte 0 ligne en production
+-- (lecture MCP du 2026-08-18) — rien n'a jamais transité par cette surface.
+ALTER TABLE "public"."arbitrages_biologiques" ENABLE ROW LEVEL SECURITY;
