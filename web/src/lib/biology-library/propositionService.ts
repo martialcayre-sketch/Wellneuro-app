@@ -115,10 +115,16 @@ async function chargerDocumentes(idPatient: string): Promise<PanelDocumente[]> {
  * Passations du dossier, au même recalcul que le moteur d'orientation.
  *
  * NE PAS passer par `evaluerOrientationPourPatient` : ce service est gaté par
- * `WN_ENABLE_ORIENTATION_NNPP2`, non posé en production. La proposition
- * biologie deviendrait muette pour une raison étrangère à la biologie. Seul
+ * `WN_ENABLE_ORIENTATION_NNPP2`, et la proposition biologie deviendrait muette
+ * pour une raison étrangère à la biologie. Seul
  * `scoresRecalculesPourRaisonnement` est réutilisé — c'est précisément pour
  * cela qu'il est exporté.
+ *
+ * LA RAISON D'ORIGINE DISAIT « drapeau non posé en production » : c'était FAUX
+ * ([[D-074]], constat du 2026-08-18 — le panneau sert des recommandations,
+ * donc le verrou est ouvert). Le découplage reste juste, mais il vaut par
+ * l'indépendance des deux surfaces, jamais par l'état d'un drapeau : un état
+ * qui bascule ne peut pas fonder une décision de conception.
  */
 async function chargerReponses(idPatient: string): Promise<ReponseOrientation[]> {
   const lignes = await prisma.questionnaireReponse.findMany({
