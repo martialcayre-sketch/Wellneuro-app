@@ -16,7 +16,7 @@ import type { LignePanelProposition, StatutPanel } from '@/lib/biology-library/s
 //   2. « remboursement non évalué » ne veut pas dire « non remboursé » ;
 //   3. l'outil ignore les bilans qu'on ne lui a pas déclarés.
 
-export type PropositionState = 'idle' | 'saving' | 'error';
+export type PropositionState = 'idle' | 'saving' | 'saved' | 'error';
 
 export type DocumenteAffiche = {
   panelCode: string;
@@ -51,14 +51,7 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('fr-FR');
 }
 
-function Limite({
-  limite,
-  libelle,
-}: {
-  limite: LimiteProposition;
-  /** Rend le libellé d'un panel : une limite se dit en clair, pas en code. */
-  libelle: (panelCode: string) => string;
-}) {
+function Limite({ limite }: { limite: LimiteProposition }) {
   if (limite.type === 'remboursement_non_evalue') {
     return (
       <li>
@@ -68,20 +61,13 @@ function Limite({
       </li>
     );
   }
-  if (limite.type === 'items_ratio_ignores') {
-    return (
-      <li>
-        Certains panels comportent des rapports calculés que cette vue n’affiche pas
-        encore ({limite.panels.map(libelle).join(', ')}) : leur composition est donc
-        incomplète à l’écran.
-      </li>
-    );
-  }
   return (
     <li>
-      Déclaration écartée pour {limite.panels.map(libelle).join(', ')} : la date saisie
-      est postérieure à aujourd’hui, ou illisible. Le panel est traité comme
-      <strong> non exploré</strong> — il vaut mieux le proposer en trop que le taire.
+      {limite.motifs.map((motif, index) => (
+        <span key={index}>{motif} </span>
+      ))}
+      Le panel concerné n’apparaît pas dans la liste ci-dessus (inactif au
+      catalogue, ou couvert par aucune règle d’indication).
     </li>
   );
 }
@@ -91,12 +77,16 @@ function FormulaireDeclaration({
   disabled,
   dejaDeclare,
   onDeclarer,
+  onOuvrir,
 }: {
   panelCode: string;
   disabled: boolean;
   /** Une déclaration existe déjà : le geste devient une CORRECTION. */
   dejaDeclare: boolean;
   onDeclarer: (panelCode: string, documenteLe: string) => void;
+  /** Efface le retour de la consignation précédente : sans cela la bannière
+   *  resterait, et une seconde consignation ne serait plus annoncée. */
+  onOuvrir: () => void;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [date, setDate] = useState('');
@@ -105,7 +95,7 @@ function FormulaireDeclaration({
     return (
       <button
         type="button"
-        onClick={() => setOuvert(true)}
+        onClick={() => { setOuvert(true); onOuvrir(); }}
         className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
       >
         {dejaDeclare ? 'Corriger la date du bilan…' : 'Déjà exploré hors outil…'}
@@ -154,6 +144,7 @@ export function PropositionBilanPanel({
   state = 'idle',
   error = null,
   onDeclarer,
+  onNouvelleSaisie = () => {},
 }: {
   lignes: LignePanelProposition[];
   limites: LimiteProposition[];
@@ -163,10 +154,10 @@ export function PropositionBilanPanel({
   state?: PropositionState;
   error?: string | null;
   onDeclarer: (panelCode: string, documenteLe: string) => void;
+  /** Appelé à l'ouverture d'un formulaire : remet l'état à `idle`. */
+  onNouvelleSaisie?: () => void;
 }) {
   const parPanel = new Map(documentes.map(doc => [doc.panelCode, doc]));
-  const libelles = new Map(lignes.map(ligne => [ligne.panelCode, ligne.libelle]));
-  const libelleDuPanel = (panelCode: string) => libelles.get(panelCode) ?? panelCode;
 
   return (
     <section
@@ -232,6 +223,15 @@ export function PropositionBilanPanel({
                     {ligne.analytes.map(analyte => analyte.libelle).join(' · ')}
                   </p>
                 )}
+                {ligne.ratios.length > 0 && (
+                  // Rapports calculés : ce sont des CALCULS sur les analytes du
+                  // panel, pas des actes — ni remboursement propre, ni
+                  // validation médicale. Les taire amputait la composition
+                  // affichée de ce que le bilan contient ([[D-072]]).
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Rapports calculés : {ligne.ratios.map(ratio => ratio.libelle).join(' · ')}
+                  </p>
+                )}
                 {ligne.analytes.some(analyte => analyte.validationMedicaleRequise) && (
                   <p className="mt-1 text-xs text-status-warning">
                     Interprétation sous validation médicale.
@@ -260,18 +260,8 @@ export function PropositionBilanPanel({
                   disabled={state === 'saving'}
                   dejaDeclare={documente !== undefined}
                   onDeclarer={onDeclarer}
+                  onOuvrir={onNouvelleSaisie}
                 />
-                {/*
-                  Un panel proposé ALORS qu'une déclaration existe : sa date a
-                  été écartée (future ou illisible). Le dire sur la ligne même,
-                  sinon le badge et la mention se contredisent en silence.
-                */}
-                {documente && ligne.statut !== 'deja_documente' && ligne.statut !== 'a_repeter' && (
-                  <p className="mt-1 text-xs text-status-warning">
-                    Cette déclaration n’est pas prise en compte : sa date est postérieure à
-                    aujourd’hui, ou illisible. Le panel reste proposé.
-                  </p>
-                )}
               </li>
             );
           })}
@@ -284,6 +274,14 @@ export function PropositionBilanPanel({
         </p>
       )}
 
+      {/* Une consignation muette laisse le praticien sans preuve que son geste
+          a porté — et la ligne ne change pas toujours de statut. */}
+      {state === 'saved' && (
+        <p role="status" className="mt-2 text-sm text-status-success">
+          Déclaration consignée : la proposition a été recalculée.
+        </p>
+      )}
+
       <div className="mt-3 rounded-lg border border-border p-3">
         <p className="text-xs font-medium text-foreground">Ce que cette vue ne sait pas</p>
         <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
@@ -292,7 +290,7 @@ export function PropositionBilanPanel({
             déclaration, le panel est proposé comme s’il n’avait jamais été exploré.
           </li>
           {limites.map((limite, index) => (
-            <Limite key={`${limite.type}-${index}`} limite={limite} libelle={libelleDuPanel} />
+            <Limite key={`${limite.type}-${index}`} limite={limite} />
           ))}
         </ul>
       </div>

@@ -22,6 +22,7 @@ function ligne(
     motifs: [],
     justificationClaims: [{ claimId: 'WN-CL-9999-001', versionClaim: 'v1.0' }],
     analytes: [],
+  ratios: [],
     ...surcharge,
   };
 }
@@ -125,5 +126,22 @@ describe('genererCourrierBiologie', () => {
       texte: resultat.courrier.texte,
     });
     expect(preparation.ok).toBe(true);
+  });
+});
+
+describe('rapports calculés (D-072)', () => {
+  it('le courrier les nomme, et comme des CALCULS — pas comme des actes à demander', () => {
+    // Les taire laissait la composition amputée sur le seul artefact qui quitte
+    // le cabinet, alors que l'écran, lui, les montrait.
+    const resultat = genererCourrierBiologie(entree([
+      ligne({
+        panelCode: 'PANEL_GLU',
+        libelle: 'Glucidique',
+        ratios: [{ code: 'RATIO_HOMA', libelle: 'Indice HOMA' }],
+      }),
+    ]));
+    const texte = JSON.stringify(resultat);
+    expect(texte).toContain('Indice HOMA');
+    expect(texte).toMatch(/Rapports calculés/);
   });
 });

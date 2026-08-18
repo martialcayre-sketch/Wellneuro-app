@@ -68,6 +68,15 @@ function paragrapheLigne(ligne: LignePanelProposition): string {
   const morceaux: string[] = [];
   morceaux.push(`${ligne.libelle} — ${libelleStatut(ligne)}.`);
   if (ligne.objectif) morceaux.push(`Objectif : ${ligne.objectif}`);
+  // Les rapports CALCULÉS sont dits, et dits comme tels ([[D-072]]) : ce ne
+  // sont pas des actes à demander au laboratoire, mais ils font partie de ce
+  // que le bilan produit. Les taire ici laissait l'amputation sur le SEUL
+  // artefact qui quitte le cabinet, alors même que l'écran, lui, les montre.
+  if (ligne.ratios.length > 0) {
+    morceaux.push(
+      `Rapports calculés à partir de ces éléments : ${ligne.ratios.map(r => r.libelle).join(', ')}.`,
+    );
+  }
   if (ligne.analytes.length > 0) {
     morceaux.push(`Éléments : ${ligne.analytes.map(a => a.libelle).join(', ')}.`);
     const validation = ligne.analytes.filter(a => a.validationMedicaleRequise);

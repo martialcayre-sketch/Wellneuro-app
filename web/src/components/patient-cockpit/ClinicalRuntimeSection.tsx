@@ -343,10 +343,10 @@ export function ClinicalRuntimeSection({
           setPropositionError(payload.error ?? 'Échec de l’enregistrement de la déclaration.');
           return;
         }
-        setPropositionState('idle');
         // Relire plutôt que patcher l'état : la déclaration change les statuts
         // dérivés du panel, et c'est le moteur qui les décide, pas l'écran.
         await loadProposition();
+        setPropositionState('saved');
       } catch {
         setPropositionState('error');
         setPropositionError('Échec de l’enregistrement de la déclaration.');
@@ -874,6 +874,7 @@ export function ClinicalRuntimeSection({
           state={propositionState}
           error={propositionError}
           onDeclarer={declarerPanelDocumente}
+          onNouvelleSaisie={() => setPropositionState('idle')}
         />
       )}
       {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (

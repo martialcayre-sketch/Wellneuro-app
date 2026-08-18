@@ -4,6 +4,97 @@
 
 ## Décisions actives
 
+### D-072 — Les dettes du LOT-06 sont soldées : deux replis fail-open supprimés, et la matrice cesse de compter les imports de type
+
+- Date : 2026-08-18
+- Statut : accepté (arbitrage praticien en session — « solder toutes les
+  dettes »). Porté par la PR de soldes, en attente de relecture.
+- Domaine : clinique, outillage d'inventaire, UI
+
+**1. Deux replis fail-open sont SUPPRIMÉS du moteur, pas rendus
+inatteignables.** `deriverStatutsBiologie` concluait `deja_documente` sur une
+date de bilan illisible **comme** sur une date postérieure à la référence —
+donc RETIRAIT le panel des propositions. Une donnée aberrante produisait la
+conclusion rassurante, ce que `DC-24` et `DC-25` refusent. `D-071` §2 bis les
+avait fermés à la frontière du service ; ils sont désormais fermés **dans le
+moteur**, pour tout appelant présent ou futur, et la garde de frontière est
+retirée : une règle clinique recopiée dans deux modules est une règle qu'on
+peut oublier de corriger dans l'un des deux.
+
+Le sens du repli est arbitré : écarter propose un bilan de trop, garder en
+tairait un. Une déclaration écartée n'est jamais silencieuse — la ligne du
+panel porte son motif (`DC-30`). Une `dateReference` illisible écarte **toutes**
+les déclarations : ne pouvant juger aucune ancienneté, le moteur ne conclut sur
+aucune.
+
+**2. Les rapports calculés entrent dans la composition.** Un item de panel porte
+soit un analyte soit un ratio ; les ratios étaient écartés, et la composition
+affichée était donc amputée de ce que le bilan contient réellement. Ils sont
+exposés à part — ce sont des CALCULS sur des analytes, sans remboursement propre
+ni validation médicale.
+
+**3. La matrice de consommation cesse de compter les imports de TYPE.** Les
+jetons d'une source incluent le chemin de son module, et la correspondance est
+textuelle : un `import type { Remboursement } from './remboursable'` suffisait à
+faire d'un fichier un consommateur. La bibliothèque NABM (987 actes) passait
+ainsi de « dormante » à « consommée » sans qu'un seul remboursement soit dérivé.
+Un import de type est **effacé à la compilation** : aucun code ne s'exécute,
+aucune donnée ne transite.
+
+**Le correctif porte au-delà du cas signalé, et c'est délibéré** : c'est la même
+erreur corrigée partout. Le dépôt compte désormais **6 sources dormantes au lieu
+de 5**, et plusieurs lignes perdent des surfaces qui n'étaient atteintes que par
+un type. L'instrument devient plus sévère — et plus vrai. Sa limite reste
+entière et connue : il modélise le graphe d'imports, jamais une frontière HTTP.
+
+**4. Le cockpit est remonté au changement de dossier** (`key={idPatient}`). En
+App Router, un changement de segment peut réconcilier un composant client sans
+le démonter : l'état clinique du patient précédent restait affiché tant que les
+GET du nouveau dossier n'avaient pas répondu. Du contenu clinique sous le
+mauvais nom, même une seconde, ne se rattrape pas. Coût assumé : un brouillon en
+cours est perdu si l'on change de dossier.
+
+**5. Une affirmation d'état est corrigée, et sa phrase conservée** (`D-071`,
+append-only). « Les tables NABM sont vides » est **imprécis** :
+`biology_nabm_actes` porte **987 actes** (lecture MCP du 2026-08-18). Ce qui est
+vide, c'est `biology_analyte_nabm` — l'appariement analyte ↔ acte, que le schéma
+exige manuel et signé. La conclusion ne change pas ; sa raison, si.
+L'affirmation avait été reprise d'une revue sans être lue en base : même classe
+que `D-070`.
+
+**6. Ce que la revue a corrigé avant merge (NO-GO → GO).** Les trois blocages
+tombaient tous dans le périmètre que cette décision revendique comme soldé —
+c'est le motif de les avoir traités plutôt que reportés :
+
+- **Le remontage était posé au mauvais niveau.** `key={idPatient}` gardait
+  `ClinicalRuntimeSection`, mais c'est `FichePatientPanel` qui détient l'état du
+  dossier — équilibre, réponses, trajectoire, mode de vie, assignations. Le
+  risque nommé restait donc entier sur la plus grande sous-arborescence. La clé
+  est remontée au point de montage du dossier.
+- **Le repli « écarter plutôt que taire » rouvrait deux silences** : sur un
+  panel discordant (la branche sort en `continue` avant le motif) et sur un
+  panel sans ligne (inactif, ou visé par aucune règle exploitable). Le premier
+  est corrigé sur place ; le second remonte désormais à l'appelant par
+  `declarationsIgnoreesHorsProposition`, que l'écran affiche. Une déclaration
+  écartée a toujours un porteur.
+- **La matrice portait deux définitions concurrentes de « import de type »** :
+  `import { type X }` seul restait compté, et le script en jugeait autrement
+  selon l'endroit. Un juge unique — `nomsDeValeur` — les décide désormais tous
+  les deux, et un banc éprouve que les deux chemins ne divergent pas.
+
+Trois corrections de moindre gravité sont prises dans la même passe : le
+courrier médecin nomme enfin les rapports calculés (l'amputation survivait sur
+le seul artefact qui quitte le cabinet) ; le moteur adopte la **même** tolérance
+de fuseau que la route (sans quoi une déclaration du jour saisie la nuit était
+acceptée puis systématiquement écartée sous les yeux de celui qui la saisit) ;
+et le motif distingue enfin la déclaration illisible de la date de RÉFÉRENCE
+illisible — accuser la mauvaise donnée est un défaut de `DC-34`.
+
+**Restent des LOTS, pas des dettes** — ils demandent une curation praticien
+signée, claim par claim, et ne se soldent pas dans une passe : l'appariement
+analyte ↔ NABM (0 ligne) et les liens biomarqueur ↔ besoin (0 ligne, claim
+obligatoire au schéma).
+
 ### D-071 — Brancher la proposition de bilan : un drapeau neuf éteint, et la table qui rend « déjà documenté » atteignable
 
 - Date : 2026-08-17
@@ -110,6 +201,13 @@ provenance contredit `DC-34` ; l'y ajouter est une autre migration. Écarté
 aussi : passer au moteur une carte de remboursements `non_evalue` — les tables
 NABM sont vides et le moteur pose déjà ce défaut, qui est l'aveu d'ignorance
 juste (`DC-24`).
+
+*(Phrase conservée pour l'histoire, mais IMPRÉCISE : `D-072` établit que
+`biology_nabm_actes` porte **987 actes**. Ce qui est vide, c'est
+`biology_analyte_nabm` — l'appariement analyte ↔ acte, que le schéma exige
+manuel et signé. La conclusion — ne pas construire de carte — ne change pas ;
+sa raison, si. L'affirmation avait été reprise d'une revue sans être lue en
+base, même classe que `D-070`.)*
 
 ### D-070 — Le drapeau `WN_CB_ENABLED` était déjà posé : quatre affirmations reviennent à l'état réel, et la table signée se découvre dormante
 

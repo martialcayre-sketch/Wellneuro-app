@@ -28,6 +28,9 @@ import {
   entreesDObjet,
   construireRapport,
   estVisiblePatient,
+  contenuHorsImportsDeType,
+  importsDe,
+  nomsDeValeur,
   jetonsDeModule,
   lireDecisions,
   mentionne,
@@ -132,6 +135,84 @@ test("un import relatif homonyme d'un AUTRE dossier ne compte pas", () => {
     'web/src/lib/b/voisin.ts': "import { Y } from './catalogue';",
   });
   assert.deepEqual(appelantsDe(index, jetons, ['web/src/lib/a/catalogue.ts']), []);
+});
+
+test("un import de TYPE ne fait pas d'un fichier un consommateur (D-072)", () => {
+  // Un `import type` est EFFACÉ à la compilation : aucun code ne s'exécute,
+  // aucune donnée ne transite. Le compter faisait passer une source dormante
+  // pour consommée — le cas réel : `statuts.ts` n'importe que le TYPE
+  // `Remboursement`, et la bibliothèque NABM cessait d'être dormante sans
+  // qu'un seul remboursement soit dérivé.
+  const index = indexer({
+    'web/src/lib/a/catalogue.ts': 'export const X = 1;\nexport type T = string;',
+    'web/src/app/api/typeur/route.ts': "import type { T } from '@/lib/a/catalogue';",
+  });
+  assert.deepEqual(
+    appelantsDe(index, jetonsDeModule('web/src/lib/a/catalogue.ts'), ['web/src/lib/a/catalogue.ts']),
+    [],
+    'un import de type ne consomme rien',
+  );
+});
+
+test("un import de VALEUR compte toujours, y compris à côté d'un import de type", () => {
+  const index = indexer({
+    'web/src/lib/a/catalogue.ts': 'export const X = 1;',
+    'web/src/app/api/vrai/route.ts':
+      "import type { T } from '@/lib/a/catalogue';\nimport { X } from '@/lib/a/catalogue';",
+  });
+  const appelants = appelantsDe(
+    index, jetonsDeModule('web/src/lib/a/catalogue.ts'), ['web/src/lib/a/catalogue.ts']);
+  assert.equal(appelants.length, 1, 'la ligne de valeur suffit à faire un consommateur');
+});
+
+test('contenuHorsImportsDeType ne retire que les imports de type', () => {
+  const contenu = [
+    "import type { A } from './a';",
+    "import { b } from './b';",
+    "import { type C, d } from './d';",
+  ].join('\n');
+  const sans = contenuHorsImportsDeType(contenu);
+  assert.ok(!sans.includes("'./a'"), "l'import de type entier disparaît");
+  assert.ok(sans.includes("'./b'"), "l'import de valeur reste");
+  assert.ok(sans.includes("'./d'"), 'un import mixte reste : il porte une valeur');
+});
+
+test("`import { type X }` SEUL ne consomme rien non plus (D-072)", () => {
+  // La forme en ligne est tout aussi effacée à la compilation que la clause
+  // entière. La traiter à moitié laissait des consommateurs fantômes.
+  const index = indexer({
+    'web/src/lib/a/catalogue.ts': 'export const X = 1;',
+    'web/src/app/api/enligne/route.ts': "import { type T } from '@/lib/a/catalogue';",
+  });
+  assert.deepEqual(
+    appelantsDe(index, jetonsDeModule('web/src/lib/a/catalogue.ts'), ['web/src/lib/a/catalogue.ts']),
+    [],
+  );
+});
+
+test('un JUGE UNIQUE décide : importsDe et contenuHorsImportsDeType ne divergent pas', () => {
+  // Deux définitions concurrentes de « qu'est-ce qu'un import de type » dans un
+  // script dont la valeur est d'être un juge unique produiraient deux vérités.
+  for (const clause of ['type { A }', '{ type A }', '{ type A, b }', 'X', '* as ns']) {
+    const source = `import ${clause} from './m';`;
+    const vuParImportsDe = importsDe(source).length > 0;
+    const vuParLeContenu = contenuHorsImportsDeType(source).includes("'./m'");
+    assert.equal(vuParImportsDe, vuParLeContenu, `désaccord sur : ${clause}`);
+  }
+});
+
+test('nomsDeValeur ne rend que ce qui survit à la compilation', () => {
+  assert.deepEqual(nomsDeValeur('type { A }'), []);
+  assert.deepEqual(nomsDeValeur('{ type A }'), []);
+  assert.deepEqual(nomsDeValeur('{ type A, b }'), ['b']);
+  assert.deepEqual(nomsDeValeur('{ a as b }'), ['a', 'b']);
+});
+
+test("un import multiligne de type est neutralisé, et un import de valeur voisin survit", () => {
+  const contenu = "import type {\n  A,\n  B,\n} from './types';\nimport { valeur } from './valeurs';";
+  const sans = contenuHorsImportsDeType(contenu);
+  assert.ok(!sans.includes("'./types'"), 'le type multiligne disparaît');
+  assert.ok(sans.includes("'./valeurs'"), "l'import de valeur survit");
 });
 
 test('les bancs ne sont jamais des surfaces', () => {

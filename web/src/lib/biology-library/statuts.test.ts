@@ -234,6 +234,146 @@ describe('deriverStatutsBiologie — panels documentés hors outil', () => {
   });
 });
 
+// DEUX REPLIS FAIL-OPEN SUPPRIMÉS ([[D-072]]). Avant, une date illisible comme
+// une date postérieure à la référence concluaient `deja_documente` — donc
+// RETIRAIENT le panel des propositions. Une donnée aberrante produisait la
+// conclusion rassurante (`DC-24`, `DC-25`).
+describe('deriverStatutsBiologie — déclarations douteuses (D-072)', () => {
+  it('une date POSTÉRIEURE à la référence n’éteint plus le panel', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2027-01-01T00:00:00.000Z' }],
+    }));
+    const socle = ligne(resultat, 'PANEL_SOCLE');
+    expect(socle.statut).toBe('recommande');
+    expect(socle.motifs.join(' ')).toMatch(/écartée/i);
+  });
+
+  it('une date ILLISIBLE n’éteint plus le panel', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: 'pas-une-date' }],
+    }));
+    const socle = ligne(resultat, 'PANEL_SOCLE');
+    expect(socle.statut).toBe('recommande');
+    expect(socle.motifs.join(' ')).toMatch(/écartée/i);
+  });
+
+  it('une date de RÉFÉRENCE illisible écarte TOUTES les déclarations', () => {
+    // Ne pouvant juger aucune ancienneté, le moteur ne conclut sur aucune.
+    const resultat = deriverStatutsBiologie(entree({
+      dateReference: 'pas-une-date',
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2026-08-01T00:00:00.000Z' }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').statut).toBe('recommande');
+  });
+
+  it('une déclaration écartée n’est JAMAIS silencieuse (DC-30)', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2027-01-01T00:00:00.000Z' }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').motifs).toContainEqual(
+      expect.stringContaining('traité comme non exploré'),
+    );
+  });
+
+  it('une déclaration valide reste exploitée — le tri n’écarte pas tout', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2026-08-01T00:00:00.000Z' }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').statut).toBe('deja_documente');
+  });
+});
+
+describe('deriverStatutsBiologie — bornes et causes du tri (D-072)', () => {
+  it('une déclaration EXACTEMENT à la date de référence est exploitée', () => {
+    // La stricte inégalité est le cœur du repli : la déplacer d'un cran
+    // écarterait un bilan du jour même.
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: DATE_REFERENCE }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').statut).toBe('deja_documente');
+  });
+
+  it('la tolérance de fuseau vaut UN jour, pas plus', () => {
+    const dansUnJour = new Date(Date.parse(DATE_REFERENCE) + 24 * 3600 * 1000).toISOString();
+    const dansDeuxJours = new Date(Date.parse(DATE_REFERENCE) + 48 * 3600 * 1000).toISOString();
+    expect(ligne(deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: dansUnJour }],
+    })), 'PANEL_SOCLE').statut).toBe('deja_documente');
+    expect(ligne(deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: dansDeuxJours }],
+    })), 'PANEL_SOCLE').statut).toBe('recommande');
+  });
+
+  it('une date de RÉFÉRENCE illisible accuse la référence, pas la déclaration', () => {
+    // Accuser la déclaration désignerait la mauvaise donnée au praticien.
+    const resultat = deriverStatutsBiologie(entree({
+      dateReference: 'pas-une-date',
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2026-08-01T00:00:00.000Z' }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').motifs.join(' ')).toMatch(/date de référence/i);
+  });
+
+  it('une date de DÉCLARATION illisible accuse la déclaration', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: 'pas-une-date' }],
+    }));
+    expect(ligne(resultat, 'PANEL_SOCLE').motifs.join(' ')).toMatch(/sa date est illisible/i);
+  });
+
+  it('sur un panel DISCORDANT, l’écartement est dit malgré le motif de discordance', () => {
+    // La branche discordance sort en `continue` : sans motif poussé avant, la
+    // déclaration écartée y redevenait muette.
+    const regles: RegleIndicationPanel[] = [
+      ...REGLES_FIXTURE,
+      regle({ id: 'BIO-SOCLE-BIS', panelCode: 'PANEL_SOCLE' }),
+    ];
+    const resultat = deriverStatutsBiologie(entree({
+      regles,
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2027-01-01T00:00:00.000Z' }],
+    }));
+    const socle = ligne(resultat, 'PANEL_SOCLE');
+    expect(socle.statut).toBe('non_indique_actuellement');
+    expect(socle.motifs.join(' ')).toMatch(/Discordance/);
+    expect(socle.motifs.join(' ')).toMatch(/écartée/i);
+  });
+
+  it('une déclaration sur un panel SANS ligne remonte à l’appelant, jamais dans le vide', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_INEXISTANT', documenteLe: '2027-01-01T00:00:00.000Z' }],
+    }));
+    if (!resultat.ok) throw new Error('abstention inattendue');
+    expect(resultat.declarationsIgnoreesHorsProposition).toEqual([
+      { panelCode: 'PANEL_INEXISTANT', motif: expect.stringMatching(/écartée/i) },
+    ]);
+  });
+
+  it('une déclaration écartée PORTÉE par une ligne ne remonte pas en double', () => {
+    const resultat = deriverStatutsBiologie(entree({
+      documentes: [{ panelCode: 'PANEL_SOCLE', documenteLe: '2027-01-01T00:00:00.000Z' }],
+    }));
+    if (!resultat.ok) throw new Error('abstention inattendue');
+    expect(resultat.declarationsIgnoreesHorsProposition).toEqual([]);
+  });
+});
+
+describe('deriverStatutsBiologie — composition (ratios, D-072)', () => {
+  it('les rapports calculés du panel sont exposés, plus écartés en silence', () => {
+    const panels = PANELS_FIXTURE.map(panel =>
+      panel.code === 'PANEL_SOCLE'
+        ? { ...panel, ratios: [{ code: 'RATIO_HOMA', libelle: 'Indice HOMA' }] }
+        : panel);
+    const resultat = deriverStatutsBiologie(entree({ panels }));
+    expect(ligne(resultat, 'PANEL_SOCLE').ratios).toEqual([
+      { code: 'RATIO_HOMA', libelle: 'Indice HOMA' },
+    ]);
+  });
+
+  it('un panel sans rapport rend une liste vide, jamais `undefined`', () => {
+    const resultat = deriverStatutsBiologie(entree());
+    expect(ligne(resultat, 'PANEL_SOCLE').ratios).toEqual([]);
+  });
+});
+
 describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
   it('table non signée : abstention motivée en français', () => {
     const resultat = deriverStatutsBiologie(entree({ signature: SIGNATURE_ABSENTE }));

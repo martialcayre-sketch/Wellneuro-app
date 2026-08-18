@@ -23,6 +23,7 @@ function ligne(partiel: Partial<LignePanelProposition> = {}): LignePanelProposit
     motifs: [],
     justificationClaims: [],
     analytes: [],
+    ratios: [],
     ...partiel,
   };
 }
@@ -64,30 +65,21 @@ describe('ce que l’écran doit dire à voix haute', () => {
 });
 
 describe('déclarations écartées — dites, jamais tues (DC-30)', () => {
-  it('nomme les panels écartés en clair, pas en code technique', () => {
+  // Le TRI appartient au moteur depuis D-072 : l'écran n'infère plus rien, il
+  // rend le motif que le moteur a posé sur la ligne concernée.
+  it('rend le motif d’écartement posé par le moteur', () => {
     rendre({
-      limites: [{ type: 'declaration_ecartee', panels: ['PANEL_A'] }],
-    });
-    const texte = screen.getByText(/Déclaration écartée/i).textContent ?? '';
-    expect(texte).toContain('Bilan martial');
-    expect(texte).not.toContain('PANEL_A');
-  });
-
-  it('signale sur la ligne qu’une déclaration existante n’est pas prise en compte', () => {
-    rendre({
-      lignes: [ligne({ statut: 'recommande' })],
-      documentes: [
-        {
-          panelCode: 'PANEL_A',
-          documenteLe: '2027-01-01T00:00:00.000Z',
-          declarePar: 'praticien@wellneuro.fr',
-          declareLe: '2026-08-17T00:00:00.000Z',
-        },
+      lignes: [
+        ligne({
+          statut: 'recommande',
+          motifs: [
+            'Une déclaration « déjà exploré » a été écartée : sa date est postérieure à '
+            + 'la date de référence, ou illisible. Le panel est traité comme non exploré.',
+          ],
+        }),
       ],
     });
-    // Sans cela, le badge « Recommandé » et la mention « Déclaré exploré le
-    // 01/01/2027 » se contrediraient en silence sur la même ligne.
-    expect(screen.getByText(/n’est pas prise en compte/i)).toBeTruthy();
+    expect(screen.getByText(/a été écartée/i)).toBeTruthy();
   });
 });
 
@@ -125,6 +117,22 @@ describe('corriger une déclaration', () => {
     // Le verrou HDS n'est pas une validation manquante : c'est une surface
     // absente.
     expect(document.querySelectorAll('input[type="number"], textarea')).toHaveLength(0);
+  });
+});
+
+describe('composition affichée', () => {
+  it('les rapports calculés du panel sont montrés, plus tus', () => {
+    rendre({
+      lignes: [ligne({ ratios: [{ code: 'RATIO_HOMA', libelle: 'Indice HOMA' }] })],
+    });
+    expect(screen.getByText(/Rapports calculés/i).textContent).toContain('Indice HOMA');
+  });
+});
+
+describe('retour de geste', () => {
+  it('une consignation réussie le dit — un geste muet ne prouve rien', () => {
+    rendre({ state: 'saved' });
+    expect(screen.getByRole('status').textContent).toMatch(/consignée/i);
   });
 });
 

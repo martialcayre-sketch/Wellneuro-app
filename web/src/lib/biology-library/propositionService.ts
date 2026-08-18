@@ -34,8 +34,13 @@ import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts
  */
 export type LimiteProposition =
   | { type: 'remboursement_non_evalue' }
-  | { type: 'items_ratio_ignores'; panels: string[] }
-  | { type: 'declaration_ecartee'; panels: string[] };
+  /**
+   * Déclarations écartées par le moteur qu'AUCUNE ligne ne porte — panel
+   * inactif, ou visé par aucune règle exploitable. Le moteur les remonte ;
+   * l'écran les dit. Sans ce relais, elles disparaîtraient de la proposition
+   * ET de l'écran (`DC-30`).
+   */
+  | { type: 'declaration_ecartee_hors_proposition'; motifs: string[] };
 
 export type ResultatProposition =
   | { ok: false; motif: string }
@@ -48,7 +53,7 @@ export type ResultatProposition =
  * sans panel actif, avec un motif propre. Filtrer ici rendrait ce fail-closed
  * indiscernable d'une requête vide.
  */
-async function chargerPanels(): Promise<{ panels: PanelCatalogue[]; panelsAvecRatio: string[] }> {
+async function chargerPanels(): Promise<{ panels: PanelCatalogue[] }> {
   const lignes = await prisma.biologyPanel.findMany({
     select: {
       code: true,
@@ -58,8 +63,8 @@ async function chargerPanels(): Promise<{ panels: PanelCatalogue[]; panelsAvecRa
       actif: true,
       items: {
         select: {
-          ratioCode: true,
           analyte: { select: { code: true, libelle: true } },
+          ratio: { select: { code: true, libelle: true } },
         },
         orderBy: { position: 'asc' },
       },
@@ -67,66 +72,43 @@ async function chargerPanels(): Promise<{ panels: PanelCatalogue[]; panelsAvecRa
     orderBy: { code: 'asc' },
   });
 
-  // `PanelCatalogue.analytes` ne connaît que les analytes ; un item de panel
-  // porte SOIT un analyte SOIT un ratio (CHECK `cible_unique`). Les items
-  // ratio sont donc écartés de la composition — et DITS, jamais laissés
-  // tomber en silence : une composition amputée sans trace est un mensonge
-  // discret sur ce que le bilan contient.
-  const panelsAvecRatio: string[] = [];
-  const panels = lignes.map(panel => {
-    if (panel.items.some(item => item.ratioCode !== null)) panelsAvecRatio.push(panel.code);
-    return {
-      code: panel.code,
-      libelle: panel.libelle,
-      niveau: panel.niveau,
-      objectif: panel.objectif,
-      actif: panel.actif,
-      analytes: panel.items
-        .map(item => item.analyte)
-        .filter((analyte): analyte is { code: string; libelle: string } => analyte !== null),
-    };
-  });
-  return { panels, panelsAvecRatio };
+  // Un item de panel porte SOIT un analyte SOIT un ratio (CHECK
+  // `cible_unique`). Les deux sont composés ([[D-072]]) : écarter les ratios
+  // affichait une composition amputée de ce que le bilan contient réellement.
+  const panels = lignes.map(panel => ({
+    code: panel.code,
+    libelle: panel.libelle,
+    niveau: panel.niveau,
+    objectif: panel.objectif,
+    actif: panel.actif,
+    analytes: panel.items
+      .map(item => item.analyte)
+      .filter((analyte): analyte is { code: string; libelle: string } => analyte !== null),
+    ratios: panel.items
+      .map(item => item.ratio)
+      .filter((ratio): ratio is { code: string; libelle: string } => ratio !== null),
+  }));
+  return { panels };
 }
 
 /**
- * Panels déclarés documentés hors outil.
+ * Panels déclarés documentés hors outil, passés TELS QUELS au moteur.
  *
- * DEUX REPLIS FAIL-OPEN DU MOTEUR SONT FERMÉS ICI ([[D-071]] §2 bis). Une date
- * illisible comme une date postérieure à la référence font conclure
- * `deja_documente` au moteur — donc RETIRENT le panel des propositions. Une
- * donnée aberrante produirait ainsi la conclusion rassurante, ce que `DC-24`
- * et `DC-25` refusent. Une déclaration douteuse est donc ÉCARTÉE (le panel
- * repasse au régime normal, il sera proposé) et SIGNALÉE à l'écran.
- *
- * Le sens du repli n'est pas arbitraire : écarter propose un bilan de trop,
- * garder en tairait un. Entre les deux, `DC-25` tranche pour la conclusion la
- * plus réduite.
+ * Le tri des déclarations douteuses — date illisible, date postérieure à la
+ * référence — appartient au MOTEUR depuis [[D-072]], et à lui seul : une règle
+ * clinique recopiée dans deux modules est une règle qu'on peut oublier de
+ * corriger dans l'un des deux. Le moteur écarte, et le dit sur la ligne du
+ * panel concerné.
  */
-async function chargerDocumentes(
-  idPatient: string,
-  dateReference: string,
-): Promise<{ documentes: PanelDocumente[]; ecartes: string[] }> {
+async function chargerDocumentes(idPatient: string): Promise<PanelDocumente[]> {
   const lignes = await prisma.panelBiologieDocumente.findMany({
     where: { idPatient },
     select: { panelCode: true, documenteLe: true },
   });
-
-  const reference = Date.parse(dateReference);
-  const documentes: PanelDocumente[] = [];
-  const ecartes: string[] = [];
-  for (const ligne of lignes) {
-    const documenteLe = ligne.documenteLe.getTime();
-    if (Number.isNaN(documenteLe) || Number.isNaN(reference) || documenteLe > reference) {
-      ecartes.push(ligne.panelCode);
-      continue;
-    }
-    documentes.push({
-      panelCode: ligne.panelCode,
-      documenteLe: ligne.documenteLe.toISOString(),
-    });
-  }
-  return { documentes, ecartes };
+  return lignes.map(ligne => ({
+    panelCode: ligne.panelCode,
+    documenteLe: ligne.documenteLe.toISOString(),
+  }));
 }
 
 /**
@@ -194,7 +176,7 @@ export async function deriverPropositionPourPatient(
 
   const [catalogue, documentes, reponses, consultation, analytesValidation] = await Promise.all([
     chargerPanels(),
-    chargerDocumentes(idPatient, dateReference),
+    chargerDocumentes(idPatient),
     chargerReponses(idPatient),
     // La consultation la plus récente QUI PORTE UNE ANAMNÈSE, et non la plus
     // récente tout court : une consultation naît sans anamnèse et ne la reçoit
@@ -223,22 +205,28 @@ export async function deriverPropositionPourPatient(
     drapeaux: consultation?.anamnese == null
       ? undefined
       : extraireDrapeauxAnamnese(consultation.anamnese),
-    documentes: documentes.documentes,
+    documentes,
     validationMedicale: new Set(analytesValidation.map(analyte => analyte.code)),
-    // `remboursements` N'EST PAS PASSÉ : les tables NABM sont vides, et le
-    // moteur pose déjà `non_evalue` par défaut. Construire une carte de
-    // `non_evalue` reviendrait à affirmer qu'on a évalué et conclu à rien.
+    // `remboursements` N'EST PAS PASSÉ, et la raison est plus précise que
+    // « les tables NABM sont vides » — elles ne le sont pas : la nomenclature
+    // porte 987 actes (lecture MCP du 2026-08-18). Ce qui est VIDE, c'est
+    // `biology_analyte_nabm`, l'appariement analyte ↔ acte, que le schéma
+    // exige MANUEL et SIGNÉ (jamais par rapprochement de libellés : le filtre
+    // de la source rend des faux négatifs silencieux). Sans lui, rien ne
+    // résout un analyte vers un acte. Le moteur pose déjà `non_evalue` par
+    // défaut ; construire une carte de `non_evalue` reviendrait à affirmer
+    // qu'on a évalué et conclu à rien.
     dateReference,
   });
 
   if (!proposition.ok) return { ok: false, motif: proposition.motif };
 
   const limites: LimiteProposition[] = [{ type: 'remboursement_non_evalue' }];
-  if (catalogue.panelsAvecRatio.length > 0) {
-    limites.push({ type: 'items_ratio_ignores', panels: catalogue.panelsAvecRatio });
-  }
-  if (documentes.ecartes.length > 0) {
-    limites.push({ type: 'declaration_ecartee', panels: documentes.ecartes });
+  if (proposition.declarationsIgnoreesHorsProposition.length > 0) {
+    limites.push({
+      type: 'declaration_ecartee_hors_proposition',
+      motifs: proposition.declarationsIgnoreesHorsProposition.map(d => d.motif),
+    });
   }
   return { ok: true, proposition, limites };
 }
