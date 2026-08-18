@@ -1,12 +1,12 @@
 ---
 id: "2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie"
 titre: "Chaîne T0 opérationnelle — de la donnée valide à la révision par biologie"
-statut: "en_cours"
+statut: "terminée (2026-08-18 — les dix lots livrés ; LOT-03 garde son SCOFF différé, LOT-04 sa table non signée)"
 créée_le: "2026-08-10"
-mise_à_jour: "2026-08-13"
-lot_courant: "LOT-06"
+mise_à_jour: "2026-08-18"
+lot_courant: "aucun"
 branche_campagne: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
-branche_lot_courant: "claude/lot-06-campagne-t0"
+branche_lot_courant: "aucune"
 cible_pr_lot: "campaign/2026-08-10-chaine-t0-operationnelle-de-la-donnee-valide-a-la-revision-par-biologie/integration"
 cible_pr_campagne: "main"
 ---
@@ -124,7 +124,7 @@ confirmé » et « discordance stress » sont en CI.
 | LOT-03 | Règles d'arrêt et extinction d'orientation — stop rules, `dejaRepondu` excluant, SCOFF | terminé (étapes 1-3, 2026-08-12 ; SCOFF différé) | LOT-01 |
 | LOT-04 | Candidats d'intervention déterministes — chaîne C1 rebranchée, canal plainte patient, recalcul serveur | terminé (2026-08-13, table non signée) | LOT-02 |
 | LOT-05 | Protocole structuré — phases, statuts d'intervention, compléments sur claims avant biologie | terminé (2026-08-13, catalogue de décision C4 vide : le moteur refuse, `D-056`) | LOT-04 |
-| LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | en_cours (ouvert le 2026-08-14, `D-059` — schéma avant code, catalogue proposé puis validé) | LOT-05 |
+| LOT-06 | Biologie opérante — catalogue niveau 1, moteur de statuts, courrier médecin, arbitrage sans valeurs, révision de protocole (migration) | terminé (2026-08-18 — catalogue `D-068`, règles signées `D-069`, branchement `D-071`, dettes soldées `D-072`, courrier ancré `D-073`) | LOT-05 |
 | LOT-07 | Suivi longitudinal — UI jalons J21/J42/J90, re-passation ciblée, momentum par domaine | terminé (2026-08-14, aucune bande de bruit publiée : aucun delta qualifié, `D-058` amendée) | LOT-05 |
 | LOT-08 | Extinction opérante — comptes de recueil `group_majority`, contradiction bloquante (D-053 §5), garde de restitution ; **à exécuter avant le LOT-05** | terminé | LOT-03 |
 | LOT-09 | Vigilances de discordance injectées dans la synthèse — moitié non livrée de l'étape 5 du LOT-01, sans lot d'accueil depuis le 2026-08-12 | terminé (2026-08-13, table de contradictions non signée : rien n'est servi) | LOT-01 |

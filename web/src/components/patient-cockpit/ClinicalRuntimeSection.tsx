@@ -34,6 +34,7 @@ import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { appliquerArbitrages } from '@/lib/biology-library/revision';
 import {
   PropositionBilanPanel,
+  type CourrierEtabli,
   type DocumenteAffiche,
   type PropositionState,
 } from './PropositionBilanPanel';
@@ -176,6 +177,9 @@ export function ClinicalRuntimeSection({
   const [propositionMotif, setPropositionMotif] = useState<string | null>(null);
   const [propositionState, setPropositionState] = useState<PropositionState>('idle');
   const [propositionError, setPropositionError] = useState<string | null>(null);
+  const [courrier, setCourrier] = useState<CourrierEtabli | null>(null);
+  const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
+  const [partageMedecin, setPartageMedecin] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   // Validation « pour diffusion » (C2A LOT-03 Part B).
@@ -297,6 +301,7 @@ export function ClinicalRuntimeSection({
         lignes?: LignePanelProposition[];
         limites?: LimiteProposition[];
         documentes?: DocumenteAffiche[];
+        partageMedecinTraitant?: string | null;
       };
       // Le moteur qui s'abstient (409) N'EST PAS une indisponibilité : son
       // motif est écrit pour le praticien et doit s'afficher tel quel — une
@@ -320,6 +325,7 @@ export function ClinicalRuntimeSection({
       setPropositionLignes(payload.lignes ?? []);
       setPropositionLimites(payload.limites ?? []);
       setPropositionDocumentes(payload.documentes ?? []);
+      setPartageMedecin(payload.partageMedecinTraitant ?? null);
     } catch {
       // La proposition est rechargeable : un échec de lecture ne bloque pas le
       // cockpit.
@@ -353,6 +359,45 @@ export function ClinicalRuntimeSection({
       }
     },
     [idPatient, loadProposition],
+  );
+
+  // Courrier médecin : le texte est GÉNÉRÉ ET CONSIGNÉ côté serveur ; l'écran
+  // ne fournit que le nom du destinataire et n'affiche que ce qui revient.
+  const etablirCourrier = useCallback(
+    async (medecinLibelle: string) => {
+      setPropositionState('saving');
+      setCourrierErreur(null);
+      try {
+        const response = await fetch('/api/praticien/biologie/proposition/courrier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, medecinLibelle }),
+        });
+        const payload = (await response.json()) as {
+          ok: boolean;
+          error?: string;
+          texte?: string;
+          ancrageSha256?: string;
+          ancrageVersion?: string;
+        };
+        setPropositionState('idle');
+        if (!response.ok || !payload.ok || !payload.texte) {
+          setCourrier(null);
+          setCourrierErreur(payload.error ?? 'Le courrier n’a pas pu être établi.');
+          return;
+        }
+        setCourrier({
+          texte: payload.texte,
+          ancrageSha256: payload.ancrageSha256 ?? '',
+          ancrageVersion: payload.ancrageVersion ?? '',
+        });
+      } catch {
+        setPropositionState('idle');
+        setCourrier(null);
+        setCourrierErreur('Le courrier n’a pas pu être établi.');
+      }
+    },
+    [idPatient],
   );
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
@@ -875,6 +920,10 @@ export function ClinicalRuntimeSection({
           error={propositionError}
           onDeclarer={declarerPanelDocumente}
           onNouvelleSaisie={() => setPropositionState('idle')}
+          courrier={courrier}
+          courrierErreur={courrierErreur}
+          partageMedecinTraitant={partageMedecin}
+          onEtablirCourrier={etablirCourrier}
         />
       )}
       {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (

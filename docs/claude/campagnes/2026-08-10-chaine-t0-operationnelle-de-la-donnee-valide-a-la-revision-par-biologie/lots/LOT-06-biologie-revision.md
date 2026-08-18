@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Biologie opérante — catalogue, statuts, courrier, arbitrage sans valeurs, révision de protocole"
-statut: "en_cours"
+statut: "terminé (2026-08-18 — branchement complet : proposition servie, courrier consigné avec son ancrage, D-071/D-072/D-073)"
 dépend_de: "LOT-05"
 ---
 

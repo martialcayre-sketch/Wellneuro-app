@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
-import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import {
   accepteNouvelEnvoi,
   MESSAGE_DOSSIER_CLOS,
   RAISON_DOSSIER_CLOS,
 } from '@/lib/patient/cycleDeVie';
-import { isCbPropositionEnabled } from '@/lib/biology-library/featureFlag';
+import { garderProposition, type VerdictGarde } from '@/lib/biology-library/gardeProposition';
+import { statutPartageMedecinTraitant } from '@/lib/trust/consentementPartage';
+import type { StatutChoix } from '@/lib/trust/types';
 import {
   deriverPropositionPourPatient,
   type LimiteProposition,
@@ -30,7 +28,6 @@ import {
 // FAIL-CLOSED sur `WN_CB_PROPOSITION` ET `WN_CB_ENABLED` — 503 avec motif
 // français, comme les drapeaux frères.
 
-const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 const PANEL_CODE_PATTERN = /^[A-Z0-9_]+$/;
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
@@ -39,7 +36,19 @@ const ROUTE_JOURNAL = '/api/praticien/biologie/proposition';
 type LigneExposee = Extract<ResultatProposition, { ok: true }>['proposition']['lignes'][number];
 
 export type PropositionApiResponse =
-  | { ok: true; lignes: LigneExposee[]; limites: LimiteProposition[]; documentes: DocumenteExpose[] }
+  | {
+      ok: true;
+      lignes: LigneExposee[];
+      limites: LimiteProposition[];
+      documentes: DocumenteExpose[];
+      /**
+       * Choix « partage médecin traitant » du patient — EXPOSÉ, jamais opposé
+       * (décision du 2026-07-22, même règle que le fil de correspondance) : le
+       * courrier s'établit depuis cette surface, l'information s'y lit AVANT
+       * le geste. `null` = le patient ne s'est jamais exprimé.
+       */
+      partageMedecinTraitant: StatutChoix | null;
+    }
   | { ok: true; documente: DocumenteExpose }
   | { ok: false; reason: string; error: string };
 
@@ -68,50 +77,16 @@ function exposerDocumente(ligne: {
   };
 }
 
-type Garde =
-  | { echec: NextResponse<PropositionApiResponse>; email?: undefined }
-  | { echec?: undefined; email: string };
-
-/**
- * L'ORDRE N'EST PAS DÉCORATIF. `verifierAppartenancePatient` JOURNALISE
- * l'accès au dossier : tester le drapeau après elle ferait consigner un accès
- * qui n'a pas eu lieu. Drapeau → session → forme de l'entrée → appartenance,
- * et la lecture des données seulement après.
- */
-async function garder(idPatient: string, acces?: GabaritAcces): Promise<Garde> {
-  if (!isCbPropositionEnabled()) {
-    return {
-      echec: echec(
-        'cb_proposition_desactivee',
-        'La proposition de bilan biologique n’est pas activée sur cet environnement.',
-        503,
-      ),
-    };
-  }
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return { echec: echec('unauthenticated', 'Authentification requise.', 401) };
-  }
-  if (!idPatient || !ID_PATIENT_PATTERN.test(idPatient) || idPatient.length > 64) {
-    return { echec: echec('invalid', 'Identifiant patient invalide.', 400) };
-  }
-  const email = emailPraticien(session);
-  const appartenance = await verifierAppartenancePatient(idPatient, email, acces);
-  if (appartenance === 'introuvable') {
-    return { echec: echec('patient_not_found', 'Patient introuvable.', 404) };
-  }
-  if (appartenance === 'autre_praticien') {
-    return { echec: echec('forbidden', 'Patient non accessible pour ce praticien.', 403) };
-  }
-  return { email: email ?? '' };
+function depuisVerdict(verdict: Exclude<VerdictGarde, { ok: true }>) {
+  return echec(verdict.reason, verdict.error, verdict.status);
 }
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const idPatient = (url.searchParams.get('idPatient') ?? '').trim();
-    const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
-    if (garde.echec) return garde.echec;
+    const garde = await garderProposition(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
+    if (!garde.ok) return depuisVerdict(garde);
 
     // `dateReference` est posée ICI, une seule fois, et descend jusqu'au
     // moteur : lui ne lit jamais l'horloge.
@@ -122,17 +97,24 @@ export async function GET(req: Request) {
       return echec('proposition_indisponible', resultat.motif, 409);
     }
 
-    const documentes = await prisma.panelBiologieDocumente.findMany({
-      where: { idPatient },
-      select: { panelCode: true, documenteLe: true, declarePar: true, declareLe: true },
-      orderBy: { documenteLe: 'desc' },
-    });
+    const [documentes, choix] = await Promise.all([
+      prisma.panelBiologieDocumente.findMany({
+        where: { idPatient },
+        select: { panelCode: true, documenteLe: true, declarePar: true, declareLe: true },
+        orderBy: { documenteLe: 'desc' },
+      }),
+      prisma.trustChoiceEvent.findMany({
+        where: { idPatient, finalite: 'partage_medecin_traitant' },
+        select: { finalite: true, statut: true, enregistreLe: true },
+      }),
+    ]);
 
     return NextResponse.json<PropositionApiResponse>({
       ok: true,
       lignes: resultat.proposition.lignes,
       limites: resultat.limites,
       documentes: documentes.map(exposerDocumente),
+      partageMedecinTraitant: statutPartageMedecinTraitant(choix),
     });
   } catch (err) {
     console.error('[praticien/biologie/proposition GET]', err instanceof Error ? err.message : String(err));
@@ -160,8 +142,8 @@ export async function POST(req: Request) {
     // — la route rendrait 500 là où elle doit rendre 503 ou 401, et se
     // distinguerait ainsi observablement d'une route fermée.
     const idPatient = typeof body.idPatient === 'string' ? body.idPatient.trim() : '';
-    const garde = await garder(idPatient);
-    if (garde.echec) return garde.echec;
+    const garde = await garderProposition(idPatient);
+    if (!garde.ok) return depuisVerdict(garde);
 
     // Dossier clos : la déclaration est une pièce du dossier, le refus vit
     // dans la route et pas seulement dans l'écran.

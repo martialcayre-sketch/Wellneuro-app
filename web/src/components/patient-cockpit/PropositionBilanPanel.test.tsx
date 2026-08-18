@@ -136,6 +136,118 @@ describe('retour de geste', () => {
   });
 });
 
+describe('courrier médecin', () => {
+  it('n’est proposé que si des lignes existent', () => {
+    rendre({ lignes: [], onEtablirCourrier: vi.fn() });
+    expect(screen.queryByRole('button', { name: /Établir et consigner/i })).toBeNull();
+  });
+
+  it('ne s’offre PAS quand rien n’est proposable — même prédicat que le générateur', () => {
+    // Tous les panels déjà documentés : le serveur rendrait 409 après avoir
+    // journalisé un accès. Le geste ne doit pas exister (revue M5).
+    rendre({
+      lignes: [ligne({ statut: 'deja_documente' }), ligne({ panelCode: 'PANEL_B', statut: 'non_indique_actuellement' })],
+      onEtablirCourrier: vi.fn(),
+    });
+    expect(screen.queryByRole('button', { name: /Établir et consigner/i })).toBeNull();
+  });
+
+  it('expose le refus de partage du patient — exposé, jamais opposé', () => {
+    const onEtablirCourrier = vi.fn();
+    rendre({ onEtablirCourrier, partageMedecinTraitant: 'refuse' });
+    expect(screen.getByText(/a refusé le partage/i)).toBeTruthy();
+    expect(screen.getByText(/jamais opposée/i)).toBeTruthy();
+    // Jamais opposé : le geste reste possible.
+    fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
+      target: { value: 'Dr Nicola' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Établir et consigner/i }));
+    expect(onEtablirCourrier).toHaveBeenCalled();
+  });
+
+  it('patient jamais exprimé : l’écran le dit aussi', () => {
+    rendre({ onEtablirCourrier: vi.fn() });
+    expect(screen.getByText(/ne s’est pas exprimé sur le partage/i)).toBeTruthy();
+  });
+
+  it('un courrier consigné ne se re-consigne pas sans changer de destinataire', () => {
+    const onEtablirCourrier = vi.fn();
+    const { rerender } = render(
+      <PropositionBilanPanel
+        lignes={[ligne()]}
+        limites={[]}
+        documentes={[]}
+        onDeclarer={vi.fn()}
+        onEtablirCourrier={onEtablirCourrier}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
+      target: { value: 'Dr Nicola' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Établir et consigner/i }));
+    expect(onEtablirCourrier).toHaveBeenCalledTimes(1);
+    // Le résultat revient : le même clic ne doit plus rien écrire (revue M4).
+    rerender(
+      <PropositionBilanPanel
+        lignes={[ligne()]}
+        limites={[]}
+        documentes={[]}
+        onDeclarer={vi.fn()}
+        onEtablirCourrier={onEtablirCourrier}
+        courrier={{ texte: 'Docteur, …', ancrageSha256: 'a'.repeat(64), ancrageVersion: 'indications-biologie-v1' }}
+      />,
+    );
+    const bouton = screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    // Corriger le destinataire rouvre le geste.
+    fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
+      target: { value: 'Dr Martin' },
+    });
+    expect((screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('demande un destinataire, et ne le part pas sans lui', () => {
+    const onEtablirCourrier = vi.fn();
+    rendre({ onEtablirCourrier });
+    const bouton = screen.getByRole('button', { name: /Établir et consigner/i }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText(/Nom du médecin destinataire/i), {
+      target: { value: 'Dr Nicola' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Établir et consigner/i }));
+    expect(onEtablirCourrier).toHaveBeenCalledWith('Dr Nicola');
+  });
+
+  it('dit qu’aucun envoi n’est automatique — la remise est manuelle', () => {
+    rendre({ onEtablirCourrier: vi.fn() });
+    expect(screen.getByText(/Aucun envoi automatique/i)).toBeTruthy();
+  });
+
+  it('affiche le texte à transcrire ET l’ancre qui l’explique', () => {
+    rendre({
+      onEtablirCourrier: vi.fn(),
+      courrier: {
+        texte: 'Docteur, …',
+        ancrageSha256: 'a'.repeat(64),
+        ancrageVersion: 'indications-biologie-v1',
+      },
+    });
+    const statut = screen.getByRole('status').textContent ?? '';
+    expect(statut).toMatch(/consigné/i);
+    expect(statut).toContain('indications-biologie-v1');
+    expect((screen.getByLabelText(/Texte du courrier/i) as HTMLTextAreaElement).value)
+      .toBe('Docteur, …');
+  });
+
+  it('un refus serveur est affiché tel quel, jamais reformulé', () => {
+    rendre({
+      onEtablirCourrier: vi.fn(),
+      courrierErreur: 'Le courrier dépasse la longueur consignable (8 000 caractères).',
+    });
+    expect(screen.getByRole('alert').textContent).toMatch(/8 000 caractères/);
+  });
+});
+
 describe('abstentions', () => {
   it('le motif du moteur est affiché tel quel, jamais reformulé (DC-34)', () => {
     rendre({ motifIndisponible: 'La table des indications n’est pas signée.' });
