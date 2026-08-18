@@ -83,9 +83,9 @@ pas fermées par la PR de branchement, et l'être-nommé vaut mieux que
 l'omission :
 
 - **La matrice de consommation reste imprécise sur la bibliothèque NABM.** La
-  régénération la fait passer de « dormante » à « 1 surface indirecte », sur la
-  seule foi d'un `import type { Remboursement }` — un import de TYPE, effacé à
-  la compilation, alors que le service ne passe délibérément aucun
+  régénération la fait passer de « dormante » à « 3 surfaces indirectes », par
+  un chemin qui part d'un `import type { Remboursement }` — un import de TYPE,
+  effacé à la compilation, alors que le service ne passe délibérément aucun
   remboursement. La ligne *neuve* de la matrice, elle, est juste : la table
   d'indications y entre et cesse d'être dormante. Corriger le générateur pour
   ignorer les imports de type est un lot à part.
