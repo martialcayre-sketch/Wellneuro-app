@@ -266,6 +266,16 @@ describe('refus — motivés en français, jamais consignés à moitié', () => 
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
   });
 
+  it('bloc non diffusé : le refus remonte un message diagnostique', async () => {
+    genererCourrierBiologie.mockReturnValue({ ok: false, raison: 'bloc_non_diffuse' });
+    const response = await POST(postRequest({ idPatient: 'PAT_TEST', medecinLibelle: 'Dr Martin' }));
+    const payload = await response.json();
+    expect(response.status).toBe(409);
+    expect(payload.error).toContain('n’est pas diffusable');
+    expect(payload.error).toContain('texte jugé');
+    expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+  });
+
   it('nom de médecin absent : refus lisible, rien n’est consigné', async () => {
     const response = await POST(postRequest({ idPatient: 'PAT_TEST' }));
     const payload = await response.json();

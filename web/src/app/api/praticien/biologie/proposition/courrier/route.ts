@@ -39,6 +39,9 @@ export type CourrierApiResponse =
 const MESSAGES_REFUS_COURRIER: Record<string, string> = {
   aucune_exploration_proposee:
     'Aucune exploration n’est proposée pour ce dossier : il n’y a pas de courrier à établir.',
+  bloc_non_diffuse:
+    'Le rendu médecin n’est pas diffusable : le texte jugé par la garde est absent. '
+    + 'Rien n’est consigné.',
   terme_prescriptif:
     'Le courrier n’a pas pu être rendu : un libellé du catalogue porte un terme prescriptif. '
     + 'Rien n’est consigné.',
