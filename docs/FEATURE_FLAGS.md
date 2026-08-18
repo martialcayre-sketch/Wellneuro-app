@@ -24,6 +24,7 @@ datée **par feature**.
 | `WN_C4_ENABLED` | `true` | rayon compléments | fermé |
 | `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
+| `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED` |
 | `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé |
 | `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
@@ -121,9 +122,14 @@ Trois lectures attentives sur ce tableau :
   signature est OUVERT — et `WN_CB_ENABLED` est POSÉ à `true` en production,
   constaté le 2026-08-17 ([[D-070]] ; la date de pose n'est enregistrée nulle
   part et reste inconnue). Les deux termes du ET sont donc vrais. Ce qu'ils
-  ouvrent est la surface d'**arbitrage** biologique, **pas** les indications :
-  `deriverStatutsBiologie` n'a aucun appelant, la table signée est dormante et
-  n'atteint aucun écran.
+  ouvrent est la surface d'**arbitrage** biologique, **pas** les indications.
+  `deriverStatutsBiologie` a désormais un appelant de production —
+  `propositionService.ts`, servi par `/api/praticien/biologie/proposition`
+  ([[D-071]]) — mais il est gardé par un **troisième** terme :
+  `WN_CB_PROPOSITION`, drapeau NEUF et **éteint**. Tant qu'il n'est pas posé,
+  la table signée reste dormante, et c'est délibéré : `WN_CB_ENABLED` valant
+  déjà `true`, s'y adosser aurait exposé la proposition sur tous les dossiers
+  dès le déploiement, sans geste d'exploitation.
 - **Les quatre tables cliniques portent un `shaPerimetre` depuis `D-067`**
   (2026-08-16) : le verrou est passé à cinq termes — booléen, date, forme ISO
   canonique, claims, concordance du SHA de périmètre. Une règle retouchée

@@ -174,6 +174,19 @@ export const SOURCES_DE_SAVOIR = [
     decisionProduite: 'Régime de remboursement d’un acte de biologie proposé.',
   },
   {
+    id: 'indications-biologie',
+    libelle: 'Table d’indications biologiques (15 règles signées)',
+    // Source branchée au 2026-08-18 ([[D-071]]) : elle était DORMANTE depuis sa
+    // signature, et la matrice ne le disait pas — aucune ligne ne la
+    // recensait. C'est précisément ce que cet inventaire existe pour montrer,
+    // et son absence rendait le constat de [[D-070]] indémontrable par l'outil.
+    module: 'web/src/lib/biology-library/statuts.ts',
+    symboles: ['deriverStatutsBiologie'],
+    modulesGardes: ['web/src/lib/biology-library/featureFlag.ts'],
+    decisionProduite:
+      'Proposition de bilan hiérarchisée et sourcée, servie au cockpit praticien.',
+  },
+  {
     id: 'packs-consultation',
     libelle: 'Packs de consultation (registre + repli legacy)',
     module: 'web/src/lib/consultation/packRegistry.ts',

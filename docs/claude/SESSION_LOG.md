@@ -4009,3 +4009,26 @@ termes, tué par neuf mutations.
 Prochaine action : PR-1, puis `release-db` approuvée, puis le branchement.
 Ouvert : deux replis fail-open du moteur (date illisible, date future) que
 cette table rend atteignables, couverts par aucun banc.
+
+## [2026-08-18] — D-071 : la proposition de bilan atteint un écran
+
+Branchement du premier appelant de `deriverStatutsBiologie` : service, route
+`GET/POST`, panneau cockpit, derrière `WN_CB_PROPOSITION` neuf et éteint. Le
+catalogue et les quinze règles signées cessent d'être dormants.
+
+Le banc-sentinelle du contrat M-B existe enfin — et c'est l'identité de
+référence qui mord, pas le SHA : un `filter` qui ne retire rien produit le même
+hachage. Les deux replis fail-open du moteur (date illisible, date future ⇒
+`deja_documente`, donc panel retiré) sont fermés à la frontière, `statuts.ts`
+restant hors périmètre.
+
+Revue GO sous réserve, quatre corrections retenues plutôt que reportées : une
+déclaration erronée était irrattrapable depuis l'écran ; le service ne
+re-testait pas son drapeau ; la date du jour était refusée comme future entre
+minuit et 2 h à Paris ; un corps JSON mal typé rendait 500 avant le drapeau.
+
+`MATRICE_CONSOMMATION.md` a refusé de rester à jour : la table d'indications
+n'y avait aucune ligne. 21 sources, 5 dormantes.
+
+Prochaine action : merge, puis allumage (geste distinct). Ouvert : la matrice
+compte la biblio NABM non dormante sur un `import type`.

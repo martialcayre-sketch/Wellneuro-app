@@ -20,6 +20,28 @@ export function isCbEnabled(value = process.env.WN_CB_ENABLED): boolean {
 }
 
 /**
+ * Étage 1 bis — PROPOSITION DE BILAN servie au praticien ([[D-071]] §1).
+ *
+ * Drapeau NEUF et éteint, et non `WN_CB_ENABLED` : celui-ci vaut DÉJÀ `true`
+ * en production ([[D-070]]). S'y adosser rendrait la proposition visible sur
+ * tous les dossiers du cabinet dès le déploiement, sans qu'aucun geste
+ * d'exploitation ne l'ait décidé — l'exact symétrique de ce que `D-070` vient
+ * de constater. Écarté aussi : `WN_CB_RESULTS_ENABLED`, gate dur HDS ; une
+ * surface documentaire ne s'adosse pas au verrou de stockage des résultats,
+ * sinon les deux s'ouvriraient ensemble le jour venu.
+ *
+ * Exige les DEUX flags, comme l'étage résultats : la proposition est un étage
+ * du rayon biologie, pas une voie parallèle qui s'ouvrirait sur un rayon
+ * fermé.
+ */
+export function isCbPropositionEnabled(
+  value = process.env.WN_CB_PROPOSITION,
+  valueRayon = process.env.WN_CB_ENABLED,
+): boolean {
+  return isCbEnabled(valueRayon) && value === 'true';
+}
+
+/**
  * Étage 2 — résultats biologiques réels (saisie, import, boucle estimé ↔
  * mesuré). GATE DUR HDS : ne doit jamais passer à true avant l'attestation
  * d'hébergement de données de santé.
