@@ -10,7 +10,7 @@ chaque ouverture ou réarbitrage.
 
 | Rang | Campagne | Dossier | Raison du rang |
 |---|---|---|---|
-| 1 | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | Seule échéance qui avance sans nous : dérogation expirée le 2026-10-21, gate + dossier RGPD reprennent la règle le même jour. |
+| 1 | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | Seule échéance qui avance sans nous : dérogation expire le 2026-10-21, gate + dossier RGPD reprennent la règle le même jour. |
 | 2 | Biologie consolidée | `2026-08-18-biologie-consolidee/` | Ferme les trois dettes nommées d'une surface VIVANTE en production (ancrage écriture seule, zéro E2E, garde-fou packs non contractualisé). Courte, sans migration. |
 | 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | Cinq véhicules déjà ordonnés par l'audit du 2026-08-11 ; V3 porte le coût de report « le plus élevé de tout l'audit ». V2 est une migration (release-db entre V2 et V3). |
 | 4 | Curation signée | `2026-08-18-curation-signee/` | **En parallèle continu, pas en séquence** : cadence praticien (claim par claim), aucune dépendance technique. NABM, liens biomarqueur↔besoin, vérification par fiche, question D-062. |
