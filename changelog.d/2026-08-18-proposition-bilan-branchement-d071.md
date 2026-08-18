@@ -32,8 +32,11 @@
   porte un code de panel et une date, rien d'autre. `declarePar` vient de la
   session, `declareLe` de la base — une déclaration est inantidatable et
   inattribuable à autrui, et une re-déclaration réécrit l'auteur avec la date.
-- Le service ne construit **aucune** carte de remboursement : les tables NABM
-  sont vides, et le défaut `non_evalue` du moteur est l'aveu d'ignorance juste.
+- Le service ne construit **aucune** carte de remboursement : `biology_nabm_actes`
+  porte bien 987 actes, mais l'appariement analyte ↔ acte
+  (`biology_analyte_nabm`) est vide — le schéma l'exige manuel et signé. Rien
+  ne résout donc un analyte vers un acte, et le défaut `non_evalue` du moteur
+  est l'aveu d'ignorance juste.
 - **Une déclaration erronée reste corrigeable** : le formulaire ne disparaît
   pas une fois le panel déclaré. Sans cela, une année saisie de travers (2016
   pour 2026) retirait durablement un panel de la proposition, sans issue depuis

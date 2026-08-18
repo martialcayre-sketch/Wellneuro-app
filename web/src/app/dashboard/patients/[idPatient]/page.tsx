@@ -39,7 +39,18 @@ export default function FichePatientPage({
     <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
       <AgendaAliFeatureProvider enabled={isAgendaAlimentaireEnabled(process.env.WN_AGENDA_ALI)}>
         <CbFeatureProvider enabled={isCbEnabled(process.env.WN_CB_ENABLED)}>
+          {/* `key` AU NIVEAU DU DOSSIER, et pas plus bas ([[D-072]] §4).
+              `FichePatientPanel` détient l'état clinique du dossier —
+              équilibre, réponses, trajectoire, mode de vie, assignations —
+              rechargé par des effets sur `idPatient`. En App Router, un
+              changement de segment le RÉCONCILIE sans le démonter : le contenu
+              du patient précédent restait affiché sous le nom du suivant, le
+              temps que chaque GET revienne. Keyer un seul enfant ne protégeait
+              que sa sous-arborescence. Du contenu clinique sous le mauvais nom,
+              même une seconde, ne se rattrape pas ; le coût assumé est la perte
+              des brouillons en cours au changement de dossier. */}
           <FichePatientPanel
+            key={params.idPatient}
             idPatient={params.idPatient}
             ongletInitial={ongletInitial}
             fixtureValidationErgo={fixtureValidationErgo}

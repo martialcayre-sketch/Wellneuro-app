@@ -4032,3 +4032,25 @@ n'y avait aucune ligne. 21 sources, 5 dormantes.
 
 Prochaine action : merge, puis allumage (geste distinct). Ouvert : la matrice
 compte la biblio NABM non dormante sur un `import type`.
+
+## [2026-08-18] — D-072 : les dettes du LOT-06 sont soldées
+
+Trois PR : #705 (deny-all RLS sur `arbitrages_biologiques`, seule table de
+`public` sans RLS en production — CI vert), et les soldes : deux replis
+fail-open SUPPRIMÉS du moteur, ratios dans la composition, matrice qui cesse de
+compter les imports de type, cockpit remonté au changement de dossier.
+
+Revue NO-GO, trois blocages tous DANS le périmètre revendiqué comme soldé :
+la clé de remontage posée sur l'enfant et non sur le composant qui détient
+l'état du dossier ; le repli rouvrant deux silences (panel discordant, panel
+sans ligne) ; et deux définitions concurrentes d'« import de type » dans le
+générateur. Corrigés plutôt que reportés.
+
+Deux corrections d'état me concernant : « les tables NABM sont vides » était
+faux (987 actes en base ; c'est l'appariement qui est vide), et j'avais régénéré
+la matrice avec des fichiers non suivis — le générateur n'indexe que le suivi,
+le CI l'a réfuté.
+
+Écarté : l'appariement analyte ↔ NABM et les liens biomarqueur ↔ besoin — lots
+de curation praticien signée, pas des dettes techniques.
+Prochaine action : merge des deux PR, puis release-db de #705.

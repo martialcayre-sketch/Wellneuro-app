@@ -515,8 +515,14 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // verrou seule. Signer n'allume toujours pas par soi-même — mais le drapeau
   // `WN_CB_ENABLED` était DÉJÀ posé à `true` en production quand cette
   // signature a été écrite ([[D-070]], constat du 2026-08-17) : les deux
-  // termes du ET sont vrais. La table n'atteint pour autant aucun écran,
-  // `deriverStatutsBiologie` n'ayant aucun appelant hors bancs.
+  // termes du ET sont vrais. La table n'atteignait alors aucun écran,
+  // `deriverStatutsBiologie` n'ayant aucun appelant hors bancs — ce n'est PLUS
+  // VRAI depuis [[D-071]] : `propositionService.ts` l'appelle, servi par
+  // `/api/praticien/biologie/proposition`. Un TROISIÈME terme la garde
+  // désormais, `WN_CB_PROPOSITION`, neuf et éteint : la table reste dormante
+  // tant qu'aucun geste d'exploitation ne le pose. (Corrigé au titre de
+  // [[D-072]] §5 : une affirmation d'état qui a cessé d'être vraie se met à
+  // jour, elle ne se laisse pas vieillir.)
   //
   // SURTOUT PAS `shaPerimetre: INDICATIONS_BIOLOGIE_SHA256` — l'instruction
   // d'origine le prescrivait, et c'était un piège à double fond (revue du

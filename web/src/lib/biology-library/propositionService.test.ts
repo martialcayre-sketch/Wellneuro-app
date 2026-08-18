@@ -39,13 +39,13 @@ beforeEach(() => {
   process.env.WN_CB_ENABLED = 'true';
   process.env.WN_CB_PROPOSITION = 'true';
   prisma.biologyPanel.findMany.mockResolvedValue([
-    panelDuCatalogue('PANEL_A', [{ ratioCode: null, analyte: { code: 'BIO_FER', libelle: 'Ferritine' } }]),
+    panelDuCatalogue('PANEL_A', [{ analyte: { code: 'BIO_FER', libelle: 'Ferritine' }, ratio: null }]),
   ]);
   prisma.biologyAnalyte.findMany.mockResolvedValue([]);
   prisma.panelBiologieDocumente.findMany.mockResolvedValue([]);
   prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
-  deriverStatutsBiologie.mockReturnValue({ ok: true, lignes: [] });
+  deriverStatutsBiologie.mockReturnValue({ ok: true, lignes: [], declarationsIgnoreesHorsProposition: [] });
 });
 
 // ── Contrat M-B ────────────────────────────────────────────────────────────
@@ -122,45 +122,27 @@ describe('verrou de drapeau — dans le service, au patron d’orientationServic
   });
 });
 
-// ── Les deux replis fail-open que cette table rend atteignables (D-071 §2 bis)
-describe('déclarations douteuses — écartées et dites, jamais silencieuses', () => {
-  it('une date postérieure à la référence est écartée, et le panel reste proposable', async () => {
+// Le TRI des déclarations douteuses appartient au MOTEUR depuis [[D-072]] : le
+// service ne fait plus que transmettre. Ces bancs gardent ce partage des rôles
+// — une règle clinique recopiée dans deux modules est une règle qu'on peut
+// oublier de corriger dans l'un des deux.
+describe('déclarations — transmises telles quelles, le moteur tranche', () => {
+  it('une date future est passée au moteur, pas filtrée par le service', async () => {
     prisma.panelBiologieDocumente.findMany.mockResolvedValue([
       { panelCode: 'PANEL_A', documenteLe: new Date('2027-01-01T00:00:00.000Z') },
     ]);
-    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    const entree = deriverStatutsBiologie.mock.calls[0][0];
-    // Le moteur ne doit JAMAIS voir cette déclaration : il conclurait
-    // `deja_documente` et retirerait le panel des propositions.
-    expect(entree.documentes).toEqual([]);
-    expect(resultat.ok && resultat.limites).toContainEqual({
-      type: 'declaration_ecartee',
-      panels: ['PANEL_A'],
-    });
-  });
-
-  // `D-071` §2 bis nommait DEUX branches ; la date illisible en est une. La
-  // colonne étant `TIMESTAMP(3) NOT NULL` et le POST validant déjà, elle est
-  // quasi inatteignable — mais « quasi inatteignable » n'est pas « gardée ».
-  it('une date illisible est écartée, comme une date future', async () => {
-    prisma.panelBiologieDocumente.findMany.mockResolvedValue([
-      { panelCode: 'PANEL_A', documenteLe: new Date('pas-une-date') },
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(deriverStatutsBiologie.mock.calls[0][0].documentes).toEqual([
+      { panelCode: 'PANEL_A', documenteLe: '2027-01-01T00:00:00.000Z' },
     ]);
-    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    expect(deriverStatutsBiologie.mock.calls[0][0].documentes).toEqual([]);
-    expect(resultat.ok && resultat.limites).toContainEqual({
-      type: 'declaration_ecartee',
-      panels: ['PANEL_A'],
-    });
   });
 
-  it('une date antérieure est transmise au moteur', async () => {
+  it('une date antérieure est transmise à l’identique', async () => {
     prisma.panelBiologieDocumente.findMany.mockResolvedValue([
       { panelCode: 'PANEL_A', documenteLe: new Date('2026-08-01T00:00:00.000Z') },
     ]);
     await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    const entree = deriverStatutsBiologie.mock.calls[0][0];
-    expect(entree.documentes).toEqual([
+    expect(deriverStatutsBiologie.mock.calls[0][0].documentes).toEqual([
       { panelCode: 'PANEL_A', documenteLe: '2026-08-01T00:00:00.000Z' },
     ]);
   });
@@ -175,24 +157,20 @@ describe('composition du catalogue', () => {
     const entree = deriverStatutsBiologie.mock.calls[0][0];
     expect(entree.panels).toHaveLength(1);
     expect(entree.panels[0].actif).toBe(false);
-    // Et la requête SQL ne porte aucun `where` sur `actif`.
     expect(prisma.biologyPanel.findMany.mock.calls[0][0]).not.toHaveProperty('where');
   });
 
-  it('un item ratio est écarté de la composition ET signalé', async () => {
+  it('analytes ET ratios sont composés — plus de composition amputée', async () => {
     prisma.biologyPanel.findMany.mockResolvedValue([
       panelDuCatalogue('PANEL_A', [
-        { ratioCode: null, analyte: { code: 'BIO_FER', libelle: 'Ferritine' } },
-        { ratioCode: 'RATIO_HOMA', analyte: null },
+        { analyte: { code: 'BIO_FER', libelle: 'Ferritine' }, ratio: null },
+        { analyte: null, ratio: { code: 'RATIO_HOMA', libelle: 'Indice HOMA' } },
       ]),
     ]);
-    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
-    const entree = deriverStatutsBiologie.mock.calls[0][0];
-    expect(entree.panels[0].analytes).toEqual([{ code: 'BIO_FER', libelle: 'Ferritine' }]);
-    expect(resultat.ok && resultat.limites).toContainEqual({
-      type: 'items_ratio_ignores',
-      panels: ['PANEL_A'],
-    });
+    await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    const panel = deriverStatutsBiologie.mock.calls[0][0].panels[0];
+    expect(panel.analytes).toEqual([{ code: 'BIO_FER', libelle: 'Ferritine' }]);
+    expect(panel.ratios).toEqual([{ code: 'RATIO_HOMA', libelle: 'Indice HOMA' }]);
   });
 });
 
@@ -214,6 +192,31 @@ describe('remboursements et abstention', () => {
     deriverStatutsBiologie.mockReturnValue({ ok: false, motif: 'La table n’est pas signée.' });
     const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
     expect(resultat).toEqual({ ok: false, motif: 'La table n’est pas signée.' });
+  });
+});
+
+// Ce que le moteur écarte SANS pouvoir le dire sur une ligne (panel inactif,
+// ou visé par aucune règle) doit atteindre l'écran par ce relais — sinon la
+// déclaration disparaît de la proposition ET de l'écran (`DC-30`).
+describe('déclarations écartées hors proposition', () => {
+  it('remontent en limite, avec leur motif', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      lignes: [],
+      declarationsIgnoreesHorsProposition: [
+        { panelCode: 'PANEL_X', motif: 'Déclaration écartée : sa date est illisible.' },
+      ],
+    });
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(resultat.ok && resultat.limites).toContainEqual({
+      type: 'declaration_ecartee_hors_proposition',
+      motifs: ['Déclaration écartée : sa date est illisible.'],
+    });
+  });
+
+  it('aucune limite quand le moteur n’a rien écarté hors proposition', async () => {
+    const resultat = await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
+    expect(resultat.ok && resultat.limites).toEqual([{ type: 'remboursement_non_evalue' }]);
   });
 });
 

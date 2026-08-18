@@ -37,6 +37,14 @@ export type PanelCatalogue = {
   objectif: string | null;
   actif: boolean;
   analytes: Array<{ code: string; libelle: string }>;
+  /**
+   * Rapports calculés du panel (HOMA, ratios) — un item de bilan porte SOIT un
+   * analyte SOIT un ratio (CHECK `cible_unique`). Ils sont composés à part
+   * parce qu'ils n'ont ni remboursement propre ni validation médicale : ce sont
+   * des CALCULS sur des analytes, pas des actes. Absents ⇒ liste vide, jamais
+   * une composition amputée en silence ([[D-072]]).
+   */
+  ratios?: Array<{ code: string; libelle: string }>;
 };
 
 /**
@@ -75,6 +83,8 @@ export type LignePanelProposition = {
   motifs: string[];
   justificationClaims: OrientationClaimRef[];
   analytes: LigneAnalyteProposition[];
+  /** Rapports calculés du panel — voir `PanelCatalogue.ratios`. */
+  ratios: Array<{ code: string; libelle: string }>;
 };
 
 export type EntreeStatutsBiologie = {
@@ -124,7 +134,17 @@ export type EntreeStatutsBiologie = {
 
 export type PropositionBilan =
   | { ok: false; motif: string }
-  | { ok: true; lignes: LignePanelProposition[] };
+  | {
+      ok: true;
+      lignes: LignePanelProposition[];
+      /**
+       * Déclarations écartées dont AUCUNE ligne ne porte le motif — panel
+       * inactif, ou visé par aucune règle exploitable. Sans ce canal, elles
+       * disparaîtraient de la proposition ET de l'écran : une déclaration
+       * qu'on ignore en silence est exactement ce que `DC-30` refuse.
+       */
+      declarationsIgnoreesHorsProposition: Array<{ panelCode: string; motif: string }>;
+    };
 
 /** Ordre de présentation : ce qui appelle une action d'abord. */
 const ORDRE_STATUTS: Record<StatutPanel, number> = {
@@ -145,6 +165,14 @@ const REMBOURSEMENT_NON_EVALUE: Remboursement = {
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Tolérance de fuseau sur la date d'un bilan déclaré — la MÊME que la route de
+ * déclaration, et pour la même raison. Borne purement technique, sans
+ * sémantique clinique : elle absorbe l'écart Paris/UTC d'une saisie de jour
+ * civil, jamais une année saisie de travers, qui reste très au-delà.
+ */
+const TOLERANCE_FUSEAU_MS = JOUR_MS;
+
 function reglesExploitables(regles: RegleIndicationPanel[]): RegleIndicationPanel[] {
   return regles.filter(regle =>
     regle.statut === 'publiee'
@@ -160,16 +188,87 @@ function reglesExploitables(regles: RegleIndicationPanel[]): RegleIndicationPane
   );
 }
 
+/** Déclaration dont la date a été lue et jugée utilisable. */
+type DeclarationExploitable = PanelDocumente & { documenteLeMs: number };
+
+/**
+ * Trie les déclarations en exploitables et ignorées ([[D-072]]).
+ *
+ * DEUX REPLIS FAIL-OPEN ONT ÉTÉ SUPPRIMÉS ICI, pas rendus inatteignables. Une
+ * date illisible et une date postérieure à la référence concluaient toutes deux
+ * `deja_documente` — donc RETIRAIENT le panel des propositions. Une donnée
+ * aberrante produisait ainsi la conclusion rassurante, ce que `DC-24` et
+ * `DC-25` refusent : une donnée absente n'est ni zéro ni normale, et des
+ * données insuffisantes réduisent la conclusion au lieu de l'inventer.
+ *
+ * Le sens du repli est arbitré : écarter propose un bilan de trop, garder en
+ * tairait un. Et une déclaration écartée n'est jamais SILENCIEUSE — l'appelant
+ * reçoit son panel dans `ignorees` et la ligne porte un motif (`DC-30` : une
+ * discordance se signale, jamais ne se supprime).
+ *
+ * Une `dateReference` illisible écarte TOUTES les déclarations : ne pouvant
+ * juger aucune ancienneté, le moteur ne conclut sur aucune.
+ */
+function trierDeclarations(
+  documentes: PanelDocumente[] | undefined,
+  dateReference: string,
+): { exploitables: Map<string, DeclarationExploitable>; ignorees: Map<string, string> } {
+  const reference = Date.parse(dateReference);
+  const exploitables = new Map<string, DeclarationExploitable>();
+  // panelCode → MOTIF, jamais un simple drapeau : accuser la déclaration quand
+  // c'est la date de référence qui est illisible désignerait la mauvaise
+  // donnée au praticien (`DC-34`).
+  const ignorees = new Map<string, string>();
+  for (const doc of documentes ?? []) {
+    const documenteLeMs = Date.parse(doc.documenteLe);
+    if (Number.isNaN(reference)) {
+      ignorees.set(
+        doc.panelCode,
+        'Déclaration « déjà exploré » écartée : la date de référence du calcul est '
+        + 'illisible — l’ancienneté d’aucun bilan ne peut être jugée. Le panel est '
+        + 'traité comme non exploré.',
+      );
+      continue;
+    }
+    if (Number.isNaN(documenteLeMs)) {
+      ignorees.set(
+        doc.panelCode,
+        'Déclaration « déjà exploré » écartée : sa date est illisible. Le panel est '
+        + 'traité comme non exploré.',
+      );
+      continue;
+    }
+    // MÊME TOLÉRANCE QUE LA ROUTE DE DÉCLARATION (un jour) : `<input
+    // type="date">` rend un jour civil que `new Date()` lit en UTC minuit.
+    // Sans elle, une déclaration du jour saisie la nuit à Paris était ACCEPTÉE
+    // par la route puis systématiquement ÉCARTÉE ici — le praticien lisait
+    // « traité comme non exploré » sur ce qu'il venait de consigner. Deux
+    // bornes qui ne s'accordent pas ne gardent rien, elles se contredisent.
+    if (documenteLeMs > reference + TOLERANCE_FUSEAU_MS) {
+      ignorees.set(
+        doc.panelCode,
+        'Déclaration « déjà exploré » écartée : sa date est postérieure à la date de '
+        + 'référence. Le panel est traité comme non exploré.',
+      );
+      continue;
+    }
+    exploitables.set(doc.panelCode, { ...doc, documenteLeMs });
+  }
+  return { exploitables, ignorees };
+}
+
+/**
+ * Statut d'un panel dont la déclaration a DÉJÀ été jugée exploitable : les
+ * dates sont des nombres lus, plus des chaînes à reparser — le repli sur
+ * `NaN` n'a donc plus d'endroit où exister.
+ */
 function statutDocumente(
   regle: RegleIndicationPanel,
-  documente: PanelDocumente,
-  dateReference: string,
+  documenteLeMs: number,
+  referenceMs: number,
 ): StatutPanel {
   if (!regle.repetition) return 'deja_documente';
-  const documenteLe = Date.parse(documente.documenteLe);
-  const reference = Date.parse(dateReference);
-  if (Number.isNaN(documenteLe) || Number.isNaN(reference)) return 'deja_documente';
-  const ageJours = (reference - documenteLe) / JOUR_MS;
+  const ageJours = (referenceMs - documenteLeMs) / JOUR_MS;
   return ageJours > regle.repetition.delaiJours ? 'a_repeter' : 'deja_documente';
 }
 
@@ -227,17 +326,24 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
   }
 
   const dernieres = derniereReponseParQuestionnaire(entree.reponses);
-  const documentes = new Map(
-    (entree.documentes ?? []).map(doc => [doc.panelCode, doc]),
+  const { exploitables: documentes, ignorees: declarationsIgnorees } = trierDeclarations(
+    entree.documentes,
+    entree.dateReference,
   );
+  const referenceMs = Date.parse(entree.dateReference);
 
   const lignes: LignePanelProposition[] = [];
+  // Panels dont une ligne porte déjà le motif d'écartement.
+  const portees = new Set<string>();
   for (const [panelCode, reglesDuPanel] of parPanel) {
     const panel = panelsActifs.get(panelCode);
     // Règle sans panel actif au catalogue : rien à proposer — la composition
     // vit en base, pas ici.
     if (!panel) continue;
     if (reglesDuPanel.length > 1) {
+      // Le motif d'écartement passe AVANT le `continue` : une déclaration
+      // écartée sur un panel discordant redevenait muette sans cela.
+      const motifIgnoree = declarationsIgnorees.get(panelCode);
       lignes.push({
         panelCode,
         libelle: panel.libelle,
@@ -250,10 +356,13 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
           `Discordance de la table d’indications : ${reglesDuPanel.length} règles publiées `
           + `visent ce panel (${reglesDuPanel.map(r => r.id).join(', ')}). `
           + 'Panel écarté jusqu’à arbitrage de la table.',
+          ...(motifIgnoree ? [motifIgnoree] : []),
         ],
         justificationClaims: [],
         analytes: composerAnalytes(panel, entree),
+        ratios: panel.ratios ?? [],
       });
+      portees.add(panelCode);
       continue;
     }
     const regle = reglesDuPanel[0];
@@ -264,7 +373,7 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
     const motifs: string[] = [];
 
     if (documente) {
-      statut = statutDocumente(regle, documente, entree.dateReference);
+      statut = statutDocumente(regle, documente.documenteLeMs, referenceMs);
       motifs.push(
         statut === 'a_repeter'
           ? `Documenté le ${documente.documenteLe.slice(0, 10)}, au-delà du délai de répétition de la règle ${regle.id}.`
@@ -291,6 +400,14 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
       }
     }
 
+    // Une déclaration écartée ne disparaît pas en silence : le panel revient au
+    // régime normal — donc il est proposé — ET la ligne le dit (`DC-30`).
+    const motifIgnoree = declarationsIgnorees.get(panelCode);
+    if (motifIgnoree) {
+      motifs.push(motifIgnoree);
+      portees.add(panelCode);
+    }
+
     lignes.push({
       panelCode,
       libelle: panel.libelle,
@@ -302,13 +419,22 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
       motifs,
       justificationClaims: regle.justificationClaims,
       analytes: composerAnalytes(panel, entree),
+      ratios: panel.ratios ?? [],
     });
   }
 
   lignes.sort((gauche, droite) =>
     ORDRE_STATUTS[gauche.statut] - ORDRE_STATUTS[droite.statut]
     || gauche.panelCode.localeCompare(droite.panelCode));
-  return { ok: true, lignes };
+
+  // Ce qu'aucune ligne n'a pu dire remonte à l'appelant, plutôt que de se
+  // perdre : un panel inactif ou sans règle exploitable n'a pas de ligne, et
+  // la déclaration écartée qui le vise n'aurait alors aucun porteur.
+  const declarationsIgnoreesHorsProposition = [...declarationsIgnorees.entries()]
+    .filter(([panelCode]) => !portees.has(panelCode))
+    .map(([panelCode, motif]) => ({ panelCode, motif }));
+
+  return { ok: true, lignes, declarationsIgnoreesHorsProposition };
 }
 
 function composerAnalytes(

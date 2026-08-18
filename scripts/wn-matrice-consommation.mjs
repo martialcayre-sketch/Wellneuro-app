@@ -464,6 +464,25 @@ export function visibilitePatientDeLaSurface(index, surface) {
  *
  * `exclus` : le module de définition lui-même. Un fichier ne se consomme pas.
  */
+/**
+ * Le contenu d'un fichier PRIVÉ de ses imports de type ([[D-072]]).
+ *
+ * Les jetons d'une source incluent le CHEMIN de son module (`./remboursable`,
+ * `@/lib/…/remboursable`), et la correspondance est TEXTUELLE : une simple
+ * mention suffit. Un `import type { Remboursement } from './remboursable'`
+ * faisait donc de son fichier un consommateur — alors qu'un import de type est
+ * effacé à la compilation : aucun code ne s'exécute, aucune donnée ne transite.
+ *
+ * Le cas qui l'a montré : `statuts.ts` n'importe que le TYPE `Remboursement`,
+ * et la bibliothèque NABM (987 actes) passait de « dormante » à « consommée »
+ * sans qu'un seul remboursement soit dérivé — la matrice déclarait consommée
+ * une source que le code refuse explicitement de consommer.
+ */
+export function contenuHorsImportsDeType(contenu) {
+  return contenu.replace(/import\s+([^;]*?)\s+from\s+['"][^'"]+['"]\s*;?/g, (entier, clause) =>
+    nomsDeValeur(clause).length === 0 ? '' : entier);
+}
+
 export function appelantsDe(index, jetons, exclus = []) {
   const vus = new Map();
   const ignores = new Set(exclus);
@@ -478,7 +497,7 @@ export function appelantsDe(index, jetons, exclus = []) {
       const correspond = frontiere.some(
         ({ jeton, dossier }) =>
           (dossier === null || path.posix.dirname(fichier.chemin) === dossier)
-          && mentionne(fichier.contenu, jeton),
+          && mentionne(contenuHorsImportsDeType(fichier.contenu), jeton),
       );
       if (!correspond) continue;
       const nature = natureDuFichier(fichier.chemin);
@@ -667,11 +686,41 @@ export function collecterAllowlistsRayons(index) {
  * pour des rayons pourtant fail-closed derrière `WN_RECHERCHE_CORPUS_ENABLED`,
  * et un tiret dans cette colonne se lit « rien ne le garde ».
  */
-/** `import { a, b } from './x'` → `[{specificateur: './x', noms: ['a','b']}]`. */
+/**
+ * `import { a, b } from './x'` → `[{specificateur: './x', noms: ['a','b']}]`.
+ *
+ * LES IMPORTS DE TYPE NE SONT PAS DES CONSOMMATIONS ([[D-072]]). `import type`
+ * est EFFACÉ à la compilation : aucun code ne s'exécute, aucune donnée ne
+ * transite. Les compter créait un faux arc dans le graphe — et la matrice
+ * déclarait consommée une source que le code refuse explicitement de
+ * consommer. Le cas qui l'a montré : `statuts.ts` importe le seul TYPE
+ * `Remboursement` de `remboursable.ts`, et la bibliothèque NABM passait ainsi
+ * de « dormante » à « consommée » sans qu'un seul remboursement soit dérivé.
+ *
+ * Deux formes sont neutralisées : la clause entière (`import type { X } from`)
+ * et les spécificateurs en ligne (`import { type X } from`). Un JUGE UNIQUE
+ * les décide — `nomsDeValeur` — parce que deux définitions concurrentes de
+ * « qu'est-ce qu'un import de type » dans un script dont toute la valeur est
+ * d'être un juge unique produiraient deux vérités.
+ */
+
+/**
+ * Les noms de VALEUR d'une clause d'import — ceux qui survivent à la
+ * compilation. Rend `[]` pour `import type { X }` comme pour
+ * `import { type X }` : dans les deux cas, rien ne s'exécute.
+ */
+export function nomsDeValeur(clause) {
+  const nette = clause.trim();
+  if (/^type\b/.test(nette)) return [];
+  return [...nette.replace(/\btype\s+[A-Za-z_$][\w$]*/g, ' ').matchAll(/[A-Za-z_$][\w$]*/g)]
+    .map((x) => x[0])
+    .filter((n) => n !== 'as');
+}
 export function importsDe(contenu) {
   const imports = [];
   for (const m of contenu.matchAll(/import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
-    const noms = [...m[1].matchAll(/[A-Za-z_$][\w$]*/g)].map((x) => x[0]).filter((n) => n !== 'type' && n !== 'as');
+    const noms = nomsDeValeur(m[1]);
+    if (noms.length === 0) continue;
     imports.push({ specificateur: m[2], noms });
   }
   return imports;

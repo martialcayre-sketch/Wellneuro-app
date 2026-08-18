@@ -1312,7 +1312,10 @@ export function FichePatientPanel({
               </div>
               {focalLocal()}
               {/* Le runtime clinique reste monté en permanence : seul l'affichage
-                  est filtré par phase — aucun rechargement, aucun brouillon perdu. */}
+                  est filtré par phase — aucun rechargement, aucun brouillon perdu.
+                  Le remontage au changement de dossier est porté PLUS HAUT, sur
+                  ce composant lui-même ([[D-072]] §4, `page.tsx`) : c'est lui
+                  qui détient l'état du dossier, pas seulement cette section. */}
               <ClinicalRuntimeSection
                 idPatient={idPatient}
                 fixture={fixtureErgo}
