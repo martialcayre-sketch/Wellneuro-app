@@ -4054,3 +4054,24 @@ le CI l'a réfuté.
 Écarté : l'appariement analyte ↔ NABM et les liens biomarqueur ↔ besoin — lots
 de curation praticien signée, pas des dettes techniques.
 Prochaine action : merge des deux PR, puis release-db de #705.
+
+## [2026-08-18] — LOT-06 : le drapeau est posé, et un build le porte enfin
+
+#707 (le générateur de matrice indexe désormais les fichiers non suivis —
+`--others --exclude-standard`, deux bancs tués par retour en arrière) ; l'autre
+piège de la même famille, `prisma format`, n'a pas de correctif structurel
+acceptable et vit désormais dans `.claude/rules/db-prisma.md`, avec le rappel
+que Prisma ne modélise pas la RLS.
+
+Puis le drapeau `WN_CB_PROPOSITION` a été posé — et le redéploiement ANNULÉ
+deux fois. Cause : `web/vercel.json` porte un `ignoreCommand` qui saute la
+construction quand le commit ne touche rien sous `web/`, et #707 était purement
+outillage. La production servait donc un build antérieur à la variable : le
+drapeau existait dans le panneau, porté par rien. Même classe que D-064 et
+D-070. Remède : `vercel redeploy` du déploiement de #706, dont le commit touche
+`web/`. Build READY, aliasé `app.wellneuro.fr`, postérieur à la variable.
+
+Écarté : `vercel env pull` pour lire la valeur — il écraserait `.env.local`.
+On sait donc que la variable EXISTE et que le build lui est postérieur, pas ce
+qu'elle vaut.
+Prochaine action : preuve visuelle du panneau sur un dossier réel.
