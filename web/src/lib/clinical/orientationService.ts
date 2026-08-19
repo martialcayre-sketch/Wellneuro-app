@@ -33,8 +33,13 @@ import { estExclueDuRaisonnement } from '@/lib/scoring/validite';
 // d'appartenance, ni journalisation d'accès. Ces gestes appartiennent à chaque
 // appelant, qui les pose AVANT d'appeler ici.
 
+// Ce message couvre les DEUX termes du ET (`orientationActive()`), donc il n'en
+// nomme aucun. Sa rédaction d'origine — « les règles NNPP2 ne sont pas encore
+// validées » — était devenue fausse le 2026-08-04, jour de la signature de la
+// table : elle donnait au praticien une raison démentie par le dépôt, et c'est
+// précisément celle qui lui aurait fait conclure à l'envers ([[D-076]]).
 export const MESSAGE_ORIENTATION_INACTIVE =
-  "Orientation en cours de constitution — les règles NNPP2 ne sont pas encore validées.";
+  "Orientation non activée sur cet environnement.";
 
 /**
  * Une recommandation servie, augmentée de l'`id_pack` de la base pour les

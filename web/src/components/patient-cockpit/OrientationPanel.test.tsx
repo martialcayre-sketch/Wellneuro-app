@@ -122,12 +122,12 @@ describe('OrientationPanel', () => {
       ok: true,
       actif: false,
       version: 'orientation-nnpp2-v1',
-      message: 'Orientation en cours de constitution — les règles NNPP2 ne sont pas encore validées.',
+      message: 'Orientation non activée sur cet environnement.',
     });
 
     render(<OrientationPanel idPatient="PAT_SEED_03" />);
 
-    expect(await screen.findByText(/en cours de constitution/i)).toBeTruthy();
+    expect(await screen.findByText(/non activée sur cet environnement/i)).toBeTruthy();
     // Un verrou fermé n'est pas une panne : le signaler en alerte enverrait le
     // praticien chercher un incident qui n'existe pas.
     expect(screen.queryByRole('alert')).toBeNull();

@@ -150,7 +150,7 @@ describe('evaluerOrientationPourPatient', () => {
 
   it('porte le message français de constitution, jamais une erreur', async () => {
     const resultat = await evaluerOrientationPourPatient('PAT_SEED_03');
-    expect(resultat.actif === false && resultat.message).toContain('en cours de constitution');
+    expect(resultat.actif === false && resultat.message).toContain('non activée sur cet environnement');
   });
 
   it('lit le dossier et rend une liste vide quand la table signée ne déclenche rien', async () => {
