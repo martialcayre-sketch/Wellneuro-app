@@ -4,6 +4,46 @@
 
 ## Décisions actives
 
+### D-075 — Les dossiers de test sont réels : lisibles par identifiant, jamais nommés dans le dépôt, jamais écrits par un seed
+
+- Date : 2026-08-18
+- Statut : accepté (arbitrage praticien explicite en session) et implémenté
+  (`CLAUDE.md`, §Données patients).
+- Domaine : données patients, gouvernance, dossiers de test
+
+- Contexte : la règle disait « seuls ces patients fictifs peuvent apparaître
+  dans le code, les seeds, les tests ou les démos ». Lue littéralement, elle
+  m'a fait refuser d'examiner un dossier que le praticien utilise réellement
+  pour tester — alors que la vérification demandée ne portait pas sur son
+  contenu clinique. Le praticien a tranché : les dossiers de test sont réels,
+  et c'est le cas de tous les dossiers créés jusqu'ici.
+
+**1. Ce que la règle protégeait vraiment.** Pas l'existence de dossiers réels
+— elle est normale et ne se décrète pas — mais deux choses : que des identités
+réelles n'entrent pas dans un dépôt dont l'historique ne s'efface pas, et
+qu'aucune donnée fabriquée n'atterrisse dans un dossier de personne. La règle
+confondait les deux avec « n'en parle jamais ».
+
+**2. Lecture autorisée, par identifiant.** Vérifier un comportement sur un vrai
+dossier via `execute_sql` est la façon normale de travailler ; s'en priver
+avait un coût réel — au lot `D-074`, la conclusion a failli reposer sur un
+journal d'accès que Playwright pouvait avoir écrit.
+
+**3. Deux interdits maintenus, et ils ne sont pas de forme.** Jamais de nom ni
+d'e-mail réel dans le dépôt : Git, les logs CI et les builds Vercel ne
+s'effacent pas. Jamais de seed ni d'E2E visant un dossier réel : `web/prisma/seed.ts`
+écrit des réponses de questionnaire (`questionnaireReponse.upsert`), et une
+réponse fabriquée déposée dans un dossier réel est une donnée que personne n'a
+produite — elle alimenterait ensuite scoring, orientation et indications
+(`DC-01`, `DC-24`). Les trois identités de fixture restent donc en place ;
+elles ne décrivent plus une liste de dossiers autorisés à exister.
+
+- Écarté : faire des trois personnes les identités de fixture du dépôt (255
+  fichiers, identités définitives dans l'historique, et réponses fabriquées
+  écrites dans deux dossiers réels).
+- Hors portée : le régime HDS, inchangé — aucune valeur biologique patient
+  n'entre nulle part.
+
 ### D-074 — Le drapeau d'orientation était posé depuis au moins le 5 août, et deux textes affirmaient le contraire
 
 - Date : 2026-08-18

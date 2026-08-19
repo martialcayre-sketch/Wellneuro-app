@@ -46,8 +46,23 @@ courant : `docs/claude/PROJET_CONTEXTE.md`.
 
 ## Données patients
 
-Seuls ces patients fictifs peuvent apparaître dans le code, les seeds, les
-tests ou les démos : **Sophie Nicola, Jennifer Martin, Michel Dogné**.
+**Aucune identité réelle dans le dépôt** — code, seeds, tests, démos, docs,
+messages de commit. Les fixtures portent trois identités neutres : **Sophie
+Nicola, Jennifer Martin, Michel Dogné**. Ce sont des identités de fixture, pas
+la liste des dossiers qui existent.
+
+**Les dossiers de test sont réels et vivent en production** (arbitrage
+praticien du 2026-08-18, `D-075`). Ils se **lisent par leur identifiant** via
+l'outil MCP `execute_sql` — c'est la façon normale de vérifier un comportement
+sur un vrai dossier. Deux interdits demeurent, et ils ne sont pas de forme :
+
+- **jamais désignés par leur nom ou leur e-mail dans le dépôt** — l'historique
+  Git, les logs CI et les builds Vercel ne s'effacent pas ;
+- **jamais visés par un seed ou un E2E** : `web/prisma/seed.ts` écrit des
+  réponses de questionnaire, et une réponse fabriquée déposée dans un dossier
+  réel est une donnée que personne n'a produite — elle alimenterait ensuite
+  scoring, orientation et indications (`DC-01`, `DC-24`).
+
 Ne jamais générer, dériver ou « compléter » des données patient réelles, même
 si elles apparaissent dans un fichier ouvert ou un log collé par erreur.
 
