@@ -40,13 +40,13 @@ chaque ouverture ou réarbitrage.
   (`biology-library/featureFlag.ts`). Aucun appelant aujourd'hui, donc aucun
   effet — mais le jour où CB-09 livrera les résultats réels, il naîtrait
   allumé sans l'attestation. Trente secondes, zéro effet observable.
-- **Trancher l'allumage du filtre de validité des passations** :
-  `WN_ENABLE_VALIDITE_PASSATIONS` est absent de la production — filtre
-  inerte, documenté (`FEATURE_FLAGS.md`, `D-052` : le `VALID` par défaut de
-  migration n'est pas un jugement clinique) et route d'invalidation praticien
-  en 503. L'allumage vaut `1` (famille `WN_ENABLE_*`, jamais `true`) et
-  c'est une décision clinique : les passations `INVALID`/`SUPERSEDED`
-  sortiraient du raisonnement.
+- **Filtre de validité des passations — FAIT, allumé le 2026-08-19**
+  (`D-077`, arbitrage praticien en session) : `WN_ENABLE_VALIDITE_PASSATIONS=1`
+  posé et porté par un redéploiement aliasé. Geste sûr, prouvé avant
+  l'arbitrage : 111 passations en production, toutes `VALID` — aucun calcul
+  ne change, la route d'invalidation praticien s'ouvre (fin du 503).
+  Vérification restante à l'œil : le geste d'invalidation répond sur un
+  dossier de test réel.
 - **Trancher les arbitrages pendants** : `complements-clean-label-v1`
   (« remplacée ? »), dégel JA5-05, sort de `2026-08-02-rayon-biologie-cb`
   (recouverte par le LOT-06 de la chaîne T0), worktree

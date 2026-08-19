@@ -4,6 +4,46 @@
 
 ## Décisions actives
 
+### D-077 — Le filtre de validité des passations est allumé : rien ne change aux calculs, le geste d'invalidation s'ouvre
+
+- Date : 2026-08-19
+- Statut : accepté (arbitrage praticien explicite en session, option
+  « allumer maintenant ») et exécuté.
+- Domaine : clinique, validité des passations, drapeaux, exploitation
+
+- Contexte : `WN_ENABLE_VALIDITE_PASSATIONS` était absent de la production —
+  filtre du LOT-00 de la chaîne T0 inerte (état documenté, `D-052`), route
+  d'invalidation praticien en 503. Interrupteur découvert lors de la lecture
+  des valeurs de production et entré en file comme geste (PR #717).
+
+**1. L'état des données a décidé de la sûreté du geste.** Lecture MCP de la
+production avant l'arbitrage : 111 passations, toutes `VALID` — le défaut de
+migration, qui n'est pas un jugement clinique (`D-052`). Le seul chemin
+d'écriture d'un autre statut est la route d'invalidation elle-même
+(`SUPERSEDED` et `HISTORICAL_ONLY` ne sont posables nulle part,
+`invalidation.ts`). Allumer ne retire donc rien du raisonnement aujourd'hui ;
+cela ouvre le geste praticien, et le filtre devient réel pour l'avenir. La
+raison d'un lancement éteint — ne rien faire disparaître en silence pendant
+la mise en place — est épuisée depuis la clôture de la chaîne T0.
+
+**2. Exécution.** Variable posée à `1` (famille `WN_ENABLE_*`, jamais
+`true`), scope Production, non marquée *sensitive* — lisible pour les audits
+futurs, à la différence de ses deux aînées. Build porté par `vercel redeploy`
+du déploiement `Ready` courant (poser ne suffit pas, `D-070`/`#708`) :
+`Ready` en 2 min, aliasé `app.wellneuro.fr` le 2026-08-19.
+
+**3. Méthode de lecture, consignée parce qu'elle manquait.** `D-076` notait
+qu'aucun outil accessible ne lit les variables Vercel : `vercel env pull`
+vers un FICHIER CIBLE EXPLICITE du scratchpad (jamais `.env.local`, prouvé
+intact par diff, tirage détruit après lecture) rend les valeurs non
+*sensitive* lisibles. Les variables marquées *sensitive* restent illisibles
+par construction — pour elles, seul le comportement ou le registre fait foi.
+
+- Vérification restante, à l'œil praticien : le geste d'invalidation répond
+  (plus de 503) sur un dossier de test réel.
+- Hors périmètre : scopes Preview/Development (`D-076`, dette toujours
+  ouverte) ; `WN_CB_RESULTS_ENABLED`, geste distinct encore en file.
+
 ### D-076 — Le message d'orientation inactive donnait une raison démentie depuis quinze jours
 
 - Date : 2026-08-19
