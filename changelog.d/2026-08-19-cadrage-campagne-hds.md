@@ -1,4 +1,4 @@
-### Campagne HDS ouverte — et trois documents cessent d'attendre une réponse déjà reçue
+### Campagne HDS cadrée — et trois documents cessent d'attendre une réponse déjà reçue
 
 - **Cadrage de `2026-08-18-echeance-hds-g-trust-04`**, campagne de rang 1 de la
   file : `CAMPAGNE.md` et ses quatre lots, écrits sur l'état réel du
