@@ -302,6 +302,46 @@ certificat Supabase qui annulerait une partie du bénéfice s'il était conserv�
 > n'est pas juriste. La qualification de la situation et les suites à donner
 > relèvent d'un conseil qualifié ou d'un DPO.
 
+## Décision du responsable du traitement — 2026-08-19 : le gate est LEVÉ par arbitrage
+
+> **Cette section prime sur l'en-tête de ce document**, qui date du 2026-07-20 et
+> annonçait « le gate reste non levé ». Il ne l'est plus — non parce que les
+> exigences ont été satisfaites, mais parce que le responsable a arbitré de
+> passer outre. Registre : [[D-078]].
+
+**Décision rendue** par le responsable du traitement le **2026-08-19**, motif
+invoqué : le gate bloque trop le développement.
+
+### Ce qui est autorisé
+
+- L'**activation des fonctionnalités** que le gate retenait : étage 2 du rayon
+  biologie (résultats réels, `WN_CB_RESULTS_ENABLED`) et messagerie D5.
+- La **migration totale vers Scalingo**, sans attendre la signature de l'annexe
+  HDS — condition (a) de `D-006`, demandée le 2026-08-12 et relancée le
+  2026-08-19, toujours sans réponse.
+
+### Ce que l'état des sept exigences devient
+
+**Rien.** Le tableau ci-dessus n'est pas modifié par cette décision et continue
+de dire le vrai : une exigence ❌, six partielles, aucune ✅. Le gate est levé
+**malgré** cet état, pas à cause d'un changement de cet état. Toute lecture
+ultérieure de ce document doit garder les deux faits ensemble.
+
+### Le point accepté sciemment
+
+Scalingo écrit le 2026-08-11 que « l'annexe HDS distincte doit être signée
+séparément pour activer l'option HDS ; l'acceptation des conditions générales
+seule ne suffit pas ». Entre la bascule et cette signature, les données réelles
+ne sont couvertes **ni** par la dérogation en vigueur — qui vise l'implantation
+Vercel — **ni** par une option HDS active. Le responsable en a été informé
+avant de trancher.
+
+### Date de revue — inchangée : 2026-10-21
+
+Elle n'est pas repoussée. Un écart sans terme cesse d'être un écart borné.
+
+---
+
 ## Décision du responsable du traitement — 2026-07-21
 
 **Décision rendue** par le responsable du traitement (`G-TRUST-02` : le

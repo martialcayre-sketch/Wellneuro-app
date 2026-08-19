@@ -52,7 +52,12 @@
   vérifié le 2026-07-21). Le responsable du traitement a autorisé une phase de
   test malgré cet écart, **bornée au 2026-10-21**. Ce n'est pas une mise en
   conformité : l'invariant reste vrai, il est enfreint sciemment et pour un
-  temps compté. **La migration n'est plus « à instruire » : elle est décidée**
+  temps compté. **Écart ÉLARGI le 2026-08-19 ([[D-078]])** : le gate
+  G-TRUST-04 est levé par arbitrage et la migration Scalingo est engagée
+  **sans attendre la signature de l'annexe HDS**, que le fournisseur déclare
+  nécessaire pour activer l'option HDS. Entre la bascule et cette signature,
+  les données réelles ne sont couvertes ni par la dérogation — qui vise
+  Vercel — ni par une option HDS active. Le terme du 2026-10-21 ne bouge pas. **La migration n'est plus « à instruire » : elle est décidée**
   — Scalingo (D-006 du 2026-07-28, confirmée par D-037 du 2026-08-09 ;
   certificat LNE n° 38436-2, six activités, valable jusqu'au 2028-09-11). Elle
   n'est pas exécutée pour autant, et l'écart ci-dessus court **inchangé

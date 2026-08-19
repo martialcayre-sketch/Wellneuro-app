@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-078 — Le gate G-TRUST-04 est levé par arbitrage du responsable, et la migration Scalingo est engagée sans attendre l'annexe HDS
+
+- Date : 2026-08-19
+- Statut : accepté (**décision du responsable de traitement**, rendue en session
+  le 2026-08-19, après exposé des constats ci-dessous)
+- Domaine : hébergement, conformité HDS/RGPD, gouvernance des gates
+
+- Contexte : l'arbitrage que la campagne `2026-08-18-echeance-hds-g-trust-04`
+  devait porter à son LOT-01 est rendu par anticipation. Motif invoqué par le
+  responsable : **le gate bloque trop le développement**. État des deux
+  conditions dures de [[D-006]] au moment de la décision — **(b) levée** par
+  écrit le 2026-08-11 ([[D-047]]) ; **(a) ouverte** : l'annexe HDS a été
+  demandée le 2026-08-12 et relancée le 2026-08-19, sans réponse à ce jour.
+
+**1. Ce que la décision fait.** Le gate **G-TRUST-04 est levé**. Les
+fonctionnalités qu'il retenait deviennent activables — étage 2 du rayon
+biologie (résultats réels, `WN_CB_RESULTS_ENABLED`) et messagerie D5 — et la
+**migration totale vers Scalingo est engagée**, sans attendre la signature de
+l'annexe HDS.
+
+**2. Ce que la décision N'EST PAS, et il faut l'écrire.** Ce n'est **pas une
+mise en conformité**, et elle ne lève aucune des exigences qu'elle contourne.
+Six des sept exigences du gate restent **partielles** et la première reste
+**non satisfaite** ; la checklist d'activation continue de faire foi sur leur
+état réel. Comme la décision du 2026-07-21 dont elle prend la suite, celle-ci
+est un **écart assumé, daté et consigné** — et c'est ce qui la rend
+défendable : elle établit que le responsable savait, et depuis quand.
+
+**3. Le point que la décision accepte sciemment.** Scalingo écrit, le
+2026-08-11 : « l'annexe HDS distincte doit être signée séparément pour activer
+l'option HDS ; l'acceptation des conditions générales seule ne suffit pas ».
+L'annexe n'est donc pas une pièce à enregistrer après coup : sa couverture
+court **à partir de la signature**. Entre la bascule et cette signature, les
+données réelles se trouvent dans le seul endroit couvert **ni** par la
+dérogation en vigueur — qui vise l'implantation Vercel — **ni** par une option
+HDS active. Sur ce point précis, et pour cette fenêtre seulement, la posture
+est **moins couverte qu'avant la migration**. Le responsable en a été informé
+avant de trancher et maintient son choix.
+
+**4. L'ordre imposé de [[D-006]] est explicitement écarté** pour sa condition
+(a). L'ordre reste écrit au registre, et [[D-047]] reste vraie ; c'est leur
+application qui est suspendue par le présent arbitrage, non leur contenu. La
+condition (b) n'est pas écartée — elle est **satisfaite**.
+
+**5. Ce qui reste dû, et n'est pas emporté par la levée.**
+- **Signer l'annexe HDS et archiver les deux pièces dès réception** — le
+  LOT-01 de la campagne HDS reste ouvert sur ce seul objet, la relance est
+  partie le 2026-08-19.
+- **L'information des personnes** sur l'écart d'hébergement, dont l'échéance
+  au tableau §14 de `docs/DOSSIER_RGPD.md` est « au plus tôt », donc **déjà
+  échue** — et que la présente décision rend plus exigeante, non moins.
+- Les autres trous du tableau §14, inchangés (AIPD, base légale, pentest,
+  registre des violations, `D-TRUST-02`).
+- **La date de revue reste le 2026-10-21.** La décision du 2026-07-21 bornait
+  son écart ; rien dans le présent arbitrage ne demande de repousser ce terme,
+  et un écart sans terme cesse d'être un écart borné. À cette date, l'annexe
+  devrait être signée et l'écart refermé par le haut ; à défaut, le terme se
+  reconduit explicitement ou la règle du dépôt reprend.
+
+- Réversibilité : une décision de registre se révoque par une décision de
+  registre. Techniquement, la bascule se replie par le filet de rollback court
+  prévu par [[D-006]] — Vercel/Supabase gardés chauds, non décommissionnés tant
+  que l'annexe n'est pas signée. **Le décommissionnement, lui, n'est pas
+  réversible** et reste subordonné à la signature.
+- Référence : [[D-006]], [[D-037]], [[D-047]], décision du responsable du
+  2026-07-21 (`CHECKLIST_ACTIVATION_G_TRUST_04.md`),
+  `docs/claude/campagnes/2026-08-18-echeance-hds-g-trust-04/`.
+
 ### D-077 — Le filtre de validité des passations est allumé : rien ne change aux calculs, le geste d'invalidation s'ouvre
 
 - Date : 2026-08-19
