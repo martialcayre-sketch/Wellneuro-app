@@ -4143,3 +4143,22 @@ accessible ne lit les variables d'environnement Vercel — vérifié, seuls les
 réglages de projet et la protection de déploiement le sont. Seul le panneau
 les montre ; la dette reste ouverte et nommée dans `D-076`.
 Prochaine action : PR.
+
+## [2026-08-19] — Campagne HDS cadrée : le ticket n'était plus en attente
+
+Le brief de la campagne de rang 1 (2026-08-18) demandait de « relancer
+Scalingo ». La réponse était arrivée le **2026-08-11**, tranchée le jour même
+par `D-047` : (b) périmètre HDS de `osc-fr1` **levée** par écrit, (a) accord de
+sous-traitance **ouverte et recaractérisée** — `D-037` avait déduit qu'il n'y
+avait rien à signer, le fournisseur répond qu'il faut **obtenir et signer une
+annexe HDS distincte du DPA**. Le LOT-01 se construit donc autour de l'annexe,
+pas d'une relance ; la démarche reste due même si la dérogation est reconduite.
+
+Trois porteurs répétaient la prémisse morte (`blocking_issue` et `next_action`
+de `.wn/state.json`, prérequis DPA du runbook) — redressés, le runbook démenti
+sur place. Le LOT-04 visait `REGISTRE_FRONTIERES.md`, qui ne porte qu'un
+renvoi : la source du gate est sa checklist d'activation.
+
+Écarté : prendre une `D-xxx` — l'arbitrage migrer/reconduire appartient au
+responsable de traitement. Prochaine action : PR, puis le geste
+`WN_CB_RESULTS_ENABLED` au panneau Vercel.

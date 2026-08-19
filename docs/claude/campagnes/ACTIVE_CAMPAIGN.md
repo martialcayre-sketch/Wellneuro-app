@@ -13,6 +13,6 @@ Aucune campagne primaire active.
 **Lot actif** : aucun
 
 **Statut global** : idle
-**Mise à jour** : 2026-08-18
+**Mise à jour** : 2026-08-19
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
