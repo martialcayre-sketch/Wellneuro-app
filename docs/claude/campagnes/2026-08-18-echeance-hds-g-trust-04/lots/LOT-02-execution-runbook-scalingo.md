@@ -1,15 +1,32 @@
 ---
 id: "LOT-02"
-statut: "à faire — conditionné : ne s'ouvre que si le LOT-01 tranche « migrer »"
+statut: "à faire — débloqué par D-078 (migrer, sans attendre l'annexe) ; chaque geste garde sa confirmation obligatoire"
 ---
 
 # LOT-02 — Exécution du runbook Scalingo — CONFIRMATION OBLIGATOIRE
 
-> **Ce lot ne s'ouvre pas de lui-même.** Il est conditionné à deux choses, dans
-> cet ordre : le `D-xxx` du LOT-01 tranche **migrer**, et la condition (a) de
-> `D-006` est **effectivement levée** — annexe HDS signée et archivée, pas
-> seulement caractérisée. Ouvrir ce lot sans l'une des deux créerait un
-> intervalle couvert ni par la dérogation ni par un contrat HDS signé.
+> ~~**Ce lot ne s'ouvre pas de lui-même.** Il est conditionné à deux choses,
+> dans cet ordre : le `D-xxx` du LOT-01 tranche **migrer**, et la condition
+> (a) de `D-006` est **effectivement levée**.~~
+>
+> **Débloqué le 2026-08-19 par `D-078`** : l'arbitrage est rendu (migrer) et
+> l'ordre « (a) d'abord » de `D-006` est explicitement écarté — son
+> application suspendue, son contenu conservé au registre (`D-047` reste
+> vraie). **Deux verrous demeurent, et ils ne se négocient pas ici** :
+> chaque geste d'infrastructure garde sa **confirmation obligatoire au moment
+> de l'étape**, et le **décommissionnement de Vercel/Supabase est interdit
+> tant que l'annexe HDS n'est pas signée** — c'est le seul geste
+> irréversible, et le filet de rollback court de `D-006` (les deux gardés
+> chauds) en dépend.
+>
+> **À dire à qui exécute** (`D-078` §3, accepté sciemment par le
+> responsable) : entre la bascule des données réelles et la signature de
+> l'annexe, ces données sont couvertes **ni** par la dérogation en vigueur
+> (qui vise l'implantation Vercel) **ni** par une option HDS active. Sur
+> cette fenêtre, la posture est moins couverte qu'avant la migration. La
+> fenêtre n'a pas de terme propre : elle est bornée de fait par la **revue du
+> 2026-10-21** (`D-078` §5), où l'écart se referme, se reconduit, ou la règle
+> du dépôt reprend.
 
 ## But
 
@@ -47,12 +64,16 @@ combler avant l'étape 2 du runbook :
 
 ## Interdits
 
-- **Aucune donnée réelle avant (a) levée** — c'est l'ordre imposé de `D-006`, et
-  il ne se contourne pas par un « staging au sens lâche » : les patients réels
+- ~~**Aucune donnée réelle avant (a) levée**~~ — ordre écarté par `D-078` §4
+  (application suspendue par décision du responsable, informé de la fenêtre
+  de moindre couverture). **Ce qui en reste, intact** : les patients réels
   n'atterrissent que sur une app prod HDS dûment provisionnée
   (`--hds-resource`, `DB_SSL_CA`, secrets prod, contrôles d'accès de niveau
-  prod). **Aucun garde runtime ne l'empêche** — la seule barrière est cette
-  règle.
+  prod) — jamais sur un « staging au sens lâche ». **Aucun garde runtime ne
+  l'empêche** — la seule barrière est cette règle.
+- **Aucun décommissionnement de Vercel/Supabase avant l'annexe signée**
+  (`D-078`) : seul geste irréversible du lot, les deux environnements restent
+  chauds comme filet de rollback court jusqu'à la signature.
 - **Aucun secret par l'assistant.** `scalingo env` rend les valeurs et
   `env-set` réaffiche celle qu'il pose : ni l'un ni l'autre ne sert à vérifier
   une configuration. `apps-info`, `addons` et `ps` suffisent.
@@ -81,7 +102,10 @@ d'une précédente :
 
 ## Dépendances
 
-LOT-01, **intégralement** — son arbitrage et sa condition (a).
+~~LOT-01, **intégralement** — son arbitrage et sa condition (a).~~
+L'arbitrage est rendu (`D-078`) et la condition (a) ne gate plus l'ouverture ;
+elle gate toujours le **décommissionnement**. Le LOT-01 reste ouvert en
+parallèle sur l'annexe.
 
 ## Tests
 
@@ -96,8 +120,10 @@ gestes — un lot ops ne se prouve pas par une suite Vitest.
       preuve, pas sur prose.
 - [ ] App de production HDS provisionnée, `HDS: true`, add-on `running`,
       migrations « up to date » sur conteneur.
-- [ ] Données réelles migrées **après** l'archivage de l'annexe signée, la
-      chronologie étant vérifiable par les dates des deux `D-xxx`.
+- [ ] ~~Données réelles migrées **après** l'archivage de l'annexe signée~~ —
+      ordre écarté par `D-078` ; **la chronologie réelle des deux événements
+      (bascule, signature) est consignée avec ses dates**, quelle qu'elle
+      soit — c'est elle qui borne la fenêtre de moindre couverture.
 - [ ] Cutover fait, Vercel/Supabase gardés chauds puis décommissionnés avec
       **preuve d'effacement écrite** au registre RGPD.
 - [ ] Le runbook porte ce que l'exécution a appris ; aucun compteur figé

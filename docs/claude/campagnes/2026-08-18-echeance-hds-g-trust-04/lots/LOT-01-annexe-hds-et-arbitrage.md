@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "à faire"
+statut: "en cours — l'arbitrage est rendu (D-078) ; reste l'annexe à signer et archiver"
 ---
 
 # LOT-01 — Annexe HDS obtenue et signée ; arbitrage migrer/reconduire posé
@@ -9,8 +9,10 @@ statut: "à faire"
 
 À la fin de ce lot, deux choses auront changé dans le dépôt et hors de lui :
 l'**annexe HDS de Scalingo est signée et archivée avec le DPA** (ou son
-impossibilité est écrite et datée), et le **responsable de traitement a tranché
-au registre** entre migrer et reconduire la dérogation.
+impossibilité est écrite et datée), et ~~le **responsable de traitement a
+tranché au registre** entre migrer et reconduire la dérogation~~ — **rendu par
+anticipation le 2026-08-19 (`D-078`) : migrer, sans attendre l'annexe.** Le
+lot reste ouvert sur le premier objet seul.
 
 Ce lot porte **deux objets distincts**. Les confondre est l'erreur à éviter :
 l'un est une démarche matérielle qui n'attend aucun arbitrage, l'autre est un
@@ -30,14 +32,20 @@ fournisseur », et la confirmation l'a démentie.
 
 **Cette démarche ne dépend pas de l'arbitrage de l'objet 2.** Reconduire la
 dérogation ne la rend pas inutile : elle est la condition (a) de `D-006`, et
-tant qu'elle n'est pas levée, la migration reste impossible quand elle sera
-décidée. Elle s'engage donc immédiatement.
+~~tant qu'elle n'est pas levée, la migration reste impossible quand elle sera
+décidée~~ — **plus depuis `D-078` §4** (l'ordre est suspendu, la migration
+est engagée sans l'annexe). Ce qui rend la démarche toujours aussi due : le
+**décommissionnement** en dépend (seul geste irréversible), la signature est
+la sortie « par le haut » de la revue du 2026-10-21, et chaque jour sans elle
+allonge la fenêtre de moindre couverture (`D-078` §3).
 
 Étapes, toutes à la main du responsable :
 
 1. Demander l'annexe HDS à Scalingo — le ticket du 2026-08-09 est le canal
    ouvert, sinon `support@scalingo.com`. **Texte prêt** :
-   `sources/demande-annexe-hds-scalingo.md`.
+   `sources/demande-annexe-hds-scalingo.md`. **Engagée selon `D-078`**
+   (demande du 2026-08-12, relance du 2026-08-19) — la référence du canal
+   reste à consigner, cf. critères de done.
 2. Signer l'annexe.
 3. Archiver **le DPA et l'annexe signée** hors dépôt, et consigner l'archivage
    au dossier RGPD (rubrique 6 et ligne correspondante du tableau §14) — la
@@ -45,7 +53,14 @@ décidée. Elle s'engage donc immédiatement.
 
 ## Objet 2 — l'arbitrage : migrer, ou reconduire
 
-**La question, telle qu'elle se pose au responsable de traitement, et sans
+> **RENDU PAR ANTICIPATION le 2026-08-19 (`D-078`)** — le responsable de
+> traitement a tranché en session : **migrer, sans attendre l'annexe**, motif
+> invoqué « le gate bloque trop le développement ». Il a tranché informé du
+> point de moindre couverture (fenêtre bascule→signature, `D-078` §3).
+> L'exposé ci-dessous est conservé comme pièce : c'est l'état qui se
+> présentait au moment de la décision.
+
+**La question, telle qu'elle se posait au responsable de traitement, et sans
 réponse suggérée :**
 
 > Au 2026-10-21, la phase de test avec des personnes réelles cesse d'être
@@ -106,11 +121,18 @@ dépôt entier, vu la nature du dossier.
 
 ## Critères de done
 
-- [ ] La demande d'annexe HDS est **partie**, avec sa date.
+- [ ] La demande d'annexe HDS est **partie**, avec sa date — **affirmée par
+      `D-078`** (demandée le 2026-08-12, relancée le 2026-08-19 ; la
+      checklist du gate reprend le même acte, même jour — ce n'est pas une
+      seconde preuve). **Trace indépendante à produire pour cocher** : le
+      canal et la référence (numéro de ticket ou courriel), consignés ici ou
+      au dossier RGPD.
 - [ ] L'annexe est **reçue**, **signée**, et **archivée avec le DPA** hors
       dépôt — ou l'obstacle rencontré est écrit et daté.
 - [ ] L'archivage est consigné au dossier RGPD (rubrique 6 + tableau §14), avec
       la date de signature.
-- [ ] Un `D-xxx` du responsable de traitement, daté, tranche **migrer** ou
-      **reconduire** — et s'il reconduit, il porte le **nouveau terme**.
+- [x] ~~Un `D-xxx` du responsable de traitement, daté, tranche **migrer** ou
+      **reconduire**~~ — **`D-078` (2026-08-19) : migrer, sans attendre
+      l'annexe.** Pas de nouveau terme : la revue reste au **2026-10-21**
+      (`D-078` §5).
 - [ ] Le fragment `changelog.d/` est écrit.

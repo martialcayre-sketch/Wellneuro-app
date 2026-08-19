@@ -10,7 +10,7 @@ chaque ouverture ou réarbitrage.
 
 | Rang | Campagne | Dossier | Raison du rang |
 |---|---|---|---|
-| 1 | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | Seule échéance qui avance sans nous : dérogation expire le 2026-10-21, gate + dossier RGPD reprennent la règle le même jour. |
+| 1 | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | **OUVERTE le 2026-08-19** — campagne primaire active, lot courant LOT-01 (annexe HDS). `D-078` a rendu l'arbitrage par anticipation : gate levé par écart assumé, migration engagée sans attendre l'annexe ; la revue du 2026-10-21 demeure. |
 | 2 | Biologie consolidée | `2026-08-18-biologie-consolidee/` | Ferme les trois dettes nommées d'une surface VIVANTE en production (ancrage écriture seule, zéro E2E, garde-fou packs non contractualisé). Courte, sans migration. |
 | 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | Cinq véhicules déjà ordonnés par l'audit du 2026-08-11 ; V3 porte le coût de report « le plus élevé de tout l'audit ». V2 est une migration (release-db entre V2 et V3). |
 | 4 | Curation signée | `2026-08-18-curation-signee/` | **En parallèle continu, pas en séquence** : cadence praticien (claim par claim), aucune dépendance technique. NABM, liens biomarqueur↔besoin, vérification par fiche, question D-062. |
@@ -33,13 +33,19 @@ chaque ouverture ou réarbitrage.
   périmé (ne s'affiche plus en production, correction = autre finalité).
 - **Constater** la proposition de bilan sur un vrai dossier (preuve terminale
   de la chaîne T0).
-- **Désarmer `WN_CB_RESULTS_ENABLED`** (panneau Vercel : `false` ou retrait) —
-  relevé le 2026-08-19 par lecture des valeurs de production : la variable
-  vaut `true` alors que son propre verrou dit « GATE DUR HDS : ne doit jamais
-  passer à true avant l'attestation d'hébergement »
-  (`biology-library/featureFlag.ts`). Aucun appelant aujourd'hui, donc aucun
-  effet — mais le jour où CB-09 livrera les résultats réels, il naîtrait
-  allumé sans l'attestation. Trente secondes, zéro effet observable.
+- ~~**Désarmer `WN_CB_RESULTS_ENABLED`**~~ — **renversé le jour même par
+  `D-078`** : le responsable autorise explicitement l'activation de l'étage 2
+  (résultats réels), le désarmement n'est plus la consigne et le drapeau
+  reste posé. Trace conservée : le relevé du matin (variable à `true` contre
+  son verrou « jamais avant l'attestation HDS ») était exact — c'est la règle
+  qui a changé, par écart assumé. Dette résiduelle nommée : le commentaire du
+  verrou (`biology-library/featureFlag.ts`, « GATE DUR HDS : ne doit jamais
+  passer à true avant l'attestation ») contredit désormais `D-078`.
+- **Dette nommée, portée hors rature** : le commentaire du verrou
+  `isCbResultsEnabled` (`web/src/lib/biology-library/featureFlag.ts`, « GATE
+  DUR HDS : ne doit jamais passer à true avant l'attestation d'hébergement »)
+  contredit `D-078` depuis le 2026-08-19 — à réviser à l'ouverture de CB-09,
+  qui est précisément le moment où ce commentaire sera lu comme une garantie.
 - **Filtre de validité des passations — FAIT, allumé le 2026-08-19**
   (`D-077`, arbitrage praticien en session) : `WN_ENABLE_VALIDITE_PASSATIONS=1`
   posé et porté par un redéploiement aliasé. Geste sûr, prouvé avant
