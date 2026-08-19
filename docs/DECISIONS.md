@@ -4,6 +4,56 @@
 
 ## Décisions actives
 
+### D-074 — Le drapeau d'orientation était posé depuis au moins le 5 août, et deux textes affirmaient le contraire
+
+- Date : 2026-08-18
+- Statut : accepté (constat praticien en session, observation du comportement
+  en production) et implémenté.
+- Domaine : drapeaux, orientation, documentation, état réel
+
+- Contexte : le praticien a tenté de poser `WN_ENABLE_ORIENTATION_NNPP2` en
+  Production ; Vercel a refusé — la variable existait déjà. Elle est marquée
+  **sensitive**, donc write-only : sa valeur n'est plus lisible. Deux textes du
+  dépôt la disaient non posée, un troisième disait l'inverse.
+
+**1. Le fait, établi par le comportement et non par un panneau.** Le panneau
+« Orientation · explorations proposées » du bas de la fiche patient SERT des
+recommandations en production. Or la route ne journalise et ne calcule
+qu'après `orientationActive()` — `WN_ENABLE_ORIENTATION_NNPP2 === '1'` ET
+`tableSignee()`. Le drapeau vaut donc `1` en Production. Le journal d'accès
+montre par ailleurs 37 accès à `/api/praticien/orientation` depuis le
+2026-08-05.
+
+**2. Pourquoi le journal seul ne suffisait PAS à conclure**, et c'est la partie
+à retenir : la base de production est aussi celle du dev et des E2E, et
+`playwright.config.ts` arme délibérément `WN_ENABLE_ORIENTATION_NNPP2=1` dans
+`webServer.env` (LOT-01, 2026-08-07). Des accès journalisés sur dossiers
+fictifs sont donc compatibles avec un drapeau éteint chez Vercel. Seule
+l'observation du rendu tranchait. Une trace n'est une preuve que si l'on sait
+qui a pu l'écrire.
+
+**3. Ce qui est corrigé.** `propositionService.ts` justifiait un découplage par
+« drapeau non posé en production » : le découplage reste juste, mais il vaut
+par l'indépendance des deux surfaces, jamais par l'état d'un drapeau — un état
+qui bascule ne peut pas fonder une décision de conception. `FEATURE_FLAGS.md`
+laissait entendre que « seul le drapeau tient encore le verrou » ; sa cellule
+d'état dit maintenant que les deux conditions sont remplies. Le récit de
+`D-065` (« l'orientation étant allumée en production ») était, lui, exact.
+
+**4. Nommé et NON corrigé ici** : `MESSAGE_ORIENTATION_INACTIVE`
+(`orientationService.ts:36`) annonce au praticien « les règles NNPP2 ne sont
+pas encore validées » — faux depuis le 2026-08-04, la table étant signée. Le
+message ne s'affiche plus en production puisque le verrou est ouvert, et le
+corriger relève d'une autre finalité (texte d'interface) que ce lot d'état.
+Dette portée au handoff.
+
+- Hors portée : poser, retirer ou modifier le drapeau. La décision constate.
+- Récidive nommée : troisième cas de la même classe après `D-064` et `D-070` —
+  **un état de production ne se déduit pas de la documentation**. La nouveauté
+  ici est le mécanisme qui l'a rendue durable : un drapeau marqué *sensitive*
+  n'est plus relisible, donc plus démentable. Réserver *sensitive* aux secrets ;
+  un interrupteur clinique y perd sa vérifiabilité.
+
 ### D-073 — Le courrier médecin gardera son ancrage de provenance en colonne, pas en prose
 
 - Date : 2026-08-18

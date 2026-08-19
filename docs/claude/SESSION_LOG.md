@@ -4095,3 +4095,21 @@ catalogue réel, 8 272 avec des libellés doublés. Banc calibré au réel.
 
 Écarté : lire l'ancre dans le fil (dette nommée — écriture seule aujourd'hui).
 Prochaine action : PR, CI, merge. Ouvert : E2E de la surface, ancre relue.
+
+## [2026-08-18] — D-074 : le drapeau d'orientation était posé, deux textes disaient l'inverse
+
+Vercel a refusé la création de `WN_ENABLE_ORIENTATION_NNPP2` — déjà présente,
+et marquée *sensitive*, donc illisible. Le journal d'accès (37 accès depuis le
+5 août) ne tranchait pas : Playwright arme ce drapeau et écrit dans la même
+base. C'est l'observation du panneau en production — des recommandations
+servies — qui a conclu, la route ne calculant qu'après `orientationActive()`.
+
+Corrigé : `propositionService.ts` (« non posé en production ») et la cellule
+d'état de `FEATURE_FLAGS.md`. Le découplage du service reste, mais fondé sur
+l'indépendance des surfaces, pas sur l'état d'un drapeau.
+
+Écarté : ouvrir le dossier d'une patiente réelle pour « vérifier » (seuls les
+trois dossiers fictifs) ; corriger `MESSAGE_ORIENTATION_INACTIVE`, faux depuis
+le 2026-08-04 mais d'une autre finalité — dette au handoff.
+Prochaine action : PR. Ouvert : les scopes Preview/Development, jamais
+vérifiés.
