@@ -165,7 +165,7 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 |---|---|---|---|
 | LOT-01 | Annexe HDS obtenue et signée ; ~~arbitrage migrer/reconduire~~ (rendu par `D-078`) | en cours — réduit à l'annexe (demandée 2026-08-12, relancée 2026-08-19) | — |
 | LOT-02 | Exécution du runbook Scalingo — **confirmation obligatoire à chaque geste** | débloqué par `D-078` ; décommissionnement subordonné à l'annexe signée | `D-078` (rendu) |
-| LOT-03 | Dossier RGPD à l'état réel + rattrapage de l'information des personnes | à faire (peut avancer en parallèle du LOT-01) | — |
+| LOT-03 | Dossier RGPD à l'état réel + rattrapage de l'information des personnes | **terminé (2026-08-19)** — information consignée, §6/§12/§14 réconciliés avec `D-078`, support v2 préparé (publication = lot TRUST distinct) | — |
 | LOT-04 | ~~G-TRUST-04 change d'état~~ (fait par `D-078`) — reste la revue du 2026-10-21 | recentré | LOT-01, et LOT-02 si la bascule est faite |
 
 ## Done de campagne
@@ -183,9 +183,23 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
       des données, signature de l'annexe) est consignée avec ses dates** —
       c'est elle qui borne la fenêtre de moindre couverture — et **aucun
       décommissionnement n'a eu lieu avant la signature**.
-- [ ] Le tableau §14 de `docs/DOSSIER_RGPD.md` ne porte plus de ligne dont
-      l'échéance est passée sans mention.
-- [ ] L'information des personnes sur l'écart HDS est consignée.
+- [x] Le tableau §14 de `docs/DOSSIER_RGPD.md` ne porte plus de ligne dont
+      l'échéance est passée sans mention — **LOT-03, 2026-08-19** : rubrique
+      11 (« au plus tôt », échue) consignée, son renouvellement indexé sur la
+      bascule ; ligne DPA (« avant bascule Scalingo ») réconciliée avec
+      `D-078` ; **ligne « preuve fonctionnelle de la piste d'audit »** dont
+      l'échéance « premier dossier ouvert » était **dépassée sans que
+      personne l'ait relevé** (`D-075`, `D-077`) — annotée et reportée. Deux
+      lignes rubrique 11 sont **ajoutées** pour les manques qui subsistent.
+- [x] L'information des personnes sur l'écart HDS est consignée — **rubrique
+      11**, sur déclaration du responsable (session du 2026-08-19) : forme
+      orale, en consultation ; contenu, l'écart d'hébergement. **Consignation
+      PARTIELLE, et le dossier le dit** : date de délivrance non établie
+      (l'ancrage « depuis la souscription HDS » n'est pas tenu pour acquis par
+      le dépôt), modalité de retrait non consignée, aucune trace écrite par
+      participant, périmètre des personnes non établi. Renouvellement
+      post-`D-078` dû avant la bascule (brouillon prêt, publication = lot
+      TRUST distinct).
 - [ ] La checklist du gate porte l'état neuf, **daté et signé**, et
       `.wn/state.json` le reflète.
 - [ ] Aucun secret n'a transité par l'assistant ; anti-secrets vert ; changelog

@@ -219,8 +219,13 @@ Reçue par courriel (Jennifer, Scalingo), en réponse aux questions posées le
   et une **annexe HDS séparée**, à signer indépendamment — l'acceptation des
   CGU seule ne l'active pas. La forme posée en rubrique 14 (« forme non posée
   au ticket du 2026-08-09 ») est donc connue ; **la signature et l'archivage
-  de l'annexe HDS restent à faire** avant toute donnée réelle (condition
-  D-037).
+  de l'annexe HDS restent à faire** ~~avant toute donnée réelle (condition
+  D-037)~~ — **ordre suspendu par `D-078` (2026-08-19)** : la migration est
+  engagée sans attendre l'annexe, par arbitrage du responsable informé de la
+  fenêtre de moindre couverture qui en résulte. La signature et l'archivage
+  restent **dus** ; ils conditionnent désormais le **décommissionnement** de
+  Vercel/Supabase (seul geste irréversible) et constituent la sortie « par le
+  haut » de la revue du 2026-10-21.
 - **Sous-traitant ultérieur.** OUTSCALE, opérateur d'infrastructure, France
   (région Paris), certifié HDS pour les six activités ; l'intégralité des
   données reste dans ses datacenters français.
@@ -336,13 +341,48 @@ faire au premier dossier réellement ouvert.
 versionné et haché (`registre.ts`, hash `b4a5551b…`). Les acquittements sont
 tracés (`TrustAcknowledgement`), les choix aussi (`TrustChoiceEvent`).
 
-**TROU majeur.** L'information délivrée aux personnes **sur l'écart
-d'hébergement** — le fait que les données sont hébergées hors d'un hébergeur
-certifié HDS pendant la phase de test — n'est **consignée nulle part** : ni sa
-date, ni sa forme, ni son contenu, ni la modalité de retrait. C'est pourtant la
-première recommandation de la décision du responsable du 2026-07-21
-(« Tracer l'information délivrée »), et elle porte la moitié de l'argumentaire
-qui autorise la phase de test. C'est le trou le plus coûteux de ce dossier.
+**TROU — partiellement comblé le 2026-08-19.** L'information délivrée aux
+personnes **sur l'écart d'hébergement** — le fait que les données sont
+hébergées hors d'un hébergeur certifié HDS pendant la phase de test — n'était
+**consignée nulle part** : ni sa date, ni sa forme, ni son contenu, ni la
+modalité de retrait. C'est la première recommandation de la décision du
+responsable du 2026-07-21 (« Tracer l'information délivrée »), et elle porte
+la moitié de l'argumentaire qui autorise la phase de test.
+
+**Ce qui est consigné**, sur déclaration du responsable de traitement rendue
+en session le 2026-08-19 — **cette déclaration est la seule source ; il
+n'existe aucune trace au dépôt de l'information elle-même** :
+
+- **Forme** : orale, en consultation.
+- **Contenu** : l'écart d'hébergement — les données sont hébergées hors d'un
+  hébergeur certifié HDS pendant la phase de test.
+- **Période, telle que déclarée** : en continu, « depuis la souscription HDS
+  Scalingo ». **Cet ancrage n'est pas une date établie** : le dépôt refuse de
+  tenir cette souscription pour acquise (« une souscription inférée n'est pas
+  une preuve produite », `RUNBOOK_MIGRATION_SCALINGO.md`), et `D-047` puis
+  `D-078` rappellent qu'**aucune option HDS n'est active tant que l'annexe
+  n'est pas signée**. Le staging HDS a été provisionné le 2026-07-24 — cette
+  date **date le staging, pas l'information**.
+
+**Ce qui reste ouvert dans ce trou, et n'est donc pas comblé** :
+
+- la **date de délivrance** — une période déclarée « en continu » n'en est
+  pas une, et le point de départ n'est pas établi (ci-dessus) ;
+- la **modalité de retrait**, qui n'a pas été consignée ;
+- l'**absence de trace écrite par participant** : aucun acquittement
+  individuel ne porte cette information — le dispositif TRUST couvre
+  `DONNEES_CONFIDENTIALITE_V1`, qui ne mentionne pas l'écart HDS ;
+- le **périmètre des personnes couvertes** : la déclaration ne dit pas si les
+  personnes vues avant le point de départ ont été informées.
+
+**Ce qui reste dû — et `D-078` l'aggrave.** La décision du 2026-08-19 (gate
+levé par écart assumé, migration engagée sans attendre l'annexe, fenêtre de
+moindre couverture acceptée) change la nature de l'écart : l'information
+délivrée jusqu'ici décrit un état antérieur. Elle est donc **à renouveler**,
+et un support durable est préparé pour validation du responsable :
+`docs/claude/campagnes/2026-08-18-echeance-hds-g-trust-04/sources/brouillon-information-hebergement-v2.md`.
+Sa publication (v2 du document versionné, re-acquittement éventuel) est un
+geste TRUST distinct, hors de ce dossier.
 
 ## 12. Hébergement — écart assumé et daté
 
@@ -355,14 +395,37 @@ personnes réelles, **décision datée du 2026-07-21**, **bornée au 2026-10-21*
 `docs/claude/REGISTRE_FRONTIERES.md` §1).
 
 Une migration vers **Scalingo** (certifié HDS) est décidée (D-006, 2026-07-28 ;
-confirmée par D-037, 2026-08-09) et non exécutée. Elle est subordonnée, dans
+confirmée par D-037, 2026-08-09) et non exécutée. ~~Elle est subordonnée, dans
 l'ordre : accord de sous-traitance **en vigueur et archivé** (D-037 : la pièce
 s'archive, elle ne s'e-signe pas — et elle n'est pas au dossier au 2026-08-09),
 puis confirmation écrite du périmètre HDS de la région cible, puis seulement
-données réelles. **Les cinq réserves de D-006 restent entières**, dont la (3),
+données réelles.~~ **Les cinq réserves de D-006 restent entières**, dont la (3),
 confirmation DPO — elle-même suspendue à la contradiction DPO de la rubrique 1.
 
-**Ce n'est pas une conformité. C'est un écart assumé, compté et daté.**
+**État au 2026-08-19 — deux décisions ont modifié cet ordre, sans le rendre
+caduc :**
+
+- **`D-047` (2026-08-11)** : la confirmation écrite du périmètre HDS de
+  `osc-fr1` est **obtenue** — par la **réponse écrite de Scalingo du
+  2026-08-11** (rubrique 6), et non par le certificat LNE n° 38436-2, qui ne
+  nomme aucune région et ne suffirait donc pas. En
+  revanche, la lecture de `D-037` (« la pièce s'archive, elle ne s'e-signe
+  pas ») est **démentie par le fournisseur** : le DPA et une **annexe HDS
+  distincte** se signent séparément.
+- **`D-078` (2026-08-19)** : le gate G-TRUST-04 est **levé par arbitrage du
+  responsable** — écart assumé, **pas** mise en conformité : l'état des sept
+  exigences est inchangé (une ❌, six partielles, aucune ✅), le gate est levé
+  **malgré** cet état. La **migration est engagée sans attendre la signature
+  de l'annexe**. Point accepté sciemment, à garder lisible : entre la bascule
+  et cette signature, les données réelles ne sont couvertes **ni** par la
+  dérogation en vigueur — qui vise l'implantation Vercel — **ni** par une
+  option HDS active ; sur cette fenêtre, la posture est **moins couverte
+  qu'avant la migration**. Le **décommissionnement** de Vercel/Supabase reste
+  subordonné à la signature (seul geste irréversible). **La date de revue est
+  inchangée : 2026-10-21.**
+
+**Ce n'est pas une conformité. C'est un écart assumé, compté et daté** — et
+`D-078` l'élargit sans en changer le terme.
 
 ## 13. Analyse d'impact (AIPD)
 
@@ -381,7 +444,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | avant bascule Scalingo | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse) ; en tout état de cause **avant tout décommissionnement** et avant la revue du 2026-10-21 | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | Fournisseur SMTP réel non identifié | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
@@ -390,8 +453,10 @@ elle.
 | 9 | Droits | Délai, vérification d'identité, circuit interne | Responsable | 2026-10-21 | ici, rubrique 9 |
 | 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2026-10-21 | checklist du gate, exigence 7 |
 | 10 | Sécurité | Registre physique des violations (EX-3) | Responsable | 2026-10-21 | `PROCEDURE_VIOLATION_DONNEES.md` |
-| 10 | Sécurité | Preuve fonctionnelle de la piste d'audit | Responsable | premier dossier ouvert | checklist du gate, item 4 |
-| 11 | Information | Information sur l'écart HDS non consignée | Responsable | **au plus tôt** | ici, rubrique 11 |
+| 10 | Sécurité | Preuve fonctionnelle de la piste d'audit | Responsable | ~~premier dossier ouvert~~ — **échéance dépassée** : des dossiers réels sont ouverts et utilisés (`D-075`, 2026-08-18), la production porte des passations (`D-077`) ; la preuve reste à produire, échéance reportée au 2026-10-21 | checklist du gate, item 4 |
+| 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | **avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3), et en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
+| 11 | Information | **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | 2026-10-21 | ici, rubrique 11 |
+| 11 | Information | **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | 2026-10-21 | ici, rubrique 11 |
 | 13 | AIPD | Absente | Conseil qualifié | 2026-10-21 | document dédié |
 
 L'échéance par défaut est le **2026-10-21**, date de revue de la dérogation :
