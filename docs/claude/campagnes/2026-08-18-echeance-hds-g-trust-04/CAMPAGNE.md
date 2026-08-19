@@ -1,10 +1,10 @@
 ---
 id: "2026-08-18-echeance-hds-g-trust-04"
 titre: "Échéance HDS — lever ou reconduire G-TRUST-04 avant le 2026-10-21"
-statut: "cadrée (2026-08-19), non ouverte"
+statut: "en_cours (ouverte 2026-08-19 — D-078 a rendu l'arbitrage du LOT-01 par anticipation)"
 créée_le: "2026-08-18"
 mise_à_jour: "2026-08-19"
-lot_courant: "aucun"
+lot_courant: "LOT-01"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -23,6 +23,13 @@ reconduite par écrit avec un nouveau terme.
 
 C'est la seule échéance du dépôt qui **avance sans nous**, et le seul
 `blocking_issue` transverse de `.wn/state.json`.
+
+**`D-078` (2026-08-19, le jour de l'ouverture) a écarté l'ordre « (a)
+d'abord » sans changer la date** : le responsable de traitement a levé le
+gate par écart assumé et
+engagé la migration **sans attendre l'annexe HDS**. La revue du 2026-10-21
+demeure — à cette date, l'annexe est signée et l'écart refermé par le haut,
+ou le terme se reconduit explicitement, ou la règle du dépôt reprend.
 
 ## Ce que la campagne ne fait pas
 
@@ -80,8 +87,9 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 
 1. L'annexe HDS est **obtenue, signée, et archivée** avec le DPA — ou son refus
    / son impossibilité est écrit et daté.
-2. Le responsable de traitement a tranché **migrer ou reconduire**, au registre,
-   avec un `D-xxx`.
+2. ~~Le responsable de traitement a tranché **migrer ou reconduire**, au
+   registre, avec un `D-xxx`.~~ **Fait — `D-078` (2026-08-19) : migrer, sans
+   attendre l'annexe ; pas de nouveau terme, la revue reste au 2026-10-21.**
 3. Si « migrer » : le runbook Scalingo est exécuté, en PR séparée du code qui en
    dépend, avec confirmation explicite à chaque geste d'infrastructure.
 4. Le dossier RGPD est à l'état réel et l'information des personnes est
@@ -91,12 +99,19 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 
 ## Contraintes non négociables
 
-- **Aucun stockage de donnée de santé réelle tant que le gate tient**
-  (`REGISTRE_FRONTIERES.md`). La campagne **débloque** E8 (résultats
-  biologiques réels) et D5 (messagerie) — elle ne les commence pas.
-- **L'ordre imposé de `D-006` tient intégralement** : aucun patient réel sur
-  Scalingo avant que (a) soit **effectivement** levée — signature et archivage
-  faits, pas seulement caractérisés (`D-047`).
+- ~~**Aucun stockage de donnée de santé réelle tant que le gate tient**~~ —
+  **le gate est levé depuis le 2026-08-19 par écart assumé (`D-078`)**, pas
+  par mise en conformité : les sept exigences restent ce qu'elles sont (une
+  ❌, six partielles). E8 et D5 deviennent activables par décision du
+  responsable — toujours hors périmètre de cette campagne.
+- ~~**L'ordre imposé de `D-006` tient intégralement**~~ — **son application
+  est suspendue pour la condition (a) par `D-078` §4** (le contenu reste au
+  registre, `D-047` reste vraie). Ce qui tient, dit par `D-078` : le
+  **décommissionnement de Vercel/Supabase reste subordonné à la signature de
+  l'annexe** (seul geste irréversible, filet de rollback court gardé chaud),
+  et la fenêtre bascule→signature est **moins couverte qu'avant** — couverte
+  ni par la dérogation (qui vise Vercel) ni par une option HDS active ; le
+  responsable en a été informé et maintient son choix.
 - **Production lue uniquement via l'outil MCP `execute_sql`** ; toute migration
   passe par `release-db`, jamais par le build Vercel.
 - **Une migration et le code qui en dépend ne voyagent pas dans la même PR.**
@@ -114,13 +129,18 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 - `D-037` (2026-08-09) — `D-006` confirmée ; **sa requalification du DPA était
   fausse**, cf. `D-047`.
 - `D-047` (2026-08-11) — (b) levée, (a) ouverte et recaractérisée.
+- **`D-078` (2026-08-19) — gate levé par écart assumé, migration engagée sans
+  attendre l'annexe ; l'ordre « (a) d'abord » suspendu (contenu conservé au
+  registre) ; décommissionnement subordonné à la signature ; revue au
+  2026-10-21.**
 - Décision du responsable du 2026-07-21 — phase de test avec personnes réelles,
   bornée au 2026-10-21, « écart assumé, borné et daté — pas une mise en
   conformité ».
 
 ## Questions ouvertes — humaines, aucun lot ne les ferme
 
-- **Migrer ou reconduire** : l'objet même du LOT-01.
+- ~~**Migrer ou reconduire** : l'objet même du LOT-01.~~ **Rendue par
+  anticipation le 2026-08-19 (`D-078`) : migrer, sans attendre l'annexe.**
 - **`D-TRUST-02`** — confirmation par un conseil qualifié, ouverte depuis la
   Vague 2.
 - **Registre physique des violations (EX-3)**, hors dépôt.
@@ -130,19 +150,23 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 
 ## Dépendances
 
-- **Scalingo** (externe) : fourniture de l'annexe HDS. Le canal est ouvert — le
-  ticket du 2026-08-09 a reçu réponse le 2026-08-11.
+- **Scalingo** (externe) : fourniture de l'annexe HDS. Le canal est ouvert —
+  le ticket du 2026-08-09 a reçu réponse le 2026-08-11 ; la **relance du
+  2026-08-19 est pendante, sans réponse** (`D-078`).
 - **`D-TRUST-02`** peut avancer en parallèle, il ne bloque aucun lot.
-- Le LOT-02 dépend **entièrement** de l'issue du LOT-01.
+- ~~Le LOT-02 dépend **entièrement** de l'issue du LOT-01.~~ **`D-078` a
+  débloqué le LOT-02** (arbitrage rendu, ordre (a)-d'abord suspendu) ; ses
+  confirmations obligatoires geste par geste demeurent, et son
+  décommissionnement reste gaté par l'annexe signée.
 
 ## Lots
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Annexe HDS obtenue et signée ; arbitrage migrer/reconduire posé au responsable | à faire | — |
-| LOT-02 | Exécution du runbook Scalingo — **confirmation obligatoire** | **ne s'ouvre que si le LOT-01 tranche « migrer »** | LOT-01 |
+| LOT-01 | Annexe HDS obtenue et signée ; ~~arbitrage migrer/reconduire~~ (rendu par `D-078`) | en cours — réduit à l'annexe (demandée 2026-08-12, relancée 2026-08-19) | — |
+| LOT-02 | Exécution du runbook Scalingo — **confirmation obligatoire à chaque geste** | débloqué par `D-078` ; décommissionnement subordonné à l'annexe signée | `D-078` (rendu) |
 | LOT-03 | Dossier RGPD à l'état réel + rattrapage de l'information des personnes | à faire (peut avancer en parallèle du LOT-01) | — |
-| LOT-04 | G-TRUST-04 change d'état — levé ou reconduit — avec sa preuve | à faire | LOT-01, et LOT-02 si « migrer » |
+| LOT-04 | ~~G-TRUST-04 change d'état~~ (fait par `D-078`) — reste la revue du 2026-10-21 | recentré | LOT-01, et LOT-02 si la bascule est faite |
 
 ## Done de campagne
 
@@ -150,11 +174,15 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 
 - [ ] L'annexe HDS et le DPA sont **archivés signés**, ou leur absence est
       écrite et datée au dossier RGPD.
-- [ ] Un `D-xxx` du responsable de traitement tranche migrer ou reconduire.
-- [ ] Si « migrer » : aucune donnée réelle n'a atteint Scalingo avant que (a)
-      soit effectivement levée — vérifiable en confrontant la **date de
-      signature de l'annexe**, consignée au dossier RGPD par le LOT-01, à la
-      date de la migration de données du LOT-02.
+- [x] ~~Un `D-xxx` du responsable de traitement tranche migrer ou
+      reconduire.~~ **Fait — `D-078` (2026-08-19) : migrer, sans attendre
+      l'annexe.**
+- [ ] ~~Si « migrer » : aucune donnée réelle n'a atteint Scalingo avant que
+      (a) soit effectivement levée~~ — ordre écarté par `D-078` §4 ; le
+      critère devient : **la chronologie réelle des deux événements (bascule
+      des données, signature de l'annexe) est consignée avec ses dates** —
+      c'est elle qui borne la fenêtre de moindre couverture — et **aucun
+      décommissionnement n'a eu lieu avant la signature**.
 - [ ] Le tableau §14 de `docs/DOSSIER_RGPD.md` ne porte plus de ligne dont
       l'échéance est passée sans mention.
 - [ ] L'information des personnes sur l'écart HDS est consignée.

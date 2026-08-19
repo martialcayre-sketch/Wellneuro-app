@@ -42,6 +42,14 @@ Deux lignes sont déjà à jour et **ne se retouchent pas** : le périmètre HDS
 `osc-fr1` (fermé le 2026-08-11) et la forme de l'accord de sous-traitance
 (connue depuis la même réponse, signature et archivage renvoyés au LOT-01).
 
+**Entré au périmètre par `D-078` (2026-08-19)** : deux passages du dossier
+sont antérieurs à la décision et disent désormais faux — §6 « la signature et
+l'archivage de l'annexe HDS restent à faire **avant toute donnée réelle** »
+et la ligne §14 dont l'échéance est « **avant bascule Scalingo** ». L'ordre
+« (a) d'abord » étant écarté (application suspendue, `D-078` §4), ces
+passages se réconcilient ici — en citant `D-078`, jamais en effaçant ce
+qu'ils disaient.
+
 ## Périmètre
 
 - `docs/DOSSIER_RGPD.md` — rubriques concernées et tableau §14.

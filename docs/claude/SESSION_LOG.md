@@ -4162,3 +4162,20 @@ renvoi : la source du gate est sa checklist d'activation.
 Écarté : prendre une `D-xxx` — l'arbitrage migrer/reconduire appartient au
 responsable de traitement. Prochaine action : PR, puis le geste
 `WN_CB_RESULTS_ENABLED` au panneau Vercel.
+
+## [2026-08-19] — Ouverture de la campagne HDS, réconciliée avec D-078
+
+`/wn-lot next` visait l'écriture du cadrage HDS : caduc — une session
+parallèle avait tout cadré et mergé (#720), avec `D-078` rendu APRÈS
+l'écriture des lots. Réconciliation plutôt que réécriture : LOT-01 réduit à
+l'annexe (arbitrage rendu — migrer sans attendre), LOT-02 débloqué avec deux
+verrous conservés (décommissionnement subordonné à l'annexe signée ; fenêtre
+de moindre couverture dite à qui exécute), LOT-04 recentré sur la revue du
+2026-10-21. Campagne activée par scripts, LOT-01 courant.
+
+Écarté : rejuger D-078 (décision du responsable, registre append-only) ;
+affaiblir les confirmations geste par geste du LOT-02.
+Décisions promues : aucune nouvelle (D-078 est d'une autre session).
+Prochaine action : PR d'ouverture, puis piloter LOT-01 (annexe — attente
+Scalingo) et LOT-03 (information des personnes, échue) en parallèle.
+Ouvert : tension commentaire du verrou `WN_CB_RESULTS_ENABLED` vs D-078.

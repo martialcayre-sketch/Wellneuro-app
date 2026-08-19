@@ -1,15 +1,30 @@
 ---
 id: "LOT-04"
-statut: "à faire"
+statut: "recentré (D-078) — la levée est consignée ; reste la revue du 2026-10-21"
 ---
 
 # LOT-04 — G-TRUST-04 change d'état, avec sa preuve
 
 ## But
 
-Le gate porte un état neuf — **levé** ou **reconduit** — écrit là où il se
+~~Le gate porte un état neuf — **levé** ou **reconduit** — écrit là où il se
 décide, daté, signé, et les porteurs machine du dépôt le reflètent au lieu de
-répéter une prémisse périmée.
+répéter une prémisse périmée.~~ **Fait le 2026-08-19 — par une troisième
+issue qu'aucune des deux ci-dessous ne décrivait** : levée par **écart
+assumé** (`D-078`), sans qu'aucune exigence change d'état. La source
+(checklist, section « Décision du 2026-08-19 » qui prime sur son en-tête) et
+le registre (`D-078`) sont alignés ; la vue machine (`.wn/state.json`) porte
+la levée en tête de son `blocking_issue` mais garde dans sa partie historique
+des phrases antérieures non marquées — la réconciliation fine de la vue
+machine reste au périmètre de ce lot (critères de done ci-dessous).
+
+**Ce qui reste à ce lot : la revue du 2026-10-21** (`D-078` §5 — « un écart
+sans terme cesse d'être un écart borné »). À cette date, une des trois
+sorties, tracée là où le gate se décide : l'annexe est signée et l'écart
+**refermé par le haut** ; ou le terme est **reconduit explicitement**, daté
+et signé ; ou **la règle du dépôt reprend** — patients fictifs seuls. Le
+cadre ci-dessous (porteurs, formes exigées, interdits) reste la procédure de
+cette revue.
 
 ## Où le gate vit réellement
 
@@ -50,14 +65,20 @@ constate, sans jamais l'arbitrer.
 
 - **Cocher une exigence sans preuve relue.** La checklist ouvre elle-même sur
   « ce document ne lève rien » — il ne prend son sens que si chaque ✅ est gagné.
-- **Lever le gate par arbitrage partiel** : « c'est un ET, pas un OU ».
+- **Lever le gate par arbitrage partiel** : « c'est un ET, pas un OU ». Cet
+  interdit lie **l'assistant** — le responsable de traitement, lui, a
+  précisément ce pouvoir et l'a exercé (`D-078`) ; l'interdit garde son sens
+  pour la revue : aucune exigence ne se coche par arbitrage, seulement sur
+  preuve.
 - **Écrire l'état machine avant la source.** `.wn/state.json` est partagé entre
   sessions : édition ciblée, jamais réécriture.
 - Rédiger le `D-xxx` du responsable d'initiative.
 
 ## Dépendances
 
-LOT-01 (l'arbitrage), et LOT-02 si l'arbitrage est « migrer ».
+~~LOT-01 (l'arbitrage)~~ (rendu, `D-078`) — LOT-01 sur l'annexe (sa signature
+est la sortie « par le haut » de la revue), et LOT-02 si la bascule est faite
+d'ici là.
 
 ## Tests
 
