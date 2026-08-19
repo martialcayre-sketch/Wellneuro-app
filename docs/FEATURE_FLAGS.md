@@ -91,7 +91,7 @@ documentée au `CHANGELOG`), pas flipper un flag.
 
 **Et signer ne suffit pas non plus** : le verrou est un ET. Sur l'orientation,
 signer la table sans poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production laisse
-l'écran praticien du LOT-06 sur « en cours de constitution ». Les deux gestes
+l'écran praticien du LOT-06 sur « Orientation non activée ». Les deux gestes
 vont ensemble, dans cet ordre : validation clinique d'abord, flag ensuite.
 
 ### État des signatures — **gardé, ne pas éditer à la main sans le code**

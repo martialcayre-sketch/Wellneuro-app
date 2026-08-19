@@ -4,6 +4,38 @@
 
 ## Décisions actives
 
+### D-076 — Le message d'orientation inactive donnait une raison démentie depuis quinze jours
+
+- Date : 2026-08-19
+- Statut : accepté (demande praticien explicite) et implémenté.
+- Domaine : texte praticien, orientation, état réel
+
+- Contexte : `MESSAGE_ORIENTATION_INACTIVE` annonçait « Orientation en cours de
+  constitution — les règles NNPP2 ne sont pas encore validées ». La table est
+  signée depuis le 2026-08-04 : la phrase est fausse depuis ce jour-là. Dette
+  nommée par `D-074`, traitée ici.
+
+**1. Un message d'état ne nomme pas un terme qu'il ne connaît pas.** La
+constante est servie par `resultatInactif()`, appelée dès que
+`orientationActive()` est faux — c'est-à-dire pour l'UN OU L'AUTRE des deux
+termes du ET (drapeau, signature). Nommer la signature revenait à affirmer le
+seul des deux qui était devenu faux. Le texte devient donc neutre :
+**« Orientation non activée sur cet environnement. »**
+
+**2. Ce que ça coûtait vraiment.** Ce n'est pas une coquille : c'est la phrase
+qu'un praticien lit pour comprendre pourquoi son écran se tait, et elle
+l'orientait vers la mauvaise conclusion — « le contenu clinique n'est pas
+prêt » au lieu de « la fonctionnalité n'est pas ouverte ici ». `DC-34` demande
+qu'une sortie soit explicable ; une explication fausse est pire qu'une
+explication absente.
+
+- Périmètre : la constante, les trois bancs qui l'épinglent, et le renvoi de
+  `FEATURE_FLAGS.md`. Aucun comportement changé — seul le libellé.
+- Non traité, et hors de ma portée : les **scopes Preview et Development** des
+  drapeaux, que `FEATURE_FLAGS.md` demande de vérifier depuis le 2026-08-04.
+  Aucun outil accessible ne lit les variables d'environnement Vercel ; seul le
+  panneau les montre. La dette reste ouverte et nommée.
+
 ### D-075 — Les dossiers de test sont réels : lisibles par identifiant, jamais nommés dans le dépôt, jamais écrits par un seed
 
 - Date : 2026-08-18

@@ -125,7 +125,7 @@ const ORIENTATION_ACTIVE = {
 const INACTIVE = {
   actif: false as const,
   version: 'orientation-nnpp2-v1',
-  message: 'Orientation en cours de constitution — les règles NNPP2 ne sont pas encore validées.',
+  message: 'Orientation non activée sur cet environnement.',
 };
 
 beforeEach(() => {

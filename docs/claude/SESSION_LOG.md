@@ -4129,3 +4129,17 @@ concernés, identités définitives dans Git, et `web/prisma/seed.ts` écrivant 
 fabriquées dans deux dossiers réels — `questionnaireReponse.upsert`).
 Prochaine action : PR. Ouvert : les identifiants des trois dossiers, à me
 donner au besoin — ils ne sont pas dans le dépôt et n'y entreront pas.
+
+## [2026-08-19] — D-076 : le message d'orientation inactive disait faux depuis quinze jours
+
+« Les règles NNPP2 ne sont pas encore validées » : faux depuis la signature du
+2026-08-04. La constante est servie dès que l'un OU l'autre des deux termes du
+verrou est faux — elle ne peut donc nommer ni le drapeau ni la signature. Elle
+devient neutre : « Orientation non activée sur cet environnement. » Trois
+bancs l'épinglaient, plus un renvoi de `FEATURE_FLAGS.md`.
+
+Non traité, hors de portée : les scopes Preview et Development. Aucun outil
+accessible ne lit les variables d'environnement Vercel — vérifié, seuls les
+réglages de projet et la protection de déploiement le sont. Seul le panneau
+les montre ; la dette reste ouverte et nommée dans `D-076`.
+Prochaine action : PR.
