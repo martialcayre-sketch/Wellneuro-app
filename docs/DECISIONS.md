@@ -31,7 +31,7 @@ journal d'accès que Playwright pouvait avoir écrit.
 
 **3. Deux interdits maintenus, et ils ne sont pas de forme.** Jamais de nom ni
 d'e-mail réel dans le dépôt : Git, les logs CI et les builds Vercel ne
-s'effacent pas. Jamais de seed ni d'E2E visant un dossier réel : `seed.ts`
+s'effacent pas. Jamais de seed ni d'E2E visant un dossier réel : `web/prisma/seed.ts`
 écrit des réponses de questionnaire (`questionnaireReponse.upsert`), et une
 réponse fabriquée déposée dans un dossier réel est une donnée que personne n'a
 produite — elle alimenterait ensuite scoring, orientation et indications

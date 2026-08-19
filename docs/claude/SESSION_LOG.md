@@ -4125,7 +4125,7 @@ l'historique ne s'efface pas, et aucune donnée fabriquée dans le dossier de
 quiconque.
 
 Écarté : faire des trois personnes les identités de fixture (255 fichiers
-concernés, identités définitives dans Git, et `seed.ts` écrivant des réponses
+concernés, identités définitives dans Git, et `web/prisma/seed.ts` écrivant des réponses
 fabriquées dans deux dossiers réels — `questionnaireReponse.upsert`).
 Prochaine action : PR. Ouvert : les identifiants des trois dossiers, à me
 donner au besoin — ils ne sont pas dans le dépôt et n'y entreront pas.
