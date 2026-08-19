@@ -22,17 +22,15 @@ chaque ouverture ou réarbitrage.
   seul débloqueur des campagnes existantes `2026-08-04-agenda-alimentaire`
   (LOT-06 barème) et `2026-08-10-chaine-alimentaire` (LOT-02/03) — elles
   reprennent, elles ne se recréent pas.
-- **Constater l'orientation NNPP2** — corrigé le 2026-08-19, lecture à la
-  source : les trois tables (`contradictionsV1`, `stopRulesV1`,
-  `priorityRulesV1`) sont SIGNÉES depuis les 2026-08-15/16 (`D-061`,
-  signature conjointe arrêt+contradictions ; procédure d'abstention entrée au
-  périmètre par `D-062` ; re-signature et `shaPerimetre` par `D-067` ; frein
-  rendu structurel par `D-065`), et les deux drapeaux EXISTENT en production
-  (`WN_ENABLE_CONTRADICTIONS_NNPP2` posé le 2026-08-16, `D-064` ;
-  `WN_ENABLE_ORIENTATION_NNPP2` présent depuis le ~2026-08-05, valeur
-  chiffrée non lisible en CLI). Le verrou exige exactement `'1'` : le constat
-  restant est la VALEUR au panneau Vercel, ou l'orientation servie sur un
-  dossier ouvert. Il n'y a RIEN à signer.
+- **Orientation NNPP2 — FAIT, plus rien à signer ni à poser** : les trois
+  tables sont signées depuis les 2026-08-15/16 (`D-061`, `D-062`, `D-067`,
+  frein structurel `D-065`), les deux drapeaux sont posés, et l'activation
+  est CONSTATÉE en production — par le comportement (`D-074`, 2026-08-18 :
+  le panneau sert des recommandations, seule preuve valable puisque la
+  variable est sensitive et que les E2E arment le même drapeau sur la même
+  base), puis valeur `'1'` confirmée au panneau le 2026-08-19. Reste la
+  dette d'interface nommée par `D-074` §4 : `MESSAGE_ORIENTATION_INACTIVE`
+  périmé (ne s'affiche plus en production, correction = autre finalité).
 - **Constater** la proposition de bilan sur un vrai dossier (preuve terminale
   de la chaîne T0).
 - **Trancher les arbitrages pendants** : `complements-clean-label-v1`
