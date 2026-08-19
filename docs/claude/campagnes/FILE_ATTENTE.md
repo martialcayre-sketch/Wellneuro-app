@@ -33,6 +33,20 @@ chaque ouverture ou réarbitrage.
   périmé (ne s'affiche plus en production, correction = autre finalité).
 - **Constater** la proposition de bilan sur un vrai dossier (preuve terminale
   de la chaîne T0).
+- **Désarmer `WN_CB_RESULTS_ENABLED`** (panneau Vercel : `false` ou retrait) —
+  relevé le 2026-08-19 par lecture des valeurs de production : la variable
+  vaut `true` alors que son propre verrou dit « GATE DUR HDS : ne doit jamais
+  passer à true avant l'attestation d'hébergement »
+  (`biology-library/featureFlag.ts`). Aucun appelant aujourd'hui, donc aucun
+  effet — mais le jour où CB-09 livrera les résultats réels, il naîtrait
+  allumé sans l'attestation. Trente secondes, zéro effet observable.
+- **Trancher l'allumage du filtre de validité des passations** :
+  `WN_ENABLE_VALIDITE_PASSATIONS` est absent de la production — filtre
+  inerte, documenté (`FEATURE_FLAGS.md`, `D-052` : le `VALID` par défaut de
+  migration n'est pas un jugement clinique) et route d'invalidation praticien
+  en 503. L'allumage vaut `1` (famille `WN_ENABLE_*`, jamais `true`) et
+  c'est une décision clinique : les passations `INVALID`/`SUPERSEDED`
+  sortiraient du raisonnement.
 - **Trancher les arbitrages pendants** : `complements-clean-label-v1`
   (« remplacée ? »), dégel JA5-05, sort de `2026-08-02-rayon-biologie-cb`
   (recouverte par le LOT-06 de la chaîne T0), worktree
