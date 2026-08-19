@@ -11,7 +11,9 @@ tant que Scalingo n'est pas provisionné (défauts = comportement Vercel actuel)
 **La migration est décidée.** `docs/DECISIONS.md` D-006 (2026-07-28) pose la
 cible « Scalingo seul », et **D-037 (2026-08-09) la confirme** en avançant la
 revue de la dette HDS du 2026-10-21 à la réponse de Scalingo au ticket du
-2026-08-09. Ce runbook a longtemps ouvert sur l'inverse — « l'orientation
+2026-08-09. **Cette réponse est arrivée le 2026-08-11** et a été tranchée le
+jour même par **D-047** : la revue attendue a donc eu lieu, et ce qu'elle a
+rendu est plus bas, aux prérequis. Ce runbook a longtemps ouvert sur l'inverse — « l'orientation
 arrêtée le 2026-07-22 est de rester sur l'hébergement actuel » —, formulation au
 présent d'un arbitrage **antérieur de six jours à D-006** et jamais consigné au
 registre. L'évènement reste vrai et daté (le 2026-07-21 instruit l'hébergement et
@@ -69,7 +71,7 @@ n'a pas été instruite ici.
 ## Prérequis
 
 - Compte Scalingo, région **`osc-fr1` + `--hds-resource`** (conforme HDS — c'est ce qui est réellement provisionné). L'audit recommandait `osc-secnum-fr1` (Outscale **SecNumCloud**, souveraine, plus strict) ; le choix `osc-fr1` reste HDS mais **non SecNumCloud** — arbitrage et réserve « périmètre HDS à confirmer par écrit » consignés dans `docs/DECISIONS.md` D‑006 et D‑037. **`osc-secnum-fr1` n'est pas accessible sur ce compte** : `scalingo regions` ne rend qu'`osc-fr1` (relevé le 2026-08-09), l'y basculer suppose donc une demande d'accès préalable, pas un choix de commande.
-- **Le DPA ne s'e‑signe pas chez ce fournisseur** — lecture du 2026-08-09, **non confirmée : la question de forme n'a PAS été posée au ticket du 2026-08-09**, à poser au prochain échange. Certification HDS et accord de sous‑traitance vivent dans les **documents généraux** de Scalingo, acceptés à la souscription — laquelle existe déjà. Ce qui reste dû serait alors une **copie horodatée à archiver** au dossier RGPD, et non une signature à obtenir (D‑037). Tant que la forme n'est pas confirmée et la pièce non reçue, **la réserve reste ouverte** : une souscription inférée n'est pas une preuve produite.
+- ~~**Le DPA ne s'e‑signe pas chez ce fournisseur**~~ — **DÉMENTI PAR ÉCRIT LE 2026-08-11 (D-047), la ligne est laissée pour mémoire.** La lecture du 2026-08-09 déduisait de l'existence de la souscription que certification HDS et accord de sous‑traitance vivaient dans les **documents généraux** acceptés à la souscription, et qu'il n'y avait donc **rien à signer** — déduction marquée à l'époque « non confirmée, question de forme PAS posée au ticket ». Elle a été posée depuis, et **Scalingo répond l'inverse** : l'accord se compose du **DPA et d'une annexe HDS distincte**, à signer séparément — « l'acceptation des conditions générales seule ne suffit pas » à activer l'option HDS. **Ce qui est dû n'est donc pas une copie à archiver mais une annexe à obtenir et à signer**, puis les deux pièces à archiver. La réserve reste ouverte, et pour une raison plus lourde qu'écrit ici : une souscription inférée n'est pas une preuve produite, et elle n'est pas non plus un contrat signé. Démarche et texte de demande : `docs/claude/campagnes/2026-08-18-echeance-hds-g-trust-04/lots/LOT-01-annexe-hds-et-arbitrage.md`.
 - CLI Scalingo installée et authentifiée (`scalingo login`) — via Homebrew
   (`brew install scalingo`, formule core, pas de tap tiers).
 - Dépôt connecté par **intégration GitHub** plutôt que par remote git + push :
