@@ -22,10 +22,17 @@ chaque ouverture ou réarbitrage.
   seul débloqueur des campagnes existantes `2026-08-04-agenda-alimentaire`
   (LOT-06 barème) et `2026-08-10-chaine-alimentaire` (LOT-02/03) — elles
   reprennent, elles ne se recréent pas.
-- **Poser `WN_ENABLE_ORIENTATION_NNPP2`** (Vercel + build qui le porte).
-- **Signer** `contradictionsV1` → `stopRulesV1` → `priorityRulesV1`, dans cet
-  ordre (l'ordre n'est gardé par rien ; signer l'arrêt d'abord ferait tourner
-  l'extinction sans son frein).
+- **Constater l'orientation NNPP2** — corrigé le 2026-08-19, lecture à la
+  source : les trois tables (`contradictionsV1`, `stopRulesV1`,
+  `priorityRulesV1`) sont SIGNÉES depuis les 2026-08-15/16 (`D-061`,
+  signature conjointe arrêt+contradictions ; procédure d'abstention entrée au
+  périmètre par `D-062` ; re-signature et `shaPerimetre` par `D-067` ; frein
+  rendu structurel par `D-065`), et les deux drapeaux EXISTENT en production
+  (`WN_ENABLE_CONTRADICTIONS_NNPP2` posé le 2026-08-16, `D-064` ;
+  `WN_ENABLE_ORIENTATION_NNPP2` présent depuis le ~2026-08-05, valeur
+  chiffrée non lisible en CLI). Le verrou exige exactement `'1'` : le constat
+  restant est la VALEUR au panneau Vercel, ou l'orientation servie sur un
+  dossier ouvert. Il n'y a RIEN à signer.
 - **Constater** la proposition de bilan sur un vrai dossier (preuve terminale
   de la chaîne T0).
 - **Trancher les arbitrages pendants** : `complements-clean-label-v1`
