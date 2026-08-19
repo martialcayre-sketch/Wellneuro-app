@@ -34,9 +34,9 @@
   cookies, mais **ne nettoie ni les messages d'exception ni les
   breadcrumbs** ; nettoyer ces canaux est un lot technique distinct, et la
   résidence UE de Sentry reste un trou ouvert du §14.
-- **`gouvernance.ts` n'a aucun consommateur** — ce n'est pas la surface
-  d'information patient, contrairement à ce qu'on pourrait croire en la
-  lisant.
+- **`web/src/lib/trust/gouvernance.ts` n'est pas le consommateur runtime de ce
+  brouillon** — c'est une source documentaire montrée au patient, pas la
+  surface d'information patient visée ici.
 - Reste au responsable, côté LOT-01 : la référence du canal de la demande
   d'annexe (2026-08-12) et la signature dès réception.
 
