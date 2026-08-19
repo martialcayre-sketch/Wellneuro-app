@@ -359,7 +359,7 @@ n'existe aucune trace au dépôt de l'information elle-même** :
 - **Période, telle que déclarée** : en continu, « depuis la souscription HDS
   Scalingo ». **Cet ancrage n'est pas une date établie** : le dépôt refuse de
   tenir cette souscription pour acquise (« une souscription inférée n'est pas
-  une preuve produite », `RUNBOOK_MIGRATION_SCALINGO.md`), et `D-047` puis
+  une preuve produite », `docs/claude/propositions/2026-07-24-audit-migration-hds/RUNBOOK_MIGRATION_SCALINGO.md`), et `D-047` puis
   `D-078` rappellent qu'**aucune option HDS n'est active tant que l'annexe
   n'est pas signée**. Le staging HDS a été provisionné le 2026-07-24 — cette
   date **date le staging, pas l'information**.
