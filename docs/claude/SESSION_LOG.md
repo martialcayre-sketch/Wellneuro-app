@@ -4113,3 +4113,19 @@ trois dossiers fictifs) ; corriger `MESSAGE_ORIENTATION_INACTIVE`, faux depuis
 le 2026-08-04 mais d'une autre finalité — dette au handoff.
 Prochaine action : PR. Ouvert : les scopes Preview/Development, jamais
 vérifiés.
+
+## [2026-08-18] — D-075 : les dossiers de test sont réels
+
+La règle « seuls ces patients fictifs » m'a fait refuser d'examiner un dossier
+que le praticien utilise pour tester. Arbitrage : les dossiers de test sont
+réels — c'est le cas de tous ceux créés jusqu'ici — et se lisent par
+identifiant via `execute_sql`. Ce que la règle protégeait vraiment n'était pas
+leur existence, mais deux choses : pas d'identité réelle dans un dépôt dont
+l'historique ne s'efface pas, et aucune donnée fabriquée dans le dossier de
+quiconque.
+
+Écarté : faire des trois personnes les identités de fixture (255 fichiers
+concernés, identités définitives dans Git, et `seed.ts` écrivant des réponses
+fabriquées dans deux dossiers réels — `questionnaireReponse.upsert`).
+Prochaine action : PR. Ouvert : les identifiants des trois dossiers, à me
+donner au besoin — ils ne sont pas dans le dépôt et n'y entreront pas.
