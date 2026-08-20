@@ -34,9 +34,15 @@
   cookies, mais **ne nettoie ni les messages d'exception ni les
   breadcrumbs** ; nettoyer ces canaux est un lot technique distinct, et la
   résidence UE de Sentry reste un trou ouvert du §14.
-- **`web/src/lib/trust/gouvernance.ts` n'est pas le consommateur runtime de ce
-  brouillon** — c'est une source documentaire montrée au patient, pas la
-  surface d'information patient visée ici.
+- **`web/src/lib/trust/gouvernance.ts` n'est montré à personne** : ses deux
+  exports (`GOUVERNANCE_TRUST`, `NUMEROS_URGENCE_FR`) n'ont **aucun
+  consommateur** dans `web/src` ni `web/e2e` — vérifié au dépôt. Ce que le
+  patient voit est une **copie indépendante** du même contenu, portée par
+  `contenus/registre.ts` (document `DONNEES_CONFIDENTIALITE_V1`, servi par
+  les pages du portail). Les deux ne sont tenues synchrones par rien : éditer
+  `gouvernance.ts` en croyant changer ce que le patient lit ne change rien.
+  **Dette nommée, sans lot** (voir aussi les rubriques 1 et 6 du dossier,
+  corrigées ici).
 - Reste au responsable, côté LOT-01 : la référence du canal de la demande
   d'annexe (2026-08-12) et la signature dès réception.
 

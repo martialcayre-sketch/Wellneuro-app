@@ -39,6 +39,15 @@
   signature qui la ferme.
 - **Rien de ce qui relève d'un conseil qualifié n'a été écrit** : base légale,
   mécanisme de transfert et AIPD restent des trous ouverts, avec leur porteur.
+- **Deux attributions de source corrigées, et une dette qu'elles révèlent** :
+  les rubriques 1 et 6 citaient `web/src/lib/trust/gouvernance.ts` comme la
+  source « montrée au patient » — ses deux exports n'ont **aucun
+  consommateur** (`web/src`, `web/e2e`). Ce que le patient lit vient de
+  `contenus/registre.ts`, qui porte une **copie indépendante** du même
+  contenu ; **rien ne tient les deux synchrones**. Éditer `gouvernance.ts` en
+  croyant changer la liste des sous-traitants ou le contact des droits
+  n'atteindrait aucun patient. Dette nommée, à traiter avec le lot TRUST qui
+  publiera la v2.
 - **Ce que la revue (`wn-reviewer`) a changé — six bloquants, refermés** : le
   trou de la rubrique 11 était barré en entier alors que deux de ses quatre
   composantes restaient ouvertes ; l'ancrage « depuis la souscription HDS »

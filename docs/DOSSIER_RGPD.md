@@ -40,8 +40,10 @@ par une dérogation datée du 2026-07-21, bornée au **2026-10-21**.
 **Source.** Le praticien Wellneuro, contact `martialcayre@wellneuro.fr` —
 qualification G-TRUST-02, décision du 2026-07-16
 (`docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/GATES_GO_NO_GO.md`).
-Le même contact est affiché au patient (`web/src/lib/trust/gouvernance.ts`) et
-repris comme point d'entrée de la procédure d'incident
+Le même contact est affiché au patient — par le document
+`DONNEES_CONFIDENTIALITE_V1` (`web/src/lib/trust/contenus/registre.ts`), seul
+chemin servi ; voir la note de la rubrique 6 sur `gouvernance.ts` — et repris
+comme point d'entrée de la procédure d'incident
 (`docs/PROCEDURE_VIOLATION_DONNEES.md` §Rôles).
 
 **TROU.** L'identité juridique exacte du responsable — personne physique ou
@@ -126,8 +128,9 @@ aucune donnée personnelle.
 
 ## 6. Destinataires et sous-traitants
 
-**Source.** `web/src/lib/trust/gouvernance.ts` — liste **montrée au patient**,
-et identique à celle de G-TRUST-02 :
+**Source.** La liste **montrée au patient** est celle du document
+`DONNEES_CONFIDENTIALITE_V1` (`web/src/lib/trust/contenus/registre.ts`), servi
+par les pages du portail. Elle est identique à celle de G-TRUST-02 :
 
 | Sous-traitant | Rôle |
 |---|---|
@@ -141,6 +144,17 @@ Aucun autre destinataire : « votre praticien, dans le cadre de votre
 accompagnement ; personne d'autre n'y accède au sein de Wellneuro », et aucun
 partage à un tiers (médecin traitant compris) sans choix explicite du patient
 (`registre.ts`).
+
+> **Attribution corrigée le 2026-08-19 (LOT-03), et dette qui en résulte.**
+> Cette rubrique et la rubrique 1 citaient `web/src/lib/trust/gouvernance.ts`
+> comme la source « montrée au patient ». C'est faux : ses deux exports n'ont
+> **aucun consommateur** dans `web/src` ni `web/e2e` — le module est une
+> **copie morte**. Le contenu servi est celui de `contenus/registre.ts`.
+> **Rien ne tient les deux copies synchrones** : une modification de
+> `gouvernance.ts` — la liste des sous-traitants, le contact des droits —
+> n'atteindrait aucun patient tout en paraissant l'avoir fait. Dette nommée,
+> sans lot d'accueil ; à traiter avec le lot TRUST qui publiera la v2 du
+> document d'information.
 
 **TROUS.**
 
