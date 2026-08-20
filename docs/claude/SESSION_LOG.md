@@ -4243,3 +4243,22 @@ déplacerait trois bancs) se contourne par le patron `fiche-trajectoire-peuplee`
 
 Écarté : garder HDS primaire (le `next` pointerait indéfiniment un lot bloqué).
 Prochaine action : LOT-01, le verdict d'ancrage à trois états.
+
+## [2026-08-20] — LOT-01 Biologie : le fil relit l'ancre, trois états
+
+Les colonnes de `D-073` étaient en écriture seule : `SELECTION` ne les lisait
+pas. Le fil rend désormais un verdict calculé côté serveur — `concordante`,
+`perimee`, `sans_ancrage` — et seul le verdict traverse HTTP. Une lettre sans
+ancre ne rend **rien** (`DC-24`).
+
+La revue `wn-reviewer` a trouvé deux choses justes : une mutation survivait
+(retirer `!sha` rendait `perimee` sur une demi-ancre), et le commentaire
+affirmait qu'une re-signature « doit se voir » — faux, l'estampille de
+`courrier.ts` est en dur. Les deux refermées ; un banc confronte maintenant
+les trois porteurs de la version.
+
+Écarté : trancher si une re-signature sans changement de contenu doit périmer
+(clinique, revient au responsable) ; toucher aux tables signées.
+
+Prochaine action : PR. Ouvert : T2 impossible ici (proxy bloque le navigateur
+Playwright) — le CI est la porte ; et aucun `D-xxx` ne couvre un verdict servi.

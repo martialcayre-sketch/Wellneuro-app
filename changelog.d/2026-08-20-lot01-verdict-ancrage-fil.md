@@ -11,9 +11,20 @@ qu'elles promettaient n'existait nulle part.
   marquer « périmée » ferait porter un soupçon à tout l'historique. Une ancre à
   moitié — que le CHECK SQL interdit en base — retombe sur `sans_ancrage`, pas
   sur un défaut affiché.
-- **Le verdict se rend sur les deux termes, jamais sur le seul SHA** : une
-  table re-signée sous une version neuve doit se voir. Un banc l'épingle, et la
-  mutation « comparer le seul `ancrageSha256` » a été **jouée** : elle rougit.
+- **Le verdict se rend sur les deux termes, et chacun détecte autre chose.**
+  Le **SHA vivant** porte toute la détection réelle de péremption : dès qu'une
+  règle bouge, il ne concorde plus. Le terme de **version**, lui, ne détecterait
+  **pas** une re-signature qui bumperait la métadonnée sans toucher aux règles —
+  l'estampille de `courrier.ts` est en dur et ne dérive pas de la métadonnée.
+  Dit ici parce que la revue a trouvé l'affirmation inverse dans le premier jet,
+  et qu'un commentaire faux dans un dossier clinique se relit comme une preuve.
+  Un banc confronte les **trois** porteurs du littéral et rougit si l'un bouge :
+  la question « une re-signature sans changement de contenu doit-elle périmer
+  les lettres ? » revient alors à un humain.
+- **Deux mutations jouées, pas supposées** : « comparer le seul
+  `ancrageSha256` » rougit, et « retirer le terme `!sha` de la garde
+  d'absence » — celle qui aurait rendu `perimee` sur une ancre à moitié —
+  rougit aussi depuis que le second sens est éprouvé.
 - **Seul le verdict traverse HTTP.** Ni le SHA ni la version ne sont servis :
   exposés, ils inviteraient le navigateur à recomparer — et à le faire mal.
 - **La copie de la version est épinglée sur sa source.** `courrier.ts` est une

@@ -25,7 +25,10 @@ import { GET, POST } from './route';
 // constante de version de la route sur la source qui la produit — recopier la
 // chaîne ici neutraliserait le seul garde-fou anti-dérive du lot.
 import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
-import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
+import {
+  INDICATIONS_BIOLOGIE_METADATA,
+  INDICATIONS_BIOLOGIE_SHA256,
+} from '@/lib/biology-library/indicationsBiologieV1';
 
 const URL_BASE = 'http://localhost/api/praticien/correspondance-medecin';
 
@@ -330,10 +333,16 @@ describe('/api/praticien/correspondance-medecin', () => {
 
   it('une lettre sans ancre n’est PAS périmée — elle ne dit rien (DC-24)', async () => {
     expect(await ancrageServi({ ancrageSha256: null, ancrageVersion: null })).toBe('sans_ancrage');
-    // Ancre à moitié : le CHECK SQL l'interdit en base ; si elle arrivait, elle
-    // resterait une donnée absente, jamais un défaut affiché.
-    const { ancrageHash } = provenanceReelle();
+    // Ancre à moitié, DANS LES DEUX SENS : le CHECK SQL l'interdit en base ; si
+    // elle arrivait, elle resterait une donnée absente, jamais un défaut
+    // affiché. Le second sens n'est pas décoratif — sans lui, retirer le terme
+    // `!sha` de la garde passe inaperçu et une ancre {null, version} sortirait
+    // `perimee` (constat M1 de la revue du 2026-08-20).
+    const { ancrageHash, version } = provenanceReelle();
     expect(await ancrageServi({ ancrageSha256: ancrageHash, ancrageVersion: null })).toBe(
+      'sans_ancrage',
+    );
+    expect(await ancrageServi({ ancrageSha256: null, ancrageVersion: version })).toBe(
       'sans_ancrage',
     );
   });
@@ -355,6 +364,25 @@ describe('/api/praticien/correspondance-medecin', () => {
     );
     const json = await (await POST(postRequest(corps()))).json();
     expect(json.correspondance.ancrage).toBe('sans_ancrage');
+  });
+
+  it('les trois porteurs de la version ne divergent pas — métadonnée, estampille, comparaison', async () => {
+    // TROIS littéraux `indications-biologie-v1` coexistent : la métadonnée de
+    // la table (qui fait foi), celui qu'estampille `genererCourrierBiologie`
+    // (en dur, NON dérivé de la métadonnée), et celui que la route compare.
+    // Aucun n'est recopié ici : la métadonnée est lue, l'estampille est
+    // générée, et la comparaison est éprouvée à travers la route.
+    //
+    // Ce banc ne tranche PAS la question clinique « une re-signature sans
+    // changement de contenu doit-elle périmer les lettres ? » (revue du
+    // 2026-08-20, M2) : il la rend visible. Un bump de
+    // `INDICATIONS_BIOLOGIE_METADATA.version` le fait rougir, et la réponse
+    // revient à un humain au lieu de se décider par omission.
+    const { version } = provenanceReelle();
+    expect(version).toBe(INDICATIONS_BIOLOGIE_METADATA.version);
+    expect(
+      await ancrageServi({ ancrageSha256: INDICATIONS_BIOLOGIE_SHA256, ancrageVersion: version }),
+    ).toBe('concordante');
   });
 
   it('sans choix exprimé, le consentement est null (jamais deviné)', async () => {

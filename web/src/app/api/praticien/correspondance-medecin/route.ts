@@ -117,20 +117,32 @@ function echec(reason: string, error: string, status: number) {
 const VERSION_INDICATIONS_ATTENDUE = 'indications-biologie-v1';
 
 /**
- * Le verdict se rend sur les DEUX termes, jamais sur le seul SHA : une table
- * re-signée sous une version neuve doit se voir.
+ * Le verdict se rend sur les DEUX termes, et chacun détecte autre chose — la
+ * distinction vaut d'être écrite, parce qu'elle est plus étroite qu'il n'y
+ * paraît (revue du 2026-08-20) :
  *
- * Le SHA de référence est `INDICATIONS_BIOLOGIE_SHA256` — le SHA VIVANT,
- * recalculé à l'import depuis les règles publiées, celui-là même que le POST
- * du courrier fait entrer dans la provenance.
+ * - le **SHA** porte toute la détection réelle de péremption. C'est
+ *   `INDICATIONS_BIOLOGIE_SHA256`, le SHA VIVANT recalculé à l'import depuis
+ *   les règles publiées — dès qu'une règle bouge, il ne concorde plus ;
+ * - la **version** ne détecte PAS une re-signature qui bumperait
+ *   `INDICATIONS_BIOLOGIE_METADATA.version` sans toucher aux règles : le
+ *   littéral estampillé par `courrier.ts` est en dur, il ne dérive pas de la
+ *   métadonnée. Ce terme garde la divergence entre ce qui est ESTAMPILLÉ et ce
+ *   qui est COMPARÉ, pas le versionnement de la table. Un banc de cette route
+ *   confronte les trois littéraux et rougit si l'un d'eux bouge : la question
+ *   « une re-signature sans changement de contenu doit-elle périmer les
+ *   lettres ? » revient alors à un humain, qui seul peut la trancher.
  *
  * Non exporté : le banc doit l'éprouver À TRAVERS la route. Appelé à côté, il
  * prouverait que la fonction est juste sans rien dire de ce qui est servi.
  */
 function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {
-  // Le CHECK SQL `c3_correspondance_ancrage_v1` interdit l'ancre à moitié en
-  // base ; si elle arrivait tout de même, elle reste une donnée ABSENTE, pas
-  // un défaut à afficher ([[DC-24]]).
+  // AU MOINS UN nul, pas « les deux nuls » : le CHECK
+  // `c3_correspondance_ancrage_complet_check` (migration
+  // 20260818140000_ancrage_correspondance_medecin) interdit déjà la demi-ancre
+  // en base, dans les deux sens. Si elle arrivait tout de même, elle resterait
+  // une donnée ABSENTE, jamais un défaut à afficher ([[DC-24]]) — cette garde
+  // applicative est une défense en profondeur, et les deux sens sont éprouvés.
   if (!sha || !version) return 'sans_ancrage';
   return sha === INDICATIONS_BIOLOGIE_SHA256 && version === VERSION_INDICATIONS_ATTENDUE
     ? 'concordante'

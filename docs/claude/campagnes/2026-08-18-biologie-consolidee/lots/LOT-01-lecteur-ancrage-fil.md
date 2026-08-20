@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "à faire"
+statut: "terminé (2026-08-20) — verdict servi, revue wn-reviewer refermée ; T2 non obtenu en conteneur, le CI de la PR reste la porte"
 dépend_de: "aucun"
 ---
 
@@ -36,7 +36,13 @@ manque, et lui seul.
 |---|---|---|
 | `concordante` | `ancrageSha256` **et** `ancrageVersion` présents, égaux au vivant | mention sobre de concordance |
 | `perimee` | les deux présents, **l'un des deux** diffère | mention de péremption |
-| `sans_ancrage` | les deux nuls | **rien** — aucun badge |
+| `sans_ancrage` | **au moins un** des deux nul | **rien** — aucun badge |
+
+**Écart assumé au cadrage initial** (revue du 2026-08-20) : la condition
+retenue est « au moins un nul », pas « les deux nuls ». Le CHECK
+`c3_correspondance_ancrage_complet_check` interdit déjà la demi-ancre en base ;
+si elle arrivait, elle resterait une donnée **absente** — la traiter en défaut
+serait exactement l'erreur que ce lot combat. Les deux sens sont éprouvés.
 
 **`sans_ancrage` n'est PAS `perimee`, et confondre les deux serait la faute du
 lot** (`DC-24` : une donnée absente n'est jamais un défaut). Une lettre sans
@@ -84,10 +90,36 @@ pour livrer celui-ci.
 
 ## Critères de done
 
-- [ ] `SELECTION` porte les deux colonnes ; le verdict est calculé côté
-      serveur et seul le verdict traverse HTTP.
-- [ ] Les trois états existent, `sans_ancrage` distinct de `perimee`.
-- [ ] La mutation « comparaison sur le seul SHA » rougit — vérifié, pas
-      supposé.
-- [ ] Textes en français ; aucun badge sur les lettres sans ancre.
-- [ ] T2 vert ; fragment `changelog.d/` écrit.
+- [x] `SELECTION` porte les deux colonnes — et rien d'autre ; le verdict est
+      calculé côté serveur, et seul le verdict traverse HTTP (banc dédié).
+- [x] Les trois états existent, `sans_ancrage` distinct de `perimee`, dans
+      **les deux sens** de la demi-ancre.
+- [x] **Deux** mutations jouées et rouges : « comparer le seul
+      `ancrageSha256` », et « retirer le terme `!sha` de la garde d'absence »
+      — la seconde passait encore au premier jet (revue du 2026-08-20).
+- [x] Textes en français ; aucune mention sur les lettres sans ancre.
+- [ ] **T2 non obtenu dans ce conteneur** : `wn-test-worktree.sh` meurt à
+      l'installation des navigateurs Playwright (le proxy bloque
+      `cdn.playwright.dev`), **avant tout test**. Joués directement à la
+      place, verts : suite Vitest complète (421 fichiers, 5032 tests),
+      `npm run lint`, anti-secrets. Le segment E2E relève du CI (`D-049`) —
+      **la porte reste le CI de la PR**.
+- [x] Fragment `changelog.d/` écrit.
+
+## Ce que la revue laisse ouvert — dettes nommées, pas comblées ici
+
+- **La boucle écriture → lecture n'est épinglée par aucun banc** : le banc du
+  POST du courrier mocke le générateur. Rien ne prouve qu'une lettre écrite
+  par `/api/praticien/biologie/proposition/courrier` soit relue
+  « concordante » par le fil. **C'est le LOT-02**, par parcours.
+- **Aucun E2E ne traverse l'onglet Correspondance** : la mention n'est prouvée
+  qu'en jsdom.
+- **Une re-signature qui bumperait `INDICATIONS_BIOLOGIE_METADATA.version`
+  sans toucher aux règles** laisserait les lettres antérieures en
+  « concordant » : l'estampille de `courrier.ts` est en dur et ne dérive pas
+  de la métadonnée. Un banc confronte désormais les trois porteurs et rougit
+  si l'un bouge — la question clinique (« faut-il périmer ? ») revient à un
+  humain, elle n'est pas tranchée ici.
+- **Colonnes vérifiées en production** le 2026-08-20 par `execute_sql`
+  (`ancrage_sha256`, `ancrage_version` présentes) : le GET du fil ne part pas
+  en 500.
