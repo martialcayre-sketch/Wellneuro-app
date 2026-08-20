@@ -26,8 +26,10 @@
   métadonnée), celui que la route compare. Le banc les confronte tous les
   trois et rougit si l'un bouge — mais **toute la détection réelle de
   péremption repose sur le SHA vivant**. Une re-signature qui bumperait la
-  seule version laisserait les lettres antérieures en « concordant ». La
-  question clinique est posée, pas tranchée.
+  seule version laisserait les lettres antérieures en « concordant » —
+  **tranché le 2026-08-20 par [[D-079]] : c'est le comportement voulu, le SHA
+  fait foi.** Ne pas « réparer » cet écart en faisant dériver l'estampille de
+  la métadonnée : ce serait renverser la décision et toucher une table signée.
 - **La boucle écriture → lecture n'est épinglée nulle part** : le banc du POST
   du courrier mocke le générateur. C'est le LOT-02, par parcours.
 - **Aucun `D-xxx` neuf.** Le lot s'adosse à `D-073`, qui ne portait que les

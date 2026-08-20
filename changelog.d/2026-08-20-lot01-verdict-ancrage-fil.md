@@ -18,9 +18,11 @@ qu'elles promettaient n'existait nulle part.
   l'estampille de `courrier.ts` est en dur et ne dérive pas de la métadonnée.
   Dit ici parce que la revue a trouvé l'affirmation inverse dans le premier jet,
   et qu'un commentaire faux dans un dossier clinique se relit comme une preuve.
-  Un banc confronte les **trois** porteurs du littéral et rougit si l'un bouge :
-  la question « une re-signature sans changement de contenu doit-elle périmer
-  les lettres ? » revient alors à un humain.
+  Un banc confronte les **trois** porteurs du littéral et rougit si l'un bouge.
+  **La question qu'il posait est tranchée le jour même : [[D-079]] — le SHA
+  fait foi**, une re-signature sans changement de contenu ne périme aucune
+  lettre. La péremption signale un écart de fond, jamais un acte
+  administratif.
 - **Deux mutations jouées, pas supposées** : « comparer le seul
   `ancrageSha256` » rougit, et « retirer le terme `!sha` de la garde
   d'absence » — celle qui aurait rendu `perimee` sur une ancre à moitié —

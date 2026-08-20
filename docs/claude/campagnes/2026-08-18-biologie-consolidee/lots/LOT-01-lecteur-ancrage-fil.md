@@ -114,12 +114,12 @@ pour livrer celui-ci.
   « concordante » par le fil. **C'est le LOT-02**, par parcours.
 - **Aucun E2E ne traverse l'onglet Correspondance** : la mention n'est prouvée
   qu'en jsdom.
-- **Une re-signature qui bumperait `INDICATIONS_BIOLOGIE_METADATA.version`
+- ~~**Une re-signature qui bumperait `INDICATIONS_BIOLOGIE_METADATA.version`
   sans toucher aux règles** laisserait les lettres antérieures en
-  « concordant » : l'estampille de `courrier.ts` est en dur et ne dérive pas
-  de la métadonnée. Un banc confronte désormais les trois porteurs et rougit
-  si l'un bouge — la question clinique (« faut-il périmer ? ») revient à un
-  humain, elle n'est pas tranchée ici.
+  « concordant »~~ — **tranché le 2026-08-20 par [[D-079]] : le SHA fait foi**,
+  et ce comportement est le comportement voulu. La péremption signale un écart
+  de fond, jamais un acte administratif. Le banc des trois porteurs reste, avec
+  un motif neuf : garder la cohérence estampille ↔ comparaison.
 - **Colonnes vérifiées en production** le 2026-08-20 par `execute_sql`
   (`ancrage_sha256`, `ancrage_version` présentes) : le GET du fil ne part pas
   en 500.

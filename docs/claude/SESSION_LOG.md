@@ -4262,3 +4262,16 @@ les trois porteurs de la version.
 
 Prochaine action : PR. Ouvert : T2 impossible ici (proxy bloque le navigateur
 Playwright) — le CI est la porte ; et aucun `D-xxx` ne couvre un verdict servi.
+
+### Rectificatif (même jour) — la question de la re-signature est tranchée
+
+L'entrée ci-dessus laissait ouverte la question posée par la revue. Le
+responsable l'a rendue en session : **le SHA fait foi** (`D-079`). Une
+re-signature de la table sans changement de contenu **ne périme aucune
+lettre** — la péremption signale un écart de fond, jamais un acte
+administratif. Aucun comportement ne change : le code l'implémentait déjà sans
+que la sémantique soit écrite. Consigné au registre, dans le commentaire de la
+route et dans le banc, avec l'interdit qui va avec : ne pas faire dériver
+l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart — ce
+serait renverser la décision et toucher une table signée. Reste ouvert : aucun
+`D-xxx` ne couvre encore le fait de servir un verdict au praticien.

@@ -127,11 +127,16 @@ const VERSION_INDICATIONS_ATTENDUE = 'indications-biologie-v1';
  * - la **version** ne détecte PAS une re-signature qui bumperait
  *   `INDICATIONS_BIOLOGIE_METADATA.version` sans toucher aux règles : le
  *   littéral estampillé par `courrier.ts` est en dur, il ne dérive pas de la
- *   métadonnée. Ce terme garde la divergence entre ce qui est ESTAMPILLÉ et ce
- *   qui est COMPARÉ, pas le versionnement de la table. Un banc de cette route
- *   confronte les trois littéraux et rougit si l'un d'eux bouge : la question
- *   « une re-signature sans changement de contenu doit-elle périmer les
- *   lettres ? » revient alors à un humain, qui seul peut la trancher.
+ *   métadonnée. **C'est voulu, et tranché : [[D-079]] pose que LE SHA FAIT
+ *   FOI** — une lettre dont le contenu de référence n'a pas bougé reste
+ *   concordante, la péremption signale un écart de FOND et jamais un acte
+ *   administratif. Ne pas « corriger » cet écart en faisant dériver
+ *   l'estampille de la métadonnée : ce serait renverser la décision, et
+ *   toucher une table signée.
+ * - ce que le terme de version garde tout de même : la divergence entre ce qui
+ *   est ESTAMPILLÉ et ce qui est COMPARÉ, deux littéraux qui n'ont aucune
+ *   raison de différer. Un banc de cette route confronte les trois porteurs et
+ *   rougit si l'un bouge.
  *
  * Non exporté : le banc doit l'éprouver À TRAVERS la route. Appelé à côté, il
  * prouverait que la fonction est juste sans rien dire de ce qui est servi.

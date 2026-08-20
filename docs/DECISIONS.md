@@ -4,6 +4,46 @@
 
 ## Décisions actives
 
+### D-079 — Le SHA fait foi : une re-signature sans changement de contenu ne périme aucune lettre
+
+- Date : 2026-08-20
+- Statut : accepté (**décision du responsable**, rendue en session le
+  2026-08-20, sur question posée par la revue du LOT-01)
+- Domaine : biologie, provenance des courriers, verdict d'ancrage
+
+- Contexte : le LOT-01 de la campagne `2026-08-18-biologie-consolidee` ouvre le
+  chemin de lecture des colonnes d'ancrage de [[D-073]] — le fil dit si l'ancre
+  d'une lettre **concorde** avec la table d'indications courante. La revue
+  `wn-reviewer` a montré que le terme de version ne détecte pas ce qu'un
+  commentaire lui prêtait, et a posé la question restée sans réponse : **une
+  re-signature de la table qui bumperait sa version sans toucher aux règles
+  doit-elle périmer les lettres antérieures ?**
+
+**1. Ce que la décision pose.** Non. **Le SHA fait foi.** Une lettre dont le
+contenu de référence n'a pas bougé reste **concordante** : ce qu'elle dit du
+patient est toujours adossé aux mêmes règles, et la péremption doit signaler un
+écart de **fond**, jamais un acte administratif. La version reste un
+descripteur de provenance, pas une garde.
+
+**2. Ce que la décision ne change pas.** Rien au comportement : le code
+l'implémentait déjà, sans que la sémantique soit écrite. `courrier.ts` estampe
+un littéral en dur qu'un bump de `INDICATIONS_BIOLOGIE_METADATA.version`
+n'atteint pas ; le verdict reste `concordante`. Cette décision **écrit ce que
+le code fait**, pour qu'un futur relecteur ne prenne pas l'écart pour un oubli
+et ne « corrige » pas dans l'autre sens.
+
+**3. Ce que le terme de version garde encore, et qui reste utile.** Il détecte
+la divergence entre ce qui est **estampillé** et ce qui est **comparé** — deux
+littéraux qui n'ont aucune raison de différer. Un banc de
+`correspondance-medecin/route.test.ts` confronte les trois porteurs (métadonnée,
+estampille, comparaison) et rougit si l'un bouge : la garde survit, elle change
+seulement de motif.
+
+**4. Ce que la décision n'autorise pas.** Elle ne dispense pas d'un examen si
+une re-signature future **change les règles** : là, le SHA bouge, et les lettres
+antérieures sont **périmées** — c'est le comportement voulu. Elle ne modifie
+aucune table signée et n'ouvre aucune migration.
+
 ### D-078 — Le gate G-TRUST-04 est levé par arbitrage du responsable, et la migration Scalingo est engagée sans attendre l'annexe HDS
 
 - Date : 2026-08-19

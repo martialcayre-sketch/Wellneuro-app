@@ -373,11 +373,12 @@ describe('/api/praticien/correspondance-medecin', () => {
     // Aucun n'est recopié ici : la métadonnée est lue, l'estampille est
     // générée, et la comparaison est éprouvée à travers la route.
     //
-    // Ce banc ne tranche PAS la question clinique « une re-signature sans
-    // changement de contenu doit-elle périmer les lettres ? » (revue du
-    // 2026-08-20, M2) : il la rend visible. Un bump de
-    // `INDICATIONS_BIOLOGIE_METADATA.version` le fait rougir, et la réponse
-    // revient à un humain au lieu de se décider par omission.
+    // La question que ce banc rendait visible est TRANCHÉE : [[D-079]]
+    // (2026-08-20) pose que LE SHA FAIT FOI — une re-signature sans changement
+    // de contenu ne périme aucune lettre. Ce banc ne garde donc plus une
+    // question ouverte, il garde la cohérence des trois porteurs : un bump de
+    // `INDICATIONS_BIOLOGIE_METADATA.version` le fait rougir, et c'est un
+    // humain qui décidera s'il faut suivre l'estampille ou la laisser.
     const { version } = provenanceReelle();
     expect(version).toBe(INDICATIONS_BIOLOGIE_METADATA.version);
     expect(
