@@ -26,7 +26,7 @@
 
 - **La demande est pendante depuis huit jours** et la relance depuis un jour.
   Le fil nomme lui-même deux voies de secours si le support n'émet rien :
-  `support@scalingo.com` et l'équipe InfoSec citée le 2026-08-11. **Geste du
+  le canal de support général et l'équipe InfoSec citée le 2026-08-11. **Geste du
   responsable, hors périmètre du lot** — l'assistant n'écrit pas au
   fournisseur.
 - **Ce que l'annexe tient en otage** : le décommissionnement de
