@@ -11,6 +11,7 @@ import {
   RAISON_DOSSIER_CLOS,
 } from '@/lib/patient/cycleDeVie';
 import { statutPartageMedecinTraitant } from '@/lib/trust/consentementPartage';
+import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien).
@@ -39,6 +40,15 @@ const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/correspondance-medecin';
 
+/**
+ * Verdict d'ancrage d'une lettre, calculé côté serveur.
+ *
+ * `sans_ancrage` n'est PAS `perimee` ([[DC-24]]) : une lettre sans ancre est
+ * antérieure à [[D-073]], ou n'est pas un courrier biologique. La présenter
+ * comme périmée ferait porter un soupçon à tout l'historique.
+ */
+export type VerdictAncrage = 'concordante' | 'perimee' | 'sans_ancrage';
+
 export type CorrespondanceExposee = {
   id: string;
   sens: string;
@@ -47,6 +57,9 @@ export type CorrespondanceExposee = {
   idSynthese: string | null;
   echangeLe: string | null;
   consigneLe: string;
+  // Seul le VERDICT traverse HTTP : ni le SHA ni la version. Servis au client,
+  // ils inviteraient à recomparer côté navigateur — et à le faire mal.
+  ancrage: VerdictAncrage;
 };
 
 export type CorrespondancePatientExposee = {
@@ -90,6 +103,40 @@ function echec(reason: string, error: string, status: number) {
   );
 }
 
+/**
+ * Version de la table d'indications à laquelle une ancre doit correspondre.
+ *
+ * COPIE ASSUMÉE du littéral écrit par `genererCourrierBiologie`
+ * (`lib/biology-library/courrier.ts`, bloc `provenance`) : ce fichier est une
+ * table SIGNÉE, et y ajouter un export serait une modification clinique
+ * ([[DC-17]], [[DC-18]]). Deux littéraux peuvent diverger en silence — et une
+ * divergence ferait dire « périmée » à des lettres concordantes. Le banc de
+ * cette route épingle la copie sur la source : il génère un vrai courrier et
+ * sert sa provenance telle quelle. Il rougit si l'un des deux bouge.
+ */
+const VERSION_INDICATIONS_ATTENDUE = 'indications-biologie-v1';
+
+/**
+ * Le verdict se rend sur les DEUX termes, jamais sur le seul SHA : une table
+ * re-signée sous une version neuve doit se voir.
+ *
+ * Le SHA de référence est `INDICATIONS_BIOLOGIE_SHA256` — le SHA VIVANT,
+ * recalculé à l'import depuis les règles publiées, celui-là même que le POST
+ * du courrier fait entrer dans la provenance.
+ *
+ * Non exporté : le banc doit l'éprouver À TRAVERS la route. Appelé à côté, il
+ * prouverait que la fonction est juste sans rien dire de ce qui est servi.
+ */
+function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {
+  // Le CHECK SQL `c3_correspondance_ancrage_v1` interdit l'ancre à moitié en
+  // base ; si elle arrivait tout de même, elle reste une donnée ABSENTE, pas
+  // un défaut à afficher ([[DC-24]]).
+  if (!sha || !version) return 'sans_ancrage';
+  return sha === INDICATIONS_BIOLOGIE_SHA256 && version === VERSION_INDICATIONS_ATTENDUE
+    ? 'concordante'
+    : 'perimee';
+}
+
 function exposer(ligne: {
   id: string;
   sens: string;
@@ -98,6 +145,8 @@ function exposer(ligne: {
   idSynthese: string | null;
   echangeLe: Date | null;
   consigneLe: Date;
+  ancrageSha256: string | null;
+  ancrageVersion: string | null;
 }): CorrespondanceExposee {
   return {
     id: ligne.id,
@@ -109,6 +158,7 @@ function exposer(ligne: {
     idSynthese: ligne.idSynthese,
     echangeLe: ligne.echangeLe ? ligne.echangeLe.toISOString() : null,
     consigneLe: ligne.consigneLe.toISOString(),
+    ancrage: verdictAncrage(ligne.ancrageSha256, ligne.ancrageVersion),
   };
 }
 
@@ -120,6 +170,11 @@ const SELECTION = {
   idSynthese: true,
   echangeLe: true,
   consigneLe: true,
+  // Les deux colonnes d'ancrage de [[D-073]], et RIEN d'autre : le fil sert
+  // des lettres, pas le schéma. Elles ne sortent pas d'ici — `exposer` les
+  // consomme et n'expose que le verdict.
+  ancrageSha256: true,
+  ancrageVersion: true,
 } as const;
 
 type Garde =

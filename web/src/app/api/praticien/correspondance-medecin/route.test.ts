@@ -20,6 +20,12 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET, POST } from './route';
+// LE GÉNÉRATEUR RÉEL, jamais une copie de sa provenance : c'est lui qui écrit
+// l'ancre consignée. Le banc de concordance ci-dessous épingle ainsi la
+// constante de version de la route sur la source qui la produit — recopier la
+// chaîne ici neutraliserait le seul garde-fou anti-dérive du lot.
+import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
+import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 
 const URL_BASE = 'http://localhost/api/praticien/correspondance-medecin';
 
@@ -48,6 +54,55 @@ const PATIENT_EN_SUIVI = {
   actif: true,
   suiviClotureLe: null,
 };
+
+/** Provenance telle que le générateur la stampe — source de vérité du banc. */
+function provenanceReelle(): { ancrageHash: string; version: string } {
+  const genere = genererCourrierBiologie({
+    patientId: 'PAT_TEST',
+    lignes: [
+      {
+        panelCode: 'PANEL_TEST',
+        libelle: 'Bilan martial',
+        niveau: '1',
+        objectif: null,
+        statut: 'recommande',
+        declencheurRempli: null,
+        condition: null,
+        motifs: [],
+        justificationClaims: [],
+        analytes: [],
+        ratios: [],
+      },
+    ],
+    tableSha256: INDICATIONS_BIOLOGIE_SHA256,
+    dateCourrier: '2026-08-20T09:00:00.000Z',
+  });
+  if (!genere.ok) throw new Error(`générateur en refus : ${genere.raison}`);
+  const provenance = genere.courrier.document.blocs[0]?.provenance;
+  if (!provenance) throw new Error('courrier sans provenance');
+  return { ancrageHash: provenance.ancrageHash, version: provenance.version };
+}
+
+function ligneFil(ancrage: { ancrageSha256: string | null; ancrageVersion: string | null }) {
+  return {
+    id: 'CORR_ANCRE',
+    sens: 'sortant',
+    medecinLibelle: 'Dr Martin',
+    texte: 'Docteur, …',
+    idSynthese: null,
+    echangeLe: null,
+    consigneLe: new Date('2026-08-20T09:00:00.000Z'),
+    ...ancrage,
+  };
+}
+
+async function ancrageServi(
+  ancrage: { ancrageSha256: string | null; ancrageVersion: string | null },
+): Promise<string> {
+  prisma.correspondanceMedecin.findMany.mockResolvedValue([ligneFil(ancrage)]);
+  const json = await (await GET(getRequest())).json();
+  return json.correspondances[0].ancrage;
+}
 
 describe('/api/praticien/correspondance-medecin', () => {
   beforeEach(() => {
@@ -247,6 +302,59 @@ describe('/api/praticien/correspondance-medecin', () => {
     ]);
     expect(JSON.stringify(json.correspondancesPatient)).not.toContain('@');
     expect(JSON.stringify(json.correspondancesPatient)).not.toContain('texte');
+  });
+
+  it('une lettre dont l’ancre concorde avec la table vivante est dite concordante', async () => {
+    const { ancrageHash, version } = provenanceReelle();
+    expect(await ancrageServi({ ancrageSha256: ancrageHash, ancrageVersion: version })).toBe(
+      'concordante',
+    );
+  });
+
+  it('une version différente périme la lettre, MÊME à SHA identique', async () => {
+    // CE BANC TUE LA MUTATION « comparer le seul ancrageSha256 » : sous cette
+    // mutation la lettre passerait pour concordante, et une table re-signée
+    // sous une version neuve deviendrait invisible.
+    const { ancrageHash } = provenanceReelle();
+    expect(
+      await ancrageServi({ ancrageSha256: ancrageHash, ancrageVersion: 'indications-biologie-v2' }),
+    ).toBe('perimee');
+  });
+
+  it('un SHA différent périme la lettre, à version identique', async () => {
+    const { version } = provenanceReelle();
+    expect(await ancrageServi({ ancrageSha256: 'f'.repeat(64), ancrageVersion: version })).toBe(
+      'perimee',
+    );
+  });
+
+  it('une lettre sans ancre n’est PAS périmée — elle ne dit rien (DC-24)', async () => {
+    expect(await ancrageServi({ ancrageSha256: null, ancrageVersion: null })).toBe('sans_ancrage');
+    // Ancre à moitié : le CHECK SQL l'interdit en base ; si elle arrivait, elle
+    // resterait une donnée absente, jamais un défaut affiché.
+    const { ancrageHash } = provenanceReelle();
+    expect(await ancrageServi({ ancrageSha256: ancrageHash, ancrageVersion: null })).toBe(
+      'sans_ancrage',
+    );
+  });
+
+  it('ni le SHA ni la version ne traversent HTTP — seul le verdict', async () => {
+    const { ancrageHash, version } = provenanceReelle();
+    prisma.correspondanceMedecin.findMany.mockResolvedValue([
+      ligneFil({ ancrageSha256: ancrageHash, ancrageVersion: version }),
+    ]);
+    const charge = JSON.stringify((await (await GET(getRequest())).json()).correspondances);
+    expect(charge).not.toContain(ancrageHash);
+    expect(charge).not.toContain(version);
+    expect(charge).toContain('concordante');
+  });
+
+  it('une correspondance consignée à la main n’a pas d’ancre, et le dit', async () => {
+    prisma.correspondanceMedecin.create.mockResolvedValue(
+      ligneFil({ ancrageSha256: null, ancrageVersion: null }),
+    );
+    const json = await (await POST(postRequest(corps()))).json();
+    expect(json.correspondance.ancrage).toBe('sans_ancrage');
   });
 
   it('sans choix exprimé, le consentement est null (jamais deviné)', async () => {
