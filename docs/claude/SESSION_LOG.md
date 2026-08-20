@@ -4227,3 +4227,19 @@ réconciliation machine s'avère quasi vide) ; écrire au fournisseur.
 Prochaine action : PR, puis relance par un second canal — geste du
 responsable. Ouvert : l'annexe couvre-t-elle rétroactivement les ressources
 déjà provisionnées ? Le LOT-02 en dépend.
+## [2026-08-20] — Ouverture de « Biologie consolidée », HDS passe en parallèle
+
+`/wn-lot next` sur la campagne HDS ne rendait qu'un lot bloqué : LOT-01 attend
+Scalingo, LOT-02 des gestes ops hors dépôt, LOT-04 la revue du 2026-10-21.
+Arbitrage : ouvrir la campagne de rang 2 et lui donner la primauté — l'activité
+primaire doit être celle où le travail a lieu ; l'échéance HDS vit dans
+`blocking_issues`, qui la porte en toutes lettres.
+
+Le cadrage a réduit le brief : l'ancrage EST gardé à l'écriture (contrat C3), le
+manque est la relecture (`SELECTION` de la route du fil) ; un contrat packs
+existe mais sur un autre invariant. Et le piège des E2E (peupler un patient
+déplacerait trois bancs) se contourne par le patron `fiche-trajectoire-peuplee`
+— provisionner par spec, jamais par le seed.
+
+Écarté : garder HDS primaire (le `next` pointerait indéfiniment un lot bloqué).
+Prochaine action : LOT-01, le verdict d'ancrage à trois états.
