@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "en cours — l'arbitrage est rendu (D-078) ; reste l'annexe à signer et archiver"
+statut: "en cours — l'arbitrage est rendu (D-078) ; la demande est tracée (2026-08-20) ; reste l'annexe à recevoir, signer et archiver"
 ---
 
 # LOT-01 — Annexe HDS obtenue et signée ; arbitrage migrer/reconduire posé
@@ -44,8 +44,9 @@ allonge la fenêtre de moindre couverture (`D-078` §3).
 1. Demander l'annexe HDS à Scalingo — le ticket du 2026-08-09 est le canal
    ouvert, sinon `support@scalingo.com`. **Texte prêt** :
    `sources/demande-annexe-hds-scalingo.md`. **Engagée selon `D-078`**
-   (demande du 2026-08-12, relance du 2026-08-19) — la référence du canal
-   reste à consigner, cf. critères de done.
+   (demande du 2026-08-12, relance du 2026-08-19) — **canal et dates
+   vérifiés au fil le 2026-08-20** et consignés `docs/DOSSIER_RGPD.md`
+   rubrique 6.
 2. Signer l'annexe.
 3. Archiver **le DPA et l'annexe signée** hors dépôt, et consigner l'archivage
    au dossier RGPD (rubrique 6 et ligne correspondante du tableau §14) — la
@@ -121,12 +122,16 @@ dépôt entier, vu la nature du dossier.
 
 ## Critères de done
 
-- [ ] La demande d'annexe HDS est **partie**, avec sa date — **affirmée par
-      `D-078`** (demandée le 2026-08-12, relancée le 2026-08-19 ; la
-      checklist du gate reprend le même acte, même jour — ce n'est pas une
-      seconde preuve). **Trace indépendante à produire pour cocher** : le
-      canal et la référence (numéro de ticket ou courriel), consignés ici ou
-      au dossier RGPD.
+- [x] La demande d'annexe HDS est **partie**, avec sa date — **trace
+      indépendante produite le 2026-08-20** par lecture du fil de courriel du
+      responsable, consignée `docs/DOSSIER_RGPD.md` rubrique 6 (« Canal et
+      trace de la demande d'annexe »). Le canal est un fil unique avec le
+      support du fournisseur, objet « Périmètre HDS de la région `osc-fr1` et
+      pièces contractuelles — compte wellneuro », ouvert le 2026-08-09 ;
+      **le fournisseur n'émet aucun numéro de ticket**, la référence est donc
+      l'objet du fil et ses dates. Les deux dates affirmées par `D-078` sont
+      confirmées : demande le 2026-08-12, relance le 2026-08-19. **Sans
+      réponse au 2026-08-20.**
 - [ ] L'annexe est **reçue**, **signée**, et **archivée avec le DPA** hors
       dépôt — ou l'obstacle rencontré est écrit et daté.
 - [ ] L'archivage est consigné au dossier RGPD (rubrique 6 + tableau §14), avec
@@ -135,4 +140,4 @@ dépôt entier, vu la nature du dossier.
       **reconduire**~~ — **`D-078` (2026-08-19) : migrer, sans attendre
       l'annexe.** Pas de nouveau terme : la revue reste au **2026-10-21**
       (`D-078` §5).
-- [ ] Le fragment `changelog.d/` est écrit.
+- [x] Le fragment `changelog.d/` est écrit — `2026-08-20-lot01-trace-canal-annexe-hds.md` (trace du canal). Un fragment neuf reste dû à la réception de l'annexe.
