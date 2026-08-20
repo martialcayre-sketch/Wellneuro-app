@@ -1,6 +1,6 @@
 ---
 id: "LOT-03"
-statut: "à faire — peut avancer en parallèle du LOT-01"
+statut: "terminé (2026-08-19) — information consignée, dossier réconcilié avec D-078 ; support v2 préparé, sa publication est un lot TRUST distinct"
 ---
 
 # LOT-03 — Dossier RGPD à l'état réel, et information des personnes rattrapée
@@ -80,10 +80,30 @@ Documentaire : T1 + `bash scripts/check_no_secrets.sh` sur le dépôt entier.
 
 ## Critères de done
 
-- [ ] Chaque ligne du tableau §14 est soit fermée avec sa preuve, soit portée à
+- [x] Chaque ligne du tableau §14 est soit fermée avec sa preuve, soit portée à
       jour (porteur, échéance), soit explicitement renvoyée à un conseil
-      qualifié.
-- [ ] L'information des personnes sur l'écart HDS est **consignée**, avec sa
-      forme et sa date — ou son émission est datée si elle restait à faire.
-- [ ] Aucune ligne du dossier ne contredit `D-047`.
-- [ ] Fragment `changelog.d/` écrit.
+      qualifié. **Deux lignes bougent** : rubrique 11 (consignée, échéance
+      « au plus tôt » → 2026-10-21 pour le renouvellement) et rubrique 6 DPA
+      (échéance « avant bascule » → « dès réception, avant tout
+      décommissionnement », `D-078`). Les autres restent **inchangées et
+      ouvertes**, chacune avec son porteur — les lignes de conseil qualifié
+      (base légale, transferts, AIPD) n'ont rien reçu de ce lot, et c'est
+      voulu.
+- [x] L'information des personnes sur l'écart HDS est **consignée** dans ce
+      qui peut l'être — rubrique 11 : **forme** (orale, en consultation) et
+      **contenu**, sur déclaration du responsable en session du 2026-08-19,
+      seule source. **Consignation PARTIELLE, et le dossier le dit** : la
+      **date** de délivrance n'est pas établie — la période déclarée
+      « depuis la souscription HDS » n'est pas un point de départ que le
+      dépôt tient pour acquis (`D-047`, runbook : « une souscription inférée
+      n'est pas une preuve produite ») —, la **modalité de retrait** n'est pas
+      consignée, il n'existe **aucune trace écrite par participant**, et le
+      **périmètre des personnes** couvertes n'est pas établi. Chacun de ces
+      manques porte sa ligne au §14. **Reste dû** : renouvellement
+      post-`D-078` avant la bascule — brouillon de support prêt
+      (`sources/brouillon-information-hebergement-v2.md`), sa publication est
+      un geste TRUST distinct.
+- [x] Aucune ligne du dossier ne contredit `D-047` — ni `D-078` : §6 et §12
+      sont annotés (ordre suspendu, signature toujours due, fenêtre de moindre
+      couverture, revue inchangée au 2026-10-21), sans rien effacer.
+- [x] Fragment `changelog.d/` écrit.

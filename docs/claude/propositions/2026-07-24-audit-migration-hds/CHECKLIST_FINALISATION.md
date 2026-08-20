@@ -63,10 +63,10 @@ réelles ».
 
 ## F. Juridique / conformité — ⚖️ responsable (conditionne le « GO données réelles » et la levée de dérogation)
 
-- [ ] ⚖️ **Arbitrage fournisseur** (Scalingo recommandé, 41–83 € HT/mois) + devis écrit → **contrat + annexe HDS signés**
+- [ ] ⚖️ ~~**Arbitrage fournisseur**~~ **rendu** (Scalingo — `D-006`, confirmé `D-037`, migration engagée par `D-078` le 2026-08-19) + devis écrit → **contrat + annexe HDS signés : TOUJOURS PENDANTS** (annexe demandée le 2026-08-12, relancée le 2026-08-19, sans réponse). La case reste ouverte : c'est la signature qui la ferme, pas l'arbitrage.
 - [ ] ⚖️ **AIPD** · **DPA** à signer/archiver (hébergeur, Anthropic, SMTP, Google, Sentry) · **pentest léger** (exig. 7 G-TRUST-04)
 - [ ] ⚖️ Identifier le **fournisseur SMTP réel** + localisation/DPA ; vérifier **résidence UE Sentry** (audit §7.4)
-- [ ] ⚖️ **Acte de levée de G-TRUST-04** (checklist) — **échéance dérogation : 2026-10-21**
+- [x] ⚖️ **Acte de levée de G-TRUST-04** — **fait le 2026-08-19** (`D-078` ; source : `CHECKLIST_ACTIVATION_G_TRUST_04.md` §« Décision du responsable du traitement — 2026-08-19 »). **Attention à ce que cette case dit et ne dit pas** : c'est une levée **par écart assumé**, pas la levée-conformité que cette puce visait — les sept exigences sont inchangées (une ❌, six partielles, aucune ✅). **L'échéance de revue reste le 2026-10-21.**
 
 ---
 

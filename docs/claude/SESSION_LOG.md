@@ -4179,3 +4179,33 @@ Décisions promues : aucune nouvelle (D-078 est d'une autre session).
 Prochaine action : PR d'ouverture, puis piloter LOT-01 (annexe — attente
 Scalingo) et LOT-03 (information des personnes, échue) en parallèle.
 Ouvert : tension commentaire du verrou `WN_CB_RESULTS_ENABLED` vs D-078.
+
+## [2026-08-19] — LOT-03 : l'information des personnes était donnée, jamais écrite
+
+Le trou « le plus coûteux du dossier RGPD » n'était pas un défaut
+d'information mais de consignation : le praticien informe oralement depuis la
+souscription HDS Scalingo. Consigné rubrique 11 avec forme, période et source,
+et le manque restant dit tel quel — aucune trace écrite par participant.
+
+D-078 rend l'information à renouveler (l'écart a changé de nature) : un
+support v2 est préparé avec ses réserves, jamais publié — la v2 d'un document
+versionné et acquitté est un lot TRUST distinct. Deux échéances du §14
+réconciliées (rubrique 11, ligne DPA), §6 et §12 annotés sans rien effacer.
+
+Écarté : rédiger ce qui relève d'un conseil qualifié (base légale, transferts,
+AIPD restent ouverts) ; publier le support ; cocher une ligne §14 sans preuve.
+Prochaine action : revue wn-reviewer, PR. Ouvert : la phrase Sentry du
+brouillon suppose une vérification de configuration non faite.
+
+### Rectificatif (même jour, après revue `wn-reviewer`)
+
+L'entrée ci-dessus dit « oralement depuis la souscription HDS Scalingo » comme
+si c'était un fait daté : c'est la déclaration du responsable, et le dépôt
+refuse précisément cette inférence (`D-047` ; runbook : « une souscription
+inférée n'est pas une preuve produite »). Le dossier consigne donc la forme et
+le contenu, et laisse ouvertes la date, la modalité de retrait, la trace écrite
+par participant et le périmètre des personnes — chacune avec sa ligne au §14.
+Deux autres corrections de revue : le renouvellement de l'information est
+indexé sur la bascule (pas sur le 2026-10-21 — `D-078` rend l'obligation plus
+exigeante), et la ligne « preuve fonctionnelle de la piste d'audit » était
+échue sans mention depuis que des dossiers réels sont utilisés.
