@@ -4209,3 +4209,21 @@ Deux autres corrections de revue : le renouvellement de l'information est
 indexé sur la bascule (pas sur le 2026-10-21 — `D-078` rend l'obligation plus
 exigeante), et la ligne « preuve fonctionnelle de la piste d'audit » était
 échue sans mention depuis que des dossiers réels sont utilisés.
+
+## [2026-08-20] — LOT-01 : la trace du canal, produite par lecture et non par déclaration
+
+Le critère de done exigeait une trace indépendante du canal de la demande
+d'annexe HDS : les dates ne reposaient que sur `D-078`, aucune référence au
+dépôt. Lecture du fil (avec accord) : les deux dates sont **confirmées**
+(demande 2026-08-12, relance 2026-08-19), le fournisseur **n'émet aucun
+numéro de ticket** — la référence est l'objet du fil, écrit tel quel plutôt
+qu'un identifiant inventé. Sans réponse au 2026-08-20. Deux notes périmées du
+TROU 1 biffées : `D-037` démentie par `D-047`, « forme non posée » posée deux
+fois depuis.
+
+Écarté : LOT-02 (tout est à la console du responsable) ; LOT-04 (sa
+réconciliation machine s'avère quasi vide) ; écrire au fournisseur.
+
+Prochaine action : PR, puis relance par un second canal — geste du
+responsable. Ouvert : l'annexe couvre-t-elle rétroactivement les ressources
+déjà provisionnées ? Le LOT-02 en dépend.

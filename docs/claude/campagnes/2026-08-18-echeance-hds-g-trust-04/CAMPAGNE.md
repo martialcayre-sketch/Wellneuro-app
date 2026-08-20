@@ -163,7 +163,7 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Annexe HDS obtenue et signée ; ~~arbitrage migrer/reconduire~~ (rendu par `D-078`) | en cours — réduit à l'annexe (demandée 2026-08-12, relancée 2026-08-19) | — |
+| LOT-01 | Annexe HDS obtenue et signée ; ~~arbitrage migrer/reconduire~~ (rendu par `D-078`) | en cours — réduit à l'annexe (demandée 2026-08-12, relancée 2026-08-19 ; canal et dates vérifiés au fil le 2026-08-20, sans réponse) | — |
 | LOT-02 | Exécution du runbook Scalingo — **confirmation obligatoire à chaque geste** | débloqué par `D-078` ; décommissionnement subordonné à l'annexe signée | `D-078` (rendu) |
 | LOT-03 | Dossier RGPD à l'état réel + rattrapage de l'information des personnes | **terminé (2026-08-19)** — information consignée, §6/§12/§14 réconciliés avec `D-078`, support v2 préparé (publication = lot TRUST distinct) | — |
 | LOT-04 | ~~G-TRUST-04 change d'état~~ (fait par `D-078`) — reste la revue du 2026-10-21 | recentré | LOT-01, et LOT-02 si la bascule est faite |

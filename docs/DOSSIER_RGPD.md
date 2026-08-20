@@ -161,12 +161,17 @@ partage à un tiers (médecin traitant compris) sans choix explicite du patient
 1. **Aucun DPA n'est signé**, avec aucun de ces sous-traitants
    (`CHECKLIST_ACTIVATION_G_TRUST_04.md` item 7 ;
    `docs/claude/propositions/2026-07-24-audit-migration-hds/CHECKLIST_FINALISATION.md:67`).
-   **Nuance posée le 2026-08-09 (D-037)** : pour Scalingo, il n'y a pas de
+   ~~**Nuance posée le 2026-08-09 (D-037)** : pour Scalingo, il n'y a pas de
    signature à obtenir — l'accord de sous-traitance vit dans les documents
-   généraux, acceptés à la souscription. Ce qui manque au dossier est la
-   **copie horodatée de la version acceptée**, demandée au fournisseur le
-   2026-08-09 — **question de forme non posée à ce ticket**, à poser au
-   prochain échange (D-037). Cette nuance vaut pour Scalingo seul ; les autres
+   généraux, acceptés à la souscription.~~ **Démentie par la réponse écrite du
+   2026-08-11 (`D-047`, section ci-dessous) : une annexe HDS distincte est
+   bien à signer.** Ce qui manque au dossier reste la **copie horodatée de la
+   version acceptée**, demandée au fournisseur le 2026-08-09 — ~~**question de
+   forme non posée à ce ticket**, à poser au prochain échange (D-037)~~ —
+   **posée depuis** : la forme a reçu réponse le 2026-08-11, et la copie
+   horodatée est redemandée au message du 2026-08-12 puis relancée le
+   2026-08-19, sans réponse à ce jour (« Canal et trace de la demande
+   d'annexe », ci-dessous). Ce point vaut pour Scalingo seul ; les autres
    sous-traitants de la liste ci-dessus restent sans DPA archivé.
 2. Le **fournisseur SMTP réel n'est pas identifié** — ni son nom, ni sa
    localisation (`CHECKLIST_FINALISATION.md:68`).
@@ -251,6 +256,36 @@ Reçue par courriel (Jennifer, Scalingo), en réponse aux questions posées le
   1 an, logs d'infrastructure 1 an, les deux inclus dans le périmètre HDS
   (activité 5). Distinct du TROU rubrique 8, qui porte sur la conservation
   des données de santé elles-mêmes, non sur les journaux de la plateforme.
+
+### Canal et trace de la demande d'annexe — vérifié le 2026-08-20
+
+Trace produite au titre du premier critère du LOT-01 (campagne
+`2026-08-18-echeance-hds-g-trust-04`) : les dates de la demande et de la
+relance ne reposaient jusqu'ici que sur l'affirmation de `D-078`. Elles sont
+ici **établies par lecture du fil**, pas par déclaration.
+
+- **Canal** : un fil de courriel unique avec le support du fournisseur
+  (relayé par Intercom), objet « Périmètre HDS de la région `osc-fr1` et
+  pièces contractuelles — compte wellneuro », ouvert le **2026-08-09
+  09:42 UTC** depuis l'adresse du responsable. **Le fournisseur n'émet aucun
+  numéro de ticket** : la référence du canal est l'objet du fil et ses dates.
+- **2026-08-11 08:19 UTC** — réponse de fond, celle que `D-047` a tranchée
+  (section ci-dessus).
+- **2026-08-12 02:55 UTC** — **demande de l'annexe HDS** : le document et sa
+  procédure de signature (point 1), la copie horodatée du DPA (point 2).
+  Confirme la date affirmée par `D-078`.
+- **2026-08-19 09:37 UTC** — **relance**, l'annexe posée comme le point
+  bloquant (document, procédure et délai de signature, préalable éventuel
+  côté compte), avec demande d'un interlocuteur direct si sa délivrance ne
+  relève pas du support. Deux points repris comme non bloquants : la **copie
+  horodatée du DPA** et la couverture rétroactive des ressources déjà
+  provisionnées. Confirme la date affirmée par `D-078`.
+- **État au 2026-08-20 : sans réponse.** Le dernier message du fil est la
+  relance ; la demande initiale est pendante depuis huit jours.
+
+Ce constat ne dit rien de l'annexe elle-même : elle n'est **ni reçue, ni
+signée, ni archivée**, et la ligne correspondante du tableau §14 reste
+ouverte.
 
 ## 7. Transferts hors Union européenne
 
@@ -458,7 +493,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse) ; en tout état de cause **avant tout décommissionnement** et avant la revue du 2026-10-21 | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; en tout état de cause **avant tout décommissionnement** et avant la revue du 2026-10-21 | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | Fournisseur SMTP réel non identifié | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
