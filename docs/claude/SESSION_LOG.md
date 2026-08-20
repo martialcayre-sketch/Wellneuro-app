@@ -4243,3 +4243,35 @@ déplacerait trois bancs) se contourne par le patron `fiche-trajectoire-peuplee`
 
 Écarté : garder HDS primaire (le `next` pointerait indéfiniment un lot bloqué).
 Prochaine action : LOT-01, le verdict d'ancrage à trois états.
+
+## [2026-08-20] — LOT-01 Biologie : le fil relit l'ancre, trois états
+
+Les colonnes de `D-073` étaient en écriture seule : `SELECTION` ne les lisait
+pas. Le fil rend désormais un verdict calculé côté serveur — `concordante`,
+`perimee`, `sans_ancrage` — et seul le verdict traverse HTTP. Une lettre sans
+ancre ne rend **rien** (`DC-24`).
+
+La revue `wn-reviewer` a trouvé deux choses justes : une mutation survivait
+(retirer `!sha` rendait `perimee` sur une demi-ancre), et le commentaire
+affirmait qu'une re-signature « doit se voir » — faux, l'estampille de
+`courrier.ts` est en dur. Les deux refermées ; un banc confronte maintenant
+les trois porteurs de la version.
+
+Écarté : trancher si une re-signature sans changement de contenu doit périmer
+(clinique, revient au responsable) ; toucher aux tables signées.
+
+Prochaine action : PR. Ouvert : T2 impossible ici (proxy bloque le navigateur
+Playwright) — le CI est la porte ; et aucun `D-xxx` ne couvre un verdict servi.
+
+### Rectificatif (même jour) — la question de la re-signature est tranchée
+
+L'entrée ci-dessus laissait ouverte la question posée par la revue. Le
+responsable l'a rendue en session : **le SHA fait foi** (`D-079`). Une
+re-signature de la table sans changement de contenu **ne périme aucune
+lettre** — la péremption signale un écart de fond, jamais un acte
+administratif. Aucun comportement ne change : le code l'implémentait déjà sans
+que la sémantique soit écrite. Consigné au registre, dans le commentaire de la
+route et dans le banc, avec l'interdit qui va avec : ne pas faire dériver
+l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart — ce
+serait renverser la décision et toucher une table signée. Reste ouvert : aucun
+`D-xxx` ne couvre encore le fait de servir un verdict au praticien.

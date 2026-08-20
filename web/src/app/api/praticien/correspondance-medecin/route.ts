@@ -11,6 +11,7 @@ import {
   RAISON_DOSSIER_CLOS,
 } from '@/lib/patient/cycleDeVie';
 import { statutPartageMedecinTraitant } from '@/lib/trust/consentementPartage';
+import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import type { StatutChoix } from '@/lib/trust/types';
 
 // Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien).
@@ -39,6 +40,15 @@ const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/correspondance-medecin';
 
+/**
+ * Verdict d'ancrage d'une lettre, calculé côté serveur.
+ *
+ * `sans_ancrage` n'est PAS `perimee` ([[DC-24]]) : une lettre sans ancre est
+ * antérieure à [[D-073]], ou n'est pas un courrier biologique. La présenter
+ * comme périmée ferait porter un soupçon à tout l'historique.
+ */
+export type VerdictAncrage = 'concordante' | 'perimee' | 'sans_ancrage';
+
 export type CorrespondanceExposee = {
   id: string;
   sens: string;
@@ -47,6 +57,9 @@ export type CorrespondanceExposee = {
   idSynthese: string | null;
   echangeLe: string | null;
   consigneLe: string;
+  // Seul le VERDICT traverse HTTP : ni le SHA ni la version. Servis au client,
+  // ils inviteraient à recomparer côté navigateur — et à le faire mal.
+  ancrage: VerdictAncrage;
 };
 
 export type CorrespondancePatientExposee = {
@@ -90,6 +103,57 @@ function echec(reason: string, error: string, status: number) {
   );
 }
 
+/**
+ * Version de la table d'indications à laquelle une ancre doit correspondre.
+ *
+ * COPIE ASSUMÉE du littéral écrit par `genererCourrierBiologie`
+ * (`lib/biology-library/courrier.ts`, bloc `provenance`) : ce fichier est une
+ * table SIGNÉE, et y ajouter un export serait une modification clinique
+ * ([[DC-17]], [[DC-18]]). Deux littéraux peuvent diverger en silence — et une
+ * divergence ferait dire « périmée » à des lettres concordantes. Le banc de
+ * cette route épingle la copie sur la source : il génère un vrai courrier et
+ * sert sa provenance telle quelle. Il rougit si l'un des deux bouge.
+ */
+const VERSION_INDICATIONS_ATTENDUE = 'indications-biologie-v1';
+
+/**
+ * Le verdict se rend sur les DEUX termes, et chacun détecte autre chose — la
+ * distinction vaut d'être écrite, parce qu'elle est plus étroite qu'il n'y
+ * paraît (revue du 2026-08-20) :
+ *
+ * - le **SHA** porte toute la détection réelle de péremption. C'est
+ *   `INDICATIONS_BIOLOGIE_SHA256`, le SHA VIVANT recalculé à l'import depuis
+ *   les règles publiées — dès qu'une règle bouge, il ne concorde plus ;
+ * - la **version** ne détecte PAS une re-signature qui bumperait
+ *   `INDICATIONS_BIOLOGIE_METADATA.version` sans toucher aux règles : le
+ *   littéral estampillé par `courrier.ts` est en dur, il ne dérive pas de la
+ *   métadonnée. **C'est voulu, et tranché : [[D-079]] pose que LE SHA FAIT
+ *   FOI** — une lettre dont le contenu de référence n'a pas bougé reste
+ *   concordante, la péremption signale un écart de FOND et jamais un acte
+ *   administratif. Ne pas « corriger » cet écart en faisant dériver
+ *   l'estampille de la métadonnée : ce serait renverser la décision, et
+ *   toucher une table signée.
+ * - ce que le terme de version garde tout de même : la divergence entre ce qui
+ *   est ESTAMPILLÉ et ce qui est COMPARÉ, deux littéraux qui n'ont aucune
+ *   raison de différer. Un banc de cette route confronte les trois porteurs et
+ *   rougit si l'un bouge.
+ *
+ * Non exporté : le banc doit l'éprouver À TRAVERS la route. Appelé à côté, il
+ * prouverait que la fonction est juste sans rien dire de ce qui est servi.
+ */
+function verdictAncrage(sha: string | null, version: string | null): VerdictAncrage {
+  // AU MOINS UN nul, pas « les deux nuls » : le CHECK
+  // `c3_correspondance_ancrage_complet_check` (migration
+  // 20260818140000_ancrage_correspondance_medecin) interdit déjà la demi-ancre
+  // en base, dans les deux sens. Si elle arrivait tout de même, elle resterait
+  // une donnée ABSENTE, jamais un défaut à afficher ([[DC-24]]) — cette garde
+  // applicative est une défense en profondeur, et les deux sens sont éprouvés.
+  if (!sha || !version) return 'sans_ancrage';
+  return sha === INDICATIONS_BIOLOGIE_SHA256 && version === VERSION_INDICATIONS_ATTENDUE
+    ? 'concordante'
+    : 'perimee';
+}
+
 function exposer(ligne: {
   id: string;
   sens: string;
@@ -98,6 +162,8 @@ function exposer(ligne: {
   idSynthese: string | null;
   echangeLe: Date | null;
   consigneLe: Date;
+  ancrageSha256: string | null;
+  ancrageVersion: string | null;
 }): CorrespondanceExposee {
   return {
     id: ligne.id,
@@ -109,6 +175,7 @@ function exposer(ligne: {
     idSynthese: ligne.idSynthese,
     echangeLe: ligne.echangeLe ? ligne.echangeLe.toISOString() : null,
     consigneLe: ligne.consigneLe.toISOString(),
+    ancrage: verdictAncrage(ligne.ancrageSha256, ligne.ancrageVersion),
   };
 }
 
@@ -120,6 +187,11 @@ const SELECTION = {
   idSynthese: true,
   echangeLe: true,
   consigneLe: true,
+  // Les deux colonnes d'ancrage de [[D-073]], et RIEN d'autre : le fil sert
+  // des lettres, pas le schéma. Elles ne sortent pas d'ici — `exposer` les
+  // consomme et n'expose que le verdict.
+  ancrageSha256: true,
+  ancrageVersion: true,
 } as const;
 
 type Garde =

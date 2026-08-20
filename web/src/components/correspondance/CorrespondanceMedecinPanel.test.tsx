@@ -111,6 +111,58 @@ describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
     expect(screen.getByText(/synthèse référencée/)).toBeTruthy();
   });
 
+  it('la mention d’ancrage suit le verdict du serveur, et se tait quand il n’y en a pas', async () => {
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondances: [
+            {
+              id: 'CORR_OK',
+              sens: 'sortant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Courrier biologique du jour.',
+              idSynthese: null,
+              echangeLe: null,
+              consigneLe: '2026-08-20T09:00:00.000Z',
+              ancrage: 'concordante',
+            },
+            {
+              id: 'CORR_VIEUX',
+              sens: 'sortant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Courrier biologique antérieur à une re-signature.',
+              idSynthese: null,
+              echangeLe: null,
+              consigneLe: '2026-08-01T09:00:00.000Z',
+              ancrage: 'perimee',
+            },
+            {
+              id: 'CORR_SANS',
+              sens: 'entrant',
+              medecinLibelle: 'Dr Martin',
+              texte: 'Réponse transcrite à la main.',
+              idSynthese: null,
+              echangeLe: null,
+              consigneLe: '2026-07-22T18:00:00.000Z',
+              ancrage: 'sans_ancrage',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+
+    expect(screen.getByText(/ancrage concordant/)).toBeTruthy();
+    expect(screen.getByText(/ancrage périmé/)).toBeTruthy();
+    // AUCUN badge sur la lettre sans ancre : elle est antérieure à D-073 ou
+    // n'est pas un courrier biologique. La signaler ferait porter un soupçon à
+    // tout l'historique (DC-24). Vérifié sur SA ligne, pas sur la page.
+    const ligneSansAncre = screen.getByText('Réponse transcrite à la main.').closest('li');
+    expect(ligneSansAncre).toBeTruthy();
+    expect(ligneSansAncre!.textContent).not.toContain('ancrage');
+  });
+
   it('consigne via le contrat exact de la route, sans jamais transmettre de date de consignation', async () => {
     fetchMock.mockImplementation(router());
     await attendreLeFil();

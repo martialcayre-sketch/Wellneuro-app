@@ -242,6 +242,14 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 Consigné le {formatDate(ligne.consigneLe)}
                 {ligne.echangeLe ? ` · échange du ${formatDate(ligne.echangeLe)}` : ''}
                 {ligne.idSynthese ? ' · synthèse référencée' : ''}
+                {/*
+                  Le verdict vient du serveur ; l'écran ne compare rien. Une
+                  lettre `sans_ancrage` ne rend RIEN : elle est antérieure à
+                  D-073 ou n'est pas un courrier biologique, et un badge lui
+                  ferait porter un soupçon qu'elle ne mérite pas (DC-24).
+                */}
+                {ligne.ancrage === 'concordante' ? ' · ancrage concordant' : ''}
+                {ligne.ancrage === 'perimee' ? ' · ancrage périmé' : ''}
               </p>
             </li>
           ))}
