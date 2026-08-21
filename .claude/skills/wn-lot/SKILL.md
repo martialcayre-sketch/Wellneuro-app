@@ -47,16 +47,18 @@ contre le dépôt réel** : un écart se signale avant de proposer, pas après. 
 le `## But` ne dit pas ce qui aura changé une fois fait, passer d'abord par
 `/wn-reprompt`.
 
-Classer sur les fichiers probables — la classe la plus haute l'emporte :
+Classer sur les fichiers probables — la classe la plus haute l'emporte. **Le
+modèle de chaque classe suit la grille de `CLAUDE.md` § Modèle, effort,
+exécution** — pas de grille dupliquée ici.
 
-| Classe | Modèle | Palier | Revue | Garde particulier |
-|---|---|---|---|---|
-| **Docs** — `.md`, `docs/`, `changelog.d/` | `sonnet` | T1 | `/code-review` en session | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
-| **UI** — `web/src/app/**`, `components/**`, `.css` | `sonnet` | **T2** | `/code-review` en session | une suite Vitest verte ne prouve rien sur les parcours |
-| **API** — `web/src/app/api/**`, `lib/` hors scoring | `opus` si contrôle d'accès en jeu, sinon `sonnet` | **T2** | `/code-review` en session | contrôle d'accès **avant** la lecture des données |
-| **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | `opus` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
-| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
-| **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | la revue de diff ne voit pas ce que le lot **ne fait pas** |
+| Classe | Palier | Revue | Garde particulier |
+|---|---|---|---|
+| **Docs** — `.md`, `docs/`, `changelog.d/` | T1 | `/code-review` en session | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
+| **UI** — `web/src/app/**`, `components/**`, `.css` | **T2** | `/code-review` en session | une suite Vitest verte ne prouve rien sur les parcours |
+| **API** — `web/src/app/api/**`, `lib/` hors scoring | **T2** | `/code-review` en session | contrôle d'accès **avant** la lecture des données |
+| **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
+| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
+| **Auth** — `lib/auth.ts`, portail, tokens, consentement | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
 **Une seule chose déborde la classe** : le gate Fable de `CLAUDE.md`, et lui
 seul — **au moins deux signaux forts** (architecture transverse, arbitrage
@@ -73,7 +75,7 @@ revue clinique est un vrai risque.
 au défaut `sonnet` + effort high (`.claude/settings.json`) — cadrer, exécuter
 et revoir (`/code-review`) sans sous-agent. On ne délègue que si le périmètre
 est réellement volumineux (nombreux fichiers à lire, sorties longues) :
-`Agent(wn-explorer)` pour l'investigation seulement.
+l'agent natif `Explore` pour l'investigation seulement.
 
 **Classes Scoring/Migration/Auth : le changement de modèle passe par
 l'outil `Agent`** (un skill ne change pas le modèle de la session) — sous-agent
@@ -103,7 +105,7 @@ N'inclure que les étapes qui servent — un lot documentaire n'a pas besoin de
 T2, un lot sans migration n'a pas besoin de la revue préalable.
 
 1. **Cadrage** — en session pour Docs/UI/API (`Grep`/`Glob` puis lectures
-   bornées ; `Agent(wn-explorer)` seulement si le périmètre est volumineux) ;
+   bornées ; agent natif `Explore` seulement si le périmètre est volumineux) ;
    `Agent(wn-reviewer)` pour Scoring/Migration/Auth : écarts entre le lot et
    le dépôt réel, périmètre confirmé, hors périmètre nommé.
 2. **Plan technique** — mode Plan natif (`EnterPlanMode`, jamais délégué).
@@ -120,11 +122,10 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    tout (constaté au LOT-01 chaîne T0 : T3 complet de 3 min 47 sur la PR #656,
    purement documentaire). Le palier de la classe redevient dû dès que le diff
    touche du code. Sortie redirigée une fois puis relue.
-5. **Revue** — un regard qui n'a pas écrit le code : `Agent(wn-reviewer)` pour
-   Scoring/Migration/Auth (**avant** de passer la main), `/code-review` en
-   session pour Docs/UI/API. Le skill `/wn-review` produit la même <!-- mention-seule: wn-review -->
-   chose et s'invoque à la main par l'utilisateur. Demander à la revue
-   d'émettre un bloc « risques » réutilisable : la description de PR
+5. **Revue** — un regard qui n'a pas écrit le code : `/code-review`
+   (ordinaire) en session pour Docs/UI/API, `Agent(wn-reviewer)` (fort risque)
+   pour Scoring/Migration/Auth — **avant** de passer la main. Demander à la
+   revue d'émettre un bloc « risques » réutilisable : la description de PR
    (étape 7) le distille au lieu de relancer un agent sur le même diff.
 6. **Clôture** — sur la **branche vivante**, avant la PR : (a) statut du lot,
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle

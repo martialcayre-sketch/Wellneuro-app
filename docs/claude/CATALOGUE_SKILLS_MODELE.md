@@ -18,7 +18,6 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 | `wn-debugger` | `model: inherit` | `model: opus` |
 | `wn-reviewer` | `model: inherit` | `model: opus` |
 | `wn-doc-auditor` | `model: inherit` | `model: sonnet` |
-| `wn-explorer` | `model: inherit` | `model: haiku` |
 
 ## 2. Fonction et intérêt
 

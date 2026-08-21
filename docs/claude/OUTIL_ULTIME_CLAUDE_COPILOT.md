@@ -13,7 +13,7 @@
 /wn-campaign-run
 /wn-campaign-run apply
 /wn-test
-/wn-review
+/code-review
 /wn-finish
 ```
 
@@ -21,9 +21,9 @@
 
 ```text
 /wn-debug <symptôme>
-/wn-plan <correctif>
+mode Plan natif (Shift+Tab) pour le correctif
 /wn-test quick
-/wn-review
+/code-review
 ```
 
 ## Répartition recommandée
