@@ -131,6 +131,13 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
       .locator('li')
       .filter({ has: page.getByRole('button', { name: 'Déjà exploré hors outil…' }) })
       .first();
+    // Le LIBELLÉ de la ligne, relevé avant le geste : c'est la seule ancre
+    // stable. Retrouver la ligne par son bouton « Déjà exploré hors outil… »
+    // ne marche qu'AVANT la déclaration — le geste remplace ce bouton par
+    // « Corriger la date du bilan… », donc le prédicat désigne ensuite une
+    // AUTRE ligne, non déclarée (constat du CI). Un repère consommé par
+    // l'action qu'il sert à observer ne prouve rien.
+    const libelleLigne = (await premiereLigne.locator('p').first().innerText()).trim();
     const statutAvant = (await premiereLigne.getByText(
       /Recommandé|À répéter|Conditionnel|Optionnel|Déjà documenté|Non indiqué actuellement/,
     ).first().innerText()).trim();
@@ -157,10 +164,11 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // qu'elle est documentée, et le geste devient une CORRECTION. C'est cela
     // qu'on éprouve — avec le statut d'avant dans le message, pour qu'un
     // futur écart se lise sans relire le moteur.
+    const ligneDeclaree = panneau.locator('li').filter({ hasText: libelleLigne }).first();
     await expect(
-      premiereLigne.getByRole('button', { name: 'Corriger la date du bilan…' }),
-      `la ligne (statut « ${statutAvant} ») ne porte pas le geste de correction : `
-        + `la déclaration n'a pas été rattachée à ce panel`,
+      ligneDeclaree.getByRole('button', { name: 'Corriger la date du bilan…' }),
+      `la ligne « ${libelleLigne} » (statut « ${statutAvant} ») ne porte pas le geste `
+        + `de correction : la déclaration n'a pas été rattachée à ce panel`,
     ).toBeVisible();
   });
 
