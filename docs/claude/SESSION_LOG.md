@@ -4275,3 +4275,18 @@ route et dans le banc, avec l'interdit qui va avec : ne pas faire dériver
 l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart — ce
 serait renverser la décision et toucher une table signée. Reste ouvert : aucun
 `D-xxx` ne couvre encore le fait de servir un verdict au praticien.
+
+## [2026-08-21] — Refonte de l'environnement Claude Code
+
+Audit baseline (6 agents) puis application en 4 lots. `CLAUDE.md` 271 → 186
+lignes ; routage réduit à une règle (145 → 79 l) ; supprimés : `wn-plan`,
+`wn-review` (contrôles cliniques migrés dans `clinique-scoring.md`),
+`wn-context`, agent `wn-explorer` — le natif (Plan, `/code-review`, `Explore`)
+les recouvre. `wn-cycle --local` + cadence adaptative `wn-attendre-ci` :
+cycle PR ~18 → ~12 gh. Récits CI (129 l) → ADR. Garde-fous vérifiés motif par
+motif, zéro modification des hooks ; `log-bash-command` était déjà async ;
+« think hard » : 0 occurrence (rien à purger). Écarté : supprimer
+`REGLES_CRITIQUES.md` (corrigé §4 seulement) ; toucher aux miroirs
+`.github/instructions/` (Copilot). Ouvert : contradiction « une session = un
+worktree » vs incompatibilité de la suite wn ; durées T1/T2/T3 canoniques dans
+`/wn-test`. Prochaine action : PR, CI, revue Copilot.
