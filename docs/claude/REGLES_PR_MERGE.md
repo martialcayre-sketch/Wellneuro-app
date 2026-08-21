@@ -117,7 +117,11 @@ de migration ou d'authentification, appliquer d'abord l'exception ci-dessous.
 ### L'exception : migration ou authentification
 
 Copilot revoit et merge **aussi** ces PR. Mais avant de lui passer la main, sur
-une PR qui porte une migration ou touche l'authentification :
+une PR qui porte une migration ou touche l'authentification — praticien
+(`web/src/lib/auth.ts`, routes `api/auth`) ou portail patient
+(`web/src/middleware.ts`, lien magique, cookie de session,
+`patients.access_token`), et plus largement tout chemin touchant
+session/token (périmètre repris tel quel par `/wn-merge`) :
 
 1. **Une passe de revue adversariale indépendante** (sous-agent `wn-reviewer`).
    C'est elle qui a trouvé, le 2026-07-21 sur la PR #202, un backfill manquant

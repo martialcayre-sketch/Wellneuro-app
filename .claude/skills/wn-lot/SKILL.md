@@ -124,11 +124,13 @@ T2, un lot sans migration n'a pas besoin de la revue préalable.
    tout (constaté au LOT-01 chaîne T0 : T3 complet de 3 min 47 sur la PR #656,
    purement documentaire). Le palier de la classe redevient dû dès que le diff
    touche du code. Sortie redirigée une fois puis relue.
-5. **Revue** — un regard qui n'a pas écrit le code : `/code-review`
-   (ordinaire) en session pour Docs/UI/API, `Agent(wn-reviewer)` (fort risque)
+5. **Revue** — un regard qui n'a pas écrit le code : `/code-review medium`
+   en session pour Docs/UI/API, `Agent(wn-reviewer)` (fort risque)
    pour Scoring/Migration/Auth — **avant** de passer la main. Demander à la
    revue d'émettre un bloc « risques » réutilisable : la description de PR
    (étape 7) le distille au lieu de relancer un agent sur le même diff.
+   Budgets, passe Codex et signaux d'escalade :
+   `docs/claude/POLITIQUE_REVUE.md` — jamais deux revues à mission identique.
 6. **Clôture** — sur la **branche vivante**, avant la PR : (a) statut du lot,
    (b) entrée `SESSION_LOG.md` < 150 mots avec les deux promotions (règle
    oubliée → exécutable, décision → `docs/DECISIONS.md`), (c) fragment

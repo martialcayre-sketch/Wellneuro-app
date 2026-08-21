@@ -4304,3 +4304,17 @@ couvre ; contre-audit Codex consacré d'une ligne dans `CLAUDE.md`. Matrice
 T1-T8 figée (`MATRICE_ROUTAGE.md`), T4 fermé (1 signal fort → Opus).
 Écarté : trims lourds de `wn-reprompt`/`wn-conventions` (risque > gain).
 Prochaine action : CI, revue, merge Copilot, puis fenêtre d'observation.
+
+## [2026-08-21] — Politique de revue Claude/Codex (PR #727, troisième vague)
+
+`docs/claude/POLITIQUE_REVUE.md` (100 l) : P0/P1/P2, budgets (P2 = une seule
+revue ; P0 = wn-reviewer + une passe Codex obligatoire), neuf signaux pour
+une seconde passe Codex — jamais automatique, toujours ciblée (« seconde
+passe = ciblée, jamais un redémarrage ») ; divergence tranchée par la preuve.
+Codex reste un geste manuel : la politique définit ce que Claude prépare et
+quand il le demande. Inventaire préalable : six contradictions documentaires,
+trois refermées (nuance transitoire Copilot dans CLAUDE.md, niveau
+/code-review toujours nommé, périmètre auth aligné dans REGLES_PR_MERGE).
+Écarté : refondre les trois autres chevauchements (dédoublonnage wn-lot/
+wn-merge/auth-securite — coût > gain, la déduplication est explicite).
+Prochaine action : CI, revue, merge Copilot.

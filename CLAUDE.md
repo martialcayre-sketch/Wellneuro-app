@@ -109,10 +109,12 @@ docs, tests, CRUD, corrections, Git/GitHub.
 - Exploration : agent natif `Explore`. Planification : mode Plan natif ;
   `/model opusplan` quand le plan est le morceau difficile — jamais deux
   planifications pour une même tâche.
-- Revue ordinaire : `/code-review` (medium) ; à fort risque (migration, auth,
-  permissions, clinique) : agent `wn-reviewer` ; angle sécurité :
-  `/security-review`. Contre-audit par modèle adverse (Codex) : geste manuel
-  de l'utilisateur (diff collé) — jamais d'intégration automatisée.
+- Revue proportionnelle au risque (P0/P1/P2, budgets, signaux d'escalade) :
+  `docs/claude/POLITIQUE_REVUE.md`. Ordinaire : `/code-review medium` (nommer
+  le niveau — il réutilise sinon le dernier tapé) ; fort risque : agent
+  `wn-reviewer` ; sécurité : `/security-review`. Contre-audit Codex : geste
+  manuel de l'utilisateur (diff collé) — jamais d'intégration automatisée,
+  jamais de seconde passe sans signal.
 
 ## Garde-fous d'écriture (hooks)
 
@@ -156,7 +158,8 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - Attendre le CI en un seul appel bloquant :
   `node scripts/wn-attendre-ci.mjs <N>` — jamais de `gh pr checks` en boucle.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
-- Revue, merge et suppression des branches appartiennent à Copilot. Détail :
+- Revue, merge et suppression des branches appartiennent à Copilot, sauf
+  autorisation transitoire en cours. Détail :
   `docs/claude/REGLES_PR_MERGE.md`.
 
 ## Documentation de référence

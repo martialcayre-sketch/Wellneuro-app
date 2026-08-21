@@ -39,3 +39,12 @@
   `docs/claude/MATRICE_ROUTAGE.md` (7 scénarios couverts d'emblée ; l'ambigu
   — architecture transverse à signal unique — fermé par « 1 signal fort →
   Opus » dans `CLAUDE.md`).
+- Politique de revue proportionnelle au risque
+  (`docs/claude/POLITIQUE_REVUE.md`) : classification P0/P1/P2, budgets par
+  niveau (P2 = une seule revue ; P0 = wn-reviewer + Codex obligatoire), neuf
+  signaux d'escalade pour une seconde passe Codex — jamais automatique,
+  toujours ciblée ; divergence tranchée par la preuve, jamais par un vote de
+  modèles. Trois dérives documentaires refermées au passage : nuance
+  transitoire Copilot restaurée dans `CLAUDE.md`, niveau `/code-review`
+  toujours nommé, périmètre auth de l'exception aligné dans
+  `REGLES_PR_MERGE.md` sur celui de `/wn-merge`.
