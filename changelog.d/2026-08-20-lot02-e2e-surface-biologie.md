@@ -22,9 +22,20 @@ ne les traversait**. Ce qui y casserait n'aurait été vu que par un praticien.
   suite Vitest s'exécute en position CB ÉTEINTE, et `/api/praticien/fil`
   interroge `arbitrageBiologique` dès que `WN_CB_ENABLED` est vrai — modèle
   absent du double de test, donc 500. Un drapeau posé sur le runner déplace la
-  position de **toute** la suite. Ils vivent désormais dans le seul
-  `webServer.env` de Playwright, avec les autres drapeaux d'E2E : là, ils ne
-  touchent que le serveur sous test.
+  position de **toute** la suite.
+- **Et le remède au remède a révélé le vrai piège** : drapeaux retirés du
+  runner, le panneau restait absent alors que la route d'API répondait `ok`.
+  `dashboard/patients/[idPatient]` lit `WN_CB_ENABLED` dans un **composant
+  serveur** ; `next build` y cuit `false`, et le client ne demande jamais la
+  proposition. **Un drapeau lu au rendu serveur se pose à la CONSTRUCTION, pas
+  seulement au démarrage.** Trois emplacements, chacun pour sa raison :
+  `webServer.env` (le serveur sous test), l'étape `Build` du CI et le
+  `npm run build` du script de worktree (les pages construites) — et jamais au
+  niveau du job, où ils déplaceraient Vitest.
+- **Le banc sonde la surface avant l'écran** : la route est interrogée et son
+  corps affiché en cas d'échec. Sans cette sonde, surface fermée, abstention
+  clinique et sélecteur faux rendaient le même « élément introuvable » — c'est
+  elle qui a disculpé le runtime et désigné le build.
 - **Nettoyage marqué, pas approximatif** : la lettre se reconnaît à son
   destinataire, le panel déclaré à sa date de bilan, la passation à son
   préfixe. Un `deleteMany` sur le seul `idPatient` aurait emporté, sur la base
