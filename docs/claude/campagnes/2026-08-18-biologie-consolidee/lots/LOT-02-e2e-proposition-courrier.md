@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "écrit le 2026-08-20, NON JOUÉ — les deux runs consécutifs restent dus (Mac)"
+statut: "BLOQUÉ le 2026-08-21 — le parcours exige un T0 confirmé, dont le dépôt a nommé la non-couverture E2E ; arbitrage de périmètre requis"
 dépend_de: "LOT-01"
 ---
 
@@ -80,6 +80,46 @@ Le lot **est** le test. Vérification propre : deux runs consécutifs verts
 (preuve du nettoyage), et le segment E2E de T3 reste au CI tant que `D-049`
 tient — un blocage WebKit sur le Mac y fait expirer une navigation sans qu'une
 requête parte, et `wn-test-worktree.sh` le classe tout seul.
+
+## LE BLOCAGE — trouvé par le CI le 2026-08-21, après quatre rondes
+
+**Le panneau de proposition n'est jamais rendu, et ce n'est ni un sélecteur ni
+un drapeau.** `ClinicalRuntimeSection` n'appelle `loadProposition()` que si
+`readyDecisionCardId` existe — donc seulement quand le runtime clinique est
+`ready` avec une carte de décision. Le `ready` ne vient pas d'une ligne en
+base : il vient du **POST de confirmation d'épisode T0**, un geste praticien à
+l'écran (`confirmAssessmentEpisode` est en mémoire).
+
+Et confirmer un T0 exige des préconditions que le dépôt a **explicitement
+renoncé** à provisionner en E2E — `e2e/mode-consultation.spec.ts:88-91` :
+
+> « NON-COUVERTURE NOMMÉE : le parcours NOMINAL (rideau complet, synthèse
+> validée, confirmation sans friction) n'a pas d'E2E — le peupler déplacerait
+> le seed partagé par l'orientation, les captures visuelles et le garde de
+> certification. Il est couvert par les bancs de route. »
+
+**Le but de ce lot passe donc par une porte que la campagne s'interdit
+d'ouvrir à la légère.** Ce n'est pas un défaut du parcours écrit ; c'est une
+prémisse du lot qui ne tient pas, et le cadrage ne l'avait pas vue — le
+fichier de lot parlait de « provisionner de quoi rendre la proposition non
+vide » sans savoir que la proposition n'est même pas demandée avant un T0.
+
+**Trois issues, toutes à l'arbitrage :**
+
+1. **Construire la fixture T0 complète** en `beforeAll`/`afterAll` (rideau
+   renseigné et cotable, synthèse validée), sans toucher au seed — le patron
+   de `fiche-trajectoire-peuplee` montre que c'est possible. C'est un lot en
+   soi, sensiblement plus lourd que ce que LOT-02 décrit, et il ouvrirait au
+   passage la non-couverture nommée ci-dessus.
+2. **Réduire le périmètre** : couvrir la surface biologie par bancs de route
+   et de composant (déjà le cas pour l'essentiel), et limiter l'E2E à ce qui
+   est atteignable sans T0.
+3. **Recadrer LOT-02** avec la contrainte nommée, et le rouvrir après le lot
+   de fixture T0.
+
+Ce que le lot a produit d'utile en attendant : trois défauts réels du harnais
+(drapeaux jamais armés, position de la suite Vitest déplacée par une pose au
+niveau du job, message de banc muet), tous corrigés et documentés.
 
 ## Ce que le cadrage a trouvé et que ce fichier ne disait pas
 

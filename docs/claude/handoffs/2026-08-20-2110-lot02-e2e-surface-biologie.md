@@ -54,3 +54,31 @@
 - Revue `/code-review` : quatre constats, tous refermés ; deux notes
   non bloquantes traitées (l'épisode inutile retiré, le fragment de changelog
   écrit).
+
+## Rectificatif — 2026-08-21, après quatre rondes de CI
+
+Le spec a tourné pour la première fois en CI, et il est **rouge pour une cause
+que ni le cadrage ni la revue n'avaient vue**. Les trois hypothèses successives
+que j'ai poussées étaient fausses, et il faut le dire dans cet ordre :
+
+1. **« Les drapeaux ne sont pas armés »** — vrai, et corrigé, mais ce n'était
+   pas la cause. Les poser au niveau du job a fait rougir 10 bancs unitaires
+   (la suite Vitest tourne en position CB éteinte).
+2. **« Le build cuit `false` dans la page »** — plausible, non prouvé,
+   **démenti** : le `env:` de l'étape Build est valide et appliqué, l'échec est
+   identique. Le changement est conservé mais marqué non prouvé nécessaire.
+3. **La vraie cause** : `loadProposition()` n'est appelé que sur un runtime
+   `ready`, c'est-à-dire après confirmation d'un **épisode T0** — et cette
+   confirmation exige un rideau complet et une synthèse validée, fixture dont
+   `e2e/mode-consultation.spec.ts:88-91` déclare la **non-couverture
+   délibérée** (« le peupler déplacerait le seed partagé »).
+
+**Ce qui a permis de trancher** : une sonde ajoutée au banc (la route est
+interrogée avant l'écran, son corps affiché en cas d'échec) puis deux
+comptages dans le message d'assertion. Sans eux, quatre rondes n'auraient
+produit que « élément introuvable ». Le banc les garde — c'est ce qui rendra
+le prochain échec lisible du premier coup.
+
+**Ce que ça change pour la suite** : LOT-02 tel qu'écrit ne peut pas aboutir.
+Trois issues sont posées dans le fichier de lot ; elles relèvent d'un
+arbitrage de périmètre, pas d'une correction.
