@@ -50,6 +50,24 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // Le panneau vit dans la phase Actions du cycle clinique — pas dans un
     // onglet à part. Sans épisode confirmé la phase resterait « à ouvrir » :
     // c'est la fixture qui la rend atteignable.
+    // LE GESTE QUI OUVRE TOUT — et que le cadrage avait manqué. Le panneau de
+    // proposition n'est monté que sur un runtime `ready`, et le `ready` naît de
+    // la confirmation d'un épisode T0 : un POST déclenché par ce bouton, pas
+    // une ligne en base. Sans ce clic, le client ne DEMANDE jamais la
+    // proposition — la route peut répondre `ok`, l'écran reste vide.
+    //
+    // Le bouton doit être ACTIF : désactivé, il dit que la fixture ne satisfait
+    // pas les préconditions dures (rideau cotable, anamnèse consignée, synthèse
+    // validée postérieure au rideau), et la checklist affichée nomme laquelle.
+    const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
+    await expect(confirmerT0).toBeVisible();
+    await expect(
+      confirmerT0,
+      'le bouton de confirmation T0 est désactivé : une précondition dure manque '
+        + 'à la fixture (rideau, anamnèse ou synthèse) — la checklist à l’écran dit laquelle',
+    ).toBeEnabled();
+    await confirmerT0.click();
+
     // La surface est interrogée AVANT l'écran, et ce n'est pas du confort de
     // débogage : le panneau n'est monté que si la route répond `ok`. Sans cette
     // sonde, une surface fermée (drapeau absent) et un moteur qui s'abstient
@@ -139,6 +157,15 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
   }) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+    // Le test précédent a confirmé le T0. Si cette confirmation n'a pas été
+    // persistée, le bouton est encore là et il faut le reposer : la
+    // confirmation vit d'abord en mémoire, et ce banc ne présume pas de ce que
+    // la base en retient. Le clic conditionnel est donc un constat, pas une
+    // paresse — et il ne masque rien : si le panneau manque ensuite,
+    // l'assertion suivante le dira.
+    const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
+    if (await confirmerT0.isVisible().catch(() => false)) await confirmerT0.click();
+
     await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
 
     const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });

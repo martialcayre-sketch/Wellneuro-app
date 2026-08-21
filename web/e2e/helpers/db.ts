@@ -9,9 +9,25 @@
 // ("aucune consultation") que le parcours normal ne produit jamais.
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../../src/generated/prisma';
+import { PrismaClient, type Prisma } from '../../src/generated/prisma';
 import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
 import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
+import { PRATICIEN_EMAIL } from './auth';
+// Dossier de référence qui PASSE les préconditions T0. RÉUTILISÉ, jamais
+// recopié : son en-tête dit pourquoi il existe — « sans lui, chacune [des
+// routes] décrirait un dossier confirmable à sa façon, et une condition qui
+// changerait devrait être retrouvée dans trois fixtures divergentes ». Une
+// quatrième description, ici, rouvrirait exactement ce trou. Bénéfice
+// concret : les `rawAnswers` sont dérivées du CATALOGUE, donc `Q_ALI_01` suit
+// sa forme courante (57 items en position production) sans qu'aucun item soit
+// écrit à la main.
+import {
+  passationsRideauT0,
+  PLAINTES_DIGESTIF_ET_PONDERAL,
+  SYNTHESE_VALIDEE_FIXTURE,
+  CONSULTATION_VALIDEE_FIXTURE,
+  DATE_RIDEAU_FIXTURE,
+} from '../../src/lib/clinical-engine/dossierT0Fixture';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -420,6 +436,15 @@ export async function cleanupTirageCaducFixture(): Promise<void> {
 // de quoi rendre la proposition de bilan NON VIDE, et la phase Actions
 // ATTEIGNABLE. Les deux conditions comptent, et la seconde ne va pas de soi :
 //
+// LE T0 CONFIRMÉ EST LA CONDITION D'EXISTENCE DU PANNEAU, et c'est ce que le
+// cadrage n'avait pas vu : `ClinicalRuntimeSection` n'appelle
+// `loadProposition()` que si `readyDecisionCardId` existe, donc seulement
+// après confirmation d'un épisode T0. La proposition ne peut pas être demandée
+// avant. La fixture provisionne donc les TROIS conditions dures recalculées en
+// base par `preconditionsT0Prisma.ts` — rideau cotable, anamnèse consignée,
+// synthèse validée postérieure au rideau — puis le spec pose le geste
+// praticien de confirmation.
+//
 // Une passation `Q_STR_02` en zone `danger` suffit : c'est le déclencheur de
 // `PANEL_STRESS_1` (indicationsBiologieV1.ts, BIO-STR-01, mode `conditionnel`,
 // lui-même dans `STATUTS_PROPOSES`), donc la proposition porte au moins une
@@ -443,6 +468,9 @@ export async function cleanupTirageCaducFixture(): Promise<void> {
 // données faites à la main sur ce dossier fictif — le spec n'est pas
 // propriétaire du patient, seulement de ce qu'il y écrit.
 const ID_REPONSE_BIO_E2E_PREFIX = 'E2E_BIO_';
+/** Consultation et synthèse de la fixture — marquées, comme le reste. */
+const ID_CONSULTATION_BIO_E2E = 'E2E_BIO_CONSULT';
+const ID_SYNTHESE_BIO_E2E = 'E2E_BIO_SYNTHESE';
 /** Destinataire de la lettre établie par le parcours — sa seule marque. */
 export const MEDECIN_BIO_E2E = 'Dr Dogné (banc E2E biologie)';
 /** Date du bilan déclaré par le parcours — la marque du panel documenté. */
@@ -464,6 +492,59 @@ export async function provisionnerDossierBiologie(idPatient: string): Promise<vo
       titre: 'Échelle de stress perçu (PSS-10)',
       dateReponse: new Date(),
       scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02_DANGER },
+    },
+  });
+
+  // ── Condition dure 1 : le premier rideau, renseigné et COTABLE ───────────
+  // `statutValidite: 'VALID'` et des `rawAnswers` réelles : un `scoresJson`
+  // précalculé (la forme du seed) ne compte PAS — `passationExploitable`
+  // recalcule par `scoresRecalculesPourRaisonnement`, qui exige `rawAnswers`.
+  await prisma.questionnaireReponse.createMany({
+    data: passationsRideauT0(DATE_RIDEAU_FIXTURE, PLAINTES_DIGESTIF_ET_PONDERAL).map(
+      passation => ({
+        idReponse: `${ID_REPONSE_BIO_E2E_PREFIX}${passation.idQuestionnaire}_${idPatient}`,
+        idPatient,
+        emailPatient: patient.email,
+        idAssignation: null,
+        idQuestionnaire: passation.idQuestionnaire,
+        titre: `${passation.idQuestionnaire} — rideau T0 (banc E2E biologie)`,
+        dateReponse: passation.dateReponse,
+        // `rawAnswers` est un `Record<string, unknown>` dérivé du catalogue :
+        // le typage Json de Prisma ne l'accepte pas tel quel. Cast local, la
+        // valeur est bien un objet JSON pur.
+        scoresJson: passation.scoresJson as unknown as Prisma.InputJsonValue,
+        statutValidite: passation.statutValidite,
+      }),
+    ),
+  });
+
+  // ── Condition dure 2 : une consultation VALIDÉE portant un motif ─────────
+  await prisma.consultation.create({
+    data: {
+      idConsultation: `${ID_CONSULTATION_BIO_E2E}_${idPatient}`,
+      idPatient,
+      emailPatient: patient.email,
+      praticienEmail: PRATICIEN_EMAIL,
+      statut: 'validee',
+      anamnese: CONSULTATION_VALIDEE_FIXTURE.anamnese,
+      dateValidation: SYNTHESE_VALIDEE_FIXTURE.dateValidation,
+    },
+  });
+
+  // ── Condition dure 3 : une synthèse validée POSTÉRIEURE au rideau ────────
+  // `dateValidation` fait foi, et la fixture partagée la place déjà après
+  // `DATE_RIDEAU_FIXTURE` — la reprendre telle quelle plutôt que d'en choisir
+  // une, c'est laisser la condition et la fixture bouger ensemble.
+  await prisma.syntheseIA.create({
+    data: {
+      idSynthese: `${ID_SYNTHESE_BIO_E2E}_${idPatient}`,
+      idPatient,
+      emailPatient: patient.email,
+      modele: 'banc-e2e-biologie',
+      donneesEntree: { source: 'fixture E2E biologie — aucune génération réelle' },
+      syntheseJson: { source: 'fixture E2E biologie — aucun contenu clinique' },
+      statut: SYNTHESE_VALIDEE_FIXTURE.statut,
+      dateValidation: SYNTHESE_VALIDEE_FIXTURE.dateValidation,
     },
   });
 }
@@ -490,6 +571,15 @@ export async function nettoyerDossierBiologie(idPatient: string): Promise<void> 
   await prisma.panelBiologieDocumente.deleteMany({
     where: { idPatient, documenteLe: DATE_BILAN_BIO_E2E },
   });
+  await prisma.syntheseIA.deleteMany({
+    where: { idPatient, idSynthese: `${ID_SYNTHESE_BIO_E2E}_${idPatient}` },
+  });
+  await prisma.consultation.deleteMany({
+    where: { idPatient, idConsultation: `${ID_CONSULTATION_BIO_E2E}_${idPatient}` },
+  });
+  // Les passations en dernier : la synthèse et la consultation ne les
+  // référencent pas, mais l'ordre reste celui du dossier — ce qui s'appuie sur
+  // une passation part avant elle.
   await prisma.questionnaireReponse.deleteMany({
     where: { idPatient, idReponse: { startsWith: ID_REPONSE_BIO_E2E_PREFIX } },
   });

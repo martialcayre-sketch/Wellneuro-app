@@ -4,7 +4,11 @@
 import { encode } from 'next-auth/jwt';
 import { PORTAIL_COOKIE_NAME, signPatientSession } from '../../src/lib/patient-session';
 
-const PRATICIEN_EMAIL = 'martialcayre@wellneuro.fr';
+// Exporté depuis le 2026-08-21 : les fixtures qui écrivent en base (une
+// consultation porte `praticienEmail`) doivent poser LE MÊME praticien que la
+// session du banc — deux littéraux divergents feraient échouer la garde
+// d'appartenance sur un dossier pourtant provisionné.
+export const PRATICIEN_EMAIL = 'martialcayre@wellneuro.fr';
 
 // Pose la session PORTAIL PATIENT (cookie `wn_portail`) exactement comme le fait
 // l'atterrissage magic-link/Google. Depuis le LOT-04, ce cookie signé est

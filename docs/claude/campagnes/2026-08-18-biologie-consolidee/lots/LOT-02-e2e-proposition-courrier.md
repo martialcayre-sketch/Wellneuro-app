@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "BLOQUÉ le 2026-08-21 — le parcours exige un T0 confirmé, dont le dépôt a nommé la non-couverture E2E ; arbitrage de périmètre requis"
+statut: "en cours — fixture T0 construite le 2026-08-21 (arbitrage du responsable) ; parcours jamais joué vert, CI en cours"
 dépend_de: "LOT-01"
 ---
 
@@ -104,7 +104,22 @@ prémisse du lot qui ne tient pas, et le cadrage ne l'avait pas vue — le
 fichier de lot parlait de « provisionner de quoi rendre la proposition non
 vide » sans savoir que la proposition n'est même pas demandée avant un T0.
 
-**Trois issues, toutes à l'arbitrage :**
+**ARBITRAGE RENDU le 2026-08-21 : construire la fixture T0** (issue 1
+ci-dessous). Elle l'est, et **sans rien inventer** :
+`src/lib/clinical-engine/dossierT0Fixture.ts` existait déjà — « le dossier de
+référence qui PASSE les préconditions T0 », partagé par les bancs des trois
+routes pour qu'une condition qui change ne soit pas à retrouver dans des
+fixtures divergentes. La fixture E2E s'y branche (`passationsRideauT0`,
+`PLAINTES_DIGESTIF_ET_PONDERAL`, `CONSULTATION_VALIDEE_FIXTURE`,
+`SYNTHESE_VALIDEE_FIXTURE`) plutôt que d'en écrire une quatrième. Les
+`rawAnswers` étant dérivées du catalogue, `Q_ALI_01` suit sa forme courante
+sans qu'un seul item soit écrit à la main.
+
+Le spec pose en plus le geste praticien qui manquait : **confirmer l'épisode
+T0**. Le bouton est assérté ACTIF — désactivé, il signifierait qu'une
+précondition dure manque, et le message d'échec le dit.
+
+**Les trois issues telles qu'elles se présentaient :**
 
 1. **Construire la fixture T0 complète** en `beforeAll`/`afterAll` (rideau
    renseigné et cotable, synthèse validée), sans toucher au seed — le patron
