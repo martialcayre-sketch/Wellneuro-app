@@ -40,3 +40,12 @@
   pratique de la suite `wn-*` avec un worktree — à arbitrer séparément.
 - `.github/instructions/` : miroirs Copilot conservés, double maintenance
   assumée.
+- **Après merge, observer avant de simplifier davantage** (recommandation de
+  la seconde revue) : ~10 tâches réelles sur cette version, traces techniques
+  sans contenu sensible (tokens, durée, appels `gh`/`git fetch`, sous-agents,
+  modèle/effort max, plans/revues, correct au premier passage), puis
+  comparaison structurée sur trois catégories — escalades inutiles,
+  sous-escalades ayant dégradé la qualité, contexte/réseau/revues chargés
+  plusieurs fois. Un benchmark interne de 8-12 tâches rejouables (base vs PR,
+  mêmes critères de réussite, la qualité reste un gate) est la suite
+  souhaitée ; aucun nouveau méta-routeur d'ici là.

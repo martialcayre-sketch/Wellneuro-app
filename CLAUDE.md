@@ -79,6 +79,10 @@ décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
 - Narration limitée aux résultats intermédiaires utiles, blocages, risques
   nouveaux et changements de plan — pas ses propres évidences.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
+- **Règle d'arrêt** : cause et correctif minimal établis ⇒ arrêter
+  l'exploration — sauf incertitude de sécurité, clinique ou de données.
+- Un état Git/GitHub collecté (status, diff, snapshot PR) se réutilise jusqu'à
+  la mutation qui le périme — jamais recollecté par réflexe.
 - Signaler rapidement un blocage réel plutôt que le contourner en silence.
 
 ## Modèle, effort, exécution
@@ -98,6 +102,8 @@ docs, tests, CRUD, corrections, Git/GitHub.
   la profondeur d'un bug local. Fable+Ultracode : rare (profondeur ET largeur).
 - **Effort natif** : low (mécanique), medium (simple), high (défaut), xhigh
   (exceptionnel), max (quasi jamais) — jamais augmenté sans signal.
+- L'escalade est déterministe : un des signaux ci-dessus, sinon le défaut.
+  Elle ne se narre pas et n'ajoute aucune couche de routage — elle s'exécute.
 - Le frontmatter `model:`/`effort:` des agents `.claude/agents/` fait foi.
 - Exploration : agent natif `Explore`. Planification : mode Plan natif ;
   `/model opusplan` quand le plan est le morceau difficile — jamais deux
