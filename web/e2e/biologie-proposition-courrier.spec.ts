@@ -164,6 +164,14 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // qu'elle est documentée, et le geste devient une CORRECTION. C'est cela
     // qu'on éprouve — avec le statut d'avant dans le message, pour qu'un
     // futur écart se lise sans relire le moteur.
+    // Le formulaire RESTE OUVERT après une consignation réussie : `setOuvert`
+    // ne repasse à faux que par « Annuler » (`PropositionBilanPanel`). Tant
+    // qu'il est ouvert, la ligne ne rend NI « Déjà exploré hors outil… » NI
+    // « Corriger la date du bilan… » — les deux sont l'affichage replié. Il
+    // faut donc replier avant d'observer. Comportement existant, hors
+    // périmètre de ce lot : noté, pas corrigé.
+    await panneau.getByRole('button', { name: 'Annuler' }).click();
+
     const ligneDeclaree = panneau.locator('li').filter({ hasText: libelleLigne }).first();
     await expect(
       ligneDeclaree.getByRole('button', { name: 'Corriger la date du bilan…' }),
