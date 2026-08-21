@@ -4290,3 +4290,17 @@ motif, zéro modification des hooks ; `log-bash-command` était déjà async ;
 `.github/instructions/` (Copilot). Ouvert : contradiction « une session = un
 worktree » vs incompatibilité de la suite wn ; durées T1/T2/T3 canoniques dans
 `/wn-test`. Prochaine action : PR, CI, revue Copilot.
+
+## [2026-08-21] — Rationalisation du parc skills/agents (seconde vague, PR #727)
+
+Classification sur preuve d'usage (SESSION_LOG + handoffs) : noyau démontré =
+10 skills + 2 agents. Fusionnés (zéro usage) : `wn-campaign-run` → `wn-lot
+next`, `wn-model` + `wn-ultra` → `wn-route`. Agents retirés : `wn-debugger`,
+`wn-doc-auditor`, `wn-hygiene-operator` ; vendoré retiré : `theme-factory`.
+Externes : 5 lignes adoptées de superpowers (disjoncteur « bug résistant »,
+fraîcheur de preuve, description-déclencheur) ; awesome-copilot, revue
+adversariale et intégration Codex REJETÉS — le natif ou le geste manuel les
+couvre ; contre-audit Codex consacré d'une ligne dans `CLAUDE.md`. Matrice
+T1-T8 figée (`MATRICE_ROUTAGE.md`), T4 fermé (1 signal fort → Opus).
+Écarté : trims lourds de `wn-reprompt`/`wn-conventions` (risque > gain).
+Prochaine action : CI, revue, merge Copilot, puis fenêtre d'observation.

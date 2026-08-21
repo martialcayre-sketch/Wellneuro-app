@@ -92,7 +92,8 @@ décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
 docs, tests, CRUD, corrections, Git/GitHub.
 
 - **Opus** sur signal concret : sécurité, auth, revue critique,
-  migration/Prisma sensible, clinique/scoring, bug résistant.
+  migration/Prisma sensible, clinique/scoring, bug résistant — ou un seul
+  signal fort de la liste Fable.
 - **Fable** : exceptionnel (< 10 %), au moins deux signaux forts —
   architecture transverse, arbitrage difficile entre solutions plausibles,
   cause racine introuvable après investigation sérieuse, décision engageant
@@ -110,7 +111,8 @@ docs, tests, CRUD, corrections, Git/GitHub.
   planifications pour une même tâche.
 - Revue ordinaire : `/code-review` (medium) ; à fort risque (migration, auth,
   permissions, clinique) : agent `wn-reviewer` ; angle sécurité :
-  `/security-review`.
+  `/security-review`. Contre-audit par modèle adverse (Codex) : geste manuel
+  de l'utilisateur (diff collé) — jamais d'intégration automatisée.
 
 ## Garde-fous d'écriture (hooks)
 

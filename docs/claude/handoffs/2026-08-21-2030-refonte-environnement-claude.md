@@ -22,6 +22,20 @@
   `2026-08-07-commentaires-workflows.md` ; invariants courts sur place ;
   aucune clé YAML/commande/`if:` modifiée.
 
+## Seconde vague (même jour) — rationalisation sur preuve d'usage
+
+- Classification complète du parc (5 audits parallèles, dont doc officielle
+  et bibliothèques externes) : noyau à valeur prouvée = 10 skills + 2 agents.
+- Fusions à zéro usage : `wn-campaign-run` → `wn-lot next` ; `wn-model` +
+  `wn-ultra` → `wn-route`. Agents retirés : `wn-debugger`, `wn-doc-auditor`,
+  `wn-hygiene-operator`. Vendoré retiré : `theme-factory`.
+- Externes : superpowers → 5 lignes adoptées (disjoncteur bug résistant,
+  fraîcheur de preuve, description-déclencheur) ; awesome-copilot et revue
+  adversariale multi-agent REJETÉS (natif au-dessus) ; intégration Codex
+  REJETÉE — contre-audit manuel consacré dans `CLAUDE.md`.
+- `docs/claude/MATRICE_ROUTAGE.md` : 8 scénarios de routage rejouables pour
+  la fenêtre d'observation ; T4 fermé (« 1 signal fort → Opus »).
+
 ## À savoir pour la suite
 
 - **Aucun hook ni garde-fou modifié** — vérifié motif par motif (10+3 Bash,
