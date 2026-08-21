@@ -47,11 +47,16 @@ export const CONTEXTE_PAR_DEFAUT = 'verify';
 
 const DELAI_PAR_DEFAUT_S = 900;
 // Cadence adaptative : 20 s au départ (les échecs francs tombent tôt), puis
-// +15 s par tour jusqu'à 60 s une fois l'attente installée — un CI simplement
-// en cours ne mérite pas d'être sondé toutes les 20 s. CI de ~5 min :
-// ~8 lectures au lieu de 15 à cadence fixe.
+// +15 s par tour jusqu'au plafond une fois l'attente installée — un CI
+// simplement en cours ne mérite pas d'être sondé toutes les 20 s. CI de
+// ~5 min : ~8 lectures au lieu de 15 à cadence fixe.
 const INTERVALLE_S = 20;
 const INTERVALLE_MAX_S = 60;
+// Plafond adaptatif : un délai demandé au-delà du défaut (900 s) signale un CI
+// long — le sonder toutes les 60 s pendant une heure n'apprend rien de plus
+// que toutes les 120 s. En deçà, comportement strictement identique.
+// Expression pure, exportée pour le banc.
+export const intervalleMaxPourDelai = (delaiS) => (delaiS > DELAI_PAR_DEFAUT_S ? 120 : INTERVALLE_MAX_S);
 
 // GitHub considère un check obligatoire `SKIPPED` ou `NEUTRAL` comme satisfait.
 // On s'aligne plutôt que d'inventer une règle plus stricte que la protection
@@ -504,6 +509,7 @@ async function principal(argv) {
   const debut = Date.now();
   let dernierMessage = '';
   let intervalle = INTERVALLE_S;
+  const intervalleMax = intervalleMaxPourDelai(delai);
   let tours = 0;
   for (;;) {
     let faits = collecter(numero);
@@ -533,7 +539,7 @@ async function principal(argv) {
       dernierMessage = verdict.message;
     }
     tours += 1;
-    if (tours >= 2) intervalle = Math.min(INTERVALLE_MAX_S, intervalle + 15);
+    if (tours >= 2) intervalle = Math.min(intervalleMax, intervalle + 15);
     await dors(intervalle);
   }
 }

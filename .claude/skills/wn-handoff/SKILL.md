@@ -15,8 +15,9 @@ Argument : `$ARGUMENTS`
 ## La fenêtre de clôture — lire le bloc de phase avant d'écrire
 
 Le merge d'un lot est un squash : ce qui s'écrit sur la branche après lui n'est
-plus dans l'ascendance de `main`. Le bloc de phase tranche donc où ce handoff
-doit atterrir :
+plus dans l'ascendance de `main`. Le bloc de phase rend aussi le verdict PR —
+c'est lui qui détecte une branche squashée avant d'écrire, raison pour laquelle
+ce skill n'utilise pas `--local`. Il tranche où ce handoff doit atterrir :
 
 - `travail`, `pret-pr`, `pr-ouverte` — branche vivante, **fenêtre ouverte** : le
   handoff part dans la PR du lot, en même temps que l'entrée `SESSION_LOG` que
@@ -32,8 +33,7 @@ Ce skill n'ouvre ni branche ni PR de lui-même dans le cas nominal.
 Le bloc ci-dessus rend l'état factuel ; il ne suffit pas. Ce que ce skill ajoute
 — et qu'aucun script ne sait produire — est le reste : les décisions prises et
 leur raison, les interdits encore actifs, la prochaine action exacte.
-`/wn-context` <!-- mention-seule: wn-context --> affiche les faits et n'écrit rien ; **ce
-skill est le seul à poser un fragment dans `docs/claude/handoffs/`**.
+**Ce skill est le seul à poser un fragment dans `docs/claude/handoffs/`.**
 
 ## Où le handoff atterrit — un fragment, jamais un fichier partagé
 

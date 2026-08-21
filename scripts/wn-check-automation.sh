@@ -4,8 +4,8 @@ set -euo pipefail
 echo "WellNeuro — vérification Claude Code + Copilot"
 
 skills=(
-  wn wn-plan wn-context wn-campaign wn-campaign-run wn-docs
-  wn-test wn-debug wn-review wn-pr wn-handoff wn-finish
+  wn wn-campaign wn-docs
+  wn-test wn-debug wn-pr wn-handoff wn-finish
 )
 
 for skill in "${skills[@]}"; do

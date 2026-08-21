@@ -1,7 +1,9 @@
 ---
 paths:
-  - "**/*.md"
+  - "docs/**"
   - "changelog.d/**"
+  - "CHANGELOG.md"
+  - "*.md"
 ---
 
 # Documentation, changelog, handoffs

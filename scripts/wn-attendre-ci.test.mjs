@@ -25,6 +25,7 @@ import {
   analyserArguments,
   causesDuCheckAbsent,
   diagnostiquer,
+  intervalleMaxPourDelai,
   normaliserCheck,
   SORTIE_VERT,
   SORTIE_ECHEC,
@@ -446,6 +447,16 @@ test('deux contextes obligatoires : le second manquant suffit à bloquer', () =>
 
 test('causesDuCheckAbsent rend une liste vide quand rien n\'est diagnosticable', () => {
   assert.deepEqual(causesDuCheckAbsent(faits()), []);
+});
+
+// Le plafond de cadence suit le délai demandé : au-delà du défaut (900 s), un
+// CI long se sonde toutes les 120 s au lieu de 60. À 900 s ou en deçà, rien ne
+// change — 900 lui-même reste à 60, la borne est strictement supérieure.
+test('intervalleMaxPourDelai : 60 s jusqu\'à 900 s inclus, 120 s au-delà', () => {
+  assert.equal(intervalleMaxPourDelai(60), 60);
+  assert.equal(intervalleMaxPourDelai(900), 60);
+  assert.equal(intervalleMaxPourDelai(901), 120);
+  assert.equal(intervalleMaxPourDelai(3600), 120);
 });
 
 // `--delai 60 553` retenait « 60 » comme numéro de PR : le message le disait,

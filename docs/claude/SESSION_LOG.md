@@ -4275,3 +4275,46 @@ route et dans le banc, avec l'interdit qui va avec : ne pas faire dériver
 l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart — ce
 serait renverser la décision et toucher une table signée. Reste ouvert : aucun
 `D-xxx` ne couvre encore le fait de servir un verdict au praticien.
+
+## [2026-08-21] — Refonte de l'environnement Claude Code
+
+Audit baseline (6 agents) puis application en 4 lots. `CLAUDE.md` 271 → 186
+lignes ; routage réduit à une règle (145 → 79 l) ; supprimés : `wn-plan`,
+`wn-review` (contrôles cliniques migrés dans `clinique-scoring.md`),
+`wn-context`, agent `wn-explorer` — le natif (Plan, `/code-review`, `Explore`)
+les recouvre. `wn-cycle --local` + cadence adaptative `wn-attendre-ci` :
+cycle PR ~18 → ~12 gh. Récits CI (129 l) → ADR. Garde-fous vérifiés motif par
+motif, zéro modification des hooks ; `log-bash-command` était déjà async ;
+« think hard » : 0 occurrence (rien à purger). Écarté : supprimer
+`REGLES_CRITIQUES.md` (corrigé §4 seulement) ; toucher aux miroirs
+`.github/instructions/` (Copilot). Ouvert : contradiction « une session = un
+worktree » vs incompatibilité de la suite wn ; durées T1/T2/T3 canoniques dans
+`/wn-test`. Prochaine action : PR, CI, revue Copilot.
+
+## [2026-08-21] — Rationalisation du parc skills/agents (seconde vague, PR #727)
+
+Classification sur preuve d'usage (SESSION_LOG + handoffs) : noyau démontré =
+10 skills + 2 agents. Fusionnés (zéro usage) : `wn-campaign-run` → `wn-lot
+next`, `wn-model` + `wn-ultra` → `wn-route`. Agents retirés : `wn-debugger`,
+`wn-doc-auditor`, `wn-hygiene-operator` ; vendoré retiré : `theme-factory`.
+Externes : 5 lignes adoptées de superpowers (disjoncteur « bug résistant »,
+fraîcheur de preuve, description-déclencheur) ; awesome-copilot, revue
+adversariale et intégration Codex REJETÉS — le natif ou le geste manuel les
+couvre ; contre-audit Codex consacré d'une ligne dans `CLAUDE.md`. Matrice
+T1-T8 figée (`MATRICE_ROUTAGE.md`), T4 fermé (1 signal fort → Opus).
+Écarté : trims lourds de `wn-reprompt`/`wn-conventions` (risque > gain).
+Prochaine action : CI, revue, merge Copilot, puis fenêtre d'observation.
+
+## [2026-08-21] — Politique de revue Claude/Codex (PR #727, troisième vague)
+
+`docs/claude/POLITIQUE_REVUE.md` (100 l) : P0/P1/P2, budgets (P2 = une seule
+revue ; P0 = wn-reviewer + une passe Codex obligatoire), neuf signaux pour
+une seconde passe Codex — jamais automatique, toujours ciblée (« seconde
+passe = ciblée, jamais un redémarrage ») ; divergence tranchée par la preuve.
+Codex reste un geste manuel : la politique définit ce que Claude prépare et
+quand il le demande. Inventaire préalable : six contradictions documentaires,
+trois refermées (nuance transitoire Copilot dans CLAUDE.md, niveau
+/code-review toujours nommé, périmètre auth aligné dans REGLES_PR_MERGE).
+Écarté : refondre les trois autres chevauchements (dédoublonnage wn-lot/
+wn-merge/auth-securite — coût > gain, la déduplication est explicite).
+Prochaine action : CI, revue, merge Copilot.

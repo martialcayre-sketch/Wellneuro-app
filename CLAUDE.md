@@ -1,9 +1,8 @@
 # CLAUDE.md — Wellneuro NNPP2
 
-Contexte pour Claude Code, lu à chaque session. Chaque ligne est repayée à
-chaque tour : rester court, pointer les détails. Les règles spécifiques à un
-sous-système vivent dans `.claude/rules/` (chargées quand les fichiers
-concernés sont touchés).
+Contexte pour Claude Code, lu à chaque session : chaque ligne est repayée à
+chaque tour — rester court, pointer les détails. Les règles spécifiques à un
+sous-système vivent dans `.claude/rules/` (chargées par chemin, nativement).
 
 ## Stack
 
@@ -13,10 +12,10 @@ concernés sont touchés).
 - Déploiement Vercel (`app.wellneuro.fr`)
 
 Application de consultation en neuronutrition **en production**. Google Apps
-Script et Google Sheets sont décommissionnés (code archivé dans
-`archive/gas-legacy/`, référence seule). Priorité absolue : stabilité en
-production, pas de migration technologique sans demande explicite. État
-courant : `docs/claude/PROJET_CONTEXTE.md`.
+Script et Google Sheets sont décommissionnés (`archive/gas-legacy/`, référence
+seule). Priorité absolue : stabilité en production, pas de migration
+technologique sans demande explicite. État courant :
+`docs/claude/PROJET_CONTEXTE.md`.
 
 ## Règles non négociables
 
@@ -26,23 +25,15 @@ courant : `docs/claude/PROJET_CONTEXTE.md`.
 - **UI en français** : tout texte visible par l'utilisateur.
 - **Changements minimaux** : pas de refactoring, renommage ou réorganisation
   non demandés.
-- **Pas de migration Prisma sans demande explicite** : jamais
-  `prisma migrate dev` / `db push` ni modification de `schema.prisma` sans
-  confirmation explicite dans la conversation.
+- **Pas de migration Prisma ni de modification de `schema.prisma`** sans
+  demande explicite dans la conversation.
 - **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans
   WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande
-  explicite, documentée dans `changelog.d/`.
-- **La base de production ne se modifie que par une migration relue** :
-  migration committée → PR relue → merge sur `main` → workflow `release-db`
-  (déclenchement automatique, approbation humaine requise). Le build Vercel
-  n'écrit pas en base. Aucun autre chemin. Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
-- **Une migration et le code qui en dépend ne voyagent pas dans la même PR** —
-  ou ce code part derrière un drapeau éteint : le merge déclenche le
-  déploiement Vercel avant que la release ait pu être approuvée.
-- **Lire la production uniquement via l'outil MCP Supabase `execute_sql`** —
-  jamais `psql` ni Bash. Les hooks y autorisent les lectures et refusent toute
-  écriture/DDL. Requêtes et pièges : `.claude/rules/db-prisma.md`.
+  explicite (décision `D-xxx` + fragment `changelog.d/`).
+- **Base de production : lecture uniquement via l'outil MCP Supabase
+  `execute_sql`, écriture uniquement par migration relue via `release-db`** —
+  détail : `.claude/rules/db-prisma.md`.
 
 ## Données patients
 
@@ -66,139 +57,83 @@ sur un vrai dossier. Deux interdits demeurent, et ils ne sont pas de forme :
 Ne jamais générer, dériver ou « compléter » des données patient réelles, même
 si elles apparaissent dans un fichier ouvert ou un log collé par erreur.
 
-## Constitution clinique (extrait permanent)
+## Constitution clinique
 
-Ces règles valent pour tout ce qui produit, transforme ou restitue du savoir
-clinique — moteurs, prompts, tables de règles, scoring. Elles sont
-**opposables en revue** (`D-043`) ; aucune n'est encore gardée par un banc, et
-la constitution nomme cette dette règle par règle. Détail et audit :
-`docs/claude/doctrine/` (58 règles `DC-nn`) ; rappel automatique sur les
-chemins cliniques via `.claude/rules/clinique-scoring.md`.
-
-- **Aucune règle clinique sans provenance certifiée** — un LLM applique,
-  combine, hiérarchise ou explique ; il n'invente jamais (`DC-01`, `DC-02`).
-- **Aucun seuil, dose, poids ou borne clinique inventé** ; un chiffre purement
-  technique doit être identifié comme tel (`DC-19`, `DC-20`).
-- **Association ≠ causalité ; score ≠ diagnostic** (`DC-27`).
-- **Une donnée absente n'est jamais zéro ni normale** (`DC-24`).
-- **Un questionnaire isolé ne suffit pas à conclure** (`DC-28`).
-- **Une discordance se signale, jamais ne se moyenne ni ne se supprime**
-  (`DC-30`).
-- **Un signal de sécurité prime sur tout score** et n'ajoute pas de points
-  (`DC-12`, `DC-23`).
-- **Diagnostic, hypothèse et orientation sont trois objets distincts** ; le
-  diagnostic reste hors périmètre (`DC-31`, `DC-32`).
-- **Respecter la population et les limites d'un claim** ; l'absence de
-  population déclarée est une restriction (`DC-14`).
-- **Les règles cliniques vivent dans le registre, jamais seulement dans le
-  code** (`DC-26`).
-- **Toute sortie clinique importante est explicable par données + claims**, y
-  compris quand elle s'abstient (`DC-34`, `DC-35`).
-- **Données insuffisantes ⇒ réduire la conclusion, jamais l'inventer**
-  (`DC-25`).
-- Conflit non résolu entre sources ⇒ escalade praticien (`DC-54`, `DC-55`) —
-  *proposition, pas encore opposable* : `D-041` la réserve jusqu'au banc.
-- **Toute modification clinique exige une décision explicite `D-xxx` et un
-  fragment `changelog.d/`** — y compris une seule ligne de TypeScript dans une
-  table signée, des poids ou un cut-off (`DC-17`, `DC-18`).
+Invariant permanent : **aucune règle clinique sans provenance certifiée, aucun
+seuil, dose, poids ou borne inventé** ; toute modification clinique exige une
+décision `D-xxx` et un fragment `changelog.d/`. Les 58 règles `DC-nn` :
+`docs/claude/doctrine/` ; rappel automatique sur les chemins cliniques :
+`.claude/rules/clinique-scoring.md`.
 
 ## Comportement par défaut — développeur senior
-
-<!-- Hiérarchie de maintenance (retirée du contexte par Claude Code) :
-1. hook/permission/test pour toute précondition objectivement vérifiable ;
-2. CLAUDE.md pour un comportement transversal à toutes les sessions ;
-3. .claude/rules/ pour une règle limitée à des chemins ;
-4. skill pour une procédure invoquée ; agent pour une relecture spécialisée.
-Ne pas recopier une règle d'un étage dans les suivants. -->
 
 - Comprendre avant de modifier ; commencer par l'hypothèse la plus simple.
 - Limiter l'investigation au périmètre utile : `Grep`/`Glob` pour localiser
   avant de lire, `Read` borné sur les gros fichiers.
 - Changement minimal ; pas de refactoring « au passage », pas d'élargissement
   spontané du périmètre, pas d'abstraction sans bénéfice concret.
-- Une décision confirmée ne se reformule qu'une fois : l'exécuter ensuite,
-  sauf fait nouveau qui change réellement le choix.
+- Ne pas re-questionner une décision confirmée ni réexpliquer l'établi :
+  l'exécuter, sauf fait nouveau qui change réellement le choix.
 - Ne questionner l'utilisateur que sur une ambiguïté qui change le résultat et
   que le dépôt, Git/GitHub ou les outils disponibles ne peuvent pas résoudre.
-- Budget de narration : communiquer seulement un résultat intermédiaire utile,
-  un blocage, un risque nouveau ou un changement de plan — pas chaque lecture,
-  recherche, édition ou test attendu.
+- Narration limitée aux résultats intermédiaires utiles, blocages, risques
+  nouveaux et changements de plan — pas ses propres évidences.
 - Aller droit au résultat vérifiable ; tester proportionnellement au risque.
+- **Règle d'arrêt** : cause et correctif minimal établis ⇒ arrêter
+  l'exploration — sauf incertitude de sécurité, clinique ou de données.
+- Un état Git/GitHub collecté (status, diff, snapshot PR) se réutilise jusqu'à
+  la mutation qui le périme — jamais recollecté par réflexe.
 - Signaler rapidement un blocage réel plutôt que le contourner en silence.
-- `/clear` entre deux sujets sans rapport. Le développement courant reste
-  solo ; déléguer à un sous-agent quand l'investigation est réellement
-  volumineuse (nombreux fichiers, sorties longues) ou porte une classe à
-  risque — son contexte est jeté, ce qu'il lit n'est jamais repayé, et ce qui
-  remonte est la conclusion.
 
-## Modèle, effort, mode d'exécution
+## Modèle, effort, exécution
 
-**Défaut : Sonnet 5 + effort high + exécution solo.** Couvre le développement
-courant : TypeScript, React, Next.js, docs, tests, CRUD, corrections
-localisées, Git/GitHub. Ne jamais escalader sans signal concret.
+**Défaut : Sonnet 5 + effort high + exécution solo** (déjà épinglé dans
+`settings.json`) — couvre ~80-90 % du courant : TypeScript, React, Next.js,
+docs, tests, CRUD, corrections, Git/GitHub.
 
-- **Opus** quand le risque ou la difficulté le justifie : sécurité, auth,
-  revue critique, migration ou Prisma sensible, scoring/clinique, bug
-  résistant.
-- **Fable** : exceptionnel (< 10 % des tâches), sur au moins deux signaux
-  forts — architecture transverse, arbitrage difficile entre solutions
-  plausibles, cause racine introuvable après investigation sérieuse, décision
-  engageant plusieurs lots. Jamais pour du CRUD, des docs, des tests, une
-  clôture de session ou un bug déjà localisé.
-- **Ultracode** = largeur parallélisable (audit exhaustif, transformation
-  massive de fichiers indépendants), jamais la profondeur d'un bug local.
-  Opt-in explicite uniquement.
-- Exploration générique : agent natif `Explore` (léger, lecture seule) ;
-  `wn-explorer` reste disponible.
-- Planification : mode Plan natif ; `opusplan` (Opus pour le plan, Sonnet pour
-  l'exécution) quand le plan est le morceau difficile. Ne pas cumuler
-  `/wn-plan` et le mode Plan natif sur la même tâche.
-- Revue ordinaire : `/code-review`. Revue à fort risque (migration, auth,
-  permissions, clinique) : agent `wn-reviewer` (Opus). Angle sécurité :
-  `/security-review`.
-- Les agents `.claude/agents/` épinglent leur modèle en frontmatter
-  (wn-reviewer/wn-debugger → opus, wn-explorer → haiku, wn-fable → fable) ;
-  ce frontmatter fait foi. Re-routage manuel : `/wn-route`, `/wn-model`,
-  `/wn-ultra`.
+- **Opus** sur signal concret : sécurité, auth, revue critique,
+  migration/Prisma sensible, clinique/scoring, bug résistant — ou un seul
+  signal fort de la liste Fable.
+- **Fable** : exceptionnel (< 10 %), au moins deux signaux forts —
+  architecture transverse, arbitrage difficile entre solutions plausibles,
+  cause racine introuvable après investigation sérieuse, décision engageant
+  plusieurs lots. Architecte/conseiller, jamais CRUD, docs, tests, clôture ou
+  bug déjà localisé.
+- **Ultracode** = largeur parallélisable, opt-in explicite, ponctuel — jamais
+  la profondeur d'un bug local. Fable+Ultracode : rare (profondeur ET largeur).
+- **Effort natif** : low (mécanique), medium (simple), high (défaut), xhigh
+  (exceptionnel), max (quasi jamais) — jamais augmenté sans signal.
+- L'escalade est déterministe : un des signaux ci-dessus, sinon le défaut.
+  Elle ne se narre pas et n'ajoute aucune couche de routage — elle s'exécute.
+- Le frontmatter `model:`/`effort:` des agents `.claude/agents/` fait foi.
+- Exploration : agent natif `Explore`. Planification : mode Plan natif ;
+  `/model opusplan` quand le plan est le morceau difficile — jamais deux
+  planifications pour une même tâche.
+- Revue proportionnelle au risque (P0/P1/P2, budgets, signaux d'escalade) :
+  `docs/claude/POLITIQUE_REVUE.md`. Ordinaire : `/code-review medium` (nommer
+  le niveau — il réutilise sinon le dernier tapé) ; fort risque : agent
+  `wn-reviewer` ; sécurité : `/security-review`. Contre-audit Codex : geste
+  manuel de l'utilisateur (diff collé) — jamais d'intégration automatisée,
+  jamais de seconde passe sans signal.
 
 ## Garde-fous d'écriture (hooks)
 
-Trois verdicts : **refus** (`.env*`, `.git/`, `node_modules/`, commandes
-destructives ou exposant des secrets — sans dérogation), **demande**
-(`schema.prisma`, `prisma/migrations/`, `supabase/migrations/`,
-`prisma migrate`, push forcé — l'autorisation en un clic dans la session
-matérialise la « confirmation explicite »), **silence** (le reste). Aucune
-variable d'environnement ne désactive la protection. Nuances (heredocs, faux
-positifs assumés) : `.claude/rules/hooks-garde-fous.md`.
+Trois verdicts — **refus**, **demande**, **silence** — appliqués par les hooks
+quoi qu'il arrive ; aucune variable d'environnement ne les désactive. Détail :
+`.claude/rules/hooks-garde-fous.md`.
 
 ## Validation
 
-| Palier | Commande | Durée | Quand |
-|---|---|---|---|
-| T1 | `cd web && npm run check` | ~15 s | après chaque édition |
-| T2 | `npm run test:worktree -- --fast` | ~3 min | avant tout commit UI ou API |
-| T3 | `npm run test:worktree` | ~4 min | avant une PR migration/scoring/clinique |
+| Palier | Commande | Quand |
+|---|---|---|
+| T1 | `cd web && npm run check` | après chaque édition |
+| T2 | `npm run test:worktree -- --fast` | avant tout commit UI ou API |
+| T3 | `npm run test:worktree` | avant une PR migration/scoring/clinique |
 
 - T1 ne joue pas de suite complète ; la première passe entière est T2 — c'est
-  T2 qu'il faut lancer avant de conclure qu'une suite est verte. Une suite
-  Vitest verte ne prouve rien sur les parcours (Playwright est dans
-  `test:worktree` seulement).
-- **T2 et T3 jouent tous deux les E2E contre le build de production** depuis le
-  2026-08-11 : `--fast` ne saute plus le build. Sur `next dev`, les E2E étaient
-  cinq fois plus lents et emportaient le test en cours à chaque recyclage
-  mémoire du serveur — un `--fast` rouge se lisait alors comme une régression.
-  L'écart entre les deux paliers est désormais le lint, l'anti-secrets, l'audit
-  de campagnes et la certification scoring, pas le build.
-- **Le segment E2E de T3 relève du CI, pas du Mac, tant que `D-049` tient** —
-  un blocage navigateur (WebKit) y fait expirer une navigation sans qu'aucune
-  requête parte ; `wn-test-worktree.sh` le classe tout seul. Le reste de T3
-  (contrats SQL, dérive schéma↔migrations, certification scoring) reste exigé.
-- **Les E2E (`npm run test:e2e`) sont l'exclusivité du Mac** — base partagée,
-  jamais deux runs en parallèle. Rôles : `docs/ROLES_MACHINES.md`.
-- Rediriger la sortie d'une suite vers un fichier (`--reporter=dot`) puis la
-  relire ; ne jamais relancer une suite pour en relire la sortie.
-- `test:worktree` provisionne son PostgreSQL éphémère et son secret de test.
-  Prérequis et options : `web/e2e/README.md`.
+  T2 qu'il faut lancer avant de conclure qu'une suite est verte.
+- Rediriger la sortie d'une suite vers un fichier puis la relire ; ne jamais
+  relancer une suite pour en relire la sortie.
 
 ## Commandes utiles
 
@@ -213,14 +148,9 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 ## Avant de committer
 
 - `bash scripts/check_no_secrets.sh` ; aucun fichier `.env*` ; textes UI en
-  français ; pas de régression visible dans les parcours (changement d'UI →
-  rejouer les E2E via T2).
-- **Changelog et handoffs par fragments** (`changelog.d/`,
-  `docs/claude/handoffs/`) — jamais d'édition du haut de `CHANGELOG.md`, jamais
-  de fichier de handoff partagé. Détail : `.claude/rules/docs-changelog.md`.
-- **La clôture passe avant la PR, pas après le merge** : `/wn-finish` puis
-  `/wn-handoff write` s'écrivent sur la branche vivante (le merge est un
-  squash). En cas de doute sur la phase : `node scripts/wn-cycle.mjs`.
+  français.
+- Changelog et handoffs par fragments ; la clôture passe avant la PR, pas
+  après le merge — détail : `.claude/rules/docs-changelog.md`.
 
 ## PR, CI, merge
 
@@ -228,10 +158,9 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - Attendre le CI en un seul appel bloquant :
   `node scripts/wn-attendre-ci.mjs <N>` — jamais de `gh pr checks` en boucle.
   **`0` est le seul code de sortie qui autorise à annoncer une PR prête.**
-- La revue, le merge et la suppression des branches appartiennent à Copilot,
-  sauf autorisation transitoire en cours. PR migration/auth : revue
-  `wn-reviewer` avant, vérification de la base de production après. Tout le
-  détail : `docs/claude/REGLES_PR_MERGE.md` (chargé par `/wn-merge`).
+- Revue, merge et suppression des branches appartiennent à Copilot, sauf
+  autorisation transitoire en cours. Détail :
+  `docs/claude/REGLES_PR_MERGE.md`.
 
 ## Documentation de référence
 
@@ -250,13 +179,10 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
   entrée avant de répondre à la première question.
 - **Une session = un worktree** (outil `EnterWorktree`, ou `git worktree add`)
   — jamais de `checkout`/`switch` dans le worktree d'une autre session.
-- **Avant la première édition, vérifier branche, HEAD et `origin/main` après un
-  `git fetch origin main` réussi.** Le hook de fraîcheur Git l'impose au
-  démarrage **et rejuge à chaque tentative d'édition** : si la branche ne
-  contient pas `origin/main`, les éditions sont refusées jusqu'à la remise à
-  niveau — et le refus tombe dès qu'elle est faite, sans reprise de session.
-  Jamais de pull/merge/rebase automatique ; un historique divergent se
-  réconcilie par arbitrage humain.
+- Le hook de fraîcheur Git impose une branche contenant `origin/main` au
+  démarrage et rejuge à chaque tentative d'édition. Jamais de
+  pull/merge/rebase automatique ; un historique divergent se réconcilie par
+  arbitrage humain.
 
 ## Fin de session
 

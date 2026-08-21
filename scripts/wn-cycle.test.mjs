@@ -1,6 +1,7 @@
 // Banc de `scripts/wn-cycle.mjs`.
 //
-// Les faits sont injectés : aucun appel git, aucun réseau, aucun dépôt requis.
+// Les faits sont injectés : aucun réseau, et — à l'exception assumée de la
+// section « Mode --local » (rev-parse en lecture seule) — aucun appel git.
 // Ce qui est vérifié ici est la seule chose que le script décide vraiment —
 // dans quelle phase du cycle on se trouve, et si la fenêtre de clôture est
 // passée. Le cas qui a motivé le script est `apres-merge` sans clôture
@@ -14,11 +15,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  analyserArguments,
   cheminsDuPorcelain,
   diagnostiquer,
   estFragmentDeHandoff,
   extraireDecisionsRecentes,
+  rendre,
   reparer,
+  synchroniserOrigin,
   SORTIE_OK,
   SORTIE_FENETRE_RATEE,
   SORTIE_PRECONDITION,
@@ -325,6 +329,77 @@ test('extraireDecisionsRecentes : un D-NNN cité dans la prose ne compte pas', (
 test('extraireDecisionsRecentes : registre vide ou absent', () => {
   assert.deepEqual(extraireDecisionsRecentes(''), []);
   assert.deepEqual(extraireDecisionsRecentes(null), []);
+});
+
+// ── Arguments CLI : `--local` saute réseau et gh, il doit être reconnu ───────
+//
+// `--local` est consommé par les préambules de `/wn-finish` et `/wn-handoff`,
+// qui ne lisent que les faits de clôture : un drapeau mal analysé referait le
+// fetch et les appels gh en silence — exactement ce que le mode existe pour
+// éviter.
+
+test('analyserArguments : --local, --appliquer et l’aide sont reconnus, sans ordre imposé', () => {
+  assert.deepEqual(analyserArguments([]), { local: false, appliquer: false, aide: false });
+  assert.deepEqual(analyserArguments(['--local']), { local: true, appliquer: false, aide: false });
+  assert.deepEqual(analyserArguments(['--appliquer', '--local']), {
+    local: true,
+    appliquer: true,
+    aide: false,
+  });
+  assert.equal(analyserArguments(['--help']).aide, true);
+  assert.equal(analyserArguments(['--aide']).aide, true);
+  assert.equal(analyserArguments(['--locale']).local, false);
+});
+
+// ── Mode --local : ce qui n'a pas été vérifié se dit tel quel ────────────────
+//
+// Le contrat du drapeau est négatif : aucun réseau, aucun gh. Ce qu'il faut
+// alors empêcher, c'est un rendu qui AFFIRME — « aucune PR », « origin
+// rafraîchi » — là où rien n'a été interrogé. Pas d'injection d'exécuteur de
+// commandes ici : `git()`, `gh()`, `fetchRecent()` et le fetch appellent
+// `execFileSync` en closures de module, l'injecter exigerait de fileter un
+// paramètre à travers toute la collecte — une restructuration, pas un test.
+// On teste donc les fonctions du verdict et du rendu sur faits injectés, plus
+// `synchroniserOrigin` en vrai (rev-parse en lecture seule, jamais de réseau).
+
+test('mode local : la ligne PR dit « non vérifiée », jamais un faux « aucune »', () => {
+  const f = faits({ modeLocal: true, sync: { fetchOk: null, ahead: null, behind: null } });
+  const lignePr = rendre(f, diagnostiquer(f))
+    .split('\n')
+    .find((l) => l.startsWith('PR '));
+  assert.ok(lignePr.includes('non vérifiée (mode local)'), lignePr);
+  assert.ok(!lignePr.includes('aucune'), lignePr);
+});
+
+test('mode local sur la branche par défaut : gh n’est jamais interrogé, le rendu normal reste juste', () => {
+  const f = faits({
+    branche: 'main',
+    fichiersDuLot: [],
+    modeLocal: true,
+    sync: { fetchOk: null, ahead: null, behind: null },
+  });
+  const lignePr = rendre(f, diagnostiquer(f))
+    .split('\n')
+    .find((l) => l.startsWith('PR '));
+  assert.ok(lignePr.includes('aucune'), lignePr);
+});
+
+test('fetchOk null (non tenté) : ni « origin rafraîchi », ni l’avertissement hors-ligne', () => {
+  const f = faits({ modeLocal: true, sync: { fetchOk: null, ahead: null, behind: null } });
+  const v = diagnostiquer(f);
+  assert.equal(v.sync.desynchronise, false);
+  assert.deepEqual(v.avertissements, []);
+  const texte = rendre(f, v);
+  assert.ok(texte.includes('fetch non tenté'), texte);
+  assert.ok(!texte.includes('origin rafraîchi'), texte);
+});
+
+test('synchroniserOrigin en mode local : fetchOk vaut null, même si un fetch récent existe', () => {
+  // `local` doit être jugé AVANT `fetchRecent()` : un FETCH_HEAD frais (posé
+  // par un autre outil de la même fenêtre) rendait `fetchOk = true` et le
+  // rendu affirmait « origin rafraîchi » sans qu'aucun fetch soit parti.
+  const { sync } = synchroniserOrigin('main', { local: true });
+  assert.equal(sync.fetchOk, null);
 });
 
 // ── `reparer()` : ce qu'il écrit, et surtout ce qu'il n'écrit plus ───────────
