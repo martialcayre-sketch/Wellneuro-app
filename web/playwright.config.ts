@@ -135,6 +135,16 @@ export default defineConfig({
       // et le panneau ne rend aucune recommandation — le spec n'a rien à
       // cliquer.
       WN_ENABLE_ORIENTATION_NNPP2: '1',
+      // Rayon biologie — les DEUX drapeaux, `isCbPropositionEnabled` les exige
+      // ensemble (`web/src/lib/biology-library/featureFlag.ts`). Posés en
+      // production depuis le 2026-08-18 ([[D-071]]) : le banc s'aligne, il ne
+      // simule pas. Ici ET dans les runners : les exports shell de
+      // `wn-test-worktree.sh` n'atteignent pas un serveur déjà lancé que
+      // `reuseExistingServer` récupère, et un `npm run test:e2e` nu n'en a
+      // aucun — dans les deux cas la route rendrait 503 et le spec biologie
+      // n'aurait rien à cliquer.
+      WN_CB_ENABLED: 'true',
+      WN_CB_PROPOSITION: 'true',
       // Posé en Production le 2026-08-16 ([[D-064]]) — même doctrine que la
       // ligne du dessus : aligner l'E2E sur l'état réel de production. Depuis
       // [[D-065]], ce drapeau conditionne AUSSI les règles d'arrêt : sans lui,

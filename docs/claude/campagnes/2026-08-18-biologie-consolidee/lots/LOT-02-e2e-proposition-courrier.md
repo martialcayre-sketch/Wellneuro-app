@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "à faire"
+statut: "écrit le 2026-08-20, NON JOUÉ — les deux runs consécutifs restent dus (Mac)"
 dépend_de: "LOT-01"
 ---
 
@@ -81,11 +81,38 @@ Le lot **est** le test. Vérification propre : deux runs consécutifs verts
 tient — un blocage WebKit sur le Mac y fait expirer une navigation sans qu'une
 requête parte, et `wn-test-worktree.sh` le classe tout seul.
 
+## Ce que le cadrage a trouvé et que ce fichier ne disait pas
+
+- **Les drapeaux n'étaient posés nulle part dans le harnais.**
+  `isCbPropositionEnabled` exige `WN_CB_ENABLED` **et** `WN_CB_PROPOSITION` ;
+  ni `wn-test-worktree.sh`, ni le job `verify`, ni `webServer.env` de
+  Playwright ne les portaient. Sans eux, la route rend 503 et le parcours
+  passerait au vert **sans rien trouver à cliquer**. Les trois les portent
+  désormais — c'est de la configuration de test, l'interdit « aucun code
+  applicatif » tient.
+- **Le point 5 n'a pas de garde serveur** : la double consignation est refusée
+  côté écran seulement (bouton désactivé). C'est la dette que la campagne
+  nomme déjà (« deux onglets peuvent encore établir deux lettres ») ; le spec
+  éprouve donc le bouton, pas un 409 qui n'existe pas.
+- **Aucun épisode confirmé n'est nécessaire** — la première version de la
+  fixture en provisionnait un « pour rendre la phase Actions atteignable » :
+  faux, `ClinicalRuntimeSection` reste monté et seul l'affichage est filtré.
+  Retiré à la revue plutôt que gardé sur une justification inventée.
+
 ## Critères de done
 
-- [ ] Le spec joue les six points ci-dessus, en mode sériel.
-- [ ] Deux runs consécutifs passent — le nettoyage est prouvé, pas supposé.
-- [ ] `web/prisma/seed.ts` est intact ; aucun autre spec n'a bougé.
-- [ ] Aucun code applicatif modifié — ou, si un défaut a été trouvé, il est
-      **nommé** et renvoyé à un lot propre.
-- [ ] T2 vert ; fragment `changelog.d/` écrit.
+- [x] Le spec joue les six points ci-dessus, en mode sériel.
+- [ ] **Deux runs consécutifs passent** — NON PRODUIT. Les E2E sont
+      l'exclusivité du Mac et le conteneur de la session ne peut pas installer
+      le navigateur (le proxy bloque `cdn.playwright.dev`). Le spec part
+      **jamais joué, pas même une fois** : ne pas lire son absence de rouge
+      comme un vert.
+- [x] `web/prisma/seed.ts` est intact ; aucun autre spec n'a bougé.
+- [x] Aucun code applicatif modifié. Défaut nommé et renvoyé : la double
+      consignation sans garde serveur (déjà au registre des questions ouvertes
+      de la campagne).
+- [ ] T2 vert — même empêchement que ci-dessus. Joués à la place :
+      `npm run check` (T1) et `npx tsc --noEmit`, verts. **Le typage ne prouve
+      qu'une chose : un sélecteur mal écrit se voit, un sélecteur qui ne
+      correspond à rien, non.**
+- [x] Fragment `changelog.d/` écrit.

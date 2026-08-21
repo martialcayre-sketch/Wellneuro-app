@@ -414,3 +414,83 @@ export async function cleanupTirageCaducFixture(): Promise<void> {
     `DELETE FROM public.rag_corpus_claims WHERE id = '${CADUC_CLAIM_PK}'`,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Fixture « surface biologie » (LOT-02 de 2026-08-18-biologie-consolidee) —
+// de quoi rendre la proposition de bilan NON VIDE, et la phase Actions
+// ATTEIGNABLE. Les deux conditions comptent, et la seconde ne va pas de soi :
+//
+// Une passation `Q_STR_02` en zone `danger` suffit : c'est le déclencheur de
+// `PANEL_STRESS_1` (indicationsBiologieV1.ts, BIO-STR-01, mode `conditionnel`,
+// lui-même dans `STATUTS_PROPOSES`), donc la proposition porte au moins une
+// ligne ET le formulaire de courrier s'affiche.
+//
+// PAS d'épisode confirmé, et c'est un correctif de revue : la première version
+// en provisionnait un « pour rendre la phase Actions atteignable ». C'était
+// FAUX — `ClinicalRuntimeSection` reste monté en permanence et les onglets de
+// phase sont toujours cliquables (FichePatientPanel.tsx, [[D-072]] §4) : seul
+// l'affichage est filtré. L'épisode n'aurait fait qu'ajouter de l'état à un
+// patient fictif partagé, sur une justification inventée.
+//
+// Le catalogue des panels n'est PAS provisionné ici : il entre par la migration
+// de données `20260817090000_catalogue_biologie_niveau_1_donnees`, que toute
+// base éphémère applique. Le fabriquer ici masquerait sa disparition.
+//
+// Tout ce que cette fixture produit porte une MARQUE, et le nettoyage ne
+// reconnaît qu'elle : préfixe d'identifiant pour la passation, libellé de
+// médecin pour la lettre, date de bilan pour le panel déclaré. Sur la base
+// partagée du Mac, un `deleteMany` sur le seul `idPatient` emporterait des
+// données faites à la main sur ce dossier fictif — le spec n'est pas
+// propriétaire du patient, seulement de ce qu'il y écrit.
+const ID_REPONSE_BIO_E2E_PREFIX = 'E2E_BIO_';
+/** Destinataire de la lettre établie par le parcours — sa seule marque. */
+export const MEDECIN_BIO_E2E = 'Dr Dogné (banc E2E biologie)';
+/** Date du bilan déclaré par le parcours — la marque du panel documenté. */
+export const DATE_BILAN_BIO_E2E = new Date('2026-07-15T00:00:00.000Z');
+
+export async function provisionnerDossierBiologie(idPatient: string): Promise<void> {
+  const patient = await prisma.patient.findUnique({ where: { idPatient }, select: { email: true } });
+  if (!patient) throw new Error(`provisionnerDossierBiologie : patient introuvable (${idPatient})`);
+
+  await nettoyerDossierBiologie(idPatient);
+
+  await prisma.questionnaireReponse.create({
+    data: {
+      idReponse: `${ID_REPONSE_BIO_E2E_PREFIX}${idPatient}`,
+      idPatient,
+      emailPatient: patient.email,
+      idAssignation: null,
+      idQuestionnaire: 'Q_STR_02',
+      titre: 'Échelle de stress perçu (PSS-10)',
+      dateReponse: new Date(),
+      scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02_DANGER },
+    },
+  });
+}
+
+/**
+ * Nettoyage CHIRURGICAL — jamais `resetPortailState` : elle filtre ses
+ * réponses sur `idAssignation: { not: null }` et laisserait donc en place la
+ * passation fabriquée ci-dessus, qui porte `idAssignation: null` comme le
+ * seed. D'un run à l'autre, la proposition resterait alimentée par une donnée
+ * que le run courant n'a pas posée.
+ *
+ * Ordre sûr vis-à-vis des clés étrangères, et chaque ligne bornée à ce que ce
+ * spec produit :
+ *   1. la lettre du parcours, reconnue à son DESTINATAIRE — pas « toutes les
+ *      correspondances sortantes du patient », qui emporterait les lettres
+ *      posées à la main sur ce dossier (constat de revue) ;
+ *   2. le panel déclaré, reconnu à la DATE de bilan que le parcours saisit ;
+ *   3. la passation fabriquée, reconnue à son préfixe.
+ */
+export async function nettoyerDossierBiologie(idPatient: string): Promise<void> {
+  await prisma.correspondanceMedecin.deleteMany({
+    where: { idPatient, medecinLibelle: MEDECIN_BIO_E2E },
+  });
+  await prisma.panelBiologieDocumente.deleteMany({
+    where: { idPatient, documenteLe: DATE_BILAN_BIO_E2E },
+  });
+  await prisma.questionnaireReponse.deleteMany({
+    where: { idPatient, idReponse: { startsWith: ID_REPONSE_BIO_E2E_PREFIX } },
+  });
+}

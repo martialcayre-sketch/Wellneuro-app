@@ -1,0 +1,157 @@
+// Surface biologie de bout en bout (LOT-02 de 2026-08-18-biologie-consolidee) :
+// proposition de bilan → déclaration d'un panel documenté → courrier médecin
+// ancré → verdict d'ancrage au fil de correspondance.
+//
+// `WN_CB_PROPOSITION` est posé en production depuis le 2026-08-18 et AUCUN
+// parcours ne traversait ces écrans : ce qui y casserait ne serait vu que par
+// un praticien. Ce spec est cette garde.
+//
+// Patient fictif Jennifer Martin (PAT_SEED_02) : un épisode T0 confirmé et une
+// passation `Q_STR_02` en zone danger sont provisionnés en base puis nettoyés.
+// Aucun autre spec ne lit ces données. Le seed n'est PAS touché — le modifier
+// emporterait `visual.spec.ts` (capture pixel), `fiche-detail-reponses` et
+// `seedCertification.guard`.
+//
+// Mode sériel : les trois tests partagent un état de dossier qui s'accumule
+// (déclaration, puis courrier consigné) — l'ordre est le parcours lui-même.
+//
+// Les drapeaux `WN_CB_ENABLED` et `WN_CB_PROPOSITION` sont exportés par
+// `scripts/wn-test-worktree.sh` et par le job `verify` : sans eux la route rend
+// 503 et ce spec passerait au vert en ne trouvant rien à cliquer.
+import { test, expect } from '@playwright/test';
+import { praticienSessionCookie } from './helpers/auth';
+import {
+  provisionnerDossierBiologie,
+  nettoyerDossierBiologie,
+  MEDECIN_BIO_E2E,
+  DATE_BILAN_BIO_E2E,
+} from './helpers/db';
+
+const PATIENT_ID = 'PAT_SEED_02';
+
+test.describe.configure({ mode: 'serial' });
+
+test.describe('Surface biologie — proposition, déclaration, courrier', () => {
+  test.beforeAll(async () => {
+    await provisionnerDossierBiologie(PATIENT_ID);
+  });
+
+  test.afterAll(async () => {
+    await nettoyerDossierBiologie(PATIENT_ID);
+  });
+
+  test('la proposition de bilan est servie, et déclarer un bilan hors outil la recalcule', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+
+    // Le panneau vit dans la phase Actions du cycle clinique — pas dans un
+    // onglet à part. Sans épisode confirmé la phase resterait « à ouvrir » :
+    // c'est la fixture qui la rend atteignable.
+    const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+    await rail.getByRole('tab', { name: /Actions/ }).click();
+
+    const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
+    await expect(panneau).toBeVisible();
+
+    // Point 1 — des LIGNES DE PROPOSITION, pas seulement un cadre. Compter les
+    // `listitem` du panneau ne prouverait rien : la liste permanente « Ce que
+    // cette vue ne sait pas » et les motifs imbriqués en portent aussi, si
+    // bien qu'une proposition VIDE passerait le compte (constat de revue).
+    // Le bouton de déclaration, lui, n'est rendu qu'une fois par ligne
+    // proposée — et le message d'abstention doit être absent.
+    await expect(
+      panneau.getByText(/Aucun panel du catalogue n’est couvert/),
+    ).toHaveCount(0);
+    const declarations = panneau.getByRole('button', { name: 'Déjà exploré hors outil…' });
+    await expect(declarations.first()).toBeVisible();
+
+    // Le statut de la première ligne, AVANT déclaration — c'est lui qui doit
+    // bouger, quel qu'il soit.
+    const premiereLigne = panneau.locator('li').filter({ has: declarations.first() }).first();
+    const statutAvant = (await premiereLigne.getByText(
+      /Recommandé|À répéter|Conditionnel|Optionnel|Déjà documenté|Non indiqué actuellement/,
+    ).first().innerText()).trim();
+
+    // Point 2 — la déclaration d'un bilan déjà réalisé hors outil. Aucun
+    // résultat n'est demandé ni conservé : seule la DATE est saisie.
+    await declarations.first().click();
+    await panneau
+      .getByLabel(/Date du bilan/)
+      .fill(DATE_BILAN_BIO_E2E.toISOString().slice(0, 10));
+    await panneau.getByRole('button', { name: 'Consigner la déclaration' }).click();
+
+    await expect(
+      panneau.getByText('Déclaration consignée : la proposition a été recalculée'),
+    ).toBeVisible();
+
+    // Le recalcul se PROUVE par un changement, pas par un libellé attendu :
+    // selon le délai de répétition de la règle et l'âge du bilan déclaré, le
+    // moteur rend `deja_documente` ou `a_repeter`. Épingler « Déjà documenté »
+    // aurait fait rougir ce banc au franchissement des 365 jours, sans qu'une
+    // ligne de code ait bougé (constat de revue).
+    const statutApres = premiereLigne.getByText(
+      /Recommandé|À répéter|Conditionnel|Optionnel|Déjà documenté|Non indiqué actuellement/,
+    ).first();
+    await expect(statutApres).not.toHaveText(statutAvant);
+  });
+
+  test('le courrier s’établit, son texte est rendu pour transcription, et rien n’est envoyé', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+    await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
+
+    const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
+    await expect(panneau).toBeVisible();
+
+    // Point 3 — le formulaire n'existe que s'il reste quelque chose à
+    // proposer : il s'offre sur le même prédicat que le générateur.
+    const formulaire = panneau.getByText('Courrier au médecin traitant');
+    await expect(formulaire).toBeVisible();
+
+    // Point 4 — l'absence d'envoi n'est pas une lacune du parcours, c'est la
+    // propriété à prouver : la surface dit elle-même qu'elle n'envoie rien, et
+    // le seul rendu du courrier est un texte à transcrire.
+    await expect(panneau.getByText(/Aucun envoi automatique/)).toBeVisible();
+
+    // Le destinataire est la MARQUE de la lettre : le nettoyage ne supprime
+    // que celle-ci, jamais toutes les correspondances sortantes du dossier.
+    await panneau.getByLabel('Nom du médecin destinataire').fill(MEDECIN_BIO_E2E);
+    const bouton = panneau.getByRole('button', { name: 'Établir et consigner le courrier' });
+    await bouton.click();
+
+    await expect(panneau.getByText(/Courrier consigné au dossier/)).toBeVisible();
+    // `toHaveValue`, pas `not.toBeEmpty()` : le texte d'un `<textarea>` piloté
+    // par React vit dans sa VALEUR, pas dans ses enfants DOM — l'assertion
+    // naïve rougirait sur un courrier pourtant rendu.
+    const texte = panneau.getByLabel('Texte du courrier à transcrire');
+    await expect(texte).toBeVisible();
+    await expect(texte).toHaveValue(/\S/);
+
+    // Point 5 — une seconde consignation au MÊME destinataire est refusée.
+    // Le verrou est côté écran (la campagne le nomme : deux onglets peuvent
+    // encore établir deux lettres) : c'est bien le bouton qu'il faut éprouver,
+    // aucune garde serveur ne rendrait 409 ici.
+    await expect(bouton).toBeDisabled();
+  });
+
+  test('le fil de correspondance porte le verdict d’ancrage de la lettre', async ({
+    page,
+    context,
+  }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+    await page.getByRole('tab', { name: 'Correspondance' }).click();
+
+    // Point 6 — la raison de la dépendance au LOT-01 : la lettre qui vient
+    // d'être établie porte l'ancre de la table courante, donc « concordant ».
+    // Une lettre sans ancre ne dirait RIEN (DC-24) — c'est ce silence-là que
+    // le verdict ne doit pas confondre avec une péremption.
+    await expect(page.getByText(/ancrage concordant/).first()).toBeVisible();
+  });
+});

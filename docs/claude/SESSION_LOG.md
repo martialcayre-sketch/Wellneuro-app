@@ -4275,3 +4275,20 @@ route et dans le banc, avec l'interdit qui va avec : ne pas faire dériver
 l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart — ce
 serait renverser la décision et toucher une table signée. Reste ouvert : aucun
 `D-xxx` ne couvre encore le fait de servir un verdict au praticien.
+
+## [2026-08-20] — LOT-02 Biologie : le parcours est écrit, il n'est pas joué
+
+Aucun E2E ne traversait la proposition de bilan ni le courrier, posés en
+production depuis le 2026-08-18. Le spec existe : six points, mode sériel,
+patient fictif, nettoyage marqué (destinataire, date, préfixe) plutôt que par
+`idPatient` — un `deleteMany` large serait destructeur sur la base du Mac.
+
+Le vrai défaut n'était pas dans le spec : **aucun `WN_CB_*` n'était posé dans
+le harnais**, ni dans `verify`, ni dans `webServer.env`. Sans eux la route rend
+503 et le parcours passait au vert sans rien trouver à cliquer.
+
+Écarté : toucher au seed ; corriger la double consignation (nommée, renvoyée) ;
+provisionner un épisode confirmé (justification fausse, retirée à la revue).
+
+Prochaine action : PR. Ouvert : **le spec n'a jamais tourné** — deux runs Mac
+sont dus ; `tsc` ne dit rien d'un sélecteur qui ne matche rien.
