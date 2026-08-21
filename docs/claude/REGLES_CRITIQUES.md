@@ -31,7 +31,7 @@ Note : la decommission Google Sheets est terminee (2026-07-07) — toutes les ro
 - Ne pas modifier la logique clinique sans demande explicite.
 - Ne pas modifier les seuils de scoring sans source/documentation.
 - Ne pas inventer de questionnaire, score, seuil ou recommandation.
-- Toute modification clinique doit etre tracee dans `CHANGELOG.md`.
+- Toute modification clinique exige une decision explicite `D-xxx` et un fragment `changelog.d/`.
 
 ## 5) Contraintes de perimetre
 
