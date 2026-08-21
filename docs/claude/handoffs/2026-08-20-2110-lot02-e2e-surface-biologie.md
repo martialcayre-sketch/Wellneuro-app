@@ -1,4 +1,4 @@
-# 2026-08-20 21:10 — LOT-02 Biologie : un parcours écrit, pas encore joué
+# Handoff — 2026-08-20 — LOT-02 Biologie : un parcours écrit, pas encore joué
 
 ## Ce qui a changé
 

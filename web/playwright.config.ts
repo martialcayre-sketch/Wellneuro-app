@@ -141,13 +141,19 @@ export default defineConfig({
       // simule pas. Sans eux, la route de proposition rend 503 et le spec
       // biologie n'aurait rien à cliquer.
       //
-      // ICI ET NULLE PART AILLEURS. Les avoir exportés au niveau du job CI et
-      // du script de worktree a fait rougir 10 bancs unitaires : la suite
+      // JAMAIS AU NIVEAU DU RUNNER. Les avoir exportés sur le job CI entier et
+      // sur le script de worktree a fait rougir 10 bancs unitaires : la suite
       // Vitest s'exécute en position CB ÉTEINTE, et `/api/praticien/fil`
       // interroge `arbitrageBiologique` dès que `WN_CB_ENABLED` est vrai —
       // modèle absent du double de test, donc 500. Un drapeau posé au niveau
-      // du runner déplace la position de TOUTE la suite ; `webServer.env` ne
-      // touche que le serveur sous test, qui est le seul à en avoir besoin.
+      // du runner déplace la position de TOUTE la suite.
+      //
+      // La portée admise est donc le PROCESSUS QUI EN A BESOIN, et il y en a
+      // deux : ici, pour le serveur sous test, et la seule commande
+      // `npm run build` du CI et de `scripts/wn-test-worktree.sh` — le rendu
+      // serveur du build lit ces drapeaux à la compilation. Deux poses, aucune
+      // au niveau du runner : les retirer là-bas rouvrirait le trou, les
+      // élargir ici rougirait Vitest.
       WN_CB_ENABLED: 'true',
       WN_CB_PROPOSITION: 'true',
       // Posé en Production le 2026-08-16 ([[D-064]]) — même doctrine que la

@@ -1,4 +1,4 @@
-### La surface biologie a enfin un parcours joué — LOT-02 (2026-08-20)
+### La surface biologie a enfin un parcours E2E — LOT-02 (2026-08-20)
 
 `WN_CB_PROPOSITION` est posé en production depuis le 2026-08-18 : proposition
 de bilan et courrier médecin ancré sont servis aux praticiens, et **aucun E2E
