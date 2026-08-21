@@ -123,7 +123,14 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
 
     // Le statut de la première ligne, AVANT déclaration — c'est lui qui doit
     // bouger, quel qu'il soit.
-    const premiereLigne = panneau.locator('li').filter({ has: declarations.first() }).first();
+    // `filter({ has })` veut une localisation RELATIVE, réenracinée dans chaque
+    // `li` : lui passer `declarations.first()` — déjà résolu à un élément
+    // précis de la page — ne filtre rien et fait expirer la lecture (constat du
+    // CI, 2 min de timeout). C'est le rôle nu qu'il faut donner.
+    const premiereLigne = panneau
+      .locator('li')
+      .filter({ has: page.getByRole('button', { name: 'Déjà exploré hors outil…' }) })
+      .first();
     const statutAvant = (await premiereLigne.getByText(
       /Recommandé|À répéter|Conditionnel|Optionnel|Déjà documenté|Non indiqué actuellement/,
     ).first().innerText()).trim();
