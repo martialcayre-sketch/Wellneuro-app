@@ -17,7 +17,7 @@ scripts/wn-check-automation.sh
 Dans Claude Code, taper ensuite seulement :
 
 ```text
-/wn-campaign-run
+/wn-lot next
 ```
 
 ou afficher le prochain lot :
@@ -65,8 +65,8 @@ Pour relire le diff sans modifier :
 
 ## Workflow recommandé (minimal)
 
-1. Lancer `/wn-campaign-run` pour charger la campagne active et le prochain lot.
-2. Passer en mode Plan avant toute modification de code.
+1. Lancer `/wn-lot next` pour charger la campagne active et le prochain lot.
+2. Passer en mode Plan pour un changement de code non trivial ou à risque.
 3. Valider le plan technique proposé.
 4. Exécuter les changements bornés au lot validé.
 5. Clôturer avec `/wn-finish`.
@@ -81,9 +81,6 @@ Pour relire le diff sans modifier :
 - Les commandes d’orchestration doivent afficher explicitement la campagne active, la branche de campagne, la branche du lot courant et la cible de merge attendue.
 
 ## Commandes utiles
-
-### `/wn-campaign-run`
-Charge la campagne active, affiche le prochain lot et cadre l'exécution bornée du lot en cours.
 
 ### `/wn-docs`
 Entretien documentaire récurrent, indépendant des lots :

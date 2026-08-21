@@ -10,8 +10,8 @@
 
 ```text
 /wn-campaign créer "Titre"
-/wn-campaign-run
-/wn-campaign-run apply
+/wn-lot next
+/wn-lot next go
 /wn-test
 /code-review
 /wn-finish

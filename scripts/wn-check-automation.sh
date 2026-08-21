@@ -4,7 +4,7 @@ set -euo pipefail
 echo "WellNeuro — vérification Claude Code + Copilot"
 
 skills=(
-  wn wn-campaign wn-campaign-run wn-docs
+  wn wn-campaign wn-docs
   wn-test wn-debug wn-pr wn-handoff wn-finish
 )
 

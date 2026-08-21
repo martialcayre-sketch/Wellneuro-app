@@ -19,4 +19,4 @@ explicitement actif, (2) la « prochaine action » du SESSION_LOG, (3) les
 roadmaps (`docs/ROADMAP_*.md`, à lire seulement dans ce cas). Ne rien modifier
 dans ce premier passage.
 
-Skills cœur, tapés par l'utilisateur : `/wn-campaign-run`, `/wn-lot`, `/wn-test`, `/wn-pr`, `/wn-merge`, `/wn-finish`. <!-- mention-seule: wn-campaign-run, wn-lot, wn-test, wn-pr, wn-merge, wn-finish -->
+Skills cœur, tapés par l'utilisateur : `/wn-campaign`, `/wn-lot` (`next` reprend le prochain lot incomplet), `/wn-test`, `/wn-pr`, `/wn-merge`, `/wn-finish`. <!-- mention-seule: wn-campaign, wn-lot, wn-test, wn-pr, wn-merge, wn-finish -->

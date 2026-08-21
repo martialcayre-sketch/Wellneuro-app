@@ -15,5 +15,5 @@ Règles impératives :
 
 Routine :
 - Lire la dernière entrée de `docs/claude/SESSION_LOG.md` au début d’un lot.
-- Utiliser le flux campagne-first : `/wn-campaign-run`, `/wn-campaign next`, le mode Plan natif, puis `/wn-finish`.
+- Utiliser le flux campagne-first : `/wn-lot next`, le mode Plan natif si le lot est non trivial, puis `/wn-finish`.
 - Ne jamais « analyser tout le projet » si le lot peut être limité.
