@@ -76,8 +76,20 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // panneau ne dirait rien de la biologie, seulement de la navigation.
     await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
 
+    // Deux comptages avant l'assertion, et ils ne sont pas décoratifs : la
+    // route répond `ok` et la phase Actions s'affiche, donc si le panneau
+    // manque encore, c'est OU BIEN qu'il n'est pas rendu (le client n'a pas le
+    // drapeau, `propositionDisponible` reste faux) OU BIEN qu'il est rendu et
+    // que le rôle/nom ne le désigne pas. Le message d'échec doit le dire.
     const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
-    await expect(panneau).toBeVisible();
+    const nTexte = await page.getByText('Biologie — proposition de bilan').count();
+    const nSection = await page.locator('section[aria-labelledby="proposition-bilan-title"]').count();
+    await expect(
+      panneau,
+      `panneau introuvable — titre présent ${nTexte} fois dans le DOM, `
+        + `sections étiquetées : ${nSection}. Zéro des deux = panneau NON RENDU `
+        + `(drapeau client absent) ; au moins un = rendu mais non désigné.`,
+    ).toBeVisible();
 
     // Point 1 — des LIGNES DE PROPOSITION, pas seulement un cadre. Compter les
     // `listitem` du panneau ne prouverait rien : la liste permanente « Ce que
