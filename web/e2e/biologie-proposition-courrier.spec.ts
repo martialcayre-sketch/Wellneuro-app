@@ -18,7 +18,7 @@
 // Les drapeaux `WN_CB_ENABLED` et `WN_CB_PROPOSITION` sont exportés par
 // `scripts/wn-test-worktree.sh` et par le job `verify` : sans eux la route rend
 // 503 et ce spec passerait au vert en ne trouvant rien à cliquer.
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
 import {
   provisionnerDossierBiologie,
@@ -30,6 +30,40 @@ import {
 const PATIENT_ID = 'PAT_SEED_02';
 
 test.describe.configure({ mode: 'serial' });
+
+/**
+ * LE GESTE QUI OUVRE TOUT — et que le cadrage avait manqué.
+ *
+ * Le panneau de proposition n'est monté que sur un runtime `ready`, et le
+ * `ready` naît de la confirmation d'un épisode T0 : un POST déclenché par ce
+ * bouton, pas une ligne en base. Sans ce clic, le client ne DEMANDE jamais la
+ * proposition — la route peut répondre `ok`, l'écran reste vide.
+ *
+ * IL SE REFAIT À CHAQUE CHARGEMENT DE PAGE. `runtime` est un état React
+ * (`ClinicalRuntimeSection`) : rien ne le restaure au montage, le GET du
+ * cockpit ne rend qu'une proposition. Un test qui compte sur la confirmation
+ * du test précédent ne trouve donc pas le panneau — c'est ce qu'a coûté la
+ * ronde du 2026-08-21.
+ *
+ * L'ATTENTE EST EXPLICITE, jamais un `isVisible()` conditionnel : celui-ci
+ * répond sur l'instant, et à cet instant le cockpit n'a pas fini son
+ * aller-retour — il rend `false` sur un bouton qui arrive une seconde plus
+ * tard, et le clic ne part pas.
+ *
+ * Le bouton doit être ACTIF : désactivé, il dit que la fixture ne satisfait
+ * pas les préconditions dures (rideau cotable, anamnèse consignée, synthèse
+ * validée postérieure au rideau), et la checklist affichée nomme laquelle.
+ */
+async function confirmerEpisodeT0(page: Page): Promise<void> {
+  const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
+  await expect(confirmerT0).toBeVisible();
+  await expect(
+    confirmerT0,
+    'le bouton de confirmation T0 est désactivé : une précondition dure manque '
+      + 'à la fixture (rideau, anamnèse ou synthèse) — la checklist à l’écran dit laquelle',
+  ).toBeEnabled();
+  await confirmerT0.click();
+}
 
 test.describe('Surface biologie — proposition, déclaration, courrier', () => {
   test.beforeAll(async () => {
@@ -50,23 +84,7 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // Le panneau vit dans la phase Actions du cycle clinique — pas dans un
     // onglet à part. Sans épisode confirmé la phase resterait « à ouvrir » :
     // c'est la fixture qui la rend atteignable.
-    // LE GESTE QUI OUVRE TOUT — et que le cadrage avait manqué. Le panneau de
-    // proposition n'est monté que sur un runtime `ready`, et le `ready` naît de
-    // la confirmation d'un épisode T0 : un POST déclenché par ce bouton, pas
-    // une ligne en base. Sans ce clic, le client ne DEMANDE jamais la
-    // proposition — la route peut répondre `ok`, l'écran reste vide.
-    //
-    // Le bouton doit être ACTIF : désactivé, il dit que la fixture ne satisfait
-    // pas les préconditions dures (rideau cotable, anamnèse consignée, synthèse
-    // validée postérieure au rideau), et la checklist affichée nomme laquelle.
-    const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
-    await expect(confirmerT0).toBeVisible();
-    await expect(
-      confirmerT0,
-      'le bouton de confirmation T0 est désactivé : une précondition dure manque '
-        + 'à la fixture (rideau, anamnèse ou synthèse) — la checklist à l’écran dit laquelle',
-    ).toBeEnabled();
-    await confirmerT0.click();
+    await confirmerEpisodeT0(page);
 
     // La surface est interrogée AVANT l'écran, et ce n'est pas du confort de
     // débogage : le panneau n'est monté que si la route répond `ok`. Sans cette
@@ -186,14 +204,9 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
   }) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
-    // Le test précédent a confirmé le T0. Si cette confirmation n'a pas été
-    // persistée, le bouton est encore là et il faut le reposer : la
-    // confirmation vit d'abord en mémoire, et ce banc ne présume pas de ce que
-    // la base en retient. Le clic conditionnel est donc un constat, pas une
-    // paresse — et il ne masque rien : si le panneau manque ensuite,
-    // l'assertion suivante le dira.
-    const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
-    if (await confirmerT0.isVisible().catch(() => false)) await confirmerT0.click();
+    // Le T0 se reconfirme : la confirmation du test précédent vivait dans
+    // l'état du composant, et ce chargement-ci repart d'une page neuve.
+    await confirmerEpisodeT0(page);
 
     await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
 
