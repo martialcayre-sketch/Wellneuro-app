@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-18-biologie-consolidee
 **Titre** : Biologie consolidée — fermer les dettes de la surface vivante
 **Statut** : active
-**Lot actif** : LOT-01
+**Lot actif** : LOT-02
 
 ## Activités parallèles
 
@@ -22,6 +22,6 @@
 **Lot actif** : LOT-01
 
 **Statut global** : active
-**Mise à jour** : 2026-08-20
+**Mise à jour** : 2026-08-21
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

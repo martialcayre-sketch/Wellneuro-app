@@ -4318,3 +4318,16 @@ trois refermées (nuance transitoire Copilot dans CLAUDE.md, niveau
 Écarté : refondre les trois autres chevauchements (dédoublonnage wn-lot/
 wn-merge/auth-securite — coût > gain, la déduplication est explicite).
 Prochaine action : CI, revue, merge Copilot.
+
+## [2026-08-21] — Refactor du portefeuille de campagnes vers 6.0
+
+La file d'attente passe à la hiérarchie du 2026-08-21 : l'axe alliance
+(réponse au trou ETP de l'audit) n'avait aucun véhicule — cinq dossiers 6.0
+entrent en init-only (Socle de restitution sûre rang 1, dossier à deux voix
+rang 2, charge/récit/jumeau rangs 5-7), doctrine exécutable garde V3 comme
+gate de toute calibration, nutrition recule au rang 8, mémoire relationnelle
+gatée conformité. E4 absorbé par 6.0-A/B/C. Resynchronisations : Biologie
+lot_courant → LOT-02 (LOT-01 terminé, PR #725), next_action ne désigne plus
+HDS comme primaire, R6/R8 périmées corrigées. wn-coherence-etat 24/24, T1
+vert. Écarté : cadrer les campagnes 6.0 d'avance (convention init-only).
+Prochaine action : PR du refactor, puis clôture biologie (LOT-02/LOT-03).
