@@ -121,8 +121,8 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     const declarations = panneau.getByRole('button', { name: 'Déjà exploré hors outil…' });
     await expect(declarations.first()).toBeVisible();
 
-    // Le statut de la première ligne, AVANT déclaration — c'est lui qui doit
-    // bouger, quel qu'il soit.
+    // Le statut de la première ligne, AVANT déclaration — relevé pour le
+    // message d'échec, PAS pour exiger qu'il bouge : voir plus bas.
     // `filter({ has })` veut une localisation RELATIVE, réenracinée dans chaque
     // `li` : lui passer `declarations.first()` — déjà résolu à un élément
     // précis de la page — ne filtre rien et fait expirer la lecture (constat du
@@ -147,15 +147,21 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
       panneau.getByText('Déclaration consignée : la proposition a été recalculée'),
     ).toBeVisible();
 
-    // Le recalcul se PROUVE par un changement, pas par un libellé attendu :
-    // selon le délai de répétition de la règle et l'âge du bilan déclaré, le
-    // moteur rend `deja_documente` ou `a_repeter`. Épingler « Déjà documenté »
-    // aurait fait rougir ce banc au franchissement des 365 jours, sans qu'une
-    // ligne de code ait bougé (constat de revue).
-    const statutApres = premiereLigne.getByText(
-      /Recommandé|À répéter|Conditionnel|Optionnel|Déjà documenté|Non indiqué actuellement/,
-    ).first();
-    await expect(statutApres).not.toHaveText(statutAvant);
+    // CE QUI CHANGE N'EST PAS LE STATUT, et le CI l'a démontré : la première
+    // ligne est restée « Conditionnel ». C'est le code qui a raison — un panel
+    // en mode `conditionnel` s'affiche TOUJOURS `conditionnel`, « déclencheur
+    // rempli ou non » (`indicationsBiologieV1.ts`, [[D-059]] §5). Exiger un
+    // changement de statut demandait au moteur de contredire sa doctrine.
+    //
+    // Ce que la déclaration change réellement et visiblement : la ligne SAIT
+    // qu'elle est documentée, et le geste devient une CORRECTION. C'est cela
+    // qu'on éprouve — avec le statut d'avant dans le message, pour qu'un
+    // futur écart se lise sans relire le moteur.
+    await expect(
+      premiereLigne.getByRole('button', { name: 'Corriger la date du bilan…' }),
+      `la ligne (statut « ${statutAvant} ») ne porte pas le geste de correction : `
+        + `la déclaration n'a pas été rattachée à ce panel`,
+    ).toBeVisible();
   });
 
   test('le courrier s’établit, son texte est rendu pour transcription, et rien n’est envoyé', async ({
