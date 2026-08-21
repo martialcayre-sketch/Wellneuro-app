@@ -16,22 +16,8 @@ on:
       - main
       - "campaign/**/integration"
 
-# Un run de PR supplanté par une poussée plus récente n'a pas à finir : seul le
-# commit de tête compte, et `wn-attendre-ci.mjs` sait lire un run `CANCELLED`
-# sans le prendre pour un échec.
-# Sur `main`, le groupe porte `github.run_id` : chaque run y est donc SEUL dans
-# son groupe, et aucun n'annule aucun autre. `cancel-in-progress: false` ne
-# suffirait PAS à l'obtenir — à groupe partagé, GitHub sérialise les runs de
-# `main` et annule le run *pending* intermédiaire dès qu'un troisième arrive.
-# Trois merges dans une fenêtre de ~15 min sont ordinaires ici ; le commit du
-# milieu perdrait sa vérification, en silence et sans que personne la regarde
-# (`wn-attendre-ci.mjs` travaille sur des PR). Or `strict` est délibérément
-# désactivé sur la protection de `main` : le run `push` est la SEULE
-# vérification du résultat fusionné.
-# NE PAS copier `release-db.yml` par analogie : son `cancel-in-progress: false`
-# à groupe FIXE sérialise des ÉCRITURES sur la base de production — la seconde
-# release attend la première. Ici le groupe par ref DÉDOUBLONNE des vérifications
-# en lecture — la seconde tue la première. Raisons opposées.
+# Sur `main`, jamais deux runs dans le même groupe (gardé par
+# `scripts/ci-invariants.test.mjs`). Récit : docs/adr/2026-08-07-commentaires-workflows.md.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/main' && github.run_id || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -589,25 +575,9 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql
 
-      # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
-      # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
-      # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend
-      # une sémantique patient — le verrou HDS cesse d'être un commentaire pour
-      # devenir un test. C'est le MÊME fichier (bloc DO nu) que l'import CB-02a
-      # rejoue DANS sa transaction avant COMMIT (`prisma/importNabm.ts`) : une
-      # violation structurelle annule alors l'import au lieu d'être constatée
-      # après coup.
-      # C4 — provenance du référentiel d'ingrédients. Le fichier existe depuis
-      # #493 et son changelog affirmait « câblé au CI » : il ne l'était pas, et
-      # n'a donc JAMAIS tourné, ni ici ni dans wn-test-worktree.sh (qui dérive
-      # sa liste de ce fichier). Ce qu'il vérifie : la nullabilité APPARIÉE de
-      # (source_provenance, source_identifiant) — sans elle, une demi-clé
-      # échappe à la fois à l'index unique et au findFirst de l'ingestion, et le
-      # même identifiant officiel s'insère indéfiniment ; le vocabulaire clos
-      # des provenances ; la RLS ; et surtout que l'index côté FORME n'est PAS
-      # unique — assertion inversée, délibérée : le rendre unique refuserait la
-      # seconde attache d'une forme multi-substances en ayant l'air d'un
-      # durcissement.
+      # C4 — provenance du référentiel d'ingrédients : nullabilité APPARIÉE de
+      # (source_provenance, source_identifiant), et index côté FORME délibérément
+      # NON unique. Récit : docs/adr/2026-08-07-commentaires-workflows.md.
       - name: C4 référentiel provenance contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -702,25 +672,10 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c3_correspondance_ancrage_v1_negatif.sql
 
-      # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
-      # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
-      # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la
-      # RLS, l'action référentielle des deux clés étrangères (RESTRICT, sans
-      # lequel la suppression nommée de `patient/effacement.ts` deviendrait du
-      # code mort en silence), et le VERROU DE PÉRIMÈTRE qui refuse une colonne
-      # de gramme, de kcal, de score ou de quantité — la frontière « journal
-      # alimentaire, pas carnet de pesée » cesse d'être un commentaire. Le même
-      # verrou existe côté JSONB (clés de premier niveau de `reponses`), mais il
-      # est VACUE ICI : la base du CI est vide, donc sans clé à parcourir. C'est
-      # le chemin le moins coûteux pour ranger un agrégat, donc celui à rejouer
-      # à la main sur la production.
-      # Il porte aussi une assertion INVERSÉE, délibérée : AUCUN index unique
-      # sur (id_assignation, date_jour). En poser un ressemblerait à un
-      # durcissement et casserait le modèle append-only — les lignes supplantées
-      # restent, et `lignes − dates distinctes` est le taux de correction.
-      # Ses trois invariants de DONNÉES (verrou de périmètre JSONB ci-dessus,
-      # version de contrat, chaînage de correction) sont vacués sur la base CI,
-      # vide : ils sont là pour être rejoués en lecture seule sur la production.
+      # Agenda alimentaire (Q_ALI_09) : AUCUN index unique sur
+      # (id_assignation, date_jour) — assertion inversée, délibérée — et ses
+      # invariants de DONNÉES sont vacués sur la base CI, vide. Récit :
+      # docs/adr/2026-08-07-commentaires-workflows.md.
       - name: Agenda alimentaire contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
