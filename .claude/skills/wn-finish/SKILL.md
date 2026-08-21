@@ -7,15 +7,16 @@ effort: medium
 
 # WellNeuro — fin de lot
 
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs --local`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Sujet : `$ARGUMENTS`
 
 Le bloc de phase ci-dessus remplace `git status` et `git diff --stat`, qu'il
-subsume. **Il commande.** Il tourne en `--local` car ce skill ne consomme que
-les faits de clôture — le verdict PR appartient à `/wn-pr` et `/wn-merge`. <!-- mention-seule: wn-pr, wn-merge -->
-Si un verdict rendu sans `--local` donne `apres-merge` avec « fenêtre de
+subsume. **Il commande.** Son verdict PR est le garde de la fenêtre de
+clôture : c'est lui qui distingue une branche vivante d'une branche squashée —
+raison pour laquelle ce skill n'utilise pas `--local`.
+Si le verdict donne `apres-merge` avec « fenêtre de
 clôture ratée », la branche a été squashée : plus rien de ce qu'on y écrit ne
 remonte vers `main`. Écrire alors depuis `main`, en PR de doc séparée — et
 surtout pas en rebranchant sur la branche squashée, qui ferait ré-embarquer le

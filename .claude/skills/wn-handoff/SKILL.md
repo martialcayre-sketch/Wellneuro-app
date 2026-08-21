@@ -7,7 +7,7 @@ effort: low
 
 # WellNeuro — handoff
 
-!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs --local`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-cycle.mjs`
 !`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown`
 
 Argument : `$ARGUMENTS`
@@ -15,9 +15,9 @@ Argument : `$ARGUMENTS`
 ## La fenêtre de clôture — lire le bloc de phase avant d'écrire
 
 Le merge d'un lot est un squash : ce qui s'écrit sur la branche après lui n'est
-plus dans l'ascendance de `main`. Le bloc de phase tourne en `--local` car ce
-skill ne consomme que les faits de clôture — le verdict PR appartient à
-`/wn-pr` et `/wn-merge`. Il tranche où ce handoff doit atterrir : <!-- mention-seule: wn-pr, wn-merge -->
+plus dans l'ascendance de `main`. Le bloc de phase rend aussi le verdict PR —
+c'est lui qui détecte une branche squashée avant d'écrire, raison pour laquelle
+ce skill n'utilise pas `--local`. Il tranche où ce handoff doit atterrir :
 
 - `travail`, `pret-pr`, `pr-ouverte` — branche vivante, **fenêtre ouverte** : le
   handoff part dans la PR du lot, en même temps que l'entrée `SESSION_LOG` que

@@ -120,7 +120,7 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
- * @param {{fetchOk: boolean, ahead: number|null, behind: number|null}|null} [faits.sync]
+ * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
  *           fenetreRatee: boolean, suivant: string[], sortie: number,
  *           sync: object|null, avertissements: string[]}}
@@ -350,14 +350,18 @@ function fetchRecent(defaut) {
   }
 }
 
-function synchroniserOrigin(defaut, { local = false } = {}) {
+// Exportée pour le banc : le contrat « --local ⇒ fetchOk = null, jamais un
+// faux “origin rafraîchi” » ne se lit nulle part ailleurs qu'ici.
+export function synchroniserOrigin(defaut, { local = false } = {}) {
   let fetchOk;
-  if (fetchRecent(defaut)) {
-    fetchOk = true;
-  } else if (local) {
-    // Mode --local : le fetch n'est pas TENTÉ. `null` (non tenté), pas `false`
-    // (tenté et échoué) — l'avertissement « hors-ligne ? » serait un mensonge.
+  if (local) {
+    // Mode --local : le fetch n'est pas TENTÉ — même si FETCH_HEAD est frais,
+    // ce serait le fetch d'un AUTRE run, et « origin rafraîchi » affirmerait un
+    // geste que celui-ci n'a pas fait. `null` (non tenté), pas `false` (tenté
+    // et échoué) — l'avertissement « hors-ligne ? » serait un mensonge.
     fetchOk = null;
+  } else if (fetchRecent(defaut)) {
+    fetchOk = true;
   } else {
     try {
       execFileSync('git', ['fetch', '--quiet', 'origin', defaut], {
@@ -557,7 +561,9 @@ export function reparer(racine = RACINE, options = {}) {
 
 // ── Rendu ───────────────────────────────────────────────────────────────────
 
-function rendre(faits, verdict) {
+// Exportée pour le banc : c'est ici, pas dans `diagnostiquer`, que le mode
+// --local doit rendre la PR « non vérifiée » plutôt qu'un faux « aucune ».
+export function rendre(faits, verdict) {
   const out = [];
   const etatBranche = {
     'hors-lot': 'branche par défaut',

@@ -13,7 +13,8 @@ Demande : `$ARGUMENTS`
 - Risque critique (sécurité, auth, migration/Prisma, clinique/scoring, revue
   critique, bug résistant) : **Opus**.
 - Difficulté conceptuelle exceptionnelle (≥ 2 signaux forts) : **Fable**.
-- Largeur réellement parallélisable : **Ultracode** (opt-in).
+- Largeur réellement parallélisable : **Ultracode** (opt-in : mot-clé
+  « ultracode » ou `/effort ultracode`, retour `/effort high`).
 - Profondeur + largeur : **Fable + Ultracode**.
 - Sinon : ne rien faire ni commenter.
 

@@ -32,8 +32,10 @@ avant, se refuse : répondre par la proposition.
 
 Même sous `go`, ces frontières ne se franchissent jamais seules :
 
-- **toute édition passe par le mode Plan** — le pilote prépare, il ne remplace
-  pas l'étape de plan technique ;
+- **le mode Plan est réservé aux changements de code non triviaux et aux
+  classes à risque** (migration, auth, clinique, scoring) — une édition
+  documentaire ou mécanique bornée s'exécute directement sous `go`, sans
+  seconde planification ;
 - **migration, écriture Supabase, déploiement, changement clinique** exigent
   une confirmation distincte, à demander au moment de l'étape ;
 - **le merge** suit le régime en vigueur dans `CLAUDE.md`, pas ce fichier ;

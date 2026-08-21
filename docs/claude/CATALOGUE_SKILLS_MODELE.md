@@ -21,17 +21,24 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 
 ## 2. Fonction et intérêt
 
-### `/wn-model` — routeur de modèle
+### `/wn-model` — rappel des overrides de modèle
 
-- **Fonction** : à partir d'une description de tâche, recommande un couple **modèle + effort** et rend la commande exacte à appliquer (`/model …` ou délégation à un sous-agent). Ne modifie aucun fichier.
-- **Intérêt** : centralise une décision récurrente (« quel modèle pour cette tâche ? ») au lieu de la laisser implicite. Aligne le coût sur la complexité réelle et rend le choix traçable.
-- **Options d'appel** : `/wn-model [tâche]` (recommande), ou override explicite `fable | opus | sonnet | haiku | plan`. Un override prime toujours sur le mapping par défaut.
+- **Fonction** : rappelle que le frontmatter `model:`/`effort:` des agents
+  `.claude/agents/` fait foi, et les overrides disponibles : `/model`
+  (`sonnet`, `opus`, `fable`, `opusplan` — Opus pour le plan, Sonnet pour
+  l'exécution) et l'effort natif (`low`→`max`, défaut `high` via
+  `settings.json`). Ne modifie aucun fichier, ne duplique pas la grille de
+  `CLAUDE.md`.
+- **Options d'appel** : `/wn-model` (manuel uniquement).
 
-### `/wn-ultra` — routeur de mode d'exécution
+### `/wn-ultra` — rappel Fable vs Ultracode
 
-- **Fonction** : à partir d'une description de tâche, tranche le **mode d'exécution** — solo, multi-agent léger (briques existantes : sous-agents épinglés, campagnes), ou **ultracode** (orchestration multi-agent via l'outil Workflow) — via une grille de signaux (largeur / confiance / échelle). Sur un verdict ultracode avec opt-in `ultracode` présent, il lance le Workflow adapté ; sans opt-in, il recommande d'opter sans rien lancer.
-- **Intérêt** : centralise la décision « faut-il payer l'orchestration multi-agent pour cette tâche ? » et aligne le coût (jusqu'à des dizaines de sous-agents) sur le besoin réel de largeur ou de confiance. Ultracode reste un **mode d'exécution, pas une autorisation** : migration, Supabase, déploiement et clinique passent toujours par le mode Plan + revue + merge.
-- **Options d'appel** : `/wn-ultra [tâche]`, ou override explicite `ultracode | leger | solo`. Un override prime sur la grille.
+- **Fonction** : rappelle la distinction — **Fable = profondeur
+  exceptionnelle** (≥ 2 signaux forts), **Ultracode = largeur parallélisable**
+  (opt-in explicite ponctuel, jamais un bug local), défaut solo, combinaison
+  rare. Ultracode reste un **mode d'exécution, pas une autorisation** :
+  migration, Supabase, déploiement et clinique gardent leurs portes.
+- **Options d'appel** : `/wn-ultra` (manuel uniquement).
 
 ### `/wn-route` — routeur combiné de session
 

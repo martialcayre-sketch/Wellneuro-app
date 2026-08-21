@@ -14,6 +14,29 @@ paths:
   - "web/src/lib/plaintes.ts"
   - "web/src/lib/*.guard.test.ts"
   - "prompts/**"
+  # Surfaces qui ASSEMBLENT ou RESTITUENT du savoir clinique (scores,
+  # orientations, vigilances, discordances, équilibre, biologie, claims).
+  # Critère d'inclusion : la surface produit une sortie clinique — les
+  # routes purement administratives (assignations, packs, jetons, fichiers)
+  # restent hors périmètre pour que la règle demeure réellement scopée.
+  - "web/src/app/api/praticien/synthese/**"
+  - "web/src/app/api/praticien/booklet/**"
+  - "web/src/app/api/praticien/cockpit/**"
+  - "web/src/app/api/praticien/orientation/**"
+  - "web/src/app/api/praticien/equilibre/**"
+  - "web/src/app/api/praticien/besoins/**"
+  - "web/src/app/api/praticien/trajectoire/**"
+  - "web/src/app/api/praticien/reponses/**"
+  - "web/src/app/api/praticien/inbox-questionnaires/**"
+  - "web/src/app/api/praticien/protocoles/**"
+  - "web/src/app/api/praticien/correspondance-medecin/**"
+  - "web/src/app/api/praticien/biologie/**"
+  - "web/src/app/api/praticien/copilote/**"
+  - "web/src/app/api/praticien/corpus/**"
+  - "web/src/app/api/patient/equilibre/**"
+  - "web/src/app/api/patient/submit/**"
+  - "web/src/app/api/portail/**"
+  - "web/src/app/api/internal/rag/**"
 ---
 
 # Logique clinique et scoring

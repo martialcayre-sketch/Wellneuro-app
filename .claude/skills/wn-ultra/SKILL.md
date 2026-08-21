@@ -12,7 +12,9 @@ Demande : `$ARGUMENTS`
 - **Défaut : solo.**
 - **Fable** répond à la profondeur exceptionnelle ; **Ultracode** à la largeur
   réellement parallélisable — jamais un bug local, même difficile.
-- Ultracode : **opt-in explicite ponctuel** (mot-clé « ultracode » dans la
-  demande), jamais un réglage permanent.
+- Ultracode : **opt-in explicite ponctuel** — mot-clé « ultracode » dans la
+  demande, ou `/effort ultracode` (natif : impose xhigh et l'orchestration
+  automatique par workflows ; retour par `/effort high`). Jamais un réglage
+  permanent.
 - Combiner Fable + Ultracode (profondeur **et** largeur) : rare, exige les
   deux simultanément.
