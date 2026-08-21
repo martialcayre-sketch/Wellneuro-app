@@ -55,12 +55,27 @@ commence par : « Ceci est une deuxième passe ciblée. Ne réaudite pas
 l'ensemble de la PR. Examine uniquement les findings suivants et leurs
 corrections ; confirme ou réfute avec des preuves concrètes. »
 
-## Gabarit de première passe Codex
+## Invocation Codex — skill personnel `$wellneuro-pr-review`
 
-Objectif · niveau de risque (P0/P1) · diff et fichiers concernés · invariants
-WellNeuro pertinents (jamais tout `CLAUDE.md`) · tests existants ·
-« lecture seule, findings uniquement, classés P0/P1 (P2 si réellement
-utile) » — pas de dissertation.
+La passe standard s'invoque par le skill personnel Codex de l'utilisateur —
+hors dépôt, déclenché manuellement, sur son abonnement et son connecteur
+GitHub. Claude **prépare le bloc**, l'utilisateur le lance :
+
+```text
+$wellneuro-pr-review
+PR: <url>
+Risque: P0 | P1
+Passe: première | correction
+Périmètre: complet | <chemins> | <findings>
+Profondeur: standard | sécurité
+Findings: <liste — passe correction seulement>
+Invariants: <2-5 invariants pertinents, jamais tout CLAUDE.md>
+```
+
+Secours si le skill n'est pas disponible : prompt collé portant les mêmes
+éléments — objectif, niveau de risque, diff et fichiers, invariants
+pertinents, tests existants, « lecture seule, findings uniquement, classés
+P0/P1 (P2 si réellement utile) » — pas de dissertation.
 
 ## Divergence Claude / Codex
 
