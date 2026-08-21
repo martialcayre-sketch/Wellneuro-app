@@ -1,4 +1,4 @@
-# 2026-08-21 22:45 — Le portefeuille de campagnes se réarbitre autour de 6.0
+# Handoff — 2026-08-21 — Le portefeuille de campagnes se réarbitre autour de 6.0
 
 ## Ce qui a changé
 
