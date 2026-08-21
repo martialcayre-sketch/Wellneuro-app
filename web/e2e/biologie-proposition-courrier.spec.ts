@@ -50,8 +50,31 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // Le panneau vit dans la phase Actions du cycle clinique — pas dans un
     // onglet à part. Sans épisode confirmé la phase resterait « à ouvrir » :
     // c'est la fixture qui la rend atteignable.
+    // La surface est interrogée AVANT l'écran, et ce n'est pas du confort de
+    // débogage : le panneau n'est monté que si la route répond `ok`. Sans cette
+    // sonde, une surface fermée (drapeau absent) et un moteur qui s'abstient
+    // (motif clinique) rendent le MÊME symptôme qu'un sélecteur faux —
+    // « élément introuvable » —, et le banc accuse l'écran pour une cause qui
+    // n'y est pas. Le premier run en CI a coûté exactement cette confusion.
+    const sonde = await page.request.get(
+      `/api/praticien/biologie/proposition?idPatient=${PATIENT_ID}`,
+    );
+    const corpsSonde = await sonde.text();
+    expect(
+      sonde.status(),
+      `la route de proposition n'a pas répondu 200 — corps : ${corpsSonde}`,
+    ).toBe(200);
+    expect(
+      JSON.parse(corpsSonde).ok,
+      `la proposition est indisponible — corps : ${corpsSonde}`,
+    ).toBe(true);
+
     const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
     await rail.getByRole('tab', { name: /Actions/ }).click();
+
+    // La phase Actions est bien celle qui s'affiche — sinon l'absence du
+    // panneau ne dirait rien de la biologie, seulement de la navigation.
+    await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
 
     const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
     await expect(panneau).toBeVisible();
