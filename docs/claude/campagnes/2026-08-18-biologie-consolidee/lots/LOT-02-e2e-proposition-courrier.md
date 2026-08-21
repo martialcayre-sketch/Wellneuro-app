@@ -87,9 +87,10 @@ requête parte, et `wn-test-worktree.sh` le classe tout seul.
   `isCbPropositionEnabled` exige `WN_CB_ENABLED` **et** `WN_CB_PROPOSITION` ;
   ni `wn-test-worktree.sh`, ni le job `verify`, ni `webServer.env` de
   Playwright ne les portaient. Sans eux, la route rend 503 et le parcours
-  passerait au vert **sans rien trouver à cliquer**. Les trois les portent
-  désormais — c'est de la configuration de test, l'interdit « aucun code
-  applicatif » tient.
+  passerait au vert **sans rien trouver à cliquer**. Ils vivent désormais dans
+  `webServer.env` seul — les poser au niveau du job CI a fait rougir 10 bancs
+  unitaires, la suite Vitest tournant en position CB éteinte. C'est de la
+  configuration de test : l'interdit « aucun code applicatif » tient.
 - **Le point 5 n'a pas de garde serveur** : la double consignation est refusée
   côté écran seulement (bouton désactivé). C'est la dette que la campagne
   nomme déjà (« deux onglets peuvent encore établir deux lettres ») ; le spec

@@ -294,15 +294,6 @@ export GOOGLE_CLIENT_ID="ci-placeholder"
 export GOOGLE_CLIENT_SECRET="ci-placeholder"
 export PLAYWRIGHT_BASE_URL="http://localhost:${APP_PORT}"
 export PORT="$APP_PORT"
-# Drapeaux du rayon biologie. `isCbPropositionEnabled` exige LES DEUX
-# (web/src/lib/biology-library/featureFlag.ts) : sans eux la route de
-# proposition rend 503, le panneau ne monte pas, et le parcours E2E de la
-# surface biologie ne prouverait rien — il passerait au vert en ne trouvant
-# rien à cliquer. Posés ici ET dans le job `verify` de ci.yml : un spec qui ne
-# passe que sur le Mac dont le .env.local porte les drapeaux est pire qu'un
-# spec absent.
-export WN_CB_ENABLED="true"
-export WN_CB_PROPOSITION="true"
 # Parité ressources : les runners CI ont 4 vCPU. Ce conteneur peut avoir plus
 # de cœurs mais moins de RAM — sans plafond, Vitest démarre un worker jsdom
 # par cœur et leur démarrage expire sous charge (« Failed to start forks

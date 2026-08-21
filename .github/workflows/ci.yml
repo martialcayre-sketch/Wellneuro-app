@@ -62,14 +62,6 @@ jobs:
       NEXTAUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
-      # Drapeaux du rayon biologie. `isCbPropositionEnabled` exige LES DEUX
-      # (web/src/lib/biology-library/featureFlag.ts) : sans eux la route de
-      # proposition rend 503, le panneau ne monte pas, et le parcours E2E de
-      # la surface biologie passerait au vert en ne trouvant rien à cliquer.
-      # Mêmes valeurs que `scripts/wn-test-worktree.sh`, qui revendique la
-      # parité env de ce job.
-      WN_CB_ENABLED: 'true'
-      WN_CB_PROPOSITION: 'true'
     steps:
       - uses: actions/checkout@v4
         with:

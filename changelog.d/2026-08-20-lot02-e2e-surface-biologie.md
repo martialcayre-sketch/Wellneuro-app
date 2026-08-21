@@ -16,7 +16,15 @@ ne les traversait**. Ce qui y casserait n'aurait été vu que par un praticien.
   revendique pourtant la parité env du job CI), ni dans le job `verify`, ni
   dans `webServer.env` de Playwright. Sans eux la route rend 503 : un parcours
   écrit sans ce préalable serait passé au vert **en ne trouvant rien à
-  cliquer**. Les trois portent désormais la paire.
+  cliquer**.
+- **Et le remède naïf était pire que le mal** : posés au niveau du job CI et du
+  script de worktree, les drapeaux ont fait rougir **10 bancs unitaires**. La
+  suite Vitest s'exécute en position CB ÉTEINTE, et `/api/praticien/fil`
+  interroge `arbitrageBiologique` dès que `WN_CB_ENABLED` est vrai — modèle
+  absent du double de test, donc 500. Un drapeau posé sur le runner déplace la
+  position de **toute** la suite. Ils vivent désormais dans le seul
+  `webServer.env` de Playwright, avec les autres drapeaux d'E2E : là, ils ne
+  touchent que le serveur sous test.
 - **Nettoyage marqué, pas approximatif** : la lettre se reconnaît à son
   destinataire, le panel déclaré à sa date de bilan, la passation à son
   préfixe. Un `deleteMany` sur le seul `idPatient` aurait emporté, sur la base

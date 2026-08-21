@@ -10,8 +10,14 @@
   `nettoyerDossierBiologie`. Une passation `Q_STR_02` en zone danger suffit à
   déclencher `PANEL_STRESS_1` (mode `conditionnel`, donc dans
   `STATUTS_PROPOSES` : le formulaire de courrier s'affiche).
-- **Les drapeaux, dans les TROIS endroits** : `wn-test-worktree.sh`, job
-  `verify`, et `webServer.env` de Playwright.
+- **Les drapeaux, dans `webServer.env` de Playwright — et là seulement.**
+  Première version : posés aussi au niveau du job CI et du script de worktree.
+  Le CI a rougi sur 10 bancs unitaires, et la leçon vaut d'être retenue : la
+  suite Vitest tourne en position CB ÉTEINTE, `/api/praticien/fil` interroge
+  `arbitrageBiologique` dès que `WN_CB_ENABLED` est vrai, et ce modèle n'est
+  pas dans le double de test. **Un drapeau posé sur le runner déplace la
+  position de toute la suite** ; `webServer.env` ne touche que le serveur sous
+  test.
 - `web/prisma/seed.ts` intact, aucun code applicatif touché.
 
 ## À savoir pour la suite
