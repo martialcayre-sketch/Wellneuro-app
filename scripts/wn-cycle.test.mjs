@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  analyserArguments,
   cheminsDuPorcelain,
   diagnostiquer,
   estFragmentDeHandoff,
@@ -325,6 +326,26 @@ test('extraireDecisionsRecentes : un D-NNN cité dans la prose ne compte pas', (
 test('extraireDecisionsRecentes : registre vide ou absent', () => {
   assert.deepEqual(extraireDecisionsRecentes(''), []);
   assert.deepEqual(extraireDecisionsRecentes(null), []);
+});
+
+// ── Arguments CLI : `--local` saute réseau et gh, il doit être reconnu ───────
+//
+// `--local` est consommé par les préambules de `/wn-finish` et `/wn-handoff`,
+// qui ne lisent que les faits de clôture : un drapeau mal analysé referait le
+// fetch et les appels gh en silence — exactement ce que le mode existe pour
+// éviter.
+
+test('analyserArguments : --local, --appliquer et l’aide sont reconnus, sans ordre imposé', () => {
+  assert.deepEqual(analyserArguments([]), { local: false, appliquer: false, aide: false });
+  assert.deepEqual(analyserArguments(['--local']), { local: true, appliquer: false, aide: false });
+  assert.deepEqual(analyserArguments(['--appliquer', '--local']), {
+    local: true,
+    appliquer: true,
+    aide: false,
+  });
+  assert.equal(analyserArguments(['--help']).aide, true);
+  assert.equal(analyserArguments(['--aide']).aide, true);
+  assert.equal(analyserArguments(['--locale']).local, false);
 });
 
 // ── `reparer()` : ce qu'il écrit, et surtout ce qu'il n'écrit plus ───────────
