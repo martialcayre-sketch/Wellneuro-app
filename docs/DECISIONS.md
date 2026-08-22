@@ -4,6 +4,35 @@
 
 ## Décisions actives
 
+### D-082 — Le corpus de synthèse est signé : validation clinique du responsable, contenu inchangé
+
+- Date : 2026-08-22
+- Statut : accepté (**acte clinique du responsable**, rendu en session le
+  2026-08-22 après relecture intégrale du corpus affiché)
+- Domaine : clinique, synthèse IA, `corpusSyntheseV1.ts`
+
+- Contexte : dernière table clinique non signée du dépôt
+  (`validationExterne: false` depuis sa création). Son contenu : 30 lignes de
+  cadre méthodologique pour le prompt de synthèse — prudence clinique, axes
+  d'analyse, heuristiques de croisement, règles de formulation
+  (« hypothèse à explorer », jamais de causalité affirmée). Aucun seuil,
+  aucun dosage, aucune borne chiffrée.
+
+**1. Ce que la décision pose.** Le responsable valide cliniquement le corpus
+**tel quel** — pas un caractère du contenu ne change — et la métadonnée
+passe à `validationExterne: true`, datée du 2026-08-22. Le verrou de
+signature est ouvert ; le deuxième terme du ET
+(`WN_ENABLE_CORPUS_CLINIQUE_V1=1`) se pose en production **après** le
+déploiement qui porte la signature, comme geste d'exploitation daté —
+l'ordre « validation d'abord, flag ensuite » de `FEATURE_FLAGS.md` est
+respecté à la lettre.
+
+**2. Ce que ça allume, et ce dont ça dépend pour rester borné** (leçon de
+`D-065`) : le corpus est injecté dans le prompt de synthèse — il **cadre**
+la formulation, il ne décide rien. La couche déterministe garde la main
+(DC-02) ; la synthèse reste un brouillon soumis à validation praticien avant
+tout envoi, et ce frein-là est structurel, indépendant du drapeau.
+
 ### D-081 — Les derniers freins non cliniques tombent : recherche corpus ouverte, gate `WN_CB_RESULTS_ENABLED` requalifié
 
 - Date : 2026-08-22

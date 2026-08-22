@@ -52,7 +52,7 @@ clinique**. Ne pas forcer la métadonnée de validation pour « voir » la featu
 
 | Flag | Valeur ON | 2ᵉ condition | État (daté) |
 |---|---|---|---|
-| `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
+| `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | **signée le 2026-08-22** ([[D-082]] — validation clinique du responsable, contenu inchangé) ; **drapeau posé en Production (Scalingo) le 2026-08-22, après le déploiement portant la signature** → les deux conditions remplies, le corpus cadre le prompt de synthèse |
 | `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (5 termes depuis `D-067` : validation + date non nulle + forme ISO canonique + claims + concordance `shaPerimetre`) | **20 règles**, `validationExterne: true` depuis le 2026-08-04, et **drapeau POSÉ en Production** — constaté le 2026-08-18 par le comportement ([[D-074]]) → **les deux conditions sont remplies ; l'orientation SERT** |
 | `WN_ENABLE_CONTRADICTIONS_NNPP2` | `1` | `tableSignee()` de `contradictionsService.ts` (5 termes depuis `D-067` : validation + date non nulle + forme ISO canonique + claims + concordance `shaPerimetre`) | **1 règle publiée (C-STR)**, table **signée le 2026-08-15** ([[D-061]]) et **drapeau posé en Production le 2026-08-16** ([[D-064]]) → **les deux conditions sont remplies ; les constats sortent au prochain déploiement de production**. L'affichage est câblé depuis [[D-050]] (route cockpit → panneau) |
 
@@ -111,7 +111,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-16T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |
-| `clinical/corpusSyntheseV1.ts` | `false` | `null` |
+| `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
