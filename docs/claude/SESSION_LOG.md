@@ -4493,3 +4493,19 @@ blanche vu rouge sous trois mutations, parité prouvée. Écarté : verrou base
 db-prisma.md, DEPLOIEMENT_RELEASE_DB.md alignés sur D-086. Prochaine action :
 T3, revue wn-reviewer, PR (merge = production, go responsable). Ouvert :
 repointage du secret (geste responsable), deux runs release-db en attente.
+
+## 2026-08-22 — Alliance 6.0-A : LOT-02 (objectif négocié) et LOT-03 (« ce qui compte »), en parallèle
+
+Décisions : drapeau sur la seule surface patient (`WN_CE_QUI_COMPTE`, neuf et
+éteint), aucun sur la surface praticien ; dépôt patient autorisé sur dossier
+clos — la clôture est un état du suivi, pas un ordre de silence ; ratification
+lue et jamais écrite au LOT-02 (le geste appartient au patient, donc au
+LOT-06) ; toutes les têtes de chaîne affichées plutôt que départagées en
+silence. Vérifié en production avant d'écrire : les tables appartiennent au
+rôle applicatif et `relforcerowsecurity = f` — sans cette lecture, T2 et T3
+seraient restés verts sur une production muette. Écarté : reprendre la plainte
+Q_MOD_03 (produite par le seul POST de confirmation d'épisode — la recalculer
+serait toucher au moteur). Onze gardes vues rouges par mutation réelle. Deux
+revues ont trouvé ce que je n'aurais pas vu : un 500 atteignable sans session,
+et deux gardes plus étroites que leur intitulé. Prochaine action : PR des deux
+lots. Ouvert : cadence sur les routes d'écriture, allumage du drapeau.

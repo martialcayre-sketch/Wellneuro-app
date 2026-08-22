@@ -1,0 +1,467 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { getServerSession, prisma } = vi.hoisted(() => ({
+  getServerSession: vi.fn(),
+  prisma: {
+    patient: { findUnique: vi.fn() },
+    consultation: { findFirst: vi.fn() },
+    objectifNegocie: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      // `update` et `delete` sont moqués EXPRÈS, alors que la route ne les
+      // appelle jamais : sans eux, l'assertion « append-only » ne pourrait pas
+      // être écrite — un mock absent lèverait au lieu de compter zéro.
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    // Le geste de ratification appartient au patient (LOT-06). Les écritures
+    // sont moquées pour prouver que cette route ne les emprunte jamais.
+    ratificationObjectif: { findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+  },
+}));
+
+vi.mock('next-auth', () => ({ getServerSession }));
+vi.mock('@/lib/auth', () => ({ authOptions: {} }));
+vi.mock('@/lib/prisma', () => ({ prisma }));
+
+import { GET, POST } from './route';
+import {
+  LONGUEUR_MAX_ENONCE,
+  LONGUEUR_MAX_MOTIF,
+  LONGUEUR_MAX_PRIORITE,
+  LONGUEUR_MAX_REFORMULATION,
+  TOLERANCE_FUSEAU_MS,
+} from '@/lib/praticien/objectifNegocie';
+
+const URL_BASE = 'http://localhost/api/praticien/objectifs';
+
+function getRequest(query = 'idPatient=PAT_TEST'): Request {
+  return new Request(`${URL_BASE}?${query}`);
+}
+
+function postRequest(body: unknown): Request {
+  return new Request(URL_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+const corps = (partiel: Record<string, unknown> = {}) => ({
+  idPatient: 'PAT_TEST',
+  enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+  ...partiel,
+});
+
+const ligneLue = (partiel: Record<string, unknown> = {}) => ({
+  id: 'OBJ_1',
+  enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+  reformulationPraticien: null,
+  priorite: null,
+  nonTraiteMotif: null,
+  nonTraiteDepuisLe: null,
+  negocieLe: null,
+  creeLe: new Date('2026-08-20T09:00:00.000Z'),
+  supersedesObjectifId: null,
+  ...partiel,
+});
+
+describe('/api/praticien/objectifs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    // Une seule fixture patient : la garde d'appartenance et le contrôle de
+    // clôture lisent tous deux `patient.findUnique`.
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'praticien@wellneuro.fr',
+      actif: true,
+      suiviClotureLe: null,
+    });
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    prisma.objectifNegocie.findMany.mockResolvedValue([]);
+    prisma.objectifNegocie.findUnique.mockResolvedValue(null);
+    prisma.objectifNegocie.findFirst.mockResolvedValue(null);
+    prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+    prisma.objectifNegocie.create.mockImplementation(
+      async ({ data }: { data: Record<string, unknown> }) => ({
+        id: 'OBJ_NEUF',
+        enoncePatient: data.enoncePatient,
+        reformulationPraticien: data.reformulationPraticien ?? null,
+        priorite: data.priorite ?? null,
+        nonTraiteMotif: data.nonTraiteMotif ?? null,
+        nonTraiteDepuisLe: data.nonTraiteDepuisLe ?? null,
+        negocieLe: data.negocieLe ?? null,
+        supersedesObjectifId: data.supersedesObjectifId ?? null,
+        // La base pose le présent : le mock reflète ce contrat, pas l'appelant.
+        creeLe: new Date('2026-08-22T09:00:00.000Z'),
+      }),
+    );
+  });
+
+  // ── Droits ────────────────────────────────────────────────────────────────
+
+  it('exige une session, au GET comme au POST', async () => {
+    getServerSession.mockResolvedValue(null);
+    expect((await GET(getRequest())).status).toBe(401);
+    expect((await POST(postRequest(corps()))).status).toBe(401);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    // Aucune session : rien n'a été lu, donc rien à journaliser.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse le dossier d’un autre praticien, sans écrire ni journaliser', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'autre@wellneuro.fr',
+      actif: true,
+      suiviClotureLe: null,
+    });
+    expect((await GET(getRequest())).status).toBe(403);
+    expect((await POST(postRequest(corps()))).status).toBe(403);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('répond 404 sur un patient inconnu', async () => {
+    prisma.patient.findUnique.mockResolvedValue(null);
+    expect((await GET(getRequest())).status).toBe(404);
+    expect((await POST(postRequest(corps()))).status).toBe(404);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('valide l’identifiant patient avant de toucher la base', async () => {
+    expect((await GET(getRequest('idPatient='))).status).toBe(400);
+    expect((await GET(getRequest('idPatient=PAT%20TEST'))).status).toBe(400);
+    expect((await POST(postRequest(corps({ idPatient: '' })))).status).toBe(400);
+    expect((await POST(postRequest(corps({ idPatient: 'PAT TEST' })))).status).toBe(400);
+    // La garde d'appartenance JOURNALISE : la tester après le format ferait
+    // consigner un accès qui n'a pas eu lieu.
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('le GET journalise EXACTEMENT une fois, sous le gabarit littéral ; le POST jamais', async () => {
+    expect((await GET(getRequest())).status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/objectifs',
+        methode: 'GET',
+      },
+    });
+
+    // Une écriture laisse déjà sa propre trace datée et attribuée (GD-1).
+    prisma.journalAccesDossier.create.mockClear();
+    expect((await POST(postRequest(corps()))).status).toBe(201);
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('journalise le gabarit, jamais l’URL reçue', async () => {
+    await GET(getRequest('idPatient=PAT_TEST&sonde=valeur-indiscrete'));
+    const data = prisma.journalAccesDossier.create.mock.calls[0][0].data;
+    expect(data.route).toBe('/api/praticien/objectifs');
+    expect(JSON.stringify(data)).not.toContain('sonde');
+  });
+
+  it('refuse toute écriture dans un dossier clos (le refus vit dans la route, pas dans l’écran)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      praticienEmail: 'praticien@wellneuro.fr',
+      actif: true,
+      suiviClotureLe: new Date('2026-08-01T00:00:00.000Z'),
+    });
+    const res = await POST(postRequest(corps()));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('dossier_cloture');
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    // La lecture, elle, reste ouverte : un dossier clos se relit.
+    expect((await GET(getRequest())).status).toBe(200);
+  });
+
+  // ── Le cœur du lot : deux dates ───────────────────────────────────────────
+
+  it('écrit un objectif sans JAMAIS transmettre la date d’écriture (G4)', async () => {
+    const res = await POST(postRequest(corps({ negocieLe: '2026-08-20' })));
+    const payload = await res.json();
+
+    expect(res.status).toBe(201);
+    const data = prisma.objectifNegocie.create.mock.calls[0][0].data;
+    // La date d'ÉVÉNEMENT est une donnée portée par l'appelant…
+    expect(data.negocieLe.toISOString()).toBe('2026-08-20T00:00:00.000Z');
+    expect(data.praticienEmail).toBe('praticien@wellneuro.fr');
+    // …la date d'ENREGISTREMENT ne part pas de l'application : `cree_le` est
+    // posé par la base. C'est ce qui rend la ligne inantidatable.
+    expect(data).not.toHaveProperty('creeLe');
+    expect(data).not.toHaveProperty('cree_le');
+    // Et les deux restent distinctes dans ce qui est rendu.
+    expect(payload.objectif.negocieLe).toBe('2026-08-20T00:00:00.000Z');
+    expect(payload.objectif.creeLe).toBe('2026-08-22T09:00:00.000Z');
+  });
+
+  // ── Validation d'entrée ───────────────────────────────────────────────────
+
+  it('rend 400 — jamais 500 — sur un corps dont les champs ne sont pas des chaînes', async () => {
+    const res = await POST(postRequest({ idPatient: 'PAT_TEST', enoncePatient: 123 }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('enonce_absent');
+
+    expect((await POST(postRequest({ idPatient: 42, enoncePatient: 'Texte.' }))).status).toBe(400);
+    expect((await POST(postRequest(corps({ supersedesObjectifId: { ruse: true } })))).status).toBe(400);
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse chaque borne de longueur, sans rien tronquer', async () => {
+    const cas: [Record<string, unknown>, string][] = [
+      [{ enoncePatient: 'a'.repeat(LONGUEUR_MAX_ENONCE + 1) }, 'enonce_trop_long'],
+      [{ reformulationPraticien: 'a'.repeat(LONGUEUR_MAX_REFORMULATION + 1) }, 'reformulation_trop_longue'],
+      [{ priorite: 'a'.repeat(LONGUEUR_MAX_PRIORITE + 1) }, 'priorite_trop_longue'],
+      [
+        { nonTraiteMotif: 'a'.repeat(LONGUEUR_MAX_MOTIF + 1), nonTraiteDepuisLe: '2026-08-01' },
+        'motif_trop_long',
+      ],
+    ];
+    for (const [partiel, raison] of cas) {
+      const res = await POST(postRequest(corps(partiel)));
+      expect(res.status).toBe(400);
+      expect((await res.json()).reason).toBe(raison);
+    }
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une date d’événement future au-delà de la tolérance de fuseau', async () => {
+    const loin = new Date(Date.now() + TOLERANCE_FUSEAU_MS + 60 * 60 * 1000).toISOString();
+    const res = await POST(postRequest(corps({ negocieLe: loin })));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('date_future');
+
+    // …mais accepte la date du jour lue minuit UTC (la tolérance sert à ça).
+    const dansUneHeure = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    expect((await POST(postRequest(corps({ negocieLe: dansUneHeure })))).status).toBe(201);
+  });
+
+  it('refuse une date d’événement illisible', async () => {
+    const res = await POST(postRequest(corps({ negocieLe: 'hier' })));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('date_invalide');
+  });
+
+  it('refuse un « non traité pour l’instant » dépareillé (motif sans date, date sans motif)', async () => {
+    const sansDate = await POST(postRequest(corps({ nonTraiteMotif: 'La priorité est ailleurs.' })));
+    expect(sansDate.status).toBe(400);
+    expect((await sansDate.json()).reason).toBe('non_traite_incomplet');
+
+    const sansMotif = await POST(postRequest(corps({ nonTraiteDepuisLe: '2026-08-01' })));
+    expect(sansMotif.status).toBe(400);
+    expect((await sansMotif.json()).reason).toBe('non_traite_incomplet');
+
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  // ── Révision : append-only ────────────────────────────────────────────────
+
+  it('reformule par une NOUVELLE ligne chaînée — jamais par un update ni un delete', async () => {
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_TEST',
+      enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+    });
+
+    const res = await POST(
+      postRequest(
+        corps({
+          supersedesObjectifId: 'OBJ_1',
+          enoncePatient: 'Énoncé réécrit par l’appelant.',
+          reformulationPraticien: 'Sommeil fragmenté en seconde partie de nuit.',
+        }),
+      ),
+    );
+    expect(res.status).toBe(201);
+
+    const data = prisma.objectifNegocie.create.mock.calls[0][0].data;
+    expect(data.supersedesObjectifId).toBe('OBJ_1');
+    // L'énoncé vient de la CIBLE VÉRIFIÉE, jamais du corps : sinon on ferait
+    // dire au patient, ligne après ligne, autre chose que ce qu'il a dit.
+    expect(data.enoncePatient).toBe('Je voudrais dormir sans me réveiller à trois heures.');
+    expect(prisma.objectifNegocie.update).not.toHaveBeenCalled();
+    expect(prisma.objectifNegocie.updateMany).not.toHaveBeenCalled();
+    expect(prisma.objectifNegocie.delete).not.toHaveBeenCalled();
+    expect(prisma.objectifNegocie.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('rend le MÊME 404 pour une cible inexistante et pour une cible d’un autre dossier', async () => {
+    prisma.objectifNegocie.findUnique.mockResolvedValue(null);
+    const absente = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_FANTOME' })));
+
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_AUTRE',
+      enoncePatient: 'Énoncé d’un autre dossier.',
+    });
+    const etrangere = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_AUTRE' })));
+
+    expect(absente.status).toBe(404);
+    expect(etrangere.status).toBe(404);
+    // Même réponse, même message : la route n'est pas un oracle d'existence.
+    expect(await absente.json()).toEqual(await etrangere.json());
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse 409 une cible déjà reformulée, plutôt que de scinder la chaîne', async () => {
+    prisma.objectifNegocie.findUnique.mockResolvedValue({
+      idPatient: 'PAT_TEST',
+      enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+    });
+    prisma.objectifNegocie.findFirst.mockResolvedValue({ id: 'OBJ_2' });
+
+    const res = await POST(postRequest(corps({ supersedesObjectifId: 'OBJ_1' })));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('objectif_supplante');
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('n’expose ni PATCH ni DELETE : il n’existe aucun verbe pour écraser', async () => {
+    const handlers = await import('./route');
+    expect(handlers).not.toHaveProperty('PATCH');
+    expect(handlers).not.toHaveProperty('DELETE');
+    expect(handlers).not.toHaveProperty('PUT');
+  });
+
+  // ── Lecture ───────────────────────────────────────────────────────────────
+
+  it('rend les têtes de chaîne ET la trajectoire complète de chacune', async () => {
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      ligneLue({
+        id: 'OBJ_2',
+        supersedesObjectifId: 'OBJ_1',
+        reformulationPraticien: 'Sommeil fragmenté.',
+        creeLe: new Date('2026-08-21T09:00:00.000Z'),
+      }),
+      ligneLue({ id: 'OBJ_1', creeLe: new Date('2026-08-20T09:00:00.000Z') }),
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.objectifs.map((o: { id: string }) => o.id)).toEqual(['OBJ_2']);
+    // La version supplantée n'est pas perdue : elle vit dans la trajectoire.
+    expect(payload.trajectoires).toHaveLength(1);
+    expect(payload.trajectoires[0].idObjectif).toBe('OBJ_2');
+    expect(payload.trajectoires[0].lignes.map((l: { id: string }) => l.id)).toEqual(['OBJ_2', 'OBJ_1']);
+  });
+
+  it('rend TOUTES les têtes quand deux reformulations concurrentes ont scindé la chaîne', async () => {
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      ligneLue({ id: 'OBJ_3', supersedesObjectifId: 'OBJ_1', creeLe: new Date('2026-08-21T09:00:01.000Z') }),
+      ligneLue({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1', creeLe: new Date('2026-08-21T09:00:00.000Z') }),
+      ligneLue({ id: 'OBJ_1', creeLe: new Date('2026-08-20T09:00:00.000Z') }),
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.objectifs.map((o: { id: string }) => o.id)).toEqual(['OBJ_3', 'OBJ_2']);
+  });
+
+  it('sans aucune ligne de ratification, l’état est « en attente » — jamais « non ratifié »', async () => {
+    prisma.objectifNegocie.findMany.mockResolvedValue([ligneLue()]);
+    prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.ratifications).toEqual({ OBJ_1: 'en_attente' });
+    // Lecture seule : aucune écriture sur le geste du patient (LOT-06).
+    expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+    expect(prisma.ratificationObjectif.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('retient le dernier geste de ratification, jamais un décompte', async () => {
+    prisma.objectifNegocie.findMany.mockResolvedValue([ligneLue()]);
+    prisma.ratificationObjectif.findMany.mockResolvedValue([
+      { id: 'R1', idObjectif: 'OBJ_1', sens: 'ratifie', creeLe: new Date('2026-08-20T10:00:00.000Z') },
+      { id: 'R2', idObjectif: 'OBJ_1', sens: 'ratifie', creeLe: new Date('2026-08-20T11:00:00.000Z') },
+      { id: 'R3', idObjectif: 'OBJ_1', sens: 'conteste', creeLe: new Date('2026-08-21T11:00:00.000Z') },
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.ratifications).toEqual({ OBJ_1: 'conteste' });
+  });
+
+  it('distingue « aucune consultation validée » de « champ non renseigné » (DC-24)', async () => {
+    const sansConsultation = await (await GET(getRequest())).json();
+    expect(sansConsultation.ancrage).toEqual({
+      consultationValidee: false,
+      motifPrincipal: null,
+      objectifPrioritaire: null,
+      attentes: [],
+    });
+
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { motif_principal: '  Fatigue persistante.  ', attentes: ['Améliorer le sommeil'] },
+    });
+    const avecConsultation = await (await GET(getRequest())).json();
+    expect(avecConsultation.ancrage).toEqual({
+      consultationValidee: true,
+      motifPrincipal: 'Fatigue persistante.',
+      // La consultation existe, le champ est vide : ce n'est pas la même chose.
+      objectifPrioritaire: null,
+      attentes: ['Améliorer le sommeil'],
+    });
+  });
+
+  it('lit les trois champs d’ancrage, et seulement eux', async () => {
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: {
+        motif_principal: 'Fatigue persistante.',
+        objectif_prioritaire: 'Retrouver de l’énergie le matin.',
+        attentes: ['Améliorer le sommeil', 'Améliorer l’énergie'],
+        poids_actuel: '68',
+      },
+    });
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.ancrage).toEqual({
+      consultationValidee: true,
+      motifPrincipal: 'Fatigue persistante.',
+      objectifPrioritaire: 'Retrouver de l’énergie le matin.',
+      attentes: ['Améliorer le sommeil', 'Améliorer l’énergie'],
+    });
+    // Le reste de l'anamnèse ne traverse pas cette route.
+    expect(JSON.stringify(payload.ancrage)).not.toContain('68');
+  });
+
+  it('ne lit que la consultation VALIDÉE du dossier', async () => {
+    await GET(getRequest());
+    expect(prisma.consultation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_TEST', statut: 'validee' } }),
+    );
+  });
+  // ── Constats de revue (2026-08-22) ────────────────────────────────────────
+
+  it.each([
+    ['null', null],
+    ['un nombre', 42],
+    ['une chaîne', '"texte"'],
+    ['un tableau', []],
+  ])('POST : un corps JSON valide mais qui n’est pas un objet (%s) rend 400, jamais 500', async (_nom, charge) => {
+    // `null`, `42`, `"texte"` et `[]` sont du JSON VALIDE : `req.json()` ne
+    // lève pas. Avant correction, `body.idPatient` levait sur `null` et la
+    // route rendait 500 — AVANT la garde, donc sans aucune session.
+    getServerSession.mockResolvedValue(null);
+    const reponse = await POST(postRequest(charge));
+
+    expect(reponse.status).toBe(400);
+    await expect(reponse.json()).resolves.toMatchObject({ ok: false, reason: 'invalid' });
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('GET : les attentes non textuelles de l’anamnèse sont écartées, jamais devinées', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_TEST', praticienEmail: 'praticien@wellneuro.fr' });
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { motif_principal: 'Sommeil', attentes: ['dormir', 42, null, '   ', 'récupérer'] },
+    });
+
+    const reponse = await GET(getRequest());
+    const donnees = await reponse.json();
+
+    expect(donnees.ancrage.attentes).toEqual(['dormir', 'récupérer']);
+  });
+});
