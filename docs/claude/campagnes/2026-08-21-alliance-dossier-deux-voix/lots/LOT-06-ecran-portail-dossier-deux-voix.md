@@ -1,6 +1,6 @@
 ---
 id: "LOT-06"
-statut: "à faire"
+statut: "en cours (2026-08-22) — cadrage rendu, trois hypothèses du lot corrigées contre le dépôt : l'écran assemble trois lectures patient dont DEUX N'EXISTENT PAS, la visibilité praticien est déjà livrée au LOT-02, et le chemin sortant N'EST PAS déjà inscrit (servir la reformulation praticien est un chemin neuf)"
 dépend_de: "LOT-02, LOT-03, LOT-04 (LOT-05 souhaitable, non bloquant)"
 ---
 

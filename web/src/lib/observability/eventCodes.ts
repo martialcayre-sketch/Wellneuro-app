@@ -20,6 +20,12 @@ export const EVENT_CODES = {
   // compréhension (journalisant, jamais bloquant : le refus confirmable vit à
   // la PUBLICATION, côté praticien, où un humain peut trancher — `D-090`).
   PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.COMPREHENSION.REGISTRE_ANXIOGENE',
+  // Alliance LOT-06 — re-vérification au service de l'écran d'assemblage. UN
+  // SEUL CODE POUR DEUX TEXTES (la reformulation de l'objectif et la synthèse
+  // servies ensemble) : l'événement dit qu'un registre anxiogène est parti vers
+  // ce patient par cette route, et le distinguer par champ ferait porter au
+  // journal une indication sur le CONTENU servi.
+  PORTAIL_DOSSIER_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.DOSSIER_DEUX_VOIX.REGISTRE_ANXIOGENE',
 
   // Gate G4 — lien magique. Le rejeu est refusé ET tracé : c'est une exigence
   // du registre, pas du confort de diagnostic.

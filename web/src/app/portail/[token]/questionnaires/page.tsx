@@ -22,6 +22,7 @@ import {
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
+import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
@@ -279,6 +280,12 @@ export default function QuestionnairesHubPage() {
         <a href={`/portail/${token}/suivi`} className={patientButtonClassName('ghost')}>
           Ouvrir mes rendez-vous de suivi
         </a>
+        {/* ICI, et non dans « Mon accompagnement » : ce dernier est replié et
+            placé après un retour anticipé qui exige un protocole diffusé — un
+            patient sans protocole n'y verrait jamais ce lien. Le composant se
+            rend lui-même invisible tant que la route ne dit pas que la surface
+            est ouverte (LOT-06). */}
+        <LienDossierDeuxVoix token={token} />
       </nav>
 
       {/*

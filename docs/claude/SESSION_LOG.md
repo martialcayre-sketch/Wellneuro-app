@@ -4546,3 +4546,21 @@ assumé puis rebase). T1/T2/CI verts, merge Copilot, worktree retiré. Prochaine
 action : aucune. Ouvert : `AGD_REV_MOY` mélange planchers v2 et comptes v3
 (sous-estimation documentée, se résorbe seule) ; l'affichage praticien d'un 3
 historique ne dit pas « ou plus ».
+
+## 2026-08-22 — Alliance 6.0-A LOT-06 : le dossier à deux voix au portail (D-092)
+
+Décisions : drapeau NEUF `WN_DOSSIER_DEUX_VOIX` gardant écran, route et
+ratification — composer les deux drapeaux existants aurait ouvert la seule
+écriture patient irréversible du geste qui ouvre une lecture ; un bloc fermé est
+ABSENT, pas vide ; deux têtes d'objectif ⇒ aucune ratification proposée (409
+même sur la plus récente) ; `geste_le` reste NULLE (colonne de déclaration, le
+patient ne date pas son clic) ; lien dans la nav du hub, pas dans le panneau
+replié des LOT-03/04. `D-092` : le gate de campagne se constate sur la
+STRUCTURE, par conteneur Scalingo — le MCP lit la base gelée. Trois mutations
+vues rouges. Écarté : recopier la séquence « Avant de commencer » dans le spec
+(provision en base) ; faire remonter le drapeau au cockpit (libellé vrai dans
+les deux positions à la place). Revue NO-GO refermée : B2 — l'écran comblait
+`saisiLe` par `creeLe` et disait « Écrit le » sur une publication, deux absences
+rendues comme des réponses. Prochaine action : T3, PR, puis clôture de campagne.
+Ouvert : constat du gate NON FAIT (login Scalingo du responsable) ; trois
+drapeaux non posés ; aucune cadence sur la ratification.

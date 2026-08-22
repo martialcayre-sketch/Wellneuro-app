@@ -200,13 +200,32 @@ const EXCEPTION_EFFACEMENT = 'src/lib/patient/effacement.ts';
 const ECRITURES_DESTRUCTRICES = /objectifNegocie\.(updateMany|update|deleteMany|delete|upsert)\b/;
 
 /**
- * LA RATIFICATION EST UN GESTE DU PATIENT (LOT-06). Le LOT-02 la LIT et ne
- * l'écrit jamais — y compris par `create` : une route praticien qui créerait
- * une ligne de ratification fabriquerait un acte que le patient n'a pas posé.
- * Jusqu'ici l'invariant ne tenait que par une assertion de mock dans un banc de
- * route ; rien n'empêchait structurellement une autre route de l'écrire.
+ * LA RATIFICATION EST UN GESTE DU PATIENT, ET IL A DÉSORMAIS UN LIEU (LOT-06).
+ *
+ * Le LOT-02 interdisait TOUTE écriture, `create` compris : une route praticien
+ * qui créerait une ligne de ratification fabriquerait un acte que le patient
+ * n'a pas posé. Le LOT-06 ouvre le geste — et la garde ne s'ouvre pas avec lui,
+ * elle se DÉPLACE : la création est épinglée à l'unique route portail, tout le
+ * reste demeure interdit partout.
+ *
+ * Ce n'est PAS la même chose qu'ajouter une exception à la liste précédente.
+ * Une exception nommée `EXCEPTION_*` de plus aurait laissé l'interdit valoir
+ * « sauf là où quelqu'un a écrit » ; l'épinglage dit l'inverse — il n'y a
+ * qu'un écrivain, et le nommer fait rougir tout second.
  */
-const ECRITURES_RATIFICATION = /ratificationObjectif\.(create|createMany|updateMany|update|deleteMany|delete|upsert)\b/;
+const ECRIVAIN_RATIFICATION = 'src/app/api/portail/dossier/route.ts';
+
+/** La création : autorisée au seul écrivain ci-dessus. */
+const CREATION_RATIFICATION = /ratificationObjectif\.create\b/;
+
+/**
+ * Tout le reste : interdit PARTOUT, y compris à l'écrivain. Un patient qui
+ * change d'avis ajoute une ligne — rien ne se met à jour, rien ne s'écrase.
+ * `createMany` en fait partie : une ratification se pose une par une, un lot
+ * de gestes n'aurait aucun auteur identifiable.
+ */
+const ECRITURES_RATIFICATION_DESTRUCTRICES =
+  /ratificationObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
 
 function fichiersSources(racine: string): string[] {
   const absolu = path.join(RACINE_WEB, racine);
@@ -245,21 +264,48 @@ describe('G5 — un objectif ne se met jamais à jour, il se succède', () => {
     expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
   });
 
-  it('aucune ÉCRITURE de ratification — le geste appartient au patient (LOT-06)', () => {
+  it('une ratification ne se crée QUE depuis le portail — le geste appartient au patient', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    // ANTI-VACUITÉ : le parcours voit l'application entière, la route praticien
+    // du lot, ET l'écrivain qu'on prétend être le seul. Si ce dernier
+    // disparaissait ou était renommé, la garde deviendrait creuse en silence.
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ROUTE);
+    expect(fichiers).toContain(ECRIVAIN_RATIFICATION);
+
+    const fautifs = fichiers.filter((chemin) =>
+      CREATION_RATIFICATION.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Le détecteur mord pour de vrai : il TROUVE l'écrivain légitime. Un motif
+    // devenu inopérant rendrait la liste vide, donc ce cas vert.
+    expect(fautifs).toContain(ECRIVAIN_RATIFICATION);
+    expect(fautifs).toEqual([ECRIVAIN_RATIFICATION]);
+
+    // Et la route PRATICIEN, elle, ne l'écrit toujours pas — c'était
+    // l'invariant du LOT-02, il n'a pas bougé.
+    expect(fautifs).not.toContain(ROUTE);
+  });
+
+  it('une ratification ne se met jamais à jour ni ne se retire, nulle part', () => {
     const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
 
     expect(fichiers.length).toBeGreaterThan(200);
-    expect(fichiers).toContain(ROUTE);
+    expect(fichiers).toContain(ECRIVAIN_RATIFICATION);
 
     const fautifs = fichiers.filter((chemin) =>
-      ECRITURES_RATIFICATION.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+      ECRITURES_RATIFICATION_DESTRUCTRICES.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
     );
 
-    // Même anti-vacuité que ci-dessus : l'effacement supprime AUSSI les
-    // ratifications, donc le détecteur doit le trouver. S'il ne trouve plus
-    // rien, c'est le motif qui est mort, pas le dépôt qui est devenu sain.
+    // Anti-vacuité : l'effacement supprime AUSSI les ratifications, donc le
+    // détecteur doit le trouver. S'il ne trouve plus rien, c'est le motif qui
+    // est mort, pas le dépôt qui est devenu sain.
     expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
     expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
+
+    // L'ÉCRIVAIN LÉGITIME N'EST PAS DISPENSÉ : il crée, il ne corrige pas.
+    expect(fautifs).not.toContain(ECRIVAIN_RATIFICATION);
   });
 });
 

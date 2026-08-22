@@ -5,11 +5,13 @@ import {
   LONGUEUR_MAX_MOTIF,
   LONGUEUR_MAX_PRIORITE,
   LONGUEUR_MAX_REFORMULATION,
+  SENS_RATIFICATION,
   TOLERANCE_FUSEAU_MS,
   chaineDObjectif,
   etatRatification,
   objectifsCourants,
   preparerObjectif,
+  preparerRatification,
   type EntreeObjectif,
 } from './objectifNegocie';
 
@@ -265,5 +267,84 @@ describe('etatRatification', () => {
     ];
     expect(etatRatification('o1', lignes)).toBe('conteste');
     expect(etatRatification('o1', [...lignes].reverse())).toBe('conteste');
+  });
+});
+
+describe('preparerRatification — le geste du patient (LOT-06)', () => {
+  const base = { idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', sens: 'ratifie' };
+
+  it('prépare les deux sens de la taxonomie, et eux seuls', () => {
+    for (const sens of SENS_RATIFICATION) {
+      const prep = preparerRatification({ ...base, sens });
+      expect(prep.ok).toBe(true);
+      if (prep.ok) expect(prep.donnees.sens).toBe(sens);
+    }
+    expect(SENS_RATIFICATION).toEqual(['ratifie', 'conteste']);
+  });
+
+  it('refuse un sens hors taxonomie AVANT la base — le CHECK est un filet, pas une validation', () => {
+    for (const sens of ['peut_etre', 'RATIFIE', '', 'ratifie ok', 'null']) {
+      const prep = preparerRatification({ ...base, sens });
+      expect(prep.ok).toBe(false);
+      if (!prep.ok) expect(prep.raison).toBe('sens_invalide');
+    }
+  });
+
+  it('refuse une référence d’objectif absente ou vide', () => {
+    for (const idObjectif of [null, undefined, '', '   ']) {
+      const prep = preparerRatification({ ...base, idObjectif });
+      expect(prep.ok).toBe(false);
+      if (!prep.ok) expect(prep.raison).toBe('objectif_absent');
+    }
+  });
+
+  it('ne prépare AUCUNE date — ni celle du geste, ni celle de l’écriture', () => {
+    // `creeLe` est posée par la base (`@default(now())`), et `gesteLe` RESTE
+    // NULLE : c'est une colonne de DÉCLARATION, or le patient ne déclare
+    // aucune date — il clique. La remplir depuis l'horloge du serveur en
+    // ferait une déclaration qu'il n'a pas faite, et elle ne pourrait de toute
+    // façon jamais différer de `creeLe`.
+    const prep = preparerRatification(base);
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(Object.keys(prep.donnees).sort()).toEqual(['idObjectif', 'idPatient', 'sens']);
+  });
+
+  it('ignore toute date proposée par l’appelant — antidater reste impossible', () => {
+    const prep = preparerRatification({
+      ...base,
+      ...({ gesteLe: '2020-01-01T00:00:00.000Z', creeLe: '2020-01-01T00:00:00.000Z' } as object),
+    });
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(prep.donnees).not.toHaveProperty('gesteLe');
+    expect(prep.donnees).not.toHaveProperty('creeLe');
+  });
+
+  it('prend `idPatient` de l’appelant et non du corps — la route passe la session', () => {
+    const prep = preparerRatification({ ...base, idPatient: 'PAT_SEED_02' });
+    expect(prep.ok).toBe(true);
+    if (prep.ok) expect(prep.donnees.idPatient).toBe('PAT_SEED_02');
+  });
+
+  it('un changement d’avis est une LIGNE DE PLUS, jamais une correction', () => {
+    const premier = preparerRatification({ ...base, sens: 'ratifie' });
+    const second = preparerRatification({ ...base, sens: 'conteste' });
+    expect(premier.ok && second.ok).toBe(true);
+    if (!premier.ok || !second.ok) return;
+
+    // Rien dans ce que le module prépare ne désigne la ligne précédente : pas
+    // de `supersedes`, pas d'identifiant à mettre à jour. La chaîne d'un
+    // objectif se révise, la ratification s'ajoute.
+    expect(Object.keys(second.donnees)).not.toContain('supersedesRatificationId');
+    expect(Object.keys(second.donnees)).not.toContain('id');
+
+    // Et c'est le DERNIER geste qui fait foi, pas le premier ni la majorité.
+    expect(
+      etatRatification('obj-1', [
+        { id: 'r1', idObjectif: 'obj-1', sens: premier.donnees.sens, creeLe: new Date(1) },
+        { id: 'r2', idObjectif: 'obj-1', sens: second.donnees.sens, creeLe: new Date(2) },
+      ]),
+    ).toBe('conteste');
   });
 });

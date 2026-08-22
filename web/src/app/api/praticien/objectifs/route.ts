@@ -256,7 +256,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       ),
     });
   } catch (err) {
-    console.error('[praticien/objectifs GET]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/objectifs GET]', messageJournalisable(err));
     return echec('exception', 'Erreur technique.', 500);
   }
 }
@@ -266,6 +266,28 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
  * quels, jamais transformés : `anamnese.ts` reste en lecture seule.
  * N'est appelée que si une consultation validée existe.
  */
+/**
+ * Ce qu'on a le droit d'écrire au journal — SÛR PAR CONSTRUCTION.
+ *
+ * DETTE NOMMÉE PAR LA REVUE DU LOT-04, SOLDÉE ICI. Les deux `catch` de cette
+ * route journalisaient `err.message` brut sous un commentaire qui promettait
+ * « jamais le payload ». La promesse était sincère et fausse :
+ * `PrismaClientValidationError` RECOPIE le `data:` du `create` dans son message
+ * — soit l'énoncé du patient, la reformulation du praticien et son e-mail. On
+ * n'en garde que la CLASSE et le marqueur Prisma (`P2002`…), ni l'un ni l'autre
+ * ne pouvant porter une valeur.
+ *
+ * `marqueurPrisma` et non `code` : la garde anti-diagnostic refuse tout nom
+ * commençant par « code » — faux positif ici (c'est un code d'ERREUR), mais on
+ * renomme plutôt que d'assouplir une garde contournable par un nom bien choisi.
+ */
+function messageJournalisable(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  if (!err.name.startsWith('PrismaClient')) return err.message;
+  const marqueurPrisma = (err as { code?: unknown }).code;
+  return typeof marqueurPrisma === 'string' ? `${err.name} (${marqueurPrisma})` : err.name;
+}
+
 function lireAncrage(anamnese: unknown): AncrageAnamnese {
   const source =
     anamnese !== null && typeof anamnese === 'object' && !Array.isArray(anamnese)
@@ -412,7 +434,7 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
   } catch (err) {
     // Jamais le payload : il porte l'énoncé du patient et la compréhension du
     // praticien, le contenu le plus nominatif du dossier.
-    console.error('[praticien/objectifs POST]', err instanceof Error ? err.message : String(err));
+    console.error('[praticien/objectifs POST]', messageJournalisable(err));
     return echec('exception', 'Erreur technique.', 500);
   }
 }

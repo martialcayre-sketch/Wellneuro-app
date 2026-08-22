@@ -1,6 +1,6 @@
 ---
 id: "LOT-03"
-statut: "livré à la PR (2026-08-22) — dépôt portail sous drapeau neuf et éteint WN_CE_QUI_COMPTE, lecture praticien chronologique, cinq gardes vues rouges par mutation réelle puis vertes ; aucune migration, aucune colonne, aucune surface de correction ni de suppression"
+statut: "terminé (2026-08-22, mergé #755) — dépôt portail sous drapeau neuf et éteint WN_CE_QUI_COMPTE, lecture praticien chronologique, cinq gardes vues rouges par mutation réelle puis vertes ; aucune migration, aucune colonne, aucune surface de correction ni de suppression"
 dépend_de: "LOT-01 (migration appliquée, constatée par conteneur le 2026-08-22 : 58 migrations up to date, contrat alli_ vert)"
 ---
 

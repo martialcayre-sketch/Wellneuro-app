@@ -223,7 +223,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     );
     await attendreLeDossier();
 
-    expect(screen.getByText(/Pas encore proposé au patient/)).toBeTruthy();
+    expect(screen.getByText(/Aucune réponse du patient enregistrée/)).toBeTruthy();
     // Le geste patient n'existe pas avant le LOT-06 : « non ratifié »
     // porterait un jugement sur quelqu'un à qui rien n'a été demandé.
     expect(document.body.textContent).not.toContain('Non ratifié');

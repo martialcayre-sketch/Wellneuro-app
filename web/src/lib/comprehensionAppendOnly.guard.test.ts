@@ -24,6 +24,12 @@ const RACINE_WEB = path.resolve(__dirname, '../..');
 const MODULE = 'src/lib/praticien/syntheseComprehension.ts';
 const ROUTE_PRATICIEN = 'src/app/api/praticien/comprehension/route.ts';
 const ROUTE_PORTAIL = 'src/app/api/portail/comprehension/route.ts';
+/**
+ * La route d'ASSEMBLAGE du LOT-06. Elle sert la synthèse au patient sans être
+ * la route du LOT-04 : ces listes sont FIGÉES, et un fichier neuf y échapperait
+ * en silence — les interdits de forme ne s'appliquent qu'à ce qui est nommé.
+ */
+const ROUTE_DOSSIER = 'src/app/api/portail/dossier/route.ts';
 
 /**
  * Le source débarrassé de ses commentaires : la prose de ces fichiers PARLE des
@@ -128,7 +134,7 @@ describe('G2 — un désaccord ne se compte pas, ne se note pas, ne se moyenne p
     'taux',
   ];
 
-  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL])(
+  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL, ROUTE_DOSSIER])(
     '%s ne déclare aucune propriété de mesure ordonnée',
     (chemin) => {
       const noms = nomsDeclares(chemin);
@@ -141,6 +147,7 @@ describe('G2 — un désaccord ne se compte pas, ne se note pas, ne se moyenne p
         [MODULE]: 'preparerSynthese',
         [ROUTE_PRATICIEN]: 'SELECTION_SYNTHESE',
         [ROUTE_PORTAIL]: 'surfaceFermee',
+        [ROUTE_DOSSIER]: 'SELECTION_OBJECTIF',
       };
       expect(noms.length).toBeGreaterThan(8);
       expect(noms).toContain(ANCRES[chemin]);
@@ -172,7 +179,7 @@ describe('G3 — ni moteur clinique, ni code diagnostique', () => {
 
   const RACINES_DIAGNOSTIQUES = ['cim', 'icd', 'dsm', 'classification', 'diagnos'];
 
-  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL])(
+  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL, ROUTE_DOSSIER])(
     '%s n’importe aucun moteur clinique',
     (chemin) => {
       const source = sourceSansCommentaires(chemin);
@@ -183,7 +190,7 @@ describe('G3 — ni moteur clinique, ni code diagnostique', () => {
     },
   );
 
-  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL])(
+  it.each([MODULE, ROUTE_PRATICIEN, ROUTE_PORTAIL, ROUTE_DOSSIER])(
     '%s ne déclare aucune propriété de nature diagnostique',
     (chemin) => {
       const noms = nomsDeclares(chemin);
@@ -282,6 +289,7 @@ describe('G5 — rien ne s’écrase, rien ne se retire', () => {
     expect(tous.length).toBeGreaterThan(200);
     expect(tous).toContain(ROUTE_PRATICIEN);
     expect(tous).toContain(ROUTE_PORTAIL);
+    expect(tous).toContain(ROUTE_DOSSIER);
     expect(tous).toContain(EXCEPTION_EFFACEMENT);
   });
 

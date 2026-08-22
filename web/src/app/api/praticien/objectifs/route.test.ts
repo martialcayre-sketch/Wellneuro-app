@@ -464,4 +464,40 @@ describe('/api/praticien/objectifs', () => {
 
     expect(donnees.ancrage.attentes).toEqual(['dormir', 'récupérer']);
   });
+  // ── JOURNALISATION SÛRE (dette nommée par la revue du LOT-04) ─────────────
+
+  describe('les exceptions ne recopient jamais le dossier en logs', () => {
+    it('une erreur Prisma est CAVIARDÉE — ni énoncé, ni reformulation, ni e-mail', async () => {
+      const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const fuite = new Error(
+        'Invalid `prisma.objectifNegocie.create()` — data: { enoncePatient: ' +
+          '"je dors trois heures par nuit depuis mon licenciement", praticienEmail: ' +
+          '"praticien@wellneuro.fr" }',
+      );
+      fuite.name = 'PrismaClientValidationError';
+      prisma.objectifNegocie.findMany.mockRejectedValue(fuite);
+
+      const reponse = await GET(getRequest());
+      expect(reponse.status).toBe(500);
+
+      const trace = espion.mock.calls.map((appel) => appel.join(' ')).join(' ');
+      expect(trace).toContain('PrismaClientValidationError');
+      expect(trace).not.toContain('licenciement');
+      expect(trace).not.toContain('praticien@wellneuro.fr');
+      espion.mockRestore();
+    });
+
+    it('une erreur ordinaire garde son message — il ne porte aucun payload', async () => {
+      const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+      prisma.objectifNegocie.findMany.mockRejectedValue(new Error('connexion interrompue'));
+
+      const reponse = await GET(getRequest());
+      expect(reponse.status).toBe(500);
+      expect(espion.mock.calls.map((appel) => appel.join(' ')).join(' ')).toContain(
+        'connexion interrompue',
+      );
+      espion.mockRestore();
+    });
+  });
 });
