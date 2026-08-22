@@ -612,7 +612,7 @@ async function genererSynthesePersistee(
           corpusActif: CORPUS_CLINIQUE_ACTIF,
           corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
           corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
-          // D-083 : sans le périmètre épinglé, un `corpusActif: false` avec
+          // D-084 : sans le périmètre épinglé, un `corpusActif: false` avec
           // signature vraie et date valide serait illisible six mois plus
           // tard — impossible de distinguer « drapeau retiré » de « prose
           // retouchée après signature » (`corpusSha256` porterait le sha du

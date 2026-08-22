@@ -296,7 +296,7 @@ export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
 // Activation volontairement bloquée tant que le corpus n'a pas été validé
 // cliniquement en externe (go/no-go documentaire). Verrou auto-portant depuis
-// [[D-083]] (régime [[D-067]], patron `tableSignee()` d'`orientationService`) :
+// [[D-084]] (régime [[D-067]], patron `tableSignee()` d'`orientationService`) :
 // booléen de signature, date ISO canonique, concordance du SHA de périmètre —
 // une retouche de la prose signée ferme le corpus en production toute seule,
 // au lieu de seulement rougir un banc.

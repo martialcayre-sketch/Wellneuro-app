@@ -39,7 +39,7 @@ export type CorpusCliniqueMetadata = {
   dateValidation: string | null;
   /**
    * SHA du périmètre effectivement relu à la signature — patron [[D-063]],
-   * régime [[D-067]], étendu à cette table par [[D-083]]. LITTÉRAL FIGÉ,
+   * régime [[D-067]], étendu à cette table par [[D-084]]. LITTÉRAL FIGÉ,
    * jamais la constante calculée : une retouche de la prose change
    * `CORPUS_CLINIQUE_SHA256`, la concordance casse et le verrou d'activation
    * se ferme seul (`lib/anthropic.ts`). `null` tant que rien n'a été relu.
@@ -53,7 +53,7 @@ export type CorpusCliniqueMetadata = {
  * caractère près, seule la métadonnée bouge (DC-17 : ce fichier est du
  * clinique, pas du code).
  *
- * Provenance (arbitrage du 2026-08-22, question 3 de la revue — D-083) : la
+ * Provenance (arbitrage du 2026-08-22, question 3 de la revue — D-084) : la
  * relecture a porté sur CE texte lui-même, rédigé au dépôt le 2026-07-10 ;
  * aucun document source SIIN n'est épinglé. La signature du responsable vaut
  * provenance, et « SIIN » au titre désigne l'école méthodologique, pas un
@@ -64,7 +64,7 @@ export const CORPUS_CLINIQUE_METADATA: CorpusCliniqueMetadata = {
   version: 'corpus-clinique-v1',
   validationExterne: true,
   dateValidation: '2026-08-22T00:00:00.000Z',
-  // Posé le 2026-08-22 (D-083, question 4 de la revue) : la chaîne hex que
+  // Posé le 2026-08-22 (D-084, question 4 de la revue) : la chaîne hex que
   // `CORPUS_CLINIQUE_SHA256` valait à la relecture de D-082, recalculée puis
   // recopiée telle quelle — JAMAIS la constante (déclarée après cet objet ;
   // la comparaison serait tautologique). Même jour que la signature : le

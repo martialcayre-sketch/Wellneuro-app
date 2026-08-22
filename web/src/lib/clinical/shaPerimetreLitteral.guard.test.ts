@@ -19,8 +19,8 @@ const TABLES = [
   { fichier: 'priorityRulesV1.ts', constante: 'PRIORITY_RULES_SHA256' },
   { fichier: 'stopRulesV1.ts', constante: 'STOP_RULES_SHA256' },
   { fichier: 'contradictionsV1.ts', constante: 'CONTRADICTIONS_RULES_SHA256' },
-  // Enrôlée par [[D-083]] — le jour même de son ancrage, pour ne pas rejouer
-  // le retard d'une table que D-067 avait précisément nommé (revue de D-083,
+  // Enrôlée par [[D-084]] — le jour même de son ancrage, pour ne pas rejouer
+  // le retard d'une table que D-067 avait précisément nommé (revue de D-084,
   // constat M1).
   { fichier: 'corpusSyntheseV1.ts', constante: 'CORPUS_CLINIQUE_SHA256' },
 ] as const;

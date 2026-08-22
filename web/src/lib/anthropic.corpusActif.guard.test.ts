@@ -75,7 +75,7 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
     expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
   });
 
-  // D-083 (question 4 de la revue) : le verrou est auto-portant — une prose
+  // D-084 (question 4 de la revue) : le verrou est auto-portant — une prose
   // retouchée après signature ne se contente plus de rougir l'empreinte N1,
   // elle FERME le corpus en production. Les cas ci-dessous éprouvent CHAQUE
   // terme du verrou, pas seulement la concordance : la classe D-069

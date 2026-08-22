@@ -1,4 +1,4 @@
-### Les deux questions ouvertes de la revue du corpus sont tranchées — provenance assumée, verrou auto-portant (D-083, 2026-08-22)
+### Les deux questions ouvertes de la revue du corpus sont tranchées — provenance assumée, verrou auto-portant (D-084, 2026-08-22)
 
 La revue adversariale de la signature du corpus (`D-082`) laissait deux
 arbitrages au responsable ; ils sont rendus le jour même.

@@ -65,7 +65,7 @@ metriquesAnthropic: {
 
 Le snapshot `corpus-clinique-v1` est **signé depuis le 2026-08-22** (`D-082`,
 validation clinique du responsable) et ancré `shaPerimetre` le même jour
-(`D-083`). Le verrou d'activation (`CORPUS_CLINIQUE_ACTIF`,
+(`D-084`). Le verrou d'activation (`CORPUS_CLINIQUE_ACTIF`,
 `lib/anthropic.ts`) est un ET auto-portant :
 
 - `WN_ENABLE_CORPUS_CLINIQUE_V1=1` (geste d'exploitation, posé après le
