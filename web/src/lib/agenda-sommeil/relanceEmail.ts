@@ -15,6 +15,7 @@
 // n'avez pas noté depuis N jours ». « Il n'y a rien à rattraper » est VRAI —
 // `estDateSaisissable` borne la saisie à aujourd'hui ou la veille, donc rien
 // n'est rattrapable. Ne jamais écrire « rien n'est perdu », qui serait faux.
+import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 
 /** Cadence minimale entre deux relances d'un même recueil. Politique, pas
  * concurrence : c'est le « budget d'attention » rendu opposable côté SERVEUR
@@ -30,23 +31,16 @@ export const JOURS_ENTRE_RELANCES = 3;
  * possiblement reçue — mais une panne franche doit rester rattrapable. */
 export const MAX_TENTATIVES_FENETRE = 2;
 
-export const SUJET_RELANCE = 'Un recueil en cours dans votre espace — Wellneuro';
+// Texte au registre des gabarits (Socle LOT-03, DC-26) — ce module reste le
+// SEUL point d'assemblage (salutation calculée ici, jamais au registre), et
+// garde sa raison d'être : pur, dédié, sans `sendMail`, pour que son banc
+// prouve quelque chose.
+export const SUJET_RELANCE = getGabarit('relance_agenda_sommeil').sujet;
 
 /** Objet consigné au registre (praticien seul, jamais dans l'e-mail). */
 export const OBJET_TRACE_RELANCE = 'Relance — agenda du sommeil';
 
 export function construireCorpsRelance(prenom: string, lien: string): string {
   const salutation = prenom.trim().length > 0 ? `Bonjour ${prenom.trim()},` : 'Bonjour,';
-  return `${salutation}
-
-Votre praticien vous signale qu'un recueil est à votre disposition dans votre
-espace patient Wellneuro. Il se remplit en une minute par jour, au moment qui
-vous convient.
-
-Accéder à votre espace :
-${lien}
-
-Il n'y a rien à rattraper : commencez ou reprenez simplement au prochain matin.
-
-L'équipe Wellneuro`;
+  return rendreGabarit(getGabarit('relance_agenda_sommeil'), { salutation, lien }).corps;
 }
