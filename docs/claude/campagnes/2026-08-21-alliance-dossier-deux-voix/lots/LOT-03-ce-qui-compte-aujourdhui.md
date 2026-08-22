@@ -106,7 +106,37 @@ LOT-01 releasé et vérifié. Indépendant de LOT-02.
 
 - **Aucune cadence sur les routes portail authentifiées** — le seul plafond du
   dépôt vit sur le canal non authentifié `lien/demande`. Risque assumé, nommé
-  ici, aggravé par le fait qu'un dépôt est une écriture.
+  ici, aggravé par le fait qu'un dépôt est une écriture. La borne technique de
+  transport ajoutée à la revue (64 Kio, refus avant lecture du corps) borne la
+  TAILLE d'un appel, pas leur NOMBRE : elle ne referme pas cette dette, elle
+  en retire seulement le cas du corps aberrant.
 - **Pas de relecture patient de ses propres entrées** : l'écran d'assemblage
   est le LOT-06. Tant que le drapeau est éteint, la question ne se pose pas ;
   elle se posera à l'allumage.
+
+## Dettes ouvertes par la revue indépendante (2026-08-22), non corrigées ici
+
+Nommées, arbitrées « hors périmètre du lot », à reprendre là où elles ont un
+lot d'accueil :
+
+- **La lecture praticien n'est pas gardée par `WN_CE_QUI_COMPTE`** — c'est un
+  choix motivé dans la route (drapeau éteint ⇒ liste vide, qui est un silence
+  honnête ; un 503 ferait croire à une panne). Son effet de bord, lui, n'est
+  pas cadré : le panneau `CeQuiComptePanel` charge à chaque activation de
+  l'onglet « Trajectoire », et `verifierAppartenancePatient` **journalise un
+  accès au dossier à chaque fois**, drapeau éteint compris. Le journal d'accès
+  (`G-TRUST-04`) se remplit donc de lectures d'une surface qui n'est pas
+  ouverte. Rien n'est faux — l'accès a bien eu lieu —, mais le bruit est réel
+  et grandira à l'allumage.
+- **Aucun E2E du trajet dépôt → lecture.** Tout ce qui est prouvé l'est par
+  bancs unitaires, route par route et écran par écran : personne n'a joué le
+  parcours complet (le patient dépose au portail, le praticien relit la même
+  parole dans le dossier). Le drapeau étant neuf et éteint, l'E2E devra
+  l'allumer explicitement — à écrire avant l'allumage en production, pas
+  après.
+- **La session portail dure 12 h, et une saisie longue peut la dépasser.** Le
+  formulaire ne vide pas le champ sur erreur (asserté par banc), donc le texte
+  reste À L'ÉCRAN sur un 401 — mais rien n'est persisté : un rechargement, une
+  fermeture d'onglet ou une navigation perd la saisie. Aucun brouillon local,
+  aucune reprise. Le risque est proportionnel à ce que le champ invite à
+  écrire.

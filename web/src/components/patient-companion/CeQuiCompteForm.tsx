@@ -17,7 +17,10 @@ import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
 // convention que `ProtocolCheckinForm`.
 //
 // Rien n'est noté, compté, catégorisé ni résumé : l'écran n'affiche aucun
-// retour sur le CONTENU, seulement l'accusé du dépôt.
+// retour sur le CONTENU, seulement l'accusé du dépôt. Le compteur de
+// caractères ne fait pas exception — il mesure une longueur de frappe, pas ce
+// qui est dit, et n'existe que pour rendre la borne de la route visible AVANT
+// l'envoi plutôt qu'après un refus.
 //
 // Aucune correction, aucune suppression : la table n'a pas de chaînage, une
 // entrée déposée se conserve. On n'ajoute donc ici ni bouton « modifier », ni
@@ -29,6 +32,11 @@ export function CeQuiCompteForm() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [depose, setDepose] = useState(false);
+
+  // Le dépassement s'AFFICHE, il ne bloque pas : le bouton reste actif, la
+  // requête part, et c'est la route qui refuse avec son message. Désactiver
+  // l'envoi ici priverait le patient de la seule explication existante.
+  const tropLong = texte.length > LONGUEUR_MAX_CE_QUI_COMPTE;
 
   const soumettre = useCallback(async () => {
     setEnvoi(true);
@@ -78,15 +86,32 @@ export function CeQuiCompteForm() {
       />
 
       <PatientField label="Ce que je veux dire" requis>
+        {/* AUCUN `maxLength` SUR CE CHAMP, ET C'EST LE POINT.
+            `maxLength` fait couper le navigateur SILENCIEUSEMENT : un collage
+            de 6 000 caractères devient 4 000 sans message, sans que le patient
+            sache qu'il manque un morceau. C'est exactement l'altération de
+            donnée que `lib/patient/ceQuiCompte.ts` désigne en contre-patron —
+            simplement déplacée du serveur vers le client, où elle est plus
+            difficile à voir. La borne est opposée par la route, en REFUS 400,
+            avec un message que le patient lit et un texte qui reste à l'écran.
+            Le compteur ci-dessous informe ; il n'ampute pas. Ne pas rétablir
+            l'attribut « pour aider l'utilisateur » : il aide en effaçant. */}
         <textarea
           value={texte}
           onChange={(e) => setTexte(e.target.value)}
           rows={7}
-          maxLength={LONGUEUR_MAX_CE_QUI_COMPTE}
           placeholder="Ce qui compte pour moi en ce moment…"
           aria-label="Ce que je veux dire"
+          aria-describedby="ce-qui-compte-compteur"
           className={patientInputClassName}
         />
+        <p
+          id="ce-qui-compte-compteur"
+          className={`mt-1 text-xs ${tropLong ? 'text-status-warning' : 'text-muted-foreground'}`}
+        >
+          {texte.length} / {LONGUEUR_MAX_CE_QUI_COMPTE} caractères
+          {tropLong && ' — au-delà de la limite : raccourcissez avant d’envoyer.'}
+        </p>
       </PatientField>
 
       <PatientField

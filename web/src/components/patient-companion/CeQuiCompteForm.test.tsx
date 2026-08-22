@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { CeQuiCompteForm } from './CeQuiCompteForm';
+import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
 
 const fetchMock = vi.fn();
 
@@ -109,18 +110,63 @@ describe('CeQuiCompteForm — la parole n’est jamais perdue', () => {
     expect(champTexte().value).toBe(TEXTE);
   });
 
-  it('refus de longueur : le texte est conservé, JAMAIS tronqué par l’écran', async () => {
+  it('le champ ne porte AUCUN maxlength — l’écran ne coupe rien', () => {
+    // C'EST LE BANC QUI MORD. Un `maxLength` sur le textarea ferait couper le
+    // NAVIGATEUR, silencieusement, à la frappe comme au collage — et aucun
+    // banc jsdom ne le verrait : `fireEvent.change` écrit la valeur
+    // directement et contourne l'attribut. La seule preuve possible en jsdom
+    // est donc STRUCTURELLE : l'attribut est absent.
+    render(<CeQuiCompteForm />);
+    expect(champTexte().hasAttribute('maxlength')).toBe(false);
+    // `maxLength` non posé se lit -1 dans le DOM : la borne n'existe pas côté
+    // navigateur, elle vit sur la route.
+    expect(champTexte().maxLength).toBe(-1);
+  });
+
+  it('AU-DELÀ de la borne : le texte entier part à la route, rien n’est coupé', async () => {
     fetchMock.mockResolvedValue(
-      json({ ok: false, reason: 'texte_trop_long', error: 'Ce texte est trop long.' }, false),
+      json(
+        {
+          ok: false,
+          reason: 'texte_trop_long',
+          error:
+            'Ce texte est trop long. Raccourcissez-le avant d’envoyer — rien n’est coupé automatiquement.',
+        },
+        false,
+      ),
     );
     render(<CeQuiCompteForm />);
-    const long = 'a'.repeat(3999);
+    // 120 caractères AU-DELÀ de la borne : sous elle, le banc ne prouverait
+    // rien (l'ancien jouait 3 999 pour une borne de 4 000).
+    const long = 'a'.repeat(LONGUEUR_MAX_CE_QUI_COMPTE + 120);
     ecrire(long);
+    // Le bouton reste actif : le refus vient de la route, pas de l'écran.
+    expect((screen.getByText('Envoyer') as HTMLButtonElement).disabled).toBe(false);
     envoyer();
 
-    await waitFor(() => expect(screen.getByText('Ce texte est trop long.')).toBeTruthy());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    // 1 — le corps posté porte le texte ENTIER, pas une version coupée.
+    const corps = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body) as { texte: string };
+    expect(corps.texte).toHaveLength(LONGUEUR_MAX_CE_QUI_COMPTE + 120);
+    expect(corps.texte).toBe(long);
+
+    // 2 — le message français de la route s'affiche.
+    await waitFor(() => expect(screen.getByText(/Ce texte est trop long/)).toBeTruthy());
+
+    // 3 — et le champ garde le texte entier : la parole n'est pas perdue.
     expect(champTexte().value).toBe(long);
-    expect(champTexte().value).toHaveLength(3999);
+    expect(champTexte().value).toHaveLength(LONGUEUR_MAX_CE_QUI_COMPTE + 120);
+  });
+
+  it('le compteur informe sans amputer, et signale le dépassement', () => {
+    render(<CeQuiCompteForm />);
+    ecrire('a'.repeat(10));
+    expect(screen.getByText(`10 / ${LONGUEUR_MAX_CE_QUI_COMPTE} caractères`)).toBeTruthy();
+
+    ecrire('a'.repeat(LONGUEUR_MAX_CE_QUI_COMPTE + 120));
+    expect(screen.getByText(/au-delà de la limite/)).toBeTruthy();
+    // Informer, jamais couper : la valeur du champ est intacte.
+    expect(champTexte().value).toHaveLength(LONGUEUR_MAX_CE_QUI_COMPTE + 120);
   });
 
   it('champ vide : l’envoi est désactivé, aucun appel réseau', () => {

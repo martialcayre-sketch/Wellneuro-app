@@ -14,7 +14,10 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 // panne sur un dossier où, simplement, personne n'a rien déposé.
 //
 // AUCUN AGRÉGAT : ni compte, ni moyenne, ni période, ni état dérivé. La
-// réponse est la liste des entrées, chacune avec ses deux dates (`DC-27`).
+// réponse est la liste des entrées, chacune avec ses deux dates — invariant
+// de campagne « jamais un score » (Alliance 6.0-A, CAMPAGNE.md § Résultat
+// observable), adossé à `DC-19`/`DC-20` (aucun seuil, dose, poids ou borne
+// inventé). Pas `DC-27`, qui traite d'association et de causalité.
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 

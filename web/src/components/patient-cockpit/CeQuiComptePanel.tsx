@@ -10,8 +10,10 @@ import type {
 // LOT-03), onglet Trajectoire de la fiche patient.
 //
 // Ce panneau AFFICHE, il ne calcule rien : aucun décompte, aucune moyenne,
-// aucune tendance, aucune catégorie, aucun résumé (`DC-27`). Le texte du
-// patient est rendu tel quel, dans son ordre chronologique.
+// aucune tendance, aucune catégorie, aucun résumé — invariant de campagne
+// « jamais un score » (Alliance 6.0-A, CAMPAGNE.md § Résultat observable),
+// adossé à `DC-19`/`DC-20`. Le texte du patient est rendu tel quel, dans son
+// ordre chronologique.
 //
 // TROIS ÉTATS DISTINCTS, jamais deux : chargement, erreur, liste chargée. Une
 // erreur de lecture ne doit JAMAIS être présentée comme « aucune entrée » —

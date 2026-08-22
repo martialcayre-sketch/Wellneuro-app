@@ -2,9 +2,14 @@
 // domaine PUR : aucune dépendance Prisma, aucune lecture d'environnement.
 //
 // Une entrée est une PAROLE DE PATIENT déposée au portail. Elle se conserve,
-// ne s'agrège pas, ne se note pas, ne se résume pas (`DC-27`). Une absence
-// d'entrée est un SILENCE, jamais un zéro ni un « rien à signaler »
-// (`DC-24`) : c'est pourquoi rien ici ne fabrique de valeur par défaut.
+// ne s'agrège pas, ne se note pas, ne se résume pas : invariant de campagne
+// « jamais un score » (Alliance 6.0-A, CAMPAGNE.md § Résultat observable),
+// adossé à `DC-19`/`DC-20` — noter ou moyenner cette parole poserait une
+// borne clinique sans provenance. (`DC-27` dit « association ≠ causalité,
+// score ≠ diagnostic » et ne porte pas cet interdit : ne pas le citer ici.)
+// Une absence d'entrée est un SILENCE, jamais un zéro ni un « rien à
+// signaler » (`DC-24`) : c'est pourquoi rien ici ne fabrique de valeur par
+// défaut.
 //
 // DEUX DATES, jamais confondues (patron SP-TT, cf. `correspondanceMedecin.ts`
 // et `relectureNote.ts`) : `saisiLe` est DÉCLARÉE par le client — la date à

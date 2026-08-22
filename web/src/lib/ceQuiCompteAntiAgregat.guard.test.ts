@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { extname, join, relative } from 'path';
 import { describe, expect, it } from 'vitest';
 
@@ -7,8 +7,14 @@ import { describe, expect, it } from 'vitest';
 //
 // Une parole de patient se conserve et se lit. Elle ne se compte pas, ne se
 // moyenne pas, ne se note pas, ne se résume pas, et n'alimente aucun moteur
-// clinique (`DC-27`). Le contrôle ne juge pas le contenu : il vérifie deux
-// choses de FORME, qui sont les deux marches vers l'agrégat —
+// clinique. C'est l'invariant de campagne « jamais un score » (CAMPAGNE.md
+// § Résultat observable), adossé à `DC-19`/`DC-20` — aucun seuil, dose, poids
+// ou borne inventé : noter une parole de patient poserait une échelle sans
+// provenance. `DC-27` (« association ≠ causalité, score ≠ diagnostic ») ne
+// porte PAS cet interdit et ne doit pas être cité pour lui.
+//
+// Le contrôle ne juge pas le contenu : il vérifie deux choses de FORME, qui
+// sont les deux marches vers l'agrégat —
 //
 //   1. aucune surface de ce lot ne calcule ni n'affiche d'agrégat ;
 //   2. aucun module clinique, de scoring ou de synthèse n'IMPORTE ce lot.
@@ -45,11 +51,25 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   { motif: /\{\s*entrees\.length\s*\}/, nom: 'décompte affiché' },
 ];
 
-/** Modules qui ne doivent JAMAIS consommer les entrées « ce qui compte ». */
+/**
+ * Modules qui ne doivent JAMAIS consommer les entrées « ce qui compte ».
+ *
+ * La liste balaie aussi large que l'intitulé du banc le promet : « ni de
+ * SYNTHÈSE » ne peut pas s'arrêter à la route `api/praticien/synthese` en
+ * laissant dehors le module de synthèse lui-même, ni les surfaces de
+ * RESTITUTION qui sont l'endroit où un agrégat se verrait — `documents/`
+ * porte `bilanPatient.ts`, la plus exposée d'entre elles.
+ *
+ * Un chemin peut désigner un DOSSIER ou un FICHIER : voir `fichiersSources`.
+ */
 const CONSOMMATEURS_INTERDITS = [
   'lib/clinical',
   'lib/clinical-engine',
   'lib/scoring',
+  'lib/synthese-praticien.ts',
+  'lib/documents',
+  'lib/correspondance',
+  'lib/equilibre',
   'app/api/praticien/synthese',
 ];
 
@@ -64,15 +84,28 @@ const REFERENCES_AU_LOT = [
 
 const EXTENSIONS = new Set(['.ts', '.tsx']);
 
-function fichiersSources(dossier: string): string[] {
+/**
+ * Sources d'un périmètre, qu'il soit un DOSSIER ou un FICHIER unique.
+ *
+ * Le repli sur le fichier n'est pas un confort : `readdirSync` échoue sur un
+ * chemin de fichier (`ENOTDIR`), et sans ce repli `lib/synthese-praticien.ts`
+ * rendrait `[]` EN SILENCE — la garde ne scannerait rien, et l'anti-vacuité
+ * rougirait pour une raison fausse, ce qui est pire qu'un trou : c'est un trou
+ * qui accuse le mauvais coupable.
+ */
+function fichiersSources(perimetre: string): string[] {
   let entrees;
   try {
-    entrees = readdirSync(dossier, { withFileTypes: true });
+    entrees = readdirSync(perimetre, { withFileTypes: true });
   } catch {
-    return [];
+    try {
+      return statSync(perimetre).isFile() && EXTENSIONS.has(extname(perimetre)) ? [perimetre] : [];
+    } catch {
+      return [];
+    }
   }
   return entrees.flatMap((entree) => {
-    const chemin = join(dossier, entree.name);
+    const chemin = join(perimetre, entree.name);
     if (entree.isDirectory()) return fichiersSources(chemin);
     return EXTENSIONS.has(extname(entree.name)) ? [chemin] : [];
   });
@@ -96,27 +129,40 @@ describe('« Ce qui compte » — anti-agrégat (LOT-03, structurel)', () => {
       });
     }
 
-    expect(fautifs, `Agrégat sur une parole de patient (DC-27) :\n${fautifs.join('\n')}`).toEqual([]);
+    expect(
+      fautifs,
+      `Agrégat sur une parole de patient — invariant « jamais un score » (DC-19/DC-20) :\n${fautifs.join('\n')}`,
+    ).toEqual([]);
   });
 
   it('aucun module clinique, de scoring ou de synthèse n’importe le lot', () => {
     const fautifs: string[] = [];
-    const fichiers = CONSOMMATEURS_INTERDITS.flatMap((dossier) => fichiersSources(join(RACINE, dossier)));
+    const fichiers = CONSOMMATEURS_INTERDITS.flatMap((perimetre) => fichiersSources(join(RACINE, perimetre)));
 
     for (const chemin of fichiers) {
       const relatif = relative(RACINE, chemin);
+      // BALAYAGE SUR LE TEXTE ENTIER, jamais ligne à ligne. Un filtre par
+      // ligne (« la ligne contient-elle `import` ? ») rate la forme la plus
+      // courante du dépôt — l'import multi-lignes, où le chemin du module vit
+      // sur une ligne qui ne porte aucun mot-clef :
+      //
+      //     import {
+      //       EntreeCeQuiCompteExposee,
+      //     } from '@/app/api/praticien/ce-qui-compte/route';
+      //
+      // Les commentaires sont scannés eux aussi, et c'est délibéré : dans un
+      // moteur clinique ou une surface de restitution, NOMMER ce lot mérite
+      // déjà une lecture humaine. Le message d'échec nomme le fichier, donc
+      // l'arbitrage tient en une ligne.
       const source = readFileSync(chemin, 'utf8');
-      source.split('\n').forEach((ligne, index) => {
-        if (!/\bimport\b|\brequire\(|\bfetch\(|prisma\./.test(ligne)) return;
-        for (const reference of REFERENCES_AU_LOT) {
-          if (ligne.includes(reference)) fautifs.push(`${relatif}:${index + 1} — « ${reference} »`);
-        }
-      });
+      for (const reference of REFERENCES_AU_LOT) {
+        if (source.includes(reference)) fautifs.push(`${relatif} — « ${reference} »`);
+      }
     }
 
     expect(
       fautifs,
-      `« Ce qui compte » consommé par un moteur clinique (DC-27) :\n${fautifs.join('\n')}`,
+      `« Ce qui compte » consommé par un moteur clinique, une synthèse ou une restitution :\n${fautifs.join('\n')}`,
     ).toEqual([]);
   });
 
@@ -129,14 +175,63 @@ describe('« Ce qui compte » — anti-agrégat (LOT-03, structurel)', () => {
       expect(source.length, `${relatif} doit exister et être non vide`).toBeGreaterThan(0);
     }
 
-    const consommateurs = CONSOMMATEURS_INTERDITS.flatMap((dossier) => fichiersSources(join(RACINE, dossier)));
-    expect(consommateurs.length, 'les dossiers cliniques doivent être scannés').toBeGreaterThan(0);
+    const consommateurs = CONSOMMATEURS_INTERDITS.flatMap((perimetre) =>
+      fichiersSources(join(RACINE, perimetre)),
+    );
+    expect(consommateurs.length, 'les périmètres cliniques doivent être scannés').toBeGreaterThan(0);
 
-    for (const dossier of CONSOMMATEURS_INTERDITS) {
+    for (const perimetre of CONSOMMATEURS_INTERDITS) {
       expect(
-        fichiersSources(join(RACINE, dossier)).length,
-        `${dossier} doit contenir des sources à scanner`,
+        fichiersSources(join(RACINE, perimetre)).length,
+        `${perimetre} doit contenir des sources à scanner (dossier ou fichier)`,
       ).toBeGreaterThan(0);
+    }
+  });
+
+  it('CONTRÔLE POSITIF : les deux listes de motifs mordent réellement', () => {
+    // L'anti-vacuité prouve que les FICHIERS existent. Elle ne prouve pas que
+    // les MOTIFS attrapent quoi que ce soit — et c'est l'autre façon dont
+    // cette garde peut devenir verte et creuse : renommer `CeQuiComptePanel`
+    // laisserait `REFERENCES_AU_LOT` périmée, un moteur clinique pourrait
+    // importer le nouveau nom, et les deux `expect([]).toEqual([])`
+    // resteraient verts en ne contrôlant plus rien. Une regex mal échappée
+    // produirait le même vert silencieux côté `MOTIFS_AGREGAT`.
+
+    // 1 — chaque référence du lot désigne quelque chose qui EXISTE : elle
+    //     apparaît dans au moins une surface du lot. Un renommage la rend
+    //     orpheline, et ce banc rougit.
+    const surfaces = SURFACES_LOT.map((relatif) => readFileSync(join(RACINE, relatif), 'utf8'));
+    for (const reference of REFERENCES_AU_LOT) {
+      expect(
+        surfaces.some((source) => source.includes(reference)),
+        `« ${reference} » n’apparaît dans aucune surface du lot : liste périmée, garde creuse`,
+      ).toBe(true);
+    }
+
+    // 2 — chaque motif d'agrégat attrape son spécimen. Les spécimens sont
+    //     écrits ici, jamais lus du dépôt : ils n'ont pas à exister dans le
+    //     code pour que la regex soit prouvée vivante.
+    const SPECIMENS: Record<string, string> = {
+      reduce: 'const total = entrees.reduce((a, b) => a + b, 0);',
+      moyenne: 'const moyenne = total / entrees.length;',
+      tendance: 'const tendance = comparer(entrees);',
+      score: 'const score = noter(entree.texte);',
+      niveau: 'const niveau = classer(entree.texte);',
+      nombreEntrees: 'return { nombreEntrees: entrees.length };',
+      'count Prisma': 'select: { _count: true }',
+      'décompte affiché': '<p>{entrees.length}</p>',
+    };
+    for (const { motif, nom } of MOTIFS_AGREGAT) {
+      const specimen = SPECIMENS[nom];
+      expect(specimen, `aucun spécimen pour le motif « ${nom} »`).toBeTruthy();
+      expect(motif.test(specimen), `le motif « ${nom} » n’attrape plus son spécimen`).toBe(true);
+    }
+
+    // 3 — et ils ne mordent pas sur du code anodin : un motif qui attrape tout
+    //     ne prouve rien non plus.
+    const ANODIN = 'const texte = entree.texte.trim();';
+    for (const { motif, nom } of MOTIFS_AGREGAT) {
+      expect(motif.test(ANODIN), `le motif « ${nom} » attrape du code anodin`).toBe(false);
     }
   });
 

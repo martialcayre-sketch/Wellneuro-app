@@ -24,7 +24,17 @@ d'enregistrement est posée par la base et n'est jamais transmise. Une saisie
 non déclarée reste absente — jamais comblée par la date d'enregistrement, qui
 fabriquerait une déclaration que le patient n'a pas faite (`DC-24`). Le texte
 est borné par **refus, jamais par troncature** : tronquer une parole de patient
-est une altération de donnée, pas une validation.
+est une altération de donnée, pas une validation. **L'écran ne coupe pas non
+plus** : le champ de saisie ne porte aucun `maxLength`, qui ferait couper le
+navigateur en silence ; un compteur de caractères informe, et c'est la route
+qui refuse avec son message.
+
+La route de dépôt refuse par ailleurs, **avant même de lire le corps**, tout
+appel dont le `content-length` annoncé dépasse 64 Kio (400) — borne
+**technique de transport**, pas un seuil : un dépôt conforme tient très
+largement dessous, elle ne vise que les corps aberrants sur une route
+d'écriture sans cadence. Un `content-length` absent n'est pas un
+laissez-passer : la même borne s'applique alors avant le parse.
 
 Cinq gardes structurelles, chacune **vue rouge par une mutation réelle** avant
 d'être déclarée verte : silence ≠ réponse (une erreur de lecture n'affiche

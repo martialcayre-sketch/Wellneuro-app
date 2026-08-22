@@ -43,15 +43,50 @@ function mockCompteActif(surcharges: Record<string, unknown> = {}): void {
   });
 }
 
-function postRequest(cookie: string | undefined, corps: unknown, brut?: string): Request {
+function postRequest(
+  cookie: string | undefined,
+  corps: unknown,
+  brut?: string,
+  entetes: Record<string, string> = {},
+): Request {
   return new Request('http://localhost/api/portail/ce-qui-compte', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {}),
+      ...entetes,
     },
     body: brut ?? JSON.stringify(corps),
   });
+}
+
+/**
+ * Cookie dont la SIGNATURE ne correspond plus à la charge — forgé, altéré en
+ * transit, ou signé avec un autre secret. `timingSafeEqual` exige des
+ * longueurs égales : on substitue un caractère plutôt que d'en retirer un,
+ * sinon le refus viendrait de la longueur et non de la signature.
+ */
+function cookieSignatureAlteree(): string {
+  const valide = cookieProprio();
+  const point = valide.indexOf('.');
+  const signature = valide.slice(point + 1);
+  const dernier = signature.slice(-1);
+  return `${valide.slice(0, point)}.${signature.slice(0, -1)}${dernier === 'A' ? 'B' : 'A'}`;
+}
+
+/**
+ * Charge réécrite (le patient s'y déclare PAT_AUTRE), signature d'origine
+ * conservée : le cas du forgeage naïf.
+ */
+function cookieChargeForgee(): string {
+  const valide = cookieProprio();
+  const point = valide.indexOf('.');
+  const charge = JSON.parse(Buffer.from(valide.slice(0, point), 'base64url').toString('utf8')) as {
+    idPatient: string;
+  };
+  charge.idPatient = 'PAT_AUTRE';
+  const reforgee = Buffer.from(JSON.stringify(charge)).toString('base64url');
+  return `${reforgee}.${valide.slice(point + 1)}`;
 }
 
 function getRequest(cookie?: string): Request {
@@ -112,6 +147,47 @@ describe('POST /api/portail/ce-qui-compte — contrat d’accès', () => {
     const res = await POST(postRequest(undefined, { texte: TEXTE }));
     expect(res.status).toBe(401);
     aucuneEcriture();
+  });
+
+  it('SIGNATURE ALTÉRÉE : 401, sans même résoudre le compte', async () => {
+    // Cinquième état d'authentification, le seul qui n'était pas couvert
+    // (absent, expiré, révoqué, compte désactivé le sont). Un cookie dont la
+    // signature ne vérifie plus n'est pas une session : il ne doit ni ouvrir
+    // la route, ni faire toucher la base.
+    const res = await POST(postRequest(cookieSignatureAlteree(), { texte: TEXTE }));
+    expect(res.status).toBe(401);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    aucuneEcriture();
+  });
+
+  it('CHARGE FORGÉE (idPatient réécrit, signature d’origine) : 401', async () => {
+    // Le forgeage naïf : on change l'identité dans la charge en gardant la
+    // signature. Elle ne couvre plus la charge ⇒ 401 AVANT toute question
+    // d'appartenance — c'est bien la signature qui garde la route, pas un
+    // recoupement en base.
+    const res = await POST(postRequest(cookieChargeForgee(), { texte: TEXTE }));
+    expect(res.status).toBe(401);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    aucuneEcriture();
+  });
+
+  it('SESSIONS INVALIDÉES après l’émission du cookie : 403', async () => {
+    // Troisième bras d'`isSessionValideForPatient`, jamais couvert : le compte
+    // est actif et le jeton non révoqué, mais toutes les sessions émises
+    // AVANT cette date sont coupées.
+    mockCompteActif({ sessionsInvalidesAvant: new Date(Date.now() + 60_000) });
+    const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+    expect(res.status).toBe(403);
+    aucuneEcriture();
+  });
+
+  it('SESSIONS INVALIDÉES avant l’émission du cookie : le dépôt passe', async () => {
+    // Le bras discrimine vraiment : une invalidation ANTÉRIEURE ne coupe pas
+    // une session émise après elle. Sans ce miroir, une garde qui refuserait
+    // tout resterait verte au banc précédent.
+    mockCompteActif({ sessionsInvalidesAvant: new Date(Date.now() - 60 * 60 * 1000) });
+    const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+    expect(res.status).toBe(201);
   });
 
   it('cookie d’un autre patient : refusé, sans écriture', async () => {
@@ -192,6 +268,104 @@ describe('POST /api/portail/ce-qui-compte — validation', () => {
   });
 });
 
+describe('POST /api/portail/ce-qui-compte — borne technique de transport', () => {
+  const PLAFOND = 64 * 1024;
+
+  it('content-length au-delà du plafond : 400, sans écriture, et LE CORPS N’EST JAMAIS LU', async () => {
+    // La borne de 4 000 caractères n'arrive qu'APRÈS le parse : sans ce
+    // pré-contrôle, `req.json()` bufférise en mémoire un corps arbitrairement
+    // gros sur une route d'écriture qui n'a aucune cadence. Le banc prouve la
+    // seule chose qui compte ici : rien n'est lu.
+    const requete = postRequest(cookieProprio(), { texte: TEXTE }, undefined, {
+      'content-length': String(PLAFOND + 1),
+    });
+    const lireTexte = vi.spyOn(requete, 'text');
+    const lireJson = vi.spyOn(requete, 'json');
+
+    const res = await POST(requete);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { reason: string }).reason).toBe('corps_trop_gros');
+    expect(lireTexte).not.toHaveBeenCalled();
+    expect(lireJson).not.toHaveBeenCalled();
+    aucuneEcriture();
+  });
+
+  it('content-length ABSENT : pas de laissez-passer, la borne s’applique quand même', async () => {
+    // Transfert `chunked` : aucun en-tête à croire. Le corps est lu, mais la
+    // même borne le refuse AVANT `JSON.parse`.
+    const enorme = JSON.stringify({ texte: 'a'.repeat(PLAFOND + 1000) });
+    const requete = new Request('http://localhost/api/portail/ce-qui-compte', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: `wn_portail=${encodeURIComponent(cookieProprio())}`,
+      },
+      body: enorme,
+    });
+    expect(requete.headers.get('content-length'), 'le banc doit bien viser le cas SANS en-tête').toBeNull();
+
+    const res = await POST(requete);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { reason: string }).reason).toBe('corps_trop_gros');
+    aucuneEcriture();
+  });
+
+  it('un dépôt conforme tient très largement sous le plafond', () => {
+    // La borne est TECHNIQUE, pas un seuil : elle ne doit jamais refuser ce
+    // que la validation accepte. Un texte à la borne applicative, en
+    // caractères multi-octets, reste d'un ordre de grandeur en dessous.
+    const auMaximum = JSON.stringify({ texte: 'é'.repeat(4000), saisiLe: '2026-08-20' });
+    expect(Buffer.byteLength(auMaximum, 'utf8')).toBeLessThan(PLAFOND);
+  });
+});
+
+describe('POST /api/portail/ce-qui-compte — chemin 500', () => {
+  it('le create rejette : 500 « exception », et le log ne porte NI le texte NI l’e-mail', async () => {
+    // Cas nommé : `PrismaClientValidationError` recopie les ARGUMENTS de la
+    // requête dans son message — donc la parole déposée. Il est aujourd'hui
+    // inatteignable (`preparerEntree` garantit les types), et c'est justement
+    // pour cela qu'il faut l'épingler : rien d'autre ne le tient.
+    const fuite = Object.assign(new Error(`Invalid \`create()\`: texte: "${TEXTE}", email: ${PATIENT.email}`), {
+      name: 'PrismaClientValidationError',
+    });
+    prisma.entreeCeQuiCompte.create.mockRejectedValueOnce(fuite);
+    const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+      expect(res.status).toBe(500);
+      const charge = (await res.json()) as { reason: string };
+      expect(charge.reason).toBe('exception');
+      // La réponse rendue au patient ne recopie rien de l'exception non plus.
+      expect(JSON.stringify(charge)).not.toContain(TEXTE);
+
+      const journal = espion.mock.calls.map((appel) => appel.join(' ')).join('\n');
+      expect(journal).toContain('PrismaClientValidationError');
+      expect(journal, 'le texte déposé ne doit jamais atteindre le journal').not.toContain(TEXTE);
+      expect(journal, 'l’e-mail du patient ne doit jamais atteindre le journal').not.toContain(
+        PATIENT.email,
+      );
+    } finally {
+      espion.mockRestore();
+    }
+  });
+
+  it('une erreur technique non-Prisma garde son message : le diagnostic reste possible', async () => {
+    // Contrepartie assumée de la restriction : on ne perd pas la seule chose
+    // qui permet de comprendre un 500 inattendu. Ces erreurs-là ne voient pas
+    // le corps de la requête.
+    prisma.entreeCeQuiCompte.create.mockRejectedValueOnce(new Error('ECONNREFUSED 127.0.0.1:5432'));
+    const espion = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+      expect(res.status).toBe(500);
+      expect(espion.mock.calls.map((appel) => appel.join(' ')).join('\n')).toContain('ECONNREFUSED');
+    } finally {
+      espion.mockRestore();
+    }
+  });
+});
+
 describe('POST /api/portail/ce-qui-compte — gardes structurelles', () => {
   it('G3 conservation : deux dépôts ⇒ deux create, jamais update/upsert/delete', async () => {
     expect((await POST(postRequest(cookieProprio(), { texte: 'Premier dépôt.' }))).status).toBe(201);
@@ -252,6 +426,24 @@ describe('GET /api/portail/ce-qui-compte — interrupteur d’écran seul', () =
 
   it('pas de sonde anonyme : hors session, 401 comme le POST', async () => {
     expect((await GET(getRequest(undefined))).status).toBe(401);
+  });
+
+  it('SIGNATURE ALTÉRÉE : 401 ici aussi, sans toucher la base', async () => {
+    // L'interrupteur d'écran passe la MÊME authentification que le dépôt : un
+    // cookie forgé ne doit pas pouvoir servir de sonde du drapeau.
+    const res = await GET(getRequest(cookieSignatureAlteree()));
+    expect(res.status).toBe(401);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('CHARGE FORGÉE : 401 ici aussi', async () => {
+    expect((await GET(getRequest(cookieChargeForgee()))).status).toBe(401);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('SESSIONS INVALIDÉES après l’émission : 403', async () => {
+    mockCompteActif({ sessionsInvalidesAvant: new Date(Date.now() + 60_000) });
+    expect((await GET(getRequest(cookieProprio()))).status).toBe(403);
   });
 
   it('session valide : rend « ouvert », et NE LIT AUCUNE ENTRÉE', async () => {
