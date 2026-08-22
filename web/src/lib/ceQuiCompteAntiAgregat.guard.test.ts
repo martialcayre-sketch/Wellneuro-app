@@ -31,6 +31,15 @@ const SURFACES_LOT = [
   'app/api/praticien/ce-qui-compte/route.ts',
   'components/patient-cockpit/CeQuiComptePanel.tsx',
   'components/patient-companion/CeQuiCompteForm.tsx',
+  // LOT-06 : la route d'assemblage RELIT les entrées « ce qui compte » pour les
+  // rendre au patient. Cette liste est FIGÉE — sans cette ligne, la surface la
+  // plus récemment ouverte serait justement celle où l'anti-agrégat ne
+  // s'appliquerait pas.
+  'app/api/portail/dossier/route.ts',
+  // L'ÉCRAN qui rend ces entrées, et pas seulement la route qui les sert : la
+  // liste portait déjà les deux surfaces d'affichage des lots précédents, et
+  // c'est à l'affichage qu'un décompte se voit.
+  'components/patient-companion/DossierDeuxVoixView.tsx',
 ];
 
 /**
@@ -48,7 +57,20 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   { motif: /\b_count\b|\bcount\s*:/i, nom: 'count Prisma' },
   // Un décompte RENDU à l'écran. `entrees.length === 0` reste licite : c'est
   // la distinction « silence / réponse », pas un agrégat.
-  { motif: /\{\s*entrees\.length\s*\}/, nom: 'décompte affiché' },
+  //
+  // LE MOTIF NE NOMME PLUS LA COLLECTION, et c'est la correction d'un trou
+  // réel : lié à `entrees`, il laissait passer `{ceQuiCompte.length}` sur
+  // l'écran du LOT-06 — la garde tenait par le NOM que l'auteur avait choisi,
+  // c'est-à-dire par rien.
+  //
+  // UNE SEULE EXCEPTION, ET ELLE EST NOMMÉE : `{texte.length}`, le compteur de
+  // caractères du champ de saisie (`CeQuiCompteForm`). Compter les caractères
+  // qu'on est en train de taper est une aide à la saisie, pas une mesure de la
+  // parole du patient — et la borne qu'il affiche est technique, identifiée
+  // comme telle (`DC-20`). Nommer le cas licite plutôt qu'énumérer les cas
+  // interdits garde l'interdit général : une collection ne peut pas s'y glisser
+  // en se renommant.
+  { motif: /\{\s*(?!texte\.length\s*\})[\w.]+\.length\s*\}/, nom: 'décompte affiché' },
 ];
 
 /**

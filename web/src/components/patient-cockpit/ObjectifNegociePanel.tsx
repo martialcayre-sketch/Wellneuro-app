@@ -38,11 +38,25 @@ const ANCRAGE_VIDE: AncrageAnamnese = {
 };
 
 const LIBELLE_RATIFICATION: Record<EtatRatification, string> = {
-  // JAMAIS « non ratifié » : le geste de ratification n'existe pas avant le
-  // LOT-06, et un « non ratifié » porterait sur le patient un jugement qu'il
-  // n'a pas eu l'occasion de démentir (`DC-24` — une absence n'est pas un
-  // refus).
-  en_attente: 'Pas encore proposé au patient',
+  // JAMAIS « non ratifié » : un « non ratifié » porterait sur le patient un
+  // jugement qu'il n'a pas eu l'occasion de démentir (`DC-24` — une absence
+  // n'est pas un refus).
+  //
+  // LE LIBELLÉ A CHANGÉ AU LOT-06, ET LES DEUX FORMULATIONS ÉVIDENTES ÉTAIENT
+  // FAUSSES — chacune dans une position du drapeau.
+  //
+  // « Pas encore proposé au patient » (LOT-02) devient faux dès que l'écran
+  // portail est ouvert : l'objectif EST proposé. « Le patient ne s'est pas
+  // encore prononcé » est faux tant qu'il est éteint : le patient n'a jamais pu
+  // se prononcer, et présenter une absence de DISPOSITIF comme un silence de
+  // personne est exactement ce que `DC-24` interdit. Le drapeau restera éteint
+  // jusqu'à un geste du responsable, donc la fenêtre n'est pas théorique.
+  //
+  // Le libellé retenu ne dit que ce que le cockpit SAIT — il n'y a pas de ligne
+  // de ratification — sans rien affirmer ni de l'offre, ni du patient. Faire
+  // remonter l'état du drapeau par la route praticien aurait marché aussi ;
+  // c'est une dépendance de plus pour dire moins.
+  en_attente: 'Aucune réponse du patient enregistrée',
   ratifie: 'Ratifié par le patient',
   conteste: 'Contesté par le patient',
 };

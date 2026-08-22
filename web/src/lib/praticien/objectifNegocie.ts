@@ -320,3 +320,96 @@ export function etatRatification(
   if (dernier.sens === 'conteste') return 'conteste';
   return 'en_attente';
 }
+
+// ── LE GESTE DU PATIENT (LOT-06) ────────────────────────────────────────────
+//
+// Ce qui précède LIT la ratification ; ce qui suit la PRÉPARE. Le LOT-02 a
+// délibérément laissé ce trou et l'a verrouillé par une garde structurelle :
+// une route praticien qui créerait une ligne de ratification fabriquerait un
+// acte que le patient n'a pas posé.
+
+/**
+ * Les deux seuls gestes, et ils ne sont pas symétriques d'un point de vue
+ * clinique : ratifier dit « c'est bien ça », contester dit « ce n'est pas
+ * exactement ça ». AUCUN TROISIÈME — et surtout pas un « ne se prononce pas »,
+ * qui transformerait un silence en réponse (`DC-24`). Un patient qui ne
+ * répond pas n'a pas de ligne, et `etatRatification` rend `en_attente`.
+ *
+ * La liste double le CHECK de `migration.sql:144-146`. Ce n'est pas une
+ * redondance décorative : le CHECK est un FILET, pas une validation. Sans ce
+ * contrôle en TypeScript, une valeur hors taxonomie ne serait pas refusée
+ * proprement — elle remonterait en erreur Prisma, donc en 500, pour ce qui est
+ * une requête malformée.
+ */
+export const SENS_RATIFICATION = ['ratifie', 'conteste'] as const;
+
+export type SensRatification = (typeof SENS_RATIFICATION)[number];
+
+export type RefusRatification = 'objectif_absent' | 'sens_invalide';
+
+/**
+ * Ce qui part en base. AUCUNE DATE — ni `gesteLe`, ni `creeLe` — et les deux
+ * absences n'ont pas le même motif.
+ *
+ * `creeLe` est posée par `@default(now())`, comme partout dans la campagne :
+ * c'est ce qui rend une ratification inantidatable.
+ *
+ * `gesteLe` RESTE NULLE, et c'est un choix, pas un oubli. La colonne est celle
+ * d'une DÉCLARATION (`migration.sql:11-15`, même rôle que `negocieLe` pour un
+ * objectif ou `saisiLe` pour une entrée « ce qui compte ») : elle porte une
+ * date que quelqu'un AFFIRME, pas celle où la ligne a été écrite. Or le patient
+ * ne déclare rien ici — il clique. La renseigner depuis l'horloge du serveur en
+ * ferait une déclaration qu'il n'a pas faite, et elle ne pourrait de toute
+ * façon jamais différer de `creeLe` : cette route est le seul écrivain, l'écart
+ * serait de quelques millisecondes. Une colonne qui ne peut que dupliquer sa
+ * voisine en prétendant dire autre chose est pire qu'une colonne vide — c'est
+ * la même faute que combler une date de saisie absente par la date d'écriture.
+ *
+ * La lire depuis le corps de la requête reste exclu : ce serait donner au
+ * client un moyen d'antidater son propre geste.
+ */
+export type DonneesRatification = {
+  idPatient: string;
+  idObjectif: string;
+  sens: SensRatification;
+};
+
+export type PreparationRatification =
+  | { ok: true; donnees: DonneesRatification }
+  | { ok: false; raison: RefusRatification };
+
+export type EntreeRatification = {
+  idPatient: string;
+  idObjectif: string | null | undefined;
+  sens: string | null | undefined;
+};
+
+/**
+ * Prépare UNE ligne de ratification. Elle ne remplace jamais rien : un
+ * changement d'avis est une ligne de plus, et `etatRatification` lit le dernier
+ * geste. Il n'existe aucun verbe pour retirer une ratification — publier un
+ * accord engage, se raviser se dit en le disant, pas en l'effaçant.
+ *
+ * Ce module est PUR : il ne vérifie pas que `idObjectif` existe, appartient au
+ * dossier, ou est une tête de chaîne. `id_objectif` n'a pas de clé étrangère
+ * (référence souple assumée par `migration.sql:17-20`) : ces trois
+ * vérifications appartiennent à la route, qui seule lit la base.
+ */
+export function preparerRatification(entree: EntreeRatification): PreparationRatification {
+  const idObjectif = (entree.idObjectif ?? '').trim();
+  if (idObjectif.length === 0) return { ok: false, raison: 'objectif_absent' };
+
+  const sens = (entree.sens ?? '').trim();
+  if (!(SENS_RATIFICATION as readonly string[]).includes(sens)) {
+    return { ok: false, raison: 'sens_invalide' };
+  }
+
+  return {
+    ok: true,
+    donnees: {
+      idPatient: entree.idPatient,
+      idObjectif,
+      sens: sens as SensRatification,
+    },
+  };
+}

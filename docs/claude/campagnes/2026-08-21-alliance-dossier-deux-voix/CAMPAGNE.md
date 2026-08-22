@@ -1,10 +1,10 @@
 ---
 id: "2026-08-21-alliance-dossier-deux-voix"
 titre: "Alliance 6.0-A — le dossier à deux voix"
-statut: "en cours (ouverte 2026-08-22 — cadrage sur état réel frais, six lots ; quatre livrés le jour de l'ouverture : LOT-01, LOT-05, LOT-02, LOT-03)"
+statut: "en cours (ouverte 2026-08-22 — cadrage sur état réel frais, six lots ; cinq mergés le jour de l'ouverture : LOT-01, LOT-05, LOT-02, LOT-03, LOT-04)"
 créée_le: "2026-08-21"
 mise_à_jour: "2026-08-22"
-lot_courant: "LOT-04"
+lot_courant: "LOT-06"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -70,11 +70,11 @@ de l'alliance sont relationnels, pas des tables de règles.
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
 | LOT-01 | La migration du dossier à deux voix — **CONFIRMATION OBLIGATOIRE** | terminé (2026-08-22 — mergé #748, migration constatée en production : 58 migrations up to date, contrat `alli_` vert au conteneur) | — |
-| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | livré à la PR (2026-08-22 — six gardes vues rouges ; ratification lue, jamais écrite ; aucune migration) | LOT-01 (migration constatée par conteneur) |
-| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | livré à la PR (2026-08-22 — cinq gardes vues rouges ; drapeau neuf et éteint `WN_CE_QUI_COMPTE` ; aucune migration) | LOT-01 (migration constatée par conteneur) |
-| LOT-04 | « Ce que j'ai compris de vous » — synthèse gardée et désaccord structuré | à faire | LOT-01 ; Socle (livré) |
+| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | terminé (2026-08-22 — mergé #754 ; six gardes vues rouges ; ratification lue, jamais écrite ; aucune migration) | LOT-01 (migration constatée par conteneur) |
+| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | terminé (2026-08-22 — mergé #755 ; cinq gardes vues rouges ; drapeau neuf et éteint `WN_CE_QUI_COMPTE` ; aucune migration) | LOT-01 (migration constatée par conteneur) |
+| LOT-04 | « Ce que j'ai compris de vous » — synthèse gardée et désaccord structuré | terminé (2026-08-22 — mergé #757, `D-090` ; drapeau neuf et éteint `WN_COMPREHENSION` gardant trois gestes ; accusé de lecture sans colonne neuve ; aucune migration) | LOT-01 ; Socle (livré) |
 | LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | terminé (2026-08-22 — mergé #750, `D-088`) | — (indépendant du LOT-01, cf. cadrage) |
-| LOT-06 | L'écran « dossier à deux voix » au portail — ratification et constat du gate | à faire | LOT-02, LOT-03, LOT-04 |
+| LOT-06 | L'écran « dossier à deux voix » au portail — ratification et constat du gate | en cours (2026-08-22 — écran d'assemblage, ratification append-only, drapeau neuf et éteint `WN_DOSSIER_DEUX_VOIX`, `D-092` ; aucune migration) | LOT-02, LOT-03, LOT-04 |
 
 Correspondance avec les quatre lots esquissés du brief : 1 → LOT-02, 2 →
 LOT-03, 3 → LOT-04, 4 → LOT-05 ; le LOT-01 isole la migration (confirmation

@@ -19,6 +19,16 @@
 // | Bilan portail (service) | `termeAnxiogene` sur narratif + note servis (`api/portail/bilan/route.ts`) | journalisant (`PORTAIL_BILAN_REGISTRE_ANXIOGENE`) | `api/portail/bilan/route.test.ts` |
 // | Synthèse de compréhension (publication) | `termeAnxiogene` sur `texte` (`api/praticien/comprehension/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/comprehension/route.test.ts` |
 // | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |
+// | Dossier à deux voix (service portail) | `termeAnxiogene` sur les TROIS textes praticien servis — reformulation, priorité, synthèse (`api/portail/dossier/route.ts`) | journalisant (`PORTAIL_DOSSIER_REGISTRE_ANXIOGENE`) | `api/portail/dossier/route.test.ts` |
+//
+// LE DOSSIER À DEUX VOIX EST UN CHEMIN NEUF, PAS UN DOUBLON (Alliance LOT-06).
+// Il sert au patient un texte praticien que RIEN d'autre ne lui sert — la
+// REFORMULATION de l'objectif négocié, jusqu'ici visible du seul cockpit — et
+// il le sert par une route qui n'est pas `api/portail/comprehension`. Une
+// garde vit dans un appelant, pas dans un objet : la ligne du LOT-04 ne couvre
+// pas cette route-ci, et le fichier de lot qui affirmait « le chemin est déjà
+// inscrit » se trompait. Régime journalisant, par application de `D-090` — le
+// geste est un SERVICE, comme le bilan et comme la synthèse au portail.
 //
 // DEUX LIGNES POUR UN SEUL OBJET, ET C'EST LE SENS DE `D-090` (Alliance
 // LOT-04) : le régime suit le GESTE, pas le texte. Publier est un acte

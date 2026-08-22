@@ -820,9 +820,19 @@ jobs:
         # Portée volontairement limitée à cette étape et à `webServer.env` :
         # au niveau du job, ces mêmes drapeaux déplacent la position de la
         # suite Vitest et font rougir dix bancs.
+        #
+        # Les trois drapeaux de l'alliance obéissent au même mécanisme : les
+        # pages `portail/[token]/{ce-qui-compte,comprehension,dossier}` lisent
+        # le leur au RENDU SERVEUR et rendent `notFound()` s'il est éteint —
+        # sans eux au build, les trois écrans sont introuvables et le parcours
+        # du dossier à deux voix n'a rien à ouvrir. Ils ne sont pas posés en
+        # production : ici l'E2E ouvre la seule position où ces écrans existent.
         env:
           WN_CB_ENABLED: 'true'
           WN_CB_PROPOSITION: 'true'
+          WN_CE_QUI_COMPTE: 'true'
+          WN_COMPREHENSION: 'true'
+          WN_DOSSIER_DEUX_VOIX: 'true'
         run: npm run build
 
       # Installation des navigateurs placée juste avant les E2E, et non en tête

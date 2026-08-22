@@ -61,3 +61,34 @@ export function isCeQuiCompteEnabled(value = process.env.WN_CE_QUI_COMPTE): bool
 export function isComprehensionEnabled(value = process.env.WN_COMPREHENSION): boolean {
   return value === 'true';
 }
+
+/**
+ * Drapeau de l'écran « dossier à deux voix » et du geste de RATIFICATION
+ * (campagne Alliance 6.0-A, LOT-06).
+ *
+ * QUATRIÈME DRAPEAU NEUF ET ÉTEINT, et il ne se compose PAS des deux
+ * précédents. Se contenter de `WN_CE_QUI_COMPTE || WN_COMPREHENSION` ouvrirait
+ * la ratification — seule écriture patient IRRÉVERSIBLE de la campagne — du
+ * même geste qui ouvre une surface de dépôt ou de lecture, et l'objectif
+ * négocié, lui, n'a aucun drapeau du tout (choix commenté du LOT-02 : surface
+ * praticien). Un patient se serait alors prononcé sur son objectif sans que
+ * personne n'ait décidé d'ouvrir ce geste-là.
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre. Même doctrine que
+ * `WN_CE_QUI_COMPTE`, `WN_COMPREHENSION`, `WN_C4_ENABLED` et `WN_CB_ENABLED`.
+ *
+ * IL GARDE TROIS GESTES : la route d'assemblage (503), l'écran du portail
+ * (404), et la ratification (503) — « invisible et écrivable » reste la pire
+ * des combinaisons.
+ *
+ * IL NE REMPLACE PAS LES AUTRES, IL S'Y AJOUTE. Chaque bloc de l'écran reste
+ * soumis à son propre drapeau : ouvrir le dossier à deux voix n'ouvre ni
+ * « ce qui compte » ni les synthèses de compréhension. Un bloc dont le drapeau
+ * est éteint est ABSENT de la réponse — pas « vide », pas « pas encore
+ * ouvert » : une phrase d'attente parlerait au patient de l'état d'un
+ * déploiement, et un bloc vide se lirait comme un silence de son praticien
+ * (`DC-24`).
+ */
+export function isDossierDeuxVoixEnabled(value = process.env.WN_DOSSIER_DEUX_VOIX): boolean {
+  return value === 'true';
+}

@@ -72,6 +72,126 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   // `afterAll` laisse le patient fictif avec un bilan visible dans la base
   // partagée — et un lien de plus dans la nav des specs suivants.
   await cleanupBilanTransmis();
+  // Les cinq tables de l'alliance (LOT-01). Elles n'étaient nettoyées par RIEN :
+  // les lots 02, 03 et 04 n'ont posé aucun E2E, et le trou ne se voyait donc
+  // pas. Sur la base PARTAGÉE du Mac, un objectif ou une synthèse laissés par
+  // un run précédent rendent le parcours du dossier à deux voix non idempotent
+  // — et le rouge n'accuserait pas le run qui a écrit la ligne.
+  await nettoyerDossierDeuxVoix(idPatient);
+}
+
+/**
+ * L'ORDRE COMPTE, et il est l'inverse des références. `desaccords_comprehension`
+ * et `ratifications_objectif` pointent vers les lignes qu'ils commentent : les
+ * effacer d'abord évite d'avoir à s'en remettre à une cascade que le schéma
+ * n'accorde pas (les FK patient sont en `RESTRICT`, délibérément — l'effacement
+ * d'un dossier est un geste nommé, jamais un effet de bord).
+ */
+export async function nettoyerDossierDeuxVoix(idPatient: string): Promise<void> {
+  await prisma.desaccordComprehension.deleteMany({ where: { idPatient } });
+  await prisma.ratificationObjectif.deleteMany({ where: { idPatient } });
+  await prisma.syntheseComprehension.deleteMany({ where: { idPatient } });
+  await prisma.entreeCeQuiCompte.deleteMany({ where: { idPatient } });
+  await prisma.objectifNegocie.deleteMany({ where: { idPatient } });
+}
+
+/**
+ * Le dossier à deux voix d'un patient de fixture : un objectif négocié, une
+ * entrée « ce qui compte », une synthèse de compréhension PUBLIÉE.
+ *
+ * Écrit directement en base plutôt que par les routes praticien : celles-ci
+ * exigent une session NextAuth du domaine, et le parcours qu'on veut couvrir
+ * est celui du PATIENT. Provisionner par l'API praticien ferait dépendre ce
+ * spec d'une authentification qui n'est pas son sujet.
+ *
+ * `publieeLe` est renseignée À L'INSERT, jamais par une mise à jour : c'est
+ * l'invariant du LOT-04, et un helper de test qui le contournerait donnerait un
+ * exemple à recopier.
+ */
+export async function provisionnerDossierDeuxVoix(idPatient: string): Promise<{
+  idObjectif: string;
+  idSynthese: string;
+}> {
+  await nettoyerDossierDeuxVoix(idPatient);
+
+  const objectif = await prisma.objectifNegocie.create({
+    data: {
+      idPatient,
+      praticienEmail: PRATICIEN_EMAIL,
+      enoncePatient: 'Je voudrais me réveiller sans avoir l’impression de n’avoir pas dormi.',
+      reformulationPraticien:
+        'Un sommeil qui ne restaure pas, plutôt qu’une difficulté à s’endormir.',
+      priorite: 'Le sommeil d’abord',
+    },
+    select: { id: true },
+  });
+
+  await prisma.entreeCeQuiCompte.create({
+    data: {
+      idPatient,
+      texte: 'Pouvoir reprendre la marche du dimanche avec ma fille.',
+    },
+  });
+
+  const synthese = await prisma.syntheseComprehension.create({
+    data: {
+      idPatient,
+      praticienEmail: PRATICIEN_EMAIL,
+      texte: 'Vous venez pour un sommeil qui se casse au milieu de la nuit.',
+      publieeLe: new Date(),
+    },
+    select: { id: true },
+  });
+
+  return { idObjectif: objectif.id, idSynthese: synthese.id };
+}
+
+/**
+ * Pose l'accusé de lecture du cadre d'accompagnement, celui que la séquence
+ * « Avant de commencer » produit.
+ *
+ * POURQUOI, ET C'EST UN CONSTAT DU LOT-06 : le hub du portail rend cette
+ * séquence AVANT tout le reste (`questionnaires/page.tsx`, `avantRequis`) —
+ * tant qu'elle n'est pas franchie, la navigation « Autres espaces » n'existe
+ * pas dans le DOM. Un spec qui veut prouver qu'un lien y est ATTEIGNABLE doit
+ * donc franchir ce gate, sinon il mesure l'absence du gate, pas celle du lien.
+ *
+ * On le pose en base plutôt qu'en rejouant les quatre écrans : `portail-parcours`
+ * couvre déjà ce parcours-là, et le recopier ferait de ce spec un second banc
+ * de la séquence de confiance — qui rougirait pour une raison étrangère à son
+ * sujet le jour où elle change.
+ *
+ * La VERSION vient du registre, jamais d'un littéral : une version figée ici
+ * cesserait de satisfaire la route au premier document révisé, et le spec
+ * rougirait sans que rien de son sujet n'ait bougé.
+ */
+export async function provisionnerAccuseCadre(idPatient: string): Promise<void> {
+  const cadre = getDocumentCourant('cadre_accompagnement');
+  await prisma.trustAcknowledgement.deleteMany({ where: { idPatient } });
+  await prisma.trustAcknowledgement.create({
+    data: {
+      idPatient,
+      documentKey: 'cadre_accompagnement',
+      documentVersion: cadre.version,
+      // Le hash vient du registre lui aussi : la route de lecture le pose
+      // ainsi (), et un littéral divergerait au
+      // premier document révisé.
+      contentHash: cadre.hash,
+      type: 'pris_connaissance',
+    },
+  });
+}
+
+/** Les ratifications posées par le parcours, dans l'ordre où elles ont été
+ *  écrites — le spec vérifie qu'un changement d'avis en AJOUTE une. */
+export async function lireRatifications(
+  idPatient: string,
+): Promise<{ sens: string; idObjectif: string }[]> {
+  return prisma.ratificationObjectif.findMany({
+    where: { idPatient },
+    select: { sens: true, idObjectif: true },
+    orderBy: { creeLe: 'asc' },
+  });
 }
 
 /**

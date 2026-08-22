@@ -531,7 +531,13 @@ step "Build"
 # proposition reste absent même quand la route d'API répond `ok`. Portée
 # limitée à cette commande : exportés pour tout le script, ils déplacent la
 # position de la suite Vitest jouée plus haut.
-WN_CB_ENABLED=true WN_CB_PROPOSITION=true npm run build
+# Idem pour les trois surfaces patient de l'alliance : les pages
+# `portail/[token]/{ce-qui-compte,comprehension,dossier}` appellent leur drapeau
+# au RENDU SERVEUR et rendent `notFound()` s'il est éteint. Sans eux au build,
+# les trois écrans sont introuvables et le parcours E2E n'a rien à ouvrir.
+WN_CB_ENABLED=true WN_CB_PROPOSITION=true \
+  WN_CE_QUI_COMPTE=true WN_COMPREHENSION=true WN_DOSSIER_DEUX_VOIX=true \
+  npm run build
 # E2E contre le build de production tout juste produit : plus rapide (pas de
 # compilation à la demande), stable, et fidèle au déploiement Vercel.
 export PLAYWRIGHT_WEB_SERVER=start

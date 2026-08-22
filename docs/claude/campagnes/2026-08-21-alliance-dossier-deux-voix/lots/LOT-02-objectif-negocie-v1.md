@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "livré à la PR (2026-08-22) — service, routes praticien et surface cockpit sur les tables du LOT-01 ; six gardes structurelles vues rouges par mutation réelle puis vertes ; ratification LUE, jamais écrite (le geste patient reste au LOT-06) ; aucune migration, aucune colonne"
+statut: "terminé (2026-08-22, mergé #754) — service, routes praticien et surface cockpit sur les tables du LOT-01 ; six gardes structurelles vues rouges par mutation réelle puis vertes ; ratification LUE, jamais écrite (le geste patient reste au LOT-06) ; aucune migration, aucune colonne"
 dépend_de: "LOT-01 (migration appliquée, constatée par conteneur le 2026-08-22 : 58 migrations up to date, contrat alli_ vert)"
 ---
 

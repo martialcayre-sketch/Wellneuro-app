@@ -4,6 +4,50 @@
 
 ## Décisions actives
 
+### D-092 — Le gate d'une campagne se constate sur la STRUCTURE, pas sur une ligne de production
+
+- Date : 2026-08-22
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-22)
+- Domaine : gouvernance de campagne — sortie d'Alliance 6.0-A, préalable à
+  l'activation élargie protocole→produits
+- Numérotation : `D-091` a été pris par l'agenda du sommeil (#758) pendant ce
+  lot. Un numéro se réserve dans `main`, jamais dans une branche.
+- Contexte : le gate de la campagne exige que « la ratification patient existe
+  et soit constatée » avant toute recommandation élargie se réclamant de
+  `priorityRulesV1`. Le fichier de lot demandait ce constat « sur un dossier de
+  test réel, lecture par identifiant, MCP ». Deux faits l'en empêchent :
+  1. depuis le cutover du 2026-08-22, le MCP Supabase lit la base **gelée**,
+     plus la production (`D-080`, `D-087`) — le constat serait cohérent et
+     faux ;
+  2. les trois drapeaux de la campagne sont **éteints** en production. Aucun
+     patient n'a pu ratifier quoi que ce soit, et aucun ne le pourra avant que
+     le responsable les pose. Exiger une ligne réelle subordonnerait la clôture
+     de la campagne à un geste d'exploitation qui n'en fait pas partie.
+- Décision : le gate se constate sur la **structure**, par lecture de la
+  production depuis un conteneur `scalingo run -d` (`D-087`) :
+  1. les cinq tables de l'alliance existent et portent leurs contraintes ;
+  2. la route qui écrit la ratification existe, elle est unique, et une garde
+     structurelle l'épingle ;
+  3. **zéro ligne de ratification en production**, et le constat le DIT au lieu
+     de le masquer — les drapeaux sont éteints, c'est la seule valeur attendue.
+- Ce que la décision N'AUTORISE PAS : elle ne pose aucun drapeau, n'ouvre
+  aucune surface, et n'active pas la recommandation élargie. Elle constate
+  qu'un geste patient EXISTE et qu'il est atteignable dès l'ouverture ; le
+  moment de l'ouverture reste au responsable, avec le piège `D-071` (poser la
+  variable ne suffit pas, il faut un build qui la porte).
+- **État du constat au moment où cette décision est écrite : NON EFFECTUÉ.**
+  La décision fixe le critère, elle ne rapporte pas son résultat. Le CLI
+  Scalingo ne s'authentifie pas par l'environnement (leçon du 2026-08-22, PR
+  #751) : la lecture exige un `scalingo login` du responsable. Les points 1 et
+  2 sont, eux, constatables sans la production — la migration a été vérifiée par
+  conteneur à la PR du LOT-01, et l'unicité de l'écrivain est tenue par une
+  garde structurelle vue rouge par mutation. **Le point 3 reste dû**, et la
+  clôture de campagne doit le porter comme tel plutôt que de l'énoncer au passé.
+- Conséquences : clôture d'Alliance 6.0-A sur ce critère, fragment
+  `changelog.d/2026-08-22-alliance-lot06-dossier-deux-voix.md`. Un constat
+  d'usage réel — « au moins un dossier porte une ratification » — reste
+  possible plus tard ; il appartiendra à l'exploitation, pas à la campagne.
+
 ### D-091 — Agenda du sommeil : compte de réveils exact, jamais d'horaires nocturnes
 
 - Date : 2026-08-22

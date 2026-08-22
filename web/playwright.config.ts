@@ -178,6 +178,21 @@ export default defineConfig({
       // jamais atteint. Il se pose ICI et pas dans le spec — `process.env` d'un
       // spec ne vaut que pour le code Node du test, pas pour le serveur Next.
       WN_AGENDA_ALI: 'true',
+      // Alliance 6.0-A — les trois surfaces patient du dossier à deux voix.
+      // Elles ne sont PAS posées en production : ici l'E2E n'aligne pas un état
+      // réel, il ouvre la seule position dans laquelle ces écrans existent. Les
+      // trois ensemble, et pas seulement celui du LOT-06 : chaque bloc de
+      // l'écran d'assemblage reste soumis à son drapeau propre, et sans les
+      // deux autres le parcours ne verrait qu'un tiers de la page.
+      //
+      // MÊME PORTÉE QUE LA BIOLOGIE CI-DESSUS, pour la même raison : le
+      // processus qui en a besoin, jamais le runner. Les pages portail lisent
+      // ces drapeaux au RENDU SERVEUR — `notFound()` sur drapeau éteint — donc
+      // la commande `npm run build` du CI et de `wn-test-worktree.sh` doit les
+      // porter elle aussi.
+      WN_CE_QUI_COMPTE: 'true',
+      WN_COMPREHENSION: 'true',
+      WN_DOSSIER_DEUX_VOIX: 'true',
       // « aucun secret posé » ci-dessus n'est vrai que si on l'IMPOSE : le
       // `...process.env` plus haut fait fuiter le vrai client patient présent
       // dans `web/.env.local` (nécessaire à `npm run dev`), et la route
