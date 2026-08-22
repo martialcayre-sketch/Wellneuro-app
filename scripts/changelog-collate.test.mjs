@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { collate } from './changelog-collate.mjs';
+import { analyserArgs, collate } from './changelog-collate.mjs';
 
 // Banc autonome : chaque test se fabrique un CHANGELOG et un changelog.d/ jetables
 // dans un répertoire temporaire, jamais le vrai fichier du dépôt.
@@ -110,4 +110,27 @@ test('pas de lignes vides accumulées à la jointure', () => {
   collate({ fragDir, changelogPath });
   const sortie = readFileSync(changelogPath, 'utf8');
   assert.ok(!sortie.includes('\n\n\n'), 'aucune séquence de trois sauts de ligne');
+});
+
+// Fail-closed sur les arguments (revue du 2026-08-22) : un `--check` lancé
+// « pour vérifier » a replié et SUPPRIMÉ 407 fragments — le mode destructeur
+// était le défaut pour tout argv inconnu. Ces cas gardent le refus, sur la
+// fonction pure : spawner le CLI réel jouerait contre le vrai dépôt,
+// exactement le risque que ce garde ferme.
+test('analyserArgs : sans argument, mode appliquer', () => {
+  assert.deepEqual(analyserArgs([]), { simulation: false });
+});
+
+test('analyserArgs : --dry-run seul, mode simulation', () => {
+  assert.deepEqual(analyserArgs(['--dry-run']), { simulation: true });
+});
+
+test('analyserArgs : un argument inconnu refuse — --check ne doit plus jamais appliquer', () => {
+  assert.throws(() => analyserArgs(['--check']), /inconnu\(s\) : --check/);
+  assert.throws(() => analyserArgs(['--verify']), /inconnu/);
+  assert.throws(() => analyserArgs(['-n']), /inconnu/);
+});
+
+test('analyserArgs : un inconnu refuse même accompagné de --dry-run', () => {
+  assert.throws(() => analyserArgs(['--dry-run', '--check']), /inconnu/);
 });

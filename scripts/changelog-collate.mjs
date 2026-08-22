@@ -56,9 +56,36 @@ export function collate({ fragDir, changelogPath, apply = true }) {
   return { inseres: fichiers.length, fichiers, contenu };
 }
 
+/**
+ * Analyse des arguments CLI — FAIL-CLOSED (revue de D-083, 2026-08-22) : le
+ * mode destructeur (écrire CHANGELOG.md PUIS supprimer les fragments) était le
+ * défaut pour TOUT argument inconnu — `--check`, `--verify` ou une faute de
+ * frappe appliquaient au lieu de refuser ; une revue l'a déclenché en croyant
+ * vérifier. Un argument inconnu jette désormais, comme un drapeau inconnu
+ * ferme.
+ * @param {string[]} args  `process.argv.slice(2)`
+ * @returns {{ simulation: boolean }}
+ */
+export function analyserArgs(args) {
+  const inconnus = args.filter((a) => a !== '--dry-run');
+  if (inconnus.length > 0) {
+    throw new Error(
+      `argument(s) inconnu(s) : ${inconnus.join(' ')} — usage : changelog-collate.mjs [--dry-run]. ` +
+        'Sans argument, le script APPLIQUE : repli dans CHANGELOG.md puis SUPPRESSION des fragments.',
+    );
+  }
+  return { simulation: args.includes('--dry-run') };
+}
+
 // ── CLI ─────────────────────────────────────────────────────────────────────
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const simulation = process.argv.includes('--dry-run');
+  let simulation;
+  try {
+    ({ simulation } = analyserArgs(process.argv.slice(2)));
+  } catch (erreur) {
+    console.error(erreur instanceof Error ? erreur.message : String(erreur));
+    process.exit(2);
+  }
   const res = collate({
     fragDir: join(RACINE, 'changelog.d'),
     changelogPath: join(RACINE, 'CHANGELOG.md'),
