@@ -57,6 +57,7 @@ async function main() {
     corpusActif: CORPUS_CLINIQUE_ACTIF,
     corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
     corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
+    corpusShaPerimetre: CORPUS_CLINIQUE_METADATA.shaPerimetre,
     stablePrefixTokens: prefixeStable,
     cacheThreshold: seuil,
     thresholdKnownForModel: typeof seuil === 'number',

@@ -295,9 +295,20 @@ export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v3';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
 // Activation volontairement bloquée tant que le corpus n'a pas été validé
-// cliniquement en externe (go/no-go documentaire).
+// cliniquement en externe (go/no-go documentaire). Verrou auto-portant depuis
+// [[D-084]] (régime [[D-067]], patron `tableSignee()` d'`orientationService`) :
+// booléen de signature, date ISO canonique, concordance du SHA de périmètre —
+// une retouche de la prose signée ferme le corpus en production toute seule,
+// au lieu de seulement rougir un banc.
+const DATE_VALIDATION_CORPUS = CORPUS_CLINIQUE_METADATA.dateValidation;
+const CORPUS_CLINIQUE_SIGNE =
+  CORPUS_CLINIQUE_METADATA.validationExterne
+  && DATE_VALIDATION_CORPUS !== null
+  && !Number.isNaN(new Date(DATE_VALIDATION_CORPUS).getTime())
+  && new Date(DATE_VALIDATION_CORPUS).toISOString() === DATE_VALIDATION_CORPUS
+  && CORPUS_CLINIQUE_METADATA.shaPerimetre === CORPUS_CLINIQUE_SHA256;
 export const CORPUS_CLINIQUE_ACTIF =
-  process.env.WN_ENABLE_CORPUS_CLINIQUE_V1 === '1' && CORPUS_CLINIQUE_METADATA.validationExterne;
+  process.env.WN_ENABLE_CORPUS_CLINIQUE_V1 === '1' && CORPUS_CLINIQUE_SIGNE;
 
 // Les deux états du prompt ne peuvent pas affirmer la même chose du corpus
 // (revue adversariale de D-082, constat H1) : éteint, il est indisponible et
