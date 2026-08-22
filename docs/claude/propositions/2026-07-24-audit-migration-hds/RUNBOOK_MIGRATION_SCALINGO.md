@@ -200,7 +200,8 @@ données (les objets pgvector exigent l'extension présente). Puis dump logique
 Supabase → restore data-only, **reconstruire/valider les index HNSW**, contrôler
 comptes de lignes et fonctions `match_*`. Les 4 tables `rag_corpus_*`
 (externes Prisma) migrent comme données. Voir audit §5 (chiffrage) et §6
-(rétro-planning S1–S13).
+(rétro-planning S1–S13). **Exécutée le 2026-08-22 — le déroulé réel et ses
+pièges sont en fin de document.**
 
 ## 5 — Cutover et décommission
 TTL DNS réduit → fenêtre de gel → delta-sync → `migrate status` vert sur la cible
@@ -230,3 +231,56 @@ RGPD) → merge des PR de nettoyage (`clone_env_vars.py`, `vercel.json`, scripts
   `scalingo` au dépôt courant. Dans un worktree, ce `.git/config` est **partagé
   avec toutes les sessions** — préférer l'intégration GitHub, qui déploie une
   branche indépendamment du worktree qui pilote la CLI.
+
+## Ce que l'exécution de la migration des données a appris (2026-08-22)
+
+Exécutée dans la nuit du 2026-08-21 au 2026-08-22 : dump de la source à
+02:13 CEST, restore achevé sur la cible à **03:24:09 CEST** — c'est la date de
+bascule consignée au dossier RGPD (rubrique 12), celle qui ouvre la fenêtre de
+moindre couverture de `D-078`. Comptes conformes à la référence figée côté
+source le même jour (19 patients, 118 réponses, ~360 k lignes). Dans l'ordre
+des découvertes :
+
+- **`pg_dump` 15 refuse une source PostgreSQL 17.** Les outils Homebrew par
+  défaut étaient en 15.18 ; passer par `libpq` (`brew install libpq`,
+  binaires sous `/opt/homebrew/opt/libpq/bin`).
+- **Dumper par le Session pooler Supabase (port 5432), jamais le Transaction
+  pooler (6543)** — et la « Direct connection » est souvent IPv6-seulement
+  depuis un poste résidentiel. L'URL qui convient est celle de
+  `MIGRATE_DATABASE_URL` (connexion directe/session), pas `DATABASE_URL`
+  (poolée).
+- **FK auto-référente** : `rag_corpus_claim_decisions.tirage_id → id` (même
+  table) fait échouer un restore data-only. Remède propre : `DROP CONSTRAINT`
+  avant, restore, `ADD CONSTRAINT` après — la re-pose revalide toutes les
+  lignes d'un coup. `--jobs=1` obligatoire pour préserver l'ordre FK global.
+- **Le déclencheur clinique `rag_claim_decisions_avant_insertion` rejette le
+  `COPY` de `pg_restore` en bloc** (« la voie lente ne se signe jamais par
+  lot ») : il traite le lot de restauration comme un lot de signatures
+  applicatives. Un restore base-à-base de données déjà validées en production
+  doit le **désactiver ciblément** le temps du `COPY` de cette seule table —
+  **feu vert explicite du responsable requis** (accordé le 2026-08-22, séance
+  tenante), réactivation immédiate vérifiée (les 3 triggers à `O`), puis
+  revalidation par la re-pose de la FK. **L'alternative « respectueuse »
+  ligne à ligne serait pire** : la règle du jour rejetterait ≥ 72 claims
+  historiques, migrant une histoire décisionnelle amputée en silence.
+- **`db-tunnel` exige une clé SSH enregistrée au compte**, et `--identity`
+  relit le fichier de clé à chaque reconnexion — une clé chiffrée met le
+  tunnel en boucle de passphrase. Remède : clé dédiée **sans passphrase**,
+  créée pour le geste et **révoquée sitôt après** (`keys-remove`). Piège dans
+  le piège : le premier `keys-remove` a répondu « deleted » sans rien
+  supprimer — toujours revérifier par `scalingo keys`.
+- **L'authentification du restore passe par `~/.pgpass`** rempli par le
+  responsable (jamais par l'assistant), vidé sitôt le geste fini. Un
+  copier-coller de mot de passe y introduit facilement un caractère
+  parasite — comparer les longueurs avant d'accuser autre chose.
+- **Conflits PK attendus sur `biology_*`** (`analytes`, `panels`,
+  `panel_items`) : ces tables sont seedées par les migrations sur la cible,
+  le dump apporte les mêmes lignes — les `duplicate key` sont sans perte,
+  vérifiables par comptes identiques à la référence.
+- **Aucune séquence à resynchroniser** : zéro `autoincrement` au schéma, tous
+  les identifiants sont des cuid — un souci classique de migration qui,
+  ici, n'existe pas.
+- **Figer les comptes de la source AVANT le dump** (ici par `execute_sql`,
+  lecture seule) : c'est la seule référence opposable au moment de valider le
+  restore ; les tables vivantes bougent tant que l'ancienne prod écrit, le
+  delta se rattrape au gel du cutover.

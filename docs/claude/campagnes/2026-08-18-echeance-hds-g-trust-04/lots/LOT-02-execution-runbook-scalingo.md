@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "à faire — débloqué par D-078 (migrer, sans attendre l'annexe) ; chaque geste garde sa confirmation obligatoire"
+statut: "en cours — recette staging faite (2026-08-21/22), prod provisionnée et données réelles migrées (2026-08-22 03:24 CEST, bascule consignée) ; restent cutover DNS et décommissionnement (gaté par l'annexe)"
 ---
 
 # LOT-02 — Exécution du runbook Scalingo — CONFIRMATION OBLIGATOIRE
@@ -116,14 +116,28 @@ gestes — un lot ops ne se prouve pas par une suite Vitest.
 
 ## Critères de done
 
-- [ ] Recette staging passée et **écrite** — les trois items §A cochés sur
-      preuve, pas sur prose.
+- [x] Recette staging passée et **écrite** — les trois items §A cochés sur
+      preuve, pas sur prose. Fait 2026-08-21/22 :
+      `propositions/2026-07-24-audit-migration-hds/RAPPORT_RECETTE_STAGING.md`
+      (login, Fil/fiche patient, RAG santé, synthèse SSE — écart de durée sur
+      ce dernier item accepté par le responsable le 2026-08-22).
 - [ ] App de production HDS provisionnée, `HDS: true`, add-on `running`,
-      migrations « up to date » sur conteneur.
+      migrations « up to date » sur conteneur. **Fait le 2026-08-22 sauf le
+      dernier terme** : app `wellneuro` (`osc-fr1`, `HDS: true`), add-on
+      `postgresql-business-512` `running`, `web:2:S`, premier déploiement
+      vert, postdeploy « All migrations have been successfully applied »
+      (56). **Reste le contrôle formel `prisma migrate status` sur conteneur
+      `scalingo run`** — TTY requis, geste du responsable ; les logs de
+      postdeploy ne le remplacent pas.
 - [ ] ~~Données réelles migrées **après** l'archivage de l'annexe signée~~ —
       ordre écarté par `D-078` ; **la chronologie réelle des deux événements
       (bascule, signature) est consignée avec ses dates**, quelle qu'elle
       soit — c'est elle qui borne la fenêtre de moindre couverture.
+      **Premier terme consigné : bascule le 2026-08-22 à 03:24:09 CEST**
+      (`docs/DOSSIER_RGPD.md` rubrique 12 ; comptes conformes, trigger
+      clinique contourné sur feu vert explicite du responsable et réactivé
+      vérifié — déroulé au runbook). Le second terme (signature de l'annexe)
+      reste pendant — la case se coche quand la chronologie est complète.
 - [ ] Cutover fait, Vercel/Supabase gardés chauds puis décommissionnés avec
       **preuve d'effacement écrite** au registre RGPD.
 - [ ] Le runbook porte ce que l'exécution a appris ; aucun compteur figé
