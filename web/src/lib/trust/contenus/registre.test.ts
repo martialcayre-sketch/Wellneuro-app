@@ -21,12 +21,13 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les six documents v1 attendus', () => {
+  it('expose les sept documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
       'limites_securite@v1',
       'donnees_confidentialite@v1',
+      'donnees_confidentialite@v2',
       'usage_ia@v1',
       'droits_patient@v1',
       'consentement_suivi@v2',
