@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
-statut: "à faire"
-dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur) ; Socle de restitution sûre (livré le 2026-08-22)"
+statut: "livré à la PR (2026-08-22) — synthèse versionnée publiée sous garde confirmable, désaccord structuré indestructible, accusé de lecture sans colonne neuve (journal + état dérivé), cinquième chemin inscrit à la carte du Socle en deux entrées (D-090) ; aucune migration"
+dépend_de: "LOT-01 (migration appliquée par one-off release-db après approbation humaine — D-087, qui supplante D-086 §1-2 ; constatée par conteneur : 58 migrations up to date) ; Socle de restitution sûre (livré le 2026-08-22)"
 ---
 
 # LOT-04 — « Ce que j'ai compris de vous » : synthèse gardée et désaccord structuré

@@ -4,6 +4,68 @@
 
 ## Décisions actives
 
+### D-090 — Le régime d'une garde de chemin sortant suit le GESTE, pas le texte
+
+- Date : 2026-08-22
+- Statut : accepté
+- Domaine : restitution sûre (Socle), surface patient, Alliance 6.0-A LOT-04
+
+- Contexte : la carte des chemins sortants du Socle
+  (`web/src/lib/documents/vocabulaire.ts`) porte trois régimes — journalisant,
+  refus confirmable, refus dur — et note explicitement que leur alignement
+  « est un arbitrage du responsable, non tranché ». Le LOT-04 ajoute le
+  cinquième chemin de la carte, et le premier depuis le Socle : la synthèse de
+  compréhension, écrite par le praticien et publiée au patient. Contrairement
+  aux quatre précédents, ce chemin comporte **deux gestes distincts** — une
+  publication (praticien) et un affichage (service) — que rien n'obligeait à
+  ranger sous le même régime.
+
+- Décision : le régime suit le **geste**, pas le texte. Un même objet peut
+  donc porter deux entrées de carte. Concrètement, pour la synthèse de
+  compréhension : **refus confirmable à la publication**, **journalisant au
+  service portail**.
+
+- Motif : un refus confirmable n'a de sens que s'il existe un humain pour
+  trancher, au moment où il se produit. Il y en a un à la publication — le
+  praticien, qui voit le terme relevé et choisit de reformuler ou de publier
+  tel quel. Il n'y en a aucun quand le patient ouvre sa page : y bloquer
+  afficherait une page d'erreur pour un texte que le patient n'a pas écrit et
+  ne peut pas corriger. Le refus dur est écarté pour la même raison, aggravée :
+  un faux positif du registre rendrait une synthèse légitime impubliable sur
+  une surface de dialogue où le praticien choisit ses mots.
+
+- Conséquences :
+  - deux lignes ajoutées à la carte, avec leurs bancs de débranchement, **vus
+    rouges** avant d'être déclarés verts ;
+  - code d'événement neuf `PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE` ;
+  - la question posée au praticien à la publication est rendue comme une
+    **question**, pas comme une erreur, et sa confirmation est un **second
+    geste distinct** de « publier » ;
+  - cette décision ne modifie **aucun** des quatre régimes déjà en place ni
+    aucun registre de termes (`RACINES_PRESCRIPTIVES`, `RACINES_ANXIOGENES`
+    inchangées) — elle tranche une question que la carte laissait ouverte, elle
+    ne réaligne rien.
+
+- Corollaire posé explicitement à la revue : **il n'existe aucune
+  dépublication**. Retirer au patient une synthèse déjà publiée n'est pas un
+  geste que ce lot ouvre — publier engage, et corriger se fait en publiant une
+  version qui corrige. La première rédaction produisait pourtant ce retrait
+  sans le dire : elle servait au patient la *tête de chaîne* publiée, si bien
+  qu'enregistrer un simple **brouillon** de révision faisait disparaître du
+  portail la version publiée qu'il supplantait, et l'écran patient présentait
+  ce retrait comme « votre praticien n'a encore rien publié » — une absence
+  fabriquée, `DC-24` pris à revers. Corrigé : la ligne servie est la **publiée
+  la plus récente**. Le filtre par tête n'apportait rien (une révision publiée
+  est toujours plus récente) ; son seul effet propre était le défaut.
+
+- Portée : ce lot ne relève ni du scoring ni d'une règle clinique. Aucun seuil,
+  aucune dose, aucune borne clinique — les bornes posées (4 000 caractères,
+  64 Kio de corps) sont techniques et identifiées comme telles (`DC-19`,
+  `DC-20`).
+
+- Référence : `docs/claude/campagnes/2026-08-21-alliance-dossier-deux-voix/lots/LOT-04-synthese-comprehension-desaccord.md`,
+  `web/src/lib/documents/vocabulaire.ts`
+
 ### D-089 — Levée technique du gate G-TRUST-04, sous réserve unique : la signature de l'annexe HDS
 
 - Date : 2026-08-22

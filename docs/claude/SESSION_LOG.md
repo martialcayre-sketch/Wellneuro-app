@@ -4509,3 +4509,24 @@ serait toucher au moteur). Onze gardes vues rouges par mutation réelle. Deux
 revues ont trouvé ce que je n'aurais pas vu : un 500 atteignable sans session,
 et deux gardes plus étroites que leur intitulé. Prochaine action : PR des deux
 lots. Ouvert : cadence sur les routes d'écriture, allumage du drapeau.
+
+## 2026-08-22 — Alliance LOT-04 : la compréhension gardée, le désaccord indestructible (D-090)
+
+Décisions : l'accusé de lecture praticien n'aura pas de colonne (le schéma la
+refuse, la liste blanche du contrat SQL la ferait rougir) — « vu » = journal
+d'accès existant, « répondu » = état DÉRIVÉ. D-090 : le régime d'une garde de
+chemin sortant suit le GESTE, pas le texte — confirmable à la publication (un
+humain est là), journalisant au service portail (personne ne l'est) ; deux
+entrées de carte pour un objet. Le drapeau garde aussi la PUBLICATION : sinon
+un stock de synthèses crues remises atteindrait le patient d'un coup à
+l'allumage (D-070 vu de l'autre bout). Écartés : refus dur (un faux positif
+rendrait une synthèse légitime impubliable), colonne d'état, 6e onglet, gabarit
+(le portail est en « pull »). Deux bancs de débranchement vus rouges puis
+rebranchés. Piège : la garde anti-diagnostic refuse tout nom commençant par
+`code` — renommé plutôt qu'assoupli. Revue NO-GO, deux bloquants réels : une
+DÉPUBLICATION de fait (servir la tête publiée retirait au patient une synthèse
+dès qu'un brouillon la supplantait — et deux de mes bancs l'épinglaient), et
+`err.message` brut journalisant le texte clinique alors que le helper sûr
+existait dans la route sœur. Corrigés, plus M1-M4. T3 vert. Prochaine action :
+PR. Ouvert : WN_COMPREHENSION à poser en production ; l'append-only n'est tenu
+par aucune contrainte base ; aucun E2E sur la surface neuve (parité LOT-03).

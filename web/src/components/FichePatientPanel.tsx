@@ -50,6 +50,7 @@ import {
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
+import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
@@ -987,6 +988,11 @@ export function FichePatientPanel({
               négocie avant qu'un épisode soit confirmé, pas après, donc le
               panneau reste visible sans épisode. Vérifié par banc de rendu. */}
           <ObjectifNegociePanel idPatient={idPatient} />
+          {/* « Ce que j'ai compris de vous » (Alliance 6.0-A, LOT-04) — AJOUT
+              ADDITIF sous l'objectif négocié, même phase et même raison : une
+              compréhension s'écrit avant qu'un épisode soit confirmé. Pas de
+              6e onglet — le lot n'en ouvre aucun. */}
+          <ComprehensionPanel idPatient={idPatient} />
         </div>
       );
     }

@@ -39,6 +39,7 @@ export function PatientCompanionHome({ token }: { token: string }) {
   // jamais deviné ici. Reste `false` sur toute erreur — le lien n'apparaît que
   // sur un « oui » explicite.
   const [ceQuiCompteOuvert, setCeQuiCompteOuvert] = useState(false);
+  const [comprehensionOuverte, setComprehensionOuverte] = useState(false);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -71,10 +72,28 @@ export function PatientCompanionHome({ token }: { token: string }) {
     }
   }, []);
 
+  /**
+   * Même sonde, même motif — avec `?interrupteur=1`, qui est OBLIGATOIRE ici et
+   * pas cosmétique : sans lui, la route servirait la synthèse complète à chaque
+   * visite de l'accueil et émettrait son événement « registre anxiogène servi »
+   * pour une page que personne n'a ouverte. Aucune donnée n'en revient —
+   * seulement « ouvert ou non ». Motif complet à la route.
+   */
+  const sonderComprehension = useCallback(async () => {
+    try {
+      const res = await fetch('/api/portail/comprehension?interrupteur=1', { cache: 'no-store' });
+      const data = (await res.json()) as { ok?: boolean; ouvert?: boolean };
+      setComprehensionOuverte(res.ok && data.ok === true && data.ouvert === true);
+    } catch {
+      setComprehensionOuverte(false);
+    }
+  }, []);
+
   useEffect(() => {
     void charger();
     void sonderCeQuiCompte();
-  }, [charger, sonderCeQuiCompte]);
+    void sonderComprehension();
+  }, [charger, sonderCeQuiCompte, sonderComprehension]);
 
   if (chargement) {
     return (
@@ -142,6 +161,16 @@ export function PatientCompanionHome({ token }: { token: string }) {
         {ceQuiCompteOuvert && (
           <Link href={`/portail/${token}/ce-qui-compte`} className={patientButtonClassName('ghost')}>
             Ce qui compte pour moi aujourd’hui
+          </Link>
+        )}
+        {/* « Ce que votre praticien a compris de vous » (Alliance 6.0-A,
+            LOT-04) — lien ADDITIF, sous drapeau, même mécanique que ci-dessus :
+            c'est la route qui décide, fail-closed. Le libellé ne promet RIEN sur
+            le contenu : il peut n'y avoir aucune synthèse publiée, et l'écran le
+            dira comme une absence, jamais comme un « rien à signaler ». */}
+        {comprehensionOuverte && (
+          <Link href={`/portail/${token}/comprehension`} className={patientButtonClassName('ghost')}>
+            Ce que mon praticien a compris de moi
           </Link>
         )}
       </div>

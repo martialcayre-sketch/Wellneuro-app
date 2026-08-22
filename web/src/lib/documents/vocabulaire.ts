@@ -17,6 +17,17 @@
 // | Booklet (envoi au patient) | `termeAnxiogene` (ci-dessous) sur `narratif_patient` (`api/praticien/booklet/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/booklet/route.test.ts` |
 // | Rendu médecin (courrier biologie, aperçus) | `assertRenduMedecinNonPrescriptif` (ci-dessous) au chokepoint `documents/rendu.ts` | refus dur (lève) | `documents/rendu.test.ts` |
 // | Bilan portail (service) | `termeAnxiogene` sur narratif + note servis (`api/portail/bilan/route.ts`) | journalisant (`PORTAIL_BILAN_REGISTRE_ANXIOGENE`) | `api/portail/bilan/route.test.ts` |
+// | Synthèse de compréhension (publication) | `termeAnxiogene` sur `texte` (`api/praticien/comprehension/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/comprehension/route.test.ts` |
+// | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |
+//
+// DEUX LIGNES POUR UN SEUL OBJET, ET C'EST LE SENS DE `D-090` (Alliance
+// LOT-04) : le régime suit le GESTE, pas le texte. Publier est un acte
+// praticien explicite — un humain est là pour trancher, donc refus
+// confirmable, comme le booklet. Afficher au portail est un service — personne
+// n'est là pour arbitrer, et bloquer montrerait une page d'erreur au patient
+// pour un texte qu'il n'a pas écrit et ne peut pas corriger, donc journalisant,
+// comme le bilan. Les deux bancs sont VUS ROUGES au débranchement (preuve
+// consignée au handoff du lot).
 //
 // Hors carte, et pourquoi : `correspondance-medecin` consigne un texte écrit
 // par le praticien hors application (rien n'est généré ni envoyé) ; les emails
