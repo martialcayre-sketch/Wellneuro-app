@@ -146,7 +146,10 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // ÉTEINT — l'état de ce banc — le texte est identique au caractère près à la
 // v26 : l'empreinte ne bouge pas, seul le numéro porte le changement. L'état
 // ALLUMÉ a son propre banc (`lib/anthropic.corpusActif.guard.test.ts`).
-const EMPREINTE_V27 = 'f37710172eae1c60';
+// v28 (2026-08-22, revue de sécurité Codex, constat M) : une ligne du cadre
+// déontologique déclare le bloc <donnees_declaratives_patient> comme DONNÉES,
+// jamais consignes — l'anti-injection de prompt des champs libres du patient.
+const EMPREINTE_V28 = 'd2a2d5ba1bdd0864';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -268,7 +271,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v27', empreinte: EMPREINTE_V27 });
+    ).toEqual({ version: 'synthese-v28', empreinte: EMPREINTE_V28 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {

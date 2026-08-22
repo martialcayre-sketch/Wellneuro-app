@@ -5,6 +5,10 @@ const { prisma, sendMagicLinkEmail, logger, attendre } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     portailMagicLink: { count: vi.fn(), create: vi.fn() },
     portailDemandeTentative: { count: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    // La transaction rend le client lui-même : les assertions existantes sur
+    // `portailMagicLink.*` continuent d'observer les mêmes espions.
+    $transaction: vi.fn(),
+    $executeRaw: vi.fn(),
   },
   sendMagicLinkEmail: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
@@ -60,6 +64,8 @@ describe('POST /api/portail/lien/demande', () => {
     prisma.portailDemandeTentative.count.mockResolvedValue(1);
     prisma.portailDemandeTentative.create.mockResolvedValue({});
     prisma.portailDemandeTentative.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma));
+    prisma.$executeRaw.mockResolvedValue(0);
   });
 
   it('drapeau G4 éteint : la route n’existe pas', async () => {
@@ -139,6 +145,25 @@ describe('POST /api/portail/lien/demande', () => {
     expect(where.creeLe.gte).toBeInstanceOf(Date);
   });
 
+  // Constat M de la revue de sécurité du 2026-08-22 : comptés HORS
+  // transaction, plusieurs demandes concurrentes observaient toutes un
+  // compteur sous le plafond avant qu'aucune n'ait créé son lien, et le
+  // franchissaient ensemble. La propriété testable ici : le comptage et la
+  // création partagent une transaction OUVERTE par le verrou consultatif du
+  // patient — c'est lui qui sérialise les concurrentes.
+  it('le plafond se vérifie sous verrou patient, dans la transaction de la création', async () => {
+    await POST(requete(PATIENT.email));
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const [gabarit, ...valeurs] = prisma.$executeRaw.mock.calls[0];
+    expect(gabarit.join('§')).toContain('pg_advisory_xact_lock');
+    expect(valeurs[0]).toBe(PATIENT.idPatient);
+    // Le verrou d'abord, le comptage ensuite — sinon il ne sérialise rien.
+    expect(prisma.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.portailMagicLink.count.mock.invocationCallOrder[0],
+    );
+  });
+
   // Une panne ne doit pas devenir un signal : 500 sur adresse connue et 200 sur
   // inconnue dirait exactement ce qu'on refuse de dire.
   it('même une panne répond comme un succès', async () => {
@@ -165,6 +190,9 @@ describe('POST /api/portail/lien/demande', () => {
       () => prisma.portailMagicLink.count.mockResolvedValue(3),
       () => prisma.portailDemandeTentative.count.mockResolvedValue(999),
       () => prisma.patient.findUnique.mockRejectedValue(new Error('base indisponible')),
+      // La transaction verrouillée est un point de panne neuf : il sort par
+      // la même porte que les autres.
+      () => prisma.$transaction.mockRejectedValue(new Error('verrou indisponible')),
     ];
 
     for (const brancher of branches) {
