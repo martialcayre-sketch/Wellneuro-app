@@ -76,11 +76,11 @@ export async function resetPortailState(idPatient: string): Promise<void> {
 
 /**
  * Met un patient fictif dans l'état « reprise » attendu par la proposition de
- * pack de réévaluation (SP-SPI / LOT-01), et renvoie son jeton d'accès portail.
+ * pack de réévaluation (SP-SPI / LOT-01).
  *
  * Réservé à un patient qu'aucun autre spec n'utilise (Jennifer Martin,
- * PAT_SEED_02) : ce helper mute ses réponses et son jeton, et deux specs
- * s'exécutent en parallèle sur la même base éphémère. L'appliquer à
+ * PAT_SEED_02) : ce helper mute ses réponses et son état de compte, et deux
+ * specs s'exécutent en parallèle sur la même base éphémère. L'appliquer à
  * `PAT_SEED_03` casserait `portail-parcours`.
  *
  * Trois écritures, toutes fidèles à un vrai patient qui revient après une longue

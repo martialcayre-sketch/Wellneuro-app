@@ -9,6 +9,7 @@ import {
   isSessionValideForPatient,
   signPatientSession,
   verifyPatientSession,
+  type PatientSessionAccount,
 } from './patient-session';
 
 const SECRET = 'secret-de-test-non-production';
@@ -190,5 +191,27 @@ describe('session patient', () => {
     // reste honorée par la fonction elle-même — un appelant ne peut pas
     // l'oublier.
     expect(isSessionValideForPatient(session, compte({ accessTokenRevoked: true }))).toBe(false);
+  });
+
+  // Revue de la PR de purge (test manquant 2) : le fait que « la session
+  // appartient au compte, pas à un jeton » n'est plus documenté par un test
+  // de comportement — il est porté par la FORME du type. Ce garde la fige :
+  // réintroduire un champ de secret dans `PatientSessionAccount` rougit ici
+  // (le Record exige exactement les clés du type, dans les deux sens).
+  it('PatientSessionAccount ne porte aucun champ de secret — cinq clés, pas une de plus', () => {
+    const clesAttendues: Record<keyof PatientSessionAccount, true> = {
+      idPatient: true,
+      email: true,
+      actif: true,
+      accessTokenRevoked: true,
+      sessionsInvalidesAvant: true,
+    };
+    expect(Object.keys(clesAttendues).sort()).toEqual([
+      'accessTokenRevoked',
+      'actif',
+      'email',
+      'idPatient',
+      'sessionsInvalidesAvant',
+    ]);
   });
 });

@@ -107,6 +107,10 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
       idPatient: 'PAT_1',
       email: 'sophie.nicola@example.test',
       prenom: 'Sophie',
+      // `actif: true` manquait : le POST sortait en 404 avant toute écriture
+      // et l'assertion « aucun update ne porte la date » était vide (constat
+      // L-3 de la revue de la PR de purge — le test redevient probant).
+      actif: true,
       accessTokenRevoked: true,
       sessionsInvalidesAvant: new Date('2026-07-21T10:00:00.000Z'),
     });

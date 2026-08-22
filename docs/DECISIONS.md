@@ -57,7 +57,11 @@ complète s'achève au décommissionnement (effacement de la copie Supabase,
 > `access_token_revoked` n'est pas dormante : c'est le drapeau **vivant** de
 > révocation du portail (posé par la route praticien `token`, honoré aux
 > trois entrées et par `isSessionValideForPatient`) — il reste. La checklist
-> disait « trois », le code disait deux ; le code fait foi.
+> disait « trois », le code disait deux ; le code fait foi. Même sort pour la
+> « bascule du helper E2E vers le lien magique » ordonnée ci-dessus : **sans
+> objet** — acquise de fait depuis LOT-04 (le jeton n'ouvrait plus rien, les
+> specs entrent par cookie signé) ; le helper cesse simplement d'écrire un
+> jeton mort (revue de la PR de purge, constat M-2).
 
 ### D-084 — Arbitrages post-revue de D-082 : la signature vaut provenance, le corpus rejoint le régime `shaPerimetre`
 

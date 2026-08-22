@@ -18,6 +18,18 @@ G-TRUST-04 — des secrets morts qu'on continuait d'héberger.
 - Deux tests « survit à une réémission du jeton permanent » retirés, avec
   commentaire daté sur place : leur sujet n'existe plus structurellement.
   Tout ce qui teste la **révocation** demeure.
+- **Relevé avant approbation** (revue, question 3 — sonde lecture seule,
+  agrégats sans identité ni valeur) : **14 jetons non nuls sur 19 patients**,
+  0 compte révoqué. C'est ce que la purge efface réellement ; après
+  application, l'information n'existe plus que dans la copie Supabase.
+- **Le rollback du code change de nature à l'application** (revue, M-3) :
+  une fois la migration approuvée par `release-db`, redéployer un commit
+  antérieur casserait les lectures `Patient` (client d'avant demandant des
+  colonnes disparues). L'ordre choisi — code d'abord, migration ensuite —
+  est le bon dans ce sens ; le retour en arrière passe alors par une
+  restauration de base, pas par un simple redéploiement. La consigne
+  générique du résumé d'approbation `release-db` (« migration d'abord »)
+  vaut pour un ADD, pas pour ce DROP — l'approbateur ne doit pas s'y fier.
 - La purge complète s'achève au décommissionnement (`D-080`, 2026-09-01) :
   la copie Supabase, gardée chaude pour rollback, porte encore les valeurs
   jusqu'à son effacement prouvé.

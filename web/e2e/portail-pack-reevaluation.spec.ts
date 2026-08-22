@@ -6,9 +6,9 @@
 // refus s'y tient.
 //
 // Patient : Jennifer Martin (PAT_SEED_02), fictif autorisé et **utilisé par
-// aucun autre spec** — la mise en reprise mute ses réponses et son jeton, et les
-// specs tournent en parallèle sur la même base éphémère. L'appliquer à Michel
-// (PAT_SEED_03) casserait `portail-parcours`.
+// aucun autre spec** — la mise en reprise mute ses réponses et son état de
+// compte, et les specs tournent en parallèle sur la même base éphémère.
+// L'appliquer à Michel (PAT_SEED_03) casserait `portail-parcours`.
 import { test, expect } from '@playwright/test';
 import { preparerReprisePourTest, nettoyerReprise, closePrisma } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
@@ -20,8 +20,8 @@ const PATIENT = {
 
 test.describe.serial('Proposition de pack de réévaluation (reprise)', () => {
   test.beforeAll(async () => {
-    // Met le patient en état « reprise » ; son jeton (inerte depuis le LOT-04)
-    // n'est plus utilisé — l'accès passe par le cookie de session.
+    // Met le patient en état « reprise » ; l'accès passe par le cookie de
+    // session (le jeton permanent n'existe plus — colonnes purgées, D-085).
     await preparerReprisePourTest(PATIENT.idPatient);
   });
 

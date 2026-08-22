@@ -189,6 +189,20 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     expect(deriverEtatParcoursPatient({ ...signauxDeBase, ...apres })).toEqual(friseAvant);
   });
 
+  // Le drapeau de révocation ferme la route la plus exercée du portail —
+  // posé à la revue de la PR de purge (test manquant 1) : ce describe ne
+  // testait que la date, jamais le drapeau.
+  it('refuse un compte révoqué (accessTokenRevoked)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessTokenRevoked: true });
+    const cookieRevoque = signPatientSession({
+      idPatient: patient.idPatient,
+      email: patient.email,
+    });
+
+    expect((await GET(request(cookieRevoque))).status).toBe(401);
+    expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
   // IDP2 LOT-02 : la révocation, et non plus la rotation du jeton, est ce qui
   // coupe une session ouverte.
   it('refuse un cookie émis avant une révocation', async () => {
@@ -208,9 +222,10 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
   // Le test « survit à une réémission du jeton permanent » a été retiré le
   // 2026-08-22 (D-085 §5) : les colonnes de valeur du jeton sont purgées, une
   // réémission n'existe plus structurellement — le cas devenait identique au
-  // nominal. La révocation, elle, reste testée plus haut.
+  // nominal. Ce test-ci reste le contrôle positif du describe (200 + forme
+  // complète), sans lequel les refus ci-dessus seraient verts pour une base
+  // qui ne rend jamais rien.
   it('sert les assignations sur session de compte valide', async () => {
-    prisma.patient.findUnique.mockResolvedValue({ ...patient });
     const currentCookie = signPatientSession({
       idPatient: patient.idPatient,
       email: patient.email,
