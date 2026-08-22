@@ -183,6 +183,111 @@ const DONNEES_CONFIDENTIALITE_V1: VersionDocumentTrust = {
   hash: 'b4a5551b20f985c2a9d4e7f9a61b10b6eb864a6f8e466874b3510c0ca04fd6ed',
 };
 
+/*
+ * v2 du 2026-08-22 — publiée au cutover de l'hébergement (LOT-02 HDS).
+ * Deux changements de fond : la liste des prestataires reflète Scalingo
+ * (l'application et la base y sont servies depuis le 2026-08-22), et une
+ * section « Où sont hébergées vos données » dit l'état réel — y compris la
+ * période transitoire avant signature du contrat HDS, moins couverte
+ * (`D-078` §3 : taire ce point rendrait l'information incomplète sur ce qui
+ * a précisément changé). Sans acquittement requis, comme la v1 (décision du
+ * responsable du 2026-08-22). Sentry n'y figure pas : aucun DSN posé en
+ * production, l'outil n'envoie rien — le déclarer décrirait un usage qui
+ * n'existe pas.
+ */
+const DONNEES_CONFIDENTIALITE_V2: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v2',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    {
+      titre: 'Qui est responsable ?',
+      paragraphes: [
+        'Votre praticien Wellneuro est responsable du traitement de vos données dans le cadre de votre accompagnement. Vous pouvez le contacter pour toute question à l’adresse indiquée dans « Exercer mes droits ».',
+      ],
+    },
+    {
+      titre: 'Quelles données sont recueillies ?',
+      paragraphes: [
+        'Les informations que vous transmettez : votre fiche de renseignements, vos réponses aux questionnaires, les éléments de votre situation que vous décrivez, vos signalements et vos choix.',
+        'Nous recueillons uniquement les informations nécessaires à votre accompagnement et à son suivi.',
+      ],
+    },
+    {
+      titre: 'Pourquoi ?',
+      paragraphes: [
+        'Pour préparer et suivre votre accompagnement en neuronutrition : comprendre votre situation, préparer les consultations, suivre l’évolution, et vous remettre des documents validés par votre praticien.',
+        'Cet accompagnement relève du bien-être et du suivi ; il n’établit pas de diagnostic médical.',
+      ],
+    },
+    {
+      titre: 'Ce qui est obligatoire et ce qui est facultatif',
+      paragraphes: [
+        'Répondre aux questionnaires proposés est nécessaire au travail de préparation de votre praticien, mais chaque envoi reste un geste explicite de votre part : rien n’est transmis tant que vous n’avez pas choisi « Transmettre ».',
+        'Les choix listés dans « Mes choix et autorisations » sont réellement facultatifs : les refuser ne bloque jamais votre accompagnement.',
+      ],
+    },
+    {
+      titre: 'Qui peut accéder à vos données ?',
+      paragraphes: [
+        'Votre praticien, dans le cadre de votre accompagnement. Personne d’autre n’y accède au sein de Wellneuro.',
+        'Aucun partage avec un tiers (par exemple votre médecin traitant) n’a lieu sans un choix explicite de votre part.',
+      ],
+    },
+    {
+      titre: 'Quels prestataires techniques interviennent ?',
+      paragraphes: [
+        'Des prestataires hébergent et font fonctionner l’application. Ils n’utilisent pas vos données pour leur propre compte :',
+      ],
+      points: [
+        'Scalingo — hébergement de l’application et de la base de données (hébergeur certifié « données de santé » HDS, France)',
+        'Vercel et Supabase — anciens hébergeurs, conservés temporairement comme solution de retour pendant la migration ; vos données y seront ensuite effacées, avec preuve',
+        'Anthropic — assistance d’intelligence artificielle pour la préparation des synthèses (voir « L’intelligence artificielle dans Wellneuro »)',
+        'Un fournisseur d’envoi d’emails — acheminement des emails Wellneuro',
+        'Google — connexion sécurisée du praticien uniquement (jamais des patients)',
+      ],
+    },
+    {
+      titre: 'Où sont hébergées vos données',
+      paragraphes: [
+        'Depuis le 22 août 2026, l’application et la base de données sont hébergées chez Scalingo, en France, chez un hébergeur certifié « données de santé » (HDS) au sens de la réglementation française.',
+        'Le contrat spécifique à l’hébergement de santé n’est pas encore signé. Votre praticien a choisi d’engager cette migration sans l’attendre, en connaissance de ce que cela implique : pendant cette période, vos données ne sont couvertes ni par le cadre posé le 21 juillet 2026 — qui visait l’hébergement précédent — ni par ce contrat. Sur ce point précis, et pour cette période seulement, la situation est moins protégée. Elle prend fin à la signature du contrat, et sera réexaminée au plus tard le 21 octobre 2026.',
+        'Avant cette migration, vos données étaient hébergées chez Vercel et Supabase, dans l’Union européenne — ni l’un ni l’autre n’est un hébergeur certifié HDS. Ce constat, daté du 21 juillet 2026, et l’écart assumé qui en a découlé restent consignés. Les anciens hébergeurs sont conservés temporairement comme solution de retour, puis vos données y seront effacées, avec preuve.',
+        'Vos droits — accès, rectification, effacement, limitation, opposition — s’exercent sans changement, comme indiqué dans « Exercer mes droits ».',
+      ],
+    },
+    {
+      titre: 'Combien de temps sont-elles conservées ?',
+      paragraphes: [
+        'La politique détaillée de durées de conservation est en cours de formalisation. Vos données sont conservées le temps de votre accompagnement ; vous pouvez à tout moment demander des précisions ou l’exercice de vos droits.',
+      ],
+    },
+    {
+      titre: 'Exercer mes droits',
+      paragraphes: [
+        'Vous pouvez demander l’accès à vos données, leur rectification, leur effacement, la limitation ou l’opposition à leur traitement, ainsi que le retrait d’une autorisation.',
+        'Le plus simple : la carte « Signaler un problème » de cet espace, choix « Je souhaite exercer un droit ». Vous pouvez aussi écrire à martialcayre@wellneuro.fr.',
+        'Certains droits dépendent du cadre applicable au traitement concerné : votre demande recevra une réponse expliquant ce qui est possible et pourquoi.',
+      ],
+    },
+    {
+      titre: 'Signaler un incident de confidentialité',
+      paragraphes: [
+        'Connexion que vous ne reconnaissez pas, document qui ne vous concerne pas, appareil perdu : signalez-le depuis la carte « Signaler un problème ». Chaque signalement est enregistré et examiné.',
+      ],
+    },
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Hébergement migré vers Scalingo (certifié HDS) le 22 août 2026 : liste des prestataires mise à jour, et nouvelle section sur le lieu d’hébergement — y compris la période transitoire avant signature du contrat HDS.',
+  publieLe: '2026-08-22',
+  requiresAcknowledgement: false,
+  hash: '4cee6be1972d6ca32325bee76d6f00b6520b185d0db76606ee143c74563866ad',
+};
+
 const USAGE_IA_V1: VersionDocumentTrust = {
   key: 'usage_ia',
   type: 'ai_transparency',
@@ -305,6 +410,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   CADRE_ACCOMPAGNEMENT_V1,
   LIMITES_SECURITE_V1,
   DONNEES_CONFIDENTIALITE_V1,
+  DONNEES_CONFIDENTIALITE_V2,
   USAGE_IA_V1,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
