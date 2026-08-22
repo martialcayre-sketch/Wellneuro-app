@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "en cours — fixture T0 construite le 2026-08-21 (arbitrage du responsable) ; parcours jamais joué vert, CI en cours"
+statut: "terminé (2026-08-22, PR #726) — joué vert au CI (vrai navigateur, build de production), puis double run consécutif vert sur base persistante locale : le nettoyage est prouvé, la production jamais touchée"
 dépend_de: "LOT-01"
 ---
 

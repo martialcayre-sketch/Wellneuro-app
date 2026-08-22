@@ -48,3 +48,14 @@ ne les traversait**. Ce qui y casserait n'aurait été vu que par un praticien.
 ne peut pas installer le navigateur (le proxy bloque `cdn.playwright.dev`).
 Les deux runs consécutifs — la preuve du nettoyage, et le critère de done du
 lot — restent à produire.
+
+**Produits le 2026-08-22, et le paragraphe ci-dessus est resté vrai jusqu'au
+bout** : le CI a joué le spec en premier (6 points verts, vrai navigateur,
+build de production — les retouches de sélecteurs prédites n'ont pas eu lieu
+d'être), puis les **deux runs consécutifs verts** sur ce Mac — contre un
+PostgreSQL persistant jetable (migrations + seed), pas contre la base
+partagée : celle-ci s'est révélée être la **base de production** (pooler du
+projet Supabase de prod dans `.env.local`), et un spec jamais joué localement
+ne s'y essaie pas en premier. La preuve du nettoyage est identique — deux
+runs, même base — et la production n'a pas reçu un octet. Avec ce lot, la
+campagne **Biologie consolidée se clôt** (3/3).

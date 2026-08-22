@@ -4361,3 +4361,18 @@ non-vacu) ; édition du frère (interdite par le lot, son « réserve ouverte »
 devient périmé — dette nommée au handoff). Constat production : dix suspendus,
 aucun référencé. Prochaine action : PR du lot, CI en un appel. Ouvert :
 LOT-02 (E2E, D-049) — dernier lot de la campagne.
+
+## 2026-08-22 — LOT-02 biologie : double run prouvé, campagne clôturée
+
+Décisions : la preuve « deux runs consécutifs » jouée sur PostgreSQL
+persistant jetable local (migrations + seed), **pas** sur la base partagée —
+découverte en route : `.env.local` du Mac pointe le pooler du projet Supabase
+de **production** ; un spec jamais joué localement ne s'y essaie pas en
+premier. Résultat : 2 × 6 verts (WebKit iPhone compris — le blocage D-049 ne
+mord pas ce spec), production intouchée. Clôture complète sur la branche de
+la PR #726 (statut lot/campagne, FILE_ATTENTE, state désactivé, trace).
+Écarté : jouer sur la base partagée (risque prod sans gain de preuve).
+Prochaine action : CI de #726, merge = geste Copilot/responsable ; puis le
+créneau primaire s'ouvre (Socle rang 1 — ouverture = geste du responsable).
+Question ouverte : documenter dans ROLES_MACHINES.md que « base partagée » =
+production, et décider d'une base E2E locale dédiée.
