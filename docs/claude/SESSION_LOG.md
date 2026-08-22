@@ -4564,3 +4564,19 @@ les deux positions à la place). Revue NO-GO refermée : B2 — l'écran comblai
 rendues comme des réponses. Prochaine action : T3, PR, puis clôture de campagne.
 Ouvert : constat du gate NON FAIT (login Scalingo du responsable) ; trois
 drapeaux non posés ; aucune cadence sur la ratification.
+
+## 2026-08-23 — Alliance 6.0-A close : gate constaté (D-092), activation restreinte (D-093)
+
+Décisions : campagne close, six lots mergés. Gate constaté en production par
+conteneur — les cinq tables sont VIDES, pas seulement les ratifications. `D-093`
+ouvre les recommandations élargies en périmètre restreint : `PAT006`, `PAT007`,
+`PAT017` par identifiant, relecture praticien avant chaque remise, sortie
+conditionnée à une réponse patient réelle ET un bilan sur le classement, six
+semaines au bout desquelles le périmètre se REFERME. Fait décisif : le gate
+n'était pas un drapeau — `tablePrioritesSignee()` rend `true` depuis `D-061`, le
+mécanisme tournait déjà ; « activer » signifiait s'autoriser à s'en réclamer.
+Écarté : activation immédiate (le classement des candidats n'est couvert par
+aucune ligne signée, or l'ordre EST la recommandation). Les trois drapeaux sont
+posés et vivants (401 et non 503). Prochaine action : rédiger un objectif sur un
+des trois dossiers — sans lui, rien à ratifier. Ouvert : classement hors
+périmètre signé ; borne des trois dossiers tenue par consigne, pas par verrou.
