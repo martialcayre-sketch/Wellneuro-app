@@ -31,6 +31,10 @@ const CONTRAT = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql';
 const NEGATIF = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql';
 const CI = '.github/workflows/ci.yml';
 const RELEASE_DB = '.github/workflows/release-db.yml';
+// Depuis D-086 (2026-08-22), le workflow n'exécute plus rien contre la base :
+// préflights et `migrate deploy` vivent dans ce script, joué en one-off dans
+// l'image de production. C'est LUI qui porte l'ordre à garder.
+const RELEASE_SCRIPT = 'web/scripts/release-db-scalingo.sh';
 
 function lire(relatif: string): string {
   return readFileSync(path.join(RACINE, relatif), 'utf8');
@@ -280,6 +284,7 @@ describe('claims épinglés — le contrat de production reste en lecture seule'
 describe('claims épinglés — les contrats sont câblés', () => {
   const ci = lire(CI);
   const releaseDb = lire(RELEASE_DB);
+  const releaseScript = lire(RELEASE_SCRIPT);
 
   it('le test négatif tourne en CI — c’est lui qui prouve que le contrat mord', () => {
     expect(ci).toContain('prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql');
@@ -297,22 +302,24 @@ describe('claims épinglés — les contrats sont câblés', () => {
   // L'ORDRE, pas la présence. Une étape déplacée APRÈS `migrate deploy`
   // vérifierait la base une fois écrite : le préflight n'aurait plus de sens, et
   // une assertion de présence resterait verte — elle serait même satisfaite par
-  // un simple commentaire.
+  // un simple commentaire. Depuis D-086, l'ordre vit dans le script du one-off.
   it('le préflight production passe AVANT migrate deploy', () => {
-    const preflight = releaseDb.indexOf(
+    const preflight = releaseScript.indexOf(
       'prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
     );
-    const deploy = releaseDb.indexOf('npx prisma migrate deploy');
+    const deploy = releaseScript.indexOf('npx prisma migrate deploy');
     expect(preflight).toBeGreaterThan(-1);
     expect(deploy).toBeGreaterThan(-1);
     expect(preflight).toBeLessThan(deploy);
   });
 
   // LE CAS QUI COMPTE. Le fichier négatif ÉCRIT ses fixtures avant de les
-  // annuler. Le câbler dans `release-db.yml` le lancerait contre la production,
-  // où le dépôt n'écrit que par migration relue.
+  // annuler. Le câbler sur le chemin de release — workflow OU script du one-off
+  // — le lancerait contre la production, où le dépôt n'écrit que par migration
+  // relue.
   it('le test négatif ne tourne JAMAIS contre la production', () => {
     expect(releaseDb).not.toContain('rag_claim_fraicheur_tables_signees_v1_negatif');
+    expect(releaseScript).not.toContain('rag_claim_fraicheur_tables_signees_v1_negatif');
   });
 
   // D-044 — sans cette ligne, le contrat ne démarrerait jamais seul : le lot ne
