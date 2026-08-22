@@ -417,6 +417,23 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/correspondance-medecin')) {
       return ok({ ok: true, correspondances: [], accepteConsignation: true, partageMedecinTraitant: null });
     }
+    // Objectif négocié (Alliance 6.0-A LOT-02) — dossier vierge : aucun
+    // objectif posé, aucune consultation validée. C'est l'état de tous les
+    // dossiers à l'arrivée du lot.
+    if (url.includes('/api/praticien/objectifs')) {
+      return ok({
+        ok: true,
+        objectifs: [],
+        trajectoires: [],
+        ancrage: {
+          consultationValidee: false,
+          motifPrincipal: null,
+          objectifPrioritaire: null,
+          attentes: [],
+        },
+        ratifications: {},
+      });
+    }
     return ok({});
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -481,6 +498,24 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
       expect(screen.getByRole('tab', { name: /Données fiables/i }).getAttribute('aria-selected')).toBe('true'),
     );
     expect(screen.getByText(/1 questionnaire\(s\) reçu\(s\)/i)).toBeTruthy();
+  });
+
+  // Alliance 6.0-A LOT-02 — banc de RENDU, pas de lecture : le panneau des
+  // objectifs vit hors du runtime clinique, donc il doit rester visible SANS
+  // épisode confirmé (`runtime: 'unavailable'`, le défaut de ce harnais). La
+  // lecture du code ne le prouve pas — le montage, si.
+  it('la phase « Compréhension » porte l’objectif négocié, même sans épisode confirmé', async () => {
+    await rendreFiche();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Compréhension/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Compréhension/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+
+    // L'ajout est ADDITIF : les cercles concentriques restent en place.
+    expect(screen.getByRole('img', { name: /Cercles concentriques des 12 besoins/i })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Objectif négocié' })).toBeTruthy());
+    expect(screen.getByText(/Aucun objectif négocié pour ce dossier/)).toBeTruthy();
   });
 
   it('ouvre puis referme un instrument à tiroir (au clic, jamais au survol)', async () => {

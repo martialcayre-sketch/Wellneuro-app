@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
-statut: "à faire"
-dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur)"
+statut: "livré à la PR (2026-08-22) — service, routes praticien et surface cockpit sur les tables du LOT-01 ; six gardes structurelles vues rouges par mutation réelle puis vertes ; ratification LUE, jamais écrite (le geste patient reste au LOT-06) ; aucune migration, aucune colonne"
+dépend_de: "LOT-01 (migration appliquée, constatée par conteneur le 2026-08-22 : 58 migrations up to date, contrat alli_ vert)"
 ---
 
 # LOT-02 — L'objectif négocié v1
@@ -16,15 +16,28 @@ pose l'état et l'API.
 
 ## Ancrage mesuré (2026-08-22)
 
-Deux sources d'énoncé existent déjà — elles s'affichent comme **matériau de
-départ**, elles ne se réécrivent pas :
+**Trois** sources d'énoncé existent déjà — elles s'affichent comme **matériau
+de départ**, elles ne se réécrivent pas, et elles ne pré-remplissent jamais la
+saisie (une phrase dite à l'anamnèse n'est pas une phrase dite en
+négociation) :
 
-- l'anamnèse : `motif_principal` (seul requis — `consultation/anamnese.ts:44`)
-  et `attentes` (`anamnese.ts:66`), figées dans la colonne `anamnese Json?`
-  (`schema.prisma:96`) ;
+- l'anamnèse : `motif_principal` (seul requis — `consultation/anamnese.ts:44`),
+  `objectif_prioritaire` (`anamnese.ts:64`) et `attentes` (`anamnese.ts:66`),
+  figées dans la colonne `anamnese Json?` (`schema.prisma:102`) ;
 - la plainte dominante Q_MOD_03 lue par la chaîne C1
   (`clinical-engine/chaineC1.ts:172`) et déjà affichée en tête du cockpit
   (`D-054`).
+
+> **Corrigé à l'exécution (2026-08-22)** : le cadrage citait `schema.prisma:96`
+> — cette ligne est `consentementHorodatage`, la colonne `anamnese` est en
+> `:102` ; et il ne nommait que deux sources, alors qu'`objectif_prioritaire`
+> est littéralement le matériau d'un objectif négocié, déjà lu par
+> `runtimeFromPrisma.ts` et affiché au cockpit.
+>
+> **La plainte dominante n'est pas reprise par ce lot** : elle n'est produite
+> que par le POST de confirmation d'épisode (`api/praticien/cockpit/route.ts`),
+> jamais par une route de lecture. La recalculer aurait été toucher au moteur.
+> Le panneau renvoie au bloc `D-054` du cockpit, qui l'affiche déjà.
 
 ## Périmètre
 
@@ -72,7 +85,25 @@ LOT-01 releasé et vérifié.
 
 ## Critères de done
 
-- [ ] Objectif négocié créable, reformulable, priorisable, avec « non traité
-      pour l'instant » daté — trajectoire complète visible au cockpit.
-- [ ] Append-only prouvé par banc ; gardes de forme vues rouges.
-- [ ] Aucun moteur ni fichier clinique touché ; T2 vert ; fragment écrit.
+- [x] Objectif négocié créable, reformulable, priorisable, avec « non traité
+      pour l'instant » daté — trajectoire complète visible au cockpit (rail,
+      phase « Compréhension », hors runtime clinique : le panneau reste
+      visible sans épisode confirmé).
+- [x] Append-only prouvé par banc ; gardes de forme **vues rouges par mutation
+      réelle** — G1 clés épinglées (type-check), G2 aucune propriété de mesure
+      ordonnée, G3 la priorité ne s'ordonne pas, G4 `creeLe` jamais transmis,
+      G5 aucun `update`/`delete` hors l'effacement nommé, G6 aucun moteur
+      clinique importé.
+- [x] Aucun moteur ni fichier clinique touché ; aucune colonne, aucune
+      migration ; T2 vert ; fragment `changelog.d/` écrit.
+
+## Dettes nommées, sans lot d'accueil
+
+- **Deux têtes de chaîne restent possibles.** La cible d'une révision est
+  vérifiée puis refusée en 409 si elle est déjà supplantée — une lecture
+  suivie d'une écriture n'est pas étanche à une course. Le parti pris est de
+  ne jamais départager en silence : `objectifsCourants` rend **toutes** les
+  têtes et l'écran les affiche toutes (`DC-30`). Poser un verrou en base
+  serait une décision propre.
+- **Aucune cadence** sur les routes praticien, comme partout ailleurs dans le
+  dépôt — risque assumé, nommé ici pour ne pas être redécouvert.

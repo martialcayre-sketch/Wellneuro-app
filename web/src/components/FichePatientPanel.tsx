@@ -49,6 +49,7 @@ import {
   type EtatRuntimeClinique,
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
+import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
@@ -969,15 +970,22 @@ export function FichePatientPanel({
 
     if (phaseActive === 'comprehension') {
       return (
-        <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
-          <CerclesConcentriques
-            besoins={priorites.map(p => ({
-              id: p.besoin,
-              libelle: p.libellePraticien,
-              strate: p.strate,
-              couverture: p.couverture,
-            }))}
-          />
+        <div className="flex flex-col gap-4">
+          <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
+            <CerclesConcentriques
+              besoins={priorites.map(p => ({
+                id: p.besoin,
+                libelle: p.libellePraticien,
+                strate: p.strate,
+                couverture: p.couverture,
+              }))}
+            />
+          </div>
+          {/* Objectif négocié (Alliance 6.0-A, LOT-02) — AJOUT ADDITIF sous les
+              cercles. Ce bloc vit HORS du runtime clinique : un objectif se
+              négocie avant qu'un épisode soit confirmé, pas après, donc le
+              panneau reste visible sans épisode. Vérifié par banc de rendu. */}
+          <ObjectifNegociePanel idPatient={idPatient} />
         </div>
       );
     }
