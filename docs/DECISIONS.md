@@ -4,6 +4,54 @@
 
 ## Décisions actives
 
+### D-085 — Revue G-TRUST-04 : cinq arbitrages du responsable pour ne laisser ouverte que l'exigence 1
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrages du responsable du traitement**, rendus en
+  session le 2026-08-22, lors de la reprise de revue post-cutover)
+- Domaine : sécurité, hébergement, gate G-TRUST-04
+
+- Contexte : la revue post-cutover (PR #744) laissait sept exigences
+  partielles. Le responsable fixe le cap : régler les exigences 2 à 6
+  aujourd'hui et confier la 7 à une revue, pour qu'il ne reste que
+  l'exigence 1 — dont la fermeture est déjà datée (annexe HDS +
+  décommissionnement du 2026-09-01, `D-080`).
+
+**1. Exigence 3 — sans objet, avec condition de réouverture.** WellNeuro est
+mono-praticien de fait et de choix : un seul compte praticien (le
+responsable). Une exigence d'isolation multi-praticien n'a pas d'objet dans
+ce périmètre. **Condition de réouverture écrite** : l'exigence se rouvre
+telle quelle, et redevient bloquante, avant toute création d'un second compte
+praticien — avec le test d'isolation réel qu'elle exigeait. La garde 30/33
+routes reste en place comme défense en profondeur ; rien n'est démonté.
+
+**2. Exigence 5 — tenue pour satisfaite.** Piste d'audit branchée sur les
+22 routes GET « dossier nommé », preuve fonctionnelle produite le 2026-08-22
+(947 accès, 99 post-bascule), lecture par requête. L'absence d'écran de
+consultation est un choix documenté (GD-3), pas un manque.
+
+**3. Exigence 6 — réglée par arbitrage, à un livrable près.** La procédure de
+violation, écrite ET exercée sur table, suffit ; la confirmation par un
+conseil qualifié sort du gate et devient la dette `D-TRUST-10` (échéance
+2026-T4, avec `D-TRUST-02`). Le **registre physique des violations est
+ouvert le 2026-08-22**, tenu hors dépôt par le responsable (EX-3 soldé).
+Reste un livrable commandé ce jour : le runbook réécrit pour Scalingo.
+
+**4. Exigence 7 — confiée à la revue Codex.** La revue de sécurité sera
+réalisée par Codex, pilotée par le responsable (bloc de paramètres préparé
+par l'assistant, lancement manuel — jamais d'appel automatisé). **Sa nature
+est dite** : revue automatisée par un second modèle, pas un test d'intrusion
+humain externe ; l'exigence se ferme quand la revue est jouée et ses
+constats triés.
+
+**5. Exigences 2/4 — purge ordonnée.** La suppression des trois colonnes
+dormantes `access_token*` (PR 2 annoncée par #397) est **explicitement
+demandée** : migration Prisma sous protocole §C (revue adversariale avant,
+vérification prod après), bascule du helper E2E vers le lien magique. La
+révocation de remplacement existe déjà (`sessionsInvalidesAvant`). La purge
+complète s'achève au décommissionnement (effacement de la copie Supabase,
+`D-080`).
+
 ### D-084 — Arbitrages post-revue de D-082 : la signature vaut provenance, le corpus rejoint le régime `shaPerimetre`
 
 - Date : 2026-08-22

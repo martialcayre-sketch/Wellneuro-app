@@ -15,3 +15,4 @@
 | D-TRUST-07 | Titre d'instrument dans l'email d'assignation (toléré, à re-juger) ; booklet en email → bascule vers consultation dans le portail | dev + praticien | avec IDP/C3 |
 | D-TRUST-08 | Revue périodique de la règle d'orientation EI v1 (source, messages, seuils de sévérité déclarée) | praticien | 6 mois |
 | D-TRUST-09 | Désignation d'un DPO ou point de contact formel distinct du responsable | praticien | avec D-TRUST-02 |
+| D-TRUST-10 | Confirmation par un conseil qualifié de la procédure de violation de données (sortie du gate G-TRUST-04 par arbitrage `D-085` du 2026-08-22 — l'exercice sur table tient lieu d'ici là) | praticien (responsable du traitement) | 2026-T4, avec D-TRUST-02 |
