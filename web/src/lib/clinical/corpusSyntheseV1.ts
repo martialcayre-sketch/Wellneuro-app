@@ -39,10 +39,16 @@ export type CorpusCliniqueMetadata = {
   dateValidation: string | null;
 };
 
+/*
+ * Signée le 2026-08-22 (D-082) : validation clinique du responsable, rendue
+ * en session après relecture intégrale du corpus — contenu inchangé au
+ * caractère près, seule la métadonnée bouge (DC-17 : ce fichier est du
+ * clinique, pas du code).
+ */
 export const CORPUS_CLINIQUE_METADATA: CorpusCliniqueMetadata = {
   version: 'corpus-clinique-v1',
-  validationExterne: false,
-  dateValidation: null,
+  validationExterne: true,
+  dateValidation: '2026-08-22T00:00:00.000Z',
 };
 
 export function sha256(text: string): string {
