@@ -16,6 +16,7 @@
 // Le niveau DEMANDE rend l'échappatoire inutile ; le niveau REFUS ne doit pas
 // en avoir.
 import fs from "node:fs";
+import path from "node:path";
 
 let data = {};
 try {
@@ -30,7 +31,15 @@ const filePath = String(
 );
 if (!filePath) process.exit(0);
 
-const normalized = filePath.replaceAll("\\", "/").toLowerCase();
+// `path.posix.normalize` replie `/./`, `//` et `..` AVANT la comparaison :
+// sans lui, `web/src/lib/./clinical/x.ts` échappait à tout motif
+// multi-segment (relecture adversariale du Socle LOT-02 — le défaut était
+// hérité et touchait déjà le niveau « demande » Prisma). Les motifs REFUS,
+// mono-segment, n'y étaient pas sensibles ; rien n'est abaissé, des chemins
+// d'évitement se referment.
+const normalized = path.posix
+  .normalize(filePath.replaceAll("\\", "/"))
+  .toLowerCase();
 
 // Niveau REFUS : aucune écriture, jamais.
 const refus = [
@@ -58,6 +67,12 @@ const demande = [
 // fragment changelog.d/ (DC-17, DC-18) — l'autorisation en un clic
 // matérialise cette confirmation dans la session. JAMAIS « refus » : le
 // niveau demande n'interdit pas le travail, il le rend explicite.
+//
+// PORTÉE, dite sans sur-promettre : ce hook ne voit que les outils
+// d'édition de fichiers (Edit/Write, cf. `.claude/settings.json`) — une
+// écriture par commande Bash (`echo >`, `sed -i`) passe par
+// `block-risky-commands.mjs`, qui ne connaît pas ces fichiers. La
+// couverture Bash est un suivi nommé du Socle, pas une promesse d'ici.
 //
 // Motifs en minuscules (le chemin est normalisé plus haut) et ancrés par leur
 // répertoire : `includes()` sans ancrage ferait d'un motif court un filet

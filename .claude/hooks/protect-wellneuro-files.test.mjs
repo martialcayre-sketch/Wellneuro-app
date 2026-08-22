@@ -37,12 +37,20 @@ function jugement(filePath) {
   return { verdict: sortie.includes('"ask"') ? "demande" : "passe", sortie };
 }
 
-// ── Ce qui doit rester refusé ────────────────────────────────────────────────
+// ── Ce qui doit rester refusé — UN CAS PAR MOTIF de la liste `refus` ─────────
+// La relecture adversariale du LOT-02 l'a mesuré : trois cas sur neuf motifs
+// laissaient l'abaissement silencieux de six protections invisibles au banc.
 
 for (const chemin of [
   "web/.env.local",
+  "web/.env.production",
+  "web/.env.development",
+  "web/.env",
   "/Users/x/depot/.git/config",
   "web/node_modules/paquet/index.js",
+  "web/.next/cache/x.js",
+  "web/dist/bundle.js",
+  "web/coverage/lcov.info",
 ]) {
   test(`refus dur : ${chemin}`, () => {
     assert.equal(jugement(chemin).verdict, "refus");
@@ -50,16 +58,20 @@ for (const chemin of [
 }
 
 // ── Ce qui doit demander — Prisma, verdict et motif inchangés ────────────────
+// Un cas par motif, là aussi.
 
 for (const chemin of [
   "web/prisma/schema.prisma",
   "web/prisma/migrations/20260822000000_x/migration.sql",
+  "supabase/migrations/20260822000000_x.sql",
 ]) {
   test(`demande Prisma : ${chemin}`, () => {
     const j = jugement(chemin);
     assert.equal(j.verdict, "demande");
-    // Le motif Prisma reste le motif Prisma : release-db, migration additive.
+    // Le motif Prisma reste le motif Prisma : release-db, migration additive —
+    // et jamais le motif clinique (la disjonction se teste dans les deux sens).
     assert.match(j.sortie, /release-db/);
+    assert.doesNotMatch(j.sortie, /D-xxx/);
   });
 }
 
@@ -128,4 +140,49 @@ test("chemin absent : silence", () => {
 test("antislashs Windows et casse mélangée : le motif clinique matche quand même", () => {
   const j = jugement("web\\src\\lib\\clinical\\OrientationRulesV1.TS");
   assert.equal(j.verdict, "demande");
+});
+
+// ── Évitement par segments — le trou mesuré par la relecture adversariale ────
+// `includes()` sur un motif multi-segment cassait dès qu'un `/./`, un `//` ou
+// un `..` s'intercalait ; `path.posix.normalize` les replie désormais AVANT la
+// comparaison. Sondes sur un motif clinique ET sur Prisma (le défaut était
+// hérité : `web/prisma/./schema.prisma` passait déjà en silence).
+
+for (const chemin of [
+  "web/src/lib/./clinical/orientationRulesV1.ts",
+  "web/src/lib//clinical/orientationRulesV1.ts",
+  "web/src/lib/clinical/../clinical/orientationRulesV1.ts",
+  "web/src/./lib/questions.ts",
+]) {
+  test(`évitement par segments refermé (clinique) : ${chemin}`, () => {
+    assert.equal(jugement(chemin).verdict, "demande");
+  });
+}
+
+test("évitement par segments refermé (Prisma) : web/prisma/./schema.prisma", () => {
+  const j = jugement("web/prisma/./schema.prisma");
+  assert.equal(j.verdict, "demande");
+  assert.match(j.sortie, /release-db/);
+});
+
+// ── Le verdict se lit en JSON, pas en sous-chaîne ────────────────────────────
+// `sortie.includes('"ask"')` passerait sur du JSON malformé qui contient le
+// mot : ce cas prouve que la sortie EST le protocole attendu.
+
+test("la sortie « demande » est du JSON valide au protocole PreToolUse", () => {
+  const j = jugement("web/src/lib/questions.ts");
+  const parsed = JSON.parse(j.sortie);
+  assert.equal(parsed.hookSpecificOutput.hookEventName, "PreToolUse");
+  assert.equal(parsed.hookSpecificOutput.permissionDecision, "ask");
+  assert.equal(typeof parsed.hookSpecificOutput.permissionDecisionReason, "string");
+});
+
+test("file_path hostile (objet, null) : silence, jamais un crash", () => {
+  for (const hostile of [{ chemin: "x" }, null, 42]) {
+    const res = spawnSync("node", [hook], {
+      input: JSON.stringify({ tool_input: { file_path: hostile } }),
+      encoding: "utf8",
+    });
+    assert.equal(res.status, 0);
+  }
 });
