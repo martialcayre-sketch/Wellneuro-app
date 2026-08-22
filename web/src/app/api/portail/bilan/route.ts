@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 import { resolvePortailPatientFromSession } from '@/lib/consultation/portail';
 import { projeterBilanPatient, whereEnvoiVisible, type BilanPatient } from '@/lib/documents/bilanPatient';
+import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -107,15 +108,37 @@ export async function GET(req: Request): Promise<NextResponse<PortailBilanRespon
 
     if (!envoi) return withCorrelationHeader(NextResponse.json<PortailBilanResponse>({ ok: true, bilan: null }), requestContext);
 
-    return withCorrelationHeader(NextResponse.json<PortailBilanResponse>({
-      ok: true,
-      bilan: projeterBilanPatient({
-        syntheseJson: envoi.synthese.syntheseJson,
-        notesPraticien: envoi.noteTransmise,
-        modele: envoi.synthese.modele,
-        transmisLe: envoi.dateEnvoi,
-      }),
-    }), requestContext);
+    const bilan = projeterBilanPatient({
+      syntheseJson: envoi.synthese.syntheseJson,
+      notesPraticien: envoi.noteTransmise,
+      modele: envoi.synthese.modele,
+      transmisLe: envoi.dateEnvoi,
+    });
+
+    // Re-vérification AU SERVICE (Socle LOT-01, carte des chemins sortants —
+    // `documents/vocabulaire.ts`). Le narratif servi vient du champ VIVANT
+    // `synthese.syntheseJson` — seule la note est un instantané : un texte
+    // réécrit APRÈS l'envoi n'a jamais repassé la garde du booklet. Régime
+    // JOURNALISANT, délibérément : la garde d'envoi est un avertissement
+    // CONFIRMABLE, et retenir ici ce que le praticien a pu confirmer en
+    // connaissance de cause changerait un verdict — le durcissement éventuel
+    // est un arbitrage du responsable, pas une décision de code.
+    const champAnxiogene = termeAnxiogene(bilan.narratif)
+      ? 'narratif'
+      : termeAnxiogene(bilan.notePraticien ?? '')
+        ? 'note'
+        : null;
+    if (champAnxiogene) {
+      logger.warn({
+        event: EVENT_CODES.PORTAIL_BILAN_REGISTRE_ANXIOGENE,
+        domain: 'PORTAIL_PATIENT',
+        // Le champ, jamais le terme ni le texte : rien de clinique en log.
+        message: `Le bilan servi emploie un registre anxiogène (champ : ${champAnxiogene})`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
+
+    return withCorrelationHeader(NextResponse.json<PortailBilanResponse>({ ok: true, bilan }), requestContext);
   } catch (err) {
     // Un `console.error` nu ne portait ni code d'événement ni `correlationId` :
     // le 500 était introuvable depuis la réponse rendue au patient, alors que

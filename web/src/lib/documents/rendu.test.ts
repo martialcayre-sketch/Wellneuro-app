@@ -50,6 +50,35 @@ describe('renderDocumentHtml', () => {
     expect(contientTermePrescriptif(html)).toBe(false);
   });
 
+  // Banc de câblage (Socle LOT-01, carte des chemins sortants —
+  // `documents/vocabulaire.ts`) : la garde est indissociable du chokepoint.
+  // Retirer l'appel à `assertRenduMedecinNonPrescriptif` de `rendu.ts` rend
+  // ce test rouge — `vocabulaire.test.ts` ne prouve que la fonction, pas
+  // son câblage.
+  it('rendu médecin : un contenu prescriptif fait lever le rendu au chokepoint', () => {
+    const s: SyntheseSchema = {
+      resume_praticien: 'Résumé interne',
+      axes_prioritaires: [
+        { axe: 'Sommeil (posologie à revoir)', niveau_priorite: 'eleve', arguments: ['réveils'], points_a_confirmer: [] },
+      ],
+      points_de_vigilance: ['fatigue'],
+      questions_entretien: [],
+      narratif_patient: 'Vos réponses évoquent un sommeil fragmenté.',
+      limites: 'À valider.',
+    };
+    const blocs = blocsDepuisSynthese({
+      syntheseJson: s,
+      statut: 'Validee_Praticien',
+      versionPrompt: 'synthese-v3',
+      dateValidation: '2026-07-18T00:00:00.000Z',
+    });
+    const doc = assemblerDocument({ modele: MODELE_SUIVI_21J, patientId: 'PAT_1', blocs });
+    expect(() => renderDocumentHtml(doc, 'medecin')).toThrow(/prescriptive/);
+    // La garde est propre au registre médecin : le même document se rend pour
+    // le praticien — surface interne, franchise clinique voulue.
+    expect(() => renderDocumentHtml(doc, 'praticien')).not.toThrow();
+  });
+
   it('rendu praticien : rendu complet sourcé', () => {
     const html = renderDocumentHtml(docValide(), 'praticien');
     expect(html).toContain('Résumé clinique STRICTEMENT interne');
