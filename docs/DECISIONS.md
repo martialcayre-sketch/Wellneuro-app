@@ -12,11 +12,13 @@
 - Domaine : clinique, synthèse IA, `corpusSyntheseV1.ts`
 
 - Contexte : dernière table clinique non signée du dépôt
-  (`validationExterne: false` depuis sa création). Son contenu : 30 lignes de
-  cadre méthodologique pour le prompt de synthèse — prudence clinique, axes
-  d'analyse, heuristiques de croisement, règles de formulation
-  (« hypothèse à explorer », jamais de causalité affirmée). Aucun seuil,
-  aucun dosage, aucune borne chiffrée.
+  (`validationExterne: false` depuis sa création). Son contenu : 32 lignes
+  (1 966 caractères) de cadre méthodologique pour le prompt de synthèse —
+  prudence clinique, axes d'analyse, heuristiques de croisement, règles de
+  formulation (« hypothèse à explorer », jamais de causalité affirmée).
+  Aucun seuil, aucun dosage, aucune borne chiffrée. Intégrité vérifiée en
+  revue par empreinte
+  (`sha256 = 19a554786075d608db033c7354b720f8b35ed6e1889ae5595979b75ce2f68fee`).
 
 **1. Ce que la décision pose.** Le responsable valide cliniquement le corpus
 **tel quel** — pas un caractère du contenu ne change — et la métadonnée

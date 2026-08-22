@@ -278,7 +278,14 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // sans reprendre celui qu'il rend faux. La puce porte désormais les deux
 // exclusions. Bump : une synthèse rédigée sous v23 aurait pu dater l'écart
 // entre deux barèmes différents.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v26';
+// v27 (D-082, revue adversariale H1) : la ligne « corpus SIIN pas encore
+// disponible » devient CONDITIONNELLE à l'activation du corpus. Sans cette
+// bascule, l'activation aurait servi au modèle deux affirmations
+// incompatibles — corpus indisponible ET corpus injecté — en sacrifiant
+// l'instruction anti-hallucination de source au moment précis où une source
+// nommée SIIN apparaissait dans le prompt. Le repli `limites` suit la même
+// bascule (constat M1 de la même revue).
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v27';
 // v3 (LOT-01 étape 4) : la sortie du modèle est lue par `analyserSortieSynthese`
 // — schéma fermé, énumérations contrôlées, rejet + une relance. La forme du JSON
 // est inchangée ; ce qui change est qu'une sortie non conforme n'est plus servie
@@ -286,6 +293,27 @@ export const VERSION_PROMPT_SYNTHESE = 'synthese-v26';
 // doit permettre de distinguer, plus tard, ce qui a été validé strictement.
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v3';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
+
+// Activation volontairement bloquée tant que le corpus n'a pas été validé
+// cliniquement en externe (go/no-go documentaire).
+export const CORPUS_CLINIQUE_ACTIF =
+  process.env.WN_ENABLE_CORPUS_CLINIQUE_V1 === '1' && CORPUS_CLINIQUE_METADATA.validationExterne;
+
+// Les deux états du prompt ne peuvent pas affirmer la même chose du corpus
+// (revue adversariale de D-082, constat H1) : éteint, il est indisponible et
+// le modèle ne doit citer aucune source ; allumé, il est fourni plus bas et
+// devient la seule source citable. Une seule de ces phrases entre dans la
+// consigne — les deux ensemble sacrifieraient l'anti-hallucination de source.
+const LIGNE_CORPUS = CORPUS_CLINIQUE_ACTIF
+  ? `- Un référentiel clinique versionné (« Référentiel clinique SIIN — Snapshot V1 ») t'est fourni plus bas. Appuie-toi dessus pour cadrer tes formulations ; n'invente pas de protocole SIIN au-delà de ce qu'il contient, et ne cite aucune source qui n'y figure pas.`
+  : `- Le corpus SIIN complet n'est pas encore disponible : n'invente pas de protocole SIIN et ne cite pas de source absente.`;
+
+// Repli du champ \`limites\` (contrat JSON et normalisation) — suit la même
+// bascule que la consigne (constat M1) : corpus injecté, l'ancienne phrase
+// « sans corpus SIIN complet » deviendrait fausse dans la trace d'audit.
+export const LIMITES_SYNTHESE_DEFAUT = CORPUS_CLINIQUE_ACTIF
+  ? 'Synthèse générée par IA avec référentiel clinique Snapshot V1 — à valider par le praticien.'
+  : 'Synthèse générée par IA sans corpus SIIN complet — à valider par le praticien.';
 
 export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires structurés remplis par un patient avant sa consultation.
 
@@ -295,7 +323,7 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 - Tu ne poses pas de diagnostic médical.
 - Tu formules des hypothèses, des priorités cliniques et des questions d'entretien.
 - Tu t'appuies uniquement sur les scores et interprétations fournis ET sur le contexte anamnestique et signalétique du patient, sans rien extrapoler au-delà des données transmises.
-- Le corpus SIIN complet n'est pas encore disponible : n'invente pas de protocole SIIN et ne cite pas de source absente.
+${LIGNE_CORPUS}
 - Ne recommande aucun dosage précis de compléments ou de médicaments, et ne propose jamais d'arrêt ou de modification d'un traitement en cours.
 - Toute recommandation doit rester générale et être présentée comme « à valider par le praticien ».
 - Si les données sont insuffisantes pour conclure sur un axe, signale-le explicitement.
@@ -521,13 +549,8 @@ Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exa
   "points_de_vigilance": ["Point important à ne pas manquer"],
   "questions_entretien": ["Question ouverte pour l'entretien clinique"],
   "narratif_patient": "Texte bienveillant résumant la situation pour le patient, sans jargon.",
-  "limites": "Synthèse générée par IA sans corpus SIIN complet — à valider par le praticien."
+  "limites": "${LIMITES_SYNTHESE_DEFAUT}"
 }`;
-
-// Activation volontairement bloquée tant que le corpus n'a pas été validé
-// cliniquement en externe (go/no-go documentaire).
-export const CORPUS_CLINIQUE_ACTIF =
-  process.env.WN_ENABLE_CORPUS_CLINIQUE_V1 === '1' && CORPUS_CLINIQUE_METADATA.validationExterne;
 
 export function buildSystemPromptSynthese(): string {
   const blocs = [SYSTEM_PROMPT_GOUVERNANCE];
@@ -695,7 +718,7 @@ export function validateSyntheseSchema(obj: unknown): SyntheseSchema {
     narratif_patient: typeof o?.narratif_patient === 'string' ? o.narratif_patient : '',
     limites: typeof o?.limites === 'string'
       ? o.limites
-      : 'Synthèse générée par IA sans corpus SIIN complet — à valider par le praticien.',
+      : LIMITES_SYNTHESE_DEFAUT,
     _schema_version: VERSION_SCHEMA_SYNTHESE,
   };
 }

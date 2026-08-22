@@ -141,7 +141,12 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // comme recommandée : la mention aurait produit l'inverse de son effet. La
 // consigne pose en outre deux fermetures — une extinction ne clôt pas un axe
 // (une passation nouvelle la lève) et n'est pas une conclusion clinique.
-const EMPREINTE_V26 = 'f37710172eae1c60';
+// v27, le 2026-08-22 (D-082, revue H1) : la ligne « corpus SIIN pas encore
+// disponible » devient conditionnelle à `CORPUS_CLINIQUE_ACTIF`. Corpus
+// ÉTEINT — l'état de ce banc — le texte est identique au caractère près à la
+// v26 : l'empreinte ne bouge pas, seul le numéro porte le changement. L'état
+// ALLUMÉ a son propre banc (`lib/anthropic.corpusActif.guard.test.ts`).
+const EMPREINTE_V27 = 'f37710172eae1c60';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -263,7 +268,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v26', empreinte: EMPREINTE_V26 });
+    ).toEqual({ version: 'synthese-v27', empreinte: EMPREINTE_V27 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {
