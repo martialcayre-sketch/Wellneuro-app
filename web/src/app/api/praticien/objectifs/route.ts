@@ -11,6 +11,7 @@ import {
   objectifsCourants,
   preparerObjectif,
   type EtatRatification,
+  type RefusObjectif,
 } from '@/lib/praticien/objectifNegocie';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — route PRATICIEN.
@@ -87,7 +88,11 @@ export type ObjectifsApiResponse =
   | { ok: true; objectif: ObjectifExpose }
   | { ok: false; reason: string; error: string };
 
-const MESSAGES_REFUS: Record<string, string> = {
+// Table EXHAUSTIVE par le type, pas par convention : un motif de refus neuf
+// sans message ferait rendre `error: undefined`, la clé disparaîtrait du JSON,
+// et l'écran retomberait sur le message générique — le motif du refus serait
+// perdu pour le praticien, sans que rien ne rougisse.
+const MESSAGES_REFUS: Record<RefusObjectif, string> = {
   enonce_absent: 'L’énoncé du patient est vide.',
   enonce_trop_long: 'L’énoncé du patient est trop long.',
   reformulation_trop_longue: 'La reformulation est trop longue.',
@@ -173,7 +178,11 @@ async function garder(idPatient: string, acces?: GabaritAcces): Promise<Garde> {
     return { echec: echec('forbidden', 'Patient non accessible pour ce praticien.', 403) };
   }
 
-  return { email: email ?? '' };
+  // Inatteignable aujourd'hui (`appartenance.ts` rend `autre_praticien` sur un
+  // e-mail de session nul), mais un repli `''` heurterait le CHECK non-vide de
+  // `praticien_email` et rendrait 500 là où 401 est la réponse juste.
+  if (!email) return { echec: echec('unauthenticated', 'Authentification requise.', 401) };
+  return { email };
 }
 
 /** Champ texte d'un JSON d'anamnèse. Absent, vide ou non textuel ⇒ `null`. */
@@ -301,6 +310,15 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
 
+    // `null`, `42`, `"texte"` et `[]` sont du JSON PARFAITEMENT VALIDE : le
+    // `catch` ci-dessus ne les voit pas. Sans ce contrôle, `body.idPatient`
+    // lève sur `null` et la route rend 500 — avant même `garder()`, donc
+    // déclenchable SANS session. Le cast ne protège que les champs, pas la
+    // forme du corps lui-même.
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return echec('invalid', 'Corps de requête illisible.', 400);
+    }
+
     const idPatient = texteDuCorps(body.idPatient);
     const garde = await garder(idPatient);
     if (garde.echec) return garde.echec;
@@ -338,7 +356,12 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
           select: { idPatient: true, enoncePatient: true },
         }),
         prisma.objectifNegocie.findFirst({
-          where: { supersedesObjectifId },
+          // Scopé au dossier, et ce n'est pas cosmétique : le seul index de la
+          // table est `(id_patient, cree_le)` (`migration.sql:99`). Sans
+          // `idPatient`, le prédicat ne peut pas l'emprunter et parcourt une
+          // table append-only qui ne fait que croître. La cible est prouvée du
+          // même dossier trois lignes plus bas, le scope est donc sûr.
+          where: { idPatient, supersedesObjectifId },
           select: { id: true },
         }),
       ]);

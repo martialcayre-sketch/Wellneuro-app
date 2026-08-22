@@ -21,6 +21,12 @@ import { objectifsCourants } from './objectifNegocie';
 const RACINE_WEB = path.resolve(__dirname, '../../..');
 const MODULE = 'src/lib/praticien/objectifNegocie.ts';
 const ROUTE = 'src/app/api/praticien/objectifs/route.ts';
+// LE PANNEAU EST SOUS GARDE, LUI AUSSI. Trier `priorite` ou brancher un moteur
+// clinique est plus naturel au RENDU qu'à la route — et G3 n'assertionne que
+// `objectifsCourants`, une fonction que l'UI n'est pas obligée d'employer pour
+// ordonner. Sans cette surface dans le balayage, le contournement le plus
+// probable ne demandait aucune ruse.
+const PANNEAU = 'src/components/patient-cockpit/ObjectifNegociePanel.tsx';
 
 /**
  * Le source débarrassé de ses commentaires : la prose de ces fichiers PARLE des
@@ -113,13 +119,20 @@ describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la
     'total',
   ];
 
-  it.each([MODULE, ROUTE])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
+  it.each([MODULE, ROUTE, PANNEAU])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
     const noms = nomsDeclares(chemin);
 
     // ANTI-VACUITÉ : une extraction qui cesserait de fonctionner rendrait ce
-    // cas vert en ne scannant rien du tout.
+    // cas vert en ne scannant rien du tout. L'ancre est PROPRE À CHAQUE
+    // FICHIER — une ancre unique obligerait à choisir un nom que les trois
+    // surfaces partagent, c'est-à-dire à affaiblir la vérification.
+    const ANCRES: Record<string, string> = {
+      [MODULE]: 'enoncePatient',
+      [ROUTE]: 'enoncePatient',
+      [PANNEAU]: 'consultationValidee',
+    };
     expect(noms.length).toBeGreaterThan(8);
-    expect(noms).toContain('enoncePatient');
+    expect(noms).toContain(ANCRES[chemin]);
 
     const fautifs = noms.filter((nom) =>
       RACINES_INTERDITES.some((racine) => nom.toLowerCase().includes(racine)),
@@ -186,6 +199,15 @@ const EXCEPTION_EFFACEMENT = 'src/lib/patient/effacement.ts';
 
 const ECRITURES_DESTRUCTRICES = /objectifNegocie\.(updateMany|update|deleteMany|delete|upsert)\b/;
 
+/**
+ * LA RATIFICATION EST UN GESTE DU PATIENT (LOT-06). Le LOT-02 la LIT et ne
+ * l'écrit jamais — y compris par `create` : une route praticien qui créerait
+ * une ligne de ratification fabriquerait un acte que le patient n'a pas posé.
+ * Jusqu'ici l'invariant ne tenait que par une assertion de mock dans un banc de
+ * route ; rien n'empêchait structurellement une autre route de l'écrire.
+ */
+const ECRITURES_RATIFICATION = /ratificationObjectif\.(create|createMany|updateMany|update|deleteMany|delete|upsert)\b/;
+
 function fichiersSources(racine: string): string[] {
   const absolu = path.join(RACINE_WEB, racine);
   const trouves: string[] = [];
@@ -222,6 +244,23 @@ describe('G5 — un objectif ne se met jamais à jour, il se succède', () => {
     expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
     expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
   });
+
+  it('aucune ÉCRITURE de ratification — le geste appartient au patient (LOT-06)', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ROUTE);
+
+    const fautifs = fichiers.filter((chemin) =>
+      ECRITURES_RATIFICATION.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Même anti-vacuité que ci-dessus : l'effacement supprime AUSSI les
+    // ratifications, donc le détecteur doit le trouver. S'il ne trouve plus
+    // rien, c'est le motif qui est mort, pas le dépôt qui est devenu sain.
+    expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
+    expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
+  });
 });
 
 // ── G6 — anti-diagnostic ────────────────────────────────────────────────────
@@ -231,16 +270,22 @@ describe('G6 — ni moteur clinique, ni code diagnostique', () => {
   // `DC-32` : diagnostic, hypothèse et orientation sont trois objets distincts).
   // Importer un moteur « pour suggérer » une reformulation ferait entrer une
   // sortie de scoring dans les mots attribués au patient.
+  // PRÉFIXES DE RÉPERTOIRE, pas noms feuilles : `clinical-engine` ne couvre pas
+  // `clinical/`, et la liste précédente laissait passer `orientationService`,
+  // `orientationEngine`, `contradictionsEngine`, `stopRulesV1`, tout `scoring/`
+  // et tout `equilibre/` — c'est-à-dire l'essentiel de ce qu'elle prétendait
+  // interdire.
   const IMPORTS_INTERDITS = [
-    'clinical-engine',
-    'orientationRulesV1',
-    'priorityRulesV1',
+    '@/lib/clinical',
+    '@/lib/clinical-engine',
+    '@/lib/scoring',
     '@/lib/instruments',
+    '@/lib/equilibre',
   ];
 
   const RACINES_DIAGNOSTIQUES = ['cim', 'icd', 'dsm', 'classification', 'diagnos'];
 
-  it.each([MODULE, ROUTE])('%s n’importe aucun moteur clinique', (chemin) => {
+  it.each([MODULE, ROUTE, PANNEAU])('%s n’importe aucun moteur clinique', (chemin) => {
     const source = sourceSansCommentaires(chemin);
     expect(source.length).toBeGreaterThan(500); // anti-vacuité
     for (const interdit of IMPORTS_INTERDITS) {

@@ -97,6 +97,36 @@ LOT-01 releasé et vérifié.
 - [x] Aucun moteur ni fichier clinique touché ; aucune colonne, aucune
       migration ; T2 vert ; fragment `changelog.d/` écrit.
 
+## Corrections issues de la revue (2026-08-22, `wn-reviewer` — GO sous réserves)
+
+- **Un 500 atteignable sans session.** `null`, `42`, `"texte"` et `[]` sont du
+  JSON valide : le `catch` du parse ne les voyait pas, et `body.idPatient`
+  levait **avant** la garde d'authentification. Corrigé, et quatre bancs le
+  prouvent — ils rendent `500` et `401` quand on retire le correctif.
+- **Deux gardes plus étroites que leur intitulé.** G6 n'énumérait que quatre
+  noms feuilles : `clinical-engine` ne couvre pas `clinical/`, si bien qu'un
+  `import { orienter } from '@/lib/clinical/orientationService'` passait
+  vert. Remplacé par des **préfixes de répertoire**, et vu rouge sur ce cas
+  précis. G2 et G6 ne balayaient que le module et la route : le **panneau**
+  entre sous garde — c'est au rendu qu'un tri de `priorite` serait le plus
+  naturel à introduire, et G3 n'assertionne que `objectifsCourants`, que l'UI
+  n'est pas obligée d'employer pour ordonner.
+- **La ratification n'était tenue que par un mock.** L'invariant « lue, jamais
+  écrite » repose désormais sur une garde structurelle : aucune écriture de
+  `ratificationObjectif` sous `web/src/app/api/**` ni `web/src/lib/**`, hors
+  l'effacement RGPD nommé.
+- **La troncature au clavier.** Les `maxLength` coupaient silencieusement un
+  collage trop long — la seule troncature qui restait sur le chemin, après que
+  la route l'a bannie. Retirés au profit d'un **compteur visible** : le
+  dépassement se voit, la saisie reste intacte, et c'est le 400 qui refuse.
+- **Reformuler perdait la priorité en silence.** Les champs praticien de la
+  version révisée sont maintenant repris ; l'énoncé du patient, lui, reste
+  recopié côté serveur depuis la ligne visée.
+- **Deux durcissements mineurs** : `MESSAGES_REFUS` est exhaustif par le type
+  (un motif neuf sans message ne compile plus), et la recherche de la version
+  supplantée est scopée au dossier — sans quoi elle ne pouvait pas emprunter
+  l'unique index de la table et parcourait une table qui ne fait que croître.
+
 ## Dettes nommées, sans lot d'accueil
 
 - **Deux têtes de chaîne restent possibles.** La cible d'une révision est
@@ -106,4 +136,19 @@ LOT-01 releasé et vérifié.
   têtes et l'écran les affiche toutes (`DC-30`). Poser un verrou en base
   serait une décision propre.
 - **Aucune cadence** sur les routes praticien, comme partout ailleurs dans le
-  dépôt — risque assumé, nommé ici pour ne pas être redécouvert.
+  dépôt — risque assumé, nommé ici pour ne pas être redécouvert. Sur une table
+  append-only qu'aucune purge ne raccourcit, un POST répété allonge une chaîne
+  indéfiniment.
+- **Le journal d'accès grossit d'une ligne par passage sur l'onglet
+  « Compréhension »** : le panneau est démonté puis remonté à chaque bascule et
+  retire le GET. La purge de `journal_acces_dossiers` reste opportuniste.
+- **Un dossier désactivé (`actif: false`) reçoit le message « clôturé »**, qui
+  décrit un autre état — comportement hérité de `patient/cycleDeVie`, partagé
+  par les autres routes praticien. Corriger le message est un geste transverse,
+  hors périmètre de ce lot.
+- **La route reste un oracle d'existence de dossier** (404 `patient_not_found`
+  ≠ 403 `forbidden`), alors qu'elle refuse de l'être pour un objectif.
+  Arbitrage du dépôt sous hypothèse mono-praticien, pas une décision de ce lot.
+- **Les `attentes` recopiées de l'anamnèse ne sont pas bornées en nombre** :
+  la colonne `anamnese Json?` est écrite en amont par le portail, et ce lot ne
+  fait que la relire.

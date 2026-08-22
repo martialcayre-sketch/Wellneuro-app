@@ -75,6 +75,25 @@ function LigneObjectif({ ligne }: { ligne: ObjectifExpose }) {
   );
 }
 
+/**
+ * Compteur de longueur. Il REMPLACE `maxLength`, il ne le double pas : un
+ * attribut `maxLength` coupe un collage trop long sans le dire, ce qui est la
+ * troncature même que ce lot refuse côté serveur. Ici le dépassement est
+ * visible, la saisie reste intacte, et c'est la route qui tranche (400).
+ */
+function Compteur({ valeur, maximum }: { valeur: string; maximum: number }) {
+  const depasse = valeur.length > maximum;
+  return (
+    <p
+      className={`mt-1 text-xs ${depasse ? 'text-status-warning' : 'text-muted-foreground'}`}
+      aria-live="polite"
+    >
+      {valeur.length.toLocaleString('fr-FR')} / {maximum.toLocaleString('fr-FR')} caractères
+      {depasse ? ' — trop long, l’enregistrement sera refusé.' : ''}
+    </p>
+  );
+}
+
 export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
   const [etat, setEtat] = useState<EtatDossier>('chargement');
   const [erreur, setErreur] = useState('');
@@ -297,7 +316,22 @@ export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setReformuleId(trajectoire.idObjectif)}
+                  onClick={() => {
+                    setReformuleId(trajectoire.idObjectif);
+                    // Les champs PRATICIEN de la version révisée sont repris :
+                    // sans cela, ne toucher qu'à la reformulation ferait
+                    // retomber `priorite` et « non traité » à vide sur la
+                    // nouvelle tête — la version courante perdrait en silence
+                    // ce qu'elle portait. L'ÉNONCÉ DU PATIENT, lui, n'est pas
+                    // repris ici : il est recopié côté serveur depuis la ligne
+                    // visée, jamais réécrit depuis l'écran.
+                    setReformulation(courante.reformulationPraticien ?? '');
+                    setPriorite(courante.priorite ?? '');
+                    setNonTraiteMotif(courante.nonTraiteMotif ?? '');
+                    setNonTraiteDepuisLe(
+                      courante.nonTraiteDepuisLe ? courante.nonTraiteDepuisLe.slice(0, 10) : '',
+                    );
+                  }}
                   className="mt-2 min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Reformuler cette version
@@ -347,10 +381,10 @@ export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
                   value={enonce}
                   onChange={(evenement) => setEnonce(evenement.target.value)}
                   rows={3}
-                  maxLength={LONGUEUR_MAX_ENONCE}
                   placeholder="« Je voudrais dormir sans me réveiller à trois heures. »"
                   className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 />
+                <Compteur valeur={enonce} maximum={LONGUEUR_MAX_ENONCE} />
               </>
             )}
 
@@ -362,10 +396,10 @@ export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
               value={reformulation}
               onChange={(evenement) => setReformulation(evenement.target.value)}
               rows={3}
-              maxLength={LONGUEUR_MAX_REFORMULATION}
               placeholder="Ce que vous avez compris de la demande…"
               className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             />
+            <Compteur valeur={reformulation} maximum={LONGUEUR_MAX_REFORMULATION} />
 
             {/* CHAMP TEXTE LIBRE, jamais une liste déroulante ni un badge
                 ordonné : une liste fermée serait un rang, et un rang serait un
@@ -378,10 +412,10 @@ export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
               type="text"
               value={priorite}
               onChange={(evenement) => setPriorite(evenement.target.value)}
-              maxLength={LONGUEUR_MAX_PRIORITE}
               placeholder="Ce sur quoi on travaille d’abord…"
               className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             />
+            <Compteur valeur={priorite} maximum={LONGUEUR_MAX_PRIORITE} />
 
             <label htmlFor="objectif-negocie-le" className="mt-3 block text-xs font-medium text-foreground">
               Date de l’accord (facultative)
@@ -407,10 +441,10 @@ export function ObjectifNegociePanel({ idPatient }: { idPatient: string }) {
                 value={nonTraiteMotif}
                 onChange={(evenement) => setNonTraiteMotif(evenement.target.value)}
                 rows={2}
-                maxLength={LONGUEUR_MAX_MOTIF}
                 placeholder="Ce qui est assumé de côté pour le moment…"
                 className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
+              <Compteur valeur={nonTraiteMotif} maximum={LONGUEUR_MAX_MOTIF} />
 
               <label htmlFor="objectif-non-traite-depuis" className="mt-2 block text-xs font-medium text-foreground">
                 Depuis le

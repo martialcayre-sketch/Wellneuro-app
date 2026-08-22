@@ -433,4 +433,35 @@ describe('/api/praticien/objectifs', () => {
       expect.objectContaining({ where: { idPatient: 'PAT_TEST', statut: 'validee' } }),
     );
   });
+  // ── Constats de revue (2026-08-22) ────────────────────────────────────────
+
+  it.each([
+    ['null', null],
+    ['un nombre', 42],
+    ['une chaîne', '"texte"'],
+    ['un tableau', []],
+  ])('POST : un corps JSON valide mais qui n’est pas un objet (%s) rend 400, jamais 500', async (_nom, charge) => {
+    // `null`, `42`, `"texte"` et `[]` sont du JSON VALIDE : `req.json()` ne
+    // lève pas. Avant correction, `body.idPatient` levait sur `null` et la
+    // route rendait 500 — AVANT la garde, donc sans aucune session.
+    getServerSession.mockResolvedValue(null);
+    const reponse = await POST(postRequest(charge));
+
+    expect(reponse.status).toBe(400);
+    await expect(reponse.json()).resolves.toMatchObject({ ok: false, reason: 'invalid' });
+    expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+  });
+
+  it('GET : les attentes non textuelles de l’anamnèse sont écartées, jamais devinées', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_TEST', praticienEmail: 'praticien@wellneuro.fr' });
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { motif_principal: 'Sommeil', attentes: ['dormir', 42, null, '   ', 'récupérer'] },
+    });
+
+    const reponse = await GET(getRequest());
+    const donnees = await reponse.json();
+
+    expect(donnees.ancrage.attentes).toEqual(['dormir', 'récupérer']);
+  });
 });
