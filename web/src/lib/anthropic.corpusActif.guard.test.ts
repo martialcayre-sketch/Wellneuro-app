@@ -129,6 +129,15 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
     expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
   });
 
+  it("date illisible (`'demain'`) : fermé — sans RangeError au chargement (N4)", async () => {
+    // Le terme `!Number.isNaN(...)` a son mode de défaillance propre : sans
+    // lui, `toISOString()` sur une date illisible JETTE au chargement du
+    // module et la route rendrait 500 au lieu de se fermer. Ce cas prouve la
+    // fermeture silencieuse (patron `indicationsBiologieV1.guard`).
+    const mod = await chargerAvecMetadonneeAlteree({ dateValidation: 'demain' });
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
   // La contre-épreuve inverse : l'ÉTAT LIVRÉ concorde. Le cas « discordant »
   // prouve la fermeture, celui-ci prouve que le littéral épinglé est bien le
   // SHA du texte tel que livré — deux propriétés distinctes (patron
