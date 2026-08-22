@@ -17,3 +17,10 @@ caractère du contenu ne change** : seule la métadonnée passe à
 - Ce que ça allume : le corpus cadre la formulation du brouillon de synthèse.
   Ce que ça ne change pas : la couche déterministe décide, le LLM formule
   (DC-02), et rien ne part au patient sans validation praticien.
+- **La consigne de synthèse devient bi-état, et c'est un bump** (`synthese-v27`,
+  revue adversariale H1/M1) : corpus éteint, texte inchangé au caractère près ;
+  corpus allumé, la ligne « corpus indisponible » cède la place à la
+  désignation du référentiel comme seule source citable, et le repli `limites`
+  suit. Chaque état a son empreinte épinglée par un banc — éteint dans
+  `promptAlimentaire.guard`, allumé dans `anthropic.corpusActif.guard` : une
+  édition de la prose signée du corpus rougit désormais elle aussi.

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /*
@@ -12,14 +13,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const LIGNE_INDISPONIBLE = "n'est pas encore disponible";
 const TITRE_CORPUS = 'Référentiel clinique SIIN — Snapshot V1';
+const EMPREINTE_PROMPT_ALLUME_V27 = 'ddff72f8b45a44e1';
 
 async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
   vi.resetModules();
-  if (valeur === undefined) {
-    vi.stubEnv('WN_ENABLE_CORPUS_CLINIQUE_V1', '');
-  } else {
-    vi.stubEnv('WN_ENABLE_CORPUS_CLINIQUE_V1', valeur);
-  }
+  // `undefined` SUPPRIME réellement la variable (constat N3 de la revue) —
+  // le fail-closed sur ABSENCE est la doctrine du dépôt, une chaîne vide
+  // n'exerce pas le même chemin.
+  vi.stubEnv('WN_ENABLE_CORPUS_CLINIQUE_V1', valeur as string);
   return import('./anthropic');
 }
 
@@ -39,9 +40,24 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
     // H1 : les deux affirmations ne doivent jamais coexister.
     expect(prompt).not.toContain(LIGNE_INDISPONIBLE);
     // La consigne active garde une instruction anti-hallucination de source.
-    expect(prompt).toContain("ne cite aucune source qui n'y figure pas");
+    expect(prompt).toContain('ne cite aucune source extérieure à ce référentiel');
+    // N2 : la ligne active ne présuppose pas que le corpus contient du
+    // protocole — l'interdiction reste absolue, comme à l'état éteint.
+    expect(prompt).toContain("n'invente pas de protocole SIIN");
+    expect(prompt).toContain('pas un protocole');
     // M1 : le repli `limites` ne nie plus le corpus qu'on vient d'injecter.
     expect(mod.LIMITES_SYNTHESE_DEFAUT).toContain('avec référentiel clinique');
+    // N1 : l'empreinte de l'état ALLUMÉ — celui que la pose du drapeau rend
+    // effectif — est épinglée comme celle de l'état éteint l'est dans
+    // `promptAlimentaire.guard.test.ts`. Toute édition de la branche ON de
+    // la consigne OU de la prose du corpus rougit ici tant que la version et
+    // cette empreinte n'ont pas bougé ensemble — c'est aussi le garde
+    // d'intégrité que l'absence de `shaPerimetre` laissait ouvert (M2).
+    const empreinte = createHash('sha256').update(prompt).digest('hex').slice(0, 16);
+    expect(
+      { version: mod.VERSION_PROMPT_SYNTHESE, empreinte },
+      'prompt allumé modifié : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
+    ).toEqual({ version: 'synthese-v27', empreinte: EMPREINTE_PROMPT_ALLUME_V27 });
   });
 
   it('drapeau absent : pas de corpus, et la consigne le dit indisponible', async () => {

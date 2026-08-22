@@ -305,7 +305,7 @@ export const CORPUS_CLINIQUE_ACTIF =
 // devient la seule source citable. Une seule de ces phrases entre dans la
 // consigne — les deux ensemble sacrifieraient l'anti-hallucination de source.
 const LIGNE_CORPUS = CORPUS_CLINIQUE_ACTIF
-  ? `- Un référentiel clinique versionné (« Référentiel clinique SIIN — Snapshot V1 ») t'est fourni plus bas. Appuie-toi dessus pour cadrer tes formulations ; n'invente pas de protocole SIIN au-delà de ce qu'il contient, et ne cite aucune source qui n'y figure pas.`
+  ? `- Un référentiel clinique versionné (« Référentiel clinique SIIN — Snapshot V1 ») t'est fourni plus bas. C'est un cadre méthodologique, pas un protocole : appuie-toi dessus pour cadrer tes formulations, n'invente pas de protocole SIIN, et ne cite aucune source extérieure à ce référentiel.`
   : `- Le corpus SIIN complet n'est pas encore disponible : n'invente pas de protocole SIIN et ne cite pas de source absente.`;
 
 // Repli du champ \`limites\` (contrat JSON et normalisation) — suit la même
