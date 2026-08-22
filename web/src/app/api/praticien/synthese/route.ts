@@ -612,6 +612,12 @@ async function genererSynthesePersistee(
           corpusActif: CORPUS_CLINIQUE_ACTIF,
           corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
           corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
+          // D-084 : sans le périmètre épinglé, un `corpusActif: false` avec
+          // signature vraie et date valide serait illisible six mois plus
+          // tard — impossible de distinguer « drapeau retiré » de « prose
+          // retouchée après signature » (`corpusSha256` porterait le sha du
+          // texte retouché, pas celui qui avait été relu).
+          corpusShaPerimetre: CORPUS_CLINIQUE_METADATA.shaPerimetre,
           // Orientation (LOT-06) : la version et le sha256 de la table qui a
           // produit le bloc transmis. Sans eux, on ne pourrait pas dire, six
           // mois plus tard, quelle table a fondé telle restitution.
