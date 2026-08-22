@@ -16,6 +16,7 @@
 // Le niveau DEMANDE rend l'échappatoire inutile ; le niveau REFUS ne doit pas
 // en avoir.
 import fs from "node:fs";
+import path from "node:path";
 
 let data = {};
 try {
@@ -30,7 +31,15 @@ const filePath = String(
 );
 if (!filePath) process.exit(0);
 
-const normalized = filePath.replaceAll("\\", "/").toLowerCase();
+// `path.posix.normalize` replie `/./`, `//` et `..` AVANT la comparaison :
+// sans lui, `web/src/lib/./clinical/x.ts` échappait à tout motif
+// multi-segment (relecture adversariale du Socle LOT-02 — le défaut était
+// hérité et touchait déjà le niveau « demande » Prisma). Les motifs REFUS,
+// mono-segment, n'y étaient pas sensibles ; rien n'est abaissé, des chemins
+// d'évitement se referment.
+const normalized = path.posix
+  .normalize(filePath.replaceAll("\\", "/"))
+  .toLowerCase();
 
 // Niveau REFUS : aucune écriture, jamais.
 const refus = [
@@ -50,6 +59,35 @@ const demande = [
   "prisma/schema.prisma",
   "prisma/migrations/",
   "supabase/migrations/"
+];
+
+// Niveau DEMANDE — fichiers cliniques (Socle LOT-02). Six tables signées
+// (`validationExterne: true`) et deux fichiers de constantes cliniques : la
+// constitution exige pour toute modification une décision D-xxx et un
+// fragment changelog.d/ (DC-17, DC-18) — l'autorisation en un clic
+// matérialise cette confirmation dans la session. JAMAIS « refus » : le
+// niveau demande n'interdit pas le travail, il le rend explicite.
+//
+// PORTÉE, dite sans sur-promettre : ce hook ne voit que les outils
+// d'édition de fichiers (Edit/Write, cf. `.claude/settings.json`) — une
+// écriture par commande Bash (`echo >`, `sed -i`) passe par
+// `block-risky-commands.mjs`, qui ne connaît pas ces fichiers. La
+// couverture Bash est un suivi nommé du Socle, pas une promesse d'ici.
+//
+// Motifs en minuscules (le chemin est normalisé plus haut) et ancrés par leur
+// répertoire : `includes()` sans ancrage ferait d'un motif court un filet
+// trop large. Vérifié à l'écriture du lot : chaque motif matche exactement UN
+// fichier suivi du dépôt. Les compagnons de test (`*.test.ts`) ne matchent
+// pas — le sha épinglé s'y ré-épingle librement, c'est la CI qui le juge.
+const demandeClinique = [
+  "src/lib/clinical/orientationrulesv1.ts",
+  "src/lib/clinical/stoprulesv1.ts",
+  "src/lib/clinical/priorityrulesv1.ts",
+  "src/lib/clinical/contradictionsv1.ts",
+  "src/lib/clinical/corpussynthesev1.ts",
+  "src/lib/biology-library/indicationsbiologiev1.ts",
+  "src/lib/equilibre/constants.ts",
+  "src/lib/questions.ts"
 ];
 
 for (const motif of refus) {
@@ -77,6 +115,25 @@ for (const motif of demande) {
           `faire approuver dans l'environnement protégé release-db. ` +
           `Une migration doit rester additive : ` +
           `colonnes nullables, ni DROP ni renommage.`
+      }
+    }));
+    process.exit(0);
+  }
+}
+
+for (const motif of demandeClinique) {
+  if (normalized.includes(motif)) {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason:
+          `Fichier clinique protégé (${motif}) : table signée ou constantes ` +
+          `cliniques. Toute modification — même une ligne, même un ` +
+          `commentaire — exige une décision D-xxx et un fragment ` +
+          `changelog.d/ (DC-17, DC-18) ; un fichier au sha épinglé devra ` +
+          `être ré-épinglé dans son banc. Autoriser vaut confirmation ` +
+          `explicite dans la session.`
       }
     }));
     process.exit(0);

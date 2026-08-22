@@ -7,10 +7,14 @@ import { sha256 } from './corpusSyntheseV1';
 //
 // Chaque règle traduit une recommandation des fiches de synthèse NNPP2 :
 // « si ces déclencheurs sont TOUS atteints, proposer ces explorations ». La
-// table est du CODE VERSIONNÉ, relu en PR — jamais du runtime dynamique. Elle
-// est régénérée par `tools/corpus/orientation/` (lot 9) à partir des seuls
-// claims VALIDÉS par le praticien dans l'Atelier corpus (barrière D-003) :
-// chaque règle épingle ses claims justificatifs (id + version immuable).
+// table est du CODE VERSIONNÉ, relu en PR — jamais du runtime dynamique, et
+// ÉCRITE À LA MAIN : le compilateur `tools/corpus/orientation/` (lot 9) que
+// cet en-tête annonçait n'a jamais existé (audit doctrine §E ; en-tête resté
+// mensonger du 2026-08-03 au 2026-08-22, corrigé par D-083). Chaque règle
+// épingle ses claims justificatifs (id + version immuable), tous VALIDÉS par
+// le praticien dans l'Atelier corpus (barrière D-003) ; leur fraîcheur est
+// gardée par le banc posé par D-042 — c'est ce banc, pas un pipeline, qui
+// tient la provenance en continu.
 //
 // Doctrine : le graphe clinique choisit les explorations POSSIBLES ; le
 // praticien décide ; rien n'est jamais auto-assigné ; le LLM de synthèse ne
