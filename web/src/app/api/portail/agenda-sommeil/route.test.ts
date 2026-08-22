@@ -46,7 +46,6 @@ function mockOwner(): void {
     idPatient: OWNER.idPatient,
     actif: true,
     email: OWNER.email,
-    accessToken: 'TOK',
     accessTokenRevoked: false,
     sessionsInvalidesAvant: null,
   });

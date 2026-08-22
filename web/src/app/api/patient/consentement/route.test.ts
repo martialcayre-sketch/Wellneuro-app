@@ -45,7 +45,6 @@ describe('POST /api/patient/consentement', () => {
       idPatient: assignation.idPatient,
       actif: true,
       email: assignation.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });
@@ -110,7 +109,6 @@ describe('POST /api/patient/consentement — date limite et déverrouillage', ()
       idPatient: assignation.idPatient,
       actif: true,
       email: assignation.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });

@@ -29,7 +29,7 @@ function mockOwnerAuth(): void {
   prisma.assignation.findFirst.mockResolvedValue(assignation);
   // Ancre du bilan de calibrage : servie tant qu'aucun protocole n'est diffusé.
   prisma.assignation.findUnique.mockResolvedValue({ dateAssignation: new Date('2026-07-20T00:00:00Z') });
-  prisma.patient.findUnique.mockResolvedValue({ idPatient: assignation.idPatient, actif: true, accessToken: 'TOK_PROPRIO', accessTokenRevoked: false, email: assignation.emailPatient });
+  prisma.patient.findUnique.mockResolvedValue({ idPatient: assignation.idPatient, actif: true, accessTokenRevoked: false, email: assignation.emailPatient });
 }
 function request(cookie?: string): Request {
   return new Request('http://localhost/api/portail/protocole', {

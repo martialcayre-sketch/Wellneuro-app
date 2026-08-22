@@ -76,16 +76,17 @@ export async function resetPortailState(idPatient: string): Promise<void> {
 
 /**
  * Met un patient fictif dans l'état « reprise » attendu par la proposition de
- * pack de réévaluation (SP-SPI / LOT-01), et renvoie son jeton d'accès portail.
+ * pack de réévaluation (SP-SPI / LOT-01).
  *
  * Réservé à un patient qu'aucun autre spec n'utilise (Jennifer Martin,
- * PAT_SEED_02) : ce helper mute ses réponses et son jeton, et deux specs
- * s'exécutent en parallèle sur la même base éphémère. L'appliquer à
+ * PAT_SEED_02) : ce helper mute ses réponses et son état de compte, et deux
+ * specs s'exécutent en parallèle sur la même base éphémère. L'appliquer à
  * `PAT_SEED_03` casserait `portail-parcours`.
  *
  * Trois écritures, toutes fidèles à un vrai patient qui revient après une longue
  * absence :
- *  1. un jeton d'accès permanent, tel qu'il aurait été posé à l'onboarding ;
+ *  1. un compte actif et non révoqué, sans coupe-circuit de session (le jeton
+ *     permanent n'existe plus : colonnes de valeur purgées, D-085) ;
  *  2. ses réponses transmises antidatées au-delà du seuil de reprise
  *     (`SEUIL_REPRISE_MOIS`), pour que « la dernière fois » soit lointaine ;
  *  3. l'accusé de lecture du cadre TRUST déjà donné — un patient qui revient a
@@ -93,16 +94,12 @@ export async function resetPortailState(idPatient: string): Promise<void> {
  * Et une remise à zéro : aucune proposition antérieure, sinon la question ne se
  * reposerait pas.
  */
-export async function preparerReprisePourTest(idPatient: string): Promise<string> {
-  const accessToken = `E2E_REPRISE_${idPatient}`;
-
+export async function preparerReprisePourTest(idPatient: string): Promise<void> {
   await prisma.patient.update({
     where: { idPatient },
     data: {
-      accessToken,
       accessTokenRevoked: false,
       actif: true,
-      accessTokenCreatedAt: new Date(),
       sessionsInvalidesAvant: null,
     },
   });
@@ -129,8 +126,6 @@ export async function preparerReprisePourTest(idPatient: string): Promise<string
   });
 
   await prisma.packProposition.deleteMany({ where: { idPatient } });
-
-  return accessToken;
 }
 
 /**
@@ -157,13 +152,9 @@ export async function accuserCadreTrust(idPatient: string): Promise<void> {
   });
 }
 
-/** Nettoie l'état de reprise laissé par un run (jeton, propositions, ack). */
+/** Nettoie l'état de reprise laissé par un run (propositions ; le jeton n'existe plus). */
 export async function nettoyerReprise(idPatient: string): Promise<void> {
   await prisma.packProposition.deleteMany({ where: { idPatient } });
-  await prisma.patient.update({
-    where: { idPatient },
-    data: { accessToken: null, accessTokenCreatedAt: null },
-  });
 }
 
 export async function closePrisma(): Promise<void> {

@@ -51,7 +51,6 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     prisma.patient.findUnique.mockResolvedValue({
       idPatient: assignation.idPatient,
       actif: true,
-      accessToken: 'TOK_TEST',
       accessTokenRevoked: false,
       email: assignation.emailPatient,
     });

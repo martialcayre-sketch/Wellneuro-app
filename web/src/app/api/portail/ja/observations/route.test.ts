@@ -68,7 +68,6 @@ describe('api/portail/ja/observations', () => {
     readPatientSession.mockReturnValue({ idPatient: 'PAT_TEST', email: 'sophie.nicola@example.test' });
     prisma.patient.findUnique.mockResolvedValue({
       actif: true,
-      accessToken: 'TOK_TEST',
       accessTokenRevoked: false,
       email: 'sophie.nicola@example.test',
     });

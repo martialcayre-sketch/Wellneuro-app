@@ -24,7 +24,6 @@ const patient = {
   nom: 'Nicola',
   email: 'sophie.nicola@example.test',
   actif: true,
-  accessToken: 'TOK',
   accessTokenRevoked: false,
 };
 

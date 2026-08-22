@@ -118,7 +118,7 @@ personnelles se répartissent ainsi :
 | Identité et contact | `Patient` (email, prénom, nom, date de naissance, téléphone) | Données ordinaires |
 | **Santé (art. 9)** | `Consultation`, `QuestionnaireReponse`, `SyntheseIA`, `AssessmentEpisode`, `ProtocolDraft`, `ProtocolCheckin`, `AgendaSommeilNuit`, `AgendaAlimentaireJour`, `CorrespondanceMedecin`, `CorrespondancePatient`, `BookletEnvoi`, `RelectureNote`, `TrustAdverseEffectReport` | **Catégorie particulière** |
 | Preuves de transparence | `TrustAcknowledgement`, `TrustChoiceEvent`, `TrustRightsRequest`, `TrustPrivacyIncident` | Traces d'information, de choix et de demandes |
-| Authentification et accès | `Patient.accessToken`, `PortailMagicLink`, `PortailConnexionGoogle`, `PortailDemandeTentative` | Jetons, traces de connexion, anti-abus |
+| Authentification et accès | `Patient.accessTokenRevoked` (drapeau de révocation, non secret — les valeurs du jeton permanent ont été **purgées le 2026-08-22**, `D-085` §5), `PortailMagicLink`, `PortailConnexionGoogle`, `PortailDemandeTentative` | Drapeau, liens hachés expirants, traces de connexion, anti-abus |
 | Journalisation | `JournalAccesDossier` (`id_patient`, `praticien_email`, route, méthode, horodatage) | Piste d'audit des accès praticien |
 | Résidu d'effacement | `DossierEfface` (année de naissance, initiales, date) | Preuve d'effacement, volontairement non ré-identifiante |
 
