@@ -47,16 +47,26 @@ cette base qui reçoit les données.
 
 | # | Exigence | État | Preuve |
 |---|---|---|---|
-| 1 | Architecture d'hébergement adaptée | ❌ **Non — établi le 2026-07-21, mis à jour le 2026-08-22** | Supabase et Vercel **absents de l'annuaire ANS des hébergeurs certifiés HDS**. Écart assumé par décision datée du responsable (voir plus bas). **Depuis le 2026-08-22, 03:24 CEST, les données réelles résident aussi sur Scalingo `osc-fr1` `--hds-resource`** (bascule consignée : `docs/DOSSIER_RGPD.md` rubrique 12, PR #729) — mais le **service** aux personnes reste rendu par Vercel/Supabase : l'exigence reste ❌ jusqu'au cutover, et sa preuve complète passe par le décommissionnement, lui-même gaté par l'annexe HDS (`D-078`) |
+| 1 | Architecture d'hébergement adaptée | ⚠️ **Partiel — depuis le cutover du 2026-08-22** (la rédaction précédente bornait elle-même son ❌ « jusqu'au cutover » : il est fait) | Depuis le 2026-08-22 : données réelles chargées sur Scalingo `osc-fr1` `--hds-resource` à 03:24 CEST, **cutover DNS ~04:05** (`app.wellneuro.fr` → Scalingo) — **service ET données sont rendus par l'hébergeur certifié HDS** (certificat LNE 38436), schéma vérifié sur conteneur prod (`migrate status` : 56 migrations, à jour — one-off-602, 11:44 CEST). Reste, et la ligne ne dit pas plus que les faits : **l'annexe HDS n'est toujours pas signée** (le point accepté sciemment de `D-078` demeure — l'option HDS n'est pas contractuellement active) et **Vercel/Supabase restent chauds jusqu'au décommissionnement du 2026-09-01** (`D-080`, inconditionnel, avec preuve d'effacement) — la résidence n'est pas encore exclusive |
 | 2 | Contrôle d'accès centralisé | ⚠️ **Partiel — amélioré depuis la rédaction** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : ~~jeton d'accès **permanent**, pas de compte~~ — **le jeton permanent n'est plus un credential depuis #397** (le cookie de session signé `wn_portail` est l'unique credential, cf. `CHECKLIST_FINALISATION.md` §C) ; les entrées sont le lien magique G4 (24 h, usage unique) et **Google patient G5, constaté actif en production par le comportement le 2026-08-22**. Reste partiel : pas de révocation en libre-service (le drapeau de révocation de remplacement est attendu avec la PR 2 du `DROP COLUMN access_token*`) |
-| 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
+| 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous. **Fait nouveau du cutover (2026-08-22)** : Scalingo n'expose **aucune API de données managée** — le vecteur que la posture A (`D-005`, deny-all RLS) neutralisait chez Supabase (PostgREST, rôles `anon`/`service`) n'existe plus ; l'app se connecte en propriétaire, l'isolation reste applicative. Le résidu inchangé : aucun test d'isolation multi-praticien réel (deux comptes, deux portefeuilles) |
 | 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. ~~Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule.~~ **La coexistence a pris fin avec #397** : le jeton permanent n'est plus relu ni reconstruit en URL, le cookie de session signé est l'unique credential (vérifié en prod post-merge, `CHECKLIST_FINALISATION.md` §C). L'exigence reste partielle pour un résidu nommé : les **valeurs en clair dormantes subsistent en base** (`DROP COLUMN access_token*` en PR 2, après fenêtre de stabilité) et la révocation de remplacement n'existe pas encore |
-| 5 | Journalisation | ⚠️ **Partiel — amélioré les 2026-07-22/23** | La piste d'audit des accès légitimes existe : table `journal_acces_dossiers` (#273 — RLS deny-all, sans FK, effacée nommément avec le dossier, rétention 12 mois GD-2) et écriture branchée sur les **22 routes GET « dossier nommé »** (12 routes A/B en #278, 10 routes C/D au lot de clôture, dont un correctif de scoping sur le GET `booklet`). « Qui a lu quel dossier, quand » répond par une lecture `execute_sql` (requête type GD-3, consignée au lot). Limites écrites : liste vide sur dossier possédé non journalisée, POST exclus (leur écriture laisse sa propre trace, GD-1), versant patient déjà tracé (`portail_connexions_google`, `portail_magic_links`). Reste partiel : pas d'écran de consultation (GD-3, voulu) et ~~preuve fonctionnelle en production attendue au premier dossier ouvert~~ — **cette échéance est dépassée** : des dossiers réels sont ouverts et utilisés (`D-075`, `D-077`) sans que la preuve ait été produite ; relevé au §14 du dossier RGPD, reporté au 2026-10-21, **toujours dû** |
-| 6 | Réponse aux incidents | ⚠️ **Partiel — procédure écrite le 2026-07-22, exercée sur table le 2026-07-22** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe et a été exercée** (`docs/PROCEDURE_VIOLATION_DONNEES.md` ; exercice sur table #281, scénario fictif Michel Dogné, fiche 2026-EX1, constats EX-1/EX-2/EX-3, §8 réécrit). Reste : la confirmation par un conseil qualifié (D-TRUST-02) et le registre physique des violations hors dépôt (EX-3) |
+| 5 | Journalisation | ⚠️ **Partiel — amélioré les 2026-07-22/23** | La piste d'audit des accès légitimes existe : table `journal_acces_dossiers` (#273 — RLS deny-all, sans FK, effacée nommément avec le dossier, rétention 12 mois GD-2) et écriture branchée sur les **22 routes GET « dossier nommé »** (12 routes A/B en #278, 10 routes C/D au lot de clôture, dont un correctif de scoping sur le GET `booklet`). « Qui a lu quel dossier, quand » répond par une lecture `execute_sql` (requête type GD-3, consignée au lot). Limites écrites : liste vide sur dossier possédé non journalisée, POST exclus (leur écriture laisse sa propre trace, GD-1), versant patient déjà tracé (`portail_connexions_google`, `portail_magic_links`). Reste partiel : pas d'écran de consultation (GD-3, voulu). ~~Preuve fonctionnelle en production toujours due~~ — **produite le 2026-08-22** (revue reprise) : sonde lecture seule sur la production Scalingo, agrégats sans identité — **947 accès journalisés, 14 dossiers distincts, 27 routes distinctes**, du 2026-07-23 08:45 UTC au 2026-08-22 11:12 UTC, **dont 99 depuis la bascule** : l'historique a été porté intact ET le journal continue d'écrire après le cutover. La question GD-3 (« qui a lu quel dossier, quand ») répond par le même canal |
+| 6 | Réponse aux incidents | ⚠️ **Partiel — procédure écrite le 2026-07-22, exercée sur table le 2026-07-22** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe et a été exercée** (`docs/PROCEDURE_VIOLATION_DONNEES.md` ; exercice sur table #281, scénario fictif Michel Dogné, fiche 2026-EX1, constats EX-1/EX-2/EX-3, §8 réécrit). Reste : la confirmation par un conseil qualifié (D-TRUST-02) et le registre physique des violations hors dépôt (EX-3). **Dette nouvelle relevée à la revue du 2026-08-22** : le runbook est **périmé depuis le cutover** — ses chapitres infra visent Vercel/DNS et Supabase, plus l'hébergeur qui rend le service ; à réécrire pour Scalingo (one-off, `logs`, `restart`, tunnel, rollback D-080) |
 | 7 | Tests de sécurité documentés | ⚠️ **Partiel** | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Aucun test d'intrusion, aucune revue de sécurité externe** |
 
 Aucune ligne n'est ✅. Le gate ne peut donc pas être levé par un arbitrage
 partiel : c'est un ET, pas un OU.
+
+> **Revue reprise le 2026-08-22, après le cutover.** L'état passe de « une ❌,
+> six partielles » (vrai à la date de `D-078`, et la section de cette décision
+> le dit toujours à sa date) à **« sept partielles, zéro ❌, zéro ✅ »** : la
+> ligne 1 a franchi son propre seuil (« ❌ jusqu'au cutover »), la ligne 5 a
+> reçu sa preuve fonctionnelle. Les chemins vers ✅ sont désormais tous nommés
+> et datés : annexe HDS + décommissionnement du 2026-09-01 (ligne 1), purge
+> des colonnes dormantes + révocation (lignes 2/4), test multi-praticien
+> (ligne 3), conseil qualifié + registre physique + runbook Scalingo
+> (ligne 6), pentest externe (ligne 7).
 
 ## Mise à jour du 2026-07-21 — état constaté, et ce qu'il ne change pas
 
@@ -208,13 +218,12 @@ base (RLS ou équivalent) si la garde applicative était un jour contournée.
    décision « **livrable en préproduction ; activation avec données réelles =
    décision distincte, aujourd'hui NO-GO** » (`REGISTRE_FRONTIERES.md:619-621`).
 4. ~~Ajouter une piste d'audit des accès légitimes.~~ Fait les 2026-07-22/23
-   (migration #273, routes A/B #278, routes C/D au lot de clôture). Reste,
-   pour que l'exigence 5 soit tenue pour satisfaite : la preuve fonctionnelle
-   en production (requête GD-3 au premier dossier ouvert).
-   > Note (LOT-06, 2026-08-07) : ce résidu attend un **usage réel** — qu'un
-   > dossier soit effectivement ouvert en production — puis une vérification
-   > `execute_sql`. Ce n'est pas un chantier de code ou de documentation, et
-   > aucun lot ne peut le fermer à la place de cet usage.
+   (migration #273, routes A/B #278, routes C/D au lot de clôture).
+   ~~Reste : la preuve fonctionnelle en production.~~ **Produite le
+   2026-08-22** (voir la ligne 5 du tableau : 947 accès, 14 dossiers,
+   27 routes, 99 écritures post-bascule — sonde lecture seule sur la
+   production Scalingo). L'exigence 5 n'a plus pour résidu que l'absence
+   d'écran de consultation, qui est un choix (GD-3).
 5. ~~Écrire la procédure de violation de données.~~ Fait le 2026-07-22
    (`docs/PROCEDURE_VIOLATION_DONNEES.md`), **exercée sur table le même jour**
    (#281, fiche 2026-EX1). Reste, pour que l'exigence 6 soit tenue pour
