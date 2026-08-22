@@ -4,7 +4,7 @@ titre: "Socle de restitution sûre — la garde avant le récit"
 statut: "en_cours (ouverte 2026-08-22)"
 créée_le: "2026-08-21"
 mise_à_jour: "2026-08-22"
-lot_courant: "LOT-02"
+lot_courant: "LOT-03"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -58,7 +58,7 @@ brief :
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
 | LOT-01 | La couverture des chemins sortants devient un contrat prouvé | terminé (2026-08-22 — 4 gardes prouvées par mutation, bilan re-vérifié au service, arbitrage des régimes instruit) | — |
-| LOT-02 | Les tables cliniques s'écrivent au niveau « demande » — et l'en-tête cesse de mentir | à faire | — |
+| LOT-02 | Les tables cliniques s'écrivent au niveau « demande » — et l'en-tête cesse de mentir | terminé (2026-08-22 — 8 fichiers, banc neuf, revue adversariale ACCEPTER, D-083) | — |
 | LOT-03 | Le registre de gabarits de messages patient (`DC-26`) | à faire | LOT-01 ou LOT-02 (l'un des deux livré) |
 
 ## Gates

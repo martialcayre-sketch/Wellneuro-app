@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "à faire"
+statut: "terminé (2026-08-22) — huit fichiers en demande, banc neuf 36 cas, relecture adversariale ACCEPTER (évitement par segments refermé), en-tête corrigé sous D-083 ; mesuré : le sha couvre les données, pas le texte — pas de ré-épinglage"
 dépend_de: "aucun"
 ---
 
@@ -36,6 +36,10 @@ que le brief croyait (voir CAMPAGNE.md, état réel).
 
 Candidat à trancher **au lot**, en un mot avec le responsable :
 `stopRulesLibelles.ts` (compagnon des stop rules, non signé séparément).
+*(Sort à la clôture : non tranché — consigné au fragment `changelog.d/` avec
+les deux candidats découverts par la relecture adversariale
+(`questionnaires/alimentaire.ts`, fixture `chaineC1Fixture`) ; arbitrage
+responsable pendant, le banc a un cas « silence » qui rougira à l'ajout.)*
 
 ## Le mécanisme, tel qu'il est
 
@@ -56,6 +60,11 @@ ancrage ferait d'un motif court un filet trop large.
   clinique entier — **décision `D-xxx` prise au lot avec le responsable**,
   fragment `changelog.d/`, re-épinglage du sha dans le même commit, et rien
   d'autre ne bouge dans le fichier.
+- *(Corrigé à l'exécution, mesure du 2026-08-22 :* le sha épinglé couvre
+  `sha256(JSON.stringify(ORIENTATION_RULES_V1))` — **les données, pas le
+  texte du fichier**. Un diff de commentaire ne le fait PAS rougir : 61/61
+  vert sans ré-épinglage. La décision `D-083` et le fragment restent requis —
+  c'est la doctrine `DC-17`, pas le sha, qui l'exige.)*
 
 ## Périmètre
 

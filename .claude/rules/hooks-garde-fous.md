@@ -20,7 +20,14 @@ Trois verdicts, rendus par les hooks PreToolUse de `.claude/settings.json` :
 - **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
   `prisma migrate`, `supabase db push`, push forcé. L'autorisation en un clic
   dans la session matérialise la « confirmation explicite » exigée par
-  CLAUDE.md.
+  CLAUDE.md. Depuis le Socle LOT-02, **les fichiers cliniques** aussi — six
+  tables signées (`orientationRulesV1`, `stopRulesV1`, `priorityRulesV1`,
+  `contradictionsV1`, `corpusSyntheseV1`, `indicationsBiologieV1`) et deux
+  fichiers de constantes (`equilibre/constants.ts`, `questions.ts`) — avec un
+  motif distinct citant `DC-17`/`DC-18` : autoriser vaut confirmation de la
+  décision `D-xxx` exigée. Portée dite sans sur-promettre : le hook ne voit
+  que Edit/Write — une écriture par commande Bash n'y passe pas (suivi nommé
+  du Socle).
 - **silence** — tout le reste.
 
 Un hook `SessionStart` séparé (`startup|resume|clear|compact`) exécute

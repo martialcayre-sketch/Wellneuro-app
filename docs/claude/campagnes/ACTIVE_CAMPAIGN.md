@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-21-socle-restitution-sure
 **Titre** : Socle de restitution sûre — la garde avant le récit
 **Statut** : active
-**Lot actif** : LOT-02
+**Lot actif** : LOT-03
 
 ## Activités parallèles
 
