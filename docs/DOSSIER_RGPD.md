@@ -399,8 +399,13 @@ sans procédure écrite.
 
 **TROUS.** Aucun **pentest** ni **revue de sécurité externe** (exigence 7 du
 gate, restée entière). Le **registre physique des violations** n'existe pas
-(EX-3). La preuve **fonctionnelle en production** de la piste d'audit reste à
-faire au premier dossier réellement ouvert.
+(EX-3). ~~La preuve fonctionnelle en production de la piste d'audit reste à
+faire.~~ **Produite le 2026-08-22** (revue G-TRUST-04 reprise) : 947 accès
+journalisés, 14 dossiers distincts, 27 routes, du 2026-07-23 au 2026-08-22,
+dont 99 écritures après la bascule Scalingo — historique porté, journal
+vivant post-cutover (sonde lecture seule, agrégats sans identité). Trou
+nouveau relevé le même jour : **`docs/RUNBOOK.md` est périmé depuis le
+cutover** (chapitres infra Vercel/Supabase), à réécrire pour Scalingo.
 
 ## 11. Information des participants
 
