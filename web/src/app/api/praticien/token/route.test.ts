@@ -19,6 +19,15 @@ vi.mock('@/lib/praticien/appartenance', () => ({
   verifierAppartenancePatient,
   emailPraticien: () => 'p@wellneuro.fr',
 }));
+// L'action `issue` déclenche un envoi d'e-mail réel (best-effort, avalé par
+// un try/catch — lent et bruyant en test). Mock nécessaire depuis que le test
+// de réémission emprunte ce chemin, le seul qui atteigne la dé-révocation.
+vi.mock('@/lib/consultation/email', () => ({
+  buildGoogleConnexionUrl: () => 'https://app.wellneuro.fr/portail/google',
+  buildMagicLinkUrl: (jeton: string) => `https://app.wellneuro.fr/portail/lien/${jeton}`,
+  sendMagicLinkEmail: vi.fn(),
+  sendPortailLinkEmail: vi.fn(),
+}));
 
 import { DELETE, POST } from './route';
 
@@ -107,16 +116,21 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
       idPatient: 'PAT_1',
       email: 'sophie.nicola@example.test',
       prenom: 'Sophie',
-      // `actif: true` manquait : le POST sortait en 404 avant toute écriture
-      // et l'assertion « aucun update ne porte la date » était vide (constat
-      // L-3 de la revue de la PR de purge — le test redevient probant).
+      // `actif: true` manquait (404 avant toute écriture) et `action: 'lien'`
+      // est le seul chemin en LECTURE SEULE de la route — deux façons pour ce
+      // test d'être vert sans rien prouver (constats L-3 puis M de la revue
+      // de la PR de purge). `issue` est la réémission que le titre nomme : le
+      // seul chemin qui atteint la dé-révocation.
       actif: true,
       accessTokenRevoked: true,
       sessionsInvalidesAvant: new Date('2026-07-21T10:00:00.000Z'),
     });
 
-    await POST(postRequest({ idPatient: 'PAT_1', action: 'lien' }));
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'issue' }));
 
+    // La contre-épreuve d'existence d'abord : sans elle, une route qui
+    // n'écrirait rien rendrait la boucle vide et le test menteur.
+    expect(prisma.patient.update).toHaveBeenCalled();
     const appels = prisma.patient.update.mock.calls as [{ data: Record<string, unknown> }][];
     for (const [appel] of appels) {
       expect(appel.data).not.toHaveProperty('sessionsInvalidesAvant');
