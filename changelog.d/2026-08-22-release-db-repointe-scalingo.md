@@ -44,3 +44,8 @@ Vercel+Supabase ne tient plus que par restauration de sauvegarde.
 - Ordre assumé et documenté (résumé d'approbation réécrit) : code d'abord,
   migration après approbation — un ADD se protège par drapeau éteint, un
   DROP rend le retour arrière dépendant d'une restauration de base.
+- **Première prise de la répétition générale** (jouée à vide le jour même,
+  fail-closed comme prévu) : le CLI n'authentifie **pas** par la variable
+  d'environnement — une étape `scalingo login --api-token` explicite est
+  ajoutée avant tout appel, l'erreur d'`env-get` n'est plus avalée, et un
+  invariant CI tient désormais « login avant premier appel ».

@@ -173,6 +173,20 @@ test('les deux calculs d’empreinte des migrations sont identiques', () => {
   );
 });
 
+// Leçon de la première répétition générale (run 32578782755, 2026-08-22) : le
+// CLI Scalingo n'authentifie PAS par la variable d'environnement — sans
+// `login --api-token`, chaque appel échoue, et un échec d'API muet se lit
+// exactement comme « drapeau absent ». Le login doit exister, et venir AVANT
+// le premier appel qui parle à l'app.
+test('le CLI se connecte explicitement avant le premier appel à l’app', () => {
+  const bloc = JOBS.get('release');
+  const login = bloc.indexOf('scalingo login --api-token');
+  const premierAppel = bloc.indexOf('env-get WN_MIGRATIONS_PAR_RELEASE_DB');
+  assert.ok(login > -1, "l'étape de login a disparu — aucun appel Scalingo ne réussit sans elle");
+  assert.ok(premierAppel > -1, 'la garde du drapeau a disparu');
+  assert.ok(login < premierAppel, "le login doit précéder le premier appel à l'app");
+});
+
 // Le jeton d'API est une créance PLEINE sur l'app (one-offs, environnement,
 // tunnels) : en portée de job, il serait visible de TOUTES les étapes — dont
 // l'installation du CLI, qui exécute du contenu téléchargé.

@@ -193,8 +193,9 @@ jobs:
       WN_RELEASE_ID: ${{ github.run_id }}-${{ github.run_attempt }}
       # Le jeton `SCALINGO_API_TOKEN`, lui, n'est PAS en portée de job : c'est
       # une créance PLEINE sur l'app (one-offs, environnement, tunnels) — il
-      # n'est visible que des seules étapes qui parlent à Scalingo, jamais de
-      # l'installation du CLI.
+      # n'est visible que de la garde de présence et de l'étape de login,
+      # jamais de l'installation du CLI. Les étapes suivantes s'appuient sur
+      # la session écrite par `login` dans le HOME éphémère du runner.
     steps:
       # Le mode import-cb visait la base Supabase (advisors + import NABM) :
       # HORS SERVICE depuis le cutover du 2026-08-22 — refus explicite plutôt
@@ -235,17 +236,38 @@ jobs:
           sudo install scalingo_1.48.0_linux_amd64/scalingo /usr/local/bin/scalingo
           scalingo --version
 
-      # La propriété « le postdeploy ne migre plus » tient à UNE variable
-      # d'app : la constater plutôt que la croire. `env-get` d'un drapeau non
-      # secret — jamais `env`, qui déverserait la configuration entière de
-      # l'app (secrets compris) dans le log CI.
-      - name: "Garde — le postdeploy ne migre plus (drapeau constaté)"
+      # LEÇON DE LA PREMIÈRE RÉPÉTITION (run 32578782755, 2026-08-22) : le
+      # CLI n'authentifie PAS par la variable d'environnement — sans login
+      # explicite, chaque appel échouait, et la garde du drapeau lisait ce
+      # silence comme « drapeau absent ». Constaté en local : un
+      # SCALINGO_API_TOKEN invalide dans l'environnement ne fait même pas
+      # échouer un CLI configuré. `login --api-token` écrit la session dans
+      # le HOME éphémère du runner ; son échec arrête tout, bruyamment.
+      - name: "Authentification du CLI (login par jeton)"
         env:
           SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
         run: |
+          if ! scalingo login --api-token "$SCALINGO_API_TOKEN"; then
+            echo "❌ Authentification Scalingo refusée — jeton invalide, expiré ou" >&2
+            echo "   révoqué. Reposer un jeton valide dans l'environnement 'release-db'." >&2
+            exit 1
+          fi
+
+      # La propriété « le postdeploy ne migre plus » tient à UNE variable
+      # d'app : la constater plutôt que la croire. `env-get` d'un drapeau non
+      # secret — jamais `env`, qui déverserait la configuration entière de
+      # l'app (secrets compris) dans le log CI. L'erreur d'`env-get` n'est
+      # PLUS avalée : la première répétition a montré qu'un échec d'API muet
+      # se lit exactement comme un drapeau absent.
+      - name: "Garde — le postdeploy ne migre plus (drapeau constaté)"
+        run: |
           DRAPEAU=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
-            env-get WN_MIGRATIONS_PAR_RELEASE_DB 2>/dev/null || true)
+            env-get WN_MIGRATIONS_PAR_RELEASE_DB 2>erreur-env-get.txt || true)
           if [ "$DRAPEAU" != "1" ]; then
+            if [ -s erreur-env-get.txt ]; then
+              echo "— erreur du CLI pendant la lecture du drapeau :" >&2
+              cat erreur-env-get.txt >&2
+            fi
             echo "❌ WN_MIGRATIONS_PAR_RELEASE_DB ≠ 1 sur l'app : le postdeploy migre" >&2
             echo "   encore de son côté — ce workflow ne serait pas l'unique porte." >&2
             echo "   Poser le drapeau (séquence de mise en service," >&2
@@ -264,8 +286,6 @@ jobs:
       # suivante) re-vérifie la même propriété DANS le conteneur, au moment
       # d'écrire.
       - name: "Garde — le commit approuvé est le dernier déployé"
-        env:
-          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
         run: |
           for i in $(seq 1 40); do
             SUCCES=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null \
@@ -296,8 +316,6 @@ jobs:
       # one-off déjà lancé (`scalingo one-off-stop <conteneur>` le fait) —
       # un run annulé se vérifie à la main, comme un run muet.
       - name: "Release en one-off (préflights + migrate deploy)"
-        env:
-          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
         run: |
           # Empreinte du CONTENU (pas des seuls noms) : une migration en
           # attente réécrite en place entre l'approbation et le déploiement
@@ -342,8 +360,6 @@ jobs:
       # comme la release — le texte de `migrate status`, lui, ne peut pas
       # porter d'id.
       - name: "Vérification — migrate status sur conteneur"
-        env:
-          SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
         run: |
           SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
             run --detached -e WN_RELEASE_ID="$WN_RELEASE_ID" \
