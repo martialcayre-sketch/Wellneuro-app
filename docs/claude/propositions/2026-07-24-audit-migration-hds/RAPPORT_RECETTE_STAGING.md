@@ -81,10 +81,14 @@ runbook). **À vérifier par le responsable.**
 
 ## Ce que ce rapport ne couvre pas
 
-- `prisma migrate status` sur conteneur (exige un TTY, ni l'assistant ni un
-  script non interactif ne peuvent le lancer) — les logs de postdeploy du
-  2026-08-21 montrent 56 migrations trouvées, aucune erreur, mais ce n'est pas
-  le contrôle formel attendu.
+- `prisma migrate status` sur conteneur **staging** — non joué ici. La raison
+  invoquée à l'époque (« exige un TTY, ni l'assistant ni un script non
+  interactif ne peuvent le lancer ») s'est révélée **fausse** le 2026-08-22 :
+  `scalingo run -d` lance le one-off en détaché et sa sortie se lit dans
+  `logs --filter one-off-N`. Le contrôle formel a été joué ce jour-là sur la
+  **prod** (one-off-602 : 56 migrations trouvées, « Database schema is up to
+  date! ») ; les logs de postdeploy du 2026-08-21 restent la seule trace côté
+  staging.
 - `NEXTAUTH_URL` et les variables de modèle n'ont pas été lues (mêmes raisons
   que ci-dessus) ; leur effet a été observé indirectement par le comportement
   (login abouti, génération aboutie).

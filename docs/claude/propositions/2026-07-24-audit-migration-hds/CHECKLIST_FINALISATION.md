@@ -50,14 +50,14 @@ réelles ».
 
 ## D. App PROD HDS + migration des données (⚙️ responsable, runbook §4)
 
-- [ ] ⚙️ Provisionner l'app **prod HDS** : `osc-fr1`, `--hds-resource` **à la création**, add-on PostgreSQL Business, `PROJECT_DIR=web`, **tous les secrets prod + `DB_SSL_CA`** (durcissement TLS, non posé en staging)
-- [ ] ⚙️ `migrate deploy` sur la cible **AVANT** le chargement des données (les objets pgvector exigent l'extension présente)
-- [ ] ⚙️ Dump logique Supabase → restore data-only → **reconstruire/valider les index HNSW** → contrôler comptes de lignes + fonctions `match_*` (dont les 4 tables `rag_corpus_*`, externes Prisma)
+- [x] ⚙️ Provisionner l'app **prod HDS** : `osc-fr1`, `--hds-resource` **à la création**, add-on PostgreSQL Business, `PROJECT_DIR=web`, **tous les secrets prod + `DB_SSL_CA`** (durcissement TLS, non posé en staging) — **fait le 2026-08-21** (app `wellneuro`, PostgreSQL Business 512, secrets posés par le responsable sans transit par l'assistant, `DB_SSL_CA` posé).
+- [x] ⚙️ `migrate deploy` sur la cible **AVANT** le chargement des données (les objets pgvector exigent l'extension présente) — **fait le 2026-08-21** par le `postdeploy` du déploiement initial ; preuve en creux pendant le restore de la nuit : FK et déclencheur clinique étaient en place (c'est même lui qui a refusé le `COPY`).
+- [x] ⚙️ Dump logique Supabase → restore data-only → **reconstruire/valider les index HNSW** → contrôler comptes de lignes + fonctions `match_*` (dont les 4 tables `rag_corpus_*`, externes Prisma) — **fait le 2026-08-22** (bascule 03:24:09 CEST, comptes exacts vs référence gelée, dont 8 144 `rag_corpus_claim_decisions` revalidées par la re-pose de la FK). **Ce que cette case ne dit pas** : HNSW et `match_*` n'ont pas été re-testés unitairement sur la cible — exercés par la recette RAG staging sur le même schéma, à confirmer au premier usage RAG réel en prod.
 
 ## E. Cutover & décommission (⚙️ responsable, runbook §5)
 
-- [ ] ⚙️🤖 **Textes RGPD sous-traitant** Vercel→Scalingo (`gouvernance.ts`, `contenus/registre.ts` versionné+hash) — **AU CUTOVER seulement** (les changer avant mentirait au patient sur l'hébergeur réel)
-- [ ] ⚙️ TTL DNS réduit → fenêtre de gel → delta-sync → `migrate status` vert sur la cible → bascule DNS `app.wellneuro.fr` → Vercel/Supabase gardés chauds (rollback)
+- [x] ⚙️🤖 **Textes RGPD sous-traitant** Vercel→Scalingo (`gouvernance.ts`, `contenus/registre.ts` versionné+hash) — **AU CUTOVER seulement** (les changer avant mentirait au patient sur l'hébergeur réel) — **fait au cutover, le 2026-08-22** : `DONNEES_CONFIDENTIALITE_V2` publiée (**#732**), v1 conservée au registre immuable.
+- [x] ⚙️ TTL DNS réduit → fenêtre de gel → delta-sync → `migrate status` vert sur la cible → bascule DNS `app.wellneuro.fr` → Vercel/Supabase gardés chauds (rollback) — **fait le 2026-08-22** : delta-sync sans objet (17 tables vivantes identiques, zéro écart), bascule DNS ~04:05 CEST, Vercel/Supabase gardés chauds jusqu'au 2026-09-01 (`D-080`). **Chronologie assumée** : le `migrate status` formel **sur conteneur prod** a été joué a posteriori le même jour (one-off-602, 11:44 CEST — 56 migrations, « Database schema is up to date! ») ; avant bascule, seuls les logs de `postdeploy` en tenaient lieu.
 - [ ] ⚙️ Après stabilité : **preuve d'effacement écrite** (registre RGPD) → merge des PR de nettoyage (`clone_env_vars.py`, `vercel.json`, scripts `supabase:*`)
 - [ ] 🤖 (Séparé) Décision pin `engines` Node 22 pour aligner sur le CI
 

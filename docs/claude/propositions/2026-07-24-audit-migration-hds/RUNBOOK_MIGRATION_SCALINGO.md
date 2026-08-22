@@ -52,9 +52,11 @@ données réelles :
   `db:deploy` à chaque merge. Les revérifications du 2026-08-05 et du 2026-08-09
   se sont faites par `apps-info`, `addons` et `ps` — **aucun des trois ne lit
   l'état des migrations**. Le seul contrôle valable est
-  `prisma migrate status` rendant « up to date », sur un conteneur `scalingo run`
-  (il exige un TTY : ni une session d'assistant ni un script non interactif ne
-  peuvent le lancer).
+  `prisma migrate status` rendant « up to date », sur un conteneur `scalingo run`.
+  En interactif il exige un TTY, mais **le mode détaché s'en passe** :
+  `scalingo run -d "npx prisma migrate status"`, sortie dans
+  `logs --filter one-off-N` — joué ainsi sur la prod le 2026-08-22
+  (one-off-602 : 56 migrations, schéma à jour).
 - **Le compteur de migrations ne s'écrit pas à la main.** Une rédaction
   antérieure portait « elles sont 49 au 2026-08-05 » : le chiffre était **exact
   à sa date** (49 répertoires au commit `0c52cc1d`) et a **périmé en quatre
