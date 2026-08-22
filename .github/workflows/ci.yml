@@ -669,6 +669,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_panels_documentes_v1_negatif.sql
 
+      # Dossier à deux voix (Alliance 6.0-A LOT-01) : une écriture valide par
+      # table doit être ACCEPTÉE ; les CHECK doivent MORDRE (praticien
+      # vide/espaces/trop long, textes porteurs vides, `sens` hors taxonomie) ;
+      # chaque table porte EXACTEMENT ses colonnes (liste blanche — l'arme de
+      # l'interdit « aucun score, seuil ou bande », DC-19/DC-20 : un motif ne verrait
+      # pas passer un `payload` ou un `niveau`) ; colonnes porteuses NOT NULL ;
+      # cinq FK vers patients en ON DELETE RESTRICT (en CASCADE, la
+      # suppression nommée d'effacement.ts deviendrait du code mort) ; RLS
+      # deny-all active et sans policy sur les cinq. Fixtures posées et
+      # transaction annulée.
+      - name: Alliance dossier à deux voix negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_dossier_deux_voix_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

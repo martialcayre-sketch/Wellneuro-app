@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 statut: "à faire"
-dépend_de: "LOT-01 (release-db faite et vérifiée)"
+dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur)"
 ---
 
 # LOT-03 — « Ce qui compte pour moi aujourd'hui »

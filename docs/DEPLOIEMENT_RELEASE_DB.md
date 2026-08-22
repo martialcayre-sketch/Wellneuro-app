@@ -22,9 +22,11 @@ import de nomenclature NABM) du **build applicatif Vercel**.
 > migration après approbation** — un ADD se protège par drapeau éteint, un
 > DROP rend le retour arrière dépendant d'une restauration de base. Le mode
 > `import-cb` est **hors service** (il visait Supabase) jusqu'à sa
-> réécriture avec la Phase C. Décision : [[D-086]]. Les sections ci-dessous
-> décrivent l'ère Vercel/Supabase et restent la référence pour le
-> raisonnement d'origine.
+> réécriture avec la Phase C. Décision : [[D-087]] — le régime transitoire
+> « gate au merge » que décrivait [[D-086]] prend fin à la pose du drapeau
+> (ses §1-2 sont supplantés, son §3 — vérification par one-off — demeure).
+> Les sections ci-dessous décrivent l'ère Vercel/Supabase et restent la
+> référence pour le raisonnement d'origine.
 
 ## Mise en service Scalingo — séquence (2026-08-22)
 
@@ -72,7 +74,7 @@ de migration fonctionnel**.
   en échec = déploiement annulé » n'existe plus sous le drapeau. Un run
   rouge laisse code neuf + schéma ancien ; la sortie est une décision du
   responsable — correctif en avant, ou rollback de slug (en connaissant le
-  premier point) — voir [[D-086]].
+  premier point) — voir [[D-087]].
 
 ## Pourquoi
 
@@ -206,7 +208,11 @@ Ces gestes se font dans l'interface, hors code :
    committée → PR relue → merge sur `main` » perdrait son ressort mécanique au
    moment même où ce chemin devient unique.
 2. **Secrets de l'environnement `release-db`** :
-   - `MIGRATE_DATABASE_URL` — URL directe Supabase (session mode, port 5432).
+   - ~~`MIGRATE_DATABASE_URL` — URL directe Supabase (session mode, port
+     5432)~~ — **supprimée depuis [[D-087]]** (2026-08-22) : le workflow ne
+     lit plus aucune URL de base (la base HDS n'est pas exposée à Internet,
+     le repointage envisagé par `D-086` §2 était matériellement impossible) ;
+     le secret vivant est `SCALINGO_API_TOKEN`, jeton d'API du one-off.
    - `WN_CB_NABM_IMPORT_CONFIRMATION` — jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`
      (doit être **identique** à la constante épinglée dans le code, sinon l'import
      refuse).

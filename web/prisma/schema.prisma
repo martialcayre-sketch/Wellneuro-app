@@ -69,6 +69,12 @@ model Patient {
   agendaSommeilNuits         AgendaSommeilNuit[]
   agendaAlimentaireJours     AgendaAlimentaireJour[]
 
+  objectifsNegocies       ObjectifNegocie[]
+  entreesCeQuiCompte      EntreeCeQuiCompte[]
+  synthesesComprehension  SyntheseComprehension[]
+  desaccordsComprehension DesaccordComprehension[]
+  ratificationsObjectif   RatificationObjectif[]
+
   @@map("patients")
 }
 
@@ -1912,4 +1918,155 @@ model PanelBiologieDocumente {
   // lecture du dossier, qui filtre sur ce seul terme. Pas de second index.
   @@unique([idPatient, panelCode], map: "cb_panel_documente_unique")
   @@map("panels_biologie_documentes")
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// LE DOSSIER À DEUX VOIX (Alliance 6.0-A, LOT-01). Cinq tables ÉVÉNEMENT,
+// append-only par convention (patron supersedes_note_id, aucune route
+// d'update — bancs aux lots 02/03/04/06) : rien ne s'écrase, un correctif est
+// une nouvelle ligne qui référence l'ancienne (dans l'esprit de DC-30 : une
+// discordance reste visible — la règle elle-même vise les discordances entre
+// sources ; ici c'est un arbitrage de campagne 6.0-A).
+// DEUX DATES partout, jamais confondues (patron RelectureNote) : la
+// date d'événement est une DONNÉE, nullable ; `cree_le` est posé par la BASE
+// (@default(now())), jamais par l'appelant — inantidatable. Pas d'@updatedAt :
+// une table événement n'a rien à remettre à jour.
+//
+// AUCUN CHAMP DE SCORE, SEUIL OU BANDE, nulle part (DC-19/DC-20 : aucun seuil
+// inventé — la liste de DC-19 nomme explicitement les objectifs ; DC-27 garde
+// la frontière score ≠ diagnostic). L'interdit est
+// opposable par la LISTE BLANCHE de colonnes du contrat
+// `prisma/checks/alli_dossier_deux_voix_v1_negatif.sql` — une colonne ajoutée
+// sans passer par le contrat fait rougir le CI.
+//
+// Références de version (`supersedes_*`, `id_synthese`, `id_objectif`) :
+// SOUPLES, sans FK (patron supersedes_note_id, schema historique ; l'unique
+// FK auto-référente du dépôt a compliqué le restore HDS). Existence et
+// appartenance au dossier se vérifient aux routes des lots suivants.
+// ───────────────────────────────────────────────────────────────────────────
+
+// L'objectif négocié : énoncé du patient, reformulation du praticien,
+// priorité clinique, « non traité pour l'instant » assumé et daté. Chaque
+// révision est une NOUVELLE ligne (supersedes_objectif_id) — la trajectoire
+// de la négociation reste lisible en entier.
+//
+// `reformulation_praticien` est une COMPRÉHENSION, jamais une conclusion :
+// aucun code diagnostique, aucune classification (DC-31, DC-32 — garde de
+// forme aux lots de code). `priorite` est un LIBELLÉ LIBRE praticien — jamais
+// un rang calculable ni un score (DC-19/DC-20) : le jour où quelqu'un veut le
+// trier, c'est la doctrine qu'il faut rouvrir, pas une colonne à typer.
+model ObjectifNegocie {
+  id                      String    @id @default(cuid()) @map("id")
+  idPatient               String    @map("id_patient")
+  praticienEmail          String    @map("praticien_email")
+  enoncePatient           String    @map("enonce_patient")
+  reformulationPraticien  String?   @map("reformulation_praticien")
+  priorite                String?   @map("priorite")
+  nonTraiteMotif          String?   @map("non_traite_motif")
+  nonTraiteDepuisLe       DateTime? @map("non_traite_depuis_le")
+  supersedesObjectifId    String?   @map("supersedes_objectif_id")
+  negocieLe               DateTime? @map("negocie_le")
+  creeLe                  DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_objectif_negocie_patient_idx")
+  @@map("objectifs_negocies")
+}
+
+// « Ce qui compte pour moi aujourd'hui » : entrée libre du patient, déposée
+// au portail, CONSERVÉE — la trajectoire de sens à côté des scores, jamais
+// résumée dans un score (DC-19/DC-20). Une entrée absente est un SILENCE, pas une
+// réponse (DC-24) — c'est l'affichage qui porte la distinction, pas une ligne
+// fabriquée.
+//
+// `saisi_le` est déclaré par le client (le moment où le patient dit
+// « aujourd'hui ») : sans fuseau, un jour civil sérialisé UTC peut basculer
+// d'un jour (précédent PanelBiologieDocumente.documenteLe) — la route du
+// LOT-03 borne cette déclaration ; la base, elle, date l'enregistrement.
+// Pas de `praticien_email` : c'est une parole de patient.
+model EntreeCeQuiCompte {
+  id        String    @id @default(cuid()) @map("id")
+  idPatient String    @map("id_patient")
+  texte     String    @map("texte")
+  saisiLe   DateTime? @map("saisi_le")
+  creeLe    DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_ce_qui_compte_patient_idx")
+  @@map("ce_qui_compte_entrees")
+}
+
+// « Ce que j'ai compris de vous » : synthèse de compréhension rédigée par le
+// praticien, versionnée. LIGNES IMMUABLES : publier un brouillon n'est PAS un
+// update — c'est une nouvelle ligne (supersedes_synthese_id) dont
+// `publiee_le` est renseignée À L'INSERT. Une ligne à `publiee_le` NULL est
+// un brouillon praticien ; aucune surface patient ne la lit (garde aux lots
+// 04/06).
+model SyntheseComprehension {
+  id                   String    @id @default(cuid()) @map("id")
+  idPatient            String    @map("id_patient")
+  praticienEmail       String    @map("praticien_email")
+  texte                String    @map("texte")
+  redigeeLe            DateTime? @map("redigee_le")
+  publieeLe            DateTime? @map("publiee_le")
+  supersedesSyntheseId String?   @map("supersedes_synthese_id")
+  creeLe               DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_synthese_comprehension_patient_idx")
+  @@map("syntheses_comprehension")
+}
+
+// « Ce n'est pas exactement ça » : désaccord structuré du patient sur UNE
+// version précise de synthèse. Un désaccord se SIGNALE, reste visible, ne
+// s'écrase et ne se moyenne jamais (dans l'esprit de DC-30, qui vise les
+// discordances entre sources — ici, arbitrage de campagne) ; il n'a pas
+// d'état « supprimé ».
+//
+// `id_synthese` : NOT NULL — un désaccord orphelin ne conteste rien — mais
+// référence SOUPLE (patron CorrespondanceMedecin.id_synthese) : la route du
+// LOT-04 vérifie existence et appartenance au POST, et l'effacement du
+// dossier emporte les deux tables dans la même transaction.
+//
+// PAS de colonne d'accusé de lecture praticien : une colonne mutable
+// contredirait l'append-only. Sa représentation (nouvelle version de
+// synthèse, journal, autre) appartient au LOT-04 — dette nommée au fichier
+// de lot.
+model DesaccordComprehension {
+  id         String    @id @default(cuid()) @map("id")
+  idPatient  String    @map("id_patient")
+  idSynthese String    @map("id_synthese")
+  texte      String?   @map("texte")
+  exprimeLe  DateTime? @map("exprime_le")
+  creeLe     DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_desaccord_patient_idx")
+  @@map("desaccords_comprehension")
+}
+
+// La ratification : le geste du patient sur UNE version précise d'objectif —
+// « ratifie » ou « conteste » (CHECK migration : taxonomie de GESTE, deux
+// valeurs, aucune sémantique clinique). Un changement d'avis est une NOUVELLE
+// ligne : une ratification ne se retire pas, elle se succède (dans l'esprit
+// de DC-30 — arbitrage de campagne).
+// Consommée au LOT-06 (écran portail) ; le gate de campagne — la ratification
+// patient précède l'activation élargie protocole→produits — se constate sur
+// cette table.
+model RatificationObjectif {
+  id         String    @id @default(cuid()) @map("id")
+  idPatient  String    @map("id_patient")
+  idObjectif String    @map("id_objectif")
+  sens       String    @map("sens") // ratifie | conteste (CHECK migration)
+  gesteLe    DateTime? @map("geste_le")
+  creeLe     DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_ratification_patient_idx")
+  @@map("ratifications_objectif")
 }

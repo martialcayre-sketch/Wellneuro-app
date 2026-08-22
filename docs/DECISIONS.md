@@ -4,13 +4,23 @@
 
 ## Décisions actives
 
-### D-086 — L'écriture du schéma de production passe par un one-off Scalingo approuvé ; le postdeploy ne migre plus
+### D-087 — L'écriture du schéma de production passe par un one-off Scalingo approuvé ; le postdeploy ne migre plus
 
 - Date : 2026-08-22
 - Statut : accepté (**décision du responsable**, rendue en session le
-  2026-08-22 : « repointer `MIGRATE_DATABASE_URL` du workflow release-db vers
-  Scalingo »)
+  2026-08-22 — « repointer `MIGRATE_DATABASE_URL` du workflow release-db vers
+  Scalingo » — puis **confirmée par arbitrage explicite le même jour**, face
+  au régime de `D-086` : « porte release-db »)
 - Domaine : hébergement HDS, gouvernance des migrations, workflow `release-db`
+- Rapport à `D-086` : les deux décisions sont nées le même jour, dans deux
+  sessions parallèles, du même incident. `D-086` reste le constat exact du
+  **régime transitoire** — le postdeploy migre au merge tant que le drapeau
+  n'est pas posé — et son §3 (vérification par one-off, jamais par le MCP
+  Supabase) demeure. **Ses §1-2 sont supplantés par la présente décision** :
+  le gate humain redevient l'approbation `release-db` dès la pose du drapeau,
+  et le « repointage » du §2 est matériellement impossible — la base HDS
+  n'étant pas exposée à Internet, aucune URL posée chez GitHub ne peut
+  l'atteindre ; le one-off en est l'implémentation réelle.
 
 - Contexte : constat fait le jour même sur la purge #746 — le secret
   `MIGRATE_DATABASE_URL` n'avait jamais été repointé au cutover (`D-080`) :
@@ -47,6 +57,39 @@ retour arrière par restauration de base) ; un redéploiement d'un slug
 antérieur au 2026-08-22 ré-active l'auto-migration ; `import-cb` est **hors
 service** jusqu'à sa réécriture avec la Phase C. Séquence de mise en service
 et régime établi : `docs/DEPLOIEMENT_RELEASE_DB.md`.
+### D-086 — Le chemin de release des migrations après le cutover : le gate humain est le merge
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrage du responsable**, rendu en session à
+  l'ouverture du LOT-01 Alliance 6.0-A)
+- Contexte : depuis le cutover Scalingo (2026-08-22 ~04:05), l'app de
+  production `wellneuro` auto-déploie `main` (lien GitHub constaté à la CLI)
+  et son hook `postdeploy` (`web/Procfile` → `web/scripts/db-deploy.sh`)
+  applique les migrations **au merge** — avant toute approbation `release-db`.
+  Le secret `MIGRATE_DATABASE_URL` de l'environnement `release-db`, inchangé
+  depuis le 2026-08-05 (métadonnées GitHub), pointait encore la base Supabase
+  gelée : un run aurait rendu vert sur une base condamnée au 2026-09-01
+  (`D-080`), et la vérification MCP — qui lit cette même base — aurait
+  confirmé ce faux vert. Boucle cohérente et entièrement fausse.
+- Décision :
+  1. **Le gate humain d'une migration est la revue (`wn-reviewer`) + le go
+     explicite du responsable AVANT merge.** L'approbation `release-db`
+     subsiste (required reviewers + wait timer, vérifié à l'API) mais **ne
+     garde plus la première écriture** — le `postdeploy` l'a déjà faite au
+     merge ; une PR de migration le dit en tête et ne se merge jamais sans
+     ce go.
+  2. Le responsable **repointe `MIGRATE_DATABASE_URL` vers la base Scalingo**
+     (geste hors dépôt, avant le 2026-09-01) ; `release-db` devient une
+     **seconde application idempotente** avec ses préflights — conservé, pas
+     démantelé.
+  3. La **vérification post-release** se fait depuis un conteneur one-off
+     Scalingo (`scalingo run -d`), plus jamais par le MCP Supabase
+     `execute_sql`, qui lit la base gelée.
+- Conséquences : `CLAUDE.md` (règle non négociable base de production),
+  `.claude/rules/db-prisma.md` et `docs/DEPLOIEMENT_RELEASE_DB.md` sont
+  alignés par la PR du LOT-01 Alliance. Les deux runs `release-db` en attente
+  du 2026-08-22 (pushes `D-044`) visent la base gelée — leur sort est un
+  geste du responsable, hors de cette décision.
 
 ### D-085 — Revue G-TRUST-04 : cinq arbitrages du responsable pour ne laisser ouverte que l'exigence 1
 
