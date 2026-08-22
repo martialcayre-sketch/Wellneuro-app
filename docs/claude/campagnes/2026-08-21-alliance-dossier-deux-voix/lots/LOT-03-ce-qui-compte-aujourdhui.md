@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
-statut: "à faire"
-dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur)"
+statut: "livré à la PR (2026-08-22) — dépôt portail sous drapeau neuf et éteint WN_CE_QUI_COMPTE, lecture praticien chronologique, cinq gardes vues rouges par mutation réelle puis vertes ; aucune migration, aucune colonne, aucune surface de correction ni de suppression"
+dépend_de: "LOT-01 (migration appliquée, constatée par conteneur le 2026-08-22 : 58 migrations up to date, contrat alli_ vert)"
 ---
 
 # LOT-03 — « Ce qui compte pour moi aujourd'hui »
@@ -64,7 +64,49 @@ LOT-01 releasé et vérifié. Indépendant de LOT-02.
 
 ## Critères de done
 
-- [ ] Dépôt patient au portail, conservé, horodaté à deux dates.
-- [ ] Lecture praticien chronologique en regard du dossier.
-- [ ] « Silence ≠ réponse » prouvé par banc ; aucun agrégat nulle part.
-- [ ] T2 vert ; fragment écrit.
+- [x] Dépôt patient au portail, conservé, horodaté à deux dates — sous le
+      drapeau **neuf et éteint `WN_CE_QUI_COMPTE`** (arbitrage du
+      responsable : la surface patient ne s'allume que par un geste séparé).
+- [x] Lecture praticien chronologique en regard du dossier (onglet
+      « Trajectoire »), ordre déterministe `creeLe desc, id desc`.
+- [x] « Silence ≠ réponse » prouvé par banc ; aucun agrégat nulle part —
+      cinq gardes **vues rouges par mutation réelle** : G1 silence ≠ réponse,
+      G2 anti-agrégat et non-consommation par un moteur clinique, G3
+      conservation, G4 portée session, G5 deux dates.
+- [x] T2 vert ; fragment `changelog.d/` écrit ; aucune colonne, aucune
+      migration.
+
+## Décisions prises à l'exécution (2026-08-22)
+
+- **`authentifierPatientPortail`, pas `authorizePortail`** : le second exige
+  une assignation et refuserait (404) un patient qui n'en a plus — précédent
+  motivé `api/portail/bilan/route.ts:36-38`.
+- **Dossier clos : le dépôt reste autorisé** (arbitrage du responsable). La
+  clôture est un état du suivi praticien, pas un ordre de silence fait au
+  patient. Commenté dans la route et asserté par banc, pour que l'absence de
+  garde se lise comme un choix et non comme un oubli.
+- **Borne de 4 000 caractères par refus, jamais par troncature.** Le dépôt
+  porte un contre-patron dans le même répertoire de routes portail
+  (`trust/signalement/route.ts:61-62` tronque du texte libre patient) : la
+  troncature silencieuse d'une parole est une altération de donnée, pas une
+  validation. Le module le dit en commentaire de tête.
+- **`saisiLe` absente reste absente** — jamais comblée par `creeLe`, ni à
+  l'écriture ni à l'affichage : ce serait fabriquer une déclaration (`DC-24`).
+- **Un interrupteur `GET` sur la route de dépôt** rend le lien du hub patient
+  gardable : le drapeau est serveur, le hub est un composant client, et le
+  seul autre idiome du dépôt s'appuie sur des données que le serveur envoie
+  déjà — ce que ce lot n'a pas. Il ne lit aucune entrée (asserté), passe la
+  même authentification que le dépôt, et rien ne s'affiche tant qu'il n'a pas
+  répondu.
+- **Le bouton de réessai porte un nom qualifié** (« Réessayer la lecture ») :
+  l'onglet « Trajectoire » en portait déjà un, et deux homonymes rendaient un
+  banc préexistant indéterminé — en plus d'être ambigus au lecteur d'écran.
+
+## Dettes nommées, sans lot d'accueil
+
+- **Aucune cadence sur les routes portail authentifiées** — le seul plafond du
+  dépôt vit sur le canal non authentifié `lien/demande`. Risque assumé, nommé
+  ici, aggravé par le fait qu'un dépôt est une écriture.
+- **Pas de relecture patient de ses propres entrées** : l'écran d'assemblage
+  est le LOT-06. Tant que le drapeau est éteint, la question ne se pose pas ;
+  elle se posera à l'allumage.

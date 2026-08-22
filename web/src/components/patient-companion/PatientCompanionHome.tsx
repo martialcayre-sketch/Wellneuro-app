@@ -35,6 +35,10 @@ export function PatientCompanionHome({ token }: { token: string }) {
   const [checkin, setCheckin] = useState<Extract<CheckinResponse, { ok: true }> | null>(null);
   const [chargement, setChargement] = useState(true);
   const [jourDifficile, setJourDifficile] = useState(false);
+  // Surface « ce qui compte » ouverte ? Décidé par la route (drapeau serveur),
+  // jamais deviné ici. Reste `false` sur toute erreur — le lien n'apparaît que
+  // sur un « oui » explicite.
+  const [ceQuiCompteOuvert, setCeQuiCompteOuvert] = useState(false);
 
   const charger = useCallback(async () => {
     setChargement(true);
@@ -55,9 +59,22 @@ export function PatientCompanionHome({ token }: { token: string }) {
     }
   }, []);
 
+  // Lecture séparée et non bloquante : un échec ne doit pas priver l'accueil
+  // de son protocole. Aucune donnée n'en revient — seulement « ouvert ou non ».
+  const sonderCeQuiCompte = useCallback(async () => {
+    try {
+      const res = await fetch('/api/portail/ce-qui-compte', { cache: 'no-store' });
+      const data = (await res.json()) as { ok?: boolean; ouvert?: boolean };
+      setCeQuiCompteOuvert(res.ok && data.ok === true && data.ouvert === true);
+    } catch {
+      setCeQuiCompteOuvert(false);
+    }
+  }, []);
+
   useEffect(() => {
     void charger();
-  }, [charger]);
+    void sonderCeQuiCompte();
+  }, [charger, sonderCeQuiCompte]);
 
   if (chargement) {
     return (
@@ -116,6 +133,17 @@ export function PatientCompanionHome({ token }: { token: string }) {
         <Link href={`/portail/${token}/informations`} className={patientButtonClassName('ghost')}>
           Ma fiche conseils
         </Link>
+        {/* « Ce qui compte pour moi aujourd'hui » (Alliance 6.0-A, LOT-03) —
+            lien ADDITIF, sous drapeau. Ce composant est client : il ne peut pas
+            lire `WN_CE_QUI_COMPTE` (variable non `NEXT_PUBLIC_*`, absente du
+            bundle navigateur), donc c'est la route qui décide — elle rend 503
+            drapeau éteint. Fail-closed : tant qu'elle n'a pas répondu, ou si
+            elle échoue, le lien reste absent. */}
+        {ceQuiCompteOuvert && (
+          <Link href={`/portail/${token}/ce-qui-compte`} className={patientButtonClassName('ghost')}>
+            Ce qui compte pour moi aujourd’hui
+          </Link>
+        )}
       </div>
 
       {/* Progression factuelle (jamais de pourcentage). */}
