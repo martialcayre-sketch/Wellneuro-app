@@ -1,6 +1,6 @@
 ---
 id: "LOT-03"
-statut: "à faire"
+statut: "terminé (2026-08-22) — huit gabarits au registre (version, hash, deux dates, écarts déclarés), sept appelants migrés au caractère près (272 tests des surfaces verts sans modification), mutation vue rouge"
 dépend_de: "LOT-01 ou LOT-02 (l'un des deux livré)"
 ---
 

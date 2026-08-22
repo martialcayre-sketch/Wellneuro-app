@@ -12,6 +12,7 @@ import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -371,17 +372,14 @@ async function sendAck(
     return;
   }
   const transport = creerTransportSmtp(smtpUrl);
+  // Texte au registre des gabarits (Socle LOT-03, DC-26).
+  const gabarit = rendreGabarit(getGabarit('accuse_reception'), { titre: titreQuestionnaire });
   try {
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: patientEmail,
-      subject: 'Vos réponses ont bien été reçues — Wellneuro',
-      text:
-        `Bonjour,\n\n` +
-        `Nous confirmons la bonne réception de vos réponses au questionnaire :\n` +
-        `« ${titreQuestionnaire} »\n\n` +
-        `Votre praticien Wellneuro en prendra connaissance prochainement.\n\n` +
-        `L'équipe Wellneuro`,
+      subject: gabarit.sujet,
+      text: gabarit.corps,
     });
     await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
   } catch (erreur) {

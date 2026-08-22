@@ -4418,3 +4418,17 @@ stopRulesLibelles, fixture C1 — consignés à trancher). Prochaine action : PR
 du lot, puis LOT-03 (registre de gabarits). Ouvert : vestige
 WN_ALLOW_RISKY_COMMAND (contredit CLAUDE.md — arbitrage responsable) ;
 travail synthèse non commité d'une session parallèle dans l'arbre.
+
+## 2026-08-22 — Socle LOT-03 : registre de gabarits — la campagne se clôt 3/3
+
+Décisions : registre au patron trust adapté (deux dates dont valideLe:null —
+aucune validation inventée ; pas de hash-chain, dit tel quel) ; huit gabarits
+déménagés au caractère près, fidélité prouvée par 272 tests de surfaces verts
+SANS modification (dont le banc strict de la relance) + volet fidélité du banc
+du registre (concaténations historiques recopiées) ; segments dateLimite/note
+partagés au registre (l'écart « note libre » y est déclaré) ; mutation vue
+rouge (hash-lock). Écarté : imposer « aucune donnée de santé » (4 écarts
+DÉCLARÉS, correction = décision praticien) ; trust/notification (praticien).
+La campagne Socle est TERMINÉE le jour de son ouverture — le gate 6.0 est
+posé. Prochaine action : PR, CI. Ouvert : valideLe des 8 gabarits (geste
+responsable), 6.0-A à ouvrir (geste responsable).

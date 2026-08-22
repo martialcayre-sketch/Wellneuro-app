@@ -7,6 +7,7 @@ import { buildBookletHTML } from '@/lib/documents/bookletHtml';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { avertissementSyntheseAnterieure } from '@/lib/scoring/passationsNonInterpretables';
@@ -262,11 +263,14 @@ export async function POST(req: Request) {
 
     const transporter = creerTransportSmtp(smtpUrl);
 
+    // Corps `text` au registre des gabarits (Socle LOT-03, DC-26) ; le corps
+    // `html` est le booklet rendu, gardé par le registre anxiogène plus haut.
+    const gabarit = rendreGabarit(getGabarit('envoi_bilan'), {});
     await transporter.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: synthese.emailPatient,
-      subject: 'Votre bilan neuronutritionnel validé — Wellneuro',
-      text: 'Bonjour,\n\nVotre praticien vous transmet votre bilan neuronutritionnel Wellneuro.\nCe document a été préparé après validation humaine et ne constitue pas un diagnostic médical.\n\nBien cordialement,\nL\'équipe Wellneuro',
+      subject: gabarit.sujet,
+      text: gabarit.corps,
       html,
     });
 
