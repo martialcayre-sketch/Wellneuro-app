@@ -4,6 +4,73 @@
 
 ## Décisions actives
 
+### D-093 — Les recommandations élargies s'ouvrent en périmètre RESTREINT et OBSERVÉ, pas d'un coup
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-08-23)
+- Domaine : gouvernance clinique — recommandations élargies se réclamant de
+  `priorityRulesV1` (chaîne C1, producteur de candidats)
+
+**Contexte, et il porte une surprise.** Le gate d'Alliance 6.0-A — « aucune
+recommandation élargie se réclamant de `priorityRulesV1` avant que la
+ratification patient existe et soit constatée » — est levé : `D-092` l'a
+constaté en production. Mais la vérification a montré que **ce gate n'a jamais
+été un drapeau**. `tablePrioritesSignee()` rend `true` depuis la signature du
+2026-08-15 (`D-061`) et sa re-signature du 2026-08-16 (`D-067`) ;
+`chaineC1.ts:364` ne produit des candidats que sous ce verrou, qui est ouvert ;
+`WN_ENABLE_ORIENTATION_NNPP2` est allumé. Le mécanisme est vivant. Le gate était
+une **retenue de gouvernance**, et « activer » signifie ici : s'autoriser à s'en
+réclamer.
+
+**Ce qui est acquis.** La dette bloquante de `D-054` — la procédure d'abstention
+hors du périmètre haché, ce que `DC-17` et `DC-26` interdisent — est **close**
+par `D-062`, et la re-signature du 2026-08-16 couvre le périmètre complet.
+
+**Ce qui ne l'est pas, et qui fonde cette décision.** Deux faits :
+
+1. **Le CLASSEMENT n'est couvert par aucune ligne signée.** Le producteur de
+   candidats, l'ordre de présentation (plainte dominante, puis priorité
+   intrinsèque, puis identifiant) et les textes `LIMITATION_*` vivent dans
+   `lib/clinical-engine/chaineC1.ts`, hors du SHA ; l'ordre d'évaluation des
+   deux motifs d'abstention est dans le même cas, « mécanique, mais non relu »
+   (bloc « À LIRE AVANT DE RE-SIGNER » de `priorityRulesV1.ts`). Or dans une
+   recommandation élargie, c'est l'ordre qui décide de ce qui est proposé en
+   premier.
+2. **Aucun patient n'a encore répondu.** Les cinq tables de l'alliance sont
+   vides. La capacité de contredire existe et est ouverte en production ; elle
+   n'est pas exercée. Le gate demandait qu'elle existe — son intention était
+   qu'elle **pèse**.
+
+**Décision — périmètre restreint et observé :**
+
+1. **Trois dossiers**, désignés nommément par le responsable, et eux seuls.
+2. **Relecture praticien de CHAQUE recommandation avant remise** — aucune
+   recommandation élargie ne part sans avoir été lue.
+3. **La sortie du périmètre exige DEUX conditions, cumulatives** : (a) au moins
+   **une réponse patient réelle** observée sur un objectif — ratification ou
+   contestation, l'une vaut l'autre ; (b) un **bilan écrit** sur le classement
+   des candidats tel qu'il s'est comporté sur ces dossiers.
+4. **Borne de six semaines** (échéance : 2026-10-04). Passé ce délai sans les
+   deux conditions, **le périmètre se referme** — il ne s'étend pas par défaut.
+   Une absence de constat n'est pas un feu vert (`DC-24`, appliqué à la
+   gouvernance).
+
+**Ce que cette décision N'AUTORISE PAS** : la généralisation à d'autres dossiers,
+l'envoi d'une recommandation élargie sans relecture, et toute modification du
+classement ou des textes `LIMITATION_*` — qui demeurent hors périmètre signé et
+relèvent d'une décision propre.
+
+**Condition nommée de la généralisation ultérieure** : faire entrer le
+classement, les textes `LIMITATION_*` et l'ordre d'évaluation des motifs
+d'abstention dans un périmètre **signé**. Tant que ce n'est pas fait, aucune
+généralisation ne peut se réclamer d'une provenance certifiée (`DC-01`,
+`DC-26`).
+
+- Conséquences : fragment
+  `changelog.d/2026-08-23-activation-restreinte-recommandations-elargies.md`.
+  Aucun code, aucun drapeau, aucune migration — le mécanisme était déjà vivant,
+  c'est son usage qui est borné.
+
 ### D-092 — Le gate d'une campagne se constate sur la STRUCTURE, pas sur une ligne de production
 
 - Date : 2026-08-22
