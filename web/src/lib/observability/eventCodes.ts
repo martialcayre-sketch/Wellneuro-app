@@ -16,6 +16,10 @@ export const EVENT_CODES = {
   // Socle LOT-01 — re-vérification au service du bilan : le contenu servi
   // emploie un registre anxiogène (journalisant, jamais bloquant).
   PORTAIL_BILAN_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.BILAN.REGISTRE_ANXIOGENE',
+  // Alliance LOT-04 — re-vérification au service de la synthèse de
+  // compréhension (journalisant, jamais bloquant : le refus confirmable vit à
+  // la PUBLICATION, côté praticien, où un humain peut trancher — `D-090`).
+  PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.COMPREHENSION.REGISTRE_ANXIOGENE',
 
   // Gate G4 — lien magique. Le rejeu est refusé ET tracé : c'est une exigence
   // du registre, pas du confort de diagnostic.
