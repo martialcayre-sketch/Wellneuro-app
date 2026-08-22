@@ -52,7 +52,11 @@
 -- aujourd'hui aucune définition suspendue, le chemin ROUGE n'est pas éprouvé
 -- en continu : il l'a été par mutation locale à l'écriture du lot, les deux
 -- assertions, les deux sens (fragment `changelog.d/` du LOT-03). Pas câblé en
--- préflight `release-db.yml` : hors périmètre du lot, décision distincte.
+-- préflight `release-db.yml` : hors périmètre du lot, décision distincte —
+-- qui devra d'abord trancher la position de `Q_ALI_09` (note de conception de
+-- `D-033` : le drapeau est documenté allumé en production quand la ligne
+-- backfillée du 2026-08-06 dit `false` ; pour les neuf autres suspendus,
+-- littéraux du catalogue, la question ne se pose pas).
 BEGIN READ ONLY;
 
 DO $$

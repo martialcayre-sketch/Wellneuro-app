@@ -4331,3 +4331,17 @@ lot_courant → LOT-02 (LOT-01 terminé, PR #725), next_action ne désigne plus
 HDS comme primaire, R6/R8 périmées corrigées. wn-coherence-etat 24/24, T1
 vert. Écarté : cadrer les campagnes 6.0 d'avance (convention init-only).
 Prochaine action : PR du refactor, puis clôture biologie (LOT-02/LOT-03).
+
+## 2026-08-22 — LOT-03 biologie : contrat packs ↔ instruments suspendus
+
+Décisions : suspension lue en base (`questionnaires.actif`, backfillée), jamais
+une liste recopiée — la réserve de D-033 se ferme par mécanisme ; deux
+assertions (legacy + miroir), chacune complète, indépendantes du contrat
+frère ; câblage `ci.yml` après seed seulement, release-db hors périmètre
+(devra trancher la position de `Q_ALI_09`, note D-033). Écarté : fichier
+négatif permanent (périmètre du lot = deux fichiers ; preuve par mutation
+jouée en session sur base éphémère, rouge sur chaque assertion, vert sain et
+non-vacu) ; édition du frère (interdite par le lot, son « réserve ouverte »
+devient périmé — dette nommée au handoff). Constat production : dix suspendus,
+aucun référencé. Prochaine action : PR du lot, CI en un appel. Ouvert :
+LOT-02 (E2E, D-049) — dernier lot de la campagne.

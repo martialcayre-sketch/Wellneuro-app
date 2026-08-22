@@ -1,6 +1,6 @@
 ---
 id: "LOT-03"
-statut: "à faire"
+statut: "terminé (2026-08-22) — contrat prouvé par mutation les deux sens (vu rouge sur chaque assertion, vu vert sain et non-vacu) ; constat production : dix suspendus en base, aucun référencé par un pack actif"
 dépend_de: "aucun"
 ---
 
