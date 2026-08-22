@@ -1,27 +1,42 @@
-# File d'attente des campagnes — hiérarchie du 2026-08-18
+# File d'attente des campagnes — hiérarchie du 2026-08-21 (axe 6.0)
 
-Arbitrée en session le 2026-08-18, à la clôture de la chaîne T0 (10/10 lots).
-Cinq dossiers initialisés en `--init-only` : le cadrage complet (CAMPAGNE.md,
-lots) s'écrit au moment d'ouvrir chaque campagne, avec un état réel frais —
-jamais d'avance. Ce fichier porte l'ordre et sa raison ; il se met à jour à
-chaque ouverture ou réarbitrage.
+Réarbitrée en session le 2026-08-21, sur l'architecture de campagnes issue de
+l'audit « Wellneuro face au notebook 00 » (audit → contre-audit adversarial →
+vision 6.0 « alliance thérapeutique » → architecture, §8 de l'artifact).
+Constat fondateur : le portefeuille était entièrement *moteur et données* ;
+l'axe alliance — la réponse au trou Éducation thérapeutique de l'audit —
+n'avait aucun véhicule. Cinq dossiers 6.0 entrent en file en `--init-only` :
+le cadrage complet (CAMPAGNE.md, lots) s'écrit au moment d'ouvrir chaque
+campagne, avec un état réel frais — jamais d'avance. Ce fichier porte l'ordre
+et sa raison ; il se met à jour à chaque ouverture ou réarbitrage.
+Hiérarchie précédente : celle du 2026-08-18 (l'historique Git la conserve).
 
 ## L'ordre, et pourquoi
 
 | Rang | Campagne | Dossier | Raison du rang |
 |---|---|---|---|
-| 1 | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | **OUVERTE le 2026-08-19** — campagne primaire active, lot courant LOT-01 (annexe HDS). `D-078` a rendu l'arbitrage par anticipation : gate levé par écart assumé, migration engagée sans attendre l'annexe ; la revue du 2026-10-21 demeure. |
-| 2 | Biologie consolidée | `2026-08-18-biologie-consolidee/` | Ferme les trois dettes nommées d'une surface VIVANTE en production (ancrage écriture seule, zéro E2E, garde-fou packs non contractualisé). Courte, sans migration. |
-| 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | Cinq véhicules déjà ordonnés par l'audit du 2026-08-11 ; V3 porte le coût de report « le plus élevé de tout l'audit ». V2 est une migration (release-db entre V2 et V3). |
-| 4 | Curation signée | `2026-08-18-curation-signee/` | **En parallèle continu, pas en séquence** : cadence praticien (claim par claim), aucune dépendance technique. NABM, liens biomarqueur↔besoin, vérification par fiche, question D-062. |
-| 5 | Nutrition référentielle (R1→R3) | `2026-08-18-nutrition-referentielle/` | Arc produit choisi par arbitrage utilisateur du 2026-08-18 (préféré à l'arc espace patient, différé sans être écarté). Premier lot = arbitrages de recouvrement avec le rayon C4. |
+| 0 | Biologie consolidée | `2026-08-18-biologie-consolidee/` | **PRIMAIRE, en clôture** — LOT-01 terminé (2026-08-20, PR #725) ; restent LOT-02 (E2E) et LOT-03 (contrat packs). On finit avant d'ouvrir. |
+| — | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | **PARALLÈLE, bloquée sur l'externe** (annexe Scalingo muette) ; échéances portées par `blocking_issues` ; revue du 2026-10-21 inchangée. Elle ne consomme pas le créneau primaire. |
+| 1 | Socle de restitution sûre | `2026-08-21-socle-restitution-sure/` | **Le gate des campagnes 6.0** : garde de vocabulaire étendue à tous les chemins patient (constat du contre-audit : un seul point de passage aujourd'hui), hook « demande » sur les tables signées, registre de gabarits de messages signés (`DC-26`). Mini-campagne, trois lots. |
+| 2 | Alliance 6.0-A — le dossier à deux voix | `2026-08-21-alliance-dossier-deux-voix/` | La réponse produit au trou ETP de l'audit. Passe devant la doctrine exécutable **sans violer son P2** : l'alliance n'étend pas le moteur, et les calibrations que V3 doit gater attendent de toute façon les données 21 j. Urgence renforcée par le contre-audit : `priorityRulesV1` signée + curation C4 en cours = la ratification patient doit précéder l'activation élargie. Absorbe l'anamnèse v2 et les EVA du P3 d'audit ; ses écrans portail sont les premières tranches du dashboard patient E4 (différé, réconcilié). |
+| 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | Inchangée dans son contenu (V1-V5 ; V2 = migration, release-db entre V2 et V3). **V3 (gates de population) bloque toute calibration** — barème alimentaire, classements LOT-04 — quelle que soit la date d'arrivée des données 21 j. |
+| 4 | Curation signée | `2026-08-18-curation-signee/` | **En parallèle continu, pas en séquence** : cadence praticien (claim par claim). NABM, liens biomarqueur↔besoin, question D-062. Chaque claim curé rapproche l'activation du chemin protocole→produits — donc renforce le rang 2. |
+| 5 | 6.0-B — Charge et capacité | `2026-08-21-charge-et-capacite/` | Budget d'effort, « simplifier mon protocole » (`ProtocolDraft` chaîné), mode « semaine compliquée », check-in v3 additif. Dépend de 6.0-A ; arbitrage A1 intangible (pilotage, jamais score). |
+| 6 | 6.0-C — Le récit du parcours | `2026-08-21-recit-du-parcours/` | Timeline racontée (projection), petites victoires (jamais causales, `DC-27`), « pourquoi maintenant ? » + double lecture (`DC-34/35`), hypothèses partagées (`DC-31/32`), messages du registre signé. Dépend du Socle et de 6.0-A. |
+| 7 | 6.0-D — Le jumeau de compréhension | `2026-08-21-jumeau-de-comprehension/` | La signature conceptuelle : représentations patient/praticien côte à côte, versionnées, écarts visibles, « prochain choix ensemble » aux jalons. Dépend de 6.0-A et 6.0-C. |
+| 8 | Nutrition référentielle (R1→R3) | `2026-08-18-nutrition-referentielle/` | Recule d'un cran par réarbitrage 6.0 : ses fiches conseils consomment le registre de messages du Socle — l'ordre naturel la place après lui. Premier lot inchangé (recouvrement rayon C4). |
+| gaté | Mémoire relationnelle consentie | *(pas de dossier — gaté conformité)* | Nouvelle finalité RGPD ⇒ information des personnes + base légale d'abord ; derrière la revue HDS du 2026-10-21. La mécanique trust (version immuable + accusé + retrait) est prête ; la table devra entrer dans l'effacement IDP2. |
+
+Critère d'acceptation transverse des lots 6.0 (principe architectural §7 de
+l'audit) : une stratégie cliniquement pertinente mais incomprise, irréalisable
+ou sans rapport avec ce qui compte pour le patient n'est pas « done ».
 
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
 - **Relancer le recueil 21 jours** du carnet alimentaire (pilote PAT006) :
   seul débloqueur des campagnes existantes `2026-08-04-agenda-alimentaire`
   (LOT-06 barème) et `2026-08-10-chaine-alimentaire` (LOT-02/03) — elles
-  reprennent, elles ne se recréent pas.
+  reprennent, elles ne se recréent pas. Indépendant de tout l'axe 6.0.
 - **Orientation NNPP2 — FAIT, plus rien à signer ni à poser** : les trois
   tables sont signées depuis les 2026-08-15/16 (`D-061`, `D-062`, `D-067`,
   frein structurel `D-065`), les deux drapeaux sont posés, et l'activation
@@ -60,11 +75,11 @@ chaque ouverture ou réarbitrage.
 
 ## Écarté à cet arbitrage — et pourquoi
 
-- **Arc espace patient (E3→E2→E4)** : différé, pas écarté — l'arc nutrition
-  lui a été préféré ; les deux convergent au dashboard E4, en mener deux de
-  front éparpillerait. IDP2 (LOT-04, jeton permanent) reste de toute façon
-  bloqué par une mesure d'usage (12/13 accès sans nouveau chemin).
+- **Arc espace patient (E3→E2→E4)** : le dashboard E4 n'est plus un arc
+  séparé — il est **absorbé** par 6.0-A/B/C, dont les écrans portail sont ses
+  tranches à valeur immédiate. IDP2 (LOT-04, jeton permanent) reste bloqué
+  par une mesure d'usage (12/13 accès sans nouveau chemin).
 - **E8 / résultats biologiques réels et D5 / messagerie** : derrière le gate
-  HDS — la campagne de rang 1 est leur préalable, pas leur début.
+  HDS — l'annexe signée est leur préalable, pas leur début.
 - **Programme corpus (gates G0-G4, pilote sommeil)** : G6 jamais ouvert ;
   aucune campagne tant que l'extraction du stock n'est pas faite.

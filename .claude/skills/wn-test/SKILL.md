@@ -55,7 +55,11 @@ Ne jamais faire entrer une sortie complète : rediriger, lire la queue, puis
 
 Rendre la **commande** et sa **sortie**, pas leur résumé : « vert » n'est pas
 une observation tant que le code de retour n'a pas été lu. Ne jamais annoncer
-un succès qui n'a pas été observé dans cette session.
+un succès qui n'a pas été observé dans cette session. Une sortie verte est
+périmée par l'édition qui la suit : la preuve citée doit être postérieure à
+la dernière modification, pas seulement « dans la session ». Le rapport d'un
+sous-agent n'est pas une preuve : avant de compter son travail comme fait,
+vérifier le diff réel.
 
 Un contrôle qui ne peut pas s'exécuter — outil absent, base indisponible,
 palier hors de portée de la machine — est un contrôle **non exécuté**, jamais

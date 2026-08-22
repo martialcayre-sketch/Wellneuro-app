@@ -91,9 +91,13 @@ Pour chaque `.claude/agents/*.md`, `.claude/skills/wn*/SKILL.md` **et**
 - **une seule convention de nommage d'outils par famille** — deux syntaxes
   coexistantes dans un même dossier signifient qu'au moins une est ignorée
   silencieusement ;
-- **`model` et `effort` explicites** côté Claude, cohérents avec `/wn-model` ; <!-- mention-seule: wn-model -->
+- **`model` et `effort` explicites** côté Claude, cohérents avec la grille de
+  `CLAUDE.md` § Modèle ;
 - **la `description` dit *quand* déléguer**, pas ce que l'agent sait faire :
   c'est elle, et elle seule, qui décide de l'appel ;
+- **une description de skill énonce ses conditions de déclenchement — et de
+  non-déclenchement — jamais le résumé de son contenu** : un résumé devient
+  le raccourci pris à la place du corps ;
 - **pas de doublon fonctionnel** — deux définitions qui se recouvrent produisent
   un routage arbitraire. Le repérer, nommer celle qui garde le périmètre.
 

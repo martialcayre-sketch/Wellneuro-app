@@ -13,11 +13,14 @@ effort: medium
 Sujet : `$ARGUMENTS`
 
 Le bloc de phase ci-dessus remplace `git status` et `git diff --stat`, qu'il
-subsume. **Il commande.** S'il rend `apres-merge` avec « fenêtre de clôture
-ratée », la branche a été squashée : plus rien de ce qu'on y écrit ne remonte
-vers `main`. Écrire alors depuis `main`, en PR de doc séparée — et surtout pas
-en rebranchant sur la branche squashée, qui ferait ré-embarquer le lot précédent
-à la PR suivante.
+subsume. **Il commande.** Son verdict PR est le garde de la fenêtre de
+clôture : c'est lui qui distingue une branche vivante d'une branche squashée —
+raison pour laquelle ce skill n'utilise pas `--local`.
+Si le verdict donne `apres-merge` avec « fenêtre de
+clôture ratée », la branche a été squashée : plus rien de ce qu'on y écrit ne
+remonte vers `main`. Écrire alors depuis `main`, en PR de doc séparée — et
+surtout pas en rebranchant sur la branche squashée, qui ferait ré-embarquer le
+lot précédent à la PR suivante.
 
 1. Vérifier que le périmètre est respecté.
 2. Résumer les validations réellement exécutées.

@@ -120,7 +120,7 @@ export function extraireDecisionsRecentes(texte, limite = 5) {
  * @param {{numero: number}|null} faits.prOuverte
  * @param {{numero: number, fichiers: string[]|null}|null} faits.prMergee
  * @param {boolean} faits.ghDisponible
- * @param {{fetchOk: boolean, ahead: number|null, behind: number|null}|null} [faits.sync]
+ * @param {{fetchOk: boolean|null, ahead: number|null, behind: number|null}|null} [faits.sync]
  * @returns {{phase: string, cloture: {sessionLog: boolean, handoff: boolean},
  *           fenetreRatee: boolean, suivant: string[], sortie: number,
  *           sync: object|null, avertissements: string[]}}
@@ -306,11 +306,14 @@ function brancheParDefaut() {
   return ref ? ref.replace('refs/remotes/origin/', '') : 'main';
 }
 
-function baseDeComparaison(defaut) {
-  for (const ref of [`origin/${defaut}`, defaut]) {
-    if (git(['rev-parse', '--verify', '--quiet', ref])) return ref;
-  }
-  return null;
+/**
+ * `originVerifie` vient de `synchroniserOrigin`, qui a déjà fait le
+ * `rev-parse --verify origin/<defaut>` : on réutilise ce résultat au lieu de
+ * refaire le même appel git deux lignes plus loin dans la collecte.
+ */
+function baseDeComparaison(defaut, originVerifie) {
+  if (originVerifie) return `origin/${defaut}`;
+  return git(['rev-parse', '--verify', '--quiet', defaut]) ? defaut : null;
 }
 
 /**
@@ -347,9 +350,17 @@ function fetchRecent(defaut) {
   }
 }
 
-function synchroniserOrigin(defaut) {
-  let fetchOk = false;
-  if (fetchRecent(defaut)) {
+// Exportée pour le banc : le contrat « --local ⇒ fetchOk = null, jamais un
+// faux “origin rafraîchi” » ne se lit nulle part ailleurs qu'ici.
+export function synchroniserOrigin(defaut, { local = false } = {}) {
+  let fetchOk;
+  if (local) {
+    // Mode --local : le fetch n'est pas TENTÉ — même si FETCH_HEAD est frais,
+    // ce serait le fetch d'un AUTRE run, et « origin rafraîchi » affirmerait un
+    // geste que celui-ci n'a pas fait. `null` (non tenté), pas `false` (tenté
+    // et échoué) — l'avertissement « hors-ligne ? » serait un mensonge.
+    fetchOk = null;
+  } else if (fetchRecent(defaut)) {
     fetchOk = true;
   } else {
     try {
@@ -365,12 +376,13 @@ function synchroniserOrigin(defaut) {
     }
   }
 
+  // Vérifié UNE fois ici (après l'éventuel fetch, qui peut créer la ref), puis
+  // transmis à `baseDeComparaison` — qui refaisait exactement le même appel.
+  const originVerifie = Boolean(git(['rev-parse', '--verify', '--quiet', `origin/${defaut}`]));
+
   let ahead = null;
   let behind = null;
-  if (
-    git(['rev-parse', '--verify', '--quiet', defaut]) &&
-    git(['rev-parse', '--verify', '--quiet', `origin/${defaut}`])
-  ) {
+  if (originVerifie && git(['rev-parse', '--verify', '--quiet', defaut])) {
     const brut = git(['rev-list', '--left-right', '--count', `${defaut}...origin/${defaut}`]);
     if (brut) {
       const [a, b] = brut.split(/\s+/).map(Number);
@@ -381,7 +393,7 @@ function synchroniserOrigin(defaut) {
     }
   }
 
-  return { fetchOk, ahead, behind };
+  return { sync: { fetchOk, ahead, behind }, originVerifie };
 }
 
 /**
@@ -426,15 +438,15 @@ export function cheminsDuPorcelain(porcelain) {
     .map((chemin) => chemin.replace(/^"|"$/g, ''));
 }
 
-function collecterFaits() {
+function collecterFaits(options = {}) {
+  const local = options.local === true;
   if (!git(['rev-parse', '--git-dir'])) return { dansUnDepot: false };
 
   const defaut = brancheParDefaut();
-  const sync = synchroniserOrigin(defaut);
+  const { sync, originVerifie } = synchroniserOrigin(defaut, { local });
   const branche = git(['rev-parse', '--abbrev-ref', 'HEAD']);
   const tip = git(['rev-parse', 'HEAD']);
-  const tipCourt = git(['rev-parse', '--short', 'HEAD']);
-  const base = baseDeComparaison(defaut);
+  const base = baseDeComparaison(defaut, originVerifie);
 
   const diff = base && branche !== defaut ? git(['diff', '--name-only', `${base}...HEAD`]) : '';
   const committes = diff ? diff.split('\n').filter(Boolean) : [];
@@ -449,10 +461,12 @@ function collecterFaits() {
   // La disponibilité de `gh` se déduit du premier appel réel — plus de sonde
   // `gh --version`. Un retour non-liste (binaire absent, non authentifié,
   // sortie illisible) est « gh indisponible », jamais un faux « aucune PR ».
+  // En mode --local, aucun appel gh : l'état PR est NON VÉRIFIÉ (le rendu le
+  // dit tel quel), ce qui n'est ni « aucune PR » ni « gh indisponible ».
   let ghDisponible = true;
   let prOuverte = null;
   let prMergee = null;
-  if (branche && branche !== defaut) {
+  if (!local && branche && branche !== defaut) {
     const ouvertes = jsonOuNull(gh(['pr', 'list', '--state', 'open', '--head', branche, '--json', 'number']));
     if (!Array.isArray(ouvertes)) {
       ghDisponible = false;
@@ -473,6 +487,7 @@ function collecterFaits() {
     prOuverte,
     prMergee,
     ghDisponible,
+    modeLocal: local,
     sync,
   };
 }
@@ -546,7 +561,9 @@ export function reparer(racine = RACINE, options = {}) {
 
 // ── Rendu ───────────────────────────────────────────────────────────────────
 
-function rendre(faits, verdict) {
+// Exportée pour le banc : c'est ici, pas dans `diagnostiquer`, que le mode
+// --local doit rendre la PR « non vérifiée » plutôt qu'un faux « aucune ».
+export function rendre(faits, verdict) {
   const out = [];
   const etatBranche = {
     'hors-lot': 'branche par défaut',
@@ -559,18 +576,30 @@ function rendre(faits, verdict) {
   out.push(`PHASE    ${verdict.phase}${verdict.fenetreRatee ? '  ⚠ fenêtre de clôture ratée' : ''}`);
   out.push(`branche  ${faits.branche || '(inconnue)'}${etatBranche ? ` (${etatBranche})` : ''}`);
 
-  const pr = faits.prOuverte
-    ? `#${faits.prOuverte.numero} ouverte`
-    : faits.prMergee
-      ? `#${faits.prMergee.numero} mergée`
-      : faits.ghDisponible
-        ? 'aucune'
-        : 'inconnue (gh indisponible — verdict partiel)';
+  // En mode --local, l'état PR n'a pas été interrogé : dire « aucune » serait
+  // un faux constat — pr-ouverte, apres-merge et la fenêtre de clôture ratée
+  // ne se jugent que sans --local. Sur la branche par défaut, gh n'est jamais
+  // interrogé de toute façon : le rendu normal reste juste.
+  const pr =
+    faits.modeLocal && faits.branche !== faits.brancheParDefaut
+      ? 'non vérifiée (mode local) — relancer sans --local pour le verdict PR'
+      : faits.prOuverte
+        ? `#${faits.prOuverte.numero} ouverte`
+        : faits.prMergee
+          ? `#${faits.prMergee.numero} mergée`
+          : faits.ghDisponible
+            ? 'aucune'
+            : 'inconnue (gh indisponible — verdict partiel)';
   out.push(`PR       ${pr}`);
 
   if (verdict.sync) {
     const s = verdict.sync;
-    const fraicheur = s.fetchOk ? 'origin rafraîchi' : 'origin NON rafraîchi (fetch échoué)';
+    const fraicheur =
+      s.fetchOk === true
+        ? 'origin rafraîchi'
+        : s.fetchOk === null
+          ? 'origin non rafraîchi (mode local — fetch non tenté)'
+          : 'origin NON rafraîchi (fetch échoué)';
     const ecart =
       s.ahead === null || s.behind === null
         ? 'écart local/distant non mesurable'
@@ -604,8 +633,40 @@ function rendre(faits, verdict) {
 }
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Analyse des arguments CLI. Fonction pure, exportée pour le banc : `--local`
+ * décide de sauter le réseau et gh, une erreur de parsing rendrait donc un
+ * verdict incomplet en silence.
+ */
+export function analyserArguments(argv) {
+  return {
+    local: argv.includes('--local'),
+    appliquer: argv.includes('--appliquer'),
+    aide: argv.includes('--help') || argv.includes('--aide') || argv.includes('-h'),
+  };
+}
+
+const AIDE = `Usage : node scripts/wn-cycle.mjs [--local] [--appliquer]
+
+  --local      Aucun réseau : saute le git fetch et tout appel gh. Les phases
+               purement locales (hors-lot, travail, pret-pr) et les faits de
+               clôture rendent leur verdict normal ; l'état PR n'est PAS
+               vérifié — la ligne PR le dit tel quel, relancer sans --local
+               pour le verdict PR (pr-ouverte, apres-merge, fenêtre ratée).
+  --appliquer  Resynchronise .wn/state.json et ACTIVE_CAMPAIGN.md après le
+               constat (voir reparer()).
+  --help       Affiche cette aide.`;
+
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  const faits = collecterFaits();
+  const options = analyserArguments(process.argv.slice(2));
+
+  if (options.aide) {
+    process.stdout.write(`${AIDE}\n`);
+    process.exit(SORTIE_OK);
+  }
+
+  const faits = collecterFaits(options);
   const verdict = diagnostiquer(faits);
 
   if (verdict.phase === 'hors-depot') {
@@ -615,7 +676,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
 
   process.stdout.write(`${rendre(faits, verdict)}\n`);
 
-  if (process.argv.includes('--appliquer')) {
+  if (options.appliquer) {
     console.error('');
     for (const ligne of reparer(RACINE)) console.error(ligne);
     console.error(

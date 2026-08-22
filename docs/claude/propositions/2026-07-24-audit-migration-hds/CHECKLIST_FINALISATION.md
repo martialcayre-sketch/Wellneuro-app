@@ -22,12 +22,12 @@ réelles ».
 
 ## A. Config & validation staging (débloque tout le reste)
 
-- [ ] ⚙️ Recopier les **flags produit** prod → staging : `WN_C5_ENABLED`, `WN_G4_LIEN_MAGIQUE`, `WN_G4_REDEMANDE_PATIENT`, `WN_PORTAIL_TOKEN_TTL_JOURS` — sinon le staging n'exerce pas le périmètre fonctionnel de la prod
+- [x] ⚙️ Recopier les **flags produit** prod → staging : `WN_C5_ENABLED`, `WN_G4_LIEN_MAGIQUE`, `WN_G4_REDEMANDE_PATIENT` — fait le 2026-08-21. `WN_PORTAIL_TOKEN_TTL_JOURS` n'existe plus dans le code (jeton portail retiré par #397) ; référence laissée pour mémoire, rien à poser.
 - [ ] ⚙️ Réconcilier **`DATABASE_URL`** posée sur staging (doublon de l'add-on à confirmer, sinon retirer) — elle a **priorité** sur `SCALINGO_POSTGRESQL_URL` (`resolveDatabaseUrl()`) et peut masquer la vraie voie de connexion Scalingo
 - [ ] ⚙️ (Optionnel staging) `WN_RELEASE_SHA` au déploiement ; aligner `CLAUDE_MODEL` / `WN_CLAIMS_CLAUDE_MODEL` sur le modèle épinglé prod ; `SENTRY_TRACES_SAMPLE_RATE`
-- [ ] 🖥️ **Login praticien réel** via OAuth Google (URI de callback staging enregistrée côté Google)
-- [ ] 🖥️ Générer une **synthèse IA** en observant le **SSE sous le routeur 30 s** (premier octet < 30 s, génération 15–40 s qui aboutit)
-- [ ] 🖥️ Parcours Fil / fiche patient / RAG santé (`/api/internal/rag/health`) sur données fictives
+- [x] 🖥️ **Login praticien réel** via OAuth Google (URI de callback staging enregistrée côté Google) — fait le 2026-08-21, après correction de `GOOGLE_CLIENT_ID` et redémarrage explicite des conteneurs. Détail : `RAPPORT_RECETTE_STAGING.md`
+- [x] 🖥️ Générer une **synthèse IA** en observant le **SSE sous le routeur 30 s** (premier octet < 30 s, génération 15–40 s qui aboutit) — premier octet tenu (77–344 ms sur 3 essais), durée totale hors fenêtre (50,6–54,4 s) mais **jugée acceptable par le responsable le 2026-08-22**. Détail : `RAPPORT_RECETTE_STAGING.md`
+- [x] 🖥️ Parcours Fil / fiche patient / RAG santé (`/api/internal/rag/health`) sur données fictives — fait le 2026-08-21. Détail : `RAPPORT_RECETTE_STAGING.md`
 
 > Rappel piège : `scalingo env-set` réaffiche la valeur posée dans son stdout —
 > **rediriger la sortie** (`> /dev/null 2>&1`) pour toute valeur sensible.

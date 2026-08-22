@@ -14,6 +14,29 @@ paths:
   - "web/src/lib/plaintes.ts"
   - "web/src/lib/*.guard.test.ts"
   - "prompts/**"
+  # Surfaces qui ASSEMBLENT ou RESTITUENT du savoir clinique (scores,
+  # orientations, vigilances, discordances, équilibre, biologie, claims).
+  # Critère d'inclusion : la surface produit une sortie clinique — les
+  # routes purement administratives (assignations, packs, jetons, fichiers)
+  # restent hors périmètre pour que la règle demeure réellement scopée.
+  - "web/src/app/api/praticien/synthese/**"
+  - "web/src/app/api/praticien/booklet/**"
+  - "web/src/app/api/praticien/cockpit/**"
+  - "web/src/app/api/praticien/orientation/**"
+  - "web/src/app/api/praticien/equilibre/**"
+  - "web/src/app/api/praticien/besoins/**"
+  - "web/src/app/api/praticien/trajectoire/**"
+  - "web/src/app/api/praticien/reponses/**"
+  - "web/src/app/api/praticien/inbox-questionnaires/**"
+  - "web/src/app/api/praticien/protocoles/**"
+  - "web/src/app/api/praticien/correspondance-medecin/**"
+  - "web/src/app/api/praticien/biologie/**"
+  - "web/src/app/api/praticien/copilote/**"
+  - "web/src/app/api/praticien/corpus/**"
+  - "web/src/app/api/patient/equilibre/**"
+  - "web/src/app/api/patient/submit/**"
+  - "web/src/app/api/portail/**"
+  - "web/src/app/api/internal/rag/**"
 ---
 
 # Logique clinique et scoring
@@ -23,6 +46,42 @@ paths:
 > (`docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md`). La lire avant de poser
 > un seuil, une catégorie de claim, une vigilance ou une pondération. Les
 > règles ci-dessous en sont l'extrait opposable **aujourd'hui**.
+
+## Invariants de la constitution clinique
+
+Valables pour tout ce qui produit, transforme ou restitue du savoir clinique —
+moteurs, prompts, tables de règles, scoring. **Opposables en revue**
+(`D-043`) ; aucun n'est encore gardé par un banc, et la constitution nomme
+cette dette règle par règle.
+
+- **Aucune règle clinique sans provenance certifiée** — un LLM applique,
+  combine, hiérarchise ou explique ; il n'invente jamais (`DC-01`, `DC-02`).
+- **Aucun seuil, dose, poids ou borne clinique inventé** ; un chiffre purement
+  technique doit être identifié comme tel (`DC-19`, `DC-20`).
+- **Association ≠ causalité ; score ≠ diagnostic** (`DC-27`).
+- **Une donnée absente n'est jamais zéro ni normale** (`DC-24`).
+- **Un questionnaire isolé ne suffit pas à conclure** (`DC-28`).
+- **Une discordance se signale, jamais ne se moyenne ni ne se supprime**
+  (`DC-30`).
+- **Un signal de sécurité prime sur tout score** et n'ajoute pas de points
+  (`DC-12`, `DC-23`).
+- **Diagnostic, hypothèse et orientation sont trois objets distincts** ; le
+  diagnostic reste hors périmètre (`DC-31`, `DC-32`).
+- **Respecter la population et les limites d'un claim** ; l'absence de
+  population déclarée est une restriction (`DC-14`).
+- **Les règles cliniques vivent dans le registre, jamais seulement dans le
+  code** (`DC-26`).
+- **Toute sortie clinique importante est explicable par données + claims**, y
+  compris quand elle s'abstient (`DC-34`, `DC-35`).
+- **Données insuffisantes ⇒ réduire la conclusion, jamais l'inventer**
+  (`DC-25`).
+- Conflit non résolu entre sources ⇒ escalade praticien (`DC-54`, `DC-55`) —
+  *proposition, pas encore opposable* : `D-041` la réserve jusqu'au banc.
+- **Toute modification clinique exige une décision explicite `D-xxx` et un
+  fragment `changelog.d/`** — y compris une seule ligne de TypeScript dans une
+  table signée, des poids ou un cut-off (`DC-17`, `DC-18`).
+
+## Règles de travail sur ces fichiers
 
 - Ne jamais changer une question, une cotation, un seuil ou une interprétation
   sans demande explicite ; documenter toute modification clinique dans un
@@ -35,7 +94,8 @@ paths:
   vigilances déterministes ne doivent pas pouvoir être supprimées par une
   sortie LLM.
 - Conserver les niveaux de preuve et l'audit trail ; ne pas extrapoler depuis
-  une source ou un questionnaire isolé.
+  une source ou un questionnaire isolé — toute modification s'appuie sur une
+  source, pas sur une déduction.
 - **Une absence de réponse rend non scoré, jamais `0`** : un zéro implicite
   déplace le score sans que rien ne le signale.
 - Gouvernance : respecter `docs/gouvernance-questionnaires-scoring.md` et
@@ -44,3 +104,10 @@ paths:
   `scripts/check_questionnaire_certification.js` ; un score Drive certifié ou
   ambigu expose la métadonnée `certification` dans `scoresJson`.
 - Tests : uniquement les patients fictifs autorisés (voir CLAUDE.md).
+
+## En revue d'un diff questionnaire ou scoring
+
+Vérifier chacun des points ci-dessus **contre le dépôt** — fragment
+`changelog.d/` posé, mapping Drive à jour, fixture de certification présente,
+métadonnée `certification` exposée, absence de réponse non scorée — jamais les
+déduire du diff seul.

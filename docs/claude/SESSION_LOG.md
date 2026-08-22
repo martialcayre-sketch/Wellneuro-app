@@ -4292,3 +4292,72 @@ provisionner un épisode confirmé (justification fausse, retirée à la revue).
 
 Prochaine action : PR. Ouvert : **le spec n'a jamais tourné** — deux runs Mac
 sont dus ; `tsc` ne dit rien d'un sélecteur qui ne matche rien.
+## [2026-08-21] — Refonte de l'environnement Claude Code
+
+Audit baseline (6 agents) puis application en 4 lots. `CLAUDE.md` 271 → 186
+lignes ; routage réduit à une règle (145 → 79 l) ; supprimés : `wn-plan`,
+`wn-review` (contrôles cliniques migrés dans `clinique-scoring.md`),
+`wn-context`, agent `wn-explorer` — le natif (Plan, `/code-review`, `Explore`)
+les recouvre. `wn-cycle --local` + cadence adaptative `wn-attendre-ci` :
+cycle PR ~18 → ~12 gh. Récits CI (129 l) → ADR. Garde-fous vérifiés motif par
+motif, zéro modification des hooks ; `log-bash-command` était déjà async ;
+« think hard » : 0 occurrence (rien à purger). Écarté : supprimer
+`REGLES_CRITIQUES.md` (corrigé §4 seulement) ; toucher aux miroirs
+`.github/instructions/` (Copilot). Ouvert : contradiction « une session = un
+worktree » vs incompatibilité de la suite wn ; durées T1/T2/T3 canoniques dans
+`/wn-test`. Prochaine action : PR, CI, revue Copilot.
+
+## [2026-08-21] — Rationalisation du parc skills/agents (seconde vague, PR #727)
+
+Classification sur preuve d'usage (SESSION_LOG + handoffs) : noyau démontré =
+10 skills + 2 agents. Fusionnés (zéro usage) : `wn-campaign-run` → `wn-lot
+next`, `wn-model` + `wn-ultra` → `wn-route`. Agents retirés : `wn-debugger`,
+`wn-doc-auditor`, `wn-hygiene-operator` ; vendoré retiré : `theme-factory`.
+Externes : 5 lignes adoptées de superpowers (disjoncteur « bug résistant »,
+fraîcheur de preuve, description-déclencheur) ; awesome-copilot, revue
+adversariale et intégration Codex REJETÉS — le natif ou le geste manuel les
+couvre ; contre-audit Codex consacré d'une ligne dans `CLAUDE.md`. Matrice
+T1-T8 figée (`MATRICE_ROUTAGE.md`), T4 fermé (1 signal fort → Opus).
+Écarté : trims lourds de `wn-reprompt`/`wn-conventions` (risque > gain).
+Prochaine action : CI, revue, merge Copilot, puis fenêtre d'observation.
+
+## [2026-08-21] — Politique de revue Claude/Codex (PR #727, troisième vague)
+
+`docs/claude/POLITIQUE_REVUE.md` (100 l) : P0/P1/P2, budgets (P2 = une seule
+revue ; P0 = wn-reviewer + une passe Codex obligatoire), neuf signaux pour
+une seconde passe Codex — jamais automatique, toujours ciblée (« seconde
+passe = ciblée, jamais un redémarrage ») ; divergence tranchée par la preuve.
+Codex reste un geste manuel : la politique définit ce que Claude prépare et
+quand il le demande. Inventaire préalable : six contradictions documentaires,
+trois refermées (nuance transitoire Copilot dans CLAUDE.md, niveau
+/code-review toujours nommé, périmètre auth aligné dans REGLES_PR_MERGE).
+Écarté : refondre les trois autres chevauchements (dédoublonnage wn-lot/
+wn-merge/auth-securite — coût > gain, la déduplication est explicite).
+Prochaine action : CI, revue, merge Copilot.
+
+## [2026-08-21] — Refactor du portefeuille de campagnes vers 6.0
+
+La file d'attente passe à la hiérarchie du 2026-08-21 : l'axe alliance
+(réponse au trou ETP de l'audit) n'avait aucun véhicule — cinq dossiers 6.0
+entrent en init-only (Socle de restitution sûre rang 1, dossier à deux voix
+rang 2, charge/récit/jumeau rangs 5-7), doctrine exécutable garde V3 comme
+gate de toute calibration, nutrition recule au rang 8, mémoire relationnelle
+gatée conformité. E4 absorbé par 6.0-A/B/C. Resynchronisations : Biologie
+lot_courant → LOT-02 (LOT-01 terminé, PR #725), next_action ne désigne plus
+HDS comme primaire, R6/R8 périmées corrigées. wn-coherence-etat 24/24, T1
+vert. Écarté : cadrer les campagnes 6.0 d'avance (convention init-only).
+Prochaine action : PR du refactor, puis clôture biologie (LOT-02/LOT-03).
+
+## 2026-08-22 — LOT-03 biologie : contrat packs ↔ instruments suspendus
+
+Décisions : suspension lue en base (`questionnaires.actif`, backfillée), jamais
+une liste recopiée — la réserve de D-033 se ferme par mécanisme ; deux
+assertions (legacy + miroir), chacune complète, indépendantes du contrat
+frère ; câblage `ci.yml` après seed seulement, release-db hors périmètre
+(devra trancher la position de `Q_ALI_09`, note D-033). Écarté : fichier
+négatif permanent (périmètre du lot = deux fichiers ; preuve par mutation
+jouée en session sur base éphémère, rouge sur chaque assertion, vert sain et
+non-vacu) ; édition du frère (interdite par le lot, son « réserve ouverte »
+devient périmé — dette nommée au handoff). Constat production : dix suspendus,
+aucun référencé. Prochaine action : PR du lot, CI en un appel. Ouvert :
+LOT-02 (E2E, D-049) — dernier lot de la campagne.

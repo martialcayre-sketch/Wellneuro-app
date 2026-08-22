@@ -3,7 +3,7 @@ description: Transforme une demande brute en demande exécutable — objectif, r
 argument-hint: "<demande brute>"
 # EXCEPTION DÉLIBÉRÉE — ne pas rétablir `disable-model-invocation: true` ici.
 # Seule exemption de la famille `wn` (wn-route est redevenu manuel le 2026-08-07).
-# Plusieurs skills — `wn`, `wn-plan`, `wn-lot`, `wn-campaign`, `wn-debug` —
+# Plusieurs skills — `wn`, `wn-lot`, `wn-campaign`, `wn-debug` —
 # demandent de passer par ce skill avant de router, cadrer ou ouvrir une campagne.
 # Le drapeau rendait ces consignes inapplicables : un skill qu'il porte n'est
 # pas exposé à l'outil `Skill`, donc l'invocation demandée ne peut pas avoir lieu
@@ -85,7 +85,7 @@ Trois règles structurelles, pas des recommandations :
   reformulation qui grossit la demande est une réécriture, et elle se refuse.
 - Ne rien décider de clinique, ne rien autoriser — migration, écriture Supabase,
   déploiement, auth restent sous les gardes de `CLAUDE.md`.
-- Ne pas remplacer le mode Plan ni `/wn-plan` : ce skill rend une **demande**, pas un <!-- mention-seule: wn-plan -->
+- Ne pas remplacer le mode Plan natif : ce skill rend une **demande**, pas un
   plan technique.
 - Ne remonter aucun extrait de fichier. Nommer `chemin:ligne` et s'arrêter là.
 
@@ -104,5 +104,5 @@ Sinon, ces six points, dans cet ordre, ~180 mots au total :
 5. **Questions bloquantes** — zéro à deux, et **seulement** celles dont toute
    hypothèse rendrait le travail inutile ou dangereux. Une question qu'un défaut
    tranche n'est pas bloquante : elle appartient au point 4.
-6. **Route** — le skill suivant (`/wn-plan`, `/wn-lot`, `/wn-campaign`, `/wn-debug`…), <!-- mention-seule: wn-plan, wn-lot, wn-campaign, wn-debug -->
-   et le passage en mode Plan s'il est envisagé des éditions.
+6. **Route** — le skill suivant (`/wn-lot`, `/wn-campaign`, `/wn-debug`…), <!-- mention-seule: wn-lot, wn-campaign, wn-debug -->
+   et le passage en mode Plan natif s'il est envisagé des éditions.

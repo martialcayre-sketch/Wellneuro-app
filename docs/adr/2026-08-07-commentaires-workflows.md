@@ -67,3 +67,173 @@ importé (append-only, idempotent) et re-semé par dump côté Scalingo
 crée aucun run — et une migration introduite autrement que par un fichier de ce
 dossier n'est pas vue : il n'y a pas d'autre chemin légitime, c'est la doctrine
 « registre canonique ».
+
+## 2026-08-21 — seconde vague de déplacement
+
+Les blocs historiques restants des deux workflows sont déplacés ici : sur
+place ne restent que les invariants courts, le récit complet vit dans cette page.
+
+### ci.yml — concurrency : pourquoi `github.run_id` sur `main` (2026-08-21)
+
+Un run de PR supplanté par une poussée plus récente n'a pas à finir : seul le
+commit de tête compte, et `wn-attendre-ci.mjs` sait lire un run `CANCELLED`
+sans le prendre pour un échec. Sur `main`, le groupe porte `github.run_id` :
+chaque run y est donc SEUL dans son groupe, et aucun n'annule aucun autre.
+`cancel-in-progress: false` ne suffirait PAS à l'obtenir — à groupe partagé,
+GitHub sérialise les runs de `main` et annule le run *pending* intermédiaire
+dès qu'un troisième arrive. Trois merges dans une fenêtre de ~15 min sont
+ordinaires ici ; le commit du milieu perdrait sa vérification, en silence et
+sans que personne la regarde (`wn-attendre-ci.mjs` travaille sur des PR). Or
+`strict` est délibérément désactivé sur la protection de `main` : le run `push`
+est la SEULE vérification du résultat fusionné.
+
+NE PAS copier `release-db.yml` par analogie : son `cancel-in-progress: false` à
+groupe FIXE sérialise des ÉCRITURES sur la base de production — la seconde
+release attend la première. Dans `ci.yml`, le groupe par ref DÉDOUBLONNE des
+vérifications en lecture — la seconde tue la première. Raisons opposées.
+
+### ci.yml — C4 provenance du référentiel d'ingrédients (2026-08-21)
+
+Le drift check Prisma ne voit ni les CHECK, ni la RLS, ni les index partiels :
+Prisma ne les introspecte pas. Le contrat STRUCTUREL les vérifie, et fait
+échouer le CI si une colonne du catalogue biologie prend une sémantique
+patient — le verrou HDS cesse d'être un commentaire pour devenir un test.
+C'est le MÊME fichier (bloc DO nu) que l'import CB-02a rejoue DANS sa
+transaction avant COMMIT (`prisma/importNabm.ts`) : une violation structurelle
+annule alors l'import au lieu d'être constatée après coup.
+
+C4 — provenance du référentiel d'ingrédients. Le fichier existe depuis #493 et
+son changelog affirmait « câblé au CI » : il ne l'était pas, et n'a donc JAMAIS
+tourné, ni en CI ni dans `wn-test-worktree.sh` (qui dérive sa liste de ce
+fichier). Ce qu'il vérifie : la nullabilité APPARIÉE de
+(source_provenance, source_identifiant) — sans elle, une demi-clé échappe à la
+fois à l'index unique et au findFirst de l'ingestion, et le même identifiant
+officiel s'insère indéfiniment ; le vocabulaire clos des provenances ; la RLS ;
+et surtout que l'index côté FORME n'est PAS unique — assertion inversée,
+délibérée : le rendre unique refuserait la seconde attache d'une forme
+multi-substances en ayant l'air d'un durcissement.
+
+### ci.yml — agenda alimentaire (Q_ALI_09), historique du contrat (2026-08-21)
+
+Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
+réserve : aucune ligne n'avait jamais été écrite ni relue contre une vraie
+base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la RLS, l'action
+référentielle des deux clés étrangères (RESTRICT, sans lequel la suppression
+nommée de `patient/effacement.ts` deviendrait du code mort en silence), et le
+VERROU DE PÉRIMÈTRE qui refuse une colonne de gramme, de kcal, de score ou de
+quantité — la frontière « journal alimentaire, pas carnet de pesée » cesse
+d'être un commentaire. Le même verrou existe côté JSONB (clés de premier
+niveau de `reponses`), mais il est VACUE en CI : la base y est vide, donc sans
+clé à parcourir. C'est le chemin le moins coûteux pour ranger un agrégat, donc
+celui à rejouer à la main sur la production.
+
+Il porte aussi une assertion INVERSÉE, délibérée : AUCUN index unique sur
+(id_assignation, date_jour). En poser un ressemblerait à un durcissement et
+casserait le modèle append-only — les lignes supplantées restent, et
+`lignes − dates distinctes` est le taux de correction. Ses trois invariants de
+DONNÉES (verrou de périmètre JSONB ci-dessus, version de contrat, chaînage de
+correction) sont vacués sur la base CI, vide : ils sont là pour être rejoués en
+lecture seule sur la production.
+
+### release-db.yml — D-044, le chemin clinique dans `paths` (2026-08-21)
+
+LE CONTRAT DE FRAÎCHEUR DES CLAIMS N'AURAIT JAMAIS DÉMARRÉ SEUL. Il ne se joue
+que contre la production, donc dans ce workflow ; or le LOT-01 ne porte AUCUNE
+migration, et `paths` ne voyait que `web/prisma/migrations/**`. Un contrat
+câblé qui ne se déclenche jamais se lit pourtant comme un contrat — c'est le
+précédent D-015 (`agenda_alimentaire_v1.sql`, rejeu promis, jamais câblé) qu'on
+refuse de répéter.
+
+CE QUE CETTE LIGNE ÉLARGIT, EN TOUTES LETTRES : une modification d'une table de
+règles cliniques PROPOSE désormais une release. Elle ne l'approuve pas —
+l'environnement protégé `release-db` et ses required reviewers restent le seul
+chemin, et sur un `push` un déclenchement automatique est un `migrate-only`
+(no-op s'il n'y a pas de migration neuve). Le gain est le rejeu des contrats de
+lecture sur la production à chaque changement d'une table signée, c'est-à-dire
+exactement quand la question « ces claims tiennent-ils encore ? » se pose.
+
+### release-db.yml — le garde de ref en deux jobs (2026-08-21)
+
+`workflow_dispatch` accepte n'importe quelle ref, et un environnement GitHub
+accepte TOUTES les branches par défaut. Sans ce garde, un dispatch depuis une
+branche appliquerait à la production un SQL jamais relu — et l'approbateur ne
+verrait pas la ref, que l'interface Actions ne met pas en avant. La doctrine
+« migration committée → PR relue → merge sur `main` » était mécanique tant que
+le build de `main` était le seul écrivain ; elle deviendrait déclarative au
+moment précis où ce chemin devient unique.
+
+Le garde tient en DEUX jobs, et il faut les deux. Le `if:` du job `release`
+empêche d'écrire — porté par le job, il est évalué AVANT les règles de
+l'environnement, donc il ne consomme aucune approbation. Mais un job non
+éligible est *skipped* : rien n'est écrit, et rien n'est DIT. Le job
+`ref-refusee` porte la condition inverse et échoue bruyamment, pour que
+« release refusée » ne se lise pas comme « rien à faire ». Dans ce workflow,
+« fail-closed » désigne un `exit 1` nommé sur stderr : c'est ce que fait ce
+second job, et pas le premier seul.
+
+Troisième clé, côté plateforme : la restriction de branche de l'environnement
+(runbook, étape ops). Elle survit à une réécriture du fichier, là où les deux
+jobs se relisent en PR.
+
+### release-db.yml — runbook du préflight packs ↔ registre (LOT-03) (2026-08-21)
+
+> Note : ce runbook appartient à `docs/DEPLOIEMENT_RELEASE_DB.md` ; il est
+> conservé ici en attendant d'y être intégré.
+
+LOT-03, dette 4 — cohérence `packs.qids` ↔ miroir relationnel. C'est la SEULE
+lecture de la vraie dérive : la base du CI est vide, le contrat y est vacu.
+`BEGIN READ ONLY … ROLLBACK` dans le fichier — aucune écriture.
+
+FAIL-CLOSED ASSUMÉ : une release ne se déploie pas sur une base en dérive. LA
+CORRECTION N'EST PAS LA MÊME SELON L'ASSERTION, et le message d'échec nomme le
+pack fautif :
+
+- « derive » / « miroir orphelin » → geste PRATICIEN : ré-enregistrer le pack
+  depuis l'écran, ce qui rejoue `syncPackToRegistry`. Jamais un UPDATE à la
+  main.
+- « qid sans definition » → ce geste-là NE MARCHE PAS : depuis le LOT-03,
+  ré-enregistrer un tel pack est précisément ce que `syncPackToRegistry` refuse
+  (409). Il faut créer la définition manquante, c'est-à-dire
+  `npm run backfill:pack-registry:apply` — qui n'a AUCUN chemin sanctionné vers
+  la production (le workflow n'offre que `migrate-only` et `import-cb`, et le
+  build Vercel n'écrit pas). RÉSERVE NOMMÉE, pas un oubli : cet état ne peut
+  plus naître de l'application, seulement d'une écriture hors application. S'il
+  survient, il bloque les releases jusqu'à une décision humaine — et c'est le
+  comportement voulu, faute de chemin d'écriture relu.
+
+### release-db.yml — préflight fraîcheur des claims épinglés (2026-08-21)
+
+LOT-01 chaîne T0 (D-042, précisé par D-044) — fraîcheur des claims que les
+tables de règles SIGNÉES épinglent. C'est la SEULE lecture qui ait un sens : la
+base du CI est vide, les 24 claims n'y existent pas, et le contrat y rougirait
+sans rien prouver. Ce qui éprouve qu'il MORD est son fichier négatif, câblé en
+CI — jamais dans ce workflow, il ÉCRIT ses fixtures. `BEGIN READ ONLY …
+ROLLBACK` dans le fichier : aucune écriture.
+
+FAIL-CLOSED ASSUMÉ. Une signature dit qu'un humain a relu ces claims ce
+jour-là ; elle ne dit rien de ce que le corpus est devenu depuis. Si un claim
+épinglé a été rejeté, désactivé, remplacé ou dépouillé de son caractère
+prescriptif, la release attend un ARBITRAGE CLINIQUE — re-signer la table sans
+ce claim, ou rétablir le claim par le chemin du corpus. Jamais un UPDATE à la
+main sur `statut` ou `active` pour faire verdir ce préflight : ce serait
+effacer le signal que ce contrat existe pour produire. Vérifié conforme sur la
+production le 2026-08-11 avant ce câblage (24/24).
+
+### release-db.yml — bump du millésime NABM (import CB-02a) (2026-08-21)
+
+Désarmé hors du mode import-cb. L'étape reprend la séquence que le build Vercel
+exécutait : advisors → import (jeton/version/sha épinglés dans le workflow,
+hôte nommé au déclenchement). PAS de contrat après l'import — il est rejoué
+dans la transaction (voir le bloc en fin de job).
+
+Millésime et empreinte n'ont plus qu'UN lieu opérationnel depuis que le build
+Vercel n'écrit plus : le workflow. Le jeton, lui, en a DEUX — le littéral du
+`run:` et la constante qui fait autorité, `NABM_IMPORT_CONFIRMATION` dans
+`web/prisma/nabmImport.ts`. Un bump de millésime doit donc changer les trois
+littéraux du workflow, cette constante, ET le secret
+`WN_CB_NABM_IMPORT_CONFIRMATION`, ET rouvrir une PR relue. Oublier la constante
+fait échouer l'import en « Confirmation CLI invalide » — fermé, donc sans
+danger, mais autant le savoir avant de chercher. Le modèle « deux clés qui
+bougent ensemble » : le jeton (épinglé + secret) et l'hôte (input). Une
+divergence échoue fermé (le garde `--version`/`--sha256` de `importNabm.ts`
+rejette), jamais un import silencieux d'un mauvais contenu.

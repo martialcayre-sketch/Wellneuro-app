@@ -16,6 +16,8 @@ Symptôme : `$ARGUMENTS`
   `/wn-reprompt` » et s'arrêter, <!-- mention-seule: wn-reprompt -->
   sinon les trois hypothèses portent sur trois bugs différents.
 - Reproduire ou obtenir une preuve observable.
+- Regarder d'abord ce qui a changé récemment (diff, commits, configuration) :
+  le bug le plus probable vit dans la dernière modification.
 - Distinguer UI, API, auth, Prisma, réseau, configuration et données.
 - Formuler au maximum trois hypothèses ordonnées.
 - Tester l’hypothèse la moins coûteuse.
@@ -24,6 +26,9 @@ Symptôme : `$ARGUMENTS`
 - Ne pas modifier schéma ou migration.
 - Proposer le correctif minimal seulement après identification de la cause.
 - Ne pas élargir : un bug à la fois, aucun refactor au-delà du correctif.
+- Trois hypothèses épuisées ou deux correctifs tombés ⇒ s'arrêter et remonter
+  les preuves : c'est le signal « bug résistant » (Opus) de `CLAUDE.md`, pas
+  une quatrième hypothèse.
 
 ## Le test de non-régression doit échouer avant le correctif
 
