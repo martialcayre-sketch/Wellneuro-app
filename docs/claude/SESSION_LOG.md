@@ -4530,3 +4530,19 @@ dès qu'un brouillon la supplantait — et deux de mes bancs l'épinglaient), et
 existait dans la route sœur. Corrigés, plus M1-M4. T3 vert. Prochaine action :
 PR. Ouvert : WN_COMPREHENSION à poser en production ; l'append-only n'est tenu
 par aucune contrainte base ; aucun E2E sur la surface neuve (parité LOT-03).
+
+## 2026-08-22 — Agenda du sommeil : compte de réveils exact (D-091, PR #758 mergée)
+
+Décisions : le compte de réveils nocturnes devient EXACT (contrat
+`agenda-sommeil-v3`, borne technique `NB_REVEILS_MAX = 20`) ; les horaires de
+réveils sont ÉCARTÉS — le Consensus Sleep Diary recueille compte + durée
+cumulée, horodater pousserait le patient à regarder l'heure la nuit (même
+doctrine que la latence en classes). Sur une ligne v1/v2, 3 reste un plancher
+« 3 ou plus », jamais réinterprété. Le compte reste facultatif et hors calcul
+structurel. Saisie au compteur tactile − / + (formulaire sans clavier).
+Écartées aussi : une durée par réveil (contrat plus lourd sans gain clinique),
+la simple mise en avant du champ. D-091 réservé après le D-090 du lot-04 (trou
+assumé puis rebase). T1/T2/CI verts, merge Copilot, worktree retiré. Prochaine
+action : aucune. Ouvert : `AGD_REV_MOY` mélange planchers v2 et comptes v3
+(sous-estimation documentée, se résorbe seule) ; l'affichage praticien d'un 3
+historique ne dit pas « ou plus ».
