@@ -43,7 +43,26 @@ par `D-062`, et la re-signature du 2026-08-16 couvre le périmètre complet.
 
 **Décision — périmètre restreint et observé :**
 
-1. **Trois dossiers**, désignés nommément par le responsable, et eux seuls.
+1. **Trois dossiers, et eux seuls** : `PAT006`, `PAT007`, `PAT017`.
+
+   Désignés par leur **identifiant**, jamais par un nom ni une adresse.
+   L'historique Git, les logs CI et les builds ne s'effacent pas : une identité
+   écrite ici y resterait même retirée ensuite. C'est l'usage déjà établi du
+   dépôt — l'état machine parle du « dossier de contrôle PAT006 », pas de la
+   personne.
+
+   Vérifiés en production le 2026-08-23, par lecture d'**identifiants seuls**
+   (aucune adresse n'a transité — une requête par e-mail aurait déposé ces
+   adresses dans les logs d'exploitation, où les commandes des conteneurs
+   one-off sont recopiées telles quelles) : les trois sont **actifs**, suivi non
+   clos, accès non révoqué.
+
+   **Précondition à lever avant que l'observation puisse commencer** : au
+   2026-08-23, aucun de ces dossiers ne porte d'objectif négocié — les cinq
+   tables de l'alliance sont vides en production. Sans objectif, il n'y a rien à
+   ratifier, donc la condition de sortie (a) ne peut pas se produire. Le
+   praticien doit rédiger un objectif sur au moins un des trois pour que la
+   fenêtre de six semaines ait un sens.
 2. **Relecture praticien de CHAQUE recommandation avant remise** — aucune
    recommandation élargie ne part sans avoir été lue.
 3. **La sortie du périmètre exige DEUX conditions, cumulatives** : (a) au moins
