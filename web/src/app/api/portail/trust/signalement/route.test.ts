@@ -21,7 +21,6 @@ const patient = {
   prenom: 'Michel',
   nom: 'Dogné',
   actif: true,
-  accessToken: 'TOK_TRUST_TEST',
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
 };
@@ -34,7 +33,7 @@ function request(body: object): Request {
   return new Request('http://localhost/api/portail/trust/signalement', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
-    body: JSON.stringify({ token: patient.accessToken, ...body }),
+    body: JSON.stringify({ ...body }),
   });
 }
 

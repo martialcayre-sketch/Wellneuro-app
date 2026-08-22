@@ -52,6 +52,13 @@ révocation de remplacement existe déjà (`sessionsInvalidesAvant`). La purge
 complète s'achève au décommissionnement (effacement de la copie Supabase,
 `D-080`).
 
+> **Correction de fait, même jour (cadrage de la migration)** : le périmètre
+> réel est **deux colonnes** — `access_token` et `access_token_created_at`.
+> `access_token_revoked` n'est pas dormante : c'est le drapeau **vivant** de
+> révocation du portail (posé par la route praticien `token`, honoré aux
+> trois entrées et par `isSessionValideForPatient`) — il reste. La checklist
+> disait « trois », le code disait deux ; le code fait foi.
+
 ### D-084 — Arbitrages post-revue de D-082 : la signature vaut provenance, le corpus rejoint le régime `shaPerimetre`
 
 - Date : 2026-08-22

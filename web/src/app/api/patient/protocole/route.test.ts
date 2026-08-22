@@ -58,7 +58,6 @@ describe('GET /api/patient/protocole', () => {
     prisma.patient.findUnique.mockResolvedValue({
       idPatient: assignation.idPatient,
       actif: true,
-      accessToken: 'TOK_PROPRIO',
       accessTokenRevoked: false,
       email: assignation.emailPatient,
     });

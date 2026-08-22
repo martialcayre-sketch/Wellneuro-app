@@ -18,7 +18,6 @@ const patient = {
   prenom: 'Sophie',
   nom: 'Nicola',
   actif: true,
-  accessToken: 'TOK_TRUST_TEST',
   accessTokenRevoked: false,
   praticienEmail: 'praticien@wellneuro.fr',
 };
@@ -47,7 +46,7 @@ describe('POST /api/portail/trust/lecture', () => {
 
   it('enregistre un accusé avec version et hash résolus côté serveur', async () => {
     const response = await POST(
-      request({ token: patient.accessToken, documentKey: 'cadre_accompagnement', type: 'pris_connaissance' }),
+      request({ documentKey: 'cadre_accompagnement', type: 'pris_connaissance' }),
     );
     expect(response.status).toBe(200);
     const attendu = getDocumentCourant('cadre_accompagnement');
@@ -65,17 +64,17 @@ describe('POST /api/portail/trust/lecture', () => {
   it('est idempotent : un accusé déjà présent (P2002) répond ok sans erreur', async () => {
     prisma.trustAcknowledgement.create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
     const response = await POST(
-      request({ token: patient.accessToken, documentKey: 'cadre_accompagnement', type: 'pris_connaissance' }),
+      request({ documentKey: 'cadre_accompagnement', type: 'pris_connaissance' }),
     );
     expect(response.status).toBe(200);
     expect(((await response.json()) as { ok: boolean }).ok).toBe(true);
   });
 
   it('refuse un document ou type inconnu et une session absente', async () => {
-    expect((await POST(request({ token: patient.accessToken, documentKey: 'x', type: 'pris_connaissance' }))).status).toBe(400);
-    expect((await POST(request({ token: patient.accessToken, documentKey: 'usage_ia', type: 'signe' }))).status).toBe(400);
+    expect((await POST(request({ documentKey: 'x', type: 'pris_connaissance' }))).status).toBe(400);
+    expect((await POST(request({ documentKey: 'usage_ia', type: 'signe' }))).status).toBe(400);
     expect(
-      (await POST(request({ token: patient.accessToken, documentKey: 'usage_ia', type: 'presente' }, false))).status,
+      (await POST(request({ documentKey: 'usage_ia', type: 'presente' }, false))).status,
     ).toBe(401);
   });
 });

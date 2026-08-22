@@ -62,7 +62,6 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
       idPatient: assignation.idPatient,
       actif: true,
       email: assignation.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });
@@ -211,7 +210,6 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
       idPatient: assignationCabinet.idPatient,
       actif: true,
       email: assignationCabinet.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });
@@ -282,7 +280,6 @@ describe('POST /api/patient/submit — bornes des saisies chiffrées', () => {
       idPatient: assignation.idPatient,
       actif: true,
       email: assignation.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });
@@ -351,7 +348,6 @@ describe('POST /api/patient/submit — questionnaires fonctionnels sans définit
       idPatient: assignationFonctionnelle.idPatient,
       actif: true,
       email: assignationFonctionnelle.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });
@@ -420,7 +416,6 @@ describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', ()
       idPatient: agenda.idPatient,
       actif: true,
       email: agenda.emailPatient,
-      accessToken: 'TOKEN_TEST',
       accessTokenRevoked: false,
       sessionsInvalidesAvant: null,
     });

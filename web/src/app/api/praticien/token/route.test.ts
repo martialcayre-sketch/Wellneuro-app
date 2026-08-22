@@ -39,7 +39,7 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     verifierAppartenancePatient.mockResolvedValue('ok');
-    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', accessToken: 'TOK_1' });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', accessTokenRevoked: false });
     prisma.patient.update.mockResolvedValue({});
     prisma.portailMagicLink.updateMany.mockResolvedValue({ count: 0 });
   });
@@ -107,7 +107,6 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
       idPatient: 'PAT_1',
       email: 'sophie.nicola@example.test',
       prenom: 'Sophie',
-      accessToken: 'TOK_1',
       accessTokenRevoked: true,
       sessionsInvalidesAvant: new Date('2026-07-21T10:00:00.000Z'),
     });

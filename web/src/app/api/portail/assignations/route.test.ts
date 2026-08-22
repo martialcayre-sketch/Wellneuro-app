@@ -30,7 +30,6 @@ const patient = {
   nom: 'Nicola',
   email: 'sophie.nicola@example.test',
   actif: true,
-  accessToken: 'TOK_NOUVEAU',
   accessTokenRevoked: false,
 };
 
@@ -206,8 +205,12 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
   });
 
-  it('survit à une réémission du jeton permanent', async () => {
-    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessToken: 'TOK_REEMIS' });
+  // Le test « survit à une réémission du jeton permanent » a été retiré le
+  // 2026-08-22 (D-085 §5) : les colonnes de valeur du jeton sont purgées, une
+  // réémission n'existe plus structurellement — le cas devenait identique au
+  // nominal. La révocation, elle, reste testée plus haut.
+  it('sert les assignations sur session de compte valide', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...patient });
     const currentCookie = signPatientSession({
       idPatient: patient.idPatient,
       email: patient.email,

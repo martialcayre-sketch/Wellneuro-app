@@ -19,7 +19,6 @@ function compte(over: Partial<{
   idPatient: string;
   email: string;
   actif: boolean;
-  accessToken: string | null;
   accessTokenRevoked: boolean;
   sessionsInvalidesAvant: Date | null;
 }> = {}) {
@@ -27,7 +26,6 @@ function compte(over: Partial<{
     idPatient: 'PAT_1',
     email: 'patient@example.test',
     actif: true,
-    accessToken: 'TOK_TEST',
     accessTokenRevoked: false,
     sessionsInvalidesAvant: null,
     ...over,
@@ -115,16 +113,11 @@ describe('session patient', () => {
     })).resolves.toBe(true);
   });
 
-  it('survit à une réémission du jeton permanent', async () => {
-    // Comportement INVERSÉ par IDP2 LOT-02 : la session appartient au compte,
-    // plus au jeton. Réémettre un lien d'accès ne déconnecte plus personne.
-    const assignment = { idPatient: 'PAT_1', emailPatient: 'patient@example.test' };
-    const session = verifyPatientSession(signPatientSession({
-      idPatient: 'PAT_1', email: 'patient@example.test',
-    }));
-    patient.findUnique.mockResolvedValue(compte({ accessToken: 'TOK_NEW' }));
-    await expect(isSessionAuthorizedForAssignment(session, assignment)).resolves.toBe(true);
-  });
+  // Le test « survit à une réémission du jeton permanent » a été retiré le
+  // 2026-08-22 (D-085 §5) : les colonnes de valeur du jeton sont purgées, une
+  // réémission n'existe plus structurellement. Le fait qu'il documentait —
+  // la session appartient au compte, pas au jeton — reste porté par le type
+  // `PatientSessionAccount`, qui ne connaît plus de jeton du tout.
 
   it('est coupée par une révocation postérieure à son émission', async () => {
     const assignment = { idPatient: 'PAT_1', emailPatient: 'patient@example.test' };
@@ -153,10 +146,9 @@ describe('session patient', () => {
     const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
     const ancien = verifyPatientSession(cookieAncienFormat('PAT_1', 'patient@example.test', exp));
 
-    // Jeton réémis APRÈS l'émission du cookie : la date reprise du backfill est
-    // postérieure, la session tombe.
+    // Rotation d'accès APRÈS l'émission du cookie : la date reprise du
+    // backfill est postérieure, la session tombe.
     patient.findUnique.mockResolvedValueOnce(compte({
-      accessToken: 'TOK_REEMIS',
       sessionsInvalidesAvant: new Date(Date.now() + 1_000),
     }));
     await expect(isSessionAuthorizedForAssignment(ancien, assignment)).resolves.toBe(false);
@@ -194,10 +186,9 @@ describe('session patient', () => {
     expect(isSessionValideForPatient(session, compte({ idPatient: 'PAT_2' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ email: 'autre@example.test' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ actif: false }))).toBe(false);
-    // LOT-04 : l'ABSENCE de jeton ne ferme plus la session (les patients sans
-    // jeton d'accès sont désormais la norme). La RÉVOCATION, elle, reste honorée
-    // par la fonction elle-même — un appelant ne peut pas l'oublier.
-    expect(isSessionValideForPatient(session, compte({ accessToken: null }))).toBe(true);
+    // Le jeton n'existe plus (colonnes purgées, D-085) ; la RÉVOCATION, elle,
+    // reste honorée par la fonction elle-même — un appelant ne peut pas
+    // l'oublier.
     expect(isSessionValideForPatient(session, compte({ accessTokenRevoked: true }))).toBe(false);
   });
 });

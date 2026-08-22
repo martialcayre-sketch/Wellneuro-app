@@ -31,7 +31,7 @@ function cookie(idPatient = OWNER.idPatient): string {
 function mockOwner(): void {
   prisma.patient.findUnique.mockResolvedValue({
     idPatient: OWNER.idPatient, actif: true, email: OWNER.email,
-    accessToken: 'TOK', accessTokenRevoked: false, sessionsInvalidesAvant: null,
+    accessTokenRevoked: false, sessionsInvalidesAvant: null,
   });
 }
 function post(c: string | undefined, body: unknown): Request {

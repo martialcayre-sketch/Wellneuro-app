@@ -21,7 +21,6 @@ const compte = {
   idPatient: PATIENT.idPatient,
   actif: true,
   email: PATIENT.email,
-  accessToken: 'TOK',
   accessTokenRevoked: false,
   sessionsInvalidesAvant: null,
 };

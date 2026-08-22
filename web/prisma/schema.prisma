@@ -27,18 +27,18 @@ model Patient {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  // Token d'accès permanent au portail patient (/portail/[token]).
-  // Révocable par le praticien ou sur demande du patient. La reconnexion se
-  // fait via ce token + l'email pré-enregistré (email = second facteur).
-  accessToken          String?   @unique @map("access_token")
-  accessTokenRevoked   Boolean   @default(false) @map("access_token_revoked")
-  accessTokenCreatedAt DateTime? @map("access_token_created_at")
+  // Drapeau « accès portail révoqué », posé par le praticien (route token,
+  // action revocation) et honoré aux trois entrées (lien magique, Google,
+  // validation de session). Vestige de nom : il gardait le jeton permanent,
+  // dont les colonnes de VALEUR (`access_token`, `access_token_created_at`)
+  // ont été purgées le 2026-08-22 (D-085 §5 — le jeton n'était plus un
+  // credential depuis #397, ses valeurs en clair étaient des secrets morts).
+  accessTokenRevoked Boolean @default(false) @map("access_token_revoked")
 
-  // Coupe-circuit de session, propre au COMPTE et non au jeton (IDP2 LOT-02).
-  // Toute session portail émise avant cette date est refusée. Distinct de
-  // `accessTokenRevoked`, qui ne vit que tant que le jeton permanent existe :
-  // ce champ survit à son retrait (LOT-04). Une révocation pose les deux ; une
-  // réémission ne défait que le premier.
+  // Coupe-circuit de session, propre au COMPTE (IDP2 LOT-02). Toute session
+  // portail émise avant cette date est refusée. Une révocation pose
+  // `accessTokenRevoked` ET cette date ; une réémission ne défait que le
+  // premier.
   sessionsInvalidesAvant DateTime? @map("sessions_invalides_avant")
 
   assignations          Assignation[]

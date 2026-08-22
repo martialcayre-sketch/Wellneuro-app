@@ -24,9 +24,7 @@ const patient = {
   email: 'sophie.nicola@example.test',
   prenom: 'Sophie',
   actif: true,
-  accessToken: 'TOK_EXISTANT',
   accessTokenRevoked: true,
-  accessTokenCreatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
 
 function getRequest(query = 'idPatient=PAT_1'): Request {
