@@ -248,7 +248,7 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
   });
 });
 
-// EVA — famille sans interprétation (`D-087`), passation de bout en bout.
+// EVA — famille sans interprétation (`D-088`), passation de bout en bout.
 //
 // DEUX TROUS À PROUVER, et c'est le seul endroit où ils se prouvent :
 //
@@ -260,7 +260,7 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
 //  2. Les bornes `min`/`max` d'un item `number` ne sont que des attributs HTML
 //     côté navigateur : c'est la garde serveur de cette route qui les tient,
 //     et une EVA n'a que ça.
-describe('POST /api/patient/submit — EVA sans interprétation (D-087)', () => {
+describe('POST /api/patient/submit — EVA sans interprétation (D-088)', () => {
   const assignationEva = {
     idAssignation: 'ASS_EVA_TEST',
     idPatient: 'PAT_SEED_03',

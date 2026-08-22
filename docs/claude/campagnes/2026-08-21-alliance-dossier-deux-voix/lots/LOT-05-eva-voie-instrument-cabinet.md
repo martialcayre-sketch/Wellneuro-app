@@ -1,6 +1,6 @@
 ---
 id: "LOT-05"
-statut: "livré à la PR (2026-08-22) — famille `sum_no_interpretation` admise au validateur (D-087), garde anti-seuil et garde anti-bande-par-défaut vues rouges puis vertes, moteur de scoring et schéma Prisma intacts"
+statut: "livré à la PR (2026-08-22) — famille `sum_no_interpretation` admise au validateur (D-088), garde anti-seuil et garde anti-bande-par-défaut vues rouges puis vertes, moteur de scoring et schéma Prisma intacts"
 dépend_de: "— (indépendant du LOT-01 — cf. cadrage : la voie CabinetInstrument existe)"
 ---
 
@@ -45,7 +45,7 @@ migration.** Mesuré sur pièces :
 - Le blocage n'était pas au moteur mais au **validateur**
   (`web/src/lib/instruments.ts`, distinct) : trois types admis, et une grille
   de 1 à 6 bandes contiguës et couvrantes exigée de tout instrument. Relâcher
-  cette garde pour une famille déclarée est un geste clinique → `D-087`
+  cette garde pour une famille déclarée est un geste clinique → `D-088`
   (`DC-17`, `DC-18`), avec sa contrepartie : **aucune bande admise** sur cette
   famille.
 - **Le piège n'était pas la grille absente, mais la grille par défaut.** Trois
@@ -130,5 +130,5 @@ LOT-01 : confirmation obligatoire, migration seule dans sa PR.)
       (anti-seuil : 5 bancs ; anti-bande-par-défaut : 1 ; refus d'édition : 1 ;
       complétude : 2).
 - [x] Moteur de scoring intact — `web/src/lib/questions.ts` non modifié ;
-      seul le validateur `web/src/lib/instruments.ts` bouge, sous `D-087`.
-- [x] T2 vert ; fragment `changelog.d/` écrit ; `D-087` au registre.
+      seul le validateur `web/src/lib/instruments.ts` bouge, sous `D-088`.
+- [x] T2 vert ; fragment `changelog.d/` écrit ; `D-088` au registre.

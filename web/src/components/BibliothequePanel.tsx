@@ -1032,7 +1032,7 @@ function EditeurInstrument({
     }
   }
 
-  // GARDE ANTI-BANDE-PAR-DÉFAUT, côté écran (`D-087`). Cet éditeur ne sait
+  // GARDE ANTI-BANDE-PAR-DÉFAUT, côté écran (`D-088`). Cet éditeur ne sait
   // produire qu'une chose : des items likert sur une échelle nommée, et une
   // grille « somme » à bandes contiguës — dont l'amorce « Grille à définir ».
   // Ouvrir un instrument SANS INTERPRÉTATION dedans le détruirait deux fois :
@@ -1386,7 +1386,7 @@ function ImportInstrument({ onRafraichir }: { onRafraichir: () => Promise<void> 
 // explicite « Grille relue — publier ». C'est LE passage obligé vers
 // l'assignabilité d'un instrument du cabinet.
 //
-// Sur la famille SANS INTERPRÉTATION (`D-087`), il n'y a pas de grille à relire
+// Sur la famille SANS INTERPRÉTATION (`D-088`), il n'y a pas de grille à relire
 // : ce qui se relit, c'est l'énoncé et ses ancres. L'écran le dit au lieu
 // d'afficher une section « Bandes » vide, qui se lirait comme une grille
 // oubliée — et le bouton cesse de promettre une relecture de grille.

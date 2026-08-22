@@ -4463,7 +4463,7 @@ Prochaine action : PR d'ouverture, CI, puis LOT-01 (schéma à proposer,
 s'arrêter à la confirmation) — LOT-05 jouable en parallèle. Ouvert : travail
 synthèse non commité d'une session parallèle dans l'arbre (non touché).
 
-## 2026-08-22 — Alliance 6.0-A LOT-05 : l'EVA, piloter sans classer (D-087)
+## 2026-08-22 — Alliance 6.0-A LOT-05 : l'EVA, piloter sans classer (D-088)
 
 Décisions : la garde « grille complète et couvrante » est relâchée pour UNE
 famille déclarée (`sum_no_interpretation`), contre une garde inverse plus

@@ -144,7 +144,7 @@ describe('instruments/import POST', () => {
     expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
   });
 
-  // GARDE ANTI-BANDE-PAR-DÉFAUT, troisième site (`D-087`). L'import est la
+  // GARDE ANTI-BANDE-PAR-DÉFAUT, troisième site (`D-088`). L'import est la
   // porte d'entrée d'une EVA : shape complète, item `number` borné, famille
   // déclarée. Rien ne doit lui poser de bande — ni la grille par défaut, ni
   // l'avertissement qui l'annonce.

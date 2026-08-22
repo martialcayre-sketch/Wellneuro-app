@@ -1,4 +1,4 @@
-### Instruments du cabinet — une famille qui pilote sans classer : l'EVA entre par la voie existante, sans seuil et sans migration (Alliance 6.0-A LOT-05, [[D-087]])
+### Instruments du cabinet — une famille qui pilote sans classer : l'EVA entre par la voie existante, sans seuil et sans migration (Alliance 6.0-A LOT-05, [[D-088]])
 
 - **Un quatrième type de scoring admis à l'entrée** :
   `sum_no_interpretation`. La garde « tout instrument du cabinet porte une

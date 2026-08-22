@@ -273,7 +273,7 @@ describe('validerInstrumentCabinet', () => {
 
   // Les deux bancs qui suivent portent sur l'EXISTANT : ils étaient asserté
   // nulle part avant le LOT-05 Alliance 6.0-A, alors que ce sont les deux
-  // frontières que le type de scoring « sans interprétation » (`D-087`) vient
+  // frontières que le type de scoring « sans interprétation » (`D-088`) vient
   // longer. Ils sont posés d'abord, verts sur le code d'avant.
   it('refuse une grille VIDE sur un type interprété — la couverture n’est pas optionnelle', () => {
     const verdict = validerInstrumentCabinet({
@@ -330,7 +330,7 @@ describe('validerInstrumentCabinet', () => {
   });
 });
 
-// ── Famille « sans interprétation » (D-087) ────────────────────────────────
+// ── Famille « sans interprétation » (D-088) ────────────────────────────────
 //
 // La garde « tout instrument cabinet publié porte une grille complète et
 // couvrante » est RELÂCHÉE pour cette famille, et pour elle seule. Elle est
@@ -361,7 +361,7 @@ const EVA_DEFINITION = {
   ],
 };
 
-describe('validerInstrumentCabinet — famille sans interprétation (D-087)', () => {
+describe('validerInstrumentCabinet — famille sans interprétation (D-088)', () => {
   it('accepte une EVA : item number borné, aucune grille, scoreMax = max déclaré', () => {
     const verdict = validerInstrumentCabinet({
       titre: 'EVA fatigue — cabinet',
@@ -514,7 +514,7 @@ describe('validerInstrumentCabinet — famille sans interprétation (D-087)', ()
   });
 });
 
-// GARDE ANTI-BANDE-PAR-DÉFAUT (D-087) — le piège du lot. Trois sites posent
+// GARDE ANTI-BANDE-PAR-DÉFAUT (D-088) — le piège du lot. Trois sites posent
 // une bande d'attente quand la grille manque ; aucun ne doit la poser sur la
 // famille qui ne classe pas.
 describe('scoringParDefaut — garde anti-bande-par-défaut', () => {

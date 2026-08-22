@@ -227,7 +227,7 @@ describe('BibliothequePanel — libellés de vérification de scoring (D-036)', 
   });
 });
 
-// ── EVA — relecture et édition d'un instrument sans interprétation (D-087) ──
+// ── EVA — relecture et édition d'un instrument sans interprétation (D-088) ──
 //
 // L'écran de relecture énumérait les bandes sans garde : sur cette famille,
 // `detail.scoring.interpretation` est ABSENT en base, et le `.map` faisait
@@ -290,7 +290,7 @@ function stubFetchEva() {
   });
 }
 
-describe('BibliothequePanel — EVA sans interprétation (D-087)', () => {
+describe('BibliothequePanel — EVA sans interprétation (D-088)', () => {
   it('la relecture rend les ancres et DIT l’absence d’interprétation, sans planter', async () => {
     stubFetchEva();
     render(<BibliothequePanel entrees={[ENTREE_BASE]} />);

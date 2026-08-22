@@ -344,9 +344,9 @@ describe('instruments PATCH', () => {
 });
 
 // EVA — la voie cabinet, du brouillon à la publication, sans jamais classer
-// (`D-087`). Le cycle `brouillon → grille_a_relire → valide` ne se contourne
+// (`D-088`). Le cycle `brouillon → grille_a_relire → valide` ne se contourne
 // pas : ce qui change est ce qu'on relit, pas qu'on relise.
-describe('instruments — EVA sans interprétation (D-087)', () => {
+describe('instruments — EVA sans interprétation (D-088)', () => {
   const EVA_DEFINITION = {
     instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
     sections: [

@@ -216,7 +216,7 @@ describe('buildMiniSynthese — détail par rubrique sur les sorties réelles du
     expect(s).toContain('Détail');
   });
 
-  // EVA — famille sans interprétation (`D-087`). La mini-synthèse ne fabrique
+  // EVA — famille sans interprétation (`D-088`). La mini-synthèse ne fabrique
   // AUCUNE phrase à partir d'un total nu : elle rend '' plutôt que d'inventer
   // le verdict que l'instrument refuse de rendre (`DC-19`, `DC-27`).
   it('EVA sans interprétation : aucune phrase, pas même une reformulation du total', () => {

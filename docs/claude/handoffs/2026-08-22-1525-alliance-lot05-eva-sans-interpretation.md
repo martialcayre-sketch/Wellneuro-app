@@ -2,7 +2,7 @@
 
 ## Ce qui a changé
 
-- **`D-087` au registre** — la garde « tout instrument du cabinet porte une
+- **`D-088` au registre** — la garde « tout instrument du cabinet porte une
   grille complète et couvrante » est **relâchée pour une famille déclarée, et
   pour elle seule** : `sum_no_interpretation`. Les trois familles qui
   concluent (`sum`, `sum_reversed`, `count_threshold`) sont inchangées au
@@ -81,7 +81,7 @@ raison, son en-tête le dit.
 - PR du lot non ouverte : c'est la session principale qui la crée après revue.
 - **`D-086` : résolu.** La contrainte d'ordre annoncée au premier jet est
   tombée — #748 est mergée, `D-086` est au registre, `origin/main` a été mergé
-  dans cette branche (conflit `DECISIONS.md` résolu : `D-087` en tête, `D-086`
+  dans cette branche (conflit `DECISIONS.md` résolu : `D-088` en tête, `D-086`
   dessous) et le garde de numérotation rend 87 décisions sans doublon ni trou.
 
 ### Dus d'affinage — nommés, non faits

@@ -38,7 +38,7 @@ export type QuestionCabinet =
   | {
       /**
        * Saisie chiffrée bornée — admise sur la SEULE famille « sans
-       * interprétation » (`D-087`). L'item porte ses ancres (`min`, `max`,
+       * interprétation » (`D-088`). L'item porte ses ancres (`min`, `max`,
        * `unit`) et rien d'autre : elles servent le rendu patient
        * (`QuestionField`), la garde de bornes côté serveur
        * (`api/patient/submit`) et les bornes du score. Aucune option cotée,
@@ -73,7 +73,7 @@ export type BandeInterpretation = {
 export const TYPES_SCORING_CABINET = ['sum', 'sum_reversed', 'count_threshold'] as const;
 
 /**
- * Famille « sans interprétation » (`D-087`) — un instrument de PILOTAGE.
+ * Famille « sans interprétation » (`D-088`) — un instrument de PILOTAGE.
  *
  * Le moteur existe déjà et n'a pas bougé d'une ligne (`@/lib/questions`,
  * `sum_no_interpretation`) : il rend le total et `interpretation: null`. Ce
@@ -330,7 +330,7 @@ export const LABEL_GRILLE_A_DEFINIR = 'Grille à définir — relecture requise'
  * et publication, comme tout instrument du cabinet.
  *
  * `typeDemande` : la famille visée. Sur la famille sans interprétation, AUCUNE
- * bande n'est posée (garde `interditTouteBande`, `D-087`) — pas même celle qui
+ * bande n'est posée (garde `interditTouteBande`, `D-088`) — pas même celle qui
  * dit « à définir ». **Paramètre DÉFENSIF : aucun appelant ne le passe
  * aujourd'hui** (les trois appels de l'import sont sans second argument, et
  * n'ont lieu que `scoring` absent, donc famille non déclarable). Détail du
@@ -412,7 +412,7 @@ export function validerInstrumentCabinet(input: {
   }
 
   // Le TYPE DE SCORING est lu avant la définition : c'est lui qui dit quelle
-  // forme d'item est admise. Seule la famille sans interprétation (`D-087`)
+  // forme d'item est admise. Seule la famille sans interprétation (`D-088`)
   // accepte la saisie chiffrée bornée — une famille qui conclut a besoin
   // d'options cotées, sans quoi ses bandes n'ont rien à couvrir.
   const scoring = (input.scoring ?? {}) as {
@@ -544,7 +544,7 @@ export function validerInstrumentCabinet(input: {
   const bandes = Array.isArray(scoring.interpretation) ? scoring.interpretation : [];
   let bandesValides = false;
   if (sansInterpretation) {
-    // GARDE ANTI-SEUIL (`D-087`) — la garde de couverture est relâchée ici, et
+    // GARDE ANTI-SEUIL (`D-088`) — la garde de couverture est relâchée ici, et
     // remplacée par son inverse : une bande, UNE SEULE, même « neutre », même
     // « à définir », transforme un instrument de pilotage en instrument qui
     // classe. Aucune source ne l'a écrite (`DC-19`, `DC-20`), et un score n'est

@@ -44,7 +44,7 @@ export function estEchelleNommee(valeur: unknown): valeur is EchelleNommee {
 }
 
 /**
- * Famille « sans interprétation » (`D-087`) — un instrument de PILOTAGE, servi
+ * Famille « sans interprétation » (`D-088`) — un instrument de PILOTAGE, servi
  * par le moteur `sum_no_interpretation` (`@/lib/questions`, inchangé) qui rend
  * le total et `interpretation: null`.
  *
@@ -56,7 +56,7 @@ export function estEchelleNommee(valeur: unknown): valeur is EchelleNommee {
 export const TYPE_SCORING_SANS_INTERPRETATION = 'sum_no_interpretation';
 
 /**
- * GARDE ANTI-BANDE-PAR-DÉFAUT (`D-087`) — vrai quand la famille de scoring
+ * GARDE ANTI-BANDE-PAR-DÉFAUT (`D-088`) — vrai quand la famille de scoring
  * interdit TOUTE bande, y compris la bande d'attente
  * « Grille à définir — relecture requise ».
  *

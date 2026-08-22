@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-087 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
+### D-088 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
 
 - Date : 2026-08-22
 - Statut : accepté (**arbitrage du responsable**, rendu en session le

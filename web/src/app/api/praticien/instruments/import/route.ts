@@ -26,7 +26,7 @@ import {
 // relecture puis la publication restent obligatoires avant toute assignation.
 //
 // UNE famille échappe à cette bande d'attente, et à toute bande : celle qui se
-// déclare `sum_no_interpretation` (`D-087`) — un instrument de pilotage, sans
+// déclare `sum_no_interpretation` (`D-088`) — un instrument de pilotage, sans
 // provenance clinique et sans verdict. C'est par ici qu'une EVA entre : shape
 // complète, items `number` bornés, `scoring: { type: 'sum_no_interpretation' }`.
 
@@ -44,7 +44,7 @@ const AVERTISSEMENT_GRILLE_ABSENTE =
   'Grille de score absente : bande unique « Grille à définir — relecture requise » posée. La relecture reste obligatoire avant publication.';
 
 /**
- * Saisie chiffrée sans grille déclarée — refus DÉDIÉ (`D-087`).
+ * Saisie chiffrée sans grille déclarée — refus DÉDIÉ (`D-088`).
  *
  * Sans lui, ce cas tombait dans l'amorce par défaut (famille `sum`, donc
  * interprétée) et ressortait avec les messages de CETTE famille : « seul
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
         if (objet.scoring !== undefined) {
           // La grille déclarée passe TELLE QUELLE à la validation, bandes
           // comprises : c'est elle qui refuse une bande sur la famille sans
-          // interprétation (`D-087`). Les effacer ici les ferait passer en
+          // interprétation (`D-088`). Les effacer ici les ferait passer en
           // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
           grilleDeclaree = true;
@@ -201,7 +201,7 @@ export async function POST(request: Request) {
         if (objet.scoring !== undefined) {
           // La grille déclarée passe TELLE QUELLE à la validation, bandes
           // comprises : c'est elle qui refuse une bande sur la famille sans
-          // interprétation (`D-087`). Les effacer ici les ferait passer en
+          // interprétation (`D-088`). Les effacer ici les ferait passer en
           // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
           grilleDeclaree = true;
