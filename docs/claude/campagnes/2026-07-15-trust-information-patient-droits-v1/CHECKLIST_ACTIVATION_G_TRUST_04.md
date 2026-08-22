@@ -2,8 +2,10 @@
 
 > Rédigée le 2026-07-20, en clôture de la Vague 2. **Ce document ne lève rien.**
 > Il dit, pour chacune des sept exigences du gate, ce qui existe aujourd'hui,
-> ce qui manque, et où le vérifier. Le gate reste **non levé**
-> (`GATES_GO_NO_GO.md:11`).
+> ce qui manque, et où le vérifier. ~~Le gate reste **non levé**~~ — **le gate
+> a été levé le 2026-08-22, sous réserve unique** (signature de l'annexe HDS,
+> décision du responsable `D-089` — statut porté par `GATES_GO_NO_GO.md:11`).
+> Ce document reste ce qu'il a toujours été : le dossier de preuve.
 
 ## Pourquoi ce document existe
 
@@ -95,6 +97,18 @@ foi, les notes datées ci-dessous portent les preuves.)* Le gate ne peut pas
 > jour, hors gate mais sur son chemin d'écriture : l'incident
 > `MIGRATE_DATABASE_URL` (release-db migrait Supabase) est corrigé par
 > [[D-087]] — l'approbation humaine redevient l'unique porte du schéma.
+
+> **Levée du gate, même jour au soir ([[D-089]]).** Le responsable lève
+> `G-TRUST-04` **techniquement, au vu de l'état du code**, avec une
+> **réserve unique** : la signature de l'annexe HDS — une question de jours,
+> à constater levée au plus tard au 2026-09-01 ([[D-080]]) ; à défaut, le
+> 2026-10-21 redevient point de contrôle. La ligne 1 reste le siège de la
+> réserve ; pendant qu'elle court, aucune affirmation contractuelle
+> d'hébergement HDS face au patient. Tout le reste est fonctionnel — la
+> dérogation de juillet est remplacée, l'écart n'est plus compté comme tel.
+> (La phrase « levée-conformité » de la note du matin visait une levée sans
+> réserve ; le responsable a arbitré une levée technique AVEC réserve nommée
+> — c'est elle qui fait foi.)
 
 ## Mise à jour du 2026-07-21 — état constaté, et ce qu'il ne change pas
 
