@@ -1,10 +1,10 @@
 ---
 id: "2026-08-21-alliance-dossier-deux-voix"
 titre: "Alliance 6.0-A — le dossier à deux voix"
-statut: "en cours (ouverte 2026-08-22 — cadrage sur état réel frais, six lots)"
+statut: "en cours (ouverte 2026-08-22 — cadrage sur état réel frais, six lots ; quatre livrés le jour de l'ouverture : LOT-01, LOT-05, LOT-02, LOT-03)"
 créée_le: "2026-08-21"
 mise_à_jour: "2026-08-22"
-lot_courant: "LOT-01"
+lot_courant: "LOT-04"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -54,7 +54,7 @@ que le Socle a livré entre-temps** — le cadrage est écrit sur les mesures :
 
 | Le brief disait | Mesuré le 2026-08-22 |
 |---|---|
-| « Les champs attentes/motif de l'anamnèse existent mais sont figés en JSON à la validation — aucune trajectoire, aucun désaccord possible » | **Confirmé.** Une seule colonne `anamnese Json?` (`web/prisma/schema.prisma:96`) ; champs `motif_principal` (seul requis — `consultation/anamnese.ts:44`) et `attentes` (`anamnese.ts:66`). Aucun objet de trajectoire. **Fait neuf** : depuis `D-054`, la tête du cockpit lit déjà une plainte dominante Q_MOD_03 (`clinical-engine/chaineC1.ts:172`) — l'ancrage du LOT-02 a donc **deux sources d'énoncé existantes** (anamnèse + Q_MOD_03), à afficher comme matériau, jamais à réécrire. |
+| « Les champs attentes/motif de l'anamnèse existent mais sont figés en JSON à la validation — aucune trajectoire, aucun désaccord possible » | **Confirmé.** Une seule colonne `anamnese Json?` (`web/prisma/schema.prisma:102` — la citation `:96` du cadrage était fausse, cette ligne est `consentementHorodatage` ; corrigé à l'exécution du LOT-02) ; champs `motif_principal` (seul requis — `consultation/anamnese.ts:44`), `objectif_prioritaire` (`:64`) et `attentes` (`:66`). Aucun objet de trajectoire. **Fait neuf** : depuis `D-054`, la tête du cockpit lit déjà une plainte dominante Q_MOD_03 (`clinical-engine/chaineC1.ts:172`) — l'ancrage du LOT-02 a donc **trois sources d'énoncé existantes** à l'anamnèse, plus la plainte Q_MOD_03, à afficher comme matériau, jamais à réécrire. **Mesuré au LOT-02** : la plainte Q_MOD_03 n'est produite que par le POST de confirmation d'épisode, jamais par une route de lecture — le LOT-02 ne la reprend donc pas et renvoie au bloc `D-054` du cockpit. |
 | « Le seul canal de contestation patient est le déverrouillage de questionnaire — il rejoue une saisie, il n'exprime pas un désaccord » | **Confirmé.** Le déverrouillage vit côté soumission (`api/patient/submit/route.ts`) et agenda (`api/portail/agenda-alimentaire/route.ts`) ; aucun objet désaccord, aucune surface de contestation d'une compréhension (greps du 2026-08-22). |
 | « Aucun objet EVA, aucun objectif négocié, aucun écran de synthèse de compréhension — à revérifier à l'ouverture » | **Revérifié, toujours vrai.** Greps du 2026-08-22 : aucune occurrence applicative d'« objectif négocié », de synthèse de compréhension ni d'EVA-instrument (les correspondances `EVA` trouvées sont fortuites). Aucune occurrence ETP. |
 | « Patrons à réutiliser : journal append-only chaîné, versions hash-verrouillées façon `trust/contenus/registre.ts`, deux dates, garde par test » | **Corrigé et enrichi par le Socle.** Le patron trust n'a **ni deux dates ni chaîne de hash** (mesure du cadrage Socle — « chaîné » s'entend ici *par référence à l'entrée précédente*, jamais au sens hash-chain). Le patron canonique est désormais **`correspondance/registreGabarits.ts`** (Socle LOT-03, PR #741) : versions + hash (`canonicalSha256` réutilisable) + deux dates (`valideLe: null` tant que le responsable n'a pas validé) + écarts déclarés. Tout message patient neuf de cette campagne **s'ajoute au registre avec sa déclaration de conformité — plus jamais inline** (handoff du 2026-08-22 12:49). |
@@ -70,10 +70,10 @@ de l'alliance sont relationnels, pas des tables de règles.
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
 | LOT-01 | La migration du dossier à deux voix — **CONFIRMATION OBLIGATOIRE** | terminé (2026-08-22 — mergé #748, migration constatée en production : 58 migrations up to date, contrat `alli_` vert au conteneur) | — |
-| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | à faire | LOT-01 (migration appliquée au postdeploy, constatée par conteneur) |
-| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | à faire | LOT-01 (migration appliquée au postdeploy, constatée par conteneur) |
+| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | livré à la PR (2026-08-22 — six gardes vues rouges ; ratification lue, jamais écrite ; aucune migration) | LOT-01 (migration constatée par conteneur) |
+| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | livré à la PR (2026-08-22 — cinq gardes vues rouges ; drapeau neuf et éteint `WN_CE_QUI_COMPTE` ; aucune migration) | LOT-01 (migration constatée par conteneur) |
 | LOT-04 | « Ce que j'ai compris de vous » — synthèse gardée et désaccord structuré | à faire | LOT-01 ; Socle (livré) |
-| LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | livré à la PR (2026-08-22, `D-088`) | — (indépendant du LOT-01, cf. cadrage) |
+| LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | terminé (2026-08-22 — mergé #750, `D-088`) | — (indépendant du LOT-01, cf. cadrage) |
 | LOT-06 | L'écran « dossier à deux voix » au portail — ratification et constat du gate | à faire | LOT-02, LOT-03, LOT-04 |
 
 Correspondance avec les quatre lots esquissés du brief : 1 → LOT-02, 2 →
@@ -105,9 +105,21 @@ ratification — le « lot 3 derrière le Socle » du brief est le LOT-04.
   ne s'écrase et ne se moyenne jamais (`DC-30`).
 - **Deux dates partout** : date de l'événement ≠ date d'enregistrement.
 - **Jamais un score** : aucun champ de score sur un objectif négocié ni sur
-  « ce qui compte » (`DC-27`) ; aucun seuil, borne ou bande sur l'EVA
+  « ce qui compte » (`DC-19`, `DC-20` — voir la correction ci-dessous) ;
+  aucun seuil, borne ou bande sur l'EVA
   (`DC-19`, `DC-20`) ; une reformulation praticien n'est jamais diagnostique
   (`DC-31`, `DC-32`).
+> **Correction doctrinale (2026-08-22, relevée en revue du LOT-03)** : cet
+> invariant citait `DC-27` pour l'interdit d'agrégation d'une parole de
+> patient. `DC-27` dit « association ≠ causalité ; score ≠ diagnostic » — il ne
+> porte pas cet interdit. Ce qui le porte, c'est **l'invariant de campagne
+> lui-même**, adossé à `DC-19`/`DC-20` (aucun seuil, dose, poids ou borne
+> inventé) : compter, moyenner ou noter une parole reviendrait à poser une
+> borne clinique sans provenance. Le code des LOT-02 et LOT-03 cite désormais
+> la bonne règle. **Les fichiers de lot écrits avant cette correction
+> (LOT-02 § Périmètre, LOT-04, LOT-06) portent encore l'ancienne citation** :
+> à corriger à l'ouverture de chacun, pas rétroactivement d'ici.
+
 - **Garde structurelle par test** pour chaque interdit de forme (patron du
   banc `D-042`/`D-046`) — chaque garde doit être **vue rouge** quand on la
   débranche.

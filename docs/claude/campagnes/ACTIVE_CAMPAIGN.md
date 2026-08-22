@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-21-alliance-dossier-deux-voix
 **Titre** : Alliance 6.0-A — le dossier à deux voix
 **Statut** : active
-**Lot actif** : LOT-01
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 

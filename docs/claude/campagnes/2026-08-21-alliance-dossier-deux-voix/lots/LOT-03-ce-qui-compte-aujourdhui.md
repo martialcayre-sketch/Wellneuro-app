@@ -22,7 +22,10 @@ en regard des passations.
 - Deux dates par entrée : saisie (déclarée par le client, bornée) ≠
   enregistrement (serveur).
 - Garde structurelle : **aucun agrégat, aucun score, aucun résumé calculé**
-  de ces entrées (`DC-27`) ; **une absence d'entrée n'est ni zéro ni
+  de ces entrées (invariant de campagne « jamais un score », adossé à
+  `DC-19`/`DC-20` — `DC-27` était cité à tort au cadrage : il dit
+  « association ≠ causalité ; score ≠ diagnostic ») ; **une absence d'entrée
+  n'est ni zéro ni
   « rien à signaler »** (`DC-24`) — l'affichage distingue « silence » de
   « réponse vide », et un banc le prouve.
 
