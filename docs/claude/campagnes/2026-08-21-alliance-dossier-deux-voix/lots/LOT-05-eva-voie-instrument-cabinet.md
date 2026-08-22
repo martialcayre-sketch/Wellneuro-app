@@ -39,7 +39,9 @@ migration.** Mesuré sur pièces :
 - Le **moteur** connaît déjà la famille : `sum_no_interpretation`
   (`web/src/lib/questions.ts`) rend le total, `maxTotal` et
   `interpretation: null` ; deux instruments du catalogue Drive s'en servent
-  (`Q_MOD_01`, `Q_MOD_02`). **Zéro ligne modifiée** — l'interdit du lot tient.
+  (`Q_PED_01` — Matinalité-Vespéralité Enfant, `questions.ts:939` — et
+  `Q_MOD_02`, `questionnaires/mode-de-vie.ts:140` ; `Q_MOD_01` est `subscore`,
+  pas cette famille). **Zéro ligne modifiée** — l'interdit du lot tient.
 - Le blocage n'était pas au moteur mais au **validateur**
   (`web/src/lib/instruments.ts`, distinct) : trois types admis, et une grille
   de 1 à 6 bandes contiguës et couvrantes exigée de tout instrument. Relâcher

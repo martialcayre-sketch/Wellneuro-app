@@ -4468,8 +4468,11 @@ synthèse non commité d'une session parallèle dans l'arbre (non touché).
 Décisions : la garde « grille complète et couvrante » est relâchée pour UNE
 famille déclarée (`sum_no_interpretation`), contre une garde inverse plus
 stricte — aucune bande admise, pas même la bande d'attente « Grille à
-définir » que trois sites posaient. Moteur `questions.ts` intact (le type
-existait, servi par Q_MOD_01/02) ; aucune migration ; item `number` borné
+définir ». Garde à deux sites actifs + un défensif (paramètre de
+`scoringParDefaut`, qu'aucun appelant ne passe) ; le cas « items number sans
+grille » est couvert par un refus dédié de l'import. Moteur `questions.ts`
+intact (le type existait, servi par Q_PED_01 et Q_MOD_02 — pas Q_MOD_01, qui
+est `subscore`) ; aucune migration ; item `number` borné
 réutilisé, pas de curseur neuf. La garde nommée `interditTouteBande` vit au
 module feuille `echelles-cabinet` — `instruments.ts` embarque Prisma et la
 Bibliothèque est un panneau client. Écarté : éditer cette famille dans

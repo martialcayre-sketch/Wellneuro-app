@@ -43,6 +43,30 @@ export type ImportInstrumentResponse = {
 const AVERTISSEMENT_GRILLE_ABSENTE =
   'Grille de score absente : bande unique « Grille à définir — relecture requise » posée. La relecture reste obligatoire avant publication.';
 
+/**
+ * Saisie chiffrée sans grille déclarée — refus DÉDIÉ (`D-087`).
+ *
+ * Sans lui, ce cas tombait dans l'amorce par défaut (famille `sum`, donc
+ * interprétée) et ressortait avec les messages de CETTE famille : « seul
+ * “likert” est admis », « entre 2 et 8 options ». Deux reproches exacts, et
+ * aucun des deux ne dit le geste qui débloque — le praticien lit qu'il doit
+ * transformer son curseur en échelle à options, alors qu'il doit déclarer sa
+ * famille. La famille ne se devine pas depuis la définition (un instrument à
+ * items `number` n'est pas *forcément* sans interprétation) : elle se déclare.
+ *
+ * Fail-closed inchangé : c'était un 400 avant, c'est un 400 maintenant. Seul
+ * le message change.
+ */
+const ERREUR_SAISIE_CHIFFREE_SANS_GRILLE =
+  'Saisie chiffrée sans grille déclarée : un item « number » n’est admis que dans la famille sans interprétation. Déclarez scoring: { "type": "sum_no_interpretation" } — aucune bande n’y est admise, l’instrument pilote la conversation sans classer.';
+
+/** Vrai dès qu'un item de la définition est une saisie chiffrée. */
+function porteUneSaisieChiffree(definition: DefinitionCabinet): boolean {
+  return definition.sections.some(section =>
+    section.questions.some(question => question.type === 'number'),
+  );
+}
+
 function avertissementEchelle(nom: keyof typeof ECHELLES_NOMMEES): string {
   return `Échelle non précisée : « ${ECHELLES_NOMMEES[nom].libelle} » appliquée par défaut.`;
 }
@@ -105,6 +129,11 @@ export async function POST(request: Request) {
     let categorie = categorieBody || 'Cabinet';
     let definition: DefinitionCabinet;
     let scoring: ScoringCabinet;
+    // Le refus dédié ci-dessous ne vaut que sur une grille ABSENTE : un
+    // `scoring: { type: 'sum' }` déclaré avec des items `number` est une
+    // contradiction du praticien, et mérite le message qui la nomme
+    // (« seul “likert” est admis »), pas celui qui suppose un oubli.
+    let grilleDeclaree = false;
 
     if (format === 'json') {
       let objet: Record<string, unknown>;
@@ -136,6 +165,7 @@ export async function POST(request: Request) {
           // interprétation (`D-087`). Les effacer ici les ferait passer en
           // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
+          grilleDeclaree = true;
         } else {
           scoring = scoringParDefaut(definition);
           // L'avertissement suit la bande d'attente ; il ne s'annonce pas tout
@@ -174,6 +204,7 @@ export async function POST(request: Request) {
           // interprétation (`D-087`). Les effacer ici les ferait passer en
           // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
+          grilleDeclaree = true;
         } else {
           scoring = scoringParDefaut(definition);
           // L'avertissement suit la bande d'attente ; il ne s'annonce pas tout
@@ -213,6 +244,21 @@ export async function POST(request: Request) {
       definition = definitionDepuisQuestions('', textes.map(texte => ({ texte, options })));
       scoring = scoringParDefaut(definition);
       if (!interditTouteBande(scoring)) avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
+    }
+
+    // AVANT la validation générale, et seulement pour lui donner un message
+    // utilisable : le verdict serait le même (400), mais rédigé depuis la
+    // famille par défaut, donc à côté du geste attendu.
+    if (!grilleDeclaree && porteUneSaisieChiffree(definition)) {
+      return NextResponse.json<ImportInstrumentResponse>(
+        {
+          success: false,
+          reason: 'invalid_payload',
+          error: ERREUR_SAISIE_CHIFFREE_SANS_GRILLE,
+          erreurs: [ERREUR_SAISIE_CHIFFREE_SANS_GRILLE],
+        },
+        { status: 400 },
+      );
     }
 
     const verdict = validerInstrumentCabinet({ titre, definition, scoring });

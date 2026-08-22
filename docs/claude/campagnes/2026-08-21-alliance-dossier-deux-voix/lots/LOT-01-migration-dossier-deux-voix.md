@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "livré à la PR (2026-08-22) — cinq tables, contrat vu rouge sous trois mutations, D-086 ; production au merge"
+statut: "terminé (2026-08-22 — mergé #748, migration constatée en production : 58 migrations up to date, contrat alli_ vert au conteneur)"
 dépend_de: "— (gaté par confirmation explicite de la migration — donnée le 2026-08-22, plan approuvé)"
 ---
 

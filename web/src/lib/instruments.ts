@@ -331,7 +331,10 @@ export const LABEL_GRILLE_A_DEFINIR = 'Grille à définir — relecture requise'
  *
  * `typeDemande` : la famille visée. Sur la famille sans interprétation, AUCUNE
  * bande n'est posée (garde `interditTouteBande`, `D-087`) — pas même celle qui
- * dit « à définir ». */
+ * dit « à définir ». **Paramètre DÉFENSIF : aucun appelant ne le passe
+ * aujourd'hui** (les trois appels de l'import sont sans second argument, et
+ * n'ont lieu que `scoring` absent, donc famille non déclarable). Détail du
+ * partage actif/défensif : `interditTouteBande`, `@/lib/echelles-cabinet`. */
 export function scoringParDefaut(
   definition: DefinitionCabinet,
   typeDemande: string = 'sum',

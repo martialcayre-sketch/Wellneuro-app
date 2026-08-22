@@ -60,11 +60,27 @@ export const TYPE_SCORING_SANS_INTERPRETATION = 'sum_no_interpretation';
  * interdit TOUTE bande, y compris la bande d'attente
  * « Grille à définir — relecture requise ».
  *
- * Trois sites posent cette bande quand la grille manque : `scoringParDefaut`
- * (import sans grille), l'amorce de l'éditeur (`BibliothequePanel`) et
- * l'avertissement d'import. Aucun ne doit la poser ici : sur un instrument
- * qui, par construction, ne classe pas, un libellé d'attente coloré `warning`
- * est un verdict de fait — et aucune source ne l'a écrit (`DC-19`, `DC-20`).
+ * Sur un instrument qui, par construction, ne classe pas, un libellé d'attente
+ * coloré `warning` est un verdict de fait — et aucune source ne l'a écrit
+ * (`DC-19`, `DC-20`).
+ *
+ * DEUX SITES ACTIFS, UN DÉFENSIF — dit tel quel pour qu'on ne lise pas ici une
+ * couverture qui n'existe pas :
+ *
+ *  - ACTIF — `validerInstrumentCabinet` : refuse toute bande sur cette
+ *    famille, y compris la bande d'attente « Grille à définir », d'où qu'elle
+ *    vienne. C'est la garde qui tient réellement.
+ *  - ACTIF — l'amorce de l'éditeur (`BibliothequePanel`) : l'éditeur refuse
+ *    cette famille au lieu de lui poser sa bande d'attente par défaut.
+ *  - DÉFENSIF — `scoringParDefaut(definition, typeDemande)` : le paramètre
+ *    existe et la garde y est câblée, mais AUCUN appelant ne le passe
+ *    aujourd'hui. Les trois appels d'`instruments/import/route.ts` sont sans
+ *    second argument, et n'ont lieu que lorsque `scoring` est absent — cas où
+ *    aucune famille n'est déclarable. Le chemin est donc inatteignable en
+ *    l'état : il est gardé pour le jour où un appelant déclarera la famille
+ *    sans grille, pas parce qu'il couvre quoi que ce soit maintenant. Ce que
+ *    couvre CE cas aujourd'hui, c'est le refus dédié de l'import (message
+ *    « Saisie chiffrée sans grille déclarée »).
  */
 export function interditTouteBande(scoring: { type?: unknown } | null | undefined): boolean {
   return scoring?.type === TYPE_SCORING_SANS_INTERPRETATION;

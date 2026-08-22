@@ -196,6 +196,87 @@ describe('instruments/import POST', () => {
     });
   });
 
+  // Le chemin gardé de `scoringParDefaut(definition, typeDemande)` est
+  // INATTEIGNABLE (aucun appelant ne passe le second argument) : ce qui couvre
+  // réellement « items number, grille absente », c'est ce refus dédié. Sans
+  // lui, l'import répondait « seul “likert” est admis » et « entre 2 et 8
+  // options » — deux reproches exacts, aucun ne disant quoi faire.
+  it('json avec des items number mais SANS scoring : 400 orientant vers la famille à déclarer', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    // Le geste attendu est NOMMÉ, avec le littéral à écrire.
+    expect(json.error).toContain('sum_no_interpretation');
+    expect(json.error).toContain('Saisie chiffrée sans grille déclarée');
+    // Et les messages de la famille par défaut ne sont plus servis ici : ils
+    // envoyaient le praticien transformer son curseur en échelle à options.
+    expect(json.erreurs.join(' ')).not.toContain('seul « likert » est admis');
+    expect(json.erreurs.join(' ')).not.toContain('entre 2 et 8 options');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
+  // Le refus dédié ne mange pas le cas voisin : une famille interprétée
+  // DÉCLARÉE avec des items number est une contradiction du praticien, et
+  // garde le message qui la nomme.
+  it('json avec des items number et un scoring « sum » déclaré : message d’origine conservé', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: {
+            type: 'sum',
+            interpretation: [{ min: 0, max: 10, label: 'Repère', color: 'warning' }],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.erreurs.join(' ')).toContain('seul « likert » est admis');
+    expect(json.error).not.toContain('Saisie chiffrée sans grille déclarée');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
   it('json EVA avec une bande : 400, rien n’est créé', async () => {
     const res = await POST(
       postRequest({
