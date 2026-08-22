@@ -16,7 +16,7 @@
 # URL cible, par ordre de préférence :
 #   DATABASE_URL            — cas général (dev, CI, ou alias posé côté Scalingo) ;
 #   SCALINGO_POSTGRESQL_URL — injectée par l'add-on PostgreSQL Scalingo.
-# MIGRATE_DATABASE_URL n'est PLUS lue (D-086) : jamais repointée au cutover,
+# MIGRATE_DATABASE_URL n'est PLUS lue (D-087) : jamais repointée au cutover,
 # elle a fait migrer la mauvaise base — la variable de l'incident ne reste
 # prioritaire sur aucune app, staging compris (vérifié non posée le
 # 2026-08-22). Un pooler transaction intercalé un jour se traitera par

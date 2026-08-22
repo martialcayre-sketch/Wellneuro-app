@@ -16,7 +16,7 @@ name: Release DB
 # Le mode `import-cb` est HORS SERVICE depuis le cutover (il visait
 # Supabase) — refus explicite plus bas. Runbook et séquence de mise en
 # service : docs/DEPLOIEMENT_RELEASE_DB.md · historique et raisonnements :
-# docs/adr/2026-08-07-commentaires-workflows.md · décision : D-086.
+# docs/adr/2026-08-07-commentaires-workflows.md · décision : D-087.
 
 on:
   # DÉCLENCHEMENT AUTOMATIQUE — proposer la release, jamais l'approuver : le job

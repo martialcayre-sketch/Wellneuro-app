@@ -247,7 +247,7 @@ jobs:
       # L'autre moitié du protocole : les invariants ci-dessus verrouillent ce
       # que le workflow LIT (sentinelles liées au run, jeton borné), ce banc
       # joue ce que les scripts ÉMETTENT — en bash réel, npx factice, chaque
-      # point de sortie — plus la porte du postdeploy (D-086). Un protocole
+      # point de sortie — plus la porte du postdeploy (D-087). Un protocole
       # vérifié d'un seul côté n'est qu'une convention.
       - name: Scripts de release Scalingo (banc des sentinelles)
         run: node --test scripts/release-db-scripts.test.mjs

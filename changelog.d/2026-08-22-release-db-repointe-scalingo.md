@@ -1,4 +1,10 @@
-### `release-db` vise enfin la base qui rend le service — one-off Scalingo, porte d'approbation restaurée (2026-08-22)
+### `release-db` vise enfin la base qui rend le service — one-off Scalingo, porte d'approbation restaurée (D-087, 2026-08-22)
+
+> Arbitrage du responsable, même jour : ce modèle **supplante les §1-2 de
+> `D-086`** (née en session parallèle du même incident) — le gate humain
+> redevient l'approbation `release-db` à la pose du drapeau, le repointage
+> d'URL envisagé par `D-086` §2 étant matériellement impossible (base HDS
+> non exposée à Internet). Son §3 (vérification par one-off) demeure.
 
 Constat déclencheur, fait le jour même sur la purge #746 : le workflow
 appliquait encore ses migrations **sur Supabase** (`MIGRATE_DATABASE_URL`

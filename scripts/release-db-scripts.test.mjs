@@ -152,7 +152,7 @@ test('statut : migrations en attente → WN_STATUT_DB_ECHEC et sortie non nulle'
   assert.doesNotMatch(r.sortie, /WN_STATUT_DB_OK/);
 });
 
-// ——— db-deploy.sh : la porte de gouvernance (D-086) ———
+// ——— db-deploy.sh : la porte de gouvernance (D-087) ———
 
 test('drapeau posé : le postdeploy sort sans toucher à la base', () => {
   const r = jouer('db-deploy.sh', { env: { WN_MIGRATIONS_PAR_RELEASE_DB: '1' } });
@@ -177,7 +177,7 @@ test('drapeau absent ou différent de 1 : le postdeploy migre comme avant', () =
 });
 
 // L'asymétrie relevée en revue : le postdeploy (staging) préférait encore la
-// variable de l'incident. Depuis D-086, plus aucun script ne la lit.
+// variable de l'incident. Depuis D-087, plus aucun script ne la lit.
 test('MIGRATE_DATABASE_URL seule : le postdeploy refuse plutôt que de la suivre', () => {
   const r = jouer('db-deploy.sh', { env: { MIGRATE_DATABASE_URL: URL_MIGRATE } });
   assert.equal(r.code, 1);

@@ -96,7 +96,7 @@ test('`release` dépend de `resume`, pour que le résumé précède la demande',
   assert.match(JOBS.get('release'), /^\s+needs:\s*resume\s*$/m);
 });
 
-// Depuis le cutover du 2026-08-22 (D-080/D-086), le mode import-cb est HORS
+// Depuis le cutover du 2026-08-22 (D-080/D-087), le mode import-cb est HORS
 // SERVICE : il visait Supabase. Le refus doit être EXPLICITE (une garde qui
 // échoue en le disant), jamais un mode qui « tombe en marche » sur une base
 // décommissionnée — et il doit rester la SEULE étape qui mentionne import-cb :
@@ -125,7 +125,7 @@ test('le mode import-cb est refusé explicitement, et rien d’autre ne le porte
 
 // La leçon de l'incident du 2026-08-22 : le workflow appliquait ses migrations
 // sur Supabase parce qu'un secret d'URL (MIGRATE_ + DATABASE_URL) était resté
-// pointé dessus au cutover. Depuis D-086, AUCUNE URL de base ne transite par
+// pointé dessus au cutover. Depuis D-087, AUCUNE URL de base ne transite par
 // GitHub — le one-off tourne là où l'add-on injecte l'URL. Ce banc interdit le
 // retour du motif jusque dans les commentaires : si une URL de base redevient
 // nécessaire ici, c'est le MODÈLE qui change (décision), pas une variable

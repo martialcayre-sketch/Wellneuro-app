@@ -31,7 +31,7 @@ const CONTRAT = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql';
 const NEGATIF = 'web/prisma/checks/rag_claim_fraicheur_tables_signees_v1_negatif.sql';
 const CI = '.github/workflows/ci.yml';
 const RELEASE_DB = '.github/workflows/release-db.yml';
-// Depuis D-086 (2026-08-22), le workflow n'exécute plus rien contre la base :
+// Depuis D-087 (2026-08-22), le workflow n'exécute plus rien contre la base :
 // préflights et `migrate deploy` vivent dans ce script, joué en one-off dans
 // l'image de production. C'est LUI qui porte l'ordre à garder.
 const RELEASE_SCRIPT = 'web/scripts/release-db-scalingo.sh';
@@ -302,7 +302,7 @@ describe('claims épinglés — les contrats sont câblés', () => {
   // L'ORDRE, pas la présence. Une étape déplacée APRÈS `migrate deploy`
   // vérifierait la base une fois écrite : le préflight n'aurait plus de sens, et
   // une assertion de présence resterait verte — elle serait même satisfaite par
-  // un simple commentaire. Depuis D-086, l'ordre vit dans le script du one-off.
+  // un simple commentaire. Depuis D-087, l'ordre vit dans le script du one-off.
   it('le préflight production passe AVANT migrate deploy', () => {
     const preflight = releaseScript.indexOf(
       'prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql',
