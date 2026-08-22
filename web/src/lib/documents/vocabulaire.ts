@@ -2,6 +2,32 @@
 // traitant emploie le registre « explorations à discuter » : jamais de
 // terminologie prescriptive. Cet utilitaire détecte les termes prescriptifs pour
 // contrôler les contenus adressés au médecin (frontière A2 : C3 ne prescrit pas).
+//
+// ─── CARTE DES CHEMINS SORTANTS (Socle LOT-01, 2026-08-22) ───────────────────
+//
+// Tout texte clinique qui SORT de l'application passe une garde, et chaque
+// câblage a son banc — un banc qui ROUGIT quand la garde est débranchée. Cette
+// carte est le contrat posé par la campagne « Socle de restitution sûre » : un
+// chemin de texte sortant absent d'ici est un chemin sans garde, et il n'a pas
+// le droit d'exister. C'est le gate des campagnes 6.0.
+//
+// | Chemin | Garde | Régime | Banc de câblage |
+// |---|---|---|---|
+// | Synthèse (génération) | `verifierRestitutionOrientation` / `Complements` / `Discordances` (`api/praticien/synthese/route.ts`) | journalisant (`SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE`) | `api/praticien/synthese/orientation.restitution.test.ts` |
+// | Booklet (envoi au patient) | `termeAnxiogene` (ci-dessous) sur `narratif_patient` (`api/praticien/booklet/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/booklet/route.test.ts` |
+// | Rendu médecin (courrier biologie, aperçus) | `assertRenduMedecinNonPrescriptif` (ci-dessous) au chokepoint `documents/rendu.ts` | refus dur (lève) | `documents/rendu.test.ts` |
+// | Bilan portail (service) | `termeAnxiogene` sur narratif + note servis (`api/portail/bilan/route.ts`) | journalisant (`PORTAIL_BILAN_REGISTRE_ANXIOGENE`) | `api/portail/bilan/route.test.ts` |
+//
+// Hors carte, et pourquoi : `correspondance-medecin` consigne un texte écrit
+// par le praticien hors application (rien n'est généré ni envoyé) ; les emails
+// templatés ne portent aucune prose générée — leur registre de gabarits est
+// l'objet du LOT-03 du Socle.
+//
+// Consigne pour un chemin NEUF : l'ajouter ici AVEC sa garde et son banc de
+// débranchement, dans la même PR que le chemin. Les régimes (journalisant /
+// confirmable / refus dur) sont des choix datés et motivés — ils ne
+// s'alignent pas entre eux sans décision : le durcissement éventuel est un
+// arbitrage du responsable (instruit au handoff du Socle LOT-01, non tranché).
 
 /** Racines de termes prescriptifs à proscrire d'un rendu médecin (minuscules). */
 export const RACINES_PRESCRIPTIVES: readonly string[] = [

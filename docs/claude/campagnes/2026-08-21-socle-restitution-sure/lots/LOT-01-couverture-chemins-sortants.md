@@ -1,6 +1,6 @@
 ---
 id: "LOT-01"
-statut: "à faire"
+statut: "terminé (2026-08-22, PR à venir) — carte posée, re-vérification du bilan au service (journalisante), quatre gardes vues rouges débranchées ; arbitrage des régimes instruit au handoff, non tranché"
 dépend_de: "aucun"
 ---
 
@@ -32,8 +32,11 @@ créer) de s'ouvrir sans garde, en silence.
    de l'appel, motif vidé) — le critère du brief : une garde toujours verte
    sans sujet ne prouve rien.
 2. Le bilan portail **re-vérifie au service** ce qu'il sert (même registre que
-   l'envoi) : un contenu devenu non conforme entre l'envoi et la lecture ne
-   part plus tel quel.
+   l'envoi) : un contenu devenu non conforme entre l'envoi et la lecture est
+   **journalisé** — pas retenu : la garde d'envoi est confirmable, et retenir
+   ce que le praticien a confirmé changerait un verdict (interdit ci-dessous).
+   *(Précisé à l'exécution — la première rédaction disait « ne part plus tel
+   quel », incompatible avec l'interdit du lot.)*
 3. Une **carte des chemins sortants** vit en tête du module de garde — la
    table ci-dessus, tenue à jour, avec la consigne pour tout chemin neuf.
 
@@ -67,8 +70,9 @@ Aucune.
 
 - Chaque banc : vert câblé, **rouge débranché** — la preuve se joue en
   mutation (retirer l'appel, voir rouge, remettre) avant de conclure.
-- Bilan portail : un envoi conforme se sert ; un contenu rendu non conforme
-  (fixture) est retenu au service. Patient fictif uniquement.
+- Bilan portail : un envoi conforme se sert sans journalisation ; un contenu
+  rendu non conforme (fixture) est servi ET journalisé (champ, jamais terme).
+  Patient fictif uniquement.
 - T2 avant commit ; le segment E2E existant du portail ne doit pas bouger.
 
 ## Critères de done

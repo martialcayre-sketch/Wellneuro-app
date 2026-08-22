@@ -8,7 +8,7 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/observability/logger', () => ({
-  logger: { security: vi.fn(), error: vi.fn() },
+  logger: { security: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
 // `@/lib/consultation/portail` n'est PAS moqué, délibérément : c'est lui qui
@@ -163,6 +163,62 @@ describe('GET /api/portail/bilan', () => {
       mentionPreparation: expect.stringContaining('assistance d’intelligence artificielle'),
       transmisLe: '2026-07-18T09:30:00.000Z',
     });
+  });
+
+  // --- Re-vérification au service (Socle LOT-01) --------------------------
+  //
+  // Le banc de débranchement du chemin « bilan portail » de la carte des
+  // chemins sortants (`documents/vocabulaire.ts`) : retirer l'appel à
+  // `termeAnxiogene` de la route rend ces tests rouges.
+
+  it('journalise — sans retenir — un narratif au registre anxiogène', async () => {
+    prisma.bookletEnvoi.findFirst.mockResolvedValue({
+      ...ENVOI,
+      synthese: {
+        ...SYNTHESE,
+        syntheseJson: { ...SYNTHESE.syntheseJson, narratif_patient: 'Consultation urgente recommandée.' },
+      },
+    });
+
+    const corps = await (await GET(requete(cookieValide()))).json();
+    // Verdict préservé : la garde d'envoi est CONFIRMABLE — le service ne
+    // retient pas ce que le praticien a pu confirmer, il journalise.
+    expect(corps.ok).toBe(true);
+    expect(corps.bilan.narratif).toContain('urgente');
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'PORTAIL_PATIENT.BILAN.REGISTRE_ANXIOGENE',
+        message: expect.stringContaining('narratif'),
+      }),
+    );
+    // Le mot du praticien ne part jamais en log — le champ, pas le terme.
+    for (const appel of (logger.warn as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(JSON.stringify(appel[0])).not.toContain('urgente');
+    }
+  });
+
+  it('la note transmise est re-vérifiée aussi', async () => {
+    prisma.bookletEnvoi.findFirst.mockResolvedValue({
+      ...ENVOI,
+      noteTransmise: 'Résultat alarmant à surveiller.',
+    });
+
+    const corps = await (await GET(requete(cookieValide()))).json();
+    expect(corps.ok).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'PORTAIL_PATIENT.BILAN.REGISTRE_ANXIOGENE',
+        message: expect.stringContaining('note'),
+      }),
+    );
+  });
+
+  it('un bilan au registre sain se sert sans journalisation', async () => {
+    prisma.bookletEnvoi.findFirst.mockResolvedValue(ENVOI);
+
+    const corps = await (await GET(requete(cookieValide()))).json();
+    expect(corps.ok).toBe(true);
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   // Le contrat que la page rend au navigateur du patient. Assertion sur la

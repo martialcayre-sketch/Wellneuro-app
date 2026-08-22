@@ -13,6 +13,9 @@ export const EVENT_CODES = {
   PORTAIL_SESSION_EXCEPTION: 'PORTAIL_PATIENT.SESSION.EXCEPTION',
   PORTAIL_ASSIGNATIONS_UNAUTHORIZED: 'PORTAIL_PATIENT.ASSIGNATIONS.UNAUTHORIZED',
   PORTAIL_ASSIGNATIONS_QUERY_FAILED: 'PORTAIL_PATIENT.ASSIGNATIONS.QUERY_FAILED',
+  // Socle LOT-01 — re-vérification au service du bilan : le contenu servi
+  // emploie un registre anxiogène (journalisant, jamais bloquant).
+  PORTAIL_BILAN_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.BILAN.REGISTRE_ANXIOGENE',
 
   // Gate G4 — lien magique. Le rejeu est refusé ET tracé : c'est une exigence
   // du registre, pas du confort de diagnostic.

@@ -4389,3 +4389,17 @@ lots du brief tels quels (deux sur trois reposaient sur des constats faux ou
 périmés). Prochaine action : PR d'ouverture, CI, puis LOT-01. Ouvert :
 arbitrage journalisant/bloquant de la garde de synthèse (instruit au LOT-01,
 tranché par le responsable) ; sort de stopRulesLibelles (LOT-02).
+
+## 2026-08-22 — Socle LOT-01 : la couverture des chemins sortants est prouvée
+
+Décisions : carte des chemins en tête de documents/vocabulaire.ts (contrat +
+consigne pour tout chemin neuf) ; re-vérification du bilan portail au service
+en régime JOURNALISANT — retenir changerait le verdict confirmable de l'envoi,
+la première rédaction du lot (« retenu ») est corrigée et la correction tracée
+dans le fichier de lot ; quatre gardes prouvées par mutation (bilan 3 rouges,
+rendu 1, booklet 3, synthèse 4 — tout rebranché vert). Écarté : instantané de
+syntheseJson figé à l'envoi (la vraie fermeture — migration, décision
+séparée) ; scan des vigilances praticien (jamais servies au patient).
+Prochaine action : PR du lot, puis LOT-02 (hook + en-tête sous D-xxx).
+Ouvert : arbitrage des régimes (3 options au handoff 11:55) ; CRLF de
+booklet/route.ts piégeux (handoff).
