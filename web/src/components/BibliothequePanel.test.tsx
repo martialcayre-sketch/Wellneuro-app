@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BibliothequePanel } from './BibliothequePanel';
 import {
   LIBELLE_INSTRUMENT_CABINET,
@@ -224,5 +224,112 @@ describe('BibliothequePanel — libellés de vérification de scoring (D-036)', 
     const tiroir = await waitFor(() => screen.getByTestId('instruments-cabinet'));
     expect(within(tiroir).getByText(TEXTE_INSTRUMENTS_CABINET)).toBeTruthy();
     expect(tiroir.textContent ?? '').not.toMatch(/certifi/i);
+  });
+});
+
+// ── EVA — relecture et édition d'un instrument sans interprétation (D-088) ──
+//
+// L'écran de relecture énumérait les bandes sans garde : sur cette famille,
+// `detail.scoring.interpretation` est ABSENT en base, et le `.map` faisait
+// planter le tiroir. Une section « Bandes » vide n'aurait pas été mieux — elle
+// se lit comme une grille oubliée, alors que l'absence est ici le propos.
+const EVA_DETAIL = {
+  idInstrument: 'CAB_EVA_1',
+  titre: 'EVA fatigue — cabinet',
+  categorie: 'Pilotage',
+  description: null,
+  statutRelecture: 'grille_a_relire',
+  nbQuestions: 1,
+  scoreMax: 10,
+  definition: {
+    instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+    sections: [
+      {
+        id: 'S1',
+        questions: [
+          {
+            id: 'EVA1',
+            texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+            type: 'number',
+            min: 0,
+            max: 10,
+            unit: '/10',
+          },
+        ],
+      },
+    ],
+  },
+  // AUCUNE clé `interpretation` : c'est exactement ce que porte la base.
+  scoring: { type: 'sum_no_interpretation', maxTotal: 10 },
+};
+
+function stubFetchEva() {
+  const ok = (data: unknown) =>
+    Promise.resolve({ ok: true, status: 200, json: async () => data } as Response);
+  vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/api/praticien/file-envoi')) return ok({ brouillons: [] });
+    if (url.includes('/api/praticien/bibliotheque')) return ok({ entrees: [] });
+    if (url.includes('/api/praticien/instruments?id=')) return ok({ instrument: EVA_DETAIL });
+    if (url.includes('/api/praticien/instruments')) {
+      return ok({
+        instruments: [
+          {
+            idInstrument: EVA_DETAIL.idInstrument,
+            titre: EVA_DETAIL.titre,
+            categorie: EVA_DETAIL.categorie,
+            statutRelecture: EVA_DETAIL.statutRelecture,
+            nbQuestions: EVA_DETAIL.nbQuestions,
+            scoreMax: EVA_DETAIL.scoreMax,
+          },
+        ],
+      });
+    }
+    if (url.includes('/api/praticien/patients')) return ok({ patients: [] });
+    return ok({});
+  });
+}
+
+describe('BibliothequePanel — EVA sans interprétation (D-088)', () => {
+  it('la relecture rend les ancres et DIT l’absence d’interprétation, sans planter', async () => {
+    stubFetchEva();
+    render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+
+    fireEvent.click(await screen.findByText('Relire la grille'));
+
+    // L'énoncé et ses ancres — ce qui se relit ici, à défaut de grille.
+    expect(await screen.findByText('Énoncés et ancres')).toBeTruthy();
+    expect(screen.getByText('Où en êtes-vous de votre fatigue aujourd’hui ?')).toBeTruthy();
+    expect(screen.getByText('0–10 /10')).toBeTruthy();
+
+    // La déclaration, au mot près : l'absence est dite, pas laissée à deviner.
+    expect(
+      screen.getByText(
+        'Aucune interprétation : cet instrument pilote la conversation, il ne classe pas.',
+      ),
+    ).toBeTruthy();
+
+    // Aucune section de bandes, aucune bande d'attente.
+    expect(screen.queryByText('Bandes d’interprétation')).toBeNull();
+    expect(screen.queryByText(/Grille à définir/)).toBeNull();
+
+    // Le bouton ne promet plus une grille relue : il n'y en a pas.
+    expect(screen.getByText('Relu — publier')).toBeTruthy();
+    expect(screen.queryByText('Grille relue — publier')).toBeNull();
+  });
+
+  it('l’éditeur refuse cette famille au lieu de lui poser une amorce de bande', async () => {
+    stubFetchEva();
+    render(<BibliothequePanel entrees={[ENTREE_BASE]} />);
+
+    fireEvent.click(await screen.findByText('Modifier'));
+
+    expect(await screen.findByText(/L’éditeur de questionnaire ne le modifie pas/)).toBeTruthy();
+    // C'EST LE PIÈGE DU LOT : l'amorce de l'éditeur pose une bande unique
+    // « Grille à définir — relecture requise », colorée `warning`. Sur un
+    // instrument qui ne classe pas, ce libellé serait un verdict.
+    expect(screen.queryByDisplayValue('Grille à définir — relecture requise')).toBeNull();
+    expect(screen.queryByText(/Bandes d’interprétation/)).toBeNull();
+    expect(screen.queryByLabelText('Libellé de la bande 1')).toBeNull();
   });
 });

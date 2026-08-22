@@ -4463,6 +4463,23 @@ Prochaine action : PR d'ouverture, CI, puis LOT-01 (schéma à proposer,
 s'arrêter à la confirmation) — LOT-05 jouable en parallèle. Ouvert : travail
 synthèse non commité d'une session parallèle dans l'arbre (non touché).
 
+## 2026-08-22 — Alliance 6.0-A LOT-05 : l'EVA, piloter sans classer (D-088)
+
+Décisions : la garde « grille complète et couvrante » est relâchée pour UNE
+famille déclarée (`sum_no_interpretation`), contre une garde inverse plus
+stricte — aucune bande admise, pas même la bande d'attente « Grille à
+définir ». Garde à deux sites actifs + un défensif (paramètre de
+`scoringParDefaut`, qu'aucun appelant ne passe) ; le cas « items number sans
+grille » est couvert par un refus dédié de l'import. Moteur `questions.ts`
+intact (le type existait, servi par Q_PED_01 et Q_MOD_02 — pas Q_MOD_01, qui
+est `subscore`) ; aucune migration ; item `number` borné
+réutilisé, pas de curseur neuf. La garde nommée `interditTouteBande` vit au
+module feuille `echelles-cabinet` — `instruments.ts` embarque Prisma et la
+Bibliothèque est un panneau client. Écarté : éditer cette famille dans
+l'éditeur de questionnaire (il la détruirait — refus explicite, entrée par
+import JSON) ; toute surface de trajectoire (hors périmètre du lot).
+Prochaine action : revue puis PR par la session principale. Ouvert :
+restitution de trajectoire des passations successives, non traitée.
 ## 2026-08-22 — Alliance LOT-01 : la migration du dossier à deux voix, et D-086
 
 Décisions : cadrage wn-reviewer NO-GO sur la chaîne de livraison — release-db

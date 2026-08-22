@@ -144,6 +144,173 @@ describe('instruments/import POST', () => {
     expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
   });
 
+  // GARDE ANTI-BANDE-PAR-DÉFAUT, troisième site (`D-088`). L'import est la
+  // porte d'entrée d'une EVA : shape complète, item `number` borné, famille
+  // déclarée. Rien ne doit lui poser de bande — ni la grille par défaut, ni
+  // l'avertissement qui l'annonce.
+  it('json EVA sans interprétation : aucune bande posée, aucun avertissement de grille', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                    unit: '/10',
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: { type: 'sum_no_interpretation' },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toMatchObject({ success: true, nbQuestions: 1, avertissements: [] });
+    const data = prisma.cabinetInstrument.create.mock.calls[0][0].data;
+    expect(data.statutRelecture).toBe('brouillon');
+    expect(data.scoringJson.type).toBe('sum_no_interpretation');
+    expect(data.scoringJson.maxTotal).toBe(10);
+    expect(data.scoringJson.interpretation ?? []).toEqual([]);
+    expect(JSON.stringify(data.scoringJson)).not.toContain('Grille à définir');
+    expect(JSON.stringify(data.scoringJson)).not.toContain('warning');
+    // Les ancres du curseur traversent l'import telles qu'elles ont été
+    // déclarées — elles bornent le rendu patient ET la garde serveur.
+    expect(data.definitionJson.sections[0].questions[0]).toMatchObject({
+      type: 'number',
+      min: 0,
+      max: 10,
+      unit: '/10',
+    });
+  });
+
+  // Le chemin gardé de `scoringParDefaut(definition, typeDemande)` est
+  // INATTEIGNABLE (aucun appelant ne passe le second argument) : ce qui couvre
+  // réellement « items number, grille absente », c'est ce refus dédié. Sans
+  // lui, l'import répondait « seul “likert” est admis » et « entre 2 et 8
+  // options » — deux reproches exacts, aucun ne disant quoi faire.
+  it('json avec des items number mais SANS scoring : 400 orientant vers la famille à déclarer', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    // Le geste attendu est NOMMÉ, avec le littéral à écrire.
+    expect(json.error).toContain('sum_no_interpretation');
+    expect(json.error).toContain('Saisie chiffrée sans grille déclarée');
+    // Et les messages de la famille par défaut ne sont plus servis ici : ils
+    // envoyaient le praticien transformer son curseur en échelle à options.
+    expect(json.erreurs.join(' ')).not.toContain('seul « likert » est admis');
+    expect(json.erreurs.join(' ')).not.toContain('entre 2 et 8 options');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
+  // Le refus dédié ne mange pas le cas voisin : une famille interprétée
+  // DÉCLARÉE avec des items number est une contradiction du praticien, et
+  // garde le message qui la nomme.
+  it('json avec des items number et un scoring « sum » déclaré : message d’origine conservé', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: {
+            type: 'sum',
+            interpretation: [{ min: 0, max: 10, label: 'Repère', color: 'warning' }],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.erreurs.join(' ')).toContain('seul « likert » est admis');
+    expect(json.error).not.toContain('Saisie chiffrée sans grille déclarée');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
+  it('json EVA avec une bande : 400, rien n’est créé', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: {
+            type: 'sum_no_interpretation',
+            interpretation: [{ min: 0, max: 10, label: 'Fatigue élevée', color: 'danger' }],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).erreurs.join(' ')).toContain('aucune bande n’est admise');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
   it('titre déjà porté par un instrument actif : 409 sans création', async () => {
     prisma.cabinetInstrument.findFirst.mockResolvedValue({ idInstrument: 'CAB_EXISTANT' });
     const res = await POST(

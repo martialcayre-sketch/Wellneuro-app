@@ -14,7 +14,11 @@ import {
   type DefinitionCatalogue,
 } from '@/lib/bibliotheque';
 import type { CabinetInstrument } from '@/generated/prisma';
-import { type OptionCabinet } from '@/lib/echelles-cabinet';
+import {
+  TYPE_SCORING_SANS_INTERPRETATION,
+  interditTouteBande,
+  type OptionCabinet,
+} from '@/lib/echelles-cabinet';
 
 export const PREFIXE_CABINET = 'CAB_';
 
@@ -24,12 +28,30 @@ export function estInstrumentCabinet(id: string): boolean {
 
 // ── Formes stockées (definition_json / scoring_json) ────────────────────────
 
-export type QuestionCabinet = {
-  id: string;
-  texte: string;
-  type: 'likert';
-  options: OptionCabinet[];
-};
+export type QuestionCabinet =
+  | {
+      id: string;
+      texte: string;
+      type: 'likert';
+      options: OptionCabinet[];
+    }
+  | {
+      /**
+       * Saisie chiffrée bornée — admise sur la SEULE famille « sans
+       * interprétation » (`D-088`). L'item porte ses ancres (`min`, `max`,
+       * `unit`) et rien d'autre : elles servent le rendu patient
+       * (`QuestionField`), la garde de bornes côté serveur
+       * (`api/patient/submit`) et les bornes du score. Aucune option cotée,
+       * donc aucune bande calculable — c'est le point.
+       */
+      id: string;
+      texte: string;
+      type: 'number';
+      min: number;
+      max: number;
+      step?: number;
+      unit?: string;
+    };
 
 export type SectionCabinet = { id: string; titre?: string; questions: QuestionCabinet[] };
 
@@ -42,12 +64,39 @@ export type BandeInterpretation = {
   color: 'success' | 'warning' | 'danger';
 };
 
-// Seuls ces trois types de scoring sont admis : le moteur de score
+// Seuls ces types de scoring sont admis : le moteur de score
 // (computeScoreFromDef, @/lib/questions) n'a AUCUN catch-all — tout autre
 // type casserait la soumission patient.
+//
+// Ces trois-ci CONCLUENT : ils rendent une bande, donc ils exigent une grille
+// complète et couvrante.
 export const TYPES_SCORING_CABINET = ['sum', 'sum_reversed', 'count_threshold'] as const;
 
-export type ScoringCabinet = {
+/**
+ * Famille « sans interprétation » (`D-088`) — un instrument de PILOTAGE.
+ *
+ * Le moteur existe déjà et n'a pas bougé d'une ligne (`@/lib/questions`,
+ * `sum_no_interpretation`) : il rend le total et `interpretation: null`. Ce
+ * qui change ici est le VALIDATEUR, et dans un seul sens : la garde « tout
+ * instrument cabinet publié porte une grille complète et couvrante » est
+ * relâchée pour cette famille, et pour elle seule — en échange d'une garde
+ * inverse, plus stricte, qui refuse toute bande (`DC-19`, `DC-20` : aucun
+ * seuil, aucune borne, aucun libellé interprétatif inventé).
+ *
+ * Littéral et garde définis dans `@/lib/echelles-cabinet` (module feuille,
+ * sans Prisma) parce que le panneau client de la Bibliothèque les lit aussi ;
+ * réexportés ici pour les appelants serveur.
+ */
+export { TYPE_SCORING_SANS_INTERPRETATION, interditTouteBande };
+
+/** Tous les types admis à l'entrée d'un instrument du cabinet. */
+export const TYPES_SCORING_CABINET_ADMIS = [
+  ...TYPES_SCORING_CABINET,
+  TYPE_SCORING_SANS_INTERPRETATION,
+] as const;
+
+/** Familles qui concluent : la grille est obligatoire, complète et couvrante. */
+export type ScoringCabinetInterprete = {
   type: (typeof TYPES_SCORING_CABINET)[number];
   reversed?: string[];
   threshold?: number;
@@ -56,6 +105,20 @@ export type ScoringCabinet = {
   maxTotal?: number;
   interpretation: BandeInterpretation[];
 };
+
+/** Famille qui ne conclut pas : la grille est INTERDITE, pas seulement absente. */
+export type ScoringCabinetSansInterpretation = {
+  type: typeof TYPE_SCORING_SANS_INTERPRETATION;
+  maxTotal?: number;
+  /**
+   * Toujours absente ou vide en base. Le champ existe pour que la VALIDATION
+   * puisse refuser une bande arrivée par le payload : l'effacer en amont
+   * ferait passer un seuil en silence au lieu de le rejeter.
+   */
+  interpretation?: BandeInterpretation[];
+};
+
+export type ScoringCabinet = ScoringCabinetInterprete | ScoringCabinetSansInterpretation;
 
 // ── Resolver commun ─────────────────────────────────────────────────────────
 
@@ -170,16 +233,39 @@ export function normaliserDefinitionCabinet(brut: unknown): DefinitionCabinet {
             ? s.id.trim().slice(0, 20)
             : `S${iSection + 1}`,
         ...(titreSection ? { titre: titreSection } : {}),
-        questions: questions.map((question: unknown) => {
+        questions: questions.map((question: unknown): QuestionCabinet => {
           const q = (question ?? {}) as {
             id?: unknown;
             texte?: unknown;
             type?: unknown;
             options?: unknown;
+            min?: unknown;
+            max?: unknown;
+            step?: unknown;
+            unit?: unknown;
           };
+          const id = typeof q.id === 'string' ? q.id.trim() : '';
+          const texte = typeof q.texte === 'string' ? q.texte.trim().slice(0, 300) : '';
+          // Saisie chiffrée : ses ancres traversent la normalisation telles
+          // quelles. Les BORNER ici (ou les inventer quand elles manquent)
+          // fabriquerait une échelle que personne n'a déclarée — c'est la
+          // validation qui exige `min`/`max`, et qui refuse sinon.
+          if (q.type === 'number') {
+            return {
+              id,
+              texte,
+              type: 'number',
+              min: q.min as number,
+              max: q.max as number,
+              ...(q.step !== undefined ? { step: q.step as number } : {}),
+              ...(typeof q.unit === 'string' && q.unit.trim().length > 0
+                ? { unit: q.unit.trim().slice(0, 20) }
+                : {}),
+            };
+          }
           return {
-            id: typeof q.id === 'string' ? q.id.trim() : '',
-            texte: typeof q.texte === 'string' ? q.texte.trim().slice(0, 300) : '',
+            id,
+            texte,
             type: (q.type === undefined ? 'likert' : q.type) as 'likert',
             options: Array.isArray(q.options)
               ? q.options.map((option: unknown) => {
@@ -205,23 +291,35 @@ export function normaliserScoringCabinet(brut: unknown): ScoringCabinet {
     threshold?: unknown;
     interpretation?: unknown;
   };
+  const type = typeof s.type === 'string' ? s.type : '';
+  const bandes: BandeInterpretation[] = Array.isArray(s.interpretation)
+    ? s.interpretation.map((bande: unknown) => {
+        const b = (bande ?? {}) as { min?: unknown; max?: unknown; label?: unknown; color?: unknown };
+        return {
+          min: b.min as number,
+          max: b.max as number,
+          label: typeof b.label === 'string' ? b.label.trim().slice(0, 120) : '',
+          color: b.color as BandeInterpretation['color'],
+        };
+      })
+    : [];
+  if (type === TYPE_SCORING_SANS_INTERPRETATION) {
+    // Les bandes reçues sont CONSERVÉES, pas effacées : c'est
+    // `validerInstrumentCabinet` qui les refuse, avec un message. Les jeter ici
+    // ferait entrer l'instrument en silence, en laissant croire au praticien
+    // que son seuil a été pris — le pire des deux mondes.
+    return {
+      type: TYPE_SCORING_SANS_INTERPRETATION,
+      ...(bandes.length > 0 ? { interpretation: bandes } : {}),
+    };
+  }
   return {
-    type: (typeof s.type === 'string' ? s.type : '') as ScoringCabinet['type'],
+    type: type as ScoringCabinetInterprete['type'],
     ...(Array.isArray(s.reversed)
       ? { reversed: s.reversed.filter((x): x is string => typeof x === 'string') }
       : {}),
     ...(s.threshold !== undefined ? { threshold: s.threshold as number } : {}),
-    interpretation: Array.isArray(s.interpretation)
-      ? s.interpretation.map((bande: unknown) => {
-          const b = (bande ?? {}) as { min?: unknown; max?: unknown; label?: unknown; color?: unknown };
-          return {
-            min: b.min as number,
-            max: b.max as number,
-            label: typeof b.label === 'string' ? b.label.trim().slice(0, 120) : '',
-            color: b.color as BandeInterpretation['color'],
-          };
-        })
-      : [],
+    interpretation: bandes,
   };
 }
 
@@ -229,8 +327,21 @@ export const LABEL_GRILLE_A_DEFINIR = 'Grille à définir — relecture requise'
 
 /** Grille par défaut d'un import sans scoring : une bande unique warning
  * couvrant tout l'intervalle possible — assignable seulement après relecture
- * et publication, comme tout instrument du cabinet. */
-export function scoringParDefaut(definition: DefinitionCabinet): ScoringCabinet {
+ * et publication, comme tout instrument du cabinet.
+ *
+ * `typeDemande` : la famille visée. Sur la famille sans interprétation, AUCUNE
+ * bande n'est posée (garde `interditTouteBande`, `D-088`) — pas même celle qui
+ * dit « à définir ». **Paramètre DÉFENSIF : aucun appelant ne le passe
+ * aujourd'hui** (les trois appels de l'import sont sans second argument, et
+ * n'ont lieu que `scoring` absent, donc famille non déclarable). Détail du
+ * partage actif/défensif : `interditTouteBande`, `@/lib/echelles-cabinet`. */
+export function scoringParDefaut(
+  definition: DefinitionCabinet,
+  typeDemande: string = 'sum',
+): ScoringCabinet {
+  if (interditTouteBande({ type: typeDemande })) {
+    return { type: TYPE_SCORING_SANS_INTERPRETATION };
+  }
   const questions = definition.sections.flatMap(s => s.questions);
   const bornes = bornesScore(questions, 'sum') ?? { min: 0, max: 0 };
   return {
@@ -259,13 +370,22 @@ function estEntier(valeur: unknown): valeur is number {
 
 /** Bornes [min..max] du score selon le type. `null` si une option est invalide. */
 function bornesScore(
-  questions: { options?: { v?: unknown }[] }[],
+  questions: { type?: unknown; options?: { v?: unknown }[]; min?: unknown; max?: unknown }[],
   type: string,
 ): { min: number; max: number } | null {
   if (type === 'count_threshold') return { min: 0, max: questions.length };
   let min = 0;
   let max = 0;
   for (const q of questions) {
+    // Saisie chiffrée : ses bornes sont celles DÉCLARÉES par l'item — il n'y a
+    // aucune option d'où les déduire, et les deviner reviendrait à inventer
+    // l'échelle.
+    if (q.type === 'number') {
+      if (!estEntier(q.min) || !estEntier(q.max)) return null;
+      min += q.min;
+      max += q.max;
+      continue;
+    }
     const valeurs = (q.options ?? []).map(o => o?.v).filter(estEntier);
     if (valeurs.length === 0) return null;
     min += Math.min(...valeurs);
@@ -290,6 +410,19 @@ export function validerInstrumentCabinet(input: {
   if (titre.length < 3 || titre.length > 120) {
     erreurs.push('Le titre doit compter entre 3 et 120 caractères.');
   }
+
+  // Le TYPE DE SCORING est lu avant la définition : c'est lui qui dit quelle
+  // forme d'item est admise. Seule la famille sans interprétation (`D-088`)
+  // accepte la saisie chiffrée bornée — une famille qui conclut a besoin
+  // d'options cotées, sans quoi ses bandes n'ont rien à couvrir.
+  const scoring = (input.scoring ?? {}) as {
+    type?: unknown;
+    reversed?: unknown;
+    threshold?: unknown;
+    interpretation?: unknown;
+  };
+  const type = typeof scoring.type === 'string' ? scoring.type : '';
+  const sansInterpretation = interditTouteBande(scoring);
 
   // ── Définition ────────────────────────────────────────
   const definition = (input.definition ?? {}) as {
@@ -322,6 +455,9 @@ export function validerInstrumentCabinet(input: {
         texte?: unknown;
         type?: unknown;
         options?: unknown;
+        min?: unknown;
+        max?: unknown;
+        unit?: unknown;
       };
       const position = `question ${iQuestion + 1} de la section ${iSection + 1}`;
       const id = typeof q.id === 'string' ? q.id : '';
@@ -338,22 +474,44 @@ export function validerInstrumentCabinet(input: {
       if (texte.length < 3 || texte.length > 300) {
         erreurs.push(`Le texte de la ${position} doit compter entre 3 et 300 caractères.`);
       }
-      if (q.type !== 'likert') {
-        erreurs.push(`Type non pris en charge pour la ${position} (seul « likert » est admis).`);
-      }
-      const options = Array.isArray(q.options) ? q.options : [];
-      if (options.length < 2 || options.length > 8) {
-        erreurs.push(`La ${position} doit proposer entre 2 et 8 options.`);
-      }
-      options.forEach((option: unknown, iOption: number) => {
-        const o = (option ?? {}) as { v?: unknown; l?: unknown };
-        if (!estEntier(o.v)) {
-          erreurs.push(`L'option ${iOption + 1} de la ${position} doit porter une valeur entière.`);
+      if (sansInterpretation && q.type === 'number') {
+        // Ancres DÉCLARÉES, jamais devinées : elles bornent le rendu patient,
+        // la garde serveur de `api/patient/submit` et le score. Une saisie sans
+        // bornes déclarées serait une échelle inventée.
+        if (!estEntier(q.min) || !estEntier(q.max)) {
+          erreurs.push(
+            `La ${position} de type « number » doit déclarer des bornes entières min et max.`,
+          );
+        } else if (q.min >= q.max) {
+          erreurs.push(
+            `La ${position} doit déclarer un minimum strictement inférieur au maximum.`,
+          );
         }
-        if (typeof o.l !== 'string' || o.l.trim().length === 0) {
-          erreurs.push(`L'option ${iOption + 1} de la ${position} doit porter un libellé.`);
+        if (q.unit !== undefined && (typeof q.unit !== 'string' || q.unit.trim().length === 0)) {
+          erreurs.push(`L'unité de la ${position} doit être un texte non vide.`);
         }
-      });
+      } else {
+        if (q.type !== 'likert') {
+          erreurs.push(
+            sansInterpretation
+              ? `Type non pris en charge pour la ${position} (seuls « likert » et « number » sont admis).`
+              : `Type non pris en charge pour la ${position} (seul « likert » est admis).`,
+          );
+        }
+        const options = Array.isArray(q.options) ? q.options : [];
+        if (options.length < 2 || options.length > 8) {
+          erreurs.push(`La ${position} doit proposer entre 2 et 8 options.`);
+        }
+        options.forEach((option: unknown, iOption: number) => {
+          const o = (option ?? {}) as { v?: unknown; l?: unknown };
+          if (!estEntier(o.v)) {
+            erreurs.push(`L'option ${iOption + 1} de la ${position} doit porter une valeur entière.`);
+          }
+          if (typeof o.l !== 'string' || o.l.trim().length === 0) {
+            erreurs.push(`L'option ${iOption + 1} de la ${position} doit porter un libellé.`);
+          }
+        });
+      }
       questions.push(q as QuestionCabinet);
     });
   });
@@ -362,16 +520,9 @@ export function validerInstrumentCabinet(input: {
   }
 
   // ── Grille de score ───────────────────────────────────
-  const scoring = (input.scoring ?? {}) as {
-    type?: unknown;
-    reversed?: unknown;
-    threshold?: unknown;
-    interpretation?: unknown;
-  };
-  const type = typeof scoring.type === 'string' ? scoring.type : '';
-  if (!(TYPES_SCORING_CABINET as readonly string[]).includes(type)) {
+  if (!(TYPES_SCORING_CABINET_ADMIS as readonly string[]).includes(type)) {
     erreurs.push(
-      'Type de scoring non pris en charge : seuls « sum », « sum_reversed » et « count_threshold » sont admis.',
+      'Type de scoring non pris en charge : seuls « sum », « sum_reversed », « count_threshold » et « sum_no_interpretation » sont admis.',
     );
   }
   if (type === 'sum_reversed') {
@@ -391,27 +542,47 @@ export function validerInstrumentCabinet(input: {
   }
 
   const bandes = Array.isArray(scoring.interpretation) ? scoring.interpretation : [];
-  if (bandes.length < 1 || bandes.length > MAX_BANDES) {
-    erreurs.push(`L'interprétation doit compter entre 1 et ${MAX_BANDES} bandes.`);
-  }
-  let bandesValides = bandes.length >= 1 && bandes.length <= MAX_BANDES;
-  bandes.forEach((bande: unknown, iBande: number) => {
-    const b = (bande ?? {}) as { min?: unknown; max?: unknown; label?: unknown; color?: unknown };
-    if (!estEntier(b.min) || !estEntier(b.max) || b.min > b.max) {
-      erreurs.push(`La bande ${iBande + 1} doit porter des bornes entières min ≤ max.`);
-      bandesValides = false;
-    }
-    if (typeof b.label !== 'string' || b.label.trim().length === 0) {
-      erreurs.push(`La bande ${iBande + 1} doit porter un libellé.`);
-      bandesValides = false;
-    }
-    if (typeof b.color !== 'string' || !COULEURS_BANDE.has(b.color)) {
+  let bandesValides = false;
+  if (sansInterpretation) {
+    // GARDE ANTI-SEUIL (`D-088`) — la garde de couverture est relâchée ici, et
+    // remplacée par son inverse : une bande, UNE SEULE, même « neutre », même
+    // « à définir », transforme un instrument de pilotage en instrument qui
+    // classe. Aucune source ne l'a écrite (`DC-19`, `DC-20`), et un score n'est
+    // pas un diagnostic (`DC-27`).
+    if (bandes.length > 0) {
       erreurs.push(
-        `La bande ${iBande + 1} doit porter une couleur parmi success, warning ou danger.`,
+        'Cet instrument est déclaré sans interprétation : aucune bande n’est admise (ni borne, ni libellé, ni couleur).',
       );
-      bandesValides = false;
     }
-  });
+    if (scoring.reversed !== undefined) {
+      erreurs.push('« sum_no_interpretation » n’admet pas de questions inversées (reversed).');
+    }
+    if (scoring.threshold !== undefined) {
+      erreurs.push('« sum_no_interpretation » n’admet pas de seuil (threshold).');
+    }
+  } else {
+    if (bandes.length < 1 || bandes.length > MAX_BANDES) {
+      erreurs.push(`L'interprétation doit compter entre 1 et ${MAX_BANDES} bandes.`);
+    }
+    bandesValides = bandes.length >= 1 && bandes.length <= MAX_BANDES;
+    bandes.forEach((bande: unknown, iBande: number) => {
+      const b = (bande ?? {}) as { min?: unknown; max?: unknown; label?: unknown; color?: unknown };
+      if (!estEntier(b.min) || !estEntier(b.max) || b.min > b.max) {
+        erreurs.push(`La bande ${iBande + 1} doit porter des bornes entières min ≤ max.`);
+        bandesValides = false;
+      }
+      if (typeof b.label !== 'string' || b.label.trim().length === 0) {
+        erreurs.push(`La bande ${iBande + 1} doit porter un libellé.`);
+        bandesValides = false;
+      }
+      if (typeof b.color !== 'string' || !COULEURS_BANDE.has(b.color)) {
+        erreurs.push(
+          `La bande ${iBande + 1} doit porter une couleur parmi success, warning ou danger.`,
+        );
+        bandesValides = false;
+      }
+    });
+  }
 
   // Contiguïté et couverture : les bandes croissantes doivent couvrir tout
   // [minPossible..maxPossible] — un score patient sans bande n'aurait pas

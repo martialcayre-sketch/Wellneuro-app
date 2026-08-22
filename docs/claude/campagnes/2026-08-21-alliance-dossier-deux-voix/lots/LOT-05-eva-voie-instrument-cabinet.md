@@ -1,6 +1,6 @@
 ---
 id: "LOT-05"
-statut: "à faire"
+statut: "livré à la PR (2026-08-22) — famille `sum_no_interpretation` admise au validateur (D-088), garde anti-seuil et garde anti-bande-par-défaut vues rouges puis vertes, moteur de scoring et schéma Prisma intacts"
 dépend_de: "— (indépendant du LOT-01 — cf. cadrage : la voie CabinetInstrument existe)"
 ---
 
@@ -30,6 +30,43 @@ d'interprétation (un `scoringJson` qui rend la valeur brute sans bande) ?
 - Si non : le lot s'arrête, nomme le manque précis, et la décision (étendre
   `scoringJson` ou voie propre) revient au responsable — jamais une bande
   « neutre » inventée pour passer.
+
+## Verdict d'instruction (2026-08-22)
+
+**Réponse à la première question : oui — au prix d'une décision, sans
+migration.** Mesuré sur pièces :
+
+- Le **moteur** connaît déjà la famille : `sum_no_interpretation`
+  (`web/src/lib/questions.ts`) rend le total, `maxTotal` et
+  `interpretation: null` ; deux instruments du catalogue Drive s'en servent
+  (`Q_PED_01` — Matinalité-Vespéralité Enfant, `questions.ts:939` — et
+  `Q_MOD_02`, `questionnaires/mode-de-vie.ts:140` ; `Q_MOD_01` est `subscore`,
+  pas cette famille). **Zéro ligne modifiée** — l'interdit du lot tient.
+- Le blocage n'était pas au moteur mais au **validateur**
+  (`web/src/lib/instruments.ts`, distinct) : trois types admis, et une grille
+  de 1 à 6 bandes contiguës et couvrantes exigée de tout instrument. Relâcher
+  cette garde pour une famille déclarée est un geste clinique → `D-088`
+  (`DC-17`, `DC-18`), avec sa contrepartie : **aucune bande admise** sur cette
+  famille.
+- **Le piège n'était pas la grille absente, mais la grille par défaut.** Trois
+  sites posent une bande unique « Grille à définir — relecture requise »,
+  colorée `warning`, quand la grille manque : `scoringParDefaut`, l'amorce de
+  l'éditeur (`BibliothequePanel`) et l'import. Sur un instrument qui ne classe
+  pas, ce libellé d'attente est un verdict de fait — d'où la garde nommée
+  `interditTouteBande`.
+- **Saisie patient : rien à écrire.** L'item `number` borné
+  (`min`/`max`/`unit`) est déjà rendu par `QuestionField` et déjà gardé côté
+  serveur par `api/patient/submit` (refus hors bornes, jamais de troncature).
+  Aucun composant curseur neuf.
+- **Restitution : déjà propre, désormais assertée.** `interpretRanges` rend
+  `null` sur grille vide, la colonne `interpretation` reste nulle, la fiche
+  affiche `—`, la mini-synthèse rend `''`, le badge dit « Cabinet — scoring
+  non vérifié ». Aucune surface nouvelle : le lot pose des bancs, pas des
+  écrans.
+- **Réserve fermée par banc** : `sum_no_interpretation` n'émet ni `missing` ni
+  `repondus` (contrairement à `sum`). La complétude d'un recueil de cette
+  famille n'est donc tenue que par la garde d'`api/patient/submit` — asserté,
+  et rouge à son débranchement.
 
 ## Périmètre
 
@@ -86,7 +123,12 @@ LOT-01 : confirmation obligatoire, migration seule dans sa PR.)
 
 ## Critères de done
 
-- [ ] Une EVA se crée, se relit, s'assigne et se passe par la voie cabinet.
-- [ ] Aucun seuil nulle part — garde vue rouge au débranchement.
-- [ ] Resolver commun intact (ou arrêt nommé si impossible).
-- [ ] T2 vert ; fragment écrit.
+- [x] Une EVA se crée, se relit, s'assigne et se passe par la voie cabinet
+      (création API et import JSON, cycle `brouillon → grille_a_relire →
+      valide`, passation scorée et persistée).
+- [x] Aucun seuil nulle part — gardes vues rouges au débranchement
+      (anti-seuil : 5 bancs ; anti-bande-par-défaut : 1 ; refus d'édition : 1 ;
+      complétude : 2).
+- [x] Moteur de scoring intact — `web/src/lib/questions.ts` non modifié ;
+      seul le validateur `web/src/lib/instruments.ts` bouge, sous `D-088`.
+- [x] T2 vert ; fragment `changelog.d/` écrit ; `D-088` au registre.

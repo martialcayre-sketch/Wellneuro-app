@@ -9,8 +9,12 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
+  LABEL_GRILLE_A_DEFINIR,
+  TYPE_SCORING_SANS_INTERPRETATION,
   idsAssignablesPour,
+  interditTouteBande,
   resolveDefinition,
+  scoringParDefaut,
   validerInstrumentCabinet,
 } from './instruments';
 
@@ -267,6 +271,42 @@ describe('validerInstrumentCabinet', () => {
     expect(avecSeuil).toEqual({ ok: true, nbQuestions: 2, scoreMax: 2 });
   });
 
+  // Les deux bancs qui suivent portent sur l'EXISTANT : ils étaient asserté
+  // nulle part avant le LOT-05 Alliance 6.0-A, alors que ce sont les deux
+  // frontières que le type de scoring « sans interprétation » (`D-088`) vient
+  // longer. Ils sont posés d'abord, verts sur le code d'avant.
+  it('refuse une grille VIDE sur un type interprété — la couverture n’est pas optionnelle', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'Sommeil cabinet',
+      definition: DEFINITION_VALIDE,
+      scoring: { type: 'sum', interpretation: [] },
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('entre 1 et 6 bandes');
+    }
+  });
+
+  it('refuse plus de 8 options — la frontière haute compte autant que la basse', () => {
+    const neufOptions = Array.from({ length: 9 }, (_, i) => ({ v: i, l: `Niveau ${i}` }));
+    const verdict = validerInstrumentCabinet({
+      titre: 'Sommeil cabinet',
+      definition: {
+        sections: [
+          {
+            id: 'S1',
+            questions: [{ id: 'Q1', texte: 'Je dors bien.', type: 'likert', options: neufOptions }],
+          },
+        ],
+      },
+      scoring: SCORING_VALIDE,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('entre 2 et 8 options');
+    }
+  });
+
   it('refuse titre trop court, question sans texte, options insuffisantes', () => {
     const verdict = validerInstrumentCabinet({
       titre: 'AB',
@@ -287,5 +327,223 @@ describe('validerInstrumentCabinet', () => {
       expect(tout).toContain('entre 3 et 300');
       expect(tout).toContain('entre 2 et 8 options');
     }
+  });
+});
+
+// ── Famille « sans interprétation » (D-088) ────────────────────────────────
+//
+// La garde « tout instrument cabinet publié porte une grille complète et
+// couvrante » est RELÂCHÉE pour cette famille, et pour elle seule. Elle est
+// remplacée par son inverse, plus stricte : une bande — une seule, même
+// « neutre », même « à définir » — est REFUSÉE. Un instrument de pilotage qui
+// classerait poserait un seuil sans provenance (`DC-19`, `DC-20`), et un score
+// n'est pas un diagnostic (`DC-27`).
+//
+// Le moteur, lui, n'a pas bougé d'une ligne : `sum_no_interpretation` existe
+// dans `@/lib/questions` depuis le catalogue Drive et rend `interpretation:
+// null`. Ce qui change ici est le VALIDATEUR.
+const EVA_DEFINITION = {
+  instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+  sections: [
+    {
+      id: 'S1',
+      questions: [
+        {
+          id: 'EVA1',
+          texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+          type: 'number',
+          min: 0,
+          max: 10,
+          unit: '/10',
+        },
+      ],
+    },
+  ],
+};
+
+describe('validerInstrumentCabinet — famille sans interprétation (D-088)', () => {
+  it('accepte une EVA : item number borné, aucune grille, scoreMax = max déclaré', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: EVA_DEFINITION,
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION },
+    });
+    expect(verdict).toEqual({ ok: true, nbQuestions: 1, scoreMax: 10 });
+  });
+
+  it('accepte une interpretation vide — absente ou [] valent pareil', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: EVA_DEFINITION,
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION, interpretation: [] },
+    });
+    expect(verdict.ok).toBe(true);
+  });
+
+  // GARDE ANTI-SEUIL — le cœur du lot. Une bande parfaitement formée et
+  // couvrante, qui passerait sur « sum », est refusée ici.
+  it('REFUSE une bande, même unique, même couvrante', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: EVA_DEFINITION,
+      scoring: {
+        type: TYPE_SCORING_SANS_INTERPRETATION,
+        interpretation: [{ min: 0, max: 10, label: 'Repère', color: 'warning' }],
+      },
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('aucune bande n’est admise');
+    }
+  });
+
+  // La bande d'attente de l'import EST un libellé interprétatif de fait,
+  // coloré `warning` : elle tombe sous la même garde.
+  it('REFUSE la bande d’attente « Grille à définir » comme n’importe quelle autre', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: EVA_DEFINITION,
+      scoring: {
+        type: TYPE_SCORING_SANS_INTERPRETATION,
+        interpretation: [{ min: 0, max: 10, label: LABEL_GRILLE_A_DEFINIR, color: 'warning' }],
+      },
+    });
+    expect(verdict.ok).toBe(false);
+  });
+
+  it('refuse reversed et threshold — cette famille ne pondère ni ne compte', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: EVA_DEFINITION,
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION, reversed: ['EVA1'], threshold: 5 },
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      const tout = verdict.erreurs.join(' ');
+      expect(tout).toContain('n’admet pas de questions inversées');
+      expect(tout).toContain('n’admet pas de seuil');
+    }
+  });
+
+  it('exige des bornes DÉCLARÉES sur l’item number — jamais devinées', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: {
+        sections: [
+          {
+            id: 'S1',
+            questions: [{ id: 'EVA1', texte: 'Où en êtes-vous aujourd’hui ?', type: 'number' }],
+          },
+        ],
+      },
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION },
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('bornes entières min et max');
+    }
+  });
+
+  it('refuse un minimum ≥ maximum', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA fatigue — cabinet',
+      definition: {
+        sections: [
+          {
+            id: 'S1',
+            questions: [
+              {
+                id: 'EVA1',
+                texte: 'Où en êtes-vous aujourd’hui ?',
+                type: 'number',
+                min: 10,
+                max: 10,
+              },
+            ],
+          },
+        ],
+      },
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION },
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('strictement inférieur');
+    }
+  });
+
+  it('somme les bornes déclarées de plusieurs items number', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'EVA double — cabinet',
+      definition: {
+        sections: [
+          {
+            id: 'S1',
+            questions: [
+              { id: 'EVA1', texte: 'Fatigue aujourd’hui ?', type: 'number', min: 0, max: 10 },
+              { id: 'EVA2', texte: 'Douleur aujourd’hui ?', type: 'number', min: 0, max: 10 },
+            ],
+          },
+        ],
+      },
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION },
+    });
+    expect(verdict).toEqual({ ok: true, nbQuestions: 2, scoreMax: 20 });
+  });
+
+  it('admet aussi des items likert — le moteur en sert déjà un (Q_MOD_02)', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'Repère cabinet',
+      definition: DEFINITION_VALIDE,
+      scoring: { type: TYPE_SCORING_SANS_INTERPRETATION },
+    });
+    expect(verdict).toEqual({ ok: true, nbQuestions: 2, scoreMax: 4 });
+  });
+
+  // Les familles qui concluent n'ont RIEN gagné : un item number y reste
+  // refusé, avec le message d'avant, au caractère près.
+  it('un item number reste refusé sur « sum » — la relâche est réservée', () => {
+    const verdict = validerInstrumentCabinet({
+      titre: 'Sommeil cabinet',
+      definition: EVA_DEFINITION,
+      scoring: SCORING_VALIDE,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.erreurs.join(' ')).toContain('seul « likert » est admis');
+    }
+  });
+});
+
+// GARDE ANTI-BANDE-PAR-DÉFAUT (D-088) — le piège du lot. Trois sites posent
+// une bande d'attente quand la grille manque ; aucun ne doit la poser sur la
+// famille qui ne classe pas.
+describe('scoringParDefaut — garde anti-bande-par-défaut', () => {
+  const definitionLikert = {
+    sections: [{ id: 'S1', questions: DEFINITION_VALIDE.sections[0].questions }],
+  } as never;
+
+  it('pose la bande d’attente sur les familles qui concluent (inchangé)', () => {
+    const scoring = scoringParDefaut(definitionLikert);
+    expect(scoring.type).toBe('sum');
+    expect(scoring.interpretation).toEqual([
+      { min: 0, max: 4, label: LABEL_GRILLE_A_DEFINIR, color: 'warning' },
+    ]);
+  });
+
+  it('ne pose AUCUNE bande sur la famille sans interprétation', () => {
+    const scoring = scoringParDefaut(definitionLikert, TYPE_SCORING_SANS_INTERPRETATION);
+    expect(scoring.type).toBe(TYPE_SCORING_SANS_INTERPRETATION);
+    expect(scoring.interpretation ?? []).toEqual([]);
+    expect(JSON.stringify(scoring)).not.toContain(LABEL_GRILLE_A_DEFINIR);
+    expect(JSON.stringify(scoring)).not.toContain('warning');
+  });
+
+  it('interditTouteBande ne nomme QUE cette famille', () => {
+    expect(interditTouteBande({ type: TYPE_SCORING_SANS_INTERPRETATION })).toBe(true);
+    expect(interditTouteBande({ type: 'sum' })).toBe(false);
+    expect(interditTouteBande({ type: 'sum_reversed' })).toBe(false);
+    expect(interditTouteBande({ type: 'count_threshold' })).toBe(false);
+    expect(interditTouteBande(null)).toBe(false);
+    expect(interditTouteBande(undefined)).toBe(false);
   });
 });

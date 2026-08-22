@@ -342,3 +342,130 @@ describe('instruments PATCH', () => {
     });
   });
 });
+
+// EVA — la voie cabinet, du brouillon à la publication, sans jamais classer
+// (`D-088`). Le cycle `brouillon → grille_a_relire → valide` ne se contourne
+// pas : ce qui change est ce qu'on relit, pas qu'on relise.
+describe('instruments — EVA sans interprétation (D-088)', () => {
+  const EVA_DEFINITION = {
+    instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+    sections: [
+      {
+        id: 'S1',
+        questions: [
+          {
+            id: 'EVA1',
+            texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+            type: 'number',
+            min: 0,
+            max: 10,
+            unit: '/10',
+          },
+        ],
+      },
+    ],
+  };
+  const EVA_SCORING = { type: 'sum_no_interpretation' };
+  const EVA = {
+    ...INSTRUMENT,
+    idInstrument: 'CAB_EVA',
+    titre: 'EVA fatigue — cabinet',
+    definitionJson: EVA_DEFINITION,
+    scoringJson: { ...EVA_SCORING, maxTotal: 10 },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.cabinetInstrument.create.mockResolvedValue({});
+    prisma.cabinetInstrument.update.mockResolvedValue({});
+    prisma.cabinetInstrument.findFirst.mockResolvedValue(null);
+    prisma.assignation.count.mockResolvedValue(0);
+  });
+
+  it('création : brouillon accepté, maxTotal dérivé des bornes, aucune bande stockée', async () => {
+    const res = await POST(
+      postRequest({
+        titre: 'EVA fatigue — cabinet',
+        categorie: 'Pilotage',
+        definition: EVA_DEFINITION,
+        scoring: EVA_SCORING,
+      }),
+    );
+    expect(res.status).toBe(200);
+    const data = prisma.cabinetInstrument.create.mock.calls[0][0].data;
+    expect(data.statutRelecture).toBe('brouillon');
+    expect(data.scoringJson.type).toBe('sum_no_interpretation');
+    expect(data.scoringJson.maxTotal).toBe(10);
+    expect(data.scoringJson.interpretation ?? []).toEqual([]);
+    // Aucun libellé interprétatif n'a été fabriqué au passage — ni « à
+    // définir », ni couleur de sévérité.
+    expect(JSON.stringify(data.scoringJson)).not.toContain('Grille à définir');
+    expect(JSON.stringify(data.scoringJson)).not.toContain('warning');
+  });
+
+  it('création avec une bande : 400, rien n’entre en base', async () => {
+    const res = await POST(
+      postRequest({
+        titre: 'EVA fatigue — cabinet',
+        definition: EVA_DEFINITION,
+        scoring: {
+          ...EVA_SCORING,
+          interpretation: [{ min: 0, max: 10, label: 'Fatigue élevée', color: 'danger' }],
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).erreurs.join(' ')).toContain('aucune bande n’est admise');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
+  it('cycle complet : demander_relecture puis publier aboutit à valide', async () => {
+    prisma.cabinetInstrument.findFirst.mockResolvedValue(EVA);
+    const resRelecture = await PATCH(
+      patchRequest({ idInstrument: 'CAB_EVA', action: 'demander_relecture' }),
+    );
+    expect(resRelecture.status).toBe(200);
+    expect(prisma.cabinetInstrument.update.mock.calls[0][0].data.statutRelecture).toBe(
+      'grille_a_relire',
+    );
+
+    prisma.cabinetInstrument.findFirst.mockResolvedValue({
+      ...EVA,
+      statutRelecture: 'grille_a_relire',
+    });
+    const resPublication = await PATCH(patchRequest({ idInstrument: 'CAB_EVA', action: 'publier' }));
+    expect(resPublication.status).toBe(200);
+    expect(prisma.cabinetInstrument.update.mock.calls[1][0].data.statutRelecture).toBe('valide');
+  });
+
+  it('édition qui glisse une bande : 400, l’instrument publié n’est pas touché', async () => {
+    prisma.cabinetInstrument.findFirst.mockResolvedValue({ ...EVA, statutRelecture: 'valide' });
+    const res = await PATCH(
+      patchRequest({
+        idInstrument: 'CAB_EVA',
+        definition: EVA_DEFINITION,
+        scoring: {
+          ...EVA_SCORING,
+          interpretation: [{ min: 0, max: 10, label: 'Repère', color: 'warning' }],
+        },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(prisma.cabinetInstrument.update).not.toHaveBeenCalled();
+  });
+
+  it('détail : la grille servie à l’écran ne porte aucune bande', async () => {
+    prisma.cabinetInstrument.findFirst.mockResolvedValue(EVA);
+    const res = await GET(new Request('http://localhost/api/praticien/instruments?id=CAB_EVA'));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.instrument.scoring.type).toBe('sum_no_interpretation');
+    expect(json.instrument.scoring.interpretation ?? []).toEqual([]);
+    expect(json.instrument.definition.sections[0].questions[0]).toMatchObject({
+      type: 'number',
+      min: 0,
+      max: 10,
+      unit: '/10',
+    });
+  });
+});

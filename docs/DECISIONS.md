@@ -4,6 +4,96 @@
 
 ## Décisions actives
 
+### D-088 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrage du responsable**, rendu en session le
+  2026-08-22 — plan du LOT-05 de la campagne Alliance 6.0-A)
+- Domaine : clinique, instruments du cabinet, validation `@/lib/instruments`
+
+- Contexte : une EVA (échelle visuelle analogique) est un instrument de
+  **pilotage** : le praticien lit une valeur et une trajectoire, il ne lit pas
+  une catégorie. La voie `CabinetInstrument` existante ne pouvait pas la
+  porter : `validerInstrumentCabinet` exige de tout instrument une grille
+  d'interprétation de 1 à 6 bandes, contiguës et couvrant tout l'intervalle de
+  score. Une EVA n'y entrait qu'au prix d'une bande inventée — exactement ce
+  qu'interdisent `DC-19` et `DC-20`.
+
+**1. La garde de couverture est relâchée pour UNE famille déclarée, et pour
+elle seule.** Un quatrième type de scoring est admis à l'entrée :
+`sum_no_interpretation`. Les trois familles qui concluent (`sum`,
+`sum_reversed`, `count_threshold`) sont **inchangées, au caractère près** —
+grille obligatoire, bandes 1..6, contiguïté, couverture, items `likert` à 2..8
+options. Leurs bancs existants sont verts sans modification.
+
+**2. La contrepartie est une garde inverse, plus stricte : aucune bande.** Sur
+cette famille, une bande — **une seule, même « neutre », même « à définir »** —
+est refusée par la validation, aux **cinq** points d'appel (création, import,
+demande de relecture, publication, édition). C'est la garde anti-seuil du lot :
+elle mord aussi sur la bande d'attente `« Grille à définir — relecture
+requise »` — un libellé d'attente coloré `warning` sur un instrument qui ne
+classe pas est un verdict de fait.
+
+**2 bis. La garde anti-bande-par-défaut : deux sites actifs, un défensif.** Dit
+tel quel pour ne pas faire croire à une couverture plus large qu'elle n'est.
+**Actifs** : `validerInstrumentCabinet` (refuse toute bande, d'où qu'elle
+vienne) et l'amorce de l'éditeur (`BibliothequePanel`, qui refuse la famille au
+lieu de lui poser sa bande d'attente). **Défensif** : le paramètre
+`typeDemande` de `scoringParDefaut` — la garde y est câblée, mais **aucun
+appelant ne le passe** : les trois appels de l'import sont sans second
+argument, et n'ont lieu que lorsque `scoring` est absent, cas où aucune famille
+n'est déclarable. Ce chemin est donc inatteignable en l'état. Ce qui couvre
+réellement « items `number`, grille absente » est un **refus dédié de
+l'import** (« Saisie chiffrée sans grille déclarée… »), qui nomme le geste
+attendu au lieu de servir les messages de la famille par défaut (« seul
+“likert” est admis », « entre 2 et 8 options ») — deux reproches exacts dont
+aucun ne dit quoi faire. Fail-closed inchangé : c'était un 400, c'est un 400.
+
+**3. Le moteur de scoring n'a pas bougé d'une ligne.** `sum_no_interpretation`
+existe déjà dans `web/src/lib/questions.ts` (servi par `Q_PED_01` — Échelle de
+Matinalité-Vespéralité Enfant, `questions.ts:939` — et `Q_MOD_02`,
+`questionnaires/mode-de-vie.ts:140` ; `Q_MOD_01`, lui, est de type `subscore`)
+et rend `interpretation: null`. Aucune modification du
+moteur, aucune migration Prisma : les colonnes `definitionJson` /
+`scoringJson` suffisent. La saisie patient réutilise l'item `number` borné
+(`min`/`max`/`unit`) déjà rendu par `QuestionField` et déjà gardé côté serveur
+par `api/patient/submit` — pas de composant curseur neuf.
+
+**4. Provenance : assumée, jamais fabriquée.** Un instrument de cette famille
+est un **instrument de pilotage, sans provenance clinique** : il n'a ni source,
+ni population déclarée, ni cut-off, et il n'en réclame aucun puisqu'il ne
+conclut pas. Il reste privé au cabinet, non certifié (« Cabinet — scoring non
+vérifié »), et passe par le cycle complet `brouillon → grille_a_relire →
+valide` comme tout instrument du cabinet — ce qui se relit n'est plus la
+grille, mais l'énoncé et ses ancres.
+
+**4 bis. Ce que vaut le total d'un instrument multi-items — cadrage, non
+tranché.** Le moteur somme les items, et cette somme est servie comme
+`scorePrincipal`. Sur cette famille, **ce total est une somme brute sans
+portée clinique** : additionner « fatigue 7/10 » et « douleur 3/10 » donne 10,
+qui ne mesure rien — aucune source ne pondère ces axes, et cette famille ne
+conclut par construction pas. **Ce qui se lit est la valeur par item**, jamais
+le total. L'alternative — **contraindre cette famille à un seul item par
+instrument**, ce qui rendrait le total non ambigu — **reste ouverte à
+l'arbitrage du responsable** : elle n'est pas tranchée ici, et le validateur
+n'impose donc aucune limite de nombre d'items au-delà du plafond commun.
+
+**5. Réserve fermée par banc : la complétude.** Le moteur
+`sum_no_interpretation` n'émet **ni `missing` ni `repondus`** (contrairement à
+`sum`). Sur cette famille, la complétude d'un recueil n'est donc tenue que par
+la garde de `api/patient/submit` — et par rien d'autre, les bandes qui la
+tiennent ailleurs n'existant pas ici. Un banc l'asserte explicitement (recueil
+partiel d'un instrument de cette famille → 400, aucune persistance, aucun
+verrouillage) et rougit au débranchement de cette garde.
+
+- Conséquences : `TYPES_SCORING_CABINET_ADMIS`, union discriminée
+  `ScoringCabinet`, garde nommée `interditTouteBande` (module feuille
+  `@/lib/echelles-cabinet`, lue aussi par le panneau client) ; l'éditeur de
+  questionnaire **refuse** cette famille au lieu de lui poser une amorce de
+  bande (il ne sait écrire que des likert et des bandes, il la détruirait) ;
+  l'entrée se fait par import JSON (shape complète). Restitution inchangée et
+  assertée : `interpretation` nulle en base, `—` sur la fiche patient,
+  mini-synthèse vide.
 ### D-087 — L'écriture du schéma de production passe par un one-off Scalingo approuvé ; le postdeploy ne migre plus
 
 - Date : 2026-08-22
