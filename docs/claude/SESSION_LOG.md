@@ -4434,6 +4434,7 @@ test du CLI réel (risque sur le vrai dépôt). PR #737/#738/#740 mergées.
 Prochaine action : 2026-09-01, décommissionnement Vercel/Supabase + preuve
 d'effacement (D-080). Ouvert : annexe HDS pendante ; revue G-TRUST-04 le
 2026-10-21.
+
 ## 2026-08-22 — Socle LOT-03 : registre de gabarits — la campagne se clôt 3/3
 
 Décisions : registre au patron trust adapté (deux dates dont valideLe:null —
