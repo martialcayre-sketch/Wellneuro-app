@@ -7,7 +7,7 @@ import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { QuestionField } from '@/components/patient/QuestionField';
-import { ECHELLES_NOMMEES, type EchelleNommee } from '@/lib/echelles-cabinet';
+import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
 import {
   LIBELLE_INSTRUMENT_CABINET,
   TEXTE_INSTRUMENTS_CABINET,
@@ -898,7 +898,8 @@ function libelleCouleur(color: string): string {
 }
 
 function detecterEchelle(initiale: InstrumentCabinetDetailDto | null): EchelleNommee {
-  const options = initiale?.definition.sections[0]?.questions[0]?.options;
+  const premiere = initiale?.definition.sections[0]?.questions[0];
+  const options = premiere && premiere.type === 'likert' ? premiere.options : null;
   if (!options) return 'frequence_0_4';
   for (const nom of Object.keys(ECHELLES_NOMMEES) as EchelleNommee[]) {
     const echelle = ECHELLES_NOMMEES[nom];
@@ -937,7 +938,9 @@ function EditeurInstrument({
   );
   const [bandes, setBandes] = useState<BandeEdition[]>(() =>
     initiale
-      ? initiale.scoring.interpretation.map(b => ({
+      ? // `?? []` — la famille sans interprétation ne porte aucune bande, et
+        // n'atteint de toute façon pas cet éditeur (refus plus bas).
+        (initiale.scoring.interpretation ?? []).map(b => ({
           min: String(b.min),
           max: String(b.max),
           label: b.label,
@@ -1027,6 +1030,30 @@ function EditeurInstrument({
     } finally {
       setOccupe(false);
     }
+  }
+
+  // GARDE ANTI-BANDE-PAR-DÉFAUT, côté écran (`D-087`). Cet éditeur ne sait
+  // produire qu'une chose : des items likert sur une échelle nommée, et une
+  // grille « somme » à bandes contiguës — dont l'amorce « Grille à définir ».
+  // Ouvrir un instrument SANS INTERPRÉTATION dedans le détruirait deux fois :
+  // ses saisies chiffrées repartiraient en likert, et il ressortirait avec la
+  // bande d'attente que sa famille interdit. L'éditeur le dit et s'arrête —
+  // le contenu se modifie par import, sa relecture par le tiroir dédié.
+  if (interditTouteBande(initiale?.scoring)) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-foreground">{initiale?.titre}</p>
+        <p className="text-xs text-muted-foreground">
+          Cet instrument est déclaré <strong>sans interprétation</strong> : il pilote la
+          conversation, il ne classe pas. L’éditeur de questionnaire ne le modifie pas — il ne sait
+          écrire que des échelles à options et des bandes d’interprétation, que cet instrument
+          n’admet pas.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Pour en changer le contenu, réimportez-le ; pour le publier, ouvrez « Relire la grille ».
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -1358,6 +1385,11 @@ function ImportInstrument({ onRafraichir }: { onRafraichir: () => Promise<void> 
 // Récapitulatif de relecture : échelle, bandes, score maximal — puis le geste
 // explicite « Grille relue — publier ». C'est LE passage obligé vers
 // l'assignabilité d'un instrument du cabinet.
+//
+// Sur la famille SANS INTERPRÉTATION (`D-087`), il n'y a pas de grille à relire
+// : ce qui se relit, c'est l'énoncé et ses ancres. L'écran le dit au lieu
+// d'afficher une section « Bandes » vide, qui se lirait comme une grille
+// oubliée — et le bouton cesse de promettre une relecture de grille.
 function RelectureGrille({
   detail,
   occupe,
@@ -1367,7 +1399,13 @@ function RelectureGrille({
   occupe: boolean;
   onPublier: () => void;
 }) {
-  const options = detail.definition.sections[0]?.questions[0]?.options ?? [];
+  const sansInterpretation = interditTouteBande(detail.scoring);
+  const premiere = detail.definition.sections[0]?.questions[0];
+  const options = premiere && premiere.type === 'likert' ? premiere.options : [];
+  const items = detail.definition.sections.flatMap(s => s.questions);
+  // `?? []` — la famille sans interprétation ne porte AUCUNE bande en base :
+  // le champ y est absent, et un `.map` nu plantait l'écran de relecture.
+  const bandes = detail.scoring.interpretation ?? [];
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -1378,36 +1416,71 @@ function RelectureGrille({
           {detail.scoreMax != null ? ` · score /${detail.scoreMax}` : ''}
         </p>
       </div>
-      <div>
-        <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
-          Échelle
-        </p>
-        <p className="mt-1 text-xs text-foreground">
-          {options.map(o => `${o.v} = ${o.l}`).join(' · ')}
-        </p>
-      </div>
-      <div>
-        <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
-          Bandes d’interprétation
-        </p>
-        <ul className="mt-1 flex flex-col">
-          {detail.scoring.interpretation.map(b => (
-            <li
-              key={`${b.min}-${b.max}`}
-              className="flex items-center justify-between gap-2 border-b border-dashed border-border py-1.5 text-xs text-foreground last:border-b-0"
-            >
-              <span className="font-mono text-2xs text-muted-foreground">
-                {b.min}–{b.max}
-              </span>
-              <span className="min-w-0 flex-1">{b.label}</span>
-              <Badge variant={b.color}>{libelleCouleur(b.color)}</Badge>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {sansInterpretation ? (
+        <>
+          <div>
+            <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+              Énoncés et ancres
+            </p>
+            <ul className="mt-1 flex flex-col">
+              {items.map(item => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-2 border-b border-dashed border-border py-1.5 text-xs text-foreground last:border-b-0"
+                >
+                  <span className="min-w-0 flex-1">{item.texte}</span>
+                  <span className="font-mono text-2xs text-muted-foreground">
+                    {item.type === 'number'
+                      ? `${item.min}–${item.max}${item.unit ? ` ${item.unit}` : ''}`
+                      : item.options.map(o => o.v).join('/')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+              Interprétation
+            </p>
+            <p className="mt-1 text-xs text-foreground">
+              Aucune interprétation : cet instrument pilote la conversation, il ne classe pas.
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+              Échelle
+            </p>
+            <p className="mt-1 text-xs text-foreground">
+              {options.map(o => `${o.v} = ${o.l}`).join(' · ')}
+            </p>
+          </div>
+          <div>
+            <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+              Bandes d’interprétation
+            </p>
+            <ul className="mt-1 flex flex-col">
+              {bandes.map(b => (
+                <li
+                  key={`${b.min}-${b.max}`}
+                  className="flex items-center justify-between gap-2 border-b border-dashed border-border py-1.5 text-xs text-foreground last:border-b-0"
+                >
+                  <span className="font-mono text-2xs text-muted-foreground">
+                    {b.min}–{b.max}
+                  </span>
+                  <span className="min-w-0 flex-1">{b.label}</span>
+                  <Badge variant={b.color}>{libelleCouleur(b.color)}</Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
       <div className="border-t border-border pt-4">
         <Button type="button" disabled={occupe} onClick={onPublier}>
-          Grille relue — publier
+          {sansInterpretation ? 'Relu — publier' : 'Grille relue — publier'}
         </Button>
         <p className="mt-2 text-2xs text-muted-foreground">
           La publication rend l’instrument assignable via la file d’envoi. Son scoring reste non

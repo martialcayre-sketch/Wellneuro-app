@@ -216,6 +216,19 @@ describe('buildMiniSynthese — détail par rubrique sur les sorties réelles du
     expect(s).toContain('Détail');
   });
 
+  // EVA — famille sans interprétation (`D-087`). La mini-synthèse ne fabrique
+  // AUCUNE phrase à partir d'un total nu : elle rend '' plutôt que d'inventer
+  // le verdict que l'instrument refuse de rendre (`DC-19`, `DC-27`).
+  it('EVA sans interprétation : aucune phrase, pas même une reformulation du total', () => {
+    const s = buildMiniSynthese({
+      type: 'sum_no_interpretation',
+      total: 10,
+      maxTotal: 20,
+      interpretation: null,
+    });
+    expect(s).toBe('');
+  });
+
   it('Pichot : un score global sans rubrique reste une phrase unique', () => {
     const s = buildMiniSynthese(calculateScore('Q_SOM_06', toutesA('Q_SOM_06', '2')));
     expect(s).toBe(

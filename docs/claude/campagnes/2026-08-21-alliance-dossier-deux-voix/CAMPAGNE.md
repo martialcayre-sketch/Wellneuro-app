@@ -73,7 +73,7 @@ de l'alliance sont relationnels, pas des tables de règles.
 | LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | à faire | LOT-01 (release-db faite) |
 | LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | à faire | LOT-01 (release-db faite) |
 | LOT-04 | « Ce que j'ai compris de vous » — synthèse gardée et désaccord structuré | à faire | LOT-01 ; Socle (livré) |
-| LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | à faire | — (indépendant du LOT-01, cf. cadrage) |
+| LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | livré à la PR (2026-08-22, `D-087`) | — (indépendant du LOT-01, cf. cadrage) |
 | LOT-06 | L'écran « dossier à deux voix » au portail — ratification et constat du gate | à faire | LOT-02, LOT-03, LOT-04 |
 
 Correspondance avec les quatre lots esquissés du brief : 1 → LOT-02, 2 →

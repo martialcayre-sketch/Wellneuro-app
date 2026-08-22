@@ -5,7 +5,12 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { emailPraticien } from '@/lib/praticien/appartenance';
-import { ECHELLES_NOMMEES, estEchelleNommee, type OptionCabinet } from '@/lib/echelles-cabinet';
+import {
+  ECHELLES_NOMMEES,
+  estEchelleNommee,
+  interditTouteBande,
+  type OptionCabinet,
+} from '@/lib/echelles-cabinet';
 import {
   normaliserDefinitionCabinet,
   normaliserScoringCabinet,
@@ -19,6 +24,11 @@ import {
 // (une question par ligne). Le résultat entre TOUJOURS en brouillon : sans
 // grille fournie, une bande unique « Grille à définir » est posée, et la
 // relecture puis la publication restent obligatoires avant toute assignation.
+//
+// UNE famille échappe à cette bande d'attente, et à toute bande : celle qui se
+// déclare `sum_no_interpretation` (`D-087`) — un instrument de pilotage, sans
+// provenance clinique et sans verdict. C'est par ici qu'une EVA entre : shape
+// complète, items `number` bornés, `scoring: { type: 'sum_no_interpretation' }`.
 
 export type ImportInstrumentResponse = {
   success: boolean;
@@ -121,10 +131,17 @@ export async function POST(request: Request) {
         // Shape complète { titre, definition, scoring? }.
         definition = normaliserDefinitionCabinet(objet.definition);
         if (objet.scoring !== undefined) {
+          // La grille déclarée passe TELLE QUELLE à la validation, bandes
+          // comprises : c'est elle qui refuse une bande sur la famille sans
+          // interprétation (`D-087`). Les effacer ici les ferait passer en
+          // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
         } else {
           scoring = scoringParDefaut(definition);
-          avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
+          // L'avertissement suit la bande d'attente ; il ne s'annonce pas tout
+          // seul. `scoringParDefaut` n'en pose aucune sur la famille sans
+          // interprétation — garde `interditTouteBande`.
+          if (!interditTouteBande(scoring)) avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
         }
       } else {
         // Shape simple { titre, instructions?, questions, echelle?, scoring? }.
@@ -152,10 +169,17 @@ export async function POST(request: Request) {
         const instructions = typeof objet.instructions === 'string' ? objet.instructions : '';
         definition = definitionDepuisQuestions(instructions, questions);
         if (objet.scoring !== undefined) {
+          // La grille déclarée passe TELLE QUELLE à la validation, bandes
+          // comprises : c'est elle qui refuse une bande sur la famille sans
+          // interprétation (`D-087`). Les effacer ici les ferait passer en
+          // silence.
           scoring = normaliserScoringCabinet(objet.scoring);
         } else {
           scoring = scoringParDefaut(definition);
-          avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
+          // L'avertissement suit la bande d'attente ; il ne s'annonce pas tout
+          // seul. `scoringParDefaut` n'en pose aucune sur la famille sans
+          // interprétation — garde `interditTouteBande`.
+          if (!interditTouteBande(scoring)) avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
         }
       }
     } else {
@@ -188,7 +212,7 @@ export async function POST(request: Request) {
       const options = ECHELLES_NOMMEES[echelle].options;
       definition = definitionDepuisQuestions('', textes.map(texte => ({ texte, options })));
       scoring = scoringParDefaut(definition);
-      avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
+      if (!interditTouteBande(scoring)) avertissements.push(AVERTISSEMENT_GRILLE_ABSENTE);
     }
 
     const verdict = validerInstrumentCabinet({ titre, definition, scoring });

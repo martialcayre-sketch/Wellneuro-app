@@ -4462,3 +4462,18 @@ lot tranche) ; ratification au LOT-02 (geste patient = portail, LOT-06).
 Prochaine action : PR d'ouverture, CI, puis LOT-01 (schéma à proposer,
 s'arrêter à la confirmation) — LOT-05 jouable en parallèle. Ouvert : travail
 synthèse non commité d'une session parallèle dans l'arbre (non touché).
+
+## 2026-08-22 — Alliance 6.0-A LOT-05 : l'EVA, piloter sans classer (D-087)
+
+Décisions : la garde « grille complète et couvrante » est relâchée pour UNE
+famille déclarée (`sum_no_interpretation`), contre une garde inverse plus
+stricte — aucune bande admise, pas même la bande d'attente « Grille à
+définir » que trois sites posaient. Moteur `questions.ts` intact (le type
+existait, servi par Q_MOD_01/02) ; aucune migration ; item `number` borné
+réutilisé, pas de curseur neuf. La garde nommée `interditTouteBande` vit au
+module feuille `echelles-cabinet` — `instruments.ts` embarque Prisma et la
+Bibliothèque est un panneau client. Écarté : éditer cette famille dans
+l'éditeur de questionnaire (il la détruirait — refus explicite, entrée par
+import JSON) ; toute surface de trajectoire (hors périmètre du lot).
+Prochaine action : revue puis PR par la session principale. Ouvert :
+restitution de trajectoire des passations successives, non traitée.

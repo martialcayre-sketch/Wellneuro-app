@@ -248,6 +248,150 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
   });
 });
 
+// EVA — famille sans interprétation (`D-087`), passation de bout en bout.
+//
+// DEUX TROUS À PROUVER, et c'est le seul endroit où ils se prouvent :
+//
+//  1. `sum_no_interpretation` n'émet NI `missing` NI `repondus` (moteur
+//     `@/lib/questions`, à comparer à `sum` qui les rend). Sur cette famille,
+//     la complétude d'un instrument du cabinet n'est donc tenue que par la
+//     garde de CETTE route — pas par le moteur, pas par les bandes (il n'y en
+//     a pas). Le banc de recueil partiel ci-dessous EST cette preuve.
+//  2. Les bornes `min`/`max` d'un item `number` ne sont que des attributs HTML
+//     côté navigateur : c'est la garde serveur de cette route qui les tient,
+//     et une EVA n'a que ça.
+describe('POST /api/patient/submit — EVA sans interprétation (D-087)', () => {
+  const assignationEva = {
+    idAssignation: 'ASS_EVA_TEST',
+    idPatient: 'PAT_SEED_03',
+    emailPatient: 'sophie.nicola@example.test',
+    idQuestionnaire: 'CAB_EVA_1',
+    titre: 'EVA fatigue — cabinet',
+    dateLimite: null,
+    statutReponses: 'en_cours',
+  };
+
+  const rowEva = {
+    idInstrument: 'CAB_EVA_1',
+    praticienEmail: 'praticien@wellneuro.fr',
+    titre: 'EVA fatigue — cabinet',
+    actif: true,
+    statutRelecture: 'valide',
+    definitionJson: {
+      instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+      sections: [
+        {
+          id: 'S1',
+          questions: [
+            {
+              id: 'EVA1',
+              texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+              type: 'number',
+              min: 0,
+              max: 10,
+              unit: '/10',
+            },
+            {
+              id: 'EVA2',
+              texte: 'Où en êtes-vous de votre douleur aujourd’hui ?',
+              type: 'number',
+              min: 0,
+              max: 10,
+              unit: '/10',
+            },
+          ],
+        },
+      ],
+    },
+    scoringJson: { type: 'sum_no_interpretation', maxTotal: 20 },
+  };
+
+  function requeteEva(answers: Record<string, unknown>): Request {
+    const cookie = signPatientSession({
+      idPatient: assignationEva.idPatient,
+      email: assignationEva.emailPatient,
+    });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: `wn_portail=${encodeURIComponent(cookie)}`,
+      },
+      body: JSON.stringify({
+        idAssignation: assignationEva.idAssignation,
+        idQuestionnaire: assignationEva.idQuestionnaire,
+        answers,
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(assignationEva);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignationEva.idPatient,
+      actif: true,
+      email: assignationEva.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignationEva);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    prisma.cabinetInstrument.findUnique.mockResolvedValue(rowEva);
+  });
+
+  it('persiste la valeur brute et interpretation NULL — aucun verdict fabriqué', async () => {
+    const res = await postSubmit(requeteEva({ EVA1: 7, EVA2: 3 }));
+    expect(res.status).toBe(200);
+    const { data } = prisma.questionnaireReponse.create.mock.calls[0][0] as {
+      data: {
+        scorePrincipal: number | null;
+        interpretation: string | null;
+        scoresJson: Record<string, unknown>;
+      };
+    };
+    expect(data.scorePrincipal).toBe(10);
+    // La colonne `interpretation` reste NULL : c'est ce que lit la fiche
+    // patient pour afficher « — ».
+    expect(data.interpretation).toBeNull();
+    expect(data.scoresJson.type).toBe('sum_no_interpretation');
+    expect(data.scoresJson.interpretation).toBeNull();
+    expect(data.scoresJson.maxTotal).toBe(20);
+    expect(data.scoresJson.rawAnswers).toEqual({ EVA1: 7, EVA2: 3 });
+    // Aucune bande, aucune couleur de sévérité, aucun libellé : le JSON entier
+    // est muet là-dessus.
+    expect(JSON.stringify(data.scoresJson)).not.toMatch(/label|color|danger|warning|success/);
+  });
+
+  // LE TROU PROUVÉ : le moteur ne rend ni `missing` ni `repondus` sur cette
+  // famille — la garde de complétude de cette route est la seule qui tienne.
+  it('recueil partiel : 400, aucune persistance ni verrouillage', async () => {
+    const res = await postSubmit(requeteEva({ EVA1: 7 }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('Réponses incomplètes');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it('valeur hors des ancres déclarées : 400, aucune persistance', async () => {
+    const res = await postSubmit(requeteEva({ EVA1: 42, EVA2: 3 }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('limites autorisées');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it('zéro est une VALEUR, pas une absence : la borne basse passe', async () => {
+    const res = await postSubmit(requeteEva({ EVA1: 0, EVA2: 10 }));
+    expect(res.status).toBe(200);
+    const { data } = prisma.questionnaireReponse.create.mock.calls[0][0] as {
+      data: { scorePrincipal: number | null };
+    };
+    expect(data.scorePrincipal).toBe(10);
+  });
+});
+
 // BORNES DES SAISIES CHIFFRÉES — ajoutées le 2026-07-31 avec `Q_ALI_03`.
 //
 // `min`/`max` d'un item `type: 'number'` n'étaient que des attributs HTML : le

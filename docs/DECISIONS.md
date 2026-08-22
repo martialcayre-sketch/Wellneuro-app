@@ -4,6 +4,70 @@
 
 ## Décisions actives
 
+### D-087 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrage du responsable**, rendu en session le
+  2026-08-22 — plan du LOT-05 de la campagne Alliance 6.0-A)
+- Domaine : clinique, instruments du cabinet, validation `@/lib/instruments`
+
+- Contexte : une EVA (échelle visuelle analogique) est un instrument de
+  **pilotage** : le praticien lit une valeur et une trajectoire, il ne lit pas
+  une catégorie. La voie `CabinetInstrument` existante ne pouvait pas la
+  porter : `validerInstrumentCabinet` exige de tout instrument une grille
+  d'interprétation de 1 à 6 bandes, contiguës et couvrant tout l'intervalle de
+  score. Une EVA n'y entrait qu'au prix d'une bande inventée — exactement ce
+  qu'interdisent `DC-19` et `DC-20`.
+
+**1. La garde de couverture est relâchée pour UNE famille déclarée, et pour
+elle seule.** Un quatrième type de scoring est admis à l'entrée :
+`sum_no_interpretation`. Les trois familles qui concluent (`sum`,
+`sum_reversed`, `count_threshold`) sont **inchangées, au caractère près** —
+grille obligatoire, bandes 1..6, contiguïté, couverture, items `likert` à 2..8
+options. Leurs bancs existants sont verts sans modification.
+
+**2. La contrepartie est une garde inverse, plus stricte : aucune bande.** Sur
+cette famille, une bande — **une seule, même « neutre », même « à définir »** —
+est refusée par la validation, aux quatre points d'appel (création, import,
+demande de relecture, publication, édition). C'est la garde anti-seuil du lot :
+elle mord aussi sur la bande d'attente `« Grille à définir — relecture
+requise »` que `scoringParDefaut`, l'amorce de l'éditeur et l'import posent
+quand la grille manque — un libellé d'attente coloré `warning` sur un
+instrument qui ne classe pas est un verdict de fait.
+
+**3. Le moteur de scoring n'a pas bougé d'une ligne.** `sum_no_interpretation`
+existe déjà dans `web/src/lib/questions.ts` (servi par `Q_MOD_01` et `Q_MOD_02`
+du catalogue Drive) et rend `interpretation: null`. Aucune modification du
+moteur, aucune migration Prisma : les colonnes `definitionJson` /
+`scoringJson` suffisent. La saisie patient réutilise l'item `number` borné
+(`min`/`max`/`unit`) déjà rendu par `QuestionField` et déjà gardé côté serveur
+par `api/patient/submit` — pas de composant curseur neuf.
+
+**4. Provenance : assumée, jamais fabriquée.** Un instrument de cette famille
+est un **instrument de pilotage, sans provenance clinique** : il n'a ni source,
+ni population déclarée, ni cut-off, et il n'en réclame aucun puisqu'il ne
+conclut pas. Il reste privé au cabinet, non certifié (« Cabinet — scoring non
+vérifié »), et passe par le cycle complet `brouillon → grille_a_relire →
+valide` comme tout instrument du cabinet — ce qui se relit n'est plus la
+grille, mais l'énoncé et ses ancres.
+
+**5. Réserve fermée par banc : la complétude.** Le moteur
+`sum_no_interpretation` n'émet **ni `missing` ni `repondus`** (contrairement à
+`sum`). Sur cette famille, la complétude d'un recueil n'est donc tenue que par
+la garde de `api/patient/submit` — et par rien d'autre, les bandes qui la
+tiennent ailleurs n'existant pas ici. Un banc l'asserte explicitement (recueil
+partiel d'un instrument de cette famille → 400, aucune persistance, aucun
+verrouillage) et rougit au débranchement de cette garde.
+
+- Conséquences : `TYPES_SCORING_CABINET_ADMIS`, union discriminée
+  `ScoringCabinet`, garde nommée `interditTouteBande` (module feuille
+  `@/lib/echelles-cabinet`, lue aussi par le panneau client) ; l'éditeur de
+  questionnaire **refuse** cette famille au lieu de lui poser une amorce de
+  bande (il ne sait écrire que des likert et des bandes, il la détruirait) ;
+  l'entrée se fait par import JSON (shape complète). Restitution inchangée et
+  assertée : `interpretation` nulle en base, `—` sur la fiche patient,
+  mini-synthèse vide.
+
 ### D-085 — Revue G-TRUST-04 : cinq arbitrages du responsable pour ne laisser ouverte que l'exigence 1
 
 - Date : 2026-08-22

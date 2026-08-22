@@ -144,6 +144,92 @@ describe('instruments/import POST', () => {
     expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
   });
 
+  // GARDE ANTI-BANDE-PAR-DÉFAUT, troisième site (`D-087`). L'import est la
+  // porte d'entrée d'une EVA : shape complète, item `number` borné, famille
+  // déclarée. Rien ne doit lui poser de bande — ni la grille par défaut, ni
+  // l'avertissement qui l'annonce.
+  it('json EVA sans interprétation : aucune bande posée, aucun avertissement de grille', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            instructions: 'Placez le curseur là où vous vous situez aujourd’hui.',
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                    unit: '/10',
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: { type: 'sum_no_interpretation' },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toMatchObject({ success: true, nbQuestions: 1, avertissements: [] });
+    const data = prisma.cabinetInstrument.create.mock.calls[0][0].data;
+    expect(data.statutRelecture).toBe('brouillon');
+    expect(data.scoringJson.type).toBe('sum_no_interpretation');
+    expect(data.scoringJson.maxTotal).toBe(10);
+    expect(data.scoringJson.interpretation ?? []).toEqual([]);
+    expect(JSON.stringify(data.scoringJson)).not.toContain('Grille à définir');
+    expect(JSON.stringify(data.scoringJson)).not.toContain('warning');
+    // Les ancres du curseur traversent l'import telles qu'elles ont été
+    // déclarées — elles bornent le rendu patient ET la garde serveur.
+    expect(data.definitionJson.sections[0].questions[0]).toMatchObject({
+      type: 'number',
+      min: 0,
+      max: 10,
+      unit: '/10',
+    });
+  });
+
+  it('json EVA avec une bande : 400, rien n’est créé', async () => {
+    const res = await POST(
+      postRequest({
+        format: 'json',
+        contenu: JSON.stringify({
+          titre: 'EVA fatigue — cabinet',
+          definition: {
+            sections: [
+              {
+                id: 'S1',
+                questions: [
+                  {
+                    id: 'EVA1',
+                    texte: 'Où en êtes-vous de votre fatigue aujourd’hui ?',
+                    type: 'number',
+                    min: 0,
+                    max: 10,
+                  },
+                ],
+              },
+            ],
+          },
+          scoring: {
+            type: 'sum_no_interpretation',
+            interpretation: [{ min: 0, max: 10, label: 'Fatigue élevée', color: 'danger' }],
+          },
+        }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).erreurs.join(' ')).toContain('aucune bande n’est admise');
+    expect(prisma.cabinetInstrument.create).not.toHaveBeenCalled();
+  });
+
   it('titre déjà porté par un instrument actif : 409 sans création', async () => {
     prisma.cabinetInstrument.findFirst.mockResolvedValue({ idInstrument: 'CAB_EXISTANT' });
     const res = await POST(
