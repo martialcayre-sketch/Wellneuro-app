@@ -4276,6 +4276,22 @@ l'estampille de `courrier.ts` de la métadonnée pour « réparer » l'écart �
 serait renverser la décision et toucher une table signée. Reste ouvert : aucun
 `D-xxx` ne couvre encore le fait de servir un verdict au praticien.
 
+## [2026-08-20] — LOT-02 Biologie : le parcours est écrit, il n'est pas joué
+
+Aucun E2E ne traversait la proposition de bilan ni le courrier, posés en
+production depuis le 2026-08-18. Le spec existe : six points, mode sériel,
+patient fictif, nettoyage marqué (destinataire, date, préfixe) plutôt que par
+`idPatient` — un `deleteMany` large serait destructeur sur la base du Mac.
+
+Le vrai défaut n'était pas dans le spec : **aucun `WN_CB_*` n'était posé dans
+le harnais**, ni dans `verify`, ni dans `webServer.env`. Sans eux la route rend
+503 et le parcours passait au vert sans rien trouver à cliquer.
+
+Écarté : toucher au seed ; corriger la double consignation (nommée, renvoyée) ;
+provisionner un épisode confirmé (justification fausse, retirée à la revue).
+
+Prochaine action : PR. Ouvert : **le spec n'a jamais tourné** — deux runs Mac
+sont dus ; `tsc` ne dit rien d'un sélecteur qui ne matche rien.
 ## [2026-08-21] — Refonte de l'environnement Claude Code
 
 Audit baseline (6 agents) puis application en 4 lots. `CLAUDE.md` 271 → 186
@@ -4345,3 +4361,18 @@ non-vacu) ; édition du frère (interdite par le lot, son « réserve ouverte »
 devient périmé — dette nommée au handoff). Constat production : dix suspendus,
 aucun référencé. Prochaine action : PR du lot, CI en un appel. Ouvert :
 LOT-02 (E2E, D-049) — dernier lot de la campagne.
+
+## 2026-08-22 — LOT-02 biologie : double run prouvé, campagne clôturée
+
+Décisions : la preuve « deux runs consécutifs » jouée sur PostgreSQL
+persistant jetable local (migrations + seed), **pas** sur la base partagée —
+découverte en route : `.env.local` du Mac pointe le pooler du projet Supabase
+de **production** ; un spec jamais joué localement ne s'y essaie pas en
+premier. Résultat : 2 × 6 verts (WebKit iPhone compris — le blocage D-049 ne
+mord pas ce spec), production intouchée. Clôture complète sur la branche de
+la PR #726 (statut lot/campagne, FILE_ATTENTE, state désactivé, trace).
+Écarté : jouer sur la base partagée (risque prod sans gain de preuve).
+Prochaine action : CI de #726, merge = geste Copilot/responsable ; puis le
+créneau primaire s'ouvre (Socle rang 1 — ouverture = geste du responsable).
+Question ouverte : documenter dans ROLES_MACHINES.md que « base partagée » =
+production, et décider d'une base E2E locale dédiée.

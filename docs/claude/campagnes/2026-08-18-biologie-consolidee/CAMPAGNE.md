@@ -1,10 +1,10 @@
 ---
 id: "2026-08-18-biologie-consolidee"
 titre: "Biologie consolidée — fermer les dettes de la surface vivante"
-statut: "en_cours (ouverte 2026-08-20)"
+statut: "terminée (2026-08-22 — les trois lots livrés ; la double consignation garde son verrou côté écran seulement, défaut nommé sans lot d'accueil)"
 créée_le: "2026-08-18"
 mise_à_jour: "2026-08-22"
-lot_courant: "LOT-02"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -95,7 +95,7 @@ toucher au seed**.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-01 | Le fil relit l'ancre et dit si elle tient — trois états | terminé (2026-08-20, PR #725 — verdict servi, D-079) | — |
-| LOT-02 | E2E de la surface proposition + courrier (et du verdict du LOT-01) | à faire | LOT-01 |
+| LOT-02 | E2E de la surface proposition + courrier (et du verdict du LOT-01) | terminé (2026-08-22, PR #726 — 6 points joués vert au CI et deux runs consécutifs verts en local : nettoyage prouvé) | LOT-01 |
 | LOT-03 | Contrat SQL « aucun pack actif ne référence un instrument suspendu » | terminé (2026-08-22, PR #731 — prouvé par mutation les deux sens ; production constatée saine) | — |
 
 ## Done de campagne

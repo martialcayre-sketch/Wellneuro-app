@@ -785,6 +785,21 @@ jobs:
       - name: Build
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
+        # Les drapeaux du rayon biologie sont exigés ICI, au BUILD, et pas
+        # seulement au démarrage du serveur : `dashboard/patients/[idPatient]`
+        # lit `process.env.WN_CB_ENABLED` dans un COMPOSANT SERVEUR pour
+        # alimenter `CbFeatureProvider`. Sans eux à la construction, la valeur
+        # `false` est cuite dans la page, le client ne demande jamais la
+        # proposition, et le panneau reste absent — alors même que la route
+        # d'API, dynamique, répond `ok` au runtime. C'est exactement le
+        # symptôme observé au CI du 2026-08-21 : sonde verte, écran vide.
+        #
+        # Portée volontairement limitée à cette étape et à `webServer.env` :
+        # au niveau du job, ces mêmes drapeaux déplacent la position de la
+        # suite Vitest et font rougir dix bancs.
+        env:
+          WN_CB_ENABLED: 'true'
+          WN_CB_PROPOSITION: 'true'
         run: npm run build
 
       # Installation des navigateurs placée juste avant les E2E, et non en tête

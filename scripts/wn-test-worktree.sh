@@ -525,7 +525,13 @@ npm run prisma:seed
 # scoring, lint. Ce qu'il ne saute plus : le build — donc une erreur de build
 # arrête désormais la séquence rapide, comme elle arrête le CI.
 step "Build"
-npm run build
+# Drapeaux du rayon biologie au BUILD, pas seulement au démarrage : la page
+# `dashboard/patients/[idPatient]` lit `WN_CB_ENABLED` dans un composant
+# SERVEUR. Sans eux ici, `false` est cuit dans la page et le panneau de
+# proposition reste absent même quand la route d'API répond `ok`. Portée
+# limitée à cette commande : exportés pour tout le script, ils déplacent la
+# position de la suite Vitest jouée plus haut.
+WN_CB_ENABLED=true WN_CB_PROPOSITION=true npm run build
 # E2E contre le build de production tout juste produit : plus rapide (pas de
 # compilation à la demande), stable, et fidèle au déploiement Vercel.
 export PLAYWRIGHT_WEB_SERVER=start

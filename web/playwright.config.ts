@@ -135,6 +135,27 @@ export default defineConfig({
       // et le panneau ne rend aucune recommandation — le spec n'a rien à
       // cliquer.
       WN_ENABLE_ORIENTATION_NNPP2: '1',
+      // Rayon biologie — les DEUX drapeaux, `isCbPropositionEnabled` les exige
+      // ensemble (`web/src/lib/biology-library/featureFlag.ts`). Posés en
+      // production depuis le 2026-08-18 ([[D-071]]) : le banc s'aligne, il ne
+      // simule pas. Sans eux, la route de proposition rend 503 et le spec
+      // biologie n'aurait rien à cliquer.
+      //
+      // JAMAIS AU NIVEAU DU RUNNER. Les avoir exportés sur le job CI entier et
+      // sur le script de worktree a fait rougir 10 bancs unitaires : la suite
+      // Vitest s'exécute en position CB ÉTEINTE, et `/api/praticien/fil`
+      // interroge `arbitrageBiologique` dès que `WN_CB_ENABLED` est vrai —
+      // modèle absent du double de test, donc 500. Un drapeau posé au niveau
+      // du runner déplace la position de TOUTE la suite.
+      //
+      // La portée admise est donc le PROCESSUS QUI EN A BESOIN, et il y en a
+      // deux : ici, pour le serveur sous test, et la seule commande
+      // `npm run build` du CI et de `scripts/wn-test-worktree.sh` — le rendu
+      // serveur du build lit ces drapeaux à la compilation. Deux poses, aucune
+      // au niveau du runner : les retirer là-bas rouvrirait le trou, les
+      // élargir ici rougirait Vitest.
+      WN_CB_ENABLED: 'true',
+      WN_CB_PROPOSITION: 'true',
       // Posé en Production le 2026-08-16 ([[D-064]]) — même doctrine que la
       // ligne du dessus : aligner l'E2E sur l'état réel de production. Depuis
       // [[D-065]], ce drapeau conditionne AUSSI les règles d'arrêt : sans lui,
