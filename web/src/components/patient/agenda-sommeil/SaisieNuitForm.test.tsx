@@ -314,6 +314,53 @@ describe('mise au lit', () => {
   });
 });
 
+describe('compte de réveils — exact, au compteur, sans clavier (v3)', () => {
+  // Parcours d'une nuit coupée, prêt pour l'envoi, détails ouverts.
+  function nuitCoupee() {
+    const rendu = rendre();
+    poignees().forEach((p) => fireEvent.keyDown(p, { key: 'Enter' }));
+    fireEvent.click(screen.getByRole('button', { name: /vite/i }));
+    fireEvent.click(screen.getByRole('button', { name: /éveillé·e longtemps/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aucune aide/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'En me couchant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dès mon réveil' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Très bonne' }));
+    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
+    return rendu;
+  }
+  const plus = () => screen.getByRole('button', { name: 'Un réveil de plus' });
+  const moins = () => screen.getByRole('button', { name: 'Un réveil de moins' });
+
+  it('transmet un compte exact au-delà de trois — « 3 ou plus » n’existe plus', () => {
+    const { onSubmit } = nuitCoupee();
+    for (let i = 0; i < 5; i += 1) fireEvent.click(plus());
+    fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60', nombre: 5 });
+  });
+
+  it('reste facultatif : sans geste sur le compteur, le compte est absent', () => {
+    const { onSubmit } = nuitCoupee();
+    fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60' });
+  });
+
+  it('décrémenter depuis 1 revient à « pas de réponse », jamais à un zéro', () => {
+    // Un zéro contredirait la nuit coupée déclarée — le serveur le refuse.
+    const { onSubmit } = nuitCoupee();
+    fireEvent.click(plus());
+    fireEvent.click(moins());
+    fireEvent.click(cta());
+    expect(onSubmit.mock.calls[0][0].reveils).toEqual({ dureeTotale: 'e30_60' });
+  });
+
+  it('le compteur n’apparaît pas sur une nuit continue', () => {
+    rendre();
+    completerLeMinimum();
+    fireEvent.click(screen.getByRole('button', { name: /ajouter des détails/i }));
+    expect(screen.queryByRole('button', { name: 'Un réveil de plus' })).toBeNull();
+  });
+});
+
 describe('facteurs — « rien de particulier » est exclusif', () => {
   it('cocher un facteur décoche « rien de particulier », et réciproquement', () => {
     const { onSubmit } = rendre();

@@ -4,6 +4,37 @@
 
 ## Décisions actives
 
+### D-091 — Agenda du sommeil : compte de réveils exact, jamais d'horaires nocturnes
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrage du praticien**, rendu en session le
+  2026-08-22)
+- Domaine : instrument de recueil Q_SOM_09 (agenda du sommeil 21 nuits)
+- Numérotation : `D-090` était réservé par le LOT-04 Alliance 6.0-A (garde de
+  chemin sortant), alors non mergé — cette entrée a pris le numéro suivant et
+  a atterri après lui.
+- Contexte : le compte de réveils nocturnes plafonnait à « 3 ou plus »
+  (contrat `agenda-sommeil-v2`) — un patient à six réveils par nuit était
+  indiscernable d'un patient à trois, et la moyenne `AGD_REV_MOY` était
+  bornée à 3 par construction. La demande initiale envisageait aussi le
+  recueil des horaires de chaque réveil.
+- Décision :
+  1. Le compte devient **exact** (contrat `agenda-sommeil-v3`), borné par une
+     borne de vraisemblance technique `NB_REVEILS_MAX = 20` — un chiffre
+     technique, pas un seuil clinique. Sur une ligne v1/v2 déjà en base, la
+     valeur 3 reste un PLANCHER (« 3 ou plus ») et n'est jamais
+     réinterprétée — même doctrine que les classes d'éveil héritées.
+  2. **Aucun horaire de réveil nocturne n'est recueilli** — option écartée :
+     le Consensus Sleep Diary recueille compte + durée cumulée, et horodater
+     supposerait que le patient regarde l'heure la nuit, la conduite que
+     l'instrument évite (même doctrine que la latence en classes). Le WASO
+     continue de venir de la durée cumulée déclarée.
+  3. Le compte reste facultatif et hors de tout calcul structurel : l'indice
+     /100 ne le voit qu'à travers l'efficacité, comme avant.
+- Conséquences : saisie patient au compteur tactile (sans clavier), borne du
+  pseudo-item `AGD_REV_MOY` alignée (0..20), fragment
+  `changelog.d/2026-08-22-agenda-sommeil-compte-reveils-exact.md`.
+
 ### D-090 — Le régime d'une garde de chemin sortant suit le GESTE, pas le texte
 
 - Date : 2026-08-22

@@ -6,7 +6,7 @@ import {
   estDateValide,
   resolveNuitsActives,
 } from './nuit';
-import type { NuitRow } from './types';
+import { NB_REVEILS_MAX, type NuitRow } from './types';
 
 const express = { heureCoucher: '23:00', heureLever: '07:00', latence: 'lt15', qualite: 4 };
 
@@ -115,6 +115,27 @@ describe('écriture v2 (stricte)', () => {
         { exigerObligatoires: true },
       ),
     ).toThrow(TypeError);
+  });
+
+  // v3 : le compte est EXACT — « 3 ou plus » n'existe plus à l'écriture. La
+  // fragmentation au-delà de trois réveils, jusqu'ici écrasée sur la valeur 3,
+  // doit passer telle que déclarée.
+  it('accepte un compte exact au-delà de trois (v3)', () => {
+    const r = ensureNuitReponses(
+      { ...v2, reveils: { dureeTotale: 'e30_60', nombre: 7 } },
+      { exigerObligatoires: true },
+    );
+    expect(r.reveils).toEqual({ dureeTotale: 'e30_60', nombre: 7 });
+  });
+
+  it('borne le compte par vraisemblance (NB_REVEILS_MAX), à l’écriture comme en lecture', () => {
+    const invraisemblable = { dureeTotale: 'gt60', nombre: NB_REVEILS_MAX + 1 };
+    expect(() =>
+      ensureNuitReponses({ ...v2, reveils: invraisemblable }, { exigerObligatoires: true }),
+    ).toThrow(TypeError);
+    // En lecture aussi : aucune ligne ne peut en porter davantage, le contrat
+    // v3 naît avec la borne — la refuser ne rend aucun historique illisible.
+    expect(() => ensureNuitReponses({ ...express, reveils: invraisemblable })).toThrow(TypeError);
   });
 
   it('refuse une mise au lit contradictoire avec le mode de coucher', () => {

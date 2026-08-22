@@ -44,11 +44,24 @@ export const AGENDA_SOMMEIL_TITRE = 'Agenda du sommeil — 21 nuits' as const;
 // leurs champs manquants valent `null`, jamais 0, et leurs classes d'éveil
 // héritées sont acceptées en lecture (cf. `CLASSES_DUREE_REVEILS_LUES`).
 //
-// Pourquoi pas un `-v3` : v2 n'a jamais été mergé ni déployé, aucune ligne en
-// base ne le porte (vérifié sur `origin/main` le 2026-07-28). Le numéroter v3
-// inventerait une version que nulle base n'a contenue.
-export const AGENDA_CONTRACT_VERSION = 'agenda-sommeil-v2' as const;
-export const AGENDA_CONTRACT_VERSIONS_LUES = ['agenda-sommeil-v1', 'agenda-sommeil-v2'] as const;
+// Pourquoi v2 ne s'est pas appelé v3 : v2 n'a jamais été mergé ni déployé,
+// aucune ligne en base ne le portait (vérifié sur `origin/main` le 2026-07-28).
+// Le numéroter v3 aurait inventé une version que nulle base n'a contenue.
+//
+// v2 → v3 (2026-08-22) — un seul changement de SENS :
+//   (g) Compte de réveils exact. `reveils.nombre` devient un compte EXACT,
+//       borné techniquement à `NB_REVEILS_MAX` (borne de vraisemblance, pas un
+//       seuil clinique). En v1/v2 la valeur 3 signifiait « 3 ou plus » : sur
+//       une ligne v1/v2 déjà en base, un 3 reste donc un PLANCHER, jamais un
+//       compte exact — on ne réécrit pas ce que le patient n'a pas dit. Le
+//       champ reste facultatif et n'entre dans aucun calcul structurel
+//       (`AGD_REV_MOY` est une métrique brute, hors indice).
+export const AGENDA_CONTRACT_VERSION = 'agenda-sommeil-v3' as const;
+export const AGENDA_CONTRACT_VERSIONS_LUES = [
+  'agenda-sommeil-v1',
+  'agenda-sommeil-v2',
+  'agenda-sommeil-v3',
+] as const;
 
 // Fenêtre de recueil : 21 emplacements (une culture « protocole 21 jours » et le
 // jalon J21 partagés par le produit).
@@ -137,6 +150,12 @@ export type FacteursNuit = Partial<Record<CleFacteur, boolean>> & {
   rienDeParticulier?: boolean;
 };
 
+// Borne de VRAISEMBLANCE du compte de réveils (v3) — un chiffre technique, pas
+// un seuil clinique : au-delà, la saisie relève de l'erreur de manipulation,
+// pas d'une nuit réelle. Elle borne l'écriture ET la lecture (aucune ligne ne
+// peut en porter davantage, le contrat v3 naît avec elle).
+export const NB_REVEILS_MAX = 20;
+
 export type ReveilsNuit = {
   // Durée cumulée d'éveil nocturne — c'est elle qui porte le critère clinique
   // et qui entre dans l'efficacité, pas le compte. Le type accepte les classes
@@ -145,7 +164,9 @@ export type ReveilsNuit = {
   // Nombre de réveils : raffinement FACULTATIF, proposé seulement quand la nuit
   // n'a pas été continue. Absent = inconnu ; il n'entre dans aucun calcul
   // structurel, donc son absence ne biaise rien (contrairement au WASO).
-  nombre?: number; // 0..3 (3 = « 3 ou plus »)
+  // v3 : compte EXACT, 0..NB_REVEILS_MAX. Sur une ligne v1/v2, 3 = « 3 ou
+  // plus » (plancher) — cf. note (g) du contrat.
+  nombre?: number;
 };
 
 export type NuitReponses = {

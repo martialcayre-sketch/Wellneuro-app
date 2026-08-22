@@ -27,6 +27,7 @@ import {
   CLASSES_LATENCE,
   CLASSES_SIESTE,
   CLES_FACTEURS,
+  NB_REVEILS_MAX,
   type ClasseAideSommeil,
   type ClasseDureeReveils,
   type ClasseLatence,
@@ -133,6 +134,55 @@ function Puces<T extends string>({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Compteur tactile − / + : le compte exact de réveils sans clavier (le
+// formulaire n'a aucun champ de texte, et un pavé numérique la nuit est
+// exactement ce qu'on ne veut pas remettre dans les mains du patient).
+// Décrémenter depuis 1 revient à « pas de réponse » : 0 n'est pas saisissable
+// ici — il est réservé à la nuit continue, qui le pose d'elle-même.
+function Compteur({
+  label,
+  value,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number | undefined;
+  max: number;
+  onChange: (v: number | undefined) => void;
+}) {
+  const bouton =
+    'min-h-11 min-w-11 rounded-xl border border-border text-lg text-foreground ' +
+    'hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent';
+  return (
+    <div>
+      <p className="text-sm font-medium text-foreground mb-2">{label}</p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          aria-label="Un réveil de moins"
+          disabled={value === undefined}
+          onClick={() => onChange(value !== undefined && value > 1 ? value - 1 : undefined)}
+          className={bouton}
+        >
+          −
+        </button>
+        <span aria-live="polite" className="min-w-24 text-center text-sm text-foreground">
+          {value === undefined ? '—' : value === 1 ? '1 réveil' : `${value} réveils`}
+        </span>
+        <button
+          type="button"
+          aria-label="Un réveil de plus"
+          disabled={value !== undefined && value >= max}
+          onClick={() => onChange(value === undefined ? 1 : Math.min(value + 1, max))}
+          className={bouton}
+        >
+          +
+        </button>
       </div>
     </div>
   );
@@ -388,14 +438,15 @@ export function SaisieNuitForm({
         <div className="space-y-6">
           {/* Raffinement facultatif, proposé seulement si la nuit a été coupée :
               le compte n'entre dans aucun calcul structurel, donc son absence ne
-              biaise rien — contrairement à la durée d'éveil, plus haut. */}
+              biaise rien — contrairement à la durée d'éveil, plus haut. Compte
+              EXACT depuis la v3 (fini le « 3 ou plus ») : la fragmentation
+              au-delà de trois réveils était invisible. */}
           {dureeReveils !== undefined && dureeReveils !== 'aucun' && (
-            <Puces<string>
+            <Compteur
               label="Combien de fois, à peu près ?"
-              options={['1', '2', '3']}
-              libelle={(v) => (v === '3' ? '3 ou plus' : v)}
-              value={nbReveils !== undefined && nbReveils > 0 ? String(nbReveils) : undefined}
-              onChange={(v) => setNbReveils(Number(v))}
+              value={nbReveils !== undefined && nbReveils > 0 ? nbReveils : undefined}
+              max={NB_REVEILS_MAX}
+              onChange={setNbReveils}
             />
           )}
           <ChoixEmoji
