@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "en cours — recette staging faite (2026-08-21/22), prod provisionnée et données réelles migrées (2026-08-22 03:24 CEST, bascule consignée) ; restent cutover DNS et décommissionnement (gaté par l'annexe)"
+statut: "en cours — recette staging faite, prod provisionnée, données migrées (2026-08-22 03:24) et CUTOVER FAIT (2026-08-22 matin) ; reste le décommissionnement, programmé au 2026-09-01 par D-080 (annexe signée ou non), avec preuve d'effacement"
 ---
 
 # LOT-02 — Exécution du runbook Scalingo — CONFIRMATION OBLIGATOIRE
@@ -139,6 +139,11 @@ gestes — un lot ops ne se prouve pas par une suite Vitest.
       vérifié — déroulé au runbook). Le second terme (signature de l'annexe)
       reste pendant — la case se coche quand la chronologie est complète.
 - [ ] Cutover fait, Vercel/Supabase gardés chauds puis décommissionnés avec
-      **preuve d'effacement écrite** au registre RGPD.
+      **preuve d'effacement écrite** au registre RGPD. **Cutover fait le
+      2026-08-22 au matin** (DNS ~04:05 CEST, NextAuth aligné 09:53, SMTP
+      validé 10:16 — chronologie au dossier RGPD rubrique 12) ; les anciens
+      hébergeurs sont chauds. **Décommissionnement programmé au 2026-09-01
+      par `D-080`** (fenêtre de stabilité de dix jours, annexe signée ou
+      non) ; la case se coche à la preuve d'effacement.
 - [ ] Le runbook porte ce que l'exécution a appris ; aucun compteur figé
       n'y est entré.

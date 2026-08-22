@@ -25,7 +25,7 @@ datée **par feature**.
 | `WN_C5_ENABLED` | `true` | alimentation / CIQUAL | fermé |
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
 | `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
-| `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé |
+| `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
 | `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
 | `WN_CLAIMS_QUESTIONNAIRE_STREAM` | `true` | claims questionnaire en SSE | réponse JSON |
@@ -155,11 +155,11 @@ variable.**
   la FORME de la date a été portée à l'ISO canonique par `D-067` (réserve F5) —
   le fait attesté ne change pas.
 
-## D. Gate dur HDS — ne jamais ouvrir avant l'attestation HDS
+## D. Gate dur HDS — requalifié par [[D-081]]
 
 | Flag | Valeur ON | Ouvre | Garde |
 |---|---|---|---|
-| `WN_CB_RESULTS_ENABLED` | `true` | stockage de **résultats biologiques réels** (donnée de santé) | exige AUSSI `WN_CB_ENABLED` ; **aucun appelant à ce jour** ; commentaire du code : « ne doit jamais passer à true avant l'attestation HDS » |
+| `WN_CB_RESULTS_ENABLED` | `true` | stockage de **résultats biologiques réels** (donnée de santé) | exige AUSSI `WN_CB_ENABLED` ; **aucun appelant à ce jour** ; ~~« ne doit jamais passer à true avant l'attestation HDS »~~ — **requalifié le 2026-08-22 ([[D-081]])** : la condition est un **hébergement HDS effectif et exclusif**, satisfaite au décommissionnement de Vercel/Supabase ([[D-080]], 2026-09-01). Le drapeau reste absent tant qu'aucun code ne le lit ; sa pose accompagnera le code de la Phase C |
 
 ## E. Configuration / secrets — **pas** des gâtes
 

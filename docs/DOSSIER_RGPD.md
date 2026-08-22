@@ -504,9 +504,22 @@ section « Ce que l'exécution de la migration des données a appris ».
 **La fenêtre de moindre couverture de `D-078` est ouverte depuis cette date.**
 Elle se ferme par la signature de l'annexe HDS (pendante — demandée le
 2026-08-12, relancée le 2026-08-19, sans réponse au 2026-08-22) ou se rejuge à
-la revue du 2026-10-21. Le **cutover DNS n'est pas fait** — le service aux
+la revue du 2026-10-21. ~~Le **cutover DNS n'est pas fait** — le service aux
 personnes reste rendu par Vercel/Supabase — et le **décommissionnement reste
-interdit** jusqu'à la signature.
+interdit** jusqu'à la signature.~~
+
+**Cutover fait le 2026-08-22 au matin.** La bascule DNS
+(`app.wellneuro.fr` → `wellneuro.osc-fr1.scalingo.io`, TTL 300 s) est
+constatée propagée avec certificat TLS émis vers **04:05 CEST** ;
+`NEXTAUTH_URL` alignée et portée par un redémarrage à **09:53 CEST** (la
+boucle OAuth praticien vérifiée sur le domaine) ; l'envoi SMTP validé en
+production à **10:16 CEST** (`250 OK`, après correction de l'identifiant —
+fournisseur : Google Workspace, rubrique 6). Depuis, **le service aux
+personnes est rendu par Scalingo** ; Vercel et Supabase sont gardés chauds
+comme filet de retour. **Le décommissionnement est reprogrammé par `D-080`**
+(2026-08-22) : fenêtre de stabilité de dix jours, puis décommissionnement au
+**2026-09-01**, annexe signée ou non — la subordination de `D-078` est levée
+à cette date, la preuve d'effacement écrite reste due.
 
 **Ce n'est pas une conformité. C'est un écart assumé, compté et daté** — et
 `D-078` l'élargit sans en changer le terme ; depuis le 2026-08-22, il n'est
@@ -529,7 +542,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; en tout état de cause **avant tout décommissionnement** et avant la revue du 2026-10-21 | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) : le décommissionnement est programmé au 2026-09-01, annexe signée ou non ; l'annexe reste due **avant la revue du 2026-10-21** (sortie « par le haut ») | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
