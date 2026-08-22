@@ -173,8 +173,19 @@ partage à un tiers (médecin traitant compris) sans choix explicite du patient
    2026-08-19, sans réponse à ce jour (« Canal et trace de la demande
    d'annexe », ci-dessous). Ce point vaut pour Scalingo seul ; les autres
    sous-traitants de la liste ci-dessus restent sans DPA archivé.
-2. Le **fournisseur SMTP réel n'est pas identifié** — ni son nom, ni sa
-   localisation (`CHECKLIST_FINALISATION.md:68`).
+2. ~~Le **fournisseur SMTP réel n'est pas identifié** — ni son nom, ni sa
+   localisation (`CHECKLIST_FINALISATION.md:68`).~~ **Identifié le
+   2026-08-22 : Google Workspace** — établi sans lire aucun secret, par
+   concordance de trois traces publiques et d'une du code : le SPF de
+   `wellneuro.fr` n'autorise que `_spf.google.com`, le MX est
+   `smtp.google.com`, la clé DKIM active est celle de Google, et
+   l'expéditeur du code est `"Wellneuro" <noreply@wellneuro.fr>`
+   (`web/src/lib/consultation/email.ts`). La ligne « Fournisseur d'envoi
+   d'e-mails » de la liste patient reste exacte ; Google y figure déjà, mais
+   au titre de la seule connexion praticien — le cumul des deux rôles est un
+   fait à porter au document d'information v2 (lot TRUST). **Restent dus** :
+   la localisation du traitement et la couverture DPA
+   (`CHECKLIST_FINALISATION.md` §F).
 3. **Sentry est un sous-traitant de fait non déclaré au patient.**
    `@sentry/nextjs` est une dépendance de `web/package.json`, sa résidence UE
    n'est pas vérifiée et son volet client reste « à trancher »
@@ -183,10 +194,17 @@ partage à un tiers (médecin traitant compris) sans choix explicite du patient
    soit il ne traite aucune donnée personnelle et cela s'écrit, soit la liste
    patient est incomplète et se corrige.
 4. **Scalingo** est décidé (D-006, 2026-07-28 ; confirmé par D-037,
-   2026-08-09) mais **pas en service** : il n'entre dans cette liste qu'au
+   2026-08-09) ~~mais **pas en service** : il n'entre dans cette liste qu'au
    basculement, et la décision subordonne toute donnée réelle à deux conditions
    préalables — l'accord de sous-traitance en vigueur et archivé, et le
-   périmètre HDS de la région confirmé par écrit.
+   périmètre HDS de la région confirmé par écrit.~~ **Les données réelles y
+   résident depuis le 2026-08-22, 03:24 CEST** (ordre des conditions suspendu
+   par `D-078` §4 ; chronologie complète : rubrique 12). **Toujours pas en
+   service** : l'application servie aux personnes reste sur Vercel/Supabase
+   jusqu'au cutover DNS, et c'est au basculement de service que Scalingo entre
+   dans la liste montrée au patient. Mais la résidence des données, elle, est
+   un fait depuis cette date — c'est précisément ce que le renouvellement
+   d'information (rubrique 11) doit dire.
 
 ### Certification HDS de Scalingo — pièce au dossier
 
@@ -444,7 +462,9 @@ personnes réelles, **décision datée du 2026-07-21**, **bornée au 2026-10-21*
 `docs/claude/REGISTRE_FRONTIERES.md` §1).
 
 Une migration vers **Scalingo** (certifié HDS) est décidée (D-006, 2026-07-28 ;
-confirmée par D-037, 2026-08-09) et non exécutée. ~~Elle est subordonnée, dans
+confirmée par D-037, 2026-08-09) ~~et non exécutée~~ — **exécutée pour les
+données le 2026-08-22** (bloc « État au 2026-08-22 » ci-dessous) ; cutover DNS
+et décommissionnement restants. ~~Elle est subordonnée, dans
 l'ordre : accord de sous-traitance **en vigueur et archivé** (D-037 : la pièce
 s'archive, elle ne s'e-signe pas — et elle n'est pas au dossier au 2026-08-09),
 puis confirmation écrite du périmètre HDS de la région cible, puis seulement
@@ -473,8 +493,24 @@ caduc :**
   subordonné à la signature (seul geste irréversible). **La date de revue est
   inchangée : 2026-10-21.**
 
+**État au 2026-08-22 — la bascule des données a eu lieu.** Le chargement des
+données réelles vers Scalingo (app `wellneuro`, région `osc-fr1`,
+`--hds-resource`, add-on PostgreSQL Business) s'est achevé le **2026-08-22 à
+03:24:09 CEST** (dump de la source le même jour à 02:13 CEST). Comptes
+vérifiés conformes à la référence figée côté source — dont 19 patients et 118
+réponses de questionnaires ; déroulé et leçons :
+`docs/claude/propositions/2026-07-24-audit-migration-hds/RUNBOOK_MIGRATION_SCALINGO.md`,
+section « Ce que l'exécution de la migration des données a appris ».
+**La fenêtre de moindre couverture de `D-078` est ouverte depuis cette date.**
+Elle se ferme par la signature de l'annexe HDS (pendante — demandée le
+2026-08-12, relancée le 2026-08-19, sans réponse au 2026-08-22) ou se rejuge à
+la revue du 2026-10-21. Le **cutover DNS n'est pas fait** — le service aux
+personnes reste rendu par Vercel/Supabase — et le **décommissionnement reste
+interdit** jusqu'à la signature.
+
 **Ce n'est pas une conformité. C'est un écart assumé, compté et daté** — et
-`D-078` l'élargit sans en changer le terme.
+`D-078` l'élargit sans en changer le terme ; depuis le 2026-08-22, il n'est
+plus une intention mais un état de fait, daté à la minute.
 
 ## 13. Analyse d'impact (AIPD)
 
@@ -495,7 +531,7 @@ elle.
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; en tout état de cause **avant tout décommissionnement** et avant la revue du 2026-10-21 | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
-| 6 | Sous-traitants | Fournisseur SMTP réel non identifié | Responsable | 2026-10-21 | ici, rubrique 6 |
+| 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
 | 7 | Transferts | Mécanisme invoqué (CCT/DPA) | Conseil qualifié | 2026-10-21 | ici, rubrique 7 |
 | 8 | Conservation | Durées des données de santé | Responsable + conseil | 2026-10-21 | ici, rubrique 8 puis `gouvernance.ts` |
@@ -503,7 +539,7 @@ elle.
 | 10 | Sécurité | Pentest / revue externe | Prestataire à engager | 2026-10-21 | checklist du gate, exigence 7 |
 | 10 | Sécurité | Registre physique des violations (EX-3) | Responsable | 2026-10-21 | `PROCEDURE_VIOLATION_DONNEES.md` |
 | 10 | Sécurité | Preuve fonctionnelle de la piste d'audit | Responsable | ~~premier dossier ouvert~~ — **échéance dépassée** : des dossiers réels sont ouverts et utilisés (`D-075`, 2026-08-18), la production porte des passations (`D-077`) ; la preuve reste à produire, échéance reportée au 2026-10-21 | checklist du gate, item 4 |
-| 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | **avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3), et en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
+| 11 | Information | ~~Information sur l'écart HDS non consignée~~ — **partiellement consignée le 2026-08-19** (forme orale et contenu, sur déclaration du responsable, rubrique 11). **Reste dû** : renouvellement après `D-078`, qui change la nature de l'écart — brouillon de support prêt, publication = geste TRUST distinct | Responsable | ~~**avant la bascule Scalingo** (c'est elle qui ouvre la fenêtre de moindre couverture, `D-078` §3)~~ — **échéance dépassée le 2026-08-22** : la bascule des données a eu lieu (03:24 CEST, rubrique 12) **sans** que le renouvellement soit publié. Relevé le jour même, pas découvert après coup ; à rattraper **au plus tôt**, en tout état de cause avant le 2026-10-21 | ici, rubrique 11 |
 | 11 | Information | **Date de délivrance non établie** et **modalité de retrait non consignée** — deux des quatre composantes du trou d'origine ; la période déclarée (« en continu depuis la souscription HDS ») ne fournit pas de point de départ tenu pour établi par le dépôt | Responsable | 2026-10-21 | ici, rubrique 11 |
 | 11 | Information | **Aucune trace écrite par participant** de l'information sur l'écart HDS — aucun acquittement individuel ne la porte ; périmètre des personnes couvertes non établi | Responsable | 2026-10-21 | ici, rubrique 11 |
 | 13 | AIPD | Absente | Conseil qualifié | 2026-10-21 | document dédié |
