@@ -4,6 +4,45 @@
 
 ## Décisions actives
 
+### D-089 — Levée technique du gate G-TRUST-04, sous réserve unique : la signature de l'annexe HDS
+
+- Date : 2026-08-22
+- Statut : accepté (**décision du responsable du traitement**, rendue en
+  session le 2026-08-22, en fin de la journée qui a exécuté le cap `D-085`)
+- Domaine : sécurité, hébergement, gate `G-TRUST-04`
+
+- Contexte : au soir du 2026-08-22, l'état du code a rejoint les exigences.
+  Ligne par ligne : **2/4** purge appliquée et vérifiée §C sur les deux
+  bases ; **3** sans objet (mono-praticien, condition de réouverture
+  écrite) ; **5** ✅ (947 accès journalisés, preuve comportementale) ;
+  **6** ✅ (procédure exercée, registre physique ouvert, runbook Scalingo
+  livré) ; **7** ✅ (revue de sécurité jouée — 0 H, 2 M, 1 L — constats
+  triés ET corrigés le jour même, correctifs passés en revue adversariale).
+  Ligne **1** : service et données sont rendus par un hébergeur certifié
+  HDS (Scalingo, certificat LNE 38436) depuis le cutover — **mais l'annexe
+  HDS n'est pas signée** et Vercel/Supabase restent en décommissionnement
+  jusqu'au 2026-09-01 (`D-080`).
+
+**La décision.** Le gate `G-TRUST-04` est **levé techniquement le
+2026-08-22, au vu de l'état du code**, avec une **réserve unique et
+nommée** : la signature de l'annexe HDS — une question de jours selon le
+fournisseur, et que le responsable s'engage à constater levée **au plus
+tard à la date fixée du décommissionnement (2026-09-01, `D-080`)**. La
+dérogation du 2026-07-21 (bornée au 2026-10-21) est **remplacée** par cette
+levée sous réserve ; si la réserve n'était pas levée au 2026-10-21, cette
+date redevient un point de contrôle.
+
+**Ce que la réserve retient encore, et rien d'autre** : aucune affirmation
+contractuelle d'hébergement HDS face au patient tant que l'annexe n'est pas
+signée (le centre d'information reste factuel). Tout le reste est
+fonctionnel. La biologie réelle reste hors produit par choix de roadmap
+(Phase C), plus par le gate.
+
+**Traçabilité** : `GATES_GO_NO_GO.md` (registre, ligne 11) porte le nouveau
+statut ; `CHECKLIST_ACTIVATION_G_TRUST_04.md` reste le dossier de preuve ;
+la dette `D-TRUST-03` est refermée sur ce périmètre (sa part multi-praticien
+vit dans la condition de réouverture de l'exigence 3, `D-085`).
+
 ### D-088 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
 
 - Date : 2026-08-22
