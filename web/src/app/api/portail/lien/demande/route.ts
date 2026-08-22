@@ -129,16 +129,44 @@ async function traiterDemande(
       return reponseIndifferenciee();
     }
 
-    // Cadence bornée EN BASE, pas en mémoire de processus : en serverless
-    // plusieurs instances répondent, et un compteur local ne borne rien.
-    const demandesRecentes = await prisma.portailMagicLink.count({
-      where: {
-        idPatient: patient.idPatient,
-        creePar: ORIGINE_PATIENT,
-        creeLe: { gte: debutFenetreDemandes(maintenant) },
-      },
+    // Cadence bornée EN BASE, pas en mémoire de processus : plusieurs
+    // conteneurs peuvent répondre (Scalingo scale horizontalement), et un
+    // compteur local ne bornerait rien.
+    //
+    // Comptage et création partagent une TRANSACTION sous verrou consultatif
+    // par patient (revue de sécurité du 2026-08-22, constat M) : séparés, des
+    // demandes concurrentes observaient toutes un compteur sous le plafond
+    // avant qu'aucune n'ait créé son lien, et le franchissaient ensemble. Le
+    // verrou `pg_advisory_xact_lock` se relâche seul au COMMIT/ROLLBACK ; un
+    // échec de la transaction ne crée rien et n'envoie rien — fail-closed.
+    const jeton = await prisma.$transaction(async (tx) => {
+      // Forme à DEUX arguments : la classe 74 sépare cet espace de clés de
+      // celui, mono-clé, des imports (`hashtext($1)` nu dans importNabm /
+      // importCiqual) — et `hashtext` est la fonction que ces imports ont
+      // déjà éprouvée sur cette base (revue adversariale, constats M1/L6 ;
+      // résolution constatée en one-off le 2026-08-22).
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(74, hashtext(${patient.idPatient}))`;
+      const demandesRecentes = await tx.portailMagicLink.count({
+        where: {
+          idPatient: patient.idPatient,
+          creePar: ORIGINE_PATIENT,
+          creeLe: { gte: debutFenetreDemandes(maintenant) },
+        },
+      });
+      if (plafondAtteint(demandesRecentes)) return null;
+      const neuf = creerJeton();
+      await tx.portailMagicLink.create({
+        data: {
+          idPatient: patient.idPatient,
+          jetonEmpreinte: empreinteJeton(neuf),
+          expireLe: expirationDepuis(maintenant),
+          creePar: ORIGINE_PATIENT,
+        },
+      });
+      return neuf;
     });
-    if (plafondAtteint(demandesRecentes)) {
+
+    if (jeton === null) {
       logger.security({
         event: EVENT_CODES.PORTAIL_LIEN_DEMANDE,
         domain: 'SECURITY',
@@ -150,23 +178,15 @@ async function traiterDemande(
       return reponseIndifferenciee();
     }
 
-    const jeton = creerJeton();
-    await prisma.portailMagicLink.create({
-      data: {
-        idPatient: patient.idPatient,
-        jetonEmpreinte: empreinteJeton(jeton),
-        expireLe: expirationDepuis(maintenant),
-        creePar: ORIGINE_PATIENT,
-      },
-    });
-
-    try {
-      await sendMagicLinkEmail(patient.email, patient.prenom, buildMagicLinkUrl(jeton), patient.idPatient);
-    } catch (e) {
-      // L'échec d'envoi ne change pas la réponse : la dire au patient
-      // signalerait que son adresse est connue.
-      console.error('[portail/lien/demande] email:', (e as Error).message);
-    }
+    // L'envoi part HORS du chemin mesuré (revue du 2026-08-22, constat L) :
+    // attendu, sa latence SMTP dépassait parfois le plancher et les paliers
+    // devenaient un canal d'énumération probabiliste. Le serveur Scalingo est
+    // un processus long : la promesse s'achève après la réponse. L'échec
+    // d'envoi ne change pas la réponse — la dire au patient signalerait que
+    // son adresse est connue.
+    void sendMagicLinkEmail(patient.email, patient.prenom, buildMagicLinkUrl(jeton), patient.idPatient).catch(
+      (e) => console.error('[portail/lien/demande] email:', (e as Error).message),
+    );
 
     logger.security({
       event: EVENT_CODES.PORTAIL_LIEN_DEMANDE,

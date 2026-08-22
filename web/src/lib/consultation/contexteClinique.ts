@@ -14,15 +14,44 @@ export function asRecord(input: unknown): Record<string, unknown> {
     : {};
 }
 
-// Chaîne non vide, tronquée par sécurité.
-export function texte(v: unknown, max = 2000): string {
-  return typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : '';
+// Neutralisation pour le prompt (revue de sécurité du 2026-08-22, constat M —
+// injection de prompt par les champs libres) : les chevrons perdent leur
+// pouvoir de forger un délimiteur (`<donnees_declaratives_patient>` et tout
+// autre balisage), les sauts de ligne celui d'injecter une structure Markdown
+// (`## Résultats…`) dans le message. Le texte reste lisible — seuls les
+// caractères porteurs de structure sont remplacés par leurs homoglyphes.
+function neutraliser(s: string): string {
+  return s
+    .replace(/</g, '‹')
+    .replace(/>/g, '›')
+    // Tous les séparateurs de ligne, pas seulement CR/LF : U+2028 (LS),
+    // U+2029 (PS), U+0085 (NEL) et U+000B (VT) sont traités comme des sauts
+    // de ligne par certains rendus — les laisser passer rouvrirait
+    // l'injection de section (revue adversariale, constat L1).
+    .replace(/\s*[\r\n\u000B\u0085\u2028\u2029]+\s*/g, ' — ');
 }
 
-// Liste de libellés (checkbox-multi) — les valeurs stockées sont déjà lisibles.
+// Troncature par POINTS DE CODE, pas par unités UTF-16 : un `slice` nu peut
+// couper un émoji en deux et laisser un surrogate orphelin que l'appel API
+// rejette (revue adversariale, constat L4).
+function tronquer(s: string, max: number): string {
+  return [...s].slice(0, max).join('');
+}
+
+// Chaîne non vide, tronquée par sécurité, neutralisée pour le prompt.
+export function texte(v: unknown, max = 2000): string {
+  return typeof v === 'string' && v.trim() ? neutraliser(tronquer(v.trim(), max)) : '';
+}
+
+// Liste de libellés (checkbox-multi) — les valeurs stockées viennent des
+// définitions de questionnaires, mais le JSON en base n'est pas garanti
+// conforme : neutralisées aussi, par le même chemin.
 export function liste(v: unknown, max = 50): string[] {
   if (!Array.isArray(v)) return [];
-  return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, max);
+  return v
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .slice(0, max)
+    .map((x) => neutraliser(x.trim()));
 }
 
 // Entrées d'un groupe répétable (médicaments, compléments).
@@ -33,7 +62,7 @@ function entrees(v: unknown, max = 20): Array<Record<string, string>> {
     const rec = asRecord(brut);
     const entree: Record<string, string> = {};
     for (const [k, val] of Object.entries(rec)) {
-      if (typeof val === 'string' && val.trim()) entree[k] = val.trim().slice(0, 500);
+      if (typeof val === 'string' && val.trim()) entree[k] = neutraliser(tronquer(val.trim(), 500));
     }
     if (Object.keys(entree).length) out.push(entree);
   }

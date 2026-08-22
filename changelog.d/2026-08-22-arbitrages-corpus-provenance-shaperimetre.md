@@ -23,5 +23,7 @@ arbitrages au responsable ; ils sont rendus le jour même.
   un corpus fermé restera explicable six mois plus tard.
 - Contenu du corpus inchangé au caractère près ; le jour de signature
   (2026-08-22, `D-082`) reste le fait attesté — précédent
-  `orientationRulesV1`/`D-067`. Prompt de synthèse intact : les deux
-  empreintes `synthese-v27` ne bougent pas.
+  `orientationRulesV1`/`D-067`. Prompt de synthèse intact **par cet
+  arbitrage** : ses empreintes n'y ont pas bougé — le bump du jour vers
+  `synthese-v28` vient d'un autre lot (revue de sécurité, anti-injection du
+  contexte patient).

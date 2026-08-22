@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, sendMagicLinkEmail, logger, attendre } = vi.hoisted(() => ({
+const { prisma, tx, sendMagicLinkEmail, logger, attendre } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
+    // Client HORS transaction : la route ne doit JAMAIS toucher
+    // `portailMagicLink` par lui — un `tx` DISTINCT du client est ce qui
+    // rend la co-transactionnalité testable (revue adversariale, constat
+    // M3 : un tx aliasé au client laissait verte la régression « comptage
+    // ressorti de la transaction »).
     portailMagicLink: { count: vi.fn(), create: vi.fn() },
     portailDemandeTentative: { count: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    $transaction: vi.fn(),
+  },
+  tx: {
+    $executeRaw: vi.fn(),
+    portailMagicLink: { count: vi.fn(), create: vi.fn() },
   },
   sendMagicLinkEmail: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
@@ -55,11 +65,17 @@ describe('POST /api/portail/lien/demande', () => {
     process.env.WN_G4_LIEN_MAGIQUE = 'true';
     process.env.WN_G4_REDEMANDE_PATIENT = 'true';
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
-    prisma.portailMagicLink.count.mockResolvedValue(0);
-    prisma.portailMagicLink.create.mockResolvedValue({});
     prisma.portailDemandeTentative.count.mockResolvedValue(1);
     prisma.portailDemandeTentative.create.mockResolvedValue({});
     prisma.portailDemandeTentative.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.$transaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
+    tx.$executeRaw.mockResolvedValue(0);
+    tx.portailMagicLink.count.mockResolvedValue(0);
+    tx.portailMagicLink.create.mockResolvedValue({});
+    // `clearAllMocks` efface l'historique mais CONSERVE les implémentations :
+    // sans ce reset, les bancs qui posent un envoi « jamais résolu » ou
+    // « rejeté » contamineraient tous les tests suivants du fichier.
+    sendMagicLinkEmail.mockReset();
   });
 
   it('drapeau G4 éteint : la route n’existe pas', async () => {
@@ -79,7 +95,7 @@ describe('POST /api/portail/lien/demande', () => {
 
   it('une adresse connue reçoit un lien', async () => {
     await POST(requete(PATIENT.email));
-    expect(prisma.portailMagicLink.create).toHaveBeenCalled();
+    expect(tx.portailMagicLink.create).toHaveBeenCalled();
     expect(sendMagicLinkEmail).toHaveBeenCalledWith(
       PATIENT.email,
       PATIENT.prenom,
@@ -91,7 +107,7 @@ describe('POST /api/portail/lien/demande', () => {
   it('une adresse inconnue ne déclenche ni écriture ni envoi', async () => {
     prisma.patient.findUnique.mockResolvedValue(null);
     await POST(requete('inconnue@example.test'));
-    expect(prisma.portailMagicLink.create).not.toHaveBeenCalled();
+    expect(tx.portailMagicLink.create).not.toHaveBeenCalled();
     expect(sendMagicLinkEmail).not.toHaveBeenCalled();
   });
 
@@ -115,7 +131,7 @@ describe('POST /api/portail/lien/demande', () => {
     prisma.patient.findUnique.mockResolvedValue({ ...PATIENT, accessTokenRevoked: true });
     expect(await observable(await POST(requete(PATIENT.email)))).toEqual(reference);
 
-    expect(prisma.portailMagicLink.create).toHaveBeenCalledTimes(1);
+    expect(tx.portailMagicLink.create).toHaveBeenCalledTimes(1);
   });
 
   it('la 4ᵉ demande de l’heure n’envoie rien, et répond pareil', async () => {
@@ -123,20 +139,62 @@ describe('POST /api/portail/lien/demande', () => {
     vi.clearAllMocks();
 
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
-    prisma.portailMagicLink.count.mockResolvedValue(3);
+    tx.portailMagicLink.count.mockResolvedValue(3);
     const plafonnee = await observable(await POST(requete(PATIENT.email)));
 
     expect(plafonnee).toEqual(reference);
-    expect(prisma.portailMagicLink.create).not.toHaveBeenCalled();
+    expect(tx.portailMagicLink.create).not.toHaveBeenCalled();
     expect(sendMagicLinkEmail).not.toHaveBeenCalled();
   });
 
   it('la cadence se compte en base, sur l’heure glissante et les demandes du patient', async () => {
     await POST(requete(PATIENT.email));
-    const where = prisma.portailMagicLink.count.mock.calls[0][0].where;
+    const where = tx.portailMagicLink.count.mock.calls[0][0].where;
     expect(where.idPatient).toBe(PATIENT.idPatient);
     expect(where.creePar).toBe('patient');
     expect(where.creeLe.gte).toBeInstanceOf(Date);
+  });
+
+  // Constat M de la revue de sécurité du 2026-08-22 : comptés HORS
+  // transaction, plusieurs demandes concurrentes observaient toutes un
+  // compteur sous le plafond avant qu'aucune n'ait créé son lien, et le
+  // franchissaient ensemble. La propriété testable ici : le comptage et la
+  // création partagent une transaction OUVERTE par le verrou consultatif du
+  // patient — c'est lui qui sérialise les concurrentes.
+  it('le plafond se vérifie sous verrou patient, dans la transaction de la création', async () => {
+    await POST(requete(PATIENT.email));
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    const [gabarit, ...valeurs] = tx.$executeRaw.mock.calls[0];
+    expect(gabarit.join('§')).toContain('pg_advisory_xact_lock');
+    expect(valeurs[0]).toBe(PATIENT.idPatient);
+    // Le verrou d'abord, le comptage ensuite — sinon il ne sérialise rien.
+    expect(tx.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.portailMagicLink.count.mock.invocationCallOrder[0],
+    );
+    // CO-TRANSACTIONNALITÉ (constat M3 de la revue adversariale) : comptage
+    // ET création passent par `tx`, jamais par le client hors transaction —
+    // ressortir l'un des deux de la transaction fait rougir ces lignes.
+    expect(tx.portailMagicLink.count).toHaveBeenCalledTimes(1);
+    expect(tx.portailMagicLink.create).toHaveBeenCalledTimes(1);
+    expect(prisma.portailMagicLink.count).not.toHaveBeenCalled();
+    expect(prisma.portailMagicLink.create).not.toHaveBeenCalled();
+  });
+
+  // Le correctif du canal temporel (constat L de la revue Codex) : l'envoi ne
+  // retient plus la réponse. Sans ce test, un futur `await` réintroduirait la
+  // latence SMTP dans le temps mesuré sans rien faire rougir.
+  it('un envoi qui ne répond jamais ne retient pas la réponse', async () => {
+    sendMagicLinkEmail.mockImplementation(() => new Promise(() => undefined));
+    const res = await POST(requete(PATIENT.email));
+    expect(res.status).toBe(200);
+    expect(attendre).toHaveBeenCalledTimes(1);
+  });
+
+  it('un envoi rejeté répond comme un succès, sans rejet non géré', async () => {
+    const reference = await observable(await POST(requete(PATIENT.email)));
+    sendMagicLinkEmail.mockRejectedValue(new Error('smtp indisponible'));
+    expect(await observable(await POST(requete(PATIENT.email)))).toEqual(reference);
   });
 
   // Une panne ne doit pas devenir un signal : 500 sur adresse connue et 200 sur
@@ -162,15 +220,18 @@ describe('POST /api/portail/lien/demande', () => {
     const branches: Array<() => void> = [
       () => undefined,
       () => prisma.patient.findUnique.mockResolvedValue(null),
-      () => prisma.portailMagicLink.count.mockResolvedValue(3),
+      () => tx.portailMagicLink.count.mockResolvedValue(3),
       () => prisma.portailDemandeTentative.count.mockResolvedValue(999),
       () => prisma.patient.findUnique.mockRejectedValue(new Error('base indisponible')),
+      // La transaction verrouillée est un point de panne neuf : il sort par
+      // la même porte que les autres.
+      () => prisma.$transaction.mockRejectedValue(new Error('verrou indisponible')),
     ];
 
     for (const brancher of branches) {
       vi.clearAllMocks();
       prisma.patient.findUnique.mockResolvedValue(PATIENT);
-      prisma.portailMagicLink.count.mockResolvedValue(0);
+      tx.portailMagicLink.count.mockResolvedValue(0);
       prisma.portailDemandeTentative.count.mockResolvedValue(1);
       brancher();
 
@@ -236,7 +297,7 @@ describe('POST /api/portail/lien/demande', () => {
     expect(await res.text()).not.toContain(jeton);
     expect(JSON.stringify(logger.security.mock.calls)).not.toContain(jeton);
     // Ce qui part en base est l'empreinte, jamais le jeton lui-même.
-    const data = prisma.portailMagicLink.create.mock.calls[0][0].data;
+    const data = tx.portailMagicLink.create.mock.calls[0][0].data;
     expect(JSON.stringify(data)).not.toContain(jeton);
     expect(data.jetonEmpreinte).toBeTruthy();
   });
