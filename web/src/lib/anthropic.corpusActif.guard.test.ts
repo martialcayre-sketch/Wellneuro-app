@@ -26,6 +26,7 @@ async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.doUnmock('@/lib/clinical/corpusSyntheseV1');
   vi.resetModules();
 });
 
@@ -72,5 +73,32 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
   it("drapeau à une valeur non-'1' : fermé — la convention est stricte", async () => {
     const mod = await chargerAnthropicAvecDrapeau('true');
     expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
+  // D-083 (question 4 de la revue) : le verrou est auto-portant — une prose
+  // retouchée après signature ne se contente plus de rougir l'empreinte N1,
+  // elle FERME le corpus en production. Ce cas simule la discordance en
+  // servant une métadonnée dont le `shaPerimetre` ne correspond plus.
+  it('périmètre discordant : fermé malgré flag posé et signature vraie', async () => {
+    vi.resetModules();
+    vi.stubEnv('WN_ENABLE_CORPUS_CLINIQUE_V1', '1');
+    vi.doMock('@/lib/clinical/corpusSyntheseV1', async () => {
+      const reel = await vi.importActual<
+        typeof import('@/lib/clinical/corpusSyntheseV1')
+      >('@/lib/clinical/corpusSyntheseV1');
+      return {
+        ...reel,
+        CORPUS_CLINIQUE_METADATA: {
+          ...reel.CORPUS_CLINIQUE_METADATA,
+          shaPerimetre: 'empreinte-perimee-apres-retouche',
+        },
+      };
+    });
+    const mod = await import('./anthropic');
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+    const prompt = mod.buildSystemPromptSynthese();
+    expect(prompt).not.toContain(TITRE_CORPUS);
+    expect(prompt).toContain(LIGNE_INDISPONIBLE);
+    expect(mod.LIMITES_SYNTHESE_DEFAUT).toContain('sans corpus SIIN complet');
   });
 });

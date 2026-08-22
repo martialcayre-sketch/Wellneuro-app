@@ -4,6 +4,37 @@
 
 ## Décisions actives
 
+### D-083 — Arbitrages post-revue de D-082 : la signature vaut provenance, le corpus rejoint le régime `shaPerimetre`
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrages du responsable**, rendus en session le
+  2026-08-22 — questions 3 et 4 de la revue adversariale de `D-082`)
+- Domaine : clinique, synthèse IA, `corpusSyntheseV1.ts`
+
+- Contexte : la revue adversariale de la signature (`D-082`) laissait deux
+  questions au responsable. Question 3 : « la relecture a-t-elle porté sur une
+  source SIIN identifiable (notebook, version) qu'on pourrait épingler, ou la
+  signature vaut-elle provenance à elle seule ? ». Question 4 : « faut-il
+  ouvrir un `shaPerimetre` sur cette table, maintenant qu'elle est la seule
+  signée sans ancrage ? »
+
+**1. La signature vaut provenance.** La relecture du 2026-08-22 a porté sur le
+texte du corpus lui-même — rédigé au dépôt le 2026-07-10 (`11c5744c`), sans
+document source SIIN épinglé. « SIIN » au titre désigne l'école
+méthodologique du praticien, pas un document ; le texte ne porte aucun seuil,
+dose ni borne chiffrée (constaté en revue, `D-082`). Si un document source
+identifiable est épinglé un jour, il s'ajoutera par **nouvelle version** du
+corpus — jamais par retouche du texte signé.
+
+**2. Le corpus rejoint le régime `D-067`.** `shaPerimetre` épinglé au littéral
+(`19a55478…`, recalculé le jour même — identique au SHA consigné en `D-082`),
+et le verrou d'activation de `lib/anthropic.ts` devient auto-portant : flag
+**ET** signature **ET** date ISO canonique **ET** concordance du SHA de
+périmètre. Une retouche de la prose signée ferme le corpus en production toute
+seule (fail-closed), au lieu de seulement rougir le banc d'empreinte. Contenu
+inchangé au caractère près : le jour de signature (2026-08-22, `D-082`) reste
+le fait attesté — précédent `orientationRulesV1`/`D-067`.
+
 ### D-082 — Le corpus de synthèse est signé : validation clinique du responsable, contenu inchangé
 
 - Date : 2026-08-22

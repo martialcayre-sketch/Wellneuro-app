@@ -37,6 +37,14 @@ export type CorpusCliniqueMetadata = {
   version: string;
   validationExterne: boolean;
   dateValidation: string | null;
+  /**
+   * SHA du périmètre effectivement relu à la signature — patron [[D-063]],
+   * régime [[D-067]], étendu à cette table par [[D-083]]. LITTÉRAL FIGÉ,
+   * jamais la constante calculée : une retouche de la prose change
+   * `CORPUS_CLINIQUE_SHA256`, la concordance casse et le verrou d'activation
+   * se ferme seul (`lib/anthropic.ts`). `null` tant que rien n'a été relu.
+   */
+  shaPerimetre: string | null;
 };
 
 /*
@@ -44,11 +52,24 @@ export type CorpusCliniqueMetadata = {
  * en session après relecture intégrale du corpus — contenu inchangé au
  * caractère près, seule la métadonnée bouge (DC-17 : ce fichier est du
  * clinique, pas du code).
+ *
+ * Provenance (arbitrage du 2026-08-22, question 3 de la revue — D-083) : la
+ * relecture a porté sur CE texte lui-même, rédigé au dépôt le 2026-07-10 ;
+ * aucun document source SIIN n'est épinglé. La signature du responsable vaut
+ * provenance, et « SIIN » au titre désigne l'école méthodologique, pas un
+ * document. Un document source, s'il est épinglé un jour, s'ajoutera par
+ * nouvelle version — jamais par retouche.
  */
 export const CORPUS_CLINIQUE_METADATA: CorpusCliniqueMetadata = {
   version: 'corpus-clinique-v1',
   validationExterne: true,
   dateValidation: '2026-08-22T00:00:00.000Z',
+  // Posé le 2026-08-22 (D-083, question 4 de la revue) : la chaîne hex que
+  // `CORPUS_CLINIQUE_SHA256` valait à la relecture de D-082, recalculée puis
+  // recopiée telle quelle — JAMAIS la constante (déclarée après cet objet ;
+  // la comparaison serait tautologique). Même jour que la signature : le
+  // périmètre relu est celui-là.
+  shaPerimetre: '19a554786075d608db033c7354b720f8b35ed6e1889ae5595979b75ce2f68fee',
 };
 
 export function sha256(text: string): string {
