@@ -13,7 +13,7 @@ Exécution de la fin du cap [[D-085]] (« il ne doit rester que l'exigence 1 »)
   dernier livrable que [[D-085]] §3 commandait : chapitre one-off (motif
   éprouvé le jour même — `run --detached`, `logs --filter`, `one-off-stop`),
   `env-get` seul (jamais `env`), piège `env-set`-sans-restart, tunnel,
-  déploiement et rollback recadrés ([[D-086]] : un slug antérieur ré-active
+  déploiement et rollback recadrés ([[D-087]] : un slug antérieur ré-active
   l'auto-migration ; un DROP ne se défait que par restauration de base),
   incidents plateforme/OAuth/base, révocation patient recalée post-purge
   (`accessTokenRevoked` est un drapeau de compte, le jeton n'existe plus).

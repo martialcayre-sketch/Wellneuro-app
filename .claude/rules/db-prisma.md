@@ -63,15 +63,19 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 
 - Aucune modification de `schema.prisma`, migration ou SQL sans demande
   explicite et confirmation distincte (le hook « demande » la matérialise).
-- **Le chemin vers la production depuis le cutover (`D-086`)** : migration
-  committée → PR relue (`wn-reviewer`) → **go explicite du responsable** →
-  merge sur `main` → l'auto-deploy Scalingo applique la migration au
-  `postdeploy` (`web/Procfile` → `db-deploy.sh`). **Le gate humain est le
-  merge** — il n'y a aucune approbation après lui. Le workflow `release-db`
-  (secret repointé Scalingo) rejoue la même migration en seconde application
-  idempotente, avec ses préflights. Détail : `docs/DEPLOIEMENT_RELEASE_DB.md`.
-- Migration et code dépendant : PR séparées, ou drapeau éteint — l'auto-deploy
-  applique la migration au merge, et le code qui en dépend n'arrive qu'après
+- **Le chemin vers la production depuis le cutover (`D-087`, qui supplante
+  `D-086` §1-2)** : migration committée → PR relue (`wn-reviewer`) → merge
+  sur `main` → l'auto-deploy Scalingo déploie le **code seul** (le
+  `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) → le
+  workflow `release-db`, proposé automatiquement, applique la migration **en
+  one-off dans l'image de production, après approbation humaine**
+  (préflights, sentinelles liées au run, empreinte des migrations re-vérifiée
+  dans le conteneur). **Le gate humain est l'approbation `release-db`** —
+  aucune URL de base ne transite par GitHub. Détail :
+  `docs/DEPLOIEMENT_RELEASE_DB.md` (séquence de mise en service comprise).
+- Migration et code dépendant : PR séparées, ou drapeau éteint — le code se
+  déploie AVANT que la migration soit approuvée ; un ADD se protège par
+  drapeau éteint, et le code qui consomme le schéma n'arrive qu'après
   l'application **constatée** par conteneur (précédent : incident du
   2026-08-05, PR #574, à l'époque via le build Vercel).
 

@@ -18,6 +18,10 @@ const CONTRAT = 'web/prisma/checks/packs_registre_coherence_v1.sql';
 const NEGATIF = 'web/prisma/checks/packs_registre_coherence_v1_negatif.sql';
 const CI = '.github/workflows/ci.yml';
 const RELEASE_DB = '.github/workflows/release-db.yml';
+// Depuis D-087 (2026-08-22), le workflow n'exécute plus rien contre la base :
+// préflights et `migrate deploy` vivent dans ce script, joué en one-off dans
+// l'image de production. C'est LUI qui porte l'ordre à garder.
+const RELEASE_SCRIPT = 'web/scripts/release-db-scalingo.sh';
 
 function lire(relatif: string): string {
   return readFileSync(path.join(RACINE, relatif), 'utf8');
@@ -122,6 +126,7 @@ describe('packs ↔ miroir relationnel — le contrat de production reste en lec
 describe('packs ↔ miroir relationnel — les contrats sont câblés', () => {
   const ci = lire(CI);
   const releaseDb = lire(RELEASE_DB);
+  const releaseScript = lire(RELEASE_SCRIPT);
 
   // DEUX FOIS, ET LA SECONDE APRÈS LE SEED. Les deux positions ne prouvent pas
   // la même chose : avant le seed la base est vide et les assertions sont
@@ -145,19 +150,23 @@ describe('packs ↔ miroir relationnel — les contrats sont câblés', () => {
   // L'ORDRE, pas la présence. Une étape déplacée APRÈS `migrate deploy`
   // vérifierait la base une fois écrite : le préflight n'aurait plus de sens, et
   // une assertion de présence resterait verte — elle serait même satisfaite par
-  // un simple commentaire.
+  // un simple commentaire. Depuis D-087, l'ordre vit dans le script du one-off.
   it('le préflight passe AVANT migrate deploy', () => {
-    const preflight = releaseDb.indexOf('prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql');
-    const deploy = releaseDb.indexOf('npx prisma migrate deploy');
+    const preflight = releaseScript.indexOf(
+      'prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql',
+    );
+    const deploy = releaseScript.indexOf('npx prisma migrate deploy');
     expect(preflight).toBeGreaterThan(-1);
     expect(deploy).toBeGreaterThan(-1);
     expect(preflight).toBeLessThan(deploy);
   });
 
   // LE CAS QUI COMPTE. Le fichier négatif ÉCRIT (il pose des fixtures avant de
-  // les annuler). Le câbler dans `release-db.yml` le lancerait contre la base
-  // de production, où le dépôt n'écrit que par migration relue.
+  // les annuler). Le câbler sur le chemin de release — workflow OU script du
+  // one-off — le lancerait contre la base de production, où le dépôt n'écrit
+  // que par migration relue.
   it('le test négatif ne tourne JAMAIS contre la production', () => {
     expect(releaseDb).not.toContain('packs_registre_coherence_v1_negatif');
+    expect(releaseScript).not.toContain('packs_registre_coherence_v1_negatif');
   });
 });

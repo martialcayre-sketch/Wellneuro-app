@@ -34,8 +34,9 @@ technologique sans demande explicite. État courant :
   explicite (décision `D-xxx` + fragment `changelog.d/`).
 - **Base de production (Scalingo depuis le 2026-08-22) : lecture uniquement
   depuis un conteneur `scalingo run -d`, écriture uniquement par migration
-  relue avec go explicite du responsable avant merge (`D-086` — l'auto-deploy
-  applique au merge)**. Le MCP Supabase `execute_sql` lit la base gelée
+  relue puis release-db approuvée (`D-087`, qui supplante `D-086` §1-2 — le
+  one-off applique APRÈS approbation humaine, le `postdeploy` ne migre plus
+  sous drapeau)**. Le MCP Supabase `execute_sql` lit la base gelée
   (rollback), plus la production. Détail : `.claude/rules/db-prisma.md`.
 
 ## Données patients
