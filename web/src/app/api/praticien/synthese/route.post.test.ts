@@ -143,7 +143,7 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
   it('laisse assez de sortie pour consolider un dossier riche sans troncature', async () => {
     await POST(req(CORPS));
     expect(anthropicCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ max_tokens: 8192 }),
+      expect.objectContaining({ max_tokens: 16384 }),
       undefined,
     );
   });
@@ -322,11 +322,11 @@ describe('POST /api/praticien/synthese — transport SSE (Scalingo, flag ON)', (
     expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
   });
 
-  it('borne l’appel Anthropic (timeout 2 min, 1 reprise) — SSE seulement', async () => {
+  it('borne l’appel Anthropic (timeout 4 min, 1 reprise) — SSE seulement', async () => {
     await POST(req(CORPS));
     expect(anthropicCreate).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ timeout: 120_000, maxRetries: 1 }),
+      expect.objectContaining({ timeout: 240_000, maxRetries: 1 }),
     );
   });
 

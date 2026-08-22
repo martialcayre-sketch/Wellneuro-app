@@ -130,11 +130,11 @@ type ReponseInput = {
 const MOTIF_FORME_AMBIGUE =
   "cet identifiant a désigné plusieurs questionnaires différents — ces passations ne sont pas comparables entre elles";
 
-// 4 096 tokens ne suffisent pas toujours lorsqu'un dossier cumule plusieurs
-// questionnaires : Claude peut produire un JSON valide mais le couper avant
-// l'accolade finale. 8 192 laisse la place à la synthèse consolidée sans
-// modifier les données d'entrée ni la logique clinique.
-const MAX_TOKENS_SYNTHESE = 8192;
+// Les dossiers cumulant de nombreux questionnaires peuvent dépasser 8 192
+// tokens : Claude coupe alors un JSON par ailleurs valide avant l'accolade
+// finale. 16 384 laisse la place à la synthèse consolidée sans modifier les
+// données d'entrée ni la logique clinique.
+const MAX_TOKENS_SYNTHESE = 16_384;
 
 const TITRE_PACK_DOCTRINE: ReadonlyMap<PackId, string> = new Map(
   PACKS_REGISTRY.map(pack => [pack.id, pack.titre]),
@@ -1110,10 +1110,10 @@ export async function POST(req: Request) {
         const state = { idSynthese: '' };
         try {
           // Le heartbeat tient le routeur ; on borne quand même le travail à
-          // ~2 min + une reprise (défaut SDK : 10 min, 2 reprises), pour ne pas
+          // ~4 min + une reprise (défaut SDK : 10 min, 2 reprises), pour ne pas
           // laisser une requête pendre après une déconnexion client.
           const payload = await genererSynthesePersistee(genererArgs, state, {
-            timeout: 120_000,
+            timeout: 240_000,
             maxRetries: 1,
           });
           enqueue(`event: done\ndata: ${JSON.stringify(payload)}\n\n`);
