@@ -14,10 +14,20 @@ Vercel+Supabase ne tient plus que par restauration de sauvegarde.
   production** via le CLI Scalingo — la base HDS reste inaccessible depuis
   Internet. Secret requis : `SCALINGO_API_TOKEN` (jeton d'API, posé par le
   responsable), garde fail-closed s'il manque.
-- **Trois gardes neuves** : le commit approuvé doit être **déployé** avant
-  le one-off (sinon l'image ne contiendrait pas les migrations approuvées) ;
-  la sortie passe par sentinelles (`WN_RELEASE_DB_OK`/`ECHEC`, toute fin
-  muette = échec) ; contre-épreuve `migrate status` par un second one-off.
+- **Des gardes durcies par revue adversariale le jour même** (verdict NO-GO
+  initial, quatre bloquants corrigés) : le commit approuvé doit être **le
+  dernier déploiement réussi**, et l'**empreinte des migrations** approuvées
+  est re-vérifiée **dans le conteneur** au moment d'écrire — un déploiement
+  plus récent ne fait pas partir de migrations que personne n'a approuvées ;
+  sentinelles **liées au run** (`id=`, un one-off antérieur ne peut plus
+  passer pour le run courant ; toute fin muette = échec) ; contre-épreuve
+  `migrate status` par un second one-off, elle aussi liée au run ; **seule
+  l'URL de l'add-on est acceptée** dans le one-off (`MIGRATE_DATABASE_URL` y
+  est ignorée à dessein, l'hôte migré est nommé dans les logs) ; drapeau de
+  gouvernance **constaté** à chaque release (`env-get`) ; jeton borné aux
+  étapes qui parlent à Scalingo ; CLI épinglé par version et empreinte. Deux
+  bancs verrouillent le protocole des deux côtés (invariants du workflow,
+  comportement réel des scripts en bash).
 - **Le `postdeploy` ne migre plus** quand `WN_MIGRATIONS_PAR_RELEASE_DB=1`
   est posé (production seule, staging garde l'auto-migration) :
   l'approbation humaine redevient l'unique porte d'écriture du schéma —

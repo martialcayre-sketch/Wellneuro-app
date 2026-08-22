@@ -96,18 +96,101 @@ test('`release` dépend de `resume`, pour que le résumé précède la demande',
   assert.match(JOBS.get('release'), /^\s+needs:\s*resume\s*$/m);
 });
 
-test("aucune étape d'import ne peut partir d'un déclenchement automatique", () => {
+// Depuis le cutover du 2026-08-22 (D-080/D-086), le mode import-cb est HORS
+// SERVICE : il visait Supabase. Le refus doit être EXPLICITE (une garde qui
+// échoue en le disant), jamais un mode qui « tombe en marche » sur une base
+// décommissionnée — et il doit rester la SEULE étape qui mentionne import-cb :
+// une étape d'import réapparue à côté du refus serait le retour silencieux du
+// mode, refus maintenu en façade.
+test('le mode import-cb est refusé explicitement, et rien d’autre ne le porte', () => {
   const lignesImport = SOURCE.split('\n').filter(
     (l) => /^\s+if:/.test(l) && l.includes('import-cb'),
   );
-  assert.ok(lignesImport.length >= 3, `attendu au moins 3 étapes gardées, trouvé ${lignesImport.length}`);
-  for (const ligne of lignesImport) {
+  assert.equal(
+    lignesImport.length,
+    1,
+    `une seule garde import-cb attendue (le refus), trouvé ${lignesImport.length}`,
+  );
+  assert.match(
+    lignesImport[0],
+    /github\.event_name == 'workflow_dispatch'/,
+    "le refus ne concerne que le dispatch : un push n'a pas de mode",
+  );
+  assert.match(
+    JOBS.get('release'),
+    /import-cb hors service[\s\S]*?exit 1/,
+    'le refus doit se dire hors service et échouer bruyamment',
+  );
+});
+
+// La leçon de l'incident du 2026-08-22 : le workflow appliquait ses migrations
+// sur Supabase parce qu'un secret d'URL (MIGRATE_ + DATABASE_URL) était resté
+// pointé dessus au cutover. Depuis D-086, AUCUNE URL de base ne transite par
+// GitHub — le one-off tourne là où l'add-on injecte l'URL. Ce banc interdit le
+// retour du motif jusque dans les commentaires : si une URL de base redevient
+// nécessaire ici, c'est le MODÈLE qui change (décision), pas une variable
+// qu'on ajoute.
+test('aucune URL de base ne transite par le workflow', () => {
+  assert.doesNotMatch(SOURCE, /DATABASE_URL/, 'aucune variable *DATABASE_URL ne doit réapparaître');
+  assert.doesNotMatch(SOURCE, /postgres(ql)?:\/\//, 'aucune URL de connexion ne doit réapparaître');
+});
+
+// Une sentinelle non liée au run est un faux vert en attente : `logs --filter`
+// est un MOTIF, et un WN_RELEASE_DB_OK laissé par un one-off antérieur dans la
+// fenêtre de logs passerait pour le succès du run courant — sur le chemin
+// d'écriture du schéma HDS.
+test('les sentinelles des one-offs sont liées au run courant', () => {
+  const bloc = JOBS.get('release');
+  assert.match(
+    bloc,
+    /WN_RELEASE_ID: \$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/,
+    'l’identifiant de run doit exister et inclure la tentative',
+  );
+  for (const sentinelle of ['WN_RELEASE_DB_OK', 'WN_RELEASE_DB_ECHEC', 'WN_STATUT_DB_OK', 'WN_STATUT_DB_ECHEC']) {
     assert.match(
-      ligne,
-      /github\.event_name == 'workflow_dispatch'/,
-      `l'import NABM ne doit JAMAIS partir sur un push : ${ligne.trim()}`,
+      bloc,
+      new RegExp(`${sentinelle} id=\\$WN_RELEASE_ID`),
+      `le grep de ${sentinelle} doit exiger l'id du run, pas le mot seul`,
     );
   }
+});
+
+// Le jeton d'API est une créance PLEINE sur l'app (one-offs, environnement,
+// tunnels) : en portée de job, il serait visible de TOUTES les étapes — dont
+// l'installation du CLI, qui exécute du contenu téléchargé.
+test('le jeton API est borné aux étapes qui parlent à Scalingo', () => {
+  const bloc = JOBS.get('release');
+  const avantSteps = bloc.slice(0, bloc.indexOf('    steps:'));
+  assert.ok(avantSteps.length > 0, 'section steps introuvable dans release');
+  assert.doesNotMatch(
+    avantSteps,
+    /SCALINGO_API_TOKEN:/,
+    'le jeton ne doit pas être en portée de job',
+  );
+});
+
+// L'installeur « dernière version » du domaine de téléchargement mettait du
+// contenu non épinglé sur le chemin d'écriture de la production. Version figée
+// + empreinte vérifiée : une mise à jour du CLI est une PR, pas un aléa.
+test('le CLI Scalingo est épinglé par version et empreinte', () => {
+  const bloc = JOBS.get('release');
+  assert.match(bloc, /github\.com\/Scalingo\/cli\/releases\/download\//, 'archive de release épinglée attendue');
+  assert.match(bloc, /sha256sum -c/, "l'archive doit être vérifiée par empreinte");
+  assert.doesNotMatch(bloc, /cli-dl\.scalingo\.com/, "l'installeur « dernière version » ne doit pas revenir");
+});
+
+// Toute la gouvernance tient à une variable d'app : si le drapeau saute, le
+// postdeploy migre en silence À CÔTÉ de la porte. Le constater à chaque
+// release, par `env-get` (jamais `env`, qui déverserait les secrets de l'app).
+test('le drapeau de gouvernance est constaté, pas cru', () => {
+  assert.match(JOBS.get('release'), /env-get WN_MIGRATIONS_PAR_RELEASE_DB/);
+});
+
+// Les trois boucles d'attente cumulent ~35 minutes ; sans borne, un run
+// suspendu occuperait le groupe de concurrence — et donc TOUTE release
+// suivante — indéfiniment.
+test('le job release est borné dans le temps', () => {
+  assert.match(JOBS.get('release'), /^\s+timeout-minutes:\s*\d+\s*$/m);
 });
 
 // D-044 a élargi ce filtre, DÉLIBÉRÉMENT et à un seul chemin de plus. La borne

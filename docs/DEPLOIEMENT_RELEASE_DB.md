@@ -22,8 +22,54 @@ import de nomenclature NABM) du **build applicatif Vercel**.
 > migration après approbation** — un ADD se protège par drapeau éteint, un
 > DROP rend le retour arrière dépendant d'une restauration de base. Le mode
 > `import-cb` est **hors service** (il visait Supabase) jusqu'à sa
-> réécriture avec la Phase C. Les sections ci-dessous décrivent l'ère
-> Vercel/Supabase et restent la référence pour le raisonnement d'origine.
+> réécriture avec la Phase C. Décision : [[D-086]]. Les sections ci-dessous
+> décrivent l'ère Vercel/Supabase et restent la référence pour le
+> raisonnement d'origine.
+
+## Mise en service Scalingo — séquence (2026-08-22)
+
+L'ordre compte : chaque étape laisse la production avec **au moins un chemin
+de migration fonctionnel**.
+
+1. **Poser le drapeau avant le merge** — sans effet tant que l'ancien slug
+   tourne, son `db-deploy.sh` l'ignore :
+   `scalingo --app wellneuro --region osc-fr1 env-set WN_MIGRATIONS_PAR_RELEASE_DB=1`.
+   Le drapeau est lu par le `postdeploy` **au déploiement suivant**, pas par
+   les conteneurs qui tournent : aucun restart nécessaire.
+2. **Merger la PR** : le déploiement Scalingo qui suit embarque le nouveau
+   `db-deploy.sh` — à partir de là, le `postdeploy` ne migre plus.
+3. **Poser le secret `SCALINGO_API_TOKEN`** dans l'environnement GitHub
+   `release-db` (jeton d'API créé dans le dashboard Scalingo — de préférence
+   **dédié à ce workflow**, révocable seul), et **supprimer
+   `MIGRATE_DATABASE_URL`** du même environnement : le workflow ne la lit
+   plus, et la laisser serait offrir l'incident du 2026-08-22 à la prochaine
+   main qui la trouve.
+4. **Répétition générale, à vide** :
+   `gh workflow run release-db.yml --ref main -f mode=migrate-only`, puis
+   approuver. Rien n'étant en attente, le run éprouve **toute la chaîne**
+   (auth par jeton, drapeau constaté, garde de déploiement, one-off,
+   sentinelles, contre-épreuve) sans rien écrire. **Tant que cette
+   répétition n'est pas verte, ne pas merger de migration.**
+5. **Retour arrière de la transition** (si la répétition échoue) :
+   `env-unset WN_MIGRATIONS_PAR_RELEASE_DB` rend l'auto-migration au
+   `postdeploy` pendant qu'on corrige — la production ne reste jamais sans
+   chemin de migration.
+
+À connaître, en régime établi :
+
+- **Un redéploiement d'un slug antérieur au 2026-08-22 ré-active
+  l'auto-migration** : l'ancien `db-deploy.sh` ignore le drapeau. Un
+  rollback de code peut donc migrer au passage — le savoir avant de
+  rollbacker.
+- **Annuler le job GitHub n'arrête pas un one-off lancé** (`--detached`) :
+  la migration continue pendant que le workflow s'affiche annulé.
+  `scalingo one-off-stop <conteneur>` l'arrête vraiment ; un run annulé se
+  vérifie comme un run muet — à la main, jamais par relance à l'aveugle.
+- **Migration en échec après déploiement du code** : le filet « postdeploy
+  en échec = déploiement annulé » n'existe plus sous le drapeau. Un run
+  rouge laisse code neuf + schéma ancien ; la sortie est une décision du
+  responsable — correctif en avant, ou rollback de slug (en connaissant le
+  premier point) — voir [[D-086]].
 
 ## Pourquoi
 
