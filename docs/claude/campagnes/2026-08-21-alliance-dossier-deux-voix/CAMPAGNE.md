@@ -69,9 +69,9 @@ de l'alliance sont relationnels, pas des tables de règles.
 
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | La migration du dossier à deux voix — **CONFIRMATION OBLIGATOIRE** | à faire | — |
-| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | à faire | LOT-01 (release-db faite) |
-| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | à faire | LOT-01 (release-db faite) |
+| LOT-01 | La migration du dossier à deux voix — **CONFIRMATION OBLIGATOIRE** | livré à la PR (2026-08-22 — cinq tables, contrat vu rouge ×3, D-086 ; le merge applique en production) | — |
+| LOT-02 | L'objectif négocié v1 — énoncé, reformulation, priorité, « non traité » assumé | à faire | LOT-01 (migration appliquée au postdeploy, constatée par conteneur) |
+| LOT-03 | « Ce qui compte pour moi aujourd'hui » — la trajectoire de sens au portail | à faire | LOT-01 (migration appliquée au postdeploy, constatée par conteneur) |
 | LOT-04 | « Ce que j'ai compris de vous » — synthèse gardée et désaccord structuré | à faire | LOT-01 ; Socle (livré) |
 | LOT-05 | L'EVA voie instrument cabinet — piloter sans classer | à faire | — (indépendant du LOT-01, cf. cadrage) |
 | LOT-06 | L'écran « dossier à deux voix » au portail — ratification et constat du gate | à faire | LOT-02, LOT-03, LOT-04 |
@@ -92,8 +92,9 @@ ratification — le « lot 3 derrière le Socle » du brief est le LOT-04.
   d'être montré ; un message neuf s'ajoute au registre, déclaration de
   conformité comprise.
 - **LOT-01 gaté par confirmation explicite** : la migration ne s'écrit
-  qu'après accord dans la conversation, seule dans sa PR, `release-db` entre
-  elle et tout code qui en dépend.
+  qu'après accord dans la conversation, seule dans sa PR ; son application en
+  production (au merge, `D-086`) se **constate par conteneur** avant tout
+  code qui en dépend.
 - Toute décision clinique de la campagne = décision `D-xxx` + fragment
   `changelog.d/` (`DC-17`, `DC-18`).
 
