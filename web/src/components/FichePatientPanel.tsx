@@ -51,6 +51,7 @@ import {
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
 import { rythmeDeclareDeReponses } from '@/lib/equilibre/discordanceRythme';
@@ -1424,6 +1425,17 @@ export function FichePatientPanel({
       </div>
 
       <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
+        {/* « Ce qui compte pour le patient » (Alliance 6.0-A, LOT-03) — ajout
+            ADDITIF à l'onglet existant : la trajectoire de sens vit à côté des
+            passations, elle ne s'y résume jamais. Aucun onglet n'est créé
+            (`lib/praticien/ongletsFiche.ts`, module pur partagé serveur/client,
+            n'est pas touché), et le panneau lit sa propre route — un échec de
+            sa lecture ne dégrade pas la trajectoire affichée en dessous. */}
+        {ongletActif === 'trajectoire' && (
+          <div className="mb-4">
+            <CeQuiComptePanel idPatient={idPatient} />
+          </div>
+        )}
         {ongletActif === 'trajectoire' &&
           (etatTrajectoire === 'chargement' || etatTrajectoire === 'inconnue' ? (
             <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
