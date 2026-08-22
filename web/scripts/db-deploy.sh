@@ -14,10 +14,13 @@
 # migrations committées (relues en PR). Le gate humain reste la revue de PR.
 #
 # URL cible, par ordre de préférence :
-#   MIGRATE_DATABASE_URL    — si un jour un pooler transaction est intercalé au
-#                             runtime (migrate deploy exige une connexion directe) ;
 #   DATABASE_URL            — cas général (dev, CI, ou alias posé côté Scalingo) ;
 #   SCALINGO_POSTGRESQL_URL — injectée par l'add-on PostgreSQL Scalingo.
+# MIGRATE_DATABASE_URL n'est PLUS lue (D-087) : jamais repointée au cutover,
+# elle a fait migrer la mauvaise base — la variable de l'incident ne reste
+# prioritaire sur aucune app, staging compris (vérifié non posée le
+# 2026-08-22). Un pooler transaction intercalé un jour se traitera par
+# décision, pas par une variable dormante.
 #
 # PRÉCONDITION : ne JAMAIS provisionner une base VIERGE par ce seul script. Il
 # n'applique que le schéma (migrate deploy) — pas les données. Les données de
@@ -27,9 +30,23 @@
 # idempotent et ne fait que rattraper d'éventuelles migrations manquantes.
 set -euo pipefail
 
-DB_URL="${MIGRATE_DATABASE_URL:-${DATABASE_URL:-${SCALINGO_POSTGRESQL_URL:-}}}"
+# Porte de gouvernance (2026-08-22, suite au constat « release-db pointait
+# encore Supabase après le cutover ») : quand ce drapeau est posé sur l'app,
+# le postdeploy NE migre PLUS — les migrations n'atteignent la base que par
+# le workflow release-db (approbation humaine), qui les exécute en one-off
+# dans cette même image. Posé sur la production seule ; le staging garde
+# l'auto-migration. Contrepartie assumée : un déploiement portant une
+# migration tourne contre l'ancien schéma jusqu'à l'approbation — c'est le
+# modèle Vercel d'origine (« PR séparées, ou drapeau éteint »).
+if [ "${WN_MIGRATIONS_PAR_RELEASE_DB:-}" = "1" ]; then
+  echo "→ Postdeploy sans migration : WN_MIGRATIONS_PAR_RELEASE_DB=1 —"
+  echo "  les migrations passent par le workflow release-db (approbation)."
+  exit 0
+fi
+
+DB_URL="${DATABASE_URL:-${SCALINGO_POSTGRESQL_URL:-}}"
 if [ -z "$DB_URL" ]; then
-  echo "❌ Aucune URL de base (MIGRATE_DATABASE_URL / DATABASE_URL / SCALINGO_POSTGRESQL_URL) : migrations refusées." >&2
+  echo "❌ Aucune URL de base (DATABASE_URL / SCALINGO_POSTGRESQL_URL) : migrations refusées." >&2
   exit 1
 fi
 export DATABASE_URL="$DB_URL"

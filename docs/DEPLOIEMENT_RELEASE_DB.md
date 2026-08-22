@@ -4,16 +4,77 @@ Ce document décrit le workflow GitHub Actions [`release-db.yml`](../.github/wor
 et son runbook. Il sépare l'**écriture en base de production** (migrations Prisma,
 import de nomenclature NABM) du **build applicatif Vercel**.
 
-> **Régime post-cutover (2026-08-22, `D-086`).** La production est sur
-> Scalingo, et l'app `wellneuro` auto-déploie `main` : le hook `postdeploy`
-> (`web/Procfile` → `web/scripts/db-deploy.sh`) applique les migrations **au
-> merge**, avant toute approbation de ce workflow. **Le gate humain d'une
-> migration est donc la revue + le go explicite du responsable AVANT merge** ;
-> `release-db` (secret `MIGRATE_DATABASE_URL` repointé sur Scalingo) rejoue la
-> même migration en **seconde application idempotente**, avec ses préflights —
-> il n'est plus l'unique chemin d'écriture que ce document décrivait à sa
-> création. Les paragraphes historiques ci-dessous se lisent avec ce
-> correctif.
+> **Réécriture du 2026-08-22 — la cible est Scalingo, et le chemin passe par
+> un one-off.** Le cutover HDS a déplacé la production sur Scalingo, dont la
+> base **n'est pas exposée à Internet** : le workflow ne s'y connecte plus
+> jamais directement (le secret `MIGRATE_DATABASE_URL`, resté pointé sur
+> Supabase, a appliqué la purge #746 sur l'ancienne base — constat qui a
+> déclenché cette réécriture). Le job `release` exécute désormais
+> `web/scripts/release-db-scalingo.sh` (les quatre préflights lecture seule,
+> puis `migrate deploy`) **en one-off dans l'image de production**, via le
+> CLI Scalingo (secret `SCALINGO_API_TOKEN` — un jeton d'API, pas une URL de
+> base), après avoir constaté que le commit approuvé est déployé. Sortie par
+> sentinelles (`WN_RELEASE_DB_OK`/`WN_RELEASE_DB_ECHEC`), contre-épreuve
+> `migrate status` par un second one-off. Côté app, le `postdeploy` ne migre
+> plus quand `WN_MIGRATIONS_PAR_RELEASE_DB=1` est posé (production seule —
+> le staging garde l'auto-migration) : l'approbation humaine redevient
+> l'unique porte d'écriture du schéma. L'ordre est donc **code d'abord,
+> migration après approbation** — un ADD se protège par drapeau éteint, un
+> DROP rend le retour arrière dépendant d'une restauration de base. Le mode
+> `import-cb` est **hors service** (il visait Supabase) jusqu'à sa
+> réécriture avec la Phase C. Décision : [[D-087]] — le régime transitoire
+> « gate au merge » que décrivait [[D-086]] prend fin à la pose du drapeau
+> (ses §1-2 sont supplantés, son §3 — vérification par one-off — demeure).
+> Les sections ci-dessous décrivent l'ère Vercel/Supabase et restent la
+> référence pour le raisonnement d'origine.
+
+## Mise en service Scalingo — séquence (2026-08-22)
+
+L'ordre compte : chaque étape laisse la production avec **au moins un chemin
+de migration fonctionnel**.
+
+1. **Poser le drapeau avant le merge** — sans effet tant que l'ancien slug
+   tourne, son `db-deploy.sh` l'ignore :
+   `scalingo --app wellneuro --region osc-fr1 env-set WN_MIGRATIONS_PAR_RELEASE_DB=1`.
+   Le drapeau est lu par le `postdeploy` **au déploiement suivant**, pas par
+   les conteneurs qui tournent : aucun restart nécessaire.
+2. **Merger la PR** : le déploiement Scalingo qui suit embarque le nouveau
+   `db-deploy.sh` — à partir de là, le `postdeploy` ne migre plus.
+3. **Poser le secret `SCALINGO_API_TOKEN`** dans l'environnement GitHub
+   `release-db` (jeton d'API créé dans le dashboard Scalingo — de préférence
+   **dédié à ce workflow**, révocable seul), et **supprimer
+   `MIGRATE_DATABASE_URL`** du même environnement : le workflow ne la lit
+   plus, et la laisser serait offrir l'incident du 2026-08-22 à la prochaine
+   main qui la trouve.
+4. **Répétition générale, à vide** — après avoir **constaté** qu'elle est à
+   vide, pas supposé : `scalingo --app wellneuro --region osc-fr1 run
+   "npx prisma migrate status"` doit dire « up to date » (sinon une
+   migration en attente ferait de la « répétition » une vraie release).
+   Puis `gh workflow run release-db.yml --ref main -f mode=migrate-only`,
+   et approuver. Le run éprouve **toute la chaîne** (auth par jeton,
+   drapeau constaté, garde de déploiement, one-off, sentinelles,
+   contre-épreuve) sans rien écrire. **Tant que cette répétition n'est pas
+   verte, ne pas merger de migration.**
+5. **Retour arrière de la transition** (si la répétition échoue) :
+   `env-unset WN_MIGRATIONS_PAR_RELEASE_DB` rend l'auto-migration au
+   `postdeploy` pendant qu'on corrige — la production ne reste jamais sans
+   chemin de migration.
+
+À connaître, en régime établi :
+
+- **Un redéploiement d'un slug antérieur au 2026-08-22 ré-active
+  l'auto-migration** : l'ancien `db-deploy.sh` ignore le drapeau. Un
+  rollback de code peut donc migrer au passage — le savoir avant de
+  rollbacker.
+- **Annuler le job GitHub n'arrête pas un one-off lancé** (`--detached`) :
+  la migration continue pendant que le workflow s'affiche annulé.
+  `scalingo one-off-stop <conteneur>` l'arrête vraiment ; un run annulé se
+  vérifie comme un run muet — à la main, jamais par relance à l'aveugle.
+- **Migration en échec après déploiement du code** : le filet « postdeploy
+  en échec = déploiement annulé » n'existe plus sous le drapeau. Un run
+  rouge laisse code neuf + schéma ancien ; la sortie est une décision du
+  responsable — correctif en avant, ou rollback de slug (en connaissant le
+  premier point) — voir [[D-087]].
 
 ## Pourquoi
 
@@ -147,9 +208,11 @@ Ces gestes se font dans l'interface, hors code :
    committée → PR relue → merge sur `main` » perdrait son ressort mécanique au
    moment même où ce chemin devient unique.
 2. **Secrets de l'environnement `release-db`** :
-   - `MIGRATE_DATABASE_URL` — URL directe de la base **Scalingo** de
-     production depuis `D-086` (2026-08-22 — geste de repointage du
-     responsable ; valeur Supabase de sa création au cutover).
+   - ~~`MIGRATE_DATABASE_URL` — URL directe Supabase (session mode, port
+     5432)~~ — **supprimée depuis [[D-087]]** (2026-08-22) : le workflow ne
+     lit plus aucune URL de base (la base HDS n'est pas exposée à Internet,
+     le repointage envisagé par `D-086` §2 était matériellement impossible) ;
+     le secret vivant est `SCALINGO_API_TOKEN`, jeton d'API du one-off.
    - `WN_CB_NABM_IMPORT_CONFIRMATION` — jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`
      (doit être **identique** à la constante épinglée dans le code, sinon l'import
      refuse).
@@ -222,16 +285,16 @@ Le cas courant n'a plus besoin de cette section : une migration mergée sur `mai
 crée son run toute seule, et il ne reste qu'à l'approuver. Ce qui suit vaut pour
 un déclenchement manuel — `import-cb`, ou une reprise après échec.
 
-Interface : **Actions → Release DB → Run workflow**, choisir le `mode` (et
-`nabm_base` pour `import-cb` : l'hôte de `MIGRATE_DATABASE_URL`). Ou :
+Interface : **Actions → Release DB → Run workflow**, choisir le `mode`. Ou :
 
 ```bash
 # Migration seule
 gh workflow run release-db.yml -f mode=migrate-only
-
-# Import NABM (nommer l'hôte visé — garde --base)
-gh workflow run release-db.yml -f mode=import-cb -f nabm_base=<hote-de-MIGRATE_DATABASE_URL>
 ```
+
+Depuis le 2026-08-22, `mode=import-cb` est **refusé explicitement** par le
+workflow (hors service — il visait Supabase, l'input `nabm_base` a disparu
+avec lui) ; sa réécriture pour Scalingo viendra avec la Phase C.
 
 L'exécution reste **en attente d'approbation** tant qu'un reviewer de
 l'environnement `release-db` ne l'a pas approuvée.

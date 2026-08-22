@@ -58,7 +58,7 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    le plus récent en tête)
 3. Variables d'environnement : `scalingo env-set` (+ `restart` si des
    conteneurs en cours doivent la voir — piège ci-dessus)
-4. **Migrations DB : par le workflow `release-db` exclusivement** ([[D-086]],
+4. **Migrations DB : par le workflow `release-db` exclusivement** ([[D-087]],
    sous `WN_MIGRATIONS_PAR_RELEASE_DB=1`) — proposé automatiquement au merge
    d'une migration, appliqué en one-off **après approbation humaine**.
    Séquence et gardes : `docs/DEPLOIEMENT_RELEASE_DB.md`. Jamais de
@@ -82,7 +82,7 @@ scalingo --app wellneuro --region osc-fr1 one-off-stop one-off-NNNN
    `git reset --hard` sur `main` : l'historique de `main` est la référence
    des déploiements et des releases DB
 3. Merge → Scalingo redéploie ; contrôle post-déploiement
-4. **Deux avertissements ([[D-086]])** :
+4. **Deux avertissements ([[D-087]])** :
    - redéployer un slug **antérieur au 2026-08-22** ré-active
      l'auto-migration du `postdeploy` (ancien `db-deploy.sh`) — un rollback
      de code peut migrer au passage ;

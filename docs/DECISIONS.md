@@ -94,6 +94,59 @@ verrouillage) et rougit au débranchement de cette garde.
   l'entrée se fait par import JSON (shape complète). Restitution inchangée et
   assertée : `interpretation` nulle en base, `—` sur la fiche patient,
   mini-synthèse vide.
+### D-087 — L'écriture du schéma de production passe par un one-off Scalingo approuvé ; le postdeploy ne migre plus
+
+- Date : 2026-08-22
+- Statut : accepté (**décision du responsable**, rendue en session le
+  2026-08-22 — « repointer `MIGRATE_DATABASE_URL` du workflow release-db vers
+  Scalingo » — puis **confirmée par arbitrage explicite le même jour**, face
+  au régime de `D-086` : « porte release-db »)
+- Domaine : hébergement HDS, gouvernance des migrations, workflow `release-db`
+- Rapport à `D-086` : les deux décisions sont nées le même jour, dans deux
+  sessions parallèles, du même incident. `D-086` reste le constat exact du
+  **régime transitoire** — le postdeploy migre au merge tant que le drapeau
+  n'est pas posé — et son §3 (vérification par one-off, jamais par le MCP
+  Supabase) demeure. **Ses §1-2 sont supplantés par la présente décision** :
+  le gate humain redevient l'approbation `release-db` dès la pose du drapeau,
+  et le « repointage » du §2 est matériellement impossible — la base HDS
+  n'étant pas exposée à Internet, aucune URL posée chez GitHub ne peut
+  l'atteindre ; le one-off en est l'implémentation réelle.
+
+- Contexte : constat fait le jour même sur la purge #746 — le secret
+  `MIGRATE_DATABASE_URL` n'avait jamais été repointé au cutover (`D-080`) :
+  le workflow appliquait ses migrations **sur Supabase**, la porte
+  d'approbation protégeait la mauvaise base, pendant que la production réelle
+  (Scalingo) migrait au `postdeploy`, **sans porte**. La règle « écriture
+  uniquement par migration relue via release-db » (CLAUDE.md) était fausse en
+  fait.
+
+**Le modèle décidé.** La base HDS n'étant pas exposée à Internet, le
+repointage n'est pas un échange d'URL : **aucune URL de base ne transite
+plus par GitHub**. Le job `release` exécute les préflights et
+`migrate deploy` **en one-off dans l'image de production** via le CLI
+Scalingo (secret `SCALINGO_API_TOKEN`) ; le `postdeploy` ne migre plus quand
+`WN_MIGRATIONS_PAR_RELEASE_DB=1` est posé (production seule — le staging
+garde l'auto-migration). L'approbation humaine de `release-db` redevient
+l'unique porte d'écriture du schéma.
+
+**Les gardes qui rendent l'approbation vraie** (durcies par revue
+adversariale le jour même) : le commit approuvé doit être **le dernier
+déploiement réussi**, et l'**empreinte des migrations** du commit approuvé
+est re-vérifiée **dans le conteneur** au moment d'écrire — un déploiement
+plus récent ne peut pas faire partir de migrations que personne n'a
+approuvées. Sentinelles de sortie **liées au run** (`id=`), drapeau de
+gouvernance **constaté** à chaque release (`env-get`), jeton borné aux
+étapes qui parlent à Scalingo, CLI épinglé par version et empreinte. Seule
+l'URL injectée par l'add-on est acceptée dans le one-off —
+`MIGRATE_DATABASE_URL` y est ignorée à dessein.
+
+**Contreparties assumées, et écrites** : le filet « postdeploy en échec =
+déploiement annulé » disparaît sous le drapeau — l'ordre devient « code
+d'abord, migration après approbation » (ADD derrière drapeau éteint, DROP =
+retour arrière par restauration de base) ; un redéploiement d'un slug
+antérieur au 2026-08-22 ré-active l'auto-migration ; `import-cb` est **hors
+service** jusqu'à sa réécriture avec la Phase C. Séquence de mise en service
+et régime établi : `docs/DEPLOIEMENT_RELEASE_DB.md`.
 ### D-086 — Le chemin de release des migrations après le cutover : le gate humain est le merge
 
 - Date : 2026-08-22
