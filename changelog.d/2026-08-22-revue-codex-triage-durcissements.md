@@ -33,8 +33,10 @@ conditionnel levé) : verrou passé à la forme **à deux arguments**
 imports, espace de clés séparé, **résolution constatée en one-off sur le
 PostgreSQL de production (17.11)** ; banc de co-transactionnalité avec `tx`
 distinct du client (la régression « comptage ressorti de la transaction »
-rougit) ; garde `enveloppePatient.guard` qui exécute `buildUserMessage`
-pour de vrai (l'enveloppe que `synthese-v28` atteste est désormais gardée) ;
+rougit) ; garde `enveloppePatient.guard` — la consigne **système** est
+importée et exécutée, le gabarit du message **utilisateur** est vérifié en
+texte (un `route.ts` App Router n'exporte que ses handlers) : supprimer
+l'enveloppe rougit ; ses limites sont nommées dans le banc même ;
 neutralisation étendue aux séparateurs U+2028/U+2029/U+0085/U+000B et
 troncature par points de code (plus de surrogate orphelin).
 

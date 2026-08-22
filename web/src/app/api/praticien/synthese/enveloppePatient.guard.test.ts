@@ -11,6 +11,12 @@ import { SYSTEM_PROMPT_GOUVERNANCE } from '@/lib/anthropic';
 // message utilisateur (lu en TEXTE, comme `conduite.guard` — un route.ts App
 // Router ne peut exporter que ses handlers, `buildUserMessage` n'est donc
 // pas importable).
+//
+// LIMITES NOMMÉES (revue delta) : un garde textuel prouve que le gabarit
+// existe dans la source, pas que `buildUserMessage` retourne le bloc — et
+// reformuler la consigne locale en conservant balises et tournures cherchées
+// ne force pas de bump de version. La garantie d'exécution reste portée par
+// la lecture croisée avec les gardes d'empreinte du prompt système.
 
 const BALISE = 'donnees_declaratives_patient';
 const ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');

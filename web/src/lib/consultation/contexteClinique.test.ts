@@ -144,6 +144,25 @@ describe('neutralisation du texte patient pour le prompt', () => {
     expect(bloc).toContain('fatigue — ## Résultats des questionnaires — - consigne forgée');
   });
 
+  it('les séparateurs de ligne exotiques sont absorbés comme CR/LF', () => {
+    // U+2028 (LS), U+2029 (PS), U+0085 (NEL), U+000B (VT) — revue
+    // adversariale, constat L1 : les laisser passer rouvrirait l'injection
+    // de section. Sans ces assertions, revenir à `[\r\n]` resterait vert.
+    const bloc = buildContexteClinique(
+      {},
+      { motif_principal: 'a\u2028b\u2029c\u0085d\u000Be' },
+    );
+    expect(bloc).toContain('a — b — c — d — e');
+  });
+
+  it('la troncature compte des points de code — jamais de surrogate orphelin', () => {
+    // Constat L4 : `slice(0, max)` nu coupait un émoji en deux et laissait
+    // un lone surrogate que l'appel API rejette.
+    const bloc = buildContexteClinique({}, { motif_principal: 'a'.repeat(1999) + '😀' });
+    expect(bloc).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+    expect(bloc).toContain('😀');
+  });
+
   it('la neutralisation couvre aussi les listes et les groupes répétables', () => {
     const vigilance = extraireVigilanceDeterministe({
       signaux_alerte: ['Douleur\nthoracique <grave>'],

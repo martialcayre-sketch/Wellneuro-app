@@ -72,6 +72,10 @@ describe('POST /api/portail/lien/demande', () => {
     tx.$executeRaw.mockResolvedValue(0);
     tx.portailMagicLink.count.mockResolvedValue(0);
     tx.portailMagicLink.create.mockResolvedValue({});
+    // `clearAllMocks` efface l'historique mais CONSERVE les implémentations :
+    // sans ce reset, les bancs qui posent un envoi « jamais résolu » ou
+    // « rejeté » contamineraient tous les tests suivants du fichier.
+    sendMagicLinkEmail.mockReset();
   });
 
   it('drapeau G4 éteint : la route n’existe pas', async () => {
