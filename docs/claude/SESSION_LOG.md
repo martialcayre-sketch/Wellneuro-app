@@ -4403,3 +4403,18 @@ séparée) ; scan des vigilances praticien (jamais servies au patient).
 Prochaine action : PR du lot, puis LOT-02 (hook + en-tête sous D-xxx).
 Ouvert : arbitrage des régimes (3 options au handoff 11:55) ; CRLF de
 booklet/route.ts piégeux (handoff).
+
+## 2026-08-22 — Socle LOT-02 : hook « demande » clinique + D-083
+
+Décisions : huit fichiers cliniques au niveau « demande » (jamais refus) ;
+banc neuf du hook (36 cas — il n'en avait aucun) ; relecture adversariale
+BLOQUER intégrée puis ACCEPTER en contre-vérification — évitement par
+segments refermé (path.posix.normalize, trou hérité couvrant aussi Prisma),
+portée Edit/Write dite sans sur-promesse ; D-083 (go responsable) : en-tête
+d'orientationRulesV1 corrigé, période mensongère datée. Mesuré au geste : le
+sha épinglé couvre les données, pas le texte — 61/61 sans ré-épinglage, le
+cadrage sur-annonçait. Écarté : élargir la liste en lot (alimentaire.ts,
+stopRulesLibelles, fixture C1 — consignés à trancher). Prochaine action : PR
+du lot, puis LOT-03 (registre de gabarits). Ouvert : vestige
+WN_ALLOW_RISKY_COMMAND (contredit CLAUDE.md — arbitrage responsable) ;
+travail synthèse non commité d'une session parallèle dans l'arbre.

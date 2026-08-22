@@ -4,6 +4,46 @@
 
 ## Décisions actives
 
+### D-083 — L'en-tête d'`orientationRulesV1` cesse d'annoncer un pipeline qui n'a jamais existé
+
+- Date : 2026-08-22
+- Statut : accepté (**go du responsable en session** le 2026-08-22, texte de
+  remplacement proposé puis validé ; Socle LOT-02)
+- Domaine : clinique, documentation d'une table signée,
+  `orientationRulesV1.ts`
+
+- Contexte : depuis le 2026-08-03, l'en-tête affirmait que la table « est
+  régénérée par `tools/corpus/orientation/` (lot 9) » — un compilateur qui
+  n'a **jamais existé** (audit doctrine §E, constat du 2026-08-11 ; `D-042`
+  a posé un banc de fraîcheur des claims en **compensation**, sans ordonner
+  la correction du commentaire). Une provenance décrite fausse est pire
+  qu'une provenance absente (`DC-01`, `DC-02`).
+
+**1. Ce que la décision pose.** Le commentaire d'en-tête — et lui seul — est
+réécrit : la table est **écrite à la main**, du code versionné relu en PR ;
+ses claims justificatifs sont réels, validés dans l'Atelier corpus
+(barrière `D-003`), et leur fraîcheur est tenue par le banc de `D-042`.
+L'en-tête nomme sa propre période mensongère (2026-08-03 → 2026-08-22) —
+la trace ne s'efface pas, elle se date.
+
+**2. Ce que le geste a mesuré.** Le sha épinglé
+(`SHA_SIGNE_2026_08_06`, discipline `D-018`) couvre
+`sha256(JSON.stringify(ORIENTATION_RULES_V1))` — **les données de la
+table, pas le texte du fichier** : la suite clinique est restée verte
+(61/61) sans ré-épinglage, contrairement à ce que le cadrage du Socle
+annonçait. Aucune règle, aucun seuil, aucun claim modifié — le diff est
+un commentaire.
+
+**3. Garde posée dans le même lot.** Le fichier est désormais au niveau
+« demande » du hook d'écriture (`protect-wellneuro-files.mjs`, Socle
+LOT-02) : cette édition-ci a été la première à passer par la confirmation
+en session que le hook matérialise.
+
+- Référence : `web/src/lib/clinical/orientationRulesV1.ts` (en-tête),
+  `docs/claude/doctrine/AUDIT_DOCTRINE_CHAINE_T0.md` §E, [[D-042]],
+  [[D-018]], [[D-003]], campagne
+  `docs/claude/campagnes/2026-08-21-socle-restitution-sure/` (LOT-02).
+
 ### D-082 — Le corpus de synthèse est signé : validation clinique du responsable, contenu inchangé
 
 - Date : 2026-08-22
