@@ -4376,3 +4376,16 @@ Prochaine action : CI de #726, merge = geste Copilot/responsable ; puis le
 créneau primaire s'ouvre (Socle rang 1 — ouverture = geste du responsable).
 Question ouverte : documenter dans ROLES_MACHINES.md que « base partagée » =
 production, et décider d'une base E2E locale dédiée.
+
+## 2026-08-22 — Ouverture du Socle de restitution sûre (primaire)
+
+Décisions : cadrage écrit sur re-mesure (5 agents, citations exigées), pas sur
+le brief du 2026-08-21 — cinq corrections substantielles consignées dans
+CAMPAGNE.md ; la liste du hook passe à 8 fichiers (2 tables omises + D-082
+signée pendant l'ouverture) ; la correction d'en-tête d'orientationRulesV1
+requalifiée geste clinique (sha épinglé, D-xxx au lot) ; « deux dates » et
+« chaîne » du patron trust corrigés en ajouts assumés. Écarté : recopier les
+lots du brief tels quels (deux sur trois reposaient sur des constats faux ou
+périmés). Prochaine action : PR d'ouverture, CI, puis LOT-01. Ouvert :
+arbitrage journalisant/bloquant de la garde de synthèse (instruit au LOT-01,
+tranché par le responsable) ; sort de stopRulesLibelles (LOT-02).
