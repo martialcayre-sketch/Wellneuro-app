@@ -1,10 +1,10 @@
 ---
 id: "2026-08-21-socle-restitution-sure"
 titre: "Socle de restitution sûre — la garde avant le récit"
-statut: "en_cours (ouverte 2026-08-22)"
+statut: "terminée (2026-08-22 — les trois lots livrés le jour de l'ouverture ; le gate des campagnes 6.0 est posé : carte des chemins prouvée, clinique au niveau demande, gabarits au registre — les validations valideLe et les arbitrages de régimes restent au responsable)"
 créée_le: "2026-08-21"
 mise_à_jour: "2026-08-22"
-lot_courant: "LOT-03"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -59,7 +59,7 @@ brief :
 |---|---|---|---|
 | LOT-01 | La couverture des chemins sortants devient un contrat prouvé | terminé (2026-08-22 — 4 gardes prouvées par mutation, bilan re-vérifié au service, arbitrage des régimes instruit) | — |
 | LOT-02 | Les tables cliniques s'écrivent au niveau « demande » — et l'en-tête cesse de mentir | terminé (2026-08-22 — 8 fichiers, banc neuf, revue adversariale ACCEPTER, D-083) | — |
-| LOT-03 | Le registre de gabarits de messages patient (`DC-26`) | à faire | LOT-01 ou LOT-02 (l'un des deux livré) |
+| LOT-03 | Le registre de gabarits de messages patient (`DC-26`) | terminé (2026-08-22 — 8 gabarits versionnés et hashés, fidélité prouvée par bancs inchangés) | LOT-01 ou LOT-02 (l'un des deux livré) |
 
 ## Gates
 

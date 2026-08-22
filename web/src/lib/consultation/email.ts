@@ -1,4 +1,5 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { getGabarit, rendreGabarit } from '@/lib/correspondance/registreGabarits';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
 import {
   journaliserCorrespondancePatient,
@@ -76,19 +77,14 @@ export async function sendMagicLinkEmail(
     envoyer: async () => {
       if (!smtpUrl) return;
       const transport = creerTransportSmtp(smtpUrl);
+      // Texte au registre des gabarits (Socle LOT-03, DC-26) — déménagé au
+      // caractère près, fidélité prouvée par `registreGabarits.test.ts`.
+      const gabarit = rendreGabarit(getGabarit('lien_magique'), { prenom, lien });
       await transport.sendMail({
         from: '"Wellneuro" <noreply@wellneuro.fr>',
         to: patientEmail,
-        subject: 'Votre lien d’accès — Wellneuro',
-        text:
-          `Bonjour ${prenom},\n\n` +
-          `Voici votre lien d'accès à votre espace patient Wellneuro :\n${lien}\n\n` +
-          `Ce lien est valable 24 heures et ne s'ouvre qu'une fois. ` +
-          `Passé ce délai, ou si vous l'avez déjà utilisé, vous pourrez en redemander ` +
-          `un nouveau depuis la page qui s'affichera — sans passer par votre praticien.\n\n` +
-          `Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message : ` +
-          `sans clic de votre part, ce lien expirera seul.\n\n` +
-          `L'équipe Wellneuro`,
+        subject: gabarit.sujet,
+        text: gabarit.corps,
       });
     },
   });
@@ -119,20 +115,13 @@ export async function sendPortailLinkEmail(
     envoyer: async () => {
       if (!smtpUrl) return;
       const transport = creerTransportSmtp(smtpUrl);
+      // Texte au registre des gabarits (Socle LOT-03, DC-26).
+      const gabarit = rendreGabarit(getGabarit('acces_portail'), { prenom, connexion });
       await transport.sendMail({
         from: '"Wellneuro" <noreply@wellneuro.fr>',
         to: patientEmail,
-        subject: 'Accès à votre espace patient — Wellneuro',
-        text:
-          `Bonjour ${prenom},\n\n` +
-          `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.\n\n` +
-          `Rendez-vous sur votre page d'accès :\n${connexion}\n\n` +
-          `Vous pourrez vous connecter avec Google, ou recevoir un lien d'accès ` +
-          `par e-mail à l'adresse enregistrée par votre praticien.\n\n` +
-          `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
-          `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
-          `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
-          `L'équipe Wellneuro`,
+        subject: gabarit.sujet,
+        text: gabarit.corps,
       });
     },
   });

@@ -8,6 +8,7 @@ import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
@@ -319,22 +320,22 @@ async function sendPackEmail(
     await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
     return;
   }
-  const liste = assignations.map(a => `• ${a.titre}`).join('\n');
-  const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
-  const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
+  // Texte au registre des gabarits (Socle LOT-03, DC-26) ; la liste reste
+  // préformatée ici — une ligne « • titre » par questionnaire.
+  const gabarit = rendreGabarit(getGabarit('assignation_pack'), {
+    packNom,
+    liste: assignations.map(a => `• ${a.titre}`).join('\n'),
+    dateInfo: rendreSegment('dateLimite', dateLimite),
+    noteInfo: rendreSegment('notePraticien', notes),
+    portalUrl,
+  });
   const transport = creerTransportSmtp(smtpUrl);
   try {
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: patientEmail,
-      subject: `Questionnaires à compléter avant votre consultation — Wellneuro`,
-      text:
-        `Bonjour,\n\n` +
-        `Votre praticien vous invite à compléter les questionnaires du pack « ${packNom} » avant votre consultation :\n` +
-        `${liste}${dateInfo}${noteInfo}\n\n` +
-        `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente du pack et les remplir dans l'ordre de votre choix.\n\n` +
-        `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
-        `L'équipe Wellneuro`,
+      subject: gabarit.sujet,
+      text: gabarit.corps,
     });
     await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
   } catch (erreur) {

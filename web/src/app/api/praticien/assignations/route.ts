@@ -10,6 +10,7 @@ import {
   RAISON_QUESTIONNAIRE_SUSPENDU,
 } from '@/lib/questionnaires-catalog';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
+import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/registreGabarits';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -326,19 +327,20 @@ async function sendAssignmentEmail(
     return;
   }
   const transport = creerTransportSmtp(smtpUrl);
-  const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
-  const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
+  // Texte au registre des gabarits (Socle LOT-03, DC-26) — fidèle au
+  // caractère près, fidélité prouvée par `registreGabarits.test.ts`.
+  const gabarit = rendreGabarit(getGabarit('assignation_questionnaire'), {
+    titre: titreQuestionnaire,
+    dateInfo: rendreSegment('dateLimite', dateLimite),
+    noteInfo: rendreSegment('notePraticien', notes),
+    portalUrl,
+  });
   try {
     await transport.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: patientEmail,
-      subject: 'Questionnaire à compléter avant votre consultation — Wellneuro',
-      text:
-        `Bonjour,\n\n` +
-        `Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n` +
-        `« ${titreQuestionnaire} »${dateInfo}${noteInfo}\n\n` +
-        `Accédez à votre espace patient ici :\n${portalUrl}\n\n` +
-        `L'équipe Wellneuro`,
+      subject: gabarit.sujet,
+      text: gabarit.corps,
     });
     await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
   } catch (erreur) {
