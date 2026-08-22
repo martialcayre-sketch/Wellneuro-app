@@ -9,7 +9,8 @@ sous-système vivent dans `.claude/rules/` (chargées par chemin, nativement).
 - Next.js 14 (App Router) — code dans `web/`
 - Prisma + PostgreSQL (Supabase)
 - NextAuth — OAuth Google restreint au domaine `@wellneuro.fr`
-- Déploiement Vercel (`app.wellneuro.fr`)
+- Déploiement Scalingo `osc-fr1` (`app.wellneuro.fr`, cutover 2026-08-22) —
+  Vercel/Supabase en décommissionnement (`D-080`, 2026-09-01)
 
 Application de consultation en neuronutrition **en production**. Google Apps
 Script et Google Sheets sont décommissionnés (`archive/gas-legacy/`, référence
@@ -31,9 +32,11 @@ technologique sans demande explicite. État courant :
   WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande
   explicite (décision `D-xxx` + fragment `changelog.d/`).
-- **Base de production : lecture uniquement via l'outil MCP Supabase
-  `execute_sql`, écriture uniquement par migration relue via `release-db`** —
-  détail : `.claude/rules/db-prisma.md`.
+- **Base de production (Scalingo depuis le 2026-08-22) : lecture uniquement
+  depuis un conteneur `scalingo run -d`, écriture uniquement par migration
+  relue avec go explicite du responsable avant merge (`D-086` — l'auto-deploy
+  applique au merge)**. Le MCP Supabase `execute_sql` lit la base gelée
+  (rollback), plus la production. Détail : `.claude/rules/db-prisma.md`.
 
 ## Données patients
 

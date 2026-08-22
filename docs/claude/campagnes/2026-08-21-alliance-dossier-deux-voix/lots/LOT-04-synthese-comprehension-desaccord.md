@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 statut: "à faire"
-dépend_de: "LOT-01 (release-db faite) ; Socle de restitution sûre (livré le 2026-08-22)"
+dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur) ; Socle de restitution sûre (livré le 2026-08-22)"
 ---
 
 # LOT-04 — « Ce que j'ai compris de vous » : synthèse gardée et désaccord structuré

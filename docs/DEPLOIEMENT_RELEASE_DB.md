@@ -4,6 +4,17 @@ Ce document décrit le workflow GitHub Actions [`release-db.yml`](../.github/wor
 et son runbook. Il sépare l'**écriture en base de production** (migrations Prisma,
 import de nomenclature NABM) du **build applicatif Vercel**.
 
+> **Régime post-cutover (2026-08-22, `D-086`).** La production est sur
+> Scalingo, et l'app `wellneuro` auto-déploie `main` : le hook `postdeploy`
+> (`web/Procfile` → `web/scripts/db-deploy.sh`) applique les migrations **au
+> merge**, avant toute approbation de ce workflow. **Le gate humain d'une
+> migration est donc la revue + le go explicite du responsable AVANT merge** ;
+> `release-db` (secret `MIGRATE_DATABASE_URL` repointé sur Scalingo) rejoue la
+> même migration en **seconde application idempotente**, avec ses préflights —
+> il n'est plus l'unique chemin d'écriture que ce document décrivait à sa
+> création. Les paragraphes historiques ci-dessous se lisent avec ce
+> correctif.
+
 ## Pourquoi
 
 `web/scripts/vercel-build.sh` appliquait historiquement les migrations et les
@@ -136,7 +147,9 @@ Ces gestes se font dans l'interface, hors code :
    committée → PR relue → merge sur `main` » perdrait son ressort mécanique au
    moment même où ce chemin devient unique.
 2. **Secrets de l'environnement `release-db`** :
-   - `MIGRATE_DATABASE_URL` — URL directe Supabase (session mode, port 5432).
+   - `MIGRATE_DATABASE_URL` — URL directe de la base **Scalingo** de
+     production depuis `D-086` (2026-08-22 — geste de repointage du
+     responsable ; valeur Supabase de sa création au cutover).
    - `WN_CB_NABM_IMPORT_CONFIRMATION` — jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`
      (doit être **identique** à la constante épinglée dans le code, sinon l'import
      refuse).

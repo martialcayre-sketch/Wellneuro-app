@@ -1,10 +1,21 @@
 ---
 id: "LOT-01"
-statut: "à faire"
-dépend_de: "— (gaté par confirmation explicite de la migration)"
+statut: "livré à la PR (2026-08-22) — cinq tables, contrat vu rouge sous trois mutations, D-086 ; production au merge"
+dépend_de: "— (gaté par confirmation explicite de la migration — donnée le 2026-08-22, plan approuvé)"
 ---
 
 # LOT-01 — La migration du dossier à deux voix (CONFIRMATION OBLIGATOIRE)
+
+> **Amendé le 2026-08-22 à l'exécution** (cadrage `wn-reviewer` + arbitrages
+> responsable) : la vérification post-release se fait depuis un **conteneur
+> Scalingo** (`scalingo run -d`), plus par MCP — le cutover HDS a déplacé la
+> production le matin même (`D-086`) ; la modification du bloc `Patient`
+> (back-relations, ajout pur) et d'`effacement.ts` (+ son banc) est
+> **autorisée nommément** — la garde de complétude d'effacement dérive sa
+> liste du schéma et rougirait sans elle ; la **ratification** est une
+> cinquième table dès ce lot (arbitrage : append-only dédiée, pas un champ
+> d'état) ; `.github/workflows/ci.yml` entre au périmètre — sans l'étape, le
+> contrat SQL neuf ne serait joué ni en T3 ni en CI.
 
 ## But
 

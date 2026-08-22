@@ -4477,3 +4477,16 @@ l'éditeur de questionnaire (il la détruirait — refus explicite, entrée par
 import JSON) ; toute surface de trajectoire (hors périmètre du lot).
 Prochaine action : revue puis PR par la session principale. Ouvert :
 restitution de trajectoire des passations successives, non traitée.
+## 2026-08-22 — Alliance LOT-01 : la migration du dossier à deux voix, et D-086
+
+Décisions : cadrage wn-reviewer NO-GO sur la chaîne de livraison — release-db
+pointait la base Supabase gelée et l'auto-deploy Scalingo applique au merge ;
+D-086 (arbitrage responsable) : gate humain = revue + go avant merge,
+repointage du secret, vérification par conteneur Scalingo. Quatre arbitrages :
+FK RESTRICT + Patient/effacement.ts même PR ; ratification en table dédiée dès
+le lot ; append-only par convention + bancs. Cinq tables, contrat liste
+blanche vu rouge sous trois mutations, parité prouvée. Écarté : verrou base
+(trigger) ; colonne d'accusé de lecture (LOT-04). Promu : CLAUDE.md,
+db-prisma.md, DEPLOIEMENT_RELEASE_DB.md alignés sur D-086. Prochaine action :
+T3, revue wn-reviewer, PR (merge = production, go responsable). Ouvert :
+repointage du secret (geste responsable), deux runs release-db en attente.
