@@ -63,14 +63,20 @@ metriquesAnthropic: {
 
 ## Activation du corpus clinique V1
 
-Le snapshot `corpus-clinique-v1` est prêt techniquement mais son activation
-reste bloquée tant que la validation clinique externe n'est pas confirmée.
+Le snapshot `corpus-clinique-v1` est **signé depuis le 2026-08-22** (`D-082`,
+validation clinique du responsable) et ancré `shaPerimetre` le même jour
+(`D-083`). Le verrou d'activation (`CORPUS_CLINIQUE_ACTIF`,
+`lib/anthropic.ts`) est un ET auto-portant :
 
-Conditions d'activation :
+- `WN_ENABLE_CORPUS_CLINIQUE_V1=1` (geste d'exploitation, posé après le
+  déploiement qui porte la signature) ;
+- `validationExterne: true` dans le snapshot, avec date non nulle en forme
+  ISO canonique ;
+- concordance du `shaPerimetre` épinglé avec le SHA calculé du texte — une
+  prose retouchée après signature ferme le corpus toute seule.
 
-- validation externe documentée dans le snapshot;
-- variable `WN_ENABLE_CORPUS_CLINIQUE_V1=1`;
-- bump de version prompt/corpus traçable.
+Le prompt est bi-état (`synthese-v27`) : chaque état a son empreinte épinglée
+par un banc, et le bump de version prompt/corpus reste traçable.
 
 TTL du cache : **5 minutes** (type `ephemeral`). Pour les sessions longues où le même praticien génère plusieurs synthèses d'affilée, le cache sera actif. Entre sessions distinctes, il sera réécrit à faible coût.
 

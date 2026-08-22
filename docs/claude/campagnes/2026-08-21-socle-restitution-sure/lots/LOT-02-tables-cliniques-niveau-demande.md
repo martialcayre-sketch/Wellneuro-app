@@ -30,7 +30,7 @@ que le brief croyait (voir CAMPAGNE.md, état réel).
 | `web/src/lib/clinical/priorityRulesV1.ts` | `validationExterne: true` (:371) |
 | `web/src/lib/clinical/contradictionsV1.ts` | `validationExterne: true` (:212) — **omise par le brief** |
 | `web/src/lib/biology-library/indicationsBiologieV1.ts` | `validationExterne: true` (:537, `D-061`) — **omise par le brief** |
-| `web/src/lib/clinical/corpusSyntheseV1.ts` | `validationExterne: true` (:50) — **signée pendant l'ouverture même de cette campagne** (`D-082`, PR #734 du 2026-08-22) |
+| `web/src/lib/clinical/corpusSyntheseV1.ts` | `validationExterne: true` (:65) — **signée pendant l'ouverture même de cette campagne** (`D-082`, PR #734 du 2026-08-22), ancrée `shaPerimetre` le même jour (`D-083`) |
 | `web/src/lib/equilibre/constants.ts` | non signée — constantes cliniques `D-014`/`D-055` (`DC-17` vaut sans signature) |
 | `web/src/lib/questions.ts` | non signée — cotations et libellés sous `D-014`/`D-055`/`D-060` |
 

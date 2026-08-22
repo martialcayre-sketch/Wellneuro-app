@@ -77,9 +77,13 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
 
   // D-083 (question 4 de la revue) : le verrou est auto-portant — une prose
   // retouchée après signature ne se contente plus de rougir l'empreinte N1,
-  // elle FERME le corpus en production. Ce cas simule la discordance en
-  // servant une métadonnée dont le `shaPerimetre` ne correspond plus.
-  it('périmètre discordant : fermé malgré flag posé et signature vraie', async () => {
+  // elle FERME le corpus en production. Les cas ci-dessous éprouvent CHAQUE
+  // terme du verrou, pas seulement la concordance : la classe D-069
+  // (constat 4) a montré qu'un terme jamais contredit n'est tenu que par
+  // accident — sa suppression resterait verte.
+  async function chargerAvecMetadonneeAlteree(
+    surcharge: Partial<import('@/lib/clinical/corpusSyntheseV1').CorpusCliniqueMetadata>,
+  ) {
     vi.resetModules();
     vi.stubEnv('WN_ENABLE_CORPUS_CLINIQUE_V1', '1');
     vi.doMock('@/lib/clinical/corpusSyntheseV1', async () => {
@@ -88,17 +92,51 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
       >('@/lib/clinical/corpusSyntheseV1');
       return {
         ...reel,
-        CORPUS_CLINIQUE_METADATA: {
-          ...reel.CORPUS_CLINIQUE_METADATA,
-          shaPerimetre: 'empreinte-perimee-apres-retouche',
-        },
+        CORPUS_CLINIQUE_METADATA: { ...reel.CORPUS_CLINIQUE_METADATA, ...surcharge },
       };
     });
-    const mod = await import('./anthropic');
+    return import('./anthropic');
+  }
+
+  it('périmètre discordant : fermé malgré flag posé et signature vraie', async () => {
+    const mod = await chargerAvecMetadonneeAlteree({
+      shaPerimetre: 'empreinte-perimee-apres-retouche',
+    });
     expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
     const prompt = mod.buildSystemPromptSynthese();
     expect(prompt).not.toContain(TITRE_CORPUS);
     expect(prompt).toContain(LIGNE_INDISPONIBLE);
     expect(mod.LIMITES_SYNTHESE_DEFAUT).toContain('sans corpus SIIN complet');
+  });
+
+  it("périmètre jamais relu (`shaPerimetre: null`) : fermé — l'état que le type documente", async () => {
+    const mod = await chargerAvecMetadonneeAlteree({ shaPerimetre: null });
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
+  it('date absente : fermé — une signature sans date est incomplète (D-063)', async () => {
+    const mod = await chargerAvecMetadonneeAlteree({ dateValidation: null });
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
+  it("date non canonique (`'2026-08-22'`) : fermé — la forme est contrôlée (D-067)", async () => {
+    const mod = await chargerAvecMetadonneeAlteree({ dateValidation: '2026-08-22' });
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
+  it("date non canonique (`'…T00:00:00Z'` sans millisecondes) : fermé", async () => {
+    const mod = await chargerAvecMetadonneeAlteree({ dateValidation: '2026-08-22T00:00:00Z' });
+    expect(mod.CORPUS_CLINIQUE_ACTIF).toBe(false);
+  });
+
+  // La contre-épreuve inverse : l'ÉTAT LIVRÉ concorde. Le cas « discordant »
+  // prouve la fermeture, celui-ci prouve que le littéral épinglé est bien le
+  // SHA du texte tel que livré — deux propriétés distinctes (patron
+  // `orientationRulesV1.test.ts`).
+  it('état livré : le littéral `shaPerimetre` concorde avec le SHA calculé du texte', async () => {
+    const { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } = await import(
+      '@/lib/clinical/corpusSyntheseV1'
+    );
+    expect(CORPUS_CLINIQUE_METADATA.shaPerimetre).toBe(CORPUS_CLINIQUE_SHA256);
   });
 });

@@ -14,8 +14,13 @@ arbitrages au responsable ; ils sont rendus le jour même.
   d'activation devient auto-portant — flag ET signature ET date ISO canonique
   ET concordance du SHA de périmètre épinglé au littéral. Une retouche de la
   prose signée **ferme le corpus en production toute seule**, au lieu de
-  seulement rougir le banc d'empreinte ; un nouveau cas du banc simule la
-  discordance et vérifie la fermeture.
+  seulement rougir le banc d'empreinte. Le banc éprouve **chaque terme**
+  (discordance, périmètre jamais relu, date absente ou non canonique — classe
+  `D-069`) et l'état livré (le littéral concorde) ; le garde anti-tautologie
+  `shaPerimetreLitteral.guard` enrôle la 5ᵉ table le jour même, pour ne pas
+  rejouer le retard que `D-067` avait nommé. Les traces d'audit (route de
+  synthèse, `prompt-cache-check`) consignent désormais le périmètre épinglé —
+  un corpus fermé restera explicable six mois plus tard.
 - Contenu du corpus inchangé au caractère près ; le jour de signature
   (2026-08-22, `D-082`) reste le fait attesté — précédent
   `orientationRulesV1`/`D-067`. Prompt de synthèse intact : les deux
