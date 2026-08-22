@@ -4448,3 +4448,17 @@ DÉCLARÉS, correction = décision praticien) ; trust/notification (praticien).
 La campagne Socle est TERMINÉE le jour de son ouverture — le gate 6.0 est
 posé. Prochaine action : PR, CI. Ouvert : valideLe des 8 gabarits (geste
 responsable), 6.0-A à ouvrir (geste responsable).
+
+## 2026-08-22 — Ouverture Alliance 6.0-A : le dossier à deux voix (six lots)
+
+Décisions : campagne ouverte en primaire sur état réel re-mesuré — trois
+corrections au brief (patron texte patient = registreGabarits du Socle, pas
+trust ; EVA sans migration pressentie via CabinetInstrument, LOT-05
+indépendant ; ancrage objectif à deux sources, anamnèse + Q_MOD_03/D-054).
+Découpage 4 lots esquissés → 6 : migration isolée en LOT-01 (confirmation
+obligatoire, RLS d'office), surface portail + ratification en LOT-06 (tranche
+E4, constat du gate). Écarté : table EVA au LOT-01 (voie cabinet existe — le
+lot tranche) ; ratification au LOT-02 (geste patient = portail, LOT-06).
+Prochaine action : PR d'ouverture, CI, puis LOT-01 (schéma à proposer,
+s'arrêter à la confirmation) — LOT-05 jouable en parallèle. Ouvert : travail
+synthèse non commité d'une session parallèle dans l'arbre (non touché).
