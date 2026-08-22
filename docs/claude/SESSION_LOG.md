@@ -4418,3 +4418,19 @@ stopRulesLibelles, fixture C1 — consignés à trancher). Prochaine action : PR
 du lot, puis LOT-03 (registre de gabarits). Ouvert : vestige
 WN_ALLOW_RISKY_COMMAND (contredit CLAUDE.md — arbitrage responsable) ;
 travail synthèse non commité d'une session parallèle dans l'arbre.
+
+## 2026-08-22 — LOT-02 HDS clos : le corpus sert, arbitrages D-084
+
+Décisions : dernier critère LOT-02 constaté depuis un conteneur prod
+(`scalingo run -d` — le « TTY requis » du runbook était faux, corrigé) ;
+drapeau corpus posé après le build signé, **constat comportemental** par
+synthèse réelle (10:22 UTC, trace `corpusActif: true`, sha concordant) — §C
+dit « le corpus SERT » ; arbitrages de revue rendus : signature vaut
+provenance, verrou auto-portant à 4 termes (`shaPerimetre`), consignés
+**D-084** après collision (le D-083 du Socle, mergé d'abord, garde le
+numéro) ; `changelog-collate` fail-closed sur argv après l'incident des 407
+fragments (restaurés). Écarté : retitrage du corpus (contenu inchangé) ;
+test du CLI réel (risque sur le vrai dépôt). PR #737/#738/#740 mergées.
+Prochaine action : 2026-09-01, décommissionnement Vercel/Supabase + preuve
+d'effacement (D-080). Ouvert : annexe HDS pendante ; revue G-TRUST-04 le
+2026-10-21.
