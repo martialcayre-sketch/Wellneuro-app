@@ -66,7 +66,10 @@ Aucune migration : les cinq tables sont en production depuis le LOT-01.
   « ici ni à l'affichage ». Chaque date est désormais dite sous son propre
   libellé, ou tue.
 - **`D-092` : le gate de campagne se constate sur la STRUCTURE**, par conteneur
-  Scalingo et non par MCP (qui lit la base gelée depuis le cutover). Les
-  drapeaux étant éteints, la valeur attendue est **zéro ligne de ratification en
-  production** — et le constat le dira au lieu de le masquer. La lecture ELLE-MÊME
-  reste due : le CLI Scalingo exige un login du responsable.
+  Scalingo et non par MCP (qui lit la base gelée depuis le cutover). **Constat
+  effectué le 2026-08-22**, en lecture seule et sans lire aucune ligne patient :
+  `ratifications_objectif` contient **zéro ligne** en production, et les quatre
+  autres tables de l'alliance sont vides elles aussi. Le gate structurel est
+  constaté ; il ne vaut ni constat d'usage réel, ni activation élargie
+  protocole→produits. Détail au paragraphe « Constat de clôture » de
+  `CAMPAGNE.md`.
