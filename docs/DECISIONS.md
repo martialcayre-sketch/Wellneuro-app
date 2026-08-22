@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-081 — Les derniers freins non cliniques tombent : recherche corpus ouverte, gate `WN_CB_RESULTS_ENABLED` requalifié
+
+- Date : 2026-08-22
+- Statut : accepté (**décision du responsable**, rendue en session le
+  2026-08-22 — « lever ces derniers freins »)
+- Domaine : feature flags, hébergement HDS
+
+- Contexte : après la bascule Scalingo (`D-080`), le responsable demande que
+  plus aucun gate non clinique ne freine le produit. L'inventaire du
+  2026-08-22 n'en trouvait que trois ; deux sont non cliniques et relèvent de
+  cette décision, le troisième (signature de `corpusSyntheseV1`) est un acte
+  clinique distinct.
+
+**1. `WN_RECHERCHE_CORPUS_ENABLED` est posé en Production** (Scalingo,
+2026-08-22) : la recherche corpus clinique (rayons cognition, douleur,
+intestin) ouvre. C'était un choix produit, il est levé.
+
+**2. Le gate dur `WN_CB_RESULTS_ENABLED` est requalifié.** Sa doctrine
+(« ne jamais passer à true avant l'attestation HDS ») visait un monde où les
+données résidaient hors HDS. Depuis la bascule, la base EST chez un hébergeur
+certifié ; après le décommissionnement (`D-080`, 2026-09-01), elle n'aura
+plus d'autre résidence. La condition devient : **hébergement HDS effectif et
+exclusif** — satisfaite au décommissionnement, sans attendre l'annexe. Le
+drapeau reste **absent** tant qu'aucun code ne le lit (il n'a aucun appelant
+à ce jour) ; sa pose accompagnera le code de la Phase C, comme geste
+d'exploitation daté.
+
+### D-080 — Fenêtre de stabilité de dix jours, puis décommissionnement inconditionnel de Vercel/Supabase
+
+- Date : 2026-08-22
+- Statut : accepté (**décision du responsable**, rendue en session le
+  2026-08-22, texte proposé par l'assistant et validé tel quel)
+- Domaine : hébergement, HDS, campagne `2026-08-18-echeance-hds-g-trust-04`
+
+- Contexte : la bascule Scalingo est faite — données réelles chargées le
+  2026-08-22 à 03:24 CEST, service basculé par cutover DNS le même matin
+  (`app.wellneuro.fr` → `wellneuro.osc-fr1.scalingo.io`). `D-078`
+  subordonnait le décommissionnement de Vercel/Supabase à la signature de
+  l'annexe HDS, toujours pendante (demandée le 2026-08-12, relancée le
+  2026-08-19, sans réponse).
+
+**1. Ce que la décision pose.** Une **fenêtre de stabilité de dix jours**
+court jusqu'au **2026-09-01**. À son terme, si la production Scalingo est
+restée saine, **Vercel et Supabase sont décommissionnés, que l'annexe HDS
+soit signée ou non** — la subordination posée par `D-078` est levée à cette
+date.
+
+**2. Motifs.** Le filet de rollback court perd sa raison d'être après dix
+jours de production stable ; et l'effacement des copies hébergées **hors
+HDS** réduit l'écart d'hébergement plutôt qu'il ne l'aggrave — après
+décommissionnement, les données de santé ne résident plus que chez un
+hébergeur certifié.
+
+**3. Ce qui ne change pas.** La **preuve d'effacement écrite** au registre
+RGPD reste obligatoire (critère de done du LOT-02) ; l'annexe HDS reste
+poursuivie — elle demeure la sortie « par le haut » de la revue ; la **revue
+du 2026-10-21** demeure. Le décommissionnement reste un geste du responsable,
+avec sa confirmation au moment de l'étape.
+
 ### D-079 — Le SHA fait foi : une re-signature sans changement de contenu ne périme aucune lettre
 
 - Date : 2026-08-20

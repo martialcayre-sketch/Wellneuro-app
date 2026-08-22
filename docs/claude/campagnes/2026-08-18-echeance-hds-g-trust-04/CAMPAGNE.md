@@ -107,11 +107,15 @@ Les réserves (3), (4), (5) de `D-006` sont inchangées.
 - ~~**L'ordre imposé de `D-006` tient intégralement**~~ — **son application
   est suspendue pour la condition (a) par `D-078` §4** (le contenu reste au
   registre, `D-047` reste vraie). Ce qui tient, dit par `D-078` : le
-  **décommissionnement de Vercel/Supabase reste subordonné à la signature de
-  l'annexe** (seul geste irréversible, filet de rollback court gardé chaud),
-  et la fenêtre bascule→signature est **moins couverte qu'avant** — couverte
+  ~~**décommissionnement de Vercel/Supabase reste subordonné à la signature
+  de l'annexe**~~ — **subordination levée par `D-080` (2026-08-22)** :
+  décommissionnement programmé au **2026-09-01** après fenêtre de stabilité
+  de dix jours, annexe signée ou non, preuve d'effacement toujours due — et
+  la fenêtre bascule→signature est **moins couverte qu'avant** — couverte
   ni par la dérogation (qui vise Vercel) ni par une option HDS active ; le
-  responsable en a été informé et maintient son choix.
+  responsable en a été informé et maintient son choix. **La bascule et le
+  cutover sont faits le 2026-08-22** (données 03:24, DNS au matin — dossier
+  RGPD rubrique 12).
 - **Production lue uniquement via l'outil MCP `execute_sql`** ; toute migration
   passe par `release-db`, jamais par le build Vercel.
 - **Une migration et le code qui en dépend ne voyagent pas dans la même PR.**
