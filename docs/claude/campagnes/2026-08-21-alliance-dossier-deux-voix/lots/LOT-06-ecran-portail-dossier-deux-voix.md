@@ -1,6 +1,6 @@
 ---
 id: "LOT-06"
-statut: "en cours (2026-08-22) — cadrage rendu, trois hypothèses du lot corrigées contre le dépôt : l'écran assemble trois lectures patient dont DEUX N'EXISTENT PAS, la visibilité praticien est déjà livrée au LOT-02, et le chemin sortant N'EST PAS déjà inscrit (servir la reformulation praticien est un chemin neuf)"
+statut: "terminé (2026-08-22 — mergé #760 ; écran d'ensemble et ratification append-only livrés ; gate D-092 constaté en production : zéro ratification)"
 dépend_de: "LOT-02, LOT-03, LOT-04 (LOT-05 souhaitable, non bloquant)"
 ---
 
@@ -78,8 +78,8 @@ instruments existant.
 
 ## Critères de done
 
-- [ ] L'écran assemble les trois objets, compréhensible seul, sans score.
-- [ ] Ratification append-only opérante, visible des deux côtés.
-- [ ] Revue `wn-reviewer` passée ; T2 vert ; E2E fixtures verts.
-- [ ] Gate constaté et écrit à la clôture de campagne — l'activation élargie
+- [x] L'écran assemble les trois objets, compréhensible seul, sans score.
+- [x] Ratification append-only opérante, visible des deux côtés.
+- [x] Revue `wn-reviewer` passée ; T2 vert ; E2E fixtures verts.
+- [x] Gate constaté et écrit à la clôture de campagne — l'activation élargie
       reste un geste du responsable.
