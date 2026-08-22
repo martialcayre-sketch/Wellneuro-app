@@ -121,6 +121,13 @@ describe('calculerAgregats — seuil et plausibilité', () => {
     expect(a.AGD_TST_MOY).toBe(427);
   });
 
+  it('la moyenne de réveils suit un compte exact au-delà de trois (v3)', () => {
+    // Sous v2 ces nuits auraient toutes été écrasées à 3 : la moyenne aurait
+    // rendu 3 au lieu de 7 — la fragmentation sévère était invisible.
+    const a = calculerAgregats(serie(7, { reveils: { dureeTotale: 'gt60', nombre: 7 } }))!;
+    expect(a.AGD_REV_MOY).toBe(7);
+  });
+
   it('DST : une nuit décalée de 60 min reste plausible et n’exclut rien', () => {
     const nuits = serie(7);
     nuits[6] = { dateNuit: decale(LUNDI, 6), reponses: rep({ heureLever: '08:00' }) };

@@ -167,7 +167,11 @@ type NuitDerivee = {
   tst: number | null; // temps de sommeil total estimé — null si waso ou twak l'est
   efficacite: number | null; // % — null si le TST l'est
   latence: number; // centre de classe (minutes)
-  nbReveils: number | null; // compte — null si non renseigné (facultatif en v2)
+  // Compte de réveils — null si non renseigné (facultatif). Exact depuis la
+  // v3 ; sur une nuit v1/v2, 3 = « 3 ou plus » : la moyenne le prend tel quel,
+  // en PLANCHER — trancher davantage inventerait un compte non déclaré, même
+  // doctrine que les classes d'éveil héritées.
+  nbReveils: number | null;
   milieu: number; // milieu de sommeil, minutes depuis midi
   qualite: number;
   aide: boolean | null; // aide au sommeil — null si non renseignée (v1)

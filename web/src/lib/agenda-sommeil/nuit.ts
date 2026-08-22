@@ -11,6 +11,7 @@ import {
   CLASSES_LATENCE,
   CLASSES_SIESTE,
   CLES_FACTEURS,
+  NB_REVEILS_MAX,
   type ClasseAideSommeil,
   type ClasseDureeReveils,
   type ClasseDureeReveilsHeritee,
@@ -105,10 +106,13 @@ export function ensureNuitReponses(
   if (v.reveils !== undefined && v.reveils !== null) {
     if (typeof v.reveils !== 'object') throw new TypeError('Réveils illisibles.');
     const r = v.reveils as Record<string, unknown>;
+    // v3 : compte exact borné par vraisemblance. Les lignes v1/v2 (0..3, où
+    // 3 = « 3 ou plus ») passent la même borne — leur 3 se lit comme un
+    // plancher, jamais réinterprété (cf. note (g) du contrat).
     const nombre =
       r.nombre === undefined || r.nombre === null
         ? undefined
-        : ensureEntierBorne(r.nombre, 0, 3, 'nombre de réveils');
+        : ensureEntierBorne(r.nombre, 0, NB_REVEILS_MAX, 'nombre de réveils');
     // En lecture on accepte aussi les classes héritées de la v1 ; en écriture,
     // seules les classes courantes passent — sinon un client obsolète pourrait
     // continuer d'écrire des bornes que le critère de 30 min ne sait pas lire.

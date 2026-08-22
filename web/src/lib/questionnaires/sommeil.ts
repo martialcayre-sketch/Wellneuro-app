@@ -225,7 +225,10 @@ export const Q_SOM_09 = {
         qn('AGD_LAT_MED',"Latence d'endormissement médiane",0,120,1,'min'),
         qn('AGD_WASO_MOY',"Éveil nocturne cumulé moyen",0,240,1,'min'),
         qn('AGD_TWAK_MOY',"Éveil au lit après le réveil final",0,480,1,'min'),
-        qn('AGD_REV_MOY',"Réveils nocturnes moyens par nuit",0,3,0.1,'réveils'),
+        // Borne 20 = NB_REVEILS_MAX du contrat v3 (compte exact, borne de
+        // vraisemblance technique — pas un seuil clinique). Métrique brute,
+        // hors indice /100 (cf. note du scoring ci-dessous).
+        qn('AGD_REV_MOY',"Réveils nocturnes moyens par nuit",0,20,0.1,'réveils'),
         qn('AGD_REG_ECT',"Régularité (écart-type du milieu de sommeil)",0,360,1,'min'),
         qn('AGD_QUAL_MOY',"Qualité subjective moyenne",1,5,0.1,''),
         qn('AGD_FREQ_LAT30_SEM',"Nuits par semaine à endormissement > 30 min",0,7,0.1,'nuits'),
