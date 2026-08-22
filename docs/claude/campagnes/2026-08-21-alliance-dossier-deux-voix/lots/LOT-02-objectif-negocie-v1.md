@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 statut: "à faire"
-dépend_de: "LOT-01 (release-db faite et vérifiée)"
+dépend_de: "LOT-01 (migration appliquée au postdeploy, constatée par conteneur)"
 ---
 
 # LOT-02 — L'objectif négocié v1

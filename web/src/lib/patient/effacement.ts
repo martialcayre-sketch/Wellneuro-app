@@ -142,6 +142,24 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.journalAccesDossier.deleteMany({ where: par })
     ).count;
 
+    // Le dossier à deux voix (Alliance 6.0-A LOT-01) : cinq tables FK
+    // RESTRICT — subsistant, elles feraient échouer la suppression du
+    // patient. Parole du patient et compréhension du praticien : elles
+    // partent avec le dossier, nommément. Les références souples entre elles
+    // (id_synthese, id_objectif, supersedes_*) tombent dans la même
+    // transaction — aucun ordre interne requis.
+    supprimees.objectifsNegocies = (await tx.objectifNegocie.deleteMany({ where: par })).count;
+    supprimees.entreesCeQuiCompte = (await tx.entreeCeQuiCompte.deleteMany({ where: par })).count;
+    supprimees.synthesesComprehension = (
+      await tx.syntheseComprehension.deleteMany({ where: par })
+    ).count;
+    supprimees.desaccordsComprehension = (
+      await tx.desaccordComprehension.deleteMany({ where: par })
+    ).count;
+    supprimees.ratificationsObjectif = (
+      await tx.ratificationObjectif.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

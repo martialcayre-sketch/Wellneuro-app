@@ -10,10 +10,16 @@ paths:
 
 ## Lire la base de production
 
-Uniquement l'outil MCP Supabase `execute_sql` — jamais `psql`, ni une commande
-Bash. Le hook `.claude/hooks/guard-supabase-mcp.mjs` autorise les lectures sans
-interruption et refuse toute écriture ou DDL ; les outils MCP mutants sont
-refusés par `.claude/settings.json`.
+**La production est sur Scalingo depuis le cutover du 2026-08-22** (`osc-fr1`,
+`--hds-resource`). Elle se lit depuis un conteneur one-off :
+`scalingo run -d "npx prisma migrate status"` (ou `db execute --file …`),
+sortie relue par `scalingo logs --filter one-off-N` — le mode détaché lève
+l'exigence de TTY. L'outil MCP Supabase `execute_sql` lit la base **gelée au
+cutover** (filet de rollback jusqu'au décommissionnement du 2026-09-01,
+`D-080`) : utile pour l'historique d'avant-bascule, **jamais pour l'état de la
+production** — couplé à un run `release-db` mal pointé, il renverrait un
+miroir cohérent et faux. Le hook `guard-supabase-mcp.mjs` continue de refuser
+toute écriture MCP.
 
 **Un nom de migration porte plusieurs lignes dans `_prisma_migrations`.** Un
 échec suivi d'un `migrate resolve --applied` laisse la ligne annulée en place
@@ -57,13 +63,17 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 
 - Aucune modification de `schema.prisma`, migration ou SQL sans demande
   explicite et confirmation distincte (le hook « demande » la matérialise).
-- Le seul chemin vers la production : migration committée → PR relue → merge
-  sur `main` → workflow `release-db`, déclenché automatiquement et gaté par un
-  relecteur requis. Le build Vercel n'écrit pas en base. Détail :
-  `docs/DEPLOIEMENT_RELEASE_DB.md`.
-- Migration et code dépendant : PR séparées, ou drapeau éteint (le merge
-  déclenche le déploiement Vercel avant l'approbation de la release —
-  incident du 2026-08-05, PR #574).
+- **Le chemin vers la production depuis le cutover (`D-086`)** : migration
+  committée → PR relue (`wn-reviewer`) → **go explicite du responsable** →
+  merge sur `main` → l'auto-deploy Scalingo applique la migration au
+  `postdeploy` (`web/Procfile` → `db-deploy.sh`). **Le gate humain est le
+  merge** — il n'y a aucune approbation après lui. Le workflow `release-db`
+  (secret repointé Scalingo) rejoue la même migration en seconde application
+  idempotente, avec ses préflights. Détail : `docs/DEPLOIEMENT_RELEASE_DB.md`.
+- Migration et code dépendant : PR séparées, ou drapeau éteint — l'auto-deploy
+  applique la migration au merge, et le code qui en dépend n'arrive qu'après
+  l'application **constatée** par conteneur (précédent : incident du
+  2026-08-05, PR #574, à l'époque via le build Vercel).
 
 ## Routes API
 

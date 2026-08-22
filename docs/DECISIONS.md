@@ -4,6 +4,40 @@
 
 ## Décisions actives
 
+### D-086 — Le chemin de release des migrations après le cutover : le gate humain est le merge
+
+- Date : 2026-08-22
+- Statut : accepté (**arbitrage du responsable**, rendu en session à
+  l'ouverture du LOT-01 Alliance 6.0-A)
+- Contexte : depuis le cutover Scalingo (2026-08-22 ~04:05), l'app de
+  production `wellneuro` auto-déploie `main` (lien GitHub constaté à la CLI)
+  et son hook `postdeploy` (`web/Procfile` → `web/scripts/db-deploy.sh`)
+  applique les migrations **au merge** — avant toute approbation `release-db`.
+  Le secret `MIGRATE_DATABASE_URL` de l'environnement `release-db`, inchangé
+  depuis le 2026-08-05 (métadonnées GitHub), pointait encore la base Supabase
+  gelée : un run aurait rendu vert sur une base condamnée au 2026-09-01
+  (`D-080`), et la vérification MCP — qui lit cette même base — aurait
+  confirmé ce faux vert. Boucle cohérente et entièrement fausse.
+- Décision :
+  1. **Le gate humain d'une migration est la revue (`wn-reviewer`) + le go
+     explicite du responsable AVANT merge.** L'approbation `release-db`
+     subsiste (required reviewers + wait timer, vérifié à l'API) mais **ne
+     garde plus la première écriture** — le `postdeploy` l'a déjà faite au
+     merge ; une PR de migration le dit en tête et ne se merge jamais sans
+     ce go.
+  2. Le responsable **repointe `MIGRATE_DATABASE_URL` vers la base Scalingo**
+     (geste hors dépôt, avant le 2026-09-01) ; `release-db` devient une
+     **seconde application idempotente** avec ses préflights — conservé, pas
+     démantelé.
+  3. La **vérification post-release** se fait depuis un conteneur one-off
+     Scalingo (`scalingo run -d`), plus jamais par le MCP Supabase
+     `execute_sql`, qui lit la base gelée.
+- Conséquences : `CLAUDE.md` (règle non négociable base de production),
+  `.claude/rules/db-prisma.md` et `docs/DEPLOIEMENT_RELEASE_DB.md` sont
+  alignés par la PR du LOT-01 Alliance. Les deux runs `release-db` en attente
+  du 2026-08-22 (pushes `D-044`) visent la base gelée — leur sort est un
+  geste du responsable, hors de cette décision.
+
 ### D-085 — Revue G-TRUST-04 : cinq arbitrages du responsable pour ne laisser ouverte que l'exigence 1
 
 - Date : 2026-08-22
