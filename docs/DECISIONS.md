@@ -35,14 +35,26 @@
   qu'un geste patient EXISTE et qu'il est atteignable dès l'ouverture ; le
   moment de l'ouverture reste au responsable, avec le piège `D-071` (poser la
   variable ne suffit pas, il faut un build qui la porte).
-- **État du constat au moment où cette décision est écrite : NON EFFECTUÉ.**
-  La décision fixe le critère, elle ne rapporte pas son résultat. Le CLI
-  Scalingo ne s'authentifie pas par l'environnement (leçon du 2026-08-22, PR
-  #751) : la lecture exige un `scalingo login` du responsable. Les points 1 et
-  2 sont, eux, constatables sans la production — la migration a été vérifiée par
-  conteneur à la PR du LOT-01, et l'unicité de l'écrivain est tenue par une
-  garde structurelle vue rouge par mutation. **Le point 3 reste dû**, et la
-  clôture de campagne doit le porter comme tel plutôt que de l'énoncer au passé.
+- **État du constat, à l'écriture de cette décision : NON EFFECTUÉ.** La
+  décision fixe le critère, elle ne rapporte pas son résultat. Le CLI Scalingo
+  ne s'authentifie pas par l'environnement (leçon du 2026-08-22, PR #751) : la
+  lecture exigeait un `scalingo login` du responsable. Les points 1 et 2 étaient,
+  eux, constatables sans la production.
+- **CONSTAT EFFECTUÉ LE 2026-08-22, APRÈS L'ÉCRITURE DE CETTE DÉCISION.**
+  Lecture de la production par conteneur one-off, sans lire aucune ligne
+  patient : `ratifications_objectif` contient **zéro ligne**, et les quatre
+  autres tables de l'alliance sont vides elles aussi. Le gate structurel est
+  donc constaté. Consigné au paragraphe « Constat de clôture » de
+  `docs/claude/campagnes/2026-08-21-alliance-dossier-deux-voix/CAMPAGNE.md`, qui
+  fait foi. Cette ligne existe pour que le registre des décisions, lu seul, ne
+  laisse pas croire que le gate est resté dû : les deux paragraphes ci-dessus
+  décrivent deux moments, pas deux états contradictoires.
+- **Ce que le constat ne dit pas** : `WN_COMPREHENSION` est posé à `true` en
+  production depuis le 2026-08-22 — la surface patient du LOT-04 est donc
+  OUVERTE, même si aucune synthèse n'y est publiée à ce jour.
+  `WN_CE_QUI_COMPTE` et `WN_DOSSIER_DEUX_VOIX` restent absents. Le zéro
+  constaté sur les ratifications s'explique par l'absence du troisième, pas par
+  l'extinction des trois.
 - Conséquences : clôture d'Alliance 6.0-A sur ce critère, fragment
   `changelog.d/2026-08-22-alliance-lot06-dossier-deux-voix.md`. Un constat
   d'usage réel — « au moins un dossier porte une ratification » — reste
