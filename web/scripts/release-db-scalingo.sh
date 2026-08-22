@@ -41,7 +41,10 @@ echo "→ Base cible (add-on Scalingo) : $HOTE"
 # sur le commit approuvé ; la recalculer ICI, dans l'image, au moment
 # d'écrire, ferme cette course.
 [ -n "${WN_MIGRATIONS_EMPREINTE:-}" ] || echec "empreinte_absente"
-EMPREINTE_IMAGE=$(ls -1 prisma/migrations | LC_ALL=C sort | sha256sum | cut -d' ' -f1)
+# Empreinte du CONTENU des fichiers, pas des seuls noms de répertoires —
+# même expression que côté workflow (au `cd web` près), symétrie verrouillée
+# par un invariant CI.
+EMPREINTE_IMAGE=$(find prisma/migrations -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
 if [ "$EMPREINTE_IMAGE" != "$WN_MIGRATIONS_EMPREINTE" ]; then
   echo "→ Empreinte de l'image : $EMPREINTE_IMAGE ≠ approuvée : $WN_MIGRATIONS_EMPREINTE."
   echo "  L'image déployée ne porte pas exactement les migrations approuvées"

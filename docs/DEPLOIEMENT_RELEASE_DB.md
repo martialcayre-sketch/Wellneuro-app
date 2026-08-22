@@ -44,12 +44,15 @@ de migration fonctionnel**.
    `MIGRATE_DATABASE_URL`** du même environnement : le workflow ne la lit
    plus, et la laisser serait offrir l'incident du 2026-08-22 à la prochaine
    main qui la trouve.
-4. **Répétition générale, à vide** :
-   `gh workflow run release-db.yml --ref main -f mode=migrate-only`, puis
-   approuver. Rien n'étant en attente, le run éprouve **toute la chaîne**
-   (auth par jeton, drapeau constaté, garde de déploiement, one-off,
-   sentinelles, contre-épreuve) sans rien écrire. **Tant que cette
-   répétition n'est pas verte, ne pas merger de migration.**
+4. **Répétition générale, à vide** — après avoir **constaté** qu'elle est à
+   vide, pas supposé : `scalingo --app wellneuro --region osc-fr1 run
+   "npx prisma migrate status"` doit dire « up to date » (sinon une
+   migration en attente ferait de la « répétition » une vraie release).
+   Puis `gh workflow run release-db.yml --ref main -f mode=migrate-only`,
+   et approuver. Le run éprouve **toute la chaîne** (auth par jeton,
+   drapeau constaté, garde de déploiement, one-off, sentinelles,
+   contre-épreuve) sans rien écrire. **Tant que cette répétition n'est pas
+   verte, ne pas merger de migration.**
 5. **Retour arrière de la transition** (si la répétition échoue) :
    `env-unset WN_MIGRATIONS_PAR_RELEASE_DB` rend l'auto-migration au
    `postdeploy` pendant qu'on corrige — la production ne reste jamais sans
@@ -276,16 +279,16 @@ Le cas courant n'a plus besoin de cette section : une migration mergée sur `mai
 crée son run toute seule, et il ne reste qu'à l'approuver. Ce qui suit vaut pour
 un déclenchement manuel — `import-cb`, ou une reprise après échec.
 
-Interface : **Actions → Release DB → Run workflow**, choisir le `mode` (et
-`nabm_base` pour `import-cb` : l'hôte de `MIGRATE_DATABASE_URL`). Ou :
+Interface : **Actions → Release DB → Run workflow**, choisir le `mode`. Ou :
 
 ```bash
 # Migration seule
 gh workflow run release-db.yml -f mode=migrate-only
-
-# Import NABM (nommer l'hôte visé — garde --base)
-gh workflow run release-db.yml -f mode=import-cb -f nabm_base=<hote-de-MIGRATE_DATABASE_URL>
 ```
+
+Depuis le 2026-08-22, `mode=import-cb` est **refusé explicitement** par le
+workflow (hors service — il visait Supabase, l'input `nabm_base` a disparu
+avec lui) ; sa réécriture pour Scalingo viendra avec la Phase C.
 
 L'exécution reste **en attente d'approbation** tant qu'un reviewer de
 l'environnement `release-db` ne l'a pas approuvée.

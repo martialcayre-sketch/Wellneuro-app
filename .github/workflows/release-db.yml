@@ -299,7 +299,11 @@ jobs:
         env:
           SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
         run: |
-          EMPREINTE=$(ls -1 web/prisma/migrations | LC_ALL=C sort | sha256sum | cut -d' ' -f1)
+          # Empreinte du CONTENU (pas des seuls noms) : une migration en
+          # attente réécrite en place entre l'approbation et le déploiement
+          # ne passerait pas. Même expression que dans le script, au `cd`
+          # près — un invariant CI verrouille cette symétrie.
+          EMPREINTE=$(cd web && find prisma/migrations -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
           echo "→ Empreinte des migrations approuvées : $EMPREINTE"
           SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
             run --detached \

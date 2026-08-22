@@ -155,6 +155,24 @@ test('les sentinelles des one-offs sont liées au run courant', () => {
   }
 });
 
+// Les deux calculs d'empreinte — runner (commit approuvé) et conteneur (image
+// déployée) — ne se comparent qu'à condition d'être LE MÊME calcul. Une
+// divergence future (un côté modifié sans l'autre) rendrait toute release
+// impossible, sans que rien ne l'ait signalé avant la production : la tenir
+// ici, à l'octet près, au `cd web && ` près.
+test('les deux calculs d’empreinte des migrations sont identiques', () => {
+  const script = readFileSync(join(RACINE, 'web/scripts/release-db-scalingo.sh'), 'utf8');
+  const duWorkflow = /EMPREINTE=\$\(cd web && (.+)\)/.exec(SOURCE);
+  const duConteneur = /EMPREINTE_IMAGE=\$\((.+)\)/.exec(script);
+  assert.ok(duWorkflow, "calcul d'empreinte introuvable dans le workflow");
+  assert.ok(duConteneur, "calcul d'empreinte introuvable dans le script du one-off");
+  assert.equal(
+    duWorkflow[1],
+    duConteneur[1],
+    'les deux expressions doivent rester identiques — sinon toute release échoue sur empreinte_migrations',
+  );
+});
+
 // Le jeton d'API est une créance PLEINE sur l'app (one-offs, environnement,
 // tunnels) : en portée de job, il serait visible de TOUTES les étapes — dont
 // l'installation du CLI, qui exécute du contenu téléchargé.
