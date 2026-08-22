@@ -184,5 +184,8 @@ test("file_path hostile (objet, null) : silence, jamais un crash", () => {
       encoding: "utf8",
     });
     assert.equal(res.status, 0);
+    // Un verdict « demande » sort aussi en 0 : le silence se prouve sur la
+    // sortie, pas sur le seul code (contre-vérification adversariale).
+    assert.equal(res.stdout || "", "");
   }
 });
