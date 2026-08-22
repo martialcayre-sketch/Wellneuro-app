@@ -4,6 +4,27 @@ Ce document décrit le workflow GitHub Actions [`release-db.yml`](../.github/wor
 et son runbook. Il sépare l'**écriture en base de production** (migrations Prisma,
 import de nomenclature NABM) du **build applicatif Vercel**.
 
+> **Réécriture du 2026-08-22 — la cible est Scalingo, et le chemin passe par
+> un one-off.** Le cutover HDS a déplacé la production sur Scalingo, dont la
+> base **n'est pas exposée à Internet** : le workflow ne s'y connecte plus
+> jamais directement (le secret `MIGRATE_DATABASE_URL`, resté pointé sur
+> Supabase, a appliqué la purge #746 sur l'ancienne base — constat qui a
+> déclenché cette réécriture). Le job `release` exécute désormais
+> `web/scripts/release-db-scalingo.sh` (les quatre préflights lecture seule,
+> puis `migrate deploy`) **en one-off dans l'image de production**, via le
+> CLI Scalingo (secret `SCALINGO_API_TOKEN` — un jeton d'API, pas une URL de
+> base), après avoir constaté que le commit approuvé est déployé. Sortie par
+> sentinelles (`WN_RELEASE_DB_OK`/`WN_RELEASE_DB_ECHEC`), contre-épreuve
+> `migrate status` par un second one-off. Côté app, le `postdeploy` ne migre
+> plus quand `WN_MIGRATIONS_PAR_RELEASE_DB=1` est posé (production seule —
+> le staging garde l'auto-migration) : l'approbation humaine redevient
+> l'unique porte d'écriture du schéma. L'ordre est donc **code d'abord,
+> migration après approbation** — un ADD se protège par drapeau éteint, un
+> DROP rend le retour arrière dépendant d'une restauration de base. Le mode
+> `import-cb` est **hors service** (il visait Supabase) jusqu'à sa
+> réécriture avec la Phase C. Les sections ci-dessous décrivent l'ère
+> Vercel/Supabase et restent la référence pour le raisonnement d'origine.
+
 ## Pourquoi
 
 `web/scripts/vercel-build.sh` appliquait historiquement les migrations et les

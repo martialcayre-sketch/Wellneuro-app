@@ -1,15 +1,19 @@
 name: Release DB
 
-# Applique les migrations Prisma et l'import NABM (CB-02a) sur la BASE DE
-# PRODUCTION, HORS du build Vercel (le build est un pur `next build` sans effet
-# de bord). PROPOSÉ AUTOMATIQUEMENT dès qu'une migration atterrit sur `main`,
-# gaté par l'environnement protégé `release-db` (required reviewers) :
-# l'automatisation porte sur le DÉCLENCHEMENT, jamais sur l'APPROBATION.
-# Le nom d'environnement est DÉDIÉ — `Production` appartient à l'intégration
-# Vercel, y attacher des reviewers gaterait ses déploiements. Deux modes :
-# `migrate-only` et `import-cb` (l'import C5 CIQUAL n'est volontairement pas
-# câblé). Runbook : docs/DEPLOIEMENT_RELEASE_DB.md · historique et
-# raisonnements complets : docs/adr/2026-08-07-commentaires-workflows.md.
+# Applique les migrations Prisma sur la BASE DE PRODUCTION — Scalingo HDS
+# depuis le cutover du 2026-08-22. La base n'est pas exposée à Internet :
+# ce workflow ne s'y connecte JAMAIS directement — il exécute
+# `web/scripts/release-db-scalingo.sh` (préflights lecture seule +
+# `migrate deploy`) EN ONE-OFF dans l'image de production, via le CLI
+# Scalingo (secret `SCALINGO_API_TOKEN`). Le `postdeploy` de l'app ne migre
+# plus (`WN_MIGRATIONS_PAR_RELEASE_DB=1`) : l'approbation humaine de ce
+# workflow est l'UNIQUE porte d'écriture du schéma. PROPOSÉ AUTOMATIQUEMENT
+# dès qu'une migration atterrit sur `main`, gaté par l'environnement protégé
+# `release-db` (required reviewers) : l'automatisation porte sur le
+# DÉCLENCHEMENT, jamais sur l'APPROBATION. Le mode `import-cb` est HORS
+# SERVICE depuis le cutover (il visait Supabase) — refus explicite plus bas.
+# Runbook : docs/DEPLOIEMENT_RELEASE_DB.md · historique et raisonnements :
+# docs/adr/2026-08-07-commentaires-workflows.md.
 
 on:
   # DÉCLENCHEMENT AUTOMATIQUE — proposer la release, jamais l'approuver : le job
@@ -153,8 +157,11 @@ jobs:
             echo
             echo "- Ces migrations sont-elles passées par une PR relue et mergée ? Ce workflow"
             echo "  ne part que de \`main\`, mais il n'a aucun moyen de le vérifier lui-même."
-            echo "- Le code qui dépend de ces colonnes est-il déjà déployé ? L'ordre attendu est"
-            echo "  l'inverse (migration d'abord) — voir \`docs/DEPLOIEMENT_RELEASE_DB.md\`."
+            echo "- Modèle Scalingo (depuis le 2026-08-22) : le CODE se déploie d'abord,"
+            echo "  automatiquement ; la migration part APRÈS cette approbation, en one-off"
+            echo "  dans l'image déployée. Un DROP rend le retour arrière dépendant d'une"
+            echo "  restauration de base ; un ADD exige que le code qui le lit soit derrière"
+            echo "  un drapeau éteint — voir \`docs/DEPLOIEMENT_RELEASE_DB.md\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
   # N'écrire que ce qui est passé par une PR relue et mergée. Le `if:` ci-dessous
@@ -168,127 +175,114 @@ jobs:
     if: github.ref == 'refs/heads/main'
     # L'environnement protégé porte les required reviewers et les secrets de prod.
     environment: release-db
-    defaults:
-      run:
-        working-directory: web
     env:
-      # URL directe (session mode, port 5432) : `migrate deploy` ne supporte pas
-      # le pooler transaction. Secret d'environnement `release-db`, jamais committé.
-      MIGRATE_DATABASE_URL: ${{ secrets.MIGRATE_DATABASE_URL }}
+      # Jeton d'API Scalingo (secret d'environnement `release-db`, posé par le
+      # responsable, jamais committé). Il ne donne PAS accès à la base : il
+      # autorise à lancer un one-off dans l'image de production, où l'add-on
+      # injecte l'URL — la base reste inaccessible depuis Internet.
+      SCALINGO_API_TOKEN: ${{ secrets.SCALINGO_API_TOKEN }}
+      SCALINGO_APP: wellneuro
+      SCALINGO_REGION: osc-fr1
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        run: npx prisma generate
-
-      - name: "Garde — MIGRATE_DATABASE_URL requise (fail-closed)"
+      # Le mode import-cb visait la base Supabase (advisors + import NABM) :
+      # HORS SERVICE depuis le cutover du 2026-08-22 — refus explicite plutôt
+      # qu'une écriture silencieuse sur l'ancienne base. Sa réécriture pour
+      # Scalingo est une décision distincte (D-081 : la pose de
+      # WN_CB_RESULTS_ENABLED accompagnera le code de la Phase C).
+      - name: "Garde — import-cb hors service depuis le cutover (fail-closed)"
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
         run: |
-          if [ -z "${MIGRATE_DATABASE_URL:-}" ]; then
-            echo "❌ MIGRATE_DATABASE_URL absente du secret d'environnement 'release-db'." >&2
+          echo "❌ Le mode import-cb visait Supabase, décommissionnée par la bascule" >&2
+          echo "   Scalingo du 2026-08-22 (D-080). Il sera réécrit avec la Phase C." >&2
+          exit 1
+
+      - name: "Garde — SCALINGO_API_TOKEN requis (fail-closed)"
+        run: |
+          if [ -z "${SCALINGO_API_TOKEN:-}" ]; then
+            echo "❌ SCALINGO_API_TOKEN absent du secret d'environnement 'release-db'." >&2
             echo "   Release refusée : aucune écriture ne doit partir sans cible explicite." >&2
             exit 1
           fi
 
-      # `nabm_base` est un input libre : il passe par `env:` et n'est JAMAIS
-      # interpolé (`${{ }}`) dans un bloc `run:`. GitHub substitue `${{ }}`
-      # textuellement AVANT le shell — une valeur piégée s'exécuterait comme du
-      # code, avec les secrets de l'environnement `release-db` en portée. Via
-      # une variable shell (`"$NABM_BASE"`), le runner ne la ré-interprète pas.
-      - name: "Garde — nabm_base requis pour import-cb"
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
-        env:
-          NABM_BASE: ${{ inputs.nabm_base }}
+      - name: "CLI Scalingo"
         run: |
-          if [ -z "$NABM_BASE" ]; then
-            echo "❌ Mode import-cb sans 'nabm_base' : il faut NOMMER l'hôte visé." >&2
-            echo "   Ce nom doit se retrouver dans MIGRATE_DATABASE_URL (garde --base)." >&2
+          curl -fsSL -O https://cli-dl.scalingo.com/install && bash install
+          scalingo version
+
+      # L'approbation autorise le COMMIT approuvé ; le one-off, lui, tourne
+      # dans l'image du dernier déploiement réussi. Cette garde attend que ce
+      # commit ait été déployé (le déploiement Scalingo part au merge, en
+      # parallèle de l'attente d'approbation) — sans elle, une approbation
+      # rapide exécuterait une image qui ne contient pas encore les
+      # migrations approuvées, et `migrate deploy` ne verrait rien.
+      - name: "Garde — le commit approuvé est déployé"
+        run: |
+          for i in $(seq 1 40); do
+            if scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null \
+              | grep success | grep -q "$GITHUB_SHA"; then
+              echo "✓ Déploiement de $GITHUB_SHA constaté."
+              exit 0
+            fi
+            echo "… déploiement de $GITHUB_SHA pas encore success ($i/40), attente 30 s."
+            sleep 30
+          done
+          echo "❌ $GITHUB_SHA jamais déployé en success après 20 min — release refusée." >&2
+          exit 1
+
+      # Le protocole de sortie est porté par les sentinelles du script
+      # embarqué (web/scripts/release-db-scalingo.sh) : WN_RELEASE_DB_OK ou
+      # WN_RELEASE_DB_ECHEC dans les logs du one-off. Toute fin sans
+      # sentinelle (timeout, conteneur tué) est un échec — fail-closed.
+      - name: "Release en one-off (préflights + migrate deploy)"
+        run: |
+          SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+            run --detached "bash scripts/release-db-scalingo.sh" 2>&1)
+          echo "$SORTIE"
+          ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
+          if [ -z "$ONEOFF" ]; then
+            echo "❌ Impossible d'identifier le conteneur one-off." >&2
             exit 1
           fi
+          echo "→ Suivi de $ONEOFF…"
+          for i in $(seq 1 60); do
+            LOGS=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+              logs --filter "$ONEOFF" -n 300 2>/dev/null || true)
+            if echo "$LOGS" | grep -q "WN_RELEASE_DB_OK"; then
+              echo "$LOGS"
+              echo "✓ Release appliquée."
+              exit 0
+            fi
+            if echo "$LOGS" | grep -q "WN_RELEASE_DB_ECHEC"; then
+              echo "$LOGS"
+              echo "❌ La release a échoué dans le one-off (voir l'étape en échec ci-dessus)." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "❌ Aucune sentinelle après 10 min — état INCONNU, à vérifier à la main" >&2
+          echo "   (scalingo logs --filter $ONEOFF), ne pas relancer à l'aveugle." >&2
+          exit 1
 
-      # Préflight lecture seule (BEGIN READ ONLY … ROLLBACK dans le fichier) :
-      # n'écrit rien. Même contrôle que web/scripts/vercel-build.sh exécutait au
-      # build avant `migrate deploy`.
-      - name: "Préflight production (lecture seule)"
+      # Contre-épreuve par un second one-off : l'état des migrations tel que
+      # la base le dit, pas tel que le script l'annonce.
+      - name: "Vérification — migrate status sur conteneur"
         run: |
-          DATABASE_URL="$MIGRATE_DATABASE_URL" \
-            npx prisma db execute --file prisma/checks/c5_ciqual_production_preflight.sql
-
-      # LOT-03, dette 4 — cohérence `packs.qids` ↔ miroir relationnel.
-      # FAIL-CLOSED ASSUMÉ ; lecture seule (`BEGIN READ ONLY … ROLLBACK` dans le
-      # fichier). Runbook de correction selon l'assertion :
-      # docs/adr/2026-08-07-commentaires-workflows.md.
-      - name: "Préflight production — packs ↔ registre relationnel (lecture seule)"
-        run: |
-          DATABASE_URL="$MIGRATE_DATABASE_URL" \
-            npx prisma db execute --file prisma/checks/packs_registre_coherence_v1.sql
-
-      # Socle pgvector du RAG : extension, index HNSW cosinus valides, signatures
-      # et droits des deux match_*. `BEGIN READ ONLY … ROLLBACK` dans le fichier —
-      # aucune écriture. FAIL-CLOSED ASSUMÉ : ces objets ne naissent et ne meurent
-      # que par migration ; s'ils manquent en production, quelque chose a écrit
-      # hors du chemin sanctionné, et la release attend une décision humaine.
-      # Vérifié conforme sur la production le 2026-08-09 avant ce câblage.
-      - name: "Préflight production — socle pgvector RAG (lecture seule)"
-        run: |
-          DATABASE_URL="$MIGRATE_DATABASE_URL" \
-            npx prisma db execute --file prisma/checks/rag_pgvector_structure_v1.sql
-
-      # Fraîcheur des claims épinglés par les tables SIGNÉES (D-042/D-044).
-      # FAIL-CLOSED ASSUMÉ ; jamais d'UPDATE manuel sur `statut` ou `active`
-      # pour verdir ce préflight. Le fichier négatif qui prouve qu'il mord est
-      # câblé en CI — jamais ici, il écrit ses fixtures. Récit :
-      # docs/adr/2026-08-07-commentaires-workflows.md.
-      - name: "Préflight production — fraîcheur des claims épinglés (lecture seule)"
-        run: |
-          DATABASE_URL="$MIGRATE_DATABASE_URL" \
-            npx prisma db execute --file prisma/checks/rag_claim_fraicheur_tables_signees_v1.sql
-
-      - name: "Migrations Prisma (migrate deploy)"
-        run: DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
-
-      # ── Import NABM CB-02a ── désarmé hors du mode import-cb. Modèle « deux
-      # clés » : jeton (épinglé + secret) et hôte (input). Procédure de bump du
-      # millésime : docs/adr/2026-08-07-commentaires-workflows.md.
-      - name: "Advisors Supabase (fail-on warn, avant import)"
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
-        run: |
-          npx --yes supabase@2.109.1 db advisors \
-            --db-url "$MIGRATE_DATABASE_URL" \
-            --type all \
-            --level warn \
-            --fail-on warn \
-            --output-format json
-
-      - name: "Import NABM CB-02a (transactionnel, idempotent)"
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'import-cb' }}
-        env:
-          WN_CB_NABM_IMPORT_CONFIRMATION: ${{ secrets.WN_CB_NABM_IMPORT_CONFIRMATION }}
-          # Passé par env, jamais interpolé dans le `run:` (cf. garde ci-dessus).
-          NABM_BASE: ${{ inputs.nabm_base }}
-        run: |
-          npm run cb:nabm:apply -- \
-            --confirmation "CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1" \
-            --base "$NABM_BASE" \
-            --version "V105" \
-            --sha256 "3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
-
-      # PAS de contrat post-import ici. Le contrat STRUCTUREL est désormais rejoué
-      # DANS la transaction de l'import (prisma/importNabm.ts, fichier
-      # cb_biologie_structure_v1.sql) : une violation annule l'import — plus de
-      # fenêtre « rouge mais données écrites ». Les invariants de DONNÉES de
-      # l'import sont vérifiés par sa relecture in-transaction ; la barrière D-003
-      # (plages/liens d'AUTRES lots) reste un contrat de catalogue, hors du chemin
-      # d'import (voir prisma/checks/cb_biologie_catalogue_v1.sql, joué en CI sur
-      # base éphémère — donc jamais contre les données de production).
+          SORTIE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+            run --detached "npx prisma migrate status" 2>&1)
+          ONEOFF=$(echo "$SORTIE" | grep -oE 'one-off-[0-9]+' | head -1)
+          [ -n "$ONEOFF" ] || { echo "❌ one-off de vérification introuvable." >&2; exit 1; }
+          for i in $(seq 1 30); do
+            LOGS=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+              logs --filter "$ONEOFF" -n 100 2>/dev/null || true)
+            if echo "$LOGS" | grep -q "Database schema is up to date"; then
+              echo "$LOGS" | grep -E "migrations found|up to date"
+              echo "✓ Schéma à jour, constaté depuis la base."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ « up to date » jamais constaté — vérifier à la main avant toute suite." >&2
+          exit 1
 
   # Le pendant bruyant du `if:` porté par `release` : sans lui, un dispatch hors
   # `main` se terminerait en *skipped*, sans un mot, et se lirait comme « la base

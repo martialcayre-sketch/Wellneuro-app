@@ -27,6 +27,20 @@
 # idempotent et ne fait que rattraper d'éventuelles migrations manquantes.
 set -euo pipefail
 
+# Porte de gouvernance (2026-08-22, suite au constat « release-db pointait
+# encore Supabase après le cutover ») : quand ce drapeau est posé sur l'app,
+# le postdeploy NE migre PLUS — les migrations n'atteignent la base que par
+# le workflow release-db (approbation humaine), qui les exécute en one-off
+# dans cette même image. Posé sur la production seule ; le staging garde
+# l'auto-migration. Contrepartie assumée : un déploiement portant une
+# migration tourne contre l'ancien schéma jusqu'à l'approbation — c'est le
+# modèle Vercel d'origine (« PR séparées, ou drapeau éteint »).
+if [ "${WN_MIGRATIONS_PAR_RELEASE_DB:-}" = "1" ]; then
+  echo "→ Postdeploy sans migration : WN_MIGRATIONS_PAR_RELEASE_DB=1 —"
+  echo "  les migrations passent par le workflow release-db (approbation)."
+  exit 0
+fi
+
 DB_URL="${MIGRATE_DATABASE_URL:-${DATABASE_URL:-${SCALINGO_POSTGRESQL_URL:-}}}"
 if [ -z "$DB_URL" ]; then
   echo "❌ Aucune URL de base (MIGRATE_DATABASE_URL / DATABASE_URL / SCALINGO_POSTGRESQL_URL) : migrations refusées." >&2
