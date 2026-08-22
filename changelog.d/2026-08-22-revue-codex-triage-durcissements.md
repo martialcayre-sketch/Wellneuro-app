@@ -27,6 +27,28 @@ des redirections OAuth. Les trois constats sont **corrigés le jour même** :
   après la réponse) ; le plancher et les paliers restent en défense en
   profondeur.
 
+Les correctifs ont eux-mêmes été passés en revue adversariale (NO-GO
+conditionnel levé) : verrou passé à la forme **à deux arguments**
+`pg_advisory_xact_lock(74, hashtext(id))` — fonction déjà éprouvée par les
+imports, espace de clés séparé, **résolution constatée en one-off sur le
+PostgreSQL de production (17.11)** ; banc de co-transactionnalité avec `tx`
+distinct du client (la régression « comptage ressorti de la transaction »
+rougit) ; garde `enveloppePatient.guard` qui exécute `buildUserMessage`
+pour de vrai (l'enveloppe que `synthese-v28` atteste est désormais gardée) ;
+neutralisation étendue aux séparateurs U+2028/U+2029/U+0085/U+000B et
+troncature par points de code (plus de surrogate orphelin).
+
+**Effet de bord nommé** : la neutralisation s'applique aussi aux points de
+vigilance restitués au praticien et à la trace d'audit
+`donneesEntree.contexteClinique` (chevrons → ‹ ›, sauts de ligne → tirets) ;
+le texte brut du patient reste intact dans `consultation.anamnese`.
+
+**Dettes datées** (échéance 2026-T4, avec `D-TRUST-10`) : borner l'attente
+du verrou (`lock_timeout` local — théorique avec `DB_POOL_MAX=5` constaté en
+production) ; séparer le helper de neutralisation prompt du helper
+d'appariement d'énuméré (`drapeauxAnamnese.radioFiltre` — aucun libellé
+actuel n'est affecté, vérifié).
+
 L'exigence 7 de `G-TRUST-04` se ferme aux termes de [[D-085]] §4 : revue
 jouée, constats triés — il ne reste au gate que l'exigence 1, datée
 (2026-09-01, [[D-080]]).

@@ -129,8 +129,9 @@ async function traiterDemande(
       return reponseIndifferenciee();
     }
 
-    // Cadence bornée EN BASE, pas en mémoire de processus : en serverless
-    // plusieurs instances répondent, et un compteur local ne borne rien.
+    // Cadence bornée EN BASE, pas en mémoire de processus : plusieurs
+    // conteneurs peuvent répondre (Scalingo scale horizontalement), et un
+    // compteur local ne bornerait rien.
     //
     // Comptage et création partagent une TRANSACTION sous verrou consultatif
     // par patient (revue de sécurité du 2026-08-22, constat M) : séparés, des
@@ -139,7 +140,12 @@ async function traiterDemande(
     // verrou `pg_advisory_xact_lock` se relâche seul au COMMIT/ROLLBACK ; un
     // échec de la transaction ne crée rien et n'envoie rien — fail-closed.
     const jeton = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${patient.idPatient}, 74))`;
+      // Forme à DEUX arguments : la classe 74 sépare cet espace de clés de
+      // celui, mono-clé, des imports (`hashtext($1)` nu dans importNabm /
+      // importCiqual) — et `hashtext` est la fonction que ces imports ont
+      // déjà éprouvée sur cette base (revue adversariale, constats M1/L6 ;
+      // résolution constatée en one-off le 2026-08-22).
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(74, hashtext(${patient.idPatient}))`;
       const demandesRecentes = await tx.portailMagicLink.count({
         where: {
           idPatient: patient.idPatient,

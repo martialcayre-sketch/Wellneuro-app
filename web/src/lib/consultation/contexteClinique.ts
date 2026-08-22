@@ -24,12 +24,23 @@ function neutraliser(s: string): string {
   return s
     .replace(/</g, '‹')
     .replace(/>/g, '›')
-    .replace(/\s*[\r\n]+\s*/g, ' — ');
+    // Tous les séparateurs de ligne, pas seulement CR/LF : U+2028 (LS),
+    // U+2029 (PS), U+0085 (NEL) et U+000B (VT) sont traités comme des sauts
+    // de ligne par certains rendus — les laisser passer rouvrirait
+    // l'injection de section (revue adversariale, constat L1).
+    .replace(/\s*[\r\n\u000B\u0085\u2028\u2029]+\s*/g, ' — ');
+}
+
+// Troncature par POINTS DE CODE, pas par unités UTF-16 : un `slice` nu peut
+// couper un émoji en deux et laisser un surrogate orphelin que l'appel API
+// rejette (revue adversariale, constat L4).
+function tronquer(s: string, max: number): string {
+  return [...s].slice(0, max).join('');
 }
 
 // Chaîne non vide, tronquée par sécurité, neutralisée pour le prompt.
 export function texte(v: unknown, max = 2000): string {
-  return typeof v === 'string' && v.trim() ? neutraliser(v.trim().slice(0, max)) : '';
+  return typeof v === 'string' && v.trim() ? neutraliser(tronquer(v.trim(), max)) : '';
 }
 
 // Liste de libellés (checkbox-multi) — les valeurs stockées viennent des
@@ -51,7 +62,7 @@ function entrees(v: unknown, max = 20): Array<Record<string, string>> {
     const rec = asRecord(brut);
     const entree: Record<string, string> = {};
     for (const [k, val] of Object.entries(rec)) {
-      if (typeof val === 'string' && val.trim()) entree[k] = neutraliser(val.trim().slice(0, 500));
+      if (typeof val === 'string' && val.trim()) entree[k] = neutraliser(tronquer(val.trim(), 500));
     }
     if (Object.keys(entree).length) out.push(entree);
   }

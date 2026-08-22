@@ -55,8 +55,10 @@ cette base qui reçoit les données.
 | 6 | Réponse aux incidents | ✅ **Réglée le 2026-08-22** (arbitrage [[D-085]] §3, dernier livrable — le runbook Scalingo — livré le jour même ; procédure écrite et exercée sur table le 2026-07-22) | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe et a été exercée** (`docs/PROCEDURE_VIOLATION_DONNEES.md` ; exercice sur table #281, scénario fictif Michel Dogné, fiche 2026-EX1, constats EX-1/EX-2/EX-3, §8 réécrit). **Arbitrages du 2026-08-22** ([[D-085]]) : la confirmation par un conseil qualifié **sort du gate** (dette `D-TRUST-10`, échéance 2026-T4) ; le **registre physique des violations est ouvert** ce jour, tenu hors dépôt par le responsable (EX-3 soldé). ~~Reste un livrable commandé : le runbook réécrit pour Scalingo~~ — **livré le 2026-08-22** : `docs/RUNBOOK.md` réécrit pour l'ère Scalingo (one-off, `env-get`/piège `env-set`, tunnel, rollback recadré [[D-080]]/[[D-087]], incidents plateforme/OAuth/base, révocation recalée post-purge). **L'exigence est réglée aux termes mêmes de [[D-085]] §3** |
 | 7 | Tests de sécurité documentés | ✅ **Réglée le 2026-08-22** (revue jouée + constats triés et corrigés, aux termes de [[D-085]] §4) | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Revue Codex jouée le 2026-08-22** (pilotée par le responsable — sa nature est dite : revue automatisée par un second modèle, pas un test d'intrusion humain externe) : **0 H, 2 M, 1 L, tous corrigés le jour même** — plafond des liens magiques rendu atomique (verrou par patient), anti-injection de prompt des champs libres (neutralisation + délimitation, consigne `synthese-v28`), envoi SMTP sorti du chemin temporellement mesuré. Périmètre négatif consigné : aucun contournement réaliste de l'auth `@wellneuro.fr`, des sessions patient, de l'usage unique des liens, de l'isolation, du SQL, des appels sortants ni des redirections OAuth. Détail : fragment `2026-08-22-revue-codex-triage-durcissements` |
 
-Aucune ligne n'est ✅. Le gate ne peut donc pas être levé par un arbitrage
-partiel : c'est un ET, pas un OU.
+~~Aucune ligne n'est ✅.~~ *(Constat du 2026-08-21, dépassé le jour suivant :
+les lignes 5, 6 et 7 sont ✅ et la 3 sans objet — le tableau ci-dessus fait
+foi, les notes datées ci-dessous portent les preuves.)* Le gate ne peut pas
+être levé par un arbitrage partiel : c'est un ET, pas un OU.
 
 > **Revue reprise le 2026-08-22, après le cutover.** L'état passe de « une ❌,
 > six partielles » (vrai à la date de `D-078`, et la section de cette décision
@@ -66,7 +68,11 @@ partiel : c'est un ET, pas un OU.
 > et datés : annexe HDS + décommissionnement du 2026-09-01 (ligne 1), purge
 > des colonnes dormantes + révocation (lignes 2/4), test multi-praticien
 > (ligne 3), conseil qualifié + registre physique + runbook Scalingo
-> (ligne 6), pentest externe (ligne 7).
+> (ligne 6), ~~pentest externe~~ revue de sécurité (ligne 7 — l'arbitrage
+> [[D-085]] §4, rendu quelques heures après cette note, a substitué la revue
+> Codex au pentest ; elle a été jouée et triée le jour même). *(« Sept
+> partielles, zéro ✅ » décrit le matin du 2026-08-22 — l'exécution du cap,
+> plus bas, l'a dépassé le jour même.)*
 
 > **Arbitrages du responsable, même jour** ([[D-085]]) : la **ligne 5 est ✅**
 > (preuve + arbitrage), la **ligne 3 est sans objet** (mono-praticien,

@@ -315,6 +315,9 @@ function buildBlocOrientation(orientation: ResultatOrientation | null): string {
   ].join('\n');
 }
 
+// Gardée par `enveloppePatient.guard.test.ts` (revue adversariale du
+// 2026-08-22, constat M4) — en TEXTE, comme les gardes voisins : un
+// route.ts App Router ne peut exporter que ses handlers.
 function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrientation = ''): string {
   const filtered = reponses.map(r => {
     // Passation dont le résultat enregistré n'est pas une mesure (registre
