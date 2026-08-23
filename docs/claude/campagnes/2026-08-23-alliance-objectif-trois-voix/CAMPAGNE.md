@@ -103,8 +103,11 @@ au statut de testeur ; sa levée est une décision propre, préparée au LOT-06.
 - **Clôture de [[D-093]] possédée par 6.0-B** (LOT-06) ; doctrine-executable
   LOT-05 couvre les gates de population sans refermer ni élargir le
   périmètre.
-- Deux migrations `release-db` en vol : celle de doctrine (schéma de claim,
-  chemin critique) passe **devant** ; `propositions_objectif` ensuite.
+- **Plus aucune contention `release-db` avec doctrine-executable** : depuis
+  [[D-096]] (2026-08-23), cette campagne n'a **plus de migration** — celle des
+  axes du claim est transférée à « Curation signée ». La contrainte
+  d'ordonnancement écrite à l'ouverture de 6.0-B est donc **caduque**, et
+  notre migration est passée seule (appliquée et constatée le 2026-08-23).
 - Deux sessions sur la copie principale : vérifier la branche avant chaque
   commit ; les `D-xxx` se réservent dans `main`, séquentiellement.
 
@@ -144,8 +147,12 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 - [[D-093]] ouverte (fenêtre close le 2026-10-04) — les premiers objectifs
   rédigés à la main sont les cas de référence du moteur ; la campagne ne les
   attend pas pour démarrer, mais le LOT-06 ne se ferme pas sans eux.
-- `doctrine-executable` LOT-02 (migration claim) devant nous dans
-  `release-db`.
+- ~~`doctrine-executable` LOT-02 devant nous dans `release-db`~~ — **levée
+  par [[D-096]]** : cette campagne n'a plus de migration.
+- LOT-01 **appliqué en production et constaté par conteneur** le 2026-08-23
+  (trois tables vides, RLS deny-all, FK RESTRICT, six CHECK, taxonomie
+  `geste` à deux valeurs, `source_proposition_id` nullable sans DEFAULT et
+  nulle sur toutes les lignes).
 
 ## Artefacts de préparation
 
