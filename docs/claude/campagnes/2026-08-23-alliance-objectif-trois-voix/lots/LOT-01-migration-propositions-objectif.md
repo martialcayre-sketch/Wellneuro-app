@@ -9,9 +9,9 @@ dépend_de: "LOT-00"
 
 ## But
 
-Créer la table `propositions_objectif` (et, si le LOT-00 l'a arbitré ainsi,
-élargir le CHECK de `ratifications_objectif` pour le verbe « le dire
-autrement ») — **seule dans sa PR**, sans aucun code qui la consomme.
+Créer la table `propositions_objectif` **et** la table d'événement du
+« dire autrement » (arbitrage `D-094` : table propre, aucun CHECK existant
+élargi) — **seules dans leur PR**, sans aucun code qui les consomme.
 
 ## Résultat observable
 

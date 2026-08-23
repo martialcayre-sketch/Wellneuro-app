@@ -4,6 +4,78 @@
 
 ## Décisions actives
 
+### D-094 — La machine cite, elle n'invente pas : le régime de la proposition d'objectif
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-08-23)
+- Domaine : doctrine produit — campagne Alliance 6.0-B (l'objectif à trois
+  voix), proposition d'objectif négocié
+- Fonde : la campagne `2026-08-23-alliance-objectif-trois-voix` (LOT-00)
+
+**Contexte.** La campagne 6.0-A a livré le dossier à deux voix : l'objectif
+négocié se rédige au cockpit (`objectifs_negocies`, append-only), le patient
+le ratifie ou le conteste au portail (`ratifications_objectif`). `D-093` a
+constaté qu'aucun objectif n'existe encore en production — sans objectif,
+rien à ratifier. La campagne 6.0-B fait de Wellneuro une **force de
+proposition** sur cet objectif, et la présente décision en fixe le régime
+avant qu'aucun code n'existe. Fait de périmètre : tous les patients actuels
+sont des bêta-testeurs réels et informés (Wellneuro leur a été présenté
+comme en phase de test) — la surface s'ouvre à tous les dossiers courants,
+sans lever `D-093`, dont la raison (classement non signé) est étrangère au
+statut de testeur.
+
+**Décision — le principe.** Une proposition d'objectif est un **assemblage
+de fragments qui portent chacun leur provenance**. La machine ne rédige
+jamais un texte d'objectif : elle cite. Un fragment sans source est
+**inconstructible** — c'est un invariant de type, pas une validation. Le
+champ `enoncePatient` reste inviolable : il ne se pré-remplit que par
+**citation verbatim** de ce que le patient a écrit, marquée comme citation
+avec sa source.
+
+**Décision — les cinq arbitrages.**
+
+1. **Sources admissibles d'un fragment**, liste fermée à trois entrées :
+   les mots écrits du patient à l'anamnèse (`motif_principal`,
+   `objectif_prioritaire`, `attentes` — verbatim, jamais paraphrasés) ; la
+   restitution d'instrument certifié (plainte dominante `Q_MOD_03`, bande
+   restituée) ; les candidats signés de la chaîne C1 avec leurs textes
+   `LIMITATION_*` et le SHA du périmètre signé. Toute extension de cette
+   liste est une décision `D-xxx` nouvelle.
+2. **« Le dire autrement » est une table d'événement propre**, pas un
+   élargissement du CHECK de `ratifications_objectif` : un amendement porte
+   un texte, une ratification n'en porte pas — les fusionner affaiblirait
+   les deux objets. Même régime que la ratification pour le reste :
+   append-only, écrivain unique au portail, version exacte référencée,
+   jamais compté ni noté.
+3. **Au plus TROIS propositions simultanées**, affichées dans l'ordre des
+   candidats C1 mais **sans numérotation ni mise en avant de la première** :
+   l'ordre des candidats n'est couvert par aucune ligne signée (`D-093`), il
+   ne doit pas se lire comme un classement. La levée de cette neutralité
+   suivra la signature du classement, pas l'inverse.
+4. **Déterministe d'abord.** Le moteur de proposition (LOT-02) n'emploie
+   aucun LLM : assemblage pur, reproductible, caduc par hash des données
+   sources. Un assemblage LLM éventuel sera une extension ultérieure, sur le
+   modèle éprouvé de la synthèse (`Brouillon_Moteur`, invisible du patient
+   avant reprise praticien), et exigera sa propre décision.
+5. **Le module de proposition est DISTINCT du module objectif.** La garde G6
+   (aucun import du moteur clinique dans le module objectif) reste intacte ;
+   le module de proposition reçoit plainte dominante et candidats **en
+   entrée** (sortie du cockpit), ne recalcule rien, n'importe pas
+   `clinical-engine/`, et n'écrit jamais `objectifs_negocies` ni
+   `ratifications_objectif` (garde G7). La reprise d'une proposition passe
+   par la route praticien existante, enrichie du seul champ
+   `sourcePropositionId`.
+
+**Gouvernance du périmètre.** Drapeau neuf `WN_OBJECTIF_PROPOSE` (éteint à
+la livraison, pose en production = geste du responsable) ; interrupteur de
+repli `WN_OBJECTIF_PROPOSE_PATIENTS` (liste d'identifiants ; vide = tous les
+dossiers) — un mécanisme de réversibilité, pas un périmètre par défaut.
+
+**Ce que cette décision n'autorise pas.** Générer ou paraphraser la parole
+d'un patient ; remettre quoi que ce soit au patient sans reprise praticien ;
+modifier le classement, les textes `LIMITATION_*` ou `priorityRulesV1` ;
+lever `D-093` ; compter, moyenner ou noter une parole (`DC-19`, `DC-24`).
+
 ### D-093 — Les recommandations élargies s'ouvrent en périmètre RESTREINT et OBSERVÉ, pas d'un coup
 
 - Date : 2026-08-23
