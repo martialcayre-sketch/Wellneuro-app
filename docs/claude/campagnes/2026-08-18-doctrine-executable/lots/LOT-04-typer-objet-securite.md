@@ -126,5 +126,11 @@ En aval : LOT-05 branche son second producteur sur l'objet posé ici.
 - [x] L'inhibition mord : un candidat est **retiré**, pas affiché à côté.
 - [x] Aucun champ de certitude sur l'objet ; garde structurelle vue rouge.
 - [x] Banc d'abstention mis à jour, jamais contourné.
-- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-099` + `changelog.d/` posés.
+- [x] T3 joué (Vitest 5529, bancs de certification 402, dérive schéma↔migrations
+      *No difference detected*, contrats SQL) ; segment E2E renvoyé au CI sur
+      blocage WebKit `D-049`, constaté deux fois sur deux cas DIFFÉRENTS.
+- [x] Revue `wn-reviewer` : GO sous réserve, deux correctifs P1 appliqués
+      (écran muet, phrase affirmant une lecture non faite), trois inexactitudes
+      corrigées, quatre bancs ajoutés, trois constats nommés en réserves 5-7.
+- [ ] Passe Codex (bloc de paramètres préparé, geste utilisateur).
 - [x] `DC-12` et `DC-23` basculés dans la constitution.
