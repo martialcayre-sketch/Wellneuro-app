@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lectureAsOf';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { construireChaineC1, type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
@@ -13,6 +14,7 @@ import {
   isRuntimeMilestone,
   proposeRuntimeEpisode,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
+import { lireEffetsIndesirables } from '@/lib/clinical-engine/effetsIndesirablesPrisma';
 import {
   messageRefusPreconditions,
   type PreconditionsT0,
@@ -136,9 +138,9 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
       orderBy: [{ dateReponse: 'asc' }, { idReponse: 'asc' }],
     }),
     prisma.consultation.findFirst({
-      where: { idPatient, statut: 'validee' },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: [{ dateValidation: 'desc' }, { createdAt: 'desc' }],
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
 
@@ -350,6 +352,12 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       // priorité est un geste praticien distinct, hors périmètre du LOT-04.
       selectionPraticien: null,
       signauxAlerte: inputs.signauxAlerte,
+      etatPopulation: inputs.etatPopulation,
+      // Lus par la fonction PARTAGÉE avec `verifierChaineC1` ([[D-101]]) : ce
+      // POST émet la carte que le vérificateur recalculera, et deux lectures
+      // divergentes rendraient 409 sur une carte que cette route vient
+      // d'écrire. Drapeau éteint ⇒ `undefined`, aucune requête neuve.
+      effetsIndesirables: await lireEffetsIndesirables(idPatient),
     });
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
     // praticien a été vérifiée — un patient d'un autre praticien est sorti en

@@ -160,6 +160,15 @@ le LOT-05 de « Doctrine exécutable ». Indication, conditions d'entrée, dose,
 durée, population, contre-indications, interactions, rôle du praticien :
 sans porteur.*
 
+***Constat du LOT-05 ([[D-101]]), qui déplace la dette plutôt qu'il ne la
+solde** : le véhicule prévu n'en était pas un. `neCouvrePas` porte 95 entrées à
+`null` sur des **documents sources** d'un registre d'audit, et **aucun chemin
+d'exécution ne relie un candidat classé à une entrée de ce registre** — les
+seuls consommateurs sont un script de vérification, qui ne lit même pas ce
+champ, et un commentaire. Le LOT-05 a livré le MÉCANISME de gate et son aveu de
+non-curation ; les exclusions elles-mêmes restent **sans porteur**, comme les
+huit autres champs, et il leur faut d'abord un objet d'intervention exécutable.*
+
 **DC-12 — Un claim de sécurité prime sur tous les autres et peut inhiber une
 proposition** issue de plusieurs claims favorables. Red flag médical,
 contre-indication, interaction, grossesse, pathologie, médicament, symptôme
@@ -458,9 +467,28 @@ jamais de motif vide. Quatre bancs épinglent le motif jusqu'à l'écran
 (`ClinicalRuntimeSection.test.tsx:401-413`,
 `PropositionBilanPanel.test.tsx:251-261`, `TrajectoirePanel.test.tsx:439-470`,
 `biology-library/statuts.test.ts:269`). **Couverture partielle des cinq
-causes** : « traitement incompatible » et « population non couverte » n'ont
-aucun motif — portés par le LOT-05 de « Doctrine exécutable » ; `ABST-SEC-01`
-reste inatteignable faute de producteur (LOT-04).*
+causes** : « traitement incompatible » n'a toujours aucun motif.*
+
+***Réexaminée au LOT-05 ([[D-101]]), et la couverture progresse de deux
+causes** — mais pas de la façon prévue :*
+
+- *`ABST-SEC-01` **n'est plus inatteignable** : [[D-099]] lui a donné son
+  producteur, et le LOT-05 lui en ajoute un second (`SAF-EI-01`, non signé).*
+- *« **Population non couverte** » reçoit son motif — et il est double, ce qui
+  n'était pas anticipé. La gate rend « écarté — exclusion déclarée » quand elle
+  mord, et « **proposé — exclusions non curées** » quand elle ne sait pas.
+  C'est ce SECOND sens qui tient réellement `DC-35` aujourd'hui : la table de
+  curation étant vide, il est le seul servi, et sans lui un axe dont personne
+  n'a vérifié la population s'afficherait comme un axe vérifié.*
+- ***Le motif de la gate n'est PAS une donnée signée**, contrairement à ceux de
+  l'abstention : il vit dans `gatePopulationV1.ts`, hors de tout périmètre
+  haché. C'est assumé — il déclare une ignorance, pas un contenu clinique — et
+  ce sera à revoir le jour où une exclusion réelle y sera écrite.*
+- ***Le motif atteint l'écran, et il s'en est fallu d'une ligne** :
+  `buildDecisionCard` n'agrège pas les limitations des candidats dans celles de
+  la carte, et `DecisionSummaryCard` ne rendait que ces dernières. Corrigé et
+  gardé (`DecisionSummaryCard.test.tsx`, banc vu rouge) — même classe de défaut
+  que celle trouvée en revue du LOT-04.*
 
 ---
 
@@ -549,26 +577,64 @@ quatre questions du catalogue gelé de check-in depuis le **2026-07-18**
 symptôme temporellement associé à une intervention interdit d'augmenter ou de
 poursuivre automatiquement : requalification, puis validation.
 *Proposition — **fait manqué par l'audit** : la capture existe depuis le
-**2026-07-16** — `TrustAdverseEffectReport` (`schema.prisma:838-866`), route
+**2026-07-16** — `TrustAdverseEffectReport`, route
 `POST /api/portail/trust/signalement`, règle versionnée
 `orienterEffetIndesirable` (`trust/securite.ts:37-55`, sévérité déclarée,
 action prise, produits concomitants). Le constat juste n'est donc pas
-« aucune capture » mais **capture complète, aucune interruption**. Porté par le
-LOT-05 de « Doctrine exécutable » (second producteur de l'objet de sécurité).*
+« aucune capture » mais **capture complète, aucune interruption**.*
+
+***Mécanisme livré, NON ARMÉ ([[D-101]], LOT-05).** Le LOT-05 a trouvé que la
+règle n'était pas « non appliquée » mais **inapplicable** : `produit_libelle`
+est du texte libre, `debut_prise` et `debut_symptomes` des `TEXT` que rien ne
+contraint — aucune requête ne pouvait établir l'association temporelle que la
+règle exige. Une migration l'ajoute (`protocol_draft_id`, `debut_prise_le`,
+`debut_symptomes_le`, tous nullables ; les champs libres restent), le patient
+DÉCLARE le rattachement au portail et le serveur résout le protocole
+(`resolveProtocoleDiffuse`) — aucune ressemblance de libellé n'est calculée.
+Le second producteur de l'objet de sécurité existe
+(`clinical-engine/safetyFindings.ts`, règle `SAF-EI-01`), avec son banc
+(`safetyEffetIndesirable.guard.test.ts`, 19 cas). **DEUX CONDITIONS RESTENT, ET
+DANS CET ORDRE** : poser `WN_EI_INTERRUPTION` après que la migration est
+appliquée **et constatée** ([[D-087]]) — le drapeau ouvre la CAPTURE —, puis
+signer `SAFETY_EI_METADATA` — la signature ouvre l'INTERRUPTION. Les inverser
+inhiberait sur une colonne que personne n'a encore remplie. La règle ne bascule
+donc pas : elle n'a mordu sur aucun dossier.*
 
 **DC-43 — Les populations particulières filtrent avant le classement, pas
 après.** Grossesse, allaitement, enfant, personne âgée, pathologie rénale ou
 hépatique, polymédication, chirurgie digestive, allergie ou intolérance,
 végétalisme. Un candidat écarté par une gate ne doit jamais avoir été classé.
-*Proposition — aucun filtre d'intervention n'existe : `grossesse` et
-`allaitement` n'apparaissent que dans `trust/contenus/registre.ts` (contenus
-d'information), et `anamnese.ts:101` porte « Grossesse / post-partum » comme
-**facteur déclenchant** — un antécédent, pas un état courant qualifiant une
-population. Porté par le LOT-05 de « Doctrine exécutable », sur le modèle
-**général déclaré + exclusions déclarées** arrêté par [[D-095]] : la gate
-croise les exclusions de l'**intervention** (`neCouvrePas`, 95 entrées, `null`
-sur les 95) avec l'état du patient, et une intervention non curée se propose
-**en le disant** (`DC-35`).*
+*Proposition — **une moitié tenue, l'autre sans sujet ([[D-101]], LOT-05).***
+
+***Ce qui est tenu et gardé** : la PLACE du filtre. `gatePopulationV1.ts`
+s'applique dans `chaineC1.ts` entre `evaluerPriorites` et le `sort`, et le banc
+assertionne qu'**aucun candidat écarté ne porte de rang** — mutation jouée,
+banc vu rouge. L'état de population du patient est un objet LU
+(`consultation/etatPopulation.ts`), distinct du facteur déclenchant : la
+section « État actuel » de l'anamnèse est neuve, et « Grossesse / post-partum »
+reste où il était, en facteur déclenchant. Trois réponses par critère, « Je ne
+sais pas » écrit — `DC-24` tenu à la source, pas seulement à la lecture.*
+
+***Ce qui n'est PAS tenu, et pourquoi la règle ne bascule pas** : aucune
+exclusion n'est déclarée, donc la gate ne mord sur aucun dossier. La descente
+du 2026-08-23 a établi que le véhicule prévu n'en était pas un —
+`neCouvrePas` porte 95 entrées à `null` sur des **documents sources** d'un
+registre d'audit, et **aucun chemin d'exécution ne relie un candidat classé à
+une entrée de ce registre**. Curer aurait produit une donnée que rien ne lit.
+La table de curation est donc livrée **vide et déclarée vide**, non signée, et
+chaque candidat porte le motif « **exclusions non curées** » servi au praticien
+(`DC-35`). La curation reste due, avec un véhicule qui la lise.*
+
+***Trois critères de la règle sont volontairement absents de la section**, et
+le dire vaut mieux que les laisser croire couverts : l'ÂGE (aucune borne n'a de
+provenance — un pivot serait un seuil inventé, `DC-19`), la POLYMÉDICATION (le
+compte existe, le nombre qui qualifie n'a aucune source), l'ALLERGIE /
+INTOLÉRANCE (déjà déclarée par `intolerances_alimentaires` et `allergies`).*
+
+***Arbitrage nommé, non rendu** : ce que fait la gate sur un état INCONNU pour
+un critère exclu. Le module parle plutôt qu'il n'inhibe — écarter sur inconnu
+retirerait des axes à tout dossier antérieur à la section, c'est-à-dire à tous.
+La branche est inatteignable tant que la table est vide.*
 
 **DC-44 — Médicament et complément : contrôle obligatoire.** Toute
 supplémentation proposée vérifie, dans la mesure du connu : médicaments,
@@ -715,6 +781,14 @@ et `contradictionsService.test.ts:584-594` (CI). **Manque le déclencheur** :
 `contradictionsEngine.ts:227` pose `resolution: {statut:'ouverte'}` en dur,
 `escaladee_praticien` n'a aucun producteur en code de production. Porté par le
 LOT-06 de « Doctrine exécutable ».*
+
+***Réexaminée au LOT-05 ([[D-101]]) : le constat ne change pas, et il faut dire
+pourquoi.** Le lot produit bien une escalade de fait — un signalement d'effet
+indésirable ouvert que le patient n'a rattaché à aucun protocole est REMONTÉ au
+praticien en limitation plutôt que tu (`DC-35`), et le module ne devine pas le
+protocole. Mais ce n'est pas un CONFLIT entre sources : c'est une ignorance sur
+une seule déclaration. `escaladee_praticien` reste donc sans producteur, et la
+règle sans son déclencheur. Le LOT-06 garde le sujet.*
 
 **DC-56 — Toute fonctionnalité clinique annonce les claims qu'elle consomme.**
 Par module : claims consommés, claims ignorés volontairement, niveau

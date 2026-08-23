@@ -1,6 +1,6 @@
 ---
 id: "LOT-05"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04 (l'objet de sécurité) — le LOT-02 est transféré hors campagne (D-096)"
 ---
 
@@ -133,16 +133,36 @@ En aval : aucun.
 - Un effet indésirable déclaré bloque la poursuite automatique ; le blocage
   est visible, pas silencieux.
 
-## Critères de done
+## Critères de done — relevé à la clôture (`D-101`)
 
-- [ ] L'état de population du patient est un objet lu, distinct du facteur
-      déclenchant.
-- [ ] `neCouvrePas` curé avec provenance sur les interventions traitées ; les
-      autres déclarent leur non-curation.
-- [ ] La gate s'applique **avant** le classement — prouvé sur l'ordre.
-- [ ] Motif rendu **dans les deux sens** : exclusion déclarée, et exclusions
-      non curées (`DC-35`).
-- [ ] L'effet indésirable déclaré interrompt la logique automatique.
-- [ ] Aucun critère inventé ; chaque seuil a sa provenance.
-- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-xxx` + `changelog.d/`.
-- [ ] `DC-42` et `DC-43` basculés ; `DC-35` et `DC-55` réexaminés.
+- [x] L'état de population du patient est un objet lu, distinct du facteur
+      déclenchant (`consultation/etatPopulation.ts`, section « État actuel » —
+      sept critères ; **trois critères de `DC-43` volontairement absents**, faute
+      de provenance : âge, polymédication, allergie/intolérance déjà déclarée).
+- [ ] ~~`neCouvrePas` curé avec provenance~~ — **abandonné sur mesure, pas
+      reporté par commodité** : `neCouvrePas` porte sur des documents sources
+      d'un registre d'audit, et **aucun chemin d'exécution ne relie un candidat
+      classé à une entrée de ce registre**. Curer aurait produit une donnée que
+      rien ne lit. Arbitrage du praticien du 2026-08-23.
+- [x] Les axes non curés **déclarent leur non-curation** — c'est ce que le lot
+      livre à la place, et c'est le garde central de la fiche.
+- [x] La gate s'applique **avant** le classement. **Prouvé sur l'ordre au sens
+      strict du gardable** : aucun candidat écarté ne porte de rang (mutation
+      jouée, banc vu rouge). La place exacte du filtre — avant ou juste après le
+      `sort` — n'est PAS observable de l'extérieur ; le banc l'écrit.
+- [x] Motif rendu **dans les deux sens**, et il atteint l'écran
+      (`DecisionSummaryCard`, banc vu rouge). Le sens « écarté » est
+      inatteignable en production, table de curation vide.
+- [ ] ~~L'effet indésirable déclaré interrompt la logique automatique~~ —
+      **mécanisme livré, NON ARMÉ**. Migration + capture portail + second
+      producteur `SAF-EI-01` écrits et bancés ; règle **non signée**, drapeau
+      `WN_EI_INTERRUPTION` **neuf et éteint**. Deux gestes restent, dans
+      l'ordre : drapeau après migration constatée, puis signature.
+- [x] Aucun critère inventé ; aucun seuil, aucune borne, aucun âge pivot.
+- [ ] T3, revue `wn-reviewer`, passe Codex — voir la PR du lot.
+- [x] `D-101` + fragment `changelog.d/`.
+- [ ] ~~`DC-42` et `DC-43` basculés~~ — **aucun des deux ne bascule**, et les
+      deux portent désormais un marqueur qui dit précisément ce qui manque.
+      `DC-35` et `DC-55` réexaminées : `DC-35` gagne deux causes sur cinq,
+      `DC-55` reste sans producteur (ce lot ne produit pas de conflit entre
+      sources, seulement une ignorance sur une déclaration).

@@ -1,5 +1,6 @@
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { isCbPropositionEnabled } from './featureFlag';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
@@ -184,13 +185,13 @@ export async function deriverPropositionPourPatient(
     chargerPanels(),
     chargerDocumentes(idPatient),
     chargerReponses(idPatient),
-    // La consultation la plus récente QUI PORTE UNE ANAMNÈSE, et non la plus
-    // récente tout court : une consultation naît sans anamnèse et ne la reçoit
-    // qu'à la validation du patient. Même sélection qu'`orientationService`.
+    // La consultation VALIDÉE la plus récente qui porte une anamnèse —
+    // sélection partagée depuis [[D-101]] (`consultationPorteuse.ts`), la même
+    // que l'orientation, les contradictions, la synthèse et la chaîne C1.
     prisma.consultation.findFirst({
-      where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
     prisma.biologyAnalyte.findMany({
       where: { validationMedicaleRequise: true },

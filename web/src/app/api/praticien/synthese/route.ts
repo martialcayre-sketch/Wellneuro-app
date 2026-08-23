@@ -59,6 +59,7 @@ import {
   vigilancesDiscordancePourSynthese,
 } from '@/lib/clinical/contradictionsService';
 import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from '@/lib/clinical/contradictionsV1';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -980,9 +981,14 @@ export async function POST(req: Request) {
     // ils se calculent même sans anamnèse (voir le bloc suivant).
     let anamnesePourConstats: unknown = null;
     try {
+      // Sélection partagée depuis [[D-101]] (`consultationPorteuse.ts`) : la
+      // consultation VALIDÉE la plus récente qui porte une anamnèse. Ce chemin
+      // alimente `extraireVigilanceDeterministe`, sur lequel s'appuie le rang
+      // `vigilance` de la cotation signée — il ne peut pas lire une autre
+      // consultation que celle que le cockpit lit.
       const consultation = await prisma.consultation.findFirst({
-        where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
-        orderBy: { createdAt: 'desc' },
+        where: whereConsultationPorteuse(idPatient),
+        orderBy: ORDRE_CONSULTATION_PORTEUSE,
       });
       if (consultation) {
         contexteClinique = buildContexteClinique(consultation.ficheSignaletique, consultation.anamnese);

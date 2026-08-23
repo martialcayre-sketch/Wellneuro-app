@@ -4,6 +4,116 @@
 
 ## Décisions actives
 
+### D-101 — La gate de population dit ce qu'elle ignore, l'effet indésirable reçoit son association, et une seule consultation fait foi
+
+- Date : 2026-08-23
+- Statut : accepté (quatre arbitrages du praticien, rendus en session le
+  2026-08-23)
+- Domaine : doctrine clinique exécutable — gate de population, objet de
+  sécurité, anamnèse patient, lecture de consultation
+- Fonde : le LOT-05 de la campagne `2026-08-18-doctrine-executable`
+- Porte sur : `DC-43`, `DC-42`, `DC-35`, `DC-24`, et la lecture de consultation
+  partagée
+
+**Ce que la mesure d'ouverture a trouvé, et qui a changé le lot.** La fiche
+prévoyait de curer les 95 `neCouvrePas` du registre d'interventions puis de
+poser la gate. La descente du 2026-08-23 a montré que **la gate n'avait pas de
+sujet** : le seul objet réellement classé à l'exécution est une **règle de
+priorité** (`chaineC1.ts`, deux règles publiées — des *axes de travail*, pas
+des interventions), et `neCouvrePas` vit sur 95 **documents sources** d'un
+registre d'audit dont les seuls consommateurs sont un script de vérification —
+qui ne lit même pas ce champ — et un commentaire. **Aucun chemin d'exécution ne
+relie un candidat classé à une entrée de ce registre.** Curer aurait produit
+une donnée que rien ne lit.
+
+Sur l'état du patient, la mesure est du même ordre : des **neuf critères** que
+`DC-43` nomme, **aucun** n'était lisible comme état courant. « Grossesse /
+post-partum » n'existe que comme **facteur déclenchant** — un antécédent ;
+les pathologies rénale et hépatique sont absentes des douze domaines
+d'antécédents ; `chirurgies` est un textarea libre, que le fichier lui-même
+déclare inutilisable en déclencheur ; végétalisme et maladie cœliaque
+n'existent nulle part.
+
+**Décision 1 — la gate livre son MÉCANISME et son AVEU, pas sa curation.** La
+gate est posée avant le classement, sur une table de curation **vide et
+déclarée vide** (`gatePopulationV1.ts`, non signée). Aucun candidat n'est
+écarté aujourd'hui, sur aucun dossier ; chacun repart avec le motif
+« **exclusions non curées** », servi au praticien. C'est `DC-35`, et c'est le
+seul rempart entre « ouvert par défaut » et « aveugle par défaut ». La table
+n'entre **pas** dans le périmètre signé de `priorityRulesV1` : elle ne porte
+aucun contenu clinique, elle déclare une ignorance — et l'y faire entrer aurait
+changé `PRIORITY_RULES_SHA256`, donc fermé le verrou, donc retiré **tous** les
+candidats de la production pour y inscrire un tableau vide.
+
+**Décision 2 — l'état de population entre par une section neuve de l'anamnèse
+patient.** Section « État actuel », distincte des facteurs déclenchants et des
+antécédents, **sept critères**, chacun en `radio` à trois réponses — « Je ne
+sais pas » **écrit**. Une case à cocher ne distingue pas « je ne suis pas
+concerné » de « je n'ai pas répondu », et sur une gate de sécurité cette
+confusion est le fail-open que `DC-24` interdit. **Trois critères de `DC-43`
+sont volontairement absents, et il faut le dire** : l'**âge** (aucune borne n'a
+de provenance — poser un pivot serait inventer un seuil, `DC-19`), la
+**polymédication** (le compte existe, le nombre qui qualifie n'a aucune
+source), l'**allergie/intolérance** (déjà déclarée deux champs plus haut ; la
+redemander créerait deux vérités pour un même fait).
+
+**Décision 3 — l'effet indésirable reçoit son association, par migration.**
+`DC-42` exige un symptôme « temporellement associé à une intervention » ; la
+capture existait depuis le 2026-07-16 et elle est complète, mais l'association
+n'y était pas — `produit_libelle` est du texte libre, `debut_prise` et
+`debut_symptomes` sont des `TEXT` que rien ne contraint. La règle n'était pas
+« non appliquée », elle était **inapplicable**. Trois colonnes nullables
+s'ajoutent (`protocol_draft_id`, `debut_prise_le`, `debut_symptomes_le`), les
+deux champs libres **restent**, et le patient **déclare** au portail que le
+produit fait partie de son programme — c'est le serveur qui résout lequel
+(`resolveProtocoleDiffuse`, V1 mono-protocole). Aucune ressemblance de libellé
+n'est calculée : l'association se déclare, elle ne s'infère pas.
+
+**Décision 4 — une seule sélection de consultation fait foi.** `statut:
+'validee'`, triée par `dateValidation`. Deux sélections coexistaient et
+rendaient parfois deux lignes différentes ; la synthèse pouvait nommer un
+signal que le cockpit ne voyait pas, et elle passe par
+`extraireVigilanceDeterministe`, le repli exact sur lequel s'appuie le rang
+`vigilance` de la cotation signée ([[D-099]]). **La condition d'anamnèse est
+conservée par-dessus** : les deux sélections ne visaient pas le même défaut, et
+prendre l'une sans l'autre en rouvrirait un — une consultation validée dont
+l'anamnèse est nulle ferait rendre `[]` à `signauxDeclares`, c'est-à-dire « je
+n'ai pas regardé » servi comme « aucun signal ».
+
+**Ce que la décision ne fait pas, et ce qui n'est pas acté.**
+
+- **`DC-43` ne bascule pas.** La moitié « le filtre est avant le classement »
+  est tenue et gardée ; la moitié « les populations particulières filtrent »
+  ne l'est pas — aucune exclusion n'est déclarée, la gate ne mord sur aucun
+  dossier. La règle reste **proposition**, avec un marqueur qui dit précisément
+  ce qui manque.
+- **`DC-42` ne bascule pas non plus.** La règle d'interruption est écrite et
+  bancée, **non signée**, derrière un drapeau `WN_EI_INTERRUPTION` **neuf et
+  éteint**. Deux gestes restent, et dans cet ordre : poser le drapeau après que
+  la migration est appliquée **et constatée** ([[D-087]]), puis signer la règle.
+  Les inverser inhiberait sur une colonne que personne n'a encore remplie.
+- **Un arbitrage est nommé et non rendu** : ce que fait la gate quand l'état du
+  patient est **inconnu** sur un critère exclu. Le module **parle** plutôt
+  qu'il n'inhibe — écarter sur inconnu retirerait des axes à tout dossier
+  antérieur à la section « État actuel », c'est-à-dire à tous. La branche est
+  **inatteignable** tant que la table est vide ; l'arbitrage se rendra au
+  moment de la curation, avec les exclusions sous les yeux.
+- **La place exacte du filtre n'est pas gardable de l'extérieur**, et le banc
+  l'écrit : déplacer le filtre juste après le `sort` mais avant la numérotation
+  rend un résultat strictement identique (mutation jouée, banc resté vert). Ce
+  qui est réellement gardé est « aucun candidat écarté ne porte de rang » —
+  mutation jouée, banc **vu rouge**.
+
+**Un défaut de rendu trouvé et fermé au passage.** `buildDecisionCard`
+n'agrège **pas** les limitations des candidats dans `decisionCard.limitations`,
+et `DecisionSummaryCard` ne rendait que ces dernières : le motif de la gate
+serait entré dans l'empreinte de la carte, serait arrivé au navigateur, et
+n'aurait été affiché par personne — la classe de défaut exacte que la revue du
+LOT-04 a trouvée sur les motifs d'abstention. Corrigé, et gardé par un banc de
+composant vu rouge.
+
+- Référence : [web/src/lib/clinical/gatePopulationV1.ts](web/src/lib/clinical/gatePopulationV1.ts), [web/src/lib/consultation/etatPopulation.ts](web/src/lib/consultation/etatPopulation.ts), [web/src/lib/consultation/consultationPorteuse.ts](web/src/lib/consultation/consultationPorteuse.ts), [web/src/lib/clinical/safetyEffetIndesirableV1.ts](web/src/lib/clinical/safetyEffetIndesirableV1.ts), [web/prisma/migrations/20260823210000_association_effet_indesirable_intervention/migration.sql](web/prisma/migrations/20260823210000_association_effet_indesirable_intervention/migration.sql), [[D-087]], [[D-093]], [[D-095]], [[D-099]]
+
 ### D-100 — Une citation s'ancre sur du texte, et le classificateur E2E se taisait pour deux raisons, pas une
 
 - Date : 2026-08-23

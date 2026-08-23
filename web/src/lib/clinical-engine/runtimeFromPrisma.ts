@@ -2,6 +2,7 @@ import { JOURS_JALON } from '../equilibre/constants';
 import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
+import { lireEtatPopulation, type EtatPopulation } from '../consultation/etatPopulation';
 import { signauxDeclares } from './safetyFindings';
 import type {
   PatientContext,
@@ -43,6 +44,21 @@ export type RuntimeInputs = {
    * de sécurité lu d'un côté seulement produirait exactement cela.
    */
   signauxAlerte: string[];
+  /**
+   * L'état de population déclaré par le patient ([[D-101]], LOT-05).
+   *
+   * LU ICI POUR LA MÊME RAISON QUE `signauxAlerte`, et elle vaut d'être répétée
+   * plutôt que déduite : le cockpit et `verifierChaineC1` traversent tous deux
+   * cette fonction, et eux seuls. Un état lu d'un côté seulement ferait
+   * diverger la gate de population, donc l'ordre des candidats, donc l'empreinte
+   * de la carte — c'est-à-dire un 409 sur une carte honnête.
+   *
+   * JAMAIS OPTIONNEL, ET JAMAIS PARTIEL : `lireEtatPopulation` rend toujours
+   * les sept critères, `inconnu` compris. Un état absent du type laisserait un
+   * appelant construire la chaîne sans lui, et « je n'ai pas regardé »
+   * redeviendrait « rien à signaler » (`DC-24`).
+   */
+  etatPopulation: EtatPopulation;
 };
 
 export type RuntimeEpisodeProposal = {
@@ -100,7 +116,13 @@ export function adaptRuntimeInputs(
     constraints: [],
   };
 
-  return { patient, responses, patientContext, signauxAlerte: signauxDeclares(anamnese) };
+  return {
+    patient,
+    responses,
+    patientContext,
+    signauxAlerte: signauxDeclares(anamnese),
+    etatPopulation: lireEtatPopulation(anamnese),
+  };
 }
 
 export function proposeRuntimeEpisode(

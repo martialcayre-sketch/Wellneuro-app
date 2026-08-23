@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { proposeRuntimeEpisode } from '@/lib/clinical-engine/runtimeFromPrisma';
+import { lireEtatPopulation } from '@/lib/consultation/etatPopulation';
 import { resoudreJalonDu } from './jalonDu';
 import type { Trajectoire } from './trajectoire';
 
@@ -151,6 +152,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
         }],
         patientContext: { mainReason: null, priorityGoal: null, expectations: [], constraints: [] },
         signauxAlerte: [],
+        etatPopulation: lireEtatPopulation(null),
       },
       'J21',
       confirmedAt,
@@ -172,6 +174,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
         }],
         patientContext: { mainReason: null, priorityGoal: null, expectations: [], constraints: [] },
         signauxAlerte: [],
+        etatPopulation: lireEtatPopulation(null),
       },
       'T0',
     );

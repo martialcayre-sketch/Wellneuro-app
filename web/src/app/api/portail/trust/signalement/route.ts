@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffetIndesirableV1';
+import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { orienterEffetIndesirable } from '@/lib/trust/securite';
 import { notifierPraticienSignalement } from '@/lib/trust/notification';
@@ -24,6 +26,22 @@ type PayloadEffetIndesirable = {
   produitsConcomitants?: string;
   actionPrise?: string;
   severiteDeclaree?: string;
+  /**
+   * Le patient déclare-t-il que ce produit fait partie du programme qui lui a
+   * été transmis ? ([[D-101]], `DC-42`)
+   *
+   * C'EST UNE DÉCLARATION, PAS UNE DÉSIGNATION. Le patient dit « oui, ça fait
+   * partie de mon programme » ; c'est le SERVEUR qui résout de quel protocole
+   * il s'agit, par `resolveProtocoleDiffuse` — la V1 est mono-protocole, il n'y
+   * a rien à choisir. Faire pointer le patient sur un identifiant lui
+   * demanderait de connaître une clé technique, et faire deviner à la machine
+   * quelle LIGNE du protocole correspond au produit serait la déduction que le
+   * lot interdit.
+   */
+  rattacheAuProgramme?: string;
+  /** Dates TYPÉES, à côté des deux champs libres qui restent. */
+  debutPriseLe?: string;
+  debutSymptomesLe?: string;
 };
 type PayloadIncident = {
   categorie: 'incident_confidentialite';
@@ -61,6 +79,24 @@ const TYPES_DROIT: TypeDemandeDroit[] = [
 const tronque = (valeur: string | undefined, max: number): string =>
   (valeur ?? '').trim().slice(0, max);
 
+/**
+ * Une date déclarée par le patient, ou `null` — jamais une date approchée.
+ *
+ * `null` DIT « pas de date », et c'est la seule chose honnête à faire d'une
+ * saisie qu'on ne sait pas lire : deviner un format, ou retomber sur la date du
+ * jour, poserait un fait que le patient n'a pas déclaré. Une date future est
+ * refusée pour la même raison — un symptôme qui n'a pas encore eu lieu n'est
+ * pas un symptôme déclaré.
+ */
+function dateDeclaree(valeur: string | undefined): Date | null {
+  const brut = (valeur ?? '').trim();
+  if (!brut) return null;
+  const date = new Date(brut);
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getTime() > Date.now()) return null;
+  return date;
+}
+
 // POST /api/portail/trust/signalement — trois parcours structurés (jamais de
 // texte libre clinique ouvert) : effet indésirable suspecté (orientation par
 // règle déterministe versionnée, sans déduction de causalité), incident de
@@ -90,12 +126,55 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           { status: 400 },
         );
       }
+      // L'ASSOCIATION À UNE INTERVENTION ([[D-101]], `DC-42`), et rien de ce
+      // bloc n'existe tant que le drapeau est absent : les trois colonnes
+      // arrivent par une migration que le déploiement du code précède
+      // ([[D-087]]), et les écrire plus tôt ferait échouer le dépôt d'un
+      // signalement — c'est-à-dire fermer au patient la surface même qui sert à
+      // signaler un effet indésirable.
+      let association: {
+        protocolDraftId?: string | null;
+        debutPriseLe?: Date | null;
+        debutSymptomesLe?: Date | null;
+      } = {};
+      if (associationEffetIndesirableDisponible()) {
+        const debutPriseLe = dateDeclaree(payload.debutPriseLe);
+        const debutSymptomesLe = dateDeclaree(payload.debutSymptomesLe);
+        // Le même invariant que le CHECK SQL, refusé ICI avec un message
+        // français : laisser la base rejeter aurait rendu une erreur technique
+        // à un patient en train de signaler un effet indésirable.
+        if (debutPriseLe && debutSymptomesLe && debutSymptomesLe < debutPriseLe) {
+          return NextResponse.json(
+            {
+              ok: false,
+              reason: 'invalid_payload',
+              error: 'La date d’apparition des symptômes ne peut pas précéder le début de la prise.',
+            },
+            { status: 400 },
+          );
+        }
+        // `resolveProtocoleDiffuse` rend `null` quand aucun protocole n'est
+        // diffusé : le patient a beau déclarer « oui », il n'y a rien à
+        // rattacher, et inventer un identifiant serait pire que l'absence.
+        const diffuse = payload.rattacheAuProgramme === 'oui'
+          ? await resolveProtocoleDiffuse(patient.idPatient)
+          : null;
+        association = {
+          protocolDraftId: diffuse?.protocolDraftId ?? null,
+          debutPriseLe,
+          debutSymptomesLe,
+        };
+      }
       const orientation = orienterEffetIndesirable(severite);
       await prisma.trustAdverseEffectReport.create({
         data: {
           idPatient: patient.idPatient,
           produitLibelle,
           doseDeclaree: tronque(payload.doseDeclaree, 200) || null,
+          // Les deux champs LIBRES restent, et ils ne sont pas redondants : le
+          // patient peut écrire « il y a trois semaines environ », que rien ne
+          // convertit en date. Les colonnes typées ajoutent, elles ne
+          // remplacent pas.
           debutPrise: tronque(payload.debutPrise, 100) || null,
           symptomes,
           debutSymptomes: tronque(payload.debutSymptomes, 100) || null,
@@ -105,6 +184,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
           orientation: orientation.orientation,
           regleId: orientation.regleId,
           regleVersion: orientation.regleVersion,
+          ...association,
         },
       });
       void notifierPraticienSignalement(patient.praticienEmail);

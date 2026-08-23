@@ -17,6 +17,7 @@ import {
   PRIORITY_RULES_V1,
   tablePrioritesSignee,
 } from '@/lib/clinical/priorityRulesV1';
+import { EXCLUSIONS_INTERVENTIONS_V1 } from '@/lib/clinical/gatePopulationV1';
 
 // CAS DE RÉFÉRENCE DU LOT-04 ([[D-054]]), mis à jour le 2026-08-15 ([[D-061]]).
 // Ce banc éprouve la chaîne dans les DEUX positions du verrou. LES RÔLES ONT
@@ -76,6 +77,8 @@ function chaine(options: {
   objectif?: string | null;
   /** Signaux d'alerte déclarés à l'anamnèse ([[D-099]]). */
   signaux?: string[];
+  /** Champs bruts de la section « État actuel » ([[D-101]]). */
+  etat?: Record<string, string>;
 } = {}) {
   const lignes = reponsesRuntimeRideauT0(
     DATE_RIDEAU_FIXTURE,
@@ -89,6 +92,7 @@ function chaine(options: {
         motif_principal: 'Ballonnements et prise de poids depuis un an.',
         ...(options.objectif === null ? {} : { objectif_prioritaire: options.objectif ?? 'Retrouver un confort digestif' }),
         ...(options.signaux ? { signaux_alerte: options.signaux } : {}),
+        ...(options.etat ?? {}),
       },
     },
   );
@@ -110,6 +114,7 @@ function chaine(options: {
     responses: inputs.responses,
     selectionPraticien: null,
     signauxAlerte: inputs.signauxAlerte,
+    etatPopulation: inputs.etatPopulation,
   });
 }
 
@@ -120,7 +125,11 @@ describe('chaîne C1 — table NON signée (verrou simulé fermé)', () => {
     // LA REVUE NE PORTE PLUS QUE LA RÈGLE DE SÉCURITÉ ([[D-099]]) : les deux
     // verrous sont indépendants, et désigner la table des PRIORITÉS ne désigne
     // pas la cotation des signaux.
-    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01']);
+    // DEUX règles jointes depuis [[D-101]] : la cotation d'anamnèse et la règle
+    // d'interruption sur effet indésirable, cette dernière en `candidate` tant
+    // qu'elle n'est pas signée. Le verrou des PRIORITÉS reste ce qui est gardé
+    // ici, et aucune règle `PRIO-` n'apparaît.
+    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01', 'SAF-EI-01']);
     expect(review.abstention.status).toBe('not_evaluated');
     // LE TEXTE A CHANGÉ AVEC LE MÊME LOT, ET LA PERTE EST NOMMÉE. Ce cas
     // épinglait « Aucune règle d'abstention cliniquement validée n'est
@@ -441,7 +450,11 @@ describe('chaineC1Fixture — verrou fermé par la fixture partagée', () => {
     // sécurité, elle, reste signée — sa règle survit donc dans la revue. Ce qui
     // est gardé ici n'a pas changé : aucune règle de priorité validée, donc
     // aucun candidat.
-    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01']);
+    // DEUX règles jointes depuis [[D-101]] : la cotation d'anamnèse et la règle
+    // d'interruption sur effet indésirable, cette dernière en `candidate` tant
+    // qu'elle n'est pas signée. Le verrou des PRIORITÉS reste ce qui est gardé
+    // ici, et aucune règle `PRIO-` n'apparaît.
+    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01', 'SAF-EI-01']);
     expect(review.rules.every(regle => !regle.ruleId.startsWith('PRIO-'))).toBe(true);
     expect(review.abstention.status).toBe('not_evaluated');
     expect(decisionCard.priorityCandidates).toEqual([]);
@@ -483,5 +496,104 @@ describe('dates de signature simulées — jamais en avance ni en retard sur la 
     const { DATE_SIGNATURE_SIMULEE } = await import('./chaineC1Fixture');
     expect(DATE_SIGNATURE_LIVREE).toBe(ETAT_LIVRE.dateValidation);
     expect(DATE_SIGNATURE_SIMULEE).toBe(ETAT_LIVRE.dateValidation);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LA GATE DE POPULATION DANS LA CHAÎNE — [[D-101]], LOT-05, `DC-43`/`DC-35`.
+//
+// LA PROPRIÉTÉ GARDÉE EST LA PLACE DU FILTRE, PAS SON RÉSULTAT. « Un candidat
+// écarté par une gate ne doit jamais avoir été classé » : filtrer avant ou
+// après le tri rend le même tableau final, et une assertion de PRÉSENCE ne
+// saurait pas les distinguer. Ce qui les distingue est l'ORDRE — les rangs
+// servis doivent être `1..n` contigus sur les seuls candidats retenus, sans le
+// trou qu'un retrait après classement laisserait.
+//
+// La table de curation de production est VIDE : la branche « écarté » serait
+// donc inatteignable. Le banc la remplit temporairement et la restaure — même
+// discipline que la mutation de `PRIORITY_RULES_METADATA` plus haut, jamais la
+// table vivante laissée modifiée.
+describe('gate de population — le filtre est AVANT le classement', () => {
+  afterEach(() => {
+    for (const cle of Object.keys(EXCLUSIONS_INTERVENTIONS_V1)) {
+      delete EXCLUSIONS_INTERVENTIONS_V1[cle];
+    }
+  });
+
+  it('sans curation, tout candidat passe ET porte le motif « non curées »', () => {
+    simulerSignature();
+    const { decisionCard } = chaine();
+    expect(decisionCard.priorityCandidates.length).toBeGreaterThanOrEqual(2);
+    for (const candidat of decisionCard.priorityCandidates) {
+      expect(candidat.limitations.some(l => /ne sont pas curées/.test(l))).toBe(true);
+    }
+  });
+
+  it('un dossier sans « État actuel » le DIT, plutôt que de se taire', () => {
+    simulerSignature();
+    const { decisionCard } = chaine();
+    for (const candidat of decisionCard.priorityCandidates) {
+      expect(candidat.limitations.some(l => /Aucun état de population n’a été déclaré/.test(l))).toBe(true);
+    }
+  });
+
+  it('un état déclaré retire la limitation d’état inconnu, sans rien écarter', () => {
+    simulerSignature();
+    const { decisionCard } = chaine({ etat: { etat_grossesse: 'Non' } });
+    expect(decisionCard.priorityCandidates.length).toBeGreaterThanOrEqual(2);
+    for (const candidat of decisionCard.priorityCandidates) {
+      expect(candidat.limitations.some(l => /Aucun état de population n’a été déclaré/.test(l))).toBe(false);
+    }
+  });
+
+  it('un candidat gaté n’apparaît DANS AUCUN ORDRE — les rangs restent contigus', () => {
+    simulerSignature();
+    const avant = chaine().decisionCard.priorityCandidates;
+    const cible = avant[0].ruleId;
+
+    EXCLUSIONS_INTERVENTIONS_V1[cible] = [{
+      critere: 'grossesse',
+      valeurExcluante: 'oui',
+      libelle: 'axe non couvert pendant la grossesse',
+      source: 'Source de banc — aucune valeur clinique.',
+    }];
+    const apres = chaine({ etat: { etat_grossesse: 'Oui' } }).decisionCard.priorityCandidates;
+
+    // Le candidat visé n'est nulle part.
+    expect(apres.some(candidat => candidat.ruleId === cible)).toBe(false);
+    expect(apres).toHaveLength(avant.length - 1);
+    // ET AUCUN RANG NE MANQUE — un filtre posé après l'ATTRIBUTION DES RANGS
+    // laisserait le survivant au rang 2, et cette assertion rougit dessus
+    // (mutation jouée, banc vu rouge).
+    //
+    // CE QU'ELLE NE PROUVE PAS, ET IL FAUT LE DIRE. Déplacer le filtre juste
+    // APRÈS le `sort` — mais avant la numérotation — rend un résultat
+    // strictement identique, parce que le rang est séquentiel sur la liste
+    // filtrée. Cette mutation-là a été jouée aussi, et le banc est resté VERT :
+    // les deux placements sont indiscernables de l'extérieur. La propriété
+    // réellement gardée est donc « aucun candidat écarté ne porte de rang »,
+    // pas la ligne exacte où vit le filtre. Le reste tient au code et à sa
+    // lecture, et l'écrire ici vaut mieux que laisser croire à une garde plus
+    // large qu'elle n'est.
+    expect(apres.map(candidat => candidat.rank)).toEqual(
+      apres.map((_, index) => index + 1),
+    );
+  });
+
+  it('l’état INCONNU n’écarte pas, même sur un critère explicitement exclu', () => {
+    simulerSignature();
+    const cible = chaine().decisionCard.priorityCandidates[0].ruleId;
+    EXCLUSIONS_INTERVENTIONS_V1[cible] = [{
+      critere: 'grossesse',
+      valeurExcluante: 'oui',
+      libelle: 'axe non couvert pendant la grossesse',
+      source: 'Source de banc — aucune valeur clinique.',
+    }];
+    // Aucune réponse d'état : `DC-24` — un état inconnu n'est pas un état
+    // absent, et il n'est pas non plus une raison d'inhiber.
+    const candidats = chaine().decisionCard.priorityCandidates;
+    const garde = candidats.find(candidat => candidat.ruleId === cible);
+    expect(garde).toBeDefined();
+    expect(garde?.limitations.some(l => /n’a pas pu être vérifiée/.test(l))).toBe(true);
   });
 });

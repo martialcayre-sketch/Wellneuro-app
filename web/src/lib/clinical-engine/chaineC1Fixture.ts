@@ -190,6 +190,7 @@ export function chaineC1DeReference(options: {
       responses: inputs.responses,
       selectionPraticien,
       signauxAlerte: inputs.signauxAlerte,
+      etatPopulation: inputs.etatPopulation,
     }),
   };
 }

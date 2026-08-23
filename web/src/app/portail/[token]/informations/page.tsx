@@ -142,7 +142,11 @@ export default function InformationsPage() {
       </CarteCentre>
 
       <CarteCentre id="signaler" titre="Signaler un problème">
-        <SignalerProbleme token={token} onEnvoye={() => void charger()} />
+        <SignalerProbleme
+          token={token}
+          onEnvoye={() => void charger()}
+          associationDisponible={etat.associationEffetIndesirable}
+        />
         {etat.signalements.length > 0 && (
           <div className="pt-2">
             <p className="text-sm font-semibold text-foreground mb-1">Mes signalements et demandes</p>

@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { canonicalJson, canonicalSha256 } from './canonical';
 import { construireChaineC1 } from './chaineC1';
+import { lireEffetsIndesirables } from './effetsIndesirablesPrisma';
 import { adaptRuntimeInputs } from './runtimeFromPrisma';
 import type { ConfirmedAssessmentEpisode, DecisionCard } from './types';
 
@@ -65,9 +67,9 @@ async function entreesRuntime(idPatient: string) {
       orderBy: [{ dateReponse: 'asc' }, { idReponse: 'asc' }],
     }),
     prisma.consultation.findFirst({
-      where: { idPatient, statut: 'validee' },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: [{ dateValidation: 'desc' }, { createdAt: 'desc' }],
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
   return adaptRuntimeInputs(
@@ -128,6 +130,10 @@ export async function refusChaineC1(
   }
 
   const inputs = await entreesRuntime(episode.patientId);
+  // Même lecture que le cockpit, par la même fonction : le vérificateur
+  // recalcule, il ne réinterprète pas ([[D-101]]). Drapeau éteint ⇒ `undefined`
+  // des deux côtés, donc aucune divergence possible.
+  const effetsIndesirables = await lireEffetsIndesirables(episode.patientId);
 
   let recalculee;
   try {
@@ -154,6 +160,8 @@ export async function refusChaineC1(
       // Un signal lu ici et pas dans le cockpit — ou l'inverse — ferait diverger
       // la revue recalculée et rendrait 409 sur une carte honnête.
       signauxAlerte: inputs.signauxAlerte,
+      etatPopulation: inputs.etatPopulation,
+      effetsIndesirables,
     });
   } catch (error) {
     return `La chaîne clinique ne peut pas être recalculée sur ce dossier : ${

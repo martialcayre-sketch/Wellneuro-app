@@ -5,12 +5,14 @@ import {
   reglesPrioritesValidees,
   tablePrioritesSignee,
 } from '@/lib/clinical/priorityRulesV1';
+import { evaluerGatePopulation } from '@/lib/clinical/gatePopulationV1';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
+import { etatIntegralementInconnu, type EtatPopulation } from '@/lib/consultation/etatPopulation';
 import { buildClinicalReview } from './clinicalReview';
 import { buildClinicalSnapshot } from './clinicalSnapshot';
 import { buildDecisionCard } from './decisionCard';
-import { construireSafetyFindings } from './safetyFindings';
+import { construireSafetyFindings, type EffetIndesirableRuntime } from './safetyFindings';
 import type {
   AbstentionAssessment,
   ClinicalReview,
@@ -100,6 +102,29 @@ export type EntreeChaineC1 = {
    * liste vide que `signauxDeclares` rend sur une anamnèse absente.
    */
   signauxAlerte: string[];
+  /**
+   * L'état de population déclaré par le patient ([[D-101]], LOT-05).
+   *
+   * ENTRÉE OBLIGATOIRE, exactement comme `signauxAlerte` et pour la même
+   * raison : `lireEtatPopulation` rend toujours les sept critères, et un défaut
+   * posé ici ferait passer « état inconnu » pour un état lu. Un appelant sans
+   * anamnèse passe explicitement ce que `lireEtatPopulation(null)` rend — un
+   * état intégralement `inconnu`, qui se DIT au praticien.
+   */
+  etatPopulation: EtatPopulation;
+  /**
+   * Les signalements d'effet indésirable du dossier ([[D-101]], `DC-42`).
+   *
+   * OPTIONNEL, ET C'EST LE SEUL CHAMP DE CE TYPE QUI L'EST. Il ne dit pas
+   * « aucun signalement » : il dit que l'appelant n'a pas interrogé la table —
+   * ce que fait tout appelant tant que `interruptionEffetIndesirableActive()`
+   * est faux, c'est-à-dire tant que la règle n'est pas signée ET le drapeau
+   * posé. Le distinguer d'une liste vide n'apporterait rien ici : dispositif
+   * éteint, il n'y a pas de lecture à qualifier. Le jour où il s'allume, les
+   * DEUX appelants (cockpit et vérificateur) le passent par la même fonction,
+   * sans quoi la carte recalculée divergerait de la carte émise.
+   */
+  effetsIndesirables?: EffetIndesirableRuntime[];
 };
 
 /** Un objet de score lisible — typage défensif, le JSON n'est pas garanti. */
@@ -207,6 +232,8 @@ const LIMITATION_CLASSEMENT =
   'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.';
 const LIMITATION_OBJECTIF =
   'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.';
+const LIMITATION_ETAT_INCONNU =
+  'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.';
 
 /** Identifiants des deux motifs `required`, tels que la table signée les porte. */
 const MOTIF_SECURITE = 'ABST-SEC-01';
@@ -326,7 +353,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
   // était posé en dur ici, et le JSDoc d'`evaluerAbstention` documentait sa
   // branche `> 0` comme inatteignable : les deux affirmations tombent avec cette
   // ligne. Le chemin n'est plus câblé « pour le jour où », il est alimenté.
-  const securite = construireSafetyFindings(input.signauxAlerte);
+  const securite = construireSafetyFindings(input.signauxAlerte, input.effetsIndesirables);
   const abstention = evaluerAbstention({
     // Les règles de PRIORITÉ, et elles seules : `abstention.ruleIds` nomme ce
     // que l'abstention suspend, pas ce qui la déclenche. La règle de sécurité
@@ -349,6 +376,10 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
       ...(abstention ? { abstention } : {}),
       safetyFindings: securite.findings,
     },
+    // Ce que le second producteur a lu sans pouvoir conclure ([[D-101]]) : un
+    // signalement ouvert que le patient n'a rattaché à aucun protocole. La
+    // revue le porte, la carte le reprend, l'écran le rend.
+    limitations: securite.limitations,
   });
 
   const candidats = construireCandidats({
@@ -360,6 +391,7 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     // validée. Lire l'intention plutôt que le verdict laisserait produire des
     // candidats sous une abstention que la revue n'a pas retenue.
     abstention: review.abstention.status,
+    etatPopulation: input.etatPopulation,
   });
   const decisionCard = buildDecisionCard({
     decisionCardId: input.decisionCardId,
@@ -387,6 +419,7 @@ function construireCandidats(input: {
   plainteDominante: PlainteDominante | null;
   priorityGoal: string | null;
   abstention: AbstentionAssessment['status'];
+  etatPopulation: EtatPopulation;
 }): DecisionPriorityCandidate[] {
   if (!tablePrioritesSignee()) return [];
   // UNE ABSTENTION REQUISE FAIT TAIRE LA TABLE (`DC-25`) — relevé en revue le
@@ -406,11 +439,34 @@ function construireCandidats(input: {
   if (input.abstention !== 'not_required') return [];
   const declenchees = evaluerPriorites(input.dernieres);
 
+  // LA GATE DE POPULATION, ET ELLE EST ICI ([[D-101]], `DC-43`).
+  //
+  // ICI, C'EST-À-DIRE ENTRE `evaluerPriorites` ET LE `sort` QUI SUIT. La place
+  // est la règle elle-même : « un candidat écarté par une gate ne doit jamais
+  // avoir été classé ». Filtrer après le tri aurait donné le même tableau final
+  // et une propriété différente — un candidat écarté aurait porté un rang, et
+  // ce rang aurait existé. Le banc l'assertionne sur L'ORDRE, pas sur la
+  // présence, précisément parce que les deux se ressemblent à l'arrivée.
+  //
+  // La table de curation est VIDE au 2026-08-23 : aucun candidat n'est écarté,
+  // et chacun repart avec le motif « exclusions non curées » que la boucle plus
+  // bas verse dans ses `limitations`. Le verdict est conservé par candidat —
+  // pas recalculé plus loin — pour qu'un seul appel décide et parle.
+  const verdicts = new Map(
+    declenchees.map(declenchee => [
+      declenchee.regle.id,
+      evaluerGatePopulation(declenchee.regle.id, input.etatPopulation),
+    ]),
+  );
+  const retenues = declenchees.filter(
+    declenchee => verdicts.get(declenchee.regle.id)?.statut !== 'ecarte',
+  );
+
   // CLASSEMENT — la plainte dominante d'abord, la priorité intrinsèque de la
   // table ensuite, l'identifiant en dernier ressort. Le troisième terme n'est
   // pas décoratif : sans lui, deux règles de même priorité s'ordonneraient selon
   // l'ordre de la table, qu'une édition future déplacerait en silence.
-  const classees = [...declenchees].sort((gauche, droite) => {
+  const classees = [...retenues].sort((gauche, droite) => {
     const rangPlainte = (candidate: typeof gauche) => (
       candidate.regle.domainePlainte !== null
       && candidate.regle.domainePlainte === input.plainteDominante?.domaine
@@ -453,6 +509,23 @@ function construireCandidats(input: {
         LIMITATION_PROPOSITION,
         LIMITATION_CLASSEMENT,
         ...(input.priorityGoal ? [LIMITATION_OBJECTIF] : []),
+        // LE MOTIF DE LA GATE, DANS LE SENS QUI PASSE (`DC-35`). Le sens qui
+        // mord — « écarté » — ne peut par construction pas s'afficher ici : le
+        // candidat n'est plus dans la liste. C'est voulu, et c'est la règle ;
+        // ce que le praticien doit lire sur un candidat PRÉSENT, c'est ce que
+        // la gate n'a PAS pu vérifier. Sans cette ligne, « ouvert par défaut »
+        // et « vérifié » auraient exactement la même apparence à l'écran.
+        //
+        // `!` plutôt qu'un repli : la carte est construite depuis `retenues`,
+        // qui vient de `verdicts` — un candidat sans verdict serait une
+        // incohérence de ce module, pas un cas clinique.
+        verdicts.get(declenchee.regle.id)!.motif,
+        // DEUX IGNORANCES DISTINCTES, ET LES CONFONDRE FERAIT PORTER À LA
+        // CURATION UN MANQUE QUI VIENT DU DOSSIER. « Les exclusions ne sont pas
+        // curées » parle du corpus ; « le patient n'a rien déclaré » parle de
+        // l'anamnèse — un dossier antérieur à la section « État actuel » n'en
+        // porte aucune réponse, et ce n'est la faute d'aucune curation.
+        ...(etatIntegralementInconnu(input.etatPopulation) ? [LIMITATION_ETAT_INCONNU] : []),
       ],
     };
   });

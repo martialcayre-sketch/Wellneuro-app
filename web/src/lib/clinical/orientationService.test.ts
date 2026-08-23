@@ -186,9 +186,17 @@ describe('evaluerOrientationPourPatient', () => {
     // Une consultation naît sans anamnèse : prendre la plus récente tout court
     // ferait taire les règles de drapeau dans la fenêtre exacte où le praticien
     // regarde l'orientation.
+    //
+    // DEUX TERMES DEPUIS [[D-101]], et le tri a changé avec eux. Ce module
+    // triait par `createdAt` quand la chaîne C1 triait par `dateValidation` :
+    // sur un dossier à deux consultations validées dans un ordre divergent, la
+    // synthèse pouvait nommer un signal que le cockpit ne voyait pas. La
+    // sélection est désormais partagée (`consultationPorteuse.ts`), et c'est
+    // elle que ce cas épingle — `statut: 'validee'` ET anamnèse présente.
     const argument = prisma.consultation.findFirst.mock.calls[0][0];
     expect(argument.where.NOT).toBeTruthy();
-    expect(argument.orderBy).toEqual({ createdAt: 'desc' });
+    expect(argument.where.statut).toBe('validee');
+    expect(argument.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }]);
   });
 
   it('ne considère que les packs actifs', async () => {

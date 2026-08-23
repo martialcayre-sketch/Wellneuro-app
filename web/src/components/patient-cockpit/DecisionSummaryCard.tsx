@@ -43,6 +43,14 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
       ? 'Décision suspendue — signal d’alerte déclaré, avis médical à évaluer en priorité'
       : 'Décision suspendue — revue praticien requise'
     : current ? current.label : 'Aucune priorité proposée';
+  // Une seule liste, dédupliquée : la carte reprend déjà les limitations de la
+  // revue, et le candidat porte les siennes. Deux listes côte à côte auraient
+  // répété les textes communs sans rien ajouter.
+  const limitationsAffichees = [...new Set([
+    ...decisionCard.abstention.limitations,
+    ...decisionCard.limitations,
+    ...(current?.limitations ?? []),
+  ])];
 
   return (
     <section aria-labelledby="decision-summary-title">
@@ -74,10 +82,19 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
                 `PRIORITY_RULES_SHA256` — patron [[D-062]] —, jamais des
                 littéraux de composant. Dédupliqué : `decisionCard.limitations`
                 reprend déjà celles de la revue. */}
-            {[...new Set([...decisionCard.abstention.limitations, ...decisionCard.limitations])].length > 0 && (
+            {/* LES LIMITATIONS DU CANDIDAT AFFICHÉ ENTRENT DANS LA MÊME LISTE
+                ([[D-101]], LOT-05). Elles étaient dans le même cas que celles
+                de l'abstention avant le LOT-04 : calculées, hachées dans la
+                carte, envoyées au navigateur, rendues par personne —
+                `buildDecisionCard` n'agrège PAS les limitations des candidats
+                dans `decisionCard.limitations`, il les laisse sur chaque
+                candidat. C'est par là que passe le motif de la gate de
+                population, et notamment « exclusions non curées » : sans cette
+                ligne, un axe dont personne n'a jamais vérifié la population
+                s'afficherait exactement comme un axe vérifié (`DC-35`). */}
+            {limitationsAffichees.length > 0 && (
               <ul className="list-disc pl-5 text-muted-foreground">
-                {[...new Set([...decisionCard.abstention.limitations, ...decisionCard.limitations])]
-                  .map(limitation => <li key={limitation}>{limitation}</li>)}
+                {limitationsAffichees.map(limitation => <li key={limitation}>{limitation}</li>)}
               </ul>
             )}
           </div>

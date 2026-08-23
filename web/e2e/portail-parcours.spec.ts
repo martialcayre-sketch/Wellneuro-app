@@ -210,20 +210,37 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
 
     await test.step('Anamnèse (paginée section par section depuis HC-F LOT-04)', async () => {
       await expect(page.getByRole('heading', { name: 'Anamnèse' })).toBeVisible();
-      // Section 1/6 — Repères corporels (aucun champ requis).
+      // SEPT SECTIONS DEPUIS [[D-101]] (LOT-05), et non plus six : « État
+      // actuel » s'insère entre « Antécédents » et « Traitements ». Le compte
+      // n'est pas décoratif — l'anamnèse est PAGINÉE, et le bouton d'envoi
+      // n'existe que sur la dernière page. Une section ajoutée sans toucher ici
+      // fait expirer l'attente de `/api/portail/valider` au lieu de désigner sa
+      // cause : c'est exactement ce qui est arrivé au T3 de ce lot.
+      //
+      // Le parcours ne remplit AUCUN champ d'« État actuel », délibérément :
+      // c'est le cas du dossier qui ne déclare rien, et la chaîne C1 doit le
+      // lire comme sept `inconnu` — jamais comme sept « non » (`DC-24`).
+      //
+      // Section 1/7 — Repères corporels (aucun champ requis).
       await page.getByRole('button', { name: 'Suivant →' }).click();
-      // Section 2/6 — Motif et attentes (seul champ requis de toute l'anamnèse).
+      // Section 2/7 — Motif et attentes (seul champ requis de toute l'anamnèse).
       await page
         .locator('label:has-text("amène aujourd") + textarea')
         .fill('Fatigue persistante depuis plusieurs mois, difficultés de concentration.');
       await page.getByRole('button', { name: 'Suivant →' }).click();
-      // Section 3/6 — Histoire des troubles.
+      // Section 3/7 — Histoire des troubles.
       await page.getByRole('button', { name: 'Suivant →' }).click();
-      // Section 4/6 — Signaux à signaler.
+      // Section 4/7 — Signaux à signaler.
       await page.getByRole('button', { name: 'Suivant →' }).click();
-      // Section 5/6 — Antécédents.
+      // Section 5/7 — Antécédents.
       await page.getByRole('button', { name: 'Suivant →' }).click();
-      // Section 6/6 — Traitements et compléments + envoi.
+      // Section 6/7 — État actuel : traversée sans rien déclarer.
+      // Le titre de section est un `<legend>`, pas un titre : `getByRole
+      // ('heading')` ne le trouverait pas, et l'assertion échouerait pour une
+      // raison étrangère à ce qu'elle veut dire.
+      await expect(page.locator('legend', { hasText: 'État actuel' })).toBeVisible();
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 7/7 — Traitements et compléments + envoi.
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/valider') && res.status() === 200),
         page.getByRole('button', { name: /Valider et accéder à mon parcours/i }).click(),
