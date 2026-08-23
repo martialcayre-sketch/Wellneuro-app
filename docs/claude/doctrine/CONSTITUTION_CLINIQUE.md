@@ -118,12 +118,23 @@ passe par le praticien ([[D-003]]). Déclencheur : la première exécution
 
 **DC-09 — Un claim associatif ne devient jamais une preuve.** « X peut être
 associé à Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
-*Proposition — garde-fou le plus exposé de la chaîne, et la seule des quatre
-règles que l'audit désignait comme telles à n'avoir aucun ancrage. Le LOT-01
-de la chaîne T0 la portait ; ce lot est livré depuis le 2026-08-18 sans rien
-avoir livré pour elle. **Porté par le LOT-09** de « Doctrine exécutable »
-([[D-096]]), sur le patron qui a refermé `DC-27` : clause de prompt plus garde
-qui épingle la formule.*
+*Acté [[D-097]] — LOT-09 de « Doctrine exécutable », sur le patron qui a
+refermé `DC-27`. Le prompt de synthèse porte l'interdit dans son **cadre
+déontologique**, entré en `synthese-v29` : `anthropic.ts:347` « Une association
+n'est pas une preuve […] Ne l'écris jamais sous la forme "X prouve Y",
+"X explique Y", "X démontre Y" ni "X atteste Y" ». Banc :
+`promptAssociationPreuve.guard.test.ts:46` (la formule) et `:82` (la
+**position** — la clause reste au-dessus des sections topiques, hors de portée
+de la primauté que s'accorde la section orientation, `anthropic.ts:514`).
+Côté déterministe, rien n'avait à être posé : `ContradictionFinding.description`
+impose déjà la formulation neutre (`contradictionFinding.ts:130-136`, appliquée
+`contradictionsV1.ts:50-53`) et aucune table signée ne conclut.
+**Limite** : comme pour `DC-27`, le banc garde la consigne, pas la sortie du
+modèle. **Second point de passage examiné et écarté** : le détecteur de
+restitution ne peut pas porter ce marqueur — le glissement probatoire n'a pas
+de vocabulaire fermé, et l'y forcer demanderait un arbitrage chiffré neuf
+(motif écrit, `verifierRestitutionOrientation.ts:43`). Le régime de [[D-011]]
+— journaliser, ne pas censurer — n'est pas touché.*
 
 **DC-10 — Un claim d'orientation produit une orientation suggérée, jamais un
 diagnostic.** « En présence de X + Y, explorer éventuellement Z » alimente le

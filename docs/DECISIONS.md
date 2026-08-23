@@ -4,6 +4,95 @@
 
 ## Décisions actives
 
+### D-097 — `DC-09` mord dans le prompt : une association ne se restitue jamais en preuve, et la clause est gardée en position
+
+- Date : 2026-08-23
+- Statut : accepté (formulation clinique tranchée par le responsable en
+  session le 2026-08-23)
+- Domaine : consigne système de synthèse (`SYSTEM_PROMPT_GOUVERNANCE`),
+  doctrine clinique
+- Fait suite à : [[D-096]] décision 1, qui a donné le LOT-09 à `DC-09`
+- Porte sur : `DC-09` ; ne touche ni [[D-011]], ni `DC-03`, ni `DC-27`
+
+**Contexte.** `DC-09` — « un claim associatif ne devient jamais une preuve » —
+n'avait **aucun ancrage côté rédigé** : ni clause de prompt, ni marqueur dans
+la validation de sortie. L'audit du 2026-08-11 la désignait comme le garde-fou
+le plus exposé de la chaîne, et le LOT-01 de « Doctrine exécutable » a
+confirmé le trou. Le déterministe, lui, tenait déjà :
+`ContradictionFinding.description` impose une formulation neutre
+(`contradictionFinding.ts:130-136`) et aucune table signée ne conclut.
+
+**Décision 1 — la clause, et ses quatre verbes.** Le cadre déontologique du
+prompt porte désormais : « **Une association n'est pas une preuve.** […] Ne
+l'écris jamais sous la forme "X prouve Y", "X explique Y", "X démontre Y" ni
+"X atteste Y" […] Expliciter un motif ou une hypothèse qui t'est donné reste
+attendu ; en faire une démonstration ne l'est jamais »
+(`anthropic.ts:347`). La formule courte est **citable**, comme « Association
+n'est pas causalité » l'est pour `DC-27` : c'est ce qui la rend épinglable.
+
+`confirme` et `signe` ont été **délibérément écartés** de la liste des verbes
+interdits : le prompt emploie déjà « à confirmer par l'entretien » et
+« signale-le », et un interdit portant sur ces deux mots se lirait comme une
+contradiction de consignes voisines. Le glissement probatoire est nommé par
+`prouve` et `démontre`, ses deux reformulations immédiates par `explique` et
+`atteste`. Aucun lexique clinique n'est créé : la clause interdit une **forme
+de phrase**, elle n'établit rien.
+
+La seconde moitié de la clause n'est pas de l'ornement. Le même prompt exige
+ailleurs « Ton rôle est de le **restituer et de l'expliquer** »
+(`anthropic.ts:488`) et « expliquer en langage clinique le motif déjà énoncé »
+(`:497`). Un interdit brut sur le verbe *expliquer* aurait renversé la
+restitution que la section orientation impose. La clause sépare donc
+**expliciter un motif donné** (attendu) de **poser qu'un élément en explique
+un autre** (interdit), et le banc garde les deux bouts.
+
+**Décision 2 — la clause est gardée en POSITION, pas seulement en texte.** Le
+prompt contient une clause de primauté : la section « Recommandation
+d'exploration déterministe » prime sur toute autre consigne relative aux
+explorations, mais « ne relève **aucune des interdictions posées plus haut** »
+(`anthropic.ts:514`). Une clause posée dans le cadre déontologique est donc
+hors de sa portée ; la même clause déplacée plus bas deviendrait discutable
+**sans qu'un mot ait bougé**. `promptAssociationPreuve.guard.test.ts:82`
+assertionne l'ordre — formule après `## Cadre déontologique`, avant la
+première section topique. Vue rouge constatée sur les deux gestes : clause
+retirée (4 tests rouges), clause déplacée sous « Consignes de réponse » (le
+seul test de position rouge, texte intact).
+
+**Décision 3 — le second point de passage est examiné et ÉCARTÉ.** Le
+détecteur de restitution (`verifierRestitutionOrientation.ts`) ne portera pas
+de marqueur « association devenue preuve ». Son critère de décidabilité est
+écrit dans son en-tête : un écart ne se juge que contre un **vocabulaire
+fermé** (seize packs, identifiants de forme fixe, marqueurs d'extinction déjà
+imposés par la consigne). Le glissement probatoire n'en a pas — il faudrait un
+lexique ouvert de paraphrases (« témoigne de », « rend compte de »,
+« est à l'origine de ») **et** la provenance associative du lien, que la prose
+ne porte pas. Un repérage littéral des quatre verbes confondrait
+« expliquer le motif déjà énoncé », qui est exigé, avec « X explique Y », qui
+est interdit ; les départager demanderait une fenêtre d'adjacence et un
+traitement de la négation — un **arbitrage chiffré neuf**, que la constitution
+interdit d'inventer (`DC-19`, `DC-20`). Le motif est écrit dans le fichier
+lui-même (`:43`) pour que la question ne se repose pas à l'aveugle. Le régime
+de [[D-011]] — journaliser, ne pas censurer — reste intact ; le renverser
+serait un autre acte.
+
+**Décision 4 — bump `synthese-v28` → `synthese-v29`, déclaré.** Un numéro de
+prompt qui bouge coupe les comparaisons entre synthèses, et cela se dit plutôt
+que se taise : une synthèse rédigée sous v28 a pu écrire « X explique Y » là
+où la donnée ne portait qu'un lien possible. Les deux versions ne se comparent
+donc pas sur ce point.
+
+**Ce que cette décision ne fait pas.** Elle ne garantit pas que le modèle
+obéit — le banc épingle **la consigne**, jamais la sortie, exactement comme
+celui de `DC-27`. Elle garantit qu'on ne retire pas l'interdit en silence, ni
+en le supprimant, ni en le déplaçant. Elle n'empiète pas sur `DC-03`
+(provenance de la justification générative) : le glissement traité est
+association → preuve, pas l'origine de la justification.
+
+**Effet sur la doctrine.** `DC-09` bascule de *Proposition* à **acté**. Les
+quatre règles que l'audit du 2026-08-11 désignait comme les plus exposées sont
+désormais **toutes** ancrées. `DC-36` demeure la seule règle sans preuve, sans
+banc et sans véhicule.
+
 ### D-096 — Trois arbitrages de portefeuille : DC-09 reçoit un lot, la migration change de campagne, la convergence cherche sa provenance
 
 - Date : 2026-08-23

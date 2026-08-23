@@ -39,6 +39,24 @@ import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 // accusée par elle. Le régime reste le même que le garde d'origine : on
 // journalise, on ne censure pas, et l'objet actionnable vient toujours de la
 // route déterministe.
+//
+// CE QU'ON A EXAMINÉ ET ÉCARTÉ, pour que la question ne se repose pas à
+// l'aveugle : `DC-09` — « association devenue preuve » — n'entre PAS dans ce
+// journal ([[D-097]], LOT-09). Le critère de ce module est écrit plus haut :
+// un écart n'est décidable que contre un VOCABULAIRE FERMÉ (seize packs, des
+// identifiants de forme fixe, des marqueurs d'extinction que la consigne
+// impose déjà). Le glissement probatoire n'en a pas. Il faudrait à la fois un
+// lexique ouvert de verbes et de paraphrases (« témoigne de », « rend compte
+// de », « est à l'origine de ») et la certitude que le lien restitué provenait
+// d'un claim associatif — provenance que la prose ne porte pas. Un repérage
+// littéral des quatre verbes interdits confondrait « expliquer le motif déjà
+// énoncé », qui est EXIGÉ de la consigne, avec « X explique Y », qui est
+// interdit ; les départager demanderait une fenêtre d'adjacence et un
+// traitement de la négation, c'est-à-dire un arbitrage chiffré neuf, que le
+// lot s'interdit. Le garde-fou de `DC-09` est donc côté consigne (clause du
+// cadre déontologique, `synthese-v29`) et côté banc de prompt
+// (`promptAssociationPreuve.guard.test.ts`), pas ici. Rouvrir cette porte
+// suppose un vocabulaire fermé qui n'existe pas aujourd'hui.
 
 /** Les champs de `SyntheseSchema` qui portent du texte libre. */
 export type TexteSynthese = {

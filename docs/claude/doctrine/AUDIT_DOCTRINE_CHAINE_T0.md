@@ -502,8 +502,12 @@ Reste **`DC-36`**, sans preuve, sans banc et sans véhicule.
 ### C — Constats de fond devenus faux
 
 - **Ligne 28** — « les quatre règles les plus exposées, `DC-09`, `DC-27`,
-  `DC-29`, `DC-30`, n'ont aucun ancrage exécutable » : faux pour trois d'entre
-  elles. Reste vrai pour **`DC-09` seule**.
+  `DC-29`, `DC-30`, n'ont aucun ancrage exécutable » : **faux pour les
+  quatre** depuis le 2026-08-23. `DC-09`, dernière des quatre, a été refermée
+  par le LOT-09 de « Doctrine exécutable » ([[D-097]]) : clause du cadre
+  déontologique en `synthese-v29`, banc de prompt qui épingle la formule **et
+  sa position**. Le constat d'origine était juste au 2026-08-11 ; il n'a plus
+  de portée courante.
 - **§D en entier (l. 269-284)** — **CLOS**. Le Socle LOT-02 ([[D-083]] §3) a
   porté le niveau « demande » du hook de trois motifs à **huit fichiers
   cliniques**, avec banc en CI sans filtre `docs_only`.
@@ -579,8 +583,8 @@ Ce que le lot établit se vérifie, en revanche, au grep de
 | règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` a reçu le LOT-09 ([[D-096]]) |
 
 Portées vivantes après requalification et après les arbitrages du 2026-08-23
-([[D-096]]), toutes par « Doctrine exécutable » sauf mention : `DC-09`
-(LOT-09) · `DC-12`, `DC-23` (LOT-04) · `DC-11`-exclusions, `DC-35`, `DC-42`,
+([[D-096]]), toutes par « Doctrine exécutable » sauf mention : ~~`DC-09`
+(LOT-09)~~ **livrée le 2026-08-23, [[D-097]]** · `DC-12`, `DC-23` (LOT-04) · `DC-11`-exclusions, `DC-35`, `DC-42`,
 `DC-43` (LOT-05) · `DC-54`, `DC-55` (LOT-06) · `DC-22` (LOT-07) · `DC-58`
 (LOT-03) · **`DC-07`, `DC-13`, `DC-20` (Curation signée** — le LOT-02 y a été
 transféré, faute de consommateur**)** · `DC-46` (CB-09, hors campagne) ·
