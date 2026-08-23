@@ -52,8 +52,9 @@ Créer la table `propositions_objectif` **et** la table d'événement du
   « demande » + gate de campagne).
 - Pas de champ de score, de rang, de code diagnostique.
 - Pas de `prisma format`.
-- PR sans autre finalité que la migration ; `release-db` **après** la
-  migration doctrine-executable (schéma de claim, chemin critique).
+- PR sans autre finalité que la migration. *(La contrainte « après la
+  migration doctrine-executable » est tombée : [[D-096]] a transféré
+  celle-ci à « Curation signée » — notre migration est passée seule.)*
 - Application constatée par conteneur one-off avant d'ouvrir le LOT-02
   ([[D-087]], [[D-092]] — identifiants seuls dans les commandes, jamais de
   nom ni d'e-mail : les commandes one-off sont recopiées dans les logs).
@@ -66,9 +67,9 @@ Créer la table `propositions_objectif` **et** la table d'événement du
       mutation (colonne parasite) puis verts.
 - [x] `npx prisma validate` ; T3 (dérive schéma↔migrations : aucune).
 - [x] Revue indépendante (`wn-reviewer`) — GO conditionnel, conditions levées.
-- [ ] PR seule ; CI par `node scripts/wn-attendre-ci.mjs <N>`.
-- [ ] Après merge et approbation `release-db` : constat par conteneur
-      (`migrate status` agrégé par nom + contrat joué en production).
+- [x] PR seule ; CI par `node scripts/wn-attendre-ci.mjs <N>` (#770, vert).
+- [x] Après merge et approbation `release-db` : constat par conteneur
+      (`migrate status` agrégé par nom + structure lue en production).
 
 ## Tests
 
@@ -114,6 +115,27 @@ colonne `rang` ajoutée, FK passée en CASCADE, RLS désactivée, CHECK
 `fragments` retiré, CHECK de taxonomie supprimé, `caduque` légalisé.
 
 T3 complet vert (contrats SQL, dérive schéma↔migrations, E2E).
+
+**Appliqué en production le 2026-08-23**, approbation `release-db` du
+responsable, constat par conteneur `one-off-9959` (lecture seule,
+identifiants seuls) : migration appliquée en **une seule tentative**, aucune
+migration du dépôt restée en travers (`JAMAIS_ABOUTIES=0`) ; les trois tables
+existent **vides**, RLS active **sans policy**, FK patient en `ON DELETE
+RESTRICT` ; les **six CHECK** sont présents et la taxonomie lue en base dit
+`CHECK ((geste = ANY (ARRAY['reprise'::text, 'ecartee'::text])))` — `caduque`
+absente ; `source_proposition_id` est `text` nullable sans DEFAULT, et
+**nulle sur toutes les lignes existantes** (aucun lien fabriqué). La fenêtre
+d'effacement RGPD est refermée par la même application.
+
+**Un incident de release, et il se reproduira.** Le premier run `release-db`
+a été REFUSÉ par la garde « le commit approuvé est le dernier déployé » : une
+PR documentaire d'une session concurrente a été mergée juste après la nôtre,
+Scalingo a déployé le commit le plus récent en sautant le nôtre, et la garde
+— qui exige un SHA exact — a attendu 20 minutes un déploiement qui
+n'arriverait jamais. Aucune écriture n'a eu lieu : le refus est le bon
+comportement. Relance par `workflow_dispatch` sur `main` (dont la tête ÉTAIT
+déployée) : verte. Correctif de la garde porté hors campagne (voir le
+changelog du jour).
 
 ## Dettes nommées, à porter aux lots suivants
 

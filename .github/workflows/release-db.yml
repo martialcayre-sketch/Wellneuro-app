@@ -222,6 +222,13 @@ jobs:
       # Nécessaire à l'empreinte des migrations (plus bas) : le contenu du
       # COMMIT APPROUVÉ, pas celui d'une image.
       - uses: actions/checkout@v4
+        with:
+          # L'historique, et pas seulement la tête : la garde « le commit
+          # approuvé est le dernier déployé » teste une ASCENDANCE (le commit
+          # approuvé a-t-il été SAUTÉ par un déploiement plus récent qui le
+          # contient ?). Avec la profondeur 1 par défaut, `merge-base` ne peut
+          # rien conclure et la garde retombe sur une attente de 20 minutes.
+          fetch-depth: 0
 
       # Version épinglée + empreinte sha256 relevée à la main le 2026-08-22 :
       # le chemin d'écriture de la production ne dépend pas du contenu courant
@@ -285,6 +292,14 @@ jobs:
       # que personne n'a approuvés. L'empreinte des migrations (étape
       # suivante) re-vérifie la même propriété DANS le conteneur, au moment
       # d'écrire.
+      #
+      # TROIS SORTIES D'ÉCHEC, et aucune n'écrit : (a) le commit approuvé est
+      # déployé mais dépassé ; (b) il a été SAUTÉ — un déploiement plus récent
+      # le contient, il ne sera donc jamais déployé pour lui-même (Scalingo ne
+      # build pas chaque commit : deux merges rapprochés et seul le dernier
+      # part) ; (c) il n'est simplement pas encore déployé, et le build n'a pas
+      # abouti en 20 minutes. Le cas (b) a coûté vingt minutes d'attente le
+      # 2026-08-23 avant un refus qui était certain dès la première seconde.
       - name: "Garde — le commit approuvé est le dernier déployé"
         run: |
           for i in $(seq 1 40); do
@@ -299,6 +314,26 @@ jobs:
               echo "❌ $GITHUB_SHA est déployé, mais un déploiement PLUS RÉCENT existe" >&2
               echo "   ($DERNIER) : l'image ne correspond plus au commit approuvé." >&2
               echo "   Relancer release-db depuis le commit de tête de main." >&2
+              exit 1
+            fi
+            # COALESCENCE — le commit approuvé a été SAUTÉ. Scalingo ne déploie
+            # pas chaque commit : deux merges rapprochés sur `main` et seul le
+            # plus récent part en build. Si le dernier déploiement réussi
+            # CONTIENT le commit approuvé sans être lui, celui-ci ne sera
+            # JAMAIS déployé — l'attendre 20 minutes ne fait que retarder un
+            # refus certain (incident du 2026-08-23, migration 6.0-B LOT-01 :
+            # une PR documentaire concurrente a emporté le créneau de build).
+            #
+            # LE REFUS RESTE ENTIER, et c'est le point : l'image déploie du
+            # code que personne n'a approuvé, la release n'a pas lieu. On
+            # échoue seulement PLUS TÔT, et en disant quoi faire.
+            if [ -n "$DERNIER" ] && git merge-base --is-ancestor "$GITHUB_SHA" "$DERNIER" 2>/dev/null; then
+              echo "❌ $GITHUB_SHA a été SAUTÉ : le déploiement réussi le plus récent" >&2
+              echo "   ($DERNIER) le contient déjà, donc le commit approuvé ne sera" >&2
+              echo "   jamais déployé pour lui-même. Deux merges rapprochés sur main." >&2
+              echo "   → Relancer release-db en workflow_dispatch sur main (mode" >&2
+              echo "     migrate-only) : la garde jugera alors la tête, qui EST" >&2
+              echo "     déployée. Aucune écriture n'a eu lieu." >&2
               exit 1
             fi
             echo "… déploiement de $GITHUB_SHA pas encore réussi ($i/40), attente 30 s."
