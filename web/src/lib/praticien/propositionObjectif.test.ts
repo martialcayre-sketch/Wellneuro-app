@@ -164,6 +164,34 @@ describe('la sérialisation canonique dupliquée rend exactement la même chose 
     }
   });
 
+  it('SE COMPORTE PAREIL SUR LES CAS QUI DISTINGUENT', () => {
+    // CORRECTION DE REVUE. Les dix valeurs ci-dessus ne séparaient AUCUNE des
+    // divergences plausibles : retirer de la copie le garde-fou des tableaux
+    // creux ou celui des références circulaires laissait le banc vert, et la
+    // seconde omission donnerait un débordement de pile en production.
+    const creux: unknown[] = [1];
+    creux[2] = 3; // trou en position 1
+    expect(() => jsonCanonique(creux)).toThrow();
+    expect(() => canonicalJson(creux)).toThrow();
+
+    const circulaire: Record<string, unknown> = { a: 1 };
+    circulaire.soi = circulaire;
+    expect(() => jsonCanonique(circulaire)).toThrow();
+    expect(() => canonicalJson(circulaire)).toThrow();
+
+    // `undefined` : admis comme VALEUR D'OBJET (la clé disparaît), refusé dans
+    // un tableau (la position, elle, ne peut pas disparaître).
+    expect(() => jsonCanonique([undefined])).toThrow();
+    expect(() => canonicalJson([undefined])).toThrow();
+
+    // Le tri des clés : `.sort()` ordonne par unité de code, `localeCompare`
+    // rangerait `a` avant `B`. C'est l'« amélioration » la plus probable qu'un
+    // futur passage apporterait à l'un des deux fichiers, et elle déplacerait
+    // toutes les empreintes déjà émises.
+    expect(jsonCanonique({ B: 1, a: 2 })).toBe(canonicalJson({ B: 1, a: 2 }));
+    expect(jsonCanonique({ B: 1, a: 2 })).toBe('{"B":1,"a":2}');
+  });
+
   it('rend une empreinte SHA-256 hexadécimale de 64 caractères', () => {
     expect(empreinte({ a: 1 })).toMatch(/^[0-9a-f]{64}$/);
   });
@@ -232,6 +260,47 @@ describe('assembler — une proposition par candidat signé, jamais plus de troi
     );
     expect(propositions).toHaveLength(1);
     expect(propositions[0].fragments[0].texte).toBe('Règle B');
+  });
+
+  it('un candidat sans libellé ne CONSOMME PAS un des trois créneaux', () => {
+    // M4, relevé en revue : couper à trois AVANT de filtrer faisait qu'un
+    // libellé vide en tête privait le quatrième candidat — parfaitement
+    // citable — d'être seulement examiné. Le plafond borne ce qu'on PROPOSE,
+    // pas ce qu'on inspecte.
+    const propositions = assemblerPropositions(
+      entrees({
+        candidats: [
+          { regle: 'PRIO-VIDE', texte: '   ' },
+          { regle: 'PRIO-B', texte: 'B' },
+          { regle: 'PRIO-C', texte: 'C' },
+          { regle: 'PRIO-D', texte: 'D' },
+        ],
+      }),
+    );
+    expect(propositions.map((p) => p.fragments[0].texte)).toEqual(['B', 'C', 'D']);
+  });
+
+  it('DÉDOUBLONNE par règle — deux libellés d’une même règle ne font qu’une proposition', () => {
+    // M2, relevé en revue, et la conséquence n'était pas cosmétique :
+    // l'empreinte porte la RÈGLE et non son libellé (arbitrage 2), si bien que
+    // deux candidats de même règle produisaient deux propositions au hachage
+    // IDENTIQUE. La comparaison d'ensembles de la route ne voyait alors plus
+    // l'assemblée rétrécir de deux lignes à une, et servait indéfiniment une
+    // proposition que le cockpit ne proposait plus.
+    const propositions = assemblerPropositions(
+      entrees({
+        candidats: [
+          { regle: 'PRIO-SOM-01', texte: 'formulation a' },
+          { regle: 'PRIO-SOM-01', texte: 'formulation b' },
+          { regle: 'PRIO-DIG-01', texte: 'digestion' },
+        ],
+      }),
+    );
+    expect(propositions).toHaveLength(2);
+    expect(propositions.map((p) => p.fragments[0].texte)).toEqual(['formulation a', 'digestion']);
+    // Et les empreintes redeviennent distinctes deux à deux, ce qui est la
+    // propriété dont la caducité dépend.
+    expect(new Set(propositions.map((p) => p.hashSources)).size).toBe(2);
   });
 
   it('se passe de plainte et d’anamnèse sans rien inventer', () => {

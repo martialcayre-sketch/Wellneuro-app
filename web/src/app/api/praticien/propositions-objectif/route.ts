@@ -78,7 +78,24 @@ const SHA_PERIMETRE_PATTERN = /^[0-9a-f]{64}$/;
  */
 const MAX_CANDIDATS_RECUS = 32;
 const LONGUEUR_MAX_TEXTE_RECU = 4000;
-const LONGUEUR_MAX_IDENTIFIANT_RECU = 200;
+const LONGUEUR_MAX_IDENTIFIANT_RECU = 64;
+
+/**
+ * La FORME d'un identifiant reçu — règle, instrument, domaine. Couvre ce que
+ * le dépôt produit réellement (`PRIO-DIG-01`, `ABST-SEC-01`, `Q_MOD_03`,
+ * `digestion`, `priority:PRIO-SOM`) et rien d'autre.
+ *
+ * CONTRÔLE DE FORME, PAS CONFRONTATION — même registre que
+ * `SHA_PERIMETRE_PATTERN`, donc sans toucher à G7. Il est là parce que la
+ * route assumait de ne pas pouvoir authentifier le SHA tout en acceptant, à
+ * côté, un identifiant de règle en TEXTE LIBRE : un client en session
+ * praticien pouvait faire persister un fragment `regle: "Recommandation
+ * Wellneuro validée"` que le GET aurait servi comme une citation sourcée, et
+ * que le LOT-03 aurait laissé reprendre en objectif. Un identifiant ne
+ * contient ni espace, ni phrase ; l'exiger n'authentifie rien, mais rend
+ * impossible de faire passer une phrase pour une provenance.
+ */
+const IDENTIFIANT_PATTERN = /^[A-Za-z0-9_.:-]+$/;
 
 export type FragmentExpose = {
   texte: string;
@@ -291,14 +308,26 @@ type LigneDispositionLue = {
 function vueDossier(lignes: LigneLue[], dispositions: LigneDispositionLue[]) {
   const courante = assembleeCourante(lignes);
   const idsCourants = new Set(courante.map((ligne) => ligne.id));
-  const vivantes = propositionsVivantes(lignes, dispositions);
-  const idsVivants = new Set(vivantes.map((ligne) => ligne.id));
 
   return {
-    propositions: vivantes.map((ligne) => exposer(ligne, null)),
+    // UNE PROPOSITION SANS FRAGMENT N'EST RIEN À PROPOSER. Le blob est libre
+    // et la table est en production depuis le LOT-01 : une ligne dont tous
+    // les fragments sont écartés à la lecture existe. La servir donnerait une
+    // carte vide que le praticien pourrait reprendre — la logique même de
+    // `marquer`, qui refuse de citer le vide, vaut jusqu'à l'écran.
+    propositions: propositionsVivantes(lignes, dispositions)
+      .map((ligne) => exposer(ligne, null))
+      .filter((proposition) => proposition.fragments.length > 0),
+    // FILTRÉE SUR LE GESTE, ET NON SUR « CE QUI N'EST PAS VIVANT ». Les deux
+    // formulations divergent dès que l'assemblée courante dépasse trois
+    // lignes : le surplus non disposé serait alors tombé ici avec
+    // `disposition: null`, et l'écran l'aurait lu comme « le praticien a
+    // tranché ». Faire dire à un dossier qu'un geste a eu lieu quand il n'a
+    // pas eu lieu est exactement ce que la campagne interdit.
     disposees: courante
-      .filter((ligne) => !idsVivants.has(ligne.id))
-      .map((ligne) => exposer(ligne, dispositionCourante(ligne.id, dispositions))),
+      .map((ligne) => ({ ligne, geste: dispositionCourante(ligne.id, dispositions) }))
+      .filter((entree): entree is { ligne: LigneLue; geste: GesteDisposition } => entree.geste !== null)
+      .map((entree) => exposer(entree.ligne, entree.geste)),
     caduques: lignes
       .filter((ligne) => !idsCourants.has(ligne.id))
       .slice(0, MAX_PROPOSITIONS)
@@ -311,10 +340,27 @@ async function lireDossier(idPatient: string) {
     prisma.propositionObjectif.findMany({
       where: { idPatient },
       select: SELECTION_PROPOSITION,
-      // Décroissant : `caduques` est tronquée aux plus récentes, et une
-      // troncature sur un ordre indéterminé rendrait la réponse instable d'un
-      // appel à l'autre.
-      orderBy: [{ assembleeLe: 'desc' }, { creeLe: 'desc' }],
+      // TROIS CLÉS, ET LES TROIS SERVENT.
+      //
+      // `nulls: 'last'` n'est pas cosmétique : en `DESC`, PostgreSQL place les
+      // NULL EN PREMIER par défaut. La colonne est nullable et ce lot traite
+      // justement une ligne sans `assembleeLe` comme caduque — sans cette
+      // précision, une telle ligne monopoliserait les trois créneaux de
+      // `caduques` et masquerait les vraies caduques récentes.
+      //
+      // `id` en dernier ressort, parce que les deux premières clés sont
+      // ÉGALES sur toute une assemblée : un seul `createMany` pose le même
+      // `assembleeLe`, et `cree_le` vaut `CURRENT_TIMESTAMP`, identique pour
+      // toutes les lignes d'un même INSERT. Sans ce départage, l'ordre servi
+      // au praticien est celui que la base veut bien rendre, et il peut
+      // changer d'un rechargement à l'autre. Il reste ARBITRAIRE — ce lot ne
+      // persiste aucun ordre (`D-094` §3) — mais il est STABLE, et une liste
+      // qui se réordonne toute seule se lirait comme une information.
+      orderBy: [
+        { assembleeLe: { sort: 'desc', nulls: 'last' } },
+        { creeLe: 'desc' },
+        { id: 'asc' },
+      ],
     }),
     prisma.dispositionProposition.findMany({
       where: { idPatient },
@@ -371,6 +417,7 @@ function texteDuCorps(valeur: unknown): string {
 function identifiantRecu(valeur: unknown): string | null {
   const texte = texteDuCorps(valeur);
   if (texte.length === 0 || texte.length > LONGUEUR_MAX_IDENTIFIANT_RECU) return null;
+  if (!IDENTIFIANT_PATTERN.test(texte)) return null;
   return texte;
 }
 
@@ -502,8 +549,25 @@ export async function POST(req: Request): Promise<NextResponse<PropositionsApiRe
       return echec('invalid', 'Action inconnue.', 400);
     }
 
+    // LE GESTE `assembler` REND LE DOSSIER, DONC IL LE JOURNALISE.
+    //
+    // Le patron hérité — « une écriture laisse déjà sa propre trace, datée et
+    // attribuée » (`objectifs/route.ts`) — ne s'applique pas ici, et pour deux
+    // raisons distinctes. D'une part `assembler` rend EXACTEMENT le corps du
+    // GET, fragments compris, c'est-à-dire les mots du patient. D'autre part
+    // son cas NOMINAL n'écrit rien : l'idempotence par empreinte fait sortir
+    // sans `createMany`, et `propositions_objectif` ne porte de toute façon
+    // aucun `praticien_email` — la ligne dirait qu'un assemblage a eu lieu,
+    // jamais qui a lu. Le chemin d'usage normal serait donc celui qui ne
+    // laisse pas de trace, et le GET journalisé deviendrait facultatif.
+    //
+    // `ecarter`, lui, ne journalise pas : il écrit une ligne qui porte son
+    // auteur et sa date, et il ne rend pas le dossier.
     const idPatient = texteDuCorps(body.idPatient);
-    const garde = await garder(idPatient);
+    const garde = await garder(
+      idPatient,
+      action === 'assembler' ? { route: ROUTE_JOURNAL, methode: 'POST' } : undefined,
+    );
     if (garde.echec) return garde.echec;
 
     // Dossier clos : une proposition d'objectif est une pièce du dossier, le
@@ -605,6 +669,24 @@ async function assembler(
   // D'ASSEMBLÉE, ce qui rend « les propositions issues du même calcul »
   // exprimable. `creeLe` reste posée par la base (`@default(now())`) — c'est
   // ce qui rend une ligne inantidatable.
+  //
+  // DETTE NOMMÉE — LIRE-PUIS-ÉCRIRE N'EST PAS ÉTANCHE À LA COURSE (relevée en
+  // revue). Deux `assembler` concurrents — double montage React, double clic,
+  // deux onglets, et le geste est appelé à chaque ouverture de panneau —
+  // lisent tous deux l'état d'avant, concluent tous deux que les empreintes
+  // ont bougé, et écrivent chacun leur assemblée. Le service reste JUSTE
+  // (l'assemblée la plus récente gagne, l'autre devient caduque) et le
+  // troisième appel re-stabilise tout par idempotence ; ce qui reste est une
+  // trace en double dans une table append-only, donc un peu de bruit dans le
+  // matériau du bilan LOT-06.
+  //
+  // Ce qui la fermerait : un index unique `(id_patient, hash_sources)` —
+  // c'est-à-dire une migration, hors périmètre de ce lot — ou une transaction
+  // sérialisable englobant lecture et écriture. La seconde est disponible
+  // sans migration ; elle n'est pas posée ici parce qu'elle sérialiserait le
+  // chemin le plus fréquent de la fonctionnalité pour un défaut qui ne
+  // produit ni perte ni contre-vérité. Arbitrage à rendre au LOT-03, quand on
+  // saura à quelle cadence le panneau appelle réellement.
   const assembleeLe = new Date();
   await prisma.propositionObjectif.createMany({
     data: aEcrire.map((ligne) => ({ ...ligne, assembleeLe })),

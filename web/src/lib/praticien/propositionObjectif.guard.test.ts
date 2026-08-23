@@ -45,7 +45,15 @@ function sourceSansCommentaires(chemin: string): string {
  */
 function nomsDeclares(chemin: string): string[] {
   const source = sourceSansCommentaires(chemin);
-  const proprietes = [...source.matchAll(/^\s*(\w+)\??\s*:/gm)].map((m) => m[1]);
+  // SANS ANCRE DE DÉBUT DE LIGNE, et c'est une correction de revue. La forme
+  // ancrée (`/^\s*(\w+)\??\s*:/gm`) ne voyait QUE les propriétés posées sur
+  // leur propre ligne : sur `const brut = entree as { regle?: unknown; texte?:
+  // unknown };` — deux fois présente dans la route — elle ne capturait que
+  // `brut`. Un champ interdit glissé dans un type en ligne passait la garde.
+  // Le motif global capture aussi des identifiants qui ne sont pas des
+  // propriétés (branches de ternaire, schémas d'URL) : c'est sans conséquence,
+  // une garde de nommage ne peut que gagner à voir PLUS de noms.
+  const proprietes = [...source.matchAll(/(\w+)\??\s*:/g)].map((m) => m[1]);
   const declarations = [
     ...source.matchAll(/\b(?:const|let|var|function|class|type|interface|enum)\s+(\w+)/g),
   ].map((m) => m[1]);
@@ -66,6 +74,29 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     '@/lib/equilibre',
   ];
 
+  /**
+   * LES RÉPERTOIRES INTERDITS, RECONNUS DANS N'IMPORTE QUELLE FORME DE CHEMIN.
+   *
+   * CORRECTION DE REVUE, ET LE TROU ÉTAIT GRAND. La liste d'alias ci-dessus
+   * ne voyait que `@/lib/…` : un simple `from '../clinical-engine/chaineC1'`
+   * la traversait sans rien faire rougir. Ce n'est pas une contorsion, c'est
+   * l'idiome local — `clinical/contradictionFinding.ts` importe
+   * `'../clinical-engine/types'`, `equilibre/momentumParBesoin.ts` importe
+   * `'../scoring/validite'`. Un développeur qui suit l'usage du répertoire
+   * produit spontanément la forme non couverte.
+   *
+   * On lit donc les SPÉCIFICATEURS d'import, et on refuse le répertoire comme
+   * SEGMENT de chemin, quelle que soit la façon dont on y arrive.
+   */
+  const REPERTOIRES_INTERDITS = /(^|\/)(clinical|clinical-engine|scoring|instruments|equilibre)(\/|$)/;
+
+  function specificateursImportes(chemin: string): string[] {
+    const source = sourceSansCommentaires(chemin);
+    return [
+      ...source.matchAll(/(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g),
+    ].map((m) => m[1]);
+  }
+
   it.each([MODULE, ROUTE])('%s n’importe aucun moteur clinique', (chemin) => {
     const source = sourceSansCommentaires(chemin);
     expect(source.length).toBeGreaterThan(500); // anti-vacuité
@@ -74,12 +105,30 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     }
   });
 
+  it.each([MODULE, ROUTE])('%s n’y accède pas non plus par un chemin relatif', (chemin) => {
+    const specificateurs = specificateursImportes(chemin);
+    // ANTI-VACUITÉ : l'extraction voit bien des imports, et l'un d'eux est
+    // celui qu'on sait présent. Une regex devenue inopérante rendrait la
+    // liste vide, donc ce cas vert sur un fichier qui importerait tout.
+    expect(specificateurs.length).toBeGreaterThan(0);
+    const fautifs = specificateurs.filter((specificateur) =>
+      REPERTOIRES_INTERDITS.test(specificateur),
+    );
+    expect(fautifs).toEqual([]);
+  });
+
   it('le détecteur mord pour de vrai — il TROUVE le moteur là où il est', () => {
     // ANTI-VACUITÉ : un motif devenu inopérant (chemin d'alias renommé, par
-    // exemple) rendrait le cas précédent vert sur un fichier qui importerait
-    // tout le moteur clinique.
+    // exemple) rendrait les cas précédents verts sur un fichier qui
+    // importerait tout le moteur clinique. Le témoin est éprouvé DEUX FOIS,
+    // par la liste d'alias et par le motif de répertoire — sans quoi le
+    // second pourrait mourir seul, en silence.
     const temoin = sourceSansCommentaires(TEMOIN_MOTEUR);
     expect(temoin).toContain('@/lib/clinical');
+    const fautifs = specificateursImportes(TEMOIN_MOTEUR).filter((specificateur) =>
+      REPERTOIRES_INTERDITS.test(specificateur),
+    );
+    expect(fautifs.length).toBeGreaterThan(0);
   });
 
   it('SEUL LE BANC importe la sérialisation canonique originale (arbitrage 2)', () => {
@@ -89,7 +138,11 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     // deux implémentations, et c'est le SEUL fichier du lot qui a le droit de
     // toucher à l'original.
     expect(sourceSansCommentaires(BANC_UNITAIRE)).toContain('@/lib/clinical-engine/canonical');
+    // LES DEUX FICHIERS, et pas seulement le module : la première rédaction
+    // n'éprouvait que `MODULE`, si bien que la ROUTE pouvait réimporter
+    // l'original sans rien faire rougir (relevé en revue).
     expect(sourceSansCommentaires(MODULE)).not.toContain('canonical');
+    expect(sourceSansCommentaires(ROUTE)).not.toContain('canonical');
     // Et la copie est bien là, sinon le banc comparerait le vide.
     expect(sourceSansCommentaires(MODULE)).toContain('createHash');
   });
@@ -104,6 +157,7 @@ describe('G7-2 — ni score, ni seuil, ni rang dans le module ni dans la route',
   // que nous écrivons, pas des clés qu'un tiers pourrait choisir — un nom
   // parent d'un nom interdit est déjà un signal.
   const RACINES_INTERDITES = [
+    // Français.
     'score',
     'seuil',
     'bande',
@@ -112,6 +166,22 @@ describe('G7-2 — ni score, ni seuil, ni rang dans le module ni dans la route',
     'gravit',
     'poids',
     'total',
+    // ANGLAIS — LE MANQUE QUE LA REVUE A TROUVÉ. La donnée amont nomme ses
+    // champs `rank` et `confidence` (`clinical-engine/decisionCard.ts`) : les
+    // quatre mutations vues rouges à la rédaction étaient toutes francisées
+    // (`rangCandidat`, `rangAffichage`), et la plus PROBABLE — recopier le
+    // champ tel qu'il arrive — serait passée. C'est le défaut du LOT-09 :
+    // épingler le vocabulaire de l'interdit plutôt que l'interdit.
+    //
+    // `priorit` N'Y EST PAS, et l'absence est raisonnée : `objectifPrioritaire`
+    // est un champ d'anamnèse, ce sont les mots du patient. L'interdire par
+    // sous-chaîne rougirait sur une provenance parfaitement légitime, et une
+    // garde à faux positif finit assouplie. La clé exacte `priorite` est en
+    // revanche refusée dans le blob, où rien ne la justifie.
+    'rank',
+    'confidence',
+    'threshold',
+    'weight',
   ];
 
   it.each([MODULE, ROUTE])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
@@ -301,12 +371,20 @@ describe('G7-5 — la provenance et la forme du blob, opposables', () => {
     // contraint.
     expect([...CLES_INTERDITES].sort()).toEqual([
       'bande',
+      'confidence',
+      'level',
       'niveau',
+      'order',
       'ordre',
       'position',
+      'priorite',
+      'priority',
       'rang',
+      'rank',
       'score',
       'seuil',
+      'threshold',
+      'weight',
     ]);
   });
 });

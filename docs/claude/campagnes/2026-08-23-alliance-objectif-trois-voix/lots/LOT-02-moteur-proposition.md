@@ -134,7 +134,7 @@ Ceux du périmètre ; en lecture de référence :
 - [x] Route GET/POST (auth, drapeaux, événements, bornes de longueur sur le
       motif d'écart, refus par motif nommé — patron `enonce_absent`).
 - [x] T1 après chaque édition ; T2 avant commit.
-- [ ] Revue `wn-reviewer` (module neuf consommant des sorties cliniques).
+- [x] Revue `wn-reviewer` (module neuf consommant des sorties cliniques).
 
 ## Tests
 
@@ -192,16 +192,56 @@ vertes : import de `clinical-engine/` dans le module (G7-1), propriété
 balayage du blob désarmé (G7-5). La cinquième (G7-4, clés exposées épinglées)
 est tenue par `tsc` et a été vue rouge en ajoutant `rangAffichage` au type.
 
-**Dette nommée, et elle n'est pas de forme.** Une assemblée qui deviendrait
+**Ce que la revue a trouvé, et c'était le défaut du LOT-09.** Les deux listes
+de mots interdits étaient **entièrement en français** — `rang`, `score`,
+`seuil`… — alors que la donnée amont nomme ses champs `rank` et `confidence`
+(`clinical-engine/decisionCard.ts`). Mes quatre mutations vues rouges étaient
+toutes francisées ; la mutation la plus PROBABLE, recopier le champ tel qu'il
+arrive, serait passée : le classement se serait persisté dans le blob (exposé
+en `unknown`, donc hors du pin de type), se serait trié, se serait affiché, et
+les 94 cas seraient restés verts. Le banc épinglait le vocabulaire de
+l'interdit, pas l'interdit.
+
+Deux autres bloquants du même registre. **G7-1 se contournait par un chemin
+relatif** — la garde ne lisait que les préfixes d'alias `@/lib/…`, et
+`from '../clinical-engine/…'` la traversait ; ce n'est pas une contorsion,
+c'est l'idiome local (`clinical/contradictionFinding.ts` importe
+`'../clinical-engine/types'`). La garde lit désormais les spécificateurs
+d'import et refuse le répertoire comme SEGMENT, quelle que soit la forme du
+chemin. Et le **POST `assembler` rendait le dossier — verbatim compris — sans
+journaliser l'accès** : le patron « une écriture laisse sa propre trace » ne
+s'appliquait pas, puisque son cas nominal n'écrit rien (idempotence) et que
+la table ne porte aucun `praticien_email`. Le chemin d'usage normal de la
+fonctionnalité était celui qui ne laissait pas de trace.
+
+Quatre corrections de rang élevé dans le même passage : l'ordre servi était
+**indéterminé** (deux clés égales sur toute une assemblée — départage par `id`
+ajouté, et `NULLS LAST` sur une colonne nullable) ; `disposees` était filtrée
+sur « ce qui n'est pas vivant », si bien que le surplus au-delà du plafond y
+tombait avec `disposition: null` — **l'écran aurait lu un geste qui n'a pas eu
+lieu** ; l'identifiant de règle était du **texte libre** de 200 caractères, ce
+qui laissait persister `regle: "Recommandation Wellneuro validée"` comme une
+provenance (contrôle de forme ajouté — pas une confrontation, donc sans
+toucher à G7) ; et deux candidats de **même règle** produisaient deux
+propositions au hachage identique, ce qui empêchait la route de voir
+l'assemblée rétrécir.
+
+**Deux dettes nommées, écrites dans le code.** Une assemblée qui deviendrait
 **vide** (table dépubliée, abstention devenue requise, plus aucun candidat) ne
 retire pas la précédente : il n'existe aucune ligne à écrire pour dire
-« désormais, rien ». Fermer ce cas demande une colonne ou une table
-d'assemblée — donc une migration, hors périmètre. En attendant, c'est le
-geste `assembler` qui fait foi, et le LOT-03 doit l'appeler avant d'afficher.
+« désormais, rien ». Et **lire-puis-écrire n'est pas étanche à la course** :
+deux `assembler` concurrents écrivent deux assemblées identiques — le service
+reste juste, l'idempotence re-stabilise au troisième appel, il reste du bruit
+dans le matériau du bilan LOT-06. Fermer la première demande une migration ;
+la seconde se fermerait par une transaction sérialisable, arbitrage renvoyé au
+LOT-03 quand on saura à quelle cadence le panneau appelle.
 
 **Validation.** T1 vert. T2 : 155 passés, 1 échec — `portail-parcours` sur
 iPhone 13, `page.goto` en timeout de chargement. **Reproduit à l'identique sur
 un arbre d'où le lot avait été retiré** : blocage WebKit connu de ce Mac,
-étranger au lot. Bancs du lot : 94 verts (50 unitaires, 15 gardes, 29 route).
+étranger au lot. Bancs du lot : 104 verts (53 unitaires, 17 gardes, 34 route).
 
-Reste : la revue `wn-reviewer`.
+**Après revue.** 104 bancs verts (53 unitaires, 17 gardes, 34 route), T1 vert.
+Les trois trous signalés — import relatif, `rank` recopié, propriété écrite
+dans un type en ligne — ont été vus **rouges par mutation** une fois les
+gardes corrigées.

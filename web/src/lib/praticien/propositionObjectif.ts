@@ -184,6 +184,7 @@ export function depuisRegleSignee(
  * travaille, elle, par sous-chaîne.
  */
 export const CLES_INTERDITES: readonly string[] = [
+  // Français — les mots que ce module écrirait lui-même.
   'score',
   'seuil',
   'bande',
@@ -191,6 +192,21 @@ export const CLES_INTERDITES: readonly string[] = [
   'position',
   'ordre',
   'niveau',
+  'priorite',
+  // Anglais — LES MOTS QUE LA DONNÉE AMONT PORTE DÉJÀ, et c'est le point.
+  // `DecisionPriorityCandidate` nomme ses champs `rank` et `confidence`
+  // (`clinical-engine/decisionCard.ts`) : la mutation la plus probable n'est
+  // pas d'inventer un `rangCandidat`, c'est de RECOPIER le champ tel qu'il
+  // arrive. Une liste en français seul aurait laissé passer exactement ce
+  // geste-là — même défaut que le banc du LOT-09, qui épinglait le
+  // vocabulaire de l'interdit et non l'interdit.
+  'rank',
+  'confidence',
+  'priority',
+  'threshold',
+  'weight',
+  'level',
+  'order',
 ];
 
 /**
@@ -389,10 +405,33 @@ export function assemblerPropositions(entrees: EntreesAssemblage): PropositionAs
     ? depuisInstrument(entrees.plainte.instrument, entrees.plainte.domaine, entrees.plainte.restitution)
     : null;
 
-  return entrees.candidats.slice(0, MAX_PROPOSITIONS).flatMap((candidat) => {
+  // LE FILTRAGE PRÉCÈDE LA COUPE, et l'ordre n'est pas indifférent : couper
+  // d'abord ferait qu'un candidat au libellé vide CONSOMMERAIT un des trois
+  // créneaux, et le quatrième candidat — parfaitement citable — ne serait
+  // jamais examiné. Le plafond borne ce qu'on PROPOSE, pas ce qu'on inspecte.
+  //
+  // LA DÉDUPLICATION PAR RÈGLE, ensuite, tient une propriété dont la caducité
+  // dépend : l'empreinte porte la règle et non son libellé (arbitrage 2), si
+  // bien que deux candidats de MÊME règle produiraient deux propositions au
+  // hachage IDENTIQUE. La comparaison d'ensembles de la route ne verrait plus
+  // l'assemblée rétrécir de deux lignes à une, et servirait indéfiniment une
+  // proposition que le cockpit ne propose plus.
+  const citables: CandidatCitable[] = [];
+  const reglesVues = new Set<string>();
+  for (const candidat of entrees.candidats) {
+    if (candidat.texte.trim().length === 0) continue;
+    if (reglesVues.has(candidat.regle)) continue;
+    reglesVues.add(candidat.regle);
+    citables.push(candidat);
+    if (citables.length === MAX_PROPOSITIONS) break;
+  }
+
+  return citables.flatMap((candidat) => {
     const fragmentRegle = depuisRegleSignee(candidat.regle, candidat.texte, sha);
-    // Un candidat dont le libellé est vide ne se cite pas : il n'y a rien à
-    // montrer au praticien, et fabriquer un intitulé serait rédiger.
+    // Inatteignable après le filtrage ci-dessus (le SHA est non vide, le
+    // libellé aussi), mais la fabrique reste seule juge de ce qu'elle accepte :
+    // s'en remettre à l'appelant pour le savoir serait rendre l'invariant
+    // dépendant du site d'appel.
     if (!fragmentRegle) return [];
 
     const fragments = [fragmentRegle, ...(fragmentPlainte ? [fragmentPlainte] : []), ...communs];
@@ -594,7 +633,13 @@ export type LigneProposition = {
 export function assembleeCourante<T extends LigneProposition>(lignes: T[]): T[] {
   const datees = lignes.filter((ligne) => ligne.assembleeLe !== null);
   if (datees.length === 0) return [];
-  const plusRecente = Math.max(...datees.map((ligne) => (ligne.assembleeLe as Date).getTime()));
+  // `reduce` et non `Math.max(...tableau)` : la table est append-only et la
+  // lecture n'est pas bornée — un dossier très ancien dépasserait la limite
+  // d'arguments d'un appel, et la lecture d'un dossier lèverait.
+  const plusRecente = datees.reduce(
+    (max, ligne) => Math.max(max, (ligne.assembleeLe as Date).getTime()),
+    Number.NEGATIVE_INFINITY,
+  );
   return datees.filter((ligne) => (ligne.assembleeLe as Date).getTime() === plusRecente);
 }
 

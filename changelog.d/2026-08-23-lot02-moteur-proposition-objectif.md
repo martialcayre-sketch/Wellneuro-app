@@ -34,11 +34,21 @@ lue en base et jamais reçue du client ; plainte dominante et candidats
 arrivent du cockpit, la carte de décision n'étant pas persistée.
 
 **Cinq gardes G7**, chacune vue rouge par mutation réelle : aucun import du
-moteur clinique, aucune propriété de mesure ordonnée, aucune écriture sur les
-tables de 6.0-A, clés exposées épinglées par le type, balayage du blob
-opposable. `canonicalSha256` est **dupliqué** (quinze lignes) plutôt que G7
-assouplie — une garde qui gagne une exception les perd toutes ; un banc
-confronte les deux implémentations pour que la copie ne dérive pas.
+moteur clinique — par alias comme par chemin relatif —, aucune propriété de
+mesure ordonnée, aucune écriture sur les tables de 6.0-A, clés exposées
+épinglées par le type, balayage du blob opposable. `canonicalSha256` est
+**dupliqué** (quinze lignes) plutôt que G7 assouplie — une garde qui gagne une
+exception les perd toutes ; un banc confronte les deux implémentations sur les
+cas qui distinguent (tableau creux, référence circulaire, collation du tri).
+
+La revue a trouvé le défaut central, et c'était celui du LOT-09 : **les deux
+listes de mots interdits étaient entièrement en français**, alors que la donnée
+amont nomme ses champs `rank` et `confidence`. La mutation la plus probable —
+recopier le champ tel qu'il arrive — serait passée, et le classement se serait
+persisté dans le blob sans qu'aucun banc ne bouge. Deux autres trous du même
+ordre : un import relatif traversait la garde d'import, et le geste
+d'assemblage rendait le dossier — verbatim patient compris — **sans journaliser
+l'accès**, son cas nominal n'écrivant rien.
 
 Écarté : assembler sur la seule anamnèse quand aucun candidat signé n'existe
 — la machine n'aurait alors rien de signé à citer, et Wellneuro deviendrait

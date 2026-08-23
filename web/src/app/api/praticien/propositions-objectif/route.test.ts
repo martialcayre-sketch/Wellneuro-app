@@ -397,6 +397,83 @@ describe('/api/praticien/propositions-objectif', () => {
     expect((corps.caduques as { id: string }[]).map((p) => p.id)).toEqual(['VIEILLE']);
   });
 
+  it('une assemblée de SIX lignes ne fait entrer aucune non-disposée dans `disposees`', async () => {
+    // E2, relevé en revue. `disposees` filtrée sur « ce qui n'est pas vivant »
+    // aurait fait tomber ici le surplus au-delà du plafond de trois, avec
+    // `disposition: null` — et l'écran l'aurait lu comme « le praticien a
+    // tranché ». Faire dire à un dossier qu'un geste a eu lieu quand il n'a
+    // pas eu lieu est exactement ce que la campagne interdit.
+    prisma.propositionObjectif.findMany.mockResolvedValue(
+      Array.from({ length: 6 }, (_, i) => ligneProposition({ id: `PROP_${i}` })),
+    );
+    const corps = await corpsDe(await GET(getRequest()));
+    expect(corps.propositions).toHaveLength(MAX_PROPOSITIONS);
+    expect(corps.disposees).toEqual([]);
+    expect(corps.caduques).toEqual([]);
+  });
+
+  it('sert un ordre STABLE quand les deux dates sont égales sur toute l’assemblée', async () => {
+    // E1, relevé en revue. Un seul `createMany` pose le même `assembleeLe`, et
+    // `cree_le` vaut `CURRENT_TIMESTAMP` — identique pour toutes les lignes
+    // d'un même INSERT. Sans départage par `id`, l'ordre servi est celui que
+    // la base veut bien rendre. Il reste ARBITRAIRE (aucun ordre n'est
+    // persisté), mais une liste qui se réordonne toute seule se lirait comme
+    // une information.
+    const { orderBy } = (await (async () => {
+      prisma.propositionObjectif.findMany.mockResolvedValue([]);
+      await GET(getRequest());
+      return prisma.propositionObjectif.findMany.mock.calls[0][0];
+    })()) as { orderBy: Record<string, unknown>[] };
+    expect(orderBy).toEqual([
+      { assembleeLe: { sort: 'desc', nulls: 'last' } },
+      { creeLe: 'desc' },
+      { id: 'asc' },
+    ]);
+  });
+
+  it('ne sert PAS une proposition dont tous les fragments sont écartés', async () => {
+    // M5, relevé en revue. La logique de `marquer` — refuser de citer le vide
+    // — vaut jusqu'à l'écran : une carte sans une seule citation n'est rien à
+    // proposer, et le LOT-03 permettrait pourtant de la reprendre.
+    prisma.propositionObjectif.findMany.mockResolvedValue([
+      ligneProposition({ id: 'VIDE', fragments: [{ texte: 'sans provenance' }] }),
+      ligneProposition({ id: 'PLEINE' }),
+    ]);
+    const corps = await corpsDe(await GET(getRequest()));
+    expect((corps.propositions as { id: string }[]).map((p) => p.id)).toEqual(['PLEINE']);
+  });
+
+  it('refuse un identifiant de règle qui est une PHRASE, pas un identifiant', async () => {
+    // E3, relevé en revue. La route assume de ne pas pouvoir authentifier le
+    // SHA ; elle acceptait à côté un `regle` en texte libre, si bien qu'un
+    // client en session pouvait faire persister un fragment
+    // `regle: "Recommandation Wellneuro validée"` que le GET aurait servi
+    // comme une citation sourcée. Contrôle de FORME, pas confrontation.
+    const phrases = [
+      'Recommandation Wellneuro validée',
+      'PRIO-SOM-01 <script>',
+      'PRIO\nSOM',
+      'x'.repeat(65),
+    ];
+    for (const regle of phrases) {
+      expect((await POST(postRequest(corpsAssembler({ candidats: [{ regle, texte: 'x' }] })))).status)
+        .toBe(400);
+    }
+    // Les formes RÉELLES du dépôt passent, elles.
+    for (const regle of ['PRIO-DIG-01', 'ABST-SEC-01', 'priority:PRIO-SOM', 'Q_MOD_03']) {
+      vi.clearAllMocks();
+      prisma.patient.findUnique.mockResolvedValue({
+        praticienEmail: 'praticien@wellneuro.fr',
+        actif: true,
+        suiviClotureLe: null,
+      });
+      prisma.propositionObjectif.findMany.mockResolvedValue([]);
+      prisma.dispositionProposition.findMany.mockResolvedValue([]);
+      expect((await POST(postRequest(corpsAssembler({ candidats: [{ regle, texte: 'x' }] })))).status)
+        .toBe(200);
+    }
+  });
+
   it('n’expose que les clés épinglées, et jamais l’empreinte des sources', async () => {
     prisma.propositionObjectif.findMany.mockResolvedValue([ligneProposition()]);
     const corps = await corpsDe(await GET(getRequest()));
@@ -431,20 +508,43 @@ describe('/api/praticien/propositions-objectif', () => {
     expect(proposition.fragments.map((f) => f.texte)).toEqual(['Sourcé']);
   });
 
-  it('journalise la lecture du dossier, une seule fois, et jamais l’URL reçue', async () => {
-    await GET(getRequest('idPatient=PAT_TEST&bruit=1'));
-    // La journalisation est portée par `verifierAppartenancePatient` : ce banc
-    // vérifie que le GET a bien opté (le POST, lui, ne doit pas).
+  it('JOURNALISE `assembler`, parce qu’il rend le dossier — mais pas `ecarter`', async () => {
+    // CE CAS ÉPINGLAIT L'INVERSE À LA PREMIÈRE RÉDACTION, et la revue a montré
+    // pourquoi c'était faux : `assembler` rend EXACTEMENT le corps du GET,
+    // fragments compris, et son cas nominal n'écrit rien (idempotence). Le
+    // patron « une écriture laisse sa propre trace » ne s'applique donc pas —
+    // la table ne porte même pas de `praticien_email`. Le chemin d'usage
+    // normal serait resté sans trace.
+    await POST(postRequest(corpsAssembler()));
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    // Gabarit LITTÉRAL, jamais l'URL reçue (G-TRUST-04).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ route: '/api/praticien/propositions-objectif' }),
+      }),
+    );
+
+    // `ecarter` écrit une ligne qui porte son auteur et sa date, et ne rend
+    // pas le dossier : rien à journaliser en plus.
     vi.clearAllMocks();
     prisma.patient.findUnique.mockResolvedValue({
       praticienEmail: 'praticien@wellneuro.fr',
       actif: true,
       suiviClotureLe: null,
     });
-    prisma.propositionObjectif.findMany.mockResolvedValue([]);
-    prisma.dispositionProposition.findMany.mockResolvedValue([]);
-    await POST(postRequest(corpsAssembler()));
+    prisma.propositionObjectif.findFirst.mockResolvedValue({ id: 'PROP_1' });
+    prisma.dispositionProposition.create.mockResolvedValue({
+      id: 'DIS_NEUVE',
+      geste: 'ecartee',
+      creeLe: new Date('2026-08-23T09:00:00.000Z'),
+    });
+    await POST(postRequest(corpsEcarter()));
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('une seule ligne de journal par appel — jamais deux pour la même lecture', async () => {
+    await GET(getRequest('idPatient=PAT_TEST&bruit=1'));
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
   });
 
   // ── Append-only et frontières ─────────────────────────────────────────────
