@@ -4,6 +4,84 @@
 
 ## Décisions actives
 
+### D-098 — Trois dettes tranchées : l'ancre devient textuelle, le classificateur perd un prédicat, les orphelines ne se rouvrent pas
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-23)
+- Domaine : outillage de doctrine et de test — aucun code produit, aucune
+  règle clinique
+- Fait suite à : [[D-097]], dont la livraison a produit la dette d'ancres
+- Porte sur : les citations `fichier:ligne` du corpus de doctrine,
+  `scripts/wn-diagnostic-e2e.mjs`, et le sort des dix règles orphelines
+
+**Contexte.** Le LOT-09 a laissé trois dettes nommées. Elles sont tranchées
+ici sur **mesure**, pas sur impression.
+
+**Décision 1 — les dix orphelines ne se rouvrent pas.** [[D-096]] les a
+laissées « dettes nommées sans véhicule » et le **LOT-08** les porte déjà dans
+son périmètre, liste et méthode de recomptage comprises. Les re-décider huit
+jours plus tard serait de l'agitation de portefeuille. Elles s'exécutent au
+LOT-08 ; aucune décision n'est due ici.
+
+**Décision 2 — l'ancre d'une citation devient TEXTUELLE, parce que le contrôle
+évident ne marche pas.** Mesure du 2026-08-23 : **247 citations**
+`fichier:ligne` dans `docs/claude/doctrine/` et ce registre. Le contrôle qu'on
+écrirait spontanément — le fichier existe, la ligne est dans les bornes — rend
+0 introuvable et **2 hors bornes** (`DECISIONS.md:4125`).
+
+Et voici ce qui tranche : **les huit citations faussées par le LOT-09 étaient
+toutes dans les bornes.** Ce contrôle-là n'en aurait attrapé aucune. Il garde
+contre la suppression d'un fichier, jamais contre la dérive — c'est-à-dire
+contre le seul défaut qu'on ait réellement observé, deux fois en un jour.
+
+Sur les **12 citations à verbatim accolé**, les seules vérifiables sans
+ambiguïté : 8 justes, 2 faux positifs de l'instrument de mesure (`D-097` cite
+avec `[…]` et du gras), **2 réellement mortes** — `drapeauxAnamnese.ts:28`
+cite « Difficultés à avaler », absent de tout le fichier, et
+`orientationEngine.ts:769` cite `Q_GAS_01`, qui vit aux lignes 283, 479 et 966.
+
+Le correctif n'est donc **pas un banc de plus, c'est un changement d'ancre** :
+une citation porte un **verbatim exact ou un nom de symbole**, le numéro de
+ligne devenant une commodité. Un contrôle « le texte cité existe dans le
+fichier cité » ne fait alors **aucune arithmétique de ligne** : décidable,
+sans faux positif, immunisé à la dérive. Il aurait attrapé les deux mortes —
+et surtout, avec une ancre textuelle, les huit décalées restaient **lisibles**
+au lieu d'envoyer le relecteur sur une consigne de médicaments.
+
+**Ce que cette décision ne fait pas** : réécrire les 247 citations. Le
+bénéfice ne paie pas la revue, et un diff de 247 lignes noierait le contrôle
+qui l'accompagne. Convention appliquée **au neuf et au touché**, l'existant
+grandfathered et le disant. **Limite assumée** : le contrôle prouvera que le
+texte cité existe dans le fichier cité, jamais qu'il s'y trouve à la ligne
+annoncée. Le numéro reste une commodité non gardée.
+
+**Décision 3 — le classificateur E2E perd un prédicat.**
+`scripts/wn-diagnostic-e2e.mjs` exige aujourd'hui le journal réseau vide
+**et** `page.goto` dans `error-context.md`. Le premier est le fait décisif —
+aucune requête émise, donc ni l'application, ni Prisma, ni PostgreSQL ne
+peuvent être en cause. Le second dépend de ce que Playwright choisit d'écrire :
+au LOT-09, il n'y avait mis que le timeout de *teardown*, et le script s'est
+tu sur exactement le cas qu'il existe pour nommer — rendant l'enquête d'une
+demi-heure qu'il devait supprimer. `page.goto` cède la place à `timeout` ; le
+journal vide reste discriminant.
+
+Ce que ce correctif **ne fait pas** : ajouter des `retries`, blanchir un rouge,
+ou toucher au code de sortie. Le harnais sort en `1` quoi qu'il diagnostique,
+et c'est voulu — le script nomme un rouge, il ne le supprime pas.
+
+**Décision 4 — un seul lot, le LOT-10 de « Doctrine exécutable ».** Les deux
+correctifs n'ont aucun rapport de fond, mais ils partagent leur origine — la
+livraison du LOT-09 —, leur classe (outillage, aucune règle clinique) et leur
+palier. Deux lots auraient coûté deux PR pour la même quantité de travail. Le
+LOT-10 est libre de toute dépendance.
+
+**Correction de portée sur une note de session** : la mémoire de travail
+affirmait le palier T3 local « atteignable sur aucune branche de ce Mac ».
+Faux — le T3 du LOT-09 est passé **intégralement**, WebKit compris, sur un
+diff plus large que celui qui avait rougi une heure plus tôt. Le blocage
+`D-049` est **intermittent, pas structurel** : un rouge portant sa signature
+se rejoue une fois avant qu'on en conclue quoi que ce soit.
+
 ### D-097 — `DC-09` mord dans le prompt : une association ne se restitue jamais en preuve, et la clause est gardée en position
 
 - Date : 2026-08-23
