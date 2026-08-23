@@ -45,8 +45,20 @@ d'autres, il ne se limite pas à cette liste.
    `VALIDE`, `metadata` sans axe doctrinal, `typologie_lecture` fermée sur
    quatre valeurs sans rapport avec `A-E` — qui tranche la question laissée
    ouverte au §A.
-6. Une décision `D-xxx` unique portant la requalification, et son fragment
-   `changelog.d/`.
+6. **Écrire la portée de `DC-14`** (arbitrage du responsable, 2026-08-23) :
+   la règle gouverne l'**extrapolation d'un claim**, elle ne commande pas le
+   défaut d'une colonne. Une population générale **déclarée** n'est pas un
+   silence — le dépôt en fait déjà la démonstration signée avec
+   `BiologyFunctionalRange.population NOT NULL DEFAULT 'adulte_tout_venant'`
+   et son `CHECK` fermé (`D-068`/`D-069`). Le modèle retenu pour la campagne
+   est **général déclaré + exclusions déclarées**, porté par l'intervention
+   (95 entrées) et non par le claim (8 224).
+   C'est une **précision de portée, pas un renversement** : le texte de
+   `DC-14` n'est pas modifié, sa lecture est écrite. Si la descente montre que
+   le texte ne supporte pas cette lecture, le lot s'arrête et le dit — amender
+   une règle de la constitution est un acte distinct.
+7. Une décision `D-xxx` unique portant la requalification **et** cette portée,
+   avec son fragment `changelog.d/`.
 
 ## Fichiers probables
 
@@ -96,5 +108,7 @@ Aucune en amont. En aval : tous les lots citent les statuts établis ici.
 - [ ] `DC-17` et `DC-30` basculés avec leur référence ; `DC-29` formulé
       exactement (typé, sans producteur) et renvoyé au LOT-06.
 - [ ] §D clos, §E requalifié, V1 et V4 requalifiés, §A tranché dans l'audit.
+- [ ] Portée de `DC-14` écrite (extrapolation, pas défaut de colonne) — ou le
+      lot s'arrête en disant que le texte ne la supporte pas.
 - [ ] Une décision `D-xxx` + un fragment `changelog.d/`.
 - [ ] Aucun fichier de code modifié.

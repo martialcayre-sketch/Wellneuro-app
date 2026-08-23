@@ -24,22 +24,38 @@
   sur `déclaré/observé/vécu/interprété`, sans rapport avec la taxonomie `A-E`
   — V2 est un axe **nouveau**, pas un enrichissement. Mesure de production du
   2026-08-23 (conteneur `one-off-8873`, lecture seule) : **8 224 claims, tous
-  `VALIDE`**, `metadata` sans axe doctrinal. Conséquence portée au LOT-02 : les
-  colonnes neuves naissent `NULL` sur 8 224 lignes et `DC-14` lit une
-  population absente comme une **restriction** — l'arbitrage se pose au
-  responsable avant d'écrire le schéma.
+  `VALIDE`**, `metadata` sans axe doctrinal.
+- **Arbitrage du responsable, 2026-08-23 — la population sort du claim.** Le
+  cadrage initial posait un axe `population` lu fail-closed, ce qui aurait
+  écarté les 8 224 claims d'un moteur qui n'existe pas encore. Le modèle
+  retenu est **général déclaré + exclusions déclarées**, porté par
+  l'**intervention** (95 entrées, champ `neCouvrePas` aujourd'hui `null` sur
+  les 95) et non par le claim : un claim descriptif n'a pas de population,
+  c'est la proposition qui en a une (`DC-11`) ; le précédent du dépôt est déjà
+  celui-là (`BiologyFunctionalRange.population NOT NULL DEFAULT
+  'adulte_tout_venant'`, `D-068`/`D-069`) ; et écrire un défaut sur 8 224
+  lignes par migration fabriquerait des déclarations que personne n'a
+  prononcées (`DC-17`, `DC-19`). **`DC-14` n'est pas modifiée** — sa portée est
+  écrite : elle gouverne l'extrapolation d'un claim, pas le défaut d'une
+  colonne, et une population générale *déclarée* n'est pas un silence.
+  Garde-fou : une intervention non curée se propose **en le disant** (`DC-35`),
+  sans quoi « ouvert par défaut » deviendrait « aveugle par défaut ».
+  Conséquences — le LOT-02 passe à **trois** colonnes et cesse d'être le chemin
+  critique ; les LOT-05 et LOT-06 n'en dépendent plus.
+- **Aucun claim n'est invalidé par la campagne** : `statut`, `validateur` et
+  `valide_at` ne sont touchés par aucun lot.
 - **V3 n'est plus préventif, il est en retard** : `grossesse`/`allaitement`
   n'existent que dans `trust/contenus/registre.ts` (contenus d'information),
   aucun filtre d'intervention, alors que `priorityRulesV1` est signée
   (`D-061`) et que `D-093` a ouvert les recommandations élargies en notant que
   le classement n'est couvert par aucune ligne signée. Sa fenêtre est la borne
   de six semaines de `D-093`.
-- Huit lots : état atteint (docs) · migration du schéma de claim
-  (**confirmation obligatoire**, seule dans sa PR, `release-db` avant les
-  consommateurs) · banc de doctrine `DC-58` · typage de l'objet de sécurité et
-  pouvoir d'inhibition · gates de population et effet indésirable · conflit de
-  sources et escalade · `DC-22` · clôture. L'ordre suit le **chemin critique**,
-  pas l'importance des règles.
+- Huit lots : état atteint (docs) · migration du schéma de claim, trois axes
+  (**confirmation obligatoire**, seule dans sa PR) · banc de doctrine `DC-58` ·
+  typage de l'objet de sécurité et pouvoir d'inhibition · gates de population
+  et effet indésirable · conflit de sources et escalade · `DC-22` · clôture.
+  L'ordre est un **graphe**, pas une chaîne : le seul lien fort est
+  LOT-04 → LOT-05/LOT-06.
 - Gate de campagne : aucun banc sans sujet, et l'acte d'intégration compte
   **trois preuves** — décision `D-xxx`, banc qui mord, statut basculé dans
   `CONSTITUTION_CLINIQUE.md`. État, `ACTIVE_CAMPAIGN` et `FILE_ATTENTE`

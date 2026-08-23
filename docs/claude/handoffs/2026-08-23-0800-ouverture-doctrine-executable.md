@@ -28,14 +28,36 @@
   l'audit, bascule `DC-17` (hook `demandeClinique`, `D-083`) et `DC-30`
   (moteur + garde, `D-041`/`D-044`) — la constitution dit encore « Banc dû »
   pour les deux — et formule `DC-29` exactement : **typée, sans producteur**.
-- **LOT-02 = migration, CONFIRMATION OBLIGATOIRE**, et son arbitrage se pose
-  AVANT le schéma. Mesure de production (`one-off-8873`, lecture seule) :
-  **8 224 claims, tous `VALIDE`** ; `metadata` ne porte que
-  `section`/`source_chunk`/`page`/`usage`. Les quatre colonnes neuves naissent
-  `NULL` sur 8 224 lignes, et `DC-14` lit une population absente comme une
-  restriction : **la migration rend mécaniquement 8 224 claims restreints**.
-  Effet immédiat assumé, ou derrière un drapeau le temps de la curation ? —
-  question au responsable, pas à l'ingénierie.
+- **ARBITRAGE DU 2026-08-23 — LA POPULATION SORT DU CLAIM.** Le cadrage
+  initial posait un axe `population` lu fail-closed sur `rag_corpus_claims` :
+  sur 8 224 claims tous `VALIDE`, cela écartait tout le corpus d'un moteur qui
+  n'existe pas encore. Modèle retenu : **général déclaré + exclusions
+  déclarées**, porté par l'**intervention**, pas par le claim.
+  Trois appuis — un claim descriptif n'a pas de population, c'est la
+  proposition qui en a une (`DC-11`) ; le précédent du dépôt est déjà
+  « général déclaré » (`BiologyFunctionalRange.population NOT NULL DEFAULT
+  'adulte_tout_venant'` + `CHECK` fermé, `D-068`/`D-069`) ; et un `DEFAULT` sur
+  8 224 lignes fabriquerait des déclarations que personne n'a prononcées
+  (`DC-17`, `DC-19`).
+  **`DC-14` n'est pas modifiée** : sa *portée* est écrite au LOT-01 — elle
+  gouverne l'extrapolation d'un claim, pas le défaut d'une colonne ; une
+  population générale **déclarée** n'est pas un silence. Si la descente montre
+  que le texte ne supporte pas cette lecture, le LOT-01 s'arrête et le dit.
+  **Garde-fou non négociable** : une intervention dont les exclusions ne sont
+  pas curées se propose **en le disant** (`DC-35`). Sans ce message, « ouvert
+  par défaut » devient « aveugle par défaut ».
+  Conséquences — LOT-02 à **trois** colonnes et **plus le chemin critique** ;
+  LOT-05 et LOT-06 n'en dépendent plus ; la cible de curation devient
+  `neCouvrePas` (95 interventions, `null` sur les 95).
+- **AUCUN CLAIM N'EST INVALIDÉ, ni ne peut l'être** : `statut`, `validateur`
+  et `valide_at` ne sont touchés par aucun lot. Le mot « restreint » employé
+  au premier cadrage désignait l'extrapolation, pas la certification — il a
+  été lu comme « invalidé » et la formulation a été corrigée partout.
+- **LOT-02 = migration, CONFIRMATION OBLIGATOIRE.** Trois axes : catégorie
+  `A-E` (`DC-07`), niveau d'exécution (`DC-13`), nature du seuil (`DC-20`).
+  Aucun consommateur dans la campagne — le déblocage est **externe**
+  (Curation signée n'a aujourd'hui aucun endroit où écrire ces axes), et c'est
+  ce qui justifie de partir tôt malgré la perte du chemin critique.
   `rag_corpus_claims` est une table **SQL-brut hors `schema.prisma`**
   (`prisma.config.ts`, `tables.external`) : SQL écrit à la main, pas
   `prisma migrate dev`. Et un fichier posé dans `prisma/checks/` **ne tourne
@@ -44,8 +66,8 @@
   Piège à ne pas rater : si la descente ne trouve **aucune** valeur orpheline,
   le banc ne se pose pas ; un garde vert en permanence sans sujet ne prouve
   rien. La mesure est alors la livraison.
-- **LOT-04 n'attend pas le LOT-02** : typer un signal d'anamnèse ne demande
-  aucun axe du claim. Deux faits utiles — `decisionCard.ts:112` sait déjà
+- **LOT-04 est le seul nœud du graphe** : LOT-05 et LOT-06 en dépendent, plus
+  rien d'autre n'est enchaîné. Deux faits utiles — `decisionCard.ts:112` sait déjà
   bloquer sur `safetyFindings.length > 0` (le consommateur est écrit, il n'a
   jamais reçu d'entrée), et `evaluerAbstentionImporteurs.guard.test.ts`
   documente la branche comme inatteignable : **à mettre à jour, jamais à
@@ -68,8 +90,12 @@
 - `DC-29` — aucune provenance ne dit à partir de combien de sources
   indépendantes on écrit `CONVERGENCE_MODEREE`. Arbitrage au LOT-06 ; défaut
   assumé : la forme reste vide.
-- Le contenu des axes du claim (catégorie, population, niveau d'exécution)
-  n'appartient pas à cette campagne : c'est **Curation signée** (rang 4), à
-  cadence praticien. Le LOT-02 ne livre que la structure.
+- Le contenu des axes du claim (catégorie, niveau d'exécution, nature du
+  seuil) n'appartient pas à cette campagne : c'est **Curation signée**
+  (rang 4), à cadence praticien. Le LOT-02 ne livre que la structure.
+- **Combien des 95 interventions le LOT-05 curera-t-il ?** Les curer toutes en
+  un lot est probablement irréaliste. Le lot doit nommer celles qu'il a
+  curées et faire dire au moteur, pour les autres, qu'elles ne le sont pas —
+  un périmètre partiel tu serait pire qu'un périmètre partiel déclaré.
 - `DC-26` restera partiel à la clôture, et le LOT-08 doit le dire plutôt que
   le laisser passer pour fermé.

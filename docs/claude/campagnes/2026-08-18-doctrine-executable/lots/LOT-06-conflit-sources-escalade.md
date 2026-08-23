@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 statut: "à_faire"
-dépend_de: "LOT-02 (releasée et constatée), LOT-04"
+dépend_de: "LOT-04 — PLUS le LOT-02 depuis l'arbitrage du 2026-08-23"
 ---
 
 # LOT-06 — V1 achevé : conflit de sources, escalade, sort de la convergence
@@ -32,10 +32,13 @@ et le fichier le dit explicitement.
 1. **La politique de résolution `DC-54`**, écrite comme une procédure
    déterministe et versionnée : identifier la contradiction · ne pas fusionner
    arbitrairement · comparer niveau de preuve, contexte, date, population ·
-   produire la **position la plus prudente**. Les quatre axes de comparaison
-   existent enfin : `niveau_preuve` et `classe_autorite` sont au claim depuis
-   l'origine, `population` arrive au LOT-02 — c'est la dépendance réelle de ce
-   lot.
+   produire la **position la plus prudente**.
+   **Trois des quatre axes sont mécanisables, le quatrième ne l'est pas** :
+   `niveau_preuve` et `classe_autorite` sont au claim depuis l'origine,
+   `valide_at` porte la date — mais **la population n'est pas sur le claim**
+   et n'y sera pas (arbitrage du 2026-08-23, LOT-02). La politique doit donc
+   **dire qu'elle ne compare pas les populations**, plutôt que faire comme si.
+   Un axe manquant qu'on tait est un axe qu'on croit couvert.
 2. **Le producteur `CONFLIT_SOURCES`** : deux claims du corpus qui se
    contredisent sur un même objet. La détection est déterministe, jamais
    générative.
@@ -70,9 +73,10 @@ et le fichier le dit explicitement.
 
 ## Dépendances
 
-En amont : **LOT-02** (la comparaison de populations est un des quatre axes de
-la politique) et **LOT-04** (un conflit à impact de sécurité passe par l'objet
-de sécurité, pas par un second canal).
+En amont : **LOT-04** (un conflit à impact de sécurité passe par l'objet de
+sécurité, pas par un second canal). **Le LOT-02 n'est plus une dépendance**
+depuis l'arbitrage du 2026-08-23 — la politique perd son axe population et le
+déclare, elle ne l'attend pas.
 En aval : aucun.
 
 ## Étapes
@@ -99,7 +103,8 @@ En aval : aucun.
 
 ## Critères de done
 
-- [ ] Politique de résolution écrite, déterministe, versionnée, décidée.
+- [ ] Politique de résolution écrite, déterministe, versionnée, décidée —
+      **et déclarant l'axe population comme non comparé**.
 - [ ] `CONFLIT_SOURCES` a un producteur ; ses claims sont épinglés et gardés
       par le contrat de fraîcheur.
 - [ ] L'escalade praticien est une issue nommée, distincte de `D-003`.

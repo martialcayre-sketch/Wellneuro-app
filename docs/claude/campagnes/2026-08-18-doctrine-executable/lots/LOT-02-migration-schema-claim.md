@@ -10,21 +10,24 @@ dépend_de: "LOT-01"
 
 À la fin de ce lot, `rag_corpus_claims` porte les axes que la doctrine lui
 demande — et **rien ne les consomme encore**. La migration est seule dans sa
-PR ; `release-db` passe entre elle et tout code qui en dépend (LOT-05,
-LOT-06).
+PR.
 
-C'est le chemin critique de la campagne : le délai d'approbation `release-db`
-est incompressible, et c'est pour cela que ce lot part tôt.
+**Aucun claim n'est invalidé, ni ne peut l'être par ce lot.** La colonne
+`statut` n'est pas touchée : une migration `ADD COLUMN` n'écrit aucune ligne
+existante, les 8 224 claims restent `VALIDE` avec leur `validateur` et leur
+`valide_at`, et `match_wellneuro_rag_claims` — la seule voie de récupération —
+continue de les servir à l'identique. Le lot ajoute des **axes de
+qualification**, il ne rejuge aucune certification praticien.
 
 ## Périmètre pressenti (à confirmer au moment du schéma)
 
-Quatre axes, tous **nullables**, tous **lus fail-closed** :
+**Trois axes**, tous **nullables**, aucun avec un défaut porteur de sens
+clinique :
 
 | Axe | Règle | Vocabulaire |
 |---|---|---|
 | Catégorie | `DC-07` | `A` descriptif · `B` associatif · `C` orientation · `D` intervention · `E` sécurité |
 | Niveau d'exécution | `DC-13` | `AUTO` · `AUTO_WITH_EXPLANATION` · `SUGGEST_ONLY` · `PRACTITIONER_REQUIRED` · `PROHIBITED_AUTOMATION` |
-| Population | `DC-14` | à arbitrer : énuméré fermé ou structure ; l'absence **restreint** |
 | Nature du seuil | `DC-20` | `clinical` · `instrument` · `data_quality` · `technical` · `regulatory` |
 
 `rag_corpus_claims` est une **table SQL-brut hors `schema.prisma`**
@@ -32,27 +35,48 @@ Quatre axes, tous **nullables**, tous **lus fail-closed** :
 `prisma migrate dev` sur un modèle. Chaque vocabulaire arrive avec sa
 contrainte `CHECK`, sur le patron de `rag_corpus_claims_typologie`.
 
-## L'arbitrage à porter au responsable, avant d'écrire
+## Pourquoi la population n'est PAS dans cette liste — arbitrage du 2026-08-23
 
-**Mesure du cadrage : 8 224 claims, tous `VALIDE`.** Les quatre colonnes
-naissent donc `NULL` sur les 8 224 lignes. Or `DC-14` pose que l'absence de
-population déclarée **se lit comme une restriction, jamais comme une
-généralité**, et `DC-13` que le niveau absent est le plus restrictif. Appliqué
-littéralement le jour du merge, cela rend 8 224 claims hors population et non
-exécutables automatiquement.
+Le cadrage prévoyait un quatrième axe, `population` (`DC-14`), lu fail-closed :
+un claim sans population déclarée n'aurait valu pour aucune population.
+Appliqué aux 8 224 claims tous `VALIDE`, cela revenait à écarter tout le
+corpus d'un moteur qui n'existe pas encore. **Arbitrage du responsable : la
+population ne va pas sur le claim.**
 
-Deux lectures, et le lot ne tranche pas seul :
+Trois raisons, et elles tiennent au dépôt :
 
-1. **Effet immédiat assumé** — la restriction est l'état honnête du corpus
-   tant qu'il n'est pas curé ; rien ne se dégrade puisque rien ne s'exécute
-   automatiquement aujourd'hui (`D-003`).
-2. **Derrière un drapeau** — la lecture fail-closed n'entre en vigueur qu'une
-   fois la curation avancée, le temps que la campagne Curation signée
-   remplisse les axes.
+1. **Un claim descriptif n'a pas de population** — « le magnésium participe à
+   la transmission neuromusculaire » est vrai, point. C'est la **proposition**
+   « prendre du magnésium » qui a une population, des exclusions et des
+   interactions. `DC-11` le dit déjà : c'est le claim *d'intervention* qui
+   porte indication, population, contre-indications. Les exclusions réelles —
+   vegan, cœliaque — ne qualifient d'ailleurs pas un savoir mais un **produit**
+   (gélule de gélatine, excipient au gluten).
+2. **Le précédent du dépôt est « général déclaré », pas « silence
+   restrictif »** — `BiologyFunctionalRange.population` et les plages du
+   catalogue biologie portent `NOT NULL DEFAULT 'adulte_tout_venant'` avec un
+   `CHECK` fermé (`schema.prisma:1668`, migration `cb_biologie_catalogue_v1`,
+   `D-068`/`D-069`). Ce défaut n'enfreint pas `DC-14` : `'adulte_tout_venant'`
+   est une **valeur écrite**, pas une absence. `DC-14` interdit de lire un
+   *silence* comme une généralité ; elle n'interdit pas de déclarer qu'un
+   contenu vise la population générale.
+3. **On ne peut pas déclarer à la place du curateur.** Écrire
+   `adulte_tout_venant` sur 8 224 lignes par une clause `DEFAULT` fabriquerait
+   8 224 déclarations cliniques que personne n'a prononcées — `DC-17`,
+   `DC-19`. Le défaut est légitime au moment où un curateur l'accepte, jamais
+   rétroactivement par migration.
 
-L'arbitrage se pose **avant** l'écriture du schéma, avec la mesure sous les
-yeux : ce qui consomme réellement ces colonnes aujourd'hui, et ce qui les
-consommera au LOT-05.
+L'axe population et ses exclusions vont donc sur le **registre
+d'interventions** (95 entrées, champ `neCouvrePas` aujourd'hui `null` sur les
+95) — c'est le LOT-05. Curation humainement faisable : 95, pas 8 224.
+
+## Qui consomme les trois axes restants
+
+Aucun lot de cette campagne. Le consommateur réel est la campagne **Curation
+signée** (rang 4, cadence praticien continue) : elle n'a aujourd'hui **aucun
+endroit où écrire** la catégorie, le niveau d'exécution ou la nature du seuil
+d'un claim. C'est ce qui justifie que le lot parte tôt malgré la perte de son
+chemin critique — pas une dépendance interne, mais un déblocage externe.
 
 ## Fichiers probables
 
@@ -70,31 +94,36 @@ consommera au LOT-05.
   au diff.
 - Aucun code applicatif, aucune route, aucun écran dans ce lot : les colonnes
   arrivent inertes.
+- **Aucune colonne `population` sur le claim** — arbitrage du 2026-08-23,
+  ci-dessus. Sa réintroduction demanderait une décision qui renverse cet
+  arbitrage, pas une commodité d'implémentation.
 - Aucun `NOT NULL`, aucun `DEFAULT` porteur de sens clinique sur les colonnes
-  neuves : un défaut sur la population **serait** une extrapolation hors
-  population, c'est-à-dire exactement ce que `DC-14` interdit.
+  neuves : un défaut écrit par la migration serait une déclaration clinique
+  que personne n'a prononcée (`DC-17`, `DC-19`).
 - Aucun backfill, même « évident » : remplir un axe doctrinal sur 8 224 claims
   est un acte de curation signée, pas une migration.
+- **Ne toucher ni `statut`, ni `validateur`, ni `valide_at`** : la
+  certification praticien n'est pas le sujet de ce lot.
 - Aucun SQL destructif.
 
 ## Dépendances
 
-En amont : LOT-01 (le statut réel de `DC-07`/`DC-13`/`DC-14`/`DC-20` est écrit).
-En aval : LOT-05 et LOT-06 ne démarrent qu'après `release-db` exécutée **et**
-l'état constaté par conteneur Scalingo.
+En amont : LOT-01 (le statut réel de `DC-07`/`DC-13`/`DC-20` est écrit).
+En aval : **aucun lot de la campagne ne consomme ces colonnes** (voir
+ci-dessus). Le déblocage est externe — Curation signée.
 
 ## Étapes
 
-1. Poser l'arbitrage ci-dessus au responsable, mesure à l'appui.
-2. Proposer le SQL (colonnes, `CHECK`, index si justifié) — **s'arrêter et
-   demander la confirmation**.
-3. Après confirmation : migration seule dans sa branche/PR, contrat SQL et son
+1. Proposer le SQL (trois colonnes, `CHECK`, index si justifié) —
+   **s'arrêter et demander la confirmation**.
+2. Après confirmation : migration seule dans sa branche/PR, contrat SQL et son
    négatif, étape CI qui les nomme, T3 local.
-4. `release-db` après approbation ; **constater par conteneur** : colonnes
-   présentes, contraintes actives, 8 224 lignes à `NULL`, aucune valeur
-   inventée.
-5. Fragment `changelog.d/` ; décision `D-xxx` portant le vocabulaire des
-   quatre axes et la règle de lecture fail-closed.
+3. `release-db` après approbation ; **constater par conteneur** : colonnes
+   présentes, contraintes actives, 8 224 lignes à `NULL`, `statut` inchangé
+   sur les 8 224, aucune valeur inventée.
+4. Fragment `changelog.d/` ; décision `D-xxx` portant le vocabulaire des trois
+   axes et la règle de lecture (niveau d'exécution absent ⇒ le plus
+   restrictif, `DC-13`).
 
 ## Tests
 
@@ -107,9 +136,10 @@ l'état constaté par conteneur Scalingo.
 
 ## Critères de done
 
-- [ ] Arbitrage du responsable obtenu et consigné (effet immédiat ou drapeau).
 - [ ] Confirmation explicite obtenue avant toute écriture de migration.
-- [ ] Migration seule dans sa PR, releasée, **constatée par conteneur**.
+- [ ] **Trois** colonnes, aucune population sur le claim.
+- [ ] Migration seule dans sa PR, releasée, **constatée par conteneur** —
+      `statut` inchangé sur les 8 224 claims, vérifié explicitement.
 - [ ] Contrat SQL + négatif vus rouges, joués en CI et en T3.
 - [ ] Aucun backfill, aucun défaut clinique, aucun code consommateur.
 - [ ] Décision `D-xxx` + fragment `changelog.d/`.
