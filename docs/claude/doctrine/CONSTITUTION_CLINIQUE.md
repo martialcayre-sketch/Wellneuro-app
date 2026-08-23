@@ -59,7 +59,7 @@ hiérarchise ou explique des règles dont la provenance est connue.
 Le texte qui explique pourquoi peut être rédigé par un modèle ; ce qu'il
 invoque doit préexister.
 *Proposition — l'interdit n'est écrit que pour le bloc d'orientation
-(`anthropic.ts:494`, `:432`) ; le reste de la synthèse (hypothèses, points de
+(`anthropic.ts:505`, `:443`) ; le reste de la synthèse (hypothèses, points de
 vigilance) est en prose libre sans provenance. [[D-011]] a délibérément choisi
 de ne pas la faire mordre : `verifierRestitutionOrientation.ts` journalise, il
 ne censure pas, et ses angles morts sont nommés (`:23-32`). **Orpheline** : le
@@ -118,12 +118,30 @@ passe par le praticien ([[D-003]]). Déclencheur : la première exécution
 
 **DC-09 — Un claim associatif ne devient jamais une preuve.** « X peut être
 associé à Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
-*Proposition — garde-fou le plus exposé de la chaîne, et la seule des quatre
-règles que l'audit désignait comme telles à n'avoir aucun ancrage. Le LOT-01
-de la chaîne T0 la portait ; ce lot est livré depuis le 2026-08-18 sans rien
-avoir livré pour elle. **Porté par le LOT-09** de « Doctrine exécutable »
-([[D-096]]), sur le patron qui a refermé `DC-27` : clause de prompt plus garde
-qui épingle la formule.*
+*Acté [[D-097]] — LOT-09 de « Doctrine exécutable », sur le patron qui a
+refermé `DC-27`. Le prompt de synthèse porte l'interdit dans son **cadre
+déontologique**, entré en `synthese-v29` : `anthropic.ts:347` « Une association
+n'est pas une preuve […] Ne l'écris jamais sous la forme "X prouve Y",
+"X explique Y", "X démontre Y" ni "X atteste Y" ». Banc :
+`promptAssociationPreuve.guard.test.ts:54` (la formule, et son unicité), `:67`
+(l'**opérateur** « jamais » — sans quoi « Évite de l'écrire » resterait vert),
+`:85` (le bloc déterministe hors périmètre) et `:133` (la **position** — la
+clause reste au-dessus des sections topiques). **Portée exacte de la
+position** : elle met la clause hors de portée de la section orientation, qui
+prime « relative aux explorations à proposer » mais ne relève « aucune des
+interdictions posées plus haut » (`anthropic.ts:525`). Deux autres sections
+priment sans cette réserve (`:384`, `:457`) : être plus haut ne protège pas
+d'elles — aucune contradiction pratique aujourd'hui, elles sont plus
+restrictives, jamais moins.
+Côté déterministe, rien n'avait à être posé : `ContradictionFinding.description`
+impose déjà la formulation neutre (`contradictionFinding.ts:130-136`, appliquée
+`contradictionsV1.ts:50-53`) et aucune table signée ne conclut.
+**Limite** : comme pour `DC-27`, le banc garde la consigne, pas la sortie du
+modèle. **Second point de passage examiné et écarté** : le détecteur de
+restitution ne peut pas porter ce marqueur — le glissement probatoire n'a pas
+de vocabulaire fermé, et l'y forcer demanderait un arbitrage chiffré neuf
+(motif écrit, `verifierRestitutionOrientation.ts:43`). Le régime de [[D-011]]
+— journaliser, ne pas censurer — n'est pas touché.*
 
 **DC-10 — Un claim d'orientation produit une orientation suggérée, jamais un
 diagnostic.** « En présence de X + Y, explorer éventuellement Z » alimente le
@@ -304,7 +322,7 @@ règle ne peut pas être actée sur la foi d'un compilateur absent.*
 plusieurs axes se chevauchent, c'est la règle la plus facile à enfreindre sans
 s'en apercevoir.
 *Acté [[D-043]] — le prompt de synthèse interdit désormais **la causalité**,
-entré en v20 : `anthropic.ts:469` « ne qualifie pas cet écart de progrès,
+entré en v20 : `anthropic.ts:480` « ne qualifie pas cet écart de progrès,
 d'aggravation ni d'effet d'une prise en charge […] Association n'est pas
 causalité ». Banc : `promptPassationCourante.guard.test.ts:70-78`, qui épingle
 les deux formules dans `SYSTEM_PROMPT_GOUVERNANCE` (suite Vitest complète,
@@ -388,7 +406,7 @@ aux modules compréhension et objectif négocié d'importer `@/lib/clinical`,
 `@/lib/equilibre`, ou de porter une racine diagnostique
 (`comprehensionAppendOnly.guard.test.ts:163-181`,
 `objectifNegocie.guard.test.ts:312-330`, CI) ; le prompt le porte aussi
-(`anthropic.ts:334`, `:522`) et les tables le déclarent
+(`anthropic.ts:344`, `:533`) et les tables le déclarent
 (`priorityRulesV1.ts:16-17`). **Portée** : modules nommés, pas le dépôt
 entier — une surface neuve n'est attrapée par aucun de ces bancs.*
 

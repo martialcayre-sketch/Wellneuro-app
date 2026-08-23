@@ -478,10 +478,12 @@ Trois sorts, qui n'ont rien à voir entre eux :
   descente.
 
 **`DC-09` faisait partie de cette liste et n'y est plus** : arbitrage du
-2026-08-23 ([[D-096]]), elle reçoit le **LOT-09** de « Doctrine exécutable ».
-Elle était la dernière des quatre règles que cet audit désignait comme les
-plus exposées à rester sans ancrage, et sa fermeture reprend le patron exact
-qui a refermé `DC-27` — clause de prompt plus garde qui épingle la formule.
+2026-08-23 ([[D-096]]), elle a reçu le **LOT-09** de « Doctrine exécutable »,
+**livré le jour même** ([[D-097]]). Elle était la dernière des quatre règles
+que cet audit désignait comme les plus exposées à rester sans ancrage ; sa
+fermeture a repris le patron exact qui a refermé `DC-27` — clause de prompt
+plus garde qui épingle la formule, ici doublée d'une garde de **position** et
+d'une garde de l'**opérateur** d'interdiction.
 Reste **`DC-36`**, sans preuve, sans banc et sans véhicule.
 
 ### B — Trois faits étaient déjà vrais le 2026-08-11, et l'audit les a manqués
@@ -502,8 +504,12 @@ Reste **`DC-36`**, sans preuve, sans banc et sans véhicule.
 ### C — Constats de fond devenus faux
 
 - **Ligne 28** — « les quatre règles les plus exposées, `DC-09`, `DC-27`,
-  `DC-29`, `DC-30`, n'ont aucun ancrage exécutable » : faux pour trois d'entre
-  elles. Reste vrai pour **`DC-09` seule**.
+  `DC-29`, `DC-30`, n'ont aucun ancrage exécutable » : **faux pour les
+  quatre** depuis le 2026-08-23. `DC-09`, dernière des quatre, a été refermée
+  par le LOT-09 de « Doctrine exécutable » ([[D-097]]) : clause du cadre
+  déontologique en `synthese-v29`, banc de prompt qui épingle la formule **et
+  sa position**. Le constat d'origine était juste au 2026-08-11 ; il n'a plus
+  de portée courante.
 - **§D en entier (l. 269-284)** — **CLOS**. Le Socle LOT-02 ([[D-083]] §3) a
   porté le niveau « demande » du hook de trois motifs à **huit fichiers
   cliniques**, avec banc en CI sans filtre `docs_only`.
@@ -570,17 +576,17 @@ Ce que le lot établit se vérifie, en revanche, au grep de
 | Mesure | Compte |
 |---|---|
 | règles re-vérifiées contre le dépôt | 58 |
-| bascules proposition → acté, sur trois preuves | **2** (`DC-29`, `DC-33`) |
+| bascules proposition → acté, sur trois preuves | **2** (`DC-29`, `DC-33`) — compte **du LOT-01** ; le grep en rend 3 depuis la bascule de `DC-09` par [[D-097]] |
 | réserves « Banc dû » retirées | **7** — dont 2 requalifiées **Producteur dû** (`DC-12`, `DC-23`) |
 | réserves « Banc dû » maintenues | 2 (`DC-14`, `DC-20`) |
 | marqueurs **Décision due** | 4 (`DC-04`, `DC-21`, `DC-44`, `DC-56`) |
 | marqueurs **écrite, non armée** | 4 (`DC-05`, `DC-08`, `DC-52`, `DC-53`) |
 | règles **orphelines** | **10**, plus la part de `DC-11` hors exclusions (11 marqueurs) |
-| règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` a reçu le LOT-09 ([[D-096]]) |
+| règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` en est sortie : LOT-09 attribué ([[D-096]]) puis **livré** ([[D-097]]) |
 
 Portées vivantes après requalification et après les arbitrages du 2026-08-23
-([[D-096]]), toutes par « Doctrine exécutable » sauf mention : `DC-09`
-(LOT-09) · `DC-12`, `DC-23` (LOT-04) · `DC-11`-exclusions, `DC-35`, `DC-42`,
+([[D-096]]), toutes par « Doctrine exécutable » sauf mention : ~~`DC-09`
+(LOT-09)~~ **livrée le 2026-08-23, [[D-097]]** · `DC-12`, `DC-23` (LOT-04) · `DC-11`-exclusions, `DC-35`, `DC-42`,
 `DC-43` (LOT-05) · `DC-54`, `DC-55` (LOT-06) · `DC-22` (LOT-07) · `DC-58`
 (LOT-03) · **`DC-07`, `DC-13`, `DC-20` (Curation signée** — le LOT-02 y a été
 transféré, faute de consommateur**)** · `DC-46` (CB-09, hors campagne) ·

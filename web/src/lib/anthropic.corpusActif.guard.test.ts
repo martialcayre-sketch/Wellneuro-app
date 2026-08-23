@@ -15,7 +15,9 @@ const LIGNE_INDISPONIBLE = "n'est pas encore disponible";
 const TITRE_CORPUS = 'Référentiel clinique SIIN — Snapshot V1';
 // v28 (2026-08-22, revue de sécurité Codex) : ligne anti-injection du bloc
 // <donnees_declaratives_patient> ajoutée au cadre déontologique.
-const EMPREINTE_PROMPT_ALLUME_V28 = 'cdbdfda5e37a2a0c';
+// v29 (2026-08-23, D-097, LOT-09) : clause `DC-09` — « Une association n'est
+// pas une preuve » — au cadre déontologique, donc dans les DEUX états.
+const EMPREINTE_PROMPT_ALLUME_V29 = '6e79b1cc5f3dc56f';
 
 async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
   vi.resetModules();
@@ -59,8 +61,8 @@ describe('prompt de synthèse — les deux états du corpus clinique (D-082, H1)
     const empreinte = createHash('sha256').update(prompt).digest('hex').slice(0, 16);
     expect(
       { version: mod.VERSION_PROMPT_SYNTHESE, empreinte },
-      'prompt allumé modifié : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v28', empreinte: EMPREINTE_PROMPT_ALLUME_V28 });
+      "prompt allumé modifié : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — voir le même avertissement dans `promptAlimentaire.guard.test.ts` : un interdit clinique qui bouge appelle une décision `D-xxx` avant le report.",
+    ).toEqual({ version: 'synthese-v29', empreinte: EMPREINTE_PROMPT_ALLUME_V29 });
   });
 
   it('drapeau absent : pas de corpus, et la consigne le dit indisponible', async () => {

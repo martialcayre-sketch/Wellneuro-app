@@ -4640,3 +4640,26 @@ neuf numéros, un seul lien fort au graphe (LOT-04 → LOT-05/06), trois lots
 libres. Prochaine action : PR. Ouvert : l'arbitrage sur les dix orphelines est
 reporté, pas clos ; Curation signée est à l'arrêt et porte désormais DC-07,
 DC-13, DC-20.
+
+## 2026-08-23 — LOT-09 : DC-09 mord dans le prompt (D-097)
+
+`DC-09` — « une association ne devient jamais une preuve » — est **actée** :
+clause au **cadre déontologique** du prompt (`synthese-v29`), pas dans une
+section topique, parce que la section orientation prime sur ce qui la suit
+mais « ne relève aucune des interdictions posées plus haut ». Quatre verbes
+(prouve, explique, démontre, atteste) ; `confirme` et `signe` écartés — le
+prompt dit déjà « à confirmer par l'entretien ». Second point de passage
+(`verifierRestitutionOrientation.ts`) **examiné et écarté**, motif écrit dans
+le fichier : le glissement probatoire n'a pas de vocabulaire fermé, l'y forcer
+demanderait un arbitrage chiffré neuf. `D-011` intact.
+
+La revue a trouvé le défaut central : le banc épinglait le **vocabulaire** de
+l'interdit, jamais l'interdit — « Évite de l'écrire » restait vert. Corrigé
+(garde d'opérateur, unicité, périmètre déterministe, messages d'empreinte qui
+refusent le report mécanique). Écarté : détecter une clause contradictoire
+arbitraire — même impossibilité que celle qui fonde le verdict ci-dessus.
+
+Prochaine action : PR. Ouvert : les ancres `fichier:ligne` de la constitution
+se périment à chaque édition du prompt (8 corrigées ici) ;
+`wn-diagnostic-e2e.mjs` rate un blocage WebKit quand `page.goto` n'apparaît
+que dans la sortie terminal.

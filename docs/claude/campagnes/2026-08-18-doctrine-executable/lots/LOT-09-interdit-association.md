@@ -1,6 +1,6 @@
 ---
 id: "LOT-09"
-statut: "à_faire"
+statut: "terminé (2026-08-23 — D-097 ; clause `DC-09` dans le cadre déontologique du prompt (synthese-v29), banc qui épingle la formule ET sa position, vue rouge sur les deux gestes ; second point de passage examiné et écarté avec motif écrit dans `verifierRestitutionOrientation.ts`)"
 dépend_de: "— (aucune)"
 ---
 
@@ -27,7 +27,7 @@ Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
   `contradictionsV1.ts:50-53`), et aucune table signée ne conclut. Le trou est
   **côté synthèse rédigée**.
 - Le patron de fermeture existe et vient d'être validé sur la règle voisine :
-  `DC-27` a été refermée par une clause de prompt (`anthropic.ts:469`,
+  `DC-27` a été refermée par une clause de prompt (`anthropic.ts:480`,
   « Association n'est pas causalité ») **plus** une garde qui épingle la
   formule dans `SYSTEM_PROMPT_GOUVERNANCE`
   (`api/praticien/synthese/promptPassationCourante.guard.test.ts:70-78`, suite
@@ -97,11 +97,18 @@ parallèle d'un autre.
 
 ## Critères de done
 
-- [ ] Clause de prompt posée, formulation tranchée par le praticien.
-- [ ] Garde structurelle en CI, **vue rouge** sous retrait de la clause.
-- [ ] Le second point de passage est tranché — ajouté au journal, ou écarté
-      avec son motif.
-- [ ] Aucun seuil, aucune règle clinique neuve.
-- [ ] T3 vert, revue `wn-reviewer` ; `D-xxx` + `changelog.d/`.
-- [ ] `DC-09` basculée à *acté* (son marqueur **Orpheline** est déjà retiré
-      depuis [[D-096]]).
+- [x] Clause de prompt posée, formulation tranchée par le praticien
+      (`anthropic.ts:347`, cadre déontologique, `synthese-v29` déclarée).
+- [x] Garde structurelle en CI, **vue rouge** sous retrait de la clause
+      (`promptAssociationPreuve.guard.test.ts` — 4 rouges clause retirée, 1
+      rouge sur le seul test de position quand la clause est déplacée sans
+      qu'un mot change).
+- [x] Le second point de passage est tranché — **écarté**, motif écrit dans
+      `verifierRestitutionOrientation.ts:43` et dans [[D-097]] : pas de
+      vocabulaire fermé, et l'y forcer demanderait un arbitrage chiffré neuf.
+- [x] Aucun seuil, aucune règle clinique neuve — la clause interdit une forme
+      de phrase.
+- [x] T3 vert, revue `wn-reviewer` ; [[D-097]] +
+      `changelog.d/2026-08-23-lot09-dc09-association-preuve.md`.
+- [x] `DC-09` basculée à *acté* (son marqueur **Orpheline** avait bien été
+      retiré par [[D-096]] — vérifié, rien à retirer).
