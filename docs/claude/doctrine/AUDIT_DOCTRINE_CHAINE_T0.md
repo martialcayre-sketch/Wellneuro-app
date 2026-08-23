@@ -1,5 +1,18 @@
 # Audit — la doctrine clinique face à la chaîne réellement codée
 
+> **AMENDÉ LE 2026-08-23** ([[D-095]], LOT-01 de la campagne « Doctrine
+> exécutable »). Le constat d'origine est conservé intégralement ci-dessous :
+> il reste la photographie du 2026-08-11 et se lit comme telle. Ce qu'il dit
+> de faux au 2026-08-23 est recensé, ligne par ligne, dans la section
+> **« Amendement du 2026-08-23 »** placée avant « Ce que l'audit ne dit pas ».
+> Trois choses ont bougé sous cet audit : la campagne chaîne T0 est **close**
+> (10/10 lots, 2026-08-18), ce qui périme tous ses porteurs ; le Socle a
+> refermé §D ; et le LOT-01 de la chaîne T0 a livré un objet de contradiction
+> que l'audit ne pouvait pas connaître. **Onze règles se révèlent orphelines**
+> — leur lot porteur est livré sans les avoir refermées. La répartition à
+> quatre colonnes ci-dessous n'a **pas** été recomputée : voir §D de
+> l'amendement, qui dit pourquoi et ce qui la remplace.
+>
 > Constat daté du **2026-08-11**, établi contre le dépôt à `13cdc259`
 > (LOT-00 de la campagne chaîne T0 mergé). Chaque ligne est vérifiée dans le
 > code, pas dans la documentation qui le décrit.
@@ -428,6 +441,140 @@ Ce troisième point est ce qui empêche la constitution de devenir un document
 d'intention : le champ de statut **est** le registre d'avancement. Une règle
 qui reste « proposition » pendant six mois est une règle que personne n'a
 voulue, et c'est une information.
+
+---
+
+## Amendement du 2026-08-23 — ce que ce constat dit de faux aujourd'hui
+
+> Établi par la descente des 58 règles du LOT-01 de « Doctrine exécutable »
+> ([[D-095]]), contre le dépôt à `f9290b37`. Rien n'est retiré ci-dessus ;
+> cette section dit ce qui a bougé.
+
+### A — Les porteurs sont périmés, tous, et pour une seule raison
+
+La campagne chaîne T0 est **close depuis le 2026-08-18** (10/10 lots). Toute
+mention d'un de ses lots renvoie donc à du **livré**. Le tableau en compte
+dix-neuf : **13 lignes « porté »** (`DC-03`, `DC-09`, `DC-27`, `DC-30`,
+`DC-33`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-45`, `DC-46`,
+`DC-47`) et **6 lignes « partiel » nommant un lot** (`DC-11`, `DC-34`,
+`DC-35`, `DC-37`, `DC-44`, `DC-48`).
+
+Trois sorts, qui n'ont rien à voir entre eux :
+
+- **le lot a refermé la règle** — `DC-27`, `DC-30`, `DC-33`, `DC-34` (4) ;
+- **la règle a changé de porteur** — `DC-37` (livrée en trois formes de
+  redondance), `DC-46` (CB-09, hors campagne), `DC-35` et la part
+  « exclusions » de `DC-11` (LOT-05 de « Doctrine exécutable ») ;
+- **le lot est livré sans l'avoir refermée, et personne ne la reprend** —
+  `DC-03`, `DC-09`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`,
+  `DC-45`, `DC-47`, `DC-48`, plus la part de `DC-11` qui excède les
+  exclusions. **Onze règles orphelines.** Chacune porte le marqueur
+  **orpheline** dans `CONSTITUTION_CLINIQUE.md` — la liste se vérifie au
+  grep. Ce ne sont pas des régressions de code, ce sont des **promesses de lot
+  évaporées**, et c'est le principal produit de cette descente.
+
+Deux règles n'ont **ni preuve, ni banc, ni véhicule** : `DC-09` — que cet
+audit désignait comme le garde-fou le plus exposé de la chaîne — et `DC-36`.
+
+### B — Trois faits étaient déjà vrais le 2026-08-11, et l'audit les a manqués
+
+- **`DC-41`** — « Aucun axe de tolérance » : l'axe `tolerance` est l'une des
+  quatre questions du catalogue gelé de check-in depuis le **2026-07-18**
+  (`protocol/checkinDomain.ts:68-76`), trois semaines avant le constat.
+- **`DC-42`** — « Aucune capture d'effet indésirable » : `TrustAdverseEffectReport`
+  (`schema.prisma:838-866`), la route `POST /api/portail/trust/signalement` et
+  la règle versionnée `orienterEffetIndesirable` (`trust/securite.ts:37-55`)
+  datent du **2026-07-16**. Le constat juste est « capture complète, aucune
+  interruption ».
+- **`DC-51`** — « La compatibilité au contexte patient n'est pas un second
+  niveau » : `buildContextualFoodReading` (`food-compass/contextual.ts:52`)
+  existe depuis le **2026-07-18**. Le fond tient — ce niveau n'évalue aucune
+  réponse individuelle — mais la formulation nie une couche qui existe.
+
+### C — Constats de fond devenus faux
+
+- **Ligne 28** — « les quatre règles les plus exposées, `DC-09`, `DC-27`,
+  `DC-29`, `DC-30`, n'ont aucun ancrage exécutable » : faux pour trois d'entre
+  elles. Reste vrai pour **`DC-09` seule**.
+- **§D en entier (l. 269-284)** — **CLOS**. Le Socle LOT-02 ([[D-083]] §3) a
+  porté le niveau « demande » du hook de trois motifs à **huit fichiers
+  cliniques**, avec banc en CI sans filtre `docs_only`.
+- **§E (l. 305-320)** — le banc de fraîcheur **a été posé** ([[D-042]],
+  [[D-044]], [[D-046]]) et découvre automatiquement les tables signées : **40
+  identifiants distincts** contrôlés en CI et au préflight `release-db`. Le
+  mode de défaillance est fermé. Le compilateur, lui, n'existe toujours pas —
+  `DC-26` reste partiel.
+- **§A (l. 197-207)** — la question ouverte est **tranchée** :
+  `typologie_lecture` ferme un axe de *lecture*
+  (déclaré/observé/vécu/interprété), sans rapport avec `A-E` ; la taxonomie
+  serait un axe **nouveau**. Deux corrections en découlent : la **population
+  sort** de la liste des champs manquants au claim — elle appartient à
+  l'intervention ([[D-095]]) — et l'argument « si la migration n'est pas posée
+  tôt, chaque lot invente son équivalent local » ne tient plus, aucun lot de la
+  campagne courante ne consomme ces axes.
+- **§B point 3 (l. 238-242)** — « une seule porte d'entrée : un red flag ne
+  peut naître que de l'anamnèse déclarée » : périmé, le portail capture un
+  signalement d'effet indésirable. Et le **consommateur** de l'inhibition est
+  désormais éprouvé (`decisionCard.ts:112`) ; c'est le **producteur** qui
+  manque (`chaineC1.ts:315`, `safetyFindings: 0` en dur).
+- **Véhicule V1 (l. 347-352)** — « le LOT-01 crée un `DiscordanceFinding` » :
+  faux. [[D-044]] a **refusé** de le réutiliser (il hérite de `confidence`) ;
+  un type propre a été créé, et le garde l'assère sur le type.
+- **Véhicule V3 (l. 367-377)** — périmé pour `DC-23` (fait en partie par
+  [[D-062]]) et pour `DC-35` (actée par `D-043`, motifs dans une table signée
+  du LOT-04). Ce qui reste dû est le **producteur** de constats de sécurité.
+- **Véhicule V4 (l. 379-386)** — **PÉRIMÉ DANS SA FORME**. « Deux paragraphes
+  dans deux fiches de lot existantes » : ces fiches sont livrées. `DC-39` et
+  `DC-41` sont désormais des dettes **sans véhicule**.
+- **Lignes du tableau démenties une à une** : `DC-01` (le drapeau ne ferme plus
+  la route depuis [[D-074]]), `DC-04` (l'acquis ne vient pas de
+  `CHUNK_INTROUVABLE`, qu'aucune suite ne joue), `DC-15` (le corpus ne vieillit
+  plus en silence pour les claims épinglés), `DC-19` (C-SOM vit dans les règles
+  écartées, avec motif et condition de retour), `DC-20` (« absent » était déjà
+  faux le jour même, `D-043` l'a actée), `DC-22` (porteur : LOT-07 de
+  « Doctrine exécutable »), `DC-23` (`SafetyFinding` est typé), `DC-29`
+  (les quatre niveaux sont typés et bancés — manque le producteur), `DC-30`
+  (le moteur existe, quatre fichiers, quatre bancs), `DC-31` (l'hypothèse est un
+  objet, rendu au cockpit), `DC-33` (le cockpit classe et numérote,
+  `chaineC1.ts:382-413`), `DC-34` (les claims remontent à l'écran), `DC-35`
+  (`ABSTENTION_PROCEDURE_V1` est signée et fail-closed), `DC-37` (trois formes
+  de redondance mordent, pas une), `DC-45` (la bibliothèque n'est plus
+  dormante ; ce qui reste vide est l'appariement `biology_analyte_nabm`),
+  `DC-47` (**faux** : aucune proposition ni courrier ne cite de borne),
+  `DC-50` (la règle vise les *claims*, pas les agendas), `DC-54` (la forme
+  `CONFLIT_SOURCES` existe et le LOT-06 la porte), `DC-55` (l'issue est typée
+  depuis [[D-055]]), `DC-56` (**21** sources dont 6 dormantes, pas 19),
+  `DC-57` (l'épinglage existe pour les tables signées), `DC-58` (porteur :
+  LOT-03).
+
+### D — Ce que la répartition devient, et pourquoi elle n'est pas recomputée
+
+**La grille à quatre colonnes n'a pas été refaite règle par règle, et c'est
+une limite assumée du LOT-01.** Elle mesure l'état du **code** ; la
+constitution mesure l'**acte d'intégration**. Les deux ne coïncident pas —
+`DC-33` en est la démonstration : le code la tenait, et la bancait, avant
+qu'aucune décision ne la tranche. Un total global non reconstituable depuis
+les listes ci-dessus vaudrait moins que pas de total.
+
+Ce que le lot établit se vérifie, en revanche, au grep de
+`CONSTITUTION_CLINIQUE.md` :
+
+| Mesure | Compte |
+|---|---|
+| règles re-vérifiées contre le dépôt | 58 |
+| bascules proposition → acté, sur trois preuves | **2** (`DC-29`, `DC-33`) |
+| réserves « Banc dû » retirées | **7** — dont 2 requalifiées **Producteur dû** (`DC-12`, `DC-23`) |
+| réserves « Banc dû » maintenues | 2 (`DC-14`, `DC-20`) |
+| marqueurs **Décision due** | 4 (`DC-04`, `DC-21`, `DC-44`, `DC-56`) |
+| marqueurs **écrite, non armée** | 4 (`DC-05`, `DC-08`, `DC-52`, `DC-53`) |
+| règles **orphelines** | **11**, plus la part de `DC-11` hors exclusions |
+| règles sans preuve, sans banc, sans véhicule | 2 (`DC-09`, `DC-36`) |
+
+Portées vivantes après requalification, toutes par « Doctrine exécutable »
+sauf mention : `DC-07`, `DC-13`, `DC-20` (LOT-02) · `DC-12`, `DC-23` (LOT-04) ·
+`DC-11`-exclusions, `DC-35`, `DC-42`, `DC-43` (LOT-05) · `DC-54`, `DC-55`
+(LOT-06) · `DC-22` (LOT-07) · `DC-58` (LOT-03) · `DC-46` (CB-09, hors
+campagne) · `DC-50`, `DC-51` (campagne chaîne alimentaire).
 
 ---
 

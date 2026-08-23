@@ -4602,3 +4602,23 @@ qu'une ligne de sentinelle de debug était temporairement dans
 revertée en local (diff non commité). Prochaine action : commiter ce
 revert. Ouvert : la passe Codex de LOT-06 (#760) reste non confirmée
 rétroactivement.
+
+## 2026-08-23 — Doctrine exécutable ouverte, LOT-01 livré : l'état atteint (D-095)
+
+Campagne de rang 3 cadrée sur état frais puis ouverte (#766, deux commits).
+Trois véhicules déplacés : V1 à moitié livré (l'objet à trois formes existe
+depuis D-041/D-044), V4 PÉRIMÉ (ses fiches d'accueil sont livrées — DC-39/DC-41
+deviennent des dettes sans véhicule), §D clos par le Socle. Arbitrage du
+responsable : **la population sort du claim** — modèle « général déclaré +
+exclusions déclarées » porté par l'intervention (95 entrées, `neCouvrePas` null
+sur les 95), sur le précédent signé `BiologyFunctionalRange` ; DC-14 n'est pas
+modifiée, sa portée est écrite. LOT-01 livré par descente en éventail (10
+agents, 58 règles) : **deux bascules seulement** (DC-29 sur la condition écrite
+par D-041 ; DC-33 par régularisation, D-054 ayant omis l'arbitrage), sept
+réserves « Banc dû » retirées, marqueurs neufs « Décision due » et « Producteur
+dû ». Écarté : déclasser les quatre règles actées sans décision (le code les
+tient) ; recomputer la grille 4 colonnes de l'audit (non reconstituable — limite
+nommée). Fait décisif : la clôture de la chaîne T0 laisse **douze règles
+orphelines**, dont DC-09, que l'audit désignait comme le garde-fou le plus
+exposé. Prochaine action : PR du LOT-01. Ouvert : arbitrage de portefeuille sur
+les orphelines ; `git add -A` a ramassé le travail d'une session voisine (défait).

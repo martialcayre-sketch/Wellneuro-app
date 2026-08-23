@@ -118,7 +118,7 @@ Les LOT-05 et LOT-06 n'en dépendent plus.
 
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | L'état atteint — requalifier l'audit, basculer ce qui est déjà acquis | à_faire | — |
+| LOT-01 | L'état atteint — requalifier l'audit, basculer ce qui est déjà acquis | **terminé** (2026-08-23, `D-095` — deux bascules sur trois preuves, sept réserves « Banc dû » retirées, **onze règles orphelines** nommées et grepables) | — |
 | LOT-02 | V2 — la migration du schéma de claim (trois axes) — **CONFIRMATION OBLIGATOIRE** | à_faire | LOT-01 |
 | LOT-03 | V5 — le banc de doctrine (`DC-58`) | à_faire | — |
 | LOT-04 | V3a — typer l'objet de sécurité et lui donner son pouvoir d'inhibition | à_faire | LOT-01 |
@@ -191,6 +191,23 @@ c'est un déblocage externe qui le justifie.
   règles qu'il touche.
 - Classe clinique : Opus, T3 avant PR migration/scoring/clinique, revue
   `wn-reviewer` avant de passer la main, passe Codex sur les lots P0.
+
+## Ce que le LOT-01 a découvert, et qui change la suite
+
+Le lot devait aligner le document sur le code. Il a surtout trouvé que **la
+clôture de la chaîne T0 a laissé onze règles orphelines** — `DC-03`, `DC-09`,
+`DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-45`, `DC-47`,
+`DC-48`, plus la part de `DC-11` qui excède les exclusions : leur lot porteur
+est livré sans les avoir refermées. Ce ne sont pas des régressions de code, ce
+sont des promesses de lot évaporées, et aucun lot de cette campagne ne les
+reprend. Chacune porte le marqueur **orpheline** dans la constitution — la
+liste se vérifie au grep.
+
+Deux n'ont **ni preuve, ni banc, ni véhicule** : `DC-09` — que l'audit
+désignait comme le garde-fou le plus exposé de toute la chaîne — et `DC-36`.
+Le LOT-08 les nommera ; il ne les fermera pas. **C'est un arbitrage de
+portefeuille qui reste au responsable**, pas une dette que cette campagne peut
+solder.
 
 ## Questions ouvertes
 
