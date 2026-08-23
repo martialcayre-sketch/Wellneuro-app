@@ -1,6 +1,6 @@
 ---
 id: "LOT-10"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "— (aucune)"
 ---
 

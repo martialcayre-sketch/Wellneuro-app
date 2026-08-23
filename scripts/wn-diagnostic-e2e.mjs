@@ -29,15 +29,19 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { inflateRawSync } from 'node:zlib';
 
 const racine = process.argv[2] ?? 'web/test-results';
 
 /**
  * Entrées d'une archive ZIP, lues dans le répertoire central.
  *
- * On ne décompresse rien : la taille décompressée y est déjà écrite, et c'est
- * la seule information nécessaire. Cela évite une dépendance à `unzip`, absent
- * d'une Debian minimale.
+ * ON DÉCOMPRESSE DÉSORMAIS LE JOURNAL RÉSEAU, et la version précédente de ce
+ * bloc disait le contraire — « la taille décompressée suffit ». Elle ne suffit
+ * plus : voir `navigationSansRequete` ci-dessous, où un journal NON vide peut
+ * ne contenir aucune requête de navigation. Ce qui reste vrai, c'est la
+ * contrainte qui avait motivé ce choix : aucune dépendance à `unzip`, absent
+ * d'une Debian minimale. `zlib` est natif à Node — elle est donc tenue.
  */
 function entreesZip(chemin) {
   const buf = readFileSync(chemin);
@@ -63,18 +67,112 @@ function entreesZip(chemin) {
   for (let i = 0; i < nombre; i++) {
     if (position + 46 > buf.length) return null;
     if (buf.readUInt32LE(position) !== 0x02014b50) return null;
+    const methode = buf.readUInt16LE(position + 10);
+    const tailleCompressee = buf.readUInt32LE(position + 20);
     const tailleDecompressee = buf.readUInt32LE(position + 24);
     const lgNom = buf.readUInt16LE(position + 28);
     const lgExtra = buf.readUInt16LE(position + 30);
     const lgCommentaire = buf.readUInt16LE(position + 32);
+    const decalageLocal = buf.readUInt32LE(position + 42);
     if (position + 46 + lgNom > buf.length) return null;
     entrees.push({
       nom: buf.toString('utf8', position + 46, position + 46 + lgNom),
       taille: tailleDecompressee,
+      methode,
+      tailleCompressee,
+      decalageLocal,
     });
     position += 46 + lgNom + lgExtra + lgCommentaire;
   }
-  return entrees;
+  return { buf, entrees };
+}
+
+/**
+ * Le contenu texte d'une entrée, ou `null` si on ne sait pas le lire.
+ *
+ * `null` n'est jamais « vide » : un contenu illisible fait TAIRE le
+ * diagnostic, il ne l'autorise pas. C'est la même discipline que le reste du
+ * script — se taire plutôt que d'excuser un rouge à tort.
+ *
+ * Les longueurs du répertoire central ne servent PAS à trouver les données :
+ * l'en-tête local porte ses propres longueurs de nom et d'extra, souvent
+ * différentes de celles du répertoire, et viser les secondes ferait lire à
+ * côté.
+ */
+function contenuEntree(buf, entree) {
+  try {
+    const local = entree.decalageLocal;
+    if (local + 30 > buf.length) return null;
+    if (buf.readUInt32LE(local) !== 0x04034b50) return null;
+    const lgNom = buf.readUInt16LE(local + 26);
+    const lgExtra = buf.readUInt16LE(local + 28);
+    const debut = local + 30 + lgNom + lgExtra;
+    // 0 = stocké (les fixtures de banc), 8 = dégonflé (les traces réelles de
+    // Playwright). Toute autre méthode est inconnue de ce lecteur : silence.
+    //
+    // POUR UNE ENTRÉE STOCKÉE, C'EST LA TAILLE DÉCOMPRESSÉE QUI BORNE LES
+    // DONNÉES — les deux champs coïncident sur un ZIP bien formé, mais le banc
+    // les DISSOCIE délibérément pour reproduire ce qu'écrit Playwright, et
+    // viser le champ « compressée » ferait lire au-delà de l'entrée, jusque
+    // dans l'en-tête suivant.
+    if (entree.methode === 0) {
+      const fin = debut + entree.taille;
+      if (fin > buf.length) return null;
+      return buf.subarray(debut, fin).toString('utf8');
+    }
+    if (entree.methode === 8) {
+      const fin = debut + entree.tailleCompressee;
+      if (fin > buf.length) return null;
+      return inflateRawSync(buf.subarray(debut, fin)).toString('utf8');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * LA NAVIGATION A-T-ELLE ÉMIS UNE REQUÊTE ? — et non « le journal est-il vide ».
+ *
+ * LE DÉFAUT QUE CETTE FONCTION FERME, mesuré le 2026-08-23 sur deux artefacts
+ * réels de deux sessions distinctes. Le prédicat précédent était « toutes les
+ * entrées `.network` pèsent zéro octet ». Il tenait tant que le test ne faisait
+ * rien avant sa navigation. Mais un test qui monte son décor par
+ * `page.request.post(...)` — forme courante dans `e2e/` — écrit une entrée dans
+ * CE MÊME journal, AVANT le `page.goto` qui, lui, n'émettra rien. Le journal
+ * pesait 2 723 octets pour une seule ligne, et le classificateur s'est tu sur
+ * le cas exact qu'il existe pour nommer.
+ *
+ * Playwright marque ces requêtes-là : `snapshot._apiRequest === true` désigne
+ * une requête émise par `APIRequestContext` (`page.request`), jamais par la
+ * page qui navigue. Le fait discriminant devient donc : **aucune requête de
+ * PAGE**. Un défaut applicatif en émet — la navigation part, le serveur
+ * répond mal ou lentement ; un blocage du navigateur n'en émet aucune, quoi
+ * que le corps du test ait envoyé par ailleurs.
+ *
+ * FAIL-SAFE DANS LE SENS DU SILENCE : une ligne qu'on ne sait pas analyser
+ * compte comme une requête de page. Mieux vaut ne pas diagnostiquer un vrai
+ * blocage que d'excuser un vrai défaut.
+ */
+function navigationSansRequete(buf, reseaux) {
+  for (const entree of reseaux) {
+    const contenu = contenuEntree(buf, entree);
+    if (contenu === null) return false;
+    for (const ligne of contenu.split('\n')) {
+      const texte = ligne.trim();
+      if (!texte) continue;
+      let evenement;
+      try {
+        evenement = JSON.parse(texte);
+      } catch {
+        return false;
+      }
+      if (evenement?.type !== 'resource-snapshot') continue;
+      if (evenement?.snapshot?._apiRequest === true) continue;
+      return false;
+    }
+  }
+  return true;
 }
 
 /** Chemins de toutes les archives `trace.zip` sous `dossier`. */
@@ -112,25 +210,31 @@ let blocages = 0;
 const lignes = [];
 
 for (const trace of traces) {
-  const entrees = entreesZip(trace);
-  if (!entrees) continue;
+  const archive = entreesZip(trace);
+  if (!archive) continue;
 
-  // Playwright écrit un `<n>-trace.network` par contexte de page. Vide = aucun
-  // événement réseau enregistré, donc aucune requête émise. Le réglage
+  // Playwright écrit un `<n>-trace.network` par contexte de page. Le réglage
   // `trace: 'retain-on-failure'` enregistre tout et ne conserve que les échecs
-  // — un fichier vide est donc un fait, pas une trace désactivée.
-  const reseaux = entrees.filter(e => e.nom.endsWith('.network'));
+  // — ce qu'on y lit est donc un fait, pas une trace désactivée.
+  const reseaux = archive.entrees.filter(e => e.nom.endsWith('.network'));
   if (reseaux.length === 0) continue;
-  const aucuneRequete = reseaux.every(e => e.taille === 0);
+  const aucuneRequeteDePage = navigationSansRequete(archive.buf, reseaux);
 
+  // EXPIRATION, SANS EXIGER `page.goto` DANS LE TEXTE. Playwright n'écrit pas
+  // toujours l'appel fautif dans `error-context.md` : au LOT-09, il n'y avait
+  // consigné qu'un délai de TEARDOWN, et le classificateur s'est tu alors que
+  // la trace portait le fait décisif. Relâcher ce prédicat n'élargit rien de
+  // dangereux, parce qu'il ne décide jamais seul : c'est la conjonction avec
+  // « aucune requête de page » qui diagnostique, et un défaut applicatif qui
+  // expire, lui, a émis des requêtes.
   const erreur = erreurVoisine(trace);
-  const navigationExpiree = /page\.goto/.test(erreur) && /timeout/i.test(erreur);
+  const expiration = /timeout/i.test(erreur);
   const nom = relative(racine, trace).replace(/\/trace\.zip$/, '');
 
-  if (aucuneRequete && navigationExpiree) {
+  if (aucuneRequeteDePage && expiration) {
     blocages++;
     lignes.push(`  ✗ ${nom}`);
-    lignes.push('      page.goto expiré, et AUCUNE requête HTTP émise (journal réseau vide).');
+    lignes.push('      Navigation expirée, et AUCUNE requête de page émise.');
   }
 }
 
@@ -138,7 +242,7 @@ if (blocages === 0) process.exit(0);
 
 process.stderr.write(
   '\n──────────────────────────────────────────────────────────────────────\n' +
-    `DIAGNOSTIC : ${blocages} échec(s) de navigation SANS requête réseau.\n` +
+    `DIAGNOSTIC : ${blocages} échec(s) de navigation SANS requête de page.\n` +
     lignes.join('\n') +
     '\n\n' +
     "La navigation n'est jamais sortie du navigateur : le serveur n'a pas été\n" +
