@@ -283,6 +283,66 @@ jobs:
           fi
           echo "✓ Drapeau constaté : le postdeploy ne migre plus."
 
+      # INTERBLOCAGE (D-102) — Scalingo est en auto-déploiement APRÈS CI, et
+      # il n'attend pas « le workflow CI » : il attend que TOUS les checks du
+      # commit aient conclu. Or `release-db` est lui-même un check de ce
+      # commit. Sur tout commit portant une migration, l'étape suivante
+      # attendait donc un déploiement que Scalingo n'aurait déclenché qu'une
+      # fois cette étape terminée : personne ne bougeait, et la borne des 20
+      # minutes tranchait. Trois refus le 2026-08-23 (#773, #778, #780), et
+      # aucun commit portant un run `release-db` n'a jamais été déployé de
+      # lui-même ce jour-là. Constaté sur pièce : la release du LOT-05 passée
+      # au vert à 20:08:58, l'auto-déploiement a démarré à 20:09:02.
+      #
+      # On inverse donc la dépendance : la release DÉCLENCHE le déploiement
+      # qu'elle attend, au lieu d'espérer qu'un autre le fasse. Effet de bord
+      # bienvenu — la COALESCENCE disparaît aussi : le commit approuvé obtient
+      # SON build, il ne dépend plus d'un créneau qu'un merge voisin peut lui
+      # prendre.
+      #
+      # Le déclenchement reste DANS le job protégé. Le sortir en amont ferait
+      # tourner le build pendant la délibération humaine — cinq minutes
+      # gagnées — mais rendrait le jeton Scalingo atteignable sans
+      # approbation, et ce confinement est exactement ce que D-087 construit.
+      # Aucun privilège nouveau ici : ce job exécute déjà des one-offs
+      # arbitraires en production, ce qui est strictement plus puissant que
+      # déployer.
+      - name: "Déclenchement du déploiement du commit approuvé"
+        run: |
+          LISTE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+            deployments 2>/dev/null || true)
+          # N'IMPORTE QUEL statut, pas seulement `success` : un build déjà en
+          # cours pour ce commit n'a pas à être doublé. S'il échoue, l'étape
+          # suivante le dira en expirant.
+          if printf '%s\n' "$LISTE" | grep -q "$GITHUB_SHA"; then
+            echo "✓ un déploiement de $GITHUB_SHA existe déjà — rien à déclencher."
+            exit 0
+          fi
+          # `integration-link-manual-deploy` déploie une BRANCHE, pas un SHA.
+          # Ne le lancer que si la tête de `main` EST le commit approuvé —
+          # sinon il déploierait du code que personne n'a approuvé, ce qui est
+          # pire que ne rien faire.
+          if ! git fetch --quiet origin main; then
+            echo '❌ "git fetch origin main" a échoué : impossible de constater que la' >&2
+            echo "   tête est bien le commit approuvé. Aucun déploiement déclenché." >&2
+            exit 1
+          fi
+          TETE=$(git rev-parse origin/main)
+          if [ "$TETE" != "$GITHUB_SHA" ]; then
+            echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
+            echo "   ($GITHUB_SHA) : déployer la branche déploierait du code non" >&2
+            echo "   approuvé. Relancer release-db en workflow_dispatch sur main," >&2
+            echo "   dont la tête sera alors le commit jugé. Aucune écriture." >&2
+            exit 1
+          fi
+          echo "→ Déclenchement du déploiement de main ($GITHUB_SHA)…"
+          if ! scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+            integration-link-manual-deploy main; then
+            echo "❌ Le déclenchement du déploiement a échoué — lien d'intégration" >&2
+            echo "   absent, jeton insuffisant, ou API indisponible. Aucune écriture." >&2
+            exit 1
+          fi
+
       # L'approbation autorise le COMMIT APPROUVÉ ; le one-off tourne dans
       # l'image du DERNIER déploiement réussi. Double exigence, sur la sortie
       # réelle du CLI (SHA complets, du plus récent au plus ancien, constaté
@@ -340,6 +400,10 @@ jobs:
             sleep 30
           done
           echo "❌ $GITHUB_SHA jamais déployé en success après 20 min — release refusée." >&2
+          echo "   Le déploiement a été DÉCLENCHÉ par l'étape précédente (D-102) : ce" >&2
+          echo "   délai n'est donc plus une attente passive. Lire le build —" >&2
+          echo "   \`scalingo --region $SCALINGO_REGION --app $SCALINGO_APP deployment-logs\`" >&2
+          echo "   — avant de relancer : un build en échec se relancera en échec." >&2
           exit 1
 
       # Le protocole de sortie est porté par les sentinelles du script

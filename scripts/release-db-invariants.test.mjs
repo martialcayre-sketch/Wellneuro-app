@@ -218,6 +218,58 @@ test('le drapeau de gouvernance est constaté, pas cru', () => {
   assert.match(JOBS.get('release'), /env-get WN_MIGRATIONS_PAR_RELEASE_DB/);
 });
 
+// D-102 — la release DÉCLENCHE le déploiement qu'elle attend. Sans ce
+// déclenchement, l'étape d'attente redevient l'interblocage : Scalingo attend
+// que tous les checks du commit concluent, `release-db` en est un, et il
+// attend le déploiement. Trois refus le 2026-08-23 avant que la cause soit
+// nommée.
+test('la release déclenche le déploiement avant de l’attendre', () => {
+  const bloc = JOBS.get('release');
+  // L'INVOCATION, pas la prose : un commentaire cite la commande plus haut
+  // dans la même étape, et un `indexOf` nu ancrait ce banc sur lui.
+  const declenche = bloc.indexOf('integration-link-manual-deploy main');
+  const attend = bloc.indexOf('jamais déployé en success');
+  assert.ok(declenche > -1, 'le déclenchement du déploiement a disparu — l’interblocage revient');
+  assert.ok(attend > -1, "l'attente du déploiement a disparu");
+  assert.ok(declenche < attend, "le déclenchement doit précéder l'attente, sinon il ne sert à rien");
+});
+
+// `integration-link-manual-deploy` déploie une BRANCHE. Si la tête de `main`
+// n'est plus le commit approuvé, elle déploierait du code que personne n'a
+// approuvé — exactement ce que tout ce workflow existe pour empêcher.
+test('le déclenchement exige que la tête de main soit le commit approuvé', () => {
+  const bloc = JOBS.get('release');
+  const debut = bloc.indexOf('Déclenchement du déploiement');
+  const fin = bloc.indexOf('integration-link-manual-deploy main');
+  // Sans ces deux ancres, `slice` rendrait une tranche arbitraire où les
+  // assertions ci-dessous passeraient pour de mauvaises raisons — constaté en
+  // mutation : l'invocation retirée, ce banc restait vert.
+  assert.ok(debut > -1 && fin > debut, 'les ancres de l’étape de déclenchement ont bougé');
+  const etape = bloc.slice(debut, fin);
+  assert.match(etape, /git rev-parse origin\/main/, 'la tête de main doit être constatée');
+  assert.match(
+    etape,
+    /!=\s*"\$GITHUB_SHA"/,
+    'une tête différente du commit approuvé doit arrêter le déclenchement',
+  );
+  assert.match(etape, /exit 1/, 'le refus doit être franc, pas un avertissement');
+});
+
+// LE point de sûreté de D-102 : le pouvoir de déployer reste DERRIÈRE le gate
+// humain. Déplacer ce déclenchement dans `resume` ferait gagner cinq minutes
+// de build — et rendrait le jeton Scalingo atteignable sans approbation, ce
+// que D-087 a précisément construit pour l'empêcher.
+test('aucun job hors du gate ne déclenche de déploiement', () => {
+  for (const [nom, bloc] of JOBS) {
+    if (nom === 'release') continue;
+    assert.doesNotMatch(
+      bloc,
+      /integration-link-manual-deploy|scalingo deploy/,
+      `le job \`${nom}\` déclenche un déploiement hors de l'environnement protégé`,
+    );
+  }
+});
+
 // Les trois boucles d'attente cumulent ~35 minutes ; sans borne, un run
 // suspendu occuperait le groupe de concurrence — et donc TOUTE release
 // suivante — indéfiniment.
