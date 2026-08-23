@@ -4622,3 +4622,21 @@ nommée). Fait décisif : la clôture de la chaîne T0 laisse **douze règles
 orphelines**, dont DC-09, que l'audit désignait comme le garde-fou le plus
 exposé. Prochaine action : PR du LOT-01. Ouvert : arbitrage de portefeuille sur
 les orphelines ; `git add -A` a ramassé le travail d'une session voisine (défait).
+
+## 2026-08-23 — Trois arbitrages de portefeuille sur Doctrine exécutable (D-096)
+
+Les questions ouvertes par le LOT-01 sont tranchées. **DC-09 reçoit le
+LOT-09** — jumelle exacte de DC-27 (même fichier, même garde épinglée), et
+dernière des quatre règles « les plus exposées » de l'audit sans ancrage ; les
+dix autres orphelines restent des dettes nommées au LOT-08. **Le LOT-02 est
+transféré à Curation signée** : sans consommateur depuis que D-095 a sorti la
+population du claim, une migration posée par une campagne qui ne s'en sert pas
+aurait ajouté une orpheline aux onze recensées — la campagne n'a donc plus
+aucune migration ni confirmation obligatoire. **DC-29 : le LOT-06 descend
+chercher la provenance avant de conclure**, la forme vide devient le repli et
+non le défaut. Écarté : renuméroter les lots (coût > trou) ; une campagne
+dédiée aux orphelines (la file compte huit dossiers). Sept lots exécutables sur
+neuf numéros, un seul lien fort au graphe (LOT-04 → LOT-05/06), trois lots
+libres. Prochaine action : PR. Ouvert : l'arbitrage sur les dix orphelines est
+reporté, pas clos ; Curation signée est à l'arrêt et porte désormais DC-07,
+DC-13, DC-20.

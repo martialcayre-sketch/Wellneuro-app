@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 statut: "à_faire"
-dépend_de: "LOT-04 — PLUS le LOT-02 depuis l'arbitrage du 2026-08-23"
+dépend_de: "LOT-04 (le LOT-02 est transféré hors campagne, D-096)"
 ---
 
 # LOT-06 — V1 achevé : conflit de sources, escalade, sort de la convergence
@@ -36,7 +36,7 @@ et le fichier le dit explicitement.
    **Trois des quatre axes sont mécanisables, le quatrième ne l'est pas** :
    `niveau_preuve` et `classe_autorite` sont au claim depuis l'origine,
    `valide_at` porte la date — mais **la population n'est pas sur le claim**
-   et n'y sera pas (arbitrage du 2026-08-23, LOT-02). La politique doit donc
+   et n'y sera pas ([[D-095]]). La politique doit donc
    **dire qu'elle ne compare pas les populations**, plutôt que faire comme si.
    Un axe manquant qu'on tait est un axe qu'on croit couvert.
 2. **Le producteur `CONFLIT_SOURCES`** : deux claims du corpus qui se
@@ -46,14 +46,22 @@ et le fichier le dit explicitement.
    significatif remonte au praticien comme **issue de la politique**. À ne pas
    confondre avec `D-003` (validation praticien en sortie), qui n'est pas
    déclenchée par un conflit identifié — l'audit le dit nommément.
-4. **L'arbitrage `DC-29`** : produire une convergence est une **règle clinique
-   neuve**. Rien dans le corpus ne dit aujourd'hui à partir de combien de
-   sources indépendantes on écrit `CONVERGENCE_MODEREE` plutôt que
-   `CONVERGENCE_FAIBLE` — et inventer cette graduation violerait `DC-19`.
-   **Défaut assumé en l'absence de provenance : la forme reste vide**, et le
-   lot l'écrit comme un état légitime, sur le patron des quatre règles à ne
-   pas armer. Si une provenance existe, elle se signe ; sinon `DC-29` reste
-   « typée, sans producteur », ce qui est une information et non une dette.
+4. **`DC-29` — descente de provenance d'abord** (arbitrage du 2026-08-23,
+   [[D-096]]). Produire une convergence est une **règle clinique neuve** :
+   rien ne dit aujourd'hui à partir de combien de sources indépendantes on
+   écrit `CONVERGENCE_MODEREE` plutôt que `CONVERGENCE_FAIBLE`, et inventer
+   cette graduation violerait `DC-19`. Le lot **cherche donc la provenance
+   avant de conclure** : descente du corpus certifié à la recherche d'une
+   source qui fonde une graduation par nombre de sources indépendantes.
+   - **Si elle existe** : la règle se signe, claims épinglés, et la forme
+     `CONVERGENCE` s'ouvre avec son producteur.
+   - **Si elle n'existe pas** : la forme **reste vide**, écrite comme état
+     légitime sur le patron des quatre règles « écrite, non armée ». C'est le
+     repli, pas l'objectif.
+
+   La descente peut ne rien rendre, et c'est un résultat : `DC-29` est déjà
+   **actée sur son interdit** ([[D-095]]) ; ce lot ne joue que sa moitié
+   positive. Le coût est borné à une descente, et il est assumé.
 
 ## Interdits
 
@@ -74,9 +82,9 @@ et le fichier le dit explicitement.
 ## Dépendances
 
 En amont : **LOT-04** (un conflit à impact de sécurité passe par l'objet de
-sécurité, pas par un second canal). **Le LOT-02 n'est plus une dépendance**
-depuis l'arbitrage du 2026-08-23 — la politique perd son axe population et le
-déclare, elle ne l'attend pas.
+sécurité, pas par un second canal). **Le LOT-02 est transféré hors campagne**
+([[D-096]]) — la politique perd son axe population et le déclare, elle ne
+l'attend pas.
 En aval : aucun.
 
 ## Étapes
@@ -86,7 +94,8 @@ En aval : aucun.
    des tables signées ; le banc de fraîcheur les découvre automatiquement et
    rougira tant que le contrat ne les porte pas — **c'est voulu**.
 3. Escalade praticien comme issue nommée de la politique.
-4. Arbitrage `DC-29` : provenance ou forme vide, écrit noir sur blanc.
+4. Descente de provenance `DC-29` — **avant** de conclure ; verdict écrit
+   noir sur blanc, qu'il ouvre la forme ou qu'il la laisse vide.
 5. Gardes vues rouges ; T3 ; revue `wn-reviewer` ; passe Codex (P0).
 6. Fragment `changelog.d/` ; bascule de `DC-54`, `DC-55`, et statut final de
    `DC-29`.
@@ -108,6 +117,8 @@ En aval : aucun.
 - [ ] `CONFLIT_SOURCES` a un producteur ; ses claims sont épinglés et gardés
       par le contrat de fraîcheur.
 - [ ] L'escalade praticien est une issue nommée, distincte de `D-003`.
-- [ ] `DC-29` tranché : provenance signée, ou forme vide assumée et écrite.
+- [ ] `DC-29` : **descente de provenance faite**, et son verdict écrit —
+      graduation signée et forme ouverte, ou absence constatée et forme vide.
+      Une forme laissée vide **sans descente** ne vaut pas ce critère.
 - [ ] Aucun champ de certitude ; garde vue rouge.
 - [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-xxx` + `changelog.d/`.

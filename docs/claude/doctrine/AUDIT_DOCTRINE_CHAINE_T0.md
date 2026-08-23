@@ -8,8 +8,10 @@
 > Trois choses ont bougé sous cet audit : la campagne chaîne T0 est **close**
 > (10/10 lots, 2026-08-18), ce qui périme tous ses porteurs ; le Socle a
 > refermé §D ; et le LOT-01 de la chaîne T0 a livré un objet de contradiction
-> que l'audit ne pouvait pas connaître. **Onze règles se révèlent orphelines**
-> — leur lot porteur est livré sans les avoir refermées. La répartition à
+> que l'audit ne pouvait pas connaître. **Onze règles se sont révélées
+> orphelines** au LOT-01 ; **dix le restent** depuis que [[D-096]] a donné un
+> lot à `DC-09` — orphelines au sens strict : leur lot porteur est livré sans
+> les avoir refermées. La répartition à
 > quatre colonnes ci-dessous n'a **pas** été recomputée : voir §D de
 > l'amendement, qui dit pourquoi et ce qui la remplace.
 >
@@ -466,15 +468,21 @@ Trois sorts, qui n'ont rien à voir entre eux :
   redondance), `DC-46` (CB-09, hors campagne), `DC-35` et la part
   « exclusions » de `DC-11` (LOT-05 de « Doctrine exécutable ») ;
 - **le lot est livré sans l'avoir refermée, et personne ne la reprend** —
-  `DC-03`, `DC-09`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`,
-  `DC-45`, `DC-47`, `DC-48`, plus la part de `DC-11` qui excède les
-  exclusions. **Onze règles orphelines.** Chacune porte le marqueur
-  **orpheline** dans `CONSTITUTION_CLINIQUE.md` — la liste se vérifie au
-  grep. Ce ne sont pas des régressions de code, ce sont des **promesses de lot
-  évaporées**, et c'est le principal produit de cette descente.
+  `DC-03`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-45`,
+  `DC-47`, `DC-48`, plus la part de `DC-11` qui excède les exclusions. **Dix
+  règles orphelines**, onze statuts marqués avec `DC-11`. Le compte se vérifie
+  par `grep -c '\*\*Orpheline\*\*' docs/claude/doctrine/CONSTITUTION_CLINIQUE.md`,
+  qui doit rendre **13** — onze statuts, plus deux occurrences dans l'en-tête
+  qui définit le marqueur. Ce ne sont pas des régressions de code, ce sont des
+  **promesses de lot évaporées**, et c'est le principal produit de cette
+  descente.
 
-Deux règles n'ont **ni preuve, ni banc, ni véhicule** : `DC-09` — que cet
-audit désignait comme le garde-fou le plus exposé de la chaîne — et `DC-36`.
+**`DC-09` faisait partie de cette liste et n'y est plus** : arbitrage du
+2026-08-23 ([[D-096]]), elle reçoit le **LOT-09** de « Doctrine exécutable ».
+Elle était la dernière des quatre règles que cet audit désignait comme les
+plus exposées à rester sans ancrage, et sa fermeture reprend le patron exact
+qui a refermé `DC-27` — clause de prompt plus garde qui épingle la formule.
+Reste **`DC-36`**, sans preuve, sans banc et sans véhicule.
 
 ### B — Trois faits étaient déjà vrais le 2026-08-11, et l'audit les a manqués
 
@@ -567,14 +575,16 @@ Ce que le lot établit se vérifie, en revanche, au grep de
 | réserves « Banc dû » maintenues | 2 (`DC-14`, `DC-20`) |
 | marqueurs **Décision due** | 4 (`DC-04`, `DC-21`, `DC-44`, `DC-56`) |
 | marqueurs **écrite, non armée** | 4 (`DC-05`, `DC-08`, `DC-52`, `DC-53`) |
-| règles **orphelines** | **11**, plus la part de `DC-11` hors exclusions |
-| règles sans preuve, sans banc, sans véhicule | 2 (`DC-09`, `DC-36`) |
+| règles **orphelines** | **10**, plus la part de `DC-11` hors exclusions (11 marqueurs) |
+| règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` a reçu le LOT-09 ([[D-096]]) |
 
-Portées vivantes après requalification, toutes par « Doctrine exécutable »
-sauf mention : `DC-07`, `DC-13`, `DC-20` (LOT-02) · `DC-12`, `DC-23` (LOT-04) ·
-`DC-11`-exclusions, `DC-35`, `DC-42`, `DC-43` (LOT-05) · `DC-54`, `DC-55`
-(LOT-06) · `DC-22` (LOT-07) · `DC-58` (LOT-03) · `DC-46` (CB-09, hors
-campagne) · `DC-50`, `DC-51` (campagne chaîne alimentaire).
+Portées vivantes après requalification et après les arbitrages du 2026-08-23
+([[D-096]]), toutes par « Doctrine exécutable » sauf mention : `DC-09`
+(LOT-09) · `DC-12`, `DC-23` (LOT-04) · `DC-11`-exclusions, `DC-35`, `DC-42`,
+`DC-43` (LOT-05) · `DC-54`, `DC-55` (LOT-06) · `DC-22` (LOT-07) · `DC-58`
+(LOT-03) · **`DC-07`, `DC-13`, `DC-20` (Curation signée** — le LOT-02 y a été
+transféré, faute de consommateur**)** · `DC-46` (CB-09, hors campagne) ·
+`DC-50`, `DC-51` (campagne chaîne alimentaire).
 
 ---
 

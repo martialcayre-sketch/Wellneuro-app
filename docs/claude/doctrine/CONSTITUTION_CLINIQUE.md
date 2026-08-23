@@ -10,8 +10,11 @@
 > **Banc dû** — la règle est opposable mais ne mord pas encore à l'exécution ;
 > **Producteur dû** — un banc la garde, mais rien ne l'alimente en production,
 > donc elle est inerte ; **Décision due** — le code la tient et un banc la
-> garde, mais aucune entrée du registre ne la prononce ; **orpheline** — son
+> garde, mais aucune entrée du registre ne la prononce ; **Orpheline** — son
 > lot porteur est livré sans l'avoir refermée, et aucun lot ne la reprend.
+> Ce dernier s'écrit **exactement** `**Orpheline**`, capitale comprise : il
+> est fait pour être compté au grep, et une casse flottante l'aurait rendu
+> invisible à moitié.
 > Un cinquième, **écrite, non armée**, dit qu'une règle n'a pas de sujet au
 > dépôt, que son déclencheur est nommé, et que c'est un état légitime.
 >
@@ -98,8 +101,9 @@ par claim ; l'ordre de résolution, lui, n'est écrit nulle part.*
 associatif ou interprétatif · `C` orientation ou exploration · `D`
 intervention · `E` sécurité, contre-indication, red flag. La catégorie
 commande le traitement ; elle n'est pas une étiquette documentaire.
-*Proposition — porté par le LOT-02 de la campagne « Doctrine exécutable »
-(colonne catégorie `A-E` sur `rag_corpus_claims`). Aucune catégorie `A-E`
+*Proposition — porté par la campagne **Curation signée** ([[D-096]] : la
+colonne catégorie `A-E` sur `rag_corpus_claims` y a été transférée depuis
+« Doctrine exécutable », faute de consommateur). Aucune catégorie `A-E`
 n'existe au dépôt ; `typologie_lecture` est un axe de **lecture**
 (déclaré/observé/vécu/interprété, `CHECK rag_corpus_claims_typologie`), sans
 rapport avec celui-ci.*
@@ -114,10 +118,12 @@ passe par le praticien ([[D-003]]). Déclencheur : la première exécution
 
 **DC-09 — Un claim associatif ne devient jamais une preuve.** « X peut être
 associé à Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
-*Proposition — garde-fou le plus exposé de la chaîne, et **orpheline** : le
-LOT-01 de la campagne chaîne T0 la portait, ce lot est livré depuis le
-2026-08-18 sans rien avoir livré pour elle, et aucun lot de « Doctrine
-exécutable » ne la reprend. Aucune des trois preuves, aucun véhicule.*
+*Proposition — garde-fou le plus exposé de la chaîne, et la seule des quatre
+règles que l'audit désignait comme telles à n'avoir aucun ancrage. Le LOT-01
+de la chaîne T0 la portait ; ce lot est livré depuis le 2026-08-18 sans rien
+avoir livré pour elle. **Porté par le LOT-09** de « Doctrine exécutable »
+([[D-096]]), sur le patron qui a refermé `DC-27` : clause de prompt plus garde
+qui épingle la formule.*
 
 **DC-10 — Un claim d'orientation produit une orientation suggérée, jamais un
 diagnostic.** « En présence de X + Y, explorer éventuellement Z » alimente le
@@ -128,7 +134,7 @@ deuxième rideau ; il ne conclut rien.
 exécutable :** indication, conditions d'entrée, dose éventuelle, durée,
 population, contre-indications, interactions, niveau de preuve, source, rôle du
 praticien.
-*Proposition — **orpheline**. Le LOT-05 de la chaîne T0 la portait, ce lot est
+*Proposition — **Orpheline**. Le LOT-05 de la chaîne T0 la portait, ce lot est
 livré ; le registre d'interventions compte 95 entrées et ne porte **aucun** des
 neuf champs exigés, sa facette `interactions` est inerte depuis le 2026-08-01.
 Seules les **exclusions** (`neCouvrePas`, `null` sur les 95) ont un véhicule :
@@ -155,7 +161,7 @@ LOT-04 de « Doctrine exécutable ».*
 `PROHIBITED_AUTOMATION`. En l'absence de niveau explicite, le plus restrictif
 s'applique.
 *Proposition — aujourd'hui l'axe est binaire (`prescriptif`, `statut`). Porté
-par le LOT-02 de « Doctrine exécutable » (colonne niveau d'exécution).*
+par la campagne **Curation signée** ([[D-096]]).*
 
 **DC-14 — Aucune extrapolation hors de la population du claim.** Un claim
 établi chez l'adulte ne vaut pas chez l'enfant, la femme enceinte, la personne
@@ -234,8 +240,7 @@ cut-offs cliniques y ont le même statut. Une morsure partielle existe et
 mérite d'être nommée — la liste blanche de colonnes de
 `alli_dossier_deux_voix_v1_negatif.sql:11,173` (`ci.yml:685`) **interdit** tout
 seuil sur les tables de l'alliance ; c'est un interdit, pas une déclaration de
-nature. Porté par le LOT-02 de « Doctrine exécutable » (colonne nature du
-seuil).*
+nature. Porté par la campagne **Curation signée** ([[D-096]]).*
 
 **DC-21 — Aucune pondération clinique tacite.** Un poids égal entre axes n'est
 pas neutre : c'est déjà une décision de modèle. Toute pondération est
@@ -442,7 +447,7 @@ pèse : pertinence clinique × information nouvelle attendue × capacité à
 départager les hypothèses × impact sur la prise en charge ÷ charge patient.
 Jamais « même thème donc on l'envoie », mais « cela changera-t-il ce que nous
 ferons ensuite ? ».
-*Proposition — **orpheline**. Les LOT-01 et LOT-03 de la chaîne T0 la
+*Proposition — **Orpheline**. Les LOT-01 et LOT-03 de la chaîne T0 la
 portaient, les deux sont livrés ; aucune pondération « information nouvelle
 attendue ÷ charge patient » n'existe au dépôt (zéro occurrence du
 vocabulaire). Seule la moitié négative — ne pas re-proposer — est livrée, et
@@ -486,7 +491,7 @@ et il est livré.*
 moteur distingue les interventions compatibles simultanément de celles à
 tester séquentiellement. Dix changements simultanés rendent inattribuables
 l'amélioration comme l'intolérance.
-*Proposition — **orpheline**. Le véhicule V4 de l'audit (« deux paragraphes
+*Proposition — **Orpheline**. Le véhicule V4 de l'audit (« deux paragraphes
 dans deux fiches de lot ») est **périmé** : ses fiches d'accueil, LOT-05 et
 LOT-07 de la chaîne T0, sont livrées depuis le 2026-08-18. Rien dans
 `web/src/lib` ne distingue les interventions compatibles simultanément de
@@ -568,7 +573,7 @@ LOT-05 de la chaîne T0 la portait et il est livré.*
 **DC-45 — Trois niveaux de mesure, jamais présentés au même degré de
 certitude.** `A` mesure standard ou conventionnelle · `B` exploration
 fonctionnelle · `C` marqueur expérimental ou débattu.
-*Proposition — **orpheline**. Le LOT-06 de la chaîne T0 la portait et il est
+*Proposition — **Orpheline**. Le LOT-06 de la chaîne T0 la portait et il est
 livré : le catalogue est peuplé (47 analytes, 15 panels) et ses surfaces sont
 branchées, mais la taxonomie A/B/C de **niveaux de mesure** n'existe nulle
 part. **Homonymie à ne pas confondre** : les lettres A/B/C de cette règle

@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 statut: "à_faire"
-dépend_de: "LOT-04 (l'objet de sécurité) — PLUS le LOT-02 depuis l'arbitrage du 2026-08-23"
+dépend_de: "LOT-04 (l'objet de sécurité) — le LOT-02 est transféré hors campagne (D-096)"
 ---
 
 # LOT-05 — V3b : les gates de population et l'effet indésirable
@@ -48,7 +48,7 @@ faux dans ses poids.
 
 **Général déclaré, exclusions déclarées** — et non « silence restrictif ». La
 gate ne lit **pas** une population sur le claim (elle n'existe pas, voir
-LOT-02) : elle croise **les exclusions de l'intervention** avec l'état du
+[[D-095]]) : elle croise **les exclusions de l'intervention** avec l'état du
 patient. Le précédent est signé et en production —
 `BiologyFunctionalRange.population NOT NULL DEFAULT 'adulte_tout_venant'` avec
 `CHECK` fermé (`D-068`/`D-069`). Un `'adulte_tout_venant'` **écrit** n'est pas
@@ -104,8 +104,8 @@ devenir « aveugle par défaut ».
 ## Dépendances
 
 En amont : **LOT-04** (l'objet de sécurité et son pouvoir d'inhibition).
-**Le LOT-02 n'est plus une dépendance** depuis l'arbitrage du 2026-08-23 : la
-gate lit les exclusions de l'intervention, pas une population du claim.
+**Le LOT-02 est transféré hors campagne** ([[D-096]]) : la gate lit les
+exclusions de l'intervention, pas une population du claim.
 En aval : aucun.
 
 ## Étapes
