@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Le moteur de proposition — déterministe, sourcé, caduc par hash"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -129,12 +129,12 @@ Ceux du périmètre ; en lecture de référence :
 
 ## Étapes
 
-- [ ] Types et assembleur pur (fragments sourcés, hash de caducité).
-- [ ] Gardes G7 — chacune vue **rouge** par mutation réelle.
-- [ ] Route GET/POST (auth, drapeaux, événements, bornes de longueur sur le
+- [x] Types et assembleur pur (fragments sourcés, hash de caducité).
+- [x] Gardes G7 — chacune vue **rouge** par mutation réelle.
+- [x] Route GET/POST (auth, drapeaux, événements, bornes de longueur sur le
       motif d'écart, refus par motif nommé — patron `enonce_absent`).
-- [ ] T1 après chaque édition ; T2 avant commit.
-- [ ] Revue `wn-reviewer` (module neuf consommant des sorties cliniques).
+- [x] T1 après chaque édition ; T2 avant commit.
+- [x] Revue `wn-reviewer` (module neuf consommant des sorties cliniques).
 
 ## Tests
 
@@ -151,4 +151,97 @@ Ceux du périmètre ; en lecture de référence :
 
 ## Résultats
 
-À compléter à la clôture.
+Clos le 2026-08-23. Les cinq arbitrages ont tenu tels quels ; deux points de
+conception ont dû être tranchés en cours de route, et ils sont écrits ici
+parce qu'ils ne se déduisent pas de la fiche.
+
+**Qui écrit `propositions_objectif`.** La fiche disait « le POST n'enregistre
+que des événements », et aucun autre lot ne portait cette écriture. Or la
+`DecisionCard` n'est **pas persistée** (`protocol_drafts` n'en garde que les
+empreintes d'ancrage) et G7 interdit de la recalculer : un GET ne peut donc
+pas assembler. Arbitré : **un POST à deux gestes** — `assembler` (le cockpit
+envoie plainte dominante, candidats et SHA ; la route lit l'anamnèse EN BASE)
+et `ecarter` (l'événement motivé). Idempotent par empreinte : mêmes sources ⇒
+aucune ligne neuve, ce qui permet au cockpit d'appeler le geste à chaque
+ouverture de panneau.
+
+**L'anamnèse ne vient jamais du client**, et c'est la frontière de confiance
+de la route : l'accepter du corps de requête permettrait de faire dire au
+patient ce qu'il n'a pas écrit, avec la mention « verbatim » quand même
+apposée. Plainte et candidats, eux, arrivent du client — la route vérifie ce
+qu'elle peut (forme, longueurs, SHA hexadécimal) et **ne feint pas** de
+vérifier le reste : elle ne peut pas confronter le SHA à la table signée, qui
+vit sous `lib/clinical/`. Prix assumé de G7, écrit dans le fichier.
+
+**`assembleeLe` devient la clé d'assemblée.** La caducité se dérive : les
+lignes du dernier assemblage sont vivantes, les précédentes caduques. La
+colonne n'est pas une duplication de `creeLe` — un seul `createMany` la pose
+à l'identique pour toute l'assemblée, là où les `creeLe` par défaut peuvent
+différer.
+
+**Ce que les bancs ont trouvé.** Un défaut réel dans la route : `return
+promesse` dans un `try` rend la promesse **sans l'attendre**, si bien qu'un
+rejet Prisma échappait au `catch` — la route aurait propagé l'erreur brute,
+laquelle recopie le `data:` du `createMany`, c'est-à-dire les mots du
+patient. Corrigé en `return await`, et le banc qui l'a vu rouge est nommé
+dans le commentaire.
+
+**Quatre gardes vues rouges par mutation réelle** avant d'être déclarées
+vertes : import de `clinical-engine/` dans le module (G7-1), propriété
+`rangCandidat` (G7-2), `objectifNegocie.create` dans la route (G7-3),
+balayage du blob désarmé (G7-5). La cinquième (G7-4, clés exposées épinglées)
+est tenue par `tsc` et a été vue rouge en ajoutant `rangAffichage` au type.
+
+**Ce que la revue a trouvé, et c'était le défaut du LOT-09.** Les deux listes
+de mots interdits étaient **entièrement en français** — `rang`, `score`,
+`seuil`… — alors que la donnée amont nomme ses champs `rank` et `confidence`
+(`clinical-engine/decisionCard.ts`). Mes quatre mutations vues rouges étaient
+toutes francisées ; la mutation la plus PROBABLE, recopier le champ tel qu'il
+arrive, serait passée : le classement se serait persisté dans le blob (exposé
+en `unknown`, donc hors du pin de type), se serait trié, se serait affiché, et
+les 94 cas seraient restés verts. Le banc épinglait le vocabulaire de
+l'interdit, pas l'interdit.
+
+Deux autres bloquants du même registre. **G7-1 se contournait par un chemin
+relatif** — la garde ne lisait que les préfixes d'alias `@/lib/…`, et
+`from '../clinical-engine/…'` la traversait ; ce n'est pas une contorsion,
+c'est l'idiome local (`clinical/contradictionFinding.ts` importe
+`'../clinical-engine/types'`). La garde lit désormais les spécificateurs
+d'import et refuse le répertoire comme SEGMENT, quelle que soit la forme du
+chemin. Et le **POST `assembler` rendait le dossier — verbatim compris — sans
+journaliser l'accès** : le patron « une écriture laisse sa propre trace » ne
+s'appliquait pas, puisque son cas nominal n'écrit rien (idempotence) et que
+la table ne porte aucun `praticien_email`. Le chemin d'usage normal de la
+fonctionnalité était celui qui ne laissait pas de trace.
+
+Quatre corrections de rang élevé dans le même passage : l'ordre servi était
+**indéterminé** (deux clés égales sur toute une assemblée — départage par `id`
+ajouté, et `NULLS LAST` sur une colonne nullable) ; `disposees` était filtrée
+sur « ce qui n'est pas vivant », si bien que le surplus au-delà du plafond y
+tombait avec `disposition: null` — **l'écran aurait lu un geste qui n'a pas eu
+lieu** ; l'identifiant de règle était du **texte libre** de 200 caractères, ce
+qui laissait persister `regle: "Recommandation Wellneuro validée"` comme une
+provenance (contrôle de forme ajouté — pas une confrontation, donc sans
+toucher à G7) ; et deux candidats de **même règle** produisaient deux
+propositions au hachage identique, ce qui empêchait la route de voir
+l'assemblée rétrécir.
+
+**Deux dettes nommées, écrites dans le code.** Une assemblée qui deviendrait
+**vide** (table dépubliée, abstention devenue requise, plus aucun candidat) ne
+retire pas la précédente : il n'existe aucune ligne à écrire pour dire
+« désormais, rien ». Et **lire-puis-écrire n'est pas étanche à la course** :
+deux `assembler` concurrents écrivent deux assemblées identiques — le service
+reste juste, l'idempotence re-stabilise au troisième appel, il reste du bruit
+dans le matériau du bilan LOT-06. Fermer la première demande une migration ;
+la seconde se fermerait par une transaction sérialisable, arbitrage renvoyé au
+LOT-03 quand on saura à quelle cadence le panneau appelle.
+
+**Validation.** T1 vert. T2 : 155 passés, 1 échec — `portail-parcours` sur
+iPhone 13, `page.goto` en timeout de chargement. **Reproduit à l'identique sur
+un arbre d'où le lot avait été retiré** : blocage WebKit connu de ce Mac,
+étranger au lot. Bancs du lot : 104 verts (53 unitaires, 17 gardes, 34 route).
+
+**Après revue.** 104 bancs verts (53 unitaires, 17 gardes, 34 route), T1 vert.
+Les trois trous signalés — import relatif, `rank` recopié, propriété écrite
+dans un type en ligne — ont été vus **rouges par mutation** une fois les
+gardes corrigées.

@@ -92,3 +92,64 @@ export function isComprehensionEnabled(value = process.env.WN_COMPREHENSION): bo
 export function isDossierDeuxVoixEnabled(value = process.env.WN_DOSSIER_DEUX_VOIX): boolean {
   return value === 'true';
 }
+
+/**
+ * Drapeau du moteur de proposition d'objectif (campagne Alliance 6.0-B,
+ * LOT-02) — `D-094`, gouvernance du périmètre.
+ *
+ * CINQUIÈME DRAPEAU NEUF ET ÉTEINT, et il ne se compose d'aucun des quatre
+ * précédents. Ce qu'il ouvre n'est pas une surface : c'est une MACHINE QUI
+ * PROPOSE. Se greffer sur `WN_DOSSIER_DEUX_VOIX` ferait qu'ouvrir la
+ * ratification mettrait aussi Wellneuro en position de force de proposition
+ * sur l'objectif — deux gestes de gouvernance distincts confondus en un seul
+ * interrupteur, ce que `D-070` a précisément constaté sur le rayon biologie.
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre. Même doctrine que
+ * `WN_CE_QUI_COMPTE`, `WN_COMPREHENSION`, `WN_DOSSIER_DEUX_VOIX`,
+ * `WN_C4_ENABLED` et `WN_CB_ENABLED`.
+ *
+ * IL GARDE LES DEUX GESTES DE LA ROUTE, et pas seulement l'écriture :
+ * l'assemblage (503) ET la lecture (503). C'est une exception assumée à la
+ * règle « une liste vide est un silence honnête, un 503 ferait croire à une
+ * panne » — laquelle vaut pour une surface que le praticien alimente lui-même.
+ * Ici, une liste vide se lirait « la machine n'a rien trouvé à proposer sur ce
+ * dossier », c'est-à-dire un CONSTAT sur le patient, là où la vérité est que
+ * personne n'a encore ouvert la fonctionnalité. Mieux vaut dire « fermé » que
+ * laisser lire un verdict.
+ */
+export function isObjectifProposeEnabled(value = process.env.WN_OBJECTIF_PROPOSE): boolean {
+  return value === 'true';
+}
+
+/**
+ * Interrupteur de repli du LOT-02 (`D-094`, gouvernance du périmètre) : la
+ * liste des dossiers auxquels la proposition s'applique, **vide = tous**.
+ *
+ * SA VALEUR PAR DÉFAUT EST OUVERTE, ET CE N'EST PAS UNE ENTORSE AU
+ * FAIL-CLOSED. Le fail-closed est tenu par `isObjectifProposeEnabled`, qui
+ * précède toujours : rien ne s'ouvre tant que le drapeau est éteint. Cet
+ * interrupteur-ci est un MÉCANISME DE RÉVERSIBILITÉ — le moyen de restreindre
+ * après coup, sans redéploiement, si la fonctionnalité se comporte mal sur
+ * certains dossiers. En faire un périmètre par défaut inverserait son rôle :
+ * il faudrait penser à l'alimenter pour que l'ouverture serve à quelque chose,
+ * et un oubli passerait pour une fermeture voulue.
+ *
+ * Le périmètre nominal est bien « tous les patients actuels » : `D-094` le
+ * fonde sur un fait, non sur une commodité — ce sont des bêta-testeurs réels
+ * et informés. Restreindre par défaut contredirait la décision.
+ *
+ * Séparateur virgule, espaces tolérés, entrées vides écartées : un panneau
+ * d'environnement se remplit à la main, et « a, b » ne doit pas produire un
+ * identifiant `" b"` qui n'appartiendrait à personne.
+ */
+export function dossierDansPerimetreProposition(
+  idPatient: string,
+  value = process.env.WN_OBJECTIF_PROPOSE_PATIENTS,
+): boolean {
+  const liste = (value ?? '')
+    .split(',')
+    .map((entree) => entree.trim())
+    .filter((entree) => entree.length > 0);
+  if (liste.length === 0) return true;
+  return liste.includes(idPatient);
+}
