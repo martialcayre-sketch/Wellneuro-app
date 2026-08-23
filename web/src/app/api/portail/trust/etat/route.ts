@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { associationEffetIndesirableDisponible } from '@/lib/clinical/safetyEffetIndesirableV1';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 import { projeterChoixCourants } from '@/lib/trust/securite';
@@ -35,6 +36,19 @@ export type TrustEtatResponse =
       choixCourants: ChoixEtat[];
       historiqueChoix: ChoixEtat[];
       signalements: SignalementEtat[];
+      /**
+       * Le formulaire d'effet indésirable peut-il demander le rattachement au
+       * programme et les dates de prise ? ([[D-101]], `DC-42`)
+       *
+       * SERVI PLUTÔT QUE SUPPOSÉ, et pour une raison qui n'est pas technique :
+       * les trois colonnes arrivent par une migration que le déploiement du
+       * code précède ([[D-087]]). Poser les questions avant l'ouverture ferait
+       * répondre le patient — « oui, ce produit fait partie de mon
+       * programme » — et **jetterait sa réponse en silence**. Demander une
+       * déclaration qu'on ne conserve pas est exactement ce que ce lot existe
+       * pour empêcher ailleurs.
+       */
+      associationEffetIndesirable: boolean;
     }
   | { ok: false; reason: string; error: string };
 
@@ -91,6 +105,7 @@ export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>
 
     return NextResponse.json({
       ok: true,
+      associationEffetIndesirable: associationEffetIndesirableDisponible(),
       avantDeCommencerRequis,
       accuses: accuses.map(a => ({
         documentKey: a.documentKey,

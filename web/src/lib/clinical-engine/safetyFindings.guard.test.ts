@@ -226,11 +226,17 @@ describe('verrou de signature — son sens est INVERSE des autres tables', () =>
     SAFETY_SIGNALS_METADATA.validationExterne = false;
     const { findings, rules } = construireSafetyFindings([...ADRESSAGE]);
     expect(findings).toEqual([]);
-    expect(rules).toEqual([{
+    // LE SECOND PRODUCTEUR JOINT SA PROPRE RÈGLE depuis [[D-101]] (LOT-05,
+    // `DC-42`), elle aussi en `candidate` tant qu'elle n'est pas signée. Ce cas
+    // épingle la règle d'ANAMNÈSE et son cycle de vie ; l'égalité stricte sur
+    // le tableau entier aurait fait de ce banc le gardien du nombre de
+    // producteurs, ce qu'il n'a jamais eu à dire.
+    expect(rules).toContainEqual({
       ruleId: REGLE_SECURITE_ANAMNESE,
       version: SAFETY_SIGNALS_METADATA.version,
       lifecycle: 'candidate',
-    }]);
+    });
+    expect(rules.every(regle => regle.lifecycle === 'candidate')).toBe(true);
   });
 
   it('un sha de périmètre périmé referme le verrou tout seul', () => {

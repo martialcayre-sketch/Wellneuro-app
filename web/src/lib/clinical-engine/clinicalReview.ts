@@ -220,6 +220,23 @@ export function buildClinicalReview(input: {
   snapshot: ClinicalSnapshot;
   rules?: ClinicalRuleRef[];
   findings?: AuthoredFindings;
+  /**
+   * Limitations posées par l'APPELANT, en plus de celles que la revue dérive
+   * seule des règles candidates ([[D-101]], LOT-05).
+   *
+   * Le besoin vient d'un cas que les règles candidates ne couvrent pas : un
+   * producteur peut avoir LU une donnée et n'avoir pas su en conclure — un
+   * signalement d'effet indésirable ouvert que le patient n'a rattaché à aucun
+   * protocole. Ce n'est ni un constat (rien n'est établi) ni une règle inactive
+   * (la règle a bien tourné). Sans ce champ, la seule façon de le dire au
+   * praticien aurait été d'en faire un constat, c'est-à-dire d'inhiber sur une
+   * ignorance.
+   *
+   * ELLES ENTRENT DANS L'EMPREINTE, comme toutes les limitations : deux
+   * appelants qui n'en poseraient pas les mêmes rendraient deux revues
+   * différentes pour un même dossier.
+   */
+  limitations?: string[];
 }): ClinicalReview {
   nonEmpty(input.reviewId, 'reviewId');
   canonicalIso(input.createdAt, 'createdAt');
@@ -254,7 +271,7 @@ export function buildClinicalReview(input: {
   const candidateLimitations = rules
     .filter(rule => rule.lifecycle === 'candidate')
     .map(rule => `Règle candidate inactive : ${rule.ruleId}.`);
-  const limitations = uniqueSorted(candidateLimitations);
+  const limitations = uniqueSorted([...candidateLimitations, ...(input.limitations ?? [])]);
   const normalizedAbstention: AbstentionAssessment = abstention.status === 'not_evaluated'
     ? { status: 'not_evaluated', ruleIds: [], limitations: uniqueSorted(abstention.limitations) }
     : { ...abstention, ruleIds: uniqueSorted(abstention.ruleIds), limitations: uniqueSorted(abstention.limitations) };

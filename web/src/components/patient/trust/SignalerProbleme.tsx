@@ -53,7 +53,21 @@ const ACTIONS_PRISES = [
   { valeur: 'ne_sait_pas', libelle: 'Je ne sais pas' },
 ];
 
-export function SignalerProbleme({ token, onEnvoye }: { token: string; onEnvoye: () => void }) {
+export function SignalerProbleme({ token, onEnvoye, associationDisponible = false }: {
+  token: string;
+  onEnvoye: () => void;
+  /**
+   * Le rattachement au programme et les dates de prise peuvent-ils être
+   * demandés ? ([[D-101]], servi par `GET /api/portail/trust/etat`)
+   *
+   * DÉFAUT `false`, ET C'EST LA GARDE. Les trois colonnes qui reçoivent ces
+   * réponses arrivent par une migration que le déploiement du code précède :
+   * poser les questions avant l'ouverture ferait répondre le patient et
+   * jetterait sa réponse en silence. Un défaut `true` aurait rendu ce trou
+   * invisible chez tout appelant qui oublie la prop.
+   */
+  associationDisponible?: boolean;
+}) {
   const [parcours, setParcours] = useState<Parcours | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
@@ -64,6 +78,11 @@ export function SignalerProbleme({ token, onEnvoye }: { token: string; onEnvoye:
   const [symptomes, setSymptomes] = useState('');
   const [severite, setSeverite] = useState('');
   const [actionPrise, setActionPrise] = useState('ne_sait_pas');
+  // Défaut « je ne sais pas », jamais « non » ([[D-101]], `DC-24`) : un champ
+  // laissé tel quel ne doit pas déclarer une absence de rattachement.
+  const [rattacheAuProgramme, setRattacheAuProgramme] = useState('ne_sait_pas');
+  const [debutPriseLe, setDebutPriseLe] = useState('');
+  const [debutSymptomesLe, setDebutSymptomesLe] = useState('');
   // Champs incident / droit.
   const [categorieIncident, setCategorieIncident] = useState('');
   const [typeDroit, setTypeDroit] = useState('');
@@ -152,6 +171,12 @@ export function SignalerProbleme({ token, onEnvoye }: { token: string; onEnvoye:
             symptomes,
             severiteDeclaree: severite,
             actionPrise,
+            // Rien n'est envoyé quand les champs ne sont pas affichés : sinon
+            // le défaut « ne_sait_pas » partirait comme une réponse que le
+            // patient n'a jamais donnée.
+            ...(associationDisponible
+              ? { rattacheAuProgramme, debutPriseLe, debutSymptomesLe }
+              : {}),
           });
         }}
       >
@@ -182,6 +207,41 @@ export function SignalerProbleme({ token, onEnvoye }: { token: string; onEnvoye:
             ))}
           </select>
         </PatientField>
+        {associationDisponible && <>
+        {/* LE RATTACHEMENT AU PROGRAMME, DÉCLARÉ PAR LE PATIENT ([[D-101]]).
+            Trois réponses, « Je ne sais pas » comprise : une question à deux
+            réponses ferait passer l'hésitation pour un « non », et c'est
+            précisément sur ce « non » supposé que la machine s'autoriserait à
+            poursuivre. Le serveur ne rattache que sur un « oui » explicite, et
+            c'est LUI qui résout de quel protocole il s'agit. */}
+        <PatientField label="Ce produit fait-il partie du programme qui vous a été transmis ?">
+          <select
+            value={rattacheAuProgramme}
+            onChange={e => setRattacheAuProgramme(e.target.value)}
+            className={patientInputClassName}
+          >
+            <option value="ne_sait_pas">Je ne sais pas</option>
+            <option value="oui">Oui</option>
+            <option value="non">Non</option>
+          </select>
+        </PatientField>
+        <PatientField label="Depuis quand le prenez-vous ?">
+          <input
+            type="date"
+            value={debutPriseLe}
+            onChange={e => setDebutPriseLe(e.target.value)}
+            className={patientInputClassName}
+          />
+        </PatientField>
+        <PatientField label="Depuis quand ressentez-vous ces symptômes ?">
+          <input
+            type="date"
+            value={debutSymptomesLe}
+            onChange={e => setDebutSymptomesLe(e.target.value)}
+            className={patientInputClassName}
+          />
+        </PatientField>
+        </>}
         {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
         <div className="flex flex-wrap gap-2">
           <PatientButton type="submit" variant="primary" loading={envoi} loadingLabel="Envoi…">

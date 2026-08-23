@@ -8,6 +8,7 @@ import {
 import { constatsContradictionsPourDossier, contradictionsActives } from '@/lib/clinical/contradictionsService';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
 import { STOP_RULES_METADATA, STOP_RULES_SHA256, STOP_RULES_V1 } from '@/lib/clinical/stopRulesV1';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
@@ -250,12 +251,16 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // validation du patient (`api/portail/valider`). Prendre la dernière
     // ferait donc disparaître toutes les règles de drapeau pendant la fenêtre
     // — création d'un suivi, patient pas encore passé — où le praticien
-    // regarde justement l'orientation. Même sélection que
-    // `api/praticien/synthese`.
+    // regarde justement l'orientation.
+    //
+    // SÉLECTION PARTAGÉE DEPUIS [[D-101]], et c'est la correction : ce module
+    // triait par `createdAt` quand la chaîne C1 triait par `dateValidation`, si
+    // bien que deux consultations validées dans un ordre divergent faisaient
+    // lire deux anamnèses différentes au même dossier.
     prisma.consultation.findFirst({
-      where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
 

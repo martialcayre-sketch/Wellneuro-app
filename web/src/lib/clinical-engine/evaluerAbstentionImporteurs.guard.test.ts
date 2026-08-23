@@ -42,12 +42,25 @@ const IMPORTEURS_ATTENDUS = [
   // prose de deux cas qui gardent QUEL motif d'abstention est servi. Il importe
   // `construireChaineC1`, jamais `evaluerAbstention`.
   'web/src/lib/clinical-engine/chaineC1.test.ts',
+  // TROIS MENTIONS NEUVES ([[D-101]], LOT-05), toutes en prose. La gate de
+  // population et la règle d'interruption sur effet indésirable décrivent
+  // l'effet de ce qu'elles produisent — « `evaluerAbstention` passe en
+  // `required` » — et citent le défaut que le LOT-04 a payé sur cette fonction
+  // (une branche utile restée sans producteur). Inscrites ici plutôt que
+  // contournées en reformulant : le banc « mention seule » ci-dessous les
+  // rattrape si l'une d'elles se met un jour à importer réellement.
+  'web/src/lib/clinical/gatePopulationV1.ts',
+  'web/src/lib/clinical/gatePopulationV1.guard.test.ts',
+  'web/src/lib/clinical/safetyEffetIndesirableV1.ts',
 ];
 
 /** Les entrées qui ne doivent citer le nom qu'en prose, jamais l'importer. */
 const MENTIONS_SEULES = [
   'web/src/lib/clinical-engine/safetyFindings.ts',
   'web/src/lib/clinical-engine/chaineC1.test.ts',
+  'web/src/lib/clinical/gatePopulationV1.ts',
+  'web/src/lib/clinical/gatePopulationV1.guard.test.ts',
+  'web/src/lib/clinical/safetyEffetIndesirableV1.ts',
 ];
 
 /** Le pipeline de lecture, pur — extrait pour être éprouvé (contre-épreuve). */

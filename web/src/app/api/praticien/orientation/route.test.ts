@@ -339,7 +339,12 @@ describe('GET /api/praticien/orientation', () => {
       // `Prisma.DbNull` cesserait d'exclure les NULL SQL et ferait revenir le
       // défaut, sans qu'une assertion « NOT est défini » s'en aperçoive.
       expect(critere.where.NOT).toEqual({ anamnese: { equals: Prisma.DbNull } });
-      expect(critere.orderBy).toEqual({ createdAt: 'desc' });
+      // Sélection PARTAGÉE depuis [[D-101]] : la consultation validée la plus
+      // récente qui porte une anamnèse. Le second terme du tri n'est pas
+      // décoratif — `dateValidation` est nullable, et deux lignes également
+      // nulles s'ordonneraient sinon selon ce que rend le moteur SQL.
+      expect(critere.where.statut).toBe('validee');
+      expect(critere.orderBy).toEqual([{ dateValidation: 'desc' }, { createdAt: 'desc' }]);
     });
 
     it("un libellé d'attente hors énuméré est ignoré, jamais deviné", async () => {

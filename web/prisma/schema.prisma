@@ -860,9 +860,27 @@ model TrustAdverseEffectReport {
   examineLe            DateTime? @map("examine_le")
   soumisLe             DateTime  @default(now()) @map("soumis_le")
 
-  patient Patient @relation(fields: [idPatient], references: [idPatient])
+  // ASSOCIATION À UNE INTERVENTION — D-101, LOT-05 (DC-42).
+  //
+  // `DC-42` exige un symptôme « temporellement associé à une intervention ».
+  // Aucune des colonnes ci-dessus ne portait cette association : `produitLibelle`
+  // est du texte libre saisi par le patient, `debutPrise` et `debutSymptomes`
+  // sont des chaînes de 100 caractères qu'aucun format ne contraint. La règle
+  // était donc inapplicable, non par choix mais par absence de donnée.
+  //
+  // Les trois colonnes sont NULLABLES et s'AJOUTENT : les deux chaînes libres
+  // restent, avec les signalements déjà enregistrés. Un signalement antérieur
+  // porte donc `null` partout ici — et `null` se lit « association inconnue »,
+  // jamais « aucune association » (DC-24).
+  protocolDraftId      String?   @map("protocol_draft_id")
+  debutPriseLe         DateTime? @map("debut_prise_le")
+  debutSymptomesLe     DateTime? @map("debut_symptomes_le")
+
+  patient       Patient        @relation(fields: [idPatient], references: [idPatient])
+  protocolDraft ProtocolDraft? @relation(fields: [protocolDraftId], references: [id])
 
   @@index([statutTraitement], map: "trust_aer_statut_idx")
+  @@index([idPatient, statutTraitement], map: "trust_aer_patient_statut_idx")
   @@map("trust_adverse_effect_reports")
 }
 
@@ -959,6 +977,8 @@ model ProtocolDraft {
   checkins              ProtocolCheckin[]
   diffusionApprovals    ProtocolDiffusionApproval[]
   arbitragesBiologiques ArbitrageBiologique[]
+  // Signalements d'effet indésirable rattachés à ce protocole (D-101, DC-42).
+  effetsIndesirables    TrustAdverseEffectReport[]
 
   @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
   @@index([decisionCardId], map: "c2a_draft_decision_card_idx")

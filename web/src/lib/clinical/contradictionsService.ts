@@ -1,5 +1,6 @@
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
@@ -238,13 +239,14 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'desc' },
     }),
-    // Même sélection que l'orientation et la synthèse : la consultation la plus
-    // récente QUI PORTE UNE ANAMNÈSE, et non la plus récente tout court — une
-    // consultation naît sans anamnèse et ne la reçoit qu'à la validation.
+    // Même sélection que l'orientation, la synthèse, la proposition de bilan ET
+    // la chaîne C1 depuis [[D-101]] : la consultation VALIDÉE la plus récente
+    // qui porte une anamnèse. Elle vit dans `consultationPorteuse.ts`, et n'est
+    // plus recopiée — c'est la recopie qui avait fait diverger les deux tris.
     prisma.consultation.findFirst({
-      where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
   ]);
 

@@ -5,6 +5,13 @@ import {
   rangDuSignal,
   regleSecuriteValidee,
 } from '@/lib/clinical/safetySignalsV1';
+import {
+  CONDUITE_EFFET_INDESIRABLE,
+  REGLE_SECURITE_EFFET_INDESIRABLE,
+  SAFETY_EI_METADATA,
+  STATUTS_EI_NON_TRAITES,
+  regleEffetIndesirableValidee,
+} from '@/lib/clinical/safetyEffetIndesirableV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
 import type { ClinicalRuleRef, SafetyFinding } from './types';
 
@@ -81,6 +88,104 @@ const LIMITATION_HORS_COTATION =
   'Ce libellé n’appartient pas à la cotation signée du 2026-08-23 : faute de rang connu,'
   + ' il est traité comme un adressage plutôt qu’ignoré.';
 
+const LIMITATION_EI_PROVENANCE =
+  'Ce constat provient d’un signalement déposé au portail patient, qui n’est pas une'
+  + ' passation : il ne cite aucune réponse de questionnaire.';
+
+/**
+ * Un signalement d'effet indésirable, tel que la chaîne C1 le reçoit.
+ *
+ * NI LES SYMPTÔMES NI LE LIBELLÉ DU PRODUIT N'Y FIGURENT, et c'est une garde,
+ * pas un oubli. Ce type traverse `construireSafetyFindings`, dont la sortie
+ * entre dans la `rationale` d'un constat, puis dans l'empreinte de la carte de
+ * décision, puis dans le corps d'une réponse HTTP. Les mots que le patient a
+ * écrits sur ses symptômes n'ont rien à faire sur ce trajet ; le praticien les
+ * lit sur la surface des signalements, à leur place.
+ */
+export type EffetIndesirableRuntime = {
+  id: string;
+  /** Le protocole que le patient a DÉSIGNÉ, ou `null` — jamais déduit. */
+  protocolDraftId: string | null;
+  /** `recu` | `en_cours` | `traite` | `clos`, tel que la base le porte. */
+  statutTraitement: string;
+};
+
+/**
+ * Les constats produits par le SECOND producteur ([[D-101]], `DC-42`).
+ *
+ * TROIS SORTIES, ET AUCUNE N'EST « NE RIEN FAIRE EN SILENCE » :
+ *
+ *   1. Signalement RATTACHÉ à un protocole et non traité ⇒ un constat. Il
+ *      inhibe, exactement comme un signal d'anamnèse de rang `adressage`.
+ *   2. Signalement non traité SANS rattachement ⇒ aucun constat, et une
+ *      LIMITATION qui le dit. Le patient n'a désigné aucun protocole ; en
+ *      deviner un serait la déduction que le lot interdit, et se taire ferait
+ *      disparaître un signalement ouvert de la vue du praticien (`DC-35`).
+ *   3. Table non signée ⇒ aucun constat, et la règle jointe en `candidate` :
+ *      `buildClinicalReview` en tire seul la limitation « Règle candidate
+ *      inactive ». Ce cas est celui de la LIVRAISON.
+ *
+ * L'IDENTIFIANT DU SIGNALEMENT EST CITÉ, ET RIEN D'AUTRE. Il permet au
+ * praticien de retrouver la ligne ; il ne transporte aucun contenu clinique.
+ */
+function construireFindingsEffetIndesirable(effetsIndesirables: EffetIndesirableRuntime[]): {
+  findings: SafetyFinding[];
+  rules: ClinicalRuleRef[];
+  limitations: string[];
+} {
+  const regle = regleEffetIndesirableValidee();
+  if (!regle) {
+    // Aucune limitation propre : la revue produit déjà « Règle candidate
+    // inactive : SAF-EI-01. » depuis le `lifecycle`, et l'écrire une seconde
+    // fois dirait deux fois la même chose au praticien.
+    return {
+      findings: [],
+      rules: [{
+        ruleId: REGLE_SECURITE_EFFET_INDESIRABLE,
+        version: SAFETY_EI_METADATA.version,
+        lifecycle: 'candidate',
+      }],
+      limitations: [],
+    };
+  }
+
+  const ouverts = effetsIndesirables.filter(
+    signalement => (STATUTS_EI_NON_TRAITES as readonly string[]).includes(signalement.statutTraitement),
+  );
+  // Tri par identifiant : l'ordre de la base n'est pas stable, et deux ordres
+  // produiraient deux empreintes de carte pour un même dossier — donc un 409
+  // sur une carte honnête.
+  const rattaches = ouverts
+    .filter(signalement => signalement.protocolDraftId !== null)
+    .sort((gauche, droite) => (gauche.id < droite.id ? -1 : gauche.id > droite.id ? 1 : 0));
+  const sansRattachement = ouverts.length - rattaches.length;
+
+  return {
+    findings: rattaches.map(signalement => ({
+      findingId: `safety:effet-indesirable:${signalement.id}`,
+      kind: 'safety' as const,
+      disposition: 'requires_practitioner_review' as const,
+      // FIGÉ, pour le motif exact du premier producteur : faire varier
+      // `confidence` avec la sévérité déclarée en ferait une gravité chiffrée.
+      confidence: 'à_documenter' as const,
+      rationale: `${CONDUITE_EFFET_INDESIRABLE} Signalement : ${signalement.id}.`,
+      ruleId: regle.ruleId,
+      // VIDE ET VALIDE : le snapshot est bâti sur les passations, et un
+      // signalement de portail n'en est pas une.
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+      limitations: [LIMITATION_EI_PROVENANCE],
+    })),
+    rules: [regle],
+    limitations: sansRattachement > 0
+      ? [
+        `${sansRattachement} signalement(s) d’effet indésirable non traité(s) ne sont rattachés à aucun`
+        + ' protocole : le patient n’en a désigné aucun, et la machine n’en déduit pas.'
+        + ' Ils n’interrompent donc rien et restent à examiner sur la surface des signalements.',
+      ]
+      : [],
+  };
+}
+
 /**
  * Les constats de sécurité d'un dossier, et les règles à joindre à la revue.
  *
@@ -107,19 +212,42 @@ const LIMITATION_HORS_COTATION =
  * autres verrous du dépôt ; c'est dit ici, gardé par `safetyFindings.guard.test.ts`,
  * et l'état non signé rend le CI rouge avant d'atteindre la production.
  */
-export function construireSafetyFindings(signauxAlerte: string[]): {
+export function construireSafetyFindings(
+  signauxAlerte: string[],
+  /**
+   * Les signalements d'effet indésirable du dossier ([[D-101]], LOT-05).
+   *
+   * DÉFAUT `[]`, ET C'EST LE SEUL DE CE MODULE — il ne dit pas « aucun
+   * signalement » mais « ce chemin ne lit pas les signalements ». La distinction
+   * tient parce que le seul appelant qui les fournit est celui qui les a
+   * réellement interrogés : quand `interruptionEffetIndesirableActive()` est
+   * faux, aucune requête n'est émise et le second producteur reste muet, ce que
+   * `limitationsEffetIndesirable` ne compense pas non plus — il n'y a rien à
+   * dire d'une lecture qui n'a pas eu lieu et dont le dispositif entier est
+   * éteint. Un défaut sur `signauxAlerte`, lui, resterait interdit : ce
+   * chemin-là est allumé.
+   */
+  effetsIndesirables: EffetIndesirableRuntime[] = [],
+): {
   findings: SafetyFinding[];
   rules: ClinicalRuleRef[];
+  /** Ce que le second producteur n'a pas pu conclure, dit plutôt que tu. */
+  limitations: string[];
 } {
+  const securiteEI = construireFindingsEffetIndesirable(effetsIndesirables);
   const regle = regleSecuriteValidee();
   if (!regle) {
     return {
-      findings: [],
-      rules: [{
-        ruleId: REGLE_SECURITE_ANAMNESE,
-        version: SAFETY_SIGNALS_METADATA.version,
-        lifecycle: 'candidate',
-      }],
+      findings: securiteEI.findings,
+      rules: [
+        {
+          ruleId: REGLE_SECURITE_ANAMNESE,
+          version: SAFETY_SIGNALS_METADATA.version,
+          lifecycle: 'candidate',
+        },
+        ...securiteEI.rules,
+      ],
+      limitations: securiteEI.limitations,
     };
   }
 
@@ -153,5 +281,9 @@ export function construireSafetyFindings(signauxAlerte: string[]): {
         : [LIMITATION_PROVENANCE],
     });
   }
-  return { findings, rules: [regle] };
+  return {
+    findings: [...findings, ...securiteEI.findings],
+    rules: [regle, ...securiteEI.rules],
+    limitations: securiteEI.limitations,
+  };
 }

@@ -1,5 +1,6 @@
 import { prisma } from '../prisma';
 import { ANAMNESE_CHAMP_REQUIS } from '../consultation/anamnese';
+import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '../consultation/consultationPorteuse';
 import { contradictionsPourPatient } from '../clinical/contradictionsService';
 import {
   STATUTS_SYNTHESE_VALIDEE,
@@ -41,12 +42,14 @@ export async function chargerEntreesPreconditionsT0(idPatient: string): Promise<
       },
       orderBy: [{ dateReponse: 'asc' }],
     }),
-    // La consultation VALIDÉE la plus récente : une anamnèse portée par une
-    // consultation non validée n'est pas consignée, elle est en cours.
+    // La consultation VALIDÉE la plus récente QUI PORTE UNE ANAMNÈSE : une
+    // anamnèse portée par une consultation non validée n'est pas consignée,
+    // elle est en cours ; et une consultation validée sans anamnèse ne dit
+    // rien qu'on puisse lire ([[D-101]], `consultationPorteuse.ts`).
     prisma.consultation.findFirst({
-      where: { idPatient, statut: 'validee' },
+      where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
-      orderBy: [{ dateValidation: 'desc' }, { createdAt: 'desc' }],
+      orderBy: ORDRE_CONSULTATION_PORTEUSE,
     }),
     // La dernière synthèse VALIDÉE, et non la dernière ligne : chaque
     // génération crée une ligne neuve au statut `Brouillon_IA`. Sans ce

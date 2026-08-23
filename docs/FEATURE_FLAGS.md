@@ -26,6 +26,7 @@ datée **par feature**.
 | `WN_CB_ENABLED` | `true` | rayon biologie — **étage documentaire** | fermé |
 | `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
 | `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
+| `WN_EI_INTERRUPTION` | `1` | **association d'un effet indésirable à un protocole** (`DC-42`, [[D-101]]) — capture au portail, puis interruption de la préparation automatique quand la règle `SAF-EI-01` est signée | fermé — **NEUF ET ÉTEINT à la livraison**. Ne se pose qu'APRÈS que la migration `20260823210000_association_effet_indesirable_intervention` est appliquée **et constatée** ([[D-087]]) : le code lit trois colonnes que la base n'a pas encore. Deux gestes dans cet ordre — le drapeau ouvre la CAPTURE, la signature ouvre l'INTERRUPTION |
 | `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
 | `WN_CLAIMS_QUESTIONNAIRE_STREAM` | `true` | claims questionnaire en SSE | réponse JSON |
@@ -113,6 +114,8 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
+| `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
+| `clinical/gatePopulationV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
