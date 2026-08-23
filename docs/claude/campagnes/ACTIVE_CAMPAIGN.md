@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-18-doctrine-executable
 **Titre** : Doctrine exécutable — les cinq véhicules de l'audit
 **Statut** : active
-**Lot actif** : LOT-05
+**Lot actif** : LOT-06
 
 ## Activités parallèles
 

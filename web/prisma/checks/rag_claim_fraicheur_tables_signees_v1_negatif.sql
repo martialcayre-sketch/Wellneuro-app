@@ -3,7 +3,7 @@
 -- `rag_claim_fraicheur_tables_signees_v1.sql` vérifie que l'invariant TIENT, sur
 -- la production. Ce fichier vérifie qu'il MORD, en CI. Il n'est pas décoratif :
 -- le contrat positif ne peut PAS tourner en CI — la base y est construite vide
--- par `migrate deploy`, les 40 claims épinglés y sont tous absents et le contrat
+-- par `migrate deploy`, les 42 claims épinglés y sont tous absents et le contrat
 -- y rougirait à chaque exécution. Sans ce fichier-ci, rien en CI ne dirait
 -- jamais que le prédicat fonctionne ([[D-012]], [[D-015]]).
 --

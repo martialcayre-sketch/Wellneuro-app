@@ -46,7 +46,17 @@
 -- Les ONZE PAIRES `priorites` ajoutées le 2026-08-12 ([[D-054]]) ont été relues
 -- le même jour, sur la production : toutes VALIDE, actives, non remplacées, en
 -- v1.0, et toutes `prescriptif = false` — d'où `exige_prescriptif = false` pour
--- cette table. La liste en compte donc 40.
+-- cette table. La liste en comptait alors 40.
+-- Les DEUX PAIRES `conflits_sources` ajoutées le 2026-08-24 ([[D-103]]) ont été
+-- relues le même jour, sur la production (conteneur `one-off-6148`, lecture
+-- seule) : `WN-CL-0312-018` et `WN-CL-0387-013`, toutes deux VALIDE, actives,
+-- non remplacées, en v1.0. Elles sont l'une et l'autre `prescriptif = true`, ce
+-- qui ne change rien : `exige_prescriptif = false` dit ce qu'on EXIGE, et un
+-- conflit peut légitimement opposer deux claims descriptifs. **La relecture
+-- n'était pas une formalité** : `WN-CL-0387-013` n'était jusqu'ici cité que
+-- dans un COMMENTAIRE d'`indicationsBiologieV1.ts`, donc gardé par rien — s'il
+-- n'avait pas été conforme, ce préflight aurait bloqué toute release de base
+-- au nom d'un registre qui ne produit rien. La liste en compte donc 42.
 --
 -- `BEGIN READ ONLY … ROLLBACK` : aucune écriture, rejouable sans risque.
 -- ERRCODE sentinelle WN001, jamais intercepté ici.

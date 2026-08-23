@@ -117,6 +117,44 @@ sont pas : le branchement s'arrête à la restitution praticien du cockpit, et
 l'escalade à l'extinction et aux préconditions T0 est un **effet clinique
 distinct**, qui demande son propre arbitrage.
 
+**Ce que la revue `wn-reviewer` a refermé** (NO-GO conditionnel, 2026-08-24) —
+quatre défauts qu'aucun banc du lot ne voyait :
+
+- **Le préflight `release-db` entrait sur deux paires jamais relues.** Le
+  déclencheur du workflow couvre `web/src/lib/clinical/**` ; le contrat de
+  fraîcheur est fail-closed sur la production, et `WN-CL-0387-013` n'était
+  jusqu'ici cité que dans un **commentaire** — donc gardé par rien. Non
+  conforme, il aurait bloqué **toute release de base** au nom d'un registre qui
+  ne produit rien. Relu le 2026-08-24 (conteneur `one-off-6148`) : les deux sont
+  `VALIDE`, actives, non remplacées, en v1.0 ; le constat est inscrit dans
+  l'en-tête du contrat, comme pour `arret` et `priorites`.
+- **Deux consommateurs gardaient un conflit avec la signature de la mauvaise
+  table.** Seul `contradictionsPourAffichage` avait reçu le filtre par forme ;
+  `vigilancesDiscordancePourSynthese` et `discordancesPourGardeRestitution`
+  restaient sur `contradictionsActives()`. Or `lignesDeVigilance` sait DÉJÀ
+  nommer un conflit : elle l'aurait servi au praticien sous la signature de la
+  table de contradictions. Un prédicat unique, `formeAutorisee`, gouverne
+  désormais les trois — et un banc du dépôt encodait l'invariant inverse, il est
+  corrigé.
+- **Une panne de la dérivation biologie éteignait la confirmation d'épisode
+  T0.** Cinq requêtes Prisma pour une vigilance informative, sans `catch` : un
+  catalogue mal formé rendait 500 sur le chemin principal. Isolée.
+- **La lecture Prisma partait au nom des conflits.** La première écriture
+  ouvrait la porte du dossier dès que l'un des deux verrous l'était, pour un
+  moteur qui ne lit ni passation ni anamnèse. Les conflits sont calculés hors de
+  cette porte : l'invariant « le verrou passe avant toute lecture » redevient
+  vrai dans toutes les configurations.
+
+**Et un point de doctrine relevé par la même revue** : `DC-54` énumère « niveau
+de preuve, **contexte**, date, population ». La première rédaction avait
+silencieusement remplacé `contexte` par `classe_autorite` — qui n'est pas un axe
+de la règle — pendant que le motif servi s'ouvrait sur « aucun axe de DC-54 ».
+C'était le grief même que ce lot instruit. `contexte` a désormais son entrée et
+son motif (aucune colonne du claim ne porte le contexte d'une affirmation ; le
+seul champ proche dit COMMENT la connaissance a été recueillie, jamais dans
+quelles circonstances elle vaut), et `classe_autorite` est comptée à part comme
+axe supplémentaire du schéma.
+
 **Et une mesure à ne pas redécouvrir** : la description composée de `CS-BIO-01`
 fait 569 caractères ; les deux lignes que `lignesDeVigilance` en tirerait
 feraient **768 et 607**, pour un plafond de **500** (`LONGUEUR_MAX_POINT`, à

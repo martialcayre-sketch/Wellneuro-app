@@ -40,7 +40,7 @@ type MetadataPartielle = {
  * `contradictionsV1` est laissée RÉELLE — elle est signée dans le dépôt : c'est
  * ce qui permet d'éprouver les deux verrous séparément.
  */
-async function service(registre: MetadataPartielle) {
+async function service(registre: MetadataPartielle, contradictions?: MetadataPartielle) {
   vi.resetModules();
   vi.doMock('./conflitsSourcesV1', async () => {
     const reel = await vi.importActual<typeof import('./conflitsSourcesV1')>('./conflitsSourcesV1');
@@ -49,6 +49,17 @@ async function service(registre: MetadataPartielle) {
       CONFLITS_SOURCES_METADATA: { ...reel.CONFLITS_SOURCES_METADATA, ...registre },
     };
   });
+  if (contradictions) {
+    vi.doMock('./contradictionsV1', async () => {
+      const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
+      return {
+        ...reel,
+        CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...contradictions },
+      };
+    });
+  } else {
+    vi.doUnmock('./contradictionsV1');
+  }
   return import('./contradictionsService');
 }
 
@@ -64,8 +75,16 @@ async function service(registre: MetadataPartielle) {
 async function serviceReel() {
   vi.resetModules();
   vi.doUnmock('./conflitsSourcesV1');
+  vi.doUnmock('./contradictionsV1');
   return import('./contradictionsService');
 }
+
+/** Table de contradictions NON signée — l'autre moitié du filtre par forme. */
+const CONTRADICTIONS_NON_SIGNEES: MetadataPartielle = {
+  validationExterne: false,
+  dateValidation: null,
+  shaPerimetre: null,
+};
 
 const conflitPublie = CONFLITS_SOURCES_V1.find(c => c.statut === 'publiee');
 
@@ -125,6 +144,30 @@ describe('conflits de sources — le verrou de signature', () => {
   it('ouvert, ne produit rien sur un dossier qui ne cite aucun claim', async () => {
     const svc = await service(SIGNATURE_VALIDE);
     expect(svc.conflitsSourcesPourDossier([])).toEqual([]);
+  });
+
+  // LE VERROU PASSE AVANT TOUTE LECTURE, invariant gardé depuis [[D-050]] —
+  // et la première écriture de D-103 l'avait cassé dans un cas précis (relevé
+  // en revue) : table de contradictions NON signée et registre signé faisaient
+  // partir deux requêtes Prisma pour un moteur de conflits qui ne lit aucune
+  // passation. Les conflits sont désormais calculés hors de cette porte.
+  it('configuration mixte : le dossier n’est pas lu', async () => {
+    const svc = await service(SIGNATURE_VALIDE, CONTRADICTIONS_NON_SIGNEES);
+    const affichees = await svc.contradictionsPourPatient('PAT_TEST', [
+      conflitPublie!.claims[0],
+    ]);
+    expect(prismaMock.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.consultation.findFirst).not.toHaveBeenCalled();
+    // Et le conflit sort quand même : la porte fermée ne le retient pas.
+    expect(affichees.map(a => a.id)).toEqual([conflitPublie!.id]);
+  });
+
+  // Les deux verrous fermés : rien ne sort, et rien n'est lu — le comportement
+  // d'avant le lot, inchangé.
+  it('les deux verrous fermés : ni lecture, ni constat', async () => {
+    const svc = await service({}, CONTRADICTIONS_NON_SIGNEES);
+    expect(await svc.contradictionsPourPatient('PAT_TEST', [conflitPublie!.claims[0]])).toEqual([]);
+    expect(prismaMock.questionnaireReponse.findMany).not.toHaveBeenCalled();
   });
 });
 
@@ -186,6 +229,44 @@ describe('conflits de sources — le filtre d’affichage par forme', () => {
     const svc = await serviceReel();
     const affichees = svc.contradictionsPourAffichage([conflit(), discordance()]);
     expect(affichees.map(a => a.id)).toEqual(['C-STR']);
+  });
+
+  // LE SENS INVERSE, que le commentaire du module affirmait sans qu'aucun banc
+  // ne le montre (relevé en revue). Signer la table de contradictions ne doit
+  // pas publier des conflits que personne n'a relus — et ne pas la signer ne
+  // doit pas faire disparaître des conflits que quelqu'un a relus.
+  it('table de contradictions non signée, registre signé : le conflit passe, la discordance est tue', async () => {
+    const svc = await service(SIGNATURE_VALIDE, CONTRADICTIONS_NON_SIGNEES);
+    const affichees = svc.contradictionsPourAffichage([conflit(), discordance()]);
+    expect(affichees.map(a => a.id)).toEqual(['CS-TEST-01']);
+  });
+
+  // LES DEUX AUTRES CONSOMMATEURS. `lignesDeVigilance` sait nommer un conflit
+  // (`INTITULE_PAR_FORME`) : elle est donc prête à en servir un, et son verrou
+  // doit être celui du REGISTRE. La première écriture de D-103 avait laissé les
+  // deux sur `contradictionsActives()`.
+  it('la synthèse ne publie pas un conflit sous la signature des contradictions', async () => {
+    const svc = await service({}, undefined);
+    // Registre NON signé (état livré), table de contradictions signée.
+    expect(svc.conflitsSourcesActifs()).toBe(false);
+    expect(svc.vigilancesDiscordancePourSynthese([conflit()])).toEqual([]);
+    // La discordance, elle, sort : le verrou qui la gouverne est ouvert.
+    expect(svc.vigilancesDiscordancePourSynthese([discordance()]).length).toBeGreaterThan(0);
+  });
+
+  it('le garde de restitution ne voit pas un conflit sous la signature des contradictions', async () => {
+    const svc = await serviceReel();
+    expect(svc.discordancesPourGardeRestitution([conflit()])).toEqual([]);
+    expect(svc.discordancesPourGardeRestitution([discordance()])).toHaveLength(1);
+  });
+
+  // Registre signé, le conflit atteint la synthèse — sinon les deux cas
+  // ci-dessus seraient verts sur une fonction qui ne rend jamais rien.
+  it('registre signé : le conflit atteint bien la synthèse', async () => {
+    const svc = await service(SIGNATURE_VALIDE);
+    const lignes = svc.vigilancesDiscordancePourSynthese([conflit()]);
+    expect(lignes.length).toBeGreaterThan(0);
+    expect(lignes[0]).toContain('Conflit entre sources');
   });
 
   // Un conflit n'a aucune passation : ses sources sont des claims. L'écran doit

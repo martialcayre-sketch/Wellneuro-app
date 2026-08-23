@@ -117,9 +117,21 @@ export function MissingDataPanel({
                     pourquoi. Sans lui, le praticien lirait « escaladée » sans
                     savoir ce que la machine a renoncé à faire, et pourrait
                     croire qu'elle a essayé de trancher (`DC-34`, `DC-35`). */}
-                {constat.resolution.statut !== 'ouverte' && (
+                {constat.resolution.statut === 'escaladee_praticien' && (
                   <p>
                     <span className="font-medium">Pourquoi la machine ne tranche pas :</span>
+                    {' '}{constat.resolution.motif}
+                  </p>
+                )}
+                {/* UN CONSTAT RÉSOLU PORTE LE MOTIF INVERSE — celui pour lequel
+                    la machine A tranché. Le premier écrit de [[D-103]] testait
+                    `!== 'ouverte'` et servait les deux sous le même intitulé,
+                    qui aurait dit le contraire de ce que le motif raconte.
+                    Latent — aucun producteur n'émet `resolue` aujourd'hui —
+                    mais le statut est typé et sera produit un jour. */}
+                {constat.resolution.statut === 'resolue' && (
+                  <p>
+                    <span className="font-medium">Motif de la résolution :</span>
                     {' '}{constat.resolution.motif}
                   </p>
                 )}

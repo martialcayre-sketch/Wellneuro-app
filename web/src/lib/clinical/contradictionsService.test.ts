@@ -45,13 +45,39 @@ const constat = (surcharge: Partial<Discordance> = {}): Discordance => ({
   ...surcharge,
 });
 
-/** Recharge le module pour que le verrou relise `CONTRADICTIONS_METADATA`. */
-async function service(metadata: { validationExterne: boolean; dateValidation: string | null; claimsSource: unknown[]; shaPerimetre?: string | null }) {
+/**
+ * Recharge le module pour que le verrou relise `CONTRADICTIONS_METADATA`.
+ *
+ * `registreSigne` signe EN PLUS le registre des conflits ([[D-103]]) : depuis
+ * ce lot, un `CONFLIT_SOURCES` répond de SA table, pas de celle-ci. Un cas qui
+ * porte un conflit sans ce second geste éprouve désormais le verrou, pas ce
+ * qu'il croyait éprouver.
+ */
+async function service(
+  metadata: { validationExterne: boolean; dateValidation: string | null; claimsSource: unknown[]; shaPerimetre?: string | null },
+  registreSigne = false,
+) {
   vi.resetModules();
   vi.doMock('./contradictionsV1', async () => {
     const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
     return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...metadata } };
   });
+  if (registreSigne) {
+    vi.doMock('./conflitsSourcesV1', async () => {
+      const reel = await vi.importActual<typeof import('./conflitsSourcesV1')>('./conflitsSourcesV1');
+      return {
+        ...reel,
+        CONFLITS_SOURCES_METADATA: {
+          ...reel.CONFLITS_SOURCES_METADATA,
+          validationExterne: true,
+          dateValidation: '2026-09-01T00:00:00.000Z',
+          shaPerimetre: reel.CONFLITS_SOURCES_SHA256,
+        },
+      };
+    });
+  } else {
+    vi.doUnmock('./conflitsSourcesV1');
+  }
   return import('./contradictionsService');
 }
 
@@ -595,11 +621,24 @@ describe('Discordances — parité de critère avec le moteur d’arrêt', () =>
 
   it('un CONFLIT_SOURCES porte son propre intitulé, jamais « entre instruments »', async () => {
     process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
-    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    // LES DEUX SIGNATURES, depuis [[D-103]]. Ce cas éprouvait l'INTITULÉ, et il
+    // le faisait sur la seule signature de la table de contradictions — c'est
+    // précisément le chemin que la revue a fermé : un conflit ne se publie pas
+    // sous la signature d'un registre que personne n'a relu.
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE, true);
     const conflit = { ...constat(), forme: 'CONFLIT_SOURCES' as const };
     const [ligne] = vigilancesDiscordancePourSynthese([conflit]);
     expect(ligne).toContain('Conflit entre sources');
     expect(ligne).not.toContain('entre instruments');
+  });
+
+  // L'AUTRE MOITIÉ, qui manquait : registre non signé, le conflit ne sort pas —
+  // quelle que soit la signature de la table de contradictions.
+  it('registre des conflits non signé : aucun CONFLIT_SOURCES en synthèse', async () => {
+    process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 = '1';
+    const { vigilancesDiscordancePourSynthese } = await service(SIGNEE);
+    const conflit = { ...constat(), forme: 'CONFLIT_SOURCES' as const };
+    expect(vigilancesDiscordancePourSynthese([conflit])).toEqual([]);
   });
 
   it('la vigilance reste explicable : elle porte sa règle et ses limitations', async () => {

@@ -105,6 +105,24 @@ export function conflitsSourcesPourDossier(
 }
 
 /**
+ * CE CONSTAT A-T-IL LE DROIT DE SORTIR ? Le verrou de sa PROPRE table.
+ *
+ * PRÉDICAT UNIQUE, et c'est tout son intérêt — même leçon que
+ * `contradictionEstOuverte` ([[D-055]]). La première écriture de [[D-103]] ne
+ * l'appliquait qu'à `contradictionsPourAffichage`, en laissant ses deux voisines
+ * sur `if (!contradictionsActives())`. Relevé en revue : `lignesDeVigilance`
+ * porte pourtant `INTITULE_PAR_FORME`, donc elle est préparée à recevoir un
+ * `CONFLIT_SOURCES` — et l'aurait servi au praticien sous la signature de la
+ * table de CONTRADICTIONS, c'est-à-dire un registre que personne n'a relu.
+ *
+ * Deux tables, deux relectures, deux verrous : signer l'une n'autorise pas
+ * l'autre, dans les deux sens.
+ */
+function formeAutorisee(constat: ContradictionFinding): boolean {
+  return constat.forme === 'CONFLIT_SOURCES' ? conflitsSourcesActifs() : contradictionsActives();
+}
+
+/**
  * Ce que l'écran reçoit d'un constat de contradiction.
  *
  * POURQUOI CE TYPE, ET PAS `DiscordanceFinding` — la lettre de [[D-044]] dit
@@ -198,10 +216,8 @@ function dateLisible(iso: string): string {
  * exactement celui d'avant.
  */
 export function contradictionsPourAffichage(constats: ContradictionFinding[]): ContradictionAffichee[] {
-  const contradictions = contradictionsActives();
-  const conflits = conflitsSourcesActifs();
   return constats
-    .filter(constat => (constat.forme === 'CONFLIT_SOURCES' ? conflits : contradictions))
+    .filter(formeAutorisee)
     .map(constat => {
       // Une passation par `reponseId`, pas une par source : une règle peut viser
       // deux sous-scores du même questionnaire, et l'écran n'a pas à afficher
@@ -333,13 +349,36 @@ export async function contradictionsPourPatient(
    */
   claimsCites: ContradictionClaimRef[] = [],
 ): Promise<ContradictionAffichee[]> {
-  // LE VERROU DES CONTRADICTIONS NE COMMANDE PLUS SEUL CETTE SORTIE : un
-  // registre de conflits signé doit pouvoir produire alors même que la table de
-  // contradictions ne le serait pas. Les deux verrous sont testés séparément,
-  // et la lecture Prisma n'a lieu que si l'un des deux au moins est ouvert —
-  // sans quoi le dossier n'est pas touché, comme avant.
-  if (!contradictionsActives() && !conflitsSourcesActifs()) return [];
+  // LES CONFLITS DE SOURCES NE LISENT PAS LE DOSSIER, et le verrou d'entrée
+  // reste donc celui des contradictions — corrigé en revue ([[D-103]]).
+  //
+  // La première écriture testait `!contradictionsActives() &&
+  // !conflitsSourcesActifs()`, pour qu'un registre signé produise sous une table
+  // de contradictions non signée. Elle faisait partir DEUX REQUÊTES PRISMA dans
+  // cette configuration — passations et consultation — pour un moteur de
+  // conflits qui n'en lit aucune : il ne travaille que sur `claimsCites`. Or
+  // l'invariant gardé depuis [[D-050]] est « le verrou passe AVANT toute lecture
+  // du dossier », et `preconditionsT0Prisma` appelle ici avec une liste vide.
+  //
+  // Les conflits sont donc calculés HORS de cette porte, plus bas : verrou des
+  // contradictions fermé, le dossier n'est pas touché et les conflits sortent
+  // quand même si leur propre registre est signé.
+  const contradictions = contradictionsActives()
+    ? await constatsDuDossierStocke(idPatient)
+    : [];
 
+  return contradictionsPourAffichage([
+    ...contradictions,
+    ...conflitsSourcesPourDossier(claimsCites),
+  ]);
+}
+
+/**
+ * Les constats de contradiction du dossier stocké — extrait de
+ * `contradictionsPourPatient` par [[D-103]], pour que la lecture Prisma reste
+ * derrière le verrou des contradictions et ne parte pas au nom des conflits.
+ */
+async function constatsDuDossierStocke(idPatient: string): Promise<ContradictionFinding[]> {
   const [reponses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
@@ -384,20 +423,7 @@ export async function contradictionsPourPatient(
   // garde sa place dans la sélection : l'instrument s'éteint au lieu de
   // reculer dans le temps. Tout ce bloc vit désormais dans
   // `constatsContradictionsPourDossier`, partagé avec `orientationService`.
-  //
-  // LES CONFLITS DE SOURCES S'AJOUTENT ICI, PAS DANS LE MOTEUR DE
-  // CONTRADICTIONS ([[D-103]]). Les deux producteurs n'ont pas la même matière
-  // — l'un confronte des instruments, l'autre le corpus — et n'ont pas la même
-  // entrée : celui-ci ne lit ni score, ni passation, ni anamnèse. Les fondre en
-  // un moteur aurait obligé à lui passer des scores dont il n'a que faire, et à
-  // faire dépendre les conflits du recalcul des passations.
-  //
-  // L'ORDRE EST STABLE : contradictions d'abord, conflits ensuite. L'écran
-  // n'ordonne pas par importance, il rend la liste telle quelle.
-  return contradictionsPourAffichage([
-    ...constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
-    ...conflitsSourcesPourDossier(claimsCites),
-  ]);
+  return constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null);
 }
 
 /**
@@ -477,8 +503,10 @@ export function lignesDeVigilance(constat: ContradictionFinding): string[] {
 export function vigilancesDiscordancePourSynthese(
   constats: ContradictionFinding[],
 ): string[] {
-  if (!contradictionsActives()) return [];
-  return constats.filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
+  // `formeAutorisee` ET NON `contradictionsActives()` depuis [[D-103]] : cette
+  // fonction sait déjà nommer un conflit (`INTITULE_PAR_FORME`), elle ne doit
+  // pas pouvoir le publier sous la signature d'une autre table.
+  return constats.filter(formeAutorisee).filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
 }
 
 /**
@@ -493,8 +521,8 @@ export function vigilancesDiscordancePourSynthese(
 export function discordancesPourGardeRestitution(
   constats: ContradictionFinding[],
 ): { regleId: string; instruments: string[] }[] {
-  if (!contradictionsActives()) return [];
   return constats
+    .filter(formeAutorisee)
     .filter(contradictionEstOuverte)
     .map(constat => ({
       regleId: constat.regleId,

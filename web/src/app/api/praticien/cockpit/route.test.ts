@@ -460,6 +460,13 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     // Le service est appelé POUR CE PATIENT — pas pour un autre, pas sans
     // argument : c'est ce qui distingue une propagation d'un décor.
     expect(espion).toHaveBeenCalledWith('PAT_TEST');
+    // DEUX APPELS, ET IL FAUT SAVOIR LEQUEL EST LEQUEL ([[D-103]]) : le premier
+    // vient de `preconditionsT0Prisma`, à UN argument — il n'évalue aucun
+    // conflit de sources, délibérément. Le second est celui de la route, à deux.
+    // Sans cette distinction, l'assertion ci-dessus était satisfaite par le
+    // premier appel et ne disait rien de ce que la route transmet.
+    expect(espion.mock.calls.at(-1)).toEqual(['PAT_TEST', []]);
+    expect(espion.mock.calls[0]).toEqual(['PAT_TEST']);
     expect(payload.contradictions).toEqual([constat]);
     espion.mockRestore();
   });
@@ -476,6 +483,79 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     }));
 
     expect((await response.json()).contradictions).toEqual([]);
+  });
+
+  // ── La dérivation des claims cités ([[D-103]]) ────────────────────────────
+  // Relevé en revue : l'affirmation « verrou fermé, la route ne fait aucune
+  // requête de plus qu'avant » n'était prouvée par rien, et retirer le garde
+  // `conflitsSourcesActifs()` laissait tous les bancs du lot verts.
+
+  it('registre non signé ⇒ la proposition de bilan n’est PAS dérivée', async () => {
+    const bio = await import('@/lib/biology-library/propositionService');
+    const espionBio = vi.spyOn(bio, 'claimsCitesParLaPropositionBilan');
+
+    const proposed = await proposal();
+    await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+
+    // C'est le coût du lot sur le chemin chaud : nul jusqu'à la signature.
+    expect(espionBio).not.toHaveBeenCalled();
+    espionBio.mockRestore();
+  });
+
+  // UNE VIGILANCE INFORMATIVE NE DOIT PAS ÉTEINDRE LA CONFIRMATION D'ÉPISODE.
+  // Sans le `catch` de la route, une panne de cette dérivation — catalogue mal
+  // formé, timeout base — rendait un 500 sur le chemin principal.
+  it('registre signé mais dérivation en panne ⇒ 200, sans conflit', async () => {
+    const service = await import('@/lib/clinical/contradictionsService');
+    const bio = await import('@/lib/biology-library/propositionService');
+    const espionVerrou = vi.spyOn(service, 'conflitsSourcesActifs').mockReturnValue(true);
+    const espionBio = vi
+      .spyOn(bio, 'claimsCitesParLaPropositionBilan')
+      .mockRejectedValue(new Error('catalogue indisponible'));
+
+    const proposed = await proposal();
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).contradictions).toEqual([]);
+    expect(espionBio).toHaveBeenCalled();
+    espionVerrou.mockRestore();
+    espionBio.mockRestore();
+  });
+
+  it('registre signé ⇒ les claims cités descendent au service', async () => {
+    const service = await import('@/lib/clinical/contradictionsService');
+    const bio = await import('@/lib/biology-library/propositionService');
+    const cites = [{ claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' }];
+    const espionVerrou = vi.spyOn(service, 'conflitsSourcesActifs').mockReturnValue(true);
+    const espionBio = vi
+      .spyOn(bio, 'claimsCitesParLaPropositionBilan')
+      .mockResolvedValue(cites);
+    const espionService = vi
+      .spyOn(service, 'contradictionsPourPatient')
+      .mockResolvedValue([]);
+
+    const proposed = await proposal();
+    await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+
+    // Le dernier appel est celui de la route ; le premier vient des
+    // préconditions T0, qui n'évaluent aucun conflit.
+    expect(espionService.mock.calls.at(-1)).toEqual(['PAT_TEST', cites]);
+    espionVerrou.mockRestore();
+    espionBio.mockRestore();
+    espionService.mockRestore();
   });
 });
 

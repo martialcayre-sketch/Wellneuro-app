@@ -390,9 +390,25 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // LA DÉRIVATION NE PART QUE SI LE REGISTRE EST SIGNÉ. Verrou fermé — l'état
     // livré — la route ne fait aucune requête de plus qu'avant, et le coût de
     // ce lot sur le cockpit est nul jusqu'au geste de signature.
-    const claimsCites = conflitsSourcesActifs()
-      ? await claimsCitesParLaPropositionBilan(idPatient, new Date().toISOString())
-      : [];
+    //
+    // BEST-EFFORT, ET C'EST LE POINT (relevé en revue). Cette dérivation émet
+    // cinq requêtes Prisma pour produire une VIGILANCE INFORMATIVE. Sans ce
+    // `catch`, un catalogue mal formé ou un timeout base ferait tomber la
+    // CONFIRMATION D'ÉPISODE T0 en 500 : un service secondaire éteindrait le
+    // chemin principal. La route de proposition traite déjà cette dérivation
+    // comme jetable. Liste vide ⇒ aucun conflit, ce qui est le repli déclaré du
+    // module — pas un silence inventé pour l'occasion.
+    let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
+    if (conflitsSourcesActifs()) {
+      try {
+        claimsCites = await claimsCitesParLaPropositionBilan(idPatient, now);
+      } catch (bioErr) {
+        console.error(
+          '[cockpit POST] claims cités indisponibles, conflits de sources non évalués',
+          bioErr instanceof Error ? bioErr.message : String(bioErr),
+        );
+      }
+    }
     const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
     return NextResponse.json({
       status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,

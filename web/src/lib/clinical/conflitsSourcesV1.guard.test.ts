@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CONFLITS_SOURCES_ECARTES_V1,
   CONFLITS_SOURCES_METADATA,
+  CONFLITS_SOURCES_SHA256,
   CONFLITS_SOURCES_V1,
 } from './conflitsSourcesV1';
 import { CONTRADICTIONS_RULES_V1 } from './contradictionsV1';
@@ -16,14 +17,31 @@ import { CONTRADICTIONS_RULES_V1 } from './contradictionsV1';
 // `conflitsSourcesService.test.ts` : il vit chez `contradictionsService`, seul
 // endroit d'où il soit éprouvable (voir le commentaire du module).
 
-describe('registre des conflits — l’état livré', () => {
-  // Écrire un conflit et le signer sont deux gestes distincts, et le second est
-  // un acte praticien. Ce banc est la preuve que la livraison ne change rien en
-  // production.
-  it('n’est PAS signé à la livraison', () => {
-    expect(CONFLITS_SOURCES_METADATA.validationExterne).toBe(false);
-    expect(CONFLITS_SOURCES_METADATA.dateValidation).toBeNull();
-    expect(CONFLITS_SOURCES_METADATA.shaPerimetre).toBeNull();
+describe('registre des conflits — signature complète ou pas de signature', () => {
+  // ÉCRIT POUR LE JOUR DE LA SIGNATURE, pas contre lui — corrigé en revue.
+  //
+  // La première rédaction épinglait `validationExterne === false` sans
+  // condition : le praticien qui signe aurait dû SUPPRIMER une assertion dans
+  // le même commit, sans que rien n'oriente vers la bonne réécriture. C'est
+  // l'idiome de `gatePopulationV1.guard.test.ts` qui vaut ici — ou bien rien
+  // n'est signé, ou bien la signature est complète et cohérente.
+  //
+  // Ce que le banc garde vraiment : on ne peut pas signer À MOITIÉ. Une
+  // `validationExterne` posée sans date ni SHA laisserait un verrou fermé pour
+  // une raison que personne ne verrait.
+  it('non signé, ou signé aux trois termes et sur le périmètre relu', () => {
+    if (!CONFLITS_SOURCES_METADATA.validationExterne) {
+      expect(CONFLITS_SOURCES_METADATA.dateValidation).toBeNull();
+      expect(CONFLITS_SOURCES_METADATA.shaPerimetre).toBeNull();
+      return;
+    }
+    const dateValidation = CONFLITS_SOURCES_METADATA.dateValidation;
+    expect(dateValidation).not.toBeNull();
+    // ISO canonique — une date mal formée FERME le verrou, et un banc qui
+    // l'accepterait laisserait croire à une signature qui n'ouvre rien.
+    expect(new Date(dateValidation as string).toISOString()).toBe(dateValidation);
+    // LE TERME QUI COMPTE : le périmètre signé est celui qui est là.
+    expect(CONFLITS_SOURCES_METADATA.shaPerimetre).toBe(CONFLITS_SOURCES_SHA256);
   });
 });
 
@@ -78,6 +96,26 @@ describe('registre des conflits — la forme des déclarations', () => {
     for (const conflit of CONFLITS_SOURCES_V1) {
       expect(conflit.importance).not.toBe('critical_for_decision');
     }
+  });
+});
+
+describe('registre des conflits — les identifiants ne collisionnent pas', () => {
+  // LES DEUX TABLES SE RETROUVENT DANS LE MÊME TABLEAU, et leurs `id` y servent
+  // de clé d'affichage. Un identifiant partagé rendrait deux constats
+  // indiscernables à l'écran, et le praticien qui conteste « la règle C-STR »
+  // ne saurait pas laquelle il nomme (`DC-34`). Relevé en revue ; rien ne le
+  // gardait, la convention `CS-*` contre `C-*` tenant au seul usage.
+  it('aucun conflit ne porte l’identifiant d’une règle de contradiction', () => {
+    const reglesContradiction = new Set(CONTRADICTIONS_RULES_V1.map(regle => regle.id));
+    expect(reglesContradiction.size).toBeGreaterThan(0);
+    for (const conflit of CONFLITS_SOURCES_V1) {
+      expect(reglesContradiction.has(conflit.id)).toBe(false);
+    }
+  });
+
+  it('aucun identifiant n’est déclaré deux fois dans le registre', () => {
+    const ids = CONFLITS_SOURCES_V1.map(conflit => conflit.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 

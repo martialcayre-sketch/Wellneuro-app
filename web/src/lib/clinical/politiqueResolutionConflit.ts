@@ -24,7 +24,26 @@ import type { ContradictionClaimRef, ResolutionContradiction } from './contradic
 /** Version de la politique, épinglée par le constat qu'elle produit. */
 export const POLITIQUE_RESOLUTION_CONFLIT_VERSION = 'politique-resolution-conflit-v1';
 
-export type AxeResolution = 'population' | 'niveau_preuve' | 'classe_autorite' | 'date';
+/**
+ * Les axes déclarés — QUATRE DE `DC-54`, PLUS UN.
+ *
+ * `DC-54` énumère « niveau de preuve, **contexte**, date, population ». La
+ * première rédaction de ce module avait silencieusement remplacé `contexte` par
+ * `classe_autorite`, qui n'est pas un axe de la règle — et le motif servi au
+ * praticien s'ouvrait pourtant sur « aucun axe de DC-54 ». C'était exactement le
+ * grief que ce lot instruit ailleurs : un axe non couvert qu'on tait est un axe
+ * qu'on croit couvert. Relevé en revue.
+ *
+ * `contexte` a donc son entrée propre, et `classe_autorite` est déclarée pour ce
+ * qu'elle est : un axe SUPPLÉMENTAIRE que le schéma du claim offre, examiné en
+ * plus des quatre, et pas davantage exploitable.
+ */
+export type AxeResolution =
+  | 'population'
+  | 'niveau_preuve'
+  | 'contexte'
+  | 'date'
+  | 'classe_autorite';
 
 export type AxeDeclare = {
   axe: AxeResolution;
@@ -39,10 +58,18 @@ export type AxeDeclare = {
   comparable: boolean;
   /** Pourquoi l'axe n'est pas comparable, et sur quelle mesure on l'affirme. */
   motif: string;
+  /**
+   * `true` si l'axe est nommé par le texte de `DC-54`, `false` s'il vient du
+   * schéma du claim. La distinction est servie au praticien : dire « aucun axe
+   * de DC-54 » en ayant compté un axe qui n'en est pas serait une exhaustivité
+   * fausse.
+   */
+  deDC54: boolean;
 };
 
 /**
- * Les quatre axes de `DC-54`, chacun avec le motif MESURÉ de sa non-comparaison.
+ * Les quatre axes de `DC-54` et l'axe supplémentaire du schéma, chacun avec le
+ * motif MESURÉ de sa non-comparaison.
  *
  * Les chiffres viennent de la production du 2026-08-23 et ne sont pas des
  * estimations : ils sont reproductibles par la requête d'agrégat citée dans
@@ -52,6 +79,7 @@ export const AXES_RESOLUTION: readonly AxeDeclare[] = [
   {
     axe: 'population',
     libelle: 'population',
+    deDC54: true,
     comparable: false,
     // [[D-095]] : la population ne vit pas sur le claim et n'y vivra pas — elle
     // est portée par l'intervention. Un claim descriptif n'a pas de population.
@@ -62,6 +90,7 @@ export const AXES_RESOLUTION: readonly AxeDeclare[] = [
   {
     axe: 'niveau_preuve',
     libelle: 'niveau de preuve',
+    deDC54: true,
     comparable: false,
     motif:
       'renseigné sur 45 claims sur 8 224 (0,55 %), en texte libre — 32 valeurs '
@@ -70,26 +99,47 @@ export const AXES_RESOLUTION: readonly AxeDeclare[] = [
       + "ordonner serait inventer un classement (DC-19).",
   },
   {
+    axe: 'contexte',
+    libelle: 'contexte',
+    deDC54: true,
+    comparable: false,
+    // L'AXE QUE LE SCHÉMA NE PORTE NULLE PART, et le plus facile à oublier
+    // parce qu'aucune colonne ne lui correspond. Il n'a pas de mesure : il a une
+    // absence, et c'est ce qu'il faut dire.
+    motif:
+      "aucune colonne du claim ne porte le contexte d'une affirmation — ni "
+      + "cadre de soin, ni moment du parcours, ni comorbidité. Le seul champ "
+      + 'proche, la typologie de lecture, dit COMMENT la connaissance a été '
+      + "recueillie (déclaré, observé, vécu, interprété), jamais dans quelles "
+      + "circonstances elle vaut. Le déduire du texte serait de l'extrapolation "
+      + '(DC-14).',
+  },
+  {
+    axe: 'date',
+    libelle: 'date',
+    deDC54: true,
+    comparable: false,
+    // L'axe le plus trompeur des cinq : la colonne EXISTE et elle est peuplée
+    // partout. C'est précisément pour cela qu'il faut écrire pourquoi on ne
+    // s'en sert pas.
+    motif:
+      'la seule date du claim est celle de sa VALIDATION praticien, pas celle de '
+      + 'la source : les 8 224 claims ont été validés sur onze jours de juillet '
+      + "et août 2026, dans l'ordre de l'ingestion. Comparer ces dates ferait "
+      + "gagner le claim ingéré le plus tard, ce qui ne dit rien de la preuve.",
+  },
+  {
     axe: 'classe_autorite',
     libelle: "classe d'autorité",
+    // PAS UN AXE DE `DC-54` — un axe supplémentaire que le schéma du claim
+    // offre, examiné en plus des quatre. Le déclarer sous le même drapeau
+    // aurait gonflé l'exhaustivité annoncée au praticien.
+    deDC54: false,
     comparable: false,
     motif:
       'renseignée sur 154 claims sur 8 224 (1,87 %), en texte libre — 73 valeurs '
       + "distinctes mêlant institutions et noms d'auteurs. Un seul claim du "
       + "corpus porte à la fois un niveau de preuve et une classe d'autorité.",
-  },
-  {
-    axe: 'date',
-    libelle: 'date',
-    comparable: false,
-    // L'axe le plus trompeur des quatre : la colonne EXISTE et elle est
-    // peuplée partout. C'est précisément pour cela qu'il faut écrire pourquoi
-    // on ne s'en sert pas.
-    motif:
-      "`valide_at` est la date de VALIDATION praticien du claim, pas la date de "
-      + 'la source : les 8 224 claims ont été validés sur onze jours de juillet '
-      + "et août 2026, dans l'ordre de l'ingestion. Comparer ces dates ferait "
-      + "gagner le claim ingéré le plus tard, ce qui ne dit rien de la preuve.",
   },
 ];
 
@@ -103,9 +153,21 @@ export const AXES_RESOLUTION: readonly AxeDeclare[] = [
 export function motifEscalade(): string {
   const nonCompares = AXES_RESOLUTION.filter(axe => !axe.comparable);
   const details = nonCompares.map(axe => `${axe.libelle} — ${axe.motif}`).join(' ');
+  const horsDC54 = nonCompares.filter(axe => !axe.deDC54).length;
+  // L'AXE SUPPLÉMENTAIRE EST COMPTÉ À PART. « Aucun des quatre axes » en ayant
+  // examiné cinq serait une exhaustivité fausse dans un sens, « aucun des cinq
+  // axes de DC-54 » dans l'autre.
+  const enPlus = horsDC54 > 0
+    ? ` ${horsDC54} axe supplémentaire du schéma du claim a été examiné et ne l’est pas davantage.`
+    : '';
+  // LA VERSION EST DANS LE MOTIF, PAS SEULEMENT EXPORTÉE (relevé en revue).
+  // Un constat archivé ou remonté par le praticien doit dire QUELLE politique
+  // s'est abstenue : la v2 escaladera avec un autre texte, et sans cette marque
+  // rien ne permettrait de les distinguer après coup (`DC-34`, `DC-35`).
   return (
-    'Aucun axe de comparaison de DC-54 n’est exploitable sur ce corpus, '
-    + `l’arbitrage revient donc au praticien (DC-55). ${details}`
+    `[${POLITIQUE_RESOLUTION_CONFLIT_VERSION}] Aucun des quatre axes de `
+    + 'comparaison de DC-54 n’est exploitable sur ce corpus, l’arbitrage revient '
+    + `donc au praticien (DC-55).${enPlus} ${details}`
   );
 }
 

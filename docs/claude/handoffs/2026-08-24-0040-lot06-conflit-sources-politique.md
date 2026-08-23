@@ -116,6 +116,43 @@ Le constat traverse `contradictionsPourPatient` → route cockpit →
 Aucun des deux ne se voyait côté serveur : les bancs de moteur et de service
 étaient verts pendant que l'écran aurait menti.
 
+## La revue a rendu un NO-GO conditionnel, et elle avait raison sur quatre points
+
+Aucun n'était visible des bancs du lot, tous verts au moment de la revue.
+
+- **Bloquant — le préflight `release-db` entrait sur deux paires jamais
+  relues.** Le déclencheur du workflow couvre `web/src/lib/clinical/**`, le
+  contrat est fail-closed sur la production, et `WN-CL-0387-013` n'était
+  jusqu'ici cité que dans un **commentaire** : gardé par rien. Non conforme, il
+  aurait bloqué **toute release de base** au nom d'un registre qui ne produit
+  rien — et le remède documenté par le fichier lui-même est « un arbitrage
+  clinique, jamais un `UPDATE` ». Relu (conteneur `one-off-6148`) : les deux
+  sont `VALIDE`, actives, non remplacées, v1.0. **Le constat est désormais
+  inscrit dans l'en-tête du contrat**, comme pour `arret` et `priorites` — c'est
+  la discipline que le fichier s'impose et que le lot avait sautée.
+- **Deux consommateurs sur trois gardaient un conflit avec la mauvaise
+  signature.** `vigilancesDiscordancePourSynthese` et
+  `discordancesPourGardeRestitution` étaient restées sur
+  `contradictionsActives()`, alors que `lignesDeVigilance` sait DÉJÀ nommer un
+  conflit. Un prédicat unique, `formeAutorisee`, gouverne les trois. Un banc du
+  dépôt encodait même l'invariant inverse — il servait un conflit sous la seule
+  signature des contradictions ; il est corrigé, et son pendant manquant ajouté.
+- **Une panne de la dérivation biologie éteignait la confirmation d'épisode
+  T0** : cinq requêtes Prisma pour une vigilance informative, sans `catch`.
+- **La lecture Prisma partait au nom des conflits**, qui ne lisent pourtant ni
+  passation ni anamnèse. Les conflits sont calculés hors de la porte du dossier.
+
+Et un point de doctrine : `DC-54` énumère « niveau de preuve, **contexte**,
+date, population ». J'avais remplacé `contexte` par `classe_autorite` — qui
+n'est pas un axe de la règle — pendant que le motif servi s'ouvrait sur « aucun
+axe de DC-54 ». C'était le grief même que ce lot instruit. `contexte` a son
+entrée et son motif ; `classe_autorite` est comptée à part.
+
+Trois mutations survivaient sur la passerelle `claimsCitesParLaPropositionBilan`
+— retirer la déduplication, rendre `[]` en toutes circonstances, ignorer le cas
+`!ok` — sans faire rougir un seul banc du lot. C'est la pièce dont dépend le
+fait qu'un praticien voie un jour quelque chose ; elle a maintenant six cas.
+
 ## Prochaine action
 
 **Signer le registre** — arbitrage du 2026-08-24 : livrer non signé, signer
