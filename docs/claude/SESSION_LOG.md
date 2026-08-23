@@ -4580,3 +4580,25 @@ aucune ligne signée, or l'ordre EST la recommandation). Les trois drapeaux sont
 posés et vivants (401 et non 503). Prochaine action : rédiger un objectif sur un
 des trois dossiers — sans lui, rien à ratifier. Ouvert : classement hors
 périmètre signé ; borne des trois dossiers tenue par consigne, pas par verrou.
+
+## 2026-08-23 — Garde-fou Codex P0 automatisé, après un oubli sur LOT-06
+
+Constat : LOT-06 (portail/token, PR #760) est classe P0 (auth/portail) et
+n'a jamais reçu la passe Codex obligatoire — seule la revue interne
+(`wn-reviewer`, NO-GO puis corrigé) a eu lieu. Décision : ne plus compter sur
+la mémoire de session pour ce rappel, mais l'ancrer en hook. Ajout de
+`.claude/hooks/gate-codex-p0.mjs` (+ banc 9 cas) sur `PreToolUse`/`Bash` :
+avant `gh pr create`/`gh pr merge`, si le diff touche une classe P0
+(auth/portail/token, migration, clinique/scoring) sans trace « Codex » dans
+changelog.d/handoffs/commits, verdict `ask` — jamais `deny`, le hook ne peut
+prouver qu'une passe a eu lieu, seulement son absence de trace. Écarté :
+bloquer en dur (le hook n'a pas l'autorité pour ça). Vérifié en live
+(sentinelle), banc complet vert (88/88).
+
+Incident en cours de vérification : une session concurrente a commité
+(`b67e039c`, branche `alliance-6a/cloture-journal`, non mergée) pendant
+qu'une ligne de sentinelle de debug était temporairement dans
+`.claude/settings.json` — elle s'est retrouvée committée par erreur. Déjà
+revertée en local (diff non commité). Prochaine action : commiter ce
+revert. Ouvert : la passe Codex de LOT-06 (#760) reste non confirmée
+rétroactivement.
