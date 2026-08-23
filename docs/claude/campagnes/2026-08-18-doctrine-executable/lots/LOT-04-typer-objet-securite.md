@@ -1,6 +1,6 @@
 ---
 id: "LOT-04"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -119,12 +119,18 @@ En aval : LOT-05 branche son second producteur sur l'objet posé ici.
 
 ## Critères de done
 
-- [ ] Qualification des douze signaux décidée, sourcée, datée — aucune
+- [x] Qualification des douze signaux décidée, sourcée, datée — aucune
       gravité inventée en passant.
-- [ ] `SafetyFinding` a un producteur réel ; `safetyFindings: 0` en dur a
+- [x] `SafetyFinding` a un producteur réel ; `safetyFindings: 0` en dur a
       disparu.
-- [ ] L'inhibition mord : un candidat est **retiré**, pas affiché à côté.
-- [ ] Aucun champ de certitude sur l'objet ; garde structurelle vue rouge.
-- [ ] Banc d'abstention mis à jour, jamais contourné.
-- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-xxx` + `changelog.d/`.
-- [ ] `DC-12` et `DC-23` basculés dans la constitution.
+- [x] L'inhibition mord : un candidat est **retiré**, pas affiché à côté.
+- [x] Aucun champ de certitude sur l'objet ; garde structurelle vue rouge.
+- [x] Banc d'abstention mis à jour, jamais contourné.
+- [x] T3 joué (Vitest 5529, bancs de certification 402, dérive schéma↔migrations
+      *No difference detected*, contrats SQL) ; segment E2E renvoyé au CI sur
+      blocage WebKit `D-049`, constaté deux fois sur deux cas DIFFÉRENTS.
+- [x] Revue `wn-reviewer` : GO sous réserve, deux correctifs P1 appliqués
+      (écran muet, phrase affirmant une lecture non faite), trois inexactitudes
+      corrigées, quatre bancs ajoutés, trois constats nommés en réserves 5-7.
+- [ ] Passe Codex (bloc de paramètres préparé, geste utilisateur).
+- [x] `DC-12` et `DC-23` basculés dans la constitution.

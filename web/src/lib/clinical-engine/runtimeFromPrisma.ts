@@ -2,6 +2,7 @@ import { JOURS_JALON } from '../equilibre/constants';
 import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
+import { signauxDeclares } from './safetyFindings';
 import type {
   PatientContext,
   ProposedAssessmentEpisode,
@@ -32,6 +33,16 @@ export type RuntimeInputs = {
   patient: RuntimePatientRow;
   responses: QuestionnaireResponseInput[];
   patientContext: PatientContext;
+  /**
+   * Les signaux d'alerte déclarés, bruts — entrée du producteur de constats de
+   * sécurité ([[D-099]], LOT-04).
+   *
+   * LU ICI, ET PAS AILLEURS, parce qu'ici est le seul endroit que le cockpit et
+   * `verifierChaineC1` traversent tous les deux : leur JSDoc respective dit
+   * qu'une lecture divergente ferait 409 sur une carte honnête, et un signal
+   * de sécurité lu d'un côté seulement produirait exactement cela.
+   */
+  signauxAlerte: string[];
 };
 
 export type RuntimeEpisodeProposal = {
@@ -89,7 +100,7 @@ export function adaptRuntimeInputs(
     constraints: [],
   };
 
-  return { patient, responses, patientContext };
+  return { patient, responses, patientContext, signauxAlerte: signauxDeclares(anamnese) };
 }
 
 export function proposeRuntimeEpisode(

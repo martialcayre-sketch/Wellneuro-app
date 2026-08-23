@@ -49,6 +49,63 @@ describe('cockpit de décision prudent', () => {
     expect(screen.getByText('Décision suspendue — revue praticien requise')).not.toBeNull();
   });
 
+  // [[D-099]], C1 de la revue du LOT-04 — LE MOTIF DU BLOCAGE EST LISIBLE, pas
+  // seulement le blocage. Deux motifs d'abstention existent et appellent des
+  // gestes opposés : un signal d'alerte déclaré appelle un ADRESSAGE médical, un
+  // canal de plainte non mesurable appelle une PASSATION. Tant qu'ils
+  // s'affichaient tous deux « revue praticien requise », le praticien lisait un
+  // écran muet — `DC-34`/`DC-35` non tenues.
+  describe('carte bloquée — le praticien lit POURQUOI', () => {
+    const carte = (bloqueur: Partial<DecisionCard>): DecisionCard => ({
+      decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
+      reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
+      version: 'c1-decision-card-v1', status: 'draft', priorityCandidates: [], proposedMainPriorityId: null,
+      selectedMainPriority: null, counterfactuals: [], missingDataFindingIds: [], discordanceFindingIds: [],
+      safetyFindingIds: [], abstention: { status: 'required', ruleIds: ['RULE_FIXTURE'], limitations: [] },
+      limitations: [], inputHash: 'card-hash',
+      ...bloqueur,
+    });
+
+    // Les assertions sont portées par le `container` du rendu, jamais par
+    // `screen` : ce fichier ne nettoie pas le DOM entre les cas, et une requête
+    // globale ramasserait les rendus précédents.
+    it('un signal de sécurité est nommé dans le résumé, sans dépli', () => {
+      const { container } = render(
+        <DecisionSummaryCard decisionCard={carte({ safetyFindingIds: ['safety-1'] })} />
+      );
+      expect(container.textContent).toContain('signal d’alerte déclaré');
+      expect(container.textContent).toContain('avis médical à évaluer en priorité');
+      expect(container.textContent).not.toContain('Décision suspendue — revue praticien requise');
+    });
+
+    // CONTRE-ÉPREUVE : les deux blocages ne disent PAS la même chose. Sans elle,
+    // un résumé qui aurait nommé la sécurité en toutes circonstances passerait.
+    it('un blocage SANS constat de sécurité ne parle jamais de signal d’alerte', () => {
+      const { container } = render(
+        <DecisionSummaryCard decisionCard={carte({ safetyFindingIds: [] })} />
+      );
+      expect(container.textContent).toContain('Décision suspendue — revue praticien requise');
+      expect(container.textContent).not.toContain('signal d’alerte déclaré');
+    });
+
+    // Les limitations d'abstention portent le motif SIGNÉ (`ABST-SEC-01`). Elles
+    // étaient calculées, hachées, envoyées au navigateur — et rendues nulle part.
+    it('le motif signé de l’abstention est servi, et dédupliqué', () => {
+      const motif = 'Au moins un constat de sécurité est présent : il prime sur tout score.';
+      const { container } = render(<DecisionSummaryCard decisionCard={carte({
+        safetyFindingIds: ['safety-1'],
+        abstention: { status: 'required', ruleIds: ['RULE_FIXTURE'], limitations: [motif] },
+        limitations: [motif, 'Aucune priorité ne peut être proposée.'],
+      })} />);
+      const deplier = container.querySelector('button');
+      expect(deplier).not.toBeNull();
+      fireEvent.click(deplier as HTMLButtonElement);
+      const lignes = [...container.querySelectorAll('li')].map(li => li.textContent);
+      expect(lignes.filter(ligne => ligne === motif)).toHaveLength(1);
+      expect(lignes).toContain('Aucune priorité ne peut être proposée.');
+    });
+  });
+
   it('permet de rendre les manques avant la décision', () => {
     const { container } = render(
       <>

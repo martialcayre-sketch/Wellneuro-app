@@ -29,11 +29,13 @@ export const HORODATAGE_C1_FIXTURE = '2026-01-03T00:00:00.000Z';
 
 /** Date de signature SIMULÉE : ISO canonique, comme la vraie devra l'être. */
 // ALIGNÉE SUR LA DATE RÉELLEMENT LIVRÉE (finding F4) : la table est signée au
-// 2026-08-15 ([[D-061]]) et RE-SIGNÉE au 2026-08-16 ([[D-067]], périmètre
-// agrandi par [[D-062]]) — une date simulée différente faisait produire aux
-// bancs une chaîne qu'aucune production ne sert, la date entrant dans
-// `validation.validatedAt`.
-export const DATE_SIGNATURE_SIMULEE = '2026-08-16T00:00:00.000Z';
+// 2026-08-15 ([[D-061]]), RE-SIGNÉE au 2026-08-16 ([[D-067]], périmètre agrandi
+// par [[D-062]]) puis au 2026-08-23 ([[D-099]], texte `ABST-NR-01` devenu faux
+// dès qu'un producteur de constats de sécurité a existé) — une date simulée
+// différente faisait produire aux bancs une chaîne qu'aucune production ne sert,
+// la date entrant dans `validation.validatedAt`. La sentinelle de
+// `chaineC1.test.ts` a désigné les trois copies à aligner, comme prévu.
+export const DATE_SIGNATURE_SIMULEE = '2026-08-23T00:00:00.000Z';
 
 /**
  * Anamnèse de la chaîne de référence — patient fictif autorisé, aucun contenu
@@ -187,6 +189,7 @@ export function chaineC1DeReference(options: {
       patientContext: inputs.patientContext,
       responses: inputs.responses,
       selectionPraticien,
+      signauxAlerte: inputs.signauxAlerte,
     }),
   };
 }

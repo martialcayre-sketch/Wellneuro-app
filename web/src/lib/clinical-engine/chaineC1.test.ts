@@ -48,7 +48,7 @@ const ETAT_LIVRE = Object.freeze({
 // sert. Même valeur que `DATE_SIGNATURE_SIMULEE` de `chaineC1Fixture` — une
 // SENTINELLE en fin de fichier tient les deux copies contre la métadonnée, et
 // rougira à la re-signature praticien (due depuis [[D-062]]).
-const DATE_SIGNATURE_LIVREE = '2026-08-16T00:00:00.000Z';
+const DATE_SIGNATURE_LIVREE = '2026-08-23T00:00:00.000Z';
 
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
@@ -74,6 +74,8 @@ function chaine(options: {
   plaintes?: Record<string, number>;
   exclure?: string[];
   objectif?: string | null;
+  /** Signaux d'alerte déclarés à l'anamnèse ([[D-099]]). */
+  signaux?: string[];
 } = {}) {
   const lignes = reponsesRuntimeRideauT0(
     DATE_RIDEAU_FIXTURE,
@@ -86,6 +88,7 @@ function chaine(options: {
       anamnese: {
         motif_principal: 'Ballonnements et prise de poids depuis un an.',
         ...(options.objectif === null ? {} : { objectif_prioritaire: options.objectif ?? 'Retrouver un confort digestif' }),
+        ...(options.signaux ? { signaux_alerte: options.signaux } : {}),
       },
     },
   );
@@ -106,6 +109,7 @@ function chaine(options: {
     patientContext: inputs.patientContext,
     responses: inputs.responses,
     selectionPraticien: null,
+    signauxAlerte: inputs.signauxAlerte,
   });
 }
 
@@ -113,10 +117,22 @@ describe('chaîne C1 — table NON signée (verrou simulé fermé)', () => {
   it('l’abstention reste non évaluée et aucune priorité n’est produite', () => {
     simulerNonSignature();
     const { review, decisionCard } = chaine();
-    expect(review.rules).toEqual([]);
+    // LA REVUE NE PORTE PLUS QUE LA RÈGLE DE SÉCURITÉ ([[D-099]]) : les deux
+    // verrous sont indépendants, et désigner la table des PRIORITÉS ne désigne
+    // pas la cotation des signaux.
+    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01']);
     expect(review.abstention.status).toBe('not_evaluated');
+    // LE TEXTE A CHANGÉ AVEC LE MÊME LOT, ET LA PERTE EST NOMMÉE. Ce cas
+    // épinglait « Aucune règle d'abstention cliniquement validée n'est
+    // fournie. », que `buildClinicalReview` ne sert que si AUCUNE règle validée
+    // n'existe dans la revue. La règle de sécurité en étant une, le message
+    // tombe sur l'autre branche — exacte, mais moins renseignée : elle ne nomme
+    // plus la cause (la table des priorités désignée). Aucun code partagé n'a
+    // été retouché pour la rattraper ; l'écart est écrit ici plutôt que corrigé
+    // au passage dans `clinicalReview.ts`, qui sert aussi les manques et les
+    // discordances.
     expect(review.abstention.limitations).toContain(
-      'Aucune règle d’abstention cliniquement validée n’est fournie.',
+      'Aucune évaluation d’abstention n’est fournie.',
     );
     expect(decisionCard.priorityCandidates).toEqual([]);
     expect(decisionCard.proposedMainPriorityId).toBeNull();
@@ -264,15 +280,100 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     );
   });
 
-  // Le texte de l'abstention DIT L'ÉTAT DU DISPOSITIF, pas l'état du patient :
-  // aucun producteur de constat de sécurité déterministe n'existe, et affirmer
-  // « aucun constat de sécurité n'est présent » servirait l'absence d'un
-  // contrôle comme le résultat d'un contrôle (`DC-24`).
-  it('l’abstention ne présente jamais un contrôle absent comme un contrôle passé', () => {
+  // Le texte de l'abstention DIT L'ÉTAT DU DISPOSITIF, pas l'état du patient
+  // (`DC-24`). CE CAS A CHANGÉ AVEC [[D-099]] : il épinglait « aucun producteur
+  // n'existe à ce jour », vrai tant que `chaineC1` posait `safetyFindings: 0` en
+  // dur. Le LOT-04 a branché le producteur ; le texte signé a suivi, et ce cas
+  // avec lui. Ce qu'il garde n'a pas changé : le verdict par défaut ne doit
+  // affirmer NI l'absence d'un contrôle qui existe, NI une couverture qu'il n'a
+  // pas — le second producteur (effet indésirable) appartient au LOT-05.
+  it('l’abstention nomme la portée de sa lecture, sans la prendre pour une couverture', () => {
     simulerSignature();
     const motifs = chaine().review.abstention.limitations.join(' ');
-    expect(motifs).toContain('aucun producteur n’existe à ce jour');
+    expect(motifs).toContain('SAF-ANAM-01');
+    // La phrase nomme la PORTÉE de la règle — ce sur quoi elle s'applique — et
+    // jamais un acte de lecture : `adaptRuntimeInputs` rend une liste vide aussi
+    // bien sur « aucun signal coché » que sur « aucune consultation validée à
+    // lire », et les confondre serait le `DC-24` que cette re-signature corrige.
+    expect(motifs).toContain('porte sur les signaux d’alerte d’une anamnèse validée');
+    expect(motifs).not.toContain('la portée de cette lecture');
+    expect(motifs).not.toContain('aucun producteur n’existe à ce jour');
     expect(motifs).not.toContain('Aucun constat de sécurité n’est présent');
+  });
+
+  // `DC-23` — LE CŒUR DU LOT, ÉPROUVÉ DE BOUT EN BOUT. Un red flag n'ajoute ni
+  // ne retire de points : le score global favorable et le signal majeur
+  // coexistent sans se compenser, et le signal reste prioritaire.
+  it('un signal majeur ne déplace pas le score d’un point, et prime malgré lui', () => {
+    simulerSignature();
+    const sans = chaine();
+    const avec = chaine({ signaux: ['Douleur thoracique / oppression'] });
+
+    // LE SCORE EST INCHANGÉ, AU CARACTÈRE PRÈS. Le snapshot porte les mesures ;
+    // son empreinte couvre le bilan des besoins comme les passations. Deux
+    // empreintes égales disent qu'aucun point n'a bougé, dans aucun sens — une
+    // comparaison bien plus large que d'inspecter un champ choisi d'avance.
+    expect(avec.snapshot.inputHash).toBe(sans.snapshot.inputHash);
+    expect(avec.snapshot.balanceAssessment).toEqual(sans.snapshot.balanceAssessment);
+
+    // ET POURTANT LE SIGNAL PRIME. Sans lui, deux candidats classés et une
+    // priorité proposée ; avec lui, la table se tait et la carte est bloquée.
+    expect(sans.decisionCard.priorityCandidates.length).toBeGreaterThan(0);
+    expect(sans.decisionCard.proposedMainPriorityId).not.toBeNull();
+    expect(avec.review.safetyFindings).toHaveLength(1);
+    expect(avec.review.abstention.status).toBe('required');
+    expect(avec.decisionCard.priorityCandidates).toEqual([]);
+    expect(avec.decisionCard.proposedMainPriorityId).toBeNull();
+    expect(avec.decisionCard.safetyFindingIds).toHaveLength(1);
+  });
+
+  // Le pendant du cas précédent, et l'arbitrage [[D-099]] lui-même : le rang
+  // `vigilance` ne change RIEN. Sans ce cas, la coupe des douze en deux rangs
+  // ne serait prouvée que du côté qui inhibe.
+  it('un signal de rang vigilance laisse la chaîne entière inchangée', () => {
+    simulerSignature();
+    const sans = chaine();
+    const avec = chaine({ signaux: ['Constipation récente inexpliquée'] });
+    expect(avec.review.safetyFindings).toEqual([]);
+    expect(avec.review.inputHash).toBe(sans.review.inputHash);
+    expect(avec.decisionCard.inputHash).toBe(sans.decisionCard.inputHash);
+  });
+
+  // QUEL MOTIF, ET PAS SEULEMENT « REQUIRED » (relevé en revue). Sans ce cas,
+  // inverser les deux branches d'`evaluerAbstention` laissait tout vert alors
+  // que le praticien aurait lu « le canal de plainte ne rend aucune mesure »
+  // sur une douleur thoracique déclarée — un motif faux servi sous une
+  // abstention juste.
+  it('un signal d’adressage sert le motif de SÉCURITÉ, jamais celui du canal', () => {
+    simulerSignature();
+    const motifs = chaine({ signaux: ['Douleur thoracique / oppression'] })
+      .review.abstention.limitations.join(' ');
+    expect(motifs).toContain('Au moins un constat de sécurité est présent');
+    expect(motifs).not.toContain('ne rend aucune mesure sur l’épisode confirmé');
+  });
+
+  // L'ORDRE DES DEUX MOTIFS, quand les deux sont atteints. `evaluerAbstention`
+  // évalue la sécurité EN PREMIER et le premier atteint l'emporte ; rien ne le
+  // gardait. Un réordonnancement ferait servir le motif du canal sur un dossier
+  // portant un signal d'alerte — l'abstention resterait requise, et le motif
+  // servi désignerait la mauvaise cause.
+  it('signal ET canal non mesurable : c’est la sécurité qui est servie', () => {
+    simulerSignature();
+    const motifs = chaine({ plaintes: {}, signaux: ['Idées noires ou suicidaires'] })
+      .review.abstention.limitations.join(' ');
+    expect(motifs).toContain('Au moins un constat de sécurité est présent');
+    expect(motifs).not.toContain('ne rend aucune mesure sur l’épisode confirmé');
+  });
+
+  // FAIL-CLOSED DE BOUT EN BOUT : un libellé que la cotation signée ne connaît
+  // pas — celui qu'une réécriture d'`anamnese.ts` produirait — inhibe au lieu de
+  // disparaître. C'est le mode de défaillance que `extraireDrapeauxAnamnese`
+  // aurait introduit s'il avait servi d'entrée (son propre commentaire le dit).
+  it('un signal hors cotation inhibe plutôt que de s’effacer', () => {
+    simulerSignature();
+    const avec = chaine({ signaux: ['Douleur thoracique / oppression (reformulé)'] });
+    expect(avec.review.safetyFindings).toHaveLength(1);
+    expect(avec.decisionCard.priorityCandidates).toEqual([]);
   });
 
   // L'objectif prioritaire du patient s'exprime en LIMITATION, jamais en
@@ -335,7 +436,13 @@ describe('chaineC1Fixture — verrou fermé par la fixture partagée', () => {
     designerTablePriorites();
     expect(tablePrioritesSignee()).toBe(false);
     const { review, decisionCard } = chaine();
-    expect(review.rules).toEqual([]);
+    // LES DEUX VERROUS SONT INDÉPENDANTS DEPUIS [[D-099]], et ce cas le dit :
+    // la table des PRIORITÉS est désignée, mais la cotation des signaux de
+    // sécurité, elle, reste signée — sa règle survit donc dans la revue. Ce qui
+    // est gardé ici n'a pas changé : aucune règle de priorité validée, donc
+    // aucun candidat.
+    expect(review.rules.map(regle => regle.ruleId)).toEqual(['SAF-ANAM-01']);
+    expect(review.rules.every(regle => !regle.ruleId.startsWith('PRIO-'))).toBe(true);
     expect(review.abstention.status).toBe('not_evaluated');
     expect(decisionCard.priorityCandidates).toEqual([]);
     expect(decisionCard.proposedMainPriorityId).toBeNull();

@@ -35,7 +35,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 // ALIGNÉE sur la date réellement livrée (dette n° 4 du handoff du 2026-08-16,
 // soldée à la re-signature [[D-067]]) : une date simulée différente ferait
 // produire aux bancs des chaînes qu'aucune production ne sert.
-const DATE_SIGNATURE_SIMULEE = '2026-08-16T00:00:00.000Z';
+const DATE_SIGNATURE_SIMULEE = '2026-08-23T00:00:00.000Z';
 
 /** Rend la table signée le temps d'un cas, et la remet dans son état livré. */
 function simulerSignature(): void {
@@ -61,13 +61,15 @@ describe('priorityRulesV1 — statut de signature', () => {
   // soit : le jour de la signature, il rougit — et c'est exactement ce qu'on lui
   // demande, parce que ce jour-là le comportement de production change.
   // SIGNÉE le 2026-08-15 ([[D-061]]), RE-SIGNÉE le 2026-08-16 ([[D-067]]) sur
-  // le périmètre agrandi par [[D-062]]. La sentinelle n'est pas supprimée, elle
-  // est INVERSÉE : elle attrape désormais une dé-signature accidentelle, une
-  // date malformée, et depuis [[D-067]] un SHA de périmètre qui ne concorde
-  // plus — la péremption détectable.
+  // le périmètre agrandi par [[D-062]], puis le 2026-08-23 ([[D-099]]) après que
+  // le producteur de constats de sécurité du LOT-04 a rendu faux le texte
+  // d'`ABST-NR-01`. La sentinelle n'est pas supprimée, elle est INVERSÉE : elle
+  // attrape désormais une dé-signature accidentelle, une date malformée, et
+  // depuis [[D-067]] un SHA de périmètre qui ne concorde plus — la péremption
+  // détectable.
   it('la table est signée, et sa signature est bien formée', () => {
     expect(PRIORITY_RULES_METADATA.validationExterne).toBe(true);
-    expect(PRIORITY_RULES_METADATA.dateValidation).toBe('2026-08-16T00:00:00.000Z');
+    expect(PRIORITY_RULES_METADATA.dateValidation).toBe('2026-08-23T00:00:00.000Z');
     const d = PRIORITY_RULES_METADATA.dateValidation as string;
     expect(new Date(d).toISOString()).toBe(d);
     expect(PRIORITY_RULES_METADATA.shaPerimetre).toBe(PRIORITY_RULES_SHA256);
@@ -387,11 +389,18 @@ describe('priorityRulesV1 — verrou de contenu', () => {
   // (`4b51c649…7448042`) couvrait `PRIORITY_RULES_V1` seule.
   //
   // METTRE CE LITTÉRAL À JOUR NE VAUT PAS SIGNATURE. Le commentaire d'origine
-  // le dit et il reste vrai : la sortie de secours est de RE-SIGNER. La
-  // métadonnée porte encore `dateValidation: '2026-08-15T00:00:00.000Z'`, posée
-  // sur l'ANCIEN périmètre — la re-signature est due, et [[D-062]] la nomme
-  // comme dette ouverte.
-  const SHA_CONTENU_2026_08_16 = 'cfd9b876e594d3298b35890e8c4827af15d88143fe03c594ff89c93ffd511ab4';
+  // le dit et il reste vrai : la sortie de secours est de RE-SIGNER.
+  //
+  // LE PÉRIMÈTRE A CHANGÉ UNE SECONDE FOIS le 2026-08-23 ([[D-099]]), et la
+  // re-signature a bien eu lieu — c'est elle qui autorise ce littéral à bouger.
+  // Le motif est étroit et vérifiable : le LOT-04 a branché un producteur de
+  // constats de sécurité, ce qui a rendu FAUX le texte d'`ABST-NR-01` (« aucun
+  // producteur n'existe à ce jour »). Le diff signé se limite à cette phrase —
+  // les deux règles, leurs déclencheurs, leurs claims et les deux motifs
+  // `required` sont inchangés, et le cas ci-dessous continue de le vérifier.
+  // Valeur précédente, couvrant le périmètre du 2026-08-16 :
+  // `cfd9b876…d511ab4`.
+  const SHA_CONTENU_2026_08_23 = '5485b92845d25ae6d3ed06fd3a4bc58c3931e753ab88f6bb93523c278c6b8c97';
 
   it('le sha publié correspond au contenu signé — règles ET procédure d’abstention', () => {
     expect(PRIORITY_RULES_SHA256).toBe(
@@ -401,7 +410,7 @@ describe('priorityRulesV1 — verrou de contenu', () => {
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
     expect(PRIORITY_RULES_V1.length).toBe(2);
-    expect(PRIORITY_RULES_SHA256).toBe(SHA_CONTENU_2026_08_16);
+    expect(PRIORITY_RULES_SHA256).toBe(SHA_CONTENU_2026_08_23);
   });
 
   // CE QUE [[D-062]] FERME : le verdict d'abstention est désormais DÉCRIT par

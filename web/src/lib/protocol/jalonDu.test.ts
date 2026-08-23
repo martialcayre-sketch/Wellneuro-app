@@ -150,6 +150,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
           scoreVersion: null,
         }],
         patientContext: { mainReason: null, priorityGoal: null, expectations: [], constraints: [] },
+        signauxAlerte: [],
       },
       'J21',
       confirmedAt,
@@ -170,6 +171,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
           scoreVersion: null,
         }],
         patientContext: { mainReason: null, priorityGoal: null, expectations: [], constraints: [] },
+        signauxAlerte: [],
       },
       'T0',
     );

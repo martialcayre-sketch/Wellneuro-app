@@ -368,15 +368,28 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   // La seconde chose que la signature assume — deux règles reposant sur un item
   // unique auto-déclaré de `Q_MOD_03`, `DC-28` mitigé par ce que la règle
   // PRODUIT — est un arbitrage clinique ordinaire, et il a été repris tel quel.
+  //
+  // RE-SIGNÉE le 2026-08-23 ([[D-099]], arbitrage praticien explicite en
+  // session), et le motif tient en une phrase : le LOT-04 a branché un
+  // producteur de constats de sécurité, ce qui a rendu FAUX le texte
+  // d'`ABST-NR-01` — « aucun producteur n'existe à ce jour ». Corriger ce texte
+  // change `PRIORITY_RULES_SHA256`, donc referme le verrou : la re-signature
+  // est la sortie prévue par le patron, jamais la mise à jour silencieuse du
+  // sha. LE PÉRIMÈTRE N'A PAS BOUGÉ AUTREMENT — les DEUX règles de cette table,
+  // leurs déclencheurs, leurs claims et les deux motifs `required` sont
+  // identiques au caractère près ; le diff signé se limite à la phrase du
+  // verdict par défaut. (Une première rédaction écrivait « les vingt règles » :
+  // vingt est le compte de la table d'ORIENTATION, pas de celle-ci, qui en
+  // porte deux — relevé en revue.)
   validationExterne: true,
-  dateValidation: '2026-08-16T00:00:00.000Z',
+  dateValidation: '2026-08-23T00:00:00.000Z',
   // SURTOUT PAS `shaPerimetre: PRIORITY_RULES_SHA256` — la constante est
   // déclarée APRÈS cet objet (ReferenceError à l'import), et réordonner
   // rendrait la comparaison tautologique : le sha est recalculé à chaque
   // chargement depuis la table vivante, la concordance serait toujours vraie
   // et la péremption jamais détectée (piège documenté sur le verrou biologie,
   // changelog du 2026-08-16).
-  shaPerimetre: 'cfd9b876e594d3298b35890e8c4827af15d88143fe03c594ff89c93ffd511ab4',
+  shaPerimetre: '5485b92845d25ae6d3ed06fd3a4bc58c3931e753ab88f6bb93523c278c6b8c97',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -458,15 +471,43 @@ export const ABSTENTION_PROCEDURE_V1 = {
   ],
   /**
    * Verdict par défaut. SA PHRASE DIT L'ÉTAT DU DISPOSITIF, PAS CELUI DU
-   * PATIENT : affirmer « aucun constat de sécurité n'est présent » serait servir
-   * l'absence d'un contrôle comme le résultat d'un contrôle (`DC-24`), aucun
-   * producteur de constat déterministe n'existant à ce jour.
+   * PATIENT.
+   *
+   * SA VERSION PRÉCÉDENTE EST DEVENUE FAUSSE LE 2026-08-23, et c'est ce qui a
+   * imposé la re-signature de cette table ([[D-099]]). Elle disait « aucun
+   * constat de sécurité n'est produit par le moteur déterministe — aucun
+   * producteur n'existe à ce jour » : c'était exact tant que `chaineC1.ts`
+   * posait `safetyFindings: 0` en dur, et le LOT-04 y a branché un producteur.
+   * Servir cette phrase après coup aurait affirmé au praticien l'absence d'un
+   * contrôle qui existe.
+   *
+   * CE QUE LA NOUVELLE PHRASE SE GARDE D'AFFIRMER, ET LE PIÈGE QU'ELLE A
+   * D'ABORD OUVERT. Elle ne dit pas « les signaux ont été lus et aucun
+   * n'appelle d'adressage » : ce serait faux dans l'état où la cotation n'est
+   * pas signée, où le producteur ne produit rien et où la revue publie « Règle
+   * candidate inactive : SAF-ANAM-01. ».
+   *
+   * Une première rédaction disait « la portée de CETTE LECTURE est celle de la
+   * règle SAF-ANAM-01 » — et affirmait donc qu'une lecture avait eu lieu. La
+   * revue du lot l'a refusée, à juste titre : `adaptRuntimeInputs` rend une
+   * liste VIDE aussi bien sur « aucun signal coché » que sur « aucune
+   * consultation validée à lire », et un jalon post-T0 se confirme sans les
+   * préconditions qui exigent cette consultation. La phrase aurait servi
+   * l'absence de lecture comme le résultat d'une lecture — le défaut exact que
+   * `DC-24` interdit, et le motif même de cette re-signature. Elle nomme
+   * désormais la PORTÉE de la règle (ce sur quoi elle s'applique) au lieu d'un
+   * acte de lecture, et renvoie à la revue pour son état.
+   *
+   * Elle ne prétend pas non plus à l'exhaustivité : le second producteur
+   * (effet indésirable déclaré au portail) appartient au LOT-05.
    */
   notRequired: {
     id: 'ABST-NR-01',
     doctrine: ['DC-24'],
     limitation:
-      'Aucun constat de sécurité n’est produit par le moteur déterministe — aucun producteur n’existe à ce jour —'
+      'Aucun constat de sécurité n’est retenu sur ce dossier — la seule règle de sécurité en vigueur'
+      + ' est SAF-ANAM-01, qui porte sur les signaux d’alerte d’une anamnèse validée et dont la revue'
+      + ' publie l’état —'
       + ` et le canal de plainte (${CANAL_PLAINTE}) rend une mesure sur l’épisode confirmé :`
       + ' la table des priorités ne retient aucun motif d’abstention.',
   },
