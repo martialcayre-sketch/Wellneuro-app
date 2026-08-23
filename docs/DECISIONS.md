@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-102 — La release déclenche le déploiement qu'elle attend
+
+- Date : 2026-08-23
+- Statut : accepté
+- Domaine : chemin d'écriture de la base de production — workflow `release-db`
+- Porte sur : `D-087` (régime de la release approuvée), qu'elle rend
+  applicable ; ne modifie ni son gate humain ni sa portée
+
+**Le fait.** Scalingo est en auto-déploiement **après CI**, et il n'attend pas
+« le workflow CI » : il attend que **tous les checks du commit** aient conclu.
+Or `release-db` est lui-même un check de ce commit. Sur tout commit portant une
+migration, la garde « le commit approuvé est le dernier déployé » attendait
+donc un déploiement que Scalingo n'aurait déclenché qu'une fois cette garde
+terminée. Les deux s'attendaient, et la borne des 20 minutes tranchait.
+
+**Ce n'est pas une inférence.** Le 2026-08-23, les trois commits portant un run
+`release-db` (#773 `43705ea1`, #778 `59c16e62`, #780 `c2210355`) n'ont **jamais
+été déployés d'eux-mêmes** ; le seul commit déployé ce jour-là sans migration
+(`4dc72347`) l'a été **deux secondes** après sa CI. Sur `c2210355`, aucun autre
+commit ne concurrençait le créneau et la CI était verte depuis 19:41:45 : aucun
+build n'a démarré. La release rejouée a conclu au vert à **20:08:58**, et
+l'auto-déploiement Scalingo a démarré à **20:09:02** — quatre secondes après le
+dernier check, exactement la latence observée ailleurs. La cause est constatée,
+pas supposée.
+
+**La garde existante couvrait un cas voisin, pas celui-là.** Elle traite la
+**coalescence** — un déploiement plus récent qui saute le commit approuvé — et
+elle la traite bien. Son message de refus conseillait cependant de relancer en
+`workflow_dispatch` sur la tête de `main` : remède sans effet dans
+l'interblocage, puisque la tête *était* le commit non déployé. Un diagnostic
+qui oriente vers un faux remède est un second défaut, corrigé avec le premier.
+
+**Décision — inverser la dépendance.** Le job `release` **déclenche** le
+déploiement du commit approuvé (`integration-link-manual-deploy`) avant
+d'entrer dans sa boucle d'attente, inchangée par ailleurs. La borne des 20
+minutes cesse d'être une course : elle attend un build qu'on vient de lancer,
+au lieu d'espérer un build que personne ne lancera. **La coalescence disparaît
+du même geste** — le commit approuvé obtient *son* build et ne dépend plus d'un
+créneau qu'un merge voisin peut lui prendre.
+
+Trois garde-fous, tous fail-closed :
+
+1. **Un déploiement de ce commit, quel que soit son statut, suffit à ne rien
+   déclencher** — un build en cours n'est pas doublé.
+2. **La tête de `origin/main` doit ÊTRE le commit approuvé.** La commande
+   déploie une *branche*, pas un SHA : si la tête a bougé, elle déploierait du
+   code que personne n'a approuvé. Refus immédiat, plus strict qu'avant.
+3. **Le déclenchement reste DANS le job protégé.** Le sortir en amont ferait
+   tourner le build pendant la délibération humaine — cinq minutes gagnées —
+   mais rendrait le jeton Scalingo atteignable **sans approbation**, ce que
+   `D-087` construit précisément pour l'empêcher. Un invariant CI interdit à
+   tout job hors gate de déclencher un déploiement.
+
+**Aucun privilège nouveau.** Le job exécute déjà des one-offs arbitraires dans
+l'image de production, ce qui est strictement plus puissant que déployer.
+
+**Conséquence assumée.** Une fois `release-db` au vert, Scalingo déploiera une
+**seconde fois** le même commit — build redondant, conteneurs redémarrés,
+`postdeploy` qui se tait. L'éviter exigerait de sortir `release-db` des checks
+du commit (`workflow_dispatch` seul), option écartée : elle coûte une action
+humaine de plus — dispatcher *puis* approuver — sans ajouter la moindre
+garantie, l'approbation étant déjà le contrôle. Un build de trop vaut mieux
+qu'une action humaine de trop.
+
+**Options écartées.** Désactiver « attendre le CI » chez Scalingo : elle
+déploierait du code à CI rouge — on ne supprime pas un interblocage en retirant
+la garde qui n'est pas en cause.
+
 ### D-101 — La gate de population dit ce qu'elle ignore, l'effet indésirable reçoit son association, et une seule consultation fait foi
 
 - Date : 2026-08-23
