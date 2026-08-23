@@ -25,11 +25,19 @@
   motif l'est aussi (la reprise se lit dans l'objectif produit). `caduque`
   n'est pas un geste : la caducité se dérive de `hash_sources`, personne ne
   la décide.
-- Contrat `alli_objectif_trois_voix_v1_negatif.sql` (11 cas négatifs, cas
-  positifs par table, listes blanches, NOT NULL, FK RESTRICT, RLS) branché
-  au CI, **vu rouge par cinq mutations réelles** puis remis au vert : CHECK
-  du couple retiré, colonne `rang` ajoutée, FK passée en CASCADE, RLS
-  désactivée, CHECK `fragments` retiré.
+- Contrat `alli_objectif_trois_voix_v1_negatif.sql` branché au CI (11 cas
+  négatifs, cas positifs par table, listes blanches, NOT NULL, FK RESTRICT,
+  RLS), **vu rouge par sept mutations réelles** puis remis au vert.
+- **Un cas négatif rouge ne prouve pas QUELLE contrainte l'a rejeté** : la
+  revue a mesuré que le CHECK du couple geste↔motif SUBSUME celui de la
+  taxonomie — supprimer `dispositions_proposition_geste_check`, ou y
+  légaliser `caduque`, laissait le contrat vert. Les six CHECK sont désormais
+  assertés **structurellement** (`pg_constraint`), et la taxonomie `geste`
+  lue dans sa définition : un geste neuf devra être arbitré.
+- Dette nommée, et non couverture acquise : la FORME des fragments
+  (`{texte, source}`) n'est gardée nulle part — `fragments` est un JSONB
+  libre, l'interdit de score/rang ne tient que sur les colonnes. La garde
+  appartient au module du LOT-02.
 - L'effacement RGPD nommé (`effacerDossier`) couvre les trois tables. Sa
   garde de complétude a **mordu la première** : elle a refusé la migration
   tant que les tables neuves n'y étaient pas — la preuve qu'elle n'est pas

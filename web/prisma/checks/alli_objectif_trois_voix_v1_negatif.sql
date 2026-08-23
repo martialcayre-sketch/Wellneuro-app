@@ -27,10 +27,22 @@
 --      du code mort en silence ;
 --   7. la RLS deny-all est active et sans policy sur les trois (posture
 --      D-005) : proposition (citation de la parole du patient), amendement
---      (sa parole même) et disposition (le jugement praticien sur elle).
+--      (sa parole même) et disposition (le jugement praticien sur elle) ;
+--   8. les six CHECK du lot EXISTENT, NOMMÉMENT, et la taxonomie `geste`
+--      porte EXACTEMENT ses deux valeurs.
 --
--- `caduque` n'est PAS testé comme geste, et son absence de la taxonomie EST
--- le test : la caducité se dérive de `hash_sources`, personne ne la décide.
+-- LE POINT 8 N'EST PAS DU ZÈLE, il répare un aveuglement mesuré en revue :
+-- le CHECK du COUPLE geste-motif SUBSUME celui de la taxonomie (ses deux
+-- branches exigent `geste = 'ecartee'` ou `geste = 'reprise'`, donc toute
+-- autre valeur est déjà rejetée par lui). Un cas négatif ne peut donc pas
+-- isoler `dispositions_proposition_geste_check` : supprimer cette contrainte,
+-- ou y ajouter `caduque`, laissait le contrat VERT — c'est-à-dire qu'on
+-- pouvait légaliser en base un geste que personne n'a posé, l'invariant
+-- même que ce fichier prétend garder. La subsomption est logique, pas
+-- contingente : l'assertion STRUCTURELLE (pg_constraint) est le seul chemin.
+--
+-- Corollaire de méthode : un cas négatif rouge ne prouve pas QUELLE
+-- contrainte l'a rejeté. Les six CHECK sont donc aussi assertés par leur nom.
 --
 -- Les dates d'ÉVÉNEMENT sont nullables PAR CONSTRUCTION (deux dates, patron
 -- 6.0-A) : ce contrat ne les exige pas — `cree_le` NOT NULL avec DEFAULT
@@ -253,6 +265,53 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- ── 5bis. Les six CHECK existent, NOMMÉMENT ─────────────────────────────
+  -- Un cas négatif prouve qu'une insertion est rejetée ; il ne prouve pas
+  -- PAR QUI. Quand deux contraintes se recouvrent, la plus large masque
+  -- l'autre et sa disparition ne fait rougir personne — c'est le défaut
+  -- mesuré en revue sur `dispositions_proposition_geste_check`.
+  FOREACH cible IN ARRAY ARRAY[
+    'propositions_objectif_hash_sources_check',
+    'propositions_objectif_fragments_check',
+    'dispositions_proposition_praticien_email_check',
+    'dispositions_proposition_geste_check',
+    'dispositions_proposition_motif_check',
+    'amendements_objectif_texte_check'
+  ] LOOP
+    SELECT count(*) INTO nb
+    FROM pg_constraint con
+    WHERE con.contype = 'c' AND con.conname = cible;
+    IF nb <> 1 THEN
+      RAISE EXCEPTION
+        'OBJECTIF À TROIS VOIX: le CHECK % est absent (% trouvé[s]) — une contrainte retirée que les cas négatifs ne voient pas, parce qu''une autre la recouvre.',
+        cible, nb;
+    END IF;
+  END LOOP;
+
+  -- La TAXONOMIE de `geste` porte exactement ses deux valeurs. On lit la
+  -- DÉFINITION de la contrainte, seul moyen de refuser un ÉLARGISSEMENT :
+  -- ajouter `caduque` à cette liste attribuerait à un praticien une décision
+  -- que personne n'a prise — la caducité se DÉRIVE de `hash_sources`.
+  DECLARE
+    definition text;
+    litteraux text[];
+  BEGIN
+    SELECT pg_get_constraintdef(con.oid) INTO definition
+    FROM pg_constraint con
+    WHERE con.contype = 'c' AND con.conname = 'dispositions_proposition_geste_check';
+
+    -- Les littéraux effectivement cités par la contrainte, quel qu'en soit
+    -- l'ordre ou la forme (IN (...) ou disjonction) : ni plus, ni moins.
+    SELECT array_agg(DISTINCT m[1] ORDER BY m[1]) INTO litteraux
+    FROM regexp_matches(definition, '''([a-z_]+)''', 'g') AS m;
+
+    IF litteraux IS DISTINCT FROM ARRAY['ecartee', 'reprise'] THEN
+      RAISE EXCEPTION
+        'OBJECTIF À TROIS VOIX: la taxonomie `geste` ne porte plus EXACTEMENT (ecartee, reprise) mais % — un geste neuf doit être arbitré, et `caduque` n''en est pas un : elle se dérive, nul ne la décide. Définition : %',
+        litteraux, definition;
+    END IF;
+  END;
+
   -- ── 6. Deny-all RLS sur les trois (posture D-005) ────────────────────────
   -- Prisma ne l'introspecte pas : une migration ultérieure pourrait la
   -- retirer sans qu'un seul test ne parle.
@@ -274,7 +333,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  RAISE NOTICE 'OBJECTIF À TROIS VOIX: écritures valides acceptées sur les 3 tables, % CHECK rejetants (dont le couple geste-motif dans les deux sens), listes blanches exactes, 13 NOT NULL, motif nullable, source_proposition_id nullable sans default, 3 FK RESTRICT, RLS deny-all ×3.',
+  RAISE NOTICE 'OBJECTIF À TROIS VOIX: écritures valides acceptées sur les 3 tables, % CHECK rejetants (dont le couple geste-motif dans les deux sens), listes blanches exactes, 13 NOT NULL, motif nullable, source_proposition_id nullable sans default, 6 CHECK assertés par leur nom, taxonomie geste exactement (ecartee, reprise), 3 FK RESTRICT, RLS deny-all ×3.',
     array_length(cas, 1);
 END $$;
 

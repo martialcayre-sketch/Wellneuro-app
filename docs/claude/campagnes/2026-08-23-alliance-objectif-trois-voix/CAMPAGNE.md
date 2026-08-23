@@ -4,7 +4,7 @@ titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "à_faire"
 créée_le: "2026-08-23"
 mise_à_jour: "2026-08-23"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -158,8 +158,8 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 | Lot | Objet | Statut | Dépend de |
 | --- | --- | --- | --- |
 | LOT-00 | Doctrine : régime de la proposition citée, « dire autrement », sources admissibles, interrupteur de repli — [[D-094]] | terminé (2026-08-23) | — |
-| LOT-01 | Migration `propositions_objectif` + table « dire autrement » — **CONFIRMATION OBLIGATOIRE** | à_faire | LOT-00 ✓ |
-| LOT-02 | Moteur de proposition déterministe + gardes G7 + drapeaux | à_faire | LOT-01 (releasée et constatée) |
+| LOT-01 | Migration : `propositions_objectif`, `dispositions_proposition`, `amendements_objectif` + `source_proposition_id` | terminé (2026-08-23, application `release-db` en attente) | LOT-00 ✓ |
+| LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | à_faire | LOT-01 (releasée et constatée) |
 | LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | à_faire | LOT-02 |
 | LOT-04 | Portail : « le dire autrement » — `D-xxx` geste patient | à_faire | LOT-00 ; LOT-01 si migration du CHECK |
 | LOT-05 | Jalons : évaluation ancrée à la version, EVA brute | à_faire | LOT-04 |

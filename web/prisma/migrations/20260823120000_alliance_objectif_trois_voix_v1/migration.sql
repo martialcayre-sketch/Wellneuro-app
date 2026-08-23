@@ -114,10 +114,17 @@ ALTER TABLE "propositions_objectif"
 -- `fragments` : un TABLEAU NON VIDE. Une proposition sans fragment n'est pas
 -- une proposition — et c'est ici que se tient, au niveau le plus bas,
 -- l'invariant de D-094 : la machine assemble des citations, elle ne produit
--- pas du vide qu'on remplirait ensuite. La FORME de chaque fragment
--- (`{texte, source}`, source dans la liste fermée) est gardée au module et
--- au contrat : un CHECK ne doit pas devenir un second schéma, qui divergerait
--- du premier.
+-- pas du vide qu'on remplirait ensuite.
+--
+-- CE QUE CE CHECK NE GARDE PAS, ET IL FAUT LE DIRE : la FORME de chaque
+-- fragment (`{texte, source}`, source dans la liste fermée de D-094 §1) N'EST
+-- GARDÉE NULLE PART À CE JOUR. `fragments` est un JSONB libre : un
+-- `{"texte":"…","score":0.82}` ou un `"rang":1` par fragment y entrerait sans
+-- qu'aucune ligne du contrat ne bouge — l'interdit « aucun score, seuil,
+-- bande ni rang » tient sur les COLONNES, pas sur ce contenu. Un CHECK ne
+-- doit pas devenir un second schéma qui divergerait du premier : la garde de
+-- forme appartient au module du LOT-02 (invariant de type + banc), et c'est
+-- une DETTE NOMMÉE de ce lot, pas une couverture acquise.
 ALTER TABLE "propositions_objectif"
   ADD CONSTRAINT "propositions_objectif_fragments_check"
     CHECK (jsonb_typeof("fragments") = 'array' AND jsonb_array_length("fragments") > 0);

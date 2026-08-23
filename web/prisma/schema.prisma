@@ -2090,9 +2090,10 @@ model RatificationObjectif {
 // La PROPOSITION d'objectif : un assemblage de fragments qui portent chacun
 // leur provenance (D-094, liste fermée à trois sources — anamnèse verbatim,
 // restitution d'instrument certifié, règle signée). `fragments` est un JSONB
-// de `{texte, source}` : sa FORME est gardée au module et au contrat, pas
-// par le schéma — mais aucun fragment n'y entre sans source, c'est
-// l'invariant de type du LOT-02.
+// de `{texte, source}` — et sa FORME n'est gardée NULLE PART à ce jour : le
+// contrat n'éprouve que « tableau non vide », le module qui portera
+// l'invariant « aucun fragment sans source » est celui du LOT-02. Dette
+// nommée, pas couverture acquise (détail : en-tête de la migration).
 //
 // `hash_sources` porte la CADUCITÉ (patron proposalHash du cockpit) : les
 // données sources ayant bougé, la proposition ne se sert plus et ne se

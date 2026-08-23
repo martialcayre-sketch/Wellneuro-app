@@ -690,8 +690,12 @@ jobs:
       # citation n'en est pas une, c'est l'invariant de D-094 au niveau le plus
       # bas) ; le couple GESTE↔MOTIF mord DANS LES DEUX SENS (écart sans motif
       # refusé, reprise avec motif refusée : le motif d'écart est le matériau
-      # du LOT-06, et la reprise se lit dans l'objectif produit) ; « caduque »
-      # n'est PAS un geste (elle se dérive de hash_sources, nul ne la décide) ;
+      # du LOT-06, et la reprise se lit dans l'objectif produit) ; les six
+      # CHECK sont assertés PAR LEUR NOM et la taxonomie `geste` lue dans sa
+      # DÉFINITION — le CHECK du couple subsume celui de la taxonomie, si
+      # bien qu'aucun cas négatif ne peut isoler ce dernier : sans assertion
+      # structurelle, on pouvait légaliser « caduque » comme geste (une
+      # décision que nul n'a prise) sans qu'une ligne du CI ne parle ;
       # `motif` reste NULLABLE et `source_proposition_id` NULLABLE SANS DEFAULT
       # (un DEFAULT fabriquerait un lien que personne n'a posé). La liste
       # blanche vise ici aussi le RANG : D-094 §3 interdit jusqu'à la
