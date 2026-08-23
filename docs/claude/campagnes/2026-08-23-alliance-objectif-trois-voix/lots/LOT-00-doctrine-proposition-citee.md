@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Doctrine — le régime de la proposition citée"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "—"
 ---
 
@@ -62,12 +62,12 @@ code n'existe.
 
 ## Étapes
 
-- [ ] Vérifier le prochain numéro `D-xxx` libre dans `main` (sessions
+- [x] Vérifier le prochain numéro `D-xxx` libre dans `main` (sessions
       concurrentes — coordination avec doctrine-executable).
-- [ ] Rédiger la décision avec les cinq arbitrages ci-dessus.
-- [ ] Poser le fragment `changelog.d/`.
-- [ ] Reporter les arbitrages dans CAMPAGNE.md (questions ouvertes → décisions).
-- [ ] Relire le diff.
+- [x] Rédiger la décision avec les cinq arbitrages ci-dessus.
+- [x] Poser le fragment `changelog.d/`.
+- [x] Reporter les arbitrages dans CAMPAGNE.md (questions ouvertes → décisions).
+- [x] Relire le diff.
 
 ## Tests
 
@@ -82,4 +82,11 @@ arbitrages, datée, signée du responsable.
 
 ## Résultats
 
-À compléter à la clôture.
+Clos le 2026-08-23. `D-094` actée (numéro vérifié libre dans `main` après le
+merge doctrine-executable #766) : régime de la proposition citée, cinq
+arbitrages tranchés. Conséquence structurante pour le LOT-01 : « le dire
+autrement » est une **table d'événement propre** — la migration porte donc
+deux tables (`propositions_objectif` + l'événement d'amendement), aucun CHECK
+existant n'est élargi. Fragment `changelog.d/` posé ; CAMPAGNE.md mis à
+l'état atteint (une seule question ouverte demeure : l'instrument GAS,
+renvoyée au LOT-05).

@@ -4,7 +4,7 @@ titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "à_faire"
 créée_le: "2026-08-23"
 mise_à_jour: "2026-08-23"
-lot_courant: "LOT-00"
+lot_courant: "LOT-01"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -118,23 +118,25 @@ au statut de testeur ; sa levée est une décision propre, préparée au LOT-06.
   mécanique que le `proposalHash` du cockpit).
 - Périmètre : tous les patients actuels ; interrupteur de repli par liste
   d'identifiants ; [[D-093]] inchangée.
-- Les décisions `D-xxx` restent à réserver dans `main` : fondatrice
-  (LOT-00), geste patient nouveau (LOT-04), instrument d'évaluation si GAS
-  (LOT-05).
+- **[[D-094]] (2026-08-23, LOT-00)** fonde le régime : sources admissibles
+  en liste fermée à trois entrées ; « le dire autrement » en **table
+  d'événement propre** (le LOT-01 porte donc les deux tables, pas de CHECK
+  élargi) ; au plus **trois** propositions, affichées sans numérotation ni
+  mise en avant ; moteur **déterministe d'abord** (aucun LLM au LOT-02) ;
+  module de proposition distinct (G6 intacte, G7 neuve).
+- Décisions `D-xxx` restant à réserver : geste patient à l'implémentation si
+  un point de forme dépasse [[D-094]] (LOT-04), instrument d'évaluation si
+  GAS (LOT-05).
 
 ## Questions ouvertes
 
-- Combien de propositions simultanées au maximum, et leur ordre d'affichage
-  (l'ordre des candidats C1 est lui-même le point non signé — l'affichage
-  doit-il le neutraliser ?) — arbitrage au LOT-00.
-- Le LLM d'assemblage : dès le LOT-02, ou moteur purement déterministe
-  d'abord et LLM en extension ? Défaut assumé : déterministe d'abord.
-- « Le dire autrement » : nouveau `sens` sur `ratifications_objectif` (CHECK
-  à élargir — migration) ou table d'événement propre ? Arbitrage au LOT-00,
-  conséquence sur le périmètre du LOT-01.
 - L'évaluation aux jalons : question libre + EVA brute suffisent-elles, ou
   adoption d'un instrument publié (Goal Attainment Scaling) ? Si GAS :
   décision de provenance dédiée, hors de cette campagne si non tranchée.
+
+Tranchées par [[D-094]] (2026-08-23) : plafond et ordre d'affichage (trois,
+sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
+(table d'événement propre — conséquence portée au LOT-01).
 
 ## Dépendances
 
@@ -155,8 +157,8 @@ au statut de testeur ; sa levée est une décision propre, préparée au LOT-06.
 
 | Lot | Objet | Statut | Dépend de |
 | --- | --- | --- | --- |
-| LOT-00 | Doctrine : régime de la proposition citée, « dire autrement », sources admissibles, interrupteur de repli — `D-xxx` fondatrice | à_faire | — |
-| LOT-01 | Migration `propositions_objectif` — **CONFIRMATION OBLIGATOIRE** | à_faire | LOT-00 |
+| LOT-00 | Doctrine : régime de la proposition citée, « dire autrement », sources admissibles, interrupteur de repli — [[D-094]] | terminé (2026-08-23) | — |
+| LOT-01 | Migration `propositions_objectif` + table « dire autrement » — **CONFIRMATION OBLIGATOIRE** | à_faire | LOT-00 ✓ |
 | LOT-02 | Moteur de proposition déterministe + gardes G7 + drapeaux | à_faire | LOT-01 (releasée et constatée) |
 | LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | à_faire | LOT-02 |
 | LOT-04 | Portail : « le dire autrement » — `D-xxx` geste patient | à_faire | LOT-00 ; LOT-01 si migration du CHECK |

@@ -2,7 +2,7 @@
 id: "LOT-04"
 titre: "Portail — « le dire autrement » : la contre-proposition du patient"
 statut: "à_faire"
-dépend_de: "LOT-00"
+dépend_de: "LOT-01"
 ---
 
 # LOT-04 — Portail : « le dire autrement »
@@ -18,10 +18,9 @@ append-only, qui entre dans la chaîne de versions.
 
 ## Résultat observable
 
-- Une décision `D-xxx` (geste patient nouveau) actée au LOT-00 ou réservée
-  ici, selon l'arbitrage de forme : nouveau `sens` sur
-  `ratifications_objectif` (CHECK élargi au LOT-01) **ou** table
-  d'événement propre.
+- L'arbitrage de forme est rendu (`D-094` : **table d'événement propre**,
+  créée au LOT-01) ; une `D-xxx` supplémentaire ne se réserve ici que si un
+  point de forme dépasse `D-094`.
 - Au portail, sur un objectif proposé : le patient saisit un texte libre ;
   l'événement référence la **version exacte** de l'objectif ; rien ne
   s'efface, se compte ou se note.
