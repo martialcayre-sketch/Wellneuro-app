@@ -4663,3 +4663,39 @@ Prochaine action : PR. Ouvert : les ancres `fichier:ligne` de la constitution
 se périment à chaque édition du prompt (8 corrigées ici) ;
 `wn-diagnostic-e2e.mjs` rate un blocage WebKit quand `page.goto` n'apparaît
 que dans la sortie terminal.
+
+## 2026-08-23 — Alliance 6.0-B ouverte, D-094 et LOT-01 en production ; garde release-db corrigée
+
+Campagne `2026-08-23-alliance-objectif-trois-voix` créée (7 lots, parallèle ;
+doctrine-executable reste primaire). `D-094` fonde le régime : **la machine
+cite, elle n'invente pas** — sources en liste fermée (anamnèse verbatim,
+`Q_MOD_03`, candidats signés), « le dire autrement » en table propre, trois
+propositions sans numérotation (l'ordre n'est pas signé, `D-093`),
+déterministe d'abord, module distinct (G6 intacte, G7 neuve). Périmètre :
+**tous les patients actuels** (bêta-testeurs informés) ; `D-093` inchangée,
+sa levée préparée au LOT-06. LOT-01 : trois tables + `source_proposition_id`,
+**appliqué et constaté en production** (`one-off-9959`).
+
+Deux trouvailles de gardes. La complétude d'effacement RGPD a refusé la
+migration tant que les tables n'étaient pas dans `effacerDossier`. Puis la
+revue a mesuré qu'**un cas négatif rouge ne prouve pas QUELLE contrainte l'a
+rejeté** : le CHECK du couple geste↔motif subsume celui de la taxonomie —
+supprimer ce dernier, ou y légaliser `caduque`, laissait le contrat vert.
+Corrigé par assertion structurelle (`pg_constraint`). Sept mutations vues
+rouges.
+
+Incident release-db : deux merges rapprochés, Scalingo déploie le plus récent
+et saute le commit approuvé ; la garde attendait 20 min un refus certain
+d'emblée. Corrigée par test d'ascendance — refus immédiat, actionnable, sans
+rien perdre de sa sévérité (#772). `D-096` a par ailleurs rendu caduque la
+frontière d'ordonnancement entre les deux campagnes (doctrine n'a plus de
+migration).
+
+Écarté : corriger les 24 lignes `cd $(git rev-parse --show-toplevel)` des
+skills `/wn-*` (option B) — l'utilisateur a choisi l'option A, travailler en
+worktree sans slash-commands. Mémoire retournée en ce sens.
+
+Prochaine action : arbitrer les **cinq recommandations du LOT-02** (consignées
+dans sa fiche), puis ouvrir le lot. Ouvert : la forme des fragments n'est
+gardée nulle part ; `hash_sources` sans algorithme fixé ; la fenêtre `D-093`
+court jusqu'au 2026-10-04 et attend toujours un premier objectif rédigé.
