@@ -291,7 +291,12 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     simulerSignature();
     const motifs = chaine().review.abstention.limitations.join(' ');
     expect(motifs).toContain('SAF-ANAM-01');
-    expect(motifs).toContain('la portée de cette lecture');
+    // La phrase nomme la PORTÉE de la règle — ce sur quoi elle s'applique — et
+    // jamais un acte de lecture : `adaptRuntimeInputs` rend une liste vide aussi
+    // bien sur « aucun signal coché » que sur « aucune consultation validée à
+    // lire », et les confondre serait le `DC-24` que cette re-signature corrige.
+    expect(motifs).toContain('porte sur les signaux d’alerte d’une anamnèse validée');
+    expect(motifs).not.toContain('la portée de cette lecture');
     expect(motifs).not.toContain('aucun producteur n’existe à ce jour');
     expect(motifs).not.toContain('Aucun constat de sécurité n’est présent');
   });
@@ -332,6 +337,32 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     expect(avec.review.safetyFindings).toEqual([]);
     expect(avec.review.inputHash).toBe(sans.review.inputHash);
     expect(avec.decisionCard.inputHash).toBe(sans.decisionCard.inputHash);
+  });
+
+  // QUEL MOTIF, ET PAS SEULEMENT « REQUIRED » (relevé en revue). Sans ce cas,
+  // inverser les deux branches d'`evaluerAbstention` laissait tout vert alors
+  // que le praticien aurait lu « le canal de plainte ne rend aucune mesure »
+  // sur une douleur thoracique déclarée — un motif faux servi sous une
+  // abstention juste.
+  it('un signal d’adressage sert le motif de SÉCURITÉ, jamais celui du canal', () => {
+    simulerSignature();
+    const motifs = chaine({ signaux: ['Douleur thoracique / oppression'] })
+      .review.abstention.limitations.join(' ');
+    expect(motifs).toContain('Au moins un constat de sécurité est présent');
+    expect(motifs).not.toContain('ne rend aucune mesure sur l’épisode confirmé');
+  });
+
+  // L'ORDRE DES DEUX MOTIFS, quand les deux sont atteints. `evaluerAbstention`
+  // évalue la sécurité EN PREMIER et le premier atteint l'emporte ; rien ne le
+  // gardait. Un réordonnancement ferait servir le motif du canal sur un dossier
+  // portant un signal d'alerte — l'abstention resterait requise, et le motif
+  // servi désignerait la mauvaise cause.
+  it('signal ET canal non mesurable : c’est la sécurité qui est servie', () => {
+    simulerSignature();
+    const motifs = chaine({ plaintes: {}, signaux: ['Idées noires ou suicidaires'] })
+      .review.abstention.limitations.join(' ');
+    expect(motifs).toContain('Au moins un constat de sécurité est présent');
+    expect(motifs).not.toContain('ne rend aucune mesure sur l’épisode confirmé');
   });
 
   // FAIL-CLOSED DE BOUT EN BOUT : un libellé que la cotation signée ne connaît

@@ -121,10 +121,17 @@ export type SafetySignalsMetadata = {
 // À LIRE AVANT DE RE-SIGNER
 //
 // CE QUE LE SHA COUVRE : `SAFETY_SIGNALS_V1` (libellés, rangs, domaines) ET
-// `SAFETY_SIGNAL_CONDUITES` (les deux textes servis au praticien). Déplacer un
-// signal d'un rang à l'autre, ou retoucher un texte de conduite, referme le
-// verrou — et la sortie de secours est de RE-SIGNER, jamais de recopier le
-// nouveau sha en silence.
+// `SAFETY_SIGNAL_CONDUITES`. Déplacer un signal d'un rang à l'autre, ou
+// retoucher un texte de conduite, referme le verrou — et la sortie de secours
+// est de RE-SIGNER, jamais de recopier le nouveau sha en silence.
+//
+// UN SEUL DES DEUX TEXTES DE CONDUITE EST SERVI, et il faut le dire (relevé en
+// revue, C5) : `adressage` entre dans la `rationale` de chaque constat produit ;
+// `vigilance`, lui, n'a aucun lecteur — le rang vigilance ne produit rien, par
+// construction. Il est donc **documentaire** : il écrit ce que le rang signifie
+// pour qui relit la table, sans qu'aucun praticien puisse en vérifier
+// l'exactitude à l'écran. Le retirer referait bouger le sha sans rien gagner ;
+// le laisser en le présentant comme « servi » aurait été faux.
 //
 // CE QUE LA SIGNATURE ASSUME, ET QUI A ÉTÉ EXPOSÉ AVANT ELLE :
 //

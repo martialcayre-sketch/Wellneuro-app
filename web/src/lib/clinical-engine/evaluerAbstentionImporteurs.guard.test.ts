@@ -38,10 +38,17 @@ const IMPORTEURS_ATTENDUS = [
   // ci-dessous vérifie que cette entrée reste une MENTION : le jour où ce
   // fichier importerait réellement la fonction, il rougirait de nouveau.
   'web/src/lib/clinical-engine/safetyFindings.ts',
+  // MENTION AUSSI, même motif : le banc de `chaineC1` nomme la fonction dans la
+  // prose de deux cas qui gardent QUEL motif d'abstention est servi. Il importe
+  // `construireChaineC1`, jamais `evaluerAbstention`.
+  'web/src/lib/clinical-engine/chaineC1.test.ts',
 ];
 
 /** Les entrées qui ne doivent citer le nom qu'en prose, jamais l'importer. */
-const MENTIONS_SEULES = ['web/src/lib/clinical-engine/safetyFindings.ts'];
+const MENTIONS_SEULES = [
+  'web/src/lib/clinical-engine/safetyFindings.ts',
+  'web/src/lib/clinical-engine/chaineC1.test.ts',
+];
 
 /** Le pipeline de lecture, pur — extrait pour être éprouvé (contre-épreuve). */
 function importeursDepuisSortie(sortie: string): string[] {

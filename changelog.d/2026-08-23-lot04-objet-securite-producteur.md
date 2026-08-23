@@ -13,6 +13,13 @@
   signal de rang adressage fait désormais passer l'abstention en `required`, la
   table des priorités se tait, la carte est bloquée et aucun protocole n'est
   diffusable. Le candidat est **retiré**, pas affiché sous un bandeau.
+- **Le praticien lit le MOTIF du blocage, pas seulement le blocage.** Un signal
+  d'alerte appelle un adressage médical, un canal de plainte non mesurable
+  appelle une passation : deux gestes opposés, jusqu'ici affichés du même
+  « bloqueurs décisionnels à revoir ». La carte de décision nomme désormais le
+  signal dans son résumé, et sert les limitations d'abstention — des **données
+  signées**, pas des littéraux de composant — qui étaient calculées, hachées,
+  envoyées au navigateur et rendues nulle part.
 - **Le rang vigilance ne change rien, et c'est l'arbitrage lui-même.** Ces six
   signaux continuent de remonter par `extraireVigilanceDeterministe`, inchangé.
   Un banc l'épingle par égalité d'empreintes : revue et carte identiques au
@@ -42,3 +49,12 @@
   autres. Ailleurs, un verrou fermé fait taire le moteur — défaut sûr. Ici, il
   retire une inhibition. Le contrepoids est la règle passée en `candidate`, dont
   la revue publie l'inactivité, et un CI qui rougit avant la production.
+- **Seconde réserve, relevée en revue** : la chaîne de décision et la synthèse
+  ne lisent pas la même consultation quand un dossier en porte deux validées
+  dans un ordre de création différent de l'ordre de validation. La divergence
+  préexiste ; ce lot la fait porter sur un chemin de sécurité. Trancher laquelle
+  fait foi est un arbitrage clinique, renvoyé au lot suivant.
+- **Effet dépassant les dossiers porteurs** : la règle de sécurité étant jointe
+  à la revue en toutes circonstances, l'empreinte de toute carte change. Une
+  carte préparée avant le déploiement et persistée après rend « Rechargez le
+  cockpit » — bénin, mais dit plutôt que découvert.

@@ -67,6 +67,20 @@ près**.
 tait —, la carte est bloquée, et `ProtocolConsultationPanel` refuse la
 diffusion. Le candidat est **retiré**, pas affiché sous un bandeau.
 
+**Décision 3 bis — et le praticien lit POURQUOI** (correctif apporté après la
+revue du lot, constat C1). Les deux motifs d'abstention appellent des gestes
+**opposés** — un signal d'alerte appelle un adressage médical, un canal de
+plainte non mesurable appelle une passation —, et les trois surfaces du cockpit
+les affichaient toutes deux « bloqueurs décisionnels à revoir ». Les textes qui
+les distinguent existaient, entraient dans l'empreinte de la carte et
+arrivaient au navigateur : **aucun composant ne les rendait**. `DecisionSummaryCard`
+nomme désormais le signal dans son résumé — sans dépli — et sert les
+`abstention.limitations`, qui sont des **données signées** couvertes par
+`PRIORITY_RULES_SHA256` (patron [[D-062]]), jamais des littéraux de composant.
+Sans ce correctif, `DC-34`/`DC-35` — une abstention doit être explicable —
+n'étaient pas tenues, et six dossiers sur vingt-cinq passaient en écran muet dès
+le merge.
+
 **Décision 4 — aucun point, dans aucun sens (`DC-23`).** Le constat ne porte ni
 gravité chiffrée, ni rang numérique, ni pondération, et le producteur ne lit
 aucun score. Le seul champ qui pouvait s'y confondre est `confidence`, imposé
@@ -98,12 +112,19 @@ donc referme le verrou : la re-signature est la sortie prévue par le patron
 n'a pas bougé autrement** — les deux règles, leurs déclencheurs, leurs claims
 et les deux motifs `required` sont identiques au caractère près.
 
-La phrase de remplacement se garde de deux affirmations : elle ne dit pas
+La phrase de remplacement se garde de trois affirmations. Elle ne dit pas
 « les signaux ont été lus et aucun n'appelle d'adressage » (faux quand la
-cotation n'est pas signée), et elle ne prétend à aucune exhaustivité — le
-second producteur, l'effet indésirable déclaré au portail, appartient au
-LOT-05. Elle nomme la **portée** de la lecture et renvoie à la revue pour son
-état.
+cotation n'est pas signée). Elle ne prétend à aucune exhaustivité — le second
+producteur, l'effet indésirable déclaré au portail, appartient au LOT-05. Et
+elle n'affirme **aucun acte de lecture** : une première rédaction disait « la
+portée de cette lecture est celle de la règle SAF-ANAM-01 », que la revue du
+lot a refusée à juste titre — `adaptRuntimeInputs` rend une liste **vide**
+aussi bien sur « aucun signal coché » que sur « aucune consultation validée à
+lire », et un jalon post-T0 se confirme sans les préconditions qui exigent
+cette consultation. La phrase aurait servi l'absence de lecture comme le
+résultat d'une lecture, c'est-à-dire le défaut `DC-24` que cette re-signature
+existe précisément pour corriger. Elle nomme désormais la **portée de la
+règle** — ce sur quoi elle s'applique — et renvoie à la revue pour son état.
 
 **Mesure de production avant décision** (conteneur `one-off-7803` puis
 `one-off-9489`, lecture seule, agrégats sans identité, 2026-08-23) : **25
@@ -159,6 +180,34 @@ priorités que la cotation uniforme aurait fait taire.
 4. **La couverture n'est pas complète et ne le prétend pas.** Le second
    producteur — effet indésirable déclaré au portail — appartient au LOT-05, et
    la phrase d'`ABST-NR-01` est écrite pour ne pas l'anticiper.
+5. **La sécurité lit une AUTRE consultation que l'orientation, les
+   contradictions et la synthèse** (relevé en revue, C3). Deux requêtes
+   coexistent dans le dépôt : la chaîne C1 (cockpit, vérificateur,
+   préconditions) lit `statut: 'validee'` triée par `dateValidation desc,
+   createdAt desc` ; `orientationService`, `contradictionsService` et
+   `api/praticien/synthese` lisent `NOT anamnese DbNull` triée par `createdAt
+   desc`. Sur un dossier portant deux consultations validées dont l'ordre de
+   création diffère de l'ordre de validation, la synthèse peut nommer un signal
+   d'alerte — par `extraireVigilanceDeterministe`, **le repli exact sur lequel
+   s'appuie le rang `vigilance`** — pendant que le cockpit lit l'autre anamnèse.
+   La divergence **préexiste** à ce lot (elle portait sur `patientContext`) ;
+   ce lot la fait porter sur un chemin de sécurité. Trancher quelle consultation
+   fait foi est un arbitrage clinique — le commentaire d'`orientationService`
+   défend explicitement l'autre choix — et il n'est pas rendu ici. **Dette
+   nommée, à porter au LOT-05**, qui branche le second producteur et rencontrera
+   la même question.
+6. **Le tour complet du vérificateur n'est éprouvé sur aucun dossier portant un
+   signal.** `verifierChaineC1` recalcule la chaîne pour comparer trois
+   empreintes, et le seul banc de bout en bout passe par `ANAMNESE_C1_FIXTURE`,
+   qui ne porte pas de `signaux_alerte`. Le code des deux lectures est
+   identique — vérifié ligne à ligne en revue —, mais rien ne le garde. Même
+   dette que la précédente, même véhicule.
+7. **Toutes les empreintes de revue et de carte changent, y compris sur les 16
+   dossiers sans aucun signal** : la règle `SAF-ANAM-01` est jointe à
+   `review.rules` inconditionnellement, et `rules` entre dans le hash.
+   Conséquence réelle et bénigne — une carte préparée avant le déploiement puis
+   persistée après rend un 409 « Rechargez le cockpit » —, mais elle dépasse les
+   6 dossiers porteurs, et c'est écrit plutôt que découvert.
 
 - Référence : [web/src/lib/clinical/safetySignalsV1.ts](web/src/lib/clinical/safetySignalsV1.ts), [web/src/lib/clinical-engine/safetyFindings.ts](web/src/lib/clinical-engine/safetyFindings.ts), [web/src/lib/clinical-engine/safetyFindings.guard.test.ts](web/src/lib/clinical-engine/safetyFindings.guard.test.ts), [web/src/lib/clinical/priorityRulesV1.ts](web/src/lib/clinical/priorityRulesV1.ts), [[D-043]], [[D-062]], [[D-063]], [[D-067]], [[D-072]], [[D-095]]
 

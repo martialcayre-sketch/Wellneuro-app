@@ -106,13 +106,26 @@ describe('le rang commande la production', () => {
     expect(findings).toHaveLength(6);
   });
 
-  it('identifiants uniques, sortie déterministe quel que soit l’ordre d’entrée', () => {
+  // TITRE CORRIGÉ APRÈS REVUE : la version précédente promettait « sortie
+  // déterministe quel que soit l'ordre d'entrée » et comparait deux listes
+  // TRIÉES — elle prouvait l'égalité d'ensemble, pas l'ordre. Le déterminisme
+  // d'ordre est réel, mais il est porté par `signauxDeclares` (qui trie) ; c'est
+  // donc là qu'il se garde, et le producteur, lui, préserve l'ordre reçu.
+  it('identifiants uniques, et c’est `signauxDeclares` qui fixe l’ordre', () => {
     const endroit = construireSafetyFindings([...ADRESSAGE].sort()).findings;
-    const envers = construireSafetyFindings([...ADRESSAGE].sort().reverse()).findings;
     expect(new Set(endroit.map(f => f.findingId)).size).toBe(6);
-    // Le producteur préserve l'ordre reçu ; c'est `signauxDeclares` qui trie, et
-    // c'est lui que traversent les deux appelants de production.
-    expect([...envers].map(f => f.findingId).sort()).toEqual([...endroit].map(f => f.findingId).sort());
+
+    // Le producteur PRÉSERVE l'ordre reçu — dit et vérifié, plutôt que masqué
+    // par un tri dans l'assertion.
+    const envers = construireSafetyFindings([...ADRESSAGE].sort().reverse()).findings;
+    expect(envers.map(f => f.findingId)).toEqual([...endroit].map(f => f.findingId).reverse());
+
+    // Et l'ordre servi à la production est celui de `signauxDeclares`, identique
+    // quel que soit l'ordre de stockage du JSON : c'est CETTE composition que
+    // traversent le cockpit et le vérificateur, et dont dépendent les empreintes.
+    const brut = [...ADRESSAGE].sort().reverse();
+    expect(construireSafetyFindings(signauxDeclares({ signaux_alerte: brut })).findings.map(f => f.findingId))
+      .toEqual(endroit.map(f => f.findingId));
   });
 });
 

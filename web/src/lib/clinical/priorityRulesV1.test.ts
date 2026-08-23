@@ -400,7 +400,7 @@ describe('priorityRulesV1 — verrou de contenu', () => {
   // `required` sont inchangés, et le cas ci-dessous continue de le vérifier.
   // Valeur précédente, couvrant le périmètre du 2026-08-16 :
   // `cfd9b876…d511ab4`.
-  const SHA_CONTENU_2026_08_23 = 'a29e2e5fd0227f2bd1c5ddf027e4bee9c70b20aa7d03b71741b863a4118d884f';
+  const SHA_CONTENU_2026_08_23 = '5485b92845d25ae6d3ed06fd3a4bc58c3931e753ab88f6bb93523c278c6b8c97';
 
   it('le sha publié correspond au contenu signé — règles ET procédure d’abstention', () => {
     expect(PRIORITY_RULES_SHA256).toBe(
