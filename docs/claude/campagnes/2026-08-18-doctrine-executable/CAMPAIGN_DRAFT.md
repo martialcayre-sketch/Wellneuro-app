@@ -1,6 +1,6 @@
 # Campagne WellNeuro - Doctrine exécutable — les cinq véhicules de l'audit
 
-_Draft genere le 2026-08-18 par scripts/wn-campaign.mjs._
+_Draft genere le 2026-08-23 par scripts/wn-campaign.mjs._
 
 ## Objectif general
 
