@@ -349,6 +349,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       // Une confirmation d'épisode ne sélectionne RIEN : la sélection d'une
       // priorité est un geste praticien distinct, hors périmètre du LOT-04.
       selectionPraticien: null,
+      signauxAlerte: inputs.signauxAlerte,
     });
     // Après `loadRuntimeInputs`, donc après que l'appartenance du patient au
     // praticien a été vérifiée — un patient d'un autre praticien est sorti en

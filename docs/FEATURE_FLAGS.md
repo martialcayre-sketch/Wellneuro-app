@@ -109,9 +109,10 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/orientationRulesV1.ts` | `true` | `2026-08-06T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `clinical/priorityRulesV1.ts` | `true` | `2026-08-16T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
+| `clinical/priorityRulesV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
+| `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
@@ -150,7 +151,17 @@ variable.**
   canonique, claims, concordance du SHA de périmètre. Une règle retouchée
   après signature ferme désormais son verrou seule. `priorityRulesV1.ts` a été
   **re-signée le 2026-08-16** sur le périmètre agrandi par `D-062` — la dette
-  de re-signature est soldée.
+  de re-signature était soldée —, puis **une seconde fois le 2026-08-23**
+  ([[D-099]]) : le producteur de constats de sécurité du LOT-04 a rendu faux le
+  texte signé d'`ABST-NR-01` (« aucun producteur n'existe à ce jour »), et le
+  corriger a refermé le verrou. Le diff signé se limite à cette phrase.
+- **`safetySignalsV1.ts` est la table neuve du 2026-08-23** ([[D-099]]) : la
+  cotation des douze signaux d'alerte d'anamnèse en deux rangs. **Son verrou
+  a un sens INVERSE des autres** — le refermer ne fait pas taire un moteur, il
+  retire une **inhibition**. Une cotation retouchée sans re-signature laisse
+  donc le dispositif moins prudent, et le seul contrepoids est la règle
+  `SAF-ANAM-01` passée en `candidate`, dont la revue clinique publie
+  l'inactivité. À lire avant d'y toucher.
 - **`orientationRulesV1.ts` garde son jour de signature du 2026-08-06** : seule
   la FORME de la date a été portée à l'ISO canonique par `D-067` (réserve F5) —
   le fait attesté ne change pas.

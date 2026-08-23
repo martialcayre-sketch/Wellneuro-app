@@ -1,6 +1,6 @@
 ---
 id: "LOT-04"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -119,12 +119,12 @@ En aval : LOT-05 branche son second producteur sur l'objet posé ici.
 
 ## Critères de done
 
-- [ ] Qualification des douze signaux décidée, sourcée, datée — aucune
+- [x] Qualification des douze signaux décidée, sourcée, datée — aucune
       gravité inventée en passant.
-- [ ] `SafetyFinding` a un producteur réel ; `safetyFindings: 0` en dur a
+- [x] `SafetyFinding` a un producteur réel ; `safetyFindings: 0` en dur a
       disparu.
-- [ ] L'inhibition mord : un candidat est **retiré**, pas affiché à côté.
-- [ ] Aucun champ de certitude sur l'objet ; garde structurelle vue rouge.
-- [ ] Banc d'abstention mis à jour, jamais contourné.
-- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-xxx` + `changelog.d/`.
-- [ ] `DC-12` et `DC-23` basculés dans la constitution.
+- [x] L'inhibition mord : un candidat est **retiré**, pas affiché à côté.
+- [x] Aucun champ de certitude sur l'objet ; garde structurelle vue rouge.
+- [x] Banc d'abstention mis à jour, jamais contourné.
+- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-099` + `changelog.d/` posés.
+- [x] `DC-12` et `DC-23` basculés dans la constitution.

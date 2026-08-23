@@ -10,6 +10,7 @@ import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationServ
 import { buildClinicalReview } from './clinicalReview';
 import { buildClinicalSnapshot } from './clinicalSnapshot';
 import { buildDecisionCard } from './decisionCard';
+import { construireSafetyFindings } from './safetyFindings';
 import type {
   AbstentionAssessment,
   ClinicalReview,
@@ -89,6 +90,16 @@ export type EntreeChaineC1 = {
    * praticien, candidat réellement classé, décision non bloquée).
    */
   selectionPraticien?: DecisionPrioritySelection | null;
+  /**
+   * Les signaux d'alerte déclarés à l'anamnèse, bruts et triés
+   * (`signauxDeclares`, appelé par `adaptRuntimeInputs`).
+   *
+   * ENTRÉE OBLIGATOIRE, jamais optionnelle : un défaut `[]` ferait passer
+   * « aucun signal » et « je n'ai pas regardé » pour la même chose, ce que
+   * `DC-24` interdit. Un appelant qui n'a pas d'anamnèse passe explicitement la
+   * liste vide que `signauxDeclares` rend sur une anamnèse absente.
+   */
+  signauxAlerte: string[];
 };
 
 /** Un objet de score lisible — typage défensif, le JSON n'est pas garanti. */
@@ -250,10 +261,15 @@ function motifRequis(id: string): (typeof ABSTENTION_PROCEDURE_V1.motifsRequired
  * moteur. Ce qui reste ici est l'ordre d'évaluation et le câblage des entrées —
  * mécanique, non clinique.
  *
- * EXPORTÉE POUR LE BANC, et il faut le dire : la branche `safetyFindings > 0`
- * est INATTEIGNABLE depuis `construireChaineC1`, qui pose `0` en dur faute de
- * producteur de constat. Sans cet export, la sélection du motif sécurité par
- * son `id` ne serait éprouvée par rien.
+ * LA BRANCHE `safetyFindings > 0` EST ATTEIGNABLE DEPUIS [[D-099]] (LOT-04) :
+ * `construireSafetyFindings` alimente le terme depuis les signaux d'alerte
+ * d'anamnèse de rang `adressage`. Elle a été inatteignable du 2026-08-12 au
+ * 2026-08-23 — `construireChaineC1` posait `0` en dur faute de producteur —, et
+ * c'est ce que disait la version précédente de ce bloc. L'export reste utile au
+ * banc de la table (`priorityRulesV1.test.ts` joue les deux motifs sur une table
+ * permutée, hors de tout dossier), et il reste sous surveillance :
+ * `evaluerAbstentionImporteurs.guard.test.ts` refuse tout appelant nouveau qui
+ * rendrait le verdict signé hors du verrou de signature.
  */
 export function evaluerAbstention(input: {
   ruleIds: string[];
@@ -306,13 +322,18 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
   const plainteDominante = canal ? plainteDominanteDepuisScores(canal.scores) : null;
 
   const regles = reglesPrioritesValidees();
+  // LE PRODUCTEUR DE CONSTATS DE SÉCURITÉ ([[D-099]], LOT-04). `safetyFindings: 0`
+  // était posé en dur ici, et le JSDoc d'`evaluerAbstention` documentait sa
+  // branche `> 0` comme inatteignable : les deux affirmations tombent avec cette
+  // ligne. Le chemin n'est plus câblé « pour le jour où », il est alimenté.
+  const securite = construireSafetyFindings(input.signauxAlerte);
   const abstention = evaluerAbstention({
+    // Les règles de PRIORITÉ, et elles seules : `abstention.ruleIds` nomme ce
+    // que l'abstention suspend, pas ce qui la déclenche. La règle de sécurité
+    // est jointe à `rules` (elle doit y être pour que la revue accepte les
+    // constats), jamais à cette liste.
     ruleIds: regles.map(regle => regle.ruleId),
-    // Le moteur déterministe ne produit AUCUN constat de sécurité aujourd'hui —
-    // la liste est donc vide, et c'est écrit plutôt que supposé. Le terme est
-    // câblé pour que le chemin existe le jour où un producteur en pose un ; le
-    // présenter comme une protection active en production serait faux.
-    safetyFindings: 0,
+    safetyFindings: securite.findings.length,
     canalMesure: canalPlainteMesure(canal?.scores ?? null),
   });
 
@@ -320,8 +341,14 @@ export function construireChaineC1(input: EntreeChaineC1): ChaineC1 {
     reviewId: input.reviewId,
     createdAt: input.horodatage,
     snapshot,
-    rules: regles,
-    ...(abstention ? { findings: { abstention } } : {}),
+    // `normalizeFindings` exige qu'un constat de sécurité cite une règle
+    // cliniquement validée PRÉSENTE dans cette liste : sans la joindre, la revue
+    // jetterait sur le premier signal déclaré.
+    rules: [...regles, ...securite.rules],
+    findings: {
+      ...(abstention ? { abstention } : {}),
+      safetyFindings: securite.findings,
+    },
   });
 
   const candidats = construireCandidats({

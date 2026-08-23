@@ -4,9 +4,9 @@ titre: "Doctrine exécutable — les cinq véhicules de l'audit"
 statut: "ouverte en primaire (2026-08-23) — huit lots cadrés sur état réel re-mesuré ; trois véhicules déplacés par le cadrage"
 créée_le: "2026-08-18"
 mise_à_jour: "2026-08-23"
-lot_courant: "LOT-01"
+lot_courant: "LOT-04"
 branche_campagne: "aucune"
-branche_lot_courant: "aucune"
+branche_lot_courant: "worktree-doctrine+lot04-objet-securite"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -123,7 +123,7 @@ jusqu'au bout le jour même** : sans consommateur interne, le lot a été
 | LOT-01 | L'état atteint — requalifier l'audit, basculer ce qui est déjà acquis | **terminé** (2026-08-23, `D-095` — deux bascules sur trois preuves, sept réserves « Banc dû » retirées, **onze règles orphelines** nommées et grepables) | — |
 | LOT-02 | ~~V2 — la migration du schéma de claim~~ | **transféré** (2026-08-23, `D-096` — part à « Curation signée », son seul bénéficiaire) | — |
 | LOT-03 | V5 — le banc de doctrine (`DC-58`) | à_faire | — |
-| LOT-04 | V3a — typer l'objet de sécurité et lui donner son pouvoir d'inhibition | à_faire | LOT-01 |
+| LOT-04 | V3a — typer l'objet de sécurité et lui donner son pouvoir d'inhibition | **terminé** (2026-08-23, `D-099` — les douze signaux cotés en deux rangs par arbitrage praticien, producteur déterministe livré, `DC-12`/`DC-23` mordantes en production ; re-signature de la table des priorités emportée par le lot) | LOT-01 |
 | LOT-05 | V3b — les gates de population et l'effet indésirable | à_faire | LOT-04 |
 | LOT-06 | V1 achevé — conflit de sources, escalade, provenance de la convergence | à_faire | LOT-04 |
 | LOT-07 | `DC-22` — le total de « Mon équilibre » a-t-il un sens ? | à_faire | — |

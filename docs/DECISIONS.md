@@ -4,6 +4,164 @@
 
 ## Décisions actives
 
+### D-099 — Les douze signaux d'alerte sont cotés en deux rangs, et le rang d'adressage retire les priorités au lieu de s'afficher à côté
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrage praticien rendu en session le 2026-08-23, item
+  par item sur les douze libellés ; signature des deux tables dans le même
+  échange)
+- Domaine : clinique et scoring — `DC-12`, `DC-23`, `DC-19`, `DC-24`
+- Campagne : « Doctrine exécutable », LOT-04 (véhicule V3a de l'audit)
+- Porte sur : `web/src/lib/clinical/safetySignalsV1.ts` (neuf),
+  `web/src/lib/clinical-engine/safetyFindings.ts` (neuf), `chaineC1.ts`,
+  `runtimeFromPrisma.ts`, `verifierChaineC1.ts`, `priorityRulesV1.ts`
+  (re-signature), le cockpit praticien
+
+**Contexte, et ce qui n'était pas en cause.** `SafetyFinding` existe depuis la
+chaîne T0, son consommateur aussi : `decisionCard.ts` bloque dès
+`safetyFindings.length > 0`, et `evaluerAbstention` sélectionne `ABST-SEC-01`.
+Les deux sont bancés. Ce qui manquait était le **producteur** —
+`chaineC1.ts:315` posait `safetyFindings: 0` en dur, si bien que `DC-12` et
+`DC-23`, actées par [[D-043]] et [[D-062]], étaient **inertes en production**.
+Ce lot ne crée ni le type, ni le blocage : il donne une entrée à un chemin
+déjà écrit.
+
+**Ce que le praticien voyait, et qui ne suffisait pas.** Les douze
+`signaux_alerte` remontent par `extraireVigilanceDeterministe` sous forme d'une
+**liste de chaînes**, où rien ne distingue « Idées noires ou suicidaires » de
+« Constipation récente inexpliquée » — ni gravité, ni domaine, ni conduite. Et
+l'arbitrage praticien du 2026-08-03, inscrit en tête d'`orientationRulesV1.ts`,
+avait déjà tranché le fond : un signal d'alerte appelle un **adressage**, jamais
+une exploration — « la surface manque, c'est un lot dédié ». C'est celui-ci.
+
+**Décision 1 — la cotation est graduée, sur un critère écrit.** Rang
+**`adressage`** : le signal appelle un avis médical dont **le report est
+lui-même le risque**. Rang **`vigilance`** : le signal appelle un avis médical
+que le praticien porte dans la consultation en cours.
+
+Six en `adressage` : douleur thoracique / oppression · essoufflement
+inhabituel · malaise / perte de connaissance · perte de force ou de
+sensibilité brutale · idées noires ou suicidaires · sang dans les selles ou les
+urines. Six en `vigilance` : perte de poids involontaire · fièvre prolongée /
+sueurs nocturnes · vomissements persistants · diarrhée persistante ou nocturne
+· douleur intense et inhabituelle · constipation récente inexpliquée.
+
+**La provenance de cette cotation est décisionnelle, pas bibliographique**, et
+c'est écrit plutôt que sous-entendu : aucun claim du corpus ne gradue ces douze
+libellés. Le régime est celui d'`ABSTENTION_PROCEDURE_V1` ([[D-062]]) —
+`DC-26` est satisfaite par le registre des décisions, pas par celui des claims.
+L'alternative « uniforme », qui n'aurait rien exigé de neuf, a été exposée et
+écartée (voir Options écartées).
+
+**Décision 2 — le rang `vigilance` ne produit RIEN.** Aucun constat, aucun
+changement de comportement : ces six signaux continuent de remonter par
+`extraireVigilanceDeterministe`, qui ne filtre rien et que ce lot ne touche
+pas. Le rang n'est pas une mise en sourdine, c'est le refus d'ajouter une
+inhibition là où l'arbitrage n'en a pas demandé. Un banc l'épingle par égalité
+d'empreintes : signal de vigilance ⇒ revue et carte **identiques au caractère
+près**.
+
+**Décision 3 — l'inhibition mord, et elle retire au lieu de coexister
+(`DC-12`).** Un constat de rang `adressage` fait passer l'abstention en
+`required` ; `construireCandidats` rend alors `[]` — la table des priorités se
+tait —, la carte est bloquée, et `ProtocolConsultationPanel` refuse la
+diffusion. Le candidat est **retiré**, pas affiché sous un bandeau.
+
+**Décision 4 — aucun point, dans aucun sens (`DC-23`).** Le constat ne porte ni
+gravité chiffrée, ni rang numérique, ni pondération, et le producteur ne lit
+aucun score. Le seul champ qui pouvait s'y confondre est `confidence`, imposé
+par `ClinicalFindingBase` et **partagé** avec les manques et les discordances :
+l'ôter du seul objet de sécurité aurait touché les deux autres. Il est donc
+**figé à `'à_documenter'`** — le faire varier avec le rang en aurait fait une
+mesure de gravité déguisée. Un banc vérifie la constance sur les douze, et un
+second inspecte les **valeurs** produites : aucun nombre, nulle part, sous
+aucun nom. La preuve de bout en bout est une égalité d'empreinte de snapshot —
+score favorable et signal majeur coexistent, le score ne bouge pas d'un point,
+le signal prime.
+
+**Décision 5 — fail-closed sur le libellé inconnu.** Un signal déclaré que la
+cotation signée ne connaît pas — ce qu'une réécriture d'`anamnese.ts`
+produirait — est traité comme un **adressage**, jamais ignoré : un silence sur
+le rang n'est pas une permission (`DC-13`, `DC-24`). Trois replis fail-open ont
+été écartés nommément, et chacun est gardé : `extraireDrapeauxAnamnese` (qui
+filtre contre l'énuméré courant et ferait **disparaître** un libellé dérivé —
+son propre commentaire le dit), le plafond de 50 entrées de `liste()`, et la
+neutralisation de texte destinée au prompt. Classe fermée par [[D-072]],
+rouverte ici et refermée. Ce cas est **vide en production** au 2026-08-23.
+
+**Décision 6 — re-signature de la table des priorités, et son motif est
+étroit.** Le texte signé d'`ABST-NR-01` affirmait « aucun constat de sécurité
+n'est produit par le moteur déterministe — **aucun producteur n'existe à ce
+jour** ». Ce lot l'a rendu faux. Le corriger change `PRIORITY_RULES_SHA256`,
+donc referme le verrou : la re-signature est la sortie prévue par le patron
+[[D-063]]/[[D-067]], jamais la mise à jour silencieuse du sha. **Le périmètre
+n'a pas bougé autrement** — les deux règles, leurs déclencheurs, leurs claims
+et les deux motifs `required` sont identiques au caractère près.
+
+La phrase de remplacement se garde de deux affirmations : elle ne dit pas
+« les signaux ont été lus et aucun n'appelle d'adressage » (faux quand la
+cotation n'est pas signée), et elle ne prétend à aucune exhaustivité — le
+second producteur, l'effet indésirable déclaré au portail, appartient au
+LOT-05. Elle nomme la **portée** de la lecture et renvoie à la revue pour son
+état.
+
+**Mesure de production avant décision** (conteneur `one-off-7803` puis
+`one-off-9489`, lecture seule, agrégats sans identité, 2026-08-23) : **25
+consultations, 9 portent au moins un signal** (36 %), et **6 portent au moins
+un signal de rang `adressage`** (24 %). Six libellés distincts sont présents,
+tous exacts. La cotation graduée rend donc **trois dossiers** à la table des
+priorités que la cotation uniforme aurait fait taire.
+
+**Options écartées.**
+
+- **Cotation uniforme** (les douze inhibent). Ne demandait aucun arbitrage neuf
+  et n'inventait rien : c'était l'option la moins coûteuse en provenance. Elle
+  faisait taire le cockpit sur 36 % des dossiers, y compris sur une
+  constipation récente. Écartée par le praticien au profit d'une cotation
+  qu'il rend et qu'il signe.
+- **Critère « tout signal appelant un adressage »** plutôt que « le report est
+  le risque ». Il réunissait en `adressage` le trio d'orientation classique
+  (sang, perte de poids, fièvre prolongée) que le critère retenu **sépare**.
+  Exposé avant la cotation, non retenu — la conséquence est assumée et écrite
+  dans la table.
+- **Une règle `SAF-ANAM-nn` par signal.** Douze règles auraient porté douze
+  fois la même validation et laissé croire à douze relectures. Une seule règle,
+  le libellé cité verbatim dans la `rationale`.
+- **Une conduite à tenir par item.** Douze textes pour deux rangs auraient
+  inventé onze distinctions que l'arbitrage n'a pas rendues, chacune sans
+  provenance au sens de `DC-19`. La conduite est portée par le rang.
+- **Rattraper la limitation d'abstention appauvrie.** Table des priorités
+  désignée, la revue servait « Aucune règle d'abstention cliniquement validée
+  n'est fournie. » ; la règle de sécurité en étant une, le message tombe
+  désormais sur une branche exacte mais moins renseignée. Corriger cela
+  supposait de toucher `clinicalReview.ts`, qui sert aussi les manques et les
+  discordances. Écart écrit dans le banc, non corrigé au passage.
+
+**Réserves.**
+
+1. **Le verrou de la cotation a un sens INVERSE des autres tables du dépôt.**
+   Ailleurs, un verrou fermé fait taire le moteur et c'est le défaut sûr. Ici,
+   il **retire une inhibition** : le dispositif devient moins prudent. Le
+   contrepoids est étroit — la règle passe en `candidate` et la revue publie
+   « Règle candidate inactive : SAF-ANAM-01. », le CI rougit avant la
+   production —, mais il ne remplace pas une inhibition. Nommé, gardé, non
+   fermé.
+2. **« Douleur intense et inhabituelle » est cotée faute de libellé
+   qualifiable**, pas sur un jugement clinique : le libellé ne porte ni siège
+   ni domaine. La requalifier suppose de réécrire la question dans
+   `anamnese.ts` — modification de questionnaire, donc autre lot et autre
+   arbitrage.
+3. **Le constat ne cite aucune source.** `validateProvenance` exige que toute
+   source citée existe dans le snapshot, or l'anamnèse n'y figure pas — le
+   snapshot est bâti sur les passations. La provenance est donc structurellement
+   **vide**, et l'origine est dite en limitation. Faire entrer l'anamnèse dans
+   le snapshot est un autre lot.
+4. **La couverture n'est pas complète et ne le prétend pas.** Le second
+   producteur — effet indésirable déclaré au portail — appartient au LOT-05, et
+   la phrase d'`ABST-NR-01` est écrite pour ne pas l'anticiper.
+
+- Référence : [web/src/lib/clinical/safetySignalsV1.ts](web/src/lib/clinical/safetySignalsV1.ts), [web/src/lib/clinical-engine/safetyFindings.ts](web/src/lib/clinical-engine/safetyFindings.ts), [web/src/lib/clinical-engine/safetyFindings.guard.test.ts](web/src/lib/clinical-engine/safetyFindings.guard.test.ts), [web/src/lib/clinical/priorityRulesV1.ts](web/src/lib/clinical/priorityRulesV1.ts), [[D-043]], [[D-062]], [[D-063]], [[D-067]], [[D-072]], [[D-095]]
+
 ### D-098 — Trois dettes tranchées : l'ancre devient textuelle, le classificateur perd un prédicat, les orphelines ne se rouvrent pas
 
 - Date : 2026-08-23

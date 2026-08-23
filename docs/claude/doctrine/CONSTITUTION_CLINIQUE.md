@@ -164,15 +164,19 @@ sans porteur.*
 proposition** issue de plusieurs claims favorables. Red flag médical,
 contre-indication, interaction, grossesse, pathologie, médicament, symptôme
 appelant une orientation médicale.
-*Acté [[D-043]] — opposable en revue et pour tout agent. Le consommateur est
-câblé et bancé : `decisionCard.ts:112` bloque dès `safetyFindings.length > 0`,
-`chaineC1.ts:263-270` sélectionne `ABST-SEC-01`, joués à `safetyFindings: 1`
-par `priorityRulesV1.test.ts:471` (table permutée, anti-vacuité),
-`c1Flow.test.ts:121` et `decisionCard.test.ts`. **Producteur dû** :
-`chaineC1.ts:315` pose `safetyFindings: 0` en dur, aucun constat de sécurité
-déterministe n'existe, la règle est **inerte en production** — la réserve
-« Banc dû » qu'elle portait était mal nommée, le banc existe. Porté par le
-LOT-04 de « Doctrine exécutable ».*
+*Acté [[D-043]], **producteur livré [[D-099]]** — opposable en revue et pour
+tout agent, et **mordante en production depuis le 2026-08-23**. Le
+consommateur était câblé et bancé de longue date (`decisionCard.ts` bloque dès
+`safetyFindings.length > 0` ; `evaluerAbstention` sélectionne `ABST-SEC-01`,
+joué à `safetyFindings: 1` par `priorityRulesV1.test.ts` sur table permutée,
+`c1Flow.test.ts` et `decisionCard.test.ts`). Ce qui manquait — le producteur —
+existe : `clinical-engine/safetyFindings.ts` construit un `SafetyFinding` par
+signal d'alerte d'anamnèse de **rang `adressage`**, sur la cotation signée de
+`clinical/safetySignalsV1.ts` (douze libellés, deux rangs, arbitrage praticien
+du 2026-08-23). L'inhibition **retire** : abstention `required` ⇒ zéro
+candidat ⇒ carte bloquée ⇒ protocole non diffusable. Un libellé hors cotation
+inhibe plutôt que de disparaître (fail-closed). Le second producteur — effet
+indésirable déclaré au portail — est porté par le LOT-05.*
 
 **DC-13 — Chaque claim porte son niveau d'exécution.** `AUTO` ·
 `AUTO_WITH_EXPLANATION` · `SUGGEST_ONLY` · `PRACTITIONER_REQUIRED` ·
@@ -280,17 +284,19 @@ pose la question au praticien et la tranche dans un sens ou dans l'autre.*
 **DC-23 — Les red flags sont orthogonaux au score.** Un red flag n'ajoute ni ne
 retire de points. Un score global favorable et un red flag majeur coexistent
 sans se compenser, et le red flag reste prioritaire.
-*Acté [[D-043]], [[D-062]] — la doctrine est portée comme **donnée signée** :
-`ABSTENTION_PROCEDURE_V1.motifsRequired[0].doctrine = ['DC-12','DC-23']`
-(`priorityRulesV1.ts:448`), couverte par `PRIORITY_RULES_SHA256`. Deux bancs la
-font mordre : `priorityRulesV1.test.ts:465-478` (`safetyFindings: 1` ⇒
-`status: 'required'`, table permutée) et `c1Flow.test.ts:114-140`
-(`buildDecisionCard` jette sur bloqueurs malgré un candidat valide).
-**Producteur dû** : branche inatteignable en production,
-`chaineC1.ts:311-315` pose `safetyFindings: 0` en dur — la réserve « Banc dû »
-qu'elle portait était mal nommée, les bancs existent, mais ils prouvent la
-priorité et le blocage, pas l'énoncé arithmétique « n'ajoute ni ne retire de
-points ». Porté par le LOT-04 de « Doctrine exécutable ».*
+*Acté [[D-043]], [[D-062]], **énoncé arithmétique prouvé [[D-099]]** — la
+doctrine est portée comme **donnée signée** :
+`ABSTENTION_PROCEDURE_V1.motifsRequired[0].doctrine = ['DC-12','DC-23']`,
+couverte par `PRIORITY_RULES_SHA256`. Les bancs de priorité et de blocage
+existaient (`priorityRulesV1.test.ts` sur table permutée, `c1Flow.test.ts`) mais
+ne prouvaient pas « n'ajoute ni ne retire de points » ; c'est ce que le LOT-04
+a fermé, de trois façons : `confidence` — seul champ de la base commune qui
+pouvait se confondre avec une mesure — est **figé** à `à_documenter` et sa
+constance est épinglée sur les douze signaux ; un banc inspecte les **valeurs**
+produites et refuse tout nombre, sous quelque nom que ce soit ; et la preuve de
+bout en bout est une **égalité d'empreinte de snapshot** — score favorable et
+signal majeur coexistent, le score ne bouge pas d'un point, le signal prime.
+La branche est atteignable en production depuis le 2026-08-23.*
 
 **DC-24 — Une donnée absente n'est jamais zéro ni normale.** `missing ≠ 0` ·
 `missing ≠ normal` · `non réalisé ≠ négatif` · `non renseigné ≠ absence de

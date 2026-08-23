@@ -149,6 +149,11 @@ export async function refusChaineC1(
       // bloquée. Une sélection forgée sur un candidat que le serveur ne produit
       // pas jette ici même.
       selectionPraticien: decisionCard.selectedMainPriority ?? null,
+      // Relu en base par `entreesRuntime`, comme le contexte patient : les deux
+      // sortent de la même consultation validée, par le même `adaptRuntimeInputs`.
+      // Un signal lu ici et pas dans le cockpit — ou l'inverse — ferait diverger
+      // la revue recalculée et rendrait 409 sur une carte honnête.
+      signauxAlerte: inputs.signauxAlerte,
     });
   } catch (error) {
     return `La chaîne clinique ne peut pas être recalculée sur ce dossier : ${
