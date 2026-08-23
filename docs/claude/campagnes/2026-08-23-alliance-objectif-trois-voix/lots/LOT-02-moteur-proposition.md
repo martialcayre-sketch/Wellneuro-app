@@ -37,6 +37,62 @@ enregistre reprise/écart. Déterministe (pas de LLM — arbitrage LOT-00).
   - aucun tri par `priorite`, aucun score, aucun rang persisté ;
   - clés exposées épinglées (patron G1).
 
+## Cinq arbitrages à trancher à l'ouverture
+
+Recommandations préparées le 2026-08-23, **en attente de l'arbitrage du
+responsable**. Chacune s'adosse à un patron déjà en place plutôt qu'à une
+invention.
+
+1. **La garde de forme des fragments** (dette héritée du LOT-01 — aucune
+   contrainte de base ne peut la tenir, `fragments` est un JSONB libre).
+   *Recommandé* : un invariant de **constructeur**, pas un validateur. Le
+   module n'expose que trois fabriques nommées — `depuisAnamnese(champ,
+   dateConsultation)`, `depuisInstrument(id, bande)`, `depuisRegleSignee(id,
+   sha)` — si bien qu'un fragment nu est inconstructible **au sens du type**.
+   S'y ajoute un balayage de la valeur sérialisée avant écriture : aucune clé
+   du blob, à quelque profondeur que ce soit, ne peut valoir
+   `score|seuil|bande|rang|position|ordre|niveau`. C'est le pendant, pour le
+   JSONB, de ce que la liste blanche fait pour les colonnes.
+
+2. **`hash_sources` — algorithme et longueur.** *Recommandé* : SHA-256 hex
+   (64 caractères) sur sérialisation canonique, à l'identique de
+   `canonicalSha256` (`lib/clinical-engine/canonical.ts`) dont le
+   `proposalHash` du cockpit est déjà l'usager — la caducité de 6.0-B en est
+   la copie conceptuelle, et un second schéma de hash créerait deux vérités.
+   **Mais G7 interdit d'importer `clinical-engine/`** : *recommandé* de
+   **dupliquer** le helper (une quinzaine de lignes, sans dépendance) plutôt
+   que d'assouplir la garde — une garde qui gagne une exception les perd
+   toutes. Contenu haché : identifiants et valeurs des sources citées + SHA du
+   périmètre signé, **jamais le texte des fragments** (sinon une reformulation
+   praticien rendrait caduque une proposition dont les sources n'ont pas
+   bougé).
+
+3. **Un `motif` vide sur une reprise.** *Recommandé* : **refuser** par un
+   motif nommé (`motif_sur_reprise`), ne pas normaliser `''` → `NULL` en
+   silence. Le dépôt a tranché ce genre de cas dans le même sens (« par refus,
+   jamais troncature », leçon du `maxLength` retiré au LOT-02 de 6.0-A) : un
+   écran qu'on contrôle et qui envoie un motif sur une reprise est un bug à
+   voir, pas à absorber.
+
+4. **Plusieurs dispositions sur une même proposition.** *Recommandé* : **le
+   dernier geste gagne**, exactement comme la ratification — tri `creeLe`
+   décroissant, départage par `id` (`praticien/objectifNegocie.ts`,
+   `etatRatification`). Deux règles de résolution différentes dans un même
+   dossier seraient un piège. Nuance à porter dans l'UI et non dans la donnée :
+   une proposition **reprise puis écartée** reste reprise EN FAIT — l'objectif
+   existe et le patient a pu le voir ; l'écran affiche la trajectoire, pas le
+   seul dernier état.
+
+5. **Le plafond de trois propositions** ([[D-094]] §3), qu'aucun index ne peut
+   tenir. *Recommandé* : borner la **production**, pas le stock — le moteur
+   n'assemble jamais plus de trois propositions par exécution et la route n'en
+   sert jamais plus de trois non caduques et non disposées, propriété garantie
+   par un banc. L'accumulation historique reste normale sur une table
+   append-only.
+
+Les points 1 et 2 touchent la doctrine de garde et pourraient mériter une
+ligne dans [[D-094]] ; les points 3 à 5 se consignent ici.
+
 ## Périmètre
 
 - `web/src/lib/praticien/propositionObjectif.ts` (+ `.test.ts`,
