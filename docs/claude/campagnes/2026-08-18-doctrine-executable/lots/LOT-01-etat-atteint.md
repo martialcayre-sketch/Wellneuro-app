@@ -1,8 +1,19 @@
 ---
 id: "LOT-01"
-statut: "à_faire"
+statut: "terminé (2026-08-23 — D-095 ; descente des 58 règles en éventail, deux bascules retenues sur trois preuves (DC-29, DC-33 par régularisation), trois « Banc dû » périmés retirés, neuf règles orphelines nommées ; aucun code modifié)"
 dépend_de: "—"
 ---
+
+> **Amendé le 2026-08-23 à l'exécution.** Le cadrage annonçait la bascule de
+> `DC-17` et `DC-30` : c'était inexact, les deux étaient **déjà actées**
+> — ce qui était faux dans leur ligne était la réserve « **Banc dû** », leurs
+> bancs existant désormais. Une seule bascule proposition → acté a résisté au
+> filtre des trois preuves (`DC-29`) ; `DC-33` a été proposée, **rejetée**
+> faute de décision, puis basculée **par régularisation** sur arbitrage du
+> responsable. Deux marqueurs ont été créés (**Décision due**, **écrite, non
+> armée**) pour éviter quatre précédents contradictoires dans le même
+> document. Les quatre règles non armées ont été traitées ici plutôt qu'au
+> LOT-08 : leur vérification devient une relecture, pas une découverte.
 
 # LOT-01 — L'état atteint : requalifier l'audit, basculer ce qui est déjà acquis
 

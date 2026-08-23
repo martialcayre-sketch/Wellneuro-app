@@ -4,6 +4,131 @@
 
 ## Décisions actives
 
+### D-095 — L'état atteint de la constitution : ce qu'on a le droit de dire acté
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrages du praticien, rendus en session le 2026-08-23)
+- Domaine : doctrine clinique — constitution, audit doctrinal, gouvernance des
+  statuts
+- Fonde : le LOT-01 de la campagne `2026-08-18-doctrine-executable`
+- Porte sur : `DC-14`, `DC-29`, `DC-33`, et la forme des statuts des 58 règles
+
+**Contexte.** L'audit doctrinal du 2026-08-11 confrontait les 58 règles `DC-nn`
+au code. Douze jours plus tard, le dépôt a bougé sous lui : la campagne chaîne
+T0 est close (10/10 lots, 2026-08-18), le Socle a posé le niveau « demande »
+clinique du hook, et le LOT-01 de la chaîne T0 a livré un objet de
+contradiction. Les 58 règles ont été re-vérifiées une par une contre le dépôt
+à `f9290b37`, jamais contre la documentation qui le décrit. La présente
+décision tranche ce que cette descente ne pouvait pas trancher seule.
+
+**Décision — le critère, rappelé parce qu'il a servi de filtre.** Une règle
+n'est **actée** que sur ses **trois preuves** : une décision qui la tranche
+(`DC-18`), un banc ou un contrat qui la fait mordre **et qui tourne
+réellement** — nommé par une étape CI ou joué par une suite —, et le statut
+basculé dans `CONSTITUTION_CLINIQUE.md`. Une règle respectée en pratique mais
+sans banc reste « proposition ». Une règle bancée sans décision **n'est pas
+actée par sa seule livraison de code**.
+
+**Décision 1 — `DC-29` bascule à acté.** [[D-041]] avait écrit sa propre
+condition (« elles ne basculent à acté qu'à ce moment »), et cette condition
+est remplie : `contradictionFinding.guard.test.ts:71-163` refuse **à la
+compilation** tout champ de certitude, de probabilité, de score ou de
+confiance, sous quelque nom que ce soit, doublé sur l'instance par
+`contradictionsEngine.test.ts:325-345`. La réserve de [[D-043]] est **levée
+pour cette règle seule** — `DC-54` et `DC-55` restent « proposition », leur
+banc n'existe pas. La bascule porte sur **l'interdit**, pas sur l'obligation :
+la moitié positive de `DC-29` (« chaque convergence nomme ses sources
+indépendantes ») n'est exercée par aucune sortie, la forme `CONVERGENCE` n'a
+aucun producteur et le moteur la refuse (`contradictionsEngine.ts:188-192`).
+
+**Décision 2 — `DC-33` bascule à acté, par régularisation.** Le code la tient
+et un banc la garde (`chaineC1.ts:382-413` classe puis numérote,
+`chaineC1.test.ts:164` épingle `[1, 2]` sur la carte de décision servie), mais
+**aucune décision ne la tranchait** : [[D-048]] l'avait renvoyée au LOT-04, et
+[[D-054]], décision de ce lot, ne l'a jamais reprise. La présente décision
+prononce l'arbitrage omis. **Deux réserves nommées, qui ne sont pas des
+formalités** : `PRIORITY_RULES_V1` ne publie que deux règles, donc le rang
+observable n'excède jamais 2 ; et le classement lui-même vit **hors du
+périmètre haché** (`priorityRulesV1.ts:328-333`, « CE QUI RESTE HORS DU
+SHA ») — la signature ne le couvre
+pas.
+
+**Décision 3 — la portée de `DC-14`.** La règle gouverne l'**extrapolation
+d'un claim** ; elle ne commande pas le défaut d'une colonne. Une population
+générale **déclarée** — `adulte_tout_venant` — n'est pas le silence que
+`DC-14` interdit de lire comme une généralité : le dépôt en fait déjà la
+démonstration signée avec `BiologyFunctionalRange.population NOT NULL DEFAULT`
+et son `CHECK` fermé ([[D-068]], [[D-069]]). Il en découle que la population
+appartient à l'**intervention** (`DC-11`), pas au claim : un claim descriptif
+n'a pas de population, c'est la proposition qui en a une. **Le texte de
+`DC-14` n'est pas modifié** — seule sa lecture est écrite. Conséquence
+opératoire : le LOT-02 n'ajoute pas de colonne `population` à
+`rag_corpus_claims`, et un `DEFAULT` posé par migration sur les 8 224 claims
+serait une déclaration clinique que personne n'a prononcée (`DC-17`, `DC-19`).
+
+**Décision 4 — sept réserves « Banc dû » sont retirées, et il faut le dire
+nommément.** Neuf règles portaient « **Banc dû** : la règle ne mord pas encore
+à l'exécution ». Sept ne le méritent plus, et pour deux raisons distinctes :
+
+- **le banc a été trouvé** — `DC-17` (hook à huit fichiers cliniques,
+  `D-083` §3, banc CI), `DC-27` (le prompt interdit la causalité depuis la
+  v20, `promptPassationCourante.guard.test.ts:70-78`), `DC-30` (moteur de
+  contradictions, quatre bancs en CI), `DC-34` (les claims remontent à
+  l'écran, `MissingDataPanel.test.tsx:105-112`), `DC-35`
+  (`ABSTENTION_PROCEDURE_V1` signée, fail-closed, quatre bancs) ;
+- **la réserve était mal nommée** — `DC-12` et `DC-23` : leurs bancs
+  existaient déjà, ce qui manque est un **producteur**. Elles reçoivent le
+  marqueur **Producteur dû** : la branche est gardée, mais
+  `chaineC1.ts:315` pose `safetyFindings: 0` en dur et la règle est **inerte
+  en production**.
+
+Deux réserves demeurent : `DC-14` (« Banc dû sur l'objet de la règle » — rien
+n'empêche d'appliquer un claim hors de sa population) et `DC-20` (aucun
+`thresholdKind` au dépôt). Aucun banc n'est créé, modifié ni supprimé par
+cette décision : seuls des constats changent.
+
+**Décision 5 — le marqueur « Décision due ».** Quatre règles sont « actées »
+sans qu'aucune entrée du registre ne les prononce : `DC-04`, `DC-21`, `DC-44`,
+`DC-56`. Elles **restent actées** — le code les tient réellement, les
+déclasser dirait moins que la vérité — et portent désormais un marqueur
+**Décision due**, calqué sur le **Banc dû** que le document emploie déjà. Un
+seul précédent pour les quatre, et une dette qui se retrouve au grep. Un
+troisième marqueur, **écrite, non armée**, distingue les règles sans sujet
+(`DC-05`, `DC-08`, `DC-52`, `DC-53`) des propositions ordinaires : leur
+déclencheur est nommé, et c'est un état légitime.
+
+**Ce que la décision ne fait pas.** Elle ne modifie aucun code, aucun banc,
+aucune table de règles, aucun seuil. Elle ne bascule aucune règle dont les
+trois preuves ne sont pas réunies, et ne referme aucune des règles devenues
+orphelines. **Elle ne recompute pas la grille à quatre colonnes de l'audit**
+(acquis / partiel / porté / absent) : cette grille mesure l'état du **code**,
+quand la constitution mesure l'**acte d'intégration**, et les deux ne
+coïncident pas — `DC-33` en est la preuve, le code la tenait avant qu'aucune
+décision ne la tranche. Un chiffre global non reconstituable depuis les listes
+serait pire que pas de chiffre ; la limite est nommée plutôt que masquée.
+
+**Constat porté au registre, parce qu'il est le vrai produit de la descente.**
+Le tableau de l'audit compte **13 lignes « porté »** et **6 lignes
+« partiel » nommant un lot** de la chaîne T0 — dix-neuf lignes suspendues à
+une campagne **close depuis le 2026-08-18**. Quatre ont été **refermées** par
+leur lot (`DC-27`, `DC-30`, `DC-33`, `DC-34`). **Onze sont orphelines** — le
+lot est livré sans les avoir refermées, et aucun lot ne les reprend :
+`DC-03`, `DC-09`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`,
+`DC-45`, `DC-47`, `DC-48`, plus la part de `DC-11` qui excède les exclusions.
+Chacune porte le marqueur **orpheline** dans la constitution : la liste se
+vérifie au grep, elle ne se croit pas sur parole. Les quatre restantes ont
+changé de porteur — `DC-37` (livrée en trois formes), `DC-46` (CB-09, hors
+campagne), `DC-35` et `DC-11`-exclusions (LOT-05 de cette campagne).
+
+Ce ne sont pas des régressions de code, ce sont des **promesses de lot
+évaporées**. Deux règles n'ont ni preuve, ni banc, ni véhicule : `DC-09` — que
+l'audit désignait comme le garde-fou le plus exposé de la chaîne — et
+`DC-36`.
+
+**Impact attendu.** Aucun sur la production : la décision est documentaire.
+Elle rend mesurables les sept lots suivants de la campagne, et elle donne aux
+règles orphelines un nom, à défaut d'un véhicule.
+
 ### D-094 — La machine cite, elle n'invente pas : le régime de la proposition d'objectif
 
 - Date : 2026-08-23
