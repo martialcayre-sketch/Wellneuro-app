@@ -4,6 +4,85 @@
 
 ## Décisions actives
 
+### D-096 — Trois arbitrages de portefeuille : DC-09 reçoit un lot, la migration change de campagne, la convergence cherche sa provenance
+
+- Date : 2026-08-23
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-08-23)
+- Domaine : portefeuille de campagnes — « Doctrine exécutable », « Curation
+  signée »
+- Fait suite à : [[D-095]], dont le LOT-01 a produit les trois questions
+- Porte sur : `DC-09`, `DC-29`, et le porteur de `DC-07` / `DC-13` / `DC-20`
+
+**Contexte.** Le LOT-01 de « Doctrine exécutable » a livré l'état atteint de
+la constitution et laissé trois questions ouvertes qu'aucune règle ne pouvait
+trancher seule : que faire des **onze** règles orphelines (plus la part de
+`DC-11` hors exclusions) recensées par [[D-095]], quand jouer une
+migration qui n'a plus de consommateur, et que faire d'une forme typée sans
+provenance. Elles sont tranchées ici, ensemble, parce qu'elles se répondent.
+
+**Décision 1 — `DC-09` reçoit le LOT-09 ; les autres orphelines restent des
+dettes nommées.** `DC-09` (« un claim associatif ne devient jamais une
+preuve ») était la dernière des quatre règles que l'audit du 2026-08-11
+désignait comme les plus exposées à n'avoir aucun ancrage — les trois autres
+(`DC-27`, `DC-29`, `DC-30`) sont refermées. Elle est la **jumelle exacte de
+`DC-27`** : même fichier (`anthropic.ts`), même mécanisme (clause de prompt
+plus garde qui épingle la formule dans `SYSTEM_PROMPT_GOUVERNANCE`), même
+coût. Le patron vient d'être constaté opérant ; le rejouer sur la règle la
+plus exposée du dépôt est le meilleur rapport de toute la campagne.
+
+Les **dix autres orphelines** — `DC-03`, `DC-36`, `DC-38`, `DC-39`, `DC-40`,
+`DC-41`, `DC-44`, `DC-45`, `DC-47`, `DC-48`, plus la part de `DC-11` hors
+exclusions — **restent des dettes nommées, sans véhicule**, écrites comme
+telles au LOT-08. Ce n'est pas un renoncement : leur fermeture est un
+arbitrage de portefeuille, et « Doctrine exécutable » n'a pas mandat pour
+l'absorber. `DC-36` demeure la seule règle sans preuve, sans banc et sans
+véhicule.
+
+**Décision 2 — la migration des axes du claim change de campagne.** Le LOT-02
+livrait trois axes doctrinaux sur `rag_corpus_claims` (`DC-07`, `DC-13`,
+`DC-20`). Après que `D-095` a sorti la population du claim, il ne lui restait
+**aucun consommateur** dans la campagne : `LOT-05` et `LOT-06` avaient perdu
+leur dépendance, et le LOT-01 a mesuré que rien d'autre ne lit ces colonnes.
+Son unique bénéficiaire est **Curation signée**, qui n'a nulle part où écrire
+ces axes — et qui est à l'arrêt (appariement NABM et liens biomarqueur↔besoin
+toujours à 0 ligne).
+
+L'argument d'origine de l'audit — « si la migration n'est pas posée tôt,
+chaque lot invente son équivalent local » — visait les LOT-04, LOT-05 et
+LOT-06 de la **chaîne T0**, livrés depuis le 2026-08-18 : le risque qu'il
+prévenait a expiré. Le périmètre est donc transféré, intégralement et avec ses
+contraintes (confirmation obligatoire, PR seule, contrat plus négatif nommés
+en CI, aucun backfill, aucun défaut clinique), à
+`docs/claude/campagnes/2026-08-18-curation-signee/sources/2026-08-23-transfert-migration-axes-claim.md`.
+
+Conséquence assumée : **« Doctrine exécutable » n'a plus de migration**, donc
+plus aucune étape sous confirmation obligatoire ni délai `release-db`. Poser
+une colonne en production depuis une campagne qui ne s'en sert pas aurait
+ajouté une orpheline à celles que le LOT-01 vient de recenser.
+
+**Décision 3 — `DC-29` : le LOT-06 descend chercher la provenance avant de
+conclure.** Les quatre niveaux de convergence sont typés et gardés, mais rien
+ne dit à partir de combien de sources indépendantes on écrit
+`CONVERGENCE_MODEREE` — et l'inventer violerait `DC-19`. Plutôt que d'assumer
+d'emblée la forme vide, le LOT-06 **cherche** : descente du corpus certifié à
+la recherche d'une source qui fonde une graduation. Si elle existe, la règle
+se signe et la forme s'ouvre ; sinon la forme reste vide, écrite comme état
+légitime. **La forme vide devient le repli, plus le défaut** — et une forme
+laissée vide *sans descente* ne vaut pas le critère de done du lot. La
+descente peut ne rien rendre : c'est un résultat, et son coût est borné.
+
+**Ce que la décision ne fait pas.** Elle ne modifie aucun code, aucun banc,
+aucun seuil, aucune règle clinique. Elle ne referme aucune des dix orphelines
+restantes. Elle ne renumérote pas les lots : le numéro du LOT-02 n'est pas
+réattribué — renuméroter six fiches coûterait plus que le trou, et
+l'historique des dépendances en deviendrait illisible.
+
+**Impact attendu.** « Doctrine exécutable » passe à **sept lots exécutables**
+sur neuf numéros, sans migration ; son graphe se réduit à un seul lien fort
+(LOT-04 → LOT-05/LOT-06), et trois lots — LOT-03, LOT-07, LOT-09 — sont
+entièrement libres. « Curation signée » gagne une migration à cadrer le jour
+où elle s'ouvre.
+
 ### D-095 — L'état atteint de la constitution : ce qu'on a le droit de dire acté
 
 - Date : 2026-08-23

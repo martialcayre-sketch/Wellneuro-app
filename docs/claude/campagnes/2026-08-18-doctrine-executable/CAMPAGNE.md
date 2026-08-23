@@ -33,11 +33,11 @@ Le cadrage ci-dessous est écrit sur les mesures, pas sur le brief.
    trois preuves existent (décision, banc qui mord, statut basculé) porte son
    statut réel et sa référence `D-xxx` — plus aucun retard entre ce que le code
    tient et ce que le document annonce.
-2. Le claim porte les axes que la doctrine lui demande — catégorie `A-E`
-   (`DC-07`), niveau d'exécution (`DC-13`), nature du seuil (`DC-20`) — **en
-   structure**, sans qu'aucun claim déjà certifié soit rejugé. La
-   **population** ne va pas sur le claim : elle appartient à l'intervention
-   (voir l'arbitrage du 2026-08-23 ci-dessous).
+2. `DC-09` mord — **une association ne se restitue jamais en preuve**. C'est
+   la règle que l'audit désignait comme la plus exposée de la chaîne, et la
+   seule des quatre à être restée sans ancrage (LOT-09).
+   *(Les axes doctrinaux du claim — `DC-07`, `DC-13`, `DC-20` — ont quitté ce
+   résultat avec le LOT-02 : voir les arbitrages ci-dessous.)*
 3. L'objet de sécurité existe comme **type**, avec un producteur réel et un
    pouvoir d'inhibition : un red flag n'ajoute ni ne retire de points
    (`DC-23`, patron `D-021`) et retire un candidat au lieu de coexister avec
@@ -112,44 +112,49 @@ l'intervention, pas sur le claim.**
 
 Conséquences sur les lots : le LOT-02 perd sa quatrième colonne et **cesse
 d'être le chemin critique** — plus aucun lot de la campagne ne le consomme.
-Les LOT-05 et LOT-06 n'en dépendent plus.
+Les LOT-05 et LOT-06 n'en dépendent plus. **Cette conséquence a été poussée
+jusqu'au bout le jour même** : sans consommateur interne, le lot a été
+**transféré à Curation signée**, son unique bénéficiaire ([[D-096]]).
 
 ## Les lots
 
 | Lot | Titre | Statut | Dépend de |
 |---|---|---|---|
 | LOT-01 | L'état atteint — requalifier l'audit, basculer ce qui est déjà acquis | **terminé** (2026-08-23, `D-095` — deux bascules sur trois preuves, sept réserves « Banc dû » retirées, **onze règles orphelines** nommées et grepables) | — |
-| LOT-02 | V2 — la migration du schéma de claim (trois axes) — **CONFIRMATION OBLIGATOIRE** | à_faire | LOT-01 |
+| LOT-02 | ~~V2 — la migration du schéma de claim~~ | **transféré** (2026-08-23, `D-096` — part à « Curation signée », son seul bénéficiaire) | — |
 | LOT-03 | V5 — le banc de doctrine (`DC-58`) | à_faire | — |
 | LOT-04 | V3a — typer l'objet de sécurité et lui donner son pouvoir d'inhibition | à_faire | LOT-01 |
 | LOT-05 | V3b — les gates de population et l'effet indésirable | à_faire | LOT-04 |
-| LOT-06 | V1 achevé — conflit de sources, escalade, sort de la convergence | à_faire | LOT-04 |
+| LOT-06 | V1 achevé — conflit de sources, escalade, provenance de la convergence | à_faire | LOT-04 |
 | LOT-07 | `DC-22` — le total de « Mon équilibre » a-t-il un sens ? | à_faire | — |
 | LOT-08 | Clôture — renvois, constitution à l'état atteint, matrice reconduite | à_faire | tous |
+| LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | à_faire | — |
 
-Correspondance avec les cinq véhicules du brief : V2 → LOT-02, V3 → LOT-04 +
-LOT-05, V5 → LOT-03, V1 → LOT-06 (redéfini par l'état réel), **V4 → aucun
-lot** (périmé, renvoyé au LOT-08). Le LOT-01 et le LOT-08 encadrent : l'un
-écrit l'état atteint à l'ouverture, l'autre à la clôture.
+Correspondance avec les cinq véhicules du brief : **V2 → hors campagne**
+(LOT-02 transféré à Curation signée), V3 → LOT-04 + LOT-05, V5 → LOT-03,
+V1 → LOT-06 (redéfini par l'état réel), **V4 → aucun lot** (périmé, renvoyé au
+LOT-08). Le LOT-09 est **neuf** : il ne vient d'aucun véhicule, mais de ce que
+le LOT-01 a découvert. Le LOT-01 et le LOT-08 encadrent.
 
-**L'ordre est un graphe, pas une chaîne** — et l'arbitrage du 2026-08-23 l'a
-desserré. Le seul lien fort restant est **LOT-04 → LOT-05 et LOT-06** : les
-deux passent par l'objet de sécurité. Le LOT-01 précède tout (il écrit l'état
-sur lequel les autres se mesurent), le LOT-08 suit tout. Les LOT-02, LOT-03 et
-LOT-07 sont **libres** et se placent où la capacité le permet.
+**L'ordre est un graphe, pas une chaîne**, et les arbitrages du 2026-08-23
+l'ont desserré jusqu'au bout. Le seul lien fort restant est **LOT-04 → LOT-05
+et LOT-06** : les deux passent par l'objet de sécurité. Le LOT-01 précède tout
+(livré), le LOT-08 suit tout. **LOT-03, LOT-07 et LOT-09 sont entièrement
+libres** et se placent où la capacité le permet — ils ne dépendent de rien et
+rien ne dépend d'eux.
 
-Le LOT-02 garde une raison de partir tôt, mais ce n'est plus une dépendance
-interne : **Curation signée** (rang 4, cadence praticien continue) n'a
-aujourd'hui aucun endroit où écrire la catégorie, le niveau d'exécution ou la
-nature du seuil d'un claim. Le délai `release-db` reste incompressible, et
-c'est un déblocage externe qui le justifie.
+**La campagne n'a plus de migration**, donc plus aucune étape sous
+confirmation obligatoire ni délai `release-db` : le LOT-02 est parti avec son
+unique bénéficiaire. Sept lots exécutables sur neuf numéros — le numéro du lot
+transféré n'est pas réattribué, renuméroter six fiches coûterait plus que le
+trou.
 
 ## Gates
 
-- **LOT-02 gaté par confirmation explicite** : la migration ne s'écrit
-  qu'après accord dans la conversation, **seule dans sa PR**, `release-db`
-  entre elle et tout code qui la consomme ; son application se **constate par
-  conteneur** ([[D-087]], [[D-092]]) avant le LOT-05.
+- **Plus aucune migration dans cette campagne** depuis le transfert du LOT-02
+  ([[D-096]]) : aucun gate de confirmation obligatoire, aucun délai
+  `release-db`. Si un lot en découvrait le besoin, il **s'arrête et le
+  nomme** — il ne l'écrit pas au passage.
 - **Aucun banc sans sujet.** Une règle dont le comportement gardé n'a pas lieu
   ne s'arme pas : le banc passerait au vert en permanence sans rien prouver.
   C'est la leçon des quatre règles à ne pas intégrer (`DC-05`, `DC-08`,
@@ -203,24 +208,31 @@ sont des promesses de lot évaporées, et aucun lot de cette campagne ne les
 reprend. Chacune porte le marqueur **orpheline** dans la constitution — la
 liste se vérifie au grep.
 
-Deux n'ont **ni preuve, ni banc, ni véhicule** : `DC-09` — que l'audit
+Deux n'avaient **ni preuve, ni banc, ni véhicule** : `DC-09` — que l'audit
 désignait comme le garde-fou le plus exposé de toute la chaîne — et `DC-36`.
-Le LOT-08 les nommera ; il ne les fermera pas. **C'est un arbitrage de
-portefeuille qui reste au responsable**, pas une dette que cette campagne peut
-solder.
+
+**Arbitrage du responsable, 2026-08-23 ([[D-096]])** : `DC-09` reçoit un lot,
+le **LOT-09**, parce qu'elle est la jumelle exacte de `DC-27` que le LOT-01
+vient de constater fermée — même fichier, même mécanisme (clause de prompt +
+garde qui épingle la formule), même coût. Les **dix autres restent des dettes
+nommées**, écrites au LOT-08 sans véhicule. Ce n'est pas un renoncement : leur
+fermeture est un arbitrage de portefeuille, et cette campagne n'a pas mandat
+pour l'absorber.
 
 ## Questions ouvertes
 
-- **`DC-29` — la convergence a-t-elle un producteur légitime ?** Les quatre
+- **`DC-29` — la convergence a-t-elle un producteur légitime ?** *(Tranché le
+  2026-08-23, [[D-096]] : le LOT-06 fait la **descente de provenance avant**
+  de conclure ; la forme vide n'est plus le défaut mais le repli, et une
+  forme laissée vide sans descente ne vaut pas le critère de done.)* Les quatre
   niveaux sont typés et vides. Les produire est une règle clinique neuve, qui
   exige sa provenance : rien dans le corpus ne dit aujourd'hui à partir de
   combien de sources indépendantes on écrit `CONVERGENCE_MODEREE`. Arbitrage
   au LOT-06 ; défaut assumé en l'absence de provenance : **la forme reste
   vide**.
-- **Qui remplit les axes ?** Le LOT-02 livre la structure ; la catégorie `A-E`
-  et le niveau d'exécution claim par claim relèvent de la campagne **Curation
-  signée** (rang 4), à sa cadence praticien. La campagne ne promet pas le
-  contenu.
+- ~~**Qui remplit les axes ?**~~ *Sans objet depuis [[D-096]] : structure et
+  contenu sont désormais tous deux chez **Curation signée**. Cette campagne ne
+  promet plus rien sur les axes du claim.*
 - **Combien d'interventions seront curées au LOT-05 ?** Les 95 entrées ont
   toutes `neCouvrePas` à `null`. Curer les 95 en un lot est probablement
   irréaliste ; le lot doit dire **lesquelles il a curées** et faire dire au
@@ -234,8 +246,11 @@ solder.
 - **Écrire le compilateur de règles** (`tools/corpus/orientation/`) : le banc
   de fraîcheur ferme le mode de défaillance, le compilateur reste souhaitable
   et hors campagne.
-- **Curer les 8 224 claims** : catégorie et niveau d'exécution claim par claim
-  appartiennent à la campagne Curation signée.
+- **Tout ce qui touche aux axes doctrinaux du claim** — la migration comme la
+  curation des 8 224. Structure et contenu appartiennent à Curation signée
+  depuis [[D-096]].
+- **Refermer les dix orphelines** autres que `DC-09` : le LOT-08 les nomme,
+  il ne les traite pas.
 - **Rejuger une certification praticien** : aucun lot ne touche `statut`,
   `validateur` ni `valide_at`. Les 8 224 claims validés dans l'Atelier corpus
   restent `VALIDE`, et la campagne n'a aucun mécanisme pour en décider

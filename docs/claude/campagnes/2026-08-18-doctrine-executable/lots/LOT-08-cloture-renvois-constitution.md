@@ -28,6 +28,15 @@ s'efface. Aucun code n'est modifié.
      lot » ; ces fiches sont livrées depuis le 2026-08-18 et le code ne porte
      ni l'un ni l'autre. Les nommer ici est le seul acte qui les empêche de
      disparaître avec le véhicule périmé.
+   - **Les dix orphelines restantes** ([[D-096]] a sorti `DC-09`) : `DC-03`, `DC-36`,
+     `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-45`, `DC-47`, `DC-48`,
+     plus la part de `DC-11` hors exclusions. Le responsable a tranché : elles
+     restent **dettes nommées sans véhicule**, et ce lot les écrit comme
+     telles. `DC-09` fait exception — elle a reçu le **LOT-09**. La liste se
+     vérifie par `grep -c '\*\*Orpheline\*\*'` sur la constitution, qui doit
+     rendre **13** au moment d'écrire (onze statuts, deux dans l'en-tête qui
+     définit le marqueur) — moins un par orpheline refermée entre-temps. Le
+     lot **recompte** plutôt que de recopier ce chiffre.
 3. **Reconduire les quatre règles à ne pas armer** (`DC-05`, `DC-08`,
    `DC-52`, `DC-53`) : leur déclencheur est nommé, il n'y a aucun travail — et
    c'est un état légitime, pas une dette. Vérifier qu'aucun déclencheur n'est
@@ -35,9 +44,10 @@ s'efface. Aucun code n'est modifié.
    un premier socle populationnel référencé).
 4. **Reconduire nommément la matrice claim par claim** — la descente des
    claims certifiés dans la grille `DC-07` / `DC-13`, annoncée en fin de
-   constitution et en fin d'audit. Elle reste à faire ; le LOT-02 en a livré
-   la structure, la campagne **Curation signée** en porte la cadence. Un
-   travail annoncé deux fois et jamais routé finit par ne plus être annoncé.
+   constitution et en fin d'audit. Elle reste à faire, et elle est désormais
+   **entièrement** chez **Curation signée** : sa structure y a suivi le LOT-02
+   transféré ([[D-096]]), sa cadence y était déjà. Un travail annoncé deux
+   fois et jamais routé finit par ne plus être annoncé.
 5. **Dire ce qui reste partiel et pourquoi** : `DC-26` (le compilateur de
    règles n'existe toujours pas), et toute règle dont un lot n'a livré que
    deux preuves sur trois.
