@@ -4727,3 +4727,25 @@ une assemblée devenue vide ne retire pas la précédente (migration) ;
 lire-puis-écrire n'est pas étanche à la course ; le SHA du périmètre n'est pas
 confrontable depuis la route. T2 porte un échec WebKit du portail **démontré
 étranger au lot** (reproduit sur un arbre sans lui).
+
+## 2026-08-23 — LOT-05 en production, et l'interblocage qui bloquait toute release (D-102)
+
+Décisions — La release du LOT-05 a été refusée comme les deux précédentes.
+Hypothèse initiale (merges rapprochés) écartée : la garde traite déjà ce cas.
+Cause réelle, un interblocage — Scalingo attend que **tous** les checks du
+commit concluent, `release-db` en est un, et il attend le déploiement. Tranché
+par `D-102` (PR #781) : la release déclenche le déploiement qu'elle attend.
+Écarté — désactiver « attendre le CI » (déploierait du code à CI rouge) ; sortir
+`release-db` des checks (coûte une action humaine sans rien garantir). Le
+déclenchement reste dans le job gaté : le sortir en amont exposerait le jeton
+sans approbation.
+
+Preuve — l'auto-déploiement a démarré 4 s après que `release-db` soit passé au
+vert. Répétition à vide verte : le déclenchement s'abstient sur une tête déjà
+déployée.
+
+Prochaine action — signature `SAFETY_EI_METADATA` (revue 2026-08-30) ; `DC-42`
+reste non armée.
+
+Questions ouvertes — aucune sur `D-102` ; l'inhibition de `DC-42` sera totale,
+pas graduée.
