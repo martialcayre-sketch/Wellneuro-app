@@ -128,18 +128,22 @@ jusqu'au bout le jour même** : sans consommateur interne, le lot a été
 | LOT-06 | V1 achevé — conflit de sources, escalade, provenance de la convergence | à_faire | LOT-04 |
 | LOT-07 | `DC-22` — le total de « Mon équilibre » a-t-il un sens ? | à_faire | — |
 | LOT-08 | Clôture — renvois, constitution à l'état atteint, matrice reconduite | à_faire | tous |
-| LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | à_faire | — |
+| LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | **terminé** (2026-08-23, `D-097` — clause au cadre déontologique en `synthese-v29`, banc de la formule, de l'**opérateur** et de la **position** ; second point de passage écarté avec motif) | — |
+| LOT-10 | Les ancres cessent de dériver, et le classificateur E2E cesse de se taire | à_faire | — |
 
 Correspondance avec les cinq véhicules du brief : **V2 → hors campagne**
 (LOT-02 transféré à Curation signée), V3 → LOT-04 + LOT-05, V5 → LOT-03,
 V1 → LOT-06 (redéfini par l'état réel), **V4 → aucun lot** (périmé, renvoyé au
-LOT-08). Le LOT-09 est **neuf** : il ne vient d'aucun véhicule, mais de ce que
-le LOT-01 a découvert. Le LOT-01 et le LOT-08 encadrent.
+LOT-08). Les LOT-09 et **LOT-10 sont neufs** : ils ne viennent d'aucun
+véhicule, mais de ce que la campagne a découvert en s'exécutant — le LOT-09 de
+la descente du LOT-01, le **LOT-10 de la livraison du LOT-09**, qui a faussé
+huit citations `fichier:ligne` en décalant un fichier de onze lignes
+([[D-098]]). Le LOT-01 et le LOT-08 encadrent.
 
 **L'ordre est un graphe, pas une chaîne**, et les arbitrages du 2026-08-23
 l'ont desserré jusqu'au bout. Le seul lien fort restant est **LOT-04 → LOT-05
 et LOT-06** : les deux passent par l'objet de sécurité. Le LOT-01 précède tout
-(livré), le LOT-08 suit tout. **LOT-03, LOT-07 et LOT-09 sont entièrement
+(livré), le LOT-08 suit tout. **LOT-03, LOT-07 et LOT-10 sont entièrement
 libres** et se placent où la capacité le permet — ils ne dépendent de rien et
 rien ne dépend d'eux.
 
