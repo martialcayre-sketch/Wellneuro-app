@@ -75,6 +75,10 @@ model Patient {
   desaccordsComprehension DesaccordComprehension[]
   ratificationsObjectif   RatificationObjectif[]
 
+  propositionsObjectif     PropositionObjectif[]
+  dispositionsProposition  DispositionProposition[]
+  amendementsObjectif      AmendementObjectif[]
+
   @@map("patients")
 }
 
@@ -1965,6 +1969,11 @@ model ObjectifNegocie {
   nonTraiteMotif          String?   @map("non_traite_motif")
   nonTraiteDepuisLe       DateTime? @map("non_traite_depuis_le")
   supersedesObjectifId    String?   @map("supersedes_objectif_id")
+  // 6.0-B (D-094) : la proposition dont cet objectif est la REPRISE, si
+  // c'en est une. Référence souple (patron supersedes_objectif_id), NULLE
+  // pour tout objectif rédigé de la main du praticien — l'immense majorité
+  // à ce jour, et jamais un défaut à combler.
+  sourcePropositionId     String?   @map("source_proposition_id")
   negocieLe               DateTime? @map("negocie_le")
   creeLe                  DateTime  @default(now()) @map("cree_le")
 
@@ -2069,4 +2078,95 @@ model RatificationObjectif {
 
   @@index([idPatient, creeLe], map: "alli_ratification_patient_idx")
   @@map("ratifications_objectif")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ALLIANCE 6.0-B — L'OBJECTIF À TROIS VOIX (D-094)
+//
+// « La machine cite, elle n'invente pas. » Deux tables événement, mêmes
+// invariants que 6.0-A : append-only, deux dates, aucune colonne de score.
+// ─────────────────────────────────────────────────────────────────────────
+
+// La PROPOSITION d'objectif : un assemblage de fragments qui portent chacun
+// leur provenance (D-094, liste fermée à trois sources — anamnèse verbatim,
+// restitution d'instrument certifié, règle signée). `fragments` est un JSONB
+// de `{texte, source}` : sa FORME est gardée au module et au contrat, pas
+// par le schéma — mais aucun fragment n'y entre sans source, c'est
+// l'invariant de type du LOT-02.
+//
+// `hash_sources` porte la CADUCITÉ (patron proposalHash du cockpit) : les
+// données sources ayant bougé, la proposition ne se sert plus et ne se
+// reprend plus. Elle n'est pas effacée pour autant — on ne réécrit pas
+// l'histoire d'un dossier.
+//
+// PAS DE RANG, PAS DE SCORE, PAS DE NUMÉRO D'ORDRE : D-094 §3 interdit
+// jusqu'à la numérotation — l'ordre des candidats n'est couvert par aucune
+// ligne signée (D-093), il ne doit pas se lire comme un classement. L'ordre
+// d'affichage se décide au rendu, il ne se persiste jamais.
+model PropositionObjectif {
+  id           String    @id @default(cuid()) @map("id")
+  idPatient    String    @map("id_patient")
+  fragments    Json      @map("fragments")
+  hashSources  String    @map("hash_sources")
+  assembleeLe  DateTime? @map("assemblee_le")
+  creeLe       DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_proposition_objectif_patient_idx")
+  @@map("propositions_objectif")
+}
+
+// Ce que le praticien FAIT d'une proposition — événement, jamais un update
+// sur la proposition elle-même : `reprise` (elle devient un objectif
+// négocié, lequel la référence par `source_proposition_id`) ou `ecartee`
+// (avec motif obligatoire, CHECK migration).
+//
+// L'ÉCART MOTIVÉ EST LE MATÉRIAU DU LOT-06 : c'est lui qui dira si le
+// classement des candidats mérite d'être signé (D-093). Une proposition
+// écartée sans raison ne dit rien ; c'est pourquoi le motif n'est pas
+// nullable.
+//
+// `caduque` n'est PAS un geste et n'a pas sa ligne ici : la caducité se
+// DÉRIVE de `hash_sources` — personne ne l'a décidée.
+model DispositionProposition {
+  id             String    @id @default(cuid()) @map("id")
+  idPatient      String    @map("id_patient")
+  idProposition  String    @map("id_proposition")
+  praticienEmail String    @map("praticien_email")
+  geste          String    @map("geste") // reprise | ecartee (CHECK migration)
+  motif          String?   @map("motif")
+  disposeLe      DateTime? @map("dispose_le")
+  creeLe         DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_disposition_proposition_patient_idx")
+  @@map("dispositions_proposition")
+}
+
+// L'AMENDEMENT du patient — « le dire autrement » (D-094 §2). TABLE PROPRE
+// et non un `sens` de plus sur `ratifications_objectif` : un amendement
+// porte un TEXTE, une ratification n'en porte pas ; les fusionner
+// affaiblirait les deux objets.
+//
+// Même régime que la ratification : écrivain unique au portail, référence à
+// la version EXACTE de l'objectif (`id_objectif`, souple sans FK),
+// append-only — se raviser se dit en le disant, une ligne de plus. Le texte
+// est NOT NULL et non vide : un amendement sans mots n'est pas un
+// amendement, c'est une contestation — et celle-là existe déjà.
+//
+// Pas de `praticien_email` : c'est une parole de patient.
+model AmendementObjectif {
+  id         String    @id @default(cuid()) @map("id")
+  idPatient  String    @map("id_patient")
+  idObjectif String    @map("id_objectif")
+  texte      String    @map("texte")
+  exprimeLe  DateTime? @map("exprime_le")
+  creeLe     DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_amendement_objectif_patient_idx")
+  @@map("amendements_objectif")
 }

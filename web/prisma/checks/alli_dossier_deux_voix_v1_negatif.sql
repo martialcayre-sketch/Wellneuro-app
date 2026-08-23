@@ -36,10 +36,15 @@ DECLARE
   colonnes text[];
   cible text;
 
+  -- `source_proposition_id` ajoutée par Alliance 6.0-B (D-094) : la
+  -- proposition dont cet objectif est la reprise, s'il en est une. Elle
+  -- entre ICI parce que toute colonne future doit modifier ce contrat —
+  -- c'est la mécanique qui rend l'arbitrage visible en revue.
   COLS_OBJECTIFS CONSTANT text[] := ARRAY[
     'cree_le', 'enonce_patient', 'id', 'id_patient', 'negocie_le',
     'non_traite_depuis_le', 'non_traite_motif', 'praticien_email',
-    'priorite', 'reformulation_praticien', 'supersedes_objectif_id'
+    'priorite', 'reformulation_praticien', 'source_proposition_id',
+    'supersedes_objectif_id'
   ];
   COLS_CE_QUI_COMPTE CONSTANT text[] := ARRAY[
     'cree_le', 'id', 'id_patient', 'saisi_le', 'texte'

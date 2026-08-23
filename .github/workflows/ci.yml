@@ -684,6 +684,24 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_dossier_deux_voix_v1_negatif.sql
 
+      # Objectif à trois voix (Alliance 6.0-B LOT-01, D-094) : mêmes exigences
+      # que ci-dessus sur les trois tables neuves, PLUS ce qui est propre à ce
+      # lot — `fragments` doit être un tableau NON VIDE (une proposition sans
+      # citation n'en est pas une, c'est l'invariant de D-094 au niveau le plus
+      # bas) ; le couple GESTE↔MOTIF mord DANS LES DEUX SENS (écart sans motif
+      # refusé, reprise avec motif refusée : le motif d'écart est le matériau
+      # du LOT-06, et la reprise se lit dans l'objectif produit) ; « caduque »
+      # n'est PAS un geste (elle se dérive de hash_sources, nul ne la décide) ;
+      # `motif` reste NULLABLE et `source_proposition_id` NULLABLE SANS DEFAULT
+      # (un DEFAULT fabriquerait un lien que personne n'a posé). La liste
+      # blanche vise ici aussi le RANG : D-094 §3 interdit jusqu'à la
+      # numérotation, l'ordre des candidats n'étant couvert par aucune ligne
+      # signée. Fixtures posées et transaction annulée.
+      - name: Alliance objectif à trois voix negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_objectif_trois_voix_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
