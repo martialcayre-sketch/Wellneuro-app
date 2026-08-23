@@ -152,7 +152,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // v29 (2026-08-23, D-097, LOT-09) : le cadre déontologique porte `DC-09` —
 // « Une association n'est pas une preuve ». Ce banc a fait ce pour quoi il
 // existe : l'édition de la consigne l'a rougi avant tout le reste.
-const EMPREINTE_V29 = '1989fcc38f00a181';
+const EMPREINTE_V29 = '397c1092ac26a5d8';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -273,7 +273,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     const empreinte = createHash('sha256').update(SYSTEM_PROMPT_GOUVERNANCE).digest('hex').slice(0, 16);
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
-      'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
+      "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
     ).toEqual({ version: 'synthese-v29', empreinte: EMPREINTE_V29 });
   });
 

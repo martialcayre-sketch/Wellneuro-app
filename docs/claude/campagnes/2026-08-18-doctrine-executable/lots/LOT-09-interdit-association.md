@@ -27,7 +27,7 @@ Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
   `contradictionsV1.ts:50-53`), et aucune table signée ne conclut. Le trou est
   **côté synthèse rédigée**.
 - Le patron de fermeture existe et vient d'être validé sur la règle voisine :
-  `DC-27` a été refermée par une clause de prompt (`anthropic.ts:469`,
+  `DC-27` a été refermée par une clause de prompt (`anthropic.ts:480`,
   « Association n'est pas causalité ») **plus** une garde qui épingle la
   formule dans `SYSTEM_PROMPT_GOUVERNANCE`
   (`api/praticien/synthese/promptPassationCourante.guard.test.ts:70-78`, suite

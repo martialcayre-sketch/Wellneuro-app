@@ -478,10 +478,12 @@ Trois sorts, qui n'ont rien à voir entre eux :
   descente.
 
 **`DC-09` faisait partie de cette liste et n'y est plus** : arbitrage du
-2026-08-23 ([[D-096]]), elle reçoit le **LOT-09** de « Doctrine exécutable ».
-Elle était la dernière des quatre règles que cet audit désignait comme les
-plus exposées à rester sans ancrage, et sa fermeture reprend le patron exact
-qui a refermé `DC-27` — clause de prompt plus garde qui épingle la formule.
+2026-08-23 ([[D-096]]), elle a reçu le **LOT-09** de « Doctrine exécutable »,
+**livré le jour même** ([[D-097]]). Elle était la dernière des quatre règles
+que cet audit désignait comme les plus exposées à rester sans ancrage ; sa
+fermeture a repris le patron exact qui a refermé `DC-27` — clause de prompt
+plus garde qui épingle la formule, ici doublée d'une garde de **position** et
+d'une garde de l'**opérateur** d'interdiction.
 Reste **`DC-36`**, sans preuve, sans banc et sans véhicule.
 
 ### B — Trois faits étaient déjà vrais le 2026-08-11, et l'audit les a manqués
@@ -574,13 +576,13 @@ Ce que le lot établit se vérifie, en revanche, au grep de
 | Mesure | Compte |
 |---|---|
 | règles re-vérifiées contre le dépôt | 58 |
-| bascules proposition → acté, sur trois preuves | **2** (`DC-29`, `DC-33`) |
+| bascules proposition → acté, sur trois preuves | **2** (`DC-29`, `DC-33`) — compte **du LOT-01** ; le grep en rend 3 depuis la bascule de `DC-09` par [[D-097]] |
 | réserves « Banc dû » retirées | **7** — dont 2 requalifiées **Producteur dû** (`DC-12`, `DC-23`) |
 | réserves « Banc dû » maintenues | 2 (`DC-14`, `DC-20`) |
 | marqueurs **Décision due** | 4 (`DC-04`, `DC-21`, `DC-44`, `DC-56`) |
 | marqueurs **écrite, non armée** | 4 (`DC-05`, `DC-08`, `DC-52`, `DC-53`) |
 | règles **orphelines** | **10**, plus la part de `DC-11` hors exclusions (11 marqueurs) |
-| règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` a reçu le LOT-09 ([[D-096]]) |
+| règles sans preuve, sans banc, sans véhicule | 1 (`DC-36`) — `DC-09` en est sortie : LOT-09 attribué ([[D-096]]) puis **livré** ([[D-097]]) |
 
 Portées vivantes après requalification et après les arbitrages du 2026-08-23
 ([[D-096]]), toutes par « Doctrine exécutable » sauf mention : ~~`DC-09`

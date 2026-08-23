@@ -25,8 +25,8 @@ confirmé le trou. Le déterministe, lui, tenait déjà :
 **Décision 1 — la clause, et ses quatre verbes.** Le cadre déontologique du
 prompt porte désormais : « **Une association n'est pas une preuve.** […] Ne
 l'écris jamais sous la forme "X prouve Y", "X explique Y", "X démontre Y" ni
-"X atteste Y" […] Expliciter un motif ou une hypothèse qui t'est donné reste
-attendu ; en faire une démonstration ne l'est jamais »
+"X atteste Y" […] Expliciter un motif déjà énoncé ou une hypothèse déjà
+transmise reste attendu ; en faire une démonstration ne l'est jamais »
 (`anthropic.ts:347`). La formule courte est **citable**, comme « Association
 n'est pas causalité » l'est pour `DC-27` : c'est ce qui la rend épinglable.
 
@@ -40,23 +40,69 @@ de phrase**, elle n'établit rien.
 
 La seconde moitié de la clause n'est pas de l'ornement. Le même prompt exige
 ailleurs « Ton rôle est de le **restituer et de l'expliquer** »
-(`anthropic.ts:488`) et « expliquer en langage clinique le motif déjà énoncé »
-(`:497`). Un interdit brut sur le verbe *expliquer* aurait renversé la
+(`anthropic.ts:499`) et « expliquer en langage clinique le motif déjà énoncé »
+(`:508`). Un interdit brut sur le verbe *expliquer* aurait renversé la
 restitution que la section orientation impose. La clause sépare donc
 **expliciter un motif donné** (attendu) de **poser qu'un élément en explique
 un autre** (interdit), et le banc garde les deux bouts.
+
+**Un résiduel relevé en revue, et fermé plutôt que laissé ouvert.** L'interdit
+porte sur une **forme de surface** (« X explique Y »), son exception sur un
+**acte** (« expliciter un motif donné »). Or `:508` demande aussi de « relier
+ce motif aux scores et au contexte ». Un modèle prudent pouvait donc ranger la
+restitution du bloc déterministe sous l'antécédent de la clause — « ce qui
+t'est transmis comme un lien possible » — et couvrir d'un « pourrait être
+associé à » un motif que la table **signée** a, lui, tranché : une règle de
+prudence affaiblissant une recommandation déjà décidée, exactement l'inverse
+de l'effet recherché. La clause dit désormais que le bloc « Recommandation
+d'exploration déterministe » n'est **pas** un lien possible — « il a été décidé
+hors de toi. Restitue-le tel qu'il t'est donné ». Le banc l'assertionne
+(`promptAssociationPreuve.guard.test.ts:85`). Corrigé **avant** expédition :
+plus tard, la même phrase aurait coûté un `synthese-v30`.
 
 **Décision 2 — la clause est gardée en POSITION, pas seulement en texte.** Le
 prompt contient une clause de primauté : la section « Recommandation
 d'exploration déterministe » prime sur toute autre consigne relative aux
 explorations, mais « ne relève **aucune des interdictions posées plus haut** »
-(`anthropic.ts:514`). Une clause posée dans le cadre déontologique est donc
+(`anthropic.ts:525`). Une clause posée dans le cadre déontologique est donc
 hors de sa portée ; la même clause déplacée plus bas deviendrait discutable
-**sans qu'un mot ait bougé**. `promptAssociationPreuve.guard.test.ts:82`
+**sans qu'un mot ait bougé**. `promptAssociationPreuve.guard.test.ts:133`
 assertionne l'ordre — formule après `## Cadre déontologique`, avant la
 première section topique. Vue rouge constatée sur les deux gestes : clause
 retirée (4 tests rouges), clause déplacée sous « Consignes de réponse » (le
 seul test de position rouge, texte intact).
+
+**Le banc garde aussi l'OPÉRATEUR, et c'est la revue qui l'a exigé.** Première
+rédaction : six assertions vérifiaient que les quatre formes verbales
+*apparaissent*, jamais qu'elles sont *interdites*. Deux mutations réelles
+laissaient tout vert — « Ne l'écris jamais sous la forme » → « **Tu peux
+l'écrire** sous la forme », et → « **Évite** de l'écrire ». L'interdit devenait
+une préférence sans qu'une assertion bouge, c'est-à-dire exactement le retrait
+silencieux que ce lot prétend rendre impossible. Le seul filet restant était
+l'empreinte du prompt, dont le message d'échec disait « reporter la nouvelle
+empreinte ici » — une invitation à la mise à jour machinale. Deux correctifs :
+`promptAssociationPreuve.guard.test.ts:67` épingle l'opérateur (vu rouge sur
+les deux mutations), et les **deux** messages d'empreinte
+(`promptAlimentaire.guard.test.ts`, `anthropic.corpusActif.guard.test.ts`)
+disent désormais que le geste n'est pas mécanique et qu'un interdit clinique
+qui bouge appelle une décision `D-xxx` avant le report.
+
+**Limite nommée** : une clause *contradictoire ajoutée ailleurs* dans le prompt
+(« une association peut valoir preuve quand… ») reste verte au banc — mutation
+jouée, elle passe. La détecter demanderait le lexique ouvert que la décision 3
+écarte ci-dessous. Ce cas-là est rattrapé par l'empreinte, et par elle seule.
+
+**Ce que cette préséance ne couvre pas, relevé en revue.** Deux autres
+sections priment elles aussi — « Questionnaires alimentaires » (`:384`) et
+« Questionnaires dont le résultat n'est pas interprétable » (`:457`) — et leur
+formule est **sans réserve** : « prime sur toute autre consigne de ce prompt si
+elles paraissent se contredire ». Seule la section orientation (`:525`)
+s'interdit explicitement de relever les interdictions posées plus haut. Être
+au-dessus met donc hors de portée de `:525`, pas des deux autres. Aucune
+contradiction pratique aujourd'hui — les deux sections alimentaire et non
+interprétable sont plus restrictives que la clause, jamais plus permissives —
+mais la revendication est bornée ici pour qu'un lot suivant ne cite pas ce
+patron plus large qu'il n'est.
 
 **Décision 3 — le second point de passage est examiné et ÉCARTÉ.** Le
 détecteur de restitution (`verifierRestitutionOrientation.ts`) ne portera pas

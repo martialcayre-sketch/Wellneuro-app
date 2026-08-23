@@ -17,6 +17,16 @@
   interdit sur ces deux mots se lirait comme une contradiction de consignes
   voisines. Aucun lexique clinique n'est créé — la clause interdit une forme
   de phrase, elle n'établit rien.
+- **Le bloc déterministe est explicitement hors du périmètre de la clause.**
+  Sans cette phrase, un modèle prudent pouvait couvrir d'un « pourrait être
+  associé à » un motif que la table **signée** a tranché — une règle de
+  prudence affaiblissant une recommandation déjà décidée.
+- **Le banc garde l'OPÉRATEUR d'interdiction, pas seulement le vocabulaire.**
+  Première rédaction : « Ne l'écris jamais » → « Évite de l'écrire » laissait
+  tout vert, l'interdit devenant une préférence sans qu'une assertion bouge.
+  Les deux messages d'échec des gardes d'empreinte disent désormais que le
+  report n'est **pas** mécanique : un interdit clinique qui bouge appelle une
+  décision `D-xxx` avant la mise à jour.
 - **Le banc garde la formule ET sa position**
   (`promptAssociationPreuve.guard.test.ts`). Le prompt contient une clause de
   primauté : la section « Recommandation d'exploration déterministe » prime

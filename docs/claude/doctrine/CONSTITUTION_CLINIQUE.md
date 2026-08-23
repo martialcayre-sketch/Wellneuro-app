@@ -59,7 +59,7 @@ hiérarchise ou explique des règles dont la provenance est connue.
 Le texte qui explique pourquoi peut être rédigé par un modèle ; ce qu'il
 invoque doit préexister.
 *Proposition — l'interdit n'est écrit que pour le bloc d'orientation
-(`anthropic.ts:494`, `:432`) ; le reste de la synthèse (hypothèses, points de
+(`anthropic.ts:505`, `:443`) ; le reste de la synthèse (hypothèses, points de
 vigilance) est en prose libre sans provenance. [[D-011]] a délibérément choisi
 de ne pas la faire mordre : `verifierRestitutionOrientation.ts` journalise, il
 ne censure pas, et ses angles morts sont nommés (`:23-32`). **Orpheline** : le
@@ -123,9 +123,16 @@ refermé `DC-27`. Le prompt de synthèse porte l'interdit dans son **cadre
 déontologique**, entré en `synthese-v29` : `anthropic.ts:347` « Une association
 n'est pas une preuve […] Ne l'écris jamais sous la forme "X prouve Y",
 "X explique Y", "X démontre Y" ni "X atteste Y" ». Banc :
-`promptAssociationPreuve.guard.test.ts:46` (la formule) et `:82` (la
-**position** — la clause reste au-dessus des sections topiques, hors de portée
-de la primauté que s'accorde la section orientation, `anthropic.ts:514`).
+`promptAssociationPreuve.guard.test.ts:54` (la formule, et son unicité), `:67`
+(l'**opérateur** « jamais » — sans quoi « Évite de l'écrire » resterait vert),
+`:85` (le bloc déterministe hors périmètre) et `:133` (la **position** — la
+clause reste au-dessus des sections topiques). **Portée exacte de la
+position** : elle met la clause hors de portée de la section orientation, qui
+prime « relative aux explorations à proposer » mais ne relève « aucune des
+interdictions posées plus haut » (`anthropic.ts:525`). Deux autres sections
+priment sans cette réserve (`:384`, `:457`) : être plus haut ne protège pas
+d'elles — aucune contradiction pratique aujourd'hui, elles sont plus
+restrictives, jamais moins.
 Côté déterministe, rien n'avait à être posé : `ContradictionFinding.description`
 impose déjà la formulation neutre (`contradictionFinding.ts:130-136`, appliquée
 `contradictionsV1.ts:50-53`) et aucune table signée ne conclut.
@@ -315,7 +322,7 @@ règle ne peut pas être actée sur la foi d'un compilateur absent.*
 plusieurs axes se chevauchent, c'est la règle la plus facile à enfreindre sans
 s'en apercevoir.
 *Acté [[D-043]] — le prompt de synthèse interdit désormais **la causalité**,
-entré en v20 : `anthropic.ts:469` « ne qualifie pas cet écart de progrès,
+entré en v20 : `anthropic.ts:480` « ne qualifie pas cet écart de progrès,
 d'aggravation ni d'effet d'une prise en charge […] Association n'est pas
 causalité ». Banc : `promptPassationCourante.guard.test.ts:70-78`, qui épingle
 les deux formules dans `SYSTEM_PROMPT_GOUVERNANCE` (suite Vitest complète,
@@ -399,7 +406,7 @@ aux modules compréhension et objectif négocié d'importer `@/lib/clinical`,
 `@/lib/equilibre`, ou de porter une racine diagnostique
 (`comprehensionAppendOnly.guard.test.ts:163-181`,
 `objectifNegocie.guard.test.ts:312-330`, CI) ; le prompt le porte aussi
-(`anthropic.ts:334`, `:522`) et les tables le déclarent
+(`anthropic.ts:344`, `:533`) et les tables le déclarent
 (`priorityRulesV1.ts:16-17`). **Portée** : modules nommés, pas le dépôt
 entier — une surface neuve n'est attrapée par aucun de ces bancs.*
 
