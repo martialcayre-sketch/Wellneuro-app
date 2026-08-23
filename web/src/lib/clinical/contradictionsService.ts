@@ -6,8 +6,10 @@ import { statutExcluDuRaisonnement } from '@/lib/scoring/validite';
 import { FUSEAU_CLINIQUE, evaluerContradictions, jourCivilClinique } from './contradictionsEngine';
 import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from './contradictionsV1';
 import { contradictionEstOuverte } from './contradictionFinding';
+import { evaluerConflitsSources } from './conflitsSourcesEngine';
+import { CONFLITS_SOURCES_METADATA, CONFLITS_SOURCES_SHA256 } from './conflitsSourcesV1';
 import { scoresRecalculesPourRaisonnement } from './orientationService';
-import type { ContradictionFinding } from './contradictionFinding';
+import type { ContradictionClaimRef, ContradictionFinding } from './contradictionFinding';
 
 /**
  * Ce qui sépare le moteur de contradictions de l'écran.
@@ -47,6 +49,79 @@ export function contradictionsActives(): boolean {
   return process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 === '1' && tableSignee();
 }
 
+// Verrou du registre des conflits déclarés, sur le patron exact de
+// `tableSignee()` ci-dessus — mêmes termes, même durcissement de la date ISO
+// canonique ([[D-054]] en revue Copilot), même `shaPerimetre` figé à la
+// relecture ([[D-067]], patron [[D-063]]).
+//
+// `claimsSource.length > 0` n'y figure pas, et l'écart est délibéré : la
+// cohérence de cette liste avec ce que les conflits épinglent est déjà gardée
+// par `conflitsSourcesV1.guard.test.ts`, et un `shaPerimetre` concordant
+// implique un registre non vide. Répéter le terme ici l'aurait fait passer pour
+// une propriété du verrou plutôt que de la curation.
+function registreConflitsSignee(): boolean {
+  const date = CONFLITS_SOURCES_METADATA.dateValidation;
+  return CONFLITS_SOURCES_METADATA.validationExterne
+    && date !== null
+    && !Number.isNaN(new Date(date).getTime())
+    && new Date(date).toISOString() === date
+    && CONFLITS_SOURCES_METADATA.shaPerimetre === CONFLITS_SOURCES_SHA256;
+}
+
+/**
+ * Le double verrou du registre des CONFLITS DE SOURCES — `DC-54`, [[D-103]].
+ *
+ * DEUX TABLES, DEUX SIGNATURES, UN SEUL DRAPEAU. La signature est celle du
+ * registre des conflits, pas celle de la table de contradictions : ce sont deux
+ * relectures distinctes, et signer l'une ne saurait allumer l'autre. Le drapeau
+ * en revanche est partagé, délibérément — les deux moteurs produisent le MÊME
+ * objet (`ContradictionFinding`), sur le MÊME écran, sous le même vocabulaire
+ * de vigilance. Deux interrupteurs pour une seule surface auraient fini par
+ * diverger, et le praticien aurait vu la moitié d'un système.
+ *
+ * À la livraison du LOT-06, `CONFLITS_SOURCES_METADATA.validationExterne` est
+ * `false` : rien ne s'allume, quel que soit le drapeau.
+ */
+export function conflitsSourcesActifs(): boolean {
+  return process.env.WN_ENABLE_CONTRADICTIONS_NNPP2 === '1' && registreConflitsSignee();
+}
+
+/**
+ * Les conflits de sources constatés pour ce dossier, verrou compris.
+ *
+ * LE VERROU EST ICI, jamais chez l'appelant — même motif que
+ * `constatsContradictionsPourDossier` : un appelant qui recevrait des constats
+ * et déciderait lui-même de les taire finirait par se tromper de sens.
+ *
+ * `claimsCites` est ce que les sorties DÉJÀ PRODUITES pour ce dossier citent.
+ * Liste vide ⇒ aucun constat, et c'est exact : un conflit du corpus qui ne pèse
+ * sur aucune sortie de ce dossier n'est pas une vigilance de ce dossier.
+ */
+export function conflitsSourcesPourDossier(
+  claimsCites: ContradictionClaimRef[],
+): ContradictionFinding[] {
+  if (!conflitsSourcesActifs()) return [];
+  return evaluerConflitsSources({ claimsCites });
+}
+
+/**
+ * CE CONSTAT A-T-IL LE DROIT DE SORTIR ? Le verrou de sa PROPRE table.
+ *
+ * PRÉDICAT UNIQUE, et c'est tout son intérêt — même leçon que
+ * `contradictionEstOuverte` ([[D-055]]). La première écriture de [[D-103]] ne
+ * l'appliquait qu'à `contradictionsPourAffichage`, en laissant ses deux voisines
+ * sur `if (!contradictionsActives())`. Relevé en revue : `lignesDeVigilance`
+ * porte pourtant `INTITULE_PAR_FORME`, donc elle est préparée à recevoir un
+ * `CONFLIT_SOURCES` — et l'aurait servi au praticien sous la signature de la
+ * table de CONTRADICTIONS, c'est-à-dire un registre que personne n'a relu.
+ *
+ * Deux tables, deux relectures, deux verrous : signer l'une n'autorise pas
+ * l'autre, dans les deux sens.
+ */
+function formeAutorisee(constat: ContradictionFinding): boolean {
+  return constat.forme === 'CONFLIT_SOURCES' ? conflitsSourcesActifs() : contradictionsActives();
+}
+
 /**
  * Ce que l'écran reçoit d'un constat de contradiction.
  *
@@ -66,6 +141,18 @@ export function contradictionsActives(): boolean {
  */
 export type ContradictionAffichee = {
   id: string;
+  /**
+   * La forme du constat — ajoutée par [[D-103]], et pas par souci de symétrie.
+   *
+   * Le panneau étiquetait toute contradiction « Contradiction entre
+   * instruments ». Sur un `CONFLIT_SOURCES`, qui oppose deux claims du corpus
+   * et ne cite aucune passation, l'étiquette est FAUSSE : le praticien
+   * chercherait deux questionnaires qui n'existent pas. Le service
+   * `lignesDeVigilance` avait déjà tiré cette conclusion pour la synthèse
+   * (`INTITULE_PAR_FORME`) ; l'écran ne pouvait pas la tirer, faute de savoir
+   * la forme.
+   */
+  forme: ContradictionFinding['forme'];
   /** Formulation neutre produite par le déterministe, jamais reformulée ici. */
   description: string;
   actionSuggeree: string;
@@ -117,42 +204,58 @@ function dateLisible(iso: string): string {
  * LE VERROU EST ICI, pas chez l'appelant : un composant qui recevrait des
  * constats et déciderait lui-même de les taire finirait par les afficher le
  * jour où quelqu'un oublie la condition. Verrou fermé ⇒ liste vide.
+ *
+ * DEUX VERROUS DEPUIS [[D-103]], APPLIQUÉS PAR FORME. Un `CONFLIT_SOURCES`
+ * répond du registre des conflits, tout le reste de la table de contradictions.
+ * Le premier écrit de ce filtre testait le seul verrou des contradictions en
+ * tête de fonction : un registre de conflits signé sous une table de
+ * contradictions non signée aurait vu ses constats disparaître en silence — et
+ * inversement, signer la table de contradictions aurait suffi à publier des
+ * conflits que personne n'a relus. Le filtre par forme rend les deux
+ * impossibles. Sans aucun `CONFLIT_SOURCES` dans la liste, le comportement est
+ * exactement celui d'avant.
  */
 export function contradictionsPourAffichage(constats: ContradictionFinding[]): ContradictionAffichee[] {
-  if (!contradictionsActives()) return [];
-  return constats.map(constat => {
-    // Une passation par `reponseId`, pas une par source : une règle peut viser
-    // deux sous-scores du même questionnaire, et l'écran n'a pas à afficher
-    // deux fois la même passation.
-    const vues = new Map<string, { idQuestionnaire: string; date: string; dateLisible: string }>();
-    for (const source of constat.sources) {
-      if (source.type !== 'instrument') continue;
-      const date = jourCivilClinique(source.dateReponse);
-      if (date === null) continue;
-      vues.set(source.reponseId, {
-        idQuestionnaire: source.idQuestionnaire,
-        date,
-        dateLisible: dateLisible(source.dateReponse),
-      });
-    }
+  return constats
+    .filter(formeAutorisee)
+    .map(constat => {
+      // Une passation par `reponseId`, pas une par source : une règle peut viser
+      // deux sous-scores du même questionnaire, et l'écran n'a pas à afficher
+      // deux fois la même passation.
+      //
+      // UN `CONFLIT_SOURCES` N'EN A AUCUNE, et c'est correct : ses deux sources
+      // sont des claims, pas des passations. Il sort avec `passations: []` et
+      // `ecartJours: null` — « non applicable », jamais « le même jour ».
+      const vues = new Map<string, { idQuestionnaire: string; date: string; dateLisible: string }>();
+      for (const source of constat.sources) {
+        if (source.type !== 'instrument') continue;
+        const date = jourCivilClinique(source.dateReponse);
+        if (date === null) continue;
+        vues.set(source.reponseId, {
+          idQuestionnaire: source.idQuestionnaire,
+          date,
+          dateLisible: dateLisible(source.dateReponse),
+        });
+      }
 
-    return {
-      id: constat.id,
-      description: constat.description,
-      actionSuggeree: constat.actionSuggeree,
-      hypotheses: constat.hypotheses,
-      limitations: constat.limitations,
-      // Triées par date : le praticien lit une chronologie, pas l'ordre des
-      // déclencheurs de la règle.
-      passations: [...vues.values()].sort((a, b) => a.date.localeCompare(b.date)),
-      ecartJours: constat.ecartJoursEntreSources,
-      claims: constat.justificationClaims,
-      importance: constat.importance,
-      resolution: constat.resolution,
-      regleId: constat.regleId,
-      ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
-    };
-  });
+      return {
+        id: constat.id,
+        forme: constat.forme,
+        description: constat.description,
+        actionSuggeree: constat.actionSuggeree,
+        hypotheses: constat.hypotheses,
+        limitations: constat.limitations,
+        // Triées par date : le praticien lit une chronologie, pas l'ordre des
+        // déclencheurs de la règle.
+        passations: [...vues.values()].sort((a, b) => a.date.localeCompare(b.date)),
+        ecartJours: constat.ecartJoursEntreSources,
+        claims: constat.justificationClaims,
+        importance: constat.importance,
+        resolution: constat.resolution,
+        regleId: constat.regleId,
+        ...(constat.recoupementJustifie ? { recoupementJustifie: constat.recoupementJustifie } : {}),
+      };
+    });
 }
 
 /**
@@ -230,9 +333,52 @@ export function constatsContradictionsPourDossier(
   });
 }
 
-export async function contradictionsPourPatient(idPatient: string): Promise<ContradictionAffichee[]> {
-  if (!contradictionsActives()) return [];
+export async function contradictionsPourPatient(
+  idPatient: string,
+  /**
+   * Les claims que les sorties déjà produites pour ce dossier citent —
+   * [[D-103]]. L'appelant les collecte : lui seul sait ce qu'il a calculé, et
+   * les recalculer ici aurait couplé ce module à la biologie, à l'orientation
+   * et à tout moteur futur qui épingle des claims.
+   *
+   * DÉFAUT VIDE, ET C'EST UN DÉFAUT SÛR : un appelant qui n'en passe pas ne
+   * reçoit aucun conflit de sources, au lieu d'en recevoir sur un périmètre
+   * qu'il n'a pas calculé. `preconditionsT0Prisma` est dans ce cas, et
+   * délibérément : l'effet d'un conflit sur les préconditions T0 et sur
+   * l'extinction est une dette nommée de [[D-103]], pas un effet de bord.
+   */
+  claimsCites: ContradictionClaimRef[] = [],
+): Promise<ContradictionAffichee[]> {
+  // LES CONFLITS DE SOURCES NE LISENT PAS LE DOSSIER, et le verrou d'entrée
+  // reste donc celui des contradictions — corrigé en revue ([[D-103]]).
+  //
+  // La première écriture testait `!contradictionsActives() &&
+  // !conflitsSourcesActifs()`, pour qu'un registre signé produise sous une table
+  // de contradictions non signée. Elle faisait partir DEUX REQUÊTES PRISMA dans
+  // cette configuration — passations et consultation — pour un moteur de
+  // conflits qui n'en lit aucune : il ne travaille que sur `claimsCites`. Or
+  // l'invariant gardé depuis [[D-050]] est « le verrou passe AVANT toute lecture
+  // du dossier », et `preconditionsT0Prisma` appelle ici avec une liste vide.
+  //
+  // Les conflits sont donc calculés HORS de cette porte, plus bas : verrou des
+  // contradictions fermé, le dossier n'est pas touché et les conflits sortent
+  // quand même si leur propre registre est signé.
+  const contradictions = contradictionsActives()
+    ? await constatsDuDossierStocke(idPatient)
+    : [];
 
+  return contradictionsPourAffichage([
+    ...contradictions,
+    ...conflitsSourcesPourDossier(claimsCites),
+  ]);
+}
+
+/**
+ * Les constats de contradiction du dossier stocké — extrait de
+ * `contradictionsPourPatient` par [[D-103]], pour que la lecture Prisma reste
+ * derrière le verrou des contradictions et ne parte pas au nom des conflits.
+ */
+async function constatsDuDossierStocke(idPatient: string): Promise<ContradictionFinding[]> {
   const [reponses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
@@ -277,9 +423,7 @@ export async function contradictionsPourPatient(idPatient: string): Promise<Cont
   // garde sa place dans la sélection : l'instrument s'éteint au lieu de
   // reculer dans le temps. Tout ce bloc vit désormais dans
   // `constatsContradictionsPourDossier`, partagé avec `orientationService`.
-  return contradictionsPourAffichage(
-    constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
-  );
+  return constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null);
 }
 
 /**
@@ -359,8 +503,10 @@ export function lignesDeVigilance(constat: ContradictionFinding): string[] {
 export function vigilancesDiscordancePourSynthese(
   constats: ContradictionFinding[],
 ): string[] {
-  if (!contradictionsActives()) return [];
-  return constats.filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
+  // `formeAutorisee` ET NON `contradictionsActives()` depuis [[D-103]] : cette
+  // fonction sait déjà nommer un conflit (`INTITULE_PAR_FORME`), elle ne doit
+  // pas pouvoir le publier sous la signature d'une autre table.
+  return constats.filter(formeAutorisee).filter(contradictionEstOuverte).flatMap(lignesDeVigilance);
 }
 
 /**
@@ -375,8 +521,8 @@ export function vigilancesDiscordancePourSynthese(
 export function discordancesPourGardeRestitution(
   constats: ContradictionFinding[],
 ): { regleId: string; instruments: string[] }[] {
-  if (!contradictionsActives()) return [];
   return constats
+    .filter(formeAutorisee)
     .filter(contradictionEstOuverte)
     .map(constat => ({
       regleId: constat.regleId,

@@ -25,6 +25,7 @@ function deplierLeDetail(): void {
 
 const constat: ContradictionAffichee = {
   id: 'C-STR',
+  forme: 'DISCORDANCE',
   description: "L'adaptation au stress déclarée est perturbée alors que le DASS-21 est dans la bande « Normal ».",
   actionSuggeree: 'Clarifier en entretien avant toute conclusion.',
   hypotheses: ['Une charge de stress que les échelles ne captent pas.'],
@@ -124,5 +125,73 @@ describe('MissingDataPanel — constats déterministes de contradiction', () => 
     render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[constat]} />);
     deplierLeDetail();
     expect(screen.getAllByText(/Visible uniquement par le praticien/).length).toBeGreaterThan(0);
+  });
+});
+
+// Ce que ce banc garde : la forme `CONFLIT_SOURCES` ([[D-103]]) n'hérite pas de
+// l'écran de la discordance. Deux défauts, trouvés en relisant le rendu avant
+// de conclure le lot, et tous deux invisibles côté serveur.
+
+const conflit: ContradictionAffichee = {
+  id: 'CS-BIO-01',
+  forme: 'CONFLIT_SOURCES',
+  description:
+    'Deux claims du corpus certifié se contredisent — le bilan biologique complet '
+    + "se réalise-t-il systématiquement ? WN-CL-0312-018 soutient que le bilan est "
+    + 'recommandé une fois par an. WN-CL-0387-013 soutient que le bilan complet '
+    + "n'est pas à réaliser systématiquement. Aucun des deux n'a été retenu contre l'autre.",
+  actionSuggeree: 'Trancher pour ce dossier si le bilan complet est indiqué.',
+  hypotheses: ['Les deux claims viseraient des situations différentes.'],
+  limitations: ['Le conflit porte sur le caractère systématique du bilan.'],
+  // Un conflit oppose des CLAIMS : aucune passation, écart non applicable.
+  passations: [],
+  ecartJours: null,
+  claims: [
+    { claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0387-013', versionClaim: 'v1.0' },
+  ],
+  importance: 'useful_not_urgent',
+  resolution: {
+    statut: 'escaladee_praticien',
+    motif: 'Aucun axe de comparaison de DC-54 n’est exploitable sur ce corpus.',
+  },
+  regleId: 'CS-BIO-01',
+};
+
+describe('MissingDataPanel — conflit entre sources du corpus', () => {
+  // PREMIER DÉFAUT : l'intitulé était « Contradiction entre instruments » pour
+  // les trois formes. Sur un conflit de claims, il envoyait le praticien
+  // chercher deux questionnaires qui n'existent pas.
+  it('n’est PAS étiqueté « entre instruments »', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflit]} />);
+    expect(screen.getByText(/Conflit entre sources du corpus/)).toBeTruthy();
+    expect(screen.queryByText(/Contradiction entre instruments/)).toBeNull();
+  });
+
+  // SECOND DÉFAUT : le panneau ne disait l'état que s'il valait `ouverte`. Un
+  // conflit escaladé serait apparu sans son état, et surtout SANS le motif —
+  // c'est-à-dire sans ce que la politique a renoncé à faire (`DC-55`).
+  it('dit qu’il est escaladé, et pourquoi la machine ne tranche pas', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflit]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/escaladée — arbitrage praticien attendu/)).toBeTruthy();
+    expect(screen.getByText(/Pourquoi la machine ne tranche pas/)).toBeTruthy();
+    expect(screen.getByText(/Aucun axe de comparaison de DC-54/)).toBeTruthy();
+  });
+
+  it('rend ses DEUX claims : le désaccord est ouvrable des deux côtés', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflit]} />);
+    deplierLeDetail();
+    expect(screen.getByText(/WN-CL-0312-018 v1\.0/)).toBeTruthy();
+    expect(screen.getByText(/WN-CL-0387-013 v1\.0/)).toBeTruthy();
+  });
+
+  // Sans passation, l'écran ne doit pas afficher de bloc de passations ni un
+  // écart : `null` est « non applicable », jamais « le même jour » (`DC-24`).
+  it('n’affiche ni passation ni écart', () => {
+    render(<MissingDataPanel missingData={[]} discordances={[]} contradictions={[conflit]} />);
+    deplierLeDetail();
+    expect(screen.queryByText(/jours entre/)).toBeNull();
+    expect(screen.queryByText(/Q_MOD_01/)).toBeNull();
   });
 });

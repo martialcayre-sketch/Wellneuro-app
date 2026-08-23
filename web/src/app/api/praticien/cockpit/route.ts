@@ -28,9 +28,11 @@ import type {
   ProposedAssessmentEpisode,
 } from '@/lib/clinical-engine/types';
 import {
+  conflitsSourcesActifs,
   contradictionsPourPatient,
   type ContradictionAffichee,
 } from '@/lib/clinical/contradictionsService';
+import { claimsCitesParLaPropositionBilan } from '@/lib/biology-library/propositionService';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
 type CockpitUnavailableReason =
@@ -378,7 +380,36 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // passations datées, ce qui rend l'écart lisible à l'écran ; réduire le
     // moteur au périmètre de l'épisode est un arbitrage clinique qui n'a pas
     // été rendu ([[D-050]]).
-    const contradictions = await contradictionsPourPatient(idPatient);
+    // LES CLAIMS CITÉS PAR LA PROPOSITION DE BILAN, et eux seuls pour l'instant
+    // ([[D-103]]) : c'est la seule sortie de dossier qui épingle aujourd'hui un
+    // claim visé par un conflit déclaré (`WN-CL-0312-018`, la répétition
+    // annuelle). L'orientation en épingle vingt-quatre autres, dont aucun n'est
+    // partie à un conflit ; les brancher aurait coûté une dérivation de plus
+    // pour zéro constat.
+    //
+    // LA DÉRIVATION NE PART QUE SI LE REGISTRE EST SIGNÉ. Verrou fermé — l'état
+    // livré — la route ne fait aucune requête de plus qu'avant, et le coût de
+    // ce lot sur le cockpit est nul jusqu'au geste de signature.
+    //
+    // BEST-EFFORT, ET C'EST LE POINT (relevé en revue). Cette dérivation émet
+    // cinq requêtes Prisma pour produire une VIGILANCE INFORMATIVE. Sans ce
+    // `catch`, un catalogue mal formé ou un timeout base ferait tomber la
+    // CONFIRMATION D'ÉPISODE T0 en 500 : un service secondaire éteindrait le
+    // chemin principal. La route de proposition traite déjà cette dérivation
+    // comme jetable. Liste vide ⇒ aucun conflit, ce qui est le repli déclaré du
+    // module — pas un silence inventé pour l'occasion.
+    let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
+    if (conflitsSourcesActifs()) {
+      try {
+        claimsCites = await claimsCitesParLaPropositionBilan(idPatient, now);
+      } catch (bioErr) {
+        console.error(
+          '[cockpit POST] claims cités indisponibles, conflits de sources non évalués',
+          bioErr instanceof Error ? bioErr.message : String(bioErr),
+        );
+      }
+    }
+    const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
     return NextResponse.json({
       status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,
     });

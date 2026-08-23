@@ -26,7 +26,7 @@ import {
   INDICATIONS_BIOLOGIE_V1,
 } from './indicationsBiologieV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
-import { deriverPropositionPourPatient } from './propositionService';
+import { claimsCitesParLaPropositionBilan, deriverPropositionPourPatient } from './propositionService';
 
 const REFERENCE = '2026-08-17T12:00:00.000Z';
 
@@ -229,5 +229,99 @@ describe('drapeaux d’anamnèse', () => {
   it('la date de référence descend telle quelle — le moteur ne lit pas l’horloge', async () => {
     await deriverPropositionPourPatient('PAT_TEST', REFERENCE);
     expect(deriverStatutsBiologie.mock.calls[0][0].dateReference).toBe(REFERENCE);
+  });
+});
+
+// ── La passerelle vers le moteur de conflits de sources ([[D-103]]) ──────────
+// Relevé en revue : `claimsCitesParLaPropositionBilan` n'avait AUCUN banc,
+// alors que c'est la seule pièce dont dépend le fait qu'un conflit déclaré
+// atteigne un jour un praticien. Trois mutations y survivaient — retirer la
+// déduplication, rendre `[]` inconditionnellement, ignorer le cas `!ok` — et
+// tous les bancs du lot restaient verts.
+describe('claims cités par la proposition de bilan', () => {
+  const claim = (id: string, version = 'v1.0') => ({ claimId: id, versionClaim: version });
+  const ligne = (panelCode: string, statut: string, justificationClaims: unknown[]) => ({
+    panelCode,
+    libelle: `Panel ${panelCode}`,
+    niveau: 'socle',
+    objectif: null,
+    statut,
+    declencheurRempli: null,
+    condition: null,
+    motifs: [],
+    justificationClaims,
+    analytes: [],
+    ratios: [],
+  });
+
+  it('déduplique sur la PAIRE : trois règles citant le même claim ne font qu’une entrée', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      declarationsIgnoreesHorsProposition: [],
+      lignes: [
+        ligne('PANEL_A', 'recommande', [claim('WN-CL-0312-018'), claim('WN-CL-0389-004')]),
+        ligne('PANEL_B', 'a_repeter', [claim('WN-CL-0312-018')]),
+        ligne('PANEL_C', 'conditionnel', [claim('WN-CL-0312-018')]),
+      ],
+    });
+    const cites = await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE);
+    expect(cites).toEqual([claim('WN-CL-0312-018'), claim('WN-CL-0389-004')]);
+  });
+
+  // La PAIRE, pas l'identifiant : deux versions d'un même claim sont deux
+  // citations distinctes — c'est ce que le moteur de conflits compare.
+  it('deux versions du même claim restent deux entrées', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      declarationsIgnoreesHorsProposition: [],
+      lignes: [
+        ligne('PANEL_A', 'recommande', [
+          claim('WN-CL-0312-018'),
+          claim('WN-CL-0312-018', 'v2.0'),
+        ]),
+      ],
+    });
+    const cites = await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE);
+    expect(cites).toHaveLength(2);
+  });
+
+  // TOUTES LES LIGNES COMPTENT. Ne retenir que celles qui proposent quelque
+  // chose reviendrait à taire un conflit parce que la ligne qui cite le claim
+  // ne recommande rien — une divergence supprimée en silence (`DC-30`).
+  it('les lignes non indiquées et déjà documentées citent aussi', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      declarationsIgnoreesHorsProposition: [],
+      lignes: [
+        ligne('PANEL_A', 'non_indique_actuellement', [claim('WN-CL-0312-018')]),
+        ligne('PANEL_B', 'deja_documente', [claim('WN-CL-0387-013')]),
+      ],
+    });
+    const cites = await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE);
+    expect(cites.map(c => c.claimId).sort()).toEqual(['WN-CL-0312-018', 'WN-CL-0387-013']);
+  });
+
+  // Proposition indisponible ⇒ aucun claim cité, donc aucun conflit ne pèse.
+  // C'est exact, pas un repli : rien n'a été proposé au praticien.
+  it('proposition non dérivée : liste vide', async () => {
+    deriverStatutsBiologie.mockReturnValue({ ok: false, motif: 'table non signée' });
+    expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toEqual([]);
+  });
+
+  it('drapeau éteint : liste vide, et le moteur n’est pas appelé', async () => {
+    process.env.WN_CB_PROPOSITION = 'false';
+    expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toEqual([]);
+    expect(deriverStatutsBiologie).not.toHaveBeenCalled();
+  });
+
+  // Anti-vacuité : sans ce cas, une passerelle rendant `[]` en toutes
+  // circonstances passerait les quatre précédents.
+  it('une proposition qui cite rend bien quelque chose', async () => {
+    deriverStatutsBiologie.mockReturnValue({
+      ok: true,
+      declarationsIgnoreesHorsProposition: [],
+      lignes: [ligne('PANEL_A', 'recommande', [claim('WN-CL-0312-018')])],
+    });
+    expect(await claimsCitesParLaPropositionBilan('PAT_TEST', REFERENCE)).toHaveLength(1);
   });
 });

@@ -379,6 +379,21 @@ réserve de [[D-043]]. **Portée** : la règle est gardée sur son **interdit**,
 pas sur son obligation — aucune règle de forme `CONVERGENCE` n'existe et le
 moteur les refuse (`contradictionsEngine.ts:188-192`).*
 
+***Descente de provenance faite au LOT-06, verdict NÉGATIF et définitif en
+l'état du corpus ([[D-103]]).** La moitié positive de la règle demandait une
+source qui gradue la convergence par nombre de sources indépendantes ; sans
+elle, écrire « trois sources = forte » violerait `DC-19`. La descente du
+2026-08-23 sur les 8 224 claims `VALIDE` et actifs rend **0 occurrence** de
+« sources indépendantes », 0 de « triangulation », et les dix-neuf candidats des
+autres requêtes (« convergen\* », « faisceau », « méthodolog\* », « niveau de
+preuve », « contradict\* », « discordan\* ») sont **tous des claims de contenu**,
+aucun de méthode. Le corpus est un corpus de neuronutrition, pas
+d'épistémologie. **La forme `CONVERGENCE` reste donc VIDE — état légitime, pas
+une dette**, et `conflitsSourcesV1.guard.test.ts` refuse désormais toute règle
+qui la porterait : sans ce banc, une telle règle serait ignorée en silence par
+le moteur, verte et fausse. La règle rouvrira le jour où le corpus ingérera une
+source de méthode.*
+
 **DC-30 — Une discordance ne se moyenne ni ne se supprime en silence.** Elle
 est détectée par le déterministe et imposée à la restitution. Objet minimal :
 sources, description, importance, hypothèses, action suggérée, résolue ou non.
@@ -761,12 +776,25 @@ Recommandation générale → adaptation patient → raison → claim source.
 **DC-54 — Une contradiction entre sources suit une politique de résolution.**
 Identifier la contradiction · ne pas fusionner arbitrairement · comparer niveau
 de preuve, contexte, date, population · produire la position la plus prudente.
-*Proposition — porté par le **LOT-06 de « Doctrine exécutable »**. La forme
-`CONFLIT_SOURCES` existe dans le type ([[D-041]], [[D-044]]) et n'a **aucun
-producteur** ; la politique de résolution n'est écrite nulle part. Limite
-structurelle à déclarer par le lot : trois des quatre axes de comparaison sont
-mécanisables (`niveau_preuve`, `classe_autorite`, `valide_at`) — **la
-population ne l'est pas**, elle n'est pas portée par le claim ([[D-095]]).*
+*Proposition — **la politique est écrite, le registre n'est pas signé**
+([[D-103]], LOT-06 de « Doctrine exécutable »). `politiqueResolutionConflit.ts`
+est déterministe et versionnée (`politique-resolution-conflit-v1`),
+`conflitsSourcesEngine.ts` produit la forme `CONFLIT_SOURCES`, et
+`conflitsSourcesV1.ts` déclare un conflit publié — mais
+`CONFLITS_SOURCES_METADATA.validationExterne` vaut `false` : rien ne mord en
+production, et la règle ne bascule donc pas. Le geste qui manque est un acte
+praticien, pas une ligne de code.*
+
+***Et la limite annoncée par le cadrage était fausse par excès d'optimisme.**
+Le brief prévoyait « trois des quatre axes mécanisables » ; la mesure du
+2026-08-23 sur les 8 224 claims `VALIDE` en donne **zéro** : `niveau_preuve` est
+renseigné sur 45 claims (0,55 %) en 32 valeurs libres, `classe_autorite` sur 154
+(1,87 %) en 73 valeurs libres mêlant institutions et noms d'auteurs, **un seul
+claim porte les deux**, la population est hors du claim ([[D-095]]), et
+`valide_at` est la date de VALIDATION praticien — pas celle de la source. La
+politique **déclare** donc ses quatre axes non comparés, chacun avec son motif
+mesuré, et conclut à l'escalade. Un banc épingle qu'aucun axe n'est comparable :
+le jour où l'un le devient, il rougit.*
 
 **DC-55 — Un conflit non résolu à impact clinique significatif s'escalade vers
 le praticien.** L'arbitrage humain est une issue de la politique, pas son
@@ -789,6 +817,17 @@ praticien en limitation plutôt que tu (`DC-35`), et le module ne devine pas le
 protocole. Mais ce n'est pas un CONFLIT entre sources : c'est une ignorance sur
 une seule déclaration. `escaladee_praticien` reste donc sans producteur, et la
 règle sans son déclencheur. Le LOT-06 garde le sujet.*
+
+***Le déclencheur existe depuis le LOT-06 ([[D-103]]), et il n'est pas armé.**
+`conflitsSourcesEngine.ts` pose `resolution: resoudreConflitDeSources(...)`,
+dont l'issue est `escaladee_praticien` avec le motif de la politique : c'est le
+PREMIER producteur du dépôt pour ce statut. Il ne tourne que registre signé, et
+le registre ne l'est pas — la règle ne bascule donc pas, pour la même raison que
+`DC-54`. Deux limites à connaître avant de signer : le branchement s'arrête au
+cockpit praticien, de sorte que l'escalade **n'atteint ni l'extinction ni les
+préconditions T0** (`preconditionsT0Prisma` reçoit une liste de claims cités
+vide) ; et « impact clinique significatif » n'est pas mécanisé — tout conflit
+déclaré escalade, la sélection se fait à la curation.*
 
 **DC-56 — Toute fonctionnalité clinique annonce les claims qu'elle consomme.**
 Par module : claims consommés, claims ignorés volontairement, niveau

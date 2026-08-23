@@ -1,6 +1,6 @@
 ---
 id: "LOT-06"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04 (le LOT-02 est transféré hors campagne, D-096)"
 ---
 
@@ -112,13 +112,43 @@ En aval : aucun.
 
 ## Critères de done
 
-- [ ] Politique de résolution écrite, déterministe, versionnée, décidée —
-      **et déclarant l'axe population comme non comparé**.
-- [ ] `CONFLIT_SOURCES` a un producteur ; ses claims sont épinglés et gardés
-      par le contrat de fraîcheur.
-- [ ] L'escalade praticien est une issue nommée, distincte de `D-003`.
-- [ ] `DC-29` : **descente de provenance faite**, et son verdict écrit —
-      graduation signée et forme ouverte, ou absence constatée et forme vide.
-      Une forme laissée vide **sans descente** ne vaut pas ce critère.
-- [ ] Aucun champ de certitude ; garde vue rouge.
-- [ ] T3 vert, revue `wn-reviewer`, passe Codex ; `D-xxx` + `changelog.d/`.
+- [x] Politique de résolution écrite, déterministe, versionnée, décidée —
+      **et déclarant l'axe population comme non comparé**. `D-103`,
+      `politiqueResolutionConflit.ts`. Elle en déclare **quatre**, pas un : la
+      mesure a montré qu'aucun axe n'est comparable.
+- [x] `CONFLIT_SOURCES` a un producteur ; ses claims sont épinglés et gardés
+      par le contrat de fraîcheur. `conflitsSourcesEngine.ts`,
+      `conflitsSourcesV1.ts` ; `WN-CL-0312-018` et `WN-CL-0387-013` entrés au
+      contrat par le banc de fraîcheur, qui a rougi jusqu'à ce qu'ils y soient.
+- [x] L'escalade praticien est une issue nommée, distincte de `D-003`. Premier
+      producteur d'`escaladee_praticien` du dépôt.
+- [x] `DC-29` : **descente de provenance faite**, et son verdict écrit —
+      absence constatée (0 claim sur « sources indépendantes », dix-neuf
+      candidats relus, tous de contenu), forme `CONVERGENCE` laissée vide et
+      gardée par un banc.
+- [x] Aucun champ de certitude ; garde vue rouge — un `fiabiliteRelative`
+      ajouté à la forme `CONFLIT_SOURCES` fait échouer
+      `contradictionFinding.guard.test.ts:81` **à la compilation**, pas au
+      `vitest run` : la garde est un type, un banc vert ne prouve rien seul.
+- [x] `D-103` posée, fragment `changelog.d/` posé, handoff écrit.
+- [x] **T3 vert** le 2026-08-24 — 454 fichiers Vitest (5 737 bancs), 21 fichiers
+      de contrats, 156 E2E, contrats SQL joués dont le négatif de fraîcheur,
+      dérive schéma ↔ migrations nulle, certification scoring verte.
+- [ ] Revue `wn-reviewer` et passe Codex — avant la PR.
+
+## Ce que le lot ne ferme pas, et qu'il faut lire
+
+- **`DC-54` et `DC-55` ne basculent pas** : le registre est livré NON SIGNÉ, la
+  signature est un acte praticien reporté après revue (arbitrage du
+  2026-08-24). Le mécanisme est complet et inerte — même régime que `DC-42`
+  au LOT-05.
+- **L'escalade n'atteint ni l'extinction ni les préconditions T0.** Un constat
+  escaladé reste « ouvert » et interdirait l'extinction partout où il serait
+  passé à `contradictionEstOuverte` ; le branchement s'arrête au cockpit
+  praticien, et `preconditionsT0Prisma` reçoit une liste de claims cités vide.
+  Effet clinique distinct, arbitrage propre.
+- **« Impact clinique significatif » n'est pas mécanisé** : tout conflit déclaré
+  escalade, et la sélection se fait à la curation du registre.
+- **Un vrai conflit reste hors registre** — `CS-MAG-01`, le magnésium dans la
+  dépression, écarté parce qu'aucun de ses deux claims n'est épinglé. Il
+  reviendra le jour où l'un d'eux le sera.
