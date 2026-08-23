@@ -160,6 +160,20 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.ratificationObjectif.deleteMany({ where: par })
     ).count;
 
+    // L'objectif à trois voix (Alliance 6.0-B LOT-01, D-094) : trois tables
+    // de plus, même régime FK RESTRICT. La proposition CITE la parole du
+    // patient, l'amendement EST sa parole, la disposition porte le jugement
+    // du praticien sur elle — rien de tout cela ne survit au dossier.
+    supprimees.propositionsObjectif = (
+      await tx.propositionObjectif.deleteMany({ where: par })
+    ).count;
+    supprimees.dispositionsProposition = (
+      await tx.dispositionProposition.deleteMany({ where: par })
+    ).count;
+    supprimees.amendementsObjectif = (
+      await tx.amendementObjectif.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;
