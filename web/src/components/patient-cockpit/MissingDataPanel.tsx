@@ -10,6 +10,35 @@ const PRIORITY_LABELS = {
   optional: 'Optionnelle',
 } as const;
 
+/**
+ * L'intitulé suit la FORME du constat — [[D-103]].
+ *
+ * « Contradiction entre instruments » était appliqué aux trois formes. Sur un
+ * `CONFLIT_SOURCES`, qui oppose deux claims du corpus et ne cite AUCUNE
+ * passation, l'étiquette envoyait le praticien chercher deux questionnaires
+ * qui n'existent pas. Ce sont des libellés d'écran, pas du contenu clinique :
+ * la phrase du déterministe suit, intacte.
+ */
+const INTITULE_PAR_FORME = {
+  DISCORDANCE: 'Contradiction entre instruments',
+  CONFLIT_SOURCES: 'Conflit entre sources du corpus',
+  CONVERGENCE: 'Convergence entre sources',
+} as const;
+
+/**
+ * L'état de résolution, en toutes lettres.
+ *
+ * `escaladee_praticien` ne pouvait PAS s'afficher avant [[D-103]] : le panneau
+ * ne disait quelque chose que sur `ouverte`. Un conflit escaladé serait donc
+ * apparu sans son état — et l'escalade est précisément ce que `DC-55` demande
+ * de rendre visible, puisqu'elle est une issue de la politique et non un échec.
+ */
+const ETAT_PAR_STATUT = {
+  ouverte: 'non résolue',
+  escaladee_praticien: 'escaladée — arbitrage praticien attendu',
+  resolue: 'résolue',
+} as const;
+
 export function MissingDataPanel({
   missingData,
   discordances,
@@ -71,7 +100,7 @@ export function MissingDataPanel({
           <TwoLevelReading
             key={constat.id}
             label="Voir le détail"
-            summary={<span><span className="font-medium">Contradiction entre instruments :</span> {constat.description}</span>}
+            summary={<span><span className="font-medium">{INTITULE_PAR_FORME[constat.forme]} :</span> {constat.description}</span>}
             detail={(
               <div className="space-y-2">
                 {/* `DC-30`, ACTÉE : l'objet minimal d'une discordance porte son
@@ -80,8 +109,20 @@ export function MissingDataPanel({
                     manquantes — un seul langage de priorité par écran. */}
                 <p>
                   <span className="font-medium">Priorité :</span> {PRIORITY_LABELS[constat.importance]}
-                  {constat.resolution.statut === 'ouverte' && ' — non résolue'}
+                  {' — '}{ETAT_PAR_STATUT[constat.resolution.statut]}
                 </p>
+                {/* LE MOTIF DE L'ESCALADE, quand il y en a un — [[D-103]].
+                    C'est là que la politique de résolution rend des comptes :
+                    elle nomme les quatre axes qu'elle NE compare pas et
+                    pourquoi. Sans lui, le praticien lirait « escaladée » sans
+                    savoir ce que la machine a renoncé à faire, et pourrait
+                    croire qu'elle a essayé de trancher (`DC-34`, `DC-35`). */}
+                {constat.resolution.statut !== 'ouverte' && (
+                  <p>
+                    <span className="font-medium">Pourquoi la machine ne tranche pas :</span>
+                    {' '}{constat.resolution.motif}
+                  </p>
+                )}
                 <p><span className="font-medium">Ce qui est proposé :</span> {constat.actionSuggeree}</p>
                 {/* LES PASSATIONS, DATÉES — corrigé après revue. Un delta nu
                     sous un intitulé d'« ancienneté » n'ancre rien : deux

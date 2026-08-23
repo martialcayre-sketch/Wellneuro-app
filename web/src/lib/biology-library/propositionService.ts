@@ -5,6 +5,7 @@ import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { isCbPropositionEnabled } from './featureFlag';
 import { scoresRecalculesPourRaisonnement } from '@/lib/clinical/orientationService';
 import type { ReponseOrientation } from '@/lib/clinical/orientationEngine';
+import type { OrientationClaimRef } from '@/lib/clinical/orientationRulesV1';
 import {
   INDICATIONS_BIOLOGIE_METADATA,
   INDICATIONS_BIOLOGIE_V1,
@@ -236,4 +237,43 @@ export async function deriverPropositionPourPatient(
     });
   }
   return { ok: true, proposition, limites };
+}
+
+/**
+ * Les claims que la proposition de bilan de ce dossier CITE — [[D-103]].
+ *
+ * Sert de déclencheur au moteur de conflits de sources : un conflit déclaré
+ * n'atteint le praticien que si l'un de ses deux claims est cité par une sortie
+ * de ce dossier. Sans cette liste, le registre resterait un document.
+ *
+ * TOUTES LES LIGNES COMPTENT, y compris `non_indique_actuellement` et
+ * `deja_documente`. L'arbitrage n'allait pas de soi : on pourrait ne retenir
+ * que les lignes qui proposent quelque chose. Mais chaque ligne est AFFICHÉE
+ * avec ses claims, et le praticien peut agir sur n'importe laquelle ; taire un
+ * conflit parce que la ligne qui cite le claim ne recommande rien reviendrait à
+ * supprimer une divergence en silence, ce que `DC-30` refuse. Le sur-ensemble
+ * est le côté sûr.
+ *
+ * DÉDUPLIQUÉ SUR LA PAIRE `(claimId, versionClaim)` : les quatre règles de
+ * répétition annuelle citent toutes `WN-CL-0312-018`, et un conflit déclaré ne
+ * doit pas être constaté quatre fois.
+ *
+ * Proposition indisponible — drapeau éteint, table non signée, catalogue vide —
+ * ⇒ liste vide. Aucun claim n'est cité, donc aucun conflit ne pèse : c'est
+ * exact, pas un repli.
+ */
+export async function claimsCitesParLaPropositionBilan(
+  idPatient: string,
+  dateReference: string,
+): Promise<OrientationClaimRef[]> {
+  const resultat = await deriverPropositionPourPatient(idPatient, dateReference);
+  if (!resultat.ok) return [];
+
+  const vus = new Map<string, OrientationClaimRef>();
+  for (const ligne of resultat.proposition.lignes) {
+    for (const claim of ligne.justificationClaims) {
+      vus.set(`${claim.claimId}@${claim.versionClaim}`, claim);
+    }
+  }
+  return [...vus.values()];
 }

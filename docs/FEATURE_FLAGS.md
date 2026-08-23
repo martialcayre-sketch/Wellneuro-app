@@ -116,6 +116,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
+| `clinical/conflitsSourcesV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
@@ -165,6 +166,14 @@ variable.**
   donc le dispositif moins prudent, et le seul contrepoids est la règle
   `SAF-ANAM-01` passée en `candidate`, dont la revue clinique publie
   l'inactivité. À lire avant d'y toucher.
+- **`conflitsSourcesV1.ts` est le registre neuf du 2026-08-24** ([[D-103]]) :
+  les conflits DÉCLARÉS entre deux claims du corpus. **Son verrou est le seul
+  geste d'exploitation** — il n'a pas de drapeau propre, et les deux termes qui
+  l'accompagnent sont DÉJÀ vrais en production
+  (`WN_ENABLE_CONTRADICTIONS_NNPP2=1`, `WN_CB_PROPOSITION=true`). Signer ce
+  registre fait donc apparaître le constat `CS-BIO-01` sur tout dossier dont la
+  proposition de bilan cite `WN-CL-0312-018`, dès le déploiement suivant, sans
+  palier intermédiaire. À lire avant de signer, et non après.
 - **`orientationRulesV1.ts` garde son jour de signature du 2026-08-06** : seule
   la FORME de la date a été portée à l'ISO canonique par `D-067` (réserve F5) —
   le fait attesté ne change pas.

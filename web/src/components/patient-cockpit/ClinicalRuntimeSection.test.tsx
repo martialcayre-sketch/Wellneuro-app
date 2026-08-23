@@ -312,6 +312,7 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
       decisionCard: fixture.decisionCard,
       contradictions: [{
         id: 'C-STR',
+        forme: 'DISCORDANCE' as const,
         description: 'Une contradiction que le praticien doit voir.',
         actionSuggeree: 'Clarifier en entretien avant toute conclusion.',
         hypotheses: ['Une charge de stress que les échelles ne captent pas.'],

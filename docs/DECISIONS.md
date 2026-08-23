@@ -4,6 +4,127 @@
 
 ## Décisions actives
 
+### D-103 — La politique de résolution ne compare rien, et elle le dit
+
+- Date : 2026-08-24
+- Statut : accepté
+- Domaine : clinique — conflits entre sources du corpus (`DC-54`, `DC-55`),
+  sort de la forme `CONVERGENCE` (`DC-29`)
+- Porte sur : `D-041` et `D-044` (l'objet à trois formes), dont elle peuple la
+  troisième forme ; `D-095` (la population sort du claim), dont elle tire la
+  conséquence sur un axe de comparaison
+
+**Le fait mesuré, qui a retourné le lot.** La fiche du LOT-06 annonçait que
+« trois des quatre axes de `DC-54` sont mécanisables ». Six lectures de la
+production le 2026-08-23 (conteneurs one-off, lecture seule, agrégats sans
+identité) établissent qu'**aucun ne l'est** :
+
+| Axe de `DC-54` | Mesure sur 8 224 claims `VALIDE` |
+| --- | --- |
+| population | hors du claim, définitivement (`D-095`) |
+| niveau de preuve | **45 claims (0,55 %)**, **32 valeurs libres** — « B », « AE », « élevé », « Niveau 1 / Niveau 2 », « evidence based », « non consensuel » |
+| classe d'autorité | **154 claims (1,87 %)**, **73 valeurs libres** — institutions et **noms d'auteurs** mêlés (« EFSA », « OMS », « Pierre Deniker », « Thurin J.M. 2005 ») |
+| date | `valide_at` existe partout, mais c'est la date de **validation praticien** — 11 jours distincts, du 2026-07-22 au 2026-08-03, dans l'ordre de l'ingestion |
+
+**Un seul claim sur 8 224 porte à la fois un niveau de preuve et une classe
+d'autorité.** Requête reproductible :
+
+```sql
+SELECT count(*) AS total,
+       count(*) FILTER (WHERE btrim(coalesce(niveau_preuve,'')) <> '')   AS np,
+       count(DISTINCT btrim(niveau_preuve))                              AS np_distincts,
+       count(*) FILTER (WHERE btrim(coalesce(classe_autorite,'')) <> '') AS ca,
+       count(DISTINCT btrim(classe_autorite))                            AS ca_distincts
+  FROM public.rag_corpus_claims;
+```
+
+**Ce que la décision tranche.** La politique de résolution est écrite,
+déterministe et versionnée (`politique-resolution-conflit-v1`) — et sa **sortie
+est une** : l'escalade praticien. Elle **déclare** ses quatre axes non comparés,
+chacun avec le motif mesuré, et sert ce motif au praticien. La position la plus
+prudente de `DC-54`, une fois la mesure faite, **est de ne pas trancher** ; et
+`DC-55` pose que l'arbitrage humain est une **issue** de la politique, pas son
+échec. Un banc épingle qu'aucun axe n'est comparable : le jour où l'un le
+devient, il rougit et force à écrire la branche de comparaison plutôt qu'à la
+laisser manquer en silence.
+
+**Écarté — comparer quand les champs sont là.** Elle aurait mordu sur 1 claim
+sur 8 224, et comparer « EFSA » à « Pierre Deniker » ou « élevé » à « B »
+suppose une hiérarchie qu'aucune ligne signée ne donne : `DC-19`. **Écarté
+aussi — poser d'abord un vocabulaire fermé** par migration et curer les 8 224
+claims : c'est une campagne à soi seule, et le LOT-06 n'aurait rien livré.
+
+**Le piège de l'axe « date », qu'il faut avoir nommé.** C'est le seul des
+quatre dont la colonne est peuplée partout, et le seul qui aurait donné une
+réponse. Sur le conflit déclaré ci-dessous, elle aurait fait gagner
+`WN-CL-0387-013` (validé le 2026-08-03) contre `WN-CL-0312-018` (le
+2026-07-29) — c'est-à-dire trancher une question de preuve par l'ordre dans
+lequel deux documents ont été ingérés.
+
+**Un conflit se déclare, il ne se détecte pas.** Rien au schéma ne dit que deux
+claims parlent du même objet ; la seule détection possible serait une
+similarité sémantique, donc une résolution générative, que `DC-01` et `DC-02`
+interdisent sur ce chemin. Le registre `conflitsSourcesV1.ts` est curé à la
+main, relu en PR, signé — patron exact de `contradictionsV1.ts`.
+
+**Le conflit déclaré, `CS-BIO-01`, était déjà vécu dans le dépôt.** Objet : le
+bilan biologique complet se réalise-t-il systématiquement une fois par an, ou
+sur orientation clinique ? `indicationsBiologieV1.ts` fonde la répétition
+annuelle (`delaiJours: 365`) sur `WN-CL-0312-018`, et son commentaire de
+`§B.8` invoque `WN-CL-0387-013` pour justifier qu'un panel d'approfondissement
+n'ait **pas** de répétition — « le bilan complet ne se fait pas
+systématiquement ». **Deux claims du même corpus certifié employés à sens
+opposés dans un même fichier signé.** Le conflit n'a pas été fabriqué pour ce
+lot : il était là, non nommé.
+
+**Le déclenchement.** Un constat naît quand **au moins un** des deux claims est
+cité par une sortie de ce dossier — pas les deux. Le cas dangereux est celui où
+le dossier ne s'appuie que sur l'une des deux positions : c'est là que le
+praticien a besoin de savoir qu'elle est contredite. La correspondance porte
+sur la **paire** `(claimId, versionClaim)`, comme le contrat de fraîcheur.
+
+**Deux conflits examinés puis écartés, avec leur motif** (patron `D-042`) :
+
+- **`CS-MAG-01`** — `WN-CL-0032-018` (« les médecins **devraient prescrire** du
+  magnésium pour la dépression résistante au traitement sans plus attendre »,
+  prescriptif) contre `WN-CL-0362-014` (« dans la dépression, l'inositol et le
+  magnésium sont **inefficaces** »). Conflit réel et le plus frontal du corpus,
+  **écarté parce qu'aucun des deux claims n'est épinglé par une table signée** :
+  aucune sortie de dossier ne les cite, le constat n'atteindrait jamais
+  personne. Le déclarer aurait ajouté une entrée inerte.
+- **`CS-MAG-02`** — `WN-CL-0242-007` contre `WN-CL-0333-020` : **faux conflit**,
+  l'un écarte le magnésium **plasmatique** en première intention, l'autre
+  conseille le magnésium **érythrocytaire**. Compatibles, et la seconde position
+  est même la conséquence de la première.
+
+**`DC-29` — la descente de provenance a eu lieu, et elle n'a rien rendu.** Sur
+les 8 224 claims actifs : « sources indépendantes » → **0**, « triangulation »
+→ 0, « convergen\* / faisceau » → 6, « méthodolog\* » → 3, « niveau de preuve »
+→ 7, « contradict\* » → 1, « discordan\* » → 2. Les dix-neuf candidats relus un
+par un sont tous des claims de **contenu**, aucun n'est un claim de **méthode**.
+Verdict écrit : **aucune source du corpus certifié ne fonde une graduation par
+nombre de sources indépendantes**. La forme `CONVERGENCE` **reste vide**, état
+légitime, et un banc refuse désormais toute règle qui la porterait — sans lui,
+une telle règle serait ignorée en silence par `contradictionsEngine.ts`, verte
+et fausse.
+
+**Ce que le lot ne fait pas, et qui est nommé plutôt que produit.** Un constat
+escaladé **reste ouvert** au sens de `contradictionEstOuverte`, donc il
+interdirait l'extinction d'une règle d'orientation (`D-053` §5, `D-055`)
+partout où les constats de ce moteur seraient passés au prédicat. Ils ne le
+sont pas : le branchement s'arrête à la restitution praticien du cockpit, et
+`preconditionsT0Prisma` reçoit une liste de claims cités vide. Étendre
+l'escalade à l'extinction et aux préconditions T0 est un **effet clinique
+distinct**, qui demande son propre arbitrage.
+
+**Et une mesure à ne pas redécouvrir** : la description composée de `CS-BIO-01`
+fait 569 caractères ; les deux lignes que `lignesDeVigilance` en tirerait
+feraient **768 et 607**, pour un plafond de **500** (`LONGUEUR_MAX_POINT`, à
+l'enregistrement d'un brouillon praticien). Sans effet ici — le cockpit ne
+plafonne rien et la synthèse ne reçoit pas ces constats — mais c'est le
+précédent exact de C-STR, scindée en 411 + 326 pour cette raison. Alimenter la
+synthèse en conflits demandera de **scinder par position**.
+
 ### D-102 — La release déclenche le déploiement qu'elle attend
 
 - Date : 2026-08-23

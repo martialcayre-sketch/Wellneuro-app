@@ -425,6 +425,7 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
   it('propage ce que le service rend, sans le filtrer ni le reconstruire', async () => {
     const constat = {
       id: 'C-STR',
+      forme: 'DISCORDANCE' as const,
       description: 'Une contradiction que le praticien doit voir.',
       actionSuggeree: 'Clarifier en entretien.',
       hypotheses: [],
@@ -555,6 +556,7 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient').mockResolvedValue([{
       id: 'C-STR',
+      forme: 'DISCORDANCE' as const,
       description: 'Une contradiction que le praticien doit voir.',
       actionSuggeree: 'Clarifier en entretien.',
       hypotheses: [], limitations: [],

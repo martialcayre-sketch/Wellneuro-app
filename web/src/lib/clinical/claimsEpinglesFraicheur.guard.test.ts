@@ -82,6 +82,10 @@ const FICHIER_VERS_TABLE: Record<string, string> = {
   'contradictionsV1.ts': 'contradictions',
   'stopRulesV1.ts': 'arret',
   'priorityRulesV1.ts': 'priorites',
+  // Registre des conflits de sources déclarés ([[D-103]], LOT-06 « Doctrine
+  // exécutable »). Il est entré au contrat par ce banc, exactement comme prévu :
+  // le fichier posé, la liste du contrat ne correspondait plus, le banc a rougi.
+  'conflitsSourcesV1.ts': 'conflits_sources',
 };
 
 // L'EXIGENCE EST DÉCLARÉE PAR TABLE, JAMAIS DÉDUITE PAR DÉFAUT — [[D-046]].
@@ -127,6 +131,20 @@ const TABLE_EXIGE_PRESCRIPTIF: Record<string, boolean> = {
   // que ce qu'elle dit (`DC-14`). La hiérarchisation « cet axe d'abord » ne vient
   // pas des claims : elle vient de la SIGNATURE praticien.
   priorites: false,
+  // UN CONFLIT DÉCLARÉ NE PRESCRIT PAS — il CONSTATE que deux claims du corpus
+  // ne disent pas la même chose ([[D-103]]).
+  //
+  // L'arbitrage se distingue des trois précédents par ce qu'il PROTÈGE. Les
+  // deux claims de `CS-BIO-01` sont l'un et l'autre `prescriptif = true` en
+  // production : exiger `prescriptif` ici passerait, aujourd'hui, sans rien
+  // coûter. C'est justement pourquoi il faut le refuser maintenant — un conflit
+  // peut parfaitement opposer deux claims DESCRIPTIFS (« X est associé à Y »
+  // contre « aucune association n'est retrouvée »), et l'exigence rejetterait
+  // alors une déclaration valide, ou forcerait à épingler un claim voisin qui
+  // ne dit pas le conflit (`DC-14`). Ce que le registre ajoute ne vient pas des
+  // claims : il vient de la SIGNATURE praticien, qui assume que ces deux
+  // affirmations s'opposent sur le même objet.
+  conflits_sources: false,
 };
 
 interface TableSignee {

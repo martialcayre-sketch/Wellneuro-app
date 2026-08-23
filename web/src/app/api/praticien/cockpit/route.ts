@@ -28,9 +28,11 @@ import type {
   ProposedAssessmentEpisode,
 } from '@/lib/clinical-engine/types';
 import {
+  conflitsSourcesActifs,
   contradictionsPourPatient,
   type ContradictionAffichee,
 } from '@/lib/clinical/contradictionsService';
+import { claimsCitesParLaPropositionBilan } from '@/lib/biology-library/propositionService';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
 type CockpitUnavailableReason =
@@ -378,7 +380,20 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // passations datées, ce qui rend l'écart lisible à l'écran ; réduire le
     // moteur au périmètre de l'épisode est un arbitrage clinique qui n'a pas
     // été rendu ([[D-050]]).
-    const contradictions = await contradictionsPourPatient(idPatient);
+    // LES CLAIMS CITÉS PAR LA PROPOSITION DE BILAN, et eux seuls pour l'instant
+    // ([[D-103]]) : c'est la seule sortie de dossier qui épingle aujourd'hui un
+    // claim visé par un conflit déclaré (`WN-CL-0312-018`, la répétition
+    // annuelle). L'orientation en épingle vingt-quatre autres, dont aucun n'est
+    // partie à un conflit ; les brancher aurait coûté une dérivation de plus
+    // pour zéro constat.
+    //
+    // LA DÉRIVATION NE PART QUE SI LE REGISTRE EST SIGNÉ. Verrou fermé — l'état
+    // livré — la route ne fait aucune requête de plus qu'avant, et le coût de
+    // ce lot sur le cockpit est nul jusqu'au geste de signature.
+    const claimsCites = conflitsSourcesActifs()
+      ? await claimsCitesParLaPropositionBilan(idPatient, new Date().toISOString())
+      : [];
+    const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
     return NextResponse.json({
       status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,
     });

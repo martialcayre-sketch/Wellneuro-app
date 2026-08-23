@@ -137,7 +137,17 @@ BEGIN
     ('WN-CL-0025-010', 'v1.0', 'priorites', false),
     ('WN-CL-0025-014', 'v1.0', 'priorites', false),
     ('WN-CL-0025-015', 'v1.0', 'priorites', false),
-    ('WN-CL-0025-016', 'v1.0', 'priorites', false)
+    ('WN-CL-0025-016', 'v1.0', 'priorites', false),
+    -- Registre des conflits de sources déclarés ([[D-103]]). `exige_prescriptif
+    -- = false` : un conflit déclaré CONSTATE que deux claims du corpus ne
+    -- disent pas la même chose, il ne prescrit rien — même catégorie que la
+    -- table de contradictions. Les deux claims de `CS-BIO-01` sont pourtant
+    -- prescriptifs en production, et c'est sans rapport : la colonne dit ce
+    -- qu'on EXIGE, pas ce qu'on interdit. L'exiger ici serait pire qu'inutile,
+    -- puisqu'un conflit peut légitimement opposer deux claims DESCRIPTIFS —
+    -- l'exigence rejetterait alors une déclaration valide (`DC-14`, [[D-046]]).
+    ('WN-CL-0312-018', 'v1.0', 'conflits_sources', false),
+    ('WN-CL-0387-013', 'v1.0', 'conflits_sources', false)
   ) AS e(claim_id, version_claim, table_signee, exige_prescriptif)
   -- La jointure porte sur LA PAIRE. Joindre sur `claim_id` seul laisserait une
   -- table signée s'appuyer sur une version du claim qui n'est pas celle qu'elle
