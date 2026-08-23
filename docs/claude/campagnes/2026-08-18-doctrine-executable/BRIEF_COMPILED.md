@@ -1,6 +1,6 @@
 # Brief compile - Doctrine exécutable — les cinq véhicules de l'audit
 
-_Genere le 2026-08-18 par scripts/wn-campaign.mjs._
+_Genere le 2026-08-23 par scripts/wn-campaign.mjs._
 
 ## Identite de campagne
 
