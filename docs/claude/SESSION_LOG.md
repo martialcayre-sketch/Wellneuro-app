@@ -4699,3 +4699,31 @@ Prochaine action : arbitrer les **cinq recommandations du LOT-02** (consignées
 dans sa fiche), puis ouvrir le lot. Ouvert : la forme des fragments n'est
 gardée nulle part ; `hash_sources` sans algorithme fixé ; la fenêtre `D-093`
 court jusqu'au 2026-10-04 et attend toujours un premier objectif rédigé.
+
+## 2026-08-23 — Alliance 6.0-B, LOT-02 : le moteur de proposition (D-094)
+
+Les cinq arbitrages d'ouverture **tranchés conformes aux recommandations**
+(#775), puis le lot livré (#776). Deux points que la fiche ne couvrait pas :
+la `DecisionCard` n'étant pas persistée et G7 interdisant de la recalculer,
+**un GET ne peut pas assembler** — d'où un POST à deux gestes (`assembler`,
+`ecarter`), idempotent par empreinte ; et l'anamnèse se lit **en base**,
+jamais dans le corps de la requête. `assembleeLe` devient la clé d'assemblée.
+
+Écarté : assembler sur la seule anamnèse sans candidat signé — la machine
+n'aurait rien de signé à citer. Écarté aussi : rouvrir `D-094` pour les
+arbitrages 1 et 2, G7 en portant l'exécution.
+
+**La revue a rendu un no-go sur le point qui compte** : mes deux listes de mots
+interdits étaient **entièrement en français**, alors que la donnée amont
+s'appelle `rank` et `confidence`. Mes quatre mutations vues rouges étaient
+toutes francisées — la plus probable serait passée. Même défaut qu'au LOT-09.
+Deux autres trous du même ordre (import relatif traversant G7-1, assemblage
+rendant le dossier sans journaliser) et six corrections de rang élevé ou moyen.
+Un banc avait par ailleurs trouvé un `return promesse` dans un `try` qui
+laissait fuir les mots du patient dans un message Prisma.
+
+Prochaine action : LOT-03 (cockpit — reprendre, amender, écarter). Ouvert :
+une assemblée devenue vide ne retire pas la précédente (migration) ;
+lire-puis-écrire n'est pas étanche à la course ; le SHA du périmètre n'est pas
+confrontable depuis la route. T2 porte un échec WebKit du portail **démontré
+étranger au lot** (reproduit sur un arbre sans lui).
