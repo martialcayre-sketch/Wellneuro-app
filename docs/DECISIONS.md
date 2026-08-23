@@ -4,6 +4,113 @@
 
 ## Décisions actives
 
+### D-100 — Une citation s'ancre sur du texte, et le classificateur E2E se taisait pour deux raisons, pas une
+
+- Date : 2026-08-23
+- Statut : accepté
+- Domaine : outillage de doctrine et de test — aucune règle clinique, aucun
+  seuil
+- Campagne : « Doctrine exécutable », LOT-10
+- Fait suite à : [[D-098]], qui a cadré ce lot, et dont **deux constats sont
+  corrigés ici par la mesure**
+- Porte sur : `docs/claude/doctrine/README.md` (convention),
+  `scripts/wn-ancres-doctrine.mjs` (neuf), `scripts/wn-diagnostic-e2e.mjs`
+
+**Décision 1 — l'ancre d'une citation devient TEXTUELLE, et l'ancre et son
+texte sont liés dans un seul jeton.** Une citation conforme s'écrit
+`[« texte exact »](chemin)` ou `` [`symbole`](chemin) ``. Le numéro de ligne
+devient une commodité que rien ne vérifie.
+
+Le motif est mesuré : le LOT-09 a décalé un fichier de onze lignes et faussé
+**huit** citations d'un coup, **toutes dans les bornes**. Le contrôle évident —
+le fichier existe, la ligne est dans les bornes — n'en aurait attrapé aucune.
+
+**Pourquoi un LIEN, et pas un verbatim posé à côté de l'ancre.** Parce que
+l'attribution par proximité invente des morts, et [[D-098]] en porte la preuve
+sans l'avoir vue : son instrument imputait chaque verbatim à l'ancre la plus
+proche à sa gauche, et a ainsi déclaré morte `drapeauxAnamnese.ts:28` en lui
+attribuant le libellé « Difficultés à avaler ». **Cette ancre est juste** — la
+ligne 28 porte `symptomesFonctionnels: string[]`, qui est ce qu'elle ancre ; le
+libellé appartient à l'ancre **voisine**, `anamnese.ts:110-119`, où il figure
+toujours. Le lien rend l'attribution syntaxique : il n'y a plus rien à deviner.
+
+**Correction du décompte de [[D-098]] : une citation morte, pas deux.** Seule
+`orientationEngine.ts:769-772` avait réellement dérivé — elle pointait sur un
+`return` et une déclaration de fonction, le code cité ayant migré. Ré-ancrée
+sur son verbatim.
+
+**Décision 2 — une ancre cite ce qui EST, jamais ce qui FUT.** Le registre
+raconte aussi des états révolus : « `chaineC1.ts:315` **posait**
+`safetyFindings: 0` en dur » a été écrit la veille du jour où [[D-099]] a
+supprimé ce code. Ancrer une phrase pareille la ferait rougir pour toujours, ou
+forcerait à réécrire l'histoire pour faire taire un contrôle. Une citation
+historique **garde l'ancienne forme**. C'est l'auteur qui choisit d'ancrer, et
+il n'ancre que le présent.
+
+**Décision 3 — le contrôle refuse de vérifier, et le DIT, plutôt que de se
+taire.** Un verbatim élidé (`[…]`) ou plus court que trois caractères est une
+**violation**, jamais un silence. Sans cela, il suffirait d'élider une citation
+fausse pour la dispenser du contrôle censé refuser les élisions — et c'est
+exactement ce que faisait la première rédaction, dont la reconnaissance ne
+voyait pas les liens à crochets internes. Le banc l'a trouvé.
+
+**Décision 4 — les 252 citations antérieures sont grandfathered, et le
+grandfathering est un CHIFFRE.** Le contrôle les compte et ne les juge pas. Une
+sentinelle refuse qu'elles tombent sous cent — une chute signalerait une
+réécriture de masse, que ce lot interdit.
+
+**Décision 5 — le classificateur E2E se taisait pour DEUX raisons, et
+[[D-098]] n'en avait cadré qu'une.** Il exigeait deux prédicats : `page.goto`
+dans `error-context.md`, **et** un journal réseau vide.
+
+- **Mode A**, celui que [[D-098]] a vu : Playwright n'écrit pas toujours
+  l'appel fautif — au LOT-09, il n'y avait consigné qu'un délai de *teardown*.
+  Le prédicat `page.goto` cède la place à `timeout`.
+- **Mode B**, mesuré ici sur **deux artefacts réels de deux sessions
+  distinctes** : un test qui monte son décor par `page.request.post(...)` écrit
+  une entrée dans le **même** journal, AVANT la navigation qui, elle, n'émettra
+  rien. Le journal pesait 2 723 octets **pour une seule ligne**, et le
+  classificateur s'est tu sur le cas exact qu'il existe pour nommer. Corriger le
+  Mode A seul n'y aurait rien changé.
+
+Le fait discriminant devient donc **« aucune requête de PAGE »** et non « le
+journal est vide » : Playwright marque `snapshot._apiRequest: true` les requêtes
+d'`APIRequestContext`. Un défaut applicatif émet des requêtes de page ; un
+blocage du navigateur n'en émet aucune, quoi que le corps du test ait envoyé
+par ailleurs. Cela impose de décompresser le journal — `zlib` étant natif à
+Node, la contrainte d'origine du script (aucune dépendance à `unzip`) tient.
+
+**Ce que ce lot NE fait pas**, et qui reste écrit dans son interdit : aucune
+réécriture de masse des 252 citations, et aucune garde bloquante sur
+l'existant.
+
+**Découverte de sécurité, sans rapport avec le périmètre mais bloquante pour
+lui : une trace Playwright ne peut jamais être committée comme fixture.** Le
+journal réseau transporte les en-têtes complets de chaque requête, **cookie
+`next-auth.session-token` compris**. Le cas de non-régression du Mode B est
+donc construit sur la **forme** réelle observée — le marqueur `_apiRequest` —,
+jamais sur l'artefact.
+
+**Réserves.**
+
+1. **Deux citations hors bornes restent hors périmètre**, et c'est le périmètre
+   qui les met dehors, pas un oubli. `seed.ts:270` vit dans
+   `docs/claude/SESSION_LOG.md`, **append-only**, et dans la fiche d'un lot de
+   campagne close — deux archives. Réécrire une archive pour faire taire un
+   contrôle est exactement ce que la décision 2 interdit. La troisième,
+   `web/prisma/seed.ts:288-294` dans ce registre, est ré-ancrée : le défaut
+   qu'elle décrit existe toujours, seules les lignes avaient bougé — et son
+   verbatim, lui, avait réellement dérivé.
+2. **Le contrôle ne distingue pas seul le présent du passé.** Il vérifie ce
+   qu'on lui donne à vérifier. Rien n'empêche un auteur d'ancrer une phrase
+   historique et de se condamner à un rouge permanent ; la convention le dit,
+   aucun code ne l'empêche.
+3. **Le périmètre est le corpus doctrinal et ce registre.** L'élargir sans
+   écrire la convention ailleurs ferait rougir des documents dont personne n'a
+   accepté la règle.
+
+- Référence : [scripts/wn-ancres-doctrine.mjs](scripts/wn-ancres-doctrine.mjs), [scripts/wn-ancres-doctrine.test.mjs](scripts/wn-ancres-doctrine.test.mjs), [scripts/wn-diagnostic-e2e.mjs](scripts/wn-diagnostic-e2e.mjs), [docs/claude/doctrine/README.md](docs/claude/doctrine/README.md), [[D-049]], [[D-098]], [[D-099]]
+
 ### D-099 — Les douze signaux d'alerte sont cotés en deux rangs, et le rang d'adressage retire les priorités au lieu de s'afficher à côté
 
 - Date : 2026-08-23
@@ -19,7 +126,8 @@
 
 **Contexte, et ce qui n'était pas en cause.** `SafetyFinding` existe depuis la
 chaîne T0, son consommateur aussi : `decisionCard.ts` bloque dès
-`safetyFindings.length > 0`, et `evaluerAbstention` sélectionne `ABST-SEC-01`.
+[`input.review.safetyFindings.length > 0`](web/src/lib/clinical-engine/decisionCard.ts),
+et `evaluerAbstention` sélectionne `ABST-SEC-01`.
 Les deux sont bancés. Ce qui manquait était le **producteur** —
 `chaineC1.ts:315` posait `safetyFindings: 0` en dur, si bien que `DC-12` et
 `DC-23`, actées par [[D-043]] et [[D-062]], étaient **inertes en production**.
@@ -65,7 +173,7 @@ près**.
 (`DC-12`).** Un constat de rang `adressage` fait passer l'abstention en
 `required` ; `construireCandidats` rend alors `[]` — la table des priorités se
 tait —, la carte est bloquée, et `ProtocolConsultationPanel` refuse la
-diffusion. Le candidat est **retiré**, pas affiché sous un bandeau.
+diffusion ([`decisionCard.safetyFindingIds.length === 0`](web/src/components/patient-cockpit/ProtocolConsultationPanel.tsx)). Le candidat est **retiré**, pas affiché sous un bandeau.
 
 **Décision 3 bis — et le praticien lit POURQUOI** (correctif apporté après la
 revue du lot, constat C1). Les deux motifs d'abstention appellent des gestes
@@ -4407,7 +4515,7 @@ commente une synthèse, elle ne la re-valide pas.
   - **Un chiffre d'énoncé se relit contre la base — et un chiffre qui bouge est une dérive, pas une péremption.** Le fait 4 annonçait « 5 qids, `Q_SOM_09` inclus » ; la lecture SQL du 2026-08-07 en donne **6** (`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`, `Q_SOM_09`, `Q_ALI_01`, `Q_ALI_09`), avec `pack_questionnaires` aligné à 6 lignes. La première rédaction de cette décision en concluait que « le chiffre était périmé » : **c'est faux, et la preuve dit le contraire**. Le LOT-00 avait mesuré 5 qids **en production le 2026-08-06** et certifié « 8/8 packs en MATCH exact », « 5 lignes, ordres 0..4 sans trou » (`2026-08-06-packs-personnalises/lots/LOT-00-cadrage.md:90-91,119-123`) ; `packs.updated_at` porte **2026-08-06 18:02:38.913** — cet horodatage ne borne que la **dernière** écriture sur la ligne, pas celle qui a ajouté le qid. Ce qui est prouvé, et rien de plus : `Q_ALI_09` est entré dans le pack de base **pendant la campagne**, **entre la mesure du LOT-00 (2026-08-06) et 18:02:38.913**, dernière écriture connue — donc après cette mesure et **avant** que le garde `IDS_SUSPENDUS` sur `PATCH` (LOT-03, #604, 2026-08-07) n'existe. La lecture consignée en [[D-025]] (« Lecture du 2026-08-05 : aucun des 8 packs ne le référence ») corrobore : la dérive est **postérieure au 2026-08-05**. **L'auteur du geste est indéterminé** : aucune colonne d'audit ne le porte, aucun document de campagne ne le mentionne. Le fait 4 est donc **partiellement vérifié — dérive survenue et non prévenue** : l'invariant « registre = legacy » tient (6 lignes pour 6 qids, relu le 2026-08-07), la **non-dérive** est démentie. C'est nommément la réserve de [[D-025]] (« Aucun garde n'empêche `Q_ALI_09` d'entrer dans un pack… ») et le **point 4 de [[D-030]]**, qui portait ce garde au LOT-03 précisément parce qu'aucun endpoint ne le vérifiait.
   - **Une garde qui rend un défaut impossible remplace le log qui l'aurait constaté — dans le périmètre de la garde, pas au-delà.** Le fait 3 promettait une journalisation de la perte de cible ; elle aurait été verte en test et muette à vie, `packId` ne survivant que dans l'union de type. Substituée par `orientationRulesV1.test.ts:463` — aucune entrée de la table, publiée ou non, ne cible un pack (justification : `lots/LOT-03-integration.md:21-28`). **Ce banc ne porte que sur `suggestion.packId`** : l'énoncé se lit « la perte de cible **par pack** est rendue impossible ». Les **deux points de fail-closed silencieux** nommés par [[D-030]] écartent, eux, des cibles **questionnaire**, et restent **non instrumentés** — `web/src/lib/clinical/orientationEngine.ts:627` (si `suggestion.questionnaireId && estAdministrable(…)` est faux, `cibles` reste vide et rien n'est journalisé) et `web/src/lib/clinical/orientationService.ts:262-264` (filtrage muet sur `estAdministrableParLaRoute`). Dette écrite, sans lot.
 - Réserves :
-  - **Cinq dettes sont nommées sans lot d'accueil, et c'est un choix, pas un oubli — mais le décompte annoncé d'abord (« trois ») était faux.** `2026-08-06-packs-personnalises/lots/LOT-03-integration.md:203-213` en datait **cinq** ; trois avaient disparu du diff de clôture. Rétablies, le compte passait à six ; il redescend à cinq, la dette « seed à 5 qids » étant **rattachée au périmètre du LOT-00** de `2026-08-07-dettes-packs-residuelles`. Les cinq : (a) `prisma/seed.ts` **ne répare pas un pack de base cassé** — `web/prisma/seed.ts:288-294`, `upsert({ where: { idPack }, update: {}, create: PACK_BASE })` sous `if (!parDefautExistant)`, no-op silencieux **suivi d'un message de succès faux** (« Pack par défaut créé »), alors que `web/src/app/api/praticien/packs/route.ts:92-94` note que sans `parDefaut: true` **et** `actif: true` tout onboarding rend 404 sans chemin de réparation par l'UI — miroir exact de la dette (c) ; (b) `resolvePackQuestionnaireIds` (`web/src/lib/consultation/packRegistry.ts:89-123`) ne lit jamais `questionnaire_packs.actif`, et le retrait vient d'**armer sa condition de déclenchement** (7 lignes sur 8 à `false`) — piège pour le jour d'une bascule du registre en source primaire ; (c) aucun chemin praticien ne réactive un pack — `PATCH { actif: true }` est accepté par la route, aucun écran ne l'envoie : `PacksPanel.tsx` porte **quatre** appels mutants sur `/api/praticien/packs`, le `POST` de création (`:177-181`), le `PATCH` d'édition (`:207-217`, dont le payload `:210-216`), le `DELETE` (`:238`) et le `PATCH { idPack, parDefaut }` (`:254-257`) — **aucun des quatre ne porte `actif`**, et c'est cela qui prouve qu'aucun écran ne réactive un pack. Le cinquième appel mutant du composant, `POST /api/praticien/packs/assign` (`:281`), vise **une autre route** — c'est le formulaire d'assignation nommé au point 2 ; (d) le commentaire de `web/prisma/schema.prisma:155-156` cite encore le pack en **capitales**, la casse même qui avait tué le repli de `resoudrePackBase` ; (e) la suture `suggestedPackSelection` est laissée inerte (`web/src/components/PatientsPanel.tsx:902`, prop `:1033`, consommateur `web/src/components/PacksPanel.tsx:80-106`). **Piège de lecture** : LOT-03 nommait « `seed.ts` ne répare pas un pack de base cassé », la première rédaction de la clôture nommait « `seed.ts:270` porte 5 qids » — **deux défauts distincts sous le même mot `seed`**, traiter le second ne traite pas le premier. Aucune des cinq n'a d'effet clinique observable aujourd'hui ; ouvrir un lot par dette latente rouvrirait la campagne qu'on clôt. Elles sont écrites dans `lots/LOT-04-validation.md` pour être retrouvées.
+  - **Cinq dettes sont nommées sans lot d'accueil, et c'est un choix, pas un oubli — mais le décompte annoncé d'abord (« trois ») était faux.** `2026-08-06-packs-personnalises/lots/LOT-03-integration.md:203-213` en datait **cinq** ; trois avaient disparu du diff de clôture. Rétablies, le compte passait à six ; il redescend à cinq, la dette « seed à 5 qids » étant **rattachée au périmètre du LOT-00** de `2026-08-07-dettes-packs-residuelles`. Les cinq : (a) `prisma/seed.ts` **ne répare pas un pack de base cassé** — [`if (!parDefautExistant) {`](web/prisma/seed.ts), un `upsert` dont l'`update` est vide (`update: {}`, `create: PACK_BASE`), no-op silencieux **suivi d'un message de succès faux** (« Pack par défaut créé »), alors que `web/src/app/api/praticien/packs/route.ts:92-94` note que sans `parDefaut: true` **et** `actif: true` tout onboarding rend 404 sans chemin de réparation par l'UI — miroir exact de la dette (c) ; (b) `resolvePackQuestionnaireIds` (`web/src/lib/consultation/packRegistry.ts:89-123`) ne lit jamais `questionnaire_packs.actif`, et le retrait vient d'**armer sa condition de déclenchement** (7 lignes sur 8 à `false`) — piège pour le jour d'une bascule du registre en source primaire ; (c) aucun chemin praticien ne réactive un pack — `PATCH { actif: true }` est accepté par la route, aucun écran ne l'envoie : `PacksPanel.tsx` porte **quatre** appels mutants sur `/api/praticien/packs`, le `POST` de création (`:177-181`), le `PATCH` d'édition (`:207-217`, dont le payload `:210-216`), le `DELETE` (`:238`) et le `PATCH { idPack, parDefaut }` (`:254-257`) — **aucun des quatre ne porte `actif`**, et c'est cela qui prouve qu'aucun écran ne réactive un pack. Le cinquième appel mutant du composant, `POST /api/praticien/packs/assign` (`:281`), vise **une autre route** — c'est le formulaire d'assignation nommé au point 2 ; (d) le commentaire de `web/prisma/schema.prisma:155-156` cite encore le pack en **capitales**, la casse même qui avait tué le repli de `resoudrePackBase` ; (e) la suture `suggestedPackSelection` est laissée inerte (`web/src/components/PatientsPanel.tsx:902`, prop `:1033`, consommateur `web/src/components/PacksPanel.tsx:80-106`). **Piège de lecture** : LOT-03 nommait « `seed.ts` ne répare pas un pack de base cassé », la première rédaction de la clôture nommait « `seed.ts:270` porte 5 qids » — **deux défauts distincts sous le même mot `seed`**, traiter le second ne traite pas le premier. Aucune des cinq n'a d'effet clinique observable aujourd'hui ; ouvrir un lot par dette latente rouvrirait la campagne qu'on clôt. Elles sont écrites dans `lots/LOT-04-validation.md` pour être retrouvées.
   - **Le LOT-00 de `2026-08-07-dettes-packs-residuelles` n'est pas seulement clinique : il débloque une campagne en cours.** `2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md:44-53` fait de « **Aucun pack ne référence `Q_ALI_09`** » un **prérequis bloquant** de l'allumage de `WN_AGENDA_ALI` (`SELECT nom, par_defaut, actif FROM packs WHERE 'Q_ALI_09' = ANY(qids);`, attendu 0 ligne) : c'est **le seul chemin qui assignerait l'agenda sans clic praticien**, `assignPackToPatient` — appelé par l'onboarding portail — n'écartant que `IDS_SUSPENDUS`, et rien ne validant les `qids` d'un pack contre cette liste. La production rend aujourd'hui **1 ligne**, le pack de base. Le retrait de `Q_ALI_09` est donc **requis, pas à arbitrer** ; et tant que la ligne existe, allumer `WN_AGENDA_ALI` auto-assignerait l'agenda à chaque patient onboardé **sans décision praticien** — exactement ce que [[D-025]] protège.
   - La garde générale appelée par les réserves de [[D-031]] — un banc distinguant porte constitutive et voie d'entrée suffisante — **reste sans lot ouvert** ; cette décision ne l'ouvre pas.
 - Référence : `docs/claude/campagnes/2026-08-06-packs-personnalises/lots/LOT-04-validation.md`, `docs/claude/campagnes/2026-08-07-dettes-packs-residuelles/CAMPAGNE.md`, [[D-030]], [[D-031]]
@@ -4452,7 +4560,7 @@ commente une synthèse, elle ne la re-valide pas.
   - **Le repli par nom de `resoudrePackBase` (`valider/route.ts:24,28-31`) est mort, pas un filet.** `NOM_PACK_BASE = 'BASE DE CONSULTATION'` (majuscules) alors que le nom réel en base est « Base de consultation » ; l'égalité Prisma/PostgreSQL est sensible à la casse — ce repli ne peut jamais s'exécuter. Si le pack `parDefaut` disparaissait ou perdait sa marque, `resoudrePackBase` renverrait `null` et `portail/valider` échouerait, sans filet réel. **Aggravant : `PATCH /api/praticien/packs` (`packs/route.ts:182,191-193`) accepte `parDefaut` sur n'importe quel pack, actif ou non, sans aucune garde** — rien n'empêche de démarquer « Base de consultation » par erreur. Geste porté au LOT-03 (point 4 de la décision) : recherche insensible à la casse, ou garde interdisant de désactiver/démarquer le pack `parDefaut`.
   - **Le bloc « Packs suggérés » de `PatientsPanel.tsx`** (`packsRecommandes`, `questionnaires-functional.ts:78,209-268` → `api/praticien/questionnaires/registry/route.ts:8,25` et `api/praticien/questionnaires/route.ts:45` → `PatientsPanel.tsx:272,288,750,900-928`) n'a pas été retiré par ce lot documentaire : après le retrait effectif (LOT-03), ses boutons continueront de citer des packs désactivés et d'aboutir à un message d'échec — porte du parcours à fermer au LOT-03.
   - **Le sens de `dejaAssigne`/`dejaCouvert`/`dejaRepondu` change quand une cible pack devient N cibles questionnaires** (`orientationEngine.ts:655-665` : pour un pack, `dejaAssigne` est un `every` sur toute la composition ; pour un questionnaire, c'est l'item seul). Le panneau d'orientation passe alors de 1 ligne par règle à 5-8 lignes — arbitrage UX/clinique à trancher au LOT-02.
-  - **L'absorption comme regroupement disparaît avec le retrait des cibles pack** (le report « via Q_GAS_01 : … », `orientationEngine.ts:769-772`) : `R2-GAS-01` et le remplacement de `R2-GAS-02` dédupliqueront alors en une seule ligne, là où l'un absorbait l'autre — acceptable, à valider au LOT-02.
+  - **L'absorption comme regroupement disparaît avec le retrait des cibles pack** (le report « via Q_GAS_01 : … », [`` `via ${qid} : ${objectif}` ``](web/src/lib/clinical/orientationEngine.ts) — ancre corrigée le 2026-08-23 ([[D-100]]) : elle visait `orientationEngine.ts:769-772`, où ce code ne vit plus) : `R2-GAS-01` et le remplacement de `R2-GAS-02` dédupliqueront alors en une seule ligne, là où l'un absorbait l'autre — acceptable, à valider au LOT-02.
   - **`packsTransmis` (`synthese/route.ts:97,361,414` ; prompt `anthropic.ts:326`) deviendra structurellement vide.** À vérifier au LOT-02 si un bloc vide se lit, côté modèle, « aucun pack recommandé » (correct) ou « bloc absent » (silence trompeur).
 - Référence : `docs/claude/campagnes/2026-08-06-packs-personnalises/CAMPAGNE.md`, `docs/claude/campagnes/2026-08-06-packs-personnalises/lots/LOT-01-socle.md` (matrice d'inventaire, section « Résultats »), [[D-018]], [[D-025]] ; renvoi ajouté le 2026-08-07 par [[D-031]] : le re-ciblage des 6 règles **rendu nécessaire par ce retrait, et arbitré au LOT-02**, est borné par [[D-031]] — une cible ajoutée ne contourne pas la porte d'une règle voisine.
 

@@ -159,11 +159,69 @@ describe('wn-diagnostic-e2e — ce qu’il nomme', () => {
 
     const { code, err } = lancerCapture(racine);
     strictEqual(code, 0, 'le diagnostic ne doit jamais changer le code de sortie');
-    match(err, /AUCUNE requête HTTP émise/);
+    match(err, /AUCUNE requête de page émise/);
     match(err, /visual-hub-et-frise-iPhone-13/);
     // Il doit dire, noir sur blanc, que le rouge reste rouge : un lecteur
     // pressé ne doit pas pouvoir lire « c'est vert ».
     match(err, /Elle est rouge/);
+  });
+
+  // LES DEUX CAS SUR LESQUELS LE CLASSIFICATEUR SE TAISAIT, mesurés le
+  // 2026-08-23 sur des artefacts réels de deux sessions distinctes. Les
+  // fixtures reproduisent la FORME observée, jamais l'artefact : un journal
+  // réseau Playwright transporte les en-têtes de la requête, cookie de session
+  // compris — une trace ne se commet pas dans un dépôt.
+  it('journal NON vide, mais uniquement des requêtes d’API ⇒ diagnostic', () => {
+    // Le cas mesuré : un test qui monte son décor par `page.request.post(...)`
+    // écrit une entrée dans le même journal, AVANT la navigation qui, elle,
+    // n'émettra rien. Le prédicat « journal vide » lâchait ici, et c'est
+    // exactement le cas que le script existe pour nommer.
+    const racine = dossierNeuf();
+    poserEchec(racine, 'portail-parcours-iPhone-13', {
+      reseau: JSON.stringify({
+        type: 'resource-snapshot',
+        snapshot: {
+          _apiRequest: true,
+          request: { method: 'POST', url: 'http://localhost:3115/api/praticien/consultations' },
+          response: { status: 200 },
+        },
+      }),
+      erreur: TIMEOUT_GOTO,
+    });
+
+    match(lancerCapture(racine).err, /AUCUNE requête de page émise/);
+  });
+
+  // CONTRE-ÉPREUVE DU CAS PRÉCÉDENT, et c'est elle qui protège le sens du
+  // script : la MÊME forme, sans le marqueur `_apiRequest`, est une requête de
+  // page — le serveur a été sollicité, et rien ne doit être excusé.
+  it('même journal, sans le marqueur d’API ⇒ AUCUN diagnostic', () => {
+    const racine = dossierNeuf();
+    poserEchec(racine, 'portail-parcours-iPhone-13', {
+      reseau: JSON.stringify({
+        type: 'resource-snapshot',
+        snapshot: {
+          request: { method: 'POST', url: 'http://localhost:3115/api/praticien/consultations' },
+          response: { status: 200 },
+        },
+      }),
+      erreur: TIMEOUT_GOTO,
+    });
+
+    strictEqual(lancerCapture(racine).err, '');
+  });
+
+  // MODE DE SILENCE N° 2, celui du LOT-09 : Playwright n'écrit pas toujours
+  // l'appel fautif dans `error-context.md` — il n'y avait consigné qu'un délai
+  // de TEARDOWN. Exiger le mot `page.goto` faisait taire le script.
+  it('expiration sans le mot `page.goto` ⇒ diagnostic quand même', () => {
+    const racine = dossierNeuf();
+    poserEchec(racine, 'teardown-iPhone-13', {
+      reseau: '',
+      erreur: '# Error details\n```\nTest timeout of 120000ms exceeded while tearing down "context".\n```\n',
+    });
+
+    match(lancerCapture(racine).err, /AUCUNE requête de page émise/);
   });
 
   it('compte plusieurs blocages et explore les sous-dossiers', () => {

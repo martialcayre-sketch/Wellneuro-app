@@ -4,9 +4,9 @@ titre: "Doctrine exécutable — les cinq véhicules de l'audit"
 statut: "ouverte en primaire (2026-08-23) — huit lots cadrés sur état réel re-mesuré ; trois véhicules déplacés par le cadrage"
 créée_le: "2026-08-18"
 mise_à_jour: "2026-08-23"
-lot_courant: "LOT-04"
+lot_courant: "LOT-10"
 branche_campagne: "aucune"
-branche_lot_courant: "worktree-doctrine+lot04-objet-securite"
+branche_lot_courant: "worktree-doctrine+lot10-ancres-classificateur"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -129,7 +129,7 @@ jusqu'au bout le jour même** : sans consommateur interne, le lot a été
 | LOT-07 | `DC-22` — le total de « Mon équilibre » a-t-il un sens ? | à_faire | — |
 | LOT-08 | Clôture — renvois, constitution à l'état atteint, matrice reconduite | à_faire | tous |
 | LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | **terminé** (2026-08-23, `D-097` — clause au cadre déontologique en `synthese-v29`, banc de la formule, de l'**opérateur** et de la **position** ; second point de passage écarté avec motif) | — |
-| LOT-10 | Les ancres cessent de dériver, et le classificateur E2E cesse de se taire | à_faire | — |
+| LOT-10 | Les ancres cessent de dériver, et le classificateur E2E cesse de se taire | **terminé** (2026-08-23, `D-100` — ancre textuelle liée dans un seul lien, contrôle sans arithmétique de ligne, 252 citations grandfathered comptées ; le classificateur avait **deux** modes de silence, pas un) | — |
 
 Correspondance avec les cinq véhicules du brief : **V2 → hors campagne**
 (LOT-02 transféré à Curation signée), V3 → LOT-04 + LOT-05, V5 → LOT-03,
