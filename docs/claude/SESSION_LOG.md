@@ -4749,3 +4749,28 @@ reste non armée.
 
 Questions ouvertes — aucune sur `D-102` ; l'inhibition de `DC-42` sera totale,
 pas graduée.
+
+## 2026-08-24 — LOT-06 : la politique qui ne compare rien, puis sa signature (D-103, D-104)
+
+Décisions — La mesure a retourné le lot : là où la fiche annonçait trois axes de
+`DC-54` mécanisables, la production en donne **zéro** (niveau de preuve sur
+0,55 % des 8 224 claims en 32 valeurs libres, un seul claim portant deux axes,
+`valide_at` étant la date de validation praticien). La politique déclare donc
+ses quatre axes non comparés et escalade — `DC-55` obtient son premier
+producteur. Le conflit `CS-BIO-01` était déjà vécu dans `indicationsBiologieV1`,
+deux claims à sens opposés dans un même fichier signé. Livré inerte, relu, puis
+signé (`D-104`) : `DC-54` et `DC-55` basculent.
+
+Écarté — comparer quand les champs sont là (mordrait sur 1 claim sur 8 224 et
+exigerait une hiérarchie inventée) ; poser d'abord un vocabulaire fermé (une
+campagne à soi seule). `DC-29` : descente faite, verdict négatif, forme
+`CONVERGENCE` laissée vide et gardée.
+
+La revue a trouvé qu'un claim entrait au préflight fail-closed sans avoir été
+relu — il aurait bloqué toute release de base.
+
+Prochaine action — approuver la release de `3f99ccd6` : sans elle la signature
+n'atteint pas la production.
+
+Questions ouvertes — l'escalade n'atteint ni l'extinction ni les préconditions
+T0 ; restent LOT-03, LOT-07 et LOT-08 de la campagne.
