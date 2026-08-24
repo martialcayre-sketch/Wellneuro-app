@@ -3,10 +3,10 @@ id: "2026-08-18-doctrine-executable"
 titre: "Doctrine exécutable — les cinq véhicules de l'audit"
 statut: "ouverte en primaire (2026-08-23) — huit lots cadrés sur état réel re-mesuré ; trois véhicules déplacés par le cadrage"
 créée_le: "2026-08-18"
-mise_à_jour: "2026-08-23"
-lot_courant: "LOT-06"
+mise_à_jour: "2026-08-24"
+lot_courant: "LOT-07"
 branche_campagne: "aucune"
-branche_lot_courant: "doctrine/lot06-conflit-sources"
+branche_lot_courant: "aucune"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -125,7 +125,7 @@ jusqu'au bout le jour même** : sans consommateur interne, le lot a été
 | LOT-03 | V5 — le banc de doctrine (`DC-58`) | **terminé** (2026-08-24, `D-105` — la mesure a retourné le lot : **zéro valeur orpheline** sur 476 fichiers de test, et la méthode prescrite démontrée **vacue** (633 valeurs distinctes au dénominateur, tout entier court trouve un répondant par hasard). `DC-58` **ne bascule pas** : instruite, sans contre-exemple, sans méthode fondée. Banc posé sur le versant décidable — un littéral à droite d'un opérateur de comparaison —, donc gardien de `DC-19`/`DC-20` ; deux littéraux fautifs nommés **sans qu'aucune valeur change**. Mesure : `LOT-03-MESURE.md`) | — |
 | LOT-04 | V3a — typer l'objet de sécurité et lui donner son pouvoir d'inhibition | **terminé** (2026-08-23, `D-099` — les douze signaux cotés en deux rangs par arbitrage praticien, producteur déterministe livré, `DC-12`/`DC-23` mordantes en production ; re-signature de la table des priorités emportée par le lot) | LOT-01 |
 | LOT-05 | V3b — les gates de population et l'effet indésirable | **terminé** (2026-08-23, `D-101` — mécanisme de gate + aveu de non-curation ; la curation de `neCouvrePas` est ABANDONNÉE sur mesure, son registre n'a aucun consommateur d'exécution ; `DC-42` et `DC-43` **ne basculent pas**, l'interruption est livrée non armée derrière `WN_EI_INTERRUPTION`) | LOT-04 |
-| LOT-06 | V1 achevé — conflit de sources, escalade, provenance de la convergence | **terminé** (2026-08-24, `D-103` — politique déterministe qui **ne compare aucun des quatre axes** et le déclare sur mesure, producteur `CONFLIT_SOURCES`, premier producteur d'`escaladee_praticien` ; descente `DC-29` **négative**, forme `CONVERGENCE` laissée vide et gardée. Registre livré NON SIGNÉ : `DC-54`/`DC-55` **ne basculent pas**) | LOT-04 |
+| LOT-06 | V1 achevé — conflit de sources, escalade, provenance de la convergence | **terminé et CLOS** (2026-08-24, `D-103` puis `D-104` — politique déterministe qui **ne compare aucun des quatre axes** et le déclare sur mesure, producteur `CONFLIT_SOURCES`, premier producteur d'`escaladee_praticien` ; descente `DC-29` **négative**, forme `CONVERGENCE` laissée vide et gardée. Registre **SIGNÉ le 2026-08-24** : `DC-54` et `DC-55` **basculent**. Déployé en production le 2026-08-24 à 05:19 (`a7ed2c7e`), release-db vérifiée verte à 05:40 — `CS-BIO-01` mord) | LOT-04 |
 | LOT-07 | `DC-22` — le total de « Mon équilibre » a-t-il un sens ? | à_faire | — |
 | LOT-08 | Clôture — renvois, constitution à l'état atteint, matrice reconduite | à_faire | tous |
 | LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | **terminé** (2026-08-23, `D-097` — clause au cadre déontologique en `synthese-v29`, banc de la formule, de l'**opérateur** et de la **position** ; second point de passage écarté avec motif) | — |
