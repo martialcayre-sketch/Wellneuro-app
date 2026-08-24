@@ -171,6 +171,30 @@ export function calculerCouverturesTousLesBesoins(
  * Agrège des couvertures par besoin (0-1 ou null) en couvertures par strate.
  * Fonction pure — ne dépend d'aucun questionnaire réel, testable avec des
  * couvertures synthétiques.
+ *
+ * ── L'ÉGALITÉ ENTRE BESOINS D'UNE MÊME STRATE EST DÉLIBÉRÉE ────────────────
+ * [[D-106]], arbitrage praticien du 2026-08-24 (LOT-07, « Doctrine
+ * exécutable »). La moyenne ci-dessous est SIMPLE : au sein d'une strate, les
+ * besoins pèsent égal.
+ *
+ * `DC-21` pose qu'« un poids égal entre axes n'est pas neutre : c'est déjà une
+ * décision de modèle ». Cette platitude était donc une pondération TACITE — les
+ * deux autres étages sont motivés sur place (entre sources d'un besoin, le
+ * rapport 2:1 du repos dans `constants.ts` ; entre strates, le 60/20/20 de
+ * `POIDS_STRATE`), celui-ci ne l'était par aucune ligne. Le LOT-07 l'a mesuré et
+ * l'a fait arbitrer.
+ *
+ * LA MOTIVATION, telle que le praticien l'a rendue : la hiérarchie clinique
+ * entre besoins n'est PAS portée par des poids, elle est portée par le
+ * MÉCANISME DES FONDATIONS CRITIQUES — cinq besoins (`BESOINS_FONDATIONS_
+ * CRITIQUES`) dont l'effondrement plafonne le total quoi qu'il arrive ailleurs.
+ * Hiérarchiser une seconde fois par des poids superposerait deux mécanismes de
+ * priorité sur le même objet, et un besoin sous-pondéré ET fondation critique
+ * deviendrait illisible : son poids l'efface dans la moyenne pendant que son
+ * plafond commande le total.
+ *
+ * Autrement dit, l'égalité ici n'est pas un défaut d'arbitrage — elle est la
+ * condition pour que le plafonnement reste le SEUL énoncé de priorité.
  */
 export function agregerBesoinsEnStrates(
   couverturesParBesoin: CouverturesParBesoin

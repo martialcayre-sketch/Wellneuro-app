@@ -1140,3 +1140,45 @@ describe('FichePatientPanel — destinataire de l’ajout à la file depuis l’
     expect(screen.queryByRole('button', { name: /ajouter à la file d’envoi/i })).toBeNull();
   });
 });
+
+// LE RENDU, PAS SEULEMENT L'ATTRIBUT — [[D-106]], `DC-22`, LOT-07.
+//
+// `natureIndiceGlobal.guard.test.ts` garde que la mention est PASSÉE à la jauge
+// du total. Il lit du texte : il ne peut pas savoir si `ObjetGauge` la rend.
+// Sans les cas ci-dessous, supprimer le `<span>` qui l'affiche laisserait tout
+// au vert — la doctrine serait déclarée dans le code et absente de l'écran.
+describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  /** La grille des objets vit dans un tiroir Radix : son contenu n'existe dans
+   *  le DOM qu'une fois le déclencheur ouvert. */
+  async function ouvrirTiroirObjets() {
+    await rendreFiche();
+    fireEvent.click(screen.getByRole('button', { name: /Objets cliniques & momentum/i }));
+    await screen.findByText('Indice global');
+  }
+
+  it('affiche la mention de nature à côté de l’indice global', async () => {
+    await ouvrirTiroirObjets();
+
+    // La valeur de la fixture (62) et sa nature coexistent : c'est tout l'objet
+    // de l'arbitrage — le chiffre reste, il ne passe plus pour un score.
+    expect(screen.getByText('62')).toBeTruthy();
+    expect(screen.getAllByText('Repère de suivi, pas un score clinique').length).toBeGreaterThan(0);
+  });
+
+  it('ne rend aucune mention sur un objet non mesuré', async () => {
+    await ouvrirTiroirObjets();
+
+    // `stabiliteMetabolique` et `clarte` valent `null` dans la fixture : leur
+    // tuile dit « Non mesuré » et n'a aucune nature à démentir.
+    const nonMesures = screen.getAllByText('Non mesuré');
+    expect(nonMesures.length).toBeGreaterThan(0);
+    for (const tuile of nonMesures) {
+      expect(tuile.parentElement?.textContent).not.toContain('pas un score clinique');
+    }
+  });
+});

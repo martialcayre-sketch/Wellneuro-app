@@ -26,6 +26,9 @@ import type { PatientsApiResponse } from '@/app/api/praticien/patients/route';
 import type { PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import type { ResultatMomentum } from '@/lib/equilibre/types';
+// Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
+// suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
+import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
@@ -143,7 +146,17 @@ function interpColorToVariant(color?: string): BadgeVariant {
   return 'neutral';
 }
 
-function ObjetGauge({ label, value }: { label: string; value: number | null }) {
+function ObjetGauge({
+  label,
+  value,
+  mention,
+}: {
+  label: string;
+  value: number | null;
+  /** Nature du chiffre, servie sous la jauge quand il n'est pas un score
+   *  clinique (`DC-20`). Absente pour les objets qui n'en ont pas besoin. */
+  mention?: string;
+}) {
   if (value === null) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-border rounded-xl p-4 h-[148px]">
@@ -152,7 +165,13 @@ function ObjetGauge({ label, value }: { label: string; value: number | null }) {
       </div>
     );
   }
-  return <ScoreGauge value={value} label={label} />;
+  if (!mention) return <ScoreGauge value={value} label={label} />;
+  return (
+    <div className="flex flex-col items-center">
+      <ScoreGauge value={value} label={label} />
+      <span className="mt-1 text-xs text-muted-foreground text-center">{mention}</span>
+    </div>
+  );
 }
 
 function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
@@ -173,9 +192,18 @@ function MomentumCard({ momentum }: { momentum: ResultatMomentum | null }) {
         {momentum.delta}
       </span>
       <span className="text-xs text-muted-foreground uppercase tracking-wide">Momentum</span>
-      <Badge variant={momentum.tendance === 'hausse' ? 'success' : momentum.tendance === 'baisse' ? 'warning' : 'neutral'}>
-        {momentum.tendance}
-      </Badge>
+      {/* VARIANTE NEUTRE DANS LES TROIS SENS — [[D-106]], `DC-22`.
+          Ce badge portait `success` sur une hausse et `warning` sur une baisse.
+          Or ce delta est la variation du TOTAL, dont l'arbitrage du 2026-08-24
+          établit qu'il n'a aucune interprétation clinique : le colorer en vert
+          ou en orange EST cette interprétation, servie au praticien sous forme
+          de couleur au lieu de mots. C'est exactement ce que la décision retire
+          au libellé patient (« En progression ») ; le laisser ici aurait
+          corrigé la phrase et gardé le jugement. */}
+      <Badge variant="neutral">{momentum.tendance}</Badge>
+      <span className="text-[10px] text-muted-foreground text-center leading-tight">
+        {MENTION_NATURE_INDICE_GLOBAL}
+      </span>
     </div>
   );
 }
@@ -723,7 +751,17 @@ export function FichePatientPanel({
     /* 2 colonnes fixes : la pane de tiroir fait 440px (maquette), les
        breakpoints viewport de Tailwind n'y voient rien. */
     <div className="grid grid-cols-2 gap-3">
-      <ObjetGauge label="Indice global" value={objetsCliniques.indiceGlobal} />
+      {/* LE SEUL ENDROIT DU DÉPÔT OÙ LE TOTAL S'AFFICHE EN CHIFFRE ([[D-106]],
+          `DC-22`). Le praticien lit donc la mention de nature : le total n'a
+          pas d'interprétation clinique, aucune règle ne le lit, il ne déclenche
+          rien. Le patient, lui, ne reçoit pas cette mention — il ne voit aucun
+          chiffre (`showValue={false}`), et démentir un score qu'il n'a jamais lu
+          ne l'informerait pas. */}
+      <ObjetGauge
+        label="Indice global"
+        value={objetsCliniques.indiceGlobal}
+        mention={MENTION_NATURE_INDICE_GLOBAL}
+      />
       <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
       <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
       <ObjetGauge label="Clarté" value={objetsCliniques.clarte} />

@@ -4,6 +4,142 @@
 
 ## Décisions actives
 
+### D-106 — Le total de « Mon équilibre » n'a pas d'interprétation clinique, et il le dit
+
+- Date : 2026-08-24
+- Statut : accepté (arbitrage praticien, rendu en session le 2026-08-24)
+- Domaine : clinique — nature d'un indicateur restitué, et deux pondérations
+  jusqu'ici non arbitrées
+- Porte sur : `DC-22`, et par les deux arbitrages adjacents, `DC-21` et le
+  calibrage du plafonnement
+- Fait suite à : le LOT-07 de « Doctrine exécutable », dont la fiche imposait de
+  **mesurer, poser la question, et s'arrêter**
+
+**La mesure, d'abord.** `DC-22` pose que la question précède le calcul :
+*existe-t-il une interprétation clinique du total ?* La descente a établi trois
+faits qui ont rendu l'arbitrage décidable.
+
+1. **Aucun consommateur ne lit le total** — et la formulation demande de la
+   précision, qu'une première rédaction s'était épargnée. `GLOBAL_BALANCE` n'est
+   **pas** un simple code de vocabulaire : `clinicalSnapshot.ts:209` l'émet comme
+   un `ClinicalObjectFinding` **portant la valeur mesurée**, qui entre donc dans
+   le snapshot figé et dans son empreinte. Ce qui est vrai, et qui suffit à
+   trancher : **rien ne le consomme**. Tous les producteurs de constats émettent
+   `clinicalObjectCodes: []` (`chaineC1.ts:506`, `clinicalReview.ts`,
+   `safetyFindings.ts`), et les consommateurs ne lisent que
+   `balanceAssessment.needs` (`decisionCard.ts:40`, `clinicalReview.ts:55`).
+   Seule exception, et elle ne lit pas la valeur : `clinicalSnapshot.ts:273,277`
+   teste la **nullité** de `scoreGlobal` pour peupler `availableDomains` /
+   `missingDomains`. Le total ne déclenche rien.
+2. **Le patient ne voit pas le nombre** (`showValue={false}`) ; le praticien, si.
+3. **Mais sa VARIATION est un signal présenté aux deux.** C'est le fait qui
+   obligeait à trancher : `construireHistoriqueEquilibre` empile `scoreGlobal`
+   en lectures datées, `calculerDeltaMomentum` en tire hausse/stable/baisse. Si
+   le total n'a pas de sens clinique, la variation de ce total n'en a pas non
+   plus — et c'est **elle**, pas lui, que le patient lit.
+
+**Décision 1 — le total n'a pas d'interprétation clinique, et il n'est pas
+retiré.** Il reste un **repère de suivi identifié comme tel** (`DC-20` : un
+chiffre purement technique doit être identifié comme tel). L'issue « le retirer »
+était ouverte et n'a pas été retenue ; ce que l'arbitrage interdit n'est pas de
+l'afficher, c'est de le laisser passer pour ce qu'il n'est pas. La mention
+« Repère de suivi, pas un score clinique » accompagne donc le chiffre partout où
+il s'affiche — c'est-à-dire au seul endroit du dépôt où il s'affiche, la fiche
+praticien. **Le patient ne la reçoit pas**, et c'est délibéré : lui servir « pas
+un score clinique » l'obligerait à démentir un score qu'il n'a jamais lu.
+
+**Décision 2 — un libellé patient affirmait une amélioration ; il ne l'affirme
+plus.** Le libellé de hausse disait « **En progression** depuis votre dernier
+bilan ». « Progression » est exactement l'interprétation clinique que la décision
+1 refuse au total. Il devient « Votre repère de suivi est en hausse depuis votre
+dernier bilan » — le vocabulaire neutre que les surfaces praticien employaient
+déjà.
+
+**L'asymétrie des trois libellés est conservée, et ce n'est pas un oubli.** La
+doctrine antérieure « construction, jamais dégradation » (SP-CONV LOT-05, `D7`,
+gardée par `gamification-patient.guard.test.ts`) veut qu'une évolution
+défavorable ne soit **jamais annoncée comme une chute** : le libellé de baisse
+garde donc sa formulation d'origine, qui ne nomme pas la direction et tend la
+main au praticien. Symétriser les trois « pour la cohérence » aurait cassé une
+règle en croyant en servir une autre.
+
+**Décision 3 — `SEUIL_EFFONDREMENT = 0,34` et `PLAFOND_FONDATION_CRITIQUE = 50`
+sont validés tels quels.** Les deux portaient depuis l'origine la mention
+« calibrage v1, **à valider par le praticien** », et cette validation n'avait
+jamais eu lieu — alors que ce sont les deux valeurs qui façonnent le plus le
+total, puisqu'elles commandent le plafonnement anti-moyenne. Validés **sans
+changer d'un chiffre**, donc **aucun bump de `VERSION_SCORE_EQUILIBRE`** : aucune
+valeur calculée ne bouge, aucun épisode figé ne change de sens, aucune
+comparaison de jalons ne se bloque. Un bump ici aurait coûté l'historique de tous
+les patients pour n'enregistrer qu'une signature.
+
+**Décision 4 — l'égalité entre besoins d'une même strate est délibérée, et sa
+motivation est écrite.** La mesure a trouvé une pondération **tacite** : les
+poids sont motivés sur place à deux étages — entre sources d'un besoin (le
+rapport 2:1 du repos), entre strates (60/20/20) — mais la moyenne entre besoins
+d'une strate est **simple**, et aucune ligne ne le disait. `DC-21` pose qu'« un
+poids égal entre axes n'est pas neutre : c'est déjà une décision de modèle ».
+
+La motivation rendue : **la hiérarchie clinique entre besoins n'est pas portée
+par des poids, elle est portée par le mécanisme des fondations critiques** —
+cinq besoins dont l'effondrement plafonne le total quoi qu'il arrive ailleurs.
+Hiérarchiser une seconde fois par des poids superposerait deux mécanismes de
+priorité sur le même objet, et un besoin à la fois sous-pondéré et fondation
+critique deviendrait illisible : son poids l'efface dans la moyenne pendant que
+son plafond commande le total. L'égalité est la condition pour que le
+plafonnement reste le **seul** énoncé de priorité.
+
+**La garde, et les deux fail-open qu'elle a fallu corriger avant de la retenir.**
+Une issue de cette forme ne vit que dans des libellés d'écran, que la première
+refonte efface sans bruit. `natureIndiceGlobal.guard.test.ts` la rend opposable.
+Deux versions ont été **vues vertes sous injection** avant d'être refusées :
+
+- la première cherchait la mention **n'importe où dans le fichier** — l'`import`
+  suffisait, un composant pouvait donc l'importer sans jamais l'afficher ;
+- la seconde raisonnait **par fichier** — or `FichePatientPanel.tsx` porte
+  ailleurs une jauge servie `showValue={false}`, et cette seule occurrence
+  dispensait toutes les autres, y compris celle du total.
+
+Le banc lit désormais **l'élément JSX qui reçoit `indiceGlobal`**, et lui seul.
+
+**Un piège que ce lot a failli poser — et le garde censé l'empêcher était déjà
+cassé.** En sortant les libellés patient de `components/patient` pour les loger
+avec leur doctrine, le lot les sortait du balayage de
+`gamification-patient.guard.test.ts`, qui ne lit que des chemins **déclarés**.
+L'entrée a donc été ajoutée — puis la revue a montré qu'elle **ne mordait pas** :
+`fichiersSources()` appelle `readdirSync` sur chaque entrée, et `readdirSync`
+lève `ENOTDIR` sur un **fichier** ; le `catch` rendait `[]`. **Toute entrée de
+chemin de fichier y était un no-op silencieux.**
+
+Deux conséquences, dont une hors de ce lot. La première : la protection que ce
+lot revendiquait n'existait pas. La seconde, **préexistante** :
+`lib/agenda-sommeil/rappelPortail.ts` était dégardé depuis son ajout — le garde
+n'a jamais lu aucun de ses deux chemins de fichier. Les deux sont réparés ici
+(`statSync` sur repli), et la cause du silence est refermée par une
+**non-vacuité PAR ENTRÉE** : le plancher global était insensible à une entrée
+morte, puisqu'un dossier en apporte des dizaines. Vérifié en injectant
+« bravo » dans le module déplacé : le garde rougit désormais.
+
+**Ce que cette décision NE fait pas.** Elle ne retire aucun total, ne modifie
+aucune valeur calculée, ne bump aucune version de score, et n'élargit pas au
+scoring des instruments : `DC-22` vise le **total agrégé**, pas les scores qui
+l'alimentent. Elle ne mécanise pas non plus une interprétation du total — il n'y
+en a pas, c'est le sens de l'arbitrage.
+
+**Trois dettes nommées, à ne pas redécouvrir.**
+
+1. **`calculerDeltaMomentum` déclenche « hausse » sur `delta > 0`**, donc sur
+   `+0,01` : le patient lit « en hausse » pour du bruit de mesure. Poser un seuil
+   de significativité serait un **changement clinique** avec sa propre décision
+   et son bump de version — hors de ce lot, mais le report est désormais écrit.
+2. **Le banc suit la valeur par son NOM.** Une variable intermédiaire, un spread
+   d'attributs ou un renommage du champ côté API la lui font perdre. La limite
+   est déclarée dans le banc ; la fermer supposerait une analyse de flot.
+3. **Rien ne garde le bump de `VERSION_SCORE_EQUILIBRE`.** `constants.ts` exige
+   désormais en toutes lettres qu'une modification de `SEUIL_EFFONDREMENT` ou de
+   `PLAFOND_FONDATION_CRITIQUE` s'accompagne d'un bump — la règle est déclarée,
+   vérifiée par aucun banc.
+
 ### D-105 — `DC-58` n'a pas de sujet, sa méthode ne tient pas, et le banc se pose sur l'autre versant
 
 - Date : 2026-08-24

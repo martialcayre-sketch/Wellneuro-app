@@ -249,8 +249,20 @@ export const BESOINS: BesoinDefinition[] = [
 // global est plafonné quel que soit le niveau des autres besoins/strates.
 export const BESOINS_FONDATIONS_CRITIQUES = [1, 2, 4, 5, 9] as const;
 
-// Calibrage v1 — seuil et plafond initiaux, à valider par le praticien et
-// ajuster si besoin (bump de VERSION_SCORE_EQUILIBRE en cas de changement).
+// VALIDÉS PAR LE PRATICIEN LE 2026-08-24 — [[D-106]], LOT-07 de « Doctrine
+// exécutable ». Les deux portaient depuis l'origine la mention « calibrage v1,
+// à valider par le praticien », et cette validation n'avait jamais eu lieu :
+// ce sont pourtant les deux valeurs qui façonnent le plus le total, puisqu'elles
+// commandent le plafonnement anti-moyenne.
+//
+// VALIDÉS TELS QUELS, sans changer d'un chiffre — et c'est la raison pour
+// laquelle aucun bump de `VERSION_SCORE_EQUILIBRE` n'accompagne cette décision :
+// aucune valeur calculée ne bouge, donc aucun épisode figé ne change de sens et
+// aucune comparaison de jalons ne se bloque. Un bump ici aurait coûté
+// l'historique de tous les patients pour n'enregistrer qu'une signature.
+//
+// Les modifier reste un changement clinique (`DC-17`, `DC-18`) : décision
+// `D-xxx`, fragment `changelog.d/` ET bump de `VERSION_SCORE_EQUILIBRE`.
 export const SEUIL_EFFONDREMENT = 0.34;
 export const PLAFOND_FONDATION_CRITIQUE = 50;
 

@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { extname, join, relative } from 'path';
 import { describe, expect, it } from 'vitest';
 
@@ -41,6 +41,12 @@ const SURFACES_PATIENT = [
   // module pur, hors de `components/patient` — sans cette entrée, un « 5 jours
   // d'affilée » y passerait sous le radar du garde.
   'lib/agenda-sommeil/rappelPortail.ts',
+  // Même raison, LOT-07 « Doctrine exécutable » ([[D-106]]) : les libellés de
+  // tendance de « Mon équilibre » ont quitté `components/patient` pour vivre
+  // avec la doctrine qui les motive. Sans cette entrée, ils sortaient du
+  // balayage en même temps — un texte patient déplacé est un texte patient
+  // dégardé tant que son nouveau chemin n'est pas déclaré ici.
+  'lib/equilibre/natureIndiceGlobal.ts',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.
@@ -75,7 +81,21 @@ function fichiersSources(dossier: string): string[] {
   try {
     entrees = readdirSync(dossier, { withFileTypes: true });
   } catch {
-    return []; // dossier absent : la garde de non-vacuité ci-dessous le dira
+    // UN CHEMIN DE FICHIER N'EST PAS UN DOSSIER ABSENT — [[D-106]].
+    //
+    // `SURFACES_PATIENT` accepte les deux depuis que des textes patient vivent
+    // hors de `components/patient`. `readdirSync` lève `ENOTDIR` sur un
+    // fichier ; le `catch` rendait `[]`, donc **toute entrée de fichier était
+    // un no-op silencieux**. `lib/agenda-sommeil/rappelPortail.ts` était ainsi
+    // dégardé depuis son ajout, et l'entrée posée par le LOT-07 l'aurait été
+    // de même — le compte global restait au-dessus du plancher, rien ne
+    // bronchait. La non-vacuité PAR ENTRÉE, plus bas, est ce qui l'aurait dit.
+    try {
+      if (statSync(dossier).isFile() && EXTENSIONS.has(extname(dossier))) return [dossier];
+    } catch {
+      /* ni dossier ni fichier : la non-vacuité par entrée le dira */
+    }
+    return [];
   }
   return entrees.flatMap((entree) => {
     const chemin = join(dossier, entree.name);
@@ -112,5 +132,19 @@ describe('surfaces patient — aucune gamification (R2)', () => {
     // Si l'arbre se vide (dossier renommé, extensions changées), le test
     // ci-dessus passerait au vert sans avoir rien lu.
     expect(fichiersPatient().length).toBeGreaterThan(20);
+  });
+
+  // LA NON-VACUITÉ PAR ENTRÉE, et c'est elle qui manquait — [[D-106]].
+  //
+  // Le plancher global ci-dessus est insensible à une entrée morte : les
+  // dossiers en apportent des dizaines, une entrée qui n'apporte rien ne fait
+  // pas descendre le total. Deux chemins de FICHIER y ont donc dormi sans que
+  // rien ne le dise. Ici chaque entrée doit rendre au moins un fichier — un
+  // chemin renommé, supprimé ou mal formé rougit, au lieu de se taire.
+  it('chaque surface déclarée contribue au moins un fichier', () => {
+    const steriles = SURFACES_PATIENT.filter(
+      (surface) => fichiersSources(join(RACINE, surface)).length === 0,
+    );
+    expect(steriles).toEqual([]);
   });
 });

@@ -5,15 +5,10 @@ import { Sprout } from 'lucide-react';
 import type { PatientEquilibreResponse } from '@/app/api/patient/equilibre/route';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { GrowthIllustration } from '@/components/patient/ui/GrowthIllustration';
-
-// Doctrine « construction, jamais dégradation » (SP-CONV LOT-05, D7) : une
-// évolution défavorable n'est jamais annoncée comme une chute — elle devient
-// un repère à explorer avec le praticien.
-const TENDANCE_LABEL: Record<string, string> = {
-  hausse: 'En progression depuis votre dernier bilan',
-  stable: 'Stable depuis votre dernier bilan',
-  baisse: 'Des repères ont évolué depuis votre dernier bilan — votre praticien les regarde avec vous',
-};
+// Doctrine « construction, jamais dégradation » (SP-CONV LOT-05, D7) ET nature
+// du total ([[D-106]], `DC-22`) : les trois libellés vivent désormais avec la
+// doctrine qui les motive, jamais en double.
+import { TENDANCE_INDICE_GLOBAL_PATIENT } from '@/lib/equilibre/natureIndiceGlobal';
 
 // Frise qualitative (SP-CONV LOT-05) : des repères temporels, pas des
 // valeurs. L'ancienne frise encodait l'indice dans la hauteur des barres — le
@@ -128,7 +123,7 @@ export function MonEquilibreAccueil({
 
         {momentum && (
           <p className="text-base text-primary bg-primary/10 rounded-xl px-4 py-2 text-center mb-4">
-            {TENDANCE_LABEL[momentum.tendance]}
+            {TENDANCE_INDICE_GLOBAL_PATIENT[momentum.tendance]}
           </p>
         )}
 
