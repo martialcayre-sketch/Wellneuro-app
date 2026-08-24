@@ -4,6 +4,109 @@
 
 ## Décisions actives
 
+### D-105 — `DC-58` n'a pas de sujet, sa méthode ne tient pas, et le banc se pose sur l'autre versant
+
+- Date : 2026-08-24
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-24)
+- Domaine : outillage de doctrine — plus deux littéraux cliniques nommés, sans
+  qu'aucune valeur ne change
+- Porte sur : `DC-58`, et par ce que la mesure a trouvé, `DC-19`/`DC-20`
+- Fait suite à : le LOT-03 de « Doctrine exécutable », dont la fiche exigeait
+  **la mesure avant le banc** — c'est elle qui a retourné le lot
+
+**La mesure d'abord, et elle dit non.** La fiche demandait un banc détectant
+« une valeur cliniquement signifiante qui n'existerait que dans un test ».
+Descente du 2026-08-24 sur **476 fichiers de test et 595 fichiers source** :
+128 candidats au lexique clinique étroit, 25 sans provenance, **zéro orpheline
+réelle** après qualification une par une. Les 25 se répartissent en trois
+classes, toutes légitimes : 19 lignes de fixture d'une **colonne Prisma**
+(`doseCibleBasse/Haute`, `seuilDoseBasse/Haute`, `doseParDjr` — les vraies
+valeurs vivent en base, curées) ; 4 codes **HTTP 400** attrapés dans des titres
+de test ; 2 sorties calculées.
+
+**Et surtout, la méthode prescrite est vacue.** Contrôler qu'une valeur de test
+« existe ailleurs » ne prouve rien : avec 633 valeurs distinctes au
+dénominateur, presque tout entier court trouve un répondant **par hasard**.
+`poids = 1` était « couvert » parce que le chiffre 1 figure dans
+`indicationsBiologieV1.ts` ; `doseCibleBasse = 4000` par
+`LONGUEUR_MAX_CE_QUI_COMPTE`, qui est une longueur de texte. Une seconde
+formulation — un test qui réécrit en littéral la valeur d'une constante déclarée
+— échoue pour la même raison : un `3` n'importe où dans un test du même dossier
+suffit à la satisfaire. **Un tel banc serait vert en permanence et vert pour la
+mauvaise raison**, ce que les interdits du lot refusent explicitement.
+
+**Décision 1 — `DC-58` reste une proposition, et le dit avec sa mesure.** Elle
+n'est pas basculée : non par manque d'outil, mais parce que **le dépôt ne lui
+oppose aucun contre-exemple** et que sa mécanisation par égalité de valeurs est
+démontrée non fondée. Le statut porte désormais la date, le volume et la raison
+— une proposition mesurée sans sujet n'est pas une proposition non instruite.
+
+**Décision 2 — le banc se pose sur le versant décidable.** Ce que `DC-58`
+décrit — « un cut-off inventé puis recopié dans le moteur » — devient décidable
+dès qu'on cesse de comparer des VALEURS pour regarder des **POSITIONS** : un
+littéral à droite d'un opérateur de comparaison **est** un seuil, sans qu'on ait
+à deviner si le nombre est clinique. `seuilsLitterauxMotives.guard.test.ts`
+balaie tout `src/lib` en découverte automatique, neutralise chaînes,
+commentaires et expressions régulières, et exige que **toute** comparaison à
+littéral non trivial hors catalogue soit soit nommée dans une constante motivée,
+soit inscrite dans une liste d'exemptions **avec son motif écrit**. Une
+comparaison inconnue **rougit plutôt que d'être devinée** — le patron de
+`D-046`, où une table inconnue n'hérite d'aucun jeu de propriétés par défaut.
+
+**Ce que ce banc garde, et ce qu'il ne garde pas.** Il garde `DC-19`/`DC-20`
+plus que `DC-58`, et son en-tête le dit : un banc dont on croit qu'il garde
+autre chose que ce qu'il garde est pire qu'absent. **Le catalogue est exempté
+par forme** — un cut-off écrit dans le catalogue est chez lui, c'est lui la
+source déclarée, et `ranges.ts` interdit déjà de ré-encoder ses bornes ailleurs.
+Les **33** seuils de `questions.ts` (PSQI, Horne-Östberg, Karasek…) ne sont donc
+pas gardés ici ; ils le restent par la certification de scoring et par
+`DC-17`/`DC-18`. Limite nommée, pas oubli.
+
+**Décision 3 — les deux littéraux trouvés sont nommés. Aucune valeur ne
+change.** Sur 61 comparaisons littérales mesurées dans `src/lib`, deux étaient
+fautives, et de la même façon : **un repère unique écrit plusieurs fois, dont
+une seule écriture nommée.**
+
+1. `discordanceRythme.ts` confrontait le déclaré à un littéral `10` pendant que
+   l'observé lisait `SEUIL_JEUNE_MIN`. Or c'est **un seul repère** — SIIN54 se
+   répond en heures, l'agenda s'observe en minutes, et le barème n'en déclare
+   qu'un (`{id:'SIIN54',points:2,seuil:{min:10}}`). Porter `SEUIL_JEUNE_MIN` à
+   11 h laissait le déclaré comparer à 10 : la discordance aurait alors
+   confronté le déclaré à un repère et l'observé à un autre, **en silence**, et
+   le drapeau de sur-déclaration se serait levé ou tu sans raison lisible.
+   `SEUIL_JEUNE_DECLARE_H = SEUIL_JEUNE_MIN / 60` — dérivé, jamais recopié, même
+   raison que `MAX_RYTHME_CHRONO`. Vaut 10 avant comme après.
+2. La borne « trois actions maximum » était écrite **six fois dans trois
+   fichiers** — le refus du moteur, le second refus de l'aperçu patient, deux
+   gardes de saisie, un bouton désactivé et un libellé « /3 ». Une borne portée
+   à quatre côté moteur laissait l'écran en bloquer trois, et le praticien
+   devant un bouton grisé sans message. `MAX_ACTIONS_PROTOCOLE_21J = 3`, posée
+   dans `clinical-engine/types.ts` — **seul foyer possible** : ce fichier
+   n'importe que des types, donc un composant client peut l'importer en valeur
+   sans embarquer `node:crypto`, défaut que `bundleClient.guard.test.ts` ferme
+   pour `lib/clinical`.
+
+**Provenance des deux, établie et non inventée.** Le repère de jeûne est
+déclaré au catalogue. « Trois actions maximum » vient de
+`docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` : c'est une borne de **charge** de
+la relation praticien-patient, pas un seuil mesuré sur une population — elle n'a
+ni claim ni intervalle et n'a pas à en avoir. Elle est nommée pour être
+identifiable comme telle (`DC-19`), pas pour prétendre à une provenance qu'elle
+n'a pas.
+
+**Ce que cette décision NE fait pas.** Elle ne modifie aucun seuil, aucune dose,
+aucune borne : les deux valeurs sont identiques avant et après, et aucun test
+existant n'a été touché pour faire passer quoi que ce soit. Elle ne corrige pas
+les 33 seuils du catalogue, qui sont à leur place. Elle ne retrace pas la
+provenance de `source.axes_prioritaires.length > 3` dans
+`synthese-praticien.ts` — troisième borne « au maximum 3 » du dépôt, exemptée
+**en étant nommée dette** dans la liste du banc, parce que son arbitrage
+appartient au praticien.
+
+**Le banc a été vu rouge quatre fois** avant d'être retenu : sur un fichier
+neuf portant un seuil orphelin (la découverte automatique), sur une exemption
+devenue morte, et sur chacune des deux corrections défaite.
+
 ### D-104 — Le registre des conflits de sources est signé : `CS-BIO-01` mord
 
 - Date : 2026-08-24

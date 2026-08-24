@@ -1,5 +1,5 @@
 import { canonicalSha256 } from './canonical';
-import { VERSION_PATIENT_PROTOCOL_VIEW } from './types';
+import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PATIENT_PROTOCOL_VIEW } from './types';
 import type {
   DecisionCard,
   PatientProtocolAction,
@@ -88,7 +88,7 @@ export function buildPatientProtocolView(input: {
   if (approval.approvedAt <= protocolDraft.review.reviewedAt) {
     throw new TypeError('La validation pour diffusion doit être postérieure à la revue.');
   }
-  if (protocolDraft.actions.length === 0 || protocolDraft.actions.length > 3) {
+  if (protocolDraft.actions.length === 0 || protocolDraft.actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
     throw new TypeError('L’aperçu patient exige entre une et trois actions.');
   }
 

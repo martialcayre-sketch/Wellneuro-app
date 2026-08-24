@@ -1,10 +1,20 @@
 ---
 id: "LOT-03"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "— (sans dépendance ; se joue pendant l'attente release-db du LOT-02)"
 ---
 
 # LOT-03 — V5 : le banc de doctrine (`DC-58`)
+
+> **Livré le 2026-08-24 — `D-105`.** La mesure a retourné le lot : `DC-58` n'a
+> **aucun sujet** dans le dépôt, et la méthode que cette fiche prescrivait
+> (« la même valeur existe ailleurs ») est **vacue** — presque tout entier court
+> trouve un répondant par hasard. Le banc a donc été posé sur le versant
+> décidable de la phrase de `DC-58` — un littéral à droite d'un opérateur de
+> comparaison —, ce qui le fait relever de `DC-19`/`DC-20`. Deux littéraux
+> fautifs ont été trouvés et **nommés sans qu'aucune valeur change**. Détail
+> chiffré : `../LOT-03-MESURE.md` (à la racine de la campagne — l'audit tient
+> tout fichier de `lots/` pour une fiche de lot).
 
 ## But
 

@@ -1,5 +1,10 @@
 import { canonicalSha256 } from './canonical';
-import { VERSION_PROTOCOL_DRAFT, VERSION_PROTOCOL_DRAFT_V3, VERSION_PROTOCOL_DRAFT_V4 } from './types';
+import {
+  MAX_ACTIONS_PROTOCOLE_21J,
+  VERSION_PROTOCOL_DRAFT,
+  VERSION_PROTOCOL_DRAFT_V3,
+  VERSION_PROTOCOL_DRAFT_V4,
+} from './types';
 import type {
   DecisionCard,
   ProtocolAction,
@@ -120,7 +125,9 @@ function normalizeInterventionStatus(
 }
 
 function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
-  if (actions.length > 3) throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
+  if (actions.length > MAX_ACTIONS_PROTOCOLE_21J) {
+    throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
+  }
   const ids = new Set<string>();
   return actions.map(action => {
     const actionId = nonEmpty(action.actionId, 'actionId');
