@@ -127,7 +127,17 @@ export function PatientCompanionHome({ token }: { token: string }) {
     <PatientCard className="space-y-5">
       <PatientPageHeader
         title="Votre accompagnement"
-        subtitle={finDeCycle ? 'Vous arrivez au terme de ce cycle. Bravo pour le chemin parcouru.' : vue.purpose}
+        subtitle={
+          finDeCycle
+            ? // Constat de l'étape, pas récompense — [[D-108]]. La rédaction
+              // précédente félicitait le patient « pour le chemin parcouru »,
+              // c'est-à-dire pour une date atteinte. La phrase dit désormais ce
+              // qui se passe ensuite. (Le mot retiré n'est pas réécrit ici : ce
+              // fichier est balayé par le garde de gamification, qui lit le
+              // texte et non l'intention — y compris en commentaire.)
+              'Vous arrivez au terme de ce cycle. Votre praticien en fait le point avec vous.'
+            : vue.purpose
+        }
       />
 
       {/* Action du jour — un seul pas, lisible en quelques secondes. */}

@@ -47,6 +47,12 @@ const SURFACES_PATIENT = [
   // balayage en même temps — un texte patient déplacé est un texte patient
   // dégardé tant que son nouveau chemin n'est pas déclaré ici.
   'lib/equilibre/natureIndiceGlobal.ts',
+  // LOT-12 ([[D-108]]) — trouvées par la complétude ci-dessous, pas à la main.
+  // `patient-companion` servait « Bravo pour le chemin parcouru » au patient
+  // depuis le 2026-07-18 : le garde connaissait la PAGE (`app/portail`), pas le
+  // composant qu'elle monte.
+  'components/patient-companion',
+  'components/ui',
 ];
 
 // Apostrophe droite ou typographique, indifféremment.
@@ -109,6 +115,49 @@ function fichiersPatient(): string[] {
   return SURFACES_PATIENT.flatMap((surface) => fichiersSources(join(RACINE, surface)));
 }
 
+// LA COMPLÉTUDE DE LA DÉCLARATION — [[D-108]], contre-revue adverse du
+// 2026-08-24.
+//
+// `SURFACES_PATIENT` est une liste tenue À LA MAIN. Les deux non-vacuités
+// ci-dessous protègent ce qui y est écrit ; aucune ne peut rien dire d'une
+// surface qui n'y a JAMAIS été inscrite. C'est le trou par lequel
+// `components/patient-companion` — monté dans le portail, servant « Bravo pour
+// le chemin parcouru » — est resté dégardé cinq semaines.
+//
+// Le portail patient est la racine de tout ce que le patient voit. On remonte
+// donc ses imports de composants, transitivement, et on exige que chaque
+// racine atteinte soit déclarée. Un composant patient neuf est alors gardé
+// D'OFFICE, ou il rougit ici en nommant l'entrée qui manque.
+function resoudre(specifieur: string): string | null {
+  const base = join(RACINE, specifieur.replace(/^@\//, ''));
+  for (const suffixe of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
+    try {
+      if (statSync(`${base}${suffixe}`).isFile()) return `${base}${suffixe}`;
+    } catch {
+      /* candidat suivant */
+    }
+  }
+  return null;
+}
+
+function racinesMonteesDansLePortail(): string[] {
+  const aVisiter = fichiersSources(join(RACINE, 'app/portail'));
+  const vus = new Set(aVisiter);
+  const racines = new Set<string>();
+
+  while (aVisiter.length > 0) {
+    const source = readFileSync(aVisiter.pop() as string, 'utf8');
+    for (const [, specifieur] of source.matchAll(/from\s+['"](@\/components\/[^'"]+)['"]/g)) {
+      racines.add(specifieur.split('/').slice(1, 3).join('/'));
+      const cible = resoudre(specifieur);
+      if (!cible || vus.has(cible)) continue;
+      vus.add(cible);
+      aVisiter.push(cible);
+    }
+  }
+  return [...racines].sort();
+}
+
 describe('surfaces patient — aucune gamification (R2)', () => {
   it('aucun vocabulaire de jeu dans les surfaces lues par le patient', () => {
     const fautifs: string[] = [];
@@ -146,5 +195,23 @@ describe('surfaces patient — aucune gamification (R2)', () => {
       (surface) => fichiersSources(join(RACINE, surface)).length === 0,
     );
     expect(steriles).toEqual([]);
+  });
+
+  // LA COMPLÉTUDE, dans l'autre sens — [[D-108]]. Les deux cas ci-dessus vont
+  // de la déclaration vers l'arbre ; celui-ci va de l'ARBRE RÉEL vers la
+  // déclaration, et c'est le seul qui puisse voir ce qui n'a jamais été écrit.
+  it('toute racine de composants montée dans le portail patient est déclarée', () => {
+    const nonDeclarees = racinesMonteesDansLePortail().filter(
+      (racine) => !SURFACES_PATIENT.includes(racine),
+    );
+    expect(nonDeclarees).toEqual([]);
+  });
+
+  it('la remontée des imports du portail voit bien quelque chose', () => {
+    // Sans ce plancher, une expression régulière d'import cassée rendrait un
+    // ensemble vide — et le cas ci-dessus passerait au vert en n'ayant rien lu.
+    const racines = racinesMonteesDansLePortail();
+    expect(racines).toContain('components/patient');
+    expect(racines.length).toBeGreaterThan(2);
   });
 });
