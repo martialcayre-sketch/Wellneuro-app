@@ -116,7 +116,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
-| `clinical/conflitsSourcesV1.ts` | `false` | `null` |
+| `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
@@ -170,10 +170,16 @@ variable.**
   les conflits DÉCLARÉS entre deux claims du corpus. **Son verrou est le seul
   geste d'exploitation** — il n'a pas de drapeau propre, et les deux termes qui
   l'accompagnent sont DÉJÀ vrais en production
-  (`WN_ENABLE_CONTRADICTIONS_NNPP2=1`, `WN_CB_PROPOSITION=true`). Signer ce
-  registre fait donc apparaître le constat `CS-BIO-01` sur tout dossier dont la
-  proposition de bilan cite `WN-CL-0312-018`, dès le déploiement suivant, sans
-  palier intermédiaire. À lire avant de signer, et non après.
+  (`WN_ENABLE_CONTRADICTIONS_NNPP2=1`, `WN_CB_PROPOSITION=true`).
+  **SIGNÉ le 2026-08-24 ([[D-104]])**, après la revue : les trois termes sont
+  donc vrais, et le constat `CS-BIO-01` atteint le cockpit sur tout dossier dont
+  la proposition de bilan cite `WN-CL-0312-018` — la plupart. C'est le seul
+  registre du dépôt dont la signature soit à elle seule la mise en service ;
+  les autres ont un drapeau devant eux.
+  **Deuxième effet de la signature, moins visible** : la route cockpit dérive
+  désormais la proposition de bilan à chaque POST pour collecter les claims
+  cités (cinq requêtes de plus, isolées par un `catch` — une panne n'emporte pas
+  la confirmation d'épisode). Verrou refermé, ce coût disparaît.
 - **`orientationRulesV1.ts` garde son jour de signature du 2026-08-06** : seule
   la FORME de la date a été portée à l'ISO canonique par `D-067` (réserve F5) —
   le fait attesté ne change pas.
