@@ -50,6 +50,32 @@ export const ANAMNESE_C1_FIXTURE = {
 };
 
 /**
+ * La MÊME anamnèse, plus un signal d'alerte — [[D-107]], dette nommée au LOT-04.
+ *
+ * LE TROU QU'ELLE COMBLE. Le vérificateur serveur (`refusChaineC1`) relit le
+ * dossier et RECALCULE la chaîne pour la confronter à celle que le client
+ * soumet. Ses deux lectures — celle du cockpit et la sienne — doivent produire
+ * le même objet, y compris quand un signal de sécurité entre dans le calcul :
+ * un red flag RETIRE des candidats (`DC-12`), donc une divergence sur ce chemin
+ * ferait diverger la carte entière. Le code des deux lectures a été vérifié
+ * ligne à ligne en revue ; **rien ne le gardait**, faute de dossier portant un
+ * signal.
+ *
+ * FIXTURE SÉPARÉE, ET C'EST DÉLIBÉRÉ. Ajouter `signaux_alerte` à
+ * `ANAMNESE_C1_FIXTURE` aurait changé ce que la chaîne de RÉFÉRENCE produit —
+ * un signal inhibe des candidats, donc `CANDIDAT_RANG_1` et toutes les
+ * empreintes qui en dérivent auraient bougé. On garde le dossier de référence
+ * intact et on en ajoute un second, ce qui donne la couverture sans déplacer
+ * une seule assertion existante.
+ */
+export const ANAMNESE_C1_FIXTURE_AVEC_SIGNAL = {
+  anamnese: {
+    ...ANAMNESE_C1_FIXTURE.anamnese,
+    signaux_alerte: ['Perte de poids involontaire'],
+  },
+};
+
+/**
  * Le candidat de rang 1 sur le dossier de référence : la plainte dominante est
  * le surpoids (9/10), et c'est donc la règle pondérale qui remonte. Écrit ici
  * plutôt que dérivé, pour que le banc de sélection dise ce qu'il sélectionne.
@@ -155,13 +181,22 @@ export function chaineC1DeReference(options: {
    * existe pour faire.
    */
   episode?: ConfirmedAssessmentEpisode;
+  /**
+   * Anamnèse de remplacement — [[D-107]]. Défaut : le dossier de référence,
+   * inchangé. Sert à construire une chaîne sur un dossier PORTANT UN SIGNAL
+   * (`ANAMNESE_C1_FIXTURE_AVEC_SIGNAL`), pour que le tour du vérificateur soit
+   * éprouvé là où il ne l'était pas — un red flag retire des candidats
+   * (`DC-12`), donc une divergence entre les deux lectures y ferait diverger la
+   * carte entière.
+   */
+  anamnese?: typeof ANAMNESE_C1_FIXTURE;
 } = {}): ChaineC1Fixture {
   assertBanc();
   const idPatient = options.idPatient ?? 'PAT_1';
   const inputs = adaptRuntimeInputs(
     { idPatient, createdAt: DATE_RIDEAU_FIXTURE },
     passationsC1Fixture(),
-    ANAMNESE_C1_FIXTURE,
+    options.anamnese ?? ANAMNESE_C1_FIXTURE,
   );
   const { proposal } = proposeRuntimeEpisode(inputs, 'T0');
   const episode = options.episode ?? confirmAssessmentEpisode(

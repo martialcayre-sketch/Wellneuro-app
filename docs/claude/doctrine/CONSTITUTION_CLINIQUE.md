@@ -650,7 +650,14 @@ donc pas : elle n'a mordu sur aucun dossier.*
 après.** Grossesse, allaitement, enfant, personne âgée, pathologie rénale ou
 hépatique, polymédication, chirurgie digestive, allergie ou intolérance,
 végétalisme. Un candidat écarté par une gate ne doit jamais avoir été classé.
-*Proposition — **une moitié tenue, l'autre sans sujet ([[D-101]], LOT-05).***
+*Proposition — **une moitié tenue, l'autre sans sujet ([[D-101]], LOT-05).**
+**Elle a désormais un PORTEUR NOMMÉ** ([[D-107]], 2026-08-24) : la curation des
+exclusions, que `D-101` avait abandonnée sur mesure, est **rouverte par arbitrage
+praticien** et routée en file d'attente. La règle n'est donc plus « écrite, non
+armée » sans issue — il lui manque une **donnée** (`neCouvrePas` est null sur les
+95 interventions), jamais un mécanisme, celui-ci étant complet et relu.
+`GATE_POPULATION_METADATA` reste **non signée** tant que le sujet n'existe pas :
+signer armerait un garde sans sujet.*
 
 ***Ce qui est tenu et gardé** : la PLACE du filtre. `gatePopulationV1.ts`
 s'applique dans `chaineC1.ts` entre `evaluerPriorites` et le `sort`, et le banc

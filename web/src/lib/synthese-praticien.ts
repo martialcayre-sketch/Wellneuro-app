@@ -10,6 +10,36 @@ import type { SyntheseSchema } from '@/lib/anthropic';
  */
 export const LONGUEUR_MAX_POINT = 500;
 
+/**
+ * TROIS AXES PRIORITAIRES MAXIMUM dans un brouillon de synthèse — [[D-107]].
+ *
+ * PROVENANCE : **déclarée par le praticien le 2026-08-24**, et c'est la seule
+ * qu'elle ait. La descente du LOT-11 a cherché la sienne et n'a rien rendu :
+ *   — le prompt **ne demande pas trois axes** (`SYSTEM_PROMPT_SYNTHESE` montre
+ *     un axe d'exemple et ne pose aucun plafond) ;
+ *   — **aucun document source** ne dit « trois axes prioritaires », à la
+ *     différence de « trois actions maximum », qui vient de
+ *     `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ;
+ *   — le commit d'origine (`651a9e98`, 2026-07-25) l'introduit **sans une ligne
+ *     de motif**.
+ *
+ * C'est donc une borne de **CHARGE de la restitution praticien**, comme les
+ * actions de protocole : elle n'a ni claim ni intervalle, et n'a pas à en
+ * avoir. Elle est nommée ici pour être identifiable comme telle (`DC-19`), et
+ * sa provenance est **l'arbitrage daté**, pas un document antérieur — écrire
+ * l'inverse aurait fabriqué une source.
+ *
+ * POURQUOI ICI. La borne était écrite **trois fois** : ce validateur, et deux
+ * fois `SynthesePraticienEditor.tsx` (la garde d'ajout, le bouton désactivé).
+ * Même défaut que « trois actions maximum » avant [[D-105]] — un repère unique,
+ * plusieurs écritures, aucune nommée : la porter à quatre côté serveur laissait
+ * l'écran en bloquer trois, sans message.
+ *
+ * Ce module n'importe qu'un TYPE : un composant client peut donc l'importer en
+ * valeur sans rien traîner.
+ */
+export const MAX_AXES_PRIORITAIRES = 3;
+
 export const MODELE_REDACTION_PRATICIEN = 'redaction-praticien';
 export const VERSION_SYNTHESE_PRATICIEN = 'synthese-praticien-v1';
 export const LIMITE_SYNTHESE_PRATICIEN =
@@ -70,8 +100,14 @@ export function validerBrouillonPraticien(input: unknown): ValidationBrouillon {
     return { ok: false, error: 'Le texte destiné au patient est requis.' };
   }
 
-  if (!Array.isArray(source.axes_prioritaires) || source.axes_prioritaires.length > 3) {
-    return { ok: false, error: 'Le brouillon accepte au maximum 3 axes prioritaires.' };
+  if (
+    !Array.isArray(source.axes_prioritaires)
+    || source.axes_prioritaires.length > MAX_AXES_PRIORITAIRES
+  ) {
+    return {
+      ok: false,
+      error: `Le brouillon accepte au maximum ${MAX_AXES_PRIORITAIRES} axes prioritaires.`,
+    };
   }
 
   const axes: SyntheseSchema['axes_prioritaires'] = [];

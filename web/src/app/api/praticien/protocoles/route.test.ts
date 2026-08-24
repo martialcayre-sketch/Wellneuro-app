@@ -24,6 +24,7 @@ import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { SYNTHESE_VALIDEE_FIXTURE } from '@/lib/clinical-engine/dossierT0Fixture';
 import {
   ANAMNESE_C1_FIXTURE,
+  ANAMNESE_C1_FIXTURE_AVEC_SIGNAL,
   CANDIDAT_RANG_1,
   chaineC1DeReference,
   passationsC1Fixture,
@@ -254,6 +255,40 @@ describe('POST /api/praticien/protocoles', () => {
         where: { idPatient: 'PAT_1', statut: { in: ['Validee_Praticien', 'Corrigee_Praticien'] } },
       }),
     );
+  });
+
+  // LE TOUR DU VÉRIFICATEUR, ÉPROUVÉ SUR UN DOSSIER PORTANT UN SIGNAL —
+  // [[D-107]], dette nommée au LOT-04.
+  //
+  // `refusChaineC1` relit le dossier et RECALCULE la chaîne pour la confronter à
+  // celle que le client soumet. Ses deux lectures doivent produire le même objet
+  // **y compris quand un signal de sécurité entre dans le calcul** : un red flag
+  // retire des candidats (`DC-12`), donc une divergence sur ce chemin ferait
+  // diverger la carte entière — et le refus tomberait sur un dossier honnête.
+  // Le code des deux lectures avait été vérifié ligne à ligne en revue ; aucun
+  // banc ne le tenait, faute de dossier portant un signal.
+  it('accepte une chaîne construite sur un dossier PORTANT un signal d’alerte', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    // Les DEUX côtés lisent la même anamnèse : le serveur par son mock Prisma,
+    // le client en construisant sa chaîne dessus. Si les lectures divergeaient,
+    // le vérificateur rendrait 409 — c'est précisément ce que ce cas surveille.
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE_AVEC_SIGNAL);
+    // AUCUNE SÉLECTION, et ce n'est pas une commodité de banc : sur un dossier
+    // portant un signal, `buildDecisionCard` REFUSE toute priorité sélectionnée
+    // (« Une priorité ne peut être sélectionnée avant la levée des bloqueurs »).
+    // C'est `DC-12` qui mord — le red flag retire le candidat au lieu de
+    // coexister avec lui. Le vérificateur doit donc accepter une chaîne
+    // légitimement DÉPOURVUE de sélection, et c'est ce que ce cas garde.
+    const chaine = chaineC1DeReference({ anamnese: ANAMNESE_C1_FIXTURE_AVEC_SIGNAL });
+
+    const res = await POST(postRequest({
+      episode: chaine.episode,
+      decisionCard: chaine.decisionCard,
+      draft: draftPour(chaine.decisionCard),
+    }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true });
   });
 
   it('persiste épisode confirmé + protocole relu (idempotent par id de contrat)', async () => {

@@ -4,7 +4,7 @@ titre: "Doctrine exécutable — les cinq véhicules de l'audit"
 statut: "ouverte en primaire (2026-08-23) — huit lots cadrés sur état réel re-mesuré ; trois véhicules déplacés par le cadrage"
 créée_le: "2026-08-18"
 mise_à_jour: "2026-08-24"
-lot_courant: "LOT-11"
+lot_courant: "LOT-08"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -130,7 +130,7 @@ jusqu'au bout le jour même** : sans consommateur interne, le lot a été
 | LOT-08 | Clôture — renvois, constitution à l'état atteint, matrice reconduite | à_faire | tous, **LOT-11 compris** |
 | LOT-09 | `DC-09` — un claim associatif ne devient jamais une preuve | **terminé** (2026-08-23, `D-097` — clause au cadre déontologique en `synthese-v29`, banc de la formule, de l'**opérateur** et de la **position** ; second point de passage écarté avec motif) | — |
 | LOT-10 | Les ancres cessent de dériver, et le classificateur E2E cesse de se taire | **terminé** (2026-08-23, `D-100` — ancre textuelle liée dans un seul lien, contrôle sans arithmétique de ligne, 252 citations grandfathered comptées ; le classificateur avait **deux** modes de silence, pas un) | — |
-| LOT-11 | Les actes en attente — deux signatures, six arbitrages, neuf dettes | à_faire (ouvert le 2026-08-24 sur balayage des onze décisions, dix fiches et cinq handoffs de la campagne. **Ce ne sont pas des constats mais des ACTES**, dont un a un effet clinique en production — d'où un lot distinct du LOT-08, qui s'interdit toute modification de code et ne peut constater un état en mouvement. **Aucun drapeau ne reste à poser** : ce qui est fermé l'est par une signature manquante, jamais par une variable. **Amendé le 2026-08-24** : les résidus du LOT-03 (`D-105`) et du LOT-07 (`D-106`) y sont versés avec leur provenance — un résidu qui n'a qu'un handoff pour domicile n'est retrouvé que par celui qui sait déjà qu'il existe) | LOT-04, LOT-05, LOT-06, LOT-07 |
+| LOT-11 | Les actes en attente — deux signatures, six arbitrages, neuf dettes | **terminé** (2026-08-24, `D-107` — signature `SAFETY_EI_METADATA` **reportée au 2026-08-30** avec son motif, le drapeau de CAPTURE étant déjà posé ; `GATE_POPULATION_METADATA` **non signée** mais `DC-43` obtient un PORTEUR : la curation des exclusions est **rouverte** par arbitrage, ce qui revient sur `D-101` ; les dix orphelines reçoivent une **campagne dédiée** — les deux routées en file, pas cadrées. Descente sur le `3` des axes : **négative**, donc borne de charge **déclarée** ce jour (`MAX_AXES_PRIORITAIRES`), écrite trois fois auparavant. `DC-55` reste **curatoriale**, `DC-58` **proposition avec sa mesure**. Neuf dettes routées une par une, **trois corrigées** — découpage des conflits (569 car. mesurés), banc de bump **par version**, tour du vérificateur éprouvé sur un dossier portant un signal, où `DC-12` bloque la sélection. Aucune migration, aucun drapeau) | LOT-04, LOT-05, LOT-06, LOT-07 |
 
 Correspondance avec les cinq véhicules du brief : **V2 → hors campagne**
 (LOT-02 transféré à Curation signée), V3 → LOT-04 + LOT-05, V5 → LOT-03,
