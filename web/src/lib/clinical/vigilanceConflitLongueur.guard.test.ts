@@ -25,6 +25,51 @@ import { lignesDeVigilance, scinderSousPlafond } from './vigilanceLongueur';
 // scinder PAR POSITION, jamais raccourcir le texte curé (`DC-19` — le texte d'un
 // conflit est une donnée signée, pas une chaîne d'affichage).
 
+// LA BORNE DE LA GARANTIE, ajoutée par le LOT-12 — [[D-108]].
+//
+// La contre-revue adverse a exécuté `scinderSousPlafond('x'.repeat(600), 'R')`
+// et obtenu un morceau HORS PLAFOND. Le constat est exact, et il n'appelle pas
+// de correctif : les deux propriétés « aucun mot coupé » et « tout morceau sous
+// le plafond » sont incompatibles dès qu'un mot dépasse à lui seul. L'arbitrage
+// retenu est de ne pas couper — un mot fabriqué dans un texte SIGNÉ coûte plus
+// qu'un enregistrement refusé (`DC-19`).
+//
+// Ce qui manquait n'était donc pas le comportement, mais son ÉPINGLAGE : un cas
+// nomme désormais la borne, au lieu de la laisser se découvrir en production.
+describe('découpage — la borne de la garantie, sur un mot plus long que le plafond', () => {
+  const MOT_PATHOLOGIQUE = 'x'.repeat(LONGUEUR_MAX_POINT + 100);
+
+  it('un mot plus long que le plafond n’est PAS coupé', () => {
+    const morceaux = scinderSousPlafond(MOT_PATHOLOGIQUE, 'R-TEST');
+    expect(morceaux).toHaveLength(1);
+    expect(morceaux[0]).toContain(MOT_PATHOLOGIQUE);
+  });
+
+  it('il sort donc hors plafond, et le banc le dit', () => {
+    const morceaux = scinderSousPlafond(MOT_PATHOLOGIQUE, 'R-TEST');
+    expect(morceaux[0].length).toBeGreaterThan(LONGUEUR_MAX_POINT);
+  });
+
+  it('il garde malgré tout son marqueur de règle', () => {
+    // La propriété qui ne cède PAS : `depuisSynthese` reconnaît une vigilance
+    // déterministe à ce marqueur. Un morceau qui le perdrait cesserait d'en
+    // être une, hors plafond ou non.
+    expect(scinderSousPlafond(MOT_PATHOLOGIQUE, 'R-TEST')[0]).toContain('[R-TEST]');
+  });
+
+  it('aucun conflit publié n’approche cette borne', () => {
+    // Ce qui rend la borne acceptable : elle est hors d'atteinte du registre
+    // réel. Si un conflit s'en approchait un jour, ce cas rougirait AVANT que
+    // le refus d'enregistrement ne se manifeste au praticien.
+    const motLePlusLong = Math.max(
+      ...CONFLITS_SOURCES_V1.flatMap(conflit =>
+        descriptionConflit(conflit).split(/\s+/).map(mot => mot.length),
+      ),
+    );
+    expect(motLePlusLong).toBeLessThan(LONGUEUR_MAX_POINT / 2);
+  });
+});
+
 describe('conflits de sources — la phrase tient dans un point de vigilance', () => {
   // Anti-vacuité : un registre vidé rendrait la boucle verte sans rien mesurer.
   it('le registre porte bien des conflits publiés', () => {

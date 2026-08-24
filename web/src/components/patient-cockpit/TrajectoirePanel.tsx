@@ -15,6 +15,7 @@ import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePane
 import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 import { BESOINS } from '@/lib/equilibre/constants';
+import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
 import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
@@ -376,6 +377,11 @@ export function TrajectoirePanel({
         <p className="mt-3 text-base text-muted-foreground">Aucun épisode confirmé pour l’instant.</p>
       ) : (
         <div className="mt-3 space-y-4">
+          {/* [[D-108]] — même exigence qu'en fiche praticien : les jalons
+              ci-dessous affichent le total de « Mon équilibre », qui n'a pas
+              d'interprétation clinique ([[D-106]], `DC-22`). Le praticien est
+              précisément celui qui pourrait le lire comme un score. */}
+          <p className="text-xs text-muted-foreground">{MENTION_NATURE_INDICE_GLOBAL}</p>
           {trajectoire.cycles.map((cycle) => {
             const misEnAvant = cycleSelectionne === cycle.cycleId;
             return (

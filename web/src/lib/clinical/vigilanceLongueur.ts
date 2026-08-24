@@ -20,6 +20,23 @@ import type { ContradictionFinding } from './contradictionFinding';
  * clinique pour tenir dans un gabarit d'affichage (`DC-19`). On coupe donc aux
  * FINS DE PHRASE, et à défaut entre deux mots — jamais au milieu de l'un.
  *
+ * LA BORNE DE LA GARANTIE, mesurée par la contre-revue adverse du 2026-08-24
+ * ([[D-108]]). Les deux propriétés ci-dessus — « jamais au milieu d'un mot » et
+ * « chaque morceau sous le plafond » — sont INCOMPATIBLES dès qu'un seul mot
+ * dépasse à lui seul `LONGUEUR_MAX_POINT`. Vérifié : `scinderSousPlafond` rend
+ * alors ce mot SEUL, hors plafond, plutôt que de le couper.
+ *
+ * C'EST LE BON ARBITRAGE, et il est délibéré : couper un mot de 500 caractères
+ * en deux fabriquerait deux mots qui n'existent pas dans un texte SIGNÉ, là où
+ * un morceau trop long ne fait que refuser un enregistrement — bruyamment, et
+ * sans avoir rien altéré (`DC-19`). Un banc l'épingle désormais au lieu de le
+ * laisser se découvrir en production.
+ *
+ * Aucun conflit publié n'en approche : le plus long mot du registre est très
+ * loin du plafond, et le cas ne se rencontre que sur une URL ou un identifiant
+ * collé. La garantie tenable est donc : « aucun mot coupé, et aucun morceau
+ * hors plafond SAUF un mot qui dépassait déjà seul ».
+ *
  * CHAQUE MORCEAU GARDE SON MARQUEUR `[regleId]`. `documents/depuisSynthese.ts`
  * reconnaît les vigilances déterministes à ce marqueur : un morceau qui le
  * perdrait cesserait d'être reconnu comme tel au milieu d'une phrase.

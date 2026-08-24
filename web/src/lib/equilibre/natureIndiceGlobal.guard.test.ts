@@ -83,6 +83,52 @@ function sansCommentaires(element: string): string {
   return element.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ');
 }
 
+/**
+ * LES ALIAS DU TOTAL, résolus à POINT FIXE dans le fichier — [[D-108]].
+ *
+ * LE TROU MESURÉ PAR LA CONTRE-REVUE. Le suivi par NOM était déclaré plus bas
+ * comme une limite assumée. Codex a montré qu'elle n'était pas seulement une
+ * limite, mais un CONTOURNEMENT complet : en gardant l'affichage conforme et en
+ * ajoutant à côté `const total = objetsCliniques.indiceGlobal` puis
+ * `<p>Total : {total}</p>`, le banc restait vert, douze tests sur douze. La
+ * sentinelle de fichiers ne pouvait rien y voir — les deux affichages vivent
+ * dans le MÊME fichier, donc l'ensemble des chemins ne bouge pas.
+ *
+ * On résout donc les alias avant d'extraire : tout identifiant affecté depuis
+ * une expression qui cite un nom déjà suivi devient lui-même suivi, et on
+ * recommence jusqu'à stabilité — une chaîne `a = indiceGlobal ; b = a ; c = b`
+ * est suivie de bout en bout.
+ *
+ * CE QUI RESTE HORS DE PORTÉE, et c'est désormais la vraie limite : un
+ * franchissement de FICHIER (valeur passée en prop à un composant enfant qui la
+ * renomme), un spread d'attributs, ou un renommage du champ côté API. Il
+ * faudrait un flot de données inter-fichiers ; le second détecteur, par
+ * LIBELLÉ, est ce qui couvre ces cas-là.
+ */
+function nomsSuivis(source: string): string[] {
+  const noms = new Set(['indiceGlobal']);
+  const AFFECTATION = /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=;\n]+)?=\s*([^;\n]+)/g;
+  const DESTRUCTURATION = /(?:const|let|var)\s*\{([^}]*)\}\s*=/g;
+
+  for (let passe = 0; passe < 6; passe++) {
+    const avant = noms.size;
+    const cite = (texte: string) =>
+      [...noms].some(nom => new RegExp(`(?<![\\w$])${nom}(?![\\w$])`).test(texte));
+
+    for (const m of source.matchAll(AFFECTATION)) {
+      if (cite(m[2])) noms.add(m[1]);
+    }
+    for (const m of source.matchAll(DESTRUCTURATION)) {
+      for (const champ of m[1].split(',')) {
+        const [origine, alias] = champ.split(':').map(s => s.trim());
+        if (alias && cite(origine)) noms.add(alias.replace(/[^\w$].*$/, ''));
+      }
+    }
+    if (noms.size === avant) break;
+  }
+  return [...noms];
+}
+
 function elementsDuTotal(): { chemin: string; element: string }[] {
   const trouves: { chemin: string; element: string }[] = [];
   // (A) BALISE OUVRANTE dont les ATTRIBUTS citent le total. Le nom du composant
@@ -94,17 +140,25 @@ function elementsDuTotal(): { chemin: string; element: string }[] {
   //     contenu des accolades doit être une expression de VALEUR pure — pas de
   //     comparaison, pas de ternaire : `{objetsCliniques.indiceGlobal}` est un
   //     affichage, `{indiceGlobal !== null ? (` est une condition de rendu.
-  const ENFANT = /\{\s*([\w.?[\]]*indiceGlobal[\w.?[\]]*)\s*\}/g;
+  //     Construit par fichier, sur les noms résolus ci-dessus.
 
   for (const fichier of composants()) {
     const chemin = path.relative(RACINE, fichier);
     const source = readFileSync(fichier, 'utf8');
+    const noms = nomsSuivis(source);
+    const CITE_LE_TOTAL = new RegExp(`(?<![\\w$])(?:${noms.join('|')})(?![\\w$])`);
+    // Le détecteur d'enfant se construit sur les MÊMES noms : sans quoi l'alias
+    // serait vu en attribut et manqué en interpolation.
+    const ENFANT_ALIAS = new RegExp(
+      `\\{\\s*([\\w.?\\[\\]]*(?:${noms.join('|')})[\\w.?\\[\\]]*)\\s*\\}`,
+      'g',
+    );
 
     for (const m of source.matchAll(BALISE)) {
-      if (!/indiceGlobal/.test(m[2])) continue;
+      if (!CITE_LE_TOTAL.test(m[2])) continue;
       trouves.push({ chemin, element: m[0] });
     }
-    for (const m of source.matchAll(ENFANT)) {
+    for (const m of source.matchAll(ENFANT_ALIAS)) {
       // UN ENFANT, PAS UNE VALEUR D'ATTRIBUT. `value={objetsCliniques.
       // indiceGlobal}` est déjà couvert par (A) : le reprendre ici le
       // dénoncerait deux fois, dont une sous une forme (`{…}` seule) qui ne
@@ -189,6 +243,71 @@ describe('nature du total — le chiffre ne s’affiche jamais sans ce qu’il e
   // s'arrête là, et l'écrire vaut mieux que de laisser croire l'inverse.
   it('la limite du suivi textuel est déclarée', () => {
     expect(elementsDuTotal().length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * LE SECOND DÉTECTEUR — PAR LIBELLÉ, et non par nom de variable ([[D-108]]).
+ *
+ * POURQUOI IL A FALLU EN AJOUTER UN. La contre-revue a nommé deux surfaces que
+ * le premier détecteur ne pouvait pas voir, et pour une raison structurelle :
+ * elles ne portent jamais le nom `indiceGlobal`. `TrajectoirePanel` affiche
+ * `indice {jalon.valeur}`, `J21DecisionPanel` la tendance sous
+ * `Score « Mon équilibre »` — deux chemins de données distincts vers LE MÊME
+ * agrégat. Aucune résolution d'alias ne les rejoint : la valeur traverse une
+ * réponse d'API et change de nom au passage.
+ *
+ * On lit donc ce que le PRATICIEN LIT — l'étiquette servie à l'écran — et non ce
+ * que le code appelle la valeur. Les deux détecteurs sont complémentaires par
+ * construction : l'un suit la donnée, l'autre le mot.
+ */
+const LIBELLES_DU_TOTAL = /indice\s*\{|indice 0–100|Score\s*«\s*Mon équilibre/;
+
+/**
+ * Les surfaces qui restituent le total sous un libellé, chacune motivée.
+ *
+ * Toutes portent `MENTION_NATURE_INDICE_GLOBAL`, exigence vérifiée juste après.
+ * Le registre existe pour que l'apparition d'une TROISIÈME passe par une
+ * relecture, jamais par un ajout muet — même patron que la sentinelle de
+ * fichiers du premier détecteur.
+ */
+const SURFACES_PAR_LIBELLE: Record<string, string> = {
+  'components/patient-cockpit/TrajectoirePanel.tsx':
+    'fiche-trajectoire praticien — affiche l’indice de chaque jalon d’un cycle',
+  'components/patient-cockpit/J21DecisionPanel.tsx':
+    'point d’étape J21 praticien — affiche la TENDANCE du total, pas sa valeur',
+};
+
+describe('nature du total — les surfaces qui le nomment sans le nommer', () => {
+  it('aucune surface par libellé qui ne soit déclarée', () => {
+    const nonDeclarees = composants()
+      .filter(f => LIBELLES_DU_TOTAL.test(readFileSync(f, 'utf8')))
+      .map(f => path.relative(RACINE, f))
+      .filter(chemin => !(chemin in SURFACES_PAR_LIBELLE));
+    expect(nonDeclarees).toEqual([]);
+  });
+
+  it('chaque surface déclarée porte la mention de nature', () => {
+    const sansMention = Object.keys(SURFACES_PAR_LIBELLE).filter(
+      chemin => !sansCommentaires(lire(chemin)).includes('MENTION_NATURE_INDICE_GLOBAL'),
+    );
+    expect(sansMention).toEqual([]);
+  });
+
+  // Anti-vacuité, dans les deux sens : le motif détecte encore quelque chose, et
+  // aucune entrée du registre ne survit à la surface qu'elle décrivait.
+  it('le détecteur par libellé voit encore les surfaces déclarées', () => {
+    const vues = composants()
+      .filter(f => LIBELLES_DU_TOTAL.test(readFileSync(f, 'utf8')))
+      .map(f => path.relative(RACINE, f))
+      .sort();
+    expect(vues).toEqual(Object.keys(SURFACES_PAR_LIBELLE).sort());
+  });
+
+  it('chaque surface déclarée porte un motif écrit', () => {
+    for (const [chemin, motif] of Object.entries(SURFACES_PAR_LIBELLE)) {
+      expect(motif.trim().length, `surface sans motif : ${chemin}`).toBeGreaterThan(20);
+    }
   });
 });
 

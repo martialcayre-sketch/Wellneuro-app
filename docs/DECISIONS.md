@@ -4,6 +4,107 @@
 
 ## Décisions actives
 
+### D-108 — La contre-revue adverse a trouvé six trous, dont un servi au patient depuis cinq semaines
+
+- Date : 2026-08-24
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-08-24)
+- Domaine : doctrine exécutable — bancs élargis, un texte patient corrigé, aucun
+  seuil ni valeur clinique modifiés
+- Porte sur : `DC-19`, `DC-20`, `DC-22`, et la réserve R2 de gamification
+- Fait suite à : la contre-revue Codex du 2026-08-24 (PR #792), lancée
+  **avant** le LOT-08 pour que ses trouvailles alimentent la clôture au lieu de
+  la corriger après coup
+
+**La revue a été lancée avant la clôture, et c'est ce qui a payé.** Le LOT-08 ne
+change aucun code : la surface relue était identique avant et après. Mais il
+**grave** l'état final dans la constitution, la matrice d'audit et
+`FILE_ATTENTE` — une règle actée sur un banc qui ne mord pas y serait inscrite
+comme fermée. Sept des treize affirmations soumises ont été réfutées, six
+tiennent. Les six trouvailles ont été **revérifiées une par une** dans l'arbre à
+`7793a4ac` avant tout correctif : toutes réelles.
+
+**Décision 1 — le vocabulaire de jeu servi au patient est corrigé, et le garde
+cesse d'être une liste tenue à la main.** `PatientCompanionHome.tsx` servait
+« … pour le chemin parcouru » depuis le **2026-07-18** (`477fa20d`), monté dans
+le portail par `app/portail/[token]/questionnaires/page.tsx`. Le mot est le
+**deuxième motif** de la liste surveillée par `gamification-patient.guard.test.ts`
+— ce n'est pas la liste qui a failli, c'est le PÉRIMÈTRE : le garde connaissait
+la page, pas le composant qu'elle monte, et `components/patient-companion`
+n'avait jamais été déclaré.
+
+C'est la **deuxième fois** que ce garde est pris à ne pas couvrir ce qu'il
+annonce. Le LOT-11 avait trouvé ses entrées de type fichier muettes ; sa
+correction — une non-vacuité **par entrée déclarée** — ne pouvait par
+construction rien dire d'une surface **jamais déclarée**. Le correctif ferme donc
+la CLASSE : un nouveau cas remonte les imports de composants du portail patient,
+transitivement, et exige que chaque racine atteinte soit déclarée. Un composant
+patient neuf est gardé d'office, ou il rougit en nommant l'entrée qui manque.
+Deux racines manquaient — `patient-companion` et `ui`. La phrase devient un
+constat de l'étape (« Votre praticien en fait le point avec vous »), pas une
+récompense d'une date atteinte.
+
+**Décision 2 — les trois bancs sont élargis avant la clôture, pas déclarés
+limités.** L'option « requalifier les statuts en déclarant les limites » a été
+écartée par le responsable : un banc dont la limite couvre le contournement
+qu'on vient de démontrer ne garde pas la règle, il en documente l'absence.
+
+- **Le banc de bump** portait le nom du bump et ne gardait que **deux
+  constantes**. La mutation `× 100 → × 99` déplaçait TOUTES les valeurs du score
+  global sans le faire rougir, alors que `constants.ts` range explicitement la
+  formule, les poids et le mapping parmi ce qui impose un bump. Deux registres
+  s'ajoutent, sur le même patron par version : les **sorties** de
+  `agregerEquilibre` sur six scénarios, et l'**empreinte du mapping** besoin →
+  sources. Un sixième scénario a dû être ajouté après mesure : rejouée contre les
+  cinq premiers, la mutation n'en faisait rougir qu'un, et `Math.round → floor`
+  passait vert sur les cinq — l'arrondi entier absorbe 1 % sur les petites
+  valeurs. Le scénario `frontiereArrondi` tombe sur 64,5 exactement. **Quatre
+  mutations vues rouges.**
+- **Le banc des seuils** ne connaissait qu'une POSITION, le littéral à droite
+  d'un opérateur. `Math.min(0,95, …)` introduisait une borne non motivée en plein
+  `src/lib` sans le réveiller. La position d'**écrêtage** entre dans le balayage.
+  Mesuré d'abord : 39 littéraux, dont **30 `.slice`** de troncature d'affichage —
+  les faire entrer aurait noyé la liste d'exemptions sous une classe qui ne
+  décide de rien, défaut que l'en-tête du banc nomme déjà. `.slice` reste donc
+  dehors, **avec sa mesure**. Les neuf écrêtages réels sont le même patron —
+  `Math.max(plancher, Math.min(paramètre ?? défaut, plafond))` — et sont exemptés
+  comme bornes de charge (`DC-20`).
+- **Le banc de la nature du total** suivait la valeur par NOM, limite qui était
+  *déclarée* — la contre-revue a montré qu'elle était un contournement complet :
+  un second affichage sous alias, coexistant avec l'affichage conforme, laissait
+  la sentinelle de fichiers immobile. Les alias sont désormais résolus **à point
+  fixe** dans le fichier.
+
+**Décision 3 — deux surfaces praticien reçoivent la mention de nature.** La
+contre-revue a nommé `TrajectoirePanel` (`indice {jalon.valeur}`) et
+`J21DecisionPanel` (la tendance sous « Score Mon équilibre ») : deux chemins de
+données distincts vers le même agrégat, qu'aucune résolution d'alias ne peut
+rejoindre — la valeur change de nom en traversant une réponse d'API. Un **second
+détecteur, par LIBELLÉ**, lit ce que le praticien lit au lieu de ce que le code
+nomme. `D-106` exige que le total soit identifié comme tel là où il s'affiche, et
+le praticien est précisément celui qui pourrait le lire comme un score : les deux
+surfaces portent la mention.
+
+**Décision 4 — la borne de `scinderSousPlafond` est épinglée, pas corrigée.** Un
+mot plus long que le plafond sort seul, hors plafond. Le constat est exact et
+n'appelle aucun correctif : « aucun mot coupé » et « tout morceau sous le
+plafond » sont **incompatibles** dans ce cas, et couper fabriquerait deux mots
+absents d'un texte signé (`DC-19`) là où un morceau trop long ne fait que refuser
+un enregistrement, bruyamment et sans rien altérer. Ce qui manquait n'était pas
+le comportement mais son épinglage ; un cas mesure aussi que le registre publié
+reste **loin** de cette borne.
+
+**Ce que la revue a laissé debout, et qui compte autant.** A1 (verrous
+fail-closed), A2 (`DC-12`), A3 (prédicat unique d'ouverture), A4 (verrous à sens
+inverse), A6 (aucune identité réelle en fixture) et D2 (aucune valence sur la
+variation) **résistent**. La revue a par ailleurs écarté sa propre première
+restitution — elle présentait comme confirmées des mutations non exécutées — et
+corrigé son verdict A4 après lecture des bancs de sécurité.
+
+**Ce qui n'est pas corrigé ici, et pourquoi.** Les constats F5 et F6 portent sur
+l'arbre final, sans être attribués à un commit de la campagne : le texte patient
+précède la campagne de cinq semaines. Les corriger dans ce lot est un choix de
+sécurité, pas une réparation de régression.
+
 ### D-107 — Les actes en attente : une signature reportée, deux campagnes routées, une borne déclarée
 
 - Date : 2026-08-24

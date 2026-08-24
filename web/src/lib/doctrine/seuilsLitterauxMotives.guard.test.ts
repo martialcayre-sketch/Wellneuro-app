@@ -142,6 +142,75 @@ function comparaisonsLitterales(): Comparaison[] {
 }
 
 /**
+ * L'ÉCRÊTAGE — seconde POSITION de seuil, ajoutée par le LOT-12 ([[D-108]]).
+ *
+ * LE TROU MESURÉ PAR LA CONTRE-REVUE. `COMPARAISON` ne connaît qu'une position :
+ * le littéral à droite d'un opérateur. Codex a plafonné toute couverture de
+ * score par `Math.min(0.95, …)` — une borne non motivée introduite en plein
+ * `src/lib` — et le banc est resté vert, neuf tests sur neuf. Or borner PAR
+ * comparaison et borner PAR écrêtage décident exactement la même chose ; seule
+ * l'écriture diffère.
+ *
+ * `Math.min` / `Math.max` seulement, et la limite est dite plus bas : `.slice`
+ * porte 30 littéraux dans `src/lib`, tous des troncatures de texte pour
+ * l'affichage ou le budget d'un prompt. Les faire entrer ici noierait la liste
+ * d'exemptions sous une classe qui ne décide de rien — le défaut que l'en-tête
+ * de `BORNES_DE_STRUCTURE` nomme déjà.
+ */
+const ECRETEURS = ['Math.min(', 'Math.max('];
+
+function litterauxDeTeteDArguments(argumentsBruts: string): string[] {
+  // Seuls les littéraux du PREMIER niveau comptent : dans
+  // `Math.min(Math.max(limite, 1), 50)`, le `1` appartient à l'appel imbriqué,
+  // qui est lui-même visité à son tour.
+  let profondeur = 0;
+  let premierNiveau = '';
+  for (const c of argumentsBruts) {
+    if (c === '(' || c === '[') profondeur++;
+    else if (c === ')' || c === ']') profondeur--;
+    premierNiveau += profondeur === 0 ? c : ' ';
+  }
+  return [...premierNiveau.matchAll(/(?<![\w.])(-?\d+(?:\.\d+)?)(?![\w.])/g)].map(m => m[1]);
+}
+
+function ecretagesLitteraux(): Comparaison[] {
+  const trouves: Comparaison[] = [];
+  for (const fichier of fichiersDeLib()) {
+    const chemin = path.relative(RACINE, fichier).replace(/\\/g, '/');
+    const net = neutraliser(readFileSync(fichier, 'utf8'));
+    for (const ecreteur of ECRETEURS) {
+      let debut = net.indexOf(ecreteur);
+      while (debut >= 0) {
+        let i = debut + ecreteur.length;
+        let profondeur = 1;
+        let argumentsBruts = '';
+        while (i < net.length && profondeur > 0) {
+          if (net[i] === '(') profondeur++;
+          else if (net[i] === ')') profondeur--;
+          if (profondeur > 0) argumentsBruts += net[i];
+          i++;
+        }
+        for (const litteral of litterauxDeTeteDArguments(argumentsBruts)) {
+          if (BORNES_DE_STRUCTURE.has(litteral)) continue;
+          trouves.push({
+            chemin,
+            ligne: net.slice(0, debut).split('\n').length,
+            expression: `${ecreteur.slice(0, -1)} ${litteral}`,
+          });
+        }
+        debut = net.indexOf(ecreteur, debut + 1);
+      }
+    }
+  }
+  return trouves;
+}
+
+/** Les deux positions réunies — c'est sur elle que porte l'arbitrage. */
+function litterauxDeSeuil(): Comparaison[] {
+  return [...comparaisonsLitterales(), ...ecretagesLitteraux()];
+}
+
+/**
  * LE CATALOGUE, RECONNU PAR SA FORME ET NON PAR SON NOM. Un cut-off écrit dans
  * le catalogue est à sa place — c'est LUI la source déclarée. Le jour où un
  * fichier de catalogue s'ajoute, il est couvert sans qu'on ait à l'inscrire ;
@@ -200,6 +269,23 @@ const EXEMPTIONS: Record<string, string> = {
   'src/lib/agenda-alimentaire/agregats.ts\tavecPrises.length < 3': 'couverture minimale avant d’émettre une suggestion d’horaire ; sous le seuil ⇒ null, jamais une valeur dégradée (`DC-25`)',
   'src/lib/food-observation/persistence.ts\tbudgetChargeGlobal > 21': 'borne haute du budget de charge, alignée sur la fenêtre 21 jours du protocole ; cadre de la relation, pas une cotation',
 
+  // — ÉCRÊTAGES D'UN PARAMÈTRE D'APPEL, entrés dans le balayage avec la
+  //   position `Math.min`/`Math.max` au LOT-12 ([[D-108]]). Les neuf sont le
+  //   MÊME patron : `Math.max(plancher, Math.min(paramètre ?? défaut, plafond))`
+  //   sur une valeur fournie par l'appelant. Ils bornent une CHARGE — combien de
+  //   lignes on rapatrie, à partir de quelle similarité on remonte un extrait —
+  //   et ne cotent rien : un extrait non remonté n'est pas un extrait jugé faux
+  //   (`DC-20`, chiffre technique identifié comme tel).
+  'src/lib/food-observation/persistence.ts\tMath.min 50': 'plafond de pagination d’un historique d’observations ; borne de charge sur un paramètre d’appel',
+  'src/lib/rag/claims/recherche.ts\tMath.min 6': 'nombre de restitutions par défaut ; borne de charge, écrasable par l’appelant',
+  'src/lib/rag/claims/revue.ts\tMath.min 50': 'plafond de pagination d’une revue de claims ; borne de charge sur un paramètre d’appel',
+  'src/lib/rag/store.ts\tMath.min 8': 'nombre d’extraits remontés par défaut ; borne de charge, écrasable par l’appelant',
+  'src/lib/rag/store.ts\tMath.min 50': 'plafond du nombre d’extraits remontés ; borne de charge sur un paramètre d’appel',
+  'src/lib/rag/store.ts\tMath.min 0.55': 'similarité minimale PAR DÉFAUT d’une recherche vectorielle ; paramètre de rappel documentaire, ne cote et n’exclut aucun contenu clinique',
+  'src/lib/supplement-library/rayonCorpus.ts\tMath.min 24': 'nombre d’extraits de rayon par défaut ; borne de charge, écrasable par l’appelant',
+  'src/lib/supplement-library/rayonCorpus.ts\tMath.min 50': 'plafond du nombre d’extraits de rayon ; borne de charge sur un paramètre d’appel',
+  'src/lib/supplement-library/rayonCorpus.ts\tMath.min 0.5': 'similarité minimale PAR DÉFAUT d’une recherche vectorielle ; paramètre de rappel documentaire, ne cote et n’exclut aucun contenu clinique',
+
   // LA DETTE DU LOT-03 A ÉTÉ SOLDÉE, ET SON EXEMPTION A DISPARU AVEC ELLE.
   //
   // `src/lib/synthese-praticien.ts  source.axes_prioritaires.length > 3` figurait
@@ -222,6 +308,26 @@ describe('seuils littéraux — le balayage lui-même', () => {
 
   it('le balayage trouve encore des comparaisons à littéral', () => {
     expect(comparaisonsLitterales().length).toBeGreaterThan(30);
+  });
+
+  // MÊME ANTI-VACUITÉ POUR LA SECONDE POSITION — [[D-108]]. Sans elle, une
+  // panne du parcours d'arguments (parenthèses déséquilibrées, `ECRETEURS`
+  // vidé) rendrait un ensemble vide, et l'arbitrage ci-dessous passerait au vert
+  // sur une position qu'il ne lit plus. C'est le mode de panne que la
+  // contre-revue a exploité une fois ; il ne se répète pas en silence.
+  it('le balayage voit encore des écrêtages à littéral', () => {
+    expect(ecretagesLitteraux().length).toBeGreaterThan(5);
+  });
+
+  // Le parcours d'arguments ne doit compter QUE le premier niveau : sans cela,
+  // le `1` de `Math.max(limite, 1)` imbriqué remonterait comme borne de l'appel
+  // englobant, et chaque écrêtage à plancher produirait une fausse entrée.
+  it('le parcours d’arguments ne compte que le premier niveau', () => {
+    expect(litterauxDeTeteDArguments('Math.max(limite, 1), 50')).toEqual(['50']);
+    expect(litterauxDeTeteDArguments('params.limite ?? 6, MAX')).toEqual(['6']);
+    // Un nombre collé à un identifiant ou à un point n'est pas un littéral
+    // d'argument : `v15`, `filters.matchCount`, `0.55` en font trois cas.
+    expect(litterauxDeTeteDArguments('etiquette.v15, 0.55')).toEqual(['0.55']);
   });
 
   // Le catalogue est exempté PAR FORME : si le prédicat ne reconnaissait plus
@@ -260,7 +366,7 @@ describe('seuils littéraux — toute comparaison hors catalogue est arbitrée',
   // Aucun jeu de propriétés par défaut, aucun héritage silencieux : une
   // comparaison inconnue fait rougir plutôt que d'être devinée.
   it('aucun seuil littéral non arbitré hors catalogue', () => {
-    const nonArbitres = comparaisonsLitterales()
+    const nonArbitres = litterauxDeSeuil()
       .filter(c => !estCatalogue(c.chemin))
       .filter(c => !(`${c.chemin}\t${c.expression}` in EXEMPTIONS))
       .map(c => `${c.chemin}:${c.ligne} — ${c.expression}`);
@@ -272,7 +378,7 @@ describe('seuils littéraux — toute comparaison hors catalogue est arbitrée',
   // où un code réintroduirait la même expression au même endroit, elle serait
   // exemptée par une décision prise pour un autre code.
   it('aucune exemption ne survit à ce qu’elle exemptait', () => {
-    const presentes = new Set(comparaisonsLitterales().map(c => `${c.chemin}\t${c.expression}`));
+    const presentes = new Set(litterauxDeSeuil().map(c => `${c.chemin}\t${c.expression}`));
     const mortes = Object.keys(EXEMPTIONS).filter(cle => !presentes.has(cle));
     expect(mortes).toEqual([]);
   });

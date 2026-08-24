@@ -2,6 +2,7 @@
 
 import { optionLibelle, type PointEtape } from '@/lib/protocol/checkinDomain';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 
 // Panneau décisionnel du point d'étape J21 (C2A LOT-04) — LECTURE SEULE. Il
 // affiche le « résumé J21 » (point de jonction A1 : le score a-t-il bougé ?
@@ -47,6 +48,9 @@ export function J21DecisionPanel({
 
       {/* Point de jonction : score (momentum) + action (check-ins). */}
       <div className="mt-3 space-y-1 text-base">
+        {/* [[D-108]] — la tendance ci-dessous est celle du total de « Mon
+            équilibre », sans interprétation clinique ([[D-106]], `DC-22`). */}
+        <p className="text-xs text-muted-foreground">{MENTION_NATURE_INDICE_GLOBAL}</p>
         <p className="text-foreground">
           Score « Mon équilibre » :{' '}
           {resume?.score ? (
