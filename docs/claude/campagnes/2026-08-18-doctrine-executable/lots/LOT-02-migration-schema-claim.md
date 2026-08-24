@@ -1,6 +1,6 @@
 ---
 id: "LOT-02"
-statut: "transféré (2026-08-23, D-096) — le périmètre part à la campagne « Curation signée »"
+statut: "abandonné dans cette campagne — TRANSFÉRÉ le 2026-08-23 (D-096), le périmètre vit désormais à « Curation signée » ; le mot suit le vocabulaire de l'audit de campagnes, qui ne connaît pas « transféré »"
 dépend_de: "— (sans objet)"
 ---
 

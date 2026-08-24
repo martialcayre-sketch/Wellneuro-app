@@ -1,10 +1,10 @@
 ---
 id: "2026-08-18-doctrine-executable"
 titre: "Doctrine exécutable — les cinq véhicules de l'audit"
-statut: "ouverte en primaire (2026-08-23) — huit lots cadrés sur état réel re-mesuré ; trois véhicules déplacés par le cadrage"
+statut: "TERMINÉE (2026-08-25) — dix lots exécutés dont un LOT-12 non prévu, né d'une contre-revue adverse ; six règles sur leurs trois preuves, et ce qui n'est pas fermé est nommé règle par règle"
 créée_le: "2026-08-18"
-mise_à_jour: "2026-08-24"
-lot_courant: "LOT-08"
+mise_à_jour: "2026-08-25"
+lot_courant: "aucun"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"

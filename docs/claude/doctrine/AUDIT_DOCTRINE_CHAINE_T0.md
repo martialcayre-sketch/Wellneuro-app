@@ -126,10 +126,10 @@ bonne nouvelle de cet audit.
 | Règle | État réel | Statut | Porteur |
 |---|---|---|---|
 | DC-19 aucun seuil inventé | `.claude/rules/clinique-scoring.md`, `D-013`. Tenu sur les instruments (bandes publiées) et sur l'orientation (claims épinglés, seuils motivés sur place). Le point sensible du LOT-01 est d'abord un **choix de bande** (le trou à 9, tranché par [[D-042]]) ; la descente y a aussi trouvé **un** seuil réellement sans provenance, le `plainte sommeil ≤ 2` de C-SOM, qui coupe à l'intérieur d'une bande — règle retirée de la V1, arbitrage reporté avec elle. Voir le dossier de règles candidates. | acquis | — |
-| DC-20 seuil clinique ≠ technique | Aucun `thresholdKind` nulle part. Les seuils de qualité de recueil et les cut-offs cliniques ont le même statut dans le code. | absent | — |
+| DC-20 seuil clinique ≠ technique | Aucun `thresholdKind` nulle part. Les seuils de qualité de recueil et les cut-offs cliniques ont le même statut dans le code. | absent | **amendé 2026-08-25** ([[D-109]]) : nature déclarée EN PROSE par le banc de `DC-19`, jamais portée par la donnée — reste **absent** au sens de la règle, chez **Curation signée** |
 | DC-21 pondération explicite | `equilibre/constants.ts` motive ses groupes et ses poids sur place, y compris le refus des poids plats. La règle générale n'était pas écrite ; la pratique la précédait. | acquis | — |
-| DC-22 pas de score global sans sens | « Mon équilibre » agrège douze besoins en groupes pondérés. La question « le total a-t-il une interprétation clinique ? » n'a jamais été posée dans le registre de décisions. | absent | — |
-| DC-23 red flags orthogonaux | Aucun objet red flag. Le patron existe pourtant en esprit — `D-021` (une sévérité acquise sert de **plancher**, jamais de mesure) et `D-024` (plancher d'orientation) refusent déjà qu'une sévérité se fasse moyenner. Voir **§B**. | absent | — |
+| DC-22 pas de score global sans sens | « Mon équilibre » agrège douze besoins en groupes pondérés. La question « le total a-t-il une interprétation clinique ? » n'a jamais été posée dans le registre de décisions. | absent | **ACTÉ 2026-08-24** ([[D-106]], [[D-108]]) — question posée, réponse NON ; total identifié et non retiré, banc `natureIndiceGlobal.guard.test.ts` |
+| DC-23 red flags orthogonaux | Aucun objet red flag. Le patron existe pourtant en esprit — `D-021` (une sévérité acquise sert de **plancher**, jamais de mesure) et `D-024` (plancher d'orientation) refusent déjà qu'une sévérité se fasse moyenner. Voir **§B**. | absent | **ACTÉ 2026-08-24** ([[D-099]]) — énoncé arithmétique prouvé, banc `safetyFindings.guard.test.ts` |
 | DC-24 absence ≠ zéro | `.claude/rules/clinique-scoring.md`, `D-009`, `D-014`, `D-016` ; `scoring/validite.ts`, `passationsNonInterpretables.ts` ; LOT-00 mergé. **La règle la mieux tenue du dépôt.** | acquis | — |
 | DC-25 couverture visible | `MissingDataPanel`, registre des passations non interprétables, `D-009`. | acquis | — |
 | DC-26 registre → compilation → runtime | La table épingle bien ses claims (`claimId` + `versionClaim` immuables) — mais **le compilateur n'existe pas**. Voir **§E**. | partiel | — |
@@ -163,8 +163,8 @@ bonne nouvelle de cet audit.
 | DC-39 une modification à la fois | Aucune notion de compatibilité simultanée vs séquentielle. | porté | LOT-05 (véhicule V4, inscrit) |
 | DC-40 critère de suivi | Momentum et jalons J21/J42/J90 inscrits au LOT-07 ; le lien intervention → variable suivie → réévaluation n'est pas encore un objet. | porté | LOT-05, LOT-07 |
 | DC-41 efficacité ≠ tolérance | Aucun axe de tolérance. | porté | LOT-07 (véhicule V4, inscrit) |
-| DC-42 effet indésirable interrompt l'automatique | Aucune capture d'effet indésirable. | absent | — |
-| DC-43 gates de population avant classement | `anamnese.ts:101` porte bien « Grossesse / post-partum », mais comme **facteur déclenchant** — un antécédent, pas un état courant, et remonté dans `DrapeauxAnamnese.facteursDeclenchants` sans qualifier une population. Sinon `grossesse`/`allaitement` n'apparaissent que dans `trust/contenus/registre.ts` (contenus d'information) : **jamais dans un filtre d'intervention**. Voir **§C**. | absent | — |
+| DC-42 effet indésirable interrompt l'automatique | Aucune capture d'effet indésirable. | absent | **amendé 2026-08-24** ([[D-101]], [[D-107]]) : la capture EXISTE, le mécanisme est complet — **signature reportée au 2026-08-30**, donc non armé |
+| DC-43 gates de population avant classement | `anamnese.ts:101` porte bien « Grossesse / post-partum », mais comme **facteur déclenchant** — un antécédent, pas un état courant, et remonté dans `DrapeauxAnamnese.facteursDeclenchants` sans qualifier une population. Sinon `grossesse`/`allaitement` n'apparaissent que dans `trust/contenus/registre.ts` (contenus d'information) : **jamais dans un filtre d'intervention**. Voir **§C**. | absent | **amendé 2026-08-24** ([[D-101]], [[D-107]]) : mécanisme complet et relu, **sans sujet** (`neCouvrePas` null sur les 95) ; porteur = curation des exclusions rouverte |
 | DC-44 médicament + complément | Cumuls et compatibilités entre compléments : faits (`supplement-library/compatibilite.ts`). Croisement avec les **médicaments du patient** : `contexteClinique.ts` collecte le contexte, aucun moteur ne l'oppose à une proposition. | partiel | LOT-05 |
 
 ### VII — Biologie
@@ -190,11 +190,11 @@ bonne nouvelle de cet audit.
 
 | Règle | État réel | Statut | Porteur |
 |---|---|---|---|
-| DC-54 politique de résolution | Aucune. La contradiction **entre sources** est un sujet distinct de la discordance **entre instruments** du LOT-01 — et personne ne le porte. | absent | — |
-| DC-55 escalade praticien | `D-003` impose la validation praticien en sortie ; ce n'est pas la même chose qu'une escalade **déclenchée par un conflit identifié**. | partiel | — |
+| DC-54 politique de résolution | Aucune. La contradiction **entre sources** est un sujet distinct de la discordance **entre instruments** du LOT-01 — et personne ne le porte. | absent | **ACTÉ 2026-08-24** ([[D-103]], [[D-104]]) — registre signé, `CS-BIO-01` mord ; banc `conflitsSourcesV1.guard.test.ts` |
+| DC-55 escalade praticien | `D-003` impose la validation praticien en sortie ; ce n'est pas la même chose qu'une escalade **déclenchée par un conflit identifié**. | partiel | **ACTÉ 2026-08-24** ([[D-103]], [[D-104]]) — escalade déclenchée par conflit identifié ; reste **curatoriale** par arbitrage ([[D-107]]) |
 | DC-56 modules annoncent leurs claims | `MATRICE_CONSOMMATION.md`, générée depuis les imports — 19 sources, dont 6 dormantes. À la maille « source de savoir », pas du claim. Les claims **ignorés volontairement** n'y figurent pas. | partiel | — |
 | DC-57 tests de doctrine, épinglés au claim | Discipline `*.guard.test.ts` établie et sérieuse ; l'identifiant du claim n'est pas dans le test. | partiel | — |
-| DC-58 le test n'est pas la vérité clinique | Aucun outil ne détecte une valeur clinique qui n'existerait que dans un test. | absent | — |
+| DC-58 le test n'est pas la vérité clinique | Aucun outil ne détecte une valeur clinique qui n'existerait que dans un test. | absent | **amendé 2026-08-24** ([[D-105]]) : mesurée **sans sujet** (zéro valeur orpheline sur 476 fichiers de test), méthode prescrite montrée VACUE — reste proposition, avec sa mesure |
 
 ---
 
@@ -603,3 +603,50 @@ on ne sait pas combien de claims tomberaient en `PRACTITIONER_REQUIRED`, ni
 combien seraient inexécutables faute de population déclarée. Cette descente
 produit la matrice claim par claim annoncée en fin de constitution, et elle
 reste à faire.
+
+**Elle est ROUTÉE depuis le 2026-08-25** ([[D-109]]) — chez **Curation signée**,
+entièrement : sa structure y a suivi le LOT-02 transféré ([[D-096]]), sa cadence
+y était déjà. Elle était annoncée **ici et en fin de constitution** sans
+destinataire ; c'est cette double annonce sans routage que la clôture ferme.
+Fait qui rend le routage exact plutôt que dilatoire : les **8 224 claims** de
+production (mesurés le 2026-08-23, conteneur en lecture seule) sont tous
+`VALIDE`, et leur `metadata` ne porte que `section`/`source_chunk`/`page`/
+`usage` — la grille **n'a aucune colonne où s'écrire** tant que Curation signée
+n'a pas ouvert les axes.
+
+---
+
+## Répartition finale — clôture de « Doctrine exécutable » (2026-08-25)
+
+*Écrite par le LOT-08 ([[D-109]]). Les lignes du 2026-08-11 restent lisibles
+ci-dessus : elles sont amendées et datées, jamais remplacées.*
+
+L'audit d'origine comptait **11 acquises, 18 partielles, 13 portées, 16 sans
+ancrage**, et ordonnait **cinq véhicules** de fermeture. Ce que la campagne en a
+fait, véhicule par véhicule :
+
+| Véhicule | Sort |
+|---|---|
+| **V1** — étendre l'objet de discordance → `DC-29`, `DC-54` | **livré** (LOT-04, LOT-06) — `DC-54` et `DC-55` actées et signées ([[D-103]], [[D-104]]) |
+| **V2** — axe population | **déplacé par arbitrage** ([[D-101]]) : la population sort du claim et vit sur l'INTERVENTION. `DC-43` a son mécanisme, **pas son sujet** |
+| **V3** — typer l'objet de sécurité → `DC-23`, `DC-42`, `DC-43` | **partiellement livré** — `DC-23` actée ([[D-099]]) ; `DC-42` attend sa **signature**, revue au 2026-08-30 |
+| **V4** — deux paragraphes dans deux fiches → `DC-39`, `DC-41` | **périmé** : les fiches sont livrées depuis le 2026-08-18 et le code ne porte ni l'un ni l'autre ⇒ **sans véhicule**, nommées et non effacées ; rejoignent la **campagne dédiée aux orphelines** ([[D-107]]) |
+| **V5** — un banc de doctrine → `DC-58` | **instruit, non basculé** ([[D-105]]) : mesurée sans sujet, méthode prescrite montrée vacue. Le versant décidable est gardé, mais il relève de `DC-19`/`DC-20` |
+| **Isolées** — `DC-22`, `DC-50`, `DC-51` | `DC-22` **actée** ([[D-106]], [[D-108]]) ; `DC-50`/`DC-51` **renvoyées** à la campagne chaîne alimentaire |
+
+**Six règles franchissent leurs trois preuves** — décision datée, banc qui
+tourne, statut basculé : `DC-09`, `DC-19`, `DC-22`, `DC-23`, `DC-54`, `DC-55`.
+Chacune est vérifiée dans la constitution, banc nommé.
+
+**Ce que la clôture refuse d'écrire comme fermé**, et c'est le point : `DC-20`
+(nature en prose, pas dans la donnée), `DC-26` (compilateur inexistant),
+`DC-42` (signature reportée), `DC-43` (sans sujet), `DC-58` (sans méthode), les
+**quatre non armées** dont le déclencheur a été revérifié **structurellement** le
+2026-08-25, et les **onze statuts orphelins** recomptés au grep le même jour —
+routés vers une **campagne dédiée** ([[D-107]]), pas laissés en dettes.
+
+**Une contre-revue adverse a précédé cette clôture** ([[D-108]]) et a réfuté
+**sept** des treize affirmations qu'elle s'apprêtait à graver — dont un texte
+servi au patient depuis cinq semaines, qu'aucun lot de la campagne n'avait vu.
+C'est la raison pour laquelle cette répartition dit d'abord ce qui n'est pas
+fermé.

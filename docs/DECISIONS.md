@@ -4,6 +4,90 @@
 
 ## Décisions actives
 
+### D-109 — Clôture de « Doctrine exécutable » : six règles fermées, et tout le reste nommé
+
+- Date : 2026-08-25
+- Statut : accepté (LOT-08, lot de clôture — constat, aucun arbitrage neuf)
+- Domaine : doctrine clinique — statuts, renvois, routages. **Aucun code.**
+- Porte sur : les 58 règles `DC-nn`, l'audit du 2026-08-11, la file d'attente
+- Fait suite à : les dix lots de la campagne, `D-095` à `D-108`
+
+**Ce lot vérifie, il n'enregistre pas.** Sa fiche l'interdit en toutes lettres :
+aucune bascule sur la foi d'un lot déclaré terminé. Les six règles ci-dessous
+franchissent leurs **trois preuves**, chacune revérifiée ici — décision datée,
+banc **présent au dépôt**, statut basculé :
+
+| Règle | Décision | Banc |
+|---|---|---|
+| `DC-09` | `D-097` | `promptAssociationPreuve.guard.test.ts` |
+| `DC-19` | `D-105`, `D-108` | `seuilsLitterauxMotives.guard.test.ts` |
+| `DC-22` | `D-106`, `D-108` | `natureIndiceGlobal.guard.test.ts` |
+| `DC-23` | `D-099` | `safetyFindings.guard.test.ts` |
+| `DC-54` | `D-103`, `D-104` | `conflitsSourcesV1.guard.test.ts` |
+| `DC-55` | `D-103`, `D-104` | `conflitsSourcesV1.guard.test.ts` |
+
+**Décision 1 — `DC-19` bascule, `DC-20` ne bascule pas, et la nuance est le
+cœur du lot.** Le banc des seuils exige désormais de chaque littéral qu'il soit
+nommé ou **motivé**, et chaque motif dit pourquoi le chiffre n'est pas clinique.
+C'est de la déclaration de nature, et elle mord. Mais elle est **en prose, dans
+un banc** — pas dans un champ `thresholdKind` porté par la donnée : elle ne suit
+pas le seuil hors du dépôt et ne se requête pas. `DC-20` reste donc chez
+**Curation signée**. La distance est plus courte qu'au 2026-08-11 ; elle n'est
+pas franchie, et l'écrire fermée aurait été le mensonge que cette campagne
+existe pour supprimer.
+
+**Décision 2 — les quatre règles non armées sont reconduites sur preuve
+STRUCTURELLE, plus sur un comptage.** `rag_corpus_claims` ne porte **aucune
+colonne de claim parent** (`DC-05`) ni **aucune colonne de niveau d'exécution**
+(`DC-08`), et aucune `ALTER` ultérieure n'en ajoute : le déclencheur ne peut pas
+être franchi, il n'est pas seulement « non franchi ». Pour `DC-52`/`DC-53`, la
+mesure a trouvé une nuance qu'un comptage aurait manquée — « PNNS 4 » **figure**
+au dépôt, mais comme **libellé d'un item de questionnaire** : on demande au
+patient s'il suit ces recommandations, le système ne les référence pas. Un socle
+cité dans une question n'est pas un socle référencé.
+
+**Décision 3 — la matrice claim par claim est ROUTÉE, aux deux endroits qui
+l'annonçaient sans destinataire.** Elle était promise en fin de constitution
+**et** en fin d'audit : un travail annoncé deux fois et jamais routé finit par ne
+plus être annoncé. Elle appartient entièrement à **Curation signée**. Ce qui rend
+le routage exact plutôt que dilatoire : les 8 224 claims de production sont tous
+`VALIDE` et leur `metadata` ne porte que `section`/`source_chunk`/`page`/`usage`
+— la grille **n'a aucune colonne où s'écrire** tant que Curation signée n'a pas
+ouvert les axes.
+
+**Décision 4 — la fiche du lot était périmée, et c'est l'arbitrage le plus
+récent qui l'emporte.** Le §2 de `LOT-08` annonçait les dix orphelines comme
+« dettes nommées sans véhicule ». C'est l'option **écartée** la veille par
+`D-107`, au profit d'une **campagne dédiée** — et pour ce motif exact : « dettes
+nommées » est le régime qui les avait rendues orphelines. La fiche n'est pas
+réécrite, elle est amendée en tête. Le lot prend acte ; il n'arbitre pas.
+
+**Ce que la clôture refuse d'écrire comme fermé**, nommément : `DC-20` (nature
+en prose), `DC-26` (le compilateur n'existe ni sur le disque ni dans
+l'historique Git), `DC-42` (mécanisme complet, **signature reportée au
+2026-08-30**), `DC-43` (mécanisme complet et relu, **sans sujet** — `neCouvrePas`
+`null` sur les 95 interventions), `DC-58` (instruite, sans contre-exemple et
+sans méthode fondée), les quatre non armées, et les **onze statuts orphelins**
+recomptés au grep le 2026-08-25 — **13** occurrences, dont deux en en-tête,
+inchangé depuis la mesure du LOT-11. `DC-50` et `DC-51` sont **renvoyées** à la
+campagne chaîne alimentaire : un renvoi est un routage, pas une fermeture.
+
+**L'audit du 2026-08-11 est amendé ligne par ligne et daté, jamais réécrit.**
+Huit lignes changent de sort dans leur colonne « Porteur » ; le constat
+d'origine reste lisible, comme la fiche l'exige. Une répartition finale par
+véhicule est ajoutée en fin de document.
+
+**Ce que la campagne aura appris sur elle-même, et qui est écrit dans la
+constitution.** Quatre fois, un lot a déclaré close une chose qui ne l'était
+pas, et **jamais le lot lui-même ne l'a vu** : une entrée de garde qui était un
+no-op silencieux, un banc vert sous quatre mutations, une règle étiquetée
+*Proposition* dont le corps concluait qu'elle basculait, et un texte de jeu servi
+au patient depuis cinq semaines. Les trois premières ont été trouvées par revue
+ou par mesure ; la quatrième par une **contre-revue adverse** lancée avant cette
+clôture (`D-108`), qui a réfuté sept des treize affirmations qui allaient être
+gravées ici. C'est la raison pour laquelle le bloc de clôture de la constitution
+dit **d'abord** ce qui n'est pas fermé.
+
 ### D-108 — La contre-revue adverse a trouvé six trous, dont un servi au patient depuis cinq semaines
 
 - Date : 2026-08-24
