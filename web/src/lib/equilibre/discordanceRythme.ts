@@ -33,6 +33,24 @@ export const SEUIL_JEUNE_MIN = 600; // 10 h
 export const SEUIL_PROTEINES_MATIN_JOURS = 4; // < 4 j/7 = rupture de majorité
 export const SEUIL_SOIR_COPIEUX_JOURS = 3; // > 3 j/7 = le soir fut le plus copieux la majorité des jours
 
+/**
+ * LE MÊME REPÈRE QUE `SEUIL_JEUNE_MIN`, dans l'unité du déclaré — [[D-105]].
+ *
+ * SIIN54 se répond en HEURES, l'agenda s'observe en MINUTES. Le repère unique
+ * du barème (`alimentaire.ts`, `{id:'SIIN54',points:2,seuil:{min:10}}`) était
+ * donc écrit DEUX FOIS dans ce fichier : nommé et motivé du côté observé,
+ * littéral nu du côté déclaré (`declare.SIIN54 >= 10`). Deux écritures d'un
+ * seul repère, dont une seule nommée — porter `SEUIL_JEUNE_MIN` à 11 h laissait
+ * le déclaré comparer à 10, et la discordance confrontait alors le déclaré à un
+ * repère et l'observé à un autre. Le drapeau de sur-déclaration se serait levé,
+ * ou tu, sans qu'aucune ligne ne dise pourquoi.
+ *
+ * DÉRIVÉ, JAMAIS RECOPIÉ — même raison que `MAX_RYTHME_CHRONO` : un second
+ * littéral est silencieux par construction, aucun banc ne compare deux nombres
+ * qui ne se connaissent pas.
+ */
+export const SEUIL_JEUNE_DECLARE_H = SEUIL_JEUNE_MIN / 60;
+
 export type AxeRythme = 'jeune' | 'proteines_matin' | 'soir_leger';
 
 export type VerdictAxe =
@@ -138,7 +156,9 @@ function verdictDepuisSpec(spec: SpecAxe): LectureAxe {
 
 function texteHeuresDeclare(siin54: number | null | undefined): string {
   if (siin54 === undefined || siin54 === null) return 'non renseigné';
-  return siin54 >= 10 ? 'déclaré ≥ 10 h' : 'déclaré < 10 h';
+  return siin54 >= SEUIL_JEUNE_DECLARE_H
+    ? `déclaré ≥ ${SEUIL_JEUNE_DECLARE_H} h`
+    : `déclaré < ${SEUIL_JEUNE_DECLARE_H} h`;
 }
 
 function texteJeuneObserve(jeuneMedian: number | null): string {
@@ -174,7 +194,9 @@ export function discordanceRythme(
     axe: 'jeune',
     libelle: 'Jeûne nocturne',
     declareFavorable:
-      declare.SIIN54 === undefined || declare.SIIN54 === null ? null : declare.SIIN54 >= 10,
+      declare.SIIN54 === undefined || declare.SIIN54 === null
+        ? null
+        : declare.SIIN54 >= SEUIL_JEUNE_DECLARE_H,
     declareTexte: texteHeuresDeclare(declare.SIIN54),
     observeDefavorable: observe?.jeuneMedian == null ? null : observe.jeuneMedian < SEUIL_JEUNE_MIN,
     observeTexte: texteJeuneObserve(observe?.jeuneMedian ?? null),

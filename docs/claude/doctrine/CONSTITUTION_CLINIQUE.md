@@ -868,9 +868,19 @@ réclamés nulle part.*
 **DC-58 — Un test n'est jamais la source de vérité clinique.** Une valeur qui
 n'existe que dans un test n'est pas une justification. Le test dérive de la
 règle ; jamais l'inverse.
-*Proposition — porté par le **LOT-03 de « Doctrine exécutable »** (banc de
-doctrine). Aucun outil ne détecte aujourd'hui une valeur cliniquement
-signifiante qui n'existerait que dans un test.*
+*Proposition **mesurée sans sujet**, et qui le reste — `D-105`, LOT-03 de
+« Doctrine exécutable ». La descente du 2026-08-24 (476 fichiers de test, 595
+fichiers source) n'a trouvé **aucune** valeur orpheline : les 25 candidats sans
+provenance étaient 19 lignes de fixture d'une colonne Prisma, 4 codes HTTP dans
+des titres de test, 2 sorties calculées. Elle a de plus montré que la
+mécanisation évidente — vérifier qu'une valeur de test « existe ailleurs » —
+est **vacue** : avec 633 valeurs distinctes au dénominateur, presque tout entier
+court trouve un répondant par hasard, et le banc serait vert en permanence pour
+la mauvaise raison. `DC-58` n'est donc ni basculée ni abandonnée : elle est
+instruite, sans contre-exemple dans le dépôt, et sans méthode fondée par
+égalité de valeurs. Le versant décidable de sa phrase — un cut-off recopié dans
+un moteur — est gardé par `seuilsLitterauxMotives.guard.test.ts`, qui relève de
+`DC-19`/`DC-20`.*
 
 ---
 

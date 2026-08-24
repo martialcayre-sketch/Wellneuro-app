@@ -38,6 +38,30 @@ export const VERSION_PROTOCOL_DRAFT_V3 = 'c1-protocol-draft-v3' as const;
 export const VERSION_PROTOCOL_DRAFT_V4 = 'c1-protocol-draft-v4' as const;
 export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v2' as const;
 
+/**
+ * TROIS ACTIONS MAXIMUM sur un protocole 21 jours — [[D-105]].
+ *
+ * PROVENANCE : `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md`, « trois actions
+ * maximum ». C'est une borne de CHARGE de la relation praticien-patient, pas un
+ * seuil mesuré sur une population : elle n'a ni claim ni intervalle, et n'a pas
+ * à en avoir un. Elle est nommée ici pour être identifiable comme telle
+ * (`DC-19`), pas pour prétendre à une provenance qu'elle n'a pas.
+ *
+ * POURQUOI ICI. La borne était écrite SIX FOIS dans trois fichiers —
+ * `protocolDraft.ts` (le refus), `patientProtocolView.ts` (le second refus),
+ * `ProtocolMiniBuilder.tsx` (deux gardes de saisie, un bouton désactivé, un
+ * libellé « /3 »). Six littéraux nus qu'aucun banc ne compare : une borne
+ * portée à quatre côté moteur laissait l'écran en bloquer trois, et le praticien
+ * devant un bouton grisé sans message.
+ *
+ * `types.ts` est le seul foyer possible : il n'importe que des TYPES, donc un
+ * composant client peut l'importer en valeur sans embarquer `node:crypto` avec
+ * lui. Le poser dans `protocolDraft.ts` — qui importe `canonicalSha256` —
+ * traînerait le moteur entier dans le bundle du cockpit, exactement le défaut
+ * que `bundleClient.guard.test.ts` ferme pour `lib/clinical`.
+ */
+export const MAX_ACTIONS_PROTOCOLE_21J = 3;
+
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
 export type Measurement = {

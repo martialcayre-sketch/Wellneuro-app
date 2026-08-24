@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
+// Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types :
+// la borne suit le moteur sans traîner `node:crypto` dans le bundle client.
+import { MAX_ACTIONS_PROTOCOLE_21J } from '@/lib/clinical-engine/types';
 import type {
   DecisionCard,
   ProtocolAction,
@@ -119,14 +122,14 @@ export function ProtocolMiniBuilder({
   };
 
   const addAction = () => {
-    if (actions.length >= 3) return;
+    if (actions.length >= MAX_ACTIONS_PROTOCOLE_21J) return;
     markDirty();
     setActions(previous => [...previous, emptyAction(`action-${nextActionId}`)]);
     setNextActionId(value => value + 1);
   };
 
   const insertFoodCompassAction = () => {
-    if (!foodCompassSelection || actions.length >= 3) return;
+    if (!foodCompassSelection || actions.length >= MAX_ACTIONS_PROTOCOLE_21J) return;
     markDirty();
     setActions(previous => [...previous, {
       ...emptyAction(`action-${nextActionId}`),
@@ -220,13 +223,13 @@ export function ProtocolMiniBuilder({
 
         <div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-foreground">Actions ({actions.length}/3)</span>
-            <button type="button" onClick={addAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
+            <span className="text-sm font-medium text-foreground">Actions ({actions.length}/{MAX_ACTIONS_PROTOCOLE_21J})</span>
+            <button type="button" onClick={addAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
           {foodCompassSelection && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2 text-sm">
               <span>Sélection Boussole prête : {foodCompassSelection.foodLabel}</span>
-              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-foreground px-3 py-2 disabled:opacity-50">
+              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= MAX_ACTIONS_PROTOCOLE_21J} className="min-h-11 rounded-lg border border-foreground px-3 py-2 disabled:opacity-50">
                 Insérer manuellement
               </button>
               <button type="button" onClick={onClearFoodCompassSelection} className="min-h-11 px-2 py-2 text-muted-foreground underline">
