@@ -1,10 +1,18 @@
 ---
 id: "LOT-07"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "—"
 ---
 
 # LOT-07 — `DC-22` : le total de « Mon équilibre » a-t-il un sens ?
+
+> **Livré le 2026-08-24 — `D-106`.** La question a été posée au praticien avec sa
+> mesure, et la réponse est **non** : le total n'a pas d'interprétation clinique.
+> L'issue retenue est la **seconde branche de `DC-22`** — il n'est pas retiré, il
+> est identifié comme repère de suivi (`DC-20`). Deux arbitrages adjacents rendus
+> au passage : les deux valeurs du plafonnement sont **validées telles quelles**
+> (aucun bump de version), et l'égalité entre besoins d'une strate est
+> **motivée** (`DC-21`).
 
 ## But
 

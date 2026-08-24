@@ -284,11 +284,42 @@ la pondération, et aucune garde n'interdit d'introduire un poids nouveau sans
 motivation ni `D-xxx` — le banc épingle les valeurs actuelles, pas la règle.
 Périmètre vérifié : « Mon équilibre » seulement.*
 
+***Une pondération tacite trouvée et refermée au LOT-07 ([[D-106]],
+2026-08-24).** La note ci-dessus visait juste mais pas complet : les poids sont
+motivés à deux étages — entre sources d'un besoin, entre strates — et la moyenne
+**entre besoins d'une même strate** était SIMPLE, sans qu'aucune ligne ne le
+dise. C'était exactement le cas que `DC-21` nomme. L'arbitrage praticien l'a
+motivée sur place (`score.ts`, `agregerBesoinsEnStrates`) : la hiérarchie entre
+besoins est portée par le **mécanisme des fondations critiques**, pas par des
+poids ; en superposer un second rendrait illisible un besoin à la fois
+sous-pondéré et fondation critique. **Ce qui reste** : la « décision due » ci-
+dessus est levée pour cette pondération-là, et le manque de garde demeure —
+rien n'interdit encore d'introduire un poids neuf sans motivation ni `D-xxx`.*
+
 **DC-22 — Pas de score global si les dimensions n'ont pas de sens commun.** La
 question précède le calcul : existe-t-il une interprétation clinique du total ?
 Sinon, afficher les axes et les signaux, ne pas produire de total.
-*Proposition — porté par le LOT-07 de la campagne « Doctrine exécutable », qui
-pose la question au praticien et la tranche dans un sens ou dans l'autre.*
+*Acté [[D-106]] — LOT-07 de « Doctrine exécutable ». **La question a été posée
+avec sa mesure, et la réponse est NON** : le total des douze besoins n'a pas
+d'interprétation clinique. La mesure qui l'a rendue décidable : **aucun
+consommateur ne le lit** — `GLOBAL_BALANCE` est bien émis comme objet clinique
+portant sa valeur (`clinicalSnapshot.ts:209`, donc dans le snapshot figé et son
+empreinte), mais tous les producteurs de constats émettent
+`clinicalObjectCodes: []` et les consommateurs ne lisent que
+`balanceAssessment.needs` ; seule la **nullité** de `scoreGlobal` est lue, pour
+peupler `availableDomains`. Le patient n'en voit jamais le chiffre —
+**mais sa variation est un signal présenté aux deux surfaces**, et c'est elle,
+pas lui, que le patient lisait.
+La règle est tenue par la seconde branche de son énoncé, pas par la première :
+le total n'est pas retiré, il est **identifié** (`DC-20`). La mention « Repère de
+suivi, pas un score clinique » accompagne le chiffre au seul endroit où il
+s'affiche, et le libellé patient qui disait « **En progression** » — une
+interprétation clinique de la variation — ne le dit plus. Banc :
+`natureIndiceGlobal.guard.test.ts`, au grain de l'ÉLÉMENT qui reçoit
+`indiceGlobal` (deux versions par fichier ont été vues vertes sous injection
+avant d'être refusées). L'asymétrie des trois libellés est **conservée** :
+`D7` « construction, jamais dégradation » interdit d'annoncer une chute, et
+symétriser aurait cassé une règle en croyant en servir une autre.*
 
 **DC-23 — Les red flags sont orthogonaux au score.** Un red flag n'ajoute ni ne
 retire de points. Un score global favorable et un red flag majeur coexistent
