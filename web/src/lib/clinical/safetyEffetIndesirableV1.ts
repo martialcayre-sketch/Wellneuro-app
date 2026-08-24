@@ -67,8 +67,16 @@ export type SafetyEffetIndesirableMetadata = {
 //      — c'est-à-dire une gravité chiffrée déguisée (`DC-23`).
 //   3. LE VERROU A LE SENS INVERSE DES AUTRES, comme celui du LOT-04 : le
 //      refermer RETIRE une inhibition. Contrepoids : tant qu'il est fermé, le
-//      producteur reste muet et le drapeau `WN_EI_INTERRUPTION` est absent de
-//      la production — l'état livré ne change rien, et le dit.
+//      producteur reste muet — l'état livré ne change rien, et le dit.
+//
+//      PHRASE CORRIGÉE LE 2026-08-24 ([[D-107]], LOT-11). Elle ajoutait « et le
+//      drapeau `WN_EI_INTERRUPTION` est absent de la production ». C'ÉTAIT VRAI
+//      À LA LIVRAISON ET FAUX DEPUIS : le drapeau y vaut `1` depuis le LOT-05,
+//      posé exprès pour ouvrir la CAPTURE ([[D-101]]) — la ligne 143 le lit. Le
+//      mécanisme n'a jamais changé ; seule la phrase avait vieilli. Ce qui tient
+//      l'inhibition fermée aujourd'hui est la SIGNATURE manquante, jamais le
+//      drapeau. Une phrase périmée dans un fichier clinique se corrige : c'est
+//      elle qu'un relecteur croit avant de croire le code.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SAFETY_EI_METADATA: SafetyEffetIndesirableMetadata = {

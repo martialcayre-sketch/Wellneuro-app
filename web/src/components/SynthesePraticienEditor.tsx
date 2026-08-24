@@ -3,6 +3,9 @@
 import { useRef, useState } from 'react';
 import { Plus, Save, Search, Trash2, X } from 'lucide-react';
 import type { SyntheseSchema } from '@/lib/anthropic';
+// La borne de charge vit avec le validateur qui la fait respecter ([[D-107]]) :
+// l'écran et le serveur ne peuvent plus diverger.
+import { MAX_AXES_PRIORITAIRES } from '@/lib/synthese-praticien';
 
 type Props = {
   value: SyntheseSchema;
@@ -86,7 +89,7 @@ export function SynthesePraticienEditor({
   };
 
   const ajouterAxe = () => {
-    if (value.axes_prioritaires.length >= 3) return;
+    if (value.axes_prioritaires.length >= MAX_AXES_PRIORITAIRES) return;
     modifier('axes_prioritaires', [
       ...value.axes_prioritaires,
       { axe: '', niveau_priorite: 'modere', arguments: [], points_a_confirmer: [] },
@@ -290,7 +293,7 @@ export function SynthesePraticienEditor({
           <button
             type="button"
             onClick={ajouterAxe}
-            disabled={value.axes_prioritaires.length >= 3}
+            disabled={value.axes_prioritaires.length >= MAX_AXES_PRIORITAIRES}
             title="Ajouter un axe prioritaire"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40"
           >

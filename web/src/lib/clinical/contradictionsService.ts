@@ -9,6 +9,9 @@ import { contradictionEstOuverte } from './contradictionFinding';
 import { evaluerConflitsSources } from './conflitsSourcesEngine';
 import { CONFLITS_SOURCES_METADATA, CONFLITS_SOURCES_SHA256 } from './conflitsSourcesV1';
 import { scoresRecalculesPourRaisonnement } from './orientationService';
+// Découpage par position d'une ligne trop longue ([[D-107]]) : fonction PURE,
+// logée à part parce que ce module-ci instancie Prisma au chargement.
+import { lignesDeVigilance } from './vigilanceLongueur';
 import type { ContradictionClaimRef, ContradictionFinding } from './contradictionFinding';
 
 /**
@@ -456,49 +459,11 @@ async function constatsDuDossierStocke(idPatient: string): Promise<Contradiction
  * lui-même de les taire finirait par les servir le jour où quelqu'un oublie la
  * condition.
  */
-/**
- * Intitulé par FORME. « Discordance entre instruments » était appliqué aux
- * trois formes : un `CONFLIT_SOURCES`, qui oppose des claims et non des
- * passations, aurait été servi sous une étiquette fausse. Ce sont des libellés,
- * pas du contenu clinique — la phrase du déterministe suit, intacte.
- */
-const INTITULE_PAR_FORME: Record<ContradictionFinding['forme'], string> = {
-  DISCORDANCE: 'Discordance entre instruments constatée par le déterministe',
-  CONFLIT_SOURCES: 'Conflit entre sources constaté par le déterministe',
-  CONVERGENCE: 'Convergence constatée par le déterministe',
-};
-
-/**
- * Une ligne de vigilance, EXPLICABLE.
- *
- * `limitations` et `regleId` ne sont pas décoratifs, et les omettre reproduisait
- * l'amputation que la revue du cockpit avait déjà fait corriger une fois. Sans
- * les limitations, le praticien ne sait pas ce que le constat NE dit pas — pour
- * C-STR, « la discordance dit qu'ils ne concordent pas, jamais lequel a raison »
- * (`DC-25`, `DC-28`), et il tranchera en faveur d'un instrument. Sans le
- * `regleId`, il n'a aucun moyen de nommer la règle qu'il conteste : un faux
- * positif devient irremontable (`DC-34`, `DC-35`).
- *
- * Les passations datées restent au cockpit, où elles s'ouvrent — arbitrage 2 de
- * [[D-057]], inchangé.
- *
- * DEUX POINTS, PAS UN. Un point de vigilance est plafonné à
- * `LONGUEUR_MAX_POINT` caractères à l'enregistrement d'un brouillon praticien.
- * Constat et limitations réunis atteignaient 730 caractères pour C-STR :
- * l'enregistrement aurait été refusé, avec un message qui ne nomme pas la
- * cause. Scindés, ils font 411 et 326 — et un banc fige le plafond pour toutes
- * les règles de la table.
- */
-export function lignesDeVigilance(constat: ContradictionFinding): string[] {
-  const lignes = [
-    `${INTITULE_PAR_FORME[constat.forme]} [${constat.regleId}] : `
-    + `${constat.description} ${constat.actionSuggeree}`,
-  ];
-  if (constat.limitations.length > 0) {
-    lignes.push(`Ce que le constat [${constat.regleId}] ne dit pas : ${constat.limitations.join(' ')}`);
-  }
-  return lignes;
-}
+// `INTITULE_PAR_FORME` et `lignesDeVigilance` vivent désormais dans
+// `vigilanceLongueur.ts` — module FEUILLE ([[D-107]]) : ce fichier-ci instancie
+// Prisma au chargement, ce qui obligeait tout banc de longueur à provisionner
+// une base, ou à recomposer la phrase et donc à en mesurer une autre.
+export { lignesDeVigilance } from './vigilanceLongueur';
 
 export function vigilancesDiscordancePourSynthese(
   constats: ContradictionFinding[],

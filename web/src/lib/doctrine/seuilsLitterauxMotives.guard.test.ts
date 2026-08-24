@@ -200,12 +200,16 @@ const EXEMPTIONS: Record<string, string> = {
   'src/lib/agenda-alimentaire/agregats.ts\tavecPrises.length < 3': 'couverture minimale avant d’émettre une suggestion d’horaire ; sous le seuil ⇒ null, jamais une valeur dégradée (`DC-25`)',
   'src/lib/food-observation/persistence.ts\tbudgetChargeGlobal > 21': 'borne haute du budget de charge, alignée sur la fenêtre 21 jours du protocole ; cadre de la relation, pas une cotation',
 
-  // — DETTE NOMMÉE, PAS UN BLANC-SEING. Troisième borne « au maximum 3 » du
-  //   dépôt, après les actions de protocole et les cartes de fil. Sa provenance
-  //   n'a PAS été retracée au LOT-03 : elle valide un brouillon de sortie LLM,
-  //   et rien n'indique d'où vient le 3. Exemptée pour ne pas bloquer sur un
-  //   arbitrage qui appartient au praticien — inscrite ici pour être retrouvée.
-  'src/lib/synthese-praticien.ts\tsource.axes_prioritaires.length > 3': 'DETTE : borne de schéma de sortie LLM, provenance non retracée au LOT-03 — à arbitrer',
+  // LA DETTE DU LOT-03 A ÉTÉ SOLDÉE, ET SON EXEMPTION A DISPARU AVEC ELLE.
+  //
+  // `src/lib/synthese-praticien.ts  source.axes_prioritaires.length > 3` figurait
+  // ici comme dette nommée : troisième borne « au maximum 3 » du dépôt, provenance
+  // non retracée. Le LOT-11 a fait la descente — le prompt ne demande pas trois
+  // axes, aucun document source ne les nomme, et le commit d'origine ne motive
+  // rien —, puis le praticien l'a déclarée borne de charge ([[D-107]]). Elle est
+  // désormais `MAX_AXES_PRIORITAIRES`, donc plus un littéral, donc hors de ce
+  // balayage. C'est le cas « aucune exemption ne survit à ce qu'elle exemptait »
+  // qui l'a signalé : il a rougi dès la constante posée.
 };
 
 describe('seuils littéraux — le balayage lui-même', () => {

@@ -4,6 +4,131 @@
 
 ## Décisions actives
 
+### D-107 — Les actes en attente : une signature reportée, deux campagnes routées, une borne déclarée
+
+- Date : 2026-08-24
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-08-24)
+- Domaine : portefeuille et clinique — une borne de charge nommée, aucune valeur
+  modifiée
+- Porte sur : `DC-42`, `DC-43`, `DC-19`, et le sort des dix règles orphelines
+- Fait suite à : le LOT-11 de « Doctrine exécutable », qui rassemblait les actes
+  que les lots précédents avaient nommés sans les rendre
+
+**Le lot re-constate avant de décider**, comme sa fiche l'exige — et rien n'avait
+bougé : les six drapeaux toujours posés en production, les deux signatures
+toujours à `false`, **zéro** exclusion curée, `DC-42`/`DC-43`/`DC-58` toutes
+trois en *proposition*, **13** occurrences d'`**Orpheline**` au grep, et
+`preconditionsT0Prisma.ts:66` appelant toujours `contradictionsPourPatient`
+**sans** les claims cités.
+
+**Décision 1 — `SAFETY_EI_METADATA` est reportée au 2026-08-30, avec son motif.**
+La revue était planifiée à cette date. Le report n'est pas un silence : **rien ne
+se perd**, parce que `WN_EI_INTERRUPTION` vaut déjà `1` — le drapeau ouvre la
+CAPTURE, et les signalements d'effet indésirable sont collectés. Seule
+l'INTERRUPTION reste fermée. Ce qui sera assumé en signant **n'est pas gradué** :
+un signalement rattaché retirera **tous** les candidats du dossier, quel que soit
+le protocole visé, le seul levier du dépôt étant binaire. `DC-42` reste donc en
+proposition **avec sa date**, jamais sans verdict.
+
+**Décision 2 — la curation des exclusions est ROUVERTE, et cela revient sur
+`D-101`.** Le LOT-05 avait abandonné cette curation *sur mesure* : son registre
+n'a aucun consommateur d'exécution. Le responsable rouvre, et l'écart mérite
+d'être dit plutôt que lissé. Ce que la mesure établit : les **95 interventions**
+portent `neCouvrePas` **null sur les 95**, donc `gatePopulationV1` ne mord sur
+**aucun** dossier — `DC-43` ne peut pas franchir son gate faute de **sujet**, non
+faute de mécanisme, celui-ci étant complet et relu.
+
+`GATE_POPULATION_METADATA` **n'est donc pas signée** : la signer armerait un
+garde sans sujet, ce que le gate de campagne « aucun banc sans sujet » interdit
+nommément. Mais `DC-43` **cesse d'être reconduite « écrite, non armée »** : elle
+obtient un **porteur nommé**, la curation routée en file d'attente. Le garde-fou
+de `D-101` demeure entier (`DC-35`) — une intervention dont les exclusions ne
+sont pas curées se propose **en le disant**, et la curation partielle est un état
+déclaré, jamais un silence.
+
+**Décision 3 — les dix orphelines reçoivent une campagne dédiée.** L'arbitrage
+de portefeuille était **reporté, pas clos**, depuis le LOT-01 ([[D-095]]) et
+rappelé au LOT-08. Trois options étaient nommées ; les deux écartées le sont avec
+leur motif : « dettes nommées » **est le régime qui les a rendues orphelines**,
+et le « rattachement au coup par coup » ne fait remonter aucune règle sans
+porteur. Le LOT-08 les **écrit** comme telles ; il ne les arbitre plus.
+
+**Décision 4 — le `3` des axes prioritaires est une borne de charge, déclarée
+aujourd'hui.** La descente demandée par le responsable a été faite, et **elle n'a
+rien rendu** :
+
+- le prompt **ne demande pas trois axes** — `SYSTEM_PROMPT_SYNTHESE` montre un
+  axe d'exemple et ne pose aucun plafond ;
+- **aucun document source** ne dit « trois axes prioritaires », à la différence
+  de « trois actions maximum », qui vient de
+  `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ;
+- le commit d'origine (`651a9e98`, 2026-07-25, « Ajoute la rédaction praticien
+  des synthèses ») l'introduit **sans une ligne de motif**.
+
+Elle devient donc `MAX_AXES_PRIORITAIRES`, borne de **charge de la restitution
+praticien** — sans claim ni intervalle, et qui n'a pas à en avoir. **Sa
+provenance est l'arbitrage daté du 2026-08-24, pas un document antérieur** :
+écrire l'inverse aurait fabriqué une source (`DC-19`). La valeur ne change pas.
+
+**Et la descente a trouvé le même défaut que `D-105`** : la borne était écrite
+**trois fois** — le validateur, et deux fois `SynthesePraticienEditor.tsx` (la
+garde d'ajout, le bouton désactivé). La porter à quatre côté serveur laissait
+l'écran en bloquer trois, sans message.
+
+**Le banc du LOT-03 a signalé la bascule tout seul**, et c'est la preuve qu'il
+mord : dès la constante posée, son cas « aucune exemption ne survit à ce qu'elle
+exemptait » a rougi sur l'entrée devenue morte.
+
+**Décision 5 — `DC-55` reste curatoriale, `DC-58` reste proposition.** « Impact
+clinique significatif » n'est **pas** mécanisé, et c'est assumé : n'entre au
+registre que ce que le praticien juge significatif. La règle est donc tenue par
+un geste humain **déclaré**, et `DC-55` le dit au lieu de laisser croire à un
+filtre automatique — mécaniser le qualificatif aurait supposé une hiérarchie que
+la donnée ne soutient pas ([[D-103]] : aucun des quatre axes n'est comparable en
+production). `DC-58` reste **proposition avec sa mesure**.
+
+**Décision 6 — les neuf dettes routées une par une**, à la demande du
+responsable. `CS-MAG-01` → Curation signée (épingler `WN-CL-0327-002` et
+`WN-CL-0018-013` est de la curation claim par claim) ; l'escalade vers T0 et le
+tour du vérificateur → campagne des orphelines ; la garde de lecture de
+consultation et les deux portées de garde restantes → dettes assumées,
+recomptées au LOT-08. **Trois sont corrigées ici**, et deux ont mordu :
+
+1. **Le découpage des conflits.** Mesuré d'abord : la description de `CS-BIO-01`
+   fait **569** caractères à elle seule. `scinderSousPlafond` coupe aux fins de
+   phrase — à défaut entre deux mots, **jamais au milieu** — et fait porter
+   `[regleId]` à chaque morceau, sans quoi `depuisSynthese.ts` cesserait de
+   reconnaître la vigilance au milieu d'une phrase. Un cas vérifie que **recoller
+   les morceaux rend le texte d'origine** : le texte d'un conflit est une donnée
+   signée, le raccourcir serait modifier du clinique pour tenir dans un gabarit
+   (`DC-19`). **`lignesDeVigilance` a déménagé dans un module feuille** — la
+   laisser à côté de Prisma obligeait tout banc de longueur à provisionner une
+   base, ou à recomposer la phrase et donc à en mesurer une autre que celle
+   servie.
+2. **Le banc de bump de version.** Il n'épingle pas `0,34` : un `toBe` se corrige
+   dans le même diff que la valeur et ne garde rien. Les valeurs sont épinglées
+   **par version**, les deux positions du drapeau couvertes. Vu rouge en portant
+   le seuil à `0,40`.
+3. **Le tour du vérificateur, éprouvé sur un dossier portant un signal.** Le
+   premier essai a échoué sur « Une priorité ne peut être sélectionnée avant la
+   levée des bloqueurs » : avec un signal, la carte est **bloquée** — `DC-12`
+   mord, exactement comme prévu. Le banc garde donc le cas réel, une chaîne
+   légitimement **dépourvue** de sélection. Fixture **séparée** : enrichir celle
+   de référence aurait déplacé `CANDIDAT_RANG_1` et toutes les empreintes qui en
+   dérivent.
+
+**Un garde du dépôt a attrapé ce lot, et il avait raison.** Toute spec sensible à
+`WN_ALI_01_SIIN57` doit tourner dans les **deux positions** du drapeau. Le banc
+de bump l'est — il lit `VERSION_SCORE_EQUILIBRE`, qui vaut `v15` ou `v14` selon
+la forme servie — et ne tournait que dans une, alors qu'il prétend couvrir les
+deux. Inscrit à `test:court14`.
+
+**Ce que cette décision NE fait pas.** Elle ne signe rien, ne modifie aucune
+valeur calculée, ne porte aucune migration, et n'ouvre aucun dossier de campagne
+— les deux ouvertures sont **routées** en file d'attente, leur cadrage restant un
+geste séparé, parce qu'un cadrage écrit sans mesure préalable est exactement ce
+que les trois derniers lots ont dû corriger après coup.
+
 ### D-106 — Le total de « Mon équilibre » n'a pas d'interprétation clinique, et il le dit
 
 - Date : 2026-08-24

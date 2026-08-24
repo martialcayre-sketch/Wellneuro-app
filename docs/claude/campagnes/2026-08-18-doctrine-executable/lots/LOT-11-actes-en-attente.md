@@ -1,10 +1,19 @@
 ---
 id: "LOT-11"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04, LOT-05, LOT-06 (livrés) — et le LOT-08 dépend de LUI"
 ---
 
 # LOT-11 — Les actes en attente : deux signatures, six arbitrages, neuf dettes
+
+> **LIVRÉ le 2026-08-24 — `D-107`.** Une signature **reportée** au 2026-08-30
+> avec son motif, deux campagnes **routées** en file d'attente (curation des
+> exclusions, dix orphelines), une borne **déclarée** après descente négative
+> (`MAX_AXES_PRIORITAIRES`), `DC-55` laissée **curatoriale** et `DC-58`
+> **proposition avec sa mesure**. Les neuf dettes routées une par une, dont
+> **trois corrigées** : découpage des conflits, banc de bump de version, tour du
+> vérificateur éprouvé sur un dossier portant un signal. **Aucune signature
+> posée, aucune migration, aucun drapeau** — il n'en restait aucun à poser.
 
 > **Amendé le 2026-08-24** — les résidus du **LOT-03** ([[D-105]]) et du
 > **LOT-07** ([[D-106]]) y sont versés. Aucun n'était perdu : chacun vivait dans
