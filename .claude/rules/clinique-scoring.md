@@ -75,8 +75,14 @@ cette dette règle par règle.
   compris quand elle s'abstient (`DC-34`, `DC-35`).
 - **Données insuffisantes ⇒ réduire la conclusion, jamais l'inventer**
   (`DC-25`).
-- Conflit non résolu entre sources ⇒ escalade praticien (`DC-54`, `DC-55`) —
-  *proposition, pas encore opposable* : `D-041` la réserve jusqu'au banc.
+- **Conflit non résolu entre sources ⇒ escalade praticien** (`DC-54`, `DC-55`)
+  — **acté et opposable** depuis la signature du 2026-08-24 (`D-103`, `D-104`,
+  qui lèvent la réserve de `D-041`). La politique **ne compare aucun** des
+  quatre axes et le déclare : la donnée manque en production. Deux limites font
+  partie de ce qui est signé — l'escalade s'arrête au cockpit praticien
+  (ni extinction, ni préconditions T0), et « impact clinique significatif »
+  n'est pas mécanisé : tout conflit déclaré escalade, la sélection se fait à la
+  curation du registre.
 - **Toute modification clinique exige une décision explicite `D-xxx` et un
   fragment `changelog.d/`** — y compris une seule ligne de TypeScript dans une
   table signée, des poids ou un cut-off (`DC-17`, `DC-18`).

@@ -802,7 +802,13 @@ le jour où l'un le devient, il rougit.*
 **DC-55 — Un conflit non résolu à impact clinique significatif s'escalade vers
 le praticien.** L'arbitrage humain est une issue de la politique, pas son
 échec.
-*Proposition — **l'issue est typée et sa sémantique est tenue** :
+*Acté [[D-103]], [[D-104]] — les trois preuves sont réunies ; le détail du
+déclencheur et de ses deux limites est dans la note datée du 2026-08-24, en fin
+de règle. Ce qui suit est l'état **antérieur au LOT-06**, conservé pour la
+trace : il dit « manque le déclencheur », ce qui n'est plus vrai depuis la
+signature.*
+
+*Acquis de longue date — **l'issue est typée et sa sémantique est tenue** :
 `ResolutionContradiction = ouverte | escaladee_praticien | resolue`
 (`contradictionFinding.ts:117-120`) et le prédicat unique
 `contradictionEstOuverte` ([[D-055]]) font qu'un constat escaladé **reste
