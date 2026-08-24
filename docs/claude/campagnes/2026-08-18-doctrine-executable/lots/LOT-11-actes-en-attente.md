@@ -4,7 +4,13 @@ statut: "à_faire"
 dépend_de: "LOT-04, LOT-05, LOT-06 (livrés) — et le LOT-08 dépend de LUI"
 ---
 
-# LOT-11 — Les actes en attente : deux signatures, cinq arbitrages, six dettes
+# LOT-11 — Les actes en attente : deux signatures, six arbitrages, neuf dettes
+
+> **Amendé le 2026-08-24** — les résidus du **LOT-03** ([[D-105]]) et du
+> **LOT-07** ([[D-106]]) y sont versés. Aucun n'était perdu : chacun vivait dans
+> le handoff ou la décision de son lot. Mais un résidu qui n'a qu'un handoff pour
+> domicile n'est retrouvé que par celui qui sait déjà qu'il existe — et le LOT-08
+> constate, il ne fouille pas. La provenance de chaque entrée est indiquée.
 
 ## Pourquoi ce lot n'est PAS le LOT-08
 
@@ -41,12 +47,19 @@ gate de campagne « aucun banc sans sujet » interdit nommément. Elle se recond
 en **« écrite, non armée »**, avec son déclencheur : la première exclusion
 réellement curée.
 
-## B — Cinq arbitrages nommés, non rendus
+## B — Six arbitrages nommés, non rendus
+
+> Provenance indiquée pour chacun. Les entrées **1** et **5** viennent du
+> **LOT-03** ([[D-105]]), l'entrée **6** du **LOT-07** ([[D-106]]) : leurs lots
+> les ont nommés sans les trancher, et ce lot les recueille plutôt que de les
+> laisser dans des handoffs que personne ne relit.
 
 1. **La provenance du `3`** de `source.axes_prioritaires.length > 3`
    (`synthese-praticien.ts:73`) — troisième borne « au maximum 3 » du dépôt,
    après les actions de protocole et les cartes de fil. Les deux autres ont une
-   source ; celle-ci n'en a aucune de retracée ([[D-105]]).
+   source ; celle-ci n'en a aucune de retracée. *(LOT-03, [[D-105]] — exemptée
+   dans `seuilsLitterauxMotives.guard.test.ts` **en étant inscrite comme
+   dette**, pas en silence.)*
 2. **Ce que fait la gate de population sur un état INCONNU** pour un critère
    exclu. La branche est inatteignable tant que la table est vide ; l'arbitrage
    « se rendra avec les exclusions sous les yeux » (LOT-05) — donc il ne se rend
@@ -60,11 +73,18 @@ réellement curée.
    (choix actuel), campagne dédiée, ou rattachement au coup par coup. Le LOT-08
    les **écrit** ; il ne les arbitre pas.
 5. **Le sort de `DC-58`** : proposition instruite, sans contre-exemple et sans
-   méthode fondée par égalité de valeurs ([[D-105]]). La laisser proposition, ou
-   la déclarer sans objet. La rouvrir suppose un fait neuf, pas une seconde
-   tentative de la même mécanisation.
+   méthode fondée par égalité de valeurs. La laisser proposition, ou la déclarer
+   sans objet. La rouvrir suppose un fait neuf, pas une seconde tentative de la
+   même mécanisation. *(LOT-03, [[D-105]].)*
+6. **Le seuil de significativité du momentum.** `calculerDeltaMomentum`
+   (`momentum.ts:43`) déclenche « hausse » sur `delta > 0`, donc sur **`+0,01`** :
+   le patient lit « votre indice est en hausse » pour du **bruit de mesure**.
+   Poser un seuil est un **changement clinique** — décision `D-xxx`, fragment,
+   et bump de `VERSION_SCORE_EQUILIBRE` avec son coût d'historique. Ne pas en
+   poser est aussi un arbitrage, et il n'a jamais été rendu explicitement.
+   *(LOT-07, [[D-106]].)*
 
-## C — Six dettes de code, nommées et non traitées
+## C — Six dettes de code, plus trois portées de garde déclarées
 
 1. **`CS-MAG-01` attend son épinglage.** Le conflit le plus frontal du corpus —
    `WN-CL-0032-018` (« prescrire du magnésium pour la dépression résistante sans
@@ -95,6 +115,31 @@ réellement curée.
    chemin d'écriture (`api/portail/valider`) pose `anamnese`, `statut` et
    `dateValidation` dans le même `update` — mais **rien au schéma ne l'impose**.
 
+### Trois portées de garde déclarées, et qui restent des trous
+
+Elles ne sont pas des oublis : chaque lot les a **nommées** en livrant son banc.
+Elles sont ici pour que la clôture les compte, et non pour être corrigées au
+passage — fermer l'une d'elles est un travail à soi seul.
+
+1. **Les 33 seuils du catalogue ne sont gardés par aucun banc de forme.**
+   `seuilsLitterauxMotives.guard.test.ts` exempte le catalogue **par forme** —
+   un cut-off écrit dans `questions.ts` est chez lui, c'est lui la source
+   déclarée. Les bandes du PSQI, de Horne-Östberg, de Karasek ne sont donc
+   couvertes que par la **certification de scoring** et par `DC-17`/`DC-18`,
+   c'est-à-dire par une procédure et non par une garde structurelle.
+   *(LOT-03, [[D-105]].)*
+2. **Le banc de nature du total suit la valeur par son NOM.** Une variable
+   intermédiaire (`const total = objets.indiceGlobal`), un spread d'attributs ou
+   un renommage du champ côté API la lui font perdre. Fermer cette limite
+   suppose une analyse de flot de données, pas une expression régulière de plus.
+   *(LOT-07, [[D-106]].)*
+3. **Rien ne garde le bump de `VERSION_SCORE_EQUILIBRE`.** `constants.ts` exige
+   désormais **en toutes lettres** qu'une modification de `SEUIL_EFFONDREMENT`
+   ou de `PLAFOND_FONDATION_CRITIQUE` s'accompagne d'un bump — la règle est
+   **déclarée, vérifiée par aucun banc**. C'est le patron exact de la « décision
+   due » que `DC-21` porte déjà : une règle écrite qu'aucun contrôle n'oppose.
+   *(LOT-07, [[D-106]].)*
+
 ## D — Les drapeaux : il n'en reste aucun à poser
 
 Constaté en production le 2026-08-24 (`scalingo env`, application `wellneuro`) :
@@ -124,6 +169,12 @@ Le gate de campagne exige **trois** preuves pour fermer une règle — une déci
 | `DC-43` | [[D-101]] | oui | *Proposition* | un **sujet** — 0 exclusion curée ; à reconduire non armée |
 | `DC-58` | [[D-105]] | sans objet | *Proposition* | un **contre-exemple** ; mesurée sans sujet |
 
+`DC-22` **a franchi le gate** au LOT-07 ([[D-106]]) : décision, banc
+(`natureIndiceGlobal.guard.test.ts`, vu rouge sous six mutations), statut
+basculé. Elle est citée ici pour que la clôture n'ait pas à la recompter — et
+parce que sa bascule s'est faite par la **seconde branche** de son énoncé, ce
+qui se lit mal si on ne le dit pas : le total n'est pas retiré, il est identifié.
+
 **La fenêtre `D-093` court toujours** — recommandations élargies ouvertes sur
 trois dossiers pour six semaines depuis le 2026-08-23, relecture praticien avant
 chaque remise. Elle n'est ni franchie ni échue ; le LOT-05 en a couvert le point
@@ -147,10 +198,10 @@ nommé comme non couvert, sans la refermer ni l'élargir.
       reportée** avec le motif et la date de revue — jamais laissée sans verdict.
 - [ ] `GATE_POPULATION_METADATA` reconduite « écrite, non armée », déclencheur
       nommé.
-- [ ] Les cinq arbitrages de la section B : chacun rendu, ou reporté avec sa
+- [ ] Les **six** arbitrages de la section B : chacun rendu, ou reporté avec sa
       raison et son porteur.
-- [ ] Les six dettes de la section C : chacune routée (lot, campagne, ou dette
-      assumée) — aucune laissée sans destination.
+- [ ] Les **six dettes et trois portées de garde** de la section C : chacune
+      routée (lot, campagne, ou dette assumée) — aucune laissée sans destination.
 - [ ] L'état des drapeaux **re-constaté** en production au moment d'écrire, pas
       recopié de cette fiche.
 - [ ] Les trois règles du gate incomplet tranchées : franchir, ou reconduire en

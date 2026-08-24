@@ -86,7 +86,12 @@ déclaré au catalogue ; « trois actions maximum » vient de
 `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` — une borne de **charge** de la
 relation, sans claim ni intervalle, et qui n'a pas à en avoir.
 
-## 4. Ce que la mesure laisse ouvert
+## 4. Ce que la mesure laisse ouvert — **porté par le LOT-11 depuis le 2026-08-24**
+
+> Les trois points ci-dessous ont été **versés au LOT-11** (« les actes en
+> attente ») : l'arbitrage du `3` et le sort de `DC-58` en section B, la portée
+> du banc sur le catalogue en section C. Ils restent écrits ici parce que c'est
+> la mesure qui les a produits ; le lot qui les porte est ailleurs.
 
 - **`source.axes_prioritaires.length > 3`** (`synthese-praticien.ts`) —
   troisième borne « au maximum 3 » du dépôt, après les actions de protocole et
