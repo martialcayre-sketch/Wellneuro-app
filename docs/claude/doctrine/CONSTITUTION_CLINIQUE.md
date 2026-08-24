@@ -776,14 +776,17 @@ Recommandation générale → adaptation patient → raison → claim source.
 **DC-54 — Une contradiction entre sources suit une politique de résolution.**
 Identifier la contradiction · ne pas fusionner arbitrairement · comparer niveau
 de preuve, contexte, date, population · produire la position la plus prudente.
-*Proposition — **la politique est écrite, le registre n'est pas signé**
-([[D-103]], LOT-06 de « Doctrine exécutable »). `politiqueResolutionConflit.ts`
-est déterministe et versionnée (`politique-resolution-conflit-v1`),
-`conflitsSourcesEngine.ts` produit la forme `CONFLIT_SOURCES`, et
-`conflitsSourcesV1.ts` déclare un conflit publié — mais
-`CONFLITS_SOURCES_METADATA.validationExterne` vaut `false` : rien ne mord en
-production, et la règle ne bascule donc pas. Le geste qui manque est un acte
-praticien, pas une ligne de code.*
+*Acté [[D-103]], [[D-104]] — les trois preuves sont réunies.
+`politiqueResolutionConflit.ts` est déterministe et versionnée
+(`politique-resolution-conflit-v1`), `conflitsSourcesEngine.ts` produit la forme
+`CONFLIT_SOURCES`, et `conflitsSourcesV1.ts` déclare un conflit publié,
+**SIGNÉ le 2026-08-24** aux cinq termes (booléen, date ISO canonique, claims,
+SHA de périmètre concordant). `WN_ENABLE_CONTRADICTIONS_NNPP2` valant `1` en
+production, la règle **mord** : `CS-BIO-01` atteint le cockpit praticien sur
+tout dossier dont la proposition de bilan cite `WN-CL-0312-018`. Bancs :
+`conflitsSourcesEngine.test.ts` (déclenchement, trois refus, forme du constat),
+`conflitsSourcesService.test.ts` (double verrou dans ses deux positions,
+filtre par forme dans les deux sens), `conflitsSourcesV1.guard.test.ts`.*
 
 ***Et la limite annoncée par le cadrage était fausse par excès d'optimisme.**
 Le brief prévoyait « trois des quatre axes mécanisables » ; la mesure du
@@ -818,16 +821,18 @@ protocole. Mais ce n'est pas un CONFLIT entre sources : c'est une ignorance sur
 une seule déclaration. `escaladee_praticien` reste donc sans producteur, et la
 règle sans son déclencheur. Le LOT-06 garde le sujet.*
 
-***Le déclencheur existe depuis le LOT-06 ([[D-103]]), et il n'est pas armé.**
-`conflitsSourcesEngine.ts` pose `resolution: resoudreConflitDeSources(...)`,
-dont l'issue est `escaladee_praticien` avec le motif de la politique : c'est le
-PREMIER producteur du dépôt pour ce statut. Il ne tourne que registre signé, et
-le registre ne l'est pas — la règle ne bascule donc pas, pour la même raison que
-`DC-54`. Deux limites à connaître avant de signer : le branchement s'arrête au
-cockpit praticien, de sorte que l'escalade **n'atteint ni l'extinction ni les
-préconditions T0** (`preconditionsT0Prisma` reçoit une liste de claims cités
-vide) ; et « impact clinique significatif » n'est pas mécanisé — tout conflit
-déclaré escalade, la sélection se fait à la curation.*
+***Le déclencheur existe depuis le LOT-06 ([[D-103]]) et il est ARMÉ depuis la
+signature du 2026-08-24 ([[D-104]]).** `conflitsSourcesEngine.ts` pose
+`resolution: resoudreConflitDeSources(...)`, dont l'issue est
+`escaladee_praticien` avec le motif de la politique : c'est le PREMIER
+producteur du dépôt pour ce statut, et il tourne en production. La règle bascule
+donc avec `DC-54`. **Deux limites qui font partie de ce qui a été signé** : le
+branchement s'arrête au cockpit praticien, de sorte que l'escalade **n'atteint
+ni l'extinction ni les préconditions T0** (`preconditionsT0Prisma` reçoit une
+liste de claims cités vide, délibérément) ; et « impact clinique significatif »
+n'est pas mécanisé — tout conflit déclaré escalade, la sélection se fait à la
+curation du registre. L'étendre à l'extinction est un effet clinique distinct,
+qui demande son propre arbitrage.*
 
 **DC-56 — Toute fonctionnalité clinique annonce les claims qu'elle consomme.**
 Par module : claims consommés, claims ignorés volontairement, niveau

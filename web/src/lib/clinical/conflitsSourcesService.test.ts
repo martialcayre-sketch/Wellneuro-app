@@ -86,6 +86,21 @@ const CONTRADICTIONS_NON_SIGNEES: MetadataPartielle = {
   shaPerimetre: null,
 };
 
+/**
+ * Registre NON signé — l'état d'avant [[D-104]].
+ *
+ * Depuis la signature du 2026-08-24, le registre du dépôt est OUVERT : les cas
+ * qui éprouvent le verrou fermé doivent donc le fermer EUX-MÊMES, au lieu de
+ * s'appuyer sur l'état du dépôt. C'est la bonne façon de les écrire de toute
+ * manière — un banc de verrou qui dépend de la position courante du verrou
+ * change de sens à chaque signature, et cesse de garder quoi que ce soit.
+ */
+const REGISTRE_NON_SIGNE: MetadataPartielle = {
+  validationExterne: false,
+  dateValidation: null,
+  shaPerimetre: null,
+};
+
 const conflitPublie = CONFLITS_SOURCES_V1.find(c => c.statut === 'publiee');
 
 beforeEach(() => {
@@ -99,10 +114,20 @@ afterEach(() => {
 });
 
 describe('conflits de sources — le verrou de signature', () => {
-  it('l’état livré est fermé : aucun conflit ne sort', async () => {
-    const svc = await serviceReel();
+  it('registre non signé : aucun conflit ne sort', async () => {
+    const svc = await service(REGISTRE_NON_SIGNE);
     expect(svc.conflitsSourcesActifs()).toBe(false);
     expect(svc.conflitsSourcesPourDossier([conflitPublie!.claims[0]])).toEqual([]);
+  });
+
+  // L'ÉTAT RÉEL DU DÉPÔT depuis [[D-104]], et il vaut d'être asserté : c'est la
+  // seule ligne du banc qui dise ce qui tourne en production. Le jour où la
+  // signature serait retirée — un conflit amendé sans re-signature ferme le
+  // verrou seul —, ce cas rougit et le dit.
+  it('le registre du dépôt est SIGNÉ, et le verrou est ouvert', async () => {
+    const svc = await serviceReel();
+    expect(svc.conflitsSourcesActifs()).toBe(true);
+    expect(svc.conflitsSourcesPourDossier([conflitPublie!.claims[0]])).toHaveLength(1);
   });
 
   it('s’ouvre sur une signature complète et canonique', async () => {
@@ -128,7 +153,7 @@ describe('conflits de sources — le verrou de signature', () => {
   });
 
   it('se ferme sur le seul drapeau `validationExterne`', async () => {
-    const svc = await service({ validationExterne: true });
+    const svc = await service({ ...REGISTRE_NON_SIGNE, validationExterne: true });
     expect(svc.conflitsSourcesActifs()).toBe(false);
   });
 
@@ -165,7 +190,7 @@ describe('conflits de sources — le verrou de signature', () => {
   // Les deux verrous fermés : rien ne sort, et rien n'est lu — le comportement
   // d'avant le lot, inchangé.
   it('les deux verrous fermés : ni lecture, ni constat', async () => {
-    const svc = await service({}, CONTRADICTIONS_NON_SIGNEES);
+    const svc = await service(REGISTRE_NON_SIGNE, CONTRADICTIONS_NON_SIGNEES);
     expect(await svc.contradictionsPourPatient('PAT_TEST', [conflitPublie!.claims[0]])).toEqual([]);
     expect(prismaMock.questionnaireReponse.findMany).not.toHaveBeenCalled();
   });
@@ -226,9 +251,17 @@ describe('conflits de sources — le filtre d’affichage par forme', () => {
   });
 
   it('registre non signé : le conflit est tu, la discordance passe', async () => {
-    const svc = await serviceReel();
+    const svc = await service(REGISTRE_NON_SIGNE);
     const affichees = svc.contradictionsPourAffichage([conflit(), discordance()]);
     expect(affichees.map(a => a.id)).toEqual(['C-STR']);
+  });
+
+  // L'ÉTAT RÉEL DU DÉPÔT depuis [[D-104]] : les deux registres sont signés,
+  // les deux formes atteignent l'écran, dans l'ordre où elles arrivent.
+  it('les deux signatures posées : les deux formes atteignent l’écran', async () => {
+    const svc = await serviceReel();
+    const affichees = svc.contradictionsPourAffichage([conflit(), discordance()]);
+    expect(affichees.map(a => a.id)).toEqual(['CS-TEST-01', 'C-STR']);
   });
 
   // LE SENS INVERSE, que le commentaire du module affirmait sans qu'aucun banc
@@ -246,7 +279,7 @@ describe('conflits de sources — le filtre d’affichage par forme', () => {
   // doit être celui du REGISTRE. La première écriture de D-103 avait laissé les
   // deux sur `contradictionsActives()`.
   it('la synthèse ne publie pas un conflit sous la signature des contradictions', async () => {
-    const svc = await service({}, undefined);
+    const svc = await service(REGISTRE_NON_SIGNE);
     // Registre NON signé (état livré), table de contradictions signée.
     expect(svc.conflitsSourcesActifs()).toBe(false);
     expect(svc.vigilancesDiscordancePourSynthese([conflit()])).toEqual([]);

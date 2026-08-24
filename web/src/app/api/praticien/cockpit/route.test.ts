@@ -490,7 +490,12 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
   // requête de plus qu'avant » n'était prouvée par rien, et retirer le garde
   // `conflitsSourcesActifs()` laissait tous les bancs du lot verts.
 
-  it('registre non signé ⇒ la proposition de bilan n’est PAS dérivée', async () => {
+  // VERROU FERMÉ ICI PAR LE DRAPEAU, pas par la signature — précisé après
+  // [[D-104]] : le registre du dépôt est désormais SIGNÉ, et ce banc ne pose
+  // jamais `WN_ENABLE_CONTRADICTIONS_NNPP2`. Il continue d'éprouver ce qu'il
+  // doit — verrou fermé ⇒ aucune dérivation — mais par l'autre terme du ET, et
+  // le dire évite de le lire comme une preuve sur la signature.
+  it('verrou fermé ⇒ la proposition de bilan n’est PAS dérivée', async () => {
     const bio = await import('@/lib/biology-library/propositionService');
     const espionBio = vi.spyOn(bio, 'claimsCitesParLaPropositionBilan');
 

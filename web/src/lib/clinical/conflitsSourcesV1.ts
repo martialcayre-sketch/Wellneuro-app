@@ -249,26 +249,35 @@ export type ConflitsSourcesMetadata = {
 
 export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
   version: 'conflits-sources-nnpp2-v1',
-  // NON SIGNÉE À LA LIVRAISON — même discipline que les six autres tables du
-  // dépôt : écrire une règle et la signer sont deux gestes distincts, et le
-  // second est un acte PRATICIEN.
+  // SIGNÉE le 2026-08-24 (arbitrage praticien explicite, [[D-104]]), après la
+  // livraison non signée du LOT-06 ([[D-103]]) et la revue qui l'a suivie.
+  // Écrire un conflit et le signer restent deux gestes distincts ; celui-ci est
+  // le second.
   //
-  // CE QUE LA SIGNATURE ALLUMERA, ET QU'IL FAUT AVOIR LU AVANT DE LA POSER :
+  // CE QUE LA SIGNATURE A ALLUMÉ, ET QUI A ÉTÉ LU AVANT DE LA POSER :
   // `WN_ENABLE_CONTRADICTIONS_NNPP2` vaut déjà `1` en production et
-  // `WN_CB_PROPOSITION` vaut `true`. Signer ce registre fait donc apparaître le
-  // constat `CS-BIO-01` sur TOUT dossier dont la proposition de bilan cite
+  // `WN_CB_PROPOSITION` vaut `true`. Ce registre fait donc apparaître le constat
+  // `CS-BIO-01` sur TOUT dossier dont la proposition de bilan cite
   // `WN-CL-0312-018` — c'est-à-dire sur la plupart d'entre eux, dès le
-  // déploiement suivant. Il n'y a pas de drapeau intermédiaire : le verrou de
-  // signature EST le geste d'exploitation.
+  // déploiement. Il n'y a pas de drapeau intermédiaire : le verrou de signature
+  // EST le geste d'exploitation, et c'est pourquoi il n'a pas été posé le jour
+  // de la livraison.
   //
-  // ET CE QU'ELLE N'ALLUMERA PAS : un constat escaladé reste OUVERT au sens de
-  // `contradictionEstOuverte`, donc il INTERDIT L'EXTINCTION d'une règle
+  // CE QUE LE PRATICIEN ASSUME EN SIGNANT : que `WN-CL-0312-018` et
+  // `WN-CL-0387-013` s'opposent bien SUR LE MÊME OBJET — le caractère
+  // systématique du bilan biologique complet — et qu'aucun des deux ne doit
+  // être retenu automatiquement contre l'autre. La machine ne tranchera pas :
+  // elle remonte, en nommant les axes qu'elle ne compare pas.
+  //
+  // ET CE QU'ELLE N'ALLUME PAS : un constat escaladé reste OUVERT au sens de
+  // `contradictionEstOuverte`, donc il INTERDIRAIT L'EXTINCTION d'une règle
   // d'orientation ([[D-053]] §5, [[D-055]]) partout où les constats de ce
-  // moteur sont passés au prédicat. Ils ne le sont pas encore : le branchement
-  // de ce lot s'arrête à la restitution praticien, et l'effet sur l'extinction
-  // est nommé comme dette dans [[D-103]] plutôt que produit sans arbitrage.
-  validationExterne: false,
-  dateValidation: null,
+  // moteur seraient passés au prédicat. Ils ne le sont pas : le branchement
+  // s'arrête à la restitution praticien du cockpit, et l'effet sur l'extinction
+  // reste la dette nommée de [[D-103]] plutôt qu'un effet de bord de cette
+  // signature.
+  validationExterne: true,
+  dateValidation: '2026-08-24T00:00:00.000Z',
   // Les claims épinglés par les conflits PUBLIÉS de ce registre. Le contrat de
   // fraîcheur les contrôle sur la production, et
   // `claimsEpinglesFraicheur.guard.test.ts` refuse que cette liste diverge de
@@ -279,7 +288,13 @@ export const CONFLITS_SOURCES_METADATA: ConflitsSourcesMetadata = {
     { claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0387-013', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: null,
+  // Posé le 2026-08-24 ([[D-104]]) : la chaîne hex que `CONFLITS_SOURCES_SHA256`
+  // valait à la relecture, recopiée telle quelle — JAMAIS la constante, qui est
+  // déclarée après cet objet (ReferenceError) et dont la comparaison serait
+  // tautologique : recalculée depuis le registre vivant, la concordance serait
+  // toujours vraie et la péremption jamais détectée. Patron [[D-063]], étendu
+  // par [[D-067]].
+  shaPerimetre: 'ea18140366c114d6a51d19f82ecb082c98dab10b07b47effd527e1430fd581e2',
 };
 
 export const CONFLITS_SOURCES_SHA256 = sha256(JSON.stringify(CONFLITS_SOURCES_V1));

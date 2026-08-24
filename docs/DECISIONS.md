@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-104 — Le registre des conflits de sources est signé : `CS-BIO-01` mord
+
+- Date : 2026-08-24
+- Statut : accepté
+- Domaine : clinique — signature praticien du registre des conflits déclarés
+- Porte sur : [[D-103]], dont elle pose le geste que le lot avait délibérément
+  laissé ouvert ; fait basculer `DC-54` et `DC-55` de proposition à **acté**
+
+**Le geste.** `CONFLITS_SOURCES_METADATA` passe aux cinq termes :
+`validationExterne: true`, `dateValidation: '2026-08-24T00:00:00.000Z'` (ISO
+canonique), les deux claims épinglés, et `shaPerimetre` figé sur
+`ea18140366c114d6a51d19f82ecb082c98dab10b07b47effd527e1430fd581e2` — la valeur
+que `CONFLITS_SOURCES_SHA256` portait à la relecture, recopiée en littéral.
+
+**Ce que le praticien assume en signant.** Que `WN-CL-0312-018` (« un bilan
+biologique nutritionnel, fonctionnel et systémique une fois par an ») et
+`WN-CL-0387-013` (« le bilan biologique complet n'est pas à réaliser
+systématiquement chez toute personne quel que soit l'âge ») **s'opposent sur le
+même objet**, et qu'aucun des deux ne doit être retenu automatiquement contre
+l'autre. La machine ne tranche pas : elle remonte, en nommant les quatre axes de
+`DC-54` qu'elle ne compare pas et pourquoi.
+
+**Pourquoi la signature n'a pas été posée le jour de la livraison.** Elle EST le
+geste de mise en service. Ce registre n'a pas de drapeau propre, et les deux
+termes qui l'accompagnent — `WN_ENABLE_CONTRADICTIONS_NNPP2=1`,
+`WN_CB_PROPOSITION=true` — étaient déjà vrais en production. Signer et déployer
+suffit donc à faire apparaître le constat. L'arbitrage du 2026-08-24 a été de
+livrer inerte, faire relire, puis signer — et la revue a effectivement trouvé
+quatre défauts, dont un qui aurait bloqué toute release de base.
+
+**Effet mesurable en production.** `CS-BIO-01` apparaît dans le panneau de
+vigilances du cockpit pour tout dossier dont la proposition de bilan cite
+`WN-CL-0312-018` — les quatre règles de répétition annuelle le citent. Le
+constat **escalade** : il ne retire aucun panel, ne bloque aucune décision, et
+n'ajoute aucun point. Second effet, moins visible : la route cockpit dérive
+désormais la proposition de bilan à chaque POST pour collecter les claims cités
+(cinq requêtes de plus, isolées par un `catch` — une panne de cette dérivation
+ne peut pas emporter la confirmation d'épisode T0).
+
+**Ce que la signature n'allume pas.** Un constat escaladé reste « ouvert » au
+sens de `contradictionEstOuverte` et interdirait l'extinction d'une règle
+d'orientation partout où il serait passé au prédicat. Il ne l'est pas : le
+branchement s'arrête au cockpit praticien, et `preconditionsT0Prisma` reçoit une
+liste de claims cités vide. Cette limite fait partie de ce qui est signé ;
+l'étendre est un effet clinique distinct.
+
+**Un banc qui change de nature avec ce geste.** Les cas qui éprouvaient le
+verrou FERMÉ s'appuyaient sur l'état non signé du dépôt ; ils le ferment
+désormais eux-mêmes par simulation. Un banc de verrou qui dépend de la position
+courante du verrou change de sens à chaque signature et cesse de garder quoi que
+ce soit. Un cas neuf asserte l'état réel — registre signé, verrou ouvert — et
+rougira le jour où un conflit amendé sans re-signature le refermera seul.
+
 ### D-103 — La politique de résolution ne compare rien, et elle le dit
 
 - Date : 2026-08-24

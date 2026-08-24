@@ -62,22 +62,22 @@ async function service(
     const reel = await vi.importActual<typeof import('./contradictionsV1')>('./contradictionsV1');
     return { ...reel, CONTRADICTIONS_METADATA: { ...reel.CONTRADICTIONS_METADATA, ...metadata } };
   });
-  if (registreSigne) {
-    vi.doMock('./conflitsSourcesV1', async () => {
-      const reel = await vi.importActual<typeof import('./conflitsSourcesV1')>('./conflitsSourcesV1');
-      return {
-        ...reel,
-        CONFLITS_SOURCES_METADATA: {
-          ...reel.CONFLITS_SOURCES_METADATA,
-          validationExterne: true,
-          dateValidation: '2026-09-01T00:00:00.000Z',
-          shaPerimetre: reel.CONFLITS_SOURCES_SHA256,
-        },
-      };
-    });
-  } else {
-    vi.doUnmock('./conflitsSourcesV1');
-  }
+  // LES DEUX POSITIONS SONT POSÉES EXPLICITEMENT, jamais héritées du dépôt —
+  // corrigé après [[D-104]], qui a signé le registre. Un `doUnmock` sur la
+  // branche « non signé » lisait le registre réel : le cas est passé de vert à
+  // rouge le jour de la signature, alors qu'il éprouve un verrou, pas un état.
+  vi.doMock('./conflitsSourcesV1', async () => {
+    const reel = await vi.importActual<typeof import('./conflitsSourcesV1')>('./conflitsSourcesV1');
+    return {
+      ...reel,
+      CONFLITS_SOURCES_METADATA: {
+        ...reel.CONFLITS_SOURCES_METADATA,
+        validationExterne: registreSigne,
+        dateValidation: registreSigne ? '2026-09-01T00:00:00.000Z' : null,
+        shaPerimetre: registreSigne ? reel.CONFLITS_SOURCES_SHA256 : null,
+      },
+    };
+  });
   return import('./contradictionsService');
 }
 
