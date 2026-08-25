@@ -23,6 +23,16 @@ const { prisma, logger } = vi.hoisted(() => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    amendementObjectif: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      // Mêmes moqueries expresses, même motif (6.0-B, LOT-04).
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   },
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
@@ -30,6 +40,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/observability/logger', () => ({ logger }));
 
 import { signPatientSession } from '@/lib/patient-session';
+import { LONGUEUR_MAX_AMENDEMENT } from '@/lib/praticien/objectifNegocie';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { GET, POST } from './route';
 
@@ -99,6 +110,7 @@ const synthese = (partiel: Record<string, unknown> = {}) => ({
 function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.objectifNegocie.findMany.mockResolvedValue(surcharges.objectifs ?? [objectif()]);
   prisma.ratificationObjectif.findMany.mockResolvedValue(surcharges.ratifications ?? []);
+  prisma.amendementObjectif.findMany.mockResolvedValue(surcharges.amendements ?? []);
   prisma.entreeCeQuiCompte.findMany.mockResolvedValue(
     surcharges.entrees ?? [
       {
@@ -293,6 +305,95 @@ describe('/api/portail/dossier', () => {
       const corps = await (await GET(getRequest(cookieProprio()))).json();
       expect(corps.objectifs.map((o: { id: string }) => o.id).sort()).toEqual(['OBJ_A', 'OBJ_B']);
       expect(corps.ratifiable).toBe(false);
+    });
+
+    it('sert les amendements du patient — il doit pouvoir relire ce qu’il a écrit', async () => {
+      mockCompteActif();
+      mockDossierComplet({
+        amendements: [
+          {
+            id: 'AME_1',
+            idObjectif: 'OBJ_1',
+            texte: 'Tenir debout jusqu’au dîner.',
+            creeLe: new Date('2026-08-25T12:00:00.000Z'),
+          },
+        ],
+      });
+      const charge = await (await GET(getRequest(cookieProprio()))).json();
+      expect(charge.amendements).toEqual([
+        {
+          id: 'AME_1',
+          idObjectif: 'OBJ_1',
+          texte: 'Tenir debout jusqu’au dîner.',
+          creeLe: '2026-08-25T12:00:00.000Z',
+        },
+      ]);
+      // `exprimeLe` n'est PAS servie : la colonne reste nulle par construction,
+      // et l'exposer inviterait l'écran à la combler par `creeLe`.
+      expect(charge.amendements[0]).not.toHaveProperty('exprimeLe');
+    });
+
+    it('« dit autrement » sort tel quel — ce n’est NI un accord NI un refus', async () => {
+      mockCompteActif();
+      mockDossierComplet({
+        amendements: [
+          {
+            id: 'AME_1',
+            idObjectif: 'OBJ_1',
+            texte: 'Tenir debout jusqu’au dîner.',
+            creeLe: new Date('2026-08-25T12:00:00.000Z'),
+          },
+        ],
+      });
+      const charge = await (await GET(getRequest(cookieProprio()))).json();
+      expect(charge.objectifs[0].etat).toBe('dit_autrement');
+    });
+
+    it('LES DEUX TABLES : ratifier puis dire autrement rend « dit autrement »', async () => {
+      mockCompteActif();
+      mockDossierComplet({
+        ratifications: [
+          {
+            id: 'RAT_1',
+            idObjectif: 'OBJ_1',
+            sens: 'ratifie',
+            creeLe: new Date('2026-08-24T12:00:00.000Z'),
+          },
+        ],
+        amendements: [
+          {
+            id: 'AME_1',
+            idObjectif: 'OBJ_1',
+            texte: 'Tenir debout jusqu’au dîner.',
+            creeLe: new Date('2026-08-25T12:00:00.000Z'),
+          },
+        ],
+      });
+      // Lire la seule table des ratifications rendrait « ratifie » : c'est la
+      // mutation que ce cas tue.
+      const charge = await (await GET(getRequest(cookieProprio()))).json();
+      expect(charge.objectifs[0].etat).toBe('dit_autrement');
+    });
+
+    it('un amendement du patient N’EST PAS soumis à la garde de registre praticien', async () => {
+      // La garde vise un texte que le PRATICIEN écrit et que le patient subit.
+      // Signaler le registre des mots que le patient a écrits sur lui-même
+      // ferait dire au journal que sa façon de parler de lui pose problème.
+      mockCompteActif();
+      mockDossierComplet({
+        objectifs: [objectif({ reformulationPraticien: null, priorite: null })],
+        syntheses: [],
+        amendements: [
+          {
+            id: 'AME_1',
+            idObjectif: 'OBJ_1',
+            texte: 'J’ai peur que ce soit grave et que rien ne s’arrange.',
+            creeLe: new Date('2026-08-25T12:00:00.000Z'),
+          },
+        ],
+      });
+      await GET(getRequest(cookieProprio()));
+      expect(logger.warn).not.toHaveBeenCalled();
     });
 
     it('ne rend aucun décompte ni aucune mesure', async () => {
@@ -585,6 +686,180 @@ describe('/api/portail/dossier', () => {
         expect(res.status).toBe(400);
       }
       expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('un geste inconnu est REFUSÉ, jamais replié sur la ratification', async () => {
+      // Deviner l'intention d'un patient à partir d'un mot qu'on ne comprend
+      // pas écrirait un geste qu'il n'a pas posé.
+      for (const geste of ['amendment', 'RATIFICATION', 'autre', '', 42, [], {}]) {
+        const res = await POST(postRequest(cookieProprio(), { geste, idObjectif: 'OBJ_1', sens: 'ratifie' }));
+        expect(res.status).toBe(400);
+        expect(await res.json()).toMatchObject({ ok: false, reason: 'geste_invalide' });
+      }
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('un corps SANS `geste` reste une ratification — l’onglet resté ouvert continue de marcher', async () => {
+      const res = await POST(postRequest(cookieProprio(), { idObjectif: 'OBJ_1', sens: 'ratifie' }));
+      expect(res.status).toBe(201);
+      expect(prisma.ratificationObjectif.create).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── POST — « LE DIRE AUTREMENT » (6.0-B, LOT-04) ──────────────────────────
+
+  describe('POST — l’amendement du patient', () => {
+    const TEXTE = 'Ce que je veux, c’est tenir debout jusqu’au dîner sans m’allonger.';
+
+    beforeEach(() => {
+      mockCompteActif();
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      prisma.amendementObjectif.create.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            id: 'AME_1',
+            idObjectif: data.idObjectif,
+            texte: data.texte,
+            creeLe: new Date('2026-08-25T12:00:00.000Z'),
+          }),
+      );
+    });
+
+    const corps = (partiel: Record<string, unknown> = {}) => ({
+      geste: 'amendement',
+      idObjectif: 'OBJ_1',
+      texte: TEXTE,
+      ...partiel,
+    });
+
+    it('accepte le texte du patient et rend 201', async () => {
+      const res = await POST(postRequest(cookieProprio(), corps()));
+      expect(res.status).toBe(201);
+      expect(await res.json()).toMatchObject({
+        ok: true,
+        amendement: { id: 'AME_1', idObjectif: 'OBJ_1', texte: TEXTE },
+      });
+      // Et AUCUNE ratification n'est écrite au passage : deux gestes, deux tables.
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('drapeau éteint ⇒ 503, et RIEN n’est écrit', async () => {
+      delete process.env.WN_DOSSIER_DEUX_VOIX;
+      const res = await POST(postRequest(cookieProprio(), corps()));
+      expect(res.status).toBe(503);
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('sans session ⇒ 401, et rien n’est écrit', async () => {
+      const res = await POST(postRequest(undefined, corps()));
+      expect(res.status).toBe(401);
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('écrit `idPatient` DE LA SESSION, jamais celui du corps', async () => {
+      await POST(postRequest(cookieProprio(), corps({ idPatient: 'PAT_AUTRE' })));
+      expect(prisma.amendementObjectif.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ idPatient: 'PAT_TEST' }) }),
+      );
+    });
+
+    it('n’écrit AUCUNE date, et ignore celles du corps — antidater est impossible', async () => {
+      await POST(
+        postRequest(
+          cookieProprio(),
+          corps({ exprimeLe: '2020-01-01T00:00:00.000Z', creeLe: '2020-01-01T00:00:00.000Z' }),
+        ),
+      );
+      const { data } = prisma.amendementObjectif.create.mock.calls[0][0];
+      expect(Object.keys(data).sort()).toEqual(['idObjectif', 'idPatient', 'texte']);
+    });
+
+    it('refuse un texte vide en 400 — un amendement sans mots n’est pas un amendement', async () => {
+      for (const texte of ['', '   ', undefined, null, 42]) {
+        const res = await POST(postRequest(cookieProprio(), corps({ texte })));
+        expect(res.status).toBe(400);
+        expect(await res.json()).toMatchObject({ ok: false, reason: 'texte_absent' });
+      }
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse hors bornes en 400, SANS RIEN TRONQUER, et le dit en chiffres', async () => {
+      const res = await POST(
+        postRequest(cookieProprio(), corps({ texte: 'x'.repeat(LONGUEUR_MAX_AMENDEMENT + 1) })),
+      );
+      expect(res.status).toBe(400);
+      const charge = await res.json();
+      expect(charge).toMatchObject({ ok: false, reason: 'texte_trop_long' });
+      expect(charge.error).toContain(String(LONGUEUR_MAX_AMENDEMENT));
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('accepte EXACTEMENT la borne, et le texte arrive entier', async () => {
+      const pile = 'x'.repeat(LONGUEUR_MAX_AMENDEMENT);
+      const res = await POST(postRequest(cookieProprio(), corps({ texte: pile })));
+      expect(res.status).toBe(201);
+      const { data } = prisma.amendementObjectif.create.mock.calls[0][0];
+      expect(data.texte).toHaveLength(LONGUEUR_MAX_AMENDEMENT);
+    });
+
+    it('objectif d’un AUTRE dossier ou inexistant : MÊME 404, MÊME message', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([]);
+      const inexistant = await POST(postRequest(cookieProprio(), corps({ idObjectif: 'OBJ_FANTOME' })));
+      expect(inexistant.status).toBe(404);
+      const messageInexistant = (await inexistant.json()).error;
+
+      // Un objectif qui existe, mais dans un AUTRE dossier : la lecture est
+      // scopée à la session, il n'apparaît donc pas — même réponse, mot pour mot.
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_AUTRE', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      const autreDossier = await POST(postRequest(cookieProprio(), corps({ idObjectif: 'OBJ_1' })));
+      expect(autreDossier.status).toBe(404);
+      expect((await autreDossier.json()).error).toBe(messageInexistant);
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('une version SUPPLANTÉE rend 409 — le texte porterait sur une version qui n’engage plus', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+        { id: 'OBJ_2', supersedesObjectifId: 'OBJ_1', creeLe: new Date('2026-08-21T09:00:00.000Z') },
+      ]);
+      const res = await POST(postRequest(cookieProprio(), corps({ idObjectif: 'OBJ_1' })));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'objectif_supplante' });
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('DEUX TÊTES : 409, et rien n’est écrit — la discordance ne se départage pas (DC-30)', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+        { id: 'OBJ_2', supersedesObjectifId: null, creeLe: new Date('2026-08-21T09:00:00.000Z') },
+      ]);
+      const res = await POST(postRequest(cookieProprio(), corps({ idObjectif: 'OBJ_1' })));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'objectif_discordant' });
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('APPEND-ONLY : deux textes successifs font DEUX lignes, rien n’est corrigé', async () => {
+      await POST(postRequest(cookieProprio(), corps()));
+      await POST(postRequest(cookieProprio(), corps({ texte: 'En fait, dormir avant minuit.' })));
+      expect(prisma.amendementObjectif.create).toHaveBeenCalledTimes(2);
+      expect(prisma.amendementObjectif.update).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.updateMany).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.upsert).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.delete).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('une référence hors bornes rend le MÊME 404, sans toucher la base', async () => {
+      const res = await POST(postRequest(cookieProprio(), corps({ idObjectif: 'x'.repeat(65) })));
+      expect(res.status).toBe(404);
+      expect(prisma.objectifNegocie.findMany).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
     });
   });
 

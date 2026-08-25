@@ -54,11 +54,16 @@ import {
 // transaction — sinon un dossier pourrait porter une « reprise » sans objectif,
 // c'est-à-dire un praticien ayant repris quelque chose qui n'existe pas.
 //
-// `enoncePatient` N'EST JAMAIS PRIS DU CORPS, ni pour une révision, ni pour une
-// reprise : il est RECOPIÉ, de la ligne visée dans un cas, du fragment cité
-// dans l'autre. C'est ce qui rend l'invariant de `D-094` opposable plutôt que
-// promis — le champ ne se pré-remplit que par citation verbatim de ce que le
-// patient a écrit.
+// `enoncePatient` N'EST JAMAIS PRIS DU CORPS — ni pour une révision, ni pour une
+// reprise, ni pour un amendement cité : il est RECOPIÉ, de la ligne visée, du
+// fragment cité, ou du texte que le patient a écrit au portail. C'est ce qui
+// rend l'invariant de `D-094` opposable plutôt que promis — le champ ne se
+// pré-remplit que par citation verbatim de ce que le patient a écrit.
+//
+// LA BOUCLE SE REFERME ICI (Alliance 6.0-B, LOT-04, `D-110`). Le patient a
+// « dit autrement » au portail ; le praticien pose une nouvelle version dont
+// l'énoncé est SON texte à lui, mot pour mot. `amendements_objectif` est LU par
+// cette route et JAMAIS écrit — l'écrivain unique reste le portail.
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -109,6 +114,21 @@ export type AncrageAnamnese = {
   attentes: string[];
 };
 
+/**
+ * L'AMENDEMENT DU PATIENT — « le dire autrement » (Alliance 6.0-B, LOT-04,
+ * `D-110`), lu au cockpit. Il est SERVI TEL QUEL : ni résumé, ni compté, ni
+ * comparé à l'énoncé courant. Un diff automatique entre les mots du patient et
+ * ceux du praticien fabriquerait une mesure de l'écart entre deux personnes.
+ *
+ * `exprimeLe` n'y figure pas : la colonne reste nulle par construction.
+ */
+export type AmendementExpose = {
+  id: string;
+  idObjectif: string;
+  texte: string;
+  creeLe: string;
+};
+
 export type ObjectifsApiResponse =
   | {
       ok: true;
@@ -116,6 +136,14 @@ export type ObjectifsApiResponse =
       trajectoires: TrajectoireObjectif[];
       ancrage: AncrageAnamnese;
       ratifications: Record<string, EtatRatification>;
+      /**
+       * TOUS les amendements du dossier, du plus récent au plus ancien —
+       * jamais filtrés sur les seules têtes courantes. Un amendement porté sur
+       * une version depuis reformulée reste la parole du patient : le masquer
+       * au premier geste du praticien effacerait ce que le lot recueille, et
+       * c'est l'écran qui le range sous sa version.
+       */
+      amendements: AmendementExpose[];
     }
   | { ok: true; objectif: ObjectifExpose }
   | { ok: false; reason: string; error: string };
@@ -253,7 +281,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, ratifications, consultation] = await Promise.all([
+    const [lignes, ratifications, amendements, consultation] = await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
         select: SELECTION_OBJECTIF,
@@ -264,6 +292,15 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       prisma.ratificationObjectif.findMany({
         where: { idPatient },
         select: { id: true, idObjectif: true, sens: true, creeLe: true },
+      }),
+      // LECTURE SEULE, MÊME MOTIF (6.0-B, LOT-04) : l'amendement est une parole
+      // de patient, et son écrivain unique est le portail. Une route praticien
+      // qui l'écrirait fabriquerait des mots que le patient n'a pas écrits —
+      // garde structurelle, pas promesse.
+      prisma.amendementObjectif.findMany({
+        where: { idPatient },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
       }),
       prisma.consultation.findFirst({
         where: { idPatient, statut: 'validee' },
@@ -285,10 +322,18 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       })),
       ancrage: consultation ? lireAncrage(consultation.anamnese) : ANCRAGE_SANS_CONSULTATION,
       // Un état par tête, jamais un taux : `etatRatification` rend le DERNIER
-      // geste porté sur cette version précise.
+      // geste porté sur cette version précise — LES DEUX TABLES CONFONDUES,
+      // sans quoi le cockpit afficherait « ratifié » à un praticien dont le
+      // patient vient d'écrire sa propre version.
       ratifications: Object.fromEntries(
-        courants.map((tete) => [tete.id, etatRatification(tete.id, ratifications)]),
+        courants.map((tete) => [tete.id, etatRatification(tete.id, ratifications, amendements)]),
       ),
+      amendements: amendements.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        texte: ligne.texte,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
     });
   } catch (err) {
     console.error('[praticien/objectifs GET]', messageJournalisable(err));
@@ -476,6 +521,21 @@ type PostBody = {
    * d'anamnèse » — exactement ce que `D-094` interdit.
    */
   sourceFragmentIndex?: unknown;
+  /**
+   * L'AMENDEMENT CITÉ (Alliance 6.0-B, LOT-04, `D-110`) — la boucle de
+   * négociation qui se referme : le patient a écrit sa version, le praticien
+   * l'intègre en posant une NOUVELLE version dont l'énoncé sont ses mots à lui.
+   *
+   * L'écran désigne, le serveur RECOPIE : le texte n'est pas transmis, exactement
+   * comme pour un fragment de proposition. Transmettre le texte laisserait
+   * écrire n'importe quoi sous l'étiquette « parole du patient ».
+   *
+   * IL SE POSE AVEC `supersedesObjectifId`, jamais seul : intégrer un amendement
+   * est une RÉVISION de la version qu'il vise. Un amendement cité sans version
+   * révisée poserait une tête de chaîne neuve à côté de celle qui existe — deux
+   * objectifs courants, donc un portail qui refuse toute réponse.
+   */
+  amendementCiteId?: string | null;
 };
 
 // `typeof`, et non `?? ''` : `PostBody` est un CAST, pas une validation. Un
@@ -541,6 +601,46 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       return echec('invalid', 'Référence de proposition invalide.', 400);
     }
 
+    const referenceAmendement = body.amendementCiteId;
+    if (
+      referenceAmendement !== undefined
+      && referenceAmendement !== null
+      && typeof referenceAmendement !== 'string'
+    ) {
+      return echec('invalid', 'Référence d’amendement invalide.', 400);
+    }
+    const amendementCiteId = texteDuCorps(referenceAmendement);
+    if (amendementCiteId.length > LONGUEUR_MAX_ID) {
+      return echec('invalid', 'Référence d’amendement invalide.', 400);
+    }
+
+    // AUCUN DRAPEAU PROPRE SUR LA CITATION D'AMENDEMENT, et l'absence est
+    // raisonnée : le geste ne peut pas s'exercer sans matière, et la matière est
+    // déjà gardée à sa source — `WN_DOSSIER_DEUX_VOIX` commande l'écriture d'un
+    // amendement au portail. Drapeau éteint, la table reste vide et la citation
+    // rend 404 sur une référence qui ne désigne rien. Poser ici une seconde
+    // manette laisserait croire à un second interrupteur de gouvernance là où il
+    // n'y en a qu'un.
+    //
+    // CE N'EST PAS LE CAS DE LA REPRISE DE PROPOSITION, gardée juste en dessous :
+    // celle-là consomme une matière que la MACHINE produit, et son interrupteur
+    // doit pouvoir se fermer sans que le stock déjà assemblé continue d'être
+    // repris.
+    if (amendementCiteId && sourcePropositionId) {
+      return echec(
+        'citation_double',
+        'Un énoncé vient d’une seule source : soit la proposition citée, soit les mots que le patient a écrits.',
+        400,
+      );
+    }
+    if (amendementCiteId && !supersedesObjectifId) {
+      return echec(
+        'amendement_sans_revision',
+        'Intégrer les mots du patient reformule la version qu’il visait : indiquez la version à reformuler.',
+        400,
+      );
+    }
+
     // LE DRAPEAU GARDE LA REPRISE, ET ELLE SEULE. Un objectif rédigé de la main
     // du praticien reste servi drapeau éteint : c'est une surface de 6.0-A, que
     // ce lot n'a pas à fermer. MÊME RÉPONSE pour le drapeau et pour le repli —
@@ -602,6 +702,47 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
         return echec('objectif_supplante', 'Cet objectif a déjà été reformulé. Rechargez le dossier.', 409);
       }
       cible = { enoncePatient: visee.enoncePatient, origine: 'revision' };
+    }
+
+    // L'AMENDEMENT CITÉ REMPLACE L'ÉNONCÉ RECOPIÉ DE LA VERSION RÉVISÉE — c'est
+    // tout l'objet du geste : la nouvelle version porte les mots du patient à la
+    // place de ceux qu'il avait contestés. Le reste de la révision ne change
+    // pas ; la version précédente demeure lisible par la chaîne.
+    if (amendementCiteId) {
+      const [amendement, lignesDuDossier] = await Promise.all([
+        prisma.amendementObjectif.findUnique({
+          where: { id: amendementCiteId },
+          select: { idPatient: true, idObjectif: true, texte: true },
+        }),
+        prisma.objectifNegocie.findMany({
+          where: { idPatient },
+          select: { id: true, supersedesObjectifId: true, creeLe: true },
+        }),
+      ]);
+
+      // INEXISTANT ou D'UN AUTRE DOSSIER : MÊME réponse, même motif que
+      // partout ailleurs — ne pas faire de la route un oracle d'existence.
+      if (!amendement || amendement.idPatient !== idPatient) {
+        return echec('amendement_introuvable', 'Texte du patient introuvable.', 404);
+      }
+
+      // IL DOIT VISER LA MÊME CHAÎNE QUE LA VERSION RÉVISÉE. Un amendement écrit
+      // sur un AUTRE objectif du dossier parle d'autre chose ; le recopier ici
+      // ferait porter les mots du patient sur une négociation à laquelle ils ne
+      // répondaient pas. La chaîne, et non la seule version visée : le patient
+      // peut avoir écrit sur `v1` alors que le praticien reformule `v2`, et sa
+      // parole n'a pas cessé de concerner cet objectif-là parce qu'une version
+      // s'est intercalée.
+      const chaine = chaineDObjectif(lignesDuDossier, supersedesObjectifId);
+      if (!chaine.some((ligne) => ligne.id === amendement.idObjectif)) {
+        return echec(
+          'amendement_hors_chaine',
+          'Ce texte du patient porte sur un autre objectif : il ne peut pas devenir l’énoncé de celui-ci.',
+          409,
+        );
+      }
+
+      cible = { enoncePatient: amendement.texte, origine: 'amendement' };
     }
 
     if (sourcePropositionId) {

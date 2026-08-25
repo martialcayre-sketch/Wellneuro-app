@@ -36,6 +36,7 @@ function assemblage(partiel: Record<string, unknown> = {}) {
     ok: true,
     objectifs: [OBJECTIF],
     ratifiable: true,
+    amendements: [],
     ceQuiCompte: [ENTREE],
     comprehension: { synthese: SYNTHESE, desaccords: [] },
     ...partiel,
@@ -296,5 +297,134 @@ describe('DossierDeuxVoixView', () => {
     fireEvent.click(screen.getByText('C’est bien ça'));
 
     await waitFor(() => expect(texteRendu()).toContain('a été reformulée depuis'));
+  });
+
+  // ── « LE DIRE AUTREMENT » (Alliance 6.0-B, LOT-04, D-110) ────────────────
+
+  describe('le troisième verbe', () => {
+    const AMENDEMENT = {
+      id: 'AME_1',
+      idObjectif: 'OBJ_1',
+      texte: 'Ce que je veux, c’est tenir debout jusqu’au dîner.',
+      creeLe: '2026-08-25T12:00:00.000Z',
+    };
+
+    async function ouvrirLaSaisie() {
+      fetchMock.mockResolvedValueOnce(json(assemblage()));
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Le dire autrement'));
+      fireEvent.click(screen.getByText('Le dire autrement'));
+      return screen.getByLabelText('Écrivez cet objectif avec vos mots') as HTMLTextAreaElement;
+    }
+
+    it('le bouton n’envoie rien : il ouvre une saisie, VIDE de toute suggestion', async () => {
+      const zone = await ouvrirLaSaisie();
+      // Jamais pré-remplie par l'énoncé courant : le patient écrirait alors sur
+      // les mots d'un autre.
+      expect(zone.value).toBe('');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('la borne est affichée AVANT d’être atteinte, et le champ ne tronque pas', async () => {
+      const zone = await ouvrirLaSaisie();
+      expect(texteRendu()).toContain('/ 4000 caractères');
+      // Pas de `maxLength` : couper en silence produirait une phrase que
+      // personne n'a écrite. Le patient dépasse, il le voit, il raccourcit.
+      expect(zone.getAttribute('maxlength')).toBeNull();
+
+      fireEvent.change(zone, { target: { value: 'x'.repeat(4001) } });
+      expect(texteRendu()).toContain('4001 / 4000');
+      expect(screen.getByText('Envoyer ma version').closest('button')?.disabled).toBe(true);
+    });
+
+    it('poste le geste NOMMÉ, avec la version visée et le texte', async () => {
+      const zone = await ouvrirLaSaisie();
+      fireEvent.change(zone, { target: { value: AMENDEMENT.texte } });
+
+      fetchMock.mockResolvedValueOnce(json({ ok: true, amendement: AMENDEMENT }));
+      fetchMock.mockResolvedValueOnce(json(assemblage({ amendements: [AMENDEMENT] })));
+      fireEvent.click(screen.getByText('Envoyer ma version'));
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+      const corps = JSON.parse(fetchMock.mock.calls[1][1].body);
+      expect(corps).toEqual({
+        geste: 'amendement',
+        idObjectif: 'OBJ_1',
+        texte: AMENDEMENT.texte,
+      });
+      // Aucune date : le geste est posé maintenant, le serveur l'horodate.
+      expect(corps).not.toHaveProperty('creeLe');
+      expect(corps).not.toHaveProperty('exprimeLe');
+    });
+
+    it('rend au patient son texte à relire, et le dit sans jamais parler de refus', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            amendements: [AMENDEMENT],
+            objectifs: [{ ...OBJECTIF, etat: 'dit_autrement' }],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('tenir debout jusqu’au dîner'));
+      expect(texteRendu()).toContain('Vous avez écrit votre version de cet objectif.');
+      const rendu = texteRendu().toLowerCase();
+      expect(rendu).not.toContain('refus');
+      expect(rendu).not.toContain('désaccord');
+      expect(rendu).not.toContain('en retard');
+    });
+
+    it('un amendement porté sur une AUTRE version ne s’affiche pas sous celle-ci', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ amendements: [{ ...AMENDEMENT, idObjectif: 'OBJ_AILLEURS' }] })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce sur quoi nous travaillons'));
+      expect(texteRendu()).not.toContain('tenir debout jusqu’au dîner');
+    });
+
+    it('SUR UN REFUS, le texte reste à l’écran — il est irremplaçable', async () => {
+      const zone = await ouvrirLaSaisie();
+      fireEvent.change(zone, { target: { value: AMENDEMENT.texte } });
+
+      fetchMock.mockResolvedValueOnce(
+        json({ ok: false, error: 'Cette version de votre objectif a été reformulée depuis.' }, false),
+      );
+      fireEvent.click(screen.getByText('Envoyer ma version'));
+
+      await waitFor(() => expect(texteRendu()).toContain('a été reformulée depuis'));
+      expect(
+        (screen.getByLabelText('Écrivez cet objectif avec vos mots') as HTMLTextAreaElement).value,
+      ).toBe(AMENDEMENT.texte);
+    });
+
+    it('deux versions coexistantes : aucun des trois verbes n’est proposé (DC-30)', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            ratifiable: false,
+            objectifs: [OBJECTIF, { ...OBJECTIF, id: 'OBJ_2' }],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Deux versions de votre objectif coexistent'));
+      expect(screen.queryByText('Le dire autrement')).toBeNull();
+    });
+
+    it('ne compte ni ne gradue le texte du patient', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ amendements: [AMENDEMENT] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('tenir debout jusqu’au dîner'));
+      const rendu = texteRendu().toLowerCase();
+      for (const interdit of ['score', 'niveau', 'moyenne', 'taux', '1 version', 'points']) {
+        expect(rendu).not.toContain(interdit);
+      }
+    });
   });
 });

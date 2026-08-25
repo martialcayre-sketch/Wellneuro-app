@@ -63,14 +63,24 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   // l'écran du LOT-06 — la garde tenait par le NOM que l'auteur avait choisi,
   // c'est-à-dire par rien.
   //
-  // UNE SEULE EXCEPTION, ET ELLE EST NOMMÉE : `{texte.length}`, le compteur de
-  // caractères du champ de saisie (`CeQuiCompteForm`). Compter les caractères
-  // qu'on est en train de taper est une aide à la saisie, pas une mesure de la
-  // parole du patient — et la borne qu'il affiche est technique, identifiée
-  // comme telle (`DC-20`). Nommer le cas licite plutôt qu'énumérer les cas
-  // interdits garde l'interdit général : une collection ne peut pas s'y glisser
-  // en se renommant.
-  { motif: /\{\s*(?!texte\.length\s*\})[\w.]+\.length\s*\}/, nom: 'décompte affiché' },
+  // DEUX EXCEPTIONS, ET ELLES SONT NOMMÉES UNE PAR UNE : `{texte.length}`, le
+  // compteur de caractères du champ de saisie (`CeQuiCompteForm`), et
+  // `{texteAmendement.length}`, celui de la saisie « le dire autrement »
+  // (`DossierDeuxVoixView`, 6.0-B LOT-04). Compter les caractères qu'on est en
+  // train de taper est une aide à la saisie, pas une mesure de la parole du
+  // patient — et la borne affichée est technique, identifiée comme telle
+  // (`DC-20`). Elle est même l'inverse d'une troncature silencieuse : le
+  // patient voit qu'il dépasse, rien n'est coupé.
+  //
+  // NOMMER LES CAS LICITES PLUTÔT QU'ÉNUMÉRER LES CAS INTERDITS garde
+  // l'interdit général : une COLLECTION ne peut pas s'y glisser en se
+  // renommant, et chaque compteur neuf doit passer par cette liste. Un motif du
+  // genre « tout identifiant contenant `texte` » aurait rendu l'exception
+  // ouverte à `textesServis.length`.
+  {
+    motif: /\{\s*(?!(?:texte|texteAmendement)\.length\s*\})[\w.]+\.length\s*\}/,
+    nom: 'décompte affiché',
+  },
 ];
 
 /**

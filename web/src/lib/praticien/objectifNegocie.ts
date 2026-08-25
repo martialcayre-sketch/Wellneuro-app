@@ -127,7 +127,7 @@ export type EntreeObjectif = {
  * établi. Il n'est pas lu ici : ce module est pur, il reçoit le résultat de la
  * vérification, il ne la fait pas.
  *
- * DEUX ORIGINES, ET ELLES NE SE VALIDENT PAS PAREIL.
+ * TROIS ORIGINES, ET ELLES NE SE VALIDENT PAS PAREIL.
  *
  * `revision` — l'énoncé est RECOPIÉ d'une ligne d'objectif existante. Sa
  * longueur ne se rejuge pas : le texte est déjà dans la table, l'avoir accepté
@@ -140,8 +140,21 @@ export type EntreeObjectif = {
  * aucune longueur maximale, un champ d'anamnèse très long produirait un
  * verbatim très long. Sa longueur se vérifie donc comme celle d'une saisie —
  * par REFUS, jamais par troncature.
+ *
+ * `amendement` — l'énoncé est recopié de ce que le PATIENT a écrit lui-même au
+ * portail (`amendements_objectif`, Alliance 6.0-B, LOT-04, `D-110`). C'est la
+ * seule origine dont le texte n'a jamais transité par un clavier de praticien,
+ * et c'est ce qui la rend admissible : `enoncePatient` ne se pré-remplit que
+ * par citation verbatim de ce que le patient a écrit (`D-094`). Il entre lui
+ * aussi dans `objectifs_negocies` pour la première fois — sa longueur s'y
+ * vérifie donc comme celle d'une saisie, même si `LONGUEUR_MAX_AMENDEMENT` l'a
+ * déjà bornée en amont : deux bornes qui coïncident aujourd'hui n'ont aucune
+ * raison de coïncider demain.
  */
-export type CibleObjectif = { enoncePatient: string; origine: 'revision' | 'reprise' };
+export type CibleObjectif = {
+  enoncePatient: string;
+  origine: 'revision' | 'reprise' | 'amendement';
+};
 
 /** Texte utile d'un champ facultatif : vide ⇒ `null`, jamais chaîne vide. */
 function texteFacultatif(brut: string | null | undefined): string | null {
@@ -184,9 +197,13 @@ export function preparerObjectif(entree: EntreeObjectif, cible?: CibleObjectif):
   let enoncePatient: string;
   if (cible) {
     enoncePatient = cible.enoncePatient;
-    // Une REPRISE fait entrer le texte dans la table pour la première fois :
-    // elle se borne comme une saisie. Une RÉVISION recopie ce qui y est déjà.
-    if (cible.origine === 'reprise' && enoncePatient.length > LONGUEUR_MAX_ENONCE) {
+    // Une REPRISE et un AMENDEMENT font entrer le texte dans la table pour la
+    // première fois : ils se bornent comme une saisie. Une RÉVISION, elle,
+    // recopie ce qui y est déjà. La condition est écrite « tout sauf
+    // `revision` » et non « `reprise` ou `amendement` » : une quatrième origine
+    // ajoutée un jour serait alors bornée par défaut, au lieu d'échapper en
+    // silence à la seule vérification qui protège la colonne.
+    if (cible.origine !== 'revision' && enoncePatient.length > LONGUEUR_MAX_ENONCE) {
       return { ok: false, raison: 'enonce_trop_long' };
     }
   } else {
@@ -307,14 +324,23 @@ export function chaineDObjectif<T extends LigneObjectif>(lignes: T[], id: string
 }
 
 /**
- * L'état de ratification d'UNE version précise d'objectif.
+ * L'état d'UNE version précise d'objectif, tel que le patient l'a laissé.
  *
- * `en_attente` est l'état par défaut et il ne dit RIEN du patient : le geste de
- * ratification n'existe pas encore (il arrive au LOT-06). Une donnée absente
- * n'est ni zéro ni un refus (`DC-24`) — l'écran doit dire « pas encore proposé
- * au patient », jamais « non ratifié ».
+ * `en_attente` est l'état par défaut et il ne dit RIEN du patient : il ne s'est
+ * pas prononcé. Une donnée absente n'est ni zéro ni un refus (`DC-24`) —
+ * l'écran doit dire « pas encore proposé au patient », jamais « non ratifié ».
+ *
+ * `dit_autrement` (Alliance 6.0-B, LOT-04, `D-110`) N'EST PAS UNE CONTESTATION,
+ * et le type le porte plutôt qu'un commentaire d'écran : le patient n'a pas dit
+ * « ce n'est pas exactement ça », il a écrit SA version. Le replier sur
+ * `conteste` ferait lire un désaccord là où il y a une proposition ; le replier
+ * sur `en_attente` effacerait un geste qu'il a bel et bien posé.
+ *
+ * LE NOM DU TYPE RESTE `EtatRatification` alors qu'il couvre désormais deux
+ * tables. Le renommer toucherait les deux routes, les deux écrans et leurs
+ * bancs pour un gain de vocabulaire — ce que « changements minimaux » exclut.
  */
-export type EtatRatification = 'en_attente' | 'ratifie' | 'conteste';
+export type EtatRatification = 'en_attente' | 'ratifie' | 'conteste' | 'dit_autrement';
 
 export type LigneRatification = {
   id: string;
@@ -323,34 +349,64 @@ export type LigneRatification = {
   creeLe: Date;
 };
 
+/** Un amendement, vu par la dérivation d'état : son TEXTE n'y entre pas — ce
+ *  qui compte ici est qu'un geste ait été posé, et quand. */
+export type LigneAmendement = {
+  id: string;
+  idObjectif: string;
+  creeLe: Date;
+};
+
+/** Tri partagé : `creeLe` décroissant, l'identifiant départageant les ex aequo
+ *  pour que la lecture soit déterministe (patron `objectifsCourants`). */
+function plusRecentDAbord(
+  gauche: { id: string; creeLe: Date },
+  droite: { id: string; creeLe: Date },
+): number {
+  const delta = droite.creeLe.getTime() - gauche.creeLe.getTime();
+  if (delta !== 0) return delta;
+  return gauche.id < droite.id ? 1 : gauche.id > droite.id ? -1 : 0;
+}
+
 /**
  * DERNIER GESTE, JAMAIS UNE MOYENNE ni un décompte. Un patient qui ratifie
  * puis conteste a contesté : compter les lignes, ou faire primer la majorité,
  * effacerait le changement d'avis — une discordance se signale, elle ne se
- * moyenne pas (`DC-30`). Le tri est celui d'`objectifsCourants` : `creeLe`
- * décroissant, l'identifiant départageant les ex aequo pour que la lecture
- * soit déterministe.
+ * moyenne pas (`DC-30`).
+ *
+ * LES DEUX TABLES SE LISENT ENSEMBLE, ET C'EST L'INVARIANT DU LOT-04. Ratifier
+ * puis dire autrement, ou dire autrement puis ratifier, sont deux trajectoires
+ * différentes ; les classer chacune dans sa table et lire la sienne rendrait
+ * « ratifié » à un patient qui vient d'écrire autre chose. `amendements` est
+ * facultatif pour les appelants qui n'en lisent pas — mais un appelant qui SERT
+ * l'état au patient ou au praticien doit les passer, et les bancs de route le
+ * vérifient.
  */
 export function etatRatification(
   idObjectif: string,
   ratifications: LigneRatification[],
+  amendements: LigneAmendement[] = [],
 ): EtatRatification {
-  const dernier = ratifications
-    .filter((ligne) => ligne.idObjectif === idObjectif)
-    .sort((gauche, droite) => {
-      const delta = droite.creeLe.getTime() - gauche.creeLe.getTime();
-      if (delta !== 0) return delta;
-      return gauche.id < droite.id ? 1 : gauche.id > droite.id ? -1 : 0;
-    })[0];
+  const gestes: { id: string; creeLe: Date; etat: EtatRatification }[] = [
+    ...ratifications
+      .filter((ligne) => ligne.idObjectif === idObjectif)
+      // La taxonomie de geste est tenue par un CHECK en base
+      // (`migration.sql:144-146`, deux valeurs) ; une valeur hors taxonomie ne
+      // peut pas exister, et si elle existait, la lire comme un geste serait
+      // pire que de la taire — elle est donc ÉCARTÉE, pas repliée sur un sens.
+      .filter((ligne) => ligne.sens === 'ratifie' || ligne.sens === 'conteste')
+      .map((ligne) => ({
+        id: ligne.id,
+        creeLe: ligne.creeLe,
+        etat: ligne.sens === 'ratifie' ? ('ratifie' as const) : ('conteste' as const),
+      })),
+    ...amendements
+      .filter((ligne) => ligne.idObjectif === idObjectif)
+      .map((ligne) => ({ id: ligne.id, creeLe: ligne.creeLe, etat: 'dit_autrement' as const })),
+  ];
 
-  if (!dernier) return 'en_attente';
-  // La taxonomie de geste est tenue par un CHECK en base
-  // (`migration.sql:144-146`, deux valeurs) ; une valeur hors taxonomie ne peut
-  // pas exister, et si elle existait, la lire comme un geste serait pire que
-  // de la taire.
-  if (dernier.sens === 'ratifie') return 'ratifie';
-  if (dernier.sens === 'conteste') return 'conteste';
-  return 'en_attente';
+  const dernier = gestes.sort(plusRecentDAbord)[0];
+  return dernier ? dernier.etat : 'en_attente';
 }
 
 // ── LE GESTE DU PATIENT (LOT-06) ────────────────────────────────────────────
@@ -444,4 +500,89 @@ export function preparerRatification(entree: EntreeRatification): PreparationRat
       sens: sens as SensRatification,
     },
   };
+}
+
+// ── « LE DIRE AUTREMENT » (Alliance 6.0-B, LOT-04, `D-110`) ─────────────────
+//
+// Le TROISIÈME verbe du patient. À côté de « c'est bien ça » et « ce n'est pas
+// exactement ça », il écrit SA version de l'objectif — dans ses mots, sur la
+// version exacte qu'on lui a servie.
+//
+// TABLE PROPRE, pas un `sens` de plus sur la ratification (`D-094` §2) : un
+// amendement porte un texte, une ratification n'en porte pas. Le reste du
+// régime est identique — append-only, écrivain unique au portail, version
+// exacte référencée, jamais compté ni noté.
+//
+// CE N'EST NI UN ACCORD NI UN REFUS, et rien ici ne le range dans l'un ou
+// l'autre : `etatRatification` rend `dit_autrement`, un état à part entière.
+
+/**
+ * La borne du texte : MÊME valeur que `LONGUEUR_MAX_ENONCE` (4 000), et le
+ * motif n'est pas la commodité — un amendement EST un énoncé de patient, celui
+ * qu'il aurait écrit si on le lui avait demandé. Lui donner une borne plus
+ * courte dirait que sa version compte moins que celle qu'on lui propose ; plus
+ * longue, qu'elle en est autre chose. Borne TECHNIQUE de saisie, sans aucune
+ * sémantique clinique (`DC-19`/`DC-20`).
+ *
+ * Elle est déclarée à part plutôt qu'aliasée sur `LONGUEUR_MAX_ENONCE` : le
+ * jour où l'une des deux bouge, l'autre ne doit pas suivre sans que quelqu'un
+ * l'ait voulu.
+ */
+export const LONGUEUR_MAX_AMENDEMENT = 4000;
+
+export type RefusAmendement = 'objectif_absent' | 'texte_absent' | 'texte_trop_long';
+
+/**
+ * Ce qui part en base. AUCUNE DATE, pour les deux motifs déjà écrits au
+ * `DonneesRatification` : `creeLe` est posée par `@default(now())` — c'est ce
+ * qui rend un amendement inantidatable —, et `exprimeLe` RESTE NULLE parce que
+ * c'est une colonne de DÉCLARATION et que le patient ne déclare pas de date, il
+ * écrit. La renseigner depuis l'horloge du serveur en ferait une déclaration
+ * qu'il n'a pas faite, et elle ne pourrait de toute façon jamais différer de
+ * `creeLe` : cette route est le seul écrivain.
+ */
+export type DonneesAmendement = {
+  idPatient: string;
+  idObjectif: string;
+  texte: string;
+};
+
+export type PreparationAmendement =
+  | { ok: true; donnees: DonneesAmendement }
+  | { ok: false; raison: RefusAmendement };
+
+export type EntreeAmendement = {
+  idPatient: string;
+  idObjectif: string | null | undefined;
+  texte: string | null | undefined;
+};
+
+/**
+ * Prépare UN amendement. Il ne remplace jamais rien : se raviser, c'est écrire
+ * à nouveau — une ligne de plus, et `etatRatification` lit le dernier geste.
+ *
+ * LE TEXTE EST OBLIGATOIRE, et ce n'est pas une exigence de formulaire. Un
+ * amendement sans mots n'est pas un amendement : c'est une contestation, et
+ * celle-là existe déjà (`schema.prisma`, `texte` NOT NULL non vide). L'accepter
+ * vide fabriquerait un troisième geste indiscernable du deuxième, rangé sous un
+ * libellé qui promet des mots.
+ *
+ * REFUS, JAMAIS TRONCATURE (patron de tout le portail) : tronquer la version
+ * d'un patient produirait une phrase que personne n'a écrite, déposée dans son
+ * dossier comme s'il l'avait dite.
+ *
+ * Ce module est PUR : il ne vérifie pas que `idObjectif` existe, appartient au
+ * dossier, ou est une tête de chaîne. `id_objectif` n'a pas de clé étrangère
+ * (référence souple assumée par la migration) : ces trois vérifications
+ * appartiennent à la route, qui seule lit la base.
+ */
+export function preparerAmendement(entree: EntreeAmendement): PreparationAmendement {
+  const idObjectif = (entree.idObjectif ?? '').trim();
+  if (idObjectif.length === 0) return { ok: false, raison: 'objectif_absent' };
+
+  const texte = (entree.texte ?? '').trim();
+  if (texte.length === 0) return { ok: false, raison: 'texte_absent' };
+  if (texte.length > LONGUEUR_MAX_AMENDEMENT) return { ok: false, raison: 'texte_trop_long' };
+
+  return { ok: true, donnees: { idPatient: entree.idPatient, idObjectif, texte } };
 }

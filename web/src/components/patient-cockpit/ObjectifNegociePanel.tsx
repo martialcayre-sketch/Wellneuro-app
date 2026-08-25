@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type {
+  AmendementExpose,
   AncrageAnamnese,
   ObjectifExpose,
   ObjectifsApiResponse,
@@ -241,6 +242,10 @@ const LIBELLE_RATIFICATION: Record<EtatRatification, string> = {
   en_attente: 'Aucune réponse du patient enregistrée',
   ratifie: 'Ratifié par le patient',
   conteste: 'Contesté par le patient',
+  // NI « refusé », NI « contesté » : le patient n'a pas dit non, il a écrit sa
+  // version — et ce libellé dit au praticien qu'il y a un TEXTE à lire, pas un
+  // verdict à encaisser (Alliance 6.0-B, LOT-04, `D-110`).
+  dit_autrement: 'Le patient l’a dit autrement — son texte ci-dessous',
 };
 
 function formatDate(iso: string): string {
@@ -323,6 +328,9 @@ export function ObjectifNegociePanel({
   const [trajectoires, setTrajectoires] = useState<TrajectoireObjectif[]>([]);
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
+  /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
+   *  Tous gestes du dossier : l'écran les range sous leur version. */
+  const [amendements, setAmendements] = useState<AmendementExpose[]>([]);
 
   const [reformuleId, setReformuleId] = useState<string | null>(null);
   const [enonce, setEnonce] = useState('');
@@ -343,6 +351,10 @@ export function ObjectifNegociePanel({
   const [repriseDe, setRepriseDe] = useState<
     { idProposition: string; index: number; texte: string; source: SourceLue } | null
   >(null);
+  /** Le texte du patient que la prochaine version va reprendre comme énoncé,
+   *  ou `null`. Comme pour un fragment : l'écran DÉSIGNE, le serveur recopie —
+   *  seul l'identifiant part, jamais le texte. */
+  const [citeAmendement, setCiteAmendement] = useState<AmendementExpose | null>(null);
   const [ecarteDe, setEcarteDe] = useState<string | null>(null);
   const [motifEcart, setMotifEcart] = useState('');
   const [erreurGeste, setErreurGeste] = useState('');
@@ -368,6 +380,7 @@ export function ObjectifNegociePanel({
       setTrajectoires(payload.trajectoires);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
+      setAmendements(payload.amendements);
       setEtat('chargee');
     } catch {
       setErreur('Les objectifs n’ont pas pu être chargés.');
@@ -424,7 +437,7 @@ export function ObjectifNegociePanel({
   }, [chargerPropositions, signalAssemblage]);
 
   const enregistrer = useCallback(async () => {
-    if (!reformuleId && !repriseDe && enonce.trim().length === 0) return;
+    if (!reformuleId && !repriseDe && !citeAmendement && enonce.trim().length === 0) return;
     setEtatEnvoi('envoi');
     setErreurEnvoi('');
     try {
@@ -444,6 +457,11 @@ export function ObjectifNegociePanel({
       if (repriseDe) {
         charge.sourcePropositionId = repriseDe.idProposition;
         charge.sourceFragmentIndex = repriseDe.index;
+      } else if (citeAmendement) {
+        // TROISIÈME CAS, MÊME RÈGLE : seul l'identifiant part. Le serveur
+        // recopie le texte depuis `amendements_objectif` et vérifie qu'il porte
+        // bien sur la chaîne reformulée.
+        charge.amendementCiteId = citeAmendement.id;
       } else if (!reformuleId) {
         charge.enoncePatient = enonce;
       }
@@ -467,6 +485,7 @@ export function ObjectifNegociePanel({
       setNonTraiteDepuisLe('');
       setReformuleId(null);
       setRepriseDe(null);
+      setCiteAmendement(null);
       setEtatEnvoi('repos');
       // Les deux lectures, et dans cet ordre : une reprise a posé un geste sur
       // la proposition, qui cesse donc d'être servie comme vivante.
@@ -480,6 +499,7 @@ export function ObjectifNegociePanel({
     idPatient,
     reformuleId,
     repriseDe,
+    citeAmendement,
     chargerPropositions,
     enonce,
     reformulation,
@@ -699,6 +719,12 @@ export function ObjectifNegociePanel({
                                       },
                                 );
                                 setReformuleId(null);
+                                // NETTOYAGE SYMÉTRIQUE (leçon du LOT-03) : les
+                                // trois origines d'énoncé s'excluent, et
+                                // chacune doit relâcher les deux autres — sinon
+                                // l'écran affiche un titre et le serveur reçoit
+                                // un corps qui en décrit un autre.
+                                setCiteAmendement(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
                               }
@@ -835,6 +861,81 @@ export function ObjectifNegociePanel({
                 <div className="mt-1">
                   <LigneObjectif ligne={courante} />
                 </div>
+
+                {/* ── CE QUE LE PATIENT A ÉCRIT LUI-MÊME (6.0-B, LOT-04) ─────
+                    Les amendements de TOUTE la chaîne, pas de la seule version
+                    courante : une parole écrite sur `v1` ne cesse pas de
+                    concerner cet objectif parce que `v2` s'est intercalée.
+                    Aucun décompte, aucun résumé, aucun diff avec l'énoncé : le
+                    texte est rendu tel quel. */}
+                {(() => {
+                  const idsDeLaChaine = new Set(trajectoire.lignes.map((ligne) => ligne.id));
+                  const siens = amendements.filter((ligne) => idsDeLaChaine.has(ligne.idObjectif));
+                  if (siens.length === 0) return null;
+                  return (
+                    <div className="mt-3 rounded-lg border border-accent bg-surface-2 p-3">
+                      <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Le patient l’a dit autrement
+                      </h5>
+                      <ul className="mt-2 flex flex-col gap-3">
+                        {siens.map((amendement) => (
+                          <li key={amendement.id} className="border-l-2 border-border pl-3">
+                            <p className="whitespace-pre-wrap text-base text-foreground">
+                              « {amendement.texte} »
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Écrit au portail le {formatDate(amendement.creeLe)}
+                            </p>
+                            <button
+                              type="button"
+                              aria-pressed={citeAmendement?.id === amendement.id}
+                              onClick={() => {
+                                // Second clic : la citation se rend. Le bouton
+                                // annonce `aria-pressed`, il doit se relever.
+                                if (citeAmendement?.id === amendement.id) {
+                                  setCiteAmendement(null);
+                                  setReformuleId(null);
+                                  return;
+                                }
+                                // Reprendre les mots du patient REFORMULE la
+                                // version courante : sans `reformuleId`, la
+                                // nouvelle ligne ouvrirait une seconde tête de
+                                // chaîne et le portail refuserait toute réponse.
+                                setReformuleId(trajectoire.idObjectif);
+                                setCiteAmendement(amendement);
+                                setRepriseDe(null);
+                                setEnonce('');
+                                setErreurEnvoi('');
+                                // Les champs PRATICIEN de la version reformulée
+                                // sont repris, comme pour « Reformuler » : sans
+                                // cela, intégrer le texte du patient ferait
+                                // retomber priorité et « non traité » à vide.
+                                setReformulation(courante.reformulationPraticien ?? '');
+                                setPriorite(courante.priorite ?? '');
+                                setNonTraiteMotif(courante.nonTraiteMotif ?? '');
+                                setNonTraiteDepuisLe(
+                                  courante.nonTraiteDepuisLe
+                                    ? courante.nonTraiteDepuisLe.slice(0, 10)
+                                    : '',
+                                );
+                              }}
+                              className={`mt-2 min-h-9 rounded-lg px-2 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                                citeAmendement?.id === amendement.id
+                                  ? 'bg-accent text-accent-foreground'
+                                  : 'border border-border text-foreground hover:bg-accent/10'
+                              }`}
+                            >
+                              {citeAmendement?.id === amendement.id
+                                ? 'Ces mots deviennent l’énoncé'
+                                : 'En faire l’énoncé du patient'}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -860,6 +961,7 @@ export function ObjectifNegociePanel({
                     // — et un corps portant les deux références, que le serveur
                     // refusait avec un message décrivant tout autre chose.
                     setRepriseDe(null);
+                    setCiteAmendement(null);
                   }}
                   className="mt-2 min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
@@ -886,14 +988,44 @@ export function ObjectifNegociePanel({
 
           <div className="border-t border-border pt-3">
             <h4 className="text-sm font-semibold text-foreground">
-              {reformuleId
-                ? 'Reformuler l’objectif'
-                : repriseDe
-                  ? 'Reprendre une proposition'
-                  : 'Poser un objectif négocié'}
+              {citeAmendement
+                ? 'Intégrer les mots du patient'
+                : reformuleId
+                  ? 'Reformuler l’objectif'
+                  : repriseDe
+                    ? 'Reprendre une proposition'
+                    : 'Poser un objectif négocié'}
             </h4>
 
-            {repriseDe ? (
+            {citeAmendement ? (
+              // LES MOTS DU PATIENT S'AFFICHENT, ILS NE S'ÉDITENT PAS — même
+              // règle que pour un fragment cité, et elle pèse plus lourd ici :
+              // un champ modifiable inviterait le praticien à « améliorer » la
+              // phrase du patient, et la nouvelle version porterait sous
+              // l'étiquette « ce que le patient demande » un texte retouché.
+              <div className="mt-2 rounded-lg border border-accent bg-surface-2 p-3">
+                <p className="whitespace-pre-wrap text-base text-foreground">
+                  « {citeAmendement.texte} »
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Écrit par le patient au portail le {formatDate(citeAmendement.creeLe)}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Ce texte devient l’énoncé de la nouvelle version, mot pour mot. La version
+                  précédente reste lisible : rien n’est écrasé.{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCiteAmendement(null);
+                      setReformuleId(null);
+                    }}
+                    className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    Ne pas l’intégrer
+                  </button>
+                </p>
+              </div>
+            ) : repriseDe ? (
               // LA CITATION S'AFFICHE, ELLE NE S'ÉDITE PAS — et ce n'est pas
               // une commodité d'écran. Le serveur la RECOPIE du fragment
               // désigné ; un champ modifiable laisserait croire au praticien
@@ -1024,15 +1156,18 @@ export function ObjectifNegociePanel({
               type="button"
               onClick={() => void enregistrer()}
               disabled={
-                (!reformuleId && !repriseDe && enonce.trim().length === 0) || etatEnvoi === 'envoi'
+                (!reformuleId && !repriseDe && !citeAmendement && enonce.trim().length === 0)
+                || etatEnvoi === 'envoi'
               }
               className="mt-3 min-h-11 rounded-lg border border-primary bg-primary/10 px-3 py-1 text-sm font-medium text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               {etatEnvoi === 'envoi'
                 ? 'Enregistrement…'
-                : reformuleId
-                  ? 'Enregistrer la reformulation'
-                  : 'Enregistrer l’objectif'}
+                : citeAmendement
+                  ? 'Enregistrer avec les mots du patient'
+                  : reformuleId
+                    ? 'Enregistrer la reformulation'
+                    : 'Enregistrer l’objectif'}
             </button>
           </div>
         </div>

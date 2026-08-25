@@ -20,6 +20,7 @@ const DOSSIER_VIDE = {
   trajectoires: [],
   ancrage: ANCRAGE_VIDE,
   ratifications: {},
+  amendements: [],
 };
 
 const ligne = (partiel: Record<string, unknown> = {}) => ({
@@ -238,6 +239,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
             },
           ],
           ratifications: { OBJ_2: 'en_attente' },
+          amendements: [],
         },
       }),
     );
@@ -260,6 +262,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
             { idObjectif: 'OBJ_2', lignes: [ligne({ id: 'OBJ_2', priorite: 'Version B' })] },
           ],
           ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
+          amendements: [],
         },
       }),
     );
@@ -280,6 +283,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           objectifs: [ligne()],
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
         },
       }),
     );
@@ -300,6 +304,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           objectifs: [ligne()],
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'conteste' },
+          amendements: [],
         },
       }),
     );
@@ -346,6 +351,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           objectifs: [ligne()],
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
         },
       }),
     );
@@ -584,6 +590,7 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ancrage: ANCRAGE_VIDE,
           ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
         },
         propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
       }),
@@ -648,5 +655,147 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
       ).length;
       expect(apres).toBe(avant + 1);
     });
+  });
+});
+
+// ── LES MOTS DU PATIENT AU COCKPIT (Alliance 6.0-B LOT-04, D-110) ───────────
+
+describe('ObjectifNegociePanel — « le dire autrement »', () => {
+  const AMENDEMENT = {
+    id: 'AME_1',
+    idObjectif: 'OBJ_1',
+    texte: 'Ce que je veux, c’est tenir debout jusqu’au dîner.',
+    creeLe: '2026-08-25T12:00:00.000Z',
+  };
+
+  const dossierAvecAmendement = (partiel: Record<string, unknown> = {}) => ({
+    ok: true,
+    objectifs: [ligne()],
+    trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
+    ancrage: ANCRAGE_VIDE,
+    ratifications: { OBJ_1: 'dit_autrement' },
+    amendements: [AMENDEMENT],
+    ...partiel,
+  });
+
+  it('affiche le texte du patient sous sa version, et le dit sans le juger', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecAmendement() }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/tenir debout jusqu’au dîner/)).toBeTruthy());
+    expect(document.body.textContent).toContain('Le patient l’a dit autrement');
+    // NI « refusé », NI « contesté » : il a proposé, il n'a pas dit non.
+    expect(document.body.textContent).toContain('son texte ci-dessous');
+    expect(document.body.textContent).not.toContain('Contesté par le patient');
+  });
+
+  it('un amendement d’une AUTRE chaîne ne s’affiche pas sous celle-ci', async () => {
+    fetchMock.mockImplementation(
+      router({
+        dossier: dossierAvecAmendement({
+          amendements: [{ ...AMENDEMENT, idObjectif: 'OBJ_AILLEURS' }],
+          ratifications: { OBJ_1: 'en_attente' },
+        }),
+      }),
+    );
+    await attendreLeDossier();
+    expect(document.body.textContent).not.toContain('tenir debout jusqu’au dîner');
+  });
+
+  it('un amendement écrit sur une version ANTÉRIEURE reste visible sur sa chaîne', async () => {
+    // Sa parole n'a pas cessé de concerner cet objectif parce qu'une version
+    // s'est intercalée.
+    fetchMock.mockImplementation(
+      router({
+        dossier: dossierAvecAmendement({
+          objectifs: [ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' })],
+          trajectoires: [
+            {
+              idObjectif: 'OBJ_2',
+              lignes: [ligne({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' }), ligne()],
+            },
+          ],
+          ratifications: { OBJ_2: 'en_attente' },
+        }),
+      }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/tenir debout jusqu’au dîner/)).toBeTruthy());
+  });
+
+  it('POSTE L’IDENTIFIANT, JAMAIS LE TEXTE — l’écran désigne, le serveur recopie', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecAmendement() }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText('En faire l’énoncé du patient')).toBeTruthy());
+    fireEvent.click(screen.getByText('En faire l’énoncé du patient'));
+    fireEvent.click(screen.getByText('Enregistrer avec les mots du patient'));
+
+    await waitFor(() => {
+      const envoi = fetchMock.mock.calls.find((appel) => appel[1]?.method === 'POST');
+      expect(envoi).toBeTruthy();
+      const corps = JSON.parse(envoi![1].body);
+      expect(corps.amendementCiteId).toBe('AME_1');
+      // La révision est portée : sans elle, une seconde tête de chaîne naîtrait.
+      expect(corps.supersedesObjectifId).toBe('OBJ_1');
+      // Le texte du patient ne transite PAS par l'écran.
+      expect(corps).not.toHaveProperty('enoncePatient');
+      expect(JSON.stringify(corps)).not.toContain('tenir debout');
+    });
+  });
+
+  it('la citation s’affiche, elle ne s’édite pas', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecAmendement() }));
+    await attendreLeDossier();
+
+    fireEvent.click(await screen.findByText('En faire l’énoncé du patient'));
+    await waitFor(() => expect(screen.getByText('Intégrer les mots du patient')).toBeTruthy());
+    // Aucune zone de saisie pour l'énoncé : la retoucher ferait passer un texte
+    // réécrit pour « ce que le patient demande ».
+    expect(screen.queryByLabelText(/Ce que le patient demande, dans ses mots/)).toBeNull();
+  });
+
+  it('reprendre un fragment de proposition RELÂCHE la citation d’amendement', async () => {
+    // Nettoyage SYMÉTRIQUE : les trois origines d'énoncé s'excluent, et l'écran
+    // ne doit jamais afficher un titre que le corps envoyé contredit.
+    fetchMock.mockImplementation(
+      router({
+        dossier: dossierAvecAmendement(),
+        propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+      }),
+    );
+    await attendreLeDossier();
+
+    fireEvent.click(await screen.findByText('En faire l’énoncé du patient'));
+    await waitFor(() => expect(screen.getByText('Intégrer les mots du patient')).toBeTruthy());
+
+    fireEvent.click(screen.getByText('Reprendre cette phrase'));
+    await waitFor(() => expect(screen.queryByText('Intégrer les mots du patient')).toBeNull());
+    expect(screen.getByText('Reprendre une proposition')).toBeTruthy();
+  });
+
+  it('un second clic REND la citation — le bouton annonce `aria-pressed`', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecAmendement() }));
+    await attendreLeDossier();
+
+    const bouton = await screen.findByText('En faire l’énoncé du patient');
+    fireEvent.click(bouton);
+    await waitFor(() =>
+      expect(screen.getByText('Ces mots deviennent l’énoncé').getAttribute('aria-pressed')).toBe('true'),
+    );
+
+    fireEvent.click(screen.getByText('Ces mots deviennent l’énoncé'));
+    await waitFor(() => expect(screen.queryByText('Intégrer les mots du patient')).toBeNull());
+  });
+
+  it('ne compte ni ne gradue les mots du patient', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecAmendement() }));
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/tenir debout jusqu’au dîner/)).toBeTruthy());
+
+    const rendu = (document.body.textContent ?? '').toLowerCase();
+    for (const interdit of ['score', 'moyenne', 'taux', '1 amendement', 'écart de']) {
+      expect(rendu).not.toContain(interdit);
+    }
   });
 });

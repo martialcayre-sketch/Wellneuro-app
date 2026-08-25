@@ -21,6 +21,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // Le geste de ratification appartient au patient (LOT-06). Les écritures
     // sont moquées pour prouver que cette route ne les emprunte jamais.
     ratificationObjectif: { findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    // Alliance 6.0-B, LOT-04 : l'amendement est LU ici et jamais écrit —
+    // l'écrivain unique est le portail. `create` est moqué EXPRÈS pour que
+    // l'assertion « cette route ne l'écrit pas » compte zéro au lieu de lever.
+    amendementObjectif: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     // Alliance 6.0-B, LOT-03 : la reprise d'une proposition. `update` et
     // `delete` sont moqués EXPRÈS alors que la route ne les appelle jamais —
@@ -100,6 +104,8 @@ describe('/api/praticien/objectifs', () => {
     prisma.objectifNegocie.findUnique.mockResolvedValue(null);
     prisma.objectifNegocie.findFirst.mockResolvedValue(null);
     prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+    prisma.amendementObjectif.findMany.mockResolvedValue([]);
+    prisma.amendementObjectif.findUnique.mockResolvedValue(null);
     prisma.propositionObjectif.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.create.mockResolvedValue({ id: 'DIS_NEUVE' });
@@ -737,6 +743,192 @@ describe('/api/praticien/objectifs', () => {
       ]) {
         expect(mock).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  // ── La citation d'un amendement (Alliance 6.0-B, LOT-04, D-110) ───────────
+
+  describe('citer les mots du patient', () => {
+    const TEXTE_PATIENT = 'Ce que je veux, c’est tenir debout jusqu’au dîner.';
+
+    const corpsCitation = (partiel: Record<string, unknown> = {}) => ({
+      idPatient: 'PAT_TEST',
+      // Écrit par l'appelant, JAMAIS lu : la route recopie l'amendement.
+      enoncePatient: 'Texte que l’écran a inventé.',
+      reformulationPraticien: 'Fatigue de fin d’après-midi, pas un trouble du sommeil.',
+      supersedesObjectifId: 'OBJ_1',
+      amendementCiteId: 'AME_1',
+      ...partiel,
+    });
+
+    beforeEach(() => {
+      prisma.objectifNegocie.findUnique.mockResolvedValue({
+        idPatient: 'PAT_TEST',
+        enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.',
+      });
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      prisma.amendementObjectif.findUnique.mockResolvedValue({
+        idPatient: 'PAT_TEST',
+        idObjectif: 'OBJ_1',
+        texte: TEXTE_PATIENT,
+      });
+    });
+
+    it('L’ÉNONCÉ EST RECOPIÉ DE L’AMENDEMENT, jamais pris du corps', async () => {
+      const reponse = await POST(postRequest(corpsCitation()));
+      expect(reponse.status).toBe(201);
+      const { data } = prisma.objectifNegocie.create.mock.calls[0][0];
+      expect(data.enoncePatient).toBe(TEXTE_PATIENT);
+      expect(data.supersedesObjectifId).toBe('OBJ_1');
+      // La version précédente n'est pas touchée : append-only.
+      expect(prisma.objectifNegocie.update).not.toHaveBeenCalled();
+    });
+
+    it('N’ÉCRIT JAMAIS dans la table des amendements — citer, c’est lire', async () => {
+      await POST(postRequest(corpsCitation()));
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('refuse une citation SANS version à reformuler — deux têtes seraient créées', async () => {
+      const reponse = await POST(
+        postRequest(corpsCitation({ supersedesObjectifId: null })),
+      );
+      expect(reponse.status).toBe(400);
+      expect((await corpsDe(reponse)).reason).toBe('amendement_sans_revision');
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse de cumuler une proposition et un amendement — un énoncé a UNE source', async () => {
+      const reponse = await POST(
+        postRequest(corpsCitation({ sourcePropositionId: 'PROP_1' })),
+      );
+      expect(reponse.status).toBe(400);
+      expect((await corpsDe(reponse)).reason).toBe('citation_double');
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('amendement inexistant ou d’un AUTRE dossier : MÊME 404, MÊME message', async () => {
+      prisma.amendementObjectif.findUnique.mockResolvedValue(null);
+      const inexistant = await POST(postRequest(corpsCitation()));
+      expect(inexistant.status).toBe(404);
+      const message = (await corpsDe(inexistant)).error;
+
+      prisma.amendementObjectif.findUnique.mockResolvedValue({
+        idPatient: 'PAT_AUTRE',
+        idObjectif: 'OBJ_1',
+        texte: TEXTE_PATIENT,
+      });
+      const autre = await POST(postRequest(corpsCitation()));
+      expect(autre.status).toBe(404);
+      expect((await corpsDe(autre)).error).toBe(message);
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse en 409 un amendement portant sur une AUTRE chaîne du dossier', async () => {
+      prisma.amendementObjectif.findUnique.mockResolvedValue({
+        idPatient: 'PAT_TEST',
+        idObjectif: 'OBJ_AILLEURS',
+        texte: TEXTE_PATIENT,
+      });
+      const reponse = await POST(postRequest(corpsCitation()));
+      expect(reponse.status).toBe(409);
+      expect((await corpsDe(reponse)).reason).toBe('amendement_hors_chaine');
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('accepte un amendement écrit sur une version ANTÉRIEURE de la même chaîne', async () => {
+      // Le patient a écrit sur `v1`, le praticien a reformulé en `v2` sans
+      // l'intégrer, il l'intègre maintenant. Sa parole n'a pas cessé de
+      // concerner cet objectif parce qu'une version s'est intercalée.
+      prisma.objectifNegocie.findUnique.mockResolvedValue({
+        idPatient: 'PAT_TEST',
+        enoncePatient: 'Reformulation intermédiaire.',
+      });
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_0', supersedesObjectifId: null, creeLe: new Date('2026-08-19T09:00:00.000Z') },
+        { id: 'OBJ_1', supersedesObjectifId: 'OBJ_0', creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      prisma.amendementObjectif.findUnique.mockResolvedValue({
+        idPatient: 'PAT_TEST',
+        idObjectif: 'OBJ_0',
+        texte: TEXTE_PATIENT,
+      });
+      const reponse = await POST(postRequest(corpsCitation()));
+      expect(reponse.status).toBe(201);
+      const { data } = prisma.objectifNegocie.create.mock.calls[0][0];
+      expect(data.enoncePatient).toBe(TEXTE_PATIENT);
+    });
+
+    it('une référence hors bornes est refusée en 400, sans lire la table', async () => {
+      const reponse = await POST(postRequest(corpsCitation({ amendementCiteId: 'x'.repeat(65) })));
+      expect(reponse.status).toBe(400);
+      expect(prisma.amendementObjectif.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('refuse une référence non textuelle en 400', async () => {
+      for (const amendementCiteId of [42, [], {}, true]) {
+        const reponse = await POST(postRequest(corpsCitation({ amendementCiteId })));
+        expect(reponse.status).toBe(400);
+      }
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('une version DÉJÀ REFORMULÉE reste refusée — la citation ne contourne pas la garde', async () => {
+      prisma.objectifNegocie.findFirst.mockResolvedValue({ id: 'OBJ_2' });
+      const reponse = await POST(postRequest(corpsCitation()));
+      expect(reponse.status).toBe(409);
+      expect((await corpsDe(reponse)).reason).toBe('objectif_supplante');
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Le GET sert les amendements (Alliance 6.0-B, LOT-04) ──────────────────
+
+  describe('GET — les mots du patient au cockpit', () => {
+    it('sert les amendements tels quels, sans décompte ni résumé', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([ligneLue({ sourcePropositionId: null })]);
+      prisma.amendementObjectif.findMany.mockResolvedValue([
+        {
+          id: 'AME_1',
+          idObjectif: 'OBJ_1',
+          texte: 'Tenir debout jusqu’au dîner.',
+          creeLe: new Date('2026-08-25T12:00:00.000Z'),
+        },
+      ]);
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(charge.amendements).toEqual([
+        {
+          id: 'AME_1',
+          idObjectif: 'OBJ_1',
+          texte: 'Tenir debout jusqu’au dîner.',
+          creeLe: '2026-08-25T12:00:00.000Z',
+        },
+      ]);
+    });
+
+    it('l’état dérivé lit LES DEUX TABLES — « dit autrement » l’emporte s’il est le dernier', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([ligneLue({ sourcePropositionId: null })]);
+      prisma.ratificationObjectif.findMany.mockResolvedValue([
+        {
+          id: 'RAT_1',
+          idObjectif: 'OBJ_1',
+          sens: 'ratifie',
+          creeLe: new Date('2026-08-24T12:00:00.000Z'),
+        },
+      ]);
+      prisma.amendementObjectif.findMany.mockResolvedValue([
+        {
+          id: 'AME_1',
+          idObjectif: 'OBJ_1',
+          texte: 'Tenir debout jusqu’au dîner.',
+          creeLe: new Date('2026-08-25T12:00:00.000Z'),
+        },
+      ]);
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(charge.ratifications).toEqual({ OBJ_1: 'dit_autrement' });
     });
   });
 });

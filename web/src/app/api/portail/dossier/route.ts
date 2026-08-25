@@ -11,10 +11,15 @@ import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 import {
+  LONGUEUR_MAX_AMENDEMENT,
   etatRatification,
   objectifsCourants,
+  preparerAmendement,
   preparerRatification,
+  type DonneesAmendement,
+  type DonneesRatification,
   type EtatRatification,
+  type RefusAmendement,
   type RefusRatification,
 } from '@/lib/praticien/objectifNegocie';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
@@ -24,8 +29,23 @@ import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 //
 // GET assemble les trois objets de la campagne pour le patient — l'objectif
 // négocié et son état, ce qui compte pour lui, la synthèse de compréhension et
-// ses désaccords. POST dépose une RATIFICATION : le geste par lequel le patient
-// dit « c'est bien ça » ou « ce n'est pas exactement ça » sur l'objectif.
+// ses désaccords. POST dépose le GESTE du patient sur une version précise de
+// son objectif.
+//
+// TROIS VERBES DEPUIS LE LOT-04 DE 6.0-B (`D-110`), pas deux : « c'est bien
+// ça », « ce n'est pas exactement ça », et — le troisième — « le dire
+// autrement », par lequel le patient écrit SA version dans ses mots.
+// L'amendement va dans sa PROPRE table (`D-094` §2), sous le MÊME drapeau
+// `WN_DOSSIER_DEUX_VOIX` que la ratification : c'est le même écran, le même
+// écrivain unique, le même régime append-only. L'adosser à
+// `WN_OBJECTIF_PROPOSE` aurait fait dépendre le droit du patient à répondre de
+// l'activation de la MACHINE QUI PROPOSE — deux gestes de gouvernance que
+// `D-094` §5 tient précisément séparés.
+//
+// « DIT AUTREMENT » N'EST NI UN ACCORD NI UN REFUS. L'état dérivé compte
+// désormais quatre valeurs, et la quatrième est à part entière : la replier sur
+// « contesté » ferait lire un désaccord là où le patient a fait une
+// proposition (`DC-24`).
 //
 // ASSEMBLER N'EST PAS COMPOSER TROIS LECTURES EXISTANTES. Deux des trois
 // n'existaient pas côté patient avant ce lot : l'objectif négocié n'était servi
@@ -98,6 +118,24 @@ export type RatificationServie = {
   creeLe: string;
 };
 
+/**
+ * L'amendement, RELU PAR SON AUTEUR (Alliance 6.0-B, LOT-04, `D-110`). Le
+ * patient doit pouvoir relire ce qu'il a écrit : un texte déposé qui disparaît
+ * de l'écran laisse croire qu'il s'est perdu, et l'invitation à répondre lui
+ * reparlerait comme s'il n'avait rien dit — le défaut exact trouvé en revue au
+ * LOT-04 de 6.0-A sur les désaccords.
+ *
+ * `exprimeLe` N'Y EST PAS : la colonne reste nulle par construction (le patient
+ * ne déclare pas de date, il écrit), et servir un champ toujours nul inviterait
+ * un écran à le combler par `creeLe`.
+ */
+export type AmendementServi = {
+  id: string;
+  idObjectif: string;
+  texte: string;
+  creeLe: string;
+};
+
 export type PortailDossierResponse =
   | { ok: true; ouvert: true }
   | {
@@ -115,6 +153,14 @@ export type PortailDossierResponse =
        */
       ratifiable: boolean;
       /**
+       * CE QUE LE PATIENT A ÉCRIT LUI-MÊME sur ses objectifs, tous gestes
+       * confondus, du plus récent au plus ancien. Jamais filtré sur la tête
+       * courante : un amendement porté sur une version depuis reformulée reste
+       * SA parole, et la faire disparaître au premier geste du praticien
+       * reviendrait à effacer ce qu'on prétend recueillir.
+       */
+      amendements: AmendementServi[];
+      /**
        * `null` = le bloc n'est pas ouvert (drapeau éteint), et il est alors
        * ABSENT de l'écran. Un tableau vide, lui, est un vrai silence du patient
        * ou du praticien — les deux ne se confondent pas (`DC-24`).
@@ -123,6 +169,7 @@ export type PortailDossierResponse =
       comprehension: { synthese: SyntheseServie | null; desaccords: DesaccordServi[] } | null;
     }
   | { ok: true; ratification: RatificationServie }
+  | { ok: true; amendement: AmendementServi }
   | { ok: false; reason: string; error: string };
 
 /**
@@ -140,6 +187,18 @@ const LONGUEUR_MAX_ID = 64;
 const MESSAGES_REFUS: Record<RefusRatification, string> = {
   objectif_absent: 'Aucun objectif n’est visé par cette réponse.',
   sens_invalide: 'Cette réponse n’est pas lisible.',
+};
+
+/**
+ * Les refus de l'amendement. LA BORNE EST DITE, ET DITE EN CHIFFRES — l'écran
+ * l'affiche aussi, mais un client qui poste sans passer par lui doit apprendre
+ * pourquoi son texte est refusé, pas seulement qu'il l'est. Un refus muet sur
+ * une longueur pousse à réessayer à l'identique.
+ */
+const MESSAGES_REFUS_AMENDEMENT: Record<RefusAmendement, string> = {
+  objectif_absent: 'Aucun objectif n’est visé par ce texte.',
+  texte_absent: 'Écrivez votre version de l’objectif avant de l’envoyer.',
+  texte_trop_long: `Votre texte dépasse ${LONGUEUR_MAX_AMENDEMENT} caractères. Rien n’est coupé : raccourcissez-le et renvoyez-le.`,
 };
 
 /** Le message d'un objectif introuvable, D'UN AUTRE DOSSIER, ou hors bornes. */
@@ -229,7 +288,8 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
     // L'objectif négocié, lui, n'a AUCUN drapeau (choix commenté du LOT-02 :
     // c'était une surface praticien). C'est CETTE route qui l'ouvre au patient,
     // et c'est `WN_DOSSIER_DEUX_VOIX` qui la garde.
-    const [objectifs, ratifications, entrees, syntheses, desaccords] = await Promise.all([
+    const [objectifs, ratifications, amendements, entrees, syntheses, desaccords] =
+      await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient: patient.idPatient },
         select: SELECTION_OBJECTIF,
@@ -238,6 +298,14 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       prisma.ratificationObjectif.findMany({
         where: { idPatient: patient.idPatient },
         select: { id: true, idObjectif: true, sens: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
+      // AUCUN DRAPEAU PROPRE : l'amendement est gardé par
+      // `WN_DOSSIER_DEUX_VOIX`, comme la ratification (`D-110`) — le contrôle
+      // est déjà passé en tête de route.
+      prisma.amendementObjectif.findMany({
+        where: { idPatient: patient.idPatient },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
       }),
       ceQuiCompteOuvert
@@ -287,6 +355,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
     // le champ oublié hors du chemin qu'elle prétend couvrir. Elle ne bloque
     // pas — voir l'en-tête du fichier.
     //
+    // LES AMENDEMENTS N'Y ENTRENT PAS, ET C'EST DÉLIBÉRÉ. La garde porte sur le
+    // registre du PRATICIEN — un texte qu'il écrit et que le patient subit. Un
+    // amendement est la parole du patient, rendue au patient qui l'a écrite :
+    // en signaler le registre reviendrait à faire dire au journal que sa façon
+    // de parler de lui-même pose problème.
+    //
     // BANC DE DÉBRANCHEMENT : `route.test.ts` doit ROUGIR si ce bloc disparaît.
     const textesPraticienServis = [
       ...tetes.map((ligne) => ligne.reformulationPraticien),
@@ -314,9 +388,18 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         priorite: ligne.priorite,
         negocieLe: ligne.negocieLe ? ligne.negocieLe.toISOString() : null,
         creeLe: ligne.creeLe.toISOString(),
-        etat: etatRatification(ligne.id, ratifications),
+        // LES DEUX TABLES, JAMAIS UNE SEULE : un patient qui vient d'écrire sa
+        // version après avoir ratifié ne doit pas relire « vous avez répondu :
+        // c'est bien ça ».
+        etat: etatRatification(ligne.id, ratifications, amendements),
       })),
       ratifiable: tetes.length === 1,
+      amendements: amendements.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        texte: ligne.texte,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
       ceQuiCompte: entrees
         ? entrees.map((ligne) => ({
             id: ligne.id,
@@ -363,9 +446,83 @@ type CorpsRatification = {
    * décorative.
    */
   idPatient?: unknown;
+  /**
+   * LE GESTE (Alliance 6.0-B, LOT-04). Absent ⇒ `ratification` : le champ est
+   * arrivé APRÈS le premier écrivain, et un onglet resté ouvert sur l'ancien
+   * écran ne doit pas voir son « c'est bien ça » refusé pour un champ qu'il
+   * ignore. Toute autre valeur qu'une des deux connues est REFUSÉE, jamais
+   * repliée sur le défaut : deviner le geste d'un patient à partir d'un mot
+   * qu'on ne comprend pas est exactement ce qu'on s'interdit.
+   */
+  geste?: unknown;
+  /** Le texte de l'amendement — lu du seul geste `amendement`. */
+  texte?: unknown;
 };
 
-// POST /api/portail/dossier — dépose une ratification. 201.
+/** Les deux gestes du patient sur cette route. Liste fermée. */
+const GESTES = ['ratification', 'amendement'] as const;
+type Geste = (typeof GESTES)[number];
+
+/**
+ * LES TROIS VÉRIFICATIONS D'UNE VERSION VISÉE, partagées par les deux gestes —
+ * et elles le sont parce que les deux portent sur le même objet : une version
+ * précise d'objectif. Les dupliquer aurait laissé l'un des deux chemins dériver
+ * (le patron du LOT-03 : « une garde corrigée ne corrige pas sa sœur »).
+ *
+ * `id_objectif` N'A PAS DE CLÉ ÉTRANGÈRE. La migration assume une référence
+ * SOUPLE et renvoie explicitement ces contrôles à la route
+ * (`migration.sql:17-20`). Sans eux, une référence devinée accrocherait le
+ * geste à n'importe quoi.
+ *
+ * (a) l'objectif existe ET appartient au dossier. INEXISTANT ou D'UN AUTRE
+ *     DOSSIER : MÊME réponse, MÊME message, MÊME statut — les distinguer ferait
+ *     de la route un oracle d'existence, interrogeable avec n'importe quelle
+ *     session patient.
+ * (b) c'est une TÊTE de chaîne : répondre à une version déjà reformulée ferait
+ *     porter le geste du patient sur un texte qui n'engage plus.
+ * (c) il n'y en a QU'UNE. Deux têtes rivales, et rien ne dit laquelle engage :
+ *     trancher « la plus récente » réglerait en silence une discordance que
+ *     `DC-30` demande de signaler. L'écran le dit et ne propose rien tant
+ *     qu'elle dure.
+ *
+ * La lecture couvre tout le dossier, et non la seule ligne visée : sans les
+ * autres lignes, (b) et (c) sont indécidables.
+ */
+async function verifierVersionVisee(
+  idPatient: string,
+  idObjectif: string,
+): Promise<NextResponse<PortailDossierResponse> | null> {
+  const objectifs = await prisma.objectifNegocie.findMany({
+    // Scopé au dossier : le seul index de la table est `(id_patient, cree_le)`.
+    where: { idPatient },
+    select: { id: true, supersedesObjectifId: true, creeLe: true },
+  });
+
+  const vise = objectifs.find((ligne) => ligne.id === idObjectif);
+  if (!vise) {
+    return echec('objectif_introuvable', MESSAGE_OBJECTIF_INTROUVABLE, 404);
+  }
+
+  const tetes = objectifsCourants(objectifs);
+  if (tetes.length > 1) {
+    return echec(
+      'objectif_discordant',
+      'Deux versions de votre objectif coexistent. Votre praticien doit les départager avant que vous puissiez répondre.',
+      409,
+    );
+  }
+  if (!tetes.some((ligne) => ligne.id === vise.id)) {
+    return echec(
+      'objectif_supplante',
+      'Cette version de votre objectif a été reformulée depuis. Rechargez la page pour répondre à la version courante.',
+      409,
+    );
+  }
+
+  return null;
+}
+
+// POST /api/portail/dossier — dépose une ratification ou un amendement. 201.
 export async function POST(req: Request): Promise<NextResponse<PortailDossierResponse>> {
   // 1 — DRAPEAU D'ABORD, fail-closed (même motif qu'au GET). Il garde le geste
   //     autant que l'affichage : « invisible et écrivable » est la pire des
@@ -409,85 +566,102 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
 
-    // 5 — VALIDATION PURE, et `sens` EN FAIT PARTIE. Le CHECK en base est un
-    //     filet, pas une validation : sans ce contrôle, « peut_etre » sortirait
-    //     en erreur Prisma, donc en 500, pour une requête simplement malformée.
-    const preparation = preparerRatification({
-      idPatient: patient.idPatient,
-      idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
-      sens: typeof corps.sens === 'string' ? corps.sens : null,
-    });
-    if (!preparation.ok) {
-      return echec(preparation.raison, MESSAGES_REFUS[preparation.raison], 400);
+    // 5 — LE GESTE, AVANT TOUTE VALIDATION DE CHAMP. Deux gestes vivent dans ce
+    //     POST, et la validation de l'un n'est pas celle de l'autre : lire
+    //     `sens` sur un amendement rendrait « cette réponse n'est pas lisible »
+    //     à un patient qui vient d'écrire trois paragraphes.
+    const gesteBrut = corps.geste === undefined || corps.geste === null ? 'ratification' : corps.geste;
+    if (typeof gesteBrut !== 'string' || !(GESTES as readonly string[]).includes(gesteBrut)) {
+      return echec('geste_invalide', 'Ce geste n’est pas lisible.', 400);
     }
-    if (preparation.donnees.idObjectif.length > LONGUEUR_MAX_ID) {
+    const geste = gesteBrut as Geste;
+
+    // 6 — VALIDATION PURE. Pour la ratification, `sens` EN FAIT PARTIE : le
+    //     CHECK en base est un filet, pas une validation — sans ce contrôle,
+    //     « peut_etre » sortirait en erreur Prisma, donc en 500, pour une
+    //     requête simplement malformée.
+    //
+    //     Le résultat est RE-ÉTIQUETÉ par son geste plutôt que déduit de la
+    //     présence d'un champ : `'texte' in donnees` marcherait aujourd'hui et
+    //     cesserait de marcher le jour où l'une des deux formes gagne un champ
+    //     homonyme — une lecture de forme n'est pas une lecture d'intention.
+    let prepare:
+      | { geste: 'amendement'; donnees: DonneesAmendement }
+      | { geste: 'ratification'; donnees: DonneesRatification };
+
+    if (geste === 'amendement') {
+      const preparation = preparerAmendement({
+        idPatient: patient.idPatient,
+        idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
+        texte: typeof corps.texte === 'string' ? corps.texte : null,
+      });
+      if (!preparation.ok) {
+        return echec(preparation.raison, MESSAGES_REFUS_AMENDEMENT[preparation.raison], 400);
+      }
+      prepare = { geste, donnees: preparation.donnees };
+    } else {
+      const preparation = preparerRatification({
+        idPatient: patient.idPatient,
+        idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
+        sens: typeof corps.sens === 'string' ? corps.sens : null,
+      });
+      if (!preparation.ok) {
+        return echec(preparation.raison, MESSAGES_REFUS[preparation.raison], 400);
+      }
+      prepare = { geste, donnees: preparation.donnees };
+    }
+
+    if (prepare.donnees.idObjectif.length > LONGUEUR_MAX_ID) {
       return echec('objectif_introuvable', MESSAGE_OBJECTIF_INTROUVABLE, 404);
     }
 
-    // 6 — TROIS VÉRIFICATIONS, ET `id_objectif` N'A PAS DE CLÉ ÉTRANGÈRE.
-    //
-    //     La migration assume une référence SOUPLE et renvoie explicitement ces
-    //     contrôles à la route (`migration.sql:17-20`). Sans eux, une référence
-    //     devinée accrocherait une ratification à n'importe quoi.
-    //
-    //     (a) l'objectif existe ET appartient au dossier. INEXISTANT ou D'UN
-    //         AUTRE DOSSIER : MÊME réponse, MÊME message, MÊME statut — les
-    //         distinguer ferait de la route un oracle d'existence, interrogeable
-    //         avec n'importe quelle session patient.
-    //     (b) c'est une TÊTE de chaîne : ratifier une version déjà reformulée
-    //         ferait porter l'accord du patient sur un texte qui n'engage plus.
-    //     (c) il n'y en a QU'UNE. Deux têtes rivales, et rien ne dit laquelle
-    //         engage : ratifier « la plus récente » trancherait en silence une
-    //         discordance que `DC-30` demande de signaler. L'écran le dit et ne
-    //         propose rien tant qu'elle dure.
-    //
-    //     La lecture couvre tout le dossier, et non la seule ligne visée : sans
-    //     les autres lignes, (b) et (c) sont indécidables.
-    const objectifs = await prisma.objectifNegocie.findMany({
-      // Scopé au dossier : le seul index de la table est `(id_patient, cree_le)`.
-      where: { idPatient: patient.idPatient },
-      select: { id: true, supersedesObjectifId: true, creeLe: true },
-    });
+    // 7 — LES TROIS VÉRIFICATIONS DE LA VERSION VISÉE, communes aux deux gestes.
+    const refus = await verifierVersionVisee(patient.idPatient, prepare.donnees.idObjectif);
+    if (refus) return refus;
 
-    const vise = objectifs.find((ligne) => ligne.id === preparation.donnees.idObjectif);
-    if (!vise) {
-      return echec('objectif_introuvable', MESSAGE_OBJECTIF_INTROUVABLE, 404);
-    }
-
-    const tetes = objectifsCourants(objectifs);
-    if (tetes.length > 1) {
-      return echec(
-        'objectif_discordant',
-        'Deux versions de votre objectif coexistent. Votre praticien doit les départager avant que vous puissiez répondre.',
-        409,
-      );
-    }
-    if (!tetes.some((ligne) => ligne.id === vise.id)) {
-      return echec(
-        'objectif_supplante',
-        'Cette version de votre objectif a été reformulée depuis. Rechargez la page pour répondre à la version courante.',
-        409,
-      );
-    }
-
-    // 7 — ÉCRITURE UNIQUE, ET C'EST LE SEUL ENDROIT DE L'APPLICATION QUI ÉCRIT
-    //     UNE RATIFICATION. La garde structurelle de
-    //     `objectifNegocie.guard.test.ts` épingle ce fichier nommément : le
-    //     geste appartient au patient, une route praticien qui créerait cette
-    //     ligne fabriquerait un acte que personne n'a posé.
+    // 8 — ÉCRITURE UNIQUE, ET C'EST LE SEUL ENDROIT DE L'APPLICATION QUI ÉCRIT
+    //     UNE RATIFICATION OU UN AMENDEMENT. La garde structurelle de
+    //     `objectifNegocie.guard.test.ts` épingle ce fichier nommément pour les
+    //     deux tables : les gestes appartiennent au patient, une route praticien
+    //     qui créerait ces lignes fabriquerait des actes que personne n'a posés.
     //
     // `idPatient` VIENT DE LA SESSION, JAMAIS DU CORPS (cf. `CorpsRatification`).
     // AUCUNE DATE n'est transmise : `creeLe` est posée par `@default(now())`, et
-    // `gesteLe` reste nulle — c'est une colonne de DÉCLARATION, et le patient ne
-    // déclare pas de date, il clique. Motif complet au module.
+    // `gesteLe`/`exprimeLe` restent nulles — ce sont des colonnes de
+    // DÉCLARATION, et le patient ne déclare pas de date, il clique ou il écrit.
+    // Motif complet au module.
     //
     // `create` et non `upsert` : répondre deux fois fait deux lignes. Rien ne
     // s'écrase, et c'est ainsi qu'un changement d'avis reste lisible.
+    if (prepare.geste === 'amendement') {
+      const amendement = await prisma.amendementObjectif.create({
+        data: {
+          idPatient: patient.idPatient,
+          idObjectif: prepare.donnees.idObjectif,
+          texte: prepare.donnees.texte,
+        },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
+      });
+
+      return NextResponse.json<PortailDossierResponse>(
+        {
+          ok: true,
+          amendement: {
+            id: amendement.id,
+            idObjectif: amendement.idObjectif,
+            texte: amendement.texte,
+            creeLe: amendement.creeLe.toISOString(),
+          },
+        },
+        { status: 201 },
+      );
+    }
+
     const creee = await prisma.ratificationObjectif.create({
       data: {
         idPatient: patient.idPatient,
-        idObjectif: preparation.donnees.idObjectif,
-        sens: preparation.donnees.sens,
+        idObjectif: prepare.donnees.idObjectif,
+        sens: prepare.donnees.sens,
       },
       select: { id: true, idObjectif: true, sens: true, creeLe: true },
     });
