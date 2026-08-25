@@ -92,6 +92,25 @@ describe('GET /portail/google/retour — retour de Google', () => {
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
   });
 
+  // Régression du 2026-08-25 : derrière le routeur Scalingo, `req.url` porte
+  // l'hôte interne du conteneur — l'atterrissage doit viser NEXTAUTH_URL.
+  it('l’atterrissage vise l’hôte public même quand la requête porte l’hôte interne du conteneur', async () => {
+    const url = new URL('https://localhost:23577/portail/google/retour');
+    url.searchParams.set('code', 'code-de-test');
+    url.searchParams.set('state', etatCourant.etat.etat);
+    const res = await GET(new Request(url, { headers: { cookie: `${COOKIE_ETAT}=${etatCourant.cookie}` } }));
+    expect(res.headers.get('location')).toBe('http://localhost:3000/portail/PAT_TEST');
+  });
+
+  // Même exigence sur le REFUS — c'est l'atterrissage que la production du
+  // 2026-08-25 montrait cassé (`Location: https://localhost:<port>/…`).
+  it('le refus vise l’hôte public même quand la requête porte l’hôte interne du conteneur', async () => {
+    const url = new URL('https://localhost:23577/portail/google/retour');
+    url.searchParams.set('error', 'access_denied');
+    const res = await GET(new Request(url));
+    expect(res.headers.get('location')).toBe(`http://localhost:3000${REFUS}`);
+  });
+
   // L'assertion la plus importante du lot, et elle manquait : `toContain(
   // 'wn_portail=')` se contente de constater qu'UN cookie est posé. Signer
   // l'identité issue de Google plutôt que celle résolue en base, ou l'idPatient

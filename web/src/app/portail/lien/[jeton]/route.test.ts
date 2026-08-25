@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, logger } = vi.hoisted(() => ({
   prisma: {
@@ -31,15 +31,27 @@ const LIEN_VALIDE = { id: 'lk_1', idPatient: 'PAT_TEST', expireLe: DEMAIN, conso
 // (retiré) est désormais une lecture explicite du patient dans la route.
 const PATIENT_ACTIF = { email: 'michel.dogne@fictif.wellneuro.fr', actif: true, accessTokenRevoked: false };
 
+const NEXTAUTH_URL_AVANT = process.env.NEXTAUTH_URL;
+
 describe('GET /portail/lien/[jeton]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    // Posée pour tout le fichier : les redirections se bâtissent sur cette
+    // base (branche de production d'`urlPubliquePortail`), quel que soit
+    // l'environnement qui lance la suite. Le repli sans variable est couvert
+    // par `lib/portail/urlPublique.test.ts`.
+    process.env.NEXTAUTH_URL = 'http://localhost:3000';
     process.env.WN_G4_LIEN_MAGIQUE = 'true';
     prisma.portailMagicLink.findUnique.mockResolvedValue(LIEN_VALIDE);
     prisma.portailMagicLink.updateMany.mockResolvedValue({ count: 1 });
     prisma.portailMagicLink.update.mockResolvedValue({});
     prisma.patient.findUnique.mockResolvedValue(PATIENT_ACTIF);
+  });
+
+  afterEach(() => {
+    if (NEXTAUTH_URL_AVANT === undefined) delete process.env.NEXTAUTH_URL;
+    else process.env.NEXTAUTH_URL = NEXTAUTH_URL_AVANT;
   });
 
   // Ce qui rend le NO-GO réel : merger la migration n'active rien.
@@ -57,6 +69,27 @@ describe('GET /portail/lien/[jeton]', () => {
     // Le jeton secret ne doit plus figurer dans l'URL d'atterrissage (LOT-04).
     expect(res.headers.get('location')).not.toContain('TOK');
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
+  });
+
+  // Régression du 2026-08-25 : derrière le routeur Scalingo, `req.url` porte
+  // l'hôte interne du conteneur — l'atterrissage doit viser NEXTAUTH_URL.
+  it('l’atterrissage vise l’hôte public même quand la requête porte l’hôte interne du conteneur', async () => {
+    const res = await GET(
+      new Request(`https://localhost:23577/portail/lien/${JETON}`),
+      { params: { jeton: JETON } },
+    );
+    expect(res.headers.get('location')).toBe('http://localhost:3000/portail/PAT_TEST');
+  });
+
+  // Même exigence sur le REFUS — c'est l'atterrissage que la production du
+  // 2026-08-25 montrait cassé (`Location: https://localhost:<port>/…`).
+  it('le refus vise l’hôte public même quand la requête porte l’hôte interne du conteneur', async () => {
+    prisma.portailMagicLink.findUnique.mockResolvedValue(null);
+    const res = await GET(
+      new Request('https://localhost:23577/portail/lien/inconnu'),
+      { params: { jeton: 'inconnu' } },
+    );
+    expect(res.headers.get('location')).toBe('http://localhost:3000/portail/lien/indisponible');
   });
 
   // Le jeton n'est jamais stocké : c'est son empreinte qui sert de clé.

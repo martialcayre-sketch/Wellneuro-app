@@ -66,4 +66,12 @@ describe('GET /portail/google — départ du chemin Google', () => {
     expect(res.headers.get('location')).toContain('/portail/connexion?etat=refus');
     expect(logger.security).toHaveBeenCalled();
   });
+
+  // Régression du 2026-08-25 : derrière le routeur Scalingo, `req.url` porte
+  // l'hôte interne du conteneur — le refus doit viser NEXTAUTH_URL lui aussi.
+  it('le refus vise l’hôte public même quand la requête porte l’hôte interne du conteneur', async () => {
+    delete process.env.WN_GOOGLE_PATIENT_CLIENT_ID;
+    const res = await GET(new Request('https://localhost:23577/portail/google'));
+    expect(res.headers.get('location')).toBe('http://localhost:3000/portail/connexion?etat=refus');
+  });
 });

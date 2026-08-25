@@ -9,6 +9,7 @@ import {
   identiteDepuisCode,
   verifierEtatGoogle,
 } from '@/lib/portail/googleIdentite';
+import { urlPubliquePortail } from '@/lib/portail/urlPublique';
 import { PORTAIL_COOKIE_NAME, PORTAIL_COOKIE_OPTIONS, signPatientSession } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -168,7 +169,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       context: finalizeLogContext(contexte, { statusCode: 307, retryable: false }),
       message: `Entrée Google refusée (${motif})`,
     });
-    const res = NextResponse.redirect(new URL(DESTINATION_REFUS, req.url));
+    const res = NextResponse.redirect(urlPubliquePortail(DESTINATION_REFUS, req.url));
     return allerReconnu ? effacerEtat(res) : res;
   };
 
@@ -234,7 +235,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     // Depuis le LOT-04, le segment d'URL porte l'idPatient (non secret) ; l'accès
     // repose sur le cookie de session ci-dessous. La révocation reste effective
     // (garde `accessTokenRevoked` ci-dessus + `sessionsInvalidesAvant`).
-    const res = effacerEtat(NextResponse.redirect(new URL(`/portail/${patient.idPatient}`, req.url)));
+    const res = effacerEtat(NextResponse.redirect(urlPubliquePortail(`/portail/${patient.idPatient}`, req.url)));
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({ idPatient: patient.idPatient, email: patient.email }),

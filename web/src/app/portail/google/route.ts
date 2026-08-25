@@ -8,6 +8,7 @@ import {
   construireUrlAutorisation,
   creerEtatGoogle,
 } from '@/lib/portail/googleIdentite';
+import { urlPubliquePortail } from '@/lib/portail/urlPublique';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -43,7 +44,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       // 307 : ce que `NextResponse.redirect` émet réellement.
       context: finalizeLogContext(contexte, { statusCode: 307, retryable: false }),
     });
-    return NextResponse.redirect(new URL(DESTINATION_REFUS, req.url));
+    return NextResponse.redirect(urlPubliquePortail(DESTINATION_REFUS, req.url));
   }
 
   const { etat, cookie } = creerEtatGoogle(new Date());
