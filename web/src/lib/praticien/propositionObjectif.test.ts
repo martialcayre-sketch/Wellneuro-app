@@ -6,18 +6,16 @@ import {
   LONGUEUR_MAX_MOTIF_ECART,
   MAX_PROPOSITIONS,
   assembleeCourante,
-  assemblerPropositions,
   clesInterdites,
   depuisAnamnese,
   depuisInstrument,
   depuisRegleSignee,
   dispositionCourante,
-  empreinte,
-  jsonCanonique,
   preparerDisposition,
   propositionsVivantes,
   type EntreesAssemblage,
 } from './propositionObjectif';
+import { assemblerPropositions, empreinte, jsonCanonique } from './assemblageProposition';
 
 // Bancs du moteur de proposition (Alliance 6.0-B, LOT-02).
 //

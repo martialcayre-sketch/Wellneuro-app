@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Cockpit — reprendre, amender, écarter ; le diff proposé↔négocié"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -61,12 +61,13 @@ Ceux du périmètre ; gardes existantes à étendre :
 
 ## Étapes
 
-- [ ] Étendre la route objectifs (`sourcePropositionId` + événement
+- [x] Étendre la route objectifs (`sourcePropositionId` + événement
       `reprise` transactionnel) ; G1 mise à jour, vue rouge puis verte.
-- [ ] UI : liste des propositions, sources cliquables, reprise/écart, diff.
-- [ ] États vides et caducs (un bloc fermé est absent, pas vide — patron
+- [x] UI : liste des propositions, sources cliquables, reprise/écart, diff.
+- [x] États vides et caducs (un bloc fermé est absent, pas vide — patron
       6.0-A).
-- [ ] T1 ; T2 avant commit ; revue `wn-reviewer`.
+- [x] T1 ; T2 avant commit.
+- [x] Revue `wn-reviewer`.
 
 ## Tests
 
@@ -82,4 +83,94 @@ Ceux du périmètre ; gardes existantes à étendre :
 
 ## Résultats
 
-À compléter à la clôture.
+Clos le 2026-08-25.
+
+**Le déclencheur d'assemblage a demandé un arbitrage que la fiche ne posait
+pas**, et la mesure a corrigé ce que je croyais savoir. Trois faits vérifiés
+dans le code : `GET /cockpit` ne rend **jamais** `ready` ; le `POST` qui produit
+la carte de décision **n'écrit rien** ; et la carte n'est persistée nulle part
+(`protocol_drafts` n'en garde que des empreintes d'ancrage). La carte n'existe
+donc que dans le navigateur, entre la confirmation d'épisode et le rechargement
+suivant. Une carte du workflow a été établie pour trancher.
+
+Conséquence directe : l'option « le panneau va chercher les candidats lui-même »
+était **impossible** — il lui aurait fallu POSTer une confirmation, or confirmer
+est un acte du praticien. Arbitré : **le navigateur enchaîne** — la section
+clinique appelle `assembler` dès sa réponse `ready`, le poste de pilotage porte
+un compteur d'assemblages, le panneau relit. L'échec de l'assemblage ne fait
+jamais échouer la confirmation : l'épisode est confirmé, la carte est affichée,
+c'est le résultat attendu.
+
+**Le SHA du périmètre signé a dû être exposé.** Le moteur ne peut pas le lire
+(G7 lui interdit `lib/clinical/`) et l'écran non plus. La réponse `ready` le
+porte donc à côté de la carte — jamais dedans, sinon toutes les empreintes déjà
+émises se déplaceraient — avec l'identifiant du canal de plainte, lu à travers
+`tablePrioritesSignee()` : servir le SHA d'une table non signée laisserait
+l'écran se réclamer d'une signature qui ne commande rien.
+
+**Deux défauts trouvés par les paliers, tous deux invisibles de `tsc`.**
+
+La garde de fraîcheur de la matrice de consommation a mordu la première : mon
+import de `CANAL_PLAINTE` dans un composant `'use client'` aurait embarqué **les
+667 lignes de la table signée** — règles, seuils, motifs — dans le bundle du
+navigateur, pour une seule chaîne. Corrigé en faisant porter l'identifiant par
+la réponse serveur ; la dérive de la matrice a disparu avec la cause.
+
+Puis **T2 a fait échouer la construction de production** : le panneau, qui ne
+prend du moteur qu'une borne de longueur, tirait `node:crypto` dans le bundle.
+Le défaut venait du LOT-02 — le module mêlait un domaine pur et un hachage
+réservé au serveur. Le découpage suit désormais la seule dépendance qui
+l'exige : `assemblageProposition.ts` porte le hachage et l'assembleur,
+`propositionObjectif.ts` reste **pur et n'importe rien**. Ce zéro est devenu un
+invariant asserté (G7-1) : il rendra rouge, avant le build, toute dépendance
+réservée au serveur qui y reviendrait.
+
+**Deux ancres d'anti-vacuité se sont périmées au découpage, et elles l'ont dit
+bruyamment** — exactement ce qu'on leur demande. C'est le risque que la revue du
+LOT-02 avait nommé ; il s'est réalisé et il a été vu.
+
+**Ce que la revue a trouvé — no-go, deux bloquants.**
+
+**B1 : le drapeau ne gardait pas la reprise.** `WN_OBJECTIF_PROPOSE` est la
+seule manette de réversibilité de `D-094`, et elle ne couvrait pas l'unique
+écriture nouvelle du lot : éteindre le drapeau — ou retirer un dossier du
+repli — laissait un onglet resté ouvert continuer d'écrire des reprises, et le
+matériau du bilan LOT-06 se remplir sur un dossier officiellement retiré.
+L'en-tête de la route affirmait même le contraire, avec un motif de 6.0-A que
+personne n'avait relu quand la reprise est entrée dans le fichier. La garde
+porte désormais sur le seul chemin `sourcePropositionId` : un objectif rédigé
+à la main reste servi drapeau éteint.
+
+**B2 : la leçon du LOT-02 n'avait pas été propagée au fichier voisin, que
+j'éditais.** `G2` promettait « en français comme en anglais » et ne portait que
+le français — mot pour mot le bloquant corrigé quinze jours plus tôt sur le
+moteur. Or ce banc garde le PANNEAU, lequel consomme désormais une donnée dont
+l'amont nomme ses champs `rank` et `confidence`. Pire : `ClinicalRuntimeSection`
+— **le seul fichier du dépôt qui lise `priorityCandidates` pour le renvoyer au
+moteur** — n'était sous aucune garde de nommage, alors que la fiche demandait
+explicitement une « garde élargie au rendu ».
+
+Quatre corrections de rang moyen dans la même passe : reprendre puis reformuler
+empilait **deux modes contradictoires** et faisait perdre la saisie ; les
+résumés « Déjà tranchées » et « Périmées » affichaient le premier fragment —
+**toujours celui de la règle signée** — nu, sans provenance, présentant comme
+« ce que le praticien a repris » une phrase que la machine avait produite ; une
+lecture en échec laissait une liste périmée cliquable à côté de son alerte ; et
+`aria-pressed` annonçait un interrupteur qui ne se relevait pas.
+
+**Le déclencheur d'assemblage n'avait aucun banc** — le cœur du lot. Quatre cas
+posés : le POST part sur `ready` ; ni `rank` ni `confidence` n'y figurent ;
+l'instrument vient de la réponse ; **un échec d'assemblage ne fait pas échouer
+la confirmation**.
+
+**Dette nommée, écrite dans le code.** Le contrôle « proposition déjà disposée »
+est un lire-puis-écrire hors transaction : deux reprises concurrentes créeraient
+deux têtes portant le même énoncé, donc un portail qui refuse toute ratification
+(`objectif_discordant`) jusqu'à arbitrage. Plus lourd que le doublon
+d'assemblage du LOT-02 ; fermer demanderait un index unique, donc une migration.
+
+**Validation.** T1 vert. **T2 : 5 854 Vitest verts**, E2E 155 passés et 1 échec
+— `portail-parcours` sur iPhone 13, blocage WebKit que l'outillage classe
+lui-même comme signature macOS jamais observée en CI, et que le LOT-02 avait
+déjà démontré étranger au lot sur ce même spec. Bancs touchés après revue :
+route objectifs 44 cas, panneau 26, section clinique 22, gardes G1-G6 15.

@@ -1,8 +1,17 @@
 # Campagnes actives
 
-Aucune campagne active.
+## Activité primaire
 
-**Statut global** : idle
-**Mise à jour** : 2026-08-24
+**Campagne** : 2026-08-23-alliance-objectif-trois-voix
+**Titre** : Alliance 6.0-B — l'objectif à trois voix
+**Statut** : active
+**Lot actif** : LOT-03
+
+## Activités parallèles
+
+Aucune campagne parallèle active.
+
+**Statut global** : active
+**Mise à jour** : 2026-08-25
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.

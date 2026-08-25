@@ -372,6 +372,20 @@ export function FichePatientPanel({
   const [etatTrajectoire, setEtatTrajectoire] = useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
   const [erreurTrajectoire, setErreurTrajectoire] = useState<string | null>(null);
   const [etatRuntime, setEtatRuntime] = useState<EtatRuntimeClinique | null>(null);
+  /**
+   * COMPTEUR D'ASSEMBLAGES, pas un booléen (Alliance 6.0-B, LOT-03).
+   *
+   * Le panneau objectif est autonome ; la carte de décision, elle, n'existe que
+   * dans la réponse de confirmation d'épisode que reçoit la section clinique.
+   * Ce compteur est le seul lien entre les deux : la section dit « je viens de
+   * demander un assemblage », le panneau relit la table.
+   *
+   * Un booléen ne marcherait qu'UNE FOIS. Un praticien peut confirmer un
+   * épisode, écarter une proposition, puis confirmer de nouveau ; le compteur
+   * change à chaque fois, un drapeau resterait à `true` et le second
+   * rafraîchissement n'aurait jamais lieu.
+   */
+  const [assemblages, setAssemblages] = useState(0);
   const refsPhases = useRef<(HTMLButtonElement | null)[]>([]);
   const refsOnglets = useRef<(HTMLButtonElement | null)[]>([]);
   // Harnais de validation ergonomique C1 (dev uniquement — voir
@@ -1025,7 +1039,7 @@ export function FichePatientPanel({
               cercles. Ce bloc vit HORS du runtime clinique : un objectif se
               négocie avant qu'un épisode soit confirmé, pas après, donc le
               panneau reste visible sans épisode. Vérifié par banc de rendu. */}
-          <ObjectifNegociePanel idPatient={idPatient} />
+          <ObjectifNegociePanel idPatient={idPatient} signalAssemblage={assemblages} />
           {/* « Ce que j'ai compris de vous » (Alliance 6.0-A, LOT-04) — AJOUT
               ADDITIF sous l'objectif négocié, même phase et même raison : une
               compréhension s'écrit avant qu'un épisode soit confirmé. Pas de
@@ -1377,6 +1391,7 @@ export function FichePatientPanel({
                 phase={phaseCourante.runtime ?? 'aucune'}
                 onAjusterProtocole={() => setPhaseActive('actions')}
                 onEtatChange={setEtatRuntime}
+                onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
               />
             </div>
 

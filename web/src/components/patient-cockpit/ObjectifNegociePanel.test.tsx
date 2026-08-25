@@ -32,14 +32,62 @@ const ligne = (partiel: Record<string, unknown> = {}) => ({
   negocieLe: null,
   creeLe: '2026-08-20T09:00:00.000Z',
   supersedesObjectifId: null,
+  sourcePropositionId: null,
+  ...partiel,
+});
+
+/** Réponse par défaut du moteur de proposition : ouvert, mais rien à citer. */
+const PROPOSITIONS_VIDES = { ok: true, propositions: [], disposees: [], caduques: [] };
+
+const fragment = (nature: string, texte: string, extra: Record<string, unknown> = {}) => ({
+  texte,
+  source: { nature, ...extra },
+});
+
+const proposition = (partiel: Record<string, unknown> = {}) => ({
+  id: 'PROP_1',
+  fragments: [
+    fragment('regle_signee', 'Explorer le sommeil', { regle: 'PRIO-SOM-01', shaPerimetre: 'a'.repeat(64) }),
+    fragment('anamnese', 'Je me réveille à trois heures toutes les nuits.', {
+      champ: 'motif_principal',
+      dateConsultation: '2026-08-20T09:00:00.000Z',
+    }),
+  ],
+  assembleeLe: '2026-08-25T09:00:00.000Z',
+  creeLe: '2026-08-25T09:00:00.000Z',
+  disposition: null,
   ...partiel,
 });
 
 /** Route les appels comme le ferait le serveur, sans supposer leur ordre. */
-function router(surcharges: { dossier?: unknown; dossierOk?: boolean; post?: unknown; postOk?: boolean } = {}) {
+function router(
+  surcharges: {
+    dossier?: unknown;
+    dossierOk?: boolean;
+    post?: unknown;
+    postOk?: boolean;
+    propositions?: unknown;
+    propositionsStatut?: number;
+    postPropositions?: unknown;
+    postPropositionsOk?: boolean;
+  } = {},
+) {
   return (url: string, options?: { method?: string }) => {
+    if (options?.method === 'POST' && url.startsWith('/api/praticien/propositions-objectif')) {
+      return Promise.resolve(
+        json(surcharges.postPropositions ?? { ok: true, disposition: { id: 'DIS_1' } }, surcharges.postPropositionsOk ?? true),
+      );
+    }
     if (options?.method === 'POST') {
       return Promise.resolve(json(surcharges.post ?? { ok: true, objectif: ligne() }, surcharges.postOk ?? true));
+    }
+    if (url.startsWith('/api/praticien/propositions-objectif')) {
+      const statut = surcharges.propositionsStatut ?? 200;
+      return Promise.resolve({
+        ok: statut === 200,
+        status: statut,
+        json: async () => surcharges.propositions ?? PROPOSITIONS_VIDES,
+      });
     }
     if (url.startsWith('/api/praticien/objectifs')) {
       return Promise.resolve(json(surcharges.dossier ?? DOSSIER_VIDE, surcharges.dossierOk ?? true));
@@ -70,7 +118,21 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     // Laisse passer d'éventuels re-rendus avant de compter.
     await new Promise((resoudre) => setTimeout(resoudre, 20));
     const lectures = fetchMock.mock.calls.filter(([, options]) => options?.method !== 'POST');
-    expect(lectures).toHaveLength(1);
+
+    // DEUX RESSOURCES, UNE LECTURE CHACUNE — et c'est ce qu'il faut compter
+    // depuis le LOT-03. Le panneau lit le dossier ET les propositions ; les
+    // DEUX routes journalisent l'accès (G-TRUST-04), si bien qu'une boucle sur
+    // l'une ou l'autre gonflerait le journal. Compter le total dirait « 2 » et
+    // laisserait passer deux tirages de la même route.
+    const parRoute = new Map<string, number>();
+    for (const [url] of lectures) {
+      const route = String(url).split('?')[0];
+      parRoute.set(route, (parRoute.get(route) ?? 0) + 1);
+    }
+    expect([...parRoute.entries()].sort()).toEqual([
+      ['/api/praticien/objectifs', 1],
+      ['/api/praticien/propositions-objectif', 1],
+    ]);
   });
 
   // ── Trois absences, trois libellés distincts (DC-24) ──────────────────────
@@ -347,5 +409,244 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’objectif' }));
 
     await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Rouvrez le suivi/));
+  });
+});
+
+// ── Les propositions (Alliance 6.0-B, LOT-03) ───────────────────────────────
+
+describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => {
+  it('le bloc est ABSENT quand la fonctionnalité est fermée, jamais « aucune proposition »', async () => {
+    // `503` = drapeau éteint ou dossier hors du périmètre de repli. Une liste
+    // vide se lirait « la machine n'a rien trouvé à proposer sur ce dossier »,
+    // c'est-à-dire un constat sur le patient (`DC-24`).
+    fetchMock.mockImplementation(router({ propositionsStatut: 503 }));
+    await attendreLeDossier();
+
+    expect(screen.queryByLabelText('Propositions d’objectif')).toBeNull();
+    expect(screen.queryByText(/Ce que Wellneuro peut citer/)).toBeNull();
+    // Et le reste du panneau, lui, est bien là : la fermeture d'un bloc n'a
+    // pas emporté la surface.
+    expect(screen.getByText(/Ce que le patient a écrit à l’anamnèse/)).toBeTruthy();
+  });
+
+  it('ouverte et sans ligne, le bloc s’affiche et NOMME la raison', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByLabelText('Propositions d’objectif')).toBeTruthy());
+    expect(screen.getByText(/sans épisode confirmé, il n’a rien de signé à citer/)).toBeTruthy();
+  });
+
+  it('affiche chaque fragment AVEC sa provenance — jamais une phrase nue', async () => {
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+    // La règle signée montre son SHA EN ENTIER : tronqué, il ne prouverait rien
+    // tout en donnant l'apparence d'une preuve.
+    expect(screen.getByText(new RegExp(`périmètre ${'a'.repeat(64)}`))).toBeTruthy();
+    expect(screen.getByText(/Motif principal — mots du patient à l’anamnèse/)).toBeTruthy();
+  });
+
+  it('« Reprendre » n’est offert QUE sur un verbatim d’anamnèse', async () => {
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    // La proposition porte DEUX fragments ; un seul est une parole du patient.
+    expect(screen.getAllByRole('button', { name: 'Reprendre cette phrase' })).toHaveLength(1);
+    // Et le fragment de règle dit pourquoi il ne l'est pas — plutôt qu'un
+    // bouton grisé, qui laisserait croire à une permission manquante.
+    expect(screen.getByText(/Ce n’est pas une parole du patient/)).toBeTruthy();
+  });
+
+  it('une reprise DÉSIGNE le fragment et ne transmet jamais l’énoncé', async () => {
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+    // La citation s'affiche, et le champ de saisie libre a disparu : un champ
+    // modifiable laisserait croire que la saisie compte, alors que le serveur
+    // recopie le fragment.
+    expect(screen.getByText(/Cette phrase devient l’énoncé du patient telle quelle/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Ce que le patient demande/)).toBeNull();
+
+    fireEvent.change(screen.getByLabelText(/Votre reformulation/), {
+      target: { value: 'Sommeil fragmenté en seconde partie de nuit.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’objectif' }));
+
+    await waitFor(() => {
+      const envoi = fetchMock.mock.calls.find(
+        ([url, options]) =>
+          options?.method === 'POST' && String(url).startsWith('/api/praticien/objectifs'),
+      );
+      expect(envoi).toBeTruthy();
+      const charge = JSON.parse(envoi![1].body as string);
+      expect(charge.sourcePropositionId).toBe('PROP_1');
+      expect(charge.sourceFragmentIndex).toBe(1);
+      // L'ÉCRAN DÉSIGNE, IL NE DICTE PAS.
+      expect(charge.enoncePatient).toBeUndefined();
+      // Ce qui appartient au praticien, lui, part bien.
+      expect(charge.reformulationPraticien).toBe('Sommeil fragmenté en seconde partie de nuit.');
+    });
+  });
+
+  it('un écart transmet le motif, et le refus du serveur s’affiche tel quel', async () => {
+    fetchMock.mockImplementation(
+      router({
+        propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+        postPropositions: {
+          ok: false,
+          reason: 'motif_absent',
+          error: 'Écarter une proposition demande un motif : c’est lui qui dit ce qu’il fallait changer.',
+        },
+        postPropositionsOk: false,
+      }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Écarter cette proposition' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Écarter avec ce motif' }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/demande un motif/)).toBeTruthy(),
+    );
+    const envoi = fetchMock.mock.calls.find(
+      ([url, options]) =>
+        options?.method === 'POST' && String(url).startsWith('/api/praticien/propositions-objectif'),
+    );
+    expect(JSON.parse(envoi![1].body as string)).toMatchObject({
+      action: 'ecarter',
+      idProposition: 'PROP_1',
+    });
+  });
+
+  it('une proposition caduque s’affiche comme périmée, et ne se reprend pas', async () => {
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true,
+          propositions: [],
+          disposees: [],
+          caduques: [proposition({ id: 'PROP_VIEILLE' })],
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/Périmées/)).toBeTruthy());
+    // CADUQUE N'EST PAS « REFUSÉE » : personne ne l'a écartée.
+    expect(screen.getByText(/Les données du dossier ont changé depuis leur assemblage/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Reprendre cette phrase' })).toBeNull();
+  });
+
+  it('« Déjà tranchées » montre la provenance, jamais une phrase nue', async () => {
+    // M4, relevé en revue. Le premier fragment d'un assemblage est TOUJOURS
+    // celui de la règle signée : « Reprise — Explorer le sommeil » présentait
+    // au praticien, comme ce qu'il avait repris, une phrase que la MACHINE
+    // avait produite, et sans sa source.
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true,
+          propositions: [],
+          disposees: [proposition({ id: 'PROP_REPRISE', disposition: 'reprise' })],
+          caduques: [],
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/Déjà tranchées/)).toBeTruthy());
+    expect(screen.getByText(/Reprise —/)).toBeTruthy();
+    expect(screen.getByText(new RegExp(`périmètre ${'a'.repeat(64)}`))).toBeTruthy();
+  });
+
+  it('reprendre puis reformuler N’EMPILE PAS les deux modes', async () => {
+    // M3, relevé en revue. Les deux états coexistants donnaient un écran
+    // contradictoire — titre « Reformuler », corps « citation retenue » — et un
+    // corps portant les deux références, que le serveur refusait avec un
+    // message décrivant tout autre chose.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ok: true,
+          objectifs: [ligne()],
+          trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
+          ancrage: ANCRAGE_VIDE,
+          ratifications: { OBJ_1: 'en_attente' },
+        },
+        propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+      }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+    expect(screen.getByText(/Cette phrase devient l’énoncé du patient/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reformuler cette version' }));
+    // La citation a été relâchée : un seul mode à la fois.
+    expect(screen.queryByText(/Cette phrase devient l’énoncé du patient/)).toBeNull();
+    expect(screen.getByText(/L’énoncé du patient est repris tel quel de la version précédente/)).toBeTruthy();
+  });
+
+  it('un second clic REND la citation — le bouton annonce un interrupteur', async () => {
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Citation retenue' }));
+    expect(screen.queryByText(/Cette phrase devient l’énoncé du patient/)).toBeNull();
+    expect(screen.getByLabelText(/Ce que le patient demande/)).toBeTruthy();
+  });
+
+  it('une lecture en échec ne laisse pas une liste périmée cliquable', async () => {
+    // M6, relevé en revue : l'alerte « la lecture a échoué » coexistait avec
+    // des boutons actifs sur une proposition peut-être déjà tranchée.
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    const { rerender } = render(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={0} />);
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fetchMock.mockImplementation(router({ propositions: {}, propositionsStatut: 500 }));
+    rerender(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={1} />);
+
+    await waitFor(() => expect(screen.getByText(/la lecture a échoué/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Reprendre cette phrase' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Écarter cette proposition' })).toBeNull();
+  });
+
+  it('relit les propositions quand la section clinique vient d’assembler', async () => {
+    // Sans ce signal, le panneau lirait la table AVANT que l'assemblage y ait
+    // écrit, et n'afficherait rien jusqu'au rechargement de page.
+    fetchMock.mockImplementation(router());
+    const { rerender } = render(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={0} />);
+    await waitFor(() => expect(screen.getByText(/Ce que le patient a écrit à l’anamnèse/)).toBeTruthy());
+
+    const avant = fetchMock.mock.calls.filter(([url]) =>
+      String(url).startsWith('/api/praticien/propositions-objectif'),
+    ).length;
+
+    rerender(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={1} />);
+    await waitFor(() => {
+      const apres = fetchMock.mock.calls.filter(([url]) =>
+        String(url).startsWith('/api/praticien/propositions-objectif'),
+      ).length;
+      expect(apres).toBe(avant + 1);
+    });
   });
 });

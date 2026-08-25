@@ -64,12 +64,21 @@ function fetchParRoute(routes: {
   trajectoire?: ReponseMock;
   cockpitGet?: ReponseMock[];
   cockpitPost?: ReponseMock[];
+  propositions?: ReponseMock;
 }) {
   const get = [...(routes.cockpitGet ?? [])];
   const post = [...(routes.cockpitPost ?? [])];
   return vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
     if (String(url).includes('/api/praticien/trajectoire')) {
       return routes.trajectoire ?? rep({ ok: true, trajectoire: null });
+    }
+    // ROUTÉ PAR URL, PAS SEULEMENT PAR MÉTHODE (relevé en revue du LOT-03).
+    // Depuis que la confirmation enchaîne un POST vers le moteur de
+    // proposition, un routage sur la seule méthode faisait consommer à ce
+    // second appel la file `cockpitPost` — invisible tant qu'elle n'a qu'une
+    // entrée, et introuvable le jour où elle en aura deux.
+    if (String(url).includes('/api/praticien/propositions-objectif')) {
+      return routes.propositions ?? rep({ ok: true, propositions: [], disposees: [], caduques: [] });
     }
     if (init?.method === 'POST') return post.shift() ?? rep({}, false, 500);
     return get.shift() ?? rep({}, false, 500);
@@ -91,7 +100,20 @@ function urlCockpit(mock: { mock: { calls: unknown[][] } }): string | undefined 
 /** Le corps du POST cockpit, quel que soit son rang. */
 function corpsPoste(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> | null {
   const appel = mock.mock.calls.find(
-    candidat => (candidat[1] as { method?: string } | undefined)?.method === 'POST',
+    candidat =>
+      (candidat[1] as { method?: string } | undefined)?.method === 'POST'
+      && String(candidat[0]).includes('/api/praticien/cockpit'),
+  );
+  const corps = (appel?.[1] as { body?: string } | undefined)?.body;
+  return corps ? (JSON.parse(corps) as Record<string, unknown>) : null;
+}
+
+/** Le corps du POST d'assemblage vers le moteur de proposition, s'il a eu lieu. */
+function corpsAssemblage(mock: { mock: { calls: unknown[][] } }): Record<string, unknown> | null {
+  const appel = mock.mock.calls.find(
+    candidat =>
+      (candidat[1] as { method?: string } | undefined)?.method === 'POST'
+      && String(candidat[0]).includes('/api/praticien/propositions-objectif'),
   );
   const corps = (appel?.[1] as { body?: string } | undefined)?.body;
   return corps ? (JSON.parse(corps) as Record<string, unknown>) : null;
@@ -183,6 +205,152 @@ describe('EpisodeConfirmationPanel', () => {
 });
 
 describe('ClinicalRuntimeSection', () => {
+
+  // ── Le déclencheur d'assemblage (Alliance 6.0-B, LOT-03) ─────────────────
+  //
+  // C'EST LE CŒUR DU LOT, et il n'avait aucun banc (relevé en revue). La carte
+  // de décision n'est persistée nulle part : elle n'existe que dans cette
+  // réponse-là. Si ce POST ne part pas, la table `propositions_objectif` reste
+  // vide et la surface entière est inerte.
+
+  function readyAvecCandidats(): CockpitRuntimeApiResponse {
+    const fixture = buildValidationErgoC1Fixture();
+    return {
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: {
+        ...fixture.decisionCard,
+        priorityCandidates: [
+          {
+            candidateId: 'priority:PRIO-SOM-01',
+            origin: 'engine',
+            label: 'Explorer le sommeil',
+            rank: 1,
+            confidence: 'à_documenter',
+            ruleId: 'PRIO-SOM-01',
+            rationale: 'Déclencheur atteint.',
+            provenance: { responseIds: ['R-IN'], needIds: [], clinicalObjectCodes: [] },
+            limitations: [],
+          },
+        ],
+      },
+      contradictions: [],
+      plainteDominante: { domaine: 'sommeil', libelle: 'Sommeil', valeur: 8, bande: 'Restitution publiée' },
+      perimetreSigne: 'a'.repeat(64),
+      canalPlainte: 'Q_MOD_03',
+    };
+  }
+
+  async function confirmer(fetchMock: ReturnType<typeof fetchParRoute>) {
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+    await screen.findByText(/Épisode T0 confirmé/);
+  }
+
+  it('demande l’assemblage sur `ready`, en citant la source et jamais le rang', async () => {
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(readyAvecCandidats())],
+    });
+    await confirmer(fetchMock);
+
+    await waitFor(() => expect(corpsAssemblage(fetchMock)).toBeTruthy());
+    const charge = corpsAssemblage(fetchMock)!;
+    expect(charge).toMatchObject({ action: 'assembler', idPatient: 'PAT_TEST' });
+
+    // L'instrument vient de la RÉPONSE, pas d'un import : le composant est
+    // `'use client'`, et importer la table signée pour une seule chaîne
+    // embarquerait ses règles dans le bundle du navigateur.
+    expect(charge.plainte).toEqual({
+      instrument: 'Q_MOD_03',
+      domaine: 'sommeil',
+      restitution: 'Restitution publiée',
+    });
+    // L'INTENSITÉ DÉCLARÉE NE PART PAS : c'est un nombre, et un nombre déposé
+    // dans une proposition se trierait.
+    expect(JSON.stringify(charge.plainte)).not.toContain('8');
+
+    expect(charge.candidats).toEqual([{ regle: 'PRIO-SOM-01', texte: 'Explorer le sommeil' }]);
+    // NI `rank`, NI `confidence` — ce qu'on n'envoie pas ne peut pas se
+    // persister, donc ne peut pas se trier (`D-093`).
+    const envoye = JSON.stringify(charge);
+    expect(envoye).not.toContain('rank');
+    expect(envoye).not.toContain('confidence');
+
+    expect(charge.shaPerimetre).toBe('a'.repeat(64));
+  });
+
+  it('n’assemble PAS tant que la réponse n’est pas `ready`', async () => {
+    // La proposition périmée (409) recharge et ne confirme rien : il n'y a pas
+    // de carte, donc rien à citer.
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse), rep(proposalResponse)],
+      cockpitPost: [rep({ status: 'unavailable', reason: 'proposal_stale', error: 'Rechargez.' }, false, 409)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(2));
+    expect(corpsAssemblage(fetchMock)).toBeNull();
+  });
+
+  it('UN ÉCHEC D’ASSEMBLAGE NE FAIT PAS ÉCHOUER LA CONFIRMATION', async () => {
+    // Le drapeau est éteint à la livraison : le `503` est l'état NOMINAL. Le
+    // praticien a confirmé son épisode et voit sa carte — c'est le résultat
+    // qu'il attendait ; une proposition absente est une surface en moins,
+    // jamais une raison de retirer ce qui a réussi.
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(readyAvecCandidats())],
+      propositions: rep({ ok: false, reason: 'feature_disabled', error: 'Fonctionnalité non ouverte.' }, false, 503),
+    });
+    const signal = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onPropositionsAssemblees={signal}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+
+    await screen.findByText(/Épisode T0 confirmé/);
+    await waitFor(() => expect(corpsAssemblage(fetchMock)).toBeTruthy());
+    // Le signal n'est PAS émis : rien n'a été assemblé, le panneau n'a rien à
+    // relire.
+    expect(signal).not.toHaveBeenCalled();
+  });
+
+  it('prévient le poste de pilotage quand l’assemblage a abouti', async () => {
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(readyAvecCandidats())],
+    });
+    const signal = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onPropositionsAssemblees={signal}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+
+    await waitFor(() => expect(signal).toHaveBeenCalledTimes(1));
+  });
   it('enchaîne GET, confirmation POST et rendu prudent des objets C1', async () => {
     const fixture = buildValidationErgoC1Fixture();
     const ready: CockpitRuntimeApiResponse = {
@@ -199,6 +367,9 @@ describe('ClinicalRuntimeSection', () => {
       // Table non signée : c'est la réponse que la production sert aujourd'hui.
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       cockpitGet: [rep(proposalResponse)],
@@ -278,6 +449,9 @@ describe('ClinicalRuntimeSection', () => {
       decisionCard: fixture.decisionCard,
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
     vi.stubGlobal('fetch', fetchMock);
@@ -328,6 +502,9 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
         regleId: 'C-STR',
       }],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       cockpitGet: [rep(proposalResponse)],
@@ -369,6 +546,9 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       decisionCard: { ...fixture.decisionCard, abstention },
       contradictions: [],
       plainteDominante,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
   }
 
@@ -473,6 +653,9 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       decisionCard: fixture.decisionCard,
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       trajectoire: trajectoireT0ConfirmeIlYA(21),

@@ -5,14 +5,21 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { dossierDansPerimetreProposition, isObjectifProposeEnabled } from '@/lib/patient/featureFlag';
 import {
   chaineDObjectif,
   etatRatification,
   objectifsCourants,
   preparerObjectif,
+  type CibleObjectif,
   type EtatRatification,
   type RefusObjectif,
 } from '@/lib/praticien/objectifNegocie';
+import {
+  assembleeCourante,
+  dispositionCourante,
+  preparerDisposition,
+} from '@/lib/praticien/propositionObjectif';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — route PRATICIEN.
 //
@@ -22,14 +29,36 @@ import {
 // écraser. La garde `objectifNegocie.guard.test.ts` (G5) l'oppose à tout
 // `web/src/app/api/**` et `web/src/lib/**`.
 //
-// PAS DE DRAPEAU DE FONCTIONNALITÉ SUR CE LOT, et l'absence est un CHOIX, pas
-// un oubli (arbitrage du responsable) : la surface est praticien, elle n'est
-// visible que d'un compte authentifié du domaine, et la table est neuve — un
-// drapeau n'aurait rien à protéger qu'une session ne protège déjà. Toute
+// PAS DE DRAPEAU SUR L'OBJECTIF LUI-MÊME, et l'absence est un CHOIX, pas un
+// oubli (arbitrage du responsable, 6.0-A) : la surface est praticien, elle
+// n'est visible que d'un compte authentifié du domaine, et la table est neuve —
+// un drapeau n'aurait rien à protéger qu'une session ne protège déjà. Toute
 // surface PATIENT de la campagne (LOT-06) relève d'un arbitrage distinct.
+//
+// MAIS LA REPRISE, ELLE, EST GARDÉE (Alliance 6.0-B, LOT-03, relevé en revue).
+// Ce raisonnement valait pour un objectif que le praticien RÉDIGE ; il ne vaut
+// pas pour le seul geste que `WN_OBJECTIF_PROPOSE` est censé pouvoir reprendre.
+// Sans cette garde, éteindre le drapeau — ou retirer un dossier du périmètre de
+// repli — laissait un onglet resté ouvert continuer d'écrire des reprises, et
+// le matériau du bilan LOT-06 se remplir sur un dossier officiellement retiré.
+// La seule manette de réversibilité de `D-094` ne couvrait pas l'unique
+// écriture nouvelle du lot.
 //
 // La ratification (`ratifications_objectif`) est LUE ici et JAMAIS écrite :
 // c'est un geste du patient, il appartient au LOT-06.
+//
+// LA REPRISE D'UNE PROPOSITION SE POSE ICI (Alliance 6.0-B, LOT-03), et pas
+// dans la route des propositions. Reprendre, c'est CRÉER UN OBJECTIF ; deux
+// routes qui créeraient un objectif seraient deux vérités sur ce qu'est un
+// objectif. Le geste et sa conséquence s'écrivent donc ENSEMBLE, dans une même
+// transaction — sinon un dossier pourrait porter une « reprise » sans objectif,
+// c'est-à-dire un praticien ayant repris quelque chose qui n'existe pas.
+//
+// `enoncePatient` N'EST JAMAIS PRIS DU CORPS, ni pour une révision, ni pour une
+// reprise : il est RECOPIÉ, de la ligne visée dans un cas, du fragment cité
+// dans l'autre. C'est ce qui rend l'invariant de `D-094` opposable plutôt que
+// promis — le champ ne se pré-remplit que par citation verbatim de ce que le
+// patient a écrit.
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -49,6 +78,9 @@ export type ObjectifExpose = {
   negocieLe: string | null;
   creeLe: string;
   supersedesObjectifId: string | null;
+  /** La proposition reprise, si c'en est une (6.0-B). `null` sinon — et c'est
+   *  le cas ordinaire, jamais un manque. */
+  sourcePropositionId: string | null;
 };
 
 /** La trajectoire d'une tête de chaîne : sa version courante puis ses
@@ -118,6 +150,7 @@ const SELECTION_OBJECTIF = {
   negocieLe: true,
   creeLe: true,
   supersedesObjectifId: true,
+  sourcePropositionId: true,
 } as const;
 
 type LigneLue = {
@@ -130,6 +163,7 @@ type LigneLue = {
   negocieLe: Date | null;
   creeLe: Date;
   supersedesObjectifId: string | null;
+  sourcePropositionId: string | null;
 };
 
 function exposer(ligne: LigneLue): ObjectifExpose {
@@ -143,6 +177,7 @@ function exposer(ligne: LigneLue): ObjectifExpose {
     negocieLe: ligne.negocieLe ? ligne.negocieLe.toISOString() : null,
     creeLe: ligne.creeLe.toISOString(),
     supersedesObjectifId: ligne.supersedesObjectifId,
+    sourcePropositionId: ligne.sourcePropositionId,
   };
 }
 
@@ -303,6 +338,123 @@ function lireAncrage(anamnese: unknown): AncrageAnamnese {
   };
 }
 
+/**
+ * La proposition reprise, VÉRIFIÉE, et l'énoncé qu'elle fournit.
+ *
+ * QUATRE REFUS, ET AUCUN N'EST DE FORME.
+ *
+ * `proposition_introuvable` (404) — inexistante OU d'un autre dossier, MÊME
+ * réponse et MÊME message : les distinguer ferait de la route un oracle
+ * d'existence de proposition, interrogeable avec une session praticien
+ * quelconque (patron de la révision, ci-dessus).
+ *
+ * `proposition_caduque` (409) — elle n'appartient plus à la dernière assemblée,
+ * donc ses données sources ont bougé. La reprendre attribuerait au patient une
+ * citation tirée d'un état du dossier qui n'est plus le sien.
+ *
+ * `proposition_disposee` (409) — un geste a déjà été posé. Reprendre deux fois
+ * la même proposition créerait deux objectifs se réclamant d'une seule parole.
+ *
+ * `fragment_non_citable` (422) — le fragment désigné n'est pas un verbatim
+ * d'anamnèse. C'EST LE CŒUR DU LOT : `enoncePatient` ne se pré-remplit que par
+ * citation de ce que le PATIENT a écrit (`D-094`). Le libellé d'une règle
+ * signée ou la restitution d'un instrument sont des paroles de la machine ou de
+ * l'instrument — les y déposer ferait dire au patient ce qu'il n'a pas dit,
+ * avec l'apparence d'une citation.
+ *
+ * LE TEST DE VIVACITÉ EST « ASSEMBLÉE COURANTE ET NON DISPOSÉE », et non le
+ * `propositionsVivantes` de la route des propositions : ce dernier applique en
+ * plus le plafond de service de trois, qui borne ce qu'on AFFICHE. L'employer
+ * ici refuserait une reprise parfaitement légitime au seul motif qu'une
+ * assemblée anormalement grande l'aurait reléguée au quatrième rang.
+ */
+type Reprise =
+  | { echec: NextResponse<ObjectifsApiResponse> }
+  | { enoncePatient: string };
+
+async function verifierReprise(
+  idPatient: string,
+  idProposition: string,
+  indexBrut: unknown,
+): Promise<Reprise> {
+  const [propositions, dispositions] = await Promise.all([
+    prisma.propositionObjectif.findMany({
+      // Scopé au dossier : le seul index de la table est `(id_patient,
+      // cree_le)`, et une table append-only ne fait que croître.
+      where: { idPatient },
+      select: { id: true, fragments: true, hashSources: true, assembleeLe: true, creeLe: true },
+    }),
+    prisma.dispositionProposition.findMany({
+      where: { idPatient },
+      select: { id: true, idProposition: true, geste: true, creeLe: true },
+    }),
+  ]);
+
+  const visee = propositions.find((ligne) => ligne.id === idProposition);
+  if (!visee) {
+    return { echec: echec('proposition_introuvable', 'Proposition introuvable.', 404) };
+  }
+
+  const courante = assembleeCourante(propositions);
+  if (!courante.some((ligne) => ligne.id === idProposition)) {
+    return {
+      echec: echec(
+        'proposition_caduque',
+        'Les données sources ont changé depuis cette proposition : elle ne se reprend plus. Rechargez le dossier.',
+        409,
+      ),
+    };
+  }
+
+  // DETTE NOMMÉE — CE CONTRÔLE EST UN LIRE-PUIS-ÉCRIRE, HORS TRANSACTION
+  // (relevée en revue). Deux reprises concurrentes de la même proposition —
+  // double clic pendant une latence, deux onglets — passent toutes deux ici et
+  // créent chacune un objectif. La conséquence est PLUS LOURDE que le doublon
+  // d'assemblage déjà nommé côté propositions : deux têtes de chaîne portant le
+  // même énoncé, donc un portail qui refuse toute ratification
+  // (`objectif_discordant`) jusqu'à arbitrage praticien. L'écran réduit la
+  // fenêtre en désactivant le bouton pendant l'envoi ; il ne la ferme pas.
+  // Fermer demanderait un index unique — donc une migration.
+  if (dispositionCourante(idProposition, dispositions) !== null) {
+    return {
+      echec: echec(
+        'proposition_disposee',
+        'Cette proposition a déjà été reprise ou écartée. Rechargez le dossier.',
+        409,
+      ),
+    };
+  }
+
+  if (typeof indexBrut !== 'number' || !Number.isInteger(indexBrut) || indexBrut < 0) {
+    return { echec: echec('invalid', 'Fragment cité invalide.', 400) };
+  }
+  const fragments = Array.isArray(visee.fragments) ? visee.fragments : [];
+  const fragment = fragments[indexBrut];
+  if (fragment === null || typeof fragment !== 'object' || Array.isArray(fragment)) {
+    return { echec: echec('invalid', 'Fragment cité invalide.', 400) };
+  }
+
+  const { texte, source } = fragment as { texte?: unknown; source?: unknown };
+  const nature =
+    source !== null && typeof source === 'object' && !Array.isArray(source)
+      ? (source as { nature?: unknown }).nature
+      : undefined;
+  if (nature !== 'anamnese') {
+    return {
+      echec: echec(
+        'fragment_non_citable',
+        'Seuls les mots écrits par le patient à l’anamnèse peuvent devenir son énoncé.',
+        422,
+      ),
+    };
+  }
+  if (typeof texte !== 'string' || texte.trim().length === 0) {
+    return { echec: echec('invalid', 'Fragment cité invalide.', 400) };
+  }
+
+  return { enoncePatient: texte.trim() };
+}
+
 type PostBody = {
   idPatient?: string;
   enoncePatient?: string;
@@ -312,6 +464,18 @@ type PostBody = {
   nonTraiteDepuisLe?: string;
   negocieLe?: string;
   supersedesObjectifId?: string | null;
+  /** La proposition reprise (6.0-B, LOT-03). */
+  sourcePropositionId?: string | null;
+  /**
+   * QUEL fragment de cette proposition fournit l'énoncé — un INDICE dans le
+   * tableau `fragments`, stable parce que la ligne est append-only et n'est
+   * jamais mise à jour.
+   *
+   * L'écran désigne, le serveur recopie. Transmettre le TEXTE aurait laissé
+   * l'appelant écrire ce qu'il voulait sous l'étiquette « citation verbatim
+   * d'anamnèse » — exactement ce que `D-094` interdit.
+   */
+  sourceFragmentIndex?: unknown;
 };
 
 // `typeof`, et non `?? ''` : `PostBody` est un CAST, pas une validation. Un
@@ -364,13 +528,49 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       return echec('invalid', 'Référence de version invalide.', 400);
     }
 
+    const referenceProposition = body.sourcePropositionId;
+    if (
+      referenceProposition !== undefined
+      && referenceProposition !== null
+      && typeof referenceProposition !== 'string'
+    ) {
+      return echec('invalid', 'Référence de proposition invalide.', 400);
+    }
+    const sourcePropositionId = texteDuCorps(referenceProposition);
+    if (sourcePropositionId.length > LONGUEUR_MAX_ID) {
+      return echec('invalid', 'Référence de proposition invalide.', 400);
+    }
+
+    // LE DRAPEAU GARDE LA REPRISE, ET ELLE SEULE. Un objectif rédigé de la main
+    // du praticien reste servi drapeau éteint : c'est une surface de 6.0-A, que
+    // ce lot n'a pas à fermer. MÊME RÉPONSE pour le drapeau et pour le repli —
+    // les distinguer dirait à l'appelant qu'un dossier a été retiré du
+    // périmètre, ce qui ne le regarde pas (patron de la route des propositions).
+    if (sourcePropositionId && (!isObjectifProposeEnabled() || !dossierDansPerimetreProposition(idPatient))) {
+      return echec('feature_disabled', 'Fonctionnalité non ouverte.', 503);
+    }
+
+    // UNE RÉVISION N'EST PAS UNE REPRISE, et les cumuler n'aurait pas de sens.
+    // Reformuler un objectif issu d'une proposition ne « reprend » pas la
+    // proposition une seconde fois : le lien appartient à la ligne d'origine et
+    // reste lisible par la chaîne. Poser les deux ferait compter deux reprises
+    // là où le praticien n'en a fait qu'une — et le bilan du LOT-06 lit
+    // précisément ces gestes.
+    if (supersedesObjectifId && sourcePropositionId) {
+      return echec(
+        'reprise_sur_revision',
+        'Une reformulation ne reprend pas la proposition une seconde fois : le lien reste porté par la version d’origine.',
+        400,
+      );
+    }
+
     // LA CIBLE SE VÉRIFIE AVANT LE MODULE PUR, et c'est une conséquence de
     // l'invariant, pas un raccourci : `enonce_patient` est NOT NULL non vide
     // sur CHAQUE ligne, et pour une révision cet énoncé est RECOPIÉ depuis la
     // cible — jamais repris du corps, sinon on ferait dire au patient, ligne
     // après ligne, autre chose que ce qu'il a dit. Le module ne peut donc pas
     // préparer ses données avant que la cible soit connue.
-    let cible: { enoncePatient: string } | undefined;
+    let cible: CibleObjectif | undefined;
     if (supersedesObjectifId) {
       const [visee, dejaSupplantee] = await Promise.all([
         prisma.objectifNegocie.findUnique({
@@ -401,7 +601,13 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       if (dejaSupplantee) {
         return echec('objectif_supplante', 'Cet objectif a déjà été reformulé. Rechargez le dossier.', 409);
       }
-      cible = { enoncePatient: visee.enoncePatient };
+      cible = { enoncePatient: visee.enoncePatient, origine: 'revision' };
+    }
+
+    if (sourcePropositionId) {
+      const reprise = await verifierReprise(idPatient, sourcePropositionId, body.sourceFragmentIndex);
+      if ('echec' in reprise) return reprise.echec;
+      cible = { enoncePatient: reprise.enoncePatient, origine: 'reprise' };
     }
 
     const preparation = preparerObjectif(
@@ -415,6 +621,7 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
         nonTraiteDepuisLe: texteDuCorps(body.nonTraiteDepuisLe),
         negocieLe: texteDuCorps(body.negocieLe),
         supersedesObjectifId: supersedesObjectifId || null,
+        sourcePropositionId: sourcePropositionId || null,
       },
       cible,
     );
@@ -425,10 +632,41 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     // `creeLe` n'est PAS transmis : la base pose le présent (@default(now())).
     // C'est ce qui rend une ligne d'objectif structurellement inantidatable.
     // Un seul `create`, jamais d'`update` : réviser AJOUTE une ligne.
-    const creee = await prisma.objectifNegocie.create({
-      data: preparation.donnees,
-      select: SELECTION_OBJECTIF,
+    if (!sourcePropositionId) {
+      const creee = await prisma.objectifNegocie.create({
+        data: preparation.donnees,
+        select: SELECTION_OBJECTIF,
+      });
+      return NextResponse.json({ ok: true, objectif: exposer(creee) }, { status: 201 });
+    }
+
+    // LES DEUX ÉCRITURES SONT INDISSOCIABLES. L'objectif porte le lien, la
+    // disposition porte le geste ; écrire l'un sans l'autre laisserait soit une
+    // reprise sans objectif — un praticien ayant repris ce qui n'existe pas —,
+    // soit un objectif se réclamant d'une proposition qu'aucun geste n'a
+    // disposée, donc encore servie comme vivante.
+    //
+    // Le geste passe par `preparerDisposition` plutôt que par un littéral :
+    // c'est lui qui porte l'arbitrage 3 (une reprise ne s'accompagne d'aucun
+    // motif d'écart), et deux vocabulaires du même geste finiraient par diverger.
+    const geste = preparerDisposition({
+      idPatient,
+      praticienEmail: garde.email,
+      idProposition: sourcePropositionId,
+      geste: 'reprise',
+      motif: null,
     });
+    if (!geste.ok) {
+      // Inatteignable : les champs sont établis ci-dessus. Mais un refus
+      // silencieusement ignoré ferait écrire l'objectif SANS son geste.
+      console.error('[praticien/objectifs POST] disposition refusée', geste.raison);
+      return echec('exception', 'Erreur technique.', 500);
+    }
+
+    const [creee] = await prisma.$transaction([
+      prisma.objectifNegocie.create({ data: preparation.donnees, select: SELECTION_OBJECTIF }),
+      prisma.dispositionProposition.create({ data: geste.donnees, select: { id: true } }),
+    ]);
 
     return NextResponse.json({ ok: true, objectif: exposer(creee) }, { status: 201 });
   } catch (err) {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -22,6 +22,15 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // sont moquées pour prouver que cette route ne les emprunte jamais.
     ratificationObjectif: { findMany: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+    // Alliance 6.0-B, LOT-03 : la reprise d'une proposition. `update` et
+    // `delete` sont moqués EXPRÈS alors que la route ne les appelle jamais —
+    // sans eux, l'assertion « append-only » ne pourrait pas être écrite.
+    propositionObjectif: { findMany: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
+    dispositionProposition: { findMany: vi.fn(), create: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
+    // Le vrai `$transaction` exécute la liste ATOMIQUEMENT ; le mock la résout
+    // simplement — ce qu'on éprouve ici, c'est que les deux écritures partent
+    // ENSEMBLE, pas la sémantique transactionnelle de PostgreSQL.
+    $transaction: vi.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
   },
 }));
 
@@ -71,6 +80,10 @@ const ligneLue = (partiel: Record<string, unknown> = {}) => ({
   ...partiel,
 });
 
+async function corpsDe(reponse: Response) {
+  return (await reponse.json()) as Record<string, unknown>;
+}
+
 describe('/api/praticien/objectifs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -87,6 +100,9 @@ describe('/api/praticien/objectifs', () => {
     prisma.objectifNegocie.findUnique.mockResolvedValue(null);
     prisma.objectifNegocie.findFirst.mockResolvedValue(null);
     prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+    prisma.propositionObjectif.findMany.mockResolvedValue([]);
+    prisma.dispositionProposition.findMany.mockResolvedValue([]);
+    prisma.dispositionProposition.create.mockResolvedValue({ id: 'DIS_NEUVE' });
     prisma.objectifNegocie.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
         id: 'OBJ_NEUF',
@@ -97,6 +113,7 @@ describe('/api/praticien/objectifs', () => {
         nonTraiteDepuisLe: data.nonTraiteDepuisLe ?? null,
         negocieLe: data.negocieLe ?? null,
         supersedesObjectifId: data.supersedesObjectifId ?? null,
+        sourcePropositionId: data.sourcePropositionId ?? null,
         // La base pose le présent : le mock reflète ce contrat, pas l'appelant.
         creeLe: new Date('2026-08-22T09:00:00.000Z'),
       }),
@@ -498,6 +515,228 @@ describe('/api/praticien/objectifs', () => {
         'connexion interrompue',
       );
       espion.mockRestore();
+    });
+  });
+  // ── La reprise d'une proposition (Alliance 6.0-B, LOT-03) ─────────────────
+
+  describe('reprise d’une proposition', () => {
+    const PROPOSITION = () => ({
+      id: 'PROP_1',
+      fragments: [
+        { texte: 'Explorer le sommeil', source: { nature: 'regle_signee', regle: 'PRIO-SOM-01' } },
+        {
+          texte: 'Je me réveille à trois heures toutes les nuits.',
+          source: { nature: 'anamnese', champ: 'motif_principal' },
+        },
+      ],
+      hashSources: 'a'.repeat(64),
+      assembleeLe: new Date('2026-08-25T09:00:00.000Z'),
+      creeLe: new Date('2026-08-25T09:00:00.000Z'),
+    });
+
+    const corpsReprise = (partiel: Record<string, unknown> = {}) => ({
+      idPatient: 'PAT_TEST',
+      // L'appelant a beau l'écrire, il ne sera pas lu : la route recopie le
+      // fragment. Le laisser dans le corps est délibéré — c'est le scénario à
+      // éprouver, pas un oubli.
+      enoncePatient: 'Texte que l’écran a inventé.',
+      reformulationPraticien: 'Sommeil fragmenté en seconde partie de nuit.',
+      sourcePropositionId: 'PROP_1',
+      sourceFragmentIndex: 1,
+      ...partiel,
+    });
+
+    beforeEach(() => {
+      // Le drapeau garde la reprise depuis le LOT-03 : les cas qui l'exercent
+      // l'allument, et deux cas dédiés vérifient les deux fermetures.
+      vi.stubEnv('WN_OBJECTIF_PROPOSE', 'true');
+      vi.stubEnv('WN_OBJECTIF_PROPOSE_PATIENTS', '');
+      prisma.propositionObjectif.findMany.mockResolvedValue([PROPOSITION()]);
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('RECOPIE l’énoncé depuis le fragment cité, jamais depuis le corps', async () => {
+      const reponse = await POST(postRequest(corpsReprise()));
+      expect(reponse.status).toBe(201);
+
+      const { data } = prisma.objectifNegocie.create.mock.calls[0][0];
+      expect(data.enoncePatient).toBe('Je me réveille à trois heures toutes les nuits.');
+      expect(data.sourcePropositionId).toBe('PROP_1');
+      // La reformulation, elle, appartient au praticien : elle vient bien du corps.
+      expect(data.reformulationPraticien).toBe('Sommeil fragmenté en seconde partie de nuit.');
+    });
+
+    it('écrit l’objectif ET le geste dans UNE SEULE transaction', async () => {
+      await POST(postRequest(corpsReprise()));
+      // Écrire l'un sans l'autre laisserait soit une reprise sans objectif,
+      // soit un objectif se réclamant d'une proposition encore servie comme
+      // vivante.
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$transaction.mock.calls[0][0]).toHaveLength(2);
+
+      const { data } = prisma.dispositionProposition.create.mock.calls[0][0];
+      expect(data).toEqual({
+        idPatient: 'PAT_TEST',
+        idProposition: 'PROP_1',
+        praticienEmail: 'praticien@wellneuro.fr',
+        geste: 'reprise',
+        // ARBITRAGE 3 du LOT-02 : une reprise ne porte aucun motif d'écart.
+        motif: null,
+      });
+    });
+
+    it('un objectif ORDINAIRE ne passe pas par la transaction et n’écrit aucun geste', async () => {
+      await POST(postRequest(corps()));
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.dispositionProposition.create).not.toHaveBeenCalled();
+      const { data } = prisma.objectifNegocie.create.mock.calls[0][0];
+      expect(data.sourcePropositionId).toBeNull();
+    });
+
+    it('REFUSE un fragment qui n’est pas un verbatim d’anamnèse — 422', async () => {
+      // LE CŒUR DU LOT. Le libellé d'une règle signée est une parole de la
+      // machine ; le déposer dans `enoncePatient` ferait dire au patient ce
+      // qu'il n'a pas dit, avec l'apparence d'une citation (`D-094`).
+      const reponse = await POST(postRequest(corpsReprise({ sourceFragmentIndex: 0 })));
+      expect(reponse.status).toBe(422);
+      expect(await corpsDe(reponse)).toMatchObject({ reason: 'fragment_non_citable' });
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+      expect(prisma.dispositionProposition.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse un indice de fragment absent, hors bornes ou non entier — 400', async () => {
+      for (const index of [undefined, -1, 1.5, 9, '1', null]) {
+        vi.clearAllMocks();
+        prisma.patient.findUnique.mockResolvedValue({
+          praticienEmail: 'praticien@wellneuro.fr',
+          actif: true,
+          suiviClotureLe: null,
+        });
+        prisma.propositionObjectif.findMany.mockResolvedValue([PROPOSITION()]);
+        prisma.dispositionProposition.findMany.mockResolvedValue([]);
+        const reponse = await POST(postRequest(corpsReprise({ sourceFragmentIndex: index })));
+        expect(reponse.status).toBe(400);
+        expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+      }
+    });
+
+    it('rend 404 sur une proposition inconnue OU d’un autre dossier — même réponse', async () => {
+      prisma.propositionObjectif.findMany.mockResolvedValue([]);
+      const reponse = await POST(postRequest(corpsReprise()));
+      expect(reponse.status).toBe(404);
+      expect(await corpsDe(reponse)).toMatchObject({ reason: 'proposition_introuvable' });
+      // La lecture est SCOPÉE AU DOSSIER : sans `idPatient`, l'index
+      // `(id_patient, cree_le)` ne peut pas être emprunté.
+      expect(prisma.propositionObjectif.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { idPatient: 'PAT_TEST' } }),
+      );
+    });
+
+    it('rend 409 sur une proposition CADUQUE — les sources ont bougé', async () => {
+      prisma.propositionObjectif.findMany.mockResolvedValue([
+        PROPOSITION(),
+        { ...PROPOSITION(), id: 'PROP_NEUVE', assembleeLe: new Date('2026-08-25T10:00:00.000Z') },
+      ]);
+      const reponse = await POST(postRequest(corpsReprise()));
+      expect(reponse.status).toBe(409);
+      expect(await corpsDe(reponse)).toMatchObject({ reason: 'proposition_caduque' });
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('rend 409 sur une proposition DÉJÀ disposée — reprise comme écartée', async () => {
+      for (const geste of ['reprise', 'ecartee']) {
+        vi.clearAllMocks();
+        prisma.patient.findUnique.mockResolvedValue({
+          praticienEmail: 'praticien@wellneuro.fr',
+          actif: true,
+          suiviClotureLe: null,
+        });
+        prisma.propositionObjectif.findMany.mockResolvedValue([PROPOSITION()]);
+        prisma.dispositionProposition.findMany.mockResolvedValue([
+          { id: 'DIS_1', idProposition: 'PROP_1', geste, creeLe: new Date('2026-08-25T09:30:00.000Z') },
+        ]);
+        const reponse = await POST(postRequest(corpsReprise()));
+        expect(reponse.status).toBe(409);
+        expect(await corpsDe(reponse)).toMatchObject({ reason: 'proposition_disposee' });
+        expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+      }
+    });
+
+    it('refuse de cumuler une révision et une reprise — 400', async () => {
+      // Reformuler un objectif issu d'une proposition ne la reprend pas une
+      // seconde fois : le lien appartient à la version d'origine. Les cumuler
+      // ferait compter deux reprises là où le praticien n'en a fait qu'une, et
+      // le bilan du LOT-06 lit précisément ces gestes.
+      const reponse = await POST(
+        postRequest(corpsReprise({ supersedesObjectifId: 'OBJ_1' })),
+      );
+      expect(reponse.status).toBe(400);
+      expect(await corpsDe(reponse)).toMatchObject({ reason: 'reprise_sur_revision' });
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('est gardée par le drapeau, alors que l’objectif ordinaire ne l’est pas', async () => {
+      // B1, relevé en revue. Sans cette garde, éteindre `WN_OBJECTIF_PROPOSE`
+      // — la seule manette de réversibilité de `D-094` — laissait un onglet
+      // resté ouvert continuer d'écrire des reprises, et le matériau du bilan
+      // LOT-06 se remplir sur un dossier officiellement retiré.
+      vi.stubEnv('WN_OBJECTIF_PROPOSE', '');
+      const refus = await POST(postRequest(corpsReprise()));
+      expect(refus.status).toBe(503);
+      expect(await corpsDe(refus)).toMatchObject({ reason: 'feature_disabled' });
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+
+      // ET L'OBJECTIF ORDINAIRE PASSE TOUJOURS : c'est une surface de 6.0-A,
+      // que ce lot n'a pas à fermer.
+      expect((await POST(postRequest(corps()))).status).toBe(201);
+    });
+
+    it('le repli par dossier ferme la reprise, sans dire que c’est le repli', async () => {
+      vi.stubEnv('WN_OBJECTIF_PROPOSE_PATIENTS', 'PAT_AUTRE');
+      const refus = await POST(postRequest(corpsReprise()));
+      expect(refus.status).toBe(503);
+      // MÊME réponse que le drapeau : les distinguer dirait à l'appelant qu'un
+      // dossier a été retiré du périmètre, ce qui ne le regarde pas.
+      expect(await corpsDe(refus)).toMatchObject({ reason: 'feature_disabled' });
+    });
+
+    it('refuse un fragment mal formé sans jamais le compléter', async () => {
+      // Les trois branches que l'indice seul ne couvrait pas : `fragments` qui
+      // n'est pas un tableau, une source absente, un texte vide sur un
+      // fragment pourtant d'anamnèse. Rien n'est deviné.
+      const malformes = [
+        { fragments: 'pas un tableau' },
+        { fragments: [{ texte: 'x' }, { texte: 'Des mots sans provenance' }] },
+        { fragments: [{ texte: 'x' }, { texte: '   ', source: { nature: 'anamnese' } }] },
+      ];
+      for (const surcharge of malformes) {
+        vi.clearAllMocks();
+        prisma.patient.findUnique.mockResolvedValue({
+          praticienEmail: 'praticien@wellneuro.fr',
+          actif: true,
+          suiviClotureLe: null,
+        });
+        prisma.dispositionProposition.findMany.mockResolvedValue([]);
+        prisma.propositionObjectif.findMany.mockResolvedValue([{ ...PROPOSITION(), ...surcharge }]);
+        const reponse = await POST(postRequest(corpsReprise()));
+        expect([400, 422]).toContain(reponse.status);
+        expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+      }
+    });
+
+    it('n’emprunte aucune écriture destructrice sur les tables 6.0-B', async () => {
+      await POST(postRequest(corpsReprise()));
+      for (const mock of [
+        prisma.propositionObjectif.update,
+        prisma.propositionObjectif.deleteMany,
+        prisma.dispositionProposition.update,
+        prisma.dispositionProposition.deleteMany,
+      ]) {
+        expect(mock).not.toHaveBeenCalled();
+      }
     });
   });
 });
