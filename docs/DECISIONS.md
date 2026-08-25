@@ -70,6 +70,21 @@ Trois bornes rendent la citation opposable plutôt que promise :
    `v1` alors que le praticien reformule `v2`, et sa parole n'a pas cessé de
    concerner cet objectif parce qu'une version s'est intercalée.
 
+**Décision 4 — le drapeau ne s'étend pas au cockpit, et c'est un choix, pas une
+déduction.** `WN_DOSSIER_DEUX_VOIX` garde la **surface du patient** : sa
+capacité à lire et à écrire. Ce qui est déjà écrit est une pièce du dossier, et
+ni la lecture du dossier par le praticien ni sa faculté de **reformuler** un
+objectif n'ont jamais été sous un drapeau (arbitrage de 6.0-A). Éteindre
+l'interrupteur ferme le portail ; cela ne rend pas intouchables les mots que le
+patient a déjà écrits, et les masquer au praticien le rendrait aveugle à une
+pièce réelle du dossier.
+
+La différence avec la reprise de proposition — gardée, elle, par
+`WN_OBJECTIF_PROPOSE` depuis le LOT-03 — est de **nature** : celle-là consomme
+une matière que la MACHINE produit, et couper son interrupteur signifie « nous
+ne voulons plus qu'elle propose ». Deux bancs épinglent ce choix ; s'ils
+deviennent rouges, c'est une décision à reprendre, pas un réglage à ajuster.
+
 **Ce que cette décision n'autorise pas.** Compter, résumer, graduer ou
 « diffuser » le texte d'un patient ; le tronquer (refus par motif, borne
 affichée) ; le journaliser ; le soumettre à la garde de registre anxiogène —
@@ -78,11 +93,22 @@ l'étendre à la parole du patient reviendrait à faire dire au journal que sa
 façon de parler de lui-même pose problème. Aucune notification n'est créée : le
 portail reste en pull.
 
-**Dette nommée.** Rien ne marque un amendement comme « lu » ou « traité » — une
-colonne mutable contredirait l'append-only, et c'est le même arbitrage que celui
-déjà écrit pour `desaccords_comprehension`. Le cockpit affiche donc tous les
-amendements de la chaîne, indéfiniment ; leur accusé de lecture, s'il devient
-nécessaire, appelle sa propre décision.
+**Trois dettes nommées, pour qu'aucune ne se redécouvre.**
+
+1. **Rien ne marque un amendement comme « lu » ou « intégré »** — une colonne
+   mutable contredirait l'append-only, et c'est le même arbitrage que celui déjà
+   écrit pour `desaccords_comprehension`. Deux conséquences assumées : le cockpit
+   affiche tous les amendements de la chaîne indéfiniment, et rien n'empêche le
+   praticien de poser deux versions successives portant le même texte de patient.
+   Un accusé de lecture appelle sa propre décision.
+2. **Le dossier clos n'arrête pas le troisième verbe**, par héritage exact de la
+   ratification : la clôture est un état du suivi praticien, pas un ordre de
+   silence fait au patient — couper le geste permettrait de clore un dossier pour
+   rendre son objectif incontestable. Ce qui valait pour un clic vaut pour un
+   texte ; l'écrire ici évite qu'on le « corrige » un jour comme un oubli.
+3. **Aucune limitation de débit** sur le dépôt d'amendements, comme sur la
+   ratification. Un jeton portail permet d'accumuler des textes de 4 Ko. Dette
+   préexistante, plus coûteuse ici — elle n'a pas de porteur.
 
 ### D-109 — Clôture de « Doctrine exécutable » : six règles fermées, et tout le reste nommé
 

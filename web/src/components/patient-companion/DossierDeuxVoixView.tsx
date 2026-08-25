@@ -385,9 +385,15 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                               en silence la version d'un patient produirait une
                               phrase que personne n'a écrite. Il la dépasse, il
                               le voit, il raccourcit. */}
+                          {/* LE JUGEMENT PORTE SUR LE TEXTE UTILE, l'affichage
+                              sur ce qui est tapé. Le serveur borne le texte
+                              TRIMÉ ; juger ici la longueur brute rendait
+                              l'écran PLUS STRICT que lui — 4 000 caractères
+                              suivis d'un saut de ligne bloquaient un envoi que
+                              le serveur aurait accepté (relevé en revue). */}
                           <p
                             className={
-                              texteAmendement.length > LONGUEUR_MAX_AMENDEMENT
+                              texteAmendement.trim().length > LONGUEUR_MAX_AMENDEMENT
                                 ? 'text-xs text-status-warning'
                                 : 'text-xs text-muted-foreground'
                             }
@@ -400,7 +406,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                             disabled={
                               envoi
                               || texteAmendement.trim().length === 0
-                              || texteAmendement.length > LONGUEUR_MAX_AMENDEMENT
+                              || texteAmendement.trim().length > LONGUEUR_MAX_AMENDEMENT
                             }
                             onClick={() => void direAutrement(objectif.id)}
                           >
@@ -416,6 +422,48 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {/* DEUX ACCUSÉS, PAS UN. « Tel que vous l'avez indiqué » convient
                   à un clic ; sur un texte, il laisserait le patient se demander
                   si ses mots sont partis entiers. */}
+              {/* ── CE QUE LE PATIENT A ÉCRIT SUR UNE VERSION DEPUIS
+                     REFORMULÉE ──────────────────────────────────────────────
+                  La route ne sert que les TÊTES de chaîne : un amendement écrit
+                  sur `v1` n'a plus de version à l'écran dès que le praticien
+                  pose `v2`. Sans ce bloc, le patient voyait SES PROPRES MOTS
+                  disparaître au premier geste du praticien — exactement ce que
+                  le contrat de la route s'engage à ne pas faire, et ce que
+                  l'en-tête de ce fichier dit vouloir éviter (relevé en revue).
+
+                  IL EST RENDU À PART, ET PAS SOUS UNE TÊTE : rattacher ces
+                  textes à l'objectif courant les ferait répondre à une
+                  formulation qu'ils n'ont jamais vue — et avec deux têtes
+                  rivales, à laquelle ? Ici, ils sont ce qu'ils sont : ce que le
+                  patient a écrit, avant. */}
+              {(() => {
+                const servis = new Set(objectifs.map((objectif) => objectif.id));
+                const anterieurs = amendements.filter(
+                  (amendement) => !servis.has(amendement.idObjectif),
+                );
+                if (anterieurs.length === 0) return null;
+                return (
+                  <div className="space-y-2 rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Vous avez écrit ceci sur une formulation précédente de votre objectif. Rien
+                      ne s’efface : votre praticien le lit toujours.
+                    </p>
+                    {anterieurs.map((amendement) => (
+                      <div key={amendement.id} className="space-y-1 border-l-2 border-border pl-3">
+                        {dateLisible(amendement.creeLe) && (
+                          <p className="text-xs text-muted-foreground">
+                            Écrit le {dateLisible(amendement.creeLe)}
+                          </p>
+                        )}
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">
+                          {amendement.texte}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {repondu === 'reponse' && (
                 <PatientInlineMessage tone="success">
                   C’est transmis. Votre praticien le verra tel que vous l’avez indiqué.

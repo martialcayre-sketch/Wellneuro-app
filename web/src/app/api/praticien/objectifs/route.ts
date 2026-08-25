@@ -614,18 +614,30 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       return echec('invalid', 'Référence d’amendement invalide.', 400);
     }
 
-    // AUCUN DRAPEAU PROPRE SUR LA CITATION D'AMENDEMENT, et l'absence est
-    // raisonnée : le geste ne peut pas s'exercer sans matière, et la matière est
-    // déjà gardée à sa source — `WN_DOSSIER_DEUX_VOIX` commande l'écriture d'un
-    // amendement au portail. Drapeau éteint, la table reste vide et la citation
-    // rend 404 sur une référence qui ne désigne rien. Poser ici une seconde
-    // manette laisserait croire à un second interrupteur de gouvernance là où il
-    // n'y en a qu'un.
+    // AUCUN DRAPEAU SUR LA CITATION D'AMENDEMENT — CHOIX ASSUMÉ, PAS DÉDUCTION.
     //
-    // CE N'EST PAS LE CAS DE LA REPRISE DE PROPOSITION, gardée juste en dessous :
-    // celle-là consomme une matière que la MACHINE produit, et son interrupteur
-    // doit pouvoir se fermer sans que le stock déjà assemblé continue d'être
-    // repris.
+    // La première rédaction de ce bloc raisonnait faux et a été reprise en revue :
+    // elle disait « drapeau éteint, la table reste vide, la citation rend 404 ».
+    // C'est vrai le jour de la livraison et faux le lendemain — `D-110` ouvre le
+    // geste patient DÈS LE MERGE, donc des amendements existeront. Un raisonnement
+    // périmé ne doit jamais tenir lieu de garde.
+    //
+    // Le motif réel : `WN_DOSSIER_DEUX_VOIX` garde la SURFACE DU PATIENT — sa
+    // capacité à lire et à écrire. Ce qui est déjà écrit est une pièce du dossier,
+    // et la lecture du dossier par le praticien comme sa faculté de REFORMULER un
+    // objectif n'ont jamais été sous aucun drapeau (arbitrage de 6.0-A, en-tête de
+    // ce fichier). Couper l'interrupteur ferme le portail ; cela ne rend pas
+    // intouchables les mots que le patient a déjà écrits, et les masquer au
+    // praticien le rendrait aveugle à une pièce réelle de son dossier.
+    //
+    // CE N'EST PAS LE CAS DE LA REPRISE DE PROPOSITION, gardée juste en dessous, et
+    // la différence est de nature : celle-là consomme une matière que la MACHINE
+    // produit. Éteindre `WN_OBJECTIF_PROPOSE` dit « nous ne voulons plus que la
+    // machine propose » — continuer d'en reprendre le stock contredirait
+    // l'interrupteur. Éteindre `WN_DOSSIER_DEUX_VOIX` ne dit rien de tel.
+    //
+    // Banc qui épingle ce choix : `route.test.ts`, « la citation reste ouverte
+    // drapeau éteint ». S'il devient faux, c'est une décision, pas un réglage.
     if (amendementCiteId && sourcePropositionId) {
       return echec(
         'citation_double',

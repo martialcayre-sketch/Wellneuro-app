@@ -289,6 +289,13 @@ describe('etatRatification', () => {
     creeLe: new Date(iso),
   });
 
+  const amendement = (id: string, idObjectif: string, iso: string) => ({
+    id,
+    idObjectif,
+    creeLe: new Date(iso),
+  });
+
+
   it('sans aucune ligne : « en attente » — le geste patient n’existe pas encore (DC-24)', () => {
     expect(etatRatification('o1', [])).toBe('en_attente');
   });
@@ -319,12 +326,6 @@ describe('etatRatification', () => {
   });
 
   // ── « Le dire autrement » entre dans la dérivation (6.0-B, LOT-04) ────────
-
-  const amendement = (id: string, idObjectif: string, iso: string) => ({
-    id,
-    idObjectif,
-    creeLe: new Date(iso),
-  });
 
   it('un amendement rend « dit autrement », qui N’EST PAS « contesté »', () => {
     expect(
@@ -364,15 +365,34 @@ describe('etatRatification', () => {
     ).toBe('en_attente');
   });
 
-  it('écarte un `sens` hors taxonomie plutôt que de le replier sur un geste', () => {
-    // Le CHECK en base rend le cas impossible ; s'il survenait, le lire comme
-    // un geste serait pire que de le taire — et il ne doit pas masquer le
-    // geste antérieur, parfaitement lisible, lui.
+  it('un `sens` hors taxonomie NE FAIT PAS REMONTER le geste précédent', () => {
+    // Le CHECK en base rend le cas impossible aujourd'hui. Mais si la taxonomie
+    // s'élargissait sans que ce module bouge, ÉCARTER la ligne inconnue avant
+    // le tri ferait afficher « Ratifié par le patient » à un praticien dont le
+    // patient vient de se rétracter. Le dernier geste est choisi d'abord ; ne
+    // pas le comprendre se dit `en_attente`, qui n'affirme rien (`DC-24`).
     const lignes = [
       ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z'),
       ratification('r2', 'o1', 'peut_etre', '2026-08-21T10:00:00.000Z'),
     ];
-    expect(etatRatification('o1', lignes)).toBe('ratifie');
+    expect(etatRatification('o1', lignes)).toBe('en_attente');
+  });
+
+  it('et il ne masque pas non plus un amendement PLUS RÉCENT que lui', () => {
+    // Le cas mixte des deux tables : c'est là que le tri doit rester unique.
+    const lignes = [
+      ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z'),
+      ratification('r2', 'o1', 'peut_etre', '2026-08-21T10:00:00.000Z'),
+    ];
+    expect(
+      etatRatification('o1', lignes, [amendement('a1', 'o1', '2026-08-22T10:00:00.000Z')]),
+    ).toBe('dit_autrement');
+
+    // Et inversement : l'inconnu le plus récent ne se replie pas sur
+    // l'amendement qui le précède.
+    expect(
+      etatRatification('o1', lignes, [amendement('a1', 'o1', '2026-08-20T12:00:00.000Z')]),
+    ).toBe('en_attente');
   });
 });
 

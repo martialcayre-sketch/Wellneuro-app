@@ -861,6 +861,40 @@ describe('/api/portail/dossier', () => {
       expect(prisma.objectifNegocie.findMany).not.toHaveBeenCalled();
       expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
     });
+
+    it('CHAQUE GESTE IGNORE LES CHAMPS DE L’AUTRE, et n’en écrit rien en base', async () => {
+      // Un corps qui porte les deux jeux de champs ne doit pas produire un
+      // hybride : le geste NOMMÉ décide seul de ce qui est lu et de ce qui est
+      // écrit.
+      await POST(postRequest(cookieProprio(), corps({ sens: 'ratifie' })));
+      const ecritAmendement = prisma.amendementObjectif.create.mock.calls[0][0].data;
+      expect(Object.keys(ecritAmendement).sort()).toEqual(['idObjectif', 'idPatient', 'texte']);
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+
+      vi.clearAllMocks();
+      mockCompteActif();
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      prisma.ratificationObjectif.create.mockResolvedValue({
+        id: 'RAT_1',
+        idObjectif: 'OBJ_1',
+        sens: 'ratifie',
+        creeLe: new Date('2026-08-25T12:00:00.000Z'),
+      });
+
+      await POST(
+        postRequest(cookieProprio(), {
+          geste: 'ratification',
+          idObjectif: 'OBJ_1',
+          sens: 'ratifie',
+          texte: TEXTE,
+        }),
+      );
+      const ecritRatification = prisma.ratificationObjectif.create.mock.calls[0][0].data;
+      expect(Object.keys(ecritRatification).sort()).toEqual(['idObjectif', 'idPatient', 'sens']);
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
   });
 
   // ── JOURNALISATION SÛRE ───────────────────────────────────────────────────

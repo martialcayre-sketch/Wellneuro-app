@@ -74,8 +74,8 @@ d'écrivain unique.
 - [x] UI portail : saisie, borne affichée, confirmation, relecture.
 - [x] Cockpit : trajectoire enrichie ; reprise citant l'amendement.
 - [x] Gardes vues rouges (écrivain unique, aucun update/delete).
-- [ ] T2 ; revue `wn-reviewer` ; **passe Codex** (P0). Pas de T3 : aucune
-      migration.
+- [x] T2 ; revue `wn-reviewer` (NO-GO, refermée). **Passe Codex** (P0) : reste
+      au responsable. Pas de T3 : aucune migration.
 
 ## Tests
 
@@ -139,5 +139,53 @@ problème. Un banc tue la mutation qui l'y ajouterait.
 mutable contredirait l'append-only — même arbitrage que pour
 `desaccords_comprehension`. Le cockpit les affiche tous, indéfiniment.
 
-**Validations.** T1 vert. T2, revue `wn-reviewer` et passe Codex : à la
-clôture. Aucun T3 — aucune migration.
+**La revue `wn-reviewer` a rendu NO-GO, et les cinq points retenus sont
+refermés.** Aucun n'a été corrigé sur la parole de la revue : chacun a été
+revérifié dans l'arbre d'abord, et l'un des cinq l'a été **contre** elle (voir
+plus bas).
+
+- **B1 — T1 était rouge, et la fiche affirmait le contraire.** `.wn/state.json`
+  passait à `LOT-04` sans que `ACTIVE_CAMPAIGN.md` suive : T1 avait été joué
+  **avant** cette édition, et la phrase « T1 vert » était périmée au moment où je
+  l'écrivais. Resynchronisé par `wn-cycle --appliquer`, T1 rejoué.
+- **M1 — un raisonnement faux tenait lieu de garde.** Le commentaire justifiant
+  l'absence de drapeau sur la citation d'amendement disait « drapeau éteint, la
+  table reste vide » : vrai le jour de la livraison, faux le lendemain, puisque
+  le geste s'ouvre dès le merge. Le motif réel est écrit à sa place (`D-110` §4)
+  et **deux bancs épinglent le choix** — le drapeau garde la surface du patient,
+  pas la faculté du praticien de lire son dossier et de reformuler.
+- **M2 — la parole du patient disparaissait de son propre écran.** La route ne
+  sert que les TÊTES de chaîne ; un amendement écrit sur `v1` n'avait plus de
+  version à l'écran dès que le praticien posait `v2`. C'est exactement ce que le
+  contrat de la route promet de ne pas faire. Un bloc dédié le rend au patient,
+  **à part** — le rattacher à la tête courante lui ferait répondre à une
+  formulation qu'il n'a jamais vue. Mon propre banc figeait le défaut ; il a été
+  retourné.
+- **M3 — le refactor avait rendu la dérivation fail-open.** Écarter un `sens`
+  hors taxonomie **avant** le tri faisait remonter le geste précédent : le
+  cockpit aurait affiché « Ratifié par le patient » à un praticien dont le
+  patient venait de se rétracter. La sémantique d'avant le lot est rétablie — le
+  dernier geste est choisi d'abord, et ne pas le comprendre se dit `en_attente`.
+  Là encore, mon banc figeait la mauvaise réponse.
+- **F1** — l'écran jugeait la longueur brute là où le serveur borne le texte
+  trimé : il était plus strict que lui.
+
+**Une garde a dû être refaite après sa propre mutation.** La revue demandait une
+couverture du rendu au cockpit (F2). La première rédaction cherchait
+`{...amendement....length}` — et la mutation `{siens.length}` est passée : le
+panneau range les amendements d'une chaîne dans une variable locale, et la garde
+tenait par le NOM que j'avais choisi, c'est-à-dire par rien. Refaite sur le
+patron de la maison — interdire **tout** décompte rendu, nommer les quatre cas
+licites un par un — puis vue rouge deux fois (le décompte fautif, et le motif
+tué).
+
+**Deux points de finition sont nommés plutôt que corrigés**, tous deux
+antérieurs au lot : la garde d'écrivain unique ne balaie que `src/app/api` et
+`src/lib` (une server action y échapperait — limitation héritée de la garde
+ratification), et rien ne limite le débit de dépôt. `D-110` porte les trois
+dettes.
+
+**Validations.** T1 vert. T2 : 5 928 Vitest verts ; l'unique rouge E2E est la
+signature WebKit/iPhone 13 locale, qui a changé de spec entre deux passes sur
+des specs que le lot ne touche pas. Passe Codex : au responsable. Aucun T3 —
+aucune migration.

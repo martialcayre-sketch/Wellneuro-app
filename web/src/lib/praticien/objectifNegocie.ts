@@ -387,18 +387,32 @@ export function etatRatification(
   ratifications: LigneRatification[],
   amendements: LigneAmendement[] = [],
 ): EtatRatification {
+  // LE GESTE HORS TAXONOMIE N'EST PAS ÉCARTÉ, IL EST TRADUIT EN SILENCE — et la
+  // nuance est tout sauf cosmétique (relevé en revue au LOT-04).
+  //
+  // La taxonomie est tenue par un CHECK en base (`migration.sql:144-146`, deux
+  // valeurs) : une valeur inconnue ne peut pas exister aujourd'hui. Mais si le
+  // CHECK s'élargissait un jour sans que ce module bouge — `retire`, `annule` —,
+  // FILTRER ces lignes AVANT le tri ferait remonter le geste PRÉCÉDENT à la
+  // surface, et le cockpit afficherait « Ratifié par le patient » à un praticien
+  // dont le patient vient de se rétracter. Les garder dans le tri et les rendre
+  // `en_attente` ne dit rien du patient, ce qui est la seule chose vraie quand on
+  // ne comprend pas son geste (`DC-24`).
+  //
+  // C'est la sémantique d'avant le LOT-04, préservée mot pour mot : le dernier
+  // geste est choisi D'ABORD, la lecture vient ensuite.
   const gestes: { id: string; creeLe: Date; etat: EtatRatification }[] = [
     ...ratifications
       .filter((ligne) => ligne.idObjectif === idObjectif)
-      // La taxonomie de geste est tenue par un CHECK en base
-      // (`migration.sql:144-146`, deux valeurs) ; une valeur hors taxonomie ne
-      // peut pas exister, et si elle existait, la lire comme un geste serait
-      // pire que de la taire — elle est donc ÉCARTÉE, pas repliée sur un sens.
-      .filter((ligne) => ligne.sens === 'ratifie' || ligne.sens === 'conteste')
       .map((ligne) => ({
         id: ligne.id,
         creeLe: ligne.creeLe,
-        etat: ligne.sens === 'ratifie' ? ('ratifie' as const) : ('conteste' as const),
+        etat:
+          ligne.sens === 'ratifie'
+            ? ('ratifie' as const)
+            : ligne.sens === 'conteste'
+              ? ('conteste' as const)
+              : ('en_attente' as const),
       })),
     ...amendements
       .filter((ligne) => ligne.idObjectif === idObjectif)

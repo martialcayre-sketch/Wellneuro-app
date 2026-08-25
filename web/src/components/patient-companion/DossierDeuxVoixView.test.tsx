@@ -376,14 +376,38 @@ describe('DossierDeuxVoixView', () => {
       expect(rendu).not.toContain('en retard');
     });
 
-    it('un amendement porté sur une AUTRE version ne s’affiche pas sous celle-ci', async () => {
+    it('un amendement porté sur une AUTRE version ne s’affiche pas SOUS celle-ci', async () => {
       fetchMock.mockResolvedValueOnce(
         json(assemblage({ amendements: [{ ...AMENDEMENT, idObjectif: 'OBJ_AILLEURS' }] })),
       );
       render(<DossierDeuxVoixView token="TOK" />);
 
       await waitFor(() => expect(texteRendu()).toContain('Ce sur quoi nous travaillons'));
-      expect(texteRendu()).not.toContain('tenir debout jusqu’au dîner');
+      // Il n'est pas rattaché à la version courante — il ne répond pas à cette
+      // formulation-là…
+      const carte = screen.getByText(OBJECTIF.enoncePatient).closest('div')?.parentElement;
+      expect(carte?.textContent ?? '').not.toContain('tenir debout jusqu’au dîner');
+    });
+
+    it('MAIS IL NE DISPARAÎT PAS : le patient relit ce qu’il a écrit avant la reformulation', async () => {
+      // La route ne sert que les TÊTES : sans bloc dédié, la parole du patient
+      // s'évanouissait au premier geste du praticien.
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ amendements: [{ ...AMENDEMENT, idObjectif: 'OBJ_AILLEURS' }] })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('tenir debout jusqu’au dîner'));
+      expect(texteRendu()).toContain('une formulation précédente de votre objectif');
+      expect(texteRendu()).toContain('Rien ne s’efface');
+    });
+
+    it('un amendement de la version COURANTE ne se dédouble pas dans le bloc « avant »', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ amendements: [AMENDEMENT] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('tenir debout jusqu’au dîner'));
+      expect(texteRendu()).not.toContain('une formulation précédente de votre objectif');
     });
 
     it('SUR UN REFUS, le texte reste à l’écran — il est irremplaçable', async () => {

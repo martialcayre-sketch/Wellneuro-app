@@ -73,6 +73,32 @@ défaut, pas une conformité.
   dans la route praticien ; l'ajout des amendements à la garde de registre
   anxiogène ; la lecture de la seule table des ratifications.
 
+## Revue `wn-reviewer` (P0) : NO-GO, cinq points refermés
+
+Aucun correctif sur la parole de la revue — chaque point revérifié dans l'arbre
+d'abord.
+
+- **B1 — T1 rouge, et la fiche disait le contraire.** `.wn/state.json` passait à
+  `LOT-04` sans que `ACTIVE_CAMPAIGN.md` suive. T1 avait été joué **avant** cette
+  édition ; « T1 vert » était périmé au moment où je l'écrivais.
+  `wn-cycle --appliquer`, T1 rejoué.
+- **M1 — un raisonnement faux tenait lieu de garde.** « Drapeau éteint, la table
+  reste vide » : vrai le jour de la livraison, faux le lendemain. Motif réel
+  écrit à sa place, **choix épinglé par deux bancs** (`D-110` §4) — le drapeau
+  garde la surface du patient, pas la faculté du praticien de lire son dossier.
+- **M2 — la parole du patient disparaissait de son propre écran** dès la
+  première reformulation, la route ne servant que les têtes. Bloc dédié, rendu
+  **à part** de la tête courante. Mon banc figeait le défaut.
+- **M3 — le refactor avait rendu la dérivation fail-open** : un `sens` hors
+  taxonomie écarté avant le tri faisait remonter le geste précédent. Sémantique
+  d'avant le lot rétablie. Mon banc figeait la mauvaise réponse.
+- **F1** — l'écran jugeait la longueur brute, le serveur borne le texte trimé.
+
+**Une garde refaite après sa propre mutation** : la première rédaction de G2-bis
+cherchait `{...amendement....length}` et laissait passer `{siens.length}` — elle
+tenait par le nom de la variable. Refaite sur le patron de la maison (interdire
+tout décompte rendu, nommer les cas licites), vue rouge deux fois.
+
 ## Problèmes ouverts
 
 - **Rien ne marque un amendement comme « lu »** : une colonne mutable
@@ -85,13 +111,22 @@ défaut, pas une conformité.
   transaction, SHA du périmètre non confrontable, aucun déplacement de focus
   quand une sélection bascule le formulaire situé plus bas — l'ouverture de la
   saisie d'amendement hérite du même défaut.
+- **La garde d'écrivain unique ne balaie que `src/app/api` et `src/lib`** : une
+  server action sous `src/app/(cockpit)` créerait un amendement sans rougir.
+  Limitation **héritée** de la garde ratification, nommée ici, non corrigée dans
+  ce lot — l'élargir toucherait les deux gardes et sort du périmètre.
+- **Aucune limitation de débit** sur le dépôt d'amendements (`D-110`, dette 3) :
+  préexistant sur la ratification, plus coûteux ici (4 Ko par dépôt). Sans
+  porteur.
+- **Le dossier clos n'arrête pas le geste** (`D-110`, dette 2) — hérité de la
+  ratification, désormais écrit pour qu'on ne le « corrige » pas comme un oubli.
 - Le portail reste en **pull** : rien ne prévient le praticien qu'un amendement
   est arrivé.
 
 ## Prochaine action exacte
 
-**T2** (`npm run test:worktree -- --fast`), puis revue `wn-reviewer`, puis passe
-Codex (classe P0), puis PR. Ensuite LOT-05 — les jalons.
+**Passe Codex** (classe P0) — geste du responsable, `$wellneuro-pr-review`.
+Ensuite la PR, puis LOT-05 — les jalons.
 
 ## Interdits encore actifs
 

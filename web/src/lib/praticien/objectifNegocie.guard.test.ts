@@ -196,6 +196,92 @@ describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la
   );
 });
 
+// ── G2-bis — la parole du patient ne se compte pas au rendu ─────────────────
+
+/**
+ * LES DEUX SURFACES QUI RENDENT UN AMENDEMENT (6.0-B, LOT-04, `D-110`), et
+ * elles seules : le cockpit et l'écran du patient.
+ *
+ * G2 balaie des NOMS DÉCLARÉS ; elle attraperait `scoreAmendement`, pas
+ * `{amendements.length}`, qui ne déclare rien. Or `D-110` nomme précisément la
+ * tentation — « ni résumé, ni compté, ni comparé à l'énoncé courant » — et le
+ * cockpit est le seul endroit du dépôt où les mots du patient et ceux du
+ * praticien se lisent côte à côte : c'est là qu'un décompte ou un écart
+ * s'écrirait. La garde « ce qui compte » ne peut pas accueillir le panneau tel
+ * quel — `{objectifs.length}` y est un signal de discordance légitime
+ * (`DC-30`) —, d'où un cas propre plutôt qu'une garde élargie à contrecœur.
+ */
+const SURFACES_AMENDEMENT = [PANNEAU, 'src/components/patient-companion/DossierDeuxVoixView.tsx'];
+
+/**
+ * LA GARDE NE NOMME PAS LA COLLECTION, ET C'EST LE POINT. Une première
+ * rédaction cherchait `{...amendement....length}` : le panneau range les
+ * amendements d'une chaîne dans une variable locale `siens`, et
+ * `{siens.length}` passait — la garde tenait par le NOM que l'auteur avait
+ * choisi, c'est-à-dire par rien. La mutation l'a montré avant qu'on la croie
+ * verte. Même cicatrice que celle déjà écrite dans
+ * `ceQuiCompteAntiAgregat.guard.test.ts`, et le même remède : interdire TOUT
+ * décompte rendu, puis nommer les cas licites un par un.
+ *
+ * `x.length === 0` reste licite et n'est pas visé : c'est la distinction
+ * « silence / réponse » (`DC-24`), pas un affichage.
+ */
+const DECOMPTE_RENDU = /\{\s*[\w.]+\.length(?:\.toLocaleString\([^)]*\))?\s*\}/g;
+
+/**
+ * LES TROIS SEULS DÉCOMPTES LICITES, chacun avec sa raison :
+ *
+ * - `objectifs.length` — le signal de DISCORDANCE au cockpit : « 2 versions
+ *   courantes coexistent ». Compter des versions n'est pas mesurer une parole,
+ *   et `DC-30` demande précisément de le dire.
+ * - `anterieures.length` — « Versions antérieures (3) », un repère de
+ *   navigation dans la trajectoire.
+ * - `valeur.length` et `texteAmendement.length` — les compteurs de caractères
+ *   des SAISIES (`Compteur`, et la zone « le dire autrement »). Ils remplacent
+ *   `maxLength` : le dépassement est visible, rien n'est coupé.
+ *
+ * Aucun ne porte sur `amendements`, et c'est bien ce qu'on veut : la parole du
+ * patient ne se compte pas (`D-110`, `DC-19`/`DC-20`).
+ */
+const DECOMPTES_LICITES = [
+  'objectifs.length',
+  'anterieures.length',
+  'valeur.length',
+  'texteAmendement.length',
+];
+
+/** Un agrégat sur les mots du patient : moyenne, cumul, comparaison chiffrée. */
+const AGREGAT_AMENDEMENT = /amendements?\s*\.\s*(reduce|sort)\s*\(/i;
+
+describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', () => {
+  it.each(SURFACES_AMENDEMENT)('%s ne rend aucun décompte ni agrégat', (chemin) => {
+    const code = sourceSansCommentaires(chemin);
+
+    // ANTI-VACUITÉ 1 : la surface rend bien des amendements. Un renommage
+    // ferait sinon passer ce cas au vert en ne gardant plus rien.
+    expect(code).toMatch(/amendement/i);
+
+    const rendus = [...code.matchAll(DECOMPTE_RENDU)].map((m) => m[0]);
+    const fautifs = rendus.filter(
+      (rendu) => !DECOMPTES_LICITES.some((licite) => rendu.includes(licite)),
+    );
+    expect(fautifs, `Décompte rendu sur une surface d’amendement : ${fautifs.join(', ')}`).toEqual(
+      [],
+    );
+
+    expect(AGREGAT_AMENDEMENT.test(code)).toBe(false);
+  });
+
+  it('ANTI-VACUITÉ 2 — le détecteur mord : il TROUVE les décomptes licites', () => {
+    // Sans ce cas, un motif devenu inopérant rendrait la liste vide, donc les
+    // deux cas ci-dessus verts et creux.
+    const panneau = sourceSansCommentaires(PANNEAU);
+    const rendus = [...panneau.matchAll(DECOMPTE_RENDU)].map((m) => m[0]);
+    expect(rendus.some((rendu) => rendu.includes('objectifs.length'))).toBe(true);
+    expect(rendus.some((rendu) => rendu.includes('anterieures.length'))).toBe(true);
+  });
+});
+
 // ── G3 — la priorité ne s'ordonne pas ───────────────────────────────────────
 
 describe('G3 — la priorité est un libellé, jamais un rang', () => {

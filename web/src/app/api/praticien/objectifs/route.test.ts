@@ -876,6 +876,33 @@ describe('/api/praticien/objectifs', () => {
       expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
     });
 
+    it('LA CITATION RESTE OUVERTE DRAPEAU ÉTEINT — choix assumé, épinglé ici', async () => {
+      // `WN_DOSSIER_DEUX_VOIX` garde la surface du PATIENT. Ce qui est déjà
+      // écrit est une pièce du dossier, et reformuler un objectif n'a jamais été
+      // sous drapeau. Si ce cas devient rouge un jour, c'est une décision à
+      // prendre — pas un réglage à ajuster.
+      vi.stubEnv('WN_DOSSIER_DEUX_VOIX', '');
+      const reponse = await POST(postRequest(corpsCitation()));
+      expect(reponse.status).toBe(201);
+      const { data } = prisma.objectifNegocie.create.mock.calls[0][0];
+      expect(data.enoncePatient).toBe(TEXTE_PATIENT);
+    });
+
+    it('et le GET sert les mots du patient, drapeau éteint aussi', async () => {
+      // Les masquer rendrait le praticien aveugle à une pièce réelle du dossier.
+      vi.stubEnv('WN_DOSSIER_DEUX_VOIX', '');
+      prisma.amendementObjectif.findMany.mockResolvedValue([
+        {
+          id: 'AME_1',
+          idObjectif: 'OBJ_1',
+          texte: TEXTE_PATIENT,
+          creeLe: new Date('2026-08-25T12:00:00.000Z'),
+        },
+      ]);
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(charge.amendements).toHaveLength(1);
+    });
+
     it('une version DÉJÀ REFORMULÉE reste refusée — la citation ne contourne pas la garde', async () => {
       prisma.objectifNegocie.findFirst.mockResolvedValue({ id: 'OBJ_2' });
       const reponse = await POST(postRequest(corpsCitation()));
