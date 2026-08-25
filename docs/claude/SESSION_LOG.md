@@ -4774,3 +4774,190 @@ n'atteint pas la production.
 
 Questions ouvertes — l'escalade n'atteint ni l'extinction ni les préconditions
 T0 ; restent LOT-03, LOT-07 et LOT-08 de la campagne.
+
+## 2026-08-25 — Alliance 6.0-B, LOT-03 : le cockpit reprend une citation (#795)
+
+Campagne reprise — elle était repassée **inactive** à la clôture de
+`doctrine-executable`. Décisions — l'écran DÉSIGNE le fragment, le serveur le
+RECOPIE ; un fragment non-anamnèse est refusé (422) ; reprendre écrit objectif
+et geste dans une seule transaction.
+
+Le déclencheur d'assemblage a demandé une mesure, qui a renversé mon modèle :
+`GET /cockpit` ne rend jamais `ready`, le `POST` qui produit la carte n'écrit
+rien, la carte n'est persistée nulle part. Elle n'existe que dans le navigateur,
+après la confirmation T0 — l'intuition du responsable était juste, et l'option
+« le panneau cherche les candidats » était **impossible**. Carte du workflow
+établie pour trancher.
+
+Deux défauts invisibles de `tsc` : un import de table clinique dans un composant
+`'use client'` (667 lignes au bundle) ; puis T2 a cassé le build sur
+`node:crypto`. Le domaine est désormais pur, et ce zéro d'import est asserté.
+
+Revue **no-go** : le drapeau ne gardait pas la reprise ; et G2 se disait
+bilingue sans l'être — le défaut du LOT-02, non propagé au fichier voisin que
+j'éditais. Mémoire corrigée en ce sens.
+
+Prochaine action : LOT-04 (portail, « le dire autrement »). Ouvert : le contrôle
+« déjà disposée » n'est pas étanche à la course ; pas de déplacement de focus ;
+aucun E2E du parcours complet.
+
+---
+
+## Entrées restaurées le 2026-08-25 — neuf sessions de « Doctrine exécutable »
+
+Ce qui suit a été **écrit après coup**, le 2026-08-25, à partir des fragments de
+handoff et du registre de décisions — les deux sources primaires, toutes deux
+présentes au dépôt. Les neuf sessions concernées ont produit leur décision, leur
+handoff et leur PR ; seule leur entrée de journal manquait, de `D-098` à `D-101`
+puis de `D-105` à `D-109`.
+
+Elles sont posées **à la fin**, et non insérées à leur place chronologique :
+`SESSION_LOG.md` est append-only, et rétablir une lacune ne justifie pas de
+défaire l'invariant qui protège le reste. Chaque titre porte sa vraie date.
+Elles sont plus courtes que celles écrites à chaud, et c'est assumé : un
+handoff dit ce qu'une session a fait, il ne dit pas tout ce qu'elle a pensé —
+on ne comble pas cet écart en l'inventant.
+
+## 2026-08-23 — Trois dettes du LOT-09 tranchées sur mesure (D-098)
+
+Décisions — L'ancre d'une citation devient **textuelle** : mesure sur 247
+citations `fichier:ligne`, et le contrôle qu'on écrirait spontanément (le
+fichier existe, la ligne est dans les bornes) n'aurait attrapé **aucune** des
+huit citations faussées la veille — elles étaient toutes dans les bornes. Il
+garde contre la suppression d'un fichier, jamais contre la dérive, c'est-à-dire
+contre le seul défaut réellement observé. Le classificateur E2E perd un
+prédicat.
+
+Écarté — Rouvrir les dix règles orphelines : `D-096` les a laissées dettes
+nommées et le LOT-08 les porte déjà, liste et méthode de recomptage comprises ;
+les re-décider huit jours plus tard serait de l'agitation de portefeuille.
+
+Prochaine action — LOT-10, qui exécute les deux premières.
+
+## 2026-08-23 — LOT-04 : un objet de sécurité qui existait partout sauf à l'entrée (D-099)
+
+Décisions — `SafetyFinding` avait son type, son consommateur et ses bancs depuis
+la chaîne T0, mais **jamais d'entrée** : `chaineC1.ts` posait `safetyFindings: 0`
+en dur. `DC-12` et `DC-23`, actées depuis `D-043`, étaient donc **inertes en
+production**. Les douze signaux d'alerte sont cotés en **deux rangs**, et le rang
+`adressage` **retire** les priorités au lieu de s'afficher à côté.
+
+Ce que la mesure a changé — Trois lectures de production en conteneur (lecture
+seule, agrégats sans identité) : 25 consultations, 9 portent au moins un signal
+(36 %), 6 au moins un signal d'adressage (24 %), six libellés distincts tous
+exacts. Ces chiffres ont écarté la cotation **uniforme**.
+
+Fait retrouvé, pas inventé — l'arbitrage praticien du 2026-08-03, inscrit en tête
+d'`orientationRulesV1.ts` : « un signal d'alerte appelle un ADRESSAGE, pas une
+exploration ». Personne n'avait relié ce lot à cette phrase.
+
+## 2026-08-23 — LOT-10 : deux instruments de mesure qui se trompaient (D-100)
+
+Décisions — Le lot a corrigé **son propre cadrage**. Deux constats de `D-098`
+étaient faux, pour la même raison de fond : l'instrument de mesure était plus
+fragile que ce qu'il mesurait. Une citation morte et non deux — l'attribution
+« à l'ancre la plus proche à gauche » condamnait une ancre juste. C'est ce faux
+positif qui a dicté la forme retenue : ancre et texte liés dans **un seul lien
+markdown**, l'attribution devient syntaxique, il n'y a plus rien à deviner.
+
+Second constat — le classificateur E2E se taisait pour **deux** raisons : le
+prédicat `page.goto`, et le prédicat « journal réseau vide », qui lâche dès
+qu'un test monte son décor par `page.request.post`. Corriger le seul mode cadré
+n'y aurait rien changé.
+
+Questions ouvertes — aucune ; le banc a trouvé deux défauts sur le contrôle
+lui-même avant livraison.
+
+## 2026-08-23 — LOT-05 : une gate sans sujet, une règle inapplicable (D-101)
+
+Décisions — La mesure d'ouverture a rendu la fiche inapplicable. **La gate
+n'avait pas de sujet** : le seul objet réellement classé à l'exécution est une
+règle de priorité, et aucun chemin d'exécution ne relie un candidat classé aux
+95 `neCouvrePas` du registre d'audit — les curer aurait produit une donnée que
+rien ne lit. **Des neuf critères de `DC-43`, aucun n'était lisible comme état
+courant.** Et `DC-42` n'était pas « non appliquée » mais **inapplicable** : la
+capture est complète depuis le 2026-07-16, mais `produit_libelle` est du texte
+libre et aucune clé ne pointait un protocole — aucune requête ne pouvait établir
+ce que la règle demande.
+
+Retenu — la gate **dit ce qu'elle ignore** ; l'effet indésirable reçoit son
+association ; une seule consultation fait foi.
+
+## 2026-08-24 — LOT-03 : `DC-58` n'a ni sujet ni méthode (D-105)
+
+Décisions — La fiche exigeait la mesure avant le banc, « c'est elle qui dit si
+le garde a un sujet ». **Elle a dit non deux fois.** Descente sur 476 fichiers
+de test, 595 sources, 283 de `src/lib` : **zéro valeur orpheline** — les 25
+candidats sans provenance sont tous légitimes après qualification une par une.
+
+Et surtout, **la méthode prescrite est vacue** : vérifier qu'une valeur de test
+« existe ailleurs » ne prouve rien avec 633 valeurs distinctes au dénominateur.
+`poids = 1` était « couvert » par le chiffre 1 d'un fichier d'indications ;
+`doseCibleBasse = 4000` par une longueur maximale de texte. Le banc aurait été
+vert en permanence, et vert pour la mauvaise raison.
+
+Retenu — le banc se pose sur **l'autre versant**.
+
+## 2026-08-24 — LOT-07 : le total de « Mon équilibre » n'a pas d'interprétation clinique (D-106)
+
+Décisions — Trois faits ont rendu l'arbitrage décidable : aucun consommateur ne
+lit le total ; le patient ne voit jamais le chiffre ; **mais sa VARIATION est un
+signal présenté aux deux surfaces**. C'est ce troisième fait qui obligeait à
+trancher — si le total n'a pas de sens clinique, sa variation n'en a pas non
+plus, et c'est elle, pas lui, que le patient lisait sous la forme « En
+progression depuis votre dernier bilan ».
+
+Réponse — **non**, il n'a pas d'interprétation clinique, et il n'est pas retiré
+pour autant : `DC-22` bascule par sa **seconde branche**, le total est
+*identifié* (`DC-20`), pas supprimé.
+
+Corrigé en revue — une première rédaction disait « simple code de vocabulaire » :
+c'était faux, `GLOBAL_BALANCE` est émis en portant sa valeur, donc dans le
+snapshot figé et son empreinte.
+
+## 2026-08-24 — LOT-11 : les actes en attente (D-107)
+
+Décisions — Le lot re-constate avant de décider, et rien n'avait bougé : six
+drapeaux toujours posés, deux signatures toujours à `false`, zéro exclusion
+curée sur 95, treize orphelines au grep. `SAFETY_EI_METADATA` est **reportée au
+2026-08-30** avec son motif — rien ne se perd, la capture reste ouverte, seule
+l'interruption reste fermée. La curation des exclusions est **rouverte**, ce qui
+revient sur `D-101` : `DC-43` cesse d'être « écrite, non armée » et obtient un
+porteur nommé.
+
+Écarté — laisser les dix orphelines en « dettes nommées » : c'est **le régime
+qui les a rendues orphelines**. Elles reçoivent une campagne dédiée.
+
+## 2026-08-24 — LOT-12 : la contre-revue adverse trouve six trous (D-108)
+
+Décisions — La revue a été lancée **avant** le lot de clôture, et c'est ce qui a
+payé : sept affirmations sur treize réfutées, six debout, toutes revérifiées une
+par une dans l'arbre avant tout correctif. Rien n'a été corrigé sur la parole de
+la revue.
+
+Le trou principal n'était pas un banc perfectible — `PatientCompanionHome.tsx`
+servait du vocabulaire de jeu **au patient depuis le 2026-07-18**, cinq
+semaines. Le mot était le deuxième motif de la liste surveillée : ce n'est pas
+la liste qui a failli, c'est le périmètre — le garde connaissait la **page**, pas
+le **composant** qu'elle monte. Deuxième fois que ce garde est pris à ne pas
+couvrir ce qu'il annonce. Le correctif ferme la classe par remontée
+**transitive** des imports du portail.
+
+## 2026-08-25 — LOT-08 : la clôture de « Doctrine exécutable » (D-109)
+
+Décisions — Le lot **vérifie, il n'enregistre pas** : les six bascules citent
+chacune une décision existante *et* un banc dont la présence a été vérifiée au
+dépôt. Deux mesures ont changé ce qui allait être écrit. Les déclencheurs des
+quatre règles non armées, vérifiés **structurellement** : `rag_corpus_claims` ne
+porte ni colonne de claim parent ni colonne de niveau d'exécution, et aucune
+`ALTER` n'en ajoute — le déclencheur ne *peut pas* être franchi, il n'est pas
+seulement « non franchi ». Et « PNNS 4 » figure bien au dépôt, mais comme
+**libellé d'un item de questionnaire** : un grep pressé aurait conclu que le
+déclencheur de `DC-52` était franchi.
+
+Écarté — suivre la fiche du lot, périmée : son §2 annonçait les dix orphelines
+en « dettes nommées », option que `D-107` avait écartée la veille.
+
+Résultat — campagne terminée, 11 lots sur 12 exécutés dont un LOT-12 non prévu ;
+six règles sur leurs trois preuves, et ce qui n'est pas fermé est nommé règle
+par règle.
