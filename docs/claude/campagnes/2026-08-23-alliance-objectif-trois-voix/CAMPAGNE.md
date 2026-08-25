@@ -1,10 +1,10 @@
 ---
 id: "2026-08-23-alliance-objectif-trois-voix"
 titre: "Alliance 6.0-B — l'objectif à trois voix"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-08-23"
-mise_à_jour: "2026-08-23"
-lot_courant: "LOT-02"
+mise_à_jour: "2026-08-25"
+lot_courant: "LOT-03"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -166,8 +166,8 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 | --- | --- | --- | --- |
 | LOT-00 | Doctrine : régime de la proposition citée, « dire autrement », sources admissibles, interrupteur de repli — [[D-094]] | terminé (2026-08-23) | — |
 | LOT-01 | Migration : `propositions_objectif`, `dispositions_proposition`, `amendements_objectif` + `source_proposition_id` | terminé (2026-08-23, application `release-db` en attente) | LOT-00 ✓ |
-| LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | à_faire | LOT-01 (releasée et constatée) |
-| LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | à_faire | LOT-02 |
+| LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | terminé (2026-08-23) | LOT-01 (releasée et constatée) |
+| LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | terminé (2026-08-25) | LOT-02 ✓ |
 | LOT-04 | Portail : « le dire autrement » — `D-xxx` geste patient | à_faire | LOT-00 ; LOT-01 si migration du CHECK |
 | LOT-05 | Jalons : évaluation ancrée à la version, EVA brute | à_faire | LOT-04 |
 | LOT-06 | Bilan : écarts + amendements → provenance pour signer le classement ; **gate de consolidation**, ferme la boucle [[D-093]] | à_faire | tous |

@@ -6,10 +6,10 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import { dossierDansPerimetreProposition, isObjectifProposeEnabled } from '@/lib/patient/featureFlag';
+import { assemblerPropositions } from '@/lib/praticien/assemblageProposition';
 import {
   MAX_PROPOSITIONS,
   assembleeCourante,
-  assemblerPropositions,
   clesInterdites,
   dispositionCourante,
   preparerDisposition,

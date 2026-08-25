@@ -78,7 +78,14 @@ type CleObjectifExpose =
   | 'nonTraiteDepuisLe'
   | 'negocieLe'
   | 'creeLe'
-  | 'supersedesObjectifId';
+  | 'supersedesObjectifId'
+  // Alliance 6.0-B, LOT-03 : la proposition dont cet objectif est la reprise.
+  // ELLE EST ADMISE ICI PARCE QU'ELLE NE MESURE RIEN — c'est un identifiant de
+  // provenance, du même ordre que `supersedesObjectifId`, et il rend LISIBLE ce
+  // qui serait autrement invisible : le praticien a-t-il rédigé cet objectif,
+  // ou repris ce que la machine avait cité ? Sans ce champ, le diff
+  // proposé↔négocié n'aurait aucun point d'ancrage.
+  | 'sourcePropositionId';
 
 describe('G1 — l’objectif exposé ne porte que les clés épinglées', () => {
   it('la liste des clés est celle-ci, et rien d’autre', () => {

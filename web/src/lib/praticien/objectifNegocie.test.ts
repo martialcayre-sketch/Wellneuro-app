@@ -149,7 +149,7 @@ describe('preparerObjectif — révision', () => {
         reformulationPraticien: 'Sommeil fragmenté en seconde partie de nuit.',
         supersedesObjectifId: 'OBJ_1',
       }),
-      { enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.' },
+      { enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.', origine: 'revision' },
     );
     expect(resultat.ok).toBe(true);
     if (!resultat.ok) return;
@@ -160,7 +160,7 @@ describe('preparerObjectif — révision', () => {
   it('n’exige pas d’énoncé au corps quand la cible en fournit un', () => {
     const resultat = preparerObjectif(
       entree({ enoncePatient: null, priorite: 'Second plan', supersedesObjectifId: 'OBJ_1' }),
-      { enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.' },
+      { enoncePatient: 'Je voudrais dormir sans me réveiller à trois heures.', origine: 'revision' },
     );
     expect(resultat.ok).toBe(true);
   });

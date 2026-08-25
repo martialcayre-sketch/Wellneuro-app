@@ -138,6 +138,7 @@ export function ClinicalRuntimeSection({
   phase = 'tout',
   onAjusterProtocole,
   onEtatChange,
+  onPropositionsAssemblees,
 }: {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
@@ -146,6 +147,13 @@ export function ClinicalRuntimeSection({
   phase?: PhaseCycleClinique;
   onAjusterProtocole?: () => void;
   onEtatChange?: (etat: EtatRuntimeClinique) => void;
+  /**
+   * Prévient le poste de pilotage qu'une assemblée de propositions vient
+   * d'être demandée (Alliance 6.0-B, LOT-03). Le panneau objectif s'en sert
+   * pour relire ; sans ce signal, il lirait la table AVANT que l'assemblage y
+   * ait écrit, et n'afficherait rien jusqu'au rechargement suivant.
+   */
+  onPropositionsAssemblees?: () => void;
 }) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
@@ -516,10 +524,73 @@ export function ClinicalRuntimeSection({
       }
       setRuntime(payload);
       setNotice(null);
+      void assemblerPropositions(payload);
     } catch {
       setError('technical');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /**
+   * DEMANDE L'ASSEMBLAGE DES PROPOSITIONS D'OBJECTIF (Alliance 6.0-B, LOT-03).
+   *
+   * POURQUOI ICI, ET NULLE PART AILLEURS. La carte de décision n'est persistée
+   * dans aucune table : le `GET /cockpit` ne la rend jamais, et le `POST` qui
+   * la produit n'écrit rien. Elle n'existe donc qu'ICI, dans la réponse qu'on
+   * vient de recevoir, entre cette confirmation et le prochain rechargement de
+   * page. Le panneau objectif, lui, est autonome et ne voit jamais le runtime
+   * clinique — il ne peut pas aller la chercher, et lui faire confirmer un
+   * épisode pour l'obtenir lui ferait poser un acte qui appartient au praticien.
+   *
+   * ELLE NE FAIT PAS ÉCHOUER LA CONFIRMATION. L'épisode est confirmé, la carte
+   * est affichée : c'est le résultat que le praticien attendait. Une
+   * proposition d'objectif absente est une surface en moins, jamais une raison
+   * de retirer ce qui a réussi — et le drapeau est éteint par défaut, donc le
+   * refus le plus fréquent sera un `503` parfaitement normal.
+   *
+   * `rank` ET `confidence` NE SONT PAS TRANSMIS, bien que la carte les porte :
+   * ce qu'on n'envoie pas ne peut pas se persister, donc ne peut pas se trier.
+   * L'ordre des candidats n'est couvert par aucune ligne signée ([[D-093]]).
+   */
+  const assemblerPropositions = async (payload: CockpitRuntimeApiResponse) => {
+    if (payload.status !== 'ready') return;
+    try {
+      const reponse = await fetch('/api/praticien/propositions-objectif', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'assembler',
+          idPatient,
+          plainte: payload.plainteDominante
+            ? {
+                // L'identifiant de l'instrument vient de la RÉPONSE, pas d'un
+                // import : ce composant est `'use client'`, et importer la
+                // table signée pour une seule chaîne embarquerait ses 667
+                // lignes — règles, seuils, motifs — dans le bundle du
+                // navigateur. La garde de fraîcheur de la matrice de
+                // consommation l'a signalé.
+                instrument: payload.canalPlainte,
+                domaine: payload.plainteDominante.domaine,
+                // Le LIBELLÉ publié, jamais l'intensité déclarée : un nombre
+                // déposé dans une proposition se trierait.
+                restitution: payload.plainteDominante.bande,
+              }
+            : null,
+          candidats: payload.decisionCard.priorityCandidates.map(candidat => ({
+            regle: candidat.ruleId ?? candidat.candidateId,
+            texte: candidat.label,
+          })),
+          shaPerimetre: payload.perimetreSigne,
+        }),
+      });
+      // Le drapeau éteint rend 503 : c'est l'état nominal à la livraison, il ne
+      // se signale pas au praticien.
+      if (reponse.ok) onPropositionsAssemblees?.();
+    } catch {
+      // Silencieux DÉLIBÉRÉMENT : voir ci-dessus. Journaliser ici écrirait dans
+      // la console du navigateur du praticien un bruit qu'il ne peut pas
+      // traiter.
     }
   };
 

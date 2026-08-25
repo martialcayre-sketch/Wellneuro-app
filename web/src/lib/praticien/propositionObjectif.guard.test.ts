@@ -24,6 +24,9 @@ const RACINE_WEB = path.resolve(__dirname, '../../..');
 const MODULE = 'src/lib/praticien/propositionObjectif.ts';
 const ROUTE = 'src/app/api/praticien/propositions-objectif/route.ts';
 const BANC_UNITAIRE = 'src/lib/praticien/propositionObjectif.test.ts';
+/** La moitié SERVEUR du moteur, sortie du domaine pour que celui-ci reste
+ *  importable d'un composant `'use client'` (défaut vu au palier T2). */
+const EMPREINTE = 'src/lib/praticien/assemblageProposition.ts';
 
 /** Un fichier qui, LUI, importe le moteur clinique — l'ancre d'anti-vacuité. */
 const TEMOIN_MOTEUR = 'src/lib/clinical-engine/chaineC1.ts';
@@ -97,7 +100,7 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     ].map((m) => m[1]);
   }
 
-  it.each([MODULE, ROUTE])('%s n’importe aucun moteur clinique', (chemin) => {
+  it.each([MODULE, ROUTE, EMPREINTE])('%s n’importe aucun moteur clinique', (chemin) => {
     const source = sourceSansCommentaires(chemin);
     expect(source.length).toBeGreaterThan(500); // anti-vacuité
     for (const interdit of IMPORTS_INTERDITS) {
@@ -105,12 +108,27 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     }
   });
 
-  it.each([MODULE, ROUTE])('%s n’y accède pas non plus par un chemin relatif', (chemin) => {
+  it.each([MODULE, ROUTE, EMPREINTE])('%s n’y accède pas non plus par un chemin relatif', (chemin) => {
     const specificateurs = specificateursImportes(chemin);
-    // ANTI-VACUITÉ : l'extraction voit bien des imports, et l'un d'eux est
-    // celui qu'on sait présent. Une regex devenue inopérante rendrait la
-    // liste vide, donc ce cas vert sur un fichier qui importerait tout.
-    expect(specificateurs.length).toBeGreaterThan(0);
+    // ANTI-VACUITÉ, PROPRE À CHAQUE FICHIER — et pour le domaine, c'est devenu
+    // un invariant à part entière.
+    //
+    // LE MODULE PUR N'IMPORTE RIEN, ET CE ZÉRO SE VÉRIFIE. C'est la forme la
+    // plus forte de l'interdit, et elle en garde une seconde que G7-1 ne visait
+    // pas : une dépendance RÉSERVÉE AU SERVEUR (`node:crypto`) y a vécu
+    // jusqu'au palier T2, où la CONSTRUCTION DE PRODUCTION a échoué — le
+    // panneau du cockpit, qui n'y prend qu'une borne de longueur, tirait tout
+    // le module dans le bundle du navigateur. Ni `tsc` ni Vitest ne le
+    // voyaient. Ce cas le rendrait rouge avant le build.
+    //
+    // Les deux autres fichiers importent : une extraction devenue inopérante y
+    // rendrait la liste vide, donc le cas vert sur un fichier qui importerait
+    // le moteur clinique entier.
+    if (chemin === MODULE) {
+      expect(specificateurs).toEqual([]);
+    } else {
+      expect(specificateurs.length).toBeGreaterThan(0);
+    }
     const fautifs = specificateurs.filter((specificateur) =>
       REPERTOIRES_INTERDITS.test(specificateur),
     );
@@ -143,8 +161,12 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     // l'original sans rien faire rougir (relevé en revue).
     expect(sourceSansCommentaires(MODULE)).not.toContain('canonical');
     expect(sourceSansCommentaires(ROUTE)).not.toContain('canonical');
+    expect(sourceSansCommentaires(EMPREINTE)).not.toContain('canonical');
     // Et la copie est bien là, sinon le banc comparerait le vide.
-    expect(sourceSansCommentaires(MODULE)).toContain('createHash');
+    expect(sourceSansCommentaires(EMPREINTE)).toContain('createHash');
+    // LE DOMAINE, LUI, RESTE PUR : `node:` dans ce fichier casserait le bundle
+    // du navigateur, et ni `tsc` ni Vitest ne le verraient — seul le build.
+    expect(sourceSansCommentaires(MODULE)).not.toContain('node:');
   });
 });
 
@@ -184,15 +206,20 @@ describe('G7-2 — ni score, ni seuil, ni rang dans le module ni dans la route',
     'weight',
   ];
 
-  it.each([MODULE, ROUTE])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
+  it.each([MODULE, ROUTE, EMPREINTE])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
     const noms = nomsDeclares(chemin);
 
     // ANTI-VACUITÉ, ancre PROPRE À CHAQUE FICHIER : une ancre commune
-    // obligerait à choisir un nom que les deux surfaces partagent,
+    // obligerait à choisir un nom que les trois surfaces partagent,
     // c'est-à-dire à affaiblir la vérification.
+    //
+    // L'ancre du module a bougé au moment du découpage serveur, et le banc l'a
+    // dit — bruyamment, comme il devait : `assemblerPropositions` avait suivi
+    // le hachage dans l'autre fichier.
     const ANCRES: Record<string, string> = {
-      [MODULE]: 'assemblerPropositions',
+      [MODULE]: 'depuisRegleSignee',
       [ROUTE]: 'propositions',
+      [EMPREINTE]: 'assemblerPropositions',
     };
     expect(noms.length).toBeGreaterThan(20);
     expect(noms).toContain(ANCRES[chemin]);

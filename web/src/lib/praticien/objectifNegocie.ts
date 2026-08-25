@@ -92,6 +92,17 @@ export type DonneesObjectif = {
   nonTraiteDepuisLe: Date | null;
   negocieLe: Date | null;
   supersedesObjectifId: string | null;
+  /**
+   * La proposition dont cet objectif est la REPRISE, si c'en est une
+   * (Alliance 6.0-B, LOT-03). `null` pour tout objectif rédigé de la main du
+   * praticien — l'immense majorité, et jamais un défaut à combler.
+   *
+   * Référence SOUPLE, sans clé étrangère (patron `supersedesObjectifId`,
+   * `schema.prisma`) : c'est la ROUTE qui prouve que la proposition existe,
+   * appartient au dossier et se laisse encore reprendre. Ce module est pur, il
+   * ne lit rien.
+   */
+  sourcePropositionId: string | null;
 };
 
 export type PreparationObjectif =
@@ -108,14 +119,29 @@ export type EntreeObjectif = {
   nonTraiteDepuisLe: string | null | undefined;
   negocieLe: string | null | undefined;
   supersedesObjectifId?: string | null;
+  sourcePropositionId?: string | null;
 };
 
 /**
- * La ligne visée par une révision, TELLE QUE LA ROUTE L'A VÉRIFIÉE (existence
- * et appartenance au même dossier). Elle n'est pas lue ici : ce module est
- * pur, il reçoit le résultat de la vérification, il ne la fait pas.
+ * L'ÉNONCÉ QUI NE VIENT PAS DU CORPS DE LA REQUÊTE, tel que la route l'a
+ * établi. Il n'est pas lu ici : ce module est pur, il reçoit le résultat de la
+ * vérification, il ne la fait pas.
+ *
+ * DEUX ORIGINES, ET ELLES NE SE VALIDENT PAS PAREIL.
+ *
+ * `revision` — l'énoncé est RECOPIÉ d'une ligne d'objectif existante. Sa
+ * longueur ne se rejuge pas : le texte est déjà dans la table, l'avoir accepté
+ * une fois engage. Le rejuger ferait qu'une ligne acceptée hier rendrait
+ * INREFORMULABLE l'objectif qu'elle porte, le jour où une borne changerait.
+ *
+ * `reprise` — l'énoncé est recopié d'un FRAGMENT DE PROPOSITION (Alliance
+ * 6.0-B, LOT-03), donc d'une citation d'anamnèse. Il entre dans la table pour
+ * la PREMIÈRE fois, et rien en amont ne l'a borné : `depuisAnamnese` ne pose
+ * aucune longueur maximale, un champ d'anamnèse très long produirait un
+ * verbatim très long. Sa longueur se vérifie donc comme celle d'une saisie —
+ * par REFUS, jamais par troncature.
  */
-export type CibleObjectif = { enoncePatient: string };
+export type CibleObjectif = { enoncePatient: string; origine: 'revision' | 'reprise' };
 
 /** Texte utile d'un champ facultatif : vide ⇒ `null`, jamais chaîne vide. */
 function texteFacultatif(brut: string | null | undefined): string | null {
@@ -158,6 +184,11 @@ export function preparerObjectif(entree: EntreeObjectif, cible?: CibleObjectif):
   let enoncePatient: string;
   if (cible) {
     enoncePatient = cible.enoncePatient;
+    // Une REPRISE fait entrer le texte dans la table pour la première fois :
+    // elle se borne comme une saisie. Une RÉVISION recopie ce qui y est déjà.
+    if (cible.origine === 'reprise' && enoncePatient.length > LONGUEUR_MAX_ENONCE) {
+      return { ok: false, raison: 'enonce_trop_long' };
+    }
   } else {
     enoncePatient = (entree.enoncePatient ?? '').trim();
     if (enoncePatient.length === 0) return { ok: false, raison: 'enonce_absent' };
@@ -211,6 +242,7 @@ export function preparerObjectif(entree: EntreeObjectif, cible?: CibleObjectif):
       nonTraiteDepuisLe: nonTraiteDepuisLe.date,
       negocieLe: negocieLe.date,
       supersedesObjectifId: entree.supersedesObjectifId ?? null,
+      sourcePropositionId: entree.sourcePropositionId ?? null,
     },
   };
 }

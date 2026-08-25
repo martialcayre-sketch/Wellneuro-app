@@ -199,6 +199,9 @@ describe('ClinicalRuntimeSection', () => {
       // Table non signée : c'est la réponse que la production sert aujourd'hui.
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       cockpitGet: [rep(proposalResponse)],
@@ -278,6 +281,9 @@ describe('ClinicalRuntimeSection', () => {
       decisionCard: fixture.decisionCard,
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
     vi.stubGlobal('fetch', fetchMock);
@@ -328,6 +334,9 @@ describe('ClinicalRuntimeSection — les constats déterministes atteignent l’
         regleId: 'C-STR',
       }],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       cockpitGet: [rep(proposalResponse)],
@@ -369,6 +378,9 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       decisionCard: { ...fixture.decisionCard, abstention },
       contradictions: [],
       plainteDominante,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
   }
 
@@ -473,6 +485,9 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       decisionCard: fixture.decisionCard,
       contradictions: [],
       plainteDominante: null,
+      // Alliance 6.0-B, LOT-03 : le SHA voyage à côté de la carte, jamais dedans.
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
       trajectoire: trajectoireT0ConfirmeIlYA(21),

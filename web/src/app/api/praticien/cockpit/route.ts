@@ -32,6 +32,7 @@ import {
   contradictionsPourPatient,
   type ContradictionAffichee,
 } from '@/lib/clinical/contradictionsService';
+import { CANAL_PLAINTE, PRIORITY_RULES_METADATA, tablePrioritesSignee } from '@/lib/clinical/priorityRulesV1';
 import { claimsCitesParLaPropositionBilan } from '@/lib/biology-library/propositionService';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
@@ -94,6 +95,40 @@ export type CockpitRuntimeApiResponse =
        * y ajouter un champ d'affichage déplacerait toutes les empreintes.
        */
       plainteDominante: PlainteDominante | null;
+      /**
+       * Le SHA du périmètre signé sous lequel les candidats ci-dessus ont été
+       * produits — `null` tant que la table des priorités n'est pas signée,
+       * auquel cas il n'y a de toute façon aucun candidat.
+       *
+       * IL VOYAGE À CÔTÉ DE LA CARTE, PAS DEDANS : même motif que
+       * `plainteDominante` ci-dessus — la carte est hachée et persistée, y
+       * ajouter un champ déplacerait toutes les empreintes déjà émises.
+       *
+       * POURQUOI L'EXPOSER (Alliance 6.0-B, LOT-03). Le moteur de proposition
+       * ne peut pas le lire lui-même : il vit sous `lib/clinical/`, que la
+       * garde G7 lui interdit d'importer. Sans ce champ, l'écran ne peut pas
+       * transmettre la provenance des candidats qu'il vient de recevoir, et un
+       * fragment de règle serait cité sans pouvoir montrer sa signature
+       * (`DC-17`, `DC-26`).
+       *
+       * IL SUIT LE VERROU, PAS LA CONSTANTE : lu à travers
+       * `tablePrioritesSignee()`, il reste `null` si la signature n'est pas
+       * active. Servir le SHA d'une table non signée laisserait l'écran se
+       * réclamer d'une signature qui ne commande rien.
+       */
+      perimetreSigne: string | null;
+      /**
+       * L'instrument du canal de plainte, tel que la table signée le nomme.
+       *
+       * IL VOYAGE PARCE QUE L'ÉCRAN NE PEUT PAS L'IMPORTER. Le fragment
+       * d'instrument doit citer sa source par son identifiant de catalogue,
+       * mais le composant qui compose la citation est `'use client'` : y
+       * importer la table embarquerait ses règles, ses seuils et ses motifs
+       * dans le bundle du navigateur, pour une seule chaîne. Une constante
+       * recopiée à la main, elle, dériverait en silence le jour où le canal
+       * changerait.
+       */
+      canalPlainte: string;
     }
   | {
       status: 'unavailable';
@@ -412,6 +447,8 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
     return NextResponse.json({
       status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,
+      perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
+      canalPlainte: CANAL_PLAINTE,
     });
   } catch (error) {
     if (error instanceof TypeError) {
