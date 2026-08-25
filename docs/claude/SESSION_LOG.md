@@ -4774,3 +4774,29 @@ n'atteint pas la production.
 
 Questions ouvertes — l'escalade n'atteint ni l'extinction ni les préconditions
 T0 ; restent LOT-03, LOT-07 et LOT-08 de la campagne.
+
+## 2026-08-25 — Alliance 6.0-B, LOT-03 : le cockpit reprend une citation (#795)
+
+Campagne reprise — elle était repassée **inactive** à la clôture de
+`doctrine-executable`. Décisions — l'écran DÉSIGNE le fragment, le serveur le
+RECOPIE ; un fragment non-anamnèse est refusé (422) ; reprendre écrit objectif
+et geste dans une seule transaction.
+
+Le déclencheur d'assemblage a demandé une mesure, qui a renversé mon modèle :
+`GET /cockpit` ne rend jamais `ready`, le `POST` qui produit la carte n'écrit
+rien, la carte n'est persistée nulle part. Elle n'existe que dans le navigateur,
+après la confirmation T0 — l'intuition du responsable était juste, et l'option
+« le panneau cherche les candidats » était **impossible**. Carte du workflow
+établie pour trancher.
+
+Deux défauts invisibles de `tsc` : un import de table clinique dans un composant
+`'use client'` (667 lignes au bundle) ; puis T2 a cassé le build sur
+`node:crypto`. Le domaine est désormais pur, et ce zéro d'import est asserté.
+
+Revue **no-go** : le drapeau ne gardait pas la reprise ; et G2 se disait
+bilingue sans l'être — le défaut du LOT-02, non propagé au fichier voisin que
+j'éditais. Mémoire corrigée en ce sens.
+
+Prochaine action : LOT-04 (portail, « le dire autrement »). Ouvert : le contrôle
+« déjà disposée » n'est pas étanche à la course ; pas de déplacement de focus ;
+aucun E2E du parcours complet.
