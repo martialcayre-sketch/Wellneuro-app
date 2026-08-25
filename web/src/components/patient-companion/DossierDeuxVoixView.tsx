@@ -6,12 +6,27 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PortailDossierResponse } from '@/app/api/portail/dossier/route';
+import { LONGUEUR_MAX_AMENDEMENT } from '@/lib/praticien/objectifNegocie';
 
 // Le « dossier à deux voix » (Alliance 6.0-A, LOT-06) — surface PATIENT.
 //
 // Trois blocs, une seule écriture : le patient LIT l'objectif négocié, ce qu'il
 // a déposé lui-même, et la synthèse de compréhension — et il peut RÉPONDRE à
-// l'objectif : « c'est bien ça » ou « ce n'est pas exactement ça ».
+// l'objectif : « c'est bien ça », « ce n'est pas exactement ça », ou — depuis
+// le LOT-04 de 6.0-B (`D-110`) — « le dire autrement », en écrivant SA version
+// dans ses mots.
+//
+// LE TROISIÈME VERBE N'EST PAS UN TROISIÈME BOUTON DE RÉPONSE. Les deux
+// premiers se posent d'un clic ; celui-ci ouvre une saisie, montre sa borne
+// AVANT que le patient bute dessus, et lui rend son texte à relire une fois
+// déposé. Un texte de patient qui disparaît de l'écran après l'envoi se lit
+// comme un texte perdu.
+//
+// LA BORNE VIENT DU MODULE, jamais d'un nombre recopié ici : une borne écrite
+// deux fois se met à diverger, et c'est l'écran qui ment alors, pas le serveur
+// (leçon `D-107`). `objectifNegocie.ts` est un domaine PUR — il n'importe rien,
+// et l'embarquer dans le bundle patient n'entraîne aucune dépendance serveur
+// (leçon du LOT-03).
 //
 // AUCUNE NOTE, AUCUNE ÉCHELLE, AUCUN DÉCOMPTE. Ni « 3 entrées », ni pouce, ni
 // curseur d'accord. Graduer une ratification en ferait une mesure de l'accord
@@ -51,13 +66,23 @@ const LIBELLE_ETAT: Record<string, string> = {
   en_attente: 'Vous ne vous êtes pas encore prononcé sur cet objectif.',
   ratifie: 'Vous avez répondu : c’est bien ça.',
   conteste: 'Vous avez répondu : ce n’est pas exactement ça.',
+  // NI « refusé », NI « en désaccord » : le patient n'a pas contredit, il a
+  // proposé. Le libellé dit ce qu'il a FAIT, pas ce qu'on en conclut (`DC-24`).
+  dit_autrement: 'Vous avez écrit votre version de cet objectif.',
 };
 
 export function DossierDeuxVoixView({ token }: { token: string }) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' });
   const [envoi, setEnvoi] = useState(false);
   const [erreurEnvoi, setErreurEnvoi] = useState('');
-  const [repondu, setRepondu] = useState(false);
+  /** Ce qui vient d'être transmis, ou `null`. Deux gestes, deux accusés : un
+   *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
+  const [repondu, setRepondu] = useState<'reponse' | 'version' | null>(null);
+  /** La version dont le patient est en train d'écrire SA formulation, ou
+   *  `null` — la saisie n'est jamais ouverte d'office : proposer un champ vide
+   *  sous un objectif suggère qu'il manque quelque chose à y mettre. */
+  const [amendeId, setAmendeId] = useState<string | null>(null);
+  const [texteAmendement, setTexteAmendement] = useState('');
 
   const charger = useCallback(async () => {
     try {
@@ -96,7 +121,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
       // Le succès précédent est retiré AVANT de repartir : sans cela, un refus
       // s'afficherait à côté d'un « c'est transmis » toujours à l'écran, et le
       // patient lirait les deux à la fois sans savoir lequel le concerne.
-      setRepondu(false);
+      setRepondu(null);
       try {
         const res = await fetch('/api/portail/dossier', {
           method: 'POST',
@@ -109,7 +134,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
         });
         const data = (await res.json()) as { ok: boolean; error?: string };
         if (res.ok && data.ok) {
-          setRepondu(true);
+          setRepondu('reponse');
           await charger();
         } else {
           setErreurEnvoi(data.error ?? 'Votre réponse n’a pas pu être enregistrée.');
@@ -121,6 +146,46 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
       }
     },
     [charger],
+  );
+
+  /**
+   * « LE DIRE AUTREMENT » — le troisième verbe.
+   *
+   * LA SAISIE N'EST VIDÉE QU'APRÈS UN SUCCÈS. Sur un refus — texte trop long,
+   * version reformulée entre-temps —, le patient retrouve ses mots à l'écran et
+   * peut les corriger. Les effacer avant de savoir si le serveur les a pris
+   * ferait perdre un texte que personne d'autre ne peut réécrire.
+   */
+  const direAutrement = useCallback(
+    async (idObjectif: string) => {
+      setEnvoi(true);
+      setErreurEnvoi('');
+      setRepondu(null);
+      try {
+        const res = await fetch('/api/portail/dossier', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          // Le geste est NOMMÉ dans le corps, jamais deviné de la présence d'un
+          // champ : le serveur refuse un geste qu'il ne connaît pas plutôt que
+          // de replier sur la ratification.
+          body: JSON.stringify({ geste: 'amendement', idObjectif, texte: texteAmendement }),
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (res.ok && data.ok) {
+          setRepondu('version');
+          setAmendeId(null);
+          setTexteAmendement('');
+          await charger();
+        } else {
+          setErreurEnvoi(data.error ?? 'Votre texte n’a pas pu être enregistré.');
+        }
+      } catch {
+        setErreurEnvoi('Erreur réseau. Réessayez.');
+      } finally {
+        setEnvoi(false);
+      }
+    },
+    [charger, texteAmendement],
   );
 
   if (etat.phase === 'chargement') {
@@ -141,7 +206,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     );
   }
 
-  const { objectifs, ratifiable, ceQuiCompte, comprehension } = etat.donnees;
+  const { objectifs, ratifiable, amendements, ceQuiCompte, comprehension } = etat.donnees;
 
   return (
     <div className="space-y-4">
@@ -218,6 +283,32 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
 
                   <p className="text-sm">{LIBELLE_ETAT[objectif.etat] ?? LIBELLE_ETAT.en_attente}</p>
 
+                  {/* CE QUE LE PATIENT A ÉCRIT SUR CETTE VERSION, rendu à sa
+                      relecture. Le filtre sur `idObjectif` compte : une version
+                      écrite pour un objectif depuis reformulé ne répond pas à
+                      ce texte-ci, et l'afficher sous lui la ferait dire autre
+                      chose (patron du bloc « désaccords »).
+                      « Écrit le » sur `creeLe` et non « Concerne le » : c'est
+                      la date d'écriture, pas une date déclarée — le patient n'a
+                      jamais dit à quoi son texte se rapporte. */}
+                  {amendements
+                    .filter((amendement) => amendement.idObjectif === objectif.id)
+                    .map((amendement) => (
+                      <div
+                        key={amendement.id}
+                        className="space-y-1 rounded-lg border border-border bg-surface p-3"
+                      >
+                        <p className="text-xs text-muted-foreground">
+                          Votre version{dateLisible(amendement.creeLe)
+                            ? `, écrite le ${dateLisible(amendement.creeLe)}`
+                            : ''}
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                          {amendement.texte}
+                        </p>
+                      </div>
+                    ))}
+
                   {ratifiable && (
                     <div className="space-y-2 pt-1">
                       <p className="text-xs text-muted-foreground">
@@ -241,15 +332,146 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                         >
                           Ce n’est pas exactement ça
                         </PatientButton>
+                        {/* LE TROISIÈME VERBE. Il n'envoie rien : il ouvre la
+                            saisie. Poster d'un clic ce que le patient n'a pas
+                            encore écrit n'aurait aucun sens, et refermer la
+                            saisie remet le texte à zéro — un abandon explicite,
+                            jamais un envoi silencieux. */}
+                        <PatientButton
+                          type="button"
+                          variant="neutral"
+                          disabled={envoi}
+                          onClick={() => {
+                            setErreurEnvoi('');
+                            if (amendeId === objectif.id) {
+                              setAmendeId(null);
+                              setTexteAmendement('');
+                              return;
+                            }
+                            setAmendeId(objectif.id);
+                            // JAMAIS PRÉ-REMPLI par l'énoncé courant : le
+                            // patient écrirait alors sur les mots d'un autre,
+                            // et sa « version » serait celle qu'on lui a
+                            // soufflée.
+                            setTexteAmendement('');
+                          }}
+                        >
+                          {amendeId === objectif.id ? 'Annuler' : 'Le dire autrement'}
+                        </PatientButton>
                       </div>
+
+                      {amendeId === objectif.id && (
+                        <div className="space-y-2 rounded-lg border border-border p-3">
+                          <label
+                            htmlFor={`amendement-${objectif.id}`}
+                            className="block text-sm font-medium"
+                          >
+                            Écrivez cet objectif avec vos mots
+                          </label>
+                          <p className="text-xs text-muted-foreground">
+                            Votre texte est ajouté à votre dossier tel quel, sans être coupé ni
+                            corrigé. Il ne remplace pas ce qui est écrit plus haut : votre praticien
+                            le lira et vous en reparlerez.
+                          </p>
+                          <textarea
+                            id={`amendement-${objectif.id}`}
+                            value={texteAmendement}
+                            onChange={(evenement) => setTexteAmendement(evenement.target.value)}
+                            rows={5}
+                            className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          />
+                          {/* LA BORNE EST DITE AVANT D'ÊTRE ATTEINTE, et le
+                              champ n'est PAS tronqué par `maxLength` : couper
+                              en silence la version d'un patient produirait une
+                              phrase que personne n'a écrite. Il la dépasse, il
+                              le voit, il raccourcit. */}
+                          {/* LE JUGEMENT PORTE SUR LE TEXTE UTILE, l'affichage
+                              sur ce qui est tapé. Le serveur borne le texte
+                              TRIMÉ ; juger ici la longueur brute rendait
+                              l'écran PLUS STRICT que lui — 4 000 caractères
+                              suivis d'un saut de ligne bloquaient un envoi que
+                              le serveur aurait accepté (relevé en revue). */}
+                          <p
+                            className={
+                              texteAmendement.trim().length > LONGUEUR_MAX_AMENDEMENT
+                                ? 'text-xs text-status-warning'
+                                : 'text-xs text-muted-foreground'
+                            }
+                          >
+                            {texteAmendement.length} / {LONGUEUR_MAX_AMENDEMENT} caractères
+                          </p>
+                          <PatientButton
+                            type="button"
+                            variant="primary"
+                            disabled={
+                              envoi
+                              || texteAmendement.trim().length === 0
+                              || texteAmendement.trim().length > LONGUEUR_MAX_AMENDEMENT
+                            }
+                            onClick={() => void direAutrement(objectif.id)}
+                          >
+                            Envoyer ma version
+                          </PatientButton>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
 
-              {repondu && (
+              {/* DEUX ACCUSÉS, PAS UN. « Tel que vous l'avez indiqué » convient
+                  à un clic ; sur un texte, il laisserait le patient se demander
+                  si ses mots sont partis entiers. */}
+              {/* ── CE QUE LE PATIENT A ÉCRIT SUR UNE VERSION DEPUIS
+                     REFORMULÉE ──────────────────────────────────────────────
+                  La route ne sert que les TÊTES de chaîne : un amendement écrit
+                  sur `v1` n'a plus de version à l'écran dès que le praticien
+                  pose `v2`. Sans ce bloc, le patient voyait SES PROPRES MOTS
+                  disparaître au premier geste du praticien — exactement ce que
+                  le contrat de la route s'engage à ne pas faire, et ce que
+                  l'en-tête de ce fichier dit vouloir éviter (relevé en revue).
+
+                  IL EST RENDU À PART, ET PAS SOUS UNE TÊTE : rattacher ces
+                  textes à l'objectif courant les ferait répondre à une
+                  formulation qu'ils n'ont jamais vue — et avec deux têtes
+                  rivales, à laquelle ? Ici, ils sont ce qu'ils sont : ce que le
+                  patient a écrit, avant. */}
+              {(() => {
+                const servis = new Set(objectifs.map((objectif) => objectif.id));
+                const anterieurs = amendements.filter(
+                  (amendement) => !servis.has(amendement.idObjectif),
+                );
+                if (anterieurs.length === 0) return null;
+                return (
+                  <div className="space-y-2 rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Vous avez écrit ceci sur une formulation précédente de votre objectif. Rien
+                      ne s’efface : votre praticien le lit toujours.
+                    </p>
+                    {anterieurs.map((amendement) => (
+                      <div key={amendement.id} className="space-y-1 border-l-2 border-border pl-3">
+                        {dateLisible(amendement.creeLe) && (
+                          <p className="text-xs text-muted-foreground">
+                            Écrit le {dateLisible(amendement.creeLe)}
+                          </p>
+                        )}
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">
+                          {amendement.texte}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {repondu === 'reponse' && (
                 <PatientInlineMessage tone="success">
                   C’est transmis. Votre praticien le verra tel que vous l’avez indiqué.
+                </PatientInlineMessage>
+              )}
+              {repondu === 'version' && (
+                <PatientInlineMessage tone="success">
+                  C’est transmis. Votre praticien lira votre version, mot pour mot.
                 </PatientInlineMessage>
               )}
               {erreurEnvoi && (

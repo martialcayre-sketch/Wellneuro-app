@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
-import type { ObjectifExpose } from '@/app/api/praticien/objectifs/route';
+import type { AmendementExpose, ObjectifExpose } from '@/app/api/praticien/objectifs/route';
 import { objectifsCourants } from './objectifNegocie';
 
 // Gardes structurelles de l'objectif négocié (Alliance 6.0-A, LOT-02).
@@ -96,7 +96,25 @@ type CleObjectifExpose =
   // proposé↔négocié n'aurait aucun point d'ancrage.
   | 'sourcePropositionId';
 
+/**
+ * LA FORME DE L'AMENDEMENT, ÉPINGLÉE ELLE AUSSI (6.0-B, LOT-04, `D-110`).
+ *
+ * Elle porte un TEXTE DE PATIENT, donc la surface la plus tentante du dépôt
+ * pour un champ dérivé : une longueur, un « ton », un indicateur d'écart avec
+ * l'énoncé courant. Chacun serait une mesure faite sur une parole
+ * (`DC-19`/`DC-20`), et aucun ne demanderait plus d'une ligne à écrire.
+ *
+ * `exprimeLe` N'Y EST PAS, et ce n'est pas un oubli : la colonne reste nulle
+ * par construction — l'exposer inviterait un écran à la combler par `creeLe`.
+ */
+type CleAmendementExpose = 'id' | 'idObjectif' | 'texte' | 'creeLe';
+
 describe('G1 — l’objectif exposé ne porte que les clés épinglées', () => {
+  it('l’amendement du patient ne porte que les siennes', () => {
+    const clesInchangees: Egales<keyof AmendementExpose, CleAmendementExpose> = true;
+    expect(clesInchangees).toBe(true);
+  });
+
   it('la liste des clés est celle-ci, et rien d’autre', () => {
     // L'assertion EST le type de cette constante : un champ ajouté rend
     // `Egales` faux, et `false` ne s'assigne pas à une constante déclarée
@@ -176,6 +194,92 @@ describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la
       expect(fautifs).toEqual([]);
     },
   );
+});
+
+// ── G2-bis — la parole du patient ne se compte pas au rendu ─────────────────
+
+/**
+ * LES DEUX SURFACES QUI RENDENT UN AMENDEMENT (6.0-B, LOT-04, `D-110`), et
+ * elles seules : le cockpit et l'écran du patient.
+ *
+ * G2 balaie des NOMS DÉCLARÉS ; elle attraperait `scoreAmendement`, pas
+ * `{amendements.length}`, qui ne déclare rien. Or `D-110` nomme précisément la
+ * tentation — « ni résumé, ni compté, ni comparé à l'énoncé courant » — et le
+ * cockpit est le seul endroit du dépôt où les mots du patient et ceux du
+ * praticien se lisent côte à côte : c'est là qu'un décompte ou un écart
+ * s'écrirait. La garde « ce qui compte » ne peut pas accueillir le panneau tel
+ * quel — `{objectifs.length}` y est un signal de discordance légitime
+ * (`DC-30`) —, d'où un cas propre plutôt qu'une garde élargie à contrecœur.
+ */
+const SURFACES_AMENDEMENT = [PANNEAU, 'src/components/patient-companion/DossierDeuxVoixView.tsx'];
+
+/**
+ * LA GARDE NE NOMME PAS LA COLLECTION, ET C'EST LE POINT. Une première
+ * rédaction cherchait `{...amendement....length}` : le panneau range les
+ * amendements d'une chaîne dans une variable locale `siens`, et
+ * `{siens.length}` passait — la garde tenait par le NOM que l'auteur avait
+ * choisi, c'est-à-dire par rien. La mutation l'a montré avant qu'on la croie
+ * verte. Même cicatrice que celle déjà écrite dans
+ * `ceQuiCompteAntiAgregat.guard.test.ts`, et le même remède : interdire TOUT
+ * décompte rendu, puis nommer les cas licites un par un.
+ *
+ * `x.length === 0` reste licite et n'est pas visé : c'est la distinction
+ * « silence / réponse » (`DC-24`), pas un affichage.
+ */
+const DECOMPTE_RENDU = /\{\s*[\w.]+\.length(?:\.toLocaleString\([^)]*\))?\s*\}/g;
+
+/**
+ * LES TROIS SEULS DÉCOMPTES LICITES, chacun avec sa raison :
+ *
+ * - `objectifs.length` — le signal de DISCORDANCE au cockpit : « 2 versions
+ *   courantes coexistent ». Compter des versions n'est pas mesurer une parole,
+ *   et `DC-30` demande précisément de le dire.
+ * - `anterieures.length` — « Versions antérieures (3) », un repère de
+ *   navigation dans la trajectoire.
+ * - `valeur.length` et `texteAmendement.length` — les compteurs de caractères
+ *   des SAISIES (`Compteur`, et la zone « le dire autrement »). Ils remplacent
+ *   `maxLength` : le dépassement est visible, rien n'est coupé.
+ *
+ * Aucun ne porte sur `amendements`, et c'est bien ce qu'on veut : la parole du
+ * patient ne se compte pas (`D-110`, `DC-19`/`DC-20`).
+ */
+const DECOMPTES_LICITES = [
+  'objectifs.length',
+  'anterieures.length',
+  'valeur.length',
+  'texteAmendement.length',
+];
+
+/** Un agrégat sur les mots du patient : moyenne, cumul, comparaison chiffrée. */
+const AGREGAT_AMENDEMENT = /amendements?\s*\.\s*(reduce|sort)\s*\(/i;
+
+describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', () => {
+  it.each(SURFACES_AMENDEMENT)('%s ne rend aucun décompte ni agrégat', (chemin) => {
+    const code = sourceSansCommentaires(chemin);
+
+    // ANTI-VACUITÉ 1 : la surface rend bien des amendements. Un renommage
+    // ferait sinon passer ce cas au vert en ne gardant plus rien.
+    expect(code).toMatch(/amendement/i);
+
+    const rendus = [...code.matchAll(DECOMPTE_RENDU)].map((m) => m[0]);
+    const fautifs = rendus.filter(
+      (rendu) => !DECOMPTES_LICITES.some((licite) => rendu.includes(licite)),
+    );
+    expect(fautifs, `Décompte rendu sur une surface d’amendement : ${fautifs.join(', ')}`).toEqual(
+      [],
+    );
+
+    expect(AGREGAT_AMENDEMENT.test(code)).toBe(false);
+  });
+
+  it('ANTI-VACUITÉ 2 — le détecteur mord : il TROUVE les décomptes licites', () => {
+    // Sans ce cas, un motif devenu inopérant rendrait la liste vide, donc les
+    // deux cas ci-dessus verts et creux.
+    const panneau = sourceSansCommentaires(PANNEAU);
+    const rendus = [...panneau.matchAll(DECOMPTE_RENDU)].map((m) => m[0]);
+    expect(rendus.some((rendu) => rendu.includes('objectifs.length'))).toBe(true);
+    expect(rendus.some((rendu) => rendu.includes('anterieures.length'))).toBe(true);
+  });
 });
 
 // ── G3 — la priorité ne s'ordonne pas ───────────────────────────────────────
@@ -264,6 +368,29 @@ const CREATION_RATIFICATION = /ratificationObjectif\.create\b/;
 const ECRITURES_RATIFICATION_DESTRUCTRICES =
   /ratificationObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
 
+/**
+ * L'AMENDEMENT SUIT LE MÊME RÉGIME QUE LA RATIFICATION (6.0-B, LOT-04,
+ * `D-110`), et la garde est écrite à part plutôt que fusionnée avec elle : deux
+ * tables, deux motifs qui se lisent séparément — c'est la leçon du LOT-03,
+ * « une garde corrigée ne corrige pas sa sœur ».
+ *
+ * L'écrivain est LE MÊME FICHIER, et il n'y en a qu'un : le geste appartient au
+ * patient. Une route praticien qui créerait cette ligne fabriquerait des MOTS
+ * que le patient n'a pas écrits — plus grave encore qu'un acte qu'il n'a pas
+ * posé, puisque ces mots peuvent ensuite devenir l'énoncé d'un objectif.
+ */
+const ECRIVAIN_AMENDEMENT = 'src/app/api/portail/dossier/route.ts';
+
+const CREATION_AMENDEMENT = /amendementObjectif\.create\b/;
+
+/**
+ * Tout le reste : interdit PARTOUT, y compris à l'écrivain. Se raviser, c'est
+ * écrire à nouveau. `createMany` en fait partie : un texte s'écrit un par un,
+ * un lot n'aurait aucun auteur identifiable.
+ */
+const ECRITURES_AMENDEMENT_DESTRUCTRICES =
+  /amendementObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
+
 function fichiersSources(racine: string): string[] {
   const absolu = path.join(RACINE_WEB, racine);
   const trouves: string[] = [];
@@ -343,6 +470,47 @@ describe('G5 — un objectif ne se met jamais à jour, il se succède', () => {
 
     // L'ÉCRIVAIN LÉGITIME N'EST PAS DISPENSÉ : il crée, il ne corrige pas.
     expect(fautifs).not.toContain(ECRIVAIN_RATIFICATION);
+  });
+
+  it('un amendement ne se crée QUE depuis le portail — les mots appartiennent au patient', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    // ANTI-VACUITÉ : le parcours voit l'application entière, la route praticien
+    // qui LIT les amendements, ET l'écrivain qu'on prétend être le seul.
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ROUTE);
+    expect(fichiers).toContain(ECRIVAIN_AMENDEMENT);
+
+    const fautifs = fichiers.filter((chemin) =>
+      CREATION_AMENDEMENT.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Le détecteur mord pour de vrai : il TROUVE l'écrivain légitime.
+    expect(fautifs).toContain(ECRIVAIN_AMENDEMENT);
+    expect(fautifs).toEqual([ECRIVAIN_AMENDEMENT]);
+
+    // Et la route PRATICIEN ne l'écrit pas, alors même qu'elle CITE ce texte
+    // pour en faire l'énoncé d'une nouvelle version : citer, c'est lire.
+    expect(fautifs).not.toContain(ROUTE);
+  });
+
+  it('un amendement ne se met jamais à jour ni ne se retire, nulle part', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ECRIVAIN_AMENDEMENT);
+
+    const fautifs = fichiers.filter((chemin) =>
+      ECRITURES_AMENDEMENT_DESTRUCTRICES.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Anti-vacuité : l'effacement du dossier supprime AUSSI les amendements,
+    // donc le détecteur doit le trouver. S'il ne trouve plus rien, c'est le
+    // motif qui est mort, pas le dépôt qui est devenu sain.
+    expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
+    expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
+
+    expect(fautifs).not.toContain(ECRIVAIN_AMENDEMENT);
   });
 });
 

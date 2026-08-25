@@ -4,6 +4,112 @@
 
 ## Décisions actives
 
+### D-110 — « Le dire autrement » : le troisième verbe du patient, et le quatrième état
+
+- Date : 2026-08-25
+- Statut : accepté (arbitrages rendus à l'implémentation du LOT-04, campagne
+  Alliance 6.0-B)
+- Domaine : doctrine produit et surface patient — geste patient sur l'objectif
+  négocié, dérivation d'état, sources admissibles de citation
+- Porte sur : `D-094` §2 (qu'elle applique) et `D-094` §1 (dont elle borne la
+  portée), `DC-24`, `DC-30`, `DC-19`/`DC-20`
+- Fonde : le LOT-04 de `2026-08-23-alliance-objectif-trois-voix`
+
+**Contexte.** `D-094` §2 a tranché la FORME du « dire autrement » — table
+d'événement propre, append-only, écrivain unique au portail, version exacte
+référencée. Le LOT-01 a livré `amendements_objectif`, appliquée et constatée en
+production le 2026-08-23 ; elle est restée sans écrivain jusqu'ici. Trois
+points de forme dépassent ce que `D-094` avait réglé, et sont tranchés ici.
+
+**Décision 1 — le geste est gardé par `WN_DOSSIER_DEUX_VOIX`, pas par
+`WN_OBJECTIF_PROPOSE`, ET IL S'OUVRE DONC AU MERGE.** `D-094` §2 dit « même
+régime que la ratification » ; la ratification est gardée par
+`WN_DOSSIER_DEUX_VOIX`, qui est **posé en production depuis le 2026-08-23**
+(clôture de 6.0-A). Le geste est donc ouvert à tous les dossiers courants dès
+la livraison — ce que la section « Application immédiate » de la campagne
+prévoit explicitement, sur le fait que les patients actuels sont des
+bêta-testeurs réels et informés.
+
+L'adosser à `WN_OBJECTIF_PROPOSE` aurait fait dépendre le droit du patient à
+répondre de l'activation de la **machine qui propose** : deux gestes de
+gouvernance que `D-094` §5 tient précisément séparés, et la confusion exacte
+que `D-070` a constatée sur le rayon biologie. L'interdit « le stock ne déferle
+pas à l'allumage » est satisfait sans réserve : **rien ne s'accumule** — un
+amendement est un geste que seul le patient peut poser, il n'existe aucun stock
+dormant à libérer.
+
+**Décision 2 — l'état dérivé compte QUATRE valeurs, et « dit autrement » est
+une valeur à part entière.** Ni un accord, ni un refus. Le replier sur
+`conteste` ferait lire un désaccord là où le patient a fait une proposition ; le
+replier sur `en_attente` effacerait un geste qu'il a posé (`DC-24`). Les deux
+tables — ratifications et amendements — se lisent **ensemble**, dernier geste
+gagnant, sans jamais compter ni moyenner (`DC-30`) : lire la seule table des
+ratifications rendrait « ratifié » à un patient qui vient d'écrire autre chose.
+
+**Décision 3 — un amendement est une source admissible de citation pour une
+reprise praticien, et cela n'élargit pas la liste fermée de `D-094` §1.** Cette
+liste ferme les sources d'un **fragment de PROPOSITION**, c'est-à-dire ce que la
+machine assemble. Un amendement n'est pas assemblé : c'est le patient qui l'a
+écrit, à la première personne, sur son propre dossier. Il relève donc de la
+règle inviolable elle-même — `enoncePatient` ne se pré-remplit que par citation
+verbatim de ce que le patient a écrit — et non de la liste des matériaux que la
+machine a le droit de citer.
+
+Trois bornes rendent la citation opposable plutôt que promise :
+
+1. **L'écran désigne, le serveur recopie.** Seul l'identifiant de l'amendement
+   transite ; le texte n'est jamais transmis par le client, et la citation
+   s'affiche sans champ modifiable. Un champ éditable inviterait à « améliorer »
+   la phrase du patient, et la nouvelle version porterait un texte retouché sous
+   l'étiquette « ce que le patient demande ».
+2. **La citation est une RÉVISION**, jamais une tête neuve : sans
+   `supersedesObjectifId`, elle créerait un second objectif courant, donc un
+   portail qui refuse toute réponse.
+3. **L'amendement doit porter sur la MÊME CHAÎNE** que la version reformulée —
+   la chaîne, et non la seule version visée : le patient peut avoir écrit sur
+   `v1` alors que le praticien reformule `v2`, et sa parole n'a pas cessé de
+   concerner cet objectif parce qu'une version s'est intercalée.
+
+**Décision 4 — le drapeau ne s'étend pas au cockpit, et c'est un choix, pas une
+déduction.** `WN_DOSSIER_DEUX_VOIX` garde la **surface du patient** : sa
+capacité à lire et à écrire. Ce qui est déjà écrit est une pièce du dossier, et
+ni la lecture du dossier par le praticien ni sa faculté de **reformuler** un
+objectif n'ont jamais été sous un drapeau (arbitrage de 6.0-A). Éteindre
+l'interrupteur ferme le portail ; cela ne rend pas intouchables les mots que le
+patient a déjà écrits, et les masquer au praticien le rendrait aveugle à une
+pièce réelle du dossier.
+
+La différence avec la reprise de proposition — gardée, elle, par
+`WN_OBJECTIF_PROPOSE` depuis le LOT-03 — est de **nature** : celle-là consomme
+une matière que la MACHINE produit, et couper son interrupteur signifie « nous
+ne voulons plus qu'elle propose ». Deux bancs épinglent ce choix ; s'ils
+deviennent rouges, c'est une décision à reprendre, pas un réglage à ajuster.
+
+**Ce que cette décision n'autorise pas.** Compter, résumer, graduer ou
+« diffuser » le texte d'un patient ; le tronquer (refus par motif, borne
+affichée) ; le journaliser ; le soumettre à la garde de registre anxiogène —
+celle-ci vise un texte que le **praticien** écrit et que le patient subit, et
+l'étendre à la parole du patient reviendrait à faire dire au journal que sa
+façon de parler de lui-même pose problème. Aucune notification n'est créée : le
+portail reste en pull.
+
+**Trois dettes nommées, pour qu'aucune ne se redécouvre.**
+
+1. **Rien ne marque un amendement comme « lu » ou « intégré »** — une colonne
+   mutable contredirait l'append-only, et c'est le même arbitrage que celui déjà
+   écrit pour `desaccords_comprehension`. Deux conséquences assumées : le cockpit
+   affiche tous les amendements de la chaîne indéfiniment, et rien n'empêche le
+   praticien de poser deux versions successives portant le même texte de patient.
+   Un accusé de lecture appelle sa propre décision.
+2. **Le dossier clos n'arrête pas le troisième verbe**, par héritage exact de la
+   ratification : la clôture est un état du suivi praticien, pas un ordre de
+   silence fait au patient — couper le geste permettrait de clore un dossier pour
+   rendre son objectif incontestable. Ce qui valait pour un clic vaut pour un
+   texte ; l'écrire ici évite qu'on le « corrige » un jour comme un oubli.
+3. **Aucune limitation de débit** sur le dépôt d'amendements, comme sur la
+   ratification. Un jeton portail permet d'accumuler des textes de 4 Ko. Dette
+   préexistante, plus coûteuse ici — elle n'a pas de porteur.
+
 ### D-109 — Clôture de « Doctrine exécutable » : six règles fermées, et tout le reste nommé
 
 - Date : 2026-08-25

@@ -8,7 +8,9 @@ import {
   SENS_RATIFICATION,
   TOLERANCE_FUSEAU_MS,
   chaineDObjectif,
+  LONGUEUR_MAX_AMENDEMENT,
   etatRatification,
+  preparerAmendement,
   objectifsCourants,
   preparerObjectif,
   preparerRatification,
@@ -190,6 +192,20 @@ describe('preparerObjectif — révision', () => {
     ).toBe(true);
   });
 
+  it('L’AMENDEMENT CITÉ SE BORNE COMME UNE SAISIE, lui aussi', () => {
+    // Le texte du patient entre dans `objectifs_negocies` pour la première
+    // fois. Sa borne amont (`LONGUEUR_MAX_AMENDEMENT`) coïncide aujourd'hui
+    // avec celle de l'énoncé — rien ne garantit qu'elle coïncidera demain, et
+    // la condition est écrite « tout sauf révision » pour cette raison.
+    const tropLong = 'x'.repeat(LONGUEUR_MAX_ENONCE + 1);
+    expect(
+      preparerObjectif(entree({ supersedesObjectifId: 'OBJ_1' }), {
+        enoncePatient: tropLong,
+        origine: 'amendement',
+      }),
+    ).toEqual({ ok: false, raison: 'enonce_trop_long' });
+  });
+
   it('n’exige pas d’énoncé au corps quand la cible en fournit un', () => {
     const resultat = preparerObjectif(
       entree({ enoncePatient: null, priorite: 'Second plan', supersedesObjectifId: 'OBJ_1' }),
@@ -273,6 +289,13 @@ describe('etatRatification', () => {
     creeLe: new Date(iso),
   });
 
+  const amendement = (id: string, idObjectif: string, iso: string) => ({
+    id,
+    idObjectif,
+    creeLe: new Date(iso),
+  });
+
+
   it('sans aucune ligne : « en attente » — le geste patient n’existe pas encore (DC-24)', () => {
     expect(etatRatification('o1', [])).toBe('en_attente');
   });
@@ -300,6 +323,141 @@ describe('etatRatification', () => {
     ];
     expect(etatRatification('o1', lignes)).toBe('conteste');
     expect(etatRatification('o1', [...lignes].reverse())).toBe('conteste');
+  });
+
+  // ── « Le dire autrement » entre dans la dérivation (6.0-B, LOT-04) ────────
+
+  it('un amendement rend « dit autrement », qui N’EST PAS « contesté »', () => {
+    expect(
+      etatRatification('o1', [], [amendement('a1', 'o1', '2026-08-20T10:00:00.000Z')]),
+    ).toBe('dit_autrement');
+  });
+
+  it('LES DEUX TABLES SE LISENT ENSEMBLE — dernier geste, toutes tables confondues', () => {
+    const ratifications = [ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z')];
+    const amendements = [amendement('a1', 'o1', '2026-08-21T10:00:00.000Z')];
+
+    // Le patient a ratifié, puis écrit sa version : c'est sa version qui vaut.
+    expect(etatRatification('o1', ratifications, amendements)).toBe('dit_autrement');
+
+    // Et l'inverse : il a écrit sa version, puis ratifié la reformulation.
+    expect(
+      etatRatification(
+        'o1',
+        [ratification('r2', 'o1', 'ratifie', '2026-08-22T10:00:00.000Z')],
+        amendements,
+      ),
+    ).toBe('ratifie');
+  });
+
+  it('lire une seule table donnerait la RÉPONSE INVERSE — le banc le montre', () => {
+    // Sans les amendements, la dérivation rendrait « ratifié » à un patient qui
+    // vient d'écrire autre chose. C'est la mutation que ce cas tue.
+    const ratifications = [ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z')];
+    const amendements = [amendement('a1', 'o1', '2026-08-21T10:00:00.000Z')];
+    expect(etatRatification('o1', ratifications)).toBe('ratifie');
+    expect(etatRatification('o1', ratifications, amendements)).toBe('dit_autrement');
+  });
+
+  it('n’attribue jamais à un objectif l’amendement porté sur un autre', () => {
+    expect(
+      etatRatification('o1', [], [amendement('a1', 'o2', '2026-08-20T10:00:00.000Z')]),
+    ).toBe('en_attente');
+  });
+
+  it('un `sens` hors taxonomie NE FAIT PAS REMONTER le geste précédent', () => {
+    // Le CHECK en base rend le cas impossible aujourd'hui. Mais si la taxonomie
+    // s'élargissait sans que ce module bouge, ÉCARTER la ligne inconnue avant
+    // le tri ferait afficher « Ratifié par le patient » à un praticien dont le
+    // patient vient de se rétracter. Le dernier geste est choisi d'abord ; ne
+    // pas le comprendre se dit `en_attente`, qui n'affirme rien (`DC-24`).
+    const lignes = [
+      ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z'),
+      ratification('r2', 'o1', 'peut_etre', '2026-08-21T10:00:00.000Z'),
+    ];
+    expect(etatRatification('o1', lignes)).toBe('en_attente');
+  });
+
+  it('et il ne masque pas non plus un amendement PLUS RÉCENT que lui', () => {
+    // Le cas mixte des deux tables : c'est là que le tri doit rester unique.
+    const lignes = [
+      ratification('r1', 'o1', 'ratifie', '2026-08-20T10:00:00.000Z'),
+      ratification('r2', 'o1', 'peut_etre', '2026-08-21T10:00:00.000Z'),
+    ];
+    expect(
+      etatRatification('o1', lignes, [amendement('a1', 'o1', '2026-08-22T10:00:00.000Z')]),
+    ).toBe('dit_autrement');
+
+    // Et inversement : l'inconnu le plus récent ne se replie pas sur
+    // l'amendement qui le précède.
+    expect(
+      etatRatification('o1', lignes, [amendement('a1', 'o1', '2026-08-20T12:00:00.000Z')]),
+    ).toBe('en_attente');
+  });
+});
+
+describe('preparerAmendement — « le dire autrement » (6.0-B, LOT-04)', () => {
+  const base = { idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', texte: 'Je veux tenir debout à 17 h.' };
+
+  it('prépare le texte du patient, débarrassé de ses espaces de bord', () => {
+    const prep = preparerAmendement({ ...base, texte: '  Je veux tenir debout à 17 h.  ' });
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(prep.donnees.texte).toBe('Je veux tenir debout à 17 h.');
+    expect(prep.donnees.idObjectif).toBe('obj-1');
+  });
+
+  it('refuse un texte vide : un amendement sans mots est une contestation, pas un amendement', () => {
+    for (const texte of [null, undefined, '', '   ', '\n\n']) {
+      const prep = preparerAmendement({ ...base, texte });
+      expect(prep.ok).toBe(false);
+      if (!prep.ok) expect(prep.raison).toBe('texte_absent');
+    }
+  });
+
+  it('refuse au-delà de la borne, PAR REFUS et jamais par troncature', () => {
+    const prep = preparerAmendement({ ...base, texte: 'x'.repeat(LONGUEUR_MAX_AMENDEMENT + 1) });
+    expect(prep).toEqual({ ok: false, raison: 'texte_trop_long' });
+
+    // La borne elle-même passe : elle borne, elle n'exclut pas.
+    const juste = preparerAmendement({ ...base, texte: 'x'.repeat(LONGUEUR_MAX_AMENDEMENT) });
+    expect(juste.ok).toBe(true);
+    // Rien n'a été coupé.
+    if (juste.ok) expect(juste.donnees.texte.length).toBe(LONGUEUR_MAX_AMENDEMENT);
+  });
+
+  it('refuse une référence d’objectif absente ou vide', () => {
+    for (const idObjectif of [null, undefined, '', '   ']) {
+      const prep = preparerAmendement({ ...base, idObjectif });
+      expect(prep.ok).toBe(false);
+      if (!prep.ok) expect(prep.raison).toBe('objectif_absent');
+    }
+  });
+
+  it('ne prépare AUCUNE date — ni celle du geste, ni celle de l’écriture', () => {
+    const prep = preparerAmendement(base);
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(Object.keys(prep.donnees).sort()).toEqual(['idObjectif', 'idPatient', 'texte']);
+  });
+
+  it('ignore toute date proposée par l’appelant — antidater reste impossible', () => {
+    const prep = preparerAmendement({
+      ...base,
+      ...({ exprimeLe: '2020-01-01T00:00:00.000Z', creeLe: '2020-01-01T00:00:00.000Z' } as object),
+    });
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(prep.donnees).not.toHaveProperty('exprimeLe');
+    expect(prep.donnees).not.toHaveProperty('creeLe');
+  });
+
+  it('se raviser est une LIGNE DE PLUS : rien ne désigne la précédente', () => {
+    const second = preparerAmendement({ ...base, texte: 'En fait, dormir avant minuit.' });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(Object.keys(second.donnees)).not.toContain('supersedesAmendementId');
+    expect(Object.keys(second.donnees)).not.toContain('id');
   });
 });
 

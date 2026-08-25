@@ -4,7 +4,7 @@ titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "en_cours"
 créée_le: "2026-08-23"
 mise_à_jour: "2026-08-25"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -127,9 +127,17 @@ au statut de testeur ; sa levée est une décision propre, préparée au LOT-06.
   élargi) ; au plus **trois** propositions, affichées sans numérotation ni
   mise en avant ; moteur **déterministe d'abord** (aucun LLM au LOT-02) ;
   module de proposition distinct (G6 intacte, G7 neuve).
-- Décisions `D-xxx` restant à réserver : geste patient à l'implémentation si
-  un point de forme dépasse [[D-094]] (LOT-04), instrument d'évaluation si
-  GAS (LOT-05).
+- **[[D-110]] (2026-08-25, LOT-04)** — trois points de forme dépassaient
+  [[D-094]] : le geste est gardé par `WN_DOSSIER_DEUX_VOIX` (donc **ouvert dès
+  le merge**, le drapeau étant posé depuis le 2026-08-23 — application immédiate
+  prévue par la campagne, et rien ne s'accumule) ; l'état dérivé gagne une
+  QUATRIÈME valeur `dit_autrement`, qui n'est ni un accord ni un refus, les deux
+  tables se lisant ensemble ; un amendement devient source admissible de
+  citation pour une reprise praticien **sans élargir la liste fermée de
+  [[D-094]] §1**, qui ferme les sources d'un fragment de proposition — ce que la
+  MACHINE assemble — et non ce que le patient a écrit lui-même.
+- Décisions `D-xxx` restant à réserver : instrument d'évaluation si GAS
+  (LOT-05).
 
 ## Questions ouvertes
 
@@ -168,7 +176,7 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 | LOT-01 | Migration : `propositions_objectif`, `dispositions_proposition`, `amendements_objectif` + `source_proposition_id` | terminé (2026-08-23, application `release-db` en attente) | LOT-00 ✓ |
 | LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | terminé (2026-08-23) | LOT-01 (releasée et constatée) |
 | LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | terminé (2026-08-25) | LOT-02 ✓ |
-| LOT-04 | Portail : « le dire autrement » — `D-xxx` geste patient | à_faire | LOT-00 ; LOT-01 si migration du CHECK |
+| LOT-04 | Portail : « le dire autrement » — [[D-110]] geste patient, quatrième état, citation d'amendement | terminé (2026-08-25) | LOT-00 ✓ ; LOT-01 ✓ |
 | LOT-05 | Jalons : évaluation ancrée à la version, EVA brute | à_faire | LOT-04 |
 | LOT-06 | Bilan : écarts + amendements → provenance pour signer le classement ; **gate de consolidation**, ferme la boucle [[D-093]] | à_faire | tous |
 
