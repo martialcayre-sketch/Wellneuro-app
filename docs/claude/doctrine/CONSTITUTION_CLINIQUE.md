@@ -81,7 +81,10 @@ de `A + B + D`, le système conserve et restitue `A`, `B`, `D`. Sans quoi naît
 une doctrine dérivée dont plus personne ne connaît l'origine.
 *Proposition — **écrite, non armée** : aucun claim dérivé n'existe, la règle
 n'a pas de sujet. Déclencheur : le premier claim dérivé. État légitime, pas
-une dette (vérifié le 2026-08-23).*
+une dette. **Reconduite le 2026-08-25** ([[D-109]], clôture) sur preuve
+STRUCTURELLE et non plus sur un comptage : `rag_corpus_claims` ne porte **aucune
+colonne de claim parent**, et aucune `ALTER` ultérieure n'en ajoute — un claim
+dérivé ne peut pas exister, pas seulement n'existe pas.*
 
 **DC-06 — La hiérarchie des sources est ordonnée, et une génération LLM ne
 contredit jamais un niveau supérieur.** Ordre décroissant : sécurité et
@@ -113,8 +116,10 @@ parfaitement certifié (correspondance score ↔ catégorie d'un questionnaire,
 par exemple).
 *Proposition — **écrite, non armée** : rien ne s'exécute automatiquement, tout
 passe par le praticien ([[D-003]]). Déclencheur : la première exécution
-`AUTO`, qui suppose `DC-13`. État légitime, pas une dette (vérifié le
-2026-08-23).*
+`AUTO`, qui suppose `DC-13`. État légitime, pas une dette. **Reconduite le
+2026-08-25** ([[D-109]], clôture) sur preuve structurelle : `rag_corpus_claims`
+ne porte **aucune colonne de niveau d'exécution**, donc rien ne peut y être
+marqué `AUTO` ; le verrou de `D-003` est un second rideau, pas le premier.*
 
 **DC-09 — Un claim associatif ne devient jamais une preuve.** « X peut être
 associé à Y » ne se restitue jamais en « X prouve Y », ni en « X explique Y ».
@@ -259,7 +264,18 @@ provenance : bornes, cut-offs, pondérations, doses, durées, fenêtres
 temporelles, nombre minimal de jours, intervalles biologiques, objectifs. Un
 chiffre purement technique peut être choisi par l'ingénierie, à condition
 d'être identifié comme tel (DC-20).
-*Acté — `.claude/rules/clinique-scoring.md`, [[D-013]].*
+*Acté — `.claude/rules/clinique-scoring.md`, [[D-013]] — **et gardé par un banc
+depuis le 2026-08-24** ([[D-105]], élargi par [[D-108]]).
+`seuilsLitterauxMotives.guard.test.ts` balaie tout `src/lib` et exige de chaque
+seuil littéral hors catalogue qu'il soit **nommé dans une constante** ou
+**inscrit avec son motif**. Il connaît deux positions : le littéral à droite
+d'un opérateur de comparaison, et l'**écrêtage** (`Math.min`/`Math.max`) — la
+seconde ajoutée après qu'une contre-revue adverse eut fait passer une borne non
+motivée par la première. Deux seuils réellement fautifs ont été trouvés et
+corrigés à sa pose. **Sa limite est déclarée** : le catalogue est exempté par
+forme (c'est lui la source), et `.slice` reste hors balayage — 30 des 39
+littéraux d'écrêtage y sont des troncatures d'affichage, qui ne décident de
+rien.*
 
 **DC-20 — Seuil clinique et seuil technique ne partagent pas le même statut.**
 Chaque seuil déclare sa nature : `clinical` · `instrument` · `data_quality` ·
@@ -272,6 +288,17 @@ mérite d'être nommée — la liste blanche de colonnes de
 `alli_dossier_deux_voix_v1_negatif.sql:11,173` (`ci.yml:685`) **interdit** tout
 seuil sur les tables de l'alliance ; c'est un interdit, pas une déclaration de
 nature. Porté par la campagne **Curation signée** ([[D-096]]).*
+
+***Ce que le LOT-08 précise, sans basculer la règle** (2026-08-25, [[D-109]]).
+Le banc de `DC-19` **exige désormais un motif** pour tout seuil littéral non
+nommé, et chaque motif dit en toutes lettres pourquoi le chiffre n'est pas
+clinique — « longueur de texte », « borne de plausibilité de saisie », « borne
+de charge sur un paramètre d'appel ». C'est de la déclaration de nature, et elle
+mord. Mais elle est **en prose, dans un banc**, non dans un champ
+`thresholdKind` porté par la donnée : elle ne suit pas le seuil hors du dépôt et
+ne se requête pas. `DC-20` reste donc **actée sans être armée au sens qu'elle
+décrit** — la distance est plus courte qu'au 2026-08-11, elle n'est pas
+franchie.*
 
 **DC-21 — Aucune pondération clinique tacite.** Un poids égal entre axes n'est
 pas neutre : c'est déjà une décision de modèle. Toute pondération est
@@ -320,6 +347,19 @@ interprétation clinique de la variation — ne le dit plus. Banc :
 avant d'être refusées). L'asymétrie des trois libellés est **conservée** :
 `D7` « construction, jamais dégradation » interdit d'annoncer une chute, et
 symétriser aurait cassé une règle en croyant en servir une autre.*
+
+***Deux surfaces manquaient, et le banc ne pouvait pas les voir** — LOT-12,
+[[D-108]], 2026-08-24. La phrase « au seul endroit où il s'affiche » ci-dessus
+était **fausse**, et c'est une contre-revue adverse qui l'a établi :
+`TrajectoirePanel` affichait l'indice de chaque jalon, `J21DecisionPanel` la
+tendance du total, toutes deux **sans la mention**. Aucune n'était rattrapable
+par le banc, et pour une raison structurelle — il suivait la valeur par son NOM,
+or elle change de nom en traversant une réponse d'API. Deux corrections : les
+alias sont résolus **à point fixe**, et un **second détecteur, par LIBELLÉ**, lit
+désormais ce que le praticien lit plutôt que ce que le code nomme. Les deux
+surfaces portent la mention. **Ce qui reste hors de portée, et qui est écrit** :
+un franchissement de fichier (valeur passée en prop à un enfant qui la renomme)
+— le détecteur par libellé le couvre par le mot, jamais par la donnée.*
 
 **DC-23 — Les red flags sont orthogonaux au score.** Un red flag n'ajoute ni ne
 retire de points. Un score global favorable et un red flag majeur coexistent
@@ -800,12 +840,18 @@ recommandations nationales et internationales servent de référence de base ;
 les adaptations NNPP2 s'y ajoutent, elles ne la remplacent pas.
 *Proposition — **écrite, non armée** : aucun socle de recommandation nationale
 n'est référencé comme tel au dépôt. Déclencheur : l'entrée d'un premier socle.
-État légitime, pas une dette (vérifié le 2026-08-23).*
+État légitime, pas une dette. **Reconduite le 2026-08-25** ([[D-109]], clôture),
+avec la nuance que la mesure a trouvée : « PNNS 4 » **figure bien au dépôt**,
+mais comme LIBELLÉ D'UN ITEM de questionnaire (`mode-de-vie.ts`,
+`MODE_ALIMENTAIRE_Q001`) — on demande au patient s'il suit ces recommandations,
+le système ne les référence pas. Un socle cité dans une question n'est pas un
+socle référencé ; le déclencheur n'est pas franchi.*
 
 **DC-53 — Toute divergence par rapport au socle est justifiée.**
 Recommandation générale → adaptation patient → raison → claim source.
 *Proposition — **écrite, non armée**, corollaire de `DC-52`. Même déclencheur.
-État légitime, pas une dette (vérifié le 2026-08-23).*
+État légitime, pas une dette. **Reconduite le 2026-08-25** ([[D-109]], clôture)
+— sans socle référencé, il n'existe aucune divergence à justifier.*
 
 ---
 
@@ -937,4 +983,77 @@ produit une table par claim (notebook, domaine, catégorie DC-07, règle dériv�
 niveau d'exécution, validation praticien, red flag, consommateurs WellNeuro)
 et reste à faire.
 
+**Elle est désormais ROUTÉE, et non plus seulement annoncée** — [[D-109]],
+clôture de « Doctrine exécutable », 2026-08-25. Cette descente était promise
+ici **et** en fin d'audit, sans destinataire : un travail annoncé deux fois et
+jamais routé finit par ne plus être annoncé du tout. Elle appartient
+**entièrement** à la campagne **Curation signée** — sa structure y a suivi le
+LOT-02 transféré ([[D-096]]), sa cadence y était déjà. Les 8 224 claims de
+production, mesurés le 2026-08-23, sont tous au statut `VALIDE` et leur
+`metadata` ne porte que `section`/`source_chunk`/`page`/`usage` : la grille n'a
+donc **aucune colonne où s'écrire** tant que Curation signée n'a pas ouvert les
+axes. C'est ce qui rend le routage exact plutôt que dilatoire.
+
 État de l'application au code existant : `AUDIT_DOCTRINE_CHAINE_T0.md`.
+
+---
+
+## Où en est cette constitution — clôture de « Doctrine exécutable »
+
+*Écrit le 2026-08-25 par le LOT-08 de la campagne ([[D-109]]). Ce bloc constate
+un état ; il ne promet rien.*
+
+**Ce que la campagne a réellement fermé**, chaque règle sur ses **trois preuves**
+vérifiées ici et non sur la foi d'un lot déclaré terminé — une décision datée, un
+banc qui tourne dans la suite du CI, un statut basculé :
+
+| Règle | Décision | Banc qui mord |
+|---|---|---|
+| `DC-09` association ≠ preuve | `D-097` | `promptAssociationPreuve.guard.test.ts` |
+| `DC-19` aucun seuil inventé | `D-105`, `D-108` | `seuilsLitterauxMotives.guard.test.ts` |
+| `DC-22` pas de total sans sens | `D-106`, `D-108` | `natureIndiceGlobal.guard.test.ts` |
+| `DC-23` red flags orthogonaux | `D-099` | `safetyFindings.guard.test.ts` |
+| `DC-54` politique de résolution | `D-103`, `D-104` | `conflitsSourcesV1.guard.test.ts` |
+| `DC-55` escalade praticien | `D-103`, `D-104` | `conflitsSourcesV1.guard.test.ts` |
+
+**Ce qui n'est pas fermé, et pourquoi — nommément :**
+
+- **`DC-20`** : la nature des seuils est déclarée **en prose dans un banc**, pas
+  portée par la donnée. Chez **Curation signée**.
+- **`DC-26`** : le compilateur de règles n'existe pas — ni sur le disque, ni dans
+  l'historique Git. Une règle ne s'acte pas sur la foi d'un outil absent.
+- **`DC-42`**, **`DC-43`** : le mécanisme est **complet et relu**, la signature
+  ne l'est pas. `DC-42` attend une revue au **2026-08-30** ; `DC-43` n'a pas de
+  **sujet** — les 95 interventions portent `neCouvrePas` à `null` sur les 95 —
+  et a reçu un **porteur**, la curation des exclusions rouverte ([[D-107]]).
+- **`DC-58`** : instruite, sans contre-exemple au dépôt, et **sans méthode
+  fondée**. Reste proposition **avec sa mesure**.
+- **Les quatre non armées** (`DC-05`, `DC-08`, `DC-52`, `DC-53`) : leur
+  déclencheur est nommé et **vérifié structurellement** le 2026-08-25. État
+  légitime.
+- **Les onze statuts orphelins** (`DC-03`, la part de `DC-11` hors exclusions,
+  `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-45`, `DC-47`,
+  `DC-48`). Recomptés au grep le 2026-08-25 — **13** occurrences du marqueur,
+  dont deux en en-tête, inchangé depuis la mesure du LOT-11.
+  **Ils reçoivent une campagne dédiée** ([[D-107]], 2026-08-24), et ce lot ne
+  les arbitre pas : il en prend acte. La fiche du LOT-08 les annonçait encore
+  comme « dettes nommées sans véhicule » — c'était l'option **écartée** la
+  veille, précisément parce que « dettes nommées » est le régime qui les avait
+  rendues orphelines.
+  `DC-39` et `DC-41` restent le cas pur du véhicule mort : V4 était « deux
+  paragraphes dans deux fiches de lot », ces fiches sont livrées depuis le
+  2026-08-18, et le code ne porte ni l'un ni l'autre. Les nommer ici est ce qui
+  les empêche de disparaître avec leur véhicule, en attendant le cadrage.
+- **`DC-50`**, **`DC-51`** : **renvoyées** à la campagne
+  `2026-08-10-chaine-alimentaire`, qui est leur matière. Un renvoi est un
+  routage, pas une fermeture.
+
+**Ce que la campagne a appris sur elle-même.** Trois fois, un lot a déclaré
+close une chose qui ne l'était pas, et **jamais le lot lui-même ne l'a vu** :
+une entrée de garde qui était un no-op silencieux, un banc vert sous quatre
+mutations, une règle étiquetée *Proposition* dont le corps concluait qu'elle
+basculait. La quatrième a été trouvée par une contre-revue **adverse** lancée
+avant cette clôture ([[D-108]]) — elle a réfuté sept des treize affirmations
+qui allaient être gravées ici, dont un texte servi au patient depuis cinq
+semaines. C'est la raison pour laquelle ce bloc dit d'abord ce qui **n'est pas**
+fermé.

@@ -1,10 +1,26 @@
 ---
 id: "LOT-08"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "tous les lots précédents"
 ---
 
 # LOT-08 — Clôture : renvois, constitution à l'état atteint, matrice reconduite
+
+> **LIVRÉ le 2026-08-25 — `D-109`. La campagne est close.** Six règles
+> franchissent leurs trois preuves, vérifiées ici et non sur la foi d'un lot
+> déclaré terminé : `DC-09`, `DC-19`, `DC-22`, `DC-23`, `DC-54`, `DC-55` — les
+> cinq bancs cités existent et tournent. Ce qui **n'est pas** fermé est écrit
+> règle par règle. Les quatre non armées sont reconduites sur preuve
+> **structurelle** et non plus sur un comptage. Les orphelines recomptées au
+> grep : **13**, inchangé. Aucun code modifié.
+>
+> **CETTE FICHE ÉTAIT PÉRIMÉE SUR UN POINT, et le lot a suivi l'arbitrage le
+> plus récent.** Le §2 ci-dessous annonce les dix orphelines comme « dettes
+> nommées sans véhicule ». C'est l'option que le responsable a **écartée** le
+> 2026-08-24 ([[D-107]]), au profit d'une **campagne dédiée** — et pour ce
+> motif exact : « dettes nommées » est le régime qui les avait rendues
+> orphelines. La fiche a été cadrée avant cet arbitrage ; elle n'est pas
+> réécrite, elle est amendée ici. Le lot **prend acte**, il n'arbitre pas.
 
 ## But
 
@@ -90,10 +106,19 @@ Tous les lots précédents. Le lot ne s'ouvre pas tant qu'un lot reste en cours
 
 ## Critères de done
 
-- [ ] Chaque bascule vérifiée sur ses trois preuves, aucune sur parole.
-- [ ] `DC-50`/`DC-51` renvoyées à la chaîne alimentaire ; `DC-39`/`DC-41`
-      nommées comme dettes sans véhicule.
-- [ ] Les quatre règles non armées reconduites, déclencheurs vérifiés.
-- [ ] La matrice claim par claim reconduite et routée, pas effacée.
-- [ ] `DC-26` et tout reste partiel documentés avec leur motif.
-- [ ] Audit et `FILE_ATTENTE.md` à jour ; clôture écrite avant la PR.
+- [x] Chaque bascule vérifiée sur ses trois preuves, aucune sur parole — six
+      règles, cinq bancs nommés et présents au dépôt.
+- [x] `DC-50`/`DC-51` renvoyées à la chaîne alimentaire ; `DC-39`/`DC-41`
+      nommées sans véhicule — et rattachées à la campagne dédiée ([[D-107]]),
+      l'arbitrage ayant changé après le cadrage de cette fiche.
+- [x] Les quatre règles non armées reconduites, déclencheurs vérifiés
+      **structurellement** : aucune colonne de claim parent, aucune colonne de
+      niveau d'exécution, aucun socle référencé (« PNNS 4 » n'est qu'un libellé
+      d'item de questionnaire).
+- [x] La matrice claim par claim routée chez **Curation signée**, aux deux
+      endroits qui l'annonçaient sans destinataire.
+- [x] `DC-26` et tout reste partiel documentés avec leur motif — `DC-20`,
+      `DC-26`, `DC-42`, `DC-43`, `DC-58`, plus les quatre non armées.
+- [x] Audit amendé **ligne par ligne et daté** (le constat du 2026-08-11 reste
+      lisible), répartition finale écrite, `FILE_ATTENTE.md` à jour ; clôture
+      écrite avant la PR.
