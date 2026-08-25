@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { empreinteJeton, etatLien } from '@/lib/portail/lienMagique';
+import { urlPubliquePortail } from '@/lib/portail/urlPublique';
 import { PORTAIL_COOKIE_NAME, PORTAIL_COOKIE_OPTIONS, signPatientSession } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -43,7 +44,7 @@ function contexteSansJeton(req: Request): RequestContext {
  * apprendre en sondant.
  */
 function refuser(req: Request): NextResponse {
-  return NextResponse.redirect(new URL('/portail/lien/indisponible', req.url));
+  return NextResponse.redirect(urlPubliquePortail('/portail/lien/indisponible', req.url));
 }
 
 export async function GET(
@@ -126,7 +127,7 @@ export async function GET(
     // segment d'URL porte l'idPatient (non secret), et l'accès repose sur le
     // cookie de session posé ci-dessous. La révocation reste effective (garde
     // ci-dessus + `sessionsInvalidesAvant`, posé à la révocation).
-    const res = NextResponse.redirect(new URL(`/portail/${lien.idPatient}`, req.url));
+    const res = NextResponse.redirect(urlPubliquePortail(`/portail/${lien.idPatient}`, req.url));
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({

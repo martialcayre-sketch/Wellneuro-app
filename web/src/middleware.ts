@@ -27,6 +27,11 @@ import type { NextRequest } from 'next/server';
  * plutôt qu'en 404 — avec sa query, ce qui est le défaut mineur, pas le grave.
  */
 export function middleware(request: NextRequest) {
+  // Derrière le routeur Scalingo, `request.url` porte l'hôte interne du
+  // conteneur ; en middleware, Next émet néanmoins une Location relative
+  // (constaté en production le 2026-08-25 — sain). Si cette redirection migre
+  // un jour vers un Route Handler, passer par `lib/portail/urlPublique.ts`,
+  // jamais par une URL absolue bâtie sur `req.url`.
   const cible = new URL('/portail/connexion', request.url);
   // Aucun paramètre repris de `request.nextUrl.searchParams` : c'est le geste
   // entier de ce fichier.
