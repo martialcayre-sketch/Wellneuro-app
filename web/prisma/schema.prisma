@@ -78,6 +78,7 @@ model Patient {
   propositionsObjectif     PropositionObjectif[]
   dispositionsProposition  DispositionProposition[]
   amendementsObjectif      AmendementObjectif[]
+  reponsesJalonObjectif    ReponseJalonObjectif[]
 
   @@map("patients")
 }
@@ -2190,4 +2191,44 @@ model AmendementObjectif {
 
   @@index([idPatient, creeLe], map: "alli_amendement_objectif_patient_idx")
   @@map("amendements_objectif")
+}
+
+// LA RÉPONSE D'ÉTAPE (Alliance 6.0-B, LOT-05) — où le patient en est PAR
+// RAPPORT À SON OBJECTIF, aux jalons J21/J42/J90.
+//
+// TABLE PROPRE, et non un élargissement de `protocol_checkins` : celle-là est
+// ancrée à un PROTOCOLE (`protocol_draft_id` et `id_assignation` NOT NULL) et
+// parle en J7/J14/J21. Une réponse d'étape sur un objectif n'a ni protocole ni
+// assignation, et sa taxonomie de jalon est celle de `JOURS_JALON`
+// (`equilibre/constants.ts`) — les fusionner rendrait la table bilingue sur ses
+// deux axes. Même raisonnement que `D-094` §2 pour l'amendement.
+//
+// `id_objectif` PORTE LA VERSION EXACTE, référence souple sans FK (patron de
+// toute la campagne) : le patient dit où il en est par rapport au texte qu'on
+// lui a servi, pas par rapport à « son objectif » en général. Sans cet ancrage,
+// une reformulation ultérieure ferait porter sa réponse sur des mots qu'il n'a
+// jamais lus.
+//
+// `texte` NOT NULL non vide : une réponse d'étape sans mots n'est pas une
+// réponse. `eva` est FACULTATIVE et RESTITUÉE BRUTE — aucune bande, aucun
+// seuil, aucune moyenne, aucune courbe (`D-088`, `DC-19`/`DC-20`). Ses bornes
+// 0-10 sont TECHNIQUES, ce que le CHECK de migration dit en toutes lettres.
+//
+// PAS DE praticien_email : c'est une parole de patient. `repondu_le` reste la
+// colonne de DÉCLARATION du patron de campagne (comme `exprime_le` et
+// `geste_le`), nulle tant que personne ne déclare de date.
+model ReponseJalonObjectif {
+  id         String    @id @default(cuid()) @map("id")
+  idPatient  String    @map("id_patient")
+  idObjectif String    @map("id_objectif")
+  jalon      String    @map("jalon") // J21 | J42 | J90 (CHECK migration)
+  texte      String    @map("texte")
+  eva        Int?      @map("eva") // 0-10, borne TECHNIQUE (CHECK migration)
+  reponduLe  DateTime? @map("repondu_le")
+  creeLe     DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_reponse_jalon_patient_idx")
+  @@map("reponses_jalon_objectif")
 }

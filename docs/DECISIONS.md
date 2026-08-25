@@ -4,6 +4,125 @@
 
 ## Décisions actives
 
+### D-111 — La réponse d'étape a sa table, l'ancre n'est pas une étape, et l'EVA ne conclut rien
+
+- Date : 2026-08-25
+- Statut : accepté (migration confirmée explicitement par le responsable en
+  session le 2026-08-25 ; gate humain = approbation `release-db`)
+- Domaine : schéma et doctrine produit — campagne Alliance 6.0-B, réponse du
+  patient aux jalons de son objectif
+- Porte sur : `D-088` (EVA sans interprétation, dont elle applique le régime),
+  `D-094` §2 (dont elle reprend le raisonnement de forme), `DC-19`/`DC-20`,
+  `DC-24`
+- Fonde : le LOT-05 de `2026-08-23-alliance-objectif-trois-voix`
+
+**Contexte.** Aux jalons J21/J42/J90, le patient est invité à dire où il en est
+**par rapport à son objectif** — en mots, plus une EVA facultative restituée
+brute. Aucune table du dépôt ne pouvait porter cet événement. La migration est
+seule dans sa PR ; le code qui la consomme suit, après application constatée par
+conteneur (`D-087`).
+
+**Décision 1 — table propre, et non un élargissement de `protocol_checkins`.**
+Celle-ci est ancrée à un **protocole** : `protocol_draft_id` et
+`id_assignation` sont NOT NULL, si bien qu'une réponse portant sur un objectif —
+qui n'a ni protocole ni assignation — y serait inécrivable sans relâcher deux
+colonnes porteuses. Et sa taxonomie de point d'étape est **J7/J14/J21**, quand
+les jalons de l'objectif sont ceux de `JOURS_JALON` (**J21/J42/J90**) : la
+fusionner l'aurait rendue bilingue sur ses **deux** axes — un `J21` y aurait
+désigné deux moments différents selon la ligne. C'est le raisonnement de
+`D-094` §2 pour l'amendement, appliqué au même endroit.
+
+**Décision 2 — `T0` n'est pas un jalon de réponse, et le CHECK le refuse.**
+`T0` est l'**ancre** des fenêtres, le moment où l'objectif se pose. Demander à
+cet instant « où en êtes-vous par rapport à votre objectif » n'a pas de sens :
+il n'y a rien derrière soi. La taxonomie est donc `JOURS_JALON` **moins son
+ancre**. Ce refus ne se déduit d'aucun autre — `T0` étant une valeur
+parfaitement légitime ailleurs —, il est donc éprouvé pour lui-même au contrat,
+et la taxonomie y est lue dans la **définition** de la contrainte : les cas
+négatifs testent des valeurs refusées, si bien qu'un CHECK élargi à `T0` les
+laisserait tous verts.
+
+**Décision 3 — l'EVA est portée par l'événement, bornée 0-10, et ne conclut
+rien.** La borne est **purement technique de saisie**, identifiée comme telle
+(`DC-19`/`DC-20`) : aucune bande, aucun seuil, aucune direction, aucune moyenne,
+aucune courbe, aucun moteur ne la lit. Elle est **restituée brute** au praticien,
+qui l'interprète avec son patient — le régime que `D-088` a établi pour l'EVA
+sans interprétation, appliqué ici **sans l'élargir**. `0-10` est l'échelle de
+saisie retenue, pas une grille.
+
+Elle reste **facultative**, et la colonne nullable sans DEFAULT : la rendre
+obligatoire forcerait un chiffre là où le patient n'a que des mots — et un
+chiffre contraint n'est plus une réponse, c'est une case remplie pour passer. Un
+DEFAULT, lui, fabriquerait une réponse que personne n'a donnée (`DC-24`).
+
+**Si un instrument publié doit un jour structurer cette mesure** — Goal
+Attainment Scaling ou autre —, ce sera une décision de **provenance dédiée**,
+hors de ce lot. La présente décision ne pose aucun barème et n'en autorise
+aucun.
+
+**Décision 4 — le texte est obligatoire, l'EVA ne peut pas le remplacer.** Une
+réponse d'étape sans mots n'est pas une réponse. L'invariant compte davantage
+ici qu'ailleurs : l'EVA étant facultative, une ligne au texte vide serait un
+**chiffre nu déposé dans un dossier** — exactement ce que ce lot refuse de
+produire.
+
+**Décision 5 — aucune contrainte d'unicité sur (patient, objectif, jalon).**
+Répondre deux fois au même jalon fait **deux lignes**, comme une ratification et
+un amendement. Se raviser se dit en le disant ; la lecture retient la plus
+récente. Un `UNIQUE` transformerait un second geste en erreur technique, ou
+pousserait à l'`upsert` — c'est-à-dire à écraser ce que le patient avait écrit.
+Le contrat asserte cette **absence**, contrainte et index confondus.
+
+**Décision 6 — l'ancre des jalons est celle de toute la chaîne, et il n'y en
+aura pas de seconde.** `JOURS_JALON` compte les jours depuis le `dateT0` du
+cycle — la confirmation du protocole (`jalonDu.ts`). La réponse d'étape emploie
+**cette ancre-là**, sans en stocker de copie et sans colonne d'ancre.
+
+Le point mérite d'être écrit parce qu'il se rouvrira : la version d'un objectif
+peut naître longtemps après le T0, et l'on pourrait vouloir compter « J21 » à
+partir d'elle. Ce serait **fabriquer un second calendrier** — un `J21` qui ne
+désigne pas le même moment que le `J21` du reste du dépôt, c'est-à-dire
+exactement la bilinguité que la Décision 1 reproche à `protocol_checkins`,
+déplacée d'un cran. Le jalon est la **cadence du suivi**, pas l'anniversaire de
+l'objectif : demander à J21 « où en êtes-vous par rapport à votre objectif » a du
+sens quel que soit l'âge de la version visée, puisque c'est la version exacte qui
+est référencée. Sans cycle confirmé, aucun jalon n'est calculable et la surface
+ne s'affiche pas — ce n'est pas un manque à combler.
+
+**Ce que cette décision n'autorise pas.** Calculer, moyenner, cumuler ou tracer
+une courbe sur l'EVA ; en dériver un taux d'atteinte, une progression ou un
+classement d'objectifs ; rendre l'absence de réponse à un jalon comme un
+manquement (`DC-24`) ; relancer le patient — le portail reste en pull.
+
+**Dettes nommées.**
+
+1. Pas de CHECK « date non future » sur `repondu_le` : Postgres refuse `now()`
+   dans un CHECK, la borne se garde à la route — reconduite de 6.0-A et du
+   LOT-01. `repondu_le` reste la colonne de **déclaration** du patron de
+   campagne, sœur d'`exprime_le` et de `geste_le` : nulle tant que personne ne
+   déclare de date.
+2. **La taxonomie des jalons et les bornes de l'EVA n'existent qu'en SQL.** Rien
+   en TypeScript ne nomme « `JOURS_JALON` moins son ancre », et deux modules
+   énumèrent déjà ses clés telles quelles. Un chemin qui dériverait le jalon de
+   `resoudreJalonDu` obtiendrait `T0` pour un patient sans cycle confirmé, et
+   l'INSERT lèverait un 23514 — donc un 500 côté patient, sur un chemin que ni
+   T1 ni T2 ne voient. **Préalable de la PR de code** : une constante dérivée,
+   ancre retirée nommément, et le refus rendu à la route en français.
+3. **`btrim/1` ne retire que l'espace ASCII.** Le CHECK de texte de cette table
+   emploie donc `btrim(texte, E' \t\r\n')`, et un cas négatif l'éprouve. Mais
+   les CHECK de texte **déjà appliqués en production** — `amendements_objectif`,
+   et ceux de 6.0-A — portent le trou : un texte fait d'une tabulation y passe.
+   Les resserrer est une migration à part, avec son arbitrage ; elle n'a pas de
+   porteur.
+4. **La fenêtre d'effacement, assumée comme au LOT-01.** `effacement.ts`
+   référence la table neuve et se déploie **au merge**, quand la migration
+   n'est appliquée qu'après approbation `release-db`. Entre les deux, tout
+   effacement de dossier échoue en 500 — **fail-closed, aucune perte**, la
+   transaction étant annulée en bloc. Ne pas « protéger » l'appel par un
+   `try/catch` : cela ouvrirait un effacement partiel, très pire que la fenêtre.
+   Le couplage est imposé par la garde de complétude, qui refuserait le schéma
+   sans la ligne.
+
 ### D-110 — « Le dire autrement » : le troisième verbe du patient, et le quatrième état
 
 - Date : 2026-08-25

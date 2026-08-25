@@ -706,6 +706,29 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_objectif_trois_voix_v1_negatif.sql
 
+      # Réponses d'étape aux jalons (Alliance 6.0-B LOT-05) : mêmes exigences de
+      # forme sur la table neuve, PLUS ce qui lui est propre — `T0` EST REFUSÉ
+      # COMME JALON, nommément (c'est l'ANCRE des fenêtres, pas une étape :
+      # demander « où en êtes-vous » au moment où l'objectif se pose n'a pas de
+      # sens), et `J7` l'est aussi (taxonomie de `protocol_checkins`, pas la
+      # nôtre), et un texte fait de blancs NON-ESPACE est refusé — `btrim/1` ne
+      # retire que l'espace ASCII, si bien qu'une tabulation passait la première
+      # rédaction du CHECK. La taxonomie est lue dans sa DÉFINITION : les cas négatifs
+      # testent des valeurs REFUSÉES, si bien qu'un CHECK ÉLARGI à `T0` les
+      # laisserait tous verts. L'EVA est bornée 0-10 par une borne PUREMENT
+      # TECHNIQUE de saisie (DC-19/DC-20) — aucune bande, aucun seuil, aucune
+      # direction, aucune moyenne —, et elle reste NULLABLE : la rendre
+      # obligatoire forcerait un chiffre là où le patient n'a que des mots.
+      # AUCUNE contrainte d'unicité n'est admise sur (patient, objectif, jalon) :
+      # répondre deux fois fait DEUX lignes, un UNIQUE pousserait à l'upsert,
+      # c'est-à-dire à écraser ce que le patient avait écrit. Liste blanche de
+      # colonnes visant ici le TAUX D'ATTEINTE autant que le score. Fixtures
+      # posées et transaction annulée.
+      - name: Alliance jalons objectif negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_jalons_objectif_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
