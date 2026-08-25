@@ -157,6 +157,39 @@ describe('preparerObjectif — révision', () => {
     expect(resultat.donnees.supersedesObjectifId).toBe('OBJ_1');
   });
 
+  it('LA RÉVISION NE REJUGE PAS LA LONGUEUR — le texte est déjà dans la table', () => {
+    // C'est la raison d'être du discriminant `origine`. Rejuger ferait qu'une
+    // ligne acceptée hier rendrait INREFORMULABLE l'objectif qu'elle porte, le
+    // jour où une borne changerait.
+    const tropLong = 'x'.repeat(LONGUEUR_MAX_ENONCE + 1);
+    const resultat = preparerObjectif(entree({ supersedesObjectifId: 'OBJ_1' }), {
+      enoncePatient: tropLong,
+      origine: 'revision',
+    });
+    expect(resultat.ok).toBe(true);
+  });
+
+  it('LA REPRISE, ELLE, LA VÉRIFIE — le texte entre pour la première fois', () => {
+    // Alliance 6.0-B : l'énoncé vient d'un fragment d'anamnèse, et rien en
+    // amont ne l'a borné (`depuisAnamnese` ne pose aucune longueur maximale).
+    // Par REFUS, jamais par troncature.
+    const tropLong = 'x'.repeat(LONGUEUR_MAX_ENONCE + 1);
+    expect(
+      preparerObjectif(entree({ sourcePropositionId: 'PROP_1' }), {
+        enoncePatient: tropLong,
+        origine: 'reprise',
+      }),
+    ).toEqual({ ok: false, raison: 'enonce_trop_long' });
+
+    // La borne elle-même passe : elle borne, elle n'exclut pas.
+    expect(
+      preparerObjectif(entree({ sourcePropositionId: 'PROP_1' }), {
+        enoncePatient: 'x'.repeat(LONGUEUR_MAX_ENONCE),
+        origine: 'reprise',
+      }).ok,
+    ).toBe(true);
+  });
+
   it('n’exige pas d’énoncé au corps quand la cible en fournit un', () => {
     const resultat = preparerObjectif(
       entree({ enoncePatient: null, priorite: 'Second plan', supersedesObjectifId: 'OBJ_1' }),

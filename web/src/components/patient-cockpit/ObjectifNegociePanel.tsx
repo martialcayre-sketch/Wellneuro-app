@@ -126,6 +126,44 @@ function Provenance({ source }: { source: SourceLue }) {
 }
 
 /**
+ * LE RÉSUMÉ D'UNE PROPOSITION DÉJÀ TRANCHÉE OU PÉRIMÉE — avec sa provenance.
+ *
+ * IL AFFICHAIT UNE PHRASE NUE, ET C'ÉTAIT LA FAUTE QUE LA CAMPAGNE INTERDIT
+ * (relevé en revue). Le premier fragment d'un assemblage est TOUJOURS celui de
+ * la règle signée (`assemblageProposition.ts`), tandis qu'une reprise porte
+ * toujours sur un fragment d'anamnèse : « Reprise — Explorer le sommeil »
+ * présentait donc au praticien, comme ce qu'il avait repris, une phrase que la
+ * MACHINE avait produite — et sans sa source. Une provenance ne s'omet jamais,
+ * pas même dans un résumé.
+ */
+function ResumeProposition({
+  prefixe,
+  proposition,
+}: {
+  prefixe?: string;
+  proposition: PropositionExposee;
+}) {
+  const premier = proposition.fragments[0];
+  if (!premier) {
+    // Une proposition dont aucun fragment n'est lisible ne se résume pas par
+    // une phrase inventée pour l'occasion.
+    return (
+      <li className="text-sm text-muted-foreground">
+        {prefixe ? `${prefixe} — ` : ''}proposition sans citation lisible
+      </li>
+    );
+  }
+  return (
+    <li className="border-l-2 border-border pl-3">
+      <p className="text-sm text-foreground">
+        {prefixe ? <span className="font-medium">{prefixe} — </span> : null}« {premier.texte} »
+      </p>
+      <Provenance source={lireSource(premier.source)} />
+    </li>
+  );
+}
+
+/**
  * Un fragment cité, avec sa provenance et — s'il est reprenable — le geste qui
  * en fait l'énoncé du patient.
  *
@@ -152,6 +190,10 @@ function FragmentCite({
         <button
           type="button"
           onClick={onReprendre}
+          // `aria-pressed` DEMANDE UN VRAI BASCULEMENT : le second clic
+          // dépresse, et c'est `onReprendre` qui le porte. Annoncer un
+          // interrupteur qui ne se relève pas — sous deux noms successifs —
+          // trompait le lecteur d'écran (relevé en revue).
           aria-pressed={choisi}
           className={`mt-1 min-h-9 rounded-lg px-2 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
             choisi
@@ -348,7 +390,14 @@ export function ObjectifNegociePanel({
       }
       const payload = (await reponse.json()) as PropositionsApiResponse;
       if (!reponse.ok || !payload.ok || !('propositions' in payload)) {
+        // LA LISTE PÉRIMÉE NE RESTE PAS À L'ÉCRAN (relevé en revue). Une
+        // relecture en échec — celle qui suit un écart réussi, par exemple —
+        // laissait l'alerte « la lecture a échoué » COEXISTER avec des boutons
+        // « Reprendre » et « Écarter » actifs sur une proposition déjà tranchée.
         setEtatPropositions('erreur');
+        setPropositions([]);
+        setDisposees([]);
+        setCaduques([]);
         return;
       }
       setPropositions(payload.propositions);
@@ -357,6 +406,9 @@ export function ObjectifNegociePanel({
       setEtatPropositions('ouverte');
     } catch {
       setEtatPropositions('erreur');
+      setPropositions([]);
+      setDisposees([]);
+      setCaduques([]);
     }
   }, [idPatient]);
 
@@ -461,11 +513,15 @@ export function ObjectifNegociePanel({
       }
       setEcarteDe(null);
       setMotifEcart('');
+      // Écarter la proposition dont une citation était retenue relâche cette
+      // sélection : sans cela, l'enregistrement partait vers un `409` juste
+      // mais parfaitement évitable.
+      if (repriseDe?.idProposition === ecarteDe) setRepriseDe(null);
       await chargerPropositions();
     } catch {
       setErreurGeste('La proposition n’a pas pu être écartée.');
     }
-  }, [ecarteDe, idPatient, motifEcart, chargerPropositions]);
+  }, [ecarteDe, idPatient, motifEcart, repriseDe, chargerPropositions]);
 
   return (
     <section aria-labelledby="objectif-negocie" className="rounded-xl border border-border bg-surface p-4">
@@ -627,12 +683,21 @@ export function ObjectifNegociePanel({
                           // (422) ; l'écran ne propose pas un geste refusé.
                           lireSource(fragment.source)?.nature === 'anamnese'
                             ? () => {
-                                setRepriseDe({
-                                  idProposition: proposition.id,
-                                  index,
-                                  texte: fragment.texte,
-                                  source: lireSource(fragment.source),
-                                });
+                                const dejaChoisi =
+                                  repriseDe?.idProposition === proposition.id
+                                  && repriseDe.index === index;
+                                // Un second clic REND la citation : le bouton
+                                // annonce `aria-pressed`, il doit se relever.
+                                setRepriseDe(
+                                  dejaChoisi
+                                    ? null
+                                    : {
+                                        idProposition: proposition.id,
+                                        index,
+                                        texte: fragment.texte,
+                                        source: lireSource(fragment.source),
+                                      },
+                                );
                                 setReformuleId(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
@@ -701,10 +766,11 @@ export function ObjectifNegociePanel({
                   </h5>
                   <ul className="mt-2 flex flex-col gap-2">
                     {disposees.map((proposition) => (
-                      <li key={proposition.id} className="text-sm text-muted-foreground">
-                        {proposition.disposition === 'reprise' ? 'Reprise' : 'Écartée'} —{' '}
-                        {proposition.fragments[0]?.texte ?? 'proposition sans citation lisible'}
-                      </li>
+                      <ResumeProposition
+                        key={proposition.id}
+                        prefixe={proposition.disposition === 'reprise' ? 'Reprise' : 'Écartée'}
+                        proposition={proposition}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -725,12 +791,15 @@ export function ObjectifNegociePanel({
                   </p>
                   <ul className="mt-2 flex flex-col gap-2">
                     {caduques.map((proposition) => (
-                      <li key={proposition.id} className="text-sm text-muted-foreground">
-                        {proposition.fragments[0]?.texte ?? 'proposition sans citation lisible'}
-                        {proposition.assembleeLe
-                          ? ` — assemblée le ${formatDate(proposition.assembleeLe)}`
-                          : ''}
-                      </li>
+                      <ResumeProposition
+                        key={proposition.id}
+                        prefixe={
+                          proposition.assembleeLe
+                            ? `Assemblée le ${formatDate(proposition.assembleeLe)}`
+                            : undefined
+                        }
+                        proposition={proposition}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -783,6 +852,14 @@ export function ObjectifNegociePanel({
                     setNonTraiteDepuisLe(
                       courante.nonTraiteDepuisLe ? courante.nonTraiteDepuisLe.slice(0, 10) : '',
                     );
+                    // REFORMULER ET REPRENDRE S'EXCLUENT, et le nettoyage doit
+                    // être SYMÉTRIQUE (relevé en revue) : la reprise effaçait
+                    // bien la reformulation, l'inverse était oublié. Les deux
+                    // états coexistants donnaient un écran contradictoire — le
+                    // titre disait « Reformuler », le corps montrait la citation
+                    // — et un corps portant les deux références, que le serveur
+                    // refusait avec un message décrivant tout autre chose.
+                    setRepriseDe(null);
                   }}
                   className="mt-2 min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >

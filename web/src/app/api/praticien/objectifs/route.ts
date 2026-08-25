@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { dossierDansPerimetreProposition, isObjectifProposeEnabled } from '@/lib/patient/featureFlag';
 import {
   chaineDObjectif,
   etatRatification,
@@ -28,11 +29,20 @@ import {
 // écraser. La garde `objectifNegocie.guard.test.ts` (G5) l'oppose à tout
 // `web/src/app/api/**` et `web/src/lib/**`.
 //
-// PAS DE DRAPEAU DE FONCTIONNALITÉ SUR CE LOT, et l'absence est un CHOIX, pas
-// un oubli (arbitrage du responsable) : la surface est praticien, elle n'est
-// visible que d'un compte authentifié du domaine, et la table est neuve — un
-// drapeau n'aurait rien à protéger qu'une session ne protège déjà. Toute
+// PAS DE DRAPEAU SUR L'OBJECTIF LUI-MÊME, et l'absence est un CHOIX, pas un
+// oubli (arbitrage du responsable, 6.0-A) : la surface est praticien, elle
+// n'est visible que d'un compte authentifié du domaine, et la table est neuve —
+// un drapeau n'aurait rien à protéger qu'une session ne protège déjà. Toute
 // surface PATIENT de la campagne (LOT-06) relève d'un arbitrage distinct.
+//
+// MAIS LA REPRISE, ELLE, EST GARDÉE (Alliance 6.0-B, LOT-03, relevé en revue).
+// Ce raisonnement valait pour un objectif que le praticien RÉDIGE ; il ne vaut
+// pas pour le seul geste que `WN_OBJECTIF_PROPOSE` est censé pouvoir reprendre.
+// Sans cette garde, éteindre le drapeau — ou retirer un dossier du périmètre de
+// repli — laissait un onglet resté ouvert continuer d'écrire des reprises, et
+// le matériau du bilan LOT-06 se remplir sur un dossier officiellement retiré.
+// La seule manette de réversibilité de `D-094` ne couvrait pas l'unique
+// écriture nouvelle du lot.
 //
 // La ratification (`ratifications_objectif`) est LUE ici et JAMAIS écrite :
 // c'est un geste du patient, il appartient au LOT-06.
@@ -396,6 +406,15 @@ async function verifierReprise(
     };
   }
 
+  // DETTE NOMMÉE — CE CONTRÔLE EST UN LIRE-PUIS-ÉCRIRE, HORS TRANSACTION
+  // (relevée en revue). Deux reprises concurrentes de la même proposition —
+  // double clic pendant une latence, deux onglets — passent toutes deux ici et
+  // créent chacune un objectif. La conséquence est PLUS LOURDE que le doublon
+  // d'assemblage déjà nommé côté propositions : deux têtes de chaîne portant le
+  // même énoncé, donc un portail qui refuse toute ratification
+  // (`objectif_discordant`) jusqu'à arbitrage praticien. L'écran réduit la
+  // fenêtre en désactivant le bouton pendant l'envoi ; il ne la ferme pas.
+  // Fermer demanderait un index unique — donc une migration.
   if (dispositionCourante(idProposition, dispositions) !== null) {
     return {
       echec: echec(
@@ -520,6 +539,15 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     const sourcePropositionId = texteDuCorps(referenceProposition);
     if (sourcePropositionId.length > LONGUEUR_MAX_ID) {
       return echec('invalid', 'Référence de proposition invalide.', 400);
+    }
+
+    // LE DRAPEAU GARDE LA REPRISE, ET ELLE SEULE. Un objectif rédigé de la main
+    // du praticien reste servi drapeau éteint : c'est une surface de 6.0-A, que
+    // ce lot n'a pas à fermer. MÊME RÉPONSE pour le drapeau et pour le repli —
+    // les distinguer dirait à l'appelant qu'un dossier a été retiré du
+    // périmètre, ce qui ne le regarde pas (patron de la route des propositions).
+    if (sourcePropositionId && (!isObjectifProposeEnabled() || !dossierDansPerimetreProposition(idPatient))) {
+      return echec('feature_disabled', 'Fonctionnalité non ouverte.', 503);
     }
 
     // UNE RÉVISION N'EST PAS UNE REPRISE, et les cumuler n'aurait pas de sens.

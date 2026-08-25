@@ -67,7 +67,7 @@ Ceux du périmètre ; gardes existantes à étendre :
 - [x] États vides et caducs (un bloc fermé est absent, pas vide — patron
       6.0-A).
 - [x] T1 ; T2 avant commit.
-- [ ] Revue `wn-reviewer`.
+- [x] Revue `wn-reviewer`.
 
 ## Tests
 
@@ -129,10 +129,48 @@ réservée au serveur qui y reviendrait.
 bruyamment** — exactement ce qu'on leur demande. C'est le risque que la revue du
 LOT-02 avait nommé ; il s'est réalisé et il a été vu.
 
-**Validation.** T1 vert. **T2 : 5 840 Vitest verts**, E2E 155 passés et 1 échec
+**Ce que la revue a trouvé — no-go, deux bloquants.**
+
+**B1 : le drapeau ne gardait pas la reprise.** `WN_OBJECTIF_PROPOSE` est la
+seule manette de réversibilité de `D-094`, et elle ne couvrait pas l'unique
+écriture nouvelle du lot : éteindre le drapeau — ou retirer un dossier du
+repli — laissait un onglet resté ouvert continuer d'écrire des reprises, et le
+matériau du bilan LOT-06 se remplir sur un dossier officiellement retiré.
+L'en-tête de la route affirmait même le contraire, avec un motif de 6.0-A que
+personne n'avait relu quand la reprise est entrée dans le fichier. La garde
+porte désormais sur le seul chemin `sourcePropositionId` : un objectif rédigé
+à la main reste servi drapeau éteint.
+
+**B2 : la leçon du LOT-02 n'avait pas été propagée au fichier voisin, que
+j'éditais.** `G2` promettait « en français comme en anglais » et ne portait que
+le français — mot pour mot le bloquant corrigé quinze jours plus tôt sur le
+moteur. Or ce banc garde le PANNEAU, lequel consomme désormais une donnée dont
+l'amont nomme ses champs `rank` et `confidence`. Pire : `ClinicalRuntimeSection`
+— **le seul fichier du dépôt qui lise `priorityCandidates` pour le renvoyer au
+moteur** — n'était sous aucune garde de nommage, alors que la fiche demandait
+explicitement une « garde élargie au rendu ».
+
+Quatre corrections de rang moyen dans la même passe : reprendre puis reformuler
+empilait **deux modes contradictoires** et faisait perdre la saisie ; les
+résumés « Déjà tranchées » et « Périmées » affichaient le premier fragment —
+**toujours celui de la règle signée** — nu, sans provenance, présentant comme
+« ce que le praticien a repris » une phrase que la machine avait produite ; une
+lecture en échec laissait une liste périmée cliquable à côté de son alerte ; et
+`aria-pressed` annonçait un interrupteur qui ne se relevait pas.
+
+**Le déclencheur d'assemblage n'avait aucun banc** — le cœur du lot. Quatre cas
+posés : le POST part sur `ready` ; ni `rank` ni `confidence` n'y figurent ;
+l'instrument vient de la réponse ; **un échec d'assemblage ne fait pas échouer
+la confirmation**.
+
+**Dette nommée, écrite dans le code.** Le contrôle « proposition déjà disposée »
+est un lire-puis-écrire hors transaction : deux reprises concurrentes créeraient
+deux têtes portant le même énoncé, donc un portail qui refuse toute ratification
+(`objectif_discordant`) jusqu'à arbitrage. Plus lourd que le doublon
+d'assemblage du LOT-02 ; fermer demanderait un index unique, donc une migration.
+
+**Validation.** T1 vert. **T2 : 5 854 Vitest verts**, E2E 155 passés et 1 échec
 — `portail-parcours` sur iPhone 13, blocage WebKit que l'outillage classe
 lui-même comme signature macOS jamais observée en CI, et que le LOT-02 avait
-déjà démontré étranger au lot sur ce même spec. Bancs touchés : route objectifs
-41 cas, panneau 22, gardes G1-G6 14.
-
-Reste : la revue `wn-reviewer`.
+déjà démontré étranger au lot sur ce même spec. Bancs touchés après revue :
+route objectifs 44 cas, panneau 26, section clinique 22, gardes G1-G6 15.

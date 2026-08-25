@@ -294,6 +294,10 @@ describe('G7-3 — le moteur de proposition n’écrit rien des tables de 6.0-A'
     expect(ecrivainsObjectif).toContain(ECRIVAIN_OBJECTIF);
     expect(ecrivainsObjectif).not.toContain(MODULE);
     expect(ecrivainsObjectif).not.toContain(ROUTE);
+    // Le fichier d'assemblage est né du découpage T2 : l'exclusion nommée le
+    // suit, sinon l'intention du banc se perd même si le balayage global
+    // continue de le couvrir (relevé en revue).
+    expect(ecrivainsObjectif).not.toContain(EMPREINTE);
 
     const ecrivainsRatification = fichiers.filter((chemin) =>
       ECRITURE_RATIFICATION.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
@@ -301,6 +305,7 @@ describe('G7-3 — le moteur de proposition n’écrit rien des tables de 6.0-A'
     expect(ecrivainsRatification.length).toBeGreaterThan(0); // le portail écrit, lui
     expect(ecrivainsRatification).not.toContain(MODULE);
     expect(ecrivainsRatification).not.toContain(ROUTE);
+    expect(ecrivainsRatification).not.toContain(EMPREINTE);
   });
 
   it('une proposition ne se met jamais à jour : append-only, ici comme ailleurs', () => {

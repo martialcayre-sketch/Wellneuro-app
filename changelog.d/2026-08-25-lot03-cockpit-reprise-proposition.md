@@ -41,5 +41,19 @@ du premier qu'une borne de longueur. Le découpage suit désormais la dépendanc
 réelle, et la pureté du domaine est un invariant asserté — le module n'importe
 rien, et une garde le vérifie avant le build.
 
+**La revue a rendu un no-go, et le second bloquant pique.** `WN_OBJECTIF_PROPOSE`
+— seule manette de réversibilité de [[D-094]] — ne gardait pas la reprise,
+c'est-à-dire la seule écriture nouvelle du lot. Et la leçon du LOT-02 n'avait
+pas été propagée à la garde voisine, pourtant éditée dans ce même diff : elle se
+disait bilingue et ne portait que le français, alors que le panneau consomme
+désormais une donnée dont l'amont nomme ses champs `rank` et `confidence`. La
+section clinique — seul fichier du dépôt qui lise les candidats classés pour les
+renvoyer au moteur — n'était sous aucune garde de nommage.
+
+Dette nommée : le contrôle « proposition déjà disposée » est un lire-puis-écrire
+hors transaction. Deux reprises concurrentes créeraient deux têtes portant le
+même énoncé, donc un portail qui refuse toute ratification jusqu'à arbitrage
+praticien. Fermer demanderait un index unique.
+
 Écarté : afficher un compteur de propositions reprises ou écartées.
 L'adhésion se constate, elle ne se compte pas.

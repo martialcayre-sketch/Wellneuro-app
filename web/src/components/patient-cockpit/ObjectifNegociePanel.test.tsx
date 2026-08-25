@@ -549,6 +549,87 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     expect(screen.queryByRole('button', { name: 'Reprendre cette phrase' })).toBeNull();
   });
 
+  it('« Déjà tranchées » montre la provenance, jamais une phrase nue', async () => {
+    // M4, relevé en revue. Le premier fragment d'un assemblage est TOUJOURS
+    // celui de la règle signée : « Reprise — Explorer le sommeil » présentait
+    // au praticien, comme ce qu'il avait repris, une phrase que la MACHINE
+    // avait produite, et sans sa source.
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true,
+          propositions: [],
+          disposees: [proposition({ id: 'PROP_REPRISE', disposition: 'reprise' })],
+          caduques: [],
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/Déjà tranchées/)).toBeTruthy());
+    expect(screen.getByText(/Reprise —/)).toBeTruthy();
+    expect(screen.getByText(new RegExp(`périmètre ${'a'.repeat(64)}`))).toBeTruthy();
+  });
+
+  it('reprendre puis reformuler N’EMPILE PAS les deux modes', async () => {
+    // M3, relevé en revue. Les deux états coexistants donnaient un écran
+    // contradictoire — titre « Reformuler », corps « citation retenue » — et un
+    // corps portant les deux références, que le serveur refusait avec un
+    // message décrivant tout autre chose.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ok: true,
+          objectifs: [ligne()],
+          trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
+          ancrage: ANCRAGE_VIDE,
+          ratifications: { OBJ_1: 'en_attente' },
+        },
+        propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+      }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+    expect(screen.getByText(/Cette phrase devient l’énoncé du patient/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reformuler cette version' }));
+    // La citation a été relâchée : un seul mode à la fois.
+    expect(screen.queryByText(/Cette phrase devient l’énoncé du patient/)).toBeNull();
+    expect(screen.getByText(/L’énoncé du patient est repris tel quel de la version précédente/)).toBeTruthy();
+  });
+
+  it('un second clic REND la citation — le bouton annonce un interrupteur', async () => {
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Citation retenue' }));
+    expect(screen.queryByText(/Cette phrase devient l’énoncé du patient/)).toBeNull();
+    expect(screen.getByLabelText(/Ce que le patient demande/)).toBeTruthy();
+  });
+
+  it('une lecture en échec ne laisse pas une liste périmée cliquable', async () => {
+    // M6, relevé en revue : l'alerte « la lecture a échoué » coexistait avec
+    // des boutons actifs sur une proposition peut-être déjà tranchée.
+    fetchMock.mockImplementation(
+      router({ propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] } }),
+    );
+    const { rerender } = render(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={0} />);
+    await waitFor(() => expect(screen.getByText(/Explorer le sommeil/)).toBeTruthy());
+
+    fetchMock.mockImplementation(router({ propositions: {}, propositionsStatut: 500 }));
+    rerender(<ObjectifNegociePanel idPatient="PAT_SEED_03" signalAssemblage={1} />);
+
+    await waitFor(() => expect(screen.getByText(/la lecture a échoué/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Reprendre cette phrase' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Écarter cette proposition' })).toBeNull();
+  });
+
   it('relit les propositions quand la section clinique vient d’assembler', async () => {
     // Sans ce signal, le panneau lirait la table AVANT que l'assemblage y ait
     // écrit, et n'afficherait rien jusqu'au rechargement de page.

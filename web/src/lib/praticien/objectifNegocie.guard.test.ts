@@ -27,6 +27,15 @@ const ROUTE = 'src/app/api/praticien/objectifs/route.ts';
 // ordonner. Sans cette surface dans le balayage, le contournement le plus
 // probable ne demandait aucune ruse.
 const PANNEAU = 'src/components/patient-cockpit/ObjectifNegociePanel.tsx';
+/**
+ * LA SECTION QUI MANIPULE RÉELLEMENT LES CANDIDATS CLASSÉS (relevé en revue du
+ * LOT-03). C'est le seul fichier du dépôt qui lise `decisionCard.
+ * priorityCandidates` pour en composer l'entrée du moteur de proposition — donc
+ * l'endroit le plus exposé au geste que `D-093` interdit : recopier le rang
+ * tel qu'il arrive. Il n'était sous aucune garde de nommage ; la fiche du
+ * LOT-03 demandait pourtant une « garde élargie au RENDU ».
+ */
+const SECTION_RUNTIME = 'src/components/patient-cockpit/ClinicalRuntimeSection.tsx';
 
 /**
  * Le source débarrassé de ses commentaires : la prose de ces fichiers PARLE des
@@ -112,9 +121,22 @@ describe('G1 — l’objectif exposé ne porte que les clés épinglées', () =>
 
 describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la route', () => {
   // Racines des formulations plausibles d'un classement ou d'une mesure
-  // ordonnée, en français comme en anglais. La liste épinglée de G1 tient le
-  // type exposé ; celle-ci tient TOUT le reste des deux fichiers — variables de
-  // sélection Prisma, types internes, littéraux.
+  // ordonnée. La liste épinglée de G1 tient le type exposé ; celle-ci tient
+  // TOUT le reste des fichiers — variables de sélection Prisma, types internes,
+  // littéraux.
+  //
+  // ELLE SE DISAIT BILINGUE ET NE L'ÉTAIT PAS (relevé en revue du LOT-03). Le
+  // commentaire promettait « en français comme en anglais » ; la liste était
+  // française seule. C'est MOT POUR MOT le bloquant que la revue du LOT-02
+  // avait trouvé sur le moteur de proposition — corrigé là-bas, et non propagé
+  // ici, alors que ce banc garde le PANNEAU, lequel consomme désormais une
+  // donnée dont l'amont nomme ses champs `rank` et `confidence`
+  // (`clinical-engine/decisionCard.ts`). Un `rank: candidat.rank` recopié au
+  // rendu serait resté vert.
+  //
+  // `priorit` reste volontairement absent : `objectifPrioritaire` est un champ
+  // d'anamnèse — les mots du patient — et une garde à faux positif finit
+  // assouplie.
   const RACINES_INTERDITES = [
     'score',
     'seuil',
@@ -124,9 +146,15 @@ describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la
     'gravit',
     'poids',
     'total',
+    'rank',
+    'confidence',
+    'threshold',
+    'weight',
   ];
 
-  it.each([MODULE, ROUTE, PANNEAU])('%s ne déclare aucune propriété de mesure ordonnée', (chemin) => {
+  it.each([MODULE, ROUTE, PANNEAU, SECTION_RUNTIME])(
+    '%s ne déclare aucune propriété de mesure ordonnée',
+    (chemin) => {
     const noms = nomsDeclares(chemin);
 
     // ANTI-VACUITÉ : une extraction qui cesserait de fonctionner rendrait ce
@@ -137,15 +165,17 @@ describe('G2 — ni score, ni seuil, ni bande, ni rang dans le module ni dans la
       [MODULE]: 'enoncePatient',
       [ROUTE]: 'enoncePatient',
       [PANNEAU]: 'consultationValidee',
+      [SECTION_RUNTIME]: 'assemblerPropositions',
     };
     expect(noms.length).toBeGreaterThan(8);
     expect(noms).toContain(ANCRES[chemin]);
 
-    const fautifs = noms.filter((nom) =>
-      RACINES_INTERDITES.some((racine) => nom.toLowerCase().includes(racine)),
-    );
-    expect(fautifs).toEqual([]);
-  });
+      const fautifs = noms.filter((nom) =>
+        RACINES_INTERDITES.some((racine) => nom.toLowerCase().includes(racine)),
+      );
+      expect(fautifs).toEqual([]);
+    },
+  );
 });
 
 // ── G3 — la priorité ne s'ordonne pas ───────────────────────────────────────

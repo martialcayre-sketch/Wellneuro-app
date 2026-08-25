@@ -54,11 +54,12 @@ indice, le serveur recopie. Un fragment non-anamnèse est refusé (`422`).
 
 ## Validations exécutées
 
-- **T1 vert.** **T2 : 5 840 Vitest verts**, E2E 155 passés / 1 échec —
+- **T1 vert.** **T2 : 5 854 Vitest verts**, E2E 155 passés / 1 échec —
   `portail-parcours` iPhone 13, que l'outillage classe lui-même comme signature
   WebKit macOS jamais observée en CI, et que le LOT-02 avait déjà démontré
   étranger au lot sur ce même spec (arbre témoin sans le lot).
-- Bancs touchés : route objectifs 41 cas, panneau 22, gardes G1-G6 14.
+- Bancs touchés après revue : route objectifs 44 cas, panneau 26, section
+  clinique 22, gardes G1-G6 15.
 
 **Deux défauts trouvés par les paliers, invisibles de `tsc` :**
 
@@ -74,6 +75,22 @@ indice, le serveur recopie. Un fragment non-anamnèse est refusé (`422`).
 **Deux ancres d'anti-vacuité se sont périmées au découpage et l'ont dit
 bruyamment** — le risque exact que la revue du LOT-02 avait nommé.
 
+**Revue `wn-reviewer` : no-go, deux bloquants — corrigés.**
+
+- **B1** — `WN_OBJECTIF_PROPOSE` ne gardait pas la reprise, c'est-à-dire la
+  seule écriture nouvelle du lot. La garde porte maintenant sur le chemin
+  `sourcePropositionId` seul ; l'objectif rédigé à la main reste servi.
+- **B2** — la leçon du LOT-02 n'avait pas été propagée à `G2`, que j'éditais :
+  la liste se disait bilingue et ne l'était pas. Et
+  `ClinicalRuntimeSection.tsx`, seul fichier qui lise `priorityCandidates` pour
+  les renvoyer au moteur, n'était sous aucune garde de nommage.
+- **M3 à M6, F7, F9, F10, F12** corrigés dans la même passe. Les deux plus
+  graves : reprendre puis reformuler empilait deux modes contradictoires ; et
+  les résumés affichaient le premier fragment — toujours la règle signée — nu,
+  sans provenance, comme « ce que le praticien a repris ».
+- **Le déclencheur n'avait aucun banc** : quatre cas posés, dont « un échec
+  d'assemblage ne fait pas échouer la confirmation ».
+
 ## Problèmes ouverts
 
 - **L'assemblage ne se déclenche qu'à la confirmation d'un épisode.** Ouvrir
@@ -81,14 +98,25 @@ bruyamment** — le risque exact que la revue du LOT-02 avait nommé.
   assemblée enregistrée, et le dit. C'est la conséquence directe du fait que la
   carte n'existe pas ailleurs, pas un manque à combler côté écran.
 - Les deux dettes du LOT-02 restent : une assemblée devenue **vide** ne retire
-  pas la précédente (migration) ; lire-puis-écrire n'est pas étanche à la course.
+  pas la précédente (migration) ; lire-puis-écrire n'est pas étanche à la course
+  côté assemblage.
 - Le SHA du périmètre n'est toujours pas **confrontable** depuis la route des
   propositions (G7). Sa forme est vérifiée, son authenticité non.
 - L'amendement patient (« le dire autrement ») reste sans écrivain : LOT-04.
+- **Le contrôle « proposition déjà disposée » est un lire-puis-écrire hors
+  transaction** (relevé en revue, nommé dans le code) : deux reprises
+  concurrentes créeraient deux têtes portant le même énoncé, donc un portail
+  qui refuse toute ratification jusqu'à arbitrage. Fermer demanderait un index
+  unique — une migration.
+- Aucun **déplacement de focus** quand la sélection d'un fragment bascule le
+  formulaire situé plus bas, ni quand l'écart révèle son champ. Relevé en
+  revue, non traité.
+- Le lot n'a **aucun E2E** du parcours reprendre / écarter, alors que le critère
+  de done parle d'un parcours « complet ».
 
 ## Prochaine action exacte
 
-Revue `wn-reviewer`, puis PR. Ensuite LOT-04 — portail : la contre-proposition
+PR. Ensuite LOT-04 — portail : la contre-proposition
 du patient, qui écrira enfin `amendements_objectif`.
 
 ## Interdits encore actifs

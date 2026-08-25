@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -547,7 +547,15 @@ describe('/api/praticien/objectifs', () => {
     });
 
     beforeEach(() => {
+      // Le drapeau garde la reprise depuis le LOT-03 : les cas qui l'exercent
+      // l'allument, et deux cas dédiés vérifient les deux fermetures.
+      vi.stubEnv('WN_OBJECTIF_PROPOSE', 'true');
+      vi.stubEnv('WN_OBJECTIF_PROPOSE_PATIENTS', '');
       prisma.propositionObjectif.findMany.mockResolvedValue([PROPOSITION()]);
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
     });
 
     it('RECOPIE l’énoncé depuis le fragment cité, jamais depuis le corps', async () => {
@@ -668,6 +676,55 @@ describe('/api/praticien/objectifs', () => {
       expect(reponse.status).toBe(400);
       expect(await corpsDe(reponse)).toMatchObject({ reason: 'reprise_sur_revision' });
       expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+    });
+
+    it('est gardée par le drapeau, alors que l’objectif ordinaire ne l’est pas', async () => {
+      // B1, relevé en revue. Sans cette garde, éteindre `WN_OBJECTIF_PROPOSE`
+      // — la seule manette de réversibilité de `D-094` — laissait un onglet
+      // resté ouvert continuer d'écrire des reprises, et le matériau du bilan
+      // LOT-06 se remplir sur un dossier officiellement retiré.
+      vi.stubEnv('WN_OBJECTIF_PROPOSE', '');
+      const refus = await POST(postRequest(corpsReprise()));
+      expect(refus.status).toBe(503);
+      expect(await corpsDe(refus)).toMatchObject({ reason: 'feature_disabled' });
+      expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+
+      // ET L'OBJECTIF ORDINAIRE PASSE TOUJOURS : c'est une surface de 6.0-A,
+      // que ce lot n'a pas à fermer.
+      expect((await POST(postRequest(corps()))).status).toBe(201);
+    });
+
+    it('le repli par dossier ferme la reprise, sans dire que c’est le repli', async () => {
+      vi.stubEnv('WN_OBJECTIF_PROPOSE_PATIENTS', 'PAT_AUTRE');
+      const refus = await POST(postRequest(corpsReprise()));
+      expect(refus.status).toBe(503);
+      // MÊME réponse que le drapeau : les distinguer dirait à l'appelant qu'un
+      // dossier a été retiré du périmètre, ce qui ne le regarde pas.
+      expect(await corpsDe(refus)).toMatchObject({ reason: 'feature_disabled' });
+    });
+
+    it('refuse un fragment mal formé sans jamais le compléter', async () => {
+      // Les trois branches que l'indice seul ne couvrait pas : `fragments` qui
+      // n'est pas un tableau, une source absente, un texte vide sur un
+      // fragment pourtant d'anamnèse. Rien n'est deviné.
+      const malformes = [
+        { fragments: 'pas un tableau' },
+        { fragments: [{ texte: 'x' }, { texte: 'Des mots sans provenance' }] },
+        { fragments: [{ texte: 'x' }, { texte: '   ', source: { nature: 'anamnese' } }] },
+      ];
+      for (const surcharge of malformes) {
+        vi.clearAllMocks();
+        prisma.patient.findUnique.mockResolvedValue({
+          praticienEmail: 'praticien@wellneuro.fr',
+          actif: true,
+          suiviClotureLe: null,
+        });
+        prisma.dispositionProposition.findMany.mockResolvedValue([]);
+        prisma.propositionObjectif.findMany.mockResolvedValue([{ ...PROPOSITION(), ...surcharge }]);
+        const reponse = await POST(postRequest(corpsReprise()));
+        expect([400, 422]).toContain(reponse.status);
+        expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
+      }
     });
 
     it('n’emprunte aucune écriture destructrice sur les tables 6.0-B', async () => {
