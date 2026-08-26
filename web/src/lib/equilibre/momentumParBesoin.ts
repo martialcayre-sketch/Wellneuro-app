@@ -1,8 +1,9 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
-import { BESOIN_SOURCES, JOURS_JALON } from './constants';
+import { BESOIN_SOURCES, JOURS_JALON, ORDRE_JALONS_MESURE } from './constants';
 import { construireReponsesParQuestionnaire, extraireRawAnswers, type ReponseBrute } from './depuisPrisma';
 import { calculerEquilibre } from './score';
-import type { JalonMomentum } from './types';
+import type { AncreCycle, JalonMomentum } from './types';
+import { joursDepuisAncre } from '../protocol/fenetreJalon';
 
 // Momentum PAR BESOIN (LOT-07, `D-058`).
 //
@@ -104,9 +105,24 @@ export function construireHistoriqueParBesoin(
   brutes: ReponseBrute[],
   dateT0: Date,
   maintenant: Date,
+  /**
+   * L'ancre du cycle auquel ces lectures appartiennent (`D-113`). Défaut `T0` :
+   * c'est le premier cycle, et c'était le seul avant la décision — les appelants
+   * qui n'ont pas encore été portés au multi-cycle gardent donc EXACTEMENT leur
+   * comportement, sans zone grise.
+   */
+  ancre: AncreCycle = 'T0',
 ): Map<number, LectureBesoin[]> {
   const series = new Map<number, LectureBesoin[]>();
-  const jalons = Object.keys(JOURS_JALON) as JalonMomentum[];
+  // L'ANCRE PUIS LES MESURES — et ICI LE NOM DE L'ANCRE COMPTE, contrairement à
+  // `depuisPrisma` : chaque lecture PORTE son jalon (`LectureBesoin.jalon`), et
+  // ce nom est restitué au praticien. Sur un second cycle, écrire « T0 » sous
+  // une lecture qui appartient au cycle `T1` la daterait d'un départ qui n'est
+  // pas le sien (`D-113`).
+  //
+  // `Object.keys(JOURS_JALON)` aurait perdu la lecture de référence en silence
+  // depuis que la table ne porte plus `T0: 0`.
+  const jalons: readonly JalonMomentum[] = [ancre, ...ORDRE_JALONS_MESURE];
 
   // RÈGLE DE NOUVEAUTÉ PAR BESOIN — le point qui fait exister ce module.
   //
@@ -135,7 +151,7 @@ export function construireHistoriqueParBesoin(
 
   const derniereLecture = new Map<number, Date>();
   for (const jalon of jalons) {
-    const dateJalon = new Date(dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS);
+    const dateJalon = new Date(dateT0.getTime() + joursDepuisAncre(jalon) * JOUR_MS);
     if (dateJalon > maintenant) continue;
 
     const resultat = calculerEquilibre(construireReponsesParQuestionnaire(brutes, dateJalon));

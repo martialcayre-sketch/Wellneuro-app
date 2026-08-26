@@ -1,4 +1,4 @@
-import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
+import type { BesoinDefinition, JalonMesure, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
 // Le maximum du besoin 1 est DÉRIVÉ de la forme réellement servie, jamais
 // recopié : un `max` littéral divergeant du barème est silencieux (aucun garde
 // ne les compare), et il sature ou effondre une fondation critique sans erreur.
@@ -331,10 +331,31 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   12: [{ idQuestionnaire: 'Q_INF_03', sousScore: 'ME', max: 40, inverser: true }],
 };
 
-// Jalons glissants (feat/e2-momentum-tracking) : nombre de jours depuis la
-// date T0 réelle du patient, pas des dates calendaires fixes — un retard
-// patient ne doit pas invalider le jalon suivant.
-export const JOURS_JALON: Record<JalonMomentum, number> = { T0: 0, J21: 21, J42: 42, J90: 90 };
+// Jalons glissants (feat/e2-momentum-tracking) : nombre de jours depuis
+// L'ANCRE DU CYCLE, pas des dates calendaires fixes — un retard patient ne doit
+// pas invalider le jalon suivant.
+//
+// LA TABLE PORTE LES SEULS JALONS DE MESURE DEPUIS `D-113`, et l'entrée `T0: 0`
+// en est sortie. Ce n'est pas un changement de cadence — 21, 42 et 90 sont
+// inchangés — c'est un changement de CLÉ : les ancres forment désormais une
+// série ouverte (`T0`, `T1`, `T2`…), et un `Record` indexé par elles dégénère
+// en SIGNATURE D'INDEX. `JOURS_JALON['T1']` aurait alors été typé `number` tout
+// en valant `undefined` à l'exécution — donc un `NaN` silencieux dans un calcul
+// de date. Mesuré, pas supposé : c'est ce que rendait le premier essai de
+// `D-113`.
+//
+// L'offset d'une ancre ne vit plus dans une table : il est nul PAR DÉFINITION —
+// une ancre est le jour 0 de son propre cycle. `joursDepuisAncre` le dit.
+export const JOURS_JALON: Record<JalonMesure, number> = { J21: 21, J42: 42, J90: 90 };
+
+/** Les jalons de mesure, dans l'ordre où ils s'ouvrent. */
+export const ORDRE_JALONS_MESURE: readonly JalonMesure[] = ['J21', 'J42', 'J90'] as const;
+
+// La règle « une ancre est le jour 0 de son propre cycle » N'EST PAS ICI, et
+// c'est délibéré : ce fichier est une TABLE CLINIQUE. Lui faire importer le
+// prédicat d'ancre le ferait dépendre du protocole, alors que la dépendance va
+// dans l'autre sens — le protocole lit les cadences, jamais l'inverse. La règle
+// vit dans `lib/protocol/fenetreJalon.ts`, qui lit les deux.
 
 // Tolérance de départ (±8 jours), explicitement ajustable selon retour
 // d'expérience patient réel — cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §3.

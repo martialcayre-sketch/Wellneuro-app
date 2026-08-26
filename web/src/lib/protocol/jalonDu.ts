@@ -1,4 +1,5 @@
-import { JOURS_JALON, TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
+import { TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
+import { joursDepuisAncre } from './fenetreJalon';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { rattacherReperesAuxCycles, type Trajectoire } from './trajectoire';
 
@@ -48,7 +49,7 @@ export type JalonDu =
     };
 
 function fenetre(dateT0: Date, jalon: JalonMomentum): { debut: Date; fin: Date } {
-  const centre = dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS;
+  const centre = dateT0.getTime() + joursDepuisAncre(jalon) * JOUR_MS;
   const tolerance = TOLERANCE_JOURS_JALON * JOUR_MS;
   return { debut: new Date(centre - tolerance), fin: new Date(centre + tolerance) };
 }

@@ -1,4 +1,5 @@
-import { JOURS_JALON, TOLERANCE_JOURS_JALON } from './constants';
+import { TOLERANCE_JOURS_JALON } from './constants';
+import { joursDepuisAncre } from '../protocol/fenetreJalon';
 import type { JalonMomentum, LectureDatee, ResultatMomentum } from './types';
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
@@ -15,7 +16,7 @@ export function resoudreLectureJalon(
   jalon: JalonMomentum,
   lectures: LectureDatee[]
 ): LectureDatee | null {
-  const centreMs = dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS;
+  const centreMs = dateT0.getTime() + joursDepuisAncre(jalon) * JOUR_MS;
   const toleranceMs = TOLERANCE_JOURS_JALON * JOUR_MS;
 
   const candidates = lectures.filter(l => Math.abs(l.date.getTime() - centreMs) <= toleranceMs);

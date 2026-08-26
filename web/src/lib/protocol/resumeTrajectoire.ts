@@ -1,4 +1,4 @@
-import { JOURS_JALON } from '@/lib/equilibre/constants';
+import { joursDepuisAncre } from './fenetreJalon';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import { deriverEpisodeBandeau } from '@/lib/trajectoire-partagee/contrat';
 import type { Trajectoire } from './trajectoire';
@@ -49,7 +49,7 @@ export function resumerTrajectoire(trajectoire: Trajectoire, aujourdhui: Date): 
     if (!lecture || !lecture.mesure) {
       prochaineEcheance = {
         libelle: jalon,
-        date: new Date(dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS).toISOString(),
+        date: new Date(dateT0.getTime() + joursDepuisAncre(jalon) * JOUR_MS).toISOString(),
       };
       break;
     }
