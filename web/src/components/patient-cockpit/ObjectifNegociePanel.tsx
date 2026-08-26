@@ -6,8 +6,12 @@ import type {
   AncrageAnamnese,
   ObjectifExpose,
   ObjectifsApiResponse,
+  ReponseJalonExposee,
   TrajectoireObjectif,
 } from '@/app/api/praticien/objectifs/route';
+// La borne haute de l'échelle vient du module PUR, jamais recopiée : « sur 10 »
+// écrit en dur ici mentirait le jour où la borne bouge côté serveur.
+import { EVA_MAX } from '@/lib/praticien/objectifNegocie';
 import type {
   FragmentExpose,
   PropositionExposee,
@@ -331,6 +335,7 @@ export function ObjectifNegociePanel({
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
    *  Tous gestes du dossier : l'écran les range sous leur version. */
   const [amendements, setAmendements] = useState<AmendementExpose[]>([]);
+  const [reponsesJalon, setReponsesJalon] = useState<ReponseJalonExposee[]>([]);
 
   const [reformuleId, setReformuleId] = useState<string | null>(null);
   const [enonce, setEnonce] = useState('');
@@ -381,6 +386,7 @@ export function ObjectifNegociePanel({
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
       setAmendements(payload.amendements);
+      setReponsesJalon(payload.reponsesJalon);
       setEtat('chargee');
     } catch {
       setErreur('Les objectifs n’ont pas pu être chargés.');
@@ -929,6 +935,53 @@ export function ObjectifNegociePanel({
                                 ? 'Ces mots deviennent l’énoncé'
                                 : 'En faire l’énoncé du patient'}
                             </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+
+                {/* ── OÙ LE PATIENT EN EST (6.0-B, LOT-05, `D-111`) ──────────
+                    UN RÉCIT, PAS UNE COURBE. Les réponses arrivent du plus
+                    récent au plus ancien et sont rendues dans cet ordre : ni
+                    tri par EVA, ni delta d'un jalon à l'autre, ni moyenne, ni
+                    couleur de tendance. Le praticien lit ce que son patient a
+                    écrit et l'interprète AVEC LUI — le dépôt ne conclut rien à
+                    sa place (`D-088`, `D-111` §3).
+                    Toute la chaîne, comme les amendements : un récit écrit
+                    avant une reformulation est souvent ce qui l'a motivée. */}
+                {(() => {
+                  const idsDeLaChaine = new Set(trajectoire.lignes.map((ligne) => ligne.id));
+                  const etapes = reponsesJalon.filter((ligne) =>
+                    idsDeLaChaine.has(ligne.idObjectif),
+                  );
+                  if (etapes.length === 0) return null;
+                  return (
+                    <div className="mt-3 rounded-lg border border-border bg-surface-2 p-3">
+                      <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Où le patient en était
+                      </h5>
+                      <ul className="mt-2 flex flex-col gap-3">
+                        {etapes.map((etape) => (
+                          <li key={etape.id} className="border-l-2 border-border pl-3">
+                            <p className="text-xs text-muted-foreground">
+                              {etape.jalon} — écrit au portail le {formatDate(etape.creeLe)}
+                            </p>
+                            <p className="mt-1 whitespace-pre-wrap text-base text-foreground">
+                              « {etape.texte} »
+                            </p>
+                            {/* `!== null` : le zéro d'un patient est une
+                                réponse, et une vérité JavaScript l'aurait
+                                effacé de l'écran du praticien (`DC-24`).
+                                Le libellé dit l'échelle et RIEN DE PLUS —
+                                aucune qualification, aucun adjectif : « 3 »
+                                n'est ni bas, ni inquiétant, ni en progrès. */}
+                            {etape.eva !== null && (
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Échelle du patient : {etape.eva} sur {EVA_MAX}
+                              </p>
+                            )}
                           </li>
                         ))}
                       </ul>

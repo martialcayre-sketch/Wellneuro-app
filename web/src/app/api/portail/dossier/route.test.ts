@@ -33,6 +33,17 @@ const { prisma, logger } = vi.hoisted(() => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    assessmentEpisode: { findFirst: vi.fn() },
+    reponseJalonObjectif: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      // Mêmes moqueries expresses, même motif (6.0-B, LOT-05).
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   },
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
@@ -41,6 +52,7 @@ vi.mock('@/lib/observability/logger', () => ({ logger }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { LONGUEUR_MAX_AMENDEMENT } from '@/lib/praticien/objectifNegocie';
+import { JOURS_JALON, TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { GET, POST } from './route';
 
@@ -111,6 +123,10 @@ function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.objectifNegocie.findMany.mockResolvedValue(surcharges.objectifs ?? [objectif()]);
   prisma.ratificationObjectif.findMany.mockResolvedValue(surcharges.ratifications ?? []);
   prisma.amendementObjectif.findMany.mockResolvedValue(surcharges.amendements ?? []);
+  prisma.reponseJalonObjectif.findMany.mockResolvedValue(surcharges.reponsesJalon ?? []);
+  // Par défaut : AUCUN cycle confirmé. C'est l'état le plus courant en
+  // production aujourd'hui, et celui où `resoudreJalonDu` rendrait `T0`.
+  prisma.assessmentEpisode.findFirst.mockResolvedValue(surcharges.ancreT0?.[0] ?? null);
   prisma.entreeCeQuiCompte.findMany.mockResolvedValue(
     surcharges.entrees ?? [
       {
@@ -894,6 +910,239 @@ describe('/api/portail/dossier', () => {
       const ecritRatification = prisma.ratificationObjectif.create.mock.calls[0][0].data;
       expect(Object.keys(ecritRatification).sort()).toEqual(['idObjectif', 'idPatient', 'sens']);
       expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── POST — « OÙ J'EN SUIS » (6.0-B, LOT-05) ───────────────────────────────
+
+  describe('POST — la réponse d’étape du patient', () => {
+    const TEXTE = 'Je tiens jusqu’au dîner trois soirs sur sept, c’est mieux qu’avant.';
+
+    const corpsJalon = (partiel: Record<string, unknown> = {}) => ({
+      geste: 'reponse_jalon',
+      idObjectif: 'OBJ_1',
+      jalon: 'J21',
+      texte: TEXTE,
+      ...partiel,
+    });
+
+    /**
+     * L'ancre placée de façon à ouvrir la fenêtre voulue MAINTENANT. Les
+     * fenêtres se calculent contre l'horloge réelle du serveur : une date
+     * d'ancre figée au calendrier deviendrait fausse le lendemain.
+     */
+    const ancreOuvrant = (jours: number) => ({
+      confirmedAt: new Date(Date.now() - jours * 24 * 60 * 60 * 1000),
+    });
+
+    beforeEach(() => {
+      mockCompteActif();
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      // T0 confirmé il y a exactement 21 jours : la fenêtre du J21 est ouverte.
+      prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(JOURS_JALON.J21));
+      prisma.reponseJalonObjectif.create.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            id: 'REP_1',
+            idObjectif: data.idObjectif,
+            jalon: data.jalon,
+            texte: data.texte,
+            eva: data.eva,
+            creeLe: new Date('2026-08-26T12:00:00.000Z'),
+          }),
+      );
+    });
+
+    it('écrit la réponse et la rend relue, sans jamais poser de date', async () => {
+      const res = await POST(postRequest(cookieProprio(), corpsJalon({ eva: 6 })));
+      expect(res.status).toBe(201);
+      expect(await res.json()).toMatchObject({
+        ok: true,
+        reponseJalon: { id: 'REP_1', idObjectif: 'OBJ_1', jalon: 'J21', texte: TEXTE, eva: 6 },
+      });
+
+      const { data } = prisma.reponseJalonObjectif.create.mock.calls[0][0];
+      expect(Object.keys(data).sort()).toEqual(['eva', 'idObjectif', 'idPatient', 'jalon', 'texte']);
+      expect(data.idPatient).toBe(PATIENT.idPatient);
+    });
+
+    it('SANS EVA, la colonne reçoit `null` — jamais zéro (DC-24)', async () => {
+      await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(prisma.reponseJalonObjectif.create.mock.calls[0][0].data.eva).toBeNull();
+    });
+
+    it('REFUSE `T0` AVANT LA BASE — sinon 23514, donc 500 pour le patient', async () => {
+      // `resoudreJalonDu` rend `T0` pour un patient sans cycle confirmé : c'est
+      // un chemin atteignable, pas une valeur théorique.
+      const res = await POST(postRequest(cookieProprio(), corpsJalon({ jalon: 'T0' })));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'jalon_invalide' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('REFUSE UNE EVA DÉCIMALE — le cast INTEGER l’arrondirait avant le CHECK', async () => {
+      const res = await POST(postRequest(cookieProprio(), corpsJalon({ eva: 5.5 })));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'eva_invalide' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('refuse une EVA hors bornes ou non numérique, sans rien écrire', async () => {
+      for (const eva of [-1, 11, '5', '', [], true]) {
+        const res = await POST(postRequest(cookieProprio(), corpsJalon({ eva })));
+        expect(res.status).toBe(400);
+        expect(await res.json()).toMatchObject({ ok: false, reason: 'eva_invalide' });
+      }
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('distingue l’étape ABSENTE de l’étape INEXISTANTE', async () => {
+      const absente = await POST(postRequest(cookieProprio(), corpsJalon({ jalon: '' })));
+      expect(await absente.json()).toMatchObject({ ok: false, reason: 'jalon_absent' });
+
+      const inexistante = await POST(postRequest(cookieProprio(), corpsJalon({ jalon: 'J7' })));
+      expect(await inexistante.json()).toMatchObject({ ok: false, reason: 'jalon_invalide' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('LE TEXTE EST OBLIGATOIRE — une EVA seule n’écrit rien', async () => {
+      const res = await POST(postRequest(cookieProprio(), corpsJalon({ texte: '   ', eva: 8 })));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'texte_absent' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('une version supplantée est refusée, comme pour les deux autres gestes', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+        { id: 'OBJ_2', supersedesObjectifId: 'OBJ_1', creeLe: new Date('2026-08-22T09:00:00.000Z') },
+      ]);
+      const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'objectif_supplante' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('un objectif d’un AUTRE dossier rend le même 404 qu’un inexistant', async () => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([
+        { id: 'OBJ_9', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
+      ]);
+      const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(res.status).toBe(404);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'objectif_introuvable' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('APPEND-ONLY : répondre deux fois au MÊME jalon fait DEUX lignes', async () => {
+      await POST(postRequest(cookieProprio(), corpsJalon({ eva: 4 })));
+      await POST(postRequest(cookieProprio(), corpsJalon({ texte: 'En fait j’ai rechuté.', eva: 2 })));
+      expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);
+      expect(prisma.reponseJalonObjectif.update).not.toHaveBeenCalled();
+      expect(prisma.reponseJalonObjectif.updateMany).not.toHaveBeenCalled();
+      expect(prisma.reponseJalonObjectif.upsert).not.toHaveBeenCalled();
+      expect(prisma.reponseJalonObjectif.delete).not.toHaveBeenCalled();
+      expect(prisma.reponseJalonObjectif.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('CE GESTE IGNORE LES CHAMPS DES AUTRES, et n’écrit aucun hybride', async () => {
+      await POST(postRequest(cookieProprio(), corpsJalon({ sens: 'conteste', eva: 3 })));
+      const { data } = prisma.reponseJalonObjectif.create.mock.calls[0][0];
+      expect(Object.keys(data).sort()).toEqual(['eva', 'idObjectif', 'idPatient', 'jalon', 'texte']);
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+      expect(prisma.amendementObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('HORS FENÊTRE, RIEN N’EST ÉCRIT — même avec un corps parfaitement valide', async () => {
+      // Le troisième jour : aucune étape n'est ouverte. Un `J21` posté quand
+      // même daterait un point d'étape d'un moment que le patient n'a pas vécu.
+      prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(3));
+      const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'jalon_ferme' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('SANS CYCLE CONFIRMÉ, aucune étape n’est écrivable', async () => {
+      // C'est l'état de tous les dossiers de production aujourd'hui, et c'est
+      // celui où `resoudreJalonDu` rendrait `T0`.
+      prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+      const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(res.status).toBe(409);
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('UNE ÉTAPE OUVERTE N’EN OUVRE PAS UNE AUTRE : le J90 est refusé pendant le J21', async () => {
+      // La borne ne dit pas seulement « une fenêtre est ouverte » : elle dit
+      // LAQUELLE. Sans la comparaison de jalon, un onglet resté ouvert
+      // posterait le J90 dans la fenêtre du J21.
+      const res = await POST(postRequest(cookieProprio(), corpsJalon({ jalon: 'J90' })));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, reason: 'jalon_ferme' });
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('les DEUX BORNES de la tolérance écrivent, le jour d’après ne le fait plus', async () => {
+      // Une demi-journée de marge VERS L'INTÉRIEUR de la fenêtre : la borne
+      // exacte tombe sur l'instant même, et l'horloge avance entre la
+      // construction du corps et sa lecture.
+      for (const jours of [
+        JOURS_JALON.J21 - TOLERANCE_JOURS_JALON + 0.5,
+        JOURS_JALON.J21 + TOLERANCE_JOURS_JALON - 0.5,
+      ]) {
+        prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(jours));
+        const res = await POST(postRequest(cookieProprio(), corpsJalon()));
+        expect(res.status).toBe(201);
+      }
+      expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);
+
+      prisma.assessmentEpisode.findFirst.mockResolvedValue(
+        ancreOuvrant(JOURS_JALON.J21 + TOLERANCE_JOURS_JALON + 1),
+      );
+      const dehors = await POST(postRequest(cookieProprio(), corpsJalon()));
+      expect(dehors.status).toBe(409);
+      expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('le GET sert l’étape ouverte, calculée par le SERVEUR', async () => {
+      mockDossierComplet({ ancreT0: [ancreOuvrant(JOURS_JALON.J42)] });
+      const res = await GET(getRequest(cookieProprio()));
+      const corps = await res.json();
+      expect(corps.jalonDu).toMatchObject({ statut: 'ouverte', jalon: 'J42' });
+    });
+
+    it('sans cycle confirmé, le GET dit POURQUOI — sans reprocher un silence', async () => {
+      mockDossierComplet();
+      const res = await GET(getRequest(cookieProprio()));
+      const corps = await res.json();
+      expect(corps.jalonDu.statut).toBe('aucune');
+      expect(corps.jalonDu.motif).toEqual(expect.any(String));
+      // `T0` ne fuit jamais vers l'écran comme une étape proposable.
+      expect(JSON.stringify(corps.jalonDu)).not.toContain('T0');
+    });
+
+    it('une réponse d’étape NE CHANGE PAS l’état de ratification de l’objectif', async () => {
+      // Dire où l'on en est n'est ni ratifier, ni contester, ni reformuler.
+      mockDossierComplet({
+        reponsesJalon: [
+          {
+            id: 'REP_1',
+            idObjectif: 'OBJ_1',
+            jalon: 'J21',
+            texte: TEXTE,
+            eva: null,
+            creeLe: new Date('2026-08-26T12:00:00.000Z'),
+          },
+        ],
+      });
+      const res = await GET(getRequest(cookieProprio()));
+      const corps = await res.json();
+      expect(corps.objectifs[0].etat).toBe('en_attente');
+      // …et elle est bien SERVIE au patient, EVA nulle comprise.
+      expect(corps.reponsesJalon).toEqual([
+        expect.objectContaining({ id: 'REP_1', jalon: 'J21', eva: null }),
+      ]);
     });
   });
 

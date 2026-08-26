@@ -6,7 +6,12 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PortailDossierResponse } from '@/app/api/portail/dossier/route';
-import { LONGUEUR_MAX_AMENDEMENT } from '@/lib/praticien/objectifNegocie';
+import {
+  EVA_MAX,
+  EVA_MIN,
+  LONGUEUR_MAX_AMENDEMENT,
+  LONGUEUR_MAX_REPONSE_JALON,
+} from '@/lib/praticien/objectifNegocie';
 
 // Le « dossier à deux voix » (Alliance 6.0-A, LOT-06) — surface PATIENT.
 //
@@ -77,12 +82,21 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
   const [erreurEnvoi, setErreurEnvoi] = useState('');
   /** Ce qui vient d'être transmis, ou `null`. Deux gestes, deux accusés : un
    *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
-  const [repondu, setRepondu] = useState<'reponse' | 'version' | null>(null);
+  const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | null>(null);
   /** La version dont le patient est en train d'écrire SA formulation, ou
    *  `null` — la saisie n'est jamais ouverte d'office : proposer un champ vide
    *  sous un objectif suggère qu'il manque quelque chose à y mettre. */
   const [amendeId, setAmendeId] = useState<string | null>(null);
   const [texteAmendement, setTexteAmendement] = useState('');
+  /** Où le patient en est, à l'étape ouverte (LOT-05). */
+  const [texteJalon, setTexteJalon] = useState('');
+  /**
+   * L'EVA, `null` TANT QUE LE PATIENT N'A RIEN CHOISI — et `null` est un état
+   * complet, pas un « pas encore ». Initialiser à `0`, ou pré-sélectionner un
+   * milieu, déposerait dans le dossier un chiffre que personne n'a donné
+   * (`DC-24`).
+   */
+  const [evaJalon, setEvaJalon] = useState<number | null>(null);
 
   const charger = useCallback(async () => {
     try {
@@ -188,6 +202,57 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     [charger, texteAmendement],
   );
 
+  /**
+   * « OÙ J'EN SUIS » — la réponse d'étape (LOT-05, `D-111`).
+   *
+   * Même patron que le troisième verbe : la saisie n'est vidée qu'APRÈS un
+   * succès. Un refus — fenêtre refermée entre l'affichage et l'envoi, version
+   * reformulée entre-temps — rend au patient ses mots ET son EVA, tels qu'il
+   * les avait posés.
+   *
+   * LE JALON N'EST PAS CHOISI ICI : il vient du serveur (`jalonDu`), qui seul
+   * connaît l'ancre et les fenêtres. L'écran le transmet tel qu'il l'a reçu ;
+   * s'il a vieilli, le serveur refuse — c'est lui qui tranche, pas l'horloge du
+   * navigateur.
+   */
+  const direOuJenSuis = useCallback(
+    async (idObjectif: string, jalon: string) => {
+      setEnvoi(true);
+      setErreurEnvoi('');
+      setRepondu(null);
+      try {
+        const res = await fetch('/api/portail/dossier', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            geste: 'reponse_jalon',
+            idObjectif,
+            jalon,
+            texte: texteJalon,
+            // `null` EXPLICITE, jamais `0` ni champ omis-par-hasard : le
+            // serveur distingue l'absence du refus, et l'écran doit lui dire
+            // « pas de valeur » plutôt que le laisser deviner.
+            eva: evaJalon,
+          }),
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (res.ok && data.ok) {
+          setRepondu('etape');
+          setTexteJalon('');
+          setEvaJalon(null);
+          await charger();
+        } else {
+          setErreurEnvoi(data.error ?? 'Votre réponse n’a pas pu être enregistrée.');
+        }
+      } catch {
+        setErreurEnvoi('Erreur réseau. Réessayez.');
+      } finally {
+        setEnvoi(false);
+      }
+    },
+    [charger, evaJalon, texteJalon],
+  );
+
   if (etat.phase === 'chargement') {
     return (
       <PatientCard className="space-y-4">
@@ -206,7 +271,8 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     );
   }
 
-  const { objectifs, ratifiable, amendements, ceQuiCompte, comprehension } = etat.donnees;
+  const { objectifs, ratifiable, amendements, reponsesJalon, jalonDu, ceQuiCompte, comprehension } =
+    etat.donnees;
 
   return (
     <div className="space-y-4">
@@ -416,6 +482,159 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                       )}
                     </div>
                   )}
+
+                  {/* ── OÙ J'EN SUIS, À CETTE VERSION (LOT-05, `D-111`) ─────
+                      Ce que le patient a déjà raconté sur CETTE version, rendu
+                      à sa relecture. Même filtre que les amendements, et même
+                      motif : un récit écrit pour une version depuis reformulée
+                      ne parle pas de ce texte-ci. */}
+                  {reponsesJalon
+                    .filter((reponse) => reponse.idObjectif === objectif.id)
+                    .map((reponse) => (
+                      <div
+                        key={reponse.id}
+                        className="space-y-1 rounded-lg border border-border bg-surface p-3"
+                      >
+                        <p className="text-xs text-muted-foreground">
+                          Où vous en étiez ({reponse.jalon})
+                          {dateLisible(reponse.creeLe) ? `, écrit le ${dateLisible(reponse.creeLe)}` : ''}
+                        </p>
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">
+                          {reponse.texte}
+                        </p>
+                        {/* `!== null` ET NON UNE VÉRITÉ JAVASCRIPT : `0` est
+                            une réponse, et `reponse.eva &&` l'aurait fait
+                            disparaître de l'écran. C'est le zéro d'un patient,
+                            pas une absence (`DC-24`). */}
+                        {reponse.eva !== null && (
+                          <p className="text-sm text-muted-foreground">
+                            Sur l’échelle : {reponse.eva} sur {EVA_MAX}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+
+                  {/* LA QUESTION D'ÉTAPE. Trois conditions, et chacune répond à
+                      une question différente :
+                      — `jalonDu.statut === 'ouverte'` : le SERVEUR dit qu'une
+                        fenêtre est ouverte. L'écran ne calcule aucune date.
+                      — `ratifiable` : une seule tête. Deux versions rivales, et
+                        la question ne saurait pas de laquelle elle parle.
+                      — l'objectif est RATIFIÉ OU DIT AUTREMENT : demander « où
+                        en êtes-vous par rapport à votre objectif » à quelqu'un
+                        qui n'a pas encore dit que c'était le sien, ou qui vient
+                        de dire que non, poserait la question à côté.
+                      C'est une condition d'INVITATION, pas de permission : le
+                      serveur, lui, n'exige pas la ratification pour accepter le
+                      texte — refuser la parole d'un patient sur son propre
+                      objectif serait plus grave que de ne pas la solliciter. */}
+                  {jalonDu.statut === 'ouverte'
+                    && ratifiable
+                    && (objectif.etat === 'ratifie' || objectif.etat === 'dit_autrement') && (
+                      <div className="space-y-2 rounded-lg border border-border p-3">
+                        <label
+                          htmlFor={`jalon-${objectif.id}`}
+                          className="block text-sm font-medium"
+                        >
+                          Où en êtes-vous par rapport à cet objectif ?
+                        </label>
+                        {/* AUCUN REPROCHE, AUCUNE ATTENTE CHIFFRÉE. Ni « vous
+                            deviez », ni pourcentage de progression : ce lot ne
+                            pose aucun barème, et un taux d'atteinte est
+                            précisément ce qu'il s'interdit de fabriquer.
+                            (La garde anti-gamification lit AUSSI les
+                            commentaires : citer ici la formule interdite la
+                            ferait rougir sur un fichier sain.) */}
+                        <p className="text-xs text-muted-foreground">
+                          Dites-le avec vos mots. Il n’y a pas de bonne réponse : ce que vous écrivez
+                          sert à en reparler avec votre praticien.
+                        </p>
+                        <textarea
+                          id={`jalon-${objectif.id}`}
+                          value={texteJalon}
+                          onChange={(evenement) => setTexteJalon(evenement.target.value)}
+                          rows={5}
+                          className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        />
+                        {/* Même règle qu'à l'amendement : la borne est DITE,
+                            le champ n'est pas tronqué, et le jugement porte sur
+                            le texte utile quand l'affichage porte sur le tapé. */}
+                        <p
+                          className={
+                            texteJalon.trim().length > LONGUEUR_MAX_REPONSE_JALON
+                              ? 'text-xs text-status-warning'
+                              : 'text-xs text-muted-foreground'
+                          }
+                        >
+                          {texteJalon.length} / {LONGUEUR_MAX_REPONSE_JALON} caractères
+                        </p>
+
+                        {/* L'ÉCHELLE — FACULTATIVE, ET DITE FACULTATIVE. Aucune
+                            valeur n'est pré-sélectionnée : un curseur posé au
+                            milieu déposerait un chiffre que le patient n'a pas
+                            choisi. Les extrémités sont nommées pour que « 0 »
+                            et « 10 » ne soient pas deux nombres nus — mais rien
+                            n'est gradué entre les deux, et aucune couleur ne
+                            suggère un bon côté. */}
+                        <fieldset className="space-y-2">
+                          <legend className="text-sm font-medium">
+                            Si vous le souhaitez, situez-vous sur une échelle
+                          </legend>
+                          <p className="text-xs text-muted-foreground">
+                            De {EVA_MIN} (pas du tout) à {EVA_MAX} (tout à fait). Vous pouvez ne pas
+                            répondre : votre texte suffit.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {Array.from(
+                              { length: EVA_MAX - EVA_MIN + 1 },
+                              (_, index) => EVA_MIN + index,
+                            ).map((valeur) => (
+                              <button
+                                key={valeur}
+                                type="button"
+                                aria-pressed={evaJalon === valeur}
+                                disabled={envoi}
+                                onClick={() => setEvaJalon(valeur)}
+                                className={
+                                  evaJalon === valeur
+                                    ? 'min-h-11 min-w-11 rounded-lg border border-border bg-accent px-3 text-base font-medium text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring'
+                                    : 'min-h-11 min-w-11 rounded-lg border border-border bg-surface px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring'
+                                }
+                              >
+                                {valeur}
+                              </button>
+                            ))}
+                          </div>
+                          {/* RETIRER SA VALEUR DOIT ÊTRE POSSIBLE. Sans ce
+                              bouton, un patient qui a cliqué par erreur ne peut
+                              plus revenir au silence — il n'aurait que le choix
+                              d'un autre chiffre. */}
+                          {evaJalon !== null && (
+                            <PatientButton
+                              type="button"
+                              variant="neutral"
+                              disabled={envoi}
+                              onClick={() => setEvaJalon(null)}
+                            >
+                              Retirer ma réponse à l’échelle
+                            </PatientButton>
+                          )}
+                        </fieldset>
+
+                        <PatientButton
+                          type="button"
+                          variant="primary"
+                          disabled={
+                            envoi
+                            || texteJalon.trim().length === 0
+                            || texteJalon.trim().length > LONGUEUR_MAX_REPONSE_JALON
+                          }
+                          onClick={() => void direOuJenSuis(objectif.id, jalonDu.jalon)}
+                        >
+                          Envoyer où j’en suis
+                        </PatientButton>
+                      </div>
+                    )}
                 </div>
               ))}
 
@@ -472,6 +691,15 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {repondu === 'version' && (
                 <PatientInlineMessage tone="success">
                   C’est transmis. Votre praticien lira votre version, mot pour mot.
+                </PatientInlineMessage>
+              )}
+              {/* TROISIÈME ACCUSÉ, et non un des deux précédents recyclé : ce
+                  n'est ni un clic ni une reformulation de l'objectif. Dire que
+                  « votre version » est partie après un récit d'étape laisserait
+                  croire que l'objectif lui-même a changé. */}
+              {repondu === 'etape' && (
+                <PatientInlineMessage tone="success">
+                  C’est transmis. Votre praticien lira où vous en êtes, tel que vous l’avez écrit.
                 </PatientInlineMessage>
               )}
               {erreurEnvoi && (

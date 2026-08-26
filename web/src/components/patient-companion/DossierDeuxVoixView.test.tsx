@@ -37,6 +37,12 @@ function assemblage(partiel: Record<string, unknown> = {}) {
     objectifs: [OBJECTIF],
     ratifiable: true,
     amendements: [],
+    reponsesJalon: [],
+    // PAR DÉFAUT, AUCUNE ÉTAPE OUVERTE : c'est l'état de la quasi-totalité des
+    // dossiers, et la question d'étape ne doit apparaître que quand le SERVEUR
+    // l'ouvre. Un défaut « ouverte » aurait fait passer au vert des cas qui ne
+    // la mentionnent pas.
+    jalonDu: { statut: 'aucune', motif: 'Aucune étape n’est ouverte.' },
     ceQuiCompte: [ENTREE],
     comprehension: { synthese: SYNTHESE, desaccords: [] },
     ...partiel,
@@ -447,6 +453,256 @@ describe('DossierDeuxVoixView', () => {
       await waitFor(() => expect(texteRendu()).toContain('tenir debout jusqu’au dîner'));
       const rendu = texteRendu().toLowerCase();
       for (const interdit of ['score', 'niveau', 'moyenne', 'taux', '1 version', 'points']) {
+        expect(rendu).not.toContain(interdit);
+      }
+    });
+  });
+
+  // ── LA RÉPONSE D'ÉTAPE (6.0-B, LOT-05) ─────────────────────────────────────
+
+  describe('où j’en suis', () => {
+    const OUVERTE = {
+      statut: 'ouverte',
+      jalon: 'J21',
+      ouvertLe: '2026-08-20T09:00:00.000Z',
+      fermeLe: '2026-09-05T09:00:00.000Z',
+    };
+    const RATIFIE = { ...OBJECTIF, etat: 'ratifie' };
+
+    it('la question ne s’affiche QUE quand le serveur ouvre une étape', async () => {
+      // Étape fermée : la question est ABSENTE, pas grisée. Un champ visible et
+      // inerte ferait croire à une panne.
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+      expect(screen.queryByText('Envoyer où j’en suis')).toBeNull();
+    });
+
+    it('étape ouverte sur un objectif ratifié : la question apparaît', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() =>
+        expect(texteRendu()).toContain('Où en êtes-vous par rapport à cet objectif ?'),
+      );
+    });
+
+    it('SUR UN OBJECTIF SANS RÉPONSE, la question n’est PAS posée', async () => {
+      // Demander « où en êtes-vous par rapport à votre objectif » à quelqu'un
+      // qui n'a pas encore dit que c'était le sien pose la question à côté.
+      fetchMock.mockResolvedValueOnce(json(assemblage({ jalonDu: OUVERTE })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+      expect(screen.queryByText('Envoyer où j’en suis')).toBeNull();
+    });
+
+    it('DEUX TÊTES : la question n’est pas posée non plus (DC-30)', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            ratifiable: false,
+            objectifs: [RATIFIE, { ...RATIFIE, id: 'OBJ_2' }],
+            jalonDu: OUVERTE,
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Deux versions'));
+      expect(screen.queryByText('Envoyer où j’en suis')).toBeNull();
+    });
+
+    it('poste le geste NOMMÉ, le jalon SERVI, et `eva: null` quand rien n’est choisi', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Où en êtes-vous'));
+
+      fireEvent.change(screen.getByLabelText('Où en êtes-vous par rapport à cet objectif ?'), {
+        target: { value: 'Trois soirs sur sept, je tiens.' },
+      });
+      fetchMock.mockResolvedValueOnce(json({ ok: true, reponseJalon: { id: 'REP_1' } }));
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      fireEvent.click(screen.getByText('Envoyer où j’en suis'));
+
+      await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(1));
+      const envoi = JSON.parse(fetchMock.mock.calls[1][1].body);
+      expect(envoi).toEqual({
+        geste: 'reponse_jalon',
+        idObjectif: 'OBJ_1',
+        jalon: 'J21',
+        texte: 'Trois soirs sur sept, je tiens.',
+        // `null` EXPLICITE, jamais `0` ni champ omis.
+        eva: null,
+      });
+      expect(envoi).not.toHaveProperty('idPatient');
+      expect(envoi).not.toHaveProperty('creeLe');
+    });
+
+    it('L’ÉCHELLE N’EST PAS PRÉ-SÉLECTIONNÉE, et se retire après un clic', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Où en êtes-vous'));
+
+      // Aucun bouton pressé au départ : rien n'est déposé que le patient n'ait
+      // choisi (`DC-24`).
+      expect(document.querySelectorAll('[aria-pressed="true"]').length).toBe(0);
+      expect(screen.queryByText('Retirer ma réponse à l’échelle')).toBeNull();
+
+      fireEvent.click(screen.getByText('0'));
+      expect(document.querySelectorAll('[aria-pressed="true"]').length).toBe(1);
+
+      // ZÉRO EST UNE RÉPONSE : le bouton de retrait doit apparaître pour lui
+      // comme pour les autres. Un test de vérité JavaScript l'aurait manqué.
+      fireEvent.click(screen.getByText('Retirer ma réponse à l’échelle'));
+      expect(document.querySelectorAll('[aria-pressed="true"]').length).toBe(0);
+    });
+
+    it('poste le zéro comme une valeur, pas comme une absence', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Où en êtes-vous'));
+
+      fireEvent.change(screen.getByLabelText('Où en êtes-vous par rapport à cet objectif ?'), {
+        target: { value: 'Rien n’a bougé.' },
+      });
+      fireEvent.click(screen.getByText('0'));
+      fetchMock.mockResolvedValueOnce(json({ ok: true, reponseJalon: { id: 'REP_1' } }));
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      fireEvent.click(screen.getByText('Envoyer où j’en suis'));
+
+      await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(1));
+      expect(JSON.parse(fetchMock.mock.calls[1][1].body).eva).toBe(0);
+    });
+
+    it('SUR UN REFUS, le texte ET l’EVA restent à l’écran', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(texteRendu()).toContain('Où en êtes-vous'));
+
+      const champ = screen.getByLabelText(
+        'Où en êtes-vous par rapport à cet objectif ?',
+      ) as HTMLTextAreaElement;
+      fireEvent.change(champ, { target: { value: 'Ce que j’ai mis dix minutes à écrire.' } });
+      fireEvent.click(screen.getByText('7'));
+
+      fetchMock.mockResolvedValueOnce(
+        json({ ok: false, reason: 'jalon_ferme', error: 'Cette étape n’est pas ouverte.' }, false),
+      );
+      fireEvent.click(screen.getByText('Envoyer où j’en suis'));
+
+      await waitFor(() => expect(texteRendu()).toContain('Cette étape n’est pas ouverte.'));
+      expect(champ.value).toBe('Ce que j’ai mis dix minutes à écrire.');
+      expect(document.querySelectorAll('[aria-pressed="true"]').length).toBe(1);
+    });
+
+    it('RELIT ce qui a été écrit, et affiche un zéro plutôt que de le taire', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            reponsesJalon: [
+              {
+                id: 'REP_1',
+                idObjectif: 'OBJ_1',
+                jalon: 'J21',
+                texte: 'Je n’ai pas avancé, et ça me pèse.',
+                eva: 0,
+                creeLe: '2026-08-26T12:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Je n’ai pas avancé'));
+      expect(texteRendu()).toContain('Où vous en étiez (J21)');
+      // Le zéro du patient est AFFICHÉ. `reponse.eva &&` l'aurait effacé.
+      expect(texteRendu()).toContain('Sur l’échelle : 0');
+    });
+
+    it('une réponse sans EVA n’affiche AUCUNE échelle — ni zéro, ni tiret', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            reponsesJalon: [
+              {
+                id: 'REP_2',
+                idObjectif: 'OBJ_1',
+                jalon: 'J42',
+                texte: 'Des mots, sans chiffre.',
+                eva: null,
+                creeLe: '2026-08-26T12:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Des mots, sans chiffre.'));
+      expect(texteRendu()).not.toContain('Sur l’échelle');
+    });
+
+    it('une réponse écrite sur une AUTRE version ne s’affiche pas sous celle-ci', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            reponsesJalon: [
+              {
+                id: 'REP_3',
+                idObjectif: 'OBJ_AILLEURS',
+                jalon: 'J21',
+                texte: 'Un récit qui parle d’un autre texte.',
+                eva: null,
+                creeLe: '2026-08-26T12:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+      expect(texteRendu()).not.toContain('Un récit qui parle d’un autre texte.');
+    });
+
+    it('ne reproche jamais un silence et ne gradue rien (DC-24, DC-19/DC-20)', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(assemblage({ objectifs: [RATIFIE], jalonDu: OUVERTE })),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Où en êtes-vous'));
+      const rendu = texteRendu().toLowerCase();
+      for (const interdit of [
+        'score',
+        'moyenne',
+        'taux',
+        'progression',
+        'manqué',
+        'retard',
+        'aurait dû',
+        'objectif atteint',
+      ]) {
         expect(rendu).not.toContain(interdit);
       }
     });

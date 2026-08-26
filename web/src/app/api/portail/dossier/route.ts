@@ -11,17 +11,25 @@ import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 import {
+  ANCRE_JALON,
+  EVA_MAX,
+  EVA_MIN,
   LONGUEUR_MAX_AMENDEMENT,
+  LONGUEUR_MAX_REPONSE_JALON,
   etatRatification,
   objectifsCourants,
   preparerAmendement,
   preparerRatification,
+  preparerReponseJalon,
   type DonneesAmendement,
   type DonneesRatification,
+  type DonneesReponseJalon,
   type EtatRatification,
   type RefusAmendement,
   type RefusRatification,
+  type RefusReponseJalon,
 } from '@/lib/praticien/objectifNegocie';
+import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 
 // Le « dossier à deux voix » (Alliance 6.0-A, LOT-06) — route PORTAIL.
@@ -136,6 +144,29 @@ export type AmendementServi = {
   creeLe: string;
 };
 
+/**
+ * LA RÉPONSE D'ÉTAPE, RELUE PAR SON AUTEUR (Alliance 6.0-B, LOT-05, `D-111`).
+ * Même motif qu'à l'amendement : ce que le patient a écrit doit rester visible
+ * sur son écran.
+ *
+ * `eva` est servie BRUTE et peut valoir `null` — le patient n'a pas répondu à
+ * l'échelle. `null` et `0` ne se confondent pas (`DC-24`) : l'écran affiche un
+ * silence dans un cas, un zéro dans l'autre, et jamais l'un à la place de
+ * l'autre. Aucune bande, aucune direction, aucune moyenne n'accompagne cette
+ * valeur ici ni ailleurs.
+ *
+ * `reponduLe` N'Y EST PAS : la colonne reste nulle par construction, et servir
+ * un champ toujours nul inviterait un écran à le combler par `creeLe`.
+ */
+export type ReponseJalonServie = {
+  id: string;
+  idObjectif: string;
+  jalon: string;
+  texte: string;
+  eva: number | null;
+  creeLe: string;
+};
+
 export type PortailDossierResponse =
   | { ok: true; ouvert: true }
   | {
@@ -161,6 +192,22 @@ export type PortailDossierResponse =
        */
       amendements: AmendementServi[];
       /**
+       * CE QUE LE PATIENT A RÉPONDU À SES JALONS, du plus récent au plus
+       * ancien. Jamais filtré sur la tête courante, pour le motif écrit aux
+       * amendements : une réponse portée sur une version depuis reformulée
+       * reste SA parole.
+       */
+      reponsesJalon: ReponseJalonServie[];
+      /**
+       * L'ÉTAPE OUVERTE AUJOURD'HUI, ou le motif qui l'en empêche — calculée
+       * par le SERVEUR, jamais par l'écran. Les fenêtres viennent de
+       * `JOURS_JALON`/`TOLERANCE_JOURS_JALON` : les faire calculer par le
+       * client obligerait à embarquer les tables cliniques dans le bundle
+       * patient, et une horloge de navigateur décalée ouvrirait une étape que
+       * le serveur refuserait ensuite.
+       */
+      jalonDu: FenetreJalonObjectif;
+      /**
        * `null` = le bloc n'est pas ouvert (drapeau éteint), et il est alors
        * ABSENT de l'écran. Un tableau vide, lui, est un vrai silence du patient
        * ou du praticien — les deux ne se confondent pas (`DC-24`).
@@ -170,6 +217,7 @@ export type PortailDossierResponse =
     }
   | { ok: true; ratification: RatificationServie }
   | { ok: true; amendement: AmendementServi }
+  | { ok: true; reponseJalon: ReponseJalonServie }
   | { ok: false; reason: string; error: string };
 
 /**
@@ -199,6 +247,24 @@ const MESSAGES_REFUS_AMENDEMENT: Record<RefusAmendement, string> = {
   objectif_absent: 'Aucun objectif n’est visé par ce texte.',
   texte_absent: 'Écrivez votre version de l’objectif avant de l’envoyer.',
   texte_trop_long: `Votre texte dépasse ${LONGUEUR_MAX_AMENDEMENT} caractères. Rien n’est coupé : raccourcissez-le et renvoyez-le.`,
+};
+
+/**
+ * Les refus de la réponse d'étape. `jalon_absent` et `jalon_invalide` se disent
+ * DIFFÉREMMENT : le premier est un champ manquant, le second une étape qui
+ * n'existe pas — dont `T0`, que `resoudreJalonDu` rend pour un patient sans
+ * cycle confirmé. Les confondre enverrait un client corriger le mauvais champ.
+ *
+ * La borne de l'EVA est dite EN CHIFFRES, et dite comme ce qu'elle est : une
+ * échelle de saisie, sans interprétation (`DC-19`/`DC-20`).
+ */
+const MESSAGES_REFUS_REPONSE_JALON: Record<RefusReponseJalon, string> = {
+  objectif_absent: 'Aucun objectif n’est visé par cette réponse.',
+  jalon_absent: 'Aucune étape n’est visée par cette réponse.',
+  jalon_invalide: 'Cette étape n’existe pas pour votre objectif.',
+  texte_absent: 'Écrivez où vous en êtes avant d’envoyer.',
+  texte_trop_long: `Votre texte dépasse ${LONGUEUR_MAX_REPONSE_JALON} caractères. Rien n’est coupé : raccourcissez-le et renvoyez-le.`,
+  eva_invalide: `L’échelle attend un nombre entier entre ${EVA_MIN} et ${EVA_MAX}, ou rien du tout.`,
 };
 
 /** Le message d'un objectif introuvable, D'UN AUTRE DOSSIER, ou hors bornes. */
@@ -288,8 +354,16 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
     // L'objectif négocié, lui, n'a AUCUN drapeau (choix commenté du LOT-02 :
     // c'était une surface praticien). C'est CETTE route qui l'ouvre au patient,
     // et c'est `WN_DOSSIER_DEUX_VOIX` qui la garde.
-    const [objectifs, ratifications, amendements, entrees, syntheses, desaccords] =
-      await Promise.all([
+    const [
+      objectifs,
+      ratifications,
+      amendements,
+      reponsesJalon,
+      ancreT0,
+      entrees,
+      syntheses,
+      desaccords,
+    ] = await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient: patient.idPatient },
         select: SELECTION_OBJECTIF,
@@ -307,6 +381,23 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         where: { idPatient: patient.idPatient },
         select: { id: true, idObjectif: true, texte: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
+      }),
+      // Même régime : la réponse d'étape est gardée par `WN_DOSSIER_DEUX_VOIX`
+      // (`D-111`), pas par un drapeau propre. `eva` est sélectionnée telle
+      // quelle — aucune transformation, aucun repli sur zéro.
+      prisma.reponseJalonObjectif.findMany({
+        where: { idPatient: patient.idPatient },
+        select: { id: true, idObjectif: true, jalon: true, texte: true, eva: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
+      // L'ANCRE DES FENÊTRES : le T0 confirmé LE PLUS RÉCENT (`D-111` §6).
+      // Une seule ligne, deux colonnes — la route patient n'a besoin de rien
+      // d'autre, et surtout pas de reconstruire une trajectoire complète, qui
+      // rejouerait le calcul d'équilibre pour afficher une question.
+      prisma.assessmentEpisode.findFirst({
+        where: { idPatient: patient.idPatient, milestone: ANCRE_JALON },
+        select: { confirmedAt: true },
+        orderBy: { confirmedAt: 'desc' },
       }),
       ceQuiCompteOuvert
         ? prisma.entreeCeQuiCompte.findMany({
@@ -391,6 +482,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         // LES DEUX TABLES, JAMAIS UNE SEULE : un patient qui vient d'écrire sa
         // version après avoir ratifié ne doit pas relire « vous avez répondu :
         // c'est bien ça ».
+        //
+        // ET DEUX SEULEMENT — `reponsesJalon` n'entre PAS dans cet état, et ce
+        // n'est pas un oubli. Dire où l'on en est n'est ni ratifier, ni
+        // contester, ni reformuler : c'est parler de son avancée, pas du texte
+        // de l'objectif. L'y verser ferait passer un patient en retard pour un
+        // patient qui conteste son objectif.
         etat: etatRatification(ligne.id, ratifications, amendements),
       })),
       ratifiable: tetes.length === 1,
@@ -400,6 +497,17 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         texte: ligne.texte,
         creeLe: ligne.creeLe.toISOString(),
       })),
+      reponsesJalon: reponsesJalon.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        jalon: ligne.jalon,
+        texte: ligne.texte,
+        // BRUTE, et `null` reste `null` : pas de `?? 0`, pas de moyenne, pas de
+        // bande. C'est le régime de `D-088`, et il ne s'élargit pas ici.
+        eva: ligne.eva,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
+      jalonDu: jalonObjectifDu(ancreT0?.confirmedAt ?? null, new Date()),
       ceQuiCompte: entrees
         ? entrees.map((ligne) => ({
             id: ligne.id,
@@ -450,17 +558,24 @@ type CorpsRatification = {
    * LE GESTE (Alliance 6.0-B, LOT-04). Absent ⇒ `ratification` : le champ est
    * arrivé APRÈS le premier écrivain, et un onglet resté ouvert sur l'ancien
    * écran ne doit pas voir son « c'est bien ça » refusé pour un champ qu'il
-   * ignore. Toute autre valeur qu'une des deux connues est REFUSÉE, jamais
+   * ignore. Toute autre valeur qu'une des trois connues est REFUSÉE, jamais
    * repliée sur le défaut : deviner le geste d'un patient à partir d'un mot
    * qu'on ne comprend pas est exactement ce qu'on s'interdit.
    */
   geste?: unknown;
-  /** Le texte de l'amendement — lu du seul geste `amendement`. */
+  /** Le texte de l'amendement ou de la réponse d'étape, selon le geste. */
   texte?: unknown;
+  /** L'étape visée — lue du seul geste `reponse_jalon`. */
+  jalon?: unknown;
+  /**
+   * L'EVA — lue du seul geste `reponse_jalon`, et FACULTATIVE. Absente, elle
+   * vaut `null` en base, jamais `0` (`DC-24`).
+   */
+  eva?: unknown;
 };
 
-/** Les deux gestes du patient sur cette route. Liste fermée. */
-const GESTES = ['ratification', 'amendement'] as const;
+/** Les trois gestes du patient sur cette route. Liste fermée. */
+const GESTES = ['ratification', 'amendement', 'reponse_jalon'] as const;
 type Geste = (typeof GESTES)[number];
 
 /**
@@ -587,9 +702,28 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     //     homonyme — une lecture de forme n'est pas une lecture d'intention.
     let prepare:
       | { geste: 'amendement'; donnees: DonneesAmendement }
-      | { geste: 'ratification'; donnees: DonneesRatification };
+      | { geste: 'ratification'; donnees: DonneesRatification }
+      | { geste: 'reponse_jalon'; donnees: DonneesReponseJalon };
 
-    if (geste === 'amendement') {
+    if (geste === 'reponse_jalon') {
+      // `jalon` et `eva` PASSENT BRUTS au module pur, sans pré-filtrage de type
+      // ici. C'est délibéré : un `typeof corps.eva === 'number' ? … : null`
+      // transformerait « 5.5 » et « "5" » en ABSENCE d'EVA — donc en réponse
+      // acceptée sans échelle, alors que le patient en a saisi une. Le module
+      // distingue l'absence du refus ; la route ne doit pas écraser cette
+      // distinction en chemin.
+      const preparation = preparerReponseJalon({
+        idPatient: patient.idPatient,
+        idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
+        jalon: corps.jalon,
+        texte: typeof corps.texte === 'string' ? corps.texte : null,
+        eva: corps.eva,
+      });
+      if (!preparation.ok) {
+        return echec(preparation.raison, MESSAGES_REFUS_REPONSE_JALON[preparation.raison], 400);
+      }
+      prepare = { geste, donnees: preparation.donnees };
+    } else if (geste === 'amendement') {
       const preparation = preparerAmendement({
         idPatient: patient.idPatient,
         idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
@@ -620,10 +754,11 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     if (refus) return refus;
 
     // 8 — ÉCRITURE UNIQUE, ET C'EST LE SEUL ENDROIT DE L'APPLICATION QUI ÉCRIT
-    //     UNE RATIFICATION OU UN AMENDEMENT. La garde structurelle de
-    //     `objectifNegocie.guard.test.ts` épingle ce fichier nommément pour les
-    //     deux tables : les gestes appartiennent au patient, une route praticien
-    //     qui créerait ces lignes fabriquerait des actes que personne n'a posés.
+    //     UNE RATIFICATION, UN AMENDEMENT OU UNE RÉPONSE D'ÉTAPE. La garde
+    //     structurelle de `objectifNegocie.guard.test.ts` épingle ce fichier
+    //     nommément pour les TROIS tables : les gestes appartiennent au patient,
+    //     et une route praticien qui créerait ces lignes fabriquerait des actes
+    //     que personne n'a posés.
     //
     // `idPatient` VIENT DE LA SESSION, JAMAIS DU CORPS (cf. `CorpsRatification`).
     // AUCUNE DATE n'est transmise : `creeLe` est posée par `@default(now())`, et
@@ -633,6 +768,63 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     //
     // `create` et non `upsert` : répondre deux fois fait deux lignes. Rien ne
     // s'écrase, et c'est ainsi qu'un changement d'avis reste lisible.
+    // 7 bis — LA FENÊTRE, POUR LE SEUL GESTE QUI EN A UNE.
+    //
+    // Le module pur a vérifié que le jalon EXISTE ; il ne peut pas vérifier
+    // qu'il est OUVERT — cela demande l'ancre, donc la base. Sans ce contrôle,
+    // un client posterait un `J90` le troisième jour : la ligne serait valide
+    // en base (le CHECK ne connaît que la taxonomie) et daterait un point
+    // d'étape d'un moment que le patient n'a pas vécu. Le praticien lirait
+    // ensuite ce récit comme s'il avait eu lieu à sa date.
+    //
+    // L'ÉCRAN NE SUFFIT PAS À GARDER CETTE BORNE : il n'affiche que l'étape
+    // ouverte, mais une horloge de navigateur décalée, un onglet resté ouvert
+    // une semaine, ou un POST direct contournent l'écran — pas ceci.
+    if (prepare.geste === 'reponse_jalon') {
+      const ancre = await prisma.assessmentEpisode.findFirst({
+        where: { idPatient: patient.idPatient, milestone: ANCRE_JALON },
+        select: { confirmedAt: true },
+        orderBy: { confirmedAt: 'desc' },
+      });
+      const fenetre = jalonObjectifDu(ancre?.confirmedAt ?? null, new Date());
+      if (fenetre.statut !== 'ouverte' || fenetre.jalon !== prepare.donnees.jalon) {
+        return echec(
+          'jalon_ferme',
+          'Cette étape n’est pas ouverte en ce moment. Rechargez la page pour voir où vous en êtes.',
+          409,
+        );
+      }
+
+      const reponse = await prisma.reponseJalonObjectif.create({
+        data: {
+          idPatient: patient.idPatient,
+          idObjectif: prepare.donnees.idObjectif,
+          jalon: prepare.donnees.jalon,
+          texte: prepare.donnees.texte,
+          // `null` explicite quand l'échelle n'a pas été remplie. La colonne
+          // n'a PAS de DEFAULT : rien ne viendrait y poser un zéro à notre
+          // place, et rien ne doit y en poser un ici non plus.
+          eva: prepare.donnees.eva,
+        },
+        select: { id: true, idObjectif: true, jalon: true, texte: true, eva: true, creeLe: true },
+      });
+
+      return NextResponse.json<PortailDossierResponse>(
+        {
+          ok: true,
+          reponseJalon: {
+            id: reponse.id,
+            idObjectif: reponse.idObjectif,
+            jalon: reponse.jalon,
+            texte: reponse.texte,
+            eva: reponse.eva,
+            creeLe: reponse.creeLe.toISOString(),
+          },
+        },
+        { status: 201 },
+      );
+    }
+
     if (prepare.geste === 'amendement') {
       const amendement = await prisma.amendementObjectif.create({
         data: {
