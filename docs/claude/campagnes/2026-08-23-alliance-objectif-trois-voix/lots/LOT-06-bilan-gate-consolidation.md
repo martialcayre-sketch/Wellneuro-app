@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Bilan et gate de consolidation — fabriquer la provenance, fermer D-093"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-01, LOT-02, LOT-03, LOT-04, LOT-05"
 ---
 
@@ -63,14 +63,21 @@ le classement des candidats — et de fermer la boucle [[D-093]].
 
 ## Étapes
 
-- [ ] Constats de production par conteneur (volumes d'événements par table,
-      zéro identité).
-- [ ] Rédiger le bilan (reprises/amendements/écarts, comportement du
-      classement, conditions D-093).
-- [ ] Si justifié : préparer le dossier de signature du classement pour
-      arbitrage.
-- [ ] Décision de clôture ; statuts de lots et CAMPAGNE.md à l'état
-      atteint ; handoff + fragments **avant** la PR.
+- [x] Constats de production par conteneur (volumes d'événements par table,
+      zéro identité) — **neuf tables à zéro**, 21 dossiers, 15 consultations
+      validées, **zéro `T0` confirmé**, `WN_OBJECTIF_PROPOSE` absent.
+- [x] Rédiger le bilan — `BILAN.md`. Les sections « reprises / amendements /
+      écarts » et « comportement du classement » sont **vides pour une raison
+      structurelle**, et le bilan le dit plutôt que de les combler.
+- [x] Dossier de signature du classement : **NON préparé, et motivé** — signer
+      un classement certifie la provenance d'un ORDRE ; zéro présentation, donc
+      rien à certifier. Le rédiger supposerait le comportement qu'il devait
+      documenter (`DC-19`).
+- [x] Décision `D-112` ; statuts de lots et `CAMPAGNE.md` à l'état atteint ;
+      handoff + fragments **avant** la PR.
+- [ ] **La campagne n'est PAS déclarée close par ce lot** : passe Codex du
+      LOT-05 (P0) et contre-revue adverse de campagne restent à jouer — la
+      contre-revue **avant** la clôture.
 
 ## Tests
 
@@ -85,4 +92,33 @@ Documentaire : chaque affirmation du bilan est adossée à un constat
 
 ## Résultats
 
-À compléter à la clôture.
+*Bilan rendu le 2026-08-26 (`D-112`). Le lot reste ouvert : la campagne n'est
+pas close.*
+
+**Le lot a trouvé l'inverse de ce qu'il cherchait, et c'est son résultat.** Il
+devait transformer l'usage réel en provenance. Il a constaté qu'**il n'y a aucun
+usage** : les neuf tables de la campagne portent zéro ligne, trois jours après
+`D-093`. L'appareil est complet, déployé, appliqué — et n'a jamais servi.
+
+**Ce constat rend la condition (b) de `D-093` non pas « non atteinte » mais NON
+PRODUCTIBLE.** Un bilan sur le comportement du classement suppose un
+comportement. Le moteur de proposition est éteint (`WN_OBJECTIF_PROPOSE`
+absent), aucun candidat n'a été présenté par les surfaces de la campagne. La
+distinction compte : « pas encore constaté » invite à attendre, « impossible à
+produire en l'état » désigne un geste manquant.
+
+**Le refus de préparer le dossier de signature est la décision la plus
+importante du lot.** La fiche l'autorisait « si le matériau le justifie ». Il
+n'existe pas. Rédiger quand même aurait produit un document qui **suppose** un
+comportement au lieu de le documenter — c'est-à-dire exactement la fabrication
+de provenance que la campagne entière s'interdit (`DC-19`).
+
+**Un fait dépasse la campagne** : **zéro épisode `T0` confirmé** sur 21 dossiers
+et 15 consultations validées. Aucun cycle n'est ancré en production. Ni la
+trajectoire, ni le momentum, ni les jalons du LOT-05 n'ont de point de départ —
+et aucun ne peut en avoir tant que ce geste n'est pas posé.
+
+**Dette de lecture nommée** : `scalingo env-get` rend `An error occurred:` aussi
+bien pour une variable absente que pour un incident d'API. Les deux sont
+indiscernables, et c'est ce qui a fait accuser à tort le drapeau
+`WN_MIGRATIONS_PAR_RELEASE_DB` au premier run `release-db` du LOT-05.

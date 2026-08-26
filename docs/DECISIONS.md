@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-112 — L'appareil de l'alliance est complet et n'a jamais servi : `D-093` n'est pas levé, et le classement n'est pas signable
+
+- Date : 2026-08-26
+- Statut : accepté (constat de bilan — ne modifie aucune règle clinique)
+- Domaine : gouvernance clinique et clôture de campagne — Alliance 6.0-B
+- Porte sur : [[D-093]] (dont elle constate les conditions de sortie), `DC-19`
+  (la provenance précède la règle), `DC-24` (une absence de constat n'est pas un
+  feu vert)
+- Fonde : le LOT-06 de `2026-08-23-alliance-objectif-trois-voix` ·
+  bilan complet : `docs/claude/campagnes/2026-08-23-alliance-objectif-trois-voix/BILAN.md`
+
+**Le constat.** Lecture de production par conteneur one-off le 2026-08-26, par
+identifiants seuls : **les neuf tables de la campagne portent zéro ligne**. Aucun
+objectif négocié, aucune proposition, aucune ratification, aucun amendement,
+aucune réponse d'étape. Sur 21 dossiers patients et 15 consultations validées,
+**zéro épisode `T0` confirmé** — aucun cycle n'est ancré en production, ce qui
+dépasse le périmètre de cette campagne.
+
+Drapeaux : `WN_DOSSIER_DEUX_VOIX`, `WN_CE_QUI_COMPTE` et `WN_COMPREHENSION` sont
+posés ; **`WN_OBJECTIF_PROPOSE` est absent**, donc le moteur de proposition est
+éteint (fail-closed).
+
+**Ce que cela décide :**
+
+1. **`D-093` n'est pas levé, et ne peut pas l'être aujourd'hui.** Sa condition
+   (a) — une réponse patient réelle sur un objectif — bute sur l'absence
+   d'objectif ; la précondition que `D-093` nommait lui-même (« le praticien doit
+   rédiger un objectif sur au moins un des trois ») n'est pas levée trois jours
+   après la décision. Sa condition (b) — un bilan sur le comportement du
+   classement — **n'est pas productible** : un bilan de comportement suppose un
+   comportement, et rien n'a été présenté. La borne du **2026-10-04** court ; à
+   son terme, sans les deux conditions, le périmètre **se referme**.
+2. **Le dossier de signature du classement n'est pas préparé, et ce refus est
+   motivé.** Signer un classement certifie la provenance d'un ORDRE de
+   présentation. Zéro présentation, zéro reprise, zéro écart motivé : il n'y a
+   rien à certifier. Un dossier rédigé sur cette base **supposerait** un
+   comportement au lieu de le documenter — ce que `DC-19` interdit. La campagne
+   devait fabriquer la provenance ; elle a fabriqué la **capacité** de la
+   recueillir.
+3. **Aucun agrégat n'est produit sur la parole patient**, y compris pour dire
+   qu'elle est absente : le bilan compte des événements techniques, jamais la
+   qualité d'une parole.
+4. **La campagne n'est pas déclarée close par cette décision.** La passe Codex du
+   LOT-05 (classe P0) et la contre-revue adverse à l'échelle de la campagne
+   restent à jouer — la contre-revue **avant** la clôture, sous forme
+   d'affirmations à réfuter.
+
+**Le geste unique qui débloque la suite, et il n'est pas technique** : qu'un
+objectif négocié soit rédigé sur l'un des trois dossiers du périmètre. Les trois
+surfaces patient sont déjà ouvertes en production. La réponse d'étape du LOT-05
+demande **en plus** un `T0` confirmé, dont aucun n'existe.
+
+**Dette de lecture nommée.** `scalingo env-get` rend `An error occurred:` aussi
+bien pour une variable absente que pour un incident d'API — les deux sont
+indiscernables. C'est cette ambiguïté qui a fait accuser à tort le drapeau
+`WN_MIGRATIONS_PAR_RELEASE_DB` au premier run `release-db` du LOT-05. Toute garde
+qui lit une variable d'app doit distinguer les deux cas ou dire qu'elle ne le
+peut pas.
+
 ### D-111 — La réponse d'étape a sa table, l'ancre n'est pas une étape, et l'EVA ne conclut rien
 
 - Date : 2026-08-25
