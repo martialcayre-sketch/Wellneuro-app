@@ -63,10 +63,11 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   // l'écran du LOT-06 — la garde tenait par le NOM que l'auteur avait choisi,
   // c'est-à-dire par rien.
   //
-  // DEUX EXCEPTIONS, ET ELLES SONT NOMMÉES UNE PAR UNE : `{texte.length}`, le
-  // compteur de caractères du champ de saisie (`CeQuiCompteForm`), et
+  // TROIS EXCEPTIONS, ET ELLES SONT NOMMÉES UNE PAR UNE : `{texte.length}`, le
+  // compteur de caractères du champ de saisie (`CeQuiCompteForm`),
   // `{texteAmendement.length}`, celui de la saisie « le dire autrement »
-  // (`DossierDeuxVoixView`, 6.0-B LOT-04). Compter les caractères qu'on est en
+  // (`DossierDeuxVoixView`, 6.0-B LOT-04), et `{texteJalon.length}`, celui de
+  // la réponse d'étape (même écran, 6.0-B LOT-05). Compter les caractères qu'on est en
   // train de taper est une aide à la saisie, pas une mesure de la parole du
   // patient — et la borne affichée est technique, identifiée comme telle
   // (`DC-20`). Elle est même l'inverse d'une troncature silencieuse : le
@@ -78,7 +79,7 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   // genre « tout identifiant contenant `texte` » aurait rendu l'exception
   // ouverte à `textesServis.length`.
   {
-    motif: /\{\s*(?!(?:texte|texteAmendement)\.length\s*\})[\w.]+\.length\s*\}/,
+    motif: /\{\s*(?!(?:texte|texteAmendement|texteJalon)\.length\s*\})[\w.]+\.length\s*\}/,
     nom: 'décompte affiché',
   },
 ];

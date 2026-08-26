@@ -21,6 +21,7 @@ const DOSSIER_VIDE = {
   ancrage: ANCRAGE_VIDE,
   ratifications: {},
   amendements: [],
+  reponsesJalon: [],
 };
 
 const ligne = (partiel: Record<string, unknown> = {}) => ({
@@ -240,6 +241,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           ],
           ratifications: { OBJ_2: 'en_attente' },
           amendements: [],
+          reponsesJalon: [],
         },
       }),
     );
@@ -263,6 +265,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           ],
           ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
           amendements: [],
+          reponsesJalon: [],
         },
       }),
     );
@@ -284,6 +287,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'en_attente' },
           amendements: [],
+          reponsesJalon: [],
         },
       }),
     );
@@ -305,6 +309,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'conteste' },
           amendements: [],
+          reponsesJalon: [],
         },
       }),
     );
@@ -352,6 +357,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
           ratifications: { OBJ_1: 'en_attente' },
           amendements: [],
+          reponsesJalon: [],
         },
       }),
     );
@@ -591,6 +597,7 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
           ancrage: ANCRAGE_VIDE,
           ratifications: { OBJ_1: 'en_attente' },
           amendements: [],
+          reponsesJalon: [],
         },
         propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
       }),
@@ -675,6 +682,7 @@ describe('ObjectifNegociePanel — « le dire autrement »', () => {
     ancrage: ANCRAGE_VIDE,
     ratifications: { OBJ_1: 'dit_autrement' },
     amendements: [AMENDEMENT],
+    reponsesJalon: [],
     ...partiel,
   });
 
@@ -795,6 +803,104 @@ describe('ObjectifNegociePanel — « le dire autrement »', () => {
 
     const rendu = (document.body.textContent ?? '').toLowerCase();
     for (const interdit of ['score', 'moyenne', 'taux', '1 amendement', 'écart de']) {
+      expect(rendu).not.toContain(interdit);
+    }
+  });
+});
+
+// ── OÙ LE PATIENT EN ÉTAIT (6.0-B, LOT-05) ───────────────────────────────────
+
+describe('ObjectifNegociePanel — le récit d’étape', () => {
+  const ETAPE = {
+    id: 'REP_1',
+    idObjectif: 'OBJ_1',
+    jalon: 'J21',
+    texte: 'Je tiens trois soirs sur sept. Le week-end, ça repart.',
+    eva: 6,
+    creeLe: '2026-08-26T12:00:00.000Z',
+  };
+
+  const dossierAvecEtapes = (reponsesJalon: unknown[]) => ({
+    ok: true,
+    objectifs: [ligne()],
+    trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
+    ancrage: ANCRAGE_VIDE,
+    ratifications: { OBJ_1: 'ratifie' },
+    amendements: [],
+    reponsesJalon,
+  });
+
+  it('rend le récit sous sa version, avec son jalon et son EVA brute', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecEtapes([ETAPE]) }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/trois soirs sur sept/)).toBeTruthy());
+    const rendu = document.body.textContent ?? '';
+    expect(rendu).toContain('Où le patient en était');
+    expect(rendu).toContain('J21');
+    expect(rendu).toContain('Échelle du patient : 6 sur 10');
+  });
+
+  it('AFFICHE LE ZÉRO du patient — une vérité JavaScript l’aurait effacé', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecEtapes([{ ...ETAPE, eva: 0 }]) }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/trois soirs sur sept/)).toBeTruthy());
+    expect(document.body.textContent).toContain('Échelle du patient : 0 sur 10');
+  });
+
+  it('sans EVA, AUCUNE échelle n’est rendue — ni zéro, ni tiret (DC-24)', async () => {
+    fetchMock.mockImplementation(router({ dossier: dossierAvecEtapes([{ ...ETAPE, eva: null }]) }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/trois soirs sur sept/)).toBeTruthy());
+    expect(document.body.textContent).not.toContain('Échelle du patient');
+  });
+
+  it('un récit d’une AUTRE chaîne ne s’affiche pas sous celle-ci', async () => {
+    fetchMock.mockImplementation(
+      router({ dossier: dossierAvecEtapes([{ ...ETAPE, idObjectif: 'OBJ_AILLEURS' }]) }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(document.body.textContent).toContain('Objectif'));
+    expect(document.body.textContent).not.toContain('Où le patient en était');
+  });
+
+  it('L’ORDRE SERVI EST L’ORDRE RENDU — jamais un tri par EVA', async () => {
+    // Trier par valeur transformerait un récit en classement, et ferait lire
+    // une progression là où il n'y a qu'une chronologie.
+    const plusRecent = { ...ETAPE, id: 'REP_2', jalon: 'J42', eva: 2, texte: 'Ça s’est dégradé.' };
+    fetchMock.mockImplementation(router({ dossier: dossierAvecEtapes([plusRecent, ETAPE]) }));
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(/dégradé/)).toBeTruthy());
+    const rendu = document.body.textContent ?? '';
+    expect(rendu.indexOf('Ça s’est dégradé.')).toBeLessThan(rendu.indexOf('trois soirs sur sept'));
+  });
+
+  it('ne calcule rien et ne qualifie rien', async () => {
+    fetchMock.mockImplementation(
+      router({
+        dossier: dossierAvecEtapes([
+          ETAPE,
+          { ...ETAPE, id: 'REP_2', jalon: 'J42', eva: 2, texte: 'Moins bien ce mois-ci.' },
+        ]),
+      }),
+    );
+    await attendreLeDossier();
+    await waitFor(() => expect(screen.getByText(/trois soirs sur sept/)).toBeTruthy());
+
+    const rendu = (document.body.textContent ?? '').toLowerCase();
+    for (const interdit of [
+      'moyenne',
+      'tendance',
+      'progression',
+      'évolution',
+      'score',
+      'taux',
+      'sur 3 étapes',
+    ]) {
       expect(rendu).not.toContain(interdit);
     }
   });

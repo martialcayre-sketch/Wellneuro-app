@@ -123,6 +123,47 @@ manquement (`DC-24`) ; relancer le patient — le portail reste en pull.
    Le couplage est imposé par la garde de complétude, qui refuserait le schéma
    sans la ligne.
 
+**Complément du 2026-08-26 — les décisions de la PR de code.** La migration a
+été appliquée puis **constatée par conteneur** le 2026-08-26 (cinq contraintes,
+taxonomie sans `T0`, `btrim` à deux arguments, RLS active, aucun index unique
+hors clé primaire). Les dettes 1 à 4 restent ouvertes ; la dette 2 est levée par
+la Décision 7.
+
+7. **La taxonomie est dérivée par une garde, pas par un import.** `G5` interdit
+   au module pur d'importer `@/lib/equilibre` — et il est embarqué dans le
+   bundle patient. `JALONS_OBJECTIF` est donc une littérale, et `G7` importe
+   `JOURS_JALON`, en retire `ANCRE_JALON` **par son nom**, et compare. Une
+   seconde assertion vérifie que l'ancre est bien une clé de `JOURS_JALON` :
+   sans elle, renommer l'ancre des deux côtés laissait la première verte et
+   rendait `T0` acceptable en silence (constaté par mutation).
+8. **La fenêtre a sa fonction, distincte de `resoudreJalonDu`.**
+   `jalonObjectifDu` lit les mêmes nombres sans les redéfinir, mais ne reprend
+   pas l'exclusion des jalons **déjà confirmés par le praticien** : une
+   confirmation au cockpit ne dit rien de ce que le patient a raconté, et
+   réutiliser cette exclusion aurait fait disparaître la question d'un patient
+   n'ayant jamais parlé. Elle ne rend jamais `T0` : sans ancre, elle rend
+   `aucune` avec son motif.
+9. **La fenêtre est tenue au POST, et sur QUEL jalon.** L'écran n'affiche que
+   l'étape ouverte, mais une horloge de navigateur décalée, un onglet resté
+   ouvert ou un POST direct le contournent. Sans la comparaison de jalon, un
+   `J90` s'écrirait dans la fenêtre du `J21` et daterait un point d'étape d'un
+   moment que le patient n'a pas vécu.
+10. **Invitation et permission sont séparées, à dessein.** L'écran ne pose la
+    question que sur un objectif ratifié ou dit-autrement, et sur une tête
+    unique ; le serveur, lui, n'exige pas la ratification pour accepter le
+    texte. Solliciter à côté est un défaut d'écran ; refuser la parole d'un
+    patient sur son propre objectif serait un défaut de fond.
+11. **Une réponse d'étape n'entre pas dans l'état de ratification.** Dire où
+    l'on en est n'est ni ratifier, ni contester, ni reformuler. L'y verser
+    ferait passer un patient en retard pour un patient qui conteste son
+    objectif.
+
+**Dette nommée par la PR de code.** La garde anti-gamification lit **aussi les
+commentaires** : citer une formule interdite pour expliquer qu'elle l'est rend
+rouge un fichier sain. Les autres gardes de la campagne dépouillent les
+commentaires (`sourceSansCommentaires`) ; celle-ci non. L'aligner est un
+changement de garde, hors périmètre de ce lot.
+
 ### D-110 — « Le dire autrement » : le troisième verbe du patient, et le quatrième état
 
 - Date : 2026-08-25

@@ -129,6 +129,27 @@ export type AmendementExpose = {
   creeLe: string;
 };
 
+/**
+ * LA RÉPONSE D'ÉTAPE DU PATIENT (Alliance 6.0-B, LOT-05, `D-111`), lue au
+ * cockpit. Servie TELLE QUELLE : ni résumée, ni comptée, ni mise en courbe.
+ *
+ * `eva` PART BRUTE ET PEUT ÊTRE NULLE. Aucune moyenne, aucune tendance, aucun
+ * delta d'un jalon à l'autre n'est calculé ici ni ailleurs — c'est le régime de
+ * `D-088`, et `D-111` §3 l'applique sans l'élargir. Le praticien lit les
+ * valeurs et les interprète avec son patient ; le dépôt ne conclut rien à sa
+ * place. Une garde structurelle interdit `reduce`/`sort` sur cette collection.
+ *
+ * `reponduLe` n'y figure pas : la colonne reste nulle par construction.
+ */
+export type ReponseJalonExposee = {
+  id: string;
+  idObjectif: string;
+  jalon: string;
+  texte: string;
+  eva: number | null;
+  creeLe: string;
+};
+
 export type ObjectifsApiResponse =
   | {
       ok: true;
@@ -144,6 +165,13 @@ export type ObjectifsApiResponse =
        * c'est l'écran qui le range sous sa version.
        */
       amendements: AmendementExpose[];
+      /**
+       * TOUTES les réponses d'étape du dossier, du plus récent au plus ancien,
+       * et jamais filtrées sur les seules têtes courantes — même motif qu'aux
+       * amendements. Le praticien doit pouvoir lire un récit écrit avant sa
+       * propre reformulation : c'est souvent lui qui l'a motivée.
+       */
+      reponsesJalon: ReponseJalonExposee[];
     }
   | { ok: true; objectif: ObjectifExpose }
   | { ok: false; reason: string; error: string };
@@ -281,7 +309,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, ratifications, amendements, consultation] = await Promise.all([
+    const [lignes, ratifications, amendements, reponsesJalon, consultation] = await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
         select: SELECTION_OBJECTIF,
@@ -300,6 +328,13 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       prisma.amendementObjectif.findMany({
         where: { idPatient },
         select: { id: true, idObjectif: true, texte: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
+      // LECTURE SEULE, TROISIÈME FOIS (6.0-B, LOT-05) : la réponse d'étape est
+      // une parole de patient sur lui-même, écrite depuis le seul portail.
+      prisma.reponseJalonObjectif.findMany({
+        where: { idPatient },
+        select: { id: true, idObjectif: true, jalon: true, texte: true, eva: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
       }),
       prisma.consultation.findFirst({
@@ -332,6 +367,16 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
         id: ligne.id,
         idObjectif: ligne.idObjectif,
         texte: ligne.texte,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
+      reponsesJalon: reponsesJalon.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        jalon: ligne.jalon,
+        texte: ligne.texte,
+        // BRUTE. Ni arrondi, ni normalisation, ni `?? 0` : le `null` d'un
+        // patient qui n'a pas répondu à l'échelle traverse la route intact.
+        eva: ligne.eva,
         creeLe: ligne.creeLe.toISOString(),
       })),
     });

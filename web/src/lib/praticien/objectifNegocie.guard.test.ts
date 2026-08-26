@@ -3,7 +3,13 @@ import path from 'path';
 import { describe, expect, it } from 'vitest';
 
 import type { AmendementExpose, ObjectifExpose } from '@/app/api/praticien/objectifs/route';
-import { objectifsCourants } from './objectifNegocie';
+import { JOURS_JALON } from '@/lib/equilibre/constants';
+import {
+  ANCRE_JALON,
+  estJalonObjectif,
+  JALONS_OBJECTIF,
+  objectifsCourants,
+} from './objectifNegocie';
 
 // Gardes structurelles de l'objectif négocié (Alliance 6.0-A, LOT-02).
 //
@@ -236,22 +242,34 @@ const DECOMPTE_RENDU = /\{\s*[\w.]+\.length(?:\.toLocaleString\([^)]*\))?\s*\}/g
  *   et `DC-30` demande précisément de le dire.
  * - `anterieures.length` — « Versions antérieures (3) », un repère de
  *   navigation dans la trajectoire.
- * - `valeur.length` et `texteAmendement.length` — les compteurs de caractères
- *   des SAISIES (`Compteur`, et la zone « le dire autrement »). Ils remplacent
- *   `maxLength` : le dépassement est visible, rien n'est coupé.
+ * - `valeur.length`, `texteAmendement.length` et `texteJalon.length` — les
+ *   compteurs de caractères des SAISIES (`Compteur`, la zone « le dire
+ *   autrement », et la réponse d'étape du LOT-05). Ils remplacent `maxLength` :
+ *   le dépassement est visible, rien n'est coupé.
  *
- * Aucun ne porte sur `amendements`, et c'est bien ce qu'on veut : la parole du
- * patient ne se compte pas (`D-110`, `DC-19`/`DC-20`).
+ * Aucun ne porte sur `amendements` ni sur `reponsesJalon`, et c'est bien ce
+ * qu'on veut : la parole du patient ne se compte pas (`D-110`, `D-111`,
+ * `DC-19`/`DC-20`). « Vous avez répondu à 2 étapes sur 3 » serait un taux
+ * d'atteinte déguisé en repère de navigation.
  */
 const DECOMPTES_LICITES = [
   'objectifs.length',
   'anterieures.length',
   'valeur.length',
   'texteAmendement.length',
+  'texteJalon.length',
 ];
 
 /** Un agrégat sur les mots du patient : moyenne, cumul, comparaison chiffrée. */
 const AGREGAT_AMENDEMENT = /amendements?\s*\.\s*(reduce|sort)\s*\(/i;
+
+/**
+ * LE MÊME INTERDIT SUR LES RÉPONSES D'ÉTAPE (LOT-05), et il compte davantage
+ * ici : ces lignes portent une EVA. `reponsesJalon.reduce(...)` serait une
+ * moyenne d'EVA — c'est-à-dire le calcul que `D-111` §3 interdit nommément, et
+ * celui qui se justifie le plus facilement en revue (« juste une tendance »).
+ */
+const AGREGAT_REPONSE_JALON = /reponsesJalon\s*\.\s*(reduce|sort)\s*\(/i;
 
 describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', () => {
   it.each(SURFACES_AMENDEMENT)('%s ne rend aucun décompte ni agrégat', (chemin) => {
@@ -270,6 +288,7 @@ describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', ()
     );
 
     expect(AGREGAT_AMENDEMENT.test(code)).toBe(false);
+    expect(AGREGAT_REPONSE_JALON.test(code)).toBe(false);
   });
 
   it('ANTI-VACUITÉ 2 — le détecteur mord : il TROUVE les décomptes licites', () => {
@@ -390,6 +409,24 @@ const CREATION_AMENDEMENT = /amendementObjectif\.create\b/;
  */
 const ECRITURES_AMENDEMENT_DESTRUCTRICES =
   /amendementObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
+
+/**
+ * LA TROISIÈME TABLE (LOT-05, `D-111`), et elle a ses propres constantes pour
+ * le motif déjà écrit deux fois : « une garde corrigée ne corrige pas sa
+ * sœur ». Réutiliser la regex de l'amendement en l'élargissant aurait fait
+ * dépendre les trois verdicts d'une seule expression.
+ *
+ * Ce que le patient dit de son avancée lui appartient comme le reste. Une route
+ * praticien qui créerait cette ligne écrirait un point d'étape que personne n'a
+ * vécu — et l'EVA qui l'accompagne serait un chiffre attribué à un patient qui
+ * ne l'a pas donné.
+ */
+const ECRIVAIN_REPONSE_JALON = 'src/app/api/portail/dossier/route.ts';
+
+const CREATION_REPONSE_JALON = /reponseJalonObjectif\.create\b/;
+
+const ECRITURES_REPONSE_JALON_DESTRUCTRICES =
+  /reponseJalonObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
 
 function fichiersSources(racine: string): string[] {
   const absolu = path.join(RACINE_WEB, racine);
@@ -512,6 +549,39 @@ describe('G5 — un objectif ne se met jamais à jour, il se succède', () => {
 
     expect(fautifs).not.toContain(ECRIVAIN_AMENDEMENT);
   });
+
+  it('une réponse d’étape ne se crée QUE depuis le portail', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ECRIVAIN_REPONSE_JALON);
+
+    const fautifs = fichiers.filter((chemin) =>
+      CREATION_REPONSE_JALON.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    expect(fautifs).toContain(ECRIVAIN_REPONSE_JALON);
+    expect(fautifs).toEqual([ECRIVAIN_REPONSE_JALON]);
+  });
+
+  it('une réponse d’étape ne se met jamais à jour ni ne se retire, nulle part', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ECRIVAIN_REPONSE_JALON);
+
+    const fautifs = fichiers.filter((chemin) =>
+      ECRITURES_REPONSE_JALON_DESTRUCTRICES.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Anti-vacuité : l'effacement du dossier supprime AUSSI ces lignes — le
+    // détecteur DOIT le trouver. S'il ne trouve plus rien, c'est que la table a
+    // quitté `effacerDossier`, pas que le dépôt est devenu sain.
+    expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
+    expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
+
+    expect(fautifs).not.toContain(ECRIVAIN_REPONSE_JALON);
+  });
 });
 
 // ── G6 — anti-diagnostic ────────────────────────────────────────────────────
@@ -556,5 +626,41 @@ describe('G6 — ni moteur clinique, ni code diagnostique', () => {
       );
     });
     expect(fautifs).toEqual([]);
+  });
+});
+
+/**
+ * G7 — LA TAXONOMIE DE JALON EST DÉRIVÉE, PAS RECOPIÉE (LOT-05, `D-111` §2).
+ *
+ * `JALONS_OBJECTIF` est écrit en littérale dans `objectifNegocie.ts`, et il le
+ * faut : ce module est importé par un composant `'use client'`, et G5 lui
+ * interdit nommément d'importer `@/lib/equilibre`. La dérivation
+ * « `JOURS_JALON` moins son ancre » ne peut donc pas s'exécuter au runtime —
+ * elle se VÉRIFIE ici, où l'import est sans conséquence.
+ *
+ * Vue rouge par mutation : ajouter `J120` à `JOURS_JALON`, retirer `J42` de
+ * `JALONS_OBJECTIF`, renommer l'ancre.
+ */
+describe('G7 — les jalons de l’objectif sont `JOURS_JALON` moins son ancre', () => {
+  it('la littérale du module pur est exactement la dérivation', () => {
+    const derives = Object.keys(JOURS_JALON).filter((jalon) => jalon !== ANCRE_JALON);
+
+    expect(derives.length).toBeGreaterThan(0); // anti-vacuité
+    expect([...JALONS_OBJECTIF]).toEqual(derives);
+  });
+
+  it('l’ancre est bien une clé de `JOURS_JALON`, et pas une chaîne orpheline', () => {
+    // Sans cette assertion, renommer l'ancre des deux côtés ferait passer le
+    // filtre ci-dessus sur une valeur qui n'existe plus — et `T0` redeviendrait
+    // un jalon acceptable en silence.
+    expect(Object.keys(JOURS_JALON)).toContain(ANCRE_JALON);
+  });
+
+  it('`estJalonObjectif` refuse l’ancre, en plus de l’inconnu', () => {
+    expect(estJalonObjectif('J21')).toBe(true); // anti-vacuité
+    expect(estJalonObjectif(ANCRE_JALON)).toBe(false);
+    expect(estJalonObjectif('J7')).toBe(false);
+    expect(estJalonObjectif('')).toBe(false);
+    expect(estJalonObjectif(21)).toBe(false);
   });
 });

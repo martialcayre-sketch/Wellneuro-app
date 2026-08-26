@@ -25,6 +25,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // l'écrivain unique est le portail. `create` est moqué EXPRÈS pour que
     // l'assertion « cette route ne l'écrit pas » compte zéro au lieu de lever.
     amendementObjectif: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    // LECTURE SEULE depuis cette route (6.0-B, LOT-05) : `create` est moqué
+    // expressément bien que jamais appelé — sans lui, l'assertion « la route
+    // praticien n'écrit pas cette table » lèverait au lieu de compter zéro.
+    reponseJalonObjectif: { findMany: vi.fn(), create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     // Alliance 6.0-B, LOT-03 : la reprise d'une proposition. `update` et
     // `delete` sont moqués EXPRÈS alors que la route ne les appelle jamais —
@@ -106,6 +110,7 @@ describe('/api/praticien/objectifs', () => {
     prisma.ratificationObjectif.findMany.mockResolvedValue([]);
     prisma.amendementObjectif.findMany.mockResolvedValue([]);
     prisma.amendementObjectif.findUnique.mockResolvedValue(null);
+    prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
     prisma.propositionObjectif.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.create.mockResolvedValue({ id: 'DIS_NEUVE' });
@@ -956,6 +961,72 @@ describe('/api/praticien/objectifs', () => {
       ]);
       const charge = await corpsDe(await GET(getRequest()));
       expect(charge.ratifications).toEqual({ OBJ_1: 'dit_autrement' });
+    });
+  });
+
+  // ── LE RÉCIT D'ÉTAPE (6.0-B, LOT-05) ──────────────────────────────────────
+
+  describe('les réponses d’étape sont SERVIES, jamais écrites ici', () => {
+    const ETAPE = {
+      id: 'REP_1',
+      idObjectif: 'OBJ_1',
+      jalon: 'J21',
+      texte: 'Je tiens trois soirs sur sept.',
+      eva: 6,
+      creeLe: new Date('2026-08-26T12:00:00.000Z'),
+    };
+
+    beforeEach(() => {
+      prisma.objectifNegocie.findMany.mockResolvedValue([ligneLue({ sourcePropositionId: null })]);
+    });
+
+    /** Le corps servi est typé `Record<string, unknown>` : on nomme la lecture
+     *  plutôt que de la répéter à chaque assertion. */
+    const servies = (charge: Record<string, unknown>) =>
+      charge.reponsesJalon as { eva: number | null }[];
+
+    it('sert la ligne telle quelle, EVA comprise, sans rien écrire', async () => {
+      prisma.reponseJalonObjectif.findMany.mockResolvedValue([ETAPE]);
+
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(charge.reponsesJalon).toEqual([
+        {
+          id: 'REP_1',
+          idObjectif: 'OBJ_1',
+          jalon: 'J21',
+          texte: 'Je tiens trois soirs sur sept.',
+          eva: 6,
+          creeLe: '2026-08-26T12:00:00.000Z',
+        },
+      ]);
+      // `reponduLe` est une colonne de DÉCLARATION, nulle par construction :
+      // la servir inviterait un écran à la combler par `creeLe`.
+      expect(Object.keys(servies(charge)[0])).not.toContain('reponduLe');
+      expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('UN `eva` NUL TRAVERSE LA ROUTE INTACT — jamais replié sur zéro', async () => {
+      prisma.reponseJalonObjectif.findMany.mockResolvedValue([{ ...ETAPE, eva: null }]);
+
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(servies(charge)[0].eva).toBeNull();
+    });
+
+    it('un `eva` à zéro reste zéro — c’est une réponse, pas une absence', async () => {
+      prisma.reponseJalonObjectif.findMany.mockResolvedValue([{ ...ETAPE, eva: 0 }]);
+
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(servies(charge)[0].eva).toBe(0);
+    });
+
+    it('les réponses d’étape N’ENTRENT PAS dans l’état de ratification', async () => {
+      // Dire où l'on en est n'est ni ratifier, ni contester, ni reformuler.
+      prisma.reponseJalonObjectif.findMany.mockResolvedValue([ETAPE]);
+      prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+      prisma.amendementObjectif.findMany.mockResolvedValue([]);
+
+      const charge = await corpsDe(await GET(getRequest()));
+      expect(charge.ratifications).toEqual({ OBJ_1: 'en_attente' });
     });
   });
 });

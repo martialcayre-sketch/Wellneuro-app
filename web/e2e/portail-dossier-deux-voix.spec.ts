@@ -18,9 +18,13 @@
 // seul dossier de fixture (`D-075` : aucun seed ni E2E ne vise un dossier réel).
 import { test, expect } from '@playwright/test';
 import {
+  cleanupAncreJalon,
   closePrisma,
   lireRatifications,
+  lireReponsesJalon,
   nettoyerDossierDeuxVoix,
+  provisionAncreJalon,
+  provisionnerRatification,
   provisionnerAccuseCadre,
   provisionnerDossierDeuxVoix,
 } from './helpers/db';
@@ -47,7 +51,11 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
 
   test.afterAll(async () => {
     await nettoyerDossierDeuxVoix(PATIENT.idPatient);
-    await closePrisma();
+    // PAS de `closePrisma()` ICI : une seconde série vit dans ce fichier, et
+    // les `afterAll` d'un `describe` tournent à la fin de CE describe, pas du
+    // fichier. Fermer le client ici le retirait sous les pieds de la série
+    // suivante — elle survivait par la reconnexion automatique de Prisma,
+    // c'est-à-dire par chance. Le client se ferme une fois, au dernier bloc.
   });
 
   test.beforeEach(async ({ context }) => {
@@ -143,5 +151,119 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
     expect(reponse.status()).toBe(401);
 
     await contexteAnonyme.close();
+  });
+});
+
+// ── OÙ J'EN SUIS : LE PARCOURS D'ÉTAPE (6.0-B, LOT-05, `D-111`) ──────────────
+//
+// Série SÉPARÉE, et pour une raison de fond : elle exige un T0 confirmé, que la
+// série précédente n'a pas — et ne doit pas avoir, l'état « aucun cycle » étant
+// celui qu'elle vérifie implicitement. Poser l'ancre dans le `beforeAll` commun
+// aurait ouvert une fenêtre de jalon sous les tests de ratification.
+test.describe.serial('Portail — où j’en suis, à cette étape', () => {
+  let idObjectif = '';
+
+  test.beforeAll(async () => {
+    ({ idObjectif } = await provisionnerDossierDeuxVoix(PATIENT.idPatient));
+    await provisionnerAccuseCadre(PATIENT.idPatient);
+    // T0 confirmé il y a 21 jours : la fenêtre du J21 est ouverte MAINTENANT.
+    await provisionAncreJalon(PATIENT.idPatient, 21);
+    // La question ne se pose que sur un objectif dont le patient a dit qu'il
+    // était le sien : on ratifie en base, le geste lui-même étant couvert par
+    // la série précédente.
+    await provisionnerRatification(PATIENT.idPatient, idObjectif);
+  });
+
+  test.afterAll(async () => {
+    await cleanupAncreJalon();
+    await nettoyerDossierDeuxVoix(PATIENT.idPatient);
+    await closePrisma();
+  });
+
+  test.beforeEach(async ({ context }) => {
+    await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+  });
+
+  test('la question s’affiche, et l’échelle n’est pré-remplie par rien', async ({ page }) => {
+    await page.goto(`/portail/${JETON}/dossier`);
+    await expect(page.getByText('Où en êtes-vous par rapport à cet objectif ?')).toBeVisible();
+
+    // Aucune valeur choisie d'avance : un chiffre pré-sélectionné se déposerait
+    // dans le dossier sans que le patient l'ait voulu (`DC-24`).
+    await expect(page.locator('[aria-pressed="true"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Retirer ma réponse à l’échelle' })).toHaveCount(
+      0,
+    );
+  });
+
+  test('ÉCRIRE SANS L’ÉCHELLE dépose `null`, jamais zéro', async ({ page }) => {
+    await page.goto(`/portail/${JETON}/dossier`);
+    await page
+      .getByLabel('Où en êtes-vous par rapport à cet objectif ?')
+      .fill('Je tiens trois soirs sur sept, et le week-end ça repart.');
+    await page.getByRole('button', { name: 'Envoyer où j’en suis' }).click();
+
+    await expect(page.getByText('Votre praticien lira où vous en êtes')).toBeVisible();
+    // Le patient se relit, et aucune échelle n'apparaît sous son texte.
+    await expect(page.getByText('Où vous en étiez (J21)')).toBeVisible();
+    await expect(page.getByText('Sur l’échelle')).toHaveCount(0);
+
+    const lignes = await lireReponsesJalon(PATIENT.idPatient);
+    expect(lignes).toEqual([
+      { jalon: 'J21', texte: 'Je tiens trois soirs sur sept, et le week-end ça repart.', eva: null },
+    ]);
+  });
+
+  test('RÉPONDRE À NOUVEAU AJOUTE UNE LIGNE, et le zéro est une valeur', async ({ page }) => {
+    await page.goto(`/portail/${JETON}/dossier`);
+    await page.getByLabel('Où en êtes-vous par rapport à cet objectif ?').fill('En fait, rien n’a bougé.');
+    await page.getByRole('button', { name: '0', exact: true }).click();
+    await page.getByRole('button', { name: 'Envoyer où j’en suis' }).click();
+
+    await expect(page.getByText('Sur l’échelle : 0')).toBeVisible();
+
+    // DEUX lignes sur le MÊME jalon — aucune contrainte d'unicité, rien n'est
+    // écrasé (`D-111` §5). Et le zéro est bien stocké comme un zéro.
+    const lignes = await lireReponsesJalon(PATIENT.idPatient);
+    expect(lignes).toHaveLength(2);
+    expect(lignes[0]).toEqual({ jalon: 'J21', texte: 'En fait, rien n’a bougé.', eva: 0 });
+  });
+
+  test('UN JALON HORS FENÊTRE EST REFUSÉ, même posté directement', async ({ page }) => {
+    // L'écran ne propose que le J21 ; la borne doit tenir sans lui.
+    const reponse = await page.request.post('/api/portail/dossier', {
+      data: {
+        geste: 'reponse_jalon',
+        idObjectif,
+        jalon: 'J90',
+        texte: 'Un texte parfaitement valide, à la mauvaise étape.',
+      },
+    });
+    expect(reponse.status()).toBe(409);
+
+    const lignes = await lireReponsesJalon(PATIENT.idPatient);
+    expect(lignes).toHaveLength(2);
+  });
+
+  test('UNE EVA DÉCIMALE EST REFUSÉE — le cast INTEGER l’aurait arrondie', async ({ page }) => {
+    const reponse = await page.request.post('/api/portail/dossier', {
+      data: { geste: 'reponse_jalon', idObjectif, jalon: 'J21', texte: 'Entre deux.', eva: 5.5 },
+    });
+    expect(reponse.status()).toBe(400);
+    expect((await reponse.json()).reason).toBe('eva_invalide');
+
+    const lignes = await lireReponsesJalon(PATIENT.idPatient);
+    expect(lignes).toHaveLength(2);
+  });
+
+  test('`T0` EST REFUSÉ — c’est l’ancre, pas une étape', async ({ page }) => {
+    const reponse = await page.request.post('/api/portail/dossier', {
+      data: { geste: 'reponse_jalon', idObjectif, jalon: 'T0', texte: 'Au tout début.' },
+    });
+    expect(reponse.status()).toBe(400);
+    expect((await reponse.json()).reason).toBe('jalon_invalide');
+
+    const lignes = await lireReponsesJalon(PATIENT.idPatient);
+    expect(lignes).toHaveLength(2);
   });
 });

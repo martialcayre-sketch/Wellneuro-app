@@ -600,3 +600,157 @@ export function preparerAmendement(entree: EntreeAmendement): PreparationAmendem
 
   return { ok: true, donnees: { idPatient: entree.idPatient, idObjectif, texte } };
 }
+
+// ---------------------------------------------------------------------------
+// LOT-05 — la réponse d'étape : où le patient en est PAR RAPPORT À SON OBJECTIF.
+// ---------------------------------------------------------------------------
+
+/**
+ * L'ANCRE des fenêtres de jalon, nommée. Ce n'est pas une étape : au moment où
+ * l'objectif se pose, il n'y a rien derrière soi, et « où en êtes-vous par
+ * rapport à votre objectif ? » n'a pas de réponse. C'est aussi la valeur que
+ * `resoudreJalonDu` rend pour un patient SANS cycle confirmé — d'où la
+ * nécessité de la refuser ici, et pas seulement en base.
+ */
+export const ANCRE_JALON = 'T0';
+
+/**
+ * Les trois jalons auxquels une réponse d'étape peut se rattacher :
+ * `JOURS_JALON` MOINS SON ANCRE.
+ *
+ * POURQUOI UNE LITTÉRALE PLUTÔT QU'UN `Object.keys(JOURS_JALON)` ICI. Ce module
+ * est importé par `DossierDeuxVoixView`, un composant `'use client'` :
+ * `@/lib/equilibre/constants` y ferait entrer les tables cliniques entières
+ * dans le bundle patient, pour trois chaînes de caractères. La dérivation est
+ * donc VÉRIFIÉE plutôt qu'exécutée — `objectifNegocie.guard.test.ts` importe
+ * `JOURS_JALON`, en retire `ANCRE_JALON` par son nom, et compare. Ajouter un
+ * `J120`, renommer `T0`, réordonner : la garde rougit.
+ *
+ * Et ce n'est pas seulement une précaution de bundle : la garde G5 de ce même
+ * banc interdit nommément à ce module d'importer `@/lib/equilibre`. L'import
+ * direct serait rouge de toute façon.
+ *
+ * La base tient la même liste (CHECK `reponses_jalon_objectif_jalon_check`) et
+ * le contrat SQL la lit dans la DÉFINITION de la contrainte. Trois endroits, un
+ * seul énoncé, et deux gardes qui refusent qu'ils divergent.
+ */
+export const JALONS_OBJECTIF = ['J21', 'J42', 'J90'] as const;
+
+export type JalonObjectif = (typeof JALONS_OBJECTIF)[number];
+
+export function estJalonObjectif(valeur: unknown): valeur is JalonObjectif {
+  return typeof valeur === 'string' && (JALONS_OBJECTIF as readonly string[]).includes(valeur);
+}
+
+/**
+ * Longueur maximale d'une réponse d'étape. Déclarée à part, comme les autres :
+ * le jour où l'une bouge, les autres ne suivent pas sans qu'on l'ait voulu.
+ */
+export const LONGUEUR_MAX_REPONSE_JALON = 4000;
+
+/**
+ * Bornes de saisie de l'EVA — PUREMENT TECHNIQUES, et identifiées comme telles
+ * (`DC-19`/`DC-20`). Ce ne sont ni un seuil, ni une bande, ni une direction :
+ * rien ne lit cette valeur pour en conclure quoi que ce soit, aucune moyenne
+ * n'en est tirée, elle n'entre dans aucun moteur. Régime de `D-088`, appliqué
+ * sans l'élargir.
+ */
+export const EVA_MIN = 0;
+export const EVA_MAX = 10;
+
+export type RefusReponseJalon =
+  | 'objectif_absent'
+  | 'jalon_absent'
+  | 'jalon_invalide'
+  | 'texte_absent'
+  | 'texte_trop_long'
+  | 'eva_invalide';
+
+/**
+ * Ce qui part en base. AUCUNE DATE, pour les motifs déjà écrits deux fois plus
+ * haut : `creeLe` est posée par `@default(now())`, et `reponduLe` est une
+ * colonne de DÉCLARATION qui reste nulle tant que personne ne déclare de date.
+ *
+ * `eva` vaut `null` quand le patient n'a pas répondu à l'échelle — JAMAIS `0`
+ * (`DC-24`) : une donnée absente n'est pas une donnée basse, et « 0 » sur une
+ * EVA se lit comme une réponse.
+ */
+export type DonneesReponseJalon = {
+  idPatient: string;
+  idObjectif: string;
+  jalon: JalonObjectif;
+  texte: string;
+  eva: number | null;
+};
+
+export type PreparationReponseJalon =
+  | { ok: true; donnees: DonneesReponseJalon }
+  | { ok: false; raison: RefusReponseJalon };
+
+export type EntreeReponseJalon = {
+  idPatient: string;
+  idObjectif: string | null | undefined;
+  jalon: unknown;
+  texte: string | null | undefined;
+  eva: unknown;
+};
+
+/**
+ * Prépare UNE réponse d'étape. Elle ne remplace jamais rien : répondre deux
+ * fois au même jalon fait deux lignes (aucun UNIQUE en base, `D-111` §5), et la
+ * lecture retient la plus récente.
+ *
+ * LE TEXTE EST OBLIGATOIRE, ET L'EVA NE PEUT PAS LE REMPLACER. Une ligne au
+ * texte vide serait un chiffre nu déposé dans un dossier — précisément ce que
+ * ce lot refuse de produire. Refus, jamais troncature (patron du portail).
+ *
+ * L'EVA EST REFUSÉE ICI, PAS SEULEMENT EN BASE, et l'écart n'est pas
+ * décoratif : la colonne est un `INTEGER`, si bien que `5.5` serait ARRONDI À 6
+ * par le cast AVANT que le CHECK ne s'exécute. Le CHECK verrait 6, l'accepterait,
+ * et le dossier porterait une valeur que le patient n'a pas donnée. Un décimal
+ * se refuse donc au bord, en amont du cast.
+ *
+ * `T0` EST REFUSÉ ICI POUR UNE RAISON SYMÉTRIQUE : `resoudreJalonDu` le rend
+ * pour tout patient sans cycle confirmé. Laissé passer, il atteindrait le CHECK,
+ * lèverait un `23514`, et le patient verrait un 500 sur un chemin qu'aucun
+ * palier de test ne traverse. Il se refuse en français, avant la base.
+ *
+ * Ce module est PUR : il ne vérifie ni l'existence de `idObjectif`, ni son
+ * appartenance au dossier, ni qu'il est une tête de chaîne — `id_objectif` n'a
+ * pas de clé étrangère (référence souple assumée par la migration). Ces
+ * vérifications appartiennent à la route, qui seule lit la base.
+ */
+export function preparerReponseJalon(entree: EntreeReponseJalon): PreparationReponseJalon {
+  const idObjectif = (entree.idObjectif ?? '').trim();
+  if (idObjectif.length === 0) return { ok: false, raison: 'objectif_absent' };
+
+  const jalonBrut = typeof entree.jalon === 'string' ? entree.jalon.trim() : entree.jalon;
+  if (jalonBrut === undefined || jalonBrut === null || jalonBrut === '') {
+    return { ok: false, raison: 'jalon_absent' };
+  }
+  if (!estJalonObjectif(jalonBrut)) return { ok: false, raison: 'jalon_invalide' };
+
+  const texte = (entree.texte ?? '').trim();
+  if (texte.length === 0) return { ok: false, raison: 'texte_absent' };
+  if (texte.length > LONGUEUR_MAX_REPONSE_JALON) return { ok: false, raison: 'texte_trop_long' };
+
+  // Absence et valeur sont deux choses. `null`/`undefined` = le patient n'a pas
+  // répondu à l'échelle ; tout le reste doit être un ENTIER dans les bornes.
+  // `typeof === 'number'` d'abord : une chaîne « 5 » n'est pas une EVA, et
+  // l'accepter par coercition ouvrirait la porte à `''`, qui vaut 0.
+  let eva: number | null = null;
+  if (entree.eva !== null && entree.eva !== undefined) {
+    if (typeof entree.eva !== 'number' || !Number.isInteger(entree.eva)) {
+      return { ok: false, raison: 'eva_invalide' };
+    }
+    if (entree.eva < EVA_MIN || entree.eva > EVA_MAX) {
+      return { ok: false, raison: 'eva_invalide' };
+    }
+    eva = entree.eva;
+  }
+
+  return {
+    ok: true,
+    donnees: { idPatient: entree.idPatient, idObjectif, jalon: jalonBrut, texte, eva },
+  };
+}

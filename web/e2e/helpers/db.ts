@@ -89,6 +89,11 @@ export async function resetPortailState(idPatient: string): Promise<void> {
  */
 export async function nettoyerDossierDeuxVoix(idPatient: string): Promise<void> {
   await prisma.desaccordComprehension.deleteMany({ where: { idPatient } });
+  // Les gestes du patient sur son objectif, effacés AVANT les objectifs
+  // eux-mêmes — `id_objectif` est une référence souple, mais laisser des
+  // lignes orphelines ferait fuir l'état d'un run dans le suivant.
+  await prisma.reponseJalonObjectif.deleteMany({ where: { idPatient } });
+  await prisma.amendementObjectif.deleteMany({ where: { idPatient } });
   await prisma.ratificationObjectif.deleteMany({ where: { idPatient } });
   await prisma.syntheseComprehension.deleteMany({ where: { idPatient } });
   await prisma.entreeCeQuiCompte.deleteMany({ where: { idPatient } });
@@ -493,6 +498,68 @@ export async function provisionEpisodeTrajectoire(idPatient: string): Promise<Da
 
 export async function cleanupEpisodeTrajectoire(): Promise<void> {
   await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_E2E } });
+}
+
+/**
+ * L'ANCRE D'UNE FENÊTRE DE JALON, posée pour que `jalonObjectifDu` en ouvre une
+ * MAINTENANT (Alliance 6.0-B, LOT-05).
+ *
+ * `confirmedAt` est calculé À REBOURS DE L'INSTANT COURANT, jamais figé au
+ * calendrier : les fenêtres se mesurent contre l'horloge du serveur, et une
+ * date en dur ouvrirait la bonne fenêtre le jour de son écriture puis plus
+ * jamais. C'est exactement le défaut qu'un E2E est censé attraper.
+ *
+ * Id dédié, distinct de celui de la Spirale : les deux fixtures visent des
+ * patients différents et ne doivent pas s'effacer l'une l'autre.
+ */
+const ID_EPISODE_JALON_E2E = 'ep_e2e_ancre_jalon';
+
+export async function provisionAncreJalon(idPatient: string, joursDepuisT0: number): Promise<Date> {
+  await cleanupAncreJalon();
+  const dateT0 = new Date(Date.now() - joursDepuisT0 * 24 * 60 * 60 * 1000);
+  await prisma.assessmentEpisode.create({
+    data: {
+      id: ID_EPISODE_JALON_E2E,
+      idPatient,
+      milestone: 'T0',
+      targetAt: dateT0,
+      confirmedAt: dateT0,
+      payload: { source: 'e2e-ancre-jalon' },
+      payloadHash: 'e2e-ancre-jalon',
+      contractVersion: 'objets-cliniques-v1',
+      cycleId: ID_EPISODE_JALON_E2E,
+      versionScore: 'v1',
+    },
+  });
+  return dateT0;
+}
+
+export async function cleanupAncreJalon(): Promise<void> {
+  await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_JALON_E2E } });
+}
+
+/**
+ * Une ratification posée EN BASE, pour amener un dossier de fixture à l'état
+ * qu'un autre parcours exige. Le geste lui-même est couvert par sa propre
+ * série : le rejouer par l'écran ferait dépendre le parcours d'étape d'un
+ * parcours qui n'est pas son sujet.
+ */
+export async function provisionnerRatification(
+  idPatient: string,
+  idObjectif: string,
+): Promise<void> {
+  await prisma.ratificationObjectif.create({ data: { idPatient, idObjectif, sens: 'ratifie' } });
+}
+
+/** Les réponses d'étape d'un dossier de fixture, du plus récent au plus ancien. */
+export async function lireReponsesJalon(
+  idPatient: string,
+): Promise<{ jalon: string; texte: string; eva: number | null }[]> {
+  return prisma.reponseJalonObjectif.findMany({
+    where: { idPatient },
+    select: { jalon: true, texte: true, eva: true },
+    orderBy: { creeLe: 'desc' },
+  });
 }
 
 // ---------------------------------------------------------------------------

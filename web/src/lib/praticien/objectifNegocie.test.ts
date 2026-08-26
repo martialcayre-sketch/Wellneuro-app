@@ -14,7 +14,14 @@ import {
   objectifsCourants,
   preparerObjectif,
   preparerRatification,
+  ANCRE_JALON,
+  EVA_MAX,
+  EVA_MIN,
+  JALONS_OBJECTIF,
+  LONGUEUR_MAX_REPONSE_JALON,
+  preparerReponseJalon,
   type EntreeObjectif,
+  type EntreeReponseJalon,
 } from './objectifNegocie';
 
 const BASE: EntreeObjectif = {
@@ -537,5 +544,139 @@ describe('preparerRatification — le geste du patient (LOT-06)', () => {
         { id: 'r2', idObjectif: 'obj-1', sens: second.donnees.sens, creeLe: new Date(2) },
       ]),
     ).toBe('conteste');
+  });
+});
+
+describe('preparerReponseJalon — où j’en suis, à un jalon (LOT-05)', () => {
+  const base: EntreeReponseJalon = {
+    idPatient: 'PAT_SEED_01',
+    idObjectif: 'obj-1',
+    jalon: 'J21',
+    texte: 'Je dors mieux depuis deux semaines, mais les réveils reviennent le week-end.',
+    eva: 6,
+  };
+
+  it('accepte une réponse complète, sans jamais poser de date', () => {
+    const prep = preparerReponseJalon(base);
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+
+    expect(prep.donnees.jalon).toBe('J21');
+    expect(prep.donnees.eva).toBe(6);
+    // `creeLe` est posée par la base, `reponduLe` reste nulle : le module ne
+    // fabrique aucune date, et une déclaration que le patient n'a pas faite
+    // n'apparaît pas dans son dossier.
+    expect(Object.keys(prep.donnees)).not.toContain('creeLe');
+    expect(Object.keys(prep.donnees)).not.toContain('reponduLe');
+  });
+
+  it('L’EVA ABSENTE VAUT `null`, JAMAIS ZÉRO (DC-24)', () => {
+    for (const absente of [null, undefined]) {
+      const prep = preparerReponseJalon({ ...base, eva: absente });
+      expect(prep.ok).toBe(true);
+      if (prep.ok) expect(prep.donnees.eva).toBeNull();
+    }
+  });
+
+  it('accepte les deux bornes, refuse ce qui les dépasse', () => {
+    for (const borne of [EVA_MIN, EVA_MAX]) {
+      const prep = preparerReponseJalon({ ...base, eva: borne });
+      expect(prep.ok).toBe(true);
+      if (prep.ok) expect(prep.donnees.eva).toBe(borne);
+    }
+    expect(preparerReponseJalon({ ...base, eva: EVA_MIN - 1 })).toEqual({
+      ok: false,
+      raison: 'eva_invalide',
+    });
+    expect(preparerReponseJalon({ ...base, eva: EVA_MAX + 1 })).toEqual({
+      ok: false,
+      raison: 'eva_invalide',
+    });
+  });
+
+  it('REFUSE UNE EVA DÉCIMALE — la base ne le pourrait pas', () => {
+    // La colonne est un INTEGER : `5.5` serait ARRONDI à 6 par le cast AVANT
+    // que le CHECK ne s'exécute. Le CHECK verrait 6 et l'accepterait. Le
+    // dossier porterait alors une valeur que le patient n'a pas donnée — c'est
+    // pourquoi ce refus vit ICI et pas seulement en base.
+    expect(preparerReponseJalon({ ...base, eva: 5.5 })).toEqual({
+      ok: false,
+      raison: 'eva_invalide',
+    });
+  });
+
+  it('refuse une EVA qui n’est pas un nombre, sans coercition', () => {
+    // `''` et `[]` valent 0 après coercition : les accepter déposerait un zéro
+    // que personne n'a saisi.
+    for (const pasUnNombre of ['5', '', [], {}, true, NaN]) {
+      expect(preparerReponseJalon({ ...base, eva: pasUnNombre })).toEqual({
+        ok: false,
+        raison: 'eva_invalide',
+      });
+    }
+  });
+
+  it('REFUSE `T0` — c’est l’ancre, pas une étape', () => {
+    // `resoudreJalonDu` rend `T0` pour tout patient sans cycle confirmé.
+    // Laissé passer, il lèverait un 23514 en base et le patient verrait un 500.
+    expect(preparerReponseJalon({ ...base, jalon: ANCRE_JALON })).toEqual({
+      ok: false,
+      raison: 'jalon_invalide',
+    });
+  });
+
+  it('refuse un jalon hors taxonomie, et distingue l’absent de l’invalide', () => {
+    expect(preparerReponseJalon({ ...base, jalon: 'J7' })).toEqual({
+      ok: false,
+      raison: 'jalon_invalide',
+    });
+    for (const absent of [null, undefined, '', '   ']) {
+      expect(preparerReponseJalon({ ...base, jalon: absent })).toEqual({
+        ok: false,
+        raison: 'jalon_absent',
+      });
+    }
+  });
+
+  it('accepte les trois jalons de la taxonomie, et eux seuls', () => {
+    for (const jalon of JALONS_OBJECTIF) {
+      const prep = preparerReponseJalon({ ...base, jalon });
+      expect(prep.ok).toBe(true);
+    }
+  });
+
+  it('LE TEXTE EST OBLIGATOIRE — l’EVA ne le remplace pas', () => {
+    // Une ligne au texte vide portant une EVA serait un chiffre nu déposé dans
+    // un dossier : exactement ce que ce lot refuse de produire.
+    expect(preparerReponseJalon({ ...base, texte: '   ', eva: 8 })).toEqual({
+      ok: false,
+      raison: 'texte_absent',
+    });
+  });
+
+  it('REFUSE un texte trop long, ne le tronque jamais', () => {
+    const prep = preparerReponseJalon({
+      ...base,
+      texte: 'a'.repeat(LONGUEUR_MAX_REPONSE_JALON + 1),
+    });
+    expect(prep).toEqual({ ok: false, raison: 'texte_trop_long' });
+  });
+
+  it('refuse une réponse qui ne vise aucun objectif', () => {
+    expect(preparerReponseJalon({ ...base, idObjectif: '  ' })).toEqual({
+      ok: false,
+      raison: 'objectif_absent',
+    });
+  });
+
+  it('répondre deux fois au même jalon prépare DEUX lignes, rien n’est écrasé', () => {
+    const premiere = preparerReponseJalon({ ...base, texte: 'Ça avance doucement.', eva: 4 });
+    const seconde = preparerReponseJalon({ ...base, texte: 'En fait, j’ai rechuté.', eva: 2 });
+    expect(premiere.ok && seconde.ok).toBe(true);
+    if (!premiere.ok || !seconde.ok) return;
+
+    // Rien dans ce que le module prépare ne désigne la ligne précédente.
+    expect(Object.keys(seconde.donnees)).not.toContain('id');
+    expect(Object.keys(seconde.donnees)).not.toContain('supersedesReponseId');
   });
 });
