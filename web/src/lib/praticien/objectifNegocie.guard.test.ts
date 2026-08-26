@@ -265,11 +265,37 @@ const AGREGAT_AMENDEMENT = /amendements?\s*\.\s*(reduce|sort)\s*\(/i;
 
 /**
  * LE MÊME INTERDIT SUR LES RÉPONSES D'ÉTAPE (LOT-05), et il compte davantage
- * ici : ces lignes portent une EVA. `reponsesJalon.reduce(...)` serait une
- * moyenne d'EVA — c'est-à-dire le calcul que `D-111` §3 interdit nommément, et
- * celui qui se justifie le plus facilement en revue (« juste une tendance »).
+ * ici : ces lignes portent une EVA. Une moyenne d'EVA est le calcul que
+ * `D-111` §3 interdit nommément, et celui qui se justifie le plus facilement en
+ * revue (« juste une tendance »).
+ *
+ * LE MOTIF NE NOMME PLUS LA COLLECTION — c'est la correction d'un trou réel,
+ * et c'est la TROISIÈME fois que ce dépôt le rencontre. Écrit
+ * `reponsesJalon\.(reduce|sort)`, il tenait par le nom que l'auteur avait
+ * choisi : le panneau introduit l'alias `const etapes = reponsesJalon.filter(…)`
+ * UNE LIGNE PLUS LOIN, et `etapes.reduce(…)` passait les deux bancs au vert
+ * (mutation jouée en revue du LOT-05). Exactement la cicatrice écrite plus haut
+ * à propos de `{ceQuiCompte.length}` et de `{siens.length}`.
+ *
+ * Donc : `reduce`/`sort` INTERDITS SUR TOUT IDENTIFIANT de ces deux surfaces,
+ * puis les cas licites nommés un par un ci-dessous. Un renommage ne peut plus
+ * franchir la garde ; un tri légitime doit passer par cette liste.
  */
-const AGREGAT_REPONSE_JALON = /reponsesJalon\s*\.\s*(reduce|sort)\s*\(/i;
+const AGREGAT_RENDU = /\b([\w.]+)\s*\.\s*(reduce|sort)\s*\(/g;
+
+/**
+ * LES TRIS ET RÉDUCTIONS LICITES DE CES DEUX SURFACES, nommés.
+ *
+ * - `trajectoire.lignes` / `lignes` — l'ordre chronologique d'une chaîne
+ *   d'objectifs, celui que le cockpit rend. Trier des VERSIONS par leur date
+ *   n'est pas mesurer une parole.
+ * - `Object.keys` / `Object.entries` — ordonnancement de clés techniques.
+ *
+ * Aucun ne porte sur `amendements`, `reponsesJalon`, ni sur un alias de l'un
+ * des deux : la parole du patient ne se compte ni ne se compare (`D-110`,
+ * `D-111`, `DC-19`/`DC-20`).
+ */
+const AGREGATS_LICITES = ['trajectoire.lignes', 'lignes', 'Object.keys', 'Object.entries'];
 
 describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', () => {
   it.each(SURFACES_AMENDEMENT)('%s ne rend aucun décompte ni agrégat', (chemin) => {
@@ -288,7 +314,17 @@ describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', ()
     );
 
     expect(AGREGAT_AMENDEMENT.test(code)).toBe(false);
-    expect(AGREGAT_REPONSE_JALON.test(code)).toBe(false);
+
+    // L'AGRÉGAT, SANS NOMMER LA COLLECTION. `AGREGAT_RENDU` est global : il
+    // porte `lastIndex`, et le réutiliser sans le remettre à zéro ferait sauter
+    // des occurrences d'un fichier à l'autre.
+    AGREGAT_RENDU.lastIndex = 0;
+    const agregats = [...code.matchAll(AGREGAT_RENDU)].map((m) => m[1]);
+    const agregatsFautifs = agregats.filter((cible) => !AGREGATS_LICITES.includes(cible));
+    expect(
+      agregatsFautifs,
+      `Agrégat rendu sur une surface de parole patient : ${agregatsFautifs.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('ANTI-VACUITÉ 2 — le détecteur mord : il TROUVE les décomptes licites', () => {
@@ -345,9 +381,22 @@ describe('G3 — la priorité est un libellé, jamais un rang', () => {
 
 // ── G5 — append-only opposable ──────────────────────────────────────────────
 
-/** Répertoires applicatifs sous garde. Les bancs sont exclus : un banc DOIT
- *  pouvoir nommer `update` pour asserter qu'il n'est jamais appelé. */
-const RACINES_SOUS_GARDE = ['src/app/api', 'src/lib'];
+/**
+ * Répertoires applicatifs sous garde. Les bancs sont exclus : un banc DOIT
+ * pouvoir nommer `update` pour asserter qu'il n'est jamais appelé.
+ *
+ * `src/app` ET `src/components` Y SONT ENTRÉS AU LOT-05 (relevé en revue). Le
+ * balayage s'arrêtait à `src/app/api` et `src/lib`, si bien qu'un Server Action
+ * `'use server'` posé dans un COMPOSANT pouvait créer une ratification, un
+ * amendement ou une réponse d'étape sans faire rougir personne — mutation jouée
+ * en revue, 26/26 verts. La garde affirmait « l'écrivain est unique » et ne
+ * regardait pas là où l'écrivain le plus plausible se cacherait aujourd'hui.
+ *
+ * `src/app` couvre aussi les routes : `src/app/api` en est un sous-ensemble, et
+ * le doublon ferait compter deux fois les mêmes fichiers. On garde donc la
+ * racine large.
+ */
+const RACINES_SOUS_GARDE = ['src/app', 'src/components', 'src/lib'];
 
 /**
  * L'UNIQUE exception, et elle est NOMMÉE : l'effacement d'un dossier est un

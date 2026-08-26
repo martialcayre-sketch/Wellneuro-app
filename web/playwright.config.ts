@@ -91,6 +91,10 @@ if (webServerMode !== 'dev' && webServerMode !== 'start') {
 
 export default defineConfig({
   testDir: 'e2e',
+  // Répare l'état laissé par un run TUÉ avant que le moindre spec ne lise la
+  // base — un `globalTeardown` ne tournerait pas davantage qu'un `afterAll`
+  // dans ce cas. Motif complet dans le fichier.
+  globalSetup: './e2e/globalSetup.ts',
   fullyParallel: false,
   // Un seul worker : le spec manipule directement l'état DB du patient fictif
   // (Michel Dogné, PAT_SEED_03) — des runs concurrents sur le même patient

@@ -682,7 +682,88 @@ describe('DossierDeuxVoixView', () => {
       render(<DossierDeuxVoixView token="TOK" />);
 
       await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
-      expect(texteRendu()).not.toContain('Un récit qui parle d’un autre texte.');
+
+      // PAS SOUS CETTE VERSION — mais il n'a pas disparu pour autant : il est
+      // rendu à part, sous son propre libellé. Ce cas ASSERTAIT LA DISPARITION
+      // (relevé en revue du LOT-05) : il verrouillait le défaut qu'il aurait dû
+      // interdire. Le voisinage compte, pas seulement la présence.
+      const rendu = texteRendu();
+      const positionTexte = rendu.indexOf('Un récit qui parle d’un autre texte.');
+      expect(positionTexte).toBeGreaterThan(-1);
+      expect(rendu.indexOf('sur une formulation précédente')).toBeLessThan(positionTexte);
+    });
+
+    it('MAIS IL NE DISPARAÎT PAS : le patient relit son récit après une reformulation', async () => {
+      // Le scénario complet : le patient ratifie `v1`, raconte où il en est,
+      // le praticien reformule en `v2`. La route ne sert que les TÊTES — donc
+      // `v1` n'est plus à l'écran. Ce que le patient a écrit doit rester
+      // lisible : le praticien, lui, continue de le voir au cockpit.
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [{ ...RATIFIE, id: 'OBJ_2', enoncePatient: 'La version reformulée.' }],
+            reponsesJalon: [
+              {
+                id: 'REP_4',
+                idObjectif: 'OBJ_1',
+                jalon: 'J21',
+                texte: 'Ce que j’avais mis dix minutes à écrire.',
+                eva: 7,
+                creeLe: '2026-08-26T12:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce que j’avais mis dix minutes à écrire.'));
+      expect(texteRendu()).toContain('sur une formulation précédente');
+      // SANS le jalon ni l'EVA sur ce bloc : rattacher « J21 » à un texte qui
+      // n'est plus à l'écran demanderait au patient de reconstituer par rapport
+      // à quoi il se situait.
+      expect(texteRendu()).not.toContain('Où vous en étiez (J21)');
+    });
+
+    it('HORS FENÊTRE, le motif du serveur est DIT — pas un écran vide', async () => {
+      // `jalonObjectifDu` écrit vouloir empêcher exactement cela : « un écran
+      // qui n'affiche simplement rien laisse croire à une panne ». Le motif
+      // traversait l'API sans être rendu (relevé en revue).
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            jalonDu: {
+              statut: 'aucune',
+              motif: 'Aucune étape n’est ouverte aujourd’hui. La prochaine le sera à sa date.',
+            },
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() =>
+        expect(texteRendu()).toContain('Aucune étape n’est ouverte aujourd’hui'),
+      );
+      // Et toujours pas de champ de saisie : dire pourquoi n'ouvre rien.
+      expect(screen.queryByText('Envoyer où j’en suis')).toBeNull();
+    });
+
+    it('le motif n’est pas servi à qui n’a pas encore répondu à son objectif', async () => {
+      // Mêmes conditions d'invitation que la question : annoncer une étape à
+      // venir à quelqu'un à qui l'on n'a pas encore demandé si l'objectif était
+      // le sien parlerait d'un calendrier avant de parler de l'objectif.
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            jalonDu: { statut: 'aucune', motif: 'Les étapes de ce suivi sont derrière vous.' },
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+      expect(texteRendu()).not.toContain('Les étapes de ce suivi sont derrière vous.');
     });
 
     it('ne reproche jamais un silence et ne gradue rien (DC-24, DC-19/DC-20)', async () => {

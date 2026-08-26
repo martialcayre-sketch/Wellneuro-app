@@ -164,6 +164,35 @@ rouge un fichier sain. Les autres gardes de la campagne dépouillent les
 commentaires (`sourceSansCommentaires`) ; celle-ci non. L'aligner est un
 changement de garde, hors périmètre de ce lot.
 
+**Complément du 2026-08-26 (2) — ce que la revue a corrigé.** Verdict GO, quatre
+majeurs, tous réels et tous corrigés. Deux méritent d'être retenus au-delà de ce
+lot :
+
+12. **Une garde qui nomme sa collection ne garde rien — troisième occurrence.**
+    `reponsesJalon\.(reduce|sort)` était franchie par l'alias `etapes` introduit
+    une ligne plus loin, et une moyenne d'EVA passait les deux bancs au vert. Le
+    dépôt avait déjà rencontré ce patron sur `{ceQuiCompte.length}` puis
+    `{siens.length}`, et le remède — interdire le motif partout, nommer les
+    licites un par un — était écrit dans le MÊME fichier. **Règle : un interdit
+    de forme ne se lie jamais à un identifiant choisi par l'auteur du code
+    gardé.**
+13. **Le bloc « écrit sur une version précédente » est un invariant de surface,
+    pas une particularité de l'amendement.** La route ne sert que les têtes de
+    chaîne : toute parole de patient rattachée à une version doit avoir son
+    rendu hors-tête, sans quoi elle disparaît de son écran à la première
+    reformulation — pendant que le praticien continue de la lire. Le LOT-04
+    l'avait découvert pour l'amendement ; le LOT-05 l'a refait pour le récit
+    d'étape, et son propre banc verrouillait la disparition. **Toute table de
+    parole patient ancrée à `id_objectif` hérite de cette obligation.**
+
+Corrigés aussi : le motif de `jalonObjectifDu` n'était rendu nulle part (écran
+vide hors fenêtre, que le module écrivait vouloir empêcher) ; la garde
+« écrivain unique » ne balayait ni `src/app` hors `api`, ni `src/components`,
+si bien qu'un Server Action dans un composant écrivait les trois tables sans
+faire rougir personne ; la fixture d'ancre E2E ne survivait pas à un run tué et
+cassait trois specs qui assertent l'absence d'épisode sur `PAT_SEED_01` — un
+`globalSetup` balaie désormais l'identifiant réservé avant tout spec.
+
 ### D-110 — « Le dire autrement » : le troisième verbe du patient, et le quatrième état
 
 - Date : 2026-08-25

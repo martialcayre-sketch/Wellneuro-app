@@ -473,6 +473,14 @@ export async function cleanupBilanTransmis(): Promise<void> {
  * Réservé à `PAT_SEED_03` (Michel Dogné) : aucun autre spec ne lit ses
  * épisodes — les parcours portail ne touchent pas `assessment_episodes`, et
  * les captures pixel du cockpit portent sur PAT_SEED_01.
+ *
+ * CETTE DERNIÈRE PHRASE N'EST PLUS VRAIE DEPUIS LE LOT-05 DE 6.0-B :
+ * `provisionAncreJalon` pose un épisode T0 sur PAT_SEED_01, parce que la
+ * fenêtre de jalon en a besoin. La contrainte tient toujours — trois specs
+ * assertent que ce patient n'a aucun épisode confirmé — mais elle est
+ * désormais tenue par le nettoyage de fin ET par `e2e/globalSetup.ts`, qui
+ * répare un run tué. Toute fixture d'épisode neuve doit passer par le même
+ * couple : un id réservé, et le balayage d'entrée.
  */
 const ID_EPISODE_E2E = 'ep_e2e_spirale_peuplee';
 

@@ -177,7 +177,6 @@ test.describe.serial('Portail — où j’en suis, à cette étape', () => {
   test.afterAll(async () => {
     await cleanupAncreJalon();
     await nettoyerDossierDeuxVoix(PATIENT.idPatient);
-    await closePrisma();
   });
 
   test.beforeEach(async ({ context }) => {
@@ -266,4 +265,13 @@ test.describe.serial('Portail — où j’en suis, à cette étape', () => {
     const lignes = await lireReponsesJalon(PATIENT.idPatient);
     expect(lignes).toHaveLength(2);
   });
+});
+
+// LA FERMETURE DU CLIENT VIT AU NIVEAU DU FICHIER, hors de tout `describe`
+// (relevé en revue du LOT-05). Placée dans le dernier bloc, elle ne jouait pas
+// quand un `--grep` ne retenait que la première série — le client restait
+// ouvert et le process pendait. Ici, elle joue quelle que soit la sélection, et
+// une seule fois.
+test.afterAll(async () => {
+  await closePrisma();
 });

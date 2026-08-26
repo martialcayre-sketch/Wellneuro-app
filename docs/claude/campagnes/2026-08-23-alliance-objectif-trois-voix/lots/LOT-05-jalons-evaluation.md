@@ -118,7 +118,11 @@ reçoit un 500 sur un chemin que ni T1 ni T2 ne voient.
       queue de suite sous charge). Les douze tests neufs allongent la queue et
       déplacent QUEL spec atterrit dans le point chaud. **Aucun contrôle joué
       sur `main` nu** : l'arbitre est le CI, pas ce Mac.
-- [ ] Revue `wn-reviewer` ; **passe Codex** (P0).
+- [x] Revue `wn-reviewer` : **GO**, quatre majeurs — tous réels, tous corrigés
+      dans une PR de suite (le récit d'étape qui disparaissait à la première
+      reformulation, l'écran vide hors fenêtre, deux gardes décoratives, la
+      fixture E2E non résistante à un run tué).
+- [ ] **Passe Codex** (P0) — geste de l'utilisateur.
 
 ## Tests
 
