@@ -528,6 +528,25 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                       serveur, lui, n'exige pas la ratification pour accepter le
                       texte — refuser la parole d'un patient sur son propre
                       objectif serait plus grave que de ne pas la solliciter. */}
+                  {/* HORS FENÊTRE, LE MOTIF EST DIT — il ne l'était pas, et
+                      c'est le défaut que `jalonObjectifDu` écrit noir sur blanc
+                      vouloir empêcher : « un écran qui n'affiche simplement
+                      rien laisse croire à une panne ». Le module rendait un
+                      motif, une prochaine ouverture, des bornes ; rien n'en
+                      était affiché (relevé en revue).
+                      MÊMES CONDITIONS D'INVITATION que la question elle-même :
+                      un patient qui n'a pas encore répondu à son objectif n'a
+                      pas à lire qu'une étape « s'ouvrira à sa date » — on ne
+                      lui a même pas demandé si l'objectif était le sien.
+                      Le motif vient du SERVEUR et n'est pas réécrit ici : les
+                      trois cas (pas d'ancre, pas encore, toutes passées) se
+                      disent différemment, et aucun ne reproche un silence. */}
+                  {jalonDu.statut === 'aucune'
+                    && ratifiable
+                    && (objectif.etat === 'ratifie' || objectif.etat === 'dit_autrement') && (
+                      <p className="text-sm text-muted-foreground">{jalonDu.motif}</p>
+                    )}
+
                   {jalonDu.statut === 'ouverte'
                     && ratifiable
                     && (objectif.etat === 'ratifie' || objectif.etat === 'dit_autrement') && (
@@ -676,6 +695,49 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                         )}
                         <p className="whitespace-pre-wrap text-base leading-relaxed">
                           {amendement.texte}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── ET LES RÉCITS D'ÉTAPE ÉCRITS AVANT UNE REFORMULATION ─────
+                  LE MÊME BLOC, POUR LA MÊME RAISON, ET IL MANQUAIT AU LOT-05
+                  (relevé en revue). La route ne sert que les TÊTES : un récit
+                  écrit sur `v1` n'avait plus de version à l'écran dès que le
+                  praticien posait `v2`, et le patient voyait disparaître ce
+                  qu'il avait mis dix minutes à écrire — pendant que le
+                  praticien, lui, continuait de le lire au cockpit, qui filtre
+                  sur TOUTE la chaîne. Asymétrie exactement inverse de celle
+                  qu'on veut. C'est le patron du LOT-03 : une garde corrigée ne
+                  corrige pas sa sœur — le bloc au-dessus existait déjà, et son
+                  commentaire décrivait ce défaut mot pour mot.
+                  SANS LEUR JALON NI LEUR EVA ICI, à dessein : rattacher
+                  « J21 » à une formulation qui n'est plus à l'écran
+                  demanderait au patient de reconstituer par rapport à quoi il
+                  se situait. Ce qui reste, c'est ce qu'il a écrit, et quand. */}
+              {(() => {
+                const servis = new Set(objectifs.map((objectif) => objectif.id));
+                const anterieurs = reponsesJalon.filter(
+                  (reponse) => !servis.has(reponse.idObjectif),
+                );
+                if (anterieurs.length === 0) return null;
+                return (
+                  <div className="space-y-2 rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Vous avez dit où vous en étiez sur une formulation précédente de votre
+                      objectif. Rien ne s’efface : votre praticien le lit toujours.
+                    </p>
+                    {anterieurs.map((reponse) => (
+                      <div key={reponse.id} className="space-y-1 border-l-2 border-border pl-3">
+                        {dateLisible(reponse.creeLe) && (
+                          <p className="text-xs text-muted-foreground">
+                            Écrit le {dateLisible(reponse.creeLe)}
+                          </p>
+                        )}
+                        <p className="whitespace-pre-wrap text-base leading-relaxed">
+                          {reponse.texte}
                         </p>
                       </div>
                     ))}
