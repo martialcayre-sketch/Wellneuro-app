@@ -35,6 +35,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'objectifNegocie', 'entreeCeQuiCompte', 'syntheseComprehension',
     'desaccordComprehension', 'ratificationObjectif',
     'propositionObjectif', 'dispositionProposition', 'amendementObjectif',
+    'reponseJalonObjectif',
   ]) {
     tx[nom] = modele(nom);
   }

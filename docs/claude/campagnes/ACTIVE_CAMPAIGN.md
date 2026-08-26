@@ -5,7 +5,7 @@
 **Campagne** : 2026-08-23-alliance-objectif-trois-voix
 **Titre** : Alliance 6.0-B — l'objectif à trois voix
 **Statut** : active
-**Lot actif** : LOT-04
+**Lot actif** : LOT-05
 
 ## Activités parallèles
 

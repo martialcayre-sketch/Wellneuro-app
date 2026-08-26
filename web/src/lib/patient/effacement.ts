@@ -174,6 +174,13 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.amendementObjectif.deleteMany({ where: par })
     ).count;
 
+    // La réponse d'étape (Alliance 6.0-B LOT-05) : même régime FK RESTRICT.
+    // C'est la parole du patient sur lui-même, aux jalons de son objectif —
+    // elle ne survit pas plus au dossier que les précédentes.
+    supprimees.reponsesJalonObjectif = (
+      await tx.reponseJalonObjectif.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

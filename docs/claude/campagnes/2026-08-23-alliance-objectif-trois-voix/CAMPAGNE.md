@@ -4,7 +4,7 @@ titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "en_cours"
 créée_le: "2026-08-23"
 mise_à_jour: "2026-08-25"
-lot_courant: "LOT-04"
+lot_courant: "LOT-05"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -136,8 +136,18 @@ au statut de testeur ; sa levée est une décision propre, préparée au LOT-06.
   citation pour une reprise praticien **sans élargir la liste fermée de
   [[D-094]] §1**, qui ferme les sources d'un fragment de proposition — ce que la
   MACHINE assemble — et non ce que le patient a écrit lui-même.
+- **[[D-111]] (2026-08-25, LOT-05)** — la réponse d'étape a sa propre table :
+  `protocol_checkins` est ancrée à un PROTOCOLE et parle en J7/J14/J21, la
+  fusionner l'aurait rendue bilingue sur ses deux axes. `T0` est REFUSÉ comme
+  jalon (c'est l'ancre des fenêtres, pas une étape) et la taxonomie est lue dans
+  la DÉFINITION de la contrainte, sans quoi un CHECK élargi passerait inaperçu.
+  L'EVA est bornée 0-10 par une borne purement TECHNIQUE, facultative, et ne
+  conclut rien (régime [[D-088]], sans élargissement). Aucune contrainte
+  d'unicité : se raviser fait une ligne de plus. **Aucune décision GAS n'a été
+  prise** — si un instrument publié doit un jour structurer cette mesure, ce sera
+  une décision de provenance dédiée, hors campagne.
 - Décisions `D-xxx` restant à réserver : instrument d'évaluation si GAS
-  (LOT-05).
+  (toujours ouverte, non tranchée par [[D-111]]).
 
 ## Questions ouvertes
 
@@ -177,7 +187,7 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 | LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | terminé (2026-08-23) | LOT-01 (releasée et constatée) |
 | LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | terminé (2026-08-25) | LOT-02 ✓ |
 | LOT-04 | Portail : « le dire autrement » — [[D-110]] geste patient, quatrième état, citation d'amendement | terminé (2026-08-25) | LOT-00 ✓ ; LOT-01 ✓ |
-| LOT-05 | Jalons : évaluation ancrée à la version, EVA brute | à_faire | LOT-04 |
+| LOT-05 | Jalons : évaluation ancrée à la version, EVA brute — **deux PR**, migration [[D-111]] puis code | en_cours (migration livrée 2026-08-25) | LOT-04 ✓ |
 | LOT-06 | Bilan : écarts + amendements → provenance pour signer le classement ; **gate de consolidation**, ferme la boucle [[D-093]] | à_faire | tous |
 
 ## Gates
