@@ -27,6 +27,7 @@ import {
   ANAMNESE_C1_FIXTURE_AVEC_SIGNAL,
   CANDIDAT_RANG_1,
   chaineC1DeReference,
+  HORODATAGE_C1_FIXTURE,
   passationsC1Fixture,
   retablirTablePriorites,
   signerTablePriorites,
@@ -150,13 +151,45 @@ describe('POST /api/praticien/protocoles', () => {
         conditionId: 'contradictions_ouvertes',
         motif: 'Motif inventé.',
         decidePar: 'praticien@wellneuro.fr',
-        decideLe: '2026-01-02T00:00:00.000Z',
+        decideLe: HORODATAGE_C1_FIXTURE,
       }],
     };
     const res = await POST(postRequest({ episode: forge, decisionCard, draft }));
     expect(res.status).toBe(422);
     expect((await res.json()).error).toContain('sans objet');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // CONTRE-REVUE ADVERSE DU 2026-08-27, affirmation `N1.8` RÉFUTÉE.
+  //
+  // `decideLe` n'était vérifié que comme ISO LISIBLE. Le commentaire de la
+  // garde décrivait pourtant déjà le risque qu'il ne fermait pas — « le dater
+  // à volonté, dans la seule ligne qui en fera foi pour toujours ». Une date
+  // arbitraire, syntaxiquement valide, était acceptée et persistée.
+  it('refuse un contournement daté autrement que la confirmation de l’épisode', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    const service = await import('@/lib/clinical/contradictionsService');
+    const espion = vi.spyOn(service, 'contradictionsPourPatient')
+      .mockResolvedValue([{ id: 'C-STR' }] as never);
+    try {
+      const antidate = {
+        ...episode,
+        preconditionOverrides: [{
+          conditionId: 'contradictions_ouvertes',
+          motif: 'Vue en entretien.',
+          decidePar: 'praticien@wellneuro.fr',
+          // Lisible, plausible, et pourtant choisie : deux ans avant la
+          // confirmation de l'épisode.
+          decideLe: '2024-01-03T00:00:00.000Z',
+        }],
+      };
+      const res = await POST(postRequest({ episode: antidate, decisionCard, draft }));
+      expect(res.status).toBe(422);
+      expect((await res.json()).error).toContain('datée de la confirmation');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    } finally {
+      espion.mockRestore();
+    }
   });
 
   it('refuse un contournement attribué à un autre praticien', async () => {
@@ -170,7 +203,7 @@ describe('POST /api/praticien/protocoles', () => {
         conditionId: 'contradictions_ouvertes',
         motif: 'Vue en entretien.',
         decidePar: 'quelquun.dautre@wellneuro.fr',
-        decideLe: '2026-01-02T00:00:00.000Z',
+        decideLe: HORODATAGE_C1_FIXTURE,
       }],
     };
     const res = await POST(postRequest({ episode: usurpe, decisionCard, draft }));
@@ -213,7 +246,7 @@ describe('POST /api/praticien/protocoles', () => {
         conditionId: 'contradictions_ouvertes',
         motif: 'Discordance reprise en entretien.',
         decidePar: 'praticien@wellneuro.fr',
-        decideLe: '2026-01-02T00:00:00.000Z',
+        decideLe: HORODATAGE_C1_FIXTURE,
       }],
     };
     // La trace de contournement fait PARTIE de l'épisode, donc des trois
