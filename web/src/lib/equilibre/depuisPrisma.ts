@@ -1,5 +1,5 @@
 import { filtrerPassationsExploitables } from '../scoring/validite';
-import { BESOIN_SOURCES, JOURS_JALON } from './constants';
+import { BESOIN_SOURCES, JOURS_JALON, ORDRE_JALONS_MESURE } from './constants';
 import { calculerEquilibre } from './score';
 import type { JalonMomentum, LectureDatee, ReponsesParQuestionnaire } from './types';
 
@@ -124,7 +124,15 @@ export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: 
   if (!dateT0) return [];
 
   const maintenant = new Date();
-  const jalons = Object.keys(JOURS_JALON) as JalonMomentum[];
+  // L'ANCRE PUIS LES MESURES, EN JOURS. Le NOM de l'ancre n'importe pas ici :
+  // seule compte sa distance à elle-même, nulle par définition (`D-113`).
+  //
+  // Auparavant : `Object.keys(JOURS_JALON)`, qui marchait tant que la table
+  // portait `T0: 0`. Depuis que les ancres forment une série ouverte, elle ne le
+  // porte plus — et l'énumération aurait SILENCIEUSEMENT PERDU la lecture de
+  // référence, sans qu'aucun type ne bronche. C'est le genre de régression que
+  // `tsc` ne peut pas voir.
+  const joursDesJalons = [0, ...ORDRE_JALONS_MESURE.map((jalon) => JOURS_JALON[jalon])];
 
   // Seules comptent comme nouveauté les réponses que le moteur lit RÉELLEMENT :
   // exploitables (`rawAnswers` présent, cf. extraireRawAnswers) ET portant sur
@@ -147,8 +155,8 @@ export function construireHistoriqueEquilibre(brutes: ReponseBrute[], ancreT0?: 
 
   const lectures: LectureDatee[] = [];
   let dateDerniereLecture: Date | null = null;
-  for (const jalon of jalons) {
-    const dateJalon = new Date(dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS);
+  for (const jours of joursDesJalons) {
+    const dateJalon = new Date(dateT0.getTime() + jours * JOUR_MS);
     if (dateJalon > maintenant) continue;
 
     if (dateDerniereLecture) {

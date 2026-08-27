@@ -1,4 +1,4 @@
-import { JOURS_JALON } from '../equilibre/constants';
+import { joursDepuisAncre } from '../protocol/fenetreJalon';
 import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
@@ -143,7 +143,7 @@ export function proposeRuntimeEpisode(
   // dossier sert uniquement à stabiliser l'enveloppe vide ; elle ne devient
   // ni une mesure ni une conclusion clinique.
   const t0 = ancreT0 ?? inputs.responses[0]?.observedAt ?? inputs.patient.createdAt.toISOString();
-  const targetAt = new Date(new Date(t0).getTime() + JOURS_JALON[milestone] * JOUR_MS).toISOString();
+  const targetAt = new Date(new Date(t0).getTime() + joursDepuisAncre(milestone) * JOUR_MS).toISOString();
   const proposal = proposeAssessmentEpisode({
     assessmentEpisodeId: `runtime-episode-${inputs.patient.idPatient}-${milestone}`,
     patientId: inputs.patient.idPatient,

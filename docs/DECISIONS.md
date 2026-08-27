@@ -4,6 +4,74 @@
 
 ## Décisions actives
 
+### D-113 — Les cycles sont nommés `T0`, `T1`, `T2` : une ancre posée ne se déplace plus
+
+- Date : 2026-08-26
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-26)
+- Domaine : modèle de suivi longitudinal — ancrage des cycles et des jalons
+- Porte sur : `D-058` (jalon dû), `D-111` (réponse d'étape, dont elle corrige la
+  dette multi-cycle nommée à la revue), `DC-30` (une discordance se signale)
+- Livrée en **deux PR** : la structure d'abord, le comportement ensuite — la
+  première ne change rien à ce que fait l'application.
+
+**Le défaut.** Chaque cycle s'ouvrait par un épisode `T0`. Deux cycles pour un
+même patient produisaient donc **deux `T0`**, et toute la chaîne retenait « le
+plus récent » (`trajectoire.cycles.at(-1)`, `resoudreJalonDu`). Ouvrir un second
+cycle **déplaçait donc l'ancre du premier**, et les fenêtres de jalon encore
+ouvertes se refermaient **comme effet de bord** : un patient à J85 perdait sa
+question J90 le jour où son praticien confirmait un nouveau départ.
+
+Le défaut n'est pas la fermeture — elle se défend cliniquement. C'est qu'elle
+était **invisible et non décidée**.
+
+**La décision.**
+
+1. **Le premier cycle s'ancre en `T0`, le deuxième en `T1`, le troisième en
+   `T2`.** Une ancre est posée une fois et ne se déplace plus jamais. La classe
+   de bug ci-dessus n'est pas corrigée : elle **n'existe plus**.
+2. **`milestone === 'T0'` devient un prédicat**, `estAncreDeCycle`. Chaque site
+   doit être **relu**, jamais substitué mécaniquement : certains voulaient dire
+   « l'ancre du cycle courant », d'autres « la toute première mesure ». C'était
+   la même chose ; ça ne l'est plus. C'est là que les défauts se logeront.
+3. **La série des ancres est ouverte, donc `JalonMomentum` n'est plus une union
+   fermée.** Conséquence mesurée, pas supposée : `Record<JalonMomentum, number>`
+   **dégénère en signature d'index** — `JOURS_JALON['T1']` était typé `number`
+   tout en valant `undefined`, soit un `NaN` silencieux dans un calcul de date.
+   `tsc` rendait vert. La table porte donc les **seuls jalons de mesure**
+   (`Record<JalonMesure, number>`), et l'offset d'une ancre est **nul par
+   définition** — une ancre est le jour 0 de son propre cycle.
+4. **Les cadences ne bougent pas.** 21, 42, 90 et la tolérance de ±8 sont
+   inchangées. Ce qui change est une **clé**, pas un seuil : aucune modification
+   clinique au sens de `DC-17`/`DC-18`, et le fragment de changelog le dit.
+5. **La dépendance ne va que dans un sens.** `equilibre/constants.ts` est une
+   table clinique : elle ne connaît pas le protocole. La règle « une ancre est le
+   jour 0 » vit dans `lib/protocol/fenetreJalon.ts`, qui lit les deux. Une
+   première rédaction faisait importer le prédicat par la table — inversion de
+   couche, écartée.
+6. **L'ordre des cycles vient du RANG, la chronologie de la date — et quand les
+   deux divergent, on le SIGNALE** (`discordanceDOrdre`). Un `T2` confirmé avant
+   un `T1` est une discordance, pas un tri à corriger en silence (`DC-30`).
+7. **`T01` est refusé** au même titre que `TA` : deux écritures d'un même cycle
+   en feraient deux cycles distincts pour la lecture.
+8. **L'ouverture d'un cycle ferme les fenêtres restées ouvertes du précédent**,
+   et cette fermeture devient une **règle énoncée** au lieu d'un effet de bord.
+   Mécaniquement, chaque cycle portant son ancre propre, on pourrait les laisser
+   vivre — mais demander à un patient où il en est sur l'objectif du cycle
+   précédent, alors qu'un nouveau a commencé, poserait la question à côté. Ce qui
+   a déjà été écrit reste lisible.
+9. **Aucune comparaison entre cycles n'est introduite.** Comparer le J90 de `T0`
+   à celui de `T1` est un acte clinique qui demande sa propre provenance
+   (`DC-27`, `DC-30`) — ce n'est pas un corollaire gratuit du renommage.
+
+**Le moment.** `assessment_episodes` est **entièrement vide en production** —
+zéro épisode, tous jalons confondus, et `milestone` n'a aucun CHECK. La bascule
+ne coûte donc **aucune donnée migrée**. C'est le moment le moins cher qu'elle
+aura jamais ; le premier `T0` confirmé en production le rendrait payant.
+
+**Dette nommée.** `assessment_episodes.milestone` reste une colonne `String`
+sans contrainte : rien en base n'empêche `T01`, `TA` ni `J7`. Poser ce CHECK est
+une migration à part, avec sa confirmation distincte.
+
 ### D-112 — L'appareil de l'alliance est complet et n'a jamais servi : `D-093` n'est pas levé, et le classement n'est pas signable
 
 - Date : 2026-08-26

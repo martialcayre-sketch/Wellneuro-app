@@ -3,7 +3,8 @@ import path from 'path';
 import { describe, expect, it } from 'vitest';
 
 import type { AmendementExpose, ObjectifExpose } from '@/app/api/praticien/objectifs/route';
-import { JOURS_JALON } from '@/lib/equilibre/constants';
+import { JOURS_JALON, ORDRE_JALONS_MESURE } from '@/lib/equilibre/constants';
+import { estAncreDeCycle } from '@/lib/protocol/cycles';
 import {
   ANCRE_JALON,
   estJalonObjectif,
@@ -687,29 +688,56 @@ describe('G6 — ni moteur clinique, ni code diagnostique', () => {
  * « `JOURS_JALON` moins son ancre » ne peut donc pas s'exécuter au runtime —
  * elle se VÉRIFIE ici, où l'import est sans conséquence.
  *
+ * PORTÉE PAR `D-113`. La formulation d'origine — « `JOURS_JALON` MOINS son
+ * ancre » — supposait que l'ancre fût une CLÉ de la table. Elle ne l'est plus :
+ * la série des ancres est ouverte (`T0`, `T1`, `T2`…), et un `Record` indexé par
+ * elle dégénérerait en signature d'index. La table porte désormais les seuls
+ * jalons de mesure, et la dérivation devient une ÉGALITÉ — ce qui la rend plus
+ * forte, pas plus faible : il n'y a plus de soustraction où se tromper.
+ *
+ * Ce que la garde doit encore empêcher n'a pas changé : qu'une ANCRE, quelle
+ * qu'elle soit, redevienne un jalon acceptable.
+ *
  * Vue rouge par mutation : ajouter `J120` à `JOURS_JALON`, retirer `J42` de
- * `JALONS_OBJECTIF`, renommer l'ancre.
+ * `JALONS_OBJECTIF`, faire accepter une ancre par `estJalonObjectif`.
  */
-describe('G7 — les jalons de l’objectif sont `JOURS_JALON` moins son ancre', () => {
-  it('la littérale du module pur est exactement la dérivation', () => {
-    const derives = Object.keys(JOURS_JALON).filter((jalon) => jalon !== ANCRE_JALON);
+describe('G7 — les jalons de l’objectif sont exactement les jalons de MESURE', () => {
+  it('la littérale du module pur est exactement la table de cadence', () => {
+    const cadences = Object.keys(JOURS_JALON);
 
-    expect(derives.length).toBeGreaterThan(0); // anti-vacuité
-    expect([...JALONS_OBJECTIF]).toEqual(derives);
+    expect(cadences.length).toBeGreaterThan(0); // anti-vacuité
+    expect([...JALONS_OBJECTIF]).toEqual(cadences);
+    // Et l'ordre servi est celui de la campagne, pas celui de l'objet.
+    expect([...JALONS_OBJECTIF]).toEqual([...ORDRE_JALONS_MESURE]);
   });
 
-  it('l’ancre est bien une clé de `JOURS_JALON`, et pas une chaîne orpheline', () => {
-    // Sans cette assertion, renommer l'ancre des deux côtés ferait passer le
-    // filtre ci-dessus sur une valeur qui n'existe plus — et `T0` redeviendrait
-    // un jalon acceptable en silence.
-    expect(Object.keys(JOURS_JALON)).toContain(ANCRE_JALON);
+  it('AUCUNE ANCRE N’EST UNE CLÉ de la table de cadence', () => {
+    // C'est le pendant de l'ancienne assertion inverse. Réintroduire `T0: 0`
+    // dans `JOURS_JALON` — le geste le plus tentant pour « simplifier » —
+    // reformerait la signature d'index et rendrait `JOURS_JALON['T1']`
+    // `undefined` sous un type `number`.
+    for (const cle of Object.keys(JOURS_JALON)) {
+      expect(estAncreDeCycle(cle)).toBe(false);
+    }
   });
 
-  it('`estJalonObjectif` refuse l’ancre, en plus de l’inconnu', () => {
+  it('`estJalonObjectif` refuse TOUTE ancre, pas seulement la première', () => {
     expect(estJalonObjectif('J21')).toBe(true); // anti-vacuité
-    expect(estJalonObjectif(ANCRE_JALON)).toBe(false);
+    // `T0` était le seul refusé au LOT-05, parce qu'il était le seul qui
+    // existât. Un `T1` posté aujourd'hui doit être refusé pour le même motif :
+    // c'est une ancre, pas une étape.
+    for (const ancre of [ANCRE_JALON, 'T1', 'T2', 'T10']) {
+      expect(estJalonObjectif(ancre)).toBe(false);
+    }
     expect(estJalonObjectif('J7')).toBe(false);
     expect(estJalonObjectif('')).toBe(false);
     expect(estJalonObjectif(21)).toBe(false);
+  });
+
+  it('`ANCRE_JALON` désigne bien une ancre — pas une chaîne orpheline', () => {
+    // L'ancienne garde vérifiait cela contre la table ; la table ne le permet
+    // plus. Le prédicat le fait, et il est plus juste : il porte sur la FORME
+    // d'une ancre, pas sur son appartenance à une liste.
+    expect(estAncreDeCycle(ANCRE_JALON)).toBe(true);
   });
 });

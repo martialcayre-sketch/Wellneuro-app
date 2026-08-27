@@ -64,9 +64,25 @@ export type ResultatEquilibre = {
   versionScore: string;
 };
 
-// Jalons de suivi longitudinal T0/J21/J42/J90, glissants depuis la date T0
-// réelle du patient (docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §2).
-export type JalonMomentum = 'T0' | 'J21' | 'J42' | 'J90';
+// Jalons de suivi longitudinal, glissants depuis l'ancre du cycle
+// (docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §2).
+//
+// LA SÉRIE DES ANCRES EST OUVERTE DEPUIS `D-113` : `T0` ouvre le premier cycle,
+// `T1` le deuxième, `T2` le troisième. Auparavant chaque cycle s'ouvrait par un
+// `T0`, si bien qu'un second cycle DÉPLAÇAIT l'ancre du premier et fermait ses
+// fenêtres par effet de bord. Une ancre posée ne se déplace plus.
+//
+// CONSÉQUENCE DE TYPAGE, ET ELLE EST VOULUE : ce type n'est plus une union
+// fermée, donc `Record<JalonMomentum, …>` n'est plus formable. Les tables
+// indexées par jalon portent désormais les seuls jalons de MESURE
+// (`JalonMesure`), et les ancres se traitent par prédicat — ce qui force à
+// écrire « est-ce une ancre ? » là où l'on écrivait `=== 'T0'` en pensant la
+// même chose. C'est cette confusion que la décision supprime.
+export type { AncreCycle, JalonMesure } from '@/lib/protocol/cycles';
+
+import type { AncreCycle, JalonMesure } from '@/lib/protocol/cycles';
+
+export type JalonMomentum = AncreCycle | JalonMesure;
 
 export type LectureDatee = {
   date: Date;
