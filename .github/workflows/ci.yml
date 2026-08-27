@@ -476,6 +476,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/assignations_unicite_ouverte_v1.sql
 
+      # `D-114` — forme du jalon et identité de cycle sur `assessment_episodes`.
+      # Un CHECK et deux index PARTIELS, que Prisma ne sait pas déclarer : le
+      # drift check ne les voit pas, donc leur disparition ne rougirait nulle
+      # part sans ce contrat. Il éprouve aussi sa propre limite (`cycle_id`
+      # NULL), pour qu'on ne croie jamais la garde plus large qu'elle n'est.
+      - name: Episodes identite cycle contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/episodes_identite_cycle_v1.sql
+
       # LOT-03, dette 4 — cohérence `packs.qids` ↔ miroir relationnel. LA BASE
       # DU CI EST VIDE (construite par `migrate deploy` seul) : les assertions
       # du contrat y sont VACUES et n'y prouvent rien de la cohérence. Elles y
