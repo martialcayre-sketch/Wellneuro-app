@@ -1,5 +1,30 @@
 # File d'attente des campagnes — hiérarchie du 2026-08-21 (axe 6.0)
 
+> **Réconciliée le 2026-08-27.** Le fichier promet de se mettre à jour « à
+> chaque ouverture ou réarbitrage » ; il ne l'avait pas été depuis le
+> 2026-08-25. Trois écarts constatés et corrigés ci-dessous : une campagne
+> **ouverte, menée et livrée sans jamais entrer dans la table** (l'objectif à
+> trois voix) ; une **collision de nom** qu'elle a introduite sur « 6.0-B » ; et
+> des pointeurs « prochaine en file » devenus faux. La réconciliation ne
+> réarbitre rien — elle rend la table fidèle à ce qui s'est passé.
+
+## `6.0-B` DÉSIGNE DEUX CAMPAGNES SANS RAPPORT — toujours qualifier
+
+L'axe 6.0 attribuait les lettres à l'ouverture : **A** = le dossier à deux voix,
+**B** = charge et capacité, **C** = le récit, **D** = le jumeau. La campagne
+ouverte le 2026-08-23 s'est intitulée **« Alliance 6.0-B — l'objectif à trois
+voix »**, reprenant une lettre déjà attribuée.
+
+Les deux existent, aucune ne se renomme : « 6.0-B » figure dans `D-110`,
+`D-111`, `D-112` et dans les messages de commit, et l'historique Git ne s'efface
+pas. **Un « 6.0-B » nu est donc ambigu** — c'est exactement le régime déjà en
+vigueur pour le préfixe `R` (CLAUDE.md : « toujours qualifier la série »).
+
+- **6.0-B *l'objectif à trois voix*** — `2026-08-23-alliance-objectif-trois-voix/`, livrée.
+- **6.0-B *charge et capacité*** — `2026-08-21-charge-et-capacite/`, rang 5, non ouverte.
+
+## D'où vient cette file
+
 Réarbitrée en session le 2026-08-21, sur l'architecture de campagnes issue de
 l'audit « Wellneuro face au notebook 00 » (audit → contre-audit adversarial →
 vision 6.0 « alliance thérapeutique » → architecture, §8 de l'artifact).
@@ -16,12 +41,13 @@ Hiérarchie précédente : celle du 2026-08-18 (l'historique Git la conserve).
 | Rang | Campagne | Dossier | Raison du rang |
 |---|---|---|---|
 | 0 | Biologie consolidée | `2026-08-18-biologie-consolidee/` | **TERMINÉE (2026-08-22)** — les trois lots livrés (LOT-01 PR #725, LOT-03 PR #731, LOT-02 PR #726). Le créneau primaire s'ouvre ; prochaine en file : le Socle (rang 1) — l'ouverture reste un geste du responsable. |
-| — | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | **PARALLÈLE, bloquée sur l'externe** (annexe Scalingo muette) ; échéances portées par `blocking_issues` ; revue du 2026-10-21 inchangée. Elle ne consomme pas le créneau primaire. |
+| — | Échéance HDS — G-TRUST-04 | `2026-08-18-echeance-hds-g-trust-04/` | **PARALLÈLE, et la seule fenêtre qui SE FERME.** Bloquée sur l'externe pour l'annexe (Scalingo muette) ; revue du 2026-10-21 inchangée ; ne consomme pas le créneau primaire. **Mais son LOT-02 porte une échéance au 2026-09-01** (`D-080`) : décommissionnement Vercel/Supabase **avec preuve d'effacement écrite au registre RGPD**, et constat de levée de la réserve annexe HDS (`D-089`). Le jour où la base de rollback disparaît, tout code ou outil pointant encore vers Supabase devient un piège muet — le MCP `execute_sql` lit précisément cette base gelée. **Travail de dépôt identifié le 2026-08-26** : 5 scripts npm `supabase:*` morts, `vercel.json`, `vercel-build.sh`, `clone_env_vars.py`, la documentation qui décrit encore le filet, et le seul point sensible `withSupabaseSslMode` (chaîne de connexion — à vérifier contre la base réelle avant d'y toucher). Les migrations qui nomment Supabase sont historiques et **ne se touchent pas**. |
 | 1 | Socle de restitution sûre | `2026-08-21-socle-restitution-sure/` | **TERMINÉE (2026-08-22)** — ouverte et livrée le même jour, trois lots : couverture des chemins sortants prouvée par bancs de débranchement + re-vérification du bilan (LOT-01, PR #736), clinique au niveau « demande » + D-083 (LOT-02, PR #739), registre de gabarits `DC-26` (LOT-03). **Le gate des campagnes 6.0 est posé.** Le créneau primaire s'ouvre ; prochaine en file : 6.0-A (rang 2) — l'ouverture reste un geste du responsable. Restent au responsable : validations `valideLe` des gabarits, arbitrage des régimes de garde, candidats de couverture du hook. |
 | 2 | Alliance 6.0-A — le dossier à deux voix | `2026-08-21-alliance-dossier-deux-voix/` | **TERMINÉE (2026-08-22)** — six lots mergés (#748, #750, #754, #755, #757, #760). Le gate `D-092` est constaté en production sur sa structure : cinq tables et écrivain unique prouvés, zéro ratification au moment de la clôture. Cela n'active ni les deux surfaces encore fermées (`WN_CE_QUI_COMPTE`, `WN_DOSSIER_DEUX_VOIX`) ni le chemin élargi protocole→produits, qui restent des gestes du responsable. Le créneau primaire s'ouvre ; prochaine en file : Doctrine exécutable (rang 3) — son ouverture reste un geste du responsable. |
-| 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | **TERMINÉE (2026-08-25)** — neuf lots exécutés (LOT-01, 03, 04, 05, 06, 07, 09, 10, 11), plus un LOT-12 **non prévu au cadrage** né d'une contre-revue adverse, et le LOT-08 de clôture. **Six règles franchissent leurs trois preuves** — `DC-09`, `DC-19`, `DC-22`, `DC-23`, `DC-54`, `DC-55` — chacune vérifiée par le lot de clôture, banc nommé, jamais sur la foi d'un lot déclaré terminé. **Ce qui n'est PAS fermé est écrit** : `DC-20` (nature en prose, pas dans la donnée → rang 4), `DC-26` (compilateur inexistant), `DC-42` (**signature reportée au 2026-08-30**), `DC-43` (mécanisme complet, **sans sujet** — `neCouvrePas` null sur les 95), `DC-58` (instruite, sans méthode fondée), les **quatre non armées** revérifiées structurellement, et les **onze statuts orphelins** → campagne dédiée (`à cadrer`). `DC-50`/`DC-51` **renvoyées** à la chaîne alimentaire — un renvoi est un routage, pas une fermeture. **La contre-revue adverse a payé** (`D-108`) : lancée AVANT la clôture, elle a réfuté **sept** des treize affirmations qui allaient être gravées, dont un texte servi au patient depuis cinq semaines. Le créneau primaire s'ouvre ; prochaine en file : Curation signée (rang 4, déjà en parallèle continu) — l'ouverture reste un geste du responsable. Restent au responsable : la signature `SAFETY_EI_METADATA` (revue 2026-08-30), le cadrage des **deux** campagnes routées (curation des exclusions, dix orphelines), l'arbitrage de la gate sur un état INCONNU, et le seuil de significativité du momentum. |
+| 3 | Doctrine exécutable | `2026-08-18-doctrine-executable/` | **TERMINÉE (2026-08-25)** — neuf lots exécutés (LOT-01, 03, 04, 05, 06, 07, 09, 10, 11), plus un LOT-12 **non prévu au cadrage** né d'une contre-revue adverse, et le LOT-08 de clôture. **Six règles franchissent leurs trois preuves** — `DC-09`, `DC-19`, `DC-22`, `DC-23`, `DC-54`, `DC-55` — chacune vérifiée par le lot de clôture, banc nommé, jamais sur la foi d'un lot déclaré terminé. **Ce qui n'est PAS fermé est écrit** : `DC-20` (nature en prose, pas dans la donnée → rang 4), `DC-26` (compilateur inexistant), `DC-42` (**signature reportée au 2026-08-30**), `DC-43` (mécanisme complet, **sans sujet** — `neCouvrePas` null sur les 95), `DC-58` (instruite, sans méthode fondée), les **quatre non armées** revérifiées structurellement, et les **onze statuts orphelins** → campagne dédiée (`à cadrer`). `DC-50`/`DC-51` **renvoyées** à la chaîne alimentaire — un renvoi est un routage, pas une fermeture. **La contre-revue adverse a payé** (`D-108`) : lancée AVANT la clôture, elle a réfuté **sept** des treize affirmations qui allaient être gravées, dont un texte servi au patient depuis cinq semaines. ~~Le créneau primaire s'ouvre ; prochaine en file : Curation signée (rang 4).~~ **Pointeur périmé, corrigé le 2026-08-27** : ce n'est pas Curation signée qui a suivi, mais **6.0-B *l'objectif à trois voix*** (rang 3 bis), ouverte hors table le 2026-08-23. Restent au responsable : la signature `SAFETY_EI_METADATA` (revue 2026-08-30), le cadrage des **deux** campagnes routées (curation des exclusions, dix orphelines), l'arbitrage de la gate sur un état INCONNU, et le seuil de significativité du momentum. |
+| 3 bis | **Alliance 6.0-B — l'objectif à trois voix** | `2026-08-23-alliance-objectif-trois-voix/` | **LIVRÉE, NON CLOSE (2026-08-26)** — ouverte le 2026-08-23 **hors de cette table**, qui n'en a jamais porté trace jusqu'à la réconciliation du 2026-08-27 : c'est l'écart que celle-ci corrige, et il explique la collision de nom ci-dessus. Six lots livrés (PR #748→#802 pour la série complète ; LOT-05 en trois PR — #799 migration, #800 code, #801 correctifs de revue). **Le LOT-06 a rendu un bilan qui contredit l'attente du portefeuille** (`D-112`) : les **neuf tables de la campagne portent zéro ligne** en production, et **zéro épisode `T0` n'est confirmé** sur 21 dossiers — l'appareil est complet et n'a jamais servi. `D-093` n'est donc pas levé : sa condition (a) bute sur l'absence d'objectif, sa condition (b) n'est pas « non atteinte » mais **non productible**. Le dossier de signature du classement **n'est pas préparé, et ce refus est motivé** (`DC-19` : rien à certifier, le rédiger supposerait un comportement). **Restent avant clôture** : passe Codex du LOT-05 (P0) et **contre-revue adverse de campagne** — avant, jamais après. |
 | 4 | Curation signée | `2026-08-18-curation-signee/` | **En parallèle continu, pas en séquence** : cadence praticien (claim par claim). NABM, liens biomarqueur↔besoin, question D-062. Chaque claim curé rapproche l'activation du chemin protocole→produits — donc renforce le rang 2. **Périmètre entrant le 2026-08-23** (`D-096`) : la migration des trois axes doctrinaux du claim — catégorie `A-E` (`DC-07`), niveau d'exécution (`DC-13`), nature du seuil (`DC-20`) — transférée depuis « Doctrine exécutable », faute de consommateur là-bas. Elle porte désormais **la structure ET le contenu** de ces axes, plus la matrice claim par claim. Source à reprendre au cadrage : `sources/2026-08-23-transfert-migration-axes-claim.md`. **Toujours à l'arrêt** : appariement NABM et liens biomarqueur↔besoin à 0 ligne. |
-| 5 | 6.0-B — Charge et capacité | `2026-08-21-charge-et-capacite/` | Budget d'effort, « simplifier mon protocole » (`ProtocolDraft` chaîné), mode « semaine compliquée », check-in v3 additif. Dépend de 6.0-A ; arbitrage A1 intangible (pilotage, jamais score). |
+| 5 | 6.0-B ***charge et capacité*** (à ne pas confondre avec 6.0-B *l'objectif à trois voix*, rang 3 bis) | `2026-08-21-charge-et-capacite/` | **FAIT NOUVEAU DU 2026-08-26, à peser avant d'ouvrir** : le bilan `D-112` a constaté **zéro usage** de tout ce que 6.0-A et 6.0-B *objectif* ont construit. Ce rang ajoute une **surface de plus** ; le goulot constaté n'est pas l'ingénierie, c'est le temps praticien. Le rang n'est pas réarbitré ici — la réconciliation ne décide pas —, mais l'ouvrir sans avoir lu `BILAN.md` serait ouvrir à l'aveugle. Budget d'effort, « simplifier mon protocole » (`ProtocolDraft` chaîné), mode « semaine compliquée », check-in v3 additif. Dépend de 6.0-A ; arbitrage A1 intangible (pilotage, jamais score). |
 | 6 | 6.0-C — Le récit du parcours | `2026-08-21-recit-du-parcours/` | Timeline racontée (projection), petites victoires (jamais causales, `DC-27`), « pourquoi maintenant ? » + double lecture (`DC-34/35`), hypothèses partagées (`DC-31/32`), messages du registre signé. Dépend du Socle et de 6.0-A. |
 | 7 | 6.0-D — Le jumeau de compréhension | `2026-08-21-jumeau-de-comprehension/` | La signature conceptuelle : représentations patient/praticien côte à côte, versionnées, écarts visibles, « prochain choix ensemble » aux jalons. Dépend de 6.0-A et 6.0-C. |
 | 8 | Nutrition référentielle (R1→R3) | `2026-08-18-nutrition-referentielle/` | Recule d'un cran par réarbitrage 6.0 : ses fiches conseils consomment le registre de messages du Socle — l'ordre naturel la place après lui. Premier lot inchangé (recouvrement rayon C4). |
@@ -32,6 +58,28 @@ Hiérarchie précédente : celle du 2026-08-18 (l'historique Git la conserve).
 Critère d'acceptation transverse des lots 6.0 (principe architectural §7 de
 l'audit) : une stratégie cliniquement pertinente mais incomprise, irréalisable
 ou sans rapport avec ce qui compte pour le patient n'est pas « done ».
+
+## Chantiers en cours hors file — de l'ingénierie, pas des campagnes
+
+Ni des campagnes (pas de dossier, pas de lots), ni des gestes du responsable :
+du travail de dépôt porté par sa décision et sa PR. Ils figurent ici pour que la
+file cesse de laisser croire que rien ne se fait en dehors d'elle.
+
+- **`D-113` — les cycles nommés `T0`, `T1`, `T2`** (2026-08-26, arbitrage du
+  responsable). Chaque cycle s'ouvrait par un `T0` : un second cycle
+  **déplaçait l'ancre du premier** et refermait ses fenêtres de jalon par effet
+  de bord. **PR 1 mergée** (#803) — la structure : série d'ancres ouverte,
+  `JOURS_JALON` re-typée sur les seuls jalons de mesure (un `Record` indexé par
+  un type ouvert dégénérait en signature d'index, rendant `undefined` sous un
+  type `number`), garde `G7` portée. **Elle ne change aucun comportement.**
+  **PR 2 à faire** : les ~20 sites `milestone === 'T0'`, à relire **un par un** —
+  ils disent aujourd'hui « l'ancre du cycle courant » ET « la toute première
+  mesure » sous le même littéral. Puis l'ouverture effective d'un `T1`.
+  **Dette nommée** : `assessment_episodes.milestone` est une colonne `String`
+  **sans CHECK** — rien en base n'empêche `T01`, `TA` ni `J7`. Migration à part,
+  confirmation distincte. Fenêtre favorable : la table est **vide en
+  production**, donc aucune donnée à migrer ; le premier `T0` confirmé rendrait
+  la bascule payante.
 
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
