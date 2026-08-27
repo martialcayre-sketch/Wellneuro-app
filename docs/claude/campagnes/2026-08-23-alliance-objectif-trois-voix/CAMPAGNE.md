@@ -208,6 +208,16 @@ aucun lot (`inflight_without_active_lot`, code bloquant en CI). Le champ dit
    sept affirmations sur treize dont un texte servi au patient depuis cinq
    semaines.
 
+**Les deux passes sont fusionnées en un seul énoncé**, versionné à côté de ce
+fichier : `PROMPT_CONTRE_REVUE_CODEX_2026-08-27.md`. Vingt-cinq affirmations
+hiérarchisées en trois niveaux — donnée patient perdue ou garde franchie,
+provenance rompue, dette structurelle — avec une règle d'arrêt qui préfère un
+niveau 1 complet à trois niveaux survolés. Le périmètre y inclut `D-113`, livré
+depuis et **hors campagne**, parce qu'il a rouvert la série des ancres : une
+garde du LOT-05 écrite contre le seul littéral `T0` ne couvre plus rien à
+partir du deuxième cycle. Le prompt est **rédigé, pas encore joué** ; son
+résultat viendra dans un `REVUE_CODEX_ADVERSE_<date>.md` distinct.
+
 **Ce que le bilan a constaté, et qui commande le reste** : les neuf tables de
 la campagne portent **zéro ligne** en production, et **zéro épisode `T0`** n'est
 confirmé sur 21 dossiers. L'appareil est complet et n'a jamais servi. [[D-093]]
