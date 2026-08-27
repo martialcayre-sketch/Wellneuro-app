@@ -4,6 +4,61 @@
 
 ## Décisions actives
 
+### D-115 — La source signée se vérifie au serveur : `G7-1` s'amende dans un seul sens, et l'exception est bornée
+
+- Date : 2026-08-28
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-28)
+- Domaine : provenance des propositions d'objectif — vérification d'une source signée
+- Porte sur : `G7-1` (qu'elle amende), `D-094` (cite et n'invente jamais),
+  `DC-26`, `D-093`
+- Origine : contre-revue adverse Codex du 2026-08-27, affirmation `N2.2`
+  (réfutée, contre-exemple exécuté)
+
+**Le défaut.** La route de proposition acceptait du NAVIGATEUR le couple
+`{regle, texte, shaPerimetre}` et le persistait comme `regle_signee` après
+n'avoir vérifié qu'une **forme** : 64 caractères hexadécimaux pour le SHA, un
+identifiant plausible pour la règle. Une règle inventée, syntaxiquement valide,
+était donc servie au praticien puis au patient comme **citée d'une table signée
+que le registre ne contient pas**. L'affirmation « le moteur cite et n'invente
+jamais » était fausse.
+
+**Ce n'était pas un oubli, et c'est ce qui rend l'arbitrage nécessaire.** La
+route le disait — elle ne pouvait pas confronter le SHA au registre, `G7-1` lui
+interdisant d'importer `lib/clinical/`. Mais une garde qui documente le trou
+qu'elle laisse reste un trou : la contre-revue a traversé par là.
+
+**L'arbitrage.** `G7-1` s'amende dans **un seul sens** : un adaptateur
+serveur, `web/src/lib/praticien/sourceSigneeVerifiee.ts`, est autorisé à lire le
+registre des règles de priorité. La route **confronte** le périmètre reçu à
+celui du serveur et **recopie** le texte des règles depuis le registre, au lieu
+de croire celui du navigateur.
+
+**Ce que `G7-1` continue d'interdire** — écrit ici parce qu'une exception non
+bornée transforme un interdit en préférence, et éprouvé par quatre bancs
+(`G7-1 bis`) :
+
+1. le module PUR n'importe **rien** — il part dans le bundle patient, et une
+   dépendance serveur y a déjà cassé la construction de production ;
+2. la route n'atteint le registre **que** par l'adaptateur, jamais directement ;
+3. l'adaptateur ne lit **que** le registre des règles : ni `clinical-engine`,
+   ni `scoring`, ni `instruments`, ni `equilibre`. Il résout une citation, il ne
+   calcule aucune clinique ;
+4. l'adaptateur ne **fabrique** aucun texte : il recopie, ou rend `null`.
+
+**Les fail-closed sont durcis, jamais assouplis.** Un registre non signé rend
+503 ; un périmètre reçu qui n'est pas celui du serveur rend 409 (« rechargez »)
+plutôt qu'une substitution silencieuse ; un SHA **absent** reste un refus, comme
+avant — substituer là le SHA du serveur aurait signé à la place du cockpit.
+
+**La conséquence produit, qui n'est pas un effet de bord mais le fond.** Le
+registre ne publie aujourd'hui que **deux** règles (`PRIO-DIG-01`,
+`PRIO-PON-01`) ; les quatre autres sont écartées. Un candidat que le registre ne
+publie pas n'est **plus** cité — il l'était, sous une signature qu'il n'avait
+pas. La surface propose donc désormais au plus deux propositions. Ce n'est pas
+une régression à corriger en élargissant la garde : c'est la mesure réelle de ce
+qui est signé. L'élargir demande de **publier des règles**, pas d'assouplir la
+vérification.
+
 ### D-114 — La base tient l'identité d'un cycle : la fenêtre sans dédoublonnage se referme au premier `T0`
 
 - Date : 2026-08-28
