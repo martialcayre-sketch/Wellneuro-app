@@ -4,6 +4,67 @@
 
 ## Décisions actives
 
+### D-116 — Une troisième règle de priorité : l'axe sommeil, en complément de l'orientation
+
+- Date : 2026-08-28
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-28)
+- Domaine : table des règles de priorité — périmètre signé
+- Porte sur : `D-054` (qui écartait `PRIO-SOM`), `D-099` (signature précédente),
+  `D-093`, `DC-27`, `DC-28`
+- Origine : la vérification serveur des sources signées (`D-115`) a rendu
+  visible que la table ne publiait que **deux** règles, et que la surface ne
+  pouvait donc jamais proposer plus de deux axes.
+
+**Ce qui bloquait, et qui est levé.** `PRIO-SOM` était écartée depuis le
+2026-08-12 pour deux motifs, tous deux nommés dans sa `conditionDeRetour` : le
+corpus ne portait, pour cet axe, que des claims d'exploration ; et
+l'articulation avec la table d'orientation — qui déclenche déjà sur le PSQI en
+bande `>= 7` — n'était pas tranchée.
+
+1. **Le corpus.** Cinq claims valides de MÉCANISME fondent l'axe, de la même
+   nature que ceux qui fondent l'axe digestif : `WN-CL-0086-001` (« le sommeil
+   et l'éveil sont deux composantes indissociables du rythme circadien en
+   Neuro-Nutrition »), `WN-CL-0017-015` (portée systémique), `WN-CL-0025-047`
+   (dette de sommeil, insulino-résistance, inflammation de bas grade),
+   `WN-CL-0006-021` et `WN-CL-0003-013` (versant neurotransmetteurs).
+2. **L'articulation, tranchée par le responsable** : la priorité **complète**
+   l'orientation, elle ne la remplace pas. Les deux n'énoncent pas la même
+   chose et ne se contredisent donc pas — l'orientation propose d'objectiver la
+   plainte par un instrument, la priorité propose de regarder l'axe. C'est le
+   partage déjà écrit dans `BESOIN_SOURCES` entre l'agenda et le PSQI. Il est
+   inscrit en `limitations` de la règle, donc servi avec elle.
+
+**Trois exclusions délibérées.** `WN-CL-0030-001` et `WN-CL-0045-001` sont des
+modèles de CAUSALITÉ : les citer ferait dire à la règle qu'une plainte de
+sommeil cause le reste du tableau (`DC-27`) — même arbitrage que l'exclusion de
+`WN-CL-0023-005` pour l'axe digestif. `WN-CL-0086-007` (privation de sommeil
+comme chronothérapie) est une CONDUITE, et cette table désigne des axes.
+
+**Les 39 claims de l'agenda de sommeil (`WN-SRC-0052`) restent hors de la
+règle** : ils décrivent comment tenir un agenda, une procédure d'exploration.
+C'est exactement ce que la condition de retour demandait de distinguer.
+
+**Aucun seuil inventé** : le déclencheur est `Q_MOD_03` domaine `sommeil`
+`>= 7`, la bande déjà utilisée par les deux règles publiées. Aucune cadence,
+dose ni borne n'est touchée.
+
+**Re-signature.** Ajouter la règle change `PRIORITY_RULES_SHA256`, ce qui a
+refermé le verrou seul — comportement prévu, éprouvé ici pour la troisième
+fois. La signature a été posée après attestation explicite du responsable :
+`shaPerimetre` figé sur le nouveau périmètre, `dateValidation` au 2026-08-28,
+et les cinq claims ajoutés à `claimsSource` ainsi qu'au contrat de fraîcheur.
+**C'est la première re-signature dont le périmètre s'agrandit d'une RÈGLE**, et
+non d'un texte.
+
+**Ce que la signature assume**, comme les précédentes : une règle reposant sur
+un item unique auto-déclaré de `Q_MOD_03` (`DC-28`, mitigé par ce que la règle
+produit — un axe, pas une conclusion).
+
+**Les trois règles restantes ne sont pas au même stade.** `PRIO-STR` et
+`PRIO-FAT` exigent un instrument que le produit ne lit pas (PSS-10, DASS-21) :
+aucun arbitrage ne les lève. `PRIO-DOU` est, comme `PRIO-SOM` l'était, à un
+arbitrage praticien — la frontière entre axe de travail et motif d'adressage.
+
 ### D-115 — La source signée se vérifie au serveur : `G7-1` s'amende dans un seul sens, et l'exception est bornée
 
 - Date : 2026-08-28

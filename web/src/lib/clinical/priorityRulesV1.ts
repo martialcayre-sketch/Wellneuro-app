@@ -239,6 +239,88 @@ export const PRIORITY_RULES_V1: PriorityRule[] = [
       { claimId: 'WN-CL-0025-016', versionClaim: 'v1.0' },
     ],
   },
+  {
+    id: 'PRIO-SOM-01',
+    statut: 'publiee',
+    // CE QUE LE CORPUS PORTE, CLAIM PAR CLAIM.
+    //
+    // `WN-CL-0086-001` est le claim d'ancrage : Â« le sommeil et l'Ã©veil sont
+    // deux composantes indissociables du rythme circadien en Neuro-Nutrition Â».
+    // C'est lui qui interdit de lire une plainte de sommeil comme une affaire
+    // nocturne isolÃ©e â et donc lui qui fonde qu'elle puisse Ãªtre un axe de
+    // travail plutÃ´t qu'un symptÃ´me Ã  ranger. Il tient ici le rÃ´le que
+    // `WN-CL-0022-005` tient pour l'axe digestif.
+    //
+    // `WN-CL-0017-015` porte la portÃ©e SYSTÃMIQUE â Â« les troubles du rythme
+    // circadien peuvent avoir des consÃ©quences sur le sommeil, le mÃ©tabolisme,
+    // le fonctionnement du systÃ¨me cardiovasculaire et du systÃ¨me immunitaire Â».
+    // `WN-CL-0025-047` en donne un retentissement concret : Â« la dette de
+    // sommeil affecte la rÃ©sistance Ã  l'insuline, validÃ©e par l'indice HOMA,
+    // ainsi que le profil des adipokines, l'inflammation de bas grade et le
+    // stress oxydatif Â». `WN-CL-0006-021` et `WN-CL-0003-013` portent le
+    // versant neurotransmetteurs â sÃ©rotonine impliquÃ©e dans le sommeil, et
+    // impacts de la chronobiologie nutritionnelle sur leur synthÃ¨se.
+    //
+    // CE QUE LA RÃGLE NE CONCLUT PAS, ET LES CLAIMS QU'ELLE N'ÃPINGLE PAS.
+    // `WN-CL-0030-001` et `WN-CL-0045-001` dÃ©crivent un MODÃLE
+    // PHYSIOPATHOLOGIQUE reliant sommeil altÃ©rÃ©, alimentation et activitÃ©
+    // physique Ã  la neuroprogression : ce sont des claims de CAUSALITÃ, et les
+    // citer ferait dire Ã  la rÃ¨gle qu'une plainte de sommeil intense cause le
+    // reste du tableau. Association n'est pas causalitÃ© (`DC-27`), et la rÃ¨gle
+    // n'en a pas besoin â elle propose un axe, elle n'explique rien. MÃªme
+    // arbitrage que l'exclusion de `WN-CL-0023-005` pour l'axe digestif.
+    //
+    // `WN-CL-0086-007` (privation de sommeil comme chronothÃ©rapie) est Ã©cartÃ©
+    // pour un autre motif : c'est une CONDUITE. Cette table dÃ©signe des axes,
+    // elle ne prescrit rien.
+    //
+    // LES CLAIMS DE L'AGENDA DE SOMMEIL SONT HORS DE CETTE RÃGLE, et c'est
+    // dÃ©libÃ©rÃ© : `WN-SRC-0052` porte 39 claims valides qui dÃ©crivent COMMENT
+    // tenir un agenda â une procÃ©dure d'EXPLORATION. C'est exactement ce que la
+    // condition de retour de `PRIO-SOM` demandait de distinguer de ce qui fonde
+    // un axe de travail.
+    declencheurs: [
+      { type: 'comparaison', idQuestionnaire: CANAL_PLAINTE, sousScore: 'sommeil', operateur: '>=', valeur: 7 },
+    ],
+    domainePlainte: 'sommeil',
+    priorite: 3,
+    libelle: 'Axe sommeil et rythme circadien',
+    motif:
+      'Le patient situe sa plainte de sommeil dans les bandes hautes de l’échelle de plaintes actuelles. '
+      + 'Le sommeil et l’éveil sont deux composantes indissociables du rythme circadien, dont les troubles '
+      + 'retentissent sur le métabolisme, le système cardiovasculaire et le système immunitaire : '
+      + 'une plainte de sommeil intense n’est pas une affaire nocturne isolée, et l’axe mérite d’être regardé.',
+    // Besoin 5 Â« Bouger et se reposer Â», dont le groupe `repos` porte le PSQI
+    // (`Q_SOM_01`) et l'agenda (`Q_SOM_09`) â voir `BESOIN_SOURCES`. Le
+    // rattachement est une DÃSIGNATION d'axe, pas une mesure : la couverture du
+    // besoin reste celle que le snapshot a calculÃ©e.
+    needIds: [5],
+    limitations: [
+      'Les claims à l’appui décrivent des mécanismes ; ils ne recommandent aucune conduite.',
+      'Une plainte déclarée sur une échelle de 1 à 10 n’est pas une mesure d’un instrument spécifique du sommeil.',
+      // L'ARTICULATION AVEC LA TABLE D'ORIENTATION â arbitrage praticien du
+      // 2026-08-28, qui lÃ¨ve la condition de retour de `PRIO-SOM`.
+      //
+      // `R2-SOM-02` dÃ©clenche dÃ©jÃ  sur le PSQI en bande `>= 7`. Les deux tables
+      // lisent donc le mÃªme axe, et il fallait dire ce que chacune Ã©nonce.
+      // L'arbitrage retenu : la prioritÃ© COMPLÃTE l'orientation, elle ne la
+      // remplace pas â le mÃªme partage que celui dÃ©jÃ  Ã©crit dans
+      // `BESOIN_SOURCES` entre l'agenda et le PSQI (Â« il COMPLÃTE le PSQI, il ne
+      // le remplace pas Â»).
+      //
+      // Les deux ne disent pas la mÃªme chose et ne se contredisent donc pas :
+      // l'orientation propose d'OBJECTIVER la plainte par un instrument, cette
+      // rÃ¨gle propose de REGARDER l'axe. Un patient peut recevoir les deux.
+      'La table d’orientation propose d’objectiver la plainte de sommeil par le PSQI. Cette priorité la complète et ne la remplace pas : elle désigne un axe, elle ne conclut pas sur l’instrument.',
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0086-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0017-015', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0025-047', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0006-021', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0003-013', versionClaim: 'v1.0' },
+    ],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,18 +328,12 @@ export const PRIORITY_RULES_V1: PriorityRule[] = [
 //
 // Patron `CONTRADICTIONS_REGLES_ECARTEES_V1` puis `STOP_RULES_ECARTEES_V1` : une
 // règle écartée reste lisible avec son motif, plutôt que de disparaître dans un
-// ticket que personne ne rouvre. `Q_MOD_03` porte SEPT domaines ; la V1 n'en
-// couvre que deux, et l'écart doit se voir.
+// ticket que personne ne rouvre. `Q_MOD_03` porte SEPT domaines ; la table n'en
+// couvre que TROIS — `PRIO-SOM` l'a rejointe le 2026-08-28, sa condition de
+// retour ayant été levée par arbitrage praticien — et l'écart doit se voir.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PRIORITY_RULES_ECARTEES_V1: PriorityRuleEcartee[] = [
-  {
-    id: 'PRIO-SOM',
-    motif:
-      "Le domaine `sommeil` de Q_MOD_03 déclenche DÉJÀ une règle de la table d'orientation signée (`R2-SOM-02`, PSQI) sur exactement la même bande `>= 7`. Écrire ici une priorité sur le même déclencheur ferait dire deux choses différentes au même fait, sans qu'aucun claim distingue « objectiver la plainte par le PSQI » de « travailler l'axe sommeil en premier ». Le corpus relu le 2026-08-12 ne porte, pour cet axe, que des claims d'exploration — c'est précisément ce que la table d'orientation exprime déjà.",
-    conditionDeRetour:
-      "Un claim VALIDE qui fonde une INTERVENTION sur l'axe sommeil, distinct de ceux qui fondent l'exploration par le PSQI, et un arbitrage praticien sur l'articulation des deux tables quand elles lisent le même déclencheur.",
-  },
   {
     id: 'PRIO-STR',
     motif:
@@ -381,15 +457,33 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   // verdict par défaut. (Une première rédaction écrivait « les vingt règles » :
   // vingt est le compte de la table d'ORIENTATION, pas de celle-ci, qui en
   // porte deux — relevé en revue.)
+  //
+  // RE-SIGNÉE le 2026-08-28 ([[D-116]], arbitrage praticien explicite en
+  // session). Le périmètre s'agrandit d'une TROISIÈME règle, `PRIO-SOM-01` :
+  // `PRIO-SOM` était écartée depuis le 2026-08-12 au motif que le corpus ne
+  // portait, pour cet axe, que des claims d'exploration, et que l'articulation
+  // avec la table d'orientation — qui déclenche déjà sur le PSQI en bande
+  // `>= 7` — n'était pas tranchée. Les deux points sont levés : cinq claims de
+  // MÉCANISME (`WN-CL-0086-001` et suivants), de la même nature que ceux qui
+  // fondent l'axe digestif, et l'arbitrage praticien « la priorité COMPLÈTE
+  // l'orientation, elle ne la remplace pas », inscrit en `limitations` de la
+  // règle.
+  //
+  // Ce que cette signature assume EN PLUS des précédentes : une troisième règle
+  // reposant, comme les deux autres, sur un item unique auto-déclaré de
+  // `Q_MOD_03` (`DC-28` mitigé par ce que la règle PRODUIT — un axe, pas une
+  // conclusion), et le fait que les 39 claims valides de l'agenda de sommeil
+  // (`WN-SRC-0052`) restent HORS de la règle : ils décrivent une procédure
+  // d'exploration, non un axe de travail.
   validationExterne: true,
-  dateValidation: '2026-08-23T00:00:00.000Z',
+  dateValidation: '2026-08-28T00:00:00.000Z',
   // SURTOUT PAS `shaPerimetre: PRIORITY_RULES_SHA256` — la constante est
   // déclarée APRÈS cet objet (ReferenceError à l'import), et réordonner
   // rendrait la comparaison tautologique : le sha est recalculé à chaque
   // chargement depuis la table vivante, la concordance serait toujours vraie
   // et la péremption jamais détectée (piège documenté sur le verrou biologie,
   // changelog du 2026-08-16).
-  shaPerimetre: '5485b92845d25ae6d3ed06fd3a4bc58c3931e753ab88f6bb93523c278c6b8c97',
+  shaPerimetre: 'c525927a34961f1397924e3a90ceefc1e831105a4d7dc10a261a4f6e9b32aa8a',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -405,6 +499,12 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
     { claimId: 'WN-CL-0025-014', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0025-015', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0025-016', versionClaim: 'v1.0' },
+    // `PRIO-SOM-01` (2026-08-28) — mécanismes de l'axe sommeil / circadien.
+    { claimId: 'WN-CL-0086-001', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0017-015', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0025-047', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0006-021', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0003-013', versionClaim: 'v1.0' },
   ],
 };
 

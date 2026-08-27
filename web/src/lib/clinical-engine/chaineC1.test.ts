@@ -49,7 +49,7 @@ const ETAT_LIVRE = Object.freeze({
 // sert. Même valeur que `DATE_SIGNATURE_SIMULEE` de `chaineC1Fixture` — une
 // SENTINELLE en fin de fichier tient les deux copies contre la métadonnée, et
 // rougira à la re-signature praticien (due depuis [[D-062]]).
-const DATE_SIGNATURE_LIVREE = '2026-08-23T00:00:00.000Z';
+const DATE_SIGNATURE_LIVREE = '2026-08-28T00:00:00.000Z';
 
 function simulerSignature(): void {
   PRIORITY_RULES_METADATA.validationExterne = true;
@@ -217,7 +217,7 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     simulerSignature();
     const { review, decisionCard } = chaine();
     expect(review.abstention.status).toBe('not_required');
-    expect(review.abstention.ruleIds).toEqual(['PRIO-DIG-01', 'PRIO-PON-01']);
+    expect(review.abstention.ruleIds).toEqual(['PRIO-DIG-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
     expect(review.abstention.limitations.join(' ')).toContain('aucun motif d’abstention');
     expect(decisionCard.abstention.status).toBe('not_required');
   });

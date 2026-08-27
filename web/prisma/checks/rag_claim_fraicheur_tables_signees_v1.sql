@@ -148,6 +148,15 @@ BEGIN
     ('WN-CL-0025-014', 'v1.0', 'priorites', false),
     ('WN-CL-0025-015', 'v1.0', 'priorites', false),
     ('WN-CL-0025-016', 'v1.0', 'priorites', false),
+    -- `PRIO-SOM-01` (2026-08-28, [[D-116]]) — mécanismes de l'axe sommeil et
+    -- du rythme circadien. `exige_prescriptif = false`, comme les autres claims
+    -- de cette table : ils DÉCRIVENT des mécanismes et ne recommandent aucune
+    -- conduite, ce que la règle dit elle-même dans ses `limitations`.
+    ('WN-CL-0086-001', 'v1.0', 'priorites', false),
+    ('WN-CL-0017-015', 'v1.0', 'priorites', false),
+    ('WN-CL-0025-047', 'v1.0', 'priorites', false),
+    ('WN-CL-0006-021', 'v1.0', 'priorites', false),
+    ('WN-CL-0003-013', 'v1.0', 'priorites', false),
     -- Registre des conflits de sources déclarés ([[D-103]]). `exige_prescriptif
     -- = false` : un conflit déclaré CONSTATE que deux claims du corpus ne
     -- disent pas la même chose, il ne prescrit rien — même catégorie que la
