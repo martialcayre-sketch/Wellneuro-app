@@ -72,7 +72,7 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `JOURS_JALON` re-typée sur les seuls jalons de mesure (un `Record` indexé par
   un type ouvert dégénérait en signature d'index, rendant `undefined` sous un
   type `number`), garde `G7` portée. **Elle ne change aucun comportement.**
-  **PR 2 livrée** (2026-08-27) — le comportement : les sites `milestone ===
+  **PR 2 mergée** (#805, 2026-08-27) — le comportement : les sites `milestone ===
   'T0'` relus un par un et tranchés entre « l'ancre du cycle courant » et « la
   toute première mesure » ; le rideau `D-052` étendu à **toute ancre** (ouvrir
   un deuxième cycle est le même acte, la clé s'élargit, aucun seuil ne bouge) ;
@@ -83,9 +83,19 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   « la plus récente » dont les deux moitiés étaient fausses. **L'ouverture d'un
   `T1` est un geste praticien nommé**, et la fermeture des fenêtres du cycle
   précédent est annoncée avant le geste au lieu d'être un effet de bord (§8).
-  **Deux gardes d'écriture neuves** aux points de persistance : la forme (ni
-  ancre ni mesure ⇒ refus) et le rang (ancre déjà posée, ou la suivante — un
-  `T7` sur un dossier qui n'a que `T0` laisserait six rangs vides).
+  **Trois gardes d'écriture neuves** aux points de persistance : la forme (ni
+  ancre ni mesure ⇒ refus), le rang (ancre déjà posée, ou la suivante — un
+  `T7` sur un dossier qui n'a que `T0` laisserait six rangs vides) et la
+  cohérence interne (identifiant et jalon déclaré qui se contredisent ⇒ refus,
+  au lieu d'un arbitrage muet qui laissait ouvrir une ancre sans rideau).
+  **La revue P0 a rendu NO-GO sur la première version de cette PR**, et le
+  correctif décisif touche l'identité des épisodes : `runtime-episode-<patient>-<jalon>`
+  n'était unique que tant qu'un dossier n'avait qu'un cycle. Le `J21` du second
+  y prenait la même **clé primaire** que celui du premier, et la persistance
+  écrit par `upsert(..., update: {})` — la confirmation n'écrivait rien sous
+  une réponse `ok: true`. Le `T1` que cette décision permet d'ouvrir aurait été
+  un cycle dont aucune mesure n'était confirmable. Un jalon de mesure porte
+  désormais le nom de l'ancre de son cycle. **`D-113` est close.**
   **Dette reconduite** : `assessment_episodes.milestone` reste une colonne
   `String` **sans CHECK** — les gardes ci-dessus la couvrent au bord
   applicatif, la contrainte en base est une migration à part, avec sa
