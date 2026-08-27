@@ -156,10 +156,42 @@ export type CibleObjectif = {
   origine: 'revision' | 'reprise' | 'amendement';
 };
 
+/**
+ * VIDE AU SENS DE CE QUE LE LECTEUR VOIT — et non au sens de `String.trim()`.
+ *
+ * `trim()` ne retire que les blancs de la grammaire JavaScript. Six caractères
+ * INVISIBLES lui survivent : `U+200B` espace sans chasse, `U+200C`/`U+200D`
+ * antiliant et liant sans chasse, `U+2060` gluon, `U+00AD` trait d'union
+ * conditionnel, `U+180E` séparateur de voyelle mongol. Une saisie composée de
+ * l'un d'eux seulement passait pour un texte non vide — `ok: true`, une ligne
+ * persistée, et RIEN à voir pour qui la relit.
+ *
+ * LA BASE NE RATTRAPE PAS. Les CHECK de texte s'écrivent
+ * `btrim("texte", E' \t\r\n') <> ''` : ils ne retirent que ces quatre
+ * caractères et laissent passer les six autres — ainsi que `U+00A0`, `U+3000`,
+ * `U+2028` et `U+FEFF`, que `trim()` retire pourtant. Le bord applicatif est
+ * donc la seule garde effective, et il doit être le PLUS STRICT des deux.
+ * Resserrer les CHECK est une migration à part, avec son arbitrage propre —
+ * dette nommée par le `migration.sql` du LOT-05, ici reconduite.
+ *
+ * REFUS, JAMAIS NETTOYAGE. Un texte qui contient au moins un caractère visible
+ * est accepté TEL QUEL, invisibles compris : retirer des caractères de la
+ * saisie d'un patient, c'est réécrire ses mots. Seul le texte dont rien n'est
+ * visible est refusé.
+ *
+ * Trouvé par la contre-revue adverse du 2026-08-27 (affirmation `N1.7`), sur
+ * un contre-exemple exécuté.
+ */
+const RIEN_DE_VISIBLE = /^[\s\p{Cf}\p{Z}]*$/u;
+
+export function sansContenuVisible(texte: string): boolean {
+  return RIEN_DE_VISIBLE.test(texte);
+}
+
 /** Texte utile d'un champ facultatif : vide ⇒ `null`, jamais chaîne vide. */
 function texteFacultatif(brut: string | null | undefined): string | null {
   const valeur = (brut ?? '').trim();
-  return valeur.length === 0 ? null : valeur;
+  return sansContenuVisible(valeur) ? null : valeur;
 }
 
 type LectureDate =
@@ -208,7 +240,7 @@ export function preparerObjectif(entree: EntreeObjectif, cible?: CibleObjectif):
     }
   } else {
     enoncePatient = (entree.enoncePatient ?? '').trim();
-    if (enoncePatient.length === 0) return { ok: false, raison: 'enonce_absent' };
+    if (sansContenuVisible(enoncePatient)) return { ok: false, raison: 'enonce_absent' };
     if (enoncePatient.length > LONGUEUR_MAX_ENONCE) return { ok: false, raison: 'enonce_trop_long' };
   }
 
@@ -595,7 +627,7 @@ export function preparerAmendement(entree: EntreeAmendement): PreparationAmendem
   if (idObjectif.length === 0) return { ok: false, raison: 'objectif_absent' };
 
   const texte = (entree.texte ?? '').trim();
-  if (texte.length === 0) return { ok: false, raison: 'texte_absent' };
+  if (sansContenuVisible(texte)) return { ok: false, raison: 'texte_absent' };
   if (texte.length > LONGUEUR_MAX_AMENDEMENT) return { ok: false, raison: 'texte_trop_long' };
 
   return { ok: true, donnees: { idPatient: entree.idPatient, idObjectif, texte } };
@@ -737,7 +769,7 @@ export function preparerReponseJalon(entree: EntreeReponseJalon): PreparationRep
   if (!estJalonObjectif(jalonBrut)) return { ok: false, raison: 'jalon_invalide' };
 
   const texte = (entree.texte ?? '').trim();
-  if (texte.length === 0) return { ok: false, raison: 'texte_absent' };
+  if (sansContenuVisible(texte)) return { ok: false, raison: 'texte_absent' };
   if (texte.length > LONGUEUR_MAX_REPONSE_JALON) return { ok: false, raison: 'texte_trop_long' };
 
   // Absence et valeur sont deux choses. `null`/`undefined` = le patient n'a pas
