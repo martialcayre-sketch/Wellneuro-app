@@ -202,14 +202,26 @@ non `aucun` : l'audit des campagnes refuse qu'une campagne en cours ne nomme
 aucun lot (`inflight_without_active_lot`, code bloquant en CI). Le champ dit
 « le lot dont dépend la suite », pas « le lot en cours d'écriture ».
 
-1. **Passe Codex du LOT-05** (classe P0, surface patient).
-2. **Contre-revue adverse à l'échelle de la campagne**, sous forme
-   d'affirmations à réfuter — le régime éprouvé par [[D-108]], qui avait réfuté
-   sept affirmations sur treize dont un texte servi au patient depuis cinq
-   semaines.
+1. ~~**Passe Codex du LOT-05**~~ (classe P0, surface patient) — **jouée**,
+   fusionnée dans la passe unique.
+2. ~~**Contre-revue adverse à l'échelle de la campagne**~~ — **jouée** le
+   2026-08-27/28, sous forme d'affirmations à réfuter, le régime éprouvé par
+   [[D-108]]. Elle a réfuté **5 affirmations sur 25**, dont trois de niveau 1.
 
-**Les deux passes sont fusionnées en un seul énoncé**, versionné à côté de ce
-fichier : `PROMPT_CONTRE_REVUE_CODEX_2026-08-27.md`. Vingt-cinq affirmations
+**Ce qui reste, et qui a remplacé les deux gestes** : le merge des quatre PR
+correctives. Trois des cinq réfutations vivaient **sous une réponse de
+succès** — écriture perdue sous `ok: true`, ligne sans contenu lisible, texte
+servi comme signé sans l'être.
+
+**Les deux passes ont été JOUÉES le 2026-08-27/28.** Résultat :
+`REVUE_CODEX_ADVERSE_2026-08-28.md`, à côté de ce fichier — **5 affirmations
+réfutées sur 25, dont 3 au niveau 1**, 20 résistent, 0 non vérifiable. Les cinq
+ont donné lieu à des correctifs (#809, #810, #811, #812) et à deux décisions,
+[[D-114]] et [[D-115]]. La clôture attend leur merge : une campagne ne se clôt
+pas sur des réfutations ouvertes.
+
+L'énoncé de la passe est versionné à côté du résultat :
+`PROMPT_CONTRE_REVUE_CODEX_2026-08-27.md`. Vingt-cinq affirmations
 hiérarchisées en trois niveaux — donnée patient perdue ou garde franchie,
 provenance rompue, dette structurelle — avec une règle d'arrêt qui préfère un
 niveau 1 complet à trois niveaux survolés. Le périmètre y inclut `D-113`, livré
