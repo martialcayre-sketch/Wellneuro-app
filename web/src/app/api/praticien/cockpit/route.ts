@@ -13,6 +13,7 @@ import {
   adaptRuntimeInputs,
   isRuntimeMilestone,
   proposeRuntimeEpisode,
+  type AncreCycleCourant,
 } from '@/lib/clinical-engine/runtimeFromPrisma';
 import { lireEffetsIndesirables } from '@/lib/clinical-engine/effetsIndesirablesPrisma';
 import {
@@ -217,10 +218,12 @@ async function ancreCycleCourant(
   idPatient: string,
   milestone: JalonMomentum,
   asOf: string | null,
-): Promise<string | null> {
+): Promise<AncreCycleCourant | null> {
   if (estAncreDeCycle(milestone)) return null;
   const ancre = ancreCourante(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null));
-  return ancre?.confirmedAt.toISOString() ?? null;
+  // Le NOM autant que la date : il entre dans l'identifiant de l'épisode, que
+  // deux cycles partageraient sinon (`identifiantEpisode`, `runtimeFromPrisma`).
+  return ancre ? { ancre: ancre.milestone, confirmedAt: ancre.confirmedAt.toISOString() } : null;
 }
 
 // GET /api/praticien/cockpit?idPatient=PAT001&milestone=T0

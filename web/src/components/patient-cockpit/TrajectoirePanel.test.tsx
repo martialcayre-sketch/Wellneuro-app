@@ -102,6 +102,19 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
     comparaison: { disponible: true, raison: 'comparable' },
   };
 
+  // `DC-30` : un booléen que personne ne rend ne signale rien. La trajectoire
+  // calculait la discordance rang ↔ date depuis `D-113` sans qu'aucun écran ne
+  // la porte — le praticien n'avait donc aucun moyen d'apprendre le doute.
+  it('NOMME la discordance d’ordre au lieu de la trancher', () => {
+    render(<TrajectoirePanel trajectoire={{ ...deuxCycles, discordanceOrdreCycles: true }} />);
+    expect(screen.getByText(/Ordre des cycles à vérifier/i)).toBeTruthy();
+  });
+
+  it('reste muet quand rang et date concordent', () => {
+    render(<TrajectoirePanel trajectoire={deuxCycles} />);
+    expect(screen.queryByText(/Ordre des cycles à vérifier/i)).toBeNull();
+  });
+
   it('rend l’index comme une liste de repères datés cliquables', () => {
     render(<TrajectoirePanel trajectoire={deuxCycles} />);
     const index = screen.getByRole('navigation', { name: /Index de la Spirale/i });

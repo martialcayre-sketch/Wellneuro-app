@@ -40,6 +40,17 @@ describe('lireAncresPersistees', () => {
     expect(ancres.map((a) => a.milestone)).toEqual(['T0', 'T1']);
   });
 
+  it('demande un ordre déterministe à la base', async () => {
+    // Sans `orderBy`, deux lignes de MÊME rang arrivent dans l'ordre que
+    // PostgreSQL veut bien rendre, et `ancreCourante` — donc l'ancre de toute
+    // fenêtre de jalon — devient non déterministe.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    await lireAncresPersistees('PAT_1');
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { confirmedAt: 'asc' } }),
+    );
+  });
+
   it('ordonne par RANG, jamais par date de confirmation', async () => {
     prisma.assessmentEpisode.findMany.mockResolvedValue([
       ligne('b', 'T1', '2026-01-01T00:00:00.000Z'),

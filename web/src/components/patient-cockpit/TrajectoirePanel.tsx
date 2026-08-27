@@ -396,6 +396,21 @@ export function TrajectoirePanel({
               d'interprétation clinique ([[D-106]], `DC-22`). Le praticien est
               précisément celui qui pourrait le lire comme un score. */}
           <p className="text-xs text-muted-foreground">{MENTION_NATURE_INDICE_GLOBAL}</p>
+          {/* `DC-30` — LE DOUTE SE DIT, IL NE SE TRANCHE PAS. Les cycles sont
+              ordonnés par le RANG de leur ancre (`D-113` §6) ; quand cet ordre
+              contredit celui des dates de confirmation, aucune des deux sources
+              n'est corrigée en silence : la discordance est nommée ici, et le
+              praticien arbitre. Un booléen que personne ne rend ne signale rien. */}
+          {trajectoire.discordanceOrdreCycles && (
+            <p
+              role="status"
+              className="rounded-lg border border-status-warning/40 bg-status-warning/10 p-2 text-xs text-foreground"
+            >
+              Ordre des cycles à vérifier : un cycle de rang supérieur a été confirmé avant un
+              cycle de rang inférieur. Les cycles restent affichés dans l’ordre de leur ancre
+              (T0, T1, …) ; les dates de confirmation, elles, ne suivent pas cet ordre.
+            </p>
+          )}
           {trajectoire.cycles.map((cycle) => {
             const misEnAvant = cycleSelectionne === cycle.cycleId;
             return (

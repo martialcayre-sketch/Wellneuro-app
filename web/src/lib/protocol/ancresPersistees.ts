@@ -43,6 +43,13 @@ export async function lireAncresPersistees(
       milestone: { startsWith: 'T' },
       ...(avantOuA ? { confirmedAt: { lte: avantOuA } } : {}),
     },
+    // `ancresOrdonnees` trie par RANG, et un tri stable conserve alors l'ordre
+    // d'arrivée entre lignes de MÊME rang. Sans `orderBy`, cet ordre est celui
+    // que PostgreSQL veut bien rendre : `ancreCourante` — donc l'ancre de toute
+    // fenêtre de jalon — deviendrait non déterministe le jour où un dossier
+    // porte deux lignes d'un même rang. La colonne n'a ni CHECK ni unicité
+    // (dette nommée par `D-113`) : rien n'interdit ce doublon en base.
+    orderBy: { confirmedAt: 'asc' },
     select: { id: true, cycleId: true, confirmedAt: true, milestone: true },
   });
   return ancresOrdonnees(lignes.filter((ligne) => estAncreDeCycle(ligne.milestone)));

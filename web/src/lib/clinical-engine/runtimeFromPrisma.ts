@@ -141,6 +141,51 @@ export function adaptRuntimeInputs(
 }
 
 /**
+ * L'ancre du cycle courant, telle que l'appelant l'a lue en base : son NOM,
+ * qui identifie le cycle, ET sa date de confirmation, qui ancre la fenêtre.
+ *
+ * Les deux, et non plus la seule date : l'identifiant d'un épisode de MESURE
+ * doit porter le cycle, faute de quoi deux cycles partagent une ligne — voir
+ * `identifiantEpisode`.
+ */
+export type AncreCycleCourant = {
+  ancre: string;
+  confirmedAt: string;
+};
+
+/**
+ * L'IDENTIFIANT D'UN ÉPISODE RUNTIME — IL DOIT PORTER LE CYCLE.
+ *
+ * Il valait `runtime-episode-<patient>-<jalon>`. Tant qu'un dossier n'avait
+ * qu'un seul cycle, cette forme était unique. Elle a cessé de l'être le jour
+ * où `D-113` a fait de l'ouverture d'un `T1` un geste offert : le `J21` du
+ * deuxième cycle prenait le MÊME identifiant que celui du premier, donc la
+ * même clé primaire — et les deux points de persistance écrivent par
+ * `upsert(..., update: {})`. La confirmation du second n'écrivait RIEN, sous
+ * une réponse `ok: true`, et le `protocol_drafts` du cycle 2 référençait
+ * l'épisode du cycle 1. Le cycle que cette PR permet d'ouvrir était un cycle
+ * dont aucune mesure n'aurait jamais pu être confirmée.
+ *
+ * UNE ANCRE NE PREND PAS LE PRÉFIXE : son nom EST celui de son cycle, et
+ * `T1` ne collisionne pas avec `T0`. Un jalon de mesure, lui, prend le nom de
+ * l'ancre de son cycle. Sans aucune ancre confirmée, la forme historique est
+ * conservée : il n'y a alors aucun cycle dont se distinguer.
+ *
+ * `assessment_episodes` est VIDE en production (constat par conteneur du
+ * 2026-08-26) : aucun identifiant existant n'est renommé par ce changement.
+ */
+function identifiantEpisode(
+  idPatient: string,
+  milestone: JalonMomentum,
+  ancreCycle: AncreCycleCourant | null,
+): string {
+  if (estAncreDeCycle(milestone) || !ancreCycle || !estAncreDeCycle(ancreCycle.ancre)) {
+    return `runtime-episode-${idPatient}-${milestone}`;
+  }
+  return `runtime-episode-${idPatient}-${ancreCycle.ancre}-${milestone}`;
+}
+
+/**
  * La date depuis laquelle la fenêtre de l'épisode se compte.
  *
  * TROIS CAS, ET LE TROISIÈME EST NÉ AVEC `D-113`.
@@ -163,11 +208,11 @@ export function adaptRuntimeInputs(
 function dateDeReference(
   inputs: RuntimeInputs,
   milestone: JalonMomentum,
-  ancreCycle: string | null,
+  ancreCycle: AncreCycleCourant | null,
 ): string {
   const repliDossier = inputs.patient.createdAt.toISOString();
   if (!estAncreDeCycle(milestone)) {
-    return ancreCycle ?? inputs.responses[0]?.observedAt ?? repliDossier;
+    return ancreCycle?.confirmedAt ?? inputs.responses[0]?.observedAt ?? repliDossier;
   }
   if ((indexDeCycle(milestone) ?? 0) === 0) {
     return inputs.responses[0]?.observedAt ?? repliDossier;
@@ -186,15 +231,19 @@ export function proposeRuntimeEpisode(
    * cette réponse de plus de 16 jours, le jalon proposé à l'écran et l'épisode
    * construit ici étaient DISJOINTS (revue LOT-07, B2). L'appelant la fournit
    * pour tout jalon de MESURE quand un cycle est ouvert ; `null` = repli.
+   *
+   * Elle porte aussi le NOM de l'ancre, qui entre dans l'identifiant de
+   * l'épisode : sans lui, deux cycles se partagent une clé primaire
+   * (`identifiantEpisode`).
    */
-  ancreCycle: string | null = null,
+  ancreCycle: AncreCycleCourant | null = null,
 ): RuntimeEpisodeProposal {
   const targetAt = new Date(
     new Date(dateDeReference(inputs, milestone, ancreCycle)).getTime()
     + joursDepuisAncre(milestone) * JOUR_MS,
   ).toISOString();
   const proposal = proposeAssessmentEpisode({
-    assessmentEpisodeId: `runtime-episode-${inputs.patient.idPatient}-${milestone}`,
+    assessmentEpisodeId: identifiantEpisode(inputs.patient.idPatient, milestone, ancreCycle),
     patientId: inputs.patient.idPatient,
     milestone,
     targetAt,

@@ -46,7 +46,22 @@ bord silencieux, est **annoncée avant le geste** et découle d'une règle
 énonçable : le cycle courant est celui du rang le plus haut (`D-113` §8). Rien
 n'est écrit tant que l'épisode n'est pas confirmé, et le panneau le dit.
 
-**Deux gardes d'écriture neuves, aux deux points de persistance** — la colonne
+**L'identifiant d'un épisode porte désormais son cycle.** Il valait
+`runtime-episode-<patient>-<jalon>`. Cette forme était unique tant qu'un
+dossier n'avait qu'un cycle ; elle a cessé de l'être au moment même où ouvrir
+un `T1` est devenu un geste offert. Le `J21` du deuxième cycle prenait le
+**même identifiant** que celui du premier, donc la même **clé primaire** — et
+les deux points de persistance écrivent par `upsert(..., update: {})`. La
+confirmation du second n'écrivait **rien**, sous une réponse `ok: true`, et le
+`protocol_drafts` du cycle 2 référençait l'épisode du cycle 1 : le cycle que
+cette PR permet d'ouvrir aurait été un cycle dont aucune mesure n'aurait jamais
+pu être confirmée. Un jalon de mesure prend le nom de l'ancre de son cycle
+(`…-T1-J21`) ; une **ancre** n'a pas besoin du préfixe, son nom EST son cycle.
+L'identifiant n'entre pas dans `proposalHash` : aucune proposition en vol n'est
+périmée. `assessment_episodes` étant **vide en production**, aucun identifiant
+existant n'est renommé.
+
+**Trois gardes d'écriture neuves, aux deux points de persistance** — la colonne
 `milestone` n'a **aucun CHECK** en base (dette nommée par `D-113`, migration à
 part) :
 
@@ -57,9 +72,19 @@ part) :
   et celle qui suit immédiatement le rang le plus haut sont recevables. Un `T7`
   posté sur un dossier qui n'a que `T0` laisserait six rangs à jamais vides, et
   `ancreSuivante` proposerait ensuite `T8` : le trou ne se refermerait pas, il
-  se propagerait.
+  se propagerait ;
+- **la cohérence interne** : un épisode dont l'identifiant et le jalon déclaré
+  se contredisent est refusé, au lieu d'être départagé. Le suffixe de
+  l'identifiant primait sur le champ, ce qui fermait un sens de l'écart —
+  déclarer `J21` sur l'identifiant d'une ancre ne désactive pas la porte — et
+  laissait l'autre ouvert : poster l'identifiant d'un `J21` en déclarant `T1`
+  faisait rendre `J21`, donc le rideau `D-052` **ne s'évaluait pas**, alors que
+  c'est `milestone: 'T1'` qui partait en base et s'y relisait comme une ancre.
+  Les deux champs viennent du même corps de requête ; aucun ne mérite plus de
+  crédit que l'autre, et une chaîne de provenance ne se construit pas sur un
+  arbitrage muet (`DC-30`).
 
-Les deux refus passent **avant** le rideau clinique : répondre « il manque
+Les trois refus passent **avant** le rideau clinique : répondre « il manque
 Q_MOD_03 » à un client qui a posté « T7 » désignerait le mauvais défaut.
 
 **Ce qui change à l'écran**, tout en français : les libellés qui affirmaient
@@ -70,8 +95,9 @@ ligne `T0` : deux cycles côte à côte n'ont plus la même ancre, et une ligne
 `T0` aurait affiché « jalon non mesuré » sur toute la colonne du second.
 
 **Nommé, pas corrigé.** L'ordre des cycles vient du rang, la chronologie de la
-date ; quand les deux divergent, la trajectoire le **signale**
-(`discordanceOrdreCycles`) sans départager (`DC-30`). Aucune comparaison entre
+date ; quand les deux divergent, la fiche-trajectoire **l'affiche au praticien**
+(« Ordre des cycles à vérifier ») sans départager (`DC-30`) — un booléen que
+personne ne rend ne signale rien. Aucune comparaison entre
 cycles n'est introduite (`D-113` §9). Et les deux routes « Mon équilibre »
 (patient et praticien) restent **cycle-aveugles** : elles ne lisent aucun
 épisode, leur référence est la première réponse exploitable du dossier. Sur un

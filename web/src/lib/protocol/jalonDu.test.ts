@@ -157,7 +157,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
         etatPopulation: lireEtatPopulation(null),
       },
       'J21',
-      confirmedAt,
+      { ancre: 'T0', confirmedAt },
     );
     expect(proposal.window.start).toBe(du.ouvertLe);
     expect(proposal.window.end).toBe(du.fermeLe);

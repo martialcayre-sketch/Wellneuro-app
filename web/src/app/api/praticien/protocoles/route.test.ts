@@ -602,4 +602,61 @@ describe('POST /api/praticien/protocoles — recevabilité de l’ancre (`D-113`
     expect((await res.json()).reason).toBe('preconditions_non_remplies');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
+
+  // REVUE P0-2 : l'écart identifiant ↔ jalon déclaré n'était fermé que dans un
+  // sens. Le suffixe primait, donc déclarer `T1` sur l'identifiant d'un `J21`
+  // faisait rendre `J21` : le rideau `D-052` ne s'évaluait PAS, et c'est
+  // pourtant `milestone: 'T1'` qui partait en base et s'y relisait comme une
+  // ancre. Un cycle s'ouvrait sans rideau d'entrée.
+  it('REFUSE un épisode qui se contredit, dans les DEUX sens', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+    ]);
+
+    const ancreAnnonceeSurUnJalon = await POST(postRequest(
+      chainePour({
+        ...episode,
+        assessmentEpisodeId: 'runtime-episode-PAT_TEST-T0-J21',
+        milestone: 'T1' as never,
+      }),
+    ));
+    expect(ancreAnnonceeSurUnJalon.status).toBe(422);
+    expect((await ancreAnnonceeSurUnJalon.json()).error).toContain('incohérent');
+
+    const jalonAnnonceSurUneAncre = await POST(postRequest(
+      chainePour({
+        ...episode,
+        assessmentEpisodeId: 'runtime-episode-PAT_TEST-T0',
+        milestone: 'J21' as never,
+      }),
+    ));
+    expect(jalonAnnonceSurUneAncre.status).toBe(422);
+    expect((await jalonAnnonceSurUneAncre.json()).error).toContain('incohérent');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('ACCEPTE le jalon de mesure d’un DEUXIÈME cycle, sur sa propre ligne', async () => {
+    // La clé primaire de l'épisode porte désormais le cycle : le `J21` du
+    // cycle 1 ne squatte plus celle du `J21` du cycle 0, que l'`upsert`
+    // `update: {}` aurait laissée intacte sous une réponse `ok: true`.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      ancre('EPI_T0', 'T0', '2025-06-01T00:00:00.000Z'),
+      ancre('EPI_T1', 'T1', '2025-12-01T00:00:00.000Z'),
+    ]);
+    const res = await POST(postRequest(
+      chainePour({
+        ...episode,
+        assessmentEpisodeId: 'runtime-episode-PAT_TEST-T1-J21',
+        milestone: 'J21' as never,
+      }),
+    ));
+    expect(res.status).toBe(200);
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'runtime-episode-PAT_TEST-T1-J21' },
+        create: expect.objectContaining({ milestone: 'J21', cycleId: 'EPI_T1' }),
+      }),
+    );
+  });
 });
