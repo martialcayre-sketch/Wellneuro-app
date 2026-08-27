@@ -145,7 +145,7 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
     // aussi la résolution du cycle plus bas : une seule lecture, sinon deux
     // verdicts pourraient diverger.
     const ancres = await lireAncresPersistees(episode.patientId);
-    const refusAncre = refusAncreNonRecevable(episode.milestone, ancres);
+    const refusAncre = refusAncreNonRecevable(episode, ancres);
     if (refusAncre) {
       return NextResponse.json(
         { ok: false, reason: 'preconditions_non_remplies', error: refusAncre },

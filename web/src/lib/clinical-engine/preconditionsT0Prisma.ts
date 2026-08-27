@@ -165,6 +165,7 @@ export async function refusPreconditionsPersistance(
     patientId: string;
     milestone: string;
     assessmentEpisodeId?: string;
+    confirmedAt?: string | null;
     preconditionOverrides?: { conditionId?: string; motif?: string; decidePar?: string; decideLe?: string }[];
   },
   emailPraticienSession: string,
@@ -206,6 +207,28 @@ export async function refusPreconditionsPersistance(
     const decideLe = override.decideLe ?? '';
     if (Number.isNaN(new Date(decideLe).getTime()) || new Date(decideLe).toISOString() !== decideLe) {
       return 'La justification de contournement porte une date invalide.';
+    }
+    // LA FORME NE SUFFISAIT PAS, et le commentaire ci-dessus décrivait déjà le
+    // risque qu'il ne fermait pas : « le dater à volonté ». Toute date ISO
+    // syntaxiquement valide était acceptée et persistée — un contournement
+    // pouvait porter un horodatage arbitraire dans la seule ligne qui en fera
+    // foi.
+    //
+    // RECOUPÉ, PAS RÉÉCRIT : réécrire ferait diverger l'épisode de celui qui a
+    // été haché dans `snapshot.inputHash`, et casserait la chaîne de provenance
+    // que ces routes existent pour tenir. Le recoupement n'invente aucune
+    // tolérance : le cockpit pose UN SEUL horodatage pour l'épisode, le
+    // snapshot, la revue et la carte (« UN SEUL HORODATAGE (`now`) »,
+    // `cockpit/route.ts`). Un contournement décidé à la confirmation porte donc
+    // EXACTEMENT l'instant de cette confirmation.
+    //
+    // Ce que ce contrôle NE ferme PAS, et qui reste ouvert : un épisode dont
+    // `confirmedAt` lui-même serait forgé reste cohérent avec ses
+    // contournements. L'ancrage de `confirmedAt` sur une preuve serveur est un
+    // chantier distinct. Trouvé par la contre-revue adverse du 2026-08-27
+    // (affirmation `N1.8`).
+    if (decideLe !== episode.confirmedAt) {
+      return 'La justification de contournement n’est pas datée de la confirmation de l’épisode.';
     }
   }
 

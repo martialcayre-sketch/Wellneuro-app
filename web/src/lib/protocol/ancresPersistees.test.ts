@@ -79,20 +79,22 @@ describe('lireAncresPersistees', () => {
 
 describe('refusAncreNonRecevable — la garde des deux points de persistance', () => {
   const ancres = [ligne('a', 'T0', '2026-01-01T00:00:00.000Z')];
+  // L'identifiant compte désormais : une re-confirmation vise LA ligne posée.
+  const ep = (milestone: string, assessmentEpisodeId = 'a') => ({ milestone, assessmentEpisodeId });
 
   it('un jalon de mesure ne pose aucune ancre : rien à refuser', () => {
-    expect(refusAncreNonRecevable('J21', ancres)).toBeNull();
+    expect(refusAncreNonRecevable(ep('J21', 'peu-importe'), ancres)).toBeNull();
   });
 
   it('accepte l’ancre suivante et la re-confirmation d’une ancre posée', () => {
-    expect(refusAncreNonRecevable('T1', ancres)).toBeNull();
-    expect(refusAncreNonRecevable('T0', ancres)).toBeNull();
+    expect(refusAncreNonRecevable(ep('T1', 'b'), ancres)).toBeNull();
+    expect(refusAncreNonRecevable(ep('T0', 'a'), ancres)).toBeNull();
   });
 
   it('REFUSE un rang sauté — le trou ne se referme pas, il se propage', () => {
     // `milestone` vient du navigateur. Un `T7` sur un dossier qui n'a que `T0`
     // ouvrirait un cycle de rang 7, et `ancreSuivante` proposerait ensuite `T8`.
-    const refus = refusAncreNonRecevable('T7', ancres);
+    const refus = refusAncreNonRecevable(ep('T7', 'z'), ancres);
     expect(refus).not.toBeNull();
     expect(refus).toContain('T7');
     expect(refus).toContain('T1');
@@ -103,12 +105,41 @@ describe('refusAncreNonRecevable — la garde des deux points de persistance', (
     // lecture ; `TA` et `J7` ne seraient relus par personne. Écrits en base,
     // ils y resteraient invisibles.
     for (const inconnu of ['T01', 'TA', 'J7', 'T', '']) {
-      expect(refusAncreNonRecevable(inconnu, ancres)).toContain('Jalon inconnu');
+      expect(refusAncreNonRecevable(ep(inconnu, 'z'), ancres)).toContain('Jalon inconnu');
     }
   });
 
   it('sur un dossier vierge, seul `T0` passe', () => {
-    expect(refusAncreNonRecevable('T0', [])).toBeNull();
-    expect(refusAncreNonRecevable('T1', [])).not.toBeNull();
+    expect(refusAncreNonRecevable(ep('T0', 'neuf'), [])).toBeNull();
+    expect(refusAncreNonRecevable(ep('T1', 'neuf'), [])).not.toBeNull();
+  });
+
+  // CONTRE-REVUE ADVERSE DU 2026-08-27, affirmation `N1.1` RÉFUTÉE.
+  //
+  // La garde raisonnait sur les NOMS : `T0` déjà posé ⇒ recevable. Mais
+  // l'`upsert` de persistance est idempotent SUR SON IDENTIFIANT — un `T0`
+  // posté sous un identifiant inconnu de la base est une CRÉATION, et le
+  // dossier se retrouve avec deux cycles nommés `T0`. Or le nom est ce dont
+  // l'identifiant des mesures est dérivé : les `J21` des deux cycles
+  // reprennent tous deux `…-T0-J21`, et la collision de clé primaire que
+  // `D-113` avait fermée se rouvre.
+  it('REFUSE un second `T0` sous un autre identifiant — la collision reviendrait', () => {
+    const refus = refusAncreNonRecevable(ep('T0', 'autre-ligne'), ancres);
+    expect(refus).not.toBeNull();
+    expect(refus).toContain('déjà posée');
+  });
+
+  it('la re-confirmation reste possible, mais seulement sur la ligne existante', () => {
+    expect(refusAncreNonRecevable(ep('T0', 'a'), ancres)).toBeNull();
+  });
+
+  it('un dossier portant déjà deux lignes de même rang accepte chacune d’elles', () => {
+    // Aucune unicité en base ne l'interdit aujourd'hui (dette `D-113`) : la
+    // garde ne doit pas rendre irréparable un dossier qui porterait déjà le
+    // doublon, elle doit empêcher d'en créer un nouveau.
+    const deux = [ligne('a', 'T0', '2026-01-01T00:00:00.000Z'), ligne('b', 'T0', '2026-02-01T00:00:00.000Z')];
+    expect(refusAncreNonRecevable(ep('T0', 'a'), deux)).toBeNull();
+    expect(refusAncreNonRecevable(ep('T0', 'b'), deux)).toBeNull();
+    expect(refusAncreNonRecevable(ep('T0', 'c'), deux)).not.toBeNull();
   });
 });

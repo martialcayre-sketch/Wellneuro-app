@@ -80,19 +80,48 @@ export function ancreCourante(ancres: readonly AncrePersistee[]): AncrePersistee
  *    jamais vides, et `ancreSuivante` proposerait ensuite `T8` : le trou ne se
  *    referme pas, il se propage.
  *
+ * 3. L'IDENTITÉ DE LA LIGNE. Une ancre déjà posée n'est re-confirmable que
+ *    par l'épisode qui la porte : voir le commentaire du corps.
+ *
  * Écrite ici et non seulement dans le cockpit, pour le motif que `D-052` a déjà
  * établi sur les préconditions : le POST du cockpit n'écrit rien, ce sont ces
  * deux routes qui gardent la base.
  */
 export function refusAncreNonRecevable(
-  milestone: string,
+  episode: { assessmentEpisodeId?: string; milestone: string },
   ancres: readonly AncrePersistee[],
 ): string | null {
+  const { milestone } = episode;
   if (!estJalonMomentum(milestone)) {
     return `Jalon inconnu : « ${milestone} ». Un épisode porte une ancre de cycle (T0, T1, …) ou un jalon de mesure (J21, J42, J90).`;
   }
   if (!estAncreDeCycle(milestone)) return null;
+
   const posees = ancres.map((ancre) => ancre.milestone);
-  if (ancreRecevable(milestone, posees)) return null;
-  return `Ancre de cycle non recevable : « ${milestone} ». Ce dossier attend « ${ancreSuivante(posees)} », ou la re-confirmation d’une ancre déjà posée.`;
+  if (!ancreRecevable(milestone, posees)) {
+    return `Ancre de cycle non recevable : « ${milestone} ». Ce dossier attend « ${ancreSuivante(posees)} », ou la re-confirmation d’une ancre déjà posée.`;
+  }
+
+  // 3. L'IDENTITÉ DE LA LIGNE, quand l'ancre est DÉJÀ POSÉE.
+  //
+  // `ancreRecevable` raisonne sur des NOMS : `T0` déjà posé ⇒ recevable, parce
+  // que la persistance traite la re-confirmation en `upsert` idempotent. Mais
+  // idempotent SUR SON IDENTIFIANT. Un `T0` posté avec un identifiant que la
+  // base ne porte pas n'est pas une re-confirmation : c'est une CRÉATION, et
+  // le dossier se retrouve avec deux lignes `milestone = 'T0'`, donc deux
+  // cycles portant le même nom.
+  //
+  // Et le nom est précisément ce dont l'identifiant des mesures est dérivé
+  // (`identifiantEpisode`, `runtimeFromPrisma`) : les `J21` des deux cycles
+  // reprennent tous deux `…-T0-J21`, et la collision de clé primaire que
+  // `D-113` venait de fermer se rouvre — écriture perdue sous `ok: true`.
+  //
+  // Une re-confirmation vise donc LA ligne existante, ou n'est pas une
+  // re-confirmation. Trouvé par la contre-revue adverse du 2026-08-27
+  // (affirmation `N1.1`), qui a réfuté le correctif précédent par ce chemin.
+  const memeNom = ancres.filter((ancre) => ancre.milestone === milestone);
+  if (memeNom.length > 0 && !memeNom.some((ancre) => ancre.id === episode.assessmentEpisodeId)) {
+    return `Ancre déjà posée : « ${milestone} » existe sur ce dossier sous un autre épisode. Une re-confirmation vise la ligne existante ; en ouvrir une seconde donnerait deux cycles de même nom. Rechargez la fiche.`;
+  }
+  return null;
 }
