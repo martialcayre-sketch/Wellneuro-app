@@ -7,8 +7,14 @@ import { TrajectoirePanel } from './TrajectoirePanel';
 
 afterEach(cleanup);
 
-const jalons = (t0: number | null, j21: number | null): Trajectoire['cycles'][number]['jalons'] => [
-  { jalon: 'T0', mesure: t0 !== null, valeur: t0, date: t0 === null ? null : '2026-01-01T00:00:00.000Z' },
+// L'ancre est un PARAMÈTRE : depuis `D-113`, deux cycles côte à côte ne
+// portent plus la même — le second s'ancre en `T1`.
+const jalons = (
+  t0: number | null,
+  j21: number | null,
+  ancre: 'T0' | 'T1' = 'T0',
+): Trajectoire['cycles'][number]['jalons'] => [
+  { jalon: ancre, mesure: t0 !== null, valeur: t0, date: t0 === null ? null : '2026-01-01T00:00:00.000Z' },
   { jalon: 'J21', mesure: j21 !== null, valeur: j21, date: j21 === null ? null : '2026-01-22T00:00:00.000Z' },
   { jalon: 'J42', mesure: false, valeur: null, date: null },
   { jalon: 'J90', mesure: false, valeur: null, date: null },
@@ -26,7 +32,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
       cycles: [
         {
           cycleId: 'ep_T0',
-          dateT0: '2026-01-01T00:00:00.000Z',
+          ancre: 'T0',
+          dateAncre: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -38,6 +45,7 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
       momentumParBesoin: [],
         },
       ],
+      discordanceOrdreCycles: false,
       comparaison: { disponible: false, raison: 'un_seul_cycle' },
     };
     render(<TrajectoirePanel trajectoire={trajectoire} />);
@@ -52,9 +60,10 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     const trajectoire: Trajectoire = {
       index: [],
       cycles: [
-        { cycleId: 'a', dateT0: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
-        { cycleId: 'b', dateT0: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'a', ancre: 'T0', dateAncre: '2026-01-01T00:00:00.000Z', versionScore: 'v1', jalons: [], momentum: null, momentumParBesoin: [] },
+        { cycleId: 'b', ancre: 'T1', dateAncre: '2026-03-01T00:00:00.000Z', versionScore: 'v2', jalons: [], momentum: null, momentumParBesoin: [] },
       ],
+      discordanceOrdreCycles: false,
       comparaison: { disponible: false, raison: 'versions_differentes' },
     };
     render(<TrajectoirePanel trajectoire={trajectoire} />);
@@ -67,12 +76,13 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
     index: [
       { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
       { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
-      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
+      { milestone: 'T1', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
     ],
     cycles: [
       {
         cycleId: 'ep_a',
-        dateT0: '2026-01-01T00:00:00.000Z',
+        ancre: 'T0',
+        dateAncre: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -80,13 +90,15 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
       },
       {
         cycleId: 'ep_b',
-        dateT0: '2026-03-01T00:00:00.000Z',
+        ancre: 'T1',
+        dateAncre: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
-        jalons: jalons(48, null),
+        jalons: jalons(48, null, 'T1'),
         momentum: null,
       momentumParBesoin: [],
       },
     ],
+    discordanceOrdreCycles: false,
     comparaison: { disponible: true, raison: 'comparable' },
   };
 
@@ -109,7 +121,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
     expect(screen.getByText(/repère sélectionné/i)).toBeTruthy();
     expect(screen.getByText(/cycle mis en avant ci-dessous/i)).toBeTruthy();
     // Le J21 du 22/01 appartient au cycle ouvert le 01/01, pas à celui du 01/03.
-    const carteA = screen.getByText(/Cycle depuis le 01\/01\/2026/).closest('div[aria-current]');
+    const carteA = screen.getByText(/Cycle T0 depuis le 01\/01\/2026/).closest('div[aria-current]');
     expect(carteA).not.toBeNull();
   });
 
@@ -125,7 +137,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
     expect(screen.queryByText(/repère sélectionné/i)).toBeNull();
   });
 
-  it('repère antérieur à tout T0 : le panneau le dit, il n’invente aucun rattachement', () => {
+  it('repère antérieur à toute ancre : le panneau le dit, il n’invente aucun rattachement', () => {
     const trajectoire: Trajectoire = {
       ...deuxCycles,
       index: [{ milestone: 'J21', date: '2025-12-01T00:00:00.000Z', cycleId: null }],
@@ -135,7 +147,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
 
     fireEvent.click(within(index).getByRole('button', { name: /J21 · 01\/12\/2025/ }));
 
-    expect(screen.getByText(/antérieur à tout épisode T0 confirmé/i)).toBeTruthy();
+    expect(screen.getByText(/antérieur à toute ancre de cycle confirmée/i)).toBeTruthy();
     expect(screen.queryByText(/repère sélectionné/i)).toBeNull();
   });
 
@@ -151,7 +163,8 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
     cycles: [
       {
         cycleId: 'ep_a',
-        dateT0: '2026-01-01T00:00:00.000Z',
+        ancre: 'T0',
+        dateAncre: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -159,24 +172,32 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
       },
       {
         cycleId: 'ep_b',
-        dateT0: '2026-03-01T00:00:00.000Z',
+        ancre: 'T1',
+        dateAncre: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
-        jalons: jalons(48, null),
+        jalons: jalons(48, null, 'T1'),
         momentum: null,
       momentumParBesoin: [],
       },
     ],
+    discordanceOrdreCycles: false,
     comparaison: { disponible: true, raison: 'comparable' },
   };
 
   it('présente une vraie grille : une colonne par cycle, une ligne par jalon', () => {
     render(<TrajectoirePanel trajectoire={comparable} />);
     const table = screen.getByRole('table');
-    expect(within(table).getByRole('columnheader', { name: /Cycle du 01\/01\/2026/ })).toBeTruthy();
-    expect(within(table).getByRole('columnheader', { name: /Cycle du 01\/03\/2026/ })).toBeTruthy();
-    for (const jalon of ['T0', 'J21', 'J42', 'J90']) {
-      expect(within(table).getByRole('rowheader', { name: jalon })).toBeTruthy();
+    // La colonne porte le NOM du cycle : deux cycles ne s'ancrent plus tous
+    // deux en `T0` (`D-113`).
+    expect(within(table).getByRole('columnheader', { name: /Cycle T0 du 01\/01\/2026/ })).toBeTruthy();
+    expect(within(table).getByRole('columnheader', { name: /Cycle T1 du 01\/03\/2026/ })).toBeTruthy();
+    // La première ligne est « l'ancre » et non `T0` : chaque colonne y lit la
+    // SIENNE. Une ligne `T0` aurait affiché « jalon non mesuré » sur toute la
+    // colonne du second cycle, dont l'ancre est `T1`.
+    for (const ligne of ['Ancre du cycle', 'J21', 'J42', 'J90']) {
+      expect(within(table).getByRole('rowheader', { name: ligne })).toBeTruthy();
     }
+    expect(within(table).getByText(/indice 48/)).toBeTruthy();
   });
 
   it('une case sans mesure affiche « jalon non mesuré », jamais un 0 (A8-2)', () => {
@@ -198,6 +219,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         trajectoire={{
           ...comparable,
           cycles: [comparable.cycles[0], { ...comparable.cycles[1], versionScore: null }],
+          discordanceOrdreCycles: false,
           comparaison: { disponible: false, raison: 'version_inconnue' },
         }}
       />,
@@ -213,6 +235,7 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
         trajectoire={{
           ...comparable,
           cycles: [comparable.cycles[0], { ...comparable.cycles[1], versionScore: 'v2' }],
+          discordanceOrdreCycles: false,
           comparaison: { disponible: false, raison: 'versions_differentes' },
         }}
       />,
@@ -227,12 +250,13 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
     index: [
       { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
       { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
-      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
+      { milestone: 'T1', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
     ],
     cycles: [
       {
         cycleId: 'ep_a',
-        dateT0: '2026-01-01T00:00:00.000Z',
+        ancre: 'T0',
+        dateAncre: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(40, 55),
         momentum: { tendance: 'hausse', delta: 15 },
@@ -240,13 +264,15 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
       },
       {
         cycleId: 'ep_b',
-        dateT0: '2026-03-01T00:00:00.000Z',
+        ancre: 'T1',
+        dateAncre: '2026-03-01T00:00:00.000Z',
         versionScore: 'v1',
-        jalons: jalons(48, null),
+        jalons: jalons(48, null, 'T1'),
         momentum: null,
       momentumParBesoin: [],
       },
     ],
+    discordanceOrdreCycles: false,
     comparaison: { disponible: true, raison: 'comparable' },
   };
 
@@ -255,7 +281,7 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
     expect(screen.getByRole('heading', { name: 'Sophie Nicola — épisode 2' })).toBeTruthy();
     const episodes = screen.getByRole('list', { name: 'Épisodes' });
     expect(within(episodes).getByText(/Épisode 1 · T0 le 01\/01\/2026 · momentum en hausse \(écart 15\)/)).toBeTruthy();
-    expect(within(episodes).getByText(/Épisode 2 · T0 le 01\/03\/2026/)).toBeTruthy();
+    expect(within(episodes).getByText(/Épisode 2 · T1 le 01\/03\/2026/)).toBeTruthy();
   });
 
   it('sans cycle confirmé : l’identité seule — aucun épisode affirmé', () => {
@@ -309,13 +335,15 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
     cycles: [
       {
         cycleId: 'ep_T0',
-        dateT0: '2026-01-01T00:00:00.000Z',
+        ancre: 'T0',
+        dateAncre: '2026-01-01T00:00:00.000Z',
         versionScore: 'v1',
         jalons: jalons(12, null),
         momentum: null,
       momentumParBesoin: [],
       },
     ],
+    discordanceOrdreCycles: false,
     comparaison: { disponible: false, raison: 'un_seul_cycle' },
   };
 
@@ -447,7 +475,8 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
           index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' }],
           cycles: [{
             cycleId: 'ep_a',
-            dateT0: '2026-01-01T00:00:00.000Z',
+            ancre: 'T0',
+            dateAncre: '2026-01-01T00:00:00.000Z',
             versionScore: 'v1',
             jalons: [],
             momentum: { tendance: 'hausse', delta: 15 },
@@ -468,6 +497,7 @@ describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
               },
             ],
           }],
+          discordanceOrdreCycles: false,
           comparaison: { disponible: false, raison: 'un_seul_cycle' },
         }}
       />,
@@ -495,13 +525,14 @@ describe('TrajectoirePanel — re-passation ciblée (LOT-07, D-058)', () => {
   // fondée sur le besoin 4 (Q_GAS_01, Q_INF_01) et un email : les trois
   // conditions du bloc.
   function trajectoireJalonOuvert(): Trajectoire {
-    const dateT0 = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
+    const dateAncre = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString();
     return {
-      index: [{ milestone: 'T0', date: dateT0, cycleId: 'ep_a' }],
+      index: [{ milestone: 'T0', date: dateAncre, cycleId: 'ep_a' }],
       cycles: [{
-        cycleId: 'ep_a', dateT0, versionScore: 'v15', jalons: [], momentum: null,
+        cycleId: 'ep_a', ancre: 'T0', dateAncre, versionScore: 'v15', jalons: [], momentum: null,
         momentumParBesoin: [],
       }],
+      discordanceOrdreCycles: false,
       comparaison: { disponible: false, raison: 'un_seul_cycle' },
     };
   }

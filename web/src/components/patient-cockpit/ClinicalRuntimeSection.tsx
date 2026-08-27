@@ -21,6 +21,8 @@ import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { resoudreJalonDu, type JalonDu } from '@/lib/protocol/jalonDu';
+import { estJalonMesure, type AncreCycle } from '@/lib/protocol/cycles';
+import { Button } from '@/components/ui/Button';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
@@ -209,6 +211,17 @@ export function ClinicalRuntimeSection({
   const [jalonDu, setJalonDu] = useState<JalonDu | null>(null);
   // Le jalon effectivement demandé au serveur : évite de redemander le même.
   const [jalonDemande, setJalonDemande] = useState<JalonMomentum>('T0');
+  /**
+   * OUVERTURE D'UN NOUVEAU CYCLE (`D-113` §8) — l'ancre que le praticien a
+   * DÉLIBÉRÉMENT demandé d'ouvrir, ou `null`.
+   *
+   * Un état à part, et non un simple `setJalonDemande` : l'effet ci-dessous
+   * resynchronise en permanence le jalon demandé sur le jalon DÛ du cycle
+   * courant. Sans ce drapeau, la proposition d'ouverture serait écrasée au
+   * rendu suivant par le J42 encore ouvert du cycle précédent — le geste
+   * serait littéralement impossible à mener à son terme.
+   */
+  const [ouvertureCycle, setOuvertureCycle] = useState<AncreCycle | null>(null);
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
@@ -460,6 +473,7 @@ export function ClinicalRuntimeSection({
       return;
     }
     setJalonDemande('T0');
+    setOuvertureCycle(null);
     void loadProposal('T0');
     void loadTrajectoire();
   }, [fixture, loadProposal, loadTrajectoire]);
@@ -476,11 +490,26 @@ export function ClinicalRuntimeSection({
     const du = resoudreJalonDu(trajectoire, new Date());
     setJalonDu(du);
     if (decisionAffichee) return;
+    // Une ouverture de cycle demandée par le praticien n'est jamais reprise par
+    // la resynchronisation automatique : c'est un geste, pas un défaut.
+    if (ouvertureCycle !== null) return;
     if (du.statut === 'du' && du.jalon !== jalonDemande) {
       setJalonDemande(du.jalon);
       void loadProposal(du.jalon);
     }
-  }, [fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee]);
+  }, [fixture, statutTrajectoire, trajectoire, jalonDemande, loadProposal, decisionAffichee, ouvertureCycle]);
+
+  /**
+   * Le geste d'ouverture. Il ne confirme RIEN : il demande la proposition
+   * d'épisode de la nouvelle ancre, et c'est le panneau de confirmation
+   * habituel — préconditions comprises (`D-052`, désormais appliquées à toute
+   * ancre) — qui garde l'écriture.
+   */
+  const ouvrirNouveauCycle = (ancre: AncreCycle) => {
+    setOuvertureCycle(ancre);
+    setJalonDemande(ancre);
+    void loadProposal(ancre);
+  };
 
   const confirm = async (includedResponseIds: string[], contournements: ContournementSaisi[] = []) => {
     if (!runtime || runtime.status !== 'proposal_required') return;
@@ -617,8 +646,12 @@ export function ClinicalRuntimeSection({
   // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
   // les booléens `mesure` déjà calculés par lib/protocol/trajectoire — aucune
   // logique clinique nouvelle.
+  // « Une ré-évaluation a-t-elle été MESURÉE ? » — donc un jalon de MESURE, et
+  // jamais l'ancre, qui est le point de départ. Le test excluait le littéral
+  // `T0` : sur un cycle ancré en `T1`, l'ouverture du cycle aurait compté comme
+  // une ré-évaluation, et le rail des phases aurait avancé d'un cran tout seul.
   const reevaluationMesuree = (trajectoire?.cycles ?? []).some(cycle =>
-    cycle.jalons.some(jalon => jalon.jalon !== 'T0' && jalon.mesure),
+    cycle.jalons.some(jalon => estJalonMesure(jalon.jalon) && jalon.mesure),
   );
   const suiviRenseigne = resumeJ21 !== null;
   const nombreVersions = versions.length;
@@ -855,18 +888,67 @@ export function ClinicalRuntimeSection({
       {/* Aucun jalon confirmable : le motif se dit. Un cockpit qui n'affiche
           simplement rien se lit comme une panne, et le praticien cherche un
           bouton qui n'existe pas ([[D-058]]). */}
-      {affiche('decision') && !fixture && !loading && !error && jalonDu?.statut === 'aucun' && (
+      {affiche('decision') && !fixture && !loading && !error && jalonDu?.statut === 'aucun'
+        && ouvertureCycle === null && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           {jalonDu.motif}
+        </div>
+      )}
+      {/* OUVRIR UN NOUVEAU CYCLE ([[D-113]] §8) — un geste du praticien, jamais
+          une proposition automatique. Il reste offert MÊME quand un jalon est
+          encore dû : c'est le cas clinique qui a motivé la décision (un nouveau
+          départ décidé alors que le J90 du cycle précédent était encore
+          ouvert). Ce qu'il coûte est ÉCRIT au-dessus du bouton — la fermeture
+          des fenêtres restantes était jusqu'ici un effet de bord silencieux. */}
+      {affiche('decision') && !fixture && !loading && !error && !decisionAffichee
+        && jalonDu?.ancreOuvrable && ouvertureCycle === null && (
+        <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+          <p>
+            Un nouveau cycle peut être ouvert pour ce patient : il portera l’ancre{' '}
+            <strong className="text-foreground">{jalonDu.ancreOuvrable}</strong>.
+          </p>
+          <p className="mt-2 text-sm">
+            L’ouvrir ferme les fenêtres de jalon encore ouvertes du cycle en cours — ce qui a déjà été confirmé reste
+            lisible. Les mesures du cycle en cours ne sont ni effacées ni recalculées.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3"
+            onClick={() => ouvrirNouveauCycle(jalonDu.ancreOuvrable!)}
+          >
+            Ouvrir un nouveau cycle ({jalonDu.ancreOuvrable})
+          </Button>
+        </div>
+      )}
+      {affiche('decision') && !fixture && !loading && !error && ouvertureCycle !== null
+        && !decisionAffichee && (
+        <div role="status" className="rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
+          <p>
+            Ouverture du cycle <strong>{ouvertureCycle}</strong> : confirmez l’épisode ci-dessous pour la rendre
+            effective. Tant qu’elle n’est pas confirmée, rien n’a changé pour ce patient.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2"
+            onClick={() => {
+              setOuvertureCycle(null);
+              void loadTrajectoire();
+            }}
+          >
+            Annuler l’ouverture
+          </Button>
         </div>
       )}
       {/* HORS FENÊTRE, RIEN N'EST PROPOSÉ — le panneau aussi, pas seulement le
           message (revue LOT-07, M1) : tant que le motif « aucun jalon
           confirmable » est affiché, aucun bouton de confirmation n'existe.
           `jalonDu` null (trajectoire illisible ou en vol) conserve le plancher
-          T0 historique. */}
+          T0 historique. Une ouverture de cycle DEMANDÉE rouvre le panneau : le
+          motif portait sur les jalons du cycle courant, pas sur le suivant. */}
       {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required'
-        && jalonDu?.statut !== 'aucun' && (
+        && (jalonDu?.statut !== 'aucun' || ouvertureCycle !== null) && (
         <EpisodeConfirmationPanel
           proposal={runtime.proposal}
           preconditions={runtime.preconditions}

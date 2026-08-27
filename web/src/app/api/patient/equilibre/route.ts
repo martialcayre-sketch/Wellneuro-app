@@ -62,6 +62,14 @@ export async function GET(req: Request): Promise<NextResponse<PatientEquilibreRe
     const reponses = construireReponsesParQuestionnaire(reponsesDb);
     const objets = calculerObjetsCliniques(reponses);
 
+    // « T0 » DÉSIGNE ICI LA TOUTE PREMIÈRE MESURE, pas l'ancre d'un cycle
+    // (`D-113` §2, site relu). Cette route ne lit AUCUN épisode : sa référence
+    // est la première réponse exploitable du dossier (`resoudreDateT0`), et
+    // l'offset d'une ancre étant nul, le littéral y nomme le décalage zéro.
+    // Limite reconduite telle quelle : sur un dossier rouvert en `T1`, ce
+    // momentum reste compté depuis la première mesure de l'historique et non
+    // depuis le cycle courant. Le brancher sur les cycles est un changement de
+    // lecture patient, pas une conséquence du renommage.
     const dateT0 = resoudreDateT0(reponsesDb);
     let momentum: ResultatMomentum | null = null;
     let historique: LectureDatee[] = [];

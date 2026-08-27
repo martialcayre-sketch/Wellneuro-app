@@ -72,12 +72,24 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   `JOURS_JALON` re-typée sur les seuls jalons de mesure (un `Record` indexé par
   un type ouvert dégénérait en signature d'index, rendant `undefined` sous un
   type `number`), garde `G7` portée. **Elle ne change aucun comportement.**
-  **PR 2 à faire** : les ~20 sites `milestone === 'T0'`, à relire **un par un** —
-  ils disent aujourd'hui « l'ancre du cycle courant » ET « la toute première
-  mesure » sous le même littéral. Puis l'ouverture effective d'un `T1`.
-  **Dette nommée** : `assessment_episodes.milestone` est une colonne `String`
-  **sans CHECK** — rien en base n'empêche `T01`, `TA` ni `J7`. Migration à part,
-  confirmation distincte. Fenêtre favorable : la table est **vide en
+  **PR 2 livrée** (2026-08-27) — le comportement : les sites `milestone ===
+  'T0'` relus un par un et tranchés entre « l'ancre du cycle courant » et « la
+  toute première mesure » ; le rideau `D-052` étendu à **toute ancre** (ouvrir
+  un deuxième cycle est le même acte, la clé s'élargit, aucun seuil ne bouge) ;
+  **trois défauts muets supprimés** — deux `Record<JalonMomentum, string>`
+  dégénérés en signature d'index (`LABEL_JALON['T1']` = `undefined` typé
+  `string`), six listes littérales `['T0', 'J21', 'J42', 'J90']` qui rejetaient
+  un `T1` par un `continue`, cinq requêtes `where: { milestone: 'T0' }` +
+  « la plus récente » dont les deux moitiés étaient fausses. **L'ouverture d'un
+  `T1` est un geste praticien nommé**, et la fermeture des fenêtres du cycle
+  précédent est annoncée avant le geste au lieu d'être un effet de bord (§8).
+  **Deux gardes d'écriture neuves** aux points de persistance : la forme (ni
+  ancre ni mesure ⇒ refus) et le rang (ancre déjà posée, ou la suivante — un
+  `T7` sur un dossier qui n'a que `T0` laisserait six rangs vides).
+  **Dette reconduite** : `assessment_episodes.milestone` reste une colonne
+  `String` **sans CHECK** — les gardes ci-dessus la couvrent au bord
+  applicatif, la contrainte en base est une migration à part, avec sa
+  confirmation distincte. Fenêtre favorable inchangée : la table est **vide en
   production**, donc aucune donnée à migrer ; le premier `T0` confirmé rendrait
   la bascule payante.
 

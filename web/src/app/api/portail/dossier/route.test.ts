@@ -33,7 +33,7 @@ const { prisma, logger } = vi.hoisted(() => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
-    assessmentEpisode: { findFirst: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
     reponseJalonObjectif: {
       findMany: vi.fn(),
       create: vi.fn(),
@@ -126,7 +126,7 @@ function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.reponseJalonObjectif.findMany.mockResolvedValue(surcharges.reponsesJalon ?? []);
   // Par défaut : AUCUN cycle confirmé. C'est l'état le plus courant en
   // production aujourd'hui, et celui où `resoudreJalonDu` rendrait `T0`.
-  prisma.assessmentEpisode.findFirst.mockResolvedValue(surcharges.ancreT0?.[0] ?? null);
+  prisma.assessmentEpisode.findMany.mockResolvedValue(surcharges.ancreT0 ?? []);
   prisma.entreeCeQuiCompte.findMany.mockResolvedValue(
     surcharges.entrees ?? [
       {
@@ -931,7 +931,10 @@ describe('/api/portail/dossier', () => {
      * fenêtres se calculent contre l'horloge réelle du serveur : une date
      * d'ancre figée au calendrier deviendrait fausse le lendemain.
      */
-    const ancreOuvrant = (jours: number) => ({
+    const ancreOuvrant = (jours: number, milestone = 'T0') => ({
+      id: `EPI_${milestone}`,
+      cycleId: `EPI_${milestone}`,
+      milestone,
       confirmedAt: new Date(Date.now() - jours * 24 * 60 * 60 * 1000),
     });
 
@@ -941,7 +944,7 @@ describe('/api/portail/dossier', () => {
         { id: 'OBJ_1', supersedesObjectifId: null, creeLe: new Date('2026-08-20T09:00:00.000Z') },
       ]);
       // T0 confirmé il y a exactement 21 jours : la fenêtre du J21 est ouverte.
-      prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(JOURS_JALON.J21));
+      prisma.assessmentEpisode.findMany.mockResolvedValue([ancreOuvrant(JOURS_JALON.J21)]);
       prisma.reponseJalonObjectif.create.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
           Promise.resolve({
@@ -1057,7 +1060,7 @@ describe('/api/portail/dossier', () => {
     it('HORS FENÊTRE, RIEN N’EST ÉCRIT — même avec un corps parfaitement valide', async () => {
       // Le troisième jour : aucune étape n'est ouverte. Un `J21` posté quand
       // même daterait un point d'étape d'un moment que le patient n'a pas vécu.
-      prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(3));
+      prisma.assessmentEpisode.findMany.mockResolvedValue([ancreOuvrant(3)]);
       const res = await POST(postRequest(cookieProprio(), corpsJalon()));
       expect(res.status).toBe(409);
       expect(await res.json()).toMatchObject({ ok: false, reason: 'jalon_ferme' });
@@ -1067,7 +1070,7 @@ describe('/api/portail/dossier', () => {
     it('SANS CYCLE CONFIRMÉ, aucune étape n’est écrivable', async () => {
       // C'est l'état de tous les dossiers de production aujourd'hui, et c'est
       // celui où `resoudreJalonDu` rendrait `T0`.
-      prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+      prisma.assessmentEpisode.findMany.mockResolvedValue([]);
       const res = await POST(postRequest(cookieProprio(), corpsJalon()));
       expect(res.status).toBe(409);
       expect(prisma.reponseJalonObjectif.create).not.toHaveBeenCalled();
@@ -1091,15 +1094,15 @@ describe('/api/portail/dossier', () => {
         JOURS_JALON.J21 - TOLERANCE_JOURS_JALON + 0.5,
         JOURS_JALON.J21 + TOLERANCE_JOURS_JALON - 0.5,
       ]) {
-        prisma.assessmentEpisode.findFirst.mockResolvedValue(ancreOuvrant(jours));
+        prisma.assessmentEpisode.findMany.mockResolvedValue([ancreOuvrant(jours)]);
         const res = await POST(postRequest(cookieProprio(), corpsJalon()));
         expect(res.status).toBe(201);
       }
       expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);
 
-      prisma.assessmentEpisode.findFirst.mockResolvedValue(
+      prisma.assessmentEpisode.findMany.mockResolvedValue([
         ancreOuvrant(JOURS_JALON.J21 + TOLERANCE_JOURS_JALON + 1),
-      );
+      ]);
       const dehors = await POST(postRequest(cookieProprio(), corpsJalon()));
       expect(dehors.status).toBe(409);
       expect(prisma.reponseJalonObjectif.create).toHaveBeenCalledTimes(2);

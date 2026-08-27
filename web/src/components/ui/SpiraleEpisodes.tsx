@@ -5,8 +5,8 @@ import type { TrajectoireCycle, TrajectoireRepere } from '@/lib/protocol/traject
 
 // Spirale d'épisodes (maquette « WellNeuro 5.0 — La Spirale », écran
 // Fiche-trajectoire) — la Spirale DATA-DRIVEN, par opposition à l'emblème fixe
-// `SpiraleTrajectoire`. Un arc concentrique = un repère confirmé (jalon de
-// mesure T0/J21/J42/J90), jamais une valeur : la Spirale reste un index
+// `SpiraleTrajectoire`. Un arc concentrique = un repère confirmé (l'ancre du
+// cycle, puis J21/J42/J90), jamais une valeur : la Spirale reste un index
 // temporel, pas un graphe (A6). Elle ne s'invente pas : zéro repère → rien.
 //
 // En mode interactif, chaque arc est un vrai bouton (clavier compris) qui
@@ -16,12 +16,11 @@ import type { TrajectoireCycle, TrajectoireRepere } from '@/lib/protocol/traject
 // En mode non interactif (miniature de liste), elle est purement décorative
 // (aria-hidden), le texte voisin porte l'information.
 
-const LABEL_JALON: Record<TrajectoireRepere['milestone'], string> = {
-  T0: 'T0',
-  J21: 'J21',
-  J42: 'J42',
-  J90: 'J90',
-};
+// LE JALON EST SON PROPRE LIBELLÉ. Une table `Record<JalonMomentum, string>`
+// tenait ici l'identité `T0 → « T0 »` ; depuis que la série des ancres est
+// ouverte (`D-113`), ce `Record` DÉGÉNÈRE en signature d'index et
+// `LABEL_JALON['T1']` vaut `undefined` sous un type `string` — un « Jalon
+// undefined du 12/03/2026 » à l'écran, sans une erreur de compilation.
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -94,7 +93,7 @@ export function SpiraleEpisodes({
 
   const libelleRepere = (repere: TrajectoireRepere): string => {
     const numero = repere.cycleId === null ? null : (numeroParCycle.get(repere.cycleId) ?? null);
-    const base = `Jalon ${LABEL_JALON[repere.milestone]} du ${formatDate(repere.date)}`;
+    const base = `Jalon ${repere.milestone} du ${formatDate(repere.date)}`;
     return numero === null ? `${base} — antérieur au premier épisode` : `${base} — épisode ${numero}`;
   };
 

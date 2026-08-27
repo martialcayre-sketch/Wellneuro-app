@@ -86,7 +86,10 @@ describe('/api/praticien/cockpit', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+    // Aucune ancre confirmée par défaut. Depuis `D-113` la lecture des ancres
+    // passe par `findMany` + filtre de forme : `findFirst` sur `milestone:
+    // 'T0'` ne voyait pas les cycles rouverts.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({
@@ -138,25 +141,40 @@ describe('/api/praticien/cockpit', () => {
     expect(j21.proposal.inWindowResponseIds).toEqual(['REP_J21']);
   });
 
-  it('fenêtre un jalon post-T0 sur le T0 CONFIRMÉ, jamais sur la première réponse (B2)', async () => {
-    // Première réponse le 1er janvier, T0 confirmé le 20 : la fenêtre du J21
-    // se calcule depuis le 20 (l'ancre de la trajectoire et de
+  it('fenêtre un jalon de mesure sur l’ANCRE CONFIRMÉE, jamais sur la première réponse (B2)', async () => {
+    // Première réponse le 1er janvier, ancre confirmée le 20 : la fenêtre du
+    // J21 se calcule depuis le 20 (l'ancre de la trajectoire et de
     // `resoudreJalonDu`), pas depuis le 1er — sinon le jalon proposé à
     // l'écran et l'épisode construit ici sont disjoints dès 16 jours d'écart.
-    prisma.assessmentEpisode.findFirst.mockResolvedValue({
-      confirmedAt: new Date('2026-01-20T00:00:00.000Z'),
-    });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-20T00:00:00.000Z') },
+    ]);
     const response = await GET(getRequest('idPatient=PAT_TEST&milestone=J21'));
     const payload = await response.json();
     expect(payload.proposal.targetAt).toBe('2026-02-10T00:00:00.000Z'); // 20 janv. + 21 j
-    expect(prisma.assessmentEpisode.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ milestone: 'T0' }) }),
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ milestone: { startsWith: 'T' } }) }),
     );
   });
 
-  it('le T0, lui, ne consulte jamais l’ancre de cycle — comportement historique', async () => {
+  it('le J21 d’un cycle ROUVERT se compte depuis le T1, jamais depuis le T0 (`D-113`)', async () => {
+    // Deux ancres : le premier cycle en janvier, le second en mars. La lecture
+    // retenait « le T0 le plus récent » — il n'y en a qu'un, et c'est celui de
+    // janvier : le J21 du deuxième cycle aurait été fenêtré deux mois trop tôt.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0', confirmedAt: new Date('2026-01-20T00:00:00.000Z') },
+      { id: 'EPI_T1', cycleId: 'EPI_T1', milestone: 'T1', confirmedAt: new Date('2026-03-20T00:00:00.000Z') },
+    ]);
+    const response = await GET(getRequest('idPatient=PAT_TEST&milestone=J21'));
+    const payload = await response.json();
+    expect(payload.proposal.targetAt).toBe('2026-04-10T00:00:00.000Z'); // 20 mars + 21 j
+  });
+
+  it('une ancre, elle, ne consulte aucune autre ancre pour se fenêtrer', async () => {
     await proposal('T0');
-    expect(prisma.assessmentEpisode.findFirst).not.toHaveBeenCalled();
+    // Une seule lecture, celle de la garde de recevabilité — jamais pour
+    // calculer une fenêtre : une ancre est le jour 0 de son propre cycle.
+    expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
   });
 
   it('autorise une proposition vide', async () => {
@@ -347,7 +365,6 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
@@ -416,7 +433,6 @@ describe('/api/praticien/cockpit — les constats déterministes traversent la r
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(responses);
     prisma.consultation.findFirst.mockResolvedValue(CONSULTATION_VALIDEE_FIXTURE);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
@@ -580,7 +596,6 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findFirst.mockResolvedValue(patient);
-    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
     brancherPassations(runtimeGolden, dossierGolden);
     prisma.consultation.findFirst.mockResolvedValue({
       anamnese: {
@@ -682,5 +697,82 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     expect(payload.review.abstention.status).toBe('required');
     expect(payload.decisionCard.priorityCandidates).toEqual([]);
     expect(payload.plainteDominante).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `D-113` — ouvrir un cycle est un acte gardé, quel que soit son rang.
+// ---------------------------------------------------------------------------
+describe('/api/praticien/cockpit — ouverture d’un cycle (`D-113`)', () => {
+  const t0Pose = {
+    id: 'EPI_T0', cycleId: 'EPI_T0', milestone: 'T0',
+    confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([t0Pose]);
+    brancherPassations(responses);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { motif_principal: 'Fatigue', objectif_prioritaire: 'Énergie', attentes: ['Comprendre'] },
+    });
+  });
+
+  async function propositionAncre(milestone: string) {
+    const response = await GET(getRequest(`idPatient=PAT_TEST&milestone=${milestone}`));
+    return response.json() as Promise<{ proposalHash: string; proposal: { inWindowResponseIds: string[] } }>;
+  }
+
+  it('accepte `T1` comme jalon : la porte de forme n’est plus une liste fermée', async () => {
+    const response = await GET(getRequest('idPatient=PAT_TEST&milestone=T1'));
+    expect(response.status).toBe(200);
+    expect((await response.json()).proposal.milestone).toBe('T1');
+  });
+
+  it('REFUSE `T01` et `TA` — deux écritures d’un même cycle, ou un nom que rien ne relit', async () => {
+    for (const forme of ['T01', 'TA', 'T']) {
+      expect((await GET(getRequest(`idPatient=PAT_TEST&milestone=${forme}`))).status).toBe(400);
+    }
+  });
+
+  it('LE RIDEAU D’ENTRÉE VAUT POUR TOUTE ANCRE, pas seulement pour `T0` ([[D-052]])', async () => {
+    // « Point d'entrée » se lisait `=== 'T0'`. Ouvrir un deuxième cycle est le
+    // même acte : sans cette extension, `T1` aurait été un chemin d'ancrage
+    // sans rideau.
+    brancherPassations(responses, []);
+    const proposed = await propositionAncre('T1');
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T1',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ reason: 'preconditions_non_remplies' });
+  });
+
+  it('REFUSE une ancre dont le rang saute — le `milestone` vient du navigateur', async () => {
+    const proposed = await propositionAncre('T7');
+    const response = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T7',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toContain('sous ce nom');
+  });
+
+  it('la fenêtre d’une ancre qui ROUVRE un suivi se centre sur la dernière réponse', async () => {
+    // `T0` se centre sur la PREMIÈRE réponse du dossier — un dossier qui
+    // s'ouvre. `T1` sur la DERNIÈRE : reprendre la première aurait centré la
+    // fenêtre du nouveau cycle sur un état vieux de plusieurs mois, et
+    // l'épisode d'ouverture aurait été confirmé vide.
+    const ancre = await propositionAncre('T1');
+    expect(ancre.proposal.inWindowResponseIds).toEqual(['REP_J21']);
+
+    const premiere = await propositionAncre('T0');
+    expect(premiere.proposal.inWindowResponseIds).toEqual(['REP_T0']);
   });
 });

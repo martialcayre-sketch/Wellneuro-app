@@ -7,16 +7,15 @@ import { construireTrajectoire, type Trajectoire, type TrajectoireEpisode } from
 import { construireReperes, resoudreAsOf } from '@/lib/praticien/lectureAsOf';
 import { construireModeVieDate, type ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { JalonMomentum } from '@/lib/equilibre/types';
+import { estJalonMomentum } from '@/lib/protocol/cycles';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // Spirale-index des jalons confirmés du patient + comparateur multi-épisodes,
 // sous garde versionScore (A8-3) et avec « jalon non mesuré » (A8-2). Les
-// lectures viennent de momentum.ts / depuisPrisma, ancrées au T0 de chaque
-// épisode (LOT-08) ; jamais un score réimplémenté, jamais une écriture.
+// lectures viennent de momentum.ts / depuisPrisma, ancrées à l'ancre de chaque
+// cycle (LOT-08, `D-113`) ; jamais un score réimplémenté, jamais une écriture.
 // Hypothèse mono-praticien (§8.8) : garde de session sans scope par identité,
 // cohérent avec les autres routes praticien.
-
-const MILESTONES: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'];
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/trajectoire';
@@ -26,7 +25,10 @@ const ROUTE_JOURNAL = '/api/praticien/trajectoire';
 export type EtatDateTrajectoire = {
   date: string; // ISO du repère résolu
   modeVie: ModeVieDate | null; // null = non mesuré à cette date (A8-2)
-  modeVieT0: ModeVieDate | null; // fantôme au T0 du cycle couvrant la date
+  // Fantôme à l'ANCRE du cycle couvrant la date. Le champ garde son nom
+  // historique : c'est une clé d'API lue par la fiche patient, et son sens
+  // — « l'état à l'ouverture du cycle lu » — est inchangé (`D-113`).
+  modeVieT0: ModeVieDate | null;
 };
 
 export type TrajectoireApiResponse =
@@ -74,7 +76,10 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
       orderBy: { confirmedAt: 'asc' },
     });
     const episodes: TrajectoireEpisode[] = episodesDb
-      .filter((e) => (MILESTONES as readonly string[]).includes(e.milestone))
+      // Une ligne dont le jalon n'est ni une ancre ni une mesure est écartée.
+      // Le test portait sur une liste littérale fermée : un `T1` confirmé en
+      // base y était rejeté, et le cycle disparaissait de la lecture.
+      .filter((e) => estJalonMomentum(e.milestone))
       .map((e) => ({
         id: e.id,
         milestone: e.milestone as JalonMomentum,
@@ -95,11 +100,13 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
     // momentum par besoin (opt-in, revue LOT-07 Mo3).
     const trajectoire = construireTrajectoire({ episodes, reponses: reponsesDb, avecMomentumParBesoin: true });
 
-    // Mode de vie au présent + fantôme T0 du cycle courant (LOT-02).
+    // Mode de vie au présent + fantôme à l'ancre du cycle courant (LOT-02).
+    // Le cycle courant est celui du RANG le plus haut : `cycles` est ordonné
+    // par rang d'ancre depuis `D-113`, plus par date de confirmation.
     const cycleCourant = trajectoire.cycles.length > 0 ? trajectoire.cycles[trajectoire.cycles.length - 1] : null;
     const modeViePresent = construireModeVieDate(reponsesDb);
     const modeVieT0CycleCourant = cycleCourant
-      ? construireModeVieDate(reponsesDb, new Date(cycleCourant.dateT0))
+      ? construireModeVieDate(reponsesDb, new Date(cycleCourant.dateAncre))
       : null;
 
     // Lecture datée optionnelle `etatAu` : même doctrine que SP-TT — la date
@@ -117,21 +124,21 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
         );
       }
       if (resolution.mode === 'passe') {
-        // Fantôme T0 : le cycle couvrant la date lue (dernier T0 ≤ date). Si
-        // la date lue EST ce T0, pas de fantôme — un seul point, comme la
-        // maquette.
+        // Fantôme d'ancre : le cycle couvrant la date lue (dernière ancre ≤
+        // date). Si la date lue EST cette ancre, pas de fantôme — un seul
+        // point, comme la maquette.
         const instant = resolution.date.getTime();
         const cycleCouvrant = [...trajectoire.cycles]
-          .filter((cycle) => new Date(cycle.dateT0).getTime() <= instant)
+          .filter((cycle) => new Date(cycle.dateAncre).getTime() <= instant)
           .pop();
-        const t0Distinct =
-          cycleCouvrant && Math.abs(new Date(cycleCouvrant.dateT0).getTime() - instant) > 1000
-            ? new Date(cycleCouvrant.dateT0)
+        const ancreDistincte =
+          cycleCouvrant && Math.abs(new Date(cycleCouvrant.dateAncre).getTime() - instant) > 1000
+            ? new Date(cycleCouvrant.dateAncre)
             : null;
         etatDate = {
           date: resolution.date.toISOString(),
           modeVie: construireModeVieDate(reponsesDb, resolution.date),
-          modeVieT0: t0Distinct ? construireModeVieDate(reponsesDb, t0Distinct) : null,
+          modeVieT0: ancreDistincte ? construireModeVieDate(reponsesDb, ancreDistincte) : null,
         };
       }
     }

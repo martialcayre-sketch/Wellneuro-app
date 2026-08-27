@@ -1,4 +1,5 @@
 import { joursDepuisAncre } from '../protocol/fenetreJalon';
+import { estAncreDeCycle, estJalonMomentum, indexDeCycle } from '../protocol/cycles';
 import type { JalonMomentum } from '../equilibre/types';
 import { proposeAssessmentEpisode } from './assessmentEpisode';
 import { canonicalSha256 } from './canonical';
@@ -12,6 +13,11 @@ import type {
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Les jalons que le runtime sert par défaut, dans l'ordre du PREMIER cycle.
+ * Ce n'est plus la liste de ce qui est acceptable — `estJalonMomentum` l'est —
+ * mais un ordre d'affichage : la série des ancres est ouverte depuis `D-113`.
+ */
 export const JALONS_RUNTIME = ['T0', 'J21', 'J42', 'J90'] as const satisfies readonly JalonMomentum[];
 
 export type RuntimePatientRow = {
@@ -84,8 +90,17 @@ function stringList(value: unknown): string[] {
     .filter(Boolean))].sort();
 }
 
+/**
+ * Le jalon reçu de l'extérieur est-il un jalon que la chaîne sait traiter ?
+ *
+ * L'APPARTENANCE À UNE LISTE FERMÉE NE SUFFIT PLUS : `T1` est une ancre valide
+ * et n'appartient à aucune liste connue d'avance. Cette porte dit la FORME —
+ * une ancre bien écrite, ou l'un des trois jalons de mesure. Elle ne dit RIEN
+ * du droit de poser cette ancre-là sur ce dossier-là : c'est `ancreRecevable`,
+ * appliqué en aval avec les ancres déjà posées sous les yeux.
+ */
 export function isRuntimeMilestone(value: unknown): value is JalonMomentum {
-  return typeof value === 'string' && (JALONS_RUNTIME as readonly string[]).includes(value);
+  return typeof value === 'string' && estJalonMomentum(value);
 }
 
 export function adaptRuntimeInputs(
@@ -125,25 +140,59 @@ export function adaptRuntimeInputs(
   };
 }
 
+/**
+ * La date depuis laquelle la fenêtre de l'épisode se compte.
+ *
+ * TROIS CAS, ET LE TROISIÈME EST NÉ AVEC `D-113`.
+ *
+ * 1. Jalon de MESURE : l'ancre du cycle courant, fournie par l'appelant.
+ * 2. `T0` — la toute première ancre : la PREMIÈRE réponse du dossier. C'est le
+ *    repli historique, inchangé ; sans aucune réponse, la date de création du
+ *    dossier stabilise l'enveloppe vide, sans devenir une mesure.
+ * 3. `T1`, `T2`, … — une ancre qui ROUVRE un suivi : la réponse la plus
+ *    RÉCENTE. Reprendre la première réponse du dossier, comme au cas 2, aurait
+ *    centré la fenêtre du nouveau cycle sur un état vieux de plusieurs mois :
+ *    aucune des mesures qui motivent la reprise n'y serait entrée, et l'épisode
+ *    d'ouverture aurait été confirmé vide.
+ *
+ * AUCUNE HORLOGE ICI, ET CE N'EST PAS UN DÉTAIL : `targetAt` entre dans
+ * `proposalHash`, que le POST recalcule pour le comparer à celui du GET. Une
+ * date « maintenant » rendrait tout épisode d'ouverture périmé à la seconde,
+ * avec un 409 impossible à résorber.
+ */
+function dateDeReference(
+  inputs: RuntimeInputs,
+  milestone: JalonMomentum,
+  ancreCycle: string | null,
+): string {
+  const repliDossier = inputs.patient.createdAt.toISOString();
+  if (!estAncreDeCycle(milestone)) {
+    return ancreCycle ?? inputs.responses[0]?.observedAt ?? repliDossier;
+  }
+  if ((indexDeCycle(milestone) ?? 0) === 0) {
+    return inputs.responses[0]?.observedAt ?? repliDossier;
+  }
+  return inputs.responses.at(-1)?.observedAt ?? repliDossier;
+}
+
 export function proposeRuntimeEpisode(
   inputs: RuntimeInputs,
   milestone: JalonMomentum,
   /**
-   * Ancre du cycle courant : `confirmedAt` du T0 confirmé le plus récent —
-   * LA MÊME ancre que la trajectoire (LOT-08, A8-1) et que `resoudreJalonDu`.
-   * Sans elle, la fenêtre d'un J21 se calculait depuis la première réponse du
-   * dossier : dès que la confirmation du T0 suivait cette réponse de plus de
-   * 16 jours, le jalon proposé à l'écran et l'épisode construit ici étaient
-   * DISJOINTS (revue LOT-07, B2). L'appelant la fournit pour tout jalon
-   * post-T0 quand un T0 confirmé existe ; `null` = repli historique.
+   * Ancre du cycle courant : `confirmedAt` de l'ancre confirmée du cycle en
+   * cours — LA MÊME ancre que la trajectoire (LOT-08, A8-1) et que
+   * `resoudreJalonDu`. Sans elle, la fenêtre d'un J21 se calculait depuis la
+   * première réponse du dossier : dès que la confirmation de l'ancre suivait
+   * cette réponse de plus de 16 jours, le jalon proposé à l'écran et l'épisode
+   * construit ici étaient DISJOINTS (revue LOT-07, B2). L'appelant la fournit
+   * pour tout jalon de MESURE quand un cycle est ouvert ; `null` = repli.
    */
-  ancreT0: string | null = null,
+  ancreCycle: string | null = null,
 ): RuntimeEpisodeProposal {
-  // Sans réponse, aucun T0 clinique n'existe encore. La date de création du
-  // dossier sert uniquement à stabiliser l'enveloppe vide ; elle ne devient
-  // ni une mesure ni une conclusion clinique.
-  const t0 = ancreT0 ?? inputs.responses[0]?.observedAt ?? inputs.patient.createdAt.toISOString();
-  const targetAt = new Date(new Date(t0).getTime() + joursDepuisAncre(milestone) * JOUR_MS).toISOString();
+  const targetAt = new Date(
+    new Date(dateDeReference(inputs, milestone, ancreCycle)).getTime()
+    + joursDepuisAncre(milestone) * JOUR_MS,
+  ).toISOString();
   const proposal = proposeAssessmentEpisode({
     assessmentEpisodeId: `runtime-episode-${inputs.patient.idPatient}-${milestone}`,
     patientId: inputs.patient.idPatient,

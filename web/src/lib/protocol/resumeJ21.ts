@@ -1,5 +1,6 @@
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import type { LectureDatee, TendanceMomentum } from '@/lib/equilibre/types';
+import type { AncreCycle } from './cycles';
 import {
   resolveActiveCheckin,
   type CheckinReponses,
@@ -33,7 +34,13 @@ export type ResumeJ21Input = {
   // Présent uniquement si un historique d'équilibre daté existe. Absent → score
   // null : le point de jonction reste honnête (aucune lecture inventée) et
   // l'action reste lue via les check-ins.
-  momentum?: { dateT0: Date; lectures: LectureDatee[] } | null;
+  //
+  // `ancre` est le NOM de l'ancre du cycle lu (`T0`, `T1`, …). Le module
+  // passait `'T0'` en dur : l'offset d'une ancre étant nul par définition, le
+  // calcul restait juste sur un cycle ancré en `T1` — mais il l'était par
+  // accident, et le jour où un jalon d'ancre porterait un offset propre, le
+  // littéral aurait lu le mauvais point sans rien signaler.
+  momentum?: { ancre: AncreCycle; dateAncre: Date; lectures: LectureDatee[] } | null;
 };
 
 const ORDRE_POINTS: readonly PointEtape[] = ['J7', 'J14', 'J21'] as const;
@@ -50,9 +57,10 @@ export function buildResumeJ21(input: ResumeJ21Input): ResumeJ21 {
 
   let score: ResumeScore = null;
   if (input.momentum) {
-    const lectureT0 = resoudreLectureJalon(input.momentum.dateT0, 'T0', input.momentum.lectures);
-    const lectureJ21 = resoudreLectureJalon(input.momentum.dateT0, 'J21', input.momentum.lectures);
-    const resultat = calculerDeltaMomentum(lectureT0, lectureJ21);
+    const { ancre, dateAncre, lectures } = input.momentum;
+    const lectureAncre = resoudreLectureJalon(dateAncre, ancre, lectures);
+    const lectureJ21 = resoudreLectureJalon(dateAncre, 'J21', lectures);
+    const resultat = calculerDeltaMomentum(lectureAncre, lectureJ21);
     if (resultat) score = { tendance: resultat.tendance, delta: resultat.delta };
   }
 

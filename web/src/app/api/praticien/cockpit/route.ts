@@ -20,6 +20,8 @@ import {
   type PreconditionsT0,
 } from '@/lib/clinical-engine/preconditionsT0';
 import { preconditionsT0PourPatient } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
 import type {
   ClinicalReview,
   ClinicalSnapshot,
@@ -203,25 +205,22 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
   };
 }
 
-// Ancre du cycle courant pour un jalon post-T0 : `confirmedAt` du T0 confirmé
-// le plus récent — la même ancre que la trajectoire et `resoudreJalonDu`
+// Ancre du cycle courant pour un jalon de MESURE : `confirmedAt` de l'ancre du
+// rang le plus haut — la même ancre que la trajectoire et `resoudreJalonDu`
 // (LOT-08 A8-1 ; revue LOT-07 B2 : deux ancres rendaient les fenêtres du
-// client et du serveur disjointes). T0 lui-même reste ancré sur la première
-// réponse du dossier : aucun cycle confirmé ne le précède. En lecture datée
-// (`asOf`), seuls les T0 confirmés à cette date comptent — un épisode
-// postérieur ne doit pas fuir dans une lecture du passé.
+// client et du serveur disjointes). Une ancre, elle, ne se compte depuis
+// aucune autre : c'est le jour 0 de son propre cycle, et sa date de référence
+// est résolue par `proposeRuntimeEpisode`. En lecture datée (`asOf`), seules
+// les ancres confirmées à cette date comptent — un épisode postérieur ne doit
+// pas fuir dans une lecture du passé.
 async function ancreCycleCourant(
   idPatient: string,
   milestone: JalonMomentum,
   asOf: string | null,
 ): Promise<string | null> {
-  if (milestone === 'T0') return null;
-  const t0 = await prisma.assessmentEpisode.findFirst({
-    where: { idPatient, milestone: 'T0', ...(asOf ? { confirmedAt: { lte: new Date(asOf) } } : {}) },
-    orderBy: { confirmedAt: 'desc' },
-    select: { confirmedAt: true },
-  });
-  return t0?.confirmedAt.toISOString() ?? null;
+  if (estAncreDeCycle(milestone)) return null;
+  const ancre = ancreCourante(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null));
+  return ancre?.confirmedAt.toISOString() ?? null;
 }
 
 // GET /api/praticien/cockpit?idPatient=PAT001&milestone=T0
@@ -260,10 +259,16 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf),
     );
     // Après `loadRuntimeInputs`, donc après la vérification d'appartenance.
-    // T0 SEULEMENT : les jalons de suivi (J21, J42, J90) ne sont pas gouvernés
-    // par cette porte — le lot pose les préconditions du point d'entrée, il ne
-    // touche pas aux jalons ([[D-052]]).
-    const preconditions = inputs.asOf || milestoneRaw !== 'T0'
+    // LES ANCRES SEULEMENT : les jalons de suivi (J21, J42, J90) ne sont pas
+    // gouvernés par cette porte — le lot pose les préconditions du point
+    // d'entrée, il ne touche pas aux jalons ([[D-052]]).
+    //
+    // « Point d'entrée » se lisait `=== 'T0'`. Depuis `D-113`, OUVRIR UN CYCLE
+    // EST LE MÊME ACTE, quel que soit son rang : `T1` est l'entrée du deuxième
+    // suivi comme `T0` était celle du premier. Restreindre la porte au premier
+    // cycle aurait ouvert un chemin d'ancrage sans rideau, ce que `D-052`
+    // interdit précisément. Le seuil ne bouge pas ; c'est la clé qui s'ouvre.
+    const preconditions = inputs.asOf || !estAncreDeCycle(milestoneRaw)
       ? undefined
       : await preconditionsT0PourPatient(idPatient);
     return NextResponse.json({
@@ -331,7 +336,23 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // garde vraiment la base est dans `protocoles` et `protocoles/versions`,
     // où le même calcul est rejoué.
     const preconditionOverrides: PreconditionOverride[] = [];
-    if (payload.milestone === 'T0') {
+    if (estAncreDeCycle(payload.milestone)) {
+      // L'ANCRE DEMANDÉE EST-ELLE CELLE QUI PEUT ÊTRE POSÉE ? `isRuntimeMilestone`
+      // n'a validé qu'une FORME (`T` suivi d'un rang) : le corps de requête vient
+      // du navigateur, et un `T7` posté sur un dossier qui n'a que `T0` créerait
+      // un cycle de rang 7 en laissant six rangs à jamais vides. Refus en amont,
+      // pour la même raison que les préconditions : éviter au praticien de
+      // composer un protocole que la persistance rejettera.
+      if (!ancreRecevable(
+        payload.milestone,
+        (await lireAncresPersistees(idPatient)).map((ancre) => ancre.milestone),
+      )) {
+        return unavailable(
+          'invalid_payload',
+          'Ce cycle ne peut pas être ouvert sous ce nom. Rechargez la fiche pour reprendre le cycle en cours.',
+          422,
+        );
+      }
       const preconditions = await preconditionsT0PourPatient(idPatient);
       if (preconditions.bloquant) {
         return unavailable('preconditions_non_remplies', messageRefusPreconditions(preconditions), 422);

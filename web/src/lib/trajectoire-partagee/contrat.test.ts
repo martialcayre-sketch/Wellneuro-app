@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { AncreCycle } from '@/lib/protocol/cycles';
 
 import {
   deriverEpisodeBandeau,
@@ -64,10 +65,11 @@ describe('phaseInitiale (règle D5)', () => {
 describe('deriverEpisodeBandeau', () => {
   const cycle = (
     cycleId: string,
-    dateT0: string,
+    ancre: AncreCycle,
+    dateAncre: string,
     versionScore: string | null,
     momentum: CycleBandeau['momentum'] = null,
-  ): CycleBandeau => ({ cycleId, dateT0, versionScore, momentum });
+  ): CycleBandeau => ({ cycleId, ancre, dateAncre, versionScore, momentum });
 
   const aujourdhui = new Date('2026-07-22T12:00:00Z');
 
@@ -75,31 +77,42 @@ describe('deriverEpisodeBandeau', () => {
     expect(deriverEpisodeBandeau([], aujourdhui)).toBeNull();
   });
 
-  it('numérote les épisodes par ordre chronologique des T0 et compte la position en jours', () => {
+  it('numérote les épisodes par RANG D’ANCRE et compte la position en jours depuis l’ancre', () => {
     const bandeau = deriverEpisodeBandeau(
-      [cycle('c2', '2026-07-08T00:00:00Z', 'v1'), cycle('c1', '2026-05-01T00:00:00Z', 'v1')],
+      [cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1'), cycle('c1', 'T0', '2026-05-01T00:00:00Z', 'v1')],
       aujourdhui,
     );
     expect(bandeau).toMatchObject({ numeroEpisode: 2, cycleId: 'c2', positionJours: 14 });
-    expect(bandeau?.positionLibelle).toBe('T0 + 14 j · vous êtes ici');
+    // Le libellé porte le NOM de l'ancre du cycle courant — « T0 + 14 j » sur
+    // un cycle ancré en `T1` serait un contresens à l'écran (`D-113`).
+    expect(bandeau?.positionLibelle).toBe('T1 + 14 j · vous êtes ici');
+  });
+
+  it('numérote par le RANG, jamais par le nombre de cycles présents', () => {
+    // `T0` effacé : deux cycles en liste, mais le courant reste le troisième.
+    const bandeau = deriverEpisodeBandeau(
+      [cycle('c1', 'T1', '2026-05-01T00:00:00Z', 'v1'), cycle('c2', 'T2', '2026-07-08T00:00:00Z', 'v1')],
+      aujourdhui,
+    );
+    expect(bandeau).toMatchObject({ numeroEpisode: 3, cycleId: 'c2' });
   });
 
   it('expose le momentum du tour précédent uniquement à version de score identique (A8-3)', () => {
     const momentum = { tendance: 'hausse' as const, delta: 3 };
     const comparable = deriverEpisodeBandeau(
-      [cycle('c1', '2026-05-01T00:00:00Z', 'v1', momentum), cycle('c2', '2026-07-08T00:00:00Z', 'v1')],
+      [cycle('c1', 'T0', '2026-05-01T00:00:00Z', 'v1', momentum), cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1')],
       aujourdhui,
     );
     expect(comparable?.deltaTourPrecedent).toMatchObject({ cycleId: 'c1', delta: 3 });
 
     const versionsDifferentes = deriverEpisodeBandeau(
-      [cycle('c1', '2026-05-01T00:00:00Z', 'v0', momentum), cycle('c2', '2026-07-08T00:00:00Z', 'v1')],
+      [cycle('c1', 'T0', '2026-05-01T00:00:00Z', 'v0', momentum), cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1')],
       aujourdhui,
     );
     expect(versionsDifferentes?.deltaTourPrecedent).toBeNull();
 
     const versionInconnue = deriverEpisodeBandeau(
-      [cycle('c1', '2026-05-01T00:00:00Z', null, momentum), cycle('c2', '2026-07-08T00:00:00Z', 'v1')],
+      [cycle('c1', 'T0', '2026-05-01T00:00:00Z', null, momentum), cycle('c2', 'T1', '2026-07-08T00:00:00Z', 'v1')],
       aujourdhui,
     );
     expect(versionInconnue?.deltaTourPrecedent).toBeNull();

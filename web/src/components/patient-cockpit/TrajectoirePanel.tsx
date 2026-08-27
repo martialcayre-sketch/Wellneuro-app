@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
+import type { TendanceMomentum } from '@/lib/equilibre/types';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { EtatDateTrajectoire } from '@/app/api/praticien/trajectoire/route';
 import { rattacherReperesAuxCycles, type Trajectoire } from '@/lib/protocol/trajectoire';
@@ -17,6 +17,7 @@ import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePan
 import { BESOINS } from '@/lib/equilibre/constants';
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
+import { estAncreDeCycle, indexDeCycle, JALONS_MESURE } from '@/lib/protocol/cycles';
 import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
@@ -28,9 +29,16 @@ import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 // (A8-5-ii) et présente des VALEURS côte à côte — il ne calcule aucun écart
 // inter-cycles, qui serait une mesure dérivée nouvelle et non sourcée.
 
-const ORDRE_JALONS: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'] as const;
+// LIGNES DU COMPARATEUR MULTI-CYCLES. La première n'est plus `T0` mais
+// « l'ancre », parce que deux cycles côte à côte n'ont plus la même : celui de
+// gauche est ancré en `T0`, celui de droite en `T1`. Une ligne `T0` aurait
+// affiché « jalon non mesuré » sur toute la colonne du second cycle — un trou
+// visuel là où la mesure existe.
+const LIGNES_COMPARAISON = ['ancre', ...JALONS_MESURE] as const;
 
-const LABEL_JALON: Record<JalonMomentum, string> = { T0: 'T0', J21: 'J21', J42: 'J42', J90: 'J90' };
+// Aucune table de libellés : le jalon EST son libellé. `Record<JalonMomentum,
+// string>` dégénère en signature d'index depuis que la série des ancres est
+// ouverte (`D-113`), et rendait `undefined` sur `T1` sous un type `string`.
 
 const LABEL_TENDANCE: Record<TendanceMomentum, string> = {
   hausse: 'en hausse',
@@ -117,14 +125,17 @@ export function TrajectoirePanel({
 
   // ── Re-passation CIBLÉE au jalon (LOT-07, `D-058`) ────────────────────────
   //
-  // Proposée seulement quand un jalon POST-T0 est dans sa fenêtre : proposer
+  // Proposée seulement quand un jalon DE MESURE est dans sa fenêtre : proposer
   // une re-mesure hors fenêtre daterait la lecture d'un moment sans jalon. La
   // cible vient des besoins qui FONDENT la priorité (`needIds` →
   // `BESOIN_SOURCES`), jamais du pack entier — c'est ce que la re-passation
   // ciblée remplace. Le geste rejoint la file d'envoi ; RIEN ne part d'ici.
   const jalonDuRepassation = useMemo(() => {
     const du = resoudreJalonDu(trajectoire ?? null, new Date());
-    return du.statut === 'du' && du.jalon !== 'T0' ? du.jalon : null;
+    // Une ANCRE ne se re-passe pas : elle ouvre le cycle, elle ne le remesure
+    // pas. Le test excluait le seul littéral `T0` — sur un dossier rouvert, il
+    // aurait proposé une re-passation ciblée pour l'ouverture d'un `T1`.
+    return du.statut === 'du' && !estAncreDeCycle(du.jalon) ? du.jalon : null;
   }, [trajectoire]);
   const ciblesRepassation = useMemo(
     () => questionnairesCiblesPourPriorite(needIdsPriorite ?? []),
@@ -221,8 +232,8 @@ export function TrajectoirePanel({
       <h3 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-foreground">{titre}</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         La Spirale indexe les jalons de mesure confirmés (lecture seule) — cliquer un repère relit la fiche telle
-        qu’elle était à cette date. Les points d’étape J7/J14/J21 (pilotage) n’y figurent pas — seuls les jalons de
-        mesure T0/J21/J42/J90.
+        qu’elle était à cette date. Les points d’étape J7/J14/J21 (pilotage) n’y figurent pas — seuls l’ancre du
+        cycle (T0, T1, …) et les jalons de mesure J21/J42/J90.
       </p>
 
       {cycles.length > 0 && (
@@ -230,7 +241,8 @@ export function TrajectoirePanel({
           {cycles.map((cycle, position) => (
             <li key={cycle.cycleId}>
               <Badge variant={position === cycles.length - 1 ? 'info' : 'neutral'}>
-                Épisode {position + 1} · T0 le {formatDate(cycle.dateT0)}
+                Épisode {(indexDeCycle(cycle.ancre) ?? position) + 1} · {cycle.ancre} le{' '}
+                {formatDate(cycle.dateAncre)}
                 {cycle.momentum
                   ? ` · momentum ${LABEL_TENDANCE[cycle.momentum.tendance]} (écart ${Math.abs(cycle.momentum.delta)})`
                   : ''}
@@ -278,7 +290,7 @@ export function TrajectoirePanel({
                           : 'border-border text-muted-foreground hover:bg-muted/40'
                       }`}
                     >
-                      {LABEL_JALON[repere.milestone]} · {formatDate(repere.date)}
+                      {repere.milestone} · {formatDate(repere.date)}
                     </button>
                   </li>
                 );
@@ -288,8 +300,8 @@ export function TrajectoirePanel({
               {repereSelectionne === null
                 ? 'Sélectionnez un repère pour relire la fiche telle qu’elle était à cette date.'
                 : cycleSelectionne === null
-                  ? `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — antérieur à tout épisode T0 confirmé, aucun cycle ne lui est rattaché.`
-                  : `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous, état daté recalculé.`}
+                  ? `Repère ${repereSelectionne.milestone} du ${formatDate(repereSelectionne.date)} — antérieur à toute ancre de cycle confirmée, aucun cycle ne lui est rattaché.`
+                  : `Repère ${repereSelectionne.milestone} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous, état daté recalculé.`}
             </p>
           </nav>
         </div>
@@ -305,7 +317,9 @@ export function TrajectoirePanel({
             modeVieT0={modeVieT0CycleCourant ?? null}
             legendeDate="aujourd’hui"
             legendeT0={
-              cycles.length > 0 ? `T0 (${formatDate(cycles[cycles.length - 1].dateT0)})` : undefined
+              cycles.length > 0
+                ? `${cycles[cycles.length - 1].ancre} (${formatDate(cycles[cycles.length - 1].dateAncre)})`
+                : undefined
             }
           />
           {/* Momentum en courbe + estimé↔mesuré (A6-R2, LOT-03) — cycle
@@ -355,7 +369,7 @@ export function TrajectoirePanel({
                 cycleSelectionne
                   ? (() => {
                       const cycle = cycles.find((candidat) => candidat.cycleId === cycleSelectionne);
-                      return cycle ? `T0 (${formatDate(cycle.dateT0)})` : undefined;
+                      return cycle ? `${cycle.ancre} (${formatDate(cycle.dateAncre)})` : undefined;
                     })()
                   : undefined
               }
@@ -392,7 +406,7 @@ export function TrajectoirePanel({
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <p className="text-sm font-medium text-foreground">
-                    Cycle depuis le {formatDate(cycle.dateT0)}
+                    Cycle {cycle.ancre} depuis le {formatDate(cycle.dateAncre)}
                     {/* Jamais la couleur seule : la mise en avant est aussi écrite. */}
                     {misEnAvant && <span className="text-primary"> · repère sélectionné</span>}
                   </p>
@@ -403,7 +417,7 @@ export function TrajectoirePanel({
                 <ul className="mt-2 space-y-1">
                   {cycle.jalons.map((jalon) => (
                     <li key={jalon.jalon} className="text-base text-muted-foreground">
-                      <span className="font-medium text-foreground">{LABEL_JALON[jalon.jalon]}</span>{' '}
+                      <span className="font-medium text-foreground">{jalon.jalon}</span>{' '}
                       {jalon.mesure && jalon.valeur !== null && jalon.date ? (
                         <>· indice {jalon.valeur} · {formatDate(jalon.date)}</>
                       ) : (
@@ -414,7 +428,7 @@ export function TrajectoirePanel({
                 </ul>
                 {cycle.momentum && (
                   <p className="mt-2 text-base text-foreground">
-                    Momentum T0 → dernier jalon mesuré :{' '}
+                    Momentum {cycle.ancre} → dernier jalon mesuré :{' '}
                     <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
                     {/* L'unité est nommée : l'écart par besoin, trois lignes plus
                         bas, est sur l'échelle de couverture 0–1 — deux « écart »
@@ -532,22 +546,25 @@ export function TrajectoirePanel({
                             scope="col"
                             className="border-b border-border px-2 py-1 font-medium text-foreground"
                           >
-                            Cycle du {formatDate(cycle.dateT0)}
+                            Cycle {cycle.ancre} du {formatDate(cycle.dateAncre)}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {ORDRE_JALONS.map((jalon) => (
-                        <tr key={jalon}>
+                      {LIGNES_COMPARAISON.map((ligne) => (
+                        <tr key={ligne}>
                           <th scope="row" className="px-2 py-1 font-medium text-foreground">
-                            {LABEL_JALON[jalon]}
+                            {ligne === 'ancre' ? 'Ancre du cycle' : ligne}
                           </th>
                           {trajectoire.cycles.map((cycle) => {
-                            const lecture = cycle.jalons.find((candidat) => candidat.jalon === jalon);
+                            // Chaque colonne lit SON ancre : la ligne « ancre »
+                            // ne désigne pas le même jalon d'un cycle à l'autre.
+                            const nomJalon = ligne === 'ancre' ? cycle.ancre : ligne;
+                            const lecture = cycle.jalons.find((candidat) => candidat.jalon === nomJalon);
                             const mesure = lecture?.mesure === true && lecture.valeur !== null;
                             return (
-                              <td key={`${cycle.cycleId}-${jalon}`} className="px-2 py-1 text-muted-foreground">
+                              <td key={`${cycle.cycleId}-${ligne}`} className="px-2 py-1 text-muted-foreground">
                                 {mesure ? (
                                   <>indice {lecture?.valeur}</>
                                 ) : (

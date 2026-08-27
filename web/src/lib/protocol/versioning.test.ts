@@ -12,7 +12,7 @@ import {
   toDraftCreateInput,
   toEpisodeCreateInput,
   type PersistedVersionRow,
-  type T0Candidate,
+  type AncreCandidate,
 } from './versioning';
 
 // DecisionCard minimale valide pour buildProtocolDraft (seuls quelques champs
@@ -139,17 +139,23 @@ describe('resolveCycleId (gate G2)', () => {
   const episode = (milestone: string, confirmedAt: string, id = 'EPI_N') =>
     ({ assessmentEpisodeId: id, patientId: 'PAT_1', milestone, confirmedAt }) as never;
 
-  const t0 = (id: string, confirmedAt: string, cycleId: string | null = id): T0Candidate => ({
+  const t0 = (
+    id: string,
+    confirmedAt: string,
+    cycleId: string | null = id,
+    milestone = 'T0',
+  ): AncreCandidate => ({
     id,
     cycleId,
     confirmedAt: new Date(confirmedAt),
+    milestone,
   });
 
   it('un T0 ouvre son propre cycle', () => {
     expect(
       resolveCycleId({
         episode: episode('T0', '2026-01-01T00:00:00.000Z', 'EPI_T0'),
-        t0Candidates: [t0('EPI_AUTRE', '2025-01-01T00:00:00.000Z')],
+        ancresCandidates: [t0('EPI_AUTRE', '2025-01-01T00:00:00.000Z')],
       }),
     ).toBe('EPI_T0');
   });
@@ -158,7 +164,7 @@ describe('resolveCycleId (gate G2)', () => {
     expect(
       resolveCycleId({
         episode: episode('J21', '2026-02-01T00:00:00.000Z'),
-        t0Candidates: [
+        ancresCandidates: [
           t0('EPI_A', '2025-11-01T00:00:00.000Z'),
           t0('EPI_B', '2026-01-01T00:00:00.000Z'),
           t0('EPI_C', '2026-06-01T00:00:00.000Z'),
@@ -171,14 +177,14 @@ describe('resolveCycleId (gate G2)', () => {
     expect(
       resolveCycleId({
         episode: episode('J42', '2026-02-01T00:00:00.000Z'),
-        t0Candidates: [t0('EPI_C', '2026-06-01T00:00:00.000Z')],
+        ancresCandidates: [t0('EPI_C', '2026-06-01T00:00:00.000Z')],
       }),
     ).toBeNull();
   });
 
   it('aucun T0 connu → cycle null, jamais deviné', () => {
     expect(
-      resolveCycleId({ episode: episode('J90', '2026-02-01T00:00:00.000Z'), t0Candidates: [] }),
+      resolveCycleId({ episode: episode('J90', '2026-02-01T00:00:00.000Z'), ancresCandidates: [] }),
     ).toBeNull();
   });
 
@@ -186,7 +192,7 @@ describe('resolveCycleId (gate G2)', () => {
     expect(
       resolveCycleId({
         episode: episode('J21', '2026-02-01T00:00:00.000Z'),
-        t0Candidates: [t0('EPI_LEGACY', '2026-01-01T00:00:00.000Z', null)],
+        ancresCandidates: [t0('EPI_LEGACY', '2026-01-01T00:00:00.000Z', null)],
       }),
     ).toBe('EPI_LEGACY');
   });
@@ -195,7 +201,7 @@ describe('resolveCycleId (gate G2)', () => {
     expect(
       resolveCycleId({
         episode: episode('J21', 'pas-une-date'),
-        t0Candidates: [t0('EPI_B', '2026-01-01T00:00:00.000Z')],
+        ancresCandidates: [t0('EPI_B', '2026-01-01T00:00:00.000Z')],
       }),
     ).toBeNull();
   });
@@ -215,5 +221,63 @@ describe('toEpisodeCreateInput (gate G2)', () => {
     );
     expect(input.cycleId).toBe('EPI_1');
     expect(input.versionScore).toBe(VERSION_SCORE_EQUILIBRE);
+  });
+});
+
+describe('resolveCycleId — cycles nommés (`D-113`)', () => {
+  const episode = (milestone: string, confirmedAt: string, id = 'EPI_N') =>
+    ({ assessmentEpisodeId: id, patientId: 'PAT_1', milestone, confirmedAt }) as never;
+
+  const ancre = (id: string, milestone: string, confirmedAt: string): AncreCandidate => ({
+    id,
+    cycleId: id,
+    confirmedAt: new Date(confirmedAt),
+    milestone,
+  });
+
+  it('une ancre de rang quelconque ouvre son propre cycle', () => {
+    expect(
+      resolveCycleId({
+        episode: episode('T1', '2026-03-01T00:00:00.000Z', 'EPI_T1'),
+        ancresCandidates: [ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z')],
+      }),
+    ).toBe('EPI_T1');
+  });
+
+  it('un jalon de mesure rejoint le cycle du RANG le plus haut déjà ouvert', () => {
+    expect(
+      resolveCycleId({
+        episode: episode('J21', '2026-03-22T00:00:00.000Z'),
+        ancresCandidates: [
+          ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+          ancre('EPI_T1', 'T1', '2026-03-01T00:00:00.000Z'),
+        ],
+      }),
+    ).toBe('EPI_T1');
+  });
+
+  it('une ancre POSTÉRIEURE au jalon ne l’absorbe jamais, si haut soit son rang', () => {
+    // La borne de date reste physique : un jalon ne documente pas un cycle qui
+    // n'avait pas commencé.
+    expect(
+      resolveCycleId({
+        episode: episode('J21', '2026-01-22T00:00:00.000Z'),
+        ancresCandidates: [
+          ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+          ancre('EPI_T1', 'T1', '2026-03-01T00:00:00.000Z'),
+        ],
+      }),
+    ).toBe('EPI_T0');
+  });
+
+  it('une ligne dont le jalon n’est pas une ancre n’est pas candidate', () => {
+    // Rien en base n'interdit `TA` (aucun CHECK, dette nommée par `D-113`) :
+    // c'est ici que la forme tranche, et le jalon reste non rattaché.
+    expect(
+      resolveCycleId({
+        episode: episode('J21', '2026-03-22T00:00:00.000Z'),
+        ancresCandidates: [ancre('EPI_X', 'TA', '2026-01-01T00:00:00.000Z')],
+      }),
+    ).toBeNull();
   });
 });

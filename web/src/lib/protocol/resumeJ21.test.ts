@@ -43,7 +43,7 @@ describe('buildResumeJ21', () => {
 
     const resume = buildResumeJ21({
       checkins: [checkin('c1', 'J21', '2026-01-22T00:00:00.000Z')],
-      momentum: { dateT0, lectures },
+      momentum: { ancre: 'T0', dateAncre: dateT0, lectures },
     });
 
     expect(resume.score).toEqual({ tendance: 'hausse', delta: 15 });

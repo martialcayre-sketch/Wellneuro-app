@@ -88,7 +88,12 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     const objets = calculerObjetsCliniques(reponses);
     const niveauxPreuve = calculerNiveauxPreuveTousLesBesoins(reponses);
 
-    // Momentum : delta entre T0 et le jalon le plus avancé déjà atteint.
+    // Momentum : delta entre la première mesure et le jalon le plus avancé
+    // déjà atteint. « T0 » DÉSIGNE ICI LA TOUTE PREMIÈRE MESURE, pas l'ancre
+    // d'un cycle (`D-113` §2, site relu) : cette route ne lit aucun épisode,
+    // sa référence est `resoudreDateT0`. Même limite reconduite que la route
+    // patient — sur un dossier rouvert, le compte part de l'historique, pas du
+    // cycle courant.
     const dateT0 = resoudreDateT0(reponsesDb);
     let momentum: ResultatMomentum | null = null;
     if (dateT0) {

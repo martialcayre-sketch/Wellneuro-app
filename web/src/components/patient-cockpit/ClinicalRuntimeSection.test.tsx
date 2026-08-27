@@ -607,17 +607,18 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     proposalHash: 'hash-J21',
   };
 
-  function trajectoireT0ConfirmeIlYA(jours: number) {
-    const dateT0 = new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
+  function trajectoireAncreConfirmeeIlYA(jours: number, ancre: 'T0' | 'T1' = 'T0') {
+    const dateAncre = new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
     return rep({
       ok: true,
       trajectoire: {
-        index: [{ milestone: 'T0', date: dateT0, cycleId: 'cycle-1' }],
+        index: [{ milestone: ancre, date: dateAncre, cycleId: 'cycle-1' }],
         cycles: [{
-          cycleId: 'cycle-1', dateT0, versionScore: 'v15', jalons: [], momentum: null,
+          cycleId: 'cycle-1', ancre, dateAncre, versionScore: 'v15', jalons: [], momentum: null,
           momentumParBesoin: [],
         }],
         comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        discordanceOrdreCycles: false,
       },
     });
   }
@@ -627,7 +628,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     // J21, J42 et J90 étaient inatteignables depuis l'interface alors que le
     // back les acceptait déjà.
     const fetchMock = fetchParRoute({
-      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      trajectoire: trajectoireAncreConfirmeeIlYA(21),
       cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -658,7 +659,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
       canalPlainte: 'Q_MOD_03',
     };
     const fetchMock = fetchParRoute({
-      trajectoire: trajectoireT0ConfirmeIlYA(21),
+      trajectoire: trajectoireAncreConfirmeeIlYA(21),
       cockpitGet: [rep(proposalResponse), rep(propositionJ21)],
       cockpitPost: [rep(confirme)],
     });
@@ -678,7 +679,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     // défaut : le panneau de confirmation restait actif sous le message
     // « aucun jalon confirmable » (revue LOT-07, M1).
     const fetchMock = fetchParRoute({
-      trajectoire: trajectoireT0ConfirmeIlYA(31),
+      trajectoire: trajectoireAncreConfirmeeIlYA(31),
       cockpitGet: [rep(proposalResponse)],
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -692,5 +693,104 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     expect(screen.queryByRole('button', { name: /Confirmer l’épisode/ })).toBeNull();
     // Et AUCUN jalon hors fenêtre n'est demandé : seul le T0 du plancher part.
     expect(urlsCockpit(fetchMock)).toEqual(['/api/praticien/cockpit?idPatient=PAT_TEST&milestone=T0']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `D-113` §8 — ouvrir un nouveau cycle est un GESTE, jamais une proposition.
+// ---------------------------------------------------------------------------
+describe('ClinicalRuntimeSection — ouverture d’un nouveau cycle (`D-113`)', () => {
+  const propositionJ21: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+    proposalHash: 'hash-J21',
+  };
+  const propositionT1: CockpitRuntimeApiResponse = {
+    status: 'proposal_required',
+    proposal: { ...proposal, assessmentEpisodeId: 'episode-T1', milestone: 'T1' },
+    proposalHash: 'hash-T1',
+  };
+
+  function trajectoireAncre(jours: number, ancre: 'T0' | 'T1' = 'T0') {
+    const dateAncre = new Date(Date.now() - jours * 24 * 60 * 60 * 1000).toISOString();
+    return rep({
+      ok: true,
+      trajectoire: {
+        index: [{ milestone: ancre, date: dateAncre, cycleId: 'cycle-1' }],
+        cycles: [{
+          cycleId: 'cycle-1', ancre, dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+          momentumParBesoin: [],
+        }],
+        comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        discordanceOrdreCycles: false,
+      },
+    });
+  }
+
+  it('propose l’ouverture en NOMMANT l’ancre et ce que le geste coûte', async () => {
+    // T0 confirmé il y a 31 jours : aucun jalon confirmable. Le cockpit disait
+    // le motif et s'arrêtait là — le praticien n'avait aucun moyen de rouvrir.
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireAncre(31),
+      cockpitGet: [rep(proposalResponse)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByRole('button', { name: 'Ouvrir un nouveau cycle (T1)' })).toBeTruthy();
+    // La fermeture des fenêtres restantes était un effet de bord silencieux :
+    // elle est désormais ÉCRITE au-dessus du bouton.
+    expect(screen.getByText(/ferme les fenêtres de jalon encore ouvertes/i)).toBeTruthy();
+  });
+
+  it('le geste demande la proposition de la NOUVELLE ancre, et rien n’est écrit avant confirmation', async () => {
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireAncre(31),
+      cockpitGet: [rep(proposalResponse), rep(propositionT1)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir un nouveau cycle (T1)' }));
+
+    await waitFor(() => expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=T1'))).toBe(true));
+    // Le panneau de confirmation rouvre : le motif « aucun jalon confirmable »
+    // portait sur les jalons du cycle COURANT, pas sur le suivant.
+    expect(await screen.findByRole('button', { name: 'Confirmer l’épisode T1' })).toBeTruthy();
+    // Tant qu'il n'est pas confirmé, rien n'a changé pour le patient.
+    expect(corpsPoste(fetchMock)).toBeNull();
+    expect(screen.getByText(/rien n’a changé pour ce patient/i)).toBeTruthy();
+  });
+
+  it('l’ouverture demandée n’est jamais écrasée par la resynchronisation du jalon dû', async () => {
+    // Un jalon EST dû (J21 ouvert) : sans le drapeau d'ouverture, l'effet de
+    // resynchronisation aurait immédiatement redemandé `J21` et le geste
+    // aurait été impossible à mener à son terme.
+    const fetchMock = fetchParRoute({
+      trajectoire: trajectoireAncre(21),
+      cockpitGet: [rep(proposalResponse), rep(propositionJ21), rep(propositionT1)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    // Le geste reste offert PENDANT qu'un jalon est dû : c'est le cas clinique
+    // qui a motivé la décision (un nouveau départ, J90 encore ouvert).
+    fireEvent.click(await screen.findByRole('button', { name: 'Ouvrir un nouveau cycle (T1)' }));
+
+    expect(await screen.findByRole('button', { name: 'Confirmer l’épisode T1' })).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Confirmer l’épisode J21' })).toBeNull());
+  });
+
+  it('sans aucun cycle, aucun geste d’ouverture : le jalon dû EST l’ouverture', async () => {
+    const fetchMock = fetchParRoute({
+      trajectoire: rep({ ok: true, trajectoire: { index: [], cycles: [], comparaison: { disponible: false, raison: 'aucun_cycle' }, discordanceOrdreCycles: false } }),
+      cockpitGet: [rep(proposalResponse)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('button', { name: 'Confirmer l’épisode T0' });
+    expect(screen.queryByRole('button', { name: /Ouvrir un nouveau cycle/ })).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { estAncreDeCycle } from '../protocol/cycles';
 import { ANAMNESE_CHAMP_REQUIS } from '../consultation/anamnese';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '../consultation/consultationPorteuse';
 import { contradictionsPourPatient } from '../clinical/contradictionsService';
@@ -100,7 +101,11 @@ export async function preconditionsT0PourPatient(idPatient: string): Promise<Pre
  * champ, faute de mieux — c'est dit plutôt que supposé.
  */
 function jalonEffectif(episode: { assessmentEpisodeId?: string; milestone: string }): string {
-  const suffixe = /-(T0|J21|J42|J90)$/.exec(episode.assessmentEpisodeId ?? '');
+  // La série des ancres est OUVERTE depuis `D-113` : l'alternative littérale
+  // `T0` ne reconnaissait pas `-T1` en fin d'identifiant, et retombait donc sur
+  // le champ déclaré — exactement la source que cette fonction existe pour ne
+  // pas croire. Un épisode d'ancre `T1` annoncé `J21` aurait désactivé la porte.
+  const suffixe = /-(T(?:0|[1-9][0-9]*)|J21|J42|J90)$/.exec(episode.assessmentEpisodeId ?? '');
   return suffixe ? suffixe[1] : episode.milestone;
 }
 
@@ -117,8 +122,11 @@ function jalonEffectif(episode: { assessmentEpisodeId?: string; milestone: strin
  * l'épisode de celui qui a été haché dans `snapshot.inputHash`, et casserait
  * la chaîne de provenance que ces routes existent pour tenir.
  *
- * Hors T0, aucune précondition : les jalons de suivi ne sont pas gouvernés par
- * cette porte.
+ * HORS ANCRE, aucune précondition : les jalons de suivi (J21, J42, J90) ne sont
+ * pas gouvernés par cette porte. Le test portait sur le seul littéral `T0` :
+ * ouvrir un deuxième cycle en `T1` aurait franchi la persistance SANS rideau,
+ * alors qu'ouvrir un cycle est le même acte quel que soit son rang (`D-052`,
+ * `D-113` §2).
  */
 export async function refusPreconditionsPersistance(
   episode: {
@@ -129,7 +137,7 @@ export async function refusPreconditionsPersistance(
   },
   emailPraticienSession: string,
 ): Promise<string | null> {
-  if (jalonEffectif(episode) !== 'T0') return null;
+  if (!estAncreDeCycle(jalonEffectif(episode))) return null;
 
   const preconditions = await preconditionsT0PourPatient(episode.patientId);
   if (preconditions.bloquant) return messageRefusPreconditions(preconditions);

@@ -22,7 +22,8 @@ const LIGNES: LigneCabinet[] = [
       cycles: [
         {
           cycleId: 'c1',
-          dateT0: '2026-01-01T00:00:00.000Z',
+          ancre: 'T0',
+          dateAncre: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -34,6 +35,7 @@ const LIGNES: LigneCabinet[] = [
           momentumParBesoin: [],
         },
       ],
+      discordanceOrdreCycles: false,
       comparaison: { disponible: false, raison: 'un_seul_cycle' },
     },
   },
@@ -42,7 +44,12 @@ const LIGNES: LigneCabinet[] = [
     prenom: 'Michel',
     nom: 'Dogné',
     email: 'michel.dogne@example.test',
-    trajectoire: { index: [], cycles: [], comparaison: { disponible: false, raison: 'aucun_cycle' } },
+    trajectoire: {
+      index: [],
+      cycles: [],
+      comparaison: { disponible: false, raison: 'aucun_cycle' },
+      discordanceOrdreCycles: false,
+    },
   },
 ];
 
@@ -104,7 +111,7 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
             cycles: [
               {
                 ...LIGNES[0].trajectoire.cycles[0],
-                dateT0,
+                dateAncre: dateT0,
                 jalons: [
                   { jalon: 'T0', mesure: true, valeur: 40, date: dateT0 },
                   { jalon: 'J21', mesure: false, valeur: null, date: null },

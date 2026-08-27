@@ -319,10 +319,12 @@ describe('POST /api/praticien/protocoles', () => {
   });
 
   // Gate G2 — identité de cycle estampillée à l'écriture.
-  it('un T0 ouvre son propre cycle, sans interroger la base', async () => {
+  it('une ancre ouvre son propre cycle', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     await POST(postRequest({ episode, decisionCard, draft }));
-    expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+    // Les ancres SONT lues, même pour une ancre : depuis `D-113`, la même
+    // lecture sert la garde de recevabilité du nom de cycle.
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
@@ -332,13 +334,13 @@ describe('POST /api/praticien/protocoles', () => {
     );
   });
 
-  it('un jalon postérieur rejoint le dernier T0 antérieur du patient', async () => {
+  it('un jalon de mesure rejoint le cycle du rang le plus haut déjà ouvert', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.assessmentEpisode.findMany.mockResolvedValue([
-      { id: 'EPI_T0_A', cycleId: 'EPI_T0_A', confirmedAt: new Date('2025-11-01T00:00:00.000Z') },
-      { id: 'EPI_T0_B', cycleId: 'EPI_T0_B', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
-      // T0 postérieur au jalon : ne doit jamais l'absorber.
-      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
+      { id: 'EPI_T0_A', cycleId: 'EPI_T0_A', milestone: 'T0', confirmedAt: new Date('2025-11-01T00:00:00.000Z') },
+      { id: 'EPI_T0_B', cycleId: 'EPI_T0_B', milestone: 'T1', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+      // Ancre postérieure au jalon : ne doit jamais l'absorber.
+      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', milestone: 'T2', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
     ]);
     await POST(postRequest(
       chainePour({ ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' }),
@@ -348,10 +350,10 @@ describe('POST /api/praticien/protocoles', () => {
     );
   });
 
-  it('un jalon sans aucun T0 antérieur reste non rattaché (cycleId null)', async () => {
+  it('un jalon sans aucune ancre antérieure reste non rattaché (cycleId null)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.assessmentEpisode.findMany.mockResolvedValue([
-      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
+      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', milestone: 'T0', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
     ]);
     await POST(postRequest(
       chainePour({ ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' }),
@@ -522,5 +524,82 @@ describe('GET /api/praticien/protocoles', () => {
     // Liste vide : dossier non prouvé accessible → pas de journalisation
     // (limite assumée, LOT-00).
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `D-113` — le point de persistance garde le NOM du cycle, pas seulement son
+// contenu. La colonne `milestone` n'a aucun CHECK : ce refus est le seul.
+// ---------------------------------------------------------------------------
+describe('POST /api/praticien/protocoles — recevabilité de l’ancre (`D-113`)', () => {
+  const ancre = (id: string, milestone: string, iso: string) => ({
+    id, cycleId: id, milestone, confirmedAt: new Date(iso),
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.$transaction.mockResolvedValue([]);
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    prisma.questionnaireReponse.findMany.mockResolvedValue(passationsC1Fixture());
+    prisma.consultation.findFirst.mockResolvedValue(ANAMNESE_C1_FIXTURE);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    signerTablePriorites();
+  });
+
+  afterEach(() => {
+    retablirTablePriorites();
+  });
+
+  it('REFUSE une ancre dont le rang saute, et n’écrit rien', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+    ]);
+    const res = await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'EPI_T7', milestone: 'T7' as never }),
+    ));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toContain('T7');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('REFUSE un jalon d’une forme que rien ne relit', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    const res = await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'EPI_TA', milestone: 'TA' as never }),
+    ));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toContain('Jalon inconnu');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('ACCEPTE l’ancre suivante, qui ouvre son propre cycle', async () => {
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+    ]);
+    const res = await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'EPI_T1', milestone: 'T1' as never }),
+    ));
+    expect(res.status).toBe(200);
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ create: expect.objectContaining({ milestone: 'T1', cycleId: 'EPI_T1' }) }),
+    );
+  });
+
+  it('LE RIDEAU D’ENTRÉE VAUT AUSSI POUR `T1` ([[D-052]])', async () => {
+    // La porte lisait le suffixe `-(T0|J21|J42|J90)` de l'identifiant : `-T1`
+    // n'y correspondait pas, la fonction retombait sur le champ déclaré, et un
+    // `T1` annoncé `J21` désactivait le rideau.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      ancre('EPI_T0', 'T0', '2026-01-01T00:00:00.000Z'),
+    ]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    const res = await POST(postRequest(
+      chainePour({ ...episode, assessmentEpisodeId: 'runtime-episode-PAT_TEST-T1', milestone: 'T1' as never }),
+    ));
+    expect(res.status).toBe(422);
+    expect((await res.json()).reason).toBe('preconditions_non_remplies');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
