@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { construireTrajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
 import type { ReponseBrute } from '@/lib/equilibre/depuisPrisma';
 import type { JalonMomentum } from '@/lib/equilibre/types';
+import { estJalonMomentum } from '@/lib/protocol/cycles';
 import type { TendanceMomentumCarte } from './cartes';
 
 // Momentum des patients au jalon J21 (accueil-observatoire LOT-03) —
@@ -12,8 +13,6 @@ import type { TendanceMomentumCarte } from './cartes';
 // est `null` et la carte n'affiche RIEN — jamais un 0 (A8-2).
 //
 // Bornée aux patients-jalon (petit sous-ensemble) : deux requêtes, pas de N+1.
-
-const MILESTONES: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'];
 
 export async function momentumJalonsParPatient(
   idsJalon: string[],
@@ -36,7 +35,10 @@ export async function momentumJalonsParPatient(
 
   const episodesParPatient = new Map<string, TrajectoireEpisode[]>();
   for (const e of episodes) {
-    if (!(MILESTONES as readonly string[]).includes(e.milestone)) continue;
+    // Une ligne dont le jalon n'est ni une ancre ni une mesure est ignorée. Le
+    // test portait sur une liste littérale fermée : un `T1` confirmé en base y
+    // était rejeté, et le cycle disparaissait de la lecture sans un mot.
+    if (!estJalonMomentum(e.milestone)) continue;
     const liste = episodesParPatient.get(e.idPatient) ?? [];
     liste.push({
       id: e.id,

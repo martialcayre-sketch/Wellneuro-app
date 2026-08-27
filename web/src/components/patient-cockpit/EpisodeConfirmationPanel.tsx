@@ -123,11 +123,14 @@ export function EpisodeConfirmationPanel({
 
           {/* Dit plutôt que passé sous silence : sans cette ligne, l'absence de
               la biologie et des agendas se lirait comme un oubli. Q_SOM_09 est
-              au pack de base et volontairement hors du rideau T0 (D-052). */}
+              au pack de base et volontairement hors du rideau d'entrée
+              (D-052). Le jalon est NOMMÉ : depuis `D-113` ce rideau garde
+              l'ouverture de tout cycle, et « un T0 » serait faux devant un
+              panneau qui confirme un T1. */}
           <p className="text-sm text-muted-foreground">
-            Biologie, agendas et journal alimentaire ne sont <strong>pas requis</strong> pour confirmer un T0
+            Biologie, agendas et journal alimentaire ne sont <strong>pas requis</strong> pour confirmer un {jalon}
             (phase 1). L’agenda du sommeil (Q_SOM_09), bien qu’il figure au pack de base, court sur 21 nuits :
-            il ne peut pas conditionner une décision prise à J0.
+            il ne peut pas conditionner une décision prise au jour 0 du cycle.
           </p>
         </div>
       )}

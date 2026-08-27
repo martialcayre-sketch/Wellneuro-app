@@ -9,6 +9,7 @@ import type {
 } from '@/lib/clinical-engine/types';
 import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
 import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { lireAncresPersistees, refusAncreNonRecevable } from '@/lib/protocol/ancresPersistees';
 import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import {
   deriveProtocolDraftId,
@@ -137,6 +138,21 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       );
     }
 
+    // OUVERTURE DE CYCLE (`D-113`), AVANT TOUT CONTRÔLE CLINIQUE. Un `milestone`
+    // que rien ne relit — ou une ancre dont le rang saute — est un défaut de
+    // FORME : le refuser après le rideau d'entrée ferait répondre « il manque
+    // Q_MOD_03 » à un client qui a posté « T7 ». Les ancres lues ici servent
+    // aussi la résolution du cycle plus bas : une seule lecture, sinon deux
+    // verdicts pourraient diverger.
+    const ancres = await lireAncresPersistees(episode.patientId);
+    const refusAncre = refusAncreNonRecevable(episode.milestone, ancres);
+    if (refusAncre) {
+      return NextResponse.json(
+        { ok: false, reason: 'preconditions_non_remplies', error: refusAncre },
+        { status: 422 },
+      );
+    }
+
     // Préconditions T0 ([[D-052]]), APRÈS la garde d'appartenance : on ne lit
     // pas le dossier d'un patient qu'on n'a pas prouvé sien. 422 et non 409 —
     // ici 409 n'est pas utilisé, et sur la route sœur il porte déjà le conflit
@@ -165,18 +181,10 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       );
     }
 
-    // Identité de cycle (gate G2), résolue AVANT la transaction : un T0 ouvre son
-    // cycle, un jalon postérieur rejoint le dernier T0 antérieur du patient.
-    const cycleId = resolveCycleId({
-      episode,
-      t0Candidates:
-        episode.milestone === 'T0'
-          ? []
-          : await prisma.assessmentEpisode.findMany({
-              where: { idPatient: episode.patientId, milestone: 'T0' },
-              select: { id: true, cycleId: true, confirmedAt: true },
-            }),
-    });
+    // Identité de cycle (gate G2), résolue AVANT la transaction : une ancre
+    // ouvre son cycle, un jalon de mesure rejoint le cycle du rang le plus haut
+    // déjà ouvert à sa date.
+    const cycleId = resolveCycleId({ episode, ancresCandidates: ancres });
 
     // Transaction : épisode puis protocole, idempotents par identifiant de contrat.
     // Le versionnement append-only (supersedes) relève de la route /versions

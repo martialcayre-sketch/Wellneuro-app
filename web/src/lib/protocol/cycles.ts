@@ -113,3 +113,54 @@ export function discordanceDOrdre<T extends { milestone: string; confirmedAt: Da
   }
   return false;
 }
+
+/** Les trois jalons de mesure, dans l'ordre où ils s'ouvrent. */
+export const JALONS_MESURE = ['J21', 'J42', 'J90'] as const satisfies readonly JalonMesure[];
+
+export function estJalonMesure(milestone: string): milestone is JalonMesure {
+  return (JALONS_MESURE as readonly string[]).includes(milestone);
+}
+
+/**
+ * Un jalon que la chaîne sait lire : une ancre de cycle, ou un jalon de mesure.
+ *
+ * Remplace les listes littérales `['T0', 'J21', 'J42', 'J90']` que six modules
+ * portaient chacun de leur côté pour filtrer les lignes d'`assessment_episodes`.
+ * Recopiée, cette liste ne pouvait qu'être fermée : un `T1` confirmé en base
+ * était rejeté à la lecture par chacune d'elles — silencieusement, puisqu'un
+ * `continue` ne dit rien.
+ */
+export function estJalonMomentum(milestone: string): milestone is AncreCycle | JalonMesure {
+  return estAncreDeCycle(milestone) || estJalonMesure(milestone);
+}
+
+/**
+ * Les jalons d'un cycle, dans l'ordre : son ancre, puis les trois mesures.
+ *
+ * L'ORDRE EST CELUI DU CYCLE, PAS UNE LISTE GLOBALE. `['T0', 'J21', 'J42',
+ * 'J90']` en dur décrivait le premier cycle et lui seul : appliquée au cycle
+ * ancré en `T1`, elle cherchait une lecture `T0` qui appartient au cycle
+ * précédent, et n'en trouvait jamais pour l'ancre du cycle lu.
+ */
+export function jalonsDuCycle(ancre: AncreCycle): readonly (AncreCycle | JalonMesure)[] {
+  return [ancre, ...JALONS_MESURE];
+}
+
+/**
+ * L'ancre est-elle recevable pour ce patient ? — GARDE D'ÉCRITURE.
+ *
+ * Deux cas, et deux seulement : l'ancre est DÉJÀ POSÉE (re-confirmation d'un
+ * épisode existant, que la persistance traite en `upsert` idempotent), ou elle
+ * est EXACTEMENT la suivante. Rien d'autre.
+ *
+ * Sans cette garde, le `milestone` venant du navigateur, un `T7` posté sur un
+ * dossier qui n'a que `T0` ouvrirait un cycle de rang 7 : les rangs 1 à 6
+ * n'existeraient jamais, et `ancreSuivante` proposerait ensuite `T8`. Le trou
+ * ne se referme pas — il se propage. La colonne `milestone` n'ayant AUCUN CHECK
+ * en base (dette nommée par `D-113`), cette garde est la seule qui existe.
+ */
+export function ancreRecevable(milestone: string, ancresPosees: readonly string[]): boolean {
+  if (!estAncreDeCycle(milestone)) return false;
+  if (ancresPosees.includes(milestone)) return true;
+  return milestone === ancreSuivante(ancresPosees);
+}

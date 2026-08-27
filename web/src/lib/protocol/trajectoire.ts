@@ -6,17 +6,22 @@ import {
   type MomentumBesoin,
 } from '@/lib/equilibre/momentumParBesoin';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
+import {
+  ancresOrdonnees,
+  discordanceDOrdre,
+  jalonsDuCycle,
+  JALONS_MESURE,
+  type AncreCycle,
+} from './cycles';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — objet DÉRIVÉ, lecture
 // seule. « La Spirale comme index temporel des épisodes » : un index de repères
 // datés (jalons confirmés) + un comparateur multi-épisodes SOUS garde de version.
 // Ne réimplémente NI le score NI les jalons (propriété exclusive de
-// lib/equilibre) : lit via momentum.ts + depuisPrisma, ancrés au T0 de chaque
-// épisode (LOT-08). Jamais une courbe, jamais un pronostic (A6). Un jalon sans
+// lib/equilibre) : lit via momentum.ts + depuisPrisma, ancrés à l'ancre de
+// chaque cycle (LOT-08, `D-113`). Jamais une courbe, jamais un pronostic (A6). Un jalon sans
 // couverture est « non mesuré », jamais un 0 (A8-2). Deux lectures de
 // versionScore différents ne sont jamais soustraites (A8-3).
-
-const ORDRE_JALONS: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'] as const;
 
 // Épisode confirmé (une ligne assessment_episodes) — un jalon, pas un cycle.
 // `cycleId` et `versionScore` sont STOCKÉS (gate G2) et donc nullables : une
@@ -36,16 +41,30 @@ export type TrajectoireJalonLecture = {
   date: string | null; // ISO de la lecture, null si non mesuré
 };
 
-// Un cycle = un épisode T0 confirmé (son ancre). Modèle mono-protocole actuel :
-// en pratique un seul cycle par patient tant qu'un 2ᵉ T0 n'est pas confirmé.
+// Un cycle = un épisode d'ANCRE confirmé (`T0`, `T1`, `T2`, …). Depuis `D-113`
+// l'ancre porte le rang de son cycle : un deuxième cycle ne redéplace plus le
+// point de départ du premier, il pose le sien.
 export type TrajectoireCycle = {
-  cycleId: string; // id de cycle stocké, à défaut id de l'épisode T0 ancre
-  dateT0: string; // ISO
+  cycleId: string; // id de cycle stocké, à défaut id de l'épisode d'ancre
+  /**
+   * L'ancre de CE cycle — `T0` pour le premier, `T1` pour le deuxième, etc.
+   * Servie explicitement plutôt que devinée : ses consommateurs lisent ses
+   * jalons par nom, et « le jalon d'ancre » n'est plus un littéral connu
+   * d'avance.
+   */
+  ancre: AncreCycle;
+  /**
+   * ISO du `confirmedAt` de l'ancre. Le champ s'appelait `dateT0` : ce nom
+   * affirmait que tout cycle commence par un `T0`, et les libellés qui en
+   * découlaient (« T0 le … », « T0 + 14 j ») seraient devenus FAUX à l'écran
+   * dès le deuxième cycle.
+   */
+  dateAncre: string; // ISO
   // null = version de score inconnue (ligne antérieure au gate G2). Jamais
   // assimilée à la version courante : ce serait rendre A8-3 indéclenchable.
   versionScore: string | null;
   jalons: TrajectoireJalonLecture[];
-  momentum: { tendance: TendanceMomentum; delta: number } | null; // T0 → dernier jalon mesuré
+  momentum: { tendance: TendanceMomentum; delta: number } | null; // ancre → dernier jalon mesuré
   /**
    * Momentum PAR BESOIN (LOT-07, `D-058`) : delta factuel, jamais qualifié
    * tant qu'aucune bande de bruit n'est publiée. Le scalaire ci-dessus reste
@@ -74,8 +93,16 @@ export type Trajectoire = {
   // courbe — une liste de points cliquables (rendue côté UI). `cycleId` est
   // celui STOCKÉ sur l'épisode (gate G2) ; null → repli par date à la lecture.
   index: { milestone: JalonMomentum; date: string; cycleId: string | null }[];
+  // Ordonnés par RANG D'ANCRE (`T0`, `T1`, `T2`, …), et non par date : le nom
+  // fait foi pour l'identité d'un cycle (`D-113` §6).
   cycles: TrajectoireCycle[];
   comparaison: TrajectoireComparaison;
+  /**
+   * L'ordre des rangs contredit l'ordre des dates de confirmation — un `T2`
+   * confirmé avant le `T1`. SIGNALÉ, jamais départagé (`DC-30`) : remettre
+   * dans l'ordre choisirait en silence laquelle des deux sources a raison.
+   */
+  discordanceOrdreCycles: boolean;
 };
 
 export function construireTrajectoire(input: {
@@ -99,16 +126,21 @@ export function construireTrajectoire(input: {
     cycleId: e.cycleId,
   }));
 
-  const cycles: TrajectoireCycle[] = episodesTriees
-    .filter((e) => e.milestone === 'T0')
-    .map((t0) => {
-      const dateT0 = t0.confirmedAt;
-      // Ancrage T0 par épisode (LOT-08) : l'historique daté est reconstruit
-      // relativement au T0 confirmé de ce cycle.
-      const historique = construireHistoriqueEquilibre(input.reponses, dateT0);
+  // Un cycle par ANCRE, ordonnés par rang (`D-113` §6). L'ordre venait de la
+  // date de confirmation ; il vient du nom, qui seul identifie le cycle.
+  const cycles: TrajectoireCycle[] = ancresOrdonnees(episodesTriees)
+    .map((episodeAncre) => {
+      // `ancresOrdonnees` a déjà filtré sur `estAncreDeCycle` : le transtypage
+      // ne fait que porter au type ce que le filtre garantit.
+      const ancre = episodeAncre.milestone as AncreCycle;
+      const dateAncre = episodeAncre.confirmedAt;
+      // Ancrage par épisode (LOT-08) : l'historique daté est reconstruit
+      // relativement à l'ancre confirmée DE CE CYCLE — plus jamais celle d'un
+      // cycle voisin.
+      const historique = construireHistoriqueEquilibre(input.reponses, dateAncre);
 
-      const jalons: TrajectoireJalonLecture[] = ORDRE_JALONS.map((jalon) => {
-        const lecture = resoudreLectureJalon(dateT0, jalon, historique);
+      const jalons: TrajectoireJalonLecture[] = jalonsDuCycle(ancre).map((jalon) => {
+        const lecture = resoudreLectureJalon(dateAncre, jalon, historique);
         return {
           jalon,
           mesure: lecture !== null,
@@ -117,39 +149,53 @@ export function construireTrajectoire(input: {
         };
       });
 
-      const lectureT0 = resoudreLectureJalon(dateT0, 'T0', historique);
-      const dernierJalonMesure = [...ORDRE_JALONS]
+      const lectureAncre = resoudreLectureJalon(dateAncre, ancre, historique);
+      // Le dernier jalon de MESURE renseigné. Le test excluait l'ancre par son
+      // littéral (`jalon !== 'T0'`) : sur un cycle ancré en `T1`, il aurait
+      // laissé l'ancre entrer dans son propre momentum, qui vaut alors zéro.
+      const dernierJalonMesure = [...JALONS_MESURE]
         .reverse()
-        .find((jalon) => jalon !== 'T0' && resoudreLectureJalon(dateT0, jalon, historique) !== null);
+        .find((jalon) => resoudreLectureJalon(dateAncre, jalon, historique) !== null);
       const lectureRecente = dernierJalonMesure
-        ? resoudreLectureJalon(dateT0, dernierJalonMesure, historique)
+        ? resoudreLectureJalon(dateAncre, dernierJalonMesure, historique)
         : null;
-      const momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
+      const momentum = calculerDeltaMomentum(lectureAncre, lectureRecente);
 
-      // Par besoin : même ancre T0, même « maintenant » implicite que
-      // l'historique scalaire (les jalons futurs sont omis pareil). Les deux
-      // lectures d'une série viennent toujours du moteur courant : aucune
-      // garde de version intra-cycle ici (revue LOT-07 B1) — la garde A8-3
-      // inter-cycles reste `resoudreComparaison` ci-dessous.
+      // Par besoin : même ancre, même « maintenant » implicite que l'historique
+      // scalaire (les jalons futurs sont omis pareil). Les deux lectures d'une
+      // série viennent toujours du moteur courant : aucune garde de version
+      // intra-cycle ici (revue LOT-07 B1) — la garde A8-3 inter-cycles reste
+      // `resoudreComparaison` ci-dessous.
+      //
+      // L'ANCRE EST PASSÉE PAR SON NOM. Le défaut par `'T0'` du module était
+      // dit provisoire (`D-113`, PR 1) : chaque `LectureBesoin` PORTE son
+      // jalon, et ce nom est restitué au praticien — « T0 » sous une lecture
+      // du cycle `T1` la daterait d'un départ qui n'est pas le sien.
       const momentumParBesoin = input.avecMomentumParBesoin
         ? calculerMomentumParBesoin({
-            series: construireHistoriqueParBesoin(input.reponses, dateT0, new Date()),
+            series: construireHistoriqueParBesoin(input.reponses, dateAncre, new Date(), ancre),
           })
         : [];
 
       return {
-        // Le cycle d'un T0 est le sien : id stocké quand il existe, sinon son
-        // propre id (repli pour les lignes antérieures au gate G2).
-        cycleId: t0.cycleId ?? t0.id,
-        dateT0: dateT0.toISOString(),
-        versionScore: t0.versionScore,
+        // Le cycle d'une ancre est le sien : id stocké quand il existe, sinon
+        // son propre id (repli pour les lignes antérieures au gate G2).
+        cycleId: episodeAncre.cycleId ?? episodeAncre.id,
+        ancre,
+        dateAncre: dateAncre.toISOString(),
+        versionScore: episodeAncre.versionScore,
         jalons,
         momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,
         momentumParBesoin,
       };
     });
 
-  return { index, cycles, comparaison: resoudreComparaison(cycles) };
+  return {
+    index,
+    cycles,
+    comparaison: resoudreComparaison(cycles),
+    discordanceOrdreCycles: discordanceDOrdre(episodesTriees),
+  };
 }
 
 // Un repère de l'index, rattaché au cycle qu'il documente. Rendu navigable côté
@@ -158,23 +204,23 @@ export function construireTrajectoire(input: {
 export type TrajectoireRepere = {
   milestone: JalonMomentum;
   date: string; // ISO
-  cycleId: string | null; // null = repère antérieur à tout T0 confirmé
+  cycleId: string | null; // null = repère antérieur à toute ancre confirmée
 };
 
 // Rattachement d'un repère à son cycle. Depuis le gate G2, le `cycleId` STOCKÉ
 // sur l'épisode fait foi ; le rattachement par date ci-dessous n'est plus qu'un
-// REPLI pour les lignes qui n'en portent pas (antérieures au gate, ou sans T0
-// antérieur au moment de leur confirmation).
-// Le repli rattache au cycle ouvert par le dernier T0 antérieur ou égal. Un
-// repère n'est JAMAIS rattaché à un cycle postérieur : un jalon ne peut pas
-// documenter un cycle qui n'avait pas commencé. Sans T0 antérieur, il reste
+// REPLI pour les lignes qui n'en portent pas (antérieures au gate, ou sans
+// ancre antérieure au moment de leur confirmation).
+// Le repli rattache au cycle ouvert par la dernière ancre antérieure ou égale.
+// Un repère n'est JAMAIS rattaché à un cycle postérieur : un jalon ne peut pas
+// documenter un cycle qui n'avait pas commencé. Sans ancre antérieure, il reste
 // explicitement non rattaché plutôt que rangé de force dans le premier cycle.
 export function rattacherReperesAuxCycles(
   index: Trajectoire['index'],
   cycles: TrajectoireCycle[],
 ): TrajectoireRepere[] {
   const ancres = cycles
-    .map((cycle) => ({ cycleId: cycle.cycleId, instant: new Date(cycle.dateT0).getTime() }))
+    .map((cycle) => ({ cycleId: cycle.cycleId, instant: new Date(cycle.dateAncre).getTime() }))
     .filter((ancre) => Number.isFinite(ancre.instant))
     .sort((a, b) => a.instant - b.instant);
 

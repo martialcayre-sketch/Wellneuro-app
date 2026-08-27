@@ -16,6 +16,7 @@
 //   n'y figure — c'est la garantie de visibilité (D11).
 
 import type { TendanceMomentum } from '@/lib/equilibre/types';
+import { indexDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
 import {
   FORMULATIONS_PATIENT,
   LIBELLES_COURTS_PATIENT,
@@ -101,18 +102,25 @@ export function phaseInitiale(entrees: EntreesPhaseInitiale): IdPhaseContrat | n
 // consommé — pas de dépendance à l'objet complet.
 export type CycleBandeau = {
   cycleId: string;
-  dateT0: string; // ISO
+  /** L'ancre du cycle : `T0`, `T1`, `T2`, … (`D-113`). */
+  ancre: AncreCycle;
+  dateAncre: string; // ISO
   versionScore: string | null;
   momentum: { tendance: TendanceMomentum; delta: number } | null;
 };
 
 export type EpisodeBandeau = {
-  // 1-indexé, ordre chronologique des T0 confirmés.
+  /**
+   * 1-indexé — LE RANG DE L'ANCRE PLUS UN, jamais la position dans la liste.
+   * Compter les cycles présents annoncerait « épisode 2 » sur un dossier dont
+   * le `T0` a été effacé et qui porte `T1` et `T2` : le numéro affiché
+   * cesserait de correspondre au nom du cycle.
+   */
   numeroEpisode: number;
   cycleId: string;
-  // Jours révolus depuis le T0 de l'épisode courant (0 le jour même).
+  // Jours révolus depuis l'ancre de l'épisode courant (0 le jour même).
   positionJours: number;
-  // « T0 + 14 j · vous êtes ici » — libellé mono du bandeau (maquette LOT-02).
+  // « T1 + 14 j · vous êtes ici » — libellé mono du bandeau (maquette LOT-02).
   positionLibelle: string;
   // Momentum du tour PRÉCÉDENT, uniquement si sa version de score est connue
   // et identique à celle du tour courant (A8-3). Sinon null — le chip delta
@@ -126,8 +134,12 @@ export function deriverEpisodeBandeau(
 ): EpisodeBandeau | null {
   if (cycles.length === 0) return null;
 
+  // Ordre par RANG D'ANCRE (`D-113` §6), et non plus par date : le nom du cycle
+  // fait foi pour son identité, la date pour sa chronologie. Quand les deux
+  // divergent, `construireTrajectoire` le SIGNALE (`discordanceOrdreCycles`) —
+  // ce module, lui, ne départage pas.
   const tries = [...cycles].sort(
-    (a, b) => new Date(a.dateT0).getTime() - new Date(b.dateT0).getTime(),
+    (a, b) => (indexDeCycle(a.ancre) ?? 0) - (indexDeCycle(b.ancre) ?? 0),
   );
   const courant = tries[tries.length - 1];
   const precedent = tries.length >= 2 ? tries[tries.length - 2] : null;
@@ -135,7 +147,7 @@ export function deriverEpisodeBandeau(
   const msParJour = 24 * 60 * 60 * 1000;
   const positionJours = Math.max(
     0,
-    Math.floor((aujourdhui.getTime() - new Date(courant.dateT0).getTime()) / msParJour),
+    Math.floor((aujourdhui.getTime() - new Date(courant.dateAncre).getTime()) / msParJour),
   );
 
   const comparable =
@@ -146,10 +158,10 @@ export function deriverEpisodeBandeau(
     precedent.momentum !== null;
 
   return {
-    numeroEpisode: tries.length,
+    numeroEpisode: (indexDeCycle(courant.ancre) ?? tries.length - 1) + 1,
     cycleId: courant.cycleId,
     positionJours,
-    positionLibelle: `T0 + ${positionJours} j · vous êtes ici`,
+    positionLibelle: `${courant.ancre} + ${positionJours} j · vous êtes ici`,
     deltaTourPrecedent:
       comparable && precedent.momentum
         ? {

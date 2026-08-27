@@ -11,7 +11,8 @@ afterEach(cleanup);
 function cycle(t0: number | null, j21: number | null, j42: number | null = null): TrajectoireCycle {
   return {
     cycleId: 'c1',
-    dateT0: '2026-01-01T00:00:00.000Z',
+    ancre: 'T0',
+    dateAncre: '2026-01-01T00:00:00.000Z',
     versionScore: 'v1',
     jalons: [
       { jalon: 'T0', mesure: t0 !== null, valeur: t0, date: t0 === null ? null : '2026-01-01T00:00:00.000Z' },

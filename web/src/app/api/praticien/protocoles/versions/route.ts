@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditionsT0Prisma';
+import { lireAncresPersistees, refusAncreNonRecevable } from '@/lib/protocol/ancresPersistees';
 import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import type {
   ConfirmedAssessmentEpisode,
@@ -134,6 +135,21 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },
+      );
+    }
+
+    // OUVERTURE DE CYCLE (`D-113`), AVANT TOUT CONTRÔLE CLINIQUE. Un `milestone`
+    // que rien ne relit — ou une ancre dont le rang saute — est un défaut de
+    // FORME : le refuser après le rideau d'entrée ferait répondre « il manque
+    // Q_MOD_03 » à un client qui a posté « T7 ». Les ancres lues ici servent
+    // aussi la résolution du cycle plus bas : une seule lecture, sinon deux
+    // verdicts pourraient diverger.
+    const ancres = await lireAncresPersistees(episode.patientId);
+    const refusAncre = refusAncreNonRecevable(episode.milestone, ancres);
+    if (refusAncre) {
+      return NextResponse.json(
+        { ok: false, reason: 'preconditions_non_remplies', error: refusAncre },
+        { status: 422 },
       );
     }
 
@@ -343,18 +359,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const versionId = deriveVersionId(protocolDraftId, draft.inputHash);
     const supersedesDraftId = active?.id ?? null;
 
-    // Identité de cycle (gate G2), résolue AVANT la transaction : un T0 ouvre son
-    // cycle, un jalon postérieur rejoint le dernier T0 antérieur du patient.
-    const cycleId = resolveCycleId({
-      episode,
-      t0Candidates:
-        episode.milestone === 'T0'
-          ? []
-          : await prisma.assessmentEpisode.findMany({
-              where: { idPatient: episode.patientId, milestone: 'T0' },
-              select: { id: true, cycleId: true, confirmedAt: true },
-            }),
-    });
+    // Identité de cycle (gate G2), résolue AVANT la transaction : une ancre
+    // ouvre son cycle, un jalon de mesure rejoint le cycle du rang le plus haut
+    // déjà ouvert à sa date.
+    const cycleId = resolveCycleId({ episode, ancresCandidates: ancres });
 
     await prisma.$transaction([
       prisma.assessmentEpisode.upsert({

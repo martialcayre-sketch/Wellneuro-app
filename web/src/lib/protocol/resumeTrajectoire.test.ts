@@ -5,7 +5,12 @@ import { resumerTrajectoire } from './resumeTrajectoire';
 const AUJOURDHUI = new Date('2026-01-15T00:00:00.000Z');
 
 function trajectoire(cycles: Trajectoire['cycles']): Trajectoire {
-  return { index: [], cycles, comparaison: { disponible: false, raison: cycles.length === 0 ? 'aucun_cycle' : 'un_seul_cycle' } };
+  return {
+    index: [],
+    cycles,
+    comparaison: { disponible: false, raison: cycles.length === 0 ? 'aucun_cycle' : 'un_seul_cycle' },
+    discordanceOrdreCycles: false,
+  };
 }
 
 describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
@@ -21,7 +26,8 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
       trajectoire([
         {
           cycleId: 'c1',
-          dateT0: '2026-01-01T00:00:00.000Z',
+          ancre: 'T0',
+          dateAncre: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -35,7 +41,7 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
       ]),
       AUJOURDHUI,
     );
-    expect(resume.episodeEnCours).toEqual({ numero: 1, dateT0: '2026-01-01T00:00:00.000Z', positionJours: 14 });
+    expect(resume.episodeEnCours).toEqual({ numero: 1, ancre: 'T0', dateAncre: '2026-01-01T00:00:00.000Z', positionJours: 14 });
     expect(resume.dernierJalonMesure).toEqual({ jalon: 'T0', valeur: 40, date: '2026-01-01T00:00:00.000Z' });
     // Prochain jalon non mesuré : J21, à sa date théorique T0 + 21 j.
     expect(resume.prochaineEcheance).toEqual({ libelle: 'J21', date: '2026-01-22T00:00:00.000Z' });
@@ -46,7 +52,8 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
       trajectoire([
         {
           cycleId: 'c1',
-          dateT0: '2026-01-01T00:00:00.000Z',
+          ancre: 'T0',
+          dateAncre: '2026-01-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [
             { jalon: 'T0', mesure: true, valeur: 40, date: '2026-01-01T00:00:00.000Z' },
@@ -65,12 +72,13 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
     expect(resume.prochaineEcheance?.libelle).toBe('J42');
   });
 
-  it('deux cycles : l’épisode en cours est le dernier T0 confirmé', () => {
+  it('deux cycles : l’épisode en cours est celui du RANG le plus haut', () => {
     const resume = resumerTrajectoire(
       trajectoire([
         {
           cycleId: 'c1',
-          dateT0: '2025-03-01T00:00:00.000Z',
+          ancre: 'T0',
+          dateAncre: '2025-03-01T00:00:00.000Z',
           versionScore: 'v1',
           jalons: [{ jalon: 'T0', mesure: true, valeur: 30, date: '2025-03-01T00:00:00.000Z' }],
           momentum: null,
@@ -78,9 +86,10 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
         },
         {
           cycleId: 'c2',
-          dateT0: '2026-01-10T00:00:00.000Z',
+          ancre: 'T1',
+          dateAncre: '2026-01-10T00:00:00.000Z',
           versionScore: 'v1',
-          jalons: [{ jalon: 'T0', mesure: true, valeur: 44, date: '2026-01-10T00:00:00.000Z' }],
+          jalons: [{ jalon: 'T1', mesure: true, valeur: 44, date: '2026-01-10T00:00:00.000Z' }],
           momentum: null,
           momentumParBesoin: [],
         },
@@ -88,6 +97,10 @@ describe('resumerTrajectoire (SP-TRAJ LOT-04)', () => {
       AUJOURDHUI,
     );
     expect(resume.episodeEnCours?.numero).toBe(2);
+    expect(resume.episodeEnCours?.ancre).toBe('T1');
     expect(resume.episodeEnCours?.positionJours).toBe(5);
+    // La première échéance non mesurée du cycle courant est son J21 — jamais
+    // un `T0` recopié d'une liste globale, qui appartient au cycle précédent.
+    expect(resume.prochaineEcheance?.libelle).toBe('J21');
   });
 });

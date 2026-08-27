@@ -24,12 +24,14 @@ function trajectoire(confirmes: string[] = ['T0']): Trajectoire {
     })),
     cycles: [{
       cycleId: 'cycle-1',
-      dateT0: T0,
+      ancre: 'T0',
+      dateAncre: T0,
       versionScore: 'equilibre-v15',
       jalons: [],
       momentum: null,
       momentumParBesoin: [],
     }],
+    discordanceOrdreCycles: false,
     comparaison: { disponible: false, raison: 'un_seul_cycle' },
   };
 }
@@ -119,7 +121,7 @@ describe('resoudreJalonDu — ce que le cockpit a le droit de proposer', () => {
 
   it('refuse de proposer quoi que ce soit sur une date T0 illisible', () => {
     const casse = trajectoire();
-    casse.cycles[0].dateT0 = 'pas-une-date';
+    casse.cycles[0].dateAncre = 'pas-une-date';
     expect(resoudreJalonDu(casse, apresT0(21))).toMatchObject({ statut: 'aucun' });
   });
 });
@@ -134,7 +136,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
     const confirmedAt = '2026-01-20T00:00:00.000Z';
     const traj = trajectoire();
     traj.index = [{ milestone: 'T0', date: confirmedAt, cycleId: 'cycle-1' }];
-    traj.cycles[0].dateT0 = confirmedAt;
+    traj.cycles[0].dateAncre = confirmedAt;
 
     const du = resoudreJalonDu(traj, new Date('2026-02-10T00:00:00.000Z'));
     expect(du).toMatchObject({ statut: 'du', jalon: 'J21' });
@@ -155,7 +157,7 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
         etatPopulation: lireEtatPopulation(null),
       },
       'J21',
-      confirmedAt,
+      { ancre: 'T0', confirmedAt },
     );
     expect(proposal.window.start).toBe(du.ouvertLe);
     expect(proposal.window.end).toBe(du.fermeLe);
@@ -179,5 +181,103 @@ describe('contrat inter-couches — la fenêtre affichée est celle que le serve
       'T0',
     );
     expect(proposal.targetAt).toBe('2026-01-01T00:00:00.000Z');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `D-113` — cycles nommés, et l'ouverture du suivant.
+// ---------------------------------------------------------------------------
+
+/** Une trajectoire à DEUX cycles : `T0` en janvier, `T1` deux mois plus tard. */
+function deuxCycles(confirmes: string[] = ['T0', 'T1']): Trajectoire {
+  const dateT1 = new Date(Date.parse(T0) + 60 * JOUR).toISOString();
+  // `T0` documente le premier cycle ; l'ancre `T1` et tout jalon de mesure
+  // documentent le second — le cycle courant.
+  return {
+    index: confirmes.map(milestone => ({
+      milestone: milestone as Trajectoire['index'][number]['milestone'],
+      date: milestone === 'T0' ? T0 : dateT1,
+      cycleId: milestone === 'T0' ? 'cycle-1' : 'cycle-2',
+    })),
+    cycles: [
+      {
+        cycleId: 'cycle-1',
+        ancre: 'T0',
+        dateAncre: T0,
+        versionScore: 'equilibre-v15',
+        jalons: [],
+        momentum: null,
+        momentumParBesoin: [],
+      },
+      {
+        cycleId: 'cycle-2',
+        ancre: 'T1',
+        dateAncre: dateT1,
+        versionScore: 'equilibre-v15',
+        jalons: [],
+        momentum: null,
+        momentumParBesoin: [],
+      },
+    ],
+    discordanceOrdreCycles: false,
+    comparaison: { disponible: true, raison: 'comparable' },
+  };
+}
+
+describe('resoudreJalonDu — cycles nommés (`D-113`)', () => {
+  it('les jalons du cycle courant se comptent depuis SON ancre, pas depuis le T0', () => {
+    // `T1` posé à J+60. Son J21 s'ouvre donc à J+81, pas à J+21.
+    expect(resoudreJalonDu(deuxCycles(), apresT0(60 + 21))).toMatchObject({
+      statut: 'du',
+      jalon: 'J21',
+    });
+    // À J+21, c'est le J21 du PREMIER cycle qui aurait été proposé avant la
+    // décision : sa fenêtre est fermée par l'ouverture du second (§8).
+    expect(resoudreJalonDu(deuxCycles(), apresT0(21))).toMatchObject({ statut: 'aucun' });
+  });
+
+  it('l’ancre du cycle courant n’est jamais re-proposée', () => {
+    // La liste littérale `['T0', …]` tenait `T0` pour un jalon non confirmé de
+    // ce cycle : sa fenêtre, centrée sur l'ancre, était ouverte le jour même.
+    const verdict = resoudreJalonDu(deuxCycles(), apresT0(60));
+    expect(verdict.statut === 'du' && verdict.jalon === 'T0').toBe(false);
+  });
+
+  it('OUVRIR UN CYCLE FERME LES FENÊTRES DU PRÉCÉDENT — règle énoncée, plus effet de bord (§8)', () => {
+    // Un seul cycle, J+21 : le J21 est dû.
+    expect(resoudreJalonDu(trajectoire(), apresT0(21))).toMatchObject({ statut: 'du', jalon: 'J21' });
+    // Le même instant, une fois `T1` ouvert : plus rien du cycle 1 n'est
+    // proposé. Ce qui a déjà été confirmé reste lisible ; c'est la PROPOSITION
+    // qui s'arrête.
+    expect(resoudreJalonDu(deuxCycles(), apresT0(21))).toMatchObject({ statut: 'aucun' });
+  });
+
+  it('nomme l’ancre qu’ouvrirait un nouveau cycle, même pendant qu’un jalon est dû', () => {
+    const unSeulCycle = resoudreJalonDu(trajectoire(), apresT0(21));
+    expect(unSeulCycle.statut).toBe('du');
+    expect(unSeulCycle.ancreOuvrable).toBe('T1');
+
+    const deux = resoudreJalonDu(deuxCycles(), apresT0(60 + 21));
+    expect(deux.ancreOuvrable).toBe('T2');
+  });
+
+  it('sans aucun cycle, l’ouverture N’EST PAS un geste à part : c’est le jalon dû', () => {
+    const verdict = resoudreJalonDu(null, apresT0(0));
+    expect(verdict).toMatchObject({ statut: 'du', jalon: 'T0' });
+    expect(verdict.ancreOuvrable).toBeNull();
+  });
+
+  it('tous les jalons du cycle courant confirmés : le motif le dit, l’ouverture reste offerte', () => {
+    const verdict = resoudreJalonDu(deuxCycles(['T0', 'T1', 'J21', 'J42', 'J90']), apresT0(60 + 21));
+    expect(verdict).toMatchObject({ statut: 'aucun', motif: 'Tous les jalons de ce cycle sont confirmés.' });
+    expect(verdict.ancreOuvrable).toBe('T2');
+  });
+
+  it('une date d’ancre illisible NOMME l’ancre en cause', () => {
+    const cassee = deuxCycles();
+    cassee.cycles[1] = { ...cassee.cycles[1], dateAncre: 'pas-une-date' };
+    const verdict = resoudreJalonDu(cassee, apresT0(60));
+    expect(verdict.statut).toBe('aucun');
+    expect(verdict.statut === 'aucun' && verdict.motif).toContain('T1');
   });
 });

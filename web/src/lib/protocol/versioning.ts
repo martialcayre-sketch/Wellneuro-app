@@ -1,4 +1,5 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { ancresOrdonnees, estAncreDeCycle } from './cycles';
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import {
   VERSION_OBJETS_CLINIQUES,
@@ -76,33 +77,43 @@ export function isClinicalChange(
   return clinicalContentHash(activeDraft) !== clinicalContentHash(nextDraft);
 }
 
-// Épisode T0 déjà persisté, tel que l'appelant le lit pour résoudre le cycle.
-export type T0Candidate = {
+// Épisode d'ANCRE déjà persisté, tel que l'appelant le lit pour résoudre le
+// cycle. `milestone` en fait partie depuis `D-113` : l'appelant ne peut plus
+// filtrer sur le seul littéral `T0`, et c'est le RANG de l'ancre qui départage.
+export type AncreCandidate = {
   id: string;
   cycleId: string | null;
   confirmedAt: Date;
+  milestone: string;
 };
 
-// Identité de cycle (gate G2). Fonction PURE : l'appelant fournit les T0 déjà
-// persistés du patient, elle désigne le cycle auquel le nouvel épisode
-// appartient. Un T0 ouvre son propre cycle ; un jalon postérieur rejoint le
-// dernier T0 antérieur ou égal à sa confirmation ; sans T0 antérieur il reste
-// `null` — jamais rattaché de force au premier cycle venu.
+// Identité de cycle (gate G2). Fonction PURE : l'appelant fournit les ancres
+// déjà persistées du patient, elle désigne le cycle auquel le nouvel épisode
+// appartient. Une ancre ouvre son propre cycle ; un jalon de mesure rejoint le
+// cycle du RANG LE PLUS HAUT parmi les ancres antérieures ou égales à sa
+// confirmation ; sans ancre antérieure il reste `null` — jamais rattaché de
+// force au premier cycle venu.
+//
+// LE FILTRE DE DATE RESTE, LE DÉPARTAGE PASSE AU RANG. La date interdit de
+// rattacher un jalon à un cycle qui n'avait pas commencé — cette borne-là est
+// physique. Mais entre deux ancres déjà ouvertes, c'est le nom qui identifie le
+// cycle (`D-113` §6) ; trier sur la date choisirait en silence la source qui a
+// raison le jour où les deux divergent.
 export function resolveCycleId(params: {
   episode: ConfirmedAssessmentEpisode;
-  t0Candidates: T0Candidate[];
+  ancresCandidates: AncreCandidate[];
 }): string | null {
-  const { episode, t0Candidates } = params;
-  if (episode.milestone === 'T0') return episode.assessmentEpisodeId;
+  const { episode, ancresCandidates } = params;
+  if (estAncreDeCycle(episode.milestone)) return episode.assessmentEpisodeId;
 
   const confirmedAt = new Date(episode.confirmedAt as string).getTime();
   if (!Number.isFinite(confirmedAt)) return null;
 
-  const anterieurs = t0Candidates
-    .filter((t0) => t0.confirmedAt.getTime() <= confirmedAt)
-    .sort((a, b) => b.confirmedAt.getTime() - a.confirmedAt.getTime());
+  const anterieures = ancresOrdonnees(
+    ancresCandidates.filter((candidate) => candidate.confirmedAt.getTime() <= confirmedAt),
+  );
 
-  const ancre = anterieurs[0];
+  const ancre = anterieures.at(-1);
   if (!ancre) return null;
   // Une ligne héritée dont le cycle n'a pas été backfillé n'invente rien : on
   // retombe sur son propre id, qui est par construction l'id du cycle qu'elle ouvre.

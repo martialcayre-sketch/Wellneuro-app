@@ -7,7 +7,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolDraft: { findMany: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
-    assessmentEpisode: { findFirst: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -38,8 +38,8 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     vi.clearAllMocks();
     // Par défaut, le patient appartient au praticien en session (garde d'appartenance).
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
-    // Par défaut : aucun épisode T0 confirmé → repli sur le T0 global (LOT-08).
-    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+    // Par défaut : aucune ancre confirmée → repli sur la 1re réponse (LOT-08).
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   });
 
   it('refuse sans session (401)', async () => {
@@ -137,12 +137,14 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     expect(typeof json.resume.score?.delta).toBe('number');
   });
 
-  it('ancre le T0 sur l’épisode confirmé quand il existe (C2B LOT-08)', async () => {
+  it('ancre sur l’épisode d’ancre confirmé quand il existe (C2B LOT-08)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC_1#h' }]);
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
-    // Épisode T0 confirmé : c'est lui qui ancre les jalons (pas la 1re réponse).
-    prisma.assessmentEpisode.findFirst.mockResolvedValue({ confirmedAt: new Date('2026-01-01T00:00:00.000Z') });
+    // Épisode d'ancre confirmé : c'est lui qui ancre les jalons (pas la 1re réponse).
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0', cycleId: 'EPI_T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z'), milestone: 'T0' },
+    ]);
     // Deux passations : voir le cas précédent — la règle de nouveauté (lot 1)
     // rend le momentum null sur une réponse unique, ce qui masquerait ici ce
     // que le cas vérifie réellement, à savoir l'ancrage sur l'épisode confirmé.
@@ -154,8 +156,10 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     const res = await GET(request());
     const json = (await res.json()) as { resume: { score: { delta: number } | null } };
     expect(res.status).toBe(200);
-    expect(prisma.assessmentEpisode.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { idPatient: 'PAT_1', milestone: 'T0' } }),
+    // Le filtre SQL est LARGE (`startsWith: 'T'`) : la série des ancres est
+    // ouverte, et `milestone: 'T0'` n'aurait pas vu un `T1` (`D-113`).
+    expect(prisma.assessmentEpisode.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_1', milestone: { startsWith: 'T' } } }),
     );
     expect(json.resume.score).not.toBeNull();
   });

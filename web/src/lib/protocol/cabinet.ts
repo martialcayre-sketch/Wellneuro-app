@@ -1,4 +1,5 @@
 import type { JalonMomentum } from '@/lib/equilibre/types';
+import { estJalonMesure, JALONS_MESURE } from '@/lib/protocol/cycles';
 import type { TrajectoireCycle } from '@/lib/protocol/trajectoire';
 
 // Repère de cabinet (A6-R2, décision utilisateur 2026-07-23) — médiane
@@ -10,13 +11,13 @@ import type { TrajectoireCycle } from '@/lib/protocol/trajectoire';
 
 export const SEUIL_COHORTE_CABINET = 5;
 
-const JALONS_MOMENTUM: readonly JalonMomentum[] = ['J21', 'J42', 'J90'] as const;
+const JALONS_MOMENTUM: readonly JalonMomentum[] = JALONS_MESURE;
 
 export type MedianeJalon = { jalon: JalonMomentum; mediane: number; n: number };
 
 export type MedianesCabinet = {
   versionScoreReference: string | null;
-  // Cycles comparables du cabinet : même versionScore ET T0 mesuré.
+  // Cycles comparables du cabinet : même versionScore ET ancre mesurée.
   nTotal: number;
   // nTotal < seuil (ou version de référence inconnue) → aucune médiane servie.
   masque: boolean;
@@ -45,13 +46,17 @@ export function calculerMedianesCabinet(
   for (const cycles of cyclesParPatient) {
     for (const cycle of cycles) {
       if (cycle.versionScore !== versionScoreReference) continue;
-      const t0 = cycle.jalons.find((jalon) => jalon.jalon === 'T0');
-      if (!t0 || !t0.mesure || t0.valeur === null) continue;
+      // La référence est l'ancre DE CE CYCLE, lue par son nom. Chercher `T0`
+      // dans les jalons d'un cycle ancré en `T1` n'aurait rien trouvé : le
+      // cycle serait sorti de la cohorte en silence, et la médiane du cabinet
+      // aurait rétréci sans que rien ne le dise.
+      const ancre = cycle.jalons.find((jalon) => jalon.jalon === cycle.ancre);
+      if (!ancre || !ancre.mesure || ancre.valeur === null) continue;
       nTotal += 1;
       for (const lecture of cycle.jalons) {
-        if (lecture.jalon === 'T0' || !lecture.mesure || lecture.valeur === null) continue;
+        if (!estJalonMesure(lecture.jalon) || !lecture.mesure || lecture.valeur === null) continue;
         const liste = deltasParJalon.get(lecture.jalon) ?? [];
-        liste.push(lecture.valeur - t0.valeur);
+        liste.push(lecture.valeur - ancre.valeur);
         deltasParJalon.set(lecture.jalon, liste);
       }
     }

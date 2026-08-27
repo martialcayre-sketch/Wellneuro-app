@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { estAncreDeCycle } from '../protocol/cycles';
 import { ANAMNESE_CHAMP_REQUIS } from '../consultation/anamnese';
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '../consultation/consultationPorteuse';
 import { contradictionsPourPatient } from '../clinical/contradictionsService';
@@ -99,9 +100,45 @@ export async function preconditionsT0PourPatient(idPatient: string): Promise<Pre
  * identifiant hors de ce format (fixtures, contrats externes) retombe sur le
  * champ, faute de mieux — c'est dit plutôt que supposé.
  */
+// La série des ancres est OUVERTE depuis `D-113` : l'alternative littérale
+// `T0` ne reconnaissait pas `-T1` en fin d'identifiant, et retombait donc sur
+// le champ déclaré — exactement la source qu'on existe pour ne pas croire.
+const SUFFIXE_JALON = /-(T(?:0|[1-9][0-9]*)|J21|J42|J90)$/;
+
+/** Le jalon lisible dans l'identifiant, ou `null` hors format runtime. */
+function suffixeJalon(assessmentEpisodeId?: string): string | null {
+  return SUFFIXE_JALON.exec(assessmentEpisodeId ?? '')?.[1] ?? null;
+}
+
 function jalonEffectif(episode: { assessmentEpisodeId?: string; milestone: string }): string {
-  const suffixe = /-(T0|J21|J42|J90)$/.exec(episode.assessmentEpisodeId ?? '');
-  return suffixe ? suffixe[1] : episode.milestone;
+  return suffixeJalon(episode.assessmentEpisodeId) ?? episode.milestone;
+}
+
+/**
+ * REFUS D'UN ÉPISODE QUI SE CONTREDIT LUI-MÊME.
+ *
+ * `jalonEffectif` faisait primer le suffixe de l'identifiant sur le champ
+ * déclaré. Cela fermait un sens de l'écart — déclarer `J21` sur l'identifiant
+ * d'une ancre ne désactive pas la porte — mais laissait l'autre grand ouvert :
+ * poster l'identifiant d'un `J21` en déclarant `T1` faisait rendre `J21`, donc
+ * la porte `D-052` ne s'évaluait PAS, et c'est pourtant `milestone: 'T1'` qui
+ * partait en base et se relisait ensuite comme une ancre. Un cycle s'ouvrait
+ * sans rideau d'entrée.
+ *
+ * DÉPARTAGER EST LE DÉFAUT, PAS LA CORRECTION : les deux champs viennent du
+ * même corps de requête, aucun ne mérite plus de crédit que l'autre, et une
+ * chaîne de provenance ne se construit pas sur un arbitrage muet (`DC-30`).
+ * Un épisode dont l'identifiant et le jalon se contredisent est refusé.
+ *
+ * Un identifiant HORS format runtime (fixtures, contrats externes) ne
+ * contredit rien : il n'affirme aucun jalon.
+ */
+export function refusJalonContredit(
+  episode: { assessmentEpisodeId?: string; milestone: string },
+): string | null {
+  const suffixe = suffixeJalon(episode.assessmentEpisodeId);
+  if (suffixe === null || suffixe === episode.milestone) return null;
+  return `Épisode incohérent : son identifiant porte « ${suffixe} » et son jalon déclaré est « ${episode.milestone} ». Rechargez la proposition.`;
 }
 
 /**
@@ -117,8 +154,11 @@ function jalonEffectif(episode: { assessmentEpisodeId?: string; milestone: strin
  * l'épisode de celui qui a été haché dans `snapshot.inputHash`, et casserait
  * la chaîne de provenance que ces routes existent pour tenir.
  *
- * Hors T0, aucune précondition : les jalons de suivi ne sont pas gouvernés par
- * cette porte.
+ * HORS ANCRE, aucune précondition : les jalons de suivi (J21, J42, J90) ne sont
+ * pas gouvernés par cette porte. Le test portait sur le seul littéral `T0` :
+ * ouvrir un deuxième cycle en `T1` aurait franchi la persistance SANS rideau,
+ * alors qu'ouvrir un cycle est le même acte quel que soit son rang (`D-052`,
+ * `D-113` §2).
  */
 export async function refusPreconditionsPersistance(
   episode: {
@@ -129,7 +169,13 @@ export async function refusPreconditionsPersistance(
   },
   emailPraticienSession: string,
 ): Promise<string | null> {
-  if (jalonEffectif(episode) !== 'T0') return null;
+  // La contradiction d'abord : elle se juge sans la base, et elle vaut pour
+  // TOUT jalon — y compris ceux que la porte laisse passer. La trancher en
+  // silence, c'est écrire une ancre sans rideau (`refusJalonContredit`).
+  const contradiction = refusJalonContredit(episode);
+  if (contradiction) return contradiction;
+
+  if (!estAncreDeCycle(jalonEffectif(episode))) return null;
 
   const preconditions = await preconditionsT0PourPatient(episode.patientId);
   if (preconditions.bloquant) return messageRefusPreconditions(preconditions);

@@ -7,11 +7,11 @@ import {
   isDossierDeuxVoixEnabled,
 } from '@/lib/patient/featureFlag';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 import {
-  ANCRE_JALON,
   EVA_MAX,
   EVA_MIN,
   LONGUEUR_MAX_AMENDEMENT,
@@ -359,7 +359,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       ratifications,
       amendements,
       reponsesJalon,
-      ancreT0,
+      ancresPosees,
       entrees,
       syntheses,
       desaccords,
@@ -390,15 +390,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         select: { id: true, idObjectif: true, jalon: true, texte: true, eva: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
       }),
-      // L'ANCRE DES FENÊTRES : le T0 confirmé LE PLUS RÉCENT (`D-111` §6).
-      // Une seule ligne, deux colonnes — la route patient n'a besoin de rien
-      // d'autre, et surtout pas de reconstruire une trajectoire complète, qui
-      // rejouerait le calcul d'équilibre pour afficher une question.
-      prisma.assessmentEpisode.findFirst({
-        where: { idPatient: patient.idPatient, milestone: ANCRE_JALON },
-        select: { confirmedAt: true },
-        orderBy: { confirmedAt: 'desc' },
-      }),
+      // L'ANCRE DES FENÊTRES : celle du CYCLE COURANT, c'est-à-dire du rang le
+      // plus haut (`D-111` §6, corrigé par `D-113`). Elle se lisait
+      // `milestone: 'T0'` + « le plus récent » : sur un dossier rouvert en
+      // `T1`, la requête ne voyait que l'ancre du PREMIER cycle et le patient
+      // se voyait proposer les étapes d'un cycle terminé.
+      lireAncresPersistees(patient.idPatient),
       ceQuiCompteOuvert
         ? prisma.entreeCeQuiCompte.findMany({
             where: { idPatient: patient.idPatient },
@@ -507,7 +504,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         eva: ligne.eva,
         creeLe: ligne.creeLe.toISOString(),
       })),
-      jalonDu: jalonObjectifDu(ancreT0?.confirmedAt ?? null, new Date()),
+      jalonDu: jalonObjectifDu(ancreCourante(ancresPosees)?.confirmedAt ?? null, new Date()),
       ceQuiCompte: entrees
         ? entrees.map((ligne) => ({
             id: ligne.id,
@@ -781,11 +778,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     // ouverte, mais une horloge de navigateur décalée, un onglet resté ouvert
     // une semaine, ou un POST direct contournent l'écran — pas ceci.
     if (prepare.geste === 'reponse_jalon') {
-      const ancre = await prisma.assessmentEpisode.findFirst({
-        where: { idPatient: patient.idPatient, milestone: ANCRE_JALON },
-        select: { confirmedAt: true },
-        orderBy: { confirmedAt: 'desc' },
-      });
+      const ancre = ancreCourante(await lireAncresPersistees(patient.idPatient));
       const fenetre = jalonObjectifDu(ancre?.confirmedAt ?? null, new Date());
       if (fenetre.statut !== 'ouverte' || fenetre.jalon !== prepare.donnees.jalon) {
         return echec(

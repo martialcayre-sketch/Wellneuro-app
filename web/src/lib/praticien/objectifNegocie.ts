@@ -606,11 +606,17 @@ export function preparerAmendement(entree: EntreeAmendement): PreparationAmendem
 // ---------------------------------------------------------------------------
 
 /**
- * L'ANCRE des fenêtres de jalon, nommée. Ce n'est pas une étape : au moment où
+ * L'ancre du PREMIER cycle, nommée. Ce n'est pas une étape : au moment où
  * l'objectif se pose, il n'y a rien derrière soi, et « où en êtes-vous par
  * rapport à votre objectif ? » n'a pas de réponse. C'est aussi la valeur que
  * `resoudreJalonDu` rend pour un patient SANS cycle confirmé — d'où la
  * nécessité de la refuser ici, et pas seulement en base.
+ *
+ * ELLE NE SERT PLUS À FILTRER UNE LIGNE EN BASE (`D-113`) : la série des ancres
+ * est ouverte, et `where: { milestone: ANCRE_JALON }` ne voyait pas `T1`. Ce
+ * qui reste ici est un point de DÉRIVATION pour la garde de `JALONS_OBJECTIF` —
+ * « les jalons d'objectif sont la cadence MOINS son ancre ». La lecture des
+ * ancres réellement posées vit dans `protocol/ancresPersistees.ts`.
  */
 export const ANCRE_JALON = 'T0';
 

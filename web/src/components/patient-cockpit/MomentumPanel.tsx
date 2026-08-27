@@ -1,19 +1,18 @@
 'use client';
 
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
-import type { JalonMomentum } from '@/lib/equilibre/types';
+import { estAncreDeCycle, jalonsDuCycle } from '@/lib/protocol/cycles';
 import type { TrajectoireCycle } from '@/lib/protocol/trajectoire';
 import type { MedianesCabinet } from '@/lib/protocol/cabinet';
 
 // Momentum en courbe (A6-R2, décision utilisateur 2026-07-23) — surface
-// praticien seule. Chaque point est un jalon RÉELLEMENT mesuré (Δ vs T0) ;
+// praticien seule. Chaque point est un jalon RÉELLEMENT mesuré (Δ vs l'ancre
+// DU CYCLE LU, nommée à l'écran : `T0`, `T1`, … depuis `D-113`) ;
 // un jalon non mesuré est un trou visible (`connectNulls` désactivé), jamais
 // un 0 (A8-2). Aucun point interpolé, aucun prolongement prédictif. La
 // médiane de cabinet est un repère descriptif (n= toujours affiché, masquée
 // sous le seuil de cohorte — A6-2), jamais un objectif. Sous 2 jalons
 // mesurés : pas de courbe, un texte de repli.
-
-const ORDRE_JALONS: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'] as const;
 
 function signe(valeur: number): string {
   return valeur > 0 ? `+${valeur}` : `${valeur}`;
@@ -31,15 +30,22 @@ export function MomentumPanel({
   /** Ex. « épisode 2 ». */
   libelle?: string;
 }) {
-  const t0 = cycle?.jalons.find((jalon) => jalon.jalon === 'T0');
-  const ancre = t0 && t0.mesure && t0.valeur !== null ? t0.valeur : null;
+  // Le nom de l'ancre du cycle lu. Sans cycle, aucun point n'est tracé : `T0`
+  // n'est alors qu'un libellé d'axe, jamais une lecture affirmée.
+  const nomAncre = cycle?.ancre ?? 'T0';
+  const lectureAncre = cycle?.jalons.find((jalon) => jalon.jalon === nomAncre);
+  const valeurAncre =
+    lectureAncre && lectureAncre.mesure && lectureAncre.valeur !== null ? lectureAncre.valeur : null;
 
-  const points = ORDRE_JALONS.map((jalon) => {
+  const points = jalonsDuCycle(nomAncre).map((jalon) => {
     const lecture = cycle?.jalons.find((candidat) => candidat.jalon === jalon);
     const patient =
-      ancre !== null && lecture && lecture.mesure && lecture.valeur !== null ? lecture.valeur - ancre : null;
+      valeurAncre !== null && lecture && lecture.mesure && lecture.valeur !== null
+        ? lecture.valeur - valeurAncre
+        : null;
     const medianeJalon = cabinet && !cabinet.masque ? cabinet.parJalon.find((m) => m.jalon === jalon) : undefined;
-    const median = jalon === 'T0' && cabinet && !cabinet.masque ? 0 : (medianeJalon?.mediane ?? null);
+    // L'ancre vaut zéro par construction — c'est son propre point de départ.
+    const median = estAncreDeCycle(jalon) && cabinet && !cabinet.masque ? 0 : (medianeJalon?.mediane ?? null);
     return { jalon, patient, cabinet: median, nCabinet: medianeJalon?.n ?? null };
   });
 
@@ -54,7 +60,7 @@ export function MomentumPanel({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="text-sm font-semibold text-foreground">Momentum{libelle ? ` — ${libelle}` : ''}</h4>
         <span className="text-xs text-muted-foreground">
-          Δ vs T0 aux jalons mesurés — jamais une prédiction
+          Δ vs {nomAncre} aux jalons mesurés — jamais une prédiction
         </span>
       </div>
 
@@ -95,11 +101,13 @@ export function MomentumPanel({
           </div>
           {/* Équivalent textuel complet — la courbe n'est jamais seule. */}
           <table className="sr-only">
-            <caption>Momentum par jalon de mesure : écart vs T0, et médiane du cabinet quand elle est disponible.</caption>
+            <caption>
+              Momentum par jalon de mesure : écart vs {nomAncre}, et médiane du cabinet quand elle est disponible.
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Jalon</th>
-                <th scope="col">Écart vs T0</th>
+                <th scope="col">Écart vs {nomAncre}</th>
                 <th scope="col">Médiane cabinet</th>
               </tr>
             </thead>
@@ -129,7 +137,7 @@ export function MomentumPanel({
           // la légende le trou que A6-R2 demande de laisser visible.
           <p className="mt-2 text-xs text-muted-foreground">
             Aucun jalon comparable dans le cabinet pour l’instant (n={cabinet.nTotal} cycles, version{' '}
-            {cabinet.versionScoreReference}) — les cycles retenus n’ont pas de mesure postérieure à T0.
+            {cabinet.versionScoreReference}) — les cycles retenus n’ont pas de mesure postérieure à leur ancre.
           </p>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">

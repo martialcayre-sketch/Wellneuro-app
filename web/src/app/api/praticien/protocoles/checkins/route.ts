@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { construireHistoriqueEquilibre, resoudreDateT0 } from '@/lib/equilibre/depuisPrisma';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import type { AncreCycle } from '@/lib/protocol/cycles';
 import { listCheckins, type CheckinRow } from '@/lib/protocol/checkins';
 import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
@@ -85,22 +87,24 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // C2B LOT-07/08 : brancher le momentum réel du patient (jalons de mesure lus
     // via l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
     // couverture est omis par construireHistoriqueEquilibre (jamais un 0) ; sans
-    // T0, momentum = null et le résumé conserve un score null honnête.
+    // ancre, momentum = null et le résumé conserve un score null honnête.
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
       orderBy: { dateReponse: 'asc' },
     });
-    // LOT-08 : ancre T0 = jalon T0 confirmé le plus récent de l'épisode ; repli
-    // sur le T0 global quand aucun épisode T0 n'est confirmé.
-    const episodeT0 = await prisma.assessmentEpisode.findFirst({
-      where: { idPatient, milestone: 'T0' },
-      orderBy: { confirmedAt: 'desc' },
-      select: { confirmedAt: true },
-    });
-    const dateT0 = episodeT0?.confirmedAt ?? resoudreDateT0(reponsesDb);
-    const momentum = dateT0
-      ? { dateT0, lectures: construireHistoriqueEquilibre(reponsesDb, dateT0) }
+    // LOT-08 : l'ancre est celle du CYCLE COURANT — le rang le plus haut, et
+    // non plus « le T0 confirmé le plus récent » (`D-113`). Repli sur la
+    // première réponse du dossier quand aucune ancre n'est confirmée : dans ce
+    // cas le cycle n'est pas ouvert, et son nom de repli est `T0`.
+    const ancre = ancreCourante(await lireAncresPersistees(idPatient));
+    const dateAncre = ancre?.confirmedAt ?? resoudreDateT0(reponsesDb);
+    const momentum = dateAncre
+      ? {
+          ancre: (ancre?.milestone ?? 'T0') as AncreCycle,
+          dateAncre,
+          lectures: construireHistoriqueEquilibre(reponsesDb, dateAncre),
+        }
       : null;
 
     const resume = buildResumeJ21({ checkins, momentum });

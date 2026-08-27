@@ -6,6 +6,7 @@ import {
   type TrajectoireCycle,
   type TrajectoireEpisode,
 } from './trajectoire';
+import type { AncreCycle } from './cycles';
 
 // Même fixture rawAnswers que depuisPrisma.test.ts : PSS-10 complet, source
 // vivante du besoin 9, donc scoreGlobal non-null (le Pichot ne l'est plus en v4).
@@ -24,10 +25,12 @@ const reponse = (iso: string) => ({
 const t0 = (
   id: string,
   iso: string,
-  overrides: Partial<Pick<TrajectoireEpisode, 'cycleId' | 'versionScore'>> = {},
+  overrides: Partial<Pick<TrajectoireEpisode, 'cycleId' | 'versionScore' | 'milestone'>> = {},
 ): TrajectoireEpisode => ({
   id,
-  milestone: 'T0',
+  // `T0` par défaut ; les cas multi-cycles passent l'ancre de leur rang, une
+  // ancre ne se déplaçant plus depuis `D-113`.
+  milestone: overrides.milestone ?? 'T0',
   confirmedAt: new Date(iso),
   cycleId: overrides.cycleId === undefined ? id : overrides.cycleId,
   versionScore: overrides.versionScore === undefined ? 'v1' : overrides.versionScore,
@@ -87,7 +90,10 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
 
   it('deux cycles même version → comparaison disponible (A8-5-ii)', () => {
     const tr = construireTrajectoire({
-      episodes: [t0('ep_a', '2026-01-01T00:00:00.000Z'), t0('ep_b', '2026-03-01T00:00:00.000Z')],
+      episodes: [
+        t0('ep_a', '2026-01-01T00:00:00.000Z'),
+        t0('ep_b', '2026-03-01T00:00:00.000Z', { milestone: 'T1' }),
+      ],
       reponses: [reponse('2026-01-01T00:00:00.000Z')],
     });
     expect(tr.cycles).toHaveLength(2);
@@ -98,7 +104,8 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
   it('garde A8-3 : deux cycles de versionScore différents → « non comparable »', () => {
     const cycle = (id: string, versionScore: string | null): TrajectoireCycle => ({
       cycleId: id,
-      dateT0: '2026-01-01T00:00:00.000Z',
+      ancre: 'T0',
+      dateAncre: '2026-01-01T00:00:00.000Z',
       versionScore,
       jalons: [],
       momentum: null,
@@ -177,9 +184,10 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
 });
 
 describe('rattacherReperesAuxCycles (index navigable)', () => {
-  const cycle = (id: string, dateT0: string): TrajectoireCycle => ({
+  const cycle = (id: string, dateAncre: string, ancre: AncreCycle = 'T0'): TrajectoireCycle => ({
     cycleId: id,
-    dateT0,
+    ancre,
+    dateAncre,
     versionScore: 'v1',
     jalons: [],
     momentum: null,
@@ -239,5 +247,100 @@ describe('rattacherReperesAuxCycles (index navigable)', () => {
     const reperes = rattacherReperesAuxCycles([{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: null }], []);
     expect(reperes).toHaveLength(1);
     expect(reperes[0].cycleId).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `D-113` — deux cycles nommés : aucune ancre ne se déplace.
+// ---------------------------------------------------------------------------
+describe('construireTrajectoire — cycles nommés T0/T1 (`D-113`)', () => {
+  it('LE DÉFAUT QUE LA DÉCISION SUPPRIME : ouvrir un second cycle ne déplace plus l’ancre du premier', () => {
+    // Cycle 1 ancré le 1er janvier, avec une re-mesure à J21 (22 janvier).
+    // Cycle 2 ouvert le 1er mars. Avant `D-113`, les DEUX portaient `T0` et la
+    // lecture retenait « le plus récent » : le cycle de janvier était relu
+    // depuis le 1er mars, et son J21 mesuré disparaissait.
+    const tr = construireTrajectoire({
+      episodes: [
+        t0('ep_a', '2026-01-01T00:00:00.000Z'),
+        t0('ep_b', '2026-03-01T00:00:00.000Z', { milestone: 'T1' }),
+      ],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+    });
+
+    expect(tr.cycles.map((c) => c.ancre)).toEqual(['T0', 'T1']);
+    const premier = tr.cycles[0];
+    expect(premier.dateAncre).toBe('2026-01-01T00:00:00.000Z');
+    expect(premier.jalons.find((j) => j.jalon === 'T0')?.mesure).toBe(true);
+    expect(premier.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(premier.momentum).not.toBeNull();
+  });
+
+  it('chaque cycle porte SON ancre en tête de ses jalons', () => {
+    const tr = construireTrajectoire({
+      episodes: [
+        t0('ep_a', '2026-01-01T00:00:00.000Z'),
+        t0('ep_b', '2026-03-01T00:00:00.000Z', { milestone: 'T1' }),
+      ],
+      reponses: [reponse('2026-01-01T00:00:00.000Z')],
+    });
+    expect(tr.cycles[0].jalons.map((j) => j.jalon)).toEqual(['T0', 'J21', 'J42', 'J90']);
+    expect(tr.cycles[1].jalons.map((j) => j.jalon)).toEqual(['T1', 'J21', 'J42', 'J90']);
+  });
+
+  it('l’ancre n’entre jamais dans son propre momentum', () => {
+    // Une seule réponse, à l'ancre du deuxième cycle : le momentum d'un cycle
+    // est ancre → dernier jalon de MESURE. Sans jalon de mesure, il est null —
+    // jamais un « stable (écart 0) » fabriqué en comparant l'ancre à elle-même.
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_b', '2026-03-01T00:00:00.000Z', { milestone: 'T1' })],
+      reponses: [reponse('2026-03-01T00:00:00.000Z')],
+    });
+    expect(tr.cycles[0].jalons.find((j) => j.jalon === 'T1')?.mesure).toBe(true);
+    expect(tr.cycles[0].momentum).toBeNull();
+  });
+
+  it('ordonne les cycles par RANG, pas par date de confirmation', () => {
+    // `T1` confirmé AVANT `T0` — reprise manuelle, ligne ressaisie. L'ordre
+    // suit le nom, qui identifie le cycle.
+    const tr = construireTrajectoire({
+      episodes: [
+        t0('ep_b', '2026-01-01T00:00:00.000Z', { milestone: 'T1' }),
+        t0('ep_a', '2026-03-01T00:00:00.000Z'),
+      ],
+      reponses: [],
+    });
+    expect(tr.cycles.map((c) => c.ancre)).toEqual(['T0', 'T1']);
+  });
+
+  it('SIGNALE la discordance rang/date sans la corriger (DC-30)', () => {
+    const discordant = construireTrajectoire({
+      episodes: [
+        t0('ep_b', '2026-01-01T00:00:00.000Z', { milestone: 'T1' }),
+        t0('ep_a', '2026-03-01T00:00:00.000Z'),
+      ],
+      reponses: [],
+    });
+    expect(discordant.discordanceOrdreCycles).toBe(true);
+
+    const coherent = construireTrajectoire({
+      episodes: [
+        t0('ep_a', '2026-01-01T00:00:00.000Z'),
+        t0('ep_b', '2026-03-01T00:00:00.000Z', { milestone: 'T1' }),
+      ],
+      reponses: [],
+    });
+    expect(coherent.discordanceOrdreCycles).toBe(false);
+  });
+
+  it('une ligne de jalon inconnue n’ouvre aucun cycle', () => {
+    // `TA` n'est pas une ancre : rien en base ne l'interdit (dette nommée par
+    // `D-113`), et la lecture ne doit pas en fabriquer un cycle.
+    const tr = construireTrajectoire({
+      episodes: [
+        { id: 'ep_x', milestone: 'TA' as never, confirmedAt: new Date('2026-01-01T00:00:00.000Z'), cycleId: null, versionScore: 'v1' },
+      ],
+      reponses: [reponse('2026-01-01T00:00:00.000Z')],
+    });
+    expect(tr.cycles).toHaveLength(0);
   });
 });

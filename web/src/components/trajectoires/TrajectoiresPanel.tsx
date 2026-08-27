@@ -132,7 +132,8 @@ export function TrajectoiresPanel() {
                       détails (jalon, échéance) se replient sous sm. */}
                   {resume.episodeEnCours ? (
                     <Badge variant="info">
-                      Épisode {resume.episodeEnCours.numero} · T0 + {resume.episodeEnCours.positionJours} j
+                      Épisode {resume.episodeEnCours.numero} · {resume.episodeEnCours.ancre} +{' '}
+                      {resume.episodeEnCours.positionJours} j
                     </Badge>
                   ) : (
                     <Badge variant="neutral">Aucun épisode confirmé</Badge>

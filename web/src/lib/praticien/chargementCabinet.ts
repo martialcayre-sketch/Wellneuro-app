@@ -3,13 +3,12 @@ import { filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { construireTrajectoire, type Trajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
 import type { ReponseBrute } from '@/lib/equilibre/depuisPrisma';
 import type { JalonMomentum } from '@/lib/equilibre/types';
+import { estJalonMomentum } from '@/lib/protocol/cycles';
 
 // Chargement « cabinet » partagé (SP-TRAJ LOT-03, réutilisé par la page
 // Trajectoires au LOT-04) : les trajectoires de TOUS les patients du
 // praticien en TROIS requêtes — patients, épisodes, réponses — puis
 // construction en mémoire. Jamais une requête par patient.
-
-const MILESTONES: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'];
 
 export type LigneCabinet = {
   idPatient: string;
@@ -41,7 +40,10 @@ export async function chargerTrajectoiresCabinet(emailPraticien: string): Promis
 
   const episodesParPatient = new Map<string, TrajectoireEpisode[]>();
   for (const e of episodes) {
-    if (!(MILESTONES as readonly string[]).includes(e.milestone)) continue;
+    // Une ligne dont le jalon n'est ni une ancre ni une mesure est ignorée. Le
+    // test portait sur une liste littérale fermée : un `T1` confirmé en base y
+    // était rejeté, et le cycle disparaissait de la lecture sans un mot.
+    if (!estJalonMomentum(e.milestone)) continue;
     const liste = episodesParPatient.get(e.idPatient) ?? [];
     liste.push({
       id: e.id,
