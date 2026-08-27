@@ -4,6 +4,54 @@
 
 ## Décisions actives
 
+### D-114 — La base tient l'identité d'un cycle : la fenêtre sans dédoublonnage se referme au premier `T0`
+
+- Date : 2026-08-28
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-28)
+- Domaine : intégrité de `assessment_episodes` — forme du jalon et identité de cycle
+- Porte sur : `D-113` (dont elle paie la dette nommée), `D-052`, `D-087` (chemin
+  de mise en production d'une migration)
+- Origine : contre-revue adverse Codex du 2026-08-27, affirmations `N1.1`
+  (réfutée) et `N3.7` (jugement demandé)
+
+**Le défaut.** `assessment_episodes.milestone` n'avait aucun CHECK, et rien
+n'interdisait deux lignes de même identité de cycle. Le bord applicatif
+couvrait la forme, le rang et l'identité de la ligne — mais seulement pour les
+chemins qu'on avait prévus. La contre-revue a montré le contraire par
+construction : elle a réfuté `N1.1` en postant une seconde ancre `T0` sous un
+identifiant inconnu de la base, ce qui rouvrait la collision de clé primaire
+inter-cycle que `D-113` venait de fermer.
+
+**L'arbitrage, et son échéance.** La table porte **zéro ligne** en production
+(constat par conteneur du 2026-08-26, `D-112`). C'est la **dernière fenêtre** où
+ces contraintes se posent sans dédoublonnage : au premier `T0` confirmé, toute
+migration devra d'abord prouver l'absence de doublons, ou décider lesquels
+garder — un arbitrage sur données réelles, dans un dossier de patient.
+L'argument « la table est vide, donc rien ne presse » se retourne : c'est parce
+qu'elle est vide que c'est maintenant.
+
+**Ce qui est posé.** Un CHECK de forme sur `milestone`, dont le motif est celui
+de `FORME_ANCRE` — la série des ancres reste **ouverte** (`T0`, `T1`, `T142`) et
+`T01` est refusé à dessein. Deux index uniques **partiels** : une ancre par
+dossier et par nom (c'est lui qui ferme `N1.1`), un jalon de mesure par cycle.
+
+**Ce qui n'est pas posé, et qui est nommé plutôt que sous-entendu.** L'index des
+mesures ne couvre pas les lignes dont `cycle_id` est NULL : la colonne est
+nullable par construction, et PostgreSQL traite deux NULL comme distincts.
+Rendre `cycle_id` NOT NULL est une décision de modélisation distincte. Le
+contrat SQL **éprouve cette limite** au lieu de la supposer, pour qu'on ne
+croie jamais la garde plus large qu'elle n'est.
+
+**Le garde du garde.** Prisma ne sait déclarer ni CHECK ni index partiel : le
+drift check ne les voit pas. Un contrat SQL
+(`prisma/checks/episodes_identite_cycle_v1.sql`) tente chaque écriture
+interdite dans une transaction annulée. Éprouvé par deux mutations : un index
+rendu **total** est pris par le drift check, un **prédicat qui glisse** — que le
+drift ne peut pas voir — est pris par le contrat, sur le message attendu.
+
+**Mise en production** : par `release-db` approuvé (`D-087`), après merge. La
+migration ne s'applique pas au déploiement du code.
+
 ### D-113 — Les cycles sont nommés `T0`, `T1`, `T2` : une ancre posée ne se déplace plus
 
 - Date : 2026-08-26

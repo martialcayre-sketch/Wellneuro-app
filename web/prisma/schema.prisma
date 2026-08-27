@@ -931,7 +931,12 @@ model TrustRightsRequest {
 model AssessmentEpisode {
   id              String   @id @map("id")
   idPatient       String   @map("id_patient")
-  milestone       String   @map("milestone") // T0 | J21 | J42 | J90 (réf. momentum.ts)
+  // Ancre de cycle `T0`, `T1`, `T2`, … (série OUVERTE depuis `D-113`) ou jalon
+  // de mesure `J21`/`J42`/`J90`. La FORME est tenue par un CHECK et l'identité
+  // de cycle par deux index partiels, tous trois en SQL brut : Prisma ne sait
+  // les déclarer, le contrat `prisma/checks/episodes_identite_cycle_v1.sql`
+  // les garde (`D-114`).
+  milestone       String   @map("milestone")
   targetAt        DateTime @map("target_at")
   confirmedAt     DateTime @map("confirmed_at")
   payload         Json     @map("payload")
