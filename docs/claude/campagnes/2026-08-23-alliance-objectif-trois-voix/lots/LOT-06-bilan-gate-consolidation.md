@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Bilan et gate de consolidation — fabriquer la provenance, fermer D-093"
-statut: "en_cours"
+statut: "termine (2026-08-26 — PR #802 ; le bilan REFUSE de signer le classement, D-112)"
 dépend_de: "LOT-01, LOT-02, LOT-03, LOT-04, LOT-05"
 ---
 

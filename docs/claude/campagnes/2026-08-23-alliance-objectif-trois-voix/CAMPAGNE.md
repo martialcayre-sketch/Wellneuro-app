@@ -3,7 +3,7 @@ id: "2026-08-23-alliance-objectif-trois-voix"
 titre: "Alliance 6.0-B — l'objectif à trois voix"
 statut: "en_cours"
 créée_le: "2026-08-23"
-mise_à_jour: "2026-08-26"
+mise_à_jour: "2026-08-27"
 lot_courant: "LOT-06"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -187,8 +187,45 @@ sans numérotation), LLM (déterministe d'abord), forme du « dire autrement »
 | LOT-02 | Moteur déterministe + gardes G7 + drapeaux + **garde de forme des fragments** (dette du LOT-01) | terminé (2026-08-23) | LOT-01 (releasée et constatée) |
 | LOT-03 | Cockpit : reprendre / amender / écarter avec motif, diff proposé↔négocié | terminé (2026-08-25) | LOT-02 ✓ |
 | LOT-04 | Portail : « le dire autrement » — [[D-110]] geste patient, quatrième état, citation d'amendement | terminé (2026-08-25) | LOT-00 ✓ ; LOT-01 ✓ |
-| LOT-05 | Jalons : évaluation ancrée à la version, EVA brute — **deux PR**, migration [[D-111]] puis code | en_cours (migration livrée 2026-08-25) | LOT-04 ✓ |
-| LOT-06 | Bilan : écarts + amendements → provenance pour signer le classement ; **gate de consolidation**, ferme la boucle [[D-093]] | à_faire | tous |
+| LOT-05 | Jalons : évaluation ancrée à la version, EVA brute — [[D-111]] | terminé (2026-08-26) — **trois** PR et non deux : #799 migration, #800 code, **#801 correctifs de revue** | LOT-04 ✓ |
+| LOT-06 | Bilan : écarts + amendements → provenance pour signer le classement ; **gate de consolidation** | terminé (2026-08-26, PR #802) — le bilan **refuse de signer** et ne ferme PAS [[D-093]] ([[D-112]]) | tous |
+
+### État au 2026-08-27 — livrée, NON close
+
+**Les sept lots sont terminés ; la campagne ne l'est pas.** Le tableau
+ci-dessus ne vaut pas clôture, et `statut` reste `en_cours` pour cette raison
+exacte : deux gestes du responsable restent à jouer, tous deux **avant** la
+clôture et jamais après ([[D-112]] §4).
+
+`lot_courant` reste `LOT-06` — le lot qui porte le gate de consolidation — et
+non `aucun` : l'audit des campagnes refuse qu'une campagne en cours ne nomme
+aucun lot (`inflight_without_active_lot`, code bloquant en CI). Le champ dit
+« le lot dont dépend la suite », pas « le lot en cours d'écriture ».
+
+1. **Passe Codex du LOT-05** (classe P0, surface patient).
+2. **Contre-revue adverse à l'échelle de la campagne**, sous forme
+   d'affirmations à réfuter — le régime éprouvé par [[D-108]], qui avait réfuté
+   sept affirmations sur treize dont un texte servi au patient depuis cinq
+   semaines.
+
+**Ce que le bilan a constaté, et qui commande le reste** : les neuf tables de
+la campagne portent **zéro ligne** en production, et **zéro épisode `T0`** n'est
+confirmé sur 21 dossiers. L'appareil est complet et n'a jamais servi. [[D-093]]
+n'est donc pas levé — sa condition (b) n'est pas « non atteinte » mais **non
+productible** — et le dossier de signature du classement n'est pas préparé, ce
+refus étant motivé ([[DC-19]] : rien à certifier). La borne du **2026-10-04**
+court. Détail : `BILAN.md`.
+
+**Un arbitrage en suspens du LOT-05 a été tranché depuis, hors campagne.** Le
+`BILAN.md` listait en suite n° 4 : « confirmer un nouveau `T0` ferme une fenêtre
+d'étape ouverte — un patient à J85 perdrait sa question J90. Non tranché. »
+C'est l'objet de [[D-113]] (2026-08-26) : les cycles sont nommés `T0`, `T1`,
+`T2`, une ancre posée ne se déplace plus, et la fermeture des fenêtres restées
+ouvertes devient une **règle énoncée** au lieu d'un effet de bord. Livré en deux
+PR : #803 (structure), mergée, et #805 (comportement), ouverte au 2026-08-27 —
+ce document ne préjuge pas de son sort. Ce chantier est de l'ingénierie
+hors file, pas un lot de cette campagne ; il est nommé ici parce qu'il **retire
+un point de la liste des suites**.
 
 ## Gates
 

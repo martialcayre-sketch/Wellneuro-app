@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Jalons — l'évaluation ancrée à la version de l'objectif"
-statut: "en_cours"
+statut: "termine (2026-08-26 — trois PR : #799 migration, #800 code, #801 correctifs de revue)"
 dépend_de: "LOT-04"
 ---
 
