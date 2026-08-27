@@ -11,8 +11,22 @@
 - Domaine : modèle de suivi longitudinal — ancrage des cycles et des jalons
 - Porte sur : `D-058` (jalon dû), `D-111` (réponse d'étape, dont elle corrige la
   dette multi-cycle nommée à la revue), `DC-30` (une discordance se signale)
-- Livrée en **deux PR** : la structure d'abord, le comportement ensuite — la
-  première ne change rien à ce que fait l'application.
+- Livrée en **deux PR**, toutes deux mergées le 2026-08-27 : #803 la structure
+  — qui ne change rien à ce que fait l'application —, #805 le comportement.
+- La revue P0 de #805 a rendu **NO-GO** sur sa première version, et deux
+  corrections en sont issues, l'une d'elles indispensable à l'objet même de la
+  décision : **l'identifiant d'un épisode porte désormais son cycle**
+  (`runtime-episode-<patient>-<ancre>-<jalon>` pour un jalon de mesure). Il
+  n'était unique que tant qu'un dossier n'avait qu'un cycle ; le `J21` du
+  second prenait la même **clé primaire** que celui du premier, et la
+  persistance écrit par `upsert(..., update: {})` — la confirmation n'écrivait
+  rien sous une réponse `ok: true`. Le `T1` que cette décision ouvre aurait été
+  un cycle dont aucune mesure n'était confirmable. Second correctif : un
+  épisode dont l'identifiant et le jalon déclaré se contredisent est **refusé**
+  au lieu d'être départagé (`DC-30`) — départager laissait ouvrir une ancre
+  sans rideau `D-052`.
+- **Trois** gardes d'écriture aux points de persistance, et non deux : la
+  forme, le rang, la cohérence interne.
 
 **Le défaut.** Chaque cycle s'ouvrait par un épisode `T0`. Deux cycles pour un
 même patient produisaient donc **deux `T0`**, et toute la chaîne retenait « le
