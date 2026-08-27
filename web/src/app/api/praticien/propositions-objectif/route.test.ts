@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { PRIORITY_RULES_SHA256 } from '@/lib/clinical/priorityRulesV1';
+import { retablirTablePriorites, signerTablePriorites } from '@/lib/clinical-engine/chaineC1Fixture';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -38,7 +40,14 @@ import { GET, POST } from './route';
 import { LONGUEUR_MAX_MOTIF_ECART, MAX_PROPOSITIONS } from '@/lib/praticien/propositionObjectif';
 
 const URL_BASE = 'http://localhost/api/praticien/propositions-objectif';
-const SHA_PERIMETRE = 'a'.repeat(64);
+// `D-115` — LE SHA DE FIXTURE EST CELUI DU REGISTRE, et plus une chaîne
+// quelconque. Le banc prouvait jusqu'ici qu'un périmètre inventé passait : il
+// documentait le trou de `N2.2` au lieu de le fermer.
+const SHA_PERIMETRE = PRIORITY_RULES_SHA256;
+// Deux règles réellement PUBLIÉES au registre. Le reste — brouillons, règles
+// écartées, identifiants inventés — n'est plus citable, par construction.
+const REGLE_PUBLIEE = 'PRIO-DIG-01';
+const AUTRE_REGLE_PUBLIEE = 'PRIO-PON-01';
 
 function getRequest(query = 'idPatient=PAT_TEST'): Request {
   return new Request(`${URL_BASE}?${query}`);
@@ -56,7 +65,7 @@ const corpsAssembler = (partiel: Record<string, unknown> = {}) => ({
   action: 'assembler',
   idPatient: 'PAT_TEST',
   plainte: { instrument: 'Q_MOD_03', domaine: 'sommeil', restitution: 'Restitution publiée' },
-  candidats: [{ regle: 'PRIO-SOM-01', texte: 'Explorer le sommeil' }],
+  candidats: [{ regle: REGLE_PUBLIEE, texte: 'Texte du navigateur, désormais IGNORÉ' }],
   shaPerimetre: SHA_PERIMETRE,
   ...partiel,
 });
@@ -311,14 +320,50 @@ describe('/api/praticien/propositions-objectif', () => {
     ]);
   });
 
-  it('ne produit JAMAIS plus de trois propositions, même sur huit candidats', async () => {
-    const candidats = Array.from({ length: 8 }, (_, i) => ({ regle: `PRIO-${i}`, texte: `Règle ${i}` }));
-    await POST(postRequest(corpsAssembler({ candidats })));
-    const { data } = prisma.propositionObjectif.createMany.mock.calls[0][0];
-    expect(data).toHaveLength(MAX_PROPOSITIONS);
+  // LE PLAFOND DE TROIS EST ÉPROUVÉ AU MODULE PUR (`propositionObjectif.test.ts`),
+  // où fabriquer huit candidats a un sens. Il ne peut plus l'être ici : depuis
+  // `D-115`, un candidat n'est citable que si le REGISTRE le publie, et huit
+  // règles inventées se résolvent toutes à rien. Ce banc prouve donc la
+  // propriété qui a remplacé l'ancienne — et qui est plus forte.
+  it('ne cite QUE ce que le registre publie, et recopie SON texte', async () => {
+    const reponse = await POST(postRequest(corpsAssembler({
+      candidats: [
+        // Publiée : citée, mais avec le texte du REGISTRE.
+        { regle: REGLE_PUBLIEE, texte: 'Texte fourni par le navigateur' },
+        // Écartée du registre, jamais publiée : non citable.
+        { regle: 'PRIO-SOM', texte: 'Texte plausible' },
+        // Purement inventée, syntaxiquement valide : c'est le contre-exemple
+        // exact de `N2.2`, qui passait avant.
+        { regle: 'REGLE-INVENTEE-999', texte: 'Texte que nulle source ne porte.' },
+      ],
+    })));
+    expect(reponse.status).toBe(200);
+
+    const ecrites = prisma.propositionObjectif.createMany.mock.calls
+      .flatMap((appel) => (appel[0] as { data: unknown[] }).data) as {
+        fragments: { texte: string; source: { regle?: string } }[];
+      }[];
+    const reglesCitees = ecrites.flatMap((ligne) =>
+      ligne.fragments.map((f) => f.source?.regle).filter(Boolean));
+
+    expect(reglesCitees).toContain(REGLE_PUBLIEE);
+    expect(reglesCitees).not.toContain('REGLE-INVENTEE-999');
+    expect(reglesCitees).not.toContain('PRIO-SOM');
+
+    // Le texte servi n'est PAS celui du corps de requête.
+    const textes = ecrites.flatMap((ligne) => ligne.fragments.map((f) => f.texte));
+    expect(textes).not.toContain('Texte fourni par le navigateur');
+    expect(textes).not.toContain('Texte que nulle source ne porte.');
   });
 
-  // ── Écarter ───────────────────────────────────────────────────────────────
+  it('REFUSE un périmètre qui n’est pas celui du registre', async () => {
+    // Un cockpit qui a calculé sur un périmètre périmé propose peut-être des
+    // règles qui ne sont plus publiées : on le lui dit, au lieu de substituer
+    // en silence des textes qu'il n'a pas vus.
+    const reponse = await POST(postRequest(corpsAssembler({ shaPerimetre: 'a'.repeat(64) })));
+    expect(reponse.status).toBe(409);
+    expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
+  });
 
   it('enregistre un écart motivé, et rien d’autre', async () => {
     prisma.propositionObjectif.findFirst.mockResolvedValue({ id: 'PROP_1' });

@@ -47,6 +47,12 @@ import {
 // AUCUNE ÉCRITURE SUR LES TABLES DE 6.0-A. Ni `objectifNegocie`, ni
 // `ratificationObjectif` : garde G7, vue rouge par mutation.
 
+import {
+  registreSigne,
+  resoudreRegleSignee,
+  shaPerimetreSigne,
+} from '@/lib/praticien/sourceSigneeVerifiee';
+
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /** Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue. */
@@ -59,10 +65,13 @@ const LONGUEUR_MAX_ID = 64;
  * Le SHA d'un périmètre signé : 64 caractères hexadécimaux, comme partout
  * ailleurs dans le dépôt (`ORIENTATION_RULES_SHA256`, `CORPUS_CLINIQUE_SHA256`).
  *
- * CE CONTRÔLE NE PROUVE PAS L'AUTHENTICITÉ, il écarte le malformé. La route ne
- * peut pas confronter ce SHA à la table signée : elle est sous
- * `lib/clinical/`, que G7 lui interdit d'importer. C'est le prix assumé de la
- * garde, et il est écrit ici plutôt que sous-entendu.
+ * CE CONTRÔLE ÉCARTE LE MALFORMÉ, ET RIEN DE PLUS — il ne prouve aucune
+ * authenticité. L'AUTHENTICITÉ, ELLE, EST DÉSORMAIS PROUVÉE : `D-115` amende
+ * `G7-1` pour que la route confronte le périmètre reçu à celui du registre, et
+ * RECOPIE le texte des règles au lieu de croire celui du navigateur
+ * (`sourceSigneeVerifiee.ts`). Le commentaire qui vivait ici disait le
+ * contraire, et il avait raison de le dire : c'est exactement le trou que la
+ * contre-revue adverse a traversé (`N2.2`).
  */
 const SHA_PERIMETRE_PATTERN = /^[0-9a-f]{64}$/;
 
@@ -621,12 +630,51 @@ async function assembler(
   const candidats = lireCandidats(body.candidats);
   if (!candidats.ok) return echec('invalid', 'Candidats invalides.', 400);
 
+  // ── LA SOURCE SIGNÉE EST RÉSOLUE AU SERVEUR (`D-115`, contre-revue `N2.2`)
+  //
+  // Ce qui arrive du navigateur ne fait plus autorité. Avant, le couple
+  // `{regle, texte}` reçu était persisté comme `regle_signee` après un simple
+  // contrôle de FORME : une règle inventée mais plausible traversait, et le
+  // patient recevait ensuite un texte présenté comme cité d'une table signée
+  // que le registre ne contient pas.
+  //
+  // 1. LE REGISTRE DOIT ÊTRE SIGNÉ. Sinon il n'y a rien de signé à citer, et
+  //    l'assemblage n'a pas lieu — fail-closed, comme le SHA absent l'était
+  //    déjà.
+  if (!registreSigne()) {
+    return echec('indisponible', 'Le référentiel signé n’est pas disponible.', 503);
+  }
+
+  // 2. LE PÉRIMÈTRE REÇU DOIT ÊTRE CELUI DU SERVEUR. Un cockpit qui a calculé
+  //    ses candidats sur un périmètre périmé propose des règles qui ne sont
+  //    peut-être plus publiées : on le lui dit, au lieu de substituer en
+  //    silence des textes qu'il n'a pas vus.
+  const shaServeur = shaPerimetreSigne();
+  if (shaPerimetre.length > 0 && shaPerimetre !== shaServeur) {
+    return echec('conflit', 'Le référentiel a changé depuis le calcul. Rechargez la fiche.', 409);
+  }
+
+  // 3. CHAQUE RÈGLE EST RÉSOLUE, ET SON TEXTE RECOPIÉ. Une règle que le
+  //    registre ne publie pas n'est pas citable : le candidat est écarté, et
+  //    aucune phrase de remplacement n'est fabriquée (`D-094`, `DC-26`).
+  const candidatsResolus = candidats.candidats
+    .map((candidat) => resoudreRegleSignee(candidat.regle))
+    .filter((resolue): resolue is NonNullable<typeof resolue> => resolue !== null)
+    .map((resolue) => ({ regle: resolue.regle, texte: resolue.texte }));
+
   const anamnese = await lireAnamnese(idPatient);
   const assemblees = assemblerPropositions({
     anamnese,
     plainte: plainte.plainte,
-    candidats: candidats.candidats,
-    shaPerimetre: shaPerimetre.length === 0 ? null : shaPerimetre,
+    candidats: candidatsResolus,
+    // Le SHA du SERVEUR, jamais celui reçu : c'est lui qui part en base sous
+    // `shaPerimetre`, donc lui qui devra pouvoir être confronté plus tard.
+    //
+    // MAIS UN SHA ABSENT RESTE UN REFUS. Un cockpit qui ne revendique aucun
+    // périmètre signé n'a rien à faire citer : substituer ici le SHA du serveur
+    // signerait à sa place, et transformerait ce fail-closed en laissez-passer.
+    // `D-115` durcit la provenance, il ne l'assouplit nulle part.
+    shaPerimetre: shaPerimetre.length === 0 ? null : shaServeur,
   });
 
   const { lignes, dispositions } = await lireDossier(idPatient);

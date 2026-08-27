@@ -27,6 +27,10 @@ const BANC_UNITAIRE = 'src/lib/praticien/propositionObjectif.test.ts';
 /** La moitié SERVEUR du moteur, sortie du domaine pour que celui-ci reste
  *  importable d'un composant `'use client'` (défaut vu au palier T2). */
 const EMPREINTE = 'src/lib/praticien/assemblageProposition.ts';
+// L'UNIQUE EXCEPTION À `G7-1`, ouverte par `D-115` : le seul fichier du lot
+// autorisé à lire le registre signé. Elle n'est une exception que parce qu'elle
+// est bornée — les quatre bancs `G7-1 bis` ci-dessous la bornent.
+const ADAPTATEUR = 'src/lib/praticien/sourceSigneeVerifiee.ts';
 
 /** Un fichier qui, LUI, importe le moteur clinique — l'ancre d'anti-vacuité. */
 const TEMOIN_MOTEUR = 'src/lib/clinical-engine/chaineC1.ts';
@@ -167,6 +171,75 @@ describe('G7-1 — ni moteur clinique, ni chaîne C1, nulle part dans le lot', (
     // LE DOMAINE, LUI, RESTE PUR : `node:` dans ce fichier casserait le bundle
     // du navigateur, et ni `tsc` ni Vitest ne le verraient — seul le build.
     expect(sourceSansCommentaires(MODULE)).not.toContain('node:');
+  });
+});
+
+// ── G7-1 bis — L'EXCEPTION EST BORNÉE (`D-115`) ─────────────────────────────
+//
+// La contre-revue adverse du 2026-08-27 a réfuté `N2.2` : la route acceptait du
+// navigateur le couple `{regle, texte}` et le persistait comme `regle_signee`
+// sans jamais confronter le SHA au registre. Elle ne le pouvait pas — `G7-1` lui
+// interdisait d'importer `lib/clinical/` — et elle le DISAIT. Mais une garde qui
+// documente son propre trou reste un trou.
+//
+// `D-115` ouvre donc UNE porte, et ces quatre bancs sont ce qui l'empêche de
+// devenir un couloir. Sans eux, l'amendement se lirait « `G7-1` sauf quand c'est
+// pratique », et l'interdit deviendrait négociable au cas par cas.
+describe('G7-1 bis — l’adaptateur est la seule porte, et elle reste étroite', () => {
+  const REPERTOIRES_MOTEUR = /(^|\/)(clinical-engine|scoring|instruments|equilibre)(\/|$)/;
+
+  function importsDe(chemin: string): string[] {
+    const source = sourceSansCommentaires(chemin);
+    return [
+      ...source.matchAll(/(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g),
+    ].map((m) => m[1]);
+  }
+
+  // 1. LE MODULE PUR N'IMPORTE TOUJOURS RIEN. C'est l'invariant le plus dur du
+  //    lot : il part dans le bundle patient, et une dépendance serveur y a déjà
+  //    cassé la construction de production. L'adaptateur, lui, importe le
+  //    registre — l'y faire entrer, même indirectement, ramènerait ce défaut.
+  it('le module pur n’importe pas l’adaptateur, ni rien d’autre', () => {
+    expect(importsDe(MODULE)).toEqual([]);
+  });
+
+  // 2. L'ADAPTATEUR EST LA SEULE PORTE. La route ne touche le registre que par
+  //    lui : un import direct de `lib/clinical/` rouvrirait le couplage que
+  //    `G7-1` refuse, et l'exception ne serait plus une exception.
+  it('la route n’atteint le registre QUE par l’adaptateur', () => {
+    const imports = importsDe(ROUTE);
+    expect(imports).toContain('@/lib/praticien/sourceSigneeVerifiee');
+    for (const specificateur of imports) {
+      if (specificateur === '@/lib/praticien/sourceSigneeVerifiee') continue;
+      expect(specificateur).not.toMatch(/(^|\/)clinical(\/|$)/);
+    }
+  });
+
+  // 3. L'ADAPTATEUR RÉSOUT, IL NE CALCULE PAS. Il lit le registre des règles de
+  //    priorité, et RIEN du moteur : ni chaîne C1, ni scoring, ni instruments,
+  //    ni équilibre. Le jour où il en importerait un, ce ne serait plus un
+  //    adaptateur de citation mais un second moteur clinique, hors de tout ce
+  //    que `G7` protège.
+  it('l’adaptateur ne lit que le registre des règles, jamais un moteur', () => {
+    const imports = importsDe(ADAPTATEUR);
+    expect(imports.length).toBeGreaterThan(0); // anti-vacuité
+    expect(imports).toEqual(['@/lib/clinical/priorityRulesV1']);
+    for (const specificateur of imports) {
+      expect(specificateur).not.toMatch(REPERTOIRES_MOTEUR);
+    }
+  });
+
+  // 4. L'ADAPTATEUR NE FABRIQUE AUCUN TEXTE. C'est la propriété que `N2.2`
+  //    réclamait : ce qui sort d'ici est une RECOPIE d'une ligne signée. Une
+  //    concaténation, un gabarit ou une valeur de repli y rendrait la garde
+  //    inutile — on citerait à nouveau une phrase que nulle source ne porte.
+  it('l’adaptateur ne compose aucun texte : il recopie ou rend null', () => {
+    const source = sourceSansCommentaires(ADAPTATEUR);
+    // Aucun littéral de gabarit, aucune concaténation de chaînes.
+    expect(source).not.toMatch(/`[^`]*\$\{/);
+    expect(source).not.toMatch(/'\s*\+|\+\s*'/);
+    // La seule source du texte est le registre.
+    expect(source).toContain('trouvee.libelle');
   });
 });
 
