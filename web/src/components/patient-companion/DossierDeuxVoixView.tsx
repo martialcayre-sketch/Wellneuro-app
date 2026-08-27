@@ -11,6 +11,7 @@ import {
   EVA_MIN,
   LONGUEUR_MAX_AMENDEMENT,
   LONGUEUR_MAX_REPONSE_JALON,
+  sansContenuVisible,
 } from '@/lib/praticien/objectifNegocie';
 
 // Le « dossier à deux voix » (Alliance 6.0-A, LOT-06) — surface PATIENT.
@@ -471,7 +472,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                             variant="primary"
                             disabled={
                               envoi
-                              || texteAmendement.trim().length === 0
+                              || sansContenuVisible(texteAmendement)
                               || texteAmendement.trim().length > LONGUEUR_MAX_AMENDEMENT
                             }
                             onClick={() => void direAutrement(objectif.id)}
@@ -645,7 +646,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                           variant="primary"
                           disabled={
                             envoi
-                            || texteJalon.trim().length === 0
+                            || sansContenuVisible(texteJalon)
                             || texteJalon.trim().length > LONGUEUR_MAX_REPONSE_JALON
                           }
                           onClick={() => void direOuJenSuis(objectif.id, jalonDu.jalon)}

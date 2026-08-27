@@ -547,6 +547,76 @@ describe('preparerRatification — le geste du patient (LOT-06)', () => {
   });
 });
 
+// CONTRE-REVUE ADVERSE DU 2026-08-27, affirmation `N1.7` RÉFUTÉE.
+//
+// La garde s'écrivait `texte.trim().length === 0`. Six caractères invisibles
+// survivent à `trim()`, et le CHECK `btrim("texte", E' \t\r\n') <> ''` les
+// laisse passer aussi : une réponse composée d'un seul d'entre eux était
+// persistée, et ne montrait RIEN à qui la relisait. L'EVA devenait alors,
+// fonctionnellement, le seul contenu de la réponse.
+//
+// Le défaut portait sur TROIS gardes, pas sur la seule qui a été rapportée :
+// l'énoncé du patient, l'amendement, et la réponse d'étape.
+describe('un texte sans rien de visible n’est pas un texte (N1.7)', () => {
+  const INVISIBLES: [string, string][] = [
+    ['U+200B espace sans chasse', '​'],
+    ['U+200C antiliant sans chasse', '‌'],
+    ['U+200D liant sans chasse', '‍'],
+    ['U+2060 gluon', '⁠'],
+    ['U+00AD trait d’union conditionnel', '­'],
+    ['U+180E séparateur de voyelle mongol', '᠎'],
+    ['U+FEFF indicateur d’ordre des octets', '﻿'],
+    ['U+00A0 espace insécable', ' '],
+    ['U+3000 cadratin idéographique', '　'],
+    ['mélange d’invisibles et d’espaces', ' ​ ­⁠ '],
+  ];
+
+  it.each(INVISIBLES)('réponse d’étape refusée — %s', (_nom, texte) => {
+    expect(preparerReponseJalon({
+      idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', jalon: 'J21', texte, eva: null,
+    })).toEqual({ ok: false, raison: 'texte_absent' });
+  });
+
+  it.each(INVISIBLES)('amendement refusé — %s', (_nom, texte) => {
+    expect(preparerAmendement({ idPatient: 'PAT_TEST', idObjectif: 'obj-1', texte }))
+      .toEqual({ ok: false, raison: 'texte_absent' });
+  });
+
+  it.each(INVISIBLES)('énoncé du patient refusé — %s', (_nom, enoncePatient) => {
+    expect(refus({ enoncePatient })).toBe('enonce_absent');
+  });
+
+  // L'EVA ne rachète pas un texte vide : c'était la conséquence exacte du
+  // défaut — une ligne dont le seul contenu réel était le chiffre.
+  it('une EVA renseignée ne rattrape pas un texte invisible', () => {
+    expect(preparerReponseJalon({
+      idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', jalon: 'J21', texte: '​', eva: 6,
+    })).toEqual({ ok: false, raison: 'texte_absent' });
+  });
+
+  // REFUS, JAMAIS NETTOYAGE : retirer des caractères d'une saisie de patient,
+  // c'est réécrire ses mots. Dès qu'un caractère est visible, le texte passe
+  // TEL QUEL, invisibles compris.
+  it('un texte qui porte du visible passe intact, invisibles compris', () => {
+    const texte = '​Je dors mieux​';
+    const prep = preparerReponseJalon({
+      idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', jalon: 'J21', texte, eva: null,
+    });
+    expect(prep.ok).toBe(true);
+    if (!prep.ok) return;
+    expect(prep.donnees.texte).toBe(texte);
+  });
+
+  it.each([['lettre', 'a'], ['accent', 'é'], ['idéogramme', '中'], ['émoji', '\u{1F44D}'], ['ponctuation', '?']])(
+    'ne refuse pas un texte légitime — %s',
+    (_nom, texte) => {
+      expect(preparerReponseJalon({
+        idPatient: 'PAT_SEED_01', idObjectif: 'obj-1', jalon: 'J21', texte, eva: null,
+      }).ok).toBe(true);
+    },
+  );
+});
+
 describe('preparerReponseJalon — où j’en suis, à un jalon (LOT-05)', () => {
   const base: EntreeReponseJalon = {
     idPatient: 'PAT_SEED_01',
