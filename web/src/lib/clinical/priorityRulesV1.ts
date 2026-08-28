@@ -321,6 +321,89 @@ export const PRIORITY_RULES_V1: PriorityRule[] = [
       { claimId: 'WN-CL-0003-013', versionClaim: 'v1.0' },
     ],
   },
+  {
+    id: 'PRIO-DOU-01',
+    statut: 'publiee',
+    // CE QUE LE CORPUS PORTE, CLAIM PAR CLAIM.
+    //
+    // `WN-CL-0026-012` est le claim d'ancrage : Â« les IL6 abaissent le seuil
+    // d'excitabilitÃ© des voies neurosensorielles dans la perception de la
+    // douleur Â». C'est lui qui relie une plainte douloureuse Ã  un terrain
+    // inflammatoire â et donc lui qui fonde qu'elle puisse Ãªtre un axe de
+    // travail neuronutritionnel plutÃ´t qu'un symptÃ´me Ã  ranger.
+    //
+    // `WN-CL-0161-035` porte le versant nutritionnel du mÃªme mÃ©canisme : Â« les
+    // acides gras omÃ©ga trois participent Ã  la modulation de la sensibilitÃ© et
+    // Ã  la perception de la douleur, notamment via les rÃ©cepteurs aux acides
+    // gras FFA1 (GPR40) Â». `WN-CL-0163-002` en donne le pendant alimentaire â
+    // Â« un excÃ¨s de graisses saturÃ©es, d'omÃ©ga 6 et d'acides gras trans peut
+    // Ãªtre ASSOCIÃ aux douleurs lombaires chroniques Â». Le mot est celui du
+    // claim, et la rÃ¨gle s'en tient lÃ  : une association n'est pas une cause
+    // (`DC-27`), et dÃ©signer un axe n'exige pas d'en Ã©tablir une.
+    //
+    // `WN-CL-0162-007` est le claim qui fonde la RÃSERVE D'ADRESSAGE : Â« le
+    // modÃ¨le biopsychosocial propose une approche intÃ©grative de la douleur
+    // incluant des processus biologique, neurologique, psychologique, social et
+    // environnemental Â». Il est citÃ© parce que la limitation qu'il porte fait
+    // partie de ce que la rÃ¨gle dit â pas en dÃ©pit d'elle.
+    //
+    // CE QUE LA RÃGLE NE CONCLUT PAS, ET LES CLAIMS QU'ELLE N'ÃPINGLE PAS.
+    // `WN-CL-0161-057` (un essai oÃ¹ le malate de magnÃ©sium rÃ©duit la douleur)
+    // et `WN-CL-0102-003` (le coenzyme Q10 Â« utilisÃ© en Neuro-Nutrition dans
+    // les douleurs et la fibromyalgie Â») sont des claims d'EFFET et de
+    // CONDUITE : les citer ferait promettre un traitement lÃ  oÃ¹ la table ne
+    // dÃ©signe qu'un axe. `WN-CL-0161-056` (Â« le magnÃ©sium POURRAIT jouer un
+    // rÃ´le Â») est hypothÃ©tique â une rÃ¨gle signÃ©e ne se fonde pas sur un
+    // conditionnel.
+    //
+    // POURQUOI `douleurs` SEUL, ET PAS `mobilite`. Les deux domaines Ã©taient
+    // Ã©cartÃ©s ENSEMBLE, et ils ne reviennent pas ensemble : tous les claims
+    // ci-dessus portent la PERCEPTION de la douleur â interleukines, omÃ©ga 3,
+    // voies neurosensorielles. Aucun ne porte l'appareil locomoteur. DÃ©clencher
+    // sur `mobilite` citerait des sources qui ne parlent pas d'elle. La
+    // mobilitÃ© reste Ã©cartÃ©e, sous son propre motif et sa propre condition de
+    // retour (`PRIO-MOB`) : l'Ã©cart continue de se voir.
+    declencheurs: [
+      { type: 'comparaison', idQuestionnaire: CANAL_PLAINTE, sousScore: 'douleurs', operateur: '>=', valeur: 7 },
+    ],
+    domainePlainte: 'douleurs',
+    priorite: 4,
+    libelle: 'Axe douleur et perception',
+    motif:
+      'Le patient situe sa plainte douloureuse dans les bandes hautes de l’échelle de plaintes actuelles. '
+      + 'Les interleukines 6 abaissent le seuil d’excitabilité des voies neurosensorielles dans la perception de la douleur, '
+      + 'et les acides gras oméga trois participent à la modulation de cette perception : '
+      + 'le terrain inflammatoire et le profil lipidique sont des angles de travail, et l’axe mérite d’être regardé.',
+    // Besoin 4 Â« Perception et sensations corporelles Â» â le besoin dont les
+    // sources sont les instruments digestif (`Q_GAS_01`) et INFLAMMATOIRE
+    // (`Q_INF_01`), voir `BESOIN_SOURCES`. C'est le second qui rattache cet
+    // axe : le mÃ©canisme citÃ© est inflammatoire. Le rattachement est une
+    // DÃSIGNATION d'axe, pas une mesure.
+    needIds: [4],
+    limitations: [
+      'Les claims à l’appui décrivent des mécanismes ; ils ne recommandent aucune conduite.',
+      'Une plainte déclarée sur une échelle de 1 à 10 n’est pas une mesure d’un instrument spécifique de la douleur.',
+      // LA RÃSERVE D'ADRESSAGE â arbitrage praticien du 2026-08-28, qui lÃ¨ve la
+      // condition de retour de `PRIO-DOU`.
+      //
+      // Le motif d'Ã©cartement disait qu'une part de la douleur chronique
+      // appelle un ADRESSAGE, et que Â« produire un axe lÃ  oÃ¹ il faut orienter
+      // serait pire Â» que de ne rien produire. L'arbitrage retenu ne supprime
+      // pas ce risque, il le NOMME dans ce que la rÃ¨gle sert : l'axe ne prÃ©juge
+      // pas de l'adressage, ne le rÃ©alise pas et ne le remplace pas.
+      //
+      // `WN-CL-0162-007` fonde cette rÃ©serve dans le corpus lui-mÃªme â la
+      // douleur relÃ¨ve de processus biologique, neurologique, psychologique,
+      // social et environnemental. Un axe neuronutritionnel n'en couvre qu'un.
+      'Une plainte douloureuse intense peut relever d’un adressage. Cette priorité désigne un axe de travail neuronutritionnel : elle ne réalise pas cet adressage, ne le remplace pas, et n’en préjuge pas.',
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0026-012', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0161-035', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0163-002', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0162-007', versionClaim: 'v1.0' },
+    ],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -329,8 +412,10 @@ export const PRIORITY_RULES_V1: PriorityRule[] = [
 // Patron `CONTRADICTIONS_REGLES_ECARTEES_V1` puis `STOP_RULES_ECARTEES_V1` : une
 // règle écartée reste lisible avec son motif, plutôt que de disparaître dans un
 // ticket que personne ne rouvre. `Q_MOD_03` porte SEPT domaines ; la table n'en
-// couvre que TROIS — `PRIO-SOM` l'a rejointe le 2026-08-28, sa condition de
-// retour ayant été levée par arbitrage praticien — et l'écart doit se voir.
+// couvre que QUATRE — `PRIO-SOM` puis `PRIO-DOU` l'ont rejointe le 2026-08-28,
+// leurs conditions de retour ayant été levées par arbitrage praticien — et
+// l'écart doit se voir. `PRIO-DOU` couvrait `douleurs` ET `mobilite` : seule la
+// première revient, la seconde reste écartée sous `PRIO-MOB`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PRIORITY_RULES_ECARTEES_V1: PriorityRuleEcartee[] = [
@@ -349,11 +434,11 @@ export const PRIORITY_RULES_ECARTEES_V1: PriorityRuleEcartee[] = [
       "Une règle qui conjugue la plainte de fatigue à une MESURE d'un instrument spécifique, et le claim qui fonde l'axe ainsi restreint.",
   },
   {
-    id: 'PRIO-DOU',
+    id: 'PRIO-MOB',
     motif:
-      "Les domaines `douleurs` et `mobilite` sont écartés ensemble : ils relèvent d'un champ — douleur chronique, appareil locomoteur — dont le corpus NNPP2 relu le 2026-08-12 ne porte pas de claim d'intervention neuronutritionnelle, et dont une part appelle un ADRESSAGE plutôt qu'un axe de travail. Produire une priorité sans claim est l'interdit explicite du lot ; produire un axe là où il faut orienter serait pire.",
+      "Le domaine `mobilite` de Q_MOD_03 reste écarté alors que `douleurs` a rejoint la table le 2026-08-28 (`PRIO-DOU-01`) : les deux étaient écartés ENSEMBLE, ils ne reviennent pas ensemble. Tous les claims qui fondent l'axe douleur portent la PERCEPTION — interleukines 6 et seuil d'excitabilité des voies neurosensorielles, oméga 3 et récepteurs FFA1, profil lipidique et lombalgies chroniques. Aucun ne porte l'appareil locomoteur. Déclencher une priorité sur `mobilite` reviendrait à citer des sources qui ne parlent pas d'elle, et une part de ce champ appelle un ADRESSAGE plutôt qu'un axe de travail — produire un axe là où il faut orienter serait pire que de s'abstenir.",
     conditionDeRetour:
-      "Des claims VALIDES sur l'axe douleur/mobilité, et l'arbitrage praticien qui trace la frontière entre un axe de travail et un motif d'adressage.",
+      "Des claims VALIDES portant l'appareil locomoteur lui-même — et non la seule perception douloureuse —, et l'arbitrage praticien qui dit ce qu'un axe de mobilité AJOUTERAIT à l'axe douleur déjà publié, plutôt que de le dédoubler sur un même dossier.",
   },
 ];
 
@@ -475,6 +560,22 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   // conclusion), et le fait que les 39 claims valides de l'agenda de sommeil
   // (`WN-SRC-0052`) restent HORS de la règle : ils décrivent une procédure
   // d'exploration, non un axe de travail.
+  //
+  // RE-SIGNÉE UNE SECONDE FOIS LE MÊME JOUR ([[D-117]], arbitrage praticien
+  // explicite en session) : `PRIO-DOU-01`, l'axe douleur et perception. La
+  // date ne bouge pas — les deux relectures sont du 2026-08-28 —, seul le SHA
+  // suit le périmètre.
+  //
+  // `PRIO-DOU` était écartée depuis le 2026-08-12 au motif que le corpus ne
+  // portait pas de claim d'intervention sur ce champ, et qu'une part de la
+  // douleur chronique appelle un ADRESSAGE plutôt qu'un axe. Le corpus a
+  // changé — quatre claims de mécanisme portent la perception douloureuse — et
+  // l'arbitrage praticien a tranché la frontière SANS la supprimer : l'axe ne
+  // préjuge pas de l'adressage, et le dit dans ses `limitations`.
+  //
+  // `douleurs` et `mobilite` étaient écartés ENSEMBLE ; seul le premier
+  // revient. `PRIO-MOB` porte désormais le second, avec sa condition de retour
+  // propre — aucun des claims cités ne parle de l'appareil locomoteur.
   validationExterne: true,
   dateValidation: '2026-08-28T00:00:00.000Z',
   // SURTOUT PAS `shaPerimetre: PRIORITY_RULES_SHA256` — la constante est
@@ -483,7 +584,7 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
   // chargement depuis la table vivante, la concordance serait toujours vraie
   // et la péremption jamais détectée (piège documenté sur le verrou biologie,
   // changelog du 2026-08-16).
-  shaPerimetre: 'c525927a34961f1397924e3a90ceefc1e831105a4d7dc10a261a4f6e9b32aa8a',
+  shaPerimetre: '2dbd7b5d4670338e9b2a7c2a793ae633bce55d5f40ec93f95becc31c87fa43cc',
   // Les claims épinglés par les règles de cette table. Le contrat de fraîcheur
   // les contrôle sur la production, et `claimsEpinglesFraicheur.guard.test.ts`
   // refuse que cette liste diverge de celle du contrat — dans les deux sens.
@@ -505,6 +606,11 @@ export const PRIORITY_RULES_METADATA: PriorityRulesMetadata = {
     { claimId: 'WN-CL-0025-047', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0006-021', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0003-013', versionClaim: 'v1.0' },
+    // `PRIO-DOU-01` (2026-08-28) — mécanismes de la perception douloureuse.
+    { claimId: 'WN-CL-0026-012', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0161-035', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0163-002', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0162-007', versionClaim: 'v1.0' },
   ],
 };
 

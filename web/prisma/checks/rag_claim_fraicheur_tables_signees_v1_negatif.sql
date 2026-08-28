@@ -143,6 +143,13 @@ BEGIN
     ('WN-CL-0025-047', 'v1.0', 'priorites', false),
     ('WN-CL-0006-021', 'v1.0', 'priorites', false),
     ('WN-CL-0003-013', 'v1.0', 'priorites', false),
+    -- `PRIO-DOU-01` (2026-08-28, [[D-117]]) — mécanismes de la perception
+    -- douloureuse. `exige_prescriptif = false` : ils décrivent, ils ne
+    -- prescrivent pas, et la règle le dit dans ses `limitations`.
+    ('WN-CL-0026-012', 'v1.0', 'priorites', false),
+    ('WN-CL-0161-035', 'v1.0', 'priorites', false),
+    ('WN-CL-0163-002', 'v1.0', 'priorites', false),
+    ('WN-CL-0162-007', 'v1.0', 'priorites', false),
     -- Registre des conflits de sources déclarés ([[D-103]]). `exige_prescriptif
     -- = false` : un conflit déclaré CONSTATE que deux claims du corpus ne
     -- disent pas la même chose, il ne prescrit rien — même catégorie que la
@@ -272,6 +279,13 @@ BEGIN
     ('WN-CL-0025-047', 'v1.0', 'priorites', false),
     ('WN-CL-0006-021', 'v1.0', 'priorites', false),
     ('WN-CL-0003-013', 'v1.0', 'priorites', false),
+    -- `PRIO-DOU-01` (2026-08-28, [[D-117]]) — mécanismes de la perception
+    -- douloureuse. `exige_prescriptif = false` : ils décrivent, ils ne
+    -- prescrivent pas, et la règle le dit dans ses `limitations`.
+    ('WN-CL-0026-012', 'v1.0', 'priorites', false),
+    ('WN-CL-0161-035', 'v1.0', 'priorites', false),
+    ('WN-CL-0163-002', 'v1.0', 'priorites', false),
+    ('WN-CL-0162-007', 'v1.0', 'priorites', false),
     -- Registre des conflits de sources déclarés ([[D-103]]). `exige_prescriptif
     -- = false` : un conflit déclaré CONSTATE que deux claims du corpus ne
     -- disent pas la même chose, il ne prescrit rien — même catégorie que la

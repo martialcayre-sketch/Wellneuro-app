@@ -159,11 +159,14 @@ variable.**
   ([[D-099]]) : le producteur de constats de sécurité du LOT-04 a rendu faux le
   texte signé d'`ABST-NR-01` (« aucun producteur n'existe à ce jour »), et le
   corriger a refermé le verrou. Le diff signé se limite à cette phrase. Enfin
-  une **troisième fois le 2026-08-28** ([[D-116]]) : la table porte désormais
-  une TROISIÈME règle, `PRIO-SOM-01`, l'axe sommeil et rythme circadien. C'est
-  la première re-signature dont le périmètre s'agrandit d'une règle, et non
-  d'un texte — `PRIO-SOM` était écartée depuis le 2026-08-12, sa condition de
-  retour a été levée par arbitrage praticien.
+  **deux fois le 2026-08-28** ([[D-116]] puis [[D-117]]) : la table porte
+  désormais QUATRE règles — `PRIO-SOM-01` (axe sommeil et rythme circadien) et
+  `PRIO-DOU-01` (axe douleur et perception). Ce sont les premières
+  re-signatures dont le périmètre s'agrandit d'une RÈGLE et non d'un texte :
+  `PRIO-SOM` et `PRIO-DOU` étaient écartées depuis le 2026-08-12, et leurs
+  conditions de retour ont été levées par arbitrage praticien. `PRIO-DOU`
+  couvrait `douleurs` ET `mobilite` ; seule la première revient, la seconde
+  reste écartée sous `PRIO-MOB`.
 - **`safetySignalsV1.ts` est la table neuve du 2026-08-23** ([[D-099]]) : la
   cotation des douze signaux d'alerte d'anamnèse en deux rangs. **Son verrou
   a un sens INVERSE des autres** — le refermer ne fait pas taire un moteur, il

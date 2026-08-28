@@ -4,6 +4,60 @@
 
 ## Décisions actives
 
+### D-117 — Une quatrième règle de priorité : l'axe douleur, sans préjuger de l'adressage
+
+- Date : 2026-08-28
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-28)
+- Domaine : table des règles de priorité — périmètre signé
+- Porte sur : `D-054` (qui écartait `PRIO-DOU`), `D-116` (signature du même
+  jour), `DC-27`
+- Origine : suite directe de `D-116` — la même question, posée sur l'axe
+  suivant que le corpus pouvait fonder.
+
+**Ce qui bloquait.** `PRIO-DOU` était écartée depuis le 2026-08-12 pour deux
+motifs : le corpus NNPP2 ne portait pas de claim d'intervention sur ce champ, et
+**une part de la douleur chronique appelle un ADRESSAGE plutôt qu'un axe de
+travail** — « produire un axe là où il faut orienter serait pire » que de
+s'abstenir.
+
+**Le corpus a changé.** Quatre claims valides de mécanisme portent la
+PERCEPTION douloureuse : `WN-CL-0026-012` (« les IL6 abaissent le seuil
+d'excitabilité des voies neurosensorielles dans la perception de la douleur »),
+`WN-CL-0161-035` (oméga 3 et récepteurs FFA1/GPR40), `WN-CL-0163-002` (excès de
+graisses saturées, d'oméga 6 et d'acides gras trans **associé** aux lombalgies
+chroniques — le mot est celui du claim, et la règle s'en tient là : une
+association n'est pas une cause, `DC-27`), et `WN-CL-0162-007` (modèle
+biopsychosocial).
+
+**La frontière, tranchée par le responsable, ne supprime pas le risque : elle
+le nomme dans ce que la règle sert.** L'axe **ne préjuge pas** de l'adressage,
+ne le réalise pas et ne le remplace pas. C'est écrit en `limitations`, donc servi
+avec la règle. `WN-CL-0162-007` fonde cette réserve dans le corpus lui-même — la
+douleur relève de processus biologique, neurologique, psychologique, social et
+environnemental, dont un axe neuronutritionnel ne couvre qu'un.
+
+**`douleurs` seul, et pas `mobilite`.** Les deux domaines étaient écartés
+ENSEMBLE ; ils ne reviennent pas ensemble. Tous les claims cités portent la
+perception ; **aucun ne porte l'appareil locomoteur**. Déclencher sur `mobilite`
+citerait des sources qui ne parlent pas d'elle. La mobilité reste écartée sous
+`PRIO-MOB`, avec un motif propre et une condition de retour qui exige de dire ce
+qu'un axe de mobilité **ajouterait** à l'axe douleur, plutôt que de le dédoubler.
+
+**Trois claims délibérément non cités.** `WN-CL-0161-057` (essai où le malate de
+magnésium réduit la douleur) et `WN-CL-0102-003` (coenzyme Q10 « utilisé dans
+les douleurs et la fibromyalgie ») sont des claims d'EFFET et de CONDUITE :
+les citer ferait promettre un traitement là où la table désigne un axe.
+`WN-CL-0161-056` (« le magnésium POURRAIT jouer un rôle ») est hypothétique —
+une règle signée ne se fonde pas sur un conditionnel.
+
+**Aucun seuil inventé** : `Q_MOD_03` domaine `douleurs` `>= 7`, la bande des
+trois autres règles. Besoin 4 « Perception et sensations corporelles », dont
+l'une des deux sources est l'instrument inflammatoire `Q_INF_01` — le mécanisme
+cité.
+
+**Seconde re-signature du même jour.** La date ne bouge pas ; seul le SHA suit
+le périmètre. Signature posée après attestation explicite du responsable.
+
 ### D-116 — Une troisième règle de priorité : l'axe sommeil, en complément de l'orientation
 
 - Date : 2026-08-28
