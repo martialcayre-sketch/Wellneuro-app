@@ -112,7 +112,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
-| `clinical/priorityRulesV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
+| `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
@@ -155,10 +155,15 @@ variable.**
   canonique, claims, concordance du SHA de périmètre. Une règle retouchée
   après signature ferme désormais son verrou seule. `priorityRulesV1.ts` a été
   **re-signée le 2026-08-16** sur le périmètre agrandi par `D-062` — la dette
-  de re-signature était soldée —, puis **une seconde fois le 2026-08-23**
+  de re-signature était soldée —, une **deuxième fois le 2026-08-23**
   ([[D-099]]) : le producteur de constats de sécurité du LOT-04 a rendu faux le
   texte signé d'`ABST-NR-01` (« aucun producteur n'existe à ce jour »), et le
-  corriger a refermé le verrou. Le diff signé se limite à cette phrase.
+  corriger a refermé le verrou. Le diff signé se limite à cette phrase. Enfin
+  une **troisième fois le 2026-08-28** ([[D-116]]) : la table porte désormais
+  une TROISIÈME règle, `PRIO-SOM-01`, l'axe sommeil et rythme circadien. C'est
+  la première re-signature dont le périmètre s'agrandit d'une règle, et non
+  d'un texte — `PRIO-SOM` était écartée depuis le 2026-08-12, sa condition de
+  retour a été levée par arbitrage praticien.
 - **`safetySignalsV1.ts` est la table neuve du 2026-08-23** ([[D-099]]) : la
   cotation des douze signaux d'alerte d'anamnèse en deux rangs. **Son verrou
   a un sens INVERSE des autres** — le refermer ne fait pas taire un moteur, il

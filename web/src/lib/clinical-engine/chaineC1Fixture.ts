@@ -35,7 +35,7 @@ export const HORODATAGE_C1_FIXTURE = '2026-01-03T00:00:00.000Z';
 // différente faisait produire aux bancs une chaîne qu'aucune production ne sert,
 // la date entrant dans `validation.validatedAt`. La sentinelle de
 // `chaineC1.test.ts` a désigné les trois copies à aligner, comme prévu.
-export const DATE_SIGNATURE_SIMULEE = '2026-08-23T00:00:00.000Z';
+export const DATE_SIGNATURE_SIMULEE = '2026-08-28T00:00:00.000Z';
 
 /**
  * Anamnèse de la chaîne de référence — patient fictif autorisé, aucun contenu
