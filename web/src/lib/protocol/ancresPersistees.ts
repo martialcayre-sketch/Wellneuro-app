@@ -83,9 +83,11 @@ export function ancreCourante(ancres: readonly AncrePersistee[]): AncrePersistee
  * 3. L'IDENTITÉ DE LA LIGNE. Une ancre déjà posée n'est re-confirmable que
  *    par l'épisode qui la porte : voir le commentaire du corps.
  *
- * Écrite ici et non seulement dans le cockpit, pour le motif que `D-052` a déjà
- * établi sur les préconditions : le POST du cockpit n'écrit rien, ce sont ces
- * deux routes qui gardent la base.
+ * Écrite ici et non dans une seule route, pour le motif que `D-052` a déjà
+ * établi sur les préconditions : un chemin de calcul UNIQUE pour tous les
+ * points de persistance. Ils sont TROIS depuis `D-118` — le POST du cockpit
+ * écrit l'épisode à la confirmation, `protocoles` et `protocoles/versions`
+ * l'écrivent avec le protocole.
  */
 export function refusAncreNonRecevable(
   episode: { assessmentEpisodeId?: string; milestone: string },

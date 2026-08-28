@@ -142,13 +142,14 @@ export function refusJalonContredit(
 }
 
 /**
- * Garde des deux POINTS DE PERSISTANCE ([[D-052]]).
+ * Garde des points de persistance DU PROTOCOLE ([[D-052]]).
  *
- * Le cockpit a déjà refusé en amont, mais son POST n'écrit rien : c'est ici que
- * la base est gardée. L'épisode arrive du NAVIGATEUR, donc rien de ce qu'il
- * porte ne fait foi : les conditions dures sont recalculées en base, et la
- * trace de contournement est VÉRIFIÉE CHAMP PAR CHAMP contre la session et
- * contre les conditions réellement en défaut.
+ * Le cockpit — troisième point de persistance depuis `D-118` — n'en a pas
+ * besoin : il CONSTRUIT la trace de contournement côté serveur (auteur et
+ * horodatage posés par la session) avant d'écrire. Ici, l'épisode arrive du
+ * NAVIGATEUR, donc rien de ce qu'il porte ne fait foi : les conditions dures
+ * sont recalculées en base, et la trace de contournement est VÉRIFIÉE CHAMP
+ * PAR CHAMP contre la session et contre les conditions réellement en défaut.
  *
  * Elle est vérifiée plutôt que réécrite : réécrire `decidePar` ferait diverger
  * l'épisode de celui qui a été haché dans `snapshot.inputHash`, et casserait

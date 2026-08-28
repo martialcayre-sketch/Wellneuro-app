@@ -794,3 +794,130 @@ describe('ClinicalRuntimeSection — ouverture d’un nouveau cycle (`D-113`)', 
     expect(screen.queryByRole('button', { name: /Ouvrir un nouveau cycle/ })).toBeNull();
   });
 });
+
+// D-118 — UN ÉPISODE PERSISTÉ SE REJOUE, ET L'ÉTAT « CONFIRMÉ » SURVIT À LA PAGE.
+//
+// Le défaut d'origine : T0 confirmé le matin, page rechargée, et le rail
+// affichait « Décision : en attente » sur un acte déjà posé. Trois propriétés
+// à tenir, chacune son banc : le rejeu s'affiche sans redemander le geste ;
+// l'état « confirmé » dérive de la base (trajectoire) et non du seul écran ;
+// et un rejeu ne verrouille pas le jalon dû.
+describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)', () => {
+  function pretRejoue(): CockpitRuntimeApiResponse {
+    const fixture = buildValidationErgoC1Fixture();
+    return {
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: fixture.decisionCard,
+      contradictions: [],
+      plainteDominante: null,
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
+      rejoue: true,
+    };
+  }
+
+  function trajectoireAvecCycle(joursDepuisAncre: number) {
+    const dateAncre = new Date(Date.now() - joursDepuisAncre * 24 * 60 * 60 * 1000).toISOString();
+    return {
+      ok: true,
+      trajectoire: {
+        index: [{ milestone: 'T0', date: dateAncre, cycleId: 'cycle-1' }],
+        cycles: [{
+          cycleId: 'cycle-1', ancre: 'T0', dateAncre, versionScore: 'v15', jalons: [], momentum: null,
+          momentumParBesoin: [],
+        }],
+        comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        discordanceOrdreCycles: false,
+      },
+    };
+  }
+
+  /**
+   * Routage par URL, jamais par file : le rejeu déclenche la cascade
+   * versions/diffusion/check-ins, dont les GET consommeraient une file
+   * ordonnée avant la resynchronisation du jalon dû — le banc deviendrait
+   * sensible à un ordre d'effets qui ne lui appartient pas.
+   */
+  function fetchParUrl(reponses: {
+    trajectoire: unknown;
+    cockpitT0: CockpitRuntimeApiResponse;
+    cockpitJ21?: CockpitRuntimeApiResponse;
+  }) {
+    return vi.fn(async (url: string, _init?: { method?: string; body?: string }) => {
+      const cible = String(url);
+      if (cible.includes('/api/praticien/trajectoire')) return rep(reponses.trajectoire);
+      if (cible.includes('/api/praticien/cockpit')) {
+        if (cible.includes('milestone=J21') && reponses.cockpitJ21) return rep(reponses.cockpitJ21);
+        return rep(reponses.cockpitT0);
+      }
+      return rep({}, false, 500);
+    });
+  }
+
+  it('un rejeu s’affiche confirmé au chargement — sans redemander le geste, sans POST', async () => {
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(1),
+      cockpitT0: pretRejoue(),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByText(/Épisode T0 confirmé/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Confirmer l’épisode/ })).toBeNull();
+    expect(fetchMock.mock.calls.some(appel =>
+      (appel[1] as { method?: string } | undefined)?.method === 'POST')).toBe(false);
+  });
+
+  it('« épisode confirmé » dérive de la trajectoire : vrai même quand l’écran montre autre chose', async () => {
+    // L'écran sert la PROPOSITION (aucune carte rejouable), mais la trajectoire
+    // porte un cycle — donc une ligne d'épisode en base, donc un acte posé.
+    // Avant `D-118`, le rail retombait « en attente » ici.
+    const onEtatChange = vi.fn();
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(1),
+      cockpitT0: proposalResponse,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onEtatChange={onEtatChange}
+      />,
+    );
+
+    await waitFor(() => {
+      const dernier = onEtatChange.mock.calls.at(-1)?.[0] as { episodeConfirme: boolean; chargement: boolean };
+      expect(dernier?.chargement).toBe(false);
+      expect(dernier?.episodeConfirme).toBe(true);
+    });
+  });
+
+  it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main sur un T0 rejoué', async () => {
+    // T0 confirmé il y a 21 jours : le J21 est dû. Sans la distinction
+    // frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte T0
+    // rejouée et le J21 dû serait resté invisible.
+    const propositionJ21: CockpitRuntimeApiResponse = {
+      status: 'proposal_required',
+      proposal: { ...proposal, assessmentEpisodeId: 'episode-J21', milestone: 'J21' },
+      proposalHash: 'hash-J21',
+    };
+    const fetchMock = fetchParUrl({
+      trajectoire: trajectoireAvecCycle(21),
+      cockpitT0: pretRejoue(),
+      cockpitJ21: propositionJ21,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+
+    expect(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
+    expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true);
+  });
+});
