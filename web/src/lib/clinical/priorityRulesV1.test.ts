@@ -295,11 +295,15 @@ describe('priorityRulesV1 — verrou fail-closed', () => {
     }]]);
   }
 
-  // `sommeil: 8` depuis le 2026-08-28 : la table porte une TROISIÈME règle, et
-  // ce dossier existe pour les déclencher TOUTES — le laisser à 2 aurait fait
-  // passer le banc en n'éprouvant plus que deux tiers de la table.
+  // `sommeil: 8` puis `douleurs: 8` (2026-08-28) : la table porte QUATRE règles,
+  // et ce dossier existe pour les déclencher TOUTES. Laisser un domaine bas
+  // ferait passer le banc en n'éprouvant plus qu'une partie de la table — un
+  // vert obtenu en couvrant moins.
+  //
+  // `mobilite: 1` reste bas À DESSEIN : `PRIO-MOB` est écartée, et ce dossier
+  // doit pouvoir montrer qu'aucune règle ne s'en réclame.
   const DOSSIER_QUI_DECLENCHE = plaintes({
-    fatigue: 2, douleurs: 2, digestion: 8, surpoids: 9, sommeil: 8, moral: 2, mobilite: 1,
+    fatigue: 2, douleurs: 8, digestion: 8, surpoids: 9, sommeil: 8, moral: 2, mobilite: 1,
   });
 
   // LE CAS QUI COMPTE POUR LA PRODUCTION : table non signée ⇒ RIEN, même sur un
@@ -309,10 +313,11 @@ describe('priorityRulesV1 — verrou fail-closed', () => {
     expect(evaluerPriorites(DOSSIER_QUI_DECLENCHE)).toEqual([]);
   });
 
-  it('table signée ⇒ les trois règles se déclenchent et portent leurs conditions', () => {
+  it('table signée ⇒ les quatre règles se déclenchent et portent leurs conditions', () => {
     simulerSignature();
     const declenchees = evaluerPriorites(DOSSIER_QUI_DECLENCHE);
-    expect(declenchees.map(d => d.regle.id).sort()).toEqual(['PRIO-DIG-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
+    expect(declenchees.map(d => d.regle.id).sort())
+      .toEqual(['PRIO-DIG-01', 'PRIO-DOU-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
     for (const declenchee of declenchees) {
       expect(declenchee.conditions.length).toBe(declenchee.regle.declencheurs.length);
       expect(declenchee.conditions[0]).toContain(CANAL_PLAINTE);
@@ -362,7 +367,8 @@ describe('priorityRulesV1 — verrou fail-closed', () => {
   it('table signée ⇒ les règles validées portent la table, sa version et son sha', () => {
     simulerSignature();
     const validees = reglesPrioritesValidees();
-    expect(validees.map(regle => regle.ruleId).sort()).toEqual(['PRIO-DIG-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
+    expect(validees.map(regle => regle.ruleId).sort())
+      .toEqual(['PRIO-DIG-01', 'PRIO-DOU-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
     for (const regle of validees) {
       expect(regle.lifecycle).toBe('clinically_validated');
       expect(regle.version).toBe(PRIORITY_RULES_METADATA.version);
@@ -409,7 +415,7 @@ describe('priorityRulesV1 — verrou de contenu', () => {
   // `required` sont inchangés, et le cas ci-dessous continue de le vérifier.
   // Valeur précédente, couvrant le périmètre du 2026-08-16 :
   // `cfd9b876…d511ab4`.
-  const SHA_CONTENU_2026_08_28 = 'c525927a34961f1397924e3a90ceefc1e831105a4d7dc10a261a4f6e9b32aa8a';
+  const SHA_CONTENU_2026_08_28 = '2dbd7b5d4670338e9b2a7c2a793ae633bce55d5f40ec93f95becc31c87fa43cc';
 
   it('le sha publié correspond au contenu signé — règles ET procédure d’abstention', () => {
     expect(PRIORITY_RULES_SHA256).toBe(
@@ -418,7 +424,7 @@ describe('priorityRulesV1 — verrou de contenu', () => {
   });
 
   it('le contenu de la table est exactement celui qui a été relu', () => {
-    expect(PRIORITY_RULES_V1.length).toBe(3);
+    expect(PRIORITY_RULES_V1.length).toBe(4);
     expect(PRIORITY_RULES_SHA256).toBe(SHA_CONTENU_2026_08_28);
   });
 

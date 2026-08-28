@@ -217,7 +217,8 @@ describe('chaîne C1 — cas de référence, table signée', () => {
     simulerSignature();
     const { review, decisionCard } = chaine();
     expect(review.abstention.status).toBe('not_required');
-    expect(review.abstention.ruleIds).toEqual(['PRIO-DIG-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
+    expect(review.abstention.ruleIds)
+      .toEqual(['PRIO-DIG-01', 'PRIO-DOU-01', 'PRIO-PON-01', 'PRIO-SOM-01']);
     expect(review.abstention.limitations.join(' ')).toContain('aucun motif d’abstention');
     expect(decisionCard.abstention.status).toBe('not_required');
   });
