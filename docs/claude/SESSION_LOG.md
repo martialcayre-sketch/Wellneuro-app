@@ -4961,3 +4961,42 @@ en « dettes nommées », option que `D-107` avait écartée la veille.
 Résultat — campagne terminée, 11 lots sur 12 exécutés dont un LOT-12 non prévu ;
 six règles sur leurs trois preuves, et ce qui n'est pas fermé est nommé règle
 par règle.
+
+## 2026-08-28 — 6.0-B : contre-revue adverse, quatre décisions, une fenêtre ouverte
+
+Décisions — Contre-revue adverse jouée **avant** le lot de clôture et sous forme
+d'affirmations à réfuter : 5 sur 25 réfutées, toutes corrigées. `D-114` porte
+l'identité de cycle **en base** (CHECK + index partiels) — le garde applicatif
+seul avait déplacé le défaut sans retirer sa condition. `D-115` fait résoudre la
+provenance signée **au serveur** : le navigateur ne fournit plus le texte d'une
+règle. `D-116`/`D-117` publient sommeil et douleur ; la table signée en porte
+quatre.
+
+Écarté — filtrer le corpus sur `prescriptif = true` : les 246 claims « sommeil »
+sont dominés par une procédure d'agenda, donc de l'exploration. Les règles
+publiées citent des claims de **mécanisme**, non prescriptifs.
+
+Prochaine action — le geste clinique : écrire un objectif sur un dossier du
+périmètre `D-093`, puis les trois vérifications de provenance.
+
+Ouvert — `WN_OBJECTIF_PROPOSE` est posé et les sept tables portent zéro ligne ;
+`D-093` se conclut avant le 2026-10-04, sinon le périmètre se referme.
+
+## 2026-08-28 — D-118 : un acte posé ne redevient pas invisible
+
+Décisions — Retour d'usage du premier dossier réel : T0 confirmé le matin,
+page rechargée, rail « en attente ». `D-118` fait du POST cockpit le
+**troisième point de persistance** (mêmes gardes, `N1.1` comprise) ; le GET
+**rejoue** l'épisode persisté — mêmes empreintes, mêmes identifiants, prouvé
+par banc — et le rail dérive « confirmé » de la base. Un rejeu ne verrouille
+pas le jalon dû et n'assemble rien.
+
+Écarté — journaliser le POST : la dispense d'écriture de `GD-1` s'applique dès
+qu'il écrit ; et `refusPreconditionsPersistance` au cockpit — il construit ses
+contournements côté serveur.
+
+Résultat — PR #817 mergée, CI vert. T2 a mordu deux fois juste : le spec
+biologie exigeait le défaut que la décision ferme.
+
+Prochaine action — reconfirmer T0 sur le dossier une dernière fois (la ligne
+s'écrira), enregistrer le protocole, diffuser.
