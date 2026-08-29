@@ -102,6 +102,24 @@ export function EpisodeConfirmationPanel({
                     {condition.detail && (
                       <span className="block break-words text-muted-foreground">{condition.detail}</span>
                     )}
+                    {/* LES CONSTATS EUX-MÊMES (`D-119`) : le motif de
+                        contournement se rédige devant ce que la garde a vu —
+                        description et passations RECOPIÉES du service, jamais
+                        composées par l'écran. */}
+                    {condition.constats && condition.constats.length > 0 && (
+                      <ul className="mt-2 grid gap-2">
+                        {condition.constats.map((constat, index) => (
+                          <li key={`${condition.id}-${index}`} className="border-l-2 border-accent pl-2">
+                            <span className="block break-words text-foreground">{constat.description}</span>
+                            {constat.passations.length > 0 && (
+                              <span className="block text-muted-foreground">
+                                Passations confrontées : {constat.passations.join(' · ')}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <label className="mt-2 block">
                       <span className="block text-muted-foreground">
                         Je confirme malgré cet avertissement — motif obligatoire

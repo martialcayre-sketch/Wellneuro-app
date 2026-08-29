@@ -51,6 +51,19 @@ const episode = reference.episode;
 const decisionCard = reference.decisionCard;
 
 /**
+ * Un constat de contradiction MINIMAL MAIS SINCÈRE sur les champs que la
+ * checklist recopie (`D-119` : `description` + `passations`). L'ancien
+ * `[{ id: 'C-STR' }] as never` mentait au type — et le chargeur des
+ * préconditions, qui recopie désormais les constats au lieu de les compter,
+ * plantait sur `passations.map` d'un objet qui n'en avait pas.
+ */
+const CONSTAT_C_STR = {
+  id: 'C-STR',
+  description: 'Stress déclaré discordant entre instruments.',
+  passations: [{ idQuestionnaire: 'Q_MOD_01', date: '2026-03-12', dateLisible: '12/03/2026' }],
+} as never;
+
+/**
  * Le protocole relu qui accompagne une carte.
  *
  * Objet littéral, comme avant : cette route ne CONSTRUIT pas le protocole, elle
@@ -171,7 +184,7 @@ describe('POST /api/praticien/protocoles', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient')
-      .mockResolvedValue([{ id: 'C-STR' }] as never);
+      .mockResolvedValue([CONSTAT_C_STR] as never);
     try {
       const antidate = {
         ...episode,
@@ -197,7 +210,7 @@ describe('POST /api/praticien/protocoles', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient')
-      .mockResolvedValue([{ id: 'C-STR' }] as never);
+      .mockResolvedValue([CONSTAT_C_STR] as never);
     const usurpe = {
       ...episode,
       preconditionOverrides: [{
@@ -218,7 +231,7 @@ describe('POST /api/praticien/protocoles', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient')
-      .mockResolvedValue([{ id: 'C-STR' }] as never);
+      .mockResolvedValue([CONSTAT_C_STR] as never);
     const res = await POST(postRequest({
       episode: {
         ...episode,
@@ -240,7 +253,7 @@ describe('POST /api/praticien/protocoles', () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     const service = await import('@/lib/clinical/contradictionsService');
     const espion = vi.spyOn(service, 'contradictionsPourPatient')
-      .mockResolvedValue([{ id: 'C-STR' }] as never);
+      .mockResolvedValue([CONSTAT_C_STR] as never);
     const contourne = {
       ...episode,
       preconditionOverrides: [{

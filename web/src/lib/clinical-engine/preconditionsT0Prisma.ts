@@ -77,7 +77,16 @@ export async function chargerEntreesPreconditionsT0(idPatient: string): Promise<
     anamnese: consultation?.anamnese ?? null,
     consultationValidee: consultation !== null,
     synthese: synthese ? { statut: synthese.statut, dateValidation: synthese.dateValidation } : null,
-    contradictionsOuvertes: contradictions.length,
+    // RECOPIE, JAMAIS COMPOSITION (`D-119`) : la description est celle du
+    // service, telle quelle ; la passation est son instrument et sa date
+    // lisible, joints par un tiret de mise en page. Rien n'est reformulé —
+    // la checklist cite, elle n'écrit pas.
+    contradictionsOuvertes: contradictions.map((constat) => ({
+      description: constat.description,
+      passations: constat.passations.map(
+        (passation) => `${passation.idQuestionnaire} — ${passation.dateLisible}`,
+      ),
+    })),
   };
 }
 
