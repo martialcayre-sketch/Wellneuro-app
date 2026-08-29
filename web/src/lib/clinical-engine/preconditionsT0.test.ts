@@ -58,9 +58,14 @@ function entrees(surcharge: Partial<EntreesPreconditionsT0> = {}): EntreesPrecon
     anamnese: { motif_principal: 'Fatigue persistante depuis six mois.' },
     consultationValidee: true,
     synthese: { statut: 'Validee_Praticien', dateValidation: LE_2026_08_05 },
-    contradictionsOuvertes: 0,
+    contradictionsOuvertes: [],
     ...surcharge,
   };
+}
+
+/** Un constat de checklist, tel que le chargeur le recopie du service (`D-119`). */
+function constatChecklist(description: string): { description: string; passations: string[] } {
+  return { description, passations: ['Q_MOD_01 — 12/03/2026', 'Q_STR_04 — 10/08/2026'] };
 }
 
 function dure(resultat: ReturnType<typeof evaluerPreconditionsT0>, id: string) {
@@ -225,9 +230,41 @@ describe('préconditions de confirmation T0 (D-052)', () => {
   });
 
   it('une condition souple non satisfaite exige un contournement sans bloquer', () => {
-    const resultat = evaluerPreconditionsT0(entrees({ contradictionsOuvertes: 2 }));
+    const resultat = evaluerPreconditionsT0(entrees({
+      contradictionsOuvertes: [constatChecklist('Stress déclaré discordant.'), constatChecklist('Sommeil déclaré discordant.')],
+    }));
     expect(resultat.bloquant).toBe(false);
     expect(resultat.contournementsRequis).toEqual(['contradictions_ouvertes']);
+  });
+
+  // D-119 — la condition porte les CONSTATS, plus seulement un compte : le
+  // motif de contournement se rédige devant ce que la garde a vu.
+  it('la condition de contradictions expose les constats recopiés, et dit ce que confirmer fait', () => {
+    const resultat = evaluerPreconditionsT0(entrees({
+      contradictionsOuvertes: [constatChecklist('Stress déclaré discordant entre instruments.')],
+    }));
+    const condition = resultat.souples.find(c => c.id === 'contradictions_ouvertes');
+    expect(condition?.satisfaite).toBe(false);
+    expect(condition?.constats).toEqual([constatChecklist('Stress déclaré discordant entre instruments.')]);
+    // Le texte dit le GESTE (`DC-30`) : confirmer ne résout pas, le motif est tracé.
+    expect(condition?.detail).toContain('confirmer ne la résout pas');
+    expect(condition?.detail).toContain('tracé avec l’épisode');
+    expect(condition?.detail).toContain('Données fiables');
+  });
+
+  it('le pluriel du détail suit le nombre de constats, et une liste vide n’en pose aucun', () => {
+    const deux = evaluerPreconditionsT0(entrees({
+      contradictionsOuvertes: [constatChecklist('A.'), constatChecklist('B.')],
+    }));
+    expect(deux.souples.find(c => c.id === 'contradictions_ouvertes')?.detail)
+      .toContain('2 contradictions ouvertes');
+    expect(deux.souples.find(c => c.id === 'contradictions_ouvertes')?.detail)
+      .toContain('confirmer ne les résout pas');
+    const aucune = evaluerPreconditionsT0(entrees());
+    const condition = aucune.souples.find(c => c.id === 'contradictions_ouvertes');
+    expect(condition?.satisfaite).toBe(true);
+    expect(condition?.detail).toBeNull();
+    expect('constats' in (condition ?? {})).toBe(false);
   });
 
   it('une passation ambiguë du rideau est souple, jamais bloquante', () => {

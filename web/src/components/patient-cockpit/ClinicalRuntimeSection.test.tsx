@@ -191,6 +191,36 @@ describe('EpisodeConfirmationPanel', () => {
     );
   });
 
+  // D-119 — le motif de contournement se rédige DEVANT les constats, plus
+  // devant un compte : la description et les passations recopiées du service
+  // s'affichent dans l'avertissement lui-même.
+  it('les constats de contradiction s’affichent dans l’avertissement', () => {
+    render(
+      <EpisodeConfirmationPanel
+        proposal={proposal}
+        preconditions={preconditions({
+          souples: [{
+            id: 'contradictions_ouvertes',
+            libelle: 'Aucune contradiction ouverte',
+            satisfaite: false,
+            detail: '1 contradiction ouverte sur ce dossier — confirmer ne la résout pas : votre motif est tracé avec l’épisode.',
+            constats: [{
+              description: 'Stress déclaré discordant entre instruments.',
+              passations: ['Q_MOD_01 — 12/03/2026', 'Q_STR_04 — 10/08/2026'],
+            }],
+          }],
+          contournementsRequis: ['contradictions_ouvertes'],
+        })}
+        submitting={false}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Stress déclaré discordant entre instruments.')).toBeTruthy();
+    expect(screen.getByText(/Q_MOD_01 — 12\/03\/2026 · Q_STR_04 — 10\/08\/2026/)).toBeTruthy();
+    // Le geste reste exigé : les constats éclairent le motif, ils ne le remplacent pas.
+    expect(screen.getByPlaceholderText(/Pourquoi confirmer/)).toBeTruthy();
+  });
+
   it('nomme ce qui n’est pas requis pour un T0, plutôt que de le taire', () => {
     render(
       <EpisodeConfirmationPanel
@@ -919,5 +949,64 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
 
     expect(await screen.findByRole('button', { name: 'Confirmer l’épisode J21' })).toBeTruthy();
     expect(urlsCockpit(fetchMock).some(url => url.includes('milestone=J21'))).toBe(true);
+  });
+});
+
+// D-119 — LE RECOUPEMENT FACTUEL S'AFFICHE PRÈS DE LA CARTE, ET LUI SEUL.
+// Une contradiction ouverte qui confronte le canal de plainte (ou un
+// instrument fondant un candidat) est nommée à côté de la décision ; sans
+// intersection, rien — le détail complet vit déjà en « Données fiables ».
+describe('ClinicalRuntimeSection — recoupement contradiction ↔ décision (`D-119`)', () => {
+  function pretAvecContradiction(idQuestionnaire: string): CockpitRuntimeApiResponse {
+    const fixture = buildValidationErgoC1Fixture();
+    return {
+      status: 'ready',
+      snapshot: fixture.snapshot,
+      review: fixture.review,
+      decisionCard: fixture.decisionCard,
+      contradictions: [{
+        id: 'C-STR',
+        forme: 'DISCORDANCE',
+        description: 'Stress déclaré discordant entre instruments.',
+        actionSuggeree: 'Reprendre en entretien.',
+        hypotheses: [],
+        limitations: [],
+        passations: [{ idQuestionnaire, date: '2026-08-19', dateLisible: '19/08/2026' }],
+        ecartJours: null,
+        claims: [],
+        importance: 'useful_not_urgent',
+        resolution: { statut: 'ouverte' },
+        regleId: 'C-STR',
+      }],
+      plainteDominante: null,
+      perimetreSigne: null,
+      canalPlainte: 'Q_MOD_03',
+    };
+  }
+
+  async function afficherReady(reponse: CockpitRuntimeApiResponse) {
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(reponse)],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />);
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+  }
+
+  it('nomme la contradiction qui confronte le canal de plainte, à côté de la carte', async () => {
+    await afficherReady(pretAvecContradiction('Q_MOD_03'));
+    const bloc = await screen.findByRole('region', { name: 'Contradictions touchant cette décision' });
+    expect(bloc.textContent).toContain('Stress déclaré discordant entre instruments.');
+    expect(bloc.textContent).toContain('le canal de plainte');
+    // Le bloc montre, il ne tranche pas (`DC-30`).
+    expect(bloc.textContent).toContain('La machine ne tranche pas');
+  });
+
+  it('sans intersection avec la décision, aucun bloc — pas de bruit près de la carte', async () => {
+    await afficherReady(pretAvecContradiction('Q_GAS_01'));
+    await screen.findByText(/Épisode T0 confirmé/);
+    expect(screen.queryByRole('region', { name: 'Contradictions touchant cette décision' })).toBeNull();
   });
 });

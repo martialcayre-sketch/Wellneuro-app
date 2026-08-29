@@ -7,6 +7,7 @@ import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
+import { recoupementsContradictions } from './recoupementContradictions';
 import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
@@ -1039,6 +1040,50 @@ export function ClinicalRuntimeSection({
         />
       )}
       {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
+      {/* RECOUPEMENT FACTUEL contradiction ↔ décision (`D-119`) : quand une
+          contradiction ouverte confronte un instrument qui fonde aussi un
+          candidat (ou le canal de plainte), le dire À CÔTÉ de la carte — le
+          praticien choisissait sans voir que la matière de son choix était
+          contestée. Intersection d'identifiants, aucune recommandation
+          (`DC-30`) ; le détail complet reste en « Données fiables ». */}
+      {affiche('decision') && !fixture && runtime?.status === 'ready'
+        // GARDE DE FORME, PAS DE CONFIANCE : un payload sans ces tableaux
+        // (fixture partielle, version antérieure en cache) ne doit pas faire
+        // tomber la section — un bloc INFORMATIF s'éteint, il n'éteint pas le
+        // chemin principal (même doctrine que les claims best-effort).
+        && Array.isArray(runtime.contradictions) && Array.isArray(runtime.snapshot?.sourceRefs) && (() => {
+        const recoupements = recoupementsContradictions({
+          contradictions: runtime.contradictions,
+          snapshot: runtime.snapshot,
+          decisionCard: runtime.decisionCard,
+          canalPlainte: runtime.canalPlainte,
+        });
+        if (recoupements.length === 0) return null;
+        return (
+          <section
+            aria-label="Contradictions touchant cette décision"
+            className="rounded-xl border border-accent bg-status-warning/10 p-4 text-sm"
+          >
+            <h3 className="font-semibold text-foreground">Contradictions touchant cette décision</h3>
+            <ul className="mt-2 grid gap-2">
+              {recoupements.map((recoupement, index) => (
+                <li key={index} className="border-l-2 border-accent pl-2 text-foreground">
+                  <span className="block break-words">{recoupement.description}</span>
+                  <span className="block text-muted-foreground">
+                    Confronte une passation qui fonde aussi
+                    {recoupement.candidats.length > 0 && ` : ${recoupement.candidats.join(', ')}`}
+                    {recoupement.candidats.length > 0 && recoupement.canalPlainte && ' ·'}
+                    {recoupement.canalPlainte && ' le canal de plainte'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-muted-foreground">
+              La machine ne tranche pas : elle montre l’intersection. Le détail se lit dans « Données fiables ».
+            </p>
+          </section>
+        );
+      })()}
       {/* Boussole alimentaire : montée dès que les gardes métier sont
           satisfaites, puis seulement MASQUÉE hors phase Actions — la démonter
           rejouerait son chargement et réinitialiserait l'aliment sélectionné. */}

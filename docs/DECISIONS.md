@@ -4,6 +4,53 @@
 
 ## Décisions actives
 
+### D-119 — La contradiction s'explicite là où le geste se pose : constats dans la checklist, recoupement factuel près de la carte
+
+- Date : 2026-08-29
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-29)
+- Domaine : surface praticien — checklist de confirmation (`D-052`) et écran de
+  décision ; aucune règle, aucun seuil, aucune table signée
+- Porte sur : `D-050` (moteur déterministe, dont elle sert les constats),
+  `D-052` (checklist), `DC-30` (une discordance se signale, ne se résout pas),
+  `D-041` (aucune gradation de confiance)
+- Origine : retour d'usage praticien du 2026-08-29 sur l'écran de validation
+  T0 — « le message concernant la contradiction n'est pas clair du tout ».
+
+**Ce qui bloquait.** Le chargeur des préconditions calcule les constats
+complets — instruments, déclarations, dates — puis n'en laisse passer qu'un
+**compte** : la checklist affichait « 1 contradiction ouverte sur ce dossier »
+sans dire laquelle, ni où la lire, ni ce que confirmer signifie. Le praticien
+devait contourner en aveugle une garde dont le contenu était calculé trois
+lignes plus haut.
+
+**La décision, en deux gestes et une frontière.**
+
+1. **La checklist porte les constats, plus seulement le compte.** Chaque
+   contradiction s'affiche dans la condition souple elle-même : sa description
+   et ses passations datées, **recopiées** du modèle d'affichage du service —
+   jamais composées ni reformulées (leçon `D-115` : ce que l'écran cite vient
+   du service, pas de l'assembleur). Le motif de contournement devient un
+   motif éclairé, et le texte dit désormais ce que le geste fait : confirmer
+   ne résout pas la contradiction, le motif est tracé avec l'épisode.
+2. **Le recoupement factuel s'affiche près de la carte de décision.** Quand
+   une contradiction ouverte confronte un instrument qui **fonde aussi** un
+   candidat de priorité (via les passations de sa provenance) ou le canal de
+   plainte, l'écran le dit — une intersection d'identifiants, calculée par un
+   module pur et prouvée par mutation.
+
+**La frontière, nommée.** Aucune aide au choix par recommandation : une règle
+« contradiction ⇒ orienter l'objectif » serait une règle clinique neuve,
+exigeant claims certifiés et sa propre décision. Le domaine et les besoins ne
+sont d'ailleurs **pas joignables** sans annoter une table signée — le
+recoupement s'en tient aux deux faits partagés qui existent : l'instrument et
+la passation. Et rien ne touche la proposition d'objectif ni les sept tables
+de la campagne : la fenêtre `D-093` observe, on n'y écrit pas.
+
+**Aucune modification clinique** (`DC-17`/`DC-18`) : les règles de
+contradiction, leurs déclencheurs et la taxonomie des conditions sont
+inchangés — c'est la **restitution** d'un calcul existant qui gagne en
+fidélité.
+
 ### D-118 — L'épisode confirmé au cockpit se persiste à la confirmation : un acte posé ne redevient pas invisible
 
 - Date : 2026-08-28

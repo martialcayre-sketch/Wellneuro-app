@@ -72,6 +72,19 @@ export type SynthesePourPreconditions = {
   dateValidation: Date | null;
 };
 
+/**
+ * Un constat de contradiction tel que la CHECKLIST le porte (`D-119`) —
+ * description et passations RECOPIÉES du modèle d'affichage du service
+ * (`ContradictionAffichee`), jamais composées ici. Ce module reste pur : il ne
+ * connaît pas le service, c'est le chargeur qui recopie (leçon `D-115` — ce
+ * que l'écran cite vient de la source, pas de l'assembleur).
+ */
+export type ContradictionPourChecklist = {
+  description: string;
+  /** « Q_XXX — 12/03/2026 », un libellé par passation confrontée. */
+  passations: readonly string[];
+};
+
 export type EntreesPreconditionsT0 = {
   passations: readonly PassationPourPreconditions[];
   /** Anamnèse de la consultation validée la plus récente ; `null` si aucune. */
@@ -80,8 +93,12 @@ export type EntreesPreconditionsT0 = {
   consultationValidee: boolean;
   /** Synthèse la plus récente du patient ; `null` si aucune. */
   synthese: SynthesePourPreconditions | null;
-  /** Nombre de contradictions ouvertes (LOT-01). Toujours 0 table non signée. */
-  contradictionsOuvertes: number;
+  /**
+   * Contradictions OUVERTES du dossier (LOT-01), constat par constat depuis
+   * `D-119` — la checklist affichait un compte que le chargeur calculait à
+   * partir des constats complets, puis jetait. Toujours vide table non signée.
+   */
+  contradictionsOuvertes: readonly ContradictionPourChecklist[];
 };
 
 export type ConditionPrecondition = {
@@ -90,6 +107,12 @@ export type ConditionPrecondition = {
   satisfaite: boolean;
   /** Ce qui manque, en français, destiné à l'écran comme au message d'API. */
   detail: string | null;
+  /**
+   * Les constats qui fondent une condition non satisfaite (`D-119`) — posés
+   * uniquement par la condition de contradictions, pour que le motif de
+   * contournement soit un motif ÉCLAIRÉ. Absents = rien à détailler.
+   */
+  constats?: readonly ContradictionPourChecklist[];
 };
 
 export type PreconditionsT0 = {
@@ -301,13 +324,20 @@ function evaluerAmbigues(passations: readonly PassationPourPreconditions[]): Con
  */
 function evaluerContradictions(entrees: EntreesPreconditionsT0): ConditionPrecondition {
   const ouvertes = entrees.contradictionsOuvertes;
+  const pluriel = ouvertes.length > 1;
   return {
     id: 'contradictions_ouvertes',
     libelle: 'Aucune contradiction ouverte',
-    satisfaite: ouvertes === 0,
-    detail: ouvertes === 0
+    satisfaite: ouvertes.length === 0,
+    // LE TEXTE DIT CE QUE LE GESTE FAIT (`D-119`, `DC-30`) : confirmer ne
+    // résout rien — le motif est tracé avec l'épisode, et la contradiction
+    // reste ouverte, lisible en phase Données fiables.
+    detail: ouvertes.length === 0
       ? null
-      : `${ouvertes} contradiction${ouvertes > 1 ? 's' : ''} ouverte${ouvertes > 1 ? 's' : ''} sur ce dossier.`,
+      : `${ouvertes.length} contradiction${pluriel ? 's' : ''} ouverte${pluriel ? 's' : ''} sur ce dossier — `
+        + `confirmer ne ${pluriel ? 'les' : 'la'} résout pas : votre motif est tracé avec l’épisode. `
+        + 'Le détail complet se lit en phase « Données fiables ».',
+    ...(ouvertes.length > 0 ? { constats: ouvertes } : {}),
   };
 }
 
