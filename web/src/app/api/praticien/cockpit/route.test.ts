@@ -15,7 +15,9 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
       // `findMany` : lecture d'un état passé (SP-TT). `findFirst` : ancre du
       // cycle courant pour les jalons post-T0 (revue LOT-07, B2).
-      assessmentEpisode: { findMany: vi.fn(), findFirst: vi.fn() },
+      // `findUnique` : rejeu d'un épisode persisté par le GET (`D-118`) ;
+      // `upsert` : persistance de l'épisode à la confirmation (`D-118`).
+      assessmentEpisode: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), upsert: vi.fn() },
       // Préconditions de confirmation T0 (D-052).
       syntheseIA: { findFirst: vi.fn() },
       // Journal des accès (G-TRUST-04) : écriture d'audit, pas clinique.
@@ -36,6 +38,7 @@ import {
   passationsRideauT0,
   reponsesRuntimeRideauT0,
 } from '@/lib/clinical-engine/dossierT0Fixture';
+import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { PRIORITY_RULES_METADATA } from '@/lib/clinical/priorityRulesV1';
 import { GET, POST } from './route';
 
@@ -90,6 +93,10 @@ describe('/api/praticien/cockpit', () => {
     // passe par `findMany` + filtre de forme : `findFirst` sur `milestone:
     // 'T0'` ne voyait pas les cycles rouverts.
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    // Aucun épisode persisté par défaut (`D-118`) : le GET sert la proposition,
+    // le POST écrit sa première ligne.
+    prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
+    prisma.assessmentEpisode.upsert.mockResolvedValue({});
     brancherPassations(responses);
     prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
     prisma.consultation.findFirst.mockResolvedValue({
@@ -337,14 +344,18 @@ describe('/api/praticien/cockpit', () => {
     expect(passe.preconditions).toBeUndefined();
   });
 
-  it('ne déclenche aucune écriture Prisma clinique', async () => {
+  it('n’écrit que l’épisode — jamais le patient, les réponses ni la consultation', async () => {
     // Le journal des accès (G-TRUST-04) écrit sur le GET — écriture d'audit,
-    // hors périmètre de cette assertion qui protège l'état clinique.
+    // hors périmètre de cette assertion qui protège l'état clinique. Depuis
+    // `D-118`, le POST écrit UNE chose : l'épisode confirmé. Cette assertion
+    // borne la persistance à cette seule table — c'est elle qui rougirait si
+    // la confirmation se mettait à toucher au dossier lui-même.
     await GET(getRequest());
     const proposed = await proposal();
     await POST(postRequest({
       idPatient: 'PAT_TEST', milestone: 'T0', includedResponseIds: ['REP_T0'], proposalHash: proposed.proposalHash,
     }));
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledTimes(1);
     expect(writes.patientUpdate).not.toHaveBeenCalled();
     expect(writes.responseCreate).not.toHaveBeenCalled();
     expect(writes.consultationUpdate).not.toHaveBeenCalled();
@@ -774,5 +785,132 @@ describe('/api/praticien/cockpit — ouverture d’un cycle (`D-113`)', () => {
 
     const premiere = await propositionAncre('T0');
     expect(premiere.proposal.inWindowResponseIds).toEqual(['REP_T0']);
+  });
+});
+
+// D-118 — L'ÉPISODE CONFIRMÉ SE PERSISTE À LA CONFIRMATION, ET LE GET LE REJOUE.
+//
+// Ce que ce banc éprouve, dans l'ordre du défaut d'origine : un praticien
+// confirmait T0 le matin, rechargeait la page, et l'écran affichait « en
+// attente » sur un acte déjà posé. Le POST écrit désormais (3e point de
+// persistance), le GET sait rejouer — et le rejeu reproduit EXACTEMENT la
+// carte d'origine, identifiants compris, sinon versions/diffusion/check-ins
+// perdraient leur fil.
+describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-118`)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findUnique.mockResolvedValue(null);
+    prisma.assessmentEpisode.upsert.mockResolvedValue({});
+    brancherPassations(responses);
+    prisma.syntheseIA.findFirst.mockResolvedValue(SYNTHESE_VALIDEE_FIXTURE);
+    prisma.consultation.findFirst.mockResolvedValue({
+      anamnese: { motif_principal: 'Fatigue', objectif_prioritaire: 'Énergie', attentes: ['Comprendre'] },
+    });
+  });
+
+  async function confirmerT0() {
+    const proposed = await proposal();
+    return POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+  }
+
+  it('le POST persiste l’épisode confirmé — l’ancre ouvre son propre cycle (gate G2)', async () => {
+    const res = await confirmerT0();
+    expect(res.status).toBe(200);
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledTimes(1);
+    const args = prisma.assessmentEpisode.upsert.mock.calls[0][0];
+    expect(args.where).toEqual({ id: 'runtime-episode-PAT_TEST-T0' });
+    // Idempotence des points de persistance : une ligne posée ne se réécrit pas.
+    expect(args.update).toEqual({});
+    expect(args.create.milestone).toBe('T0');
+    expect(args.create.cycleId).toBe('runtime-episode-PAT_TEST-T0');
+    // Le blob se recoupe : c'est ce qui rend le rejeu vérifiable.
+    expect(args.create.payloadHash).toBe(canonicalSha256(args.create.payload));
+  });
+
+  it('refuse d’écrire une ancre déjà posée sous un autre épisode (N1.1, 3e point)', async () => {
+    const proposed = await proposal();
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPISODE_ETRANGER', cycleId: null, confirmedAt: new Date('2026-01-05T00:00:00.000Z'), milestone: 'T0' },
+    ]);
+    const res = await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0',
+      includedResponseIds: proposed.proposal.inWindowResponseIds,
+      proposalHash: proposed.proposalHash,
+    }));
+    expect(res.status).toBe(422);
+    const payload = await res.json();
+    expect(payload.reason).toBe('preconditions_non_remplies');
+    expect(payload.error).toContain('sous un autre épisode');
+    expect(prisma.assessmentEpisode.upsert).not.toHaveBeenCalled();
+  });
+
+  it('le GET rejoue l’épisode persisté : même carte, mêmes identifiants, marqueur `rejoue`', async () => {
+    const post = await confirmerT0();
+    const postPayload = await post.json();
+    const create = prisma.assessmentEpisode.upsert.mock.calls[0][0].create;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: create.payload, payloadHash: create.payloadHash,
+    });
+    const get = await GET(getRequest('idPatient=PAT_TEST&milestone=T0'));
+    const payload = await get.json();
+    expect(payload.status).toBe('ready');
+    expect(payload.rejoue).toBe(true);
+    // Les identifiants d'enveloppe sont CEUX D'ORIGINE — versions, diffusion et
+    // check-ins sont retrouvés par `decisionCardId`, un rejeu qui en changerait
+    // orphelinerait tout le fil.
+    expect(payload.decisionCard.decisionCardId).toBe(postPayload.decisionCard.decisionCardId);
+    // Même horodatage (celui de la confirmation) ⇒ mêmes empreintes : le rejeu
+    // est la carte d'origine, pas une réédition.
+    expect(payload.decisionCard.inputHash).toBe(postPayload.decisionCard.inputHash);
+    // Un GET ne réécrit rien.
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('un POST qui rend `ready` ne pose jamais le marqueur `rejoue`', async () => {
+    const post = await confirmerT0();
+    expect('rejoue' in (await post.json())).toBe(false);
+  });
+
+  it('ne rejoue pas un dossier dont le socle a bougé : la proposition reprend la main', async () => {
+    await confirmerT0();
+    const create = prisma.assessmentEpisode.upsert.mock.calls[0][0].create;
+    // La fenêtre persistée ne correspond plus à la proposition recalculée —
+    // l'empreinte du blob, elle, reste valide : c'est bien le SOCLE qui rejette.
+    const altere = {
+      ...(create.payload as Record<string, unknown>),
+      window: { ...(create.payload as { window: object }).window, toleranceDays: 99 },
+    };
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: altere, payloadHash: canonicalSha256(altere),
+    });
+    const get = await GET(getRequest('idPatient=PAT_TEST&milestone=T0'));
+    expect((await get.json()).status).toBe('proposal_required');
+  });
+
+  it('ne rejoue pas un payload qui ne se recoupe pas avec son empreinte (intégrité)', async () => {
+    await confirmerT0();
+    const create = prisma.assessmentEpisode.upsert.mock.calls[0][0].create;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: { ...(create.payload as Record<string, unknown>), confirmedAt: '2027-01-01T00:00:00.000Z' },
+      payloadHash: create.payloadHash,
+    });
+    const get = await GET(getRequest('idPatient=PAT_TEST&milestone=T0'));
+    expect((await get.json()).status).toBe('proposal_required');
+  });
+
+  it('la lecture datée (`asOf`) ne rejoue jamais : le passé se recompose, il ne se sanctionne pas', async () => {
+    await confirmerT0();
+    prisma.assessmentEpisode.findUnique.mockClear();
+    const res = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-01T00:00:00.000Z'));
+    expect(res.status).toBe(200);
+    expect((await res.json()).status).toBe('proposal_required');
+    expect(prisma.assessmentEpisode.findUnique).not.toHaveBeenCalled();
   });
 });

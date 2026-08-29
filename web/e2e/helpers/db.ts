@@ -751,6 +751,15 @@ export async function provisionnerDossierBiologie(idPatient: string): Promise<vo
  *   3. la passation fabriquée, reconnue à son préfixe.
  */
 export async function nettoyerDossierBiologie(idPatient: string): Promise<void> {
+  // L'épisode que la confirmation du spec a PERSISTÉ (`D-118`). Avant cette
+  // décision le POST cockpit n'écrivait rien et il n'y avait rien à ramasser ;
+  // depuis, une ligne oubliée ici ferait rejouer la carte au projet suivant —
+  // et le bouton « Confirmer l'épisode T0 » que le spec attend n'apparaîtrait
+  // jamais. Supprimé AVANT les passations : l'épisode cite des réponses, ce
+  // qui s'appuie sur une passation part avant elle.
+  await prisma.assessmentEpisode.deleteMany({
+    where: { idPatient, id: `runtime-episode-${idPatient}-T0` },
+  });
   await prisma.correspondanceMedecin.deleteMany({
     where: { idPatient, medecinLibelle: MEDECIN_BIO_E2E },
   });

@@ -34,29 +34,36 @@ test.describe.configure({ mode: 'serial' });
 /**
  * LE GESTE QUI OUVRE TOUT — et que le cadrage avait manqué.
  *
- * Le panneau de proposition n'est monté que sur un runtime `ready`, et le
- * `ready` naît de la confirmation d'un épisode T0 : un POST déclenché par ce
- * bouton, pas une ligne en base. Sans ce clic, le client ne DEMANDE jamais la
- * proposition — la route peut répondre `ok`, l'écran reste vide.
+ * Le panneau de proposition n'est monté que sur un runtime `ready`. Depuis
+ * `D-118`, ce `ready` a DEUX origines légitimes, et ce helper accepte les
+ * deux :
  *
- * IL SE REFAIT À CHAQUE CHARGEMENT DE PAGE. `runtime` est un état React
- * (`ClinicalRuntimeSection`) : rien ne le restaure au montage, le GET du
- * cockpit ne rend qu'une proposition. Un test qui compte sur la confirmation
- * du test précédent ne trouve donc pas le panneau — c'est ce qu'a coûté la
- * ronde du 2026-08-21.
+ *  - la CONFIRMATION — le bouton, cliqué ici, sur la première traversée du
+ *    dossier : le POST persiste alors l'épisode ;
+ *  - le REJEU — au chargement suivant, le GET rejoue l'épisode persisté et le
+ *    bandeau « Épisode T0 confirmé » s'affiche sans redemander le geste.
+ *    C'est le comportement que `D-118` installe : un test qui exigerait le
+ *    bouton à chaque page exigerait le défaut que la décision vient de fermer.
  *
- * L'ATTENTE EST EXPLICITE, jamais un `isVisible()` conditionnel : celui-ci
- * répond sur l'instant, et à cet instant le cockpit n'a pas fini son
- * aller-retour — il rend `false` sur un bouton qui arrive une seconde plus
- * tard, et le clic ne part pas.
+ * L'ATTENTE RESTE EXPLICITE, jamais un `isVisible()` conditionnel sur
+ * l'instant : on attend que L'UN des deux états soit rendu — le cockpit a pu
+ * ne pas finir son aller-retour —, puis on ne clique que si c'est le bouton.
  *
- * Le bouton doit être ACTIF : désactivé, il dit que la fixture ne satisfait
- * pas les préconditions dures (rideau cotable, anamnèse consignée, synthèse
- * validée postérieure au rideau), et la checklist affichée nomme laquelle.
+ * Le bouton, quand c'est lui, doit être ACTIF : désactivé, il dit que la
+ * fixture ne satisfait pas les préconditions dures (rideau cotable, anamnèse
+ * consignée, synthèse validée postérieure au rideau), et la checklist
+ * affichée nomme laquelle.
  */
 async function confirmerEpisodeT0(page: Page): Promise<void> {
   const confirmerT0 = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
-  await expect(confirmerT0).toBeVisible();
+  // LE SIGNAL DU REJEU EST LE RAIL, PAS LE BANDEAU. Sur un épisode rejoué, la
+  // fiche n'ouvre plus la phase Décision — elle n'est plus « exigible » — et le
+  // bandeau « Épisode T0 confirmé », filtré par phase affichée, peut être monté
+  // hors écran. L'onglet du rail, lui, est visible quelle que soit la phase, et
+  // son libellé « renseignée » dérive de la base (trajectoire) depuis `D-118`.
+  const railRenseigne = page.getByRole('tab', { name: 'Décision 21 j renseignée' });
+  await expect(confirmerT0.or(railRenseigne).first()).toBeVisible();
+  if ((await railRenseigne.count()) > 0) return;
   await expect(
     confirmerT0,
     'le bouton de confirmation T0 est désactivé : une précondition dure manque '
@@ -204,8 +211,10 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
   }) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
-    // Le T0 se reconfirme : la confirmation du test précédent vivait dans
-    // l'état du composant, et ce chargement-ci repart d'une page neuve.
+    // Depuis `D-118`, la confirmation du test 1 a PERSISTÉ l'épisode : ce
+    // chargement-ci le rejoue — le helper le constate au rail et ne reclique
+    // rien. La fiche ouvre alors d'elle-même la phase Actions ; le clic
+    // d'onglet ci-dessous reste correct dans les deux états.
     await confirmerEpisodeT0(page);
 
     await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();

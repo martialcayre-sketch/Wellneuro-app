@@ -118,8 +118,9 @@ describe('POST /api/praticien/protocoles', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
-  // PRÉCONDITIONS T0 (D-052). C'est ICI que la base est gardée : le POST du
-  // cockpit n'écrit rien, son refus n'est qu'un pré-refus d'ergonomie.
+  // PRÉCONDITIONS T0 (D-052). La base est gardée ici POUR CE QUI ARRIVE DU
+  // NAVIGATEUR — le cockpit, troisième point de persistance depuis D-118,
+  // construit sa trace côté serveur et porte ses propres gardes.
   it('refuse la persistance d’un T0 sans premier rideau, sans rien écrire (422)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);

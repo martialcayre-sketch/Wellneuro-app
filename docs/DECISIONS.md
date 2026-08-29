@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-118 — L'épisode confirmé au cockpit se persiste à la confirmation : un acte posé ne redevient pas invisible
+
+- Date : 2026-08-28
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-08-28)
+- Domaine : chaîne C1 — persistance de l'épisode d'évaluation
+- Porte sur : `D-054` (dont elle déplace un arbitrage sans en abroger les deux
+  points de persistance), `D-052` (préconditions T0), `D-113`/`D-114` (identité
+  de cycle), `G-TRUST-04` (journalisation des accès)
+- Origine : retour d'usage du premier dossier réel servi de bout en bout
+  (2026-08-28) — le praticien confirme `T0` au matin, recharge la page, et le
+  rail affiche « Décision : en attente », « Actions : à ouvrir », comme si
+  l'acte n'avait pas eu lieu.
+
+**Ce qui bloquait.** L'arbitrage `D-054` faisait voyager la persistance de
+l'épisode avec le protocole : le POST cockpit confirmait **en mémoire** et
+n'écrivait rien — ses commentaires le disaient à quatre endroits. Tant que le
+protocole n'était pas enregistré, l'acte clinique « j'ai confirmé cet épisode »
+ne survivait pas à la session d'écran. Un écran qui affiche « en attente » sur
+un geste déjà posé ment par omission ; et le praticien à qui l'écran ment
+recommence son geste — au mieux une re-lecture, au pire une re-saisie.
+
+**Ce que la décision ne change pas.** Le doublon de `T0` était déjà impossible :
+l'identité d'épisode est déterministe (même dossier + même jalon ⇒ même
+identifiant), et l'index partiel unique de `D-114` verrouille en base qu'un
+dossier ne porte qu'une ancre par nom. La décision ne crée pas le blocage — elle
+rend l'état **visible et durable**.
+
+**La décision.** Le POST cockpit persiste l'épisode **à la confirmation**, sous
+les mêmes gardes que le point de persistance du protocole : recevabilité
+d'ancre, préconditions de persistance, résolution d'identité de cycle. Le GET
+expose l'état persisté ; le rail des phases le lit — « Décision : renseignée »
+survit au rechargement. Les deux points de persistance du protocole
+**demeurent** (`D-054`, arbitrage 5 : un fail-closed écrit dans une seule route
+est un fail-closed qu'on peut oublier de corriger dans l'autre) — leur upsert
+idempotent trouve désormais la ligne déjà posée et ne réécrit rien.
+
+**Le non-journal du POST change de justification, pas de comportement.** Il
+reposait sur « ce POST n'écrit rien » — motif qui meurt avec la décision. Le
+POST reste non journalisé, mais au titre de la dispense d'écriture de `GD-1`,
+la même que les deux points de persistance du protocole : une écriture laisse
+déjà sa propre trace datée et attribuée.
+
+**L'état neuf « confirmé sans protocole » est sain partout.** Les neuf lecteurs
+d'`assessment_episodes` traitent une ligne comme un marqueur de jalon confirmé
+(`milestone` + `confirmedAt`), jamais comme une promesse de protocole — le
+pré-vol lit les protocoles dans une requête distincte. C'est aussi la sémantique
+clinique : l'épisode **est** l'acte de confirmation, le protocole est ce qu'on
+en fait.
+
+**Aucune modification clinique** au sens de `DC-17`/`DC-18` : aucun seuil, dose
+ni borne ; aucune règle ajoutée, retirée ni modifiée. C'est le **moment de
+persistance** d'un acte déjà défini qui change, et sa visibilité.
+
 ### D-117 — Une quatrième règle de priorité : l'axe douleur, sans préjuger de l'adressage
 
 - Date : 2026-08-28

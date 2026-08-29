@@ -484,7 +484,12 @@ export function ClinicalRuntimeSection({
   // par un rechargement de proposition (revue LOT-07, Mo4) : la relecture de
   // trajectoire après confirmation ne remet pas le praticien devant un
   // panneau de confirmation.
-  const decisionAffichee = runtime?.status === 'ready';
+  //
+  // SAUF SI ELLE EST REJOUÉE (`D-118`) : une carte servie par le GET depuis un
+  // épisode persisté n'est pas le geste que Mo4 protège. Le jalon dû peut
+  // avoir avancé pendant que la page était fermée — épingler l'écran sur un
+  // `T0` rejoué masquerait un `J21` devenu dû.
+  const decisionAffichee = runtime?.status === 'ready' && !runtime.rejoue;
   useEffect(() => {
     if (fixture || statutTrajectoire !== 'chargee') return;
     const du = resoudreJalonDu(trajectoire, new Date());
@@ -564,13 +569,15 @@ export function ClinicalRuntimeSection({
   /**
    * DEMANDE L'ASSEMBLAGE DES PROPOSITIONS D'OBJECTIF (Alliance 6.0-B, LOT-03).
    *
-   * POURQUOI ICI, ET NULLE PART AILLEURS. La carte de décision n'est persistée
-   * dans aucune table : le `GET /cockpit` ne la rend jamais, et le `POST` qui
-   * la produit n'écrit rien. Elle n'existe donc qu'ICI, dans la réponse qu'on
-   * vient de recevoir, entre cette confirmation et le prochain rechargement de
-   * page. Le panneau objectif, lui, est autonome et ne voit jamais le runtime
-   * clinique — il ne peut pas aller la chercher, et lui faire confirmer un
-   * épisode pour l'obtenir lui ferait poser un acte qui appartient au praticien.
+   * POURQUOI ICI, ET NULLE PART AILLEURS. L'assemblage suit le GESTE, pas la
+   * carte : depuis `D-118`, le `GET /cockpit` sait REJOUER une carte depuis
+   * l'épisode persisté, mais un rejeu n'est pas une confirmation — assembler à
+   * chaque relecture ferait d'un affichage un acte. La carte n'est toujours
+   * persistée nulle part ; ses candidats n'existent, pour ce panneau, que dans
+   * la réponse de la confirmation qu'on vient de recevoir. Le panneau objectif,
+   * lui, est autonome et ne voit jamais le runtime clinique — il ne peut pas
+   * aller la chercher, et lui faire confirmer un épisode pour l'obtenir lui
+   * ferait poser un acte qui appartient au praticien.
    *
    * ELLE NE FAIT PAS ÉCHOUER LA CONFIRMATION. L'épisode est confirmé, la carte
    * est affichée : c'est le résultat que le praticien attendait. Une
@@ -681,11 +688,17 @@ export function ClinicalRuntimeSection({
     ? decisionCard?.priorityCandidates.find(candidat => candidat.candidateId === idCandidatVise) ?? null
     : null;
   const needIdsPrioriteSelectionnee = candidatVise?.provenance.needIds ?? NEED_IDS_VIDE;
+  // « Un épisode a-t-il été confirmé ? » ne dépend plus du seul écran
+  // (`D-118`) : un cycle présent dans la trajectoire vient d'une ligne
+  // d'`assessment_episodes`, donc d'une confirmation persistée — l'état
+  // survit au rechargement de page même quand l'écran affiche la proposition
+  // d'un AUTRE jalon (le `J21` dû d'un `T0` confirmé). Booléen value-stable.
+  const episodeConfirmeEnBase = (trajectoire?.cycles.length ?? 0) > 0;
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
       erreur: error,
-      episodeConfirme: readyDecisionCardId !== null,
+      episodeConfirme: readyDecisionCardId !== null || episodeConfirmeEnBase,
       nombreVersions,
       suiviRenseigne,
       trajectoireErreur,
@@ -699,6 +712,7 @@ export function ClinicalRuntimeSection({
     loading,
     error,
     readyDecisionCardId,
+    episodeConfirmeEnBase,
     nombreVersions,
     suiviRenseigne,
     trajectoireErreur,

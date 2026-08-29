@@ -8,6 +8,7 @@ import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lect
 import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
+import { canonicalJson, canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import { construireChaineC1, type PlainteDominante } from '@/lib/clinical-engine/chaineC1';
 import {
   adaptRuntimeInputs,
@@ -21,11 +22,18 @@ import {
   type PreconditionsT0,
 } from '@/lib/clinical-engine/preconditionsT0';
 import { preconditionsT0PourPatient } from '@/lib/clinical-engine/preconditionsT0Prisma';
-import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import {
+  ancreCourante,
+  lireAncresPersistees,
+  refusAncreNonRecevable,
+  type AncrePersistee,
+} from '@/lib/protocol/ancresPersistees';
 import { ancreRecevable, estAncreDeCycle } from '@/lib/protocol/cycles';
+import { resolveCycleId, toEpisodeCreateInput } from '@/lib/protocol/versioning';
 import type {
   ClinicalReview,
   ClinicalSnapshot,
+  ConfirmedAssessmentEpisode,
   DecisionCard,
   PreconditionOverride,
   ProposedAssessmentEpisode,
@@ -132,6 +140,18 @@ export type CockpitRuntimeApiResponse =
        * changerait.
        */
       canalPlainte: string;
+      /**
+       * `true` quand ce `ready` est le REJEU d'un épisode persisté (`D-118`),
+       * servi par le GET — jamais posé par le POST, dont le `ready` sanctionne
+       * une confirmation fraîche.
+       *
+       * L'écran s'en sert pour une seule chose : un rejeu ne VERROUILLE pas le
+       * jalon affiché. Une carte fraîchement confirmée ne doit pas être écrasée
+       * par une resynchronisation de trajectoire ; une carte rejouée, si — le
+       * jalon dû peut avoir avancé pendant que la page était fermée, et épingler
+       * l'écran sur un `T0` rejoué masquerait un `J21` devenu dû.
+       */
+      rejoue?: true;
     }
   | {
       status: 'unavailable';
@@ -214,16 +234,126 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOf
 // est résolue par `proposeRuntimeEpisode`. En lecture datée (`asOf`), seules
 // les ancres confirmées à cette date comptent — un épisode postérieur ne doit
 // pas fuir dans une lecture du passé.
+function ancreCycleDepuis(
+  ancres: readonly AncrePersistee[],
+  milestone: JalonMomentum,
+): AncreCycleCourant | null {
+  if (estAncreDeCycle(milestone)) return null;
+  const ancre = ancreCourante([...ancres]);
+  // Le NOM autant que la date : il entre dans l'identifiant de l'épisode, que
+  // deux cycles partageraient sinon (`identifiantEpisode`, `runtimeFromPrisma`).
+  return ancre ? { ancre: ancre.milestone, confirmedAt: ancre.confirmedAt.toISOString() } : null;
+}
+
 async function ancreCycleCourant(
   idPatient: string,
   milestone: JalonMomentum,
   asOf: string | null,
 ): Promise<AncreCycleCourant | null> {
   if (estAncreDeCycle(milestone)) return null;
-  const ancre = ancreCourante(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null));
-  // Le NOM autant que la date : il entre dans l'identifiant de l'épisode, que
-  // deux cycles partageraient sinon (`identifiantEpisode`, `runtimeFromPrisma`).
-  return ancre ? { ancre: ancre.milestone, confirmedAt: ancre.confirmedAt.toISOString() } : null;
+  return ancreCycleDepuis(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null), milestone);
+}
+
+/**
+ * L'épisode persisté est-il REJOUABLE sur la proposition courante (`D-118`) ?
+ *
+ * Deux conditions, et chacune protège une propriété distincte :
+ *
+ * 1. L'INTÉGRITÉ — le blob relu se re-hache à son `payloadHash`. Un payload qui
+ *    ne se recoupe pas ne se rejoue pas : on journalise et on sert la
+ *    proposition, jamais une chaîne calculée sur un épisode altéré.
+ * 2. LE SOCLE — les champs de PROPOSITION de l'épisode persisté (identifiant,
+ *    jalon, fenêtre, candidats) sont canoniquement identiques à la proposition
+ *    recalculée à l'instant. C'est ce qui garantit que le `proposalHash`
+ *    courant est celui de la confirmation, donc que les identifiants
+ *    d'enveloppe (`runtime-decision-…`) — par lesquels versions, diffusion et
+ *    check-ins sont retrouvés — sont EXACTEMENT ceux de la carte d'origine.
+ *    Un dossier qui a bougé (nouvelle passation, fenêtre déplacée) fait
+ *    diverger le socle : on retombe sur `proposal_required`, le flux « les
+ *    réponses ont changé » d'aujourd'hui.
+ */
+function episodeRejouable(
+  persiste: { payload: unknown; payloadHash: string },
+  proposal: ProposedAssessmentEpisode,
+): ConfirmedAssessmentEpisode | null {
+  const episode = persiste.payload as ConfirmedAssessmentEpisode;
+  try {
+    if (canonicalSha256(episode) !== persiste.payloadHash) {
+      console.error('[cockpit GET] payload d’épisode incohérent avec son empreinte', episode.assessmentEpisodeId);
+      return null;
+    }
+    const {
+      status: _statut,
+      includedResponseIds: _incluses,
+      sourceDateRange: _plage,
+      confirmedAt: _confirme,
+      preconditionOverrides: _contournements,
+      ...soclePersiste
+    } = episode;
+    const {
+      status: _statutCourant,
+      includedResponseIds: _inclusesCourantes,
+      sourceDateRange: _plageCourante,
+      ...socleCourant
+    } = proposal;
+    if (canonicalJson(soclePersiste) !== canonicalJson(socleCourant)) return null;
+  } catch {
+    // Sérialisation canonique impossible : un épisode qu'on ne sait pas hacher
+    // est un épisode qu'on ne rejoue pas.
+    return null;
+  }
+  return episode;
+}
+
+/**
+ * La réponse `ready`, assemblée d'un seul geste pour la confirmation (POST) et
+ * le rejeu (GET, `D-118`) : deux assemblages divergeraient un jour sur ce que
+ * « prêt » veut dire.
+ *
+ * LES CLAIMS CITÉS PAR LA PROPOSITION DE BILAN, et eux seuls pour l'instant
+ * ([[D-103]]) : c'est la seule sortie de dossier qui épingle aujourd'hui un
+ * claim visé par un conflit déclaré (`WN-CL-0312-018`, la répétition
+ * annuelle). LA DÉRIVATION NE PART QUE SI LE REGISTRE EST SIGNÉ — verrou
+ * fermé, aucune requête de plus.
+ *
+ * BEST-EFFORT, ET C'EST LE POINT (relevé en revue) : sans ce `catch`, un
+ * catalogue mal formé ou un timeout base ferait tomber la confirmation — un
+ * service secondaire éteindrait le chemin principal. Liste vide ⇒ aucun
+ * conflit, le repli déclaré du module.
+ */
+async function reponsePrete(
+  idPatient: string,
+  chaine: {
+    snapshot: ClinicalSnapshot;
+    review: ClinicalReview;
+    decisionCard: DecisionCard;
+    plainteDominante: PlainteDominante | null;
+  },
+  options?: { rejoue: true },
+): Promise<NextResponse<CockpitRuntimeApiResponse>> {
+  let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
+  if (conflitsSourcesActifs()) {
+    try {
+      claimsCites = await claimsCitesParLaPropositionBilan(idPatient, new Date().toISOString());
+    } catch (bioErr) {
+      console.error(
+        '[cockpit] claims cités indisponibles, conflits de sources non évalués',
+        bioErr instanceof Error ? bioErr.message : String(bioErr),
+      );
+    }
+  }
+  const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
+  return NextResponse.json({
+    status: 'ready',
+    snapshot: chaine.snapshot,
+    review: chaine.review,
+    decisionCard: chaine.decisionCard,
+    contradictions,
+    plainteDominante: chaine.plainteDominante,
+    perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
+    canalPlainte: CANAL_PLAINTE,
+    ...(options?.rejoue ? { rejoue: true as const } : {}),
+  });
 }
 
 // GET /api/praticien/cockpit?idPatient=PAT001&milestone=T0
@@ -245,11 +375,10 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     // Journalisé ICI et non dans loadRuntimeInputs : le helper sert aussi le
     // POST, et GD-1 ne porte que sur les lectures de dossier nommé par un GET.
-    // (Une rédaction antérieure invoquait la dispense « une écriture laisse
-    // déjà sa trace » : elle ne s'applique pas, ce POST n'écrit rien — voir le
-    // commentaire de la confirmation plus bas.) AVANT le refus `asOf` : le
-    // dossier a été résolu et ses données lues — même principe que booklet et
-    // documents avec leur 422.
+    // Le POST, lui, écrit depuis `D-118` et relève donc de la dispense
+    // d'écriture de GD-1 — voir le commentaire de la confirmation plus bas.
+    // AVANT le refus `asOf` : le dossier a été résolu et ses données lues —
+    // même principe que booklet et documents avec leur 422.
     await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
     if ('refus' in inputs) {
       // Une date hors repères n'est jamais ramenée au présent en silence : la
@@ -261,6 +390,59 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
       milestoneRaw,
       await ancreCycleCourant(idPatient, milestoneRaw, inputs.asOf),
     );
+
+    // ── LE REJEU D'UN ÉPISODE PERSISTÉ (`D-118`) ────────────────────────────
+    //
+    // Un épisode confirmé est un acte posé : depuis `D-118`, le POST le
+    // persiste, et ce GET le REJOUE — la carte de décision est « recalculable »
+    // par contrat (`schema.prisma`), et le chemin de construction est celui,
+    // unique, que `verifierChaineC1` emprunte déjà (`D-054`, arbitrage 6).
+    // Avant cela, l'écran affichait « en attente » sur un geste déjà fait, et
+    // le praticien recommençait au mieux une relecture, au pire une saisie.
+    //
+    // JAMAIS EN LECTURE DATÉE : le mode `asOf` recompose un passé, il ne
+    // sanctionne rien — et la proposition y reste le seul état servi.
+    //
+    // Rejouable ⇒ mêmes identifiants d'enveloppe que la carte d'origine (le
+    // socle garantit le `proposalHash`), avec l'horodatage DE LA CONFIRMATION :
+    // versions, diffusion et check-ins retrouvent leur fil. Non rejouable —
+    // dossier qui a bougé, payload illisible — ⇒ `proposal_required`, le flux
+    // d'aujourd'hui, sans rien inventer.
+    if (!inputs.asOf) {
+      const persiste = await prisma.assessmentEpisode.findUnique({
+        where: { id: proposal.assessmentEpisodeId },
+        select: { payload: true, payloadHash: true },
+      });
+      const episode = persiste ? episodeRejouable(persiste, proposal) : null;
+      if (episode) {
+        try {
+          const idSuffix = `${milestoneRaw}-${proposalHash.slice(0, 16)}`;
+          const chaine = construireChaineC1({
+            snapshotId: `runtime-snapshot-${idSuffix}`,
+            reviewId: `runtime-review-${idSuffix}`,
+            decisionCardId: `runtime-decision-${idSuffix}`,
+            patientId: idPatient,
+            horodatage: episode.confirmedAt as string,
+            episode,
+            patientContext: inputs.patientContext,
+            responses: inputs.responses,
+            selectionPraticien: null,
+            signauxAlerte: inputs.signauxAlerte,
+            etatPopulation: inputs.etatPopulation,
+            effetsIndesirables: await lireEffetsIndesirables(idPatient),
+          });
+          return await reponsePrete(idPatient, chaine, { rejoue: true });
+        } catch (erreurRejeu) {
+          // Le dossier ne porte plus ce que l'épisode cite (passation retirée,
+          // contexte incohérent) : le rejeu ne force rien, la proposition
+          // reprend la main — et la confirmation re-signera un état lisible.
+          console.error(
+            '[cockpit GET] rejeu impossible, proposition servie',
+            erreurRejeu instanceof Error ? erreurRejeu.message : String(erreurRejeu),
+          );
+        }
+      }
+    }
     // Après `loadRuntimeInputs`, donc après la vérification d'appartenance.
     // LES ANCRES SEULEMENT : les jalons de suivi (J21, J42, J90) ne sont pas
     // gouvernés par cette porte — le lot pose les préconditions du point
@@ -287,7 +469,10 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
   }
 }
 
-// POST /api/praticien/cockpit — confirme en mémoire puis calcule la chaîne C1.
+// POST /api/praticien/cockpit — confirme l'épisode, calcule la chaîne C1, et
+// PERSISTE l'épisode confirmé (`D-118`) : un acte posé ne redevient pas
+// invisible au rechargement de page. La carte, elle, reste recalculable et
+// n'est toujours persistée nulle part.
 export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) return unavailable('unauthenticated', 'Non authentifié.', 401);
@@ -321,10 +506,14 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     if ('refus' in inputs) return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
+    // UNE SEULE LECTURE DES ANCRES, réutilisée par l'identité de l'épisode, la
+    // recevabilité et la résolution de cycle (patron `protocoles/route.ts`) :
+    // deux lectures pourraient rendre deux verdicts.
+    const ancres = await lireAncresPersistees(idPatient);
     const current = proposeRuntimeEpisode(
       inputs,
       payload.milestone,
-      await ancreCycleCourant(idPatient, payload.milestone, null),
+      ancreCycleDepuis(ancres, payload.milestone),
     );
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);
@@ -333,11 +522,11 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     const now = new Date().toISOString();
 
     // PRÉCONDITIONS T0 ([[D-052]]), recalculées DEPUIS LA BASE et jamais lues
-    // dans le corps de requête. Ce POST n'écrit rien : le refus posé ici est un
-    // pré-refus d'ergonomie, qui évite au praticien de composer un protocole
-    // sur un épisode que les points de persistance rejetteront. La porte qui
-    // garde vraiment la base est dans `protocoles` et `protocoles/versions`,
-    // où le même calcul est rejoué.
+    // dans le corps de requête. Depuis `D-118` ce POST est un point de
+    // persistance : le refus posé ici n'est plus un pré-refus d'ergonomie, il
+    // garde la base au même titre que ceux de `protocoles` et
+    // `protocoles/versions` — qui rejouent le même calcul sur ce qui leur
+    // arrive du navigateur.
     const preconditionOverrides: PreconditionOverride[] = [];
     if (estAncreDeCycle(payload.milestone)) {
       // L'ANCRE DEMANDÉE EST-ELLE CELLE QUI PEUT ÊTRE POSÉE ? `isRuntimeMilestone`
@@ -348,7 +537,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       // composer un protocole que la persistance rejettera.
       if (!ancreRecevable(
         payload.milestone,
-        (await lireAncresPersistees(idPatient)).map((ancre) => ancre.milestone),
+        ancres.map((ancre) => ancre.milestone),
       )) {
         return unavailable(
           'invalid_payload',
@@ -425,11 +614,12 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // 404 bien avant cette ligne. Le service ne pose ni authentification, ni
     // contrôle d'appartenance, ni journal : c'est l'appelant qui les porte.
     //
-    // Ce POST ne journalise pas, et cette seconde lecture n'y change rien :
-    // c'est le même praticien, le même dossier et la même requête déjà
-    // autorisée, dans un POST qui n'écrit rien (`confirmAssessmentEpisode` est
-    // en mémoire). Le dire plutôt que d'invoquer la dispense d'écriture de
-    // GD-1, qui ne s'applique justement pas ici.
+    // Ce POST ÉCRIT (`D-118`) et ne journalise toujours pas — mais plus pour la
+    // même raison. La rédaction antérieure disait « un POST qui n'écrit rien » ;
+    // ce motif est mort avec la persistance de l'épisode. Ce qui s'applique
+    // désormais est la dispense d'écriture de GD-1, la même que les deux points
+    // de persistance du protocole : une écriture laisse déjà sa propre trace
+    // datée et attribuée.
     //
     // PÉRIMÈTRE DIFFÉRENT DE CELUI DE `review`, et c'est nommé plutôt que
     // supposé : `snapshot`/`review` sont calculés sur les réponses INCLUSES
@@ -439,41 +629,40 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
     // passations datées, ce qui rend l'écart lisible à l'écran ; réduire le
     // moteur au périmètre de l'épisode est un arbitrage clinique qui n'a pas
     // été rendu ([[D-050]]).
-    // LES CLAIMS CITÉS PAR LA PROPOSITION DE BILAN, et eux seuls pour l'instant
-    // ([[D-103]]) : c'est la seule sortie de dossier qui épingle aujourd'hui un
-    // claim visé par un conflit déclaré (`WN-CL-0312-018`, la répétition
-    // annuelle). L'orientation en épingle vingt-quatre autres, dont aucun n'est
-    // partie à un conflit ; les brancher aurait coûté une dérivation de plus
-    // pour zéro constat.
+
+    // ── LA PERSISTANCE DE L'ÉPISODE (`D-118`) ───────────────────────────────
     //
-    // LA DÉRIVATION NE PART QUE SI LE REGISTRE EST SIGNÉ. Verrou fermé — l'état
-    // livré — la route ne fait aucune requête de plus qu'avant, et le coût de
-    // ce lot sur le cockpit est nul jusqu'au geste de signature.
+    // APRÈS la chaîne C1 : un épisode dont la chaîne ne se construit pas ne
+    // s'écrit pas. AVANT la réponse : un épisode montré « confirmé » à l'écran
+    // sans ligne en base serait exactement le défaut que `D-118` ferme.
     //
-    // BEST-EFFORT, ET C'EST LE POINT (relevé en revue). Cette dérivation émet
-    // cinq requêtes Prisma pour produire une VIGILANCE INFORMATIVE. Sans ce
-    // `catch`, un catalogue mal formé ou un timeout base ferait tomber la
-    // CONFIRMATION D'ÉPISODE T0 en 500 : un service secondaire éteindrait le
-    // chemin principal. La route de proposition traite déjà cette dérivation
-    // comme jetable. Liste vide ⇒ aucun conflit, ce qui est le repli déclaré du
-    // module — pas un silence inventé pour l'occasion.
-    let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
-    if (conflitsSourcesActifs()) {
-      try {
-        claimsCites = await claimsCitesParLaPropositionBilan(idPatient, now);
-      } catch (bioErr) {
-        console.error(
-          '[cockpit POST] claims cités indisponibles, conflits de sources non évalués',
-          bioErr instanceof Error ? bioErr.message : String(bioErr),
-        );
-      }
+    // LES MÊMES GARDES QUE LES POINTS DE PERSISTANCE DU PROTOCOLE, à trois
+    // exceptions près, chacune nommée :
+    //  - `refusAncreNonRecevable` : reprise telle quelle — c'est elle qui
+    //    porte le refus « ancre déjà posée sous un autre épisode » (`N1.1`) que
+    //    le pré-refus d'ergonomie `ancreRecevable` plus haut ne couvre pas ;
+    //  - `refusPreconditionsPersistance` : SANS OBJET ici — elle vérifie des
+    //    contournements qui ont transité par le navigateur, or ce POST les
+    //    CONSTRUIT côté serveur quelques lignes plus haut (auteur et horodatage
+    //    posés par la session) ;
+    //  - `refusChaineC1` : structurellement satisfait — cette route EST
+    //    l'émetteur de la chaîne qu'il recalculerait.
+    //
+    // `update: {}` : même idempotence que les deux autres points — une ligne
+    // déjà posée ne se réécrit pas, une re-confirmation ne duplique rien.
+    const refusAncre = refusAncreNonRecevable(episode, ancres);
+    if (refusAncre) {
+      return unavailable('preconditions_non_remplies', refusAncre, 422);
     }
-    const contradictions = await contradictionsPourPatient(idPatient, claimsCites);
-    return NextResponse.json({
-      status: 'ready', snapshot, review, decisionCard, contradictions, plainteDominante,
-      perimetreSigne: tablePrioritesSignee() ? PRIORITY_RULES_METADATA.shaPerimetre : null,
-      canalPlainte: CANAL_PLAINTE,
+    await prisma.assessmentEpisode.upsert({
+      where: { id: episode.assessmentEpisodeId },
+      create: toEpisodeCreateInput(episode, {
+        cycleId: resolveCycleId({ episode, ancresCandidates: [...ancres] }),
+      }),
+      update: {},
     });
+
+    return await reponsePrete(idPatient, { snapshot, review, decisionCard, plainteDominante });
   } catch (error) {
     if (error instanceof TypeError) {
       return unavailable('invalid_payload', error.message, 400);
