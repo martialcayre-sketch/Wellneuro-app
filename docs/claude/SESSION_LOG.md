@@ -4981,3 +4981,22 @@ périmètre `D-093`, puis les trois vérifications de provenance.
 
 Ouvert — `WN_OBJECTIF_PROPOSE` est posé et les sept tables portent zéro ligne ;
 `D-093` se conclut avant le 2026-10-04, sinon le périmètre se referme.
+
+## 2026-08-28 — D-118 : un acte posé ne redevient pas invisible
+
+Décisions — Retour d'usage du premier dossier réel : T0 confirmé le matin,
+page rechargée, rail « en attente ». `D-118` fait du POST cockpit le
+**troisième point de persistance** (mêmes gardes, `N1.1` comprise) ; le GET
+**rejoue** l'épisode persisté — mêmes empreintes, mêmes identifiants, prouvé
+par banc — et le rail dérive « confirmé » de la base. Un rejeu ne verrouille
+pas le jalon dû et n'assemble rien.
+
+Écarté — journaliser le POST : la dispense d'écriture de `GD-1` s'applique dès
+qu'il écrit ; et `refusPreconditionsPersistance` au cockpit — il construit ses
+contournements côté serveur.
+
+Résultat — PR #817 mergée, CI vert. T2 a mordu deux fois juste : le spec
+biologie exigeait le défaut que la décision ferme.
+
+Prochaine action — reconfirmer T0 sur le dossier une dernière fois (la ligne
+s'écrira), enregistrer le protocole, diffuser.
