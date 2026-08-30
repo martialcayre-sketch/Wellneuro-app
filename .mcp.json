@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "betterstack": {
+      "type": "http",
+      "url": "https://mcp.betterstack.com"
+    }
+  }
+}
