@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build Vercel — construit l'application. N'ÉCRIT PLUS EN BASE DE PRODUCTION.
+# Build de production (Scalingo, CI) — construit l'application.
+# N'ÉCRIT PLUS EN BASE DE PRODUCTION.
 #
 # Les migrations Prisma et l'import de nomenclature NABM (CB-02a) s'appliquent
 # désormais HORS du build, via le workflow GitHub Actions `release-db` (proposé

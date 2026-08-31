@@ -47,9 +47,9 @@ cd web && npm run type-check
 
 ## Etape 7 - Deploiement en production (automatique depuis 2026-07-16)
 
-- Merge d'une PR sur `main` (CI verte) => build et deploiement Vercel
+- Merge d'une PR sur `main` (CI verte) => build et deploiement Scalingo
   automatiques (integration Git).
-- Le build de production execute `web/scripts/vercel-build.sh` : il genere le
+- Le build de production execute `web/scripts/build.sh` : il genere le
   client Prisma et construit Next. Il N'ECRIT PLUS EN BASE.
 - Les migrations Prisma committees (relues en PR) et l'import NABM s'appliquent
   HORS du build, via le workflow GitHub Actions `release-db` (gate par
