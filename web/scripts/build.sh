@@ -21,5 +21,14 @@
 # dépend — est décrit dans le runbook ; le code tolère une base « en avance ».
 set -euo pipefail
 
+# L'environnement Scalingo porte NODE_OPTIONS=--max-old-space-size=384 : un
+# plafond de tas dimensionné pour les conteneurs web de 512 MiB (incident du
+# 2026-08-31). Le build, lui, tourne dans un conteneur de build aux limites
+# bien plus larges, et `next build` dépasse largement 384 MB — les
+# déploiements du 2026-08-31 23:29 ont tous échoué en OOM sur ce plafond
+# hérité. Le build revient donc au réglage mémoire par défaut, éprouvé ;
+# le plafond ne vaut que pour le runtime.
+unset NODE_OPTIONS
+
 npm run prisma:generate
 next build
