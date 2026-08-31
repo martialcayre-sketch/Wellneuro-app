@@ -288,6 +288,105 @@ const DONNEES_CONFIDENTIALITE_V2: VersionDocumentTrust = {
   hash: '4cee6be1972d6ca32325bee76d6f00b6520b185d0db76606ee143c74563866ad',
 };
 
+/**
+ * v3 — publiée le 2026-09-01 : l'annexe HDS est signée (2026-08-30, `D-121`)
+ * et les anciens hébergeurs sont décommissionnés, données effacées avec
+ * preuve consignée (`D-080`/`D-120`, registre RGPD rubrique 12). La période
+ * transitoire « moins protégée » décrite par la v2 est close ; la liste des
+ * prestataires ne porte plus que les sous-traitants réels.
+ */
+const DONNEES_CONFIDENTIALITE_V3: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v3',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    {
+      titre: 'Qui est responsable ?',
+      paragraphes: [
+        'Votre praticien Wellneuro est responsable du traitement de vos données dans le cadre de votre accompagnement. Vous pouvez le contacter pour toute question à l’adresse indiquée dans « Exercer mes droits ».',
+      ],
+    },
+    {
+      titre: 'Quelles données sont recueillies ?',
+      paragraphes: [
+        'Les informations que vous transmettez : votre fiche de renseignements, vos réponses aux questionnaires, les éléments de votre situation que vous décrivez, vos signalements et vos choix.',
+        'Nous recueillons uniquement les informations nécessaires à votre accompagnement et à son suivi.',
+      ],
+    },
+    {
+      titre: 'Pourquoi ?',
+      paragraphes: [
+        'Pour préparer et suivre votre accompagnement en neuronutrition : comprendre votre situation, préparer les consultations, suivre l’évolution, et vous remettre des documents validés par votre praticien.',
+        'Cet accompagnement relève du bien-être et du suivi ; il n’établit pas de diagnostic médical.',
+      ],
+    },
+    {
+      titre: 'Ce qui est obligatoire et ce qui est facultatif',
+      paragraphes: [
+        'Répondre aux questionnaires proposés est nécessaire au travail de préparation de votre praticien, mais chaque envoi reste un geste explicite de votre part : rien n’est transmis tant que vous n’avez pas choisi « Transmettre ».',
+        'Les choix listés dans « Mes choix et autorisations » sont réellement facultatifs : les refuser ne bloque jamais votre accompagnement.',
+      ],
+    },
+    {
+      titre: 'Qui peut accéder à vos données ?',
+      paragraphes: [
+        'Votre praticien, dans le cadre de votre accompagnement. Personne d’autre n’y accède au sein de Wellneuro.',
+        'Aucun partage avec un tiers (par exemple votre médecin traitant) n’a lieu sans un choix explicite de votre part.',
+      ],
+    },
+    {
+      titre: 'Quels prestataires techniques interviennent ?',
+      paragraphes: [
+        'Des prestataires hébergent et font fonctionner l’application. Ils n’utilisent pas vos données pour leur propre compte :',
+      ],
+      points: [
+        'Scalingo — hébergement de l’application et de la base de données (hébergeur certifié « données de santé » HDS, France)',
+        'Anthropic — assistance d’intelligence artificielle pour la préparation des synthèses (voir « L’intelligence artificielle dans Wellneuro »)',
+        'Un fournisseur d’envoi d’emails — acheminement des emails Wellneuro',
+        'Google — connexion sécurisée du praticien uniquement (jamais des patients)',
+      ],
+    },
+    {
+      titre: 'Où sont hébergées vos données',
+      paragraphes: [
+        'Depuis le 22 août 2026, l’application et la base de données sont hébergées chez Scalingo, en France, chez un hébergeur certifié « données de santé » (HDS) au sens de la réglementation française.',
+        'Le contrat spécifique à l’hébergement de données de santé (l’« annexe HDS ») a été signé le 30 août 2026. La période transitoire décrite dans la version précédente de ce document — pendant laquelle, sur ce point précis, la situation était moins protégée — est close.',
+        'Avant cette migration, vos données étaient hébergées chez Vercel et Supabase, dans l’Union européenne — ni l’un ni l’autre n’est un hébergeur certifié HDS. Ce constat, daté du 21 juillet 2026, et l’écart assumé qui en a découlé restent consignés. Le 1ᵉʳ septembre 2026, ces anciens hébergeurs ont été définitivement fermés et vos données y ont été effacées ; la preuve de cet effacement est consignée au registre tenu par votre praticien.',
+        'Vos droits — accès, rectification, effacement, limitation, opposition — s’exercent sans changement, comme indiqué dans « Exercer mes droits ».',
+      ],
+    },
+    {
+      titre: 'Combien de temps sont-elles conservées ?',
+      paragraphes: [
+        'La politique détaillée de durées de conservation est en cours de formalisation. Vos données sont conservées le temps de votre accompagnement ; vous pouvez à tout moment demander des précisions ou l’exercice de vos droits.',
+      ],
+    },
+    {
+      titre: 'Exercer mes droits',
+      paragraphes: [
+        'Vous pouvez demander l’accès à vos données, leur rectification, leur effacement, la limitation ou l’opposition à leur traitement, ainsi que le retrait d’une autorisation.',
+        'Le plus simple : la carte « Signaler un problème » de cet espace, choix « Je souhaite exercer un droit ». Vous pouvez aussi écrire à martialcayre@wellneuro.fr.',
+        'Certains droits dépendent du cadre applicable au traitement concerné : votre demande recevra une réponse expliquant ce qui est possible et pourquoi.',
+      ],
+    },
+    {
+      titre: 'Signaler un incident de confidentialité',
+      paragraphes: [
+        'Connexion que vous ne reconnaissez pas, document qui ne vous concerne pas, appareil perdu : signalez-le depuis la carte « Signaler un problème ». Chaque signalement est enregistré et examiné.',
+      ],
+    },
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le contrat d’hébergement de données de santé (annexe HDS) a été signé le 30 août 2026 — la période transitoire décrite par la version précédente est close — et les anciens hébergeurs (Vercel, Supabase) ont été définitivement fermés le 1ᵉʳ septembre 2026, vos données y étant effacées avec preuve consignée.',
+  publieLe: '2026-09-01',
+  requiresAcknowledgement: false,
+  hash: 'f8c239c31a45cc90779b7d91837bfff96cbd0542eb50030813d8f3a6d3b5fe59',
+};
+
 const USAGE_IA_V1: VersionDocumentTrust = {
   key: 'usage_ia',
   type: 'ai_transparency',
@@ -411,6 +510,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   LIMITES_SECURITE_V1,
   DONNEES_CONFIDENTIALITE_V1,
   DONNEES_CONFIDENTIALITE_V2,
+  DONNEES_CONFIDENTIALITE_V3,
   USAGE_IA_V1,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
