@@ -81,15 +81,15 @@ audit campagnes, scoring, type-check, Vitest, lint) avant toute base, puis
 migrations, seed, build et Playwright.
 
 Gates de sûreté alignés sur la chaîne de déploiement (le workflow GitHub Actions
-`release-db` applique `migrate deploy` en production, hors du build Vercel) :
+`release-db` applique `migrate deploy` en production, hors du build applicatif) :
 
 - **dérive schéma↔migrations** : `prisma migrate diff` compare la base
   éphémère (construite uniquement par `migrate deploy`) à `schema.prisma` et
   échoue si le schéma a évolué sans migration committée ;
 - **certification scoring** : les 63 questionnaires restent conformes à leurs
   fixtures certifiées ;
-- **e2e sur build de production** (`next start`) : le même artefact que Vercel
-  déploie, sans compilation à la demande pendant les tests.
+- **e2e sur build de production** (`next start`) : le même artefact que la
+  production déploie, sans compilation à la demande pendant les tests.
 
 Usage (depuis `web/`, de n'importe quel worktree) :
 
@@ -165,33 +165,6 @@ Options:
 ```bash
 bash scripts/repo-hygiene.sh audit-only --root /path/to/repo --out .repo-hygiene
 bash scripts/repo-hygiene.sh report-pr --write .repo-hygiene/pr-template.md
-```
-
-## Supabase + Prisma
-
-### `setup_supabase_prisma.sh` — Setup complet Docker + migration 5432
-
-Automatise la preparation d'un environnement Supabase/Prisma pour migration distante:
-
-1. installe Docker (Debian/Ubuntu) si absent,
-2. verifie l'acces au daemon Docker,
-3. verifie l'authentification Supabase CLI,
-4. lie le projet Supabase,
-5. verifie l'acces reseau `db.<project_ref>.supabase.co:5432`,
-6. derive une URL directe de migration (port 5432) depuis `DATABASE_URL`,
-7. lance `prisma migrate deploy`,
-8. lance optionnellement `supabase db pull`.
-
-Usage recommande:
-
-```bash
-bash scripts/setup_supabase_prisma.sh --project-ref <project_ref>
-```
-
-Mode rapide (si Docker est deja installe):
-
-```bash
-bash scripts/setup_supabase_prisma.sh --project-ref <project_ref> --skip-docker-install
 ```
 
 ## Files

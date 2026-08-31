@@ -20,7 +20,7 @@ Seuls patients fictifs nommes autorises:
 
 ## 3) Regle secrets et configuration
 
-Toute configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement (`web/.env.local` en dev, variables Vercel en production).
+Toute configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement (`web/.env.local` en dev, variables Scalingo en production).
 
 Jamais en dur dans le code.
 

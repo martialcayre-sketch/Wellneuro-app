@@ -17,7 +17,8 @@ commitée est une fuite, une migration lancée a déjà écrit.
    Seuls patients fictifs autorisés : Sophie Nicola, Jennifer Martin,
    Michel Dogné.
 3. **Aucune migration** Prisma ou SQL, aucune modification de `schema.prisma`,
-   aucune écriture Supabase sans demande explicite et confirmation distincte.
+   aucune écriture en base de production sans demande explicite et confirmation
+   distincte.
 4. **Aucune modification de la logique clinique ni des seuils de scoring** sans
    demande explicite, source, et fragment dans `changelog.d/`.
 5. **Changement minimal** : pas de refactor, de renommage ni de réorganisation

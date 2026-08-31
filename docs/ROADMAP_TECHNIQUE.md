@@ -153,22 +153,21 @@ Renvois différenciés — ne pas confondre les deux documents :
 
 ## 8. Déploiement et CI/CD
 
-Vercel, région `fra1`, build piloté par `web/scripts/vercel-build.sh` +
-`vercel.json`. En preview/local, aucune migration n'est appliquée.
+Scalingo, région `osc-fr1` (hébergement HDS), build piloté par
+`web/scripts/build.sh`. En local, aucune migration n'est appliquée.
 
 **État actuel — un seul mécanisme d'écriture** :
 
-- `web/scripts/vercel-build.sh` n'écrit plus en base : plus de préflight SQL, plus
-  de `prisma migrate deploy` inline, plus d'imports armés par variables Vercel
-  (CIQUAL C5, NABM CB-02a). Le script se réduit à
+- `web/scripts/build.sh` (ex-`vercel-build.sh`) n'écrit plus en base : plus de
+  préflight SQL, plus de `prisma migrate deploy` inline, plus d'imports armés
+  par variables d'hébergeur (CIQUAL C5, NABM CB-02a). Le script se réduit à
   `prisma generate && next build`.
 - Le workflow GitHub Actions `release-db.yml` est le **chemin unique**
-  d'application (déclenché à la main, gaté par l'environnement protégé
-  `release-db` — second gate humain) : préflight en lecture seule,
-  `prisma migrate deploy`, et l'import NABM CB-02a en mode `import-cb` (advisors
-  Supabase + confirmation SHA-256 + contrat rejoué dans la transaction). Le « lot
-  de bascule » qui a allégé `vercel-build.sh` a eu lieu ; les deux mécanismes ne
-  coexistent plus.
+  d'application (gaté par l'environnement protégé `release-db` — second gate
+  humain) : préflight en lecture seule puis `prisma migrate deploy`. Le mode
+  `import-cb` (import NABM, advisors) visait la base Supabase décommissionnée :
+  le workflow le refuse désormais explicitement. Le « lot de bascule » qui a
+  allégé le build a eu lieu ; les deux mécanismes ne coexistent plus.
 
 Renvois : détail du runbook de release DB → `docs/DEPLOIEMENT_RELEASE_DB.md` ;
 exploitation générale → `docs/RUNBOOK.md` ; coordination multi-machines/sessions

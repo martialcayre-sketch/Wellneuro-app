@@ -13,7 +13,7 @@ handoffs:
 
 N’implémente qu’un lot validé. Commence par rappeler le périmètre. Préserve les règles de `.github/copilot-instructions.md`.
 
-Ne lance aucune migration, écriture Supabase ou déploiement.
+Ne lance aucune migration, écriture en base de production ou déploiement.
 
 Après modification, exécute le palier qui correspond au périmètre touché, et
 nomme-le : **T1** (`cd web && npm run check`, ~15 s) après chaque édition ;
