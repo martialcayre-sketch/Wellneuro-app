@@ -4,6 +4,95 @@
 
 ## Décisions actives
 
+### D-121 — La réserve de D-089 est levée : l'annexe HDS est signée, G-TRUST-04 est définitivement clos
+
+- Date : 2026-08-31
+- Statut : accepté (**constat du responsable du traitement**, rendu en session
+  le 2026-08-31)
+- Domaine : sécurité, hébergement, gate `G-TRUST-04`
+- Porte sur : `D-089` (levée sous réserve unique), `D-080` (échéance du
+  constat), `D-078` (fenêtre de moindre couverture)
+
+**Le constat.** L'annexe HDS Scalingo a été **signée le 2026-08-30** —
+déclaration du responsable, rendue en session le 2026-08-31 ; la signature
+s'est faite par canal hors dépôt (demandée le 2026-08-12, relancée le
+2026-08-19). Le constat intervient dans le délai que `D-089` fixait : au plus
+tard le 2026-09-01.
+
+**Ce qui en découle.** La réserve unique de `D-089` est levée ; `G-TRUST-04`
+est **définitivement clos** — le 2026-10-21 ne redevient pas point de contrôle
+à ce titre. La retenue que la réserve imposait tombe : une affirmation
+contractuelle d'hébergement HDS face au patient devient possible ; sa
+publication reste un geste TRUST distinct, à jouer avec la mise à jour du
+contenu patient qui suivra l'exécution de `D-080`/`D-120`. La fenêtre de
+moindre couverture de `D-078` se ferme par cette signature.
+
+**Reste dû, hors du gate** : l'archivage du document signé (et du DPA) au
+dossier — rubrique 6 du `DOSSIER_RGPD.md`, où la ligne « signature et
+archivage non faits » ne vaut plus que pour l'archivage.
+
+**Traçabilité** : `GATES_GO_NO_GO.md` ligne 11 (statut mis à jour), note de
+suivi sous `D-089`, `DOSSIER_RGPD.md` rubriques 12 et 14.
+
+### D-120 — Le décommissionnement D-080 s'exécute : validation expresse, anticipation d'un jour actée, drapeau CB régularisé
+
+- Date : 2026-08-31
+- Statut : accepté (**validation expresse du responsable du traitement**,
+  rendue en session le 2026-08-31) ; **exécution en cours** — la preuve
+  d'effacement se consigne en rubrique 12 du `DOSSIER_RGPD.md` au moment des
+  suppressions
+- Domaine : hébergement, décommissionnement Vercel/Supabase, drapeaux
+  d'exploitation
+- Porte sur : `D-080` (décision-cadre), `D-081` (`WN_CB_RESULTS_ENABLED`),
+  `D-089`/`D-121` (G-TRUST-04)
+
+**Ce qui est décidé, en trois points.**
+
+1. **Le décommissionnement complet de Vercel et Supabase est validé
+   expressément**, avec une **anticipation d'un jour actée ici** : l'exécution
+   s'engage le soir du 2026-08-31, la lettre de `D-080` fixant le terme au
+   2026-09-01. La production Scalingo est constatée saine le jour même
+   (DNS exclusivement Scalingo, `HDS=true`, service HTTP sain) ; la fenêtre de
+   stabilité n'a connu qu'un incident de performance le 2026-08-31 au soir
+   (saturation mémoire des conteneurs, résolu le soir même par
+   redimensionnement S→M et borne de tas V8), sans atteinte aux données ni
+   interruption du service rendu.
+
+2. **L'ordre d'exécution protège le point de non-retour.** Gestes réversibles
+   d'abord : détacher `app.wellneuro.fr` du projet Vercel et déconnecter
+   l'intégration GitHub — un déploiement « production » fantôme du ~2026-08-28
+   a été constaté, le lien GitHub→Vercel buildait encore à chaque push.
+   Suppressions ensuite, projet Vercel puis projet Supabase gelé (dernier
+   rollback des données pré-cutover, backups inclus), **chacune avec capture
+   de preuve au moment du geste** (écran de confirmation daté, e-mail,
+   confirmation d'effacement des backups demandée au support). Les
+   suppressions restent des gestes du responsable au dashboard, conformément
+   à `D-080` ; aucune copie de secours hors HDS avant suppression.
+
+3. **Un écart de gouvernance découvert à l'inventaire est régularisé** :
+   `WN_CB_RESULTS_ENABLED` était posé en production sans décision ni fragment,
+   en contradiction avec `D-081` (« reste absent tant qu'aucun code ne le
+   lit »). Retiré le 2026-08-31 à 23:19 (`env-unset`, geste inerte : zéro
+   appelant dans le code). `D-081` demeure la doctrine : la pose accompagnera
+   le code de la Phase C comme geste d'exploitation daté.
+
+**Ce que « activer les fonctions dépendantes de HDS » recouvre — et ne
+recouvre pas.** L'inventaire du dépôt n'a trouvé qu'une seule fonction jamais
+conditionnée à HDS : la biologie réelle (Phase C, `WN_CB_RESULTS_ENABLED`,
+zéro appelant en production). Aucun geste de code n'accompagne donc cette
+validation ; la biologie réelle reste hors produit **par choix de roadmap**
+(`D-089`), et son ouverture exigera une demande explicite distincte (nouveau
+modèle de données, migration Prisma). `SAFETY_EI_METADATA` (`DC-42`) est une
+signature clinique sans aucun lien avec HDS — hors périmètre de cette
+décision.
+
+**Reste dû pour clore** : preuves d'effacement capturées et consignées
+(rubrique 12), mise à jour du contenu patient trust (`registre.ts`,
+`gouvernance.ts` — palier T2), PR de nettoyage du code mort (scripts
+`supabase:*`, `vercel.json`, bootstrap `vercel env pull`…), mises à jour
+d'état courant (`PROJET_CONTEXTE.md`, `CLAUDE.md`,
+`.claude/rules/db-prisma.md`, retrait du serveur MCP Supabase).
+
 ### D-119 — La contradiction s'explicite là où le geste se pose : constats dans la checklist, recoupement factuel près de la carte
 
 - Date : 2026-08-29
@@ -2774,6 +2863,9 @@ fonctionnel. La biologie réelle reste hors produit par choix de roadmap
 statut ; `CHECKLIST_ACTIVATION_G_TRUST_04.md` reste le dossier de preuve ;
 la dette `D-TRUST-03` est refermée sur ce périmètre (sa part multi-praticien
 vit dans la condition de réouverture de l'exigence 3, `D-085`).
+
+**Suivi (2026-08-31, `D-121`)** : annexe HDS signée le 2026-08-30 — la
+réserve est levée dans le délai fixé, le gate est définitivement clos.
 
 ### D-088 — Une famille d'instruments du cabinet qui pilote sans classer : la garde de grille complète est relâchée pour elle seule, contre une garde anti-seuil plus stricte
 

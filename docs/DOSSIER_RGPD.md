@@ -530,6 +530,18 @@ comme filet de retour. **Le décommissionnement est reprogrammé par `D-080`**
 `D-078` l'élargit sans en changer le terme ; depuis le 2026-08-22, il n'est
 plus une intention mais un état de fait, daté à la minute.
 
+**Annexe HDS signée le 2026-08-30** — déclaration du responsable, consignée
+le 2026-08-31 (`D-121`) : **la fenêtre de moindre couverture de `D-078` est
+fermée**, et l'écart ci-dessus cesse d'être un écart. Le même soir, le
+responsable a **validé expressément l'exécution du décommissionnement**
+(`D-120`, anticipation d'un jour actée sur le terme de `D-080`) : gestes
+réversibles d'abord (domaine détaché du projet Vercel, intégration GitHub
+déconnectée), suppressions ensuite — projet Vercel puis projet Supabase gelé.
+**La preuve d'effacement écrite de chaque suppression se consignera ici, au
+moment du geste** (écran de confirmation daté, e-mail du fournisseur,
+confirmation d'effacement des backups) ; tant que cette entrée n'existe pas,
+les suppressions ne sont pas faites.
+
 ## 13. Analyse d'impact (AIPD)
 
 **TROU.** Aucune AIPD n'existe. Elle est listée comme réserve à lever dans
@@ -547,7 +559,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) : le décommissionnement est programmé au 2026-09-01, annexe signée ou non ; l'annexe reste due **avant la revue du 2026-10-21** (sortie « par le haut ») | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21** | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |
