@@ -116,6 +116,25 @@ describe('authOptions — un seul provider, et il est praticien', () => {
     expect(corpsSignIn).toBeDefined();
     expect(corpsSignIn).toMatch(/\breturn profilPraticienAutorise\(/);
   });
+
+  it('le budget réseau du provider reste épinglé à 8 s', () => {
+    // Incident du 2026-08-31 : le défaut openid-client (3 500 ms) a fermé le
+    // login praticien (SIGNIN_OAUTH_ERROR ×3) pendant une dégradation des
+    // conteneurs. Sans cette assertion, un revert ou une réécriture du
+    // provider restaurerait le défaut sans qu'aucune suite ne le signale.
+    // 8 s par appel (inactivité socket), ~24 s au pire sur le callback —
+    // sous la fenêtre de 30 s du routeur Scalingo.
+    // Le factory GoogleProvider() range la config utilisateur sous `options` ;
+    // la fusion sur le provider ne se fait qu'au runtime (parseProviders).
+    // On regarde les deux niveaux pour survivre à un changement de forme.
+    type AvecBudget = {
+      httpOptions?: { timeout?: number };
+      options?: { httpOptions?: { timeout?: number } };
+    };
+    const provider = (authOptions.providers as Array<AvecBudget>)[0];
+    const timeout = provider?.options?.httpOptions?.timeout ?? provider?.httpOptions?.timeout;
+    expect(timeout).toBe(8_000);
+  });
 });
 
 describe('propriété — aucun profil hors domaine n’est autorisé', () => {

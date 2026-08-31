@@ -54,6 +54,15 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // 8 s au lieu du défaut openid-client (3 500 ms), qui transformait tout
+      // ralentissement en échec sec du login (incident du 2026-08-31,
+      // SIGNIN_OAUTH_ERROR ×3). C'est un budget d'inactivité socket PAR APPEL,
+      // pas une échéance totale, et next-auth le pose en défaut GLOBAL du
+      // process (custom.setHttpOptionsDefaults) au premier login. Le callback
+      // enchaîne jusqu'à trois appels (découverte OIDC, jeton, JWKS) : ~24 s
+      // au pire — délibérément sous la fenêtre de 30 s du routeur Scalingo,
+      // au-delà de laquelle le 504 remplacerait la redirection /login?error.
+      httpOptions: { timeout: 8_000 },
       authorization: {
         params: {
           // Forcer le choix du compte à chaque connexion
