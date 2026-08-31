@@ -7,10 +7,11 @@ sous-système vivent dans `.claude/rules/` (chargées par chemin, nativement).
 ## Stack
 
 - Next.js 14 (App Router) — code dans `web/`
-- Prisma + PostgreSQL (Supabase)
+- Prisma + PostgreSQL (add-on Scalingo, HDS)
 - NextAuth — OAuth Google restreint au domaine `@wellneuro.fr`
 - Déploiement Scalingo `osc-fr1` (`app.wellneuro.fr`, cutover 2026-08-22) —
-  Vercel/Supabase en décommissionnement (`D-080`, 2026-09-01)
+  Vercel/Supabase **décommissionnés le 2026-09-01** (`D-080`, exécution
+  `D-120`, preuve au registre RGPD)
 
 Application de consultation en neuronutrition **en production**. Google Apps
 Script et Google Sheets sont décommissionnés (`archive/gas-legacy/`, référence
@@ -21,8 +22,8 @@ technologique sans demande explicite. État courant :
 ## Règles non négociables
 
 - **Jamais de secret en dur** (clés API, tokens, mots de passe) : variables
-  d'environnement uniquement (`web/.env.local` en dev, Vercel en prod), jamais
-  committées.
+  d'environnement uniquement (`web/.env.local` en dev, Scalingo en prod),
+  jamais committées.
 - **UI en français** : tout texte visible par l'utilisateur.
 - **Changements minimaux** : pas de refactoring, renommage ou réorganisation
   non demandés.
@@ -36,8 +37,8 @@ technologique sans demande explicite. État courant :
   depuis un conteneur `scalingo run -d`, écriture uniquement par migration
   relue puis release-db approuvée (`D-087`, qui supplante `D-086` §1-2 — le
   one-off applique APRÈS approbation humaine, le `postdeploy` ne migre plus
-  sous drapeau)**. Le MCP Supabase `execute_sql` lit la base gelée
-  (rollback), plus la production. Détail : `.claude/rules/db-prisma.md`.
+  sous drapeau)**. La base Supabase gelée et son MCP n'existent plus
+  (`D-120`). Détail : `.claude/rules/db-prisma.md`.
 
 ## Données patients
 
@@ -47,9 +48,9 @@ Nicola, Jennifer Martin, Michel Dogné**. Ce sont des identités de fixture, pas
 la liste des dossiers qui existent.
 
 **Les dossiers de test sont réels et vivent en production** (arbitrage
-praticien du 2026-08-18, `D-075`). Ils se **lisent par leur identifiant** via
-l'outil MCP `execute_sql` — c'est la façon normale de vérifier un comportement
-sur un vrai dossier. Deux interdits demeurent, et ils ne sont pas de forme :
+praticien du 2026-08-18, `D-075`). Ils se **lisent par leur identifiant**
+depuis un conteneur `scalingo run -d` — c'est la façon normale de vérifier un
+comportement sur un vrai dossier. Deux interdits demeurent, et ils ne sont pas de forme :
 
 - **jamais désignés par leur nom ou leur e-mail dans le dépôt** — l'historique
   Git, les logs CI et les builds Vercel ne s'effacent pas ;

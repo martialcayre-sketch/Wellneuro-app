@@ -562,6 +562,19 @@ l'archivage de tout e-mail de confirmation reçu, et la **partie Vercel** du
 décommissionnement (détacher le domaine, déconnecter GitHub, supprimer le
 projet — preuve à consigner ici au moment du geste).
 
+**Suppression du projet Vercel — faite le 2026-09-01, constatée à
+00:39 CEST.** Gestes du responsable au dashboard, dans l'ordre prévu par
+`D-120` : domaine `app.wellneuro.fr` détaché, intégration GitHub déconnectée
+(fin des déploiements fantômes constatés depuis le ~2026-08-28), puis
+suppression du projet `wellneuro-app`
+(`prj_9sg8HgiCvxQfZiULTnmXIaU5c12k`). **Vérification indépendante au même
+moment** : l'équipe Vercel du compte ne contient plus aucun projet.
+Transcript archivé hors dépôt par le responsable, avec celui de Supabase.
+**Le décommissionnement `D-080` est intégralement exécuté.** Il ne reste, au
+titre de la preuve, que la confirmation écrite d'effacement des backups
+automatiques Supabase (demande au support à envoyer, réponse à archiver et à
+référencer ici).
+
 ## 13. Analyse d'impact (AIPD)
 
 **TROU.** Aucune AIPD n'existe. Elle est listée comme réserve à lever dans

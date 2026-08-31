@@ -96,8 +96,11 @@ d'état courant (`PROJET_CONTEXTE.md`, `CLAUDE.md`,
 **Suivi (2026-09-01)** : projet Supabase supprimé par le responsable (CLI,
 entre 00:12 et 00:18 CEST, au terme exact de `D-080` — l'anticipation actée
 au point 1 n'a finalement pas servi) ; preuve consignée en rubrique 12.
-Restent la confirmation d'effacement des backups par le support Supabase et
-les gestes Vercel.
+Gestes Vercel exécutés dans la foulée par le responsable au dashboard
+(domaine détaché, GitHub déconnecté, projet supprimé — zéro projet constaté
+par canal indépendant à 00:39 CEST). **Le décommissionnement est
+intégralement exécuté** ; reste la confirmation écrite d'effacement des
+backups Supabase par le support, à archiver.
 
 ### D-119 — La contradiction s'explicite là où le geste se pose : constats dans la checklist, recoupement factuel près de la carte
 
