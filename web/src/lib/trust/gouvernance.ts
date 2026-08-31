@@ -12,7 +12,7 @@ export const GOUVERNANCE_TRUST = Object.freeze({
   /** Sous-traitants réellement impliqués (audit LOT-00). */
   sousTraitants: Object.freeze([
     Object.freeze({ nom: 'Scalingo', role: 'hébergement de l’application et de la base de données (HDS, France) — depuis le 2026-08-22' }),
-    Object.freeze({ nom: 'Vercel et Supabase', role: 'anciens hébergeurs, conservés temporairement comme solution de retour, puis effacement avec preuve' }),
+    Object.freeze({ nom: 'Vercel et Supabase', role: 'anciens hébergeurs — définitivement fermés le 2026-09-01, données effacées avec preuve consignée au registre' }),
     Object.freeze({ nom: 'Anthropic', role: 'assistance d’intelligence artificielle pour la préparation des synthèses' }),
     Object.freeze({ nom: 'Fournisseur d’envoi d’emails', role: 'acheminement des emails Wellneuro' }),
     Object.freeze({ nom: 'Google', role: 'connexion sécurisée du praticien uniquement (jamais des patients)' }),
