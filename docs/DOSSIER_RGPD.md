@@ -530,6 +530,51 @@ comme filet de retour. **Le décommissionnement est reprogrammé par `D-080`**
 `D-078` l'élargit sans en changer le terme ; depuis le 2026-08-22, il n'est
 plus une intention mais un état de fait, daté à la minute.
 
+**Annexe HDS signée le 2026-08-30** — déclaration du responsable, consignée
+le 2026-08-31 (`D-121`) : **la fenêtre de moindre couverture de `D-078` est
+fermée**, et l'écart ci-dessus cesse d'être un écart. Le même soir, le
+responsable a **validé expressément l'exécution du décommissionnement**
+(`D-120`, anticipation d'un jour actée sur le terme de `D-080`) : gestes
+réversibles d'abord (domaine détaché du projet Vercel, intégration GitHub
+déconnectée), suppressions ensuite — projet Vercel puis projet Supabase gelé.
+**La preuve d'effacement écrite de chaque suppression se consignera ici, au
+moment du geste** (écran de confirmation daté, e-mail du fournisseur,
+confirmation d'effacement des backups) ; tant que cette entrée n'existe pas,
+les suppressions ne sont pas faites.
+
+**Suppression du projet Supabase — faite le 2026-09-01, entre 00:12 et
+00:18 CEST.** Geste du responsable, par le CLI Supabase depuis son propre
+terminal (après authentification `supabase login`), conformément à `D-080`
+(« geste du responsable ») et `D-120`. Préflight santé rejoué le jour même —
+le terme exact de `D-080` — à 00:14 CEST : production Scalingo
+`running`/`HDS=true`, deux conteneurs web, DNS exclusivement Scalingo,
+service HTTP sain. **Preuve écrite** : transcript avant/après de la session
+d'assistance, archivé hors dépôt par le responsable — à 00:12, le connecteur
+listait l'**unique** projet de l'organisation `dshxeplvjhhbkxnllwdd`
+(`Wellneuro-app`, ref `ohnbmypinamzzfhqymlt`, eu-central-1,
+`ACTIVE_HEALTHY`) ; à 00:18-00:20, **deux canaux indépendants** (CLI
+authentifié sur la même organisation, et connecteur de session) renvoient
+zéro projet et la ref ne résout plus. Aucune capture d'écran ni e-mail
+capturés au moment du geste : le transcript biface tient lieu de preuve
+écrite principale. **Restent dus** : la confirmation écrite par le support
+Supabase de l'effacement des backups automatiques (demande à envoyer),
+l'archivage de tout e-mail de confirmation reçu, et la **partie Vercel** du
+décommissionnement (détacher le domaine, déconnecter GitHub, supprimer le
+projet — preuve à consigner ici au moment du geste).
+
+**Suppression du projet Vercel — faite le 2026-09-01, constatée à
+00:39 CEST.** Gestes du responsable au dashboard, dans l'ordre prévu par
+`D-120` : domaine `app.wellneuro.fr` détaché, intégration GitHub déconnectée
+(fin des déploiements fantômes constatés depuis le ~2026-08-28), puis
+suppression du projet `wellneuro-app`
+(`prj_9sg8HgiCvxQfZiULTnmXIaU5c12k`). **Vérification indépendante au même
+moment** : l'équipe Vercel du compte ne contient plus aucun projet.
+Transcript archivé hors dépôt par le responsable, avec celui de Supabase.
+**Le décommissionnement `D-080` est intégralement exécuté.** Il ne reste, au
+titre de la preuve, que la confirmation écrite d'effacement des backups
+automatiques Supabase (demande au support à envoyer, réponse à archiver et à
+référencer ici).
+
 ## 13. Analyse d'impact (AIPD)
 
 **TROU.** Aucune AIPD n'existe. Elle est listée comme réserve à lever dans
@@ -547,7 +592,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais **signature et archivage non faits** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19, sans réponse — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) : le décommissionnement est programmé au 2026-09-01, annexe signée ou non ; l'annexe reste due **avant la revue du 2026-10-21** (sortie « par le haut ») | `CHECKLIST_FINALISATION.md` §F |
+| 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21** | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |
 | 6 | Sous-traitants | ~~Fournisseur SMTP réel non identifié~~ — **identifié le 2026-08-22 : Google Workspace** (rubrique 6, TROU 2 — SPF/MX/DKIM du domaine + expéditeur du code) ; **restent dus** : localisation du traitement et couverture DPA | Responsable | 2026-10-21 | ici, rubrique 6 |
 | 6 | Sous-traitants | Sentry non déclaré au patient | Responsable | 2026-10-21 | `gouvernance.ts` ou ici |

@@ -14,12 +14,10 @@ paths:
 `--hds-resource`). Elle se lit depuis un conteneur one-off :
 `scalingo run -d "npx prisma migrate status"` (ou `db execute --file …`),
 sortie relue par `scalingo logs --filter one-off-N` — le mode détaché lève
-l'exigence de TTY. L'outil MCP Supabase `execute_sql` lit la base **gelée au
-cutover** (filet de rollback jusqu'au décommissionnement du 2026-09-01,
-`D-080`) : utile pour l'historique d'avant-bascule, **jamais pour l'état de la
-production** — couplé à un run `release-db` mal pointé, il renverrait un
-miroir cohérent et faux. Le hook `guard-supabase-mcp.mjs` continue de refuser
-toute écriture MCP.
+l'exigence de TTY. La base Supabase gelée au cutover et son outil MCP
+`execute_sql` **n'existent plus** : décommissionnement `D-080` exécuté le
+2026-09-01 (`D-120`, preuve au registre RGPD, rubrique 12). L'unique base est
+la production Scalingo, et elle ne se lit que par conteneur.
 
 **Un nom de migration porte plusieurs lignes dans `_prisma_migrations`.** Un
 échec suivi d'un `migrate resolve --applied` laisse la ligne annulée en place

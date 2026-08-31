@@ -9,7 +9,9 @@ Application de consultation en neuronutrition clinique, à deux portails :
 - **Portail patient permanent** (`/portail/[token]`) : espace patient unifié, accès par token révocable (non prédictible), vérification email une seule fois + cookie signé `wn_portail`, onboarding (consentement, fiche signalétique, anamnèse) puis hub « Mes questionnaires ». **Flux patient principal.**
 - **Flux patient legacy** (`/patient/[idAssignation]`) : **retiré le 2026-08-08** (dette 5). Il n'en reste qu'une redirection 307 vers `/portail/connexion`, pour les liens e-mail déjà partis chez des patients.
 
-Production : `https://app.wellneuro.fr` (Vercel).
+Production : `https://app.wellneuro.fr` (Scalingo `osc-fr1`, app
+`wellneuro`, HDS — cutover le 2026-08-22 ; Vercel/Supabase décommissionnés le
+2026-09-01, `D-080`/`D-120`).
 
 ## Stack technique
 
@@ -17,10 +19,10 @@ Production : `https://app.wellneuro.fr` (Vercel).
 |---|---|
 | Framework web | Next.js 14 (App Router), TypeScript, Tailwind CSS |
 | Auth praticien | NextAuth 4, provider Google, restreint au domaine `@wellneuro.fr` |
-| Base de données | PostgreSQL (Supabase), via Prisma 7 + Driver Adapter (`@prisma/adapter-pg`) |
+| Base de données | PostgreSQL (add-on Scalingo `postgresql-business-512`, HDS), via Prisma 7 + Driver Adapter (`@prisma/adapter-pg`) |
 | IA clinique | Anthropic SDK (`ANTHROPIC_API_KEY`), prompt caching activé — voir `docs/claude/PROMPT_CACHING.md` |
 | Email | Nodemailer / SMTP (`SMTP_URL`) |
-| Hébergement | Vercel (`rootDirectory: web/`, `framework: nextjs`) |
+| Hébergement | Scalingo `osc-fr1` (Procfile `web/Procfile`, 2 conteneurs web M, migrations par `release-db` approuvé — `D-087`) |
 
 ## Arborescence utile
 
