@@ -542,6 +542,26 @@ moment du geste** (écran de confirmation daté, e-mail du fournisseur,
 confirmation d'effacement des backups) ; tant que cette entrée n'existe pas,
 les suppressions ne sont pas faites.
 
+**Suppression du projet Supabase — faite le 2026-09-01, entre 00:12 et
+00:18 CEST.** Geste du responsable, par le CLI Supabase depuis son propre
+terminal (après authentification `supabase login`), conformément à `D-080`
+(« geste du responsable ») et `D-120`. Préflight santé rejoué le jour même —
+le terme exact de `D-080` — à 00:14 CEST : production Scalingo
+`running`/`HDS=true`, deux conteneurs web, DNS exclusivement Scalingo,
+service HTTP sain. **Preuve écrite** : transcript avant/après de la session
+d'assistance, archivé hors dépôt par le responsable — à 00:12, le connecteur
+listait l'**unique** projet de l'organisation `dshxeplvjhhbkxnllwdd`
+(`Wellneuro-app`, ref `ohnbmypinamzzfhqymlt`, eu-central-1,
+`ACTIVE_HEALTHY`) ; à 00:18-00:20, **deux canaux indépendants** (CLI
+authentifié sur la même organisation, et connecteur de session) renvoient
+zéro projet et la ref ne résout plus. Aucune capture d'écran ni e-mail
+capturés au moment du geste : le transcript biface tient lieu de preuve
+écrite principale. **Restent dus** : la confirmation écrite par le support
+Supabase de l'effacement des backups automatiques (demande à envoyer),
+l'archivage de tout e-mail de confirmation reçu, et la **partie Vercel** du
+décommissionnement (détacher le domaine, déconnecter GitHub, supprimer le
+projet — preuve à consigner ici au moment du geste).
+
 ## 13. Analyse d'impact (AIPD)
 
 **TROU.** Aucune AIPD n'existe. Elle est listée comme réserve à lever dans

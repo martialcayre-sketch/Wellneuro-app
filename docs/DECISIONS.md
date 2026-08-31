@@ -93,6 +93,12 @@ décision.
 d'état courant (`PROJET_CONTEXTE.md`, `CLAUDE.md`,
 `.claude/rules/db-prisma.md`, retrait du serveur MCP Supabase).
 
+**Suivi (2026-09-01)** : projet Supabase supprimé par le responsable (CLI,
+entre 00:12 et 00:18 CEST, au terme exact de `D-080` — l'anticipation actée
+au point 1 n'a finalement pas servi) ; preuve consignée en rubrique 12.
+Restent la confirmation d'effacement des backups par le support Supabase et
+les gestes Vercel.
+
 ### D-119 — La contradiction s'explicite là où le geste se pose : constats dans la checklist, recoupement factuel près de la carte
 
 - Date : 2026-08-29
