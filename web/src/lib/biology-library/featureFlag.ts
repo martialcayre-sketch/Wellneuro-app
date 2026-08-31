@@ -19,6 +19,14 @@ export function isCbEnabled(value = process.env.WN_CB_ENABLED): boolean {
   return value === 'true';
 }
 
+const MESSAGE_CB_DESACTIVE =
+  "Le rayon biologie fonctionnelle n'est pas encore ouvert sur cet environnement. Son activation métier se fait via le flag WN_CB_ENABLED.";
+
+/** Message de repli du rayon documentaire, patron C4 (`getC4DisabledMessage`). */
+export function getCbDisabledMessage(): string {
+  return MESSAGE_CB_DESACTIVE;
+}
+
 /**
  * Étage 1 bis — PROPOSITION DE BILAN servie au praticien ([[D-071]] §1).
  *

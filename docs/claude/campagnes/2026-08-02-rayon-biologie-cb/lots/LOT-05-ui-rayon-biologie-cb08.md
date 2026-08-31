@@ -1,8 +1,8 @@
 ---
 id: "LOT-05"
 titre: "ui-rayon-biologie-cb08"
-statut: "à_faire"
-dépend_de: "LOT-02 (CB-05), LOT-03 (CB-06)"
+statut: "terminé"
+dépend_de: "LOT-02 (CB-05), LOT-03 (CB-06) — dépendances constatées caduques au réel (voir Résultats)"
 ---
 
 # LOT-05 (CB-08) — UI : rayon biologie dans la bibliothèque, fiche patient, fil
@@ -58,12 +58,13 @@ cartes de suivi dans le Fil du jour.
 
 ## Étapes
 
-- [ ] Vérifier les hypothèses (patron C4 UI, placeholder actuel).
-- [ ] Implémenter le rayon documentaire (catalogue, fiches analytes).
-- [ ] Implémenter l'encart fiche patient et les cartes du Fil.
-- [ ] Exécuter les validations (T2, captures de revue pour tout nouvel écran).
-- [ ] Relire le diff (UI, français, vocabulaire).
-- [ ] Documenter les résultats.
+- [x] Vérifier les hypothèses (patron C4 UI, placeholder actuel).
+- [x] Implémenter le rayon documentaire (catalogue, fiches analytes).
+- [x] ~~Implémenter l'encart fiche patient et les cartes du Fil~~ — constatés
+      **déjà livrés hors campagne** (voir Résultats), rien à écrire.
+- [x] Exécuter les validations (T1 + T2).
+- [x] Relire le diff (UI, français, vocabulaire).
+- [x] Documenter les résultats.
 
 ## Tests
 
@@ -79,4 +80,31 @@ cartes de suivi dans le Fil du jour.
 
 ## Résultats
 
-À compléter à la clôture.
+**Terminé le 2026-09-01**, sur un périmètre réel plus étroit que le cadrage du
+2026-08-03 — l'écart est un constat, pas une coupe :
+
+- **Livré ici** : le rayon documentaire « Analyses biologiques » dans la
+  Bibliothèque (section flag-gardée `WN_CB_ENABLED`, patron C4) — bilans par
+  niveau, fiches d'analytes en tiroir avec les deux référentiels côte à côte
+  (chaque absence dite), remboursement dérivé par `remboursable.ts` (« non
+  évalué » ≠ « non remboursé », écrit à l'écran), préanalytique, provenance,
+  millésime NABM sans euros. Route `GET /api/praticien/biologie/catalogue`
+  (garde praticien + 404 fail-closed), service
+  `biology-library/catalogue.ts`. Le placeholder `dashboard/biologie` oriente
+  vers le rayon et sa bannière HDS périmée est réécrite (`D-120`/`D-121`).
+- **Constaté déjà livré hors campagne, donc pas réécrit** : l'encart fiche
+  patient (`PropositionBilanPanel` au cockpit, `D-071`) et les cartes du fil
+  (cartes d'arbitrage, `D-070` §2). Les cartes « signée/transmise » du cadrage
+  restent sans objet : la machine à états CB-05 (`BiologyExplorationProposal`)
+  n'a jamais été construite — la proposition se recalcule à la lecture
+  (chaîne `D-068`→`D-073`), et les dépendances déclarées du lot (LOT-02/LOT-03)
+  sont caduques.
+- **Bancs** : garde-fous du drapeau sur la page Bibliothèque, route (401/404
+  fail-closed/500), service (dérivation du remboursement, actes du seul
+  millésime pointé, panels inactifs écartés), écran (deux colonnes, absences
+  dites, badge validation médicale, banc de vocabulaire — aucun terme d'acte
+  médical, aucun score global, aucun euro).
+- **Matrice de consommation** : `catalogue-biologie` sort des dormantes (le
+  verdict `a_brancher` du 2026-08-05 est soldé) ; `rayon:biologie` re-daté,
+  toujours dormant — élargir l'allowlist corpus est une décision praticien.
+- **EstimeMesurePanel** intact (« second temps », étage 2 / CB-09).
