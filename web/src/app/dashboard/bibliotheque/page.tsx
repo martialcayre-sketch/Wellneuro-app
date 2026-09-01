@@ -46,7 +46,7 @@ export default function BibliothequePage() {
           un seul mail par patient, un seul lien portail.
         </p>
       </div>
-      <BibliothequePanel entrees={entrees} />
+      <BibliothequePanel entrees={entrees} rayonBiologieOuvert={rayonBiologieActif} />
 
       <section aria-labelledby="rayon-complements-titre" className="flex flex-col gap-4">
         <div>

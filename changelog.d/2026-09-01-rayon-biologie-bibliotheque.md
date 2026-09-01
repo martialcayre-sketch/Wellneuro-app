@@ -12,8 +12,10 @@
   l'autre), remboursement dérivé de `remboursable.ts` (les quatre états ; « non
   évalué » explicitement distingué de « non remboursé »), préanalytique,
   provenance et complétude, bilans citant l'analyte. Aucun score global, aucun
-  tarif en euros (coefficient seul dans la source), vocabulaire sans terme
-  d'acte médical — un banc d'écran le verrouille.
+  tarif en euros (coefficient seul dans la source) ; un banc d'écran, joué
+  liste et tiroir ouvert, interdit « prescription », « ordonnance » et
+  « diagnostic » — « dosage » n'en fait pas partie, la donnée réelle du
+  catalogue le portant en verbatim de claim (`PANEL_MG_PLASMATIQUE`).
 - **Route `GET /api/praticien/biologie/catalogue`** : praticien seul, patron
   C4 (401 sans session, 404 fail-closed drapeau éteint), lecture seule du
   catalogue — aucune donnée patient ne transite (étage 1 documentaire, verrou
@@ -24,12 +26,15 @@
   rayon devient donc visible au déploiement. Le précédent `D-071` (drapeau
   neuf éteint) visait une surface servie **par dossier** ; un catalogue global
   au cabinet, sans donnée patient, est l'objet même de l'étage 1.
-- **La page `dashboard/biologie` cesse de mentir** : sa bannière annonçait que
-  le stockage de résultats « attend un hébergement HDS », ce qui est faux
-  depuis `D-120`/`D-121` (annexe HDS signée le 2026-08-30, hébergement HDS
-  effectif et exclusif). Elle oriente vers le rayon de la Bibliothèque et ne
-  garde en différé que l'étage 2 (saisie de résultats réels), désormais retenu
-  par une décision de roadmap, plus par l'hébergement.
+- **Les écrans cessent de mentir sur l'état du rayon** : la bannière de
+  `dashboard/biologie` annonçait que le stockage de résultats « attend un
+  hébergement HDS » — faux depuis `D-120`/`D-121` (annexe HDS signée le
+  2026-08-30) ; la page lit désormais le drapeau à la requête et oriente vers
+  le rayon, l'étage 2 restant différé par décision de roadmap. Le sélecteur de
+  rayons de la Bibliothèque (`BibliothequePanel`) cesse de marquer « Analyses
+  biologiques » à venir quand le rayon est rendu sur la même page : la page
+  serveur lui passe l'état du drapeau, la bannière pointe vers la section, et
+  sa phrase HDS périmée disparaît dans les deux états.
 - Matrice de consommation régénérée : `catalogue-biologie` sort des sources
   dormantes (verdict `a_brancher` du 2026-08-05 soldé, décision retirée) ;
   `rayon:biologie` (claims du notebook 08) reste dormant, re-daté au

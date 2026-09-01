@@ -62,7 +62,10 @@ cartes de suivi dans le Fil du jour.
 - [x] Implémenter le rayon documentaire (catalogue, fiches analytes).
 - [x] ~~Implémenter l'encart fiche patient et les cartes du Fil~~ — constatés
       **déjà livrés hors campagne** (voir Résultats), rien à écrire.
-- [x] Exécuter les validations (T1 + T2).
+- [x] Exécuter les validations (T1 + T2 ; ~~captures de revue pour tout nouvel
+      écran~~ — non produites : remplacées par les bancs d'écran et une
+      contre-revue adverse du diff, constat en Résultats ; la vérification à
+      l'œil reste due au premier déploiement).
 - [x] Relire le diff (UI, français, vocabulaire).
 - [x] Documenter les résultats.
 
@@ -102,8 +105,18 @@ cartes de suivi dans le Fil du jour.
 - **Bancs** : garde-fous du drapeau sur la page Bibliothèque, route (401/404
   fail-closed/500), service (dérivation du remboursement, actes du seul
   millésime pointé, panels inactifs écartés), écran (deux colonnes, absences
-  dites, badge validation médicale, banc de vocabulaire — aucun terme d'acte
-  médical, aucun score global, aucun euro).
+  dites, badge validation médicale, banc de vocabulaire joué liste ET tiroir
+  ouvert — jamais « prescription », « ordonnance » ni « diagnostic », aucun
+  score global, aucun euro ; « dosage » n'est PAS interdit d'écran : la donnée
+  réelle le porte en verbatim de claim — `PANEL_MG_PLASMATIQUE` — et la
+  fixture du banc le prouve).
+- **Contre-revue adverse du diff jouée avant la PR** (3 lentilles, réfutation
+  par 2 sceptiques par constat) : 10 constats retenus, 0 réfuté, tous
+  corrigés — dont la puce « Analyses biologiques » de `BibliothequePanel`
+  restée « à venir » avec la phrase HDS fausse sur la page même du rayon, et
+  la carte « Le rayon est ouvert » de `dashboard/biologie` qui ne lisait pas
+  le drapeau. Aucune capture d'écran produite : la vérification à l'œil reste
+  due au premier déploiement.
 - **Matrice de consommation** : `catalogue-biologie` sort des dormantes (le
   verdict `a_brancher` du 2026-08-05 est soldé) ; `rayon:biologie` re-daté,
   toujours dormant — élargir l'allowlist corpus est une décision praticien.

@@ -68,6 +68,18 @@ const CATALOGUE = {
       objectif: 'Explorer une fatigue persistante.',
       items: [{ type: 'analyte', code: 'BIO_FERRITINE', libelle: 'Ferritine' }],
     },
+    {
+      // La donnée RÉELLE du catalogue niveau 1 contient ce verbatim de claim
+      // (PANEL_MG_PLASMATIQUE) : l'écran rend la source telle quelle, et le
+      // banc de vocabulaire ne doit PAS l'interdire — « dosage » cité par un
+      // claim n'est pas un terme d'acte de l'outil.
+      code: 'PANEL_MG_PLASMATIQUE',
+      libelle: 'Magnésium plasmatique',
+      niveau: 'specialise',
+      objectif:
+        'Le dosage plasmatique du magnésium circulant n’est pas recommandé comme dépistage (verbatim du claim source).',
+      items: [],
+    },
   ],
   millesimeNabm: { versionSource: 'V105', nombreEntrees: 987, importeLe: '2026-07-26T00:00:00.000Z' },
 };
@@ -103,10 +115,14 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(screen.getByText(/millésime V105/)).toBeTruthy();
     expect(document.body.textContent).not.toContain('€');
 
-    // Vocabulaire imposé de la campagne CB : jamais de langage d'acte médical
-    // sur cette surface praticien (la garde codée ne couvre que le registre
-    // médecin — l'écran porte donc son propre banc).
-    expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti|dosage/i);
+    // Vocabulaire imposé de la campagne CB : jamais « prescription »,
+    // « ordonnance » ni « diagnostic » sur cette surface praticien (la garde
+    // codée ne couvre que le registre médecin — l'écran porte donc son propre
+    // banc). « dosage » n'en fait PAS partie : la donnée réelle du catalogue
+    // le porte en verbatim de claim (PANEL_MG_PLASMATIQUE, présent dans la
+    // fixture), et une citation de source n'est pas un terme de l'outil.
+    expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+    expect(screen.getByText(/Le dosage plasmatique du magnésium/)).toBeTruthy();
     // Jamais de score global (décision figée C4, reprise par CB-08).
     expect(document.body.textContent).not.toMatch(/score global/i);
   });
@@ -130,6 +146,13 @@ describe('RayonBiologiePanel — consultation documentaire', () => {
     expect(screen.getByText(/WN-CL-0044-003/)).toBeTruthy();
     // « Non évalué » n'est jamais écrit « non remboursé » — l'écran explique.
     expect(screen.getByText(/ne veut pas dire\s*« non remboursé »/)).toBeTruthy();
+
+    // Le banc de vocabulaire se rejoue TIROIR OUVERT : la fiche porte les
+    // textes les plus riches (remboursement, préanalytique, provenance), les
+    // juger tiroir fermé ne verrouillerait que la liste.
+    expect(document.body.textContent).not.toMatch(/prescri|ordonnance|diagnosti/i);
+    expect(document.body.textContent).not.toContain('€');
+    expect(document.body.textContent).not.toMatch(/score global/i);
   });
 
   it('la validation médicale requise est un badge visible en liste', async () => {

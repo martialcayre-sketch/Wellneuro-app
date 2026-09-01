@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
+import { getCbDisabledMessage, isCbEnabled } from '@/lib/biology-library/featureFlag';
 
 // L'étage DOCUMENTAIRE du rayon biologie est livré dans la Bibliothèque
 // (CB-08) : cette page oriente vers lui et ne garde en « différé » que
@@ -9,8 +10,12 @@ import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 // retient : l'étage 2 attend sa propre décision, sa migration et sa demande
 // explicite. Aucune valeur biologique patient n'est saisie ni stockée.
 export const metadata = { title: 'Wellneuro — Biologie fonctionnelle' };
+// L'état du rayon se lit à la requête : « ouvert » ne s'affirme jamais depuis
+// un rendu figé au build pendant que la Bibliothèque répond le contraire.
+export const dynamic = 'force-dynamic';
 
 export default function BiologiePage() {
+  const rayonOuvert = isCbEnabled();
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -25,20 +30,29 @@ export default function BiologiePage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground">Le rayon est ouvert</h3>
-        <p className="mt-2 text-base text-muted-foreground">
-          Catalogue niveau 1 : bilans par niveau (socle, approfondissement, spécialisé) et fiches
-          d&apos;analytes, remboursement dérivé de la nomenclature — la proposition d&apos;exploration
-          par dossier, elle, se prépare depuis le cockpit du patient.
-        </p>
-        <Link
-          href="/dashboard/bibliotheque"
-          className="mt-3 inline-flex h-11 items-center rounded-[10px] border border-border px-4 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      {rayonOuvert ? (
+        <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
+          <h3 className="font-display text-lg font-semibold text-foreground">Le rayon est ouvert</h3>
+          <p className="mt-2 text-base text-muted-foreground">
+            Catalogue niveau 1 : bilans par niveau (socle, approfondissement, spécialisé) et fiches
+            d&apos;analytes, remboursement dérivé de la nomenclature — la proposition d&apos;exploration
+            par dossier, elle, se prépare depuis le cockpit du patient.
+          </p>
+          <Link
+            href="/dashboard/bibliotheque"
+            className="mt-3 inline-flex h-11 items-center rounded-[10px] border border-border px-4 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Consulter le rayon dans la Bibliothèque
+          </Link>
+        </div>
+      ) : (
+        <div
+          role="status"
+          className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
         >
-          Consulter le rayon dans la Bibliothèque
-        </Link>
-      </div>
+          {getCbDisabledMessage()} Le catalogue documentaire s&apos;ouvrira dans la Bibliothèque.
+        </div>
+      )}
 
       <BanniereDiffere>
         La saisie de résultats biologiques réels reste un second temps, ouvert par une décision

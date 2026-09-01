@@ -25,6 +25,15 @@ export const LABEL_NIVEAU: Record<string, string> = {
 export const LABEL_STATUT_FICHE: Record<string, string> = {
   importee: 'Importée',
   verifiee: 'Vérifiée',
+  // Troisième valeur admise par le CHECK en base : rien ne lie
+  // `statut_fiche = 'inactive'` au booléen `actif`, une telle fiche resterait
+  // servie — son badge doit alors parler français, pas rendre le jeton brut.
+  inactive: 'Inactive',
+};
+
+/** Jetons de `donnees_manquantes` (déclarés à l'import) rendus en français. */
+const LABEL_DONNEE_MANQUANTE: Record<string, string> = {
+  unite: 'unité',
 };
 
 export const LABEL_COMPLETUDE: Record<string, string> = {
@@ -93,7 +102,7 @@ export function FicheAnalytePanel({ fiche }: { fiche: FicheAnalyte }) {
         )}
       </div>
 
-      <dl className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface-2 p-3">
+      <dl className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-3">
         <LigneDetail label="Unité" valeur={fiche.unite ?? 'Sans unité (bloc d’analyses)'} />
         <LigneDetail label="Prélèvement" valeur={libelleTechnique(fiche.typePrelevement)} />
         {fiche.delaiRenduIndicatif && (
@@ -222,7 +231,10 @@ export function FicheAnalytePanel({ fiche }: { fiche: FicheAnalyte }) {
         </dl>
         {fiche.donneesManquantes.length > 0 && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Données manquantes déclarées : {fiche.donneesManquantes.join(', ')}
+            Données manquantes déclarées :{' '}
+            {fiche.donneesManquantes
+              .map(donnee => LABEL_DONNEE_MANQUANTE[donnee] ?? libelleTechnique(donnee))
+              .join(', ')}
           </p>
         )}
         {fiche.incertitudes && (

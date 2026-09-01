@@ -40,9 +40,13 @@ cadrage que les chaînes `D-068`→`D-073` n'avaient pas déjà livrée.
   (+ test), fragment changelog.
 - Modifiés : `biology-library/featureFlag.ts` (message repli),
   `dashboard/bibliotheque/page.tsx` (+ section, tests étendus par rayon),
-  `dashboard/biologie/page.tsx`, `docs/claude/MATRICE_CONSOMMATION.md`
-  (régénérée après `git add` — piège connu), `consommation_decisions.json`,
-  fiche LOT-05 et CAMPAGNE.md (statuts).
+  `dashboard/biologie/page.tsx` (drapeau lu à la requête),
+  `BibliothequePanel.tsx` (puce « Analyses biologiques » et bannière alignées
+  sur l'état du drapeau — la phrase HDS périmée disparaît),
+  `docs/claude/MATRICE_CONSOMMATION.md` (régénérée après `git add` — piège
+  connu), `consommation_decisions.json`, fiche LOT-05 et CAMPAGNE.md.
+- Contre-revue adverse du diff jouée avant la PR : 10 constats, 0 réfuté,
+  tous corrigés (détail : Résultats de la fiche LOT-05).
 
 ## Problèmes ouverts / interdits actifs
 
