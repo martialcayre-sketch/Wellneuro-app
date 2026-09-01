@@ -192,7 +192,11 @@ export async function listerCatalogueBiologie(): Promise<CatalogueBiologieResult
   // correspondances citent : la dérivation n'a pas besoin des 987 actes, et
   // sans correspondance (l'état livré, zéro ligne) la requête ne part pas.
   const codesActes = [
-    ...new Set(analytes.flatMap(a => a.correspondancesNabm.map(c => c.codeActe))),
+    ...new Set(
+      analytes.flatMap(a =>
+        a.correspondancesNabm.filter(c => c.verifiePar !== null).map(c => c.codeActe),
+      ),
+    ),
   ];
   const actesCourants =
     pointeurNabm && codesActes.length > 0

@@ -1,4 +1,4 @@
-### Ajouté — le rayon biologie ouvre dans la Bibliothèque (CB-08)
+### Ajouté — le rayon biologie ouvre dans la Bibliothèque (CB-08) (2026-09-01)
 
 - **Rayon « Analyses biologiques » dans la Bibliothèque praticien** : catalogue
   documentaire consultable — 15 bilans hiérarchisés par niveau (socle,
