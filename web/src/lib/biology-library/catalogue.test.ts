@@ -103,6 +103,27 @@ describe('remboursement — dérivé par remboursable.ts, jamais recalculé ici'
     );
   });
 
+  it('correspondances uniquement NON signées : non_evalue, et la requête des actes ne part pas non plus', async () => {
+    // Verrouille le filtre posé en revue (commit Copilot d9efc6d0) : une ligne
+    // non signée est une proposition de rapprochement — `deriverRemboursement`
+    // ne la lira pas, charger ses actes serait un aller-retour pour rien.
+    prisma.biologyAnalyte.findMany.mockResolvedValue([
+      analyteBase({
+        correspondancesNabm: [{ codeActe: '1104', nature: 'isole', verifiePar: null }],
+      }),
+    ]);
+    prisma.biologyCatalogVersionCourante.findUnique.mockResolvedValue({
+      versionSource: 'V105',
+      nombreEntrees: 987,
+      importeLe: new Date('2026-07-26T00:00:00.000Z'),
+    });
+
+    const catalogue = await listerCatalogueBiologie();
+
+    expect(catalogue.analytes[0].remboursement.statut).toBe('non_evalue');
+    expect(prisma.biologyNabmActe.findMany).not.toHaveBeenCalled();
+  });
+
   it('correspondance signée mais source jamais importée (pas de pointeur) : hors_nomenclature', async () => {
     prisma.biologyAnalyte.findMany.mockResolvedValue([
       analyteBase({
