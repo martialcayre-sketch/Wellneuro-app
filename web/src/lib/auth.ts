@@ -95,7 +95,7 @@ export const authOptions: AuthOptions = {
       },
       token: 'https://oauth2.googleapis.com/token',
       userinfo: 'https://openidconnect.googleapis.com/v1/userinfo',
-      jwks_endpoint: 'https://www.googleapis.com/oauth2/v3/certs',
+      jwks_uri: 'https://www.googleapis.com/oauth2/v3/certs',
     }),
   ],
   callbacks: {
