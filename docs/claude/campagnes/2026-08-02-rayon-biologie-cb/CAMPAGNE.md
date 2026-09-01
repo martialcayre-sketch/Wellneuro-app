@@ -120,7 +120,7 @@ et ne sont pas des lots de cette campagne.
 | LOT-02 | CB-05 : Migration + machine à états `BiologyExplorationProposal`/`Item` | à_faire — **confirmation obligatoire (migration)** | CB-01, LOT-00 |
 | LOT-03 | CB-06 : Régimes de diffusion (courrier médecin / document patient) | à_faire | LOT-02 |
 | LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | à_faire — revue adversariale requise | LOT-02 |
-| LOT-05 | CB-08 : UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | à_faire | LOT-02, LOT-03 |
+| LOT-05 | CB-08 : UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | **terminé (2026-09-01)** — rayon + fiches livrés dans la Bibliothèque ; encart patient et cartes du fil constatés déjà livrés hors campagne (`D-070`/`D-071`), dépendances LOT-02/LOT-03 caduques (CB-05 jamais construite, proposition recalculée — chaîne `D-068`→`D-073`). Détail : `lots/LOT-05-ui-rayon-biologie-cb08.md` | ~~LOT-02, LOT-03~~ caduques |
 | LOT-06 | CB-09 : Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** | HDS obtenu |
 
 ## Done de campagne

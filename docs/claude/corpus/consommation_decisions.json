@@ -1,20 +1,13 @@
 {
   "version": 1,
   "commentaire": "Arbitrage de chaque source de savoir DORMANTE — une source sans appelant doit porter une décision datée, sinon `node scripts/wn-matrice-consommation.mjs --strict` échoue en code 2. Trois verdicts seulement : `a_brancher` (dette assumée, avec un porteur), `dormante` (inerte volontairement, avec sa raison et sa date de réexamen), `a_retirer` (le code part). Brancher réellement une surface ou poser un drapeau en production reste une décision praticien, hors du LOT-05 (voir son périmètre). Ce fichier s'édite à la main ; la matrice, non.",
-  "misAJourLe": "2026-08-05",
+  "misAJourLe": "2026-09-01",
   "decisions": {
-    "catalogue-biologie": {
-      "verdict": "a_brancher",
-      "date": "2026-08-05",
-      "raison": "Les 987 actes NABM V105 sont en base depuis le 2026-07-26, mais AUCUN fichier hors de web/src/lib/biology-library/ ne les touche : ni route, ni écran, ni composant. WN_CB_ENABLED et WN_CB_RESULTS_ENABLED gardent une porte qui ne mène nulle part. C'est la dette la plus coûteuse de la matrice — une ingestion payée et jamais consommée.",
-      "porteur": "campagne 2026-08-02-rayon-biologie-cb",
-      "reexaminerLe": "2026-09-01"
-    },
     "rayon:biologie": {
       "verdict": "dormante",
-      "date": "2026-08-05",
-      "raison": "Notebook 08 ingéré et validé, mais le rayon suit le sort de la bibliothèque de biologie ci-dessus : le brancher avant elle servirait des claims sans écran pour les lire.",
-      "reexaminerLe": "2026-09-01"
+      "date": "2026-09-01",
+      "raison": "Notebook 08 ingéré et validé. La bibliothèque de biologie est branchée depuis le 2026-09-01 (rayon CB-08 : catalogue et fiches d'analytes dans la Bibliothèque) — son verdict `a_brancher` du 2026-08-05 est soldé et sa décision retirée de ce fichier. Le rayon corpus reste pourtant inerte : l'allowlist RAYONS_RECHERCHE_CORPUS est délibérément limitée à cognition/douleur/intestin, et l'élargir est une décision praticien, hors périmètre du lot CB-08.",
+      "reexaminerLe": "2026-10-01"
     },
     "rayon:nutrition": {
       "verdict": "dormante",

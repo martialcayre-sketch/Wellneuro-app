@@ -1,7 +1,9 @@
 import { BibliothequePanel } from '@/components/BibliothequePanel';
+import { RayonBiologiePanel } from '@/components/biologie/RayonBiologiePanel';
 import { RayonComplementsPanel } from '@/components/complements/RayonComplementsPanel';
 import { RechercheCorpusRayonPanel } from '@/components/corpus/RechercheCorpusRayonPanel';
 import { listeBibliotheque } from '@/lib/bibliotheque';
+import { getCbDisabledMessage, isCbEnabled } from '@/lib/biology-library/featureFlag';
 import {
   getC4DisabledMessage,
   getRechercheCorpusDisabledMessage,
@@ -15,10 +17,10 @@ export const dynamic = 'force-dynamic';
 
 // La Bibliothèque est le thème général, organisée en rayons (arbitrage
 // utilisateur du 2026-07-23) : Questionnaires (livré ici), Analyses
-// biologiques (série R5, à venir), Fiches conseils (reprend la bibliothèque
-// d'interventions, à venir). Le catalogue vit en code : il est calculé côté
-// serveur et passé au panneau client, qui ne recharge que le vivant
-// (patients, file d'envoi, aperçus).
+// biologiques (rayon CB-08, livré derrière WN_CB_ENABLED), Fiches conseils
+// (reprend la bibliothèque d'interventions, à venir). Le catalogue vit en
+// code : il est calculé côté serveur et passé au panneau client, qui ne
+// recharge que le vivant (patients, file d'envoi, aperçus).
 //
 // Le rayon compléments est servi derrière WN_C4_ENABLED (fail-closed, modèle
 // C5) : instrument « à tiroir » consultable quand le drapeau est levé, simple
@@ -28,6 +30,7 @@ export default function BibliothequePage() {
   const entrees = listeBibliotheque();
   const domaines = new Set(entrees.map(e => e.categorie)).size;
   const rayonComplementsActif = isC4Enabled();
+  const rayonBiologieActif = isCbEnabled();
   const rechercheCorpusActive = isRechercheCorpusEnabled();
   return (
     <div className="flex flex-col gap-6">
@@ -43,7 +46,7 @@ export default function BibliothequePage() {
           un seul mail par patient, un seul lien portail.
         </p>
       </div>
-      <BibliothequePanel entrees={entrees} />
+      <BibliothequePanel entrees={entrees} rayonBiologieOuvert={rayonBiologieActif} />
 
       <section aria-labelledby="rayon-complements-titre" className="flex flex-col gap-4">
         <div>
@@ -70,6 +73,37 @@ export default function BibliothequePage() {
             className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
           >
             {getC4DisabledMessage()} Le catalogue et les fiches justificatives s&apos;afficheront ici dès
+            son ouverture — rien n&apos;est perdu, le référentiel reste intact.
+          </div>
+        )}
+      </section>
+
+      <section aria-labelledby="rayon-biologie-titre" className="flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+            Rayon biologie fonctionnelle · étage documentaire
+          </p>
+          <h3
+            id="rayon-biologie-titre"
+            className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground"
+          >
+            Analyses biologiques
+          </h3>
+          <p className="mt-1 max-w-2xl text-base text-muted-foreground">
+            Bilans hiérarchisés et fiches d&apos;analytes : les deux référentiels de valeurs
+            (laboratoire et fonctionnel) côte à côte, jamais fusionnés — aucune valeur d&apos;analyse
+            patient n&apos;est saisie ni conservée ici.
+          </p>
+        </div>
+
+        {rayonBiologieActif ? (
+          <RayonBiologiePanel />
+        ) : (
+          <div
+            role="status"
+            className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
+          >
+            {getCbDisabledMessage()} Le catalogue et les fiches d&apos;analytes s&apos;afficheront ici dès
             son ouverture — rien n&apos;est perdu, le référentiel reste intact.
           </div>
         )}

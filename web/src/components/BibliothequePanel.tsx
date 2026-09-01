@@ -37,7 +37,16 @@ type PatientOption = { email: string; prenom: string; nom: string };
 // Rayon Questionnaires de la Bibliothèque (arbitrages 2026-07-23) :
 // chercher → prévisualiser tel que le patient le verra → ajouter à la file →
 // envoyer, un seul mail et un seul lien portail par patient.
-export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }) {
+export function BibliothequePanel({
+  entrees,
+  rayonBiologieOuvert = false,
+}: {
+  entrees: BibliothequeEntree[];
+  /** État du drapeau WN_CB_ENABLED, lu par la page serveur (CB-08) : la puce
+   *  « Analyses biologiques » et sa bannière doivent dire la même chose que le
+   *  rayon rendu plus bas sur la même page. */
+  rayonBiologieOuvert?: boolean;
+}) {
   const [rayon, setRayon] = useState<Rayon>('questionnaires');
   const [recherche, setRecherche] = useState('');
   const [categorie, setCategorie] = useState<string | null>(null);
@@ -333,7 +342,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
         <BoutonRayon actif={rayon === 'questionnaires'} onClick={() => setRayon('questionnaires')}>
           Questionnaires
         </BoutonRayon>
-        <BoutonRayon actif={rayon === 'analyses'} onClick={() => setRayon('analyses')} aVenir>
+        <BoutonRayon
+          actif={rayon === 'analyses'}
+          onClick={() => setRayon('analyses')}
+          aVenir={!rayonBiologieOuvert}
+        >
           Analyses biologiques
         </BoutonRayon>
         <BoutonRayon actif={rayon === 'conseils'} onClick={() => setRayon('conseils')} aVenir>
@@ -341,13 +354,29 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
         </BoutonRayon>
       </div>
 
-      {rayon === 'analyses' && (
-        <BanniereDiffere>
-          Le rayon Analyses biologiques ouvrira avec le catalogue et les packs de marqueurs par
-          axe (série R5) ; la phase « résultats patients » attend l&apos;hébergement de données de
-          santé.
-        </BanniereDiffere>
-      )}
+      {rayon === 'analyses' &&
+        (rayonBiologieOuvert ? (
+          <div
+            role="status"
+            className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
+          >
+            Le rayon Analyses biologiques est ouvert : catalogue des bilans et fiches
+            d&apos;analytes, plus bas sur cette page —{' '}
+            <a
+              href="#rayon-biologie-titre"
+              className="font-medium text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              aller au rayon
+            </a>
+            . La saisie de résultats reste un second temps, ouvert par une décision dédiée.
+          </div>
+        ) : (
+          <BanniereDiffere>
+            Le rayon Analyses biologiques ouvrira avec le catalogue et les fiches
+            d&apos;analytes ; la saisie de résultats patients restera un second temps, ouvert par
+            une décision dédiée.
+          </BanniereDiffere>
+        ))}
       {rayon === 'conseils' && (
         <BanniereDiffere>
           Le rayon Fiches conseils reprendra la bibliothèque d&apos;interventions — compléments,
