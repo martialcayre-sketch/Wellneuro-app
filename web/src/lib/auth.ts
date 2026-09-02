@@ -58,19 +58,44 @@ export const authOptions: AuthOptions = {
       // ralentissement en échec sec du login (incident du 2026-08-31,
       // SIGNIN_OAUTH_ERROR ×3). C'est un budget d'inactivité socket PAR APPEL,
       // pas une échéance totale, et next-auth le pose en défaut GLOBAL du
-      // process (custom.setHttpOptionsDefaults) au premier login. Le callback
-      // enchaîne jusqu'à trois appels (découverte OIDC, jeton, JWKS) : ~24 s
-      // au pire — délibérément sous la fenêtre de 30 s du routeur Scalingo,
-      // au-delà de laquelle le 504 remplacerait la redirection /login?error.
+      // process (custom.setHttpOptionsDefaults) au premier login. Avec les
+      // endpoints épinglés ci-dessous, le callback enchaîne au pire deux
+      // appels (jeton, JWKS) : ~16 s — délibérément sous la fenêtre de 30 s
+      // du routeur Scalingo, au-delà de laquelle le 504 remplacerait la
+      // redirection /login?error.
       httpOptions: { timeout: 8_000 },
+      // Découverte OIDC désactivée : `wellKnown: undefined` écrase le défaut
+      // du factory (la fusion next-auth copie aussi les clés `undefined` —
+      // utils/merge), et openidClient construit alors l'Issuer localement à
+      // partir des valeurs ci-dessous (core/lib/oauth/client.js). Ce sont les
+      // endpoints publiés par le document well-known de Google, stables et
+      // documentés ; si Google les faisait évoluer, restaurer la découverte
+      // se ferait en retirant ce bloc. Gain : l'appel de découverte disparaît
+      // des deux jambes du flux (construction de l'URL d'autorisation, puis
+      // callback) — un appel réseau et un point de panne de moins sur
+      // chacune. Valeurs relevées sur le document well-known en direct le
+      // 2026-09-01 (15:53 UTC). Sans rapport avec ce bloc : PKCE
+      // est déjà actif, `checks: ["pkce", "state"]` est le défaut du factory
+      // GoogleProvider (next-auth 4.24.14).
+      wellKnown: undefined,
+      issuer: 'https://accounts.google.com',
       authorization: {
+        url: 'https://accounts.google.com/o/oauth2/v2/auth',
         params: {
           // Forcer le choix du compte à chaque connexion
           prompt: 'select_account',
           // Profil Google uniquement (plus de dépendance runtime à Google Sheets)
           scope: 'openid email profile',
+          // Préfiltre l'écran Google de choix de compte sur le domaine
+          // Workspace autorisé. Indication d'interface, jamais un contrôle :
+          // la décision d'accès reste entière dans profilPraticienAutorise
+          // (domaine, adresse vérifiée, cohérence `hd`).
+          hd: ALLOWED_DOMAINS[0],
         },
       },
+      token: 'https://oauth2.googleapis.com/token',
+      userinfo: 'https://openidconnect.googleapis.com/v1/userinfo',
+      jwks_endpoint: 'https://www.googleapis.com/oauth2/v3/certs',
     }),
   ],
   callbacks: {

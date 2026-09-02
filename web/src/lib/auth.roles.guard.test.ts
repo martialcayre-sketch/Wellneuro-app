@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { authOptions, profilPraticienAutorise } from './auth';
 
@@ -122,8 +123,9 @@ describe('authOptions — un seul provider, et il est praticien', () => {
     // login praticien (SIGNIN_OAUTH_ERROR ×3) pendant une dégradation des
     // conteneurs. Sans cette assertion, un revert ou une réécriture du
     // provider restaurerait le défaut sans qu'aucune suite ne le signale.
-    // 8 s par appel (inactivité socket), ~24 s au pire sur le callback —
-    // sous la fenêtre de 30 s du routeur Scalingo.
+    // 8 s par appel (inactivité socket), ~16 s au pire sur le callback
+    // depuis l'épinglage des endpoints — sous la fenêtre de 30 s du routeur
+    // Scalingo.
     // Le factory GoogleProvider() range la config utilisateur sous `options` ;
     // la fusion sur le provider ne se fait qu'au runtime (parseProviders).
     // On regarde les deux niveaux pour survivre à un changement de forme.
@@ -134,6 +136,93 @@ describe('authOptions — un seul provider, et il est praticien', () => {
     const provider = (authOptions.providers as Array<AvecBudget>)[0];
     const timeout = provider?.options?.httpOptions?.timeout ?? provider?.httpOptions?.timeout;
     expect(timeout).toBe(8_000);
+  });
+
+  it('la découverte OIDC reste désactivée et les endpoints Google épinglés', () => {
+    // L'épinglage retire l'appel de découverte des deux jambes du flux —
+    // URL d'autorisation et callback (dont le pire cas passe de trois à
+    // deux appels sous la fenêtre du routeur). Deux conditions le
+    // tiennent, et ce test les
+    // fixe toutes les deux : la clé `wellKnown` doit être PRÉSENTE et valoir
+    // `undefined` — une clé simplement absente ne remplacerait pas le défaut
+    // du factory lors de la fusion (utils/merge itère les clés du source,
+    // `undefined` compris) — et les endpoints doivent nourrir la
+    // construction locale de l'Issuer (core/lib/oauth/client.js).
+    type AvecEndpoints = {
+      options?: {
+        wellKnown?: string;
+        issuer?: string;
+        token?: string;
+        userinfo?: string;
+        jwks_endpoint?: string;
+        authorization?: { url?: string; params?: Record<string, string> };
+      };
+    };
+    const options = (authOptions.providers as Array<AvecEndpoints>)[0]?.options;
+    expect(options && 'wellKnown' in options).toBe(true);
+    expect(options?.wellKnown).toBeUndefined();
+    expect(options?.issuer).toBe('https://accounts.google.com');
+    expect(options?.authorization?.url).toBe('https://accounts.google.com/o/oauth2/v2/auth');
+    expect(options?.token).toBe('https://oauth2.googleapis.com/token');
+    expect(options?.userinfo).toBe('https://openidconnect.googleapis.com/v1/userinfo');
+    expect(options?.jwks_endpoint).toBe('https://www.googleapis.com/oauth2/v3/certs');
+  });
+
+  it('la fusion next-auth copie toujours les clés `undefined` — la prémisse de l’épinglage', () => {
+    // Tout le bloc « découverte désactivée » repose sur un détail
+    // d'implémentation : utils/merge itère les clés du source (`for in`) et
+    // recopie aussi une valeur `undefined`. Une version de next-auth qui
+    // « corrigerait » cette sémantique restaurerait la découverte en silence,
+    // tous les autres tests restant verts — ils ne lisent que la
+    // configuration brute, jamais le résultat de la fusion (revue
+    // adversariale du 2026-09-01, constat majeur nº1). Ce test charge le
+    // module réellement installé ; la carte `exports` du paquet ne l'expose
+    // pas, d'où le détour par le chemin résolu.
+    const chargeur = createRequire(__filename);
+    const racineNextAuth = dirname(chargeur.resolve('next-auth'));
+    const { merge } = chargeur(join(racineNextAuth, 'utils', 'merge.js')) as {
+      merge: (cible: Record<string, unknown>, source: Record<string, unknown>) => Record<string, unknown>;
+    };
+    const fusion = merge({ wellKnown: 'https://exemple.invalid' }, { wellKnown: undefined });
+    expect('wellKnown' in fusion).toBe(true);
+    expect(fusion.wellKnown).toBeUndefined();
+  });
+
+  it('le profil vient d’un id_token signé — `idToken` reste vrai', () => {
+    // Ce lot touche exactement les options qui nourrissent l'inférence
+    // d'`idToken` (core/lib/providers.js). S'il basculait à faux, `hd` et
+    // `email_verified` cesseraient de venir d'un JWT vérifié pour venir
+    // d'une réponse userinfo — toujours Google, parole plus faible. C'est la
+    // matière de la décision d'accès : épinglé (revue adversariale du
+    // 2026-09-01, constat majeur nº3).
+    const provider = (authOptions.providers as Array<{ idToken?: boolean }>)[0];
+    expect(provider?.idToken).toBe(true);
+  });
+
+  it('PKCE et state restent les contrôles du provider', () => {
+    // Défaut du factory GoogleProvider (next-auth 4.24.14), constaté dans la
+    // source installée — épinglé pour qu'une mise à jour de next-auth qui
+    // l'affaiblirait ne passe pas inaperçue.
+    const provider = (authOptions.providers as Array<{ checks?: string[] }>)[0];
+    expect(provider?.checks).toEqual(['pkce', 'state']);
+  });
+
+  it('`hd` préfiltre l’écran de choix de compte sur le domaine autorisé', () => {
+    // Indication d'interface envoyée à Google, jamais un contrôle d'accès :
+    // la décision reste dans profilPraticienAutorise, éprouvée plus bas par
+    // les cas hors domaine.
+    const provider = (authOptions.providers as Array<{
+      options?: { authorization?: { params?: Record<string, string> } };
+    }>)[0];
+    expect(provider?.options?.authorization?.params?.hd).toBe('wellneuro.fr');
+    // `hd` ne sait préfiltrer qu'UN domaine ; la décision serveur en accepte
+    // une liste. Tant que la liste est un singleton, les deux coïncident. Le
+    // jour où un second domaine entre dans ALLOWED_DOMAINS, ce pin force à
+    // repenser l'indication d'interface — sinon : compte légitime absent de
+    // l'écran de choix, panne difficile à diagnostiquer (revue adversariale
+    // du 2026-09-01, constat mineur nº1).
+    const source = readFileSync(join(RACINE, 'lib/auth.ts'), 'utf8');
+    expect(source).toMatch(/const ALLOWED_DOMAINS = \['wellneuro\.fr'\];/);
   });
 });
 
