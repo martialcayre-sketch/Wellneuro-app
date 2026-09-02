@@ -68,6 +68,8 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
   const [texte, setTexte] = useState('');
   const [redigeeLe, setRedigeeLe] = useState('');
   const [revise, setRevise] = useState<string | null>(null);
+  /** Rédaction d'une version indépendante, ouverte par geste explicite. */
+  const [redactionLibre, setRedactionLibre] = useState(false);
   const [envoi, setEnvoi] = useState<EtatEnvoi>('repos');
   const [message, setMessage] = useState('');
   /** Question du registre restée sans réponse : le praticien doit trancher. */
@@ -120,6 +122,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
           setTexte('');
           setRedigeeLe('');
           setRevise(null);
+          setRedactionLibre(false);
           setRegistreAConfirmer(false);
           setEnvoi('repos');
           await charger();
@@ -141,6 +144,13 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
   );
 
   const tropLong = texte.length > LONGUEUR_MAX_SYNTHESE;
+
+  // LE FORMULAIRE NE S'OUVRE QUE SUR UN GESTE dès qu'une version existe —
+  // même correctif que le panneau voisin (ObjectifNegociePanel) : un
+  // formulaire vide affiché en permanence sous une version publiée la fait
+  // passer pour un brouillon. Sans aucune version, la rédaction reste la
+  // première chose visible, comme avant.
+  const editionOuverte = syntheses.length === 0 || revise !== null || redactionLibre;
 
   return (
     <section className="mt-6 rounded-lg border border-border bg-card p-4">
@@ -262,6 +272,18 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
           )}
 
           {/* ── Rédaction ────────────────────────────────────────────────── */}
+          {!editionOuverte && (
+            <div className="border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={() => setRedactionLibre(true)}
+                className="rounded border border-border px-3 py-2 text-sm text-foreground hover:bg-accent/10"
+              >
+                Écrire une nouvelle version
+              </button>
+            </div>
+          )}
+          {editionOuverte && (
           <form
             className="space-y-3 border-t border-border pt-4"
             onSubmit={(e) => {
@@ -278,9 +300,27 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                   onClick={() => {
                     setRevise(null);
                     setTexte('');
+                    setRedactionLibre(true);
                   }}
                 >
                   Écrire une version indépendante
+                </button>
+              </p>
+            )}
+            {!revise && redactionLibre && (
+              <p className="text-xs text-muted-foreground">
+                Nouvelle version indépendante.{' '}
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => {
+                    setRedactionLibre(false);
+                    setTexte('');
+                    setMessage('');
+                    setRegistreAConfirmer(false);
+                  }}
+                >
+                  Annuler
                 </button>
               </p>
             )}
@@ -360,6 +400,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               )}
             </div>
           </form>
+          )}
         </div>
       )}
     </section>

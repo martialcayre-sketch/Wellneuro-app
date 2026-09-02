@@ -256,17 +256,41 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-/** Une ligne d'objectif, telle qu'elle se lit — version courante ou antérieure. */
-function LigneObjectif({ ligne }: { ligne: ObjectifExpose }) {
+/**
+ * Une ligne d'objectif, telle qu'elle se lit — version courante ou antérieure.
+ *
+ * DEUX VOIX NOMMÉES, PAS UNE CITATION SUIVIE D'UNE NOTE : le patient et le
+ * praticien avaient déjà chacun leur texte ; ce qui manquait était le label
+ * qui les distingue au premier coup d'œil, sans quoi la reformulation se
+ * lisait comme un commentaire secondaire noyé dans le gris (relevé par le
+ * praticien : la carte paraissait « grisée et vierge, comme non validée »).
+ *
+ * `ratificationLibelle` est OPTIONNEL et n'est passé que pour la version
+ * COURANTE de chaque chaîne : une version antérieure n'a pas de statut de
+ * ratification qui lui soit propre, l'affirmer serait un fait inventé.
+ */
+function LigneObjectif({
+  ligne,
+  ratificationLibelle,
+}: {
+  ligne: ObjectifExpose;
+  ratificationLibelle?: string;
+}) {
   return (
     <div className="text-base text-foreground">
-      <p className="whitespace-pre-wrap">« {ligne.enoncePatient} »</p>
+      <div className="rounded-lg border border-accent/50 bg-surface-2 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Le patient</p>
+        <p className="mt-1 whitespace-pre-wrap">« {ligne.enoncePatient} »</p>
+      </div>
       {ligne.reformulationPraticien && (
-        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-          Reformulation : {ligne.reformulationPraticien}
-        </p>
+        <div className="mt-2 rounded-lg border border-border bg-surface-2 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Le praticien a compris
+          </p>
+          <p className="mt-1 whitespace-pre-wrap">{ligne.reformulationPraticien}</p>
+        </div>
       )}
-      {ligne.priorite && <p className="mt-1 text-sm text-muted-foreground">Priorité : {ligne.priorite}</p>}
+      {ligne.priorite && <p className="mt-2 text-sm text-muted-foreground">Priorité : {ligne.priorite}</p>}
       {ligne.nonTraiteMotif && ligne.nonTraiteDepuisLe && (
         <p className="mt-1 text-sm text-muted-foreground">
           Non traité pour l’instant depuis le {formatDate(ligne.nonTraiteDepuisLe)} — {ligne.nonTraiteMotif}
@@ -286,9 +310,15 @@ function LigneObjectif({ ligne }: { ligne: ObjectifExpose }) {
           Repris d’une proposition citée — la reformulation et la priorité ci-dessus sont les vôtres.
         </p>
       )}
-      <p className="mt-1 text-xs text-muted-foreground">
+      {/* LA SIGNATURE : date d'enregistrement, date de l'accord, et — pour la
+          seule version courante — l'état de ratification, réunis en un seul
+          pied de carte plutôt que dispersés entre l'en-tête de l'article et
+          le bas de la ligne. C'est ce pied qui doit lire comme un
+          enregistrement daté et signé, pas comme une note technique. */}
+      <p className="mt-2 text-xs font-medium text-foreground">
         Enregistré le {formatDate(ligne.creeLe)}
         {ligne.negocieLe ? ` · négocié le ${formatDate(ligne.negocieLe)}` : ''}
+        {ratificationLibelle ? ` — ${ratificationLibelle}` : ''}
       </p>
     </div>
   );
@@ -548,6 +578,17 @@ export function ObjectifNegociePanel({
       setErreurGeste('La proposition n’a pas pu être écartée.');
     }
   }, [ecarteDe, idPatient, motifEcart, repriseDe, chargerPropositions]);
+
+  // LE FORMULAIRE NE S'OUVRE QUE SUR UN GESTE, PAS PAR DÉFAUT — dès qu'un
+  // objectif courant existe. Sans dossier (`objectifs.length === 0`), il n'y a
+  // rien à lire : la saisie reste la première chose visible, comme avant. Avec
+  // un dossier, seul un déclencheur explicite (reformuler, reprendre une
+  // proposition, citer un amendement — les trois états déjà posés par les
+  // boutons des cartes) rouvre le formulaire ; sinon la carte validée reste
+  // seule à l'écran, sans un formulaire vide en dessous qui la fait passer
+  // pour un brouillon.
+  const editionOuverte =
+    objectifs.length === 0 || reformuleId !== null || repriseDe !== null || citeAmendement !== null;
 
   return (
     <section aria-labelledby="objectif-negocie" className="rounded-xl border border-border bg-surface p-4">
@@ -861,11 +902,14 @@ export function ObjectifNegociePanel({
                 key={trajectoire.idObjectif}
                 className="rounded-lg border border-border bg-surface p-3"
               >
-                <p className="text-xs font-medium text-muted-foreground">
-                  Version courante · {LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente']}
-                </p>
+                <p className="text-xs font-medium text-muted-foreground">Version courante</p>
                 <div className="mt-1">
-                  <LigneObjectif ligne={courante} />
+                  <LigneObjectif
+                    ligne={courante}
+                    ratificationLibelle={
+                      LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente']
+                    }
+                  />
                 </div>
 
                 {/* ── CE QUE LE PATIENT A ÉCRIT LUI-MÊME (6.0-B, LOT-04) ─────
@@ -1039,6 +1083,7 @@ export function ObjectifNegociePanel({
             );
           })}
 
+          {editionOuverte && (
           <div className="border-t border-border pt-3">
             <h4 className="text-sm font-semibold text-foreground">
               {citeAmendement
@@ -1107,7 +1152,7 @@ export function ObjectifNegociePanel({
                   onClick={() => setReformuleId(null)}
                   className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  Poser un nouvel objectif à la place
+                  Annuler la reformulation
                 </button>
               </p>
             ) : (
@@ -1223,6 +1268,7 @@ export function ObjectifNegociePanel({
                     : 'Enregistrer l’objectif'}
             </button>
           </div>
+          )}
         </div>
       )}
     </section>

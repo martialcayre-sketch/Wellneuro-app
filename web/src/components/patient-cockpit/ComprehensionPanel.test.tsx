@@ -168,6 +168,31 @@ describe('ComprehensionPanel', () => {
     expect(screen.queryByText('Publier tel quel')).toBeNull();
   });
 
+  it('le formulaire cède la place dès qu’une version existe, et se rouvre sur un geste', async () => {
+    fetchMock.mockResolvedValueOnce(json(dossier({ syntheses: [version()] })));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByText(/sommeil qui se casse/)).toBeTruthy());
+    // Une version existe : la saisie n'est plus la première chose visible.
+    expect(screen.queryByLabelText('Ce que j’ai compris')).toBeNull();
+
+    fireEvent.click(screen.getByText('Écrire une nouvelle version'));
+    expect(screen.getByLabelText('Ce que j’ai compris')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Annuler'));
+    expect(screen.queryByLabelText('Ce que j’ai compris')).toBeNull();
+  });
+
+  it('« Réviser cette version » rouvre le formulaire pré-rempli', async () => {
+    fetchMock.mockResolvedValueOnce(json(dossier({ syntheses: [version()] })));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByText('Réviser cette version')).toBeTruthy());
+    fireEvent.click(screen.getByText('Réviser cette version'));
+    const champ = screen.getByLabelText('Ce que j’ai compris') as HTMLTextAreaElement;
+    expect(champ.value).toContain('sommeil qui se casse');
+  });
+
   it('n’affiche AUCUN décompte de désaccords', async () => {
     fetchMock.mockResolvedValueOnce(
       json(

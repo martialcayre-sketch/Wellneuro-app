@@ -319,6 +319,32 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
 
   // ── Écriture ──────────────────────────────────────────────────────────────
 
+  it('le formulaire cède la place dès qu’un objectif courant existe', async () => {
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne()],
+          trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne()] }],
+          ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
+          reponsesJalon: [],
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    // Un objectif existe : plus de saisie vierge affichée sous la carte.
+    expect(screen.queryByLabelText(/Ce que le patient demande/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Enregistrer l’objectif' })).toBeNull();
+
+    // Le geste de reformulation rouvre le formulaire ; l'annuler le referme.
+    fireEvent.click(screen.getByRole('button', { name: 'Reformuler cette version' }));
+    expect(screen.getByLabelText(/Votre reformulation/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler la reformulation' }));
+    expect(screen.queryByLabelText(/Votre reformulation/)).toBeNull();
+  });
+
   it('poste le contrat exact de la route, sans jamais transmettre de date d’enregistrement', async () => {
     fetchMock.mockImplementation(router());
     await attendreLeDossier();
