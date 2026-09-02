@@ -230,7 +230,10 @@ describe('EpisodeConfirmationPanel', () => {
         onConfirm={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Q_SOM_09/)).toBeTruthy();
+    // Le nom MÉTIER, jamais l'identifiant d'instrument — Q_SOM_09 relevait de
+    // la fuite dev à l'écran (audit du cockpit 2026-09-02).
+    expect(screen.getByText(/L’agenda du sommeil, bien qu’il figure au pack de base/)).toBeTruthy();
+    expect(screen.queryByText(/Q_SOM_09/)).toBeNull();
   });
 });
 

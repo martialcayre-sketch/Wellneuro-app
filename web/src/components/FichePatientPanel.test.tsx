@@ -528,7 +528,11 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Patient/i }));
     const patient = screen.getByRole('tab', { name: /Patient/i });
     expect(patient.getAttribute('aria-selected')).toBe('true');
-    expect(screen.getByText(/Dernière réponse reçue le/i)).toBeTruthy();
+    // La carte d'identité de la phase Patient : e-mail visible ici seulement.
+    // La date de dernière réponse vit dans le bandeau permanent, plus ici
+    // (dédoublonnage, audit 2026-09-02).
+    expect(screen.getAllByText('sophie.nicola@example.test').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Dernière réponse reçue le/i)).toBeNull();
 
     // Flèche bas → phase suivante du cycle.
     fireEvent.keyDown(patient, { key: 'ArrowDown' });

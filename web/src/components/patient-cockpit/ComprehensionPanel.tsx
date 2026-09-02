@@ -263,11 +263,17 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
                   patient mais laisse le message en « pas encore de réponse »,
                   définitivement. Le praticien doit pouvoir le savoir plutôt que
                   de le découvrir. (Revue LOT-04, M2.) */}
-              <p className="text-xs text-muted-foreground">
-                Répondre, c’est publier une nouvelle version. Un message ne se ferme pas et ne
-                s’efface pas. Pour qu’il apparaisse comme répondu, révisez la version contestée :
-                une version écrite indépendamment ne s’y rattache pas.
-              </p>
+              {/* En repli depuis l'audit 2026-09-02 : règle d'usage utile une
+                  fois, pas à chaque consultation. Le texte reste entier dans
+                  le DOM (details natif) — le banc qui l'exige passe tel quel. */}
+              <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer">Comment un message devient « répondu »</summary>
+                <p className="mt-1">
+                  Répondre, c’est publier une nouvelle version. Un message ne se ferme pas et ne
+                  s’efface pas. Pour qu’il apparaisse comme répondu, révisez la version contestée :
+                  une version écrite indépendamment ne s’y rattache pas.
+                </p>
+              </details>
             </div>
           )}
 

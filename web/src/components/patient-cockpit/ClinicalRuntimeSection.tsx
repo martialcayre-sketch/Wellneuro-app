@@ -998,7 +998,14 @@ export function ClinicalRuntimeSection({
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-muted-foreground">Objectif prioritaire déclaré</dt>
+              {/* « figé à la confirmation » : le même libellé s'affiche en
+                  phase Compréhension avec une LECTURE VIVANTE de l'anamnèse ;
+                  ici la valeur vient du snapshot de l'épisode et peut avoir
+                  changé depuis — sans ce qualificatif, rien ne distinguait
+                  les deux sources (audit 2026-09-02, divergence silencieuse). */}
+              <dt className="text-sm text-muted-foreground">
+                Objectif prioritaire déclaré (figé à la confirmation de l’épisode)
+              </dt>
               <dd className="text-base text-foreground">
                 {snapshotPriorityGoal ?? 'Non renseigné à l’anamnèse.'}
               </dd>
@@ -1060,27 +1067,36 @@ export function ClinicalRuntimeSection({
         });
         if (recoupements.length === 0) return null;
         return (
+          // COMPACT PRÈS DE LA CARTE, DÉTAIL EN REPLI (audit 2026-09-02) :
+          // `D-119` exige la proximité et le contenu — pas un encart déplié en
+          // permanence. Le repli est natif (`<details>`) : chaque phrase
+          // arbitrée reste dans le DOM, les bancs sur le textContent passent
+          // tels quels.
           <section
             aria-label="Contradictions touchant cette décision"
             className="rounded-xl border border-accent bg-status-warning/10 p-4 text-sm"
           >
-            <h3 className="font-semibold text-foreground">Contradictions touchant cette décision</h3>
-            <ul className="mt-2 grid gap-2">
-              {recoupements.map((recoupement, index) => (
-                <li key={index} className="border-l-2 border-accent pl-2 text-foreground">
-                  <span className="block break-words">{recoupement.description}</span>
-                  <span className="block text-muted-foreground">
-                    Confronte une passation qui fonde aussi
-                    {recoupement.candidats.length > 0 && ` : ${recoupement.candidats.join(', ')}`}
-                    {recoupement.candidats.length > 0 && recoupement.canalPlainte && ' ·'}
-                    {recoupement.canalPlainte && ' le canal de plainte'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 text-muted-foreground">
-              La machine ne tranche pas : elle montre l’intersection. Le détail se lit dans « Données fiables ».
-            </p>
+            <details>
+              <summary className="cursor-pointer font-semibold text-foreground">
+                Contradictions touchant cette décision ({recoupements.length})
+              </summary>
+              <ul className="mt-2 grid gap-2">
+                {recoupements.map((recoupement, index) => (
+                  <li key={index} className="border-l-2 border-accent pl-2 text-foreground">
+                    <span className="block break-words">{recoupement.description}</span>
+                    <span className="block text-muted-foreground">
+                      Confronte une passation qui fonde aussi
+                      {recoupement.candidats.length > 0 && ` : ${recoupement.candidats.join(', ')}`}
+                      {recoupement.candidats.length > 0 && recoupement.canalPlainte && ' ·'}
+                      {recoupement.canalPlainte && ' le canal de plainte'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-muted-foreground">
+                La machine ne tranche pas : elle montre l’intersection. Le détail se lit dans « Données fiables ».
+              </p>
+            </details>
           </section>
         );
       })()}

@@ -292,8 +292,12 @@ export function OrientationPanel({
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
         Orientation · explorations proposées
       </p>
+      {/* Langage métier à l'écran — « NNPP2 » est le codename interne de la
+          table, sans signification pour un praticien (audit 2026-09-02,
+          fuite dev). L'identité exacte de la table reste lisible dans le
+          repli « Provenance de la table » en pied de section. */}
       <h3 className="mt-1 font-display text-base font-bold tracking-[-0.02em] text-foreground">
-        Explorations proposées par la table NNPP2
+        Explorations complémentaires proposées
       </h3>
 
       {lecture === 'chargement' ? (
@@ -370,17 +374,24 @@ export function OrientationPanel({
                     </p>
                   )}
 
+                  {/* LA CONDITION CLINIQUE D'ABORD, LES IDENTIFIANTS EN REPLI
+                      (audit 2026-09-02) : regleId et claimId sont de la
+                      traçabilité, pas du langage praticien. Ils restent
+                      ENTIERS dans le DOM (repli natif — les bancs d'ordre qui
+                      lisent le textContent des items passent tels quels) ;
+                      seule leur proéminence change. */}
                   <ul className="mt-2 space-y-1">
                     {recommandation.motifs.map(motif => (
                       <li key={motif.regleId} className="text-xs text-foreground">
-                        <span className="text-muted-foreground">{motif.regleId} —</span>{' '}
                         {motif.conditions.join(' ; ')}
-                        {motif.claims.length > 0 && (
-                          <span className="text-muted-foreground">
-                            {' '}
-                            ({motif.claims.map(claim => claim.claimId).join(', ')})
+                        <details className="mt-0.5 text-2xs text-muted-foreground">
+                          <summary className="cursor-pointer">Traçabilité</summary>
+                          <span>
+                            {motif.regleId}
+                            {motif.claims.length > 0 &&
+                              ` (${motif.claims.map(claim => claim.claimId).join(', ')})`}
                           </span>
-                        )}
+                        </details>
                       </li>
                     ))}
                   </ul>
@@ -389,18 +400,19 @@ export function OrientationPanel({
                     <div className="mt-2 rounded-md bg-muted/50 p-2">
                       <p className="text-xs font-medium text-foreground">{LIBELLE_EXTINCTION}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        <span>{recommandation.extinction.stopRuleId} —</span>{' '}
                         {recommandation.extinction.motif}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {recommandation.extinction.conditions.join(' ; ')}
-                        {recommandation.extinction.claims.length > 0 && (
-                          <span>
-                            {' '}
-                            ({recommandation.extinction.claims.map(claim => claim.claimId).join(', ')})
-                          </span>
-                        )}
                       </p>
+                      <details className="mt-1 text-2xs text-muted-foreground">
+                        <summary className="cursor-pointer">Traçabilité</summary>
+                        <span>
+                          {recommandation.extinction.stopRuleId}
+                          {recommandation.extinction.claims.length > 0 &&
+                            ` (${recommandation.extinction.claims.map(claim => claim.claimId).join(', ')})`}
+                        </span>
+                      </details>
                     </div>
                   )}
 
@@ -473,9 +485,12 @@ export function OrientationPanel({
             </p>
           )}
           <p className="mt-3 text-2xs text-muted-foreground">
-            Table {reponse.version} · SHA-256 {reponse.sha256}. Aucune assignation n’est automatique : la
-            proposition est une lecture, le geste reste praticien.
+            Aucune assignation n’est automatique : la proposition est une lecture, le geste reste praticien.
           </p>
+          <details className="mt-1 text-2xs text-muted-foreground">
+            <summary className="cursor-pointer">Provenance de la table</summary>
+            <span>Table NNPP2 {reponse.version} · SHA-256 {reponse.sha256}</span>
+          </details>
         </>
       ) : null}
     </section>
