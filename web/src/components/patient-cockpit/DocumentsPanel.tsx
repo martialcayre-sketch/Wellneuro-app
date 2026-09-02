@@ -40,7 +40,7 @@ const DESTINATAIRE_LABELS: Record<Destinataire, string> = {
 const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
 const btnBase = 'min-h-11 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60';
 
-export function DocumentsPanel() {
+export function DocumentsPanel({ initialPatientId = '' }: { initialPatientId?: string } = {}) {
   const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [syntheses, setSyntheses] = useState<SyntheseRecord[]>([]);
@@ -56,8 +56,19 @@ export function DocumentsPanel() {
   useEffect(() => {
     fetch('/api/praticien/patients-pg')
       .then((r) => r.json())
-      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
+      .then((d: PatientsPgApiResponse) => {
+        const liste = d.patients ?? [];
+        setPatients(liste);
+        // Continuité `?idPatient=` (audit 2026-09-02) : pré-sélectionner le
+        // dossier transmis par l'URL — seulement s'il existe dans la liste du
+        // praticien, jamais sur la foi du paramètre seul.
+        if (initialPatientId && liste.some((p) => p.idPatient === initialPatientId)) {
+          void onSelectPatient(initialPatientId);
+        }
+      })
       .catch(() => {});
+    // `initialPatientId` vient de l'URL au montage : une seule lecture.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function onSelectPatient(idPatient: string) {

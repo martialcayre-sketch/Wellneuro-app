@@ -163,21 +163,17 @@ export function PatientRow({
         </button>
       </td>
       <td className="px-4 py-2">
-        <span className="flex flex-wrap gap-x-3 gap-y-1">
-          <Link
-            href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
-            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            Fiche patient
-          </Link>
-          {/* Accès direct à l'onglet Trajectoire (deep-link SP-TRAJ LOT-01). */}
-          <Link
-            href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}?onglet=trajectoire`}
-            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            Trajectoire
-          </Link>
-        </span>
+        {/* UN SEUL lien par ligne (audit 2026-09-02) : deux destinations vers
+            la même fiche, différenciées par le seul onglet d'ouverture, se
+            lisaient comme deux objets. L'entrée trajectoire garde sa porte
+            dédiée (/dashboard/trajectoires) et le deep-link ?onglet= vit
+            toujours côté fiche. */}
+        <Link
+          href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Fiche patient
+        </Link>
       </td>
       <td className="px-4 py-2">
         <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />

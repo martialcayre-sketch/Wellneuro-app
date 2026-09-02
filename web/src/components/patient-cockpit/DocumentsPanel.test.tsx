@@ -47,6 +47,19 @@ describe('DocumentsPanel', () => {
     await waitFor(() => expect(screen.getByRole('option', { name: /Sophie Nicola/ })).not.toBeNull());
   });
 
+  it('pré-sélectionne le patient transmis par l’URL — continuité depuis la fiche', async () => {
+    const { container } = render(<DocumentsPanel initialPatientId="PAT_1" />);
+    // Le dossier est sélectionné et ses synthèses chargées sans aucun geste.
+    await waitFor(() => screen.getByRole('option', { name: /Validée/ }));
+    expect((container.querySelector('select') as HTMLSelectElement).value).toBe('PAT_1');
+  });
+
+  it('ignore un idPatient d’URL inconnu de la liste du praticien', async () => {
+    const { container } = render(<DocumentsPanel initialPatientId="PAT_AILLEURS" />);
+    await waitFor(() => screen.getByRole('option', { name: /Sophie Nicola/ }));
+    expect((container.querySelector('select') as HTMLSelectElement).value).toBe('');
+  });
+
   it('compose et affiche l’aperçu sans fuite de donnée interne côté patient', async () => {
     const { container } = render(<DocumentsPanel />);
     await waitFor(() => screen.getByRole('option', { name: /Sophie Nicola/ }));
