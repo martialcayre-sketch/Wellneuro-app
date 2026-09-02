@@ -4,6 +4,7 @@ import type { AncreCycle } from '@/lib/protocol/cycles';
 import {
   deriverEpisodeBandeau,
   deriverEtatParcoursPatient,
+  phaseDue,
   phaseInitiale,
   type CycleBandeau,
 } from './contrat';
@@ -59,6 +60,53 @@ describe('phaseInitiale (règle D5)', () => {
 
   it('à défaut de tout : décision (comportement antérieur, documenté)', () => {
     expect(phaseInitiale(base)).toBe('decision');
+  });
+
+  // Audit du cockpit 2026-09-02 : la réévaluation ne produit JAMAIS
+  // 'en_attente' — sans ce rang, un dossier avancé atterrissait sur
+  // « Décision — renseignée » au lieu de la phase réellement due.
+  it('3 bis. une phase « à ouvrir » est due — elle prime la mémoire locale', () => {
+    expect(
+      phaseInitiale({
+        ...base,
+        statuts: { decision: 'fait', actions: 'fait', suivi: 'fait', reevaluation: 'a_ouvrir' },
+        dernierePhaseConsultee: 'suivi',
+      }),
+    ).toBe('reevaluation');
+  });
+
+  it('3 ter. « en attente » prime toujours « à ouvrir »', () => {
+    expect(
+      phaseInitiale({
+        ...base,
+        statuts: { suivi: 'en_attente', reevaluation: 'a_ouvrir' },
+      }),
+    ).toBe('suivi');
+  });
+});
+
+describe('phaseDue (fil conducteur « prochaine étape »)', () => {
+  const base = {
+    chargement: false,
+    bloqueurs: [] as const,
+    actionsExigibles: [] as const,
+    statuts: {},
+  };
+
+  it('rien de dû ⇒ null — jamais une étape inventée pour meubler', () => {
+    expect(phaseDue(base)).toBeNull();
+    expect(phaseDue({ ...base, statuts: { decision: 'fait', suivi: 'fait' } })).toBeNull();
+  });
+
+  it('suit la même hiérarchie que D5, mémoire exclue', () => {
+    expect(phaseDue({ ...base, bloqueurs: ['actions'], statuts: { donnees: 'en_attente' } })).toBe('actions');
+    expect(phaseDue({ ...base, actionsExigibles: ['decision'] })).toBe('decision');
+    expect(phaseDue({ ...base, statuts: { donnees: 'en_attente' } })).toBe('donnees');
+    expect(phaseDue({ ...base, statuts: { reevaluation: 'a_ouvrir' } })).toBe('reevaluation');
+  });
+
+  it('un statut « indéterminée » ne rend jamais la phase due', () => {
+    expect(phaseDue({ ...base, statuts: { decision: 'inconnu' } })).toBeNull();
   });
 });
 

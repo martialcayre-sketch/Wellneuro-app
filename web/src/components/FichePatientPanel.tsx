@@ -59,7 +59,7 @@ import { CeQuiComptePanel } from '@/components/patient-cockpit/CeQuiComptePanel'
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
 import { rythmeDeclareDeReponses } from '@/lib/equilibre/discordanceRythme';
-import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
+import { deriverEpisodeBandeau, phaseDue, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import {
   type CertificationLue,
   libelleCertificationPassation,
@@ -255,6 +255,19 @@ const LIBELLE_STATUT: Record<StatutPhase, string> = {
   inconnu: 'indéterminée',
 };
 
+/**
+ * Le libellé de statut, QUALIFIÉ PAR LA PHASE pour « en attente » — le même
+ * mot désignait deux situations opposées (audit du cockpit 2026-09-02) : sur
+ * « Données fiables » ou « Compréhension », le praticien attend une matière
+ * qui vient du patient (questionnaires, scores) ; sur Patient, Décision,
+ * Actions ou Suivi, c'est à lui d'agir. Les trois autres statuts restent
+ * inchangés — leurs mots ne portaient pas d'ambiguïté.
+ */
+function libelleStatut(id: IdPhase, statut: StatutPhase): string {
+  if (statut !== 'en_attente') return LIBELLE_STATUT[statut];
+  return id === 'donnees' || id === 'comprehension' ? 'en attente du patient' : 'à traiter';
+}
+
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
@@ -356,10 +369,13 @@ export function FichePatientPanel({
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
-  // Phase focale. 'decision' n'est plus qu'un point de départ neutre : la
-  // phase réellement exigible est calculée par la règle D5 (SP-CONV LOT-02)
-  // dès que l'état runtime est établi — sauf si le praticien a déjà navigué.
-  const [phaseActive, setPhaseActive] = useState<IdPhase>('decision');
+  // Phase focale. Point de départ : 'patient' — la PREMIÈRE étape annoncée
+  // par le rail, jamais le milieu de la séquence (audit du cockpit
+  // 2026-09-02 : s'initialiser sur 'decision' faisait s'ouvrir chaque dossier
+  // sur la 4e étape pendant la fenêtre transitoire). La phase réellement due
+  // est ensuite calculée par la règle D5 (SP-CONV LOT-02) dès que l'état
+  // runtime est établi — sauf si le praticien a déjà navigué.
+  const [phaseActive, setPhaseActive] = useState<IdPhase>('patient');
   const phaseChoisieParPraticien = useRef(false);
   const phaseInitialiseeRef = useRef(false);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
@@ -1216,6 +1232,56 @@ export function FichePatientPanel({
         </div>
       )}
 
+      {/* Fil conducteur GÉNÉRIQUE « prochaine étape » (audit du cockpit
+          2026-09-02) : les deux bandeaux spécifiques ci-dessus et ci-dessous
+          ne couvraient que deux cas ; pour tout le reste, le praticien devait
+          lire lui-même les sept lignes du rail. La phase due vient de
+          `phaseDue` — la même hiérarchie que la règle D5, mémoire exclue —
+          et rien ne s'affiche quand rien n'est dû (`DC-24`, transposé).
+          Les deux cas déjà couverts par un bandeau spécifique sont SUPPRIMÉS
+          d'ici : deux bandeaux pour le même fait se liraient comme deux
+          faits ; et le bandeau se tait quand la phase due est déjà affichée
+          (le rail la montre sélectionnée). */}
+      {(() => {
+        if (!etatRuntime || etatRuntime.chargement || loading || !data || 'unavailable' in data) return null;
+        const due = phaseDue({
+          chargement: false,
+          bloqueurs: etatRuntime.erreur === null && etatRuntime.decisionBloquee ? ['actions'] : [],
+          actionsExigibles: [
+            ...(assignationsModif.length > 0 ? (['patient'] as const) : []),
+            ...(etatRuntime.erreur === null && !etatRuntime.episodeConfirme ? (['decision'] as const) : []),
+          ],
+          statuts: Object.fromEntries(PHASES.map(p => [p.id, statutPhase(p.id)])),
+        });
+        if (!due) return null;
+        if (due === 'patient' && assignationsModif.length > 0) return null;
+        if (due === 'actions' && etatRuntime.erreur === null && etatRuntime.decisionBloquee) return null;
+        if (ongletActif === 'cockpit' && phaseActive === due) return null;
+        const phaseDueDef = PHASES.find(p => p.id === due);
+        if (!phaseDueDef) return null;
+        return (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2 text-base text-foreground"
+          >
+            <IconeStatut statut={statutPhase(due)} />
+            <span className="min-w-0">
+              Prochaine étape : {phaseDueDef.libelle} — {libelleStatut(due, statutPhase(due))}.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                choisirPhase(due);
+              }}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Y aller
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Signal permanent : un protocole bloqué (abstention non levée ou finding
           de sécurité) n'est détaillé que par ProtocolMiniBuilder, lequel vit
           dans la phase Actions — or la fiche s'ouvre sur Décision. Le praticien
@@ -1302,7 +1368,7 @@ export function FichePatientPanel({
             )}
             <Chip variante="due" className="ml-auto">
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
-              Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
+              Phase affichée : {phaseCourante.libelle} — {libelleStatut(phaseCourante.id, statutPhase(phaseCourante.id))}
             </Chip>
           </div>
           </div>
@@ -1321,17 +1387,13 @@ export function FichePatientPanel({
               {PHASES.map((phase, index) => {
                 const actif = phaseActive === phase.id;
                 const statut = statutPhase(phase.id);
-                // Anatomie maquette : puce 10px colorée par statut + statut
+                // Anatomie : ICÔNE de statut (les 4 statuts ont 4 formes —
+                // l'audit du 2026-09-02 relevait que la puce colorée
+                // confondait « à ouvrir » et « indéterminée ») + statut
                 // textuel — jamais la couleur seule. La phase due (en attente)
                 // porte le liseré solaire inset ; la phase affichée garde la
                 // carte claire. Un seul box-shadow à la fois (ils ne se
                 // composent pas entre classes Tailwind).
-                const couleurPuce =
-                  statut === 'fait'
-                    ? 'bg-status-success'
-                    : statut === 'en_attente'
-                      ? 'bg-accent'
-                      : 'bg-transparent border border-border';
                 const classesEtat = actif
                   ? 'bg-surface font-semibold text-foreground shadow-card'
                   : statut === 'en_attente'
@@ -1353,9 +1415,12 @@ export function FichePatientPanel({
                     onKeyDown={event => onClavierRail(event, index)}
                     className={`flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3 py-2 text-left text-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${classesEtat}`}
                   >
-                    <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${couleurPuce}`} />
-                    <span className="min-w-0 flex-1 truncate">{phase.libelle}</span>
-                    <span className="shrink-0 text-2xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
+                    <IconeStatut statut={statut} />
+                    {/* Le rang rend la SÉQUENCE visible : sans lui, les sept
+                        libellés se lisaient comme des catégories
+                        indépendantes, pas comme un cycle à parcourir. */}
+                    <span className="min-w-0 flex-1 truncate">{index + 1}. {phase.libelle}</span>
+                    <span className="shrink-0 text-2xs text-muted-foreground">{libelleStatut(phase.id, statut)}</span>
                   </button>
                 );
               })}
