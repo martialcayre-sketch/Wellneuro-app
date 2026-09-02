@@ -56,8 +56,15 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
     await expect(onglets.getByRole('tab', { name: 'Trajectoire' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('region', { name: 'Fiche-trajectoire' })).toBeVisible();
 
-    // Une valeur inconnue est ignorée : la fiche s'ouvre sur le poste de
-    // pilotage, jamais une erreur.
+    // Une valeur inconnue est ignorée — jamais une erreur. Depuis la mémoire
+    // d'onglet (audit 2026-09-02), « ignorée » = « aucune intention » : la
+    // fiche restaure l'onglet mémorisé s'il existe (ici « Trajectoire »,
+    // consulté juste au-dessus)…
+    await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=inconnu`);
+    await expect(onglets.getByRole('tab', { name: 'Trajectoire' })).toHaveAttribute('aria-selected', 'true');
+
+    // …et sans mémoire, elle retombe sur le poste de pilotage, comme avant.
+    await page.evaluate(() => window.localStorage.clear());
     await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=inconnu`);
     await expect(onglets.getByRole('tab', { name: 'Poste de pilotage' })).toHaveAttribute('aria-selected', 'true');
   });

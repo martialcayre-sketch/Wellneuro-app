@@ -6,6 +6,18 @@ import { estOngletFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
+// La fiche MÉMORISE l'onglet et la phase en localStorage (par patient) : sans
+// purge entre les cas, un test qui navigue vers « Trajectoire » ferait
+// restaurer cet onglet au cas suivant, avec des fixtures qui ne le
+// provisionnent pas — fuite d'état inter-tests, pas un comportement produit.
+afterEach(() => {
+  try {
+    window.localStorage.clear();
+  } catch {
+    // jsdom sans stockage : rien à purger.
+  }
+});
+
 // Patient fictif autorisé (CLAUDE.md) — aucune donnée réelle.
 const EQUILIBRE = {
   patient: { idPatient: 'PAT001', prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
@@ -472,7 +484,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     const phases = ['Patient', 'Données fiables', 'Compréhension', 'Décision 21 j', 'Actions', 'Suivi', 'Réévaluation'];
     for (const libelle of phases) {
-      expect(screen.getByRole('tab', { name: new RegExp(libelle, 'i') })).toBeTruthy();
+      expect(screen.getByRole('tab', { name: new RegExp(`^\\d\\. ${libelle}`, 'i') })).toBeTruthy();
     }
     // Le rang rend la séquence visible (audit du cockpit 2026-09-02).
     expect(screen.getByRole('tab', { name: /1\. Patient/i })).toBeTruthy();
@@ -525,8 +537,8 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
   it('navigue de phase en phase au clic et au clavier, sans quitter la page', async () => {
     await rendreFiche();
 
-    fireEvent.click(screen.getByRole('tab', { name: /Patient/i }));
-    const patient = screen.getByRole('tab', { name: /Patient/i });
+    fireEvent.click(screen.getByRole('tab', { name: /^1\. Patient/i }));
+    const patient = screen.getByRole('tab', { name: /^1\. Patient/i });
     expect(patient.getAttribute('aria-selected')).toBe('true');
     // La carte d'identité de la phase Patient : e-mail visible ici seulement.
     // La date de dernière réponse vit dans le bandeau permanent, plus ici
@@ -569,7 +581,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const tiroir = await screen.findByRole('dialog');
     expect(tiroir.textContent).toContain('Sommeil réparateur');
 
-    fireEvent.click(screen.getByRole('button', { name: /Fermer l’instrument Les 12 besoins/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Fermer Les 12 besoins/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
@@ -676,15 +688,15 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     // action exigible — la fiche atterrit dessus au lieu de l'ignorer. C'était
     // le reproche central de l'audit du 2026-07-22.
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: /Patient/i }).getAttribute('aria-selected')).toBe('true'),
+      expect(screen.getByRole('tab', { name: /^1\. Patient/i }).getAttribute('aria-selected')).toBe('true'),
     );
     // Le signal B2 reste hissé au niveau fiche, visible quelle que soit la vue.
     await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
     // Et le rail signale la phase Patient « à traiter » — c'est au praticien
     // d'agir (débloquer), jamais « renseignée » ni un « en attente » ambigu
     // qui laisserait croire qu'on attend le patient (audit 2026-09-02).
-    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).toContain('à traiter');
-    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).not.toContain('renseignée');
+    expect(screen.getByRole('tab', { name: /^1\. Patient/i }).textContent).toContain('à traiter');
+    expect(screen.getByRole('tab', { name: /^1\. Patient/i }).textContent).not.toContain('renseignée');
   });
 
   it('affiche un état vide explicite en Suivi et Réévaluation sans épisode confirmé (M3)', async () => {
@@ -788,7 +800,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     // Le raccourci ramène au cockpit sur la phase Patient.
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Patient' }));
     await waitFor(() => expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(false));
-    expect(screen.getByRole('tab', { name: /Patient/i }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: /^1\. Patient/i }).getAttribute('aria-selected')).toBe('true');
   });
 
   // Le détail du blocage vit dans ProtocolMiniBuilder, phase Actions — or la
@@ -857,6 +869,34 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     // Le cockpit est masqué, le panneau trajectoire est monté.
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
     await waitFor(() => expect(screen.getByText(/Fiche-trajectoire · identité patient durable/)).toBeTruthy());
+    // Et le retour suit le point d'entrée : entré par la porte trajectoire,
+    // on repart vers elle — plus jamais vers la liste héritage (audit
+    // 2026-09-02).
+    expect(screen.getByRole('link', { name: /Retour aux fiches-trajectoires/ })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Retour aux patients/ })).toBeNull();
+  });
+
+  it('l’onglet consulté se mémorise par patient et se restaure sans deep-link', async () => {
+    stubFetch();
+    const { unmount } = render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Correspondance' }));
+    unmount();
+
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Correspondance' }).getAttribute('aria-selected')).toBe('true'),
+    );
   });
 
   it('dimensions descriptives : le total et son interprétation restent affichés, détaillés et non remplacés', async () => {
@@ -1020,7 +1060,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     expect(screen.getByRole('button', { name: 'Réessayer la lecture des corrections' })).toBeTruthy();
     // Sans cette discipline, le rail afficherait « renseignée » : une affirmation
     // d'absence alors que l'état réel n'a pas pu être établi.
-    const patient = screen.getByRole('tab', { name: /Patient/i });
+    const patient = screen.getByRole('tab', { name: /^1\. Patient/i });
     expect(patient.textContent).toContain('indéterminée');
     expect(patient.textContent).not.toContain('renseignée');
   });

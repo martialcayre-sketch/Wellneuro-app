@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
-import * as Dialog from '@radix-ui/react-dialog';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import {
   Activity,
   Check,
@@ -18,7 +18,6 @@ import {
   Sparkles,
   Stethoscope,
   Utensils,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import type { EquilibreApiResponse, PrioriteBesoin } from '@/app/api/praticien/equilibre/route';
@@ -276,14 +275,17 @@ function IconeStatut({ statut }: { statut: StatutPhase }) {
   return <Circle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
 }
 
-// Instrument à tiroir — patron Radix repris de `PatientPreview` : la densité
-// s'ouvre AU CLIC (jamais au survol) puis se referme.
+// Instrument à tiroir — mince habillage de la primitive `PanneauSuperpose`
+// (audit 2026-09-02, lot 2) : le bouton d'instrument et le sur-titre restent
+// ici, la mécanique Radix (portail, thème, fermeture) vit dans la primitive.
+// `onOpenChange` remonte l'ouverture pour les tiroirs à chargement paresseux.
 function InstrumentTiroir({
   libelle,
   description,
   icone: Icone,
   children,
   large = false,
+  onOpenChange,
 }: {
   libelle: string;
   description: string;
@@ -292,10 +294,17 @@ function InstrumentTiroir({
   /** Dérogation de largeur (maquette : 440px par défaut ; les tableaux
    * denses comme « Détail des réponses » gardent la pane large). */
   large?: boolean;
+  onOpenChange?: (ouvert: boolean) => void;
 }) {
   return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>
+    <PanneauSuperpose
+      variante="tiroir"
+      large={large}
+      titre={libelle}
+      description={description}
+      surtitre="Instrument"
+      onOpenChange={onOpenChange}
+      declencheur={
         <button
           type="button"
           className="flex min-h-12 w-full items-center gap-2 rounded-[11px] border border-border bg-surface px-3 py-2 text-left text-14 font-medium text-foreground shadow-card hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
@@ -304,37 +313,137 @@ function InstrumentTiroir({
           <span className="min-w-0 flex-1">{libelle}</span>
           <ChevronRight aria-hidden="true" size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
         </button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        {/* data-theme requis : Radix portale hors de [data-theme="praticien"]
-            posé par dashboard/layout.tsx (cf. PatientPreview.tsx). */}
-        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
-        <Dialog.Content
-          data-theme="praticien"
-          className={`fixed right-0 top-0 z-50 h-full w-full overflow-y-auto border-l border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none ${
-            large ? 'max-w-2xl' : 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl'
-          }`}
-        >
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">Instrument</p>
-              <Dialog.Title className="font-display text-[19px] font-bold text-foreground">{libelle}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label={`Fermer l’instrument ${libelle}`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                <X aria-hidden="true" size={20} strokeWidth={2} />
-              </button>
-            </Dialog.Close>
+      }
+    >
+      {children}
+    </PanneauSuperpose>
+  );
+}
+
+/**
+ * Le tiroir « Synthèse IA & booklet » AFFICHE la dernière synthèse validée
+ * sur place, en lecture seule (audit 2026-09-02, constat « 3 clics et un
+ * changement de route pour lire un texte ») — la génération et l'édition
+ * restent dans l'espace dédié. Chargement PARESSEUX : rien ne part tant que
+ * le tiroir n'est pas ouvert (l'ouverture d'une fiche déclenche déjà ~30
+ * requêtes — angle mort perf du contre-audit), puis une seule lecture.
+ */
+function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
+  const [etat, setEtat] = useState<'repos' | 'chargement' | 'chargee' | 'erreur'>('repos');
+  const [validee, setValidee] = useState<{
+    statut: string;
+    dateValidation: string | null;
+    resume: string | null;
+    narratif: string | null;
+  } | null>(null);
+
+  const charger = useCallback(async () => {
+    setEtat('chargement');
+    try {
+      const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
+      const d = (await r.json()) as {
+        syntheses?: { statut?: string; dateValidation?: string | null; syntheseJson?: unknown }[];
+      };
+      if (!r.ok) {
+        setEtat('erreur');
+        return;
+      }
+      // La plus récente VALIDÉE (le tri du serveur fait foi) ; les brouillons
+      // ne se montrent pas ici — les relire est un geste d'édition, pas de
+      // consultation de dossier.
+      const derniere = (d.syntheses ?? []).find(
+        s => s.statut === 'Validee_Praticien' || s.statut === 'Corrigee_Praticien',
+      );
+      if (!derniere) {
+        setValidee(null);
+        setEtat('chargee');
+        return;
+      }
+      const json = derniere.syntheseJson;
+      const champ = (cle: string): string | null => {
+        if (typeof json !== 'object' || json === null) return null;
+        const valeur = (json as Record<string, unknown>)[cle];
+        return typeof valeur === 'string' && valeur.trim() ? valeur : null;
+      };
+      setValidee({
+        statut: derniere.statut ?? '',
+        dateValidation: derniere.dateValidation ?? null,
+        resume: champ('resume_praticien'),
+        narratif: champ('narratif_patient'),
+      });
+      setEtat('chargee');
+    } catch {
+      setEtat('erreur');
+    }
+  }, [idPatient]);
+
+  return (
+    <InstrumentTiroir
+      libelle="Synthèse IA & booklet"
+      description="Relire la dernière synthèse validée ; générer et éditer dans l’espace dédié."
+      icone={Sparkles}
+      onOpenChange={ouvert => {
+        if (ouvert && etat === 'repos') void charger();
+      }}
+    >
+      <div className="flex flex-col gap-3">
+        {etat === 'chargement' && (
+          <p role="status" className="text-sm text-muted-foreground">Chargement de la synthèse…</p>
+        )}
+        {etat === 'erreur' && (
+          <p role="alert" className="text-sm text-status-warning">
+            La synthèse n’a pas pu être lue — ce n’est pas une absence de synthèse.
+          </p>
+        )}
+        {etat === 'chargee' && !validee && (
+          <p className="text-sm text-muted-foreground">Aucune synthèse validée pour ce dossier.</p>
+        )}
+        {etat === 'chargee' && validee && (
+          <div className="rounded-lg border border-border bg-background p-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              {validee.statut === 'Corrigee_Praticien' ? 'Validée et corrigée' : 'Validée'}
+              {validee.dateValidation
+                ? ` le ${new Date(validee.dateValidation).toLocaleDateString('fr-FR')}`
+                : ''}
+              {' '}— lecture seule.
+            </p>
+            {validee.resume && (
+              <>
+                <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Résumé praticien
+                </h4>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{validee.resume}</p>
+              </>
+            )}
+            {validee.narratif && (
+              <>
+                <h4 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Narratif patient
+                </h4>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{validee.narratif}</p>
+              </>
+            )}
           </div>
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <Sparkles aria-hidden="true" size={16} />
+            Ouvrir la synthèse IA
+          </Link>
+          {/* Continuité vers la composition de document — la page accepte
+              ?idPatient= depuis le lot 2a ; plus de re-sélection à la main. */}
+          <Link
+            href={`/dashboard/documents?idPatient=${encodeURIComponent(idPatient)}`}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Composer un document
+          </Link>
+        </div>
+      </div>
+    </InstrumentTiroir>
   );
 }
 
@@ -369,6 +478,33 @@ export function FichePatientPanel({
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
+  // L'onglet actif se MÉMORISE comme la phase (par patient, en localStorage,
+  // audit 2026-09-02) : après un aller-retour hors de la fiche, le praticien
+  // retrouve l'onglet qu'il consultait. Le deep-link `?onglet=` prime
+  // toujours (intention explicite) ; la mémoire ne se lit qu'à défaut, DANS
+  // UN EFFET — jamais dans l'initialisateur d'état, où `window` casserait le
+  // rendu serveur et désaccorderait l'hydratation.
+  const clefOngletMemorise = `wn.fiche.dernier-onglet.${idPatient}`;
+  const ongletRestaureRef = useRef(false);
+  useEffect(() => {
+    if (ongletRestaureRef.current) return;
+    ongletRestaureRef.current = true;
+    if (ongletInitial) return;
+    try {
+      const brut = window.localStorage.getItem(clefOngletMemorise);
+      if (brut && ONGLETS.some(o => o.id === brut)) setOngletActif(brut as OngletFiche);
+    } catch {
+      // Stockage local indisponible : la mémoire est un confort, jamais une
+      // condition (même doctrine que la mémoire de phase).
+    }
+  }, [ongletInitial, clefOngletMemorise]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(clefOngletMemorise, ongletActif);
+    } catch {
+      // Idem : jamais une condition.
+    }
+  }, [ongletActif, clefOngletMemorise]);
   // Phase focale. Point de départ : 'patient' — la PREMIÈRE étape annoncée
   // par le rail, jamais le milieu de la séquence (audit du cockpit
   // 2026-09-02 : s'initialiser sur 'decision' faisait s'ouvrir chaque dossier
@@ -1131,9 +1267,20 @@ export function FichePatientPanel({
               Mode consultation
             </button>
           )}
-          <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
-            ← Retour aux patients
-          </Link>
+          {/* RETOUR CONTEXTUEL (audit 2026-09-02) : une entrée par
+              ?onglet=trajectoire vient de la porte 5.0 (« Fiche-trajectoire »
+              du rail, inbox du Fil) — la ramener vers la liste héritage
+              perdait le praticien. Le paramètre d'entrée est le seul signal
+              fiable dont la fiche dispose. */}
+          {ongletInitial === 'trajectoire' ? (
+            <Link href="/dashboard/trajectoires" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              ← Retour aux fiches-trajectoires
+            </Link>
+          ) : (
+            <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              ← Retour aux patients
+            </Link>
+          )}
         </div>
       </div>
 
@@ -1485,24 +1632,7 @@ export function FichePatientPanel({
               >
                 {cartesObjetsCliniques}
               </InstrumentTiroir>
-              <InstrumentTiroir
-                libelle="Synthèse IA & booklet"
-                description="Générer, relire, valider la synthèse IA puis préparer le booklet patient."
-                icone={Sparkles}
-              >
-                <div className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
-                  <p className="text-base text-foreground">
-                    Les outils de synthèse s’ouvrent dans l’espace dédié, avec ce patient déjà sélectionné.
-                  </p>
-                  <Link
-                    href={`/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`}
-                    className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                  >
-                    <Sparkles aria-hidden="true" size={16} />
-                    Ouvrir la synthèse IA
-                  </Link>
-                </div>
-              </InstrumentTiroir>
+              <TiroirSyntheseInline idPatient={idPatient} />
               <InstrumentTiroir
                 libelle="Agenda du sommeil"
                 description="Recueil nuit par nuit (Q_SOM_09) : chronogramme, durée, efficacité, régularité."
