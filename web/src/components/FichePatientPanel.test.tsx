@@ -464,7 +464,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('rend le rail des 7 phases du cycle clinique, phase « Décision 21 j » sélectionnée', async () => {
+  it('rend le rail des 7 phases numérotées, ouvert sur la PREMIÈRE étape', async () => {
     await rendreFiche();
 
     const rail = screen.getByRole('tablist', { name: 'Cycle clinique' });
@@ -474,14 +474,52 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     for (const libelle of phases) {
       expect(screen.getByRole('tab', { name: new RegExp(libelle, 'i') })).toBeTruthy();
     }
+    // Le rang rend la séquence visible (audit du cockpit 2026-09-02).
+    expect(screen.getByRole('tab', { name: /1\. Patient/i })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /7\. Réévaluation/i })).toBeTruthy();
+
+    // Le cockpit s'ouvre sur la PREMIÈRE étape annoncée, plus jamais au
+    // milieu de sa propre séquence (audit 2026-09-02) — ici le runtime est
+    // indisponible, donc la règle D5 ne corrige rien : 'patient' reste.
+    const patient = screen.getByRole('tab', { name: /1\. Patient/i });
+    expect(patient.getAttribute('aria-selected')).toBe('true');
 
     const decision = screen.getByRole('tab', { name: /Décision 21 j/i });
-    expect(decision.getAttribute('aria-selected')).toBe('true');
+    expect(decision.getAttribute('aria-selected')).toBe('false');
     // Statut jamais porté par la seule couleur : un libellé texte accompagne
     // l'icône. Runtime indisponible ici → l'état réel n'est pas établi, donc
     // « indéterminée » (jamais une affirmation par défaut « à ouvrir »).
     expect(decision.textContent).toContain('indéterminée');
     expect(decision.textContent).not.toContain('à ouvrir');
+  });
+
+  // ── Fil conducteur « Prochaine étape » (audit du cockpit 2026-09-02) ─────
+
+  it('un fil « Prochaine étape » désigne la phase due quand elle n’est pas affichée', async () => {
+    // runtime 'proposal' : aucun épisode confirmé → décision exigible (D5).
+    // La fiche s'ouvre donc sur Décision ; on navigue ailleurs pour vérifier
+    // que le fil apparaît et ramène à la phase due.
+    await rendreFiche({ runtime: 'proposal' });
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+    // Phase due affichée → le fil se tait (le rail la montre déjà).
+    expect(screen.queryByText(/Prochaine étape/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Suivi/i }));
+    await waitFor(() => expect(screen.getByText(/Prochaine étape : Décision 21 j/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Y aller' }));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+    expect(screen.queryByText(/Prochaine étape/)).toBeNull();
+  });
+
+  it('le fil se tait quand le runtime n’est pas établi — jamais une étape inventée', async () => {
+    await rendreFiche();
+    expect(screen.queryByText(/Prochaine étape/)).toBeNull();
   });
 
   it('navigue de phase en phase au clic et au clavier, sans quitter la page', async () => {
@@ -638,8 +676,11 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     );
     // Le signal B2 reste hissé au niveau fiche, visible quelle que soit la vue.
     await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
-    // Et le rail signale la phase Patient « en attente », pas « renseignée ».
-    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).toContain('en attente');
+    // Et le rail signale la phase Patient « à traiter » — c'est au praticien
+    // d'agir (débloquer), jamais « renseignée » ni un « en attente » ambigu
+    // qui laisserait croire qu'on attend le patient (audit 2026-09-02).
+    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).toContain('à traiter');
+    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).not.toContain('renseignée');
   });
 
   it('affiche un état vide explicite en Suivi et Réévaluation sans épisode confirmé (M3)', async () => {

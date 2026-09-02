@@ -67,9 +67,38 @@ export type EntreesPhaseInitiale = {
 };
 
 // Règle D5, dans l'ordre : bloqueur de sécurité > action exigible > première
-// phase en attente > dernière phase consultée. À défaut de tout : 'decision'
-// (reprise du comportement antérieur, documentée — jamais un statut inventé).
+// phase en attente > première phase à ouvrir > dernière phase consultée. À
+// défaut de tout : 'decision' (reprise du comportement antérieur, documentée —
+// jamais un statut inventé).
+//
+// « À OUVRIR » EST ENTRÉ DANS LA RECHERCHE le 2026-09-02 (audit du cockpit,
+// constat D5) : la phase Réévaluation ne produit JAMAIS 'en_attente' — elle
+// vaut 'fait' ou 'a_ouvrir' — si bien qu'un dossier avancé où seule la
+// réévaluation restait due atterrissait, sans mémoire locale, sur « Décision —
+// renseignée » au lieu de la phase réellement due. La due-ness prime la
+// mémoire, comme c'était déjà le cas pour 'en_attente'.
 export function phaseInitiale(entrees: EntreesPhaseInitiale): IdPhaseContrat | null {
+  if (entrees.chargement) return null;
+
+  const due = phaseDue(entrees);
+  if (due) return due;
+
+  if (entrees.dernierePhaseConsultee) return entrees.dernierePhaseConsultee;
+
+  return 'decision';
+}
+
+/**
+ * La phase DUE — celle qu'un fil conducteur « prochaine étape » désigne.
+ *
+ * Même hiérarchie que `phaseInitiale`, SANS la mémoire locale ni le repli
+ * 'decision' : `null` signifie « rien n'attend le praticien », et l'écran
+ * n'affiche alors aucun fil — jamais une étape inventée pour meubler
+ * (`DC-24`, transposé à la conduite d'écran).
+ */
+export function phaseDue(
+  entrees: Omit<EntreesPhaseInitiale, 'dernierePhaseConsultee'>,
+): IdPhaseContrat | null {
   if (entrees.chargement) return null;
 
   const premiereDansLeCycle = (candidates: readonly IdPhaseContrat[]): IdPhaseContrat | null => {
@@ -89,9 +118,11 @@ export function phaseInitiale(entrees: EntreesPhaseInitiale): IdPhaseContrat | n
     if (entrees.statuts[phase] === 'en_attente') return phase;
   }
 
-  if (entrees.dernierePhaseConsultee) return entrees.dernierePhaseConsultee;
+  for (const phase of ORDRE_PHASES) {
+    if (entrees.statuts[phase] === 'a_ouvrir') return phase;
+  }
 
-  return 'decision';
+  return null;
 }
 
 // ---------------------------------------------------------------------------
