@@ -16,7 +16,6 @@ import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVers
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
-import { TrajectoirePanel } from './TrajectoirePanel';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
@@ -140,6 +139,7 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed,
   phase = 'tout',
   onAjusterProtocole,
+  onOuvrirTrajectoire,
   onEtatChange,
   onPropositionsAssemblees,
 }: {
@@ -149,6 +149,9 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
   phase?: PhaseCycleClinique;
   onAjusterProtocole?: () => void;
+  /** Ouvre l'onglet Trajectoire de la fiche — le résumé de la phase
+   *  Réévaluation y renvoie pour le détail complet (audit 2026-09-02). */
+  onOuvrirTrajectoire?: () => void;
   onEtatChange?: (etat: EtatRuntimeClinique) => void;
   /**
    * Prévient le poste de pilotage qu'une assemblée de propositions vient
@@ -160,6 +163,15 @@ export function ClinicalRuntimeSection({
 }) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
+  // Sous-vues de la phase Actions (audit 2026-09-02, constat « jusqu'à 7
+  // panneaux lourds dans le même puits de défilement »). Bascule par `hidden`
+  // pour le protocole — ProtocolMiniBuilder et la Boussole doivent rester
+  // MONTÉS (le brouillon et l'aliment sélectionné vivent dans leur état) ;
+  // les autres sous-vues sont pilotées par leurs props, un montage
+  // conditionnel ne leur perd rien.
+  const [sousVueActions, setSousVueActions] = useState<
+    'protocole' | 'historique' | 'diffusion' | 'biologie'
+  >('protocole');
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
@@ -1100,11 +1112,42 @@ export function ClinicalRuntimeSection({
           </section>
         );
       })()}
+      {/* ── Phase Actions : SOUS-VUES (audit 2026-09-02) ─────────────────────
+          Jusqu'à sept panneaux lourds s'empilaient dans le même défilement.
+          Quatre sous-vues les regroupent : Protocole (construction +
+          consultation), Historique, Diffusion, Biologie. Le sélecteur
+          n'apparaît qu'en phase Actions hors fixture (la fixture ne monte que
+          le protocole, comme avant). */}
+      {affiche('actions') && !fixture && (
+        <div role="group" aria-label="Sections de la phase Actions" className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
+          {([
+            ['protocole', 'Protocole'],
+            ['historique', 'Historique'],
+            ['diffusion', 'Diffusion'],
+            ['biologie', 'Biologie'],
+          ] as const).map(([id, libelle]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={sousVueActions === id}
+              onClick={() => setSousVueActions(id)}
+              className={`min-h-9 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                sousVueActions === id
+                  ? 'bg-accent/15 font-semibold text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
+      )}
       {/* Boussole alimentaire : montée dès que les gardes métier sont
-          satisfaites, puis seulement MASQUÉE hors phase Actions — la démonter
-          rejouerait son chargement et réinitialiserait l'aliment sélectionné. */}
+          satisfaites, puis seulement MASQUÉE hors phase Actions / hors
+          sous-vue Protocole — la démonter rejouerait son chargement et
+          réinitialiserait l'aliment sélectionné. */}
       {c5Enabled && !fixture && readyDecisionCardId && (
-        <div hidden={!affiche('actions')}>
+        <div hidden={!affiche('actions') || sousVueActions !== 'protocole'}>
           <PractitionerFoodCompassObservatory
             idPatient={idPatient}
             decisionCardId={readyDecisionCardId}
@@ -1112,7 +1155,7 @@ export function ClinicalRuntimeSection({
           />
         </div>
       )}
-      <div id="protocol-version-builder" hidden={!affiche('actions')}>
+      <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
@@ -1123,11 +1166,13 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />
       </div>
-      {affiche('actions') && (
+      {affiche('actions') && (fixture || sousVueActions === 'protocole') && (
         <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
       )}
-      {affiche('actions') && !fixture && <ProtocolVersionHistory versions={versions} />}
-      {affiche('actions') && !fixture && versions.length > 0 && (
+      {affiche('actions') && !fixture && sousVueActions === 'historique' && (
+        <ProtocolVersionHistory versions={versions} />
+      )}
+      {affiche('actions') && !fixture && sousVueActions === 'diffusion' && versions.length > 0 && (
         <ProtocolDiffusionPanel
           canApprove={Boolean(activeReviewedVersion)}
           approved={approvedAt !== null}
@@ -1138,7 +1183,12 @@ export function ClinicalRuntimeSection({
           onApprove={approveForDiffusion}
         />
       )}
-      {affiche('actions') && !fixture && propositionDisponible && (
+      {affiche('actions') && !fixture && sousVueActions === 'diffusion' && versions.length === 0 && (
+        <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+          Aucune version de protocole enregistrée : rien à diffuser pour l’instant.
+        </p>
+      )}
+      {affiche('actions') && !fixture && sousVueActions === 'biologie' && propositionDisponible && (
         <PropositionBilanPanel
           lignes={propositionLignes}
           limites={propositionLimites}
@@ -1154,7 +1204,12 @@ export function ClinicalRuntimeSection({
           onEtablirCourrier={etablirCourrier}
         />
       )}
-      {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (
+      {affiche('actions') && !fixture && sousVueActions === 'biologie' && !propositionDisponible && !cbEnabled && (
+        <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+          Aucun outil de biologie ouvert sur ce dossier pour l’instant.
+        </p>
+      )}
+      {affiche('actions') && !fixture && sousVueActions === 'biologie' && cbEnabled && contenuActif && activeVersionId && (
         <ArbitrageBiologiquePanel
           intentions={contenuActif.actions
             .filter(action => action.interventionStatus === 'conditionnelle_biologie')
@@ -1217,7 +1272,68 @@ export function ClinicalRuntimeSection({
             Chargement de la trajectoire&hellip;
           </div>
         ) : (
-          <TrajectoirePanel trajectoire={trajectoire} />
+          // RÉSUMÉ, PLUS LE PANNEAU ENTIER (audit 2026-09-02) : TrajectoirePanel
+          // (620 lignes — cycles, spirale, comparateur) était monté une DEUXIÈME
+          // fois ici, en plus de l'onglet Trajectoire. La phase Réévaluation dit
+          // l'essentiel — dernier cycle, jalons mesurés ou non — et renvoie vers
+          // l'onglet pour le détail. Aucune valeur n'est réinterprétée : les
+          // booléens `mesure` et le momentum viennent tels quels de la
+          // trajectoire (A8-2), et un jalon non mesuré se dit « non mesuré »,
+          // jamais zéro (DC-24).
+          (() => {
+            const cycles = trajectoire?.cycles ?? [];
+            const dernierCycle = cycles.length > 0 ? cycles[cycles.length - 1] : null;
+            return (
+              <section
+                aria-label="Réévaluation — résumé du cycle"
+                className="rounded-xl border border-border bg-surface p-4 text-sm"
+              >
+                <h3 className="font-semibold text-foreground">Réévaluation — où en est le cycle</h3>
+                {!dernierCycle ? (
+                  <p className="mt-2 text-muted-foreground">Aucun cycle lisible dans la trajectoire.</p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-muted-foreground">
+                      Épisode {dernierCycle.ancre} · ancré le{' '}
+                      {new Date(dernierCycle.dateAncre).toLocaleDateString('fr-FR')}
+                      {dernierCycle.momentum
+                        ? ` · momentum ${dernierCycle.momentum.tendance}`
+                        : ''}
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {dernierCycle.jalons.map(jalon => (
+                        <li
+                          key={jalon.jalon}
+                          className={`rounded-full border px-3 py-1 text-xs ${
+                            jalon.mesure
+                              ? 'border-status-success/40 text-foreground'
+                              : 'border-border text-muted-foreground'
+                          }`}
+                        >
+                          {jalon.jalon} — {jalon.mesure
+                            ? `mesuré${jalon.date ? ` le ${new Date(jalon.date).toLocaleDateString('fr-FR')}` : ''}`
+                            : 'non mesuré'}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <p className="mt-3 text-muted-foreground">
+                  Le détail complet — cycles antérieurs, momentum par besoin, comparateur — vit dans
+                  l’onglet Trajectoire.
+                </p>
+                {onOuvrirTrajectoire && (
+                  <button
+                    type="button"
+                    onClick={onOuvrirTrajectoire}
+                    className="mt-2 min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    Ouvrir l’onglet Trajectoire
+                  </button>
+                )}
+              </section>
+            );
+          })()
         )
       )}
     </>

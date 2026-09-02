@@ -119,6 +119,11 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     // panneau ne dirait rien de la biologie, seulement de la navigation.
     await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
 
+    // Depuis l'audit du 2026-09-02, la phase Actions se structure en
+    // sous-vues : la proposition de bilan vit sous « Biologie ».
+    await page.getByRole('group', { name: 'Sections de la phase Actions' })
+      .getByRole('button', { name: 'Biologie' }).click();
+
     // Deux comptages avant l'assertion, et ils ne sont pas décoratifs : la
     // route répond `ok` et la phase Actions s'affiche, donc si le panneau
     // manque encore, c'est OU BIEN qu'il n'est pas rendu (le client n'a pas le
@@ -218,6 +223,10 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
     await confirmerEpisodeT0(page);
 
     await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
+
+    // Sous-vue « Biologie » (audit 2026-09-02) — même geste qu'au test 1.
+    await page.getByRole('group', { name: 'Sections de la phase Actions' })
+      .getByRole('button', { name: 'Biologie' }).click();
 
     const panneau = page.getByRole('region', { name: 'Biologie — proposition de bilan' });
     await expect(panneau).toBeVisible();

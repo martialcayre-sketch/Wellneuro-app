@@ -570,6 +570,21 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByRole('img', { name: /Cercles concentriques des 12 besoins/i })).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Objectif négocié' })).toBeTruthy());
     expect(screen.getByText(/Aucun objectif négocié pour ce dossier/)).toBeTruthy();
+
+    // SOUS-VUES (audit 2026-09-02) : les deux panneaux sont MONTÉS (leurs GET
+    // journalisent une seule fois), un seul est EXPOSÉ à la fois — bascule par
+    // `hidden`, jamais par démontage. `getByRole` par défaut ne voit pas un
+    // sous-arbre hidden ; `hidden: true` prouve le montage.
+    expect(screen.queryByRole('heading', { name: 'Ce que j’ai compris de vous' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Ce que j’ai compris de vous', hidden: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ce que j’ai compris' }));
+    expect(screen.getByRole('heading', { name: 'Ce que j’ai compris de vous' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Objectif négocié' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Objectif négocié', hidden: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Objectif négocié' }));
+    expect(screen.getByRole('heading', { name: 'Objectif négocié' })).toBeTruthy();
   });
 
   it('ouvre puis referme un instrument à tiroir (au clic, jamais au survol)', async () => {

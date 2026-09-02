@@ -512,6 +512,9 @@ export function FichePatientPanel({
   // est ensuite calculée par la règle D5 (SP-CONV LOT-02) dès que l'état
   // runtime est établi — sauf si le praticien a déjà navigué.
   const [phaseActive, setPhaseActive] = useState<IdPhase>('patient');
+  // Sous-vue de la phase Compréhension (audit 2026-09-02) — voir le bloc de
+  // rendu : bascule par `hidden`, jamais par démontage.
+  const [sousVueComprehension, setSousVueComprehension] = useState<'objectif' | 'comprehension'>('objectif');
   const phaseChoisieParPraticien = useRef(false);
   const phaseInitialiseeRef = useRef(false);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
@@ -1180,6 +1183,12 @@ export function FichePatientPanel({
     }
 
     if (phaseActive === 'comprehension') {
+      // SCINDÉE EN DEUX SOUS-VUES (audit 2026-09-02, constat bloquant : 13 à
+      // 18 blocs empilés). Bascule par `hidden`, jamais par démontage : les
+      // deux panneaux sont autonomes et leurs GET journalisent l'accès au
+      // dossier (G-TRUST-04) — les démonter à chaque bascule gonflerait le
+      // journal. Les deux montent donc UNE fois à l'entrée de phase, comme
+      // avant ; seul l'affichage alterne.
       return (
         <div className="flex flex-col gap-4">
           <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
@@ -1192,16 +1201,38 @@ export function FichePatientPanel({
               }))}
             />
           </div>
-          {/* Objectif négocié (Alliance 6.0-A, LOT-02) — AJOUT ADDITIF sous les
-              cercles. Ce bloc vit HORS du runtime clinique : un objectif se
-              négocie avant qu'un épisode soit confirmé, pas après, donc le
-              panneau reste visible sans épisode. Vérifié par banc de rendu. */}
-          <ObjectifNegociePanel idPatient={idPatient} signalAssemblage={assemblages} />
-          {/* « Ce que j'ai compris de vous » (Alliance 6.0-A, LOT-04) — AJOUT
-              ADDITIF sous l'objectif négocié, même phase et même raison : une
-              compréhension s'écrit avant qu'un épisode soit confirmé. Pas de
-              6e onglet — le lot n'en ouvre aucun. */}
-          <ComprehensionPanel idPatient={idPatient} />
+          <div role="group" aria-label="Sections de la phase Compréhension" className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
+            {([
+              ['objectif', 'Objectif négocié'],
+              ['comprehension', 'Ce que j’ai compris'],
+            ] as const).map(([id, libelle]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={sousVueComprehension === id}
+                onClick={() => setSousVueComprehension(id)}
+                className={`min-h-9 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                  sousVueComprehension === id
+                    ? 'bg-accent/15 font-semibold text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+          {/* Objectif négocié (Alliance 6.0-A, LOT-02) — HORS du runtime
+              clinique : un objectif se négocie avant qu'un épisode soit
+              confirmé, donc le panneau reste visible sans épisode. Vérifié
+              par banc de rendu. */}
+          <div hidden={sousVueComprehension !== 'objectif'}>
+            <ObjectifNegociePanel idPatient={idPatient} signalAssemblage={assemblages} />
+          </div>
+          {/* « Ce que j'ai compris de vous » (Alliance 6.0-A, LOT-04) — même
+              phase et même raison. Pas de 6e onglet — une sous-vue. */}
+          <div hidden={sousVueComprehension !== 'comprehension'}>
+            <ComprehensionPanel idPatient={idPatient} />
+          </div>
         </div>
       );
     }
@@ -1607,6 +1638,7 @@ export function FichePatientPanel({
                 onFixtureReviewed={relectureErgo}
                 phase={phaseCourante.runtime ?? 'aucune'}
                 onAjusterProtocole={() => setPhaseActive('actions')}
+                onOuvrirTrajectoire={() => setOngletActif('trajectoire')}
                 onEtatChange={setEtatRuntime}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
               />
@@ -1683,7 +1715,19 @@ export function FichePatientPanel({
         {ongletActif === 'correspondance' && <CorrespondanceMedecinPanel idPatient={idPatient} />}
       </div>
 
-      <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
+      {/* HAUTEUR CONTENUE, DÉFILEMENT INTERNE (audit 2026-09-02, constat
+          bloquant : « la pire page de défilement du produit » — l'onglet
+          n'avait ni plafond ni overflow, tout partait en flux de page). Même
+          patron que le Poste de pilotage (A6-R1 : on navigue, on ne
+          défile pas la page) ; sous lg, le flux normal demeure, comme le
+          cockpit. */}
+      <div
+        role="tabpanel"
+        id="panneau-trajectoire"
+        aria-labelledby="onglet-trajectoire"
+        hidden={ongletActif !== 'trajectoire'}
+        className="lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:overflow-y-auto"
+      >
         {/* « Ce qui compte pour le patient » (Alliance 6.0-A, LOT-03) — ajout
             ADDITIF à l'onglet existant : la trajectoire de sens vit à côté des
             passations, elle ne s'y résume jamais. Aucun onglet n'est créé
