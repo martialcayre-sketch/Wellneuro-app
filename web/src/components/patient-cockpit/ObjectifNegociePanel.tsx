@@ -99,6 +99,13 @@ const LIBELLE_CHAMP: Record<string, string> = {
  * redeviendrait une phrase que Wellneuro semble avoir écrite. Le SHA du
  * périmètre signé est montré en entier — tronqué, il ne prouverait rien et
  * donnerait l'apparence d'une preuve.
+ *
+ * DEPUIS L'AUDIT DU 2026-09-02, le SHA vit dans un repli natif `<details>` :
+ * la ligne visible nomme la règle, l'empreinte complète s'ouvre au clic. Le
+ * texte reste ENTIER et DANS LE DOM replié (un `<details>` fermé ne démonte
+ * pas ses enfants — les bancs qui exigent les 64 caractères passent tels
+ * quels) : c'est la mise en scène qui change, jamais la provenance — la
+ * distinction que l'audit doctrine a établie comme libre.
  */
 function Provenance({ source }: { source: SourceLue }) {
   if (!source) {
@@ -124,9 +131,12 @@ function Provenance({ source }: { source: SourceLue }) {
     );
   }
   return (
-    <p className="mt-1 break-all text-xs text-muted-foreground">
-      Règle signée {source.regle} — périmètre {source.shaPerimetre}
-    </p>
+    <details className="mt-1 text-xs text-muted-foreground">
+      <summary className="cursor-pointer">Règle signée {source.regle} — voir le périmètre signé</summary>
+      <p className="mt-1 break-all">
+        Règle signée {source.regle} — périmètre {source.shaPerimetre}
+      </p>
+    </details>
   );
 }
 
@@ -596,8 +606,8 @@ export function ObjectifNegociePanel({
         Objectif négocié
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Ce que le patient demande, dans ses mots, et ce que vous en avez compris. Chaque révision s’ajoute :
-        rien n’est écrasé, rien n’est supprimé.
+        Ce que le patient demande, dans ses mots, et ce que vous en avez compris. Les versions
+        précédentes restent consultables ci-dessous.
       </p>
 
       {etat === 'chargement' && (
@@ -783,9 +793,12 @@ export function ObjectifNegociePanel({
 
                   {ecarteDe === proposition.id ? (
                     <div className="mt-3 flex flex-col gap-2">
+                      {/* Label simple — la justification de gouvernance aval
+                          (curation du classement des candidats) vit dans la
+                          doc du lot, pas devant le praticien (audit
+                          2026-09-02, fuite de processus interne). */}
                       <label className="text-sm text-muted-foreground" htmlFor={`motif-${proposition.id}`}>
-                        Pourquoi cette proposition ne convient pas — c’est ce motif qui dira, plus tard, si le
-                        classement des candidats mérite d’être signé.
+                        Pourquoi cette proposition ne convient pas
                       </label>
                       <textarea
                         id={`motif-${proposition.id}`}
@@ -1065,11 +1078,15 @@ export function ObjectifNegociePanel({
                   Reformuler cette version
                 </button>
 
+                {/* REPLIÉES PAR DÉFAUT depuis l'audit du 2026-09-02 — même
+                    patron `<details>` que ComprehensionPanel : rien n'est
+                    écrasé ni retiré du DOM, l'écran cesse seulement de tout
+                    déplier en permanence. */}
                 {anterieures.length > 0 && (
-                  <div className="mt-3 border-t border-border pt-2">
-                    <h5 className="text-xs font-medium text-muted-foreground">
+                  <details className="mt-3 border-t border-border pt-2">
+                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
                       Versions antérieures ({anterieures.length})
-                    </h5>
+                    </summary>
                     <ol className="mt-2 flex flex-col gap-3">
                       {anterieures.map((ligne) => (
                         <li key={ligne.id} className="opacity-80">
@@ -1077,7 +1094,7 @@ export function ObjectifNegociePanel({
                         </li>
                       ))}
                     </ol>
-                  </div>
+                  </details>
                 )}
               </article>
             );
@@ -1134,7 +1151,7 @@ export function ObjectifNegociePanel({
                 <p className="whitespace-pre-wrap text-base text-foreground">« {repriseDe.texte} »</p>
                 <Provenance source={repriseDe.source} />
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Cette phrase devient l’énoncé du patient telle quelle : Wellneuro cite, il ne rédige pas.{' '}
+                  Cette phrase devient l’énoncé du patient telle quelle — non modifiable.{' '}
                   <button
                     type="button"
                     onClick={() => setRepriseDe(null)}

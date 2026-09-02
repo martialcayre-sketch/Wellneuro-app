@@ -426,8 +426,13 @@ export function PropositionBilanPanel({
         />
       )}
 
-      <div className="mt-3 rounded-lg border border-border p-3">
-        <p className="text-xs font-medium text-foreground">Ce que cette vue ne sait pas</p>
+      {/* REPLIÉ PAR DÉFAUT (audit 2026-09-02) : les limites épistémiques
+          restent lisibles au clic et entières dans le DOM — un méta-discours
+          permanent noyait la donnée clinique du panneau. */}
+      <details className="mt-3 rounded-lg border border-border p-3">
+        <summary className="cursor-pointer text-xs font-medium text-foreground">
+          Ce que cette vue ne sait pas
+        </summary>
         <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
           <li>
             Un bilan réalisé hors outil n’est connu que s’il a été déclaré ici : sans
@@ -437,7 +442,7 @@ export function PropositionBilanPanel({
             <Limite key={`${limite.type}-${index}`} limite={limite} />
           ))}
         </ul>
-      </div>
+      </details>
     </section>
   );
 }

@@ -771,9 +771,14 @@ export function FichePatientPanel({
           ))}
         </tbody>
       </table>
-      <div className="px-4 py-3 border-t border-border">
-        <LegendeNiveauxPreuve />
-      </div>
+      {/* Légende en repli (audit 2026-09-02) : pédagogique, utile une fois,
+          pas un pied de tableau permanent. */}
+      <details className="px-4 py-3 border-t border-border">
+        <summary className="cursor-pointer text-xs text-muted-foreground">Niveaux de preuve A–D</summary>
+        <div className="mt-2">
+          <LegendeNiveauxPreuve />
+        </div>
+      </details>
     </div>
   );
 
@@ -990,14 +995,14 @@ export function FichePatientPanel({
     if (phaseActive === 'patient') {
       return (
         <div className="flex flex-col gap-4">
+          {/* La date de dernière réponse N'EST PLUS répétée ici : le bandeau
+              du cockpit la porte en permanence sur ce même onglet, et la
+              double occurrence sans contexte ajouté était une pure
+              duplication (audit 2026-09-02). L'e-mail, lui, n'est visible
+              qu'ici. */}
           <div className="rounded-xl border border-border bg-surface p-4">
             <p className="text-base text-foreground">{nomComplet}</p>
             <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
-            <p className="mt-2 text-base text-muted-foreground">
-              {derniereReponse
-                ? `Dernière réponse reçue le ${derniereReponse}.`
-                : 'Aucune réponse reçue pour l’instant.'}
-            </p>
           </div>
           {assignationsModif.length > 0 && (
             <section aria-label="Demandes de correction en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
