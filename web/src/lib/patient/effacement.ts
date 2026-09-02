@@ -123,6 +123,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.correspondancesMedecin = (
       await tx.correspondanceMedecin.deleteMany({ where: par })
     ).count;
+    // Le document patient biologie (décision F, D-122) porte le texte remis
+    // au patient — même régime que la correspondance médecin : une pièce du
+    // dossier, elle part avec lui, nommément (FK RESTRICT côté patients).
+    supprimees.documentsPatientBiologie = (
+      await tx.documentPatientBiologie.deleteMany({ where: par })
+    ).count;
     // Les rendez-vous (accueil-observatoire LOT-04) sont en ON DELETE RESTRICT :
     // subsistant, ils feraient échouer la suppression du patient. Donnée
     // opérationnelle du dossier, ils partent avec lui, nommément.

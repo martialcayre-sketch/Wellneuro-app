@@ -679,6 +679,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_panels_documentes_v1_negatif.sql
 
+      # Document patient biologie (décision F, D-122) : un document valide et
+      # une seconde génération doivent être ACCEPTÉS (append-only) ; les CHECK
+      # doivent MORDRE (texte vide ou blancs avec tabulations — trou btrim/1
+      # fermé —, ancre hors format sha256 minuscule, version vide, auteur
+      # vide/espaces/trop long) ; la table porte EXACTEMENT huit colonnes
+      # (liste blanche : aucune colonne de valeur d'analyse) ; cinq porteuses
+      # NOT NULL ; FK patients en ON DELETE RESTRICT ; RLS deny-all active et
+      # sans policy. Fixtures posées et transaction annulée.
+      - name: CB document patient negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_documents_patient_v1_negatif.sql
+
       # Dossier à deux voix (Alliance 6.0-A LOT-01) : une écriture valide par
       # table doit être ACCEPTÉE ; les CHECK doivent MORDRE (praticien
       # vide/espaces/trop long, textes porteurs vides, `sens` hors taxonomie) ;

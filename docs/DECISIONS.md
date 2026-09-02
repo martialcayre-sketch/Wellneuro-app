@@ -4,6 +4,66 @@
 
 ## Décisions actives
 
+### D-122 — Les étages restants du rayon biologie s'ouvrent : document patient consigné, puis résultats réels
+
+- Date : 2026-09-01
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-09-01 —
+  « passer aux autres étages du rayon », après constat visuel du rayon
+  documentaire en production ; schémas des deux migrations confirmés
+  explicitement le même jour)
+- Domaine : rayon biologie fonctionnelle — régime documentaire (décision F du
+  cadrage CB) et étage 2 (CB-09) ; aucune règle clinique, aucun seuil
+- Porte sur : `D-073` (ancrage en colonnes, dont elle reprend le patron),
+  `D-079` (le SHA fait foi), `D-080`/`D-120`/`D-121` (qui ont levé le verrou
+  d'hébergement et exigé la demande explicite que cette décision constate),
+  `D-081` (un drapeau se pose avec le code qui le lit, geste daté),
+  `D-087` (chemin release-db), décision F du cadrage CB (README §4)
+
+**Ce que la décision constate.** La demande explicite exigée par `D-120` pour
+ouvrir l'étage 2 est rendue. Les deux livraisons passent chacune par une
+migration, chacune seule dans sa PR, appliquée par `release-db` approuvé puis
+constatée par conteneur, le code ensuite.
+
+**1. Le document patient (décision F) se consigne ancré.** Table
+`documents_patient_biologie`, patron `correspondances_medecin` sans le
+médecin : texte généré côté serveur depuis la table d'indications signée,
+`ancrage_sha256`/`ancrage_version` **non nuls** (ce document n'existe que
+dérivé de la table signée — sans ancre, pas de ligne), append-only, RLS
+deny-all, effacement IDP2 dès la PR de schéma, contrat SQL à liste blanche de
+colonnes (verrou « sans valeurs » intact : la demande, jamais le résultat).
+**Granularité : le dossier entier**, comme le courrier médecin — avec zéro
+appariement NABM signé, tout remboursement sort `non_evalue` et le régime
+documentaire couvre de toute façon toutes les lignes ; scinder par régime
+redeviendra pertinent quand l'appariement sera curé.
+
+**2. L'étage 2 (CB-09) reçoit sa table, bornée au cadrage.** Table
+`resultats_biologiques` (migration distincte, seconde PR) : `id_patient`,
+`analyte_code` (FK catalogue), `valeur`, `unite` (vocabulaire d'unités
+partagé), `preleve_le`, `source` (`saisie_praticien | import_labo`),
+`saisi_par`/`saisi_le`. **Par analyte seulement** — pas de ratio en V1 (ils se
+calculent), entité distincte, jamais un champ de la proposition. Hors de
+`tables_cb` du verrou structurel (comme les autres tables patient du rayon),
+RLS deny-all, effacement IDP2 dès la PR de schéma. La borne « date non
+future » se garde côté route (`now()` interdit en CHECK).
+
+**Frontières nommées, non franchies ici.**
+
+- Aucune règle « résultat → statut de panel » : le moteur de statuts ne lit
+  que les déclarations de panel documenté ; faire parler un résultat réel au
+  moteur est une règle clinique neuve, avec sa décision et ses claims. Une
+  discordance déclaration ↔ résultat se **signale**, ne se résout pas
+  (`DC-30`).
+- `WN_CB_RESULTS_ENABLED` (retiré le 2026-08-31, `D-120` §3) se **repose avec
+  le code qui le lit**, geste d'exploitation daté (`D-081`) — le verrou
+  `isCbResultsEnabled` existe, exige les deux drapeaux, et tout code étage 2
+  naît fermé.
+- Le courrier médecin reste sans pièce biologique tant que sa frontière n'est
+  pas rouverte (cadrage §7).
+
+**Aucune modification clinique** (`DC-17`/`DC-18`) : aucun seuil, aucune
+règle, aucune table signée touchée — deux tables de consignation et leur
+régime d'écriture.
+
 ### D-121 — La réserve de D-089 est levée : l'annexe HDS est signée, G-TRUST-04 est définitivement clos
 
 - Date : 2026-08-31

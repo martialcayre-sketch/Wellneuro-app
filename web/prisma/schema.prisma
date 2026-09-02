@@ -58,6 +58,7 @@ model Patient {
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
   arbitragesBiologiques      ArbitrageBiologique[]
   panelsBiologieDocumentes   PanelBiologieDocumente[]
+  documentsPatientBiologie   DocumentPatientBiologie[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
@@ -1948,6 +1949,38 @@ model PanelBiologieDocumente {
   // lecture du dossier, qui filtre sur ce seul terme. Pas de second index.
   @@unique([idPatient, panelCode], map: "cb_panel_documente_unique")
   @@map("panels_biologie_documentes")
+}
+
+// Document patient du régime documentaire biologie (décision F du cadrage CB,
+// CB-06 — [[D-122]]) : la trace écrite de ce qui a été PROPOSÉ au patient et
+// pourquoi. La demande, JAMAIS le résultat — aucune colonne de valeur, le
+// contrat SQL négatif fige la liste des colonnes (verrou « sans valeurs »,
+// même régime que `panels_biologie_documentes`).
+//
+// Patron `CorrespondanceMedecin` ([[D-073]]), sans le médecin : texte généré
+// côté serveur depuis la table d'indications SIGNÉE, ancrage de provenance en
+// COLONNES (un SHA qu'une garde peut comparer, jamais une ancre en prose).
+// Différence assumée avec le courrier : ici `ancrage_*` sont NON NULS — une
+// correspondance saisie à la main n'a pas de source dérivable, ce document
+// n'existe QUE dérivé de la table signée ; sans ancre, pas de ligne.
+// Append-only : re-générer fait une ligne de plus, rien ne s'écrase.
+// Table fille de `patients` : entre dans la transaction d'effacement IDP2
+// DÈS CETTE PR (le banc de complétude dérive du schéma et rougit à la seconde
+// où le modèle apparaît — précédent `arbitrages_biologiques`, #680).
+model DocumentPatientBiologie {
+  id             String   @id @default(cuid())
+  idPatient      String   @map("id_patient")
+  texte          String   @map("texte")
+  ancrageSha256  String   @map("ancrage_sha256")
+  ancrageVersion String   @map("ancrage_version")
+  generePar      String   @map("genere_par") // email praticien, posé côté serveur (CHECK migration : non vide, ≤ 320)
+  genereLe       DateTime @default(now()) @map("genere_le")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, genereLe], map: "cb_document_patient_patient_idx")
+  @@map("documents_patient_biologie")
 }
 
 // ───────────────────────────────────────────────────────────────────────────
