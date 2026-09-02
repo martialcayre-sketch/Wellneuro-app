@@ -168,6 +168,22 @@ describe('authOptions — un seul provider, et il est praticien', () => {
     expect(options?.jwks_endpoint).toBe('https://www.googleapis.com/oauth2/v3/certs');
   });
 
+  it('next-auth consomme bien `jwks_endpoint` — le nom que ce dépôt épingle', () => {
+    // Piège documenté : `jwks_uri` est le nom OIDC standard de la métadonnée,
+    // mais l'OPTION next-auth s'appelle `jwks_endpoint` — c'est elle que
+    // openidClient recopie dans l'Issuer. Une revue automatique a « corrigé »
+    // le nom le 2026-09-01 en renommant aussi l'assertion de configuration :
+    // le test de config seul ne suffit donc pas. Celui-ci épingle le CONTRAT
+    // CONSOMMATEUR dans la source installée — il rougit si next-auth renomme
+    // son champ, et il documente pourquoi le nôtre ne doit pas l'être.
+    const chargeur = createRequire(__filename);
+    const clientJs = readFileSync(
+      join(dirname(chargeur.resolve('next-auth')), 'core', 'lib', 'oauth', 'client.js'),
+      'utf8',
+    );
+    expect(clientJs).toMatch(/jwks_uri:\s*provider\.jwks_endpoint\b/);
+  });
+
   it('la fusion next-auth copie toujours les clés `undefined` — la prémisse de l’épinglage', () => {
     // Tout le bloc « découverte désactivée » repose sur un détail
     // d'implémentation : utils/merge itère les clés du source (`for in`) et

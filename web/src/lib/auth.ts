@@ -95,6 +95,14 @@ export const authOptions: AuthOptions = {
       },
       token: 'https://oauth2.googleapis.com/token',
       userinfo: 'https://openidconnect.googleapis.com/v1/userinfo',
+      // `jwks_uri` est le nom OIDC standard de la MÉTADONNÉE, pas de cette
+      // option : next-auth v4 lit `provider.jwks_endpoint` pour bâtir
+      // l'Issuer (core/lib/oauth/client.js — `jwks_uri: provider.jwks_endpoint`).
+      // Renommer cette clé priverait l'Issuer de son JWKS et casserait la
+      // validation de l'id_token au premier login réel ; tsc le refuse aussi
+      // (la propriété n'existe pas dans OAuthConfig). Une revue automatique a
+      // tenté cette « standardisation » le 2026-09-01 — revertée, et le nom
+      // consommé est épinglé par test contre la source installée.
       jwks_endpoint: 'https://www.googleapis.com/oauth2/v3/certs',
     }),
   ],
