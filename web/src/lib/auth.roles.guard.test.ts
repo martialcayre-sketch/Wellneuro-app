@@ -154,7 +154,7 @@ describe('authOptions — un seul provider, et il est praticien', () => {
         issuer?: string;
         token?: string;
         userinfo?: string;
-        jwks_uri?: string;
+        jwks_endpoint?: string;
         authorization?: { url?: string; params?: Record<string, string> };
       };
     };
@@ -165,7 +165,7 @@ describe('authOptions — un seul provider, et il est praticien', () => {
     expect(options?.authorization?.url).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     expect(options?.token).toBe('https://oauth2.googleapis.com/token');
     expect(options?.userinfo).toBe('https://openidconnect.googleapis.com/v1/userinfo');
-    expect(options?.jwks_uri).toBe('https://www.googleapis.com/oauth2/v3/certs');
+    expect(options?.jwks_endpoint).toBe('https://www.googleapis.com/oauth2/v3/certs');
   });
 
   it('la fusion next-auth copie toujours les clés `undefined` — la prémisse de l’épinglage', () => {
