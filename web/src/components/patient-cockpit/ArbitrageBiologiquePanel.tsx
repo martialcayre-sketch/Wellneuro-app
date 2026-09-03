@@ -108,6 +108,7 @@ export function ArbitrageBiologiquePanel({
   revisionPossible,
   onArbitrer,
   onReviser,
+  resultatsActifs = false,
 }: {
   /** Intentions `conditionnelle_biologie` de la version active. */
   intentions: IntentionBiologieAffichee[];
@@ -119,6 +120,8 @@ export function ArbitrageBiologiquePanel({
   revisionPossible: boolean;
   onArbitrer: (intentionId: string, verdict: VerdictArbitrage, note: string) => void;
   onReviser?: () => void;
+  /** Étage 2 actif : le badge « aucune valeur conservée » suit l'état réel. */
+  resultatsActifs?: boolean;
 }) {
   if (intentions.length === 0 && arbitrages.length === 0) return null;
   const parIntention = new Map(arbitrages.map(a => [a.intentionId, a]));
@@ -130,7 +133,13 @@ export function ArbitrageBiologiquePanel({
           Biologie — arbitrage au retour du bilan
         </h3>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-          Aucune valeur d’analyse conservée
+          {/* Le badge est une affirmation sur L'OUTIL, pas sur cette table :
+              il suit l'état réel de l'étage 2 (D-122 §2), comme son jumeau du
+              panneau proposition. La phrase en dessous, elle, reste vraie —
+              l'arbitrage ne consigne jamais un résultat. */}
+          {resultatsActifs
+            ? 'L’arbitrage ne consigne jamais une valeur'
+            : 'Aucune valeur d’analyse conservée'}
         </span>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">

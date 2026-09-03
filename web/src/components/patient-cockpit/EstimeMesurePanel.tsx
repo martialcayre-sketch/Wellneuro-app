@@ -1,26 +1,313 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
+import { useCbResultsEnabled } from './CbFeatureProvider';
 
-// « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — panneau en
-// état « SECOND TEMPS » (A6-R2) : aucune donnée biologique n'est stockée par
-// l'application (le stockage du mesuré exige un hébergement HDS — gate
-// inchangé), et rien n'est fabriqué ici. Le panneau documente la place de
-// l'instrument, il n'affiche ni axe chiffré ni donnée d'exemple.
+// « Estimé ↔ mesuré » (maquette 5.0, écran Fiche-trajectoire) — étage 2 du
+// rayon biologie (CB-09, [[D-122]] §2), derrière `isCbResultsEnabled` (posé
+// avec ce code, geste daté [[D-081]]).
+//
+// LE PANNEAU CONFRONTE, IL NE FUSIONNE JAMAIS ([[A6-R2]]) : le déclaratif des
+// questionnaires (estimé) vit dans les courbes de momentum ci-dessus ; ici
+// s'affichent les MESURES, par analyte, côte à côte — aucun chiffre unique,
+// aucun écart calculé, aucune interprétation (`DC-27` : score ≠ diagnostic ;
+// l'interprétation appartient au praticien et, quand l'analyte l'exige, au
+// médecin).
+//
+// LA SAISIE PORTE L'HEURE : l'unicité en base est (patient, analyte,
+// horodatage) — deux prélèvements du même jour (cortisol salivaire
+// matin/soir) ne coexistent que distingués par l'heure (frontière PR #838).
+// L'unité n'est PAS saisie : la route la relit sur l'analyte au catalogue.
 
-export function EstimeMesurePanel() {
+type AnalyteChoix = { code: string; libelle: string; unite: string | null };
+
+type ResultatAffiche = {
+  id: string;
+  analyteCode: string;
+  analyteLibelle: string;
+  valeur: number;
+  unite: string | null;
+  preleveLe: string;
+  source: string;
+};
+
+function formatDateHeure(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function SaisieMesure({
+  analytes,
+  disabled,
+  onConsigner,
+}: {
+  analytes: AnalyteChoix[];
+  disabled: boolean;
+  /** Rend `true` au succès : la valeur saisie ne s'efface qu'alors. */
+  onConsigner: (saisie: { analyteCode: string; valeur: number; preleveLe: string }) => Promise<boolean>;
+}) {
+  const [analyteCode, setAnalyteCode] = useState('');
+  const [valeur, setValeur] = useState('');
+  const [preleveLe, setPreleveLe] = useState('');
+  const choisi = analytes.find(a => a.code === analyteCode) ?? null;
+  const valeurNum = Number(valeur.replace(',', '.'));
+  const prete = choisi !== null && valeur.trim() !== '' && Number.isFinite(valeurNum) && preleveLe !== '';
+
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3">
+      <p className="text-xs font-medium text-foreground">Consigner une mesure</p>
+      <label className="mt-2 block text-xs text-muted-foreground" htmlFor="mesure-analyte">
+        Analyte (unité du catalogue)
+      </label>
+      <select
+        id="mesure-analyte"
+        value={analyteCode}
+        onChange={event => setAnalyteCode(event.target.value)}
+        className="min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+      >
+        <option value="">— choisir —</option>
+        {analytes.map(analyte => (
+          <option key={analyte.code} value={analyte.code}>
+            {analyte.libelle}
+            {analyte.unite ? ` (${analyte.unite})` : ''}
+          </option>
+        ))}
+      </select>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <div>
+          <label className="block text-xs text-muted-foreground" htmlFor="mesure-valeur">
+            Valeur{choisi?.unite ? ` (${choisi.unite})` : ''}
+          </label>
+          <input
+            id="mesure-valeur"
+            type="text"
+            inputMode="decimal"
+            value={valeur}
+            onChange={event => setValeur(event.target.value)}
+            placeholder="42,5"
+            className="min-h-11 w-32 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-muted-foreground" htmlFor="mesure-preleve-le">
+            Prélevé le (avec l’heure)
+          </label>
+          <input
+            id="mesure-preleve-le"
+            type="datetime-local"
+            value={preleveLe}
+            onChange={event => setPreleveLe(event.target.value)}
+            className="min-h-11 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </div>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        L’heure distingue deux prélèvements du même jour (profils salivaires, glycémies).
+        Vérifiez la valeur avant de consigner : le geste de correction n’existe pas encore.
+      </p>
+      <button
+        type="button"
+        disabled={disabled || !prete}
+        onClick={() => {
+          if (choisi === null) return;
+          void onConsigner({
+            analyteCode: choisi.code,
+            valeur: valeurNum,
+            preleveLe: new Date(preleveLe).toISOString(),
+          }).then(ok => {
+            if (ok) setValeur('');
+          });
+        }}
+        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        Consigner la mesure
+      </button>
+    </div>
+  );
+}
+
+export function EstimeMesurePanel({ idPatient }: { idPatient?: string }) {
+  const resultsEnabled = useCbResultsEnabled();
+  const [resultats, setResultats] = useState<ResultatAffiche[]>([]);
+  // ÉCHEC DE LECTURE ≠ ABSENCE DE MESURE (DC-24, même règle que le runtime
+  // clinique deux panneaux plus haut) : l'état vide ne s'affirme qu'après une
+  // lecture ABOUTIE — jamais pendant le chargement, jamais sur une panne.
+  const [lecture, setLecture] = useState<'chargement' | 'ok' | 'erreur'>('chargement');
+  const [analytes, setAnalytes] = useState<AnalyteChoix[]>([]);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const actif = resultsEnabled && typeof idPatient === 'string' && idPatient !== '';
+
+  const chargerResultats = useCallback(async () => {
+    if (!actif) return;
+    try {
+      const response = await fetch(
+        `/api/praticien/biologie/resultats?idPatient=${encodeURIComponent(idPatient ?? '')}`,
+      );
+      const payload = (await response.json()) as { ok: boolean; resultats?: ResultatAffiche[] };
+      if (response.ok && payload.ok) {
+        setResultats(payload.resultats ?? []);
+        setLecture('ok');
+      } else {
+        setLecture('erreur');
+      }
+    } catch {
+      // Un échec n'efface pas une série déjà affichée — mais il se DIT.
+      setLecture('erreur');
+    }
+  }, [actif, idPatient]);
+
+  useEffect(() => {
+    void chargerResultats();
+  }, [chargerResultats]);
+
+  useEffect(() => {
+    if (!actif) return;
+    let abandonne = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/praticien/biologie/catalogue');
+        const payload = (await response.json()) as {
+          ok: boolean;
+          analytes?: Array<{ code: string; libelle: string; unite: string | null }>;
+        };
+        if (!abandonne && response.ok && payload.ok) {
+          setAnalytes(
+            (payload.analytes ?? []).map(a => ({ code: a.code, libelle: a.libelle, unite: a.unite })),
+          );
+        }
+      } catch {
+        // Sans catalogue, la saisie reste fermée — la série se lit quand même.
+      }
+    })();
+    return () => {
+      abandonne = true;
+    };
+  }, [actif, idPatient]);
+
+  // Rend `true` au succès seulement : le formulaire ne vide la valeur saisie
+  // qu'à ce moment — un refus (doublon, dossier clos, 500) laisse la saisie
+  // intacte plutôt que de forcer une re-frappe de mémoire d'une donnée
+  // clinique.
+  const consigner = useCallback(
+    async (saisie: { analyteCode: string; valeur: number; preleveLe: string }): Promise<boolean> => {
+      setEnvoiEnCours(true);
+      setErreur(null);
+      try {
+        const response = await fetch('/api/praticien/biologie/resultats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, ...saisie }),
+        });
+        const payload = (await response.json()) as { ok: boolean; error?: string };
+        if (!response.ok || !payload.ok) {
+          setErreur(payload.error ?? 'La mesure n’a pas pu être consignée.');
+          return false;
+        }
+        await chargerResultats();
+        return true;
+      } catch {
+        setErreur('La mesure n’a pas pu être consignée.');
+        return false;
+      } finally {
+        setEnvoiEnCours(false);
+      }
+    },
+    [idPatient, chargerResultats],
+  );
+
+  if (!actif) {
+    return (
+      <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h4 className="text-sm font-semibold text-foreground">Estimé ↔ mesuré</h4>
+          <Badge variant="info">Second temps — à activer</Badge>
+        </div>
+        <p className="mt-2 text-base text-muted-foreground">
+          Cet instrument confrontera le déclaratif des questionnaires (estimé) aux résultats de biologie
+          fonctionnelle (mesuré) — jamais fusionnés en un chiffre unique. L’hébergement de données de santé
+          est en place ; la saisie des résultats s’ouvre avec l’activation de l’étage 2 du rayon, et rien
+          n’est affiché d’ici là.
+        </p>
+      </section>
+    );
+  }
+
+  const parAnalyte = new Map<string, ResultatAffiche[]>();
+  for (const resultat of resultats) {
+    const serie = parAnalyte.get(resultat.analyteCode) ?? [];
+    serie.push(resultat);
+    parAnalyte.set(resultat.analyteCode, serie);
+  }
+
   return (
     <section aria-label="Estimé et mesuré" className="rounded-lg border border-border/60 p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="text-sm font-semibold text-foreground">Estimé ↔ mesuré</h4>
-        <Badge variant="info">Second temps — HDS requis</Badge>
+        <Badge variant="info">Mesures consignées</Badge>
       </div>
-      <p className="mt-2 text-base text-muted-foreground">
-        Cet instrument confrontera le déclaratif des questionnaires (estimé) aux résultats de biologie fonctionnelle
-        (mesuré) — jamais fusionnés en un chiffre unique. Le stockage du mesuré exige un hébergement de données de
-        santé (HDS) : tant qu’il n’est pas en place, seul le déclaratif existe dans l’application et rien n’est
-        affiché ici.
+      <p className="mt-2 text-sm text-muted-foreground">
+        Le déclaratif (estimé) se lit dans les courbes de trajectoire, dès qu’un cycle est
+        confirmé ; les mesures se lisent ici, par analyte — <strong>jamais fusionnés en un
+        chiffre unique</strong>, et sans interprétation : elle revient au praticien et, quand
+        l’analyte l’exige, au médecin.
       </p>
+
+      {/* L'état vide ne s'affirme qu'après lecture ABOUTIE : « aucune mesure »
+          sur une panne serait une absence de donnée fabriquée (DC-24). */}
+      {lecture === 'chargement' ? (
+        <p className="mt-3 rounded-lg border border-border p-3 text-sm text-muted-foreground">
+          Lecture des mesures en cours — une lecture en cours n’est pas une absence.
+        </p>
+      ) : lecture === 'erreur' && parAnalyte.size === 0 ? (
+        <div className="mt-3 rounded-lg border border-status-danger/60 p-3">
+          <p role="alert" className="text-sm text-status-danger">
+            La série n’a pas pu être lue : impossible d’affirmer qu’aucune mesure n’existe.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setLecture('chargement');
+              void chargerResultats();
+            }}
+            className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+          >
+            Relire la série
+          </button>
+        </div>
+      ) : parAnalyte.size === 0 ? (
+        <p className="mt-3 rounded-lg border border-border p-3 text-sm text-foreground">
+          Aucune mesure consignée pour ce dossier.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {[...parAnalyte.entries()].map(([code, serie]) => (
+            <li key={code} className="rounded-lg border border-border p-3">
+              <p className="text-sm font-medium text-foreground">{serie[0].analyteLibelle}</p>
+              <ul className="mt-1 space-y-1">
+                {serie.map(mesure => (
+                  <li key={mesure.id} className="text-xs text-muted-foreground">
+                    {mesure.valeur}
+                    {mesure.unite ? ` ${mesure.unite}` : ''} — prélevé le{' '}
+                    {formatDateHeure(mesure.preleveLe)} (
+                    {mesure.source === 'import_labo' ? 'import laboratoire' : 'saisie praticien'})
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {erreur && (
+        <p role="alert" className="mt-2 text-sm text-status-danger">
+          {erreur}
+        </p>
+      )}
+
+      <SaisieMesure analytes={analytes} disabled={envoiEnCours} onConsigner={consigner} />
     </section>
   );
 }

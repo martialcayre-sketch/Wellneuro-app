@@ -8,6 +8,7 @@ import {
 import { garderProposition, type VerdictGarde } from '@/lib/biology-library/gardeProposition';
 import { deriverPropositionPourPatient } from '@/lib/biology-library/propositionService';
 import { genererCourrierBiologie } from '@/lib/biology-library/courrier';
+import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 
@@ -109,6 +110,8 @@ export async function POST(req: Request) {
       // dirait ce qui a été relu, pas ce qui a servi.
       tableSha256: INDICATIONS_BIOLOGIE_SHA256,
       dateCourrier: maintenant,
+      // La phrase « aucun résultat conservé » suit l'état réel de l'étage 2.
+      resultatsActifs: isCbResultsEnabled(),
     });
     if (!genere.ok) {
       return echec(genere.raison, MESSAGES_REFUS_COURRIER[genere.raison] ?? 'Courrier indisponible.', 409);

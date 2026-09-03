@@ -64,6 +64,20 @@ describe('genererCourrierBiologie', () => {
     expect(resultat.courrier.document.modeleId).toBe('courrier_biologie');
   });
 
+  it('étage 2 actif : la phrase « aucun résultat conservé » cède la place à l’état réel', () => {
+    // Promettre au médecin qu'aucun résultat n'est conservé alors que la
+    // saisie existe (D-122 §2) serait une fausse assurance sur le seul
+    // artefact qui quitte le cabinet.
+    const resultat = genererCourrierBiologie({
+      ...entree([ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' })]),
+      resultatsActifs: true,
+    });
+    expect(resultat.ok).toBe(true);
+    if (!resultat.ok) return;
+    expect(resultat.courrier.texte).not.toContain('Aucun résultat d’analyse n’est conservé');
+    expect(resultat.courrier.texte).toContain('peuvent être consignées dans notre outil');
+  });
+
   it('un déclencheur non rempli s’écrit avec sa condition — jamais absent en silence', () => {
     const resultat = genererCourrierBiologie(entree([
       ligne({

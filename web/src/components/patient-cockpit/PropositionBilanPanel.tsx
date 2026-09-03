@@ -372,6 +372,7 @@ export function PropositionBilanPanel({
   documentPatientRegistreATrancher = false,
   documentPatientReponses = 0,
   onEtablirDocumentPatient,
+  resultatsActifs = false,
 }: {
   lignes: LignePanelProposition[];
   limites: LimiteProposition[];
@@ -397,6 +398,8 @@ export function PropositionBilanPanel({
   /** Compteur de réponses abouties du geste document (verrou du formulaire). */
   documentPatientReponses?: number;
   onEtablirDocumentPatient?: (confirmerRegistre: boolean) => void;
+  /** Étage 2 actif : le badge « aucune valeur conservée » suit l'état réel. */
+  resultatsActifs?: boolean;
 }) {
   const parPanel = new Map(documentes.map(doc => [doc.panelCode, doc]));
   // UN SEUL prédicat d'offre pour les DEUX gestes (courrier et document
@@ -415,7 +418,12 @@ export function PropositionBilanPanel({
           Biologie — proposition de bilan
         </h3>
         <span className="rounded-full border border-border px-2 py-1 text-xs text-muted-foreground">
-          Aucune valeur d’analyse conservée
+          {/* Le badge suit l'état RÉEL de l'étage 2 (D-122 §2) : « aucune
+              valeur conservée » deviendrait faux drapeau levé — la
+              proposition, elle, ne porte jamais de valeur. */}
+          {resultatsActifs
+            ? 'Les mesures vivent à part — jamais dans la proposition'
+            : 'Aucune valeur d’analyse conservée'}
         </span>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">

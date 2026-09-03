@@ -389,9 +389,13 @@ sans procédure écrite.
   (G4, activé en production le 2026-07-21) ; coupe-circuit de session
   `sessionsInvalidesAvant`.
 - **Piste d'audit** — `journal_acces_dossiers`, écriture branchée sur les
-  22 routes GET « dossier nommé ». **Limites écrites** : pas d'écran de
-  consultation (lecture par requête SQL), POST exclus, liste vide non
-  journalisée.
+  23 routes GET « dossier nommé » (23ᵉ le 2026-09-03 : lecture des résultats
+  biologiques, étage 2 du rayon — D-122 §2). **Limites écrites** : pas
+  d'écran de consultation (lecture par requête SQL), POST exclus — y compris
+  la saisie d'un résultat, qui ne lit rien du dossier et dont l'écriture est
+  tracée par la ligne consignée elle-même (`saisi_par`, `saisi_le`) ; les
+  POST courrier/document patient, eux, journalisent parce qu'ils DÉRIVENT le
+  dossier entier —, liste vide non journalisée.
 - **Procédure de violation** — `docs/PROCEDURE_VIOLATION_DONNEES.md`, écrite
   **et exercée sur table** le 2026-07-22 (fiche 2026-EX1, scénario fictif).
 - **Hygiène du dépôt** — `docs/securite_rgpd.md`, garde anti-secrets

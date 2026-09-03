@@ -196,7 +196,7 @@ variable.**
 
 | Flag | Valeur ON | Ouvre | Garde |
 |---|---|---|---|
-| `WN_CB_RESULTS_ENABLED` | `true` | stockage de **résultats biologiques réels** (donnée de santé) | exige AUSSI `WN_CB_ENABLED` ; **aucun appelant à ce jour** ; ~~« ne doit jamais passer à true avant l'attestation HDS »~~ — **requalifié le 2026-08-22 ([[D-081]])** : la condition est un **hébergement HDS effectif et exclusif**, satisfaite au décommissionnement de Vercel/Supabase ([[D-080]], 2026-09-01). Le drapeau reste absent tant qu'aucun code ne le lit ; sa pose accompagnera le code de la Phase C |
+| `WN_CB_RESULTS_ENABLED` | `true` | stockage de **résultats biologiques réels** (donnée de santé) | exige AUSSI `WN_CB_ENABLED` ; ~~« ne doit jamais passer à true avant l'attestation HDS »~~ — **requalifié le 2026-08-22 ([[D-081]])** : la condition est un **hébergement HDS effectif et exclusif**, satisfaite au décommissionnement de Vercel/Supabase ([[D-080]], 2026-09-01). **Posé le 2026-09-03 avec le code qui le lit** (étage 2, [[D-122]] §2, geste daté D-081) : appelants `gardeResultats.ts` (routes GET/POST `api/praticien/biologie/resultats`), `EstimeMesurePanel` (via `CbFeatureProvider`), et les générateurs courrier/document patient (phrase « aucun résultat conservé » conditionnée). Absent en production = éteint (fail-closed) ; la levée en prod est un geste d'exploitation distinct |
 
 ## E. Configuration / secrets — **pas** des gâtes
 

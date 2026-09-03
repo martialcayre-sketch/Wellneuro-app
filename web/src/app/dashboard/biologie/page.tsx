@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
-import { getCbDisabledMessage, isCbEnabled } from '@/lib/biology-library/featureFlag';
+import { getCbDisabledMessage, isCbEnabled, isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 
 // L'étage DOCUMENTAIRE du rayon biologie est livré dans la Bibliothèque
 // (CB-08) : cette page oriente vers lui et ne garde en « différé » que
@@ -54,11 +54,22 @@ export default function BiologiePage() {
         </div>
       )}
 
-      <BanniereDiffere>
-        La saisie de résultats biologiques réels reste un second temps, ouvert par une décision
-        dédiée. D&apos;ici là, aucune valeur biologique patient n&apos;est saisie ni stockée dans
-        l&apos;application.
-      </BanniereDiffere>
+      {/* L'affirmation suit l'ÉTAT RÉEL de l'étage 2 (D-122 §2) : « rien
+          n'est stocké » deviendrait faux drapeau levé — sur la page même du
+          rayon, l'affirmation la plus visible de toutes. */}
+      {isCbResultsEnabled() ? (
+        <BanniereDiffere>
+          La saisie de résultats biologiques réels est ouverte (étage 2 du rayon) : elle se fait
+          depuis la fiche patient, panneau « Estimé ↔ mesuré », par analyte et avec l&apos;heure de
+          prélèvement.
+        </BanniereDiffere>
+      ) : (
+        <BanniereDiffere>
+          La saisie de résultats biologiques réels reste un second temps, ouvert par une décision
+          dédiée. D&apos;ici là, aucune valeur biologique patient n&apos;est saisie ni stockée dans
+          l&apos;application.
+        </BanniereDiffere>
+      )}
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
         <h3 className="font-display text-lg font-semibold text-foreground">Du présumé au mesuré</h3>

@@ -331,7 +331,7 @@ export function TrajectoirePanel({
               libelle={`épisode ${cycles.length}`}
             />
           )}
-          <EstimeMesurePanel />
+          <EstimeMesurePanel idPatient={idPatient} />
           {/* Orientation NNPP2 (LOT-06) — au présent seulement. Une
               recommandation d'exploration se lit sur l'état courant du dossier ;
               l'afficher en lecture datée la ferait passer pour ce que la table

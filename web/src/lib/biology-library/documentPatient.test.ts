@@ -67,6 +67,17 @@ describe('genererDocumentPatientBiologie', () => {
     expect(resultat.documentPatient.html).toContain('Validé par votre praticien');
   });
 
+  it('étage 2 actif : la phrase « aucun résultat conservé » cède la place à l’état réel', () => {
+    const resultat = genererDocumentPatientBiologie({
+      ...entree([ligne({ panelCode: 'PANEL_SOCLE', libelle: 'Socle' })]),
+      resultatsActifs: true,
+    });
+    expect(resultat.ok).toBe(true);
+    if (!resultat.ok) return;
+    expect(resultat.documentPatient.texte).not.toContain('Aucun résultat d’analyse n’est conservé');
+    expect(resultat.documentPatient.texte).toContain('consigner des mesures dans son outil');
+  });
+
   it('le gabarit lui-même ne déclenche pas la garde anxiogène', () => {
     // La garde vit dans la route ; ce banc prouve que le chemin nominal ne la
     // fait pas crier — un gabarit qui alarme par construction rendrait le

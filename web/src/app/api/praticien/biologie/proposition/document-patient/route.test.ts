@@ -80,6 +80,26 @@ afterEach(() => {
   delete process.env.WN_CB_PROPOSITION;
 });
 
+// Banc de câblage jumeau du courrier : la phrase « aucun résultat conservé »
+// suit `isCbResultsEnabled` parce que la ROUTE le passe.
+describe('câblage resultatsActifs (D-122 §2)', () => {
+  it('drapeau étage 2 levé : le générateur le reçoit', async () => {
+    process.env.WN_CB_RESULTS_ENABLED = 'true';
+    await POST(postRequest({ idPatient: 'PAT1' }));
+    delete process.env.WN_CB_RESULTS_ENABLED;
+    expect(genererDocumentPatientBiologie).toHaveBeenCalledWith(
+      expect.objectContaining({ resultatsActifs: true }),
+    );
+  });
+
+  it('drapeau éteint : le générateur reçoit false (fail-closed)', async () => {
+    await POST(postRequest({ idPatient: 'PAT1' }));
+    expect(genererDocumentPatientBiologie).toHaveBeenCalledWith(
+      expect.objectContaining({ resultatsActifs: false }),
+    );
+  });
+});
+
 describe('ancrage — celui du document rendu, jamais autre chose (D-073, D-122)', () => {
   it('consigne le SHA et la version lus dans la provenance du bloc', async () => {
     const response = await POST(postRequest({ idPatient: 'PAT1' }));

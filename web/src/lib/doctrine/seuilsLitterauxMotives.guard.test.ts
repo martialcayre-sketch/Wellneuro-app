@@ -255,6 +255,7 @@ const EXEMPTIONS: Record<string, string> = {
   'src/lib/instruments.ts\ttexte.length > 300': 'longueur de libellé (caractères), contrainte de saisie',
   'src/lib/instruments.ts\toptions.length > 8': 'nombre d’options d’un item ; contrainte d’ergonomie de saisie, aucune cotation n’en dépend',
   'src/lib/biology-library/gardeProposition.ts\tidPatient.length > 64': 'longueur maximale d’un identifiant, garde d’entrée',
+  'src/lib/biology-library/gardeResultats.ts\tidPatient.length > 64': 'longueur maximale d’un identifiant, garde d’entrée (jumelle de gardeProposition)',
   'src/lib/rag/config.ts\tinternalSecret.length < 32': 'longueur minimale d’un secret — garde de SÉCURITÉ, sans rapport clinique',
   'src/lib/supplement-library/config.ts\tinternalSecret.length < 32': 'longueur minimale d’un secret — garde de SÉCURITÉ, sans rapport clinique',
 

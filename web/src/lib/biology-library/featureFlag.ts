@@ -50,15 +50,18 @@ export function isCbPropositionEnabled(
 }
 
 /**
- * Étage 2 — résultats biologiques réels (saisie, import, boucle estimé ↔
- * mesuré). GATE DUR HDS : ne doit jamais passer à true avant l'attestation
- * d'hébergement de données de santé.
+ * Étage 2 — résultats biologiques réels (saisie, boucle estimé ↔ mesuré).
+ * La condition HDS a été requalifiée le 2026-08-22 ([[D-081]]) : hébergement
+ * HDS effectif et exclusif, satisfaite au décommissionnement Vercel/Supabase
+ * ([[D-080]]).
  *
  * Exige les DEUX flags : l'étage résultats ne peut pas s'ouvrir sur un rayon
  * fermé. C'est délibérément plus strict que « un flag par étage » — il faut
  * deux variables justes pour stocker une donnée de santé, jamais une seule.
- * Aucun appelant à ce jour : la fonction existe pour que le lot CB-09 trouve
- * le verrou déjà écrit et testé, plutôt que de l'inventer sous pression.
+ * Appelants depuis le 2026-09-03 ([[D-122]] §2, drapeau posé avec le code) :
+ * `gardeResultats`, `EstimeMesurePanel` (via `CbFeatureProvider`), et les
+ * générateurs courrier/document patient pour la phrase « aucun résultat
+ * conservé ». Absent = éteint (fail-closed).
  */
 export function isCbResultsEnabled(
   value = process.env.WN_CB_RESULTS_ENABLED,
