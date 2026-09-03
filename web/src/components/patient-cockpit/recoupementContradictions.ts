@@ -20,6 +20,23 @@ import type { ContradictionAffichee } from '@/lib/clinical/contradictionsService
 // `modules purs pour composants client`).
 
 export type RecoupementContradiction = {
+  /**
+   * L'identifiant du constat d'origine (`C-STR`…), RECOPIÉ du service.
+   *
+   * IL NE S'AFFICHE PAS, et ce n'est pas un oubli : l'audit du 2026-09-02
+   * reproche précisément à l'écran ses « références au code » — un `C-STR` posé
+   * près de la carte de décision en serait une de plus. Il sert de CLÉ STABLE à
+   * la liste, qui s'indexait sur le rang (`key={index}`) : deux contradictions
+   * dont l'ordre change entre deux rendus voyaient alors React réutiliser le
+   * mauvais nœud, et un repli ouvert restait ouvert sur la ligne suivante.
+   *
+   * Le lot « Référence » du cadrage visait un identifiant PARTAGÉ entre les
+   * sites de contradiction. Le relevé a corrigé sa prémisse : l'id n'est affiché
+   * NULLE PART — `MissingDataPanel` l'emploie lui aussi comme simple clé. Le
+   * rendre visible sur deux surfaces cliniques est une décision d'affichage qui
+   * revient au praticien, pas une conséquence technique.
+   */
+  id: string;
   /** La description du constat, RECOPIÉE du service — jamais reformulée. */
   description: string;
   /** Libellés des candidats dont une passation fondatrice est confrontée. */
@@ -69,6 +86,7 @@ export function recoupementsContradictions(entree: {
     .map((constat) => {
       const instruments = new Set(constat.passations.map((passation) => passation.idQuestionnaire));
       return {
+        id: constat.id,
         description: constat.description,
         candidats: candidats
           .filter((candidat) => [...instruments].some((instrument) => candidat.instruments.has(instrument)))
