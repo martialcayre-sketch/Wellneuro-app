@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DUREE_VALIDITE_MS,
+  MESSAGE_DEMANDE_ENVOYEE,
   MESSAGE_LIEN_INDISPONIBLE,
   PALIER_REPONSE_MS,
   PLAFOND_DEMANDES_PAR_HEURE,
@@ -134,6 +135,30 @@ describe('message unique', () => {
   it('une seule phrase couvre consommé, expiré et inconnu', () => {
     expect(MESSAGE_LIEN_INDISPONIBLE).toMatch(/n’est plus valable/);
     expect(MESSAGE_LIEN_INDISPONIBLE).not.toMatch(/expir|consomm|utilisé|inconnu|introuvable/i);
+  });
+
+  // La route répond « envoyé » même quand l'envoi a échoué — c'est le prix de
+  // l'indifférenciation. Sans recours, la personne attend un e-mail qui
+  // n'arrivera jamais : le message doit lui dire quoi faire dans ce cas.
+  it('la redemande indique un recours quand rien n’arrive', () => {
+    expect(MESSAGE_DEMANDE_ENVOYEE).toMatch(/courriers indésirables/);
+    expect(MESSAGE_DEMANDE_ENVOYEE).toMatch(/praticien/);
+  });
+
+  // Le recours ne doit pas rouvrir l'oracle qu'il traverse : il vaut pour le
+  // courrier indésirable, l'adresse inconnue ET la panne, sans nommer aucun
+  // des trois. Nommer la panne dirait, sur une adresse connue, que l'envoi a
+  // été tenté.
+  //
+  // RAPPEL D'INTENTION, PAS LA GARDE. La propriété d'indifférenciation est
+  // tenue par `api/portail/lien/demande/route.test.ts`, qui compare statut,
+  // corps et en-têtes entre les branches (adresse connue, inconnue, plafond,
+  // SMTP rejeté, base en panne) — une phrase qui trahirait la panne y
+  // casserait. La liste de mots ci-dessous ne couvre que les formulations les
+  // plus probables : ne pas l'invoquer comme preuve.
+  it('la redemande ne distingue toujours pas adresse inconnue et panne', () => {
+    expect(MESSAGE_DEMANDE_ENVOYEE).toMatch(/^Si cette adresse correspond/);
+    expect(MESSAGE_DEMANDE_ENVOYEE).not.toMatch(/panne|incident|erreur|indisponible|échec|inconnue/i);
   });
 });
 
