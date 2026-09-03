@@ -1,8 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import type {
   CreatePatientResponse,
   PatchPatientResponse,
@@ -27,6 +25,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { PacksPanel } from '@/components/PacksPanel';
 
 const PAGE_SIZE = 10;
@@ -75,59 +74,6 @@ function StatusBadge({ value }: { value: string }) {
 // une définition imbriquée remonterait le formulaire à chaque rendu et ferait
 // perdre le focus de saisie). Le déclencheur vit dans le Root Radix : le
 // focus revient dessus à la fermeture.
-function TiroirAction({
-  boutonLabel,
-  titre,
-  description,
-  ouvert,
-  onOpenChange,
-  children,
-}: {
-  boutonLabel: string;
-  titre: string;
-  description?: string;
-  ouvert: boolean;
-  onOpenChange: (ouvert: boolean) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Dialog.Root open={ouvert} onOpenChange={onOpenChange}>
-      <Dialog.Trigger asChild>
-        <Button className="min-h-11">{boutonLabel}</Button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        {/* data-theme requis : Radix portale vers document.body, hors du
-            conteneur [data-theme="praticien"] du layout. */}
-        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
-        <Dialog.Content
-          data-theme="praticien"
-          className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-pop focus:outline-none"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Dialog.Title className="font-display text-lg font-semibold text-foreground">{titre}</Dialog.Title>
-              {description ? (
-                <Dialog.Description className="mt-1 text-xs text-muted-foreground">{description}</Dialog.Description>
-              ) : (
-                <Dialog.Description className="sr-only">{titre}</Dialog.Description>
-              )}
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label={`Fermer « ${titre} »`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                <X aria-hidden="true" size={20} strokeWidth={2} />
-              </button>
-            </Dialog.Close>
-          </div>
-          <div className="mt-4">{children}</div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
 
 type EditPatientState = {
   idPatient: string;
@@ -773,10 +719,13 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       {/* Barre d'actions (LOT-05) : les formulaires de création vivent en
           tiroirs — le tableau patients est le premier contenu de la page. */}
       <div className="flex flex-wrap items-center gap-3">
-        <TiroirAction
-          boutonLabel="Nouveau patient"
+        <PanneauSuperpose
+          largeur="standard"
+          declencheur={<Button className="min-h-11">Nouveau patient</Button>}
           titre="Nouveau patient"
-          ouvert={tiroirOuvert === 'patient'}
+          description="Nouveau patient"
+          descriptionMasquee
+          open={tiroirOuvert === 'patient'}
           onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'patient' : null)}
         >
           <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
@@ -796,13 +745,14 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             )}
           </div>
           </form>
-        </TiroirAction>
+        </PanneauSuperpose>
 
-        <TiroirAction
-          boutonLabel="Nouvelle consultation"
+        <PanneauSuperpose
+          largeur="standard"
+          declencheur={<Button className="min-h-11">Nouvelle consultation</Button>}
           titre="Nouvelle consultation"
           description="Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un dossier existant sont dans « Gérer le dossier », au bout de sa ligne."
-          ouvert={tiroirOuvert === 'consultation'}
+          open={tiroirOuvert === 'consultation'}
           onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'consultation' : null)}
         >
           <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
@@ -837,12 +787,15 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             )}
           </div>
           </form>
-        </TiroirAction>
+        </PanneauSuperpose>
 
-        <TiroirAction
-          boutonLabel="Nouvelle assignation"
+        <PanneauSuperpose
+          largeur="standard"
+          declencheur={<Button className="min-h-11">Nouvelle assignation</Button>}
           titre="Nouvelle assignation questionnaire"
-          ouvert={tiroirOuvert === 'assignation'}
+          description="Nouvelle assignation questionnaire"
+          descriptionMasquee
+          open={tiroirOuvert === 'assignation'}
           onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'assignation' : null)}
         >
           <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
@@ -918,7 +871,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             )}
           </div>
           </form>
-        </TiroirAction>
+        </PanneauSuperpose>
 
         {/* Retour des actions déclenchées depuis les lignes du tableau (lien
             renvoyé/copié/révoqué, consultation créée…) : loin du geste,
