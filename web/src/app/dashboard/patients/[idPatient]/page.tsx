@@ -1,5 +1,10 @@
 import { FichePatientPanel } from '@/components/FichePatientPanel';
-import { estOngletFiche, type OngletFiche } from '@/lib/praticien/ongletsFiche';
+import {
+  estOngletFiche,
+  estPhaseFiche,
+  type OngletFiche,
+  type PhaseFiche,
+} from '@/lib/praticien/ongletsFiche';
 import {
   buildValidationErgoC1Fixture,
   estModeValidationErgoActif,
@@ -35,6 +40,11 @@ export default function FichePatientPage({
   // Trajectoires) : validé ici côté serveur, toute valeur inconnue est ignorée.
   const ongletBrut = Array.isArray(searchParams?.onglet) ? searchParams.onglet[0] : searchParams?.onglet;
   const ongletInitial: OngletFiche | undefined = estOngletFiche(ongletBrut) ? ongletBrut : undefined;
+  // Deep-link `?phase=` : un lien partageable vers une phase précise du rail
+  // (« regarde la Réévaluation de ce dossier »). Même garde que `?onglet=` —
+  // une valeur inconnue est ignorée et la règle D5 reprend la main.
+  const phaseBrute = Array.isArray(searchParams?.phase) ? searchParams.phase[0] : searchParams?.phase;
+  const phaseDemandee: PhaseFiche | undefined = estPhaseFiche(phaseBrute) ? phaseBrute : undefined;
   return (
     <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
       <AgendaAliFeatureProvider enabled={isAgendaAlimentaireEnabled(process.env.WN_AGENDA_ALI)}>
@@ -53,6 +63,7 @@ export default function FichePatientPage({
             key={params.idPatient}
             idPatient={params.idPatient}
             ongletInitial={ongletInitial}
+            phaseDemandee={phaseDemandee}
             fixtureValidationErgo={fixtureValidationErgo}
           />
         </CbFeatureProvider>
