@@ -38,6 +38,11 @@ describe('DossierConfirmDialog — effacement', () => {
     expect(screen.getByRole('heading', { name: new RegExp(PATIENT) })).toBeTruthy();
   });
 
+  it('re-pose data-theme sur le portail — Radix portale hors du thème du layout', () => {
+    rendreEffacement();
+    expect(screen.getByRole('dialog').getAttribute('data-theme')).toBe('praticien');
+  });
+
   it('annonce l’irréversibilité', () => {
     rendreEffacement();
     expect(screen.getByText(/irréversible/i)).toBeTruthy();

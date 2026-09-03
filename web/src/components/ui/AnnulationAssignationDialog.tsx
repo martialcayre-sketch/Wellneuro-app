@@ -64,8 +64,13 @@ export function AnnulationAssignationDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-foreground/35" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl focus:outline-none">
+        {/* data-theme requis : Radix portale vers document.body, hors du
+            conteneur [data-theme="praticien"] du layout. */}
+        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
+        <Dialog.Content
+          data-theme="praticien"
+          className="fixed left-1/2 top-1/2 z-50 max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl focus:outline-none"
+        >
           <Dialog.Title className="text-base font-semibold text-foreground">
             Annuler l’assignation « {titreQuestionnaire} » ?
           </Dialog.Title>
