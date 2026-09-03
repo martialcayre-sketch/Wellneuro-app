@@ -692,6 +692,11 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_documents_patient_v1_negatif.sql
 
+      - name: CB resultats biologiques negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_resultats_biologiques_v1_negatif.sql
+
       # Dossier à deux voix (Alliance 6.0-A LOT-01) : une écriture valide par
       # table doit être ACCEPTÉE ; les CHECK doivent MORDRE (praticien
       # vide/espaces/trop long, textes porteurs vides, `sens` hors taxonomie) ;

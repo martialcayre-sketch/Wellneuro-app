@@ -59,6 +59,7 @@ model Patient {
   arbitragesBiologiques      ArbitrageBiologique[]
   panelsBiologieDocumentes   PanelBiologieDocumente[]
   documentsPatientBiologie   DocumentPatientBiologie[]
+  resultatsBiologiques       ResultatBiologique[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
@@ -1571,6 +1572,7 @@ model BiologyAnalyte {
   itemsPanel           BiologyPanelItem[]
   ratiosOperandeA      BiologyRatio[]          @relation("ratio_operande_a")
   ratiosOperandeB      BiologyRatio[]          @relation("ratio_operande_b")
+  resultats            ResultatBiologique[]
 
   @@index([statutFiche, actif], map: "biology_analytes_statut_idx")
   @@index([typePrelevement], map: "biology_analytes_prelevement_idx")
@@ -1981,6 +1983,42 @@ model DocumentPatientBiologie {
 
   @@index([idPatient, genereLe], map: "cb_document_patient_patient_idx")
   @@map("documents_patient_biologie")
+}
+
+// Résultats biologiques réels du dossier (étage 2 du rayon, CB-09 —
+// [[D-122]] §2) : la MESURE, par analyte seulement — pas de ratio en V1 (ils
+// se calculent), entité distincte, jamais un champ de la proposition.
+// `valeur` en numeric (exact — V1 quantitative seulement : un résultat
+// qualitatif n'a pas de colonne, il attendra sa propre décision plutôt qu'un
+// champ libre). `unite` porte le vocabulaire d'unités PARTAGÉ du catalogue :
+// CHECK migration identique à `biology_analytes_unite_check` (« défini une
+// fois, appliqué quatre fois » — l'égalité est tenue par le contrat),
+// nullable comme lui — un analyte sans unité a des résultats sans unité,
+// on n'en invente pas. `source`
+// bornée par CHECK aux deux origines nommées par la décision. La borne
+// « date non future » de `preleve_le` se garde côté route (`now()` interdit
+// en CHECK). Table fille de `patients` : entre dans la transaction
+// d'effacement IDP2 DÈS CETTE PR (le banc de complétude dérive du schéma —
+// précédent `arbitrages_biologiques`, #680).
+model ResultatBiologique {
+  id          String   @id @default(cuid())
+  idPatient   String   @map("id_patient")
+  analyteCode String   @map("analyte_code")
+  valeur      Decimal  @map("valeur")
+  unite       String?  @map("unite")
+  preleveLe   DateTime @map("preleve_le") // date de prélèvement : une DONNÉE, posée par le praticien
+  source      String   @map("source") // saisie_praticien | import_labo (CHECK migration)
+  saisiPar    String   @map("saisi_par") // email praticien, posé côté serveur (CHECK : non vide, ≤ 320)
+  saisiLe     DateTime @default(now()) @map("saisi_le")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient Patient        @relation(fields: [idPatient], references: [idPatient])
+  analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
+  // série d'un analyte dans un dossier (estimé ↔ mesuré). Pas de second index.
+  @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
+  @@map("resultats_biologiques")
 }
 
 // ───────────────────────────────────────────────────────────────────────────
