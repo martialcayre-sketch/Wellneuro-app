@@ -31,7 +31,7 @@ import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
-import type { OngletFiche } from '@/lib/praticien/ongletsFiche';
+import type { OngletFiche, PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
@@ -230,7 +230,11 @@ const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'correspondance', libelle: 'Correspondance' },
 ];
 
-type IdPhase = 'patient' | 'donnees' | 'comprehension' | 'decision' | 'actions' | 'suivi' | 'reevaluation';
+// LA LISTE VIT DANS `lib/praticien/ongletsFiche.ts`, pas ici : la page serveur
+// doit valider `?phase=` avant de le passer, et un module `'use client'` ne
+// s'appelle pas côté serveur. Deux listes dériveraient, et la dérive se lirait
+// comme un deep-link qui « ne marche pas » sur la phase qu'une seule connaît.
+type IdPhase = PhaseFiche;
 // `inconnu` : l'état réel n'a pas pu être établi (runtime en chargement ou en
 // erreur) — on l'affiche tel quel plutôt que d'affirmer « à ouvrir ».
 type StatutPhase = 'fait' | 'en_attente' | 'a_ouvrir' | 'inconnu';
@@ -450,11 +454,19 @@ function TiroirSyntheseInline({ idPatient }: { idPatient: string }) {
 export function FichePatientPanel({
   idPatient,
   ongletInitial,
+  phaseDemandee,
   fixtureValidationErgo = null,
 }: {
   idPatient: string;
   /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
   ongletInitial?: OngletFiche;
+  /**
+   * Phase d'ouverture (deep-link `?phase=`, validée par la page serveur).
+   *
+   * Vaut une navigation du praticien : elle prime sur la règle D5 et n'est pas
+   * écrasée. Voir `phaseChoisieParPraticien` plus bas.
+   */
+  phaseDemandee?: PhaseFiche;
   fixtureValidationErgo?: ValidationErgoC1Fixture | null;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
@@ -511,11 +523,26 @@ export function FichePatientPanel({
   // sur la 4e étape pendant la fenêtre transitoire). La phase réellement due
   // est ensuite calculée par la règle D5 (SP-CONV LOT-02) dès que l'état
   // runtime est établi — sauf si le praticien a déjà navigué.
-  const [phaseActive, setPhaseActive] = useState<IdPhase>('patient');
+  //
+  // `phaseDemandee` (deep-link `?phase=`) COURT-CIRCUITE ce point de départ et,
+  // plus bas, la règle D5 elle-même : un lien qui désigne une phase doit
+  // l'ouvrir, sinon il ne sert à rien. La valeur vient du serveur, elle est donc
+  // identique au rendu et à l'hydratation — contrairement à la mémoire locale,
+  // qui ne peut être lue qu'après le montage.
+  const [phaseActive, setPhaseActive] = useState<IdPhase>(phaseDemandee ?? 'patient');
   // Sous-vue de la phase Compréhension (audit 2026-09-02) — voir le bloc de
   // rendu : bascule par `hidden`, jamais par démontage.
   const [sousVueComprehension, setSousVueComprehension] = useState<'objectif' | 'comprehension'>('objectif');
-  const phaseChoisieParPraticien = useRef(false);
+  // UN DEEP-LINK VAUT UNE NAVIGATION DU PRATICIEN : sans cela, la règle D5
+  // s'exécuterait dès l'état runtime établi et écraserait la phase demandée par
+  // celle qu'elle juge due — le lien partagé afficherait alors autre chose que
+  // ce qu'il désigne, une seconde après l'ouverture.
+  //
+  // IL N'EST EN REVANCHE PAS MÉMORISÉ. `choisirPhase` écrit en localStorage ;
+  // ici, non. Un lien reçu d'un confrère ne doit pas réécrire silencieusement la
+  // phase par défaut du destinataire sur ce dossier : il ouvre une vue, il ne
+  // change pas une habitude.
+  const phaseChoisieParPraticien = useRef(phaseDemandee !== undefined);
   const phaseInitialiseeRef = useRef(false);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
   // Mode de vie 7 domaines (LOT-02) — servi par la même lecture de trajectoire.

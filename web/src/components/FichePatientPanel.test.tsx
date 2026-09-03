@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FichePatientPanel } from './FichePatientPanel';
-import { estOngletFiche } from '@/lib/praticien/ongletsFiche';
+import { estOngletFiche, estPhaseFiche, type PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
@@ -457,11 +457,11 @@ function stubFetch(options: Options = {}) {
   return fetchMock;
 }
 
-async function rendreFiche(options: Options = {}) {
+async function rendreFiche(options: Options & { phaseDemandee?: PhaseFiche } = {}) {
   const fetchMock = stubFetch(options);
   render(
     <C5FeatureProvider enabled={false}>
-      <FichePatientPanel idPatient="PAT001" />
+      <FichePatientPanel idPatient="PAT001" phaseDemandee={options.phaseDemandee} />
     </C5FeatureProvider>,
   );
   await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
@@ -1080,6 +1080,62 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     expect(estOngletFiche('inconnu')).toBe(false);
     expect(estOngletFiche(undefined)).toBe(false);
     expect(estOngletFiche(42)).toBe(false);
+  });
+
+  it('estPhaseFiche : même garde stricte pour `?phase=`', () => {
+    for (const valide of ['patient', 'donnees', 'comprehension', 'decision', 'actions', 'suivi', 'reevaluation']) {
+      expect(estPhaseFiche(valide)).toBe(true);
+    }
+    expect(estPhaseFiche('cockpit')).toBe(false); // un onglet n'est pas une phase
+    expect(estPhaseFiche(undefined)).toBe(false);
+    expect(estPhaseFiche(42)).toBe(false);
+  });
+});
+
+// Deep-link `?phase=` — un lien partageable vers une phase précise du rail.
+describe('FichePatientPanel — phase demandée par lien', () => {
+  // `cleanup` est enregistré PAR BLOC dans ce fichier, pas globalement (seul le
+  // vidage de `localStorage` l'est) : sans ce rappel, la fiche du cas précédent
+  // reste montée et `getByRole('tab')` en trouve deux.
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('la phase demandée PRIME sur la règle D5, qui en aurait choisi une autre', async () => {
+    // `runtime: 'proposal'` = aucun épisode confirmé, donc décision exigible :
+    // D5 ouvrirait la fiche sur « Décision 21 j ». Le lien demande « Suivi ».
+    // Sans priorité, la phase demandée s'afficherait puis serait écrasée une
+    // seconde plus tard, à l'établissement de l'état runtime — un lien partagé
+    // montrerait alors autre chose que ce qu'il désigne.
+    await rendreFiche({ runtime: 'proposal', phaseDemandee: 'suivi' });
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('false'),
+    );
+    expect(screen.getByRole('tab', { name: /Suivi/i }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('la phase demandée n’est PAS mémorisée — un lien reçu ne réécrit pas l’habitude', async () => {
+    // `choisirPhase` mémorise ; l'arrivée par lien, non. Un lien envoyé par un
+    // confrère ouvre une vue, il ne change pas la phase par défaut du
+    // destinataire sur ce dossier.
+    await rendreFiche({ runtime: 'proposal', phaseDemandee: 'suivi' });
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Suivi/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+
+    expect(window.localStorage.getItem('wn.fiche.derniere-phase.PAT001')).toBeNull();
+  });
+
+  it('une phase inconnue est ignorée : la règle D5 reprend la main', async () => {
+    // La garde serveur ne passe jamais une valeur hors liste ; ce cas vérifie
+    // le comportement du composant quand rien ne lui est demandé.
+    await rendreFiche({ runtime: 'proposal' });
+
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true'),
+    );
   });
 });
 
