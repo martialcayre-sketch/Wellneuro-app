@@ -74,7 +74,7 @@ type Options = {
   // - `filtresIgnores` : serveur antérieur aux paramètres — il rend la ligne
   //   d'un AUTRE dossier et n'écho aucun filtre.
   patients?: 'defaut' | 'erreur' | 'tronque' | 'filtresIgnores';
-  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
+  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
   // d'identité du destinataire est observable.
@@ -283,7 +283,8 @@ const REPONSES_A_SUBSCORES_AVEC_DETAIL = {
 function cycleTrajectoire(j21Mesure: boolean) {
   return {
     cycleId: 'ep_T0',
-    dateT0: '2026-06-01T00:00:00.000Z',
+    ancre: 'T0',
+    dateAncre: '2026-06-01T00:00:00.000Z',
     versionScore: 'v1',
     jalons: [
       { jalon: 'T0', mesure: true, valeur: 40, date: '2026-06-01T00:00:00.000Z' },
@@ -292,6 +293,7 @@ function cycleTrajectoire(j21Mesure: boolean) {
       { jalon: 'J90', mesure: false, valeur: null, date: null },
     ],
     momentum: null,
+    momentumParBesoin: [],
   };
 }
 
@@ -371,7 +373,7 @@ function stubFetch(options: Options = {}) {
       const cycles =
         trajectoire === 'cycleT0Seul'
           ? [cycleTrajectoire(false)]
-          : trajectoire === 'cycleJ21Mesure'
+          : trajectoire === 'cycleJ21Mesure' || trajectoire === 'discordant'
             ? [cycleTrajectoire(true)]
             : [];
       // Index navigable RÉALISTE : un repère daté par jalon effectivement
@@ -389,6 +391,9 @@ function stubFetch(options: Options = {}) {
           index,
           cycles,
           comparaison: { disponible: false, raison: cycles.length > 0 ? 'un_seul_cycle' : 'aucun_cycle' },
+          // `DC-30` : la discordance rang↔dates est un SIGNAL servi par la
+          // route — le résumé de Réévaluation doit le rendre, pas le trancher.
+          discordanceOrdreCycles: trajectoire === 'discordant',
         },
       });
     }
@@ -570,6 +575,21 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByRole('img', { name: /Cercles concentriques des 12 besoins/i })).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Objectif négocié' })).toBeTruthy());
     expect(screen.getByText(/Aucun objectif négocié pour ce dossier/)).toBeTruthy();
+
+    // SOUS-VUES (audit 2026-09-02) : les deux panneaux sont MONTÉS (leurs GET
+    // journalisent une seule fois), un seul est EXPOSÉ à la fois — bascule par
+    // `hidden`, jamais par démontage. `getByRole` par défaut ne voit pas un
+    // sous-arbre hidden ; `hidden: true` prouve le montage.
+    expect(screen.queryByRole('heading', { name: 'Ce que j’ai compris de vous' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Ce que j’ai compris de vous', hidden: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ce que j’ai compris' }));
+    expect(screen.getByRole('heading', { name: 'Ce que j’ai compris de vous' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Objectif négocié' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Objectif négocié', hidden: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Objectif négocié' }));
+    expect(screen.getByRole('heading', { name: 'Objectif négocié' })).toBeTruthy();
   });
 
   it('ouvre puis referme un instrument à tiroir (au clic, jamais au survol)', async () => {
@@ -769,6 +789,40 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
     await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+  });
+
+  // ── Le résumé de la phase Réévaluation (audit 2026-09-02, lot 3) ─────────
+
+  it('résumé de Réévaluation : un jalon non mesuré se dit « non mesuré » — jamais zéro, jamais une date', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    const resume = await screen.findByRole('region', { name: 'Réévaluation — résumé du cycle' });
+    expect(resume.textContent).toContain('Cycle T0');
+    expect(resume.textContent).toContain('J21 — non mesuré');
+    expect(resume.textContent).toContain('J42 — non mesuré');
+    // DC-24 : l'absence n'est ni un zéro ni une valeur — et AUCUNE tendance
+    // du momentum n'est restituée ici (le mot n'apparaît que dans le renvoi
+    // vers l'onglet ; une surface qui restituerait la tendance devrait se
+    // déclarer au garde D-106, elle n'a pas à exister).
+    expect(resume.textContent).not.toMatch(/momentum (en )?(hausse|baisse|stable)/i);
+    expect(resume.textContent).not.toMatch(/J21 — 0/);
+    // Le renvoi vers le détail existe et ramène à l'onglet Trajectoire.
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir l’onglet Trajectoire' }));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Trajectoire' }).getAttribute('aria-selected')).toBe('true'),
+    );
+  });
+
+  it('résumé de Réévaluation : un jalon mesuré porte sa date, la discordance d’ordre se dit (DC-30)', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'discordant' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    const resume = await screen.findByRole('region', { name: 'Réévaluation — résumé du cycle' });
+    expect(resume.textContent).toContain('J21 — mesuré le 22/06/2026');
+    // Le doute se dit, il ne se tranche pas : la bannière DC-30 est rendue
+    // mot pour mot comme dans TrajectoirePanel.
+    expect(resume.textContent).toContain('Ordre des cycles à vérifier');
   });
 
   it('Réévaluation sous erreur runtime : aucun état vide affirmé, l’erreur prime (M3)', async () => {

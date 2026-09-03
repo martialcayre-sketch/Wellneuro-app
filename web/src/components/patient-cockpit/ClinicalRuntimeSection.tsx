@@ -16,7 +16,6 @@ import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVers
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
-import { TrajectoirePanel } from './TrajectoirePanel';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
 import type { CheckinRow } from '@/lib/protocol/checkinDomain';
@@ -140,6 +139,7 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed,
   phase = 'tout',
   onAjusterProtocole,
+  onOuvrirTrajectoire,
   onEtatChange,
   onPropositionsAssemblees,
 }: {
@@ -149,6 +149,9 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
   phase?: PhaseCycleClinique;
   onAjusterProtocole?: () => void;
+  /** Ouvre l'onglet Trajectoire de la fiche — le résumé de la phase
+   *  Réévaluation y renvoie pour le détail complet (audit 2026-09-02). */
+  onOuvrirTrajectoire?: () => void;
   onEtatChange?: (etat: EtatRuntimeClinique) => void;
   /**
    * Prévient le poste de pilotage qu'une assemblée de propositions vient
@@ -160,6 +163,27 @@ export function ClinicalRuntimeSection({
 }) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
+  // Sous-vues de la phase Actions (audit 2026-09-02, constat « jusqu'à 7
+  // panneaux lourds dans le même puits de défilement »). Bascule par `hidden`
+  // pour le protocole — ProtocolMiniBuilder et la Boussole doivent rester
+  // MONTÉS (le brouillon et l'aliment sélectionné vivent dans leur état) ;
+  // les autres sous-vues sont pilotées par leurs props, un montage
+  // conditionnel ne leur perd rien.
+  const [sousVueActions, setSousVueActions] = useState<
+    'protocole' | 'historique' | 'diffusion' | 'biologie'
+  >('protocole');
+  // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
+  // est un état inconnu, jamais un vide affirmable (revue I1).
+  const [versionsLues, setVersionsLues] = useState(false);
+  // ENTRER dans la phase Actions ramène à la sous-vue Protocole (revue I4) :
+  // les deux affordances qui promettent le protocole — « Ouvrir la phase
+  // Actions » du bandeau bloqueur, « Ajuster » de J21 — font
+  // `setPhaseActive('actions')` côté fiche ; sans cette remise à zéro, elles
+  // atterrissaient sur la dernière sous-vue consultée, sans constructeur à
+  // l'écran. La sous-vue reste stable TANT QU'ON EST dans la phase.
+  useEffect(() => {
+    if (phase === 'actions') setSousVueActions('protocole');
+  }, [phase]);
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
@@ -284,6 +308,10 @@ export function ClinicalRuntimeSection({
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
       setVersions(payload.history);
+      // La lecture a ABOUTI : les états vides des sous-vues Historique et
+      // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
+      // `[]` en vol ou après échec est un état INCONNU, pas un vide).
+      setVersionsLues(true);
       setActiveVersionId(payload.active?.versionId ?? null);
       setContenuActif(payload.active?.contenu ?? null);
     } catch {
@@ -1100,11 +1128,42 @@ export function ClinicalRuntimeSection({
           </section>
         );
       })()}
+      {/* ── Phase Actions : SOUS-VUES (audit 2026-09-02) ─────────────────────
+          Jusqu'à sept panneaux lourds s'empilaient dans le même défilement.
+          Quatre sous-vues les regroupent : Protocole (construction +
+          consultation), Historique, Diffusion, Biologie. Le sélecteur
+          n'apparaît qu'en phase Actions hors fixture (la fixture ne monte que
+          le protocole, comme avant). */}
+      {affiche('actions') && !fixture && readyDecisionCardId && (
+        <div role="group" aria-label="Sections de la phase Actions" className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1">
+          {([
+            ['protocole', 'Protocole'],
+            ['historique', 'Historique'],
+            ['diffusion', 'Diffusion'],
+            ['biologie', 'Biologie'],
+          ] as const).map(([id, libelle]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={sousVueActions === id}
+              onClick={() => setSousVueActions(id)}
+              className={`min-h-11 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                sousVueActions === id
+                  ? 'bg-accent/15 font-semibold text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
+      )}
       {/* Boussole alimentaire : montée dès que les gardes métier sont
-          satisfaites, puis seulement MASQUÉE hors phase Actions — la démonter
-          rejouerait son chargement et réinitialiserait l'aliment sélectionné. */}
+          satisfaites, puis seulement MASQUÉE hors phase Actions / hors
+          sous-vue Protocole — la démonter rejouerait son chargement et
+          réinitialiserait l'aliment sélectionné. */}
       {c5Enabled && !fixture && readyDecisionCardId && (
-        <div hidden={!affiche('actions')}>
+        <div hidden={!affiche('actions') || sousVueActions !== 'protocole'}>
           <PractitionerFoodCompassObservatory
             idPatient={idPatient}
             decisionCardId={readyDecisionCardId}
@@ -1112,7 +1171,7 @@ export function ClinicalRuntimeSection({
           />
         </div>
       )}
-      <div id="protocol-version-builder" hidden={!affiche('actions')}>
+      <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
@@ -1123,63 +1182,117 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />
       </div>
-      {affiche('actions') && (
+      {affiche('actions') && (fixture || sousVueActions === 'protocole') && (
         <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
       )}
-      {affiche('actions') && !fixture && <ProtocolVersionHistory versions={versions} />}
-      {affiche('actions') && !fixture && versions.length > 0 && (
-        <ProtocolDiffusionPanel
-          canApprove={Boolean(activeReviewedVersion)}
-          approved={approvedAt !== null}
-          stale={approvalStale}
-          approvedAt={approvedAt}
-          state={diffusionState}
-          error={diffusionError}
-          onApprove={approveForDiffusion}
-        />
+      {/* Historique et Diffusion : panneaux SANS état local (vérifié en
+          revue) — le montage conditionnel ne leur perd rien. Les états vides
+          ne s'affirment qu'une fois la lecture ABOUTIE (`versionsLues`) :
+          « aucune version » pendant un fetch en vol ou après un échec serait
+          une affirmation sur un état inconnu (même doctrine que la
+          trajectoire, vingt lignes plus bas). */}
+      {affiche('actions') && !fixture && sousVueActions === 'historique' && (
+        versions.length > 0 ? (
+          <ProtocolVersionHistory versions={versions} />
+        ) : versionsLues ? (
+          <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+            Aucune version de protocole enregistrée pour ce dossier.
+          </p>
+        ) : (
+          <p role="status" className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+            Lecture des versions en cours ou indisponible — rien n’est affirmé sur l’historique.
+          </p>
+        )
       )}
-      {affiche('actions') && !fixture && propositionDisponible && (
-        <PropositionBilanPanel
-          lignes={propositionLignes}
-          limites={propositionLimites}
-          documentes={propositionDocumentes}
-          motifIndisponible={propositionMotif}
-          state={propositionState}
-          error={propositionError}
-          onDeclarer={declarerPanelDocumente}
-          onNouvelleSaisie={() => setPropositionState('idle')}
-          courrier={courrier}
-          courrierErreur={courrierErreur}
-          partageMedecinTraitant={partageMedecin}
-          onEtablirCourrier={etablirCourrier}
-        />
+      {affiche('actions') && !fixture && sousVueActions === 'diffusion' && (
+        versions.length > 0 ? (
+          <ProtocolDiffusionPanel
+            canApprove={Boolean(activeReviewedVersion)}
+            approved={approvedAt !== null}
+            stale={approvalStale}
+            approvedAt={approvedAt}
+            state={diffusionState}
+            error={diffusionError}
+            onApprove={approveForDiffusion}
+          />
+        ) : versionsLues ? (
+          <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+            Aucune version de protocole enregistrée : rien à diffuser pour l’instant.
+          </p>
+        ) : (
+          <p role="status" className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+            Lecture des versions en cours ou indisponible — rien n’est affirmé sur la diffusion.
+          </p>
+        )
       )}
-      {affiche('actions') && !fixture && cbEnabled && contenuActif && activeVersionId && (
-        <ArbitrageBiologiquePanel
-          intentions={contenuActif.actions
-            .filter(action => action.interventionStatus === 'conditionnelle_biologie')
-            .map(action => ({
-              actionId: action.actionId,
-              title: action.title,
-              cible: action.waitFor?.cible ?? null,
-            }))}
-          arbitrages={arbitrages
-            .filter(a => a.protocolDraftId === activeVersionId)
-            .map(a => ({
-              intentionId: a.intentionId,
-              verdict: a.verdict,
-              noteCourte: a.noteCourte,
-              arbitreLe: a.arbitreLe,
-            }))}
-          state={saveState === 'saving' ? 'saving' : arbitrageState}
-          error={arbitrageError}
-          revisionPossible={arbitrages.some(
-            a => a.protocolDraftId === activeVersionId
-              && (a.verdict === 'confirme' || a.verdict === 'infirme'),
+      {/* Biologie : les DEUX panneaux portent des saisies cliniques locales
+          (verdict + note d'arbitrage, destinataire du courrier) — revue
+          wn-reviewer B2 : un montage conditionnel par sous-vue les perdait à
+          chaque bascule, et réarmait le verrou « déjà consigné » du courrier.
+          Le bloc reste donc MONTÉ tant que la phase Actions l'est (mêmes
+          conditions de données qu'avant le lot), la sous-vue ne fait que
+          masquer. Aucun GET n'est déclenché par ces panneaux au montage : le
+          `hidden` ne coûte rien au journal G-TRUST-04. */}
+      {affiche('actions') && !fixture && (
+        <div hidden={sousVueActions !== 'biologie'}>
+          {propositionDisponible && (
+            <PropositionBilanPanel
+              lignes={propositionLignes}
+              limites={propositionLimites}
+              documentes={propositionDocumentes}
+              motifIndisponible={propositionMotif}
+              state={propositionState}
+              error={propositionError}
+              onDeclarer={declarerPanelDocumente}
+              onNouvelleSaisie={() => setPropositionState('idle')}
+              courrier={courrier}
+              courrierErreur={courrierErreur}
+              partageMedecinTraitant={partageMedecin}
+              onEtablirCourrier={etablirCourrier}
+            />
           )}
-          onArbitrer={arbitrerBiologie}
-          onReviser={reviserApresArbitrages}
-        />
+          {cbEnabled && contenuActif && activeVersionId && (
+            <ArbitrageBiologiquePanel
+              intentions={contenuActif.actions
+                .filter(action => action.interventionStatus === 'conditionnelle_biologie')
+                .map(action => ({
+                  actionId: action.actionId,
+                  title: action.title,
+                  cible: action.waitFor?.cible ?? null,
+                }))}
+              arbitrages={arbitrages
+                .filter(a => a.protocolDraftId === activeVersionId)
+                .map(a => ({
+                  intentionId: a.intentionId,
+                  verdict: a.verdict,
+                  noteCourte: a.noteCourte,
+                  arbitreLe: a.arbitreLe,
+                }))}
+              state={saveState === 'saving' ? 'saving' : arbitrageState}
+              error={arbitrageError}
+              revisionPossible={arbitrages.some(
+                a => a.protocolDraftId === activeVersionId
+                  && (a.verdict === 'confirme' || a.verdict === 'infirme'),
+              )}
+              onArbitrer={arbitrerBiologie}
+              onReviser={reviserApresArbitrages}
+            />
+          )}
+          {!cbEnabled && (
+            <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+              Aucun outil de biologie ouvert sur ce dossier pour l’instant.
+            </p>
+          )}
+          {/* L'état nominal de production à la livraison : CB actif mais
+              proposition fermée (503) et aucune version active — sans cette
+              branche, la sous-vue rendait un écran nu (revue I2). */}
+          {cbEnabled && !propositionDisponible && !(contenuActif && activeVersionId) && (
+            <p className="rounded-lg border border-border bg-surface p-3 text-sm text-muted-foreground">
+              Rien à afficher ici pour l’instant : la proposition de bilan n’est pas ouverte sur ce
+              dossier, et aucune version active de protocole ne porte d’arbitrage biologique.
+            </p>
+          )}
+        </div>
       )}
       {affiche('suivi') && !fixture && readyDecisionCardId && (
         <MeteoAdhesionPanel meteo={deriverMeteoAdhesion(checkins)} />
@@ -1217,7 +1330,84 @@ export function ClinicalRuntimeSection({
             Chargement de la trajectoire&hellip;
           </div>
         ) : (
-          <TrajectoirePanel trajectoire={trajectoire} />
+          // RÉSUMÉ, PLUS LE PANNEAU ENTIER (audit 2026-09-02) : TrajectoirePanel
+          // (620 lignes — cycles, spirale, comparateur) était monté une DEUXIÈME
+          // fois ici, en plus de l'onglet Trajectoire. La phase Réévaluation dit
+          // l'essentiel — dernier cycle, jalons mesurés ou non — et renvoie vers
+          // l'onglet pour le détail.
+          //
+          // CE QUE LE RÉSUMÉ NE FAIT PAS (revue wn-reviewer du 2026-09-03) :
+          // - il ne restitue PAS le momentum de l'indice global — toute surface
+          //   qui le restitue doit porter la mention de nature et se déclarer
+          //   au garde (`D-106`/`DC-22`, `natureIndiceGlobal.guard.test.ts`) ;
+          //   l'onglet Trajectoire le fait déjà, sous garde — pas de seconde
+          //   surface non déclarée ;
+          // - il ne tranche PAS l'ordre des cycles : la discordance rang↔dates
+          //   est rendue, mot pour mot comme dans TrajectoirePanel (`DC-30` —
+          //   le doute se dit, il ne se tranche pas) ;
+          // - un jalon non mesuré se dit « non mesuré », jamais zéro (DC-24),
+          //   et « mesuré » reste neutre — aucune couleur de valence.
+          (() => {
+            const cycles = trajectoire?.cycles ?? [];
+            const dernierCycle = cycles.length > 0 ? cycles[cycles.length - 1] : null;
+            const formatDateFr = (iso: string) =>
+              new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return (
+              <section
+                aria-label="Réévaluation — résumé du cycle"
+                className="rounded-xl border border-border bg-surface p-4 text-sm"
+              >
+                <h3 className="font-semibold text-foreground">Réévaluation — où en est le cycle</h3>
+                {trajectoire?.discordanceOrdreCycles && (
+                  <p
+                    role="status"
+                    className="mt-2 rounded-lg border border-status-warning/40 bg-status-warning/10 p-2 text-xs text-foreground"
+                  >
+                    Ordre des cycles à vérifier : un cycle de rang supérieur a été confirmé avant un
+                    cycle de rang inférieur. Les cycles restent affichés dans l’ordre de leur ancre
+                    (T0, T1, …) ; les dates de confirmation, elles, ne suivent pas cet ordre.
+                  </p>
+                )}
+                {!dernierCycle ? (
+                  <p className="mt-2 text-muted-foreground">Aucun cycle lisible dans la trajectoire.</p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-muted-foreground">
+                      Cycle {dernierCycle.ancre}
+                      {dernierCycle.dateAncre ? ` · ancré le ${formatDateFr(dernierCycle.dateAncre)}` : ''}
+                    </p>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {dernierCycle.jalons.map(jalon => (
+                        <li
+                          key={jalon.jalon}
+                          className={`rounded-full border px-3 py-1 text-xs ${
+                            jalon.mesure ? 'border-accent/40 text-foreground' : 'border-border text-muted-foreground'
+                          }`}
+                        >
+                          {jalon.jalon} — {jalon.mesure
+                            ? `mesuré${jalon.date ? ` le ${formatDateFr(jalon.date)}` : ''}`
+                            : 'non mesuré'}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <p className="mt-3 text-muted-foreground">
+                  Le détail complet — momentum, cycles antérieurs, comparateur — vit dans
+                  l’onglet Trajectoire.
+                </p>
+                {onOuvrirTrajectoire && (
+                  <button
+                    type="button"
+                    onClick={onOuvrirTrajectoire}
+                    className="mt-2 min-h-11 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    Ouvrir l’onglet Trajectoire
+                  </button>
+                )}
+              </section>
+            );
+          })()
         )
       )}
     </>
