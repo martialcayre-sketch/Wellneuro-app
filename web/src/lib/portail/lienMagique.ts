@@ -73,9 +73,21 @@ export const MESSAGE_LIEN_INDISPONIBLE =
 /**
  * La réponse du canal de redemande — la même que l'adresse corresponde ou non
  * à un espace patient. C'est ce qui empêche d'énumérer les adresses connues.
+ *
+ * La seconde phrase existe pour un cas que la première rend invisible : la
+ * route répond « envoyé » **même quand l'envoi a échoué** (SMTP indisponible,
+ * base en panne — voir le `catch` de `api/portail/lien/demande`), parce qu'une
+ * erreur affichée sur une adresse connue et un succès sur une inconnue
+ * formeraient l'oracle que tout ce canal ferme. Sans recours indiqué, la
+ * personne attend alors indéfiniment un e-mail qui n'arrivera jamais.
+ *
+ * Le recours est dit à TOUT LE MONDE, dans les mêmes termes : il couvre le
+ * courrier indésirable, l'adresse qui ne correspond à rien et la panne, sans
+ * permettre de distinguer les trois. C'est ce qui le rend compatible avec
+ * l'indifférenciation au lieu de la trouer.
  */
 export const MESSAGE_DEMANDE_ENVOYEE =
-  'Si cette adresse correspond à un espace patient, vous recevrez un lien dans quelques minutes.';
+  'Si cette adresse correspond à un espace patient, vous recevrez un lien dans quelques minutes. Si rien n’arrive, pensez à regarder vos courriers indésirables, puis parlez-en à votre praticien.';
 
 export type EtatLien = 'valide' | 'consomme' | 'expire';
 
