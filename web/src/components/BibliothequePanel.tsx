@@ -1,11 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import { QuestionField } from '@/components/patient/QuestionField';
 import { ECHELLES_NOMMEES, interditTouteBande, type EchelleNommee } from '@/lib/echelles-cabinet';
 import {
@@ -388,7 +387,8 @@ export function BibliothequePanel({
       {rayon === 'questionnaires' && (
         <>
           <div className="flex flex-wrap gap-2">
-            <TiroirBibliotheque
+            <PanneauSuperpose
+              largeur="standard"
               declencheur={
                 <Button className="min-h-11" onClick={() => setEditionInitiale(null)}>
                   Créer un questionnaire
@@ -396,7 +396,7 @@ export function BibliothequePanel({
               }
               titre={editionInitiale ? 'Modifier l’instrument' : 'Créer un questionnaire'}
               description="Instrument privé au cabinet — son scoring n’est jamais vérifié par WellNeuro : la grille est relue puis publiée avant tout envoi."
-              ouvert={tiroirEditeur}
+              open={tiroirEditeur}
               onOpenChange={setTiroirEditeur}
             >
               <EditeurInstrument
@@ -407,8 +407,9 @@ export function BibliothequePanel({
                   setMessage(m);
                 }}
               />
-            </TiroirBibliotheque>
-            <TiroirBibliotheque
+            </PanneauSuperpose>
+            <PanneauSuperpose
+              largeur="standard"
               declencheur={
                 <Button variant="outline" className="min-h-11">
                   Importer
@@ -416,15 +417,16 @@ export function BibliothequePanel({
               }
               titre="Importer un questionnaire"
               description="JSON ou CSV — le résultat entre en brouillon, grille à relire avant publication."
-              ouvert={tiroirImport}
+              open={tiroirImport}
               onOpenChange={setTiroirImport}
             >
               <ImportInstrument onRafraichir={rafraichirCabinet} />
-            </TiroirBibliotheque>
-            <TiroirBibliotheque
+            </PanneauSuperpose>
+            <PanneauSuperpose
+              largeur="standard"
               titre="Relire la grille"
               description="Vérifiez l’échelle, les bandes et le score maximal avant de publier."
-              ouvert={tiroirRelecture}
+              open={tiroirRelecture}
               onOpenChange={setTiroirRelecture}
             >
               {relecture && (
@@ -434,7 +436,7 @@ export function BibliothequePanel({
                   onPublier={() => void publier(relecture.idInstrument)}
                 />
               )}
-            </TiroirBibliotheque>
+            </PanneauSuperpose>
           </div>
           {(message || erreur) && (
             <p
@@ -850,67 +852,6 @@ function BadgeStatutInstrument({ statut }: { statut: string }) {
   if (statut === 'valide') return <Badge variant="success">Publié</Badge>;
   if (statut === 'grille_a_relire') return <Badge variant="warning">Grille à relire</Badge>;
   return <Badge variant="neutral">Brouillon</Badge>;
-}
-
-// Tiroir Radix de la Bibliothèque (patron TiroirAction de PatientsPanel,
-// SP-TRAJ LOT-05) : composant DÉFINI AU NIVEAU MODULE — une définition
-// imbriquée remonterait le formulaire à chaque rendu et ferait perdre le
-// focus de saisie. `declencheur` optionnel : le tiroir de relecture s'ouvre
-// depuis la liste, sans bouton propre.
-function TiroirBibliotheque({
-  declencheur,
-  titre,
-  description,
-  ouvert,
-  onOpenChange,
-  children,
-}: {
-  declencheur?: React.ReactNode;
-  titre: string;
-  description?: string;
-  ouvert: boolean;
-  onOpenChange: (ouvert: boolean) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Dialog.Root open={ouvert} onOpenChange={onOpenChange}>
-      {declencheur ? <Dialog.Trigger asChild>{declencheur}</Dialog.Trigger> : null}
-      <Dialog.Portal>
-        {/* data-theme requis : Radix portale vers document.body, hors du
-            conteneur [data-theme="praticien"] du layout. */}
-        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
-        <Dialog.Content
-          data-theme="praticien"
-          className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-pop focus:outline-none"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <Dialog.Title className="font-display text-lg font-semibold text-foreground">
-                {titre}
-              </Dialog.Title>
-              {description ? (
-                <Dialog.Description className="mt-1 text-xs text-muted-foreground">
-                  {description}
-                </Dialog.Description>
-              ) : (
-                <Dialog.Description className="sr-only">{titre}</Dialog.Description>
-              )}
-            </div>
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label={`Fermer « ${titre} »`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-              >
-                <X aria-hidden="true" size={20} strokeWidth={2} />
-              </button>
-            </Dialog.Close>
-          </div>
-          <div className="mt-4">{children}</div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
 }
 
 const CLASSE_CHAMP =
