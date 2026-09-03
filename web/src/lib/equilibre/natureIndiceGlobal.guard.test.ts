@@ -287,6 +287,21 @@ describe('nature du total — les surfaces qui le nomment sans le nommer', () =>
     expect(nonDeclarees).toEqual([]);
   });
 
+  /**
+   * LA RÉPÉTITION DE LA MENTION EST PORTANTE — ne pas la « factoriser ».
+   *
+   * Ce cas exige que le FICHIER de chaque surface contienne littéralement
+   * `MENTION_NATURE_INDICE_GLOBAL`. Extraire un composant partagé
+   * (`<MentionNatureIndice />`) retirerait l'identifiant des surfaces et ferait
+   * tomber cette garde — dont le remède apparent serait d'assouplir le
+   * détecteur, c'est-à-dire de désarmer `D-106` pour un gain cosmétique.
+   *
+   * Le lot Densité du cadrage (2026-09-02) proposait exactement ce
+   * regroupement, « composant unique pour la mention (×4) ». Vérifié le
+   * 2026-09-04 : à ne pas faire. Les quatre sites ne sont d'ailleurs pas
+   * identiques — deux rendent un `<p>` commun, un troisième un `<span>` ajusté
+   * à un badge, le quatrième passe la chaîne en prop.
+   */
   it('chaque surface déclarée porte la mention de nature', () => {
     const sansMention = Object.keys(SURFACES_PAR_LIBELLE).filter(
       chemin => !sansCommentaires(lire(chemin)).includes('MENTION_NATURE_INDICE_GLOBAL'),
