@@ -299,7 +299,7 @@ function InstrumentTiroir({
   return (
     <PanneauSuperpose
       variante="tiroir"
-      large={large}
+      largeur={large ? 'large' : 'focale'}
       titre={libelle}
       description={description}
       surtitre="Instrument"
