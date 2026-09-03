@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import * as Dialog from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
 import {
   FicheAnalytePanel,
   LABEL_NIVEAU,
@@ -287,36 +286,18 @@ export function RayonBiologiePanel() {
         </>
       )}
 
-      {/* Tiroir de la fiche analyte (patron C4) */}
-      <Dialog.Root open={ficheOuverte !== null} onOpenChange={o => !o && setFicheOuverte(null)}>
-        <Dialog.Portal>
-          <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
-          <Dialog.Content
-            data-theme="praticien"
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-pop focus:outline-none"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <Dialog.Title className="font-display text-lg font-semibold text-foreground">
-                Fiche analyte
-              </Dialog.Title>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label="Fermer la fiche"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                >
-                  <X aria-hidden="true" size={20} strokeWidth={2} />
-                </button>
-              </Dialog.Close>
-            </div>
-            <Dialog.Description className="sr-only">
-              Fiche documentaire de l’analyte : identité, référentiels de valeurs, remboursement,
-              provenance.
-            </Dialog.Description>
-            <div className="mt-4">{ficheOuverte && <FicheAnalytePanel fiche={ficheOuverte} />}</div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      {/* Tiroir de la fiche analyte (patron C4) — sur la primitive depuis le
+          lot Primitive (2026-09-03), à largeur et à sous-titre constants. */}
+      <PanneauSuperpose
+        largeur="standard"
+        titre="Fiche analyte"
+        description="Fiche documentaire de l’analyte : identité, référentiels de valeurs, remboursement, provenance."
+        descriptionMasquee
+        open={ficheOuverte !== null}
+        onOpenChange={o => !o && setFicheOuverte(null)}
+      >
+        {ficheOuverte && <FicheAnalytePanel fiche={ficheOuverte} />}
+      </PanneauSuperpose>
     </div>
   );
 }

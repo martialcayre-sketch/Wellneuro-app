@@ -81,6 +81,7 @@ export function PanneauSuperpose({
   titre,
   description,
   surtitre,
+  descriptionMasquee = false,
   variante = 'tiroir',
   largeur = 'focale',
   theme = 'praticien',
@@ -101,6 +102,18 @@ export function PanneauSuperpose({
   titre: string;
   /** Toujours fournie : Radix l'exige pour l'accessibilité du dialogue. */
   description: string;
+  /**
+   * Sort la description de la VUE, jamais du DOM : Radix la réclame pour
+   * `aria-describedby`, et un lecteur d'écran l'annonce toujours.
+   *
+   * Deux tiroirs de `PatientsPanel` — « Nouveau patient », « Nouvelle
+   * assignation » — n'ont pas de sous-titre à montrer : leur titre dit déjà
+   * tout, et leur implémentation locale repliait la description en `sr-only`.
+   * Sans cette faculté, les migrer aurait demandé d'INVENTER deux phrases pour
+   * l'écran — c'est-à-dire d'ajouter du texte au nom d'un lot qui existe pour
+   * en retirer.
+   */
+  descriptionMasquee?: boolean;
   /** Petit sur-titre en capitales au-dessus du titre (ex. « Instrument »). */
   surtitre?: string;
   variante?: Variante;
@@ -127,7 +140,11 @@ export function PanneauSuperpose({
                 <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">{surtitre}</p>
               )}
               <Dialog.Title className="font-display text-[19px] font-bold text-foreground">{titre}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>
+              <Dialog.Description
+                className={descriptionMasquee ? 'sr-only' : 'mt-1 text-sm text-muted-foreground'}
+              >
+                {description}
+              </Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button
