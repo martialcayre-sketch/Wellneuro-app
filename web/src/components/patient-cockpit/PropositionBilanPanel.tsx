@@ -26,6 +26,13 @@ export type CourrierEtabli = {
   ancrageVersion: string;
 };
 
+/** Document patient établi : le texte à remettre, et l'ancre qui l'explique. */
+export type DocumentPatientEtabli = {
+  texte: string;
+  ancrageSha256: string;
+  ancrageVersion: string;
+};
+
 export type DocumenteAffiche = {
   panelCode: string;
   documenteLe: string;
@@ -191,6 +198,98 @@ function FormulaireCourrier({
   );
 }
 
+function FormulaireDocumentPatient({
+  disabled,
+  documentPatient,
+  erreur,
+  registreATrancher,
+  reponses,
+  onEtablir,
+}: {
+  disabled: boolean;
+  documentPatient: DocumentPatientEtabli | null;
+  erreur: string | null;
+  /** Le refus est un REGISTRE_ANXIOGENE : offrir le second temps (D-090). */
+  registreATrancher: boolean;
+  /** Compteur de réponses ABOUTIES du parent : le verrou se lève sur lui. */
+  reponses: number;
+  onEtablir: (confirmerRegistre: boolean) => void;
+}) {
+  // Même intention de verrou que le courrier — un envoi à la fois — mais levé
+  // sur le COMPTEUR de réponses, pas sur les objets résultat/erreur : le
+  // chemin de confirmation part avec une erreur déjà affichée, et deux échecs
+  // au même message seraient invisibles d'une dépendance sur la chaîne.
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  useEffect(() => {
+    setEnvoiEnCours(false);
+  }, [reponses]);
+  // La table est append-only : re-générer ferait une ligne de plus pour le
+  // même contenu. Le bouton se ferme après consignation — un nouveau passage
+  // sur la fiche rouvre le geste.
+  const dejaConsigne = documentPatient !== null;
+
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3">
+      <p className="text-xs font-medium text-foreground">Document remis au patient</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        La trace écrite de ce qui est proposé au patient et pourquoi, dans son registre —
+        aucune valeur d’analyse, aucune demande. <strong>Aucun envoi automatique</strong> —
+        le document est à imprimer ou à remettre en consultation.
+      </p>
+      <button
+        type="button"
+        disabled={disabled || envoiEnCours || dejaConsigne}
+        onClick={() => {
+          setEnvoiEnCours(true);
+          onEtablir(false);
+        }}
+        className="mt-2 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        Établir et consigner le document patient
+      </button>
+
+      {erreur && (
+        <p role="alert" className="mt-2 text-sm text-status-danger">
+          {erreur}
+        </p>
+      )}
+
+      {/* Second temps du refus confirmable (D-090) : le praticien a lu le
+          terme signalé et tranche en connaissance — un faux positif coûte un
+          clic, jamais un document indélivrable. */}
+      {registreATrancher && !dejaConsigne && (
+        <button
+          type="button"
+          disabled={disabled || envoiEnCours}
+          onClick={() => {
+            setEnvoiEnCours(true);
+            onEtablir(true);
+          }}
+          className="mt-2 min-h-11 rounded-lg border border-status-warning px-3 py-2 text-sm font-medium text-status-warning disabled:opacity-50"
+        >
+          Consigner malgré le registre signalé
+        </button>
+      )}
+
+      {documentPatient && (
+        <div className="mt-3">
+          <p role="status" className="text-xs text-status-success">
+            Document consigné au dossier. Provenance : {documentPatient.ancrageVersion}, empreinte{' '}
+            {documentPatient.ancrageSha256.slice(0, 12)}…
+          </p>
+          <textarea
+            readOnly
+            value={documentPatient.texte}
+            rows={10}
+            aria-label="Texte du document patient à remettre"
+            className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormulaireDeclaration({
   panelCode,
   disabled,
@@ -268,6 +367,11 @@ export function PropositionBilanPanel({
   courrierErreur = null,
   partageMedecinTraitant = null,
   onEtablirCourrier,
+  documentPatient = null,
+  documentPatientErreur = null,
+  documentPatientRegistreATrancher = false,
+  documentPatientReponses = 0,
+  onEtablirDocumentPatient,
 }: {
   lignes: LignePanelProposition[];
   limites: LimiteProposition[];
@@ -285,8 +389,21 @@ export function PropositionBilanPanel({
   /** Choix « partage médecin traitant » — exposé, jamais opposé. */
   partageMedecinTraitant?: string | null;
   onEtablirCourrier?: (medecinLibelle: string) => void;
+  /** Document patient établi lors de ce passage, à remettre. */
+  documentPatient?: DocumentPatientEtabli | null;
+  documentPatientErreur?: string | null;
+  /** Le dernier refus est un REGISTRE_ANXIOGENE confirmable (D-090). */
+  documentPatientRegistreATrancher?: boolean;
+  /** Compteur de réponses abouties du geste document (verrou du formulaire). */
+  documentPatientReponses?: number;
+  onEtablirDocumentPatient?: (confirmerRegistre: boolean) => void;
 }) {
   const parPanel = new Map(documentes.map(doc => [doc.panelCode, doc]));
+  // UN SEUL prédicat d'offre pour les DEUX gestes (courrier et document
+  // patient) — celui du serveur (revue M5) : hissé ici, il ne peut pas
+  // diverger entre les deux blocs de rendu.
+  const gesteOffrable =
+    !motifIndisponible && lignes.some(ligne => STATUTS_PROPOSES.has(ligne.statut));
 
   return (
     <section
@@ -411,18 +528,29 @@ export function PropositionBilanPanel({
         </p>
       )}
 
-      {/* Le geste s'offre sur le MÊME prédicat que le générateur (revue M5) :
-          un dossier dont tous les panels sont déjà documentés ou non indiqués
-          n'a pas de courrier — l'offrir ferait journaliser un accès pour un
-          409. */}
-      {onEtablirCourrier && !motifIndisponible
-        && lignes.some(ligne => STATUTS_PROPOSES.has(ligne.statut)) && (
+      {/* Les gestes s'offrent sur le MÊME prédicat que le générateur (revue
+          M5, hissé en `gesteOffrable`) : un dossier dont tous les panels sont
+          déjà documentés ou non indiqués n'a ni courrier ni document patient
+          — les offrir ferait journaliser un accès pour un 409. */}
+      {onEtablirCourrier && gesteOffrable && (
         <FormulaireCourrier
           disabled={state === 'saving'}
           courrier={courrier}
           erreur={courrierErreur}
           partageMedecinTraitant={partageMedecinTraitant}
           onEtablir={onEtablirCourrier}
+        />
+      )}
+
+      {/* Document patient (décision F, D-122). */}
+      {onEtablirDocumentPatient && gesteOffrable && (
+        <FormulaireDocumentPatient
+          disabled={state === 'saving'}
+          documentPatient={documentPatient}
+          erreur={documentPatientErreur}
+          registreATrancher={documentPatientRegistreATrancher}
+          reponses={documentPatientReponses}
+          onEtablir={onEtablirDocumentPatient}
         />
       )}
 

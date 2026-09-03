@@ -41,10 +41,26 @@ export const MODELE_COURRIER_BIOLOGIE: ModeleDocument = {
   typesBlocs: ['narratif'],
 };
 
+/**
+ * Document patient — proposition d'explorations biologiques (décision F du
+ * cadrage CB, D-122 §1). La trace écrite de ce qui est PROPOSÉ au patient et
+ * pourquoi — la demande, jamais le résultat. Le registre patient est gardé
+ * côté route par `termeAnxiogene` (refus confirmable, D-090 : publier est un
+ * acte praticien explicite).
+ */
+export const MODELE_DOCUMENT_PATIENT_BIOLOGIE: ModeleDocument = {
+  id: 'document_patient_biologie',
+  titre: 'Document patient — explorations biologiques proposées',
+  intention:
+    'Remettre au patient, dans son registre, la proposition d’explorations biologiques dérivée de la table d’indications signée.',
+  typesBlocs: ['narratif'],
+};
+
 /** Registre des modèles disponibles, indexés par id. */
 export const MODELES_DOCUMENTS: Readonly<Record<string, ModeleDocument>> = {
   [MODELE_SUIVI_21J.id]: MODELE_SUIVI_21J,
   [MODELE_COURRIER_BIOLOGIE.id]: MODELE_COURRIER_BIOLOGIE,
+  [MODELE_DOCUMENT_PATIENT_BIOLOGIE.id]: MODELE_DOCUMENT_PATIENT_BIOLOGIE,
 };
 
 /** Résout un modèle par id, ou `null` s'il n'existe pas. */

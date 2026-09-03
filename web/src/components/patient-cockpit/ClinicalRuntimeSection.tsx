@@ -37,6 +37,7 @@ import { appliquerArbitrages } from '@/lib/biology-library/revision';
 import {
   PropositionBilanPanel,
   type CourrierEtabli,
+  type DocumentPatientEtabli,
   type DocumenteAffiche,
   type PropositionState,
 } from './PropositionBilanPanel';
@@ -214,6 +215,19 @@ export function ClinicalRuntimeSection({
   const [propositionError, setPropositionError] = useState<string | null>(null);
   const [courrier, setCourrier] = useState<CourrierEtabli | null>(null);
   const [courrierErreur, setCourrierErreur] = useState<string | null>(null);
+  const [documentPatient, setDocumentPatient] = useState<DocumentPatientEtabli | null>(null);
+  // UN SEUL état de refus (raison + message + empreinte du texte refusé) : trois
+  // useState synchronisés à la main se désynchronisent à la première branche
+  // oubliée. `registreATrancher` et l'empreinte à confirmer s'en dérivent.
+  const [documentPatientRefus, setDocumentPatientRefus] = useState<{
+    reason?: string;
+    error: string;
+    texteSha256?: string;
+  } | null>(null);
+  // Compteur de réponses ABOUTIES : le verrou du formulaire se lève sur son
+  // incrément — une référence fraîche par réponse, là où un même message
+  // d'erreur répété ne changerait pas.
+  const [documentPatientReponses, setDocumentPatientReponses] = useState(0);
   const [partageMedecin, setPartageMedecin] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -376,6 +390,14 @@ export function ClinicalRuntimeSection({
       setPropositionLimites(payload.limites ?? []);
       setPropositionDocumentes(payload.documentes ?? []);
       setPartageMedecin(payload.partageMedecinTraitant ?? null);
+      // La proposition vient de changer : le document patient affiché et le
+      // refus en attente (empreinte comprise) visaient l'ANCIENNE dérivation.
+      // Les garder montrerait une pièce rassie à imprimer, et armerait une
+      // confirmation contre un texte disparu — le point unique où « la
+      // proposition a changé » est su, c'est ici.
+      setDocumentPatient(null);
+      setDocumentPatientRefus(null);
+      setDocumentPatientReponses(n => n + 1);
     } catch {
       // La proposition est rechargeable : un échec de lecture ne bloque pas le
       // cockpit.
@@ -448,6 +470,66 @@ export function ClinicalRuntimeSection({
       }
     },
     [idPatient],
+  );
+
+  // Document patient (décision F, D-122) : généré et consigné côté serveur.
+  // Le refus REGISTRE_ANXIOGENE est CONFIRMABLE (D-090), et la confirmation
+  // est LIÉE AU TEXTE refusé : le 409 rend l'empreinte du texte jugé, le
+  // second clic la renvoie — un dossier qui a bougé entre-temps re-refuse au
+  // lieu de consigner un texte que personne n'a lu. Aucun état de refus n'est
+  // effacé au départ du POST : il ne change qu'à l'arrivée d'une réponse
+  // (sinon le verrou du formulaire se lèverait en plein vol).
+  const etablirDocumentPatient = useCallback(
+    async (confirmer: boolean) => {
+      setPropositionState('saving');
+      const confirmerTexteSha256 = confirmer ? documentPatientRefus?.texteSha256 : undefined;
+      try {
+        const response = await fetch('/api/praticien/biologie/proposition/document-patient', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, confirmerTexteSha256 }),
+        });
+        const payload = (await response.json()) as {
+          ok: boolean;
+          reason?: string;
+          error?: string;
+          texteSha256?: string;
+          texte?: string;
+          ancrageSha256?: string;
+          ancrageVersion?: string;
+        };
+        setPropositionState('idle');
+        if (!response.ok || !payload.ok || !payload.texte) {
+          setDocumentPatient(null);
+          setDocumentPatientRefus({
+            reason: payload.reason,
+            error: payload.error ?? 'Le document n’a pas pu être établi.',
+            texteSha256: payload.texteSha256,
+          });
+          return;
+        }
+        setDocumentPatientRefus(null);
+        setDocumentPatient({
+          texte: payload.texte,
+          ancrageSha256: payload.ancrageSha256 ?? '',
+          ancrageVersion: payload.ancrageVersion ?? '',
+        });
+      } catch {
+        // Panne réseau : le CONTEXTE du refus précédent est conservé (raison,
+        // empreinte) — perdre le second temps sur une saute de connexion
+        // forcerait un POST non confirmant de plus, donc un accès journalisé
+        // de plus, pour retrouver un bouton qui n'aurait jamais dû partir.
+        setPropositionState('idle');
+        setDocumentPatient(null);
+        setDocumentPatientRefus(prev => ({
+          ...(prev ?? {}),
+          error: 'Le document n’a pas pu être établi. Vérifiez la connexion et réessayez.',
+        }));
+      } finally {
+        setDocumentPatientReponses(n => n + 1);
+      }
+    },
+    [idPatient, documentPatientRefus],
   );
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
@@ -1249,6 +1331,14 @@ export function ClinicalRuntimeSection({
               courrierErreur={courrierErreur}
               partageMedecinTraitant={partageMedecin}
               onEtablirCourrier={etablirCourrier}
+              documentPatient={documentPatient}
+              documentPatientErreur={documentPatientRefus?.error ?? null}
+              documentPatientRegistreATrancher={
+                documentPatientRefus?.reason === 'REGISTRE_ANXIOGENE'
+                && documentPatientRefus.texteSha256 !== undefined
+              }
+              documentPatientReponses={documentPatientReponses}
+              onEtablirDocumentPatient={etablirDocumentPatient}
             />
           )}
           {cbEnabled && contenuActif && activeVersionId && (

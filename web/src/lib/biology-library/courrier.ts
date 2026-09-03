@@ -3,6 +3,7 @@ import { blocsPourDestinataire, contenuPourDestinataire } from '@/lib/documents/
 import { MODELE_COURRIER_BIOLOGIE } from '@/lib/documents/modele';
 import { renderDocumentHtml } from '@/lib/documents/rendu';
 import type { Bloc, DocumentComposite } from '@/lib/documents/types';
+import { STATUTS_PROPOSES } from './statuts';
 import type { LignePanelProposition } from './statuts';
 
 // Courrier médecin — proposition d'explorations biologiques (LOT-06, D-059 §6).
@@ -17,14 +18,10 @@ import type { LignePanelProposition } from './statuts';
 // transcrit, et la consignation passe par `preparerCorrespondance` existant
 // (chokepoint de `CorrespondanceMedecin`).
 
-/**
- * Statuts qui entrent dans le courrier : ce qui est réellement proposé.
- * EXPORTÉ pour que l'écran offre le geste sur le MÊME prédicat que le
- * générateur — un formulaire affiché là où le serveur refusera fait
- * journaliser un accès pour un 409 (revue M5).
- */
-export const STATUTS_PROPOSES: ReadonlySet<string> =
-  new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
+// Le prédicat des statuts proposés vit dans `statuts.ts` depuis la décision F
+// (D-122 §1) : le document patient et l'écran le partagent — ré-exporté ici
+// pour les appelants historiques.
+export { STATUTS_PROPOSES };
 
 export type EntreeCourrierBiologie = {
   patientId: string;
