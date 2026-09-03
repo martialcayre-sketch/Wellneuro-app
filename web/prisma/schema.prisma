@@ -2016,8 +2016,9 @@ model ResultatBiologique {
   analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
-  // série d'un analyte dans un dossier (estimé ↔ mesuré). Pas de second index.
-  @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
+  // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
+  // analyte et date de prélèvement.
+  @@unique([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
   @@map("resultats_biologiques")
 }
 

@@ -2,7 +2,8 @@
 --
 -- La table promet sept choses, et ce fichier les éprouve TOUTES :
 --   1. un résultat valide est ACCEPTÉ, et un SECOND résultat du même analyte
---      pour le même patient aussi (la lecture est une SÉRIE — estimé↔mesuré) ;
+--      à une autre date aussi (la lecture est une SÉRIE — estimé↔mesuré) ;
+--      le doublon exact patient/analyte/date est REFUSÉ ;
 --   2. les CHECK mordent (23514) : source hors des deux origines de la
 --      décision, auteur vide ou réduit à des blancs — tabulations comprises,
 --      le trou btrim/1 est fermé ici — ou trop long, unité hors du
@@ -108,6 +109,23 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION
         'RESULTATS BIO: la SECONDE mesure (sans unité, import_labo) a été refusée (SQLSTATE %) — la série et la nullité d''unité sont le régime nominal.',
+        SQLSTATE;
+  END;
+
+  -- Une date de prélèvement identifie une mesure dans la série d'un analyte.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+    VALUES ('doublon', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 43.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+    RAISE EXCEPTION
+      'RESULTATS BIO: un doublon patient/analyte/date a été ACCEPTÉ alors qu''il doit être rejeté';
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+    WHEN others THEN
+      RAISE EXCEPTION
+        'RESULTATS BIO: le doublon patient/analyte/date a été rejeté pour le mauvais motif (SQLSTATE %, attendu 23505 unique_violation)',
         SQLSTATE;
   END;
 

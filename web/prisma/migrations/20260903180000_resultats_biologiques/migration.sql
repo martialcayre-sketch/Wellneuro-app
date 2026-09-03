@@ -28,8 +28,8 @@ CREATE TABLE "resultats_biologiques" (
 
 -- CreateIndex — la lecture est la série d'un analyte dans un dossier
 -- (estimé ↔ mesuré) : patient, puis analyte, ordonnée par date de
--- prélèvement. Pas de second index.
-CREATE INDEX "cb_resultat_bio_patient_analyte_idx"
+-- prélèvement, avec une mesure par analyte et date.
+CREATE UNIQUE INDEX "cb_resultat_bio_patient_analyte_idx"
   ON "resultats_biologiques"("id_patient", "analyte_code", "preleve_le");
 
 -- AddForeignKey — RESTRICT : la suppression nommée reste celle de la
