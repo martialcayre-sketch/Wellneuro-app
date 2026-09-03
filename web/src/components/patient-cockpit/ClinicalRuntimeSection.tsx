@@ -1191,8 +1191,8 @@ export function ClinicalRuntimeSection({
                 Contradictions touchant cette décision ({recoupements.length})
               </summary>
               <ul className="mt-2 grid gap-2">
-                {recoupements.map((recoupement, index) => (
-                  <li key={index} className="border-l-2 border-accent pl-2 text-foreground">
+                {recoupements.map(recoupement => (
+                  <li key={recoupement.id} className="border-l-2 border-accent pl-2 text-foreground">
                     <span className="block break-words">{recoupement.description}</span>
                     <span className="block text-muted-foreground">
                       Confronte une passation qui fonde aussi

@@ -51,6 +51,9 @@ describe('recoupementsContradictions (`D-119`)', () => {
       canalPlainte: 'Q_MOD_03',
     });
     expect(resultat).toEqual([{
+      // L'id est RECOPIÉ du constat pour servir de clé stable à la liste — il
+      // ne s'affiche pas (audit 2026-09-02 : pas de référence au code à l'écran).
+      id: 'C-STR',
       description: 'Stress déclaré discordant entre instruments.',
       candidats: ['Axe stress et adaptation'],
       canalPlainte: false,
@@ -67,6 +70,9 @@ describe('recoupementsContradictions (`D-119`)', () => {
       canalPlainte: 'Q_MOD_03',
     });
     expect(resultat).toEqual([{
+      // L'id est RECOPIÉ du constat pour servir de clé stable à la liste — il
+      // ne s'affiche pas (audit 2026-09-02 : pas de référence au code à l'écran).
+      id: 'C-STR',
       description: 'Stress déclaré discordant entre instruments.',
       candidats: [],
       canalPlainte: true,
