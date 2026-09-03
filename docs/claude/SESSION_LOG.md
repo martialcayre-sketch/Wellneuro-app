@@ -5000,3 +5000,25 @@ biologie exigeait le défaut que la décision ferme.
 
 Prochaine action — reconfirmer T0 sur le dossier une dernière fois (la ligne
 s'écrira), enregistrer le protocole, diffuser.
+
+## 2026-09-03 — Incident mémoire, décommissionnement D-080, chaîne auth
+
+Décisions — Session du 31/08 au 03/09. Incident : logins praticien en échec,
+event loop affamé sur conteneurs S ; remédiation 2×M + `NODE_OPTIONS=384` +
+alerte 85 % + budget openid-client 8 s (#820). Décommissionnement
+Vercel/Supabase exécuté avec preuves (D-120/D-121, trust v3 #822, nettoyage
+#823). `NODE_OPTIONS` hérité par le build Scalingo a cassé quatre
+déploiements → `unset` dans `build.sh` (#824). `engines.node` épinglé
+« 22.x || 24.x » (#826). Auth : endpoints Google épinglés sans découverte,
+`hd`, PKCE constaté déjà actif (#827, revue adversariale GO) ; renommage
+`jwks_uri` de Copilot reverté — il cassait le login —, contrat consommateur
+verrouillé par banc (#829). Login réel validé le 03/09.
+
+Écarté — migration Auth.js (aucun signal) ; restart planifié (alerte +
+plafond suffisent).
+
+Prochaine action — sonde Better Stack sur `/login` ; micro-lot
+`/login?error` (pannes d'auth muettes à l'écran).
+
+Questions ouvertes — confirmation écrite Supabase (backups, rubrique 12) ;
+dépôt sous sync iCloud : suites locales instables (`fileproviderd`).
