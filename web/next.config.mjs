@@ -66,6 +66,45 @@ const nextConfig = {
   // ou que son `matcher` dérive, un ancien lien tombe en 404 au lieu d'atterrir
   // sur le portail. C'est ce que `e2e/parcours-legacy-redirection.spec.ts`
   // surveille, sur les deux navigateurs.
+  // LES DEUX SOUS-VUES PLEINE PAGE DU DOSSIER ONT ÉTÉ RETIRÉES le 2026-09-03.
+  // Elles rendaient exactement les composants que les onglets de la fiche
+  // montent déjà, et la refonte UX 5.0 (2026-07-19) les avait explicitement
+  // remplacées par ces onglets — elles ont survécu à leur propre remplacement,
+  // sans qu'aucun lien de l'application n'y mène plus.
+  //
+  // LA REDIRECTION N'EST PAS UNE COURTOISIE POUR LES FAVORIS, elle referme une
+  // exposition. Le dossier `[idPatient]` pose `key={params.idPatient}` sur la
+  // fiche ([[D-072]] §4) pour qu'un changement de patient DÉMONTE l'arbre au
+  // lieu de le réconcilier. Les deux routes retirées vivaient sous ce dossier
+  // sans aucune `key` : `PractitionerFoodObservationPanel` sème quatre morceaux
+  // de la décision du praticien (traces, mode, assiette, note) depuis un
+  // initialiseur paresseux de `useState`, qui ne s'exécute qu'AU MONTAGE. Passer
+  // de l'URL d'un patient à celle d'un autre y laissait donc le brouillon du
+  // premier sous le nom du second, sans état de chargement pour le masquer.
+  // Renvoyer vers la fiche fait repasser ces adresses par la page gardée.
+  //
+  // 307 et non 308, comme pour `/patient/` plus haut et pour la même raison : un
+  // 308 se met en cache durablement chez le praticien et ne se rappelle pas.
+  //
+  // Déclaratif ici SANS contredire la leçon du bloc précédent : ce qui avait
+  // chassé `redirects()` vers le middleware, c'était la recopie de la query
+  // string d'origine — l'e-mail du patient s'y déposait. Ces deux chemins-ci ne
+  // portent aucune donnée : la fusion de query est sans effet, et rien dans le
+  // middleware (`matcher: '/patient/:path*'`) n'entre en concurrence.
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/patients/:idPatient/besoins',
+        destination: '/dashboard/patients/:idPatient?onglet=besoins',
+        permanent: false,
+      },
+      {
+        source: '/dashboard/patients/:idPatient/alimentation',
+        destination: '/dashboard/patients/:idPatient?onglet=alimentation',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: enTetesSecurite },
