@@ -1008,9 +1008,14 @@ export function FichePatientPanel({
                           {ETIQUETTE_NON_INTERPRETABLE} — {r.nonInterpretable}
                         </div>
                       )}
+                      {/* « Résumé du score » et non « Synthèse » : la Synthèse
+                          est un document distinct du dossier (onglet dédié,
+                          rédigée puis diffusée). Le même mot pour les deux
+                          faisait lire cette ligne comme un extrait de ce
+                          document, alors qu'elle dérive des seuls scores. */}
                       {miniSynthese && (
                         <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
-                          Synthèse : {miniSynthese}
+                          Résumé du score : {miniSynthese}
                         </div>
                       )}
                       {note && (

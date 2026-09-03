@@ -55,6 +55,22 @@ export function indexDeCycle(milestone: string): number | null {
   return Number.parseInt(milestone.slice(1), 10);
 }
 
+/**
+ * Le numéro d'ÉPISODE affiché pour un cycle — `T0` → « épisode 1 », `T2` → 3.
+ *
+ * Rang affiché = rang d'ancre + 1 : le praticien compte à partir de un, la
+ * série des ancres à partir de zéro. La formule vivait en double (le bandeau
+ * d'épisode et l'index de la fiche-trajectoire) ; deux copies d'un même décalage
+ * dérivent tôt ou tard, et l'écart se lit comme deux épisodes différents pour
+ * un seul cycle.
+ *
+ * `rangDeSecours` couvre l'ancre hors série (valeur inattendue en base) : sans
+ * lui, `indexDeCycle` rendant `null`, l'écran afficherait « épisode NaN ».
+ */
+export function numeroEpisodeDeCycle(ancre: string, rangDeSecours: number): number {
+  return (indexDeCycle(ancre) ?? rangDeSecours) + 1;
+}
+
 /** L'ancre du cycle de rang donné. */
 export function ancreDeCycle(index: number): AncreCycle {
   if (!Number.isInteger(index) || index < 0) {

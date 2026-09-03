@@ -4,6 +4,12 @@
 // solaire). Décoratif (aria-hidden) : la Spirale n'est jamais porteuse seule
 // d'une information — le texte voisin (nom, position, chips) la porte.
 // Couleurs : trio d'entité fixe --viz-* (indépendant des thèmes, A5-R1).
+//
+// NE PAS CONFONDRE AVEC `SpiraleEpisodes` : celle-ci est un emblème FIXE, dont
+// la géométrie ne dépend d'aucune donnée ; l'autre est data-driven (un arc =
+// un repère confirmé) et interactive. Les deux coexistent volontairement —
+// fusionner l'emblème dans la version data-driven rendrait le bandeau
+// dépendant d'un chargement de cycles qu'il n'a pas besoin d'attendre.
 export function SpiraleTrajectoire({
   taille = 52,
   enCours = false,

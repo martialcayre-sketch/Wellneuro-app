@@ -499,7 +499,8 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     expect(screen.getAllByRole('button', { name: 'Reprendre cette phrase' })).toHaveLength(1);
     // Et le fragment de règle dit pourquoi il ne l'est pas — plutôt qu'un
     // bouton grisé, qui laisserait croire à une permission manquante.
-    expect(screen.getByText(/Ce n’est pas une parole du patient/)).toBeTruthy();
+    // Dit UNE FOIS sous la liste, plus sous chaque fragment (audit 2026-09-02).
+    expect(screen.getByText(/ne sont pas des paroles du patient/)).toBeTruthy();
   });
 
   it('une reprise DÉSIGNE le fragment et ne transmet jamais l’énoncé', async () => {

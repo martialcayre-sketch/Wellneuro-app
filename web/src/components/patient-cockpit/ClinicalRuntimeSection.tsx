@@ -947,12 +947,12 @@ export function ClinicalRuntimeSection({
         && jalonDu?.ancreOuvrable && ouvertureCycle === null && (
         <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           <p>
-            Un nouveau cycle peut être ouvert pour ce patient : il portera l’ancre{' '}
+            Un nouveau cycle peut être ouvert : il portera l’ancre{' '}
             <strong className="text-foreground">{jalonDu.ancreOuvrable}</strong>.
           </p>
           <p className="mt-2 text-sm">
-            L’ouvrir ferme les fenêtres de jalon encore ouvertes du cycle en cours — ce qui a déjà été confirmé reste
-            lisible. Les mesures du cycle en cours ne sont ni effacées ni recalculées.
+            L’ouvrir ferme les fenêtres de jalon encore ouvertes du cycle en cours. Rien n’est effacé ni recalculé :
+            ce qui a déjà été confirmé reste lisible.
           </p>
           <Button
             type="button"

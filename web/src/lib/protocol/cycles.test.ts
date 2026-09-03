@@ -11,6 +11,7 @@ import {
   discordanceDOrdre,
   estAncreDeCycle,
   indexDeCycle,
+  numeroEpisodeDeCycle,
 } from './cycles';
 
 describe('estAncreDeCycle — ce qui est une ancre, et ce qui n’en est pas', () => {
@@ -43,6 +44,20 @@ describe('indexDeCycle — le rang, et `null` quand ce n’est pas une ancre', (
     // ferait passer un J21 pour un début de suivi.
     expect(indexDeCycle('J21')).toBeNull();
     expect(indexDeCycle('')).toBeNull();
+  });
+});
+
+describe('numeroEpisodeDeCycle — le rang affiché, à partir de un', () => {
+  it('décale d’un : `T0` ouvre l’épisode 1', () => {
+    expect(numeroEpisodeDeCycle('T0', 0)).toBe(1);
+    expect(numeroEpisodeDeCycle('T2', 0)).toBe(3);
+  });
+
+  it('sur une ancre hors série, retombe sur le rang fourni — jamais `NaN`', () => {
+    // Le cas est celui d'une valeur inattendue en base : l'écran doit rester
+    // lisible, en donnant au cycle sa place dans la liste plutôt qu'un trou.
+    expect(numeroEpisodeDeCycle('J21', 2)).toBe(3);
+    expect(numeroEpisodeDeCycle('', 0)).toBe(1);
   });
 });
 

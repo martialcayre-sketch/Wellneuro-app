@@ -16,7 +16,7 @@
 //   n'y figure — c'est la garantie de visibilité (D11).
 
 import type { TendanceMomentum } from '@/lib/equilibre/types';
-import { indexDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
+import { indexDeCycle, numeroEpisodeDeCycle, type AncreCycle } from '@/lib/protocol/cycles';
 import {
   FORMULATIONS_PATIENT,
   LIBELLES_COURTS_PATIENT,
@@ -189,7 +189,7 @@ export function deriverEpisodeBandeau(
     precedent.momentum !== null;
 
   return {
-    numeroEpisode: (indexDeCycle(courant.ancre) ?? tries.length - 1) + 1,
+    numeroEpisode: numeroEpisodeDeCycle(courant.ancre, tries.length - 1),
     cycleId: courant.cycleId,
     positionJours,
     positionLibelle: `${courant.ancre} + ${positionJours} j · vous êtes ici`,

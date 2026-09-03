@@ -17,7 +17,7 @@ import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePan
 import { BESOINS } from '@/lib/equilibre/constants';
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
 import { resoudreJalonDu } from '@/lib/protocol/jalonDu';
-import { estAncreDeCycle, indexDeCycle, JALONS_MESURE } from '@/lib/protocol/cycles';
+import { estAncreDeCycle, JALONS_MESURE, numeroEpisodeDeCycle } from '@/lib/protocol/cycles';
 import { questionnairesCiblesPourPriorite } from '@/lib/protocol/repassationCiblee';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 
@@ -241,7 +241,7 @@ export function TrajectoirePanel({
           {cycles.map((cycle, position) => (
             <li key={cycle.cycleId}>
               <Badge variant={position === cycles.length - 1 ? 'info' : 'neutral'}>
-                Épisode {(indexDeCycle(cycle.ancre) ?? position) + 1} · {cycle.ancre} le{' '}
+                Épisode {numeroEpisodeDeCycle(cycle.ancre, position)} · {cycle.ancre} le{' '}
                 {formatDate(cycle.dateAncre)}
                 {cycle.momentum
                   ? ` · momentum ${LABEL_TENDANCE[cycle.momentum.tendance]} (écart ${Math.abs(cycle.momentum.delta)})`
