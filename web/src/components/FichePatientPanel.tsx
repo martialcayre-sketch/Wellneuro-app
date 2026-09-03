@@ -1211,7 +1211,7 @@ export function FichePatientPanel({
                 type="button"
                 aria-pressed={sousVueComprehension === id}
                 onClick={() => setSousVueComprehension(id)}
-                className={`min-h-9 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                className={`min-h-11 rounded-md px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                   sousVueComprehension === id
                     ? 'bg-accent/15 font-semibold text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -1638,7 +1638,10 @@ export function FichePatientPanel({
                 onFixtureReviewed={relectureErgo}
                 phase={phaseCourante.runtime ?? 'aucune'}
                 onAjusterProtocole={() => setPhaseActive('actions')}
-                onOuvrirTrajectoire={() => setOngletActif('trajectoire')}
+                onOuvrirTrajectoire={() => {
+                  setOngletActif('trajectoire');
+                  requestAnimationFrame(() => document.getElementById('panneau-trajectoire')?.focus());
+                }}
                 onEtatChange={setEtatRuntime}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
               />
@@ -1726,6 +1729,7 @@ export function FichePatientPanel({
         id="panneau-trajectoire"
         aria-labelledby="onglet-trajectoire"
         hidden={ongletActif !== 'trajectoire'}
+        tabIndex={0}
         className="lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:overflow-y-auto"
       >
         {/* « Ce qui compte pour le patient » (Alliance 6.0-A, LOT-03) — ajout
