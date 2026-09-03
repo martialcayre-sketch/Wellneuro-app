@@ -41,6 +41,36 @@ describe('PanneauSuperpose', () => {
     expect(contenu.getAttribute('data-theme')).toBe('praticien');
   });
 
+  // Sans cette faculté, les dialogues de confirmation ne pouvaient pas adopter
+  // la primitive : leur bouton d'ouverture vit dans une ligne de liste ou un
+  // menu d'actions, et Radix rendait un `Trigger` vide qu'aucun geste
+  // n'atteignait.
+  it('s’ouvre SANS déclencheur, piloté par son parent', () => {
+    const { rerender } = render(
+      <PanneauSuperpose titre="Effacer le dossier" description="Action irréversible." open={false} onOpenChange={() => {}}>
+        <p>Corps de la confirmation.</p>
+      </PanneauSuperpose>,
+    );
+    expect(screen.queryByText('Corps de la confirmation.')).toBeNull();
+
+    rerender(
+      <PanneauSuperpose titre="Effacer le dossier" description="Action irréversible." open onOpenChange={() => {}}>
+        <p>Corps de la confirmation.</p>
+      </PanneauSuperpose>,
+    );
+    expect(screen.getByText('Corps de la confirmation.')).toBeTruthy();
+    expect(screen.getByRole('dialog').getAttribute('data-theme')).toBe('praticien');
+  });
+
+  it('une surface patient obtient son propre thème', () => {
+    render(
+      <PanneauSuperpose titre="Confirmer" description="…" theme="patient" open onOpenChange={() => {}}>
+        <p>Corps patient.</p>
+      </PanneauSuperpose>,
+    );
+    expect(screen.getByRole('dialog').getAttribute('data-theme')).toBe('patient');
+  });
+
   it('chaque variante rend le même contrat (titre, description, fermeture)', () => {
     for (const variante of ['tiroir', 'modale', 'feuille'] as const) {
       monter(variante);

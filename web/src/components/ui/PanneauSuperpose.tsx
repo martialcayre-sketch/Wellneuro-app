@@ -25,6 +25,31 @@ import { X } from 'lucide-react';
 
 type Variante = 'tiroir' | 'modale' | 'feuille';
 
+/**
+ * Les trois largeurs de tiroir RÉELLEMENT en usage — relevées, pas inventées.
+ *
+ * - `focale` : 440 px sur grand écran. La zone focale du cockpit (les
+ *   Instruments de la fiche), pensée pour se lire à côté du dossier.
+ * - `standard` : `max-w-xl`. Ce que les QUATRE tiroirs de formulaire ont choisi
+ *   chacun de leur côté — Bibliothèque, Patients, rayon biologie, rayon
+ *   compléments. La primitive ne le proposait pas : elle offrait 440 px ou
+ *   `max-w-2xl`, et aucun des quatre n'aurait migré sans changer de largeur.
+ *   L'unanimité de l'existant fait loi ici, pas la préférence de la primitive.
+ * - `large` : `max-w-2xl`, pour les tableaux denses.
+ *
+ * MIGRER À APPARENCE CONSTANTE est la règle du lot : un lot de convergence
+ * retire de la duplication, il ne redessine pas des écrans au passage. Sans
+ * cette troisième valeur, l'adoption de la primitive aurait déplacé quatre
+ * panneaux sans que personne l'ait demandé.
+ */
+type LargeurTiroir = 'focale' | 'standard' | 'large';
+
+const CLASSES_LARGEUR: Record<LargeurTiroir, string> = {
+  focale: 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl',
+  standard: 'max-w-xl',
+  large: 'max-w-2xl',
+};
+
 const CLASSES_CONTENU: Record<Variante, string> = {
   tiroir:
     'fixed right-0 top-0 z-50 h-full w-full overflow-y-auto border-l border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none',
@@ -34,43 +59,67 @@ const CLASSES_CONTENU: Record<Variante, string> = {
     'fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full overflow-y-auto rounded-t-[1.5rem] border-t border-border bg-surface p-5 shadow-pop focus:outline-none',
 };
 
+/**
+ * L'univers dont le panneau emprunte les couleurs.
+ *
+ * TYPÉ, ET PLUS `string`. Radix portale vers `document.body` : la valeur est
+ * re-posée sur l'overlay ET le contenu, faute de quoi le panneau retombe sur
+ * les tokens par défaut de `globals.css` — qui sont ceux du PORTAIL PATIENT.
+ * C'est exactement le bug corrigé le 2026-09-03 sur les deux dialogues de
+ * confirmation du cockpit : l'écran d'effacement définitif d'un dossier
+ * s'affichait aux couleurs du patient.
+ *
+ * Le défaut reste `praticien` — la primitive est née dans le cockpit et neuf de
+ * ses dix appelants y vivent. Une surface PATIENT doit donc passer
+ * `theme="patient"` explicitement ; `PanneauSuperpose.guard.test.ts` refuse
+ * qu'elle l'oublie, parce que l'oubli est silencieux et visible du patient.
+ */
+type ThemePanneau = 'praticien' | 'patient';
+
 export function PanneauSuperpose({
   declencheur,
   titre,
   description,
   surtitre,
   variante = 'tiroir',
-  large = false,
+  largeur = 'focale',
   theme = 'praticien',
   open,
   onOpenChange,
   children,
 }: {
-  /** L'élément qui ouvre le panneau (rendu tel quel, `Trigger asChild`). */
-  declencheur: ReactElement;
+  /**
+   * L'élément qui ouvre le panneau (rendu tel quel, `Trigger asChild`).
+   *
+   * FACULTATIF : un panneau piloté par son parent (`open`/`onOpenChange`) n'a
+   * pas de déclencheur à lui — le bouton vit ailleurs, souvent dans une ligne
+   * de liste ou un menu d'actions. Sans cette faculté, les dialogues de
+   * confirmation ne pouvaient pas adopter la primitive : Radix rendait un
+   * `Trigger` vide qu'aucun geste n'atteignait.
+   */
+  declencheur?: ReactElement;
   titre: string;
   /** Toujours fournie : Radix l'exige pour l'accessibilité du dialogue. */
   description: string;
   /** Petit sur-titre en capitales au-dessus du titre (ex. « Instrument »). */
   surtitre?: string;
   variante?: Variante;
-  /** `tiroir` seulement : pane large pour les tableaux denses. */
-  large?: boolean;
+  /** `tiroir` seulement — voir `LargeurTiroir`. */
+  largeur?: LargeurTiroir;
   /** Valeur `data-theme` re-posée sur le portail Radix. */
-  theme?: string;
+  theme?: ThemePanneau;
   open?: boolean;
   onOpenChange?: (ouvert: boolean) => void;
   children: ReactNode;
 }) {
-  const largeurTiroir = large ? 'max-w-2xl' : 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl';
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Trigger asChild>{declencheur}</Dialog.Trigger>
+      {declencheur ? <Dialog.Trigger asChild>{declencheur}</Dialog.Trigger> : null}
       <Dialog.Portal>
         <Dialog.Overlay data-theme={theme} className="fixed inset-0 z-50 bg-foreground/35" />
         <Dialog.Content
           data-theme={theme}
-          className={`${CLASSES_CONTENU[variante]}${variante === 'tiroir' ? ` ${largeurTiroir}` : ''}`}
+          className={`${CLASSES_CONTENU[variante]}${variante === 'tiroir' ? ` ${CLASSES_LARGEUR[largeur]}` : ''}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
