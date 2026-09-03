@@ -1093,6 +1093,31 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
 });
 
 // Deep-link `?phase=` — un lien partageable vers une phase précise du rail.
+// UNE OUVERTURE DE DOSSIER = UNE LECTURE DE TRAJECTOIRE. Les GET journalisent
+// l'accès (`G-TRUST-04`) : deux lectures pour une ouverture inscrivaient deux
+// accès au journal du dossier, là où le praticien n'a ouvert qu'une fois.
+describe('FichePatientPanel — la trajectoire n’est lue qu’une fois', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('la fiche lit la trajectoire, la section clinique ne la relit pas', async () => {
+    const fetchMock = await rendreFiche();
+
+    // Laisse passer les effets de montage de la section clinique, qui tirait
+    // ici sa propre lecture de la même URL.
+    await act(async () => {
+      await new Promise(resoudre => setTimeout(resoudre, 30));
+    });
+
+    const lectures = fetchMock.mock.calls
+      .map(appel => String(appel[0]))
+      .filter(url => url.includes('/api/praticien/trajectoire'));
+    expect(lectures).toHaveLength(1);
+  });
+});
+
 describe('FichePatientPanel — phase demandée par lien', () => {
   // `cleanup` est enregistré PAR BLOC dans ce fichier, pas globalement (seul le
   // vidage de `localStorage` l'est) : sans ce rappel, la fiche du cas précédent

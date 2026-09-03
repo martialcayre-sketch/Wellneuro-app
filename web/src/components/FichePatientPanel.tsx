@@ -1663,6 +1663,13 @@ export function FichePatientPanel({
                   Le remontage au changement de dossier est porté PLUS HAUT, sur
                   ce composant lui-même ([[D-072]] §4, `page.tsx`) : c'est lui
                   qui détient l'état du dossier, pas seulement cette section. */}
+              {/* LA FICHE EST PROPRIÉTAIRE DE LA LECTURE DE TRAJECTOIRE
+                  (`trajectoirePartagee` / `onRechargerTrajectoire`). Elle la lit
+                  déjà à l'ouverture — le bandeau d'épisode en a besoin — et la
+                  section la relisait au montage : le MÊME GET, deux fois, pour
+                  une seule ouverture de dossier. Les GET journalisant l'accès
+                  (`G-TRUST-04`), le journal comptait deux accès là où le
+                  praticien n'a ouvert le dossier qu'une fois. */}
               <ClinicalRuntimeSection
                 idPatient={idPatient}
                 fixture={fixtureErgo}
@@ -1675,6 +1682,9 @@ export function FichePatientPanel({
                   requestAnimationFrame(() => document.getElementById('panneau-trajectoire')?.focus());
                 }}
                 onEtatChange={setEtatRuntime}
+                trajectoirePartagee={trajectoire}
+                statutTrajectoirePartage={etatTrajectoire}
+                onRechargerTrajectoire={chargerTrajectoire}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
               />
             </div>
