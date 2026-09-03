@@ -129,6 +129,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.documentsPatientBiologie = (
       await tx.documentPatientBiologie.deleteMany({ where: par })
     ).count;
+    // Les résultats biologiques (étage 2 du rayon, D-122 §2) sont des données
+    // de santé nominatives en FK RESTRICT : subsistant, ils feraient échouer
+    // la suppression du patient. Ils partent avec le dossier, nommément.
+    supprimees.resultatsBiologiques = (
+      await tx.resultatBiologique.deleteMany({ where: par })
+    ).count;
     // Les rendez-vous (accueil-observatoire LOT-04) sont en ON DELETE RESTRICT :
     // subsistant, ils feraient échouer la suppression du patient. Donnée
     // opérationnelle du dossier, ils partent avec lui, nommément.
