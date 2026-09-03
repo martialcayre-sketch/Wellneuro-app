@@ -60,25 +60,86 @@ const rep = (payload: unknown, ok = true, status = 200): ReponseMock => ({
   ok, status, json: async () => payload,
 });
 
-function fetchParRoute(routes: {
-  trajectoire?: ReponseMock;
-  cockpitGet?: ReponseMock[];
-  cockpitPost?: ReponseMock[];
-  propositions?: ReponseMock;
-}) {
+/**
+ * TOUTES LES ROUTES SONT NOMMÉES, ET PLUS SEULEMENT DEUX.
+ *
+ * Le harnais ne connaissait que `trajectoire` et `propositions-objectif` : les
+ * SEPT autres routes du runtime — quatre du rayon biologie, trois des
+ * protocoles — tombaient dans les files génériques `cockpitGet`/`cockpitPost`
+ * et y consommaient une réponse destinée au cockpit. Le symptôme n'est pas un
+ * banc rouge, c'est un banc qui teste autre chose que ce qu'il annonce : la
+ * réponse cockpit attendue au rang N est servie à un appel biologie, et le
+ * cockpit reçoit le 500 de fin de file.
+ *
+ * ORDRE SIGNIFICATIF : les préfixes les plus longs d'abord.
+ * `…/proposition/courrier` doit être reconnu AVANT `…/proposition`, sinon il
+ * n'est jamais atteint.
+ */
+const ROUTES_NOMMEES = [
+  ['/api/praticien/biologie/proposition/document-patient', 'cbDocumentPatient'],
+  ['/api/praticien/biologie/proposition/courrier', 'cbCourrier'],
+  ['/api/praticien/biologie/proposition', 'cbProposition'],
+  ['/api/praticien/biologie/arbitrage', 'cbArbitrage'],
+  ['/api/praticien/protocoles/checkins', 'protocolesCheckins'],
+  ['/api/praticien/protocoles/diffusion', 'protocolesDiffusion'],
+  ['/api/praticien/protocoles/versions', 'protocolesVersions'],
+  ['/api/praticien/propositions-objectif', 'propositions'],
+  ['/api/praticien/trajectoire', 'trajectoire'],
+] as const;
+
+type RouteNommee = (typeof ROUTES_NOMMEES)[number][1];
+
+/**
+ * Une route NON DÉCLARÉE par le cas répond en échec, pas en succès vide.
+ *
+ * Le réflexe inverse a été essayé et rejeté sur mesure : servir un
+ * `{ ok: true }` minimal à une route dont le cas ne parle pas fait emprunter au
+ * composant des chemins de succès qu'il ne prenait pas, avec des charges utiles
+ * incomplètes — trois bancs sont tombés, dont un sur un DOM entièrement démonté
+ * par un rejet non géré. L'échec, lui, est exactement ce que ces routes
+ * recevaient déjà avant ce routage (la file générique épuisée rendait un 500),
+ * et chaque chargeur du runtime l'absorbe dans son `catch` en le traitant comme
+ * une donnée indicative absente.
+ *
+ * `trajectoire` et `propositions` font exception, et c'est leur histoire : le
+ * runtime les lit AVANT de savoir quoi demander, si bien qu'un échec y change
+ * la séquence au lieu d'omettre un panneau. Elles gardent le succès vide
+ * qu'elles servaient déjà.
+ */
+const DEFAUTS: Partial<Record<RouteNommee, unknown>> = {
+  propositions: { ok: true, propositions: [], disposees: [], caduques: [] },
+  trajectoire: { ok: true, trajectoire: null },
+};
+
+const ECHEC_ROUTE_NON_DECLAREE = () => rep({}, false, 500);
+
+function fetchParRoute(
+  routes: {
+    cockpitGet?: ReponseMock[];
+    cockpitPost?: ReponseMock[];
+  } & Partial<Record<RouteNommee, ReponseMock | ReponseMock[]>>,
+) {
   const get = [...(routes.cockpitGet ?? [])];
   const post = [...(routes.cockpitPost ?? [])];
+  // Une route peut être servie par une réponse unique (rejouée à chaque appel)
+  // ou par une file (consommée dans l'ordre) — le rechargement d'une même route
+  // après un geste est courant dans ce runtime.
+  const files = new Map<RouteNommee, ReponseMock[]>();
+  for (const [, nom] of ROUTES_NOMMEES) {
+    const declaree = routes[nom];
+    if (Array.isArray(declaree)) files.set(nom, [...declaree]);
+  }
+
   return vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
-    if (String(url).includes('/api/praticien/trajectoire')) {
-      return routes.trajectoire ?? rep({ ok: true, trajectoire: null });
-    }
-    // ROUTÉ PAR URL, PAS SEULEMENT PAR MÉTHODE (relevé en revue du LOT-03).
-    // Depuis que la confirmation enchaîne un POST vers le moteur de
-    // proposition, un routage sur la seule méthode faisait consommer à ce
-    // second appel la file `cockpitPost` — invisible tant qu'elle n'a qu'une
-    // entrée, et introuvable le jour où elle en aura deux.
-    if (String(url).includes('/api/praticien/propositions-objectif')) {
-      return routes.propositions ?? rep({ ok: true, propositions: [], disposees: [], caduques: [] });
+    const cible = String(url);
+    const entree = ROUTES_NOMMEES.find(([prefixe]) => cible.includes(prefixe));
+    if (entree) {
+      const nom = entree[1];
+      const defaut = () =>
+        nom in DEFAUTS ? rep(DEFAUTS[nom]) : ECHEC_ROUTE_NON_DECLAREE();
+      const file = files.get(nom);
+      if (file) return file.shift() ?? defaut();
+      return (routes[nom] as ReponseMock | undefined) ?? defaut();
     }
     if (init?.method === 'POST') return post.shift() ?? rep({}, false, 500);
     return get.shift() ?? rep({}, false, 500);
