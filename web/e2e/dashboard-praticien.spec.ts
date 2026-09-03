@@ -395,12 +395,18 @@ test.describe('Praticien Dashboard', () => {
     await expect(dialogue).toBeHidden();
   });
 
-  test('route praticien : accès Trajectoire alimentaire (JA5-03)', async ({ page }) => {
+  test('ancienne route pleine page : redirigée vers l’onglet Trajectoire alimentaire (JA5-03)', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
 
+    // ON PART DE L'ANCIENNE ADRESSE À DESSEIN. La sous-vue pleine page a été
+    // retirée le 2026-09-03 au profit de l'onglet de la fiche, qui montait déjà
+    // le même composant. Naviguer directement vers l'onglet ne prouverait que
+    // l'onglet ; partir d'ici prouve AUSSI que le favori d'un praticien atterrit
+    // encore au bon endroit — et qu'il repasse par la fiche, seule surface à
+    // porter la garde anti-réconciliation de `[[D-072]]` §4.
     await page.goto('/dashboard/patients/PAT_SEED_03/alimentation');
-    await expect(page).toHaveURL(/\/dashboard\/patients\/PAT_SEED_03\/alimentation$/);
+    await expect(page).toHaveURL(/\/dashboard\/patients\/PAT_SEED_03\?onglet=alimentation$/);
     await expect(page.getByRole('heading', { name: 'Trajectoire alimentaire' })).toBeVisible();
     await expect(page.getByTestId('ja-praticien-calibrage')).toBeVisible();
     await expect(page.getByTestId('ja-praticien-moments-explorer')).toBeVisible();
