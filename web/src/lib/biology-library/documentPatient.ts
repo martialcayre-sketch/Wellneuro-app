@@ -31,6 +31,12 @@ export type EntreeDocumentPatientBiologie = {
   tableSha256: string;
   /** ISO 8601 — date du document, posée par l'appelant (jamais l'horloge ici). */
   dateDocument: string;
+  /**
+   * Étage 2 actif (`isCbResultsEnabled`, posé par la ROUTE — jamais lu ici) :
+   * la phrase « aucun résultat n'est conservé » devient fausse quand la
+   * saisie existe. Absent = éteint (fail-closed) : la phrase historique.
+   */
+  resultatsActifs?: boolean;
 };
 
 export type RefusDocumentPatientBiologie =
@@ -123,8 +129,14 @@ export function genererDocumentPatientBiologie(
     'Ce document n’est ni une ordonnance ni un diagnostic : la décision de '
     + 'réaliser ces explorations se prend avec votre praticien et, le cas échéant, '
     + 'avec votre médecin traitant, à qui leur interprétation revient.',
-    'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
-    + 'bilan se fait directement auprès de vous et de votre médecin.',
+    // Même exigence de vérité que le courrier : la phrase suit l'état réel de
+    // l'outil (étage 2, D-122 §2) — au patient encore plus qu'au médecin.
+    entree.resultatsActifs
+      ? 'Le retour du bilan se fait directement auprès de vous et de votre '
+        + 'médecin ; votre praticien peut consigner des mesures dans son outil '
+        + 'pour votre suivi.'
+      : 'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
+        + 'bilan se fait directement auprès de vous et de votre médecin.',
     `Document préparé le ${dateLisible}.`,
   ];
   const texte = paragraphes.join('\n\n');

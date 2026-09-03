@@ -1,13 +1,31 @@
 ---
 id: "LOT-06"
 titre: "etage-2-resultats-hds-cb09"
-statut: "hors_périmètre — gate dur HDS"
-dépend_de: "HDS obtenu (attestation) ; WN_CB_RESULTS_ENABLED"
+statut: "livré — code posé le 2026-09-03, drapeau éteint (levée en prod = geste d'exploitation)"
+dépend_de: "D-122 §2 (ouverture) ; D-081 (condition HDS requalifiée, satisfaite par D-080) ; WN_CB_RESULTS_ENABLED"
 ---
 
-# LOT-06 (CB-09) — Étage 2 : résultats biologiques réels (post-HDS uniquement)
+# LOT-06 (CB-09) — Étage 2 : résultats biologiques réels
 
-## But
+> **RÉGULARISÉ LE 2026-09-03.** Le gate « attestation HDS » de ce fichier a
+> été REQUALIFIÉ le 2026-08-22 ([[D-081]] : hébergement HDS effectif et
+> exclusif, satisfait au décommissionnement Vercel/Supabase, [[D-080]]), et
+> l'ouverture de l'étage a été décidée par [[D-122]] §2 (demande explicite du
+> 2026-09-01). Livré depuis : la migration `resultats_biologiques` (PR #838,
+> appliquée par release-db et constatée par conteneur le 2026-09-03 — unicité
+> patient/analyte/horodatage, vocabulaire d'unités partagé, RLS deny-all,
+> effacement IDP2) et le code (routes `GET`/`POST
+> /api/praticien/biologie/resultats`, panneau estimé ↔ mesuré, drapeau posé
+> avec le code qui le lit — voir `docs/FEATURE_FLAGS.md` §D). Le drapeau
+> reste ÉTEINT en production : la levée est un geste d'exploitation distinct.
+> Les sections historiques ci-dessous sont conservées comme trace du cadrage ;
+> là où elles contredisent ce bandeau, le bandeau fait foi.
+> Restes connus : la ré-alimentation du moteur d'orientation et du momentum
+> par le mesuré N'EST PAS livrée (elle exigera sa propre décision — jamais un
+> champ de la proposition), l'import laboratoire non plus, et le geste de
+> correction d'une saisie n'existe pas encore (dit dans la route).
+
+## But (cadrage d'origine)
 
 Ce lot **n'est pas planifié**. Il borne le contrat pour ne pas peindre le
 catalogue dans un coin, et ne doit être ouvert qu'après attestation HDS.

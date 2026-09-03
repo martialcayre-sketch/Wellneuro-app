@@ -76,6 +76,28 @@ afterEach(() => {
   delete process.env.WN_CB_PROPOSITION;
 });
 
+// ── CÂBLAGE DU DRAPEAU ÉTAGE 2 (banc qui rougit au débranchement) ──────────
+// La phrase « aucun résultat conservé » du courrier suit `isCbResultsEnabled`
+// PARCE QUE la route le passe : supprimer la ligne `resultatsActifs:` doit
+// faire rougir ici, pas seulement dans le test de la fonction pure.
+describe('câblage resultatsActifs (D-122 §2)', () => {
+  it('drapeau étage 2 levé : le générateur le reçoit', async () => {
+    process.env.WN_CB_RESULTS_ENABLED = 'true';
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    delete process.env.WN_CB_RESULTS_ENABLED;
+    expect(genererCourrierBiologie).toHaveBeenCalledWith(
+      expect.objectContaining({ resultatsActifs: true }),
+    );
+  });
+
+  it('drapeau éteint : le générateur reçoit false (fail-closed)', async () => {
+    await POST(postRequest({ idPatient: 'PAT1', medecinLibelle: 'Dr Nicola' }));
+    expect(genererCourrierBiologie).toHaveBeenCalledWith(
+      expect.objectContaining({ resultatsActifs: false }),
+    );
+  });
+});
+
 // ── L'INVARIANT CENTRAL DU LOT ─────────────────────────────────────────────
 // Deux colonnes d'ancrage ne valent que si elles portent l'ancre du document
 // RENDU. Reconstruites, ou pire fournies par l'appelant, elles seraient deux

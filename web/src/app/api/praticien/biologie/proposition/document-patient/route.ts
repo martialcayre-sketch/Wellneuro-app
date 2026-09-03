@@ -12,6 +12,7 @@ import {
   genererDocumentPatientBiologie,
   type RefusDocumentPatientBiologie,
 } from '@/lib/biology-library/documentPatient';
+import { isCbResultsEnabled } from '@/lib/biology-library/featureFlag';
 import { INDICATIONS_BIOLOGIE_SHA256 } from '@/lib/biology-library/indicationsBiologieV1';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 
@@ -128,6 +129,8 @@ export async function POST(req: Request) {
       // réellement publiées — jamais le littéral figé de la signature.
       tableSha256: INDICATIONS_BIOLOGIE_SHA256,
       dateDocument: maintenant,
+      // La phrase « aucun résultat conservé » suit l'état réel de l'étage 2.
+      resultatsActifs: isCbResultsEnabled(),
     });
     if (!genere.ok) {
       if (genere.raison === 'bloc_non_diffuse') {

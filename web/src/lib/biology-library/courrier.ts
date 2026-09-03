@@ -31,6 +31,12 @@ export type EntreeCourrierBiologie = {
   tableSha256: string;
   /** ISO 8601 — date du courrier, posée par l'appelant (jamais l'horloge ici). */
   dateCourrier: string;
+  /**
+   * Étage 2 actif (`isCbResultsEnabled`, posé par la ROUTE — jamais lu ici) :
+   * la phrase « aucun résultat n'est conservé » devient fausse quand la
+   * saisie existe. Absent = éteint (fail-closed) : la phrase historique.
+   */
+  resultatsActifs?: boolean;
 };
 
 export type RefusCourrierBiologie =
@@ -124,8 +130,15 @@ export function genererCourrierBiologie(
     + 'utiles au vu du tableau clinique recueilli. La décision de les demander, '
     + 'comme leur interprétation, vous appartient pleinement.',
     ...proposees.map(paragrapheLigne),
-    'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
-    + 'bilan se fait directement auprès du patient et de votre cabinet.',
+    // La phrase suit l'ÉTAT RÉEL de l'outil (étage 2, D-122 §2) : promettre
+    // au médecin qu'aucun résultat n'est conservé alors que la saisie existe
+    // serait une fausse assurance sur le seul artefact qui quitte le cabinet.
+    entree.resultatsActifs
+      ? 'Le retour du bilan se fait directement auprès du patient et de votre '
+        + 'cabinet ; les mesures utiles au suivi peuvent être consignées dans '
+        + 'notre outil par le praticien.'
+      : 'Aucun résultat d’analyse n’est conservé dans notre outil : le retour du '
+        + 'bilan se fait directement auprès du patient et de votre cabinet.',
     `Avec mes remerciements pour votre lecture. Courrier préparé le ${dateLisible}.`,
   ];
   const texte = paragraphes.join('\n\n');

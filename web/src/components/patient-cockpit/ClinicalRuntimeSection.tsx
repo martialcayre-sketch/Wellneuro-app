@@ -27,7 +27,7 @@ import type { JalonMomentum } from '@/lib/equilibre/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
 import { useC5Enabled } from './C5FeatureProvider';
-import { useCbEnabled } from './CbFeatureProvider';
+import { useCbEnabled, useCbResultsEnabled } from './CbFeatureProvider';
 import {
   ArbitrageBiologiquePanel,
   type ArbitrageState,
@@ -164,6 +164,7 @@ export function ClinicalRuntimeSection({
 }) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
+  const cbResultatsActifs = useCbResultsEnabled();
   // Sous-vues de la phase Actions (audit 2026-09-02, constat « jusqu'à 7
   // panneaux lourds dans le même puits de défilement »). Bascule par `hidden`
   // pour le protocole — ProtocolMiniBuilder et la Boussole doivent rester
@@ -1339,10 +1340,12 @@ export function ClinicalRuntimeSection({
               }
               documentPatientReponses={documentPatientReponses}
               onEtablirDocumentPatient={etablirDocumentPatient}
+              resultatsActifs={cbResultatsActifs}
             />
           )}
           {cbEnabled && contenuActif && activeVersionId && (
             <ArbitrageBiologiquePanel
+              resultatsActifs={cbResultatsActifs}
               intentions={contenuActif.actions
                 .filter(action => action.interventionStatus === 'conditionnelle_biologie')
                 .map(action => ({

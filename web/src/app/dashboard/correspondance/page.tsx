@@ -20,10 +20,10 @@ export default function CorrespondancePage() {
       </div>
 
       <BanniereDiffere>
-        Le fil réutilisera la chaîne Documents (C3) et l&apos;identité patient durable ;
-        le stockage de pièces jointes biologiques exige un hébergement de données de
-        santé (HDS). D&apos;ici là, les canaux officiels restent les documents validés
-        et les rendez-vous de suivi — chaque échange y est tracé.
+        Le fil réutilisera la chaîne Documents (C3) et l&apos;identité patient durable.
+        L&apos;hébergement de données de santé est en place ; le fil de pièces jointes,
+        lui, attend son propre chantier. D&apos;ici là, les canaux officiels restent les
+        documents validés et les rendez-vous de suivi — chaque échange y est tracé.
       </BanniereDiffere>
 
       <div className="rounded-xl border border-border bg-surface p-5 shadow-card">
