@@ -3,12 +3,21 @@
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 
+// « PRIORITÉ ET LIMITES » ET NON « DÉCISION CLINIQUE » : la carte vit DANS la
+// phase « Décision 21 j » — le titre y répétait celui de la phase sans rien
+// ajouter, entre deux voisins qui, eux, nomment leur contenu (« Plainte et
+// objectif du patient », « Contradictions touchant cette décision »). Le titre
+// retenu tient AUSSI quand la carte s'abstient : il annonce une rubrique, pas
+// un résultat, là où « ce qui est retenu » aurait promis un choix au-dessus
+// d'une suspension. « Limites » reprend le mot du dépliant de la carte
+// (« Voir les sources et limites »), et jamais « synthèse », qui désigne un
+// document du dossier.
 export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCard | null }) {
   if (!decisionCard) {
     return (
       <section aria-labelledby="decision-summary-title">
         <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-          Décision clinique
+          Priorité et limites
         </h3>
         {/* Carte de décision 5.0 : liseré primaire (maquette cible). */}
         <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-card">
@@ -55,7 +64,7 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
   return (
     <section aria-labelledby="decision-summary-title">
       <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-        Décision clinique
+        Priorité et limites
       </h3>
       <TwoLevelReading
         label="Voir les sources et limites"

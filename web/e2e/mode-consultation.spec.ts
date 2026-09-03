@@ -25,7 +25,7 @@ test.describe('Mode consultation (fiche patient)', () => {
       await expect(rail).toBeVisible();
 
       // Décision (phase par défaut) : décision clinique non préparée.
-      await expect(page.getByRole('heading', { name: 'Décision clinique' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Priorité et limites' })).toBeVisible();
       await expect(page.getByText('Décision clinique non préparée')).toBeVisible();
 
       // Données : données manquantes non évaluées tant que rien n'est qualifié.

@@ -184,8 +184,11 @@ function ResumeProposition({
  *
  * `onReprendre` ABSENT N'EST PAS UN BOUTON GRISÉ : le fragment reste
  * parfaitement lisible, il n'est simplement pas une parole du patient. Griser
- * un bouton laisserait croire à une permission manquante ; la phrase dit ce
- * qu'il en est.
+ * un bouton laisserait croire à une permission manquante.
+ *
+ * CE QU'IL EN EST SE DIT UNE FOIS, SOUS LA LISTE, et non sous chaque fragment :
+ * la même phrase répétée à chaque ligne noyait les citations qu'elle
+ * accompagne — c'est le reproche de verbosité de l'audit du 2026-09-02.
  */
 function FragmentCite({
   fragment,
@@ -218,11 +221,7 @@ function FragmentCite({
         >
           {choisi ? 'Citation retenue' : 'Reprendre cette phrase'}
         </button>
-      ) : (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Ce n’est pas une parole du patient : elle éclaire la proposition, elle ne devient pas son énoncé.
-        </p>
-      )}
+      ) : null}
     </li>
   );
 }
@@ -681,10 +680,15 @@ export function ObjectifNegociePanel({
                 </div>
               </dl>
             )}
-            <p className="mt-2 text-sm text-muted-foreground">
-              Déclarations recueillies à l’anamnèse, dans un autre contexte que cet entretien : matériau de
-              départ, jamais un objectif négocié. Rien n’est recopié automatiquement dans la saisie.
-            </p>
+            {/* LE MODE D'EMPLOI SUIT LE MATÉRIAU. Sans consultation validée il
+                n'y a rien à reprendre : expliquer comment ne pas le recopier
+                ajoutait deux lignes sous une absence déjà énoncée. */}
+            {ancrage.consultationValidee && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Déclarations recueillies à l’anamnèse, dans un autre contexte que cet entretien : matériau de
+                départ, jamais un objectif négocié. Rien n’est recopié automatiquement dans la saisie.
+              </p>
+            )}
           </aside>
 
           {/* PROPOSITIONS D'OBJECTIF (Alliance 6.0-B, LOT-03).
@@ -791,6 +795,16 @@ export function ObjectifNegociePanel({
                     ))}
                   </ul>
 
+                  {/* DIT UNE FOIS POUR LA LISTE : voir `FragmentCite`. */}
+                  {proposition.fragments.some(
+                    (fragment) => lireSource(fragment.source)?.nature !== 'anamnese',
+                  ) && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Les fragments sans bouton ne sont pas des paroles du patient : ils éclairent la
+                      proposition, ils ne deviennent pas son énoncé.
+                    </p>
+                  )}
+
                   {ecarteDe === proposition.id ? (
                     <div className="mt-3 flex flex-col gap-2">
                       {/* Label simple — la justification de gouvernance aval
@@ -845,11 +859,21 @@ export function ObjectifNegociePanel({
                 </article>
               ))}
 
+              {/* REPLIÉES PAR DÉFAUT — ce sont des archives : elles se
+                  consultent, elles n'attendent aucun geste. `<details>` natif
+                  et non `TwoLevelReading` : le contenu reste dans le DOM, donc
+                  lisible par la recherche du navigateur et par les bancs.
+
+                  SANS DÉCOMPTE dans le résumé : `D-110` interdit de compter les
+                  amendements sur cette surface autant que de les résumer, et
+                  `G2-bis` refuse tout `{x.length}` rendu ici. Un « (3) » collé
+                  au titre paraît anodin — c'est exactement la comparaison que
+                  la décision proscrit. */}
               {disposees.length > 0 && (
-                <div className="mt-4 border-t border-border pt-3">
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <details className="mt-4 border-t border-border pt-3">
+                  <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Déjà tranchées
-                  </h5>
+                  </summary>
                   <ul className="mt-2 flex flex-col gap-2">
                     {disposees.map((proposition) => (
                       <ResumeProposition
@@ -859,14 +883,14 @@ export function ObjectifNegociePanel({
                       />
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
 
               {caduques.length > 0 && (
-                <div className="mt-4 border-t border-border pt-3">
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <details className="mt-4 border-t border-border pt-3">
+                  <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Périmées
-                  </h5>
+                  </summary>
                   {/* CADUQUE N'EST PAS « REFUSÉE ». Personne ne les a écartées :
                       les données sources ont changé depuis, et une citation
                       tirée d'un état du dossier qui n'est plus le sien ne se
@@ -888,7 +912,7 @@ export function ObjectifNegociePanel({
                       />
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
             </aside>
           )}

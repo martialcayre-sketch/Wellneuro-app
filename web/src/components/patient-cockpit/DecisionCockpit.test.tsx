@@ -114,7 +114,7 @@ describe('cockpit de décision prudent', () => {
       </>
     );
     expect(container.textContent?.indexOf('Données manquantes')).toBeLessThan(
-      container.textContent?.indexOf('Décision clinique') ?? 0
+      container.textContent?.indexOf('Priorité et limites') ?? 0
     );
   });
 
