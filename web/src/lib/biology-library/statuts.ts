@@ -146,6 +146,18 @@ export type PropositionBilan =
       declarationsIgnoreesHorsProposition: Array<{ panelCode: string; motif: string }>;
     };
 
+/**
+ * Statuts qui constituent une PROPOSITION : ce qui entre dans le courrier
+ * médecin, dans le document patient, et ce sur quoi l'écran offre les deux
+ * gestes. Le prédicat vit ICI, dans le module qui possède le vocabulaire des
+ * statuts — ni dans un générateur ni dans l'autre : un formulaire affiché là
+ * où le serveur refusera fait journaliser un accès pour un 409 (revue M5), et
+ * deux artefacts qui divergeraient sur ce prédicat diraient au patient et au
+ * médecin deux propositions différentes.
+ */
+export const STATUTS_PROPOSES: ReadonlySet<string> =
+  new Set(['recommande', 'a_repeter', 'optionnel', 'conditionnel']);
+
 /** Ordre de présentation : ce qui appelle une action d'abord. */
 const ORDRE_STATUTS: Record<StatutPanel, number> = {
   recommande: 0,

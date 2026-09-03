@@ -238,8 +238,18 @@ test.describe('Surface biologie — proposition, déclaration, courrier', () => 
 
     // Point 4 — l'absence d'envoi n'est pas une lacune du parcours, c'est la
     // propriété à prouver : la surface dit elle-même qu'elle n'envoie rien, et
-    // le seul rendu du courrier est un texte à transcrire.
-    await expect(panneau.getByText(/Aucun envoi automatique/)).toBeVisible();
+    // le seul rendu du courrier est un texte à transcrire. Depuis la décision
+    // F (D-122), DEUX gestes l'affirment — le courrier ET le document patient :
+    // le compte est l'assertion, un des deux qui se tairait ferait rougir ici.
+    await expect(panneau.getByText(/Aucun envoi automatique/)).toHaveCount(2);
+
+    // Le geste jumeau du document patient s'offre sur le même prédicat. Il
+    // n'est PAS cliqué ici : sa consignation est éprouvée au banc de la route,
+    // et un clic E2E laisserait une ligne append-only sans nettoyage dédié.
+    await expect(panneau.getByText('Document remis au patient')).toBeVisible();
+    await expect(
+      panneau.getByRole('button', { name: 'Établir et consigner le document patient' }),
+    ).toBeVisible();
 
     // Le destinataire est la MARQUE de la lettre : le nettoyage ne supprime
     // que celle-ci, jamais toutes les correspondances sortantes du dossier.

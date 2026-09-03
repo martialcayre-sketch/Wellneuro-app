@@ -20,6 +20,7 @@
 // | Synthèse de compréhension (publication) | `termeAnxiogene` sur `texte` (`api/praticien/comprehension/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/comprehension/route.test.ts` |
 // | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |
 // | Dossier à deux voix (service portail) | `termeAnxiogene` sur les TROIS textes praticien servis — reformulation, priorité, synthèse (`api/portail/dossier/route.ts`) | journalisant (`PORTAIL_DOSSIER_REGISTRE_ANXIOGENE`) | `api/portail/dossier/route.test.ts` |
+// | Document patient biologie (génération, décision F/D-122) | `termeAnxiogene` sur le texte généré avant consignation (`api/praticien/biologie/proposition/document-patient/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/biologie/proposition/document-patient/route.test.ts` |
 //
 // LE DOSSIER À DEUX VOIX EST UN CHEMIN NEUF, PAS UN DOUBLON (Alliance LOT-06).
 // Il sert au patient un texte praticien que RIEN d'autre ne lui sert — la
