@@ -2,8 +2,8 @@
 //
 // Sur le modèle de `release-db-invariants.test.mjs` : un workflow porte des
 // règles qu'un commentaire ne suffit pas à tenir, parce qu'une expression YAML
-// se modifie sans que rien ne rougisse. Trois d'entre elles ont un coût réel et
-// silencieux, d'où ce banc.
+// se modifie sans que rien ne rougisse. Quatre d'entre elles ont un coût réel
+// et silencieux, d'où ce banc.
 //
 // 1. LE GROUPE DE CONCURRENCE NE DOIT JAMAIS ÊTRE PARTAGÉ PAR DEUX RUNS DE
 //    `main`. `cancel-in-progress: false` ne le garantit PAS : à groupe partagé,
@@ -28,6 +28,17 @@
 //    2026-08-05 : la promesse était fausse et rien ne le disait. Une image
 //    produite ailleurs que là où elle sera comparée est une baseline dont
 //    personne ne peut dire ce qu'elle prouve.
+//
+// 4. `visual-baselines.yml` DOIT PASSER `--update-snapshots=all`. Le drapeau nu
+//    prend le préréglage `changed` : Playwright ne réécrit alors que ce qu'il
+//    juge différent, avec les options du matcher (`maxDiffPixelRatio: 0.02`).
+//    Une baseline périmée dont l'écart passe sous ce seuil survit au workflow
+//    et repart telle quelle dans l'artefact. Constaté le 2026-09-04 (run
+//    33915188718) : les deux images `fiche-tiroir-besoins` de l'artefact
+//    étaient octet pour octet celles déjà commises, alors que la capture de
+//    revue du même run montrait le rail posé obtenu par #871. Un workflow dont
+//    le métier est de produire la référence ne doit jamais avoir le droit de
+//    la conserver.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -177,4 +188,26 @@ test('les baselines visuelles sont produites sur le Node qui les comparera', () 
       + `visual-baselines.yml=${[...new Set(desBaselines)].join(',')}. `
       + 'Une baseline produite ailleurs que là où elle est comparée ne prouve rien.',
   );
+});
+
+test('le workflow des baselines réécrit TOUT — le drapeau nu conserverait le périmé', () => {
+  const baselines = fs.readFileSync(CHEMIN_BASELINES, 'utf8');
+  const appels = [...baselines.matchAll(/^\s*run:.*--update-snapshots(=[a-z]+)?/gm)];
+  assert.ok(appels.length > 0, 'visual-baselines.yml : plus aucun appel --update-snapshots.');
+
+  // Assertion sur la VALEUR, pas sur la présence du drapeau. `--update-snapshots`
+  // nu est accepté par Playwright et vaut `changed` : c'est exactement la forme
+  // qui a conservé une baseline périmée le 2026-09-04. `missing` serait pire
+  // encore (il ne réécrirait jamais rien d'existant).
+  for (const appel of appels) {
+    assert.equal(
+      appel[1],
+      '=all',
+      "visual-baselines.yml doit passer --update-snapshots=all, valeur trouvée : "
+        + (appel[1] ? appel[1].slice(1) : 'aucune (drapeau nu, donc « changed »)')
+        + '. Sans =all, Playwright ne réécrit que ce qu’il juge différent au seuil du matcher : '
+        + 'une baseline périmée sous ce seuil survit au workflow et repart dans l’artefact, '
+        + 'où rien ne la distingue d’une image fraîche.',
+    );
+  }
 });

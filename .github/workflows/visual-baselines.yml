@@ -79,7 +79,24 @@ jobs:
           # même sans baseline — combiné à --update-snapshots, il ÉCRIT la
           # baseline au lieu de comparer.
           WN_VISUAL_UPDATE: '1'
-        run: npx playwright test e2e/visual.spec.ts --update-snapshots
+        # `=all` ET NON LE DRAPEAU NU. Sans valeur, `--update-snapshots` prend
+        # le préréglage `changed` : Playwright ne réécrit que les baselines
+        # qu'il juge DIFFÉRENTES — jugement rendu avec les options du matcher
+        # (`maxDiffPixelRatio: 0.02`, pixelmatch `includeAA: false`). Une
+        # baseline périmée dont l'écart passe sous ce seuil est donc conservée,
+        # et republiée telle quelle dans l'artefact.
+        #
+        # Constaté le 2026-09-04, run 33915188718 : les deux baselines
+        # `fiche-tiroir-besoins` de l'artefact étaient OCTET POUR OCTET celles
+        # déjà commises (sha256 identiques), alors que la capture de revue du
+        # même run — écrite inconditionnellement, elle — montrait le rail posé
+        # que #871 venait d'obtenir. Le correctif était en place, le run vert,
+        # et la référence restait celle d'avant.
+        #
+        # `all` réécrit sans juger : c'est la seule valeur cohérente avec un
+        # workflow dont le métier est de PRODUIRE la référence, pas de la
+        # conserver.
+        run: npx playwright test e2e/visual.spec.ts --update-snapshots=all
 
       - name: Publier les baselines en artefact
         uses: actions/upload-artifact@v4
