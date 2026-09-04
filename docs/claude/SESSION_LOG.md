@@ -5061,3 +5061,24 @@ proposition ou le document patient.
 
 Prochaine action — constat visuel des deux surfaces ; levée du drapeau
 précédée du registre des traitements et de l'information patient.
+
+## 2026-09-04 — Mise en service des dossiers neufs : encart du Fil et courrier d'accès
+
+Cinq dossiers ouverts depuis le 2026-08-20 : e-mails d'accès tous partis
+(`Envoye`), **aucune entrée au portail**, donc aucun pack — il n'est assigné
+qu'à la validation d'onboarding par le patient. Trois portes séparent la
+création d'un dossier de son existence clinique, et aucune ne rendait compte.
+#868 pose l'encart « Nouveaux patients » qui nomme la première porte fermée ;
+#869 réécrit le gabarit `acces_portail` (v2, première `valideLe` du registre)
+et pose un `Reply-To` par dossier.
+
+Écarté — un e-mail ponctuel aux cinq (reformuler sert aussi les suivants) ;
+`{{praticien}}` en variable (ne dirait plus « c'est moi ») ; restaurer le CRLF
+de `consultations/route.ts` (`.gitattributes` renormalise).
+
+La revue adversariale a rendu NO-GO sur deux promesses fausses du texte, dont
+« taper app.wellneuro.fr » — la racine sert l'écran praticien. Leçon : un
+gabarit se relit seul, ce qu'il promet vit ailleurs.
+
+Prochaine action — « Renvoyer l'accès » sur les cinq fiches après déploiement ;
+si rien ne bouge, regarder SPF/DKIM.
