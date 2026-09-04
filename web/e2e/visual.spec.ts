@@ -70,6 +70,18 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
   });
 
   test('fiche patient — poste de pilotage', async ({ page }, testInfo) => {
+    // FENÊTRE HAUTE, ET NON `fullPage` — mesuré, pas supposé.
+    //
+    // Le cockpit est un TROIS-COLONNES DONT CHAQUE COLONNE DÉFILE POUR
+    // ELLE-MÊME, bornée à la hauteur de fenêtre
+    // (`FichePatientPanel`, `lg:h-[calc(100dvh-11.75rem)] lg:overflow-y-auto`) :
+    // c'est le principe `A6-R1`, naviguer par phase et jamais défiler la page.
+    // `fullPage` photographie donc la PAGE, qui ne dépasse presque pas la
+    // fenêtre — le passage en page entière n'avait gagné que 88 pixels
+    // (1440×988 contre 1440×900), sans rien montrer de plus de l'intérieur des
+    // colonnes. Les colonnes étant dimensionnées sur `100dvh`, seule une
+    // fenêtre haute les étire et rend leur contenu visible d'un coup.
+    await page.setViewportSize({ width: 1440, height: 2200 });
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}`);
     await page.getByRole('tablist', { name: 'Cycle clinique' }).waitFor();
 
@@ -90,16 +102,12 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // (« indéterminée » peut légitimement rester : Réévaluation sans épisode
     // est un état stable — seul le chargement en vol est transitoire.)
     await expect(page.getByText(/Chargement de la proposition/)).toHaveCount(0);
-    // PAGE ENTIÈRE, ET C'EST LE POINT DE CETTE BASELINE. En fenêtre visible,
-    // elle ne photographiait que les 1440×900 du haut : la campagne cockpit des
-    // 2-4 septembre a restructuré le rail, les phases et l'intérieur des
-    // panneaux sans jamais faire bouger cette image, et le CI est resté vert
-    // d'un bout à l'autre. Une preuve visuelle qui ne voit que le premier écran
-    // ne prouve rien du cockpit.
+    // La fenêtre haute posée en tête de ce test suffit : le cockpit y tient
+    // entier, et `fullPage` n'ajouterait rien qu'elle ne montre déjà.
     //
-    // Le tiroir des 12 besoins, lui, RESTE en fenêtre visible : c'est un
-    // `dialog` ancré au viewport, dont la page entière ne dirait rien de plus.
-    await capturer(page, testInfo, 'fiche-cockpit', { fullPage: true });
+    // Le tiroir des 12 besoins, lui, RESTE en fenêtre ordinaire : c'est un
+    // `dialog` ancré au viewport, que l'étirer ne rendrait pas plus lisible.
+    await capturer(page, testInfo, 'fiche-cockpit');
   });
 
   test('fiche patient — tiroir « Les 12 besoins » ouvert', async ({ page }, testInfo) => {
