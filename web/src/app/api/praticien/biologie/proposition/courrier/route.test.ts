@@ -191,6 +191,15 @@ describe('gardes — fail-closed et dans l’ordre', () => {
     expect(response.status).toBe(503);
   });
 
+  it('un corps JSON `null` est un 400, jamais un 500 pré-auth', async () => {
+    // `null` est du JSON valide : sans garde, `body.idPatient` lèverait avant
+    // toute session — un 500 fabricable par n'importe quel client anonyme
+    // (relevé en contre-revue ; patron de la route document-patient).
+    const response = await POST(postRequest(null));
+    expect(response.status).toBe(400);
+    expect(getServerSession).not.toHaveBeenCalled();
+  });
+
   it('sans session : 401', async () => {
     getServerSession.mockResolvedValue(null);
     const response = await POST(postRequest({ idPatient: 'PAT_TEST', medecinLibelle: 'Dr Martin' }));
