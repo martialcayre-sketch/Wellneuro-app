@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { analyserArgs, collate } from './changelog-collate.mjs';
 
 // Banc autonome : chaque test se fabrique un CHANGELOG et un changelog.d/ jetables
@@ -133,4 +134,46 @@ test('analyserArgs : un argument inconnu refuse — --check ne doit plus jamais 
 
 test('analyserArgs : un inconnu refuse même accompagné de --dry-run', () => {
   assert.throws(() => analyserArgs(['--dry-run', '--check']), /inconnu/);
+});
+
+// ── Sentinelle : UN SEUL changelog.d, celui de la racine ─────────────────────
+//
+// POURQUOI CE CAS EXISTE. `web/changelog.d/` a accumulé DIX-SEPT fragments entre
+// le 2026-08-10 et le 2026-09-04 — dont neuf de la campagne cockpit — que le CLI
+// n'a jamais lus : il ne collate que la racine (`fragDir: join(RACINE,
+// 'changelog.d')`). Rien ne s'en plaignait. Le handoff du 2026-09-04 07:53 l'a
+// nommé « un cimetière » ; sept fragments s'y sont ajoutés APRÈS ce constat,
+// parce qu'un diagnostic écrit dans un document ne ferme rien.
+//
+// Un fragment déposé au mauvais endroit est une entrée de changelog PERDUE, et
+// l'échec est silencieux des deux côtés : la PR passe au vert, et le repli
+// suivant ne remarque pas l'absence. Seule une garde qui lit le VRAI dépôt peut
+// le voir — les autres cas de ce fichier travaillent sur des fixtures jetables,
+// à dessein, et ne peuvent donc pas attraper celui-ci.
+test('aucun changelog.d hors de la racine — un fragment égaré est une entrée perdue', () => {
+  const racine = join(fileURLToPath(new URL('.', import.meta.url)), '..');
+  const IGNORES = new Set(['node_modules', '.git', '.next', 'generated', 'dist', 'coverage']);
+  const egares = [];
+
+  const descendre = (dossier, relatif) => {
+    for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+      if (!entree.isDirectory() || IGNORES.has(entree.name)) continue;
+      const rel = relatif ? `${relatif}/${entree.name}` : entree.name;
+      if (entree.name === 'changelog.d') {
+        // Celui de la racine est le bon, et lui seul.
+        if (rel !== 'changelog.d') egares.push(rel);
+        continue;
+      }
+      descendre(join(dossier, entree.name), rel);
+    }
+  };
+  descendre(racine, '');
+
+  assert.deepEqual(
+    egares,
+    [],
+    `changelog.d hors racine : ${egares.join(', ')} — `
+      + 'le CLI ne lit que `changelog.d/` à la racine du dépôt (voir son README). '
+      + 'Déplacer les fragments, puis supprimer le répertoire.',
+  );
 });
