@@ -55,6 +55,24 @@ async function capturer(
   }
 }
 
+/**
+ * Attend que le rail des phases porte un état ÉTABLI.
+ *
+ * `FichePatientPanel` rend « indéterminée » tant que `etatRuntime` n'est pas
+ * posé (`!etatRuntime || chargement || erreur`) — jamais une affirmation par
+ * défaut. C'est donc le marqueur juste, et il attend vraiment : présent au
+ * premier rendu, il disparaît à la résolution.
+ *
+ * Un `toHaveCount(0)` sur « Chargement de la proposition… » ne vaudrait pas :
+ * ce texte n'existe pas encore au moment du clic, et l'assertion passerait
+ * aussitôt sans rien attendre.
+ */
+async function attendreRailPose(page: Page): Promise<void> {
+  const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+  await rail.waitFor();
+  await expect(rail.getByText('indéterminée')).toHaveCount(0);
+}
+
 async function ouvrirHubPortail(page: Page): Promise<void> {
   // LOT-04 : session par cookie (comme l'atterrissage magic-link/Google), plus
   // de gate e-mail ni de jeton d'URL.
@@ -81,7 +99,15 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // (1440×988 contre 1440×900), sans rien montrer de plus de l'intérieur des
     // colonnes. Les colonnes étant dimensionnées sur `100dvh`, seule une
     // fenêtre haute les étire et rend leur contenu visible d'un coup.
-    await page.setViewportSize({ width: 1440, height: 2200 });
+    //
+    // 1700 ET NON 2200 : à 2200, l'image portait ~850 px de vide en bas. Ce
+    // n'est pas qu'inélégant — `maxDiffPixelRatio: 0.02` est un RATIO, et des
+    // pixels vides qui ne diffèrent jamais gonflent le dénominateur : ils
+    // achètent de la tolérance à un changement réel ailleurs. 1700 garde tout
+    // le contenu (mesuré à ~1460 px sur l'image du 2026-09-04) avec la marge
+    // qu'il faut pour qu'il grandisse sans être coupé — une baseline tronquée
+    // serait pire qu'absente.
+    await page.setViewportSize({ width: 1440, height: 1700 });
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}`);
     await page.getByRole('tablist', { name: 'Cycle clinique' }).waitFor();
 
@@ -99,9 +125,17 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // État posé : le panneau runtime a fini de charger — une baseline sur
     // un état transitoire serait structurellement flaky (constaté au premier
     // run du workflow : « Chargement de la proposition… » figé dans l'image).
-    // (« indéterminée » peut légitimement rester : Réévaluation sans épisode
-    // est un état stable — seul le chargement en vol est transitoire.)
-    await expect(page.getByText(/Chargement de la proposition/)).toHaveCount(0);
+    //
+    // « INDÉTERMINÉE » N'EST PAS UN ÉTAT STABLE, contrairement à ce qui était
+    // écrit ici. `FichePatientPanel` rend ce statut tant que `etatRuntime` n'est
+    // pas posé (`!etatRuntime || chargement || erreur`), et « à ouvrir » une
+    // fois l'état établi sans rien en attente. Comparaison des deux baselines
+    // du 2026-09-04 : l'image posée affiche « à ouvrir » en phase 7, celle
+    // prise avant résolution « indéterminée ». C'est donc le marqueur d'attente
+    // juste — d'où `attendreRailPose`, qui remplace la lecture négative de
+    // « Chargement de la proposition… » (absente au premier rendu, elle passait
+    // sans rien attendre).
+    await attendreRailPose(page);
     // La fenêtre haute posée en tête de ce test suffit : le cockpit y tient
     // entier, et `fullPage` n'ajouterait rien qu'elle ne montre déjà.
     //
@@ -112,6 +146,12 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
 
   test('fiche patient — tiroir « Les 12 besoins » ouvert', async ({ page }, testInfo) => {
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}`);
+    // ATTENDRE L'ÉTAT POSÉ, ce que ce test ne faisait pas. Il cliquait aussitôt
+    // après le `goto` : le rail visible derrière le tiroir était donc figé AVANT
+    // résolution du runtime, phase 7 en « indéterminée ». La baseline du
+    // 2026-09-04 le montre, à côté de celle du cockpit qui affiche « à ouvrir ».
+    // Elle était reproductible par chance, pas par construction.
+    await attendreRailPose(page);
     await page.getByRole('button', { name: 'Les 12 besoins' }).first().click();
     await page.getByRole('dialog').waitFor();
     await capturer(page, testInfo, 'fiche-tiroir-besoins');
