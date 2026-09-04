@@ -79,7 +79,21 @@ async function capturer(
   await page.screenshot({ path: `${DOSSIER}/${nom}-${testInfo.project.name}.png`, fullPage });
   const baseline = `${nom}.png`;
   if (pixel && baselineComparable(testInfo, baseline)) {
-    await expect(page).toHaveScreenshot(baseline, { fullPage, maxDiffPixelRatio: 0.02 });
+    // PASSE DE MESURE — CE RÉGLAGE N'EST PAS DESTINÉ À ÊTRE FUSIONNÉ.
+    //
+    // `maxDiffPixels: 0` ne cherche pas à passer : il fait DIRE à Playwright le
+    // nombre exact de pixels qui séparent l'image produite par le workflow
+    // `visual-baselines` (seed vierge, ce fichier seul) de celle que rend
+    // `verify` (base écrite par les 21 autres specs, celui-ci en dernier).
+    //
+    // Cet écart est la quantité restée non mesurée depuis le début du chantier.
+    // On la déduisait : les baselines passent, donc l'écart tient sous 2 %.
+    // C'est un majorant, pas une mesure — et 2 % valent ~49 000 pixels sur le
+    // cockpit, de quoi contenir un panneau entier.
+    //
+    // Le rapport Playwright est publié `if: always()` par `ci.yml` : le rouge
+    // de cette passe est l'instrument, pas un échec.
+    await expect(page).toHaveScreenshot(baseline, { fullPage, maxDiffPixels: 0 });
   }
 }
 
