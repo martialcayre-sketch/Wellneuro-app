@@ -29,6 +29,7 @@ vi.mock('@/lib/consultation/email', () => ({
   sendPortailLinkEmail: vi.fn(),
 }));
 
+import { sendPortailLinkEmail } from '@/lib/consultation/email';
 import { DELETE, POST } from './route';
 
 function request(query = 'idPatient=PAT_1'): Request {
@@ -135,5 +136,29 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
     for (const [appel] of appels) {
       expect(appel.data).not.toHaveProperty('sessionsInvalidesAvant');
     }
+  });
+
+  // « Renvoyer l'accès » est le chemin qui sert les dossiers DÉJÀ ouverts :
+  // c'est par lui que le texte du gabarit atteint un patient créé avant sa
+  // dernière version. L'adresse du praticien doit y voyager comme ailleurs,
+  // sans quoi le bouton « Répondre » retombe sur `noreply@`.
+  it('la réémission passe le praticien du dossier, pour le Reply-To', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT_1',
+      email: 'sophie.nicola@example.test',
+      prenom: 'Sophie',
+      praticienEmail: 'p@wellneuro.fr',
+      actif: true,
+      accessTokenRevoked: false,
+    });
+
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'resend' }));
+
+    expect(vi.mocked(sendPortailLinkEmail)).toHaveBeenCalledWith(
+      'sophie.nicola@example.test',
+      'Sophie',
+      'PAT_1',
+      'p@wellneuro.fr',
+    );
   });
 });

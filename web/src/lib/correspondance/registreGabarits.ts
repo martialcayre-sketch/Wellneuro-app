@@ -250,6 +250,112 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: null,
     hash: 'c67f70beb29b025c6cb93eb8397bf35e32d85a556d6142439f2da93b1fd74780',
   },
+  // Ajoutée en fin de liste, comme le veut l'append-only : la v1 ci-dessus ne
+  // bouge pas d'un caractère, elle cesse simplement d'être servie
+  // (`getGabarit` rend la version la plus haute).
+  //
+  // POURQUOI UNE V2. Le texte v1 ouvrait un accès sans jamais dire QUI
+  // l'ouvre : « Votre praticien » à la troisième personne, signé « L'équipe
+  // Wellneuro » — une entreprise que le patient n'a jamais rencontrée, sur un
+  // domaine qu'il ne connaît pas, à propos d'un service dont le prix n'était
+  // pas dit. Cinq dossiers ouverts entre le 2026-08-20 et le 2026-09-04 ont
+  // reçu ce message : aucun n'a ouvert son espace. C'est la seule lecture
+  // qu'on ait, et elle ne prouve rien à elle seule — mais le texte, lui, était
+  // bel et bien ambigu.
+  //
+  // PREMIER GABARIT DU REGISTRE PORTANT UNE VALIDATION FORMELLE : `valideLe`
+  // valait `null` sur les huit versions publiées. Le champ existait pour cet
+  // acte-là, il n'avait encore jamais servi.
+  //
+  // LE NOM DU PRATICIEN EST EN DUR, décision assumée (arbitrage praticien du
+  // 2026-09-04) : un gabarit qui dirait « {{praticien}} » ne dirait plus
+  // « c'est moi », et c'est tout l'objet de cette version. Le dépôt tient
+  // l'hypothèse mono-praticien ; le jour où un second compte praticien
+  // s'ouvre, ce texte devra passer par une variable — alimentée par un nom
+  // d'affichage qui n'existe pas encore en base, les dossiers ne portant que
+  // `praticienEmail`. C'est la dette, elle est connue.
+  //
+  // LA QUALITÉ DU PRATICIEN EST ÉCRITE DANS LES TERMES DE CELUI QUI LA
+  // DÉLIVRE, vérifiés sur le site de l'Institut SIIN le 2026-09-04
+  // (`siin-nutrition.com/fr/institut-siin/neuro-nutrition/`) :
+  //
+  //   • « Neuro-Nutrition® » PREND UN TRAIT D'UNION. La page déclare que
+  //     « toute utilisation du terme : Neuro-Nutrition® NeuroNutrition ou
+  //     toute déclinaison susceptible de créer une confusion est strictement
+  //     encadrée ». Une première rédaction écrivait « NeuroNutrition® » : sur
+  //     une marque déposée, l'orthographe n'est pas une préférence.
+  //   • L'INSTITUT SIIN DÉLIVRE le label, il n'EST pas le label. Une première
+  //     rédaction disait « label S.I.I.N. », inversant les deux. Le nom exact
+  //     est « Label Neuro-Nutrition® (NN®) », et l'institut s'écrit « Institut
+  //     SIIN » (Scientific Institute for Intelligent Nutrition®), sans points.
+  //   • « praticien labellisé » est le terme de la page elle-même.
+  //
+  // CE QUE LE TEXTE NE DIT PAS, ET NE DOIT PAS DIRE : aucune reconnaissance
+  // par l'État, les autorités de santé ou un ordre professionnel. Le site n'en
+  // revendique aucune — sa seule certification est Qualiopi, « au titre de la
+  // catégorie Actions de formation », qui porte sur le PROCESSUS de formation.
+  // Le gabarit énonce un diplôme et un label, et s'arrête là.
+  //
+  // DEUX PHRASES ONT ÉTÉ RETIRÉES EN REVUE (2026-09-04), toutes deux fausses
+  // sans qu'aucun banc puisse le dire — un gabarit se relit seul, et ce qu'il
+  // PROMET vit ailleurs dans le dépôt :
+  //
+  //   • « taper app.wellneuro.fr : c'est la même page ». La racine redirige
+  //     hors session vers `/login`, l'écran PRATICIEN, dont le seul bouton
+  //     passe par `ALLOWED_DOMAINS = ['wellneuro.fr']` (`lib/auth.ts`) et
+  //     refuse tout compte Google personnel. La phrase existait pour rassurer
+  //     contre l'hameçonnage : elle envoyait donc au mur le patient le PLUS
+  //     méfiant, celui qui tape plutôt que de cliquer. Le texte pointe
+  //     désormais l'URL rendue par `{{connexion}}`, qui est bien la sienne.
+  //   • « sans échéance ». `SEGMENTS_GABARITS.dateLimite` est servi par les
+  //     trois gabarits d'assignation : la promesse portait nommément sur ce
+  //     qui peut porter une date limite. Le pack de base, lui, part sans date
+  //     (`api/portail/valider` n'en passe aucune) — mais pas le reste.
+  //
+  // L'ADRESSE DE RÉPONSE EST ÉCRITE DANS LE CORPS, et l'en-tête `Reply-To` la
+  // double depuis le même jour (`sendPortailLinkEmail`, alimenté par
+  // `patients.praticien_email`) : l'expéditeur reste `noreply@wellneuro.fr`,
+  // donc sans cet en-tête le bouton « Répondre » du client viserait une boîte
+  // morte. Les deux se justifient — l'en-tête sert le geste réflexe, le corps
+  // reste lisible là où le client masque l'adresse de réponse.
+  {
+    key: 'acces_portail',
+    version: 2,
+    titre: "Ouverture de l'accès à l'espace patient",
+    sujet: 'Votre espace de suivi — Martial Cayre (Wellneuro)',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'Je vous ouvre l’accès à votre espace de suivi.\n\n' +
+      'Wellneuro est l’outil que j’utilise pour le suivi de mes patients, et ' +
+      'wellneuro.fr est mon site : ce message, et ceux qui suivront depuis ' +
+      'noreply@wellneuro.fr, viennent de mon cabinet. L’accès à cet espace et le ' +
+      'suivi qui s’y fait sont gratuits — il n’y a rien à payer, ni maintenant ni ' +
+      'plus tard.\n\n' +
+      'Votre page d’accès :\n{{connexion}}\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'À la première connexion : votre consentement, une courte fiche de ' +
+      'renseignements, puis quelques questions sur ce qui vous amène. Vos ' +
+      'questionnaires sont mis à disposition ensuite, et vous avancez à votre ' +
+      'rythme ; si l’un d’eux porte une date limite, elle vous sera indiquée.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      'Martial Cayre\n' +
+      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
+      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
+      'Wellneuro — wellneuro.fr',
+    variables: ['prenom', 'connexion'],
+    // Ni instrument, ni domaine clinique, ni chiffre : « ce qui vous amène »
+    // ne nomme rien du dossier. La qualité du praticien n'est pas une donnée
+    // du patient.
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-09-04',
+    valideLe: '2026-09-04',
+    hash: '565610165965e90f611d6f315e07a6392956cdcf0e48547c1b4391fb6a8153eb',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

@@ -134,6 +134,15 @@ describe('POST /api/praticien/consultations', () => {
       data: expect.objectContaining({ accessTokenRevoked: false }),
     });
     expect(sendPortailLinkEmail).toHaveBeenCalledOnce();
+    // Le 4e argument porte le `Reply-To` : sans cette assertion, un
+    // remaniement le perdrait sans qu'aucun banc ne rougisse, et le bouton
+    // « Répondre » du patient viserait de nouveau `noreply@`.
+    expect(sendPortailLinkEmail).toHaveBeenCalledWith(
+      'sophie.nicola@example.test',
+      'Sophie',
+      'PAT_1',
+      'p@wellneuro.fr',
+    );
     // Le POST ne journalise pas (GD-1) : il laisse déjà une trace datée.
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
