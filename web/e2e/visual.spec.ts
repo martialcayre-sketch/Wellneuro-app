@@ -14,10 +14,27 @@
 //    conditionnée à son existence. Bootstrap : workflow manuel
 //    `visual-baselines` (--update-snapshots sous Ubuntu, artefact à commiter).
 //
-// Isolation (motif du refus V12 de capturer le portail) : les captures
-// portail utilisent Jennifer Martin (PAT_SEED_02), jamais touchée par les
-// parcours E2E (Michel Dogné, PAT_SEED_03) ni par les captures praticien
-// (Sophie Nicola, PAT_SEED_01) — plus d'interférence entre workers.
+// CE QUI SUIT REMPLACE UNE AFFIRMATION D'ISOLATION QUI ÉTAIT FAUSSE. Il était
+// écrit ici que Jennifer Martin (PAT_SEED_02) n'était « jamais touchée par les
+// parcours E2E ». Elle l'est par trois autres specs — dont
+// `portail-pack-reevaluation`, qui la revendique en exclusivité pour la raison
+// exacte qui rend le partage coûteux : « la mise en reprise mute ses réponses
+// et son état de compte ». Sophie Nicola (PAT_SEED_01) est décrite ailleurs
+// comme « le patient de tous les » parcours.
+//
+// Il n'y a pourtant PAS de course : `playwright.config.ts` pose
+// `fullyParallel: false` et `workers: 1`. Les specs se suivent, et
+// `visual.spec.ts` passe en dernier (ordre alphabétique). La conséquence est
+// donc systématique, pas intermittente : le workflow `visual-baselines` ne joue
+// que ce fichier, sur un seed vierge, tandis que `verify` le joue APRÈS les 21
+// autres. Une baseline est produite dans un état de base, comparée dans un
+// autre.
+//
+// Mesuré le 2026-09-04 : les six baselines promues passent quand même dans
+// `verify` (#874, vert). Le vert dit « dans la tolérance », pas « identique » —
+// l'écart réel entre les deux contextes n'est pas mesuré à ce jour. C'est la
+// raison pour laquelle tout écran dont le contenu dépend de cet état partagé
+// reste hors comparaison au pixel, motif par motif ci-dessous.
 import { existsSync } from 'node:fs';
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
@@ -39,9 +56,20 @@ function baselineComparable(testInfo: TestInfo, nom: string): boolean {
   return existsSync(testInfo.snapshotPath(nom));
 }
 
-// `pixel: false` — écrans dont un texte dépend du temps qui passe (phrase de
-// reprise en mois, dates relatives du Fil) : une baseline au pixel y dériverait
-// avec le calendrier. Ils gardent capture de revue + snapshot ARIA.
+// `pixel: false` — DEUX familles de motifs, qu'il ne faut pas confondre, chacun
+// vérifié sur l'image et non supposé (revue du 2026-09-04) :
+//
+//  1. LE CALENDRIER. Un texte avance tout seul : « Votre dernier envoi date
+//     d'environ 20 mois » au portail, « T0 + X j » et les échéances datées des
+//     trajectoires, les dates relatives du Fil. La baseline pourrirait sans
+//     qu'aucun code n'ait changé.
+//  2. L'ÉTAT PARTAGÉ. Le contenu dépend de ce que les autres specs ont écrit
+//     avant, dans `verify` mais pas dans le workflow (voir l'en-tête).
+//     `dashboard-patients` en est la preuve mesurée : 2386 contre 2546 px.
+//
+// Un motif de la première famille est définitif ; un de la seconde tomberait si
+// la génération se faisait dans le même état que la comparaison. Les écrans
+// exclus gardent capture de revue + snapshot ARIA.
 async function capturer(
   page: Page,
   testInfo: TestInfo,
@@ -71,6 +99,33 @@ async function attendreRailPose(page: Page): Promise<void> {
   const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
   await rail.waitFor();
   await expect(rail.getByText('indéterminée')).toHaveCount(0);
+}
+
+/**
+ * Attend que l'onglet Trajectoire porte un état ÉTABLI.
+ *
+ * La capture du 2026-09-04 gelait DEUX panneaux en cours de lecture —
+ * « Chargement des dépôts… » (`CeQuiComptePanel`) et « Lecture de
+ * l'orientation… » (`OrientationPanel`) : le test n'attendait que l'existence
+ * de la région, qui est rendue avant que ses panneaux aient répondu.
+ *
+ * Chaque panneau est attendu en DEUX temps, et l'ordre compte. Son titre est
+ * rendu quel que soit l'état : l'attendre garantit que le panneau est monté.
+ * Ce n'est qu'ensuite que l'absence du texte de chargement veut dire quelque
+ * chose — c'est le piège de #871, où une absence constatée avant l'apparition
+ * passait sans rien attendre. Les deux états initiaux valent bien
+ * `'chargement'` (`useState<Etat>('chargement')`), donc le texte est présent
+ * dès le premier rendu du panneau : la transition ne peut aller que vers son
+ * absence.
+ */
+async function attendreFicheTrajectoirePosee(page: Page): Promise<void> {
+  await page.getByRole('region', { name: 'Fiche-trajectoire' }).waitFor();
+
+  await page.getByRole('heading', { name: 'Ce qui compte pour le patient' }).waitFor();
+  await expect(page.getByText(/Chargement des dépôts/)).toHaveCount(0);
+
+  await page.getByRole('heading', { name: 'Explorations complémentaires proposées' }).waitFor();
+  await expect(page.getByText(/Lecture de l['’]orientation/)).toHaveCount(0);
 }
 
 async function ouvrirHubPortail(page: Page): Promise<void> {
@@ -179,10 +234,25 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
 
   test('fiche patient — onglet Trajectoire, état vide honnête (SP-TRAJ LOT-01)', async ({ page }, testInfo) => {
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}?onglet=trajectoire`);
-    await page.getByRole('region', { name: 'Fiche-trajectoire' }).waitFor();
-    // Pas de pixel : le panneau « Mode de vie » et les textes datés varient
-    // avec les réponses laissées par les autres suites du run.
-    await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: true, pixel: false });
+    await attendreFicheTrajectoirePosee(page);
+    // COMPARAISON AU PIXEL ACTIVÉE — le motif d'exclusion précédent ne tenait
+    // pas. Il invoquait « les textes datés » : l'image du 2026-09-04 n'en porte
+    // aucun qui dérive. Sur un dossier sans épisode, l'écran dit « Aucun épisode
+    // confirmé pour l'instant », le panneau « Mode de vie » dit « non mesuré à
+    // cette date », et la seule mention temporelle est « aujourd'hui » — un mot
+    // constant, pas une date qui avance.
+    //
+    // Ce qui rendait vraiment cette capture inutilisable était ailleurs, et
+    // n'était pas écrit : elle photographiait deux panneaux en cours de lecture.
+    // `attendreFicheTrajectoirePosee` traite cette cause-là.
+    //
+    // Le risque qui subsiste est l'état partagé décrit en tête de fichier :
+    // `fiche-trajectoire.spec.ts` joue un parcours complet sur le même dossier,
+    // et passe avant celui-ci dans `verify`. Si cet écart mord, cette
+    // comparaison rougira — ce qui est précisément ce qu'on veut savoir, et ce
+    // qu'aucun raisonnement ne remplace. Le motif serait alors MESURÉ, là où le
+    // précédent était supposé.
+    await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: true });
   });
 
   test('patients & assignations', async ({ page }, testInfo) => {
@@ -241,6 +311,10 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
         - listitem:
           - text: /Restitution/
     `);
+    // Pas de pixel, et le motif est VU, non supposé : le hub affiche « Votre
+    // dernier envoi date d'environ 20 mois. » (capture du 2026-09-04). Ce
+    // nombre s'incrémente avec le calendrier — une baseline au pixel y
+    // pourrirait toute seule, sans qu'aucun code n'ait changé.
     await capturer(page, testInfo, 'portail-hub', { fullPage: true, pixel: false });
   });
 
@@ -249,6 +323,15 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
     for (const summary of await page.locator('details > summary').all()) {
       await summary.click();
     }
+    // Le dépliage MONTE « Mon accompagnement », qui part en lecture : la capture
+    // du 2026-09-04 gelait son « Chargement de votre accompagnement… ».
+    // L'assertion ne peut ici que retarder la capture, jamais l'empêcher — et
+    // si le texte restait indéfiniment, c'est une information qu'on veut voir
+    // rouge plutôt que figée dans une image.
+    await expect(page.getByText(/Chargement de votre accompagnement/)).toHaveCount(0);
+    // Pas de pixel : même phrase de reprise en mois que le hub, à laquelle ce
+    // dépliage ajoute le menu « Confort de lecture » ouvert — la boucle clique
+    // TOUS les `summary` de la page, y compris celui de l'en-tête.
     await capturer(page, testInfo, 'portail-hub-details', { fullPage: true, pixel: false });
   });
 });
