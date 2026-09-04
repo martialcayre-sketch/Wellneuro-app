@@ -5042,3 +5042,22 @@ l'e-mail du lien magique.
 
 Questions ouvertes — Sentry inerte (aucune erreur client tracée) ; faux succès
 praticien symétrique sur panne SMTP ; `web/changelog.d/` jamais collaté.
+
+## 2026-09-04 — D-122 : les deux étages du rayon biologie livrés dans la nuit
+
+Décisions — Nuit sous autorisation globale. Deux migrations seules dans leur
+PR (`D-087`), release-db approuvées, constats par conteneur :
+`documents_patient_biologie` (#828) puis `resultats_biologiques` (#838, unicité
+patient/analyte/horodatage ajoutée par l'utilisateur — la borne vit sur
+l'horodatage complet). Code : document patient ancré, refus registre
+confirmable lié au texte par empreinte SHA (#848) ; saisie de résultats +
+estimé↔mesuré derrière `WN_CB_RESULTS_ENABLED` éteint, unité relue sur
+l'analyte, POST sans journal `GD-1` (#854). Deux leçons release-db consignées :
+fenêtre de suivi 10 min < démarrage à froid npx ; wait timer + garde de tête =
+course perdante face aux merges concurrents.
+
+Écarté — relancer un release-db rouge à l'aveugle ; toute valeur dans la
+proposition ou le document patient.
+
+Prochaine action — constat visuel des deux surfaces ; levée du drapeau
+précédée du registre des traitements et de l'information patient.
