@@ -4,6 +4,7 @@ import { AgendasEnCoursAside } from '@/components/agenda-sommeil/AgendasEnCoursA
 import { InboxQuestionnaires } from '@/components/fil/InboxQuestionnaires';
 import { FileEnvoiAside } from '@/components/fil/FileEnvoiAside';
 import { CorrespondanceRecente } from '@/components/fil/CorrespondanceRecente';
+import { NouveauxPatientsAside } from '@/components/fil/NouveauxPatientsAside';
 
 // Accueil praticien = le Fil du jour, conforme à la maquette de référence
 // « WellNeuro 5.0 — La Spirale » (artifact canonique) : eyebrow daté
@@ -45,6 +46,11 @@ export default function DashboardPage() {
             chaque panneau se charge indépendamment et affiche ses propres
             états — rien n'est inventé, rien ne bloque le Fil. */}
         <aside className="flex flex-col gap-4">
+          {/* En tête de colonne : un dossier neuf resté derrière l'une des
+              trois portes de mise en service (e-mail d'accès, entrée au
+              portail, pack de base) n'apparaît nulle part ailleurs — il
+              ressemble partout à un dossier qui commence. */}
+          <NouveauxPatientsAside />
           <MeteoAdhesionAside />
           <AgendasEnCoursAside />
           <InboxQuestionnaires />
