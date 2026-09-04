@@ -5022,3 +5022,23 @@ Prochaine action — sonde Better Stack sur `/login` ; micro-lot
 
 Questions ouvertes — confirmation écrite Supabase (backups, rubrique 12) ;
 dépôt sous sync iCloud : suites locales instables (`fileproviderd`).
+
+## 2026-09-04 — Écrans d'échec : plus personne devant un écran muet
+
+Décisions — Suite de la session incident/décommissionnement. `/login` traduit
+enfin le `?error=` de NextAuth (refus vs panne, deux conduites distinctes). Côté
+patient, la redemande de lien indiquait « envoyé » jusque sur panne SMTP : le
+recours est ajouté **à l'identique pour tous**, ce qui préserve
+l'indifférenciation anti-énumération. `app/portail/error.tsx` et
+`app/not-found.tsx` remplacent le HTML système et la page anglaise. Aucun écran
+ne nomme de sous-traitant : inutile au patient, renseignant pour qui sonde.
+Alerte `p95_response_time` armée chez Scalingo.
+
+Écarté — un disclaimer applicatif en cas de panne d'hébergeur : la page serait
+servie par le composant tombé. Seule réponse valable, une page d'état ailleurs.
+
+Prochaine action — monitor et page d'état externes, puis son adresse dans
+l'e-mail du lien magique.
+
+Questions ouvertes — Sentry inerte (aucune erreur client tracée) ; faux succès
+praticien symétrique sur panne SMTP ; `web/changelog.d/` jamais collaté.
