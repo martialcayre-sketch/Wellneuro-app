@@ -2,7 +2,7 @@
 //
 // Sur le modèle de `release-db-invariants.test.mjs` : un workflow porte des
 // règles qu'un commentaire ne suffit pas à tenir, parce qu'une expression YAML
-// se modifie sans que rien ne rougisse. Deux d'entre elles ont un coût réel et
+// se modifie sans que rien ne rougisse. Trois d'entre elles ont un coût réel et
 // silencieux, d'où ce banc.
 //
 // 1. LE GROUPE DE CONCURRENCE NE DOIT JAMAIS ÊTRE PARTAGÉ PAR DEUX RUNS DE
@@ -19,6 +19,15 @@
 //    retrait de `campaign/**/integration` du même déclencheur (2026-08-07) :
 //    retirer `main` aussi laisserait les commits fusionnés sans aucune
 //    vérification, et le diff ne montrerait qu'une ligne de moins.
+//
+// 3. `visual-baselines.yml` DOIT TOURNER SUR LE MÊME NODE QUE `verify`. Ce
+//    workflow existe pour produire les baselines « dans l'environnement de
+//    référence (Ubuntu, celui du job verify) » — c'est écrit dans son en-tête,
+//    et c'est sa seule justification d'être manuel et séparé. Il générait
+//    pourtant sous Node 20 ce que `verify` relit sous Node 22, depuis le
+//    2026-08-05 : la promesse était fausse et rien ne le disait. Une image
+//    produite ailleurs que là où elle sera comparée est une baseline dont
+//    personne ne peut dire ce qu'elle prouve.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,6 +38,14 @@ import { fileURLToPath } from 'node:url';
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHEMIN = path.join(RACINE, '.github/workflows/ci.yml');
 const SOURCE = fs.readFileSync(CHEMIN, 'utf8');
+const CHEMIN_BASELINES = path.join(RACINE, '.github/workflows/visual-baselines.yml');
+
+/** Versions de Node déclarées par un workflow, dans l'ordre, quotes retirées. */
+function versionsDeNode(source, quoi) {
+  const trouvees = [...source.matchAll(/^\s*node-version:\s*['"]?([^'"\s#]+)/gm)].map((m) => m[1]);
+  assert.ok(trouvees.length > 0, `${quoi} : aucune clé node-version déclarée.`);
+  return trouvees;
+}
 
 /** Bloc `concurrency:` de premier niveau, hors commentaires. */
 function blocConcurrence() {
@@ -141,5 +158,23 @@ test('`pull_request` couvre `main` et les branches de campagne', () => {
   assert.ok(
     branches.some((b) => b.includes('campaign/')),
     '`pull_request` ne couvre plus les branches de campagne — qui n’ont plus de run `push` pour compenser.',
+  );
+});
+
+test('les baselines visuelles sont produites sur le Node qui les comparera', () => {
+  const baselines = fs.readFileSync(CHEMIN_BASELINES, 'utf8');
+  const duVerify = versionsDeNode(SOURCE, 'ci.yml');
+  const desBaselines = versionsDeNode(baselines, 'visual-baselines.yml');
+
+  // Une seule version de part et d'autre : deux `node-version:` divergents dans
+  // le même fichier rendraient la comparaison ci-dessous ambiguë, et c'est un
+  // état qu'il vaut mieux voir rouge que deviner.
+  assert.deepEqual(
+    [...new Set(duVerify)],
+    [...new Set(desBaselines)],
+    'visual-baselines.yml doit déclarer la MÊME version de Node que ci.yml : '
+      + `ci.yml=${[...new Set(duVerify)].join(',')}, `
+      + `visual-baselines.yml=${[...new Set(desBaselines)].join(',')}. `
+      + 'Une baseline produite ailleurs que là où elle est comparée ne prouve rien.',
   );
 });

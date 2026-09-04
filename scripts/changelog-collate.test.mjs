@@ -164,7 +164,18 @@ test('aucun changelog.d hors de la racine — un fragment égaré est une entré
         if (rel !== 'changelog.d') egares.push(rel);
         continue;
       }
-      descendre(join(dossier, entree.name), rel);
+      const chemin = join(dossier, entree.name);
+      // UN DÉPÔT IMBRIQUÉ N'EST PAS UN ÉGAREMENT. Un worktree
+      // (`.claude/worktrees/<lot>/`) est une copie COMPLÈTE du dépôt : il porte
+      // donc son propre `changelog.d` À SA racine, parfaitement à sa place.
+      // Sans cette coupe, ce cas rougissait dès qu'une session parallèle
+      // ouvrait un worktree — un faux positif qui bloquait T1 pour tout le
+      // monde, y compris pour la session qui n'y était pour rien (constaté le
+      // 2026-09-04, quelques heures après la pose de ce garde). La marque d'un
+      // dépôt imbriqué est son `.git`, fichier pour un worktree, répertoire
+      // pour un clone.
+      if (existsSync(join(chemin, '.git'))) continue;
+      descendre(chemin, rel);
     }
   };
   descendre(racine, '');
