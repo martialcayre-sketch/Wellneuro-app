@@ -1,11 +1,20 @@
 ---
 id: "LOT-00"
 titre: "extension-moteur-cb03"
-statut: "bloqué"
+statut: "recouvert (clôture campagne 2026-09-04)"
 dépend_de: "CB-02b (fait) ; lots 8-9 de la campagne certification-corpus-questionnaires (table NNPP2 stabilisée et signée)"
 ---
 
 # LOT-00 (CB-03) — Extension du moteur d'orientation aux cibles biologie
+
+> **Requalifié à la clôture de campagne (2026-09-04, arbitrage du
+> responsable).** Jamais construit tel que cadré — et le blocage initial
+> (lots 8-9 certification) a été dépassé par un autre chemin : les règles
+> biologie vivent dans la table signée `indicationsBiologieV1.ts` (D-069,
+> verrou à cinq termes D-063), servies par `propositionService` (D-071), sans
+> extension d'`evaluerOrientation`. Faire parler le **mesuré** au moteur
+> d'orientation reste une frontière explicitement fermée (D-122) : ce sera
+> une campagne future, avec sa décision et ses claims (FILE_ATTENTE).
 
 ## But
 

@@ -51,6 +51,10 @@ Hiérarchie précédente : celle du 2026-08-18 (l'historique Git la conserve).
 | 6 | 6.0-C — Le récit du parcours | `2026-08-21-recit-du-parcours/` | Timeline racontée (projection), petites victoires (jamais causales, `DC-27`), « pourquoi maintenant ? » + double lecture (`DC-34/35`), hypothèses partagées (`DC-31/32`), messages du registre signé. Dépend du Socle et de 6.0-A. |
 | 7 | 6.0-D — Le jumeau de compréhension | `2026-08-21-jumeau-de-comprehension/` | La signature conceptuelle : représentations patient/praticien côte à côte, versionnées, écarts visibles, « prochain choix ensemble » aux jalons. Dépend de 6.0-A et 6.0-C. |
 | 8 | Nutrition référentielle (R1→R3) | `2026-08-18-nutrition-referentielle/` | Recule d'un cran par réarbitrage 6.0 : ses fiches conseils consomment le registre de messages du Socle — l'ordre naturel la place après lui. Premier lot inchangé (recouvrement rayon C4). |
+| à ouvrir | **Biologie exploitée** | `2026-09-04-biologie-exploitee/` | **Cadrée le 2026-09-04** (go du responsable, même session que la clôture de la campagne CB). Quatre lots courts, code sans règle clinique nouvelle : relecture du document patient consigné + garde anti-double-consignation (le défaut nommé du 2026-08-20 trouve son lot d'accueil), geste de correction d'une saisie, E2E des étages de septembre, plage sourcée à côté de la mesure (conditionné au tranchement DC-19/20). **Le rang face aux campagnes 6.0 reste à arbitrer** — le cadrage ne réarbitre pas la file. |
+| à cadrer | Ré-alimentation du moteur par le mesuré | *(pas de dossier — frontière D-122, consignée le 2026-09-04)* | **Le différenciant produit** (croisement questionnaires × biologie de la roadmap) et la plus grosse suite du rayon : faire parler un résultat réel au moteur d'orientation/momentum est une **règle clinique neuve** — D-122 la ferme explicitement. Chemin : proposition de cadrage (patron du 2026-07-25) → décision D-xxx + claims validés (DC-19/20, DC-30 : une discordance se signale, ne se résout pas) → campagne propre. Ne s'ouvre pas sans le mesuré en production (levée du drapeau) ni sans matière (curation). |
+| à cadrer | Import laboratoire (`import_labo`) | *(pas de dossier — consigné le 2026-09-04)* | Seconde origine des résultats (D-122 §2) : l'enum l'attend en base, rien ne le produit. Cadrage propre requis : formats, parseur, authentification de la source, doublons, **exactitude décimale de bout en bout** (la valeur transite en `number` JSON aujourd'hui — dette nommée à la contre-revue), et volet RGPD (nouvelle provenance de données de santé, sous-traitant éventuel). |
+| à cadrer | Producteur d'intentions `conditionnelle_biologie` (+ contrat V4 CB-07 transféré) | *(pas de dossier — constat du bilan 2026-09-04)* | La boucle arbitrage→révision est livrée et **indéclenchable** : aucune surface ne pose d'intention, le moteur D-056 n'a aucun appelant (et refuserait tout, catalogues d'alertes à 0 ligne). Deux chemins à arbitrer : brancher D-056 ou offrir le geste au praticien dans le builder. Le contrat V4 `BiologyCatalogRef` (LOT-04 de la campagne CB, non livré) se réexamine ICI, pas isolément. |
 | à cadrer | Curation des exclusions d'intervention (`neCouvrePas`) | *(pas de dossier — routée le 2026-08-24, `D-107`)* | **Arbitrage praticien du 2026-08-24, qui REVIENT sur le constat de `D-101`.** Le LOT-05 avait ABANDONNÉ cette curation sur mesure — son registre n'a aucun consommateur d'exécution. Le responsable rouvre : les **95 interventions** portent `neCouvrePas` **null sur les 95**, et tant qu'elles le restent, `gatePopulationV1` ne mord sur **aucun** dossier et `DC-43` ne peut pas franchir son gate faute de **sujet**, non faute de mécanisme. Le mécanisme, lui, est **complet et relu** (`D-101`) : il ne manque que la donnée. **Ce que cela débloque** : `DC-43` obtient un porteur nommé au lieu d'être reconduite « écrite, non armée ». **Ce que cela coûte** : une cadence praticien, intervention par intervention, comme « Curation signée ». **Garde-fou non négociable** (`D-101`, `DC-35`) : une intervention dont les exclusions ne sont pas curées se propose **en le disant** — la curation partielle est un état déclaré, jamais un silence. |
 | à cadrer | Les dix règles orphelines de la constitution | *(pas de dossier — routée le 2026-08-24, `D-107`)* | **Arbitrage praticien du 2026-08-24, après deux reports.** `DC-03`, `DC-36`, `DC-38`, `DC-39`, `DC-40`, `DC-41`, `DC-44`, `DC-45`, `DC-47`, `DC-48`, plus la part de `DC-11` hors exclusions. Le LOT-01 de « Doctrine exécutable » les avait nommées orphelines (`D-095`), `D-096` en a sorti `DC-09` pour le LOT-09, et l'arbitrage de portefeuille était **reporté, pas clos** — trois options nommées : dettes nommées, campagne dédiée, rattachement au coup par coup. **Le responsable tranche : campagne dédiée.** Les deux autres options sont écartées avec leur motif — « dettes nommées » était le régime qui les a rendues orphelines, et le « coup par coup » ne fait remonter aucune règle sans porteur. Le **LOT-08** de « Doctrine exécutable » les écrit comme telles ; il ne les arbitre plus, c'est fait ici. Recompte au grep avant cadrage : `grep -c '\*\*Orpheline\*\*'` rend **13** au 2026-08-24 (onze statuts + deux en en-tête). |
 | gaté | Mémoire relationnelle consentie | *(pas de dossier — gaté conformité)* | Nouvelle finalité RGPD ⇒ information des personnes + base légale d'abord ; derrière la revue HDS du 2026-10-21. La mécanique trust (version immuable + accusé + retrait) est prête ; la table devra entrer dans l'effacement IDP2. |
@@ -128,11 +132,15 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   qui a changé, par écart assumé. Dette résiduelle nommée : le commentaire du
   verrou (`biology-library/featureFlag.ts`, « GATE DUR HDS : ne doit jamais
   passer à true avant l'attestation ») contredit désormais `D-078`.
-- **Dette nommée, portée hors rature** : le commentaire du verrou
+- ~~**Dette nommée, portée hors rature** : le commentaire du verrou
   `isCbResultsEnabled` (`web/src/lib/biology-library/featureFlag.ts`, « GATE
   DUR HDS : ne doit jamais passer à true avant l'attestation d'hébergement »)
   contredit `D-078` depuis le 2026-08-19 — à réviser à l'ouverture de CB-09,
-  qui est précisément le moment où ce commentaire sera lu comme une garantie.
+  qui est précisément le moment où ce commentaire sera lu comme une
+  garantie.~~ — **Soldée, constatée le 2026-09-04** : le commentaire porte
+  désormais la requalification `D-081` (« hébergement HDS effectif et
+  exclusif ») et les appelants `D-122` §2 — révisé par les PR de CB-09
+  (2026-09-03), la file ne l'avait pas consigné.
 - **Filtre de validité des passations — FAIT, allumé le 2026-08-19**
   (`D-077`, arbitrage praticien en session) : `WN_ENABLE_VALIDITE_PASSATIONS=1`
   posé et porté par un redéploiement aliasé. Geste sûr, prouvé avant
@@ -141,9 +149,11 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   Vérification restante à l'œil : le geste d'invalidation répond sur un
   dossier de test réel.
 - **Trancher les arbitrages pendants** : `complements-clean-label-v1`
-  (« remplacée ? »), dégel JA5-05, sort de `2026-08-02-rayon-biologie-cb`
-  (recouverte par le LOT-06 de la chaîne T0), worktree
-  `arbitrage-boucle-clinique`.
+  (« remplacée ? »), dégel JA5-05, ~~sort de `2026-08-02-rayon-biologie-cb`
+  (recouverte par le LOT-06 de la chaîne T0)~~ — **tranché le 2026-09-04** :
+  campagne close, LOT-00→04 requalifiés fiche par fiche, seul reste éventuel
+  (contrat V4) transféré à l'entrée « producteur d'intentions » ci-dessus —,
+  worktree `arbitrage-boucle-clinique`.
 
 ## Écarté à cet arbitrage — et pourquoi
 
@@ -152,6 +162,12 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
   tranches à valeur immédiate. IDP2 (LOT-04, jeton permanent) reste bloqué
   par une mesure d'usage (12/13 accès sans nouveau chemin).
 - **E8 / résultats biologiques réels et D5 / messagerie** : derrière le gate
-  HDS — l'annexe signée est leur préalable, pas leur début.
+  HDS — l'annexe signée est leur préalable, pas leur début. **Périmé pour E8
+  depuis le 2026-09-03** : le gate est levé (annexe signée `D-121`,
+  hébergement exclusif `D-080`/`D-120`), l'étage 2 est **livré** derrière
+  `WN_CB_RESULTS_ENABLED` éteint (`D-122` §2, PR #838/#854) ; la levée du
+  drapeau est un geste d'exploitation conditionné au registre des
+  traitements et à l'information patient D'ABORD. D5 reste écartée telle
+  quelle.
 - **Programme corpus (gates G0-G4, pilote sommeil)** : G6 jamais ouvert ;
   aucune campagne tant que l'extraction du stock n'est pas faite.

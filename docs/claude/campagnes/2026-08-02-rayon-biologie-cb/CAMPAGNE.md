@@ -1,17 +1,45 @@
 ---
 id: "2026-08-02-rayon-biologie-cb"
 titre: "Rayon biologie fonctionnelle — achever CB-03 à CB-09"
-statut: "cadrée"
+statut: "terminée (2026-09-04 — arbitrage du responsable : LOT-05 et LOT-06 livrés ; LOT-00→LOT-04 requalifiés à la clôture, recouverts par la chaîne D-068→D-073 ; seul le contrat V4 (CB-07) reste éventuellement dû, transféré en FILE_ATTENTE avec le producteur d'intentions)"
 créée_le: "2026-08-02"
-mise_à_jour: "2026-08-03"
-lot_courant: "LOT-00"
-branche_campagne: "campaign/2026-08-02-rayon-biologie-cb/integration"
-branche_lot_courant: "campaign/2026-08-02-rayon-biologie-cb/lot-00"
-cible_pr_lot: "campaign/2026-08-02-rayon-biologie-cb/integration"
+mise_à_jour: "2026-09-04"
+lot_courant: "aucun"
+branche_campagne: "aucune"
+branche_lot_courant: "aucune"
+cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
 
 # Rayon biologie fonctionnelle — achever CB-03 à CB-09
+
+## Clôture — 2026-09-04, arbitrage du responsable
+
+La campagne est **close sans que ses lots médians aient été construits tels
+que cadrés, et c'est la bonne issue** : la chaîne `D-068`→`D-073` (LOT-06 de
+la campagne T0, 2026-08-14→18) a livré une biologie opérante par un autre
+chemin — proposition **recalculée à la lecture** depuis la table d'indications
+signée, sans machine à états ni compilateur — puis `D-122` (2026-09-01) a
+ouvert et livré les deux derniers étages (document patient PR #828/#848,
+résultats réels PR #838/#854). L'arbitrage pendant de `FILE_ATTENTE.md`
+(« sort de la campagne, recouverte par le LOT-06 de la chaîne T0 ») est
+tranché ici. Requalification fiche par fiche :
+
+| Lot | Sort à la clôture |
+|---|---|
+| LOT-00 (CB-03) | **Recouvert** — pas d'extension d'`evaluerOrientation` : les règles vivent dans `indicationsBiologieV1.ts` (D-069), servies par `propositionService`. Faire parler le **mesuré** au moteur reste une frontière fermée (D-122) → future campagne, FILE_ATTENTE. |
+| LOT-01 (CB-04) | **Recouvert** — les 15 règles sont nées par transcription signée (D-069, 29 claims), pas par compilation. Un compilateur ne redevient pertinent que si la curation crée le volume ; aucun dû. |
+| LOT-02 (CB-05) | **Caduc** — la machine à états n'a jamais existé ; la proposition se recalcule, sa trace remise vit dans `documents_patient_biologie` (D-122 §1). |
+| LOT-03 (CB-06) | **Recouvert** — courrier médecin ancré (D-073, PR #710) ; document patient (décision F) livré par D-122 §1 (PR #828/#848). |
+| LOT-04 (CB-07) | **Non livré, transféré** — seul contenu encore éventuellement dû ; `BiologyCatalogRef` se réexamine AVEC le producteur d'intentions `conditionnelle_biologie` (entrée « à cadrer » de FILE_ATTENTE). |
+
+La suite du rayon est cadrée le même jour : campagne
+`2026-09-04-biologie-exploitee/` (exploitation de l'existant, quatre lots
+courts) ; les chantiers à décision (mesuré→moteur, import laboratoire,
+producteur d'intentions) entrent en FILE_ATTENTE comme campagnes futures.
+État des lieux complet et contre-revue : handoff
+`2026-09-04-0040-chantier-d122-etages-biologie.md` et bilan du rayon du
+2026-09-04.
 
 ## Objectif
 
@@ -115,17 +143,27 @@ et ne sont pas des lots de cette campagne.
 | — | CB-01 : Migration catalogue CB-A (11 tables) + deux flags | **fait** (PR #369) | CB-00 |
 | — | CB-02a : Import NABM (987 actes) + migration additive | **fait** (PR #374, #381, #433) | CB-01 |
 | — | CB-02b : Corpus notebook biologie (135 chunks, 758 claims) | **fait** (PR #394) | décision G levée |
-| LOT-00 | CB-03 : Extension moteur (cibles analyse/panel_bio) + table de règles vide signée-sha | **bloqué** — attend lots 8-9 certification | CB-02b |
-| LOT-01 | CB-04 : Compilateur `tools/corpus/biologie/compile.mjs` | à_faire | LOT-00 + claims validés |
-| LOT-02 | CB-05 : Migration + machine à états `BiologyExplorationProposal`/`Item` | à_faire — **confirmation obligatoire (migration)** | CB-01, LOT-00 |
-| LOT-03 | CB-06 : Régimes de diffusion (courrier médecin / document patient) | à_faire | LOT-02 |
-| LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | à_faire — revue adversariale requise | LOT-02 |
+| LOT-00 | CB-03 : Extension moteur (cibles analyse/panel_bio) + table de règles vide signée-sha | **recouvert (clôture 2026-09-04)** — chaîne D-068→D-073 | CB-02b |
+| LOT-01 | CB-04 : Compilateur `tools/corpus/biologie/compile.mjs` | **recouvert (clôture 2026-09-04)** — transcription signée D-069 | LOT-00 + claims validés |
+| LOT-02 | CB-05 : Migration + machine à états `BiologyExplorationProposal`/`Item` | **caduc (clôture 2026-09-04)** — jamais construite, proposition recalculée | CB-01, LOT-00 |
+| LOT-03 | CB-06 : Régimes de diffusion (courrier médecin / document patient) | **recouvert (clôture 2026-09-04)** — D-073 puis D-122 §1 | LOT-02 |
+| LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | **non livré, transféré (clôture 2026-09-04)** — FILE_ATTENTE, avec le producteur d'intentions | LOT-02 |
 | LOT-05 | CB-08 : UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | **terminé (2026-09-01)** — rayon + fiches livrés dans la Bibliothèque ; encart patient et cartes du fil constatés déjà livrés hors campagne (`D-070`/`D-071`), dépendances LOT-02/LOT-03 caduques (CB-05 jamais construite, proposition recalculée — chaîne `D-068`→`D-073`). Détail : `lots/LOT-05-ui-rayon-biologie-cb08.md` | ~~LOT-02, LOT-03~~ caduques |
 | LOT-06 | CB-09 : Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** | HDS obtenu |
 
 ## Done de campagne
 
-- [ ] Tous les lots requis sont terminés.
-- [ ] Les validations sont documentées.
-- [ ] La documentation canonique est à jour.
-- [ ] Le handoff final est produit.
+Coché à la clôture du 2026-09-04, sur preuves relues.
+
+- [x] Tous les lots requis sont terminés — LOT-05 (2026-09-01, PR #825) et
+      LOT-06 (2026-09-03, PR #838/#854) ; LOT-00→LOT-04 requalifiés non
+      requis à la clôture (table ci-dessus), le seul reste éventuel (CB-07)
+      étant transféré en FILE_ATTENTE.
+- [x] Les validations sont documentées — fiches LOT-05/LOT-06 (revues
+      adverses, T1/T2, constats par conteneur des deux migrations).
+- [x] La documentation canonique est à jour — FEATURE_FLAGS.md §A/§D,
+      DOSSIER_RGPD.md (23ᵉ route), réconciliation ROADMAP_PRODUIT /
+      REGISTRE_FRONTIERES / FILE_ATTENTE portée par la PR de clôture.
+- [x] Le handoff final est produit —
+      `docs/claude/handoffs/2026-09-04-2130-cloture-cb-cadrage-suite.md`
+      (s'appuie sur `2026-09-04-0040-chantier-d122-etages-biologie.md`).

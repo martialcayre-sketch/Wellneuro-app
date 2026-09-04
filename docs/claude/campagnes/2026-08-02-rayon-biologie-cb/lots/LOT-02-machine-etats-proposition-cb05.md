@@ -1,11 +1,18 @@
 ---
 id: "LOT-02"
 titre: "machine-etats-proposition-cb05"
-statut: "à_faire"
+statut: "caduc (clôture campagne 2026-09-04)"
 dépend_de: "CB-01 (fait) ; LOT-00 (CB-03)"
 ---
 
 # LOT-02 (CB-05) — Machine à états de la proposition d'exploration
+
+> **Requalifié à la clôture de campagne (2026-09-04, arbitrage du
+> responsable).** La machine à états n'a jamais été construite et ne le sera
+> pas : la proposition se **recalcule à la lecture** (chaîne D-068→D-073),
+> et la trace de ce qui est remis vit dans `documents_patient_biologie`
+> (D-122 §1, append-only, ancrée). Aucune table `BiologyExplorationProposal`
+> n'existera sans décision nouvelle.
 
 ## But
 

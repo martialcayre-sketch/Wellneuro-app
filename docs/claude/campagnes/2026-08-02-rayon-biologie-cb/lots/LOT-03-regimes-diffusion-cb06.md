@@ -1,11 +1,18 @@
 ---
 id: "LOT-03"
 titre: "regimes-diffusion-cb06"
-statut: "à_faire"
+statut: "recouvert (clôture campagne 2026-09-04)"
 dépend_de: "LOT-02 (CB-05)"
 ---
 
 # LOT-03 (CB-06) — Régimes de diffusion (courrier médecin / document patient)
+
+> **Requalifié à la clôture de campagne (2026-09-04, arbitrage du
+> responsable).** Les deux régimes sont livrés par d'autres chemins : courrier
+> médecin ancré (D-073, campagne T0, PR #710) ; document patient — décision F
+> — consigné ancré avec refus confirmable lié au texte (D-122 §1, D-090,
+> PR #828/#848). La granularité « dossier entier » (pas de scission par
+> régime tant que l'appariement NABM n'est pas curé) est actée par D-122 §1.
 
 ## But
 
