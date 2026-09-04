@@ -281,3 +281,72 @@ describe('traçabilité de chaque ligne', () => {
     expect(screen.getByText(/validation médicale/i)).toBeTruthy();
   });
 });
+
+// Lot Densité. Le cas ci-dessus reste vert que la justification soit repliée ou
+// non — `getByText` lit le DOM, pas l'écran. Ce qui doit être gardé n'est donc
+// pas la présence des claims, déjà couverte, mais LA FRONTIÈRE : ce qui tombe
+// dans le repli et ce qui n'y tombe jamais.
+describe('repli de la justification — la frontière', () => {
+  const avecTout = () =>
+    ligne({
+      motifs: ['Ferritine attendue basse chez ce profil.'],
+      justificationClaims: [{ claimId: 'WN-CL-0312-018', versionClaim: 'v1.0' }],
+      condition: 'Fatigue rapportée depuis plus de trois mois',
+      declencheurRempli: false,
+      analytes: [
+        {
+          code: 'BIO_INSULINE',
+          libelle: 'Insulinémie',
+          validationMedicaleRequise: true,
+          remboursement: { statut: 'non_evalue', conditions: [], codesActesRetenus: [] },
+        },
+      ],
+      ratios: [{ code: 'HOMA', libelle: 'Indice HOMA' }],
+    });
+
+  /** Le `<details>` de justification, atteint par son libellé de repli. */
+  const repli = (): HTMLDetailsElement => {
+    const details = screen.getByText('Ce qui justifie cette ligne').closest('details');
+    expect(details).not.toBeNull();
+    return details as HTMLDetailsElement;
+  };
+
+  it('motifs et claims sont repliés, et restent dans le DOM (DC-34, DC-35)', () => {
+    rendre({ lignes: [avecTout()] });
+    expect(repli().open).toBe(false);
+    // « Chaque ligne cite les claims qui la fondent », dit le chapô du panneau :
+    // repliés, ils sont toujours cités — retirés, la phrase deviendrait fausse.
+    expect(repli().textContent).toContain('WN-CL-0312-018');
+    expect(repli().textContent).toContain('Ferritine attendue basse');
+  });
+
+  it('l’avertissement de validation médicale n’est JAMAIS dans le repli', () => {
+    rendre({ lignes: [avecTout()] });
+    // Un avertissement au deuxième clic n'en est plus un.
+    expect(repli().textContent).not.toContain('validation médicale');
+    expect(screen.getByText(/Interprétation sous validation médicale/)).toBeTruthy();
+  });
+
+  it('libellé, statut, composition et geste de déclaration restent hors du repli', () => {
+    rendre({ lignes: [avecTout()] });
+    const cache = repli().textContent ?? '';
+    // Le geste et le libellé sont lus par l'E2E biologie avec `toBeVisible()` et
+    // `innerText()` — deux lectures qu'un repli rendrait muettes.
+    for (const dehors of [
+      'Bilan martial',
+      'Recommandé',
+      'Insulinémie',
+      'Indice HOMA',
+      'Déjà exploré hors outil',
+      'Fatigue rapportée depuis plus de trois mois',
+    ]) {
+      expect(screen.getByText(new RegExp(dehors))).toBeTruthy();
+      expect(cache).not.toContain(dehors);
+    }
+  });
+
+  it('aucune ligne sans motif ni claim ne porte de repli vide', () => {
+    rendre({ lignes: [ligne()] });
+    expect(screen.queryByText('Ce qui justifie cette ligne')).toBeNull();
+  });
+});

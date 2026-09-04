@@ -84,6 +84,24 @@ function sansCommentaires(element: string): string {
 }
 
 /**
+ * LA SOURCE SANS SES IMPORTS — même raison que `sansCommentaires`, second trou.
+ *
+ * Le détecteur par libellé (plus bas) exige que le FICHIER contienne
+ * `MENTION_NATURE_INDICE_GLOBAL`. Vu vert sous mutation le 2026-09-04 : retirer
+ * le `<p>{MENTION_NATURE_INDICE_GLOBAL}</p>` de `TrajectoirePanel` en laissant
+ * la ligne `import { MENTION_NATURE_INDICE_GLOBAL } from …` gardait les seize
+ * cas au vert, alors que l'écran n'affichait plus rien. L'import satisfaisait la
+ * garde à lui seul.
+ *
+ * Un import ne rend rien. La correction est celle que le premier détecteur
+ * applique déjà aux commentaires : on retire ce qui ne s'affiche pas avant de
+ * chercher la mention.
+ */
+function sansImports(source: string): string {
+  return source.replace(/\bimport\b[^;]*?['"][^'"]*['"]\s*;/g, ' ');
+}
+
+/**
  * LES ALIAS DU TOTAL, résolus à POINT FIXE dans le fichier — [[D-108]].
  *
  * LE TROU MESURÉ PAR LA CONTRE-REVUE. Le suivi par NOM était déclaré plus bas
@@ -301,10 +319,13 @@ describe('nature du total — les surfaces qui le nomment sans le nommer', () =>
    * 2026-09-04 : à ne pas faire. Les quatre sites ne sont d'ailleurs pas
    * identiques — deux rendent un `<p>` commun, un troisième un `<span>` ajusté
    * à un badge, le quatrième passe la chaîne en prop.
+   *
+   * NI COMMENTÉE, NI SEULEMENT IMPORTÉE : les deux retraits ont été vus verts
+   * sous mutation, et c'est `sansImports` qui ferme le second (voir sa note).
    */
   it('chaque surface déclarée porte la mention de nature', () => {
     const sansMention = Object.keys(SURFACES_PAR_LIBELLE).filter(
-      chemin => !sansCommentaires(lire(chemin)).includes('MENTION_NATURE_INDICE_GLOBAL'),
+      chemin => !sansImports(sansCommentaires(lire(chemin))).includes('MENTION_NATURE_INDICE_GLOBAL'),
     );
     expect(sansMention).toEqual([]);
   });

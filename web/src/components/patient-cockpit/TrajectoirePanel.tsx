@@ -411,81 +411,109 @@ export function TrajectoirePanel({
               (T0, T1, …) ; les dates de confirmation, elles, ne suivent pas cet ordre.
             </p>
           )}
-          {trajectoire.cycles.map((cycle) => {
+          {trajectoire.cycles.map((cycle, position) => {
             const misEnAvant = cycleSelectionne === cycle.cycleId;
+            // CYCLES ANCIENS REPLIÉS (lot Densité) — le cycle COURANT est le
+            // dernier : `cycles` est ordonné par rang d'ancre (`D-113` §6), pas
+            // par date. Un dossier au quatrième cycle déroulait quatre blocs
+            // entiers, jalons et momentum par besoin compris, avant d'atteindre
+            // le comparateur.
+            //
+            // DEUX CYCLES RESTENT OUVERTS D'OFFICE, et le second n'est pas un
+            // confort : un repère sélectionné dans la Spirale qui se replierait
+            // mettrait « repère sélectionné » hors de vue — le clic n'aurait
+            // plus de réponse visible. La sélection commande donc l'ouverture.
+            //
+            // Rien n'est retiré du DOM : `<details>` garde ses enfants montés,
+            // donc un cycle replié reste atteignable au clavier, annonçable par
+            // une lecture d'écran, et trouvable par la recherche du navigateur
+            // (Chrome déplie sur correspondance). CE QU'IL PERD : l'impression
+            // ne déplie pas — un cycle ancien ne sortira pas sur papier tant
+            // qu'il n'est pas ouvert. Assumé : le comparateur, lui, reste
+            // déplié, et c'est lui qui porte les valeurs côte à côte.
+            const courant = position === trajectoire.cycles.length - 1;
             return (
               <div
                 key={cycle.cycleId}
                 aria-current={misEnAvant ? 'true' : undefined}
                 className={`rounded-lg border p-3 ${misEnAvant ? 'border-primary bg-primary/5' : 'border-border/60'}`}
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">
-                    Cycle {cycle.ancre} depuis le {formatDate(cycle.dateAncre)}
-                    {/* Jamais la couleur seule : la mise en avant est aussi écrite. */}
-                    {misEnAvant && <span className="text-primary"> · repère sélectionné</span>}
-                  </p>
-                  <span className="text-xs text-muted-foreground">
-                    version de score : {cycle.versionScore ?? 'inconnue'}
-                  </span>
-                </div>
-                <ul className="mt-2 space-y-1">
-                  {cycle.jalons.map((jalon) => (
-                    <li key={jalon.jalon} className="text-base text-muted-foreground">
-                      <span className="font-medium text-foreground">{jalon.jalon}</span>{' '}
-                      {jalon.mesure && jalon.valeur !== null && jalon.date ? (
-                        <>· indice {jalon.valeur} · {formatDate(jalon.date)}</>
-                      ) : (
-                        <span className="italic">· jalon non mesuré</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                {cycle.momentum && (
-                  <p className="mt-2 text-base text-foreground">
-                    Momentum {cycle.ancre} → dernier jalon mesuré :{' '}
-                    <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
-                    {/* L'unité est nommée : l'écart par besoin, trois lignes plus
-                        bas, est sur l'échelle de couverture 0–1 — deux « écart »
-                        nus se liraient comme comparables (revue LOT-07, M4). */}
-                    <span className="text-muted-foreground">
-                      (écart {Math.abs(cycle.momentum.delta)} — indice 0–100)
+                <details open={courant || misEnAvant}>
+                  <summary className="cursor-pointer marker:text-muted-foreground">
+                    {/* Le libellé du repli est la ligne d'en-tête EXISTANTE, mot
+                        pour mot : le lot ne déplace aucun texte, il n'en invente
+                        aucun. L'`inline-flex` rend la justification d'avant, que
+                        `display:flex` sur le `<summary>` aurait payée du triangle
+                        d'ouverture — la seule affordance de ce repli. */}
+                    <span className="inline-flex w-[calc(100%-1.25rem)] flex-wrap items-baseline justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground">
+                        Cycle {cycle.ancre} depuis le {formatDate(cycle.dateAncre)}
+                        {/* Jamais la couleur seule : la mise en avant est aussi écrite. */}
+                        {misEnAvant && <span className="text-primary"> · repère sélectionné</span>}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        version de score : {cycle.versionScore ?? 'inconnue'}
+                      </span>
                     </span>
-                  </p>
-                )}
-                {/* Momentum PAR BESOIN (LOT-07, D-058). Interdits de rendu : un
-                    besoin non re-mesuré est nommé tel quel, jamais « stable » ;
-                    et le MOTIF est toujours restitué (DC-34/DC-35) — un delta,
-                    qualifié ou non, ne s'affiche jamais comme une tendance nue,
-                    et les deux jalons comparés sont nommés. */}
-                {cycle.momentumParBesoin.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Momentum par besoin
+                  </summary>
+                  <ul className="mt-2 space-y-1">
+                    {cycle.jalons.map((jalon) => (
+                      <li key={jalon.jalon} className="text-base text-muted-foreground">
+                        <span className="font-medium text-foreground">{jalon.jalon}</span>{' '}
+                        {jalon.mesure && jalon.valeur !== null && jalon.date ? (
+                          <>· indice {jalon.valeur} · {formatDate(jalon.date)}</>
+                        ) : (
+                          <span className="italic">· jalon non mesuré</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {cycle.momentum && (
+                    <p className="mt-2 text-base text-foreground">
+                      Momentum {cycle.ancre} → dernier jalon mesuré :{' '}
+                      <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
+                      {/* L'unité est nommée : l'écart par besoin, trois lignes plus
+                          bas, est sur l'échelle de couverture 0–1 — deux « écart »
+                          nus se liraient comme comparables (revue LOT-07, M4). */}
+                      <span className="text-muted-foreground">
+                        (écart {Math.abs(cycle.momentum.delta)} — indice 0–100)
+                      </span>
                     </p>
-                    <ul className="mt-1 space-y-1.5">
-                      {cycle.momentumParBesoin.map((ligne) => {
-                        const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
-                          ?? `Besoin ${ligne.besoin}`;
-                        return (
-                          <li key={ligne.besoin} className="text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">{libelle}</span>
-                            {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
-                              <>
-                                {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
-                                ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
-                                ({ligne.arrivee.jalon}) · écart{' '}
-                                {ligne.delta > 0 ? `+${formatCouverture(ligne.delta)}` : formatCouverture(ligne.delta)}
-                                {' '}— échelle de couverture 0–1
-                              </>
-                            )}
-                            <span className="block text-xs italic">{ligne.motif}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
+                  )}
+                  {/* Momentum PAR BESOIN (LOT-07, D-058). Interdits de rendu : un
+                      besoin non re-mesuré est nommé tel quel, jamais « stable » ;
+                      et le MOTIF est toujours restitué (DC-34/DC-35) — un delta,
+                      qualifié ou non, ne s'affiche jamais comme une tendance nue,
+                      et les deux jalons comparés sont nommés. */}
+                  {cycle.momentumParBesoin.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Momentum par besoin
+                      </p>
+                      <ul className="mt-1 space-y-1.5">
+                        {cycle.momentumParBesoin.map((ligne) => {
+                          const libelle = BESOINS.find(b => b.id === ligne.besoin)?.libellePraticien
+                            ?? `Besoin ${ligne.besoin}`;
+                          return (
+                            <li key={ligne.besoin} className="text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">{libelle}</span>
+                              {ligne.mesure && ligne.depart && ligne.arrivee && ligne.delta !== null && (
+                                <>
+                                  {' '}· couverture {formatCouverture(ligne.depart.couverture)}{' '}
+                                  ({ligne.depart.jalon}) → {formatCouverture(ligne.arrivee.couverture)}{' '}
+                                  ({ligne.arrivee.jalon}) · écart{' '}
+                                  {ligne.delta > 0 ? `+${formatCouverture(ligne.delta)}` : formatCouverture(ligne.delta)}
+                                  {' '}— échelle de couverture 0–1
+                                </>
+                              )}
+                              <span className="block text-xs italic">{ligne.motif}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </details>
               </div>
             );
           })}

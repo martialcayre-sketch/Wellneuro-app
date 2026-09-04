@@ -465,12 +465,47 @@ export function PropositionBilanPanel({
                     Condition : {ligne.condition}
                   </p>
                 )}
-                {ligne.motifs.length > 0 && (
-                  <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
-                    {ligne.motifs.map((motif, index) => (
-                      <li key={`${ligne.panelCode}-${index}`}>{motif}</li>
-                    ))}
-                  </ul>
+                {/*
+                  LA JUSTIFICATION SE REPLIE, LA LIGNE RESTE (lot Densité).
+                  Motifs et claims sont le plus gros bloc d'une ligne — trois à
+                  cinq puces par panel, répétées sur toute la proposition : la
+                  hiérarchie du moteur devenait illisible entre ses propres
+                  justificatifs.
+
+                  CE QUI NE SE REPLIE PAS, et pourquoi chacun :
+                    — le libellé, le statut et le geste de déclaration, qui sont
+                      la ligne elle-même ;
+                    — « Interprétation sous validation médicale », qui est un
+                      avertissement : un avertissement au deuxième clic n'en est
+                      plus un ;
+                    — analytes et rapports calculés, qui disent ce que le bilan
+                      CONTIENT ([[D-072]] — les taire amputait la composition).
+
+                  `<details>` ne démonte rien : les claims restent dans le DOM,
+                  atteignables au clavier, donc l'exigence de provenance
+                  (`DC-34`, `DC-35`) et la promesse du chapô — « chaque ligne
+                  cite les claims qui la fondent » — tiennent toujours. Même
+                  geste que « Ce que cette vue ne sait pas », posé par l'audit du
+                  2026-09-02 en bas de ce panneau.
+                */}
+                {(ligne.motifs.length > 0 || ligne.justificationClaims.length > 0) && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                      Ce qui justifie cette ligne
+                    </summary>
+                    {ligne.motifs.length > 0 && (
+                      <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
+                        {ligne.motifs.map((motif, index) => (
+                          <li key={`${ligne.panelCode}-${index}`}>{motif}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {ligne.justificationClaims.length > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Claims : {ligne.justificationClaims.map(claim => claim.claimId).join(', ')}
+                      </p>
+                    )}
+                  </details>
                 )}
                 {ligne.analytes.length > 0 && (
                   <p className="mt-2 text-xs text-muted-foreground">
@@ -489,11 +524,6 @@ export function PropositionBilanPanel({
                 {ligne.analytes.some(analyte => analyte.validationMedicaleRequise) && (
                   <p className="mt-1 text-xs text-status-warning">
                     Interprétation sous validation médicale.
-                  </p>
-                )}
-                {ligne.justificationClaims.length > 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Claims : {ligne.justificationClaims.map(claim => claim.claimId).join(', ')}
                   </p>
                 )}
                 {documente && (
