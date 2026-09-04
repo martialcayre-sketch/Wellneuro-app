@@ -4,6 +4,88 @@
 
 ## Décisions actives
 
+### D-123 — La course de deux consignations simultanées n'est pas due : la garde applicative suffit, et le détecteur existe désormais
+
+- Date : 2026-09-04
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-09-04,
+  sur constat de production lu le même soir)
+- Domaine : rayon biologie fonctionnelle — document patient consigné (étage
+  1 bis). **Aucune règle clinique, aucun seuil, aucun schéma touché** : cette
+  décision est un refus d'ouvrir un chantier, pas une modification.
+- Porte sur : `D-122` §1 (la table `documents_patient_biologie`), `D-087`
+  (chemin release-db, dont cette décision évite précisément le cycle),
+  `D-090` (régime du refus confirmable, que la garde livrée applique),
+  campagne « Biologie exploitée » LOT-01
+
+**Ce que la décision tranche.** La garde anti-double-consignation livrée au
+LOT-01 est **applicative** — `findFirst` puis `create`
+([route.ts:290](../web/src/app/api/praticien/biologie/proposition/document-patient/route.ts#L290)
+et [:316](../web/src/app/api/praticien/biologie/proposition/document-patient/route.ts#L316)),
+sans transaction ni contrainte d'unicité. Elle ferme le cas séquentiel et
+laisse ouverte la course de deux requêtes vraiment simultanées.
+**Cette course n'est pas due.** Elle ne sera pas fermée tant que l'un des deux
+déclencheurs nommés plus bas n'est pas constaté.
+
+**Sur quoi elle s'appuie — trois faits, vérifiés le 2026-09-04.**
+
+1. **Le double-clic est déjà absorbé côté client.** Le bouton passe `disabled`
+   sur `envoiEnCours`, posé **synchroniquement dans le `onClick` avant**
+   l'appel, et `dejaConsigne` le referme après consignation
+   ([PropositionBilanPanel.tsx:280-283](../web/src/components/patient-cockpit/PropositionBilanPanel.tsx#L280-L283)).
+   Dans un onglet, deux clics ne produisent pas deux POST. La course n'est
+   donc pas « deux clics » mais **deux contextes de navigation distincts**
+   dont les clics tombent dans la largeur d'un aller-retour base — quelques
+   millisecondes. Ce n'est pas une double-soumission, c'est une coïncidence.
+2. **Le rayon d'explosion en aval est nul.** La table n'a que trois
+   consommateurs dans tout le dépôt : le `GET` de relecture, le `findFirst` de
+   la garde, et le `deleteMany` de l'effacement patient
+   (`web/src/lib/patient/effacement.ts:130`). Rien ne la compte, ne l'exporte,
+   ne la montre au patient, n'en dérive quoi que ce soit de clinique. Une
+   ligne en double fait apparaître **deux fois la même remise, avec deux
+   horodatages distincts**, dans une liste lue par un humain — aucun score,
+   aucun document, aucune décision n'est faussé.
+3. **La production comptait UNE ligne.** Lu par one-off `one-off-2476` le
+   2026-09-04 à 23:53 (agrégats seuls, aucune identité) :
+   `lignes=1, dossiers=1, doublons_de_texte=0, paires_à_moins_de_5_s=0`. Le
+   geste a été exécuté **une fois depuis que la table existe**. Le défaut n'a
+   pas une fréquence faible : il n'a jamais eu l'occasion de se produire.
+
+**Ce qui rend l'attente légitime plutôt que négligente.** Le LOT-01 n'a pas
+seulement posé la garde : il a livré le **détecteur**. Avant lui, un doublon
+serait resté invisible pour toujours — la table n'avait aucun lecteur. Le
+praticien le verrait désormais dans sa liste de relecture. On n'accepte donc
+pas un risque aveugle, on accepte un risque **observable** : c'est la
+condition sous laquelle « ne pas fermer » est un choix d'ingénierie et non un
+oubli.
+
+**Les deux déclencheurs de réouverture** — la décision n'est pas ouverte,
+elle est conditionnée :
+
+1. **Un doublon réel apparaît** — vu à l'écran, ou relevé par la requête
+   agrégée ci-dessus rejouée en one-off.
+2. **Le geste change d'échelle** — la table passe de l'unité à un usage
+   courant, où la coïncidence cesse d'être une curiosité.
+
+**Ce que la décision ne dit pas.** Elle ne dit pas que la contrainte en base
+serait inutile ; elle dit qu'elle n'est pas due **maintenant**. Si un
+déclencheur tombe, la voie retenue est **colonne d'empreinte du texte +
+colonne d'intention (`doublon_confirmé`) + index unique PARTIEL** sur les
+seules lignes non confirmées — et la contrainte se glisse **sous** le 409
+confirmable, qui reste : c'est lui qui porte le message et le second temps
+(`D-090`). Deux voies sont écartées et le restent :
+
+- **l'index unique nu** `(id_patient, empreinte)` — il fermerait la course en
+  tuant le geste que la garde autorise exprès : remettre une seconde copie au
+  patient est légitime. Ce serait une régression de geste, pas une correction
+  de bug ;
+- **la transaction sérialisable sans migration** — payer un chemin de retry
+  dans une écriture pour un événement de fréquence nulle, avec un verrou
+  étranger aux habitudes du dépôt.
+
+**Dépendance nommée.** Si un doublon survient, **le retirer demande un geste
+qui n'existe pas** : c'est le terrain du LOT-02 (régime de correction). Cette
+décision s'appuie donc sur le fait que LOT-02 finira par le donner.
+
 ### D-122 — Les étages restants du rayon biologie s'ouvrent : document patient consigné, puis résultats réels
 
 - Date : 2026-09-01

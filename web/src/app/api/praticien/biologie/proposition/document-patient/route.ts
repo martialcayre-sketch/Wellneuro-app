@@ -56,14 +56,19 @@ import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 // GARDE ANTI-DOUBLE-CONSIGNATION, REFUS CONFIRMABLE. La table est append-only
 // et re-générer est un geste légitime — le dossier évolue, le document suit.
 // Ce qui ne l'est pas, c'est consigner DEUX FOIS LE MÊME TEXTE sans le savoir
-// (deux onglets, un double clic, un retour arrière). La route refuse alors en
+// (deux onglets, un retour arrière — le double clic, lui, est déjà absorbé à
+// l'écran : `envoiEnCours` est posé avant l'appel). La route refuse alors en
 // 409 `DOUBLON_DOCUMENT`, confirmable par `confirmerDoublonSha256` — même
 // liaison au texte que le registre, mais JETON SÉPARÉ PAR DOMAINE : les deux
 // gardes visent le même texte, une empreinte nue les rendrait
 // interchangeables. PORTÉE EXACTE, ET ELLE EST ÉTROITE : une détection en
 // lecture-puis-écriture ferme le cas SÉQUENTIEL (deux gestes qui se suivent),
 // pas la course vraie de deux requêtes simultanées, qui exigerait une
-// contrainte en base — donc une migration, donc son propre cycle.
+// contrainte en base — donc une migration, donc son propre cycle. Cette
+// course est ARBITRÉE, pas oubliée : `D-123` (2026-09-04) la déclare NON DUE
+// et nomme les deux déclencheurs qui la rouvriraient. Ne pas la « corriger »
+// au passage : l'index unique nu tuerait la seconde copie confirmée, qui est
+// un geste légitime.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/proposition/document-patient';
 
