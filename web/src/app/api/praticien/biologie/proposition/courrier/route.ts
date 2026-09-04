@@ -76,6 +76,13 @@ export async function POST(req: Request) {
     } catch {
       return echec('invalid', 'Corps de requête illisible.', 400);
     }
+    // `null`, `42`, `"texte"` et `[]` sont du JSON parfaitement valide :
+    // sans cette garde, `body.idPatient` lèverait AVANT toute session — un
+    // 500 que n'importe quel client anonyme peut fabriquer (patron de la
+    // route document-patient).
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+      return echec('invalid', 'Corps de requête illisible.', 400);
+    }
 
     const idPatient = typeof body.idPatient === 'string' ? body.idPatient.trim() : '';
     // `acces` EST fourni ici, contrairement au POST de déclaration : cette
