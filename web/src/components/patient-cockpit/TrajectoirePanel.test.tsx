@@ -258,6 +258,94 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
   });
 });
 
+// Lot Densité. CE BLOC EXISTE PARCE QUE LE RESTE DU FICHIER NE PROUVE RIEN ICI :
+// `getByText` trouve un contenu replié aussi bien que déplié — c'est même la
+// propriété qu'on veut (rien n'est démonté). Aucun des 46 cas précédents ne
+// serait passé au rouge si le repli s'était appliqué à TOUS les cycles, ou à
+// aucun. L'état d'ouverture doit donc être lu explicitement.
+describe('TrajectoirePanel — cycles anciens repliés (lot Densité)', () => {
+  const troisCycles: Trajectoire = {
+    index: [
+      { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'T1', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
+    ],
+    cycles: [
+      {
+        cycleId: 'ep_a',
+        ancre: 'T0',
+        dateAncre: '2026-01-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(40, 55),
+        momentum: { tendance: 'hausse', delta: 15 },
+        momentumParBesoin: [],
+      },
+      {
+        cycleId: 'ep_b',
+        ancre: 'T1',
+        dateAncre: '2026-03-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(48, null, 'T1'),
+        momentum: null,
+        momentumParBesoin: [],
+      },
+    ],
+    discordanceOrdreCycles: false,
+    comparaison: { disponible: true, raison: 'comparable' },
+  };
+
+  /** Le `<details>` d'un cycle, atteint par sa ligne d'en-tête. */
+  const cycle = (entete: RegExp): HTMLDetailsElement => {
+    const details = screen.getByText(entete).closest('details');
+    expect(details).not.toBeNull();
+    return details as HTMLDetailsElement;
+  };
+
+  it('le cycle courant est ouvert, l’ancien est replié', () => {
+    render(<TrajectoirePanel trajectoire={troisCycles} />);
+    // `cycles` est ordonné par RANG D'ANCRE (`D-113` §6) : le courant est le
+    // dernier, jamais le premier ni le plus récemment daté.
+    expect(cycle(/Cycle T0 depuis le 01\/01\/2026/).open).toBe(false);
+    expect(cycle(/Cycle T1 depuis le 01\/03\/2026/).open).toBe(true);
+  });
+
+  it('replié ne veut pas dire retiré : les jalons du cycle ancien restent dans le DOM', () => {
+    render(<TrajectoirePanel trajectoire={troisCycles} />);
+    const ancien = cycle(/Cycle T0 depuis le 01\/01\/2026/);
+    expect(ancien.open).toBe(false);
+    // Ce que le repli doit préserver : clavier, lecture d'écran, recherche du
+    // navigateur. Un rendu conditionnel les aurait tous perdus.
+    expect(within(ancien).getByText(/indice 40/)).toBeTruthy();
+    expect(within(ancien).getByText(/Momentum T0 → dernier jalon mesuré/)).toBeTruthy();
+  });
+
+  it('un cycle ancien SÉLECTIONNÉ s’ouvre — une sélection invisible n’est pas une sélection', () => {
+    render(<TrajectoirePanel trajectoire={troisCycles} />);
+    const index = screen.getByRole('navigation', { name: /Index de la Spirale/i });
+
+    fireEvent.click(within(index).getByRole('button', { name: /J21 · 22\/01\/2026/ }));
+
+    // Le J21 du 22/01 documente le cycle T0, qui serait replié sans cette règle :
+    // le clic sur la Spirale n'aurait alors aucune réponse visible.
+    const selectionne = cycle(/Cycle T0 depuis le 01\/01\/2026/);
+    expect(selectionne.open).toBe(true);
+    expect(within(selectionne).getByText(/repère sélectionné/i)).toBeTruthy();
+  });
+
+  it('un cycle unique reste ouvert : le repli n’apparaît qu’à partir du second', () => {
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...troisCycles,
+          cycles: [troisCycles.cycles[0]],
+          comparaison: { disponible: false, raison: 'un_seul_cycle' },
+        }}
+      />,
+    );
+    expect(cycle(/Cycle T0 depuis le 01\/01\/2026/).open).toBe(true);
+  });
+});
+
 describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 5.0)', () => {
   const deuxCycles: Trajectoire = {
     index: [
