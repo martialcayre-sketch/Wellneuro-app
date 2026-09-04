@@ -377,6 +377,32 @@ describe('ClinicalRuntimeSection', () => {
     expect(charge.shaPerimetre).toBe('a'.repeat(64));
   });
 
+  it('délègue la relecture de trajectoire une fois, après la confirmation', async () => {
+    const recharger = vi.fn();
+    const fetchMock = fetchParRoute({
+      cockpitGet: [rep(proposalResponse)],
+      cockpitPost: [rep(readyAvecCandidats())],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        trajectoirePartagee={null}
+        statutTrajectoirePartage="chargee"
+        onRechargerTrajectoire={recharger}
+      />,
+    );
+
+    await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+    expect(recharger).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer l’épisode T0' }));
+    await screen.findByText(/Épisode T0 confirmé/);
+    expect(recharger).toHaveBeenCalledTimes(1);
+  });
+
   it('n’assemble PAS tant que la réponse n’est pas `ready`', async () => {
     // La proposition périmée (409) recharge et ne confirme rien : il n'y a pas
     // de carte, donc rien à citer.

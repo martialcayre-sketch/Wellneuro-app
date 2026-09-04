@@ -1102,20 +1102,24 @@ describe('FichePatientPanel — la trajectoire n’est lue qu’une fois', () =>
     vi.unstubAllGlobals();
   });
 
-  it('la fiche lit la trajectoire, la section clinique ne la relit pas', async () => {
-    const fetchMock = await rendreFiche();
+  it.each(['proposal', 'ready'] as const)(
+    'la fiche lit la trajectoire une fois quand le runtime répond %s',
+    async runtime => {
+      const fetchMock = await rendreFiche({ runtime });
 
-    // Laisse passer les effets de montage de la section clinique, qui tirait
-    // ici sa propre lecture de la même URL.
-    await act(async () => {
-      await new Promise(resoudre => setTimeout(resoudre, 30));
-    });
+      // Laisse passer les effets de montage et, pour `ready`, l'effet qui charge
+      // les ressources annexes de la carte. Ce dernier ne doit pas transformer
+      // le rejeu d'une carte persistée en second accès à la trajectoire.
+      await act(async () => {
+        await new Promise(resoudre => setTimeout(resoudre, 30));
+      });
 
-    const lectures = fetchMock.mock.calls
-      .map(appel => String(appel[0]))
-      .filter(url => url.includes('/api/praticien/trajectoire'));
-    expect(lectures).toHaveLength(1);
-  });
+      const lectures = fetchMock.mock.calls
+        .map(appel => String(appel[0]))
+        .filter(url => url.includes('/api/praticien/trajectoire'));
+      expect(lectures).toHaveLength(1);
+    },
+  );
 });
 
 describe('FichePatientPanel — phase demandée par lien', () => {

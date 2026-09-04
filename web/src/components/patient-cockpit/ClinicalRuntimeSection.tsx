@@ -133,20 +133,38 @@ export type EtatRuntimeClinique = {
   decisionBloquee: boolean;
 };
 
-export function ClinicalRuntimeSection({
-  idPatient,
-  fixture,
-  protocolDraft,
-  onFixtureReviewed,
-  phase = 'tout',
-  onAjusterProtocole,
-  onOuvrirTrajectoire,
-  onEtatChange,
-  onPropositionsAssemblees,
-  trajectoirePartagee,
-  statutTrajectoirePartage,
-  onRechargerTrajectoire,
-}: {
+/**
+ * Trajectoire LUE PAR LA FICHE, avec son statut et son rappel de lecture.
+ *
+ * La fiche lit déjà la trajectoire à l'ouverture (le bandeau d'épisode en a
+ * besoin) ; sans ces props, la section relisait la MÊME URL au montage — deux
+ * GET pour une ouverture, donc deux accès journalisés (`G-TRUST-04`) là où le
+ * praticien n'a ouvert le dossier qu'une fois.
+ *
+ * TOUT OU RIEN, ET C'EST LE TYPE QUI LE TIENT. Les trois props étaient
+ * indépendamment facultatives, et le mode ne dépendait que du rappel : le
+ * triplet `statutTrajectoirePartage="chargee"` + `trajectoirePartagee=undefined`
+ * était donc DÉCLARÉ VALIDE, et rendait « Aucun cycle lisible dans la
+ * trajectoire » — une absence clinique affirmée à partir d'une donnée jamais
+ * fournie, ce que `DC-24` interdit (revue Codex du 2026-09-04, P1-3). L'union
+ * ci-dessous rend ce triplet impossible à écrire.
+ *
+ * La branche vide reste entière : la section demeure montable SEULE, et se
+ * comporte alors exactement comme avant.
+ */
+type PilotageTrajectoireProps =
+  | {
+      trajectoirePartagee: Trajectoire | null;
+      statutTrajectoirePartage: 'inconnue' | 'chargement' | 'chargee' | 'erreur';
+      onRechargerTrajectoire: () => void;
+    }
+  | {
+      trajectoirePartagee?: never;
+      statutTrajectoirePartage?: never;
+      onRechargerTrajectoire?: never;
+    };
+
+type ClinicalRuntimeSectionProps = {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
   protocolDraft: ProtocolDraft | null;
@@ -164,22 +182,22 @@ export function ClinicalRuntimeSection({
    * ait écrit, et n'afficherait rien jusqu'au rechargement suivant.
    */
   onPropositionsAssemblees?: () => void;
-  /**
-   * Trajectoire LUE PAR LA FICHE, avec son statut et son rappel de lecture.
-   *
-   * Les trois vont ensemble : fournir le rappel bascule la section en mode
-   * piloté. La fiche lit déjà la trajectoire à l'ouverture (le bandeau
-   * d'épisode en a besoin) ; sans ces props, la section relisait la MÊME URL au
-   * montage — deux GET pour une ouverture, donc deux accès journalisés
-   * (`G-TRUST-04`) là où le praticien n'a ouvert le dossier qu'une fois.
-   *
-   * Facultatives À DESSEIN : la section reste montable seule, et se comporte
-   * alors exactement comme avant.
-   */
-  trajectoirePartagee?: Trajectoire | null;
-  statutTrajectoirePartage?: 'inconnue' | 'chargement' | 'chargee' | 'erreur';
-  onRechargerTrajectoire?: () => void;
-}) {
+} & PilotageTrajectoireProps;
+
+export function ClinicalRuntimeSection({
+  idPatient,
+  fixture,
+  protocolDraft,
+  onFixtureReviewed,
+  phase = 'tout',
+  onAjusterProtocole,
+  onOuvrirTrajectoire,
+  onEtatChange,
+  onPropositionsAssemblees,
+  trajectoirePartagee,
+  statutTrajectoirePartage,
+  onRechargerTrajectoire,
+}: ClinicalRuntimeSectionProps) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
   const cbResultatsActifs = useCbResultsEnabled();
@@ -708,6 +726,18 @@ export function ClinicalRuntimeSection({
       }
       setRuntime(payload);
       setNotice(null);
+      // LA TRAJECTOIRE SUIT LE GESTE, PAS LA CARTE — même règle que
+      // `assemblerPropositions` juste en dessous, et pour la même raison
+      // (`D-118`) : le `GET /cockpit` sait REJOUER une carte depuis l'épisode
+      // persisté, et un rejeu n'est pas une confirmation.
+      //
+      // Accroché à `readyDecisionCardId`, ce rechargement repartait à CHAQUE
+      // ouverture d'un dossier déjà confirmé — le cas le plus courant. Deux
+      // accès inscrits au registre `G-TRUST-04` pour une seule ouverture,
+      // c'est-à-dire le défaut même que ce lot prétendait corriger (revue Codex
+      // du 2026-09-04, P1-1). Ici, il ne part que quand un épisode vient
+      // réellement d'être confirmé.
+      rechargerTrajectoire();
       void assemblerPropositions(payload);
     } catch {
       setError('technical');
@@ -789,11 +819,21 @@ export function ClinicalRuntimeSection({
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
       void loadCheckins(readyDecisionCardId);
-      rechargerTrajectoire();
+      // AUCUN RECHARGEMENT DE TRAJECTOIRE ICI : il appartient au geste de
+      // confirmation (voir `confirm`). Cet effet se déclenche aussi sur une
+      // carte simplement REJOUÉE à l'ouverture, où la trajectoire vient d'être
+      // lue par son propriétaire.
+      //
+      // Le retirer d'ici ferme un second défaut : l'effet ne dépend plus de
+      // l'IDENTITÉ de `rechargerTrajectoire`. Un appelant qui passerait un
+      // rappel en ligne (`onRechargerTrajectoire={() => charger()}`) le
+      // recréait à chaque rendu du parent, et l'effet repartait en boucle sans
+      // que `readyDecisionCardId` ait bougé — chaque tour inscrivant un accès
+      // au registre (revue Codex du 2026-09-04, P1-4).
       void loadArbitrages();
       void loadProposition();
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, rechargerTrajectoire, loadArbitrages, loadProposition]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadArbitrages, loadProposition]);
 
   useEffect(() => {
     setFoodCompassSelection(null);
