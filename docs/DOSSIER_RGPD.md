@@ -394,8 +394,15 @@ sans procédure écrite.
   (G4, activé en production le 2026-07-21) ; coupe-circuit de session
   `sessionsInvalidesAvant`.
 - **Piste d'audit** — `journal_acces_dossiers`, écriture branchée sur les
-  23 routes GET « dossier nommé » (23ᵉ le 2026-09-03 : lecture des résultats
-  biologiques, étage 2 du rayon — D-122 §2). **Limites écrites** : pas
+  24 routes GET « dossier nommé » (23ᵉ le 2026-09-03 : lecture des résultats
+  biologiques, étage 2 du rayon — D-122 §2 ; 24ᵉ le 2026-09-04 : relecture des
+  documents patient déjà consignés — LOT-01 « Biologie exploitée », une pièce
+  remise se relit telle qu'elle est partie). **Cette 24ᵉ lecture est
+  AUTOMATIQUE, pas gestuelle** : elle part avec l'affichage du panneau de
+  proposition, donc une ouverture de fiche inscrit deux accès pour ce rayon là
+  où elle en inscrivait un. C'est assumé — ce que la route rapporte est
+  affiché, et journaliser une lecture faite vaut mieux qu'un affichage muet.
+  **Limites écrites** : pas
   d'écran de consultation (lecture par requête SQL), POST exclus — y compris
   la saisie d'un résultat, qui ne lit rien du dossier et dont l'écriture est
   tracée par la ligne consignée elle-même (`saisi_par`, `saisi_le`) ; les

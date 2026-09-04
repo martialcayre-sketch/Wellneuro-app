@@ -38,9 +38,15 @@ import {
   PropositionBilanPanel,
   type CourrierEtabli,
   type DocumentPatientEtabli,
+  type DocumentPatientConsigneAffiche,
   type DocumenteAffiche,
+  type LectureDocumentsPatient,
   type PropositionState,
 } from './PropositionBilanPanel';
+import {
+  ajouterConfirmation,
+  type ConfirmationsDocument,
+} from '@/lib/biology-library/confirmationsDocument';
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
@@ -265,6 +271,20 @@ export function ClinicalRuntimeSection({
   // incrément — une référence fraîche par réponse, là où un même message
   // d'erreur répété ne changerait pas.
   const [documentPatientReponses, setDocumentPatientReponses] = useState(0);
+  // Ce qui a DÉJÀ été remis, relu en base : c'est ce qui survit au
+  // rechargement, là où l'état de session ci-dessus repart à zéro.
+  const [documentsPatientConsignes, setDocumentsPatientConsignes] = useState<
+    DocumentPatientConsigneAffiche[]
+  >([]);
+  const [lectureDocumentsPatient, setLectureDocumentsPatient] =
+    useState<LectureDocumentsPatient>('chargement');
+  // Les confirmations s'ACCUMULENT, chacune liée à l'empreinte du texte
+  // qu'elle vise. Un texte peut être refusé deux fois de suite pour deux
+  // motifs (registre puis doublon) : n'envoyer que la dernière ferait
+  // re-refuser la première, et le geste tournerait en rond. Une empreinte
+  // rassie ne correspond plus au texte re-dérivé : le serveur re-refuse, ce
+  // qui est exactement le comportement voulu.
+  const [confirmationsDocument, setConfirmationsDocument] = useState<ConfirmationsDocument>({});
   const [partageMedecin, setPartageMedecin] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -404,6 +424,40 @@ export function ClinicalRuntimeSection({
     }
   }, [idPatient, cbEnabled]);
 
+  // Relecture des pièces déjà remises. Elle ne re-dérive rien : ce sont les
+  // lignes consignées, telles qu'elles sont parties au patient.
+  //
+  // ELLE SE CHAÎNE À LA PROPOSITION, jamais à l'effet global : ce GET
+  // journalise un accès au dossier (GD-1), et le déclencher là où le panneau
+  // n'est même pas rendu inscrirait au registre une lecture que personne n'a
+  // demandée — le défaut exact que la revue Codex a relevé sur l'effet voisin.
+  // Le chaînage suit donc le RENDU du panneau (les deux branches qui posent
+  // `propositionDisponible`), pas l'offre du geste d'établir : la relecture
+  // s'affiche même quand plus aucune ligne n'est proposée.
+  const chargerDocumentsPatient = useCallback(async () => {
+    if (!cbEnabled) return;
+    setLectureDocumentsPatient('chargement');
+    try {
+      const response = await fetch(
+        `/api/praticien/biologie/proposition/document-patient?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        documents?: DocumentPatientConsigneAffiche[];
+      };
+      if (!response.ok || !payload.ok) {
+        // Un 503 (étage fermé) comme une panne : dans les deux cas l'écran ne
+        // SAIT pas ce qui a été remis, et ne doit pas l'affirmer (`DC-24`).
+        setLectureDocumentsPatient('erreur');
+        return;
+      }
+      setDocumentsPatientConsignes(payload.documents ?? []);
+      setLectureDocumentsPatient('ok');
+    } catch {
+      setLectureDocumentsPatient('erreur');
+    }
+  }, [idPatient, cbEnabled]);
+
   // Proposition de bilan biologique — le drapeau `WN_CB_PROPOSITION` est lu
   // côté serveur seulement : ici, une route qui refuse (503) laisse le
   // panneau absent, et rien ne le distingue d'un rayon fermé.
@@ -433,6 +487,11 @@ export function ClinicalRuntimeSection({
         // Les déclarations déjà consignées NE sont PAS effacées de l'écran :
         // l'abstention porte sur la dérivation, pas sur ce que le praticien a
         // déclaré. Les vider ferait disparaître un fait du dossier.
+        //
+        // Le panneau est rendu, donc la liste des remises l'est aussi : elle a
+        // lieu d'être lue. Ce que le moteur ne sait plus dériver aujourd'hui
+        // ne retire rien à ce qui a été remis hier.
+        void chargerDocumentsPatient();
         return;
       }
       if (!response.ok || !payload.ok) {
@@ -452,13 +511,18 @@ export function ClinicalRuntimeSection({
       // proposition a changé » est su, c'est ici.
       setDocumentPatient(null);
       setDocumentPatientRefus(null);
+      setConfirmationsDocument({});
       setDocumentPatientReponses(n => n + 1);
+      // Le panneau est rendu : la liste des remises l'est aussi, donc elle a
+      // lieu d'être lue. Le GET journalise — il ne part que là où ce qu'il
+      // rapporte sera affiché.
+      void chargerDocumentsPatient();
     } catch {
       // La proposition est rechargeable : un échec de lecture ne bloque pas le
       // cockpit.
       setPropositionDisponible(false);
     }
-  }, [idPatient, cbEnabled]);
+  }, [idPatient, cbEnabled, chargerDocumentsPatient]);
 
   const declarerPanelDocumente = useCallback(
     async (panelCode: string, documenteLe: string) => {
@@ -537,12 +601,22 @@ export function ClinicalRuntimeSection({
   const etablirDocumentPatient = useCallback(
     async (confirmer: boolean) => {
       setPropositionState('saving');
-      const confirmerTexteSha256 = confirmer ? documentPatientRefus?.texteSha256 : undefined;
+      // Confirmer, c'est AJOUTER un jeton à ceux déjà tranchés, pas remplacer :
+      // le motif du refus courant dit lequel. La règle vit dans un module pur,
+      // gardée par ses bancs — pas enfouie ici.
+      const confirmations = confirmer
+        ? ajouterConfirmation(confirmationsDocument, documentPatientRefus)
+        : confirmationsDocument;
+      if (confirmations !== confirmationsDocument) setConfirmationsDocument(confirmations);
       try {
         const response = await fetch('/api/praticien/biologie/proposition/document-patient', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idPatient, confirmerTexteSha256 }),
+          body: JSON.stringify({
+            idPatient,
+            confirmerTexteSha256: confirmations.registre,
+            confirmerDoublonSha256: confirmations.doublon,
+          }),
         });
         const payload = (await response.json()) as {
           ok: boolean;
@@ -569,6 +643,9 @@ export function ClinicalRuntimeSection({
           ancrageSha256: payload.ancrageSha256 ?? '',
           ancrageVersion: payload.ancrageVersion ?? '',
         });
+        // La pièce vient d'entrer au dossier : la liste des remises la montre
+        // sans attendre un rechargement de page.
+        void chargerDocumentsPatient();
       } catch {
         // Panne réseau : le CONTEXTE du refus précédent est conservé (raison,
         // empreinte) — perdre le second temps sur une saute de connexion
@@ -584,7 +661,7 @@ export function ClinicalRuntimeSection({
         setDocumentPatientReponses(n => n + 1);
       }
     },
-    [idPatient, documentPatientRefus],
+    [idPatient, documentPatientRefus, confirmationsDocument, chargerDocumentsPatient],
   );
 
   // Jeton d'obsolescence des propositions (revue LOT-07, M3) : le GET T0 de
@@ -1416,8 +1493,15 @@ export function ClinicalRuntimeSection({
                 documentPatientRefus?.reason === 'REGISTRE_ANXIOGENE'
                 && documentPatientRefus.texteSha256 !== undefined
               }
+              documentPatientDoublonATrancher={
+                documentPatientRefus?.reason === 'DOUBLON_DOCUMENT'
+                && documentPatientRefus.texteSha256 !== undefined
+              }
+              documentsPatientConsignes={documentsPatientConsignes}
+              lectureDocumentsPatient={lectureDocumentsPatient}
               documentPatientReponses={documentPatientReponses}
               onEtablirDocumentPatient={etablirDocumentPatient}
+              onRelireDocumentsPatient={chargerDocumentsPatient}
               resultatsActifs={cbResultatsActifs}
             />
           )}

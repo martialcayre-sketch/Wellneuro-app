@@ -90,6 +90,20 @@ const ROUTES_NOMMEES = [
 type RouteNommee = (typeof ROUTES_NOMMEES)[number][1];
 
 /**
+ * UNE ROUTE PEUT PORTER DEUX VERBES, et le préfixe seul ne les distingue pas.
+ *
+ * Depuis le LOT-01 « Biologie exploitée », `…/document-patient` répond en GET
+ * (relecture des pièces remises) ET en POST (consignation). Un cas qui ne
+ * déclarait que `cbDocumentPatient` voyait sa réponse de POST consommée par le
+ * GET qui la précède — un banc vert qui teste autre chose que ce qu'il
+ * annonce, le défaut même que le routage par URL avait fermé.
+ *
+ * Un cas peut donc suffixer la clé par le verbe ; la clé nue sert les deux
+ * quand elle est seule.
+ */
+type CleRoute = RouteNommee | `${RouteNommee}Get` | `${RouteNommee}Post`;
+
+/**
  * Une route NON DÉCLARÉE par le cas répond en échec, pas en succès vide.
  *
  * Le réflexe inverse a été essayé et rejeté sur mesure : servir un
@@ -117,17 +131,19 @@ function fetchParRoute(
   routes: {
     cockpitGet?: ReponseMock[];
     cockpitPost?: ReponseMock[];
-  } & Partial<Record<RouteNommee, ReponseMock | ReponseMock[]>>,
+  } & Partial<Record<CleRoute, ReponseMock | ReponseMock[]>>,
 ) {
   const get = [...(routes.cockpitGet ?? [])];
   const post = [...(routes.cockpitPost ?? [])];
   // Une route peut être servie par une réponse unique (rejouée à chaque appel)
   // ou par une file (consommée dans l'ordre) — le rechargement d'une même route
   // après un geste est courant dans ce runtime.
-  const files = new Map<RouteNommee, ReponseMock[]>();
-  for (const [, nom] of ROUTES_NOMMEES) {
-    const declaree = routes[nom];
-    if (Array.isArray(declaree)) files.set(nom, [...declaree]);
+  const declarees = routes as Record<string, ReponseMock | ReponseMock[] | undefined>;
+  const files = new Map<string, ReponseMock[]>();
+  for (const [cle, valeur] of Object.entries(declarees)) {
+    if (cle !== 'cockpitGet' && cle !== 'cockpitPost' && Array.isArray(valeur)) {
+      files.set(cle, [...valeur]);
+    }
   }
 
   return vi.fn(async (url: string, init?: { method?: string; body?: string }) => {
@@ -137,9 +153,15 @@ function fetchParRoute(
       const nom = entree[1];
       const defaut = () =>
         nom in DEFAUTS ? rep(DEFAUTS[nom]) : ECHEC_ROUTE_NON_DECLAREE();
-      const file = files.get(nom);
-      if (file) return file.shift() ?? defaut();
-      return (routes[nom] as ReponseMock | undefined) ?? defaut();
+      // La clé qualifiée par le verbe l'emporte ; la clé nue sert de repli.
+      const qualifiee = `${nom}${init?.method === 'POST' ? 'Post' : 'Get'}`;
+      for (const cle of [qualifiee, nom]) {
+        const file = files.get(cle);
+        if (file) return file.shift() ?? defaut();
+        const unique = declarees[cle];
+        if (unique && !Array.isArray(unique)) return unique;
+      }
+      return defaut();
     }
     if (init?.method === 'POST') return post.shift() ?? rep({}, false, 500);
     return get.shift() ?? rep({}, false, 500);
