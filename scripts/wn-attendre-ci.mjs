@@ -45,18 +45,33 @@ export const SORTIE_NON_FUSIONNABLE = 5;
 // qu'on aurait dû attendre (voir `SORTIE_INDETERMINE`).
 export const CONTEXTE_PAR_DEFAUT = 'verify';
 
-const DELAI_PAR_DEFAUT_S = 900;
+// MESURÉ, PAS ESTIMÉ. Les sept runs de PR du 2026-09-04 ont duré 8, 10, 12, 15,
+// 16, 16 et 17 minutes. Le défaut précédent — 900 s, quinze minutes — tombait
+// donc pile sur la MÉDIANE : il expirait une fois sur deux, et trois PR de la
+// journée ont demandé deux appels au lieu d'un.
+//
+// Ce n'est pas une gêne bénigne. `CLAUDE.md` pose que `0` est le seul code de
+// sortie qui autorise à annoncer une PR prête ; un `3` (délai dépassé) se lit
+// vite comme un rouge alors qu'il ne dit rien du CI. Attendre 25 minutes d'un
+// coup coûte le même temps d'horloge que quinze puis relancer, en supprimant
+// l'occasion de se tromper de verdict.
+const DELAI_PAR_DEFAUT_S = 1500;
 // Cadence adaptative : 20 s au départ (les échecs francs tombent tôt), puis
 // +15 s par tour jusqu'au plafond une fois l'attente installée — un CI
 // simplement en cours ne mérite pas d'être sondé toutes les 20 s. CI de
 // ~5 min : ~8 lectures au lieu de 15 à cadence fixe.
 const INTERVALLE_S = 20;
 const INTERVALLE_MAX_S = 60;
-// Plafond adaptatif : un délai demandé au-delà du défaut (900 s) signale un CI
+// SEUIL DE « CI LONG », distinct du délai par défaut — il l'a longtemps valu,
+// par coïncidence. Les confondre liait deux décisions sans rapport : combien de
+// temps on accepte d'attendre, et à partir de quand sonder plus lentement.
+// Relever le défaut aurait alors déplacé la cadence en silence.
+const SEUIL_CI_LONG_S = 900;
+// Plafond adaptatif : une attente au-delà d'un quart d'heure signale un CI
 // long — le sonder toutes les 60 s pendant une heure n'apprend rien de plus
 // que toutes les 120 s. En deçà, comportement strictement identique.
 // Expression pure, exportée pour le banc.
-export const intervalleMaxPourDelai = (delaiS) => (delaiS > DELAI_PAR_DEFAUT_S ? 120 : INTERVALLE_MAX_S);
+export const intervalleMaxPourDelai = (delaiS) => (delaiS > SEUIL_CI_LONG_S ? 120 : INTERVALLE_MAX_S);
 
 // GitHub considère un check obligatoire `SKIPPED` ou `NEUTRAL` comme satisfait.
 // On s'aligne plutôt que d'inventer une règle plus stricte que la protection
