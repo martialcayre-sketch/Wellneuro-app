@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "machine-etats-proposition-cb05"
-statut: "caduc (clôture campagne 2026-09-04)"
+statut: "abandonné — caduc, jamais construite (clôture campagne 2026-09-04)"
 dépend_de: "CB-01 (fait) ; LOT-00 (CB-03)"
 ---
 

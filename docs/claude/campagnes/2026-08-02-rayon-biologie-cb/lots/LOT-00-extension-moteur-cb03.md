@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "extension-moteur-cb03"
-statut: "recouvert (clôture campagne 2026-09-04)"
+statut: "abandonné — recouvert par la chaîne D-068→D-073 (clôture campagne 2026-09-04)"
 dépend_de: "CB-02b (fait) ; lots 8-9 de la campagne certification-corpus-questionnaires (table NNPP2 stabilisée et signée)"
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "contrat-protocole-v4-cb07"
-statut: "non livré — transféré en FILE_ATTENTE (clôture campagne 2026-09-04)"
+statut: "abandonné ici — non livré, transféré en FILE_ATTENTE (clôture campagne 2026-09-04)"
 dépend_de: "LOT-02 (CB-05)"
 ---
 

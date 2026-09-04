@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "compilateur-regles-cb04"
-statut: "recouvert (clôture campagne 2026-09-04)"
+statut: "abandonné — recouvert par la transcription signée D-069 (clôture campagne 2026-09-04)"
 dépend_de: "LOT-00 (CB-03) ; claims biologie validés dans l'Atelier"
 ---
 

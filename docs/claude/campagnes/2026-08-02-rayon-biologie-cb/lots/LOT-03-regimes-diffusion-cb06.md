@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "regimes-diffusion-cb06"
-statut: "recouvert (clôture campagne 2026-09-04)"
+statut: "abandonné — recouvert par D-073 puis D-122 §1 (clôture campagne 2026-09-04)"
 dépend_de: "LOT-02 (CB-05)"
 ---
 
