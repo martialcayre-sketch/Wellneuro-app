@@ -133,17 +133,38 @@ export type EtatRuntimeClinique = {
   decisionBloquee: boolean;
 };
 
-export function ClinicalRuntimeSection({
-  idPatient,
-  fixture,
-  protocolDraft,
-  onFixtureReviewed,
-  phase = 'tout',
-  onAjusterProtocole,
-  onOuvrirTrajectoire,
-  onEtatChange,
-  onPropositionsAssemblees,
-}: {
+/**
+ * Trajectoire LUE PAR LA FICHE, avec son statut et son rappel de lecture.
+ *
+ * La fiche lit déjà la trajectoire à l'ouverture (le bandeau d'épisode en a
+ * besoin) ; sans ces props, la section relisait la MÊME URL au montage — deux
+ * GET pour une ouverture, donc deux accès journalisés (`G-TRUST-04`) là où le
+ * praticien n'a ouvert le dossier qu'une fois.
+ *
+ * TOUT OU RIEN, ET C'EST LE TYPE QUI LE TIENT. Les trois props étaient
+ * indépendamment facultatives, et le mode ne dépendait que du rappel : le
+ * triplet `statutTrajectoirePartage="chargee"` + `trajectoirePartagee=undefined`
+ * était donc DÉCLARÉ VALIDE, et rendait « Aucun cycle lisible dans la
+ * trajectoire » — une absence clinique affirmée à partir d'une donnée jamais
+ * fournie, ce que `DC-24` interdit (revue Codex du 2026-09-04, P1-3). L'union
+ * ci-dessous rend ce triplet impossible à écrire.
+ *
+ * La branche vide reste entière : la section demeure montable SEULE, et se
+ * comporte alors exactement comme avant.
+ */
+type PilotageTrajectoireProps =
+  | {
+      trajectoirePartagee: Trajectoire | null;
+      statutTrajectoirePartage: 'inconnue' | 'chargement' | 'chargee' | 'erreur';
+      onRechargerTrajectoire: () => void;
+    }
+  | {
+      trajectoirePartagee?: never;
+      statutTrajectoirePartage?: never;
+      onRechargerTrajectoire?: never;
+    };
+
+type ClinicalRuntimeSectionProps = {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
   protocolDraft: ProtocolDraft | null;
@@ -161,7 +182,22 @@ export function ClinicalRuntimeSection({
    * ait écrit, et n'afficherait rien jusqu'au rechargement suivant.
    */
   onPropositionsAssemblees?: () => void;
-}) {
+} & PilotageTrajectoireProps;
+
+export function ClinicalRuntimeSection({
+  idPatient,
+  fixture,
+  protocolDraft,
+  onFixtureReviewed,
+  phase = 'tout',
+  onAjusterProtocole,
+  onOuvrirTrajectoire,
+  onEtatChange,
+  onPropositionsAssemblees,
+  trajectoirePartagee,
+  statutTrajectoirePartage,
+  onRechargerTrajectoire,
+}: ClinicalRuntimeSectionProps) {
   const c5Enabled = useC5Enabled();
   const cbEnabled = useCbEnabled();
   const cbResultatsActifs = useCbResultsEnabled();
@@ -242,12 +278,21 @@ export function ClinicalRuntimeSection({
   // Points d'étape bruts : la route les renvoyait déjà, le cockpit les ignorait.
   // Ils alimentent la météo d'adhésion (SP-MET), dérivée à la lecture seule.
   const [checkins, setCheckins] = useState<CheckinRow[]>([]);
-  const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  const [trajectoireLue, setTrajectoire] = useState<Trajectoire | null>(null);
   // « inconnue » tant qu'aucune lecture n'a abouti (aligné sur l'onglet
   // Trajectoire) : ni une requête EN VOL ni un échec ne doivent être présentés
   // comme « aucun épisode confirmé » — affirmation fausse sur l'historique.
-  const [statutTrajectoire, setStatutTrajectoire] =
+  const [statutLu, setStatutTrajectoire] =
     useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
+
+  // PILOTÉ OU AUTONOME. Quand la fiche fournit son rappel, elle est PROPRIÉTAIRE
+  // de la lecture : le runtime lit ce qu'elle lui passe et lui délègue les
+  // rechargements — un seul GET par ouverture, donc un seul accès au journal
+  // (`G-TRUST-04`). Sans ce rappel — bancs qui montent la section seule, et tout
+  // appelant futur —, il garde son état et sa lecture, à l'identique.
+  const pilote = onRechargerTrajectoire !== undefined;
+  const trajectoire = pilote ? trajectoirePartagee ?? null : trajectoireLue;
+  const statutTrajectoire = pilote ? statutTrajectoirePartage ?? 'inconnue' : statutLu;
   const [jalonDu, setJalonDu] = useState<JalonDu | null>(null);
   // Le jalon effectivement demandé au serveur : évite de redemander le même.
   const [jalonDemande, setJalonDemande] = useState<JalonMomentum>('T0');
@@ -286,6 +331,15 @@ export function ClinicalRuntimeSection({
       setStatutTrajectoire('erreur');
     }
   }, [idPatient]);
+
+  // LE RECHARGEMENT VA AU PROPRIÉTAIRE DE LA LECTURE : la fiche quand elle
+  // pilote, la section sinon. Sans cette indirection, un rafraîchissement en
+  // mode piloté écrirait dans un état local que plus personne ne lit — l'écran
+  // resterait sur la trajectoire d'avant le geste.
+  const rechargerTrajectoire = useCallback(() => {
+    if (onRechargerTrajectoire) onRechargerTrajectoire();
+    else void loadTrajectoire();
+  }, [onRechargerTrajectoire, loadTrajectoire]);
 
   const loadCheckins = useCallback(async (decisionCardId: string) => {
     try {
@@ -587,8 +641,10 @@ export function ClinicalRuntimeSection({
     setJalonDemande('T0');
     setOuvertureCycle(null);
     void loadProposal('T0');
-    void loadTrajectoire();
-  }, [fixture, loadProposal, loadTrajectoire]);
+    // La fiche a déjà lu la trajectoire à l'ouverture : redemander ici tirait
+    // le MÊME GET une seconde fois, et journalisait un second accès au dossier.
+    if (!pilote) void loadTrajectoire();
+  }, [fixture, loadProposal, loadTrajectoire, pilote]);
 
   // Trajectoire arrivée : si le jalon dû n'est pas celui déjà demandé, on
   // recharge sur le bon. Sinon on ne touche à rien — pas de second appel pour
@@ -670,6 +726,18 @@ export function ClinicalRuntimeSection({
       }
       setRuntime(payload);
       setNotice(null);
+      // LA TRAJECTOIRE SUIT LE GESTE, PAS LA CARTE — même règle que
+      // `assemblerPropositions` juste en dessous, et pour la même raison
+      // (`D-118`) : le `GET /cockpit` sait REJOUER une carte depuis l'épisode
+      // persisté, et un rejeu n'est pas une confirmation.
+      //
+      // Accroché à `readyDecisionCardId`, ce rechargement repartait à CHAQUE
+      // ouverture d'un dossier déjà confirmé — le cas le plus courant. Deux
+      // accès inscrits au registre `G-TRUST-04` pour une seule ouverture,
+      // c'est-à-dire le défaut même que ce lot prétendait corriger (revue Codex
+      // du 2026-09-04, P1-1). Ici, il ne part que quand un épisode vient
+      // réellement d'être confirmé.
+      rechargerTrajectoire();
       void assemblerPropositions(payload);
     } catch {
       setError('technical');
@@ -751,11 +819,21 @@ export function ClinicalRuntimeSection({
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
       void loadCheckins(readyDecisionCardId);
-      void loadTrajectoire();
+      // AUCUN RECHARGEMENT DE TRAJECTOIRE ICI : il appartient au geste de
+      // confirmation (voir `confirm`). Cet effet se déclenche aussi sur une
+      // carte simplement REJOUÉE à l'ouverture, où la trajectoire vient d'être
+      // lue par son propriétaire.
+      //
+      // Le retirer d'ici ferme un second défaut : l'effet ne dépend plus de
+      // l'IDENTITÉ de `rechargerTrajectoire`. Un appelant qui passerait un
+      // rappel en ligne (`onRechargerTrajectoire={() => charger()}`) le
+      // recréait à chaque rendu du parent, et l'effet repartait en boucle sans
+      // que `readyDecisionCardId` ait bougé — chaque tour inscrivant un accès
+      // au registre (revue Codex du 2026-09-04, P1-4).
       void loadArbitrages();
       void loadProposition();
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire, loadArbitrages, loadProposition]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadArbitrages, loadProposition]);
 
   useEffect(() => {
     setFoodCompassSelection(null);
@@ -1060,7 +1138,7 @@ export function ClinicalRuntimeSection({
             className="mt-2"
             onClick={() => {
               setOuvertureCycle(null);
-              void loadTrajectoire();
+              rechargerTrajectoire();
             }}
           >
             Annuler l’ouverture
@@ -1410,7 +1488,7 @@ export function ClinicalRuntimeSection({
             </span>
             <button
               type="button"
-              onClick={() => void loadTrajectoire()}
+              onClick={() => rechargerTrajectoire()}
               className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Réessayer

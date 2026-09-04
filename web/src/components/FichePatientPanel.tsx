@@ -553,6 +553,7 @@ export function FichePatientPanel({
   // sur l'historique clinique).
   const [etatTrajectoire, setEtatTrajectoire] = useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
   const [erreurTrajectoire, setErreurTrajectoire] = useState<string | null>(null);
+  const generationTrajectoire = useRef(0);
   const [etatRuntime, setEtatRuntime] = useState<EtatRuntimeClinique | null>(null);
   /**
    * COMPTEUR D'ASSEMBLAGES, pas un booléen (Alliance 6.0-B, LOT-03).
@@ -671,7 +672,17 @@ export function FichePatientPanel({
   // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
   // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
   // définitif posé avant la réponse).
+  //
+  // GARDE DE GÉNÉRATION, comme `chargerCorrections` — revue Codex du
+  // 2026-09-04, P1-2. Depuis que la confirmation d'un épisode délègue ici son
+  // rafraîchissement, deux lectures peuvent se croiser : celle de l'ouverture,
+  // encore en vol, et celle du geste. La seconde répond la première (elle porte
+  // le nouvel épisode), puis la PREMIÈRE arrive et écrase l'état frais avec
+  // l'historique d'avant. Le praticien vient de confirmer, et le bandeau, le
+  // jalon dû et le résumé de réévaluation restent sur l'état antérieur — voire
+  // affirment qu'aucun cycle n'est lisible, ce que `DC-24` interdit.
   const chargerTrajectoire = useCallback(async () => {
+    const generation = ++generationTrajectoire.current;
     setEtatTrajectoire('chargement');
     setErreurTrajectoire(null);
     try {
@@ -683,6 +694,7 @@ export function FichePatientPanel({
         modeViePresent?: ModeVieDate | null;
         modeVieT0CycleCourant?: ModeVieDate | null;
       };
+      if (generation !== generationTrajectoire.current) return;
       if (!reponse.ok || !payload?.ok) {
         setEtatTrajectoire('erreur');
         setErreurTrajectoire(
@@ -699,6 +711,7 @@ export function FichePatientPanel({
       setModeVieT0CycleCourant(payload.modeVieT0CycleCourant ?? null);
       setEtatTrajectoire('chargee');
     } catch {
+      if (generation !== generationTrajectoire.current) return;
       setEtatTrajectoire('erreur');
       setErreurTrajectoire(
         'La trajectoire n’a pas pu être lue (erreur réseau). L’historique clinique de ce patient n’est pas affiché.',
@@ -1663,6 +1676,13 @@ export function FichePatientPanel({
                   Le remontage au changement de dossier est porté PLUS HAUT, sur
                   ce composant lui-même ([[D-072]] §4, `page.tsx`) : c'est lui
                   qui détient l'état du dossier, pas seulement cette section. */}
+              {/* LA FICHE EST PROPRIÉTAIRE DE LA LECTURE DE TRAJECTOIRE
+                  (`trajectoirePartagee` / `onRechargerTrajectoire`). Elle la lit
+                  déjà à l'ouverture — le bandeau d'épisode en a besoin — et la
+                  section la relisait au montage : le MÊME GET, deux fois, pour
+                  une seule ouverture de dossier. Les GET journalisant l'accès
+                  (`G-TRUST-04`), le journal comptait deux accès là où le
+                  praticien n'a ouvert le dossier qu'une fois. */}
               <ClinicalRuntimeSection
                 idPatient={idPatient}
                 fixture={fixtureErgo}
@@ -1675,6 +1695,9 @@ export function FichePatientPanel({
                   requestAnimationFrame(() => document.getElementById('panneau-trajectoire')?.focus());
                 }}
                 onEtatChange={setEtatRuntime}
+                trajectoirePartagee={trajectoire}
+                statutTrajectoirePartage={etatTrajectoire}
+                onRechargerTrajectoire={chargerTrajectoire}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
               />
             </div>

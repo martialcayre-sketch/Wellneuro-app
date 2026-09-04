@@ -1093,6 +1093,39 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
 });
 
 // Deep-link `?phase=` — un lien partageable vers une phase précise du rail.
+// UNE OUVERTURE DE DOSSIER = UNE LECTURE DE TRAJECTOIRE. Les GET journalisent
+// l'accès (`G-TRUST-04`) : deux lectures pour une ouverture inscrivaient deux
+// accès au journal du dossier, là où le praticien n'a ouvert qu'une fois.
+describe('FichePatientPanel — la trajectoire n’est lue qu’une fois', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it.each(['proposal', 'ready'] as const)(
+    'la fiche lit la trajectoire une fois quand le runtime répond %s',
+    async runtime => {
+      const fetchMock = await rendreFiche({ runtime });
+
+      if (runtime === 'proposal') {
+        await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+      } else {
+        // La route versions est appelée par le même effet que les ressources
+        // annexes d'une carte `ready`. L'attendre prouve que cet effet a tourné,
+        // sans temporisation arbitraire.
+        await waitFor(() => expect(fetchMock.mock.calls.some(
+          appel => String(appel[0]).includes('/api/praticien/protocoles/versions'),
+        )).toBe(true));
+      }
+
+      const lectures = fetchMock.mock.calls
+        .map(appel => String(appel[0]))
+        .filter(url => url.includes('/api/praticien/trajectoire'));
+      expect(lectures).toHaveLength(1);
+    },
+  );
+});
+
 describe('FichePatientPanel — phase demandée par lien', () => {
   // `cleanup` est enregistré PAR BLOC dans ce fichier, pas globalement (seul le
   // vidage de `localStorage` l'est) : sans ce rappel, la fiche du cas précédent
