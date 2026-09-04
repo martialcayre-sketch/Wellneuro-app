@@ -415,6 +415,18 @@ if [[ "$FAST" == 0 ]]; then
 fi
 
 step "Type-check"
+# `.next/types` EST PURGÉ AVANT, par le `pretype-check` de `web/package.json`.
+#
+# Next.js y génère un fichier de types par route, mais ne RETIRE jamais celui
+# d'une route disparue. Ce type-check tournant AVANT le build, il lisait donc les
+# types d'un build précédent : une route supprimée — ou appartenant à une session
+# parallèle — faisait échouer `tsc` sur un fichier source qui n'existe plus.
+# Trois fois le 2026-09-04, et chaque fois lu d'abord comme une régression.
+#
+# Rien n'est perdu : `next.config.mjs` ne désactive pas le type-check du build,
+# donc les types de routes sont vérifiés plus bas, à l'étape « Build ». Le
+# crochet vit dans `package.json` pour couvrir aussi `npm run check` (T1), qui
+# appelle le même script et souffrait du même défaut.
 npm run type-check
 
 # Passe complète dans la position de PRODUCTION : `WN_ALI_01_SIIN57` est allumé

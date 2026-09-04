@@ -12,6 +12,7 @@
     "start:scalingo": "next start -p ${PORT:-3000}",
     "db:deploy": "bash scripts/db-deploy.sh",
     "lint": "next lint",
+    "pretype-check": "rm -rf .next/types",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
