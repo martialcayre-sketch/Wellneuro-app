@@ -14,6 +14,9 @@ paths:
 - **Changelog par fragments** : ne pas éditer le haut de `CHANGELOG.md` ;
   poser `changelog.d/AAAA-MM-JJ-slug.md` (le bloc `###` qui irait sous
   `## Non publié`). Détail : `changelog.d/README.md`.
+  **À la RACINE du dépôt, jamais sous `web/`** — le CLI ne collate que celui-là,
+  et `web/changelog.d/` avait accumulé 17 fragments perdus avant que la
+  sentinelle de `scripts/changelog-collate.test.mjs` ne ferme la porte.
 - **Handoff par fragments** : `/wn-handoff write` pose
   `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md` ; le handoff courant est le
   dernier au tri. Jamais de créneau unique réécrit par deux branches.
