@@ -128,7 +128,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       try {
         // En serverless, on attend explicitement la promesse pour eviter que
         // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-        await sendPortailLinkEmail(patient.email, patient.prenom, patient.idPatient);
+        await sendPortailLinkEmail(patient.email, patient.prenom, patient.idPatient, patient.praticienEmail);
       } catch (e) {
         console.error('[praticien/token POST] email:', (e as Error).message);
       }

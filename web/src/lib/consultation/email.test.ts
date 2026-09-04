@@ -33,6 +33,50 @@ describe('sendPortailLinkEmail', () => {
     expect(text).not.toContain('Motif');
   });
 
+  it('pose le praticien du dossier en Reply-To — sans quoi la réponse vise noreply@', async () => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', 'praticien@wellneuro.fr');
+
+    const { from, replyTo } = sendMail.mock.calls[0][0];
+    // L'expéditeur ne bouge pas : c'est le canal de service, et le SPF du
+    // domaine est aligné sur lui. Seule la réponse change de destination.
+    expect(from).toBe('"Wellneuro" <noreply@wellneuro.fr>');
+    expect(replyTo).toBe('praticien@wellneuro.fr');
+  });
+
+  it("sans adresse de praticien, l'en-tête est absent — pas vide", async () => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST');
+
+    expect('replyTo' in sendMail.mock.calls[0][0]).toBe(false);
+  });
+
+  it('une adresse malformée est écartée, et le message part quand même', async () => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+
+    // Retour à la ligne : la forme même d'une injection d'en-tête.
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', 'p@wellneuro.fr\nBcc: tiers@example.com');
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect('replyTo' in sendMail.mock.calls[0][0]).toBe(false);
+  });
+
+  it('une adresse démesurée est écartée — la ligne d’en-tête ne doit pas violer RFC 5321', async () => {
+    process.env.SMTP_URL = 'smtp://localhost:1025';
+    process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
+
+    const trop = `${'p'.repeat(250)}@wellneuro.fr`; // 263 caractères
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'PAT_TEST', trop);
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect('replyTo' in sendMail.mock.calls[0][0]).toBe(false);
+  });
+
   it("n'envoie rien sans SMTP_URL configuré", async () => {
     delete process.env.SMTP_URL;
 

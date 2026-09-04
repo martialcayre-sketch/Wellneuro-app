@@ -98,6 +98,29 @@ export async function sendMagicLinkEmail(
 // consultation n'y figure plus — une boîte e-mail n'est pas un canal maîtrisé.
 // Il reste en base (`consultations.motif`), visible du praticien.
 //
+/**
+ * Une adresse de dossier ne devient un EN-TÊTE d'e-mail qu'après contrôle de
+ * forme. `praticienEmail` est écrit depuis la session Google (domaine
+ * `@wellneuro.fr`) et n'a jamais été hostile, mais une ligne héritée ou
+ * corrompue passerait sinon telle quelle dans un en-tête — les caractères de
+ * contrôle, notamment, sont exactement ce qu'une injection d'en-tête
+ * emprunte. Rejeter est sans conséquence : l'en-tête disparaît, l'e-mail part.
+ *
+ * La borne à 254 aligne sur `api/praticien/patients`, qui tronque à cette
+ * longueur AVANT d'appliquer la même expression. Elle n'est pas décorative :
+ * au-delà de 998 octets, la ligne d'en-tête viole RFC 5321 et le SMTP peut
+ * refuser le message — or l'échec d'envoi est MUET côté praticien (les deux
+ * appelants journalisent en console et rendent `success: true`). Un refus ici
+ * coûte un en-tête ; un refus au SMTP coûte l'e-mail entier, sans le dire.
+ */
+function replyToValide(email: string | undefined): email is string {
+  return (
+    typeof email === 'string' &&
+    email.length <= 254 &&
+    /^[^\s@<>,;:"]+@[^\s@<>,;:"]+\.[^\s@<>,;:"]+$/.test(email)
+  );
+}
+
 // LOT-04 : plus aucun lien permanent secret dans l'e-mail. On pointe la page de
 // connexion (non secrète, durable), où le patient choisit Google ou la réception
 // d'un lien d'accès par e-mail. Ce sont les deux seuls chemins d'entrée.
@@ -105,6 +128,9 @@ export async function sendPortailLinkEmail(
   patientEmail: string,
   prenom: string,
   idPatient?: string,
+  /** Adresse du praticien du dossier (`patients.praticien_email`), posée en
+   * `Reply-To`. Facultative : sans elle, l'en-tête est simplement absent. */
+  praticienEmail?: string,
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
   const connexion = buildGoogleConnexionUrl();
@@ -120,6 +146,12 @@ export async function sendPortailLinkEmail(
       await transport.sendMail({
         from: '"Wellneuro" <noreply@wellneuro.fr>',
         to: patientEmail,
+        // Le gabarit v2 invite le patient à écrire en cas de doute — sans cet
+        // en-tête, le bouton « Répondre » de son client vise `noreply@` et sa
+        // réponse se perd. L'adresse vient du DOSSIER, pas d'une constante :
+        // le corps du gabarit nomme le praticien en dur (dette assumée,
+        // 2026-09-04), l'en-tête n'a pas besoin de reproduire cette limite.
+        ...(replyToValide(praticienEmail) ? { replyTo: praticienEmail } : {}),
         subject: gabarit.sujet,
         text: gabarit.corps,
       });

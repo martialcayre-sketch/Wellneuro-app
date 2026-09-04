@@ -33,7 +33,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les huit versions attendues, dans cet ordre', () => {
+  it('expose les neuf versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -43,7 +43,22 @@ describe('registre des gabarits patient — intégrité', () => {
       'file_envoi@1',
       'accuse_reception@1',
       'envoi_bilan@1',
+      // Append-only : la v2 s'ajoute en fin de liste, la v1 garde sa place.
+      'acces_portail@2',
     ]);
+  });
+
+  it('acces_portail : c’est la v2 qui est servie, la v1 reste au registre', () => {
+    expect(getGabarit('acces_portail').version).toBe(2);
+    expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'acces_portail')).toHaveLength(2);
+  });
+
+  it('la validation formelle de la v2 est datée — le reste du registre ne l’est pas', () => {
+    // `valideLe` a existé huit versions durant sans jamais être renseigné. Ce
+    // banc échoue si une validation est posée ailleurs sans décision.
+    const valides = REGISTRE_GABARITS_PATIENT.filter(g => g.valideLe !== null);
+    expect(valides.map(g => `${g.key}@${g.version}`)).toEqual(['acces_portail@2']);
+    expect(valides[0].valideLe).toBe('2026-09-04');
   });
 
   it('les segments partagés sont figés', () => {
@@ -107,8 +122,12 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
     );
   });
 
-  it("accès portail", () => {
-    const { corps } = rendreGabarit(getGabarit('acces_portail'), {
+  it("accès portail v1 — texte historique, conservé au registre", () => {
+    // Épinglé sur la version 1 : `getGabarit` rend désormais la v2, et ce
+    // banc existe pour prouver la fidélité au texte inline d'origine.
+    const v1 = REGISTRE_GABARITS_PATIENT.find(g => g.key === 'acces_portail' && g.version === 1);
+    if (!v1) throw new Error('acces_portail@1 retirée du registre');
+    const { corps } = rendreGabarit(v1, {
       prenom: 'Jennifer',
       connexion: 'https://app.wellneuro.fr/portail/connexion',
     });
@@ -123,6 +142,68 @@ describe('registre des gabarits patient — fidélité aux textes historiques', 
       `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
       `L'équipe Wellneuro`,
     );
+  });
+
+  it('accès portail v2 — texte validé le 2026-09-04, au caractère près', () => {
+    const { sujet, corps } = rendreGabarit(getGabarit('acces_portail'), {
+      prenom: 'Jennifer',
+      connexion: 'https://app.wellneuro.fr/portail/connexion',
+    });
+    expect(sujet).toBe('Votre espace de suivi — Martial Cayre (Wellneuro)');
+    expect(corps).toBe(
+      `Bonjour Jennifer,\n\n` +
+      `Je vous ouvre l’accès à votre espace de suivi.\n\n` +
+      `Wellneuro est l’outil que j’utilise pour le suivi de mes patients, et ` +
+      `wellneuro.fr est mon site : ce message, et ceux qui suivront depuis ` +
+      `noreply@wellneuro.fr, viennent de mon cabinet. L’accès à cet espace et le ` +
+      `suivi qui s’y fait sont gratuits — il n’y a rien à payer, ni maintenant ni ` +
+      `plus tard.\n\n` +
+      `Votre page d’accès :\nhttps://app.wellneuro.fr/portail/connexion\n\n` +
+      `Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ` +
+      `cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ` +
+      `en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ` +
+      `ce message.\n\n` +
+      `À la première connexion : votre consentement, une courte fiche de ` +
+      `renseignements, puis quelques questions sur ce qui vous amène. Vos ` +
+      `questionnaires sont mis à disposition ensuite, et vous avancez à votre ` +
+      `rythme ; si l’un d’eux porte une date limite, elle vous sera indiquée.\n\n` +
+      `On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ` +
+      `de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ` +
+      `martialcayre@wellneuro.fr.\n\n` +
+      `Martial Cayre\n` +
+      `Docteur en Pharmacie — praticien en santé fonctionnelle\n` +
+      `Labellisé Neuro-Nutrition® (Institut SIIN)\n` +
+      `Wellneuro — wellneuro.fr`,
+    );
+  });
+
+  it('le texte servi ne promet rien que le dépôt ne tienne (revue 2026-09-04)', () => {
+    const { corps } = rendreGabarit(getGabarit('acces_portail'), {
+      prenom: 'Jennifer',
+      connexion: 'https://app.wellneuro.fr/portail/connexion',
+    });
+    // La racine du domaine sert `/login`, l'écran praticien : l'annoncer au
+    // patient comme « la même page » l'envoie au mur (`app/page.tsx`).
+    expect(corps).not.toMatch(/taper\s+app\.wellneuro\.fr/);
+    // `SEGMENTS_GABARITS.dateLimite` existe et part avec les assignations.
+    expect(corps).not.toContain('sans échéance');
+    // L'adresse annoncée reste celle de la page de connexion PATIENT.
+    expect(corps).toContain('https://app.wellneuro.fr/portail/connexion');
+    // Marque déposée, usage « strictement encadré » par l'Institut SIIN :
+    // le trait d'union en fait partie, et l'institut DÉLIVRE le label.
+    expect(corps).toContain('Neuro-Nutrition® (Institut SIIN)');
+    expect(corps).not.toMatch(/NeuroNutrition/);
+    expect(corps).not.toContain('S.I.I.N.');
+  });
+
+  it('le texte servi ne parle plus au nom d’une équipe anonyme', () => {
+    const { corps } = rendreGabarit(getGabarit('acces_portail'), {
+      prenom: 'Jennifer',
+      connexion: 'https://app.wellneuro.fr/portail/connexion',
+    });
+    expect(corps).not.toContain("L'équipe Wellneuro");
+    expect(corps).not.toContain('Votre praticien');
+    expect(corps).toContain('gratuits');
   });
 
   it('assignation de questionnaire — avec et sans segments', () => {
