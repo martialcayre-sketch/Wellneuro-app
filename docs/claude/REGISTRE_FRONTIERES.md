@@ -321,9 +321,13 @@
   `SEUIL_COHORTE_CABINET`, ajustable). Un repère, jamais une prédiction, ni
   un objectif, ni un classement de patients.
 - « Estimé ↔ mesuré » : le panneau **existe en état « second temps »**
-  (badge « HDS requis ») — aucune donnée biologique n'est stockée ni
-  fabriquée ; le gate HDS et le différé « Biologie fonctionnelle » restent
-  inchangés.
+  ~~(badge « HDS requis »)~~ — **amendé le 2026-09-04** : depuis `D-122` §2
+  (2026-09-03), l'étage 2 est **livré** (table `resultats_biologiques`,
+  saisie + série par analyte) derrière `WN_CB_RESULTS_ENABLED` **éteint** ;
+  le badge dit « Second temps — à activer », l'hébergement HDS étant acquis
+  (`D-121`). Tant que le drapeau dort, aucune donnée biologique n'est
+  stockée ; la frontière « résultat → statut de panel » reste fermée
+  (`D-122`, `DC-30`).
 - Aucune modification de logique clinique ni de seuils : la courbe et la
   médiane lisent des valeurs déjà produites par `lib/equilibre`, rien n'est
   recalibré.
@@ -944,7 +948,10 @@
 - **Auth patient inter-assignations** (ex-E3/R8 complet) : magic link +
   passkeys. **Sortie des différés le 2026-07-19** — cadrée en campagne **IDP**
   (`2026-07-19-idp-identite-patient-durable`), déclenchée par SP-SPI.
-- **Biologie réelle stockée** (ex-E8/R5 complet) : après HDS.
+- **Biologie réelle stockée** (ex-E8/R5 complet) : ~~après HDS~~ — **amendé
+  le 2026-09-04** : HDS acquis (`D-121`), socle livré derrière drapeau
+  éteint (`D-122`, PR #838/#854) ; la levée est un geste d'exploitation
+  conditionné au registre des traitements et à l'information patient.
 - **OCR papier** (ex-« zéro saisie », candidat R10) : D0 fait, pilotes =
   familles auditées (ALI_01, ALI_03, NEU_03, MOD_02 — mêmes que QX).
   Mécanisme zone→id à trancher. Se compile après QX (synergies renderer).
@@ -964,5 +971,5 @@
 | E0 bascule Sheets→PG | livré, hors `feat/e0-patients-pagination` (à séquencer avant restylage annuaire HC-F/C1) |
 | E3 / R8 Auth patient | R8-lite livré ; complet = campagne auth différée |
 | E4 Dashboard patient | Hybrid Patient (différé) |
-| E8 / R5 Biologie réelle | après HDS |
+| E8 / R5 Biologie réelle | ~~après HDS~~ socle livré éteint (`D-122`, 2026-09-03) ; levée = geste RGPD-conditionné |
 | « Zéro saisie » OCR | candidat R10, différé, entrée de registre |

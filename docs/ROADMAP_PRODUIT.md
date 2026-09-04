@@ -166,8 +166,15 @@ logique de PatientsPanel.
   intestin.
 - Formulation : « explorations à discuter avec le médecin traitant ».
 - Phase catalogue : sans contrainte HDS. Phase résultats stockés :
-  **conditionnée à D6 (HDS)**. Croisement questionnaires × biologie dans la
-  synthèse IA = différenciant majeur.
+  ~~**conditionnée à D6 (HDS)**~~ — **réconcilié le 2026-09-04** : la
+  condition HDS est levée (annexe signée `D-121`, hébergement exclusif
+  `D-080`/`D-120`) et l'étage 2 est **livré** derrière
+  `WN_CB_RESULTS_ENABLED` éteint (`D-122`, PR #838/#854) ; la levée du
+  drapeau est un geste d'exploitation conditionné aux mises à jour RGPD
+  préalables. Croisement questionnaires × biologie dans la
+  synthèse IA = différenciant majeur — **entièrement à faire** : c'est la
+  ré-alimentation du moteur par le mesuré, frontière fermée par `D-122`,
+  entrée « à cadrer » de la file d'attente des campagnes.
 
 ### R6 — Workflow RDV complet (extension de D3)
 - **Socle livré le 2026-07-23** (accueil-observatoire LOT-04) : modèle
@@ -306,7 +313,7 @@ Chaque lot E se découpe ensuite en branches courtes selon le schéma D1.
 | Lot | Contenu | Dépendances |
 |---|---|---|
 | **E7** | Facturation / paiement (R7) | E5 souhaitable |
-| **E8** | Packs biologiques avec résultats patients stockés (R5 complet) | **D6 HDS obligatoire** |
+| **E8** | Packs biologiques avec résultats patients stockés (R5 complet) | ~~**D6 HDS obligatoire**~~ HDS acquis (`D-121`) ; socle livré éteint (`D-122`, 2026-09-03) — restent la levée du drapeau (préalables RGPD) et la ré-alimentation du moteur (décision propre) |
 | D6 | Hébergement HDS + éventuel multi-praticien | — |
 | D5 | Messagerie sécurisée praticien ↔ patient | E3 ; HDS recommandé |
 | D4/D7 | Corpus SIIN complet + synthèse longitudinale + RAG pgvector + suggestions de protocoles | Corpus structuré (stratégie NotebookLM → .md → pgvector actée) |
@@ -315,7 +322,9 @@ Chaque lot E se découpe ensuite en branches courtes selon le schéma D1.
 ### Logique de dépendances (résumé)
 Les référentiels (E1) nourrissent le score (E2) et le protocole (E6) ;
 l'auth (E3) débloque le dashboard (E4) ; l'HDS (D6) conditionne la
-biologie réelle (E8) et la messagerie (D5).
+biologie réelle (E8) et la messagerie (D5) — pour E8, cette condition est
+satisfaite depuis le 2026-09-01 (`D-120`/`D-121`) et le socle est livré
+(`D-122`).
 
 ---
 

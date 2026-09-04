@@ -1,11 +1,20 @@
 ---
 id: "LOT-04"
 titre: "contrat-protocole-v4-cb07"
-statut: "à_faire"
+statut: "abandonné ici — non livré, transféré en FILE_ATTENTE (clôture campagne 2026-09-04)"
 dépend_de: "LOT-02 (CB-05)"
 ---
 
 # LOT-04 (CB-07) — Contrat protocole V4 `BiologyCatalogRef`
+
+> **Requalifié à la clôture de campagne (2026-09-04, arbitrage du
+> responsable).** Seul contenu de la campagne encore éventuellement dû :
+> `BiologyCatalogRef` n'existe pas dans le code. Le constat du bilan du
+> 2026-09-04 le replace dans son vrai problème : la boucle
+> arbitrage→révision est livrée mais **aucun producteur d'intentions
+> `conditionnelle_biologie`** n'existe (D-056 dormant, builder sans geste).
+> Ce contrat se réexamine AVEC ce producteur — entrée « à cadrer » de
+> FILE_ATTENTE, pas un reste isolé de cette campagne.
 
 ## But
 

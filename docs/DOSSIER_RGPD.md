@@ -67,8 +67,13 @@ l'évolution, remettre des documents validés par le praticien.
 
 Le même document écrit, et c'est une limite de finalité opposable :
 « cet accompagnement relève du bien-être et du suivi ; **il n'établit pas de
-diagnostic médical** ». Les résultats biologiques réels restent hors produit
-(gate `WN_CB_RESULTS_ENABLED`, Phase C).
+diagnostic médical** ». L'étage des résultats biologiques réels est
+construit (table `resultats_biologiques`, `D-122` §2, 2026-09-03) et reste
+**fermé en production** : `WN_CB_RESULTS_ENABLED` est éteint, aucune valeur
+n'est saisie ni stockée. Son ouverture est un geste d'exploitation daté,
+conditionné à la mise à jour **préalable** du registre des traitements et du
+document d'information patient (nouvelle catégorie « résultats
+biologiques »).
 
 ## 3. Base légale
 
