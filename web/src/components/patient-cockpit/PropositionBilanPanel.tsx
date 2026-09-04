@@ -33,6 +33,42 @@ export type DocumentPatientEtabli = {
   ancrageVersion: string;
 };
 
+/** Une pièce déjà consignée, relue telle qu'elle est partie au patient. */
+export type DocumentPatientConsigneAffiche = {
+  id: string;
+  texte: string;
+  ancrageSha256: string;
+  ancrageVersion: string;
+  genereLe: string;
+};
+
+/**
+ * Lecture de l'historique des documents remis. L'état vide ne s'affirme
+ * qu'après une lecture ABOUTIE (`DC-24`) : sur panne, « aucun document remis »
+ * serait une affirmation que rien ne fonde.
+ */
+export type LectureDocumentsPatient = 'chargement' | 'ok' | 'erreur';
+
+/**
+ * Plafond de relecture servi par la route — miroir du `take` côté serveur.
+ * L'écran s'en sert pour DIRE qu'il est tronqué : une liste coupée en silence
+ * se lit comme une liste complète.
+ */
+export const PLAFOND_RELECTURE_AFFICHE = 20;
+
+/** Date et heure lisibles — l'heure distingue deux remises du même jour. */
+function formatDateHeureDocument(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export type DocumenteAffiche = {
   panelCode: string;
   documenteLe: string;
@@ -203,6 +239,7 @@ function FormulaireDocumentPatient({
   documentPatient,
   erreur,
   registreATrancher,
+  doublonATrancher,
   reponses,
   onEtablir,
 }: {
@@ -211,9 +248,11 @@ function FormulaireDocumentPatient({
   erreur: string | null;
   /** Le refus est un REGISTRE_ANXIOGENE : offrir le second temps (D-090). */
   registreATrancher: boolean;
+  /** Le refus est un DOUBLON_DOCUMENT : offrir le second temps, autre libellé. */
+  doublonATrancher: boolean;
   /** Compteur de réponses ABOUTIES du parent : le verrou se lève sur lui. */
   reponses: number;
-  onEtablir: (confirmerRegistre: boolean) => void;
+  onEtablir: (confirmer: boolean) => void;
 }) {
   // Même intention de verrou que le courrier — un envoi à la fois — mais levé
   // sur le COMPTEUR de réponses, pas sur les objets résultat/erreur : le
@@ -271,6 +310,22 @@ function FormulaireDocumentPatient({
         </button>
       )}
 
+      {/* Second temps du doublon : re-consigner reste permis — le praticien
+          peut remettre une seconde copie —, mais jamais sans le savoir. */}
+      {doublonATrancher && !dejaConsigne && (
+        <button
+          type="button"
+          disabled={disabled || envoiEnCours}
+          onClick={() => {
+            setEnvoiEnCours(true);
+            onEtablir(true);
+          }}
+          className="mt-2 min-h-11 rounded-lg border border-status-warning px-3 py-2 text-sm font-medium text-status-warning disabled:opacity-50"
+        >
+          Consigner une seconde copie
+        </button>
+      )}
+
       {documentPatient && (
         <div className="mt-3">
           <p role="status" className="text-xs text-status-success">
@@ -285,6 +340,104 @@ function FormulaireDocumentPatient({
             className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground"
           />
         </div>
+      )}
+
+    </div>
+  );
+}
+
+/**
+ * Ce qui a déjà été remis — relu en base, donc SURVIT au rechargement.
+ *
+ * IL VIT HORS DU FORMULAIRE, ET C'EST LE POINT. Le geste d'établir n'est
+ * offert que tant qu'une ligne reste proposée ; quand tous les panels sont
+ * déclarés explorés, il disparaît — et c'est précisément l'état où « qu'ai-je
+ * remis à ce patient ? » se pose. Loger la relecture dans le formulaire la
+ * faisait disparaître avec lui (contre-revue du 2026-09-04, M1).
+ */
+function DocumentsRemis({
+  documents,
+  lecture,
+  plafond,
+  onRelire,
+}: {
+  documents: DocumentPatientConsigneAffiche[];
+  lecture: LectureDocumentsPatient;
+  /** Nombre au-delà duquel la liste est tronquée — dit, jamais tu. */
+  plafond: number;
+  onRelire: () => void;
+}) {
+  // Quelle pièce est dépliée. Relire est un geste, pas un déversement : dix
+  // textes ouverts d'office noieraient celui qu'on cherche.
+  const [ouvert, setOuvert] = useState<string | null>(null);
+
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3">
+      <p className="text-xs font-medium text-foreground">Documents déjà remis</p>
+
+      {lecture === 'chargement' && (
+        <p className="mt-1 text-xs text-muted-foreground">Lecture du dossier…</p>
+      )}
+
+      {lecture === 'erreur' && (
+        <div className="mt-1">
+          <p role="alert" className="text-xs text-status-danger">
+            La liste n’a pas pu être lue : impossible d’affirmer qu’aucun document n’a été
+            remis.
+          </p>
+          <button
+            type="button"
+            onClick={onRelire}
+            className="mt-2 min-h-11 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground"
+          >
+            Relire la liste
+          </button>
+        </div>
+      )}
+
+      {lecture === 'ok' && documents.length === 0 && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Aucun document n’a encore été remis pour ce dossier.
+        </p>
+      )}
+
+      {lecture === 'ok' && documents.length > 0 && (
+        <>
+          <ul className="mt-2 space-y-2">
+            {documents.map(doc => (
+              <li key={doc.id} className="rounded-lg border border-border p-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Remis le {formatDateHeureDocument(doc.genereLe)} · provenance{' '}
+                    {doc.ancrageVersion}, empreinte {doc.ancrageSha256.slice(0, 12)}…
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOuvert(prev => (prev === doc.id ? null : doc.id))}
+                    aria-expanded={ouvert === doc.id}
+                    className="min-h-11 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground"
+                  >
+                    {ouvert === doc.id ? 'Masquer le texte' : 'Relire le texte'}
+                  </button>
+                </div>
+                {ouvert === doc.id && (
+                  <textarea
+                    readOnly
+                    value={doc.texte}
+                    rows={10}
+                    aria-label={`Texte du document remis le ${formatDateHeureDocument(doc.genereLe)}`}
+                    className="mt-2 w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground"
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+          {documents.length >= plafond && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Seules les {plafond} remises les plus récentes sont affichées.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
@@ -368,10 +521,14 @@ export function PropositionBilanPanel({
   partageMedecinTraitant = null,
   onEtablirCourrier,
   documentPatient = null,
+  documentsPatientConsignes = [],
+  lectureDocumentsPatient = 'chargement',
   documentPatientErreur = null,
   documentPatientRegistreATrancher = false,
+  documentPatientDoublonATrancher = false,
   documentPatientReponses = 0,
   onEtablirDocumentPatient,
+  onRelireDocumentsPatient,
   resultatsActifs = false,
 }: {
   lignes: LignePanelProposition[];
@@ -392,12 +549,18 @@ export function PropositionBilanPanel({
   onEtablirCourrier?: (medecinLibelle: string) => void;
   /** Document patient établi lors de ce passage, à remettre. */
   documentPatient?: DocumentPatientEtabli | null;
+  /** Pièces déjà consignées, relues en base — l'écran les sait au rechargement. */
+  documentsPatientConsignes?: DocumentPatientConsigneAffiche[];
+  lectureDocumentsPatient?: LectureDocumentsPatient;
   documentPatientErreur?: string | null;
   /** Le dernier refus est un REGISTRE_ANXIOGENE confirmable (D-090). */
   documentPatientRegistreATrancher?: boolean;
+  /** Le dernier refus est un DOUBLON_DOCUMENT confirmable. */
+  documentPatientDoublonATrancher?: boolean;
   /** Compteur de réponses abouties du geste document (verrou du formulaire). */
   documentPatientReponses?: number;
-  onEtablirDocumentPatient?: (confirmerRegistre: boolean) => void;
+  onEtablirDocumentPatient?: (confirmer: boolean) => void;
+  onRelireDocumentsPatient?: () => void;
   /** Étage 2 actif : le badge « aucune valeur conservée » suit l'état réel. */
   resultatsActifs?: boolean;
 }) {
@@ -587,8 +750,21 @@ export function PropositionBilanPanel({
           documentPatient={documentPatient}
           erreur={documentPatientErreur}
           registreATrancher={documentPatientRegistreATrancher}
+          doublonATrancher={documentPatientDoublonATrancher}
           reponses={documentPatientReponses}
           onEtablir={onEtablirDocumentPatient}
+        />
+      )}
+
+      {/* La relecture NE dépend PAS de `gesteOffrable` : ce qui a été remis
+          reste à relire même quand plus aucune ligne n'est proposée — c'est
+          même là qu'on le cherche. */}
+      {onEtablirDocumentPatient && (
+        <DocumentsRemis
+          documents={documentsPatientConsignes}
+          lecture={lectureDocumentsPatient}
+          plafond={PLAFOND_RELECTURE_AFFICHE}
+          onRelire={onRelireDocumentsPatient ?? (() => {})}
         />
       )}
 

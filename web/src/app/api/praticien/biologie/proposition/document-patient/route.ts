@@ -46,12 +46,50 @@ import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 //
 // Remise MANUELLE : aucun envoi. La réponse rend le texte pour impression ou
 // remise en consultation.
+//
+// LE GET RELIT CE QUI A ÉTÉ CONSIGNÉ, IL NE LE RE-DÉRIVE PAS. Une pièce du
+// dossier se relit telle qu'elle est partie au patient : le texte et l'ancre
+// viennent de la LIGNE, jamais d'une nouvelle dérivation — sinon l'écran
+// montrerait ce que le dossier produirait aujourd'hui sous l'étiquette de ce
+// qui a été remis hier (même discipline que le verdict d'ancrage, [[D-079]]).
+//
+// GARDE ANTI-DOUBLE-CONSIGNATION, REFUS CONFIRMABLE. La table est append-only
+// et re-générer est un geste légitime — le dossier évolue, le document suit.
+// Ce qui ne l'est pas, c'est consigner DEUX FOIS LE MÊME TEXTE sans le savoir
+// (deux onglets, un double clic, un retour arrière). La route refuse alors en
+// 409 `DOUBLON_DOCUMENT`, confirmable par `confirmerDoublonSha256` — même
+// liaison au texte que le registre, mais JETON SÉPARÉ PAR DOMAINE : les deux
+// gardes visent le même texte, une empreinte nue les rendrait
+// interchangeables. PORTÉE EXACTE, ET ELLE EST ÉTROITE : une détection en
+// lecture-puis-écriture ferme le cas SÉQUENTIEL (deux gestes qui se suivent),
+// pas la course vraie de deux requêtes simultanées, qui exigerait une
+// contrainte en base — donc une migration, donc son propre cycle.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/proposition/document-patient';
 
 export type DocumentPatientApiResponse =
   | { ok: true; texte: string; ancrageSha256: string; ancrageVersion: string }
   | { ok: false; reason: string; error: string; texteSha256?: string };
+
+/**
+ * Une pièce consignée, relue telle quelle. `generePar` N'EST PAS exposé :
+ * l'écran ne l'affiche pas, et un e-mail qui traverse la frontière sans
+ * consommateur est une donnée de plus au navigateur pour rien.
+ */
+export type DocumentPatientConsigne = {
+  id: string;
+  texte: string;
+  ancrageSha256: string;
+  ancrageVersion: string;
+  genereLe: string;
+};
+
+/** Nombre de remises relues d'un coup — borne technique, dite à l'écran. */
+const PLAFOND_RELECTURE = 20;
+
+export type DocumentsPatientGetResponse =
+  | { ok: true; documents: DocumentPatientConsigne[] }
+  | { ok: false; reason: string; error: string };
 
 // `Record` EXHAUSTIF sur l'union des refus : un motif ajouté au générateur
 // sans message français devient une erreur de build, pas un texte générique.
@@ -78,7 +116,67 @@ function depuisVerdict(verdict: Exclude<VerdictGarde, { ok: true }>) {
   return echec(verdict.reason, verdict.error, verdict.status);
 }
 
-type PostBody = { idPatient?: unknown; confirmerTexteSha256?: unknown };
+function echecGet(reason: string, error: string, status: number) {
+  return NextResponse.json<DocumentsPatientGetResponse>({ ok: false, reason, error }, { status });
+}
+
+function depuisVerdictGet(verdict: Exclude<VerdictGarde, { ok: true }>) {
+  return echecGet(verdict.reason, verdict.error, verdict.status);
+}
+
+export async function GET(req: Request) {
+  try {
+    const idPatient = new URL(req.url).searchParams.get('idPatient')?.trim() ?? '';
+    // Lecture d'une pièce de dossier nommé : l'accès se journalise (GD-1).
+    const garde = await garderProposition(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
+    if (!garde.ok) return depuisVerdictGet(garde);
+
+    const lignes = await prisma.documentPatientBiologie.findMany({
+      where: { idPatient },
+      // Le plus récent d'abord : c'est celui qui fait foi de ce qui a été
+      // remis. L'identifiant DÉPARTAGE — `genere_le` n'est pas unique, et deux
+      // lignes du même horodatage sont exactement le cas que la garde
+      // anti-doublon vise : « le dernier » ne doit pas être indéterminé.
+      orderBy: [{ genereLe: 'desc' }, { id: 'desc' }],
+      // Borne technique : au-delà, la charge utile est un jeu de textes
+      // entiers. L'écran DIT qu'il est au plafond plutôt que de laisser croire
+      // à une liste complète.
+      take: PLAFOND_RELECTURE,
+      select: {
+        id: true,
+        texte: true,
+        ancrageSha256: true,
+        ancrageVersion: true,
+        genereLe: true,
+      },
+    });
+
+    return NextResponse.json<DocumentsPatientGetResponse>({
+      ok: true,
+      documents: lignes.map(ligne => ({
+        id: ligne.id,
+        texte: ligne.texte,
+        ancrageSha256: ligne.ancrageSha256,
+        ancrageVersion: ligne.ancrageVersion,
+        genereLe: ligne.genereLe.toISOString(),
+      })),
+    });
+  } catch (err) {
+    // JAMAIS `err.message` : c'est le seul catch dont la requête rend un JEU
+    // DE TEXTES de documents patient — même discipline que la consignation.
+    console.error(
+      '[praticien/biologie/proposition/document-patient GET] lecture refusée :',
+      err instanceof Error ? err.name : 'inconnue',
+    );
+    return echecGet('server_error', 'Erreur technique.', 500);
+  }
+}
+
+type PostBody = {
+  idPatient?: unknown;
+  confirmerTexteSha256?: unknown;
+  confirmerDoublonSha256?: unknown;
+};
 
 export async function POST(req: Request) {
   try {
@@ -99,6 +197,8 @@ export async function POST(req: Request) {
     const idPatient = typeof body.idPatient === 'string' ? body.idPatient.trim() : '';
     const confirmerTexteSha256 =
       typeof body.confirmerTexteSha256 === 'string' ? body.confirmerTexteSha256 : null;
+    const confirmerDoublonSha256 =
+      typeof body.confirmerDoublonSha256 === 'string' ? body.confirmerDoublonSha256 : null;
     // `acces` EST fourni : cette route LIT le dossier entier pour en dériver
     // la proposition, et une lecture de dossier nommé se journalise (G-TRUST-04).
     const garde = await garderProposition(idPatient, { route: ROUTE_JOURNAL, methode: 'POST' });
@@ -162,7 +262,15 @@ export async function POST(req: Request) {
     // confirmation n'est honorée que si elle vise CE texte-ci (empreinte) :
     // un dossier qui a bougé entre les deux clics re-refuse avec la nouvelle.
     const terme = termeAnxiogene(texte);
-    const texteSha256 = createHash('sha256').update(texte, 'utf8').digest('hex');
+    // DEUX JETONS SÉPARÉS PAR DOMAINE, pas une empreinte nue. Les deux gardes
+    // visent le même texte : un `sha256(texte)` unique les rendrait
+    // interchangeables, et un client qui recopierait par erreur la même valeur
+    // dans les deux champs lèverait les deux à la fois. Le préfixe rend cette
+    // confusion impossible par construction. Le jeton reste opaque pour
+    // l'appelant, qui se contente de renvoyer celui qu'il a reçu au refus.
+    const jeton = (domaine: string) =>
+      createHash('sha256').update(`${domaine}:${texte}`, 'utf8').digest('hex');
+    const texteSha256 = jeton('REGISTRE');
     if (terme && confirmerTexteSha256 !== texteSha256) {
       return echec(
         'REGISTRE_ANXIOGENE',
@@ -171,6 +279,30 @@ export async function POST(req: Request) {
         + 'texte-ci depuis l’écran.',
         409,
         texteSha256,
+      );
+    }
+
+    // Garde anti-double-consignation, APRÈS le registre : un texte inadapté au
+    // patient se signale avant sa redondance. La comparaison porte sur le
+    // DERNIER document consigné — celui qui fait foi de ce qui a été remis ;
+    // re-consigner un texte antérieur après qu'il a changé puis re-changé est
+    // un geste neuf, pas un doublon.
+    const dernier = await prisma.documentPatientBiologie.findFirst({
+      where: { idPatient },
+      // L'identifiant départage : deux lignes au même horodatage sont le cas
+      // même que cette garde vise.
+      orderBy: [{ genereLe: 'desc' }, { id: 'desc' }],
+      select: { texte: true },
+    });
+    const doublonSha256 = jeton('DOUBLON');
+    if (dernier?.texte === texte && confirmerDoublonSha256 !== doublonSha256) {
+      return echec(
+        'DOUBLON_DOCUMENT',
+        'Un document au texte identique est déjà consigné à ce dossier — c’est le dernier '
+        + 'en date. Rien n’est consigné. Confirmez depuis l’écran si vous en remettez '
+        + 'une seconde copie au patient.',
+        409,
+        doublonSha256,
       );
     }
 

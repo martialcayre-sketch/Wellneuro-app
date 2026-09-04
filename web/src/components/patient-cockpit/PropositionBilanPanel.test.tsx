@@ -350,3 +350,108 @@ describe('repli de la justification — la frontière', () => {
     expect(screen.queryByText('Ce qui justifie cette ligne')).toBeNull();
   });
 });
+
+// LOT-01 de « Biologie exploitée » : ce qui a été remis se relit. Avant ce
+// lot, la pièce n'existait qu'en base et l'écran repartait vierge.
+describe('documents déjà remis — la relecture, et ce qu’elle n’affirme pas', () => {
+  const consigne = {
+    id: 'doc1',
+    texte: 'Texte tel qu’il est parti au patient.',
+    ancrageSha256: 'a'.repeat(64),
+    ancrageVersion: 'indications-biologie-v1',
+    genereLe: '2026-09-03T08:30:00.000Z',
+  };
+
+  it('une pièce consignée s’affiche, et son texte se relit au geste', () => {
+    rendre({
+      onEtablirDocumentPatient: vi.fn(),
+      documentsPatientConsignes: [consigne],
+      lectureDocumentsPatient: 'ok',
+    });
+    // Le texte n'est pas déversé d'office : relire est un geste.
+    expect(screen.queryByDisplayValue(consigne.texte)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /relire le texte/i }));
+    expect(screen.getByDisplayValue(consigne.texte)).toBeTruthy();
+  });
+
+  it('lecture en échec : l’écran REFUSE d’affirmer qu’aucun document n’a été remis (DC-24)', () => {
+    const relire = vi.fn();
+    rendre({
+      onEtablirDocumentPatient: vi.fn(),
+      lectureDocumentsPatient: 'erreur',
+      onRelireDocumentsPatient: relire,
+    });
+    expect(screen.queryByText(/Aucun document n’a encore été remis/i)).toBeNull();
+    expect(screen.getByRole('alert').textContent).toMatch(/impossible d’affirmer/i);
+    fireEvent.click(screen.getByRole('button', { name: /relire la liste/i }));
+    expect(relire).toHaveBeenCalledTimes(1);
+  });
+
+  it('lecture en cours : aucun état vide affirmé non plus', () => {
+    rendre({ onEtablirDocumentPatient: vi.fn(), lectureDocumentsPatient: 'chargement' });
+    expect(screen.queryByText(/Aucun document n’a encore été remis/i)).toBeNull();
+  });
+
+  it('lecture aboutie et dossier vierge : là, et là seulement, l’écran l’affirme', () => {
+    rendre({
+      onEtablirDocumentPatient: vi.fn(),
+      documentsPatientConsignes: [],
+      lectureDocumentsPatient: 'ok',
+    });
+    expect(screen.getByText(/Aucun document n’a encore été remis/i)).toBeTruthy();
+  });
+
+  it('doublon signalé : le second temps est offert, et il confirme', () => {
+    const etablir = vi.fn();
+    rendre({
+      onEtablirDocumentPatient: etablir,
+      documentPatientDoublonATrancher: true,
+      lectureDocumentsPatient: 'ok',
+    });
+    fireEvent.click(screen.getByRole('button', { name: /consigner une seconde copie/i }));
+    expect(etablir).toHaveBeenCalledWith(true);
+  });
+
+  it('sans doublon signalé, le second temps n’existe pas', () => {
+    rendre({ onEtablirDocumentPatient: vi.fn(), lectureDocumentsPatient: 'ok' });
+    expect(screen.queryByRole('button', { name: /consigner une seconde copie/i })).toBeNull();
+  });
+
+  it('la relecture SURVIT quand plus aucun geste n’est offert', () => {
+    // Tous les panels déclarés explorés : le geste d'établir disparaît — et
+    // c'est précisément l'état où « qu'ai-je remis à ce patient ? » se pose.
+    // Loger la relecture dans le formulaire la faisait disparaître avec lui
+    // (contre-revue du 2026-09-04, M1).
+    rendre({
+      lignes: [ligne({ statut: 'deja_documente' })],
+      onEtablirDocumentPatient: vi.fn(),
+      documentsPatientConsignes: [consigne],
+      lectureDocumentsPatient: 'ok',
+    });
+    expect(
+      screen.queryByRole('button', { name: /établir et consigner le document patient/i }),
+    ).toBeNull();
+    expect(screen.getByText(/Documents déjà remis/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /relire le texte/i })).toBeTruthy();
+  });
+
+  it('liste au plafond : l’écran DIT qu’elle est tronquée', () => {
+    const vingt = Array.from({ length: 20 }, (_, i) => ({ ...consigne, id: `doc${i}` }));
+    rendre({
+      onEtablirDocumentPatient: vi.fn(),
+      documentsPatientConsignes: vingt,
+      lectureDocumentsPatient: 'ok',
+    });
+    // Une liste coupée en silence se lit comme une liste complète.
+    expect(screen.getByText(/Seules les 20 remises les plus récentes/i)).toBeTruthy();
+  });
+
+  it('liste courte : aucune mention de troncature', () => {
+    rendre({
+      onEtablirDocumentPatient: vi.fn(),
+      documentsPatientConsignes: [consigne],
+      lectureDocumentsPatient: 'ok',
+    });
+    expect(screen.queryByText(/les plus récentes sont affichées/i)).toBeNull();
+  });
+});
