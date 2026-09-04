@@ -1107,12 +1107,16 @@ describe('FichePatientPanel — la trajectoire n’est lue qu’une fois', () =>
     async runtime => {
       const fetchMock = await rendreFiche({ runtime });
 
-      // Laisse passer les effets de montage et, pour `ready`, l'effet qui charge
-      // les ressources annexes de la carte. Ce dernier ne doit pas transformer
-      // le rejeu d'une carte persistée en second accès à la trajectoire.
-      await act(async () => {
-        await new Promise(resoudre => setTimeout(resoudre, 30));
-      });
+      if (runtime === 'proposal') {
+        await screen.findByRole('heading', { name: 'Confirmation de l’épisode T0' });
+      } else {
+        // La route versions est appelée par le même effet que les ressources
+        // annexes d'une carte `ready`. L'attendre prouve que cet effet a tourné,
+        // sans temporisation arbitraire.
+        await waitFor(() => expect(fetchMock.mock.calls.some(
+          appel => String(appel[0]).includes('/api/praticien/protocoles/versions'),
+        )).toBe(true));
+      }
 
       const lectures = fetchMock.mock.calls
         .map(appel => String(appel[0]))
