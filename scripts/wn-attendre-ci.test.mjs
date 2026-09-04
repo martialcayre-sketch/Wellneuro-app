@@ -449,13 +449,19 @@ test('causesDuCheckAbsent rend une liste vide quand rien n\'est diagnosticable',
   assert.deepEqual(causesDuCheckAbsent(faits()), []);
 });
 
-// Le plafond de cadence suit le délai demandé : au-delà du défaut (900 s), un
-// CI long se sonde toutes les 120 s au lieu de 60. À 900 s ou en deçà, rien ne
-// change — 900 lui-même reste à 60, la borne est strictement supérieure.
+// Le plafond de cadence suit un SEUIL DE CI LONG (900 s), désormais distinct du
+// délai par défaut : un CI long se sonde toutes les 120 s au lieu de 60. À
+// 900 s ou en deçà, rien ne change — 900 lui-même reste à 60, la borne est
+// strictement supérieure.
+//
+// LE DÉFAUT PASSE PAR CE SEUIL, et c'est voulu : à 1500 s, l'attente ordinaire
+// sonde à 120 s. Le cas ci-dessous le fige — si quelqu'un ramenait les deux
+// constantes à un même nombre, la cadence changerait sans que le diff le dise.
 test('intervalleMaxPourDelai : 60 s jusqu\'à 900 s inclus, 120 s au-delà', () => {
   assert.equal(intervalleMaxPourDelai(60), 60);
   assert.equal(intervalleMaxPourDelai(900), 60);
   assert.equal(intervalleMaxPourDelai(901), 120);
+  assert.equal(intervalleMaxPourDelai(1500), 120);
   assert.equal(intervalleMaxPourDelai(3600), 120);
 });
 
@@ -464,7 +470,8 @@ test('intervalleMaxPourDelai : 60 s jusqu\'à 900 s inclus, 120 s au-delà', () 
 test('analyserArguments : le drapeau et sa valeur ne sont pas pris pour un numéro', () => {
   assert.deepEqual(analyserArguments(['--delai', '60', '553']), { numero: '553', delai: 60 });
   assert.deepEqual(analyserArguments(['553', '--delai', '60']), { numero: '553', delai: 60 });
-  assert.equal(analyserArguments(['553']).delai, 900);
+  // 1500 s = 25 min, au-dessus du run le plus long mesuré le 2026-09-04 (17 min).
+  assert.equal(analyserArguments(['553']).delai, 1500);
   assert.equal(analyserArguments([]).numero, null);
   assert.equal(analyserArguments(['--delai']).numero, null);
 });
