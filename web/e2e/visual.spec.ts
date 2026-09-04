@@ -90,7 +90,16 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // (« indéterminée » peut légitimement rester : Réévaluation sans épisode
     // est un état stable — seul le chargement en vol est transitoire.)
     await expect(page.getByText(/Chargement de la proposition/)).toHaveCount(0);
-    await capturer(page, testInfo, 'fiche-cockpit');
+    // PAGE ENTIÈRE, ET C'EST LE POINT DE CETTE BASELINE. En fenêtre visible,
+    // elle ne photographiait que les 1440×900 du haut : la campagne cockpit des
+    // 2-4 septembre a restructuré le rail, les phases et l'intérieur des
+    // panneaux sans jamais faire bouger cette image, et le CI est resté vert
+    // d'un bout à l'autre. Une preuve visuelle qui ne voit que le premier écran
+    // ne prouve rien du cockpit.
+    //
+    // Le tiroir des 12 besoins, lui, RESTE en fenêtre visible : c'est un
+    // `dialog` ancré au viewport, dont la page entière ne dirait rien de plus.
+    await capturer(page, testInfo, 'fiche-cockpit', { fullPage: true });
   });
 
   test('fiche patient — tiroir « Les 12 besoins » ouvert', async ({ page }, testInfo) => {
