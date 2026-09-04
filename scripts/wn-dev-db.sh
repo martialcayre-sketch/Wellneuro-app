@@ -22,6 +22,9 @@
 #   bash scripts/wn-dev-db.sh                  # démarre/retrouve, imprime l'URL
 #   bash scripts/wn-dev-db.sh --migrate         # + prisma migrate deploy
 #   bash scripts/wn-dev-db.sh --migrate --seed  # + patients fictifs (seed.ts)
+#   bash scripts/wn-dev-db.sh --migrate --seed --demo
+#       # + dossiers de démonstration locale (anamnèse, dossier en attente,
+#       #   dossier clos) — mêmes identités fictives, identifiants distincts.
 set -euo pipefail
 
 die() { printf 'Erreur : %s\n' "$*" >&2; exit 1; }
@@ -30,11 +33,16 @@ die() { printf 'Erreur : %s\n' "$*" >&2; exit 1; }
 
 MIGRATE=0
 SEED=0
+DEMO=0
 for arg in "$@"; do
   case "$arg" in
     --migrate) MIGRATE=1 ;;
     --seed) SEED=1 ;;
-    *) die "Option inconnue : $arg (attendu : --migrate, --seed)" ;;
+    # Dossiers de démonstration locale, JAMAIS semés par défaut : le CI et les
+    # E2E dépendent des états vides des trois dossiers ordinaires. Voir
+    # `web/prisma/seedDemo.ts`.
+    --demo) DEMO=1 ;;
+    *) die "Option inconnue : $arg (attendu : --migrate, --seed, --demo)" ;;
   esac
 done
 
@@ -91,7 +99,8 @@ fi
 
 if [[ "$SEED" -eq 1 ]]; then
   echo "Seed (patients fictifs uniquement)..." >&2
-  ( cd "$ROOT/web" && DATABASE_URL="$DATABASE_URL" node prisma/runWithAlias.js prisma/seed.ts )
+  ( cd "$ROOT/web" && DATABASE_URL="$DATABASE_URL" WN_SEED_DEMO="$DEMO" \
+      node prisma/runWithAlias.js prisma/seed.ts )
 fi
 
 echo "$DATABASE_URL"

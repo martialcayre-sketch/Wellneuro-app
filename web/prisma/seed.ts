@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { withSupabaseSslMode, supabasePoolSsl } from '../src/lib/postgres';
 import { REPONSES_SOPHIE, REPONSES_JENNIFER, REPONSES_MICHEL } from './seedReponses';
+import { CONSULTATIONS_DEMO, PATIENTS_DEMO, REPONSES_DEMO } from './seedDemo';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -230,6 +231,55 @@ async function seed() {
       });
     }
     console.log(`  → ${reponses.length} questionnaires insérés pour ${idPatient}`);
+  }
+
+  // DOSSIERS DE DÉMONSTRATION — hors du chemin par défaut, à dessein.
+  //
+  // Le CI, `test:worktree` et les E2E sèment SANS ce drapeau : ils ne voient
+  // donc jamais ces dossiers, et le contrat d'états vides des trois dossiers
+  // ordinaires reste intact. Voir l'en-tête de `seedDemo.ts` pour le pourquoi.
+  if (process.env.WN_SEED_DEMO === '1') {
+    console.log('\nDossiers de démonstration (WN_SEED_DEMO=1) :');
+
+    for (const patient of PATIENTS_DEMO) {
+      await prisma.patient.upsert({
+        where: { idPatient: patient.idPatient },
+        update: {},
+        create: patient,
+      });
+      console.log(`  → ${patient.prenom} ${patient.nom} (${patient.idPatient})`);
+    }
+
+    for (const consultation of CONSULTATIONS_DEMO) {
+      await prisma.consultation.upsert({
+        where: { idConsultation: consultation.idConsultation },
+        update: {},
+        create: consultation,
+      });
+    }
+    console.log(`  → ${CONSULTATIONS_DEMO.length} consultations validées (anamnèse renseignée)`);
+
+    for (const { idPatient, email, reponses } of REPONSES_DEMO) {
+      for (const r of reponses) {
+        await prisma.questionnaireReponse.upsert({
+          where: { idReponse: r.idReponse },
+          // Même discipline que plus haut : un seed ne réécrit pas une
+          // passation existante.
+          update: {},
+          create: {
+            idReponse: r.idReponse,
+            idPatient,
+            emailPatient: email,
+            idQuestionnaire: r.idQuestionnaire,
+            titre: r.titre,
+            dateReponse: r.dateReponse,
+            scoresJson: r.scoresJson,
+            interpretation: r.interpretation,
+          },
+        });
+      }
+      console.log(`  → ${reponses.length} passations pour ${idPatient}`);
+    }
   }
 
   console.log('\nSeed terminé.');
