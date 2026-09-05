@@ -5,10 +5,28 @@
 // s'affiche pour un vrai patient en reprise, dans un vrai navigateur, et que le
 // refus s'y tient.
 //
-// Patient : Jennifer Martin (PAT_SEED_02), fictif autorisé et **utilisé par
-// aucun autre spec** — la mise en reprise mute ses réponses et son état de
-// compte, et les specs tournent en parallèle sur la même base éphémère.
-// L'appliquer à Michel (PAT_SEED_03) casserait `portail-parcours`.
+// Patient : Jennifer Martin (PAT_SEED_02). Le motif de ce choix tient toujours :
+// la mise en reprise mute ses réponses et son état de compte, et l'appliquer à
+// Michel (PAT_SEED_03) casserait `portail-parcours`.
+//
+// EN REVANCHE, DEUX AFFIRMATIONS QUI VIVAIENT ICI ÉTAIENT FAUSSES, et elles se
+// tenaient l'une l'autre : « utilisé par aucun autre spec », justifié par le
+// fait que « les specs tournent en parallèle sur la même base éphémère ».
+//
+// Elle est nommée par QUATRE specs. Trois y écrivent — celui-ci et
+// `visual.spec.ts` par `preparerReprisePourTest`, `biologie-proposition-courrier`
+// en confirmant un épisode T0 ; `fiche-detail-reponses` se contente de lire.
+//
+// Et rien ne tourne en parallèle : `playwright.config.ts` pose
+// `fullyParallel: false` et `workers: 1`. Les specs se suivent, dans l'ordre
+// alphabétique des fichiers, donc celui-ci passe après
+// `biologie-proposition-courrier` et avant `visual.spec.ts`.
+//
+// Ce qui protège n'est donc pas une exclusivité qui n'existe pas, mais deux
+// choses réelles : la séquence est déterministe, et chaque spec qui mute
+// nettoie derrière lui (`nettoyerReprise` ici et dans `visual`,
+// `nettoyerDossierBiologie` dans le troisième). Écrit parce qu'un commentaire
+// crédible et faux est ce sur quoi quelqu'un s'appuiera.
 import { test, expect } from '@playwright/test';
 import { preparerReprisePourTest, nettoyerReprise, closePrisma } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
