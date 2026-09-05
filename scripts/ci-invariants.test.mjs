@@ -39,6 +39,16 @@
 //    revue du même run montrait le rail posé obtenu par #871. Un workflow dont
 //    le métier est de produire la référence ne doit jamais avoir le droit de
 //    la conserver.
+//
+// 5. L'ARTEFACT `playwright-report` DOIT ÊTRE ÉCRIT PAR QUELQU'UN. `ci.yml`
+//    publiait `web/playwright-report/` depuis toujours, mais
+//    `playwright.config.ts` déclarait `reporter: 'list'` : personne n'écrivait
+//    ce dossier. Sans `if-no-files-found: error`, l'étape publiait le vide en
+//    silence — et `web/.gitignore` ignorait déjà le chemin, ce qui achevait de
+//    rendre l'artefact crédible. Résultat : un échec E2E en CI ne laissait ni
+//    images de diff ni rapport, et il fallait extraire le log brut du job par
+//    l'API. Une étape de diagnostic qui échoue en silence est pire que pas
+//    d'étape : on la croit là le jour où on en a besoin.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -50,6 +60,7 @@ const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHEMIN = path.join(RACINE, '.github/workflows/ci.yml');
 const SOURCE = fs.readFileSync(CHEMIN, 'utf8');
 const CHEMIN_BASELINES = path.join(RACINE, '.github/workflows/visual-baselines.yml');
+const CHEMIN_PLAYWRIGHT = path.join(RACINE, 'web/playwright.config.ts');
 
 /** Versions de Node déclarées par un workflow, dans l'ordre, quotes retirées. */
 function versionsDeNode(source, quoi) {
@@ -187,6 +198,45 @@ test('les baselines visuelles sont produites sur le Node qui les comparera', () 
       + `ci.yml=${[...new Set(duVerify)].join(',')}, `
       + `visual-baselines.yml=${[...new Set(desBaselines)].join(',')}. `
       + 'Une baseline produite ailleurs que là où elle est comparée ne prouve rien.',
+  );
+});
+
+/** Bloc de l'étape qui publie l'artefact `playwright-report`, dans ci.yml. */
+function etapeRapportPlaywright() {
+  const bloc = /name:\s*playwright-report\n((?:\s+[^\n]*\n)*)/.exec(SOURCE);
+  assert.ok(bloc, 'ci.yml : plus aucune étape ne publie l’artefact playwright-report.');
+  return bloc[1];
+}
+
+test('l’artefact playwright-report est écrit par un rapporteur, pas publié à vide', () => {
+  const config = fs.readFileSync(CHEMIN_PLAYWRIGHT, 'utf8');
+  const rapporteur = /\[\s*['"]html['"]\s*,\s*\{[^}]*outputFolder:\s*['"]([^'"]+)['"]/.exec(config);
+  assert.ok(
+    rapporteur,
+    'playwright.config.ts ne déclare plus de rapporteur html avec outputFolder : le dossier publié par '
+      + 'ci.yml ne serait écrit par personne, et l’étape publierait le vide. C’était l’état jusqu’au '
+      + '2026-09-05 — un échec E2E en CI ne laissait alors ni image de diff ni rapport.',
+  );
+
+  const attendu = 'web/' + rapporteur[1] + '/';
+  const chemin = /path:\s*(\S+)/.exec(etapeRapportPlaywright());
+  assert.ok(chemin, 'ci.yml : l’étape playwright-report n’a plus de `path:`.');
+  assert.equal(
+    chemin[1],
+    attendu,
+    'le chemin publié par ci.yml ne correspond plus au outputFolder du rapporteur html : '
+      + 'ci.yml=' + chemin[1] + ', playwright.config.ts=' + attendu + '. '
+      + 'Deux fichiers qui se désignent sans se vérifier, c’est exactement le trou que cet invariant ferme.',
+  );
+});
+
+test('l’absence du rapport fait ROUGIR, au lieu de passer inaperçue', () => {
+  assert.match(
+    etapeRapportPlaywright(),
+    /if-no-files-found:\s*error/,
+    'l’étape playwright-report n’exige plus `if-no-files-found: error` : le défaut est `warn`, qui publie '
+      + 'le vide sans rien dire. Une étape de diagnostic qui échoue en silence est pire que pas d’étape — '
+      + 'on la croit là le jour où on en a besoin.',
   );
 });
 

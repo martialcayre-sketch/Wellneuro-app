@@ -939,4 +939,9 @@ jobs:
         with:
           name: playwright-report
           path: web/playwright-report/
+          # `error` ET NON LE DÉFAUT `warn` : sans rapporteur `html`, ce dossier
+          # n'existait pas et l'étape publiait le vide sans rien dire. Une étape
+          # de diagnostic qui échoue en silence est pire que pas d'étape — on la
+          # croit là le jour où on en a besoin.
+          if-no-files-found: error
           retention-days: 7
