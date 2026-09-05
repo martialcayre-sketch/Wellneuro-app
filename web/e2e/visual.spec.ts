@@ -79,7 +79,37 @@ async function capturer(
   await page.screenshot({ path: `${DOSSIER}/${nom}-${testInfo.project.name}.png`, fullPage });
   const baseline = `${nom}.png`;
   if (pixel && baselineComparable(testInfo, baseline)) {
-    await expect(page).toHaveScreenshot(baseline, { fullPage, maxDiffPixelRatio: 0.02 });
+    // SEUIL ABSOLU, ET MESURÉ — ne pas le desservir sans refaire la mesure.
+    //
+    // Le bruit réel a été mesuré le 2026-09-05 (run 33923782703, passe à
+    // `maxDiffPixels: 0` dont le rouge était l'instrument). Il sépare l'image
+    // produite par `visual-baselines` (seed vierge, ce fichier seul) de celle
+    // que rend `verify` (base écrite par les 21 autres specs) :
+    //
+    //   écran                      Chromium   WebKit
+    //   fiche-cockpit                 31 px      0
+    //   fiche-tiroir-besoins          17 px      0
+    //   fiche-trajectoire-onglet      33 px      0
+    //   portail-connexion              0         0
+    //
+    // Cinq comparaisons sur huit sont identiques AU BIT PRÈS ; l'écart maximal
+    // est de 33 pixels. Le seuil précédent, `maxDiffPixelRatio: 0.02`, en
+    // tolérait ~48 960 sur le cockpit — 1 483 fois le bruit observé, de quoi
+    // laisser passer un panneau entier sans rougir. C'est ainsi qu'une baseline
+    // périmée a survécu (#872).
+    //
+    // 100 est borné des deux côtés, et les deux bornes sont calculées :
+    //  — plancher : 3 × le maximum observé (33), marge pour une variation
+    //    d'antialiasing qui n'aurait pas encore été vue ;
+    //  — plafond : sous l'aire du plus petit élément dont le changement doit
+    //    rougir — une icône de statut de 14 px occupe 196 px de boîte.
+    //
+    // ABSOLU ET NON RATIO, parce qu'un ratio se paie en surface : les mêmes
+    // 2 % achetaient 48 960 px au cockpit (1440×1700) contre 7 560 à
+    // `portail-connexion` (420×900). L'indulgence suivait la taille de l'image,
+    // pas l'importance de l'écran — et des pixels morts gonflaient le
+    // dénominateur (constaté en #871).
+    await expect(page).toHaveScreenshot(baseline, { fullPage, maxDiffPixels: 100 });
   }
 }
 
