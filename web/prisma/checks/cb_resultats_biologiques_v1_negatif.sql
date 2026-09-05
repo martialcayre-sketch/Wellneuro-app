@@ -3,14 +3,22 @@
 -- La table promet sept choses, et ce fichier les éprouve TOUTES :
 --   1. un résultat valide est ACCEPTÉ, et un SECOND résultat du même analyte
 --      à une autre date aussi (la lecture est une SÉRIE — estimé↔mesuré) ;
---      le doublon exact patient/analyte/date est REFUSÉ ;
+--      le doublon exact patient/analyte/date est REFUSÉ — mais SEULEMENT pour
+--      une saisie NEUVE : depuis `D-124` l'unicité est PARTIELLE
+--      (`WHERE supersedes_resultat_id IS NULL`), si bien qu'une CORRECTION
+--      sur la même clé est ACCEPTÉE, et qu'un doublon neuf reste refusé même
+--      une fois des corrections posées. Ces deux faces se tiennent : si
+--      quelqu'un rendait l'index simplement non unique, le doublon passerait
+--      et le cas négatif le dirait ; s'il le rendait total, la correction
+--      serait refusée et le cas positif le dirait ;
 --   2. les CHECK mordent (23514) : source hors des deux origines de la
 --      décision, auteur vide ou réduit à des blancs — tabulations comprises,
 --      le trou btrim/1 est fermé ici — ou trop long, unité hors du
 --      vocabulaire partagé (chaîne blanche comprise) ;
---   3. la table porte EXACTEMENT dix colonnes, liste blanche — un
+--   3. la table porte EXACTEMENT onze colonnes, liste blanche — un
 --      `commentaire` ou un `interpretation` text serait un champ clinique
---      libre arrivé sans arbitrage ;
+--      libre arrivé sans arbitrage (la onzième, `supersedes_resultat_id`, est
+--      arrivée par `D-124` : c'est cette porte-là qu'elle a franchie) ;
 --   4. les colonnes porteuses sont NOT NULL — un résultat sans patient, sans
 --      analyte, sans valeur, sans date de prélèvement, sans source ou sans
 --      auteur n'est pas une donnée de dossier ;
@@ -46,7 +54,8 @@ DECLARE
 
   COLONNES_ATTENDUES CONSTANT text[] := ARRAY[
     'analyte_code', 'created_at', 'id', 'id_patient', 'preleve_le',
-    'saisi_le', 'saisi_par', 'source', 'unite', 'valeur'
+    'saisi_le', 'saisi_par', 'source', 'supersedes_resultat_id', 'unite',
+    'valeur'
   ];
 
   -- Chaque entrée : une insertion qui DOIT échouer sur un CHECK. Toutes
@@ -72,7 +81,12 @@ DECLARE
         VALUES ('t5', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, 'grammes', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$],
     ['unité en chaîne blanche (une unité absente est NULL)',
      $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
-        VALUES ('t6', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, '  ', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$]
+        VALUES ('t6', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, '  ', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$],
+    -- D-124 : une ligne qui se supplante elle-même ne serait JAMAIS tête de
+    -- fil — la mesure disparaîtrait de la série sans que rien ne le signale.
+    ['une ligne qui se supplante elle-même',
+     $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+        VALUES ('t7', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, 'mg/L', TIMESTAMP '2026-09-03 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 't7')$q$]
   ];
 BEGIN
   -- ── 0. Fixtures — patient fictif autorisé et analyte de contrat ──────────
@@ -126,6 +140,53 @@ BEGIN
     WHEN others THEN
       RAISE EXCEPTION
         'RESULTATS BIO: le doublon patient/analyte/date a été rejeté pour le mauvais motif (SQLSTATE %, attendu 23505 unique_violation)',
+        SQLSTATE;
+  END;
+
+  -- ── 1 bis. La CORRECTION passe là où le doublon échoue (D-124) ───────────
+  -- Même clé (patient, analyte, date) que `ok1`, et c'est tout l'objet : une
+  -- correction porte forcément la clé de ce qu'elle corrige. Elle sort de
+  -- l'index parce que `supersedes_resultat_id` n'est pas nul.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('corr1', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 45.5, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'ok1');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: la CORRECTION d''une mesure a été refusée (SQLSTATE %) — l''unicité est-elle redevenue TOTALE ? Aucune correction ne serait alors possible.',
+        SQLSTATE;
+  END;
+
+  -- Corriger une correction : le fil a plus de deux maillons.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('corr2', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 46.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'corr1');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: la correction d''une correction a été refusée (SQLSTATE %) — le fil doit accepter plus de deux maillons.',
+        SQLSTATE;
+  END;
+
+  -- Et l'unicité tient TOUJOURS pour une saisie neuve, corrections posées :
+  -- c'est la moitié de la promesse que l'index partiel ne doit pas perdre.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+    VALUES ('doublon2', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 47.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+    RAISE EXCEPTION
+      'D-124: une saisie NEUVE en doublon a été ACCEPTÉE alors que deux corrections existent — l''index partiel a perdu sa moitié négative, et le 409 doublon_mesure (P2002) est mort en silence';
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: le doublon de saisie neuve a été rejeté pour le mauvais motif (SQLSTATE %, attendu 23505 unique_violation)',
         SQLSTATE;
   END;
 
@@ -224,7 +285,7 @@ BEGIN
     RAISE EXCEPTION 'RESULTATS BIO: policy inattendue (deny-all attendu)';
   END IF;
 
-  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, % CHECK rejetants, 10 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
+  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, doublon de saisie neuve toujours refusé (unicité partielle D-124), % cas rejetants, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 

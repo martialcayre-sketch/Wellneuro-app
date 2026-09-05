@@ -2012,13 +2012,29 @@ model ResultatBiologique {
   saisiLe     DateTime @default(now()) @map("saisi_le")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  // Correction d'une saisie ([[D-124]]) : append-only chaîné, patron
+  // `supersedes_note_id` — corriger crée une LIGNE qui référence l'ancienne,
+  // jamais un `update`. Référence SOUPLE, sans FK, comme les autres chaînes
+  // `supersedes_*` ; la ligne visée est validée côté route.
+  supersedesResultatId String? @map("supersedes_resultat_id")
+
   patient Patient        @relation(fields: [idPatient], references: [idPatient])
   analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
 
   // L'index commence par `idPatient` puis `analyteCode` : la lecture est la
   // série d'un analyte dans un dossier (estimé ↔ mesuré), avec une mesure par
   // analyte et date de prélèvement.
-  @@unique([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
+  //
+  // L'UNICITÉ EST PARTIELLE et vit dans la migration seule — Prisma ne sait
+  // pas exprimer un index partiel (même situation que
+  // `biology_reference_ranges`) : `cb_resultat_bio_courant_key` est UNIQUE
+  // sur (patient, analyte, date) `WHERE supersedes_resultat_id IS NULL`. Une
+  // saisie NEUVE reste donc soumise à l'unicité — le 409 `doublon_mesure` est
+  // un `P2002` et ne bouge pas — pendant qu'une CORRECTION, qui porte un
+  // `supersedes` non nul, en sort. Ne pas redéclarer ici un `@@unique` : il
+  // recréerait l'index TOTAL et rendrait toute correction impossible.
+  @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
+  @@index([supersedesResultatId], map: "cb_resultat_bio_supersedes_idx")
   @@map("resultats_biologiques")
 }
 
