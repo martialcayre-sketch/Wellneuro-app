@@ -39,10 +39,11 @@ couvert nulle part.
 Le cadrage suit désormais le projet au lieu de l'écraser, discriminé par
 `isMobile` (et non par le nom du projet, qui est gravé dans le nom des fichiers
 de baseline et qu'on ne peut donc pas renommer sans les invalider). Au bureau :
-fenêtre haute, pas de `fullPage`. En mobile : viewport natif et `fullPage`,
-parce que les colonnes ne sont bornées à `100dvh` que sous le préfixe `lg:` —
-sous ce point de rupture, le cockpit redevient une colonne unique et c'est la
-page qui défile.
+fenêtre haute, pas de `fullPage`. En mobile : largeur native de l'appareil, et
+fenêtre haute là aussi — les colonnes ne sont bornées à `100dvh` que sous le
+préfixe `lg:`, donc le cockpit y redevient une colonne unique et c'est la page
+qui défile, ce qui appelait d'abord `fullPage` ; la génération a montré pourquoi
+ce n'était pas jouable (voir plus bas).
 
 Le contrôle du moteur WebKit n'est pas perdu : les captures du portail
 l'exercent toujours, à 420 px sur les deux projets.
