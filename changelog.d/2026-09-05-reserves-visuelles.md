@@ -71,3 +71,13 @@ n'en dépend.
 sur Mac que le CI Linux ne reproduit pas), dans un spec que ce lot ne touche
 pas. **Les 18 tests de `visual.spec.ts` passent**, dont les captures praticien
 au viewport mobile.
+
+**Les trois baselines mobiles sont commises** (run 33949636277) : `fiche-cockpit`
+390×2800, `fiche-tiroir-besoins` 390×664, `fiche-trajectoire-onglet` 390×1900.
+Chacune regardée à pleine résolution — barre de navigation à sa place, en bas ;
+panneaux résolus ; aucune date qui dérive. Les cinq autres images du run sont
+ressorties identiques au bit près, dont `portail-connexion` sur les deux
+projets : le changement de cadrage ne touche que les écrans praticien.
+
+Ce sont les **premières images d'une mise en page que la suite n'avait jamais
+photographiée**.
