@@ -25,6 +25,13 @@ import { validerSaisieResultat } from '@/lib/biology-library/resultats';
 // refuse le doublon exact, et corriger une valeur saisie de travers est un
 // geste qui mérite son propre arbitrage (trace de l'erreur comprise, esprit
 // DC-30) — il n'existe pas encore, et c'est dit ici plutôt qu'improvisé.
+// L'ARBITRAGE, LUI, EST RENDU : `D-124` (2026-09-05) fixe le régime avant
+// tout code — nouvelle ligne chaînée `supersedes_resultat_id`, index unique
+// rendu PARTIEL (`WHERE supersedes_resultat_id IS NULL`), valeur et unité
+// seulement. Conséquence à connaître avant de toucher à cette route : le 409
+// `doublon_mesure` ci-dessous reste un `P2002` et ne bouge pas — seule la
+// correction sort de l'index. Le geste se livre au LOT-02 de « Biologie
+// exploitée », migration seule dans sa PR.
 
 const ROUTE_JOURNAL = '/api/praticien/biologie/resultats';
 

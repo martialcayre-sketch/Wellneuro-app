@@ -4,6 +4,98 @@
 
 ## Décisions actives
 
+### D-124 — Corriger une saisie de résultat : nouvelle ligne chaînée, unicité rendue partielle, valeur et unité seulement
+
+- Date : 2026-09-05
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-09-05,
+  **avant toute ligne de code** — première case du Done du LOT-02)
+- Domaine : rayon biologie fonctionnelle — étage 2 (résultats réels, `D-122`
+  §2). **Aucune borne clinique, aucun seuil** : la correction revalide la
+  FORME exactement comme la saisie (`DC-19`/`DC-20` inchangés).
+- Porte sur : `D-122` §2 (la table `resultats_biologiques`), `D-087` (cycle
+  migration), `D-090` (« corriger se fait en publiant une version qui
+  corrige »), `DC-30` dans son esprit (une erreur se signale, elle ne
+  disparaît pas), campagne « Biologie exploitée » LOT-02
+
+**Ce que la décision tranche** — trois choses : le régime, la forme, le
+périmètre.
+
+**1. Le régime : nouvelle ligne chaînée, jamais de correction en place.** Ce
+n'est pas une préférence, c'est la constitution du dépôt : **au moins dix
+chaînes `supersedes_*` distinctes** existent déjà (réponses, événements de
+confiance, brouillons de protocole, check-ins, nuits et jours d'agenda,
+approbations, rejets, notes, propositions), et le schéma le dit en toutes
+lettres — « append-only par convention, aucune route d'update ; un correctif
+est une nouvelle ligne qui référence l'ancienne ». La correction en place a
+été examinée et **écartée comme dominée** : elle exige de toute façon des
+colonnes pour dire qu'une correction a eu lieu — donc la migration est payée —
+tout en détruisant la valeur erronée et en rendant une correction
+indiscernable d'une saisie neuve dans la trace. Même coût, moins de garanties.
+
+**2. La forme : UNE colonne `supersedes_resultat_id`, et l'index unique
+devient PARTIEL.** Le patron maison se heurte ici à un obstacle propre à cette
+table : `cb_resultat_bio_patient_analyte_idx` est **UNIQUE** sur
+`(id_patient, analyte_code, preleve_le)`, or corriger une valeur c'est écrire
+une seconde ligne sur exactement cette clé. Trois formes ont été pesées ; la
+retenue est celle-ci :
+
+```sql
+-- l'index unique devient partiel : les corrections en sortent
+CREATE UNIQUE INDEX cb_resultat_bio_patient_analyte_idx
+  ON resultats_biologiques (id_patient, analyte_code, preleve_le)
+  WHERE supersedes_resultat_id IS NULL;
+```
+
+Une saisie **neuve** porte `supersedes_resultat_id` à `NULL` et reste soumise
+à l'unicité — le doublon continue de partir en `P2002` → 409 `doublon_mesure`,
+**comportement inchangé**. Une **correction** porte un `supersedes` non nul et
+sort de l'index. Une colonne, un échange d'index, **aucun `UPDATE`**,
+append-only strict intact. La lecture réutilise l'idiome déjà en place,
+`resolveActiveVersion` (`web/src/lib/protocol/versioning.ts`) : la ligne
+courante est celle qu'aucune autre ne supplante, la plus récente en cas
+d'égalité — ce qui tranche aussi une fourche de deux corrections concurrentes.
+
+Les deux formes écartées, et pourquoi :
+
+- **rendre l'index simplement non unique** (le patron d'`AgendaSommeilNuit`) —
+  supprimerait **en silence la garde anti-doublon**, puisque le 409 est un
+  rattrapage de `P2002`. `AgendaSommeilNuit` n'avait aucune garantie base à
+  perdre ; cette table-ci en a une ;
+- **marqueur `remplace_le` sur la ligne d'origine + unique partiel dessus** —
+  tient aussi, mais coûte deux colonnes, un `UPDATE` de la ligne corrigée, et
+  la fin de l'append-only strict pour ne rien gagner de plus.
+
+**3. Le périmètre V1 : valeur et unité seulement.** Corriger le
+`analyte_code` ou le `preleve_le`, ce n'est pas corriger une mesure : c'est en
+**annuler** une et en saisir une autre — or la suppression est explicitement
+hors périmètre du lot et n'existera pas sans décision propre.
+
+**Ce que la livraison devra porter** (opposable au LOT-02) :
+
+- la **migration seule dans sa PR**, cycle `D-087` complet, application
+  constatée par conteneur avant le code qui la consomme ;
+- le contrat `prisma/checks/cb_resultats_biologiques_v1_negatif.sql` amendé —
+  sa **liste blanche de colonnes** refuse toute colonne neuve (« une colonne
+  neuve doit être arbitrée ») : c'est une porte voulue, cette décision la
+  franchit ;
+- horodatage et auteur de la correction **posés serveur, inantidatables**
+  (`saisi_le` par défaut de la base) ;
+- la série affiche la valeur **courante** et **dit qu'une correction a eu
+  lieu** ; la ligne d'origine reste lisible.
+
+**L'écart résiduel, nommé maintenant plutôt que découvert plus tard.** Une
+correction qui atterrirait sur une clé `(patient, analyte, date)` déjà occupée
+par une autre ligne courante **n'est pas rattrapée par `P2002`** — elle est
+hors index par construction. Une vérification applicative est donc **due au
+geste de correction**, et le lot doit la porter.
+
+**Pourquoi maintenant.** `WN_CB_RESULTS_ENABLED` n'est pas posé en production
+et `resultats_biologiques` compte **0 ligne** (`one-off-7473`, 2026-09-05). Un
+échange d'index unique sur une table vide est gratuit ; sur une table peuplée
+il peut échouer sur les données existantes et exige un plan de reprise. Et une
+fois des mesures saisies, le régime de correction devient très coûteux à
+changer.
+
 ### D-123 — La course de deux consignations simultanées n'est pas due : la garde applicative suffit, et le détecteur existe désormais
 
 - Date : 2026-09-04
