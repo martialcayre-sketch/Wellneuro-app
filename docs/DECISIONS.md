@@ -96,6 +96,41 @@ il peut échouer sur les données existantes et exige un plan de reprise. Et une
 fois des mesures saisies, le régime de correction devient très coûteux à
 changer.
 
+**Suivi (2026-09-05) — quatre précisions rapportées par la contre-revue de la
+migration (PR #883, verdict NO-GO initial, levé).** Aucune ne change le régime,
+la forme ni le périmètre ; toutes complètent ce que la décision disait trop vite.
+
+1. **La forme littérale de cette décision laissait la série sans index.** La
+   garde partielle ne couvre que les lignes non supplantées, or la lecture est
+   la série ENTIÈRE — une correction doit rester lisible avec ce qu'elle
+   corrige. La migration ajoute donc `cb_resultat_bio_serie_idx`, non unique,
+   sur les trois mêmes colonnes. **Et le nom de la garde ne bouge pas** :
+   `cb_resultat_bio_patient_analyte_idx` désigne l'unicité depuis la création
+   de la table et continue de la désigner. Recycler ce nom pour l'index de
+   lecture aurait fait dire à la production le contraire du registre — un
+   auditeur y aurait lu une garde disparue, ou l'aurait « réparée » en la
+   rendant totale, ce qui tue toute correction.
+2. **Un `CHECK` de non-réflexivité est ajouté** (`supersedes_resultat_id <>
+   id`) : une ligne qui se supplante elle-même ne serait jamais tête de fil,
+   et la mesure disparaîtrait de la série en silence. **C'est un écart assumé
+   au patron maison** — aucune des dix autres chaînes `supersedes_*` ne le
+   porte, et il est en pratique inatteignable (`id` est un `cuid()`). Il est
+   strictement resserrant, donc conservé ; l'asymétrie avec les dix autres
+   tables reste, elle, à trancher si le cas se pose ailleurs.
+3. **La reprise de `resolveActiveVersion` était surestimée.** La fonction
+   exige `{ inputHash, supersedesDraftId }`, que `ResultatBiologique` n'a pas,
+   et rend UNE tête pour tout le tableau — or une série a une tête **par
+   groupe (analyte, date de prélèvement)**. Le geste devra donc grouper puis
+   adapter, ou la fonction être généralisée. À trancher avant l'écriture.
+4. **La validation de la cible d'une correction n'est pas facultative, et ce
+   n'est pas UNE condition mais QUATRE.** Une ligne au `supersedes` non nul
+   est **hors index par construction** : un `supersedes` accepté sans contrôle
+   contourne la garde anti-doublon autant de fois qu'on veut. Avant écriture,
+   la route doit vérifier que la cible **existe**, appartient **au même
+   dossier**, porte le **même `analyte_code`** et le **même `preleve_le`**, et
+   est elle-même **tête de fil**. La décision n'en nommait qu'une (« même
+   clé ») ; les quatre sont portées au Done du LOT-02.
+
 ### D-123 — La course de deux consignations simultanées n'est pas due : la garde applicative suffit, et le détecteur existe désormais
 
 - Date : 2026-09-04

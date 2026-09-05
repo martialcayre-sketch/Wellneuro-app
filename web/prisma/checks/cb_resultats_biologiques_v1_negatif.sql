@@ -1,16 +1,28 @@
 -- Contrat des résultats biologiques (étage 2 du rayon, CB-09, D-122 §2).
 --
--- La table promet sept choses, et ce fichier les éprouve TOUTES :
+-- La table promet huit choses, et ce fichier les éprouve TOUTES :
 --   1. un résultat valide est ACCEPTÉ, et un SECOND résultat du même analyte
 --      à une autre date aussi (la lecture est une SÉRIE — estimé↔mesuré) ;
---      le doublon exact patient/analyte/date est REFUSÉ ;
+--      le doublon exact patient/analyte/date est REFUSÉ — mais SEULEMENT pour
+--      une saisie NEUVE : depuis `D-124` l'unicité est PARTIELLE
+--      (`WHERE supersedes_resultat_id IS NULL`), si bien qu'une CORRECTION
+--      sur la même clé est ACCEPTÉE, et qu'un doublon neuf reste refusé même
+--      une fois des corrections posées. TROIS faces, pas deux, car deux ne
+--      suffisaient pas : un index rendu non unique laisserait passer le
+--      doublon (cas négatif) ; un index rendu total sur les trois colonnes
+--      refuserait la correction (cas positif) ; mais un index total sur
+--      QUATRE colonnes — les trois plus `supersedes_resultat_id` — passerait
+--      ces deux-là sans broncher. Seule LA FOURCHE le débusque : une SECONDE
+--      correction de la même ligne d'origine, qui porte le même quadruplet.
+--      C'est aussi l'état que `D-124` promet de savoir trancher ;
 --   2. les CHECK mordent (23514) : source hors des deux origines de la
 --      décision, auteur vide ou réduit à des blancs — tabulations comprises,
 --      le trou btrim/1 est fermé ici — ou trop long, unité hors du
 --      vocabulaire partagé (chaîne blanche comprise) ;
---   3. la table porte EXACTEMENT dix colonnes, liste blanche — un
+--   3. la table porte EXACTEMENT onze colonnes, liste blanche — un
 --      `commentaire` ou un `interpretation` text serait un champ clinique
---      libre arrivé sans arbitrage ;
+--      libre arrivé sans arbitrage (la onzième, `supersedes_resultat_id`, est
+--      arrivée par `D-124` : c'est cette porte-là qu'elle a franchie) ;
 --   4. les colonnes porteuses sont NOT NULL — un résultat sans patient, sans
 --      analyte, sans valeur, sans date de prélèvement, sans source ou sans
 --      auteur n'est pas une donnée de dossier ;
@@ -23,7 +35,18 @@
 --      `cb_catalogue_niveau_1_donnees.sql` : la LISTE `ARRAY[...]` extraite
 --      des définitions, le motif IN n'existant pas dans pg_get_constraintdef) ;
 --   7. la RLS deny-all est active et sans policy (posture D-005) — la table
---      porte des DONNÉES DE SANTÉ nominatives.
+--      porte des DONNÉES DE SANTÉ nominatives ;
+--   8. la FORME de l'index, pas seulement son comportement : la garde est un
+--      index UNIQUE À PRÉDICAT et porte toujours son nom d'origine, et
+--      l'index de série n'est PAS unique. Le point 1 dit ce que la base
+--      fait ; celui-ci dit ce qu'elle est — un `@@unique` redéclaré au schéma
+--      rendrait l'index total sans que la dérive schéma ↔ migrations rougisse,
+--      puisque l'état serait cohérent. CHOIX DOCUMENTÉ : ce point n'épingle
+--      ni les COLONNES de la garde ni le CONTENU du prédicat, parce que le
+--      comportement les tient déjà — un unique partiel sur `(id_patient)`
+--      seul ferait rougir `ok2`, un prédicat `WHERE valeur > 0` ferait rougir
+--      `corr1`. Épingler le texte du prédicat le rendrait fragile au
+--      formatage de PostgreSQL sans rien fermer de plus.
 --
 -- Comme les autres tables patient du rayon, la table est VOLONTAIREMENT hors
 -- de `tables_cb` du contrat structurel catalogue : elle porte `id_patient`
@@ -38,6 +61,13 @@ BEGIN;
 DO $$
 DECLARE
   refuse boolean;
+  -- Un `RAISE EXCEPTION` levé DANS le corps d'un bloc est rattrapé par la
+  -- clause `EXCEPTION` de ce même bloc : il tomberait dans `WHEN others` et
+  -- ferait afficher « rejeté pour le mauvais motif (P0001) » là où le vrai
+  -- défaut est « accepté alors qu'il devait être rejeté ». Le drapeau sort le
+  -- verdict du bloc — le contrat échouait déjà, mais en désignant le mauvais
+  -- coupable, précisément quand on a le plus besoin qu'il soit juste.
+  accepte boolean;
   nb integer;
   colonnes text[];
   cible text;
@@ -46,7 +76,8 @@ DECLARE
 
   COLONNES_ATTENDUES CONSTANT text[] := ARRAY[
     'analyte_code', 'created_at', 'id', 'id_patient', 'preleve_le',
-    'saisi_le', 'saisi_par', 'source', 'unite', 'valeur'
+    'saisi_le', 'saisi_par', 'source', 'supersedes_resultat_id', 'unite',
+    'valeur'
   ];
 
   -- Chaque entrée : une insertion qui DOIT échouer sur un CHECK. Toutes
@@ -72,7 +103,12 @@ DECLARE
         VALUES ('t5', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, 'grammes', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$],
     ['unité en chaîne blanche (une unité absente est NULL)',
      $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
-        VALUES ('t6', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, '  ', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$]
+        VALUES ('t6', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, '  ', TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr')$q$],
+    -- D-124 : une ligne qui se supplante elle-même ne serait JAMAIS tête de
+    -- fil — la mesure disparaîtrait de la série sans que rien ne le signale.
+    ['une ligne qui se supplante elle-même',
+     $q$INSERT INTO resultats_biologiques (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+        VALUES ('t7', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 42.5, 'mg/L', TIMESTAMP '2026-09-03 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 't7')$q$]
   ];
 BEGIN
   -- ── 0. Fixtures — patient fictif autorisé et analyte de contrat ──────────
@@ -113,13 +149,13 @@ BEGIN
   END;
 
   -- Une date de prélèvement identifie une mesure dans la série d'un analyte.
+  accepte := false;
   BEGIN
     INSERT INTO resultats_biologiques
       (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
     VALUES ('doublon', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 43.0, 'mg/L',
             TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
-    RAISE EXCEPTION
-      'RESULTATS BIO: un doublon patient/analyte/date a été ACCEPTÉ alors qu''il doit être rejeté';
+    accepte := true;
   EXCEPTION
     WHEN unique_violation THEN
       NULL;
@@ -128,6 +164,99 @@ BEGIN
         'RESULTATS BIO: le doublon patient/analyte/date a été rejeté pour le mauvais motif (SQLSTATE %, attendu 23505 unique_violation)',
         SQLSTATE;
   END;
+  IF accepte THEN
+    RAISE EXCEPTION
+      'RESULTATS BIO: un doublon patient/analyte/date a été ACCEPTÉ alors qu''il doit être rejeté';
+  END IF;
+
+  -- ── 1 bis. La CORRECTION passe là où le doublon échoue (D-124) ───────────
+  -- Même clé (patient, analyte, date) que `ok1`, et c'est tout l'objet : une
+  -- correction porte forcément la clé de ce qu'elle corrige. Elle sort de
+  -- l'index parce que `supersedes_resultat_id` n'est pas nul.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('corr1', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 45.5, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'ok1');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: la CORRECTION d''une mesure a été refusée (SQLSTATE %) — l''unicité est-elle redevenue TOTALE ? Aucune correction ne serait alors possible.',
+        SQLSTATE;
+  END;
+
+  -- LA FOURCHE — et c'est le SEUL cas qui distingue l'index livré d'un index
+  -- faux plausible. Un unique TOTAL sur QUATRE colonnes (les trois plus
+  -- `supersedes_resultat_id`) passerait tous les autres cas de ce fichier à
+  -- l'identique : `corr1`, `corr2` et le rejet de `doublon2` en sortiraient
+  -- inchangés. Il échoue ici seulement : une SECONDE correction de la MÊME
+  -- ligne d'origine porte le même quadruplet que `corr1`.
+  -- La fourche n'est pas un accident toléré, c'est un état que D-124 promet
+  -- de savoir trancher (`resolveActiveVersion` : « la plus récente »).
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('corr1bis', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 45.9, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'ok1');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: une SECONDE correction de la même ligne a été refusée (SQLSTATE %) — l''unicité n''est pas celle qui est promise : un index unique TOTAL sur (patient, analyte, date, supersedes) passerait tous les autres cas et échouerait ici. La fourche que resolveActiveVersion doit trancher serait impossible.',
+        SQLSTATE;
+  END;
+
+  -- Corriger une correction : le fil a plus de deux maillons.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('corr2', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 46.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'corr1');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: la correction d''une correction a été refusée (SQLSTATE %) — le fil doit accepter plus de deux maillons.',
+        SQLSTATE;
+  END;
+
+  -- Une cible INEXISTANTE est ACCEPTÉE : la référence est souple, sans clé
+  -- étrangère (patron maison), et le contrat le DIT plutôt que de laisser
+  -- croire à une FK oubliée. Conséquence à porter au geste : une ligne au
+  -- `supersedes` non nul étant hors index, un `supersedes` accepté sans
+  -- contrôle contourne la garde anti-doublon autant de fois qu'on veut. La
+  -- validation de la cible est due CÔTÉ ROUTE, et elle n'est pas facultative.
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par, supersedes_resultat_id)
+    VALUES ('orphelin', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 48.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr', 'ligne_qui_n_existe_pas');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: une chaîne orpheline a été refusée (SQLSTATE %) — une clé étrangère est-elle apparue ? La référence est SOUPLE par décision ; si elle devient dure, le patron maison et l''effacement IDP2 sont à rejuger.',
+        SQLSTATE;
+  END;
+
+  -- Et l'unicité tient TOUJOURS pour une saisie neuve, corrections posées :
+  -- c'est la moitié de la promesse que l'index partiel ne doit pas perdre.
+  accepte := false;
+  BEGIN
+    INSERT INTO resultats_biologiques
+      (id, id_patient, analyte_code, valeur, unite, preleve_le, source, saisi_par)
+    VALUES ('doublon2', 'PAT_CONTRAT_RESBIO', 'BIO_CONTRAT_RESBIO', 47.0, 'mg/L',
+            TIMESTAMP '2026-09-01 08:00:00', 'saisie_praticien', 'praticien@wellneuro.fr');
+    accepte := true;
+  EXCEPTION
+    WHEN unique_violation THEN
+      NULL;
+    WHEN others THEN
+      RAISE EXCEPTION
+        'D-124: le doublon de saisie neuve a été rejeté pour le mauvais motif (SQLSTATE %, attendu 23505 unique_violation)',
+        SQLSTATE;
+  END;
+  IF accepte THEN
+    RAISE EXCEPTION
+      'D-124: une saisie NEUVE en doublon a été ACCEPTÉE alors que des corrections existent — l''index partiel a perdu sa moitié négative, et le 409 doublon_mesure (P2002) est mort en silence';
+  END IF;
 
   -- ── 2. Les CHECK mordent ─────────────────────────────────────────────────
   FOR i IN 1 .. array_length(cas, 1) LOOP
@@ -224,7 +353,42 @@ BEGIN
     RAISE EXCEPTION 'RESULTATS BIO: policy inattendue (deny-all attendu)';
   END IF;
 
-  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, % CHECK rejetants, 10 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
+  -- ── 8. La FORME de l'index, pas seulement son comportement (D-124) ───────
+  -- Les cas 1 et 1 bis prouvent ce que la base FAIT ; ceci prouve ce qu'elle
+  -- EST. Deux régressions distinctes sont visées : un `@@unique` redéclaré au
+  -- schéma (l'index redeviendrait TOTAL, et la dérive schéma ↔ migrations
+  -- resterait verte puisque l'état serait cohérent), et le recyclage du nom
+  -- historique pour un index de lecture — le nom désigne la GARDE depuis la
+  -- création de la table, et un audit par nom doit continuer de la trouver.
+  -- `indrelid` verrouille schéma ET table d'un coup : sans lui, un index
+  -- homonyme ailleurs pourrait compter à la place de celui qu'on vise.
+  -- `indisvalid` écarte un index invalide, qui compterait pour un.
+  SELECT count(*) INTO nb
+  FROM pg_index i
+  JOIN pg_class ix ON ix.oid = i.indexrelid
+  WHERE ix.relname = 'cb_resultat_bio_patient_analyte_idx'
+    AND i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisvalid
+    AND i.indisunique
+    AND i.indpred IS NOT NULL;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION
+      'D-124: `cb_resultat_bio_patient_analyte_idx` n''est plus un index UNIQUE À PRÉDICAT. Soit l''unicité est redevenue totale (aucune correction n''est plus possible), soit le nom de la garde a été donné à autre chose (un audit par nom conclurait que la garde a sauté).';
+  END IF;
+
+  SELECT count(*) INTO nb
+  FROM pg_index i
+  JOIN pg_class ix ON ix.oid = i.indexrelid
+  WHERE ix.relname = 'cb_resultat_bio_serie_idx'
+    AND i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisvalid
+    AND NOT i.indisunique;
+  IF nb <> 1 THEN
+    RAISE EXCEPTION
+      'D-124: `cb_resultat_bio_serie_idx` (lecture de la série ENTIÈRE, corrections comprises) est absent ou devenu unique — une correction ne serait plus lisible avec ce qu''elle corrige.';
+  END IF;
+
+  RAISE NOTICE 'RESULTATS BIO: série de deux mesures acceptée, fil de correction à trois maillons accepté, fourche acceptée, chaîne orpheline acceptée (référence souple), doublon de saisie neuve toujours refusé, garde unique À PRÉDICAT sous son nom d''origine (D-124), % cas rejetants dont un CHECK de non-réflexivité, 11 colonnes exactes, 6 NOT NULL, 2 FK RESTRICT, vocabulaire d''unités aligné sur le catalogue, RLS deny-all.',
     array_length(cas, 1);
 END $$;
 
