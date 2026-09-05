@@ -166,10 +166,33 @@ async function ouvrirHubPortail(page: Page): Promise<void> {
   await page.getByRole('heading', { name: 'Mon parcours' }).waitFor();
 }
 
+/**
+ * Le projet en cours est-il le projet MOBILE ?
+ *
+ * `devices['iPhone 13']` pose `isMobile: true` — c'est le seul discriminant qui
+ * ne dépende pas du nom du projet, lequel se retrouve déjà dans le nom de
+ * fichier des baselines et qu'on ne peut donc pas renommer sans les invalider.
+ */
+function estMobile(testInfo: TestInfo): boolean {
+  return testInfo.project.use.isMobile === true;
+}
+
 test.describe('Preuve visuelle — Observatoire (praticien)', () => {
-  test.beforeEach(async ({ page, context }) => {
+  // LE CADRAGE SUIT LE PROJET, ET NE L'ÉCRASE PLUS.
+  //
+  // Ce `beforeEach` posait 1440×900 pour LES DEUX projets. Le projet « iPhone
+  // 13 » photographiait donc la mise en page BUREAU : ses baselines ne
+  // prouvaient rien sur le point de rupture mobile, seulement sur le moteur de
+  // rendu WebKit — alors que leur nom disait le contraire, et que le point de
+  // rupture mobile du cockpit n'était couvert nulle part.
+  //
+  // Chaque projet garde désormais son viewport : 1440 px au bureau, le viewport
+  // natif de l'appareil en mobile. Le contrôle du moteur WebKit n'est pas perdu
+  // — il reste exercé par les captures du portail, prises à 420 px sur les deux
+  // projets.
+  test.beforeEach(async ({ page, context }, testInfo) => {
     await context.addCookies([await praticienSessionCookie()]);
-    await page.setViewportSize({ width: 1440, height: 900 });
+    if (!estMobile(testInfo)) await page.setViewportSize({ width: 1440, height: 900 });
   });
 
   test('fiche patient — poste de pilotage', async ({ page }, testInfo) => {
@@ -192,7 +215,13 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // le contenu (mesuré à ~1460 px sur l'image du 2026-09-04) avec la marge
     // qu'il faut pour qu'il grandisse sans être coupé — une baseline tronquée
     // serait pire qu'absente.
-    await page.setViewportSize({ width: 1440, height: 1700 });
+    //
+    // EN MOBILE, RIEN DE TOUT CELA NE S'APPLIQUE : les colonnes ne sont bornées
+    // à `100dvh` que sous le préfixe `lg:`. Sous ce point de rupture, le cockpit
+    // redevient une colonne unique et c'est LA PAGE qui défile — donc `fullPage`,
+    // et le viewport natif de l'appareil. Étirer la fenêtre y serait exactement
+    // le contresens que la fenêtre haute corrige au bureau.
+    if (!estMobile(testInfo)) await page.setViewportSize({ width: 1440, height: 1700 });
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}`);
     await page.getByRole('tablist', { name: 'Cycle clinique' }).waitFor();
 
@@ -226,7 +255,7 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     //
     // Le tiroir des 12 besoins, lui, RESTE en fenêtre ordinaire : c'est un
     // `dialog` ancré au viewport, que l'étirer ne rendrait pas plus lisible.
-    await capturer(page, testInfo, 'fiche-cockpit');
+    await capturer(page, testInfo, 'fiche-cockpit', { fullPage: estMobile(testInfo) });
   });
 
   test('fiche patient — tiroir « Les 12 besoins » ouvert', async ({ page }, testInfo) => {
