@@ -47,6 +47,24 @@ page qui défile.
 Le contrôle du moteur WebKit n'est pas perdu : les captures du portail
 l'exercent toujours, à 420 px sur les deux projets.
 
+**La première génération mobile a montré un défaut imprévu.** `MobileBottomNav`
+est en `position: fixed` : une capture `fullPage` la fige à la hauteur du
+viewport, donc au milieu d'une image de 2539 px — par-dessus « PHASE DUE /
+Décision 21 j » sur le cockpit, et par-dessus « Aucun dépôt à ce jour » sur
+l'onglet Trajectoire. Deux baselines qui auraient enterré sous un artefact de
+capture le contenu même qu'elles surveillent.
+
+Le remède est celui du cockpit bureau — fenêtre haute plutôt que `fullPage` —
+pour une cause différente : là-bas des colonnes bornées à `100dvh`, ici un
+élément fixe. 2800 px pour un contenu mesuré à 2539, 1900 px pour 1669. Le vide
+en bas ne coûte plus rien depuis que le seuil est absolu (#879) : tant qu'il
+s'agissait d'un ratio, sur-dimensionner la fenêtre achetait de la tolérance
+ailleurs.
+
+`dashboard-trajectoires` et `dashboard-patients` gardent l'artefact en mobile,
+volontairement : ce sont des captures de revue (`pixel: false`), aucune baseline
+n'en dépend.
+
 **Validation.** T1 : exit 0. T2 : exit 1 — sur `portail-lien-magique.spec.ts`
 (iPhone 13), `page.goto` expiré à 120 s, signature de `D-049` (blocage WebKit
 sur Mac que le CI Linux ne reproduit pas), dans un spec que ce lot ne touche
