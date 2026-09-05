@@ -100,7 +100,17 @@ export default defineConfig({
   // (Michel Dogné, PAT_SEED_03) — des runs concurrents sur le même patient
   // se marcheraient dessus (reset/token/assignations partagés).
   workers: 1,
-  reporter: 'list',
+  // `list` pour la console, `html` pour l'après-coup. Le second manquait, et
+  // son absence était SILENCIEUSE : `ci.yml` publie depuis toujours un artefact
+  // `web/playwright-report/` que rien n'écrivait — `web/.gitignore` l'ignorait
+  // déjà, ce qui achevait de le rendre crédible. Un échec E2E en CI ne laissait
+  // donc ni images de diff, ni trace lisible : il fallait aller chercher le log
+  // brut du job par l'API (constaté le 2026-09-05 pour lire la mesure du seuil
+  // visuel — `gh run view --log` tronque avant l'étape E2E sans le dire).
+  //
+  // `open: 'never'` est indispensable : le défaut `on-failure` ouvre un serveur
+  // et ATTEND, ce qui suspendrait un run local en échec et le CI avec.
+  reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   // Marges plus larges que les défauts (30s/5s) : le scénario enchaîne ~15
   // appels serveur contre la DB de dev (pooler Supabase distant en local, ou
   // service Postgres en CI), qui ajoute une latence notable.
