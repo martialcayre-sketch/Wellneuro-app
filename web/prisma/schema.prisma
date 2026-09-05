@@ -2027,13 +2027,19 @@ model ResultatBiologique {
   //
   // L'UNICITÉ EST PARTIELLE et vit dans la migration seule — Prisma ne sait
   // pas exprimer un index partiel (même situation que
-  // `biology_reference_ranges`) : `cb_resultat_bio_courant_key` est UNIQUE
-  // sur (patient, analyte, date) `WHERE supersedes_resultat_id IS NULL`. Une
-  // saisie NEUVE reste donc soumise à l'unicité — le 409 `doublon_mesure` est
-  // un `P2002` et ne bouge pas — pendant qu'une CORRECTION, qui porte un
-  // `supersedes` non nul, en sort. Ne pas redéclarer ici un `@@unique` : il
-  // recréerait l'index TOTAL et rendrait toute correction impossible.
-  @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_patient_analyte_idx")
+  // `biology_reference_ranges`) : `cb_resultat_bio_patient_analyte_idx`, qui
+  // garde son nom d'origine, est UNIQUE sur (patient, analyte, date)
+  // `WHERE supersedes_resultat_id IS NULL`. Une saisie NEUVE reste donc
+  // soumise à l'unicité — le 409 `doublon_mesure` est un `P2002` et ne bouge
+  // pas — pendant qu'une CORRECTION, qui porte un `supersedes` non nul, en
+  // sort. Ne pas redéclarer ici un `@@unique` : il recréerait l'index TOTAL
+  // et rendrait toute correction impossible. Ce commentaire N'EST PAS une
+  // garde — c'est le contrat `cb_resultats_biologiques_v1_negatif.sql` qui
+  // tient la régression, par sa forme d'index et par le cas de la fourche.
+  //
+  // `cb_resultat_bio_serie_idx` sert la lecture de la série ENTIÈRE,
+  // corrections comprises — la garde partielle ne couvre que les têtes.
+  @@index([idPatient, analyteCode, preleveLe], map: "cb_resultat_bio_serie_idx")
   @@index([supersedesResultatId], map: "cb_resultat_bio_supersedes_idx")
   @@map("resultats_biologiques")
 }
