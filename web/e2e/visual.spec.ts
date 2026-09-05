@@ -166,10 +166,61 @@ async function ouvrirHubPortail(page: Page): Promise<void> {
   await page.getByRole('heading', { name: 'Mon parcours' }).waitFor();
 }
 
+/**
+ * Le projet en cours est-il le projet MOBILE ?
+ *
+ * `devices['iPhone 13']` pose `isMobile: true` — c'est le seul discriminant qui
+ * ne dépende pas du nom du projet, lequel se retrouve déjà dans le nom de
+ * fichier des baselines et qu'on ne peut donc pas renommer sans les invalider.
+ */
+function estMobile(testInfo: TestInfo): boolean {
+  return testInfo.project.use.isMobile === true;
+}
+
+/**
+ * Fenêtre assez haute pour que toute la page tienne — À LA PLACE de `fullPage`,
+ * et pour une raison découverte sur l'image, non supposée.
+ *
+ * `MobileBottomNav` est en `position: fixed`. Une capture `fullPage` la laisse à
+ * la hauteur du VIEWPORT : sur la première génération mobile (run 33949271912),
+ * elle flottait au milieu d'une image de 2539 px, par-dessus le titre « PHASE
+ * DUE / Décision 21 j » du cockpit et par-dessus « Aucun dépôt à ce jour » de
+ * l'onglet Trajectoire — masquant dans les deux cas le contenu qu'on venait
+ * photographier.
+ *
+ * Une fenêtre haute la remet où elle est réellement, au bas de l'écran. C'est le
+ * même remède qu'au bureau (#866, #871) pour une cause différente : là-bas des
+ * colonnes bornées à `100dvh`, ici un élément fixe.
+ *
+ * La largeur reste celle de l'appareil : seule la hauteur est forcée.
+ *
+ * Restent concernées, et volontairement laissées telles quelles :
+ * `dashboard-trajectoires` et `dashboard-patients`, qui capturent en `fullPage`
+ * et portent donc le même artefact en mobile. Ce sont des captures de REVUE
+ * (`pixel: false`) — aucune baseline n'en dépend, et les traiter demanderait de
+ * mesurer deux hauteurs de plus pour des images que rien ne compare.
+ */
+async function fenetreHaute(page: Page, hauteur: number): Promise<void> {
+  const largeur = page.viewportSize()?.width ?? 390;
+  await page.setViewportSize({ width: largeur, height: hauteur });
+}
+
 test.describe('Preuve visuelle — Observatoire (praticien)', () => {
-  test.beforeEach(async ({ page, context }) => {
+  // LE CADRAGE SUIT LE PROJET, ET NE L'ÉCRASE PLUS.
+  //
+  // Ce `beforeEach` posait 1440×900 pour LES DEUX projets. Le projet « iPhone
+  // 13 » photographiait donc la mise en page BUREAU : ses baselines ne
+  // prouvaient rien sur le point de rupture mobile, seulement sur le moteur de
+  // rendu WebKit — alors que leur nom disait le contraire, et que le point de
+  // rupture mobile du cockpit n'était couvert nulle part.
+  //
+  // Chaque projet garde désormais son viewport : 1440 px au bureau, le viewport
+  // natif de l'appareil en mobile. Le contrôle du moteur WebKit n'est pas perdu
+  // — il reste exercé par les captures du portail, prises à 420 px sur les deux
+  // projets.
+  test.beforeEach(async ({ page, context }, testInfo) => {
     await context.addCookies([await praticienSessionCookie()]);
-    await page.setViewportSize({ width: 1440, height: 900 });
+    if (!estMobile(testInfo)) await page.setViewportSize({ width: 1440, height: 900 });
   });
 
   test('fiche patient — poste de pilotage', async ({ page }, testInfo) => {
@@ -192,7 +243,16 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // le contenu (mesuré à ~1460 px sur l'image du 2026-09-04) avec la marge
     // qu'il faut pour qu'il grandisse sans être coupé — une baseline tronquée
     // serait pire qu'absente.
-    await page.setViewportSize({ width: 1440, height: 1700 });
+    //
+    // EN MOBILE, la cause change mais le remède est le même. Les colonnes ne
+    // sont bornées à `100dvh` que sous `lg:` — le cockpit y redevient une
+    // colonne unique et c'est la page qui défile. `fullPage` conviendrait, s'il
+    // n'y avait `MobileBottomNav` en `position: fixed` : voir `fenetreHaute`.
+    // 2800 px pour un contenu mesuré à 2539 (run 33949271912) — une baseline
+    // tronquée serait pire qu'absente, et depuis #879 le seuil est ABSOLU :
+    // du vide en bas n'achète plus de tolérance ailleurs.
+    if (estMobile(testInfo)) await fenetreHaute(page, 2800);
+    else await page.setViewportSize({ width: 1440, height: 1700 });
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}`);
     await page.getByRole('tablist', { name: 'Cycle clinique' }).waitFor();
 
@@ -264,6 +324,10 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
 
   test('fiche patient — onglet Trajectoire, état vide honnête (SP-TRAJ LOT-01)', async ({ page }, testInfo) => {
     await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}?onglet=trajectoire`);
+    // Mobile : fenêtre haute plutôt que `fullPage`, pour la barre fixe (voir
+    // `fenetreHaute`). 1900 px pour un contenu mesuré à 1669. Au bureau, pas de
+    // barre fixe à ce point de rupture — `fullPage` y reste juste.
+    if (estMobile(testInfo)) await fenetreHaute(page, 1900);
     await attendreFicheTrajectoirePosee(page);
     // COMPARAISON AU PIXEL ACTIVÉE — le motif d'exclusion précédent ne tenait
     // pas. Il invoquait « les textes datés » : l'image du 2026-09-04 n'en porte
@@ -282,7 +346,7 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     // comparaison rougira — ce qui est précisément ce qu'on veut savoir, et ce
     // qu'aucun raisonnement ne remplace. Le motif serait alors MESURÉ, là où le
     // précédent était supposé.
-    await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: true });
+    await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: !estMobile(testInfo) });
   });
 
   test('patients & assignations', async ({ page }, testInfo) => {
