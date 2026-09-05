@@ -48,7 +48,8 @@ que de laisser croire à une contrainte oubliée. Conséquence à porter au code
 une ligne au `supersedes` non nul étant hors index, un `supersedes` accepté
 sans contrôle contournerait la garde anti-doublon sans limite.
 
-**Cette migration n'ouvre aucun geste** : elle prépare le terrain, le geste de
-correction vient au lot suivant. `WN_CB_RESULTS_ENABLED` n'est pas posé en
-production et la table comptait 0 ligne — l'échange d'index est gratuit
-aujourd'hui, il ne l'aurait pas été une fois des mesures saisies.
+**Cette migration n'ouvre aucun geste** : elle prépare le terrain, et le geste
+de correction vient au **temps suivant du même lot**, une fois la migration
+appliquée et constatée en production. `WN_CB_RESULTS_ENABLED` n'est pas posé
+et la table comptait 0 ligne — l'échange d'index est gratuit aujourd'hui, il
+ne l'aurait pas été une fois des mesures saisies.

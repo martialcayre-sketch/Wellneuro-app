@@ -5,10 +5,10 @@
 -- l'ancienne, jamais un `update` (au moins dix chaînes `supersedes_*` au
 -- schéma, esprit DC-30 : une erreur se signale, elle ne disparaît pas).
 --
--- L'OBSTACLE, et ce que cette migration en fait. `cb_resultat_bio_patient_
--- analyte_idx` était UNIQUE sur (patient, analyte, date de prélèvement) : une
--- correction, qui porte par définition la MÊME clé, était structurellement
--- impossible. L'unicité devient donc PARTIELLE — elle ne vise que les lignes
+-- L'OBSTACLE, et ce que cette migration en fait. L'index
+-- `cb_resultat_bio_patient_analyte_idx` était UNIQUE sur (patient, analyte,
+-- date de prélèvement) : une correction, qui porte par définition la MÊME
+-- clé, était structurellement impossible. L'unicité devient donc PARTIELLE — elle ne vise que les lignes
 -- dont `supersedes_resultat_id IS NULL`, c'est-à-dire les saisies NEUVES.
 -- Conséquence tenue exprès : le 409 `doublon_mesure` de la route est un
 -- rattrapage de `P2002`, et il ne bouge pas — un doublon de saisie neuve

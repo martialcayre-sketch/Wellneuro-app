@@ -41,7 +41,12 @@
 --      l'index de série n'est PAS unique. Le point 1 dit ce que la base
 --      fait ; celui-ci dit ce qu'elle est — un `@@unique` redéclaré au schéma
 --      rendrait l'index total sans que la dérive schéma ↔ migrations rougisse,
---      puisque l'état serait cohérent.
+--      puisque l'état serait cohérent. CHOIX DOCUMENTÉ : ce point n'épingle
+--      ni les COLONNES de la garde ni le CONTENU du prédicat, parce que le
+--      comportement les tient déjà — un unique partiel sur `(id_patient)`
+--      seul ferait rougir `ok2`, un prédicat `WHERE valeur > 0` ferait rougir
+--      `corr1`. Épingler le texte du prédicat le rendrait fragile au
+--      formatage de PostgreSQL sans rien fermer de plus.
 --
 -- Comme les autres tables patient du rayon, la table est VOLONTAIREMENT hors
 -- de `tables_cb` du contrat structurel catalogue : elle porte `id_patient`
@@ -355,10 +360,15 @@ BEGIN
   -- resterait verte puisque l'état serait cohérent), et le recyclage du nom
   -- historique pour un index de lecture — le nom désigne la GARDE depuis la
   -- création de la table, et un audit par nom doit continuer de la trouver.
+  -- `indrelid` verrouille schéma ET table d'un coup : sans lui, un index
+  -- homonyme ailleurs pourrait compter à la place de celui qu'on vise.
+  -- `indisvalid` écarte un index invalide, qui compterait pour un.
   SELECT count(*) INTO nb
   FROM pg_index i
   JOIN pg_class ix ON ix.oid = i.indexrelid
   WHERE ix.relname = 'cb_resultat_bio_patient_analyte_idx'
+    AND i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisvalid
     AND i.indisunique
     AND i.indpred IS NOT NULL;
   IF nb <> 1 THEN
@@ -370,6 +380,8 @@ BEGIN
   FROM pg_index i
   JOIN pg_class ix ON ix.oid = i.indexrelid
   WHERE ix.relname = 'cb_resultat_bio_serie_idx'
+    AND i.indrelid = 'public.resultats_biologiques'::regclass
+    AND i.indisvalid
     AND NOT i.indisunique;
   IF nb <> 1 THEN
     RAISE EXCEPTION
