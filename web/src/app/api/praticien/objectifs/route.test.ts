@@ -29,6 +29,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // expressément bien que jamais appelé — sans lui, l'assertion « la route
     // praticien n'écrit pas cette table » lèverait au lieu de compter zéro.
     reponseJalonObjectif: { findMany: vi.fn(), create: vi.fn() },
+    // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. `create` est moqué ici
+    // bien que cette route ne l'appelle pas — il vit à `objectifs/fin`.
+    finObjectif: { findMany: vi.fn(), create: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     // Alliance 6.0-B, LOT-03 : la reprise d'une proposition. `update` et
     // `delete` sont moqués EXPRÈS alors que la route ne les appelle jamais —
@@ -121,6 +124,7 @@ describe('/api/praticien/objectifs', () => {
     prisma.amendementObjectif.findMany.mockResolvedValue([]);
     prisma.amendementObjectif.findUnique.mockResolvedValue(null);
     prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
+    prisma.finObjectif.findMany.mockResolvedValue([]);
     prisma.propositionObjectif.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.create.mockResolvedValue({ id: 'DIS_NEUVE' });

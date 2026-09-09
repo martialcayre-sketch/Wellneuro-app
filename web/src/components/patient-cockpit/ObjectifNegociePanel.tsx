@@ -9,6 +9,7 @@ import type {
   ReponseJalonExposee,
   TrajectoireObjectif,
 } from '@/app/api/praticien/objectifs/route';
+import type { LectureFin } from '@/lib/praticien/objectifNegocie';
 // La borne haute de l'échelle vient du module PUR, jamais recopiée : « sur 10 »
 // écrit en dur ici mentirait le jour où la borne bouge côté serveur.
 import { EVA_MAX } from '@/lib/praticien/objectifNegocie';
@@ -369,6 +370,13 @@ export function ObjectifNegociePanel({
   const [erreur, setErreur] = useState('');
   const [objectifs, setObjectifs] = useState<ObjectifExpose[]>([]);
   const [trajectoires, setTrajectoires] = useState<TrajectoireObjectif[]>([]);
+  // L'ÉTAT DE FIN DE CHAQUE TÊTE, servi par le serveur (`D-161`). L'écran ne le
+  // calcule pas : la règle « le témoignage cède à la preuve » vit dans le
+  // module, et deux lectures de la même chose finiraient par diverger.
+  const [fins, setFins] = useState<Record<string, LectureFin>>({});
+  const [tetesActives, setTetesActives] = useState(0);
+  const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
+  const [erreurDepartage, setErreurDepartage] = useState('');
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
@@ -422,6 +430,8 @@ export function ObjectifNegociePanel({
       }
       setObjectifs(payload.objectifs);
       setTrajectoires(payload.trajectoires);
+      setFins(payload.fins);
+      setTetesActives(payload.tetesActives);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
       setAmendements(payload.amendements);
@@ -432,6 +442,45 @@ export function ObjectifNegociePanel({
       setEtat('erreur');
     }
   }, [idPatient]);
+
+  /**
+   * LE DÉPARTAGE — et c'est le seul geste qui ramène deux têtes à une.
+   * `supersedes_objectif_id` étant à parent unique, aucun ajout d'objectif ne
+   * peut faire décroître le nombre de têtes : il faut une ligne de FIN sur la
+   * racine perdante, portant la racine qui prend la suite (`D-161`, motif
+   * `remplace`). Rien n'est effacé — la chaîne écartée reste lisible, marquée.
+   */
+  const departager = useCallback(
+    async (racinePerdante: string, racineGagnante: string) => {
+      setDepartageEnCours(racinePerdante);
+      setErreurDepartage('');
+      try {
+        const reponse = await fetch('/api/praticien/objectifs/fin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idPatient,
+            racineObjectifId: racinePerdante,
+            motif: 'remplace',
+            voix: 'praticien',
+            sens: 'declare',
+            remplaceParRacineId: racineGagnante,
+          }),
+        });
+        const payload = (await reponse.json()) as { ok: boolean; error?: string };
+        if (!reponse.ok || !payload.ok) {
+          setErreurDepartage(payload.error ?? 'Le départage n’a pas pu être enregistré.');
+          return;
+        }
+        await chargerDossier();
+      } catch {
+        setErreurDepartage('Le départage n’a pas pu être enregistré.');
+      } finally {
+        setDepartageEnCours(null);
+      }
+    },
+    [idPatient, chargerDossier],
+  );
 
   const chargerPropositions = useCallback(async () => {
     setErreurGeste('');
@@ -921,14 +970,72 @@ export function ObjectifNegociePanel({
             <p className="text-base text-muted-foreground">Aucun objectif négocié pour ce dossier.</p>
           )}
 
-          {objectifs.length > 1 && (
-            // On n'en garde PAS un seul : deux reformulations concurrentes ont
-            // créé deux versions courantes, et départager en silence ferait
-            // disparaître le travail de l'une des deux (`DC-30`).
-            <p role="status" className="text-sm text-status-warning">
-              {objectifs.length} versions courantes coexistent pour ce dossier — deux reformulations ont été
-              enregistrées en parallèle. Elles sont toutes affichées ; aucune n’est écartée.
-            </p>
+          {tetesActives > 1 && (
+            // ON N'EN GARDE PAS UN SEUL EN SILENCE : deux reformulations
+            // concurrentes ont créé deux versions courantes, et trancher sans le
+            // dire ferait disparaître le travail de l'une des deux (`DC-30`).
+            // Mais l'état ne se subit plus : depuis `D-161`, un geste EXPLICITE
+            // du praticien départage, et il porte son nom.
+            //
+            // TANT QU'IL N'EST PAS POSÉ, LE PATIENT NE PEUT RIEN RÉPONDRE : le
+            // portail refuse ses trois gestes en 409. Le dire ici, c'est dire
+            // pourquoi le geste presse.
+            <section
+              role="status"
+              className="rounded-lg border border-status-warning/40 bg-status-warning/5 p-3"
+            >
+              <p className="text-sm text-status-warning">
+                {tetesActives} versions courantes coexistent pour ce dossier — deux reformulations ont
+                été enregistrées en parallèle. <strong>Votre patient ne peut ni ratifier, ni contester,
+                ni proposer une autre formulation</strong> tant qu’elles ne sont pas départagées.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choisir laquelle poursuivre n’efface rien : l’autre chaîne reste lisible, marquée
+                comme remplacée, avec tout ce que le patient y a écrit.
+              </p>
+              <ul className="mt-3 flex flex-col gap-2">
+                {trajectoires
+                  .filter((t) => fins[t.idObjectif]?.etat !== 'close')
+                  .map((gardee) => {
+                    const racineGardee = gardee.lignes[gardee.lignes.length - 1]?.id;
+                    const courante = gardee.lignes[0];
+                    if (!racineGardee || !courante) return null;
+                    return (
+                      <li key={gardee.idObjectif}>
+                        <button
+                          type="button"
+                          disabled={departageEnCours !== null}
+                          onClick={() => {
+                            // Toutes les AUTRES chaînes actives cèdent la place à
+                            // celle-ci — une ligne `remplace` par racine perdante.
+                            const perdantes = trajectoires
+                              .filter((t) => t.idObjectif !== gardee.idObjectif)
+                              .filter((t) => fins[t.idObjectif]?.etat !== 'close')
+                              .map((t) => t.lignes[t.lignes.length - 1]?.id)
+                              .filter((id): id is string => typeof id === 'string');
+                            void (async () => {
+                              for (const perdante of perdantes) {
+                                await departager(perdante, racineGardee);
+                              }
+                            })();
+                          }}
+                          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        >
+                          <span className="block font-medium">Poursuivre celle-ci</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            « {courante.enoncePatient} »
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+              {erreurDepartage && (
+                <p role="alert" className="mt-2 text-sm text-status-danger">
+                  {erreurDepartage}
+                </p>
+              )}
+            </section>
           )}
 
           {trajectoires.map((trajectoire) => {
