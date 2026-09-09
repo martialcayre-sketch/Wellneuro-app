@@ -207,6 +207,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.reponseJalonObjectif.deleteMany({ where: par })
     ).count;
 
+    // La fin d'une chaîne d'objectif (Alliance 6.0-B, `D-161`) : même régime
+    // FK RESTRICT. Elle dit pourquoi une chaîne a cessé d'être ce sur quoi on
+    // travaillait, et porte la voix de l'un comme de l'autre — elle ne survit
+    // pas plus au dossier que les gestes qu'elle conclut.
+    supprimees.finsObjectif = (
+      await tx.finObjectif.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

@@ -810,6 +810,23 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_jalons_objectif_v1_negatif.sql
 
+      # La fin d'une chaîne d'objectif (D-161) : une LIGNE, jamais une colonne
+      # qu'on écrase, et elle vise la RACINE de la chaîne — qui ne bouge jamais
+      # — plutôt que sa tête, qu'une révision déplacerait. Le contrat éprouve
+      # les DEUX colonnes qui distinguent une PREUVE (le patient consigne son
+      # propre geste au portail) d'un TÉMOIGNAGE (le praticien atteste ce que
+      # le patient a dit en consultation) : l'asymétrie inverse — un patient
+      # consignant la voix du praticien — doit être REFUSÉE nommément, et rien
+      # d'autre ne le dirait. Il éprouve aussi que seul `atteint` se négocie,
+      # qu'un abandon porte son motif écrit et qu'une chaîne ne se remplace pas
+      # elle-même. Liste blanche de colonnes visant ici le TAUX D'ATTEINTE
+      # autant que le score : « atteint » ne dit RIEN d'une cause (DC-27).
+      # Fixtures posées et transaction annulée.
+      - name: Alliance fin objectif negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_fin_objectif_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

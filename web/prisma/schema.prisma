@@ -83,6 +83,7 @@ model Patient {
   dispositionsProposition  DispositionProposition[]
   amendementsObjectif      AmendementObjectif[]
   reponsesJalonObjectif    ReponseJalonObjectif[]
+  finsObjectif             FinObjectif[]
 
   @@map("patients")
 }
@@ -2512,4 +2513,57 @@ model ReponseJalonObjectif {
 
   @@index([idPatient, creeLe], map: "alli_reponse_jalon_patient_idx")
   @@map("reponses_jalon_objectif")
+}
+
+
+// LA FIN D'UNE CHAÎNE D'OBJECTIF — une LIGNE, jamais une colonne qu'on écrase
+// (`D-161`). Elle référence la RACINE de la chaîne — l'objectif dont
+// `supersedes_objectif_id` est nul —, jamais sa tête : la racine ne bouge
+// jamais, donc une fin qui s'y attache survit à toute révision et ne peut pas
+// devenir orpheline. Se rouvrir est une ligne de plus, comme se raviser.
+//
+// TROIS MOTIFS ET TROIS SEULEMENT (CHECK migration). `atteint` ne dit RIEN
+// d'une cause : l'objectif n'est plus ce sur quoi on travaille, jamais qu'une
+// intervention l'a produit (`DC-27`). `abandonne` porte son motif écrit —
+// c'est `non_traite_motif` promu de la version à la chaîne. `remplace` porte
+// la racine qui prend la suite, et c'est LUI qui départage deux têtes.
+//
+// DEUX COLONNES POUR UNE SEULE IDÉE, ET C'EST LE CŒUR DE `D-161` §2-4. `voix`
+// dit DE QUI EST LA PAROLE, `consignee_par` dit QUI A ÉCRIT LA LIGNE. Un
+// patient qui confirme au portail donne `voix = patient, consignee_par =
+// patient` : une PREUVE. Le praticien qui atteste ce que le patient a dit en
+// consultation donne `voix = patient, consignee_par = praticien` : un
+// TÉMOIGNAGE. Les fondre en une colonne ferait passer la parole de l'un pour
+// l'acte de l'autre, devant l'intéressé. Le témoignage cède à la preuve, jamais
+// l'inverse — règle de lecture, tenue par le module, pas par la base.
+//
+// `atteint` SE DÉCLARE À DEUX VOIX ; `abandonne` et `remplace` se prennent
+// seuls. Une réussite ne se constate pas seul : tant qu'une seule voix s'est
+// prononcée, la chaîne porte une fin PROPOSÉE, pas une chaîne achevée. Un refus
+// est une ligne comme une autre — il reste lisible, il ne s'efface pas. Exiger
+// deux voix pour ABANDONNER condamnerait à l'inachèvement toute chaîne dont le
+// patient ne répond plus.
+//
+// AUCUNE CONTRAINTE D'UNICITÉ, comme partout dans la campagne : une fin posée
+// deux fois reste deux lignes. Aucune colonne de score, de seuil, de bande ni
+// de taux d'atteinte — l'interdit de forme est tenu par la liste blanche du
+// contrat `prisma/checks/alli_fin_objectif_v1_negatif.sql`.
+model FinObjectif {
+  id                  String    @id @default(cuid()) @map("id")
+  idPatient           String    @map("id_patient")
+  racineObjectifId    String    @map("racine_objectif_id")
+  motif               String    @map("motif") // atteint | abandonne | remplace (CHECK migration)
+  voix                String    @map("voix") // praticien | patient (CHECK migration)
+  consigneePar        String    @map("consignee_par") // praticien | patient (CHECK migration)
+  sens                String    @map("sens") // declare | confirme | refuse (CHECK migration)
+  praticienEmail      String?   @map("praticien_email")
+  motifTexte          String?   @map("motif_texte")
+  remplaceParRacineId String?   @map("remplace_par_racine_id")
+  exprimeLe           DateTime? @map("exprime_le")
+  creeLe              DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_fin_objectif_patient_idx")
+  @@map("fins_objectif")
 }
