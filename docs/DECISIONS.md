@@ -4,6 +4,66 @@
 
 ## Décisions actives
 
+### D-163 — Le périmètre de `D-093` s'ouvre à tous les dossiers, et rien ne se réclame d'une provenance certifiée
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10)
+- Amende : [[D-093]], point 1 (« Trois dossiers, et eux seuls ») et sa « condition
+  nommée de la généralisation ultérieure ». [[D-162]] avait retiré la borne sans
+  toucher au périmètre ; celle-ci l'ouvre.
+- Domaine : gouvernance clinique — recommandations élargies se réclamant de
+  `priorityRulesV1`
+
+**Constat.** `D-093` restreignait à trois dossiers pour une raison qui tient
+toujours : le classement n'est couvert par aucune ligne signée. Sa clause finale
+conditionne la généralisation à ce que le classement, les textes `LIMITATION_*` et
+l'ordre d'évaluation des motifs d'abstention entrent dans un périmètre signé —
+« tant que ce n'est pas fait, aucune généralisation ne peut se réclamer d'une
+provenance certifiée » (`DC-01`, `DC-26`). Cette clause laisse **deux** voies :
+signer d'abord, ou généraliser sans se réclamer de rien. La présente décision
+prend la seconde, et l'écrit — elle n'est pas tacite.
+
+Elle le fait sur une base que `D-093` n'avait pas : le bilan descriptif du
+2026-09-09 documente exactement ce que la signature couvre et ce qu'elle laisse
+dehors — **dix objets**, là où le fichier signé en nommait quatre
+(`docs/claude/campagnes/2026-08-23-alliance-objectif-trois-voix/BILAN_CLASSEMENT_DESCRIPTIF_2026-09-09.md`).
+
+**Décision :**
+
+1. **Le périmètre s'ouvre à tous les dossiers courants.** `PAT006`, `PAT007` et
+   `PAT017` cessent de constituer un périmètre. `WN_OBJECTIF_PROPOSE_PATIENTS`
+   demeure un mécanisme de repli, jamais un périmètre par défaut (`D-094`).
+2. **Rien ne se réclame d'une provenance certifiée pour ce qui n'est pas signé.**
+   Le classement, son premier terme, les sept textes `LIMITATION_*` et l'ordre
+   d'évaluation des deux motifs d'abstention restent hors du SHA : aucun texte,
+   aucun écran, aucun document ne les présente comme relus ou signés.
+3. **Les contrepoids qui rendent cette voie tenable sont nommés, et ils existent
+   déjà** : l'ordre n'est persisté nulle part, la carte de décision n'étant
+   stockée dans aucune table ; `D-094` §3 en interdit la transmission — ni rang,
+   ni score, ni numéro d'ordre ; au plus trois propositions, sans numérotation ni
+   mise en avant de la première ; et le bilan du 2026-09-09 dit publiquement ce
+   qui n'est pas couvert.
+4. **La relecture praticien de chaque recommandation avant remise demeure.**
+   C'est elle, et non le périmètre, qui portait la retenue — le périmètre n'a
+   d'ailleurs jamais mordu, aucun objectif n'existant hors de `PAT017`.
+5. **Les trois interdits de `D-093` demeurent** : pas de recommandation élargie
+   sans relecture, pas de modification du classement, pas de modification des
+   textes `LIMITATION_*`.
+6. **La condition de généralisation n'est pas levée : elle est honorée
+   autrement.** Faire entrer le classement dans un périmètre signé reste dû, et
+   le bilan descriptif en est la première pièce. Ce qui est abandonné n'est pas
+   le travail de signature — c'est l'idée qu'il faille attendre pour servir, dès
+   lors qu'on ne se réclame de rien.
+
+**Ce que cette décision N'AUTORISE PAS** : présenter le classement, son ordre ou
+ses textes comme relus ou signés ; modifier le classement ou les textes
+`LIMITATION_*`, qui relèvent d'une décision propre ; envoyer une recommandation
+élargie sans relecture ; tenir le travail de signature pour caduc.
+
+- Conséquences : fragment `changelog.d/2026-09-10-perimetre-d093-ouvert.md`.
+  Aucun code, aucune migration ; `WN_OBJECTIF_PROPOSE_PATIENTS` reste vide, ce
+  qui était déjà l'état servi.
+
 ### D-162 — La borne de six semaines de `D-093` est abrogée : une restriction n'a pas besoin de terme
 
 - Date : 2026-09-09
@@ -6242,6 +6302,13 @@ par `D-062`, et la re-signature du 2026-08-16 couvre le périmètre complet.
    ratifier, donc la condition de sortie (a) ne peut pas se produire. Le
    praticien doit rédiger un objectif sur au moins un des trois pour que la
    fenêtre de six semaines ait un sens.
+
+> **AMENDÉE le 2026-09-10 par [[D-163]] — le périmètre s'ouvre à tous les
+> dossiers.** La précondition ci-dessus a été levée sur `PAT017`, dont le patient
+> n'a jamais pu être prévenu ([[D-162]]). Le périmètre restreint cesse ; ce qui le
+> remplace est une interdiction de se réclamer d'une provenance certifiée tant que
+> le classement n'est pas signé — la seconde voie que laissait la clause de
+> généralisation ci-dessous.
 2. **Relecture praticien de CHAQUE recommandation avant remise** — aucune
    recommandation élargie ne part sans avoir été lue.
 3. **La sortie du périmètre exige DEUX conditions, cumulatives** : (a) au moins
