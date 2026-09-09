@@ -148,6 +148,7 @@ personnelles se répartissent ainsi :
 | **Santé — exploration biologique (art. 9)** | `ArbitrageBiologique`, `PanelBiologieDocumente`, `DocumentPatientBiologie`, `ResultatBiologique` | **Catégorie particulière** — voir le paragraphe ci-dessous |
 | Preuves de transparence | `TrustAcknowledgement`, `TrustChoiceEvent`, `TrustRightsRequest`, `TrustPrivacyIncident` | Traces d'information, de choix et de demandes |
 | Authentification et accès | `Patient.accessTokenRevoked` (drapeau de révocation, non secret — les valeurs du jeton permanent ont été **purgées le 2026-08-22**, `D-085` §5), `PortailMagicLink`, `PortailConnexionGoogle`, `PortailDemandeTentative` | Drapeau, liens hachés expirants, traces de connexion, anti-abus |
+| Alliance — fin d'un objectif | `FinObjectif` (racine de la chaîne, motif, voix, consignataire, sens, motif écrit de renoncement, date d'expression) | Parole du patient et du praticien sur la fin d'un objectif de suivi — aucun score, seuil, bande, rang ni taux d'atteinte (`D-161`) |
 | Journalisation | `JournalAccesDossier` (`id_patient`, `praticien_email`, route, méthode, horodatage) | Piste d'audit des accès praticien |
 | Résidu d'effacement | `DossierEfface` (année de naissance, initiales, date) | Preuve d'effacement, volontairement non ré-identifiante |
 
