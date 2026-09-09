@@ -22,6 +22,21 @@ const DOSSIER_VIDE = {
   ratifications: {},
   amendements: [],
   reponsesJalon: [],
+  // Alliance 6.0-B (`D-161`) : l'état de fin de chaque tête, et le nombre de
+  // têtes ACTIVES — c'est lui, et non `objectifs.length`, qui dit s'il y a
+  // discordance. Un dossier vide n'a aucune tête active.
+  fins: {},
+  tetesActives: 0,
+  lignesFin: [],
+};
+
+const FIN_OUVERTE = {
+  etat: 'ouverte' as const,
+  motif: null,
+  voixManquante: null,
+  refusee: false,
+  attestee: false,
+  remplaceParRacineId: null,
 };
 
 const ligne = (partiel: Record<string, unknown> = {}) => ({
@@ -266,6 +281,8 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
           amendements: [],
           reponsesJalon: [],
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: FIN_OUVERTE },
+          tetesActives: 2,
         },
       }),
     );
@@ -274,6 +291,60 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     expect(screen.getByRole('status').textContent).toMatch(/2 versions courantes coexistent/);
     expect(screen.getByText(/Priorité : Version A/)).toBeTruthy();
     expect(screen.getByText(/Priorité : Version B/)).toBeTruthy();
+  });
+
+  it('DEUX TÊTES : le départage est OFFERT, et il dit ce qu’il coûte au patient', async () => {
+    // Avant `D-161`, l'écran constatait la discordance sans rien pouvoir en
+    // faire : `supersedes_objectif_id` étant à parent unique, aucun ajout ne
+    // ramenait deux têtes à une. Le geste existe désormais, et l'écran doit
+    // dire POURQUOI il presse — le patient est bloqué tant qu'il n'est pas posé.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_3' }), ligne({ id: 'OBJ_2' })],
+          trajectoires: [
+            { idObjectif: 'OBJ_3', lignes: [ligne({ id: 'OBJ_3', priorite: 'Version A' })] },
+            { idObjectif: 'OBJ_2', lignes: [ligne({ id: 'OBJ_2', priorite: 'Version B' })] },
+          ],
+          ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: FIN_OUVERTE },
+          tetesActives: 2,
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    const statut = screen.getByRole('status');
+    expect(statut.textContent).toMatch(/ne peut ni ratifier, ni contester/);
+    // RIEN N'EST EFFACÉ, et l'écran le dit : la chaîne écartée reste lisible.
+    expect(statut.textContent).toMatch(/n’efface rien/);
+    expect(screen.getAllByRole('button', { name: /Poursuivre celle-ci/ })).toHaveLength(2);
+  });
+
+  it('UNE CHAÎNE CLOSE ne rouvre pas le départage — elle ne concurrence plus', async () => {
+    // Deux têtes, mais une seule ACTIVE : ce n'est pas une discordance, c'est un
+    // dossier qui porte une histoire. Compter les têtes ferait passer l'une pour
+    // l'autre.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_3' }), ligne({ id: 'OBJ_2' })],
+          trajectoires: [
+            { idObjectif: 'OBJ_3', lignes: [ligne({ id: 'OBJ_3', priorite: 'Version A' })] },
+            { idObjectif: 'OBJ_2', lignes: [ligne({ id: 'OBJ_2', priorite: 'Version B' })] },
+          ],
+          ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: { ...FIN_OUVERTE, etat: 'close', motif: 'atteint' } },
+          tetesActives: 1,
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    expect(screen.queryByRole('button', { name: /Poursuivre celle-ci/ })).toBeNull();
+    expect(screen.queryByText(/versions courantes coexistent/)).toBeNull();
   });
 
   // ── Ratification ──────────────────────────────────────────────────────────

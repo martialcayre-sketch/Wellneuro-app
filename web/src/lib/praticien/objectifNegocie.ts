@@ -316,6 +316,12 @@ export type LigneObjectif = {
  *
  * Les lignes supplantées ne sont pas supprimées : elles sortent de cette
  * liste, pas de la base — `chaineDObjectif` les relit.
+ *
+ * CETTE FONCTION IGNORE LES FINS DE CHAÎNE, ET C'EST VOULU : elle dit ce que
+ * l'append-only dit, rien de plus. **Un appelant qui décide d'une DISCORDANCE
+ * ou qui AUTORISE UNE ÉCRITURE doit passer par `tetesDeChaine`**, qui marque
+ * les chaînes closes — sans quoi il servirait un objectif clos comme vivant et
+ * laisserait écrire dessus. Un banc de garde tient cette frontière.
  */
 export function objectifsCourants<T extends LigneObjectif>(lignes: T[]): T[] {
   const supplantees = new Set(
@@ -372,6 +378,354 @@ export function chaineDObjectif<T extends LigneObjectif>(lignes: T[], id: string
  * tables. Le renommer toucherait les deux routes, les deux écrans et leurs
  * bancs pour un gain de vocabulaire — ce que « changements minimaux » exclut.
  */
+/**
+ * La fin d'une chaîne d'objectif, vue par la dérivation d'état (`D-161`). Son
+ * texte de motif n'y entre pas : ce qui compte ici est qu'une parole ait été
+ * posée, par quelle voix, consignée par qui, et quand.
+ */
+export type LigneFin = {
+  id: string;
+  racineObjectifId: string;
+  motif: string;
+  voix: string;
+  consigneePar: string;
+  sens: string;
+  creeLe: Date;
+};
+
+export type EtatChaine = 'ouverte' | 'fin_proposee' | 'close';
+
+/** Ce qu'une chaîne dit de sa propre fin — assez pour l'afficher, jamais un
+ *  décompte ni une note (`DC-19`). */
+export type LectureFin = {
+  etat: EtatChaine;
+  /** Le motif de la fin close ou proposée. `null` sur une chaîne ouverte. */
+  motif: 'atteint' | 'abandonne' | 'remplace' | null;
+  /** Sur `fin_proposee` : la voix qui ne s'est pas encore prononcée. */
+  voixManquante: 'praticien' | 'patient' | null;
+  /** La seconde voix a REFUSÉ. Le refus n'est pas une panne : il reste lisible,
+   *  et la chaîne demeure ouverte. */
+  refusee: boolean;
+  /** La voix du patient a été ATTESTÉE par le praticien, non prouvée par un
+   *  geste du patient. `D-161` §4 : l'intéressé doit savoir laquelle il lit. */
+  attestee: boolean;
+  /** Sur `remplace` : la racine qui prend la suite. */
+  remplaceParRacineId: string | null;
+};
+
+const OUVERTE: LectureFin = {
+  etat: 'ouverte',
+  motif: null,
+  voixManquante: null,
+  refusee: false,
+  attestee: false,
+  remplaceParRacineId: null,
+};
+
+/**
+ * LA PAROLE QUI PRÉVAUT POUR UNE VOIX, et la règle n'est pas « la plus
+ * récente ». Pour la voix du PATIENT, une ligne qu'il a consignée lui-même au
+ * portail est une PREUVE ; une ligne que le praticien a consignée en attestant
+ * ce qu'il a entendu est un TÉMOIGNAGE. **Le témoignage cède à la preuve, jamais
+ * l'inverse** (`D-161` §3) : une preuve l'emporte quelle que soit sa date. À
+ * consignataire égal, la plus récente gagne — se raviser est une ligne de plus.
+ *
+ * La base ne connaît pas cette règle et ne peut pas la connaître : elle ignore
+ * l'ordre des paroles. C'est une règle de LECTURE, et elle vit ici.
+ */
+function paroleQuiPrevaut(lignes: LigneFin[], voix: string): LigneFin | null {
+  const dEllesMemes = lignes.filter((l) => l.voix === voix && l.consigneePar === voix);
+  const attestees = lignes.filter((l) => l.voix === voix && l.consigneePar !== voix);
+  const retenues = dEllesMemes.length > 0 ? dEllesMemes : attestees;
+  return [...retenues].sort(plusRecentDAbord)[0] ?? null;
+}
+
+/**
+ * L'ÉTAT DE FIN D'UNE CHAÎNE, lu depuis sa RACINE — jamais depuis sa tête. La
+ * racine ne bouge pas : une fin qui s'y attache survit à toute révision
+ * (`D-161` §5).
+ *
+ * `abandonne` et `remplace` SE PRENNENT SEULS et closent aussitôt : exiger deux
+ * voix pour renoncer condamnerait à l'inachèvement toute chaîne dont le patient
+ * ne répond plus. Ils sont terminaux — le dépôt n'offre aucun verbe pour les
+ * défaire, et une chaîne close se remplace par une chaîne neuve, non par une
+ * résurrection.
+ *
+ * `atteint` SE DÉCLARE À DEUX VOIX. Tant qu'une seule s'est prononcée, la chaîne
+ * porte une fin PROPOSÉE, pas une chaîne achevée. Un refus la rouvre et reste
+ * lisible : c'est un signal, pas une panne.
+ */
+export function etatDeChaine(racineId: string, fins: LigneFin[]): LectureFin {
+  const siennes = fins.filter((l) => l.racineObjectifId === racineId);
+  if (siennes.length === 0) return OUVERTE;
+
+  // Les deux motifs unilatéraux d'abord : ils closent sans négociation, et le
+  // plus récent des deux l'emporte si les deux existent.
+  const unilateral = siennes
+    .filter((l) => (l.motif === 'abandonne' || l.motif === 'remplace') && l.sens === 'declare')
+    .sort(plusRecentDAbord)[0];
+  if (unilateral) {
+    return {
+      etat: 'close',
+      motif: unilateral.motif as 'abandonne' | 'remplace',
+      voixManquante: null,
+      refusee: false,
+      attestee: false,
+      remplaceParRacineId: null,
+    };
+  }
+
+  const atteints = siennes.filter((l) => l.motif === 'atteint');
+  if (atteints.length === 0) return OUVERTE;
+
+  const cotePraticien = paroleQuiPrevaut(atteints, 'praticien');
+  const cotePatient = paroleQuiPrevaut(atteints, 'patient');
+  const dit = (l: LigneFin | null) => l !== null && l.sens !== 'refuse';
+  const refusee = cotePraticien?.sens === 'refuse' || cotePatient?.sens === 'refuse';
+  const attestee = cotePatient !== null && cotePatient.consigneePar !== 'patient';
+
+  const praticienDit = dit(cotePraticien);
+  const patientDit = dit(cotePatient);
+
+  if (praticienDit && patientDit) {
+    return {
+      etat: 'close',
+      motif: 'atteint',
+      voixManquante: null,
+      refusee: false,
+      attestee,
+      remplaceParRacineId: null,
+    };
+  }
+
+  // UN REFUS RÉPOND À LA PROPOSITION, IL NE LA LAISSE PAS PENDANTE. Une fin
+  // n'est « proposée » que tant que la seconde voix n'a rien dit ; dès qu'elle
+  // refuse, la chaîne est OUVERTE et le refus reste lisible. Rendre
+  // `fin_proposee` ici afficherait « en attente de votre réponse » à un patient
+  // qui vient précisément de répondre.
+  if (refusee) return { ...OUVERTE, refusee: true };
+
+  // Une seule voix s'est prononcée, l'autre se tait : la fin est PROPOSÉE, et
+  // l'on dit laquelle manque — c'est ce qui rend la relance possible, et c'est
+  // au praticien qu'incombe d'aller la chercher (`D-161` §7).
+  if (praticienDit || patientDit) {
+    return {
+      etat: 'fin_proposee',
+      motif: 'atteint',
+      voixManquante: praticienDit ? 'patient' : 'praticien',
+      refusee: false,
+      attestee,
+      remplaceParRacineId: null,
+    };
+  }
+
+  return OUVERTE;
+}
+
+/** Une tête de chaîne, avec ce que sa chaîne dit de sa propre fin. */
+export type TeteDeChaine<T> = {
+  ligne: T;
+  racineId: string;
+  fin: LectureFin;
+};
+
+/**
+ * LES TÊTES DE CHAÎNE, MARQUÉES. C'est la fonction que doivent employer tous
+ * les appelants qui servent un état ou autorisent une écriture — jamais
+ * `objectifsCourants`, qui ignore les fins.
+ *
+ * Elle rend TOUTES les têtes, closes comprises : une chaîne close **reste
+ * lisible**, marquée. La faire disparaître rendrait invisible ce qu'un patient
+ * y a écrit — le défaut exact qu'une contestation portée sur une version
+ * supplantée a déjà produit ailleurs.
+ *
+ * Le second paramètre est OBLIGATOIRE, et l'écart avec `etatRatification` est
+ * voulu : là-bas, un tableau vide rend l'état INCOMPLET ; ici, il le rendrait
+ * FAUX — toutes les chaînes paraîtraient ouvertes.
+ */
+export function tetesDeChaine<T extends LigneObjectif>(
+  lignes: T[],
+  fins: LigneFin[],
+): TeteDeChaine<T>[] {
+  return objectifsCourants(lignes).map((ligne) => {
+    const chaine = chaineDObjectif(lignes, ligne.id);
+    const racineId = chaine[chaine.length - 1]?.id ?? ligne.id;
+    return { ligne, racineId, fin: etatDeChaine(racineId, fins) };
+  });
+}
+
+/**
+ * LES TÊTES ACTIVES — celles dont la chaîne n'est pas close. C'est CE compte,
+ * et non celui des têtes, qui décide d'une discordance : un dossier portant un
+ * objectif atteint l'an dernier et un objectif courant n'est pas discordant, il
+ * est normal. Avant `D-161`, le modèle ne supportait qu'une seule chaîne par
+ * patient pour toujours — une seconde tête bloquait les trois gestes du patient
+ * sans qu'aucun verbe ne puisse la retirer.
+ */
+export function tetesActives<T extends LigneObjectif>(
+  tetes: TeteDeChaine<T>[],
+): TeteDeChaine<T>[] {
+  return tetes.filter((tete) => tete.fin.etat !== 'close');
+}
+
+export const MOTIFS_FIN = ['atteint', 'abandonne', 'remplace'] as const;
+export type MotifFin = (typeof MOTIFS_FIN)[number];
+
+export const SENS_FIN = ['declare', 'confirme', 'refuse'] as const;
+export type SensFin = (typeof SENS_FIN)[number];
+
+export const VOIX_FIN = ['praticien', 'patient'] as const;
+export type VoixFin = (typeof VOIX_FIN)[number];
+
+/** Borne technique de saisie du motif de renoncement, alignée sur l'énoncé. */
+export const MOTIF_FIN_MAX = 4000;
+
+export type RefusFin =
+  | 'racine_absente'
+  | 'racine_introuvable'
+  | 'pas_une_racine'
+  | 'chaine_deja_close'
+  | 'motif_invalide'
+  | 'sens_invalide'
+  | 'voix_invalide'
+  | 'motif_texte_absent'
+  | 'motif_texte_trop_long'
+  | 'cible_absente'
+  | 'cible_introuvable'
+  | 'cible_pas_une_racine'
+  | 'cible_identique'
+  | 'cible_close'
+  | 'negociation_impossible';
+
+export type DonneesFin = {
+  idPatient: string;
+  racineObjectifId: string;
+  motif: MotifFin;
+  voix: VoixFin;
+  consigneePar: 'praticien';
+  sens: SensFin;
+  praticienEmail: string;
+  motifTexte: string | null;
+  remplaceParRacineId: string | null;
+  exprimeLe: Date | null;
+};
+
+export type PreparationFin =
+  | { ok: true; donnees: DonneesFin }
+  | { ok: false; raison: RefusFin };
+
+export type EntreeFin = {
+  idPatient: string;
+  praticienEmail: string;
+  racineObjectifId: string;
+  motif: string;
+  voix: string;
+  sens: string;
+  motifTexte?: string | null;
+  remplaceParRacineId?: string | null;
+  exprimeLe?: Date | null;
+};
+
+/**
+ * CE QUE LA BASE NE PEUT PAS TENIR, ET QUI VIT DONC ICI. Les CHECK de migration
+ * tiennent la FORME d'une ligne — taxonomies, colonnes conditionnelles,
+ * asymétrie de consignation. Ils ne peuvent tenir ni l'APPARTENANCE au dossier,
+ * ni la qualité de RACINE, ni l'état de la chaîne : les références sont souples,
+ * sans clé étrangère, patron de toute la campagne. « Un CHECK ne doit pas
+ * devenir un second schéma qui divergerait du premier. »
+ *
+ * `lignes` et `fins` sont le dossier ENTIER, pas la seule racine visée : sans
+ * elles, « est-ce une racine », « appartient-elle », « est-elle déjà close » et
+ * « la cible existe-t-elle » sont indécidables.
+ *
+ * ÉCRIT TOUJOURS `consigneePar: 'praticien'` — c'est une route praticien. Ce
+ * qu'il peut faire varier est la VOIX : la sienne, ou celle du patient qu'il
+ * ATTESTE avoir entendue en consultation. Le portail écrit l'autre moitié, et
+ * lui seul peut poser une preuve.
+ */
+export function preparerFin<T extends LigneObjectif>(
+  entree: EntreeFin,
+  lignes: T[],
+  fins: LigneFin[],
+): PreparationFin {
+  const racineId = (entree.racineObjectifId ?? '').trim();
+  if (!racineId) return { ok: false, raison: 'racine_absente' };
+
+  const racine = lignes.find((ligne) => ligne.id === racineId);
+  if (!racine) return { ok: false, raison: 'racine_introuvable' };
+  if (racine.supersedesObjectifId !== null) return { ok: false, raison: 'pas_une_racine' };
+
+  if (!MOTIFS_FIN.includes(entree.motif as MotifFin)) {
+    return { ok: false, raison: 'motif_invalide' };
+  }
+  if (!SENS_FIN.includes(entree.sens as SensFin)) return { ok: false, raison: 'sens_invalide' };
+  if (!VOIX_FIN.includes(entree.voix as VoixFin)) return { ok: false, raison: 'voix_invalide' };
+  const motif = entree.motif as MotifFin;
+  const sens = entree.sens as SensFin;
+  const voix = entree.voix as VoixFin;
+
+  // UNE CHAÎNE CLOSE NE SE RE-CLÔT PAS. Le refus est explicite plutôt que
+  // silencieux : poser une seconde fin sur une chaîne déjà close ne casserait
+  // rien en base — append-only, aucune unicité — mais laisserait croire à un
+  // geste qui n'a rien changé.
+  if (etatDeChaine(racineId, fins).etat === 'close') {
+    return { ok: false, raison: 'chaine_deja_close' };
+  }
+
+  // SEUL `atteint` SE NÉGOCIE, et le CHECK de migration le tient déjà. Le
+  // redire ici rend une ERREUR LISIBLE là où la base rendrait un 500.
+  if (sens !== 'declare' && motif !== 'atteint') {
+    return { ok: false, raison: 'negociation_impossible' };
+  }
+
+  let motifTexte: string | null = null;
+  if (motif === 'abandonne') {
+    // Le renoncement est unilatéral ET motivé : une chaîne close sans raison
+    // lisible ne dit rien à qui la relira dans six mois.
+    if (voix !== 'praticien') return { ok: false, raison: 'voix_invalide' };
+    const texte = (entree.motifTexte ?? '').trim();
+    if (texte.length === 0) return { ok: false, raison: 'motif_texte_absent' };
+    if (texte.length > MOTIF_FIN_MAX) return { ok: false, raison: 'motif_texte_trop_long' };
+    motifTexte = texte;
+  }
+
+  let cible: string | null = null;
+  if (motif === 'remplace') {
+    if (voix !== 'praticien') return { ok: false, raison: 'voix_invalide' };
+    const cibleId = (entree.remplaceParRacineId ?? '').trim();
+    if (!cibleId) return { ok: false, raison: 'cible_absente' };
+    if (cibleId === racineId) return { ok: false, raison: 'cible_identique' };
+    const ligneCible = lignes.find((ligne) => ligne.id === cibleId);
+    if (!ligneCible) return { ok: false, raison: 'cible_introuvable' };
+    if (ligneCible.supersedesObjectifId !== null) {
+      return { ok: false, raison: 'cible_pas_une_racine' };
+    }
+    // DÉPARTAGER VERS UNE CHAÎNE CLOSE NE DÉPARTAGE RIEN : les deux têtes
+    // sortiraient du compte actif et le dossier n'aurait plus d'objectif du
+    // tout, sans qu'aucun geste ne l'ait décidé.
+    if (etatDeChaine(cibleId, fins).etat === 'close') {
+      return { ok: false, raison: 'cible_close' };
+    }
+    cible = cibleId;
+  }
+
+  return {
+    ok: true,
+    donnees: {
+      idPatient: entree.idPatient,
+      racineObjectifId: racineId,
+      motif,
+      voix,
+      consigneePar: 'praticien',
+      sens,
+      praticienEmail: entree.praticienEmail,
+      motifTexte,
+      remplaceParRacineId: cible,
+      exprimeLe: entree.exprimeLe ?? null,
+    },
+  };
+}
+
 export type EtatRatification = 'en_attente' | 'ratifie' | 'conteste' | 'dit_autrement';
 
 export type LigneRatification = {

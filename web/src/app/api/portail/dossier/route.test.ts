@@ -34,6 +34,18 @@ const { prisma, logger } = vi.hoisted(() => ({
       deleteMany: vi.fn(),
     },
     assessmentEpisode: { findMany: vi.fn() },
+    // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. Les verbes d'écrasement
+    // sont moqués EXPRESSÉMENT bien que jamais appelés — sans eux, l'assertion
+    // « cette route n'écrase rien » lèverait au lieu de compter zéro.
+    finObjectif: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     reponseJalonObjectif: {
       findMany: vi.fn(),
       create: vi.fn(),
@@ -124,6 +136,7 @@ function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.ratificationObjectif.findMany.mockResolvedValue(surcharges.ratifications ?? []);
   prisma.amendementObjectif.findMany.mockResolvedValue(surcharges.amendements ?? []);
   prisma.reponseJalonObjectif.findMany.mockResolvedValue(surcharges.reponsesJalon ?? []);
+  prisma.finObjectif.findMany.mockResolvedValue(surcharges.fins ?? []);
   // Par défaut : AUCUN cycle confirmé. C'est l'état le plus courant en
   // production aujourd'hui, et celui où `resoudreJalonDu` rendrait `T0`.
   prisma.assessmentEpisode.findMany.mockResolvedValue(surcharges.ancreT0 ?? []);

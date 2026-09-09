@@ -12,6 +12,10 @@ import {
   etatRatification,
   preparerAmendement,
   objectifsCourants,
+  etatDeChaine,
+  tetesDeChaine,
+  tetesActives,
+  preparerFin,
   preparerObjectif,
   preparerRatification,
   ANCRE_JALON,
@@ -748,5 +752,248 @@ describe('preparerReponseJalon — où j’en suis, à un jalon (LOT-05)', () =>
     // Rien dans ce que le module prépare ne désigne la ligne précédente.
     expect(Object.keys(seconde.donnees)).not.toContain('id');
     expect(Object.keys(seconde.donnees)).not.toContain('supersedesReponseId');
+  });
+});
+
+describe('etatDeChaine — la fin se lit depuis la RACINE (D-161)', () => {
+  const fin = (
+    id: string,
+    motif: string,
+    voix: string,
+    consigneePar: string,
+    sens: string,
+    jour: number,
+    racine = 'r1',
+  ) => ({
+    id,
+    racineObjectifId: racine,
+    motif,
+    voix,
+    consigneePar,
+    sens,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+
+  it('sans aucune ligne de fin, la chaîne est ouverte', () => {
+    expect(etatDeChaine('r1', []).etat).toBe('ouverte');
+  });
+
+  it('les lignes d’une AUTRE racine ne closent pas celle-ci', () => {
+    const autre = [fin('f1', 'abandonne', 'praticien', 'praticien', 'declare', 1, 'r2')];
+    expect(etatDeChaine('r1', autre).etat).toBe('ouverte');
+  });
+
+  it('un abandon clôt seul — exiger deux voix condamnerait à l’inachèvement', () => {
+    const lu = etatDeChaine('r1', [fin('f1', 'abandonne', 'praticien', 'praticien', 'declare', 1)]);
+    expect(lu.etat).toBe('close');
+    expect(lu.motif).toBe('abandonne');
+  });
+
+  it('un remplacement clôt seul — c’est LUI qui départage deux têtes', () => {
+    const lu = etatDeChaine('r1', [fin('f1', 'remplace', 'praticien', 'praticien', 'declare', 1)]);
+    expect(lu.etat).toBe('close');
+    expect(lu.motif).toBe('remplace');
+  });
+
+  it('« atteint » déclaré par une seule voix est une fin PROPOSÉE, jamais close', () => {
+    const lu = etatDeChaine('r1', [fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1)]);
+    expect(lu.etat).toBe('fin_proposee');
+    expect(lu.voixManquante).toBe('patient');
+  });
+
+  it('« atteint » confirmé par la seconde voix clôt la chaîne', () => {
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'atteint', 'patient', 'patient', 'confirme', 2),
+    ]);
+    expect(lu.etat).toBe('close');
+    expect(lu.attestee).toBe(false);
+  });
+
+  it('une fin attestée par le praticien clôt AUSSI, mais se dit attestée', () => {
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'atteint', 'patient', 'praticien', 'confirme', 2),
+    ]);
+    expect(lu.etat).toBe('close');
+    expect(lu.attestee).toBe(true);
+  });
+
+  it('LE TÉMOIGNAGE CÈDE À LA PREUVE, même quand la preuve est ANTÉRIEURE', () => {
+    // Le patient refuse au portail le 1er ; le praticien atteste le contraire
+    // le 5. La parole du patient l’emporte, quelle que soit sa date.
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'atteint', 'patient', 'patient', 'refuse', 1),
+      fin('f3', 'atteint', 'patient', 'praticien', 'confirme', 5),
+    ]);
+    expect(lu.etat).toBe('ouverte');
+    expect(lu.refusee).toBe(true);
+  });
+
+  it('à consignataire égal, la plus récente gagne — se raviser est une ligne de plus', () => {
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'atteint', 'patient', 'patient', 'confirme', 2),
+      fin('f3', 'atteint', 'patient', 'patient', 'refuse', 3),
+    ]);
+    expect(lu.etat).toBe('ouverte');
+    expect(lu.refusee).toBe(true);
+  });
+
+  it('un refus ROUVRE, et un refus puis une confirmation referme', () => {
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'atteint', 'patient', 'patient', 'refuse', 2),
+      fin('f3', 'atteint', 'patient', 'patient', 'confirme', 3),
+    ]);
+    expect(lu.etat).toBe('close');
+  });
+
+  it('un abandon l’emporte sur un « atteint » proposé — il ne se négocie pas', () => {
+    const lu = etatDeChaine('r1', [
+      fin('f1', 'atteint', 'praticien', 'praticien', 'declare', 1),
+      fin('f2', 'abandonne', 'praticien', 'praticien', 'declare', 2),
+    ]);
+    expect(lu.etat).toBe('close');
+    expect(lu.motif).toBe('abandonne');
+  });
+});
+
+describe('tetesDeChaine / tetesActives — la discordance ne compte que les ACTIVES', () => {
+  const obj = (id: string, supersedes: string | null, jour: number) => ({
+    id,
+    supersedesObjectifId: supersedes,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+  const remplace = (racine: string, jour: number) => ({
+    id: `f_${racine}`,
+    racineObjectifId: racine,
+    motif: 'remplace',
+    voix: 'praticien',
+    consigneePar: 'praticien',
+    sens: 'declare',
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+
+  it('la racine est remontée jusqu’au bout — une fin survit à toute révision', () => {
+    const lignes = [obj('o1', null, 1), obj('o2', 'o1', 2), obj('o3', 'o2', 3)];
+    const tetes = tetesDeChaine(lignes, []);
+    expect(tetes).toHaveLength(1);
+    expect(tetes[0].ligne.id).toBe('o3');
+    expect(tetes[0].racineId).toBe('o1');
+  });
+
+  it('DEUX TÊTES DEVIENNENT UNE quand l’une est remplacée — le départage', () => {
+    const lignes = [obj('oA', null, 1), obj('oB', null, 2)];
+    expect(tetesDeChaine(lignes, [])).toHaveLength(2);
+    const apres = tetesDeChaine(lignes, [remplace('oA', 3)]);
+    expect(apres).toHaveLength(2);
+    expect(tetesActives(apres)).toHaveLength(1);
+    expect(tetesActives(apres)[0].ligne.id).toBe('oB');
+  });
+
+  it('une chaîne close RESTE SERVIE, marquée — elle ne disparaît pas', () => {
+    const lignes = [obj('oA', null, 1), obj('oB', null, 2)];
+    const apres = tetesDeChaine(lignes, [remplace('oA', 3)]);
+    const close = apres.find((t) => t.ligne.id === 'oA');
+    expect(close?.fin.etat).toBe('close');
+    expect(close?.fin.motif).toBe('remplace');
+  });
+
+  it('la fin suit la RACINE, pas la tête : révisée après coup, la chaîne reste close', () => {
+    const lignes = [obj('o1', null, 1), obj('o2', 'o1', 5)];
+    const tetes = tetesDeChaine(lignes, [remplace('o1', 3)]);
+    expect(tetes[0].ligne.id).toBe('o2');
+    expect(tetes[0].fin.etat).toBe('close');
+    expect(tetesActives(tetes)).toHaveLength(0);
+  });
+});
+
+describe('preparerFin — ce que la base ne peut pas tenir (D-161)', () => {
+  const obj = (id: string, supersedes: string | null) => ({
+    id,
+    supersedesObjectifId: supersedes,
+    creeLe: new Date('2026-09-01T10:00:00Z'),
+  });
+  const LIGNES = [obj('rA', null), obj('rA2', 'rA'), obj('rB', null)];
+  const BASE = { idPatient: 'PAT001', praticienEmail: 'p@wellneuro.fr' };
+  const prep = (surcharges: Record<string, unknown>, fins: never[] | object[] = []) =>
+    preparerFin(
+      { ...BASE, racineObjectifId: 'rA', motif: 'atteint', voix: 'praticien', sens: 'declare', ...surcharges } as never,
+      LIGNES,
+      fins as never,
+    );
+
+  it('une fin se pose sur la RACINE, jamais sur une version révisée', () => {
+    const r = prep({ racineObjectifId: 'rA2' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('pas_une_racine');
+  });
+
+  it('une racine d’un AUTRE dossier est introuvable — l’appartenance n’est pas en base', () => {
+    const r = prep({ racineObjectifId: 'rZ' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('racine_introuvable');
+  });
+
+  it('la route écrit TOUJOURS `consigneePar: praticien` — jamais une preuve', () => {
+    const r = prep({ voix: 'patient', sens: 'confirme' });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.donnees.consigneePar).toBe('praticien');
+      expect(r.donnees.voix).toBe('patient');
+    }
+  });
+
+  it('un renoncement se motive, et un motif de blancs ne motive rien', () => {
+    expect(prep({ motif: 'abandonne' }).ok).toBe(false);
+    const blancs = prep({ motif: 'abandonne', motifTexte: '   \t\n ' });
+    expect(blancs.ok).toBe(false);
+    if (!blancs.ok) expect(blancs.raison).toBe('motif_texte_absent');
+    expect(prep({ motif: 'abandonne', motifTexte: 'La grossesse déplace la priorité.' }).ok).toBe(true);
+  });
+
+  it('un renoncement ne se porte pas par la voix du patient', () => {
+    const r = prep({ motif: 'abandonne', voix: 'patient', motifTexte: 'Je ne veux plus' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('voix_invalide');
+  });
+
+  it('un remplacement porte sa cible, et une chaîne ne se remplace pas elle-même', () => {
+    expect(prep({ motif: 'remplace' }).ok).toBe(false);
+    const soi = prep({ motif: 'remplace', remplaceParRacineId: 'rA' });
+    expect(soi.ok).toBe(false);
+    if (!soi.ok) expect(soi.raison).toBe('cible_identique');
+    const versVersion = prep({ motif: 'remplace', remplaceParRacineId: 'rA2' });
+    expect(versVersion.ok).toBe(false);
+    if (!versVersion.ok) expect(versVersion.raison).toBe('cible_pas_une_racine');
+    expect(prep({ motif: 'remplace', remplaceParRacineId: 'rB' }).ok).toBe(true);
+  });
+
+  it('DÉPARTAGER VERS UNE CHAÎNE CLOSE laisserait le dossier sans objectif', () => {
+    const closeB = [{
+      id: 'f1', racineObjectifId: 'rB', motif: 'abandonne', voix: 'praticien',
+      consigneePar: 'praticien', sens: 'declare', creeLe: new Date('2026-09-02T10:00:00Z'),
+    }];
+    const r = prep({ motif: 'remplace', remplaceParRacineId: 'rB' }, closeB);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('cible_close');
+  });
+
+  it('une chaîne déjà close ne se re-clôt pas', () => {
+    const closeA = [{
+      id: 'f1', racineObjectifId: 'rA', motif: 'abandonne', voix: 'praticien',
+      consigneePar: 'praticien', sens: 'declare', creeLe: new Date('2026-09-02T10:00:00Z'),
+    }];
+    const r = prep({}, closeA);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('chaine_deja_close');
+  });
+
+  it('seul « atteint » se confirme ou se refuse', () => {
+    const r = prep({ motif: 'abandonne', motifTexte: 'x', sens: 'confirme' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.raison).toBe('negociation_impossible');
   });
 });
