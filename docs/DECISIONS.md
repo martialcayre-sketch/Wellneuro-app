@@ -4,6 +4,68 @@
 
 ## Décisions actives
 
+### D-164 — La restitution d'instrument se vérifie au serveur : `G7-1` s'amende une SECONDE fois, et la porte reste étroite
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10)
+- Amende : [[D-115]], en ouvrant une **seconde** porte à côté de la sienne. Ses
+  quatre interdits demeurent mot pour mot ; celui-ci en ajoute une exception
+  bornée, il n'en assouplit aucun.
+- Porte sur : `G7-1`, `G7-2`, [[D-094]] (cite et n'invente jamais), `DC-26`
+- Origine : contre-revue adverse du 2026-09-09, défaut `F1` (P1)
+
+**Le défaut.** La route de proposition acceptait du NAVIGATEUR le fragment de
+restitution `{instrument, domaine, restitution}` et n'en contrôlait que la
+**forme** avant de le recopier. Le praticien lisait ensuite « Restitution publiée
+par… » sous un texte que rien n'avait confronté. Et le texte **entre dans
+l'empreinte de caducité** : un envoi forgé supplantait l'assemblée légitime et
+rendait les vraies propositions caduques. C'est le même défaut que `N2.2`, sur
+l'autre moitié du fragment — [[D-115]] avait durci les règles signées, pas la
+restitution.
+
+**Pourquoi [[D-115]] ne suffisait pas.** Son point 3 est explicite : l'adaptateur
+ne lit **que** le registre des règles — « ni `clinical-engine`, ni `scoring`, ni
+`instruments`, ni `equilibre` ». Or une plainte dominante n'est pas dans le
+registre : elle se **dérive** des sous-scores d'une passation. Vérifier au
+serveur exigeait donc d'amender `G7-1` une seconde fois, et cela ne pouvait pas
+se faire en silence — [[D-115]] écrit elle-même qu'« une exception non bornée
+transforme un interdit en préférence ».
+
+**L'arbitrage.** Un second adaptateur, `web/src/lib/praticien/plainteVerifiee.ts`,
+relit la plainte dominante depuis l'**épisode confirmé** le plus récent. La route
+**confronte** le fragment reçu à ce que le serveur publie, et refuse en 409 s'il
+en diffère.
+
+**Ce que cette seconde porte admet, et rien d'autre** — éprouvé par `G7-1 ter` :
+
+1. `CANAL_PLAINTE`, du registre : quel instrument porte la plainte ;
+2. `scoresRecalculesPourRaisonnement`, la **même** lecture que le cockpit. La
+   recopier ici en ferait une seconde vérité, et les cinq fermetures cliniques
+   qu'elle porte seraient à corriger deux fois ;
+3. `plainteDominanteDepuisScores`, la **même** dérivation, départage technique
+   compris.
+
+**Ce qui reste interdit :**
+
+- la route ne touche **aucun score**. C'est `G7-2` qui l'a imposé — un premier
+  brouillon laissait la lecture base dans la route, qui sélectionnait
+  `scoresJson`, et le banc a mordu. La lecture vit donc dans l'adaptateur, qui
+  ne rend qu'un domaine et une bande, **jamais un chiffre** ;
+- l'adaptateur ne **fabrique** aucun texte : il rend ce que l'instrument publie,
+  ou `null` ;
+- le module **pur** n'importe toujours rien — il part dans le bundle patient ;
+- aucune troisième porte ne s'ouvre sans sa propre décision.
+
+**Les fail-closed sont durcis, jamais assouplis.** Sans épisode confirmé, le
+serveur ne publie rien : un fragment reçu est **refusé**, il n'est pas accepté par
+défaut. La comparaison est **stricte** — ni casse, ni espaces normalisés : c'est
+exactement par une « forme plausible » que le défaut est passé la première fois.
+Ne **rien** citer reste permis quand l'instrument publie quelque chose : le
+cockpit qui s'abstient n'invente rien, et c'est l'inverse qui ment.
+
+- Conséquences : fragment `changelog.d/2026-09-10-restitution-verifiee-au-serveur.md`.
+  Aucune migration, aucun drapeau.
+
 ### D-163 — Le périmètre de `D-093` s'ouvre à tous les dossiers, et rien ne se réclame d'une provenance certifiée
 
 - Date : 2026-09-10
