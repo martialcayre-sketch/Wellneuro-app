@@ -1077,6 +1077,26 @@ describe('/api/praticien/objectifs — notification du patient (M02, D-154)', ()
     prisma.objectifNegocie.create.mockResolvedValue(ligneLue({ id: 'OBJ_NEUF' }));
     sendObjectifProposeEmail.mockReset();
     sendObjectifProposeEmail.mockResolvedValue('Envoye');
+    // `N1.2` : L'ENVOI LIT DÉSORMAIS LE DRAPEAU DE LA SURFACE. Ces cas décrivent
+    // un espace OUVERT — un cas dédié éprouve l'inverse. Sans cette ligne, ils
+    // passeraient au vert en n'envoyant rien, ce qui n'est pas ce qu'ils disent.
+    vi.stubEnv('WN_DOSSIER_DEUX_VOIX', 'true');
+  });
+
+  it('N1.2 — L’E-MAIL NE PART PLUS QUAND LA SURFACE EST FERMÉE', async () => {
+    // Il invitait à relire « dans votre espace » et annonçait deux gestes, sans
+    // lire aucun drapeau : surface fermée, le patient entrait et ne trouvait
+    // AUCUN lien — la sonde du hub est fail-closed. On promettait une page qui
+    // n'existait pas. Retenir l'envoi se rattrape par une relance ; un courrier
+    // parti vers une porte fermée a déjà fait son effet.
+    vi.stubEnv('WN_DOSSIER_DEUX_VOIX', '');
+
+    const reponse = await POST(postRequest(corps()));
+    expect(reponse.status).toBe(201);
+    // L'ÉCRITURE A LIEU — c'est l'ENVOI qui est retenu, jamais le geste du
+    // praticien : un objectif écrit reste écrit.
+    expect(prisma.objectifNegocie.create).toHaveBeenCalledTimes(1);
+    expect(sendObjectifProposeEmail).not.toHaveBeenCalled();
   });
 
   it('un objectif écrit notifie le patient, par son adresse de dossier', async () => {
@@ -1164,4 +1184,5 @@ describe('/api/praticien/objectifs — notification du patient (M02, D-154)', ()
     expect(prisma.objectifNegocie.create).not.toHaveBeenCalled();
     expect(sendObjectifProposeEmail).not.toHaveBeenCalled();
   });
+
 });

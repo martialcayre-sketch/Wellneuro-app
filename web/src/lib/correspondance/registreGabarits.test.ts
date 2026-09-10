@@ -33,7 +33,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les onze versions attendues, dans cet ordre', () => {
+  it('expose les douze versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -53,7 +53,28 @@ describe('registre des gabarits patient — intégrité', () => {
       // APPELLE UN GESTE : relire l'objectif proposé. Il ne transporte pas
       // l'énoncé, seulement l'adresse de l'espace.
       'objectif_propose@1',
+      // `N1.2` — la v2 NOMME LE CHEMIN. La v1 disait « il vous attend dans
+      // votre espace » et donnait l'URL de connexion : le patient entrait et
+      // devait trouver seul, derrière trois écrans, un lien rendu par une sonde
+      // fail-closed. La v2 dit « Accéder à mon parcours », puis « Ouvrir mon
+      // dossier à deux voix ». Elle ne transporte toujours ni l'énoncé, ni
+      // aucune donnée clinique — l'interdit de l'audit HDS du 2026-07-24 tient.
+      'objectif_propose@2',
     ]);
+  });
+
+  it('objectif_propose : c’est la v2 qui est servie, la v1 reste au registre', () => {
+    expect(getGabarit('objectif_propose').version).toBe(2);
+    expect(REGISTRE_GABARITS_PATIENT.filter(g => g.key === 'objectif_propose')).toHaveLength(2);
+  });
+
+  it('la v2 NOMME le chemin, et ne transporte toujours aucune donnée clinique', () => {
+    const v2 = getGabarit('objectif_propose');
+    expect(v2.corps).toContain('Accéder à mon parcours');
+    expect(v2.corps).toContain('Ouvrir mon dossier à deux voix');
+    // L'INTERDIT DE L'AUDIT HDS TIENT : ni énoncé, ni priorité, ni reformulation.
+    expect(v2.variables).toEqual(getGabarit('objectif_propose').variables);
+    expect([...v2.variables].sort()).toEqual(['connexion', 'prenom']);
   });
 
   it('acces_portail : c’est la v2 qui est servie, la v1 reste au registre', () => {

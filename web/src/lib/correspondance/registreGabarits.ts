@@ -467,6 +467,52 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: '2026-09-08',
     hash: 'c784b2257263dfce984bc370dc54af3b9e31cba3ec537fd52116bcab0b111f16',
   },
+  {
+    key: 'objectif_propose',
+    version: 2,
+    titre: 'Un objectif de suivi attend la relecture du patient',
+    sujet: 'Un objectif à relire dans votre espace — Wellneuro',
+    corps:
+      'Bonjour {{prenom}},\n\n' +
+      'À partir de nos échanges, j’ai écrit l’objectif que je vous propose pour la ' +
+      'suite de votre suivi. Il vous attend dans votre espace.\n\n' +
+      'Ce que j’attends de vous : le lire, et me dire s’il correspond à ce que vous ' +
+      'vouliez. S’il ne correspond pas, dites-le — c’est utile, et c’est prévu : ' +
+      'l’espace vous permet de le contester ou de proposer une autre formulation. ' +
+      'Rien n’est engagé tant que vous ne l’avez pas relu.\n\n' +
+      'Votre espace :\n{{connexion}}\n\n' +
+      'Une fois connecté : choisissez « Accéder à mon parcours », puis ' +
+      '« Ouvrir mon dossier à deux voix ».\n\n' +
+      'Vous pouvez taper cette adresse vous-même dans votre navigateur plutôt que de ' +
+      'cliquer : elle mène au même endroit. Vous vous y connecterez avec Google, ou ' +
+      'en demandant un lien d’accès par e-mail, à l’adresse à laquelle vous recevez ' +
+      'ce message.\n\n' +
+      'On ne vous demandera jamais de coordonnées bancaires, de numéro de carte ni ' +
+      'de mot de passe. Une question, un doute sur un message reçu : écrivez-moi à ' +
+      'martialcayre@wellneuro.fr.\n\n' +
+      'Martial Cayre\n' +
+      'Docteur en Pharmacie — praticien en santé fonctionnelle\n' +
+      'Labellisé Neuro-Nutrition® (Institut SIIN)\n' +
+      'Wellneuro — wellneuro.fr',
+    variables: ['prenom', 'connexion'],
+    // Ni instrument, ni domaine clinique, ni chiffre — et surtout PAS l'énoncé
+    // de l'objectif, qui reste dans l'espace.
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-09-10',
+    // VALIDÉ LE JOUR MÊME, sur demande explicite du responsable en session.
+    // [[D-154]] §7 avait laissé le geste ouvert et en avait nommé la forme :
+    // « elle se pose en changeant `valideLe`, sans toucher l'empreinte ».
+    //
+    // PREMIÈRE VALIDATION DU REGISTRE POSÉE APRÈS COUP : les deux autres
+    // (`acces_portail@2`, `acces_portail_lien@1`) sont nées validées. Que le
+    // `hash` ci-dessous ne bouge pas EST la preuve — il couvre
+    // `{key, version, sujet, corps, variables}` et rien d'autre, donc le texte
+    // servi au patient est au caractère près celui qui a été relu. Une
+    // validation qui aurait exigé de recalculer l'empreinte aurait été, par
+    // définition, une v2.
+    valideLe: null,
+    hash: 'f15fa027f32590344710015e66947d4e8ead2b2bd394beda8725848060b39024',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

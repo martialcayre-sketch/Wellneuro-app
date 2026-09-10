@@ -5,7 +5,11 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
-import { dossierDansPerimetreProposition, isObjectifProposeEnabled } from '@/lib/patient/featureFlag';
+import {
+  dossierDansPerimetreProposition,
+  isDossierDeuxVoixEnabled,
+  isObjectifProposeEnabled,
+} from '@/lib/patient/featureFlag';
 import { sendObjectifProposeEmail } from '@/lib/consultation/email';
 import {
   chaineDObjectif,
@@ -537,6 +541,16 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
  */
 async function notifierObjectifPropose(idPatient: string): Promise<void> {
   try {
+    // LE DRAPEAU D'ABORD, ET IL MANQUAIT (`N1.2`). Cet e-mail invite à relire
+    // un objectif « dans votre espace » et annonce deux gestes — contester,
+    // proposer une autre formulation. Or il partait SANS lire aucun drapeau :
+    // surface fermée, le patient entrait et ne trouvait AUCUN lien, la sonde du
+    // hub étant fail-closed. On promettait une page qui n'existait pas.
+    //
+    // RETENIR L'ENVOI PLUTÔT QUE L'ENVOYER À VIDE : un courrier non parti se
+    // rattrape par une relance ; un courrier parti vers une porte fermée a déjà
+    // fait son effet.
+    if (!isDossierDeuxVoixEnabled()) return;
     const patient = await prisma.patient.findUnique({
       where: { idPatient },
       select: { email: true, prenom: true },
