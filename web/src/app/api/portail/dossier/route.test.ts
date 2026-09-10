@@ -37,6 +37,9 @@ const { prisma, logger } = vi.hoisted(() => ({
     // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. Les verbes d'écrasement
     // sont moqués EXPRESSÉMENT bien que jamais appelés — sans eux, l'assertion
     // « cette route n'écrase rien » lèverait au lieu de compter zéro.
+    // Les attestations d'accord (`D-161` §11) : le témoignage, à côté de la
+    // preuve qu'est la ratification posée au portail.
+    accordAtteste: { findMany: vi.fn() },
     finObjectif: {
       findMany: vi.fn(),
       create: vi.fn(),
@@ -137,6 +140,7 @@ function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.amendementObjectif.findMany.mockResolvedValue(surcharges.amendements ?? []);
   prisma.reponseJalonObjectif.findMany.mockResolvedValue(surcharges.reponsesJalon ?? []);
   prisma.finObjectif.findMany.mockResolvedValue(surcharges.fins ?? []);
+  prisma.accordAtteste.findMany.mockResolvedValue(surcharges.attestations ?? []);
   // Par défaut : AUCUN cycle confirmé. C'est l'état le plus courant en
   // production aujourd'hui, et celui où `resoudreJalonDu` rendrait `T0`.
   prisma.assessmentEpisode.findMany.mockResolvedValue(surcharges.ancreT0 ?? []);

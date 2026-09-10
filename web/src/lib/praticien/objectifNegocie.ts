@@ -393,6 +393,65 @@ export type LigneFin = {
   creeLe: Date;
 };
 
+/** Une attestation d'accord conclu en consultation (`D-161` §11). */
+export type LigneAccordAtteste = {
+  id: string;
+  idObjectif: string;
+  convenuLe: Date;
+  creeLe: Date;
+};
+
+/**
+ * LA DATE D'ACCORD D'UNE VERSION, ET SA FORME.
+ *
+ * `preuve` : le patient s'est prononcé lui-même au portail. `temoignage` : le
+ * praticien atteste un accord conclu en consultation — il l'a entendu.
+ * `heritee` : la colonne `negocie_le` de la version, saisie à la main avant
+ * `D-161` §11 ; elle ne dit pas laquelle des deux formes elle recouvre, et
+ * c'est pourquoi elle porte son propre nom plutôt que d'être rangée sous l'une
+ * d'elles.
+ */
+export type FormeAccord = 'preuve' | 'temoignage' | 'heritee';
+
+export type AccordDeVersion = { date: Date; forme: FormeAccord };
+
+/**
+ * L'ACCORD PORTÉ PAR UNE VERSION — lu depuis le FAIT qui le porte, jamais
+ * depuis une colonne saisie à la main (`D-161` §11).
+ *
+ * LE TÉMOIGNAGE CÈDE À LA PREUVE, et ici la règle se voit : une ratification du
+ * patient l'emporte sur une attestation du praticien, QUELLE QUE SOIT SA DATE.
+ * La base ne connaît pas l'ordre des paroles ; cette fonction, si.
+ *
+ * SEULE UNE RATIFICATION FAIT PREUVE, jamais une contestation : un patient qui
+ * dit « pas exactement ça » n'a rien convenu.
+ *
+ * `negocieLe` RESTE LU EN DERNIER RECOURS, et c'est délibéré. La colonne
+ * subsiste, et des dossiers réels la portent : l'ignorer effacerait une
+ * déclaration que le praticien a faite. Elle est rendue MARQUÉE `heritee` — on
+ * ne sait pas si elle recouvrait un geste du patient ou une parole de cabinet,
+ * et le dire vaut mieux que de choisir.
+ */
+export function accordDeVersion(
+  idObjectif: string,
+  ratifications: LigneRatification[],
+  attestations: LigneAccordAtteste[],
+  negocieLe: Date | null = null,
+): AccordDeVersion | null {
+  const preuve = ratifications
+    .filter((l) => l.idObjectif === idObjectif && l.sens === 'ratifie')
+    .sort(plusRecentDAbord)[0];
+  if (preuve) return { date: preuve.creeLe, forme: 'preuve' };
+
+  const attestee = attestations
+    .filter((l) => l.idObjectif === idObjectif)
+    .sort(plusRecentDAbord)[0];
+  if (attestee) return { date: attestee.convenuLe, forme: 'temoignage' };
+
+  if (negocieLe !== null) return { date: negocieLe, forme: 'heritee' };
+  return null;
+}
+
 export type EtatChaine = 'ouverte' | 'fin_proposee' | 'close';
 
 /** Ce qu'une chaîne dit de sa propre fin — assez pour l'afficher, jamais un
