@@ -51,6 +51,10 @@ import {
   type EtatRuntimeClinique,
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
+import type {
+  EtatPhaseApiResponse,
+  EtatPhaseComprehension,
+} from '@/app/api/praticien/objectifs/etat-phase/route';
 import { ObjectifNegociePanel } from '@/components/patient-cockpit/ObjectifNegociePanel';
 import { ComprehensionPanel } from '@/components/patient-cockpit/ComprehensionPanel';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
@@ -479,6 +483,19 @@ export function FichePatientPanel({
   // questionnaire verrouillé côté patient sans que rien ne le signale. Même
   // discipline que `etatTrajectoire` plus bas.
   const [etatCorrections, setEtatCorrections] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
+  /**
+   * L'ÉTAT RÉEL DE LA PHASE 3 (`D-161` §10). Jusqu'ici son statut ne lisait que
+   * les couvertures des douze besoins — ni objectif, ni ratification, ni
+   * synthèse —, et un dossier sans le moindre objectif s'affichait
+   * « renseignée ».
+   *
+   * `null` tant que la lecture n'a pas abouti, et le statut rend alors
+   * « indéterminée » : même discipline que `etatCorrections` et
+   * `etatTrajectoire` — un échec de lecture n'est jamais rendu comme un état
+   * connu.
+   */
+  const [etatPhase3, setEtatPhase3] = useState<EtatPhaseComprehension | null>(null);
+  const [etatPhase3Lu, setEtatPhase3Lu] = useState<'chargement' | 'lu' | 'erreur'>('chargement');
   // Vrai seulement si le serveur a confirmé avoir appliqué NOS filtres et
   // compte en base plus de lignes qu'il n'en a rendues.
   const [correctionsTronquees, setCorrectionsTronquees] = useState(false);
@@ -607,6 +624,30 @@ export function FichePatientPanel({
       .then((d: EquilibreApiResponse) => setData(d))
       .catch(() => setData({ unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
+  }, [idPatient]);
+
+  useEffect(() => {
+    // ROUTE À PART, ET JOURNALISÉE. La fiche appelle déjà `equilibre`, ce qui
+    // aurait évité une lecture — mais `lib/equilibre` est nommément un
+    // consommateur INTERDIT de « ce qui compte », et le module de compréhension
+    // a interdiction de l'importer : lui faire lire les tables d'alliance irait
+    // contre l'esprit de deux gardes (arbitrage du 2026-09-10).
+    setEtatPhase3Lu('chargement');
+    fetch(`/api/praticien/objectifs/etat-phase?idPatient=${encodeURIComponent(idPatient)}`)
+      .then((r) => r.json())
+      .then((d: EtatPhaseApiResponse) => {
+        if (!d.ok) {
+          setEtatPhase3(null);
+          setEtatPhase3Lu('erreur');
+          return;
+        }
+        setEtatPhase3(d.etat);
+        setEtatPhase3Lu('lu');
+      })
+      .catch(() => {
+        setEtatPhase3(null);
+        setEtatPhase3Lu('erreur');
+      });
   }, [idPatient]);
 
   useEffect(() => {
@@ -745,7 +786,23 @@ export function FichePatientPanel({
       }
       if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
       if (id === 'comprehension') {
-        return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
+        // CE QUE LA PHASE CONTIENT, ET NON CE QUI L'ENTOURE. Elle lisait les
+        // couvertures des douze besoins — un objet du cercle, affiché en tête de
+        // phase, mais qui ne dit RIEN de l'objectif ni de la compréhension.
+        // Un dossier sans le moindre objectif s'affichait « renseignée », et
+        // `D-161` §10 en tire la conséquence : le rail ne peut pas servir de feu
+        // pour passer à la prise de décision tant qu'il dit cela.
+        //
+        // Une lecture en vol ou en échec rend « indéterminée », jamais un état
+        // par défaut — même discipline que les phases du runtime plus bas.
+        if (etatPhase3Lu !== 'lu' || etatPhase3 === null) return 'inconnu';
+        // LES DEUX, ET PAS L'UNE OU L'AUTRE. Un objectif posé sans qu'on ait
+        // dit au patient ce qu'on a compris de lui n'est pas une phase faite ;
+        // une synthèse publiée sans objectif non plus. La phase porte les deux
+        // sous-vues, son statut porte les deux conditions.
+        return etatPhase3.objectifsActifs > 0 && etatPhase3.synthesePubliee
+          ? 'fait'
+          : 'en_attente';
       }
       // Phases dérivées du runtime : tant que son état n'est pas établi
       // (première mesure absente, chargement en cours ou erreur), le statut est
@@ -768,7 +825,7 @@ export function FichePatientPanel({
       if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
       return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
     },
-    [data, assignationsModif, etatCorrections, reponses, etatRuntime],
+    [data, assignationsModif, etatCorrections, reponses, etatRuntime, etatPhase3, etatPhase3Lu],
   );
 
   // Navigation praticien : le choix manuel prime définitivement sur la

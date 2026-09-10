@@ -81,6 +81,8 @@ type Options = {
   orientation?: 'inactif' | 'actif';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
+  /** L'état de la phase 3 servi par `objectifs/etat-phase` (`D-161` §10). */
+  phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur';
   reponses?:
     | 'defaut'
     | 'dimensions'
@@ -325,6 +327,20 @@ function stubFetch(options: Options = {}) {
       Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(payload) });
 
     if (url.includes('/api/praticien/equilibre')) return ok(EQUILIBRE);
+    // L'ÉTAT DE LA PHASE 3 (`D-161` §10). Par défaut : un objectif actif et une
+    // synthèse publiée — la phase est faite. `options.phase3` permet de dire le
+    // contraire, et l'ABSENCE de réponse fait rendre « indéterminée » au rail,
+    // ce qu'un banc éprouve pour lui-même.
+    if (url.includes('/api/praticien/objectifs/etat-phase')) {
+      if (options.phase3 === 'erreur') return ok({ ok: false, reason: 'server_error', error: 'x' }, 500);
+      if (options.phase3 === 'vide') {
+        return ok({ ok: true, etat: { objectifsActifs: 0, synthesePubliee: false } });
+      }
+      if (options.phase3 === 'sans-synthese') {
+        return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: false } });
+      }
+      return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: true } });
+    }
     if (url.includes('/api/praticien/besoins')) {
       return ok({
         patient: EQUILIBRE.patient,
@@ -563,6 +579,40 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
   // objectifs vit hors du runtime clinique, donc il doit rester visible SANS
   // épisode confirmé (`runtime: 'unavailable'`, le défaut de ce harnais). La
   // lecture du code ne le prouve pas — le montage, si.
+  it('LE RAIL NE DIT PLUS « renseignée » SUR UN DOSSIER SANS OBJECTIF (D-161 §10)', async () => {
+    // Il ne lisait que les couvertures des douze besoins — un objet du cercle,
+    // affiché en tête de phase, qui ne dit RIEN de l'objectif ni de la
+    // compréhension. La fixture porte des couvertures ; sans objectif, la phase
+    // doit pourtant rester en attente.
+    await rendreFiche({ phase3: 'vide' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).not.toMatch(/renseignée/i);
+    expect(onglet.textContent).toMatch(/en attente/i);
+  });
+
+  it('UNE SYNTHÈSE MANQUANTE SUFFIT À TENIR LA PHASE EN ATTENTE — elle porte les deux', async () => {
+    // Un objectif posé sans qu'on ait dit au patient ce qu'on a compris de lui
+    // n'est pas une phase faite : la phase a deux sous-vues, son statut a deux
+    // conditions.
+    await rendreFiche({ phase3: 'sans-synthese' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).not.toMatch(/renseignée/i);
+  });
+
+  it('avec un objectif actif ET une synthèse publiée, la phase est renseignée', async () => {
+    await rendreFiche({ phase3: 'complete' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).toMatch(/renseignée/i);
+  });
+
+  it('UNE LECTURE EN ÉCHEC REND « indéterminée », jamais un état par défaut', async () => {
+    // Même discipline que les phases du runtime : un échec de lecture ne vaut
+    // pas « rien en attente », et surtout pas « fait ».
+    await rendreFiche({ phase3: 'erreur' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).toMatch(/indéterminée/i);
+  });
+
   it('la phase « Compréhension » porte l’objectif négocié, même sans épisode confirmé', async () => {
     await rendreFiche();
 
