@@ -85,7 +85,7 @@ function card(): DecisionCard {
     priorityCandidates: [{
       candidateId: 'priority-c5', origin: 'engine', label: 'Équilibre de l’assiette', rank: 1,
       confidence: 'à_documenter', ruleId: 'fixture', rationale: 'Fixture LOT-03.',
-      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [],
     }],
     proposedMainPriorityId: 'priority-c5',
     selectedMainPriority: {

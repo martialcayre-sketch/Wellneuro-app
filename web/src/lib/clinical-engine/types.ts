@@ -314,6 +314,23 @@ export type DecisionPriorityCandidate = {
   rationale: string;
   provenance: ClinicalFindingProvenance;
   limitations: string[];
+  /**
+   * CELLES DES `limitations` QUI VIENNENT DE LA RÈGLE RELUE, et elles seules.
+   * Le reste — les textes du producteur de candidats, le motif de la gate de
+   * population — vit hors du périmètre haché : `PRIORITY_RULES_SHA256` porte sur
+   * `PRIORITY_RULES_V1` et `ABSTENTION_PROCEDURE_V1`, pas sur
+   * `lib/clinical-engine`. Le bilan descriptif du 2026-09-09 l'établit.
+   *
+   * POURQUOI CE CHAMP PLUTÔT QU'UN DÉCOUPAGE À L'ÉCRAN. Les trois sources
+   * arrivent fusionnées et dédoublonnées ; l'écran ne peut pas deviner l'origine
+   * d'un texte, et la deviner par comparaison de chaînes ferait dépendre une
+   * garde de provenance d'une égalité de ponctuation.
+   *
+   * UN SOUS-ENSEMBLE, JAMAIS UNE LISTE PARALLÈLE : les textes restent dans
+   * `limitations`, qui ne change ni d'ordre ni de contenu. Ce champ dit
+   * lesquels, il n'en retire aucun.
+   */
+  limitationsRegleSignee: string[];
 };
 
 export type DecisionPrioritySelection = {

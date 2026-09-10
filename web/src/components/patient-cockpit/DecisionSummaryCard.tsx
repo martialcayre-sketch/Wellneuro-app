@@ -52,14 +52,35 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
       ? 'Décision suspendue — signal d’alerte déclaré, avis médical à évaluer en priorité'
       : 'Décision suspendue — revue praticien requise'
     : current ? current.label : 'Aucune priorité proposée';
-  // Une seule liste, dédupliquée : la carte reprend déjà les limitations de la
-  // revue, et le candidat porte les siennes. Deux listes côte à côte auraient
-  // répété les textes communs sans rien ajouter.
-  const limitationsAffichees = [...new Set([
+  // DEUX GROUPES, PAR PROVENANCE — arbitrage du responsable, 2026-09-10, sur le
+  // bilan descriptif du classement (2026-09-09).
+  //
+  // Une seule liste dédoublonnée mêlait ce que la RÈGLE RELUE dit et ce que le
+  // MOTEUR ajoute, sans que rien ne les distingue. Or `PRIORITY_RULES_SHA256`
+  // porte sur `PRIORITY_RULES_V1` et `ABSTENTION_PROCEDURE_V1` — pas sur
+  // `lib/clinical-engine`, où vivent le producteur de candidats, les quatre
+  // textes `LIMITATION_*` et le motif de la gate de population. Le praticien
+  // lisait donc du relu et du non relu dans la même liste.
+  //
+  // AUCUN BADGE, AUCUN TAMPON : deux intitulés qui disent l'ORIGINE, rien de
+  // plus. Marquer le premier groupe comme « certifié » sur-promettrait une
+  // couverture que le SHA n'accorde pas au reste de la chaîne.
+  //
+  // FAIL-SAFE : le groupe signé est une liste EXPLICITE — les limitations de la
+  // règle déclenchée, et le cadre d'abstention, tous deux dans le périmètre
+  // haché. Tout texte qu'on ne sait pas rattacher tombe dans l'autre groupe,
+  // c'est-à-dire qu'on SOUS-promet plutôt que l'inverse.
+  const signees = new Set([
+    ...decisionCard.abstention.limitations,
+    ...(current?.limitationsRegleSignee ?? []),
+  ]);
+  const toutes = [...new Set([
     ...decisionCard.abstention.limitations,
     ...decisionCard.limitations,
     ...(current?.limitations ?? []),
   ])];
+  const limitationsRegle = toutes.filter((texte) => signees.has(texte));
+  const limitationsMoteur = toutes.filter((texte) => !signees.has(texte));
 
   return (
     <section aria-labelledby="decision-summary-title">
@@ -101,10 +122,29 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
                 population, et notamment « exclusions non curées » : sans cette
                 ligne, un axe dont personne n'a jamais vérifié la population
                 s'afficherait exactement comme un axe vérifié (`DC-35`). */}
-            {limitationsAffichees.length > 0 && (
-              <ul className="list-disc pl-5 text-muted-foreground">
-                {limitationsAffichees.map(limitation => <li key={limitation}>{limitation}</li>)}
-              </ul>
+            {limitationsRegle.length > 0 && (
+              <>
+                <p className="mt-2 text-xs font-medium text-foreground">Limitations de la règle</p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {limitationsRegle.map(limitation => <li key={limitation}>{limitation}</li>)}
+                </ul>
+              </>
+            )}
+            {limitationsMoteur.length > 0 && (
+              <>
+                {/* L'INTITULÉ DIT L'ESSENTIEL, et il est factuel : ces textes
+                    ne sont couverts par aucune ligne signée. Le bilan
+                    descriptif du 2026-09-09 en dresse la liste — producteur de
+                    candidats, classement à trois termes, quatre textes
+                    `LIMITATION_*`, motifs de la gate. Les taire ferait passer
+                    l'ensemble pour relu. */}
+                <p className="mt-2 text-xs font-medium text-foreground">
+                  Ajoutées par le moteur <span className="font-normal text-muted-foreground">(hors périmètre signé)</span>
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {limitationsMoteur.map(limitation => <li key={limitation}>{limitation}</li>)}
+                </ul>
+              </>
             )}
           </div>
         )}

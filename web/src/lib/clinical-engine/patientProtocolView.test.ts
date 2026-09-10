@@ -12,7 +12,7 @@ function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
     decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
     reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
     version: 'c1-decision-card-v1', status: 'draft',
-    priorityCandidates: [{ candidateId: 'priority-1', origin: 'engine', label: 'Priorité fixture', rank: 1, confidence: 'à_documenter', ruleId: 'RULE_FIXTURE', rationale: 'Interne.', provenance: { responseIds: ['response-1'], needIds: [1], clinicalObjectCodes: [] }, limitations: ['Interne.'] }],
+    priorityCandidates: [{ candidateId: 'priority-1', origin: 'engine', label: 'Priorité fixture', rank: 1, confidence: 'à_documenter', ruleId: 'RULE_FIXTURE', rationale: 'Interne.', provenance: { responseIds: ['response-1'], needIds: [1], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: ['Interne.'] }],
     proposedMainPriorityId: 'priority-1',
     selectedMainPriority: { candidateId: 'priority-1', selectedAt: '2026-01-01T00:00:00.000Z', selectedBy: 'practitioner', rationale: 'Choix interne.' },
     counterfactuals: [], missingDataFindingIds: ['missing-1'], discordanceFindingIds: ['discordance-1'], safetyFindingIds: [],
