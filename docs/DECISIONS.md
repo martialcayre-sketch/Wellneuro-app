@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-166 — « Ce qui compte pour moi » se dépose une fois par cycle, et l'échec de lecture ne ferme rien
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10,
+  **contre l'avis motivé de l'agent**, consigné au §6)
+- Porte sur : `ce_qui_compte_entrees` et sa route de dépôt
+  (`api/portail/ce-qui-compte`). **N'amende pas** l'append-only de
+  [[D-094]]-LOT-03 : voir §3.
+- Domaine : doctrine produit — campagne Alliance 6.0-A, parole du patient
+
+**Constat.** La route de dépôt n'a aucune cadence, et son propre code le dit
+(« une route d'écriture qui n'a aucune cadence »). Un patient qui vient de
+déposer se voit réoffrir un champ vide, sans que rien à l'écran ne lui rappelle
+qu'il a déjà parlé — le formulaire n'affiche aucun historique et répond « C'est
+enregistré. Merci de l'avoir écrit. » avant de rouvrir. Constaté sur un dossier
+réel le 2026-09-10, dépôt de 10 h 56.
+
+**Décision :**
+
+1. **Un dépôt par cycle.** Après un dépôt, la fenêtre est FERMÉE. Elle se
+   rouvre à la confirmation d'une **ancre de cycle** (`T0`, `T1`, `T12`…)
+   postérieure à ce dépôt.
+2. **Un jalon de mesure ne rouvre rien.** `J21`, `J42`, `J90` rythment un
+   cycle, ils n'en ouvrent pas. La forme de l'ancre se lit par
+   `estAncreDeCycle` (`lib/protocol/cycles.ts`) et jamais par une liste
+   recopiée : la série est ouverte, une liste figée cesserait d'être vraie au
+   premier cycle qu'elle ne connaît pas.
+3. **L'APPEND-ONLY N'EST PAS TOUCHÉ, et c'est la clause à ne pas mal lire.**
+   `lib/patient/ceQuiCompte.ts` dit « une parole n'est pas une donnée qu'on
+   rectifie, elle s'ajoute » : cela reste vrai mot pour mot. Pas de
+   `supersedes`, pas de correction, pas de suppression. Ce qui est borné est la
+   **cadence** de l'ajout, jamais sa nature. Lire ce verrou comme une
+   autorisation à chaîner les entrées serait le contresens exact que cette
+   clause ferme.
+4. **Une lecture en échec N'OPPOSE RIEN au patient.** Si les épisodes ou les
+   dépôts sont illisibles, la fenêtre reste **ouverte**. Une fermeture repose
+   sur un fait — « vous avez déposé le … » ; sans ce fait, la prononcer
+   reviendrait à affirmer au patient quelque chose qu'on ne sait pas (`DC-24`).
+   C'est l'inverse du fail-closed habituel, et c'est délibéré : ici le
+   fail-closed protégerait une règle, pas une parole.
+5. **Un dossier sans aucune ancre confirmée reste fermé après son premier
+   dépôt**, et cette conséquence est assumée plutôt que découverte : aucun
+   cycle n'a commencé, donc aucun n'a pu commencer depuis. Un patient qui
+   dépose avant son `T0` attend cette confirmation. C'est la lecture fidèle de
+   la règle du §1 ; l'écarter demanderait une exception qui n'a pas été
+   demandée.
+6. **Réserve de l'agent, consignée parce qu'elle a été pesée et écartée.** Le
+   verrou ferme la parole au moment où elle peut avoir le plus de valeur : un
+   patient dont la vie change en semaine 3 s'entend répondre d'attendre. Trois
+   voies l'évitaient — afficher le dépôt précédent avec sa date pour tarir la
+   ressaisie par l'information plutôt que par la barrière ; retirer le lien du
+   hub sans fermer l'écran ; ne rien changer tant qu'aucun dossier réel n'a
+   déposé deux fois (aucun ne l'a fait à ce jour). L'arbitrage a été rendu en
+   connaissance de ces trois voies.
+7. **Ce que le patient lit.** L'écran fermé dit la date de son dépôt, que son
+   texte est conservé, et qu'il pourra écrire de nouveau « à la prochaine étape
+   de votre suivi ». **Aucune date de réouverture n'est annoncée** — elle
+   dépend d'une confirmation que le praticien n'a pas posée, et l'inventer
+   serait un rendez-vous fabriqué. Aucun compte à rebours, aucun décompte de
+   dépôts, et le texte déposé n'est pas réaffiché : une surface de lecture des
+   dépôts reste hors de ce lot.
+8. **La garde est au serveur** (409 `fenetre_fermee`), l'écran n'en est que la
+   courtoisie. 409 et non 403 : rien n'est interdit à ce patient, l'état du
+   dossier rend le geste sans objet pour l'instant.
+9. **Le lien du hub ne bouge pas.** La surface reste offerte ; c'est l'écran
+   qui explique. Cacher l'entrée ferait de la fermeture une disparition, et le
+   dépôt a déjà reproché ailleurs les surfaces à moitié cachées.
+
+**Ce que cela change au `GET`.** L'interrupteur d'écran porte désormais l'état
+de la fenêtre, donc lit la DATE du dernier dépôt. Son invariant survit et se
+dit mieux : aucun CONTENU de parole ne transite — la projection ne demande que
+`creeLe`, et un banc l'assertionne à la source plutôt que sur la réponse.
+
 ### D-165 — Les quatre colonnes de déclaration de date sont ASSUMÉES vides, pas oubliées
 
 - Date : 2026-09-10

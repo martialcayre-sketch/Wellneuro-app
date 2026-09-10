@@ -12,12 +12,15 @@ const { prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     entreeCeQuiCompte: {
       create: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    // `D-166` : la fenêtre de dépôt se lit sur les ANCRES de cycle confirmées.
+    assessmentEpisode: { findMany: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -113,6 +116,11 @@ beforeEach(() => {
   process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
   process.env.WN_CE_QUI_COMPTE = 'true';
   mockCompteActif();
+  // DÉFAUT : aucun dépôt antérieur ⇒ fenêtre ouverte. Les bancs de `D-166`
+  // surchargent ces deux lectures ; tous les autres décrivent un premier
+  // dépôt, qui n'a jamais été borné.
+  prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(null);
+  prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   prisma.entreeCeQuiCompte.create.mockImplementation(
     async ({ data }: { data: { saisiLe: Date | null } }) => ({
       id: 'ENT_1',
@@ -446,12 +454,77 @@ describe('GET /api/portail/ce-qui-compte — interrupteur d’écran seul', () =
     expect((await GET(getRequest(cookieProprio()))).status).toBe(403);
   });
 
-  it('session valide : rend « ouvert », et NE LIT AUCUNE ENTRÉE', async () => {
+  // CE BANC DISAIT « NE LIT AUCUNE ENTRÉE » JUSQU'AU 2026-09-10. `D-166` fait
+  // lire au GET la DATE du dernier dépôt — le formulaire doit connaître l'état
+  // de la fenêtre avant d'offrir un champ. Son intention réelle survit intacte
+  // et se dit mieux : aucun CONTENU de parole ne transite. Le `select` le
+  // prouve à la source plutôt que sur la réponse — une projection qui ne
+  // demande pas `texte` ne peut pas le divulguer, même par erreur de sérialisation.
+  it('session valide : rend « ouvert » et l’état de la fenêtre, sans JAMAIS lire une parole', async () => {
     const res = await GET(getRequest(cookieProprio()));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, ouvert: true });
-    // L'interrupteur est un interrupteur : aucune donnée patient ne transite.
+    expect(await res.json()).toEqual({ ok: true, ouvert: true, fenetre: { ouverte: true } });
+
+    const [args] = prisma.entreeCeQuiCompte.findFirst.mock.calls[0] as [{ select: Record<string, unknown> }];
+    expect(Object.keys(args.select)).toEqual(['creeLe']);
     expect(prisma.entreeCeQuiCompte.findMany).not.toHaveBeenCalled();
     aucuneEcriture();
+  });
+
+  // ── `D-166` — un dépôt par cycle ────────────────────────────────────────────
+
+  const DEPOT_DU_10 = { creeLe: new Date('2026-09-10T08:56:00.000Z') };
+
+  it('GET : un dépôt sans ancre postérieure ⇒ fenêtre FERMÉE, avec sa date', async () => {
+    prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT_DU_10);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { milestone: 'T0', confirmedAt: new Date('2026-08-30T20:39:00.000Z') },
+    ]);
+    const res = await GET(getRequest(cookieProprio()));
+    expect(await res.json()).toEqual({
+      ok: true,
+      ouvert: true,
+      fenetre: { ouverte: false, fermeeDepuis: '2026-09-10T08:56:00.000Z' },
+    });
+  });
+
+  it('POST hors fenêtre : 409, et RIEN N’EST ÉCRIT', async () => {
+    prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT_DU_10);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { milestone: 'T0', confirmedAt: new Date('2026-08-30T20:39:00.000Z') },
+    ]);
+    const res = await POST(postRequest(cookieProprio(), { texte: TEXTE }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).reason).toBe('fenetre_fermee');
+    aucuneEcriture();
+  });
+
+  it('une ANCRE confirmée après le dépôt rouvre la fenêtre', async () => {
+    prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT_DU_10);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { milestone: 'T1', confirmedAt: new Date('2026-09-11T09:00:00.000Z') },
+      { milestone: 'T0', confirmedAt: new Date('2026-08-30T20:39:00.000Z') },
+    ]);
+    expect((await POST(postRequest(cookieProprio(), { texte: TEXTE }))).status).toBe(201);
+  });
+
+  // UN JALON DE MESURE N'OUVRE PAS DE CYCLE, et c'est tout l'écart entre
+  // « rythmer un suivi » et « en commencer un ». Sans ce banc, un `estJalonMomentum`
+  // mis à la place d'`estAncreDeCycle` passerait au vert.
+  it('un JALON DE MESURE postérieur ne rouvre RIEN', async () => {
+    prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT_DU_10);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { milestone: 'J21', confirmedAt: new Date('2026-09-30T09:00:00.000Z') },
+      { milestone: 'T0', confirmedAt: new Date('2026-08-30T20:39:00.000Z') },
+    ]);
+    expect((await POST(postRequest(cookieProprio(), { texte: TEXTE }))).status).toBe(409);
+  });
+
+  // UNE LECTURE EN ÉCHEC N'OPPOSE RIEN AU PATIENT. Dire « vous avez déjà
+  // parlé » sans le savoir serait lui affirmer un fait faux.
+  it('épisodes illisibles ⇒ la fenêtre reste OUVERTE, le dépôt passe', async () => {
+    prisma.entreeCeQuiCompte.findFirst.mockResolvedValue(DEPOT_DU_10);
+    prisma.assessmentEpisode.findMany.mockRejectedValue(new Error('base indisponible'));
+    expect((await POST(postRequest(cookieProprio(), { texte: TEXTE }))).status).toBe(201);
   });
 });
