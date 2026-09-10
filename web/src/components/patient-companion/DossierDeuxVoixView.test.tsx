@@ -12,7 +12,7 @@ const OBJECTIF = {
   enoncePatient: 'Je voudrais me réveiller sans avoir l’impression de n’avoir pas dormi.',
   reformulationPraticien: 'Un sommeil qui ne restaure pas, plutôt qu’une difficulté à s’endormir.',
   priorite: 'Le sommeil d’abord',
-  negocieLe: '2026-08-20T09:00:00.000Z',
+  accordHerite: '2026-08-20T09:00:00.000Z',
   creeLe: '2026-08-20T09:00:00.000Z',
   etat: 'en_attente',
 };

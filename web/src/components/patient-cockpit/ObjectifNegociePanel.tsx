@@ -380,6 +380,9 @@ export function ObjectifNegociePanel({
   const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
   const [erreurDepartage, setErreurDepartage] = useState('');
   const [relanceEnCours, setRelanceEnCours] = useState(false);
+  const [dateAccord, setDateAccord] = useState('');
+  const [accordEnCours, setAccordEnCours] = useState(false);
+  const [messageAccord, setMessageAccord] = useState('');
   const [messageRelance, setMessageRelance] = useState('');
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
@@ -482,10 +485,6 @@ export function ObjectifNegociePanel({
     }
   }, [idPatient]);
 
-  // DÉPENDANCE STABLE. `chargerDossier` ne dépend que de `idPatient` ; un
-  // littéral recréé au rendu ferait retirer le GET en boucle, et ce GET
-  // JOURNALISE l'accès au dossier (G-TRUST-04) — le journal se remplirait de
-  // lignes que personne n'a demandées (cicatrice `ClinicalRuntimeSection.tsx:80-81`).
   const chargerDossier = useCallback(async () => {
     setEtat('chargement');
     setErreur('');
@@ -554,6 +553,46 @@ export function ObjectifNegociePanel({
     },
     [idPatient, chargerDossier],
   );
+
+  /**
+   * ATTESTER UN ACCORD CONCLU DE VIVE VOIX (`D-161` §11).
+   *
+   * N'ÉCRIT PAS DANS LA CHAÎNE : aucune version n'est créée. C'est une ligne à
+   * part, dans sa propre table, et c'est ce qui la distingue de l'ancienne
+   * colonne `negocie_le` — un fait de chaîne rangé dans une colonne de version,
+   * perdable à la révision et falsifiable au formulaire.
+   */
+  const attesterAccord = useCallback(
+    async (idObjectif: string) => {
+      setAccordEnCours(true);
+      setMessageAccord('');
+      try {
+        const reponse = await fetch('/api/praticien/objectifs/accord', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, idObjectif, convenuLe: dateAccord }),
+        });
+        const payload = (await reponse.json()) as { ok: boolean; error?: string };
+        if (!reponse.ok || !payload.ok) {
+          setMessageAccord(payload.error ?? 'L’accord n’a pas pu être noté.');
+          return;
+        }
+        setDateAccord('');
+        setMessageAccord('Accord noté. Votre patient lira qu’il vient de vous.');
+        await chargerDossier();
+      } catch {
+        setMessageAccord('L’accord n’a pas pu être noté.');
+      } finally {
+        setAccordEnCours(false);
+      }
+    },
+    [idPatient, dateAccord, chargerDossier],
+  );
+
+  // DÉPENDANCE STABLE. `chargerDossier` ne dépend que de `idPatient` ; un
+  // littéral recréé au rendu ferait retirer le GET en boucle, et ce GET
+  // JOURNALISE l'accès au dossier (G-TRUST-04) — le journal se remplirait de
+  // lignes que personne n'a demandées (cicatrice `ClinicalRuntimeSection.tsx:80-81`).
 
   const chargerPropositions = useCallback(async () => {
     setErreurGeste('');
@@ -1151,6 +1190,49 @@ export function ObjectifNegociePanel({
                   />
                 </div>
 
+                {/* ── NOTER UN ACCORD CONCLU EN CONSULTATION ─────────────────
+                    UN TÉMOIGNAGE, PAS UNE PREUVE. Le geste que le patient pose
+                    lui-même vit au portail ; ici, vous attestez ce que vous avez
+                    ENTENDU. Le témoignage cède à la preuve à la lecture : si le
+                    patient se prononce ensuite, c'est SA réponse qui s'affiche.
+                    La date est OBLIGATOIRE — c'est l'objet de l'attestation. */}
+                {tetesActives === 1 && fins[trajectoire.idObjectif]?.etat !== 'close' && (
+                  <div className="mt-2 rounded-lg border border-border p-3">
+                    <label
+                      htmlFor={`accord-${trajectoire.idObjectif}`}
+                      className="block text-xs font-medium text-foreground"
+                    >
+                      Accord conclu en consultation, le
+                    </label>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <input
+                        id={`accord-${trajectoire.idObjectif}`}
+                        type="date"
+                        value={dateAccord}
+                        onChange={(evenement) => setDateAccord(evenement.target.value)}
+                        className="rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      />
+                      <button
+                        type="button"
+                        disabled={accordEnCours || dateAccord === ''}
+                        onClick={() => void attesterAccord(trajectoire.idObjectif)}
+                        className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      >
+                        {accordEnCours ? 'Enregistrement…' : 'Noter cet accord'}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Votre patient lira que l’accord vient de vous, pas de lui. S’il se prononce
+                      ensuite depuis son espace, c’est sa réponse qui s’affichera.
+                    </p>
+                    {messageAccord && (
+                      <p role="status" className="mt-1 text-xs text-foreground">
+                        {messageAccord}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* ── RENVOYER LE COURRIER ────────────────────────────────────
                     L'envoi ne part qu'à l'ÉCRITURE d'un objectif : un objectif
                     rédigé avant la mise en service de l'expéditeur, ou dont le
@@ -1515,16 +1597,13 @@ export function ObjectifNegociePanel({
             />
             <Compteur valeur={priorite} maximum={LONGUEUR_MAX_PRIORITE} />
 
-            <label htmlFor="objectif-negocie-le" className="mt-3 block text-xs font-medium text-foreground">
-              Date de l’accord (facultative)
-            </label>
-            <input
-              id="objectif-negocie-le"
-              type="date"
-              value={negocieLe}
-              onChange={(evenement) => setNegocieLe(evenement.target.value)}
-              className="mt-1 rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-            />
+            {/* LA DATE D'ACCORD A QUITTÉ CE FORMULAIRE (`D-161` §11). C'était
+                un fait de CHAÎNE rangé dans une colonne de VERSION : à la fois
+                perdable — une révision la laissait derrière — et falsifiable,
+                le formulaire n'étant jamais démonté. Surtout, elle laissait UNE
+                voix affirmer un accord que l'autre n'avait pas donné.
+                Elle se note désormais par un geste à part, sur la version
+                courante, et se LIT depuis le fait qui la porte. */}
 
             <fieldset className="mt-3 rounded-lg border border-border p-3">
               <legend className="px-1 text-xs font-medium text-foreground">

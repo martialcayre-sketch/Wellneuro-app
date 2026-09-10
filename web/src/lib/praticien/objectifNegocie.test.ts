@@ -16,6 +16,7 @@ import {
   tetesDeChaine,
   tetesActives,
   preparerFin,
+  accordDeVersion,
   preparerObjectif,
   preparerRatification,
   ANCRE_JALON,
@@ -995,5 +996,67 @@ describe('preparerFin — ce que la base ne peut pas tenir (D-161)', () => {
     const r = prep({ motif: 'abandonne', motifTexte: 'x', sens: 'confirme' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.raison).toBe('negociation_impossible');
+  });
+});
+
+describe('accordDeVersion — le témoignage cède à la preuve (D-161 §11)', () => {
+  const rat = (id: string, sens: string, jour: number) => ({
+    id, idObjectif: 'v1', sens,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+  const att = (id: string, convenu: number, cree: number) => ({
+    id, idObjectif: 'v1',
+    convenuLe: new Date(`2026-09-${String(convenu).padStart(2, '0')}T10:00:00Z`),
+    creeLe: new Date(`2026-09-${String(cree).padStart(2, '0')}T10:00:00Z`),
+  });
+
+  it('rien de posé, rien d’hérité : aucun accord', () => {
+    expect(accordDeVersion('v1', [], [])).toBeNull();
+  });
+
+  it('une ratification du patient fait PREUVE', () => {
+    const lu = accordDeVersion('v1', [rat('R1', 'ratifie', 3)], []);
+    expect(lu?.forme).toBe('preuve');
+  });
+
+  it('SEULE UNE RATIFICATION fait preuve — une contestation n’a rien convenu', () => {
+    expect(accordDeVersion('v1', [rat('R1', 'conteste', 3)], [])).toBeNull();
+  });
+
+  it('une attestation du praticien fait TÉMOIGNAGE, à sa date CONVENUE', () => {
+    const lu = accordDeVersion('v1', [], [att('A1', 3, 8)]);
+    expect(lu?.forme).toBe('temoignage');
+    // La date SERVIE est celle de l'accord, pas celle de la saisie : c'est
+    // toute la raison d'être des deux colonnes.
+    expect(lu?.date.toISOString()).toContain('2026-09-03');
+  });
+
+  it('LE TÉMOIGNAGE CÈDE À LA PREUVE, même quand la preuve est POSTÉRIEURE', () => {
+    const lu = accordDeVersion('v1', [rat('R1', 'ratifie', 9)], [att('A1', 3, 3)]);
+    expect(lu?.forme).toBe('preuve');
+  });
+
+  it('et même quand la preuve est ANTÉRIEURE à l’attestation', () => {
+    // La règle ne dépend pas des dates : elle dépend de QUI parle.
+    const lu = accordDeVersion('v1', [rat('R1', 'ratifie', 1)], [att('A1', 9, 9)]);
+    expect(lu?.forme).toBe('preuve');
+  });
+
+  it('`negocieLe` RESTE LU EN DERNIER RECOURS, et se dit HÉRITÉ', () => {
+    // La colonne subsiste et des dossiers réels la portent : l'ignorer
+    // effacerait une déclaration faite. Mais elle ne dit pas laquelle des deux
+    // formes elle recouvrait — le dire vaut mieux que de choisir.
+    const lu = accordDeVersion('v1', [], [], new Date('2026-08-01T10:00:00Z'));
+    expect(lu?.forme).toBe('heritee');
+  });
+
+  it('un fait POSÉ l’emporte sur l’héritage', () => {
+    const lu = accordDeVersion('v1', [], [att('A1', 3, 3)], new Date('2026-08-01T10:00:00Z'));
+    expect(lu?.forme).toBe('temoignage');
+  });
+
+  it('les faits d’une AUTRE version ne comptent pas', () => {
+    const autre = [{ ...rat('R1', 'ratifie', 3), idObjectif: 'v2' }];
+    expect(accordDeVersion('v1', autre, [])).toBeNull();
   });
 });

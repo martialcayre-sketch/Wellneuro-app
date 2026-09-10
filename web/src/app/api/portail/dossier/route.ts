@@ -17,8 +17,10 @@ import {
   LONGUEUR_MAX_AMENDEMENT,
   LONGUEUR_MAX_REPONSE_JALON,
   etatRatification,
+  accordDeVersion,
   tetesDeChaine,
   tetesActives,
+  type AccordDeVersion,
   type LectureFin,
   preparerAmendement,
   preparerRatification,
@@ -88,8 +90,20 @@ export type ObjectifServi = {
   enoncePatient: string;
   reformulationPraticien: string | null;
   priorite: string | null;
-  /** Déclaration du praticien — `null` s'il n'a rien déclaré. Jamais comblée. */
-  negocieLe: string | null;
+  /**
+   * L'ACCORD PORTÉ PAR CETTE VERSION, ET SA FORME (`D-161` §11).
+   *
+   * Remplace `negocieLe`, qui était une colonne de version saisie à la main :
+   * une voix pouvait y affirmer un accord que l'autre n'avait pas donné —
+   * « Convenu le 3 septembre » s'affichait chez un patient qui n'avait jamais
+   * rien ratifié. La date se lit désormais depuis le FAIT qui la porte, et la
+   * forme dit lequel : `preuve` (le patient s'est prononcé lui-même),
+   * `temoignage` (le praticien atteste ce qu'il a entendu), `heritee` (l'ancienne
+   * colonne, qui ne dit pas laquelle des deux elle recouvrait).
+   *
+   * `null` = rien n'a été convenu. Jamais comblé.
+   */
+  accord: { date: string; forme: AccordDeVersion['forme'] } | null;
   creeLe: string;
   /**
    * `en_attente` NE DIT RIEN DU PATIENT : il ne s'est pas encore prononcé.
@@ -395,6 +409,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       entrees,
       syntheses,
       desaccords,
+      attestations,
       fins,
     ] = await Promise.all([
       prisma.objectifNegocie.findMany({
@@ -461,6 +476,14 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       // `WN_DOSSIER_DEUX_VOIX` comme la ratification et l'amendement — le motif
       // écrit plus haut vaut ici mot pour mot. Le texte de motif n'est PAS lu :
       // ce qui sert l'état est la parole posée, pas ce qu'elle raconte.
+      // LES ATTESTATIONS D'ACCORD (`D-161` §11) : le témoignage, à côté de la
+      // preuve qu'est la ratification. Aucun drapeau propre — même régime que
+      // les autres tables de l'alliance.
+      prisma.accordAtteste.findMany({
+        where: { idPatient: patient.idPatient },
+        select: { id: true, idObjectif: true, convenuLe: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
       prisma.finObjectif.findMany({
         where: { idPatient: patient.idPatient },
         select: {
@@ -527,7 +550,10 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         enoncePatient: ligne.enoncePatient,
         reformulationPraticien: ligne.reformulationPraticien,
         priorite: ligne.priorite,
-        negocieLe: ligne.negocieLe ? ligne.negocieLe.toISOString() : null,
+        accord: (() => {
+          const lu = accordDeVersion(ligne.id, ratifications, attestations, ligne.negocieLe);
+          return lu === null ? null : { date: lu.date.toISOString(), forme: lu.forme };
+        })(),
         creeLe: ligne.creeLe.toISOString(),
         // LES DEUX TABLES, JAMAIS UNE SEULE : un patient qui vient d'écrire sa
         // version après avoir ratifié ne doit pas relire « vous avez répondu :

@@ -1010,12 +1010,7 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
 
   // ── La date d'accord ne voyage pas ────────────────────────────────────────
 
-  describe('LA DATE D’ACCORD NE VOYAGE PAS D’UNE VERSION À L’AUTRE', () => {
-    // Le formulaire n'est jamais DÉMONTÉ — il est masqué. Une valeur saisie
-    // pour une version survivait donc dans l'état et repartait avec la version
-    // choisie ensuite. Sur `negocieLe`, ce n'est pas une perte : c'est une date
-    // FAUSSE affichée au patient, « Convenu le … » sous une version dont il n'a
-    // jamais entendu parler ce jour-là.
+  describe('LA DATE D’ACCORD A QUITTÉ LE FORMULAIRE (D-161 §11)', () => {
     const dossierAvecObjectif = {
       ...DOSSIER_VIDE,
       objectifs: [ligne({ id: 'OBJ_1' })],
@@ -1025,73 +1020,42 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
       tetesActives: 1,
     };
 
-    it('annuler une reformulation vide la date, la priorité et le « non traité »', async () => {
+    it('le champ n’existe plus — le défaut est clos par RETRAIT, pas par vidage', async () => {
+      // C'était un fait de CHAÎNE rangé dans une colonne de VERSION : perdable
+      // à la révision, et falsifiable parce que le formulaire n'est jamais
+      // démonté. Le vidage fermait le symptôme ; le retrait ferme la cause.
       fetchMock.mockImplementation(router({ dossier: dossierAvecObjectif }));
       await attendreLeDossier();
-
       fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
-
-      const date = (document.getElementById('objectif-negocie-le') as HTMLInputElement);
-      const priorite = (document.getElementById('objectif-priorite') as HTMLInputElement);
-      fireEvent.change(date, { target: { value: '2026-09-03' } });
-      fireEvent.change(priorite, { target: { value: 'Le sommeil d’abord' } });
-      expect(date.value).toBe('2026-09-03');
-
-      // ANNULER REFERME LE FORMULAIRE — `editionOuverte` retombe dès qu'un
-      // objectif courant existe. Le champ quitte donc le DOM, mais l'ÉTAT
-      // REACT, lui, survit : c'est précisément ce qui faisait voyager la
-      // saisie. Le défaut ne s'observe qu'à la réouverture, et c'est là qu'on
-      // regarde.
-      fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
-      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
-
-      expect((document.getElementById('objectif-negocie-le') as HTMLInputElement).value).toBe('');
-      expect((document.getElementById('objectif-priorite') as HTMLInputElement).value).toBe('');
+      expect(document.getElementById('objectif-negocie-le')).toBeNull();
     });
 
-    it('LE CHEMIN QUI FAIT VRAIMENT VOYAGER LES QUATRE AUTRES CHAMPS : reformuler, annuler, PUIS reprendre une proposition', async () => {
-      // Rentrer dans « Reformuler » repose `reformulation`, `priorite` et
-      // « non traité » depuis la version révisée — ces trois-là s'y nettoient
-      // donc d'eux-mêmes. « Reprendre une proposition », lui, ouvre un objectif
-      // NEUF et ne repose RIEN : une priorité saisie puis abandonnée ailleurs
-      // s'y retrouve intacte, sur un objectif qui n'a rien à voir.
-      fetchMock.mockImplementation(
-        router({
-          dossier: dossierAvecObjectif,
-          propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
-        }),
-      );
+    it('LE GESTE D’ATTESTATION LE REMPLACE, et dit que la parole vient du praticien', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAvecObjectif }));
+      await attendreLeDossier();
+      expect(screen.getByText(/Accord conclu en consultation, le/)).toBeTruthy();
+      // `D-161` §4 : le patient doit savoir laquelle des deux formes il lit.
+      expect(document.body.textContent).toMatch(/l’accord vient de vous, pas de lui/);
+      expect(document.body.textContent).toMatch(/c’est sa réponse qui s’affichera/);
+    });
+
+    it('les quatre autres champs se vident toujours à la bascule de mode', async () => {
+      // Le vidage reste nécessaire pour eux : « reformuler → annuler → reprendre
+      // une proposition » ne repose aucun de ces champs.
+      fetchMock.mockImplementation(router({
+        dossier: dossierAvecObjectif,
+        propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+      }));
       await attendreLeDossier();
 
       fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
       fireEvent.change(document.getElementById('objectif-priorite') as HTMLInputElement, {
         target: { value: 'Le sommeil d’abord' },
       });
-      fireEvent.change(document.getElementById('objectif-negocie-le') as HTMLInputElement, {
-        target: { value: '2026-09-03' },
-      });
       fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
-
       fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
 
       expect((document.getElementById('objectif-priorite') as HTMLInputElement).value).toBe('');
-      expect((document.getElementById('objectif-negocie-le') as HTMLInputElement).value).toBe('');
-    });
-
-    it('rouvrir une reformulation après l’avoir annulée ne réhérite de rien', async () => {
-      // Le cas qui produit la date fausse : on saisit, on annule, on rouvre —
-      // et l'ancienne saisie repart avec la version choisie ensuite.
-      fetchMock.mockImplementation(router({ dossier: dossierAvecObjectif }));
-      await attendreLeDossier();
-
-      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
-      fireEvent.change((document.getElementById('objectif-negocie-le') as HTMLInputElement), {
-        target: { value: '2026-09-03' },
-      });
-      fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
-      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
-
-      expect(((document.getElementById('objectif-negocie-le') as HTMLInputElement)).value).toBe('');
     });
   });
 

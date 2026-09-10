@@ -342,9 +342,18 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                     </p>
                   )}
 
-                  {dateLisible(objectif.negocieLe) && (
+                  {objectif.accord && dateLisible(objectif.accord.date) && (
+                    /* LA FORME EST DITE, ET C'EST `D-161` §4. « Convenu le … »
+                       tout court laissait croire à un accord que le patient
+                       aurait donné, alors que la date pouvait venir d'une
+                       saisie du praticien seul. Il doit pouvoir distinguer ce
+                       QU'IL a fait de ce qu'on rapporte de lui. */
                     <p className="text-xs text-muted-foreground">
-                      Convenu le {dateLisible(objectif.negocieLe)}
+                      {objectif.accord.forme === 'preuve'
+                        ? `Convenu le ${dateLisible(objectif.accord.date)}, d’après votre réponse.`
+                        : objectif.accord.forme === 'temoignage'
+                          ? `Convenu le ${dateLisible(objectif.accord.date)}, d’après votre praticien — il a noté votre accord après votre échange.`
+                          : `Convenu le ${dateLisible(objectif.accord.date)}.`}
                     </p>
                   )}
 
