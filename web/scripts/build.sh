@@ -32,3 +32,26 @@ unset NODE_OPTIONS
 
 npm run prisma:generate
 next build
+
+# LE CACHE WEBPACK NE PART PAS DANS L'IMAGE. `next build` écrit
+# `.next/cache/webpack` — 812 Mo mesurés sur le conteneur de production le
+# 2026-09-10 — et le buildpack empaquette `.next` en entier. Le runtime n'en
+# lit rien : `next start` sert `.next/server`, `.next/static` et `.next/types`,
+# 37 Mo à eux trois.
+#
+# Ce cache ne survit PAS d'un build à l'autre : le buildpack ne restaure et ne
+# conserve que le cache npm (« Restoring cache — npm cache »). Il est donc
+# reconstruit à chaque fois puis expédié pour rien. Le supprimer ne coûte pas
+# une seconde de build.
+#
+# CE N'EST PAS UNE OPTIMISATION, C'EST CE QUI REND L'APPLICATION DÉPLOYABLE.
+# Scalingo refuse une image au-delà de 2048 Mo. Le 2026-09-10 à 19:36 puis
+# 20:07, deux déploiements ont échoué sur `image exceeds the limit of 2048MB -
+# (2049MB)` : un mégaoctet. Tous les déploiements réussis d'avant affichaient
+# déjà « 2.0 GiB » — la marge était nulle depuis longtemps, et le premier
+# commit venu devait franchir la ligne. C'est une PR documentaire qui l'a fait.
+#
+# Ne pas retirer cette ligne sans avoir mesuré l'image : sans elle, elle repasse
+# au-dessus de la limite et PLUS AUCUN déploiement ne réussit — donc plus aucune
+# `release-db`, dont la garde exige que le commit approuvé soit déployé.
+rm -rf .next/cache/webpack
