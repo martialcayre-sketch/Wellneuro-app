@@ -182,6 +182,16 @@ describe('chaîne C1 — cas de référence, table signée', () => {
       expect(candidat.limitations).toContain(
         'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.',
       );
+      // LE TEXTE QUI QUALIFIE LE CLASSEMENT, ÉPINGLÉ VERBATIM. Jusqu'au
+      // 2026-09-10 il n'avait AUCUNE occurrence au dépôt hors sa définition :
+      // le réécrire — ou le retirer — passait au vert. Or c'est la seule
+      // contrepartie textuelle au fait que l'ordre DÉCIDE de ce qui est proposé
+      // en premier sans être couvert par une ligne signée (`D-093`, et le bilan
+      // descriptif du 2026-09-09 qui l'a mis au jour). Le figer n'est pas du
+      // zèle : c'est mettre sous garde la phrase qui tient la retenue.
+      expect(candidat.limitations).toContain(
+        'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.',
+      );
     }
     // Rangs uniques et contigus : la garde de `buildDecisionCard` jetterait
     // sinon, et un rang dupliqué est le mode de panne d'un classement dérivé
@@ -534,7 +544,13 @@ describe('gate de population — le filtre est AVANT le classement', () => {
     simulerSignature();
     const { decisionCard } = chaine();
     for (const candidat of decisionCard.priorityCandidates) {
-      expect(candidat.limitations.some(l => /Aucun état de population n’a été déclaré/.test(l))).toBe(true);
+      // VERBATIM PLUTÔT QU'UN INCIPIT : la regex ne couvrait que les six
+      // premiers mots, si bien que l'ÉNUMÉRATION des six états — la seule
+      // partie du texte qui dit au praticien ce qui n'a pas été vérifié —
+      // pouvait être réécrite sans qu'aucun banc ne parle.
+      expect(candidat.limitations).toContain(
+        'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.',
+      );
     }
   });
 

@@ -493,8 +493,8 @@ export type PriorityRulesMetadata = {
 // ordinaires : aucune ligne signée ne les décrit. L'ordre d'évaluation des deux
 // motifs d'abstention est dans le même cas — mécanique, mais non relu.
 //
-// SECONDE CHOSE QUE LA SIGNATURE ASSUME. Chacune des deux règles repose sur UN
-// ITEM UNIQUE de `Q_MOD_03` — un auto-déclaré de 1 à 10, sans instrument
+// SECONDE CHOSE QUE LA SIGNATURE ASSUME. Chacune des QUATRE règles publiées
+// repose sur UN ITEM UNIQUE de `Q_MOD_03` — un auto-déclaré de 1 à 10, sans instrument
 // spécifique à l'appui. `DC-28` (« un questionnaire isolé ne suffit pas à
 // conclure ») est ici mitigé par ce que la règle PRODUIT — une proposition
 // hiérarchisée, jamais une conclusion — et par les `limitations` que chaque
