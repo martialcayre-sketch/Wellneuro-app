@@ -93,6 +93,7 @@ export async function nettoyerDossierDeuxVoix(idPatient: string): Promise<void> 
   // Les gestes du patient sur son objectif, effacés AVANT les objectifs
   // eux-mêmes — `id_objectif` est une référence souple, mais laisser des
   // lignes orphelines ferait fuir l'état d'un run dans le suivant.
+  await prisma.accordAtteste.deleteMany({ where: { idPatient } });
   await prisma.finObjectif.deleteMany({ where: { idPatient } });
   await prisma.reponseJalonObjectif.deleteMany({ where: { idPatient } });
   await prisma.amendementObjectif.deleteMany({ where: { idPatient } });
