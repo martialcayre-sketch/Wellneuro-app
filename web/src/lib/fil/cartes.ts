@@ -24,7 +24,19 @@ export type TypeCarteFil =
   | 't0_a_confirmer'
   | 'biologie_arbitree'
   | 'assignation_en_retard'
-  | 'reprise';
+  | 'reprise'
+  // LE RETOUR DU PATIENT SUR SON OBJECTIF. Jusqu'au 2026-09-10, ratifier,
+  // contester, dire autrement ou raconter une étape n'écrivait qu'une ligne :
+  // RIEN ne repartait vers le praticien, qui devait ouvrir la fiche, la phase 3
+  // et la bonne sous-vue pour l'apprendre. Le modèle en tirage était assumé,
+  // mais il laissait un patient qui conteste sans réponse tant qu'on n'ouvrait
+  // pas son dossier.
+  //
+  // UNE CARTE, PAS UNE NOTIFICATION — arbitrage du 2026-09-10, et la
+  // contre-revue déconseillait explicitement un canal sortant. Rien ne part :
+  // le Fil est tiré à l'ouverture, et la carte s'écarte par le refus persisté
+  // (`G1`), ancré sur la ligne source. Elle ne revient donc pas.
+  | 'geste_objectif';
 
 export type CarteFil = {
   type: TypeCarteFil;
@@ -436,6 +448,58 @@ export function cartesT0AConfirmer(
     });
 }
 
+/** Un geste du patient sur son objectif, tel que le Fil le lit. */
+export type GesteObjectifRow = {
+  /** Identité de la LIGNE SOURCE — c'est elle qui ancre la clé, donc le refus. */
+  id: string;
+  idPatient: string;
+  /** Ce que le patient a fait, en clair pour l'écran. */
+  geste: 'ratifie' | 'conteste' | 'dit_autrement' | 'etape' | 'fin';
+  creeLe: Date;
+};
+
+const LIBELLE_GESTE: Record<GesteObjectifRow['geste'], string> = {
+  // LES MOTS DE L'ÉCRAN DU PATIENT, jamais ceux de la base : il a cliqué
+  // « c'est bien ça », il n'a jamais vu « ratifie ».
+  ratifie: 'a répondu « c’est bien ça »',
+  conteste: 'a répondu « pas exactement ça »',
+  dit_autrement: 'a proposé sa propre formulation',
+  etape: 'a raconté où il en est',
+  fin: 's’est prononcé sur la fin de son objectif',
+};
+
+/**
+ * LES GESTES DU PATIENT SUR SON OBJECTIF, du plus récent au plus ancien.
+ *
+ * AUCUN DÉCOMPTE, AUCUN AGRÉGAT : une carte par geste, ancrée sur sa ligne.
+ * « 3 retours » ferait de paroles distinctes un volume, et le refus ne saurait
+ * plus quoi écarter (`DC-19`).
+ *
+ * UNE CONTESTATION N'EST PAS UNE ALERTE. Le titre dit ce qui s'est passé, sans
+ * gravité ni couleur : le patient qui dit « pas exactement ça » fait ce qu'on
+ * lui demande, et le dossier à deux voix existe pour cela.
+ */
+export function cartesGestesObjectif(
+  gestes: GesteObjectifRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return gestes
+    .slice()
+    .sort((a, b) => b.creeLe.getTime() - a.creeLe.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(g => ({
+      type: 'geste_objectif' as const,
+      idPatient: g.idPatient,
+      patient: nomPatient(noms, g.idPatient),
+      titre: 'Votre patient s’est prononcé sur son objectif',
+      pourquoi: `Le ${formatDateFr(g.creeLe)}, il ${LIBELLE_GESTE[g.geste]}.`,
+      date: g.creeLe.toISOString(),
+      href: `/dashboard/patients/${g.idPatient}`,
+      actionLabel: 'Ouvrir la fiche',
+      cle: cleCarte('geste_objectif', g.id),
+    }));
+}
+
 export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): CarteFil[] {
   return jalons
     .slice()
@@ -646,6 +710,7 @@ export function construireFil(entrees: {
   premieresSyntheses?: Map<string, Date>;
   assignationsToutes?: AssignationRideauRow[];
   biologiesArbitrees?: BiologieArbitreeCarteRow[];
+  gestesObjectif?: GesteObjectifRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
   noms: Map<string, string>;
@@ -665,6 +730,7 @@ export function construireFil(entrees: {
     premieresSyntheses = new Map<string, Date>(),
     assignationsToutes = [],
     biologiesArbitrees = [],
+    gestesObjectif = [],
     assignations,
     activites,
     noms,
@@ -675,6 +741,10 @@ export function construireFil(entrees: {
     // une consultation imminente. Viennent ensuite les consultations du jour.
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesConsultationsPrevues(consultations, noms, maintenant),
+    // LE RETOUR DU PATIENT VIENT TÔT, et c'est délibéré : il a répondu, il
+    // attend. Après les signalements et les consultations du jour, avant les
+    // synthèses à produire — une parole reçue passe devant un travail à faire.
+    ...cartesGestesObjectif(gestesObjectif, noms),
     ...cartesSynthesesAValider(syntheses, noms),
     ...cartesSynthesesAGenerer(lectures, dernieresSyntheses, noms),
     // Le T0 précède le J21 : un dossier qui n'a pas son repère de départ ne

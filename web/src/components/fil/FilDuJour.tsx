@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -22,6 +22,9 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   biologie_arbitree: { libelle: 'Biologie arbitrée', icon: FlaskConical },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
+  // UN LIBELLÉ NEUTRE, jamais « Alerte » : un patient qui conteste fait ce
+  // qu'on lui demande, et le dossier à deux voix existe pour cela.
+  geste_objectif: { libelle: 'Réponse du patient', icon: MessageSquare },
 };
 
 /** Grille timeline de la maquette : heure | pastille | carte. Partagée entre

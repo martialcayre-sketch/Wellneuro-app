@@ -67,6 +67,10 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       premieresPassationsGroupBy,
       premieresSynthesesGroupBy,
       assignationsToutes,
+      ratifications,
+      amendements,
+      etapes,
+      finsPatient,
     ] = await Promise.all([
       prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
@@ -161,6 +165,31 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       prisma.assignation.findMany({
         select: { idPatient: true, idQuestionnaire: true, dateAssignation: true, statut: true },
       }),
+      // ── LE RETOUR DU PATIENT SUR SON OBJECTIF (Alliance 6.0-A/B) ──────────
+      // Quatre tables, quatre gestes, et AUCUN TEXTE n'est lu : le Fil dit
+      // qu'une parole existe, il ne la rapporte pas. La lire ici mettrait la
+      // parole d'un patient dans une liste de tâches — elle se lit dans sa
+      // fiche, sous sa version, avec ce qui l'entoure.
+      prisma.ratificationObjectif.findMany({
+        select: { id: true, idPatient: true, sens: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+        take: 20,
+      }),
+      prisma.amendementObjectif.findMany({
+        select: { id: true, idPatient: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+        take: 20,
+      }),
+      prisma.reponseJalonObjectif.findMany({
+        select: { id: true, idPatient: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+        take: 20,
+      }),
+      prisma.finObjectif.findMany({
+        select: { id: true, idPatient: true, voix: true, consigneePar: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+        take: 20,
+      }),
     ]);
 
     const lectures = lecturesGroupBy
@@ -238,7 +267,36 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const momentums = await momentumJalonsParPatient(jalonsBruts.map(j => j.idPatient));
     const jalons = jalonsBruts.map(j => ({ ...j, momentum: momentums.get(j.idPatient) ?? null }));
 
+    // LE RETOUR DU PATIENT SUR SON OBJECTIF, quatre gestes confondus et
+    // ordonnés par le producteur. AUCUN DÉCOMPTE : une carte par geste, ancrée
+    // sur sa ligne source — c'est ce qui permet au refus persisté (`G1`) de
+    // savoir quoi écarter, et à la carte de ne pas revenir.
+    const gestesObjectif = [
+      ...ratifications.map((l) => ({
+        id: l.id,
+        idPatient: l.idPatient,
+        geste: (l.sens === 'ratifie' ? 'ratifie' : 'conteste') as 'ratifie' | 'conteste',
+        creeLe: l.creeLe,
+      })),
+      ...amendements.map((l) => ({
+        id: l.id, idPatient: l.idPatient, geste: 'dit_autrement' as const, creeLe: l.creeLe,
+      })),
+      ...etapes.map((l) => ({
+        id: l.id, idPatient: l.idPatient, geste: 'etape' as const, creeLe: l.creeLe,
+      })),
+      // LA VOIX DU PATIENT SEULEMENT : une fin que le praticien a déclarée
+      // lui-même n'est pas un retour, c'est son propre geste. Et une ligne
+      // ATTESTÉE — consignée par le praticien pour le patient — n'en est pas un
+      // non plus : il sait déjà ce qu'il a entendu.
+      ...finsPatient
+        .filter((l) => l.voix === 'patient' && l.consigneePar === 'patient')
+        .map((l) => ({
+          id: l.id, idPatient: l.idPatient, geste: 'fin' as const, creeLe: l.creeLe,
+        })),
+    ].filter((g) => actifs.has(g.idPatient));
+
     const cartes = construireFil({
+      gestesObjectif,
       consultations: rdvs.filter(r => actifs.has(r.idPatient)),
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
