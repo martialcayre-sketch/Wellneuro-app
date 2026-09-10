@@ -16,6 +16,51 @@ accepté, ce qui a été refusé, et pourquoi.*
 > mais 11 points où la contre-revue rétrécit à tort.** Douze corrections portées
 > au compte rendu, quatre défauts ajoutés dont deux P1.
 
+## 0. ÉTAT AU 2026-09-10 — ce que la nuit a fermé, et ce qu'elle n'a pas fermé
+
+> **Addendum daté, ajouté à la fusion.** Ce document dit ce qui était vrai à
+> `e67743dc`, le 2026-09-09. Il est versé au dépôt tel quel — rien n'y est
+> réécrit. Cette section dit seulement où en sont ses constats un jour plus tard,
+> pour qu'un lecteur ne prenne pas une liste datée pour une liste courante.
+
+**Fermé.**
+
+- **N1.1 · Deux têtes** — correctif R1. Livré (PR #976). Le verbe manquait pour
+  une raison que ce document n'avait pas nommée et que l'estimation « 15-30
+  lignes » manquait : `supersedes_objectif_id` est à **parent unique**, donc
+  aucun ajout ne fait décroître le nombre de têtes. Il fallait une table — le
+  motif `remplace` de [[D-161]], appliqué en production le 2026-09-10.
+- **N2.7 · Date d'accord** — correctif R6. Livré (PR #977). Le vidage est appelé
+  aux six bascules de mode. Mesuré : sans lui, une date saisie puis abandonnée
+  réapparaissait à la réouverture.
+- **La doctrine de cadence non empruntée** (§6, dernier point). Livrée avec la
+  relance (PR #979) : `JOURS_ENTRE_RELANCES` est désormais opposable côté serveur
+  sur le courrier d'objectif.
+- **N1.4 · [[D-154]] §7** — « aucune relance, un seul envoi, à l'écriture ». Le
+  constat était juste et l'est resté jusqu'au 2026-09-10 : une route de relance
+  existe depuis (PR #979), et elle n'écrit **aucune ligne** dans la chaîne.
+- **Les trois textes `LIMITATION_*` de sécurité** qui n'atteignaient personne
+  (relevé au bilan du classement, pas ici). Livré (PR #981) — et la cause était
+  plus profonde que l'affichage des textes : le **constat lui-même** n'était rendu
+  nulle part.
+
+**Ouvert, et inchangé.** `F1` (restitution jamais reconfrontée), `F2`
+(contestation acceptée puis invisible — R3), `F4` (aucun bornage de volume),
+`N1.6` (assemblage absorbé, cause fausse à l'écran — R4/R5), `N1.3`
+(`erreurCourte` jamais rendue — R2), `N2.6` (familles visibles sans marque de
+version).
+
+**Partiellement, et il faut le dire précisément.** `F3` — clôture concurrente :
+les **deux routes neuves** (`objectifs/fin`, `objectifs/relance`) lisent la porte
+du dossier clos avant d'écrire ; la route d'objectif d'origine, elle, n'a pas
+bougé. Le défaut demeure là où il a été constaté.
+
+**Ce que la relance N'A PAS réglé, et c'est important.** `N1.2` tient entier :
+l'e-mail porte l'URL de **connexion**, pas celle du dossier, et le patient qui
+entre ne trouve aucun lien tant que la sonde est fermée. La relance fait partir un
+courrier qui **ne mène toujours pas à l'objectif**. Elle ferme « la lettre n'est
+jamais partie », pas « la lettre ne conduit nulle part ».
+
 ## 1. Ce qui tombe — le compte rendu avait tort
 
 | Point | Ce qui était écrit | Ce qui est vrai |
