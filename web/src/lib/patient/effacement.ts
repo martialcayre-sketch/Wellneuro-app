@@ -223,6 +223,22 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.accordAtteste.deleteMany({ where: par })
     ).count;
 
+    // Les propositions de priorité assistées par IA (Alliance 6.0-B, `D-167`
+    // §11) : même régime FK RESTRICT. Elles sont produites À PARTIR de la
+    // parole du patient — son dépôt « ce qui compte » et la synthèse le
+    // concernant — et n'y survivent pas. Les tirages écartés partent avec :
+    // ce qui n'a pas été retenu reste de la matière tirée de son dossier.
+    //
+    // AUCUNE TOLÉRANCE À UNE TABLE ABSENTE, et c'est délibéré. Entre le
+    // déploiement de ce code et l'application de sa migration par `release-db`,
+    // cet appel échouerait — bruyamment, en annulant toute la transaction.
+    // C'est le bon défaut : un effacement qui échoue se rejoue, un effacement
+    // qui saute une table en silence est un trou. Même arbitrage que pour
+    // `finsObjectif` et `accordsAttestes`.
+    supprimees.propositionsPrioriteIa = (
+      await tx.propositionPrioriteIA.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

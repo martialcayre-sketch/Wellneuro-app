@@ -13,8 +13,10 @@
 --   4. une source et son identifiant vont ENSEMBLE, dans les DEUX sens : une
 --      source sans identifiant ne se rejoue pas, un identifiant sans source est
 --      un pointeur que rien ne qualifie ;
---   5. une priorité proposée exige sa synthèse ET son prompt — une proposition
---      irrejouable n'est plus une provenance, c'est une étiquette ;
+--   5. une priorité proposée exige sa synthèse, son dépôt ET son prompt — une
+--      proposition irrejouable n'est plus une provenance, c'est une étiquette,
+--      et depuis l'arbitrage du 2026-09-10 au soir la parole du patient est une
+--      CONDITION de l'appel, pas un complément (`D-167` §3 amendé) ;
 --   6. PAS DE PROVENANCE SANS TEXTE : déclarer d'où vient un champ vide
 --      décrirait l'origine de rien, et laisserait croire en relecture qu'un
 --      texte a existé puis disparu.
@@ -79,7 +81,13 @@ DECLARE
         VALUES ('p11', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'synthese_ia', 'SYN_1')$q$],
     ['priorité : provenance déclarée sur un texte ABSENT',
      $q$INSERT INTO objectifs_negocies (id, id_patient, praticien_email, enonce_patient, priorite_source, priorite_source_synthese_id, priorite_prompt)
-        VALUES ('p12', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'proposition_ia', 'SYN_1', 'priorite-v1')$q$]
+        VALUES ('p12', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'proposition_ia', 'SYN_1', 'priorite-v1')$q$],
+    -- AJOUTÉ LE 2026-09-11 (`D-167` §3 amendé, contrainte
+    -- `alli_objectif_priorite_source_depot_requis`) : ce cas était un POSITIF
+    -- jusqu'à l'arbitrage du soir. Les deux pièces sont désormais exigées.
+    ['priorité proposée SANS dépôt patient (la parole du patient est une condition)',
+     $q$INSERT INTO objectifs_negocies (id, id_patient, praticien_email, enonce_patient, priorite, priorite_source, priorite_source_synthese_id, priorite_prompt)
+        VALUES ('p13', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'Sommeil', 'proposition_ia', 'SYN_1', 'priorite-v1')$q$]
   ];
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé (identité de fixture du dépôt) ──
@@ -118,16 +126,16 @@ BEGIN
     VALUES ('obj_prov_partiel', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr',
             'Retrouver un sommeil continu', 'ce_qui_compte', 'ent_contrat_1');
 
-    -- LE DÉPÔT D'ENTRÉE DE L'APPEL EST FACULTATIF : un dossier sans dépôt
-    -- « ce qui compte » doit pouvoir recevoir une priorité proposée depuis la
-    -- seule synthèse. L'exiger fermerait la fonction à tout dossier muet.
-    INSERT INTO objectifs_negocies (
-      id, id_patient, praticien_email, enonce_patient, priorite,
-      priorite_source, priorite_source_synthese_id, priorite_prompt
-    )
-    VALUES ('obj_prov_sans_depot', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr',
-            'Retrouver un sommeil continu', 'Sommeil',
-            'proposition_ia', 'SYN_contrat_1', 'priorite-v1');
+    -- CE CAS A CHANGÉ DE CAMP LE 2026-09-11, ET IL EST DESCENDU EN NÉGATIF.
+    -- Il affirmait ici que « le dépôt d'entrée de l'appel est facultatif », et
+    -- avertissait que l'exiger « fermerait la fonction à tout dossier muet ».
+    -- L'arbitrage du praticien du 2026-09-10 au soir a tranché l'inverse :
+    -- les deux pièces sont EXIGÉES, la parole du patient est une condition et
+    -- non un complément (`D-167` §3 amendé).
+    --
+    -- LA CONSÉQUENCE ANNONCÉE EST RÉELLE ET ASSUMÉE : un dossier dont le
+    -- patient n'a jamais déposé n'aura pas de proposition de priorité. Elle est
+    -- consignée là où elle avait été prévue, plutôt qu'effacée avec le cas.
   EXCEPTION
     WHEN others THEN
       RAISE EXCEPTION
