@@ -77,7 +77,25 @@ describe('GET — lit sans jamais appeler le modèle', () => {
 
   it('dit « aucune » quand les deux sources sont là mais que rien n’a été proposé', async () => {
     const corps = await (await get()).json();
-    expect(corps).toEqual({ ok: true, etat: 'aucune' });
+    expect(corps.etat).toBe('aucune');
+  });
+
+  it('sert la MATIÈRE CITABLE même sans proposition — les deux citations arrivent seules', async () => {
+    // `D-167` §1 et §2 : l'énoncé et la reformulation se pré-remplissent par
+    // CITATION, sans qu'aucun appel n'ait lieu. Elles ne dépendent pas du bouton.
+    const corps = await (await get()).json();
+    expect(corps.matiere.enonce).toEqual({
+      texte: 'Je voudrais dormir sans me réveiller à trois heures.',
+      idDepot: 'DEP_1',
+    });
+    expect(corps.matiere.reformulation).toEqual({
+      texte: 'Vos réponses évoquent un sommeil qui se rompt vers le milieu de la nuit.',
+      idSynthese: 'SYN_1',
+    });
+    // ET RIEN DU BLOB : le tableau ordonné ne voyage pas avec les citations.
+    expect(JSON.stringify(corps)).not.toContain('axes_prioritaires');
+    expect(JSON.stringify(corps)).not.toContain('digestion');
+    expect(messagesCreate).not.toHaveBeenCalled();
   });
 
   it('NOMME ce qui manque, sans jamais deviner une cause', async () => {

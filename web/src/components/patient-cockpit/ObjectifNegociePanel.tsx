@@ -16,7 +16,12 @@ import type { LectureFin } from '@/lib/praticien/objectifNegocie';
 // écrit en dur ici mentirait le jour où la borne bouge côté serveur.
 import { EVA_MAX } from '@/lib/praticien/objectifNegocie';
 import type {
+  MatiereCitable,
+  PropositionApiResponse,
+} from '@/app/api/praticien/objectifs/proposition-priorite/route';
+import type {
   FragmentExpose,
+  PourquoiVide,
   PropositionExposee,
   PropositionsApiResponse,
 } from '@/app/api/praticien/propositions-objectif/route';
@@ -387,6 +392,21 @@ export function ObjectifNegociePanel({
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   const [lignesRatification, setLignesRatification] = useState<LigneRatificationExposee[]>([]);
+  // `D-167` §15 — la CAUSE du vide, lue au serveur. `null` tant qu'on ne sait
+  // pas : la phrase par défaut n'affirme alors rien.
+  const [pourquoiVide, setPourquoiVide] = useState<PourquoiVide>(null);
+
+  // `D-167` §1, §2, §3, §6 — la matière de pré-remplissage et la proposition.
+  //
+  // `prioriteProposee` PORTE LA MARQUE. Tant qu'il est égal au contenu du champ,
+  // le texte est celui de la machine et la mention s'affiche. Au PREMIER
+  // caractère modifié l'égalité tombe, et la mention avec elle : le praticien
+  // voit en direct que le texte est redevenu le sien (`D-167` §6).
+  const [matiere, setMatiere] = useState<MatiereCitable | null>(null);
+  const [prioriteProposee, setPrioriteProposee] = useState<string | null>(null);
+  const [appelEnCours, setAppelEnCours] = useState(false);
+  const [erreurProposition, setErreurProposition] = useState('');
+  const [manqueProposition, setManqueProposition] = useState<string[]>([]);
   const [jalonDu, setJalonDu] = useState<FenetreJalonObjectif | null>(null);
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
    *  Tous gestes du dossier : l'écran les range sous leur version. */
@@ -617,23 +637,155 @@ export function ObjectifNegociePanel({
         setPropositions([]);
         setDisposees([]);
         setCaduques([]);
+        setPourquoiVide(null);
         return;
       }
       setPropositions(payload.propositions);
       setDisposees(payload.disposees);
       setCaduques(payload.caduques);
+      // UNE RAISON PÉRIMÉE NE SURVIT PAS À UNE RELECTURE. Sans cette remise à
+      // jour, un dossier qui vient de recevoir sa confirmation d'épisode
+      // continuerait d'afficher « aucun n'est confirmé » — le défaut corrigé,
+      // reconstitué par la mémoire de l'écran.
+      setPourquoiVide(payload.pourquoiVide ?? null);
       setEtatPropositions('ouverte');
     } catch {
       setEtatPropositions('erreur');
       setPropositions([]);
       setDisposees([]);
       setCaduques([]);
+      setPourquoiVide(null);
+    }
+  }, [idPatient]);
+
+  /**
+   * LIT LA MATIÈRE ET LA PROPOSITION FIGÉE — SANS JAMAIS APPELER LE MODÈLE.
+   *
+   * Le `GET` de cette route ne fait parler personne (`D-167` §3 amendé) :
+   * ouvrir un cockpit ne coûte rien. C'est le bouton qui appelle.
+   */
+  const chargerMatiere = useCallback(async () => {
+    setErreurProposition('');
+    try {
+      const reponse = await fetch(
+        `/api/praticien/objectifs/proposition-priorite?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const payload = (await reponse.json()) as PropositionApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        // ÉCHEC DE LECTURE ≠ ABSENCE DE MATIÈRE. On n'affirme rien : les champs
+        // restent vides et aucune phrase ne prétend savoir pourquoi.
+        setMatiere(null);
+        setManqueProposition([]);
+        return;
+      }
+      if (payload.etat === 'sources_manquantes') {
+        setMatiere(null);
+        setManqueProposition(payload.manque);
+        return;
+      }
+      setManqueProposition([]);
+      // `?? null` ET NON L'AFFECTATION NUE. Une réponse sans `matiere` — un
+      // serveur plus ancien, ou un contrat qui bouge — donnait `undefined`, que
+      // le garde `=== null` laissait passer : l'écran plantait sur
+      // `matiere.enonce`. Un champ absent doit se lire comme absent.
+      setMatiere(payload.matiere ?? null);
+      if (payload.etat === 'proposee') setPrioriteProposee(payload.proposition.texte);
+    } catch {
+      setMatiere(null);
+      setManqueProposition([]);
     }
   }, [idPatient]);
 
   useEffect(() => {
     void chargerDossier();
   }, [chargerDossier]);
+
+  useEffect(() => {
+    void chargerMatiere();
+  }, [chargerMatiere]);
+
+  /**
+   * LE PRÉ-REMPLISSAGE N'ÉCRASE JAMAIS UNE SAISIE.
+   *
+   * Il ne pose un texte que dans un champ VIDE. Le praticien qui a commencé à
+   * écrire, puis dont la matière arrive, ne doit pas voir ses mots remplacés —
+   * c'est la faute que le placeholder inventé a values au champ d'à côté.
+   */
+  useEffect(() => {
+    if (matiere == null) return;
+    setEnonce((actuel) => (actuel.trim() === '' ? matiere.enonce.texte : actuel));
+    setReformulation((actuel) => (actuel.trim() === '' ? matiere.reformulation.texte : actuel));
+  }, [matiere]);
+
+  // ── `D-167` §13 : UN CONFLIT CONSIGNÉ, NON RÉSOLU EN SILENCE ───────────────
+  //
+  // §13 dit qu'une RÉÉCRITURE « repart des sources » plutôt que de reprendre la
+  // version qu'on amende. Appliqué à la lettre, cela recréerait un défaut que le
+  // code garde déjà — le commentaire de « Reformuler cette version » l'écrit :
+  // reprendre les champs praticien évite que `priorite` et « non traité »
+  // « retombent à vide sur la nouvelle tête », la version courante perdant en
+  // silence ce qu'elle portait.
+  //
+  // DEUX RAISONS DE NE PAS L'APPLIQUER TEL QUEL CE SOIR :
+  //
+  //   1. « Non traité pour l'instant » N'A AUCUNE SOURCE (§7, qui refuse
+  //      explicitement de le pré-remplir). « Repartir des sources » ne peut donc
+  //      pas le remplir — seulement le perdre ;
+  //   2. la cadence de [[D-166]] garantit qu'aucun dépôt ni aucune synthèse
+  //      nouvelle n'arrive avant une ancre de cycle. Dans un même cycle,
+  //      « repartir des sources » remplacerait donc la reformulation TRAVAILLÉE
+  //      du praticien par le `narratif_patient` brut — sans rien gagner, la
+  //      matière étant identique.
+  //
+  // CE QUI EST FAIT ICI : le pré-remplissage ne pose un texte que dans un champ
+  // VIDE, et la reprise de version continue de porter les champs praticien. Sur
+  // un premier objectif, les trois champs arrivent remplis — la demande
+  // d'origine. Sur une réécriture, rien n'est perdu.
+  //
+  // CE QUI RESTE À TRANCHER : rafraîchir les deux citations quand les sources
+  // sont PLUS RÉCENTES que la version amendée. Les colonnes de provenance posées
+  // le 2026-09-10 (`enonce_source_id`, `reformulation_source_id`) le rendent
+  // calculable — c'est un lot à part, pas une ligne à glisser ici.
+
+  useEffect(() => {
+    if (prioriteProposee === null) return;
+    setPriorite((actuel) => (actuel.trim() === '' ? prioriteProposee : actuel));
+  }, [prioriteProposee]);
+
+  /** Le bouton — « Proposer une priorité », et « une autre ». */
+  const demanderProposition = useCallback(async () => {
+    setAppelEnCours(true);
+    setErreurProposition('');
+    try {
+      const reponse = await fetch('/api/praticien/objectifs/proposition-priorite', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ idPatient }),
+      });
+      const payload = (await reponse.json()) as PropositionApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreurProposition(
+          ('error' in payload && payload.error) || 'La proposition n’a pas pu être produite.',
+        );
+        return;
+      }
+      if (payload.etat === 'sources_manquantes') {
+        setManqueProposition(payload.manque);
+        return;
+      }
+      if (payload.etat === 'proposee') {
+        setPrioriteProposee(payload.proposition.texte);
+        // LE TIRAGE DEMANDÉ REMPLACE LE CHAMP, même non vide : le praticien
+        // vient de cliquer pour en obtenir un autre. C'est le seul endroit où
+        // écraser est ce qu'il demande.
+        setPriorite(payload.proposition.texte);
+      }
+    } catch {
+      setErreurProposition('La proposition n’a pas pu être produite.');
+    } finally {
+      setAppelEnCours(false);
+    }
+  }, [idPatient]);
 
   // `signalAssemblage` en dépendance : le compteur change quand la section
   // clinique vient d'assembler, et cette relecture est le seul moment où une
@@ -897,12 +1049,30 @@ export function ObjectifNegociePanel({
               )}
 
               {etatPropositions === 'ouverte' && propositions.length === 0 && (
-                // OUVERTE ET SANS LIGNE : là, le dire est juste — et le motif
-                // est nommé, parce qu'« aucune proposition » sans raison se
-                // lirait comme un jugement sur le dossier.
+                // TROIS BRANCHES, ET CHACUNE N'AFFIRME QUE CE QUI A ÉTÉ LU
+                // (`D-167` §15).
+                //
+                // LE DÉFAUT, corrigé ici. Une phrase unique disait « sans
+                // épisode confirmé, il n'a rien de signé à citer » DÈS QUE la
+                // liste était vide — y compris sur un dossier dont l'épisode
+                // EST confirmé, constaté sur dossier réel le 2026-09-10. Le
+                // motif était nommé, mais il n'était pas vérifié : l'écran
+                // énonçait une cause qu'il ne connaissait pas. C'est la même
+                // faute que le rail de phase 3, qui mettait l'attente sur le dos
+                // du patient sans avoir regardé de quel côté elle était.
+                //
+                // `pourquoiVide` VIENT DU SERVEUR, qui lit les deux
+                // préconditions de l'assemblage. Un `undefined` — réponse d'un
+                // serveur plus ancien — ne retombe PAS sur l'ancienne phrase :
+                // il donne la formulation qui n'affirme rien.
                 <p className="mt-3 text-base text-muted-foreground">
-                  Aucune proposition vivante. Wellneuro n’en assemble qu’à partir de candidats signés, après la
-                  confirmation d’un épisode : sans épisode confirmé, il n’a rien de signé à citer.
+                  {pourquoiVide === 'episode_non_confirme'
+                    ? 'Aucune proposition. Wellneuro n’assemble qu’après la confirmation d’un épisode, et aucun n’est confirmé sur ce dossier.'
+                    : pourquoiVide === 'referentiel_non_signe'
+                      ? 'Aucune proposition. Le référentiel signé n’est pas disponible : sans lui, il n’y a rien de signé à citer.'
+                      : pourquoiVide === 'rien_retenu'
+                        ? 'Aucune proposition. L’épisode est confirmé et le référentiel est signé — aucune règle publiée ne s’applique à ce dossier.'
+                        : 'Aucune proposition à afficher.'}
                 </p>
               )}
 
@@ -1600,6 +1770,18 @@ export function ObjectifNegociePanel({
             <label htmlFor="objectif-priorite" className="mt-3 block text-xs font-medium text-foreground">
               Priorité (libellé libre)
             </label>
+
+            {/* LA MARQUE, ET LE MOMENT EXACT OÙ ELLE TOMBE (`D-167` §6).
+                Elle s'affiche tant que le champ contient EXACTEMENT le texte
+                proposé. Au premier caractère modifié, l'égalité tombe et la
+                mention disparaît — le praticien voit en direct que le texte est
+                redevenu le sien. La comparer à l'enregistrement aurait laissé
+                l'écran annoncer une proposition pendant qu'il la réécrit. */}
+            {prioriteProposee !== null && priorite === prioriteProposee && (
+              <p className="mt-1 rounded-lg border border-accent bg-accent/5 px-2 py-1 text-xs text-solar-ink">
+                Proposé par la machine, à valider. Réécrivez-le et il redevient le vôtre.
+              </p>
+            )}
             <input
               id="objectif-priorite"
               type="text"
@@ -1609,6 +1791,61 @@ export function ObjectifNegociePanel({
               className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             />
             <Compteur valeur={priorite} maximum={LONGUEUR_MAX_PRIORITE} />
+
+            {/* LE BOUTON — L'APPEL PART SUR UN GESTE, JAMAIS À L'OUVERTURE
+                (`D-167` §3 amendé). Deux libellés pour un seul geste : la
+                première fois on propose, ensuite on en demande une autre. */}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {manqueProposition.length === 0 && matiere !== null && (
+                <button
+                  type="button"
+                  onClick={() => void demanderProposition()}
+                  disabled={appelEnCours}
+                  className="min-h-9 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-60"
+                >
+                  {appelEnCours
+                    ? 'Rédaction…'
+                    : prioriteProposee === null
+                      ? 'Proposer une priorité'
+                      : 'Une autre'}
+                </button>
+              )}
+
+              {/* CE QUI MANQUE EST NOMMÉ, JAMAIS DEVINÉ. Les deux pièces sont
+                  exigées : sans le dépôt du patient, il n'y a pas de
+                  proposition, et le dire est plus honnête que de griser un
+                  bouton sans raison. */}
+              {manqueProposition.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {manqueProposition.includes('synthese_validee')
+                    && manqueProposition.includes('depot_patient')
+                    ? 'Aucune priorité ne peut être proposée : il manque une synthèse validée et le dépôt du patient.'
+                    : manqueProposition.includes('synthese_validee')
+                      ? 'Aucune priorité ne peut être proposée : aucune synthèse n’est validée sur ce dossier.'
+                      : 'Aucune priorité ne peut être proposée : le patient n’a pas encore écrit ce qui compte pour lui.'}
+                </p>
+              )}
+            </div>
+
+            {/* UN ÉCHEC SE DIT, avec un bouton pour réessayer (`D-167` §3). Un
+                champ vide et silencieux serait indiscernable d'un dossier sans
+                matière — la faute corrigée deux fois le 2026-09-10. */}
+            {erreurProposition && (
+              <div
+                role="alert"
+                className="mt-2 flex flex-col gap-2 rounded-lg border border-accent bg-status-warning/10 p-2 text-xs text-status-warning"
+              >
+                <span>{erreurProposition}</span>
+                <button
+                  type="button"
+                  onClick={() => void demanderProposition()}
+                  disabled={appelEnCours}
+                  className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-60"
+                >
+                  Réessayer
+                </button>
+              </div>
+            )}
 
             {/* LA DATE D'ACCORD A QUITTÉ CE FORMULAIRE (`D-161` §11). C'était
                 un fait de CHAÎNE rangé dans une colonne de VERSION : à la fois

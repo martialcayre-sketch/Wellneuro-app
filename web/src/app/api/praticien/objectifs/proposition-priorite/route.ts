@@ -51,9 +51,26 @@ export type PropositionExposee = {
   versionConsigne: string;
 };
 
+/**
+ * LA MATIÈRE CITABLE, servie avec la proposition — `D-167` §1 et §2.
+ *
+ * DEUX CITATIONS, ET LEUR PROVENANCE. L'énoncé se pré-remplit du dépôt patient
+ * VERBATIM, la reformulation du `narratif_patient` d'une synthèse validée. Les
+ * identifiants voyagent avec les textes parce que l'écriture les enregistrera :
+ * une citation dont on ne peut plus nommer la source n'est plus une citation.
+ *
+ * ELLE PASSE PAR LE MÊME ADAPTATEUR BORNÉ que l'appel. Ajouter ici une seconde
+ * lecture de `syntheses_ia` ferait une seconde frontière à garder, et c'est
+ * toujours la moins relue qui laisse fuir `axes_prioritaires`.
+ */
+export type MatiereCitable = {
+  enonce: { texte: string; idDepot: string };
+  reformulation: { texte: string; idSynthese: string };
+};
+
 export type PropositionApiResponse =
-  | { ok: true; etat: 'proposee'; proposition: PropositionExposee }
-  | { ok: true; etat: 'aucune' }
+  | { ok: true; etat: 'proposee'; proposition: PropositionExposee; matiere: MatiereCitable }
+  | { ok: true; etat: 'aucune'; matiere: MatiereCitable }
   | { ok: true; etat: 'sources_manquantes'; manque: ManquePriorite[] }
   | { ok: false; reason: string; error: string };
 
@@ -136,11 +153,19 @@ export async function GET(req: Request): Promise<NextResponse<PropositionApiResp
       orderBy: { rang: 'desc' },
       select: { texte: true, rang: true, creeLe: true },
     });
-    if (ligne === null) return NextResponse.json<PropositionApiResponse>({ ok: true, etat: 'aucune' });
+    const matiere: MatiereCitable = {
+      enonce: { texte: depot.texte, idDepot: depot.idDepot },
+      reformulation: { texte: synthese.narratifPatient, idSynthese: synthese.idSynthese },
+    };
+
+    if (ligne === null) {
+      return NextResponse.json<PropositionApiResponse>({ ok: true, etat: 'aucune', matiere });
+    }
 
     return NextResponse.json<PropositionApiResponse>({
       ok: true,
       etat: 'proposee',
+      matiere,
       proposition: {
         texte: ligne.texte,
         rang: ligne.rang,
@@ -239,6 +264,10 @@ export async function POST(req: Request): Promise<NextResponse<PropositionApiRes
       {
         ok: true,
         etat: 'proposee',
+        matiere: {
+          enonce: { texte: depot.texte, idDepot: depot.idDepot },
+          reformulation: { texte: synthese.narratifPatient, idSynthese: synthese.idSynthese },
+        },
         proposition: {
           texte: ligne.texte,
           rang: ligne.rang,

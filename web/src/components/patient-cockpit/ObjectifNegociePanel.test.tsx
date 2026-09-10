@@ -92,9 +92,26 @@ function router(
     propositionsStatut?: number;
     postPropositions?: unknown;
     postPropositionsOk?: boolean;
+    matiere?: unknown;
+    matiereOk?: boolean;
+    postMatiere?: unknown;
+    postMatiereOk?: boolean;
   } = {},
 ) {
   return (url: string, options?: { method?: string }) => {
+    // `D-167` — la route de matière et de proposition. Déclarée AVANT les
+    // autres branches : son chemin commence par `/api/praticien/objectifs`, et
+    // la branche générique l'avalerait.
+    if (url.startsWith('/api/praticien/objectifs/proposition-priorite')) {
+      if (options?.method === 'POST') {
+        return Promise.resolve(
+          json(surcharges.postMatiere ?? { ok: true, etat: 'aucune' }, surcharges.postMatiereOk ?? true),
+        );
+      }
+      return Promise.resolve(
+        json(surcharges.matiere ?? { ok: true, etat: 'sources_manquantes', manque: ['depot_patient'] }, surcharges.matiereOk ?? true),
+      );
+    }
     if (options?.method === 'POST' && url.startsWith('/api/praticien/propositions-objectif')) {
       return Promise.resolve(
         json(surcharges.postPropositions ?? { ok: true, disposition: { id: 'DIS_1' } }, surcharges.postPropositionsOk ?? true),
@@ -151,8 +168,14 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
       const route = String(url).split('?')[0];
       parRoute.set(route, (parRoute.get(route) ?? 0) + 1);
     }
+    // TROIS ROUTES DEPUIS `D-167`, UNE LECTURE CHACUNE. La troisième sert la
+    // matière de pré-remplissage ; elle lit le dossier et journalise comme les
+    // deux autres. Ce qui est compté reste « une lecture par route » — l'ajout
+    // d'une ressource n'affaiblit pas l'assertion, une boucle sur n'importe
+    // laquelle des trois la fait toujours rougir.
     expect([...parRoute.entries()].sort()).toEqual([
       ['/api/praticien/objectifs', 1],
+      ['/api/praticien/objectifs/proposition-priorite', 1],
       ['/api/praticien/propositions-objectif', 1],
     ]);
   });
@@ -562,12 +585,192 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     expect(screen.getByText(/Ce que le patient a écrit à l’anamnèse/)).toBeTruthy();
   });
 
-  it('ouverte et sans ligne, le bloc s’affiche et NOMME la raison', async () => {
+  // CE BANC ENCODAIT LA PHRASE FAUSSE. Il exigeait « sans épisode confirmé, il
+  // n'a rien de signé à citer » sur une réponse qui ne dit RIEN de l'épisode :
+  // il verrouillait une cause que l'écran n'avait pas vérifiée, et il l'aurait
+  // défendue contre sa correction. Réécrit sur son intention — le bloc s'affiche
+  // et NOMME une raison —, en éprouvant que la raison suit ce que le serveur dit.
+  it('ouverte et sans ligne, le bloc s’affiche et n’affirme AUCUNE cause non dite', async () => {
     fetchMock.mockImplementation(router());
     await attendreLeDossier();
 
     await waitFor(() => expect(screen.getByLabelText('Propositions d’objectif')).toBeTruthy());
-    expect(screen.getByText(/sans épisode confirmé, il n’a rien de signé à citer/)).toBeTruthy();
+    // Le serveur du mock ne sert pas `pourquoiVide` : l'écran doit alors se
+    // taire sur la cause, jamais retomber sur l'ancienne phrase.
+    expect(screen.getByText('Aucune proposition à afficher.')).toBeTruthy();
+    expect(screen.queryByText(/sans épisode confirmé/)).toBeNull();
+  });
+
+  it.each([
+    ['episode_non_confirme', /aucun n’est confirmé sur ce dossier/],
+    ['referentiel_non_signe', /Le référentiel signé n’est pas disponible/],
+    ['rien_retenu', /aucune règle publiée ne s’applique à ce dossier/],
+  ])('quand le serveur dit « %s », l’écran dit CELA et rien d’autre', async (raison, attendu) => {
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true, propositions: [], disposees: [], caduques: [], pourquoiVide: raison,
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() => expect(screen.getByText(attendu)).toBeTruthy());
+    // LES TROIS BRANCHES S'EXCLUENT. Sans cette assertion, une phrase qui les
+    // concaténerait passerait les trois cas.
+    const autres = [
+      /aucun n’est confirmé sur ce dossier/,
+      /Le référentiel signé n’est pas disponible/,
+      /aucune règle publiée ne s’applique à ce dossier/,
+    ].filter((motif) => motif.source !== attendu.source);
+    for (const motif of autres) expect(screen.queryByText(motif)).toBeNull();
+  });
+
+  // ── `D-167` — les trois champs arrivent remplis ───────────────────────────
+
+  const MATIERE = {
+    ok: true,
+    etat: 'aucune',
+    matiere: {
+      enonce: { texte: 'Je voudrais dormir sans me réveiller à trois heures.', idDepot: 'DEP_1' },
+      reformulation: { texte: 'Sommeil fragmenté en seconde partie de nuit.', idSynthese: 'SYN_1' },
+    },
+  };
+  const MATIERE_PROPOSEE = {
+    ok: true,
+    etat: 'proposee',
+    matiere: MATIERE.matiere,
+    proposition: {
+      texte: 'Retrouver un sommeil continu',
+      rang: 1,
+      creeLe: '2026-09-11T00:00:00.000Z',
+      idSynthese: 'SYN_1',
+      idDepot: 'DEP_1',
+      versionConsigne: 'priorite-v1',
+    },
+  };
+
+  it('l’énoncé et la reformulation arrivent PRÉ-REMPLIS par citation, sans aucun appel', async () => {
+    fetchMock.mockImplementation(router({ matiere: MATIERE }));
+    await attendreLeDossier();
+
+    await waitFor(() => {
+      const champ = screen.getByLabelText(/Ce que le patient demande/) as HTMLTextAreaElement;
+      expect(champ.value).toBe('Je voudrais dormir sans me réveiller à trois heures.');
+    });
+    const reformulation = screen.getByLabelText(/Votre reformulation/) as HTMLTextAreaElement;
+    expect(reformulation.value).toBe('Sommeil fragmenté en seconde partie de nuit.');
+
+    // AUCUN POST : les citations ne coûtent rien, seul le bouton appelle.
+    expect(fetchMock.mock.calls.filter(([, o]) => o?.method === 'POST')).toEqual([]);
+  });
+
+  it('la priorité proposée arrive MARQUÉE', async () => {
+    fetchMock.mockImplementation(router({ matiere: MATIERE_PROPOSEE }));
+    await attendreLeDossier();
+
+    await waitFor(() => {
+      const champ = screen.getByLabelText(/Priorité/) as HTMLInputElement;
+      expect(champ.value).toBe('Retrouver un sommeil continu');
+    });
+    expect(screen.getByText(/Proposé par la machine, à valider/)).toBeTruthy();
+  });
+
+  it('LA MARQUE TOMBE AU PREMIER CARACTÈRE MODIFIÉ, pas à l’enregistrement', async () => {
+    fetchMock.mockImplementation(router({ matiere: MATIERE_PROPOSEE }));
+    await attendreLeDossier();
+
+    const champ = await waitFor(() => {
+      const trouve = screen.getByLabelText(/Priorité/) as HTMLInputElement;
+      expect(trouve.value).toBe('Retrouver un sommeil continu');
+      return trouve;
+    });
+    expect(screen.getByText(/Proposé par la machine/)).toBeTruthy();
+
+    fireEvent.change(champ, { target: { value: 'Retrouver un sommeil continu.' } });
+    await waitFor(() => expect(screen.queryByText(/Proposé par la machine/)).toBeNull());
+  });
+
+  it('le pré-remplissage N’ÉCRASE PAS une saisie commencée AVANT son arrivée', async () => {
+    // LE BANC DOIT TAPER AVANT, PAS APRÈS — et c'est une mutation qui l'a
+    // montré. Une première rédaction tapait une fois la matière arrivée : elle
+    // passait même avec un `setEnonce(matiere.enonce.texte)` inconditionnel,
+    // l'effet ne se rejouant pas sur une frappe. Le risque réel est l'inverse :
+    // le praticien écrit pendant que la lecture est en vol, et ses mots
+    // disparaissent sous ses doigts quand elle atterrit.
+    // `resoudre!` PLUTÔT QU'UNE VARIABLE NULLABLE : l'exécuteur d'une Promise
+    // court SYNCHRONEMENT, mais TypeScript ne le sait pas et réduit la variable
+    // à `null` au point d'appel.
+    let libere!: () => void;
+    const enVol = new Promise<void>((resoudre) => {
+      libere = resoudre;
+    });
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+      if (url.startsWith('/api/praticien/objectifs/proposition-priorite') && options?.method !== 'POST') {
+        return enVol.then(() => json(MATIERE, true));
+      }
+      return router()(url, options);
+    });
+    await attendreLeDossier();
+
+    const champ = screen.getByLabelText(/Ce que le patient demande/) as HTMLTextAreaElement;
+    expect(champ.value).toBe('');
+    fireEvent.change(champ, { target: { value: 'Ce que j’ai entendu en consultation' } });
+
+    libere();
+    await new Promise((resoudre) => setTimeout(resoudre, 30));
+    expect(champ.value).toBe('Ce que j’ai entendu en consultation');
+  });
+
+  it('NOMME ce qui manque au lieu de griser un bouton sans raison', async () => {
+    fetchMock.mockImplementation(
+      router({ matiere: { ok: true, etat: 'sources_manquantes', manque: ['depot_patient'] } }),
+    );
+    await attendreLeDossier();
+
+    await waitFor(() =>
+      expect(screen.getByText(/le patient n’a pas encore écrit ce qui compte pour lui/)).toBeTruthy(),
+    );
+    expect(screen.queryByText('Proposer une priorité')).toBeNull();
+  });
+
+  it('« une autre » remplace le champ ET la marque revient', async () => {
+    fetchMock.mockImplementation(
+      router({
+        matiere: MATIERE_PROPOSEE,
+        postMatiere: {
+          ...MATIERE_PROPOSEE,
+          proposition: { ...MATIERE_PROPOSEE.proposition, texte: 'Dormir sans réveil prolongé', rang: 2 },
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    const bouton = await waitFor(() => screen.getByText('Une autre'));
+    fireEvent.click(bouton);
+
+    await waitFor(() => {
+      const champ = screen.getByLabelText(/Priorité/) as HTMLInputElement;
+      expect(champ.value).toBe('Dormir sans réveil prolongé');
+    });
+    expect(screen.getByText(/Proposé par la machine/)).toBeTruthy();
+  });
+
+  it('un échec de proposition SE DIT, avec de quoi réessayer', async () => {
+    fetchMock.mockImplementation(
+      router({
+        matiere: MATIERE,
+        postMatiere: { ok: false, reason: 'proposition_trop_longue', error: 'La proposition dépassait 200 caractères : elle a été refusée plutôt que coupée.' },
+        postMatiereOk: false,
+      }),
+    );
+    await attendreLeDossier();
+
+    const bouton = await waitFor(() => screen.getByText('Proposer une priorité'));
+    fireEvent.click(bouton);
+
+    await waitFor(() => expect(screen.getByText(/refusée plutôt que coupée/)).toBeTruthy());
+    expect(screen.getByText('Réessayer')).toBeTruthy();
   });
 
   it('affiche chaque fragment AVEC sa provenance — jamais une phrase nue', async () => {
