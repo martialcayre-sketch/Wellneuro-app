@@ -542,6 +542,10 @@ function construireCandidats(input: {
       // Uniquement des sources RÉELLEMENT présentes au snapshot : `dernieres` est
       // bornée aux réponses incluses dans l'épisode confirmé.
       provenance: { responseIds, needIds: declenchee.regle.needIds, clinicalObjectCodes: [] },
+      // CE QUI VIENT DE LA RÈGLE RELUE, nommé pour que l'écran puisse le dire.
+      // Fail-safe par construction : un texte inconnu de cette liste sera rendu
+      // comme HORS périmètre signé — sous-promettre plutôt que sur-promettre.
+      limitationsRegleSignee: [...declenchee.regle.limitations],
       limitations: [
         ...declenchee.regle.limitations,
         LIMITATION_PROPOSITION,

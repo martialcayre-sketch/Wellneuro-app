@@ -23,7 +23,7 @@ function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
     priorityCandidates: [{
       candidateId: 'priority-1', origin: 'engine', label: 'Priorité fixture', rank: 1,
       confidence: 'à_documenter', ruleId: 'RULE_FIXTURE', rationale: 'Fixture technique.',
-      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [],
     }],
     proposedMainPriorityId: 'priority-1',
     selectedMainPriority: {

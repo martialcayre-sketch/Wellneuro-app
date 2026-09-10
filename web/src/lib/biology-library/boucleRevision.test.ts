@@ -38,7 +38,7 @@ function carte(): DecisionCard {
       ruleId: 'R',
       rationale: 'Fixture.',
       provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
-      limitations: [],
+      limitationsRegleSignee: [], limitations: [],
     }],
     proposedMainPriorityId: 'p1',
     selectedMainPriority: {

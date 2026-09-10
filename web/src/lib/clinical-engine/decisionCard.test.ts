@@ -41,7 +41,7 @@ function candidate(overrides: Partial<DecisionPriorityCandidate> = {}): Decision
   return {
     candidateId: 'candidate-1', origin: 'engine', label: 'Priorité de test', rank: 1, confidence: 'à_documenter',
     ruleId: 'RULE_VALIDATED', rationale: 'Justification technique de fixture.',
-    provenance: { responseIds: [], needIds: [1], clinicalObjectCodes: [] }, limitations: [], ...overrides,
+    provenance: { responseIds: [], needIds: [1], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [], ...overrides,
   };
 }
 

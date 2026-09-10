@@ -365,7 +365,7 @@ describe('ClinicalRuntimeSection', () => {
             ruleId: 'PRIO-SOM-01',
             rationale: 'Déclencheur atteint.',
             provenance: { responseIds: ['R-IN'], needIds: [], clinicalObjectCodes: [] },
-            limitations: [],
+            limitationsRegleSignee: [], limitations: [],
           },
         ],
       },

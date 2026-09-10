@@ -53,7 +53,7 @@ function nominalFlow() {
     candidates: [{
       candidateId: 'priority-fixture', origin: 'engine', label: 'Priorité technique fixture', rank: 1,
       confidence: 'à_documenter', ruleId: validatedRule.ruleId, rationale: 'Fixture sans portée clinique.',
-      provenance: { responseIds: [response.responseId], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+      provenance: { responseIds: [response.responseId], needIds: [], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [],
     }],
     proposedMainPriorityId: 'priority-fixture',
     selectedMainPriority: {
@@ -131,7 +131,7 @@ describe('replay d’intégration C1', () => {
       candidates: [{
         candidateId: 'priority-fixture', origin: 'engine', label: 'Priorité fixture', rank: 1,
         confidence: 'à_documenter', ruleId: validatedRule.ruleId, rationale: 'Fixture.',
-        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [],
+        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [],
       }],
       selectedMainPriority: {
         candidateId: 'priority-fixture', selectedAt: '2026-01-04T00:00:00.000Z',

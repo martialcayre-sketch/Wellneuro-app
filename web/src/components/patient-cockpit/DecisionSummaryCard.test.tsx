@@ -88,4 +88,66 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
     if (commune) expect(screen.getAllByText(commune)).toHaveLength(1);
     expect(screen.getByText(MOTIF_NON_CURE)).toBeTruthy();
   });
+
+  // ── Signé et non signé ne se lisent plus dans la même liste ───────────────
+
+  describe('DEUX GROUPES PAR PROVENANCE (arbitrage du 2026-09-10)', () => {
+    // Une seule liste dédoublonnée mêlait ce que la RÈGLE RELUE dit et ce que le
+    // MOTEUR ajoute. `PRIORITY_RULES_SHA256` porte sur la table des règles et la
+    // procédure d'abstention — pas sur `lib/clinical-engine`, où vivent le
+    // producteur, les quatre `LIMITATION_*` et le motif de la gate. Le praticien
+    // lisait du relu et du non relu sans que rien ne les distingue.
+    const carteAvecLimitations = (): DecisionCard => ({
+      decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
+      reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
+      version: 'c1-decision-card-v1', status: 'draft',
+      priorityCandidates: [{
+        candidateId: 'p1', origin: 'engine', label: 'Axe digestif', rank: 1,
+        confidence: 'à_documenter', ruleId: 'PRIO-DIG-01', rationale: 'Fixture.',
+        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+        limitations: ['CE QUE LA RÈGLE DIT.', 'CE QUE LE MOTEUR AJOUTE.'],
+        limitationsRegleSignee: ['CE QUE LA RÈGLE DIT.'],
+      }],
+      proposedMainPriorityId: 'p1', selectedMainPriority: null, counterfactuals: [],
+      missingDataFindingIds: [], discordanceFindingIds: [], safetyFindingIds: [],
+      abstention: { status: 'not_required', ruleIds: ['PRIO-DIG-01'], limitations: ['CADRE SIGNÉ.'] },
+      limitations: [], inputHash: 'card-hash',
+    });
+
+    it('les deux intitulés de provenance sont rendus', () => {
+      render(<DecisionSummaryCard decisionCard={carteAvecLimitations()} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      expect(screen.getByText('Limitations de la règle')).not.toBeNull();
+      expect(screen.getByText(/Ajoutées par le moteur/)).not.toBeNull();
+      // L'INTITULÉ DIT L'ESSENTIEL, et il est factuel : sans « hors périmètre
+      // signé », le regroupement se lirait comme un rangement de confort.
+      expect(screen.getByText(/hors périmètre signé/)).not.toBeNull();
+    });
+
+    it('CHAQUE TEXTE TOMBE DANS SON GROUPE — le cadre d’abstention est signé', () => {
+      const { container } = render(<DecisionSummaryCard decisionCard={carteAvecLimitations()} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      const listes = container.querySelectorAll('ul');
+      const groupes = [...listes].map((ul) => [...ul.querySelectorAll('li')].map((li) => li.textContent));
+      const regle = groupes.find((g) => g.includes('CE QUE LA RÈGLE DIT.'));
+      const moteur = groupes.find((g) => g.includes('CE QUE LE MOTEUR AJOUTE.'));
+      expect(regle).toContain('CADRE SIGNÉ.');
+      expect(regle).not.toContain('CE QUE LE MOTEUR AJOUTE.');
+      expect(moteur).not.toContain('CE QUE LA RÈGLE DIT.');
+    });
+
+    it('FAIL-SAFE : un texte qu’on ne sait pas rattacher tombe du côté NON signé', () => {
+      // Sous-promettre plutôt que sur-promettre. Un texte inconnu du groupe
+      // signé ne doit jamais hériter de sa couverture par défaut.
+      const carte = carteAvecLimitations();
+      carte.priorityCandidates[0].limitations = [...carte.priorityCandidates[0].limitations, 'TEXTE ORPHELIN.'];
+      const { container } = render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      const groupes = [...container.querySelectorAll('ul')].map((ul) =>
+        [...ul.querySelectorAll('li')].map((li) => li.textContent));
+      const moteur = groupes.find((g) => g.includes('CE QUE LE MOTEUR AJOUTE.'));
+      expect(moteur).toContain('TEXTE ORPHELIN.');
+    });
+  });
+
 });

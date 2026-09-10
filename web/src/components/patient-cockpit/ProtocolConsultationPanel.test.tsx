@@ -8,7 +8,7 @@ function card(overrides: Partial<DecisionCard> = {}): DecisionCard {
   return {
     decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash', reviewId: 'review-1', reviewInputHash: 'review-hash',
     createdAt: '2026-01-01T00:00:00.000Z', version: 'c1-decision-card-v1', status: 'draft',
-    priorityCandidates: [{ candidateId: 'priority-1', origin: 'engine', label: 'Priorité fixture', rank: 1, confidence: 'à_documenter', ruleId: 'R', rationale: 'Raisonnement interne confidentiel', provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [] }],
+    priorityCandidates: [{ candidateId: 'priority-1', origin: 'engine', label: 'Priorité fixture', rank: 1, confidence: 'à_documenter', ruleId: 'R', rationale: 'Raisonnement interne confidentiel', provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitationsRegleSignee: [], limitations: [] }],
     proposedMainPriorityId: 'priority-1', selectedMainPriority: { candidateId: 'priority-1', selectedAt: '2026-01-01T00:00:00.000Z', selectedBy: 'practitioner', rationale: 'Sélection interne confidentielle' },
     counterfactuals: [], missingDataFindingIds: ['manque-interne'], discordanceFindingIds: ['discordance-interne'], safetyFindingIds: [],
     abstention: { status: 'not_required', ruleIds: ['R'], limitations: [] }, limitations: [], inputHash: 'card-hash', ...overrides,

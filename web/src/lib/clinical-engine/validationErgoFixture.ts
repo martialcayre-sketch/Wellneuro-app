@@ -160,7 +160,7 @@ export function buildValidationErgoC1Fixture(): ValidationErgoC1Fixture {
         ruleId: RULE.ruleId,
         rationale: 'Priorité fictive préparée pour la grille de validation ergonomique.',
         provenance: { responseIds: [RESPONSE_ID], needIds: [], clinicalObjectCodes: [] },
-        limitations: [MENTION_FICTIVE],
+        limitationsRegleSignee: [], limitations: [MENTION_FICTIVE],
       },
       {
         candidateId: 'ergo-priorite-2',
@@ -171,7 +171,7 @@ export function buildValidationErgoC1Fixture(): ValidationErgoC1Fixture {
         ruleId: RULE.ruleId,
         rationale: 'Alternative fictive préparée pour la grille de validation ergonomique.',
         provenance: { responseIds: [RESPONSE_ID], needIds: [], clinicalObjectCodes: [] },
-        limitations: [MENTION_FICTIVE],
+        limitationsRegleSignee: [], limitations: [MENTION_FICTIVE],
       },
     ],
     proposedMainPriorityId: 'ergo-priorite-1',
