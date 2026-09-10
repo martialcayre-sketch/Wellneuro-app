@@ -10,10 +10,10 @@
 - Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10, sur
   écran réel — les trois zones étaient vides devant un dossier qui portait la
   matière)
-- Amende : [[D-160]] §2 (la priorité cesse d'être exclusivement manuscrite),
-  [[D-094]] §1 (une source citable de plus pour la reformulation) et la garde
-  `G3` (`comprehensionAppendOnly.guard.test.ts`), dont `IMPORTS_INTERDITS`
-  s'ouvre à un adaptateur borné.
+- Amende : [[D-160]] §2 (la priorité cesse d'être exclusivement manuscrite) et
+  [[D-094]] §1 (une source citable de plus pour la reformulation).
+  ~~et la garde `G3`~~ — **rectifié le 2026-09-11, voir §10** : `G3` n'avait
+  rien à ouvrir.
 - N'amende PAS : [[D-003]] (voir §4), ni [[D-094]] §4 (voir §5).
 - Domaine : doctrine produit et frontière IA — campagne Alliance 6.0-B
 - **Amendée le 2026-09-10 au soir**, avant tout code, par quinze arbitrages du
@@ -120,12 +120,32 @@ retrouver puis la recopier de mémoire.
    deux pièces — `resume_praticien` d'une synthèse validée, et le dernier dépôt
    patient — et toute extension est une décision neuve.
 
-10. **Les gardes.** `IMPORTS_INTERDITS` de `G3` s'ouvre à un **adaptateur
-    borné**, sur le patron de `plainteVerifiee.ts` ([[D-164]]) : un module dont
-    les imports sont nommés un par un et éprouvés par banc, qui expose
-    `narratif_patient` et `resume_praticien` d'une synthèse validée, et RIEN
-    d'autre. Une lecture déportée ailleurs reste interdite. Un banc éprouve
-    qu'`axes_prioritaires` n'est jamais lu.
+10. **Les gardes.** Un **adaptateur borné**, sur le patron de
+    `plainteVerifiee.ts` ([[D-164]]) : un module qui expose `narratif_patient`
+    et `resume_praticien` d'une synthèse validée, et RIEN d'autre. Une lecture
+    déportée ailleurs reste interdite. Un banc éprouve qu'`axes_prioritaires`
+    n'est jamais lu.
+
+    **RECTIFIÉ LE 2026-09-11, EN ÉCRIVANT LE CODE.** Cette clause annonçait que
+    l'`IMPORTS_INTERDITS` de `G3` (`comprehensionAppendOnly.guard.test.ts`)
+    s'ouvrirait à cet adaptateur. C'était une erreur de lecture à deux étages.
+
+    D'abord, `G3` ne garde pas ces fichiers : son périmètre est
+    `syntheseComprehension.ts` et trois routes de compréhension. L'adaptateur lit
+    `syntheses_ia`, une AUTRE table. Il n'y avait rien à ouvrir, et croire le
+    contraire aurait fait passer pour un amendement gardé ce qui n'était gardé
+    par rien.
+
+    Ensuite — et c'est le point qui compte —, **un interdit d'import n'aurait
+    rien prouvé ici.** `resume_praticien`, `narratif_patient` et
+    `axes_prioritaires` vivent dans le MÊME blob `syntheseJson`. Une fois la
+    table lue, et il FAUT la lire, l'import est déjà fait : ce qui reste à
+    garder, c'est ce qui SORT. La garde est donc neuve et porte sur la SURFACE —
+    `matierePriorite.guard.test.ts` : le type de sortie est fermé et énuméré, le
+    blob ne franchit pas la frontière, deux clés sont extraites et nommées une
+    par une, et seule une synthèse `Validee_Praticien` est lue. Éprouvée par
+    mutation : faire fuir le blob, couper au lieu de refuser, ou appeler le
+    modèle depuis le `GET` font toutes trois rougir.
 
 11. **La proposition est FIGÉE, dans une table append-only à elle.** Un modèle
     n'est pas déterministe : deux appels sur les mêmes sources rendent deux
