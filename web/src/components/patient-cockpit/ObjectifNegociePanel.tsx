@@ -411,6 +411,31 @@ export function ObjectifNegociePanel({
   const [motifEcart, setMotifEcart] = useState('');
   const [erreurGeste, setErreurGeste] = useState('');
 
+  /**
+   * VIDER LES DÉCLARATIONS DU PRATICIEN À CHAQUE BASCULE DE MODE, et ce n'est
+   * pas de l'hygiène : le formulaire n'est jamais DÉMONTÉ — il est masqué —, si
+   * bien qu'une valeur saisie pour une version survit dans l'état et **repart
+   * avec la version choisie ensuite**.
+   *
+   * Sur `negocieLe`, ce n'est pas une perte, c'est une **date FAUSSE affichée au
+   * patient** : « Convenu le 3 septembre » sous une version dont il n'a jamais
+   * entendu parler ce jour-là. Les quatre autres champs voyagent de la même
+   * façon — une priorité, un motif de « non traité » abandonnés en cours de
+   * route se retrouvent sur un objectif neuf.
+   *
+   * NE TOUCHE PAS À L'ÉNONCÉ : ses trois origines s'excluent déjà et se
+   * nettoient chacune à sa bascule (leçon du LOT-03). Les modes qui REPRENNENT
+   * délibérément les champs de la version révisée appellent ce vidage AVANT de
+   * les reposer — l'ordre est ce qui rend la reprise sûre.
+   */
+  const viderDeclarations = useCallback(() => {
+    setReformulation('');
+    setPriorite('');
+    setNegocieLe('');
+    setNonTraiteMotif('');
+    setNonTraiteDepuisLe('');
+  }, []);
+
   // DÉPENDANCE STABLE. `chargerDossier` ne dépend que de `idPatient` ; un
   // littéral recréé au rendu ferait retirer le GET en boucle, et ce GET
   // JOURNALISE l'accès au dossier (G-TRUST-04) — le journal se remplirait de
@@ -837,6 +862,9 @@ export function ObjectifNegociePanel({
                                 setCiteAmendement(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
+                                // Une reprise ouvre un objectif NEUF : rien de
+                                // ce qui a été saisi pour un autre ne le suit.
+                                viderDeclarations();
                               }
                             : undefined
                         }
@@ -1089,6 +1117,7 @@ export function ObjectifNegociePanel({
                                 if (citeAmendement?.id === amendement.id) {
                                   setCiteAmendement(null);
                                   setReformuleId(null);
+                                  viderDeclarations();
                                   return;
                                 }
                                 // Reprendre les mots du patient REFORMULE la
@@ -1100,6 +1129,9 @@ export function ObjectifNegociePanel({
                                 setRepriseDe(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
+                                // Vider AVANT la reprise, même motif qu'à
+                                // « Reformuler cette version ».
+                                viderDeclarations();
                                 // Les champs PRATICIEN de la version reformulée
                                 // sont repris, comme pour « Reformuler » : sans
                                 // cela, intégrer le texte du patient ferait
@@ -1181,6 +1213,9 @@ export function ObjectifNegociePanel({
                   type="button"
                   onClick={() => {
                     setReformuleId(trajectoire.idObjectif);
+                    // VIDER D'ABORD : ce que la version révisée ne porte pas ne
+                    // doit pas être hérité d'une saisie abandonnée ailleurs.
+                    viderDeclarations();
                     // Les champs PRATICIEN de la version révisée sont repris :
                     // sans cela, ne toucher qu'à la reformulation ferait
                     // retomber `priorite` et « non traité » à vide sur la
@@ -1264,6 +1299,7 @@ export function ObjectifNegociePanel({
                     onClick={() => {
                       setCiteAmendement(null);
                       setReformuleId(null);
+                      viderDeclarations();
                     }}
                     className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
@@ -1285,7 +1321,10 @@ export function ObjectifNegociePanel({
                   Cette phrase devient l’énoncé du patient telle quelle — non modifiable.{' '}
                   <button
                     type="button"
-                    onClick={() => setRepriseDe(null)}
+                    onClick={() => {
+                      setRepriseDe(null);
+                      viderDeclarations();
+                    }}
                     className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     Écrire un énoncé à la place
@@ -1297,7 +1336,10 @@ export function ObjectifNegociePanel({
                 L’énoncé du patient est repris tel quel de la version précédente : il ne se réécrit pas.{' '}
                 <button
                   type="button"
-                  onClick={() => setReformuleId(null)}
+                  onClick={() => {
+                    setReformuleId(null);
+                    viderDeclarations();
+                  }}
                   className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Annuler la reformulation
