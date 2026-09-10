@@ -1556,12 +1556,25 @@ export function ObjectifNegociePanel({
                 <label htmlFor="objectif-enonce" className="mt-2 block text-xs font-medium text-foreground">
                   Ce que le patient demande, dans ses mots
                 </label>
+                {/* UNE CONSIGNE, JAMAIS UN EXEMPLE — et c'est le seul champ du
+                    dépôt où la distinction porte à conséquence. `enoncePatient`
+                    est le texte dont [[D-094]] dit « verbatim, jamais
+                    paraphrasé » : y afficher une phrase clinique plausible
+                    (« Je voudrais dormir sans me réveiller à trois heures. »,
+                    posée jusqu'au 2026-09-10) propose un MODÈLE À IMITER là où
+                    la règle est de recopier. Les trois autres champs de ce
+                    panneau portent tous une consigne ; celui-ci faisait
+                    exception, sans raison.
+
+                    Le risque n'est pas théorique : l'exemple a été lu comme un
+                    contenu déjà présent lors d'une relecture sur dossier réel,
+                    le compteur à `0` ne suffisant pas à le démentir. */}
                 <textarea
                   id="objectif-enonce"
                   value={enonce}
                   onChange={(evenement) => setEnonce(evenement.target.value)}
                   rows={3}
-                  placeholder="« Je voudrais dormir sans me réveiller à trois heures. »"
+                  placeholder="Ses mots, tels qu’il les a dits…"
                   className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 />
                 <Compteur valeur={enonce} maximum={LONGUEUR_MAX_ENONCE} />
