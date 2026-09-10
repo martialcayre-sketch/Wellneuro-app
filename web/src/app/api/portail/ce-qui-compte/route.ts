@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authentifierPatientPortail } from '@/lib/trust/portailAuth';
 import { isCeQuiCompteEnabled } from '@/lib/patient/featureFlag';
-import { preparerEntree, type RefusEntree } from '@/lib/patient/ceQuiCompte';
+import { fenetreDeDepot, preparerEntree, type FenetreDepot, type RefusEntree } from '@/lib/patient/ceQuiCompte';
+import { estAncreDeCycle } from '@/lib/protocol/cycles';
 
 // Dépôt patient de « ce qui compte pour moi aujourd'hui » (Alliance 6.0-A,
 // LOT-03). Route de classe AUTH : le contrôle d'accès prime sur tout le reste.
@@ -35,8 +36,21 @@ export type EntreeDeposee = {
   saisiLe: string | null;
 };
 
+/**
+ * L'état de la fenêtre de dépôt, rendu au client (`D-166`).
+ *
+ * `fermeeDepuis` est la date du dernier dépôt DU PATIENT LUI-MÊME, rendue au
+ * patient lui-même : ce n'est ni un agrégat, ni un état dérivé de sa parole —
+ * c'est l'horodatage de son propre geste, et c'est le seul moyen d'expliquer
+ * une fermeture sans la lui faire deviner. Le TEXTE déposé n'est pas rendu :
+ * une surface de lecture des dépôts reste hors de ce lot.
+ */
+export type EtatFenetre =
+  | { ouverte: true }
+  | { ouverte: false; fermeeDepuis: string };
+
 export type PortailCeQuiCompteResponse =
-  | { ok: true; ouvert: true }
+  | { ok: true; ouvert: true; fenetre: EtatFenetre }
   | { ok: true; entree: EntreeDeposee }
   | { ok: false; reason: string; error: string };
 
@@ -104,6 +118,59 @@ function surfaceFermee() {
 }
 
 /**
+ * LA FENÊTRE DE DÉPÔT (`D-166`) — deux lectures, et chacune tombe du côté de
+ * la parole quand elle échoue.
+ *
+ * Le dépôt le plus récent d'abord : sans lui il n'y a rien à borner, et on
+ * s'épargne la seconde lecture. Puis les épisodes du dossier, dont on retient
+ * la dernière ANCRE confirmée — `estAncreDeCycle` décide de la forme, jamais
+ * une liste recopiée ici : la série des ancres est ouverte (`T0`, `T1`,
+ * `T12`…), et une liste figée aurait cessé d'être vraie au premier cycle
+ * qu'elle ne connaît pas. Les jalons de mesure sont écartés par là même.
+ *
+ * LES DEUX `catch` OUVRENT LA FENÊTRE, et ce n'est pas un relâchement : une
+ * fermeture repose sur un fait — « vous avez déposé le … ». Sans ce fait, la
+ * dire serait affirmer au patient quelque chose qu'on ne sait pas.
+ *
+ * Aucun décompte n'est produit ni rendu : on prend la première ancre d'une
+ * liste ordonnée, pas un total.
+ */
+async function lireFenetre(idPatient: string): Promise<FenetreDepot> {
+  let dernierDepotLe: Date | null;
+  try {
+    const dernier = await prisma.entreeCeQuiCompte.findFirst({
+      where: { idPatient },
+      orderBy: { creeLe: 'desc' },
+      select: { creeLe: true },
+    });
+    dernierDepotLe = dernier?.creeLe ?? null;
+  } catch {
+    return { ouverte: true };
+  }
+  if (dernierDepotLe === null) return { ouverte: true };
+
+  try {
+    const episodes = await prisma.assessmentEpisode.findMany({
+      where: { idPatient },
+      orderBy: { confirmedAt: 'desc' },
+      select: { milestone: true, confirmedAt: true },
+    });
+    const ancre = episodes.find((episode) => estAncreDeCycle(episode.milestone))?.confirmedAt ?? null;
+    return fenetreDeDepot(dernierDepotLe, { lue: true, derniereAncreConfirmeeLe: ancre });
+  } catch {
+    return fenetreDeDepot(dernierDepotLe, { lue: false });
+  }
+}
+
+/** La fenêtre telle qu'elle part sur le fil — la `Date` devient une chaîne ISO. */
+function fenetreServie(fenetre: FenetreDepot): EtatFenetre {
+  return fenetre.ouverte ? { ouverte: true } : { ouverte: false, fermeeDepuis: fenetre.fermeeDepuis.toISOString() };
+}
+
+const MESSAGE_FENETRE_FERMEE =
+  'Vous avez déjà écrit ce qui compte pour vous pour cette étape de votre suivi. Ce que vous avez écrit est conservé.';
+
+/**
  * GET — INTERRUPTEUR D'ÉCRAN, et rien d'autre.
  *
  * Ne lit AUCUNE entrée et ne rend AUCUNE donnée patient : uniquement « cette
@@ -115,6 +182,24 @@ function surfaceFermee() {
  *
  * Exposer ici la liste des dépôts du patient serait une surface de lecture que
  * ce lot n'a pas cadrée ; on s'en tient à l'interrupteur.
+ *
+ * DEPUIS `D-166`, L'INTERRUPTEUR PORTE AUSSI L'ÉTAT DE LA FENÊTRE — et la
+ * phrase ci-dessus reste vraie : on rend « pouvez-vous écrire, et sinon depuis
+ * quand », jamais un dépôt. Le formulaire en a besoin AVANT d'afficher un
+ * champ de saisie : laisser le patient écrire quatre mille caractères pour les
+ * lui refuser à l'envoi serait la pire des façons de lui apprendre la règle.
+ * Le lien du hub, lui, ne bouge pas : la surface reste offerte, c'est l'écran
+ * qui explique.
+ *
+ * LE COÛT EST ASSUMÉ, PAS IGNORÉ. Le hub appelle ce `GET` à chaque ouverture
+ * du portail et n'a besoin que du drapeau ; il paie désormais deux lectures
+ * indexées qui ne lui servent à rien. Un `?fenetre=1` les lui épargnerait —
+ * écarté délibérément : la fenêtre deviendrait ABSENTE quand on oublie le
+ * paramètre, et un appelant qui l'oublie doit alors deviner. Or l'absence se
+ * lit « je ne sais pas », donc OUVERTE : l'oubli produirait un champ de saisie
+ * sur une fenêtre fermée. Une seule forme de réponse, impossible à obtenir de
+ * travers, vaut mieux que deux requêtes économisées sur une cohorte qui se
+ * compte en dizaines.
  */
 export async function GET(req: Request): Promise<NextResponse<PortailCeQuiCompteResponse>> {
   if (!isCeQuiCompteEnabled()) return surfaceFermee();
@@ -122,7 +207,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailCeQuiCompte
   const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<PortailCeQuiCompteResponse>;
 
-  return NextResponse.json<PortailCeQuiCompteResponse>({ ok: true, ouvert: true });
+  const fenetre = await lireFenetre(auth.patient.idPatient);
+  return NextResponse.json<PortailCeQuiCompteResponse>({
+    ok: true,
+    ouvert: true,
+    fenetre: fenetreServie(fenetre),
+  });
 }
 
 type CorpsDepot = {
@@ -181,6 +271,23 @@ export async function POST(req: Request): Promise<NextResponse<PortailCeQuiCompt
     // le lira ou non, mais l'application ne coupe pas la parole. Ne pas
     // « corriger » cette absence de garde en la posant : c'est le comportement
     // voulu. La révocation du compte, elle, ferme bien la route (403 ci-dessus).
+
+    // 2 bis — LA FENÊTRE DE DÉPÔT (`D-166`), ET C'EST LE SERVEUR QUI TRANCHE.
+    //
+    // Placée AVANT le corps : un dépôt hors fenêtre n'a pas à être lu, ni
+    // validé, ni pesé. L'écran connaît déjà l'état par le `GET` et n'offre pas
+    // de champ ; cette garde existe pour le cas où il ne l'aurait pas fait —
+    // onglet resté ouvert depuis la veille, client tiers, rejeu.
+    //
+    // 409 ET NON 403 : rien n'est interdit à ce patient, l'état du dossier
+    // rend simplement le geste sans objet pour l'instant. Le message dit le
+    // fait et ce qui est conservé ; il ne promet aucune date de réouverture,
+    // parce que personne ne la connaît — elle dépend d'une confirmation que le
+    // praticien n'a pas encore posée.
+    const fenetre = await lireFenetre(patient.idPatient);
+    if (!fenetre.ouverte) {
+      return echec('fenetre_fermee', MESSAGE_FENETRE_FERMEE, 409);
+    }
 
     // 3 — TAILLE DU CORPS, AVANT DE LE LIRE (voir `TAILLE_CORPS_MAX_OCTETS`).
     //

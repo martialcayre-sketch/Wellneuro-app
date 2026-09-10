@@ -113,6 +113,66 @@ export function preparerEntree(entree: { texte: unknown; saisiLe?: unknown }): P
 }
 
 /**
+ * L'état de la fenêtre de dépôt — OUVERTE, ou fermée avec la date qui la ferme.
+ *
+ * `fermeeDepuis` porte le dernier dépôt : c'est ce que l'écran doit dire au
+ * patient. Rien d'autre n'est rendu — ni le texte déposé, ni un nombre de
+ * dépôts, ni une date de réouverture qu'on ne connaît pas.
+ */
+export type FenetreDepot =
+  | { ouverte: true }
+  | { ouverte: false; fermeeDepuis: Date };
+
+/**
+ * UN DÉPÔT PAR CYCLE (`D-166`, arbitrage du praticien du 2026-09-10).
+ *
+ * CE QUE CETTE FONCTION NE RENVERSE PAS. L'en-tête de ce module dit « une
+ * parole n'est pas une donnée qu'on rectifie, elle s'ajoute », et cela reste
+ * vrai mot pour mot : pas de `supersedes`, pas de correction, pas de
+ * suppression. Ce qui est borné ici est la CADENCE de l'ajout, jamais sa
+ * nature. Lire ce verrou comme une autorisation à chaîner les entrées serait
+ * le contresens exact que `D-166` §3 ferme.
+ *
+ * CE QUI ROUVRE : une ANCRE DE CYCLE confirmée APRÈS le dernier dépôt. Les
+ * jalons de mesure (`J21`, `J42`, `J90`) n'en sont pas et ne rouvrent rien —
+ * ils rythment un cycle, ils n'en ouvrent pas. L'appelant filtre les ancres
+ * (`estAncreDeCycle`) ; cette fonction ne reçoit qu'une date, pour rester
+ * pure et pour que la forme de l'ancre reste définie à un seul endroit.
+ *
+ * « AUCUNE ANCRE » ET « JE N'AI PAS PU LIRE » SONT DEUX ÉTATS OPPOSÉS, et les
+ * confondre en un seul `null` ferait exactement le contraire de ce qu'on veut
+ * dans chacun des deux cas. D'où `LectureAncres`, qui les sépare :
+ *
+ *  - `{ lue: false }` — la lecture a échoué. La fenêtre reste OUVERTE. Refuser
+ *    sur un état inconnu dirait au patient « vous avez déjà parlé » sans le
+ *    savoir : un énoncé FAUX adressé à un patient, ce que la campagne interdit
+ *    partout ailleurs (`DC-24`). Ici le fail-closed protégerait une règle, pas
+ *    une parole — et entre les deux, `D-166` §4 tranche pour la parole.
+ *  - `{ lue: true, derniereAncreConfirmeeLe: null }` — le dossier n'a AUCUNE
+ *    ancre confirmée. La fenêtre est FERMÉE après un premier dépôt : aucun
+ *    cycle n'a commencé, donc aucun n'a pu commencer depuis. C'est la lecture
+ *    fidèle de la règle, et sa conséquence est nommée à `D-166` §5 — un
+ *    patient qui dépose avant son `T0` attend cette confirmation.
+ *
+ * Le seul cas où l'absence ouvre est l'absence de DÉPÔT : il n'y a rien à
+ * répéter, le premier passe toujours.
+ */
+export type LectureAncres =
+  | { lue: true; derniereAncreConfirmeeLe: Date | null }
+  | { lue: false };
+
+export function fenetreDeDepot(
+  dernierDepotLe: Date | null,
+  ancres: LectureAncres,
+): FenetreDepot {
+  if (dernierDepotLe === null) return { ouverte: true };
+  if (!ancres.lue) return { ouverte: true };
+  const ancre = ancres.derniereAncreConfirmeeLe;
+  if (ancre !== null && ancre.getTime() > dernierDepotLe.getTime()) return { ouverte: true };
+  return { ouverte: false, fermeeDepuis: dernierDepotLe };
+}
+
+/**
  * Date de saisie déclarée : `null` (rien de déclaré) ou une date bornée.
  *
  * Absente ⇒ `null` ACCEPTÉ : le dépôt reste valide, le patient n'a

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LONGUEUR_MAX_CE_QUI_COMPTE,
   TOLERANCE_FUSEAU_MS,
+  fenetreDeDepot,
   preparerEntree,
 } from './ceQuiCompte';
 
@@ -75,5 +76,56 @@ describe('preparerEntree — « ce qui compte pour moi aujourd’hui » (LOT-03)
     const preparation = preparerEntree({ texte: TEXTE, saisiLe: '2024-01-15' });
     expect(preparation.ok).toBe(true);
     if (preparation.ok) expect(preparation.donnees.saisiLe?.getUTCFullYear()).toBe(2024);
+  });
+});
+
+// ── `D-166` — un dépôt par cycle ─────────────────────────────────────────────
+//
+// Le prédicat est PUR : il ne lit ni base ni horloge. Les quatre branches se
+// disent donc en quatre dates, sans harnais.
+
+const DEPOT = new Date('2026-09-10T08:56:00.000Z');
+const AVANT = new Date('2026-08-30T20:39:00.000Z');
+const APRES = new Date('2026-09-11T09:00:00.000Z');
+
+describe('fenetreDeDepot — la cadence du dépôt (D-166)', () => {
+  it('AUCUN DÉPÔT : ouverte, quoi qu\'il arrive ailleurs', () => {
+    expect(fenetreDeDepot(null, { lue: true, derniereAncreConfirmeeLe: null })).toEqual({ ouverte: true });
+    expect(fenetreDeDepot(null, { lue: false })).toEqual({ ouverte: true });
+  });
+
+  it('un dépôt, une ancre ANTÉRIEURE : fermée, et elle porte la date du dépôt', () => {
+    expect(fenetreDeDepot(DEPOT, { lue: true, derniereAncreConfirmeeLe: AVANT })).toEqual({
+      ouverte: false,
+      fermeeDepuis: DEPOT,
+    });
+  });
+
+  it('un dépôt, une ancre POSTÉRIEURE : rouverte', () => {
+    expect(fenetreDeDepot(DEPOT, { lue: true, derniereAncreConfirmeeLe: APRES })).toEqual({ ouverte: true });
+  });
+
+  // LES DEUX ÉTATS QU'ON NE DOIT JAMAIS CONFONDRE, et c'est la raison d'être
+  // de `LectureAncres`. Un seul `null` pour les deux ferait, au choix, taire un
+  // patient sur une panne, ou ne jamais borner un dossier sans cycle.
+  it('AUCUNE ANCRE, mais la lecture a EU LIEU : fermée — aucun cycle n\'a pu commencer', () => {
+    expect(fenetreDeDepot(DEPOT, { lue: true, derniereAncreConfirmeeLe: null })).toEqual({
+      ouverte: false,
+      fermeeDepuis: DEPOT,
+    });
+  });
+
+  it('LECTURE IMPOSSIBLE : ouverte — on n\'oppose pas au patient un fait qu\'on ignore', () => {
+    expect(fenetreDeDepot(DEPOT, { lue: false })).toEqual({ ouverte: true });
+  });
+
+  // Une ancre EXACTEMENT à la seconde du dépôt n'est pas postérieure : la
+  // confirmation qui rouvre doit venir APRÈS, sinon le dépôt qu'on vient
+  // d'écrire rouvrirait sa propre fenêtre.
+  it('une ancre à l\'instant EXACT du dépôt ne rouvre pas', () => {
+    expect(fenetreDeDepot(DEPOT, { lue: true, derniereAncreConfirmeeLe: new Date(DEPOT.getTime()) })).toEqual({
+      ouverte: false,
+      fermeeDepuis: DEPOT,
+    });
   });
 });

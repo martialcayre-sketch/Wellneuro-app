@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
@@ -26,12 +26,64 @@ import { LONGUEUR_MAX_CE_QUI_COMPTE } from '@/lib/patient/ceQuiCompte';
 // entrée déposée se conserve. On n'ajoute donc ici ni bouton « modifier », ni
 // bouton « supprimer ».
 
+/**
+ * L'état de la fenêtre côté écran (`D-166`).
+ *
+ * `chargement` et `inconnue` sont DEUX états, pas un : le premier n'affiche
+ * rien de définitif, le second a renoncé à savoir et OUVRE le champ. Un échec
+ * de lecture ne doit jamais fermer la parole — c'est la même règle que la
+ * route applique de son côté, et elle doit tenir des deux.
+ */
+type EtatFenetreEcran =
+  | { etat: 'chargement' }
+  | { etat: 'ouverte' }
+  | { etat: 'inconnue' }
+  | { etat: 'fermee'; depuis: string };
+
+/** Date lisible par un patient : « 10 septembre 2026 ». */
+function dateLisible(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export function CeQuiCompteForm() {
   const [texte, setTexte] = useState('');
   const [saisiLe, setSaisiLe] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
   const [depose, setDepose] = useState(false);
+  const [fenetre, setFenetre] = useState<EtatFenetreEcran>({ etat: 'chargement' });
+
+  /**
+   * LA FENÊTRE SE LIT AVANT D'OFFRIR UN CHAMP. Laisser le patient rédiger pour
+   * lui refuser à l'envoi serait la pire façon de lui apprendre la règle : il
+   * aurait écrit, et il perdrait le geste.
+   */
+  const lireFenetre = useCallback(async () => {
+    try {
+      const res = await fetch('/api/portail/ce-qui-compte');
+      const data = (await res.json()) as {
+        ok?: boolean;
+        fenetre?: { ouverte?: boolean; fermeeDepuis?: string };
+      };
+      if (!res.ok || !data.ok || data.fenetre === undefined) {
+        setFenetre({ etat: 'inconnue' });
+        return;
+      }
+      setFenetre(
+        data.fenetre.ouverte === false && typeof data.fenetre.fermeeDepuis === 'string'
+          ? { etat: 'fermee', depuis: data.fenetre.fermeeDepuis }
+          : { etat: 'ouverte' },
+      );
+    } catch {
+      setFenetre({ etat: 'inconnue' });
+    }
+  }, []);
+
+  useEffect(() => {
+    void lireFenetre();
+  }, [lireFenetre]);
 
   // Le dépassement s'AFFICHE, il ne bloque pas : le bouton reste actif, la
   // requête part, et c'est la route qui refuse avec son message. Désactiver
@@ -70,6 +122,63 @@ export function CeQuiCompteForm() {
       setEnvoi(false);
     }
   }, [texte, saisiLe]);
+
+  // APRÈS LE DÉPÔT, L'ACCUSÉ PREND TOUTE LA PLACE — et il dit maintenant deux
+  // choses : que c'est enregistré, et quand on pourra écrire de nouveau. Il
+  // passe AVANT l'état de fenêtre pour que le remerciement ne soit pas remplacé
+  // dans la seconde par un écran de fermeture : le patient vient d'écrire, il
+  // doit lire qu'il a été entendu, pas qu'une porte se referme.
+  if (depose) {
+    return (
+      <PatientCard className="space-y-5">
+        <PatientPageHeader
+          title="Ce qui compte pour moi aujourd’hui"
+          subtitle="C’est conservé tel quel. Personne ne le note ni ne le résume."
+        />
+        <PatientInlineMessage tone="success">C’est enregistré. Merci de l’avoir écrit.</PatientInlineMessage>
+        <p className="text-sm text-muted-foreground">
+          Vous pourrez en écrire un nouveau à la prochaine étape de votre suivi. D’ici là, si quelque chose change et
+          que cela vous semble important, dites-le à votre praticien lors de votre prochain échange.
+        </p>
+      </PatientCard>
+    );
+  }
+
+  // TANT QU'ON NE SAIT PAS, ON N'AFFIRME RIEN — ni le champ, ni la fermeture.
+  // Ouvrir le champ puis le retirer une demi-seconde plus tard ferait
+  // disparaître sous les doigts du patient ce qu'il a commencé à écrire.
+  if (fenetre.etat === 'chargement') {
+    return (
+      <PatientCard className="space-y-5">
+        <PatientPageHeader title="Ce qui compte pour moi aujourd’hui" subtitle="Un instant…" />
+      </PatientCard>
+    );
+  }
+
+  // FERMÉE — le fait, puis ce qui reste possible. Aucune date de réouverture
+  // n'est promise : elle dépend d'une confirmation que le praticien n'a pas
+  // encore posée, et l'inventer serait mentir. Aucun compte à rebours, aucun
+  // décompte de dépôts, et le texte déposé n'est pas réaffiché.
+  if (fenetre.etat === 'fermee') {
+    const depuis = dateLisible(fenetre.depuis);
+    return (
+      <PatientCard className="space-y-5">
+        <PatientPageHeader
+          title="Ce qui compte pour moi aujourd’hui"
+          subtitle="C’est conservé tel quel. Personne ne le note ni ne le résume."
+        />
+        <PatientInlineMessage tone="info">
+          {depuis
+            ? `Vous avez écrit ce qui compte pour vous le ${depuis}.`
+            : 'Vous avez déjà écrit ce qui compte pour vous.'}
+        </PatientInlineMessage>
+        <p className="text-sm text-muted-foreground">
+          Vous pourrez en écrire un nouveau à la prochaine étape de votre suivi. D’ici là, ce que vous avez écrit
+          reste ce qui compte — si quelque chose change, dites-le à votre praticien lors de votre prochain échange.
+        </p>
+      </PatientCard>
+    );
+  }
 
   return (
     <PatientCard
@@ -127,12 +236,10 @@ export function CeQuiCompteForm() {
         />
       </PatientField>
 
+      {/* L'accusé de dépôt n'est plus ici : depuis `D-166` il remplace le
+          formulaire entier, parce qu'il porte désormais aussi la cadence. Le
+          garder ici en plus l'aurait rendu inatteignable. */}
       {erreur && <PatientInlineMessage tone="error">{erreur}</PatientInlineMessage>}
-      {depose && (
-        <PatientInlineMessage tone="success">
-          C’est enregistré. Merci de l’avoir écrit.
-        </PatientInlineMessage>
-      )}
 
       <PatientButton
         type="submit"
