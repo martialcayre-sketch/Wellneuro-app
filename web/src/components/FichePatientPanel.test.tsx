@@ -85,6 +85,8 @@ type Options = {
   phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur';
   reponses?:
     | 'defaut'
+    /** Aucune passation rendue : la seule branche où « Données fiables » est en attente. */
+    | 'aucune'
     | 'dimensions'
     | 'dimensions-degradees'
     | 'non-interpretable'
@@ -348,6 +350,7 @@ function stubFetch(options: Options = {}) {
       });
     }
     if (url.includes('/api/praticien/reponses')) {
+      if (options.reponses === 'aucune') return ok({ reponses: [] });
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
       if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
@@ -587,7 +590,41 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await rendreFiche({ phase3: 'vide' });
     const onglet = screen.getByRole('tab', { name: /Compréhension/i });
     expect(onglet.textContent).not.toMatch(/renseignée/i);
-    expect(onglet.textContent).toMatch(/en attente/i);
+    // Le mot est « à traiter » depuis le 2026-09-10, et non plus « en attente
+    // du patient » : ce banc disait `/en attente/` quand la phase était encore
+    // rangée du côté patient. Voir le banc d'acteur ci-dessous.
+    expect(onglet.textContent).toMatch(/à traiter/i);
+  });
+
+  // LE LIBELLÉ NOMME LE PRATICIEN, PAS LE PATIENT — et rien ne l'épinglait
+  // jusqu'ici, ce qui est la raison pour laquelle la suite est restée verte
+  // quand `D-161` §10 a changé l'acteur sous le mot. La qualification (2026-09-02)
+  // rangeait « Compréhension » du côté patient parce que le statut lisait alors
+  // les couvertures des douze besoins ; il lit désormais un objectif ACTIF et
+  // une synthèse PUBLIÉE, deux actes du praticien. Sur un dossier vierge, dire
+  // « en attente du patient » désigne l'acteur opposé.
+  it('LE RAIL NE MET JAMAIS L’ATTENTE DE LA PHASE 3 SUR LE DOS DU PATIENT', async () => {
+    await rendreFiche({ phase3: 'vide' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).not.toMatch(/en attente du patient/i);
+  });
+
+  it('UN OBJECTIF POSÉ SANS SYNTHÈSE N’EST PAS DAVANTAGE UNE ATTENTE DU PATIENT', async () => {
+    // La seconde branche d'attente : la ratification n'entre pas dans le
+    // statut, donc rien ici ne dépend d'un geste du patient non plus.
+    await rendreFiche({ phase3: 'sans-synthese' });
+    const onglet = screen.getByRole('tab', { name: /Compréhension/i });
+    expect(onglet.textContent).not.toMatch(/en attente du patient/i);
+    expect(onglet.textContent).toMatch(/à traiter/i);
+  });
+
+  // La contrepartie : « Données fiables » attend BIEN une matière du patient,
+  // et la qualification doit y survivre. Sans ce banc, supprimer la fonction
+  // entière passerait au vert sur le seul banc ci-dessus.
+  it('« Données fiables » garde « en attente du patient » — la qualification n’est pas retirée', async () => {
+    await rendreFiche({ reponses: 'aucune' });
+    const onglet = screen.getByRole('tab', { name: /Données fiables/i });
+    expect(onglet.textContent).toMatch(/en attente du patient/i);
   });
 
   it('UNE SYNTHÈSE MANQUANTE SUFFIT À TENIR LA PHASE EN ATTENTE — elle porte les deux', async () => {

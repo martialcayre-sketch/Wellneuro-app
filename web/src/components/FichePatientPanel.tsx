@@ -265,14 +265,24 @@ const LIBELLE_STATUT: Record<StatutPhase, string> = {
 /**
  * Le libellé de statut, QUALIFIÉ PAR LA PHASE pour « en attente » — le même
  * mot désignait deux situations opposées (audit du cockpit 2026-09-02) : sur
- * « Données fiables » ou « Compréhension », le praticien attend une matière
- * qui vient du patient (questionnaires, scores) ; sur Patient, Décision,
- * Actions ou Suivi, c'est à lui d'agir. Les trois autres statuts restent
- * inchangés — leurs mots ne portaient pas d'ambiguïté.
+ * « Données fiables », le praticien attend une matière qui vient du patient
+ * (questionnaires, scores) ; sur les autres phases, c'est à lui d'agir. Les
+ * trois autres statuts restent inchangés — leurs mots ne portaient pas
+ * d'ambiguïté.
+ *
+ * « COMPRÉHENSION » A CHANGÉ DE CAMP LE 2026-09-10, ET LE LIBELLÉ N'AVAIT PAS
+ * SUIVI. La qualification l'avait rangée du côté patient parce que son statut
+ * lisait alors les couvertures des douze besoins — de la matière déposée par
+ * lui. `D-161` §10 a fait lire tout autre chose à ce statut : un objectif
+ * ACTIF et une synthèse PUBLIÉE, deux actes du praticien dont aucun n'attend
+ * un geste du patient (ni ratification, ni réponse d'étape n'y entrent). Le
+ * mot désignait donc l'acteur opposé, sur une phase où c'est au praticien de
+ * jouer — le défaut même que la qualification existait pour empêcher.
+ * Constaté sur un dossier réel vierge d'objectif, le 2026-09-10.
  */
 function libelleStatut(id: IdPhase, statut: StatutPhase): string {
   if (statut !== 'en_attente') return LIBELLE_STATUT[statut];
-  return id === 'donnees' || id === 'comprehension' ? 'en attente du patient' : 'à traiter';
+  return id === 'donnees' ? 'en attente du patient' : 'à traiter';
 }
 
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
