@@ -421,6 +421,25 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     expect(screen.queryByLabelText(/Votre reformulation/)).toBeNull();
   });
 
+  // AUCUN CHAMP DE CE PANNEAU NE PROPOSE UNE PHRASE À IMITER. Le champ
+  // `enoncePatient` porte le texte dont `D-094` dit « verbatim, jamais
+  // paraphrasé » ; il a porté jusqu'au 2026-09-10 un exemple clinique entre
+  // guillemets, seul des quatre champs à ne pas donner une consigne. Le banc
+  // vise la FORME — un libellé indicatif entre guillemets français — plutôt
+  // que la phrase retirée, pour qu'un autre exemple ne puisse pas la remplacer
+  // sur ce champ ni sur un autre.
+  it('AUCUN CHAMP NE SUGGÈRE UN EXEMPLE : les invites sont des consignes, pas des phrases citées', async () => {
+    fetchMock.mockImplementation(router());
+    await attendreLeDossier();
+
+    const enonce = screen.getByLabelText(/Ce que le patient demande/);
+    expect(enonce.getAttribute('placeholder')).toBe('Ses mots, tels qu’il les a dits…');
+
+    for (const champ of screen.getAllByRole('textbox')) {
+      expect(champ.getAttribute('placeholder') ?? '').not.toMatch(/[«»]/);
+    }
+  });
+
   it('poste le contrat exact de la route, sans jamais transmettre de date d’enregistrement', async () => {
     fetchMock.mockImplementation(router());
     await attendreLeDossier();
