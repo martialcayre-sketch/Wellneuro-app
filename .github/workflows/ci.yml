@@ -857,6 +857,22 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_objectif_provenance_v1_negatif.sql
 
+      # Propositions de priorité assistées par IA (D-167 §11) : la borne de 200
+      # caractères doit MORDRE EN BASE — un dépassement se refuse au lieu de se
+      # couper —, un texte vide et un texte fait d'une tabulation doivent être
+      # rejetés, les deux sources doivent être nommées (la parole du patient est
+      # une CONDITION depuis l'arbitrage du 2026-09-10 au soir), `modele` et
+      # `version_consigne` doivent être remplis — c'est ce qui rend vraie la
+      # phrase dite au patient dans la v2 du document IA. Deux tirages ne
+      # partagent pas un rang (23505), sans quoi « resservir la proposition
+      # figée » n'a plus de réponse déterministe. La liste blanche fige l'absence
+      # de score, de seuil et de bande : `rang` compte des TIRAGES, jamais des
+      # priorités. Fixtures posées et transaction annulée.
+      - name: Alliance proposition priorite IA negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_proposition_priorite_ia_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

@@ -85,6 +85,7 @@ model Patient {
   reponsesJalonObjectif    ReponseJalonObjectif[]
   finsObjectif             FinObjectif[]
   accordsAttestes          AccordAtteste[]
+  propositionsPrioriteIa   PropositionPrioriteIA[]
 
   @@map("patients")
 }
@@ -2541,6 +2542,52 @@ model ReponseJalonObjectif {
 
   @@index([idPatient, creeLe], map: "alli_reponse_jalon_patient_idx")
   @@map("reponses_jalon_objectif")
+}
+
+
+// LA PROPOSITION DE PRIORITÉ ASSISTÉE PAR IA — `D-167` §11.
+//
+// N'EST PAS `PropositionObjectif`, ET NE DOIT JAMAIS LE DEVENIR. Ce
+// modèle-là est le moteur DÉTERMINISTE de `D-094` §4 : mêmes entrées, mêmes
+// propositions, même empreinte — c'est ce qui rend sa caducité calculable. Y
+// faire entrer un appel IA détruirait cette propriété. Les deux objets portent
+// le mot « proposition » et n'ont pas la même nature ; ne pas « unifier ».
+//
+// APPEND-ONLY, comme toute la campagne : aucune route d'update, aucune
+// suppression. Le bouton « une autre » écrit UNE LIGNE DE PLUS, de `rang`
+// suivant. Les tirages précédents restent — auditables en base, JAMAIS affichés
+// (`D-167` §11) : ni compte, ni rang, ni historique à l'écran.
+//
+// `modele` ET `version_consigne` SONT UNE PROMESSE FAITE AU PATIENT, pas une
+// commodité de journal. La v2 de « L'intelligence artificielle dans Wellneuro »
+// lui dit : « Le modèle utilisé et la version du procédé sont enregistrés à
+// chaque fois, ce qui permet de retracer l'origine de chaque texte. » Ces deux
+// colonnes sont ce qui rend cette phrase vraie ; les rendre nullables la
+// rendrait fausse.
+//
+// PAS DE `praticien_email`. Le document patient ne promet pas de dire QUI a
+// demandé, `D-167` ne le réclame pas, et la provenance portée par l'objectif
+// n'en dit rien non plus. Une colonne qu'aucune lecture n'attend est ce que
+// `D-165` vient de nommer.
+//
+// `id_synthese` et `id_depot` sont des références SOUPLES, sans FK — patron de
+// toute la campagne : existence et appartenance se vérifient à la route.
+model PropositionPrioriteIA {
+  id              String   @id @default(cuid())
+  idPatient       String   @map("id_patient")
+  idSynthese      String   @map("id_synthese")
+  idDepot         String   @map("id_depot")
+  versionConsigne String   @map("version_consigne")
+  modele          String   @map("modele")
+  rang            Int      @map("rang")
+  texte           String   @map("texte")
+  creeLe          DateTime @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@unique([idPatient, idSynthese, idDepot, versionConsigne, rang], map: "alli_prop_priorite_tirage_unique")
+  @@index([idPatient, creeLe], map: "alli_prop_priorite_patient_idx")
+  @@map("propositions_priorite_ia")
 }
 
 
