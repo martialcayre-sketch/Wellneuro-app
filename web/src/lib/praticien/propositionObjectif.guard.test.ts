@@ -206,11 +206,17 @@ describe('G7-1 bis — l’adaptateur est la seule porte, et elle reste étroite
   // 2. L'ADAPTATEUR EST LA SEULE PORTE. La route ne touche le registre que par
   //    lui : un import direct de `lib/clinical/` rouvrirait le couplage que
   //    `G7-1` refuse, et l'exception ne serait plus une exception.
-  it('la route n’atteint le registre QUE par l’adaptateur', () => {
+  it('la route n’atteint le registre QUE par les DEUX adaptateurs', () => {
+    // `F1` ouvre une SECONDE porte, et elle doit rester aussi étroite que la
+    // première : une plainte dominante n'est pas dans le registre, elle se
+    // dérive de sous-scores — `D-115` interdisait donc à son adaptateur de la
+    // lire. Deux exceptions font jurisprudence ; ce banc est ce qui empêche la
+    // troisième de se prendre pour un usage.
+    const PORTES = ['@/lib/praticien/sourceSigneeVerifiee', '@/lib/praticien/plainteVerifiee'];
     const imports = importsDe(ROUTE);
-    expect(imports).toContain('@/lib/praticien/sourceSigneeVerifiee');
+    for (const porte of PORTES) expect(imports).toContain(porte);
     for (const specificateur of imports) {
-      if (specificateur === '@/lib/praticien/sourceSigneeVerifiee') continue;
+      if (PORTES.includes(specificateur)) continue;
       expect(specificateur).not.toMatch(/(^|\/)clinical(\/|$)/);
     }
   });
@@ -497,3 +503,40 @@ describe('G7-5 — la provenance et la forme du blob, opposables', () => {
 /** Alias local : le type public, nommé pour que `@ts-expect-error` porte sur
  *  l'assignation et non sur un import inutilisé. */
 type FragmentSourceTest = import('./propositionObjectif').FragmentSource;
+
+describe('G7-1 ter — la SECONDE porte (F1) reste aussi étroite que la première', () => {
+  const ADAPTATEUR_PLAINTE = 'src/lib/praticien/plainteVerifiee.ts';
+
+  function importsDe(chemin: string): string[] {
+    const source = sourceSansCommentaires(chemin);
+    return [
+      ...source.matchAll(/(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g),
+    ].map((m) => m[1]);
+  }
+
+  it('l’adaptateur de plainte n’importe QUE ce que sa doctrine admet', () => {
+    // Trois lectures, et pas une de plus : quel instrument porte la plainte,
+    // la MÊME recalculation que le cockpit — la recopier en ferait une seconde
+    // vérité —, et la MÊME dérivation, départage technique compris.
+    const ADMIS = [
+      '@/lib/prisma',
+      '@/lib/clinical/priorityRulesV1',
+      '@/lib/clinical/orientationService',
+      '@/lib/clinical-engine/chaineC1',
+    ];
+    expect([...importsDe(ADAPTATEUR_PLAINTE)].sort()).toEqual([...ADMIS].sort());
+  });
+
+  it('il ne rend AUCUN score — un domaine et une bande, jamais un chiffre', () => {
+    // La frontière est là : `G7-2` interdit à la route de toucher un score, et
+    // c'est ce banc qui a fait descendre la lecture base dans l'adaptateur.
+    // Si un chiffre repassait par ici, la route en hériterait.
+    const source = sourceSansCommentaires(ADAPTATEUR_PLAINTE);
+    const typeRendu = source.slice(source.indexOf('export type PlainteAuthentique'));
+    expect(typeRendu.slice(0, 200)).not.toMatch(/valeur|score|total|rang/i);
+  });
+
+  it('le module PUR n’importe toujours rien — ni cette porte, ni l’autre', () => {
+    expect(importsDe(MODULE)).toEqual([]);
+  });
+});

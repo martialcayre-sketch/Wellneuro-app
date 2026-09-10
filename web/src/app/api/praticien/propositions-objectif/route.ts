@@ -52,6 +52,7 @@ import {
   resoudreRegleSignee,
   shaPerimetreSigne,
 } from '@/lib/praticien/sourceSigneeVerifiee';
+import { fragmentPlainteConcorde, plainteDominantePubliee } from '@/lib/praticien/plainteVerifiee';
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 
@@ -661,6 +662,26 @@ async function assembler(
     .map((candidat) => resoudreRegleSignee(candidat.regle))
     .filter((resolue): resolue is NonNullable<typeof resolue> => resolue !== null)
     .map((resolue) => ({ regle: resolue.regle, texte: resolue.texte }));
+
+  // 4. LA RESTITUTION D'INSTRUMENT EST RELUE AU SERVEUR (`F1`, P1). Le
+  //    fragment reçu du navigateur n'était contrôlé que sur sa FORME : le
+  //    praticien lisait « Restitution publiée par… » sous un texte que rien
+  //    n'avait confronté, et ce texte entrait dans l'empreinte de caducité —
+  //    un envoi forgé supplantait l'assemblée légitime et rendait les vraies
+  //    propositions caduques.
+  //
+  //    BORNÉ À L'ÉPISODE CONFIRMÉ, jamais « la dernière passation du dossier » :
+  //    une réponse arrivée entre la confirmation et l'assemblage n'a pas servi
+  //    au calcul des candidats, et la citer ici ferait coexister deux plaintes
+  //    dans une même proposition.
+  const authentique = await plainteDominantePubliee(idPatient);
+  if (!fragmentPlainteConcorde(plainte.plainte, authentique)) {
+    return echec(
+      'conflit',
+      'La restitution d’instrument ne correspond pas à ce que le serveur publie. Rechargez la fiche.',
+      409,
+    );
+  }
 
   const anamnese = await lireAnamnese(idPatient);
   const assemblees = assemblerPropositions({

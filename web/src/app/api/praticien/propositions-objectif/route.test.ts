@@ -1,12 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PRIORITY_RULES_SHA256 } from '@/lib/clinical/priorityRulesV1';
 import { retablirTablePriorites, signerTablePriorites } from '@/lib/clinical-engine/chaineC1Fixture';
+import { PLAINTES_DIGESTIF_ET_PONDERAL } from '@/lib/clinical-engine/dossierT0Fixture';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     consultation: { findFirst: vi.fn() },
+    // `F1` : la restitution d'instrument est RELUE au serveur. Sans ces deux
+    // lectures, l'adaptateur lève au lieu de rendre « aucune plainte publiée ».
+    assessmentEpisode: { findFirst: vi.fn() },
+    questionnaireReponse: { findMany: vi.fn() },
     propositionObjectif: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -64,7 +69,11 @@ function postRequest(body: unknown): Request {
 const corpsAssembler = (partiel: Record<string, unknown> = {}) => ({
   action: 'assembler',
   idPatient: 'PAT_TEST',
-  plainte: { instrument: 'Q_MOD_03', domaine: 'sommeil', restitution: 'Restitution publiée' },
+  // `F1` : LA PLAINTE ENVOYÉE EST CELLE QUE LE SERVEUR PUBLIE, et non plus une
+  // valeur de convenance. La fixture `PLAINTES_DIGESTIF_ET_PONDERAL` met le
+  // SURPOIDS en tête (Q004 = 9, « Intensité très élevée ») ; un fragment qui
+  // dirait autre chose serait désormais refusé en 409, ce qu'un cas éprouve.
+  plainte: { instrument: 'Q_MOD_03', domaine: 'surpoids', restitution: 'Intensité très élevée' },
   candidats: [{ regle: REGLE_PUBLIEE, texte: 'Texte du navigateur, désormais IGNORÉ' }],
   shaPerimetre: SHA_PERIMETRE,
   ...partiel,
@@ -106,6 +115,26 @@ describe('/api/praticien/propositions-objectif', () => {
       suiviClotureLe: null,
     });
     prisma.consultation.findFirst.mockResolvedValue(null);
+    // `F1` : LE SERVEUR PUBLIE UNE PLAINTE, et c'est elle que le fragment reçu
+    // doit dire. Le dossier de fixture porte un épisode confirmé dont la
+    // passation `Q_MOD_03` met le SOMMEIL en tête — donc `corpsAssembler`
+    // envoie une plainte VRAIE. Un cas dédié éprouve le fragment forgé.
+    prisma.assessmentEpisode.findFirst.mockResolvedValue({
+      payload: { includedResponseIds: ['REP_MOD_03'] },
+    });
+    // LE SERVEUR RECALCULE DEPUIS `rawAnswers`, jamais depuis des `subScores`
+    // stockés : `scoresRecalculesPourRaisonnement` porte cinq fermetures
+    // cliniques et repart des réponses brutes. Une fixture qui poserait des
+    // sous-scores tout faits éprouverait un chemin que le serveur n'emprunte
+    // pas.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_MOD_03',
+        scoresJson: { rawAnswers: PLAINTES_DIGESTIF_ET_PONDERAL },
+        dateReponse: new Date('2026-09-01T10:00:00.000Z'),
+        statutValidite: 'VALID',
+      },
+    ]);
     prisma.propositionObjectif.findMany.mockResolvedValue([]);
     prisma.propositionObjectif.findFirst.mockResolvedValue(null);
     prisma.propositionObjectif.createMany.mockResolvedValue({ count: 0 });
@@ -309,6 +338,32 @@ describe('/api/praticien/propositions-objectif', () => {
       expect((await POST(postRequest(corps))).status).toBe(400);
     }
     expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
+  });
+
+  it('F1 — UN FRAGMENT DE RESTITUTION FORGÉ EST REFUSÉ, il n’est plus recopié', async () => {
+    // Le praticien lisait « Restitution publiée par… » sous un texte que rien
+    // n'avait confronté. Pire : ce texte entrait dans l'empreinte de caducité,
+    // si bien qu'un envoi forgé SUPPLANTAIT l'assemblée légitime.
+    const reponse = await POST(postRequest(corpsAssembler({
+      plainte: { instrument: 'Q_MOD_03', domaine: 'sommeil', restitution: 'Intensité très élevée' },
+    })));
+    expect(reponse.status).toBe(409);
+    expect(prisma.propositionObjectif.createMany).not.toHaveBeenCalled();
+  });
+
+  it('F1 — LA BANDE AUSSI EST CONFRONTÉE, pas seulement le domaine', async () => {
+    // Le domaine juste et la bande fausse resterait un mensonge : c'est la
+    // BANDE que le praticien lit.
+    const reponse = await POST(postRequest(corpsAssembler({
+      plainte: { instrument: 'Q_MOD_03', domaine: 'surpoids', restitution: 'Intensité faible' },
+    })));
+    expect(reponse.status).toBe(409);
+  });
+
+  it('F1 — SANS ÉPISODE CONFIRMÉ, le serveur ne publie rien et la citation est refusée', async () => {
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+    const reponse = await POST(postRequest(corpsAssembler()));
+    expect(reponse.status).toBe(409);
   });
 
   it('accepte une plainte absente — le canal n’est pas toujours mesurable', async () => {
