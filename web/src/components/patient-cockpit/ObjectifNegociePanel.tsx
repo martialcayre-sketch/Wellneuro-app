@@ -10,6 +10,7 @@ import type {
   TrajectoireObjectif,
   LigneRatificationExposee,
 } from '@/app/api/praticien/objectifs/route';
+import type { FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import type { LectureFin } from '@/lib/praticien/objectifNegocie';
 // La borne haute de l'échelle vient du module PUR, jamais recopiée : « sur 10 »
 // écrit en dur ici mentirait le jour où la borne bouge côté serveur.
@@ -383,6 +384,7 @@ export function ObjectifNegociePanel({
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   const [lignesRatification, setLignesRatification] = useState<LigneRatificationExposee[]>([]);
+  const [jalonDu, setJalonDu] = useState<FenetreJalonObjectif | null>(null);
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
    *  Tous gestes du dossier : l'écran les range sous leur version. */
   const [amendements, setAmendements] = useState<AmendementExpose[]>([]);
@@ -504,6 +506,7 @@ export function ObjectifNegociePanel({
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
       setLignesRatification(payload.lignesRatification ?? []);
+      setJalonDu(payload.jalonDu ?? null);
       setAmendements(payload.amendements);
       setReponsesJalon(payload.reponsesJalon);
       setEtat('chargee');
@@ -1041,6 +1044,25 @@ export function ObjectifNegociePanel({
 
           {objectifs.length === 0 && (
             <p className="text-base text-muted-foreground">Aucun objectif négocié pour ce dossier.</p>
+          )}
+
+          {/* ── L'ÉTAPE ATTENDUE, PAS SEULEMENT CELLES QUI SONT ARRIVÉES ──
+              `jalonObjectifDu` n'était consommé que par le PORTAIL : le cockpit
+              montrait les réponses reçues, jamais celles qu'on attend. Le
+              praticien ne savait donc pas qu'une fenêtre s'ouvrait, ni quand
+              elle se refermait — et relançait au hasard, ou pas du tout.
+
+              LE MOTIF EST DIT QUAND RIEN N'EST OUVERT, jamais un blanc : un
+              écran muet laisse croire à une panne, et « le patient n'a pas
+              répondu » ferait d'un silence un manquement (`DC-24`). */}
+          {jalonDu && (
+            <p className="text-sm text-muted-foreground">
+              {jalonDu.statut === 'ouverte'
+                ? `Étape ${jalonDu.jalon} : votre patient peut répondre jusqu’au ${formatDate(jalonDu.fermeLe)}.`
+                : jalonDu.prochaineOuverture
+                  ? `${jalonDu.motif} Prochaine étape${jalonDu.prochainJalon ? ` (${jalonDu.prochainJalon})` : ''} à partir du ${formatDate(jalonDu.prochaineOuverture)}.`
+                  : jalonDu.motif}
+            </p>
           )}
 
           {tetesActives > 1 && (

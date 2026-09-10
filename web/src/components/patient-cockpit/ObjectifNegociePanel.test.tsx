@@ -31,6 +31,8 @@ const DOSSIER_VIDE = {
   // `F2` : les gestes de ratification avec LEUR version. Sans eux, une
   // contestation posée sur une version reformulée depuis disparaît du cockpit.
   lignesRatification: [],
+  // L'ÉTAPE ATTENDUE : aucune par défaut, le motif étant dit plutôt que tu.
+  jalonDu: { statut: 'aucune' as const, motif: 'Aucun cycle n’est confirmé pour ce dossier.' },
 };
 
 const FIN_OUVERTE = {
@@ -1205,6 +1207,46 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
     // jamais reporté sur la courante — le drapeau `s` n'est pas disponible sur
     // la cible de compilation, donc on vérifie la mention de rattachement.
     expect(corps).toMatch(/Version initiale/);
+  });
+
+
+  it('LE COCKPIT DIT L’ÉTAPE ATTENDUE, pas seulement celles qui sont arrivées', async () => {
+    // `jalonObjectifDu` n'était consommé que par le PORTAIL : le praticien
+    // voyait les réponses reçues, jamais celles qu'on attend — et relançait au
+    // hasard, ou pas du tout.
+    fetchMock.mockImplementation(router({
+      dossier: {
+        ...DOSSIER_VIDE,
+        jalonDu: {
+          statut: 'ouverte',
+          jalon: 'J21',
+          ouvertLe: '2026-09-05T00:00:00.000Z',
+          fermeLe: '2026-09-21T00:00:00.000Z',
+        },
+      },
+    }));
+    await attendreLeDossier();
+    expect(document.body.textContent).toMatch(/Étape J21/);
+    expect(document.body.textContent).toMatch(/peut répondre jusqu’au/);
+  });
+
+  it('SANS FENÊTRE OUVERTE, LE MOTIF EST DIT — jamais un blanc', async () => {
+    // Un écran muet laisse croire à une panne, et « le patient n'a pas répondu »
+    // ferait d'un silence un manquement (`DC-24`).
+    fetchMock.mockImplementation(router({
+      dossier: {
+        ...DOSSIER_VIDE,
+        jalonDu: {
+          statut: 'aucune',
+          motif: 'Aucune étape n’est ouverte aujourd’hui.',
+          prochainJalon: 'J42',
+          prochaineOuverture: '2026-10-01T00:00:00.000Z',
+        },
+      },
+    }));
+    await attendreLeDossier();
+    expect(document.body.textContent).toMatch(/Aucune étape n’est ouverte/);
+    expect(document.body.textContent).toMatch(/Prochaine étape \(J42\)/);
   });
 
 });

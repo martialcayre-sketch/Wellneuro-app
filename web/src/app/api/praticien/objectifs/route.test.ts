@@ -32,6 +32,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. `create` est moqué ici
     // bien que cette route ne l'appelle pas — il vit à `objectifs/fin`.
     finObjectif: { findMany: vi.fn(), create: vi.fn() },
+    // L'ÉTAPE ATTENDUE se calcule depuis l'ancre du cycle courant : sans cette
+    // lecture, la route lève au lieu de rendre « aucune fenêtre ouverte ».
+    assessmentEpisode: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     // Alliance 6.0-B, LOT-03 : la reprise d'une proposition. `update` et
     // `delete` sont moqués EXPRÈS alors que la route ne les appelle jamais —
@@ -125,6 +128,9 @@ describe('/api/praticien/objectifs', () => {
     prisma.amendementObjectif.findUnique.mockResolvedValue(null);
     prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
     prisma.finObjectif.findMany.mockResolvedValue([]);
+    // AUCUNE ANCRE PAR DÉFAUT : c'est l'état de la quasi-totalité des dossiers,
+    // et la fenêtre d'étape ne s'annonce que quand le SERVEUR en ouvre une.
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     prisma.propositionObjectif.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.findMany.mockResolvedValue([]);
     prisma.dispositionProposition.create.mockResolvedValue({ id: 'DIS_NEUVE' });
