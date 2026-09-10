@@ -215,6 +215,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.finObjectif.deleteMany({ where: par })
     ).count;
 
+    // L'accord attesté en consultation (Alliance 6.0-B, `D-161` §11) : même
+    // régime FK RESTRICT. C'est la parole du praticien SUR un accord conclu
+    // avec ce patient — elle ne survit pas plus au dossier que la fin qu'elle
+    // précède.
+    supprimees.accordsAttestes = (
+      await tx.accordAtteste.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

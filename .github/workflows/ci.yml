@@ -827,6 +827,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_fin_objectif_v1_negatif.sql
 
+      # L'accord attesté en consultation (D-161 §11) : le TÉMOIGNAGE, à côté de
+      # la PREUVE qu'est la ratification posée au portail. Le contrat éprouve
+      # l'écart assumé de cette table — `convenu_le` est NOT NULL là où les
+      # autres dates d'événement sont nullables : une attestation sans date ne
+      # dirait rien de plus que sa propre écriture, et `cree_le` affirmerait que
+      # l'accord a eu lieu au moment de la saisie (D-165). Il fige aussi DEUX
+      # ABSENCES voulues — ni `voix`, ni `consignee_par` : cette table EST une
+      # attestation, les porter ajouterait des colonnes qui ne varient jamais.
+      # Aucune unicité : se raviser fait une ligne de plus. Fixtures posées et
+      # transaction annulée.
+      - name: Alliance accord attesté negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_accord_atteste_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

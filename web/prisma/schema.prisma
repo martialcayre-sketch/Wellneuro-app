@@ -84,6 +84,7 @@ model Patient {
   amendementsObjectif      AmendementObjectif[]
   reponsesJalonObjectif    ReponseJalonObjectif[]
   finsObjectif             FinObjectif[]
+  accordsAttestes          AccordAtteste[]
 
   @@map("patients")
 }
@@ -2566,4 +2567,43 @@ model FinObjectif {
 
   @@index([idPatient, creeLe], map: "alli_fin_objectif_patient_idx")
   @@map("fins_objectif")
+}
+
+// L'ACCORD ATTESTÉ EN CONSULTATION — le TÉMOIGNAGE, à côté de la PREUVE
+// (`D-161` §2-4, §11).
+//
+// CETTE TABLE EST, PAR DÉFINITION, UNE ATTESTATION. Le geste que le patient
+// pose lui-même vit déjà dans `ratifications_objectif`, dont l'écrivain unique
+// est le portail : c'est une PREUVE. Ici, le praticien atteste qu'un accord a
+// été conclu en consultation — il l'a ENTENDU. Les deux sont légitimes et
+// souvent vrais ; ils ne sont pas de la même espèce.
+//
+// D'OÙ L'ABSENCE DE `voix` ET DE `consignee_par`, et c'est délibéré. Sur
+// `fins_objectif`, ces deux colonnes sont nécessaires parce que la parole du
+// patient et son attestation vivent dans la MÊME table. Ici, la table elle-même
+// dit la forme : les porter serait ajouter des colonnes dont la valeur ne varie
+// jamais — exactement ce que `D-165` vient de nommer.
+//
+// LE TÉMOIGNAGE CÈDE À LA PREUVE, jamais l'inverse : règle de LECTURE, tenue
+// par le module. La base ne connaît pas l'ordre des paroles.
+//
+// `convenu_le` EST OBLIGATOIRE, contrairement aux dates de déclaration des
+// autres tables : ici la date N'EST PAS un accessoire de la ligne, elle EN EST
+// L'OBJET. Une attestation sans date ne dit rien de plus que sa propre écriture,
+// et `cree_le` dirait alors que l'accord a eu lieu au moment où on l'a saisi —
+// la date inventée que `D-165` refuse.
+//
+// APPEND-ONLY, AUCUNE UNICITÉ : se raviser est une ligne de plus.
+model AccordAtteste {
+  id             String   @id @default(cuid()) @map("id")
+  idPatient      String   @map("id_patient")
+  idObjectif     String   @map("id_objectif")
+  praticienEmail String   @map("praticien_email")
+  convenuLe      DateTime @map("convenu_le")
+  creeLe         DateTime @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_accord_atteste_patient_idx")
+  @@map("accords_attestes_objectif")
 }
