@@ -40,11 +40,26 @@ DECLARE
   -- proposition dont cet objectif est la reprise, s'il en est une. Elle
   -- entre ICI parce que toute colonne future doit modifier ce contrat —
   -- c'est la mécanique qui rend l'arbitrage visible en revue.
+  --
+  -- HUIT COLONNES DE PROVENANCE ajoutées par `D-167`, et cette liste est
+  -- LEUR SEULE liste blanche : le contrat de provenance
+  -- (`alli_objectif_provenance_v1_negatif.sql`) éprouve les CHECK, la
+  -- nullabilité et la RLS, mais N'ÉNUMÈRE PAS les colonnes. Deux listes sur
+  -- une même table divergeraient au premier ajout, et une liste divergée est
+  -- pire qu'absente : elle passe au vert en prétendant garder.
+  --
+  -- CE QU'ELLES SONT, ET CE QU'ELLES NE SONT PAS. Chacune nomme une NATURE
+  -- (« d'où vient ce texte ») ou un identifiant de source. Aucune ne porte de
+  -- position, de rang ni de note : `D-094` §3 interdit jusqu'à la
+  -- numérotation, et une colonne d'ordre rouvrirait `D-093`. L'interdit que
+  -- ce contrat garde — « aucun score, seuil ou bande » — reste entier.
   COLS_OBJECTIFS CONSTANT text[] := ARRAY[
-    'cree_le', 'enonce_patient', 'id', 'id_patient', 'negocie_le',
-    'non_traite_depuis_le', 'non_traite_motif', 'praticien_email',
-    'priorite', 'reformulation_praticien', 'source_proposition_id',
-    'supersedes_objectif_id'
+    'cree_le', 'enonce_patient', 'enonce_source', 'enonce_source_id', 'id',
+    'id_patient', 'negocie_le', 'non_traite_depuis_le', 'non_traite_motif',
+    'praticien_email', 'priorite', 'priorite_prompt', 'priorite_source',
+    'priorite_source_depot_id', 'priorite_source_synthese_id',
+    'reformulation_praticien', 'reformulation_source', 'reformulation_source_id',
+    'source_proposition_id', 'supersedes_objectif_id'
   ];
   COLS_CE_QUI_COMPTE CONSTANT text[] := ARRAY[
     'cree_le', 'id', 'id_patient', 'saisi_le', 'texte'
