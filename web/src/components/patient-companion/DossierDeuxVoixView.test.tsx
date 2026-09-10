@@ -36,6 +36,9 @@ function assemblage(partiel: Record<string, unknown> = {}) {
     ok: true,
     objectifs: [OBJECTIF],
     ratifiable: true,
+    // `F2` : les gestes de ratification, servis avec LEUR version. Vides par
+    // défaut — un dossier sans geste ancien n'affiche pas le bloc.
+    ratifications: [],
     amendements: [],
     reponsesJalon: [],
     // PAR DÉFAUT, AUCUNE ÉTAPE OUVERTE : c'est l'état de la quasi-totalité des
@@ -788,4 +791,54 @@ describe('DossierDeuxVoixView', () => {
       }
     });
   });
+
+  it('F2 — UN GESTE POSÉ SUR UNE VERSION REFORMULÉE DEPUIS reste lisible, à sa place', async () => {
+    // Un clic n'est pas un texte : il ne laissait AUCUNE trace à l'écran, là où
+    // un amendement en laissait une. Le patient contestait, lisait « C'est
+    // transmis », et retrouvait au rechargement « vous ne vous êtes pas encore
+    // prononcé » — son geste avait été accepté ET rendu invisible.
+    fetchMock.mockResolvedValueOnce(json(assemblage({
+      objectifs: [{ ...OBJECTIF, id: 'OBJ_2', etat: 'en_attente' }],
+      ratifications: [
+        { id: 'RAT_1', idObjectif: 'OBJ_1', sens: 'conteste', creeLe: '2026-09-01T10:00:00.000Z' },
+      ],
+    })));
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() =>
+      expect(texteRendu()).toContain('Vous vous étiez prononcé sur une formulation précédente'));
+    // LES MOTS DE L'ÉCRAN, pas la valeur de la base : le patient a cliqué
+    // « pas exactement ça », il n'a jamais vu « conteste ».
+    expect(texteRendu()).toContain('pas exactement ça');
+    expect(texteRendu()).not.toContain('conteste');
+  });
+
+  it('F2 — SANS TRANSFERT : l’état de la version courante ne bouge pas', async () => {
+    // Reporter un ancien geste sur une formulation reformulée depuis ferait
+    // ratifier au patient des mots qu'il n'a pas lus.
+    fetchMock.mockResolvedValueOnce(json(assemblage({
+      objectifs: [{ ...OBJECTIF, id: 'OBJ_2', etat: 'en_attente' }],
+      ratifications: [
+        { id: 'RAT_1', idObjectif: 'OBJ_1', sens: 'ratifie', creeLe: '2026-09-01T10:00:00.000Z' },
+      ],
+    })));
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() =>
+      expect(texteRendu()).toContain('Vous vous étiez prononcé sur une formulation précédente'));
+    expect(texteRendu()).not.toContain('C’est bien ça, je m’y retrouve');
+  });
+
+  it('un geste sur la version COURANTE ne s’affiche pas dans le bloc des anciens', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage({
+      ratifications: [
+        { id: 'RAT_1', idObjectif: OBJECTIF.id, sens: 'ratifie', creeLe: '2026-09-01T10:00:00.000Z' },
+      ],
+    })));
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() => expect(texteRendu()).toContain('Ce sur quoi nous travaillons'));
+    expect(texteRendu()).not.toContain('Vous vous étiez prononcé sur une formulation précédente');
+  });
+
 });

@@ -127,6 +127,19 @@ export type DesaccordServi = {
   creeLe: string;
 };
 
+/**
+ * UN GESTE DE RATIFICATION, SERVI AVEC SA VERSION (`F2`, P1).
+ *
+ * CE TYPE EXISTAIT ET N'ÉTAIT SERVI PAR PERSONNE. Les lignes étaient LUES pour
+ * dériver l'état, jamais rendues. Une contestation posée sur `v1` disparaissait
+ * donc de l'écran dès qu'une `v2` existait : le patient lisait « C'est
+ * transmis », puis au rechargement « vous ne vous êtes pas encore prononcé ».
+ * Son geste était accepté ET rendu invisible.
+ *
+ * `idObjectif` PORTE LA VERSION VISÉE, et c'est tout l'objet : sans lui, un
+ * geste ancien s'afficherait sous la formulation courante et répondrait à des
+ * mots que le patient n'a jamais lus.
+ */
 export type RatificationServie = {
   id: string;
   idObjectif: string;
@@ -198,6 +211,17 @@ export type PortailDossierResponse =
        * SA parole, et la faire disparaître au premier geste du praticien
        * reviendrait à effacer ce qu'on prétend recueillir.
        */
+      /**
+       * LES GESTES DE RATIFICATION DU PATIENT, tous, du plus récent au plus
+       * ancien — jamais filtrés sur la tête courante. Même motif que les
+       * amendements : un geste porté sur une version depuis reformulée reste SA
+       * parole, et la faire disparaître au premier geste du praticien
+       * reviendrait à effacer ce qu'on prétend recueillir.
+       *
+       * L'ÉTAT PAR VERSION (`objectifs[].etat`) NE CHANGE PAS : ces lignes
+       * s'affichent à leur place, elles ne transfèrent leur sens à aucune tête.
+       */
+      ratifications: RatificationServie[];
       amendements: AmendementServi[];
       /**
        * CE QUE LE PATIENT A RÉPONDU À SES JALONS, du plus récent au plus
@@ -530,6 +554,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
        * passer une histoire pour un conflit.
        */
       ratifiable: tetesActives(tetes).length === 1,
+      ratifications: ratifications.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        sens: ligne.sens,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
       amendements: amendements.map((ligne) => ({
         id: ligne.id,
         idObjectif: ligne.idObjectif,

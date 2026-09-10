@@ -272,7 +272,7 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     );
   }
 
-  const { objectifs, ratifiable, amendements, reponsesJalon, jalonDu, ceQuiCompte, comprehension } =
+  const { objectifs, ratifiable, ratifications, amendements, reponsesJalon, jalonDu, ceQuiCompte, comprehension } =
     etat.donnees;
 
   return (
@@ -696,6 +696,54 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                         )}
                         <p className="whitespace-pre-wrap text-base leading-relaxed">
                           {amendement.texte}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* ── ET LES GESTES POSÉS AVANT UNE REFORMULATION (`F2`, P1) ───
+                  LE TROISIÈME BLOC DE LA MÊME FAMILLE, et il manquait. Un clic
+                  n'est pas un texte : il ne laissait donc AUCUNE trace à
+                  l'écran, là où un amendement et un récit d'étape en laissaient
+                  une. Le patient contestait, lisait « C'est transmis », et
+                  retrouvait au rechargement « vous ne vous êtes pas encore
+                  prononcé » — son geste avait été accepté ET rendu invisible.
+
+                  SANS TRANSFERT À LA VERSION COURANTE, jamais : l'état d'une
+                  tête reste celui de SES propres gestes. Reporter ici un
+                  ancien « c'est bien ça » sur une formulation reformulée
+                  depuis ferait ratifier au patient des mots qu'il n'a pas lus —
+                  exactement ce que la remise à zéro de l'état existe pour
+                  empêcher. Ces lignes disent ce qu'il a fait, avant, et rien
+                  d'autre. */}
+              {(() => {
+                const servis = new Set(objectifs.map((objectif) => objectif.id));
+                const anterieures = ratifications.filter(
+                  (ratification) => !servis.has(ratification.idObjectif),
+                );
+                if (anterieures.length === 0) return null;
+                return (
+                  <div className="space-y-2 rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Vous vous étiez prononcé sur une formulation précédente de votre objectif.
+                      Rien ne s’efface : votre praticien le lit toujours.
+                    </p>
+                    {anterieures.map((ratification) => (
+                      <div key={ratification.id} className="space-y-1 border-l-2 border-border pl-3">
+                        {dateLisible(ratification.creeLe) && (
+                          <p className="text-xs text-muted-foreground">
+                            Le {dateLisible(ratification.creeLe)}
+                          </p>
+                        )}
+                        <p className="text-base leading-relaxed">
+                          {/* LES MOTS DE L'ÉCRAN, pas la valeur de la base : le
+                              patient a cliqué « c'est bien ça » ou « pas
+                              exactement ça », il n'a jamais vu « ratifie ». */}
+                          {ratification.sens === 'ratifie'
+                            ? 'Vous aviez répondu : c’est bien ça.'
+                            : 'Vous aviez répondu : pas exactement ça.'}
                         </p>
                       </div>
                     ))}

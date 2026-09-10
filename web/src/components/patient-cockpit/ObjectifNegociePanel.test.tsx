@@ -28,6 +28,9 @@ const DOSSIER_VIDE = {
   fins: {},
   tetesActives: 0,
   lignesFin: [],
+  // `F2` : les gestes de ratification avec LEUR version. Sans eux, une
+  // contestation posée sur une version reformulée depuis disparaît du cockpit.
+  lignesRatification: [],
 };
 
 const FIN_OUVERTE = {
@@ -1167,6 +1170,41 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
       });
       expect(screen.getByRole('status').textContent).toMatch(/Possible à partir du/);
     });
+  });
+
+
+  it('F2 — UNE CONTESTATION POSÉE SUR UNE VERSION ANTÉRIEURE reste visible au cockpit', async () => {
+    // C'est le geste le plus BREF qui disparaissait, et souvent le plus
+    // décisif : un patient qui conteste. L'amendement et la réponse d'étape,
+    // eux, restaient affichés sur toute la chaîne — asymétrie exactement
+    // inverse de celle qu'on veut.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_2' })],
+          trajectoires: [{
+            idObjectif: 'OBJ_2',
+            lignes: [ligne({ id: 'OBJ_2' }), ligne({ id: 'OBJ_1', priorite: 'Version initiale' })],
+          }],
+          ratifications: { OBJ_2: 'en_attente' },
+          fins: { OBJ_2: FIN_OUVERTE },
+          tetesActives: 1,
+          lignesRatification: [
+            { id: 'RAT_1', idObjectif: 'OBJ_1', sens: 'conteste', creeLe: '2026-09-01T10:00:00.000Z' },
+          ],
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    fireEvent.click(screen.getByText(/Versions antérieures/));
+    const corps = document.body.textContent ?? '';
+    expect(corps).toMatch(/sur CETTE version/);
+    // ET LA TÊTE N'HÉRITE DE RIEN : le geste ancien est rendu SOUS sa version,
+    // jamais reporté sur la courante — le drapeau `s` n'est pas disponible sur
+    // la cible de compilation, donc on vérifie la mention de rattachement.
+    expect(corps).toMatch(/Version initiale/);
   });
 
 });

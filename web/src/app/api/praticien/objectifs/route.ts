@@ -153,6 +153,13 @@ export type ReponseJalonExposee = {
   creeLe: string;
 };
 
+export type LigneRatificationExposee = {
+  id: string;
+  idObjectif: string;
+  sens: string;
+  creeLe: string;
+};
+
 export type LigneFinExposee = {
   id: string;
   racineObjectifId: string;
@@ -173,6 +180,8 @@ export type ObjectifsApiResponse =
       trajectoires: TrajectoireObjectif[];
       ancrage: AncrageAnamnese;
       ratifications: Record<string, EtatRatification>;
+      /** Les gestes de ratification avec LEUR version (`F2`). */
+      lignesRatification: LigneRatificationExposee[];
       /**
        * TOUS les amendements du dossier, du plus récent au plus ancien —
        * jamais filtrés sur les seules têtes courantes. Un amendement porté sur
@@ -442,6 +451,20 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       // geste porté sur cette version précise — LES DEUX TABLES CONFONDUES,
       // sans quoi le cockpit afficherait « ratifié » à un praticien dont le
       // patient vient d'écrire sa propre version.
+      /**
+       * LES GESTES EUX-MÊMES, avec la version qu'ils visaient (`F2`, P1). La
+       * map ci-dessous ne porte que les TÊTES : une contestation portée sur
+       * `v1` cessait d'être visible au praticien dès qu'il posait `v2` —
+       * pendant que l'amendement et la réponse d'étape, eux, restaient
+       * affichés sur toute la chaîne. Asymétrie exactement inverse de celle
+       * qu'on veut : le geste le plus bref est celui qui disparaissait.
+       */
+      lignesRatification: ratifications.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        sens: ligne.sens,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
       ratifications: Object.fromEntries(
         courants.map((tete) => [tete.id, etatRatification(tete.id, ratifications, amendements)]),
       ),
