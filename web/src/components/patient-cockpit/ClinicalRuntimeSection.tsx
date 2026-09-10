@@ -1388,6 +1388,22 @@ export function ClinicalRuntimeSection({
                     }`
                   : 'Non renseignée — le questionnaire de plaintes actuelles ne rend aucune mesure sur cet épisode.'}
               </dd>
+              {/* L'ÉGALITÉ SE DIT, ELLE NE SE TRANCHE PAS EN SILENCE. À valeur
+                  égale, c'est l'ORDRE DE PUBLICATION DU CATALOGUE qui départage
+                  — un départage TECHNIQUE, que le moteur nomme comme tel depuis
+                  [[D-054]] : « un départage clinique n'a pas été rendu ». Tant
+                  qu'on ne le disait pas, l'écran laissait croire à une
+                  hiérarchie que personne n'a arbitrée. Le dire n'est pas
+                  trancher : c'est refuser de trancher à la place du patient,
+                  ce que `DC-30` demande d'une discordance. */}
+              {runtime.plainteDominante && runtime.plainteDominante.exAequo.length > 0 && (
+                <dd className="mt-1 text-sm text-status-warning">
+                  À la même intensité :{' '}
+                  {runtime.plainteDominante.exAequo.join(', ')}. L’ordre d’affichage est technique,
+                  il ne dit aucune priorité clinique — c’est avec votre patient que cela se
+                  départage.
+                </dd>
+              )}
             </div>
             <div>
               {/* « figé à la confirmation » : le même libellé s'affiche en

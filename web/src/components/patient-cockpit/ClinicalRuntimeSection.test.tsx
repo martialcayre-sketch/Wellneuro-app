@@ -370,7 +370,7 @@ describe('ClinicalRuntimeSection', () => {
         ],
       },
       contradictions: [],
-      plainteDominante: { domaine: 'sommeil', libelle: 'Sommeil', valeur: 8, bande: 'Restitution publiée' },
+      plainteDominante: { domaine: 'sommeil', libelle: 'Sommeil', valeur: 8, bande: 'Restitution publiée', exAequo: [] },
       perimetreSigne: 'a'.repeat(64),
       canalPlainte: 'Q_MOD_03',
     };
@@ -726,7 +726,7 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
   it('affiche la plainte dominante et l’objectif prioritaire en tête, avant la décision', async () => {
     await afficher(reponsePrete(
       { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
-      { domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée' },
+      { domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée', exAequo: [] },
     ));
 
     const panneau = await screen.findByRole('region', { name: 'Plainte et objectif du patient' });
@@ -739,10 +739,40 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     expect(panneau.compareDocumentPosition(bandeau) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('L’ÉGALITÉ DE PLAINTE EST DITE, et l’écran désigne le départage comme technique', async () => {
+    // À valeur égale, c'est l'ordre de publication du catalogue qui l'emporte —
+    // un départage que le moteur nomme TECHNIQUE depuis D-054, et dont le
+    // départage clinique « n'a pas été rendu ». Tant qu'on ne le disait pas,
+    // l'écran laissait croire à une hiérarchie que personne n'a arbitrée.
+    await afficher(reponsePrete(
+      { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      {
+        domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée',
+        exAequo: ['Sommeil', 'Douleurs'],
+      },
+    ));
+
+    const panneau = await screen.findByRole('region', { name: 'Plainte et objectif du patient' });
+    expect(panneau.textContent).toContain('À la même intensité : Sommeil, Douleurs');
+    // ET LE MOTIF, pas seulement le fait : sans lui, le praticien lirait une
+    // liste sans savoir qu'elle dit l'absence d'arbitrage, non son résultat.
+    expect(panneau.textContent).toMatch(/L’ordre d’affichage est technique/);
+    expect(panneau.textContent).toMatch(/c’est avec votre patient que cela se départage/);
+  });
+
+  it('sans ex aequo, RIEN n’est dit — une liste vide n’est pas un avertissement', async () => {
+    await afficher(reponsePrete(
+      { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+    ));
+    const panneau = await screen.findByRole('region', { name: 'Plainte et objectif du patient' });
+    expect(panneau.textContent).not.toMatch(/À la même intensité/);
+  });
+
   it('dit l’état réel de l’abstention, et non une phrase figée', async () => {
     await afficher(reponsePrete(
       { status: 'required', ruleIds: ['PRIO-PON-01'], limitations: [] },
-      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée' },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
     ));
     expect(await screen.findByText(/l’abstention clinique est requise/)).toBeTruthy();
     expect(screen.queryByText(/n’est pas encore évaluée/)).toBeNull();

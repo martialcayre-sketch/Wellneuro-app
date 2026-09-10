@@ -692,6 +692,10 @@ describe('/api/praticien/cockpit — chaîne C1 rebranchée, table signée', () 
     const { payload } = await confirmer();
     expect(payload.plainteDominante).toEqual({
       domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée',
+      // LES EX AEQUO TRAVERSENT AUSSI : sans eux dans la charge servie, l'écran
+      // ne pourrait pas dire l'égalité, et le départage technique du catalogue
+      // continuerait de passer pour une hiérarchie clinique.
+      exAequo: [],
     });
     // L'objectif prioritaire voyage dans le snapshot, où il est haché : l'écran
     // le lit là, jamais dans un champ recalculé côté navigateur.
