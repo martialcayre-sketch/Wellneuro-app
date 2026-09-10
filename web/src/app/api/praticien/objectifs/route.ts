@@ -11,6 +11,8 @@ import {
   isObjectifProposeEnabled,
 } from '@/lib/patient/featureFlag';
 import { sendObjectifProposeEmail } from '@/lib/consultation/email';
+import { ancreCourante, lireAncresPersistees } from '@/lib/protocol/ancresPersistees';
+import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import {
   chaineDObjectif,
   etatRatification,
@@ -183,6 +185,8 @@ export type ObjectifsApiResponse =
       objectifs: ObjectifExpose[];
       trajectoires: TrajectoireObjectif[];
       ancrage: AncrageAnamnese;
+      /** L'étape ATTENDUE aujourd'hui, ou le motif qui l'en empêche. */
+      jalonDu: FenetreJalonObjectif;
       ratifications: Record<string, EtatRatification>;
       /** Les gestes de ratification avec LEUR version (`F2`). */
       lignesRatification: LigneRatificationExposee[];
@@ -353,7 +357,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, ratifications, amendements, reponsesJalon, consultation, fins] =
+    const [lignes, ratifications, amendements, reponsesJalon, consultation, fins, ancres] =
       await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
@@ -406,6 +410,7 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
         },
         orderBy: { creeLe: 'desc' },
       }),
+      lireAncresPersistees(idPatient),
     ]);
 
     // MARQUÉES, JAMAIS FILTRÉES : une chaîne close reste au cockpit, sans quoi
@@ -450,6 +455,18 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
         exprimeLe: ligne.exprimeLe ? ligne.exprimeLe.toISOString() : null,
         creeLe: ligne.creeLe.toISOString(),
       })),
+      /**
+       * L'ÉTAPE ATTENDUE, ET NON PLUS SEULEMENT CELLES QUI SONT ARRIVÉES.
+       * `jalonObjectifDu` n'était consommé que par le PORTAIL : le cockpit
+       * montrait les réponses reçues, jamais celles qu'on attend. Le praticien
+       * ne savait donc pas qu'une fenêtre s'ouvrait, ni quand elle se refermait
+       * — et relançait au hasard, ou pas du tout.
+       *
+       * LE MÊME CALCUL, LA MÊME ANCRE, LE MÊME INSTANT que ce que le patient
+       * voit. Recalculer autrement ici ferait dire deux choses aux deux écrans,
+       * et c'est le praticien qui aurait tort devant son patient.
+       */
+      jalonDu: jalonObjectifDu(ancreCourante(ancres)?.confirmedAt ?? null, new Date()),
       ancrage: consultation ? lireAncrage(consultation.anamnese) : ANCRAGE_SANS_CONSULTATION,
       // Un état par tête, jamais un taux : `etatRatification` rend le DERNIER
       // geste porté sur cette version précise — LES DEUX TABLES CONFONDUES,
