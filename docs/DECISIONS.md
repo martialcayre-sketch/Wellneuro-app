@@ -4,6 +4,54 @@
 
 ## Décisions actives
 
+### D-165 — Les quatre colonnes de déclaration de date sont ASSUMÉES vides, pas oubliées
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10)
+- Porte sur : `geste_le` (`dispositions_proposition`), `dispose_le`,
+  `exprime_le` (`amendements_objectif`), `repondu_le`
+  (`reponses_jalon_objectif`)
+- Origine : compte rendu de l'objectif partagé du 2026-09-08, silence n° 4 ;
+  contre-revue adverse du 2026-09-09, `N2.3` / `N3.4`
+
+**Le constat.** Quatre colonnes de déclaration de date existent en base et
+**aucun code ne les écrit**. Le compte rendu les a nommées « colonnes mortes » ;
+la contre-revue a cru y trouver des écrivains, mais ses deux réfutations
+s'appuyaient sur des `INSERT` qui vivent dans un `BEGIN` … `ROLLBACK` — un
+contrat d'épreuve n'est pas un producteur, et rien ne persiste.
+
+**Pourquoi elles sont vides, et ce n'est pas un appel qui oublie.** Le type ne
+porte pas le champ : `DonneesDisposition` ne déclare ni `disposeLe` ni
+`gesteLe`, et le commentaire du module l'écrit — « le praticien ne DÉCLARE
+pas ». Le vide est donc **verrouillé à la compilation**, pas laissé au hasard.
+
+**L'arbitrage.** Elles restent, vides, et ce document dit pourquoi :
+
+1. **Elles attendent une surface de saisie qui n'existe pas.** Leur raison
+   d'être est le patron des DEUX DATES : `cree_le` dit quand la ligne a été
+   écrite, la colonne de déclaration dit quand le geste a EU LIEU. Tant que
+   personne ne peut déclarer « j'ai répondu à cela le 3, pas aujourd'hui », la
+   colonne n'a rien à recevoir.
+2. **Leur vide est un silence assumé, jamais un défaut à corriger.** Une date
+   comblée par `cree_le` serait une date INVENTÉE : elle dirait que le geste a
+   eu lieu au moment de son enregistrement, ce que personne n'a constaté
+   (`DC-24`).
+3. **Les retirer serait un LOT, pas un nettoyage.** Deux d'entre elles sont
+   épinglées par la liste blanche d'un contrat négatif : les retirer ferait
+   rougir le contrat, demanderait une migration destructive, et il faudrait
+   tout refaire le jour où la surface de saisie arrive.
+4. **Aucun code n'est écrit par cette décision.** Elle change ce qu'un lecteur
+   comprend, pas ce que la machine fait — et c'est précisément ce qui manquait :
+   quatre colonnes vides sans explication se lisent comme un bogue.
+
+**Ce que cette décision N'AUTORISE PAS** : combler une déclaration depuis
+`cree_le` ; retirer les colonnes sans lot ; présenter leur vide comme une
+donnée manquante du dossier — le patient n'a rien omis, on ne lui a rien
+demandé.
+
+- Conséquences : fragment `changelog.d/2026-09-10-colonnes-declaration-assumees.md`.
+  Aucun code, aucune migration, aucun drapeau.
+
 ### D-164 — La restitution d'instrument se vérifie au serveur : `G7-1` s'amende une SECONDE fois, et la porte reste étroite
 
 - Date : 2026-09-10
@@ -838,6 +886,15 @@ responsable a arbitré **qu'un e-mail parte**, il n'a pas validé **ce texte** �
 le registre le dit au lieu de l'inventer, comme il l'a fait huit versions
 durant. C'est aussi le premier gabarit du registre qui n'ouvre pas un accès mais
 **appelle un geste**.
+
+> **SUIVI (2026-09-10)** — le registre a divergé de ce paragraphe, et l'écart
+> était réel : `objectif_propose@1` porte `valideLe: '2026-09-08'` depuis une
+> validation posée le JOUR MÊME, après l'entrée du gabarit, sur demande
+> explicite du responsable. Son empreinte n'a pas bougé — une validation n'est
+> pas une v2. Ce paragraphe décrit donc l'état à sa rédaction, pas l'état
+> courant. Depuis le 2026-09-10, la version SERVIE est `objectif_propose@2`,
+> qui nomme le chemin de l'écran et déclare `valideLe: null` : elle attend une
+> validation, exactement comme la v1 l'attendait ici.
 
 **5. L'échec d'envoi n'annule pas l'écriture.** L'objectif est en base avant que
 l'envoi ne parte ; un relais en panne ne doit pas transformer une écriture
