@@ -8,6 +8,12 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     trustRightsRequest: { findMany: vi.fn() },
     syntheseIA: { findMany: vi.fn(), groupBy: vi.fn() },
     assignation: { findMany: vi.fn() },
+    // Le retour du patient sur son objectif (4 tables) : vide par défaut, comme
+    // le reste — une carte ne s'allume que sur une matière réelle.
+    ratificationObjectif: { findMany: vi.fn() },
+    amendementObjectif: { findMany: vi.fn() },
+    reponseJalonObjectif: { findMany: vi.fn() },
+    finObjectif: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
     questionnaireLecturePraticien: { groupBy: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
@@ -40,6 +46,10 @@ describe('GET /api/praticien/fil', () => {
     prisma.syntheseIA.findMany.mockResolvedValue([]);
     prisma.syntheseIA.groupBy.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.ratificationObjectif.findMany.mockResolvedValue([]);
+    prisma.amendementObjectif.findMany.mockResolvedValue([]);
+    prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
+    prisma.finObjectif.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
     prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([]);

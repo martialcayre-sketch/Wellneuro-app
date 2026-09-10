@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cartesAssignationsEnRetard,
   cartesConsultationsPrevues,
+  cartesGestesObjectif,
   cartesJalons,
   cartesReprise,
   cartesSignalementsTrust,
@@ -625,5 +626,84 @@ describe('cartesT0AConfirmer', () => {
       passations, new Map([['P-SOPHIE', T0]]), new Set<string>(), 4, SYNTHESES, secondRideauRendu(), NOMS, MAINTENANT,
     );
     expect(cartes).toHaveLength(1);
+  });
+});
+
+describe('cartesGestesObjectif — le retour du patient sur son objectif', () => {
+  const noms = new Map([['PAT001', 'Sophie N.']]);
+  const geste = (id: string, g: 'ratifie' | 'conteste' | 'dit_autrement' | 'etape' | 'fin', jour: number) => ({
+    id,
+    idPatient: 'PAT001',
+    geste: g,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+
+
+  it('LA CARTE DU RETOUR PATIENT ENTRE DANS LE FIL, et passe devant les synthèses', () => {
+    // Une parole reçue passe devant un travail à faire : le patient a répondu,
+    // il attend. Sans ce banc, le producteur pourrait exister sans que personne
+    // ne l'appelle — un objet sans client, exactement ce que l'artefact
+    // inventoriait.
+    const fil = construireFil({
+      syntheses: [
+        { idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-13T09:00:00') },
+      ],
+      gestesObjectif: [
+        {
+          id: 'RAT_1',
+          idPatient: 'P-SOPHIE',
+          geste: 'conteste',
+          creeLe: new Date('2026-07-14T09:00:00'),
+        },
+      ],
+      assignations: [],
+      activites: [],
+      noms: new Map([['P-SOPHIE', 'Sophie N.']]),
+      maintenant: new Date('2026-07-15T10:00:00'),
+    });
+
+    const types = fil.map(c => c.type);
+    expect(types).toContain('geste_objectif');
+    expect(types.indexOf('geste_objectif')).toBeLessThan(types.indexOf('synthese_a_valider'));
+  });
+
+  it('LES MOTS DE L’ÉCRAN DU PATIENT, jamais ceux de la base', () => {
+    // Il a cliqué « c'est bien ça » ; il n'a jamais vu « ratifie ».
+    const [carte] = cartesGestesObjectif([geste('R1', 'conteste', 3)], noms);
+    expect(carte.pourquoi).toContain('pas exactement ça');
+    expect(carte.pourquoi).not.toContain('conteste');
+  });
+
+  it('UNE CONTESTATION N’EST PAS UNE ALERTE — le titre dit ce qui s’est passé', () => {
+    // Un patient qui dit « pas exactement ça » fait ce qu'on lui demande, et le
+    // dossier à deux voix existe pour cela.
+    const [carte] = cartesGestesObjectif([geste('R1', 'conteste', 3)], noms);
+    expect(carte.titre).toBe('Votre patient s’est prononcé sur son objectif');
+    expect(carte.titre.toLowerCase()).not.toMatch(/alerte|urgent|problème/);
+  });
+
+  it('UNE CARTE PAR GESTE, ancrée sur sa ligne — aucun agrégat', () => {
+    // « 3 retours » ferait de paroles distinctes un volume, et le refus persisté
+    // ne saurait plus quoi écarter (`DC-19`).
+    const cartes = cartesGestesObjectif(
+      [geste('R1', 'ratifie', 1), geste('A1', 'dit_autrement', 2), geste('E1', 'etape', 3)],
+      noms,
+    );
+    expect(cartes).toHaveLength(3);
+    expect(new Set(cartes.map(c => c.cle)).size).toBe(3);
+    expect(cartes.every(c => c.nbElements === undefined)).toBe(true);
+  });
+
+  it('du plus récent au plus ancien', () => {
+    const cartes = cartesGestesObjectif([geste('R1', 'ratifie', 1), geste('E1', 'etape', 5)], noms);
+    expect(cartes.map(c => c.cle.includes('E1'))).toEqual([true, false]);
+  });
+
+  it('AUCUN TEXTE DU PATIENT dans la carte — le Fil dit qu’une parole existe', () => {
+    // La rapporter ici mettrait la parole d'un patient dans une liste de
+    // tâches. Elle se lit dans sa fiche, sous sa version, avec ce qui l'entoure.
+    const [carte] = cartesGestesObjectif([geste('A1', 'dit_autrement', 3)], noms);
+    expect(carte.pourquoi).toContain('a proposé sa propre formulation');
+    expect(JSON.stringify(carte)).not.toMatch(/dormir|réveille/i);
   });
 });
