@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // lui emprunte ses cinq fermetures de recalcul, pas sa base.
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
-import { construireChaineC1 } from './chaineC1';
+import { construireChaineC1, plainteDominanteDepuisScores } from './chaineC1';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { adaptRuntimeInputs, proposeRuntimeEpisode } from './runtimeFromPrisma';
 import {
@@ -159,6 +159,10 @@ describe('chaîne C1 — table NON signée (verrou simulé fermé)', () => {
     simulerNonSignature();
     expect(chaine().plainteDominante).toEqual({
       domaine: 'surpoids', libelle: 'Surpoids', valeur: 9, bande: 'Intensité très élevée',
+      // Sur ce dossier, la plainte dominante est SEULE à son niveau : la liste
+      // des ex aequo est vide, et une liste vide n'est pas un silence — elle
+      // dit qu'il n'y a rien à départager.
+      exAequo: [],
     });
   });
 });
@@ -181,6 +185,16 @@ describe('chaîne C1 — cas de référence, table signée', () => {
       expect(candidat.rationale).toContain('Q_MOD_03');
       expect(candidat.limitations).toContain(
         'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.',
+      );
+      // LE TEXTE QUI QUALIFIE LE CLASSEMENT, ÉPINGLÉ VERBATIM. Jusqu'au
+      // 2026-09-10 il n'avait AUCUNE occurrence au dépôt hors sa définition :
+      // le réécrire — ou le retirer — passait au vert. Or c'est la seule
+      // contrepartie textuelle au fait que l'ordre DÉCIDE de ce qui est proposé
+      // en premier sans être couvert par une ligne signée (`D-093`, et le bilan
+      // descriptif du 2026-09-09 qui l'a mis au jour). Le figer n'est pas du
+      // zèle : c'est mettre sous garde la phrase qui tient la retenue.
+      expect(candidat.limitations).toContain(
+        'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.',
       );
     }
     // Rangs uniques et contigus : la garde de `buildDecisionCard` jetterait
@@ -534,7 +548,13 @@ describe('gate de population — le filtre est AVANT le classement', () => {
     simulerSignature();
     const { decisionCard } = chaine();
     for (const candidat of decisionCard.priorityCandidates) {
-      expect(candidat.limitations.some(l => /Aucun état de population n’a été déclaré/.test(l))).toBe(true);
+      // VERBATIM PLUTÔT QU'UN INCIPIT : la regex ne couvrait que les six
+      // premiers mots, si bien que l'ÉNUMÉRATION des six états — la seule
+      // partie du texte qui dit au praticien ce qui n'a pas été vérifié —
+      // pouvait être réécrite sans qu'aucun banc ne parle.
+      expect(candidat.limitations).toContain(
+        'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.',
+      );
     }
   });
 
@@ -596,5 +616,74 @@ describe('gate de population — le filtre est AVANT le classement', () => {
     const garde = candidats.find(candidat => candidat.ruleId === cible);
     expect(garde).toBeDefined();
     expect(garde?.limitations.some(l => /n’a pas pu être vérifiée/.test(l))).toBe(true);
+  });
+});
+
+describe('plainteDominanteDepuisScores — l’égalité se dit, elle ne se tranche pas en silence', () => {
+  const scores = (domaines: [string, string, number | null][]) => ({
+    subScores: domaines.map(([id, label, total]) => ({ id, label, total, interpretation: null })),
+  }) as never;
+
+  it('sans ex aequo, la liste est vide — et une liste vide n’est pas un silence', () => {
+    const lu = plainteDominanteDepuisScores(scores([
+      ['digestion', 'Digestion', 8],
+      ['sommeil', 'Sommeil', 5],
+    ]));
+    expect(lu?.libelle).toBe('Digestion');
+    expect(lu?.exAequo).toEqual([]);
+  });
+
+  it('DEUX DOMAINES À LA MÊME INTENSITÉ : le second est nommé, pas tu', () => {
+    // Avant ce champ, l'écran affichait « Digestion — 8/10 » sans laisser
+    // deviner que le sommeil était à 8 lui aussi. Le départage — l'ordre de
+    // publication du catalogue — passait pour une hiérarchie clinique.
+    const lu = plainteDominanteDepuisScores(scores([
+      ['digestion', 'Digestion', 8],
+      ['sommeil', 'Sommeil', 8],
+    ]));
+    expect(lu?.libelle).toBe('Digestion');
+    expect(lu?.exAequo).toEqual(['Sommeil']);
+  });
+
+  it('L’ORDRE DU CATALOGUE EST CONSERVÉ dans les ex aequo — c’est LUI le départage', () => {
+    // Les trier autrement — alphabétiquement, par exemple — remplacerait un
+    // départage technique assumé par un autre, non dit.
+    const lu = plainteDominanteDepuisScores(scores([
+      ['fatigue', 'Fatigue', 7],
+      ['douleurs', 'Douleurs', 7],
+      ['digestion', 'Digestion', 7],
+    ]));
+    expect(lu?.libelle).toBe('Fatigue');
+    expect(lu?.exAequo).toEqual(['Douleurs', 'Digestion']);
+  });
+
+  it('un domaine SANS RÉPONSE n’entre pas dans les ex aequo — une absence n’est pas un zéro', () => {
+    const lu = plainteDominanteDepuisScores(scores([
+      ['digestion', 'Digestion', 8],
+      ['moral', 'Moral', null],
+      ['sommeil', 'Sommeil', 8],
+    ]));
+    expect(lu?.exAequo).toEqual(['Sommeil']);
+  });
+
+  it('les domaines D’UNE AUTRE VALEUR ne s’y glissent pas', () => {
+    const lu = plainteDominanteDepuisScores(scores([
+      ['digestion', 'Digestion', 9],
+      ['sommeil', 'Sommeil', 9],
+      ['moral', 'Moral', 3],
+      ['fatigue', 'Fatigue', 3],
+    ]));
+    expect(lu?.exAequo).toEqual(['Sommeil']);
+  });
+
+  it('L’ORDRE DU CLASSEMENT N’EST PAS TOUCHÉ : la dominante reste la première du catalogue', () => {
+    // Le champ est une OBSERVATION sur le classement, jamais une entrée dedans.
+    // Si l'ajout avait déplacé la gagnante, tout l'aval — `rank`,
+    // `proposedMainPriorityId` — aurait bougé en silence.
+    const lu = plainteDominanteDepuisScores(scores([
+      ['sommeil', 'Sommeil', 6],
+      ['digestion', 'Digestion', 6],
+    ]));
+    expect(lu?.domaine).toBe('sommeil');
   });
 });

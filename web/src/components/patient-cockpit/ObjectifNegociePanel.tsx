@@ -9,6 +9,7 @@ import type {
   ReponseJalonExposee,
   TrajectoireObjectif,
 } from '@/app/api/praticien/objectifs/route';
+import type { LectureFin } from '@/lib/praticien/objectifNegocie';
 // La borne haute de l'échelle vient du module PUR, jamais recopiée : « sur 10 »
 // écrit en dur ici mentirait le jour où la borne bouge côté serveur.
 import { EVA_MAX } from '@/lib/praticien/objectifNegocie';
@@ -369,6 +370,15 @@ export function ObjectifNegociePanel({
   const [erreur, setErreur] = useState('');
   const [objectifs, setObjectifs] = useState<ObjectifExpose[]>([]);
   const [trajectoires, setTrajectoires] = useState<TrajectoireObjectif[]>([]);
+  // L'ÉTAT DE FIN DE CHAQUE TÊTE, servi par le serveur (`D-161`). L'écran ne le
+  // calcule pas : la règle « le témoignage cède à la preuve » vit dans le
+  // module, et deux lectures de la même chose finiraient par diverger.
+  const [fins, setFins] = useState<Record<string, LectureFin>>({});
+  const [tetesActives, setTetesActives] = useState(0);
+  const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
+  const [erreurDepartage, setErreurDepartage] = useState('');
+  const [relanceEnCours, setRelanceEnCours] = useState(false);
+  const [messageRelance, setMessageRelance] = useState('');
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
@@ -403,6 +413,71 @@ export function ObjectifNegociePanel({
   const [motifEcart, setMotifEcart] = useState('');
   const [erreurGeste, setErreurGeste] = useState('');
 
+  /**
+   * VIDER LES DÉCLARATIONS DU PRATICIEN À CHAQUE BASCULE DE MODE, et ce n'est
+   * pas de l'hygiène : le formulaire n'est jamais DÉMONTÉ — il est masqué —, si
+   * bien qu'une valeur saisie pour une version survit dans l'état et **repart
+   * avec la version choisie ensuite**.
+   *
+   * Sur `negocieLe`, ce n'est pas une perte, c'est une **date FAUSSE affichée au
+   * patient** : « Convenu le 3 septembre » sous une version dont il n'a jamais
+   * entendu parler ce jour-là. Les quatre autres champs voyagent de la même
+   * façon — une priorité, un motif de « non traité » abandonnés en cours de
+   * route se retrouvent sur un objectif neuf.
+   *
+   * NE TOUCHE PAS À L'ÉNONCÉ : ses trois origines s'excluent déjà et se
+   * nettoient chacune à sa bascule (leçon du LOT-03). Les modes qui REPRENNENT
+   * délibérément les champs de la version révisée appellent ce vidage AVANT de
+   * les reposer — l'ordre est ce qui rend la reprise sûre.
+   */
+  const viderDeclarations = useCallback(() => {
+    setReformulation('');
+    setPriorite('');
+    setNegocieLe('');
+    setNonTraiteMotif('');
+    setNonTraiteDepuisLe('');
+  }, []);
+
+  /**
+   * RENVOYER LE COURRIER D'UN OBJECTIF DÉJÀ ÉCRIT — et rien d'autre. Aucune
+   * ligne n'est créée : c'est ce qui distingue ce geste du contournement qui
+   * consistait à « réviser pour déclencher un envoi », c'est-à-dire à se servir
+   * d'un geste clinique comme d'un transport.
+   *
+   * LA CADENCE EST TENUE PAR LE SERVEUR, pas par ce bouton : le dépôt a déjà
+   * connu une interdiction qui ne vivait que dans l'écran. Ici on se contente de
+   * RENDRE LISIBLE son refus, y compris la date à laquelle ce sera possible.
+   */
+  const relancer = useCallback(async () => {
+    setRelanceEnCours(true);
+    setMessageRelance('');
+    try {
+      const reponse = await fetch('/api/praticien/objectifs/relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient }),
+      });
+      const payload = (await reponse.json()) as {
+        ok: boolean;
+        error?: string;
+        possibleLe?: string;
+      };
+      if (!reponse.ok || !payload.ok) {
+        setMessageRelance(
+          payload.possibleLe
+            ? `${payload.error ?? 'Le courrier n’a pas pu être renvoyé.'} Possible à partir du ${formatDate(payload.possibleLe)}.`
+            : (payload.error ?? 'Le courrier n’a pas pu être renvoyé.'),
+        );
+        return;
+      }
+      setMessageRelance('Courrier renvoyé. Votre patient est invité à relire son objectif.');
+    } catch {
+      setMessageRelance('Le courrier n’a pas pu être renvoyé.');
+    } finally {
+      setRelanceEnCours(false);
+    }
+  }, [idPatient]);
+
   // DÉPENDANCE STABLE. `chargerDossier` ne dépend que de `idPatient` ; un
   // littéral recréé au rendu ferait retirer le GET en boucle, et ce GET
   // JOURNALISE l'accès au dossier (G-TRUST-04) — le journal se remplirait de
@@ -422,6 +497,8 @@ export function ObjectifNegociePanel({
       }
       setObjectifs(payload.objectifs);
       setTrajectoires(payload.trajectoires);
+      setFins(payload.fins);
+      setTetesActives(payload.tetesActives);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
       setAmendements(payload.amendements);
@@ -432,6 +509,45 @@ export function ObjectifNegociePanel({
       setEtat('erreur');
     }
   }, [idPatient]);
+
+  /**
+   * LE DÉPARTAGE — et c'est le seul geste qui ramène deux têtes à une.
+   * `supersedes_objectif_id` étant à parent unique, aucun ajout d'objectif ne
+   * peut faire décroître le nombre de têtes : il faut une ligne de FIN sur la
+   * racine perdante, portant la racine qui prend la suite (`D-161`, motif
+   * `remplace`). Rien n'est effacé — la chaîne écartée reste lisible, marquée.
+   */
+  const departager = useCallback(
+    async (racinePerdante: string, racineGagnante: string) => {
+      setDepartageEnCours(racinePerdante);
+      setErreurDepartage('');
+      try {
+        const reponse = await fetch('/api/praticien/objectifs/fin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idPatient,
+            racineObjectifId: racinePerdante,
+            motif: 'remplace',
+            voix: 'praticien',
+            sens: 'declare',
+            remplaceParRacineId: racineGagnante,
+          }),
+        });
+        const payload = (await reponse.json()) as { ok: boolean; error?: string };
+        if (!reponse.ok || !payload.ok) {
+          setErreurDepartage(payload.error ?? 'Le départage n’a pas pu être enregistré.');
+          return;
+        }
+        await chargerDossier();
+      } catch {
+        setErreurDepartage('Le départage n’a pas pu être enregistré.');
+      } finally {
+        setDepartageEnCours(null);
+      }
+    },
+    [idPatient, chargerDossier],
+  );
 
   const chargerPropositions = useCallback(async () => {
     setErreurGeste('');
@@ -788,6 +904,9 @@ export function ObjectifNegociePanel({
                                 setCiteAmendement(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
+                                // Une reprise ouvre un objectif NEUF : rien de
+                                // ce qui a été saisi pour un autre ne le suit.
+                                viderDeclarations();
                               }
                             : undefined
                         }
@@ -921,14 +1040,72 @@ export function ObjectifNegociePanel({
             <p className="text-base text-muted-foreground">Aucun objectif négocié pour ce dossier.</p>
           )}
 
-          {objectifs.length > 1 && (
-            // On n'en garde PAS un seul : deux reformulations concurrentes ont
-            // créé deux versions courantes, et départager en silence ferait
-            // disparaître le travail de l'une des deux (`DC-30`).
-            <p role="status" className="text-sm text-status-warning">
-              {objectifs.length} versions courantes coexistent pour ce dossier — deux reformulations ont été
-              enregistrées en parallèle. Elles sont toutes affichées ; aucune n’est écartée.
-            </p>
+          {tetesActives > 1 && (
+            // ON N'EN GARDE PAS UN SEUL EN SILENCE : deux reformulations
+            // concurrentes ont créé deux versions courantes, et trancher sans le
+            // dire ferait disparaître le travail de l'une des deux (`DC-30`).
+            // Mais l'état ne se subit plus : depuis `D-161`, un geste EXPLICITE
+            // du praticien départage, et il porte son nom.
+            //
+            // TANT QU'IL N'EST PAS POSÉ, LE PATIENT NE PEUT RIEN RÉPONDRE : le
+            // portail refuse ses trois gestes en 409. Le dire ici, c'est dire
+            // pourquoi le geste presse.
+            <section
+              role="status"
+              className="rounded-lg border border-status-warning/40 bg-status-warning/5 p-3"
+            >
+              <p className="text-sm text-status-warning">
+                {tetesActives} versions courantes coexistent pour ce dossier — deux reformulations ont
+                été enregistrées en parallèle. <strong>Votre patient ne peut ni ratifier, ni contester,
+                ni proposer une autre formulation</strong> tant qu’elles ne sont pas départagées.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Choisir laquelle poursuivre n’efface rien : l’autre chaîne reste lisible, marquée
+                comme remplacée, avec tout ce que le patient y a écrit.
+              </p>
+              <ul className="mt-3 flex flex-col gap-2">
+                {trajectoires
+                  .filter((t) => fins[t.idObjectif]?.etat !== 'close')
+                  .map((gardee) => {
+                    const racineGardee = gardee.lignes[gardee.lignes.length - 1]?.id;
+                    const courante = gardee.lignes[0];
+                    if (!racineGardee || !courante) return null;
+                    return (
+                      <li key={gardee.idObjectif}>
+                        <button
+                          type="button"
+                          disabled={departageEnCours !== null}
+                          onClick={() => {
+                            // Toutes les AUTRES chaînes actives cèdent la place à
+                            // celle-ci — une ligne `remplace` par racine perdante.
+                            const perdantes = trajectoires
+                              .filter((t) => t.idObjectif !== gardee.idObjectif)
+                              .filter((t) => fins[t.idObjectif]?.etat !== 'close')
+                              .map((t) => t.lignes[t.lignes.length - 1]?.id)
+                              .filter((id): id is string => typeof id === 'string');
+                            void (async () => {
+                              for (const perdante of perdantes) {
+                                await departager(perdante, racineGardee);
+                              }
+                            })();
+                          }}
+                          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                        >
+                          <span className="block font-medium">Poursuivre celle-ci</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            « {courante.enoncePatient} »
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+              {erreurDepartage && (
+                <p role="alert" className="mt-2 text-sm text-status-danger">
+                  {erreurDepartage}
+                </p>
+              )}
+            </section>
           )}
 
           {trajectoires.map((trajectoire) => {
@@ -948,6 +1125,38 @@ export function ObjectifNegociePanel({
                     }
                   />
                 </div>
+
+                {/* ── RENVOYER LE COURRIER ────────────────────────────────────
+                    L'envoi ne part qu'à l'ÉCRITURE d'un objectif : un objectif
+                    rédigé avant la mise en service de l'expéditeur, ou dont le
+                    courrier s'est perdu, était MUET PAR CONSTRUCTION — son
+                    patient ne pouvait pas savoir qu'un texte l'attendait.
+                    Offert seulement quand il y a quelque chose à annoncer :
+                    UNE tête active, non close, et un patient qui ne s'est pas
+                    encore prononcé. Le relancer après sa réponse lui dirait
+                    qu'on ne l'a pas lu. */}
+                {tetesActives === 1
+                  && fins[trajectoire.idObjectif]?.etat !== 'close'
+                  && (ratifications[trajectoire.idObjectif] ?? 'en_attente') === 'en_attente' && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        disabled={relanceEnCours}
+                        onClick={() => void relancer()}
+                        className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      >
+                        {relanceEnCours ? 'Envoi…' : 'Renvoyer le courrier au patient'}
+                      </button>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Rien n’est modifié : aucune version n’est créée, seul le courrier repart.
+                      </p>
+                      {messageRelance && (
+                        <p role="status" className="mt-1 text-xs text-foreground">
+                          {messageRelance}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                 {/* ── CE QUE LE PATIENT A ÉCRIT LUI-MÊME (6.0-B, LOT-04) ─────
                     Les amendements de TOUTE la chaîne, pas de la seule version
@@ -982,6 +1191,7 @@ export function ObjectifNegociePanel({
                                 if (citeAmendement?.id === amendement.id) {
                                   setCiteAmendement(null);
                                   setReformuleId(null);
+                                  viderDeclarations();
                                   return;
                                 }
                                 // Reprendre les mots du patient REFORMULE la
@@ -993,6 +1203,9 @@ export function ObjectifNegociePanel({
                                 setRepriseDe(null);
                                 setEnonce('');
                                 setErreurEnvoi('');
+                                // Vider AVANT la reprise, même motif qu'à
+                                // « Reformuler cette version ».
+                                viderDeclarations();
                                 // Les champs PRATICIEN de la version reformulée
                                 // sont repris, comme pour « Reformuler » : sans
                                 // cela, intégrer le texte du patient ferait
@@ -1074,6 +1287,9 @@ export function ObjectifNegociePanel({
                   type="button"
                   onClick={() => {
                     setReformuleId(trajectoire.idObjectif);
+                    // VIDER D'ABORD : ce que la version révisée ne porte pas ne
+                    // doit pas être hérité d'une saisie abandonnée ailleurs.
+                    viderDeclarations();
                     // Les champs PRATICIEN de la version révisée sont repris :
                     // sans cela, ne toucher qu'à la reformulation ferait
                     // retomber `priorite` et « non traité » à vide sur la
@@ -1157,6 +1373,7 @@ export function ObjectifNegociePanel({
                     onClick={() => {
                       setCiteAmendement(null);
                       setReformuleId(null);
+                      viderDeclarations();
                     }}
                     className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
@@ -1178,7 +1395,10 @@ export function ObjectifNegociePanel({
                   Cette phrase devient l’énoncé du patient telle quelle — non modifiable.{' '}
                   <button
                     type="button"
-                    onClick={() => setRepriseDe(null)}
+                    onClick={() => {
+                      setRepriseDe(null);
+                      viderDeclarations();
+                    }}
                     className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                   >
                     Écrire un énoncé à la place
@@ -1190,7 +1410,10 @@ export function ObjectifNegociePanel({
                 L’énoncé du patient est repris tel quel de la version précédente : il ne se réécrit pas.{' '}
                 <button
                   type="button"
-                  onClick={() => setReformuleId(null)}
+                  onClick={() => {
+                    setReformuleId(null);
+                    viderDeclarations();
+                  }}
                   className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
                   Annuler la reformulation

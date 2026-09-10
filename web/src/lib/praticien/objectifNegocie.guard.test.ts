@@ -333,8 +333,18 @@ describe('G2-bis — un amendement se lit, il ne se compte ni ne se compare', ()
     // deux cas ci-dessus verts et creux.
     const panneau = sourceSansCommentaires(PANNEAU);
     const rendus = [...panneau.matchAll(DECOMPTE_RENDU)].map((m) => m[0]);
-    expect(rendus.some((rendu) => rendu.includes('objectifs.length'))).toBe(true);
     expect(rendus.some((rendu) => rendu.includes('anterieures.length'))).toBe(true);
+
+    // `objectifs.length` N'EST PLUS RENDU DEPUIS `D-161`, et son remplacement
+    // est le point : compter TOUTES les têtes ferait passer pour un conflit un
+    // dossier portant un objectif clos et un objectif courant. Le décompte
+    // servi au praticien ne compte plus que les chaînes ACTIVES — un nombre
+    // calculé côté serveur, donc hors de portée de `DECOMPTE_RENDU`, qui ne
+    // voit que les `.length` de l'écran. Il est asserté ici pour lui-même :
+    // sans cela, le panneau pourrait cesser d'annoncer la discordance sans
+    // qu'aucun banc ne parle.
+    expect(panneau).toMatch(/\{tetesActives\}/);
+    expect(panneau).not.toMatch(/\{\s*objectifs\.length\s*\}/);
   });
 });
 
@@ -739,5 +749,59 @@ describe('G7 — les jalons de l’objectif sont exactement les jalons de MESURE
     // plus. Le prédicat le fait, et il est plus juste : il porte sur la FORME
     // d'une ancre, pas sur son appartenance à une liste.
     expect(estAncreDeCycle(ANCRE_JALON)).toBe(true);
+  });
+});
+
+describe('FRONTIÈRE — qui a le droit d’ignorer les fins de chaîne (D-161)', () => {
+  // `objectifsCourants` dit ce que l'append-only dit : les têtes, sans plus.
+  // C'est une primitive juste, et elle reste exportée. Mais un appelant qui
+  // DÉCIDE D'UNE DISCORDANCE ou AUTORISE UNE ÉCRITURE et l'emploie servirait un
+  // objectif clos comme vivant et laisserait écrire dessus — le défaut que
+  // `tetesDeChaine` existe pour fermer. Le typage ne peut pas le dire : les
+  // deux fonctions prennent les mêmes lignes. Ce banc le dit.
+  const ROUTES_QUI_GARDENT_UNE_ÉCRITURE = [
+    'src/app/api/portail/dossier/route.ts',
+    'src/app/api/praticien/objectifs/route.ts',
+    'src/app/api/praticien/objectifs/fin/route.ts',
+    // La relance N'ÉCRIT PAS dans la chaîne, mais elle DÉCIDE d'après elle :
+    // employer `objectifsCourants` la ferait relancer sur une chaîne close,
+    // c'est-à-dire inviter un patient à répondre à un objectif terminé.
+    'src/app/api/praticien/objectifs/relance/route.ts',
+  ];
+
+  it('aucune route qui garde une écriture n’appelle `objectifsCourants` en direct', () => {
+    const coupables = ROUTES_QUI_GARDENT_UNE_ÉCRITURE.filter((chemin) => {
+      const source = readFileSync(path.join(RACINE_WEB, chemin), 'utf8');
+      return /\bobjectifsCourants\s*\(/.test(source);
+    });
+
+    expect(
+      coupables,
+      'Ces routes décident d’une discordance ou autorisent une écriture : elles doivent '
+        + 'passer par `tetesDeChaine`, qui marque les chaînes closes. `objectifsCourants` '
+        + 'ignore les fins et servirait un objectif clos comme vivant.',
+    ).toEqual([]);
+  });
+
+  it('et elles passent bien par `tetesDeChaine`', () => {
+    const sansMarquage = ROUTES_QUI_GARDENT_UNE_ÉCRITURE.filter((chemin) => {
+      const source = readFileSync(path.join(RACINE_WEB, chemin), 'utf8');
+      // La route de fin lit l'état par `preparerFin`, qui appelle `etatDeChaine`.
+      return !/tetesDeChaine|preparerFin/.test(source);
+    });
+    expect(sansMarquage).toEqual([]);
+  });
+
+  it('LA ROUTE PRATICIEN NE POSE JAMAIS UNE PREUVE — elle consigne, elle n’est pas le patient', () => {
+    const source = readFileSync(
+      path.join(RACINE_WEB, 'src/app/api/praticien/objectifs/fin/route.ts'),
+      'utf8',
+    );
+    // `consigneePar` n'est jamais lu du corps de requête : il est écrit par
+    // `preparerFin`, en dur, côté praticien. Un praticien qui pourrait le poser
+    // à `patient` fabriquerait une preuve — c'est-à-dire un geste que le patient
+    // n'a pas fait, présenté comme s'il l'avait fait.
+    expect(source).not.toMatch(/corps\.consigneePar/);
+    expect(source).not.toMatch(/consigneePar\s*:\s*['"]patient['"]/);
   });
 });

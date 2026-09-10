@@ -17,7 +17,9 @@ import {
   LONGUEUR_MAX_AMENDEMENT,
   LONGUEUR_MAX_REPONSE_JALON,
   etatRatification,
-  objectifsCourants,
+  tetesDeChaine,
+  tetesActives,
+  type LectureFin,
   preparerAmendement,
   preparerRatification,
   preparerReponseJalon,
@@ -94,6 +96,12 @@ export type ObjectifServi = {
    * Jamais « non ratifié », jamais « refusé » (`DC-24`).
    */
   etat: EtatRatification;
+  /**
+   * CE QUE SA CHAÎNE DIT DE SA PROPRE FIN (`D-161`) : ouverte, fin proposée par
+   * une voix, ou close. Une chaîne close reste SERVIE et marquée — la faire
+   * disparaître effacerait de l'écran du patient ce qu'il y a écrit.
+   */
+  fin: LectureFin;
 };
 
 export type EntreeServie = {
@@ -363,6 +371,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       entrees,
       syntheses,
       desaccords,
+      fins,
     ] = await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient: patient.idPatient },
@@ -424,9 +433,29 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
             orderBy: { creeLe: 'desc' },
           })
         : Promise.resolve(null),
+      // LES FINS DE CHAÎNE (`D-161`). Aucun drapeau propre : elles suivent
+      // `WN_DOSSIER_DEUX_VOIX` comme la ratification et l'amendement — le motif
+      // écrit plus haut vaut ici mot pour mot. Le texte de motif n'est PAS lu :
+      // ce qui sert l'état est la parole posée, pas ce qu'elle raconte.
+      prisma.finObjectif.findMany({
+        where: { idPatient: patient.idPatient },
+        select: {
+          id: true,
+          racineObjectifId: true,
+          motif: true,
+          voix: true,
+          consigneePar: true,
+          sens: true,
+          creeLe: true,
+        },
+        orderBy: { creeLe: 'desc' },
+      }),
     ]);
 
-    const tetes = objectifsCourants(objectifs);
+    // MARQUÉES, JAMAIS FILTRÉES. Une chaîne close reste servie au patient : la
+    // faire disparaître effacerait de son écran ce qu'il y a lui-même écrit.
+    // C'est la DISCORDANCE, plus bas, qui ne compte que les actives.
+    const tetes = tetesDeChaine(objectifs, fins);
     // LE FILTRE EST DANS LE MODULE, PAS DANS LE `where` : « publiée » ne suffit
     // pas, c'est la publiée LA PLUS RÉCENTE qui est servie — et un brouillon de
     // révision ne retire rien au patient (défaut trouvé en revue au LOT-04).
@@ -451,8 +480,8 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
     //
     // BANC DE DÉBRANCHEMENT : `route.test.ts` doit ROUGIR si ce bloc disparaît.
     const textesPraticienServis = [
-      ...tetes.map((ligne) => ligne.reformulationPraticien),
-      ...tetes.map((ligne) => ligne.priorite),
+      ...tetes.map((tete) => tete.ligne.reformulationPraticien),
+      ...tetes.map((tete) => tete.ligne.priorite),
       servie ? servie.texte : null,
     ].filter((texte): texte is string => texte !== null);
 
@@ -469,7 +498,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
 
     return NextResponse.json<PortailDossierResponse>({
       ok: true,
-      objectifs: tetes.map((ligne) => ({
+      objectifs: tetes.map(({ ligne, fin }) => ({
         id: ligne.id,
         enoncePatient: ligne.enoncePatient,
         reformulationPraticien: ligne.reformulationPraticien,
@@ -486,8 +515,21 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         // de l'objectif. L'y verser ferait passer un patient en retard pour un
         // patient qui conteste son objectif.
         etat: etatRatification(ligne.id, ratifications, amendements),
+        /**
+         * CE QUE SA CHAÎNE DIT DE SA PROPRE FIN (`D-161`). `attestee` n'est pas
+         * un détail : elle dit au patient que la parole qu'on lui prête a été
+         * ATTESTÉE par son praticien plutôt que posée par lui-même. Sans elle,
+         * un témoignage se lirait comme une preuve — devant l'intéressé.
+         */
+        fin,
       })),
-      ratifiable: tetes.length === 1,
+      /**
+       * SEULES LES CHAÎNES ACTIVES COMPTENT. Un dossier portant un objectif
+       * atteint l'an dernier et un objectif courant n'est pas discordant : il
+       * est normal. Compter toutes les têtes, comme avant `D-161`, ferait
+       * passer une histoire pour un conflit.
+       */
+      ratifiable: tetesActives(tetes).length === 1,
       amendements: amendements.map((ligne) => ({
         id: ligne.id,
         idObjectif: ligne.idObjectif,
@@ -604,26 +646,60 @@ async function verifierVersionVisee(
   idPatient: string,
   idObjectif: string,
 ): Promise<NextResponse<PortailDossierResponse> | null> {
-  const objectifs = await prisma.objectifNegocie.findMany({
-    // Scopé au dossier : le seul index de la table est `(id_patient, cree_le)`.
-    where: { idPatient },
-    select: { id: true, supersedesObjectifId: true, creeLe: true },
-  });
+  const [objectifs, fins] = await Promise.all([
+    prisma.objectifNegocie.findMany({
+      // Scopé au dossier : le seul index de la table est `(id_patient, cree_le)`.
+      where: { idPatient },
+      select: { id: true, supersedesObjectifId: true, creeLe: true },
+    }),
+    prisma.finObjectif.findMany({
+      where: { idPatient },
+      select: {
+        id: true,
+        racineObjectifId: true,
+        motif: true,
+        voix: true,
+        consigneePar: true,
+        sens: true,
+        creeLe: true,
+      },
+    }),
+  ]);
 
   const vise = objectifs.find((ligne) => ligne.id === idObjectif);
   if (!vise) {
     return echec('objectif_introuvable', MESSAGE_OBJECTIF_INTROUVABLE, 404);
   }
 
-  const tetes = objectifsCourants(objectifs);
-  if (tetes.length > 1) {
+  const tetes = tetesDeChaine(objectifs, fins);
+  const actives = tetesActives(tetes);
+
+  // LA DISCORDANCE NE COMPTE QUE LES ACTIVES (`D-161`). Avant elle, un dossier
+  // ne pouvait porter qu'UNE chaîne pour toujours : une seconde tête fermait
+  // les trois gestes du patient sans qu'aucun verbe ne puisse la retirer. Le
+  // départage est désormais une ligne `remplace` sur la racine perdante.
+  if (actives.length > 1) {
     return echec(
       'objectif_discordant',
       'Deux versions de votre objectif coexistent. Votre praticien doit les départager avant que vous puissiez répondre.',
       409,
     );
   }
-  if (!tetes.some((ligne) => ligne.id === vise.id)) {
+
+  // UNE CHAÎNE CLOSE NE S'ÉCRIT PLUS, MAIS ELLE SE LIT ENCORE. Le refus est
+  // distinct de `objectif_supplante` : la version visée n'a pas été reformulée,
+  // c'est son objectif tout entier qui est terminé. Dire « rechargez la page »
+  // enverrait le patient chercher une version courante qui n'existe pas.
+  const visee = tetes.find((tete) => tete.ligne.id === vise.id);
+  if (visee && visee.fin.etat === 'close') {
+    return echec(
+      'objectif_clos',
+      'Cet objectif est terminé. Vous ne pouvez plus y répondre, mais il reste consultable dans votre dossier.',
+      409,
+    );
+  }
+
+  if (!actives.some((tete) => tete.ligne.id === vise.id)) {
     return echec(
       'objectif_supplante',
       'Cette version de votre objectif a été reformulée depuis. Rechargez la page pour répondre à la version courante.',

@@ -57,6 +57,26 @@ export type PlainteDominante = {
   valeur: number;
   /** Bande d'interprétation publiée, ou `null` si le catalogue n'en sert pas. */
   bande: string | null;
+  /**
+   * LES AUTRES DOMAINES DÉCLARÉS À LA MÊME INTENSITÉ, libellés publiés du
+   * catalogue, dans l'ordre où il les publie. Vide quand la plainte dominante
+   * est seule à son niveau.
+   *
+   * POURQUOI CE CHAMP EXISTE. À valeur égale, le départage est TECHNIQUE — le
+   * premier domaine dans l'ordre du catalogue l'emporte — et le code le dit
+   * depuis [[D-054]] : « un départage clinique n'a pas été rendu ». Mais
+   * l'arbitraire ne se voyait nulle part : l'écran affichait « Digestion —
+   * 8/10 » sans laisser deviner que le sommeil était à 8 lui aussi. Le rendre
+   * VISIBLE n'est pas trancher : c'est refuser de trancher EN SILENCE, ce que
+   * `DC-30` demande d'une discordance — elle se signale, elle ne se résout pas.
+   *
+   * CE CHAMP NE CHANGE RIEN À L'ORDRE. Le tri, ses trois termes et le départage
+   * technique restent mot pour mot ce qu'ils étaient : ce champ est une
+   * OBSERVATION sur le classement, jamais une entrée dedans. Il ne porte pas
+   * non plus de texte — la phrase appartient à l'écran, pour que les
+   * `LIMITATION_*` restent la seule prose de ce module.
+   */
+  exAequo: string[];
 };
 
 export type ChaineC1 = {
@@ -215,20 +235,33 @@ export function plainteDominanteDepuisScores(scores: ScoresLus): PlainteDominant
   const sousScores = scores.subScores;
   if (!Array.isArray(sousScores)) return null;
   let dominante: PlainteDominante | null = null;
+  // LES LIBELLÉS RETENUS AU PASSAGE, dans l'ordre du catalogue : les relire
+  // après coup obligerait à re-parcourir la liste, et l'ordre de publication —
+  // qui EST le départage — se perdrait dans un tri de convenance.
+  const parValeur = new Map<number, string[]>();
   for (const brut of sousScores as SousScoreLu[]) {
     // Un domaine sans réponse rend `total: null` : il n'entre pas. Une absence
     // n'est ni un zéro ni une plainte faible (`DC-24`).
     if (typeof brut?.total !== 'number' || typeof brut.id !== 'string') continue;
+    const libelle = typeof brut.label === 'string' ? brut.label : brut.id;
+    parValeur.set(brut.total, [...(parValeur.get(brut.total) ?? []), libelle]);
     if (dominante !== null && brut.total <= dominante.valeur) continue;
     const interpretation = brut.interpretation as { label?: unknown } | null | undefined;
     dominante = {
       domaine: brut.id,
-      libelle: typeof brut.label === 'string' ? brut.label : brut.id,
+      libelle,
       valeur: brut.total,
       bande: typeof interpretation?.label === 'string' ? interpretation.label : null,
+      exAequo: [],
     };
   }
-  return dominante;
+  if (dominante === null) return null;
+  // LE PREMIER EST LA DOMINANTE ELLE-MÊME — celui que le départage technique a
+  // fait gagner. Les suivants sont les ex aequo, et ce sont EUX que l'écran
+  // doit nommer : les taire ferait passer un départage d'ordre de publication
+  // pour une hiérarchie clinique.
+  const memeValeur = parValeur.get(dominante.valeur) ?? [];
+  return { ...dominante, exAequo: memeValeur.slice(1) };
 }
 
 const LIMITATION_PROPOSITION =

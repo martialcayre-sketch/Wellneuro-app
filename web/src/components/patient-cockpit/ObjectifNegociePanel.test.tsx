@@ -22,6 +22,21 @@ const DOSSIER_VIDE = {
   ratifications: {},
   amendements: [],
   reponsesJalon: [],
+  // Alliance 6.0-B (`D-161`) : l'état de fin de chaque tête, et le nombre de
+  // têtes ACTIVES — c'est lui, et non `objectifs.length`, qui dit s'il y a
+  // discordance. Un dossier vide n'a aucune tête active.
+  fins: {},
+  tetesActives: 0,
+  lignesFin: [],
+};
+
+const FIN_OUVERTE = {
+  etat: 'ouverte' as const,
+  motif: null,
+  voixManquante: null,
+  refusee: false,
+  attestee: false,
+  remplaceParRacineId: null,
 };
 
 const ligne = (partiel: Record<string, unknown> = {}) => ({
@@ -266,6 +281,8 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
           ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
           amendements: [],
           reponsesJalon: [],
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: FIN_OUVERTE },
+          tetesActives: 2,
         },
       }),
     );
@@ -274,6 +291,60 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     expect(screen.getByRole('status').textContent).toMatch(/2 versions courantes coexistent/);
     expect(screen.getByText(/Priorité : Version A/)).toBeTruthy();
     expect(screen.getByText(/Priorité : Version B/)).toBeTruthy();
+  });
+
+  it('DEUX TÊTES : le départage est OFFERT, et il dit ce qu’il coûte au patient', async () => {
+    // Avant `D-161`, l'écran constatait la discordance sans rien pouvoir en
+    // faire : `supersedes_objectif_id` étant à parent unique, aucun ajout ne
+    // ramenait deux têtes à une. Le geste existe désormais, et l'écran doit
+    // dire POURQUOI il presse — le patient est bloqué tant qu'il n'est pas posé.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_3' }), ligne({ id: 'OBJ_2' })],
+          trajectoires: [
+            { idObjectif: 'OBJ_3', lignes: [ligne({ id: 'OBJ_3', priorite: 'Version A' })] },
+            { idObjectif: 'OBJ_2', lignes: [ligne({ id: 'OBJ_2', priorite: 'Version B' })] },
+          ],
+          ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: FIN_OUVERTE },
+          tetesActives: 2,
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    const statut = screen.getByRole('status');
+    expect(statut.textContent).toMatch(/ne peut ni ratifier, ni contester/);
+    // RIEN N'EST EFFACÉ, et l'écran le dit : la chaîne écartée reste lisible.
+    expect(statut.textContent).toMatch(/n’efface rien/);
+    expect(screen.getAllByRole('button', { name: /Poursuivre celle-ci/ })).toHaveLength(2);
+  });
+
+  it('UNE CHAÎNE CLOSE ne rouvre pas le départage — elle ne concurrence plus', async () => {
+    // Deux têtes, mais une seule ACTIVE : ce n'est pas une discordance, c'est un
+    // dossier qui porte une histoire. Compter les têtes ferait passer l'une pour
+    // l'autre.
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_3' }), ligne({ id: 'OBJ_2' })],
+          trajectoires: [
+            { idObjectif: 'OBJ_3', lignes: [ligne({ id: 'OBJ_3', priorite: 'Version A' })] },
+            { idObjectif: 'OBJ_2', lignes: [ligne({ id: 'OBJ_2', priorite: 'Version B' })] },
+          ],
+          ratifications: { OBJ_3: 'en_attente', OBJ_2: 'en_attente' },
+          fins: { OBJ_3: FIN_OUVERTE, OBJ_2: { ...FIN_OUVERTE, etat: 'close', motif: 'atteint' } },
+          tetesActives: 1,
+        },
+      }),
+    );
+    await attendreLeDossier();
+
+    expect(screen.queryByRole('button', { name: /Poursuivre celle-ci/ })).toBeNull();
+    expect(screen.queryByText(/versions courantes coexistent/)).toBeNull();
   });
 
   // ── Ratification ──────────────────────────────────────────────────────────
@@ -931,4 +1002,171 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
       expect(rendu).not.toContain(interdit);
     }
   });
+
+  // ── La date d'accord ne voyage pas ────────────────────────────────────────
+
+  describe('LA DATE D’ACCORD NE VOYAGE PAS D’UNE VERSION À L’AUTRE', () => {
+    // Le formulaire n'est jamais DÉMONTÉ — il est masqué. Une valeur saisie
+    // pour une version survivait donc dans l'état et repartait avec la version
+    // choisie ensuite. Sur `negocieLe`, ce n'est pas une perte : c'est une date
+    // FAUSSE affichée au patient, « Convenu le … » sous une version dont il n'a
+    // jamais entendu parler ce jour-là.
+    const dossierAvecObjectif = {
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1' })] }],
+      ratifications: { OBJ_1: 'en_attente' as const },
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+    };
+
+    it('annuler une reformulation vide la date, la priorité et le « non traité »', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAvecObjectif }));
+      await attendreLeDossier();
+
+      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
+
+      const date = (document.getElementById('objectif-negocie-le') as HTMLInputElement);
+      const priorite = (document.getElementById('objectif-priorite') as HTMLInputElement);
+      fireEvent.change(date, { target: { value: '2026-09-03' } });
+      fireEvent.change(priorite, { target: { value: 'Le sommeil d’abord' } });
+      expect(date.value).toBe('2026-09-03');
+
+      // ANNULER REFERME LE FORMULAIRE — `editionOuverte` retombe dès qu'un
+      // objectif courant existe. Le champ quitte donc le DOM, mais l'ÉTAT
+      // REACT, lui, survit : c'est précisément ce qui faisait voyager la
+      // saisie. Le défaut ne s'observe qu'à la réouverture, et c'est là qu'on
+      // regarde.
+      fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
+
+      expect((document.getElementById('objectif-negocie-le') as HTMLInputElement).value).toBe('');
+      expect((document.getElementById('objectif-priorite') as HTMLInputElement).value).toBe('');
+    });
+
+    it('LE CHEMIN QUI FAIT VRAIMENT VOYAGER LES QUATRE AUTRES CHAMPS : reformuler, annuler, PUIS reprendre une proposition', async () => {
+      // Rentrer dans « Reformuler » repose `reformulation`, `priorite` et
+      // « non traité » depuis la version révisée — ces trois-là s'y nettoient
+      // donc d'eux-mêmes. « Reprendre une proposition », lui, ouvre un objectif
+      // NEUF et ne repose RIEN : une priorité saisie puis abandonnée ailleurs
+      // s'y retrouve intacte, sur un objectif qui n'a rien à voir.
+      fetchMock.mockImplementation(
+        router({
+          dossier: dossierAvecObjectif,
+          propositions: { ok: true, propositions: [proposition()], disposees: [], caduques: [] },
+        }),
+      );
+      await attendreLeDossier();
+
+      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
+      fireEvent.change(document.getElementById('objectif-priorite') as HTMLInputElement, {
+        target: { value: 'Le sommeil d’abord' },
+      });
+      fireEvent.change(document.getElementById('objectif-negocie-le') as HTMLInputElement, {
+        target: { value: '2026-09-03' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
+
+      fireEvent.click(screen.getByRole('button', { name: 'Reprendre cette phrase' }));
+
+      expect((document.getElementById('objectif-priorite') as HTMLInputElement).value).toBe('');
+      expect((document.getElementById('objectif-negocie-le') as HTMLInputElement).value).toBe('');
+    });
+
+    it('rouvrir une reformulation après l’avoir annulée ne réhérite de rien', async () => {
+      // Le cas qui produit la date fausse : on saisit, on annule, on rouvre —
+      // et l'ancienne saisie repart avec la version choisie ensuite.
+      fetchMock.mockImplementation(router({ dossier: dossierAvecObjectif }));
+      await attendreLeDossier();
+
+      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
+      fireEvent.change((document.getElementById('objectif-negocie-le') as HTMLInputElement), {
+        target: { value: '2026-09-03' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Annuler la reformulation/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Reformuler cette version/ }));
+
+      expect(((document.getElementById('objectif-negocie-le') as HTMLInputElement)).value).toBe('');
+    });
+  });
+
+
+  // ── Renvoyer le courrier ──────────────────────────────────────────────────
+
+  describe('RENVOYER LE COURRIER D’UN OBJECTIF DÉJÀ ÉCRIT', () => {
+    const dossierEnAttente = {
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1' })] }],
+      ratifications: { OBJ_1: 'en_attente' as const },
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+    };
+
+    it('le geste est OFFERT quand le patient ne s’est pas encore prononcé', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierEnAttente }));
+      await attendreLeDossier();
+
+      const bouton = screen.getByRole('button', { name: /Renvoyer le courrier au patient/ });
+      expect(bouton).toBeTruthy();
+      // ET IL DIT CE QU'IL NE FAIT PAS : aucune version créée. C'est ce qui le
+      // distingue du contournement « réviser pour déclencher un envoi ».
+      expect(screen.getByText(/aucune version n’est créée/)).toBeTruthy();
+    });
+
+    it('le geste DISPARAÎT dès que le patient s’est prononcé — le relancer dirait qu’on ne l’a pas lu', async () => {
+      for (const etat of ['ratifie', 'conteste', 'dit_autrement'] as const) {
+        cleanup();
+        fetchMock.mockImplementation(
+          router({ dossier: { ...dossierEnAttente, ratifications: { OBJ_1: etat } } }),
+        );
+        await attendreLeDossier();
+        expect(
+          screen.queryByRole('button', { name: /Renvoyer le courrier au patient/ }),
+          etat,
+        ).toBeNull();
+      }
+    });
+
+    it('le geste DISPARAÎT sur une chaîne close — elle n’attend plus de réponse', async () => {
+      fetchMock.mockImplementation(
+        router({
+          dossier: {
+            ...dossierEnAttente,
+            fins: { OBJ_1: { ...FIN_OUVERTE, etat: 'close', motif: 'atteint' } },
+            tetesActives: 0,
+          },
+        }),
+      );
+      await attendreLeDossier();
+      expect(screen.queryByRole('button', { name: /Renvoyer le courrier au patient/ })).toBeNull();
+    });
+
+    it('un refus de CADENCE est rendu lisible, avec la date à laquelle ce sera possible', async () => {
+      fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+        if (url.startsWith('/api/praticien/objectifs/relance')) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            json: async () => ({
+              ok: false,
+              reason: 'cadence',
+              error: 'Un courrier est déjà parti il y a moins de 3 jours.',
+              possibleLe: '2026-09-13T12:00:00.000Z',
+            }),
+          } as Response);
+        }
+        return router({ dossier: dossierEnAttente })(url, options);
+      });
+      await attendreLeDossier();
+
+      fireEvent.click(screen.getByRole('button', { name: /Renvoyer le courrier au patient/ }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('status').textContent).toMatch(/moins de 3 jours/);
+      });
+      expect(screen.getByRole('status').textContent).toMatch(/Possible à partir du/);
+    });
+  });
+
 });

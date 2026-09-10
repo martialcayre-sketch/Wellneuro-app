@@ -4,6 +4,400 @@
 
 ## Décisions actives
 
+### D-163 — Le périmètre de `D-093` s'ouvre à tous les dossiers, et rien ne se réclame d'une provenance certifiée
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10)
+- Amende : [[D-093]], point 1 (« Trois dossiers, et eux seuls ») et sa « condition
+  nommée de la généralisation ultérieure ». [[D-162]] avait retiré la borne sans
+  toucher au périmètre ; celle-ci l'ouvre.
+- Domaine : gouvernance clinique — recommandations élargies se réclamant de
+  `priorityRulesV1`
+
+**Constat.** `D-093` restreignait à trois dossiers pour une raison qui tient
+toujours : le classement n'est couvert par aucune ligne signée. Sa clause finale
+conditionne la généralisation à ce que le classement, les textes `LIMITATION_*` et
+l'ordre d'évaluation des motifs d'abstention entrent dans un périmètre signé —
+« tant que ce n'est pas fait, aucune généralisation ne peut se réclamer d'une
+provenance certifiée » (`DC-01`, `DC-26`). Cette clause laisse **deux** voies :
+signer d'abord, ou généraliser sans se réclamer de rien. La présente décision
+prend la seconde, et l'écrit — elle n'est pas tacite.
+
+Elle le fait sur une base que `D-093` n'avait pas : le bilan descriptif du
+2026-09-09 documente exactement ce que la signature couvre et ce qu'elle laisse
+dehors — **dix objets**, là où le fichier signé en nommait quatre
+(`docs/claude/campagnes/2026-08-23-alliance-objectif-trois-voix/BILAN_CLASSEMENT_DESCRIPTIF_2026-09-09.md`).
+
+**Décision :**
+
+1. **Le périmètre s'ouvre à tous les dossiers courants.** `PAT006`, `PAT007` et
+   `PAT017` cessent de constituer un périmètre. `WN_OBJECTIF_PROPOSE_PATIENTS`
+   demeure un mécanisme de repli, jamais un périmètre par défaut (`D-094`).
+2. **Rien ne se réclame d'une provenance certifiée pour ce qui n'est pas signé.**
+   Le classement, son premier terme, les sept textes `LIMITATION_*` et l'ordre
+   d'évaluation des deux motifs d'abstention restent hors du SHA : aucun texte,
+   aucun écran, aucun document ne les présente comme relus ou signés.
+3. **Les contrepoids qui rendent cette voie tenable sont nommés, et ils existent
+   déjà** : l'ordre n'est persisté nulle part, la carte de décision n'étant
+   stockée dans aucune table ; `D-094` §3 en interdit la transmission — ni rang,
+   ni score, ni numéro d'ordre ; au plus trois propositions, sans numérotation ni
+   mise en avant de la première ; et le bilan du 2026-09-09 dit publiquement ce
+   qui n'est pas couvert.
+4. **La relecture praticien de chaque recommandation avant remise demeure.**
+   C'est elle, et non le périmètre, qui portait la retenue — le périmètre n'a
+   d'ailleurs jamais mordu, aucun objectif n'existant hors de `PAT017`.
+5. **Les trois interdits de `D-093` demeurent** : pas de recommandation élargie
+   sans relecture, pas de modification du classement, pas de modification des
+   textes `LIMITATION_*`.
+6. **La condition de généralisation n'est pas levée : elle est honorée
+   autrement.** Faire entrer le classement dans un périmètre signé reste dû, et
+   le bilan descriptif en est la première pièce. Ce qui est abandonné n'est pas
+   le travail de signature — c'est l'idée qu'il faille attendre pour servir, dès
+   lors qu'on ne se réclame de rien.
+
+**Ce que cette décision N'AUTORISE PAS** : présenter le classement, son ordre ou
+ses textes comme relus ou signés ; modifier le classement ou les textes
+`LIMITATION_*`, qui relèvent d'une décision propre ; envoyer une recommandation
+élargie sans relecture ; tenir le travail de signature pour caduc.
+
+- Conséquences : fragment `changelog.d/2026-09-10-perimetre-d093-ouvert.md`.
+  Aucun code, aucune migration ; `WN_OBJECTIF_PROPOSE_PATIENTS` reste vide, ce
+  qui était déjà l'état servi.
+
+### D-162 — La borne de six semaines de `D-093` est abrogée : une restriction n'a pas besoin de terme
+
+- Date : 2026-09-09
+- Statut : accepté (arbitrage du praticien)
+- Amende : [[D-093]], point 4 (« borne de six semaines »). **Le reste de `D-093`
+  est inchangé** — le périmètre, la relecture praticien, les deux conditions de
+  sortie et la condition nommée de la généralisation demeurent.
+- Domaine : gouvernance clinique — périmètre restreint des recommandations
+  élargies
+
+**Constat.** `D-093` intitule sa précondition « Précondition à lever avant que
+l'observation puisse commencer », puis compte six semaines depuis sa propre date
+de signature : le délai courait sur une fenêtre déclarée fermée le jour même.
+`D-094` §3, prise le même jour et fondée sur `D-093`, interdit de persister
+l'ordre servi (`schema.prisma:2405-2408`) — soit exactement la trace que la
+condition (b) demande d'observer. Au 2026-09-08, un objectif négocié existe en
+production, sur `PAT017`, dans le périmètre : la précondition est levée. Mais son
+patient n'a jamais été informé — il n'y avait alors ni client au cockpit ni envoi
+— et il ne peut plus l'être, `notifierObjectifPropose` ne partant qu'à l'écriture
+(`route.ts:877`, `:912`) sans qu'aucune relance existe. Les six semaines ont
+mesuré une absence de réponse sur un canal inexistant. Enfin la borne n'a
+aucun exécutant — `D-093` ne pose ni code, ni drapeau, ni migration — et son verbe
+« se referme » n'est glosé nulle part autrement que par « il ne s'étend pas par
+défaut ».
+
+**Décision :**
+
+1. **La borne du 2026-10-04 est abrogée.** Elle n'est pas repoussée : l'index
+   calendaire est retiré. Le 2026-10-04 ne redevient pas un point de contrôle à
+   ce titre.
+2. **Le périmètre n'est ni reconduit ni refermé ici.** Le praticien a annoncé le
+   2026-09-09 un amendement propre l'ouvrant à tous les dossiers. La présente
+   décision ne le préjuge pas et ne le porte pas : **elle retire la borne, et
+   rien d'autre.** Jusqu'à cet amendement, le périmètre reste ce que `D-093`
+   écrit, sans date d'expiration.
+3. **Les deux conditions de sortie perdent leur objet si le périmètre s'ouvre.**
+   Elles existaient pour sortir d'une restriction ; on ne sort pas d'une
+   restriction qui n'existe plus. La condition (a) — une réponse patient réelle
+   observée sur un objectif du périmètre — tombe avec elle, et c'est heureux :
+   elle n'était atteignable ni en droit, l'objectif de `PAT017` étant muet par
+   construction, ni en fait, aucun texte ne nommant le dossier porteur avant ce
+   jour.
+4. **Le bilan du classement survit, détaché de la mécanique de sortie.** Il
+   n'était une condition que par accident de rédaction ; sa valeur propre est de
+   documenter ce que la signature ne couvre pas. **Sa moitié descriptive est due
+   et rédigeable aujourd'hui**, sans aucune lecture de production : producteur de
+   candidats, ordre à trois termes, textes `LIMITATION_*`, périmètre du SHA.
+   Sa moitié comportementale ne s'obtient que par rejeu de `construireChaineC1`,
+   `D-094` §3 interdisant la trace en base ; elle n'est pas exigible et devient
+   une pièce du futur dossier de signature.
+5. **La clause de généralisation demeure, et elle vise l'amendement annoncé.**
+   `D-093` conditionne la généralisation à l'entrée du classement, des textes
+   `LIMITATION_*` et de l'ordre d'évaluation des motifs d'abstention dans un
+   périmètre **signé** : « tant que ce n'est pas fait, aucune généralisation ne
+   peut se réclamer d'une provenance certifiée » (`DC-01`, `DC-26`). Le classement
+   n'est pas signé à ce jour (`lib/clinical/priorityRulesV1.ts:489-495`).
+   **L'amendement qui ouvre le périmètre doit donc dire lequel des deux il fait**
+   : signer d'abord, ou généraliser en ne se réclamant d'aucune provenance
+   certifiée — ce que `D-094` §3 pratique déjà en retirant toute saillance à
+   l'ordre servi (au plus trois propositions, sans numérotation ni mise en avant
+   de la première). La seconde voie est ouverte ; elle n'est pas tacite.
+6. **Ce que `D-093` garde d'intact** : la relecture praticien de chaque
+   recommandation avant remise, et ses trois interdits — pas de recommandation
+   élargie sans relecture, pas de modification du classement ni des textes
+   `LIMITATION_*`. Ce sont eux, et non la borne, qui portaient la retenue.
+
+**Ce que cette décision N'AUTORISE PAS** : l'envoi d'une recommandation élargie
+sans relecture, et toute modification du classement ou des textes `LIMITATION_*`.
+Elle n'ouvre par elle-même aucun périmètre : l'élargissement annoncé se fait par
+son propre amendement, daté, qui dira s'il signe d'abord ou s'il généralise sans
+provenance certifiée.
+
+- Conséquences : fragment `changelog.d/2026-09-09-abrogation-borne-d093.md`.
+  Aucun code, aucun drapeau, aucune migration.
+
+### D-161 — La fin de l'objectif se dit par une ligne, et l'accord a deux formes qui ne se confondent pas
+
+- Date : 2026-09-09
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-09)
+- Porte sur : [[D-094]] (régime de l'objectif à trois voix), la chaîne
+  `objectifs_negocies` et les deux tables de retour patient. N'amende aucune
+  clause existante : ajoute ce qu'aucune ne dit.
+- Domaine : doctrine produit — campagne Alliance 6.0-B, passage de l'objectif
+  partagé à la prise de décision
+
+**Constat.** Une chaîne d'objectif porte deux faits qui ne sont pas des
+propriétés d'une version — s'est-on accordé, est-ce fini. Le premier est logé
+dans une colonne de version saisie à la main, ce qui le rend à la fois perdable
+et falsifiable ; le second n'existe pas. Rien ne permet donc de dire qu'une
+négociation est conclue, et le protocole se poserait sur un accord que le modèle
+ne sait pas exprimer.
+
+**Décision :**
+
+1. **Deux états distincts, et l'un n'est pas l'autre.** L'**état d'accord** est
+   une propriété de version, déjà dérivée du dernier geste, et **n'est jamais
+   terminal**. La **fin de chaîne** est une propriété de chaîne, et c'est elle
+   qui manque. Confondre les deux ferme l'objet au moment où le travail commence.
+2. **L'accord a deux formes, également recevables.** La **ratification au
+   portail** est un geste du patient, daté par la base : une preuve. L'**accord
+   attesté en consultation** est une déclaration du praticien, datée par lui : un
+   témoignage. Un accord se conclut le plus souvent dans le cabinet — exiger un
+   clic pour l'enregistrer effacerait un fait réel.
+3. **Le témoignage cède à la preuve, jamais l'inverse.** Un accord attesté par le
+   praticien reste contredisible par le patient au portail, et cette contradiction
+   l'emporte. Une ratification ne se défait par aucune déclaration du praticien.
+4. **Le patient voit laquelle des deux il lit.** « Convenu le » sans mention de
+   provenance laisse croire à un accord qu'il aurait donné. Chaque affichage
+   d'accord porte sa source — son geste, ou la parole du praticien.
+5. **La fin de chaîne se dit par une LIGNE, jamais par une colonne qu'on
+   écrase**, et cette ligne référence la **racine** de la chaîne — l'objectif dont
+   `supersedesObjectifId` est nul —, pas sa tête. La racine ne bouge jamais : une
+   fin ainsi attachée survit à toute révision, et ne peut pas se retrouver
+   orpheline. Se rouvrir est une ligne de plus, dans le régime déjà tenu par le
+   dépôt.
+6. **Trois motifs de fin, et trois seulement** : **atteint**, **abandonné** — avec
+   son motif écrit, dont `nonTraiteMotif` est la graine à promouvoir de la version
+   à la chaîne — et **remplacé**, portant la racine de la chaîne qui prend la
+   suite. Toute extension de cette liste est une décision `D-xxx` nouvelle.
+7. **« Atteint » se déclare à DEUX VOIX ; « abandonné » se prend seul.** Une
+   réussite ne se constate pas seul : il y faut le geste du praticien ET celui du
+   patient. L'ordre est libre — l'un propose la fin, l'autre la confirme —, et
+   c'est exactement la forme sous laquelle l'objectif s'est négocié : la fin se
+   négocie comme le début. Tant qu'une seule voix s'est prononcée, **la chaîne
+   n'est pas achevée** : elle porte une fin **proposée**, que l'autre voix peut
+   confirmer ou refuser. Un refus n'est pas une panne du mécanisme, c'est un
+   signal — il reste lisible et ne s'efface pas, au même titre qu'une
+   contestation.
+
+   **La conduite de cette fin INCOMBE AU PRATICIEN.** La voix du patient est
+   requise ; le devoir de l'obtenir ne lui incombe pas. Un patient qui ne répond
+   pas n'est jamais en défaut, et son silence ne devient pas un assentiment :
+   c'est au praticien qu'il revient d'aller chercher la seconde voix, et de
+   conclure la chaîne d'une manière ou d'une autre plutôt que de la laisser
+   pendre.
+
+   **Et la seconde voix suit le régime du point 2, entièrement.** Elle vaut par
+   un geste au portail — une preuve — ou par une parole tenue en consultation que
+   le praticien atteste — un témoignage, cédant à la preuve si le patient se
+   prononce ensuite. Le praticien peut donc consigner un « atteint » convenu dans
+   le cabinet, **parce qu'il l'a entendu** ; il ne peut pas attester ce que
+   personne n'a dit. **Un « atteint » sans l'une ou l'autre forme de seconde voix
+   n'existe pas** : la chaîne reste une fin proposée, ou devient un renoncement
+   motivé. Le silence ne conclut rien.
+
+   **Le renoncement, lui, reste unilatéral et motivé.** Exiger deux voix pour
+   abandonner condamnerait à l'inachèvement toute chaîne dont le patient ne
+   répond plus — on aurait rebâti, à la sortie, le défaut que cette décision
+   existe pour fermer. La règle tient en une phrase : *on ne conclut pas seul à
+   une réussite ; on renonce seul, et on le dit.* « Remplacé » suit le même
+   régime que l'abandon, étant un geste d'organisation du suivi et non un
+   jugement sur le résultat.
+
+8. **La clôture du suivi rend la chaîne INACTIVE, elle ne l'achève pas.** Rien ne
+   s'écrit : l'état se dérive de la clôture, et se défait si le suivi rouvre. Une
+   fin est un geste, pas une conséquence administrative.
+9. **« Atteint » ne dit rien d'une cause.** Il dit que l'objectif n'est plus ce
+   sur quoi on travaille, jamais qu'une intervention l'a produit (`DC-27`). Aucun
+   décompte, aucune moyenne, aucune note — ni des accords, ni des fins
+   (`DC-19`, `DC-24`).
+10. **Ce qui autorise le passage à la prise de décision** — protocole, bilan
+   biologique, compléments — tient en trois conditions cumulatives : une **seule
+   tête** de chaîne ; un **accord** sur cette tête, sous l'une ou l'autre forme ;
+   la chaîne **non achevée**. Le rail ne peut pas servir de feu : le statut de la
+   phase 3 ne lit aujourd'hui que les couvertures des douze besoins
+   (`FichePatientPanel.tsx:747-749`), et affiche « renseignée » sur un dossier
+   sans le moindre objectif.
+11. **`negocieLe` cesse d'être saisie sur la version.** La date d'accord se lit
+    depuis le fait qui la porte — geste du patient, ou attestation du praticien.
+    Tant que la colonne subsiste, le formulaire doit être vidé à chaque bascule
+    de mode, sans quoi une date abandonnée repart avec la version suivante.
+
+**Ce que cette décision N'AUTORISE PAS** : déclarer un accord au nom du patient
+sans dire que c'est le praticien qui parle ; faire de la ratification un terminus ; conclure seul à un « atteint » ;
+écraser une fin par un `UPDATE` ; compter, moyenner ou noter des accords ou des
+fins ; tirer d'un « atteint » une affirmation causale.
+
+**Ce que cette décision NE FAIT PAS.** Aucune migration n'est écrite ici et
+`schema.prisma` n'est pas touché : le modèle requis est décrit, sa mise en œuvre
+demande un feu vert explicite. Et elle ne corrige pas le blocage connu — deux
+têtes de chaîne sans verbe de départage ferment les trois gestes du patient en
+409 ; tant qu'il n'existe pas, la première des trois conditions du point 10 n'est
+pas garantie.
+
+- Conséquences : fragment `changelog.d/2026-09-09-fin-objectif-et-formes-de-l-accord.md`.
+  Aucun code, aucune migration, aucun drapeau dans cette décision.
+
+### D-160 — Ce qui se cite dans l'objectif partagé : deux listes, pas une
+
+- Date : 2026-09-09
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-09)
+- Amende : [[D-094]] §1, en portant sa liste fermée de trois à **quatre**
+  entrées, et ouvre à côté d'elle une **seconde** liste, distincte, pour la
+  reformulation praticien. Le reste de `D-094` est inchangé.
+- Domaine : doctrine produit — campagne Alliance 6.0-B, objectif à trois voix
+
+**Constat.** Deux chantiers tranchés le 2026-09-09 butent sur la clause de
+fermeture de `D-094` §1. L'un est une parole écrite du patient destinée à un
+fragment de proposition ; l'autre est un texte du praticien destiné à sa propre
+reformulation. Ni la nature, ni l'objet, ni le garant ne coïncident. La première
+entre dans la liste ; la seconde demande la sienne.
+
+**Décision :**
+
+1. **La liste de `D-094` §1 passe à quatre entrées.** Quatrième : « ce qui compte
+   pour moi aujourd'hui », verbatim, jamais paraphrasé, marqué comme citation
+   avec sa source — même régime que les trois autres. Quatre conditions, aucune
+   négociable :
+   - le fragment porte sa `saisiLe`, comme le fragment d'anamnèse porte sa
+     `dateConsultation` — sans quoi on cite un « aujourd'hui » vieux de trois
+     mois comme une demande actuelle ;
+   - **un seul dépôt, le plus récent.** En citer plusieurs, c'est les ordonner,
+     et la table n'a délibérément pas de `supersedes` (`lib/patient/ceQuiCompte.ts:21-29`,
+     « une parole n'est pas une donnée qu'on rectifie ») ;
+   - toute surface neuve rendant ces entrées entre dans `SURFACES_LOT`
+     (`ceQuiCompteAntiAgregat.guard.test.ts:28`), faute de quoi l'anti-agrégat
+     ne s'y applique pas ;
+   - aucun décompte, aucun résumé, aucune moyenne, y compris à l'écran
+     (`DC-19`, `DC-24`).
+2. **Ce dépôt alimente l'ÉNONCÉ, jamais la PRIORITÉ.** Deux motifs, aucun de
+   confort : la priorité est l'arbitrage du praticien — « ce sur quoi on
+   travaille d'abord » — et y verser une parole de patient convertirait
+   silencieusement l'une en l'autre, ce que le dossier à deux voix existe pour
+   empêcher ; et elle est bornée à 200 caractères contre 4 000 pour un dépôt,
+   donc il faudrait tronquer, que `lib/patient/ceQuiCompte.ts:44-50` nomme
+   explicitement contre-patron et « altération de donnée ».
+3. **Une SECONDE liste est ouverte, pour la reformulation praticien, fermée à
+   une entrée** : une version **publiée** de la synthèse de compréhension, citée
+   par identifiant de version, recopiée côté serveur, le fragment portant
+   `idSynthese` et `publieeLe`. **Un brouillon n'est jamais citable** — sinon la
+   garde de registre se contourne par le bas.
+4. **La garde manquante se pose EN MÊME TEMPS.** La saisie libre de la
+   reformulation reçoit le même refus bloquant sur le registre anxiogène que la
+   publication d'une synthèse. Sans cela, la citation devient le chemin sûr et la
+   frappe le chemin sale : on aurait déplacé le défaut au lieu de le fermer.
+5. **Les deux textes praticien ne fusionnent pas et ne se pré-remplissent pas
+   l'un l'autre.** Portées distinctes — la demande d'un côté, la personne de
+   l'autre — et verbes patient distincts : ratifier ou contester pour l'objectif,
+   signaler un désaccord pour la synthèse.
+6. **La clause de fermeture est reconduite et s'étend à la seconde liste.** Toute
+   extension de l'une ou de l'autre est une décision `D-xxx` nouvelle, pas un
+   champ de plus.
+
+**Ce que cette décision N'AUTORISE PAS** : faire rédiger par la machine l'une ou
+l'autre moitié de l'objectif ; pré-remplir une synthèse de compréhension par une
+sortie de moteur — la garde G3 nomme ce scénario mot pour mot
+(`comprehensionAppendOnly.guard.test.ts:161-166`) ; lire `SyntheseIA` depuis une
+autre route, ce qui serait un contournement et non une conformité ; tronquer un
+dépôt pour le faire entrer dans la priorité ; citer un brouillon.
+
+**Ce que cette décision NE RÈGLE PAS.** L'assemblage des propositions ne tourne
+qu'à la confirmation d'un épisode (`ClinicalRuntimeSection.tsx:928`) : un dépôt
+écrit après ne rafraîchit rien de lui-même, et rien n'apparaît en première
+consultation. L'**étage minimal** — afficher le dépôt courant et la synthèse
+publiée courante à côté des champs, comme le matériau d'anamnèse l'est déjà
+(`ObjectifNegociePanel.tsx:689`) — ne demande aucune décision, se pose dès
+maintenant, et c'est lui qui rend la chose utile au premier jour. Les deux étages
+sont complémentaires, pas alternatifs.
+
+- Conséquences : fragment `changelog.d/2026-09-09-deux-listes-de-sources-citables.md`.
+  Code à venir dans la campagne 6.0-B ; aucune migration, aucun drapeau neuf.
+
+### D-159 — Une condition d'ouverture qui ne vit que dans le dossier RGPD est une condition qu'on manque
+
+- Date : 2026-09-09
+- Statut : accepté — **arbitrage du responsable rendu en session le 2026-09-09**,
+  sur constat d'écart : « laisser posé, combler tout de suite »
+- Domaine : RGPD, exploitation, rayon biologie — étage 2
+- Porte sur : `D-081` (un drapeau se pose avec le code qui le lit, geste daté),
+  `D-122` §2 (l'étage 2 et son verrou), `D-120` §3 (le retrait du 2026-08-31),
+  `D-157` (la limite que l'écran tient), `DOSSIER_RGPD.md` §2 et rubrique 5
+
+**1. Le geste.** `WN_CB_RESULTS_ENABLED` est posé en production le 2026-09-09,
+sur demande explicite du responsable. `env-set` **puis** `restart` : Scalingo
+n'applique pas un changement d'environnement aux conteneurs en cours, et un
+drapeau posé sans redémarrage laisse la configuration et le runtime se
+contredire — l'écart exact que ce registre passe son temps à corriger ailleurs.
+Effectivité **constatée** par sonde non authentifiée sur
+`/api/praticien/biologie/resultats` : `401 unauthenticated` et non
+`503 cb_resultats_desactives`. `garderResultats` teste le drapeau **avant** la
+session ; ce couple de codes prouve donc le drapeau lu par le processus, sans
+authentification et sans toucher une donnée.
+
+**2. La condition manquée, et pourquoi elle l'a été.** `DOSSIER_RGPD.md` §2
+conditionnait cette ouverture à la mise à jour **préalable** du registre des
+traitements et du document d'information patient. Le drapeau a été posé avant.
+La vérification qui a précédé le geste avait retenu — et présenté comme
+complètes — les trois conditions **techniques** : hébergement HDS exclusif
+(`D-080`/`D-121`), `WN_CB_ENABLED`, code déployé qui lit le drapeau (`D-081`,
+la condition dont le manquement avait fait retirer ce même drapeau le
+2026-08-31). La quatrième était écrite **dans un seul document**, et ce document
+n'était ni `FEATURE_FLAGS.md`, ni `D-122` §2 — qui décrit pourtant le geste
+d'exploitation en trois lignes sans la nommer.
+
+**La décision que ceci prend, et qui dépasse ce drapeau** : une condition
+d'ouverture se pose **sur la ligne de ce qu'elle conditionne**. `FEATURE_FLAGS.md`
+porte désormais la condition RGPD à côté du drapeau. Un lecteur qui ouvre la
+documentation d'un drapeau y trouve toutes ses conditions, ou il n'en trouve
+aucune de fiable.
+
+**3. Portée réelle : nulle sur les données.** `resultats_biologiques` comptait
+**0 ligne** au constat (lecture par conteneur, `one-off-8343`). La capacité a
+été ouverte ; aucune donnée de santé n'a été traitée hors registre. L'arbitrage
+du responsable a été de **laisser posé et de combler immédiatement** plutôt que
+de refermer — le retour au fail-closed était l'autre branche, et elle a été
+présentée.
+
+**4. Ce qui est comblé.** Rubrique 5 du dossier RGPD : les quatre tables patient
+du rayon (`ArbitrageBiologique`, `PanelBiologieDocumente`,
+`DocumentPatientBiologie`, `ResultatBiologique`). Document patient :
+`donnees_confidentialite@v6`, qui nomme la catégorie **et dit ce qui n'en est pas
+fait** — les repères publiés se posent à côté de la mesure, aucun calcul ne les
+qualifie (`D-157`). Nommer une catégorie sans dire ce qu'on en fait laisserait le
+lecteur supposer le pire, ou le meilleur.
+
+**5. Le constat plus large, non tranché ici.** Comparer `schema.prisma` à la
+rubrique 5 rend **17 tables filles de `patients` non déclarées**, sans rapport
+avec la biologie : 38 modèles portent une relation vers `Patient`, 21 y étaient
+cités. Elles ne sont **pas** corrigées ici — qualifier une table au sens de
+l'article 9 est un acte juridique, comme le trou de base légale que la rubrique 3
+nomme déjà. Portées au récapitulatif des trous, porteur « responsable + conseil ».
+
+**6. La garde.** `rubrique5.modeles.test.ts` tient la rubrique 5 au schéma, comme
+`registre.dossier.test.ts` tient la rubrique 6 au document patient. Il compare
+des **noms de modèle**, jamais de la prose. La dette de 17 y est nommée et datée ;
+toute table ajoutée après le 2026-09-09 rougit. Un second cas périme la dette
+elle-même : un nom dispensé qui n'est plus une table doit en sortir, faute de quoi
+la liste finirait par couvrir une table neuve sous un ancien nom. **Le passif est
+ouvert, la récidive est fermée.**
+
+**Aucune modification clinique** (`DC-17`/`DC-18`) : aucun seuil, aucune règle,
+aucune table signée touchée — un geste d'exploitation, deux pièces de conformité
+et une garde.
+
 ### D-158 — Un `T0` ne se confirme qu'après le second rideau, ET sur une synthèse qui l'a lu
 
 - Date : 2026-09-08, **amendée le 2026-09-09** (§3 bis — le cinquième temps)
@@ -5908,6 +6302,13 @@ par `D-062`, et la re-signature du 2026-08-16 couvre le périmètre complet.
    ratifier, donc la condition de sortie (a) ne peut pas se produire. Le
    praticien doit rédiger un objectif sur au moins un des trois pour que la
    fenêtre de six semaines ait un sens.
+
+> **AMENDÉE le 2026-09-10 par [[D-163]] — le périmètre s'ouvre à tous les
+> dossiers.** La précondition ci-dessus a été levée sur `PAT017`, dont le patient
+> n'a jamais pu être prévenu ([[D-162]]). Le périmètre restreint cesse ; ce qui le
+> remplace est une interdiction de se réclamer d'une provenance certifiée tant que
+> le classement n'est pas signé — la seconde voie que laissait la clause de
+> généralisation ci-dessous.
 2. **Relecture praticien de CHAQUE recommandation avant remise** — aucune
    recommandation élargie ne part sans avoir été lue.
 3. **La sortie du périmètre exige DEUX conditions, cumulatives** : (a) au moins
@@ -5918,6 +6319,16 @@ par `D-062`, et la re-signature du 2026-08-16 couvre le périmètre complet.
    deux conditions, **le périmètre se referme** — il ne s'étend pas par défaut.
    Une absence de constat n'est pas un feu vert (`DC-24`, appliqué à la
    gouvernance).
+
+> **AMENDÉE le 2026-09-09 par [[D-162]] — la borne est abrogée ; le périmètre
+> relève d'une décision propre.** Le délai courait depuis une date à laquelle le point 1 ci-dessus
+> déclare l'observation non commencée ; `D-094` §3 interdit par ailleurs la trace
+> que la condition (b) demande d'observer. L'objectif écrit sur `PAT017` n'a
+> jamais atteint son patient — ni cockpit ni envoi à l'époque, et
+> `notifierObjectifPropose` ne part qu'à l'écriture : les six semaines ont mesuré
+> un silence sur un canal inexistant. Le 2026-10-04 ne redevient pas un point de
+> contrôle. **Le périmètre n'est pas touché ici** : il ne porte plus de date, et
+> ne s'étend que par une décision propre.
 
 **Ce que cette décision N'AUTORISE PAS** : la généralisation à d'autres dossiers,
 l'envoi d'une recommandation élargie sans relecture, et toute modification du

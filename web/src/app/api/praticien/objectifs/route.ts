@@ -10,7 +10,9 @@ import { sendObjectifProposeEmail } from '@/lib/consultation/email';
 import {
   chaineDObjectif,
   etatRatification,
-  objectifsCourants,
+  tetesDeChaine,
+  tetesActives,
+  type LectureFin,
   preparerObjectif,
   type CibleObjectif,
   type EtatRatification,
@@ -151,6 +153,19 @@ export type ReponseJalonExposee = {
   creeLe: string;
 };
 
+export type LigneFinExposee = {
+  id: string;
+  racineObjectifId: string;
+  motif: string;
+  voix: string;
+  consigneePar: string;
+  sens: string;
+  motifTexte: string | null;
+  remplaceParRacineId: string | null;
+  exprimeLe: string | null;
+  creeLe: string;
+};
+
 export type ObjectifsApiResponse =
   | {
       ok: true;
@@ -173,6 +188,21 @@ export type ObjectifsApiResponse =
        * propre reformulation : c'est souvent lui qui l'a motivée.
        */
       reponsesJalon: ReponseJalonExposee[];
+      /**
+       * L'ÉTAT DE FIN DE CHAQUE TÊTE (`D-161`), indexé par la version courante.
+       * C'est lui qui dit au cockpit s'il doit offrir le DÉPARTAGE, une relance,
+       * ou rien — l'écran ne le recalcule jamais : « le témoignage cède à la
+       * preuve » vit dans le module, et deux lectures divergeraient.
+       */
+      fins: Record<string, LectureFin>;
+      /**
+       * LE NOMBRE DE TÊTES ACTIVES — celui qui décide d'une discordance. Une
+       * chaîne close ne concurrence plus rien : un dossier portant un objectif
+       * atteint l'an dernier et un objectif courant n'est pas en conflit.
+       */
+      tetesActives: number;
+      /** Les lignes de fin elles-mêmes, motif écrit compris. */
+      lignesFin: LigneFinExposee[];
     }
   | { ok: true; objectif: ObjectifExpose }
   | { ok: false; reason: string; error: string };
@@ -310,7 +340,8 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, ratifications, amendements, reponsesJalon, consultation] = await Promise.all([
+    const [lignes, ratifications, amendements, reponsesJalon, consultation, fins] =
+      await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
         select: SELECTION_OBJECTIF,
@@ -343,9 +374,31 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
         select: { anamnese: true },
         orderBy: [{ dateValidation: 'desc' }, { createdAt: 'desc' }],
       }),
+      // LES FINS DE CHAÎNE (`D-161`), en lecture. Le texte de motif n'entre pas
+      // dans la dérivation d'état — il est servi à part, plus bas, parce que le
+      // praticien doit relire POURQUOI il a renoncé, pas seulement QUE.
+      prisma.finObjectif.findMany({
+        where: { idPatient },
+        select: {
+          id: true,
+          racineObjectifId: true,
+          motif: true,
+          voix: true,
+          consigneePar: true,
+          sens: true,
+          motifTexte: true,
+          remplaceParRacineId: true,
+          exprimeLe: true,
+          creeLe: true,
+        },
+        orderBy: { creeLe: 'desc' },
+      }),
     ]);
 
-    const courants = objectifsCourants(lignes);
+    // MARQUÉES, JAMAIS FILTRÉES : une chaîne close reste au cockpit, sans quoi
+    // le praticien perdrait de vue ce qu'il a lui-même conclu.
+    const tetes = tetesDeChaine(lignes, fins);
+    const courants = tetes.map((tete) => tete.ligne);
 
     return NextResponse.json({
       ok: true,
@@ -355,6 +408,34 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       trajectoires: courants.map((tete) => ({
         idObjectif: tete.id,
         lignes: chaineDObjectif(lignes, tete.id).map(exposer),
+      })),
+      /**
+       * L'ÉTAT DE FIN DE CHAQUE TÊTE, indexé par la version courante. C'est lui
+       * qui dit au cockpit s'il doit offrir le DÉPARTAGE — deux têtes actives —,
+       * une relance — fin proposée dont la seconde voix se tait —, ou rien.
+       */
+      fins: Object.fromEntries(tetes.map((tete) => [tete.ligne.id, tete.fin])),
+      /**
+       * LE NOMBRE DE TÊTES ACTIVES, servi plutôt que déduit à l'écran : c'est
+       * lui, et non le nombre de têtes, qui dit s'il y a discordance. Un
+       * objectif clos ne concurrence plus rien.
+       */
+      tetesActives: tetesActives(tetes).length,
+      /**
+       * LES LIGNES DE FIN elles-mêmes, motif écrit compris : le praticien doit
+       * pouvoir relire POURQUOI une chaîne a été close, et par quelle voix.
+       */
+      lignesFin: fins.map((ligne) => ({
+        id: ligne.id,
+        racineObjectifId: ligne.racineObjectifId,
+        motif: ligne.motif,
+        voix: ligne.voix,
+        consigneePar: ligne.consigneePar,
+        sens: ligne.sens,
+        motifTexte: ligne.motifTexte,
+        remplaceParRacineId: ligne.remplaceParRacineId,
+        exprimeLe: ligne.exprimeLe ? ligne.exprimeLe.toISOString() : null,
+        creeLe: ligne.creeLe.toISOString(),
       })),
       ancrage: consultation ? lireAncrage(consultation.anamnese) : ANCRAGE_SANS_CONSULTATION,
       // Un état par tête, jamais un taux : `etatRatification` rend le DERNIER
