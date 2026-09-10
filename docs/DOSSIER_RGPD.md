@@ -150,8 +150,18 @@ personnelles se répartissent ainsi :
 | Authentification et accès | `Patient.accessTokenRevoked` (drapeau de révocation, non secret — les valeurs du jeton permanent ont été **purgées le 2026-08-22**, `D-085` §5), `PortailMagicLink`, `PortailConnexionGoogle`, `PortailDemandeTentative` | Drapeau, liens hachés expirants, traces de connexion, anti-abus |
 | Alliance — accord attesté en consultation | `AccordAtteste` (version d'objectif visée, e-mail du praticien attestant, date de l'accord) | Attestation du praticien qu'un accord a été conclu de vive voix — un témoignage, distinct de la ratification que le patient pose lui-même (`D-161`) |
 | Alliance — fin d'un objectif | `FinObjectif` (racine de la chaîne, motif, voix, consignataire, sens, motif écrit de renoncement, date d'expression) | Parole du patient et du praticien sur la fin d'un objectif de suivi — aucun score, seuil, bande, rang ni taux d'atteinte (`D-161`) |
+| **Alliance — la parole des deux voix (art. 9)** | `ObjectifNegocie`, `EntreeCeQuiCompte`, `SyntheseComprehension`, `DesaccordComprehension`, `RatificationObjectif`, `AmendementObjectif`, `ReponseJalonObjectif` | **Catégorie particulière** — ce que le patient écrit sous « ce qui compte pour moi », l'objectif posé avec lui, sa reformulation, sa priorité, et ce que chacun en dit ensuite. Aucun score, aucun rang, aucun taux d'atteinte (`D-161`) |
+| Alliance — moteur déterministe de propositions | `PropositionObjectif`, `DispositionProposition` | Propositions assemblées à partir de sources signées, **sans IA** (`D-094` §4) — et les dispositions du praticien à leur égard |
+| Alliance — proposition de priorité assistée par IA | `PropositionPrioriteIA` | Libellé de 200 caractères proposé par le modèle à partir du `resume_praticien` d'une synthèse validée et du dernier dépôt patient, avec l'identifiant de ses deux sources et la version de la consigne. **Objet distinct du moteur ci-dessus** (`D-167` §5) |
 | Journalisation | `JournalAccesDossier` (`id_patient`, `praticien_email`, route, méthode, horodatage) | Piste d'audit des accès praticien |
 | Résidu d'effacement | `DossierEfface` (année de naissance, initiales, date) | Preuve d'effacement, volontairement non ré-identifiante |
+
+> **Ajouté le 2026-09-10 (`D-167`), et c'est un rattrapage.** Ce tableau ne
+> portait de la campagne Alliance que `AccordAtteste` et `FinObjectif`. Les neuf
+> autres modèles — dont l'objectif lui-même et le dépôt « ce qui compte pour
+> moi », qui sont la parole brute du patient — n'y figuraient pas. L'écart a été
+> vu en écrivant l'entrée de la proposition de priorité : on ne pouvait pas
+> déclarer une table nouvelle en laissant ses deux sources absentes.
 
 **Hors périmètre personnel**, et à ne pas confondre : les référentiels
 (`Biology*`, `Supplement*`, `Ciqual*`, catalogues de questionnaires) ne portent
@@ -175,7 +185,7 @@ les pages du portail — **v5 depuis le 2026-09-07** (`D-141`).
 | Sous-traitant | Rôle tel qu'il est dit au patient |
 |---|---|
 | Scalingo | hébergement de l'application et de la base de données (HDS, France) |
-| Anthropic | assistance d'IA pour la préparation des synthèses |
+| Anthropic | assistance d'IA pour la préparation des synthèses **et pour la proposition de formulation de la priorité d'un objectif** (`D-167`) |
 | Google Workspace | acheminement des e-mails Wellneuro, **y compris les documents adressés au patient** (bilan, comptes rendus) |
 | Google | connexion du praticien, **et du patient s'il la choisit** (seule l'adresse e-mail est transmise) |
 | Sentry | détection des erreurs techniques, région européenne — jamais les réponses, les documents ni l'identité |
@@ -392,6 +402,22 @@ ouverte.
   inférence UE » et la rétention d'inférence (`:251-253`, le prompt caching
   étant activé). La localisation réelle de l'inférence n'est donc **pas
   établie** — ni dans un sens ni dans l'autre.
+- **Anthropic — second flux, ouvert par `D-167` (2026-09-10).** La proposition
+  de formulation de la priorité d'un objectif envoie au même destinataire deux
+  pièces : le `resume_praticien` d'une synthèse **validée par le praticien**, et
+  le dernier dépôt patient « ce qui compte pour moi » **verbatim**, c'est-à-dire
+  la parole brute du patient et non un texte déjà rédigé par un professionnel.
+  Ce sont des données de santé au titre de l'article 9.
+
+  **Ce flux n'ouvre pas un canal nouveau et ne referme aucun trou.** Il emprunte
+  le transfert Anthropic déjà qualifié hors UE ci-dessus, avec la même réserve
+  non levée sur la localisation réelle de l'inférence et la même absence de
+  mécanisme de transfert écrit. Ce qui s'ajoute est le VOLUME et la NATURE de ce
+  qui part : jusqu'ici, la matière transmise était médiée par la rédaction d'un
+  praticien ; ici, une partie ne l'est pas. À verser au même arbitrage
+  contractuel que le flux de synthèse, sans attendre qu'il soit rendu pour
+  l'avoir écrit.
+
 - **Google** — connexion du praticien seul.
 
 **TROU.** Le **mécanisme de transfert invoqué** (clauses contractuelles types,

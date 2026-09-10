@@ -16,6 +16,11 @@
   s'ouvre à un adaptateur borné.
 - N'amende PAS : [[D-003]] (voir §4), ni [[D-094]] §4 (voir §5).
 - Domaine : doctrine produit et frontière IA — campagne Alliance 6.0-B
+- **Amendée le 2026-09-10 au soir**, avant tout code, par quinze arbitrages du
+  praticien rendus en session : §3 (déclenchement, sources exigées, modèle,
+  échec), §6 (le moment exact où la marque tombe), et les §11 à §15, neufs. La
+  doctrine du matin ne bouge pas ; ce qui s'ajoute est la manière dont elle sera
+  bâtie — arbitrée avant d'écrire, plutôt que découverte en écrivant.
 
 **Constat.** Devant un dossier réel portant une synthèse validée du 2026-08-29
 et un dépôt patient du matin même, les trois zones de « Poser un objectif
@@ -52,6 +57,27 @@ retrouver puis la recopier de mémoire.
    « ALTÉRATION DE DONNÉE ». **La borne ne bouge pas : c'est l'appel qui s'y
    plie**, et un dépassement se refuse au lieu de se couper.
 
+   **L'appel part sur un GESTE, jamais à l'ouverture.** Le champ arrive vide
+   avec un bouton ; aucun appel n'est fait sur un dossier qu'on ouvre pour autre
+   chose. C'est aussi ce qui tient `D-003` : la machine ne prend pas la parole
+   la première.
+
+   **Les deux pièces sont EXIGÉES.** Sans dépôt patient, pas de proposition,
+   même si la synthèse validée est là — la parole du patient est une condition,
+   pas un complément. Le schéma appliqué le 2026-09-10 ne l'impose pas encore
+   (`alli_objectif_priorite_source_rejouable` n'exige que l'identifiant de
+   synthèse) : la contrainte s'ajoute avec la table du §11.
+
+   **Le modèle a sa propre variable d'environnement**, par défaut sur celui de
+   la synthèse. Cet appel n'a pas la taille d'une synthèse et doit pouvoir
+   changer sans la toucher.
+
+   **Un échec SE DIT.** Panne, délai dépassé, ou réponse au-delà de la borne :
+   une ligne dit ce qui s'est passé, en distinguant les cas, et un bouton permet
+   de réessayer. **Jamais un champ vide silencieux** — indiscernable d'un
+   dossier sans matière, c'est la faute exacte que le rail de phase 3 et le
+   placeholder inventé ont valu au même dossier le même jour.
+
 4. **`D-003` N'EST PAS AMENDÉE — elle est satisfaite, et la marque est ce qui la
    satisfait.** `D-003` exige que la priorisation reste déterministe et
    testable, et sa conséquence dit « le LLM peut traduire et synthétiser, mais
@@ -72,7 +98,8 @@ retrouver puis la recopier de mémoire.
    réécriture.** Chaque ligne d'`objectifs_negocies` est une version immuable ;
    sa provenance est une propriété de cette version. Trois champs, trois
    provenances indépendantes. **Un texte modifié par le praticien perd sa
-   marque** et redevient ses mots : garder « proposé par la machine » sur une
+   marque dès le PREMIER caractère modifié**, pas à l'enregistrement ; il
+   redevient ses mots : garder « proposé par la machine » sur une
    phrase qu'il a réécrite serait un faux, et l'inverse — effacer la marque
    d'un texte accepté tel quel — en serait un autre.
 
@@ -99,6 +126,70 @@ retrouver puis la recopier de mémoire.
     `narratif_patient` et `resume_praticien` d'une synthèse validée, et RIEN
     d'autre. Une lecture déportée ailleurs reste interdite. Un banc éprouve
     qu'`axes_prioritaires` n'est jamais lu.
+
+11. **La proposition est FIGÉE, dans une table append-only à elle.** Un modèle
+    n'est pas déterministe : deux appels sur les mêmes sources rendent deux
+    phrases. Une proposition produite est donc conservée — classée par le couple
+    (synthèse validée, dépôt patient) et la version de consigne — et resservie
+    telle quelle tant que ce couple ne change pas. Le praticien retrouve ce
+    qu'il a lu.
+
+    **Cette table n'est ni `propositions_objectif` ni sa parente.** Le moteur de
+    `D-094` §4 est déterministe et sans LLM ; les mélanger détruirait la
+    propriété qui rend sa caducité calculable (§5). Nom distinct, table
+    distincte.
+
+    **Un bouton « une autre » produit un nouveau tirage**, ajouté à côté du
+    précédent — rien n'est remplacé, la table est append-only comme le reste de
+    l'alliance. **Les tirages ne sont pas affichés** : ni compte, ni rang, ni
+    historique à l'écran. Ils restent en base, donc auditables, sans peser sur
+    un écran qui n'a pas à raconter combien de fois on a demandé.
+
+    *Réserve consignée, non levée par cet arbitrage* : un praticien qui relance
+    jusqu'à retrouver la phrase qu'il avait en tête fait décider la machine par
+    sélection, ce que la marque ne dit pas. Le fait est conservé en base ; s'il
+    fallait un jour le dire à l'écran, ce serait une décision neuve.
+
+12. **Aucun écran « proposition périmée ».** Le cas — une proposition figée
+    pendant qu'une source change — est rendu inatteignable par la cadence de
+    [[D-166]] : ni dépôt nouveau ni synthèse nouvelle avant une ancre de cycle.
+    La proposition étant classée par son couple de sources, un couple qui
+    changerait ne correspondrait simplement à rien et le champ reviendrait vide
+    avec son bouton. **Ne pas construire d'état pour ce cas** : un écran qu'on
+    ne peut pas atteindre est un écran qu'on ne peut pas éprouver.
+
+13. **Une réécriture repart des sources.** Sur le chemin de réécriture
+    (`reformuleId`), les champs se pré-remplissent depuis le dépôt et la
+    synthèse les plus récents, et non depuis la version qu'on amende. La version
+    précédente n'est pas perdue pour autant — chaque ligne est immuable et reste
+    lisible ; ce qui ne se reporte pas, c'est son texte dans le formulaire.
+
+14. **Les documents patient précèdent le code, et c'est une condition.** La v1
+    de « L'intelligence artificielle dans Wellneuro » porte une section
+    intitulée « Le seul usage actuel » : cette phrase devient fausse le jour où
+    l'appel part. Trois pièces sont donc publiées AVANT toute ligne de code —
+    l'entrée au registre (`DOSSIER_RGPD` §5, §6, §7), la **v2** du document IA,
+    et la **v7** du document de confidentialité, dont la ligne Anthropic
+    s'élargit.
+
+    **Aucune prise de connaissance n'est exigée** (`requiresAcknowledgement:
+    false`), même régime que les versions précédentes : ces documents DÉCRIVENT
+    un usage, ils ne demandent aucune autorisation nouvelle, et la sortie
+    n'atteint le patient qu'après validation du praticien.
+
+    **La v2 est écrite pour être vraie à sa publication**, alors que le code
+    n'existe pas encore : elle dit que ce second usage est décrit avant sa mise
+    en service. Annoncer au présent un usage qui n'est pas ouvert aurait été le
+    même faux, dans l'autre sens.
+
+15. **Le message « Aucune proposition vivante » se scinde en trois branches.**
+    Le panneau affiche aujourd'hui « sans épisode confirmé, il n'a rien de signé
+    à citer » y compris sur un dossier dont l'épisode EST confirmé : il énonce
+    une cause qu'il n'a pas vérifiée. Trois phrases le remplacent — pas
+    d'épisode confirmé / épisode confirmé mais aucune table de candidats signée
+    / tout est là et le moteur n'a rien retenu — et chacune n'affirme que ce qui
+    a été lu. Même classe de défaut que le rail de phase 3 et le placeholder
+    inventé, corrigés le même jour.
 
 ### D-166 — « Ce qui compte pour moi » se dépose une fois par cycle, et l'échec de lecture ne ferme rien
 
