@@ -4,6 +4,102 @@
 
 ## Décisions actives
 
+### D-167 — Les trois champs de l'objectif arrivent remplis : deux par citation, un par proposition marquée
+
+- Date : 2026-09-10
+- Statut : accepté (arbitrage du praticien, rendu en session le 2026-09-10, sur
+  écran réel — les trois zones étaient vides devant un dossier qui portait la
+  matière)
+- Amende : [[D-160]] §2 (la priorité cesse d'être exclusivement manuscrite),
+  [[D-094]] §1 (une source citable de plus pour la reformulation) et la garde
+  `G3` (`comprehensionAppendOnly.guard.test.ts`), dont `IMPORTS_INTERDITS`
+  s'ouvre à un adaptateur borné.
+- N'amende PAS : [[D-003]] (voir §4), ni [[D-094]] §4 (voir §5).
+- Domaine : doctrine produit et frontière IA — campagne Alliance 6.0-B
+
+**Constat.** Devant un dossier réel portant une synthèse validée du 2026-08-29
+et un dépôt patient du matin même, les trois zones de « Poser un objectif
+négocié » étaient vides. Rien n'était cassé : aucune n'a jamais été alimentée.
+La matière existait, à un onglet de distance, et le praticien devait la
+retrouver puis la recopier de mémoire.
+
+**Décision :**
+
+1. **L'énoncé se pré-remplit par citation du dépôt patient.** Le dernier
+   « ce qui compte pour moi aujourd'hui », verbatim, jamais paraphrasé —
+   application de `D-160` §1, dont les quatre conditions tiennent sans
+   changement (la `saisiLe` accompagne, un seul dépôt, la surface entre dans
+   `SURFACES_LOT`, aucun décompte).
+
+2. **La reformulation se pré-remplit par citation de `narratif_patient`**, pris
+   d'une synthèse **`Validee_Praticien` seule**. Jamais un `Brouillon_IA`, jamais
+   une `Corrigee_Praticien` non validée, jamais `axes_prioritaires` — qui sont
+   un TABLEAU ORDONNÉ et tombent sous `DC-19`/`DC-20`. Mesuré avant d'être
+   décidé : `narratif_patient` va de 976 à 3 104 caractères en production, la
+   reformulation en admet 4 000. Rien n'est tronqué.
+
+3. **La priorité se pré-remplit par une PROPOSITION DE LA MACHINE, marquée
+   comme telle.** Un appel IA reçoit le `resume_praticien` de la synthèse
+   validée et le dernier dépôt patient ; il rend **un seul libellé d'au plus
+   200 caractères**, jamais une liste, jamais un ordre, jamais un rang
+   (`D-094` §3, `DC-19`/`DC-20`).
+
+   **Pourquoi un appel et non une citation** : la priorité est bornée à 200
+   caractères et aucune source ne tient dedans. Mesuré sur les 36 synthèses
+   validées de production — `resume_praticien` va de **682 à 2 282**
+   caractères, moyenne 1 391. La plus courte dépasse la borne d'un facteur 3,4.
+   Citer imposerait de tronquer, que `lib/patient/ceQuiCompte.ts` nomme
+   « ALTÉRATION DE DONNÉE ». **La borne ne bouge pas : c'est l'appel qui s'y
+   plie**, et un dépassement se refuse au lieu de se couper.
+
+4. **`D-003` N'EST PAS AMENDÉE — elle est satisfaite, et la marque est ce qui la
+   satisfait.** `D-003` exige que la priorisation reste déterministe et
+   testable, et sa conséquence dit « le LLM peut traduire et synthétiser, mais
+   **ne décide pas seul** ». Ici il ne décide pas : il propose, la proposition
+   est visible en tant que telle, le praticien la valide, la réécrit ou
+   l'efface, et la trace dit lequel des trois a eu lieu. Retirer la marque
+   ferait de cette clause une dérogation — et il faudrait alors la demander.
+
+5. **`D-094` §4 N'EST PAS AMENDÉE, et l'appel vit HORS du moteur de
+   proposition.** Ce moteur est déterministe et sans LLM par décision : mêmes
+   entrées, mêmes propositions, même empreinte — c'est ce qui rend sa caducité
+   calculable. Y faire entrer un appel IA détruirait cette propriété. La
+   proposition de priorité est donc un objet SÉPARÉ, qui ne passe ni par
+   `assemblerPropositions`, ni par `hashSources`, ni par `fragments`. **Ne pas
+   « unifier » les deux chemins** : ils n'ont pas la même nature.
+
+6. **La marque de provenance est portée par la version, et elle tombe à la
+   réécriture.** Chaque ligne d'`objectifs_negocies` est une version immuable ;
+   sa provenance est une propriété de cette version. Trois champs, trois
+   provenances indépendantes. **Un texte modifié par le praticien perd sa
+   marque** et redevient ses mots : garder « proposé par la machine » sur une
+   phrase qu'il a réécrite serait un faux, et l'inverse — effacer la marque
+   d'un texte accepté tel quel — en serait un autre.
+
+7. **« Non traité pour l'instant » RESTE VIDE, et c'est un refus motivé.**
+   Ni le dépôt, ni la synthèse ne disent ce qui est mis de côté ni pourquoi. Le
+   champ exige un motif ET une date qui vont ensemble. Le pré-remplir ferait
+   décider par la machine ce qu'on renonce à traiter, et le daterait d'un jour
+   qu'elle aurait choisi. **Aucune source ne le porte : on ne le remplit pas.**
+
+8. **Ce que le patient lit ne change pas de nature, mais il lit désormais
+   quelque chose qu'une machine a proposé.** « Priorité retenue : … » part dans
+   le dossier à deux voix. C'est la raison pour laquelle la validation du
+   praticien est une condition et non une politesse : il signe ce que le
+   patient lira.
+
+9. **Ce que l'appel ne reçoit pas.** Aucun score de questionnaire, aucune
+   sortie de moteur clinique, aucun `axes_prioritaires`. L'entrée est fermée à
+   deux pièces — `resume_praticien` d'une synthèse validée, et le dernier dépôt
+   patient — et toute extension est une décision neuve.
+
+10. **Les gardes.** `IMPORTS_INTERDITS` de `G3` s'ouvre à un **adaptateur
+    borné**, sur le patron de `plainteVerifiee.ts` ([[D-164]]) : un module dont
+    les imports sont nommés un par un et éprouvés par banc, qui expose
+    `narratif_patient` et `resume_praticien` d'une synthèse validée, et RIEN
+    d'autre. Une lecture déportée ailleurs reste interdite. Un banc éprouve
+    qu'`axes_prioritaires` n'est jamais lu.
+
 ### D-166 — « Ce qui compte pour moi » se dépose une fois par cycle, et l'échec de lecture ne ferme rien
 
 - Date : 2026-09-10
