@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { AbstentionAssessment, ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
@@ -767,6 +767,49 @@ describe('ClinicalRuntimeSection — plainte du patient et état de la décision
     ));
     const panneau = await screen.findByRole('region', { name: 'Plainte et objectif du patient' });
     expect(panneau.textContent).not.toMatch(/À la même intensité/);
+  });
+
+  it('UN CONSTAT DE SÉCURITÉ SE LIT, avec sa PROVENANCE — il ne suspend plus en silence', async () => {
+    // Un constat de sécurité BLOQUE la carte, et il n'atteignait AUCUN humain :
+    // `buildDecisionCard` ne retenait que les `findingId`, et aucun composant ne
+    // lisait `review.safetyFindings`. Le praticien voyait « décision suspendue »
+    // sans jamais lire POURQUOI.
+    const reponse = reponsePrete(
+      { status: 'required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+    );
+    // `reponsePrete` rend l'union de la route : la branche `ready` est la seule
+    // qui porte `review`, et le cast la nomme plutôt que d'élargir le type.
+    (reponse as unknown as { review: { safetyFindings: unknown[] } }).review.safetyFindings = [
+      {
+        findingId: 'SAFE_1',
+        kind: 'safety',
+        disposition: 'requires_practitioner_review',
+        rationale: 'Un signal déclaré à l’anamnèse demande une relecture avant toute proposition.',
+        ruleId: 'ABST-SEC-01',
+        confidence: 'à_documenter',
+        provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+        limitations: [
+          'Ce constat provient de l’anamnèse déclarée, qui n’est pas une passation : il ne cite aucune réponse de questionnaire.',
+        ],
+      },
+    ];
+    await afficher(reponse);
+
+    const panneau = await screen.findByRole('region', { name: 'Constats de sécurité' });
+    expect(panneau.textContent).toContain('demande une relecture avant toute proposition');
+    // LA PROVENANCE EST LISIBLE, en second niveau : lire le constat sans elle
+    // ferait passer une DÉCLARATION pour une MESURE.
+    fireEvent.click(within(panneau).getByText(/Voir la provenance/));
+    expect(panneau.textContent).toContain('qui n’est pas une passation');
+  });
+
+  it('sans constat de sécurité, la section est ABSENTE — pas vide', async () => {
+    await afficher(reponsePrete(
+      { status: 'not_required', ruleIds: ['PRIO-PON-01'], limitations: [] },
+      { domaine: 'digestion', libelle: 'Digestion', valeur: 8, bande: 'Intensité élevée', exAequo: [] },
+    ));
+    expect(screen.queryByRole('region', { name: 'Constats de sécurité' })).toBeNull();
   });
 
   it('dit l’état réel de l’abstention, et non une phrase figée', async () => {

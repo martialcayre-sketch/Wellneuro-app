@@ -8,6 +8,7 @@ import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
+import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import {
@@ -1440,6 +1441,47 @@ export function ClinicalRuntimeSection({
               ? `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique est requise.`
               : `Épisode ${jalonConfirme} confirmé. Décision suspendue : l’abstention clinique n’est pas encore évaluée.`}
         </div>
+      )}
+
+      {/* ── CE QUI SUSPEND LA DÉCISION, EN TOUTES LETTRES ───────────────────
+          Un constat de sécurité BLOQUE la carte (`decisionCard.ts`), et jusqu'au
+          2026-09-10 il n'atteignait AUCUN humain : `buildDecisionCard` ne
+          retenait que les `findingId`, et aucun composant ne lisait
+          `review.safetyFindings`. Le praticien voyait donc « décision
+          suspendue » sans jamais lire POURQUOI — et les trois textes
+          `LIMITATION_*` du producteur de sécurité, qui disent la PROVENANCE du
+          constat, traversaient la réponse HTTP sans être rendus.
+
+          LA PROVENANCE N'EST PAS UN DÉTAIL. Ces textes disent qu'un constat
+          vient de l'anamnèse DÉCLARÉE et non d'une passation, ou qu'un libellé
+          n'appartient pas à la cotation signée et se trouve traité comme un
+          adressage plutôt qu'ignoré. Lire le constat sans eux ferait passer une
+          déclaration pour une mesure. */}
+      {affiche('decision') && !fixture && (review?.safetyFindings?.length ?? 0) > 0 && (
+        <section
+          aria-label="Constats de sécurité"
+          className="rounded-xl border border-status-warning/40 bg-status-warning/5 p-4"
+        >
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-status-warning">
+            Ce qui suspend la décision
+          </h3>
+          <div className="mt-3 flex flex-col gap-3">
+            {(review?.safetyFindings ?? []).map((constat) => (
+              <TwoLevelReading
+                key={constat.findingId}
+                label="Voir la provenance"
+                summary={<span className="text-foreground">{constat.rationale}</span>}
+                detail={(
+                  <ul className="space-y-1">
+                    {constat.limitations.map((texte) => (
+                      <li key={texte} className="text-muted-foreground">{texte}</li>
+                    ))}
+                  </ul>
+                )}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {affiche('donnees') && (
