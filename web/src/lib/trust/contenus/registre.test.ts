@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les onze documents attendus', () => {
+  it('expose les treize documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -33,7 +33,11 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v4',
       'donnees_confidentialite@v5',
       'donnees_confidentialite@v6',
+      // `D-167` — le rôle d'Anthropic s'élargit à la proposition de priorité.
+      'donnees_confidentialite@v7',
       'usage_ia@v1',
+      // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
+      'usage_ia@v2',
       'droits_patient@v1',
       'consentement_suivi@v2',
     ]);
@@ -78,7 +82,10 @@ describe('registre des documents TRUST', () => {
     // était fausse depuis le 2026-07-22 — la porte Google patient est ouverte
     // en production, relue par `env-get` le 2026-09-07.
     const courant = getDocumentCourant('donnees_confidentialite');
-    expect(courant.version).toBe('v6');
+    // La version courante avance à chaque publication ; ce banc ne porte pas
+    // sur son numéro mais sur ce que le document servi dit — l'assertion de
+    // version n'est là que pour qu'un oubli de publication se voie.
+    expect(courant.version).toBe('v7');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);

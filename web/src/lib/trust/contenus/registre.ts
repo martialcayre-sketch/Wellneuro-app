@@ -695,6 +695,86 @@ const DONNEES_CONFIDENTIALITE_V6: VersionDocumentTrust = {
   hash: 'f704378b435e996c2a39c78e70ae4e6a5df7af426312f41519c069dc42a31591',
 };
 
+const USAGE_IA_V2: VersionDocumentTrust = {
+  key: 'usage_ia',
+  type: 'ai_transparency',
+  version: 'v2',
+  titre: 'L’intelligence artificielle dans Wellneuro',
+  resume:
+    'Où l’IA intervient, ce qu’elle fait, ce qu’elle ne fait jamais, et comment contester un contenu.',
+  sections: [
+    ...USAGE_IA_V1.sections.map(section => {
+      // LA SECTION QUI DEVENAIT FAUSSE. La v1 s’intitulait « Le seul usage
+      // actuel » et disait « l’IA intervient à un seul endroit ». `D-167` en
+      // ouvre un second, dont la sortie atteint le patient : la phrase ne
+      // pouvait pas survivre à la mise en service, et un document de
+      // transparence qui décrit un état révolu ne protège personne.
+      if (section.titre === 'Le seul usage actuel') {
+        return {
+          titre: 'Où l’IA intervient',
+          paragraphes: [
+            'Le premier usage est la préparation du brouillon de la synthèse de votre bilan, à partir de vos réponses aux questionnaires et des éléments transmis à votre praticien.',
+            'Un second usage s’ouvre : lorsque votre praticien pose avec vous l’objectif de votre suivi, il peut demander à l’outil une proposition de formulation pour la priorité — une phrase courte, à partir de la synthèse qu’il a validée et de ce que vous avez écrit sous « ce qui compte pour moi ». Elle lui est présentée comme une proposition, et il la valide, la réécrit ou l’efface.',
+            'Ce second usage est décrit ici AVANT sa mise en service, pour que vous en ayez connaissance dès qu’il s’ouvre plutôt qu’après coup. Tant qu’il n’est pas ouvert, seul le premier usage a lieu.',
+            'Le fournisseur est Anthropic, pour l’un comme pour l’autre. Le modèle utilisé et la version du procédé sont enregistrés à chaque fois, ce qui permet de retracer l’origine de chaque texte.',
+          ],
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Ce document annonçait un usage unique de l’IA — la préparation du brouillon de synthèse. Un second usage s’ouvre : votre praticien peut demander une proposition de formulation pour la priorité de votre objectif, à partir de la synthèse qu’il a validée et de ce que vous avez écrit. Cette proposition lui est présentée comme telle et ne vous parvient qu’après sa validation. Ce que l’IA ne fait jamais ne change pas.',
+  publieLe: '2026-09-10',
+  // MÊME RÉGIME QUE LA v1, et le motif est le même : ce document DÉCRIT où
+  // l'outil intervient, il ne demande aucune autorisation nouvelle. La sortie
+  // de ce second usage n'atteint le patient qu'après validation du praticien
+  // — la garantie que la v1 posait déjà et qui ne bouge pas. Dresser un mur
+  // d'accusé devant un espace de soin pour une information qui se lit
+  // coûterait plus qu'il ne protège.
+  requiresAcknowledgement: false,
+  hash: 'a7471f6282787b5e0af593fb692d2ad505536aa7ceb3956eea6df71f069eb11c',
+};
+
+const DONNEES_CONFIDENTIALITE_V7: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v7',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V6.sections.map(section => {
+      // LE RÔLE D’ANTHROPIC S’ÉLARGIT, LE NOM NE BOUGE PAS. Le banc
+      // `registre.dossier.test.ts` compare les NOMS de cette liste à ceux de la
+      // rubrique 6 du dossier RGPD : la forme « Nom — rôle » doit tenir, c’est
+      // elle qui porte la séparation.
+      if (section.titre === 'Quels prestataires techniques interviennent ?') {
+        return {
+          ...section,
+          points: (section.points ?? []).map(point =>
+            point.startsWith('Anthropic — ')
+              ? 'Anthropic — assistance d’intelligence artificielle pour la préparation des synthèses et pour la proposition de formulation de la priorité de votre objectif (voir « L’intelligence artificielle dans Wellneuro »)'
+              : point,
+          ),
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Le rôle d’Anthropic est décrit plus complètement : l’assistance d’IA ne sert plus seulement à préparer les synthèses, elle sert aussi à proposer une formulation pour la priorité de votre objectif. Aucun prestataire ne s’ajoute et aucune donnée nouvelle n’est recueillie — c’est la description d’un usage qui s’élargit.',
+  publieLe: '2026-09-10',
+  // MÊME RÉGIME QUE LES v3 À v6. Aucun prestataire nouveau, aucune donnée
+  // nouvelle, aucune autorisation à recueillir : une phrase existante devient
+  // exacte. Le détail de l'usage vit dans le document IA, vers lequel cette
+  // ligne renvoie déjà.
+  requiresAcknowledgement: false,
+  hash: '1cb0d9ec0491cb99cb1a2a983381107b3fbbca0982f9ca1f5b748722c8f309e1',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -705,7 +785,9 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V4,
   DONNEES_CONFIDENTIALITE_V5,
   DONNEES_CONFIDENTIALITE_V6,
+  DONNEES_CONFIDENTIALITE_V7,
   USAGE_IA_V1,
+  USAGE_IA_V2,
   DROITS_PATIENT_V1,
   CONSENTEMENT_SUIVI_V2,
 ]);
