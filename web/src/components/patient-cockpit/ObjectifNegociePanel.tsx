@@ -8,6 +8,7 @@ import type {
   ObjectifsApiResponse,
   ReponseJalonExposee,
   TrajectoireObjectif,
+  LigneRatificationExposee,
 } from '@/app/api/praticien/objectifs/route';
 import type { LectureFin } from '@/lib/praticien/objectifNegocie';
 // La borne haute de l'échelle vient du module PUR, jamais recopiée : « sur 10 »
@@ -381,6 +382,7 @@ export function ObjectifNegociePanel({
   const [messageRelance, setMessageRelance] = useState('');
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
+  const [lignesRatification, setLignesRatification] = useState<LigneRatificationExposee[]>([]);
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
    *  Tous gestes du dossier : l'écran les range sous leur version. */
   const [amendements, setAmendements] = useState<AmendementExpose[]>([]);
@@ -501,6 +503,7 @@ export function ObjectifNegociePanel({
       setTetesActives(payload.tetesActives);
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
+      setLignesRatification(payload.lignesRatification ?? []);
       setAmendements(payload.amendements);
       setReponsesJalon(payload.reponsesJalon);
       setEtat('chargee');
@@ -1328,11 +1331,36 @@ export function ObjectifNegociePanel({
                       Versions antérieures ({anterieures.length})
                     </summary>
                     <ol className="mt-2 flex flex-col gap-3">
-                      {anterieures.map((ligne) => (
-                        <li key={ligne.id} className="opacity-80">
-                          <LigneObjectif ligne={ligne} />
-                        </li>
-                      ))}
+                      {anterieures.map((ligne) => {
+                        /* LE GESTE DU PATIENT RESTE ATTACHÉ À SA VERSION
+                           (`F2`, P1). La map d'états ne porte que les TÊTES :
+                           une contestation posée sur `v1` cessait d'être
+                           visible ici dès qu'une `v2` était écrite — pendant
+                           que l'amendement et la réponse d'étape, eux,
+                           restaient affichés sur toute la chaîne. C'est le
+                           geste le plus BREF qui disparaissait, et c'est
+                           souvent le plus décisif : un patient qui conteste. */
+                        const gestes = lignesRatification.filter(
+                          (geste) => geste.idObjectif === ligne.id,
+                        );
+                        return (
+                          <li key={ligne.id} className="opacity-80">
+                            <LigneObjectif ligne={ligne} />
+                            {gestes.length > 0 && (
+                              <ul className="mt-1 space-y-0.5">
+                                {gestes.map((geste) => (
+                                  <li key={geste.id} className="text-xs text-muted-foreground">
+                                    {LIBELLE_RATIFICATION[
+                                      geste.sens === 'ratifie' ? 'ratifie' : 'conteste'
+                                    ]}{' '}
+                                    — sur CETTE version, le {formatDate(geste.creeLe)}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ol>
                   </details>
                 )}
