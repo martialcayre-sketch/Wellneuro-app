@@ -2278,6 +2278,33 @@ model ObjectifNegocie {
   // pour tout objectif rédigé de la main du praticien — l'immense majorité
   // à ce jour, et jamais un défaut à combler.
   sourcePropositionId     String?   @map("source_proposition_id")
+  // 6.0-B (D-167) : D'OÙ VIENT CHACUN DES TROIS TEXTES, champ par champ.
+  //
+  // PORTÉES PAR LA VERSION, pas par la chaîne : chaque ligne est une version
+  // immuable, et sa provenance est une propriété de cette version-là. Une
+  // révision qui reprend un texte à la main porte donc `null`, même si la
+  // version précédente était citée — c'est le comportement voulu, et c'est
+  // ce que « la marque tombe à la réécriture » signifie en base (D-167 §6).
+  //
+  // TOUTES NULLABLES, et jamais un défaut à combler : un objectif écrit
+  // entièrement de la main du praticien — l'immense majorité à ce jour — les
+  // laisse toutes nulles. NULL veut dire « ses mots », pas « on ne sait pas ».
+  //
+  // Références SOUPLES, sans FK (patron `supersedes_objectif_id`) : l'appel
+  // et la citation pointent des lignes d'autres tables qui, elles, ne
+  // s'effacent pas — l'existence se vérifie à la route.
+  enonceSource               String?   @map("enonce_source")
+  enonceSourceId             String?   @map("enonce_source_id")
+  reformulationSource        String?   @map("reformulation_source")
+  reformulationSourceId      String?   @map("reformulation_source_id")
+  // La priorité est la seule des trois à venir d'un APPEL, jamais d'une
+  // citation : aucune source ne tient dans ses 200 caractères (D-167 §3).
+  // Elle garde donc, en plus, ses DEUX entrées et la version de son prompt —
+  // ce que le patient lit doit pouvoir se rejouer.
+  prioriteSource             String?   @map("priorite_source")
+  prioriteSourceSyntheseId   String?   @map("priorite_source_synthese_id")
+  prioriteSourceDepotId      String?   @map("priorite_source_depot_id")
+  prioritePrompt             String?   @map("priorite_prompt")
   negocieLe               DateTime? @map("negocie_le")
   creeLe                  DateTime  @default(now()) @map("cree_le")
 

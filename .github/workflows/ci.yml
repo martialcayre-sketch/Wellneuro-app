@@ -842,6 +842,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_accord_atteste_v1_negatif.sql
 
+      # La provenance des trois textes de l'objectif (D-167) : d'où vient
+      # l'énoncé, la reformulation et la priorité, champ par champ. Le contrat
+      # éprouve d'abord LE CAS NU — un objectif écrit sans aucune provenance
+      # doit passer, et c'est ce qui autorise la migration à partir AVANT son
+      # code (D-087). Puis que source et identifiant vont ensemble dans les DEUX
+      # sens, qu'une priorité proposée exige sa synthèse ET son prompt (une
+      # proposition irrejouable n'est pas une provenance), et qu'aucune
+      # provenance ne se déclare sur un texte absent. La liste blanche fige
+      # l'absence de score, de rang et de seuil — D-094 §3 interdit jusqu'à la
+      # numérotation. Fixtures posées et transaction annulée.
+      - name: Alliance objectif provenance negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_objectif_provenance_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
