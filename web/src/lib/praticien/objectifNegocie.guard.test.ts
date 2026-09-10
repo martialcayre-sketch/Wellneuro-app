@@ -763,6 +763,10 @@ describe('FRONTIÈRE — qui a le droit d’ignorer les fins de chaîne (D-161)'
     'src/app/api/portail/dossier/route.ts',
     'src/app/api/praticien/objectifs/route.ts',
     'src/app/api/praticien/objectifs/fin/route.ts',
+    // La relance N'ÉCRIT PAS dans la chaîne, mais elle DÉCIDE d'après elle :
+    // employer `objectifsCourants` la ferait relancer sur une chaîne close,
+    // c'est-à-dire inviter un patient à répondre à un objectif terminé.
+    'src/app/api/praticien/objectifs/relance/route.ts',
   ];
 
   it('aucune route qui garde une écriture n’appelle `objectifsCourants` en direct', () => {

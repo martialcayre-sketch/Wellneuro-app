@@ -377,6 +377,8 @@ export function ObjectifNegociePanel({
   const [tetesActives, setTetesActives] = useState(0);
   const [departageEnCours, setDepartageEnCours] = useState<string | null>(null);
   const [erreurDepartage, setErreurDepartage] = useState('');
+  const [relanceEnCours, setRelanceEnCours] = useState(false);
+  const [messageRelance, setMessageRelance] = useState('');
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   /** Ce que le patient a écrit lui-même (« le dire autrement », 6.0-B LOT-04).
@@ -435,6 +437,46 @@ export function ObjectifNegociePanel({
     setNonTraiteMotif('');
     setNonTraiteDepuisLe('');
   }, []);
+
+  /**
+   * RENVOYER LE COURRIER D'UN OBJECTIF DÉJÀ ÉCRIT — et rien d'autre. Aucune
+   * ligne n'est créée : c'est ce qui distingue ce geste du contournement qui
+   * consistait à « réviser pour déclencher un envoi », c'est-à-dire à se servir
+   * d'un geste clinique comme d'un transport.
+   *
+   * LA CADENCE EST TENUE PAR LE SERVEUR, pas par ce bouton : le dépôt a déjà
+   * connu une interdiction qui ne vivait que dans l'écran. Ici on se contente de
+   * RENDRE LISIBLE son refus, y compris la date à laquelle ce sera possible.
+   */
+  const relancer = useCallback(async () => {
+    setRelanceEnCours(true);
+    setMessageRelance('');
+    try {
+      const reponse = await fetch('/api/praticien/objectifs/relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient }),
+      });
+      const payload = (await reponse.json()) as {
+        ok: boolean;
+        error?: string;
+        possibleLe?: string;
+      };
+      if (!reponse.ok || !payload.ok) {
+        setMessageRelance(
+          payload.possibleLe
+            ? `${payload.error ?? 'Le courrier n’a pas pu être renvoyé.'} Possible à partir du ${formatDate(payload.possibleLe)}.`
+            : (payload.error ?? 'Le courrier n’a pas pu être renvoyé.'),
+        );
+        return;
+      }
+      setMessageRelance('Courrier renvoyé. Votre patient est invité à relire son objectif.');
+    } catch {
+      setMessageRelance('Le courrier n’a pas pu être renvoyé.');
+    } finally {
+      setRelanceEnCours(false);
+    }
+  }, [idPatient]);
 
   // DÉPENDANCE STABLE. `chargerDossier` ne dépend que de `idPatient` ; un
   // littéral recréé au rendu ferait retirer le GET en boucle, et ce GET
@@ -1083,6 +1125,38 @@ export function ObjectifNegociePanel({
                     }
                   />
                 </div>
+
+                {/* ── RENVOYER LE COURRIER ────────────────────────────────────
+                    L'envoi ne part qu'à l'ÉCRITURE d'un objectif : un objectif
+                    rédigé avant la mise en service de l'expéditeur, ou dont le
+                    courrier s'est perdu, était MUET PAR CONSTRUCTION — son
+                    patient ne pouvait pas savoir qu'un texte l'attendait.
+                    Offert seulement quand il y a quelque chose à annoncer :
+                    UNE tête active, non close, et un patient qui ne s'est pas
+                    encore prononcé. Le relancer après sa réponse lui dirait
+                    qu'on ne l'a pas lu. */}
+                {tetesActives === 1
+                  && fins[trajectoire.idObjectif]?.etat !== 'close'
+                  && (ratifications[trajectoire.idObjectif] ?? 'en_attente') === 'en_attente' && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        disabled={relanceEnCours}
+                        onClick={() => void relancer()}
+                        className="min-h-9 rounded-lg border border-border px-3 py-1 text-xs font-medium text-foreground hover:bg-accent/10 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      >
+                        {relanceEnCours ? 'Envoi…' : 'Renvoyer le courrier au patient'}
+                      </button>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Rien n’est modifié : aucune version n’est créée, seul le courrier repart.
+                      </p>
+                      {messageRelance && (
+                        <p role="status" className="mt-1 text-xs text-foreground">
+                          {messageRelance}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                 {/* ── CE QUE LE PATIENT A ÉCRIT LUI-MÊME (6.0-B, LOT-04) ─────
                     Les amendements de TOUTE la chaîne, pas de la seule version

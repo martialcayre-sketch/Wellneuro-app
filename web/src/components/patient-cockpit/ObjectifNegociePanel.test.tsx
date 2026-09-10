@@ -1090,4 +1090,83 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
     });
   });
 
+
+  // ── Renvoyer le courrier ──────────────────────────────────────────────────
+
+  describe('RENVOYER LE COURRIER D’UN OBJECTIF DÉJÀ ÉCRIT', () => {
+    const dossierEnAttente = {
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1' })] }],
+      ratifications: { OBJ_1: 'en_attente' as const },
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+    };
+
+    it('le geste est OFFERT quand le patient ne s’est pas encore prononcé', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierEnAttente }));
+      await attendreLeDossier();
+
+      const bouton = screen.getByRole('button', { name: /Renvoyer le courrier au patient/ });
+      expect(bouton).toBeTruthy();
+      // ET IL DIT CE QU'IL NE FAIT PAS : aucune version créée. C'est ce qui le
+      // distingue du contournement « réviser pour déclencher un envoi ».
+      expect(screen.getByText(/aucune version n’est créée/)).toBeTruthy();
+    });
+
+    it('le geste DISPARAÎT dès que le patient s’est prononcé — le relancer dirait qu’on ne l’a pas lu', async () => {
+      for (const etat of ['ratifie', 'conteste', 'dit_autrement'] as const) {
+        cleanup();
+        fetchMock.mockImplementation(
+          router({ dossier: { ...dossierEnAttente, ratifications: { OBJ_1: etat } } }),
+        );
+        await attendreLeDossier();
+        expect(
+          screen.queryByRole('button', { name: /Renvoyer le courrier au patient/ }),
+          etat,
+        ).toBeNull();
+      }
+    });
+
+    it('le geste DISPARAÎT sur une chaîne close — elle n’attend plus de réponse', async () => {
+      fetchMock.mockImplementation(
+        router({
+          dossier: {
+            ...dossierEnAttente,
+            fins: { OBJ_1: { ...FIN_OUVERTE, etat: 'close', motif: 'atteint' } },
+            tetesActives: 0,
+          },
+        }),
+      );
+      await attendreLeDossier();
+      expect(screen.queryByRole('button', { name: /Renvoyer le courrier au patient/ })).toBeNull();
+    });
+
+    it('un refus de CADENCE est rendu lisible, avec la date à laquelle ce sera possible', async () => {
+      fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+        if (url.startsWith('/api/praticien/objectifs/relance')) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            json: async () => ({
+              ok: false,
+              reason: 'cadence',
+              error: 'Un courrier est déjà parti il y a moins de 3 jours.',
+              possibleLe: '2026-09-13T12:00:00.000Z',
+            }),
+          } as Response);
+        }
+        return router({ dossier: dossierEnAttente })(url, options);
+      });
+      await attendreLeDossier();
+
+      fireEvent.click(screen.getByRole('button', { name: /Renvoyer le courrier au patient/ }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('status').textContent).toMatch(/moins de 3 jours/);
+      });
+      expect(screen.getByRole('status').textContent).toMatch(/Possible à partir du/);
+    });
+  });
+
 });
