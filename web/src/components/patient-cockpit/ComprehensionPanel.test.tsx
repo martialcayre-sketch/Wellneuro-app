@@ -211,3 +211,188 @@ describe('ComprehensionPanel', () => {
     expect(document.body.textContent).not.toMatch(/2 désaccords|taux|%/i);
   });
 });
+
+// ── LE RÉSUMÉ PROPOSÉ ────────────────────────────────────────────────────────
+describe('ComprehensionPanel — le résumé proposé', () => {
+  const TIRAGE = { id: 'TIR_1', texte: 'Vous décrivez un sommeil qui ne répare pas.', rang: 1 };
+
+  /** Un routeur par URL : l'ordre des appels ne doit rien décider ici. */
+  function router(tirageGet: unknown, tiragePost?: unknown) {
+    return (url: string, options?: { method?: string }) => {
+      if (String(url).includes('/comprehension/proposition')) {
+        return Promise.resolve(
+          json(options?.method === 'POST' ? (tiragePost ?? tirageGet) : tirageGet),
+        );
+      }
+      return Promise.resolve(json(dossier()));
+    };
+  }
+
+  const posts = () =>
+    fetchMock.mock.calls.filter(([, o]) => (o as { method?: string } | undefined)?.method === 'POST');
+
+  it('SOUS LA BARRE, aucun bouton — et ce qui manque est nommé pièce par pièce', async () => {
+    fetchMock.mockImplementation(
+      router({ ok: true, etat: 'sources_manquantes', manque: ['deux_syntheses_validees'] }),
+    );
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByText(/une seconde synthèse validée/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Proposer un résumé' })).toBeNull();
+  });
+
+  it('les deux manques se disent ENSEMBLE, sans se confondre', async () => {
+    fetchMock.mockImplementation(
+      router({ ok: true, etat: 'sources_manquantes', manque: ['deux_syntheses_validees', 'second_rideau'] }),
+    );
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/une seconde synthèse validée et un second rideau de questionnaires/),
+      ).toBeTruthy(),
+    );
+  });
+
+  it('OUVRIR L’ÉCRAN NE FAIT PARLER AUCUNE MACHINE — le bouton est le seul geste', async () => {
+    fetchMock.mockImplementation(router({ ok: true, etat: 'aucune' }));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Proposer un résumé' })).toBeTruthy());
+    expect(posts()).toEqual([]);
+  });
+
+  it('le bouton produit un tirage et pré-remplit la zone', async () => {
+    fetchMock.mockImplementation(
+      router({ ok: true, etat: 'aucune' }, { ok: true, etat: 'proposee', proposition: TIRAGE }),
+    );
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Proposer un résumé' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Proposer un résumé' }));
+
+    await waitFor(() => {
+      const zone = screen.getByLabelText('Ce que j’ai compris') as HTMLTextAreaElement;
+      expect(zone.value).toBe(TIRAGE.texte);
+    });
+    expect(screen.getByText(/à relire. Réécrivez-le/)).toBeTruthy();
+  });
+
+  it('UN TIRAGE QUI ARRIVE N’ÉCRASE PAS UNE SAISIE EN COURS', async () => {
+    // Le piège s'est refermé deux fois dans cette campagne : un banc qui tape
+    // APRÈS l'arrivée de la matière ne prouve rien. Ici le texte est tapé
+    // pendant que la lecture du tirage est encore en vol.
+    let livrer: (v: unknown) => void = () => {};
+    const enVol = new Promise((r) => {
+      livrer = r;
+    });
+    fetchMock.mockImplementation((url: string) => {
+      if (String(url).includes('/comprehension/proposition')) return enVol;
+      return Promise.resolve(json(dossier()));
+    });
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByLabelText('Ce que j’ai compris')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText('Ce que j’ai compris'), {
+      target: { value: 'Mes mots, tapés avant que le tirage n’arrive.' },
+    });
+
+    livrer(json({ ok: true, etat: 'proposee', proposition: TIRAGE }));
+
+    await waitFor(() => {
+      const zone = screen.getByLabelText('Ce que j’ai compris') as HTMLTextAreaElement;
+      expect(zone.value).toBe('Mes mots, tapés avant que le tirage n’arrive.');
+    });
+  });
+
+  it('« Une autre » REMPLACE le texte — c’est un geste, pas un pré-remplissage', async () => {
+    const AUTRE = { id: 'TIR_2', texte: 'Une autre manière de le dire.', rang: 2 };
+    fetchMock.mockImplementation(
+      router({ ok: true, etat: 'proposee', proposition: TIRAGE }, { ok: true, etat: 'proposee', proposition: AUTRE }),
+    );
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Une autre' })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Une autre' }));
+
+    await waitFor(() => {
+      const zone = screen.getByLabelText('Ce que j’ai compris') as HTMLTextAreaElement;
+      expect(zone.value).toBe(AUTRE.texte);
+    });
+  });
+
+  it('LE VERROU : publier est refusé tant que le texte est celui du tirage', async () => {
+    fetchMock.mockImplementation(router({ ok: true, etat: 'proposee', proposition: TIRAGE }));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => {
+      const zone = screen.getByLabelText('Ce que j’ai compris') as HTMLTextAreaElement;
+      expect(zone.value).toBe(TIRAGE.texte);
+    });
+
+    const publier = screen.getByRole('button', { name: 'Publier au patient' }) as HTMLButtonElement;
+    expect(publier.disabled).toBe(true);
+    expect(screen.getByText(/Relisez-le et réécrivez-le/)).toBeTruthy();
+
+    // LE BROUILLON RESTE POSSIBLE : on tire, on enregistre, on revient relire.
+    const brouillon = screen.getByRole('button', { name: 'Enregistrer en brouillon' }) as HTMLButtonElement;
+    expect(brouillon.disabled).toBe(false);
+  });
+
+  it('réécrire dégrise la publication', async () => {
+    fetchMock.mockImplementation(router({ ok: true, etat: 'proposee', proposition: TIRAGE }));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Publier au patient' }) as HTMLButtonElement).disabled).toBe(true),
+    );
+    fireEvent.change(screen.getByLabelText('Ce que j’ai compris'), {
+      target: { value: 'Ce que j’ai compris, avec mes mots à moi.' },
+    });
+
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Publier au patient' }) as HTMLButtonElement).disabled).toBe(false),
+    );
+    expect(screen.queryByText(/Relisez-le et réécrivez-le/)).toBeNull();
+  });
+
+  it('l’envoi porte `sourceId`, et RIEN D’AUTRE de la provenance', async () => {
+    fetchMock.mockImplementation(router({ ok: true, etat: 'proposee', proposition: TIRAGE }));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByLabelText('Ce que j’ai compris')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText('Ce que j’ai compris'), {
+      target: { value: 'Mes mots.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Publier au patient' }));
+
+    await waitFor(() => {
+      const envoi = posts().find(([url]) => String(url) === '/api/praticien/comprehension');
+      expect(envoi).toBeTruthy();
+      const charge = JSON.parse(String((envoi as [string, { body?: string }])[1].body));
+      expect(charge.sourceId).toBe('TIR_1');
+      // Le modèle et la version de consigne sont lus par le SERVEUR sur la
+      // ligne du tirage : un navigateur ne doit pas pouvoir les déclarer.
+      expect(charge.modele).toBeUndefined();
+      expect(charge.versionConsigne).toBeUndefined();
+      expect(charge.source).toBeUndefined();
+    });
+  });
+
+  it('sans tirage, `sourceId` part NUL — « ses mots »', async () => {
+    fetchMock.mockImplementation(router({ ok: true, etat: 'aucune' }));
+    render(<ComprehensionPanel idPatient="PAT_TEST" />);
+
+    await waitFor(() => expect(screen.getByLabelText('Ce que j’ai compris')).toBeTruthy());
+    fireEvent.change(screen.getByLabelText('Ce que j’ai compris'), {
+      target: { value: 'Entièrement de ma main.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Publier au patient' }));
+
+    await waitFor(() => {
+      const envoi = posts().find(([url]) => String(url) === '/api/praticien/comprehension');
+      expect(envoi).toBeTruthy();
+      expect(JSON.parse(String((envoi as [string, { body?: string }])[1].body)).sourceId).toBeNull();
+    });
+  });
+});

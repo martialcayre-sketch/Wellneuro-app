@@ -97,6 +97,26 @@ export type DonneesSynthese = {
   redigeeLe: Date | null;
   publieeLe: Date | null;
   supersedesSyntheseId: string | null;
+  /**
+   * D'OÙ VIENT CE TEXTE — « PARTI DE », et non « cité mot pour mot ».
+   *
+   * Le verrou de publication refuse un texte identique au tirage : le texte
+   * publié diffère donc TOUJOURS de sa source, par construction. `source` dit
+   * que le praticien est parti de ce tirage-là, pas que la phrase est du
+   * modèle.
+   *
+   * CE MODULE NE LES VALIDE PAS, ET C'EST VOLONTAIRE. Il est PUR : il ne lit
+   * pas la base. Que `sourceId` désigne un tirage existant, du même dossier et
+   * sous la consigne courante, se vérifie à la ROUTE — comme l'appartenance de
+   * `idSynthese` pour un désaccord. Ce module ne fait que transporter.
+   *
+   * NULL VEUT DIRE « SES MOTS », pas « on ne sait pas » (`DC-24`). Quatre
+   * contraintes en base refusent les demi-provenances et les orphelins.
+   */
+  source: string | null;
+  sourceId: string | null;
+  versionConsigne: string | null;
+  modele: string | null;
 };
 
 /**
@@ -131,6 +151,19 @@ export type EntreeSynthese = {
   /** `true` ⇒ ligne publiée (`publieeLe` posée à l'insert) ; sinon brouillon. */
   publier: boolean;
   supersedesSyntheseId?: string | null;
+  /**
+   * La provenance DÉJÀ VÉRIFIÉE par la route, ou rien.
+   *
+   * Le type est celui d'une provenance COMPLÈTE ou ABSENTE : il n'y a pas de
+   * forme intermédiaire à transporter. Les demi-provenances sont donc
+   * impossibles à écrire ici, avant même que la base ne les refuse.
+   */
+  provenance?: {
+    source: string;
+    sourceId: string;
+    versionConsigne: string;
+    modele: string;
+  } | null;
 };
 
 export type EntreeDesaccord = {
@@ -196,6 +229,10 @@ export function preparerSynthese(entree: EntreeSynthese): PreparationSynthese {
       redigeeLe: redigeeLe.date,
       publieeLe: entree.publier ? new Date() : null,
       supersedesSyntheseId: entree.supersedesSyntheseId ?? null,
+      source: entree.provenance?.source ?? null,
+      sourceId: entree.provenance?.sourceId ?? null,
+      versionConsigne: entree.provenance?.versionConsigne ?? null,
+      modele: entree.provenance?.modele ?? null,
     },
   };
 }

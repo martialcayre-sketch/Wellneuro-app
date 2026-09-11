@@ -26,6 +26,15 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    // La table des TIRAGES : lue seulement, jamais écrite depuis ici. Les
+    // écritures sont moquées pour que l'assertion puisse compter zéro.
+    propositionComprehensionIA: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -77,6 +86,7 @@ describe('/api/praticien/comprehension', () => {
       actif: true,
       suiviClotureLe: null,
     });
+    prisma.propositionComprehensionIA.findUnique.mockResolvedValue(null);
     prisma.syntheseComprehension.findMany.mockResolvedValue([]);
     prisma.syntheseComprehension.findUnique.mockResolvedValue(null);
     prisma.syntheseComprehension.findFirst.mockResolvedValue(null);
@@ -471,5 +481,141 @@ describe('/api/praticien/comprehension', () => {
     await POST(postRequest(corps()));
     expect(espion.mock.calls.flat().join(' ')).toContain('socket hang up');
     espion.mockRestore();
+  });
+
+  // ── LE VERROU DE PUBLICATION ET LA PROVENANCE ───────────────────────────
+  describe('un texte parti d’un résumé proposé', () => {
+    const TEXTE_TIRAGE = 'Vous décrivez un sommeil qui ne répare pas, et un rythme régulier malgré tout.';
+    const tirage = (partiel: Record<string, unknown> = {}) => ({
+      idPatient: 'PAT_TEST',
+      texte: TEXTE_TIRAGE,
+      versionConsigne: 'comprehension-v1',
+      modele: 'claude-modele-de-banc',
+      ...partiel,
+    });
+
+    it('PUBLIER un texte IDENTIQUE au tirage est refusé — il n’a pas été relu', async () => {
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage());
+      const reponse = await POST(
+        postRequest(corps({ texte: TEXTE_TIRAGE, sourceId: 'TIR_1', publier: true })),
+      );
+      expect(reponse.status).toBe(409);
+      expect((await reponse.json()).reason).toBe('RESUME_NON_RELU');
+      expect(prisma.syntheseComprehension.create).not.toHaveBeenCalled();
+    });
+
+    it('le verrou ignore les espaces de bord — recopier avec un retour à la ligne ne le contourne pas', async () => {
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage());
+      const reponse = await POST(
+        postRequest(corps({ texte: `  ${TEXTE_TIRAGE}\n`, sourceId: 'TIR_1', publier: true })),
+      );
+      expect(reponse.status).toBe(409);
+    });
+
+    it('le verrou trime AUSSI le tirage stocké — les deux côtés, pas un seul', async () => {
+      // Trouvé par mutation : le banc précédent ne trimait que le texte SOUMIS.
+      // Un tirage enregistré avec un blanc de bord aurait laissé publier sa
+      // recopie exacte.
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(
+        tirage({ texte: `\n  ${TEXTE_TIRAGE}  ` }),
+      );
+      const reponse = await POST(
+        postRequest(corps({ texte: TEXTE_TIRAGE, sourceId: 'TIR_1', publier: true })),
+      );
+      expect(reponse.status).toBe(409);
+      expect((await reponse.json()).reason).toBe('RESUME_NON_RELU');
+    });
+
+    it('ENREGISTRER EN BROUILLON un texte identique reste possible', async () => {
+      // On tire, on enregistre, on revient le relire : c'est l'usage attendu.
+      // Le brouillon ne sort pas de l'application.
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage());
+      prisma.syntheseComprehension.create.mockResolvedValue(ligneLue());
+      const reponse = await POST(
+        postRequest(corps({ texte: TEXTE_TIRAGE, sourceId: 'TIR_1', publier: false })),
+      );
+      expect(reponse.status).toBe(201);
+    });
+
+    it('un texte RÉÉCRIT publie, et écrit les quatre colonnes de provenance', async () => {
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage());
+      prisma.syntheseComprehension.create.mockResolvedValue(ligneLue({ publieeLe: new Date() }));
+      const reponse = await POST(
+        postRequest(corps({ texte: 'Ce que j’ai compris, avec mes mots.', sourceId: 'TIR_1', publier: true })),
+      );
+      expect(reponse.status).toBe(201);
+      const data = prisma.syntheseComprehension.create.mock.calls[0][0].data;
+      expect(data.source).toBe('proposition_ia');
+      expect(data.sourceId).toBe('TIR_1');
+      expect(data.versionConsigne).toBe('comprehension-v1');
+      expect(data.modele).toBe('claude-modele-de-banc');
+    });
+
+    it('la version de consigne et le modèle sont LUS SUR LA LIGNE, jamais reçus du client', async () => {
+      // Un navigateur ne peut pas inventer une provenance : au mieux désigner,
+      // parmi les tirages de CE dossier, lequel a servi (`D-164`).
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(
+        tirage({ versionConsigne: 'comprehension-v9', modele: 'modele-reel' }),
+      );
+      prisma.syntheseComprehension.create.mockResolvedValue(ligneLue());
+      await POST(
+        postRequest(
+          corps({
+            texte: 'Mes mots.',
+            sourceId: 'TIR_1',
+            publier: true,
+            versionConsigne: 'consigne-mentie',
+            modele: 'modele-menti',
+            source: 'source_mentie',
+          }),
+        ),
+      );
+      const data = prisma.syntheseComprehension.create.mock.calls[0][0].data;
+      expect(data.versionConsigne).toBe('comprehension-v9');
+      expect(data.modele).toBe('modele-reel');
+      expect(data.source).toBe('proposition_ia');
+    });
+
+    it('un tirage d’un AUTRE dossier est introuvable — pas « interdit »', async () => {
+      // Les distinguer ferait de la route un oracle d'existence, interrogeable
+      // avec une session praticien quelconque.
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage({ idPatient: 'PAT_AUTRE' }));
+      const reponse = await POST(postRequest(corps({ sourceId: 'TIR_1', publier: true })));
+      expect(reponse.status).toBe(404);
+      expect((await reponse.json()).reason).toBe('source_introuvable');
+    });
+
+    it('un tirage inexistant rend la MÊME réponse et le MÊME message', async () => {
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(null);
+      const reponse = await POST(postRequest(corps({ sourceId: 'TIR_INCONNU', publier: true })));
+      expect(reponse.status).toBe(404);
+      expect((await reponse.json()).reason).toBe('source_introuvable');
+    });
+
+    it('sans `sourceId`, les quatre colonnes restent NULL — « ses mots » (DC-24)', async () => {
+      prisma.syntheseComprehension.create.mockResolvedValue(ligneLue());
+      await POST(postRequest(corps({ publier: true })));
+      const data = prisma.syntheseComprehension.create.mock.calls[0][0].data;
+      expect(data.source).toBeNull();
+      expect(data.sourceId).toBeNull();
+      expect(data.versionConsigne).toBeNull();
+      expect(data.modele).toBeNull();
+      expect(prisma.propositionComprehensionIA.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('un `sourceId` mal typé est un 400, pas une panne', async () => {
+      const reponse = await POST(postRequest(corps({ sourceId: 42, publier: true })));
+      expect(reponse.status).toBe(400);
+    });
+
+    it('cette route n’écrit JAMAIS dans la table des tirages', async () => {
+      prisma.propositionComprehensionIA.findUnique.mockResolvedValue(tirage());
+      prisma.syntheseComprehension.create.mockResolvedValue(ligneLue());
+      await POST(postRequest(corps({ texte: 'Mes mots.', sourceId: 'TIR_1', publier: true })));
+      expect(prisma.propositionComprehensionIA.create).not.toHaveBeenCalled();
+      expect(prisma.propositionComprehensionIA.update).not.toHaveBeenCalled();
+      expect(prisma.propositionComprehensionIA.delete).not.toHaveBeenCalled();
+      expect(prisma.propositionComprehensionIA.deleteMany).not.toHaveBeenCalled();
+    });
   });
 });

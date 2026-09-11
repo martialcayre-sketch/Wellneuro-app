@@ -434,14 +434,17 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     await attendreLeDossier();
 
     // Un objectif existe : plus de saisie vierge affichée sous la carte.
-    expect(screen.queryByLabelText(/Ce que le patient demande/)).toBeNull();
+    expect(screen.queryByLabelText(/Priorité/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Enregistrer l’objectif' })).toBeNull();
 
     // Le geste de reformulation rouvre le formulaire ; l'annuler le referme.
+    // LA SONDE EST LA PRIORITÉ depuis le 2026-09-11 : le champ de reformulation
+    // a été retiré, et l'énoncé reste caché en mode reformulation — le serveur
+    // le recopie de la cible plutôt que de le faire retransiter.
     fireEvent.click(screen.getByRole('button', { name: 'Reformuler cette version' }));
-    expect(screen.getByLabelText(/Votre reformulation/)).toBeTruthy();
+    expect(screen.getByLabelText(/Priorité/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Annuler la reformulation' }));
-    expect(screen.queryByLabelText(/Votre reformulation/)).toBeNull();
+    expect(screen.queryByLabelText(/Priorité/)).toBeNull();
   });
 
   // AUCUN CHAMP DE CE PANNEAU NE PROPOSE UNE PHRASE À IMITER. Le champ
@@ -470,7 +473,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     fireEvent.change(screen.getByLabelText(/Ce que le patient demande/), {
       target: { value: 'Je voudrais dormir sans me réveiller à trois heures.' },
     });
-    fireEvent.change(screen.getByLabelText(/Votre reformulation/), {
+    fireEvent.change(screen.getByLabelText(/Priorité/), {
       target: { value: 'Sommeil fragmenté en seconde partie de nuit.' },
     });
     fireEvent.change(screen.getByLabelText(/Priorité \(libellé libre\)/), {
@@ -510,7 +513,7 @@ describe('ObjectifNegociePanel (Alliance 6.0-A LOT-02)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reformuler cette version' }));
     expect(screen.queryByLabelText(/Ce que le patient demande/)).toBeNull();
 
-    fireEvent.change(screen.getByLabelText(/Votre reformulation/), {
+    fireEvent.change(screen.getByLabelText(/Priorité/), {
       target: { value: 'Sommeil fragmenté en seconde partie de nuit.' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer la reformulation' }));
@@ -650,7 +653,7 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     },
   };
 
-  it('l’énoncé et la reformulation arrivent PRÉ-REMPLIS par citation, sans aucun appel', async () => {
+  it('l’énoncé arrive PRÉ-REMPLI par citation, sans aucun appel', async () => {
     fetchMock.mockImplementation(router({ matiere: MATIERE }));
     await attendreLeDossier();
 
@@ -658,11 +661,36 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
       const champ = screen.getByLabelText(/Ce que le patient demande/) as HTMLTextAreaElement;
       expect(champ.value).toBe('Je voudrais dormir sans me réveiller à trois heures.');
     });
-    const reformulation = screen.getByLabelText(/Votre reformulation/) as HTMLTextAreaElement;
-    expect(reformulation.value).toBe('Sommeil fragmenté en seconde partie de nuit.');
 
     // AUCUN POST : les citations ne coûtent rien, seul le bouton appelle.
     expect(fetchMock.mock.calls.filter(([, o]) => o?.method === 'POST')).toEqual([]);
+  });
+
+  it('LE CHAMP DE REFORMULATION N’EST PLUS À L’ÉCRAN — arbitrage du 2026-09-11', async () => {
+    // Il demandait au praticien, dans la MÊME phase, de redire ce qu'il avait
+    // compris alors que « Ce que j'ai compris de vous » le lui demandait déjà,
+    // et les deux textes atteignaient le patient. Ce banc défend le retrait :
+    // le réintroduire par inadvertance le fait rougir.
+    fetchMock.mockImplementation(router({ matiere: MATIERE }));
+    await attendreLeDossier();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Ce que le patient demande/)).toBeTruthy();
+    });
+    expect(screen.queryByLabelText(/Votre reformulation/)).toBeNull();
+  });
+
+  it('la matière de reformulation arrive toujours de la route, et n’est PLUS écrite nulle part', async () => {
+    // La route continue de la servir — c'est une citation valide, et retirer le
+    // champ de l'API aurait été un changement de surface que rien n'exige. Ce
+    // qui a changé est ce que l'écran en fait : plus rien.
+    fetchMock.mockImplementation(router({ matiere: MATIERE }));
+    await attendreLeDossier();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Ce que le patient demande/)).toBeTruthy();
+    });
+    expect(screen.queryByDisplayValue('Sommeil fragmenté en seconde partie de nuit.')).toBeNull();
   });
 
   it('la priorité proposée arrive MARQUÉE', async () => {
@@ -815,7 +843,7 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     expect(screen.getByText(/Cette phrase devient l’énoncé du patient telle quelle/)).toBeTruthy();
     expect(screen.queryByLabelText(/Ce que le patient demande/)).toBeNull();
 
-    fireEvent.change(screen.getByLabelText(/Votre reformulation/), {
+    fireEvent.change(screen.getByLabelText(/Priorité/), {
       target: { value: 'Sommeil fragmenté en seconde partie de nuit.' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’objectif' }));
@@ -832,7 +860,10 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
       // L'ÉCRAN DÉSIGNE, IL NE DICTE PAS.
       expect(charge.enoncePatient).toBeUndefined();
       // Ce qui appartient au praticien, lui, part bien.
-      expect(charge.reformulationPraticien).toBe('Sommeil fragmenté en seconde partie de nuit.');
+      // La reformulation n'est plus saisissable : la charge la porte VIDE pour
+      // un objectif neuf. Elle n'est pas retirée du contrat — une reprise de
+      // version doit pouvoir reconduire une reformulation existante.
+      expect(charge.reformulationPraticien).toBe('');
     });
   });
 
