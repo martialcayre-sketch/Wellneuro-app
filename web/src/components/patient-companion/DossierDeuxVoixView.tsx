@@ -10,6 +10,7 @@ import {
   EVA_MAX,
   EVA_MIN,
   LONGUEUR_MAX_AMENDEMENT,
+  LONGUEUR_MAX_DEMANDE_CORRECTION,
   LONGUEUR_MAX_REPONSE_JALON,
   sansContenuVisible,
 } from '@/lib/praticien/objectifNegocie';
@@ -83,12 +84,20 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
   const [erreurEnvoi, setErreurEnvoi] = useState('');
   /** Ce qui vient d'être transmis, ou `null`. Deux gestes, deux accusés : un
    *  message unique ferait dire à un texte ce qu'on dit d'un clic. */
-  const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | null>(null);
+  const [repondu, setRepondu] = useState<'reponse' | 'version' | 'etape' | 'correction' | null>(
+    null,
+  );
   /** La version dont le patient est en train d'écrire SA formulation, ou
    *  `null` — la saisie n'est jamais ouverte d'office : proposer un champ vide
    *  sous un objectif suggère qu'il manque quelque chose à y mettre. */
   const [amendeId, setAmendeId] = useState<string | null>(null);
   const [texteAmendement, setTexteAmendement] = useState('');
+  /** La version pour laquelle le patient ouvre une demande de correction, ou
+   *  `null`. Même discipline que la saisie ci-dessus : jamais ouverte d'office
+   *  — un champ offert sous un objectif ratifié suggérerait qu'il y a quelque
+   *  chose à y redire. */
+  const [demandeId, setDemandeId] = useState<string | null>(null);
+  const [texteDemande, setTexteDemande] = useState('');
   /** Où le patient en est, à l'étape ouverte (LOT-05). */
   const [texteJalon, setTexteJalon] = useState('');
   /**
@@ -204,6 +213,55 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
   );
 
   /**
+   * « DEMANDER UNE CORRECTION » — le quatrième verbe (2026-09-11).
+   *
+   * IL N'EXISTE QUE PARCE QUE LE BLOC SE FERME. Une fois « c'est bien ça »
+   * posé, les trois premiers verbes disparaissent : sans celui-ci, le patient
+   * serait enfermé dans sa propre réponse.
+   *
+   * LE TEXTE EST FACULTATIF, et l'envoi part même vide. C'est le seul des
+   * quatre gestes où le champ ne conditionne pas le bouton : un patient peut
+   * savoir que ça ne va pas sans savoir le dire, et lui demander de formuler
+   * pour avoir le droit de demander lui poserait une condition d'expression
+   * sur sa propre parole.
+   *
+   * MÊME DISCIPLINE DE SAISIE que le troisième verbe : elle n'est vidée
+   * qu'APRÈS un succès. Sur un refus — texte trop long, version reformulée
+   * entre-temps — le patient retrouve ses mots et peut les corriger.
+   */
+  const demanderCorrection = useCallback(
+    async (idObjectif: string) => {
+      setEnvoi(true);
+      setErreurEnvoi('');
+      setRepondu(null);
+      try {
+        const res = await fetch('/api/portail/dossier', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          // Le geste est NOMMÉ, comme les deux précédents. `texte` part tel
+          // quel, vide compris : c'est le SERVEUR qui replie le blanc sur
+          // `null`, et le faire ici en double finirait par diverger.
+          body: JSON.stringify({ geste: 'demande_correction', idObjectif, texte: texteDemande }),
+        });
+        const data = (await res.json()) as { ok: boolean; error?: string };
+        if (res.ok && data.ok) {
+          setRepondu('correction');
+          setDemandeId(null);
+          setTexteDemande('');
+          await charger();
+        } else {
+          setErreurEnvoi(data.error ?? 'Votre demande n’a pas pu être enregistrée.');
+        }
+      } catch {
+        setErreurEnvoi('Erreur réseau. Réessayez.');
+      } finally {
+        setEnvoi(false);
+      }
+    },
+    [charger, texteDemande],
+  );
+
+  /**
    * « OÙ J'EN SUIS » — la réponse d'étape (LOT-05, `D-111`).
    *
    * Même patron que le troisième verbe : la saisie n'est vidée qu'APRÈS un
@@ -272,8 +330,17 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
     );
   }
 
-  const { objectifs, ratifiable, ratifications, amendements, reponsesJalon, jalonDu, ceQuiCompte, comprehension } =
-    etat.donnees;
+  const {
+    objectifs,
+    ratifiable,
+    ratifications,
+    amendements,
+    demandesCorrection,
+    reponsesJalon,
+    jalonDu,
+    ceQuiCompte,
+    comprehension,
+  } = etat.donnees;
 
   return (
     <div className="space-y-4">
@@ -409,7 +476,144 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                       </div>
                     ))}
 
-                  {ratifiable && (
+                  {/* ── LE BLOC SE FERME SUR « C'EST BIEN ÇA » (2026-09-11) ──
+                      LA MESURE QUI L'A DÉCIDÉ. Le dossier PAT006 porte deux
+                      ratifications IDENTIQUES sur la même version, à dix
+                      secondes d'écart : un patient qui a répondu, n'a rien vu
+                      changer d'assez net, et a recommencé. Les trois verbes
+                      restaient offerts sous sa propre réponse.
+
+                      SEULEMENT SUR `ratifie`, ET C'EST L'ARBITRAGE DU
+                      RESPONSABLE. Contester et « le dire autrement » appellent
+                      déjà une suite du praticien : leur bloc reste ouvert, le
+                      patient peut encore se raviser d'un clic. Ratifier, non —
+                      il a dit oui, et la porte qui reste est le quatrième
+                      verbe.
+
+                      L'ÉCRAN NE VERROUILLE RIEN, et c'est pour cela que la
+                      route refuse AUSSI le doublon strict (`D-164`) : un onglet
+                      resté ouvert rouvrirait ces boutons sans rien demander à
+                      personne. */}
+                  {ratifiable && objectif.etat === 'ratifie' && (
+                    <div className="space-y-2 pt-1">
+                      <p className="text-xs text-muted-foreground">
+                        Votre réponse est enregistrée et ne s’efface pas. Si vous voulez revenir
+                        dessus, demandez une correction à votre praticien : il reprendra cet
+                        objectif avec vous.
+                      </p>
+
+                      {/* CE QUE LE PATIENT A DÉJÀ DEMANDÉ SUR CETTE VERSION,
+                          rendu à sa relecture. Même filtre et même motif que
+                          les amendements : une demande écrite pour une version
+                          depuis reformulée ne parle pas de ce texte-ci.
+                          « Demandé le » sur `creeLe` : c'est la date d'envoi,
+                          pas une date déclarée. */}
+                      {demandesCorrection
+                        .filter((demande) => demande.idObjectif === objectif.id)
+                        .map((demande) => (
+                          <div
+                            key={demande.id}
+                            className="space-y-1 rounded-lg border border-border bg-surface p-3"
+                          >
+                            <p className="text-xs text-muted-foreground">
+                              Vous avez demandé une correction
+                              {dateLisible(demande.creeLe)
+                                ? `, le ${dateLisible(demande.creeLe)}`
+                                : ''}
+                            </p>
+                            {/* LE TEXTE EST FACULTATIF : `null` n'est PAS un
+                                texte vide à afficher, et surtout pas une phrase
+                                inventée à sa place. On ne rend rien — la ligne
+                                ci-dessus dit déjà le geste (`DC-24`). */}
+                            {demande.texte && (
+                              <p className="whitespace-pre-wrap text-base leading-relaxed">
+                                {demande.texte}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+
+                      <PatientButton
+                        type="button"
+                        variant="neutral"
+                        disabled={envoi}
+                        onClick={() => {
+                          setErreurEnvoi('');
+                          if (demandeId === objectif.id) {
+                            setDemandeId(null);
+                            setTexteDemande('');
+                            return;
+                          }
+                          setDemandeId(objectif.id);
+                          // JAMAIS PRÉ-REMPLI, même règle qu'au troisième
+                          // verbe : souffler au patient ce qui ne va pas dans
+                          // un texte qu'il vient d'accepter serait lui mettre
+                          // des mots dans la bouche.
+                          setTexteDemande('');
+                        }}
+                      >
+                        {demandeId === objectif.id
+                          ? 'Annuler'
+                          : 'Demander une correction à mon praticien'}
+                      </PatientButton>
+
+                      {demandeId === objectif.id && (
+                        <div className="space-y-2 rounded-lg border border-border p-3">
+                          <label
+                            htmlFor={`demande-${objectif.id}`}
+                            className="block text-sm font-medium"
+                          >
+                            Qu’est-ce qui ne vous va pas dans cet objectif ?
+                          </label>
+                          {/* LE FACULTATIF EST DIT, ET DIT AVANT LE CHAMP. Un
+                              champ sous une question se lit comme obligatoire ;
+                              sans cette phrase, un patient qui ne sait pas
+                              formuler renoncerait à demander. */}
+                          <p className="text-xs text-muted-foreground">
+                            Vous pouvez l’expliquer, ou envoyer votre demande sans rien écrire :
+                            votre praticien reprendra l’objectif avec vous dans les deux cas.
+                          </p>
+                          <textarea
+                            id={`demande-${objectif.id}`}
+                            value={texteDemande}
+                            onChange={(evenement) => setTexteDemande(evenement.target.value)}
+                            rows={4}
+                            className="w-full rounded-lg border border-border bg-surface p-3 text-base leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          />
+                          {/* MÊME PATRON DE COMPTEUR que le troisième verbe :
+                              aucune troncature par `maxLength`, le jugement
+                              porte sur le texte TRIMÉ — juger la longueur brute
+                              rendrait l'écran plus strict que le serveur. */}
+                          <p
+                            className={
+                              texteDemande.trim().length > LONGUEUR_MAX_DEMANDE_CORRECTION
+                                ? 'text-xs text-status-warning'
+                                : 'text-xs text-muted-foreground'
+                            }
+                          >
+                            {texteDemande.length} / {LONGUEUR_MAX_DEMANDE_CORRECTION} caractères
+                          </p>
+                          {/* LE BOUTON N'EST PAS DÉSACTIVÉ SUR UN CHAMP VIDE,
+                              et c'est le seul des quatre gestes dans ce cas.
+                              Le désactiver contredirait la phrase au-dessus et
+                              rendrait le « facultatif » mensonger. */}
+                          <PatientButton
+                            type="button"
+                            variant="primary"
+                            disabled={
+                              envoi
+                              || texteDemande.trim().length > LONGUEUR_MAX_DEMANDE_CORRECTION
+                            }
+                            onClick={() => void demanderCorrection(objectif.id)}
+                          >
+                            Envoyer ma demande
+                          </PatientButton>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {ratifiable && objectif.etat !== 'ratifie' && (
                     <div className="space-y-2 pt-1">
                       <p className="text-xs text-muted-foreground">
                         Votre réponse reste dans votre dossier et ne s’efface pas. Si vous changez
@@ -844,6 +1048,16 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {repondu === 'etape' && (
                 <PatientInlineMessage tone="success">
                   C’est transmis. Votre praticien lira où vous en êtes, tel que vous l’avez écrit.
+                </PatientInlineMessage>
+              )}
+              {/* QUATRIÈME ACCUSÉ, et il ne dit PAS « c'est transmis » tout
+                  court : ce geste attend une suite du praticien, là où les
+                  trois autres se suffisent. Promettre un délai serait mentir —
+                  rien dans le dossier ne le connaît. */}
+              {repondu === 'correction' && (
+                <PatientInlineMessage tone="success">
+                  Votre demande est transmise. Votre praticien la lira et reprendra cet objectif
+                  avec vous.
                 </PatientInlineMessage>
               )}
               {erreurEnvoi && (

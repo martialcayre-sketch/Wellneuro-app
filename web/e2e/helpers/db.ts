@@ -97,6 +97,12 @@ export async function nettoyerDossierDeuxVoix(idPatient: string): Promise<void> 
   await prisma.finObjectif.deleteMany({ where: { idPatient } });
   await prisma.reponseJalonObjectif.deleteMany({ where: { idPatient } });
   await prisma.amendementObjectif.deleteMany({ where: { idPatient } });
+  // LA QUATRIÈME TABLE (2026-09-11). Son absence ici a été trouvée par un banc
+  // qui rougissait sur WebKit et pas sur Chromium : le patient de fixture est
+  // PARTAGÉ entre les deux projets Playwright, l'objectif non — la demande du
+  // premier run s'ajoutait donc à celle du second. Une table oubliée d'un
+  // nettoyage ne se voit que le jour où elle porte des lignes.
+  await prisma.demandeCorrectionObjectif.deleteMany({ where: { idPatient } });
   await prisma.ratificationObjectif.deleteMany({ where: { idPatient } });
   await prisma.syntheseComprehension.deleteMany({ where: { idPatient } });
   await prisma.entreeCeQuiCompte.deleteMany({ where: { idPatient } });
@@ -198,6 +204,21 @@ export async function lireRatifications(
   return prisma.ratificationObjectif.findMany({
     where: { idPatient },
     select: { sens: true, idObjectif: true },
+    orderBy: { creeLe: 'asc' },
+  });
+}
+
+/**
+ * Les demandes de correction d'un dossier, dans l'ordre. `texte` est rendu tel
+ * qu'il est en base — `null` compris : c'est justement ce que le banc doit
+ * pouvoir distinguer d'une chaîne vide.
+ */
+export async function lireDemandesCorrection(
+  idPatient: string,
+): Promise<{ idObjectif: string; texte: string | null }[]> {
+  return prisma.demandeCorrectionObjectif.findMany({
+    where: { idPatient },
+    select: { idObjectif: true, texte: true },
     orderBy: { creeLe: 'asc' },
   });
 }

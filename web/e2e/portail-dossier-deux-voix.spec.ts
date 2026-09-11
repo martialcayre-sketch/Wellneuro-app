@@ -20,6 +20,7 @@ import { test, expect } from '@playwright/test';
 import {
   cleanupAncreJalon,
   closePrisma,
+  lireDemandesCorrection,
   lireRatifications,
   lireReponsesJalon,
   nettoyerDossierDeuxVoix,
@@ -119,28 +120,77 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
     expect(lignes).toEqual([{ sens: 'ratifie', idObjectif }]);
   });
 
-  test('CHANGER D’AVIS AJOUTE UNE LIGNE — rien n’est écrasé ni retiré', async ({ page }) => {
+  // CE BANC A ÉTÉ RÉÉCRIT LE 2026-09-11, PAS SUPPRIMÉ. Il cliquait « Ce n'est
+  // pas exactement ça » APRÈS avoir ratifié — un chemin que l'écran n'offre
+  // plus, puisque le bloc se ferme sur « c'est bien ça ». L'invariant qu'il
+  // défendait — rien ne s'écrase, contre une VRAIE base — est intact et se
+  // vérifie désormais sur le geste qui a pris la place des trois autres.
+  test('APRÈS « C’EST BIEN ÇA », LE BLOC SE FERME et le quatrième verbe prend sa place', async ({
+    page,
+  }) => {
     await page.goto(`/portail/${JETON}/dossier`);
     // L'écran affiche l'état posé au cas précédent : la série est bien
-    // séquentielle, et le second geste s'ajoute au premier.
+    // séquentielle.
     await expect(page.getByText('Vous avez répondu : c’est bien ça.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Ce n’est pas exactement ça' }).click();
-    await expect(page.getByText('Vous avez répondu : ce n’est pas exactement ça.')).toBeVisible();
+    // LES TROIS VERBES ONT DISPARU — c'est le défaut mesuré sur PAT006, où le
+    // patient voyait encore « C'est bien ça » sous sa propre réponse et a
+    // recommencé dix secondes plus tard.
+    await expect(page.getByRole('button', { name: 'C’est bien ça' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Ce n’est pas exactement ça' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Le dire autrement' })).toHaveCount(0);
 
-    // DEUX lignes, dans l'ordre — pas une ligne corrigée. C'est l'invariant du
-    // lot, et c'est le seul endroit où il se vérifie contre une vraie base.
-    const lignes = await lireRatifications(PATIENT.idPatient);
-    expect(lignes).toEqual([
-      { sens: 'ratifie', idObjectif },
-      { sens: 'conteste', idObjectif },
+    // ET LE QUATRIÈME EST LÀ : le patient n'est pas enfermé dans sa réponse.
+    await page.getByRole('button', { name: 'Demander une correction à mon praticien' }).click();
+    await page.getByRole('button', { name: 'Envoyer ma demande' }).click();
+    await expect(page.getByText('Votre demande est transmise')).toBeVisible();
+
+    // UNE DEMANDE SANS TEXTE VAUT — et elle vaut `null`, jamais `''` : le CHECK
+    // en base refuse la chaîne vide, et c'est ici, contre une vraie base, que
+    // le repli du serveur se vérifie.
+    expect(await lireDemandesCorrection(PATIENT.idPatient)).toEqual([
+      { idObjectif, texte: null },
     ]);
+
+    // LA RATIFICATION N'A PAS BOUGÉ : une demande ne corrige rien, elle
+    // s'ajoute. C'est l'invariant append-only, vérifié contre la base.
+    expect(await lireRatifications(PATIENT.idPatient)).toEqual([{ sens: 'ratifie', idObjectif }]);
 
     // Et aucun bouton pour retirer la réponse : il n'existe pas de verbe pour
     // cela, ni dans l'écran ni dans la route.
     const rendu = (await page.locator('body').textContent()) ?? '';
     expect(rendu).not.toContain('Annuler ma réponse');
     expect(rendu).not.toContain('Supprimer');
+  });
+
+  test('LE VERROU TIENT CONTRE LA VRAIE BASE — un doublon posté directement est refusé', async ({
+    page,
+  }) => {
+    await page.goto(`/portail/${JETON}/dossier`);
+    await expect(page.getByText('Vous avez répondu : c’est bien ça.')).toBeVisible();
+
+    // L'écran ne propose plus le bouton ; un onglet resté ouvert, lui, le
+    // posterait encore. `D-164` : le serveur vérifie au lieu de croire le
+    // navigateur.
+    const refus = await page.request.post('/api/portail/dossier', {
+      data: { idObjectif, sens: 'ratifie' },
+    });
+    expect(refus.status()).toBe(409);
+    expect((await refus.json()).reason).toBe('deja_ratifie');
+
+    // RIEN N'A ÉTÉ ÉCRIT : le refus est un refus, pas une ligne de plus.
+    expect(await lireRatifications(PATIENT.idPatient)).toEqual([{ sens: 'ratifie', idObjectif }]);
+
+    // MAIS LA PAROLE NEUVE PASSE : contester reste possible depuis le même
+    // onglet périmé. Le verrou ne ferme que la répétition à l'identique.
+    const conteste = await page.request.post('/api/portail/dossier', {
+      data: { idObjectif, sens: 'conteste' },
+    });
+    expect(conteste.status()).toBe(201);
+    expect(await lireRatifications(PATIENT.idPatient)).toEqual([
+      { sens: 'ratifie', idObjectif },
+      { sens: 'conteste', idObjectif },
+    ]);
   });
 
   test('sans session portail, l’écran ne sert rien', async ({ browser }) => {
