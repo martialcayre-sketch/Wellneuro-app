@@ -33,6 +33,17 @@ const { prisma, logger } = vi.hoisted(() => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    demandeCorrectionObjectif: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      // Mêmes moqueries expresses, même motif : sans elles, l'assertion
+      // « rien ne s'écrase » lèverait au lieu de compter zéro.
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     assessmentEpisode: { findMany: vi.fn() },
     // Alliance 6.0-B (`D-161`) : la fin d'une chaîne. Les verbes d'écrasement
     // sont moqués EXPRESSÉMENT bien que jamais appelés — sans eux, l'assertion
@@ -66,7 +77,10 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/observability/logger', () => ({ logger }));
 
 import { signPatientSession } from '@/lib/patient-session';
-import { LONGUEUR_MAX_AMENDEMENT } from '@/lib/praticien/objectifNegocie';
+import {
+  LONGUEUR_MAX_AMENDEMENT,
+  LONGUEUR_MAX_DEMANDE_CORRECTION,
+} from '@/lib/praticien/objectifNegocie';
 import { JOURS_JALON, TOLERANCE_JOURS_JALON } from '@/lib/equilibre/constants';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { GET, POST } from './route';
@@ -138,6 +152,7 @@ function mockDossierComplet(surcharges: Record<string, unknown[]> = {}): void {
   prisma.objectifNegocie.findMany.mockResolvedValue(surcharges.objectifs ?? [objectif()]);
   prisma.ratificationObjectif.findMany.mockResolvedValue(surcharges.ratifications ?? []);
   prisma.amendementObjectif.findMany.mockResolvedValue(surcharges.amendements ?? []);
+  prisma.demandeCorrectionObjectif.findMany.mockResolvedValue(surcharges.demandes ?? []);
   prisma.reponseJalonObjectif.findMany.mockResolvedValue(surcharges.reponsesJalon ?? []);
   prisma.finObjectif.findMany.mockResolvedValue(surcharges.fins ?? []);
   prisma.accordAtteste.findMany.mockResolvedValue(surcharges.attestations ?? []);
@@ -211,6 +226,230 @@ describe('/api/portail/dossier', () => {
   });
 
   // ── DRAPEAU ───────────────────────────────────────────────────────────────
+
+  // ── LE QUATRIÈME VERBE ET SON VERROU (2026-09-11) ─────────────────────────
+
+  describe('POST demande_correction — le geste qui reste quand le bloc se ferme', () => {
+    const demandeOk = (texte?: unknown) => ({
+      geste: 'demande_correction',
+      idObjectif: 'OBJ_1',
+      ...(texte === undefined ? {} : { texte }),
+    });
+
+    beforeEach(() => {
+      mockCompteActif();
+      mockDossierComplet();
+      prisma.demandeCorrectionObjectif.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'DEM_1',
+          idObjectif: data.idObjectif,
+          texte: data.texte,
+          creeLe: new Date('2026-09-11T18:20:00.000Z'),
+        }),
+      );
+    });
+
+    it('UNE DEMANDE SANS TEXTE EST UNE DEMANDE — le geste seul suffit', async () => {
+      const res = await POST(postRequest(cookieProprio(), demandeOk()));
+      expect(res.status).toBe(201);
+      expect(await res.json()).toMatchObject({ ok: true, demandeCorrection: { texte: null } });
+    });
+
+    it('un texte vide dépose `null`, JAMAIS la chaîne vide', async () => {
+      // « Il n'a pas écrit » et « il a écrit, et il n'a rien mis » ne sont pas
+      // la même phrase devant un praticien (`DC-24`). Le CHECK en base refuse
+      // `''` : le déposer ferait un 500 pour un envoi parfaitement ordinaire.
+      for (const vide of ['', '   ', '\u200b']) {
+        prisma.demandeCorrectionObjectif.create.mockClear();
+        const res = await POST(postRequest(cookieProprio(), demandeOk(vide)));
+        expect(res.status).toBe(201);
+        const { data } = prisma.demandeCorrectionObjectif.create.mock.calls[0][0];
+        expect(data.texte).toBeNull();
+      }
+    });
+
+    it('le texte écrit est déposé tel quel, sans date ni identifiant du corps', async () => {
+      await POST(
+        postRequest(cookieProprio(), {
+          ...demandeOk('Ce n’est pas le sommeil, c’est la fatigue de la journée.'),
+          idPatient: 'PAT_AUTRE',
+          creeLe: '2020-01-01T00:00:00.000Z',
+        }),
+      );
+      const { data } = prisma.demandeCorrectionObjectif.create.mock.calls[0][0];
+      expect(data).toEqual({
+        idPatient: PATIENT.idPatient,
+        idObjectif: 'OBJ_1',
+        texte: 'Ce n’est pas le sommeil, c’est la fatigue de la journée.',
+      });
+      expect(data).not.toHaveProperty('creeLe');
+    });
+
+    it('refuse un texte au-delà de la borne — SANS le tronquer', async () => {
+      const res = await POST(
+        postRequest(cookieProprio(), demandeOk('x'.repeat(LONGUEUR_MAX_DEMANDE_CORRECTION + 1))),
+      );
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ reason: 'texte_trop_long' });
+      expect(prisma.demandeCorrectionObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('UNE BORNE D’ESPACES N’EST PAS UN TEXTE TROP LONG — elle se réduit à rien', async () => {
+      const res = await POST(
+        postRequest(cookieProprio(), demandeOk(' '.repeat(LONGUEUR_MAX_DEMANDE_CORRECTION + 50))),
+      );
+      expect(res.status).toBe(201);
+      const { data } = prisma.demandeCorrectionObjectif.create.mock.calls[0][0];
+      expect(data.texte).toBeNull();
+    });
+
+    it('refuse une référence d’objectif absente', async () => {
+      const res = await POST(
+        postRequest(cookieProprio(), { geste: 'demande_correction', texte: 'reprenez-le' }),
+      );
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ reason: 'objectif_absent' });
+    });
+
+    it('APPEND-ONLY : redemander fait DEUX lignes, rien n’est corrigé', async () => {
+      await POST(postRequest(cookieProprio(), demandeOk('la première fois')));
+      await POST(postRequest(cookieProprio(), demandeOk('je redemande')));
+      expect(prisma.demandeCorrectionObjectif.create).toHaveBeenCalledTimes(2);
+      expect(prisma.demandeCorrectionObjectif.update).not.toHaveBeenCalled();
+      expect(prisma.demandeCorrectionObjectif.updateMany).not.toHaveBeenCalled();
+      expect(prisma.demandeCorrectionObjectif.upsert).not.toHaveBeenCalled();
+      expect(prisma.demandeCorrectionObjectif.delete).not.toHaveBeenCalled();
+      expect(prisma.demandeCorrectionObjectif.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('une demande sur une version DÉJÀ REFORMULÉE est refusée — comme les trois autres gestes', async () => {
+      mockDossierComplet({
+        objectifs: [objectif(), objectif({ id: 'OBJ_2', supersedesObjectifId: 'OBJ_1' })],
+      });
+      const res = await POST(postRequest(cookieProprio(), demandeOk('trop tard')));
+      expect(res.status).toBe(409);
+      expect(prisma.demandeCorrectionObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('le GET rend les demandes du dossier, texte nul compris', async () => {
+      mockDossierComplet({
+        demandes: [
+          { id: 'DEM_1', idObjectif: 'OBJ_1', texte: null, creeLe: new Date('2026-09-11T18:20:00.000Z') },
+          { id: 'DEM_0', idObjectif: 'OBJ_0', texte: 'sur l’ancienne version', creeLe: new Date('2026-09-01T10:00:00.000Z') },
+        ],
+      });
+      const corps = await (await GET(getRequest(cookieProprio()))).json();
+      // JAMAIS FILTRÉES SUR LA TÊTE : `OBJ_0` est une version reformulée depuis,
+      // et c'est le cas NORMAL ici — la reformulation est ce qui referme une
+      // demande. La faire disparaître effacerait ce qui a provoqué la v2.
+      expect(corps.demandesCorrection.map((d: { id: string }) => d.id)).toEqual(['DEM_1', 'DEM_0']);
+      expect(corps.demandesCorrection[0].texte).toBeNull();
+    });
+  });
+
+  describe('LE VERROU DU DOUBLON STRICT — mesuré sur PAT006, pas craint', () => {
+    const ratifier = () => ({ idObjectif: 'OBJ_1', sens: 'ratifie' });
+    const ligneRatification = (id: string, sens: string, jour: number) => ({
+      id,
+      idObjectif: 'OBJ_1',
+      sens,
+      creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00.000Z`),
+    });
+
+    beforeEach(() => {
+      mockCompteActif();
+      mockDossierComplet();
+      prisma.ratificationObjectif.create.mockResolvedValue({
+        id: 'RAT_N',
+        idObjectif: 'OBJ_1',
+        sens: 'ratifie',
+        creeLe: new Date('2026-09-11T18:14:10.000Z'),
+      });
+    });
+
+    it('RATIFIER DEUX FOIS LA MÊME VERSION EST REFUSÉ EN 409 — c’est le défaut de PAT006', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'ratifie', 11)] });
+      const res = await POST(postRequest(cookieProprio(), ratifier()));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ reason: 'deja_ratifie' });
+      expect(prisma.ratificationObjectif.create).not.toHaveBeenCalled();
+    });
+
+    it('LE REFUS NOMME LA SORTIE — sans quoi le patient resterait sans geste', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'ratifie', 11)] });
+      const corps = await (await POST(postRequest(cookieProprio(), ratifier()))).json();
+      expect(corps.error).toMatch(/demandez une correction à votre praticien/);
+    });
+
+    it('CONTESTER APRÈS AVOIR RATIFIÉ RESTE POSSIBLE — c’est une parole neuve', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'ratifie', 11)] });
+      prisma.ratificationObjectif.create.mockResolvedValue({
+        id: 'RAT_N',
+        idObjectif: 'OBJ_1',
+        sens: 'conteste',
+        creeLe: new Date('2026-09-11T18:20:00.000Z'),
+      });
+      const res = await POST(
+        postRequest(cookieProprio(), { idObjectif: 'OBJ_1', sens: 'conteste' }),
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('CONTESTER DEUX FOIS RESTE POSSIBLE — le verrou ne porte que sur « c’est bien ça »', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'conteste', 11)] });
+      prisma.ratificationObjectif.create.mockResolvedValue({
+        id: 'RAT_N',
+        idObjectif: 'OBJ_1',
+        sens: 'conteste',
+        creeLe: new Date('2026-09-11T18:20:00.000Z'),
+      });
+      const res = await POST(
+        postRequest(cookieProprio(), { idObjectif: 'OBJ_1', sens: 'conteste' }),
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('RATIFIER APRÈS AVOIR CONTESTÉ RESTE POSSIBLE — changer d’avis n’est pas se répéter', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'conteste', 11)] });
+      const res = await POST(postRequest(cookieProprio(), ratifier()));
+      expect(res.status).toBe(201);
+    });
+
+    it('RATIFIER APRÈS AVOIR ÉCRIT SA VERSION RESTE POSSIBLE — les deux tables se lisent ensemble', async () => {
+      // Le dernier geste est `dit_autrement` : revenir à « c'est bien ça »
+      // après avoir proposé autre chose est un vrai changement d'avis. Lire la
+      // seule table des ratifications le refuserait à tort.
+      mockDossierComplet({
+        ratifications: [ligneRatification('RAT_1', 'ratifie', 10)],
+        amendements: [
+          { id: 'AMD_1', idObjectif: 'OBJ_1', texte: 'ma version', creeLe: new Date('2026-09-11T10:00:00.000Z') },
+        ],
+      });
+      const res = await POST(postRequest(cookieProprio(), ratifier()));
+      expect(res.status).toBe(201);
+    });
+
+    it('une ratification sur une AUTRE version ne verrouille pas celle-ci', async () => {
+      mockDossierComplet({
+        ratifications: [{ ...ligneRatification('RAT_1', 'ratifie', 11), idObjectif: 'OBJ_AUTRE' }],
+      });
+      const res = await POST(postRequest(cookieProprio(), ratifier()));
+      expect(res.status).toBe(201);
+    });
+
+    it('LA PREMIÈRE RATIFICATION PASSE — le verrou ne ferme pas la porte d’entrée', async () => {
+      const res = await POST(postRequest(cookieProprio(), ratifier()));
+      expect(res.status).toBe(201);
+    });
+
+    it('LE VERROU LIT LA BASE, PAS LE NAVIGATEUR — la lecture est scopée au dossier ET à la version', async () => {
+      mockDossierComplet({ ratifications: [ligneRatification('RAT_1', 'ratifie', 11)] });
+      await POST(postRequest(cookieProprio(), ratifier()));
+      const appels = prisma.ratificationObjectif.findMany.mock.calls.map((c) => c[0]);
+      const scope = appels.find((a) => a?.where?.idObjectif !== undefined);
+      expect(scope?.where).toMatchObject({ idPatient: PATIENT.idPatient, idObjectif: 'OBJ_1' });
+    });
+  });
 
   describe('le drapeau garde les deux verbes, fail-closed', () => {
     it.each([
