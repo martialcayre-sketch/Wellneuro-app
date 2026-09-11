@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { constaterProvenance } from '@/lib/objectif/provenanceVerifiee';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -1001,12 +1002,31 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
       return echec(preparation.raison, MESSAGES_REFUS[preparation.raison], 400);
     }
 
+    // LA PROVENANCE SE CONSTATE ICI, APRÈS la préparation et AVANT l'écriture.
+    //
+    // AUCUNE DÉCLARATION DU CORPS N'EST LUE. `body` ne porte aucun identifiant
+    // de source et n'en portera pas : le serveur relit le dépôt, le
+    // `narratif_patient` et les tirages, puis compare aux textes préparés. Une
+    // provenance n'est posée que sur correspondance EXACTE — c'est aussi ce qui
+    // fait tomber la marque d'un texte réécrit (`D-167` §6), par un seul
+    // mécanisme plutôt que deux qui pourraient diverger.
+    //
+    // Les textes comparés sont ceux de `preparation.donnees`, pas ceux du
+    // corps : ce sont eux qui partent en base, et comparer les autres
+    // laisserait un écart entre ce qui est écrit et ce qui est attesté.
+    const provenance = await constaterProvenance(idPatient, {
+      enoncePatient: preparation.donnees.enoncePatient ?? null,
+      reformulationPraticien: preparation.donnees.reformulationPraticien ?? null,
+      priorite: preparation.donnees.priorite ?? null,
+    });
+    const donneesAvecProvenance = { ...preparation.donnees, ...provenance };
+
     // `creeLe` n'est PAS transmis : la base pose le présent (@default(now())).
     // C'est ce qui rend une ligne d'objectif structurellement inantidatable.
     // Un seul `create`, jamais d'`update` : réviser AJOUTE une ligne.
     if (!sourcePropositionId) {
       const creee = await prisma.objectifNegocie.create({
-        data: preparation.donnees,
+        data: donneesAvecProvenance,
         select: SELECTION_OBJECTIF,
       });
       await notifierObjectifPropose(idPatient);
@@ -1037,7 +1057,7 @@ export async function POST(req: Request): Promise<NextResponse<ObjectifsApiRespo
     }
 
     const [creee] = await prisma.$transaction([
-      prisma.objectifNegocie.create({ data: preparation.donnees, select: SELECTION_OBJECTIF }),
+      prisma.objectifNegocie.create({ data: donneesAvecProvenance, select: SELECTION_OBJECTIF }),
       prisma.dispositionProposition.create({ data: geste.donnees, select: { id: true } }),
     ]);
 
