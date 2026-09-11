@@ -82,7 +82,7 @@ type Options = {
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
   /** L'état de la phase 3 servi par `objectifs/etat-phase` (`D-161` §10). */
-  phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur';
+  phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur' | 'demande-en-attente';
   reponses?:
     | 'defaut'
     /** Aucune passation rendue : la seule branche où « Données fiables » est en attente. */
@@ -336,12 +336,17 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/objectifs/etat-phase')) {
       if (options.phase3 === 'erreur') return ok({ ok: false, reason: 'server_error', error: 'x' }, 500);
       if (options.phase3 === 'vide') {
-        return ok({ ok: true, etat: { objectifsActifs: 0, synthesePubliee: false } });
+        return ok({ ok: true, etat: { objectifsActifs: 0, synthesePubliee: false, demandesCorrectionEnAttente: 0 } });
       }
       if (options.phase3 === 'sans-synthese') {
-        return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: false } });
+        return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: false, demandesCorrectionEnAttente: 0 } });
       }
-      return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: true } });
+      // TOUT EST FAIT, SAUF QU'UNE DEMANDE ATTEND : c'est le seul état où les
+      // deux premières conditions passent et la troisième non.
+      if (options.phase3 === 'demande-en-attente') {
+        return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: true, demandesCorrectionEnAttente: 1 } });
+      }
+      return ok({ ok: true, etat: { objectifsActifs: 1, synthesePubliee: true, demandesCorrectionEnAttente: 0 } });
     }
     if (url.includes('/api/praticien/besoins')) {
       return ok({
@@ -1264,6 +1269,93 @@ describe('FichePatientPanel — phase demandée par lien', () => {
 // assignations de tous les patients. Une demande hors des 40 assignations les
 // plus récentes du cabinet n'apparaissait nulle part et n'était donc jamais
 // débloquée — le questionnaire restait verrouillé côté patient, sans signal.
+describe('FichePatientPanel — la demande de correction de l’OBJECTIF (2026-09-11)', () => {
+  // `cleanup` PAR BLOC, convention de ce fichier : sans ce rappel, la fiche du
+  // cas précédent reste montée et `getByRole('tab')` en trouve deux. Oublié à
+  // l'écriture, retrouvé par neuf rouges d'un coup.
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const BANDEAU = /demande une correction de son objectif négocié/i;
+
+  it('LE BANDEAU EST LÀ quand une demande attend', async () => {
+    await rendreFiche({ phase3: 'demande-en-attente' });
+    expect(await screen.findByText(BANDEAU)).toBeTruthy();
+  });
+
+  it('IL EST ABSENT quand rien n’attend — un cadre vide se lirait comme un signal', async () => {
+    await rendreFiche({ phase3: 'complete' });
+    await waitFor(() => expect(screen.getByRole('tab', { name: /^3\. Compréhension/i })).toBeTruthy());
+    expect(screen.queryByText(BANDEAU)).toBeNull();
+  });
+
+  it('IL RESTE VISIBLE DEPUIS UN AUTRE ONGLET — sinon il n’est qu’un encart de plus', async () => {
+    // C'est TOUT le point du bandeau hissé au niveau de la fiche : un praticien
+    // qui travaille dans « Les 12 besoins » ne verrait jamais une demande
+    // rangée dans la seule phase Compréhension.
+    await rendreFiche({ phase3: 'demande-en-attente' });
+    expect(await screen.findByText(BANDEAU)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^1\. Patient/i }));
+    expect(screen.getByText(BANDEAU)).toBeTruthy();
+  });
+
+  it('IL MÈNE À LA PHASE COMPRÉHENSION, pas à la phase Patient', async () => {
+    // L'homonyme du dessus — les réponses de questionnaire — mène à la phase
+    // Patient et se règle par un DÉBLOCAGE. Confondre les deux enverrait le
+    // praticien au mauvais endroit faire le mauvais geste.
+    await rendreFiche({ phase3: 'demande-en-attente', phaseDemandee: 'patient' });
+    expect(await screen.findByText(BANDEAU)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Compréhension' }));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /^3\. Compréhension/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+  });
+
+  it('SON LIBELLÉ EST DISTINCT DE L’HOMONYME — deux bandeaux jumeaux égareraient', async () => {
+    await rendreFiche({ phase3: 'demande-en-attente', assignationsModif: true });
+    expect(await screen.findByText(BANDEAU)).toBeTruthy();
+    // Celui des questionnaires parle de DÉBLOCAGE ; celui-ci n'en parle pas.
+    expect(screen.getByText(/en attente de déblocage/i)).toBeTruthy();
+    const bandeau = screen.getByText(BANDEAU).textContent ?? '';
+    expect(bandeau).not.toMatch(/déblocage/i);
+  });
+
+  it('AUCUN NOMBRE : une parole ne se compte pas', async () => {
+    await rendreFiche({ phase3: 'demande-en-attente' });
+    const bandeau = (await screen.findByText(BANDEAU)).textContent ?? '';
+    for (const interdit of ['1 demande', '2 demandes', '(1)']) {
+      expect(bandeau).not.toContain(interdit);
+    }
+  });
+
+  it('LE RAIL NE DIT PLUS « renseignée » tant qu’une demande attend', async () => {
+    await rendreFiche({ phase3: 'demande-en-attente' });
+    const phase = await screen.findByRole('tab', { name: /^3\. Compréhension/i });
+    expect(phase.textContent).not.toMatch(/renseignée/i);
+  });
+
+  it('et il la dit de nouveau dès que la demande est refermée', async () => {
+    await rendreFiche({ phase3: 'complete' });
+    const phase = await screen.findByRole('tab', { name: /^3\. Compréhension/i });
+    await waitFor(() => expect(phase.textContent).toMatch(/renseignée/i));
+  });
+
+  it('UNE LECTURE EN ÉCHEC NE VAUT PAS « AUCUNE DEMANDE » — elle le dit', async () => {
+    // Sans cette branche, l'absence de signal serait indiscernable d'une
+    // absence de demande, et un patient attendrait une reformulation que
+    // personne ne sait lui devoir.
+    await rendreFiche({ phase3: 'erreur' });
+    expect(await screen.findByText(/n’a pas pu être lu/i)).toBeTruthy();
+    // Et le rail n'affirme rien.
+    const phase = screen.getByRole('tab', { name: /^3\. Compréhension/i });
+    expect(phase.textContent).toContain('indéterminée');
+  });
+});
+
 describe('FichePatientPanel — demandes de correction (filtre serveur)', () => {
   afterEach(() => {
     cleanup();

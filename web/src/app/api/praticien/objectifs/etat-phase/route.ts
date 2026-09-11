@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
-import { tetesActives, tetesDeChaine } from '@/lib/praticien/objectifNegocie';
+import { demandesEnAttente, tetesActives, tetesDeChaine } from '@/lib/praticien/objectifNegocie';
 import { synthesesCourantes } from '@/lib/praticien/syntheseComprehension';
 
 /**
@@ -42,6 +42,22 @@ export type EtatPhaseComprehension = {
   objectifsActifs: number;
   /** Une synthèse « Ce que j'ai compris de vous » a été PUBLIÉE au patient. */
   synthesePubliee: boolean;
+  /**
+   * LE NOMBRE DE DEMANDES DE CORRECTION EN ATTENTE (2026-09-11) — celles qui
+   * visent une tête encore ACTIVE. Un nombre, jamais un texte : le rail n'a
+   * pas à lire ce que le patient a écrit pour dire qu'il attend quelque chose.
+   *
+   * CE QU'IL EMPÊCHE. Un dossier dont le patient demande qu'on reprenne son
+   * objectif ne peut pas s'afficher « renseignée » : la phase porterait au vert
+   * pendant qu'une parole reste sans réponse, et le rail sert justement de feu
+   * pour passer à la prise de décision (`D-161` §10).
+   *
+   * CE N'EST PAS UN DÉCOMPTE DE PAROLE (`DC-19`/`DC-20`). Il ne s'affiche
+   * nulle part comme un nombre : le rail lit « y en a-t-il », pas « combien ».
+   * Servir un booléen aurait suffi ; le nombre suit la forme des deux champs
+   * voisins, et la surface qui le consomme ne le rend jamais.
+   */
+  demandesCorrectionEnAttente: number;
 };
 
 export type EtatPhaseApiResponse =
@@ -75,7 +91,7 @@ export async function GET(req: Request): Promise<NextResponse<EtatPhaseApiRespon
       return echec('forbidden', 'Patient non accessible pour ce praticien.', 403);
     }
 
-    const [lignes, fins, syntheses] = await Promise.all([
+    const [lignes, fins, syntheses, demandes] = await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
         // LE STRICT NÉCESSAIRE : aucun texte ne sort d'ici.
@@ -97,6 +113,14 @@ export async function GET(req: Request): Promise<NextResponse<EtatPhaseApiRespon
         where: { idPatient },
         select: { id: true, publieeLe: true, supersedesSyntheseId: true, creeLe: true },
       }),
+      // LECTURE SEULE, et AUCUN TEXTE n'en sort : `texte` n'est pas sélectionné.
+      // Le rail dit qu'une demande attend, il ne raconte pas ce qu'elle dit —
+      // la prose du dossier a déjà sa surface de lecture (`ObjectifNegociePanel`),
+      // et une seconde l'ouvrirait pour rien.
+      prisma.demandeCorrectionObjectif.findMany({
+        where: { idPatient },
+        select: { id: true, idObjectif: true, creeLe: true },
+      }),
     ]);
 
     return NextResponse.json<EtatPhaseApiResponse>({
@@ -108,6 +132,15 @@ export async function GET(req: Request): Promise<NextResponse<EtatPhaseApiRespon
         // PUBLIÉE, pas rédigée : un brouillon n'a atteint personne, et une phase
         // que le patient n'a pas lue n'est pas une phase faite.
         synthesePubliee: synthesesCourantes(syntheses).some((s) => s.publieeLe !== null),
+        // LA MÊME DÉRIVATION QUE LE COCKPIT, et surtout pas une seconde règle :
+        // une demande attend tant que l'objectif qu'elle vise est une tête
+        // ACTIVE. Recalculer autrement ici ferait dire deux choses aux deux
+        // surfaces, et le rail passerait au vert pendant que la carte affiche
+        // encore la demande.
+        demandesCorrectionEnAttente: demandesEnAttente(
+          demandes.map((d) => ({ ...d, texte: null })),
+          tetesDeChaine(lignes, fins),
+        ).length,
       },
     });
   } catch {
