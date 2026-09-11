@@ -5210,3 +5210,25 @@ dément : amendés, pas suivis.
 
 Prochaine action — la lettre de DPA à Anthropic, seul point restant ; les trois
 trous du §7 restent nommés et ouverts.
+
+## 2026-09-11 (après-midi) — « Ce que j'ai compris » cesse d'arriver vide
+
+Décidé — `D-168` et `D-169`, six PR (#1011–#1017), deux migrations constatées
+par conteneur. Un appel **relie** les synthèses validées sans rien y ajouter, et
+**ne compose pas la hiérarchie** : il reprend l'ordre des axes qu'un praticien a
+validé. Barre d'ouverture au sens de `D-158` — aucun seuil neuf, deux règles déjà
+écrites lues ensemble. Publier est refusé tant que le texte est celui du tirage.
+
+Écarté — mesurer une « ressemblance » pour savoir si le praticien a vraiment
+utilisé le tirage : ce serait un seuil sans provenance. La limite est écrite dans
+la migration plutôt que contournée.
+
+Retiré — le champ « Votre reformulation », mesuré à **zéro usage en production**
+avant d'être décidé. Cinq bancs le défendaient : réécrits pour défendre le
+retrait.
+
+Manqué — un banc du verrou ne prouvait le `trim` que d'un côté ; trouvé par
+mutation, pas par relecture. Et une PR perdue pour avoir branché depuis le lot
+précédent au lieu de `main`.
+
+Prochaine action — la mise en service côté patient, qui se demande.
