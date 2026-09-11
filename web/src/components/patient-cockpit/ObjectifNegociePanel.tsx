@@ -9,6 +9,7 @@ import type {
   ReponseJalonExposee,
   TrajectoireObjectif,
   LigneRatificationExposee,
+  LigneDemandeCorrectionExposee,
 } from '@/app/api/praticien/objectifs/route';
 import type { FenetreJalonObjectif } from '@/lib/protocol/jalonObjectifDu';
 import type { LectureFin } from '@/lib/praticien/objectifNegocie';
@@ -282,19 +283,42 @@ function formatDate(iso: string): string {
  * lisait comme un commentaire secondaire noyé dans le gris (relevé par le
  * praticien : la carte paraissait « grisée et vierge, comme non validée »).
  *
- * `ratificationLibelle` est OPTIONNEL et n'est passé que pour la version
- * COURANTE de chaque chaîne : une version antérieure n'a pas de statut de
- * ratification qui lui soit propre, l'affirmer serait un fait inventé.
+ * `ratification` est OPTIONNELLE et n'est passée que pour la version COURANTE
+ * de chaque chaîne : une version antérieure n'a pas de statut de ratification
+ * qui lui soit propre, l'affirmer serait un fait inventé.
+ *
+ * ELLE A QUITTÉ LE PIED DE CARTE LE 2026-09-11, et c'est le défaut que le
+ * responsable a relevé : « je ne retrouve nulle part dans l'espace praticien la
+ * validation de l'objectif négocié par le patient ». Elle y était pourtant —
+ * en suffixe de « Enregistré le … », en 12 px, sous le bloc d'anamnèse. Le
+ * geste le plus fort du parcours arrivait à l'écran accroché derrière une date
+ * d'enregistrement, du même poids typographique qu'elle.
+ *
+ * LA DATE VIENT DU SERVEUR (`datesRatification`), jamais d'un calcul local :
+ * c'est le même tri que celui qui produit l'état, et deux tris concurrents sur
+ * les deux mêmes tables finissent par répondre différemment.
  */
 function LigneObjectif({
   ligne,
-  ratificationLibelle,
+  ratification,
 }: {
   ligne: ObjectifExpose;
-  ratificationLibelle?: string;
+  ratification?: { libelle: string; date: string | null };
 }) {
   return (
     <div className="text-base text-foreground">
+      {/* LA RÉPONSE DU PATIENT, EN TÊTE ET DATÉE. Elle se lit avant les deux
+          voix parce que c'est elle qui dit si ce qui suit est convenu ou
+          seulement proposé.
+          LA DATE EST OMISE QUAND IL N'Y EN A PAS — c'est le cas « aucune
+          réponse enregistrée », et lui coller une date inventerait un silence
+          daté (`DC-24`). */}
+      {ratification && (
+        <p className="mb-2 rounded-lg border border-accent bg-surface-2 px-3 py-2 text-sm font-semibold text-foreground">
+          {ratification.libelle}
+          {ratification.date ? ` — le ${formatDate(ratification.date)}` : ''}
+        </p>
+      )}
       <div className="rounded-lg border border-accent/50 bg-surface-2 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Le patient</p>
         <p className="mt-1 whitespace-pre-wrap">« {ligne.enoncePatient} »</p>
@@ -327,15 +351,13 @@ function LigneObjectif({
           Repris d’une proposition citée — la reformulation et la priorité ci-dessus sont les vôtres.
         </p>
       )}
-      {/* LA SIGNATURE : date d'enregistrement, date de l'accord, et — pour la
-          seule version courante — l'état de ratification, réunis en un seul
-          pied de carte plutôt que dispersés entre l'en-tête de l'article et
-          le bas de la ligne. C'est ce pied qui doit lire comme un
-          enregistrement daté et signé, pas comme une note technique. */}
+      {/* LA SIGNATURE : date d'enregistrement et date de l'accord. L'état de
+          ratification N'Y EST PLUS (2026-09-11) — il a sa place en tête de
+          carte. Le laisser ici EN PLUS l'aurait dit deux fois, et un fait
+          répété à deux endroits finit par diverger quand l'un des deux bouge. */}
       <p className="mt-2 text-xs font-medium text-foreground">
         Enregistré le {formatDate(ligne.creeLe)}
         {ligne.negocieLe ? ` · négocié le ${formatDate(ligne.negocieLe)}` : ''}
-        {ratificationLibelle ? ` — ${ratificationLibelle}` : ''}
       </p>
     </div>
   );
@@ -392,6 +414,8 @@ export function ObjectifNegociePanel({
   const [ancrage, setAncrage] = useState<AncrageAnamnese>(ANCRAGE_VIDE);
   const [ratifications, setRatifications] = useState<Record<string, EtatRatification>>({});
   const [lignesRatification, setLignesRatification] = useState<LigneRatificationExposee[]>([]);
+  const [datesRatification, setDatesRatification] = useState<Record<string, string | null>>({});
+  const [demandesCorrection, setDemandesCorrection] = useState<LigneDemandeCorrectionExposee[]>([]);
   // `D-167` §15 — la CAUSE du vide, lue au serveur. `null` tant qu'on ne sait
   // pas : la phrase par défaut n'affirme alors rien.
   const [pourquoiVide, setPourquoiVide] = useState<PourquoiVide>(null);
@@ -525,6 +549,8 @@ export function ObjectifNegociePanel({
       setAncrage(payload.ancrage);
       setRatifications(payload.ratifications);
       setLignesRatification(payload.lignesRatification ?? []);
+      setDatesRatification(payload.datesRatification ?? {});
+      setDemandesCorrection(payload.demandesCorrection ?? []);
       setJalonDu(payload.jalonDu ?? null);
       setAmendements(payload.amendements);
       setReponsesJalon(payload.reponsesJalon);
@@ -1365,11 +1391,56 @@ export function ObjectifNegociePanel({
                 <div className="mt-1">
                   <LigneObjectif
                     ligne={courante}
-                    ratificationLibelle={
-                      LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente']
-                    }
+                    ratification={{
+                      libelle:
+                        LIBELLE_RATIFICATION[ratifications[trajectoire.idObjectif] ?? 'en_attente'],
+                      date: datesRatification[trajectoire.idObjectif] ?? null,
+                    }}
                   />
                 </div>
+
+                {/* ── CE QUE LE PATIENT DEMANDE DE REPRENDRE (2026-09-11) ───
+                    SOUS LA VERSION QU'ELLE VISE, jamais ailleurs : c'est CE
+                    texte-ci que le patient a lu et dont il demande la reprise.
+
+                    « DE L'OBJECTIF » DANS LE TITRE, ET CE N'EST PAS DU BAVARDAGE.
+                    Le même cockpit porte un homonyme — la « demande de
+                    correction » de `Assignation`, qui vise les RÉPONSES DE
+                    QUESTIONNAIRE et se débloque. Deux objets sous un même nom
+                    se confondraient au premier coup d'œil.
+
+                    LE GESTE ATTENDU EST DIT, et c'est le seul : reformuler.
+                    Aucun bouton « j'ai lu » — une demande se referme parce que
+                    l'objectif a été repris, elle ne se coche pas. */}
+                {demandesCorrection.filter((d) => d.idObjectif === courante.id).length > 0 && (
+                  <div className="mt-3 rounded-lg border border-accent bg-status-warning/10 p-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-status-warning">
+                      Votre patient demande une correction de l’objectif
+                    </h4>
+                    <ul className="mt-2 flex flex-col gap-2">
+                      {demandesCorrection
+                        .filter((demande) => demande.idObjectif === courante.id)
+                        .map((demande) => (
+                          <li key={demande.id} className="text-base text-foreground">
+                            <p className="text-xs text-muted-foreground">
+                              Demandé le {formatDate(demande.creeLe)}
+                            </p>
+                            {/* LE TEXTE EST FACULTATIF. `null` ne se rend pas —
+                                ni « (sans commentaire) », ni un tiret : la ligne
+                                au-dessus dit déjà le geste, et lui inventer un
+                                contenu ferait lire au praticien des mots que le
+                                patient n'a pas écrits (`DC-24`). */}
+                            {demande.texte && (
+                              <p className="mt-1 whitespace-pre-wrap">« {demande.texte} »</p>
+                            )}
+                          </li>
+                        ))}
+                    </ul>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Reformulez cet objectif ci-dessous : la demande se refermera d’elle-même.
+                    </p>
+                  </div>
+                )}
 
                 {/* ── NOTER UN ACCORD CONCLU EN CONSULTATION ─────────────────
                     UN TÉMOIGNAGE, PAS UNE PREUVE. Le geste que le patient pose

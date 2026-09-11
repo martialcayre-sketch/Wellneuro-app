@@ -17,6 +17,7 @@ import { jalonObjectifDu, type FenetreJalonObjectif } from '@/lib/protocol/jalon
 import {
   chaineDObjectif,
   etatRatification,
+  dernierGesteDeVersion,
   tetesDeChaine,
   tetesActives,
   type LectureFin,
@@ -167,6 +168,18 @@ export type LigneRatificationExposee = {
   creeLe: string;
 };
 
+/**
+ * La demande de correction, telle que le cockpit la lit. `texte` est
+ * `string | null` : le geste seul suffit, et l'écran doit pouvoir l'afficher
+ * sans inventer des mots pour un patient qui n'en a pas écrit (`DC-24`).
+ */
+export type LigneDemandeCorrectionExposee = {
+  id: string;
+  idObjectif: string;
+  texte: string | null;
+  creeLe: string;
+};
+
 export type LigneFinExposee = {
   id: string;
   racineObjectifId: string;
@@ -189,6 +202,31 @@ export type ObjectifsApiResponse =
       /** L'étape ATTENDUE aujourd'hui, ou le motif qui l'en empêche. */
       jalonDu: FenetreJalonObjectif;
       ratifications: Record<string, EtatRatification>;
+      /**
+       * LA DATE DU DERNIER GESTE, par tête — `null` s'il n'y en a aucun.
+       *
+       * SERVIE PAR LE SERVEUR, jamais recalculée à l'écran : c'est le MÊME tri
+       * que celui qui produit `ratifications` ci-dessus, et deux tris
+       * concurrents sur les deux mêmes tables finissent par répondre
+       * différemment. C'est l'écran qui aurait alors tort devant le praticien.
+       *
+       * `null` N'EST PAS UNE DATE MANQUANTE : c'est l'absence de geste. Une
+       * absence n'a pas de date (`DC-24`), et en inventer une ferait lire que
+       * le patient s'est tu à un moment précis.
+       */
+      datesRatification: Record<string, string | null>;
+      /**
+       * LES DEMANDES DE CORRECTION, avec la version qu'elles visent. SERVIES
+       * TOUTES, jamais filtrées sur les têtes : une demande portée sur une
+       * version depuis reformulée est le cas NORMAL — la reformulation est
+       * précisément ce qui la referme —, et la masquer effacerait la trace de
+       * ce qui a provoqué la v2.
+       *
+       * C'est l'écran qui appelle `demandesEnAttente` pour savoir lesquelles
+       * réclament encore quelque chose. La route ne tranche pas : servir déjà
+       * filtré ferait disparaître l'historique.
+       */
+      demandesCorrection: LigneDemandeCorrectionExposee[];
       /** Les gestes de ratification avec LEUR version (`F2`). */
       lignesRatification: LigneRatificationExposee[];
       /**
@@ -358,7 +396,16 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, ratifications, amendements, reponsesJalon, consultation, fins, ancres] =
+    const [
+      lignes,
+      ratifications,
+      amendements,
+      demandesCorrection,
+      reponsesJalon,
+      consultation,
+      fins,
+      ancres,
+    ] =
       await Promise.all([
       prisma.objectifNegocie.findMany({
         where: { idPatient },
@@ -376,6 +423,18 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       // qui l'écrirait fabriquerait des mots que le patient n'a pas écrits —
       // garde structurelle, pas promesse.
       prisma.amendementObjectif.findMany({
+        where: { idPatient },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
+      // LECTURE SEULE, QUATRIÈME FOIS (2026-09-11) : la demande de correction
+      // est une parole de patient sur le texte qu'on a écrit avec lui, et son
+      // écrivain unique est le portail. Une route praticien qui l'écrirait
+      // fabriquerait une demande que personne n'a faite — et comme la CLÔTURE
+      // d'une demande est dérivée de la reformulation, un praticien qui
+      // pourrait aussi en créer tiendrait les deux bouts d'un dialogue à lui
+      // seul. Garde structurelle, pas promesse.
+      prisma.demandeCorrectionObjectif.findMany({
         where: { idPatient },
         select: { id: true, idObjectif: true, texte: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
@@ -490,6 +549,18 @@ export async function GET(req: Request): Promise<NextResponse<ObjectifsApiRespon
       ratifications: Object.fromEntries(
         courants.map((tete) => [tete.id, etatRatification(tete.id, ratifications, amendements)]),
       ),
+      datesRatification: Object.fromEntries(
+        courants.map((tete) => [
+          tete.id,
+          dernierGesteDeVersion(tete.id, ratifications, amendements)?.creeLe.toISOString() ?? null,
+        ]),
+      ),
+      demandesCorrection: demandesCorrection.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        texte: ligne.texte,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
       amendements: amendements.map((ligne) => ({
         id: ligne.id,
         idObjectif: ligne.idObjectif,

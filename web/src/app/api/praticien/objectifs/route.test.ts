@@ -25,6 +25,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     // l'écrivain unique est le portail. `create` est moqué EXPRÈS pour que
     // l'assertion « cette route ne l'écrit pas » compte zéro au lieu de lever.
     amendementObjectif: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
+    // LECTURE SEULE côté praticien : `create` et consorts ne sont PAS moqués,
+    // et c'est délibéré — une route praticien qui écrirait une demande lèverait
+    // ici, bruyamment, au lieu de passer en silence.
+    demandeCorrectionObjectif: { findMany: vi.fn() },
     // LECTURE SEULE depuis cette route (6.0-B, LOT-05) : `create` est moqué
     // expressément bien que jamais appelé — sans lui, l'assertion « la route
     // praticien n'écrit pas cette table » lèverait au lieu de compter zéro.
@@ -126,6 +130,7 @@ describe('/api/praticien/objectifs', () => {
     prisma.ratificationObjectif.findMany.mockResolvedValue([]);
     prisma.amendementObjectif.findMany.mockResolvedValue([]);
     prisma.amendementObjectif.findUnique.mockResolvedValue(null);
+    prisma.demandeCorrectionObjectif.findMany.mockResolvedValue([]);
     prisma.reponseJalonObjectif.findMany.mockResolvedValue([]);
     prisma.finObjectif.findMany.mockResolvedValue([]);
     // AUCUNE ANCRE PAR DÉFAUT : c'est l'état de la quasi-totalité des dossiers,

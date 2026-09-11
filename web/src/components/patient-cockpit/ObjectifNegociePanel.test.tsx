@@ -31,6 +31,11 @@ const DOSSIER_VIDE = {
   // `F2` : les gestes de ratification avec LEUR version. Sans eux, une
   // contestation posée sur une version reformulée depuis disparaît du cockpit.
   lignesRatification: [],
+  // La date du DERNIER geste, par tête. Vide par défaut : un dossier sans geste
+  // n'a aucune date à afficher, et lui en inventer une daterait un silence.
+  datesRatification: {},
+  // Les demandes de correction de l'OBJECTIF (2026-09-11). Vides par défaut.
+  demandesCorrection: [],
   // L'ÉTAPE ATTENDUE : aucune par défaut, le motif étant dit plutôt que tu.
   jalonDu: { statut: 'aucune' as const, motif: 'Aucun cycle n’est confirmé pour ce dossier.' },
 };
@@ -1312,6 +1317,164 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
     });
   });
 
+
+  // ── La réponse du patient, et ce qu'il demande de reprendre ───────────────
+
+  describe('LA RÉPONSE DU PATIENT REMONTE EN TÊTE DE CARTE (2026-09-11)', () => {
+    const dossierRatifie = {
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1' })] }],
+      ratifications: { OBJ_1: 'ratifie' as const },
+      datesRatification: { OBJ_1: '2026-09-11T18:14:00.000Z' },
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+    };
+
+    it('« Ratifié par le patient » S’AFFICHE AVEC SA DATE', async () => {
+      // LE DÉFAUT QUE CE LOT FERME : « je ne retrouve nulle part dans l'espace
+      // praticien la validation de l'objectif négocié par le patient ». Elle y
+      // était — en suffixe de « Enregistré le … », en 12 px.
+      fetchMock.mockImplementation(router({ dossier: dossierRatifie }));
+      await attendreLeDossier();
+
+      expect(document.body.textContent).toContain('Ratifié par le patient');
+      expect(document.body.textContent).toContain('11/09/2026');
+    });
+
+    it('ELLE N’EST PLUS EN SUFFIXE DE « Enregistré le » — un fait dit deux fois finit par diverger', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierRatifie }));
+      await attendreLeDossier();
+
+      const rendu = document.body.textContent ?? '';
+      expect(rendu).not.toMatch(/Enregistré le[^]*?—\s*Ratifié par le patient/);
+    });
+
+    it('SANS AUCUN GESTE, le libellé s’affiche SANS DATE — une absence n’a pas de date', async () => {
+      fetchMock.mockImplementation(
+        router({
+          dossier: {
+            ...dossierRatifie,
+            ratifications: { OBJ_1: 'en_attente' as const },
+            datesRatification: { OBJ_1: null },
+          },
+        }),
+      );
+      await attendreLeDossier();
+
+      expect(document.body.textContent).toContain('Aucune réponse du patient enregistrée');
+      expect(document.body.textContent).not.toContain('Aucune réponse du patient enregistrée — le');
+    });
+  });
+
+  describe('CE QUE LE PATIENT DEMANDE DE REPRENDRE', () => {
+    const demande = (partiel: Record<string, unknown> = {}) => ({
+      id: 'DEM_1',
+      idObjectif: 'OBJ_1',
+      texte: 'Ce n’est pas le sommeil, c’est la fatigue de la journée.',
+      creeLe: '2026-09-11T18:20:00.000Z',
+      ...partiel,
+    });
+    const dossierAvecDemande = (demandes: unknown[]) => ({
+      ...DOSSIER_VIDE,
+      objectifs: [ligne({ id: 'OBJ_1' })],
+      trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1' })] }],
+      ratifications: { OBJ_1: 'ratifie' as const },
+      datesRatification: { OBJ_1: '2026-09-11T18:14:00.000Z' },
+      demandesCorrection: demandes,
+      fins: { OBJ_1: FIN_OUVERTE },
+      tetesActives: 1,
+    });
+
+    it('la demande s’affiche sous la version qu’elle vise, avec son texte et sa date', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAvecDemande([demande()]) }));
+      await attendreLeDossier();
+
+      const rendu = document.body.textContent ?? '';
+      expect(rendu).toContain('c’est la fatigue de la journée');
+      expect(rendu).toContain('Demandé le 11/09/2026');
+    });
+
+    it('LE TITRE DIT « DE L’OBJECTIF » — l’homonyme du questionnaire vit dans le même cockpit', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAvecDemande([demande()]) }));
+      await attendreLeDossier();
+
+      expect(document.body.textContent).toContain('demande une correction de l’objectif');
+    });
+
+    it('LE GESTE ATTENDU EST DIT, et c’est REFORMULER — aucun bouton « j’ai lu »', async () => {
+      // Une demande se referme parce que l'objectif a été repris, pas parce
+      // qu'on l'a cochée. Un bouton de classement transformerait la dérivation
+      // en drapeau.
+      fetchMock.mockImplementation(router({ dossier: dossierAvecDemande([demande()]) }));
+      await attendreLeDossier();
+
+      expect(document.body.textContent).toContain('la demande se refermera d’elle-même');
+      for (const interdit of [/j’ai lu/i, /classer/i, /marquer comme traitée/i, /archiver/i]) {
+        expect(document.body.textContent ?? '').not.toMatch(interdit);
+      }
+    });
+
+    it('UNE DEMANDE SANS TEXTE N’INVENTE AUCUNE PHRASE', async () => {
+      fetchMock.mockImplementation(
+        router({ dossier: dossierAvecDemande([demande({ texte: null })]) }),
+      );
+      await attendreLeDossier();
+
+      const rendu = document.body.textContent ?? '';
+      expect(rendu).toContain('Demandé le 11/09/2026');
+      // AUCUN GUILLEMET SANS CITATION, et c'est LA bonne sonde. Chercher
+      // « null » ne prouvait rien : React ne rend pas `null`, il rend du vide —
+      // et le vide entre deux chevrons produit « <espaces> », une citation de
+      // rien attribuée au patient. Une mutation l'a montré.
+      expect(rendu).not.toMatch(/«\s*»/);
+      for (const interdit of ['null', 'undefined', 'sans commentaire']) {
+        expect(rendu).not.toContain(interdit);
+      }
+    });
+
+    it('une demande portée sur une AUTRE version ne s’affiche pas sous celle-ci', async () => {
+      fetchMock.mockImplementation(
+        router({
+          dossier: dossierAvecDemande([
+            demande({ id: 'DEM_0', idObjectif: 'OBJ_AILLEURS', texte: 'sur une version d’avant' }),
+          ]),
+        }),
+      );
+      await attendreLeDossier();
+
+      const rendu = document.body.textContent ?? '';
+      expect(rendu).not.toContain('sur une version d’avant');
+      expect(rendu).not.toContain('demande une correction de l’objectif');
+    });
+
+    it('SANS DEMANDE, aucun bloc — un cadre vide se lirait comme un silence du patient', async () => {
+      fetchMock.mockImplementation(router({ dossier: dossierAvecDemande([]) }));
+      await attendreLeDossier();
+
+      expect(document.body.textContent).not.toContain('demande une correction de l’objectif');
+    });
+
+    it('AUCUN DÉCOMPTE : deux demandes se lisent, elles ne se comptent pas', async () => {
+      fetchMock.mockImplementation(
+        router({
+          dossier: dossierAvecDemande([
+            demande(),
+            demande({ id: 'DEM_2', texte: 'Je redemande, je n’ai pas eu de retour.' }),
+          ]),
+        }),
+      );
+      await attendreLeDossier();
+
+      const rendu = document.body.textContent ?? '';
+      expect(rendu).toContain('Je redemande');
+      // Ni « (2) », ni « 2 demandes » : l'insistance d'un patient n'est pas une
+      // série, et une série deviendrait un reproche (`DC-19`/`DC-20`).
+      for (const interdit of ['(2)', '2 demandes', '2 corrections']) {
+        expect(rendu).not.toContain(interdit);
+      }
+    });
+  });
 
   // ── Renvoyer le courrier ──────────────────────────────────────────────────
 
