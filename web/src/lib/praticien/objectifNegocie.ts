@@ -627,6 +627,56 @@ export function tetesActives<T extends LigneObjectif>(
   return tetes.filter((tete) => tete.fin.etat !== 'close');
 }
 
+/** Une demande de correction, telle que la dérivation la lit. */
+export type LigneDemandeCorrection = {
+  id: string;
+  idObjectif: string;
+  texte: string | null;
+  creeLe: Date;
+};
+
+/**
+ * LES DEMANDES DE CORRECTION EN ATTENTE — et c'est une DÉRIVATION, pas un
+ * drapeau. La table ne porte ni `statut`, ni `close_le`, ni `traitee_par` : une
+ * demande est en attente tant que l'objectif qu'elle vise est encore une TÊTE
+ * ACTIVE de sa chaîne.
+ *
+ * CE QUE CETTE FORME ACHÈTE. Le praticien referme une demande en REFORMULANT :
+ * la v2 devient la tête, la v1 cesse d'en être une, la demande sort de la
+ * liste. Aucune route praticien n'écrit alors sur une table de parole patient
+ * — même discipline que `ratifications_objectif`, lue au cockpit et jamais
+ * écrite par lui. Et l'écart avec un drapeau n'est pas cosmétique : un statut
+ * se coche sans rien faire, une reformulation ne se simule pas.
+ *
+ * UNE CHAÎNE CLOSE NE LAISSE PAS DE DEMANDE EN ATTENTE, et il faut le dire
+ * plutôt que de le laisser découvrir. `tetesActives` écarte les chaînes closes :
+ * une demande portée sur un objectif ensuite abandonné ou atteint cesse d'être
+ * en attente sans avoir été reformulée. Ce n'est pas un classement silencieux —
+ * clore une chaîne est un geste NOMMÉ, motivé, et à deux voix (`D-161`) — et
+ * l'inverse serait pire : réclamer au praticien de reformuler un objectif dont
+ * on a convenu ensemble qu'il n'existait plus lui demanderait l'impossible.
+ *
+ * LA DEMANDE VISE UNE VERSION, JAMAIS LA CHAÎNE. C'est ce texte-ci que le
+ * patient a lu et dont il demande la reprise ; la rattacher à la racine ferait
+ * porter sa demande par une formulation qu'il n'a jamais vue — le défaut que
+ * `F2` a déjà fermé pour les ratifications.
+ *
+ * Le second paramètre est OBLIGATOIRE, et l'écart avec `etatRatification` est
+ * celui de `tetesDeChaine` : un tableau vide rendrait ici un résultat FAUX —
+ * aucune demande ne paraîtrait en attente — et non simplement incomplet.
+ *
+ * L'ORDRE D'ENTRÉE EST PRÉSERVÉ. Un tri par date vivrait ici et se tairait
+ * ailleurs : l'appelant lit déjà ses lignes dans l'ordre qu'il veut, et deux
+ * ordres concurrents sur la même liste finissent par diverger.
+ */
+export function demandesEnAttente<T extends LigneObjectif>(
+  demandes: LigneDemandeCorrection[],
+  tetes: TeteDeChaine<T>[],
+): LigneDemandeCorrection[] {
+  const actives = new Set(tetesActives(tetes).map((tete) => tete.ligne.id));
+  return demandes.filter((demande) => actives.has(demande.idObjectif));
+}
+
 export const MOTIFS_FIN = ['atteint', 'abandonne', 'remplace'] as const;
 export type MotifFin = (typeof MOTIFS_FIN)[number];
 
