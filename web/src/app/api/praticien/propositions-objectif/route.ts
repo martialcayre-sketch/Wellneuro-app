@@ -130,9 +130,27 @@ export type PropositionExposee = {
   disposition: GesteDisposition | null;
 };
 
+/**
+ * POURQUOI LA LISTE EST VIDE — `D-167` §15.
+ *
+ * Une liste vide a trois causes qui ne se confondent pas, et l'écran ne peut en
+ * nommer aucune sans que le serveur la lui dise. Il l'a fait pendant des mois :
+ * il affirmait « sans épisode confirmé » y compris sur un dossier dont l'épisode
+ * ÉTAIT confirmé.
+ *
+ * `null` QUAND LA LISTE N'EST PAS VIDE : il n'y a alors rien à expliquer.
+ */
+export type PourquoiVide =
+  | 'referentiel_non_signe'
+  | 'episode_non_confirme'
+  | 'rien_retenu'
+  | null;
+
 export type PropositionsApiResponse =
   | {
       ok: true;
+      /** Pourquoi `propositions` est vide, ou `null` si elle ne l'est pas. */
+      pourquoiVide?: PourquoiVide;
       /**
        * Les propositions SERVABLES : assemblée courante, aucun geste posé, au
        * plus trois (`D-094` §3, arbitrage 5 — plafond tenu au service comme à
@@ -402,7 +420,31 @@ export async function GET(req: Request): Promise<NextResponse<PropositionsApiRes
     if (garde.echec) return garde.echec;
 
     const { lignes, dispositions } = await lireDossier(idPatient);
-    return NextResponse.json({ ok: true, ...vueDossier(lignes, dispositions) });
+    const vue = vueDossier(lignes, dispositions);
+
+    // POURQUOI C'EST VIDE — LU, JAMAIS DEVINÉ (`D-167` §15).
+    //
+    // L'écran affichait « sans épisode confirmé, il n'a rien de signé à citer »
+    // DÈS QUE la liste était vide, y compris sur un dossier dont l'épisode EST
+    // confirmé. Il énonçait une cause qu'il n'avait pas vérifiée — la même faute
+    // que le rail de phase 3, corrigée le 2026-09-10.
+    //
+    // Les deux préconditions de l'assemblage sont ICI, et elles sont lisibles
+    // sans rien recalculer : le référentiel signé, et la plainte publiée par un
+    // épisode confirmé. Ce qui reste après elles est un troisième cas — tout est
+    // là, et le moteur n'a rien retenu — qui ne se confond avec aucun des deux.
+    //
+    // `null` QUAND LA LISTE N'EST PAS VIDE : il n'y a alors rien à expliquer, et
+    // servir une raison ferait croire à un manque.
+    const pourquoiVide = vue.propositions.length > 0
+      ? null
+      : !registreSigne()
+        ? 'referentiel_non_signe'
+        : (await plainteDominantePubliee(idPatient)) === null
+          ? 'episode_non_confirme'
+          : 'rien_retenu';
+
+    return NextResponse.json({ ok: true, ...vue, pourquoiVide });
   } catch (err) {
     console.error('[praticien/propositions-objectif GET]', messageJournalisable(err));
     return echec('exception', 'Erreur technique.', 500);
