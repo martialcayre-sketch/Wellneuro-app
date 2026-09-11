@@ -5189,3 +5189,24 @@ qualification article 9 due au responsable et à un conseil.
 
 Prochaine action — l'accusé de lecture de la v6, tranché par précédent et non par
 droit.
+
+## 2026-09-11 — D-167 bouclé des deux côtés, et la production qui ne déployait plus
+
+Décidé — dix PR (#1000–#1009), trois migrations constatées par conteneur. La
+priorité proposée par le modèle est tirée, bornée et tracée ; la provenance se
+**constate au serveur** et ne se déclare pas depuis le navigateur (`D-164`) ; le
+patient relit sa parole datée et nommée comme sienne.
+
+Trouvé en chemin — la production ne déployait plus depuis la veille : 812 Mo de
+`.next/cache/webpack` embarqués pour rien, image à 2049 Mo pour une limite de
+2048. `rm -rf` dans `build.sh`, image à 1,2 Gio (#1001). Hors chantier — mais
+c'est ce qui tuait la première `release-db`.
+
+Manqué — huit colonnes de provenance en production depuis #1000 sans que rien ne
+les écrive. Trouvé en préparant vos arbitrages, pas en relisant le code.
+
+Corrigé au registre — `D-167` §10 et §13 décrivaient des mécanismes que le code
+dément : amendés, pas suivis.
+
+Prochaine action — la lettre de DPA à Anthropic, seul point restant ; les trois
+trous du §7 restent nommés et ouverts.
