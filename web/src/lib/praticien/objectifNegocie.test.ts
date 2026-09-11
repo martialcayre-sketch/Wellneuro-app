@@ -14,6 +14,7 @@ import {
   objectifsCourants,
   etatDeChaine,
   tetesDeChaine,
+  demandesEnAttente,
   tetesActives,
   preparerFin,
   accordDeVersion,
@@ -908,6 +909,87 @@ describe('tetesDeChaine / tetesActives — la discordance ne compte que les ACTI
     expect(tetes[0].ligne.id).toBe('o2');
     expect(tetes[0].fin.etat).toBe('close');
     expect(tetesActives(tetes)).toHaveLength(0);
+  });
+});
+
+describe('demandesEnAttente — la reformulation referme, aucun statut ne se coche', () => {
+  const obj = (id: string, supersedes: string | null, jour: number) => ({
+    id,
+    supersedesObjectifId: supersedes,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+  const abandon = (racine: string, jour: number) => ({
+    id: `f_${racine}`,
+    racineObjectifId: racine,
+    motif: 'abandonne',
+    voix: 'praticien',
+    consigneePar: 'praticien',
+    sens: 'declare',
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T10:00:00Z`),
+  });
+  const demande = (id: string, idObjectif: string, jour: number, texte: string | null = null) => ({
+    id,
+    idObjectif,
+    texte,
+    creeLe: new Date(`2026-09-${String(jour).padStart(2, '0')}T12:00:00Z`),
+  });
+
+  it('une demande sur la TÊTE COURANTE est en attente', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1)], []);
+    const lues = demandesEnAttente([demande('d1', 'o1', 2)], tetes);
+    expect(lues.map((l) => l.id)).toEqual(['d1']);
+  });
+
+  it('LA REFORMULATION LA REFERME — sans qu’aucune écriture praticien n’ait eu lieu', () => {
+    // v2 supplante v1 : la demande visait v1, qui n’est plus une tête.
+    const tetes = tetesDeChaine([obj('o1', null, 1), obj('o2', 'o1', 3)], []);
+    expect(demandesEnAttente([demande('d1', 'o1', 2)], tetes)).toEqual([]);
+  });
+
+  it('la demande posée SUR la nouvelle version, elle, reste en attente', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1), obj('o2', 'o1', 3)], []);
+    const lues = demandesEnAttente([demande('d1', 'o1', 2), demande('d2', 'o2', 4)], tetes);
+    expect(lues.map((l) => l.id)).toEqual(['d2']);
+  });
+
+  it('UNE CHAÎNE CLOSE NE LAISSE RIEN EN ATTENTE — on ne réclame pas de reformuler un objectif abandonné', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1)], [abandon('o1', 3)]);
+    expect(tetes).toHaveLength(1);
+    expect(demandesEnAttente([demande('d1', 'o1', 2)], tetes)).toEqual([]);
+  });
+
+  it('une demande d’une AUTRE chaîne n’est pas refermée par la reformulation de celle-ci', () => {
+    const lignes = [obj('oA', null, 1), obj('oB', null, 1), obj('oA2', 'oA', 3)];
+    const tetes = tetesDeChaine(lignes, []);
+    const lues = demandesEnAttente([demande('dA', 'oA', 2), demande('dB', 'oB', 2)], tetes);
+    expect(lues.map((l) => l.id)).toEqual(['dB']);
+  });
+
+  it('DEUX DEMANDES sur la même version restent DEUX — aucune n’est fondue dans l’autre', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1)], []);
+    const lues = demandesEnAttente([demande('d1', 'o1', 2), demande('d2', 'o1', 5)], tetes);
+    expect(lues.map((l) => l.id)).toEqual(['d1', 'd2']);
+  });
+
+  it('une demande SANS TEXTE est une demande — le geste seul compte', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1)], []);
+    const lues = demandesEnAttente([demande('d1', 'o1', 2, null)], tetes);
+    expect(lues).toHaveLength(1);
+    expect(lues[0].texte).toBeNull();
+  });
+
+  it('L’ORDRE D’ENTRÉE EST PRÉSERVÉ — la dérivation ne trie pas à la place de l’appelant', () => {
+    const tetes = tetesDeChaine([obj('o1', null, 1)], []);
+    const lues = demandesEnAttente(
+      [demande('tardive', 'o1', 9), demande('ancienne', 'o1', 2)],
+      tetes,
+    );
+    expect(lues.map((l) => l.id)).toEqual(['tardive', 'ancienne']);
+  });
+
+  it('sans aucune tête, rien n’est en attente — et sans demande non plus', () => {
+    expect(demandesEnAttente([demande('d1', 'o1', 2)], [])).toEqual([]);
+    expect(demandesEnAttente([], tetesDeChaine([obj('o1', null, 1)], []))).toEqual([]);
   });
 });
 
