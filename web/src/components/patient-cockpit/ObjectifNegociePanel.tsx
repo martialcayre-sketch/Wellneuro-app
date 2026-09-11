@@ -667,8 +667,11 @@ export function ObjectifNegociePanel({
   const chargerMatiere = useCallback(async () => {
     setErreurProposition('');
     try {
+      // `D-167` §13 — l'identifiant de la version amendée voyage avec la
+      // demande : c'est le serveur qui compare les sources, pas l'écran.
+      const amende = reformuleId === null ? '' : `&amende=${encodeURIComponent(reformuleId)}`;
       const reponse = await fetch(
-        `/api/praticien/objectifs/proposition-priorite?idPatient=${encodeURIComponent(idPatient)}`,
+        `/api/praticien/objectifs/proposition-priorite?idPatient=${encodeURIComponent(idPatient)}${amende}`,
       );
       const payload = (await reponse.json()) as PropositionApiResponse;
       if (!reponse.ok || !payload.ok) {
@@ -694,7 +697,7 @@ export function ObjectifNegociePanel({
       setMatiere(null);
       setManqueProposition([]);
     }
-  }, [idPatient]);
+  }, [idPatient, reformuleId]);
 
   useEffect(() => {
     void chargerDossier();
@@ -1748,6 +1751,24 @@ export function ObjectifNegociePanel({
                   className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 />
                 <Compteur valeur={enonce} maximum={LONGUEUR_MAX_ENONCE} />
+                {/* `D-167` §13 — IL LE DIT ET IL PROPOSE, IL NE REMPLACE PAS.
+                    La lecture littérale de la clause — « une réécriture repart
+                    des sources » — ferait disparaître sous les doigts du
+                    praticien un texte qu'il a travaillé, et ferait retomber
+                    `priorite` et « non traité » à vide sur la nouvelle tête.
+                    L'écart est SIGNALÉ, la reprise est un geste. */}
+                {matiere?.fraicheur?.enonce === 'plus_recente' && (
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>Le patient a déposé un texte plus récent que celui cité par cette version.</span>
+                    <button
+                      type="button"
+                      onClick={() => setEnonce(matiere.enonce.texte)}
+                      className="min-h-9 rounded-lg border border-accent px-2 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    >
+                      Reprendre le dépôt à jour
+                    </button>
+                  </p>
+                )}
               </>
             )}
 
@@ -1763,6 +1784,18 @@ export function ObjectifNegociePanel({
               className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             />
             <Compteur valeur={reformulation} maximum={LONGUEUR_MAX_REFORMULATION} />
+            {matiere?.fraicheur?.reformulation === 'plus_recente' && (
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>Une synthèse plus récente a été validée depuis cette version.</span>
+                <button
+                  type="button"
+                  onClick={() => setReformulation(matiere.reformulation.texte)}
+                  className="min-h-9 rounded-lg border border-accent px-2 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  Reprendre la synthèse à jour
+                </button>
+              </p>
+            )}
 
             {/* CHAMP TEXTE LIBRE, jamais une liste déroulante ni un badge
                 ordonné : une liste fermée serait un rang, et un rang serait un

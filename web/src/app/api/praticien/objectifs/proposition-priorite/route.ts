@@ -66,7 +66,35 @@ export type PropositionExposee = {
 export type MatiereCitable = {
   enonce: { texte: string; idDepot: string };
   reformulation: { texte: string; idSynthese: string };
+  /** Renseignée seulement quand une version est amendée — voir `Fraicheur`. */
+  fraicheur?: Fraicheur;
 };
+
+/**
+ * LA FRAÎCHEUR D'UNE CITATION FACE À LA VERSION QU'ON AMENDE — `D-167` §13.
+ *
+ * TROIS ÉTATS, ET LE TROISIÈME EST LE PLUS IMPORTANT. `inconnue` n'est pas
+ * `identique` : les objectifs écrits AVANT que la provenance ne soit constatée
+ * portent des colonnes NULL, et on ne sait pas ce qu'ils citaient. Les traiter
+ * comme « à jour » affirmerait un fait qu'on n'a pas (`DC-24`) ; les traiter
+ * comme « périmés » proposerait au praticien de remplacer son texte sans
+ * savoir par quoi.
+ *
+ * `plus_recente` NE DÉCLENCHE RIEN TOUT SEUL. L'écran le DIT et propose ; il ne
+ * remplace jamais dans le dos du praticien. C'est ce qui distingue cette clause
+ * de la lecture littérale du §13, qui aurait fait retomber `priorite` et
+ * « non traité » à vide sur la nouvelle tête.
+ */
+export type Fraicheur = {
+  enonce: 'identique' | 'plus_recente' | 'inconnue';
+  reformulation: 'identique' | 'plus_recente' | 'inconnue';
+};
+
+/** Compare la source courante à celle que la version amendée citait. */
+function comparer(idCourant: string, idCite: string | null): Fraicheur['enonce'] {
+  if (idCite === null) return 'inconnue';
+  return idCite === idCourant ? 'identique' : 'plus_recente';
+}
 
 export type PropositionApiResponse =
   | { ok: true; etat: 'proposee'; proposition: PropositionExposee; matiere: MatiereCitable }
@@ -157,6 +185,28 @@ export async function GET(req: Request): Promise<NextResponse<PropositionApiResp
       enonce: { texte: depot.texte, idDepot: depot.idDepot },
       reformulation: { texte: synthese.narratifPatient, idSynthese: synthese.idSynthese },
     };
+
+    // `D-167` §13 — LA FRAÎCHEUR SE CALCULE ICI, jamais à l'écran.
+    //
+    // L'identifiant de la version amendée arrive en paramètre plutôt que sa
+    // provenance : faire voyager les colonnes de provenance jusqu'au navigateur
+    // élargirait la surface de l'API des objectifs pour une comparaison que le
+    // serveur fait mieux — il a déjà les deux sources courantes sous la main.
+    const amende = (new URL(req.url).searchParams.get('amende') ?? '').trim();
+    if (amende !== '') {
+      const version = await prisma.objectifNegocie.findFirst({
+        where: { id: amende, idPatient },
+        select: { enonceSourceId: true, reformulationSourceId: true },
+      });
+      // UNE VERSION INTROUVABLE NE DIT RIEN. Pas de fraîcheur servie : ni
+      // « à jour », ni « périmé » — on ne sait pas.
+      if (version !== null) {
+        matiere.fraicheur = {
+          enonce: comparer(depot.idDepot, version.enonceSourceId),
+          reformulation: comparer(synthese.idSynthese, version.reformulationSourceId),
+        };
+      }
+    }
 
     if (ligne === null) {
       return NextResponse.json<PropositionApiResponse>({ ok: true, etat: 'aucune', matiere });
