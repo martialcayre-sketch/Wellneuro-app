@@ -27,6 +27,8 @@ datée **par feature**.
 | `WN_CB_PROPOSITION` | `true` | **proposition de bilan** servie au cockpit praticien (`GET/POST /api/praticien/biologie/proposition`) | fermé — exige AUSSI `WN_CB_ENABLED`. **POSÉE en Production le 2026-08-18** ([[D-072]]) |
 | `WN_RECHERCHE_CORPUS_ENABLED` | `true` | recherche corpus clinique (rayons cognition, douleur, intestin — `dashboard/bibliotheque`) | fermé — **POSÉE en Production (Scalingo) le 2026-08-22** ([[D-081]]) |
 | `WN_EI_INTERRUPTION` | `1` | **association d'un effet indésirable à un protocole** (`DC-42`, [[D-101]]) — capture au portail, puis interruption de la préparation automatique quand la règle `SAF-EI-01` est signée | fermé — **NEUF ET ÉTEINT à la livraison**. Ne se pose qu'APRÈS que la migration `20260823210000_association_effet_indesirable_intervention` est appliquée **et constatée** ([[D-087]]) : le code lit trois colonnes que la base n'a pas encore. Deux gestes dans cet ordre — le drapeau ouvre la CAPTURE, la signature ouvre l'INTERRUPTION |
+| `WN_AGENDA_ALI` | `true` | agenda alimentaire 21 j — la **surface d'écriture** du patient au portail | fermé. Il ferme ce qui s'écrit, **pas ce qui se relit** : la route `GET /api/praticien/agenda-alimentaire` et son panneau ne sont pas gardés ([[D-027]]), et le catalogue ne se lit jamais depuis `process.env` ([[D-025]]). **ALLUMÉ en Production depuis le 2026-08-05**. **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_ALI_01_SIIN57` | `true` | **rien** — il SUBSTITUE : `Q_ALI_01` est servi en forme longue SIIN 57 items au lieu de la forme courte 14 items (`lib/questionnaires/alimentaire.ts:406`) | absent ⇒ forme courte. **Seul drapeau de FORME du dépôt** : `DRAPEAUX_DE_FORME` (`tools/corpus/certify/lib/servi.mjs:85`) le nomme, et `scoring-check` joue les deux positions. **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true` — c'est donc la forme longue qui est servie en production. |
 | `WN_AGENDA_RELANCE` | `true` | relance praticien de l'agenda du sommeil (**envoi e-mail au clic**, jamais de cron) | fermé |
 | `WN_SYNTHESE_STREAM` | `true` | synthèse IA en SSE (routeur 30 s Scalingo) | réponse JSON |
 | `WN_CLAIMS_QUESTIONNAIRE_STREAM` | `true` | claims questionnaire en SSE | réponse JSON |
@@ -38,21 +40,57 @@ datée **par feature**.
 ON en dev (données **fictives**). En prod, chaque activation est une décision
 datée, avec ses dépendances.
 
-> ⚠️ **Ces quatre drapeaux commandent toute la voie patient** — sans eux, aucun
-> patient n'entre. Leur état de production se lit **ici**, daté, comme au § A :
-> une activation non consignée dans ce tableau rend illisible tout classement de
+> ⚠️ **Ces drapeaux commandent toute la voie patient** — les trois premiers
+> décident si un patient **entre**, les quatre suivants ce qu'il **trouve** une
+> fois entré. Leur état de production se lit **ici**, daté, comme au § A : une
+> activation non consignée dans ce tableau rend illisible tout classement de
 > constat portant sur le portail (un défaut derrière un drapeau éteint et un
-> défaut servi à des patients ne se traitent pas au même rang). Les dates
-> ci-dessous datent d'AVANT la migration Scalingo — mais les quatre valeurs ont
-> été **relues sur Scalingo le 2026-09-07** (`env-get`) : les quatre portes sont
-> ouvertes en production. Toute extinction ou activation ultérieure se consigne
-> ici, datée, comme au § A.
+> défaut servi à des patients ne se traitent pas au même rang). Les dates des
+> portes d'entrée datent d'AVANT la migration Scalingo ; elles ont été **relues
+> sur Scalingo le 2026-09-07** (`env-get`), puis avec toute la section le
+> 2026-09-11.
+>
+> **LES QUATRE SURFACES DU § B.2 ONT MANQUÉ À CE TABLEAU JUSQU'AU 2026-09-11**,
+> alors qu'elles étaient posées en production. Leur état était pourtant écrit —
+> dans [[D-092]], [[D-110]], [[D-112]] et [[D-154]], à quatre dates
+> différentes, c'est-à-dire partout sauf à l'endroit dont ce § dit qu'il fait
+> foi. Lire ce document, en septembre, c'était croire que la voie patient tenait
+> en trois portes. `drapeauxDocumentes.guard.test.ts` refuse désormais qu'une
+> variable lue par `web/src` ne soit nommée nulle part ici — deuxième
+> application de [[D-064]], qui gardait déjà la justesse des lignes mais jamais
+> leur existence.
+>
+> **RELECTURE INTÉGRALE SUR SCALINGO LE 2026-09-11** (`scalingo --app wellneuro
+> env`, `WN_DEPLOY_ENV=production`) : **les sept drapeaux de cette section sont
+> posés à `true`** — la voie patient est entièrement ouverte —, et
+> `WN_OBJECTIF_PROPOSE_PATIENTS` étant **absent**, le périmètre de la machine
+> qui propose est **tous les dossiers**. Toute extinction ou activation
+> ultérieure se consigne ici, datée, comme au § A.
+
+### B.1 — Les portes d'entrée
 
 | Flag | Valeur ON | Ouvre | Dépendance / note |
 |---|---|---|---|
 | `WN_G4_LIEN_MAGIQUE` | `true` | entrée portail par lien magique | **POSÉ en Production le 2026-07-21** (`campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md`, constaté à `CHECKLIST_ACTIVATION_G_TRUST_04.md:167`) — plateforme Vercel d'alors ; valeur reprise au dossier de migration le 2026-08-21 (`CHECKLIST_FINALISATION.md:25`, recopie prod → staging). **RELU SUR SCALINGO LE 2026-09-07** (`env-get`) : la variable y est bien posée. |
 | `WN_G4_REDEMANDE_PATIENT` | `true` | canal public de redemande de lien | **surface publique non authentifiée**. **POSÉ en Production**, constaté actif le 2026-08-05 (`handoffs/2026-08-05-1634-parcours-patient-unique-revocation-fermee.md:18`, lecture des logs runtime) ; valeur reprise au dossier de migration le 2026-08-21 (`CHECKLIST_FINALISATION.md:25`). **RELU SUR SCALINGO LE 2026-09-07** (`env-get`) : la variable y est bien posée. |
 | `WN_G5_GOOGLE_PATIENT` | `true` | entrée patient par Google | exige `WN_GOOGLE_PATIENT_CLIENT_ID` / `_SECRET` (client OAuth dédié). **POSÉ en Production le 2026-07-22** (`propositions/2026-07-25-audit-identites-google/AUDIT_IDENTITES_GOOGLE.md:50`) — une connexion patient réelle tracée le jour même (`SESSION_LOG.md:122`), donc une porte qui a effectivement servi. **RELU SUR SCALINGO LE 2026-09-07** (`env-get`) : la variable y est bien posée. |
+
+### B.2 — Les surfaces de la voie Alliance
+
+Chacune a **son** drapeau, et aucune ne se compose des autres : ouvrir une
+surface d'écriture n'ouvre pas une publication, et ouvrir une publication
+n'ouvre pas la ratification. Se greffer sur un drapeau déjà allumé rendrait un
+écran visible à tous les dossiers du cabinet dès le déploiement, sans qu'aucune
+décision ne l'ait ouvert — le défaut exact que [[D-070]] a constaté sur le rayon
+biologie.
+
+| Flag | Valeur ON | Ouvre | Dépendance / note |
+|---|---|---|---|
+| `WN_CE_QUI_COMPTE` | `true` | « Ce qui compte pour moi aujourd'hui » — la **route de dépôt** (503) **et** l'**écran du portail** (404) | Alliance 6.0-A, LOT-03. Ne garde **pas** la lecture praticien : une liste vide côté dossier est un silence honnête, un 503 ferait croire à une panne. **Absent le 2026-08-22** ([[D-092]]) ; **posé** au constat du 2026-08-26 ([[D-112]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_COMPREHENSION` | `true` | « Ce que j'ai compris de vous » — route (503) et écran (404) du portail, **et la PUBLICATION côté praticien** (503) | Alliance 6.0-A, LOT-04. Le troisième geste est le moins évident et le plus important : laisser publier dans une surface fermée produirait un stock de synthèses que le praticien croit remises, et qui atteindraient le patient **d'un seul coup** le jour de l'allumage. Ne garde pas le **brouillon** — préparer avant d'ouvrir est l'usage attendu. **POSÉ en Production le 2026-08-22** ([[D-092]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_DOSSIER_DEUX_VOIX` | `true` | l'écran « dossier à deux voix » (404), sa route d'assemblage (503) et le geste de **RATIFICATION** (503) | Alliance 6.0-A, LOT-06. **Ne se compose pas** des deux précédents : la ratification est la seule écriture patient **irréversible** de la campagne. Il ne remplace pas les autres, il **s'y ajoute** — chaque bloc de l'écran reste soumis à son propre drapeau, et un bloc éteint est **absent** de la réponse, ni « vide » ni « pas encore ouvert » (`DC-24`). Garde aussi l'amendement, et non `WN_OBJECTIF_PROPOSE` ([[D-110]] §1). **POSÉ en Production depuis le 2026-08-23** ([[D-110]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_OBJECTIF_PROPOSE` | `true` | la **machine qui propose** un objectif — l'assemblage (503) **et la lecture** (503) | Alliance 6.0-B, LOT-02, gouvernance du périmètre ([[D-094]]). Ce qu'il ouvre n'est pas une surface mais une force de proposition, d'où un drapeau distinct de `WN_DOSSIER_DEUX_VOIX`. Gâter la **lecture** est une exception assumée à la règle « une liste vide est un silence honnête » : ici, elle se lirait « la machine n'a rien trouvé à proposer sur ce dossier », soit un **constat sur le patient**, là où la vérité est que personne n'a ouvert la fonctionnalité. **Absent au 2026-08-26** ([[D-112]]) ; **posé** à la lecture du 2026-09-08 ([[D-154]] §1 — « ce n'est pas un drapeau qui manquait »). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_OBJECTIF_PROPOSE_PATIENTS` | liste d'identifiants séparés par des virgules, **vide = tous** | **rien** — il RESTREINT : mécanisme de réversibilité, pour limiter après coup et sans redéploiement | N'est pas une gâte : le fail-closed est tenu par `WN_OBJECTIF_PROPOSE`, qui précède toujours. En faire un périmètre par défaut inverserait son rôle, un oubli passant pour une fermeture voulue. **ABSENT en production au 2026-09-11** ⇒ périmètre = **tous les dossiers**, ce que [[D-094]] fonde sur un fait et non sur une commodité : les patients actuels sont des bêta-testeurs réels et informés. |
 
 ## C. Double verrou clinique — `'1'` **ET** validation en code
 
@@ -215,9 +253,24 @@ n'ouvrent rien.
 
 `WN_CLAIMS_CLAUDE_MODEL` · `WN_DEPLOY_ENV` · `WN_RELEASE_SHA` ·
 `NEXT_PUBLIC_WN_DEPLOY_ENV` · `NEXT_PUBLIC_WN_RELEASE_SHA` ·
-`WN_PORTAIL_TOKEN_TTL_JOURS` (TTL, entier) · `RAG_INTERNAL_SECRET` ·
-`RAG_EMBEDDING_MODEL` · `RAG_EMBEDDING_DIMENSIONS` ·
-`WN_GOOGLE_PATIENT_CLIENT_ID` / `_SECRET`.
+`RAG_INTERNAL_SECRET` · `RAG_EMBEDDING_MODEL` · `RAG_EMBEDDING_DIMENSIONS` ·
+`WN_GOOGLE_PATIENT_CLIENT_ID` / `WN_GOOGLE_PATIENT_CLIENT_SECRET`.
+
+**Modèle des deux appels de proposition**, défaut `CLAUDE_MODEL` si absent :
+`WN_MODELE_PROPOSITION_PRIORITE` (`lib/objectif/propositionPriorite.ts:58`) et
+`WN_MODELE_PROPOSITION_COMPREHENSION`
+(`lib/objectif/propositionComprehension.ts:68`). Ils ne décident **pas** qu'un
+appel a lieu — cela, c'est l'affaire des drapeaux du § B.2 — seulement à qui il
+est adressé.
+
+**Entrée morte, gardée pour mémoire** : `WN_PORTAIL_TOKEN_TTL_JOURS` (TTL,
+entier) n'est plus lue par aucune ligne du dépôt depuis que #397 a retiré le
+jeton du portail ; rien à poser nulle part
+(`propositions/2026-07-24-audit-migration-hds/CHECKLIST_FINALISATION.md:25`).
+
+**Hors `web/src`** : `WN_MIGRATIONS_PAR_RELEASE_DB` (`web/scripts/db-deploy.sh`)
+sort les migrations du postdeploy pour les confier au workflow `release-db` —
+posée en production seule, décrite dans `docs/DEPLOIEMENT_RELEASE_DB.md`.
 
 ## Tout allumer pour le dev local
 
@@ -233,6 +286,12 @@ RAG_PGVECTOR_ENABLED=true            # + RAG_INTERNAL_SECRET et clés OpenAI
 WN_G4_LIEN_MAGIQUE=true
 WN_G4_REDEMANDE_PATIENT=true
 WN_G5_GOOGLE_PATIENT=true            # + WN_GOOGLE_PATIENT_CLIENT_ID / _SECRET
+WN_AGENDA_ALI=true
+WN_AGENDA_RELANCE=true
+WN_CE_QUI_COMPTE=true                # les quatre surfaces du § B.2 : sans
+WN_COMPREHENSION=true                # elles, le portail local ne montre RIEN
+WN_DOSSIER_DEUX_VOIX=true            # de la voie Alliance — et c'est un 404,
+WN_OBJECTIF_PROPOSE=true             # pas un écran vide
 ```
 
 Les flags **C** (double verrou clinique) et **D** (gate dur HDS) n'y figurent pas
