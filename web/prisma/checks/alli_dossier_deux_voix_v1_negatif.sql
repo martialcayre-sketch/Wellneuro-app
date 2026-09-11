@@ -57,7 +57,8 @@ DECLARE
     'cree_le', 'enonce_patient', 'enonce_source', 'enonce_source_id', 'id',
     'id_patient', 'negocie_le', 'non_traite_depuis_le', 'non_traite_motif',
     'praticien_email', 'priorite', 'priorite_prompt', 'priorite_source',
-    'priorite_source_depot_id', 'priorite_source_synthese_id',
+    'priorite_source_depot_id', 'priorite_source_rang',
+    'priorite_source_synthese_id',
     'reformulation_praticien', 'reformulation_source', 'reformulation_source_id',
     'source_proposition_id', 'supersedes_objectif_id'
   ];

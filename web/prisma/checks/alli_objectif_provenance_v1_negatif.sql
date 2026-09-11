@@ -17,6 +17,8 @@
 --      proposition irrejouable n'est plus une provenance, c'est une étiquette,
 --      et depuis l'arbitrage du 2026-09-10 au soir la parole du patient est une
 --      CONDITION de l'appel, pas un complément (`D-167` §3 amendé) ;
+--   6 bis. le RANG du tirage retenu ne vit pas sans sa source, et commence à 1 —
+--      ajouté le 2026-09-11 quand la réserve du §11 a été levée ;
 --   6. PAS DE PROVENANCE SANS TEXTE : déclarer d'où vient un champ vide
 --      décrirait l'origine de rien, et laisserait croire en relecture qu'un
 --      texte a existé puis disparu.
@@ -87,7 +89,17 @@ DECLARE
     -- jusqu'à l'arbitrage du soir. Les deux pièces sont désormais exigées.
     ['priorité proposée SANS dépôt patient (la parole du patient est une condition)',
      $q$INSERT INTO objectifs_negocies (id, id_patient, praticien_email, enonce_patient, priorite, priorite_source, priorite_source_synthese_id, priorite_prompt)
-        VALUES ('p13', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'Sommeil', 'proposition_ia', 'SYN_1', 'priorite-v1')$q$]
+        VALUES ('p13', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'Sommeil', 'proposition_ia', 'SYN_1', 'priorite-v1')$q$],
+    -- AJOUTÉS LE 2026-09-11 (`D-167` §11, réserve levée) : le rang du tirage
+    -- retenu. Il TOMBE AVEC LA MARQUE — un texte réécrit « redevient ses mots »
+    -- (§6), et lui laisser un rang garderait une mention de machine sur une
+    -- phrase qu'elle n'a pas écrite.
+    ['rang de tirage SANS source de priorité (un rang orphelin ne désigne rien)',
+     $q$INSERT INTO objectifs_negocies (id, id_patient, praticien_email, enonce_patient, priorite, priorite_source_rang)
+        VALUES ('p14', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'Sommeil', 2)$q$],
+    ['rang de tirage nul (un ordre commence à 1)',
+     $q$INSERT INTO objectifs_negocies (id, id_patient, praticien_email, enonce_patient, priorite, priorite_source, priorite_source_synthese_id, priorite_source_depot_id, priorite_prompt, priorite_source_rang)
+        VALUES ('p15', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr', 'Dormir mieux', 'Sommeil', 'proposition_ia', 'SYN_1', 'ent_1', 'priorite-v1', 0)$q$]
   ];
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé (identité de fixture du dépôt) ──
@@ -116,6 +128,19 @@ BEGIN
             'ce_qui_compte', 'ent_contrat_1',
             'synthese_ia', 'SYN_contrat_1',
             'proposition_ia', 'SYN_contrat_1', 'ent_contrat_1', 'priorite-v1');
+
+    -- LE RANG ACCOMPAGNE UNE PROPOSITION RETENUE (`D-167` §11). Sans ce cas
+    -- positif, une contrainte trop serrée sur le rang passerait verte et la
+    -- route casserait au premier objectif dont la priorité vient d'un second
+    -- tirage.
+    INSERT INTO objectifs_negocies (
+      id, id_patient, praticien_email, enonce_patient, priorite,
+      priorite_source, priorite_source_synthese_id, priorite_source_depot_id,
+      priorite_prompt, priorite_source_rang
+    )
+    VALUES ('obj_prov_rang', 'PAT_CONTRAT_PROV', 'praticien@wellneuro.fr',
+            'Retrouver un sommeil continu', 'Sommeil',
+            'proposition_ia', 'SYN_contrat_1', 'ent_contrat_1', 'priorite-v1', 3);
 
     -- PROVENANCES INDÉPENDANTES : citer l'énoncé sans rien déclarer ailleurs
     -- doit passer. Un CHECK qui lierait les trois champs ferait de la citation
@@ -173,7 +198,7 @@ BEGIN
       AND column_name IN ('enonce_source', 'enonce_source_id', 'reformulation_source',
                           'reformulation_source_id', 'priorite_source',
                           'priorite_source_synthese_id', 'priorite_source_depot_id',
-                          'priorite_prompt')
+                          'priorite_prompt', 'priorite_source_rang')
   ) THEN
     RAISE EXCEPTION 'PROVENANCE OBJECTIF: une colonne de provenance est NOT NULL — le silence cesserait d''être permis.';
   END IF;
