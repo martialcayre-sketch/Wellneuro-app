@@ -243,10 +243,16 @@ const DECOMPTE_RENDU = /\{\s*[\w.]+\.length(?:\.toLocaleString\([^)]*\))?\s*\}/g
  *   et `DC-30` demande précisément de le dire.
  * - `anterieures.length` — « Versions antérieures (3) », un repère de
  *   navigation dans la trajectoire.
- * - `valeur.length`, `texteAmendement.length` et `texteJalon.length` — les
- *   compteurs de caractères des SAISIES (`Compteur`, la zone « le dire
- *   autrement », et la réponse d'étape du LOT-05). Ils remplacent `maxLength` :
+ * - `valeur.length`, `texteAmendement.length`, `texteJalon.length` et
+ *   `texteDemande.length` — les compteurs de caractères des SAISIES
+ *   (`Compteur`, la zone « le dire autrement », la réponse d'étape du LOT-05,
+ *   et la demande de correction de 2026-09-11). Ils remplacent `maxLength` :
  *   le dépassement est visible, rien n'est coupé.
+ *
+ *   CE QUE `texteDemande.length` COMPTE EST CE QUE LE PATIENT EST EN TRAIN DE
+ *   TAPER, jamais ce qu'il a déposé. `demandesCorrection.length` resterait
+ *   interdit, et doit le rester : « vous avez demandé 3 corrections » ferait de
+ *   l'insistance d'un patient une série, et d'une série un reproche.
  *
  * Aucun ne porte sur `amendements` ni sur `reponsesJalon`, et c'est bien ce
  * qu'on veut : la parole du patient ne se compte pas (`D-110`, `D-111`,
@@ -259,6 +265,7 @@ const DECOMPTES_LICITES = [
   'valeur.length',
   'texteAmendement.length',
   'texteJalon.length',
+  'texteDemande.length',
 ];
 
 /** Un agrégat sur les mots du patient : moyenne, cumul, comparaison chiffrée. */

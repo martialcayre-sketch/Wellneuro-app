@@ -40,6 +40,9 @@ function assemblage(partiel: Record<string, unknown> = {}) {
     // défaut — un dossier sans geste ancien n'affiche pas le bloc.
     ratifications: [],
     amendements: [],
+    // Vides par défaut, même motif que les ratifications : un dossier sans
+    // demande n'affiche aucun rappel de demande.
+    demandesCorrection: [],
     reponsesJalon: [],
     // PAR DÉFAUT, AUCUNE ÉTAPE OUVERTE : c'est l'état de la quasi-totalité des
     // dossiers, et la question d'étape ne doit apparaître que quand le SERVEUR
@@ -496,6 +499,221 @@ describe('DossierDeuxVoixView', () => {
       for (const interdit of ['score', 'niveau', 'moyenne', 'taux', '1 version', 'points']) {
         expect(rendu).not.toContain(interdit);
       }
+    });
+  });
+
+  // ── LE BLOC QUI SE FERME, ET LE QUATRIÈME VERBE (2026-09-11) ──────────────
+
+  describe('après « c’est bien ça », le bloc se ferme', () => {
+    const BOUTON_DEMANDE = 'Demander une correction à mon praticien';
+    const etatDe = (etat: string) => ({ ...OBJECTIF, etat });
+
+    it('LES TROIS VERBES DISPARAISSENT — c’est le défaut mesuré sur PAT006', async () => {
+      // Deux ratifications identiques à dix secondes d'écart : le patient
+      // voyait encore « C'est bien ça » sous sa propre réponse.
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [etatDe('ratifie')] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Vous avez répondu'));
+      expect(screen.queryByRole('button', { name: 'C’est bien ça' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Ce n’est pas exactement ça' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Le dire autrement' })).toBeNull();
+    });
+
+    it('LE QUATRIÈME VERBE PREND LEUR PLACE — le patient n’est pas enfermé dans sa réponse', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [etatDe('ratifie')] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: BOUTON_DEMANDE })).toBeTruthy());
+    });
+
+    it('APRÈS « CE N’EST PAS EXACTEMENT ÇA », LE BLOC RESTE OUVERT — arbitrage du responsable', async () => {
+      // Contester appelle déjà une suite du praticien : le patient doit pouvoir
+      // se raviser d'un clic, sans passer par une demande de correction.
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [etatDe('conteste')] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'C’est bien ça' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: BOUTON_DEMANDE })).toBeNull();
+    });
+
+    it('APRÈS « LE DIRE AUTREMENT », LE BLOC RESTE OUVERT AUSSI', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [etatDe('dit_autrement')] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'C’est bien ça' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: BOUTON_DEMANDE })).toBeNull();
+    });
+
+    it('SANS RÉPONSE, les trois verbes sont là et le quatrième ABSENT', async () => {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [etatDe('en_attente')] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'C’est bien ça' })).toBeTruthy());
+      expect(screen.queryByRole('button', { name: BOUTON_DEMANDE })).toBeNull();
+    });
+  });
+
+  describe('le quatrième verbe — « demander une correction »', () => {
+    const BOUTON_DEMANDE = 'Demander une correction à mon praticien';
+    const RATIFIE = { ...OBJECTIF, etat: 'ratifie' };
+
+    async function ouvrirLaSaisie() {
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+      render(<DossierDeuxVoixView token="TOK" />);
+      await waitFor(() => expect(screen.getByRole('button', { name: BOUTON_DEMANDE })).toBeTruthy());
+      fireEvent.click(screen.getByRole('button', { name: BOUTON_DEMANDE }));
+      await waitFor(() =>
+        expect(screen.getByLabelText('Qu’est-ce qui ne vous va pas dans cet objectif ?')).toBeTruthy(),
+      );
+    }
+
+    it('LA SAISIE N’EST JAMAIS PRÉ-REMPLIE — on ne souffle pas au patient ce qui ne va pas', async () => {
+      await ouvrirLaSaisie();
+      const champ = screen.getByLabelText(
+        'Qu’est-ce qui ne vous va pas dans cet objectif ?',
+      ) as HTMLTextAreaElement;
+      expect(champ.value).toBe('');
+    });
+
+    it('LE FACULTATIF EST DIT, ET LE BOUTON RESTE ACTIF SUR UN CHAMP VIDE', async () => {
+      // C'est le seul des quatre gestes dans ce cas. Un bouton désactivé
+      // contredirait la phrase juste au-dessus et rendrait le « facultatif »
+      // mensonger.
+      await ouvrirLaSaisie();
+      expect(texteRendu()).toContain('sans rien écrire');
+      const envoyer = screen.getByRole('button', { name: 'Envoyer ma demande' }) as HTMLButtonElement;
+      expect(envoyer.disabled).toBe(false);
+    });
+
+    it('poste le geste NOMMÉ, sans identifiant patient ni date', async () => {
+      await ouvrirLaSaisie();
+      fetchMock.mockResolvedValueOnce(json({ ok: true, demandeCorrection: { id: 'DEM_1' } }));
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+      fireEvent.change(screen.getByLabelText('Qu’est-ce qui ne vous va pas dans cet objectif ?'), {
+        target: { value: 'Ce n’est pas le sommeil, c’est la fatigue.' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Envoyer ma demande' }));
+
+      await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(1));
+      const envoi = fetchMock.mock.calls.find(
+        (appel) => (appel[1] as { method?: string } | undefined)?.method === 'POST',
+      );
+      const corps = JSON.parse(String((envoi as [string, { body?: string }])[1].body));
+      expect(corps).toEqual({
+        geste: 'demande_correction',
+        idObjectif: OBJECTIF.id,
+        texte: 'Ce n’est pas le sommeil, c’est la fatigue.',
+      });
+    });
+
+    it('ENVOIE MÊME VIDE — et c’est le serveur qui replie le blanc sur `null`', async () => {
+      await ouvrirLaSaisie();
+      fetchMock.mockResolvedValueOnce(json({ ok: true, demandeCorrection: { id: 'DEM_1' } }));
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+      fireEvent.click(screen.getByRole('button', { name: 'Envoyer ma demande' }));
+
+      await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(1));
+      const envoi = fetchMock.mock.calls.find(
+        (appel) => (appel[1] as { method?: string } | undefined)?.method === 'POST',
+      );
+      const corps = JSON.parse(String((envoi as [string, { body?: string }])[1].body));
+      expect(corps.texte).toBe('');
+      expect(corps.geste).toBe('demande_correction');
+    });
+
+    it('L’ACCUSÉ N’EST PAS CELUI DES TROIS AUTRES — ce geste attend une suite', async () => {
+      await ouvrirLaSaisie();
+      fetchMock.mockResolvedValueOnce(json({ ok: true, demandeCorrection: { id: 'DEM_1' } }));
+      fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [RATIFIE] })));
+      fireEvent.click(screen.getByRole('button', { name: 'Envoyer ma demande' }));
+
+      await waitFor(() => expect(texteRendu()).toContain('Votre demande est transmise'));
+      // SONDE DISTINCTIVE : « reprendra cet objectif avec vous » figure DÉJÀ
+      // dans le bloc fermé, en permanence. La sonder aurait laissé passer un
+      // accusé recopié d'un autre geste — une mutation l'a montré.
+      expect(texteRendu()).not.toContain('tel que vous l’avez indiqué');
+    });
+
+    it('SUR UN REFUS, le texte reste à l’écran — personne d’autre ne peut le réécrire', async () => {
+      await ouvrirLaSaisie();
+      fetchMock.mockResolvedValueOnce(
+        json({ ok: false, reason: 'texte_trop_long', error: 'Votre texte dépasse 4000 caractères.' }, false),
+      );
+      fireEvent.change(screen.getByLabelText('Qu’est-ce qui ne vous va pas dans cet objectif ?'), {
+        target: { value: 'mes mots à moi' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Envoyer ma demande' }));
+
+      await waitFor(() => expect(texteRendu()).toContain('Votre texte dépasse'));
+      const champ = screen.getByLabelText(
+        'Qu’est-ce qui ne vous va pas dans cet objectif ?',
+      ) as HTMLTextAreaElement;
+      expect(champ.value).toBe('mes mots à moi');
+    });
+
+    it('RELIT une demande déjà posée, avec sa date', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            demandesCorrection: [
+              {
+                id: 'DEM_1',
+                idObjectif: OBJECTIF.id,
+                texte: 'Ce n’est pas le sommeil.',
+                creeLe: '2026-09-11T18:20:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Vous avez demandé une correction'));
+      expect(texteRendu()).toContain('11 septembre 2026');
+      expect(texteRendu()).toContain('Ce n’est pas le sommeil.');
+    });
+
+    it('UNE DEMANDE SANS TEXTE N’INVENTE AUCUNE PHRASE — le geste est dit, et c’est tout', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            demandesCorrection: [
+              { id: 'DEM_1', idObjectif: OBJECTIF.id, texte: null, creeLe: '2026-09-11T18:20:00.000Z' },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Vous avez demandé une correction'));
+      for (const interdit of ['null', 'undefined', 'Aucun texte']) {
+        expect(texteRendu()).not.toContain(interdit);
+      }
+    });
+
+    it('une demande portée sur une AUTRE version ne s’affiche pas sous celle-ci', async () => {
+      fetchMock.mockResolvedValueOnce(
+        json(
+          assemblage({
+            objectifs: [RATIFIE],
+            demandesCorrection: [
+              {
+                id: 'DEM_0',
+                idObjectif: 'OBJ_AILLEURS',
+                texte: 'sur une version d’avant',
+                creeLe: '2026-09-01T10:00:00.000Z',
+              },
+            ],
+          }),
+        ),
+      );
+      render(<DossierDeuxVoixView token="TOK" />);
+
+      await waitFor(() => expect(texteRendu()).toContain('Vous avez répondu'));
+      expect(texteRendu()).not.toContain('sur une version d’avant');
     });
   });
 

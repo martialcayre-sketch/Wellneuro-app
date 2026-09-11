@@ -63,11 +63,19 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   // l'écran du LOT-06 — la garde tenait par le NOM que l'auteur avait choisi,
   // c'est-à-dire par rien.
   //
-  // TROIS EXCEPTIONS, ET ELLES SONT NOMMÉES UNE PAR UNE : `{texte.length}`, le
+  // QUATRE EXCEPTIONS, ET ELLES SONT NOMMÉES UNE PAR UNE : `{texte.length}`, le
   // compteur de caractères du champ de saisie (`CeQuiCompteForm`),
   // `{texteAmendement.length}`, celui de la saisie « le dire autrement »
-  // (`DossierDeuxVoixView`, 6.0-B LOT-04), et `{texteJalon.length}`, celui de
-  // la réponse d'étape (même écran, 6.0-B LOT-05). Compter les caractères qu'on est en
+  // (`DossierDeuxVoixView`, 6.0-B LOT-04), `{texteJalon.length}`, celui de
+  // la réponse d'étape (même écran, 6.0-B LOT-05), et `{texteDemande.length}`,
+  // celui de la demande de correction (même écran, 2026-09-11).
+  //
+  // `demandesCorrection.length` RESTE INTERDIT, et doit le rester : « vous avez
+  // demandé 3 corrections » ferait de l'insistance d'un patient une série, et
+  // d'une série un reproche. Ce que la quatrième exception laisse passer est ce
+  // qu'il est en train de TAPER, jamais ce qu'il a déposé.
+  //
+  // Compter les caractères qu'on est en
   // train de taper est une aide à la saisie, pas une mesure de la parole du
   // patient — et la borne affichée est technique, identifiée comme telle
   // (`DC-20`). Elle est même l'inverse d'une troncature silencieuse : le
@@ -79,7 +87,7 @@ const MOTIFS_AGREGAT: { motif: RegExp; nom: string }[] = [
   // genre « tout identifiant contenant `texte` » aurait rendu l'exception
   // ouverte à `textesServis.length`.
   {
-    motif: /\{\s*(?!(?:texte|texteAmendement|texteJalon)\.length\s*\})[\w.]+\.length\s*\}/,
+    motif: /\{\s*(?!(?:texte|texteAmendement|texteJalon|texteDemande)\.length\s*\})[\w.]+\.length\s*\}/,
     nom: 'décompte affiché',
   },
 ];
