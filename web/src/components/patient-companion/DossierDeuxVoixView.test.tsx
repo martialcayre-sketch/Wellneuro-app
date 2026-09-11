@@ -880,3 +880,67 @@ describe('DossierDeuxVoixView', () => {
   });
 
 });
+
+// ── LA SECONDE VOIX, REMONTÉE SOUS L'ÉNONCÉ ─────────────────────────────────
+describe('DossierDeuxVoixView — la seconde voix', () => {
+  const attendre = async (payload: unknown) => {
+    fetchMock.mockResolvedValueOnce(json(payload));
+    render(<DossierDeuxVoixView token="jeton" />);
+    await waitFor(() => expect(texteRendu()).toContain('Ce que votre praticien a compris de vous'));
+  };
+
+  it('la compréhension publiée est rendue DANS la carte de l’objectif', async () => {
+    // La page s'appelle « dossier à deux voix » : depuis le retrait du champ de
+    // reformulation, la seconde n'y était plus.
+    await attendre(assemblage({ objectifs: [{ ...OBJECTIF, reformulationPraticien: null }] }));
+    expect(texteRendu()).toContain('Vous venez pour un sommeil qui se casse au milieu de la nuit.');
+  });
+
+  it('C’EST UN DÉPLACEMENT, PAS UNE COPIE — le texte n’apparaît qu’UNE fois', async () => {
+    await attendre(assemblage({ objectifs: [{ ...OBJECTIF, reformulationPraticien: null }] }));
+    const occurrences = texteRendu().split(SYNTHESE.texte).length - 1;
+    expect(occurrences).toBe(1);
+    expect(texteRendu()).toContain('Ce texte est repris plus haut, sous votre objectif.');
+  });
+
+  it('SANS OBJECTIF, la section basse rend le texte comme avant', async () => {
+    fetchMock.mockResolvedValueOnce(json(assemblage({ objectifs: [] })));
+    render(<DossierDeuxVoixView token="jeton" />);
+    await waitFor(() => expect(texteRendu()).toContain(SYNTHESE.texte));
+    expect(texteRendu()).not.toContain('Ce texte est repris plus haut');
+  });
+
+  it('SANS COMPRÉHENSION PUBLIÉE, rien ne remonte — et aucun titre orphelin', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(assemblage({ comprehension: { synthese: null, desaccords: [] } })),
+    );
+    render(<DossierDeuxVoixView token="jeton" />);
+    await waitFor(() => expect(texteRendu()).toContain('Je voudrais me réveiller'));
+    expect(texteRendu()).not.toContain('Ce que votre praticien a compris de vous ·');
+    expect(texteRendu()).not.toContain('Ce texte est repris plus haut');
+  });
+
+  it('la date remontée dit son VRAI nom — publié, et non écrit', async () => {
+    // « Écrit le » sur une date de PUBLICATION attribuerait au praticien une
+    // déclaration qu'il n'a pas faite. `redigeeLe` est null ici.
+    await attendre(assemblage({ objectifs: [{ ...OBJECTIF, reformulationPraticien: null }] }));
+    expect(texteRendu()).toContain('publié le 20 août 2026');
+    expect(texteRendu()).not.toContain('écrit le 20 août 2026');
+  });
+
+  it('UNE SEULE FOIS, et non sous chaque version concurrente', async () => {
+    // Il n'y a qu'une compréhension publiée par dossier, alors qu'il peut y
+    // avoir deux têtes : la rendre sous chacune la ferait dire qu'elle répond
+    // à chacune.
+    await attendre(
+      assemblage({
+        objectifs: [
+          { ...OBJECTIF, reformulationPraticien: null },
+          { ...OBJECTIF, id: 'OBJ_2', reformulationPraticien: null },
+        ],
+      }),
+    );
+    const occurrences = texteRendu().split(SYNTHESE.texte).length - 1;
+    expect(occurrences).toBe(1);
+  });
+});

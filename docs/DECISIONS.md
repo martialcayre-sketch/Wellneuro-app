@@ -4,6 +4,217 @@
 
 ## Décisions actives
 
+### D-169 — La reformulation de l'objectif quitte l'écran praticien : un même geste ne s'écrit pas deux fois
+
+- Date : 2026-09-11
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-09-11 —
+  « je pense que la reformulation n'a plus lieu d'être dans ces conditions »)
+- Amende : [[D-094]] §1 et [[D-167]] §2, qui faisaient de la reformulation un
+  champ citable et pré-rempli.
+- Dépend de [[D-168]] : le retrait n'a de sens que parce que le résumé global
+  prend cette charge. Deux décisions distinctes, pour qu'on puisse revenir sur
+  l'une sans toucher à l'autre.
+- Domaine : doctrine produit — campagne Alliance 6.0-B
+
+**Constat.** La phase 3 demandait DEUX FOIS au praticien de dire ce qu'il avait
+compris. « Votre reformulation », dans l'objectif négocié, arrivait pré-remplie
+du `narratif_patient` d'une synthèse validée ; « Ce que j'ai compris de vous »,
+sur l'onglet voisin, arrivait vide. Les deux textes atteignaient le patient, sur
+deux pages du portail. Le doublon n'a pas été créé par le pré-remplissage : il a
+été rendu impossible à ignorer par lui.
+
+**Décision.** Le champ de reformulation est retiré de l'ÉCRAN PRATICIEN. Il n'est
+plus offert à la saisie, ni pré-rempli.
+
+**Ce que le retrait ne fait PAS.**
+
+1. **La colonne reste en base.** `reformulation_praticien` n'est pas supprimée,
+   et ne le sera pas : les tables d'alliance sont append-only, et une colonne
+   qu'on retire emporte ce qu'elle portait.
+2. **Le portail continue d'afficher une reformulation existante.** Le retrait
+   porte sur l'écran praticien SEUL — arbitrage explicite entre trois portées.
+3. **Le contrat de la route ne change pas.** `reformulationPraticien` continue
+   d'être transmis : une reprise de version doit pouvoir reconduire une
+   reformulation existante, et retirer le champ de l'API aurait été un
+   changement de surface que rien n'exige.
+4. **`matiere.reformulation` continue d'arriver de la route.** Elle n'a pas cessé
+   d'être une citation valide. Ce qui a changé est ce que l'écran en fait : plus
+   rien.
+
+**Ce que le retrait coûtait, mesuré avant de décider.** Rien. Lecture de la
+production le 2026-09-11 : **un seul objectif négocié au total, sur un dossier,
+sans reformulation** — `AVEC_REFORM|0|patients=0`. Aucun patient n'avait jamais
+lu une reformulation. La mesure a précédé l'arbitrage ; elle ne le justifie pas
+après coup.
+
+**Ce que le retrait déplace, et qui a été nommé avant l'accord.** La page
+patient s'appelle « dossier à deux voix ». Ses deux voix étaient l'énoncé du
+patient et la reformulation du praticien. Sans la seconde, le patient lisait ses
+propres mots et une priorité de 200 caractères. Le responsable a tranché entre
+trois réponses, en connaissance du coût de celle qu'il a retenue : la
+compréhension publiée est rendue dans la carte de l'objectif.
+
+**C'est un DÉPLACEMENT, pas une copie.** Le texte remonte quand un objectif
+existe, et la section plus bas cesse alors de le répéter — le même paragraphe
+deux fois sur un écran se lit comme un bug, pas comme une insistance. Sans
+objectif, rien ne remonte et la section basse le rend comme avant. Et il ne
+remonte **qu'une fois** : il n'y a qu'une compréhension publiée par dossier,
+alors qu'il peut y avoir deux têtes d'objectif concurrentes — la rendre sous
+chacune la ferait dire qu'elle répond à chacune.
+
+**Conséquences.**
+
+- Cinq bancs défendaient le champ retiré. Ils ont été **réécrits pour défendre le
+  retrait**, pas supprimés : réintroduire le champ par inadvertance les fait
+  rougir. Deux sondes de test ont changé de champ — en mode reformulation
+  l'énoncé reste caché, puisque le serveur le recopie de la cible.
+- Les colonnes `reformulation_source` et `reformulation_source_id`, posées la
+  veille par [[D-167]] §6, deviennent **dormantes**. Elles sont documentées comme
+  telles, sur le précédent de [[D-165]] : une colonne assumée vide n'est pas une
+  colonne oubliée, et une relecture future ne doit pas la « réparer ».
+- Un objectif neuf porte désormais une reformulation vide. C'est le comportement
+  voulu : `NULL`/`''` veut dire « le praticien n'a pas écrit ici », pas « on ne
+  sait pas » (`DC-24`).
+
+**Réserve.** Si le résumé global venait à être retiré, ce retrait-ci devrait être
+réexaminé : la phase 3 se retrouverait sans aucune voix du praticien sur la page
+dossier. C'est la raison pour laquelle les deux décisions sont séparées.
+
+- Référence : `web/src/components/patient-cockpit/ObjectifNegociePanel.tsx`,
+  `web/src/components/patient-companion/DossierDeuxVoixView.tsx`,
+  `changelog.d/2026-09-11-verrou-publication-et-retrait-reformulation.md`
+
+### D-168 — Le résumé global de compréhension : un appel qui RELIE, une hiérarchie qu'il ne compose pas, et un verrou de publication
+
+- Date : 2026-09-11
+- Statut : accepté (arbitrage du responsable, rendu en session le 2026-09-11, sur
+  écran réel — `PAT006`, phase 3, la zone « Ce que j'ai compris » vide devant un
+  dossier qui portait deux synthèses validées)
+- Amende : [[D-167]] §10, dont l'adaptateur borné interdisait à
+  `axes_prioritaires` de sortir d'une synthèse. Une porte est ouverte pour
+  l'ORDRE de ces axes, et pour lui seul.
+- N'amende PAS : [[D-003]] (voir « ce que l'appel ne décide pas »), ni
+  [[D-094]] §4 — cet appel vit hors du moteur déterministe, comme son voisin
+  [[D-167]] §5.
+- Domaine : doctrine produit et frontière IA — campagne Alliance 6.0-B
+
+**Constat.** « Ce que j'ai compris de vous » est publié TEL QUEL au patient, sous
+la signature du praticien, et arrivait vide. La reformulation de l'objectif, sur
+l'onglet voisin, arrivait pré-remplie depuis [[D-167]]. Le praticien devait donc
+écrire deux fois le même geste, dont une fois en repartant de zéro.
+
+**Décision.** Un appel produit un RÉSUMÉ GLOBAL du dossier, qui pré-remplit ce
+champ. Six clauses le bornent.
+
+**§1 — L'appel RELIE, il ne reformule pas.** Le mot est du responsable : « appel
+borné à lier, un résumé hiérarchisé du matériel à disposition », choisi
+explicitement pour « éviter le risque d'une reformulation qui s'éloignerait des
+synthèses établies ». Le modèle reçoit des textes DÉJÀ validés par un praticien
+et n'a le droit que de les articuler. Un banc vérifie que la consigne DIT ses
+interdits, mot par mot : ordre, hiérarchie, rang, liste, numérotation,
+diagnostic, score, seuil, bande.
+
+**§2 — La hiérarchie ne vient pas du modèle, et c'est ce qui sauve la clause de
+`DC-19`/`DC-20`.** L'ordre des axes lui est DONNÉ, repris de celui qu'un
+praticien a validé en validant la synthèse. Une consigne qui lui demanderait de
+classer par importance poserait un rang sans provenance ; elle lui demande
+l'inverse — suivre.
+
+Et l'ordre arrive **sans numérotation**. Numéroter dans le message d'entrée
+réintroduirait par la porte de service le rang que la consigne interdit : le
+modèle recopierait les numéros. L'ordre suffit à porter l'ordre.
+
+**« ORDRE VALIDÉ » EST EXACT, « ORDRE CHOISI » SERAIT FAUX.** Le praticien a
+validé la synthèse entière, donc l'ordre des axes avec elle ; il ne l'a pas
+nécessairement composé — l'éditeur lui permet d'ajouter, retirer et modifier des
+axes, pas de les réordonner. La nuance est écrite dans le code plutôt que tue :
+elle borne ce que la provenance du texte produit peut honnêtement affirmer.
+
+**§3 — La porte ne laisse passer qu'une chaîne par entrée.** Un axe prioritaire
+porte quatre champs. Trois sont exactement ce que la doctrine interdit de faire
+voyager : `niveau_priorite` est une BANDE, `arguments` contient des SCORES —
+« Score X élevé » est l'exemple du contrat JSON lui-même — et
+`points_a_confirmer` est une consigne d'entretien. Aucun des trois n'est nommé
+dans l'adaptateur ; sa garde de surface l'éprouve mot par mot, et le banc de
+comportement sérialise la sortie entière, parce que vérifier `axes` seul
+laisserait passer une fuite par une autre clé.
+
+**§4 — La barre d'ouverture : deux règles déjà écrites, lues ensemble.** La règle
+du responsable est « deux rideaux de questionnaires et deux synthèses minimum ».
+Elle se compte au sens que le dépôt a DÉJÀ écrit — [[D-158]] : le second rideau
+se compte depuis la première synthèse validée du dossier. **Aucun seuil n'est
+inventé.** Deux booléens et non un, parce que les deux manques ne se confondent
+pas et que l'écran doit pouvoir dire lequel. Sans date de validation, le rideau
+ne se constate pas — mais les synthèses se comptent quand même : les confondre
+ferait dire « il manque une synthèse » à un dossier qui en a deux, dont les dates
+sont absentes (`DC-24`). Et **aucun décompte ne sort** : un nombre servi à
+l'écran finirait par y être affiché comme une mesure du dossier.
+
+**§5 — Le verrou de publication.** « Publier au patient » est REFUSÉ tant que le
+texte est identique au tirage. Ce champ part au patient sous la signature du
+praticien : un texte de machine ne doit pas pouvoir y passer sans être relu.
+
+- Il ne garde QUE la publication. Enregistrer un brouillon identique reste
+  possible — on tire, on enregistre, on revient le relire. Le brouillon ne sort
+  pas de l'application : même asymétrie que le drapeau de surface patient.
+- Il vit à la ROUTE, pas seulement à l'écran. Un bouton grisé est une commodité ;
+  le refus est une garantie ([[D-164]]).
+- Il trime LES DEUX CÔTÉS. Une mutation a révélé que le banc ne prouvait le
+  `trim` que du côté soumis : un tirage enregistré avec un blanc de bord aurait
+  laissé publier sa recopie exacte.
+
+**§6 — La traçabilité, et sa limite écrite.** Le patron complet de [[D-167]] §11
+est repris : une table de tirages append-only (`propositions_comprehension_ia`),
+un bouton « une autre » qui écrit une ligne de plus, et quatre colonnes de
+provenance sur `syntheses_comprehension`.
+
+`source` dit « PARTI DE », et non « cité mot pour mot » — c'est structurel : le
+verrou garantit que le texte publié diffère TOUJOURS de sa source.
+
+Il en découle une limite, écrite dans la migration pour que personne ne lise ces
+colonnes comme une preuve qu'elles ne sont pas :
+
+- le serveur VÉRIFIE l'APPARTENANCE — `source_id` désigne un tirage existant, du
+  même dossier, et le navigateur ne déclare QUE cet identifiant : `source`, la
+  version de consigne et le modèle sont lus sur la ligne du tirage ([[D-164]]) ;
+- le serveur NE VÉRIFIE PAS l'usage. La constatation par comparaison de textes
+  ([[D-167]] §6) est ici impossible. Un praticien qui tire une proposition,
+  l'écarte, puis écrit de sa main, verra sa ligne marquée comme partie de ce
+  tirage. **Mesurer une « ressemblance » pour lever cette limite poserait un
+  seuil sans provenance (`DC-19`/`DC-20`), ce qui serait pire.**
+
+**Ce que l'appel ne décide pas ([[D-003]]).** Il propose ; la proposition n'est
+jamais publiée telle quelle — le verrou l'interdit. Le praticien la réécrit, ou
+il n'y a pas de publication. Retirer le verrou ferait de cette clause une
+dérogation.
+
+**Ce que la production ne peut pas prouver.** Il y avait **zéro désaccord en base
+au 2026-09-11**. La seconde liste de sources — les contestations du patient, que
+le résumé doit prendre en compte — ne sera exercée par aucune donnée réelle avant
+qu'un patient ne conteste. Le cas positif du contrat SQL et un banc unitaire en
+sont la seule preuve, et ils sont écrits pour cela.
+
+**Conséquences.**
+
+- Deux migrations, chacune seule avant son code ([[D-087]]), relues, jouées en
+  T3, approuvées en `release-db` et CONSTATÉES par conteneur.
+- Le minimum de deux synthèses est porté par un CHECK en base, pas seulement par
+  la route. `coalesce(array_length(…, 1), 0)` en fait la moitié :
+  `array_length('{}', 1)` rend NULL et non 0 — sans lui, la contrainte censée
+  exiger deux sources aurait accepté zéro source.
+- Le modèle se règle par `WN_MODELE_PROPOSITION_COMPREHENSION`, par défaut sur
+  `CLAUDE_MODEL`.
+- La longueur VISÉE (1 500 caractères) est dite au modèle comme une cible et ne
+  fait rien respecter : seule la borne du champ (4 000) refuse. Couper à 1 500
+  rendrait un texte que le modèle n'a pas écrit.
+- L'ouverture de la phase 3 ne dépense aucun appel : `GET` lit, `POST` produit.
+
+- Référence : `web/src/lib/objectif/matiereComprehension.ts`,
+  `web/src/lib/objectif/propositionComprehension.ts`,
+  `web/src/app/api/praticien/comprehension/proposition/route.ts`,
+  `web/prisma/migrations/20260911140000_alliance_proposition_comprehension_ia_v1/`,
+  `web/prisma/migrations/20260911160000_alliance_comprehension_provenance_v1/`
+
 ### D-167 — Les trois champs de l'objectif arrivent remplis : deux par citation, un par proposition marquée
 
 - Date : 2026-09-10

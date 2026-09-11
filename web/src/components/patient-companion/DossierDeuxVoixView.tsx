@@ -851,6 +851,42 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               )}
             </>
           )}
+
+          {/* ── LA SECONDE VOIX ────────────────────────────────────────────
+              CETTE PAGE S'APPELLE « DOSSIER À DEUX VOIX », et depuis le retrait
+              du champ de reformulation (2026-09-11) la seconde n'y était plus.
+              Le patient y lisait ses propres mots et une priorité de 200
+              caractères ; ce que son praticien a compris de lui vivait plus bas,
+              sous un autre titre.
+
+              C'EST UN DÉPLACEMENT, PAS UNE COPIE. Le texte est rendu ICI quand
+              un objectif existe, et la section plus bas cesse alors de le
+              répéter : le même paragraphe deux fois sur un écran se lit comme
+              un bug, pas comme une insistance. Sans objectif, rien ne remonte
+              et la section basse le rend comme avant.
+
+              UNE SEULE FOIS, ET NON SOUS CHAQUE VERSION. Il n'y a qu'une
+              compréhension publiée par dossier, alors qu'il peut y avoir deux
+              têtes d'objectif concurrentes : la rendre sous chacune la ferait
+              dire qu'elle répond à chacune. */}
+          {objectifs.length > 0 && comprehension?.synthese && (
+            <div className="space-y-1 border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">
+                Ce que votre praticien a compris de vous
+                {dateLisible(
+                  comprehension.synthese.redigeeLe ?? comprehension.synthese.publieeLe,
+                ) &&
+                  ` · ${
+                    dateLisible(comprehension.synthese.redigeeLe)
+                      ? `écrit le ${dateLisible(comprehension.synthese.redigeeLe)}`
+                      : `publié le ${dateLisible(comprehension.synthese.publieeLe)}`
+                  }`}
+              </p>
+              <p className="whitespace-pre-wrap text-base leading-relaxed">
+                {comprehension.synthese.texte}
+              </p>
+            </div>
+          )}
         </section>
       </PatientCard>
 
@@ -926,9 +962,20 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
                   </p>
                 )
               )}
-              <p className="whitespace-pre-wrap text-base leading-relaxed">
-                {comprehension.synthese.texte}
-              </p>
+              {objectifs.length > 0 ? (
+                /* DÉJÀ LU PLUS HAUT. Le texte est rendu dans la carte de
+                   l'objectif, comme seconde voix ; le répéter ici ferait lire
+                   deux fois le même paragraphe sur un seul écran. Ce qui reste
+                   ici est ce qui n'a pas de place là-haut : les désaccords déjà
+                   posés, et l'invitation à en poser un. */
+                <p className="text-sm text-muted-foreground">
+                  Ce texte est repris plus haut, sous votre objectif.
+                </p>
+              ) : (
+                <p className="whitespace-pre-wrap text-base leading-relaxed">
+                  {comprehension.synthese.texte}
+                </p>
+              )}
               {/* CE QUE LE PATIENT A DÉJÀ RÉPONDU, sur CETTE version. Sans ce
                   bloc, un patient qui a contesté au LOT-04 ne le verrait nulle
                   part ici, et l'invitation ci-dessous lui parlerait comme s'il
