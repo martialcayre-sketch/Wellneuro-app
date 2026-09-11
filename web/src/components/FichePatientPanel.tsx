@@ -810,7 +810,18 @@ export function FichePatientPanel({
         // dit au patient ce qu'on a compris de lui n'est pas une phase faite ;
         // une synthèse publiée sans objectif non plus. La phase porte les deux
         // sous-vues, son statut porte les deux conditions.
-        return etatPhase3.objectifsActifs > 0 && etatPhase3.synthesePubliee
+        // TROISIÈME CONDITION (2026-09-11) : une DEMANDE DE CORRECTION en
+        // attente empêche « renseignée ». Le patient a lu son objectif et
+        // demande qu'on le reprenne — la phase porterait au vert pendant
+        // qu'une parole reste sans réponse, et ce rail sert de feu pour passer
+        // à la prise de décision (`D-161` §10).
+        //
+        // Elle s'ajoute aux deux autres, elle n'en remplace aucune : un
+        // dossier sans objectif ni synthèse n'est pas « en attente d'une
+        // correction », il est en attente tout court.
+        return etatPhase3.objectifsActifs > 0
+          && etatPhase3.synthesePubliee
+          && etatPhase3.demandesCorrectionEnAttente === 0
           ? 'fait'
           : 'en_attente';
       }
@@ -1524,6 +1535,68 @@ export function FichePatientPanel({
               Ouvrir la phase Patient
             </button>
           )}
+        </div>
+      )}
+
+      {/* ── LE PATIENT DEMANDE QU'ON REPRENNE SON OBJECTIF (2026-09-11) ────
+          MÊME PATRON QUE LE BANDEAU CI-DESSUS, et pour la même raison : ce
+          signal doit rester perceptible quel que soit l'ONGLET affiché. Un
+          praticien qui travaille dans « Alimentation » ou « Trajectoire » ne
+          verrait jamais une demande rangée dans la seule phase Compréhension.
+
+          UN LIBELLÉ DISTINCT, ET C'EST LE POINT DÉLICAT. Le bandeau juste
+          au-dessus dit lui aussi « demande de correction » — mais il parle des
+          RÉPONSES DE QUESTIONNAIRE, et se règle par un DÉBLOCAGE. Celui-ci
+          parle du TEXTE DE L'OBJECTIF, et se règle par une REFORMULATION.
+          Deux bandeaux qui se ressembleraient enverraient le praticien au
+          mauvais endroit faire le mauvais geste.
+
+          AUCUN NOMBRE (`DC-19`/`DC-20`). Le bandeau du dessus compte des
+          assignations — des objets. Celui-ci parlerait d'une PAROLE : « 3
+          demandes de correction » ferait de l'insistance d'un patient une
+          série, et d'une série un reproche. Le rail sait combien ; l'écran ne
+          le dit pas. */}
+      {etatPhase3Lu === 'lu' && (etatPhase3?.demandesCorrectionEnAttente ?? 0) > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">
+            Votre patient demande une correction de son objectif négocié.
+          </span>
+          {!(ongletActif === 'cockpit' && phaseActive === 'comprehension') && (
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                setPhaseActive('comprehension');
+              }}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Ouvrir la phase Compréhension
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* UNE LECTURE EN ÉCHEC NE VAUT PAS « AUCUNE DEMANDE », et c'est le
+          patron du bandeau d'erreur des corrections de questionnaire : sans
+          cette branche, l'absence de signal serait indiscernable d'une absence
+          de demande, et un patient attendrait une reformulation que personne
+          ne sait lui devoir. Libellé de bouton distinct des deux autres : deux
+          nœuds portant le même nom accessible casseraient le mode strict des
+          E2E. */}
+      {etatPhase3Lu === 'erreur' && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">
+            L’état de la phase Compréhension n’a pas pu être lu. Ce dossier peut compter une
+            demande de correction de l’objectif en attente.
+          </span>
         </div>
       )}
 
