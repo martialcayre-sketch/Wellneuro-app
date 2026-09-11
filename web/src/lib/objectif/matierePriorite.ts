@@ -69,8 +69,20 @@ export type MatierePriorite = {
   depot: MatiereDepot | null;
 };
 
-/** Extrait une clé texte d'un blob JSON, sans laisser passer le blob. */
-function texteDepuisBlob(blob: unknown, cle: string): string | null {
+/**
+ * Extrait une clé texte d'un blob JSON, sans laisser passer le blob.
+ *
+ * EXPORTÉ depuis le 2026-09-11 pour le second adaptateur borné
+ * (`matiereComprehension.ts`), qui lit le MÊME blob et doit le faire de la même
+ * manière. Une seconde copie de six lignes dériverait de celle-ci le jour où
+ * l'une change de définition du vide — et deux définitions du vide sur la même
+ * donnée sont exactement le genre d'écart qui ne se voit pas.
+ *
+ * L'EXPORT N'OUVRE RIEN. Ce qui garde ces blobs n'a jamais été la portée de
+ * cette fonction, mais la SURFACE de chaque adaptateur : les clés qu'il nomme,
+ * et les types qu'il rend. Chacun a sa garde, et elles les énumèrent.
+ */
+export function texteDepuisBlob(blob: unknown, cle: string): string | null {
   if (typeof blob !== 'object' || blob === null) return null;
   const valeur = (blob as Record<string, unknown>)[cle];
   if (typeof valeur !== 'string') return null;
