@@ -4,11 +4,13 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     syntheseIA: { findMany: vi.fn() },
     desaccordComprehension: { findMany: vi.fn() },
+    assignation: { count: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
+  constaterOuverture,
   lireDesaccords,
   lireMatiereComprehension,
   lireSynthesesCitables,
@@ -29,6 +31,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   prisma.syntheseIA.findMany.mockResolvedValue([]);
   prisma.desaccordComprehension.findMany.mockResolvedValue([]);
+  prisma.assignation.count.mockResolvedValue(0);
 });
 
 describe('la matière du résumé global — ce qui sort, et ce qui ne sort pas', () => {
@@ -222,5 +225,84 @@ describe('les deux pièces, lues ensemble', () => {
   it('un dossier sans rien rend deux listes VIDES, jamais une erreur ni un null', async () => {
     const matiere = await lireMatiereComprehension('PAT_1');
     expect(matiere).toEqual({ syntheses: [], desaccords: [] });
+  });
+});
+
+describe('la barre d’ouverture — deux règles déjà écrites, lues ensemble', () => {
+  const validee = (jour: string) => ({ dateValidation: new Date(jour) });
+
+  it('deux synthèses validées et un rideau postérieur : la barre est franchie', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([validee('2026-07-07'), validee('2026-08-29')]);
+    prisma.assignation.count.mockResolvedValue(18);
+    expect(await constaterOuverture('PAT_1')).toEqual({
+      deuxSynthesesValidees: true,
+      secondRideau: true,
+    });
+  });
+
+  it('une seule synthèse validée ne franchit pas la barre', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([validee('2026-07-07')]);
+    prisma.assignation.count.mockResolvedValue(18);
+    const ouverture = await constaterOuverture('PAT_1');
+    expect(ouverture.deuxSynthesesValidees).toBe(false);
+    expect(ouverture.secondRideau).toBe(true);
+  });
+
+  it('le second rideau se compte DEPUIS la première synthèse validée (D-158)', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([validee('2026-07-07'), validee('2026-08-29')]);
+    await constaterOuverture('PAT_1');
+    expect(prisma.assignation.count).toHaveBeenCalledWith({
+      where: { idPatient: 'PAT_1', dateAssignation: { gt: new Date('2026-07-07') } },
+    });
+  });
+
+  it('aucune assignation postérieure : pas de second rideau', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([validee('2026-07-07'), validee('2026-08-29')]);
+    prisma.assignation.count.mockResolvedValue(0);
+    expect((await constaterOuverture('PAT_1')).secondRideau).toBe(false);
+  });
+
+  it('un dossier sans aucune synthèse validée ne compte RIEN, et n’interroge pas les assignations', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([]);
+    expect(await constaterOuverture('PAT_1')).toEqual({
+      deuxSynthesesValidees: false,
+      secondRideau: false,
+    });
+    expect(prisma.assignation.count).not.toHaveBeenCalled();
+  });
+
+  it('des synthèses SANS date comptent quand même comme synthèses', async () => {
+    // Les confondre ferait dire « il manque une synthèse » à un dossier qui en a
+    // deux, dont les dates sont absentes (`DC-24`). Le rideau, lui, ne se
+    // constate pas sans date — et c’est deux phrases différentes.
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { dateValidation: null },
+      { dateValidation: null },
+    ]);
+    expect(await constaterOuverture('PAT_1')).toEqual({
+      deuxSynthesesValidees: true,
+      secondRideau: false,
+    });
+    expect(prisma.assignation.count).not.toHaveBeenCalled();
+  });
+
+  it('la première date TROUVÉE fait référence, même si des lignes sans date la précèdent', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { dateValidation: null },
+      validee('2026-07-07'),
+      validee('2026-08-29'),
+    ]);
+    await constaterOuverture('PAT_1');
+    expect(prisma.assignation.count.mock.calls[0][0].where.dateAssignation.gt)
+      .toEqual(new Date('2026-07-07'));
+  });
+
+  it('ne rend AUCUN décompte — deux booléens, et rien d’autre', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([validee('2026-07-07'), validee('2026-08-29')]);
+    prisma.assignation.count.mockResolvedValue(18);
+    const ouverture = await constaterOuverture('PAT_1');
+    // Un nombre servi finirait par être affiché comme une mesure du dossier.
+    expect(Object.keys(ouverture).sort()).toEqual(['deuxSynthesesValidees', 'secondRideau']);
+    expect(JSON.stringify(ouverture)).not.toContain('18');
   });
 });

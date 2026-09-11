@@ -16,6 +16,8 @@ import path from 'node:path';
 
 const RACINE = path.resolve(__dirname, '../../..');
 const ADAPTATEUR = 'src/lib/objectif/matiereComprehension.ts';
+const APPEL = 'src/lib/objectif/propositionComprehension.ts';
+const ROUTE = 'src/app/api/praticien/comprehension/proposition/route.ts';
 
 function source(chemin: string): string {
   return fs.readFileSync(path.join(RACINE, chemin), 'utf8');
@@ -117,6 +119,68 @@ describe('matière de compréhension — la surface exposée', () => {
     // d'unicité des tirages, où `{A,B}` et `{B,A}` sont deux matières.
     const code = sourceSansCommentaires(ADAPTATEUR);
     expect(code).toContain("orderBy: { dateValidation: 'asc' }");
+  });
+
+  it.each([ADAPTATEUR, APPEL, ROUTE])('%s ne nomme aucun champ interdit d’un axe', (chemin) => {
+    // La porte est ouverte chez l'adaptateur POUR LES LIBELLÉS. Elle doit rester
+    // fermée partout en aval : c'est toujours la frontière la moins relue qui
+    // laisse fuir une bande.
+    const code = sourceSansCommentaires(chemin);
+    expect(code.length).toBeGreaterThan(400); // anti-vacuité
+    expect(code).not.toContain('niveau_priorite');
+    expect(code).not.toContain('points_a_confirmer');
+  });
+
+  it('l’appel vit HORS du moteur de proposition déterministe (D-094 §4, D-167 §5)', () => {
+    const code = sourceSansCommentaires(APPEL);
+    expect(code).not.toContain('assemblerPropositions');
+    expect(code).not.toContain('hashSources');
+    expect(code).not.toContain('propositionObjectif');
+  });
+
+  it('la consigne interdit d’inventer un ordre, et le dit mot par mot', () => {
+    const code = source(APPEL);
+    const bloc = code.match(/const CONSIGNE = \[([\s\S]*?)\]\.join/);
+    expect(bloc, 'CONSIGNE introuvable').not.toBeNull();
+    const consigne = (bloc?.[1] ?? '').toLowerCase();
+    for (const mot of ['ordre', 'hiérarchise', 'rang', 'liste', 'numérotation', 'diagnostic', 'score', 'seuil', 'bande']) {
+      expect(consigne, `la consigne ne dit rien de « ${mot} »`).toContain(mot);
+    }
+  });
+
+  it('la borne REFUSE, elle ne coupe pas, et elle n’est pas redéclarée', () => {
+    const code = sourceSansCommentaires(APPEL);
+    expect(code).toMatch(
+      /import \{[^}]*LONGUEUR_MAX_SYNTHESE[^}]*\} from '@\/lib\/praticien\/syntheseComprehension'/,
+    );
+    expect(code).not.toMatch(/const LONGUEUR_MAX_SYNTHESE\s*=/);
+    expect(code).not.toMatch(/texte\.(slice|substring|substr)\(/);
+    expect(code).toContain("motif: 'trop_longue'");
+  });
+
+  it('le GET n’appelle jamais le modèle — ouvrir la phase 3 ne dépense pas un appel', () => {
+    const code = source(ROUTE);
+    const get = code.match(/export async function GET[\s\S]*?\n\}/);
+    expect(get, 'GET introuvable').not.toBeNull();
+    expect(get?.[0]).not.toContain('proposerComprehension');
+    expect(get?.[0]).not.toContain('anthropic');
+  });
+
+  it('la route n’écrit jamais dans la table de compréhension elle-même', () => {
+    // Un tirage n'est PAS une compréhension. Le verrou de publication vit
+    // ailleurs ; cette route ne doit pas pouvoir court-circuiter le praticien.
+    const code = sourceSansCommentaires(ROUTE);
+    expect(code).not.toContain('syntheseComprehension.create');
+    expect(code).not.toContain('syntheseComprehension.update');
+  });
+
+  it('la table des tirages est APPEND-ONLY depuis la route', () => {
+    const code = sourceSansCommentaires(ROUTE);
+    for (const verbe of ['update', 'updateMany', 'delete', 'deleteMany', 'upsert']) {
+      expect(code, `propositionComprehensionIA.${verbe} ne doit pas exister`)
+        .not.toContain(`propositionComprehensionIA.${verbe}`);
+    }
+    expect(code).toContain('propositionComprehensionIA.create');
   });
 
   it('l’adaptateur n’importe aucun moteur clinique', () => {
