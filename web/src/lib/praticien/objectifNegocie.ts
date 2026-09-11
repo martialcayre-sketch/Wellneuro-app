@@ -1097,6 +1097,88 @@ export function preparerAmendement(entree: EntreeAmendement): PreparationAmendem
 }
 
 // ---------------------------------------------------------------------------
+// LE QUATRIÈME VERBE — « demander une correction » (2026-09-11).
+// ---------------------------------------------------------------------------
+
+/**
+ * La borne du quatrième verbe, alignée sur celle de l'amendement pour le motif
+ * qui s'y trouve écrit : deux champs où le MÊME patient écrit sur le MÊME
+ * objectif, avec deux bornes différentes, poseraient une limite que rien ne
+ * justifie. Borne TECHNIQUE de saisie, sans sémantique clinique
+ * (`DC-19`/`DC-20`).
+ *
+ * Déclarée à part plutôt qu'aliasée, même raison qu'à `LONGUEUR_MAX_AMENDEMENT` :
+ * le jour où l'une bouge, l'autre ne doit pas suivre sans qu'on l'ait voulu.
+ */
+export const LONGUEUR_MAX_DEMANDE_CORRECTION = 4000;
+
+/**
+ * DEUX REFUS, ET PAS TROIS. `texte_absent` N'EXISTE PAS ici, et c'est tout
+ * l'écart avec l'amendement : un patient peut savoir que ça ne va pas sans
+ * savoir le dire. Exiger qu'il formule pour avoir le droit de demander lui
+ * poserait une condition d'expression sur sa propre parole.
+ */
+export type RefusDemandeCorrection = 'objectif_absent' | 'texte_trop_long';
+
+/**
+ * Ce qui part en base. `texte` est `string | null` — JAMAIS `''`. La
+ * distinction est portée jusqu'au CHECK : `NULL` dit « il n'a pas écrit », `''`
+ * dirait « il a écrit, et il n'a rien mis », et ces deux phrases ne se valent
+ * pas devant un praticien (`DC-24`).
+ *
+ * AUCUNE DATE, pour le motif déjà écrit aux trois gestes précédents : `creeLe`
+ * est posée par `@default(now())`, ce qui rend la demande inantidatable.
+ */
+export type DonneesDemandeCorrection = {
+  idPatient: string;
+  idObjectif: string;
+  texte: string | null;
+};
+
+export type PreparationDemandeCorrection =
+  | { ok: true; donnees: DonneesDemandeCorrection }
+  | { ok: false; raison: RefusDemandeCorrection };
+
+export type EntreeDemandeCorrection = {
+  idPatient: string;
+  idObjectif: string | null | undefined;
+  texte: string | null | undefined;
+};
+
+/**
+ * Prépare UNE demande de correction. Elle ne remplace jamais rien : redemander,
+ * c'est écrire une ligne de plus — aucune unicité en base, et c'est voulu (un
+ * patient qui n'a pas eu de retour doit pouvoir insister).
+ *
+ * LA BORNE EST MESURÉE AVANT LA NORMALISATION DU BLANC, et l'ordre compte : un
+ * envoi de 5 000 espaces se réduit à rien et devient une demande sans texte,
+ * pendant que 5 000 caractères réels sont REFUSÉS. Refus, jamais troncature —
+ * patron de tout le portail : tronquer produirait une phrase que personne n'a
+ * écrite, déposée dans le dossier comme si le patient l'avait dite.
+ *
+ * Ce module est PUR : il ne vérifie pas que `idObjectif` existe, appartient au
+ * dossier, ou est une tête de chaîne. `id_objectif` n'a pas de clé étrangère
+ * (référence souple assumée par la migration) : ces vérifications appartiennent
+ * à la route, qui seule lit la base.
+ */
+export function preparerDemandeCorrection(
+  entree: EntreeDemandeCorrection,
+): PreparationDemandeCorrection {
+  const idObjectif = (entree.idObjectif ?? '').trim();
+  if (idObjectif.length === 0) return { ok: false, raison: 'objectif_absent' };
+
+  const brut = (entree.texte ?? '').trim();
+  if (brut.length > LONGUEUR_MAX_DEMANDE_CORRECTION) {
+    return { ok: false, raison: 'texte_trop_long' };
+  }
+
+  return {
+    ok: true,
+    donnees: { idPatient: entree.idPatient, idObjectif, texte: texteFacultatif(brut) },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // LOT-05 — la réponse d'étape : où le patient en est PAR RAPPORT À SON OBJECTIF.
 // ---------------------------------------------------------------------------
 

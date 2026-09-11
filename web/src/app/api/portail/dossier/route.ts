@@ -15,6 +15,7 @@ import {
   EVA_MAX,
   EVA_MIN,
   LONGUEUR_MAX_AMENDEMENT,
+  LONGUEUR_MAX_DEMANDE_CORRECTION,
   LONGUEUR_MAX_REPONSE_JALON,
   etatRatification,
   accordDeVersion,
@@ -23,13 +24,16 @@ import {
   type AccordDeVersion,
   type LectureFin,
   preparerAmendement,
+  preparerDemandeCorrection,
   preparerRatification,
   preparerReponseJalon,
   type DonneesAmendement,
+  type DonneesDemandeCorrection,
   type DonneesRatification,
   type DonneesReponseJalon,
   type EtatRatification,
   type RefusAmendement,
+  type RefusDemandeCorrection,
   type RefusRatification,
   type RefusReponseJalon,
 } from '@/lib/praticien/objectifNegocie';
@@ -189,6 +193,19 @@ export type AmendementServi = {
 };
 
 /**
+ * LA DEMANDE DE CORRECTION, RELUE PAR SON AUTEUR (2026-09-11). `texte` est
+ * `string | null` et jamais `''` : l'écran doit pouvoir dire « vous avez
+ * demandé une correction » sans inventer des mots pour un patient qui n'en a
+ * pas écrit.
+ */
+export type DemandeCorrectionServie = {
+  id: string;
+  idObjectif: string;
+  texte: string | null;
+  creeLe: string;
+};
+
+/**
  * LA RÉPONSE D'ÉTAPE, RELUE PAR SON AUTEUR (Alliance 6.0-B, LOT-05, `D-111`).
  * Même motif qu'à l'amendement : ce que le patient a écrit doit rester visible
  * sur son écran.
@@ -247,6 +264,15 @@ export type PortailDossierResponse =
       ratifications: RatificationServie[];
       amendements: AmendementServi[];
       /**
+       * LES DEMANDES DE CORRECTION DU PATIENT, toutes, du plus récent au plus
+       * ancien — jamais filtrées sur la tête courante, MÊME MOTIF que les
+       * amendements et les ratifications : une demande portée sur une version
+       * depuis reformulée reste SA parole, et c'est justement le cas NORMAL ici
+       * puisque la reformulation est ce qui referme une demande. La faire
+       * disparaître effacerait la trace de ce qui a provoqué la v2.
+       */
+      demandesCorrection: DemandeCorrectionServie[];
+      /**
        * CE QUE LE PATIENT A RÉPONDU À SES JALONS, du plus récent au plus
        * ancien. Jamais filtré sur la tête courante, pour le motif écrit aux
        * amendements : une réponse portée sur une version depuis reformulée
@@ -272,6 +298,7 @@ export type PortailDossierResponse =
     }
   | { ok: true; ratification: RatificationServie }
   | { ok: true; amendement: AmendementServi }
+  | { ok: true; demandeCorrection: DemandeCorrectionServie }
   | { ok: true; reponseJalon: ReponseJalonServie }
   | { ok: false; reason: string; error: string };
 
@@ -302,6 +329,16 @@ const MESSAGES_REFUS_AMENDEMENT: Record<RefusAmendement, string> = {
   objectif_absent: 'Aucun objectif n’est visé par ce texte.',
   texte_absent: 'Écrivez votre version de l’objectif avant de l’envoyer.',
   texte_trop_long: `Votre texte dépasse ${LONGUEUR_MAX_AMENDEMENT} caractères. Rien n’est coupé : raccourcissez-le et renvoyez-le.`,
+};
+
+/**
+ * Les refus de la demande de correction. DEUX, ET PAS TROIS : il n'y a pas de
+ * `texte_absent`, parce qu'une demande sans texte est une demande. C'est l'écart
+ * avec l'amendement juste au-dessus, et il est délibéré.
+ */
+const MESSAGES_REFUS_DEMANDE_CORRECTION: Record<RefusDemandeCorrection, string> = {
+  objectif_absent: 'Aucun objectif n’est visé par cette demande.',
+  texte_trop_long: `Votre texte dépasse ${LONGUEUR_MAX_DEMANDE_CORRECTION} caractères. Rien n’est coupé : raccourcissez-le et renvoyez-le.`,
 };
 
 /**
@@ -422,6 +459,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       objectifs,
       ratifications,
       amendements,
+      demandesCorrection,
       reponsesJalon,
       ancresPosees,
       entrees,
@@ -444,6 +482,16 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       // `WN_DOSSIER_DEUX_VOIX`, comme la ratification (`D-110`) — le contrôle
       // est déjà passé en tête de route.
       prisma.amendementObjectif.findMany({
+        where: { idPatient: patient.idPatient },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
+        orderBy: { creeLe: 'desc' },
+      }),
+      // MÊME RÉGIME DE DRAPEAU que les trois gestes précédents : la demande de
+      // correction vit sous `WN_DOSSIER_DEUX_VOIX`, contrôlé en tête de route.
+      // Lui donner un drapeau propre ouvrirait la possibilité d'un écran où le
+      // bloc se ferme sans que le quatrième verbe apparaisse — c'est-à-dire
+      // exactement l'impasse que ce lot existe pour éviter.
+      prisma.demandeCorrectionObjectif.findMany({
         where: { idPatient: patient.idPatient },
         select: { id: true, idObjectif: true, texte: true, creeLe: true },
         orderBy: { creeLe: 'desc' },
@@ -662,6 +710,12 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
         texte: ligne.texte,
         creeLe: ligne.creeLe.toISOString(),
       })),
+      demandesCorrection: demandesCorrection.map((ligne) => ({
+        id: ligne.id,
+        idObjectif: ligne.idObjectif,
+        texte: ligne.texte,
+        creeLe: ligne.creeLe.toISOString(),
+      })),
       reponsesJalon: reponsesJalon.map((ligne) => ({
         id: ligne.id,
         idObjectif: ligne.idObjectif,
@@ -740,7 +794,7 @@ type CorpsRatification = {
 };
 
 /** Les trois gestes du patient sur cette route. Liste fermée. */
-const GESTES = ['ratification', 'amendement', 'reponse_jalon'] as const;
+const GESTES = ['ratification', 'amendement', 'reponse_jalon', 'demande_correction'] as const;
 type Geste = (typeof GESTES)[number];
 
 /**
@@ -902,7 +956,8 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     let prepare:
       | { geste: 'amendement'; donnees: DonneesAmendement }
       | { geste: 'ratification'; donnees: DonneesRatification }
-      | { geste: 'reponse_jalon'; donnees: DonneesReponseJalon };
+      | { geste: 'reponse_jalon'; donnees: DonneesReponseJalon }
+      | { geste: 'demande_correction'; donnees: DonneesDemandeCorrection };
 
     if (geste === 'reponse_jalon') {
       // `jalon` et `eva` PASSENT BRUTS au module pur, sans pré-filtrage de type
@@ -932,6 +987,23 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
         return echec(preparation.raison, MESSAGES_REFUS_AMENDEMENT[preparation.raison], 400);
       }
       prepare = { geste, donnees: preparation.donnees };
+    } else if (geste === 'demande_correction') {
+      // `texte` PASSE MÊME ABSENT, et c'est le point : un corps sans `texte` est
+      // une demande valide. Le replier sur `null` ici plutôt que de le refuser
+      // plus bas est ce qui distingue ce geste de l'amendement.
+      const preparation = preparerDemandeCorrection({
+        idPatient: patient.idPatient,
+        idObjectif: typeof corps.idObjectif === 'string' ? corps.idObjectif : null,
+        texte: typeof corps.texte === 'string' ? corps.texte : null,
+      });
+      if (!preparation.ok) {
+        return echec(
+          preparation.raison,
+          MESSAGES_REFUS_DEMANDE_CORRECTION[preparation.raison],
+          400,
+        );
+      }
+      prepare = { geste, donnees: preparation.donnees };
     } else {
       const preparation = preparerRatification({
         idPatient: patient.idPatient,
@@ -951,6 +1023,55 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
     // 7 — LES TROIS VÉRIFICATIONS DE LA VERSION VISÉE, communes aux deux gestes.
     const refus = await verifierVersionVisee(patient.idPatient, prepare.donnees.idObjectif);
     if (refus) return refus;
+
+    // 7 ter — LE VERROU DU DOUBLON STRICT, et il ne refuse AUCUNE parole neuve.
+    //
+    // CE QUI L'A DÉCIDÉ EST UNE MESURE, PAS UNE CRAINTE. Le dossier PAT006
+    // porte deux ratifications IDENTIQUES sur la même version, à dix secondes
+    // d'écart (2026-09-11, 18:14) : un patient qui a répondu « c'est bien ça »,
+    // n'a rien vu changer d'assez net, et a recommencé.
+    //
+    // L'ÉCRAN SE FERME (lot 4), MAIS UN ÉCRAN NE VERROUILLE RIEN. Un onglet
+    // resté ouvert, un retour arrière, un POST direct rouvrent le geste :
+    // `D-164` dit que le serveur vérifie au lieu de croire le navigateur.
+    //
+    // IL NE PORTE QUE SUR LE DOUBLON STRICT — `ratifie` quand le DERNIER geste
+    // sur cette version est déjà `ratifie`. Ni `conteste`, ni « le dire
+    // autrement », ni la demande de correction ne passent par ici : ce sont des
+    // paroles NEUVES, et le dépôt écrit noir sur blanc, au bloc du jalon, que
+    // « refuser la parole d'un patient sur son propre objectif serait plus
+    // grave que de ne pas la solliciter ». Répéter à l'identique n'est pas une
+    // parole neuve : c'est la même, et elle est déjà enregistrée.
+    //
+    // `etatRatification` LIT LES DEUX TABLES. Un patient qui ratifie puis écrit
+    // sa version a pour dernier geste `dit_autrement` : re-ratifier lui est
+    // alors RENDU, parce que revenir à « c'est bien ça » après avoir proposé
+    // autre chose est un vrai changement d'avis.
+    //
+    // LE MESSAGE NOMME LA SORTIE. Un refus qui dit seulement « déjà fait »
+    // laisserait le patient sans geste ; celui-ci le renvoie au quatrième verbe.
+    if (prepare.geste === 'ratification' && prepare.donnees.sens === 'ratifie') {
+      const [ratificationsPosees, amendementsPoses] = await Promise.all([
+        prisma.ratificationObjectif.findMany({
+          where: { idPatient: patient.idPatient, idObjectif: prepare.donnees.idObjectif },
+          select: { id: true, idObjectif: true, sens: true, creeLe: true },
+        }),
+        prisma.amendementObjectif.findMany({
+          where: { idPatient: patient.idPatient, idObjectif: prepare.donnees.idObjectif },
+          select: { id: true, idObjectif: true, creeLe: true },
+        }),
+      ]);
+      if (
+        etatRatification(prepare.donnees.idObjectif, ratificationsPosees, amendementsPoses) ===
+        'ratifie'
+      ) {
+        return echec(
+          'deja_ratifie',
+          'Vous avez déjà répondu « c’est bien ça » à cette version — votre réponse est enregistrée. Si vous voulez revenir dessus, demandez une correction à votre praticien.',
+          409,
+        );
+      }
+    }
 
     // 8 — ÉCRITURE UNIQUE, ET C'EST LE SEUL ENDROIT DE L'APPLICATION QUI ÉCRIT
     //     UNE RATIFICATION, UN AMENDEMENT OU UNE RÉPONSE D'ÉTAPE. La garde
@@ -1038,6 +1159,33 @@ export async function POST(req: Request): Promise<NextResponse<PortailDossierRes
             idObjectif: amendement.idObjectif,
             texte: amendement.texte,
             creeLe: amendement.creeLe.toISOString(),
+          },
+        },
+        { status: 201 },
+      );
+    }
+
+    if (prepare.geste === 'demande_correction') {
+      const demande = await prisma.demandeCorrectionObjectif.create({
+        data: {
+          idPatient: patient.idPatient,
+          idObjectif: prepare.donnees.idObjectif,
+          // `null` ET JAMAIS `''` — le module l'a déjà replié, et le CHECK en
+          // base refuserait la chaîne vide. Trois gardes pour une distinction :
+          // « il n'a pas écrit » n'est pas « il a écrit, et il n'a rien mis ».
+          texte: prepare.donnees.texte,
+        },
+        select: { id: true, idObjectif: true, texte: true, creeLe: true },
+      });
+
+      return NextResponse.json<PortailDossierResponse>(
+        {
+          ok: true,
+          demandeCorrection: {
+            id: demande.id,
+            idObjectif: demande.idObjectif,
+            texte: demande.texte,
+            creeLe: demande.creeLe.toISOString(),
           },
         },
         { status: 201 },

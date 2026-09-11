@@ -488,6 +488,31 @@ const CREATION_REPONSE_JALON = /reponseJalonObjectif\.create\b/;
 const ECRITURES_REPONSE_JALON_DESTRUCTRICES =
   /reponseJalonObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
 
+/**
+ * LA QUATRIÈME TABLE (2026-09-11) — la demande de correction de l'objectif. Ses
+ * propres constantes, pour le motif désormais écrit trois fois : « une garde
+ * corrigée ne corrige pas sa sœur ». Élargir la regex d'une voisine ferait
+ * dépendre quatre verdicts d'une seule expression.
+ *
+ * CE QUE CETTE GARDE EMPÊCHE EST PRÉCIS. Le cockpit LIT les demandes et les
+ * affiche ; il ne doit jamais en créer. Une route praticien qui écrirait cette
+ * ligne fabriquerait une demande que le patient n'a pas faite — et comme la
+ * clôture d'une demande est DÉRIVÉE de la reformulation, un praticien qui
+ * pourrait aussi en créer tiendrait les deux bouts d'un dialogue à lui seul.
+ */
+const ECRIVAIN_DEMANDE_CORRECTION = 'src/app/api/portail/dossier/route.ts';
+
+const CREATION_DEMANDE_CORRECTION = /demandeCorrectionObjectif\.create\b/;
+
+/**
+ * Tout le reste, interdit PARTOUT, écrivain compris. Une demande ne se retire
+ * pas : le praticien y répond en reformulant. Lui donner un verbe pour l'effacer
+ * transformerait la dérivation en drapeau, et le drapeau se coche sans rien
+ * faire — c'est exactement ce que la table refuse par sa forme.
+ */
+const ECRITURES_DEMANDE_CORRECTION_DESTRUCTRICES =
+  /demandeCorrectionObjectif\.(createMany|updateMany|update|deleteMany|delete|upsert)\b/;
+
 function fichiersSources(racine: string): string[] {
   const absolu = path.join(RACINE_WEB, racine);
   const trouves: string[] = [];
@@ -608,6 +633,47 @@ describe('G5 — un objectif ne se met jamais à jour, il se succède', () => {
     expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
 
     expect(fautifs).not.toContain(ECRIVAIN_AMENDEMENT);
+  });
+
+  it('une demande de correction ne se crée QUE depuis le portail', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    // ANTI-VACUITÉ : le parcours voit l'application entière, la route praticien
+    // qui LIRA ces demandes, ET l'écrivain qu'on prétend être le seul.
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ROUTE);
+    expect(fichiers).toContain(ECRIVAIN_DEMANDE_CORRECTION);
+
+    const fautifs = fichiers.filter((chemin) =>
+      CREATION_DEMANDE_CORRECTION.test(readFileSync(path.join(RACINE_WEB, chemin), 'utf8')),
+    );
+
+    // Le détecteur mord pour de vrai : il TROUVE l'écrivain légitime.
+    expect(fautifs).toContain(ECRIVAIN_DEMANDE_CORRECTION);
+    expect(fautifs).toEqual([ECRIVAIN_DEMANDE_CORRECTION]);
+
+    expect(fautifs).not.toContain(ROUTE);
+  });
+
+  it('une demande de correction ne se met jamais à jour ni ne se retire, nulle part', () => {
+    const fichiers = RACINES_SOUS_GARDE.flatMap(fichiersSources);
+
+    expect(fichiers.length).toBeGreaterThan(200);
+    expect(fichiers).toContain(ECRIVAIN_DEMANDE_CORRECTION);
+
+    const fautifs = fichiers.filter((chemin) =>
+      ECRITURES_DEMANDE_CORRECTION_DESTRUCTRICES.test(
+        readFileSync(path.join(RACINE_WEB, chemin), 'utf8'),
+      ),
+    );
+
+    // Anti-vacuité : l'effacement du dossier supprime AUSSI les demandes, donc
+    // le détecteur doit le trouver. S'il ne trouve plus rien, c'est le motif qui
+    // est mort, pas le dépôt qui est devenu sain.
+    expect(fautifs).toContain(EXCEPTION_EFFACEMENT);
+    expect(fautifs).toEqual([EXCEPTION_EFFACEMENT]);
+
+    expect(fautifs).not.toContain(ECRIVAIN_DEMANDE_CORRECTION);
   });
 
   it('une réponse d’étape ne se crée QUE depuis le portail', () => {
