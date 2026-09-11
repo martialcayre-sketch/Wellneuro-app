@@ -5,6 +5,7 @@ const { getServerSession, prisma, messagesCreate } = vi.hoisted(() => ({
   messagesCreate: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
+    objectifNegocie: { findFirst: vi.fn() },
     syntheseIA: { findFirst: vi.fn() },
     entreeCeQuiCompte: { findFirst: vi.fn() },
     // `update`, `delete` et `deleteMany` sont moqués EXPRÈS bien que la route ne
@@ -131,6 +132,59 @@ describe('GET — lit sans jamais appeler le modèle', () => {
     await get();
     expect(prisma.syntheseIA.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { idPatient: 'PAT_TEST', statut: 'Validee_Praticien' } }),
+    );
+  });
+});
+
+describe('GET — la fraîcheur des citations (D-167 §13)', () => {
+  const get13 = (amende: string) =>
+    GET(new Request(`${URL_BASE}?idPatient=PAT_TEST&amende=${amende}`));
+
+  it('ne sert AUCUNE fraîcheur quand aucune version n’est amendée', async () => {
+    const corps = await (await get()).json();
+    expect(corps.matiere.fraicheur).toBeUndefined();
+    expect(prisma.objectifNegocie.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('dit « identique » quand la version cite les sources courantes', async () => {
+    prisma.objectifNegocie.findFirst.mockResolvedValue({
+      enonceSourceId: 'DEP_1', reformulationSourceId: 'SYN_1',
+    });
+    const corps = await (await get13('OBJ_1')).json();
+    expect(corps.matiere.fraicheur).toEqual({ enonce: 'identique', reformulation: 'identique' });
+  });
+
+  it('dit « plus_recente » quand la source a changé depuis', async () => {
+    prisma.objectifNegocie.findFirst.mockResolvedValue({
+      enonceSourceId: 'DEP_ANCIEN', reformulationSourceId: 'SYN_1',
+    });
+    const corps = await (await get13('OBJ_1')).json();
+    expect(corps.matiere.fraicheur.enonce).toBe('plus_recente');
+    expect(corps.matiere.fraicheur.reformulation).toBe('identique');
+  });
+
+  it('UNE PROVENANCE NULLE DIT « inconnue », JAMAIS « identique » (DC-24)', async () => {
+    // Les objectifs écrits avant que la provenance ne soit constatée portent
+    // des colonnes NULL. Les dire « à jour » affirmerait un fait qu'on n'a pas ;
+    // les dire « périmés » proposerait de remplacer sans savoir par quoi.
+    prisma.objectifNegocie.findFirst.mockResolvedValue({
+      enonceSourceId: null, reformulationSourceId: null,
+    });
+    const corps = await (await get13('OBJ_ANCIEN')).json();
+    expect(corps.matiere.fraicheur).toEqual({ enonce: 'inconnue', reformulation: 'inconnue' });
+  });
+
+  it('une version INTROUVABLE ne sert aucune fraîcheur — on ne sait pas', async () => {
+    prisma.objectifNegocie.findFirst.mockResolvedValue(null);
+    const corps = await (await get13('OBJ_FANTOME')).json();
+    expect(corps.matiere.fraicheur).toBeUndefined();
+  });
+
+  it('la version amendée est cherchée DANS LE DOSSIER du patient', async () => {
+    prisma.objectifNegocie.findFirst.mockResolvedValue({ enonceSourceId: 'DEP_1', reformulationSourceId: 'SYN_1' });
+    await get13('OBJ_1');
+    expect(prisma.objectifNegocie.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'OBJ_1', idPatient: 'PAT_TEST' } }),
     );
   });
 });
