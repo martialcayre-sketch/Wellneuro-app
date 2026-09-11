@@ -144,6 +144,54 @@ export async function lireDesaccords(idPatient: string): Promise<MatiereDesaccor
   return matiere;
 }
 
+/**
+ * L'ÉTAT D'OUVERTURE DE LA FONCTION, AU SENS DE `D-158`.
+ *
+ * LA RÈGLE DU RESPONSABLE, 2026-09-11 : « deux rideaux de questionnaires et
+ * deux synthèses minimum doivent donner de la matière ». Et elle se compte au
+ * sens que le dépôt a DÉJÀ écrit, plutôt qu'au sens d'un comptage neuf —
+ * `D-158` : le second rideau se compte depuis la PREMIÈRE SYNTHÈSE VALIDÉE du
+ * dossier. Aucun seuil n'est donc inventé ici ; deux règles existantes sont
+ * lues ensemble.
+ *
+ * DEUX BOOLÉENS ET NON UN, parce que les deux manques ne se confondent pas et
+ * que l'écran doit pouvoir dire lequel. Un dossier peut avoir ses deux
+ * synthèses sans second rideau, et l'inverse.
+ *
+ * CETTE FONCTION NE REND AUCUN DÉCOMPTE. Ni le nombre de synthèses, ni celui
+ * des assignations : deux booléens suffisent à ouvrir ou fermer, et un nombre
+ * servi à l'écran finirait par y être affiché comme une mesure du dossier.
+ *
+ * SANS DATE DE VALIDATION, LE RIDEAU NE SE CONSTATE PAS — mais les synthèses se
+ * comptent quand même. Les confondre ferait dire « il manque une synthèse » à un
+ * dossier qui en a deux, dont les dates sont absentes (`DC-24`).
+ */
+export type OuvertureResume = {
+  deuxSynthesesValidees: boolean;
+  secondRideau: boolean;
+};
+
+export async function constaterOuverture(idPatient: string): Promise<OuvertureResume> {
+  const validees = await prisma.syntheseIA.findMany({
+    where: { idPatient, statut: STATUT_SYNTHESE_CITABLE },
+    orderBy: { dateValidation: 'asc' },
+    select: { dateValidation: true },
+  });
+
+  const deuxSynthesesValidees = validees.length >= 2;
+
+  const premiere = validees.find((v) => v.dateValidation !== null)?.dateValidation ?? null;
+  if (premiere === null) return { deuxSynthesesValidees, secondRideau: false };
+
+  // `gt` ET NON `gte` : une assignation posée dans la même milliseconde que la
+  // validation appartient au premier rideau, pas au second.
+  const posterieures = await prisma.assignation.count({
+    where: { idPatient, dateAssignation: { gt: premiere } },
+  });
+
+  return { deuxSynthesesValidees, secondRideau: posterieures > 0 };
+}
+
 /** Les deux pièces, lues ensemble. */
 export async function lireMatiereComprehension(idPatient: string): Promise<MatiereComprehension> {
   const [syntheses, desaccords] = await Promise.all([
