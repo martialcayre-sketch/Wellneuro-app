@@ -896,6 +896,35 @@ export function etatRatification(
   //
   // C'est la sémantique d'avant le LOT-04, préservée mot pour mot : le dernier
   // geste est choisi D'ABORD, la lecture vient ensuite.
+  // UN SEUL TRI POUR LES DEUX FONCTIONS (2026-09-11). `dernierGesteDeVersion`
+  // porte la mécanique ; celle-ci n'en garde que l'état. Les avoir écrites deux
+  // fois aurait laissé deux tris répondre différemment à la même question, et
+  // c'est l'écran qui aurait eu tort devant le praticien.
+  return dernierGesteDeVersion(idObjectif, ratifications, amendements)?.etat ?? 'en_attente';
+}
+
+/**
+ * LE DERNIER GESTE, AVEC SA DATE — `etatRatification` rendu par sa date.
+ *
+ * POURQUOI IL EXISTE. Le cockpit affiche « Ratifié par le patient le
+ * 11 septembre », et la date ne se devine pas depuis l'état. La seule
+ * alternative était de refaire le tri à l'écran, sur les mêmes deux tables :
+ * deux tris concurrents sur la même question finissent par répondre
+ * différemment, et c'est l'écran qui aurait tort devant le praticien.
+ *
+ * `null` QUAND IL N'Y A AUCUN GESTE, et non un `en_attente` daté d'aujourd'hui.
+ * Une absence n'a pas de date (`DC-24`) — en inventer une ferait lire au
+ * praticien que son patient s'est tu à un moment précis.
+ *
+ * Un geste hors taxonomie rend `en_attente` AVEC sa date : la ligne existe, on
+ * ne sait pas ce qu'elle dit. Même sémantique qu'au-dessus, et le commentaire
+ * qui s'y trouve vaut ici mot pour mot.
+ */
+export function dernierGesteDeVersion(
+  idObjectif: string,
+  ratifications: LigneRatification[],
+  amendements: LigneAmendement[] = [],
+): { etat: EtatRatification; creeLe: Date } | null {
   const gestes: { id: string; creeLe: Date; etat: EtatRatification }[] = [
     ...ratifications
       .filter((ligne) => ligne.idObjectif === idObjectif)
@@ -915,7 +944,7 @@ export function etatRatification(
   ];
 
   const dernier = gestes.sort(plusRecentDAbord)[0];
-  return dernier ? dernier.etat : 'en_attente';
+  return dernier ? { etat: dernier.etat, creeLe: dernier.creeLe } : null;
 }
 
 // ── LE GESTE DU PATIENT (LOT-06) ────────────────────────────────────────────
