@@ -88,6 +88,15 @@ import { syntheseServieAuPatient } from '@/lib/praticien/syntheseComprehension';
 export type ObjectifServi = {
   id: string;
   enoncePatient: string;
+  /**
+   * D'OÙ VIENT L'ÉNONCÉ — `D-167`, appliqué au patient le 2026-09-11.
+   *
+   * `null` N'EST PAS « écrit par le praticien », c'est « on ne sait pas ». Une
+   * provenance nulle couvre deux cas indiscernables : le praticien a rédigé, ou
+   * l'objectif précède la constatation de provenance. L'écran garde alors sa
+   * formulation neutre plutôt que d'affirmer la mauvaise (`DC-24`).
+   */
+  origineEnonce: { forme: 'depot'; date: string } | null;
   reformulationPraticien: string | null;
   priorite: string | null;
   /**
@@ -353,6 +362,15 @@ const SELECTION_OBJECTIF = {
   negocieLe: true,
   supersedesObjectifId: true,
   creeLe: true,
+  // `D-167` — d'où vient l'énoncé. Le patient lit « Ce que vous avez dit »
+  // sans savoir si ce sont SES mots cités verbatim ou la note de son
+  // praticien. Cette colonne permet enfin de le lui dire, sur le patron que
+  // `D-161` §4 a posé pour l'accord trois lignes plus bas.
+  //
+  // L'IDENTIFIANT SEUL NE SUFFIT PAS : il faut la DATE du dépôt, qui vit dans
+  // l'autre table. Elle est lue plus bas, en une fois pour tous les objectifs.
+  enonceSource: true,
+  enonceSourceId: true,
 } as const;
 
 /**
@@ -511,13 +529,21 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
     // ── RE-VÉRIFICATION AU SERVICE, RÉGIME JOURNALISANT (`D-090`) ───────────
     //
     // Elle porte sur TOUT texte praticien qui part par cette route, et il y en
-    // a TROIS — pas deux. `priorite` est un LIBELLÉ LIBRE écrit par le
-    // praticien (`objectifNegocie.ts`, 200 caractères), servi au patient et
-    // rendu tel quel : « urgent » ou « grave » y sortirait par un chemin neuf
-    // sans qu'aucune ligne de journal ne parte, alors que `RACINES_ANXIOGENES`
-    // l'attrape. Une garde qui n'énumère pas tous les champs d'un objet laisse
-    // le champ oublié hors du chemin qu'elle prétend couvrir. Elle ne bloque
-    // pas — voir l'en-tête du fichier.
+    // a TROIS — pas deux. `priorite` est un LIBELLÉ LIBRE de 200 caractères
+    // (`objectifNegocie.ts`), servi au patient et rendu tel quel : « urgent »
+    // ou « grave » y sortirait par un chemin neuf sans qu'aucune ligne de
+    // journal ne parte, alors que `RACINES_ANXIOGENES` l'attrape. Une garde qui
+    // n'énumère pas tous les champs d'un objet laisse le champ oublié hors du
+    // chemin qu'elle prétend couvrir. Elle ne bloque pas — voir l'en-tête.
+    //
+    // CE COMMENTAIRE DISAIT « écrit par le praticien ». C'EST DEVENU FAUX LE
+    // 2026-09-11, et le corriger renforce la garde au lieu de l'affaiblir :
+    // depuis `D-167`, cette priorité peut être PRODUITE PAR UN MODÈLE et
+    // acceptée telle quelle. C'est donc le seul texte de cette route qu'aucune
+    // main humaine n'a nécessairement composé — et celui pour lequel un
+    // registre anxiogène est le moins prévisible. Ne pas relire cette
+    // énumération comme une formalité héritée : elle couvre désormais une
+    // sortie de LLM lue par un patient.
     //
     // LES AMENDEMENTS N'Y ENTRENT PAS, ET C'EST DÉLIBÉRÉ. La garde porte sur le
     // registre du PRATICIEN — un texte qu'il écrit et que le patient subit. Un
@@ -543,11 +569,55 @@ export async function GET(req: Request): Promise<NextResponse<PortailDossierResp
       });
     }
 
+    // LES DATES DES DÉPÔTS CITÉS, en UNE lecture pour tous les objectifs — pas
+    // une par ligne. Bornée aux dépôts DE CE DOSSIER : l'identifiant vient
+    // d'une colonne sans clé étrangère, et le filtrer sur `idPatient` est ce
+    // qui empêche un identifiant erroné de pointer ailleurs.
+    //
+    // UNE LECTURE EN ÉCHEC NE DIT RIEN. Si la date manque, l'écran garde sa
+    // formulation neutre : il n'affirmera pas « vous avez écrit le … » sans
+    // savoir quand.
+    const idsDepotsCites = [
+      ...new Set(
+        tetes
+          .map(({ ligne }) => (ligne.enonceSource === 'ce_qui_compte' ? ligne.enonceSourceId : null))
+          .filter((id): id is string => typeof id === 'string' && id !== ''),
+      ),
+    ];
+    const datesDepots = new Map<string, Date>();
+    if (idsDepotsCites.length > 0) {
+      try {
+        const depots = await prisma.entreeCeQuiCompte.findMany({
+          where: { id: { in: idsDepotsCites }, idPatient: patient.idPatient },
+          select: { id: true, saisiLe: true, creeLe: true },
+        });
+        for (const depot of depots) datesDepots.set(depot.id, depot.saisiLe ?? depot.creeLe);
+      } catch {
+        // Silence volontaire : l'absence de date rend l'origine « inconnue ».
+      }
+    }
+
     return NextResponse.json<PortailDossierResponse>({
       ok: true,
       objectifs: tetes.map(({ ligne, fin }) => ({
         id: ligne.id,
         enoncePatient: ligne.enoncePatient,
+        // L'ORIGINE DE L'ÉNONCÉ — DEUX ÉTATS, PAS TROIS.
+        //
+        // `depot` n'est servi que sur un fait COMPLET : la provenance dit « cité
+        // du dépôt » ET la date a pu être lue. Sinon `null`, et l'écran garde sa
+        // formulation actuelle.
+        //
+        // POURQUOI PAS DE TROISIÈME ÉTAT « écrit par le praticien ». Une
+        // provenance NULLE couvre DEUX cas indiscernables : le praticien a
+        // rédigé, ou l'objectif est antérieur au 2026-09-11 et personne n'a
+        // constaté sa provenance. Les confondre sous « votre praticien a noté »
+        // affirmerait au patient un fait qu'on n'a pas (`DC-24`).
+        origineEnonce: (() => {
+          if (ligne.enonceSource !== 'ce_qui_compte' || ligne.enonceSourceId === null) return null;
+          const date = datesDepots.get(ligne.enonceSourceId);
+          return date === undefined ? null : { forme: 'depot' as const, date: date.toISOString() };
+        })(),
         reformulationPraticien: ligne.reformulationPraticien,
         priorite: ligne.priorite,
         accord: (() => {

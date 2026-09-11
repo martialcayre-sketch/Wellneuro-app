@@ -167,6 +167,49 @@ describe('/api/portail/dossier', () => {
     process.env.WN_COMPREHENSION = 'true';
   });
 
+  describe('GET — d’où vient l’énoncé (D-167, appliqué au patient)', () => {
+    it('sert l’origine quand l’énoncé est le dépôt cité ET que sa date est lisible', async () => {
+      mockCompteActif();
+      mockDossierComplet({
+        objectifs: [objectif({ enonceSource: 'ce_qui_compte', enonceSourceId: 'ENT_1' })],
+      });
+      const corps = await (await GET(getRequest(cookieProprio()))).json();
+      expect(corps.objectifs[0].origineEnonce).toEqual({
+        forme: 'depot',
+        date: '2026-08-21T08:00:00.000Z',
+      });
+    });
+
+    it('NE SERT AUCUNE ORIGINE si la date du dépôt est introuvable', async () => {
+      // Le dépôt cité n'existe plus, ou la lecture a échoué. Affirmer « vous avez
+      // écrit le … » sans savoir QUAND serait inventer une date au patient — ce
+      // que `D-165` refuse ailleurs sous le même motif.
+      mockCompteActif();
+      mockDossierComplet({
+        objectifs: [objectif({ enonceSource: 'ce_qui_compte', enonceSourceId: 'ENT_DISPARU' })],
+        entrees: [],
+      });
+      const corps = await (await GET(getRequest(cookieProprio()))).json();
+      expect(corps.objectifs[0].origineEnonce).toBeNull();
+    });
+
+    it('NE SERT AUCUNE ORIGINE sur une provenance absente — pas « écrit par le praticien »', async () => {
+      mockCompteActif();
+      mockDossierComplet({ objectifs: [objectif({ enonceSource: null, enonceSourceId: null })] });
+      const corps = await (await GET(getRequest(cookieProprio()))).json();
+      expect(corps.objectifs[0].origineEnonce).toBeNull();
+    });
+
+    it('cherche le dépôt DANS LE DOSSIER du patient — la référence est souple, sans FK', async () => {
+      mockCompteActif();
+      mockDossierComplet({ objectifs: [objectif({ enonceSource: 'ce_qui_compte', enonceSourceId: 'ENT_1' })] });
+      await GET(getRequest(cookieProprio()));
+      const appels = prisma.entreeCeQuiCompte.findMany.mock.calls.map((c) => c[0]);
+      const parId = appels.find((a) => a?.where?.id?.in !== undefined);
+      expect(parId?.where?.idPatient).toBeDefined();
+    });
+  });
+
   // ── DRAPEAU ───────────────────────────────────────────────────────────────
 
   describe('le drapeau garde les deux verbes, fail-closed', () => {
