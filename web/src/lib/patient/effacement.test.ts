@@ -44,6 +44,8 @@ const { prisma, appels } = vi.hoisted(() => {
     'propositionPrioriteIA',
     // Les propositions de résumé global assistées par IA (2026-09-11).
     'propositionComprehensionIA',
+    // La demande de correction de l'objectif (2026-09-11).
+    'demandeCorrectionObjectif',
   ]) {
     tx[nom] = modele(nom);
   }
