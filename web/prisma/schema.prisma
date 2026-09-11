@@ -86,6 +86,7 @@ model Patient {
   finsObjectif             FinObjectif[]
   accordsAttestes          AccordAtteste[]
   propositionsPrioriteIa   PropositionPrioriteIA[]
+  propositionsComprehensionIa PropositionComprehensionIA[]
 
   @@map("patients")
 }
@@ -2589,6 +2590,33 @@ model PropositionPrioriteIA {
   @@unique([idPatient, idSynthese, idDepot, versionConsigne, rang], map: "alli_prop_priorite_tirage_unique")
   @@index([idPatient, creeLe], map: "alli_prop_priorite_patient_idx")
   @@map("propositions_priorite_ia")
+}
+
+// 6.0-B — LA PROPOSITION DE RÉSUMÉ GLOBAL, celle qui pré-remplit « Ce que j'ai
+// compris de vous ». Voisine de `PropositionPrioriteIA` et distincte d'elle :
+// plusieurs synthèses en entrée au lieu d'une, 4 000 caractères au lieu de 200,
+// et une consigne qui RELIE au lieu de reformuler — l'ordre du texte produit
+// est celui qu'un praticien a déjà validé, jamais un ordre neuf.
+//
+// Les deux listes sont des références SOUPLES, sans FK (patron
+// `supersedes_objectif_id`) : l'existence de chaque source se vérifie à la
+// route, qui seule sait ce qu'est une synthèse `Validee_Praticien`.
+model PropositionComprehensionIA {
+  id                 String   @id @default(cuid())
+  idPatient          String   @map("id_patient")
+  sourcesSyntheses   String[] @map("sources_syntheses")
+  sourcesDesaccords  String[] @default([]) @map("sources_desaccords")
+  versionConsigne    String   @map("version_consigne")
+  modele             String   @map("modele")
+  rang               Int      @map("rang")
+  texte              String   @map("texte")
+  creeLe             DateTime @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@unique([idPatient, sourcesSyntheses, sourcesDesaccords, versionConsigne, rang], map: "alli_prop_comprehension_tirage_unique")
+  @@index([idPatient, creeLe], map: "alli_prop_comprehension_patient_idx")
+  @@map("propositions_comprehension_ia")
 }
 
 

@@ -239,6 +239,13 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.propositionPrioriteIA.deleteMany({ where: par })
     ).count;
 
+    // La table SŒUR des propositions de priorité : mêmes motifs, même arbitrage.
+    // Elle porte des textes produits à partir de la parole du patient — elle
+    // part avec le dossier, et par un appel NOMMÉ, pas par une FK en cascade.
+    supprimees.propositionsComprehensionIa = (
+      await tx.propositionComprehensionIA.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

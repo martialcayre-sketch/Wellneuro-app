@@ -42,6 +42,8 @@ const { prisma, appels } = vi.hoisted(() => {
     'reponseJalonObjectif', 'finObjectif', 'accordAtteste',
     // `D-167` §11 — les propositions de priorité assistées par IA.
     'propositionPrioriteIA',
+    // Les propositions de résumé global assistées par IA (2026-09-11).
+    'propositionComprehensionIA',
   ]) {
     tx[nom] = modele(nom);
   }

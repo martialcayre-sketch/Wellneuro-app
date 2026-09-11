@@ -873,6 +873,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_proposition_priorite_ia_v1_negatif.sql
 
+      # La table SŒUR : mêmes promesses de traçabilité, matière PLURIELLE. Trois
+      # exigences y sont neuves et n'existaient nulle part ailleurs — deux
+      # synthèses validées au minimum (règle du responsable, 2026-09-11), aucune
+      # source vide, aucun trou NULL dans les listes. Le cas qui compte le plus
+      # est le tableau VIDE : `array_length('{}', 1)` rend NULL, donc un CHECK
+      # écrit sans `coalesce` aurait laissé passer exactement ce qu'il interdit.
+      # La liste blanche fige l'absence de score, de seuil et de bande. Fixtures
+      # posées et transaction annulée.
+      - name: Alliance proposition comprehension IA negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/alli_proposition_comprehension_ia_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
