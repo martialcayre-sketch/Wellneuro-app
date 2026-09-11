@@ -5190,6 +5190,42 @@ qualification article 9 due au responsable et à un conseil.
 Prochaine action — l'accusé de lecture de la v6, tranché par précédent et non par
 droit.
 
+## 2026-09-11 (soir) — Le bloc se ferme, et le patient garde une porte
+
+Décidé — six PR (#1021–#1026), une migration constatée par conteneur, `D-170`.
+Le bloc de réponse se ferme après « c'est bien ça » et après lui seul ; un
+quatrième verbe — « demander une correction » — prend la place des trois autres,
+avec un texte facultatif et un bouton d'envoi qui reste actif à vide. La
+clôture d'une demande est DÉRIVÉE : elle se referme parce que l'objectif a été
+reformulé, jamais parce qu'on l'a cochée.
+
+Parti d'une mesure, pas d'une intuition — PAT006 portait deux ratifications
+identiques à dix secondes d'écart (18:14, lu par conteneur). Quelqu'un avait
+répondu, n'avait rien vu changer d'assez net, et avait recommencé.
+
+Corrigé une impression, aussi — « je ne retrouve nulle part la validation dans
+l'espace praticien » : elle y était, en suffixe de « Enregistré le … », en 12 px,
+sous le bloc d'anamnèse. Elle a maintenant son bandeau en tête de carte, daté.
+
+Trouvé en chemin, et les deux par une mutation qui a SURVÉCU — `etat-phase`
+n'avait aucun banc (la route qui nourrit le feu du rail), et
+`nettoyerDossierDeuxVoix` ignorait la table neuve : le patient de fixture est
+partagé entre les deux projets Playwright, la demande d'un run s'ajoutait à
+celle du suivant.
+
+Manqué à l'écriture — `cleanup` s'enregistre PAR BLOC dans
+`FichePatientPanel.test.tsx`, le fichier le dit noir sur blanc. Neuf rouges d'un
+coup pour l'avoir oublié.
+
+Preuve — 49 mutations, 49 mutants tués. Quatre survivants départagés : deux
+bancs faibles (dont une sonde qui cherchait « null » là où React rend du vide —
+et le vide entre deux chevrons produit une citation de rien), un banc absent, et
+une mutation qui ne s'appliquait pas.
+
+Prochaine action — la branche « demande » est inéprouvable contre des données
+réelles : la table est née vide. Et rien ne relance le praticien dont une
+demande reste sans suite : le rail la signale, aucune échéance ne la porte.
+
 ## 2026-09-11 — D-167 bouclé des deux côtés, et la production qui ne déployait plus
 
 Décidé — dix PR (#1000–#1009), trois migrations constatées par conteneur. La
