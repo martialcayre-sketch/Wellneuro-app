@@ -717,7 +717,15 @@ export function ObjectifNegociePanel({
   useEffect(() => {
     if (matiere == null) return;
     setEnonce((actuel) => (actuel.trim() === '' ? matiere.enonce.texte : actuel));
-    setReformulation((actuel) => (actuel.trim() === '' ? matiere.reformulation.texte : actuel));
+    // LA REFORMULATION N'EST PLUS PRÉ-REMPLIE — arbitrage du 2026-09-11. Elle
+    // et « Ce que j'ai compris de vous » étaient le MÊME geste écrit à deux
+    // endroits de la phase 3, nourris de la même synthèse validée, et tous deux
+    // lus par le patient. Le résumé global a pris cette charge ; le champ
+    // disparaît de l'écran plutôt que de rester à côté en doublon.
+    //
+    // `matiere.reformulation` CONTINUE D'ARRIVER de la route : elle n'a pas
+    // cessé d'être une citation valide, et la retirer de l'API aurait été un
+    // changement de surface que rien n'exige ici.
   }, [matiere]);
 
   // ── `D-167` §13 : UN CONFLIT CONSIGNÉ, NON RÉSOLU EN SILENCE ───────────────
@@ -1772,30 +1780,16 @@ export function ObjectifNegociePanel({
               </>
             )}
 
-            <label htmlFor="objectif-reformulation" className="mt-3 block text-xs font-medium text-foreground">
-              Votre reformulation (facultative)
-            </label>
-            <textarea
-              id="objectif-reformulation"
-              value={reformulation}
-              onChange={(evenement) => setReformulation(evenement.target.value)}
-              rows={3}
-              placeholder="Ce que vous avez compris de la demande…"
-              className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-            />
-            <Compteur valeur={reformulation} maximum={LONGUEUR_MAX_REFORMULATION} />
-            {matiere?.fraicheur?.reformulation === 'plus_recente' && (
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>Une synthèse plus récente a été validée depuis cette version.</span>
-                <button
-                  type="button"
-                  onClick={() => setReformulation(matiere.reformulation.texte)}
-                  className="min-h-9 rounded-lg border border-accent px-2 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                >
-                  Reprendre la synthèse à jour
-                </button>
-              </p>
-            )}
+            {/* LE CHAMP DE REFORMULATION A ÉTÉ RETIRÉ — arbitrage du 2026-09-11.
+                Il demandait au praticien, dans la MÊME phase, de redire ce
+                qu'il avait compris alors que « Ce que j'ai compris de vous » le
+                lui demandait déjà, et les deux textes atteignaient le patient.
+                Le résumé global porte désormais ce geste, une seule fois.
+
+                LA COLONNE RESTE EN BASE, et le portail continue d'afficher une
+                reformulation existante : le retrait porte sur l'ÉCRAN
+                PRATICIEN seul. Aucune reformulation n'existait en production au
+                jour du retrait — la mesure a été faite avant de décider. */}
 
             {/* CHAMP TEXTE LIBRE, jamais une liste déroulante ni un badge
                 ordonné : une liste fermée serait un rang, et un rang serait un

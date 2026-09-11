@@ -24,6 +24,21 @@ import { LONGUEUR_MAX_SYNTHESE } from '@/lib/praticien/syntheseComprehension';
 // comme une erreur — c'est le sens du régime (`D-090`).
 
 type EtatDossier = 'chargement' | 'chargee' | 'erreur';
+
+/**
+ * Le tirage servi par la route, réduit à ce dont l'écran a besoin.
+ *
+ * `id` EN FAIT PARTIE : c'est lui qui repart comme `sourceId` à l'envoi. Ni le
+ * modèle ni la version de consigne ne voyagent jusqu'ici — le serveur les lit
+ * sur la ligne, et un navigateur ne doit pas pouvoir les déclarer.
+ */
+type Tirage = { id: string; texte: string; rang: number };
+
+/** Ce qui manque pour qu'un résumé puisse être proposé, dit en toutes lettres. */
+const LIBELLE_MANQUE_RESUME: Record<string, string> = {
+  deux_syntheses_validees: 'une seconde synthèse validée',
+  second_rideau: 'un second rideau de questionnaires',
+};
 type EtatEnvoi = 'repos' | 'envoi' | 'erreur';
 
 const LIBELLE_DESACCORD: Record<DesaccordExpose['etat'], string> = {
@@ -75,6 +90,13 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
   /** Question du registre restée sans réponse : le praticien doit trancher. */
   const [registreAConfirmer, setRegistreAConfirmer] = useState(false);
 
+  // LE RÉSUMÉ PROPOSÉ — état du tirage courant, et de ce qui manque pour en
+  // avoir un. `null` n'est pas `[]` : « rien n'a été tiré » et « la barre n'est
+  // pas franchie » sont deux phrases différentes (`DC-24`).
+  const [tirage, setTirage] = useState<Tirage | null>(null);
+  const [manqueResume, setManqueResume] = useState<string[] | null>(null);
+  const [tirageEnCours, setTirageEnCours] = useState(false);
+
   const charger = useCallback(async () => {
     setEtat('chargement');
     try {
@@ -100,6 +122,82 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
     void charger();
   }, [charger]);
 
+  /**
+   * Lit le tirage figé. N'EN PRODUIT JAMAIS : c'est un GET, et la route ne
+   * fait parler la machine que sur un POST. Ouvrir la phase 3 d'un dossier ne
+   * doit pas dépenser un appel.
+   */
+  const chargerTirage = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/praticien/comprehension/proposition?idPatient=${encodeURIComponent(idPatient)}`,
+      );
+      const data = (await res.json()) as {
+        ok: boolean;
+        etat?: string;
+        manque?: string[];
+        proposition?: Tirage;
+      };
+      if (!res.ok || !data.ok) return;
+      // `?? null` ET NON L'AFFECTATION NUE : un champ absent doit se lire comme
+      // absent, pas comme `undefined` qui se comparerait mal plus bas.
+      setManqueResume(data.etat === 'sources_manquantes' ? (data.manque ?? []) : null);
+      setTirage(data.proposition ?? null);
+    } catch {
+      // Silencieux À DESSEIN : le résumé proposé est un confort. Son absence ne
+      // doit pas afficher une erreur sur un écran dont le reste fonctionne.
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void chargerTirage();
+  }, [chargerTirage]);
+
+  /**
+   * PRÉ-REMPLIT SANS ÉCRASER. `setTexte((actuel) => …)` et non `setTexte(texte)` :
+   * le tirage peut arriver APRÈS que le praticien ait commencé à écrire, et la
+   * forme fonctionnelle est la seule qui lise l'état au moment du rendu. Le
+   * piège s'est refermé deux fois dans cette campagne.
+   */
+  useEffect(() => {
+    if (tirage === null) return;
+    setTexte((actuel) => (actuel.trim() === '' ? tirage.texte : actuel));
+  }, [tirage]);
+
+  /** Demande un tirage — ou un de plus. C'est le seul geste qui appelle. */
+  const demanderTirage = useCallback(
+    async (remplacer: boolean) => {
+      setTirageEnCours(true);
+      try {
+        const res = await fetch('/api/praticien/comprehension/proposition', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ idPatient }),
+        });
+        const data = (await res.json()) as { ok: boolean; proposition?: Tirage };
+        if (res.ok && data.ok && data.proposition) {
+          setTirage(data.proposition);
+          // « UNE AUTRE » REMPLACE LE TEXTE, le premier tirage ne fait que
+          // pré-remplir. Le praticien qui demande une autre formulation
+          // demande à voir l'autre ; celui qui ouvre l'écran n'a rien demandé.
+          if (remplacer) setTexte(data.proposition.texte);
+        }
+      } catch {
+        // Même silence : rien ne dépend de ce confort.
+      } finally {
+        setTirageEnCours(false);
+      }
+    },
+    [idPatient],
+  );
+
+  /**
+   * LE VERROU, CÔTÉ ÉCRAN. Ce n'est qu'une commodité : le refus qui compte est
+   * celui de la route, qui ne fait pas confiance au navigateur (`D-164`). Le
+   * bouton grisé évite au praticien un aller-retour, il ne garantit rien.
+   */
+  const identiqueAuTirage = tirage !== null && texte.trim() === tirage.texte.trim();
+
   const envoyer = useCallback(
     async (publier: boolean, confirmerRegistre: boolean) => {
       setEnvoi('envoi');
@@ -115,6 +213,10 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
             publier,
             confirmerRegistre,
             supersedesSyntheseId: revise,
+            // LE SEUL CHAMP DE PROVENANCE QUE L'ÉCRAN DÉCLARE. Le modèle, la
+            // version de consigne et la valeur de `source` sont lus par le
+            // serveur sur la ligne du tirage (`D-164`).
+            sourceId: tirage?.id ?? null,
           }),
         });
         const data = (await res.json()) as { ok: boolean; reason?: string; error?: string };
@@ -125,7 +227,9 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
           setRedactionLibre(false);
           setRegistreAConfirmer(false);
           setEnvoi('repos');
+          setTirage(null);
           await charger();
+          await chargerTirage();
           return;
         }
         // LE REGISTRE EST UNE QUESTION, PAS UNE ERREUR : le praticien voit le
@@ -140,7 +244,7 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
         setEnvoi('erreur');
       }
     },
-    [idPatient, texte, redigeeLe, revise, charger],
+    [idPatient, texte, redigeeLe, revise, charger, chargerTirage, tirage],
   );
 
   const tropLong = texte.length > LONGUEUR_MAX_SYNTHESE;
@@ -331,6 +435,41 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               </p>
             )}
 
+            {/* ── LE RÉSUMÉ PROPOSÉ ─────────────────────────────────────────
+                À LA DEMANDE, JAMAIS À L'OUVERTURE : le bouton est le seul geste
+                qui fait parler la machine. Ce qui manque est NOMMÉ pièce par
+                pièce plutôt que résumé en « indisponible » — un écran qui
+                affirme une cause qu'il n'a pas vérifiée est le défaut fermé
+                deux fois dans cette campagne. */}
+            {manqueResume !== null ? (
+              <p className="rounded border border-border bg-muted/40 p-2 text-xs text-muted-foreground">
+                Un résumé de ce dossier pourra vous être proposé quand il y aura{' '}
+                {manqueResume.map((m) => LIBELLE_MANQUE_RESUME[m] ?? m).join(' et ')}. D’ici là,
+                écrivez de votre main.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={tirageEnCours}
+                  onClick={() => void demanderTirage(tirage !== null)}
+                  className="rounded border border-border px-3 py-1.5 text-xs disabled:opacity-50"
+                >
+                  {tirageEnCours
+                    ? 'En cours…'
+                    : tirage === null
+                      ? 'Proposer un résumé'
+                      : 'Une autre'}
+                </button>
+                {tirage !== null && (
+                  <span className="text-xs text-muted-foreground">
+                    Proposé par la machine, à relire. Réécrivez-le : il partira sous votre
+                    signature.
+                  </span>
+                )}
+              </div>
+            )}
+
             <label className="block text-sm font-medium" htmlFor="comprehension-texte">
               Ce que j’ai compris
             </label>
@@ -375,6 +514,17 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               </p>
             )}
 
+            {/* LE VERROU, DIT. Un bouton grisé sans phrase est une énigme ;
+                celui-ci explique ce qu'il attend. Le refus qui compte reste
+                celui de la route (`D-164`) — ceci n'est qu'une courtoisie. */}
+            {identiqueAuTirage && (
+              <p className="rounded border border-status-warning/40 bg-status-warning/10 p-2 text-sm">
+                Ce texte est exactement celui qui vous a été proposé. Relisez-le et réécrivez-le :
+                il sera publié sous votre signature. Vous pouvez l’enregistrer en brouillon tel
+                quel.
+              </p>
+            )}
+
             <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
@@ -385,7 +535,12 @@ export function ComprehensionPanel({ idPatient }: { idPatient: string }) {
               </button>
               <button
                 type="button"
-                disabled={envoi === 'envoi' || texte.trim().length === 0 || !surfaceOuverte}
+                disabled={
+                  envoi === 'envoi' ||
+                  texte.trim().length === 0 ||
+                  !surfaceOuverte ||
+                  identiqueAuTirage
+                }
                 onClick={() => void envoyer(true, false)}
                 className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50"
               >

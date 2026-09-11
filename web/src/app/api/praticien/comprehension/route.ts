@@ -282,6 +282,16 @@ type PostBody = {
   publier?: boolean;
   confirmerRegistre?: boolean;
   supersedesSyntheseId?: string | null;
+  /**
+   * L'identifiant du TIRAGE dont ce texte est parti, s'il en vient un.
+   *
+   * C'EST LA SEULE CHOSE QUE LE NAVIGATEUR DÉCLARE, et c'est délibéré : le
+   * modèle, la version de consigne et la valeur de `source` sont lus par le
+   * serveur SUR LA LIGNE DU TIRAGE, jamais reçus du client. Un navigateur ne
+   * peut donc pas inventer une provenance — au mieux désigner, parmi les
+   * tirages de CE dossier, lequel a servi (`D-164`).
+   */
+  sourceId?: string | null;
 };
 
 // `typeof`, et non `?? ''` : `PostBody` est un CAST, pas une validation. Un
@@ -391,6 +401,76 @@ export async function POST(req: Request): Promise<NextResponse<ComprehensionApiR
       }
     }
 
+    // ── LA PROVENANCE, ET LE VERROU DE PUBLICATION ─────────────────────────
+    //
+    // CE QUE LE SERVEUR VÉRIFIE : que le tirage EXISTE et appartienne à CE
+    // dossier. Le reste de la provenance — `source`, la version de consigne, le
+    // modèle — est lu SUR LA LIGNE, jamais reçu du navigateur. Une provenance
+    // déclarée par le client serait une provenance inventable (`D-164`).
+    //
+    // CE QUE LE SERVEUR NE PEUT PAS VÉRIFIER : que le praticien ait réellement
+    // utilisé ce tirage. La constatation par comparaison de textes
+    // (`provenanceVerifiee.ts`, `D-167` §6) est ici IMPOSSIBLE, puisque le
+    // verrou ci-dessous garantit que les deux textes diffèrent. Limite assumée,
+    // écrite dans la migration : mesurer une « ressemblance » poserait un seuil
+    // sans provenance (`DC-19`/`DC-20`), ce qui serait pire.
+    const sourceBrute = body.sourceId;
+    if (sourceBrute !== undefined && sourceBrute !== null && typeof sourceBrute !== 'string') {
+      return echec('invalid', 'Référence de résumé proposé invalide.', 400);
+    }
+    const sourceId = texteDuCorps(sourceBrute);
+    if (sourceId.length > LONGUEUR_MAX_ID) {
+      return echec('invalid', 'Référence de résumé proposé invalide.', 400);
+    }
+
+    let provenance: {
+      source: string;
+      sourceId: string;
+      versionConsigne: string;
+      modele: string;
+    } | null = null;
+
+    if (sourceId) {
+      const tirage = await prisma.propositionComprehensionIA.findUnique({
+        where: { id: sourceId },
+        select: { idPatient: true, texte: true, versionConsigne: true, modele: true },
+      });
+      // INEXISTANT OU D'UN AUTRE DOSSIER : MÊME réponse, MÊME message. Les
+      // distinguer ferait de la route un oracle d'existence, interrogeable avec
+      // une session praticien quelconque — même arbitrage que pour la version
+      // révisée ci-dessus.
+      if (!tirage || tirage.idPatient !== idPatient) {
+        return echec('source_introuvable', 'Résumé proposé introuvable.', 404);
+      }
+
+      // LE VERROU DE PUBLICATION. Arbitrage du 2026-09-11 : ce champ part au
+      // patient sous la signature du praticien, et un texte de machine ne doit
+      // pas pouvoir y passer sans être relu. La publication est refusée tant
+      // que le texte est IDENTIQUE au tirage.
+      //
+      // IL NE GARDE QUE LA PUBLICATION. Enregistrer un brouillon identique
+      // reste possible : c'est l'usage attendu — on tire, on enregistre, on
+      // revient le relire. Le brouillon ne sort pas de l'application ; c'est
+      // la même asymétrie que celle du drapeau juste au-dessus.
+      //
+      // IL VIT ICI ET PAS SEULEMENT À L'ÉCRAN. Un bouton grisé est une
+      // commodité ; le refus est une garantie.
+      if (publier && texteDuCorps(body.texte) === tirage.texte.trim()) {
+        return echec(
+          'RESUME_NON_RELU',
+          'Ce texte est exactement celui qui vous a été proposé. Relisez-le et réécrivez-le : il sera publié sous votre signature.',
+          409,
+        );
+      }
+
+      provenance = {
+        source: 'proposition_ia',
+        sourceId,
+        versionConsigne: tirage.versionConsigne,
+        modele: tirage.modele,
+      };
+    }
+
     const preparation = preparerSynthese({
       idPatient,
       praticienEmail: garde.email,
@@ -398,6 +478,7 @@ export async function POST(req: Request): Promise<NextResponse<ComprehensionApiR
       redigeeLe: texteDuCorps(body.redigeeLe),
       publier,
       supersedesSyntheseId: supersedesSyntheseId || null,
+      provenance,
     });
     if (!preparation.ok) {
       return echec(preparation.raison, MESSAGES_REFUS[preparation.raison], 400);
