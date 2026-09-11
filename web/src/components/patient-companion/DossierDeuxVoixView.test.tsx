@@ -67,6 +67,44 @@ afterEach(() => {
 });
 
 describe('DossierDeuxVoixView', () => {
+
+  // ── `D-167` — sa parole lui est rendue comme sienne ────────────────────────
+
+  it('DIT que l’énoncé est son propre texte, avec sa date, quand il est cité mot pour mot', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(assemblage({
+        objectifs: [{ ...OBJECTIF, origineEnonce: { forme: 'depot', date: '2026-09-10T08:56:00.000Z' } }],
+      })),
+    );
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez écrit le'));
+    expect(texteRendu()).toContain('repris mot pour mot');
+  });
+
+  it('SANS provenance, garde la formulation neutre — jamais « votre praticien a noté »', async () => {
+    // Une provenance absente couvre DEUX cas indiscernables : le praticien a
+    // rédigé, ou l'objectif précède la constatation de provenance. Affirmer
+    // l'un des deux dirait au patient un fait qu'on n'a pas (`DC-24`).
+    fetchMock.mockResolvedValueOnce(
+      json(assemblage({ objectifs: [{ ...OBJECTIF, origineEnonce: null }] })),
+    );
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+    expect(texteRendu()).not.toContain('mot pour mot');
+    expect(texteRendu()).not.toContain('praticien a noté');
+  });
+
+  it('un champ ABSENT se lit comme absent — pas comme une origine', async () => {
+    // `undefined !== null` est VRAI : avec une comparaison stricte, une réponse
+    // plus ancienne ferait planter l'écran du patient.
+    fetchMock.mockResolvedValueOnce(json(assemblage()));
+    render(<DossierDeuxVoixView token="TOK" />);
+
+    await waitFor(() => expect(texteRendu()).toContain('Ce que vous avez dit'));
+  });
+
   it('assemble les trois objets', async () => {
     fetchMock.mockResolvedValueOnce(json(assemblage()));
     render(<DossierDeuxVoixView token="TOK" />);

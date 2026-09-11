@@ -316,7 +316,31 @@ export function DossierDeuxVoixView({ token }: { token: string }) {
               {objectifs.map((objectif) => (
                 <div key={objectif.id} className="space-y-2 rounded-lg border border-border p-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Ce que vous avez dit</p>
+                    {/* SA PAROLE LUI EST RENDUE COMME SIENNE (`D-167`,
+                        appliqué au patient le 2026-09-11). Quand l'énoncé est
+                        son dépôt « ce qui compte pour moi » cité MOT POUR MOT,
+                        l'écran le dit avec sa date : il écrit dans son espace,
+                        ne le revoit jamais, et retrouvait ici son texte sans
+                        qu'on lui dise que c'était le sien.
+
+                        DEUX LIBELLÉS, PAS TROIS, et c'est le point. Une
+                        provenance absente N'EST PAS « votre praticien a noté » :
+                        elle couvre aussi les objectifs antérieurs à la
+                        constatation de provenance. L'affirmer serait dire au
+                        patient un fait qu'on n'a pas (`DC-24`). On garde alors
+                        la formulation neutre, qui reste vraie dans les deux
+                        cas. Même discipline que l'accord, plus bas : la forme
+                        n'est dite que lorsqu'elle est établie. */}
+                    <p className="text-xs text-muted-foreground">
+                      {/* `!= null` ET NON `!== null` : une réponse plus
+                          ancienne — ou une fixture — ne porte pas le champ, et
+                          `undefined !== null` est VRAI. C'est la seconde fois
+                          en une nuit que ce piège attrape ce composant ; la
+                          comparaison lâche couvre les deux absences. */}
+                      {objectif.origineEnonce != null && dateLisible(objectif.origineEnonce.date)
+                        ? `Ce que vous avez écrit le ${dateLisible(objectif.origineEnonce.date)}, repris mot pour mot`
+                        : 'Ce que vous avez dit'}
+                    </p>
                     {/* `whitespace-pre-wrap` : les mots sont rendus TELS QUELS,
                         retours à la ligne compris. Les reformater serait déjà
                         les réécrire. */}
