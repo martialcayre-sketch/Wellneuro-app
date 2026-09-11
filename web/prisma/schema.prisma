@@ -2355,6 +2355,24 @@ model SyntheseComprehension {
   redigeeLe            DateTime? @map("redigee_le")
   publieeLe            DateTime? @map("publiee_le")
   supersedesSyntheseId String?   @map("supersedes_synthese_id")
+  // D'OÙ VIENT LE TEXTE PUBLIÉ — « PARTI DE », et non « cité mot pour mot ».
+  // Le verrou de publication refuse un texte identique au tirage : le texte
+  // publié diffère donc TOUJOURS de sa source, par construction. `source` dit
+  // que le praticien est parti de ce tirage-là, pas que la phrase est celle du
+  // modèle.
+  //
+  // Le serveur vérifie l'APPARTENANCE de `sourceId` — tirage existant, du même
+  // dossier, sous la consigne courante — et NON l'usage : la comparaison de
+  // textes qui constate la provenance de l'objectif (`D-167` §6) est ici
+  // impossible. Limite assumée ; mesurer une « ressemblance » poserait un seuil
+  // sans provenance (`DC-19`/`DC-20`).
+  //
+  // TOUTES NULLABLES, et jamais un défaut à combler : NULL veut dire « ses
+  // mots », pas « on ne sait pas ». Référence SOUPLE, sans FK.
+  source               String?   @map("source")
+  sourceId             String?   @map("source_id")
+  versionConsigne      String?   @map("version_consigne")
+  modele               String?   @map("modele")
   creeLe               DateTime  @default(now()) @map("cree_le")
 
   patient Patient @relation(fields: [idPatient], references: [idPatient])

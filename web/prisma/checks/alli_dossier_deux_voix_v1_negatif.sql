@@ -65,9 +65,19 @@ DECLARE
   COLS_CE_QUI_COMPTE CONSTANT text[] := ARRAY[
     'cree_le', 'id', 'id_patient', 'saisi_le', 'texte'
   ];
+  -- Les quatre dernières sont la provenance du texte publié (2026-09-11). Elles
+  -- entrent ICI et nulle part ailleurs : une table a UNE liste blanche, chez le
+  -- contrat qui l'a créée. Une seconde liste chez le contrat de la provenance
+  -- divergerait — leçon du 2026-09-10.
+  -- ORDRE ALPHABÉTIQUE OBLIGATOIRE : la comparaison est un `IS DISTINCT FROM`
+  -- entre ce tableau et un `array_agg(... ORDER BY column_name)`. Une colonne
+  -- ajoutée à la fin de la liste rougit alors qu'elle est déclarée — le message
+  -- d'erreur affiche alors deux ensembles identiques au tri près, ce qui se lit
+  -- mal. Insérer chaque colonne neuve À SA PLACE.
   COLS_SYNTHESES CONSTANT text[] := ARRAY[
-    'cree_le', 'id', 'id_patient', 'praticien_email', 'publiee_le',
-    'redigee_le', 'supersedes_synthese_id', 'texte'
+    'cree_le', 'id', 'id_patient', 'modele', 'praticien_email', 'publiee_le',
+    'redigee_le', 'source', 'source_id', 'supersedes_synthese_id', 'texte',
+    'version_consigne'
   ];
   COLS_DESACCORDS CONSTANT text[] := ARRAY[
     'cree_le', 'exprime_le', 'id', 'id_patient', 'id_synthese', 'texte'
