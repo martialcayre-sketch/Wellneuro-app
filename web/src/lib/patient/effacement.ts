@@ -246,6 +246,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
       await tx.propositionComprehensionIA.deleteMany({ where: par })
     ).count;
 
+    // La demande de correction de l'objectif (2026-09-11) : même régime FK
+    // RESTRICT. C'est la parole du patient sur le texte qu'on a écrit avec lui
+    // — le geste qu'il pose APRÈS avoir dit « c'est bien ça » — et elle ne
+    // survit pas plus au dossier que la ratification qu'elle prolonge.
+    supprimees.demandesCorrectionObjectif = (
+      await tx.demandeCorrectionObjectif.deleteMany({ where: par })
+    ).count;
+
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
     supprimees.patient = (await tx.patient.deleteMany({ where: par })).count;

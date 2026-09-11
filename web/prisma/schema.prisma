@@ -87,6 +87,7 @@ model Patient {
   accordsAttestes          AccordAtteste[]
   propositionsPrioriteIa   PropositionPrioriteIA[]
   propositionsComprehensionIa PropositionComprehensionIA[]
+  demandesCorrectionObjectif DemandeCorrectionObjectif[]
 
   @@map("patients")
 }
@@ -2522,6 +2523,42 @@ model AmendementObjectif {
 
   @@index([idPatient, creeLe], map: "alli_amendement_objectif_patient_idx")
   @@map("amendements_objectif")
+}
+
+// 6.0-B — LA DEMANDE DE CORRECTION DE L'OBJECTIF : le quatrième verbe du
+// patient, celui qu'il pose APRÈS avoir ratifié. Le bloc de réponse se ferme
+// sur « c'est bien ça » ; ce geste est la porte qui reste.
+//
+// TROIS VOISINES, ET AUCUNE NE FAIT SON TRAVAIL. `AmendementObjectif` dit
+// « voici MA version » et son texte est obligatoire parce qu'il EST la
+// proposition. `RatificationObjectif` de sens `conteste` se pose AVANT
+// d'accepter, jamais après. Et la « demande de correction » de `Assignation`
+// (`correction_commentaire`) est un HOMONYME d'un autre objet : elle porte sur
+// les réponses de questionnaire et se débloque. Celle-ci porte sur le TEXTE de
+// l'objectif et se referme par une reformulation.
+//
+// `texte` EST NULLABLE, et c'est l'arbitrage : un patient peut savoir que ça ne
+// va pas sans savoir le dire. Exiger qu'il formule pour avoir le droit de
+// demander lui poserait une condition d'expression sur sa propre parole.
+//
+// AUCUNE COLONNE DE CLÔTURE. Une demande est en attente tant que l'objectif
+// visé est une tête ACTIVE de sa chaîne ; la reformulation la referme. Un
+// statut se coche sans rien faire — une reformulation ne se simule pas.
+//
+// `idObjectif` est une référence SOUPLE, sans FK (patron
+// `supersedes_objectif_id`) : l'appartenance au dossier et la qualité de tête
+// se vérifient à la route, qui seule lit toute la chaîne.
+model DemandeCorrectionObjectif {
+  id         String   @id @default(cuid())
+  idPatient  String   @map("id_patient")
+  idObjectif String   @map("id_objectif")
+  texte      String?  @map("texte")
+  creeLe     DateTime @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "alli_demande_correction_patient_idx")
+  @@map("demandes_correction_objectif")
 }
 
 // LA RÉPONSE D'ÉTAPE (Alliance 6.0-B, LOT-05) — où le patient en est PAR
