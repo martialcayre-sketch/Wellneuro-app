@@ -105,6 +105,13 @@ versement s'est donc fait par retouches ciblées sur la version de `main`.
    vérifié à la lecture. Sur Scalingo, c'est `postdeploy: npm run db:deploy` du `Procfile`
    qui les applique. Le compte est daté : 35 au 2026-07-24, **49 au 2026-08-05**.
 
-**Reste ouvert, non fait ici** : la branche `sauvegarde/runbook-scalingo-staging` est
-désormais redondante et **dangereuse à merger** (28 332 suppressions). Sa suppression
-relève du ressort Copilot ; elle est nommée ici pour ne pas être oubliée.
+~~**Reste ouvert, non fait ici**~~ — **FAIT LE 2026-09-11.** La branche
+`sauvegarde/runbook-scalingo-staging` (`0c437793`) est supprimée d'`origin`, sur
+autorisation explicite du responsable. Le verdict a été revérifié fichier à fichier avant
+le geste, et il est plus net qu'écrit ici : `main` n'est pas seulement en avance sur elle,
+il l'a **corrigée**. Comparés directement, le runbook de `main` porte **178 lignes que la
+sauvegarde n'a pas** — D-047, la rétractation du « validé de bout en bout », l'inaccessibilité
+d'`osc-secnum-fr1` sur ce compte, et toute la section « ce que l'exécution de la migration
+des données a appris (2026-08-22) ». Ses 81 lignes propres sont les **formulations
+antérieures** des paragraphes que `main` a réécrits : la merger aurait régressé le document,
+pas seulement supprimé du code.
