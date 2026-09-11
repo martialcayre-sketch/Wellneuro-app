@@ -2306,6 +2306,7 @@ model ObjectifNegocie {
   prioriteSourceSyntheseId   String?   @map("priorite_source_synthese_id")
   prioriteSourceDepotId      String?   @map("priorite_source_depot_id")
   prioritePrompt             String?   @map("priorite_prompt")
+  prioriteSourceRang         Int?      @map("priorite_source_rang")
   negocieLe               DateTime? @map("negocie_le")
   creeLe                  DateTime  @default(now()) @map("cree_le")
 
