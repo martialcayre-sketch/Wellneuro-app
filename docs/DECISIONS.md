@@ -4,6 +4,111 @@
 
 ## Décisions actives
 
+### D-170 — Le bloc de réponse se ferme sur « c'est bien ça », et un quatrième verbe rend sa porte au patient
+
+- Date : 2026-09-11
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-09-11 :
+  « Fermer le bloc entièrement », « Après *c'est bien ça* seulement »,
+  « Oui — un quatrième verbe », « Oui, mais facultatif »,
+  « Une reformulation de l'objectif »)
+- Amende : [[D-110]] §2, qui posait les trois verbes comme offerts en
+  permanence, et la doctrine écrite en tête de `DossierDeuxVoixView`
+  (« changer d'avis, c'est répondre à nouveau ») — désormais vraie du SERVEUR
+  et non plus de l'écran après une ratification.
+- Domaine : doctrine produit — campagne Alliance 6.0-B
+
+**Constat, et il est MESURÉ.** Le dossier PAT006 porte, le 2026-09-11 à 18:14,
+**deux ratifications identiques sur le même objectif, à dix secondes d'écart**
+(lecture par conteneur `scalingo run -d`, par identifiant). Ce n'est pas un
+double-clic : c'est un patient qui a répondu « c'est bien ça », n'a rien vu
+changer d'assez net, et a recommencé. Les trois verbes restaient offerts sous sa
+propre réponse.
+
+Le même jour, le responsable relève l'autre moitié du défaut : « je ne retrouve
+nulle part dans l'espace praticien la validation de l'objectif négocié par le
+patient ». Elle y était — en suffixe de « Enregistré le … », en 12 px, au pied
+d'une carte placée sous le bloc d'anamnèse.
+
+**Décision, en quatre points.**
+
+1. **Le bloc de réponse se ferme après `ratifie`, et après lui seul.** Contester
+   et « le dire autrement » appellent déjà une suite du praticien : leur bloc
+   reste ouvert, le patient peut se raviser d'un clic. Ratifier, non.
+2. **Un quatrième verbe — « demander une correction à mon praticien » — prend la
+   place des trois autres.** Un bloc qui se ferme sans rien ouvrir enfermerait
+   le patient dans sa propre réponse.
+3. **Son texte est FACULTATIF.** Un patient peut savoir que ça ne va pas sans
+   savoir le dire ; exiger qu'il formule pour avoir le droit de demander lui
+   poserait une condition d'expression sur sa propre parole. Le bouton d'envoi
+   reste actif sur un champ vide — seul des quatre gestes dans ce cas —, sans
+   quoi le mot « facultatif » serait mensonger.
+4. **La réponse du patient remonte en tête de la carte du cockpit, datée**, et
+   quitte le pied : un fait dit à deux endroits finit par diverger quand l'un
+   des deux bouge.
+
+**La clôture est DÉRIVÉE, jamais cochée.** Une demande est en attente tant que
+l'objectif qu'elle vise est une **tête active** de sa chaîne. Le praticien la
+referme en REFORMULANT : la v2 devient la tête, la demande sort de la liste —
+sans qu'aucune route praticien n'écrive sur une table de parole patient (même
+discipline que `ratifications_objectif`). L'écart avec un drapeau n'est pas
+cosmétique : **un statut se coche sans rien faire, une reformulation ne se
+simule pas.** La table ne porte donc ni `statut`, ni `close_le`, ni
+`traitee_par`, et son contrat négatif garde cette absence.
+
+**Une chaîne close ne laisse rien en attente**, et il faut le dire plutôt que le
+laisser découvrir : une demande portée sur un objectif ensuite abandonné cesse
+d'être en attente sans avoir été reformulée. Ce n'est pas un classement
+silencieux — clore est un geste nommé, motivé et à deux voix ([[D-161]]) — et
+l'inverse serait pire : réclamer de reformuler un objectif dont on a convenu
+ensemble qu'il n'existait plus demanderait l'impossible.
+
+**Le verrou serveur ne refuse aucune parole neuve.** Un écran qui se ferme ne
+verrouille rien : un onglet resté ouvert, un retour arrière, un POST direct
+rouvrent le geste, et [[D-164]] veut que le serveur vérifie au lieu de croire le
+navigateur. Il porte donc sur le **doublon strict** — `ratifie` quand le dernier
+geste sur cette version est déjà `ratifie` — et sur lui seul. Contester, écrire
+sa version, demander une correction passent : le dépôt écrit noir sur blanc que
+« refuser la parole d'un patient sur son propre objectif serait plus grave que
+de ne pas la solliciter ». **Se répéter n'est pas parler.** `etatRatification`
+lit les deux tables : qui ratifie puis écrit sa version peut re-ratifier, parce
+que c'est un vrai changement d'avis.
+
+**L'HOMONYME, ET LA DETTE QU'IL CRÉE.** Le même cockpit porte déjà une « demande
+de correction » — `Assignation.correction_commentaire`, qui vise les RÉPONSES DE
+QUESTIONNAIRE et se règle par un DÉBLOCAGE, en phase Patient. La nouvelle vise
+le TEXTE DE L'OBJECTIF et se règle par une REFORMULATION, en phase
+Compréhension. Le suffixe `_objectif` doit rester dans tous les libellés
+praticien et dans le nom de table ; deux bandeaux jumeaux enverraient le
+praticien au mauvais endroit faire le mauvais geste. **C'est une dette de
+nommage, pas une solution** : le jour où l'un des deux objets se renomme, elle
+se referme.
+
+**Ce que cette décision NE fait pas.**
+
+1. **Aucun décompte, nulle part.** Ni bandeau, ni carte, ni rail ne rendent un
+   nombre de demandes : « vous avez demandé 3 corrections » ferait de
+   l'insistance d'un patient une série, et d'une série un reproche
+   (`DC-19`/`DC-20`). Deux gardes anti-agrégat l'interdisent, et une mutation le
+   prouve. Le rail compte en interne — il lit « y en a-t-il », jamais
+   « combien », et ne le rend jamais.
+2. **Aucun délai promis.** L'accusé dit que le praticien reprendra l'objectif,
+   pas quand : rien dans le dossier ne le sait.
+3. **Aucun geste de classement côté praticien.** Ni « j'ai lu », ni « archiver ».
+   Voir la clôture dérivée ci-dessus.
+
+**Limite écrite.** Le rail ne peut plus afficher « renseignée » tant qu'une
+demande attend — c'est voulu, il sert de feu pour passer à la prise de décision
+([[D-161]] §10). Mais **rien ne relance le praticien** : un dossier dont la
+demande reste sans suite reste simplement « à traiter », sans échéance ni
+rappel. Poser un délai aurait demandé un seuil que personne n'a arbitré.
+
+**Constatation en production.** La branche « demande » est **inéprouvable contre
+des données réelles au jour de la livraison** : la table est née vide, et les
+bancs la couvrent contre une base jetable, pas contre un dossier vécu. Le verrou,
+lui, répond à un défaut observé.
+
+---
+
 ### D-169 — La reformulation de l'objectif quitte l'écran praticien : un même geste ne s'écrit pas deux fois
 
 - Date : 2026-09-11
