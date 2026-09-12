@@ -14,6 +14,8 @@ import { getGabarit, rendreGabarit, rendreSegment } from '@/lib/correspondance/r
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import { isEcheanceObligatoireEnabled } from '@/lib/patient/featureFlag';
+import { STATUTS_SYNTHESE_VALIDEE } from '@/lib/clinical-engine/preconditionsT0';
 import {
   journaliserCorrespondancePatient,
   TYPES_CORRESPONDANCE_PATIENT,
@@ -52,6 +54,10 @@ export type CreateAssignationResponse = {
     // Suivi clôturé : distinct de `patient_not_found`, sinon le praticien
     // chercherait un dossier disparu au lieu de le rouvrir.
     | 'dossier_cloture'
+    // Second rideau sans échéance, drapeau `WN_ECHEANCE_OBLIGATOIRE` allumé.
+    // Distinct d'`invalid_payload` : la date n'est pas malformée, elle MANQUE
+    // là où le dossier l'exige — l'écran doit pouvoir le dire autrement.
+    | 'echeance_requise'
     | 'exception';
 };
 
@@ -132,6 +138,39 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
         { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
         { status: 409 }
       );
+    }
+
+    // L'ÉCHÉANCE DU SECOND RIDEAU, quand le drapeau l'exige.
+    //
+    // POURQUOI SEULEMENT LE SECOND. Une assignation postérieure à la première
+    // synthèse validée compose le second rideau ([[D-158]]), et le second
+    // rideau GARDE LE `T0` : tant qu'il n'est pas rendu, la trajectoire entière
+    // est arrêtée. Sans échéance, cet arrêt n'a ni terme ni rappel — la relance
+    // elle-même refuse de partir (`sans_echeance`), parce qu'un rappel sans
+    // date ne dit rien de plus que l'invitation. Avant toute synthèse validée,
+    // le dossier se remplit au rythme de l'entrée : lui imposer un terme au
+    // premier jour serait une borne administrative sur un parcours qui commence.
+    //
+    // LE CRITÈRE EST UNE LECTURE, PAS UNE DEVINETTE : « une synthèse validée
+    // existe-t-elle ? » se lit en une requête, et c'est la même borne basse que
+    // `secondRideauDuDossier` emploie.
+    if (isEcheanceObligatoireEnabled() && !dateLimite) {
+      const syntheseValidee = await prisma.syntheseIA.findFirst({
+        where: { idPatient: patient.idPatient, statut: { in: [...STATUTS_SYNTHESE_VALIDEE] } },
+        select: { idSynthese: true },
+      });
+      if (syntheseValidee) {
+        return NextResponse.json(
+          {
+            success: false,
+            reason: 'echeance_requise',
+            error:
+              'Ce dossier a une synthèse validée : les questionnaires assignés depuis composent le second rideau, '
+              + 'qui garde le T0. Posez une échéance — c’est elle qui rend le rappel possible.',
+          },
+          { status: 422 }
+        );
+      }
     }
 
     // Questionnaire suspendu (`actif: false` au catalogue) : refus ici, dans la
