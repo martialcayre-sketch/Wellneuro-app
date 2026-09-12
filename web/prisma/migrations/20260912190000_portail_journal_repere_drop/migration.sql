@@ -1,0 +1,51 @@
+-- SUPPRESSION DE `portail_journal_reperes` — le repère de fraîcheur du journal.
+--
+-- Demandée explicitement par le responsable le 2026-09-12. SQL destructif, donc
+-- confirmé en propre : « go et supprime portail_journal_reperes ».
+--
+-- ── CE QUI EST DÉTRUIT, COMPTÉ AVANT DE L'ÊTRE ─────────────────────────────
+--
+-- La table portait **UNE ligne**, sur **un dossier**, `vu_jusqua =
+-- 2026-09-12 12:34:33` — lue en production avant d'écrire cette migration
+-- (one-off-4288). Un patient avait bien ouvert son journal pendant les treize
+-- minutes où le drapeau fut allumé.
+--
+-- CE POINT A ÉTÉ ÉCRIT FAUX AILLEURS, ET IL FAUT LE SAVOIR EN LISANT CE
+-- FICHIER : la § B.4 de `docs/FEATURE_FLAGS.md` a d'abord affirmé « aucun
+-- repère n'avait encore été posé ». C'était une supposition, pas une lecture,
+-- et elle est corrigée là-bas. Une absence se CONSTATE.
+--
+-- Aucune clé étrangère entrante, aucune vue ne s'appuyait sur cette table : sa
+-- suppression n'emporte rien d'autre que sa ligne.
+--
+-- ── POURQUOI ELLE N'A PLUS DE RAISON D'ÊTRE ────────────────────────────────
+--
+-- Elle répondait à « jusqu'où ce patient a vu son journal ». Le journal a été
+-- retiré le même jour : un récapitulatif rétrospectif ajoutait du bruit là où
+-- le responsable attendait une liste de ce qu'il y a à faire. Le fil du jour a
+-- pris sa place.
+--
+-- Elle devait ensuite servir à faire disparaître une LECTURE du fil une fois
+-- faite. Elle ne le pouvait pas : un seul instant par dossier ne dit pas quel
+-- document a été ouvert. `portail_lectures_patient` porte cet accusé PAR
+-- VERSION. Sans consommateur, ce repère est devenu orphelin.
+--
+-- ── CE QUE CETTE TABLE PROMETTAIT, ET QU'IL NE FAUT PAS PERDRE ─────────────
+--
+-- Son contrat SQL (`portail_journal_repere_v1_negatif.sql`) disparaît avec
+-- elle : sept promesses éprouvées, dont une qui vaut au-delà de ce cas.
+--
+-- `id_patient` ÉTAIT LA CLÉ PRIMAIRE, et ce n'était pas une commodité : c'est
+-- ce qui rendait un DÉCOMPTE D'ASSIDUITÉ **impossible**, et non pas seulement
+-- interdit. Une table append-only de visites aurait permis « ce patient a
+-- ouvert son portail 14 fois en septembre » — un constat sur lui, que
+-- `DC-19`/`DC-20` refusent. CE QUI N'EST PAS CONSERVÉ NE SE COMPTE PAS.
+--
+-- Cette leçon est répétée ici parce qu'une migration de suppression est le
+-- dernier endroit où quelqu'un la lira. La table suivante qui voudra dire
+-- « où en est ce patient » doit se poser la même question avant de choisir sa
+-- clé primaire. `portail_lectures_patient` se l'est posée et a répondu
+-- autrement — plusieurs lignes par dossier, donc un compte POSSIBLE —, et elle
+-- dit franchement, dans sa propre migration, ce qui borne alors le risque.
+
+DROP TABLE "portail_journal_reperes";

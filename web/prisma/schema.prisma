@@ -65,7 +65,6 @@ model Patient {
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
-  portailJournalRepere       PortailJournalRepere?
   portailLecturesPatient     PortailLecturePatient[]
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
@@ -1446,44 +1445,6 @@ model CorrespondanceMedecin {
   @@map("correspondances_medecin")
 }
 
-// Lien magique d'accès au portail patient (IDP LOT-01, gate G4).
-//
-// Remplace PROGRESSIVEMENT le jeton permanent `patients.access_token`, qui est
-// conservé : les deux chemins coexistent pendant la bascule, c'est une
-// exigence du registre. Cette table n'enlève rien, elle ajoute une entrée.
-//
-// LE JETON N'EST PAS ICI. Seule son empreinte HMAC-SHA256 est stockée
-// (`lib/portail/lienMagique.ts`, `empreinteJeton`) : un dump de la base ne
-// permet donc pas d'ouvrir un espace patient. L'unicité sert la recherche par
-// empreinte et interdit la collision.
-//
-// USAGE UNIQUE : `consomme_le` passe de null à un instant, une seule fois, dans
-// la même transaction que la lecture d'état — sinon deux requêtes concurrentes
-// consommeraient le même lien. Le rejeu n'est pas seulement refusé, il est
-// TRACÉ : `rejeux_refuses` et `derniere_tentative_le` gardent la preuve en base,
-// là où un log Vercel serait purgé.
-//
-// Aucune ligne ne signifie « aucun lien magique émis » — l'état de tous les
-// patients avant ce gate, et l'état attendu tant que le drapeau est éteint.
-// LE REPÈRE DE FRAÎCHEUR DU JOURNAL PATIENT — « jusqu'où ce patient a vu ».
-//
-// UNE SEULE LIGNE PAR DOSSIER, ÉCRASÉE : `id_patient` EST la clé primaire, et
-// c'est la contrainte qui rend un décompte d'assiduité IMPOSSIBLE, pas seulement
-// interdit. Une table append-only de visites dirait « ce patient a ouvert son
-// portail 14 fois en septembre » — un constat sur lui (`DC-19`/`DC-20`). Ce qui
-// n'est pas conservé ne se compte pas.
-//
-// DEUX COLONNES, ET PAS UNE DE PLUS. Pas de `mis_a_jour_le` : il vaudrait
-// toujours `vu_jusqua`. Ce n'est PAS une trace d'audit — les valeurs
-// précédentes sont perdues à chaque avancée, et la perte est voulue.
-model PortailJournalRepere {
-  idPatient String   @id @map("id_patient")
-  vuJusqua  DateTime @map("vu_jusqua")
-
-  patient Patient @relation(fields: [idPatient], references: [idPatient])
-
-  @@map("portail_journal_reperes")
-}
 
 // CE QUE LE PATIENT A DÉJÀ LU — un accusé par VERSION remise (LOT-08).
 //
@@ -1515,6 +1476,25 @@ model PortailLecturePatient {
   @@map("portail_lectures_patient")
 }
 
+// Lien magique d'accès au portail patient (IDP LOT-01, gate G4).
+//
+// Remplace PROGRESSIVEMENT le jeton permanent `patients.access_token`, qui est
+// conservé : les deux chemins coexistent pendant la bascule, c'est une
+// exigence du registre. Cette table n'enlève rien, elle ajoute une entrée.
+//
+// LE JETON N'EST PAS ICI. Seule son empreinte HMAC-SHA256 est stockée
+// (`lib/portail/lienMagique.ts`, `empreinteJeton`) : un dump de la base ne
+// permet donc pas d'ouvrir un espace patient. L'unicité sert la recherche par
+// empreinte et interdit la collision.
+//
+// USAGE UNIQUE : `consomme_le` passe de null à un instant, une seule fois, dans
+// la même transaction que la lecture d'état — sinon deux requêtes concurrentes
+// consommeraient le même lien. Le rejeu n'est pas seulement refusé, il est
+// TRACÉ : `rejeux_refuses` et `derniere_tentative_le` gardent la preuve en base,
+// là où un log Vercel serait purgé.
+//
+// Aucune ligne ne signifie « aucun lien magique émis » — l'état de tous les
+// patients avant ce gate, et l'état attendu tant que le drapeau est éteint.
 model PortailMagicLink {
   id                String    @id @default(cuid()) @map("id")
   idPatient         String    @map("id_patient")

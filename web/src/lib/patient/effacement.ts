@@ -123,12 +123,6 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     //    feraient échouer la suppression du patient s'ils subsistaient.
     supprimees.filCardRejections = (await tx.filCardRejection.deleteMany({ where: par })).count;
     supprimees.filCardLectures = (await tx.filCardLecture.deleteMany({ where: par })).count;
-    // Le repère de fraîcheur du journal patient : une seule ligne par dossier,
-    // et elle part avec lui. `deleteMany` plutôt que `delete` — un dossier qui
-    // n'a jamais déplié son journal n'en a pas.
-    supprimees.portailJournalReperes = (
-      await tx.portailJournalRepere.deleteMany({ where: par })
-    ).count;
     // Les accusés de lecture du fil du jour : PLUSIEURS lignes par dossier,
     // contrairement au repère ci-dessus. Elles partent avec lui — et un dossier
     // qui n'a jamais rien ouvert n'en a aucune.
