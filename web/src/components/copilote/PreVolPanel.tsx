@@ -15,7 +15,7 @@ const LIBELLE_SOURCE: Record<SourcePreVol, string> = {
   episode_confirme: 'Épisode',
   protocole_relu: 'Protocole',
   diffusion_approuvee: 'Diffusion',
-  demande_correction: 'Patient',
+  demande_correction_questionnaire: 'Questionnaire',
   signalement: 'Signalement',
 };
 

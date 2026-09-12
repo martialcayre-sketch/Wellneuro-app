@@ -803,7 +803,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
       expect(screen.getByRole('tab', { name: /^1\. Patient/i }).getAttribute('aria-selected')).toBe('true'),
     );
     // Le signal B2 reste hissé au niveau fiche, visible quelle que soit la vue.
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
     // Et le rail signale la phase Patient « à traiter » — c'est au praticien
     // d'agir (débloquer), jamais « renseignée » ni un « en attente » ambigu
     // qui laisserait croire qu'on attend le patient (audit 2026-09-02).
@@ -936,12 +936,12 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await rendreFiche({ assignationsModif: true });
 
     // Visible sur l'onglet cockpit par défaut…
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
 
     // …et TOUJOURS visible une fois basculé sur « Les 12 besoins » (cockpit masqué).
     fireEvent.click(screen.getByRole('tab', { name: 'Les 12 besoins' }));
     await waitFor(() => expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true));
-    expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy();
+    expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy();
 
     // Le raccourci ramène au cockpit sur la phase Patient.
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Patient' }));
@@ -1364,7 +1364,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
 
   it('les deux filtres partent au serveur, jamais après la troncature', async () => {
     const fetchMock = await rendreFiche({ assignationsModif: true });
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
 
     const urls = urlsPatients(fetchMock);
     expect(urls.length).toBeGreaterThan(0);
@@ -1379,7 +1379,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     await rendreFiche({ patients: 'erreur' });
 
     expect(await screen.findByText(/n’ont pas pu être lues/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Réessayer la lecture des corrections' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Réessayer la lecture des corrections de questionnaire' })).toBeTruthy();
     // Sans cette discipline, le rail afficherait « renseignée » : une affirmation
     // d'absence alors que l'état réel n'a pas pu être établi.
     const patient = screen.getByRole('tab', { name: /^1\. Patient/i });
@@ -1409,8 +1409,8 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     );
     expect(await screen.findByText(/n’ont pas pu être lues/i)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Réessayer la lecture des corrections' }));
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Réessayer la lecture des corrections de questionnaire' }));
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
     expect(screen.queryByText(/n’ont pas pu être lues/i)).toBeNull();
   });
 
@@ -1461,7 +1461,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
       </C5FeatureProvider>,
     );
     await waitFor(() => expect(appels).toBe(2));
-    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+    expect(screen.queryByText(/demande de correction de questionnaire en attente/i)).toBeNull();
 
     // …puis la réponse du premier dossier arrive. Elle ne doit rien afficher :
     // ce serait la demande de correction d'un patient sur la fiche d'un autre,
@@ -1472,13 +1472,13 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+    expect(screen.queryByText(/demande de correction de questionnaire en attente/i)).toBeNull();
   });
 
   it('la troncature est dite au lieu d’être tue', async () => {
     await rendreFiche({ assignationsModif: true, patients: 'tronque' });
 
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
     expect(screen.getByText(/Liste tronquée/i)).toBeTruthy();
   });
 
@@ -1486,7 +1486,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     // Sans lui, afficher la mention inconditionnellement passerait au vert.
     await rendreFiche({ assignationsModif: true });
 
-    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/1 demande de correction de questionnaire en attente/i)).toBeTruthy());
     expect(screen.queryByText(/Liste tronquée/i)).toBeNull();
   });
 
@@ -1494,7 +1494,7 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     await rendreFiche({ assignationsModif: true, patients: 'filtresIgnores' });
 
     await waitFor(() => expect(screen.getByRole('tablist', { name: 'Cycle clinique' })).toBeTruthy());
-    expect(screen.queryByText(/demande de correction en attente/i)).toBeNull();
+    expect(screen.queryByText(/demande de correction de questionnaire en attente/i)).toBeNull();
     // Et l'on n'affirme rien sur la troncature : les filtres n'ayant pas été
     // honorés, le `total` rendu ne parle pas du même ensemble que la liste.
     expect(screen.queryByText(/Liste tronquée/i)).toBeNull();
