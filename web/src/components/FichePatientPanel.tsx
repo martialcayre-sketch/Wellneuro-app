@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import { PanneauSuperpose } from '@/components/ui/PanneauSuperpose';
@@ -28,6 +28,10 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 // Import de VALEUR depuis un module FEUILLE (il n'importe rien) : la mention
 // suit la doctrine sans traîner le moteur d'équilibre dans le bundle client.
 import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal';
+// Même patron, même raison : `rideauT0.ts` est une feuille sans import, alors
+// que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
+// `orientationService`.
+import { estDuRideauT0 } from '@/lib/clinical-engine/rideauT0';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
@@ -285,6 +289,27 @@ function libelleStatut(id: IdPhase, statut: StatutPhase): string {
   return id === 'donnees' ? 'en attente du patient' : 'à traiter';
 }
 
+/**
+ * « en attente depuis le 08/09 (4 j) » — LA DATE D'ABORD, les jours ensuite.
+ *
+ * L'ordre n'est pas cosmétique. La date est SERVIE par la route, donc exacte ;
+ * le nombre de jours est calculé dans le navigateur, à son horloge, et peut
+ * basculer d'une unité autour de minuit. Cet écran tient déjà cette règle pour
+ * l'échéance — `isDeadlineExpired` n'y est jamais rejoué, c'est le serveur qui
+ * décide (cf. `dateLimite` dans la route). Ici rien n'est décidé : le nombre de
+ * jours est un repère de tri visuel, pas un verdict, et il vient après la
+ * donnée qui fait foi.
+ *
+ * Sous un jour, on ne dit PAS « (0 j) » : un envoi du matin n'est pas une
+ * attente, et l'afficher comme telle ferait chercher un retard qui n'existe pas.
+ */
+function anciennete(dateAssignation: string): string {
+  const pose = new Date(dateAssignation);
+  const lisible = pose.toLocaleDateString('fr-FR');
+  const jours = Math.floor((Date.now() - pose.getTime()) / 86_400_000);
+  return jours >= 1 ? `en attente depuis le ${lisible} (${jours} j)` : `envoyé le ${lisible}`;
+}
+
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
@@ -533,6 +558,34 @@ export function FichePatientPanel({
   const [assignationsEchues, setAssignationsEchues] = useState<PatientsApiResponse['assignations']>([]);
   const [etatEchues, setEtatEchues] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
   const generationEchues = useRef(0);
+  /*
+   * ── « 9 REÇUS » NE DISAIT PAS « SUR COMBIEN » ─────────────────────────────
+   *
+   * Demande propriétaire du 2026-09-12, sur un dossier réel : la phase
+   * « Données fiables » annonçait le nombre de passations reçues et rien
+   * d'autre. Neuf sur quoi ? Un dossier à qui il manque un questionnaire du
+   * rideau T0 se lisait exactement comme un dossier complet.
+   *
+   * COMPTE ADMINISTRATIF, ET IL RESTE SÉPARÉ DU CLINIQUE. « 6 en attente » dit
+   * qu'un envoi n'est pas revenu ; « données manquantes » (MissingDataPanel,
+   * juste en dessous) dit qu'une revue clinique reste à préparer. Les fondre
+   * ferait passer un retard d'envoi pour un manque clinique — ce que `DC-24`
+   * interdit précisément.
+   *
+   * LES ANNULÉES SONT HORS DU DÉNOMINATEUR, et c'est un choix : `Annulée` est
+   * le geste par lequel le praticien dit « je ne l'attends plus », et c'est
+   * aussi ce que `evaluerSecondRideau` en fait. Un compte qui les garderait
+   * afficherait une attente que personne n'attend. Elles sont donc dites à
+   * part, jamais tues.
+   */
+  const [passations, setPassations] = useState<PatientsApiResponse['assignations']>([]);
+  // `tronque` EST UN ÉTAT À PART ENTIÈRE, pas une variante d'erreur : la
+  // lecture a réussi, mais la route plafonne à 40 lignes et ce dossier en
+  // porte davantage. Un compte tiré d'une liste tronquée serait faux vers le
+  // bas — exactement le défaut que les trois filtres serveur de cette route
+  // ont déjà corrigé trois fois. On le dit, on ne devine pas.
+  const [etatPassations, setEtatPassations] = useState<'chargement' | 'chargees' | 'tronque' | 'erreur'>('chargement');
+  const generationPassations = useRef(0);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
@@ -797,6 +850,82 @@ export function FichePatientPanel({
   useEffect(() => {
     void chargerEchues();
   }, [chargerEchues]);
+
+  /**
+   * Toutes les assignations du dossier, SANS filtre de statut.
+   *
+   * Une seule lecture plutôt que trois (une par statut) : le compte se tire de
+   * la liste, et `assignationsMeta.total` sert à vérifier qu'elle est
+   * complète. Trois requêtes auraient rendu trois `total` exacts, mais aussi
+   * trois chances de servir un compte dont les parties ne s'additionnent pas —
+   * elles ne décrivent pas le même instant.
+   *
+   * L'ABSENCE DE FILTRE EST CE QUI L'IDENTIFIE. Les deux autres lectures de
+   * cette route depuis cet écran portent chacune le leur
+   * (`modification_demandee`, `echeanceDepassee=1`) ; celle-ci est la seule
+   * dont `assignationsMeta` doit échoter `statut: null` ET
+   * `statutReponses: null`. Un serveur antérieur qui ignorerait `idPatient`
+   * rendrait les assignations de tout le cabinet — d'où la vérification, et
+   * non la confiance.
+   */
+  const chargerPassations = useCallback(async () => {
+    const generation = ++generationPassations.current;
+    setEtatPassations('chargement');
+    const params = new URLSearchParams({ idPatient });
+    try {
+      const reponse = await fetch(`/api/praticien/patients?${params.toString()}`);
+      const payload = (await reponse.json()) as PatientsApiResponse;
+      if (!reponse.ok || payload.unavailable) throw new Error(payload.reason ?? 'exception');
+      if (generation !== generationPassations.current) return;
+
+      const meta = payload.assignationsMeta;
+      const filtresHonores =
+        meta !== undefined
+        && meta.idPatient === idPatient
+        && meta.statut === null
+        && (meta.statutReponses ?? null) === null
+        && meta.echeanceDepassee !== true;
+      if (!filtresHonores) {
+        setPassations([]);
+        setEtatPassations('erreur');
+        return;
+      }
+      // Second passage en défense, comme les deux lectures voisines.
+      const liste = (payload.assignations ?? []).filter(a => a.idPatient === idPatient);
+      setPassations(liste);
+      setEtatPassations(meta.total > liste.length ? 'tronque' : 'chargees');
+    } catch {
+      if (generation !== generationPassations.current) return;
+      setPassations([]);
+      setEtatPassations('erreur');
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void chargerPassations();
+  }, [chargerPassations]);
+
+  /**
+   * Le compte des envois, et ce qui de leur attente bloque l'ancre.
+   *
+   * `assignees` est `rendues + enAttente`, jamais `passations.length` : les
+   * annulées ne sont pas attendues (cf. le commentaire de l'état plus haut).
+   */
+  const envois = useMemo(() => {
+    const rendues = passations.filter(a => a.statut === 'Complété').length;
+    const enAttente = passations.filter(a => a.statut === 'En attente');
+    const annulees = passations.filter(a => a.statut === 'Annulée').length;
+    return {
+      rendues,
+      enAttente,
+      annulees,
+      assignees: rendues + enAttente.length,
+      // Les seules dont l'attente empêche de confirmer l'ancre : le rideau T0
+      // est une condition DURE de `preconditionsT0`. Les autres retardent une
+      // lecture, pas une décision.
+      rideauEnAttente: enAttente.filter(a => estDuRideauT0(a.idQuestionnaire)),
+    };
+  }, [passations]);
 
   // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
   // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
@@ -1429,12 +1558,72 @@ export function FichePatientPanel({
 
     if (phaseActive === 'donnees') {
       return (
-        <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
-          {loadingReponses
-            ? 'Chargement des réponses...'
-            : reponses.length === 0
-              ? 'Aucun questionnaire complété pour ce patient.'
-              : `${reponses.length} questionnaire(s) reçu(s). Le détail chiffré s’ouvre dans l’instrument « Détail des réponses ».`}
+        <div className="flex flex-col gap-3">
+          <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+            {loadingReponses
+              ? 'Chargement des réponses...'
+              : reponses.length === 0
+                ? 'Aucun questionnaire complété pour ce patient.'
+                : `${reponses.length} questionnaire(s) reçu(s). Le détail chiffré s’ouvre dans l’instrument « Détail des réponses ».`}
+          </div>
+
+          {/* LE COMPTE DES ENVOIS — demande propriétaire du 2026-09-12.
+              Rendu SOUS la ligne des passations reçues et non fondu avec elle :
+              les deux nombres viennent de deux sources (`/reponses` compte des
+              passations, celle-ci des assignations) et ne se divisent pas l'un
+              par l'autre. Une passation peut exister sans assignation, et une
+              assignation rendue peut porter deux passations — le ratio fabriqué
+              aurait été faux les deux fois. */}
+          {etatPassations === 'chargement' && (
+            <p role="status" className="text-sm text-muted-foreground">Lecture des envois du dossier...</p>
+          )}
+          {(etatPassations === 'erreur' || etatPassations === 'tronque') && (
+            <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2 text-sm text-muted-foreground">
+              <span className="min-w-0">
+                {/* Deux libellés distincts, et ils ne disent pas la même chose :
+                    l'un annonce une liste incomplète, l'autre une liste
+                    absente. Aucun des deux ne reprend la phrase du bandeau des
+                    questionnaires échus — deux messages voisins qui se lisent
+                    pareil rendent les bancs ambigus et le dépannage plus dur. */}
+                {etatPassations === 'tronque'
+                  ? 'Ce dossier porte plus d’envois que la liste n’en rend : le compte n’est pas affiché plutôt qu’affiché faux.'
+                  : 'Le compte des envois est inconnu : la liste n’a pas pu être obtenue. Inconnu, pas nul.'}
+              </span>
+              <button
+                type="button"
+                onClick={() => void chargerPassations()}
+                className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                Réessayer la lecture des envois
+              </button>
+            </div>
+          )}
+          {etatPassations === 'chargees' && envois.assignees > 0 && (
+            <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+              <p className="text-foreground">
+                Envois : <strong className="font-semibold">{envois.rendues} rendu{envois.rendues > 1 ? 's' : ''} sur {envois.assignees}</strong>
+                {envois.enAttente.length > 0 && ` — ${envois.enAttente.length} en attente`}.
+                {envois.annulees > 0 && ` ${envois.annulees} annulé${envois.annulees > 1 ? 's' : ''}, hors compte.`}
+              </p>
+              {/* CE QUI BLOQUE, AU SINGULIER. Le rideau T0 est la condition dure
+                  de `preconditionsT0` : tant qu'un de ses quatre questionnaires
+                  manque, l'ancre ne peut pas être confirmée. L'inverse se dit
+                  aussi — un dossier dont le rideau est complet et qui attend
+                  encore trois explorations n'est PAS bloqué, et le praticien ne
+                  pouvait pas le savoir depuis cet écran. */}
+              {envois.rideauEnAttente.length > 0 ? (
+                <p className="mt-2 text-status-warning">
+                  L’ancre T0 ne peut pas être confirmée : {envois.rideauEnAttente.length > 1 ? 'ces envois du rideau T0 manquent' : 'cet envoi du rideau T0 manque'}
+                  {' — '}
+                  {envois.rideauEnAttente.map(a => `${a.titre} (${a.idQuestionnaire}), ${anciennete(a.dateAssignation)}`).join(' ; ')}.
+                </p>
+              ) : envois.enAttente.length > 0 ? (
+                <p className="mt-2">
+                  Le rideau T0 est complet : {envois.enAttente.length > 1 ? 'ces envois' : 'cet envoi'} n’empêche{envois.enAttente.length > 1 ? 'nt' : ''} pas de confirmer l’ancre.
+                </p>
+              ) : null}
+            </div>
+          )}
         </div>
       );
     }

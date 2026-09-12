@@ -94,6 +94,13 @@ const ALLOWLIST = new Map([
       + 'D-150) : la carte compte des instruments distincts, elle ne lit ni score ni forme servie',
   ],
   [
+    'src/components/FichePatientPanel.test.tsx',
+    'ne nomme Q_ALI_01 que comme IDENTIFIANT d’instrument du rideau T0 (compte des envois de la '
+      + 'phase « Données fiables », 2026-09-12) : l’écran range un envoi en attente selon son '
+      + 'appartenance au rideau, il ne lit ni score, ni bande, ni nombre d’items — le verdict est '
+      + 'identique sous les deux formes servies',
+  ],
+  [
     'src/lib/protocol/repassationCiblee.test.ts',
     'ne lit de BESOIN_SOURCES que les identifiants de questionnaire — jamais les max, seuls sensibles '
       + 'à la forme servie : le verdict est identique sous les deux drapeaux',

@@ -76,6 +76,13 @@ type Options = {
   patients?: 'defaut' | 'erreur' | 'tronque' | 'filtresIgnores';
   /** Le dossier porte un questionnaire JAMAIS REMPLI dont l'échéance est passée. */
   assignationEchue?: boolean;
+  // Les ENVOIS du dossier, pour le compte « rendus sur assignés » de la phase 2.
+  // - `defaut` : rideau T0 complet, un envoi hors rideau en attente ;
+  // - `rideauIncomplet` : `Q_ALI_01` du rideau jamais rendu — le seul cas qui
+  //   empêche de confirmer l'ancre, et celui qui a motivé ce compte ;
+  // - `tronque` : la route plafonne, le dossier porte plus de lignes ;
+  // - `filtreIgnore` : serveur qui n'écho pas l'absence de filtre.
+  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore';
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
@@ -330,6 +337,50 @@ const ASSIGNATION_MODIF = {
   correctionCommentaire: 'Je me suis trompée sur une question.',
 };
 
+/**
+ * Un envoi du dossier, tel que `GET /api/praticien/patients` le sert.
+ *
+ * La DATE est calculée depuis maintenant, et non écrite en dur : le compte de
+ * jours affiché par l'écran est relatif, et une date fixe rendrait l'assertion
+ * fausse dès le lendemain de l'écriture du banc.
+ */
+function envoi(
+  idQuestionnaire: string,
+  statut: 'Complété' | 'En attente' | 'Annulée',
+  joursDepuisPose: number,
+  titre: string,
+) {
+  return {
+    idAssignation: `ASG_${idQuestionnaire}_${statut}`,
+    idPatient: 'PAT001',
+    emailPatient: 'sophie.nicola@example.test',
+    statut,
+    statutReponses: statut === 'Complété' ? 'verrouille' : 'non_rempli',
+    titre,
+    idQuestionnaire,
+    dateAssignation: new Date(Date.now() - joursDepuisPose * 86_400_000).toISOString(),
+    correctionCommentaire: null,
+  };
+}
+
+/** Rideau T0 complet, et un envoi hors rideau qui attend : rien ne bloque l'ancre. */
+const ENVOIS_RIDEAU_COMPLET = [
+  envoi('Q_MOD_03', 'Complété', 4, 'Mes plaintes actuelles'),
+  envoi('Q_MOD_01', 'Complété', 4, 'Questionnaire contextuel de mode de vie SIIN'),
+  envoi('Q_INF_03', 'Complété', 4, 'DNST SIIN'),
+  envoi('Q_ALI_01', 'Complété', 4, 'Enquête alimentaire SIIN'),
+  envoi('Q_SOM_09', 'En attente', 4, 'Agenda du sommeil — 21 nuits'),
+];
+
+/** `Q_ALI_01` du rideau jamais rendu : l'ancre T0 est inconfirmable. */
+const ENVOIS_RIDEAU_INCOMPLET = [
+  envoi('Q_MOD_03', 'Complété', 4, 'Mes plaintes actuelles'),
+  envoi('Q_MOD_01', 'Complété', 4, 'Questionnaire contextuel de mode de vie SIIN'),
+  envoi('Q_INF_03', 'Complété', 4, 'DNST SIIN'),
+  envoi('Q_ALI_01', 'En attente', 4, 'Enquête alimentaire SIIN'),
+  envoi('Q_STR_05', 'Annulée', 2, 'BMS-10'),
+];
+
 function stubFetch(options: Options = {}) {
   const runtime = options.runtime ?? 'unavailable';
   const assignationsModif = options.assignationsModif ?? false;
@@ -403,6 +454,25 @@ function stubFetch(options: Options = {}) {
             statut: null,
             statutReponses: 'non_rempli',
             echeanceDepassee: true,
+            idPatient: 'PAT001',
+          },
+        });
+      }
+      // LA LECTURE DES ENVOIS : la seule des trois qui ne porte AUCUN filtre.
+      // C'est cette absence qui l'identifie, jamais son rang d'arrivée.
+      if (recherche.get('statutReponses') === null && recherche.get('echeanceDepassee') === null) {
+        const scenarioEnvois = options.envois ?? 'defaut';
+        const liste = scenarioEnvois === 'rideauIncomplet' ? ENVOIS_RIDEAU_INCOMPLET : ENVOIS_RIDEAU_COMPLET;
+        return ok({
+          assignations: liste,
+          assignationsMeta: {
+            total: scenarioEnvois === 'tronque' ? liste.length + 3 : liste.length,
+            plafond: 40,
+            statut: null,
+            // Serveur qui n'écho pas l'absence de filtre : il prétend avoir
+            // restreint sur un statut de réponse que personne n'a demandé.
+            statutReponses: scenarioEnvois === 'filtreIgnore' ? 'modification_demandee' : null,
+            echeanceDepassee: false,
             idPatient: 'PAT001',
           },
         });
@@ -1745,5 +1815,73 @@ describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
     expect(
       screen.getByRole('button', { name: 'Réessayer la lecture des questionnaires échus' }),
     ).toBeTruthy();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE COMPTE DES ENVOIS EN PHASE « DONNÉES FIABLES » — demande propriétaire du
+// 2026-09-12, sur un dossier réel.
+//
+// L'écran annonçait « 9 questionnaire(s) reçu(s) » et rien d'autre. Neuf sur
+// combien ? Un dossier à qui il manquait un questionnaire du rideau T0 — donc
+// dont l'ancre était inconfirmable — se lisait exactement comme un dossier
+// complet. Les bancs ci-dessous tiennent les quatre états : rideau complet,
+// rideau incomplet, liste tronquée, liste absente.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('FichePatientPanel — le compte des envois', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('compte les rendus sur les assignés, et dit que le rideau T0 est complet', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees' });
+
+    expect(await screen.findByText(/4 rendus sur 5/)).toBeTruthy();
+    expect(screen.getByText(/1 en attente/)).toBeTruthy();
+    // L'inverse se dit AUSSI, et c'est la moitié de la demande : un envoi qui
+    // attend sans bloquer l'ancre doit se lire comme tel, sinon le praticien
+    // suppose un blocage et attend pour rien.
+    expect(screen.getByText(/rideau T0 est complet/)).toBeTruthy();
+    expect(screen.queryByText(/ancre T0 ne peut pas être confirmée/)).toBeNull();
+  });
+
+  it('nomme l’envoi du rideau T0 qui empêche de confirmer l’ancre, avec son âge', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'rideauIncomplet' });
+
+    const blocage = await screen.findByText(/ancre T0 ne peut pas être confirmée/);
+    expect(blocage.textContent).toContain('Q_ALI_01');
+    // La date d'abord, le nombre de jours ensuite — et le nombre n'est pas
+    // arrondi à zéro : quatre jours d'attente doivent se voir.
+    expect(blocage.textContent).toContain('(4 j)');
+    // L'annulée sort du dénominateur — 3 rendus sur 4, pas sur 5 — et elle est
+    // dite à part plutôt que passée sous silence.
+    expect(screen.getByText(/3 rendus sur 4/)).toBeTruthy();
+    expect(screen.getByText(/1 annulé, hors compte/)).toBeTruthy();
+  });
+
+  it('une liste tronquée ne produit AUCUN compte, et le dit', async () => {
+    // Un compte tiré d'une liste plafonnée serait faux vers le bas : c'est le
+    // défaut que les trois filtres serveur de cette route ont déjà corrigé
+    // trois fois. On ne le reproduit pas d'un quatrième côté.
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'tronque' });
+
+    expect(await screen.findByText(/plus d’envois que la liste n’en rend/)).toBeTruthy();
+    expect(screen.queryByText(/rendus sur/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Réessayer la lecture des envois' })).toBeTruthy();
+  });
+
+  it('un serveur qui n’écho pas l’absence de filtre : aucun compte, et on le dit', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'filtreIgnore' });
+
+    expect(await screen.findByText(/compte des envois est inconnu/)).toBeTruthy();
+    expect(screen.queryByText(/rendus sur/)).toBeNull();
+  });
+
+  it('une lecture en échec ne rend jamais un compte de zéro', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', patients: 'erreur' });
+
+    expect(await screen.findByText(/compte des envois est inconnu/)).toBeTruthy();
+    expect(screen.queryByText(/rendus sur/)).toBeNull();
   });
 });
