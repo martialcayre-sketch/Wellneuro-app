@@ -934,6 +934,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/portail_journal_repere_v1_negatif.sql
 
+      # CE QUE LE PATIENT A DÉJÀ LU (LOT-08). Trois promesses que rien d'autre
+      # ne tient : la clé primaire porte le TRIPLET (un doublon d'accusé est
+      # refusé), le CHECK ferme l'espèce (sans lui la table peut devenir un
+      # journal de présence), et AUCUNE COLONNE N'EST UN HORODATAGE — vérifié
+      # sur le TYPE, pas sur des noms devinés : « quand le patient a lu » doit
+      # rester sans réponse. Le cas positif éprouve aussi que PLUSIEURS accusés
+      # par dossier sont acceptés, écart assumé avec le repère ci-dessus.
+      - name: Portail lectures patient negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/portail_lectures_patient_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

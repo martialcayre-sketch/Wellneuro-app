@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-07, le fil du jour que la demande disait"
+statut: "en cours — LOT-08, accuser les lectures (migration seule)"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-07"
+lot_courant: "LOT-08"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-fil-du-jour"
+branche_lot_courant: "portail-lectures-migration"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -187,6 +187,7 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-05** | ~~Les deux portes manquantes~~ — **RETIRÉ le jour même** (#1052) : doublon avec « mon dossier à deux voix », et une porte n'est pas une invitation | non |
 | **LOT-06** | Doctrine (`D-172`), journal de session, handoff — et la demande de mise en service | non |
 | **LOT-07** | **LE FIL DU JOUR** — la liste de ce qu'il y a à faire, à la place de « votre étape du moment ». Répare la dérive du cadrage, lisible en tête de ce fichier | non |
+| **LOT-08** | **CE QUE LE PATIENT A DÉJÀ LU** — un accusé par version remise, pour que les lectures entrent au fil et en sortent une fois faites | **oui** — demandée explicitement le 2026-09-12 |
 
 ## Une ligne du cadrage était fausse — corrigée le 2026-09-12
 
