@@ -33,7 +33,7 @@ describe('registre des gabarits patient — intégrité', () => {
     }
   });
 
-  it('expose les douze versions attendues, dans cet ordre', () => {
+  it('expose les treize versions attendues, dans cet ordre', () => {
     expect(REGISTRE_GABARITS_PATIENT.map(g => `${g.key}@${g.version}`)).toEqual([
       'lien_magique@1',
       'acces_portail@1',
@@ -60,6 +60,12 @@ describe('registre des gabarits patient — intégrité', () => {
       // dossier à deux voix ». Elle ne transporte toujours ni l'énoncé, ni
       // aucune donnée clinique — l'interdit de l'audit HDS du 2026-07-24 tient.
       'objectif_propose@2',
+      // Le rappel d'un questionnaire resté sans réponse. Il ne NOMME PAS
+      // l'instrument, contrairement à l'invitation initiale : un rappel part
+      // seul, plusieurs jours après, et le titre d'un instrument révèle le
+      // domaine exploré. Seule l'échéance l'accompagne — c'est elle qui rend
+      // le rappel actionnable.
+      'relance_questionnaire@1',
     ]);
   });
 

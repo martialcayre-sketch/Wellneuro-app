@@ -177,3 +177,44 @@ export function dossierDansPerimetreProposition(
 export function isJournalPortailEnabled(value = process.env.WN_PORTAIL_JOURNAL): boolean {
   return value === 'true';
 }
+
+/**
+ * Drapeau du RAPPEL PATIENT d'un questionnaire resté sans réponse.
+ *
+ * SEPTIÈME DRAPEAU NEUF ET ÉTEINT. Ce qu'il ouvre est un COURRIER DE PLUS vers
+ * le patient, et un courrier de plus ne se décide pas au déploiement : le
+ * cabinet doit pouvoir choisir le jour où ses patients commencent à recevoir
+ * des rappels. Le dépôt a déjà tenu cette ligne pour l'agenda du sommeil
+ * (`WN_AGENDA_RELANCE`).
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre.
+ *
+ * IL NE GARDE PAS LA BORNE, et c'est délibéré : `WN_ECHEANCE_OBLIGATOIRE`
+ * refuse une assignation sans échéance, ce qui arrête un geste du PRATICIEN.
+ * Les deux se décident séparément — on peut vouloir rappeler sans contraindre,
+ * et l'inverse.
+ */
+export function isRelanceQuestionnaireEnabled(value = process.env.WN_RELANCE_QUESTIONNAIRE): boolean {
+  return value === 'true';
+}
+
+/**
+ * Drapeau de l'ÉCHÉANCE OBLIGATOIRE sur une assignation du second rideau.
+ *
+ * HUITIÈME DRAPEAU NEUF ET ÉTEINT, et le seul du lot qui REFUSE un geste du
+ * praticien. Le second rideau garde le `T0` ([[D-158]]) : un questionnaire qui
+ * n'en revient pas bloque toute la trajectoire. Sans échéance, ce blocage n'a
+ * ni terme ni rappel — la relance elle-même refuse de partir
+ * (`sans_echeance`), parce qu'un rappel sans date ne dit rien de plus que
+ * l'invitation.
+ *
+ * IL NE PORTE QUE LE SECOND RIDEAU. Une assignation posée avant toute synthèse
+ * validée reste libre d'échéance : le premier rideau se remplit au rythme de
+ * l'entrée dans le dossier, et lui imposer un terme au premier jour serait une
+ * borne administrative sur un parcours qui commence.
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre.
+ */
+export function isEcheanceObligatoireEnabled(value = process.env.WN_ECHEANCE_OBLIGATOIRE): boolean {
+  return value === 'true';
+}

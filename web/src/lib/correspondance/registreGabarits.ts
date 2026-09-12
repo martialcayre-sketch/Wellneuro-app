@@ -513,6 +513,29 @@ export const REGISTRE_GABARITS_PATIENT: readonly VersionGabaritPatient[] = Objec
     valideLe: null,
     hash: 'f15fa027f32590344710015e66947d4e8ead2b2bd394beda8725848060b39024',
   },
+  {
+    key: 'relance_questionnaire',
+    version: 1,
+    titre: 'Rappel — un questionnaire attend toujours',
+    sujet: 'Un questionnaire vous attend toujours — Wellneuro',
+    // IL NE NOMME PAS L'INSTRUMENT, contrairement à l'invitation initiale
+    // (`assignation_questionnaire`, écart « données de santé » assumé). Un
+    // rappel part SEUL, souvent plusieurs jours après, et peut être lu par
+    // quelqu'un d'autre que le destinataire : le titre d'un instrument révèle
+    // le domaine exploré. L'échéance, elle, est ce qui rend le rappel
+    // actionnable — c'est le seul segment qu'il porte.
+    corps:
+      'Bonjour,\n\n' +
+      'Un questionnaire vous attend toujours dans votre espace patient.{{dateInfo}}\n\n' +
+      'Le compléter permet à votre praticien de préparer votre consultation.\n\n' +
+      'Accéder à votre espace :\n{{portalUrl}}\n\n' +
+      "L'équipe Wellneuro",
+    variables: ['dateInfo', 'portalUrl'],
+    donneesSante: { statut: 'conforme' },
+    redigeLe: '2026-09-12',
+    valideLe: null,
+    hash: '29da6688c0d92bf35b9645066ecc3706c0ca261303c15a802a02f7f1970d0a90',
+  },
 ]);
 
 /** Le gabarit courant d'une clé : version la plus haute (les versions

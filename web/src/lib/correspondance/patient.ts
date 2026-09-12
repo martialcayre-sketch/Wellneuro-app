@@ -9,6 +9,8 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
   accuseQuestionnaire: 'accuse_questionnaire',
   relanceAgendaSommeil: 'relance_agenda_sommeil',
   objectifPropose: 'objectif_propose',
+  /** Rappel d'un questionnaire assigné, resté sans réponse passé son échéance. */
+  relanceQuestionnaire: 'relance_questionnaire',
 } as const;
 
 export type TypeCorrespondancePatient =
