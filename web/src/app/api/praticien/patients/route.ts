@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
+import { jourCourantLocal } from '@/lib/patient-access';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -71,6 +72,14 @@ type Assignation = {
   statutReponses: string;
   correctionCommentaire: string | null;
   correctionDemandeeDate: string | null;
+  // Échéance telle qu'elle est STOCKÉE (`AAAA-MM-JJ`), pour être AFFICHÉE — et
+  // pour cela seulement. L'écran ne recalcule JAMAIS l'expiration à partir
+  // d'elle : `isDeadlineExpired` construit une date sans fuseau, donc évaluée
+  // dans un navigateur elle se lit à l'heure du NAVIGATEUR — à Paris l'été, le
+  // client déclarait l'expiration ~2 h avant le serveur. C'est le serveur qui
+  // décide, par `echeanceDepassee` ; ce champ ne sert qu'à écrire la date sous
+  // les yeux du praticien. Optionnel comme les deux champs suivants.
+  dateLimite?: string | null;
   // Fait, pas verdict : « au moins une QuestionnaireReponse existe pour cette
   // assignation », jamais « annulable » — la décision d'autorisation reste
   // dans `estAnnulable` (lib/praticien/annulabilite.ts), pas dans ce DTO de
@@ -110,6 +119,11 @@ export type AssignationsMeta = {
   // une troncature massive.
   statutReponses?: string | null;
   idPatient?: string | null;
+  // Écho du filtre d'échéance. Même raison que les deux au-dessus : le client
+  // doit pouvoir constater qu'un serveur antérieur l'a IGNORÉ, plutôt que de
+  // lire une liste non filtrée comme une liste filtrée — et d'offrir un
+  // déblocage sur des assignations dont l'échéance court encore.
+  echeanceDepassee?: boolean;
 };
 
 export type PatientsApiResponse = {
@@ -199,11 +213,28 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   // d'autrui. La garde de portée praticien reste en tête du `where` : elle n'est
   // pas remplacée, un idPatient d'un autre praticien ne rend rien.
   const idPatientDemande = (searchParams.get('idPatient') ?? '').trim().slice(0, 100) || null;
+  // ── ÉCHÉANCE DÉPASSÉE : LE FILTRE EST EN BASE, JAMAIS DANS L'ÉCRAN ────────
+  //
+  // Troisième filtre remonté côté serveur, et pour la troisième fois la même
+  // raison : filtrer en mémoire une liste déjà tronquée à `MAX_ASSIGNATIONS`
+  // ne cache pas des lignes en trop, il en cache en moins — sans le dire.
+  //
+  // `date_limite` est une colonne TEXTE `AAAA-MM-JJ` : l'ordre lexicographique
+  // y est l'ordre chronologique, donc « échue » s'écrit `< aujourd'hui`. Le
+  // `not: null` n'est pas décoratif — sans lui, une assignation SANS échéance
+  // dépendrait de la façon dont le moteur compare `NULL`, alors que la règle du
+  // portail est explicite : pas d'échéance, jamais expirée.
+  //
+  // `jourCourantLocal` lit l'horodatage LOCAL du serveur, comme
+  // `isDeadlineExpired` lit le sien ; `patient-access.guard.test.ts` tient les
+  // deux règles d'accord, et c'est lui seul qui les tient.
+  const echeanceDepassee = searchParams.get('echeanceDepassee') === '1';
   const whereAssignations = {
     patient: filtrePatientsDuPraticien(email),
     ...(statut ? { statut } : {}),
     ...(statutReponses ? { statutReponses } : {}),
     ...(idPatientDemande ? { idPatient: idPatientDemande } : {}),
+    ...(echeanceDepassee ? { dateLimite: { not: null, lt: jourCourantLocal() } } : {}),
   };
 
   try {
@@ -258,6 +289,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
           plafond: MAX_ASSIGNATIONS,
           statut,
           statutReponses,
+          echeanceDepassee,
           idPatient: idPatientDemande,
         },
         pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
@@ -289,6 +321,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
         plafond: MAX_ASSIGNATIONS,
         statut,
         statutReponses,
+        echeanceDepassee,
         idPatient: idPatientDemande,
       },
     });
@@ -338,6 +371,7 @@ function assignationToDto(
     dateAssignation: Date;
     statut: string;
     statutReponses: string;
+    dateLimite: string | null;
     correctionCommentaire: string | null;
     correctionDemandeeDate: Date | null;
   },
@@ -353,6 +387,7 @@ function assignationToDto(
     dateAssignation: a.dateAssignation.toISOString(),
     statut: a.statut,
     statutReponses: a.statutReponses,
+    dateLimite: a.dateLimite ?? null,
     correctionCommentaire: a.correctionCommentaire ?? null,
     correctionDemandeeDate: a.correctionDemandeeDate ? a.correctionDemandeeDate.toISOString() : null,
     aPassation: idsAvecPassation.has(a.idAssignation),

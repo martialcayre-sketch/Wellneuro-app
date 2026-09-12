@@ -17,6 +17,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET, PATCH } from './route';
+import { jourCourantLocal } from '@/lib/patient-access';
 
 function get(query = ''): Request {
   return new Request(`http://localhost/api/praticien/patients${query ? `?${query}` : ''}`);
@@ -354,6 +355,7 @@ describe('GET /api/praticien/patients — filtre de statut des assignations', ()
       plafond: 40,
       statut: 'Complété',
       statutReponses: null,
+      echeanceDepassee: false,
       idPatient: null,
     });
   });
@@ -444,8 +446,53 @@ describe('GET /api/praticien/patients — filtre par dossier et statut de répon
       plafond: 40,
       statut: null,
       statutReponses: 'modification_demandee',
+      echeanceDepassee: false,
       idPatient: 'PAT001',
     });
+  });
+
+  // ── ÉCHÉANCE DÉPASSÉE ──────────────────────────────────────────────────────
+  //
+  // Le geste de déblocage existait ; l'écran ne l'offrait qu'aux demandes de
+  // correction. Un questionnaire JAMAIS REMPLI dont l'échéance est passée
+  // n'entrait dans aucune liste : le portail refusait la saisie, et aucun
+  // bouton nulle part ne la rouvrait. Ce filtre est ce qui le rend visible.
+  it('descend l’échéance dépassée jusqu’au where Prisma, avec le jour courant', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=1'));
+    const where = prisma.assignation.findMany.mock.calls[0][0].where;
+    // `not: null` n'est pas décoratif : sans lui, une assignation SANS échéance
+    // dépendrait de la façon dont le moteur compare NULL, alors que la règle du
+    // portail est explicite — pas d'échéance, jamais expirée.
+    expect(where.dateLimite).toEqual({ not: null, lt: jourCourantLocal() });
+    expect(where.statutReponses).toBe('non_rempli');
+    expect(where.idPatient).toBe('PAT001');
+  });
+
+  it('le même where part au compte qu’à la liste', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=1'));
+    expect(prisma.assignation.count.mock.calls[0][0].where).toEqual(
+      prisma.assignation.findMany.mock.calls[0][0].where,
+    );
+  });
+
+  it('sans le paramètre, AUCUN filtre d’échéance — contrôle négatif', async () => {
+    // Sans lui, poser le filtre inconditionnellement passerait au vert.
+    await GET(get('idPatient=PAT001&statutReponses=non_rempli'));
+    expect(prisma.assignation.findMany.mock.calls[0][0].where.dateLimite).toBeUndefined();
+  });
+
+  it('une valeur autre que « 1 » ne déclenche rien', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=true'));
+    expect(prisma.assignation.findMany.mock.calls[0][0].where.dateLimite).toBeUndefined();
+  });
+
+  it('l’écho dit au client que le filtre a bien été appliqué', async () => {
+    // Sans cet écho, un client parlant à un serveur antérieur lirait une liste
+    // NON filtrée comme filtrée, et offrirait « Débloquer » sur des
+    // questionnaires dont l'échéance court encore.
+    const res = await GET(get('idPatient=PAT001&statutReponses=non_rempli&echeanceDepassee=1'));
+    const json = await res.json();
+    expect(json.assignationsMeta.echeanceDepassee).toBe(true);
   });
 
   it('ignore un statut de réponse hors registre au lieu de rejeter la requête', async () => {

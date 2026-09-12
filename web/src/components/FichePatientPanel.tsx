@@ -514,6 +514,25 @@ export function FichePatientPanel({
   // précédent écraserait celle du patient affiché — soit les demandes de
   // correction d'un autre dossier, avec leur bouton « Débloquer ».
   const generationCorrections = useRef(0);
+  /*
+   * ── LE QUESTIONNAIRE JAMAIS REMPLI DONT L'ÉCHÉANCE EST PASSÉE ─────────────
+   *
+   * Angle mort constaté en production le 2026-09-12. Le portail refuse la
+   * saisie dès que la date limite est dépassée, et n'en exempte que trois
+   * statuts — dont `deverrouille`. Le geste de déblocage existe bien
+   * (`PATCH /api/praticien/assignations`), mais l'écran ne l'offrait QUE sur
+   * les demandes de correction : un questionnaire simplement JAMAIS REMPLI et
+   * échu n'entrait dans aucune liste. Aucun bouton nulle part, et un patient
+   * définitivement bloqué sans que rien ne le signale.
+   *
+   * Liste tenue à part de `assignationsModif`, et non fondue avec elle : les
+   * deux se règlent par le MÊME geste mais ne disent pas la même chose. L'une
+   * rapporte une demande DU PATIENT, l'autre un silence. Les confondre
+   * enverrait le praticien chercher un commentaire qui n'existe pas.
+   */
+  const [assignationsEchues, setAssignationsEchues] = useState<PatientsApiResponse['assignations']>([]);
+  const [etatEchues, setEtatEchues] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
+  const generationEchues = useRef(0);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
@@ -720,6 +739,57 @@ export function FichePatientPanel({
     void chargerCorrections();
   }, [chargerCorrections]);
 
+  /*
+   * Même patron que `chargerCorrections`, et pour les mêmes raisons : garde de
+   * génération contre une réponse lente du patient précédent, et second passage
+   * EN DÉFENSE — pas en filtre.
+   *
+   * LA DÉFENSE EST ICI PLUS IMPORTANTE QU'AILLEURS. L'échéance ne se recalcule
+   * PAS côté client : `isDeadlineExpired` lit une date sans fuseau, donc à
+   * l'heure du navigateur, et le serveur a déjà tranché. Si l'écho
+   * `echeanceDepassee` manque — serveur antérieur à ce paramètre —, la réponse
+   * porte TOUTES les assignations non remplies du dossier, échues ou non.
+   * Offrir « Débloquer » dessus rouvrirait des questionnaires dont l'échéance
+   * court encore. On préfère alors ne RIEN afficher, et le dire.
+   */
+  const chargerEchues = useCallback(async () => {
+    const generation = ++generationEchues.current;
+    setEtatEchues('chargement');
+    const params = new URLSearchParams({
+      idPatient,
+      statutReponses: 'non_rempli',
+      echeanceDepassee: '1',
+    });
+    try {
+      const reponse = await fetch(`/api/praticien/patients?${params.toString()}`);
+      const payload = (await reponse.json()) as PatientsApiResponse;
+      if (!reponse.ok || payload.unavailable) throw new Error(payload.reason ?? 'exception');
+      if (generation !== generationEchues.current) return;
+
+      const meta = payload.assignationsMeta;
+      const filtresHonores =
+        meta !== undefined
+        && meta.idPatient === idPatient
+        && meta.statutReponses === 'non_rempli'
+        && meta.echeanceDepassee === true;
+      const liste = filtresHonores
+        ? (payload.assignations ?? []).filter(
+            a => a.idPatient === idPatient && a.statutReponses === 'non_rempli',
+          )
+        : [];
+      setAssignationsEchues(liste);
+      setEtatEchues(filtresHonores ? 'chargees' : 'erreur');
+    } catch {
+      if (generation !== generationEchues.current) return;
+      setAssignationsEchues([]);
+      setEtatEchues('erreur');
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void chargerEchues();
+  }, [chargerEchues]);
+
   // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
   // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
   // définitif posé avant la réponse).
@@ -909,7 +979,12 @@ export function FichePatientPanel({
         body: JSON.stringify({ idAssignation }),
       });
       const json = (await r.json()) as PatchAssignationResponse;
-      if (json.success) setAssignationsModif(prev => prev.filter(a => a.idAssignation !== idAssignation));
+      if (json.success) {
+        // Le même geste règle les deux listes : l'assignation passe
+        // `deverrouille`, elle n'appartient plus ni à l'une ni à l'autre.
+        setAssignationsModif(prev => prev.filter(a => a.idAssignation !== idAssignation));
+        setAssignationsEchues(prev => prev.filter(a => a.idAssignation !== idAssignation));
+      }
     } finally {
       setDeverrouillageId(null);
     }
@@ -1288,6 +1363,57 @@ export function FichePatientPanel({
                 </div>
               ))}
             </section>
+          )}
+          {/* ── ÉCHU ET JAMAIS REMPLI ──────────────────────────────────────
+              Bloc SÉPARÉ de celui des demandes de correction, jamais fondu
+              avec lui : le geste est le même, l'histoire ne l'est pas. Là, le
+              patient a DEMANDÉ qu'on rouvre ; ici, il n'a rien demandé — il a
+              trouvé porte close. Un bloc commun ferait chercher un commentaire
+              patient qui n'existe pas.
+
+              L'échéance est ÉCRITE, jamais recalculée : c'est le serveur qui a
+              décidé que ces lignes sont échues (`echeanceDepassee`), et la date
+              n'est là que pour que le praticien sache de quand elle date. */}
+          {assignationsEchues.length > 0 && (
+            <section aria-label="Questionnaires jamais remplis dont l’échéance est dépassée" className="bg-surface border border-border rounded-xl overflow-hidden">
+              {assignationsEchues.map(a => (
+                <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="text-base text-foreground">
+                      Jamais rempli, échéance dépassée — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
+                    </span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {a.dateLimite ? `À rendre avant le ${a.dateLimite}. ` : ''}
+                      Le portail refuse la saisie ; le déblocage la rouvre.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onDebloquer(a.idAssignation)}
+                    disabled={deverrouillageId === a.idAssignation}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-accent text-solar-ink hover:bg-accent/10 disabled:opacity-60"
+                  >
+                    {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
+          {/* Un échec de lecture n'est JAMAIS rendu comme « aucun » : ce dossier
+              peut porter un questionnaire bloqué que personne ne verra. Même
+              discipline que le bandeau des corrections. */}
+          {etatEchues === 'erreur' && (
+            <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2 text-base text-muted-foreground">
+              <span className="min-w-0">
+                Les questionnaires échus n’ont pas pu être lus. Ce dossier peut en compter un, jamais rempli et bloqué.
+              </span>
+              <button
+                type="button"
+                onClick={() => void chargerEchues()}
+                className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                Réessayer la lecture des questionnaires échus
+              </button>
+            </div>
           )}
         </div>
       );
