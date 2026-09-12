@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-01 livré"
+statut: "en cours — LOT-01 à LOT-05 livrés, mise en service à demander"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-01"
+lot_courant: "LOT-05"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-journal-lot01"
+branche_lot_courant: "portail-journal-lot05"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -68,7 +68,7 @@ moitié qui manque — celle qui n'entre en concurrence avec rien.
 | Bilans | « Consulter mon bilan » — rangée de liens secondaires, conditionnel à `bilanConsultable` |
 | Déclarer ce qui compte | `/ce-qui-compte` — **aucune entrée depuis l'accueil**, seulement depuis le dossier à deux voix |
 | Rappel agenda sommeil | Phrase d'appui sous l'étape du moment (`lib/agenda-sommeil/rappelPortail.ts`) — « 5 nuits notées sur 21 », jamais un compte à rebours |
-| Rappel agenda alimentaire | **Rien** — un lien « Ouvrir Mon carnet alimentaire », sans état ni rappel |
+| Rappel agenda alimentaire | ~~**Rien**~~ — **CETTE LIGNE ÉTAIT FAUSSE**, corrigée le 2026-09-12 après lecture du code : `lib/agenda-alimentaire/rappelPortail.ts` existe, jumeau déclaré du sommeil, et `hubQuestionnaires.ts` le fait remonter jusqu'à l'étape du moment avec sa phrase factuelle. Détail et preuves : `lots/LOT-04-rappel-agenda-alimentaire.md` |
 | Ce qui s'est passé | « Depuis votre dernière visite (N) », **replié** — et voir ci-dessous |
 
 ### « Depuis votre dernière visite » ne consigne rien
@@ -131,9 +131,27 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-01** | La **dérivation** du journal : une fonction pure qui assemble la vie d'un dossier depuis les tables existantes, et sa route de lecture au portail | non |
 | **LOT-02** | Le **repère de fraîcheur** : la marque « vu jusqu'ici » du patient, sa migration, sa route | **oui** (arbitrage 3) |
 | **LOT-03** | L'écran « Ce qui s'est passé » sur l'accueil du portail — placé **après** l'étape du moment, déplié seulement s'il y a du neuf | non |
-| **LOT-04** | Le rappel de l'agenda **alimentaire**, au régime exact du sommeil : une phrase factuelle, jamais un compte à rebours | non |
+| **LOT-04** | ~~Le rappel de l'agenda alimentaire~~ — **SANS OBJET, déjà livré** (constaté le 2026-09-12) | non |
 | **LOT-05** | Les deux portes manquantes : « ce qui compte » et « ce que j'ai compris » visibles depuis l'accueil | non |
 | **LOT-06** | Doctrine (`D-xxx`), journal de session, handoff — et la demande de mise en service | non |
+
+## Une ligne du cadrage était fausse — corrigée le 2026-09-12
+
+Le tableau « état réel » ci-dessus affirmait que l'agenda **alimentaire** n'avait
+« rien » : ni état, ni rappel. **C'est faux**, et la vérification a précédé
+l'écriture du lot : le module jumeau existe, il a ses bancs, et le hub le fait
+remonter jusqu'à l'étape du moment. Le LOT-04 est donc **sans objet**, et son
+fichier de lot porte les preuves.
+
+**La leçon est celle de « sans drapeau propre = en service au déploiement » :**
+une absence se CONSTATE, elle ne se suppose pas. Un cadrage qui affirme un
+manque sans l'avoir cherché fabrique du travail, et pire — il fait croire à une
+lacune là où le dépôt était en règle.
+
+Ce qui reste vrai et n'est pas de cette campagne : la **clôture alimentaire**
+n'existe pas, si bien que l'état `a_transmettre` ne propose aucun geste côté
+alimentaire. Le code le dit et l'explique (`D-015` : un refus — ou une
+proposition — doit nommer un geste POSSIBLE).
 
 ## Arbitrages tranchés — 2026-09-12
 
