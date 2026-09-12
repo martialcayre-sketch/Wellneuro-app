@@ -124,12 +124,14 @@ l'ait relu et décidé de le transmettre.
 **Volume borné par construction** : deux générations par dossier au maximum
 (marqueur `donneesEntree.source`), et un brouillon rejeté ne se régénère pas.
 
-**LA CONDITION EST TENUE CETTE FOIS, ET DANS LE BON ORDRE.** `WN_SYNTHESE_PAR_RIDEAU`
-est **absent en production** au moment où ces lignes sont écrites, et il le
-reste jusqu'à la validation du responsable. C'est exactement l'inverse de
-l'épisode du 2026-09-09 rapporté ci-dessus, où le drapeau avait été posé avant
-la mise à jour. `FEATURE_FLAGS.md` porte la condition sur la ligne du drapeau,
-et non seulement ici.
+**LA CONDITION A ÉTÉ TENUE, ET DANS LE BON ORDRE.** Ce paragraphe a été rédigé
+**avant** toute pose, soumis au responsable, puis **validé par lui le 2026-09-12**.
+`WN_SYNTHESE_PAR_RIDEAU` a été posé **après** cette validation, à **18:08:24 UTC**
+— conteneurs web recréés au même instant, `env` relu, code vérifié en ligne par
+contenance avant la pose. C'est exactement l'inverse de l'épisode du 2026-09-09
+rapporté ci-dessus, où le drapeau avait précédé la mise à jour.
+`FEATURE_FLAGS.md` porte la condition sur la ligne du drapeau, et non seulement
+ici.
 
 **Le document d'information patient n'a PAS besoin d'une version nouvelle — et
 il faut dire pourquoi.** `DONNEES_CONFIDENTIALITE_V7` écrit deux choses qui
@@ -141,9 +143,13 @@ est destinée » — la promesse même que le brouillon automatique ne touche pa
 Aucun prestataire ne s'ajoute, aucune donnée nouvelle n'est recueillie, aucune
 sortie nouvelle n'atteint le patient. Publier une v8 pour annoncer un changement
 de déclencheur interne au cabinet apprendrait au patient à survoler des versions
-qui ne le concernent pas. **Ce paragraphe est le point de désaccord possible :
-si le responsable juge que le patient doit savoir que la préparation démarre
-seule, une v8 se rédige — la décision lui appartient.**
+qui ne le concernent pas. **ARBITRAGE DU RESPONSABLE, RENDU LE 2026-09-12 : PAS DE v8.** Le point lui avait
+été posé comme un désaccord possible ; il l'a tranché sur le fond, et son motif
+est plus net que celui du paragraphe ci-dessus : « **l'envoi du booklet est
+toujours la main du praticien ; la machine n'envoie jamais rien
+automatiquement** ». Ce que le document promet au patient porte sur ce qui lui
+PARVIENT, et rien de ce qui lui parvient ne change. Le moment où un brouillon
+commence à se préparer est un fait interne au cabinet.
 
 ## 3. Base légale
 
