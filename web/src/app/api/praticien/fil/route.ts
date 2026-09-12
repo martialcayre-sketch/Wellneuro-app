@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { construireFil, type CarteFil } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
+import { partagerParLecture } from '@/lib/fil/lectureCartes';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
 import { RIDEAU_T0, STATUTS_SYNTHESE_VALIDEE } from '@/lib/clinical-engine/preconditionsT0';
 import { arbitragesSansRevision } from '@/lib/fil/biologieArbitree';
@@ -14,6 +15,13 @@ import { bornesJourParis } from '@/lib/fil/fuseau';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
+  /**
+   * Les cartes LUES dont la trace se montre encore — « Carte lue … / Remettre ».
+   * Liste SÉPARÉE et jamais fondue dans `cartes` : l'écran ne doit pas avoir à
+   * deviner laquelle des deux il rend, et un client qui ignore ce champ affiche
+   * simplement le Fil sans traces, ce qui reste juste.
+   */
+  lues?: CarteFil[];
   unavailable?: boolean;
   error?: string;
 };
@@ -335,7 +343,24 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       select: { id: true, carteCle: true, refusee: true, supersedesRejectionId: true, refuseLe: true },
     });
 
-    return NextResponse.json({ cartes: filtrerCartesRefusees(cartes, clesRefusees(refus)) });
+    // LA LECTURE VIENT APRÈS LE REFUS, et l'ordre n'est pas indifférent. Le
+    // refus est le geste EXPLICITE : une carte écartée reste écartée, même si
+    // le dossier a été lu depuis. L'inverse ferait reparaître en « Carte lue »
+    // ce qu'un praticien avait délibérément rangé.
+    const retenues = filtrerCartesRefusees(cartes, clesRefusees(refus));
+
+    // `lecturesCartesFil`, ET SURTOUT PAS `lectures` : ce fichier porte déjà un
+    // `lectures` à vingt lignes d'ici — la lecture d'une RÉPONSE DE
+    // QUESTIONNAIRE, qui nourrit « synthèse à générer ». Le compilateur l'a
+    // refusé ; sans lui, deux « lectures » auraient cohabité dans la même
+    // fonction, et la prochaine lecture du fichier aurait été un piège.
+    const lecturesCartesFil = await prisma.filCardLecture.findMany({
+      where: { idPatient: { in: [...actifs] } },
+      select: { idPatient: true, typeCarte: true, lue: true, lueLe: true },
+    });
+    const partage = partagerParLecture(retenues, lecturesCartesFil, maintenant);
+
+    return NextResponse.json({ cartes: partage.visibles, lues: partage.lues });
   } catch (err) {
     console.error('[fil GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json(
