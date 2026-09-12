@@ -53,3 +53,9 @@ des lectures viendra après l'application constatée par conteneur.
 `portail_journal_reperes` n'a plus de consommateur dès que le journal
 rétrospectif partira : il devient orphelin. Il n'est pas supprimé — détruire une
 table se demande.
+
+**En service depuis `16:00:51 UTC`, et vide au soir** (one-off-729) : aucun
+patient n'a ouvert un bilan ni une synthèse depuis la mise en ligne. Le chemin
+d'écriture des accusés n'a donc **jamais été emprunté en production** — il n'est
+tenu que par ses bancs et un E2E. C'est un constat, pas un défaut ; il est écrit
+ici pour qu'on ne le prenne pas plus tard pour une preuve d'usage.

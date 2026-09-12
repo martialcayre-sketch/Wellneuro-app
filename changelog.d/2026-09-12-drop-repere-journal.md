@@ -28,3 +28,14 @@ la même question, et le dit franchement dans sa propre migration. Deux réponse
 opposées, toutes deux motivées : c'est ce qu'il faut pouvoir relire.
 
 Les contrats SQL de CI passent de 42 à 41.
+
+**Constaté par conteneur, pas par la couleur du workflow** (one-off-729,
+2026-09-12) : `portail_journal_reperes` rend **0** dans `information_schema` ET
+dans `pg_class` — les deux catalogues, parce qu'une seule vue ne prouverait
+qu'une moitié. Migration `20260912190000_portail_journal_repere_drop` finie à
+`17:39:52 UTC`, `rolled_back_at = NULL`.
+
+**Et un point d'arrêt annoncé à tort.** Il avait été dit que `release-db`
+demanderait une approbation, dernier moment pour dire non. L'environnement ne
+porte qu'une **minuterie de cinq minutes**, aucune porte de relecture : le run
+est parti seul. Le dernier point d'arrêt réel était le merge de la PR.

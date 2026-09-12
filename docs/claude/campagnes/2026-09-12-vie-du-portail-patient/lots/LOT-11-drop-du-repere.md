@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "drop-du-repere"
-statut: "migration seule — fusionnée #1066, 2026-09-12"
+statut: "terminé — #1066 fusionnée, release-db verte, DROP constaté par conteneur (one-off-729)"
 dépend_de: "LOT-10 (le code qui touchait la table a quitté la production)"
 ---
 
@@ -72,3 +72,38 @@ pouvoir relire.
 `release-db` à approuver — **c'est le dernier point où la suppression peut être
 arrêtée** —, puis disparition **constatée par conteneur**, et non par la couleur
 du workflow.
+
+## Constaté par conteneur après `release-db` — one-off-729, 2026-09-12
+
+`release-db` a rendu ses onze étapes vertes. **Ce n'est pas la constatation.**
+La couleur d'un workflow dit qu'une commande n'a pas échoué ; elle ne dit pas ce
+que la base contient. Lu depuis un conteneur `scalingo run -d` :
+
+| Lecture | Valeur |
+| --- | --- |
+| `portail_journal_reperes` dans `information_schema.tables` | **0** |
+| `portail_journal_reperes` dans `pg_class` | **0** |
+| `portail_lectures_patient` dans `information_schema.tables` | **1** |
+| `portail_lectures_patient`, lignes | **0** |
+| `20260912190000_portail_journal_repere_drop` | fini `2026-09-12 17:39:52 UTC`, `rolled_back_at = NULL` |
+| `20260912170000_portail_lectures_patient_v1` | fini `2026-09-12 16:00:51 UTC`, `rolled_back_at = NULL` |
+
+Les deux vues — catalogue logique et catalogue physique — sont interrogées parce
+qu'une seule ne prouverait qu'une moitié : une table peut disparaître d'une vue
+et survivre dans l'autre si la suppression a été partielle.
+
+**CE QUE LA DERNIÈRE LIGNE DIT, ET QU'IL NE FAUT PAS TAIRE.**
+`portail_lectures_patient` est vide. Elle est en service depuis 16:00 UTC, et
+**aucun patient n'a ouvert un bilan ni une synthèse depuis**. Le chemin
+d'écriture des accusés n'a donc **jamais été emprunté en production** : il n'est
+tenu que par ses bancs et par un E2E. Une absence se constate — celle-ci est
+constatée, et elle est jeune.
+
+**LE POINT D'ARRÊT ANNONCÉ N'EN ÉTAIT PAS UN.** J'avais dit au responsable que
+`release-db` demanderait son approbation et que ce serait le dernier moment pour
+dire non. C'est faux : l'environnement `release-db` ne porte qu'une **minuterie
+de cinq minutes**, aucune porte de relecture. À 17:34:49 le run est passé seul en
+`in_progress`. Les trois minutes pendant lesquelles l'API a répondu « no pending
+deployment requests to approve or reject » n'étaient pas un refus de permission —
+c'était l'API disant qu'il n'y avait **rien à approuver**. Le dernier point
+d'arrêt réel était le merge de la PR.
