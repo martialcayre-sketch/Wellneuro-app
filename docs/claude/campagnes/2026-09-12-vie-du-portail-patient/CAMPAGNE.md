@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-01 à LOT-05 livrés, mise en service à demander"
+statut: "en cours — tous lots livrés, mise en service à demander"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-05"
+lot_courant: "LOT-06"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-journal-lot05"
+branche_lot_courant: "portail-journal-lot06-doctrine"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -133,7 +133,7 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-03** | L'écran « Ce qui s'est passé » sur l'accueil du portail — placé **après** l'étape du moment, déplié seulement s'il y a du neuf | non |
 | **LOT-04** | ~~Le rappel de l'agenda alimentaire~~ — **SANS OBJET, déjà livré** (constaté le 2026-09-12) | non |
 | **LOT-05** | Les deux portes manquantes : « ce qui compte » et « ce que j'ai compris » visibles depuis l'accueil | non |
-| **LOT-06** | Doctrine (`D-xxx`), journal de session, handoff — et la demande de mise en service | non |
+| **LOT-06** | Doctrine (`D-172`), journal de session, handoff — et la demande de mise en service | non |
 
 ## Une ligne du cadrage était fausse — corrigée le 2026-09-12
 
