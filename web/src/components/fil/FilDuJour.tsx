@@ -6,6 +6,7 @@ import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, Messa
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
+import { grouperLuesParLecture, type GroupeLecture } from '@/lib/fil/lectureCartes';
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import type { EtatMeteoAdhesion } from '@/lib/protocol/adhesion';
 import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
@@ -166,6 +167,47 @@ function CarteEcartee({
   );
 }
 
+/** Trace laissée par une LECTURE — « la fiche a été ouverte, la parole a été
+ * lue ». Sœur de `CarteEcartee`, et distincte d'elle jusque dans ses mots : une
+ * carte écartée a été REFUSÉE sans être vue, une carte lue a été TRAITÉE. Dire
+ * « écartée » ici accuserait le praticien d'avoir refusé ce qu'il venait de
+ * lire.
+ *
+ * UNE TRACE PAR (DOSSIER, TYPE), jamais une par carte : c'est ce qu'une lecture
+ * acquitte, et donc ce que « Remettre » annule. Le libellé ne compte rien — il
+ * nomme le type et le dossier (`DC-19`). */
+function CarteLue({
+  groupe,
+  maintenant,
+  onRemettre,
+}: {
+  groupe: GroupeLecture;
+  maintenant: Date;
+  onRemettre: () => void;
+}) {
+  const { libelle } = TYPE_CARTE[groupe.type];
+  const { texte: heure } = libelleTemporel(groupe.date, maintenant);
+  return (
+    <article className={GRILLE_TIMELINE}>
+      <span className="pt-2.5 text-right font-mono text-xs font-semibold text-muted-foreground/60">{heure}</span>
+      <span className="relative mt-1.5 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border border-dashed border-border bg-background" />
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
+        <p className="min-w-0 truncate text-base text-muted-foreground">
+          Lu sur la fiche — {libelle}, {groupe.patient}
+        </p>
+        <button
+          type="button"
+          onClick={onRemettre}
+          aria-label={`Remettre au Fil — ${libelle}, ${groupe.patient}`}
+          className="min-h-11 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          Remettre
+        </button>
+      </div>
+    </article>
+  );
+}
+
 /** Le Fil du jour (SP-FIL LOT-01) : cartes « pourquoi maintenant » depuis les
  * données existantes. Proposition, jamais capture : chaque carte est une
  * information sourcée + une action explicite, rien n'est automatique. */
@@ -178,13 +220,23 @@ export function FilDuJour() {
   // masque jamais le Fil : sans donnée, pas de badge, c'est tout.
   const [meteoParPatient, setMeteoParPatient] = useState<Map<string, EtatMeteoAdhesion>>(new Map());
 
-  useEffect(() => {
-    fetch('/api/praticien/fil')
-      .then(async r => (await r.json()) as FilApiResponse)
-      .then(setData)
-      .catch(() => setData({ cartes: [], unavailable: true }))
-      .finally(() => setLoading(false));
+  // Le Fil se RELIT après un « Remettre », il ne se répare pas de mémoire. Une
+  // lecture annulée rend au Fil TOUTES les cartes de son couple (dossier,
+  // type), à la place que l'ordre du serveur leur donne — le client ne sait pas
+  // reconstituer cet ordre (priorité de type, puis date), et l'inventer
+  // afficherait une journée qui n'est pas celle du prochain chargement.
+  const chargerFil = useCallback(async () => {
+    try {
+      const reponse = await fetch('/api/praticien/fil');
+      setData((await reponse.json()) as FilApiResponse);
+    } catch {
+      setData({ cartes: [], unavailable: true });
+    }
   }, []);
+
+  useEffect(() => {
+    void chargerFil().finally(() => setLoading(false));
+  }, [chargerFil]);
 
   useEffect(() => {
     fetch('/api/praticien/meteo-adhesion')
@@ -220,6 +272,30 @@ export function FilDuJour() {
     }
   }, []);
 
+  // LE SERVEUR FAIT FOI, comme pour le refus : la trace ne disparaît qu'une
+  // fois l'annulation acceptée, et le Fil est relu pour retrouver l'ordre vrai.
+  const remettreAuFil = useCallback(
+    async (groupe: GroupeLecture) => {
+      setErreurRefus('');
+      try {
+        const reponse = await fetch('/api/praticien/fil/lecture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient: groupe.idPatient, typeCarte: groupe.type, lue: false }),
+        });
+        const payload = (await reponse.json()) as { ok: boolean; error?: string };
+        if (!reponse.ok || !payload.ok) {
+          setErreurRefus(payload.error ?? 'Cette carte n’a pas pu être remise au Fil.');
+          return;
+        }
+        await chargerFil();
+      } catch {
+        setErreurRefus('Cette carte n’a pas pu être remise au Fil.');
+      }
+    },
+    [chargerFil],
+  );
+
   if (loading) {
     return (
       <div data-testid="fil-du-jour" className="flex flex-col gap-3">
@@ -237,7 +313,14 @@ export function FilDuJour() {
     );
   }
 
-  if (data.cartes.length === 0) {
+  // LES TRACES COMPTENT DANS LE VIDE. Un Fil dont toutes les cartes ont été
+  // lues n'est pas un Fil vide : ses traces portent le seul « Remettre » de la
+  // journée. Les cacher derrière l'état vide rendrait la réparation
+  // inatteignable — et l'erreur serait invisible, puisque l'écran dirait
+  // quelque chose de rassurant.
+  const groupesLus = grouperLuesParLecture(data.lues ?? []);
+
+  if (data.cartes.length === 0 && groupesLus.length === 0) {
     return (
       <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
@@ -272,6 +355,11 @@ export function FilDuJour() {
             {erreurRefus}
           </p>
         )}
+        {data.cartes.length === 0 && (
+          <p className="px-1 text-base text-muted-foreground">
+            Rien n&apos;appelle plus votre attention aujourd&apos;hui.
+          </p>
+        )}
         {data.cartes.map(carte =>
           ecartees.includes(carte.cle) ? (
             <CarteEcartee
@@ -291,6 +379,20 @@ export function FilDuJour() {
             />
           ),
         )}
+        {/* LES TRACES EN BAS, et c'est un choix assumé. Une carte écartée garde
+            sa place parce qu'elle y était une seconde plus tôt — le geste vient
+            de se produire sous les yeux du praticien. Une lecture, elle, s'est
+            produite AILLEURS, sur la fiche : il n'y a aucune continuité
+            visuelle à préserver, et remonter les traces dans la timeline
+            pousserait vers le bas les cartes qui appellent encore un geste. */}
+        {groupesLus.map(groupe => (
+          <CarteLue
+            key={groupe.cle}
+            groupe={groupe}
+            maintenant={maintenant}
+            onRemettre={() => void remettreAuFil(groupe)}
+          />
+        ))}
       </div>
     </section>
   );

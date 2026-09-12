@@ -265,3 +265,122 @@ describe('FilDuJour — écarter une carte (G1)', () => {
     expect(screen.queryByText(/Carte écartée/)).toBeNull();
   });
 });
+
+// La TRACE d'une lecture — troisième issue d'une carte, à côté de « reste » et
+// « s'en va ». Elle n'existe que le jour de sa lecture ; le lendemain la carte
+// est partie sans rien laisser, comme une carte écartée.
+describe('FilDuJour — la trace d’une carte lue, et « Remettre »', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const lue = (partiel: Partial<CarteFil> = {}): CarteFil =>
+    carte({
+      type: 'geste_objectif',
+      idPatient: 'PAT_SEED_03',
+      patient: 'Michel Dogné',
+      titre: 'Votre patient s’est prononcé sur son objectif',
+      cle: 'geste_objectif:G1',
+      ...partiel,
+    });
+
+  /** Le GET rend `{ cartes, lues }` ; le POST de lecture accepte ou refuse. */
+  function stubFilEtLecture(
+    reponses: { cartes: CarteFil[]; lues: CarteFil[] }[],
+    lectureOk = true,
+  ) {
+    const appels: { url: string; body?: unknown }[] = [];
+    let tour = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, options?: { method?: string; body?: string }) => {
+        appels.push({ url, body: options?.body ? JSON.parse(options.body) : undefined });
+        if (url.includes('meteo-adhesion')) {
+          return { ok: true, json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response;
+        }
+        if (options?.method === 'POST') {
+          return {
+            ok: lectureOk,
+            json: async () =>
+              lectureOk
+                ? { ok: true, typeCarte: 'geste_objectif', lue: false, inchange: false }
+                : { ok: false, reason: 'exception', error: 'Erreur technique.' },
+          } as unknown as Response;
+        }
+        const reponse = reponses[Math.min(tour, reponses.length - 1)];
+        tour += 1;
+        return { ok: true, json: async () => reponse } as unknown as Response;
+      }),
+    );
+    return appels;
+  }
+
+  it('une carte lue laisse une trace — « Lu sur la fiche », jamais « écartée »', async () => {
+    // Le mot compte : « écartée » dirait que le praticien a REFUSÉ ce qu'il
+    // venait de lire. Les deux sorties se ressemblent à l'écran et n'ont pas le
+    // même sens dans le dossier.
+    stubFilEtLecture([{ cartes: [], lues: [lue()] }]);
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText(/Lu sur la fiche/)).toBeTruthy());
+    expect(screen.getByText(/Lu sur la fiche — Réponse du patient, Michel Dogné/)).toBeTruthy();
+    expect(screen.queryByText(/Carte écartée/)).toBeNull();
+  });
+
+  it('DEUX CARTES DU MÊME DOSSIER NE FONT QU’UNE TRACE, et aucun décompte', async () => {
+    stubFilEtLecture([
+      { cartes: [], lues: [lue({ cle: 'geste_objectif:G1' }), lue({ cle: 'geste_objectif:G2' })] },
+    ]);
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getAllByText(/Lu sur la fiche/)).toHaveLength(1));
+    expect(screen.getAllByRole('button', { name: /Remettre au Fil/ })).toHaveLength(1);
+    expect(screen.queryByText(/2 /)).toBeNull();
+  });
+
+  it('UN FIL SANS CARTE MAIS AVEC UNE TRACE n’affiche pas l’état vide générique', async () => {
+    // Sinon le seul « Remettre » de la journée serait inatteignable, et l'écran
+    // dirait quelque chose de rassurant pendant qu'une parole a disparu.
+    stubFilEtLecture([{ cartes: [], lues: [lue()] }]);
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Remettre au Fil/ })).toBeTruthy());
+    expect(screen.queryByText(/Le Fil se remplit à mesure/)).toBeNull();
+    expect(screen.getByText(/Rien n.appelle plus votre attention aujourd.hui/)).toBeTruthy();
+  });
+
+  it('« Remettre » annule la lecture du COUPLE (dossier, type), puis relit le Fil', async () => {
+    const appels = stubFilEtLecture([
+      { cartes: [], lues: [lue()] },
+      { cartes: [lue()], lues: [] },
+    ]);
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Remettre au Fil/ }));
+
+    await waitFor(() => expect(screen.getByText('Votre patient s’est prononcé sur son objectif')).toBeTruthy());
+    const lecture = appels.find(a => a.url === '/api/praticien/fil/lecture');
+    expect(lecture?.body).toEqual({
+      idPatient: 'PAT_SEED_03',
+      typeCarte: 'geste_objectif',
+      lue: false,
+    });
+    // La carte est revenue par une RELECTURE du serveur, pas par une
+    // reconstitution locale : le client ne sait pas ordonner le Fil.
+    expect(appels.filter(a => a.url === '/api/praticien/fil')).toHaveLength(2);
+    expect(screen.queryByText(/Lu sur la fiche/)).toBeNull();
+  });
+
+  it('si le serveur refuse, la trace reste et l’échec est dit', async () => {
+    stubFilEtLecture([{ cartes: [], lues: [lue()] }], false);
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Remettre au Fil/ }));
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Erreur technique/));
+    // Le praticien ne doit pas croire avoir remis une carte qui ne reviendra pas.
+    expect(screen.getByRole('button', { name: /Remettre au Fil/ })).toBeTruthy();
+  });
+
+  it('sans aucune lecture, le Fil ne montre aucune trace', async () => {
+    stubFilEtLecture([{ cartes: [carte()], lues: [] }]);
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Questionnaire en retard')).toBeTruthy());
+    expect(screen.queryByText(/Lu sur la fiche/)).toBeNull();
+  });
+});
