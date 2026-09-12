@@ -911,6 +911,19 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/alli_demande_correction_objectif_v1_negatif.sql
 
+      # La LECTURE d'une carte du Fil, distincte de son refus. Deux cas positifs
+      # au lieu d'un : une seconde lecture sur le même couple (dossier, type)
+      # doit passer — une unicité rendrait « Remettre » impossible, et une carte
+      # partie sur un lien ouvert par mégarde ne reviendrait jamais. Le DEFAULT
+      # `lue = true` est éprouvé deux fois, par le comportement ET par la
+      # promesse déclarée. La liste blanche garde l'interdit score/compteur et
+      # l'absence de `carte_cle` : la lecture est ancrée sur le dossier et le
+      # type, jamais sur la ligne (arbitrage du 2026-09-12).
+      - name: Fil lecture carte negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/fil_lecture_carte_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

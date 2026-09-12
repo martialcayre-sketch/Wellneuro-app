@@ -122,6 +122,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // 5. Le reste, dont les liens magiques — en `onDelete: Restrict`, ils
     //    feraient échouer la suppression du patient s'ils subsistaient.
     supprimees.filCardRejections = (await tx.filCardRejection.deleteMany({ where: par })).count;
+    supprimees.filCardLectures = (await tx.filCardLecture.deleteMany({ where: par })).count;
     supprimees.relectureNotes = (await tx.relectureNote.deleteMany({ where: par })).count;
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
     supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;
