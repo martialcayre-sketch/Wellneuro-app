@@ -91,7 +91,6 @@ biologie.
 | `WN_DOSSIER_DEUX_VOIX` | `true` | l'écran « dossier à deux voix » (404), sa route d'assemblage (503) et **les quatre gestes du patient** (503) : **RATIFICATION**, amendement, réponse d'étape, et **demande de correction de l'objectif** | Alliance 6.0-A, LOT-06. **Ne se compose pas** des deux précédents : la ratification est la seule écriture patient **irréversible** de la campagne. Il ne remplace pas les autres, il **s'y ajoute** — chaque bloc de l'écran reste soumis à son propre drapeau, et un bloc éteint est **absent** de la réponse, ni « vide » ni « pas encore ouvert » (`DC-24`). Garde aussi l'amendement, et non `WN_OBJECTIF_PROPOSE` ([[D-110]] §1). Le quatrième geste n'a **délibérément pas** de drapeau propre ([[D-170]]) : l'en doter aurait rendu possible un écran où le bloc se ferme sur « c'est bien ça » sans que la porte de la demande s'ouvre — le patient sans recours. **POSÉ en Production depuis le 2026-08-23** ([[D-110]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. **MISE EN SERVICE DU QUATRIÈME GESTE CONSTATÉE LE 2026-09-12** — § B.3. |
 | `WN_OBJECTIF_PROPOSE` | `true` | la **machine qui propose** un objectif — l'assemblage (503) **et la lecture** (503) | Alliance 6.0-B, LOT-02, gouvernance du périmètre ([[D-094]]). Ce qu'il ouvre n'est pas une surface mais une force de proposition, d'où un drapeau distinct de `WN_DOSSIER_DEUX_VOIX`. Gâter la **lecture** est une exception assumée à la règle « une liste vide est un silence honnête » : ici, elle se lirait « la machine n'a rien trouvé à proposer sur ce dossier », soit un **constat sur le patient**, là où la vérité est que personne n'a ouvert la fonctionnalité. **Absent au 2026-08-26** ([[D-112]]) ; **posé** à la lecture du 2026-09-08 ([[D-154]] §1 — « ce n'est pas un drapeau qui manquait »). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
 | `WN_OBJECTIF_PROPOSE_PATIENTS` | liste d'identifiants séparés par des virgules, **vide = tous** | **rien** — il RESTREINT : mécanisme de réversibilité, pour limiter après coup et sans redéploiement | N'est pas une gâte : le fail-closed est tenu par `WN_OBJECTIF_PROPOSE`, qui précède toujours. En faire un périmètre par défaut inverserait son rôle, un oubli passant pour une fermeture voulue. **ABSENT en production au 2026-09-11** ⇒ périmètre = **tous les dossiers**, ce que [[D-094]] fonde sur un fait et non sur une commodité : les patients actuels sont des bêta-testeurs réels et informés. |
-| `WN_PORTAIL_JOURNAL` | `true` | le **journal du portail patient** — « ce qui s'est passé dans votre dossier » : sa route de lecture (503), et l'écran du LOT-03 quand il existera | Campagne « la vie du portail patient », LOT-01. **SIXIÈME drapeau neuf et éteint**, et il ne se compose d'aucun des cinq précédents : ce qu'il ouvre n'est ni une surface d'écriture ni une machine, mais une **restitution transverse**. Se greffer sur l'un d'eux ferait qu'ouvrir « ce qui compte » publierait du même geste l'histoire entière du dossier, gestes du praticien compris. **IL NE LÈVE AUCUN DES AUTRES, ET C'EST L'INVARIANT** : une surface fermée par son propre drapeau ne produit **aucune** ligne de journal, même celui-ci allumé — le journal ne peut pas devenir la porte dérobée par laquelle une synthèse de compréhension atteint un patient dont l'écran est clos. Le drapeau est relu **après** l'identité : un 503 servi à un visiteur non identifié dirait ce que le cabinet a déployé. **POSÉ en Production le 2026-09-12 à 13:24 UTC, puis RETIRÉ à 13:37:57 UTC** ([[D-172]]) — treize minutes de service, les deux gestes sur demande explicite du responsable. **L'état courant du drapeau est ABSENT, donc fermé** : l'écran « ce qui s'est passé dans votre dossier » n'est servi à personne. Il a été retiré parce que le responsable, le voyant sur son propre écran, a jugé qu'un récapitulatif rétrospectif **ajoute du bruit** là où il attendait une liste de ce qu'il y a à faire. Les deux bascules sont constatées par conteneur, jamais par la route : **le 401 ne prouve PAS le drapeau** et ne doit pas être lu ainsi — la route relit le drapeau APRÈS l'identité, si bien qu'un appel anonyme rend 401 dans les deux états. § B.4. |
 | `WN_RELANCE_QUESTIONNAIRE` | `true` | le **rappel patient d'un questionnaire resté sans réponse** — la route de relance (503) | Campagne « le second rideau borné et relancé », 2026-09-12. **SEPTIÈME drapeau neuf et éteint.** Ce qu'il ouvre est un **courrier de plus vers le patient**, et un courrier de plus ne se décide pas au déploiement : le cabinet choisit le jour où ses patients commencent à recevoir des rappels. Même ligne que `WN_AGENDA_RELANCE`. **Il ne garde PAS la borne** (`WN_ECHEANCE_OBLIGATOIRE`) : on peut vouloir rappeler sans contraindre, et l'inverse. La route n'écrit **rien** dans le dossier — ni assignation, ni réponse, ni statut : elle renvoie un courrier et le trace. **POSÉ en Production le 2026-09-12 à 16:32:45 UTC**, sur arbitrage du responsable rendu en session. Effectivité constatée comme l'exige le § B.4 : `env` relu (`true`), et **les deux conteneurs web recréés à 16:32:45** — un `env-set` seul ne change rien tant que les conteneurs tournent. Code en ligne vérifié AVANT la pose par contenance (`merge-base --is-ancestor` : #1056 contenu dans le déploiement courant), jamais par égalité de SHA. |
 | `WN_ECHEANCE_OBLIGATOIRE` | `true` | **refuse (422) une assignation sans échéance** sur un dossier qui porte déjà une synthèse validée | Même campagne. **HUITIÈME drapeau neuf et éteint, et le seul du lot qui arrête un geste du PRATICIEN** — d'où un drapeau distinct du précédent. Motif : une assignation postérieure à la première synthèse validée compose le **second rideau**, qui garde le `T0` ([[D-158]]) ; sans échéance, ce blocage n'a ni terme ni rappel — la relance elle-même refuse de partir (`sans_echeance`), parce qu'un rappel sans date ne dit rien de plus que l'invitation. **Il ne porte que le second rideau** : avant toute synthèse validée, le dossier se remplit au rythme de l'entrée, et lui imposer un terme au premier jour serait une borne administrative sur un parcours qui commence. **POSÉ en Production le 2026-09-12 à 16:32:45 UTC**, sur arbitrage du responsable rendu en session. Effectivité constatée comme l'exige le § B.4 : `env` relu (`true`), et **les deux conteneurs web recréés à 16:32:45** — un `env-set` seul ne change rien tant que les conteneurs tournent. Code en ligne vérifié AVANT la pose par contenance (`merge-base --is-ancestor` : #1056 contenu dans le déploiement courant), jamais par égalité de SHA. |
 | `WN_SYNTHESE_PAR_RIDEAU` | `true` | la **génération automatique d'un brouillon de synthèse** à la fermeture du premier puis du second rideau de questionnaires | [[D-174]]. **NEUVIÈME drapeau neuf et éteint, et le seul de la série qui déclenche un APPEL AU MODÈLE que personne n'a demandé** : ce n'est pas une surface qui s'ouvre, c'est une machine qui se met à produire sur des dossiers réels sans geste humain en amont. **CE QU'IL N'OUVRE PAS, ET C'EST L'INVARIANT** : rien n'atteint le patient — ce qui est produit est un `Brouillon_IA`, la validation et l'envoi restent deux gestes du praticien. Idempotent par marqueur (`donneesEntree.source`) : deux générations par dossier au maximum, et un brouillon rejeté ne se régénère pas. **ABSENT en production au 2026-09-12**, donc fermé — et il le reste tant que le responsable n'a pas validé la mise à jour du registre : `DOSSIER_RGPD.md` § 2 bis est **rédigé et en attente de validation**. L'ordre est cette fois l'inverse de l'épisode `WN_CB_RESULTS_ENABLED` du 2026-09-09, où le drapeau avait été posé avant. |
@@ -155,19 +154,41 @@ deux preuves, et par conteneur** :
    démarrage de 13:24:54 — l'`env-unset` seul n'éteint rien.
 
 **CE QUE LE DRAPEAU A PROUVÉ EN S'ÉTEIGNANT.** Une surface mise devant un patient
-et retirée treize minutes plus tard, sans déploiement, sans migration, sans
-qu'aucune donnée ne soit perdue : c'est exactement ce pour quoi un drapeau
-existe, et c'est la première fois qu'il sert dans ce sens ici. La table
-`portail_journal_reperes` reste en place et n'a rien perdu — aucun repère n'avait
-encore été posé en treize minutes, et la route qui les pose est fermée avec le
-reste.
+et retirée treize minutes plus tard, sans déploiement et sans migration : c'est
+exactement ce pour quoi un drapeau existe, et c'est la première fois qu'il sert
+dans ce sens ici.
 
-**CE QUI RESTE EN PLACE, ET CE QUI VA PARTIR.** `portail-visite.ts` et son bloc de
-repli (« Depuis votre dernière visite ») n'ont jamais été retirés : ils étaient le
-filet du nouvel écran, et ils sont redevenus l'écran. Le code du journal
-rétrospectif — sa dérivation et son composant — est **destiné au retrait** ; le
-**repère de fraîcheur survit**, car c'est lui qui fera disparaître une lecture du
-fil du jour une fois faite. Cet arbitrage est du responsable, pris le jour même.
+**CORRECTION DU 2026-09-12, 18 h — CE PARAGRAPHE DISAIT UNE CHOSE FAUSSE.** Il
+affirmait : « la table `portail_journal_reperes` n'a rien perdu — aucun repère
+n'avait encore été posé en treize minutes ». **C'était une supposition, pas une
+lecture.** La table a été lue en production (one-off-4288) et elle porte **UNE
+LIGNE**, sur **un dossier**, `vu_jusqua = 2026-09-12 12:34:33`. Un patient a donc
+bien ouvert son journal pendant ces treize minutes.
+
+La leçon est celle que ce fichier répète ailleurs et que j'ai manquée ici :
+**une absence se CONSTATE, elle ne se suppose pas.** Écrire « rien n'a été
+perdu » sans compter les lignes est exactement l'erreur que la §B.4 reproche au
+401 quelques paragraphes plus haut.
+
+Ce que cette ligne contient : qu'un dossier a vu son journal jusqu'à un certain
+instant. Aucun contenu clinique — la §B.4 le dit elle-même, « ce n'est PAS une
+trace d'audit ». Elle disparaîtra avec la table.
+
+**CE QUI EST PARTI DEPUIS, ET CE QUI PART AVEC.** Le drapeau n'existe plus : le
+code du journal rétrospectif a été retiré le jour même — dérivation, écran,
+route, et `isJournalPortailEnabled` avec eux. `portail-visite.ts` et son bloc
+« Depuis votre dernière visite » sont partis **du même geste**, et ce n'est pas
+un élargissement : ils étaient le filet du journal, et ils sont de la même
+famille — un récapitulatif rétrospectif, exactement ce que le responsable a
+refusé. Garder le premier parce que le second s'en va aurait conservé le bruit
+en changeant sa source.
+
+**LE REPÈRE NE SURVIT PLUS NON PLUS, ET L'ARBITRAGE A CHANGÉ.** Il devait servir
+à faire disparaître une lecture du fil une fois faite ; c'est une table dédiée
+qui le fait (`portail_lectures_patient`, LOT-08), avec un accusé PAR VERSION que
+le repère — un seul instant par dossier — ne pouvait pas porter. Sans
+consommateur, `portail_journal_reperes` est devenu orphelin, et sa suppression a
+été demandée explicitement par le responsable le 2026-09-12.
 
 **LES DEUX BOUTONS N'ÉTAIENT PAS GARDÉS PAR CE DRAPEAU.** « Dire ce qui compte pour
 moi » et « ce que votre praticien a compris », posés sur le hub par le LOT-05,

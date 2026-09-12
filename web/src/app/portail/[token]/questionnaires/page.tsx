@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/Badge';
 import { PatientCard, patientCardClassName } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
-import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
 import {
   affichage,
   GROUPES,
@@ -25,7 +24,6 @@ import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierD
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour } from '@/lib/portail/filDuJour';
 import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
-import { JournalDossier } from '@/components/patient/JournalDossier';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 
@@ -53,7 +51,6 @@ export default function QuestionnairesHubPage() {
   const [agendasAli, setAgendasAli] = useState<AgendaAliPortail[]>([]);
   const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
-  const [changements, setChangements] = useState<ChangementVisite[]>([]);
   // Parcours synchronisé (SP-CONV LOT-04, D11) : signaux servis par les
   // routes portail existantes. En cas d'échec de lecture, tout reste au plus
   // prudent (false / null) — le parcours n'avance jamais sur une supposition.
@@ -228,12 +225,6 @@ export default function QuestionnairesHubPage() {
         }
       })();
       setBrouillons(new Set(data.assignations.filter(a => hasDraft(a.idAssignation)).map(a => a.idAssignation)));
-      // Comparaison locale à l'instantané de la visite précédente — purement
-      // présentationnel, aucune écriture serveur (cf. lib/portail-visite.ts).
-      setChangements(detecterChangementsEtMettreAJour(
-        data.patient.idPatient,
-        data.assignations.map(a => ({ idAssignation: a.idAssignation, titre: a.titre || a.idQuestionnaire, statutReponses: a.statutReponses })),
-      ));
       setState({ status: 'ready' });
     } catch {
       if (annuleRef.current) return;
@@ -404,33 +395,23 @@ export default function QuestionnairesHubPage() {
       </details>
 
       {/*
-        LE JOURNAL DU DOSSIER prend la place de « Depuis votre dernière visite »
-        — et ce dernier reste son FILET tant que `WN_PORTAIL_JOURNAL` est
-        éteint. Le retirer avant la mise en service enlèverait au patient le peu
-        qu'il a : un résumé local, deviné, mais un résumé quand même.
+        ── CE QUI OCCUPAIT CETTE PLACE, ET POURQUOI IL N'Y EST PLUS ──────────
 
-        La différence est de nature, pas de degré. L'ancien compare un
-        instantané `localStorage` au suivant puis l'écrase : il ne voit que les
-        assignations, ne suit pas la personne d'un appareil à l'autre, et est
-        vide à la première visite par construction. Le nouveau se dérive du
-        serveur, et remonte à l'entrée du dossier.
+        Deux récapitulatifs RÉTROSPECTIFS se sont succédé ici : « Depuis votre
+        dernière visite (N) », deviné d'un instantané `localStorage`, puis le
+        journal du dossier, dérivé du serveur — ce dernier gardé par
+        `WN_PORTAIL_JOURNAL`, allumé treize minutes le 2026-09-12.
+
+        Le responsable a tranché en ouvrant son propre écran : un récapitulatif
+        rétrospectif AJOUTE DU BRUIT là où il attend une liste de ce qu'il y a à
+        faire. Les deux sont donc partis, et le second n'a pas servi de raison
+        de garder le premier : ils étaient de la même famille.
+
+        Ce qui répond maintenant à « où en suis-je » est le FIL DU JOUR, plus
+        haut — non pas ce qui s'est passé, mais ce qui reste à faire. Un dossier
+        qui n'a rien à demander le dit avec « Rien à faire aujourd'hui », et
+        c'est une réponse, pas un vide.
       */}
-      <JournalDossier
-        fallback={
-          changements.length > 0 ? (
-            <details className="rounded-xl border border-border bg-surface p-4">
-              <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Depuis votre dernière visite ({changements.length})
-              </summary>
-              <ul className="mt-3 space-y-1">
-                {changements.map(c => (
-                  <li key={c.idAssignation} className="text-base text-foreground">{c.texte}</li>
-                ))}
-              </ul>
-            </details>
-          ) : null
-        }
-      />
 
       {aCompleter > 0 && (
         <p className="text-sm text-muted-foreground">

@@ -22,10 +22,14 @@ import { describe, expect, it } from 'vitest';
 
 const RACINE = join(__dirname, '..');
 
+// `lib/portail-visite.ts` figurait ici et n'existe plus : l'instantané « depuis
+// votre dernière visite » a été retiré avec le journal rétrospectif
+// (2026-09-12). Le banc plus bas EXIGE au moins une clé par surface listée —
+// laisser l'entrée aurait fait échouer la lecture du fichier, pas simplement
+// passer à vide, ce qui est le bon comportement pour une garde.
 const SURFACES = [
   'app/portail/[token]/page.tsx',
   'components/food-observation/PatientFoodObservationPanel.tsx',
-  'lib/portail-visite.ts',
 ];
 
 describe('clés de stockage local du portail patient', () => {
@@ -43,11 +47,12 @@ describe('clés de stockage local du portail patient', () => {
     }
   });
 
-  it('le hub questionnaires date sa visite d’après le patient, pas d’après le lien', () => {
-    const source = readFileSync(join(RACINE, 'app/portail/[token]/questionnaires/page.tsx'), 'utf8');
-    const appel = source.match(/detecterChangementsEtMettreAJour\(\s*([^,]+),/);
-    expect(appel?.[1].trim()).toBe('data.patient.idPatient');
-  });
+  // RETIRÉ LE 2026-09-12 — « le hub questionnaires date sa visite d'après le
+  // patient, pas d'après le lien ». Son sujet n'existe plus : le hub ne garde
+  // AUCUNE trace locale depuis le retrait de l'instantané « depuis votre
+  // dernière visite ». Un banc dont l'objet a disparu ne garde pas moins, il
+  // garde du vide — et sa présence laisserait croire qu'une surface est
+  // surveillée alors qu'elle n'écrit plus rien.
 
   it('le panneau du Journal Alimentaire ne reçoit plus le jeton du tout', () => {
     const source = readFileSync(join(RACINE, 'components/food-observation/PatientFoodObservationPanel.tsx'), 'utf8');

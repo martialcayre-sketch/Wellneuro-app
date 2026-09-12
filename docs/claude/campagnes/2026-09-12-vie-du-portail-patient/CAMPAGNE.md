@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-09, les lectures entrent au fil"
+statut: "en cours — LOT-10, le journal rétrospectif s'en va"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-09"
+lot_courant: "LOT-10"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-lectures-au-fil"
+branche_lot_courant: "portail-retrait-journal"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -189,6 +189,7 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-07** | **LE FIL DU JOUR** — la liste de ce qu'il y a à faire, à la place de « votre étape du moment ». Répare la dérive du cadrage, lisible en tête de ce fichier | non |
 | **LOT-08** | **CE QUE LE PATIENT A DÉJÀ LU** — un accusé par version remise, pour que les lectures entrent au fil et en sortent une fois faites | **oui** — demandée explicitement le 2026-09-12 |
 | **LOT-09** | **LES LECTURES AU FIL** — un bilan neuf, une synthèse neuve deviennent des tâches, et sortent à l'ouverture de leur écran | non |
+| **LOT-10** | **RETRAIT DU JOURNAL** — dérivation, écran, route, drapeau, et le repli « Depuis votre dernière visite » qui lui servait de filet | non |
 
 ## Une ligne du cadrage était fausse — corrigée le 2026-09-12
 
