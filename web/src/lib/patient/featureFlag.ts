@@ -153,3 +153,27 @@ export function dossierDansPerimetreProposition(
   if (liste.length === 0) return true;
   return liste.includes(idPatient);
 }
+
+/**
+ * Drapeau du JOURNAL DU PORTAIL PATIENT — « ce qui s'est passé dans votre
+ * dossier » (campagne « la vie du portail patient », LOT-01).
+ *
+ * SIXIÈME DRAPEAU NEUF ET ÉTEINT, et il ne se compose d'aucun des cinq
+ * précédents. Ce qu'il ouvre n'est ni une surface d'écriture ni une machine :
+ * c'est une RESTITUTION TRANSVERSE. Le journal traverse des surfaces qui ont
+ * chacune leur propre interrupteur — se greffer sur l'une d'elles ferait
+ * qu'ouvrir « ce qui compte » publierait du même geste l'histoire entière du
+ * dossier, y compris les gestes du praticien.
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre. Même doctrine que
+ * `WN_CE_QUI_COMPTE`, `WN_COMPREHENSION`, `WN_DOSSIER_DEUX_VOIX`,
+ * `WN_OBJECTIF_PROPOSE`, `WN_C4_ENABLED` et `WN_CB_ENABLED`.
+ *
+ * IL NE LÈVE AUCUN DES AUTRES, ET C'EST L'INVARIANT. Une surface fermée par
+ * son propre drapeau ne produit AUCUNE ligne de journal, même celui-ci allumé :
+ * le journal ne peut pas devenir la porte dérobée par laquelle une synthèse de
+ * compréhension atteint un patient dont la surface est close.
+ */
+export function isJournalPortailEnabled(value = process.env.WN_PORTAIL_JOURNAL): boolean {
+  return value === 'true';
+}

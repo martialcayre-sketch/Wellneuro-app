@@ -13,6 +13,12 @@ export const EVENT_CODES = {
   PORTAIL_SESSION_EXCEPTION: 'PORTAIL_PATIENT.SESSION.EXCEPTION',
   PORTAIL_ASSIGNATIONS_UNAUTHORIZED: 'PORTAIL_PATIENT.ASSIGNATIONS.UNAUTHORIZED',
   PORTAIL_ASSIGNATIONS_QUERY_FAILED: 'PORTAIL_PATIENT.ASSIGNATIONS.QUERY_FAILED',
+  // Campagne « vie du portail patient », LOT-01 — la lecture du journal du
+  // dossier a échoué. Pas de code « registre anxiogène » pour cette route, et
+  // ce n'est pas un oubli : le journal ne sert AUCUN texte libre — ni la parole
+  // du patient, ni celle du praticien — seulement des phrases fixes et des
+  // titres de questionnaire, qui sont des libellés de catalogue.
+  PORTAIL_JOURNAL_QUERY_FAILED: 'PORTAIL_PATIENT.JOURNAL.QUERY_FAILED',
   // Socle LOT-01 — re-vérification au service du bilan : le contenu servi
   // emploie un registre anxiogène (journalisant, jamais bloquant).
   PORTAIL_BILAN_REGISTRE_ANXIOGENE: 'PORTAIL_PATIENT.BILAN.REGISTRE_ANXIOGENE',
