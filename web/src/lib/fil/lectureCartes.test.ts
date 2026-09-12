@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CarteFil, TypeCarteFil } from './cartes';
 import {
+  grouperLuesParLecture,
   lectureEffective,
   lienFilVersFiche,
   PARAM_PROVENANCE_FIL,
@@ -335,5 +336,73 @@ describe('urlSansMarqueurFil — ce que la barre d’adresse garde après la lec
     expect(urlSansMarqueurFil('PAT006', { onglet: ['cockpit', 'besoins'], fil: 'geste_objectif' })).toBe(
       '/dashboard/patients/PAT006?onglet=cockpit&onglet=besoins',
     );
+  });
+});
+
+describe('grouperLuesParLecture — une trace par lecture, pas une par carte', () => {
+  it('sans carte lue, aucune trace', () => {
+    expect(grouperLuesParLecture([])).toEqual([]);
+  });
+
+  it('LES DEUX RATIFICATIONS DE PAT006 NE FONT QU’UNE TRACE — c’est ce que « Remettre » annule', () => {
+    // Deux lignes « Remettre » côte à côte agiraient toutes deux sur le même
+    // état : cliquer l'une ferait disparaître l'autre, et le praticien ne
+    // saurait pas ce que son geste a fait.
+    const groupes = grouperLuesParLecture([
+      carte({ cle: 'geste_objectif:l1' }),
+      carte({ cle: 'geste_objectif:l2' }),
+    ]);
+    expect(groupes).toHaveLength(1);
+    expect(groupes[0]).toMatchObject({ cle: 'PAT006|geste_objectif', idPatient: 'PAT006', type: 'geste_objectif' });
+  });
+
+  it('AUCUN DÉCOMPTE ne sort du groupe — « 2 cartes lues » referait un volume (DC-19)', () => {
+    const [groupe] = grouperLuesParLecture([
+      carte({ cle: 'geste_objectif:l1' }),
+      carte({ cle: 'geste_objectif:l2' }),
+    ]);
+    expect(Object.keys(groupe).sort()).toEqual(['cle', 'date', 'idPatient', 'patient', 'type']);
+    expect(JSON.stringify(groupe)).not.toMatch(/\b2\b/);
+  });
+
+  it('deux dossiers, deux traces ; deux types, deux traces', () => {
+    const groupes = grouperLuesParLecture([
+      carte({ idPatient: 'PAT006' }),
+      carte({ idPatient: 'PAT017', cle: 'geste_objectif:autre' }),
+      carte({ type: 'signalement_trust', cle: 'signalement_trust:s1' }),
+    ]);
+    expect(groupes.map(g => g.cle)).toEqual([
+      'PAT006|geste_objectif',
+      'PAT017|geste_objectif',
+      'PAT006|signalement_trust',
+    ]);
+  });
+
+  it('la trace porte la date de la carte la PLUS RÉCENTE du groupe', () => {
+    // Elle prend la place du dernier geste sur la timeline du jour. Garder la
+    // première ferait remonter la trace au-dessus de gestes plus récents
+    // qu'elle acquitte pourtant.
+    const [groupe] = grouperLuesParLecture([
+      carte({ cle: 'a', date: '2026-09-11T10:00:00.000Z' }),
+      carte({ cle: 'b', date: '2026-09-11T16:00:00.000Z' }),
+      carte({ cle: 'c', date: '2026-09-11T12:00:00.000Z' }),
+    ]);
+    expect(groupe.date).toBe('2026-09-11T16:00:00.000Z');
+  });
+
+  it('une carte SANS DATE n’efface pas la date du groupe, et seule elle la laisse nulle', () => {
+    const [avecDate] = grouperLuesParLecture([
+      carte({ cle: 'a', date: '2026-09-11T10:00:00.000Z' }),
+      carte({ cle: 'b', date: null }),
+    ]);
+    expect(avecDate.date).toBe('2026-09-11T10:00:00.000Z');
+
+    const [sansDate] = grouperLuesParLecture([carte({ cle: 'b', date: null })]);
+    expect(sansDate.date).toBeNull();
+  });
+
+  it('le nom du dossier vient de la carte, jamais d’une reconstitution', () => {
+    const [groupe] = grouperLuesParLecture([carte({ patient: 'Michel Dogné' })]);
+    expect(groupe.patient).toBe('Michel Dogné');
   });
 });

@@ -223,3 +223,51 @@ export function urlSansMarqueurFil(
   const requete = reste.toString();
   return requete ? `${base}?${requete}` : base;
 }
+
+/**
+ * UNE TRACE DE LECTURE PAR (DOSSIER, TYPE) — pas une par carte.
+ *
+ * C'est la granularité RÉELLE de ce qui s'est écrit : la table consigne un
+ * type, jamais une clé de carte. Les deux ratifications d'un même patient sont
+ * parties ENSEMBLE et reviendront ENSEMBLE ; deux lignes « Remettre » côte à
+ * côte, agissant toutes deux sur le même état, mentiraient sur ce que le geste
+ * fait.
+ *
+ * ET SURTOUT : AUCUN DÉCOMPTE. « 2 cartes lues » referait de paroles distinctes
+ * un volume — ce que `cartesGestesObjectif` refuse explicitement (`DC-19`). Le
+ * groupe porte le libellé de son type et le nom du dossier, rien d'autre.
+ */
+export type GroupeLecture = {
+  /** `${idPatient}|${type}` — ce qu'une ligne « Remettre » annule vraiment. */
+  cle: string;
+  idPatient: string;
+  type: TypeCarteFil;
+  patient: string;
+  /**
+   * La date de la carte la plus RÉCENTE du groupe : la trace garde sa place sur
+   * la timeline du jour, là où le dernier geste s'est produit.
+   */
+  date: string | null;
+};
+
+export function grouperLuesParLecture(lues: CarteFil[]): GroupeLecture[] {
+  const groupes = new Map<string, GroupeLecture>();
+  for (const carte of lues) {
+    const k = cle(carte.idPatient, carte.type);
+    const connu = groupes.get(k);
+    if (!connu) {
+      groupes.set(k, {
+        cle: k,
+        idPatient: carte.idPatient,
+        type: carte.type,
+        patient: carte.patient,
+        date: carte.date,
+      });
+      continue;
+    }
+    if (carte.date === null) continue;
+    const candidate = new Date(carte.date).getTime();
+    if (connu.date === null || candidate > new Date(connu.date).getTime()) connu.date = carte.date;
+  }
+  return [...groupes.values()];
+}
