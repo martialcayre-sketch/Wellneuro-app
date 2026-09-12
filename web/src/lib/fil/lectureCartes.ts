@@ -1,4 +1,5 @@
 import type { CarteFil, TypeCarteFil } from './cartes';
+import type { OngletFiche, PhaseFiche } from '@/lib/praticien/ongletsFiche';
 import { bornesJourParis } from './fuseau';
 
 /**
@@ -139,4 +140,86 @@ export const TYPES_ACQUITTABLES_PAR_LECTURE: readonly TypeCarteFil[] = ['geste_o
 
 export function sAcquitteParLecture(type: TypeCarteFil): boolean {
   return (TYPES_ACQUITTABLES_PAR_LECTURE as readonly string[]).includes(type);
+}
+
+/**
+ * LE MARQUEUR DE PROVENANCE — ce qui distingue « j'arrive par le Fil » de
+ * « j'ouvre ce dossier ».
+ *
+ * SANS LUI, CONSULTER UN DOSSIER EFFACERAIT EN SILENCE LES SIGNAUX QU'IL PORTE.
+ * Ouvrir la fiche de PAT006 depuis la liste des patients, pour tout autre
+ * motif, viderait son Fil des paroles qu'on n'a pas lues. La lecture consignée
+ * est celle d'un geste précis, atteint par le lien qui le nommait.
+ */
+export const PARAM_PROVENANCE_FIL = 'fil';
+
+/**
+ * OÙ LA LECTURE SE FAIT, sur la fiche — un couple (onglet, phase) par type.
+ *
+ * Le lien ne se contente plus d'ouvrir le dossier : il ouvre l'endroit où la
+ * parole du patient se lit. « Ouvrir la fiche » puis chercher soi-même la
+ * réponse dans sept phases, c'est le trajet que la carte existe pour éviter.
+ *
+ * TOUTE CLÉ D'ICI DOIT S'ACQUITTER PAR LECTURE, et c'est un banc qui le tient,
+ * pas une garde au runtime : une destination déclarée pour un signalement
+ * Trust poserait le marqueur sur un lien qui ne doit jamais l'avoir. Le
+ * vérifier ici ET dans `lienFilVersFiche` serait une garde morte — la seconde
+ * ne pourrait jamais rendre un verdict différent de la première.
+ */
+const DESTINATION_LECTURE: Partial<Record<TypeCarteFil, { onglet: OngletFiche; phase: PhaseFiche }>> = {
+  geste_objectif: { onglet: 'cockpit', phase: 'comprehension' },
+};
+
+/**
+ * LE LIEN D'UNE CARTE ACQUITTABLE : la fiche, à sa phase, marquée d'où l'on
+ * vient. Un type sans destination déclarée rend la fiche nue — un lien qui
+ * marche, jamais une 404 ni un marqueur orphelin.
+ */
+export function lienFilVersFiche(idPatient: string, type: TypeCarteFil): string {
+  const base = `/dashboard/patients/${encodeURIComponent(idPatient)}`;
+  const destination = DESTINATION_LECTURE[type];
+  if (!destination) return base;
+  return `${base}?onglet=${destination.onglet}&phase=${destination.phase}&${PARAM_PROVENANCE_FIL}=${encodeURIComponent(type)}`;
+}
+
+/**
+ * CE QUE LA PAGE ACCEPTE DE CONSIGNER À L'ATTERRISSAGE — la même liste étroite
+ * que la route, relue ici sur une valeur d'URL.
+ *
+ * UNE URL EST UNE ENTRÉE UTILISATEUR. `?fil=signalement_trust` collé à la main
+ * ferait disparaître du Fil un suivi que personne n'a fait ; la page le refuse
+ * avant même que la route ait à le refuser (`D-164`, deux gardes valent mieux
+ * qu'une quand la seconde est gratuite).
+ */
+export function typeLuAlAtterrissage(valeur: unknown): TypeCarteFil | null {
+  const brut = Array.isArray(valeur) ? valeur[0] : valeur;
+  if (typeof brut !== 'string') return null;
+  const type = brut.trim();
+  return sAcquitteParLecture(type as TypeCarteFil) ? (type as TypeCarteFil) : null;
+}
+
+/**
+ * L'URL DE LA MÊME PAGE, SANS LE MARQUEUR — ce que le client remet dans la
+ * barre d'adresse une fois la lecture consignée.
+ *
+ * CALCULÉE AU SERVEUR, et pas avec `useSearchParams` : ce hook force la page
+ * dans une frontière Suspense et fait basculer son rendu. La page connaît déjà
+ * son chemin et ses paramètres ; les recomposer coûte trois lignes.
+ *
+ * SANS CE NETTOYAGE, un rechargement (F5) réécrirait une lecture — inoffensif,
+ * la table est chaînée, mais elle raconterait des lectures qui n'ont pas eu
+ * lieu, et une trace d'audit qui exagère ne vaut pas mieux qu'une qui ment.
+ */
+export function urlSansMarqueurFil(
+  idPatient: string,
+  parametres: Record<string, string | string[] | undefined> | undefined,
+): string {
+  const base = `/dashboard/patients/${encodeURIComponent(idPatient)}`;
+  const reste = new URLSearchParams();
+  for (const [cle, valeur] of Object.entries(parametres ?? {})) {
+    if (cle === PARAM_PROVENANCE_FIL || valeur === undefined) continue;
+    for (const v of Array.isArray(valeur) ? valeur : [valeur]) reste.append(cle, v);
+  }
+  const requete = reste.toString();
+  return requete ? `${base}?${requete}` : base;
 }
