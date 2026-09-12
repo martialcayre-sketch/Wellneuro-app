@@ -4,6 +4,124 @@
 
 ## Décisions actives
 
+### D-172 — La vie du portail patient se DÉRIVE et se consigne au serveur ; « consigner » n'est pas « assigner », et le journal ne lève aucun drapeau
+
+- Date : 2026-09-12
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-09-12 :
+  « Seulement ce qui lui est remis », « Tout le dossier », « Déplié seulement
+  s'il y a du neuf », « L'entrée est elle-même la première ligne »)
+- Domaine : doctrine produit — portail patient
+- Voisine de [[D-171]], et à ne pas confondre avec elle : là-bas un praticien
+  ACQUITTE une carte de son Fil ; ici un patient est INFORMÉ de la vie de son
+  dossier. Les deux touchent le mot « fil » et rien d'autre.
+
+**Demande du responsable.** « Prévoir au portail patient un *fil du jour*
+(questionnaires à remplir, lectures synthèses, bilans, actions à faire, rappels
+d'agenda) — **consigner la vie du portail patient** ».
+
+**LE PIÈGE ÉTAIT DANS LA DEMANDE, ET IL ÉTAIT DÉJÀ ÉCRIT DANS LE CODE.**
+`MonParcoursAccueil.tsx` porte ceci en tête : « Ce bloc porte l'étape du moment
+— UNE seule chose mise en avant. C'est la réponse à l'écart **E11** de l'audit
+5.0 : la page d'atterrissage empilait une dizaine de blocs autonomes, contre le
+principe **A6-R1** *une étape à la fois (séquentiel, pas de hub empilé)* côté
+patient. » Un « fil du jour » patient qui LISTE TOUT CE QUI EST DÛ est,
+littéralement, le hub empilé qu'un audit a fait démonter.
+
+**CE QUI SAUVE LA DEMANDE : `CONSIGNER` N'EST PAS `ASSIGNER`.** Le Fil praticien
+fait deux choses à la fois — il dit ce qui s'est passé ET ce qu'il reste à
+faire. Côté patient, ces deux moitiés n'ont pas le même sort : la moitié « à
+faire » existe (« votre étape du moment ») et ne doit pas grossir ; la moitié
+« ce qui s'est passé » n'existait pas. La demande, lue à la lettre, porte sur
+celle qui manque — celle qui n'entre en concurrence avec rien.
+
+**Décision, en sept points.**
+
+1. **LE JOURNAL SE DÉRIVE, IL NE SE STOCKE PAS.** La vie du dossier est déjà en
+   base. Un journal recopié divergerait de ce qu'il prétend refléter, et
+   personne ne saurait lequel des deux croire. Même discipline que [[D-170]]
+   (« un statut se coche sans rien faire ; une reformulation ne se simule pas »).
+2. **Y ENTRENT LES GESTES DU PRATICIEN QUI REMETTENT QUELQUE CHOSE** — synthèse
+   publiée, bilan transmis, questionnaire proposé, objectif proposé ou reformulé.
+   Pas les gestes internes : un protocole relu, une biologie arbitrée, une
+   décision de palier. **La ligne de partage est le DESTINATAIRE du geste, pas
+   sa nature** : le patient voit ce qui lui arrive, jamais ce qu'on fait de lui.
+3. **LE JOURNAL REMONTE À L'ENTRÉE DU DOSSIER, sans borne.** Aucune fenêtre,
+   donc aucun seuil à inventer (`DC-19`/`DC-20`). La volumétrie réelle ne la
+   justifie pas ; si elle vient à la justifier, ce sera un fait nouveau constaté
+   sur des dossiers réels.
+4. **L'ENTRÉE DANS L'ACCOMPAGNEMENT EST ELLE-MÊME UN ÉVÉNEMENT**, et donc la
+   première ligne. Conséquence directe et heureuse : **le journal n'est jamais
+   vide, il n'y a aucun état vide à écrire et aucune phrase d'accueil à
+   inventer.** `DC-24` est satisfait sans habillage — l'absence de tout le reste
+   se lit comme une absence parce qu'il n'y a rien d'autre à lire.
+5. **REPLIÉ PAR DÉFAUT, DÉPLIÉ S'IL Y A DU NEUF.** C'est le SEUL point de la
+   campagne qui demande une écriture, et le cadrage annonçait le contraire.
+   Calculé en `localStorage`, le « neuf » reproduirait le défaut même que cette
+   campagne corrige : un patient qui change d'appareil verrait tout en neuf, ou
+   rien.
+6. **LE REPÈRE EST UNE LIGNE PAR DOSSIER, ÉCRASÉE, ET SA CLÉ PRIMAIRE REND LE
+   DÉCOMPTE IMPOSSIBLE — pas seulement interdit.** Une table append-only de
+   visites dirait « ce patient a ouvert son portail 14 fois en septembre », un
+   constat sur lui (`DC-19`/`DC-20`). Ce qui n'est pas conservé ne se compte pas.
+   Ce repère **n'est pas une trace d'audit** : les valeurs précédentes sont
+   perdues, et la perte est voulue.
+7. **LE JOURNAL NE LÈVE AUCUN DRAPEAU DE SURFACE.** `WN_PORTAIL_JOURNAL` ouvre le
+   journal et rien d'autre : une surface fermée par son propre drapeau ne produit
+   AUCUNE ligne, même celui-ci allumé. Sans cette règle, le journal deviendrait
+   la porte dérobée par laquelle une synthèse de compréhension atteint un patient
+   dont l'écran est clos.
+
+**Écarté — grossir « votre étape du moment ».** `A6-R1` tient. Aucun lot n'y
+ajoute de liste.
+
+**Écarté — notifier.** Aucun canal sortant, ni e-mail ni push. Le portail se
+consulte, il ne poursuit pas (même arbitrage que le Fil praticien, 2026-09-10).
+
+**Écarté — retirer `portail-visite.ts` avant la mise en service.** Il reste le
+filet du nouveau bloc : tant que le drapeau est éteint, « Depuis votre dernière
+visite » reprend sa place. Le retirer avant enlèverait au patient le peu qu'il a.
+
+**CE QUE CETTE DÉCISION COÛTE, ET IL FAUT LE SAVOIR.** Le jour où une surface
+aujourd'hui fermée s'ouvrira, le journal fera **apparaître d'un coup des faits
+anciens**. Ils seront vrais, et datés de leur jour ; aucune ligne ne dira « ceci
+vous est révélé aujourd'hui ».
+
+**UNE LIGNE DU CADRAGE ÉTAIT FAUSSE, ET LE DIRE FAIT PARTIE DE LA DÉCISION.** Le
+cadrage affirmait que l'agenda alimentaire n'avait « ni état ni rappel » ; la
+vérification, faite avant d'écrire le lot, a montré que le module jumeau existe,
+qu'il a ses bancs, et que le hub le fait remonter jusqu'à l'étape du moment. Le
+lot est devenu sans objet. **Une absence se CONSTATE, elle ne se suppose pas** —
+c'est la leçon de « sans drapeau propre = en service au déploiement », appliquée
+en sens inverse.
+
+**Mise en œuvre.** Cinq lots livrés le 2026-09-12 : la dérivation et sa route,
+le repère de fraîcheur (migration partie **seule**, [[D-087]], approuvée en
+`release-db` et **constatée par conteneur**) et sa route, l'écran, et les deux
+portes manquantes. Sept promesses tenues par contrat SQL négatif. **Le drapeau
+`WN_PORTAIL_JOURNAL` reste ÉTEINT : le code se livre, son activation se
+demande.**
+
+**LE COMPTE EXACT DES MUTATIONS, parce que deux messages de commit l'ont arrondi
+à l'avantage du code.** **55 jouées, 49 tuées**, réparties ainsi : LOT-01 20
+jouées / 19 tuées, LOT-02 10 / 10, LOT-03 17 / 12, LOT-05 8 / 8. Les six
+survivantes ne sont pas des trous laissés ouverts, et c'est pour cela qu'elles
+méritent d'être dites plutôt que gommées :
+
+- **LOT-01, une survivante** (une clé de journal sans son espèce) : un banc a été
+  ajouté, puis la mutation rejouée sous deux formes — tuées toutes deux. La PR
+  annonçait « 20 tuées » ; c'est 19, plus deux rejeux.
+- **LOT-03, cinq survivantes.** Quatre désignaient du **code mort** — un effet de
+  montage qui doublait `onToggle` (la spécification HTML fait naître un `toggle`
+  chaque fois que `open` est posé, y compris par React au premier rendu), et une
+  garde `if (open)` dont le premier `toggle` est nécessairement une ouverture.
+  Elles ont été résolues en RETIRANT le code, pas en ajoutant un banc. La
+  cinquième était **équivalente** : deux gardes défensives se couvrant l'une
+  l'autre, dont aucune n'est observable seule. La PR annonçait « 15 tuées » ;
+  c'est 12 sur 17, et le reste a fait maigrir le code.
+
+Un compte de mutations n'a de valeur que s'il est exact : arrondi, il devient
+l'argument d'autorité que la méthode existe pour remplacer.
+
 ### D-171 — Une carte du Fil s'acquitte en la LISANT, et la lecture se prouve par l'atterrissage — jamais par l'ouverture d'un dossier
 
 - Date : 2026-09-12

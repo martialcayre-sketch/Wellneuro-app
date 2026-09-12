@@ -5437,3 +5437,39 @@ release-db. Elle l'était déjà, par un run approuvé ; mon déploiement n'a ri
 
 Prochaine action — aucune de nature technique. Reste un geste praticien :
 débloquer PAT017 depuis sa fiche.
+
+## 2026-09-12 — La vie du portail patient, consignée au serveur
+
+Demande — « prévoir au portail patient un fil du jour… consigner la vie du
+portail patient ». Le piège était dans la demande et déjà écrit dans le code : un
+fil patient qui LISTE tout ce qui est dû est le hub empilé que l'écart E11 a fait
+démonter. Ce qui la sauve : **consigner n'est pas assigner**. La moitié « à
+faire » existe et ne doit pas grossir ; la moitié « ce qui s'est passé »
+n'existait pas.
+
+Livré en cinq lots, cinq PR — la dérivation et sa route, le repère de fraîcheur
+(migration partie seule, `D-087`, approuvée et constatée par conteneur
+one-off-5630) et sa route, l'écran, les deux portes manquantes. Doctrine `D-172`.
+
+Quatre arbitrages du responsable : seuls les gestes du praticien QUI REMETTENT
+quelque chose ; tout le dossier sans borne ; replié, déplié s'il y a du neuf ;
+l'entrée dans l'accompagnement est la première ligne.
+
+Décidé sans demander, et dit — le repère avance quand le journal a été montré
+déplié (pas à chaque chargement) ; le POST ignore son corps (un horodatage du
+client poserait le silence à perpétuité) ; le journal ne lève AUCUN drapeau de
+surface ; l'ancien bloc reste le filet du nouveau jusqu'à la mise en service.
+
+Trouvé en chemin, et corrigé — **le cadrage se trompait sur l'agenda
+alimentaire** : il l'annonçait sans état ni rappel, le module jumeau existe et le
+hub le fait remonter jusqu'à l'étape du moment. Le LOT-04 est devenu sans objet.
+Une absence se constate, elle ne se suppose pas.
+
+Prouvé — **55 mutations jouées, 49 tuées**. Les six survivantes ont été utiles :
+une a désigné un banc manquant, quatre ont désigné du CODE MORT (un effet de
+montage doublant `onToggle`, une garde `if (open)` inatteignable) retiré plutôt
+que couvert, et une était équivalente. Deux messages de commit ont arrondi ces
+comptes à l'avantage du code — corrigé dans `D-172`.
+
+Prochaine action — la mise en service : `WN_PORTAIL_JOURNAL` reste éteint, et son
+allumage se demande. Avec lui vient le retrait de `portail-visite.ts`.
