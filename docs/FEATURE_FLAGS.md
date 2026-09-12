@@ -91,7 +91,48 @@ biologie.
 | `WN_DOSSIER_DEUX_VOIX` | `true` | l'écran « dossier à deux voix » (404), sa route d'assemblage (503) et **les quatre gestes du patient** (503) : **RATIFICATION**, amendement, réponse d'étape, et **demande de correction de l'objectif** | Alliance 6.0-A, LOT-06. **Ne se compose pas** des deux précédents : la ratification est la seule écriture patient **irréversible** de la campagne. Il ne remplace pas les autres, il **s'y ajoute** — chaque bloc de l'écran reste soumis à son propre drapeau, et un bloc éteint est **absent** de la réponse, ni « vide » ni « pas encore ouvert » (`DC-24`). Garde aussi l'amendement, et non `WN_OBJECTIF_PROPOSE` ([[D-110]] §1). Le quatrième geste n'a **délibérément pas** de drapeau propre ([[D-170]]) : l'en doter aurait rendu possible un écran où le bloc se ferme sur « c'est bien ça » sans que la porte de la demande s'ouvre — le patient sans recours. **POSÉ en Production depuis le 2026-08-23** ([[D-110]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. **MISE EN SERVICE DU QUATRIÈME GESTE CONSTATÉE LE 2026-09-12** — § B.3. |
 | `WN_OBJECTIF_PROPOSE` | `true` | la **machine qui propose** un objectif — l'assemblage (503) **et la lecture** (503) | Alliance 6.0-B, LOT-02, gouvernance du périmètre ([[D-094]]). Ce qu'il ouvre n'est pas une surface mais une force de proposition, d'où un drapeau distinct de `WN_DOSSIER_DEUX_VOIX`. Gâter la **lecture** est une exception assumée à la règle « une liste vide est un silence honnête » : ici, elle se lirait « la machine n'a rien trouvé à proposer sur ce dossier », soit un **constat sur le patient**, là où la vérité est que personne n'a ouvert la fonctionnalité. **Absent au 2026-08-26** ([[D-112]]) ; **posé** à la lecture du 2026-09-08 ([[D-154]] §1 — « ce n'est pas un drapeau qui manquait »). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
 | `WN_OBJECTIF_PROPOSE_PATIENTS` | liste d'identifiants séparés par des virgules, **vide = tous** | **rien** — il RESTREINT : mécanisme de réversibilité, pour limiter après coup et sans redéploiement | N'est pas une gâte : le fail-closed est tenu par `WN_OBJECTIF_PROPOSE`, qui précède toujours. En faire un périmètre par défaut inverserait son rôle, un oubli passant pour une fermeture voulue. **ABSENT en production au 2026-09-11** ⇒ périmètre = **tous les dossiers**, ce que [[D-094]] fonde sur un fait et non sur une commodité : les patients actuels sont des bêta-testeurs réels et informés. |
-| `WN_PORTAIL_JOURNAL` | `true` | le **journal du portail patient** — « ce qui s'est passé dans votre dossier » : sa route de lecture (503), et l'écran du LOT-03 quand il existera | Campagne « la vie du portail patient », LOT-01. **SIXIÈME drapeau neuf et éteint**, et il ne se compose d'aucun des cinq précédents : ce qu'il ouvre n'est ni une surface d'écriture ni une machine, mais une **restitution transverse**. Se greffer sur l'un d'eux ferait qu'ouvrir « ce qui compte » publierait du même geste l'histoire entière du dossier, gestes du praticien compris. **IL NE LÈVE AUCUN DES AUTRES, ET C'EST L'INVARIANT** : une surface fermée par son propre drapeau ne produit **aucune** ligne de journal, même celui-ci allumé — le journal ne peut pas devenir la porte dérobée par laquelle une synthèse de compréhension atteint un patient dont l'écran est clos. Le drapeau est relu **après** l'identité : un 503 servi à un visiteur non identifié dirait ce que le cabinet a déployé. **ABSENT en production au 2026-09-12** — le code se livre, son activation se demande. |
+| `WN_PORTAIL_JOURNAL` | `true` | le **journal du portail patient** — « ce qui s'est passé dans votre dossier » : sa route de lecture (503), et l'écran du LOT-03 quand il existera | Campagne « la vie du portail patient », LOT-01. **SIXIÈME drapeau neuf et éteint**, et il ne se compose d'aucun des cinq précédents : ce qu'il ouvre n'est ni une surface d'écriture ni une machine, mais une **restitution transverse**. Se greffer sur l'un d'eux ferait qu'ouvrir « ce qui compte » publierait du même geste l'histoire entière du dossier, gestes du praticien compris. **IL NE LÈVE AUCUN DES AUTRES, ET C'EST L'INVARIANT** : une surface fermée par son propre drapeau ne produit **aucune** ligne de journal, même celui-ci allumé — le journal ne peut pas devenir la porte dérobée par laquelle une synthèse de compréhension atteint un patient dont l'écran est clos. Le drapeau est relu **après** l'identité : un 503 servi à un visiteur non identifié dirait ce que le cabinet a déployé. **POSÉ en Production le 2026-09-12 à 13:24 UTC** ([[D-172]]), sur demande explicite du responsable. Mise en service **constatée par trois preuves** : `env` relu = `true` ; les deux conteneurs web recréés à 13:24:54 UTC, donc APRÈS la pose, donc porteurs de la valeur ; et la route répond **401 et non 404** — elle est déployée. **Le 401 ne prouve PAS le drapeau** et ne doit pas être lu ainsi : la route relit le drapeau APRÈS l'identité, si bien qu'un appel anonyme rend 401 dans les deux états. § B.4. |
+
+### B.4 — Mise en service du journal du portail patient (2026-09-12)
+
+`WN_PORTAIL_JOURNAL` **posé à `true` le 2026-09-12 à 13:24 UTC**, sur demande
+explicite du responsable, après livraison des six lots de la campagne « la vie du
+portail patient » ([[D-172]]).
+
+**Ce qui a été vérifié AVANT de poser le drapeau** : que le code était en ligne.
+Un drapeau posé avant son code ouvre une porte sur rien. Preuve directe plutôt
+qu'une égalité de SHA — `src/app/api/portail/journal/route.ts` **présent dans le
+conteneur** (one-off-252), et les cinq commits de squash des lots de code
+contenus dans le déploiement courant (`merge-base --is-ancestor`).
+
+**Ce qui a été vérifié APRÈS** — trois preuves, et une quatrième écartée :
+
+1. `scalingo env` relu : `WN_PORTAIL_JOURNAL=true`.
+2. `scalingo ps` : les deux conteneurs web **recréés à 13:24:54 UTC**, donc
+   après la pose. Un `env-set` seul ne change rien tant que les conteneurs
+   tournent : ils lisent leur environnement au démarrage.
+3. La route répond **401 et non 404** : elle est déployée et servie.
+
+**LA QUATRIÈME PREUVE N'EN EST PAS UNE, ET IL FAUT LE DIRE.** Un 401 sur un appel
+anonyme ne prouve **rien** du drapeau : la route le relit **après** l'identité —
+délibérément, pour qu'un visiteur non identifié n'apprenne pas ce que le cabinet
+a déployé. Les deux états rendent donc 401. Seule une session patient réelle
+verrait la différence.
+
+**CE QUE L'ALLUMAGE CHANGE POUR LES PATIENTS, DÈS LEUR PROCHAINE VISITE.** Aucun
+dossier ne porte encore de repère de fraîcheur : `duNeuf` vaut donc **vrai
+partout**, et le journal s'ouvre **déplié** à la première visite de chacun, sur
+l'histoire entière de son dossier. C'est l'écart nommé dans [[D-172]] — « le
+jour où une surface s'ouvrira, le journal fera apparaître d'un coup des faits
+anciens » — et il se réalise ici en une fois, pour tout le monde. Les lignes sont
+vraies et datées de leur jour ; aucune ne dit « ceci vous est révélé
+aujourd'hui ».
+
+**CE QUI RESTE À FAIRE, ET QUI NE S'EST PAS FAIT EN MÊME TEMPS.** `portail-visite.ts`
+et son bloc de repli (« Depuis votre dernière visite ») sont **toujours en
+place** : ils sont le filet du nouvel écran. Leur retrait est un lot de code qui
+SUIT la mise en service constatée sur une session réelle — le faire dans la même
+heure retirerait le filet avant d'avoir vu le trapèze.
 
 ### B.3 — Mise en service du quatrième geste patient (2026-09-12)
 
