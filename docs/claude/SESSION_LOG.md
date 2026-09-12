@@ -5268,3 +5268,41 @@ mutation, pas par relecture. Et une PR perdue pour avoir branché depuis le lot
 précédent au lieu de `main`.
 
 Prochaine action — la mise en service côté patient, qui se demande.
+
+## 2026-09-12 — La mise en service côté patient était déjà faite
+
+Demandé — activer la mise en service côté patient du quatrième verbe (`D-170`).
+
+Constaté — **il n'y avait rien à poser.** Le geste n'a délibérément pas de
+drapeau propre : il vit sous `WN_DOSSIER_DEUX_VOIX`, `true` en production depuis
+le 2026-08-23. La fonctionnalité est donc entrée en service **au déploiement de
+son code**, le 2026-09-11 à 23:08:29 (conteneurs recréés sur `e01d844a`), sans
+décision distincte et sans que rien ne le signale. Le handoff du chantier
+annonçait « la mise en service côté patient reste à demander » : c'était inexact.
+
+Livré — le § B.3 de `docs/FEATURE_FLAGS.md`, qui date la mise en service et
+porte ses quatre preuves (contenance du déploiement, présence de
+`demande_correction` dans l'image qui tourne — route **et** écran —, sonde non
+authentifiée à **401 et non 503**, table à 0 ligne lue par conteneur). La ligne
+du drapeau nomme désormais les **quatre** gestes qu'il garde, au lieu de la
+seule ratification.
+
+Mesuré — périmètre réel : **deux** dossiers portent une tête d'objectif active,
+**un seul** (`PAT006`) a `ratifie` pour dernier geste. C'est le seul patient à
+qui l'écran présente aujourd'hui le bloc fermé et le quatrième verbe. La branche
+« demande » reste donc inéprouvée contre un dossier vécu — limite de `D-170`
+que cette mise en service ne lève pas.
+
+Examiné — la condition RGPD du §2 du dossier, celle qu'un drapeau de santé avait
+déjà fait manquer le 2026-09-09. Elle est **remplie** : catégorie déjà déclarée
+en rubrique 5, document patient inchangé en v7. Examen, pas dispense.
+
+Relevé, non traité — `web/src/lib/copilote/prevol.ts` porte le littéral
+`'demande_correction'` et le libellé « Demande de correction du patient » pour
+un tout autre objet (les **réponses de questionnaire**, via `assignations`).
+L'homonyme que `D-170` nommait comme une dette est donc une **collision de
+chaîne exacte**, déjà à l'écran praticien. Le Copilote n'a jamais été cadré :
+rien n'y a été touché.
+
+Prochaine action — rien d'ouvert de ce chantier. Reste, hors périmètre : la
+lettre de DPA à Anthropic et les trois trous du §7 RGPD.
