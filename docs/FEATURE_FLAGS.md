@@ -88,9 +88,66 @@ biologie.
 |---|---|---|---|
 | `WN_CE_QUI_COMPTE` | `true` | « Ce qui compte pour moi aujourd'hui » — la **route de dépôt** (503) **et** l'**écran du portail** (404) | Alliance 6.0-A, LOT-03. Ne garde **pas** la lecture praticien : une liste vide côté dossier est un silence honnête, un 503 ferait croire à une panne. **Absent le 2026-08-22** ([[D-092]]) ; **posé** au constat du 2026-08-26 ([[D-112]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
 | `WN_COMPREHENSION` | `true` | « Ce que j'ai compris de vous » — route (503) et écran (404) du portail, **et la PUBLICATION côté praticien** (503) | Alliance 6.0-A, LOT-04. Le troisième geste est le moins évident et le plus important : laisser publier dans une surface fermée produirait un stock de synthèses que le praticien croit remises, et qui atteindraient le patient **d'un seul coup** le jour de l'allumage. Ne garde pas le **brouillon** — préparer avant d'ouvrir est l'usage attendu. **POSÉ en Production le 2026-08-22** ([[D-092]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
-| `WN_DOSSIER_DEUX_VOIX` | `true` | l'écran « dossier à deux voix » (404), sa route d'assemblage (503) et le geste de **RATIFICATION** (503) | Alliance 6.0-A, LOT-06. **Ne se compose pas** des deux précédents : la ratification est la seule écriture patient **irréversible** de la campagne. Il ne remplace pas les autres, il **s'y ajoute** — chaque bloc de l'écran reste soumis à son propre drapeau, et un bloc éteint est **absent** de la réponse, ni « vide » ni « pas encore ouvert » (`DC-24`). Garde aussi l'amendement, et non `WN_OBJECTIF_PROPOSE` ([[D-110]] §1). **POSÉ en Production depuis le 2026-08-23** ([[D-110]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
+| `WN_DOSSIER_DEUX_VOIX` | `true` | l'écran « dossier à deux voix » (404), sa route d'assemblage (503) et **les quatre gestes du patient** (503) : **RATIFICATION**, amendement, réponse d'étape, et **demande de correction de l'objectif** | Alliance 6.0-A, LOT-06. **Ne se compose pas** des deux précédents : la ratification est la seule écriture patient **irréversible** de la campagne. Il ne remplace pas les autres, il **s'y ajoute** — chaque bloc de l'écran reste soumis à son propre drapeau, et un bloc éteint est **absent** de la réponse, ni « vide » ni « pas encore ouvert » (`DC-24`). Garde aussi l'amendement, et non `WN_OBJECTIF_PROPOSE` ([[D-110]] §1). Le quatrième geste n'a **délibérément pas** de drapeau propre ([[D-170]]) : l'en doter aurait rendu possible un écran où le bloc se ferme sur « c'est bien ça » sans que la porte de la demande s'ouvre — le patient sans recours. **POSÉ en Production depuis le 2026-08-23** ([[D-110]]). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. **MISE EN SERVICE DU QUATRIÈME GESTE CONSTATÉE LE 2026-09-12** — § B.3. |
 | `WN_OBJECTIF_PROPOSE` | `true` | la **machine qui propose** un objectif — l'assemblage (503) **et la lecture** (503) | Alliance 6.0-B, LOT-02, gouvernance du périmètre ([[D-094]]). Ce qu'il ouvre n'est pas une surface mais une force de proposition, d'où un drapeau distinct de `WN_DOSSIER_DEUX_VOIX`. Gâter la **lecture** est une exception assumée à la règle « une liste vide est un silence honnête » : ici, elle se lirait « la machine n'a rien trouvé à proposer sur ce dossier », soit un **constat sur le patient**, là où la vérité est que personne n'a ouvert la fonctionnalité. **Absent au 2026-08-26** ([[D-112]]) ; **posé** à la lecture du 2026-09-08 ([[D-154]] §1 — « ce n'est pas un drapeau qui manquait »). **RELU SUR SCALINGO LE 2026-09-11** (`env`) : `true`. |
 | `WN_OBJECTIF_PROPOSE_PATIENTS` | liste d'identifiants séparés par des virgules, **vide = tous** | **rien** — il RESTREINT : mécanisme de réversibilité, pour limiter après coup et sans redéploiement | N'est pas une gâte : le fail-closed est tenu par `WN_OBJECTIF_PROPOSE`, qui précède toujours. En faire un périmètre par défaut inverserait son rôle, un oubli passant pour une fermeture voulue. **ABSENT en production au 2026-09-11** ⇒ périmètre = **tous les dossiers**, ce que [[D-094]] fonde sur un fait et non sur une commodité : les patients actuels sont des bêta-testeurs réels et informés. |
+
+### B.3 — Mise en service du quatrième geste patient (2026-09-12)
+
+[[D-170]] a ajouté un **quatrième geste** au « dossier à deux voix » : après
+« c'est bien ça », le bloc de réponse se ferme, et une **demande de correction
+de l'objectif** prend sa place. Ce geste **n'a pas de drapeau propre** — choix
+commenté à la route (`web/src/app/api/portail/dossier/route.ts`) : l'en doter
+aurait rendu possible un écran où le bloc se ferme sans que la porte de la
+demande s'ouvre.
+
+**Conséquence, et c'est le fait à retenir : il n'y a eu aucun geste
+d'exploitation à poser.** `WN_DOSSIER_DEUX_VOIX` valant `true` depuis le
+2026-08-23, la fonctionnalité est entrée en service **au déploiement de son
+code**, sans décision distincte et sans que rien ne la signale. Le handoff du
+chantier (`docs/claude/handoffs/2026-09-12-0040-…`) annonce « la mise en service
+côté patient reste à demander » : c'était **inexact**, elle était déjà faite.
+Cette ligne-ci corrige ce point, et c'est ici qu'elle fait foi.
+
+**Constatée le 2026-09-12**, par quatre preuves dont aucune ne se déduit d'une
+autre :
+
+1. **Contenance** — le déploiement qui sert est `e01d844a` (Scalingo,
+   2026-09-11 23:05:18 ; conteneurs `web-1`/`web-2` créés à 23:08:29). Il
+   **contient** les six lots du chantier (`492e55b2` → `e01d844a`), et
+   `git diff e01d844a d607c002 -- web/` est **vide** : la tête de `main`
+   n'ajoute que de la documentation. Constaté par contenance, jamais par
+   égalité de SHA.
+2. **Conteneur** — dans l'image qui tourne, `demande_correction` est présent
+   dans `.next/server/app/api/portail/dossier/route.js` **et** dans
+   `.next/server/app/portail/[token]/dossier/page.js` : la route **et** l'écran,
+   pas seulement l'une des deux.
+3. **Comportement** — sonde non authentifiée sur `POST /api/portail/dossier`,
+   corps `{"geste":"demande_correction"}` : **401, et non 503**. Le drapeau
+   (étape 1 de la route) laisse passer ; c'est l'authentification (étape 2) qui
+   refuse. Le GET rend 401 de même.
+4. **Base** — `demandes_correction_objectif` existe et compte **0 ligne**
+   (lecture par conteneur, `one-off-959`).
+
+**Périmètre réel au 2026-09-12, mesuré et non supposé.** Deux dossiers portent
+une tête d'objectif active. **Un seul** — `PAT006` — a `ratifie` pour dernier
+geste : c'est le seul patient à qui l'écran présente aujourd'hui le bloc fermé
+et le quatrième verbe. L'autre (`PAT017`) n'a posé aucun geste, et voit les
+trois verbes, inchangés. La demande n'a donc encore **jamais** été éprouvée
+contre un dossier vécu — limite déjà écrite en `D-170`, que cette mise en
+service ne lève pas.
+
+**Aucune version nouvelle du document patient n'est due.**
+`donnees_confidentialite` reste en **v7**. La condition d'ouverture écrite au
+§2 de `docs/DOSSIER_RGPD.md` — mise à jour **préalable** du registre des
+traitements et du document d'information patient — est examinée et **remplie** :
+la demande de correction entre dans une catégorie **déjà déclarée**, « Alliance
+— la parole des deux voix (art. 9) », où `DemandeCorrectionObjectif` a été
+inscrite en rubrique 5 **avec sa migration** ; et le document couvre déjà « les
+éléments de votre situation que vous décrivez, vos signalements et vos choix ».
+Aucune donnée d'une nature nouvelle n'est recueillie, aucun prestataire ne
+s'ajoute. C'est un examen, pas une dispense : la question s'est posée parce que
+le §2 l'exige, et elle se repose à chaque surface d'écriture patient nouvelle.
 
 ## C. Double verrou clinique — `'1'` **ET** validation en code
 
