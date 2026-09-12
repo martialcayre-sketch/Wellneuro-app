@@ -313,3 +313,28 @@ export function journalPorteDuNeuf(evenements: EvenementJournal[], vuJusqua: Dat
   const borne = vuJusqua.toISOString();
   return evenements.some(evenement => evenement.date > borne);
 }
+
+/**
+ * LA DATE D'UN ÉVÉNEMENT, TELLE QUE LE PATIENT LA LIT — « 12 septembre 2026 ».
+ *
+ * LE JOUR EST CELUI DE PARIS, et ce n'est pas un détail : un fait enregistré à
+ * 23 h 30 heure de Paris tombe la veille en UTC. Un journal qui daterait en UTC
+ * dirait au patient qu'il a transmis ses réponses « hier » alors qu'il venait
+ * de le faire — et il aurait raison contre lui.
+ *
+ * L'ANNÉE EST TOUJOURS ÉCRITE. Le journal remonte à l'entrée du dossier, sans
+ * borne (arbitrage 2) : il enjambe donc les années, et « 12 septembre » seul y
+ * deviendrait ambigu au premier janvier.
+ */
+const FORMAT_DATE_JOURNAL = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+export function libelleDateJournal(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return FORMAT_DATE_JOURNAL.format(date);
+}

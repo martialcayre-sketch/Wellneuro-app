@@ -3,6 +3,7 @@ import {
   construireJournalDossier,
   instantLePlusRecent,
   journalPorteDuNeuf,
+  libelleDateJournal,
   type EvenementJournal,
   type SourcesJournal,
 } from './journalDossier';
@@ -457,5 +458,25 @@ describe('journalPorteDuNeuf — la seule question qui commande l’affichage', 
         new Date('2026-07-01T10:00:00.000Z'),
       ),
     ).toBe(true);
+  });
+});
+
+describe('libelleDateJournal — la date telle que le patient la lit', () => {
+  it('écrit le jour, le mois en toutes lettres et l’ANNÉE', () => {
+    // Le journal enjambe les années (aucune borne, arbitrage 2) : « 12
+    // septembre » seul deviendrait ambigu au premier janvier.
+    expect(libelleDateJournal('2026-09-12T10:00:00.000Z')).toBe('12 septembre 2026');
+  });
+
+  it('LE JOUR EST CELUI DE PARIS, pas celui d’UTC', () => {
+    // 22:30Z le 12 = 00:30 à Paris le 13. Daté en UTC, le journal dirait au
+    // patient qu'il a transmis « hier » alors qu'il venait de le faire.
+    expect(libelleDateJournal('2026-09-12T22:30:00.000Z')).toBe('13 septembre 2026');
+    // Et la borne d'en face : 21:30Z = 23:30 à Paris, encore le 12.
+    expect(libelleDateJournal('2026-09-12T21:30:00.000Z')).toBe('12 septembre 2026');
+  });
+
+  it('une date illisible rend une chaîne vide, jamais « Invalid Date »', () => {
+    expect(libelleDateJournal('pas une date')).toBe('');
   });
 });
