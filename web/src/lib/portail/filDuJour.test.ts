@@ -102,6 +102,7 @@ function fil(
     token: 'TOK',
     enrichis: enrichir(assignations, agendas, brouillons, agendasAli),
     brouillons,
+    lectures: [],
     agendas,
     agendasAli,
     ceQuiCompteOuvert: null,
@@ -370,6 +371,77 @@ describe('l’invitation à dire ce qui compte', () => {
       ceQuiCompteOuvert: true,
     });
     expect(cles(f)).toEqual(['ce-qui-compte']);
+  });
+});
+
+describe('les lectures — ce que le praticien a remis', () => {
+  const bilan = { espece: 'bilan' as const, idObjet: 'env_1', remiseLe: '2026-09-01T10:00:00.000Z' };
+  const synthese = {
+    espece: 'synthese' as const,
+    idObjet: 'syn_1',
+    remiseLe: '2026-09-02T10:00:00.000Z',
+  };
+
+  it('une lecture entre au fil, avec son geste et son écran', () => {
+    const f = fil([], [], new Set(), [], { lectures: [bilan] });
+    expect(f.taches).toEqual([
+      {
+        cle: 'lecture:bilan:env_1',
+        espece: 'lecture',
+        cta: 'Lire mon bilan',
+        appui: null,
+        href: '/portail/TOK/bilan',
+      },
+    ]);
+  });
+
+  it('elle ne passe PAS devant une nuit à noter', () => {
+    const f = fil([assignAgenda()], [agenda()], new Set(), [], { lectures: [bilan] });
+    expect(cles(f)).toEqual(['ASS_AGD', 'lecture:bilan:env_1']);
+  });
+
+  it('elle passe devant l’invitation à dire ce qui compte, et c’est une SÉQUENCE', () => {
+    // « Voici ce que j'ai compris de vous », puis « dites-moi ce qui compte » —
+    // l'inverse ferait parler le patient avant de l'avoir écouté.
+    const f = fil([], [], new Set(), [], { lectures: [synthese], ceQuiCompteOuvert: true });
+    expect(cles(f)).toEqual(['lecture:synthese:syn_1', 'ce-qui-compte']);
+  });
+
+  it('elle passe devant les questionnaires : un document REMIS n’est pas un formulaire de plus', () => {
+    const f = fil([assign()], [], new Set(), [], { lectures: [bilan] });
+    expect(cles(f)).toEqual(['lecture:bilan:env_1', 'ASS_Q']);
+  });
+
+  it('l’ordre reçu est conservé — c’est `lecturesAttendues` qui arbitre, pas le fil', () => {
+    const f = fil([], [], new Set(), [], { lectures: [synthese, bilan] });
+    expect(cles(f)).toEqual(['lecture:synthese:syn_1', 'lecture:bilan:env_1']);
+  });
+
+  it('la clé porte l’ESPÈCE : deux identifiants identiques ne se confondent pas', () => {
+    // Les deux familles d'identifiants sont indépendantes ; une clé de rendu
+    // dupliquée ferait disparaître une tâche de l'écran sans rien faire rougir.
+    const f = fil([], [], new Set(), [], {
+      lectures: [
+        { espece: 'bilan', idObjet: 'x', remiseLe: '2026-09-01T10:00:00.000Z' },
+        { espece: 'synthese', idObjet: 'x', remiseLe: '2026-09-02T10:00:00.000Z' },
+      ],
+    });
+    expect(cles(f)).toEqual(['lecture:bilan:x', 'lecture:synthese:x']);
+    expect(new Set(cles(f)).size).toBe(2);
+  });
+
+  it('aucune lecture attendue : le fil n’en fabrique aucune', () => {
+    expect(cles(fil([], [], new Set(), [], { lectures: [] }))).toEqual([]);
+  });
+
+  it('une lecture seule suffit à faire un fil non vide', () => {
+    // Un dossier où tout est transmis n'est pas un dossier sans rien à faire
+    // quand un bilan vient d'arriver.
+    const f = fil([assign({ statutReponses: 'verrouille' })], [], new Set(), [], {
+      lectures: [bilan],
+    });
+    expect(cles(f)).toEqual(['lecture:bilan:env_1']);
+    expect(f.taches[0].espece).toBe('lecture');
   });
 });
 

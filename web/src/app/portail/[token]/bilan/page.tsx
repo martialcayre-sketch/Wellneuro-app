@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { MonBilan } from '@/components/patient/MonBilan';
 
 // Le bilan transmis par le praticien, lu dans l'espace patient. La session est
@@ -15,6 +16,10 @@ export default async function PortailBilanPage({ params }: { params: Promise<{ t
         ← Mon parcours
       </Link>
       <MonBilan token={token} />
+      {/* Ouvrir le document ACQUITTE la tâche du fil du jour : elle en sort,
+          et le document reste atteignable indéfiniment par « Consulter mon
+          bilan ». Ce qui disparaît est la tâche, jamais le document. */}
+      <ConsignerLecturePortail espece="bilan" />
     </div>
   );
 }

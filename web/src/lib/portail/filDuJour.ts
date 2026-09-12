@@ -33,6 +33,9 @@
 //   ce qui compte        — disparaît quand la fenêtre de dépôt se ferme, c'est-
 //                          à-dire dès que le patient a déposé (`D-166`). Revient
 //                          à la prochaine ancre de cycle confirmée.
+//   lecture              — disparaît quand l'écran qui porte le document a été
+//                          ouvert (`portail_lectures_patient`, LOT-08). Revient
+//                          à la VERSION suivante, jamais pour la même.
 //
 // Un `cta` nul, côté rappel d'agenda, N'EST PAS un état dégradé : c'est le mot
 // par lequel le domaine dit « il n'y a rien à faire aujourd'hui ». Ce module
@@ -63,10 +66,12 @@ import type { Enrichi, AgendaAliPortail, AgendaPortail } from '@/lib/portail/hub
 import { deriverRappelAgenda } from '@/lib/agenda-sommeil/rappelPortail';
 import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { deriverRappelAgendaAli } from '@/lib/agenda-alimentaire/rappelPortail';
+import { ctaLecture, lienLecture, type LectureAttendue } from '@/lib/portail/lecturesAttendues';
 
 export type EspeceTache =
   | 'agenda_sommeil'
   | 'agenda_alimentaire'
+  | 'lecture'
   | 'ce_qui_compte'
   | 'questionnaire';
 
@@ -106,6 +111,12 @@ export type SourcesFilDuJour = {
   enrichis: Enrichi[];
   /** Les assignations qui portent un brouillon local — elles passent devant. */
   brouillons: Set<string>;
+  /**
+   * Ce que le praticien a remis et que le patient n'a pas encore ouvert, déjà
+   * filtré et ordonné par `lecturesAttendues`. Tableau VIDE si la route n'a pas
+   * répondu : le fil retombe sur ce qu'il sait, il n'invente pas une lecture.
+   */
+  lectures: LectureAttendue[];
   agendas: AgendaPortail[];
   agendasAli: AgendaAliPortail[];
   /**
@@ -138,16 +149,18 @@ function lienAssignation(token: string, idAssignation: string): string {
  *    perdre. Sommeil puis alimentaire — non que l'un prime cliniquement sur
  *    l'autre, mais pour que l'ordre soit STABLE (même raison que
  *    `candidatsAgendas`, et même ordre).
- * 2. L'INVITATION À DIRE CE QUI COMPTE. Placée AVANT les questionnaires, et
+ * 2. LES LECTURES. Ce que le praticien a remis — voir le commentaire à leur
+ *    construction, plus bas.
+ * 3. L'INVITATION À DIRE CE QUI COMPTE. Placée AVANT les questionnaires, et
  *    c'est un arbitrage, pas un hasard : c'est la seule tâche du fil où le
  *    patient PARLE — toutes les autres lui demandent de remplir. La mettre
  *    après les questionnaires reviendrait à ne l'inviter qu'une fois qu'il a
  *    tout rempli, c'est-à-dire, pour la plupart des dossiers, jamais. C'est
  *    exactement l'absence que ce lot corrige ; l'enterrer la reconduirait.
- * 3. Les questionnaires en attente, brouillon repris d'abord — même préférence
+ * 4. Les questionnaires en attente, brouillon repris d'abord — même préférence
  *    que celle qui gouvernait l'étape du moment, pour ne pas faire recommencer
  *    à zéro quelqu'un qui a déjà écrit.
- * 4. Les agendas à COMMENCER, en DERNIER — et c'est une doctrine existante,
+ * 5. Les agendas à COMMENCER, en DERNIER — et c'est une doctrine existante,
  *    pas un choix de ce lot. `rappelPortail` la porte déjà, mot pour mot :
  *    « rien ne se perd à commencer demain » (la fenêtre s'ancre sur la
  *    première saisie), et surtout « le mettre en tête ENTERRERAIT SANS TERME
@@ -162,7 +175,7 @@ function lienAssignation(token: string, idAssignation: string): string {
  *    sur l'agenda là où il attendait le premier questionnaire du pack.
  */
 export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
-  const { token, enrichis, brouillons, agendas, agendasAli, ceQuiCompteOuvert, formulationParcours } =
+  const { token, enrichis, brouillons, lectures, agendas, agendasAli, ceQuiCompteOuvert, formulationParcours } =
     sources;
 
   // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé qu'il
@@ -248,6 +261,30 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
     (rappel.prioritaire ? prioritaires : aCommencer).push(tache);
   }
 
+  /*
+   * LES LECTURES, JUSTE APRÈS CE QUI PÉRIME — et avant tout le reste.
+   *
+   * Un document que le praticien a REMIS est ce qu'il y a de plus chargé de sens
+   * dans le fil : ce n'est pas un formulaire de plus à remplir, c'est quelqu'un
+   * qui s'adresse au patient. Il ne périme pas, donc il ne passe pas devant une
+   * nuit à noter ; mais il passe devant tout ce que le portail DEMANDE.
+   *
+   * Et il passe devant l'invitation à dire ce qui compte, délibérément : « voici
+   * ce que j'ai compris de vous », puis « dites-moi ce qui compte pour vous »
+   * est une séquence ; l'inverse fait parler le patient avant de l'avoir écouté.
+   *
+   * La clé porte l'espèce ET l'identifiant : deux familles d'identifiants
+   * indépendantes peuvent collisionner, et une clé de rendu dupliquée ferait
+   * disparaître une tâche de l'écran sans que rien ne rougisse.
+   */
+  const tachesLectures: Tache[] = lectures.map(lecture => ({
+    cle: `lecture:${lecture.espece}:${lecture.idObjet}`,
+    espece: 'lecture' as const,
+    cta: ctaLecture(lecture.espece),
+    appui: null,
+    href: lienLecture(token, lecture.espece),
+  }));
+
   const invitation: Tache[] =
     ceQuiCompteOuvert === true
       ? [
@@ -283,7 +320,7 @@ export function construireFilDuJour(sources: SourcesFilDuJour): FilDuJour {
       href: lienAssignation(token, e.a.idAssignation),
     }));
 
-  const taches = [...prioritaires, ...invitation, ...questionnaires, ...aCommencer];
+  const taches = [...prioritaires, ...tachesLectures, ...invitation, ...questionnaires, ...aCommencer];
   return { taches, repos: deriverRepos(enrichis, appuisDeRepos, formulationParcours) };
 }
 
