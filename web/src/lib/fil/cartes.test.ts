@@ -12,6 +12,7 @@ import {
   construireFil,
   indexCarteImminente,
   resumeFil,
+  cartesSynthesesNonServies,
 } from './cartes';
 
 // Patients fictifs autorisés uniquement (CLAUDE.md).
@@ -716,5 +717,65 @@ describe('cartesGestesObjectif — le retour du patient sur son objectif', () =>
     expect(carte.href).toBe(
       '/dashboard/patients/PAT001?onglet=cockpit&phase=comprehension&fil=geste_objectif',
     );
+  });
+});
+
+// ── LE BOUT DE LA CHAÎNE : validée, jamais servie ──────────────────────────
+//
+// Mesuré en production le 2026-09-12 : 44 synthèses validées, 24 envoyées, 0
+// renvoi. Vingt textes relus et validés par un praticien ne sont jamais partis,
+// et aucune surface ne le disait. Tout le reste du Fil appelle à PRODUIRE.
+describe('cartesSynthesesNonServies', () => {
+  const noms = new Map([['PAT_1', 'Sophie Nicola']]);
+  const validee = (jour: string, id = 'SYN_1', idPatient = 'PAT_1') =>
+    ({ idPatient, idSynthese: id, dateValidation: new Date(jour) });
+
+  it('nomme un dossier dont la dernière validée n’a aucun envoi postérieur', () => {
+    const cartes = cartesSynthesesNonServies(
+      [validee('2026-08-29T11:50:00.000Z')],
+      [{ idPatient: 'PAT_1', dateEnvoi: new Date('2026-07-07T21:50:00.000Z') }],
+      noms,
+    );
+    expect(cartes).toHaveLength(1);
+    expect(cartes[0].type).toBe('synthese_non_servie');
+    expect(cartes[0].titre).toBe('Synthèse validée, jamais transmise');
+    expect(cartes[0].cle).toBe('synthese_non_servie:SYN_1');
+  });
+
+  it('se tait quand un envoi suit la validation', () => {
+    expect(cartesSynthesesNonServies(
+      [validee('2026-08-29T11:50:00.000Z')],
+      [{ idPatient: 'PAT_1', dateEnvoi: new Date('2026-08-30T09:00:00.000Z') }],
+      noms,
+    )).toEqual([]);
+  });
+
+  it('nomme un dossier qui n’a JAMAIS rien reçu', () => {
+    expect(cartesSynthesesNonServies([validee('2026-08-29T11:50:00.000Z')], [], noms))
+      .toHaveLength(1);
+  });
+
+  // LA DERNIÈRE, PAS TOUTES : un dossier dont la synthèse de juillet est partie
+  // et dont celle d'août dort appelle UN geste, pas deux.
+  it('ne regarde que la validation la plus récente, une carte par dossier', () => {
+    const cartes = cartesSynthesesNonServies(
+      [validee('2026-07-07T19:02:00.000Z', 'SYN_VIEUX'), validee('2026-08-29T11:50:00.000Z', 'SYN_NEUF')],
+      [{ idPatient: 'PAT_1', dateEnvoi: new Date('2026-07-07T21:50:00.000Z') }],
+      noms,
+    );
+    expect(cartes).toHaveLength(1);
+    expect(cartes[0].cle).toBe('synthese_non_servie:SYN_NEUF');
+  });
+
+  it('la plus ancienne attente d’abord', () => {
+    const cartes = cartesSynthesesNonServies(
+      [
+        { idPatient: 'PAT_2', idSynthese: 'SYN_B', dateValidation: new Date('2026-09-01T10:00:00.000Z') },
+        { idPatient: 'PAT_1', idSynthese: 'SYN_A', dateValidation: new Date('2026-08-01T10:00:00.000Z') },
+      ],
+      [],
+      noms,
+    );
+    expect(cartes.map(c => c.idPatient)).toEqual(['PAT_1', 'PAT_2']);
   });
 });

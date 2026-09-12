@@ -79,6 +79,8 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       amendements,
       etapes,
       finsPatient,
+      synthesesValidees,
+      envoisBooklet,
     ] = await Promise.all([
       prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
@@ -198,6 +200,21 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         orderBy: { creeLe: 'desc' },
         take: 20,
       }),
+      // LE BOUT DE LA CHAÎNE (carte `synthese_non_servie`). Deux lectures, et
+      // pas de jointure : la règle « la dernière validée, sans envoi postérieur »
+      // se décide dans le module pur, qui est éprouvable aux bornes.
+      //
+      // `dateValidation` NON NULLE : une synthèse au statut validé qui ne porte
+      // pas sa date ne peut pas être comparée à un envoi, et affirmer qu'elle
+      // n'est pas servie serait affirmer ce qu'on n'a pas lu (`DC-24`).
+      prisma.syntheseIA.findMany({
+        where: { statut: { in: ['Validee_Praticien', 'Corrigee_Praticien'] }, dateValidation: { not: null } },
+        select: { idSynthese: true, idPatient: true, dateValidation: true },
+      }),
+      prisma.bookletEnvoi.findMany({
+        where: { statut: 'Envoye' },
+        select: { idPatient: true, dateEnvoi: true },
+      }),
     ]);
 
     const lectures = lecturesGroupBy
@@ -247,6 +264,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...lectures.map(l => l.idPatient),
         ...biologiesArbitreesBrutes.map(b => b.idPatient),
         ...passationsRideau.map(p => p.idPatient),
+        ...synthesesValidees.map(s => s.idPatient),
       ]),
     ];
     // Toute carte dont le patient n'est pas dans ce résultat est écartée
@@ -257,10 +275,17 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         actif: true,
         ...filtrePatientsDuPraticien(email),
       },
-      select: { idPatient: true, prenom: true, nom: true },
+      select: { idPatient: true, prenom: true, nom: true, suiviClotureLe: true },
     });
     const noms = new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()]));
     const actifs = new Set(patients.map(p => p.idPatient));
+    // LE SUIVI CLOS SORT DE LA CARTE DE SORTIE, et d'elle seule : un dossier
+    // clôturé n'attend plus qu'on lui transmette quoi que ce soit — la route
+    // d'envoi le refuse d'ailleurs (`accepteNouvelEnvoi`). Appeler à un geste
+    // que le serveur interdit ferait douter de toutes les cartes.
+    const servables = new Set(
+      patients.filter(p => p.suiviClotureLe === null).map(p => p.idPatient),
+    );
 
     // Jalon J21 = check-in J21 sans épisode J21 consigné (différence pure),
     // enrichi du momentum réel quand il existe (bornée aux patients-jalon).
@@ -310,6 +335,13 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
       lectures: lectures.filter(l => actifs.has(l.idPatient)),
       dernieresSyntheses,
+      synthesesValidees: synthesesValidees
+        // `instanceof Date` et non `!== null` : la colonne est nullable, et une
+        // ligne sans date de validation ne peut pas être comparée à un envoi.
+        // Affirmer qu'elle n'est pas servie serait affirmer ce qu'on n'a pas lu.
+        .filter((ligne): ligne is typeof ligne & { dateValidation: Date } => ligne.dateValidation instanceof Date)
+        .filter(ligne => servables.has(ligne.idPatient)),
+      envoisBooklet,
       jalons,
       passationsRideau: passationsRideau.filter(p => actifs.has(p.idPatient)),
       premieresPassations: new Map(

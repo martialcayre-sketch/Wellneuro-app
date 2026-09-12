@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, Flag, FlagTriangleRight, FlaskConical, MailX, MessageSquare, PenLine, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -18,6 +18,10 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
   synthese_a_generer: { libelle: 'À générer', icon: PenLine },
+  // « NON TRANSMISE » ET NON « À ENVOYER » : la carte dit un FAIT (le texte
+  // n'est pas parti), pas une consigne. Un praticien peut avoir de bonnes
+  // raisons d'attendre la consultation.
+  synthese_non_servie: { libelle: 'Non transmise', icon: MailX },
   jalon_j21: { libelle: 'Jalon', icon: Flag },
   t0_a_confirmer: { libelle: 'T0 à confirmer', icon: FlagTriangleRight },
   biologie_arbitree: { libelle: 'Biologie arbitrée', icon: FlaskConical },
