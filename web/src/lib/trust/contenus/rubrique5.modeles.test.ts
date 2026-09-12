@@ -46,7 +46,6 @@ const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([
   'CritereDossierConstate',
   'DecisionPrioritySelection',
   'ProtocolDiffusionApproval',
-  'FilCardRejection',
   'PackProposition',
   'EnvoiBrouillon',
   'RendezVous',

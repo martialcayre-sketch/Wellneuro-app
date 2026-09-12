@@ -64,6 +64,7 @@ model Patient {
   resultatsBiologiques       ResultatBiologique[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
+  filCardLectures            FilCardLecture[]
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
@@ -1328,6 +1329,34 @@ model FilCardRejection {
   @@index([idPatient, refuseLe], map: "g1_fil_rejection_patient_idx")
   @@index([idPatient, carteCle], map: "g1_fil_rejection_cle_idx")
   @@map("fil_card_rejections")
+}
+
+// La LECTURE d'une carte du Fil (SP-FIL, 2026-09-12). Sœur de
+// `FilCardRejection`, et délibérément distincte d'elle : le Fil sépare déjà
+// « écartée sans avoir été vue » de « traitée » (`lib/fil/inbox.ts`), et
+// écrire une lecture dans la table des refus ferait afficher « Carte
+// écartée — … » pour une carte qu'on a traitée.
+//
+// ANCRÉE SUR (dossier, type), PAS SUR LA CARTE : ouvrir la phase où ces gestes
+// se lisent, c'est les voir tous. `lueLe` fait la coupure — sont lues les
+// cartes de ce type ANTÉRIEURES à cet instant ; un geste postérieur reparaît.
+//
+// Append-only chaînée : « Remettre » est une SECONDE ligne (`lue = false`) qui
+// supplante la première, d'où l'absence d'unicité sur (idPatient, typeCarte).
+model FilCardLecture {
+  id                  String   @id @default(cuid()) @map("id")
+  idPatient           String   @map("id_patient")
+  typeCarte           String   @map("type_carte")
+  lue                 Boolean  @default(true) @map("lue")
+  luePar              String   @map("lue_par")
+  supersedesLectureId String?  @map("supersedes_lecture_id")
+  lueLe               DateTime @default(now()) @map("lue_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, lueLe], map: "fil_lecture_patient_idx")
+  @@index([idPatient, typeCarte], map: "fil_lecture_type_idx")
+  @@map("fil_card_lectures")
 }
 
 // Note de relecture (SP-TT LOT-02, gate G3). Le praticien annote un état passé
