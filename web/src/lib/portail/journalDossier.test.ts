@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { construireJournalDossier, type SourcesJournal } from './journalDossier';
+import {
+  construireJournalDossier,
+  instantLePlusRecent,
+  journalPorteDuNeuf,
+  type EvenementJournal,
+  type SourcesJournal,
+} from './journalDossier';
 
 // Bancs du JOURNAL DU PORTAIL PATIENT (campagne « vie du portail patient »,
 // LOT-01, 2026-09-12).
@@ -360,5 +366,96 @@ describe('ordre, clés et discipline du journal', () => {
       sources({ entreesCeQuiCompte: [{ id: 'E1', creeLe: new Date('pas une date') }] }),
     );
     expect(journal.map(e => e.espece)).toEqual(['entree_accompagnement']);
+  });
+});
+
+// ── LE REPÈRE DE FRAÎCHEUR (LOT-02) ────────────────────────────────────────
+//
+// Une seule question commande l'affichage : « y a-t-il du neuf ? ». Se tromper
+// d'un côté rouvre le journal à chaque chargement et « du neuf » ne veut plus
+// rien dire ; se tromper de l'autre le tient fermé sur des faits que le patient
+// n'a jamais vus.
+
+const evenement = (date: string, cle = date): EvenementJournal => ({
+  cle,
+  espece: 'ce_qui_compte_depose',
+  voix: 'patient',
+  libelle: 'Vous avez dit ce qui compte pour vous.',
+  date,
+});
+
+describe('instantLePlusRecent', () => {
+  it('rend la date du fait le plus récent, quel que soit l’ordre', () => {
+    const lignes = [
+      evenement('2026-07-01T10:00:00.000Z'),
+      evenement('2026-08-01T10:00:00.000Z'),
+      evenement('2026-06-01T10:00:00.000Z'),
+    ];
+    expect(instantLePlusRecent(lignes)).toBe('2026-08-01T10:00:00.000Z');
+    expect(instantLePlusRecent([...lignes].reverse())).toBe('2026-08-01T10:00:00.000Z');
+  });
+
+  it('rend null sur un journal vide — le cas ne se produit pas, il est traité quand même', () => {
+    expect(instantLePlusRecent([])).toBeNull();
+  });
+
+  it('sur le journal RÉEL d’un dossier neuf, c’est la date d’entrée', () => {
+    const journal = construireJournalDossier(sources());
+    expect(instantLePlusRecent(journal)).toBe(ENTREE.toISOString());
+  });
+});
+
+describe('journalPorteDuNeuf — la seule question qui commande l’affichage', () => {
+  it('SANS REPÈRE, TOUT EST NEUF — un patient qui n’a jamais déplié n’a jamais vu', () => {
+    // C'est aussi ce qui fait qu'un dossier qui vient de s'ouvrir MONTRE sa
+    // première ligne au lieu de la cacher.
+    expect(journalPorteDuNeuf([evenement('2026-07-01T10:00:00.000Z')], null)).toBe(true);
+    expect(journalPorteDuNeuf(construireJournalDossier(sources()), null)).toBe(true);
+  });
+
+  it('un journal vide sans repère ne porte rien — on n’ouvre pas sur du vide', () => {
+    expect(journalPorteDuNeuf([], null)).toBe(false);
+  });
+
+  it('un fait POSTÉRIEUR au repère est du neuf', () => {
+    expect(
+      journalPorteDuNeuf(
+        [evenement('2026-07-02T10:00:00.000Z')],
+        new Date('2026-07-01T10:00:00.000Z'),
+      ),
+    ).toBe(true);
+  });
+
+  it('LA BORNE EST STRICTE — un fait daté EXACTEMENT du repère a été vu', () => {
+    // Un `>=` rouvrirait le journal à chaque chargement sur le dernier fait
+    // déjà lu, et « du neuf » cesserait de vouloir dire quelque chose.
+    expect(
+      journalPorteDuNeuf(
+        [evenement('2026-07-01T10:00:00.000Z')],
+        new Date('2026-07-01T10:00:00.000Z'),
+      ),
+    ).toBe(false);
+  });
+
+  it('un fait ANTÉRIEUR au repère n’est pas du neuf', () => {
+    expect(
+      journalPorteDuNeuf(
+        [evenement('2026-06-01T10:00:00.000Z')],
+        new Date('2026-07-01T10:00:00.000Z'),
+      ),
+    ).toBe(false);
+  });
+
+  it('il suffit d’UN fait postérieur au milieu d’anciens', () => {
+    expect(
+      journalPorteDuNeuf(
+        [
+          evenement('2026-06-01T10:00:00.000Z'),
+          evenement('2026-07-05T10:00:00.000Z'),
+          evenement('2026-06-15T10:00:00.000Z'),
+        ],
+        new Date('2026-07-01T10:00:00.000Z'),
+      ),
+    ).toBe(true);
   });
 });

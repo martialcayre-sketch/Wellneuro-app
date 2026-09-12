@@ -31,13 +31,14 @@ const { prisma, ECRITURES } = vi.hoisted(() => {
       demandeCorrectionObjectif: table('findMany'),
       reponseJalonObjectif: table('findMany'),
       entreeCeQuiCompte: table('findMany'),
+      portailJournalRepere: table('findUnique', 'findMany'),
     } as Record<string, Record<string, ReturnType<typeof vi.fn>>>,
   };
 });
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { signPatientSession } from '@/lib/patient-session';
-import { GET } from './route';
+import { GET, POST } from './route';
 
 const PATIENT = { idPatient: 'PAT_TEST', email: 'sophie.nicola@example.test' };
 const ENTREE = new Date('2026-06-01T08:00:00.000Z');
@@ -84,6 +85,8 @@ beforeEach(() => {
   ]) {
     table.findMany.mockResolvedValue([]);
   }
+  prisma.portailJournalRepere.findUnique.mockResolvedValue(null);
+  prisma.portailJournalRepere.upsert.mockResolvedValue({ idPatient: PATIENT.idPatient });
 });
 
 afterEach(() => {
@@ -243,6 +246,146 @@ describe('GET /api/portail/journal — ce qui est lu, et ce qui ne l’est pas',
   it('une panne de lecture rend 500 sans détail technique', async () => {
     prisma.assignation.findMany.mockRejectedValue(new Error('connexion perdue'));
     const reponse = await GET(getRequest(cookieProprio()));
+    expect(reponse.status).toBe(500);
+    const payload = await reponse.json();
+    expect(payload.error).toBe('Erreur technique.');
+    expect(JSON.stringify(payload)).not.toMatch(/connexion perdue/);
+  });
+});
+
+// ── LE REPÈRE DE FRAÎCHEUR (LOT-02) ────────────────────────────────────────
+//
+// Deux dangers, opposés et tous deux silencieux. Un repère qui recule rouvre le
+// journal sur des faits déjà vus ; un repère que le CLIENT choisit peut être
+// posé loin dans le futur et fermer ce journal POUR TOUJOURS, sans que rien ne
+// le dise.
+
+function postRequest(cookie?: string, corps?: unknown): Request {
+  return new Request('http://localhost/api/portail/journal', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      ...(cookie ? { cookie: `wn_portail=${encodeURIComponent(cookie)}` } : {}),
+    },
+    body: JSON.stringify(corps ?? {}),
+  });
+}
+
+describe('GET — ce que le repère ajoute à la réponse', () => {
+  it('sans repère, tout est neuf et `vuJusqua` est nul', async () => {
+    const { vuJusqua, duNeuf } = await (await GET(getRequest(cookieProprio()))).json();
+    expect(vuJusqua).toBeNull();
+    expect(duNeuf).toBe(true);
+  });
+
+  it('un repère postérieur au dernier fait ferme le journal', async () => {
+    prisma.portailJournalRepere.findUnique.mockResolvedValue({
+      vuJusqua: new Date('2026-12-31T10:00:00.000Z'),
+    });
+    const { vuJusqua, duNeuf } = await (await GET(getRequest(cookieProprio()))).json();
+    expect(vuJusqua).toBe('2026-12-31T10:00:00.000Z');
+    expect(duNeuf).toBe(false);
+  });
+
+  it('un fait postérieur au repère le rouvre', async () => {
+    prisma.portailJournalRepere.findUnique.mockResolvedValue({
+      vuJusqua: new Date('2026-06-01T08:00:00.000Z'),
+    });
+    prisma.entreeCeQuiCompte.findMany.mockResolvedValue([
+      { id: 'E1', creeLe: new Date('2026-07-01T10:00:00.000Z') },
+    ]);
+    expect((await (await GET(getRequest(cookieProprio()))).json()).duNeuf).toBe(true);
+  });
+
+  it('le repère est lu POUR CE DOSSIER, jamais globalement', async () => {
+    await GET(getRequest(cookieProprio()));
+    expect(prisma.portailJournalRepere.findUnique.mock.calls[0][0].where).toEqual({
+      idPatient: PATIENT.idPatient,
+    });
+  });
+});
+
+describe('POST — « j’ai vu mon journal »', () => {
+  it('la même porte que le GET : session, compte, drapeau', async () => {
+    expect((await POST(postRequest())).status).toBe(401);
+
+    mockCompteActif({ actif: false });
+    expect((await POST(postRequest(cookieProprio()))).status).toBe(403);
+
+    mockCompteActif();
+    delete process.env.WN_PORTAIL_JOURNAL;
+    expect((await POST(postRequest(cookieProprio()))).status).toBe(503);
+    expect(prisma.portailJournalRepere.upsert).not.toHaveBeenCalled();
+  });
+
+  it('avance le repère jusqu’au fait le plus récent, pour ce dossier', async () => {
+    prisma.entreeCeQuiCompte.findMany.mockResolvedValue([
+      { id: 'E1', creeLe: new Date('2026-07-01T10:00:00.000Z') },
+    ]);
+    const reponse = await POST(postRequest(cookieProprio()));
+    expect(reponse.status).toBe(200);
+    expect((await reponse.json())).toMatchObject({
+      ok: true,
+      vuJusqua: '2026-07-01T10:00:00.000Z',
+      inchange: false,
+    });
+    const appel = prisma.portailJournalRepere.upsert.mock.calls[0][0];
+    expect(appel.where).toEqual({ idPatient: PATIENT.idPatient });
+    expect(appel.create).toEqual({
+      idPatient: PATIENT.idPatient,
+      vuJusqua: new Date('2026-07-01T10:00:00.000Z'),
+    });
+    expect(appel.update).toEqual({ vuJusqua: new Date('2026-07-01T10:00:00.000Z') });
+  });
+
+  it('LE CORPS EST IGNORÉ — un horodatage du client fermerait ce journal pour toujours', async () => {
+    // Posé au 31 décembre 2030, il ferait taire le journal de ce patient sans
+    // que rien ne le dise. Le serveur recalcule (`D-164`).
+    const reponse = await POST(
+      postRequest(cookieProprio(), { vuJusqua: '2030-12-31T10:00:00.000Z' }),
+    );
+    expect((await reponse.json()).vuJusqua).toBe(ENTREE.toISOString());
+    expect(prisma.portailJournalRepere.upsert.mock.calls[0][0].update).toEqual({
+      vuJusqua: ENTREE,
+    });
+  });
+
+  it('LE REPÈRE NE RECULE JAMAIS, et rien ne s’écrit alors', async () => {
+    // Deux onglets, une réponse lente, un ordre d'arrivée inversé : le plus
+    // ancien ne doit pas effacer le plus récent, sinon le journal se rouvrirait
+    // sur des faits déjà vus.
+    prisma.portailJournalRepere.findUnique.mockResolvedValue({
+      vuJusqua: new Date('2026-12-31T10:00:00.000Z'),
+    });
+    const reponse = await POST(postRequest(cookieProprio()));
+    expect((await reponse.json())).toMatchObject({
+      inchange: true,
+      vuJusqua: '2026-12-31T10:00:00.000Z',
+    });
+    expect(prisma.portailJournalRepere.upsert).not.toHaveBeenCalled();
+  });
+
+  it('un repère DÉJÀ posé sur le dernier fait n’est pas réécrit', async () => {
+    // Une écriture par chargement de page ferait de cette table un compteur de
+    // visites par la bande — ce que sa clé primaire existe pour empêcher.
+    prisma.portailJournalRepere.findUnique.mockResolvedValue({ vuJusqua: ENTREE });
+    const reponse = await POST(postRequest(cookieProprio()));
+    expect((await reponse.json()).inchange).toBe(true);
+    expect(prisma.portailJournalRepere.upsert).not.toHaveBeenCalled();
+  });
+
+  it('le POST voit les MÊMES faits que le GET — drapeaux compris', async () => {
+    // Si le POST assemblait le journal autrement, il marquerait « vu » un fait
+    // que l'écran n'a pas montré.
+    delete process.env.WN_CE_QUI_COMPTE;
+    await POST(postRequest(cookieProprio()));
+    expect(prisma.entreeCeQuiCompte.findMany).not.toHaveBeenCalled();
+    expect(prisma.portailJournalRepere.upsert.mock.calls[0][0].update).toEqual({ vuJusqua: ENTREE });
+  });
+
+  it('une panne d’écriture rend 500 sans détail technique', async () => {
+    prisma.portailJournalRepere.upsert.mockRejectedValue(new Error('connexion perdue'));
+    const reponse = await POST(postRequest(cookieProprio()));
     expect(reponse.status).toBe(500);
     const payload = await reponse.json();
     expect(payload.error).toBe('Erreur technique.');

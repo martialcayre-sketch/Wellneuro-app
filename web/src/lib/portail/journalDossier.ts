@@ -277,3 +277,39 @@ export function construireJournalDossier(sources: SourcesJournal): EvenementJour
     return ecart !== 0 ? ecart : a.cle.localeCompare(b.cle);
   });
 }
+
+/**
+ * L'INSTANT DU FAIT LE PLUS RÉCENT du journal — ce jusqu'où le patient vient de
+ * voir, une fois son journal montré déplié.
+ *
+ * Rend `null` sur un journal vide, ce qui n'arrive pas en pratique : l'entrée
+ * dans l'accompagnement en est toujours. Le cas est traité quand même — une
+ * fonction pure qui suppose une ligne serait fausse le jour où son appelant
+ * change.
+ */
+export function instantLePlusRecent(evenements: EvenementJournal[]): string | null {
+  let plusRecent: string | null = null;
+  for (const evenement of evenements) {
+    if (plusRecent === null || evenement.date > plusRecent) plusRecent = evenement.date;
+  }
+  return plusRecent;
+}
+
+/**
+ * LE JOURNAL PORTE-T-IL DU NEUF ? — la seule question dont dépend l'affichage
+ * (arbitrage 3 du 2026-09-12 : replié par défaut, déplié s'il y a du neuf).
+ *
+ * SANS REPÈRE, TOUT EST NEUF. Un patient qui n'a jamais déplié son journal ne
+ * l'a jamais vu : le lui ouvrir est exact. C'est aussi ce qui fait qu'un dossier
+ * qui vient de s'ouvrir montre sa première ligne plutôt que de la cacher.
+ *
+ * LA BORNE EST STRICTE. Un fait daté EXACTEMENT du repère a été vu — c'est le
+ * repère lui-même qui a été posé sur lui. Un `>=` rouvrirait le journal à chaque
+ * chargement sur le dernier fait déjà lu, et « du neuf » ne voudrait plus rien
+ * dire.
+ */
+export function journalPorteDuNeuf(evenements: EvenementJournal[], vuJusqua: Date | null): boolean {
+  if (vuJusqua === null) return evenements.length > 0;
+  const borne = vuJusqua.toISOString();
+  return evenements.some(evenement => evenement.date > borne);
+}
