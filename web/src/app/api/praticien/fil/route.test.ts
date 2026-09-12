@@ -7,6 +7,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     trustPrivacyIncident: { findMany: vi.fn() },
     trustRightsRequest: { findMany: vi.fn() },
     syntheseIA: { findMany: vi.fn(), groupBy: vi.fn() },
+    // Le bout de la chaîne (carte `synthese_non_servie`) : vide par défaut,
+    // comme les autres lectures qui n'intéressent pas le banc en cours.
+    bookletEnvoi: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     // Le retour du patient sur son objectif (4 tables) : vide par défaut, comme
     // le reste — une carte ne s'allume que sur une matière réelle.
@@ -45,6 +48,7 @@ describe('GET /api/praticien/fil', () => {
     prisma.trustPrivacyIncident.findMany.mockResolvedValue([]);
     prisma.trustRightsRequest.findMany.mockResolvedValue([]);
     prisma.syntheseIA.findMany.mockResolvedValue([]);
+    prisma.bookletEnvoi.findMany.mockResolvedValue([]);
     prisma.syntheseIA.groupBy.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.ratificationObjectif.findMany.mockResolvedValue([]);

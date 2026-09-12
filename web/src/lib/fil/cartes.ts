@@ -21,6 +21,11 @@ export type TypeCarteFil =
   | 'signalement_trust'
   | 'synthese_a_valider'
   | 'synthese_a_generer'
+  // LE TROU DE SORTIE, et il a été MESURÉ : 44 synthèses validées en
+  // production, 24 envoyées, 0 renvoi. Vingt textes validés par un
+  // praticien n'ont jamais atteint leur patient, et aucune surface ne le
+  // disait. Le geste manquant n'est pas en amont — il est au bout.
+  | 'synthese_non_servie'
   | 'jalon_j21'
   | 't0_a_confirmer'
   | 'biologie_arbitree'
@@ -297,6 +302,80 @@ export function cartesSynthesesAGenerer(
       href: `/dashboard/synthese?idPatient=${encodeURIComponent(l.idPatient)}`,
       actionLabel: 'Générer la synthèse',
       cle: cleCarte('synthese_a_generer', `agregat:${l.idPatient}:${l.derniereLecture.toISOString()}`),
+    }));
+}
+
+/** Une synthèse VALIDÉE, réduite à ce que la carte de sortie a besoin de lire. */
+export type SyntheseValideeRow = { idPatient: string; idSynthese: string; dateValidation: Date };
+
+/** Un envoi de booklet RÉUSSI, réduit de même. */
+export type EnvoiBookletRow = { idPatient: string; dateEnvoi: Date };
+
+/**
+ * SYNTHÈSES VALIDÉES QUI N'ONT JAMAIS ÉTÉ SERVIES AU PATIENT.
+ *
+ * LE FAIT QUI A FAIT ÉCRIRE CETTE CARTE, lu par conteneur le 2026-09-12 : 44
+ * synthèses validées, **24 envoyées**, **0 renvoi**. Vingt textes qu'un
+ * praticien a relus et validés ne sont jamais partis — et rien, nulle part, ne
+ * le disait. Tout le reste du Fil appelle à PRODUIRE ; celle-ci est la seule à
+ * regarder le bout de la chaîne.
+ *
+ * LA RÈGLE EST : « la dernière validée, sans envoi postérieur ».
+ *
+ *   · LA DERNIÈRE, pas toutes — un dossier dont la synthèse de juillet est
+ *     partie et dont celle d'août ne l'est pas appelle UN geste, pas deux. Ce
+ *     qui compte est l'état courant du dossier, pas son histoire.
+ *   · POSTÉRIEUR À LA VALIDATION, pas « un envoi quelconque » : le dossier qui
+ *     a reçu un bilan en juillet et dont la synthèse du 29 août dort n'est pas
+ *     servi. C'est le cas qui a fait naître la carte.
+ *
+ * ELLE NE JUGE PAS LE PRATICIEN. Un texte validé et non transmis peut être un
+ * oubli comme une décision — on attend la consultation, on a vu le patient
+ * entre-temps. La carte dit le FAIT et ouvre le dossier ; elle ne dit pas
+ * « vous avez oublié », et elle s'écarte comme toutes les autres.
+ */
+export function cartesSynthesesNonServies(
+  validees: SyntheseValideeRow[],
+  envois: EnvoiBookletRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  // La plus RÉCENTE validation par dossier. L'appelant n'est pas tenu de trier.
+  const derniereValidee = new Map<string, SyntheseValideeRow>();
+  for (const ligne of validees) {
+    const connue = derniereValidee.get(ligne.idPatient);
+    if (!connue || ligne.dateValidation.getTime() > connue.dateValidation.getTime()) {
+      derniereValidee.set(ligne.idPatient, ligne);
+    }
+  }
+
+  const dernierEnvoi = new Map<string, Date>();
+  for (const envoi of envois) {
+    const connu = dernierEnvoi.get(envoi.idPatient);
+    if (!connu || envoi.dateEnvoi.getTime() > connu.getTime()) {
+      dernierEnvoi.set(envoi.idPatient, envoi.dateEnvoi);
+    }
+  }
+
+  return [...derniereValidee.values()]
+    .filter(ligne => {
+      const envoye = dernierEnvoi.get(ligne.idPatient);
+      return envoye === undefined || envoye.getTime() <= ligne.dateValidation.getTime();
+    })
+    .sort((a, b) => a.dateValidation.getTime() - b.dateValidation.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(ligne => ({
+      type: 'synthese_non_servie' as const,
+      idPatient: ligne.idPatient,
+      patient: nomPatient(noms, ligne.idPatient),
+      titre: 'Synthèse validée, jamais transmise',
+      pourquoi: `Validée le ${formatDateFr(ligne.dateValidation)} — aucun envoi depuis.`,
+      date: ligne.dateValidation.toISOString(),
+      href: `/dashboard/synthese?idPatient=${encodeURIComponent(ligne.idPatient)}`,
+      actionLabel: 'Ouvrir la synthèse',
+      // Ancrée sur la synthèse, pas sur le dossier : une validation nouvelle
+      // est un fait nouveau et mérite une nouvelle décision — la carte écartée
+      // revient, comme pour `synthese_a_valider`.
+      cle: cleCarte('synthese_non_servie', ligne.idSynthese),
     }));
 }
 
@@ -668,6 +747,7 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
   { type: 'synthese_a_generer', singulier: 'synthèse à générer', pluriel: 'synthèses à générer' },
+  { type: 'synthese_non_servie', singulier: 'synthèse non transmise', pluriel: 'synthèses non transmises' },
   { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'biologie_arbitree', singulier: 'biologie arbitrée', pluriel: 'biologies arbitrées' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
@@ -717,6 +797,8 @@ export function construireFil(entrees: {
   syntheses: SyntheseRow[];
   lectures?: LectureRow[];
   dernieresSyntheses?: Map<string, Date>;
+  synthesesValidees?: SyntheseValideeRow[];
+  envoisBooklet?: EnvoiBookletRow[];
   jalons?: JalonRow[];
   passationsRideau?: PassationRideauRow[];
   premieresPassations?: Map<string, Date>;
@@ -737,6 +819,8 @@ export function construireFil(entrees: {
     syntheses,
     lectures = [],
     dernieresSyntheses = new Map<string, Date>(),
+    synthesesValidees = [],
+    envoisBooklet = [],
     jalons = [],
     passationsRideau = [],
     premieresPassations = new Map<string, Date>(),
@@ -762,6 +846,10 @@ export function construireFil(entrees: {
     ...cartesGestesObjectif(gestesObjectif, noms),
     ...cartesSynthesesAValider(syntheses, noms),
     ...cartesSynthesesAGenerer(lectures, dernieresSyntheses, noms),
+    // APRÈS « à générer », et c'est l'ordre du travail : produire vient avant
+    // transmettre. Mais elle passe AVANT le T0 — un patient qui attend un texte
+    // déjà écrit attend depuis plus longtemps qu'un dossier sans repère.
+    ...cartesSynthesesNonServies(synthesesValidees, envoisBooklet, noms),
     // Le T0 précède le J21 : un dossier qui n'a pas son repère de départ ne
     // peut pas produire de jalon suivant. La carte passe donc devant.
     ...cartesT0AConfirmer(
