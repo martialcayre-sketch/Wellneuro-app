@@ -706,4 +706,15 @@ describe('cartesGestesObjectif — le retour du patient sur son objectif', () =>
     expect(carte.pourquoi).toContain('a proposé sa propre formulation');
     expect(JSON.stringify(carte)).not.toMatch(/dormir|réveille/i);
   });
+
+  it('LE LIEN OUVRE LA PHASE OÙ LA PAROLE SE LIT, et se marque d’où il vient', () => {
+    // Deux promesses en une : la fiche s'ouvre sur Compréhension plutôt que de
+    // laisser chercher dans sept phases, ET le lien porte `?fil=` — le marqueur
+    // sans lequel l'atterrissage ne consignerait aucune lecture, et la carte
+    // reviendrait demain. Un `href` nu est exactement l'état d'avant ce lot.
+    const [carte] = cartesGestesObjectif([geste('R1', 'ratifie', 3)], noms);
+    expect(carte.href).toBe(
+      '/dashboard/patients/PAT001?onglet=cockpit&phase=comprehension&fil=geste_objectif',
+    );
+  });
 });

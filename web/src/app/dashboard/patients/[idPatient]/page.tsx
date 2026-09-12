@@ -1,4 +1,6 @@
 import { FichePatientPanel } from '@/components/FichePatientPanel';
+import { ConsignerLectureFil } from '@/components/fil/ConsignerLectureFil';
+import { typeLuAlAtterrissage, urlSansMarqueurFil } from '@/lib/fil/lectureCartes';
 import {
   estOngletFiche,
   estPhaseFiche,
@@ -47,6 +49,14 @@ export default async function FichePatientPage({
   // une valeur inconnue est ignorée et la règle D5 reprend la main.
   const phaseBrute = Array.isArray(parametres?.phase) ? parametres.phase[0] : parametres?.phase;
   const phaseDemandee: PhaseFiche | undefined = estPhaseFiche(phaseBrute) ? phaseBrute : undefined;
+  // MARQUEUR `?fil=` : le praticien arrive PAR une carte du Fil, et l'atteinte
+  // de cette page vaut lecture de ce type de carte pour ce dossier. La liste
+  // des types acquittables par lecture est étroite et tenue au serveur — une
+  // valeur collée à la main ne consigne rien.
+  //
+  // OUVRIR LA FICHE AUTREMENT NE CONSIGNE RIEN, et c'est le point : sans ce
+  // marqueur, consulter un dossier viderait en silence les signaux qu'il porte.
+  const typeCarteLu = typeLuAlAtterrissage(parametres?.fil);
   return (
     <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
       <AgendaAliFeatureProvider enabled={isAgendaAlimentaireEnabled(process.env.WN_AGENDA_ALI)}>
@@ -71,6 +81,13 @@ export default async function FichePatientPage({
             phaseDemandee={phaseDemandee}
             fixtureValidationErgo={fixtureValidationErgo}
           />
+          {typeCarteLu && (
+            <ConsignerLectureFil
+              idPatient={idPatient}
+              typeCarte={typeCarteLu}
+              urlPropre={urlSansMarqueurFil(idPatient, parametres)}
+            />
+          )}
         </CbFeatureProvider>
       </AgendaAliFeatureProvider>
     </C5FeatureProvider>

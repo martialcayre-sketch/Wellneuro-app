@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { CarteFil, TypeCarteFil } from './cartes';
 import {
   lectureEffective,
+  lienFilVersFiche,
+  PARAM_PROVENANCE_FIL,
   partagerParLecture,
   sAcquitteParLecture,
+  typeLuAlAtterrissage,
   TYPES_ACQUITTABLES_PAR_LECTURE,
+  urlSansMarqueurFil,
   type LectureCarteFilRow,
 } from './lectureCartes';
 
@@ -237,5 +241,99 @@ describe('les types qui s’acquittent par lecture — liste fermée et étroite
 
   it('la liste ne contient QUE le geste objectif — l’élargir est un arbitrage, pas une retouche', () => {
     expect([...TYPES_ACQUITTABLES_PAR_LECTURE]).toEqual(['geste_objectif']);
+  });
+});
+
+describe('lienFilVersFiche — le lien de la carte porte sa destination ET sa provenance', () => {
+  it('ouvre la phase où la parole se lit, pas la fiche en général', () => {
+    // Sans `onglet`/`phase`, le praticien atterrit sur le poste de pilotage et
+    // cherche lui-même dans sept phases la réponse qu'on vient de lui annoncer.
+    expect(lienFilVersFiche('PAT006', 'geste_objectif')).toBe(
+      '/dashboard/patients/PAT006?onglet=cockpit&phase=comprehension&fil=geste_objectif',
+    );
+  });
+
+  it('LE MARQUEUR DE PROVENANCE EST LÀ, et il porte le type lu', () => {
+    const lien = lienFilVersFiche('PAT006', 'geste_objectif');
+    expect(lien).toContain(`${PARAM_PROVENANCE_FIL}=geste_objectif`);
+  });
+
+  it('UN TYPE QUI NE S’ACQUITTE PAS PAR LECTURE rend la fiche NUE, sans marqueur', () => {
+    // Un marqueur orphelin sur un signalement Trust ferait disparaître du Fil
+    // un suivi que personne n'a fait. La liste étroite se relit ici aussi.
+    for (const type of ['signalement_trust', 'biologie_arbitree', 'assignation_en_retard'] as const) {
+      const lien = lienFilVersFiche('PAT006', type);
+      expect(lien, type).toBe('/dashboard/patients/PAT006');
+      expect(lien, type).not.toContain(PARAM_PROVENANCE_FIL + '=');
+    }
+  });
+
+  it('TOUTE DESTINATION DÉCLARÉE porte un type qui s’acquitte par lecture', () => {
+    // La table des destinations est privée : on la lit par son seul effet
+    // observable. Un lien qui porte le marqueur est un lien dont la
+    // destination est déclarée — il doit donc être acquittable par lecture.
+    const nonAcquittables: TypeCarteFil[] = [
+      'signalement_trust',
+      'biologie_arbitree',
+      'assignation_en_retard',
+      'synthese_a_valider',
+      'consultation_prevue',
+      'jalon_j21',
+      't0_a_confirmer',
+      'synthese_a_generer',
+      'reprise',
+    ];
+    for (const type of nonAcquittables) {
+      expect(lienFilVersFiche('PAT006', type), type).not.toContain(`${PARAM_PROVENANCE_FIL}=`);
+    }
+  });
+
+  it('un identifiant exotique est encodé — jamais d’URL cassée', () => {
+    expect(lienFilVersFiche('PAT 006/x', 'geste_objectif')).toContain('PAT%20006%2Fx');
+  });
+});
+
+describe('typeLuAlAtterrissage — une URL est une entrée utilisateur', () => {
+  it('accepte le type que le lien du Fil pose', () => {
+    expect(typeLuAlAtterrissage('geste_objectif')).toBe('geste_objectif');
+  });
+
+  it('REFUSE CE QUI APPELLE UN GESTE AILLEURS, même collé à la main dans la barre', () => {
+    for (const type of ['signalement_trust', 'biologie_arbitree', 'synthese_a_valider']) {
+      expect(typeLuAlAtterrissage(type), type).toBeNull();
+    }
+  });
+
+  it('refuse l’absent, l’inventé, le vide et ce qui n’est pas une chaîne', () => {
+    expect(typeLuAlAtterrissage(undefined)).toBeNull();
+    expect(typeLuAlAtterrissage('inventé')).toBeNull();
+    expect(typeLuAlAtterrissage('')).toBeNull();
+    expect(typeLuAlAtterrissage(42)).toBeNull();
+    expect(typeLuAlAtterrissage({ fil: 'geste_objectif' })).toBeNull();
+  });
+
+  it('un paramètre répété prend la première valeur — Next rend un tableau', () => {
+    expect(typeLuAlAtterrissage(['geste_objectif', 'signalement_trust'])).toBe('geste_objectif');
+    expect(typeLuAlAtterrissage(['signalement_trust', 'geste_objectif'])).toBeNull();
+    expect(typeLuAlAtterrissage([])).toBeNull();
+  });
+});
+
+describe('urlSansMarqueurFil — ce que la barre d’adresse garde après la lecture', () => {
+  it('RETIRE LE MARQUEUR et garde le reste — sinon un F5 réécrirait une lecture', () => {
+    expect(
+      urlSansMarqueurFil('PAT006', { onglet: 'cockpit', phase: 'comprehension', fil: 'geste_objectif' }),
+    ).toBe('/dashboard/patients/PAT006?onglet=cockpit&phase=comprehension');
+  });
+
+  it('sans autre paramètre, rend la page sans point d’interrogation', () => {
+    expect(urlSansMarqueurFil('PAT006', { fil: 'geste_objectif' })).toBe('/dashboard/patients/PAT006');
+    expect(urlSansMarqueurFil('PAT006', undefined)).toBe('/dashboard/patients/PAT006');
+  });
+
+  it('un paramètre répété survit en entier — on ne rogne pas l’URL du praticien', () => {
+    expect(urlSansMarqueurFil('PAT006', { onglet: ['cockpit', 'besoins'], fil: 'geste_objectif' })).toBe(
+      '/dashboard/patients/PAT006?onglet=cockpit&onglet=besoins',
+    );
   });
 });

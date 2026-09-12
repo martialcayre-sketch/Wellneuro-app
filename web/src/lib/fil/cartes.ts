@@ -7,6 +7,7 @@
  */
 
 import { bornesJourParis, formatHeureParis } from './fuseau';
+import { lienFilVersFiche } from './lectureCartes';
 import { filtrerPassationsExploitables } from '@/lib/scoring/validite';
 
 // `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
@@ -494,7 +495,10 @@ export function cartesGestesObjectif(
       titre: 'Votre patient s’est prononcé sur son objectif',
       pourquoi: `Le ${formatDateFr(g.creeLe)}, il ${LIBELLE_GESTE[g.geste]}.`,
       date: g.creeLe.toISOString(),
-      href: `/dashboard/patients/${g.idPatient}`,
+      // LE LIEN OUVRE LA PHASE OÙ LA PAROLE SE LIT, et se marque d'où il
+      // vient — c'est ce marqueur qui fera disparaître la carte à
+      // l'atterrissage, et lui seul (`lienFilVersFiche`).
+      href: lienFilVersFiche(g.idPatient, 'geste_objectif'),
       actionLabel: 'Ouvrir la fiche',
       cle: cleCarte('geste_objectif', g.id),
     }));

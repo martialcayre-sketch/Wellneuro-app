@@ -28,6 +28,7 @@ vi.mock('@/lib/agenda-alimentaire/featureFlag', () => ({
 import FichePatientPage from './page';
 import { AgendaAliFeatureProvider } from '@/components/agenda-alimentaire/AgendaAliFeatureProvider';
 import { isAgendaAlimentaireEnabled } from '@/lib/agenda-alimentaire/featureFlag';
+import { ConsignerLectureFil } from '@/components/fil/ConsignerLectureFil';
 
 // On n'appelle PAS `render` : la page est un composant serveur, son arbre
 // suffit. Le marcher évite de monter `FichePatientPanel`, composant client
@@ -81,5 +82,64 @@ describe('câblage de WN_AGENDA_ALI jusqu’au panneau agenda alimentaire', () =
     drapeau.mockReturnValue(true);
     await enabledDuProvider();
     expect(drapeau).toHaveBeenCalled();
+  });
+});
+
+// ── L'ATTERRISSAGE DEPUIS LE FIL ────────────────────────────────────────────
+//
+// Même méthode que plus haut : on marche l'arbre, on ne monte rien. Ce qui se
+// joue ici n'est pas visuel — c'est la garde qui décide si atteindre cette page
+// consigne une lecture. Se tromper d'un côté laisse les cartes revenir chaque
+// jour ; se tromper de l'autre efface en silence, à chaque ouverture de
+// dossier, des paroles que personne n'a lues.
+function trouverConsigneur(node: unknown): ReactElement | null {
+  if (!node || typeof node !== 'object') return null;
+  const el = node as ReactElement<{ children?: unknown }>;
+  if (el.type === ConsignerLectureFil) return el;
+  const enfants = el.props?.children;
+  if (Array.isArray(enfants)) {
+    for (const enfant of enfants) {
+      const trouve = trouverConsigneur(enfant);
+      if (trouve) return trouve;
+    }
+    return null;
+  }
+  return trouverConsigneur(enfants);
+}
+
+async function consigneurPour(parametres: Record<string, unknown>) {
+  const arbre = await FichePatientPage({
+    params: Promise.resolve({ idPatient: 'PAT_1' }),
+    searchParams: Promise.resolve(parametres as never),
+  });
+  return trouverConsigneur(arbre);
+}
+
+describe('atterrissage depuis une carte du Fil', () => {
+  it('MONTE LE CONSIGNEUR quand on arrive par le lien du Fil, et lui passe l’URL nettoyée', async () => {
+    const consigneur = await consigneurPour({
+      onglet: 'cockpit',
+      phase: 'comprehension',
+      fil: 'geste_objectif',
+    });
+    expect(consigneur, 'le consigneur doit être monté sur un atterrissage marqué').not.toBeNull();
+    expect(consigneur?.props).toMatchObject({
+      idPatient: 'PAT_1',
+      typeCarte: 'geste_objectif',
+      urlPropre: '/dashboard/patients/PAT_1?onglet=cockpit&phase=comprehension',
+    });
+  });
+
+  it('OUVRIR LA FICHE AUTREMENT NE CONSIGNE RIEN — c’est tout l’intérêt du marqueur', async () => {
+    // Sans cette garde, consulter un dossier depuis la liste des patients
+    // viderait en silence son Fil des paroles qu'on n'a pas lues.
+    expect(await consigneurPour({})).toBeNull();
+    expect(await consigneurPour({ onglet: 'cockpit', phase: 'comprehension' })).toBeNull();
+  });
+
+  it('UN MARQUEUR COLLÉ À LA MAIN sur un type qui appelle un geste ne consigne rien', async () => {
+    for (const type of ['signalement_trust', 'biologie_arbitree', 'inventé', '']) {
+      expect(await consigneurPour({ fil: type }), type).toBeNull();
+    }
   });
 });
