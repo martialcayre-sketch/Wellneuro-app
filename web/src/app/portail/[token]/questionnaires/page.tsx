@@ -24,6 +24,7 @@ import { PatientCompanionHome } from '@/components/patient-companion/PatientComp
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
 import { construireFilDuJour } from '@/lib/portail/filDuJour';
+import type { LectureAttendue } from '@/lib/portail/lecturesAttendues';
 import { JournalDossier } from '@/components/patient/JournalDossier';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
@@ -93,6 +94,17 @@ export default function QuestionnairesHubPage() {
    * déposé nommerait un geste que `D-166` refuse.
    */
   const [ceQuiCompteOuvert, setCeQuiCompteOuvert] = useState<boolean | null>(null);
+  /*
+   * CE QUE LE PRATICIEN A REMIS et que le patient n'a pas encore ouvert. La
+   * route applique les MÊMES règles de visibilité que les écrans du bilan et de
+   * la synthèse, et ne transporte aucun contenu — une espèce, une version, une
+   * date.
+   *
+   * Tableau vide en cas d'échec : le fil retombe sur ce qu'il sait. Annoncer
+   * une lecture qu'on n'a pas pu vérifier enverrait le patient sur un écran qui
+   * lui dirait qu'il n'y a rien.
+   */
+  const [lectures, setLectures] = useState<LectureAttendue[]>([]);
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
   // fois au prochain accès, tant que la version courante du cadre n'a pas
   // d'accusé de lecture. Jamais bloquante en cas d'erreur réseau.
@@ -144,6 +156,25 @@ export default function QuestionnairesHubPage() {
         // Silence délibéré : on reste à `null`, donc sans invitation. Annoncer
         // une panne sur une surface que le patient ne connaît pas encore
         // l'informerait d'un incident sur un écran qui n'existe pas pour lui.
+      }
+    })();
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/portail/lectures');
+        const data = (await res.json()) as { ok?: boolean; lectures?: LectureAttendue[] };
+        if (vivant && res.ok && data.ok === true && Array.isArray(data.lectures)) {
+          setLectures(data.lectures);
+        }
+      } catch {
+        // Silence délibéré : aucune lecture annoncée. Le portail ne signale pas
+        // au patient la panne d'une surface dont il ignore l'existence.
       }
     })();
     return () => {
@@ -273,6 +304,7 @@ export default function QuestionnairesHubPage() {
     token,
     enrichis: enriched,
     brouillons,
+    lectures,
     agendas,
     agendasAli,
     ceQuiCompteOuvert,

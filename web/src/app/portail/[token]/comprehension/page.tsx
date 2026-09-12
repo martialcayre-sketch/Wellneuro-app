@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ConsignerLecturePortail } from '@/components/patient/ConsignerLecturePortail';
 import { notFound } from 'next/navigation';
 import { ComprehensionView } from '@/components/patient-companion/ComprehensionView';
 import { isComprehensionEnabled } from '@/lib/patient/featureFlag';
@@ -23,6 +24,10 @@ export default async function PortailComprehensionPage({ params }: { params: Pro
         ← Mon parcours
       </Link>
       <ComprehensionView />
+      {/* Même geste que sur l'écran du bilan : ouvrir acquitte la tâche du fil.
+          Le drapeau garde déjà cet écran par `notFound()` plus haut — une
+          surface close ne consigne donc rien, sans qu'il faille le redire. */}
+      <ConsignerLecturePortail espece="synthese" />
     </div>
   );
 }
