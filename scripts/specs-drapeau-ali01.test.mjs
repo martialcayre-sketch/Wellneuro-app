@@ -152,6 +152,12 @@ const ALLOWLIST = new Map([
     '« Q_ALI_01 » y est l’identifiant d’une fixture d’assignation ; le hub n’ouvre jamais la définition',
   ],
   [
+    'src/lib/portail/filDuJour.test.ts',
+    'même fixture d’assignation que son voisin `hubQuestionnaires.test.ts`, dont il reprend les '
+      + 'helpers : « Q_ALI_01 » y est un identifiant opaque, et le fil du jour ne lit que le GROUPE '
+      + 'rendu par `affichage()` — jamais la définition du questionnaire, donc jamais sa forme servie',
+  ],
+  [
     'src/app/api/praticien/agenda-sommeil/relance/route.test.ts',
     '« Q_ALI_01 » y est l’identifiant d’un mock Prisma ; la forme servie n’entre pas dans le verdict',
   ],

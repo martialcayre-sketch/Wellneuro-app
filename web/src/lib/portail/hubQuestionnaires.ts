@@ -10,7 +10,6 @@
 
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import type { BadgeVariant } from '@/components/ui/Badge';
-import type { EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 import { deriverRappelAgenda, type EtatAgendaPortail } from '@/lib/agenda-sommeil/rappelPortail';
 import { AGENDA_SOMMEIL_ID, NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import {
@@ -171,82 +170,19 @@ export function affichage(
   };
 }
 
-// Une seule action mise en avant : d'abord un AGENDA dont la saisie du jour
-// manque (seule tâche PÉRISSABLE — la fenêtre de saisie se referme, alors
-// qu'un brouillon attend sans rien perdre), puis une reprise de brouillon, puis
-// le premier « à compléter », puis une correction demandée en attente (non
-// actionnable : présentée en information, pas en CTA), sinon un état stable
-// sans action.
-//
-// Les deux familles d'agenda sont au MÊME RANG : ni le sommeil ni
-// l'alimentaire ne prime cliniquement sur l'autre. La liste des candidats les
-// concatène (sommeil d'abord) uniquement pour que l'ordre soit STABLE et que le
-// comportement d'avant l'agenda alimentaire soit inchangé quand il n'y en a
-// pas. Le premier candidat prioritaire gagne, et le second ne l'écrase jamais —
-// le portail ne met en avant qu'une seule chose à la fois.
-type CandidatAgenda = { idAssignation: string; cta: string; factuel: string };
-
-function candidatsAgendas(
-  agendas: AgendaPortail[],
-  agendasAli: AgendaAliPortail[],
-): CandidatAgenda[] {
-  const candidats: CandidatAgenda[] = [];
-  for (const agenda of agendas) {
-    const rappel = deriverRappelAgenda(agenda, NB_JOURS_AGENDA);
-    if (!rappel.prioritaire || rappel.cta === null) continue;
-    candidats.push({
-      idAssignation: agenda.idAssignation,
-      cta: rappel.cta,
-      factuel: rappel.factuel,
-    });
-  }
-  for (const agendaAli of agendasAli) {
-    const rappel = deriverRappelAgendaAli(agendaAli);
-    if (!rappel.prioritaire || rappel.cta === null) continue;
-    candidats.push({
-      idAssignation: agendaAli.idAssignation,
-      cta: rappel.cta,
-      factuel: rappel.factuel,
-    });
-  }
-  return candidats;
-}
-
-export function calculerActionRecommandee(
-  enriched: Enrichi[],
-  brouillons: Set<string>,
-  agendas: AgendaPortail[],
-  agendasAli: AgendaAliPortail[] = [],
-): EtapeDuMoment {
-  if (enriched.length === 0) return { kind: 'vide' };
-
-  for (const agenda of candidatsAgendas(agendas, agendasAli)) {
-    const cible = enriched.find(
-      e => e.a.idAssignation === agenda.idAssignation && e.aff.groupe === 'a_completer',
-    );
-    // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé
-    // qu'il rouvre pour faire corriger : lui proposer « transmettre » ferait
-    // créer une seconde QuestionnaireReponse. Son état praticien prime.
-    if (cible && cible.a.statutReponses !== 'deverrouille') {
-      return {
-        kind: 'action',
-        idAssignation: agenda.idAssignation,
-        cta: agenda.cta,
-        appui: agenda.factuel,
-      };
-    }
-  }
-
-  const brouillon = enriched.find(e => e.aff.groupe === 'a_completer' && brouillons.has(e.a.idAssignation));
-  const cible = brouillon ?? enriched.find(e => e.aff.groupe === 'a_completer');
-  if (cible) {
-    const titre = cible.a.titre || cible.a.idQuestionnaire;
-    return { kind: 'action', idAssignation: cible.a.idAssignation, cta: `${cible.aff.action} « ${titre} »` };
-  }
-  const enAttente = enriched.find(e => e.aff.groupe === 'correction');
-  if (enAttente) {
-    const titre = enAttente.a.titre || enAttente.a.idQuestionnaire;
-    return { kind: 'attente', texte: `Votre demande de correction sur « ${titre} » est en attente de traitement par votre praticien.` };
-  }
-  return { kind: 'stable' };
-}
+/*
+ * ── CE QUI A ÉTÉ RETIRÉ ICI LE 2026-09-12, ET POURQUOI ─────────────────────
+ *
+ * `calculerActionRecommandee` vivait à cette place : elle élisait UNE action à
+ * mettre en avant — agenda périssable, puis brouillon, puis premier à
+ * compléter, puis correction en attente. `lib/portail/filDuJour.ts` répond
+ * maintenant à la même question, et en donne la LISTE au lieu du premier.
+ *
+ * Elle n'a pas été gardée « au cas où ». Deux dérivations de « qu'est-ce que
+ * le patient a à faire », lues par le même écran, divergeraient — et la
+ * divergence ne se verrait pas : les deux rendraient quelque chose de
+ * plausible. Ses promesses ne sont pas perdues pour autant : chacune est
+ * rejouée dans `filDuJour.test.ts`, y compris celles que le fil honore
+ * autrement (un agenda à jour n'est plus une action « Consulter », il devient
+ * un repos).
+ */

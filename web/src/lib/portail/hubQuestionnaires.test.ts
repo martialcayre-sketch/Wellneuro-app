@@ -4,7 +4,6 @@ import {
   GROUPES,
   GROUPES_SECONDAIRES,
   affichage,
-  calculerActionRecommandee,
   type AgendaAliPortail,
   type AgendaPortail,
   type Enrichi,
@@ -79,206 +78,6 @@ function enrichir(
     ),
   }));
 }
-
-function etape(
-  assignations: AssignationPatient[],
-  agendas: AgendaPortail[] = [],
-  brouillons = new Set<string>(),
-  agendasAli: AgendaAliPortail[] = [],
-) {
-  return calculerActionRecommandee(
-    enrichir(assignations, agendas, brouillons, agendasAli),
-    brouillons,
-    agendas,
-    agendasAli,
-  );
-}
-
-describe('étape du moment — la priorité de l’agenda', () => {
-  it('une nuit à noter passe DEVANT un brouillon enregistré', () => {
-    // Le brouillon attend sans rien perdre ; la nuit, non.
-    const r = etape(
-      [assign(), assignAgenda()],
-      [agenda()],
-      new Set(['ASS_Q']),
-    );
-    expect(r).toMatchObject({
-      kind: 'action',
-      idAssignation: 'ASS_AGD',
-      cta: 'Noter ma nuit',
-      appui: '5 nuits notées sur 21.',
-    });
-  });
-
-  it('agenda à jour : la main revient au brouillon', () => {
-    const r = etape(
-      [assign(), assignAgenda()],
-      [agenda({ nuitDuJourNotee: true })],
-      new Set(['ASS_Q']),
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-    expect((r as { cta: string }).cta).toContain('Reprendre');
-  });
-
-  it('agenda jamais commencé : NON prioritaire, le pack assigné garde la main', () => {
-    // Sinon un agenda sans date limite enterrerait le pack sans terme.
-    const r = etape(
-      [assign(), assignAgenda()],
-      [agenda({ nbRenseignees: 0, jourCourant: null })],
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
-  it('agenda déverrouillé par le praticien : son état prime, pas la transmission', () => {
-    // Proposer « transmettre » sur un recueil rouvert créerait une seconde
-    // QuestionnaireReponse pour la même assignation.
-    const r = etape(
-      [assignAgenda({ statutReponses: 'deverrouille' })],
-      [agenda({ cloturablePatient: true, nuitDuJourNotee: true, jourCourant: 21 })],
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_AGD' });
-    expect((r as { cta: string }).cta).toContain('Corriger');
-    expect((r as { appui?: string }).appui).toBeUndefined();
-  });
-
-  it('agenda présent dans agendas mais absent des assignations : aucun CTA orphelin', () => {
-    // Cas du filtre IDS_SUSPENDUS : la boucle passe au suivant, pas de crash.
-    const r = etape([assign()], [agenda()]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
-  it('deux agendas, un seul prioritaire : c’est celui-là qui est mis en avant', () => {
-    const r = etape(
-      [assignAgenda({ idAssignation: 'ASS_A' }), assignAgenda({ idAssignation: 'ASS_B' })],
-      [
-        agenda({ idAssignation: 'ASS_A', nuitDuJourNotee: true }),
-        agenda({ idAssignation: 'ASS_B', nuitDuJourNotee: false }),
-      ],
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_B', cta: 'Noter ma nuit' });
-  });
-
-  it('agenda expiré (date limite dépassée) : jamais mis en avant', () => {
-    const r = etape([assignAgenda({ estEnAttenteSaisie: false })], [agenda()]);
-    expect(r).toMatchObject({ kind: 'stable' });
-  });
-
-  it('sans assignation : état vide, jamais une action', () => {
-    expect(etape([], [agenda()])).toEqual({ kind: 'vide' });
-  });
-});
-
-describe('étape du moment — l’agenda ALIMENTAIRE au même rang que celui du sommeil', () => {
-  it('une journée à noter passe DEVANT un brouillon enregistré', () => {
-    const r = etape([assign(), assignAgendaAli()], [], new Set(['ASS_Q']), [agendaAli()]);
-    expect(r).toMatchObject({
-      kind: 'action',
-      idAssignation: 'ASS_AGD_ALI',
-      cta: 'Noter ma journée',
-      appui: '5 journées notées sur 21.',
-    });
-  });
-
-  it('agenda alimentaire à jour : la main revient au brouillon', () => {
-    const r = etape(
-      [assign(), assignAgendaAli()],
-      [],
-      new Set(['ASS_Q']),
-      [agendaAli({ journeeDuJourEnregistree: true })],
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-    expect((r as { cta: string }).cta).toContain('Reprendre');
-  });
-
-  it('agenda alimentaire jamais commencé : NON prioritaire, le pack garde la main', () => {
-    const r = etape([assign(), assignAgendaAli()], [], new Set(), [
-      agendaAli({ nbRenseignees: 0, jourCourant: null }),
-    ]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
-  it('agenda alimentaire déverrouillé par le praticien : son état prime, pas la transmission', () => {
-    // Proposer « transmettre » sur un recueil rouvert créerait une seconde
-    // QuestionnaireReponse pour la même assignation. Même garde que le sommeil.
-    const r = etape([assignAgendaAli({ statutReponses: 'deverrouille' })], [], new Set(), [
-      agendaAli({ cloturablePatient: true, journeeDuJourEnregistree: true, jourCourant: 21 }),
-    ]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_AGD_ALI' });
-    expect((r as { cta: string }).cta).toContain('Corriger');
-    expect((r as { appui?: string }).appui).toBeUndefined();
-  });
-
-  it('agenda alimentaire présent mais absent des assignations : aucun CTA orphelin', () => {
-    // Cas du filtre IDS_SUSPENDUS, drapeau `WN_AGENDA_ALI` éteint : la route
-    // peut ne plus servir l'assignation. La boucle passe au suivant, pas de
-    // CTA pointant vers un écran qui rendrait 410.
-    const r = etape([assign()], [], new Set(), [agendaAli()]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
-  it('agenda alimentaire expiré (date limite dépassée) : jamais mis en avant', () => {
-    const r = etape([assignAgendaAli({ estEnAttenteSaisie: false })], [], new Set(), [agendaAli()]);
-    expect(r).toMatchObject({ kind: 'stable' });
-  });
-
-  // LE CAS QUI DÉCIDE : les deux recueils ouverts en même temps. Le portail ne
-  // met en avant qu'UNE chose — le second ne doit ni écraser le premier, ni
-  // disparaître de la liste.
-  it('sommeil ET alimentaire tous deux à noter : le sommeil est recommandé, l’alimentaire reste listé', () => {
-    const enriched = enrichir(
-      [assignAgenda(), assignAgendaAli()],
-      [agenda()],
-      new Set(),
-      [agendaAli()],
-    );
-    const r = calculerActionRecommandee(enriched, new Set(), [agenda()], [agendaAli()]);
-    expect(r).toMatchObject({
-      kind: 'action',
-      idAssignation: 'ASS_AGD',
-      cta: 'Noter ma nuit',
-      appui: '5 nuits notées sur 21.',
-    });
-    // L'alimentaire n'est pas écrasé : il garde son propre badge dans la liste.
-    const ali = enriched.find(e => e.a.idAssignation === 'ASS_AGD_ALI');
-    expect(ali?.aff.badge).toBe('Journée du jour à noter');
-    expect(ali?.aff.action).toBe('Noter ma journée');
-  });
-
-  it('sommeil à jour, alimentaire à noter : l’alimentaire prend la main', () => {
-    const r = etape(
-      [assignAgenda(), assignAgendaAli()],
-      [agenda({ nuitDuJourNotee: true })],
-      new Set(),
-      [agendaAli()],
-    );
-    expect(r).toMatchObject({
-      kind: 'action',
-      idAssignation: 'ASS_AGD_ALI',
-      cta: 'Noter ma journée',
-    });
-  });
-
-  it('les deux à jour : la main revient aux questionnaires ordinaires', () => {
-    const r = etape(
-      [assign(), assignAgenda(), assignAgendaAli()],
-      [agenda({ nuitDuJourNotee: true })],
-      new Set(),
-      [agendaAli({ journeeDuJourEnregistree: true })],
-    );
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
-  // Non-régression : sans agenda alimentaire, le hub se comporte EXACTEMENT
-  // comme avant — le quatrième paramètre est facultatif.
-  it('appel à trois arguments (sans agendas alimentaires) : comportement inchangé', () => {
-    const enriched = enrichir([assign(), assignAgenda()], [agenda()], new Set());
-    expect(calculerActionRecommandee(enriched, new Set(), [agenda()])).toMatchObject({
-      kind: 'action',
-      idAssignation: 'ASS_AGD',
-      cta: 'Noter ma nuit',
-    });
-  });
-});
 
 describe('affichage — l’état praticien prime toujours sur le rythme de l’agenda', () => {
   it.each([
@@ -414,18 +213,6 @@ describe('agenda alimentaire clos — il quitte « À compléter »', () => {
     expect(aff.ghost).toBe(true);
   });
 
-  it('seul reste à l’écran : plus jamais l’étape du moment', () => {
-    const r = etape([assignAgendaAli()], [], new Set(), [agendaAliClos()]);
-    expect(r).toMatchObject({ kind: 'stable' });
-  });
-
-  it('un vrai questionnaire à compléter reprend l’étape du moment', () => {
-    // L'ordre place l'agenda EN PREMIER : avant le correctif, le repli
-    // « premier à compléter » le choisissait lui, et non le questionnaire.
-    const r = etape([assignAgendaAli(), assign()], [], new Set(), [agendaAliClos()]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
-  });
-
   it('il ne compte plus parmi les « à compléter »', () => {
     const enriched = enrichir([assignAgendaAli(), assign()], [], new Set(), [agendaAliClos()]);
     expect(enriched.filter(e => e.aff.groupe === 'a_completer')).toHaveLength(1);
@@ -487,7 +274,5 @@ describe('agenda alimentaire clos — il quitte « À compléter »', () => {
     );
     expect(aff.groupe).toBe('a_completer');
     expect(aff.action).toBe('Terminer et transmettre à mon praticien');
-    const r = etape([assignAgenda()], [agenda({ nbRenseignees: 21, jourCourant: null })]);
-    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_AGD' });
   });
 });

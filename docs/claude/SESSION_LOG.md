@@ -5473,3 +5473,65 @@ comptes à l'avantage du code — corrigé dans `D-172`.
 
 Prochaine action — la mise en service : `WN_PORTAIL_JOURNAL` reste éteint, et son
 allumage se demande. Avec lui vient le retrait de `portail-visite.ts`.
+
+## 2026-09-12 (fin d'après-midi) — Le fil du jour : un cadrage qui reconnaît son erreur
+
+Le responsable a ouvert son propre écran de patient après l'allumage et a rendu
+son verdict : les deux boutons du LOT-05 font doublon avec « mon dossier à deux
+voix », « ce qui s'est passé dans votre dossier » ajoute du bruit, et ce qu'il
+voulait était **un fil du jour de ce qu'il y a à faire — une todo list, pas un
+calendrier rétrospectif**. « beaucoup de code pour rien. je suis déçu. »
+
+Il avait raison, et la dérive est localisable à la ligne près. Le cadrage de la
+campagne a lu l'énumération de la demande (« questionnaires à remplir, lectures
+synthèses, bilans, actions à faire comme déclarer ce qui compte pour moi,
+reminders agenda ») comme un INTERDIT, au motif que lister ce qui est dû
+rouvrirait l'écart `E11` — puis a conclu que la demande portait « en réalité »
+sur la moitié rétrospective. Les quatre arbitrages soumis ensuite ne rouvraient
+aucun d'entre eux ce renversement : le cadrage approuvé était déjà penché.
+
+Fait — `WN_PORTAIL_JOURNAL` éteint (13:37:57 UTC, constaté par conteneur :
+treize minutes de service) ; les deux boutons retirés (#1052) ; § B.4 amendée
+pour porter les DEUX bascules (#1051) ; `CAMPAGNE.md` amendée en tête, qui dit
+maintenant où son propre raisonnement a dévié.
+
+Livré — `lib/portail/filDuJour.ts`, et `MonParcoursAccueil` rend la LISTE à la
+place de « votre étape du moment ». Règle unique : une tâche disparaît quand le
+patient l'a faite. Aucune condition de disparition inventée — un `cta` nul côté
+rappel d'agenda est déjà le mot du domaine. **L'invitation à dire ce qui compte
+entre enfin dans le portail**, avant les questionnaires, et seulement si la
+FENÊTRE de dépôt est ouverte. `calculerActionRecommandee` retirée : deux
+dérivations de « qu'a-t-il à faire » divergeraient sans que ça se voie.
+
+Renversé, et dit — la réponse à `E11` sur cette page. Gardée : la hiérarchie
+(un bouton plein, les suivantes en liens), pas le masquage.
+
+Corrigé en passant — un agenda à jour était présenté comme l'étape du moment
+sous « Consulter » : une tâche là où il n'y en avait aucune.
+
+Prouvé — T1, **T3 complet** (et non T2 : l'accueil de tous les patients change).
+**19 mutations jouées, 19 tuées** ; les deux survivants ont été comblés par des
+bancs, aucun code retiré pour les faire taire. Un rouge résiduel, `D-049` :
+`portail-dossier-deux-voix`, iPhone 13/WebKit, 120 s, AUCUNE requête émise,
+surface hors diff — non présenté comme vert.
+
+Trouvé par l'E2E, et c'est une leçon sur les bancs — j'avais remonté les agendas
+JAMAIS COMMENCÉS en 2ᵉ position, contre une doctrine écrite (« le mettre en tête
+enterrerait sans terme un pack assigné »). Le banc censé l'épingler portait le
+BON TITRE SUR LA MAUVAISE ASSERTION. Aucune mutation ne pouvait le voir : la
+mutation éprouve le code contre les bancs, pas les bancs contre eux-mêmes.
+
+Deux E2E corrigés, pour des raisons opposées — `portail-agenda-alimentaire`
+ÉPINGLAIT le défaut (il attendait le « Consulter » fabriqué), et ma première
+réécriture attendait « Rien à faire aujourd'hui », ce qui aurait couplé le spec
+à l'état d'une autre surface : le fil n'est pas vide, il porte l'invitation.
+
+Erreur de méthode à ne pas refaire — mutation lancée sur l'arbre pendant que T2
+le lisait. Le rouge obtenu était celui d'un mutant : un tel verdict n'est pas
+rouge, il est **nul**.
+
+Prochaine action — les lectures (bilan, synthèse) dans le fil, qui disparaissent
+une fois lues via le repère de fraîcheur. Piège : le repère est UN instant par
+patient (clé primaire `id_patient`), il ne peut pas porter un accusé par
+document ; lister du plus ancien au plus récent et avancer le repère à la date
+ouverte. Puis le retrait du journal rétrospectif, puis l'amendement de `D-172`.

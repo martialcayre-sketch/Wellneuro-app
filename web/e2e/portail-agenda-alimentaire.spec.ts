@@ -197,9 +197,30 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     await expect(page.getByRole('link', { name: 'Commencer mon agenda alimentaire' })).toHaveCount(
       0,
     );
-    await expect(
-      page.getByRole('link', { name: 'Consulter « Agenda alimentaire — 21 jours »' }),
-    ).toBeVisible();
+    // ── CE QUE CE TEST ATTENDAIT AVANT LE FIL DU JOUR, ET POURQUOI ÇA A CHANGÉ
+    //
+    // Il attendait ici un lien « Consulter « Agenda alimentaire — 21 jours » »
+    // mis en avant comme étape du moment. Ce libellé n'existait pas dans le
+    // domaine : `deriverRappelAgendaAli` rend `cta: null` sur une journée déjà
+    // notée — il n'y a RIEN à faire. C'est le repli « premier à compléter » de
+    // `calculerActionRecommandee` qui fabriquait un « Consulter » et le
+    // présentait comme la tâche du jour. Le test épinglait donc le défaut.
+    //
+    // Le fil du jour dit maintenant la vérité : aucune tâche, et la phrase
+    // factuelle du recueil pour que « rien à faire » ne se lise pas « rien ne
+    // se passe ». L'agenda reste atteignable — plus bas, dans sa liste, sous un
+    // « Consulter » qui n'est pas une tâche.
+    //
+    // CE QUI EST ÉPROUVÉ ICI est l'ABSENCE de la tâche fabriquée, et non la
+    // présence d'un repos : le fil peut très bien porter autre chose — sur ce
+    // dossier il porte l'invitation à dire ce qui compte. Attendre « Rien à
+    // faire aujourd'hui » coupleraient ce spec à l'état d'une autre surface.
+    await expect(page.getByRole('link', { name: /Agenda alimentaire — 21 jours/ })).toHaveCount(0);
+    // Il reste atteignable, plus bas, dans sa liste : un « Consulter » nu — le
+    // geste est POSSIBLE, il n'est simplement pas dû aujourd'hui — et le badge
+    // dit son état plutôt que de le taire.
+    await expect(page.getByRole('link', { name: 'Consulter', exact: true })).toBeVisible();
+    await expect(page.getByText('Journée notée aujourd’hui')).toBeVisible();
   });
 
   test('la journée du jour manquante fait passer l’agenda devant, avec son avancement', async ({

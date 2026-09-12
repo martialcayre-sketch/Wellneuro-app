@@ -12,7 +12,6 @@ import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
 import {
   affichage,
-  calculerActionRecommandee,
   GROUPES,
   GROUPES_SECONDAIRES,
   type AgendaAliPortail,
@@ -23,7 +22,8 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
-import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
+import { MonParcoursAccueil } from '@/components/patient/MonParcoursAccueil';
+import { construireFilDuJour } from '@/lib/portail/filDuJour';
 import { JournalDossier } from '@/components/patient/JournalDossier';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
@@ -74,6 +74,25 @@ export default function QuestionnairesHubPage() {
     protocoleDiffuse: false,
     finDeCycle: false,
   });
+  /*
+   * LA FENÊTRE DE DÉPÔT DE « CE QUI COMPTE » — et pourquoi une sonde.
+   *
+   * Le hub est un composant CLIENT, et `WN_CE_QUI_COMPTE` n'est pas
+   * `NEXT_PUBLIC_*` : elle est absente du bundle navigateur. C'est donc la
+   * route qui décide, et son GET ne sert QUE d'interrupteur — il ne transporte
+   * aucun texte de patient.
+   *
+   * `null` = ON NE SAIT PAS : drapeau fermé, sonde en vol, sonde en échec. Le
+   * fil du jour n'invite PAS dans le doute (`D-015`) — inviter à un geste
+   * impossible enverrait le patient sur un écran qui rend `notFound()`.
+   *
+   * CONTRAIREMENT AU LIEN DE NAVIGATION QUI A ÉTÉ ESSAYÉ PUIS RETIRÉ (#1052),
+   * la FENÊTRE est consultée ici, et pas seulement le drapeau. Une porte peut
+   * rester ouverte sur un écran qui explique pourquoi le dépôt est clos ; une
+   * TÂCHE, non — « dire ce qui compte pour moi » proposé à quelqu'un qui a déjà
+   * déposé nommerait un geste que `D-166` refuse.
+   */
+  const [ceQuiCompteOuvert, setCeQuiCompteOuvert] = useState<boolean | null>(null);
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
   // fois au prochain accès, tant que la version courante du cadre n'a pas
   // d'accusé de lecture. Jamais bloquante en cas d'erreur réseau.
@@ -103,6 +122,34 @@ export default function QuestionnairesHubPage() {
       }
     })();
   }, [token]);
+
+  useEffect(() => {
+    let vivant = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/portail/ce-qui-compte');
+        const data = (await res.json()) as {
+          ok?: boolean;
+          ouvert?: boolean;
+          fenetre?: { ouverte?: boolean };
+        };
+        if (!vivant) return;
+        // Trois conditions, et aucune n'est de trop : la route a répondu, la
+        // surface est ouverte pour ce patient, et la fenêtre de dépôt l'est
+        // aussi. `=== true` partout — une clé absente ne doit pas ouvrir.
+        if (res.ok && data.ok === true && data.ouvert === true) {
+          setCeQuiCompteOuvert(data.fenetre?.ouverte === true);
+        }
+      } catch {
+        // Silence délibéré : on reste à `null`, donc sans invitation. Annoncer
+        // une panne sur une surface que le patient ne connaît pas encore
+        // l'informerait d'un incident sur un écran qui n'existe pas pour lui.
+      }
+    })();
+    return () => {
+      vivant = false;
+    };
+  }, []);
 
   const charger = useCallback(async () => {
     setState({ status: 'loading' });
@@ -205,7 +252,6 @@ export default function QuestionnairesHubPage() {
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
-  const actionRecommandee = calculerActionRecommandee(enriched, brouillons, agendas, agendasAli);
 
   // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
   // dérivées du contrat partagé sur les seuls signaux que le portail sert
@@ -219,14 +265,26 @@ export default function QuestionnairesHubPage() {
     bookletEnvoye: signauxParcours.bookletEnvoye,
   });
 
-  // L'étape du moment reflète l'état synchronisé quand plus rien n'est à
-  // compléter : « stable » devient la formulation D7 (transmis / en
-  // préparation / restitution disponible / prochaine étape prête). Une
-  // correction en attente garde la priorité — elle est plus actionnable.
-  const etapeDuMoment: EtapeDuMoment =
-    actionRecommandee.kind === 'stable' && etatParcours
-      ? { kind: 'attente', texte: etatParcours.formulation }
-      : actionRecommandee;
+  // LE FIL DU JOUR : ce qu'il y a à faire, dans l'ordre. La formulation du
+  // contrat de parcours ne devient le repos que si rien n'est à faire ET qu'il
+  // n'y a pas de correction en attente — c'est la dérivation qui arbitre, ici
+  // on ne fait que lui passer la phrase.
+  const fil = construireFilDuJour({
+    token,
+    enrichis: enriched,
+    brouillons,
+    agendas,
+    agendasAli,
+    ceQuiCompteOuvert,
+    formulationParcours: etatParcours?.formulation ?? null,
+  });
+  // Ce que le fil met en avant ne se répète pas dans les listes plus bas. Le
+  // dédoublonnage portait jusqu'ici sur la SEULE action recommandée ; il porte
+  // maintenant sur tout le fil, sans quoi un patient à quatre tâches lirait
+  // quatre fois la même chose sur un écran dont on vient de lui retirer le
+  // bruit. Rien n'est perdu : un item revient dans sa liste dès qu'il quitte
+  // le fil.
+  const clesDuFil = new Set(fil.taches.map(t => t.cle));
 
   /*
    * Disposition séquentielle (SP-SPI / LOT-01, résorption de l'écart E11).
@@ -251,7 +309,7 @@ export default function QuestionnairesHubPage() {
         token={token}
         prenom={patient?.prenom ?? null}
         derniereReponseLe={derniereReponseLe}
-        etape={etapeDuMoment}
+        fil={fil}
       />
 
       {/* Proposition de réévaluation : ne s'affiche qu'en reprise, et une seule
@@ -350,19 +408,12 @@ export default function QuestionnairesHubPage() {
       )}
 
       {GROUPES.map(({ cle, titre }) => {
-        // Dédoublonnage (SP-CONV LOT-04) : l'action recommandée est déjà mise
-        // en avant par « Mon parcours » — la réafficher dans « À compléter »
-        // diluait la promesse « une étape à la fois ». Rien n'est retiré : le
-        // compteur reste complet, et l'item revient dans la liste dès qu'il
-        // n'est plus l'action recommandée.
+        // Dédoublonnage (SP-CONV LOT-04, élargi au fil du jour le 2026-09-12) :
+        // ce que « Mon parcours » porte déjà ne se réaffiche pas ici. Le
+        // compteur, lui, reste complet — il totalise ce qui est à compléter, y
+        // compris ce que le fil a remonté.
         const items = enriched.filter(
-          e =>
-            e.aff.groupe === cle &&
-            !(
-              cle === 'a_completer' &&
-              actionRecommandee.kind === 'action' &&
-              e.a.idAssignation === actionRecommandee.idAssignation
-            ),
+          e => e.aff.groupe === cle && !(cle === 'a_completer' && clesDuFil.has(e.a.idAssignation)),
         );
         if (items.length === 0) return null;
 

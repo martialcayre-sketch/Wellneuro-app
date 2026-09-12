@@ -1,8 +1,8 @@
 // Le hub patient quand un agenda du sommeil est ouvert, dans un vrai navigateur.
 //
 // Ce que ce spec apporte que le banc du domaine (lib/portail/
-// hubQuestionnaires.test.ts) ne peut pas donner : la preuve que la décision
-// atteint bien l'ÉCRAN. Le domaine dit quelle étape doit primer ; seul le
+// portail/filDuJour.test.ts) ne peut pas donner : la preuve que la décision
+// atteint bien l'ÉCRAN. Le domaine dit quelle tâche vient en tête ; seul le
 // navigateur dit ce que le patient lit à l'ouverture de son espace. CLAUDE.md
 // est explicite là-dessus — une suite Vitest verte ne prouve rien sur les
 // parcours.
@@ -20,7 +20,7 @@ test.afterAll(async () => {
 });
 
 test.describe('Hub patient — agenda du sommeil', () => {
-  test('un agenda commencé dont la nuit du jour manque devient l’étape du moment', async ({
+  test('un agenda commencé dont la nuit du jour manque prend la tête du fil du jour', async ({
     page,
   }) => {
     await resetPortailState(PATIENT.idPatient);
@@ -85,7 +85,8 @@ test.describe('Hub patient — agenda du sommeil', () => {
     });
     expect(saisie.ok()).toBe(true);
 
-    // 3. Maintenant l'agenda est la seule tâche périssable : il passe devant.
+    // 3. Maintenant l'agenda est la seule tâche périssable : il prend la tête
+    //    du fil, donc le bouton plein.
     await page.reload();
     const cta = page.getByRole('link', { name: 'Noter ma nuit' });
     await expect(cta).toBeVisible();
