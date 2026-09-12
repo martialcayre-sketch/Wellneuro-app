@@ -24,6 +24,7 @@ import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
+import { JournalDossier } from '@/components/patient/JournalDossier';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 
@@ -302,18 +303,34 @@ export default function QuestionnairesHubPage() {
         </div>
       </details>
 
-      {changements.length > 0 && (
-        <details className="rounded-xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Depuis votre dernière visite ({changements.length})
-          </summary>
-          <ul className="mt-3 space-y-1">
-            {changements.map(c => (
-              <li key={c.idAssignation} className="text-base text-foreground">{c.texte}</li>
-            ))}
-          </ul>
-        </details>
-      )}
+      {/*
+        LE JOURNAL DU DOSSIER prend la place de « Depuis votre dernière visite »
+        — et ce dernier reste son FILET tant que `WN_PORTAIL_JOURNAL` est
+        éteint. Le retirer avant la mise en service enlèverait au patient le peu
+        qu'il a : un résumé local, deviné, mais un résumé quand même.
+
+        La différence est de nature, pas de degré. L'ancien compare un
+        instantané `localStorage` au suivant puis l'écrase : il ne voit que les
+        assignations, ne suit pas la personne d'un appareil à l'autre, et est
+        vide à la première visite par construction. Le nouveau se dérive du
+        serveur, et remonte à l'entrée du dossier.
+      */}
+      <JournalDossier
+        fallback={
+          changements.length > 0 ? (
+            <details className="rounded-xl border border-border bg-surface p-4">
+              <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Depuis votre dernière visite ({changements.length})
+              </summary>
+              <ul className="mt-3 space-y-1">
+                {changements.map(c => (
+                  <li key={c.idAssignation} className="text-base text-foreground">{c.texte}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null
+        }
+      />
 
       {aCompleter > 0 && (
         <p className="text-sm text-muted-foreground">
