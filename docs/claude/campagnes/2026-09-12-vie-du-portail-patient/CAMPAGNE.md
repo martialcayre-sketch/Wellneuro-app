@@ -1,7 +1,7 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "cadrée — arbitrages dus avant LOT-01"
+statut: "arbitrée — prête pour LOT-01"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
 lot_courant: "aucun"
@@ -101,9 +101,13 @@ reformulation ne se simule pas ») et celle de `DC-24` : une absence se lit comm
 une absence. Un journal recopié divergerait de ce qu'il prétend refléter, et
 personne ne saurait lequel des deux croire.
 
-**Conséquence : LOT-01 n'a pas besoin de migration.** Si un lot ultérieur en
-demande une, c'est qu'une décision aura été prise entre-temps — elle se
-justifiera alors par écrit.
+**Conséquence : le journal lui-même ne se stocke pas, et LOT-01 n'a besoin
+d'aucune migration.**
+
+Une seule ligne de cette campagne s'écrit en base, et elle ne fait pas partie du
+journal : le **repère de fraîcheur** du patient (arbitrage 3), qui dit jusqu'où
+il a vu — pas ce qui s'est passé. Il vit au LOT-02, sous ses propres contraintes,
+et son existence a été décidée le 2026-09-12, pas supposée ici.
 
 ## Ce qui n'est PAS un lot de cette campagne
 
@@ -112,7 +116,9 @@ justifiera alors par écrit.
   il ne poursuit pas. (Même arbitrage que le Fil praticien, 2026-09-10.)
 - **Compter.** Ni « 3 actions en retard », ni série, ni score d'assiduité
   (`DC-19`/`DC-20`). Le nombre de fois qu'un patient a ouvert son portail n'est
-  pas une mesure de lui.
+  pas une mesure de lui. Le repère de fraîcheur du LOT-02 est écrit pour rendre
+  ce décompte **impossible**, et non seulement interdit : un seul instant par
+  dossier, écrasé à chaque avancée. Ce qui n'est pas conservé ne se compte pas.
 - **La mise en service.** Surface patient : le code se livre, son activation se
   demande.
 
@@ -121,29 +127,87 @@ justifiera alors par écrit.
 | Lot | Objet | Migration |
 |---|---|---|
 | **LOT-01** | La **dérivation** du journal : une fonction pure qui assemble la vie d'un dossier depuis les tables existantes, et sa route de lecture au portail | non |
-| **LOT-02** | L'écran « Ce qui s'est passé » sur l'accueil du portail — placé **après** l'étape du moment, jamais avant | non |
-| **LOT-03** | Le rappel de l'agenda **alimentaire**, au régime exact du sommeil : une phrase factuelle, jamais un compte à rebours | non |
-| **LOT-04** | Les deux portes manquantes : « ce qui compte » et « ce que j'ai compris » visibles depuis l'accueil | non |
-| **LOT-05** | Doctrine (`D-xxx`), journal de session, handoff — et la demande de mise en service | non |
+| **LOT-02** | Le **repère de fraîcheur** : la marque « vu jusqu'ici » du patient, sa migration, sa route | **oui** (arbitrage 3) |
+| **LOT-03** | L'écran « Ce qui s'est passé » sur l'accueil du portail — placé **après** l'étape du moment, déplié seulement s'il y a du neuf | non |
+| **LOT-04** | Le rappel de l'agenda **alimentaire**, au régime exact du sommeil : une phrase factuelle, jamais un compte à rebours | non |
+| **LOT-05** | Les deux portes manquantes : « ce qui compte » et « ce que j'ai compris » visibles depuis l'accueil | non |
+| **LOT-06** | Doctrine (`D-xxx`), journal de session, handoff — et la demande de mise en service | non |
 
-## Arbitrages dus AVANT le LOT-01
+## Arbitrages tranchés — 2026-09-12
 
-Quatre, et aucun ne se déduit du code.
+Les quatre questions ouvertes au cadrage ont été posées et tranchées le jour
+même par le responsable. Ce qui suit fait foi ; le reste de ce document a été
+remis en cohérence avec ces réponses.
 
-1. **Le journal montre-t-il les gestes du PRATICIEN ?** « Votre praticien a
-   publié une synthèse le 3 septembre » est utile — et c'est aussi une
-   surveillance du praticien par son patient, dans les deux sens. Le dossier à
-   deux voix a tranché ce genre de question au cas par cas ; ici, elle se pose
-   en bloc.
-2. **Jusqu'où remonte-t-il ?** Tout le dossier, ou une fenêtre ? Une fenêtre est
-   un **seuil**, et aucun seuil ne s'invente (`DC-19`/`DC-20`).
-3. **Déplié ou replié par défaut ?** Replié, il ne concurrence pas l'étape du
-   moment mais reste invisible — le défaut actuel. Déplié, il pèse sur une page
-   dont un audit a retiré le poids.
-4. **Que fait-il d'un dossier neuf ?** Un journal vide chez quelqu'un qui vient
-   d'entrer dit « il ne s'est rien passé » — vrai, mais accueillant comme une
-   porte close. `DC-24` demande que l'absence se lise comme une absence, pas
-   comme un manquement.
+### 1. Le journal montre les gestes du praticien QUI PRODUISENT quelque chose
+
+**Tranché : seulement ce qui lui est remis.**
+
+Y entrent : une synthèse publiée, un bilan transmis, un questionnaire assigné,
+une reformulation d'objectif proposée. N'y entrent pas les gestes internes —
+un protocole relu, une biologie arbitrée, une note de suivi, une décision de
+palier.
+
+La ligne de partage est le **destinataire du geste**, pas sa nature : le patient
+voit ce qui lui arrive, jamais ce qu'on fait de lui. Ce critère est
+opérationnel, et il doit se lire dans le code comme une liste fermée d'espèces
+d'événements — pas comme un filtre sur un champ qui pourrait dériver.
+
+### 2. Le journal remonte à l'entrée du dossier, sans borne
+
+**Tranché : tout le dossier.**
+
+Aucun seuil n'est inventé (`DC-19`/`DC-20`). La volumétrie réelle ne justifie
+pas encore de fenêtre — un dossier de trois mois tient en une vingtaine de
+lignes. Si elle vient à la justifier, ce sera un fait nouveau, constaté sur des
+dossiers réels, et la fenêtre se décidera alors par écrit.
+
+### 3. Déplié seulement s'il y a du neuf — et cela coûte une migration
+
+**Tranché : replié par défaut, déplié quand quelque chose s'est passé depuis
+que le patient a vu le journal.**
+
+**C'EST LE SEUL POINT DE LA CAMPAGNE QUI DEMANDE UNE ÉCRITURE**, et le cadrage
+initial annonçait le contraire. Il faut un repère serveur : sans lui, le
+« neuf » se calculerait en `localStorage` — exactement le défaut que cette
+campagne existe pour corriger (un patient qui change de téléphone verrait tout
+en neuf, ou rien).
+
+Trois contraintes encadrent ce repère, et elles ne sont pas de forme :
+
+- **UN SEUL INSTANT PAR DOSSIER, ÉCRASÉ.** Pas un journal de visites. Une
+  table append-only de connexions serait un décompte d'assiduité déguisé — ce
+  que « Ce qui n'est PAS un lot » interdit explicitement, et que `DC-19`/`DC-20`
+  interdisent en général. Les valeurs précédentes sont perdues, et c'est voulu :
+  ce repère n'est pas une trace d'audit, c'est une commodité d'affichage.
+- **LE REPÈRE AVANCE QUAND LE JOURNAL A ÉTÉ MONTRÉ DÉPLIÉ**, pas à chaque
+  ouverture du portail. Le déplacer à chaque chargement le viderait de son sens
+  au premier rafraîchissement — le patient n'aurait rien lu et le portail
+  dirait qu'il a tout vu.
+- **NE PAS LE NOMMER COMME LA LECTURE DU FIL PRATICIEN.** Les deux se
+  ressemblent et ne sont pas la même chose : là-bas un praticien acquitte une
+  carte, ici un patient est informé. `fil_card_lectures` et son vocabulaire
+  (`lue`, `luePar`, `supersedesLectureId`) restent au praticien. Voir la
+  dépendance ci-dessous — l'homonymie « demande de correction » a coûté une
+  campagne entière le jour même.
+
+### 4. Un dossier neuf s'ouvre sur sa propre entrée
+
+**Tranché : l'entrée dans l'accompagnement est la première ligne du journal.**
+
+« Vous êtes entré dans votre accompagnement le 12 septembre. » Le journal n'est
+donc jamais vide : l'entrée dans le dossier EST un événement du dossier, il est
+en base, daté et vrai.
+
+Conséquence directe : **aucun état vide à écrire**, et aucune phrase d'accueil à
+inventer. `DC-24` est satisfait sans habillage — l'absence de tout le reste se
+lit comme une absence parce qu'il n'y a rien d'autre à lire, pas parce qu'une
+phrase le dit.
+
+Corollaire à vérifier au LOT-01 : la date d'entrée dans l'accompagnement doit
+être lisible pour **tous** les dossiers, y compris les plus anciens. Si elle
+manque pour certains, le journal commence à leur premier événement connu — et
+ce cas se constate sur les dossiers réels, il ne se suppose pas.
 
 ## Dépendance
 
