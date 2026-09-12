@@ -1,7 +1,7 @@
 ---
 id: "LOT-11"
 titre: "drop-du-repere"
-statut: "migration seule — en cours, 2026-09-12"
+statut: "migration seule — fusionnée #1066, 2026-09-12"
 dépend_de: "LOT-10 (le code qui touchait la table a quitté la production)"
 ---
 
