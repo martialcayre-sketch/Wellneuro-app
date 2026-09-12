@@ -385,6 +385,8 @@ function Compteur({ valeur, maximum }: { valeur: string; maximum: number }) {
 export function ObjectifNegociePanel({
   idPatient,
   signalAssemblage = 0,
+  onOuvrirDecision,
+  onDemanderAssemblage,
 }: {
   idPatient: string;
   /**
@@ -394,6 +396,29 @@ export function ObjectifNegociePanel({
    * l'assemblage y ait écrit et n'afficherait rien jusqu'au rechargement.
    */
   signalAssemblage?: number;
+  /**
+   * Ouvre la phase « Décision 21 j » de la fiche.
+   *
+   * LE RAIL NUMÉROTE 3 AVANT 4 ; LA MACHINE EXIGE 4 AVANT LA MOITIÉ ASSISTÉE
+   * DE 3. Les propositions s'appuient sur la plainte dominante, et
+   * `plainteDominantePubliee` la borne à l'épisode confirmé — la borne est
+   * motivée, elle ne bouge pas. Ce qui manquait, c'est la SORTIE : l'écran
+   * nommait la cause depuis `D-167` §15 et laissait le praticien chercher où
+   * aller.
+   */
+  onOuvrirDecision?: () => void;
+  /**
+   * Demande un assemblage des propositions à la section clinique, qui détient
+   * la carte.
+   *
+   * L'ASSEMBLAGE N'EXISTAIT QUE COMME EFFET DE BORD DU GESTE DE CONFIRMATION
+   * (`D-118` interdit d'assembler à la relecture — un affichage ne doit pas
+   * être un acte). Mais un épisode est append-only : si l'assemblage échoue
+   * — drapeau éteint, réseau, onglet fermé — il n'existait AUCUN moyen de le
+   * rejouer sans confirmer un nouvel épisode. Ce bouton rend l'assemblage
+   * DEMANDABLE : le principe tient, le point unique de défaillance tombe.
+   */
+  onDemanderAssemblage?: () => void;
 }) {
   const [etat, setEtat] = useState<EtatDossier>('chargement');
   const [erreur, setErreur] = useState('');
@@ -1102,15 +1127,53 @@ export function ObjectifNegociePanel({
                 // préconditions de l'assemblage. Un `undefined` — réponse d'un
                 // serveur plus ancien — ne retombe PAS sur l'ancienne phrase :
                 // il donne la formulation qui n'affirme rien.
-                <p className="mt-3 text-base text-muted-foreground">
-                  {pourquoiVide === 'episode_non_confirme'
-                    ? 'Aucune proposition. Wellneuro n’assemble qu’après la confirmation d’un épisode, et aucun n’est confirmé sur ce dossier.'
-                    : pourquoiVide === 'referentiel_non_signe'
-                      ? 'Aucune proposition. Le référentiel signé n’est pas disponible : sans lui, il n’y a rien de signé à citer.'
-                      : pourquoiVide === 'rien_retenu'
-                        ? 'Aucune proposition. L’épisode est confirmé et le référentiel est signé — aucune règle publiée ne s’applique à ce dossier.'
-                        : 'Aucune proposition à afficher.'}
-                </p>
+                <div className="mt-3 flex flex-col items-start gap-2">
+                  <p className="text-base text-muted-foreground">
+                    {pourquoiVide === 'episode_non_confirme'
+                      ? 'Aucune proposition. Wellneuro n’assemble qu’après la confirmation d’un épisode, et aucun n’est confirmé sur ce dossier.'
+                      : pourquoiVide === 'referentiel_non_signe'
+                        ? 'Aucune proposition. Le référentiel signé n’est pas disponible : sans lui, il n’y a rien de signé à citer.'
+                        : pourquoiVide === 'rien_retenu'
+                          // LA PHRASE N'AFFIRME PLUS CE QU'ELLE NE PEUT PAS
+                          // LIRE. Elle disait « aucune règle publiée ne
+                          // s'applique à ce dossier » — un verdict du moteur.
+                          // Or la route ne sait pas si le moteur a seulement
+                          // ÉTÉ INTERROGÉ : l'assemblage suit le geste de
+                          // confirmation, et rien n'est écrit pour dire
+                          // « désormais, rien » (dette nommée dans
+                          // `propositions-objectif/route.ts`). Un assemblage
+                          // manqué — drapeau éteint, réseau, onglet fermé — se
+                          // lisait donc comme une conclusion clinique.
+                          // Distinguer les deux demanderait une colonne ; dire
+                          // moins ne demande rien, et le bouton ci-dessous
+                          // permet de trancher en une seconde.
+                          ? 'Aucune proposition enregistrée pour ce dossier. L’épisode est confirmé et le référentiel est signé : vous pouvez demander un assemblage.'
+                          : 'Aucune proposition à afficher.'}
+                  </p>
+                  {/* DEUX SORTIES, ET CHACUNE RÉPOND À LA CAUSE LUE — jamais
+                      affichées ensemble : sans épisode il n'y a rien à
+                      assembler, et avec un épisode il n'y a nulle part où
+                      aller. Le référentiel non signé n'en a aucune : rien de ce
+                      que le praticien peut faire ne le signe. */}
+                  {pourquoiVide === 'episode_non_confirme' && onOuvrirDecision && (
+                    <button
+                      type="button"
+                      onClick={onOuvrirDecision}
+                      className="min-h-9 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    >
+                      Ouvrir la phase Décision 21 j
+                    </button>
+                  )}
+                  {pourquoiVide === 'rien_retenu' && onDemanderAssemblage && (
+                    <button
+                      type="button"
+                      onClick={onDemanderAssemblage}
+                      className="min-h-9 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                    >
+                      Demander un assemblage
+                    </button>
+                  )}
+                </div>
               )}
 
               {propositions.map((proposition) => (

@@ -140,8 +140,11 @@ function router(
   };
 }
 
-async function attendreLeDossier() {
-  render(<ObjectifNegociePanel idPatient="PAT_SEED_03" />);
+async function attendreLeDossier(
+  /** Les sorties de l'état vide ne s'affichent que si la fiche les câble. */
+  sorties: { onOuvrirDecision?: () => void; onDemanderAssemblage?: () => void } = {},
+) {
+  render(<ObjectifNegociePanel idPatient="PAT_SEED_03" {...sorties} />);
   await waitFor(() => expect(screen.getByText(/Ce que le patient a écrit à l’anamnèse/)).toBeTruthy());
 }
 
@@ -612,7 +615,11 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
   it.each([
     ['episode_non_confirme', /aucun n’est confirmé sur ce dossier/],
     ['referentiel_non_signe', /Le référentiel signé n’est pas disponible/],
-    ['rien_retenu', /aucune règle publiée ne s’applique à ce dossier/],
+    // La phrase de `rien_retenu` N'AFFIRME PLUS un verdict du moteur. Elle
+    // disait « aucune règle publiée ne s'applique à ce dossier » ; la route ne
+    // sait pas si le moteur a seulement été interrogé, et un assemblage manqué
+    // se lisait donc comme une conclusion clinique.
+    ['rien_retenu', /Aucune proposition enregistrée pour ce dossier/],
   ])('quand le serveur dit « %s », l’écran dit CELA et rien d’autre', async (raison, attendu) => {
     fetchMock.mockImplementation(
       router({
@@ -629,9 +636,52 @@ describe('ObjectifNegociePanel — propositions (Alliance 6.0-B LOT-03)', () => 
     const autres = [
       /aucun n’est confirmé sur ce dossier/,
       /Le référentiel signé n’est pas disponible/,
-      /aucune règle publiée ne s’applique à ce dossier/,
+      /Aucune proposition enregistrée pour ce dossier/,
     ].filter((motif) => motif.source !== attendu.source);
     for (const motif of autres) expect(screen.queryByText(motif)).toBeNull();
+  });
+
+  // ── LA SORTIE, ET ELLE RÉPOND À LA CAUSE LUE ──────────────────────────────
+  //
+  // Le rail numérote « Compréhension » avant « Décision 21 j » ; la machine
+  // exige l'épisode confirmé avant la moitié assistée de la compréhension —
+  // les propositions s'appuient sur la plainte dominante, que le serveur borne
+  // à l'épisode. L'écran nommait la cause depuis `D-167` §15 sans jamais dire
+  // où aller, et l'assemblage n'existait que comme effet de bord d'un geste
+  // qu'un épisode append-only interdit de refaire.
+  it.each([
+    ['episode_non_confirme', 'Ouvrir la phase Décision 21 j', 'Demander un assemblage'],
+    ['rien_retenu', 'Demander un assemblage', 'Ouvrir la phase Décision 21 j'],
+  ])('la cause « %s » offre « %s » et pas l’autre sortie', async (raison, offerte, absente) => {
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true, propositions: [], disposees: [], caduques: [], pourquoiVide: raison,
+        },
+      }),
+    );
+    await attendreLeDossier({ onOuvrirDecision: () => {}, onDemanderAssemblage: () => {} });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: offerte })).toBeTruthy());
+    expect(screen.queryByRole('button', { name: absente })).toBeNull();
+  });
+
+  // Le référentiel non signé n'a AUCUNE sortie, et c'est exact : rien de ce que
+  // le praticien peut faire depuis cet écran ne le signe. Offrir un bouton
+  // inopérant serait pire que n'en offrir aucun.
+  it('un référentiel non signé n’offre aucune sortie', async () => {
+    fetchMock.mockImplementation(
+      router({
+        propositions: {
+          ok: true, propositions: [], disposees: [], caduques: [], pourquoiVide: 'referentiel_non_signe',
+        },
+      }),
+    );
+    await attendreLeDossier({ onOuvrirDecision: () => {}, onDemanderAssemblage: () => {} });
+
+    await waitFor(() => expect(screen.getByText(/Le référentiel signé n’est pas disponible/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Ouvrir la phase Décision 21 j' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Demander un assemblage' })).toBeNull();
   });
 
   // ── `D-167` — les trois champs arrivent remplis ───────────────────────────

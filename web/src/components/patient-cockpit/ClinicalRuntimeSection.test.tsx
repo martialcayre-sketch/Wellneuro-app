@@ -417,6 +417,44 @@ describe('ClinicalRuntimeSection', () => {
     expect(charge.shaPerimetre).toBe('a'.repeat(64));
   });
 
+  // ── LE RATTRAPAGE D'UN ASSEMBLAGE MANQUÉ ──────────────────────────────────
+  //
+  // L'assemblage ne partait qu'au retour du POST de confirmation, et l'épisode
+  // est append-only : un assemblage perdu ne pouvait plus être rejoué sans
+  // reposer un acte clinique. Ces deux bancs tiennent les deux moitiés — un
+  // dossier simplement OUVERT n'assemble rien (`D-118` : un affichage n'est pas
+  // un acte), un dossier DEMANDÉ assemble.
+  it('un épisode rejoué, simplement affiché, n’assemble rien', async () => {
+    const fetchMock = fetchParRoute({ cockpitGet: [rep(readyAvecCandidats())] });
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(corpsPoste(fetchMock)).toBeNull());
+    expect(corpsAssemblage(fetchMock)).toBeNull();
+  });
+
+  it('assemble sur DEMANDE, sans reconfirmer l’épisode', async () => {
+    const fetchMock = fetchParRoute({ cockpitGet: [rep(readyAvecCandidats())] });
+    vi.stubGlobal('fetch', fetchMock);
+    const proprietes = {
+      idPatient: 'PAT_TEST', fixture: null, protocolDraft: null, onFixtureReviewed: vi.fn(),
+    } as const;
+    const { rerender } = render(<ClinicalRuntimeSection {...proprietes} demandeAssemblage={0} />);
+    await waitFor(() => expect(corpsAssemblage(fetchMock)).toBeNull());
+
+    rerender(<ClinicalRuntimeSection {...proprietes} demandeAssemblage={1} />);
+
+    await waitFor(() => expect(corpsAssemblage(fetchMock)).toBeTruthy());
+    expect(corpsAssemblage(fetchMock)).toMatchObject({ action: 'assembler', idPatient: 'PAT_TEST' });
+    // AUCUN ACTE CLINIQUE REPOSÉ : la demande lit la carte déjà servie, elle ne
+    // reconfirme pas l'épisode pour obtenir un effet de bord.
+    expect(corpsPoste(fetchMock)).toBeNull();
+  });
+
   it('délègue la relecture de trajectoire une fois, après la confirmation', async () => {
     const recharger = vi.fn();
     const fetchMock = fetchParRoute({
