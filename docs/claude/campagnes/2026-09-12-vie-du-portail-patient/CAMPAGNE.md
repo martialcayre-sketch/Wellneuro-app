@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "arbitrée — prête pour LOT-01"
+statut: "en cours — LOT-01 livré"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "aucun"
+lot_courant: "LOT-01"
 branche_campagne: "aucune"
-branche_lot_courant: "aucune"
+branche_lot_courant: "portail-journal-lot01"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -120,7 +120,9 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
   ce décompte **impossible**, et non seulement interdit : un seul instant par
   dossier, écrasé à chaque avancée. Ce qui n'est pas conservé ne se compte pas.
 - **La mise en service.** Surface patient : le code se livre, son activation se
-  demande.
+  demande. Le drapeau est `WN_PORTAIL_JOURNAL` (LOT-01), **neuf, éteint, et il
+  ne se compose d'aucun des cinq autres** : une surface fermée par son propre
+  drapeau ne produit aucune ligne de journal, même celui-ci allumé.
 
 ## Lots proposés
 
