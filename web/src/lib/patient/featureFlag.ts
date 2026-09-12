@@ -218,3 +218,24 @@ export function isRelanceQuestionnaireEnabled(value = process.env.WN_RELANCE_QUE
 export function isEcheanceObligatoireEnabled(value = process.env.WN_ECHEANCE_OBLIGATOIRE): boolean {
   return value === 'true';
 }
+
+/**
+ * Drapeau de la GÉNÉRATION AUTOMATIQUE d'une synthèse à la fermeture d'un
+ * rideau de questionnaires.
+ *
+ * NEUVIÈME DRAPEAU NEUF ET ÉTEINT, et le seul de la série qui déclenche un
+ * APPEL AU MODÈLE que personne n'a demandé. Ce n'est pas une surface qui
+ * s'ouvre : c'est une machine qui se met à produire, sur des dossiers réels,
+ * sans geste humain en amont. Un tel basculement se décide ; il ne se déploie
+ * pas.
+ *
+ * CE QU'IL N'OUVRE PAS, ET C'EST L'INVARIANT : rien n'atteint le patient. Ce
+ * qui est produit est un `Brouillon_IA` — la validation et l'envoi restent
+ * deux gestes du praticien. L'automatisation ne franchit que la première des
+ * trois portes.
+ *
+ * Fail-closed : seule la chaîne EXACTE « true » ouvre.
+ */
+export function isSyntheseParRideauEnabled(value = process.env.WN_SYNTHESE_PAR_RIDEAU): boolean {
+  return value === 'true';
+}

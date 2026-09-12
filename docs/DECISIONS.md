@@ -4,6 +4,71 @@
 
 ## Décisions actives
 
+### D-174 — La synthèse se demande à la fermeture d'un RIDEAU, deux fois par dossier, et ne franchit que la première des trois portes
+
+- Date : 2026-09-12
+- Statut : accepté — demandé en session le 2026-09-12 (« deux synthèses IA après
+  le premier rideau de questionnaires et après le recueil des réponses aux
+  questionnaires assignés post-1ʳᵉ synthèse »)
+- Domaine : synthèse IA, déclenchement
+- S'appuie sur [[D-052]] (le rideau `T0`) et [[D-158]] (le second rideau) sans
+  les amender : le déclencheur LIT leurs conditions, il n'en pose aucune.
+- Livré derrière `WN_SYNTHESE_PAR_RIDEAU`, **éteint**.
+
+**LE BRUIT QU'IL SUPPRIME, MESURÉ.** La carte `synthese_a_generer` du Fil
+s'ancre sur la dernière **lecture confirmée** sans synthèse depuis : sur un
+dossier qui rend ses questionnaires en plusieurs vagues, la même demande revient
+vague après vague. Lecture par conteneur du 2026-09-12 : **49 synthèses pour 16
+dossiers**, jusqu'à **sept** sur un même dossier. Le geste n'est pourtant
+pertinent qu'à deux moments — quand la matière est complète.
+
+**LE DÉCLENCHEUR N'INVENTE AUCUN MOMENT.** Les deux sont déjà nommés par le
+domaine, et ce sont deux conditions de `preconditionsT0` :
+
+1. `rideau_t0` satisfaite — les quatre instruments de la table signée sont
+   renseignés et exploitables.
+2. `second_rideau` satisfaite — tout ce qui a été assigné depuis la première
+   synthèse validée est rendu.
+
+**CE N'EST PAS « LE PACK DE BASE », ET LA NUANCE N'EST PAS DE FORME.** [[D-052]]
+§1 refuse de dériver le rideau du pack : le pack est une ligne éditable depuis
+l'UI, et une divergence registre↔pack a déjà été journalisée le 2026-08-03.
+Déclencher sur le pack ferait déplacer une règle clinique par un geste
+administratif. Il y a pire : `Q_SOM_09` est **au pack et hors rideau** — un
+agenda du sommeil sur 21 nuits ferait attendre trois semaines une synthèse que
+le rideau permet le jour même.
+
+**IL NE FRANCHIT QUE LA PREMIÈRE DES TROIS PORTES.** Ce qui est produit est un
+`Brouillon_IA`. La **validation** et l'**envoi** restent deux gestes du
+praticien, et ce sont eux qui atteignent le patient. L'automatisation ne
+franchit que celle qui n'est qu'un appel d'API.
+
+**IDEMPOTENT PAR MARQUEUR, jamais par date.** Une génération automatique inscrit
+son origine dans `donneesEntree.source` (`auto_rideau_premier`,
+`auto_rideau_second`) ; la présence du marqueur ferme définitivement le rideau
+correspondant. Conséquence assumée et écrite : **un brouillon rejeté ne se
+régénère pas** — un rejet est une décision, pas une panne. Les synthèses déjà en
+base ne portent aucune clé `source`, et rien ne leur en invente une.
+
+**DÉCLENCHÉ À LA SOUMISSION, APRÈS LA RÉPONSE.** `after()` (Next 15) : le seul
+instant où la matière peut devenir complète est celui où une réponse arrive. Un
+balayage périodique repasserait sur des dossiers que rien n'a changés, et
+demanderait un conteneur que le `Procfile` n'a pas. Le patient, lui, n'attend
+rien : la génération part après sa réponse, et son échec éventuel ne touche pas
+sa soumission.
+
+**CE QUE LA CARTE DU FIL DEVIENT.** Elle reste, et c'est délibéré : lecture par
+conteneur du 2026-09-12 — **19 dossiers portent des passations, 12 seulement ont
+le rideau complet**. Sept dossiers ne déclencheraient jamais rien. Supprimer la
+carte les rendrait invisibles partout, ce qu'elle a précisément été créée pour
+empêcher.
+
+**CE QUI RESTE À DEMANDER** : l'allumage du drapeau, et la mise à jour du
+registre des traitements — passer d'un traitement **déclenché par le praticien**
+à un traitement **automatique** change la description de la finalité, même si
+aucune décision automatisée n'atteint le patient (art. 22 non applicable : un
+humain valide).
+
 ### D-173 — Un acte confirmé se rejoue sur son IDENTITÉ, jamais sur l'état courant du dossier ; et l'identité d'une carte ne dérive pas de son contenu
 
 - Date : 2026-09-12

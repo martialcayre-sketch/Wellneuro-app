@@ -461,6 +461,20 @@ export type GenererArgs = {
   contexteClinique: string;
   /** Recommandation déterministe transmise au modèle, `null` si aucune. */
   orientation: ResultatOrientation | null;
+  /**
+   * QUI A DEMANDÉ CETTE GÉNÉRATION — inscrit dans `donneesEntree`, jamais dans
+   * le prompt.
+   *
+   * `undefined` = le geste du praticien, et la trace ne porte alors AUCUNE clé
+   * `source` : c'est la forme historique, et toutes les synthèses déjà en base
+   * la portent. Inventer rétroactivement une origine pour elles ferait dire à
+   * la trace ce qu'elle n'a jamais su.
+   *
+   * Six mois plus tard, il faudra pouvoir distinguer un brouillon que personne
+   * n'a demandé d'une synthèse voulue — c'est exactement ce que cette clé
+   * permet, et rien d'autre. Elle ne change pas d'un mot ce qui part au modèle.
+   */
+  source?: string;
   /** Contexte de corrélation, pour journaliser depuis les deux transports. */
   requestContext: RequestContext;
 };
@@ -636,6 +650,8 @@ export async function genererSynthesePersistee(
         // avant sérialisation. Reconstituer le prompt à partir de ce champ
         // donnerait donc un message plus riche que celui réellement envoyé.
         reponses: args.reponsesInput,
+        // Absente quand la génération vient du praticien : voir `GenererArgs`.
+        ...(args.source ? { source: args.source } : {}),
         contexteClinique: args.contexteClinique,
         vigilanceDeterministe: args.vigilanceDeterministe,
         metadonneesPrompt: {

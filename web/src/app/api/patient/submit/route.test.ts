@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma } = vi.hoisted(() => ({
+const { prisma, after, genererSiRideauFerme } = vi.hoisted(() => ({
+  // `after` EXIGE UN CONTEXTE DE REQUÊTE NEXT, que ce banc n'a pas : il appelle
+  // le handler directement. Le mock EXÉCUTE la tâche au lieu de la planifier —
+  // c'est ce qui rend le branchement observable ici.
+  after: vi.fn((tache: () => unknown) => { void tache(); }),
+  genererSiRideauFerme: vi.fn().mockResolvedValue({ genere: false, raison: 'drapeau_eteint' }),
   prisma: {
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
@@ -10,6 +15,11 @@ const { prisma } = vi.hoisted(() => ({
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  after,
+}));
+vi.mock('@/lib/synthese/declencheurRideau', () => ({ genererSiRideauFerme }));
 vi.mock('@/lib/observability/logger', () => ({
   logger: { warn: vi.fn(), security: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
@@ -588,5 +598,52 @@ describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', ()
     // réponse ne protégerait rien.
     expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
     expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+});
+
+// ── LE RIDEAU, DÉCLENCHÉ APRÈS LA RÉPONSE ([[D-174]]) ──────────────────────
+//
+// Le branchement est ce qui se garde ici, pas la décision de générer : celle-ci
+// a ses propres bancs (`declencheurRideau.test.ts`). Ce qui doit être vrai sur
+// CE chemin, c'est que le patient ne porte ni le délai ni l'échec d'un travail
+// qu'il n'a pas demandé.
+describe('POST /api/patient/submit — génération par rideau', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(assignation);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+  });
+
+  it('planifie le déclencheur APRÈS la réponse, avec le dossier et son adresse', async () => {
+    const res = await postSubmit(requeteSoumission());
+
+    expect(res.status).toBe(200);
+    expect(after).toHaveBeenCalledTimes(1);
+    expect(genererSiRideauFerme).toHaveBeenCalledWith(
+      assignation.idPatient,
+      assignation.emailPatient,
+      expect.anything(),
+    );
+  });
+
+  // CE QUI SERAIT PERDU SINON EST LA CONFIANCE DU PATIENT dans un questionnaire
+  // qu'il vient de remplir. Ce qui est perdu ici n'est qu'un brouillon que
+  // personne n'attendait.
+  it('une planification impossible ne fait pas échouer une soumission réussie', async () => {
+    after.mockImplementationOnce(() => { throw new Error('hors contexte de requête'); });
+
+    const res = await postSubmit(requeteSoumission());
+
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalled();
   });
 });
