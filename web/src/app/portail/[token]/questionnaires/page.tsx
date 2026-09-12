@@ -23,6 +23,8 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { LienDossierDeuxVoix } from '@/components/patient-companion/LienDossierDeuxVoix';
+import { LienCeQuiCompte } from '@/components/patient-companion/LienCeQuiCompte';
+import { LienComprehension } from '@/components/patient-companion/LienComprehension';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 import { JournalDossier } from '@/components/patient/JournalDossier';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
@@ -287,6 +289,15 @@ export default function QuestionnairesHubPage() {
             rend lui-même invisible tant que la route ne dit pas que la surface
             est ouverte (LOT-06). */}
         <LienDossierDeuxVoix token={token} />
+        {/* LES DEUX ÉCRANS QUI N'AVAIENT PAS DE PORTE. « Ce qui compte » n'était
+            atteignable que depuis le dossier à deux voix — lui-même derrière le
+            lien ci-dessus — et « ce que j'ai compris », que par « Mon
+            accompagnement », replié. Un texte que le praticien écrit POUR le
+            patient, et qu'il faut deux gestes et un dépliage pour trouver, est
+            un texte qui n'arrive pas. Même sonde fail-closed que le voisin :
+            sans réponse « ouvert », pas de lien. */}
+        <LienCeQuiCompte token={token} />
+        <LienComprehension token={token} />
       </nav>
 
       {/*
