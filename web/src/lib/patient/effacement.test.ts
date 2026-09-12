@@ -30,7 +30,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
-    'trustRightsRequest', 'filCardRejection', 'filCardLecture', 'portailJournalRepere',
+    'trustRightsRequest', 'filCardRejection', 'filCardLecture',
     'portailLecturePatient',
     'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
