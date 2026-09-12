@@ -924,6 +924,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/fil_lecture_carte_v1_negatif.sql
 
+      # Le repère de fraîcheur du journal patient. LA PROMESSE CENTRALE EST LA
+      # CLÉ PRIMAIRE : un seul repère par dossier, écrasé. Sans elle la table
+      # deviendrait un journal de visites, c'est-à-dire un décompte d'assiduité
+      # (DC-19/DC-20) — ce que la campagne s'interdit explicitement. Le cas
+      # positif éprouve l'écrasement ET l'absence d'historique.
+      - name: Portail journal repere negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/portail_journal_repere_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
