@@ -4,6 +4,97 @@
 
 ## Décisions actives
 
+### D-173 — Un acte confirmé se rejoue sur son IDENTITÉ, jamais sur l'état courant du dossier ; et l'identité d'une carte ne dérive pas de son contenu
+
+- Date : 2026-09-12
+- Statut : accepté — correction d'une régression **constatée en production**,
+  demandée en session le 2026-09-12 (« met en œuvre toutes les corrections »)
+- Domaine : cockpit clinique, épisode d'évaluation, rejeu
+- Amende : [[D-118]], clause de REJEU seulement. Ni [[D-156]] (la composition
+  de l'ancre initiale), ni [[D-052]] (les préconditions), ni [[D-127]] (la
+  sélection de priorité) ne sont touchées.
+
+**LA MESURE QUI DÉCIDE.** Les sept épisodes `T0` confirmés en production, lus
+par conteneur le 2026-09-12 :
+
+| dossier | confirmé | hors fenêtre au moment de l'acte | réponses reçues depuis | rejouable |
+|---|---|---|---|---|
+| A | 08-29 | 5 | 0 | **non** |
+| B | 08-30 | 5 | 6 | **non** |
+| C | 08-30 | 6 | 0 | **non** |
+| D | 09-04 | 17 | 0 | **non** |
+| E, F, G | 09-12 | 0 | 0 | oui |
+
+**Quatre actes cliniques sur sept n'étaient plus servis.** Leur fiche affichait
+« Décision clinique non préparée » — le texte d'un dossier où rien n'a jamais
+été décidé — alors que la ligne `assessment_episodes` était intacte et que son
+empreinte se recoupait. Les trois épisodes rejouables avaient tous été
+confirmés le jour même de la lecture.
+
+**DEUX CAUSES INDÉPENDANTES, ET AUCUNE N'EST UN BOGUE D'ÉCRITURE.** Le rejeu
+comparait le SOCLE de la proposition persistée à la proposition recalculée à
+l'instant : `candidateResponses`, `inWindowResponseIds`,
+`outOfWindowResponseIds`, borne haute de fenêtre. Ces quatre champs ne décrivent
+pas l'acte — ils décrivent comment le dossier se composerait AUJOURD'HUI, sous
+la règle d'inclusion d'aujourd'hui.
+
+1. **Le dossier vit.** Toute passation nouvelle déplace `candidateResponses`.
+   Un patient qui répondait à un questionnaire de plus éteignait, sans que
+   personne ne fasse rien, le `T0` de son propre dossier.
+2. **La règle d'inclusion a changé.** [[D-156]] a fait tomber la borne haute de
+   l'ancre initiale le 2026-09-08. Les épisodes signés avant — leurs réponses
+   hors fenêtre réintégrées une à une par le praticien, ce que la table de
+   `D-156` documente dossier par dossier — ne pouvaient plus coïncider avec une
+   proposition qui met tout dans la fenêtre. Le déploiement d'une décision de
+   composition a donc éteint rétroactivement les actes antérieurs.
+
+**Décision, en quatre points.**
+
+1. **LE REJEU SE JUGE SUR L'IDENTITÉ DE L'ACTE.** Cinq champs, et rien de ce
+   qui s'en dérive : `assessmentEpisodeId`, `patientId`, `milestone`,
+   `targetAt`, fenêtre nominale (début et tolérance). Ce sont ceux qu'un acte
+   fixe ; ils ne bougent que si l'ancre bouge, et une ancre qui bouge n'est
+   plus le même acte.
+2. **CE QUE LE REJEU DOIT ENCORE REFUSER.** L'intégrité du blob (inchangée), et
+   désormais l'intégrité des réponses CITÉES : une passation incluse par
+   l'épisode et devenue illisible — retirée, invalidée — fait tomber le rejeu,
+   parce que la carte citerait une mesure que le dossier ne porte plus. Une
+   passation AJOUTÉE ne fait rien tomber : c'est le sens même d'un instant.
+3. **LE DÉCALAGE SE DIT, IL NE SE TAIT PAS.** La réponse `ready` compte les
+   réponses postérieures à la confirmation (`reponsesDepuisConfirmation`) et la
+   fiche l'écrit sous la carte. Un fait porté par l'écran, jamais un refus
+   silencieux — le patron retenu par [[D-127]] §11 pour la sélection écartée.
+   Compté sur `observedAt` et non sur « absentes de l'épisode » : une réponse
+   que le praticien a délibérément écartée à la confirmation n'est pas une
+   réponse arrivée depuis.
+4. **L'IDENTITÉ D'UNE CARTE NE DÉRIVE PLUS DE SON CONTENU.** Les identifiants
+   d'enveloppe valaient `<jalon>-<16 caractères du proposalHash>`, et ce hash se
+   calcule sur les réponses du dossier. `schema.prisma` dit pourtant de
+   `decision_card_id` qu'il est « l'identité de la carte, pas celle de son
+   contenu » — et c'est par lui que la sélection de priorité, les brouillons de
+   protocole et les check-ins retrouvent ce qu'ils commentent. Ils dérivent
+   désormais de `assessmentEpisodeId`, unique par point de décision et stable
+   par construction. Le contenu continue de se dire par
+   `decisionCardInputHash`, qui est fait pour ça.
+
+**AUCUNE REPRISE DE DONNÉES.** Lecture par conteneur du 2026-09-12 : zéro
+sélection de priorité en base, zéro check-in, zéro approbation de diffusion, et
+l'unique brouillon de protocole est accroché à une carte de calibrage, pas à un
+`runtime-decision-…`. Le point 4 ne rend donc rien orphelin — et il ne pourra
+plus le devenir.
+
+**CE QUI NE CHANGE PAS.** Les préconditions de confirmation ([[D-052]],
+[[D-158]]) sont intactes : un dossier dont la synthèse a vieilli ou dont le
+second rideau n'est pas rendu ne peut toujours pas confirmer un nouvel épisode.
+Cette décision ne rouvre pas une porte d'écriture — elle rend lisible un acte
+déjà écrit.
+
+**LA LEÇON, ET ELLE EST GÉNÉRALE.** Un acte signé ne doit jamais être comparé à
+une dérivation qui a le droit de changer. Le banc
+`route.test.ts` porte désormais un payload signé sous la règle d'inclusion
+antérieure à `D-156` : la prochaine décision de composition fera rougir le CI
+au lieu d'éteindre la production.
+
 ### D-172 — La vie du portail patient se DÉRIVE et se consigne au serveur ; « consigner » n'est pas « assigner », et le journal ne lève aucun drapeau
 
 - Date : 2026-09-12

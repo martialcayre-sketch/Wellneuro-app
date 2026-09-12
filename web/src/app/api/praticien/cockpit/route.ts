@@ -178,6 +178,23 @@ export type CockpitRuntimeApiResponse =
        * déplacerait toutes les empreintes déjà émises.
        */
       selectionEcartee?: true;
+      /**
+       * Combien de réponses le dossier a reçues APRÈS la confirmation de
+       * l'épisode — donc hors de la carte servie. Posé au rejeu seulement :
+       * après une confirmation fraîche, il n'y a rien « depuis ».
+       *
+       * IL EXISTE PARCE QU'UN INSTANT CONFIRMÉ EST MUET SUR CE QUI LE SUIT.
+       * Une carte rejouée est en tout point identique à celle d'un dossier qui
+       * n'aurait plus rien reçu : sans ce compte, le praticien lit une décision
+       * qui ignore la moitié récente de son dossier, sans qu'aucun écran ne le
+       * dise. C'est ce que le rejeu avait auparavant « réglé » en refusant de
+       * servir la carte du tout.
+       *
+       * `0` ET L'ABSENCE DISENT LA MÊME CHOSE : rien n'est arrivé depuis, ou le
+       * `ready` ne vient pas d'un rejeu. L'écran ne montre le fait qu'au-dessus
+       * de zéro — un compte nul affiché se lirait comme un avertissement.
+       */
+      reponsesDepuisConfirmation?: number;
     }
   | {
       status: 'unavailable';
@@ -280,27 +297,108 @@ async function ancreCycleCourant(
   return ancreCycleDepuis(await lireAncresPersistees(idPatient, asOf ? new Date(asOf) : null), milestone);
 }
 
+/** Le préfixe que `identifiantEpisode` pose sur tout identifiant d'épisode runtime. */
+const PREFIXE_EPISODE = 'runtime-episode-';
+
 /**
- * L'épisode persisté est-il REJOUABLE sur la proposition courante (`D-118`) ?
+ * Le suffixe des identifiants d'ENVELOPPE — `runtime-snapshot-…`,
+ * `runtime-review-…`, `runtime-decision-…`.
  *
- * Deux conditions, et chacune protège une propriété distincte :
+ * IL DÉRIVE DE L'IDENTITÉ DE L'ÉPISODE, JAMAIS D'UNE EMPREINTE DE CONTENU. Il
+ * valait `<jalon>-<16 premiers caractères du proposalHash>`, et ce hash se
+ * calcule sur les réponses du dossier : l'identifiant de la carte se déplaçait
+ * donc à chaque passation nouvelle. Or `schema.prisma` dit de
+ * `decision_card_id` qu'il est « l'identité de la carte, pas celle de son
+ * contenu » — et c'est par lui que la sélection de priorité ([[D-127]]), les
+ * brouillons de protocole et les check-ins retrouvent la carte qu'ils
+ * commentent. Une identité qui bouge avec le contenu les en détache.
+ *
+ * `assessmentEpisodeId` porte déjà le patient, le cycle et le jalon
+ * (`identifiantEpisode`) : il est unique par point de décision et stable par
+ * construction. Le CONTENU, lui, continue de se dire par
+ * `decisionCardInputHash`, qui est fait pour ça et que rien ici ne touche.
+ *
+ * AUCUNE REPRISE DE DONNÉES. Lecture par conteneur du 2026-09-12 : la
+ * production ne porte aucune sélection de priorité, et son unique brouillon de
+ * protocole est accroché à une carte de calibrage, pas à un
+ * `runtime-decision-…`. Rien n'est rendu orphelin par ce changement.
+ */
+function suffixeEnveloppe(assessmentEpisodeId: string): string {
+  return assessmentEpisodeId.startsWith(PREFIXE_EPISODE)
+    ? assessmentEpisodeId.slice(PREFIXE_EPISODE.length)
+    : assessmentEpisodeId;
+}
+
+/**
+ * Ce qui IDENTIFIE un point de décision — et rien de ce qui s'en dérive.
+ *
+ * Les cinq champs ci-dessous sont ceux qu'un acte confirmé fixe : le même
+ * épisode, pour le même patient, au même jalon, compté depuis la même date de
+ * référence et sur la même fenêtre nominale. Ils ne bougent que si l'ancre
+ * bouge — et une ancre qui bouge n'est plus le même acte.
+ */
+function identiteActe(episode: ProposedAssessmentEpisode | ConfirmedAssessmentEpisode) {
+  return {
+    assessmentEpisodeId: episode.assessmentEpisodeId,
+    patientId: episode.patientId,
+    milestone: episode.milestone,
+    targetAt: episode.targetAt,
+    fenetreDebut: episode.window.start,
+    toleranceJours: episode.window.toleranceDays,
+  };
+}
+
+/**
+ * L'épisode persisté est-il REJOUABLE (`D-118`) ?
+ *
+ * Trois conditions, et chacune protège une propriété distincte :
  *
  * 1. L'INTÉGRITÉ — le blob relu se re-hache à son `payloadHash`. Un payload qui
  *    ne se recoupe pas ne se rejoue pas : on journalise et on sert la
  *    proposition, jamais une chaîne calculée sur un épisode altéré.
- * 2. LE SOCLE — les champs de PROPOSITION de l'épisode persisté (identifiant,
- *    jalon, fenêtre, candidats) sont canoniquement identiques à la proposition
- *    recalculée à l'instant. C'est ce qui garantit que le `proposalHash`
- *    courant est celui de la confirmation, donc que les identifiants
- *    d'enveloppe (`runtime-decision-…`) — par lesquels versions, diffusion et
- *    check-ins sont retrouvés — sont EXACTEMENT ceux de la carte d'origine.
- *    Un dossier qui a bougé (nouvelle passation, fenêtre déplacée) fait
- *    diverger le socle : on retombe sur `proposal_required`, le flux « les
- *    réponses ont changé » d'aujourd'hui.
+ * 2. L'IDENTITÉ DE L'ACTE — `identiteActe` ci-dessus, canoniquement identique
+ *    de part et d'autre.
+ * 3. L'INTÉGRITÉ DES RÉPONSES CITÉES — chaque réponse incluse par l'épisode est
+ *    encore LISIBLE dans le dossier. Une passation retirée ou invalidée fait
+ *    tomber le rejeu : la carte citerait une mesure que le dossier ne porte
+ *    plus. Une passation AJOUTÉE, elle, ne fait plus rien tomber.
+ *
+ * CE QUI A ÉTÉ RETIRÉ DE LA COMPARAISON, ET POURQUOI. La condition 2 lisait le
+ * SOCLE entier de la proposition — `candidateResponses`, `inWindowResponseIds`,
+ * `outOfWindowResponseIds`, borne haute de fenêtre. Ces champs ne décrivent pas
+ * l'acte : ils décrivent comment le dossier se composerait AUJOURD'HUI, sous la
+ * règle d'inclusion d'aujourd'hui. Les comparer accrochait un acte signé à une
+ * dérivation qui bouge — et elle a bougé deux fois :
+ *
+ *   · à chaque passation nouvelle du dossier : un patient qui répondait à un
+ *     questionnaire de plus éteignait le `T0` de son propre dossier ;
+ *   · au déploiement de [[D-156]], qui a fait tomber la borne haute de l'ancre
+ *     initiale : un épisode signé sous la règle précédente — ses réponses hors
+ *     fenêtre réintégrées une à une par le praticien — ne pouvait plus
+ *     coïncider avec une proposition qui met tout dans la fenêtre.
+ *
+ * CONSTATÉ EN PRODUCTION LE 2026-09-12, par conteneur : quatre des sept épisodes
+ * `T0` confirmés n'étaient plus rejouables, et leur fiche affichait « Décision
+ * clinique non préparée » sur un acte posé. Le geste du praticien était intact
+ * en base ; c'est la lecture qui refusait de le servir. Les trois épisodes
+ * rejouables avaient tous été confirmés le jour même.
+ *
+ * CE QUE LE REJEU NE DIT PLUS, ET QUI SE DIT AILLEURS : les réponses arrivées
+ * DEPUIS la confirmation n'entrent pas dans l'épisode, et la réponse `ready`
+ * les COMPTE (`reponsesDepuisConfirmation`) pour que l'écran le dise. Un fait
+ * porté par l'écran, jamais un refus silencieux — même patron que
+ * `selectionEcartee` ([[D-127]] §11).
  */
 function episodeRejouable(
   persiste: { payload: unknown; payloadHash: string },
   proposal: ProposedAssessmentEpisode,
+  /**
+   * Les identifiants des réponses LISIBLES aujourd'hui. `loadRuntimeInputs` les
+   * a déjà passées par `filtrerPassationsExploitables` : une passation
+   * invalidée n'y est plus, et c'est exactement ce que la condition 3 doit
+   * voir.
+   */
+  reponsesLisibles: ReadonlySet<string>,
 ): ConfirmedAssessmentEpisode | null {
   const episode = persiste.payload as ConfirmedAssessmentEpisode;
   try {
@@ -308,21 +406,8 @@ function episodeRejouable(
       console.error('[cockpit GET] payload d’épisode incohérent avec son empreinte', episode.assessmentEpisodeId);
       return null;
     }
-    const {
-      status: _statut,
-      includedResponseIds: _incluses,
-      sourceDateRange: _plage,
-      confirmedAt: _confirme,
-      preconditionOverrides: _contournements,
-      ...soclePersiste
-    } = episode;
-    const {
-      status: _statutCourant,
-      includedResponseIds: _inclusesCourantes,
-      sourceDateRange: _plageCourante,
-      ...socleCourant
-    } = proposal;
-    if (canonicalJson(soclePersiste) !== canonicalJson(socleCourant)) return null;
+    if (canonicalJson(identiteActe(episode)) !== canonicalJson(identiteActe(proposal))) return null;
+    if (!episode.includedResponseIds.every(responseId => reponsesLisibles.has(responseId))) return null;
   } catch {
     // Sérialisation canonique impossible : un épisode qu'on ne sait pas hacher
     // est un épisode qu'on ne rejoue pas.
@@ -355,7 +440,7 @@ async function reponsePrete(
     decisionCard: DecisionCard;
     plainteDominante: PlainteDominante | null;
   },
-  options?: { rejoue?: true; selectionEcartee?: boolean },
+  options?: { rejoue?: true; selectionEcartee?: boolean; reponsesDepuisConfirmation?: number },
 ): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   let claimsCites: Awaited<ReturnType<typeof claimsCitesParLaPropositionBilan>> = [];
   if (conflitsSourcesActifs()) {
@@ -380,6 +465,9 @@ async function reponsePrete(
     canalPlainte: CANAL_PLAINTE,
     ...(options?.rejoue ? { rejoue: true as const } : {}),
     ...(options?.selectionEcartee ? { selectionEcartee: true as const } : {}),
+    ...(options?.reponsesDepuisConfirmation
+      ? { reponsesDepuisConfirmation: options.reponsesDepuisConfirmation }
+      : {}),
   });
 }
 
@@ -440,10 +528,11 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
         where: { id: proposal.assessmentEpisodeId },
         select: { payload: true, payloadHash: true },
       });
-      const episode = persiste ? episodeRejouable(persiste, proposal) : null;
+      const reponsesLisibles = new Set(inputs.responses.map(reponse => reponse.responseId));
+      const episode = persiste ? episodeRejouable(persiste, proposal, reponsesLisibles) : null;
       if (episode) {
         try {
-          const idSuffix = `${milestoneRaw}-${proposalHash.slice(0, 16)}`;
+          const idSuffix = suffixeEnveloppe(episode.assessmentEpisodeId);
           const decisionCardIdRejeu = `runtime-decision-${idSuffix}`;
           // La sélection praticien, relue en base ([[D-127]]) par la MÊME
           // fonction que `verifierChaineC1` — deux lectures divergentes
@@ -471,7 +560,22 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
             // candidat — la ligne nomme un dossier, pas un choix.
             console.warn('[cockpit GET] sélection de priorité écartée : elle ne tient plus sur ce dossier');
           }
-          return await reponsePrete(idPatient, chaine, { rejoue: true, selectionEcartee });
+          // LE DÉCALAGE SE DIT, IL NE SE DEVINE PAS. Les réponses postérieures à
+          // l'acte n'entrent pas dans l'épisode — c'est le sens même d'un
+          // instant confirmé — mais le praticien doit savoir qu'il en existe,
+          // sans quoi il lit une carte muette sur une moitié de son dossier.
+          // Comptées sur `observedAt`, jamais sur « absentes de l'épisode » :
+          // une réponse que le praticien a délibérément écartée à la
+          // confirmation n'est pas une réponse arrivée depuis.
+          const confirmeLe = new Date(episode.confirmedAt).getTime();
+          const reponsesDepuisConfirmation = inputs.responses.filter(
+            reponse => new Date(reponse.observedAt).getTime() > confirmeLe,
+          ).length;
+          return await reponsePrete(idPatient, chaine, {
+            rejoue: true,
+            selectionEcartee,
+            reponsesDepuisConfirmation,
+          });
         } catch (erreurRejeu) {
           // Le dossier ne porte plus ce que l'épisode cite (passation retirée,
           // contexte incohérent) : le rejeu ne force rien, la proposition
@@ -717,7 +821,10 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
       instantActe,
       preconditionOverrides,
     );
-    const idSuffix = `${payload.milestone}-${proposalHash.slice(0, 16)}`;
+    // MÊME DÉRIVATION QU'AU REJEU, et c'est la condition pour que le rejeu
+    // retrouve la carte que ce POST émet : l'identité de l'épisode, jamais une
+    // empreinte de contenu (`suffixeEnveloppe`).
+    const idSuffix = suffixeEnveloppe(episode.assessmentEpisodeId);
     // UN SEUL CHEMIN DE CONSTRUCTION, partagé avec le recalcul des deux points
     // de persistance ([[D-054]], arbitrage 6) : deux constructions divergentes
     // rendraient 409 sur une carte que ce POST vient d'émettre.

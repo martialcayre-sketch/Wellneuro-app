@@ -1297,11 +1297,12 @@ describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-11
     expect('selectionEcartee' in get).toBe(false);
   });
 
-  it('ne rejoue pas un dossier dont le socle a bougé : la proposition reprend la main', async () => {
+  it('ne rejoue pas un dossier dont l’ANCRE a bougé : la proposition reprend la main', async () => {
     await confirmerT0();
     const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
-    // La fenêtre persistée ne correspond plus à la proposition recalculée —
-    // l'empreinte du blob, elle, reste valide : c'est bien le SOCLE qui rejette.
+    // La fenêtre NOMINALE persistée ne correspond plus à la proposition
+    // recalculée — l'empreinte du blob, elle, reste valide : c'est bien
+    // l'identité de l'acte qui rejette, pas l'intégrité.
     const altere = {
       ...(create.payload as Record<string, unknown>),
       window: { ...(create.payload as { window: object }).window, toleranceDays: 99 },
@@ -1311,6 +1312,89 @@ describe('/api/praticien/cockpit — persistance et rejeu de l’épisode (`D-11
     });
     const get = await GET(getRequest('idPatient=PAT_TEST&milestone=T0'));
     expect((await get.json()).status).toBe('proposal_required');
+  });
+
+  // ── LE REJEU SURVIT À UN DOSSIER VIVANT ───────────────────────────────────
+  //
+  // Constat de production du 2026-09-12, par conteneur : quatre des sept
+  // épisodes `T0` confirmés n'étaient plus rejouables, et leur fiche affichait
+  // « Décision clinique non préparée » sur un acte posé en base. Deux causes
+  // indépendantes, un banc pour chacune — plus le banc d'intégrité qui doit,
+  // lui, continuer de refuser.
+
+  it('rejoue malgré une passation ARRIVÉE DEPUIS, et compte le décalage', async () => {
+    const post = await confirmerT0();
+    const postPayload = await post.json();
+    const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: create.payload, payloadHash: create.payloadHash,
+    });
+    // Le patient répond à un questionnaire de plus APRÈS l'acte. Date relative
+    // à l'horloge du run : `confirmedAt` vaut l'instant du POST, et une date en
+    // dur ferait de ce banc une bombe à retardement.
+    brancherPassations([...responses, {
+      idReponse: 'REP_APRES', idQuestionnaire: 'Q_SOM_06',
+      dateReponse: new Date(Date.now() + 86_400_000), scoresJson: { rawAnswers },
+    }]);
+    const payload = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T0'))).json();
+    expect(payload.status).toBe('ready');
+    expect(payload.rejoue).toBe(true);
+    // Le fait se DIT — il ne fait plus tomber la carte.
+    expect(payload.reponsesDepuisConfirmation).toBe(1);
+    // Et l'identité de la carte n'a pas bougé avec le contenu du dossier :
+    // c'est ce qui garde sélection, brouillons et check-ins accrochés.
+    expect(payload.decisionCard.decisionCardId).toBe(postPayload.decisionCard.decisionCardId);
+    expect(payload.decisionCard.decisionCardId).toBe('runtime-decision-PAT_TEST-T0');
+  });
+
+  // LE BANC QUE LA PRODUCTION A RÉCLAMÉ. Un épisode signé sous la règle
+  // d'inclusion ANTÉRIEURE à [[D-156]] — borne haute encore en place, donc des
+  // réponses `outOfWindowResponseIds` que le praticien avait réintégrées une à
+  // une. La règle d'inclusion a changé ; l'acte, lui, n'a pas bougé.
+  it('rejoue un épisode signé sous l’ancienne règle d’inclusion (borne haute, hors fenêtre réintégrés)', async () => {
+    await confirmerT0();
+    const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    const signeAvantD156 = {
+      ...(create.payload as Record<string, unknown>),
+      window: {
+        ...(create.payload as { window: Record<string, unknown> }).window,
+        end: '2026-01-09T00:00:00.000Z',
+      },
+      inWindowResponseIds: ['REP_T0'],
+      outOfWindowResponseIds: ['REP_J21'],
+    };
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: signeAvantD156, payloadHash: canonicalSha256(signeAvantD156),
+    });
+    const payload = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T0'))).json();
+    expect(payload.status).toBe('ready');
+    expect(payload.rejoue).toBe(true);
+  });
+
+  it('ne rejoue pas quand une réponse CITÉE par l’épisode a disparu du dossier', async () => {
+    await confirmerT0();
+    const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: create.payload, payloadHash: create.payloadHash,
+    });
+    // `REP_J21` et non `REP_T0` : retirer la PREMIÈRE réponse déplacerait aussi
+    // `targetAt`, et le banc ne prouverait plus laquelle des deux conditions a
+    // rejeté. Ici l'ancre est intacte — seule la réponse citée manque.
+    brancherPassations(responses.filter(reponse => reponse.idReponse !== 'REP_J21'));
+    const get = await GET(getRequest('idPatient=PAT_TEST&milestone=T0'));
+    expect((await get.json()).status).toBe('proposal_required');
+  });
+
+  it('aucune réponse ordinaire ne porte le compte des passations postérieures', async () => {
+    const post = await confirmerT0();
+    expect('reponsesDepuisConfirmation' in (await post.json())).toBe(false);
+    const create = prisma.assessmentEpisode.create.mock.calls[0][0].data;
+    prisma.assessmentEpisode.findUnique.mockResolvedValue({
+      payload: create.payload, payloadHash: create.payloadHash,
+    });
+    const get = await (await GET(getRequest('idPatient=PAT_TEST&milestone=T0'))).json();
+    expect(get.rejoue).toBe(true);
+    expect('reponsesDepuisConfirmation' in get).toBe(false);
   });
 
   it('ne rejoue pas un payload qui ne se recoupe pas avec son empreinte (intégrité)', async () => {
