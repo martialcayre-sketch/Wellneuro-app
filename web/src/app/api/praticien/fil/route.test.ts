@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -21,6 +21,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     rendezVous: { findMany: vi.fn() },
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
+    filCardLecture: { findMany: vi.fn() },
   },
 }));
 
@@ -58,6 +59,7 @@ describe('GET /api/praticien/fil', () => {
     prisma.rendezVous.findMany.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
+    prisma.filCardLecture.findMany.mockResolvedValue([]);
   });
 
   it('sans session : 401 et `unavailable`, jamais un fil vide silencieux', async () => {
@@ -269,6 +271,86 @@ describe('GET /api/praticien/fil', () => {
 
     const payload = await (await GET()).json();
     expect(payload.cartes.map((c: { cle: string }) => c.cle)).toEqual([CLE_SYNTHESE]);
+  });
+
+  // LA LECTURE (2026-09-12) — trois issues, et l'ordre avec le refus.
+  //
+  // HORLOGE FIGÉE, ET C'EST INDISPENSABLE : la trace d'une carte lue est bornée
+  // au JOUR CIVIL DE PARIS. Sur l'horloge réelle, une lecture datée de juillet
+  // ne serait jamais « aujourd'hui » — les cartes partiraient sans trace et ces
+  // bancs prouveraient le contraire de ce qu'ils annoncent.
+  describe('cartes lues', () => {
+    const MIDI_PARIS = new Date('2026-07-20T10:00:00.000Z');
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(MIDI_PARIS);
+      // Le dossier qui a décidé ce lot portait DEUX ratifications identiques à
+      // dix secondes d'écart : elles doivent partir ENSEMBLE, sur une lecture.
+      prisma.patient.findMany.mockResolvedValue([
+        { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+      ]);
+      prisma.ratificationObjectif.findMany.mockResolvedValue([
+        { id: 'RAT_1', idPatient: 'PAT_SEED_01', sens: 'ratifie', creeLe: new Date('2026-07-19T16:14:00.000Z') },
+        { id: 'RAT_2', idPatient: 'PAT_SEED_01', sens: 'ratifie', creeLe: new Date('2026-07-19T16:14:10.000Z') },
+      ]);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const lectureLe = (iso: string) => [
+      { idPatient: 'PAT_SEED_01', typeCarte: 'geste_objectif', lue: true, lueLe: new Date(iso) },
+    ];
+    const cles = (liste: { cle: string }[]) => liste.map(c => c.cle);
+
+    it('sans lecture, les deux gestes restent deux cartes', async () => {
+      const payload = await (await GET()).json();
+      expect(payload.cartes.filter((c: { type: string }) => c.type === 'geste_objectif')).toHaveLength(2);
+      expect(payload.lues ?? []).toEqual([]);
+    });
+
+    it('UNE lecture du jour retire LES DEUX cartes et laisse LES DEUX traces', async () => {
+      prisma.filCardLecture.findMany.mockResolvedValue(lectureLe('2026-07-20T08:00:00.000Z'));
+
+      const payload = await (await GET()).json();
+      expect(payload.cartes.filter((c: { type: string }) => c.type === 'geste_objectif')).toHaveLength(0);
+      expect(cles(payload.lues)).toEqual(['geste_objectif:RAT_2', 'geste_objectif:RAT_1']);
+    });
+
+    it('un geste POSTÉRIEUR à la lecture reste une carte — un fait nouveau n’est pas acquitté', async () => {
+      prisma.filCardLecture.findMany.mockResolvedValue(lectureLe('2026-07-19T16:14:05.000Z'));
+
+      const payload = await (await GET()).json();
+      expect(cles(payload.cartes)).toContain('geste_objectif:RAT_2');
+      // RAT_1 est lue, mais sa lecture date d'HIER : elle s'en va sans trace.
+      expect(cles(payload.cartes)).not.toContain('geste_objectif:RAT_1');
+      expect(cles(payload.lues)).toEqual([]);
+    });
+
+    it('LES DEUX TRACES D’AUDIT sont lues BORNÉES aux dossiers du praticien', async () => {
+      // Sans cette borne, la route lirait les acquittements de dossiers qui ne
+      // sont pas les siens. L'effet visible serait nul — aucune carte ne leur
+      // correspond — et c'est bien le problème : rien ne rougirait, et une
+      // piste d'audit d'un autre cabinet aurait été lue quand même.
+      await GET();
+      const bornes = { idPatient: { in: ['PAT_SEED_01'] } };
+      expect(prisma.filCardLecture.findMany.mock.calls[0][0].where).toEqual(bornes);
+      expect(prisma.filCardRejection.findMany.mock.calls[0][0].where).toEqual(bornes);
+    });
+
+    it('LE REFUS PRÉCÈDE LA LECTURE : une carte écartée ne revient pas en « carte lue »', async () => {
+      prisma.filCardRejection.findMany.mockResolvedValue([
+        { id: 'r1', carteCle: 'geste_objectif:RAT_1', refusee: true, supersedesRejectionId: null, refuseLe: new Date('2026-07-20T07:00:00.000Z') },
+      ]);
+      prisma.filCardLecture.findMany.mockResolvedValue(lectureLe('2026-07-20T08:00:00.000Z'));
+
+      const payload = await (await GET()).json();
+      const toutes = [...cles(payload.cartes), ...cles(payload.lues)];
+      expect(toutes).not.toContain('geste_objectif:RAT_1');
+      expect(cles(payload.lues)).toEqual(['geste_objectif:RAT_2']);
+    });
   });
 
   it('une panne de lecture est annoncée, jamais présentée comme un fil vide', async () => {
