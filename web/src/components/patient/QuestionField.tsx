@@ -2,7 +2,7 @@
 
 import type { Question } from '@/lib/questionnaire-types';
 
-// Champ de question (likert / select / number). Composant présentationnel pur.
+// Champ de question (likert / bristol / select / number). Composant présentationnel pur.
 export function QuestionField({ question, value, onChange, displaySelectAsRadioCards = false, optionLayout = 'cartes' }: {
   question: Question;
   value: string;
@@ -22,11 +22,14 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
    */
   optionLayout?: 'cartes' | 'grille';
 }) {
-  const enGrille = optionLayout === 'grille';
+  // Bristol : sept descriptions d'une ligne et demie, chacune avec son
+  // pictogramme. Les mettre en regard sur une même ligne les rendrait
+  // illisibles — la grille est faite pour des options de deux mots.
+  const enGrille = optionLayout === 'grille' && question.type !== 'bristol';
   return (
     <fieldset className="min-w-0 space-y-2">
       <legend className="text-sm font-medium text-foreground">{question.texte}</legend>
-      {(question.type === 'likert' || (question.type === 'select' && displaySelectAsRadioCards)) && question.options && (
+      {(question.type === 'likert' || question.type === 'bristol' || (question.type === 'select' && displaySelectAsRadioCards)) && question.options && (
         <div className={enGrille ? 'flex flex-wrap gap-2' : 'grid gap-2'}>
           {question.options.map(opt => (
             <label
@@ -47,6 +50,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
                 onChange={() => onChange(String(opt.v))}
                 className="accent-primary"
               />
+              {opt.icon && <span aria-hidden="true">{opt.icon}</span>}
               <span className="min-w-0 break-words">{opt.l}</span>
             </label>
           ))}

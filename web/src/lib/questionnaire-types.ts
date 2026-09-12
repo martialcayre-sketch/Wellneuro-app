@@ -4,12 +4,29 @@
 
 // v : numérique pour les scorings ; chaîne pour les items qualitatifs purs
 // ('oui'/'non' des dépistages digestifs, héritage GAS) — le catalogue porte les deux.
-export type QuestionOption = { v: number | string; l: string };
+export type QuestionOption = {
+  v: number | string;
+  l: string;
+  /** Pictogramme facultatif affiché devant le libellé (échelle de Bristol). */
+  icon?: string;
+};
 
 export type Question = {
   id: string;
   texte: string;
-  type: 'likert' | 'number' | 'select';
+  /**
+   * Tout type listé ici DOIT avoir sa branche de rendu dans `QuestionField` :
+   * un type inconnu n'y produit pas d'erreur, il rend la légende seule, et le
+   * patient se retrouve devant une question sans rien à cocher, « Suivant »
+   * désactivé pour toujours — c'est ce qu'a vécu l'échelle de Bristol, servie
+   * ainsi depuis son ajout. Le garde `QuestionField.saisissable.guard.test.tsx`
+   * exerce chaque item du catalogue et refuse un item sans champ.
+   *
+   * `bristol` — choix unique parmi les 7 types de la classification, libellés
+   * longs et pictogrammes : des radios en cartes pleine largeur, jamais en
+   * grille.
+   */
+  type: 'likert' | 'number' | 'select' | 'bristol';
   options?: QuestionOption[];
   min?: number;
   max?: number;
