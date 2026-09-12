@@ -384,3 +384,79 @@ describe('FilDuJour — la trace d’une carte lue, et « Remettre »', () => {
     expect(screen.queryByText(/Lu sur la fiche/)).toBeNull();
   });
 });
+
+// ── LE RAPPEL PATIENT, DEPUIS LA CARTE QUI CONSTATE LE RETARD ──────────────
+//
+// La route existait sans appelant : le mécanisme, ses refus et ses bancs, et
+// rien pour le déclencher. Ces bancs tiennent le geste ET ce qu'il affiche —
+// un refus de cadence n'est pas une panne, c'est une réponse, et la perdre
+// retirerait la seule chose que ces refus apportent : la raison.
+describe('FilDuJour — rappeler un questionnaire en retard', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** Le Fil, la Météo, et la relance — trois routes, trois réponses. */
+  function stubAvecRelance(relance: () => Promise<unknown>) {
+    const poste = vi.fn(async (url: string, options?: { method?: string }) => {
+      if (url.includes('meteo-adhesion')) {
+        return { json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response;
+      }
+      if (url.includes('assignations/relance')) {
+        expect(options?.method).toBe('POST');
+        return { json: relance } as unknown as Response;
+      }
+      return {
+        json: async () => ({
+          ok: true,
+          cartes: [carte({ idAssignation: 'ASG_1' })],
+          refusees: [],
+          lues: [],
+        }),
+      } as unknown as Response;
+    });
+    vi.stubGlobal('fetch', poste);
+    return poste;
+  }
+
+  it('poste le rappel sur l’assignation de la carte, et dit qu’il est parti', async () => {
+    const poste = stubAvecRelance(async () => ({ ok: true, statut: 'Envoye' }));
+    render(<FilDuJour />);
+
+    const bouton = await screen.findByRole('button', { name: /Rappeler au patient/i });
+    fireEvent.click(bouton);
+
+    await waitFor(() => expect(screen.getByText('Rappel envoyé.')).toBeTruthy());
+    const appel = poste.mock.calls.find(([url]) => String(url).includes('assignations/relance'));
+    expect(JSON.parse(String((appel?.[1] as { body?: string })?.body))).toEqual({ idAssignation: 'ASG_1' });
+  });
+
+  // LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL : « un rappel est déjà parti il y
+  // a moins de 3 jours » se lit ; « Rappel impossible » n'apprendrait rien.
+  it('affiche le refus du serveur tel quel, sans le traduire en panne', async () => {
+    stubAvecRelance(async () => ({
+      ok: false,
+      reason: 'cadence',
+      error: 'Un rappel est déjà parti il y a moins de 3 jours.',
+    }));
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rappeler au patient/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Un rappel est déjà parti il y a moins de 3 jours.')).toBeTruthy());
+  });
+
+  // Les autres cartes n'ont pas d'assignation à rappeler, et le bouton ne doit
+  // pas apparaître au seul motif qu'une carte est en retard d'autre chose.
+  it('aucune autre carte ne porte le bouton', async () => {
+    stubFetch(async () => ({
+      ok: true,
+      cartes: [carte({ type: 'synthese_a_valider', idAssignation: undefined })],
+      refusees: [],
+      lues: [],
+    }));
+    render(<FilDuJour />);
+
+    await screen.findByText('Questionnaire en retard');
+    expect(screen.queryByRole('button', { name: /Rappeler au patient/i })).toBeNull();
+  });
+});
