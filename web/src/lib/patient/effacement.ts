@@ -129,6 +129,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.portailJournalReperes = (
       await tx.portailJournalRepere.deleteMany({ where: par })
     ).count;
+    // Les accusés de lecture du fil du jour : PLUSIEURS lignes par dossier,
+    // contrairement au repère ci-dessus. Elles partent avec lui — et un dossier
+    // qui n'a jamais rien ouvert n'en a aucune.
+    supprimees.portailLecturesPatient = (
+      await tx.portailLecturePatient.deleteMany({ where: par })
+    ).count;
     supprimees.relectureNotes = (await tx.relectureNote.deleteMany({ where: par })).count;
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
     supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;

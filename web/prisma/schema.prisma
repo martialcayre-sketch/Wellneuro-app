@@ -66,6 +66,7 @@ model Patient {
   filCardRejections          FilCardRejection[]
   filCardLectures            FilCardLecture[]
   portailJournalRepere       PortailJournalRepere?
+  portailLecturesPatient     PortailLecturePatient[]
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
@@ -1482,6 +1483,36 @@ model PortailJournalRepere {
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
   @@map("portail_journal_reperes")
+}
+
+// CE QUE LE PATIENT A DÉJÀ LU — un accusé par VERSION remise (LOT-08).
+//
+// Trois colonnes, AUCUNE DATE. Le fil du jour ne consulte que l'EXISTENCE de la
+// ligne : « quand le patient a-t-il ouvert son bilan » reste structurellement
+// sans réponse, et c'est la seule impossibilité que cette table offre.
+//
+// ELLE NE REND PAS LE DÉCOMPTE IMPOSSIBLE, contrairement à sa voisine
+// `PortailJournalRepere` — plusieurs lignes par dossier, `count(*)` répond. Ce
+// qui borne le risque : le compte ne peut pas dépasser ce que le cabinet a
+// REMIS, et ne dit rien des connexions. Qu'aucune surface praticien ne la lise
+// est tenu par un banc de garde du dépôt, pas par le schéma.
+//
+// PAS DE COLONNE DE VERSION : `id_objet` l'est déjà. `SyntheseComprehension` et
+// `BookletEnvoi` ne connaissent que `create` — une republication est une ligne
+// neuve. Un banc épingle l'apparition d'un `update` sur ces deux modèles.
+model PortailLecturePatient {
+  idPatient String @map("id_patient")
+  /// 'bilan' | 'synthese' — fermé par un CHECK en base : l'espèce est un
+  /// arbitrage, pas un champ libre.
+  espece    String @map("espece")
+  /// L'identifiant de la VERSION lue : `BookletEnvoi.id` ou
+  /// `SyntheseComprehension.id`. Polymorphe, donc sans clé étrangère.
+  idObjet   String @map("id_objet")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@id([idPatient, espece, idObjet])
+  @@map("portail_lectures_patient")
 }
 
 model PortailMagicLink {
