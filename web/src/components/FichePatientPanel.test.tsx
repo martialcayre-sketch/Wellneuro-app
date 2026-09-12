@@ -74,6 +74,8 @@ type Options = {
   // - `filtresIgnores` : serveur antérieur aux paramètres — il rend la ligne
   //   d'un AUTRE dossier et n'écho aucun filtre.
   patients?: 'defaut' | 'erreur' | 'tronque' | 'filtresIgnores';
+  /** Le dossier porte un questionnaire JAMAIS REMPLI dont l'échéance est passée. */
+  assignationEchue?: boolean;
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
@@ -304,6 +306,20 @@ function cycleTrajectoire(j21Mesure: boolean) {
 // Demande de correction du patient fictif Sophie Nicola. `idPatient` est la clé
 // sur laquelle la fiche restreint désormais — côté serveur, et en défense côté
 // client : sans lui, la ligne d'un autre dossier passerait.
+// Jamais remplie, échéance passée : le portail refuse la saisie, et aucune
+// demande de correction n'existe — le patient n'a rien demandé, il a trouvé
+// porte close. C'est le cas que l'écran ne voyait pas.
+const ASSIGNATION_ECHUE = {
+  idAssignation: 'ASG_ECHUE',
+  idPatient: 'PAT001',
+  emailPatient: 'sophie.nicola@example.test',
+  statutReponses: 'non_rempli',
+  titre: 'Échelle de Bristol — Type de selles',
+  idQuestionnaire: 'Q_GAS_03',
+  dateLimite: '2026-08-01',
+  correctionCommentaire: null,
+};
+
 const ASSIGNATION_MODIF = {
   idAssignation: 'ASG001',
   idPatient: 'PAT001',
@@ -317,6 +333,7 @@ const ASSIGNATION_MODIF = {
 function stubFetch(options: Options = {}) {
   const runtime = options.runtime ?? 'unavailable';
   const assignationsModif = options.assignationsModif ?? false;
+  const assignationEchue = options.assignationEchue ?? false;
   const trajectoire = options.trajectoire ?? 'ok';
   const carte =
     options.decision === 'bloquee'
@@ -372,6 +389,23 @@ function stubFetch(options: Options = {}) {
       // et n'écho aucun filtre. Rien de tout cela ne doit atteindre l'écran.
       if (scenario === 'filtresIgnores') {
         return ok({ assignations: [{ ...ASSIGNATION_MODIF, idPatient: 'PAT999' }] });
+      }
+      // Deux lectures passent par ce point d'entrée, et elles se distinguent
+      // par leurs paramètres — jamais par leur ordre d'arrivée.
+      const recherche = new URL(url, 'http://test.local').searchParams;
+      if (recherche.get('echeanceDepassee') === '1') {
+        const echues = assignationEchue ? [ASSIGNATION_ECHUE] : [];
+        return ok({
+          assignations: echues,
+          assignationsMeta: {
+            total: echues.length,
+            plafond: 40,
+            statut: null,
+            statutReponses: 'non_rempli',
+            echeanceDepassee: true,
+            idPatient: 'PAT001',
+          },
+        });
       }
       const assignations = assignationsModif ? [ASSIGNATION_MODIF] : [];
       return ok({
@@ -475,6 +509,10 @@ function stubFetch(options: Options = {}) {
         ratifications: {},
       });
     }
+    // Déblocage d'une assignation (`PATCH`). Sans cette branche, la réponse
+    // par défaut ne porte pas `success` et l'écran ne retire jamais la ligne :
+    // le test du geste ne prouverait rien.
+    if (url.includes('/api/praticien/assignations')) return ok({ success: true });
     return ok({});
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -1368,11 +1406,20 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
 
     const urls = urlsPatients(fetchMock);
     expect(urls.length).toBeGreaterThan(0);
+    // La fiche lit DEUX listes par ce même point d'entrée : les demandes de
+    // correction, et les questionnaires jamais remplis dont l'échéance est
+    // passée. Les deux sont filtrées au serveur — c'est ce que ce test tient.
+    const parStatut = new Map<string, URLSearchParams>();
     for (const url of urls) {
       const params = new URL(url, 'http://test.local').searchParams;
       expect(params.get('idPatient')).toBe('PAT001');
-      expect(params.get('statutReponses')).toBe('modification_demandee');
+      parStatut.set(params.get('statutReponses') ?? '', params);
     }
+    expect(parStatut.has('modification_demandee')).toBe(true);
+    const echues = parStatut.get('non_rempli');
+    expect(echues).toBeDefined();
+    // L'échéance ne se recalcule pas dans l'écran : le filtre part au serveur.
+    expect(echues!.get('echeanceDepassee')).toBe('1');
   });
 
   it('un échec de lecture n’est pas « aucune demande » — il le dit, et le rail n’affirme rien', async () => {
@@ -1426,9 +1473,15 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
       vi.fn(async (input: unknown) => {
         const url = String(input);
         if (!url.includes('/api/praticien/patients')) return base(input);
+        const recherche = new URL(url, 'http://test.local').searchParams;
+        // La fiche lit aussi les questionnaires échus par ce point d'entrée.
+        // Ce test porte sur la garde de fraîcheur des CORRECTIONS : on ne
+        // compte et ne retient que celles-là, sinon le compteur mesurerait les
+        // deux lectures et le blocage tomberait sur la mauvaise.
+        if (recherche.get('statutReponses') !== 'modification_demandee') return base(input);
         appels += 1;
         if (appels === 1) await new Promise<void>(resolve => { libererPremiere = resolve; });
-        const cible = new URL(url, 'http://test.local').searchParams.get('idPatient');
+        const cible = recherche.get('idPatient');
         const assignations = cible === 'PAT001' ? [ASSIGNATION_MODIF] : [];
         return {
           ok: true,
@@ -1587,5 +1640,110 @@ describe('FichePatientPanel — le total dit sa nature à l’écran', () => {
     for (const tuile of nonMesures) {
       expect(tuile.parentElement?.textContent).not.toContain('pas un score clinique');
     }
+  });
+});
+
+describe('FichePatientPanel — jamais rempli, échéance dépassée', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  /*
+   * L'ANGLE MORT QUE CE LOT FERME. Le portail refuse la saisie dès l'échéance
+   * passée, et n'en exempte que trois statuts dont `deverrouille`. Le geste de
+   * déblocage existait déjà côté API ; l'écran ne l'offrait qu'aux demandes de
+   * CORRECTION. Un questionnaire simplement jamais rempli et échu n'entrait
+   * dans aucune liste : aucun bouton nulle part, et un patient bloqué sans que
+   * rien ne le signale. Constaté en production le 2026-09-12.
+   */
+  it('le questionnaire échu apparaît, avec sa date et son bouton', async () => {
+    await rendreFiche({ assignationEchue: true, phaseDemandee: 'patient' });
+
+    const ligne = await screen.findByText(/Jamais rempli, échéance dépassée/i);
+    expect(ligne.textContent).toContain('Échelle de Bristol');
+    // La date est ÉCRITE, pas recalculée : c'est le serveur qui a jugé.
+    expect(screen.getByText(/À rendre avant le 2026-08-01/i)).toBeTruthy();
+    const section = screen.getByRole('region', {
+      name: /Questionnaires jamais remplis dont l’échéance est dépassée/i,
+    });
+    expect(within(section).getByRole('button', { name: 'Débloquer' })).toBeTruthy();
+  });
+
+  it('débloquer retire la ligne — le même geste que pour une correction', async () => {
+    await rendreFiche({ assignationEchue: true, phaseDemandee: 'patient' });
+    const section = await screen.findByRole('region', {
+      name: /Questionnaires jamais remplis dont l’échéance est dépassée/i,
+    });
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Débloquer' }));
+    await waitFor(() =>
+      expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull(),
+    );
+  });
+
+  it('contrôle négatif — rien ne s’affiche quand le dossier n’a aucun échu', async () => {
+    // Sans lui, afficher le bloc inconditionnellement passerait au vert.
+    await rendreFiche({ phaseDemandee: 'patient' });
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+    expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull();
+  });
+
+  it('un serveur qui n’écho PAS le filtre : on n’affiche rien, et on le dit', async () => {
+    // LE cas dangereux. Sans écho, la réponse porte TOUTES les assignations non
+    // remplies du dossier, échues ou non — offrir « Débloquer » dessus
+    // rouvrirait des questionnaires dont l'échéance court encore. L'écran ne
+    // peut pas trancher lui-même : `isDeadlineExpired` lit une date sans
+    // fuseau, donc à l'heure du NAVIGATEUR, et le serveur a déjà tranché
+    // autrement. On préfère ne rien afficher.
+    // `stubFetch` pose LUI-MÊME le global : l'appeler dans le repli le
+    // réinstallerait au premier appel non intercepté, et cette surcharge
+    // disparaîtrait avant d'avoir servi. On le construit une fois, avant.
+    const base = stubFetch();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.includes('/api/praticien/patients') && url.includes('echeanceDepassee=1')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () =>
+              Promise.resolve({
+                assignations: [ASSIGNATION_ECHUE],
+                // Serveur antérieur au SEUL paramètre d'échéance : il écho
+                // bien le dossier et le statut — c'est `echeanceDepassee` qui
+                // manque, et lui seul. Un stub qui n'échoerait RIEN laisserait
+                // passer une régression sur cette vérification-là : les autres
+                // clés suffiraient à faire échouer le contrôle.
+                assignationsMeta: {
+                  total: 1,
+                  plafond: 40,
+                  statut: null,
+                  statutReponses: 'non_rempli',
+                  idPatient: 'PAT001',
+                },
+              }),
+          });
+        }
+        return base(input);
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" />
+      </C5FeatureProvider>,
+    );
+
+    expect(await screen.findByText(/n’ont pas pu être lus/i)).toBeTruthy();
+    expect(screen.queryByText(/Jamais rempli, échéance dépassée/i)).toBeNull();
+  });
+
+  it('une lecture en échec n’est jamais rendue comme « aucun »', async () => {
+    await rendreFiche({ patients: 'erreur', phaseDemandee: 'patient' });
+    expect(await screen.findByText(/n’ont pas pu être lus/i)).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Réessayer la lecture des questionnaires échus' }),
+    ).toBeTruthy();
   });
 });
