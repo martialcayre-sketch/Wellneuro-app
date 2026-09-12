@@ -5385,3 +5385,20 @@ a du neuf » exige un repère serveur, sinon le neuf se calculerait en
 
 Prochaine action — LOT-01 de la campagne portail (la dérivation du journal). Rien
 d'autre d'ouvert sur le Fil.
+## 2026-09-12 — Deux branches tranchées, et l'appareil Alliance qui sert enfin
+
+Décidé — les deux dernières branches distantes supprimées (#1020), rien à
+absorber : comparées fichier à fichier, `main` portait **178 lignes de plus** que
+la « sauvegarde » du runbook, dont elle aurait régressé le texte. Le « 81 lignes
+uniques » qui les a fait survivre trois examens venait d'un `diff` à trois points.
+
+Constaté — relecture de production (#1035, conteneurs `5534` et `6707`) : huit
+des treize tables de la campagne portent des lignes, et les épisodes `T0`
+confirmés passent de **0 à 7**. Le constat le plus lourd d'août est levé, et la
+prémisse de `D-093` renversée — la capacité de contredire est exercée.
+
+Écarté — une « proposition de sortie de `D-093` », rédigée à moitié puis
+abandonnée : `D-163` avait ouvert le périmètre deux jours plus tôt. Deux fois
+j'ai cité un document de campagne au lieu du registre.
+
+Prochaine action — l'arbitrage du second `T0`, qui se posera seul et trop tard.
