@@ -5402,3 +5402,21 @@ abandonnée : `D-163` avait ouvert le périmètre deux jours plus tôt. Deux foi
 j'ai cité un document de campagne au lieu du registre.
 
 Prochaine action — l'arbitrage du second `T0`, qui se posera seul et trop tard.
+
+## 2026-09-12 — Bristol saisissable, et deux impasses du portail levées
+
+Parti d'un signalement d'usage : l'échelle de Bristol ne pouvait pas être
+saisie. Son item porte `type: 'bristol'`, inconnu de `QuestionField` — qui ne
+lève alors AUCUNE erreur et rend la légende seule. Huit assignations, huit
+patients, zéro passation depuis juillet. Corrigé (#1033), vérifié en production.
+
+Les deux lots suivants viennent de la lecture de la production, pas du
+programme : un recueil alimentaire clos tenait « votre étape du moment » sous un
+bouton fabriqué par un `?? 'Consulter'` (#1041), et un questionnaire jamais
+rempli à échéance passée n'avait plus aucun geste praticien (#1043).
+
+Écarté — écrire en base pour débloquer PAT017 : l'autorisation portait sur le
+résultat, `D-087` interdit le moyen. Ce refus a fait apparaître l'angle mort,
+donc le troisième lot.
+
+Prochaine action — déployer `main` : deux des trois lots ne sont pas servis.
