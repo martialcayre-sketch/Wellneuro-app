@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "les-deux-portes"
-statut: "livré (2026-09-12)"
+statut: "livré puis RETIRÉ le 2026-09-12 — arbitrage du responsable"
 dépend_de: "—"
 ---
 
@@ -51,3 +51,21 @@ cycle » : une porte qui s'explique vaut mieux qu'une porte qui s'efface
 **T1 vert. T2 verte. Huit mutations jouées, huit mutants tués** — dont les trois
 qui comptent : le lien affiché sans sonde, la sonde qui ignore `ouvert`, et
 l'échec réseau qui ouvrirait la porte.
+
+## RETIRÉ LE JOUR MÊME — et le lot avait tort
+
+Arbitrage du responsable, sur copie d'écran, quelques heures après la mise en
+service : **« avoir ajouté *dire ce qui compte pour moi* et *ce que le praticien
+a compris* est inutile puisque cela est déjà dans *mon dossier à deux voix* ; il
+faut retirer ces boutons. »**
+
+Le lot avait vu juste sur le fait — aucun lien direct depuis l'accueil — et faux
+sur le remède. Les deux écrans vivent **dans** le dossier à deux voix, qu'un lien
+de cette même nav ouvre déjà. Deux boutons de plus ne donnaient pas un accès :
+ils ajoutaient du bruit à une navigation qui en portait cinq.
+
+**CE QUI MANQUE VRAIMENT N'EST PAS UNE PORTE, C'EST UNE INVITATION.** « Jamais le
+patient n'a d'invitation à le saisir », dit le responsable de « ce qui compte
+pour moi ». Une invitation est une **tâche** — elle paraît quand elle est due et
+s'en va quand elle est faite. Elle appartient au fil du jour, pas à une
+navigation permanente. C'est ce que livre le chantier qui suit.
