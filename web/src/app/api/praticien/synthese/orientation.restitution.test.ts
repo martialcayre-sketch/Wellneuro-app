@@ -651,7 +651,12 @@ describe('cohérence du prédicat d’injection', () => {
   // « le garde doit-il tourner ? ». Les deux dérivent maintenant du même
   // prédicat ; ce banc structurel échoue si l'un des deux s'en détache.
   it('le garde et le builder consultent le même prédicat', () => {
-    const source = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+    // LE TEXTE SOURCE A DÉMÉNAGÉ, PAS CE QU'IL DOIT DIRE. La chaîne de
+    // génération vit désormais dans `lib/synthese/generation.ts` : Next.js
+    // refuse tout export de valeur depuis un `route.ts`, et sans ce
+    // déménagement aucun autre déclencheur ne pouvait la réutiliser. Ce banc
+    // asserte exactement les mêmes phrases, sur le même code.
+    const source = readFileSync(join(__dirname, '../../../../lib/synthese/generation.ts'), 'utf8');
     const occurrences = source.match(/orientationInjectee\(/g) ?? [];
     // Une définition, plus les appels : garde, métadonnée, version.
     expect(occurrences.length).toBeGreaterThanOrEqual(3);

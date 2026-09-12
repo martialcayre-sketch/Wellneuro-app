@@ -17,7 +17,12 @@ import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 // n'est pas appelable depuis un test. Même patron que
 // `pseudonymisation.guard.test.ts`.
 
-const SOURCE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+// LE TEXTE SOURCE A DÉMÉNAGÉ, PAS CE QU'IL DOIT DIRE. La chaîne de
+// génération vit désormais dans `lib/synthese/generation.ts` : Next.js
+// refuse tout export de valeur depuis un `route.ts`, et sans ce
+// déménagement aucun autre déclencheur ne pouvait la réutiliser. Ce banc
+// asserte exactement les mêmes phrases, sur le même code.
+const SOURCE = readFileSync(join(__dirname, '../../../../lib/synthese/generation.ts'), 'utf8');
 
 /** Toute clé `conduite`/`protocol` restant dans une structure, à toute profondeur. */
 function cheminsDeConduite(valeur: unknown, chemin = ''): string[] {

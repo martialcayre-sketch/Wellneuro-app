@@ -19,7 +19,12 @@ import { SYSTEM_PROMPT_GOUVERNANCE } from '@/lib/anthropic';
 // la lecture croisée avec les gardes d'empreinte du prompt système.
 
 const BALISE = 'donnees_declaratives_patient';
-const ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+// LE TEXTE SOURCE A DÉMÉNAGÉ, PAS CE QU'IL DOIT DIRE. La chaîne de
+// génération vit désormais dans `lib/synthese/generation.ts` : Next.js
+// refuse tout export de valeur depuis un `route.ts`, et sans ce
+// déménagement aucun autre déclencheur ne pouvait la réutiliser. Ce banc
+// asserte exactement les mêmes phrases, sur le même code.
+const ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/generation.ts'), 'utf8');
 
 describe('enveloppe anti-injection du contexte patient', () => {
   it('le gabarit du message utilisateur enveloppe le contexte entre les balises', () => {
