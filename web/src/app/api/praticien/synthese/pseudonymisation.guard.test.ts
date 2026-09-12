@@ -13,7 +13,12 @@ import { describe, expect, it } from 'vitest';
 // listés un à un), et ses champs libres sont de la donnée clinique, pas un
 // en-tête d'identité.
 
-const SOURCE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+// LE TEXTE SOURCE A DÉMÉNAGÉ, PAS CE QU'IL DOIT DIRE. La chaîne de
+// génération vit désormais dans `lib/synthese/generation.ts` : Next.js
+// refuse tout export de valeur depuis un `route.ts`, et sans ce
+// déménagement aucun autre déclencheur ne pouvait la réutiliser. Ce banc
+// asserte exactement les mêmes phrases, sur le même code.
+const SOURCE = readFileSync(join(__dirname, '../../../../lib/synthese/generation.ts'), 'utf8');
 
 describe('Synthèse IA — pseudonymisation de l’appel Anthropic (structurel)', () => {
   it('buildUserMessage ne reçoit ni prénom ni nom', () => {
