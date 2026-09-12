@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import {
+  GROUPES,
+  GROUPES_SECONDAIRES,
   affichage,
   calculerActionRecommandee,
   type AgendaAliPortail,
@@ -379,4 +381,113 @@ describe('affichage — l’agenda ALIMENTAIRE', () => {
     'badge alimentaire : ne dit jamais « %s »',
     interdit => expect(badgesAli).not.toContain(interdit),
   );
+});
+
+// ── LE RECUEIL ALIMENTAIRE CLOS SORT DE « À COMPLÉTER » ──────────────────────
+//
+// Constaté en production le 2026-09-12 : un agenda dont la fenêtre de 21 jours
+// s'était refermée cinq semaines plus tôt tenait encore « VOTRE ÉTAPE DU
+// MOMENT », sous « Consulter « Agenda alimentaire — 21 jours » » — un libellé
+// que personne n'avait écrit, fabriqué par le `?? 'Consulter'` d'`affichage`.
+// Aucune route de clôture alimentaire n'existant, AUCUN geste du patient ne
+// pouvait l'en faire sortir.
+//
+// L'état d'un agenda clos est décrit par un helper local : `jourCourant: null`
+// avec au moins une journée notée, c'est-à-dire ce que la route sert pour un
+// recueil ancré puis dépassé.
+const agendaAliClos = (over: Partial<AgendaAliPortail> = {}) =>
+  agendaAli({ nbRenseignees: 1, jourCourant: null, ...over });
+
+describe('agenda alimentaire clos — il quitte « À compléter »', () => {
+  it('affichage : groupe « recueil_termine », jamais « a_completer »', () => {
+    const aff = affichage(assignAgendaAli(), false, undefined, agendaAliClos());
+    expect(aff.groupe).toBe('recueil_termine');
+    expect(aff.badge).toBe('Recueil terminé');
+  });
+
+  it('relire ses journées reste possible — « Consulter », en retrait', () => {
+    // Le geste offert doit rester POSSIBLE : le journal propose déjà la
+    // relecture. C'est le geste de CLÔTURE qui n'existe pas, et qu'on ne nomme
+    // donc nulle part.
+    const aff = affichage(assignAgendaAli(), false, undefined, agendaAliClos());
+    expect(aff.action).toBe('Consulter');
+    expect(aff.ghost).toBe(true);
+  });
+
+  it('seul reste à l’écran : plus jamais l’étape du moment', () => {
+    const r = etape([assignAgendaAli()], [], new Set(), [agendaAliClos()]);
+    expect(r).toMatchObject({ kind: 'stable' });
+  });
+
+  it('un vrai questionnaire à compléter reprend l’étape du moment', () => {
+    // L'ordre place l'agenda EN PREMIER : avant le correctif, le repli
+    // « premier à compléter » le choisissait lui, et non le questionnaire.
+    const r = etape([assignAgendaAli(), assign()], [], new Set(), [agendaAliClos()]);
+    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_Q' });
+  });
+
+  it('il ne compte plus parmi les « à compléter »', () => {
+    const enriched = enrichir([assignAgendaAli(), assign()], [], new Set(), [agendaAliClos()]);
+    expect(enriched.filter(e => e.aff.groupe === 'a_completer')).toHaveLength(1);
+  });
+
+  it('le groupe est déclaré, et affiché en section secondaire repliable', () => {
+    expect(GROUPES.map(g => g.cle)).toContain('recueil_termine');
+    expect(GROUPES_SECONDAIRES.has('recueil_termine')).toBe(true);
+  });
+
+  // ── CE QUI NE DOIT PAS BOUGER ──────────────────────────────────────────────
+
+  it('un recueil EN COURS reste « à compléter », même la journée du jour notée', () => {
+    // La fenêtre court encore : demain il y aura une journée à noter. Le sortir
+    // ici enterrerait un recueil vivant.
+    const aff = affichage(
+      assignAgendaAli(),
+      false,
+      undefined,
+      agendaAli({ journeeDuJourEnregistree: true }),
+    );
+    expect(aff.groupe).toBe('a_completer');
+    expect(aff.badge).toBe('Journée notée aujourd’hui');
+  });
+
+  it('un agenda jamais commencé reste « à compléter »', () => {
+    // `jourCourant: null` AUSSI, mais sans aucune journée notée : la fenêtre
+    // n'est pas close, elle n'est pas encore ancrée. Distinguer les deux est
+    // tout l'objet du garde — `jourCourant === null` ne suffit pas à conclure.
+    const aff = affichage(
+      assignAgendaAli(),
+      false,
+      undefined,
+      agendaAli({ nbRenseignees: 0, jourCourant: null }),
+    );
+    expect(aff.groupe).toBe('a_completer');
+    expect(aff.badge).toBe('À commencer');
+  });
+
+  it('l’état praticien prime toujours sur la clôture du recueil', () => {
+    // Un recueil clos que le praticien rouvre redevient une tâche.
+    const aff = affichage(
+      assignAgendaAli({ statutReponses: 'deverrouille' }),
+      false,
+      undefined,
+      agendaAliClos(),
+    );
+    expect(aff.groupe).toBe('a_completer');
+    expect(aff.badge).toBe('Déverrouillé par le praticien');
+  });
+
+  it('l’agenda du SOMMEIL n’est pas touché : sa fin de fenêtre porte un vrai geste', () => {
+    // Son `a_transmettre` a une route de clôture, donc un CTA : il reste une
+    // tâche, et prioritaire. Le correctif ne vaut que là où le geste manque.
+    const aff = affichage(
+      assignAgenda(),
+      false,
+      agenda({ nbRenseignees: 21, jourCourant: null }),
+    );
+    expect(aff.groupe).toBe('a_completer');
+    expect(aff.action).toBe('Terminer et transmettre à mon praticien');
+    const r = etape([assignAgenda()], [agenda({ nbRenseignees: 21, jourCourant: null })]);
+    expect(r).toMatchObject({ kind: 'action', idAssignation: 'ASS_AGD' });
+  });
 });
