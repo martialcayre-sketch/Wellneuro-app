@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — tous lots livrés, mise en service à demander"
+statut: "en cours — LOT-07, le fil du jour que la demande disait"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-06"
+lot_courant: "LOT-07"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-journal-lot06-doctrine"
+branche_lot_courant: "portail-fil-du-jour"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -31,6 +31,58 @@ alimentaire), **consigner la vie du portail patient** ».
 Un « fil du jour » patient qui **liste tout ce qui est dû** est, littéralement,
 le hub empilé qu'un audit a fait démonter. Le construire rouvrirait E11 sans
 qu'aucune décision ne l'ait voulu.
+
+## LE CADRAGE CI-DESSOUS A EU TORT — lisez ceci d'abord (2026-09-12, 14 h)
+
+Tout ce qui suit part d'un raisonnement qui a été soumis au responsable après
+coup, et qu'il a cassé en une phrase le jour même, en ouvrant son propre écran
+de patient :
+
+> « au lieu d'un récap rétrospectif je voulais surtout **un fil du jour de ce
+> qu'il y a à faire pour le patient** (reminder pour saisir journée agenda
+> sommeil et alimentaire), saisir les questionnaires en attente, répondre
+> justement à "ce qui compte pour moi" (**jamais le patient n'a d'invitation à
+> le saisir**), lecture de nouveau bilan, etc. **plus une todo list qu'un
+> calendrier rétrospectif**. beaucoup de code pour rien. je suis déçu. »
+
+**OÙ EXACTEMENT LE CADRAGE A DÉVIÉ.** La demande d'origine énumérait :
+« questionnaires à remplir, lectures synthèses, bilans, actions à faire comme
+déclarer ce qui compte pour moi, reminders agenda sommeil et agenda
+alimentaire ». C'est une LISTE DE TÂCHES, et elle est explicite. Le paragraphe
+« Le piège est nommé d'avance » ci-dessous a retourné cette liste en interdit —
+en invoquant l'écart **E11** et le principe **A6-R1** — puis a conclu que la
+demande, « lue à la lettre », portait en réalité sur l'autre moitié : la moitié
+rétrospective, « celle qui n'entre en concurrence avec rien ».
+
+Ce n'était pas une lecture à la lettre. C'était une lecture qui a remplacé la
+demande par ce qui était le plus facile à concilier avec une doctrine
+existante. Les quatre arbitrages soumis ensuite au responsable portaient tous
+sur le journal rétrospectif — **aucun ne rouvrait le renversement**, si bien
+que le cadrage qu'il a approuvé était déjà penché quand il l'a lu.
+
+**CE QUE ÇA A COÛTÉ.** Six lots livrés, un drapeau, une table, une route, 41
+contrats SQL, une décision de doctrine (`D-172`). Le drapeau a été allumé à
+13:24 UTC et retiré à 13:37:57 — treize minutes de service (§ B.4 de
+`docs/FEATURE_FLAGS.md`). Deux boutons posés au LOT-05 ont été retirés le jour
+même (#1052) : ils faisaient doublon avec « mon dossier à deux voix ».
+
+**CE QUI SURVIT, ET CE N'EST PAS RIEN.** Le **repère de fraîcheur** du LOT-02
+(table `portail_journal_reperes`) reste : c'est lui qui fera disparaître une
+lecture du fil du jour une fois faite. Le reste du journal rétrospectif est
+destiné au retrait.
+
+**LA RÉPONSE À E11 EST RENVERSÉE SUR CETTE PAGE, ET C'EST DÉLIBÉRÉ.** Le LOT-07
+remplace « votre étape du moment » par la liste. On ne peut pas à la fois ne
+montrer qu'une étape et dire au patient tout ce qui l'attend ; il fallait
+choisir, et c'est le responsable qui a choisi. Ce qui est gardé de E11 est la
+HIÉRARCHIE, pas le masquage : un seul bouton plein, les suivantes en liens.
+Détail et contreparties : `lots/LOT-07-le-fil-du-jour.md`.
+
+**LA LIGNE 4 DU « RÉSULTAT OBSERVABLE » CI-DESSOUS EST DONC CADUQUE.**
+« *Votre étape du moment reste une seule étape. Aucun lot n'y ajoute de
+liste.* » — c'est exactement ce que le LOT-07 fait.
+
+---
 
 ## Ce qui sauve la demande : deux objets, et un seul manque
 
@@ -132,8 +184,9 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-02** | Le **repère de fraîcheur** : la marque « vu jusqu'ici » du patient, sa migration, sa route | **oui** (arbitrage 3) |
 | **LOT-03** | L'écran « Ce qui s'est passé » sur l'accueil du portail — placé **après** l'étape du moment, déplié seulement s'il y a du neuf | non |
 | **LOT-04** | ~~Le rappel de l'agenda alimentaire~~ — **SANS OBJET, déjà livré** (constaté le 2026-09-12) | non |
-| **LOT-05** | Les deux portes manquantes : « ce qui compte » et « ce que j'ai compris » visibles depuis l'accueil | non |
+| **LOT-05** | ~~Les deux portes manquantes~~ — **RETIRÉ le jour même** (#1052) : doublon avec « mon dossier à deux voix », et une porte n'est pas une invitation | non |
 | **LOT-06** | Doctrine (`D-172`), journal de session, handoff — et la demande de mise en service | non |
+| **LOT-07** | **LE FIL DU JOUR** — la liste de ce qu'il y a à faire, à la place de « votre étape du moment ». Répare la dérive du cadrage, lisible en tête de ce fichier | non |
 
 ## Une ligne du cadrage était fausse — corrigée le 2026-09-12
 
