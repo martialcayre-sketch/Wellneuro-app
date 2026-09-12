@@ -53,6 +53,16 @@ export type CarteFil = {
   cle: string;
   /** Nombre de lignes sources portées par la carte (cartes agrégées) — 1 sinon. */
   nbElements?: number;
+
+  /**
+   * L'assignation que la carte désigne — `assignation_en_retard` SEULEMENT.
+   *
+   * IL EXISTE POUR UN GESTE, PAS POUR L'AFFICHAGE : le rappel patient se poste
+   * sur `api/praticien/assignations/relance`, qui veut cet identifiant. Le
+   * déduire de `cle` marcherait — elle le contient — mais ferait dépendre un
+   * appel d'écriture du FORMAT d'une clé de refus, dont ce n'est pas le rôle.
+   */
+  idAssignation?: string;
 };
 
 /**
@@ -605,6 +615,7 @@ export function cartesAssignationsEnRetard(
         href: `/dashboard/patients/${a.idPatient}`,
         actionLabel: 'Ouvrir la fiche',
         cle: cleCarte('assignation_en_retard', a.idAssignation),
+        idAssignation: a.idAssignation,
       };
     });
 }

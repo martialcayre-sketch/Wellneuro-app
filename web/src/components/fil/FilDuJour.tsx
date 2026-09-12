@@ -33,6 +33,68 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
 const GRILLE_TIMELINE =
   'grid grid-cols-[44px,26px,minmax(0,1fr)] items-start gap-x-3 sm:grid-cols-[56px,26px,minmax(0,1fr)]';
 
+/**
+ * RAPPELER AU PATIENT UN QUESTIONNAIRE EN RETARD — depuis la carte qui
+ * constate le retard, et nulle part ailleurs.
+ *
+ * POURQUOI ICI. La carte « Échéance dépassée » est le seul endroit du produit
+ * où le retard est établi ; la route refuse d'ailleurs tout rappel avant
+ * l'échéance. Offrir le geste sur une liste d'assignations ferait voir un
+ * bouton là où le serveur dira non.
+ *
+ * LE MESSAGE DU SERVEUR EST AFFICHÉ TEL QUEL, succès comme refus. Les refus de
+ * `deciderRelanceAssignation` sont écrits pour être lus par un praticien — « un
+ * rappel est déjà parti il y a moins de 3 jours », « l'échéance n'est pas encore
+ * passée ». Les remplacer par un message générique retirerait la seule chose
+ * qu'ils apportent : la raison.
+ *
+ * IL NE DISPARAÎT PAS APRÈS L'ENVOI, et la carte ne bouge pas : le rappel
+ * n'écrit rien dans le dossier, donc rien n'a changé de ce que la carte
+ * constate. Le questionnaire est toujours en retard — c'est le patient qui a
+ * la main, pas nous.
+ */
+function BoutonRelance({ idAssignation, titre }: { idAssignation: string; titre: string }) {
+  const [enCours, setEnCours] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const relancer = useCallback(async () => {
+    setEnCours(true);
+    setMessage(null);
+    try {
+      const reponse = await fetch('/api/praticien/assignations/relance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation }),
+      });
+      const charge = (await reponse.json()) as { ok?: boolean; error?: string };
+      setMessage(charge.ok ? 'Rappel envoyé.' : charge.error ?? 'Rappel impossible.');
+    } catch {
+      setMessage('Rappel impossible : le serveur n’a pas répondu.');
+    } finally {
+      setEnCours(false);
+    }
+  }, [idAssignation]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => void relancer()}
+        disabled={enCours}
+        aria-label={`Rappeler au patient le questionnaire en retard — ${titre}`}
+        className="inline-flex min-h-9 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+      >
+        {enCours ? 'Envoi…' : 'Rappeler'}
+      </button>
+      {/* `role="status"` et non `alert` : un refus de cadence n'est pas une
+          erreur, c'est une réponse. Le lecteur d'écran l'annonce sans
+          interrompre. */}
+      {message && (
+        <span role="status" className="text-13 text-muted-foreground">{message}</span>
+      )}
+    </>
+  );
+}
 function CarteDuFil({
   carte,
   imminente,
@@ -110,6 +172,9 @@ function CarteDuFil({
             >
               {carte.actionLabel} →
             </Link>
+            {carte.type === 'assignation_en_retard' && carte.idAssignation && (
+              <BoutonRelance idAssignation={carte.idAssignation} titre={carte.titre} />
+            )}
             <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full border border-border bg-muted px-3 py-0.5 text-13 text-muted-foreground">
               <span>Pourquoi maintenant :</span>
               <span>{carte.pourquoi}</span>
