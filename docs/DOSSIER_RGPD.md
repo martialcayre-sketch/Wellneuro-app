@@ -98,6 +98,53 @@ sonde non authentifiée sur `/api/praticien/biologie/resultats` — `401` et non
 > conditionne, est une condition qu'on manque. `FEATURE_FLAGS.md` la porte
 > désormais aussi.
 
+### 2 bis. La synthèse préparée SANS geste du praticien (2026-09-12)
+
+**Ce qui change, et ce qui ne change pas.** [[D-174]] fait préparer le brouillon
+de synthèse **à la fermeture d'un rideau de questionnaires**, sans qu'un
+praticien l'ait demandé. Le traitement lui-même est inchangé — mêmes données
+d'entrée (les réponses aux questionnaires, le contexte clinique du dossier),
+même sous-traitant (Anthropic), même sortie (`SyntheseIA`, déjà déclarée en
+catégorie particulière à la rubrique 5), même finalité (préparer la
+consultation). **C'est le DÉCLENCHEUR qui change, et lui seul** : un geste du
+praticien devient un événement du dossier.
+
+**Pourquoi cela se déclare quand même.** Une finalité se décrit aussi par la
+façon dont le traitement s'active. « Le praticien demande une synthèse » et
+« l'outil en prépare une quand la matière est complète » ne décrivent pas la
+même maîtrise, même quand ils produisent le même objet à partir des mêmes
+données. Le registre doit porter la seconde formulation.
+
+**Ce qui n'est PAS une décision automatisée (art. 22).** Ce qui est produit est
+un `Brouillon_IA`. Deux gestes du praticien restent nécessaires pour qu'un texte
+atteigne le patient — la **validation** de la synthèse, puis son **envoi** — et
+aucun des deux n'est automatisé. Rien ne parvient au patient sans qu'un humain
+l'ait relu et décidé de le transmettre.
+
+**Volume borné par construction** : deux générations par dossier au maximum
+(marqueur `donneesEntree.source`), et un brouillon rejeté ne se régénère pas.
+
+**LA CONDITION EST TENUE CETTE FOIS, ET DANS LE BON ORDRE.** `WN_SYNTHESE_PAR_RIDEAU`
+est **absent en production** au moment où ces lignes sont écrites, et il le
+reste jusqu'à la validation du responsable. C'est exactement l'inverse de
+l'épisode du 2026-09-09 rapporté ci-dessus, où le drapeau avait été posé avant
+la mise à jour. `FEATURE_FLAGS.md` porte la condition sur la ligne du drapeau,
+et non seulement ici.
+
+**Le document d'information patient n'a PAS besoin d'une version nouvelle — et
+il faut dire pourquoi.** `DONNEES_CONFIDENTIALITE_V7` écrit deux choses qui
+restent vraies au mot près : « Le premier usage est la préparation du brouillon
+de la synthèse de votre bilan, à partir de vos réponses aux questionnaires » —
+inchangé — et « l'outil peut aider à organiser ou reformuler des informations,
+mais **il ne publie jamais seul** une décision ou une recommandation qui vous
+est destinée » — la promesse même que le brouillon automatique ne touche pas.
+Aucun prestataire ne s'ajoute, aucune donnée nouvelle n'est recueillie, aucune
+sortie nouvelle n'atteint le patient. Publier une v8 pour annoncer un changement
+de déclencheur interne au cabinet apprendrait au patient à survoler des versions
+qui ne le concernent pas. **Ce paragraphe est le point de désaccord possible :
+si le responsable juge que le patient doit savoir que la préparation démarre
+seule, une v8 se rédige — la décision lui appartient.**
+
 ## 3. Base légale
 
 **TROU intégral.** Aucune base légale n'est qualifiée dans le dépôt, et ce
