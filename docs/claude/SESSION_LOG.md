@@ -5343,6 +5343,48 @@ sur le code revenu à l'état ambigu. Rejoué avec des copies de sauvegarde et u
 
 Prochaine action — rien d'ouvert.
 
+## 2026-09-12 — Le Fil praticien apprend à lire une carte, au lieu de la refuser
+
+Demande — « dans le fil du jour praticien deux entrées restent pour le dossier
+PAT006, cliquer ne valide rien et n'amène pas sur un choix nouveau ? », puis
+« l'action doit disparaître du fil du jour une fois la fiche lue (une fois le
+lien atterri) ». Les deux moitiés étaient vraies et n'avaient pas la même cause :
+le seul geste qui retirait une carte était « Écarter », un REFUS ; et le lien
+menait à la fiche nue, où la parole se cherchait parmi sept phases.
+
+Livré en cinq lots, cinq PR — `fil_card_lectures` (migration seule, `D-087`,
+constatée par conteneur), la dérivation, la route, le lien profond et
+l'atterrissage, l'écran et « Remettre ». Doctrine `D-171`.
+
+Quatre arbitrages du responsable : périmètre « geste objectif » seul ; table de
+lecture dédiée ; la lecture couvre tous les gestes antérieurs du dossier ; trace
+annulable comme un refus.
+
+Décidé sans demander, et dit — la trace est bornée par le JOUR CIVIL DE PARIS
+(le cadre que le Fil se donne déjà, pas un seuil neuf) ; l'URL se nettoie de son
+marqueur après l'envoi ; un échec réseau ne dit rien à l'écran, la carte reste au
+Fil. Et une garde retirée du constructeur de lien : elle ne pouvait jamais rendre
+un verdict différent de la table des destinations — un banc tient l'invariant à
+sa place.
+
+Prouvé — **quarante-sept mutations jouées sur les quatre lots de code,
+quarante-sept mutants tués** ; sept promesses par contrat SQL négatif. Trois
+trous trouvés par un mutant survivant, dont la portée de la requête de lectures
+(elle lisait la trace d'audit d'un autre cabinet, effet visible nul).
+
+Manqué — un octet NUL écrit dans un gabarit de clé, invisible en diff, quatre
+bancs rouges avec « expected undefined » ; trouvé en forçant la clé dans un
+message d'assertion. Deux bancs vides livrés puis corrigés : un `rerender` à
+props égales ne rejoue pas un effet (il fallait `StrictMode`), et une mutation
+formulée de façon neutre ne prouve rien (rejouée).
+
+Campagne « vie du portail patient » — les quatre arbitrages dus sont tranchés
+(#1037). L'un coûte une migration que le cadrage disait inutile : « déplié s'il y
+a du neuf » exige un repère serveur, sinon le neuf se calculerait en
+`localStorage` — le défaut même que la campagne corrige.
+
+Prochaine action — LOT-01 de la campagne portail (la dérivation du journal). Rien
+d'autre d'ouvert sur le Fil.
 ## 2026-09-12 — Deux branches tranchées, et l'appareil Alliance qui sert enfin
 
 Décidé — les deux dernières branches distantes supprimées (#1020), rien à
