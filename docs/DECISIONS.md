@@ -4,6 +4,79 @@
 
 ## Décisions actives
 
+### D-175 — Le fil du jour ne liste que des gestes POSABLES MAINTENANT, et chacun DISPARAÎT quand il est posé ; la condition de disparition ne s'invente pas, elle existe déjà
+
+- Date : 2026-09-12
+- Statut : accepté — arbitrages du responsable rendus en session le 2026-09-12,
+  devant l'écran livré : « le fil du jour REMPLACE votre étape du moment »,
+  « les lectures entrent dans la liste et en sortent une fois lues »,
+  « on garde le repère, on retire le reste » — ce dernier point rouvert le jour
+  même et tranché autrement (voir le point 6).
+- Domaine : doctrine produit — portail patient
+- **Renverse [[D-172]]**, qui avait lu la même demande à l'envers. L'amendement
+  en tête de D-172 dit où et comment ; il n'est pas répété ici.
+
+**Demande du responsable, à la lettre.** « Un fil du jour de ce qu'il y a à
+faire » — rappels d'agenda sommeil et alimentaire, questionnaires en attente,
+invitation à déclarer « ce qui compte pour moi », lectures des bilans neufs.
+L'énumération EST la demande.
+
+**Décision, en six points.**
+
+1. **UNE RÈGLE UNIQUE, ET ELLE EST ÉCRITE EN TÊTE DU MODULE.** Une tâche est un
+   geste que le patient peut poser MAINTENANT, et elle DISPARAÎT quand il l'a
+   posé. Tout le reste — l'ordre, les libellés, les états de repos — en découle.
+   Une liste dont les entrées ne partent jamais n'est pas un fil du jour : c'est
+   un reproche permanent.
+2. **AUCUNE CONDITION DE DISPARITION N'EST INVENTÉE.** Chaque espèce en avait
+   déjà une, éprouvée ailleurs : un `cta` à `null` rendu par `rappelPortail` est
+   le mot que le domaine emploie DÉJÀ pour « rien à faire aujourd'hui » ; une
+   assignation quitte le groupe `a_completer` ; la fenêtre de dépôt de « ce qui
+   compte » se ferme par [[D-166]]. Redériver ces états une seconde fois les
+   aurait fait diverger sans bruit.
+3. **IL N'Y A QU'UNE SEULE DÉRIVATION DE « CE QUE LE PATIENT A À FAIRE ».**
+   `calculerActionRecommandee` est RETIRÉE avec ses bancs. Elle fabriquait déjà
+   une tâche fausse — « Consulter “Agenda alimentaire — 21 jours” » sur un
+   recueil déjà rempli — et un E2E l'avait encodée comme attendue. Deux réponses
+   à la même question, dans deux fichiers, se contredisent en silence.
+4. **LE FIL PREND LA PLACE DE « VOTRE ÉTAPE DU MOMENT », IL NE S'Y AJOUTE PAS.**
+   Un geste mis en avant, le reste replié sous « Ensuite ». C'est ce qui le
+   distingue du hub empilé que l'écart `E11` proscrit — et c'est l'arbitrage du
+   responsable, pas une atténuation de ma part.
+5. **UNE LECTURE S'ACCUSE PAR VERSION, ET LE SERVEUR VÉRIFIE L'IDENTIFIANT QU'ON
+   LUI TEND.** `portail_lectures_patient` porte trois colonnes — dossier, espèce,
+   identifiant — et **aucune date** : « quand le patient a lu » devient
+   structurellement insaisissable. L'écran envoie l'identifiant, le serveur
+   refuse tout ce qui n'est pas exactement ce qu'il sert à cet instant
+   ([[D-164]]) : une publication survenue entre l'affichage et l'accusé échoue en
+   404, et la tâche reste au fil — l'erreur tombe du côté sûr.
+6. **CETTE TABLE NE REND PAS LE DÉCOMPTE IMPOSSIBLE, ET IL FAUT LE DIRE.**
+   Contrairement à `portail_journal_reperes` — dont la clé primaire à une ligne
+   par dossier l'interdisait par construction, et qui a été supprimée le jour
+   même, ne pouvant pas distinguer QUEL document avait été ouvert — plusieurs
+   lignes coexistent ici par dossier. Un compte est donc POSSIBLE. Il est borné
+   par l'absence de date, par le plafond structurel de deux lectures servies à la
+   fois, et par une garde de dépôt qui interdit toute lecture de cette table
+   depuis le praticien. **Cette garde est un test, pas une contrainte de base.**
+
+**Écarté — « aucun identifiant ne traverse le réseau ».** Le serveur aurait alors
+accusé « la lecture courante » sans savoir laquelle l'écran montrait. L'écho
+vérifié coûte un aller-retour et ferme la course dans le bon sens.
+
+**Écarté — une colonne de version.** Vérifié plutôt que supposé : une synthèse de
+compréhension ne s'écrit qu'en `create`, jamais en `update`. L'identifiant EST
+l'identité de la version. Une garde de dépôt le tient désormais, et `bookletEnvoi`
+en a reçu une qui lui manquait.
+
+**CE QUE LA MÉTHODE N'A PAS PU ATTRAPER.** L'ordre des tâches a été livré faux —
+un agenda jamais commencé placé devant un pack assigné, contre une doctrine déjà
+écrite dans `rappelPortail.ts` — et le banc censé le protéger AFFIRMAIT la
+violation sous un titre qui la niait. **Aucune mutation ne pouvait le voir : la
+mutation éprouve le code contre les bancs, jamais les bancs contre eux-mêmes.**
+C'est un E2E de parcours qui l'a trouvé. Un banc dont le titre et l'assertion se
+contredisent est un trou, et il ne se signale d'aucune autre façon que par la
+lecture.
+
 ### D-174 — La synthèse se demande à la fermeture d'un RIDEAU, deux fois par dossier, et ne franchit que la première des trois portes
 
 - Date : 2026-09-12
@@ -162,10 +235,56 @@ au lieu d'éteindre la production.
 
 ### D-172 — La vie du portail patient se DÉRIVE et se consigne au serveur ; « consigner » n'est pas « assigner », et le journal ne lève aucun drapeau
 
+> **AMENDEMENT DU 2026-09-12, 17 h — CE QUE CETTE DÉCISION A CONSTRUIT N'EXISTE
+> PLUS, ET L'ARGUMENT QUI L'A CONSTRUIT ÉTAIT FAUX.** Cet amendement est placé
+> en tête parce qu'un lecteur qui s'arrêterait au titre repartirait avec
+> l'inverse de ce que le responsable voulait.
+>
+> **L'erreur de cadrage, nommée.** La décision lit la demande « un fil du jour
+> (questionnaires à remplir, lectures synthèses, bilans, actions à faire,
+> rappels d'agenda) » comme un piège, et conclut que « **consigner** n'est pas
+> **assigner** » : la moitié « à faire » ne devait pas grossir, seule la moitié
+> « ce qui s'est passé » était demandée. **C'est l'inverse.** Le responsable
+> avait ÉNUMÉRÉ les tâches ; l'énumération était la demande, pas le piège. Son
+> verdict, rendu le jour même devant l'écran livré : la déception. Il attendait
+> « **un fil du jour de ce qu'il y a à faire** ».
+>
+> **Comment un écart d'audit a servi d'interdiction.** `A6-R1` / l'écart `E11`
+> proscrivent un HUB EMPILÉ — une page d'atterrissage faite d'une dizaine de
+> blocs autonomes et concurrents. Une LISTE ORDONNÉE d'un seul geste mis en
+> avant, le reste replié dessous, n'est pas cela. J'ai étendu la portée d'un
+> écart jusqu'à en faire le refus de ce qui m'était demandé, puis j'ai soumis
+> quatre arbitrages — dont AUCUN ne rouvrait ce renversement. Le cadrage qu'il
+> a approuvé était déjà penché.
+>
+> **Ce qui est retiré (2026-09-12, PR #1063 et #1066).** Le journal rétrospectif,
+> sa route, son écran, son drapeau `WN_PORTAIL_JOURNAL`, et la table
+> `portail_journal_reperes` (`DROP` confirmé en propre par le responsable ;
+> migration `20260912190000_portail_journal_repere_drop`). Les points **1**,
+> **2**, **3**, **4**, **5** et **6** ci-dessous décrivent donc du code qui n'est
+> plus là. Ils sont conservés, non corrigés en place : une décision se lit avec
+> ce qu'elle a cru, sinon elle n'apprend rien à personne.
+>
+> **Ce qui survit, et c'est la part qui valait.** Le point **7** — une surface
+> fermée par son propre drapeau ne produit AUCUNE ligne, même le drapeau porteur
+> allumé — a été repris tel quel par `lecturesAttendues.ts`, où `null` (surface
+> close) ne se confond pas avec `[]` (surface ouverte et vide). Et la leçon du
+> point **6** — `id_patient` en clé primaire rendait un décompte d'assiduité
+> **impossible**, pas seulement interdit — est recopiée dans l'en-tête de la
+> migration de suppression, dernier endroit où quelqu'un la lira.
+>
+> **Ce qui remplace.** Le fil du jour, [[D-175]] : une liste de gestes que le
+> patient peut poser MAINTENANT, dont chacun DISPARAÎT quand il l'a posé. Il
+> prend la place de « votre étape du moment » au lieu de s'y ajouter — c'est
+> l'arbitrage du responsable, et c'est ce qui fait qu'il ne reconstitue pas le
+> hub que `E11` proscrit.
+
 - Date : 2026-09-12
-- Statut : accepté (arbitrages du responsable, rendus en session le 2026-09-12 :
-  « Seulement ce qui lui est remis », « Tout le dossier », « Déplié seulement
-  s'il y a du neuf », « L'entrée est elle-même la première ligne »)
+- Statut : accepté le 2026-09-12 (arbitrages du responsable, rendus en session
+  le 2026-09-12 : « Seulement ce qui lui est remis », « Tout le dossier »,
+  « Déplié seulement s'il y a du neuf », « L'entrée est elle-même la première
+  ligne »), puis **RENVERSÉ le jour même par [[D-175]]** — voir l'amendement
+  ci-dessus. Le code qu'elle décrit est retiré ; le point 7 seul a survécu.
 - Domaine : doctrine produit — portail patient
 - Voisine de [[D-171]], et à ne pas confondre avec elle : là-bas un praticien
   ACQUITTE une carte de son Fil ; ici un patient est INFORMÉ de la vie de son

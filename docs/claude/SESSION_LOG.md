@@ -5557,3 +5557,39 @@ pack de base — `Q_SOM_09` ferait attendre 21 nuits.
 
 Prochaine action — trois drapeaux à allumer ou non, et le vrai goulot : 44
 synthèses validées, 24 envoyées.
+
+## 2026-09-12 (soir) — Le repère supprimé et constaté ; D-172 amendée, D-175 posée
+
+**Fusionné** : #1061 (lectures au fil), #1063 (retrait du journal), #1066 (`DROP
+TABLE "portail_journal_reperes"`). L'ordre était contraint : le code quitte la
+production AVANT la migration destructive, sinon l'application casse entre deux
+déploiements. `release-db` vert sur #1066.
+
+**Constaté au conteneur** (one-off-729), pas à la couleur du workflow : la table
+rend 0 dans `information_schema` ET dans `pg_class` ; migration finie à 17:39:52
+UTC, `rolled_back_at = NULL`. `portail_lectures_patient` existe et est **vide** —
+en service depuis 16:00:51 UTC, aucun patient n'a encore ouvert un bilan ni une
+synthèse ; le chemin d'écriture n'a jamais été emprunté en production.
+
+**Écrit** (branche `doctrine-fil-du-jour`, documentation seule, T1 vert) :
+`D-172` amendée en tête — avant ses métadonnées, parce que son titre contient
+l'erreur — et `D-175` qui pose la règle unique du fil du jour.
+
+**Deux erreurs consignées.** (1) Mes `POST` d'approbation `release-db` revenant
+en 422 pendant le minuteur, j'ai conclu — et écrit dans cinq documents — que
+l'environnement n'avait aucune porte de relecture et que le run était parti seul.
+Faux : les règles de protection portent `required_reviewers`, et le journal des
+approbations montre `martialcayre-sketch`, `state: approved`. Le responsable a
+approuvé lui-même ; le point d'arrêt annoncé existait et il l'a utilisé. Le 422
+du minuteur était déjà en mémoire depuis le 2026-09-11 — relu de travers. Une
+configuration se lit, elle ne se déduit pas d'un échec. (2) La
+notification de tâche de fond a annoncé « exit code 0 » sur un `T1-EXIT=1` —
+elle rapporte le code du `echo` final. Lire le fichier, jamais le résumé.
+
+**Écarté** : corriger `D-172` en place. Une décision se lit avec ce qu'elle a
+cru, sinon elle n'apprend rien.
+
+**Prochaine action** : ouvrir la PR doctrine, confirmer le numéro `D-175` au
+merge. Restent ouverts : la clôture de l'agenda alimentaire (`a_transmettre`
+sans CTA), le second `T0`, la lettre DPA, les trois trous du § 7 RGPD, et une
+variable `WN_PORTAIL_JOURNAL` possiblement orpheline côté Scalingo.

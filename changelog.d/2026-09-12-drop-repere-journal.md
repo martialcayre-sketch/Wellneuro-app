@@ -28,3 +28,18 @@ la même question, et le dit franchement dans sa propre migration. Deux réponse
 opposées, toutes deux motivées : c'est ce qu'il faut pouvoir relire.
 
 Les contrats SQL de CI passent de 42 à 41.
+
+**Constaté par conteneur, pas par la couleur du workflow** (one-off-729,
+2026-09-12) : `portail_journal_reperes` rend **0** dans `information_schema` ET
+dans `pg_class` — les deux catalogues, parce qu'une seule vue ne prouverait
+qu'une moitié. Migration `20260912190000_portail_journal_repere_drop` finie à
+`17:39:52 UTC`, `rolled_back_at = NULL`.
+
+**Le point d'arrêt annoncé existait, et le responsable l'a utilisé.**
+L'environnement `release-db` porte `required_reviewers` en plus de son minuteur
+de cinq minutes ; le journal des approbations garde la trace de
+`martialcayre-sketch`, `state: approved`. Ce fragment a d'abord affirmé le
+contraire, parce qu'un `POST` d'approbation revenu en **422 pendant le minuteur**
+avait été lu comme « rien à approuver ». Un code d'erreur n'est pas un constat de
+configuration — les règles de protection et le journal des approbations, eux, se
+lisent.

@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-11, suppression du repère orphelin"
+statut: "en cours — LOT-12, amendement de la doctrine"
 créée_le: "2026-09-12"
 mise_à_jour: "2026-09-12"
-lot_courant: "LOT-11"
+lot_courant: "LOT-12"
 branche_campagne: "aucune"
-branche_lot_courant: "portail-drop-repere"
+branche_lot_courant: "doctrine-fil-du-jour"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -191,6 +191,7 @@ et son existence a été décidée le 2026-09-12, pas supposée ici.
 | **LOT-09** | **LES LECTURES AU FIL** — un bilan neuf, une synthèse neuve deviennent des tâches, et sortent à l'ouverture de leur écran | non |
 | **LOT-10** | **RETRAIT DU JOURNAL** — dérivation, écran, route, drapeau, et le repli « Depuis votre dernière visite » qui lui servait de filet | non |
 | **LOT-11** | **SUPPRESSION DU REPÈRE** — `portail_journal_reperes` est orpheline et part, avec son contrat et sa déclaration au registre | **oui** — SQL destructif, confirmé en propre |
+| **LOT-12** | **AMENDEMENT DE LA DOCTRINE** — `D-172` porte en tête l'erreur de cadrage qu'elle a commise ; `D-175` pose la règle du fil. Documentation seule | non |
 
 ## Une ligne du cadrage était fausse — corrigée le 2026-09-12
 
