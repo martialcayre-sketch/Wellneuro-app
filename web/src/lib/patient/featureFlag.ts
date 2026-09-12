@@ -154,29 +154,21 @@ export function dossierDansPerimetreProposition(
   return liste.includes(idPatient);
 }
 
-/**
- * Drapeau du JOURNAL DU PORTAIL PATIENT — « ce qui s'est passé dans votre
- * dossier » (campagne « la vie du portail patient », LOT-01).
+/*
+ * LE SIXIÈME DRAPEAU A EXISTÉ, ET IL A ÉTÉ RETIRÉ — d'où le trou dans la
+ * numérotation ci-dessous, qui saute de CINQUIÈME à SEPTIÈME.
  *
- * SIXIÈME DRAPEAU NEUF ET ÉTEINT, et il ne se compose d'aucun des cinq
- * précédents. Ce qu'il ouvre n'est ni une surface d'écriture ni une machine :
- * c'est une RESTITUTION TRANSVERSE. Le journal traverse des surfaces qui ont
- * chacune leur propre interrupteur — se greffer sur l'une d'elles ferait
- * qu'ouvrir « ce qui compte » publierait du même geste l'histoire entière du
- * dossier, y compris les gestes du praticien.
+ * `WN_PORTAIL_JOURNAL` gardait « ce qui s'est passé dans votre dossier ». Posé
+ * en production le 2026-09-12 à 13:24 UTC, retiré à 13:37:57 — treize minutes —
+ * parce que le responsable, voyant l'écran, a jugé qu'un récapitulatif
+ * rétrospectif ajoutait du bruit là où il attendait une liste de ce qu'il y a à
+ * faire. Le fil du jour a pris sa place (`lib/portail/filDuJour.ts`).
  *
- * Fail-closed : seule la chaîne EXACTE « true » ouvre. Même doctrine que
- * `WN_CE_QUI_COMPTE`, `WN_COMPREHENSION`, `WN_DOSSIER_DEUX_VOIX`,
- * `WN_OBJECTIF_PROPOSE`, `WN_C4_ENABLED` et `WN_CB_ENABLED`.
- *
- * IL NE LÈVE AUCUN DES AUTRES, ET C'EST L'INVARIANT. Une surface fermée par
- * son propre drapeau ne produit AUCUNE ligne de journal, même celui-ci allumé :
- * le journal ne peut pas devenir la porte dérobée par laquelle une synthèse de
- * compréhension atteint un patient dont la surface est close.
+ * Les ordinaux ne sont PAS renumérotés : ils disent la position à laquelle
+ * chaque drapeau a été posé, pas un compte de ce qui reste. Les décaler ferait
+ * dire à ce fichier que le rappel patient fut le sixième, ce qui est faux.
+ * § B.4 de `docs/FEATURE_FLAGS.md` garde l'histoire complète.
  */
-export function isJournalPortailEnabled(value = process.env.WN_PORTAIL_JOURNAL): boolean {
-  return value === 'true';
-}
 
 /**
  * Drapeau du RAPPEL PATIENT d'un questionnaire resté sans réponse.
