@@ -4,6 +4,107 @@
 
 ## Décisions actives
 
+### D-171 — Une carte du Fil s'acquitte en la LISANT, et la lecture se prouve par l'atterrissage — jamais par l'ouverture d'un dossier
+
+- Date : 2026-09-12
+- Statut : accepté (arbitrages du responsable, rendus en session le 2026-09-12 :
+  « Seulement *geste objectif* », « Nouvelle table de lecture (migration) »,
+  « La lecture couvre tous les gestes antérieurs de ce patient »,
+  « Une trace annulable, comme un refus »)
+- Domaine : doctrine produit — Fil du jour praticien (SP-FIL)
+- Voisine de [[D-170]], et distincte d'elle : `D-170` rend sa porte au PATIENT
+  après qu'il s'est prononcé ; celle-ci rend au PRATICIEN le moyen d'en prendre
+  acte sans refuser.
+
+**Constat, et il est mesuré.** Le Fil du jour fait **une carte par geste** du
+patient sur son objectif, ancrée sur sa ligne source. PAT006 en portait deux,
+identiques — deux ratifications à dix secondes d'écart, le défaut que `D-170`
+a corrigé le jour même. Le responsable les a signalées ainsi : « deux entrées
+restent pour le dossier PAT006, cliquer ne valide rien et n'amène pas sur un
+choix nouveau ».
+
+Les deux moitiés de la phrase sont vraies, et n'ont pas la même cause.
+
+1. **« Cliquer ne valide rien. »** Le seul geste qui retirait une carte était
+   « Écarter » — un **refus explicite**. Le praticien qui avait ouvert la fiche,
+   lu la réponse et repris l'objectif retrouvait les mêmes cartes le lendemain,
+   et devait refuser une à une des paroles qu'il venait de lire.
+2. **« N'amène pas sur un choix nouveau. »** Le lien menait à
+   `/dashboard/patients/<id>` — la fiche nue. La parole du patient se lit dans
+   la phase Compréhension du rail ; il fallait l'y chercher soi-même, parmi sept.
+
+**Décision, en sept points.**
+
+1. **UNE LECTURE ACQUITTE, ET CE N'EST PAS UN REFUS.** Elle s'écrit dans sa
+   propre table, `fil_card_lectures`, avec son propre vocabulaire. Le Fil
+   distingue déjà, et exprès, « écartée sans avoir été vue » de « traitée »
+   (`lib/fil/inbox.ts`) : écrire une lecture parmi les refus ferait afficher
+   « Carte écartée — … » pour une carte qu'on a traitée. Le dossier dirait que
+   le praticien a refusé ce qu'il venait de lire. **Un écran qui ment sur ce que
+   son lecteur a fait est pire qu'un écran qui ne dit rien.**
+2. **ELLE EST ANCRÉE SUR (DOSSIER, TYPE), JAMAIS SUR LA CARTE.** Une lecture
+   n'est pas l'acquittement d'une ligne : c'est le constat qu'on a ouvert la
+   phase où ces gestes se lisent, et on les y voit **tous**. Ancrer sur la clé
+   aurait laissé à PAT006 une carte orpheline après la lecture, à écarter à la
+   main — c'est-à-dire à refuser.
+3. **ELLE N'EST PAS IDEMPOTENTE, ET C'EST LE POINT DÉLICAT.** Le refus est un
+   **état** : re-refuser n'ajoute rien. Une lecture est un **instant**, et c'est
+   l'instant qui fait le travail — il déplace la coupure. Un praticien qui relit
+   un dossier à 11 h, après un geste posé à 10 h, écrit une lecture NEUVE : sans
+   quoi la carte de 10 h resterait à l'écran pour toujours, « déjà lu » étant
+   vrai de la lecture de 9 h et faux du dossier tel qu'il est. **L'annulation,
+   elle, EST un état** : « Remettre » sur un dossier qu'aucune lecture ne couvre
+   ne remet rien.
+4. **LA LISTE DES TYPES ACQUITTABLES PAR LECTURE EST FERMÉE ET ÉTROITE :
+   `geste_objectif`, et lui seul.** Une carte qui appelle un GESTE ailleurs — un
+   signalement Trust, une biologie arbitrée, une assignation en retard — ne se
+   règle pas en la lisant ; la faire partir à l'atterrissage effacerait du Fil un
+   suivi que personne n'a fait. Élargir cette liste est un arbitrage, pas une
+   retouche.
+5. **OUVRIR LA FICHE AUTREMENT NE CONSIGNE RIEN.** La carte porte un **marqueur
+   de provenance** (`?fil=<type>`) ; sans lui, aucune lecture ne s'écrit.
+   Consulter un dossier depuis la liste des patients, pour tout autre motif,
+   viderait sinon son Fil des paroles que personne n'a lues. Le marqueur est
+   relu **au serveur** — par la page, puis par la route : une URL est une entrée
+   utilisateur ([[D-164]]). Et il quitte la barre d'adresse une fois la lecture
+   partie, pour qu'un rechargement n'écrive pas une lecture qui n'a pas eu lieu.
+6. **LA TRACE NE SURVIT PAS AU JOUR DE SA LECTURE — et ce n'est pas un seuil
+   neuf.** C'est le **jour civil de Paris**, le cadre que le Fil se donne déjà
+   pour les consultations et que son nom annonce (`DC-19`/`DC-20` : aucun seuil
+   ne s'invente). Sans cette borne, une trace qui ne s'efface jamais cesserait
+   d'être une trace et redeviendrait une liste.
+7. **UNE TRACE PAR (DOSSIER, TYPE), ET AUCUN DÉCOMPTE.** « 2 cartes lues »
+   referait de paroles distinctes un volume — ce que le Fil refuse déjà pour
+   les cartes elles-mêmes (`DC-19`). Deux boutons « Remettre » côte à côte,
+   agissant sur le même état, mentiraient en outre sur ce que le geste fait.
+
+**Ce que cela coûte, et il faut le savoir.** La réparation d'un lien ouvert par
+mégarde a la durée du jour. Le lendemain, la carte est partie sans trace, comme
+une carte écartée : c'est le régime de sa sœur, pas une exception.
+
+**Écarté — la trace à la place de la carte, dans la timeline.** Une carte
+écartée garde sa place parce que le geste vient de se produire sous les yeux du
+praticien. Une lecture s'est produite **ailleurs**, sur la fiche : il n'y a
+aucune continuité visuelle à préserver, et remonter les traces pousserait vers
+le bas les cartes qui appellent encore un geste. Les traces sont rendues en bas.
+
+**Écarté — la réversibilité de session, comme pour le refus.** « Annuler » sur
+un refus n'existe que dans la session du clic, parce que le clic et le repentir
+s'y suivent. Une lecture, elle, se produit sur un autre écran : sa trace devait
+survivre au chargement, donc être bornée par autre chose qu'une session.
+
+**Écarté — une colonne `carte_cle` « au cas où ».** Elle aurait contredit le
+point 2 en silence, et un contrat SQL négatif refuse désormais toute colonne
+hors de la liste blanche.
+
+**Mise en œuvre.** Migration `20260912100000_fil_lecture_carte_geste_objectif_v1`
+partie **seule** ([[D-087]]), release-db approuvée et constatée par conteneur ;
+puis la dérivation (#1032), la route (#1034), le lien profond et l'atterrissage
+(#1036), l'écran et « Remettre » (#1038). Sept promesses tenues par contrat SQL
+négatif ; **quarante-sept mutations jouées sur les quatre lots de code, quarante-sept
+mutants tués** — onze par lot pour la dérivation et la route, treize pour
+l'atterrissage, douze pour l'écran.
+
 ### D-170 — Le bloc de réponse se ferme sur « c'est bien ça », et un quatrième verbe rend sa porte au patient
 
 - Date : 2026-09-11
