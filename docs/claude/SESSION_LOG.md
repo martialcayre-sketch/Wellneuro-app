@@ -5420,3 +5420,20 @@ résultat, `D-087` interdit le moyen. Ce refus a fait apparaître l'angle mort,
 donc le troisième lot.
 
 Prochaine action — déployer `main` : deux des trois lots ne sont pas servis.
+
+## 2026-09-12 — Addendum : `main` déployée, migrations vérifiées
+
+L'entrée précédente annonçait « déployer `main` » comme prochaine action : fait,
+sur demande. Ref servi `69ee6359` — la tête au moment du build, une autre
+session ayant mergé entre-temps. Les quatre commits de la session sont servis,
+constatés par contenance.
+
+Les 80 migrations du dépôt sont appliquées, aucune en échec, les deux listes
+coïncident nom par nom.
+
+Corrigé — j'avais annoncé la migration de #1045 non appliquée et en attente de
+release-db. Elle l'était déjà, par un run approuvé ; mon déploiement n'a rien
+écrit en base, `WN_MIGRATIONS_PAR_RELEASE_DB=1` étant posé.
+
+Prochaine action — aucune de nature technique. Reste un geste praticien :
+débloquer PAT017 depuis sa fiche.
