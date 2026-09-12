@@ -19,7 +19,13 @@ import {
 } from '@/lib/agenda-alimentaire/rappelPortail';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 
-export type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
+/**
+ * `recueil_termine` — un recueil quotidien dont la fenêtre est CLOSE et dont
+ * il ne reste RIEN à faire. N'est ni `transmis` (aucune passation n'est partie
+ * chez le praticien), ni `expire` (ce groupe-là dit une date limite dépassée,
+ * `estEnAttenteSaisie === false`). Il lui fallait son propre nom.
+ */
+export type Groupe = 'a_completer' | 'correction' | 'recueil_termine' | 'transmis' | 'expire';
 
 export type Affichage = {
   groupe: Groupe;
@@ -36,13 +42,14 @@ export type AgendaAliPortail = EtatAgendaAliPortail & { idAssignation: string };
 export const GROUPES: { cle: Groupe; titre: string }[] = [
   { cle: 'a_completer', titre: 'À compléter' },
   { cle: 'correction', titre: 'Correction demandée' },
+  { cle: 'recueil_termine', titre: 'Recueil terminé' },
   { cle: 'transmis', titre: 'Transmis au praticien' },
   { cle: 'expire', titre: 'Expiré' },
 ];
 
 // Groupes affichés en sections secondaires (repliables) : « à compléter »
 // reste toujours visible en premier plan, le reste est du détail consultable.
-export const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'transmis', 'expire']);
+export const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'recueil_termine', 'transmis', 'expire']);
 
 /** Badge de liste d'un agenda du sommeil : ce qui reste à faire AUJOURD'HUI,
  * jamais ce qui a été manqué. */
@@ -121,6 +128,34 @@ export function affichage(
   // sommeil : un recueil quotidien n'est ni « à compléter » ni un brouillon.
   if (a.idQuestionnaire === AGENDA_ALI_ID && agendaAli) {
     const rappel = deriverRappelAgendaAli(agendaAli);
+    // ── LE RECUEIL CLOS QUITTE « À COMPLÉTER » ──────────────────────────────
+    //
+    // Fenêtre de 21 jours atteinte et AUCUNE route de clôture patient : ce
+    // recueil ne peut plus rien recevoir, et aucun geste du patient ne le fera
+    // sortir de la liste. `rappelPortail` le dit déjà — `cta: null`,
+    // `prioritaire: false` — au motif qu'on ne nomme pas un geste impossible
+    // (D-015). Le `?? 'Consulter'` ci-dessous refaisait cette promesse par
+    // l'autre bout : l'item comptait dans « N questionnaires à compléter » et,
+    // n'étant candidat d'aucun agenda prioritaire, il était rattrapé par le
+    // repli « premier à compléter » de `calculerActionRecommandee` — devenant
+    // l'étape du moment sous un bouton que ce `??` venait d'inventer. Constaté
+    // en production sur un recueil clos depuis cinq semaines.
+    //
+    // La condition porte sur `cta === null` et non sur le seul état : le jour
+    // où la clôture alimentaire existera, `rappelPortail` rendra un vrai CTA et
+    // l'item reviendra de lui-même dans « à compléter ».
+    //
+    // « Consulter » reste offert, en `ghost` : relire ses journées est un geste
+    // POSSIBLE — c'est ce que le journal propose déjà. Ce n'est pas une tâche.
+    if (rappel.etat === 'a_transmettre' && rappel.cta === null) {
+      return {
+        groupe: 'recueil_termine',
+        badge: badgeAgendaAli(rappel.etat),
+        badgeVariant: 'neutral',
+        action: 'Consulter',
+        ghost: true,
+      };
+    }
     return {
       groupe: 'a_completer',
       badge: badgeAgendaAli(rappel.etat),
