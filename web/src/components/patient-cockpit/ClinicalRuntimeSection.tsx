@@ -195,6 +195,18 @@ type ClinicalRuntimeSectionProps = {
    * ait écrit, et n'afficherait rien jusqu'au rechargement suivant.
    */
   onPropositionsAssemblees?: () => void;
+  /**
+   * Compteur de DEMANDES d'assemblage venues du panneau objectif, qui n'a pas
+   * la carte sous la main. Chaque incrément est un geste du praticien.
+   *
+   * UN COMPTEUR, PAS UN BOOLÉEN, pour la même raison que `signalAssemblage` de
+   * l'autre côté : un praticien peut demander deux fois, et un drapeau resté à
+   * `true` ne rejouerait jamais la seconde.
+   *
+   * IL N'ASSEMBLE JAMAIS TOUT SEUL : sans geste, le compteur ne bouge pas, et
+   * `D-118` tient — un affichage n'est pas un acte.
+   */
+  demandeAssemblage?: number;
 } & PilotageTrajectoireProps;
 
 export function ClinicalRuntimeSection({
@@ -207,6 +219,7 @@ export function ClinicalRuntimeSection({
   onOuvrirTrajectoire,
   onEtatChange,
   onPropositionsAssemblees,
+  demandeAssemblage = 0,
   trajectoirePartagee,
   statutTrajectoirePartage,
   onRechargerTrajectoire,
@@ -963,6 +976,31 @@ export function ClinicalRuntimeSection({
       // traiter.
     }
   };
+
+  // LE RATTRAPAGE D'UN ASSEMBLAGE MANQUÉ, demandé depuis le panneau objectif.
+  //
+  // L'assemblage ne partait qu'au retour du POST de confirmation. Or l'épisode
+  // est append-only : un assemblage perdu — drapeau éteint, réseau coupé,
+  // onglet fermé avant la réponse — ne pouvait plus être rejoué sans confirmer
+  // un NOUVEL épisode, c'est-à-dire sans reposer un acte clinique pour obtenir
+  // un effet de bord. Le geste manquait, pas la mécanique.
+  //
+  // IL SE DÉCLENCHE SUR LE GESTE, JAMAIS SUR LE RENDU : `demandeAssemblage`
+  // n'avance que quand le praticien clique. Un dossier simplement ouvert
+  // n'assemble rien, et `D-118` reste entier.
+  //
+  // LA ROUTE EST IDEMPOTENTE (« mêmes empreintes ⇒ rien à écrire ») : demander
+  // deux fois de suite n'écrit qu'une fois, et ne supplante aucune assemblée.
+  useEffect(() => {
+    if (demandeAssemblage === 0) return;
+    if (fixture) return;
+    if (!runtime || runtime.status !== 'ready') return;
+    void assemblerPropositions(runtime);
+    // `assemblerPropositions` et `runtime` sont volontairement hors
+    // dépendances : l'effet répond à un GESTE, et les relister le relancerait
+    // à chaque rendu de la section — ce que la règle ci-dessus interdit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demandeAssemblage]);
 
   // Charge l'historique des versions et l'état de diffusion dès que le runtime
   // réel est prêt.

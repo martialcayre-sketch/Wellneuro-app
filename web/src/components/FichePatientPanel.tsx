@@ -615,6 +615,14 @@ export function FichePatientPanel({
    * rafraîchissement n'aurait jamais lieu.
    */
   const [assemblages, setAssemblages] = useState(0);
+  /**
+   * LE CHEMIN INVERSE DU PRÉCÉDENT, et il manquait. `assemblages` dit au
+   * panneau objectif qu'un assemblage vient d'avoir lieu ; celui-ci dit à la
+   * section clinique qu'on lui en DEMANDE un. Les deux transitent par la fiche
+   * parce que ni l'un ni l'autre des panneaux ne voit son voisin — le panneau
+   * objectif n'a pas la carte, la section clinique n'a pas la liste.
+   */
+  const [demandesAssemblage, setDemandesAssemblage] = useState(0);
   const refsPhases = useRef<(HTMLButtonElement | null)[]>([]);
   const refsOnglets = useRef<(HTMLButtonElement | null)[]>([]);
   // Harnais de validation ergonomique C1 (dev uniquement — voir
@@ -1475,7 +1483,12 @@ export function FichePatientPanel({
               confirmé, donc le panneau reste visible sans épisode. Vérifié
               par banc de rendu. */}
           <div hidden={sousVueComprehension !== 'objectif'}>
-            <ObjectifNegociePanel idPatient={idPatient} signalAssemblage={assemblages} />
+            <ObjectifNegociePanel
+              idPatient={idPatient}
+              signalAssemblage={assemblages}
+              onOuvrirDecision={() => setPhaseActive('decision')}
+              onDemanderAssemblage={() => setDemandesAssemblage(n => n + 1)}
+            />
           </div>
           {/* « Ce que j'ai compris de vous » (Alliance 6.0-A, LOT-04) — même
               phase et même raison. Pas de 6e onglet — une sous-vue. */}
@@ -1972,6 +1985,7 @@ export function FichePatientPanel({
                 statutTrajectoirePartage={etatTrajectoire}
                 onRechargerTrajectoire={chargerTrajectoire}
                 onPropositionsAssemblees={() => setAssemblages(n => n + 1)}
+                demandeAssemblage={demandesAssemblage}
               />
             </div>
 
