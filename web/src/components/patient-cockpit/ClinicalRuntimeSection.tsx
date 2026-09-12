@@ -1027,6 +1027,15 @@ export function ClinicalRuntimeSection({
   const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const decisionBloquee = isDecisionBloquee(decisionCard);
+  // Combien de réponses le dossier a reçues APRÈS l'acte confirmé. Lu tel quel
+  // depuis le serveur, jamais dérivé ici : l'écran n'a pas l'épisode sous la
+  // main, et compter « les réponses absentes de la carte » confondrait ce qui
+  // est arrivé depuis avec ce que le praticien avait délibérément écarté.
+  // Absent ⇒ `0` : la fiche de démonstration et les `ready` de confirmation
+  // fraîche n'ont rien « depuis ».
+  const reponsesDepuisConfirmation = runtime?.status === 'ready'
+    ? runtime.reponsesDepuisConfirmation ?? 0
+    : 0;
   // Priorité visée : la sélection praticien quand elle existe, à défaut la
   // priorité proposée par la carte. Le seul producteur en production pose
   // `selectionPraticien: null` (cockpit/route.ts) : sans ce repli, la
@@ -1497,6 +1506,24 @@ export function ClinicalRuntimeSection({
         />
       )}
       {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
+      {/* CE QUE LA CARTE NE LIT PAS SE DIT SOUS LA CARTE. Un épisode confirmé
+          est un INSTANT : les réponses arrivées après n'y entrent pas, et c'est
+          ce qui fait d'un `T0` une mesure de départ. Ce qui n'allait pas, c'est
+          le silence — la fiche servait la décision sans dire qu'une part
+          récente du dossier lui était postérieure. Auparavant, ce décalage
+          faisait refuser la carte ENTIÈRE : le praticien lisait « Décision
+          clinique non préparée » sur un acte qu'il avait posé.
+
+          UNE PHRASE, PAS UN AVERTISSEMENT : rien n'est en défaut ici. Le geste
+          qui suit — ouvrir le jalon suivant — a son propre écran, et le nommer
+          ici ferait de cette ligne une consigne. */}
+      {affiche('decision') && reponsesDepuisConfirmation > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {reponsesDepuisConfirmation === 1
+            ? 'Une réponse est arrivée depuis la confirmation de l’épisode : elle n’entre pas dans cette décision.'
+            : `${reponsesDepuisConfirmation} réponses sont arrivées depuis la confirmation de l’épisode : elles n’entrent pas dans cette décision.`}
+        </p>
+      )}
       {/* LE GESTE, JUSTE SOUS LA CARTE QUI LE MOTIVE ([[D-127]]). Il se place
           entre « Priorité et limites » — qui montre ce que le moteur a classé —
           et le constructeur de protocole, qui refusait jusqu'ici sans dire où
