@@ -99,11 +99,24 @@ d'écriture des accusés n'a donc **jamais été emprunté en production** : il 
 tenu que par ses bancs et par un E2E. Une absence se constate — celle-ci est
 constatée, et elle est jeune.
 
-**LE POINT D'ARRÊT ANNONCÉ N'EN ÉTAIT PAS UN.** J'avais dit au responsable que
-`release-db` demanderait son approbation et que ce serait le dernier moment pour
-dire non. C'est faux : l'environnement `release-db` ne porte qu'une **minuterie
-de cinq minutes**, aucune porte de relecture. À 17:34:49 le run est passé seul en
-`in_progress`. Les trois minutes pendant lesquelles l'API a répondu « no pending
-deployment requests to approve or reject » n'étaient pas un refus de permission —
-c'était l'API disant qu'il n'y avait **rien à approuver**. Le dernier point
-d'arrêt réel était le merge de la PR.
+**LE POINT D'ARRÊT ANNONCÉ EXISTAIT, ET LE RESPONSABLE L'A UTILISÉ.** Il avait
+été dit que `release-db` demanderait son approbation et que ce serait le dernier
+moment pour dire non. C'est exact, et cela s'est produit : l'environnement porte
+`required_reviewers` **en plus** du minuteur de cinq minutes, et
+`GET /actions/runs/<id>/approvals` garde la trace des deux approbations —
+`github-actions[bot]` pour « 5 minute wait timer », puis **`martialcayre-sketch`,
+`state: approved`**, vers 17:34:49.
+
+**CE QUE J'AVAIS D'ABORD ÉCRIT ICI ÉTAIT FAUX, et le motif vaut plus que la
+correction.** J'avais consigné qu'aucune approbation n'était requise et que le
+run était parti seul. Mes `POST` d'approbation revenaient en **422 — « No pending
+deployment requests to approve or reject »** ; j'ai lu ce message comme « il n'y
+a rien à approuver ». C'est le piège **déjà consigné en mémoire le 2026-09-11** :
+pendant le minuteur, l'API refuse l'approbation avec un message qui ressemble à
+autre chose qu'une attente. Je l'avais relu de travers, puis j'ai conclu de mon
+échec à approuver qu'il n'y avait pas de porte — une supposition présentée comme
+un constat, dans le lot même qui reproche cette faute à la § B.4.
+
+Ce qui se constate : les règles de protection (`required_reviewers`, `wait_timer`,
+`branch_policy`) et le journal des approbations. Ni l'un ni l'autre ne se déduit
+d'un code d'erreur.

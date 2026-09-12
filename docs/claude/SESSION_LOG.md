@@ -5575,9 +5575,14 @@ synthèse ; le chemin d'écriture n'a jamais été emprunté en production.
 `D-172` amendée en tête — avant ses métadonnées, parce que son titre contient
 l'erreur — et `D-175` qui pose la règle unique du fil du jour.
 
-**Deux erreurs consignées.** (1) J'ai annoncé que `release-db` demanderait une
-approbation : faux, l'environnement n'a qu'une minuterie de cinq minutes, le run
-est parti seul ; le dernier point d'arrêt réel était le merge. (2) La
+**Deux erreurs consignées.** (1) Mes `POST` d'approbation `release-db` revenant
+en 422 pendant le minuteur, j'ai conclu — et écrit dans cinq documents — que
+l'environnement n'avait aucune porte de relecture et que le run était parti seul.
+Faux : les règles de protection portent `required_reviewers`, et le journal des
+approbations montre `martialcayre-sketch`, `state: approved`. Le responsable a
+approuvé lui-même ; le point d'arrêt annoncé existait et il l'a utilisé. Le 422
+du minuteur était déjà en mémoire depuis le 2026-09-11 — relu de travers. Une
+configuration se lit, elle ne se déduit pas d'un échec. (2) La
 notification de tâche de fond a annoncé « exit code 0 » sur un `T1-EXIT=1` —
 elle rapporte le code du `echo` final. Lire le fichier, jamais le résumé.
 

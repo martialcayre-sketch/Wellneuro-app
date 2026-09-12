@@ -53,15 +53,21 @@ par ses bancs et un E2E. Ne pas prendre plus tard ce silence pour un usage.
 
 ## DEUX ERREURS DE MA PART, ÉCRITES ICI POUR QU'ELLES NE SE REJOUENT PAS
 
-**1. J'ai annoncé un point d'arrêt qui n'existait pas.** J'avais dit au
-responsable que `release-db` demanderait son approbation et que ce serait le
-dernier moment pour dire non. L'environnement `release-db` ne porte qu'une
-**minuterie de cinq minutes**, aucune porte de relecture : à 17:34:49 le run est
-parti seul. Les trois minutes pendant lesquelles l'API répondait « no pending
-deployment requests to approve or reject » n'étaient pas un refus de
-permission — c'était l'API disant qu'il n'y avait **rien à approuver**. **Le
-dernier point d'arrêt réel est le merge de la PR.** Le dire ainsi la prochaine
-fois.
+**1. J'ai conclu d'un code d'erreur ce qui ne s'en conclut pas.** Mes `POST`
+d'approbation sur `release-db` revenaient en **422 — « No pending deployment
+requests to approve or reject »**. J'en ai déduit, et écrit au responsable comme
+au dépôt, que l'environnement n'avait **aucune porte de relecture** et que le run
+était parti seul sur son minuteur. **C'est faux.** Les règles de protection —
+qui se lisent, `GET /repos/{owner}/{repo}/environments/release-db` — portent
+`required_reviewers` **en plus** du `wait_timer: 5`, et
+`GET /actions/runs/<id>/approvals` garde la trace de **`martialcayre-sketch`,
+`state: approved`**. Le responsable a approuvé lui-même, depuis un autre
+appareil. Le point d'arrêt annoncé **existait, et il l'a utilisé**.
+
+Le 422 pendant le minuteur est **déjà consigné en mémoire depuis le
+2026-09-11** : l'API refuse l'approbation avec un message qui ressemble à autre
+chose qu'une attente. Je l'avais relu de travers. **Une configuration se lit ;
+elle ne se déduit pas d'un échec.**
 
 **2. La notification de tâche de fond a menti sur un code de sortie, deux fois
 aujourd'hui.** Elle a annoncé « exit code 0 » alors que le fichier portait
