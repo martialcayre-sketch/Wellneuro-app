@@ -5306,3 +5306,39 @@ rien n'y a été touché.
 
 Prochaine action — rien d'ouvert de ce chantier. Reste, hors périmètre : la
 lettre de DPA à Anthropic et les trois trous du §7 RGPD.
+
+## 2026-09-12 — L'homonymie « demande de correction », refermée du côté ancien
+
+Demandé — corriger l'homonymie relevée la veille.
+
+Trouvé — elle était plus large que je ne l'avais rapportée. `D-170` chargeait le
+suffixe `_objectif` de toute la distinction, c'est-à-dire la famille NEUVE. Le
+mauvais côté : nommer l'objet du seul bandeau neuf laisse l'ancien dire
+« demande de correction » tout court, et c'est l'ancien qu'un praticien lit
+depuis des mois comme non ambigu. Trois surfaces le faisaient — le bandeau
+permanent de la fiche, la ligne de chaque demande, et le pré-vol du Copilote,
+qui affichait « Demande de correction du patient » **sous une puce nommant la
+VOIX** (« Patient ») là où ses six voisines nomment l'OBJET.
+
+Livré — `demande_correction_questionnaire` et une puce « Questionnaire » côté
+copilote ; « de questionnaire » dans les quatre libellés de la fiche ; le jeton
+nu `demande_correction` réservé à la route du portail. Note datée sous `D-170`.
+
+Prouvé — `homonymieDemandeCorrection.guard.test.ts`, deux règles et une
+anti-vacuité. **Dix mutations jouées, dix mutants tués**, dont deux contre la
+garde elle-même (un fichier gardé qui disparaît, le `(?!_)` qui cesse d'être ce
+qui sauve).
+
+Écarté — renommer les surfaces PATIENT. Il rencontre chacune des deux dans un
+écran qui ne parle que d'elle ; renommer aurait touché six sondes pour du bruit.
+Écarté aussi l'index `alli_demande_correction_patient_idx` : porté par la table
+`demandes_correction_objectif`, il est sans ambiguïté, et le renommer coûterait
+une migration.
+
+Manqué — `git checkout -- <fichier>` pour défaire une mutation alors que la
+BASE elle-même n'était pas commitée : trois fichiers d'édition réelle effacés
+d'un coup, et trois faux « mutant tué » qui n'étaient que la garde rougissant
+sur le code revenu à l'état ambigu. Rejoué avec des copies de sauvegarde et un
+`diff` qui vérifie que la mutation s'est APPLIQUÉE avant de conclure.
+
+Prochaine action — rien d'ouvert.

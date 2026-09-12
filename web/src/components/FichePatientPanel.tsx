@@ -1267,12 +1267,12 @@ export function FichePatientPanel({
             <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
           </div>
           {assignationsModif.length > 0 && (
-            <section aria-label="Demandes de correction en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
+            <section aria-label="Demandes de correction de questionnaire en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
               {assignationsModif.map(a => (
                 <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-status-warning/10">
                   <div className="min-w-0">
                     <span className="text-base text-status-warning">
-                      Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
+                      Demande de correction d’un questionnaire — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
                     </span>
                     {a.correctionCommentaire && (
                       <p className="text-xs text-status-warning mt-1 italic">« {a.correctionCommentaire} »</p>
@@ -1485,14 +1485,14 @@ export function FichePatientPanel({
         >
           <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
           <span className="min-w-0">
-            Les demandes de correction n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
+            Les demandes de correction de questionnaire n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
           </span>
           <button
             type="button"
             onClick={() => void chargerCorrections()}
             className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            Réessayer la lecture des corrections
+            Réessayer la lecture des corrections de questionnaire
           </button>
         </div>
       )}
@@ -1511,8 +1511,8 @@ export function FichePatientPanel({
           <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
           <span className="min-w-0">
             {assignationsModif.length === 1
-              ? '1 demande de correction en attente de déblocage.'
-              : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
+              ? '1 demande de correction de questionnaire en attente de déblocage.'
+              : `${assignationsModif.length} demandes de correction de questionnaire en attente de déblocage.`}
           </span>
           {/* Le plafond de la route s'applique désormais aux seules demandes de
               CE dossier — inatteignable en pratique (18 assignations pour le
@@ -1545,11 +1545,17 @@ export function FichePatientPanel({
           verrait jamais une demande rangée dans la seule phase Compréhension.
 
           UN LIBELLÉ DISTINCT, ET C'EST LE POINT DÉLICAT. Le bandeau juste
-          au-dessus dit lui aussi « demande de correction » — mais il parle des
-          RÉPONSES DE QUESTIONNAIRE, et se règle par un DÉBLOCAGE. Celui-ci
-          parle du TEXTE DE L'OBJECTIF, et se règle par une REFORMULATION.
-          Deux bandeaux qui se ressembleraient enverraient le praticien au
-          mauvais endroit faire le mauvais geste.
+          au-dessus parle des RÉPONSES DE QUESTIONNAIRE, et se règle par un
+          DÉBLOCAGE. Celui-ci parle du TEXTE DE L'OBJECTIF, et se règle par une
+          REFORMULATION. Deux bandeaux qui se ressembleraient enverraient le
+          praticien au mauvais endroit faire le mauvais geste.
+
+          LE 2026-09-12, LA DISTINCTION A ÉTÉ PORTÉE DE L'AUTRE CÔTÉ AUSSI.
+          Nommer l'objet du seul bandeau neuf laissait l'ancien dire « demande
+          de correction » tout court — c'est-à-dire laisser l'ambiguïté entière
+          à celui des deux qui était là avant, et qu'un praticien lit depuis
+          des mois comme non ambigu. Les deux nomment désormais leur objet.
+          `homonymieDemandeCorrection.guard.test.ts` refuse la rechute.
 
           AUCUN NOMBRE (`DC-19`/`DC-20`). Le bandeau du dessus compte des
           assignations — des objets. Celui-ci parlerait d'une PAROLE : « 3

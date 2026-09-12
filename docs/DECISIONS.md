@@ -83,6 +83,25 @@ praticien au mauvais endroit faire le mauvais geste. **C'est une dette de
 nommage, pas une solution** : le jour où l'un des deux objets se renomme, elle
 se referme.
 
+> **Note datée du 2026-09-12 — LA DETTE EST REFERMÉE, ET PAS DU CÔTÉ QU'ON
+> CROYAIT.** Le paragraphe ci-dessus chargeait le suffixe `_objectif` de toute
+> la distinction, c'est-à-dire la famille NEUVE. C'était insuffisant, et d'une
+> manière que seule la mise en service a rendue visible : nommer l'objet du
+> seul côté neuf laisse l'ANCIEN dire « demande de correction » tout court — or
+> c'est l'ancien qu'un praticien lit depuis des mois comme non ambigu, et c'est
+> donc lui qui trompe. Trois surfaces le faisaient : le bandeau permanent de la
+> fiche (« 1 demande de correction en attente de déblocage »), la ligne de
+> chaque demande, et surtout le pré-vol du Copilote, qui affichait « Demande de
+> correction du patient » **sous une puce nommant la VOIX** (« Patient ») là où
+> ses six voisines nomment l'OBJET. Les deux familles nomment désormais la
+> leur : `demande_correction_questionnaire` d'un côté, `_objectif` de l'autre,
+> et le jeton nu `demande_correction` est réservé à la route du portail dont
+> l'objet unique EST l'objectif. `homonymieDemandeCorrection.guard.test.ts`
+> refuse la rechute des deux côtés — dix mutations jouées, dix mutants tués.
+> Ce qui reste, et qui ne vaut pas une migration : l'index
+> `alli_demande_correction_patient_idx`, porté par la table
+> `demandes_correction_objectif` elle-même, donc sans ambiguïté possible.
+
 **Ce que cette décision NE fait pas.**
 
 1. **Aucun décompte, nulle part.** Ni bandeau, ni carte, ni rail ne rendent un

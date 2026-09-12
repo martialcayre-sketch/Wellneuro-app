@@ -8,7 +8,7 @@ const vide: EntreesPreVol = {
   episodes: [],
   protocolesRelus: [],
   diffusionsApprouvees: [],
-  demandesCorrection: [],
+  demandesCorrectionQuestionnaire: [],
   signalements: [],
 };
 
@@ -154,7 +154,7 @@ describe('questions suggérées — jamais sans le fait qui les fonde', () => {
         pointsEtape: [
           { pointEtape: 'J14', soumisLe: new Date('2026-02-15T00:00:00.000Z'), tolerance: 'difficilement', adhesion: 'pas_encore' },
         ],
-        demandesCorrection: [{ demandeeLe: new Date('2026-02-20T00:00:00.000Z') }],
+        demandesCorrectionQuestionnaire: [{ demandeeLe: new Date('2026-02-20T00:00:00.000Z') }],
       }),
     );
     expect(prevol.questionsSuggerees).toEqual([]);
@@ -163,7 +163,7 @@ describe('questions suggérées — jamais sans le fait qui les fonde', () => {
   it('demande de correction et signalement ouvrent chacun leur question', () => {
     const prevol = construirePreVol(
       entrees({
-        demandesCorrection: [{ demandeeLe: new Date('2026-03-02T00:00:00.000Z') }],
+        demandesCorrectionQuestionnaire: [{ demandeeLe: new Date('2026-03-02T00:00:00.000Z') }],
         signalements: [{ soumisLe: new Date('2026-03-03T00:00:00.000Z') }],
       }),
     );

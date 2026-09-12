@@ -21,7 +21,7 @@ export type SourcePreVol =
   | 'episode_confirme'
   | 'protocole_relu'
   | 'diffusion_approuvee'
-  | 'demande_correction'
+  | 'demande_correction_questionnaire'
   | 'signalement';
 
 export type FaitPreVol = {
@@ -58,7 +58,7 @@ export type EntreesPreVol = {
   episodes: { milestone: string; confirmedAt: Date; versionScore: string | null }[];
   protocolesRelus: { reviewedAt: Date }[];
   diffusionsApprouvees: { approvedAt: Date }[];
-  demandesCorrection: { demandeeLe: Date }[];
+  demandesCorrectionQuestionnaire: { demandeeLe: Date }[];
   signalements: { soumisLe: Date }[];
 };
 
@@ -129,11 +129,11 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
     });
   }
 
-  for (const demande of entrees.demandesCorrection) {
+  for (const demande of entrees.demandesCorrectionQuestionnaire) {
     if (!apresAncre(demande.demandeeLe, ancreDate)) continue;
     faits.push({
-      source: 'demande_correction',
-      libelle: 'Demande de correction du patient',
+      source: 'demande_correction_questionnaire',
+      libelle: 'Correction des réponses demandée par le patient',
       instrument: null,
       date: demande.demandeeLe.toISOString(),
       version: null,
@@ -181,7 +181,7 @@ function suggererQuestions(entrees: EntreesPreVol, ancreDate: Date | null): stri
     );
   }
 
-  if (entrees.demandesCorrection.some((demande) => apresAncre(demande.demandeeLe, ancreDate))) {
+  if (entrees.demandesCorrectionQuestionnaire.some((demande) => apresAncre(demande.demandeeLe, ancreDate))) {
     questions.push('Le patient a demandé à corriger ses réponses — vérifier ce qu’il souhaite modifier.');
   }
 

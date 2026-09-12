@@ -122,7 +122,7 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
         .filter((draft): draft is { reviewedAt: Date } => draft.reviewedAt !== null)
         .map((draft) => ({ reviewedAt: draft.reviewedAt })),
       diffusionsApprouvees: diffusions,
-      demandesCorrection: assignations
+      demandesCorrectionQuestionnaire: assignations
         .filter((a): a is { correctionDemandeeDate: Date } => a.correctionDemandeeDate !== null)
         .map((a) => ({ demandeeLe: a.correctionDemandeeDate })),
       signalements,
