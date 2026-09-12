@@ -5535,3 +5535,25 @@ une fois lues via le repère de fraîcheur. Piège : le repère est UN instant p
 patient (clé primaire `id_patient`), il ne peut pas porter un accusé par
 document ; lister du plus ancien au plus récent et avancer le repère à la date
 ouverte. Puis le retrait du journal rétrospectif, puis l'amendement de `D-172`.
+
+## 2026-09-12 — Le rejeu d'un acte confirmé, et les deux rideaux
+
+Parti d'une question sur l'espace patient, arrivé à une régression de
+production : **quatre des sept épisodes `T0` confirmés n'étaient plus servis**.
+La carte de décision est rejouée, et le rejeu comparait l'acte signé à une
+dérivation qui a le droit de changer — une passation de plus, ou la chute de la
+borne haute de l'ancre initiale (`D-156`), et le `T0` s'éteignait. `D-173` juge
+désormais le rejeu sur l'identité de l'acte, et l'identité d'une carte ne dérive
+plus de son contenu.
+
+Cinq autres lots : les sorties de la phase 3 (le rail numérote 3 avant 4, la
+machine exige l'inverse), l'assemblage redemandable, la borne et le rappel du
+second rideau, la génération sortie de sa route (Next refuse l'export de valeur
+depuis un `route.ts` — mesuré), et `D-174` : une synthèse à la fermeture de
+chaque rideau, deux par dossier, derrière un drapeau éteint.
+
+Écarté : le conteneur de fond — `after()` suffit. Écarté : déclencher sur le
+pack de base — `Q_SOM_09` ferait attendre 21 nuits.
+
+Prochaine action — trois drapeaux à allumer ou non, et le vrai goulot : 44
+synthèses validées, 24 envoyées.
