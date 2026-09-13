@@ -11,6 +11,11 @@ const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     pack: { findMany: vi.fn() },
     // Anamnèse la plus récente : source des déclencheurs `drapeau` (LOT-05).
     consultation: { findFirst: vi.fn() },
+    // Écartements praticien ([[D-178]]) : lus dans le MÊME `Promise.all` que le
+    // reste. Un mock absent ne se lit pas « aucun écartement » — il fait jeter
+    // le service, donc rendre 500, et c'est la bonne direction : une orientation
+    // illisible se rapporte comme illisible, jamais comme vide.
+    ecartementProposition: { findMany: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -66,6 +71,7 @@ describe('GET /api/praticien/orientation', () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.pack.findMany.mockResolvedValue([]);
+    prisma.ecartementProposition.findMany.mockResolvedValue([]);
     // Par défaut aucune consultation : les déclencheurs `drapeau` ne portent
     // pas, ce qui est le cas fail-closed attendu.
     prisma.consultation.findFirst.mockResolvedValue(null);

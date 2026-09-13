@@ -6,6 +6,7 @@ const { prisma, mockMeta, mockRegles, mockArretMeta, mockArretRegles, mockContra
     assignation: { findMany: vi.fn() },
     pack: { findMany: vi.fn() },
     consultation: { findFirst: vi.fn() },
+    ecartementProposition: { findMany: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -67,10 +68,15 @@ function lecturesVides() {
   prisma.assignation.findMany.mockResolvedValue([]);
   prisma.pack.findMany.mockResolvedValue([]);
   prisma.consultation.findFirst.mockResolvedValue(null);
+  prisma.ecartementProposition.findMany.mockResolvedValue([]);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // DÉFAUT DE CHAQUE TOUR : aucun écartement. Posé ici et pas seulement dans
+  // `lecturesVides` — plusieurs cas amorcent les autres mocks à la main, et un
+  // `findMany` non amorcé rend `undefined`, ce qui casserait sur `.map`.
+  prisma.ecartementProposition.findMany.mockResolvedValue([]);
   mockMeta.validationExterne = false;
   mockMeta.dateValidation = null;
   mockMeta.claimsSource = [];
@@ -315,6 +321,121 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
       if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
       expect(resultat.recommandations[0].dejaAssigne).toBe(false);
       expect(resultat.recommandations[0].dateAssignationOuverte).toBeUndefined();
+    });
+  });
+
+  // ── ÉCARTEMENTS PRATICIEN ([[D-178]]) ───────────────────────────────────
+  // La règle mockée propose `Q_SOM_05` depuis `R-PSQI-TEST`. Ces cas jouent le
+  // fil d'écartement de cette cible, et rien d'autre.
+  function ecartement(surcharges: Record<string, unknown> = {}) {
+    return {
+      id: 'ec_1',
+      cibleId: 'questionnaire:Q_SOM_05',
+      espece: 'ecartement',
+      reglesAuGeste: [REGLE_PSQI.id],
+      motif: 'Le chronotype est déjà connu par l’anamnèse.',
+      parEmail: 'praticien@wellneuro.fr',
+      faitLe: new Date('2026-09-13T09:00:00Z'),
+      supersedesEcartementId: null,
+      ...surcharges,
+    };
+  }
+
+  it('le fil est lu SCOPÉ au dossier — sans quoi les cas suivants ne prouvent rien', () => {
+    // CE CAS EXISTE PARCE QUE LES AUTRES NE TENAIENT PAS L'ISOLEMENT. Aucun ne lit
+    // le `where`, et retirer `idPatient` du filtre les laisserait tous VERTS : les
+    // écartements d'un dossier masqueraient alors des propositions dans un autre,
+    // en y affichant leur motif — du contenu clinique d'un tiers sur l'écran d'un
+    // patient.
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([]);
+    return evaluerOrientationPourPatient('PAT-1').then(() => {
+      expect(prisma.ecartementProposition.findMany.mock.calls[0][0].where)
+        .toEqual({ idPatient: 'PAT-1' });
+    });
+  });
+
+  it('une cible ÉCARTÉE quitte les recommandations et part dans `ecartees`', () => {
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([ecartement()]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      // RETIRÉE de la liste principale : le geste doit dégager l'écran, sinon il
+      // ne sert qu'à consigner (troisième arbitrage de D-178).
+      expect(resultat.recommandations).toEqual([]);
+      // MAIS RIEN N'EST EFFACÉ : motif, auteur et date voyagent avec la ligne, et
+      // `ecartementId` est ce sur quoi la reprise chaînera.
+      expect(resultat.ecartees).toHaveLength(1);
+      expect(resultat.ecartees[0].ecartementId).toBe('ec_1');
+      expect(resultat.ecartees[0].motif).toContain('chronotype');
+      expect(resultat.ecartees[0].parEmail).toBe('praticien@wellneuro.fr');
+      expect(resultat.ecartees[0].faitLe).toBe('2026-09-13T09:00:00.000Z');
+    });
+  });
+
+  it('une RÈGLE NOUVELLE réveille la ligne, qui revient en nommant son réveil', () => {
+    // LE CAS QUI FAIT TENIR DC-30. L'écartement a été posé quand une AUTRE règle
+    // motivait la cible ; celle qui l'allume aujourd'hui n'y figure pas.
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([
+      ecartement({ reglesAuGeste: ['R-AUTRE-AXE'] }),
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.ecartees).toEqual([]);
+      expect(resultat.recommandations).toHaveLength(1);
+      // Sans ce champ, la ligne réapparaîtrait sans explication et se lirait
+      // comme un défaut, alors que c'est le comportement voulu.
+      expect(resultat.recommandations[0].reveil?.reglesNouvelles).toEqual([REGLE_PSQI.id]);
+      expect(resultat.recommandations[0].reveil?.motif).toContain('chronotype');
+    });
+  });
+
+  it('une REPRISE en tête de fil rend la ligne visible, sans marque de réveil', () => {
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([
+      ecartement(),
+      ecartement({
+        id: 'ec_2',
+        espece: 'reprise',
+        reglesAuGeste: [],
+        motif: 'Je rouvre : le sommeil s’est dégradé.',
+        supersedesEcartementId: 'ec_1',
+      }),
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.ecartees).toEqual([]);
+      expect(resultat.recommandations).toHaveLength(1);
+      expect(resultat.recommandations[0].reveil).toBeUndefined();
+    });
+  });
+
+  it('un fil CASSÉ laisse la ligne VISIBLE — on ne cache pas sur un état illisible', () => {
+    // `supersedes` pendouillant : la référence est souple, la base l'accepte. La
+    // direction de l'échec est choisie — montrer est le seul défaut réparable.
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([
+      ecartement({ supersedesEcartementId: 'jamais_ecrit' }),
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.ecartees).toEqual([]);
+      expect(resultat.recommandations).toHaveLength(1);
+    });
+  });
+
+  it('un écartement sur une AUTRE cible ne touche pas celle-ci', () => {
+    // Contre-épreuve : sans elle, un filtre qui ignorerait `cibleId` passerait
+    // les quatre cas ci-dessus.
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.ecartementProposition.findMany.mockResolvedValue([
+      ecartement({ cibleId: 'questionnaire:Q_NEU_11' }),
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.ecartees).toEqual([]);
+      expect(resultat.recommandations).toHaveLength(1);
     });
   });
 

@@ -6,6 +6,7 @@ import {
   evaluerOrientationPourPatient,
   orientationActive,
   resultatInactif,
+  type PropositionEcartee,
   type RecommandationServie,
 } from '@/lib/clinical/orientationService';
 
@@ -35,6 +36,13 @@ export type OrientationApiResponse =
       version: string;
       sha256: string;
       recommandations: RecommandationServie[];
+      /**
+       * Les propositions écartées par le praticien — [[D-178]]. VIDE, jamais
+       * absent : un tableau absent se lirait « aucun geste connu » alors que la
+       * réponse dit « aucune ligne écartée », et l'écran doit pouvoir afficher
+       * le repli sans distinguer les deux (`DC-24`).
+       */
+      ecartees: PropositionEcartee[];
     }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
@@ -83,6 +91,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       version: resultat.version,
       sha256: resultat.sha256,
       recommandations: resultat.recommandations,
+      ecartees: resultat.ecartees,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de

@@ -13,6 +13,12 @@ import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { STATUTS_ASSIGNATION_TERMINAL } from '@/lib/assignations/dedup';
+import {
+  cleCibleEcartement,
+  tetesParCible,
+  verdictPourCible,
+  type GesteEcartement,
+} from '@/lib/orientation/ecartements';
 import { calculateScore } from '@/lib/questions';
 import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
 import { estExclueDuRaisonnement } from '@/lib/scoring/validite';
@@ -70,6 +76,64 @@ export const MESSAGE_ORIENTATION_INACTIVE =
 export type RecommandationServie = RecommandationExploration & {
   idPackBase?: string;
   dateAssignationOuverte?: string;
+  /**
+   * Cette ligne avait été ÉCARTÉE, et elle est revenue — [[D-178]].
+   *
+   * Présent seulement sur un réveil : une règle ABSENTE de l'écartement motive
+   * désormais la cible. Sans ce champ, la ligne réapparaîtrait sans explication
+   * et se lirait comme un défaut, alors que c'est le comportement voulu.
+   */
+  reveil?: { reglesNouvelles: string[]; ecarteLe: string; motif: string };
+};
+
+/**
+ * Une proposition ÉCARTÉE par le praticien — [[D-178]], troisième arbitrage.
+ *
+ * RETIRÉE de `recommandations`, et servie à part : le geste doit dégager
+ * l'écran, sinon il ne sert qu'à consigner. Mais rien n'est effacé — motif,
+ * auteur et date voyagent avec la ligne, et `ecartementId` permet la reprise.
+ *
+ * CONSÉQUENCE ASSUMÉE SUR LA SYNTHÈSE, et elle est juste : le bloc d'orientation
+ * du prompt se construit depuis `recommandations` (`synthese/generation.ts`),
+ * donc une ligne écartée n'atteint pas le modèle. Proposer dans la synthèse ce
+ * que le praticien a refusé par écrit contredirait son geste.
+ *
+ * UNE CONSÉQUENCE DE SECOND ORDRE, DITE PLUTÔT QUE SUPPOSÉE — la première
+ * rédaction de ce commentaire affirmait ici qu'`orientationInjectee` « reste
+ * vrai », et c'était FAUX. Il vaut `actif && recommandations.length > 0`
+ * (`synthese/generation.ts`) : quand TOUTES les recommandations sont écartées, il
+ * passe à faux, et le garde de fidélité de restitution d'orientation ne tourne
+ * plus — l'écart qu'il journalisait (`SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE`)
+ * n'est alors plus relevé. Le garde n'a jamais censuré la prose, donc rien ne
+ * change pour le patient ; c'est la TRACE D'AUDIT qui change de comportement, et
+ * elle ne doit pas changer en silence. L'armer sur `recommandations + ecartees`
+ * est un arbitrage ouvert : il touche le garde de synthèse, pas ce lot.
+ *
+ * LA BORNE DE CETTE LISTE, DITE PLUTÔT QUE DÉCOUVERTE. `ecartees` se construit en
+ * parcourant les recommandations SERVIES : un écartement dont la cible n'est plus
+ * proposée du tout — les scores ont changé, la règle ne s'allume plus — n'apparaît
+ * donc nulle part à l'écran. Ce n'est pas une perte : la ligne n'est plus proposée,
+ * il n'y a plus rien à écarter ni à reprendre, et le geste reste entier en base
+ * pour l'audit. Mais un praticien qui chercherait son geste ne le trouverait pas,
+ * et c'est pour ça que ce n'est pas laissé à deviner.
+ *
+ * UN CAS VOISIN N'EST PAS ATTEIGNABLE AUJOURD'HUI, et il faut le dire pour qu'on le
+ * revoie si ça change : un instrument écarté puis ABSORBÉ dans un pack recommandé
+ * disparaîtrait de l'écran tout en restant proposé À L'INTÉRIEUR du pack. Aucune
+ * règle publiée ne cible un pack depuis le 2026-08-06 — les six suggestions à
+ * `packId` ont été retirées et la table re-signée (`orientationRulesV1.ts`) : le
+ * chemin est dormant. Réintroduire une règle à `packId` demande de le rouvrir.
+ */
+export type PropositionEcartee = {
+  cible: RecommandationExploration['cible'];
+  idPackBase?: string;
+  /** Id de la TÊTE du fil : c'est sur elle que la reprise chaîne. */
+  ecartementId: string;
+  motif: string;
+  parEmail: string;
+  faitLe: string;
+  /** Les règles qui la motivaient au moment du geste — ce que le réveil compare. */
+  reglesAuGeste: string[];
 };
 
 export type ResultatOrientationInactif = { actif: false; version: string; message: string };
@@ -90,6 +154,8 @@ export type ResultatOrientation =
       version: string;
       sha256: string;
       recommandations: RecommandationServie[];
+      /** Vide quand aucune proposition n'est écartée — jamais absent. */
+      ecartees: PropositionEcartee[];
       arret: ProvenanceArret | null;
     };
 
@@ -245,7 +311,7 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // aval de ce test, jamais en amont.
   if (!orientationActive()) return resultatInactif();
 
-  const [reponses, assignations, packs, consultation] = await Promise.all([
+  const [reponses, assignations, packs, consultation, ecartements] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true, statutValidite: true },
@@ -284,6 +350,23 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       where: whereConsultationPorteuse(idPatient),
       select: { anamnese: true },
       orderBy: ORDRE_CONSULTATION_PORTEUSE,
+    }),
+    // ÉCARTEMENTS PRATICIEN ([[D-178]]) — le fil ENTIER de chaque cible, pas la
+    // seule dernière ligne : l'état courant est la TÊTE de chaîne, et la tête ne
+    // se lit qu'en sachant qui supplante qui. Trier par date ici ne servirait à
+    // rien et tromperait — `fait_le` est un horodatage de transaction.
+    prisma.ecartementProposition.findMany({
+      where: { idPatient },
+      select: {
+        id: true,
+        cibleId: true,
+        espece: true,
+        reglesAuGeste: true,
+        motif: true,
+        parEmail: true,
+        faitLe: true,
+        supersedesEcartementId: true,
+      },
     }),
   ]);
 
@@ -454,11 +537,66 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     return idPackBase === null ? recommandation : { ...recommandation, idPackBase };
   });
 
+  // ── ÉCARTEMENTS : LA LIGNE PART DE LA LISTE, RIEN NE S'EFFACE ──────────────
+  //
+  // L'état courant d'une cible est la TÊTE de son fil, jamais sa ligne la plus
+  // récente par date (`fait_le` est un horodatage de transaction). Un fil qu'on
+  // ne sait pas lire — cycle, `supersedes` pendouillant, deux racines — n'entre
+  // pas dans la carte, et la cible reste alors VISIBLE : sur un état cassé,
+  // montrer est le seul défaut réparable (`DC-24`, `DC-30`).
+  const gestes: GesteEcartement[] = ecartements.map(ligne => ({
+    id: ligne.id,
+    cibleId: ligne.cibleId,
+    espece: ligne.espece === 'reprise' ? 'reprise' : 'ecartement',
+    reglesAuGeste: [...ligne.reglesAuGeste],
+    motif: ligne.motif,
+    parEmail: ligne.parEmail,
+    faitLe: ligne.faitLe.toISOString(),
+    supersedesEcartementId: ligne.supersedesEcartementId,
+  }));
+  const tetes = tetesParCible(gestes);
+
+  const recommandationsVisibles: RecommandationServie[] = [];
+  const ecartees: PropositionEcartee[] = [];
+  for (const recommandation of recommandationsServies) {
+    const cleCible = cleCibleEcartement(recommandation.cible);
+    // LES RÈGLES ACTUELLES SONT CELLES DES MOTIFS DE LA LIGNE, et le moteur en
+    // garantit au moins un : c'est cet ensemble que le réveil compare à celui
+    // figé au geste.
+    const reglesActuelles = recommandation.motifs.map(motif => motif.regleId);
+    const verdict = verdictPourCible(tetes.get(cleCible), reglesActuelles);
+    if (verdict.etat === 'ecartee') {
+      ecartees.push({
+        cible: recommandation.cible,
+        ...(recommandation.idPackBase === undefined ? {} : { idPackBase: recommandation.idPackBase }),
+        ecartementId: verdict.geste.id,
+        motif: verdict.geste.motif,
+        parEmail: verdict.geste.parEmail,
+        faitLe: verdict.geste.faitLe,
+        reglesAuGeste: verdict.geste.reglesAuGeste,
+      });
+      continue;
+    }
+    if (verdict.etat === 'reveillee') {
+      recommandationsVisibles.push({
+        ...recommandation,
+        reveil: {
+          reglesNouvelles: verdict.reglesNouvelles,
+          ecarteLe: verdict.geste.faitLe,
+          motif: verdict.geste.motif,
+        },
+      });
+      continue;
+    }
+    recommandationsVisibles.push(recommandation);
+  }
+
   return {
     actif: true,
     version: ORIENTATION_METADATA.version,
     sha256: ORIENTATION_RULES_SHA256,
-    recommandations: recommandationsServies,
+    recommandations: recommandationsVisibles,
+    ecartees,
     // Deux synthèses rédigées sous deux tables d'arrêt différentes seraient
     // autrement indiscernables à l'audit — et une extinction est précisément ce
     // qu'on voudra pouvoir expliquer six mois plus tard. `null` tant que la
