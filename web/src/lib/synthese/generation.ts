@@ -91,6 +91,31 @@ import {
 import type { RequestContext } from '@/lib/observability/types';
 
 type ReponseInput = {
+  /**
+   * Identité de la passation, dans la TRACE seulement — jamais dans le prompt.
+   *
+   * POURQUOI ELLE N'ATTEINT PAS LE MODÈLE. `buildUserMessage` ne sérialise pas
+   * cet objet : il en REPROJETTE les clés une à une, par deux littéraux
+   * exhaustifs. Une clé ajoutée ici reste donc dans `donneesEntree` et ne part
+   * pas avec le message, tant que personne ne l'ajoute AUSSI à la projection.
+   * C'est délibéré : un identifiant que le modèle voit est un identifiant qu'il
+   * peut recopier ailleurs, et une citation recopiée n'est pas une provenance.
+   *
+   * CE QUE ÇA ACHÈTE, ET RIEN DE PLUS. `donneesEntree.reponses` portait déjà
+   * `idQuestionnaire` + `date`, qui désignent presque toujours la ligne ; avec
+   * `idReponse`, « presque » devient « exactement ». La trace peut donc nommer
+   * les passations sur lesquelles une synthèse a été écrite, six mois plus tard
+   * et même après une seconde passation du même instrument le même jour.
+   *
+   * CE QUE ÇA N'ACHÈTE PAS : aucune provenance PAR ARGUMENT. Les `arguments`
+   * d'un axe restent des chaînes nues, et rien ici ne les rattache à une
+   * passation — `D-168` §6 a tranché qu'un texte reformulé ne se constate pas
+   * par comparaison. C'est une provenance D'ENSEMBLE, au niveau du document.
+   *
+   * L'espace de valeurs est celui de `ClinicalFindingProvenance.responseIds` :
+   * une jointure ultérieure vers la chaîne C1 lira les mêmes identifiants.
+   */
+  idReponse: string;
   // Transmis au modèle depuis le 2026-07-27 : la consigne système désigne les
   // questionnaires alimentaires par leur identifiant (« commençant par Q_ALI »)
   // pour lui interdire d'en conclure une carence ou une quantité. Sans cette
@@ -866,6 +891,7 @@ export async function preparerGeneration(
     const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => {
       const statutEcarte = statutExcluDuRaisonnement(r.statutValidite) ? r.statutValidite ?? null : null;
       return {
+        idReponse: r.idReponse,
         idQuestionnaire: r.idQuestionnaire,
         titre: r.titre,
         date: r.dateReponse.toISOString().split('T')[0],
