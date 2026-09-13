@@ -5621,3 +5621,21 @@ pas de CTA, le patient ne peut pas fermer son recueil depuis le fil.
 
 **Questions ouvertes.** Second `T0` ; lettre DPA Anthropic ; trois trous du § 7
 RGPD ; le décompte que `portail_lectures_patient` rend possible (`D-175` § 6).
+
+## 2026-09-13 — Accueil praticien : l'inbox remonte, les panneaux vides se replient
+
+**Décidé.** Sur demande propriétaire prise sur capture : l'inbox questionnaires
+passe en tête de la colonne principale (sa PLACE change, pas sa forme — la
+décision du 2026-07-23 n'est pas rouverte) ; `PanneauRail` replie tout panneau
+vide sur une ligne ; le rail se dédouble au-delà de 1536 px ; Météo et Agendas
+descendent sous Correspondance. Deux PR mergées : `506e1da2` (#1074),
+`cad2d617` (#1077).
+
+**Écarté.** Fondre les réponses en cartes de la timeline ; un rail à onglets —
+il tient sur un écran mais rend invisibles quatre panneaux sur cinq.
+
+**Appris.** Un run CI peut rester `queued` sans créer un seul job : rouvrir la
+PR, ne pas chercher dans le diff. Et une PR peut être mergée pendant qu'on
+travaille encore dessus — le second commit est reparti d'`origin/main`.
+
+**Prochaine action.** Constater `cad2d617` en ligne par contenance.
