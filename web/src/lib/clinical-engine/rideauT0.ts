@@ -17,6 +17,9 @@
  * lecteurs existants continuent de l'importer là où ils l'importaient.
  */
 
+import { AGENDA_ALI_ID } from '../agenda-alimentaire/types';
+import { AGENDA_SOMMEIL_ID } from '../agenda-sommeil/types';
+
 /**
  * Le rideau T0 — table clinique signée par [[D-052]], et non composition du
  * pack de base.
@@ -41,6 +44,46 @@ export const RIDEAU_T0 = ['Q_MOD_03', 'Q_MOD_01', 'Q_INF_03', 'Q_ALI_01'] as con
 
 /** Instrument du pack de base volontairement hors rideau — motivé ci-dessus. */
 export const HORS_RIDEAU_MOTIVE = ['Q_SOM_09'] as const;
+
+/**
+ * LES AGENDAS NE COMPOSENT AUCUN RIDEAU — ni le premier, ni le second.
+ *
+ * LE PREMIER LES EXCLUAIT DÉJÀ, et par une phrase qui n'a jamais valu que pour
+ * lui : « un agenda du sommeil sur 21 nuits ne peut pas conditionner un point
+ * de décision qui se prend à J0 » (`HORS_RIDEAU_MOTIVE`, ci-dessus). Le SECOND
+ * rideau, lui, n'avait aucune exclusion — et un agenda alimentaire de 21 jours
+ * s'y invitait, bloquant le `T0` exactement pour la raison que la doctrine
+ * avait nommée quelques lignes plus haut.
+ *
+ * CONSTATÉ EN PRODUCTION, par conteneur : un agenda alimentaire assigné le 5
+ * août, deux journées renseignées le jour même puis plus rien. Au 2026-09-13,
+ * **cinq dossiers portent un agenda alimentaire en attente** (assignés du 5 août
+ * au 7 septembre) et **cinq un agenda du sommeil** (du 2 au 12 septembre).
+ *
+ * LA RAISON EST CLINIQUE, ET ELLE EST DU RESPONSABLE ([[D-176]], arbitrage
+ * rendu en session le 2026-09-13) : **un agenda est un outil d'AJUSTEMENT, pas
+ * de constat.** Il accompagne une conduite déjà décidée ; il n'établit pas
+ * l'état de départ sur lequel cette conduite se décide. Faire garder le point
+ * d'entrée par un recueil qui court sur trois semaines, c'est faire attendre la
+ * décision par l'outil qui devait la suivre.
+ *
+ * CE QUE CETTE EXCLUSION NE FAIT PAS. Elle ne retire l'agenda de rien d'autre :
+ * il reste assigné, se remplit jour après jour, se clôture, et sa passation
+ * entre au dossier comme n'importe quelle autre. Elle dit seulement qu'il ne
+ * GARDE aucun point de décision — et donc, par la condition sœur de fraîcheur,
+ * qu'une journée d'agenda ne périme plus une synthèse validée.
+ *
+ * CONSÉQUENCE ASSUMÉE : un dossier dont la SEULE assignation postérieure à la
+ * synthèse est un agenda n'a plus de second rideau du tout, et lit « reste à
+ * composer » au lieu de « incomplet ». C'est plus juste — un agenda ne
+ * constitue pas une exploration.
+ */
+export const AGENDAS_HORS_RIDEAU = [AGENDA_SOMMEIL_ID, AGENDA_ALI_ID] as const;
+
+/** Est-ce un agenda, donc hors de tout rideau ? */
+export function estAgendaHorsRideau(idQuestionnaire: string): boolean {
+  return (AGENDAS_HORS_RIDEAU as readonly string[]).includes(idQuestionnaire);
+}
 
 /**
  * Appartient-il au rideau T0 ?

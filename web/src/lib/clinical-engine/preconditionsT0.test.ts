@@ -363,6 +363,51 @@ describe('second rideau (D-158)', () => {
     expect(dure(resultat, 'second_rideau').satisfaite).toBe(true);
   });
 
+  // ── LES AGENDAS NE COMPOSENT AUCUN RIDEAU ([[D-176]]) ────────────────────
+  //
+  // Le premier rideau les excluait déjà — « un agenda sur 21 nuits ne peut pas
+  // conditionner un point de décision qui se prend à J0 ». Le second n'avait
+  // aucune exclusion, et un agenda alimentaire de 21 jours bloquait le T0 pour
+  // exactement cette raison. Six dossiers dans cette position au 2026-09-12.
+  it('un agenda EN ATTENTE ne bloque plus le second rideau', () => {
+    const resultat = evaluerPreconditionsT0(entrees({
+      assignations: [
+        assignation(),
+        assignation({ idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', statut: 'En attente' }),
+        assignation({ idQuestionnaire: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', statut: 'En attente' }),
+      ],
+    }), 'T0');
+    expect(dure(resultat, 'second_rideau').satisfaite).toBe(true);
+  });
+
+  // PLUS JUSTE QUE « INCOMPLET » : un agenda ne constitue pas une exploration.
+  it('un agenda SEUL ne fait pas un second rideau : il reste à composer', () => {
+    const resultat = evaluerPreconditionsT0(entrees({
+      assignations: [assignation({ idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours' })],
+    }), 'T0');
+    expect(dure(resultat, 'second_rideau').satisfaite).toBe(false);
+    expect(dure(resultat, 'second_rideau').detail).toContain('reste à composer');
+  });
+
+  // LA CONDITION SŒUR SUIT, sans qu'on la touche : la fraîcheur se juge sur les
+  // passations DES RIDEAUX, et un agenda n'en fait plus partie. Une journée
+  // renseignée après la synthèse ne la périme donc plus.
+  it('une passation d’agenda postérieure ne périme plus la synthèse validée', () => {
+    const resultat = evaluerPreconditionsT0(entrees({
+      synthese: { statut: 'Validee_Praticien', dateValidation: LE_2026_08_05 },
+      premiereValidationSynthese: LE_2026_08_05,
+      assignations: [
+        assignation(),
+        assignation({ idQuestionnaire: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours' }),
+      ],
+      passations: [
+        ...rideauComplet(),
+        // Une journée d'agenda renseignée APRÈS la synthèse validée.
+        passation('Q_ALI_09', { dateReponse: new Date('2026-08-20T09:00:00.000Z') }),
+      ],
+    }), 'T0');
+    expect(dure(resultat, 'synthese_validee').satisfaite).toBe(true);
+  });
   it('une assignation ANTÉRIEURE à la synthèse n’est pas un second rideau', () => {
     // Le premier rideau est assigné à l'entrée du dossier : le compter ici
     // ouvrirait le T0 sans qu'aucune seconde exploration ait eu lieu.
@@ -430,13 +475,17 @@ describe('second rideau (D-158)', () => {
     }
   });
 
-  // §4 — « RENDU » SE LIT SUR L'ASSIGNATION, PAS SUR LA COTABILITÉ. Q_ALI_03 ne
-  // rend aucun total par construction, les agendas et Q_ALI_09 ne sont pas
-  // scorés : sous le prédicat du PREMIER rideau, un second rideau qui en
-  // contient un serait insatisfiable par nature.
+  // §4 — « RENDU » SE LIT SUR L'ASSIGNATION, PAS SUR LA COTABILITÉ. `Q_ALI_03`
+  // ne rend aucun total par construction : sous le prédicat du PREMIER rideau,
+  // un second rideau qui en contient un serait insatisfiable par nature.
+  //
+  // L'EXEMPLE A CHANGÉ, PAS LA RÈGLE ([[D-176]]). Ce banc illustrait la
+  // non-cotabilité avec `Q_ALI_09` — un AGENDA, qui depuis ne compose plus
+  // aucun rideau. Le garder tel quel aurait fait passer ce test pour la bonne
+  // raison tout en prouvant autre chose que ce qu'il annonce.
   it('un instrument non cotable compte, s’il est rendu', () => {
     const resultat = evaluerPreconditionsT0(entrees({
-      assignations: [assignation({ idQuestionnaire: 'Q_ALI_09', titre: 'Journal alimentaire' })],
+      assignations: [assignation({ idQuestionnaire: 'Q_ALI_03', titre: 'Journal alimentaire' })],
     }), 'T0');
     expect(dure(resultat, 'second_rideau').satisfaite).toBe(true);
   });
