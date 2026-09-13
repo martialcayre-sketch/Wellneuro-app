@@ -1360,6 +1360,20 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       // administrables : Cungi = Q_STR_03, HAD = Q_NEU_11. Aucune substitution —
       // la règle propose exactement ce que le claim désigne.
       { claimId: 'WN-CL-0323-013', versionClaim: 'v1.0' },
+      // « L'exploration du sommeil est systématique dans la démarche de
+      // Neuro-Nutrition. » (`WN-SRC-0323`, typologie « déclaré », prescriptif.)
+      //
+      // RECOPIÉ LE 2026-09-13, APRÈS LECTURE EN BASE DE PRODUCTION. Son texte
+      // n'était reproduit nulle part dans le dépôt, là où celui de son jumeau
+      // l'était juste au-dessus : la moitié de la justification de cette règle
+      // n'était pas relisible depuis le code, et un lot antérieur l'avait même
+      // soupçonné d'être fantôme. Il ne l'est pas — il est VALIDE, actif, v1.0.
+      //
+      // CE QU'IL FONDE, ET QUI N'EST PAS CE QU'ON POUVAIT SUPPOSER. Ce claim ne
+      // dit rien des instruments : il fonde l'EXISTENCE de la règle — que
+      // l'exploration du sommeil soit systématique —, là où `0323-013` fonde le
+      // CHOIX et le RANG de ses deux cibles. Les deux claims ne sont donc pas
+      // redondants, et aucun ne remplacerait l'autre.
       { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
     ],
     niveau: 'socle',
