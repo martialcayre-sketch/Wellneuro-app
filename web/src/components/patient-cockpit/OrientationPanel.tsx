@@ -10,6 +10,7 @@ import type {
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
 import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
+import { anciennete } from '@/lib/assignations/peremption';
 import { LIBELLE_EXTINCTION } from '@/lib/clinical/stopRulesLibelles';
 import { Badge } from '@/components/ui/Badge';
 
@@ -420,9 +421,28 @@ export function OrientationPanel({
                     // Le texte vient de la route d'assignation, il n'est pas
                     // réécrit ici : deux formulations du même refus
                     // divergeraient, et c'est l'écran qui mentirait.
-                    <p className="mt-2 text-xs text-muted-foreground" role="status">
-                      {MESSAGE_DEJA_ASSIGNE}
-                    </p>
+                    //
+                    // CE QUE CET ÉCRAN AJOUTE, ET QUE LA CONSTANTE NE PEUT PAS
+                    // PORTER. La constante est rendue par cinq écrans, dont un
+                    // seul — celui-ci — est sur la fiche qui porte le bouton
+                    // d'annulation ; et la date de l'envoi qui bloque ne se
+                    // connaît qu'au cas par cas. Les deux sont donc dits ici,
+                    // par l'écran qui sait où il est et ce qu'il affiche. Le
+                    // formatage de l'ancienneté est partagé avec la liste des
+                    // envois de la fiche (`anciennete`) : deux formatages du même
+                    // fait donneraient deux nombres sur la même page.
+                    //
+                    // La date reste ABSENTE sur un pack, et le refus s'affiche
+                    // alors seul : un pack est dit couvert parce que tous ses
+                    // membres le sont, à des dates qui peuvent différer.
+                    <div className="mt-2" role="status">
+                      <p className="text-xs text-muted-foreground">{MESSAGE_DEJA_ASSIGNE}</p>
+                      {recommandation.dateAssignationOuverte && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {`Envoi ${anciennete(recommandation.dateAssignationOuverte)} — à annuler sur cette fiche, phase « Données fiables ».`}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {ajoutable && !dejaCouvert && (

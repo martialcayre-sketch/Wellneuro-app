@@ -139,7 +139,17 @@ export type ExtinctionRecommandation = {
 
 export type EntreeOrientation = {
   reponses: ReponseOrientation[];
-  /** Questionnaires déjà assignés au patient (toutes assignations confondues). */
+  /**
+   * Questionnaires portant une assignation OUVERTE pour ce patient.
+   *
+   * « Toutes assignations confondues » disait cette ligne ; c'est faux, et
+   * corrigé le 2026-09-13 sans changer une virgule de comportement. Le seul
+   * appelant de production filtre `statut notIn ['Complété','Annulée']`
+   * (`orientationService`), au motif explicite qu'« une assignation annulée ou
+   * complétée ne doit pas bloquer une repassation ». Le moteur reste indifférent
+   * — il ne fait qu'un `has` —, mais un lecteur qui croyait le contraire aurait
+   * lu `dejaAssigne` comme un historique là où c'est un état courant.
+   */
   idsQuestionnairesAssignes: string[];
   regles: OrientationRule[];
   /** Composition réelle des packs (qids) quand elle est connue ; un pack à

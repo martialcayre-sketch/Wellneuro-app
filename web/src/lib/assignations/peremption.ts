@@ -100,3 +100,25 @@ export function envoiPerime(envoi: EnvoiPourPeremption, maintenant: Date = new D
   if (envoi.aPassation !== false) return false;
   return joursDepuisPose(envoi.dateAssignation, maintenant) > JOURS_PEREMPTION_ENVOI;
 }
+
+/**
+ * Depuis quand cet envoi attend — phrase française, UNE seule fois dans le dépôt.
+ *
+ * DÉPLACÉE ICI depuis `FichePatientPanel.tsx` le 2026-09-13, parce qu'un second
+ * écran en a besoin : le refus « déjà assigné » du panneau d'orientation. Deux
+ * formatages de la même ancienneté auraient fini par donner deux nombres derrière
+ * le même fait, à deux blocs d'écart sur la MÊME fiche — la chaîne est
+ * `FichePatientPanel` → `TrajectoirePanel` → `OrientationPanel`.
+ *
+ * La date vient AVANT le compte de jours : c'est la date qui situe l'envoi dans
+ * la consultation, le compte ne fait que la qualifier.
+ *
+ * Assise sur `joursDepuisPose`, qui borne à zéro : une date de pose dans le futur
+ * rend « envoyé le … » plutôt qu'un compte négatif. Le calcul local qu'elle
+ * remplace ne bornait pas.
+ */
+export function anciennete(dateAssignation: string, maintenant: Date = new Date()): string {
+  const lisible = new Date(dateAssignation).toLocaleDateString('fr-FR');
+  const jours = joursDepuisPose(dateAssignation, maintenant);
+  return jours >= 1 ? `en attente depuis le ${lisible} (${jours} j)` : `envoyé le ${lisible}`;
+}

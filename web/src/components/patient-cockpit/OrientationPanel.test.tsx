@@ -249,6 +249,39 @@ describe('OrientationPanel', () => {
     expect(await screen.findByText(MESSAGE_DEJA_ASSIGNE)).toBeTruthy();
   });
 
+  // Le refus disait l'état sans dire depuis quand : un envoi posé il y a 39 jours
+  // et un posé hier portaient le même texte, alors que la fiche, deux blocs plus
+  // haut, sait dire « 39 j ». La date vient du serveur — l'écran ne la déduit pas.
+  it('dit depuis quand l’envoi bloquant attend, et où l’annuler', async () => {
+    const poseeIlYA39Jours = new Date(Date.now() - 39 * 86_400_000).toISOString();
+    stubFetch({
+      ...ACTIF,
+      recommandations: [
+        { ...RECOMMANDATION_PSQI, dejaAssigne: true, dateAssignationOuverte: poseeIlYA39Jours },
+      ],
+    });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Pittsburgh/i);
+    expect(await screen.findByText(/\(39 j\)/)).toBeTruthy();
+    // Le LIEU est dit par cet écran et par lui seul : la constante est rendue par
+    // cinq écrans, dont quatre ne sont pas sur la fiche.
+    expect(await screen.findByText(/sur cette fiche/i)).toBeTruthy();
+    expect(MESSAGE_DEJA_ASSIGNE).not.toContain('cette fiche');
+  });
+
+  // Sans la date, le refus s'affiche seul plutôt que d'inventer une ancienneté.
+  it('affiche le refus seul quand le serveur ne sert aucune date', async () => {
+    stubFetch({ ...ACTIF, recommandations: [{ ...RECOMMANDATION_PSQI, dejaAssigne: true }] });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Pittsburgh/i);
+    expect(await screen.findByText(MESSAGE_DEJA_ASSIGNE)).toBeTruthy();
+    expect(screen.queryByText(/sur cette fiche/i)).toBeNull();
+  });
+
   // Contrôle négatif : la garde ne doit pas éteindre le bouton hors du doublon.
   it('propose toujours l’ajout quand le questionnaire n’est pas déjà assigné', async () => {
     stubFetch(ACTIF);

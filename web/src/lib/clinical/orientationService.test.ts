@@ -278,6 +278,46 @@ describe('evaluerOrientationPourPatient — le score est RECALCULÉ, jamais relu
     });
   });
 
+  // LA DATE DE L'ENVOI QUI BLOQUE — fait administratif ajouté par le service, au
+  // même titre qu'`idPackBase`. Le moteur ne la reçoit pas et ne la calcule pas.
+  const COMPLET_DEGRADE = {
+    Q1: 0, Q2: 90, Q3: 7, Q4: 4,
+    Q5a: 3, Q5b: 3, Q5c: 3, Q5d: 3, Q5e: 3,
+    Q5f: 3, Q5g: 3, Q5h: 3, Q5i: 3, Q5j: 3,
+    Q6: 3, Q7: 3, Q8: 3, Q9: 3,
+  };
+
+  it('sert la PLUS ANCIENNE assignation ouverte de la cible', () => {
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    // Deux lignes ouvertes sur le même instrument : la déduplication sous verrou
+    // l'interdit aujourd'hui, mais des dossiers antérieurs à ce verrou en
+    // portent. Prendre la plus récente rajeunirait une attente que le praticien
+    // doit voir vieille — c'est précisément le défaut que ce lot corrige.
+    prisma.assignation.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_SOM_05', dateAssignation: new Date('2026-09-01T08:00:00Z') },
+      { idQuestionnaire: 'Q_SOM_05', dateAssignation: new Date('2026-08-05T08:00:00Z') },
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.recommandations[0].dejaAssigne).toBe(true);
+      expect(resultat.recommandations[0].dateAssignationOuverte).toBe('2026-08-05T08:00:00.000Z');
+    });
+  });
+
+  it('ne sert aucune date quand la cible n’est pas déjà assignée', () => {
+    // La date sans le verdict inviterait un lecteur à déduire « est-ce bloqué ? »
+    // de la présence du champ, et à répondre autre chose que le moteur.
+    dossierAvec({ type: 'psqi', total: 0, interpretation: null, rawAnswers: COMPLET_DEGRADE });
+    prisma.assignation.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_STR_03', dateAssignation: new Date('2026-08-05T08:00:00Z') },
+    ]);
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.recommandations[0].dejaAssigne).toBe(false);
+      expect(resultat.recommandations[0].dateAssignationOuverte).toBeUndefined();
+    });
+  });
+
   it('une passation ancienne garde son badge « déjà renseigné »', () => {
     // DEUX FAITS DISTINCTS, et une première rédaction les confondait. « Une
     // réponse existe » est ADMINISTRATIF ; « une réponse est cotable » est

@@ -51,7 +51,26 @@ export const MESSAGE_ORIENTATION_INACTIVE =
  * client devrait refaire la jointure lui-même — ou, plus probablement, envoyer
  * le slug et récolter un `pack_not_found`. On donne donc les deux.
  */
-export type RecommandationServie = RecommandationExploration & { idPackBase?: string };
+/**
+ * FAIT ADMINISTRATIF AJOUTÉ PAR LE SERVICE, comme `idPackBase` — jamais par le
+ * moteur, qui reste pur et ne connaît que des identifiants.
+ *
+ * `dateAssignationOuverte` : date de pose de l'assignation OUVERTE qui bloque
+ * cette cible, ou absente. La PLUS ANCIENNE quand il y en a plusieurs — c'est
+ * celle qui mesure l'attente réelle, et celle que le praticien a le plus de
+ * raisons d'annuler.
+ *
+ * CIBLE QUESTIONNAIRE SEULEMENT. Un pack « déjà assigné » l'est parce que TOUS
+ * ses membres le sont, à des dates qui peuvent différer : une date unique sous
+ * une carte de huit instruments désignerait un objet que le praticien ne peut
+ * pas identifier. Même motif que l'absence de nombre dans
+ * `MESSAGE_DEJA_ASSIGNE`. Le champ reste donc absent sur un pack, et l'écran
+ * retombe sur le refus seul.
+ */
+export type RecommandationServie = RecommandationExploration & {
+  idPackBase?: string;
+  dateAssignationOuverte?: string;
+};
 
 export type ResultatOrientationInactif = { actif: false; version: string; message: string };
 
@@ -236,7 +255,11 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // assignation annulée ou complétée ne doit pas bloquer une repassation.
     prisma.assignation.findMany({
       where: { idPatient, statut: { notIn: [...STATUTS_ASSIGNATION_TERMINAL] } },
-      select: { idQuestionnaire: true },
+      // `dateAssignation` en plus depuis le 2026-09-13 : le refus « déjà
+      // assigné » disait l'état sans dire depuis quand, si bien qu'un envoi posé
+      // il y a 39 jours et un posé hier portaient le même texte. Elle ne sert
+      // QU'À ce fait administratif — le moteur ne la reçoit pas.
+      select: { idQuestionnaire: true, dateAssignation: true },
     }),
     prisma.pack.findMany({
       where: { actif: true },
@@ -400,8 +423,27 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
   // forcément une correspondance — il vient de `compositionPacks`, construit
   // par traduction — mais on ne le suppose pas : sans `idPackBase`, le champ
   // reste absent plutôt que faux.
+  // LA PLUS ANCIENNE assignation ouverte par questionnaire. Plusieurs lignes
+  // ouvertes sur un même instrument ne devraient pas exister — la déduplication
+  // sous verrou de ligne patient l'interdit — mais le cas se lit en production
+  // sur des dossiers antérieurs à ce verrou, et prendre la plus récente aurait
+  // rajeuni une attente que le praticien doit voir vieille.
+  const poseOuverteParQid = new Map<string, string>();
+  for (const assignation of assignations) {
+    const iso = assignation.dateAssignation.toISOString();
+    const connue = poseOuverteParQid.get(assignation.idQuestionnaire);
+    if (connue === undefined || iso < connue) poseOuverteParQid.set(assignation.idQuestionnaire, iso);
+  }
+
   const recommandationsServies: RecommandationServie[] = recommandationsFiltrees.map(recommandation => {
-    if (recommandation.cible.type !== 'pack') return recommandation;
+    if (recommandation.cible.type !== 'pack') {
+      // Servie SEULEMENT quand le moteur a bien dit `dejaAssigne` : la date sans
+      // le verdict inviterait un lecteur à recalculer « est-ce bloqué ? » depuis
+      // la présence du champ, et à répondre autre chose que le moteur.
+      if (!recommandation.dejaAssigne) return recommandation;
+      const pose = poseOuverteParQid.get(recommandation.cible.questionnaireId);
+      return pose === undefined ? recommandation : { ...recommandation, dateAssignationOuverte: pose };
+    }
     const idPackBase = idBaseDepuisPackId(recommandation.cible.packId);
     return idPackBase === null ? recommandation : { ...recommandation, idPackBase };
   });
