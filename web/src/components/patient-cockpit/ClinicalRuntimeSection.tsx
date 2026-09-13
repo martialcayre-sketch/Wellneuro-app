@@ -1081,6 +1081,13 @@ export function ClinicalRuntimeSection({
   // trajectoire lisible puisse avoir confirmé.
   const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
+  // LE RELEVÉ SUIT LA CARTE, SOURCE POUR SOURCE — relevé en revue. Écrit avec
+  // le seul `runtime`, il laissait le mode fixture rendre « Source non
+  // retrouvée » sous une carte dont la fixture porte pourtant le snapshot :
+  // deux dérivations voisines qui ne lisent pas la même origine finissent
+  // toujours par se contredire. Elles se lisent maintenant l'une sous l'autre.
+  const sourceRefsEpisode = fixture?.snapshot.sourceRefs
+    ?? (runtime?.status === 'ready' ? runtime.snapshot?.sourceRefs ?? [] : []);
   const decisionBloquee = isDecisionBloquee(decisionCard);
   // Combien de réponses le dossier a reçues APRÈS l'acte confirmé. Lu tel quel
   // depuis le serveur, jamais dérivé ici : l'écran n'a pas l'épisode sous la
@@ -1577,13 +1584,10 @@ export function ClinicalRuntimeSection({
           dans la carte — `sourceRefs` vit dans le snapshot, et le faire entrer
           dans `DecisionCard` déplacerait son `inputHash`, donc `versionId`, donc
           le recoupement de toutes les versions de protocole déjà persistées
-          ([[D-054]] §2). Absent hors `ready` : la liste est alors vide et la
-          rubrique ne s'affiche pas. */}
+          ([[D-054]] §2). Il est dérivé avec la carte, pas ici : les deux doivent
+          venir de la même origine. */}
       {affiche('decision') && (
-        <DecisionSummaryCard
-          decisionCard={decisionCard}
-          sourceRefs={runtime?.status === 'ready' ? runtime.snapshot?.sourceRefs ?? [] : []}
-        />
+        <DecisionSummaryCard decisionCard={decisionCard} sourceRefs={sourceRefsEpisode} />
       )}
       {/* CE QUE LA CARTE NE LIT PAS SE DIT SOUS LA CARTE. Un épisode confirmé
           est un INSTANT : les réponses arrivées après n'y entrent pas, et c'est

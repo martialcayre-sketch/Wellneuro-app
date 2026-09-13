@@ -1,4 +1,4 @@
-### Carte de décision — les passations qui fondent un candidat atteignent enfin l'écran
+### Carte de décision — les passations qui fondent un candidat atteignent enfin l’écran (2026-09-13)
 
 `ClinicalFindingProvenance.responseIds` est calculée, validée contre le snapshot
 — `buildDecisionCard` **jette** si un identifiant y est absent —, hachée dans
