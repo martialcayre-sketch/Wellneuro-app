@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "rappel-agenda-alimentaire"
-statut: "sans objet — déjà livré, constaté le 2026-09-12"
+statut: "abandonné — sans objet : le rappel existait déjà, constaté le 2026-09-12"
 dépend_de: "—"
 ---
 
