@@ -7,76 +7,30 @@ import { createPublicId } from '@/lib/ids';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import {
-  anthropic,
-  CLAUDE_MODEL,
-  SYSTEM_PROMPT_SYNTHESE,
-  VERSION_CORPUS_SYNTHESE,
-  VERSION_PROMPT_SYNTHESE,
-  VERSION_SCHEMA_SYNTHESE,
-  analyserSortieSynthese,
-  validateSyntheseSchema,
-  sanitizeAuditError,
+  validateSyntheseSchema
 } from '@/lib/anthropic';
-import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
-import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
-import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
-import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
-import { filtrerPassationsExploitables, statutExcluDuRaisonnement } from '@/lib/scoring/validite';
-import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
-import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
-  avertissementSyntheseAnterieure,
-  motifNonInterpretable,
+  avertissementSyntheseAnterieure
 } from '@/lib/scoring/passationsNonInterpretables';
-import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import {
   MODELE_REDACTION_PRATICIEN,
   VERSION_SYNTHESE_PRATICIEN,
   nouveauBrouillonPraticien,
-  validerBrouillonPraticien,
+  validerBrouillonPraticien
 } from '@/lib/synthese-praticien';
-import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
-import { instrumentAFormeVariable } from '@/lib/questionnaires/alimentaire';
-import {
-  evaluerOrientationPourPatient,
-  type ResultatOrientation,
-} from '@/lib/clinical/orientationService';
-import {
-  derniereReponseParQuestionnaire,
-  type ReponseOrientation,
-} from '@/lib/clinical/orientationEngine';
-import {
-  formaterEcarts,
-  verifierRestitutionComplements,
-  verifierRestitutionDiscordances,
-  verifierRestitutionOrientation,
-} from '@/lib/clinical/verifierRestitutionOrientation';
-import { chargerVocabulaireIngredients } from '@/lib/supplement-library/vocabulaire';
-import {
-  constatsContradictionsPourDossier,
-  contradictionsActives,
-  discordancesPourGardeRestitution,
-  vigilancesDiscordancePourSynthese,
-} from '@/lib/clinical/contradictionsService';
-import { CONTRADICTIONS_METADATA, CONTRADICTIONS_RULES_SHA256 } from '@/lib/clinical/contradictionsV1';
-import { ORDRE_CONSULTATION_PORTEUSE, whereConsultationPorteuse } from '@/lib/consultation/consultationPorteuse';
-import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
   createRequestContext,
   finalizeLogContext,
-  withCorrelationHeader,
+  withCorrelationHeader
 } from '@/lib/observability/requestContext';
-import type { RequestContext } from '@/lib/observability/types';
 import {
   preparerGeneration,
   genererSynthesePersistee,
   logErreurGeneration,
-  auditErreurGeneration,
-  MAX_TOKENS_SYNTHESE,
+  auditErreurGeneration
 } from '@/lib/synthese/generation';
-import type { GenererArgs, DonePayload } from '@/lib/synthese/generation';
 const MESSAGE_ERREUR_GENERATION = 'Erreur lors de la génération de la synthèse. Réessayez.';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.

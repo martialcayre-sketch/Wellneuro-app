@@ -107,9 +107,18 @@ export type RecommandationExploration = {
   /** Questionnaire déjà assigné, ou composition connue du pack déjà couverte. */
   dejaAssigne: boolean;
   /**
-   * Déjà répondu (fait affiché, jamais un filtre). `null` = inconnu — cas d'un
-   * pack dont la composition n'est pas fournie : un fait inconnu ne doit pas se
+   * Déjà répondu — fait affiché sur la ligne. `null` = inconnu, cas d'un pack
+   * dont la composition n'est pas fournie : un fait inconnu ne doit pas se
    * présenter comme un fait négatif.
+   *
+   * CE CHAMP NE DIT RIEN DE L'EXCLUSION, et la rédaction antérieure — « fait
+   * affiché, JAMAIS UN FILTRE » — laissait croire le contraire. Corrigé le
+   * 2026-09-13. Quand `entree.exclureDejaRepondu` est vrai, une cible déjà
+   * couverte par une passation exploitable n'arrive jamais jusqu'ici : elle est
+   * sautée plus haut dans la boucle, AVANT que la ligne ne soit créée — voir le
+   * `continue` de `cibleDejaCouverte`. Ce booléen ne décrit donc que les cibles
+   * qui ont SURVÉCU à cette exclusion : passation non `VALID`, non cotable, ou
+   * exclusion éteinte parce que la table d'arrêt n'est pas exploitable.
    */
   dejaRepondu: boolean | null;
   motifs: MotifOrientation[];
