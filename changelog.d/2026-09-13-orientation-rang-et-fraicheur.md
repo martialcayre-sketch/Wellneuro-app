@@ -69,3 +69,23 @@ lieu.
 
 Le reste de la barrière est vert : `tsc --noEmit`, `next lint`, et 8968 bancs sur
 539 fichiers.
+
+**LES 23 CLAIMS ONT ÉTÉ RELUS EN BASE DE PRODUCTION LE 2026-09-13**, comme la
+re-signature du 2026-08-06 l'exige et comme `D-067` l'a nommé le maillon que
+l'automatisation ne couvre pas — aucun test unitaire n'ouvre `rag_corpus_claims`,
+si bien qu'un identifiant inventé passerait les bancs. Lecture par one-off
+détaché (`one-off-4974`) : **23 lignes sur 23**, toutes `statut = 'VALIDE'`,
+`prescriptif = true`, `active = true`, `version_claim = 'v1.0'`, aucune
+`superseded_at`.
+
+Un point que cette lecture tranche au passage : `WN-CL-0323-001`, le second claim
+de `R-SOM-01`, **existe et il est valide**. Ce qui manque n'est pas le claim,
+c'est son VERBATIM — son texte n'est reproduit nulle part dans le dépôt, là où
+celui de `WN-CL-0323-013` l'est en commentaire. La moitié de la justification de
+la carte reste donc illisible depuis le code, mais elle n'est pas fantôme.
+
+**CE QU'IL RESTE POUR SIGNER : la relecture du contenu modifié par le praticien,
+et deux lignes.** Dans `ORIENTATION_METADATA` : `shaPerimetre` porté à
+`e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`, et
+`dateValidation` au jour de cette relecture. Les deux bancs rouges repassent au
+vert par ce seul geste ; rien d'autre n'est à toucher.
