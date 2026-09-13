@@ -91,6 +91,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.decisionPrioritySelections = (
       await tx.decisionPrioritySelection.deleteMany({ where: par })
     ).count;
+    // Écartements de propositions d'orientation : même nature que la sélection
+    // ci-dessus — un geste praticien MOTIVÉ sur un dossier nommé. « Ce
+    // praticien a écarté cette exploration pour ce patient, et voici pourquoi »
+    // est une donnée de santé nominative, et elle part avec le dossier. FK
+    // RESTRICT vers `patients` seule, l'ordre est libre.
+    supprimees.ecartementsPropositions = (
+      await tx.ecartementProposition.deleteMany({ where: par })
+    ).count;
     // Constats de critères ([[D-138]]) : FK RESTRICT vers patients ET
     // clinical_criteria. Le vocabulaire n'est pas touché — c'est du
     // référentiel ; ce qui part, c'est « le praticien a constaté ce critère

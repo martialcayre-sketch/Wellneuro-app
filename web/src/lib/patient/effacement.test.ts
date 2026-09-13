@@ -26,6 +26,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
     'arbitrageBiologique', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
+    'ecartementProposition',
     'critereDossierConstate',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',

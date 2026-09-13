@@ -4,6 +4,86 @@
 
 ## Décisions actives
 
+### D-178 — Une proposition d'orientation s'écarte avec un motif écrit, et se RÉVEILLE sur un motif neuf
+
+- Date : 2026-09-13
+- Statut : accepté — **arbitrage du responsable rendu en session le 2026-09-13**,
+  sur quatre points posés séparément (objet, durée, affichage, migration)
+- Domaine : clinique — orientation, geste praticien sur une proposition
+- Migration AUTORISÉE explicitement dans la même session. Le code qui LIT la
+  table arrive dans une PR distincte, après application constatée
+  ([[D-087]]) : interroger une table absente ferait échouer le panneau entier.
+- Patron repris de [[D-127]] (`DecisionPrioritySelection`) : motif obligatoire,
+  auteur et horodatage posés côté serveur, chaînage append-only, index partiel
+  de racine dans la migration seule, contrat négatif.
+
+**CE QUI N'EXISTAIT PAS.** Les recommandations sont RECALCULÉES à chaque lecture
+depuis la table signée. Aucune ligne ne portait l'état d'une proposition, et
+« je ne veux plus voir celle-ci » n'était donc pas exprimable : les seules
+sorties étaient d'assigner l'instrument, ou de le laisser dans la liste
+indéfiniment. Sur les dossiers réels lus le 2026-09-12, c'est la seconde qui
+domine.
+
+**PREMIER ARBITRAGE — L'OBJET, ET LA DOCTRINE QU'IL FALLAIT NE PAS TRAHIR.**
+L'écartement porte sur la CIBLE : c'est le geste que le praticien fait
+réellement, et raisonner par règle lui serait étranger. Mais [[D-053]]
+arbitrage 3 refuse explicitement d'éteindre par cible, et pour une raison
+mesurable : le Cungi (`Q_STR_03`) est proposé par `R2-STR-02` depuis l'axe
+stress ET par `R-SOM-01` depuis l'axe sommeil. Écarter la cible le ferait
+disparaître d'un axe qui n'a rien demandé (`DC-30`).
+
+La sortie retenue n'est ni l'une ni l'autre : **l'écartement fige les règles qui
+motivaient la ligne à l'instant du geste**, et il est LEVÉ dès qu'une règle
+ABSENTE de cette liste vient motiver la même cible. La ligne revient alors avec
+son nouveau motif. Le geste reste simple, et une raison cliniquement neuve n'est
+jamais tue. C'est ce que porte `regles_au_geste`, et c'est la colonne qui fait
+tenir la doctrine.
+
+**DEUXIÈME — LA DURÉE.** Jusqu'à reprise explicite. Aucune horloge : la borne
+clinique est le dossier lui-même, par le réveil ci-dessus. Un écartement borné au
+cycle aurait fait réapparaître des lignes sans qu'aucun fait nouveau ne le
+justifie ; un délai en jours aurait été un chiffre opérationnel de plus à
+déclarer (`DC-19`) qu'aucune source ne fonde.
+
+**TROISIÈME — L'AFFICHAGE.** La ligne quitte la liste principale et rejoint un
+« N écartées » dépliable, qui porte motif, auteur et date, et où se fait la
+reprise. Les deux patrons existaient : une extinction CONSERVE la ligne, tandis
+que l'exclusion `dejaRepondu` ne la produit pas. Conserver la ligne aurait laissé
+l'écran aussi chargé qu'avant — le geste n'aurait servi qu'à consigner. La retirer
+sans trace aurait rendu l'écartement ni visible ni reprenable.
+
+**LA REPRISE EST UNE ESPÈCE, PAS UNE COLONNE NULLABLE.** Reprendre n'est pas
+effacer l'écartement : c'est un second geste, avec son auteur, sa date et son
+propre motif. Une paire `repris_le`/`repris_par` aurait écrit en place et perdu le
+premier motif. L'état courant est la TÊTE de chaîne.
+
+**UN DÉFAUT ATTRAPÉ PAR LE CONTRAT AVANT TOUT DÉPLOIEMENT, et il mérite d'être
+consigné.** La première rédaction du CHECK central écrivait
+`array_length(regles_au_geste, 1) >= 1`. Sur un tableau VIDE, `array_length` rend
+NULL et non zéro : la condition valait NULL, et **un CHECK qui évalue à NULL
+PASSE** — seul FALSE refuse. La garde qui rend le réveil possible ne mordait donc
+pas, et rien ne l'aurait dit. Le cas correspondant du contrat négatif l'a refusée.
+C'est précisément ce qu'un contrat négatif achète.
+
+**CE QUE LE SCHÉMA NE PEUT PAS TENIR, dit plutôt que laissé croire** : que
+`regles_au_geste` contienne des identifiants de RÈGLES et non de CIBLES. Aucune
+contrainte de base ne le sait, alors que la distinction porte tout l'arbitrage.
+C'est la route qui le gardera.
+
+**RGPD — LA DÉCLARATION PRÉCÈDE LA SURFACE, et une qualification reste due.** La
+table est déclarée en rubrique 5 de `docs/DOSSIER_RGPD.md` dans cette PR, avant
+toute ouverture — l'ordre que le précédent `WN_CB_RESULTS_ENABLED` du 2026-09-09
+impose, et qu'un banc tient désormais. Sa qualification au titre de l'article 9
+n'est PAS posée ici : c'est une qualification juridique qui appartient au
+responsable de traitement. Le motif écrit est un raisonnement clinique porté sur
+une personne identifiée ; `DecisionPrioritySelection`, de même nature, figure dans
+la dette nommée du 2026-09-09 — une qualification unique trancherait les deux.
+
+- Référence : `web/prisma/schema.prisma` (`EcartementProposition`),
+  `web/prisma/migrations/20260913120000_orientation_ecartement_v1/`,
+  `web/prisma/checks/orientation_ecartement_v1_negatif.sql`,
+  `changelog.d/2026-09-13-ecartement-proposition-table.md`
+
 ### D-177 — L'exploration du sommeil ne s'éteint pas sur un seul instrument : STOP-SOM reste écartée, et ce n'est plus une attente
 
 - Date : 2026-09-13
