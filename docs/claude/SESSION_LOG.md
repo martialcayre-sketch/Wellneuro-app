@@ -5639,3 +5639,22 @@ PR, ne pas chercher dans le diff. Et une PR peut être mergée pendant qu'on
 travaille encore dessus — le second commit est reparti d'`origin/main`.
 
 **Prochaine action.** Constater `cad2d617` en ligne par contenance.
+
+## 2026-09-13 — Accueil : le débordement du rail, et une release en retard
+
+**Deux signalements sur une même capture, de natures différentes.** « Météo et
+Agendas n'ont pas bougé » n'était pas un défaut de code : `506e1da2` tournait
+encore en ligne, `cad2d617` était `starting`. Constaté par contenance, jamais par
+égalité de SHA. « Le texte dépasse de la fenêtre » était un vrai défaut de
+`PanneauRail` : `shrink-0` tenait le résumé à sa largeur maximale, donc rien ne
+pouvait céder dans les 268 px utiles d'un rail de 300 px.
+
+**Corrigé** (`adb501d1`, #1081) : `flex-wrap` autorise la rupture,
+`whitespace-nowrap` la choisit — le résumé descend entier sous le titre. Mesuré
+au navigateur, pas supposé.
+
+**Ouvert.** `WN_RELEASE_SHA` absente côté Scalingo : l'écran affiche « build
+local » en production et Sentry tague la release `local`. Poser la variable
+redémarre l'application — arbitrage propriétaire en attente.
+
+**Prochaine action.** Constater `adb501d1` en ligne par contenance.
