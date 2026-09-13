@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { OrientationApiResponse } from '@/app/api/praticien/orientation/route';
-import type { RecommandationServie } from '@/lib/clinical/orientationService';
+import type { EcartementPropositionResponse } from '@/app/api/praticien/orientation/ecartement/route';
+import type { PropositionEcartee, RecommandationServie } from '@/lib/clinical/orientationService';
+import { cleCibleEcartement, motifRecevable, MOTIF_LONGUEUR_MAX } from '@/lib/orientation/ecartements';
+import type { CibleExploration } from '@/lib/clinical/orientationEngine';
 import type {
   FileEnvoiApiResponse,
   MutateFileEnvoiResponse,
@@ -43,19 +46,18 @@ const LABEL_NIVEAU: Record<RecommandationServie['niveau'], string> = {
   specialise: 'spécialisé',
 };
 
-function libelleCible(recommandation: RecommandationServie): string {
+function libelleCible(cible: CibleExploration): string {
   // Plus aucune règle publiée ne cible un pack (table du 2026-08-06) ; le TYPE
   // en admet toujours un, et cette ligne est ce qu'il en reste ici — l'identifiant
   // brut plutôt qu'un rendu inventé.
-  if (recommandation.cible.type !== 'questionnaire') return recommandation.cible.packId;
-  const definition = CATALOGUE_DEFINITIONS[recommandation.cible.questionnaireId];
-  return definition?.titre ?? recommandation.cible.questionnaireId;
+  if (cible.type !== 'questionnaire') return cible.packId;
+  const definition = CATALOGUE_DEFINITIONS[cible.questionnaireId];
+  return definition?.titre ?? cible.questionnaireId;
 }
 
-function cleCible(recommandation: RecommandationServie): string {
-  return recommandation.cible.type === 'pack'
-    ? `pack:${recommandation.cible.packId}`
-    : `questionnaire:${recommandation.cible.questionnaireId}`;
+/** Date lisible d'un horodatage ISO — jamais l'heure : le geste se situe au jour. */
+function jourLisible(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR');
 }
 
 export function OrientationPanel({
@@ -94,6 +96,15 @@ export function OrientationPanel({
   const [brouillonPatient, setBrouillonPatient] = useState<{ idBrouillon: string; nb: number } | null>(null);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [issueEnvoi, setIssueEnvoi] = useState<{ succes: boolean; message: string } | null>(null);
+
+  // ÉCARTEMENT PRATICIEN — [[D-178]]. UN SEUL formulaire ouvert à la fois, et
+  // c'est un choix : le motif écrit est la décision, et on n'en rédige pas
+  // quatre en parallèle. Le formulaire ne se ferme que sur un succès — un refus
+  // du serveur laisse le texte saisi en place, sinon le praticien le réécrirait.
+  const [formulaire, setFormulaire] = useState<{ cle: string; action: 'ecarter' | 'reprendre' } | null>(null);
+  const [motifGeste, setMotifGeste] = useState('');
+  const [gesteEnCours, setGesteEnCours] = useState(false);
+  const [issueGeste, setIssueGeste] = useState<{ cle: string; succes: boolean; message: string } | null>(null);
 
   const [rechargement, setRechargement] = useState(0);
   const relire = useCallback(() => setRechargement(n => n + 1), []);
@@ -161,6 +172,12 @@ export function OrientationPanel({
     setBrouillonPatient(null);
     setIssue(null);
     setIssueEnvoi(null);
+    // Le formulaire d'écartement appartient au DOSSIER affiché : un motif à
+    // demi rédigé pour un patient ne doit pas suivre la navigation vers un
+    // autre — il s'y enregistrerait sur la mauvaise proposition.
+    setFormulaire(null);
+    setMotifGeste('');
+    setIssueGeste(null);
     void chargerFile(() => annule);
     return () => {
       annule = true;
@@ -251,6 +268,72 @@ export function OrientationPanel({
     [emailPatient, chargerFile, idPatient],
   );
 
+  /**
+   * Écarte une proposition, ou la reprend — [[D-178]].
+   *
+   * LE CORPS NE PORTE NI RÈGLE NI `supersedes`, et ce n'est pas une économie :
+   * la route les calcule elle-même, et c'est ce qui rend le réveil fiable. Un
+   * client qui figerait les règles pourrait empêcher une proposition de revenir
+   * quand un autre axe clinique la motive — soit faire taire cet axe (`DC-30`).
+   */
+  const enregistrerGeste = useCallback(
+    async (cle: string, action: 'ecarter' | 'reprendre', motif: string) => {
+      if (gesteEnCours) return;
+      setGesteEnCours(true);
+      setIssueGeste(null);
+      try {
+        const res = await fetch('/api/praticien/orientation/ecartement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idPatient, cibleId: cle, action, motif }),
+        });
+        const payload = (await res.json()) as EcartementPropositionResponse;
+        // PÉREMPTION — le même patron que les deux autres appels de ce fichier, et
+        // son absence était un vrai défaut. Si le praticien a changé de dossier
+        // pendant le POST, l'effet de changement a déjà remis le formulaire et
+        // l'issue à zéro : écrire ici afficherait, sur le dossier B, un message
+        // vert affirmant qu'une proposition vient d'être écartée — et renvoyant
+        // vers un repli qui peut être absent. Le geste, lui, a bien été enregistré
+        // sur le dossier A ; c'est l'écran qui n'est plus le bon.
+        if (idPatientRef.current !== idPatient) return;
+        if (payload?.ok) {
+          setFormulaire(null);
+          setMotifGeste('');
+          setIssueGeste({
+            cle,
+            succes: true,
+            message: action === 'ecarter'
+              ? 'Proposition écartée — elle reste consultable dans le repli ci-dessous, avec votre motif.'
+              : 'Proposition reprise — elle est de nouveau dans la liste.',
+          });
+          // C'est la RELECTURE qui déplace la ligne, jamais une déduction
+          // locale : le serveur seul sait si la proposition est encore motivée,
+          // et une ligne reprise peut revenir accompagnée d'un réveil.
+          relire();
+        } else {
+          // La phrase du refus vient du serveur : lui seul distingue « déjà
+          // écartée » de « plus proposée » ou d'un fil illisible, et réécrire
+          // ces cas ici les ferait diverger.
+          setIssueGeste({
+            cle,
+            succes: false,
+            message: payload?.error ?? "Le geste n'a pas pu être enregistré.",
+          });
+        }
+      } catch {
+        // Même péremption : une panne réseau survenue après la navigation ne
+        // s'annonce pas sur le dossier suivant.
+        if (idPatientRef.current !== idPatient) return;
+        setIssueGeste({ cle, succes: false, message: "Le geste n'a pas pu être enregistré (erreur technique)." });
+      } finally {
+        // NON gardé, à la différence des deux au-dessus : laisser `gesteEnCours`
+        // à vrai désactiverait les boutons du dossier suivant.
+        setGesteEnCours(false);
+      }
+    },
+    [gesteEnCours, idPatient, relire],
+  );
+
   const envoyerLaFile = useCallback(async () => {
     const brouillon = brouillonPatient;
     if (!brouillon || envoiEnCours) return;
@@ -288,6 +371,115 @@ export function OrientationPanel({
     }
   }, [brouillonPatient, envoiEnCours, chargerFile, idPatient, relire]);
 
+  const ecartees: PropositionEcartee[] =
+    reponse?.ok && reponse.actif === true && Array.isArray(reponse.ecartees) ? reponse.ecartees : [];
+
+  /**
+   * Le champ de motif, identique pour les deux gestes.
+   *
+   * Pas un `<form>`, et c'est délibéré : ce panneau est rendu dans la fiche
+   * patient, et un formulaire imbriqué dans un autre est du HTML invalide dont
+   * le comportement de soumission dépend du navigateur.
+   */
+  const champMotif = (cle: string, action: 'ecarter' | 'reprendre') => (
+    <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">
+      <label htmlFor={`motif-${action}-${cle}`} className="block text-2xs font-medium text-foreground">
+        {action === 'ecarter'
+          ? 'Pourquoi écarter cette exploration ? (obligatoire)'
+          : 'Pourquoi la reprendre ? (obligatoire)'}
+      </label>
+      <textarea
+        id={`motif-${action}-${cle}`}
+        rows={2}
+        value={motifGeste}
+        maxLength={MOTIF_LONGUEUR_MAX}
+        onChange={event => setMotifGeste(event.target.value)}
+        className="mt-1 w-full rounded-md border border-border bg-surface p-2 text-xs text-foreground"
+      />
+      <p className="mt-1 text-2xs text-muted-foreground">
+        Votre motif, votre nom et la date sont enregistrés. Rien n’est effacé : l’exploration reste
+        consultable, et revient d’elle-même si une autre règle la motive plus tard.
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          // La même sévérité que la route et que la base : un motif fait
+          // d'espaces ou de tabulations n'est pas un motif. Refuser ici évite
+          // un aller-retour, mais ne remplace RIEN — le serveur revérifie.
+          disabled={gesteEnCours || !motifRecevable(motifGeste)}
+          onClick={() => void enregistrerGeste(cle, action, motifGeste)}
+          className="rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+        >
+          {gesteEnCours
+            ? 'Enregistrement...'
+            : action === 'ecarter' ? 'Confirmer l’écartement' : 'Confirmer la reprise'}
+        </button>
+        <button
+          type="button"
+          disabled={gesteEnCours}
+          onClick={() => { setFormulaire(null); setMotifGeste(''); setIssueGeste(null); }}
+          className="rounded-md px-2 py-1 text-xs text-muted-foreground disabled:opacity-60"
+        >
+          Annuler
+        </button>
+      </div>
+      {issueGeste && !issueGeste.succes && issueGeste.cle === cle && (
+        // Le refus s'affiche DANS le formulaire, et le texte saisi y reste :
+        // « déjà écartée », « plus proposée » ou fil illisible sont des refus
+        // dont le praticien peut avoir à tenir compte avant de réécrire.
+        <p role="alert" className="mt-1 text-xs text-status-danger">{issueGeste.message}</p>
+      )}
+    </div>
+  );
+
+  /**
+   * Le repli des propositions écartées — [[D-178]], troisième arbitrage.
+   *
+   * LE GESTE DOIT DÉGAGER L'ÉCRAN, sinon il ne sert qu'à consigner ; mais rien
+   * n'est effacé, et ce repli est ce qui l'atteste. Il est rendu aussi quand la
+   * liste visible est vide : c'est même là qu'il compte le plus, puisque l'écran
+   * dirait sinon « aucune exploration proposée » alors que la table en propose.
+   */
+  const blocEcartees = ecartees.length > 0 ? (
+    <details className="mt-3 rounded-lg border border-border p-2">
+      <summary className="cursor-pointer text-xs font-medium text-foreground">
+        {`${ecartees.length} exploration${ecartees.length > 1 ? 's' : ''} écartée${ecartees.length > 1 ? 's' : ''}`}
+      </summary>
+      <ul className="mt-2 space-y-2">
+        {ecartees.map(ecartee => {
+          const cle = cleCibleEcartement(ecartee.cible);
+          return (
+            <li key={ecartee.ecartementId} className="rounded-md bg-muted/40 p-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">{libelleCible(ecartee.cible)}</span>
+                <Badge variant="info">{ecartee.cible.type === 'pack' ? 'pack' : 'questionnaire'}</Badge>
+              </div>
+              <p className="mt-1 text-2xs text-muted-foreground">
+                {`Écartée le ${jourLisible(ecartee.faitLe)} par ${ecartee.parEmail}`}
+              </p>
+              <p className="mt-1 text-xs text-foreground">{ecartee.motif}</p>
+              {formulaire?.cle === cle && formulaire.action === 'reprendre'
+                ? champMotif(cle, 'reprendre')
+                : (
+                  <button
+                    type="button"
+                    disabled={gesteEnCours}
+                    onClick={() => { setFormulaire({ cle, action: 'reprendre' }); setMotifGeste(''); setIssueGeste(null); }}
+                    className="mt-2 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                  >
+                    Reprendre cette exploration
+                  </button>
+                )}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-2xs text-muted-foreground">
+        Une exploration écartée revient d’elle-même si une autre indication la motive plus tard.
+      </p>
+    </details>
+  ) : null;
+
   return (
     <section aria-label="Orientation des explorations" className="rounded-xl border border-border bg-surface p-4">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -321,19 +513,37 @@ export function OrientationPanel({
         // serveur — l'UI n'invente pas la raison pour laquelle la table se tait.
         <p className="mt-2 text-xs text-muted-foreground">{reponse.message}</p>
       ) : reponse?.ok && reponse.actif === true && reponse.recommandations.length === 0 ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Aucune exploration complémentaire n’est proposée par la table en vigueur pour ce patient.
-        </p>
+        <>
+          {/* DEUX PHRASES, PARCE QUE CE SONT DEUX FAITS DIFFÉRENTS. « Aucune
+              exploration n'est proposée » serait FAUX quand la table en propose
+              et que le praticien les a écartées : ce qui est vide, c'est la
+              liste à traiter, pas la proposition ([[DC-24]] — une absence à
+              l'écran ne doit pas se lire comme une absence de fait). */}
+          <p className="mt-2 text-xs text-muted-foreground">
+            {ecartees.length > 0
+              ? 'Plus aucune exploration à examiner : celles que la table propose pour ce patient ont toutes été écartées.'
+              : 'Aucune exploration complémentaire n’est proposée par la table en vigueur pour ce patient.'}
+          </p>
+          {issueGeste?.succes && (
+            <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
+          )}
+          {blocEcartees}
+        </>
       ) : reponse?.ok && reponse.actif === true ? (
         <>
           <ol className="mt-3 space-y-3">
             {reponse.recommandations.map(recommandation => {
-              const cle = cleCible(recommandation);
+              // La clé vient du module d'écartement, et non plus d'une copie
+              // locale : la route d'écartement et la base parlent cette
+              // orthographe-là, et deux implémentations divergeraient sur la
+              // cible même du geste. La chaîne produite est identique à celle
+              // que ce panneau construisait — rien ne change pour la file.
+              const cle = cleCibleEcartement(recommandation.cible);
               const estPack = recommandation.cible.type === 'pack';
               const qid = recommandation.cible.type === 'questionnaire'
                 ? recommandation.cible.questionnaireId
                 : null;
-              const titre = libelleCible(recommandation);
+              const titre = libelleCible(recommandation.cible);
               // Deux conditions cumulatives, aucune supposée : une cible
               // questionnaire, et un email pour l'appeler. Sinon le bouton est
               // absent — jamais présent et voué à l'échec.
@@ -367,6 +577,11 @@ export function OrientationPanel({
                         trouble ; la peindre en vert à l'écran dirait le
                         contraire au praticien. */}
                     {recommandation.extinction && <Badge variant="neutral">exploration éteinte</Badge>}
+                    {/* WARNING, et pas `info` : une ligne qui réapparaît après
+                        avoir été écartée par écrit demande à être regardée. Sans
+                        ce signal, sa réapparition se lirait comme un défaut de
+                        l'écran, alors que c'est le comportement voulu. */}
+                    {recommandation.reveil && <Badge variant="warning">revenue</Badge>}
                   </div>
 
                   {recommandation.objectifs.length > 0 && (
@@ -396,6 +611,32 @@ export function OrientationPanel({
                       </li>
                     ))}
                   </ul>
+
+                  {recommandation.reveil && (
+                    // LE RÉVEIL SE DIT, il ne se devine pas — [[D-178]]. Le
+                    // praticien avait écarté cette ligne par écrit : elle ne
+                    // peut pas revenir en silence. Ce qui la ramène est une
+                    // indication NOUVELLE, et son identifiant reste en repli de
+                    // traçabilité comme partout ailleurs dans ce panneau
+                    // (audit 2026-09-02 : un `regleId` n'est pas du langage
+                    // praticien).
+                    <div className="mt-2 rounded-md bg-status-warning/10 p-2">
+                      <p className="text-xs font-medium text-foreground">
+                        Cette exploration revient : une nouvelle indication la motive.
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {/* PAS « vous l'aviez écartée » : le champ de réveil ne
+                            porte pas l'auteur du geste, et l'attribuer au
+                            lecteur serait une affirmation que rien ne soutient
+                            — l'auteur reste nommé dans le repli des écartées. */}
+                        {`Écartée le ${jourLisible(recommandation.reveil.ecarteLe)} : ${recommandation.reveil.motif}`}
+                      </p>
+                      <details className="mt-1 text-2xs text-muted-foreground">
+                        <summary className="cursor-pointer">Traçabilité</summary>
+                        <span>{recommandation.reveil.reglesNouvelles.join(', ')}</span>
+                      </details>
+                    </div>
+                  )}
 
                   {recommandation.extinction && (
                     <div className="mt-2 rounded-md bg-muted/50 p-2">
@@ -470,10 +711,39 @@ export function OrientationPanel({
                       )}
                     </div>
                   )}
+
+                  {/* ÉCARTER — disponible sur TOUTE ligne visible, pack compris,
+                      et même déjà assignée : le geste porte sur la proposition,
+                      pas sur l'envoi. Le conditionner à `ajoutable` en priverait
+                      les lignes qu'on a justement le plus de raisons d'écarter.
+                      La reprise, elle, vit dans le repli des écartées : c'est là
+                      que la ligne se trouve après le geste. */}
+                  {formulaire?.cle === cle && formulaire.action === 'ecarter' ? (
+                    champMotif(cle, 'ecarter')
+                  ) : (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        disabled={gesteEnCours}
+                        onClick={() => { setFormulaire({ cle, action: 'ecarter' }); setMotifGeste(''); setIssueGeste(null); }}
+                        className="rounded-md px-2 py-1 text-xs text-muted-foreground underline decoration-dotted disabled:opacity-60"
+                      >
+                        Écarter cette exploration
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ol>
+          {issueGeste?.succes && (
+            // AU NIVEAU DU PANNEAU, et non dans la ligne : après un écartement
+            // la ligne n'est plus là, et un message accroché à elle
+            // disparaîtrait avec elle — le praticien ne saurait pas si son
+            // geste a été enregistré.
+            <p role="status" className="mt-2 text-xs text-status-success">{issueGeste.message}</p>
+          )}
+          {blocEcartees}
           {/* Le même bouton que la file de la Bibliothèque, sous les
               suggestions (demande propriétaire 2026-08-09) : il envoie TOUT le
               brouillon du patient — y compris d'éventuels items ajoutés depuis
