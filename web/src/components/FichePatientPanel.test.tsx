@@ -82,7 +82,11 @@ type Options = {
   //   empêche de confirmer l'ancre, et celui qui a motivé ce compte ;
   // - `tronque` : la route plafonne, le dossier porte plus de lignes ;
   // - `filtreIgnore` : serveur qui n'écho pas l'absence de filtre.
-  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption';
+  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption' | 'aucun';
+  // Verdict du rideau T0 servi par la checklist du cockpit, branche
+  // `proposal_required` seulement. ABSENT par défaut : la route ne le
+  // calcule qu'en visant une ancre, et son absence doit rester testable.
+  rideau?: 'satisfait' | 'incomplet';
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
@@ -504,7 +508,9 @@ function stubFetch(options: Options = {}) {
           ? ENVOIS_RIDEAU_INCOMPLET
           : scenarioEnvois === 'peremption'
             ? ENVOIS_PEREMPTION
-            : ENVOIS_RIDEAU_COMPLET;
+            : scenarioEnvois === 'aucun'
+              ? []
+              : ENVOIS_RIDEAU_COMPLET;
         return ok({
           assignations: liste,
           assignationsMeta: {
@@ -570,7 +576,34 @@ function stubFetch(options: Options = {}) {
     // Runtime clinique C1.
     if (url.includes('/api/praticien/cockpit')) {
       if (runtime === 'ready') return ok({ status: 'ready', snapshot: {}, review: { missingData: null, discordances: null }, decisionCard: carte });
-      if (runtime === 'proposal') return ok({ status: 'proposal_required', proposal: { assessmentEpisodeId: 'ep1', milestone: 'T0', inWindowResponseIds: [], candidateResponses: [] }, proposalHash: 'h' });
+      if (runtime === 'proposal') {
+        const rideau = options.rideau;
+        return ok({
+          status: 'proposal_required',
+          proposal: { assessmentEpisodeId: 'ep1', milestone: 'T0', inWindowResponseIds: [], candidateResponses: [] },
+          proposalHash: 'h',
+          // La checklist n'est servie que si le scénario la demande : son
+          // ABSENCE est un état à part entière, que le statut doit rendre
+          // « indéterminée » plutôt que d'affirmer.
+          ...(rideau
+            ? {
+                preconditions: {
+                  dures: [
+                    {
+                      id: 'rideau_t0',
+                      libelle: 'Premier rideau renseigné et cotable',
+                      satisfaite: rideau === 'satisfait',
+                      detail: rideau === 'satisfait' ? null : 'Premier rideau incomplet — non renseigné : Q_ALI_01.',
+                    },
+                  ],
+                  souples: [],
+                  bloquant: rideau !== 'satisfait',
+                  contournementsRequis: [],
+                },
+              }
+            : {}),
+        });
+      }
       if (runtime === 'unauthenticated') return ok({ status: 'unavailable', reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       return ok({ status: 'unavailable', reason: 'exception', error: 'Indisponible.' });
     }
@@ -777,7 +810,10 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
   // et la qualification doit y survivre. Sans ce banc, supprimer la fonction
   // entière passerait au vert sur le seul banc ci-dessus.
   it('« Données fiables » garde « en attente du patient » — la qualification n’est pas retirée', async () => {
-    await rendreFiche({ reponses: 'aucune' });
+    // Le critère a changé le 2026-09-13 (rideau T0 complet et cotable, et non
+    // plus « au moins une passation ») ; la QUALIFICATION, elle, doit survivre.
+    // C'est bien cette phase qui attend une matière du patient.
+    await rendreFiche({ runtime: 'proposal', rideau: 'incomplet' });
     const onglet = screen.getByRole('tab', { name: /Données fiables/i });
     expect(onglet.textContent).toMatch(/en attente du patient/i);
   });
@@ -1929,6 +1965,70 @@ describe('FichePatientPanel — le compte des envois', () => {
 
     expect(await screen.findByText(/compte des envois est inconnu/)).toBeTruthy();
     expect(screen.queryByText(/rendus sur/)).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE STATUT DE LA PHASE 2 SUIT LE RIDEAU T0 — arbitrage praticien du
+// 2026-09-13.
+//
+// Le rail marquait « renseignée » dès qu'une passation existait. Un dossier à
+// qui il manquait un questionnaire du rideau — donc dont l'ancre était
+// inconfirmable — portait la même pastille verte qu'un dossier complet, à trois
+// centimètres d'un compte qui disait l'inverse. Le critère est désormais celui
+// de `preconditionsT0`, remonté du serveur et jamais recalculé ici.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('FichePatientPanel — le statut de « Données fiables »', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const ongletDonnees = () => screen.getByRole('tab', { name: /Données fiables/i });
+
+  it('rideau complet et cotable : « renseignée »', async () => {
+    await rendreFiche({ runtime: 'proposal', rideau: 'satisfait' });
+    expect(ongletDonnees().textContent).toMatch(/renseignée/i);
+  });
+
+  it('rideau incomplet : « en attente du patient », même avec des passations reçues', async () => {
+    // LE CAS QUI A MOTIVÉ L'ARBITRAGE. Les fixtures servent quatre passations
+    // rendues : l'ancien critère aurait dit « renseignée ».
+    await rendreFiche({ runtime: 'proposal', rideau: 'incomplet' });
+    expect(ongletDonnees().textContent).toMatch(/en attente du patient/i);
+    expect(ongletDonnees().textContent).not.toMatch(/renseignée/i);
+  });
+
+  it('aucun envoi jamais posé : « à ouvrir », et surtout pas « en attente du patient »', async () => {
+    // Cinq dossiers sur douze en production au 2026-09-12 : créés, zéro
+    // assignation. Le geste attendu est PRATICIEN — reprocher l'attente au
+    // patient nommerait l'acteur opposé, le défaut même que la
+    // requalification de « Compréhension » a corrigé le 2026-09-10.
+    await rendreFiche({ runtime: 'proposal', rideau: 'incomplet', envois: 'aucun' });
+    expect(ongletDonnees().textContent).toMatch(/à ouvrir/i);
+    expect(ongletDonnees().textContent).not.toMatch(/en attente du patient/i);
+  });
+
+  it('checklist absente : « indéterminée », jamais un verdict inventé', async () => {
+    // La route ne calcule les préconditions qu'en visant une ancre. Sans
+    // elles, le rideau n'est pas incomplet : il est inconnu (`DC-24`).
+    await rendreFiche({ runtime: 'proposal' });
+    expect(ongletDonnees().textContent).toMatch(/indéterminée/i);
+  });
+
+  it('lecture des envois en échec : « indéterminée » plutôt qu’un statut affirmé', async () => {
+    await rendreFiche({ runtime: 'proposal', rideau: 'satisfait', patients: 'erreur' });
+    expect(ongletDonnees().textContent).toMatch(/indéterminée/i);
+  });
+
+  it('épisode confirmé : « renseignée », alors que la route ne sert plus de checklist', async () => {
+    // Le rideau complet est une condition DURE de la confirmation : un épisode
+    // confirmé ne peut pas coexister avec un rideau incomplet au moment où il a
+    // été posé. Sans cette branche, tout dossier ancré retomberait en
+    // « indéterminée » — la route cesse de calculer ce qu'elle n'a plus à
+    // autoriser.
+    await rendreFiche({ runtime: 'ready' });
+    expect(ongletDonnees().textContent).toMatch(/renseignée/i);
   });
 });
 

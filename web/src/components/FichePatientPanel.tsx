@@ -1061,7 +1061,43 @@ export function FichePatientPanel({
         if (etatCorrections === 'erreur') return 'inconnu';
         return assignationsModif.length > 0 ? 'en_attente' : 'fait';
       }
-      if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
+      if (id === 'donnees') {
+        // « RENSEIGNÉE » VEUT DIRE « LE RIDEAU T0 EST COMPLET ET COTABLE »,
+        // arbitrage praticien du 2026-09-13 — et non « au moins une passation
+        // est arrivée », qui était le critère jusqu'ici.
+        //
+        // L'ancien critère mentait dans le sens qui coûte : un dossier à qui
+        // il manquait un questionnaire du rideau — donc dont l'ancre était
+        // inconfirmable — portait la même pastille verte qu'un dossier
+        // complet. Constaté sur un dossier réel le 2026-09-12, et le compte
+        // posé depuis en phase 2 disait déjà l'inverse du badge, à trois
+        // centimètres l'un de l'autre.
+        //
+        // Le critère est celui de `preconditionsT0`, PAS un second : le rail
+        // dit maintenant la même chose que le panneau de confirmation
+        // d'épisode. Un envoi du second rideau qui traîne ne fait donc pas
+        // retomber la phase — il n'empêche pas de confirmer l'ancre, et la
+        // liste des envois le montre déjà pour ce qu'il est.
+        if (etatPassations === 'erreur' || etatPassations === 'tronque') return 'inconnu';
+        // RIEN N'A ÉTÉ DEMANDÉ : le geste attendu est PRATICIEN, pas patient.
+        // `en_attente` afficherait « en attente du patient » et reprocherait à
+        // celui-ci un envoi qui n'est jamais parti — cinq dossiers sur douze
+        // en production au 2026-09-12. C'est le défaut de désignation d'acteur
+        // que la requalification de « Compréhension » a corrigé le 2026-09-10.
+        if (envois.assignees === 0) return 'a_ouvrir';
+        if (!etatRuntime || etatRuntime.chargement) return 'inconnu';
+        // L'ANCRE CONFIRMÉE VAUT VERDICT, et c'est le seul raccourci admis :
+        // le rideau complet est une condition DURE de la confirmation, donc un
+        // épisode confirmé ne peut pas coexister avec un rideau incomplet au
+        // moment où il a été posé. La route cesse d'ailleurs de calculer les
+        // préconditions dès qu'il n'y a plus rien à autoriser — sans cette
+        // branche, tout dossier ancré retomberait en « indéterminée ».
+        if (etatRuntime.episodeConfirme) return 'fait';
+        // Le verdict du rideau vient du serveur ; absent, il est INCONNU et
+        // ne s'invente pas (`DC-24`).
+        if (etatRuntime.rideauT0Satisfait === null) return 'inconnu';
+        return etatRuntime.rideauT0Satisfait ? 'fait' : 'en_attente';
+      }
       if (id === 'comprehension') {
         // CE QUE LA PHASE CONTIENT, ET NON CE QUI L'ENTOURE. Elle lisait les
         // couvertures des douze besoins — un objet du cercle, affiché en tête de
@@ -1113,7 +1149,7 @@ export function FichePatientPanel({
       if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
       return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
     },
-    [data, assignationsModif, etatCorrections, reponses, etatRuntime, etatPhase3, etatPhase3Lu],
+    [data, assignationsModif, etatCorrections, reponses, etatRuntime, etatPhase3, etatPhase3Lu, envois, etatPassations],
   );
 
   // Navigation praticien : le choix manuel prime définitivement sur la
