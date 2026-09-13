@@ -134,6 +134,18 @@ export type PropositionEcartee = {
   faitLe: string;
   /** Les règles qui la motivaient au moment du geste — ce que le réveil compare. */
   reglesAuGeste: string[];
+  /**
+   * L'extinction de la ligne, quand elle en portait une — et ce champ répare une
+   * PERTE, relevée en revue.
+   *
+   * Une ligne peut être ÉTEINTE par la table d'arrêt ET écartée par le praticien :
+   * deux faits de natures différentes, et le repli n'affichait que le second. La
+   * qualification clinique disparaissait donc de l'écran au moment où le praticien
+   * écartait la ligne, alors qu'elle est justement ce qui explique POURQUOI
+   * l'exploration avait cessé d'être proposée. Une extinction se qualifie, elle ne
+   * s'efface pas (`D-055`) — y compris dans un repli.
+   */
+  extinction?: RecommandationExploration['extinction'];
 };
 
 export type ResultatOrientationInactif = { actif: false; version: string; message: string };
@@ -574,6 +586,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
         parEmail: verdict.geste.parEmail,
         faitLe: verdict.geste.faitLe,
         reglesAuGeste: verdict.geste.reglesAuGeste,
+        // L'extinction voyage avec la ligne : écarter ne dé-qualifie pas.
+        ...(recommandation.extinction === undefined
+          ? {}
+          : { extinction: recommandation.extinction }),
       });
       continue;
     }

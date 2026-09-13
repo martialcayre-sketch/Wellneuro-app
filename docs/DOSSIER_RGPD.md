@@ -218,31 +218,31 @@ personnelles se répartissent ainsi :
 > vu en écrivant l'entrée de la proposition de priorité : on ne pouvait pas
 > déclarer une table nouvelle en laissant ses deux sources absentes.
 
-> **Les deux tables de GESTES PRATICIEN MOTIVÉS — une seule question à trancher,
-> posée le 2026-09-13.** `DecisionPrioritySelection` (`D-127`, migration du
-> 2026-09-06) et `EcartementProposition` (`D-178`, migration appliquée le
-> 2026-09-13) ont la même anatomie, au champ près : un dossier nommé, un motif
-> écrit obligatoire, l'e-mail du praticien et l'horodatage posés **côté serveur**,
-> et un chaînage append-only où se corriger crée une ligne au lieu d'en réécrire
-> une. Ce qu'elles portent n'est ni une mesure ni un score : c'est une PHRASE
-> écrite par un soignant sur une personne identifiée, et qui dit un raisonnement
-> clinique — « cette exploration n'a pas lieu d'être pour ce patient, et voici
-> pourquoi », « c'est cette priorité qui est retenue, et voici pourquoi ».
->
-> **Ce dossier ne les qualifie pas, et l'abstention est délibérée.** Classer une
-> table en catégorie particulière au sens de l'article 9 est un acte juridique,
-> qui appartient au responsable de traitement avec son conseil — c'est ce que la
-> rubrique 5 de la table des dettes énonce déjà pour les tables non déclarées,
-> échéance du 2026-10-21. Ce qui est fait ici est l'inverse d'une qualification :
-> les deux tables sont DÉCRITES, champ par champ, et rapprochées pour que la
-> question se pose UNE fois. Les traiter séparément aurait produit deux réponses
-> possiblement divergentes sur une même nature d'objet.
->
-> **Ce qui ne dépend pas de cette qualification, et qui est déjà tenu** : les deux
-> tables entrent dans la transaction d'effacement IDP2, portent la RLS, et ne
-> sortent jamais vers le portail patient. `DecisionPrioritySelection` quitte par
-> là même la dette nommée du 2026-09-09 : elle n'était pas déclarée, elle l'est.
-> La dette ne devait que rétrécir — elle rétrécit.
+**Les deux tables de GESTES PRATICIEN MOTIVÉS — une seule question à trancher,
+posée le 2026-09-13.** `DecisionPrioritySelection` (`D-127`, migration du
+2026-09-06) et `EcartementProposition` (`D-178`, migration appliquée le
+2026-09-13) ont la même anatomie, au champ près : un dossier nommé, un motif
+écrit obligatoire, l'e-mail du praticien et l'horodatage posés **côté serveur**,
+et un chaînage append-only où se corriger crée une ligne au lieu d'en réécrire
+une. Ce qu'elles portent n'est ni une mesure ni un score : c'est une PHRASE
+écrite par un soignant sur une personne identifiée, et qui dit un raisonnement
+clinique — « cette exploration n'a pas lieu d'être pour ce patient, et voici
+pourquoi », « c'est cette priorité qui est retenue, et voici pourquoi ».
+
+**Ce dossier ne les qualifie pas, et l'abstention est délibérée.** Classer une
+table en catégorie particulière au sens de l'article 9 est un acte juridique,
+qui appartient au responsable de traitement avec son conseil — c'est ce que la
+rubrique 5 de la table des dettes énonce déjà pour les tables non déclarées,
+échéance du 2026-10-21. Ce qui est fait ici est l'inverse d'une qualification :
+les deux tables sont DÉCRITES, champ par champ, et rapprochées pour que la
+question se pose UNE fois. Les traiter séparément aurait produit deux réponses
+possiblement divergentes sur une même nature d'objet.
+
+**Ce qui ne dépend pas de cette qualification, et qui est déjà tenu** : les deux
+tables entrent dans la transaction d'effacement IDP2, portent la RLS, et ne
+sortent jamais vers le portail patient. `DecisionPrioritySelection` quitte par
+là même la dette nommée du 2026-09-09 : elle n'était pas déclarée, elle l'est.
+La dette ne devait que rétrécir — elle rétrécit.
 
 **Hors périmètre personnel**, et à ne pas confondre : les référentiels
 (`Biology*`, `Supplement*`, `Ciqual*`, catalogues de questionnaires) ne portent
@@ -780,7 +780,7 @@ elle.
 | 1 | Responsable | Contradiction DPO (G-TRUST-02 vs D-005) | Responsable | 2026-10-21 | `docs/DECISIONS.md` |
 | 3 | Base légale | Qualification, non rédigée à ce jour | Conseil qualifié | 2026-10-21 | ici, rubrique 3 |
 | 4 | Personnes | Cas des mineurs | Responsable | 2026-10-21 | `SOURCES_ET_VALIDATIONS.md` |
-| 5 | Catégories | **Seize tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portent alors une relation vers `Patient`, 21 y sont cités) ; `DecisionPrioritySelection` en est sortie le 2026-09-13, déclarée avec `EcartementProposition` sous une même entrée. Les qualifier (art. 9 ou non) est un acte juridique, pas une écriture de code ; la liste est nommée dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et sur toute sortie de liste non suivie d'une déclaration — le passif est ouvert, la récidive est fermée | Responsable + conseil | 2026-10-21 | ici, rubrique 5 |
+| 5 | Catégories | **Six tables filles de `patients` ne sont pas déclarées** — dix-sept au 2026-09-09, mesuré en comparant `schema.prisma` à cette rubrique (38 modèles portaient alors une relation vers `Patient`, 21 y étaient cités ; ils sont 46 et 40 au 2026-09-13). ONZE noms sont sortis de la liste depuis, dont dix le 2026-09-13 : `DecisionPrioritySelection`, déclarée avec `EcartementProposition` sous une même entrée ; et neuf **dettes périmées** — déjà déclarées depuis le rattrapage `D-167`, mais laissées dans la liste, donc DISPENSÉES de vérification alors qu'elles n'en avaient plus besoin. Les qualifier (art. 9 ou non) reste un acte juridique, pas une écriture de code ; la liste vit dans `rubrique5.modeles.test.ts`, qui **rougit sur toute table ajoutée après cette date** et, depuis la purge, sur toute déclaration retirée pour l'une des dix — le passif est ouvert, la récidive est fermée | Responsable + conseil | 2026-10-21 | ici, rubrique 5 |
 | 5 | Catégories | ~~Catégorie « résultats biologiques » absente~~ — **déclarée le 2026-09-09** (quatre tables du rayon), mais **après** la pose de `WN_CB_RESULTS_ENABLED` que la rubrique 2 posait comme conditionnée à cette déclaration préalable. Écart daté en rubrique 2 ; portée nulle sur les données (0 ligne au constat) | — | fermé | ici, rubriques 2 et 5 |
 | 6 | Sous-traitants | Aucun DPA archivé — forme connue depuis la réponse du 2026-08-11 (DPA + annexe HDS distincte, signature séparée requise) mais ~~**signature et archivage non faits**~~ — **annexe HDS signée le 2026-08-30** (déclaration du responsable, consignée le 2026-08-31, `D-121`) ; **restent dus : l'archivage du document signé, et la signature + archivage du DPA** | Responsable | ~~avant bascule Scalingo~~ — ordre suspendu par `D-078` : **dès réception de l'annexe** (demandée 2026-08-12, relancée 2026-08-19 — **canal et dates vérifiés au fil le 2026-08-20**, rubrique 6 ; **signée le 2026-08-30**) ; ~~en tout état de cause **avant tout décommissionnement**~~ — **plus depuis `D-080`** (2026-08-22) ; archivage dû **avant la revue du 2026-10-21** | `CHECKLIST_FINALISATION.md` §F |
 | 6 | Sous-traitants | ~~Périmètre HDS de la région `osc-fr1` non confirmé~~ — **répondu par écrit le 2026-08-11** : couvert, activités 5 et 6 incluses | Responsable | fermé | ici, rubrique 6 |

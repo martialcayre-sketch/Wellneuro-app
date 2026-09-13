@@ -472,6 +472,79 @@ describe('verifierRestitutionOrientation — un complément nommé en contexte p
   });
 });
 
+// ── UNE CIBLE ÉCARTÉE PAR LE PRATICIEN — [[D-178]], [[D-181]] ──────────────
+//
+// CE QUE CES CAS TIENNENT, ET POURQUOI LE SENS EXISTE. Une ligne écartée n'est pas
+// transmise au modèle : la voir sous sa plume dit qu'il RE-PROPOSE ce qu'un soignant
+// a refusé par écrit. Le fait mérite d'être vu — mais il ne mérite pas le nom
+// d'« infidélité » : la prose n'est pas fautive d'avoir pensé à la même chose. D'où
+// un `type` distinct, et non un `pack`/`questionnaire` de plus.
+//
+// Arbitrage rendu APRÈS REVUE : une première rédaction mettait les écartées dans
+// l'allowlist, ce qui rendait le cas invisible.
+describe('verifierRestitutionOrientation — une cible écartée par le praticien', () => {
+  it('un questionnaire ÉCARTÉ cité est signalé sous `ecartee`, pas sous `questionnaire`', () => {
+    const synthese: TexteSynthese = { resume_praticien: 'Je proposerais Q_STR_02 malgré tout.' };
+    expect(
+      verifierRestitutionOrientation(synthese, {
+        ...RIEN,
+        ecartees: { packs: [], questionnaires: ['Q_STR_02'] },
+      }),
+    ).toEqual([{ type: 'ecartee', identifiant: 'Q_STR_02', espece: 'questionnaire' }]);
+  });
+
+  it('un pack ÉCARTÉ cité est signalé sous `ecartee`, pas sous `pack`', () => {
+    const synthese: TexteSynthese = { resume_praticien: 'Le pack Sommeil et chronobiologie reste une piste.' };
+    expect(
+      verifierRestitutionOrientation(synthese, {
+        ...RIEN,
+        ecartees: { packs: ['pack_sommeil_chronobiologie'], questionnaires: [] },
+      }),
+    ).toEqual([{ type: 'ecartee', identifiant: 'pack_sommeil_chronobiologie', espece: 'pack' }]);
+  });
+
+  it('une cible NI transmise NI écartée reste une infidélité ordinaire', () => {
+    // CONTRE-ÉPREUVE : sans elle, un `type: 'ecartee'` rendu inconditionnellement
+    // passerait les deux cas ci-dessus et effacerait le signal d'origine.
+    const synthese: TexteSynthese = { resume_praticien: 'Je proposerais Q_STR_02 malgré tout.' };
+    expect(
+      verifierRestitutionOrientation(synthese, {
+        ...RIEN,
+        ecartees: { packs: [], questionnaires: ['Q_SOM_01'] },
+      }),
+    ).toEqual([{ type: 'questionnaire', identifiant: 'Q_STR_02' }]);
+  });
+
+  it('une cible TRANSMISE reste silencieuse, même si une autre est écartée', () => {
+    const synthese: TexteSynthese = { resume_praticien: 'Q_STR_02 est proposé.' };
+    expect(
+      verifierRestitutionOrientation(synthese, {
+        packs: [],
+        questionnaires: ['Q_STR_02'],
+        ecartees: { packs: [], questionnaires: ['Q_SOM_01'] },
+      }),
+    ).toEqual([]);
+  });
+
+  it('sans option `ecartees`, le comportement d’avant est inchangé', () => {
+    // Le champ est optionnel : tous les appelants qui ne le passent pas — et tous
+    // les cas de ce fichier — doivent voir exactement ce qu'ils voyaient.
+    const synthese: TexteSynthese = { resume_praticien: 'Je proposerais Q_STR_02 malgré tout.' };
+    expect(verifierRestitutionOrientation(synthese, RIEN)).toEqual([
+      { type: 'questionnaire', identifiant: 'Q_STR_02' },
+    ]);
+  });
+
+  it('`formaterEcarts` porte l’espèce — sans elle, la ligne de journal se lit au jugé', () => {
+    expect(
+      formaterEcarts([
+        { type: 'ecartee', identifiant: 'Q_STR_02', espece: 'questionnaire' },
+        { type: 'ecartee', identifiant: 'pack_sommeil_chronobiologie', espece: 'pack' },
+      ]),
+    ).toBe('ecartee:questionnaire:Q_STR_02, ecartee:pack:pack_sommeil_chronobiologie');
+  });
+});
+
 describe('verifierRestitutionDiscordances — la prose ne contredit pas la vigilance', () => {
   // Le garde du LOT-09 ([[D-057]], arbitrage 3). Comme ses deux prédécesseurs,
   // la moitié des cas sont des CONTRÔLES NÉGATIFS : la prose clinique parle

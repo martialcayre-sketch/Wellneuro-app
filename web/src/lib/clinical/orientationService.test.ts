@@ -844,6 +844,44 @@ describe('règles d\'arrêt — les deux positions du verrou', () => {
     expect(resultat.recommandations[0].extinction?.motif).toContain('rassurants');
   });
 
+  it('ÉTEINTE PUIS ÉCARTÉE : l\'extinction voyage avec la ligne dans le repli', async () => {
+    // PERTE RELEVÉE EN REVUE. Deux faits de natures différentes — l'extinction
+    // vient de la table d'arrêt, l'écartement du praticien — et `ecartees` ne
+    // portait que le second. Écarter une ligne éteinte effaçait donc de l'écran la
+    // qualification qui explique pourquoi l'exploration avait cessé d'être
+    // proposée. Écarter ne dé-qualifie pas (`D-055`).
+    signerLArret();
+    armerLesContradictions();
+    // La cible du dossier de ce banc, écartée par le praticien.
+    const resultatAvant = await evaluerOrientationPourPatient('PAT-1');
+    if (resultatAvant.actif !== true) throw new Error('la table doit être active ici');
+    const cible = resultatAvant.recommandations[0].cible;
+    const cleCible = cible.type === 'questionnaire'
+      ? `questionnaire:${cible.questionnaireId}`
+      : `pack:${cible.packId}`;
+    prisma.ecartementProposition.findMany.mockResolvedValue([{
+      id: 'ec_eteinte',
+      cibleId: cleCible,
+      espece: 'ecartement',
+      // Les règles FIGÉES sont celles qui motivent la ligne aujourd'hui : sans
+      // cela le verdict serait « réveillée », et le cas n'éprouverait rien.
+      reglesAuGeste: resultatAvant.recommandations[0].motifs.map(motif => motif.regleId),
+      motif: 'Le chronotype est déjà connu par l’anamnèse.',
+      parEmail: 'praticien@wellneuro.fr',
+      faitLe: new Date('2026-09-13T09:00:00Z'),
+      supersedesEcartementId: null,
+    }]);
+
+    const resultat = await evaluerOrientationPourPatient('PAT-1');
+    if (resultat.actif !== true) throw new Error('la table doit être active ici');
+    expect(resultat.recommandations).toEqual([]);
+    expect(resultat.ecartees).toHaveLength(1);
+    expect(resultat.ecartees[0].extinction?.stopRuleId).toBe('STOP-TEST');
+    expect(resultat.ecartees[0].extinction?.motif).toContain('rassurants');
+    // Et le motif d'ÉCARTEMENT reste distinct de celui de l'extinction.
+    expect(resultat.ecartees[0].motif).toContain('chronotype');
+  });
+
   // L'EXCLUSION SUIT LE MÊME VERROU, et elle porte sur une passation
   // EXPLOITABLE. `Q_SOM_01` est au dossier avec un recueil complet : la règle qui
   // le viserait ne le proposerait plus une fois la table signée.
