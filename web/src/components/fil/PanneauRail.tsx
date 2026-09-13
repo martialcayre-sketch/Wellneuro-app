@@ -50,15 +50,24 @@ export function PanneauRail({
         className="rounded-lg border border-border bg-surface px-4 py-3 shadow-card"
       >
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
+          {/* LA LIGNE REPLIÉE PASSE À DEUX LIGNES PLUTÔT QUE DE DÉBORDER.
+              Mesuré sur la production du 2026-09-13 : « Correspondance récente »
+              plus « Aucun échange consigné » dépasse de quelques pixels les
+              268 px utiles d'un rail de 300 px — le résumé sortait de la carte.
+              `shrink-0` tenait le résumé à sa largeur maximale et rien ne
+              pouvait céder. Désormais `flex-wrap` autorise le passage à la
+              ligne, et `whitespace-nowrap` sur le résumé choisit QUELLE
+              rupture : le résumé descend entier sous le titre au lieu de se
+              couper en deux au milieu. */}
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
             <h3 className="font-display text-sm font-semibold text-foreground">{titre}</h3>
-            <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
               {resumeVide}
               <ChevronDown
                 aria-hidden="true"
                 size={14}
                 strokeWidth={2}
-                className="transition-transform group-open:rotate-180"
+                className="shrink-0 transition-transform group-open:rotate-180"
               />
             </span>
           </summary>
