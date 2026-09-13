@@ -170,6 +170,16 @@ export type OrientationClaimRef = {
   versionClaim: string;
 };
 
+/** Fenêtre au-delà de laquelle une cible déjà mesurée se re-propose. */
+export type RepetitionOrientation = {
+  /**
+   * Délai en jours. Chiffre CLINIQUE : il ne se choisit pas pour la commodité
+   * du code. Même forme que `RepetitionPanel` côté biologie, pour que les deux
+   * tables se lisent avec la même grammaire.
+   */
+  delaiJours: number;
+};
+
 export type OrientationRule = {
   id: string;
   /** Seules les règles `publiee` sont évaluées par le moteur. */
@@ -180,6 +190,32 @@ export type OrientationRule = {
   /** Besoins (1-12) que l'exploration vise à mesurer ou préciser. */
   needIds?: number[];
   categoriesCibles?: FunctionalCategoryId[];
+  /**
+   * FENÊTRE DE FRAÎCHEUR — au-delà de ce délai, une passation déjà faite cesse
+   * de couvrir la cible, et la règle la re-propose.
+   *
+   * POURQUOI CE CHAMP EXISTE. Sans lui, l'exclusion `dejaRepondu` ([[D-053]])
+   * ferme une cible SANS HORIZON : la requête ne pose aucun filtre de date,
+   * `derniereReponseParQuestionnaire` retient la dernière passation quelle que
+   * soit son ancienneté, et `passationExploitable` la déclare couvrante. Une
+   * mesure vieille de deux ans fermait donc la cible, sans badge et sans motif
+   * — la ligne n'étant pas produite, le praticien n'avait rien à voir.
+   *
+   * LE PATRON EST CELUI DE LA TABLE SŒUR, délibérément : `RepetitionPanel`
+   * (`indicationsBiologieV1.ts`) fait exactement cela depuis `D-069`, et la
+   * biologie rouvrait donc un panel documenté là où l'orientation ne rouvrait
+   * rien. La mesure la plus périssable était la mieux protégée.
+   *
+   * LE CHIFFRE EST UN ARBITRAGE WELLNEURO, ET IL EST NOMMÉ COMME TEL. Côté
+   * biologie, le 365 entre dans le périmètre signé adossé à deux claims
+   * (`DC-19`). Ici, AUCUN claim ne fonde une périodicité de re-passation des
+   * questionnaires : le 365 uniforme est l'arbitrage praticien du 2026-09-13,
+   * aligné sur la table sœur faute de source, et il doit se lire ainsi — pas
+   * comme une propriété des instruments. Un affinage instrument par instrument
+   * reste ouvert, et c'est pourquoi le champ vit sur la RÈGLE et non dans une
+   * constante globale.
+   */
+  repetition?: RepetitionOrientation;
   /**
    * Claims VALIDÉS à l'appui. Jamais vide : une règle sans claim ne serait pas
    * traçable jusqu'à sa source, et le moteur l'ignore (invariant de doctrine,
@@ -502,6 +538,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Mesurer la qualité du sommeil par le PSQI quand le questionnaire contextuel la donne pour insuffisante ou non réparatrice.' },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -534,6 +573,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: 'Objectiver par le PSQI une plainte de sommeil que le patient déclare intense.' },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0234-011', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -563,6 +605,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_05', priorite: 1, objectif: "Situer le chronotype par le questionnaire de Horne quand le rythme biologique est insuffisant, pour ajuster l'hygiène des rythmes." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0315-007', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-025', versionClaim: 'v1.0' },
@@ -601,6 +646,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_SOM_03', priorite: 1, objectif: "Dépister le syndrome d'apnées par le questionnaire de Berlin quand un antécédent respiratoire est déclaré et que le sommeil est dégradé." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0312-021', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0359-025', versionClaim: 'v1.0' },
@@ -670,6 +718,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: "Mesurer la qualité du sommeil par le PSQI quand le patient demande à l'améliorer et que le sommeil est non réparateur." },
       { questionnaireId: 'Q_SOM_05', priorite: 2, objectif: "Situer le chronotype par le questionnaire de Horne quand le patient demande à améliorer un sommeil non réparateur." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
@@ -705,6 +756,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_SOM_02', priorite: 1, objectif: "Mesurer la somnolence diurne par l'échelle d'Epworth, que la source demande de proposer systématiquement." },
       { questionnaireId: 'Q_SOM_06', priorite: 2, objectif: "Mesurer la fatigue par l'échelle de Pichot, que la source associe à Epworth pour l'impact sur la vitalité." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-012', versionClaim: 'v1.0' },
     ],
@@ -733,6 +787,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_02', priorite: 1, objectif: "Mesurer l'intensité du stress chronique par le PSS-10 quand l'adaptation au stress est insuffisante ou perturbée." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
@@ -777,6 +834,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_STR_04', priorite: 2, objectif: 'Situer dépression, anxiété et stress par le DASS-21 devant un burn-out déclaré comme facteur déclenchant.' },
       { questionnaireId: 'Q_STR_03', priorite: 3, objectif: "Préciser le vécu du stress par le questionnaire de Cungi quand l'adaptation au stress est insuffisante." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
     ],
@@ -812,6 +872,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_05', priorite: 1, objectif: "Évaluer sans attendre le risque de burnout par le BMS-10 quand l'adaptation au stress est perturbée." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0228-009', versionClaim: 'v1.0' },
@@ -838,6 +901,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Objectiver l'humeur et l'anxiété par le HAD quand la plainte de moral est intense." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0154-013', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0234-010', versionClaim: 'v1.0' },
@@ -869,6 +935,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Objectiver l'humeur et l'anxiété quand un antécédent psychiatrique est déclaré au bilan initial." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0339-010', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
@@ -920,6 +989,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer l'humeur par le HAD quand l'échelle fonctionnelle sérotonine entre dans la bande « Perturbations probables » de sa grille." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0136-004', versionClaim: 'v1.0' },
@@ -955,6 +1027,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer l'humeur par le HAD quand l'échelle fonctionnelle dopamine entre dans la bande « Perturbations probables » de sa grille." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0136-004', versionClaim: 'v1.0' },
@@ -980,6 +1055,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: 'Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand la plainte digestive est intense.' },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
     ],
@@ -1034,6 +1112,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol devant un antécédent digestif déclaré et une plainte au moins modérée." },
       { questionnaireId: 'Q_INF_01', priorite: 3, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand un antécédent digestif est déclaré et que la plainte est au moins modérée." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
@@ -1150,6 +1231,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_01', priorite: 1, objectif: "Mesurer les troubles fonctionnels digestifs et intestinaux par le TFD SIIN quand le score global de l'enquête alimentaire SIIN est défavorable." },
       { questionnaireId: 'Q_GAS_03', priorite: 2, objectif: "Caractériser le transit par l'échelle de Bristol quand le score global de l'enquête alimentaire SIIN est défavorable." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
     ],
@@ -1232,9 +1316,41 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'couleur', couleurs: ['info', 'warning', 'danger', 'dark'] } },
     ],
     suggestions: [
-      { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer la dimension de l'humeur, que la source désigne explicitement par le test HAD." },
-      { questionnaireId: 'Q_STR_03', priorite: 2, objectif: "Explorer la dimension du stress par le test de Cungi, que la source juge le plus pertinent dans les troubles du sommeil." },
+      // RANG ALIGNÉ SUR LE CLAIM CITÉ — arbitrage praticien du 2026-09-13.
+      //
+      // CE QUI CLOCHAIT. Le claim `WN-CL-0323-013`, recopié en clair ci-dessous,
+      // porte les deux seuls comparatifs de la source : le Cungi « plus pertinent
+      // et sensible » pour le stress DANS LES TROUBLES DU SOMMEIL, le HAD qui
+      // « suffit » pour l'humeur. Cette règle se déclenche précisément sur une
+      // bande de PSQI, donc dans le contexte exact où la source privilégie le
+      // Cungi — et elle le rangeait second, derrière l'instrument qui « suffit »,
+      // tout en affirmant plus bas « aucune substitution, la règle propose
+      // exactement ce que le claim désigne ». Elle suivait la source sur
+      // l'IDENTITÉ des instruments, et la contredisait sur leur RANG.
+      //
+      // CE QUE L'INVERSION CHANGE, ET CE QU'ELLE NE CHANGE PAS. Bien moins qu'il
+      // n'y paraît : `Q_NEU_11` est posé en priorité 1 par QUATRE autres règles
+      // (`R2-NEU-01` à `R2-NEU-04`), et la fusion garde le MINIMUM
+      // (`orientationEngine`, `Math.min`). Dès qu'une seule d'entre elles
+      // s'allume, le HAD repasse premier. L'inversion ne se voit donc que sur un
+      // dossier où `R-SOM-01` est SEULE à motiver ces deux cibles — un mauvais
+      // dormeur sans drapeau psychiatrique, sans moral bas et sans sous-score
+      // `Q_INF_03` élevé.
+      //
+      // CE QUI RESTE NON SOURCÉ, ET QUI N'EST PAS TRANCHÉ ICI. Le HAD exclut par
+      // construction tout item somatique — insomnie, fatigue, céphalées —, ce
+      // qui en fait l'instrument d'humeur le moins contaminé chez un mauvais
+      // dormeur, et la littérature insomnie → dépression est massive là où
+      // aucune recommandation ne fait du stress perçu une cible. Cet argument
+      // plaide pour le rang inverse ; il n'est adossé à AUCUN claim du corpus, et
+      // un rang ne se fonde pas sur un raisonnement qui ne vit que dans un
+      // commentaire. Si un claim vient le porter, ce rang se rediscute.
+      { questionnaireId: 'Q_STR_03', priorite: 1, objectif: "Explorer la dimension du stress par le test de Cungi, que la source juge le plus pertinent dans les troubles du sommeil." },
+      { questionnaireId: 'Q_NEU_11', priorite: 2, objectif: "Explorer la dimension de l'humeur, que la source désigne explicitement par le test HAD." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       // « Le test de stress de Cungi est plus pertinent et sensible pour
       // explorer la dimension du stress dans les troubles du sommeil, tandis que
@@ -1276,6 +1392,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     suggestions: [
       { questionnaireId: 'Q_STR_05', priorite: 1, objectif: "Ajouter l'évaluation d'un risque éventuel de burnout à l'intensité du stress chronique." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
@@ -1353,6 +1472,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_STR_06', priorite: 2, objectif: 'Évaluer la contrainte professionnelle par le questionnaire de Karasek quand un burn-out est déclaré et que le stress perçu est élevé.' },
       { questionnaireId: 'Q_STR_08', priorite: 3, objectif: "Évaluer le surinvestissement au travail par le WART quand un burn-out est déclaré et que le stress perçu est élevé." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
@@ -1411,6 +1533,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       { questionnaireId: 'Q_GAS_03', priorite: 1, objectif: "Caractériser le transit par l'échelle de Bristol quand le score de troubles fonctionnels intestinaux est élevé." },
       { questionnaireId: 'Q_INF_01', priorite: 2, objectif: "Rechercher des signes d'hyperexcitabilité neuro-musculaire par le questionnaire d'hyperexcitabilité SIIN, quand le score de troubles fonctionnels intestinaux est élevé." },
     ],
+    // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
+    // les vingt règles et aligné sur la table sœur faute de source propre.
+    repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
     ],

@@ -621,14 +621,47 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
   const reponse = (idQuestionnaire: string, scores: Record<string, unknown>): ReponseOrientation =>
     ({ idQuestionnaire, dateReponse: '2026-08-01T10:00:00.000Z', scores });
 
-  it('R-SOM-01 : un PSQI en zone défavorable propose HAD puis Cungi', () => {
+  // ARBITRAGE PRATICIEN DU 2026-09-13 — le rang suit le claim cité.
+  //
+  // CE BANC NE TENAIT RIEN AVANT. Il s'intitulait « propose HAD puis Cungi » et
+  // n'assertait que deux `toContainEqual` : inverser les deux `priorite` dans la
+  // table l'aurait laissé VERT. Le contraste avec le banc de `R2-SOM-06`, qui
+  // assère explicitement `priorite` 1 puis 2, était visible dans le même
+  // fichier. L'ordre est désormais tenu des deux façons — le rang déclaré dans
+  // la table, ET la position dans la liste réellement servie, parce que c'est
+  // celle-là que le praticien lit.
+  it('R-SOM-01 : un PSQI défavorable propose le Cungi AVANT le HAD', () => {
     const recos = evaluer([
       reponse('Q_SOM_01', { total: 14, interpretation: { label: 'Troubles du sommeil modérés', color: 'warning' } }),
     ]);
     const cibles = recos.map(r => r.cible);
-    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
     // Cungi, nommé par le claim WN-CL-0323-013 — pas le PSS-10.
     expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_03' });
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
+
+    const rang = (qid: string) => cibles.findIndex(c => c.type === 'questionnaire' && c.questionnaireId === qid);
+    expect(rang('Q_STR_03')).toBeLessThan(rang('Q_NEU_11'));
+
+    const cungi = ORIENTATION_RULES_V1.find(r => r.id === 'R-SOM-01')!.suggestions.find(s => s.questionnaireId === 'Q_STR_03');
+    const had = ORIENTATION_RULES_V1.find(r => r.id === 'R-SOM-01')!.suggestions.find(s => s.questionnaireId === 'Q_NEU_11');
+    expect(cungi?.priorite).toBe(1);
+    expect(had?.priorite).toBe(2);
+  });
+
+  // CE QUE L'INVERSION NE CHANGE PAS, et il faut que ce soit écrit quelque part
+  // d'exécutable : quatre autres règles posent `Q_NEU_11` en priorité 1, et la
+  // fusion garde le MINIMUM. Dès que l'une d'elles s'allume aussi, le HAD
+  // repasse premier — l'arbitrage du 2026-09-13 ne se voit que sur un dossier où
+  // `R-SOM-01` est SEULE à motiver ces deux cibles.
+  it('R-SOM-01 : une règle NEU concurrente fait repasser le HAD devant', () => {
+    const recos = evaluer([
+      reponse('Q_SOM_01', { total: 14, interpretation: { label: 'Troubles du sommeil modérés', color: 'warning' } }),
+      reponse('Q_INF_03', { subScores: [{ id: 'SE', total: 12 }] }),
+    ]);
+    const cibles = recos.map(r => r.cible);
+    const rang = (qid: string) => cibles.findIndex(c => c.type === 'questionnaire' && c.questionnaireId === qid);
+    expect(rang('Q_NEU_11')).toBeGreaterThanOrEqual(0);
+    expect(rang('Q_NEU_11')).toBeLessThan(rang('Q_STR_03'));
   });
 
   // Arbitrage du 2026-08-03 : bande d'entrée par instrument. Le PSQI démarre à
