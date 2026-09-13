@@ -26,6 +26,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
     'arbitrageBiologique', 'panelBiologieDocumente',
     'protocolDraft', 'assessmentEpisode', 'decisionPrioritySelection',
+    'ecartementProposition',
     'critereDossierConstate',
     'syntheseIA', 'questionnaireReponse',
     'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
@@ -104,6 +105,18 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('correspondancePatient');
     expect(appels.indexOf('correspondancePatient')).toBeLessThan(appels.indexOf('patient'));
+  });
+
+  // Écartements de propositions d'orientation : FK RESTRICT vers `patients`
+  // seule, donc l'ordre relatif aux autres tables est libre — ce test ne garde
+  // qu'une chose, et c'est la seule qui casse en production : la ligne doit
+  // passer AVANT la suppression du dossier. Le garde structurel plus bas est un
+  // `source.includes` : il attrape la ligne retirée, il est aveugle à la ligne
+  // DÉPLACÉE.
+  it('supprime les écartements de propositions avant le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('ecartementProposition');
+    expect(appels.indexOf('ecartementProposition')).toBeLessThan(appels.indexOf('patient'));
   });
 
   // Nuits d'agenda du sommeil : FK RESTRICT vers patients ET assignations. Si
