@@ -96,7 +96,7 @@ export type RegleIndicationPanel = {
  *
  * SIX RÈGLES PORTENT UNE DISJONCTION ([[D-060]]) : atteinte dès qu'UNE branche
  * complète l'est, traçabilité limitée à cette branche, un recueil incomplet
- * n'allume jamais une branche. Les dix-sept instruments visés publient leurs
+ * n'allume jamais une branche. Les seize instruments visés publient leurs
  * comptes depuis [[D-066]] — le banc d'inertie le tient (RV-1).
  *
  * RÉPÉTITION ANNUELLE (`delaiJours: 365`, arbitrage F.1 explicite du
@@ -577,7 +577,7 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
 };
 
 /**
- * LES GRILLES QUE CETTE TABLE LIT — dix-sept instruments, tous cités par une
+ * LES GRILLES QUE CETTE TABLE LIT — seize instruments, tous cités par une
  * zone COULEUR.
  *
  * Dérivé, jamais écrit à la main : la liste se recalcule depuis les zones
