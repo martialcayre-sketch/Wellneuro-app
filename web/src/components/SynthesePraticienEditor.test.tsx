@@ -155,4 +155,59 @@ describe('SynthesePraticienEditor', () => {
     const textarea = screen.getByLabelText('Texte destiné au patient') as HTMLTextAreaElement;
     expect(textarea.value).toBe('Nouveau départ. Le repos reste perturbé.');
   });
+
+  // PAS DE DÉFAUT FAVORABLE SUR UNE BANDE ([[D-146]]).
+  //
+  // L'axe créé portait `niveau_priorite: 'modere'`, que le validateur exigeait
+  // ensuite comme s'il avait été choisi : l'oubli était indiscernable d'un
+  // « modéré » assumé. Ces trois cas tiennent le correctif par ses deux bouts —
+  // la valeur n'est pas semée, et l'enregistrement reste fermé tant qu'elle
+  // n'est pas posée.
+  describe('priorité d’un axe — aucune valeur par défaut', () => {
+    function Wrapper({ onSave }: { onSave: () => void }) {
+      const [value, setValue] = useState(nouveauBrouillonPraticien());
+      return <SynthesePraticienEditor value={value} onChange={setValue} onSave={onSave} />;
+    }
+
+    it('un axe créé naît SANS priorité choisie', () => {
+      render(<Wrapper onSave={() => {}} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter un axe prioritaire' }));
+
+      const select = screen.getByLabelText(/Priorité/) as HTMLSelectElement;
+      expect(select.value).toBe('');
+      // Le libellé de l'option retenue doit dire qu'il reste un choix à poser,
+      // pas nommer une bande : « Modérée » affiché sur un axe neuf est
+      // exactement l'affirmation que ce lot retire.
+      expect(select.selectedOptions[0].textContent).toBe('Choisir la priorité…');
+    });
+
+    it('l’enregistrement reste fermé tant que la priorité n’est pas posée', () => {
+      const onSave = vi.fn();
+      render(<Wrapper onSave={onSave} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter un axe prioritaire' }));
+
+      const bouton = screen.getByRole('button', { name: 'Enregistrer le brouillon' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(true);
+      expect(screen.getByText('Un axe n’a pas encore de priorité : choisissez-la pour enregistrer.')).toBeTruthy();
+
+      fireEvent.click(bouton);
+      expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it('la priorité posée rouvre l’enregistrement', () => {
+      const onSave = vi.fn();
+      render(<Wrapper onSave={onSave} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter un axe prioritaire' }));
+      fireEvent.change(screen.getByLabelText(/Priorité/), { target: { value: 'faible' } });
+
+      const bouton = screen.getByRole('button', { name: 'Enregistrer le brouillon' }) as HTMLButtonElement;
+      expect(bouton.disabled).toBe(false);
+
+      fireEvent.click(bouton);
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+  });
 });

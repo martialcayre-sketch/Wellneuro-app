@@ -4,8 +4,46 @@ import { useRef, useState } from 'react';
 import { Plus, Save, Search, Trash2, X } from 'lucide-react';
 import type { SyntheseSchema } from '@/lib/anthropic';
 // La borne de charge vit avec le validateur qui la fait respecter ([[D-107]]) :
-// l'écran et le serveur ne peuvent plus diverger.
-import { MAX_AXES_PRIORITAIRES } from '@/lib/synthese-praticien';
+// l'écran et le serveur ne peuvent plus diverger. Même motif pour la liste des
+// priorités admises.
+import { MAX_AXES_PRIORITAIRES, PRIORITES_AXE } from '@/lib/synthese-praticien';
+
+type NiveauPriorite = SyntheseSchema['axes_prioritaires'][number]['niveau_priorite'];
+
+const LIBELLE_PRIORITE: Record<NiveauPriorite, string> = {
+  eleve: 'Élevée',
+  modere: 'Modérée',
+  faible: 'Faible',
+};
+
+/**
+ * PAS DE DÉFAUT FAVORABLE SUR UNE BANDE ([[D-146]]).
+ *
+ * `ajouterAxe` semait `niveau_priorite: 'modere'` sur tout axe créé par le
+ * praticien, et `validerBrouillonPraticien` l'exigeait ensuite comme s'il avait
+ * été choisi : l'oubli était indiscernable d'un « modéré » assumé. Un axe créé
+ * naît donc SANS priorité, et l'enregistrement reste fermé tant qu'elle n'est
+ * pas posée.
+ *
+ * POURQUOI LA GARDE EST ICI, ET PAS AU SERVEUR. Elle y est déjà pour le
+ * brouillon praticien — `validerBrouillonPraticien` refuse toute valeur hors de
+ * `PRIORITES_AXE`, et rendrait un 400. Mais l'autre chemin d'écriture, l'édition
+ * d'un brouillon IA, passe par `validateSyntheseSchema`, TOLÉRANT par
+ * construction parce qu'il relit des blobs écrits sous des schémas antérieurs
+ * (« strict à l'entrée, tolérant à la relecture — et jamais l'inverse »). Le
+ * resserrer rejetterait des synthèses déjà en base. L'éditeur étant le seul
+ * producteur de cette valeur, la garde se pose là où la valeur NAÎT, pas là où
+ * on la relit — et rien d'invalide ne part sur aucun des deux chemins.
+ *
+ * Le `as` est assumé et tenu par cette garde : la valeur vide ne sort jamais du
+ * composant. `depuisSynthese.ts` indexe `NIVEAU_LABEL` sans repli, et une bande
+ * vide persistée y rendrait « Axe (undefined) » dans un document SORTANT.
+ */
+const SANS_PRIORITE = '' as NiveauPriorite;
+
+function prioriteChoisie(niveau: NiveauPriorite): boolean {
+  return (PRIORITES_AXE as readonly string[]).includes(niveau);
+}
 
 type Props = {
   value: SyntheseSchema;
@@ -79,6 +117,12 @@ export function SynthesePraticienEditor({
   saving = false,
   saveLabel = 'Enregistrer le brouillon',
 }: Props) {
+  // Compté, pas booléen : le message dit combien d'axes restent à trancher, ce
+  // qui évite au praticien de les rouvrir un par un pour trouver lequel.
+  const axesSansPriorite = value.axes_prioritaires.filter(
+    axe => !prioriteChoisie(axe.niveau_priorite),
+  ).length;
+
   const modifier = <K extends keyof SyntheseSchema>(cle: K, valeur: SyntheseSchema[K]) => {
     onChange({ ...value, [cle]: valeur });
   };
@@ -92,7 +136,7 @@ export function SynthesePraticienEditor({
     if (value.axes_prioritaires.length >= MAX_AXES_PRIORITAIRES) return;
     modifier('axes_prioritaires', [
       ...value.axes_prioritaires,
-      { axe: '', niveau_priorite: 'modere', arguments: [], points_a_confirmer: [] },
+      { axe: '', niveau_priorite: SANS_PRIORITE, arguments: [], points_a_confirmer: [] },
     ]);
   };
 
@@ -318,15 +362,21 @@ export function SynthesePraticienEditor({
                 <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                   Priorité
                   <select
-                    value={axe.niveau_priorite}
+                    value={prioriteChoisie(axe.niveau_priorite) ? axe.niveau_priorite : ''}
                     onChange={event => modifierAxe(index, {
-                      niveau_priorite: event.target.value as 'eleve' | 'modere' | 'faible',
+                      niveau_priorite: event.target.value as NiveauPriorite,
                     })}
                     className={champ}
                   >
-                    <option value="eleve">Élevée</option>
-                    <option value="modere">Modérée</option>
-                    <option value="faible">Faible</option>
+                    {/* Option vide NON désactivée : un `disabled` la rendrait
+                        inatteignable au clavier sur certains moteurs, et le
+                        praticien ne pourrait plus revenir à « pas encore
+                        choisi » après une erreur de manipulation. Elle ne passe
+                        de toute façon pas l'enregistrement. */}
+                    <option value="">Choisir la priorité…</option>
+                    {PRIORITES_AXE.map(niveau => (
+                      <option key={niveau} value={niveau}>{LIBELLE_PRIORITE[niveau]}</option>
+                    ))}
                   </select>
                 </label>
                 <button
@@ -390,11 +440,18 @@ export function SynthesePraticienEditor({
         </label>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        {axesSansPriorite > 0 && (
+          <p className="basis-full text-xs text-status-warning">
+            {axesSansPriorite === 1
+              ? 'Un axe n’a pas encore de priorité : choisissez-la pour enregistrer.'
+              : `${axesSansPriorite} axes n’ont pas encore de priorité : choisissez-les pour enregistrer.`}
+          </p>
+        )}
         <button
           type="button"
           onClick={onSave}
-          disabled={saving}
+          disabled={saving || axesSansPriorite > 0}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
           <Save size={16} aria-hidden="true" />
