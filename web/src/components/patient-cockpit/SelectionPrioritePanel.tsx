@@ -66,6 +66,11 @@ export function SelectionPrioritePanel({
   // l'essentiel.
   if (!decisionCard) return null;
 
+  // Le geste est offert tant que la décision n'est pas bloquée et qu'un
+  // candidat est classé — que le praticien ait déjà retenu une priorité ou
+  // non, puisque ce panneau sert aussi à la CHANGER. `isSelectionPrioriteDue`
+  // répond à la question voisine (« reste-t-il à faire ? ») et sert le statut
+  // de la phase : les deux lisent les mêmes champs, depuis le même module.
   const gesteDisponible =
     !isDecisionBloquee(decisionCard) && decisionCard.priorityCandidates.length > 0;
   if (!gesteDisponible && !selectionEcartee) return null;

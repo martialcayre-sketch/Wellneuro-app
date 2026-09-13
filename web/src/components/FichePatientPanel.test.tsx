@@ -93,7 +93,11 @@ type Options = {
   // d'identité du destinataire est observable.
   orientation?: 'inactif' | 'actif';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
-  decision?: 'actionnable' | 'bloquee';
+  // `sans_priorite` : épisode confirmé, aucune priorité retenue par le
+  // praticien — l'état de six dossiers réels sur sept au 2026-09-13.
+  // `sans_candidat` : la table des priorités n'est pas signée, donc aucun geste
+  // n'est offert en phase Décision.
+  decision?: 'actionnable' | 'bloquee' | 'sans_priorite' | 'sans_candidat';
   /** L'état de la phase 3 servi par `objectifs/etat-phase` (`D-161` §10). */
   phase3?: 'complete' | 'vide' | 'sans-synthese' | 'erreur' | 'demande-en-attente';
   reponses?:
@@ -426,7 +430,11 @@ function stubFetch(options: Options = {}) {
   const carte =
     options.decision === 'bloquee'
       ? decisionCard({ abstention: { status: 'required', ruleIds: ['R'], limitations: [] } })
-      : decisionCard();
+      : options.decision === 'sans_priorite'
+        ? decisionCard({ selectedMainPriority: null })
+        : options.decision === 'sans_candidat'
+          ? decisionCard({ selectedMainPriority: null, priorityCandidates: [], proposedMainPriorityId: null })
+          : decisionCard();
 
   const fetchMock = vi.fn((input: unknown) => {
     const url = String(input);
@@ -1052,6 +1060,63 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
     expect(onglet.textContent).toContain('indéterminée');
     expect(onglet.textContent).not.toContain('à ouvrir');
+  });
+
+  // ── Le statut de « Décision 21 j » suit SON geste, pas l'ancre ──────────
+  // Trou de couverture qui a laissé passer le défaut : la fixture pose toujours
+  // une priorité sélectionnée, donc aucun banc n'éprouvait le cas majoritaire
+  // en production.
+
+  it('statut Décision : « renseignée » quand une priorité est retenue', async () => {
+    await rendreFiche({ runtime: 'ready' });
+
+    const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
+    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+  });
+
+  it('LE RAIL NE DIT PLUS « renseignée » SUR UN ÉPISODE CONFIRMÉ SANS PRIORITÉ RETENUE', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'sans_priorite' });
+
+    const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
+    await waitFor(() => expect(onglet.textContent).toContain('à traiter'));
+    expect(onglet.textContent).not.toContain('renseignée');
+    // Et la phase due redevient Décision : elle précède Actions dans le cycle,
+    // donc la fiche s'ouvre sur le geste au lieu du refus qui en découle.
+    expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('priorité non retenue : un bandeau permanent offre la sortie, et s’efface une fois sur place', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'sans_priorite' });
+
+    expect(await screen.findByText(/Priorité non retenue/i)).toBeTruthy();
+    // La fiche s'ouvre DÉJÀ sur Décision (D5) : le raccourci se tait, comme le
+    // bandeau bloqueur le fait sur sa propre phase.
+    expect(screen.queryByRole('button', { name: 'Choisir la priorité' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: /Suivi/i }));
+    const raccourci = screen.getByRole('button', { name: 'Choisir la priorité' });
+    fireEvent.click(raccourci);
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true'));
+  });
+
+  it('statut Décision : une décision bloquée ne réclame pas un geste que l’écran n’offre pas', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'bloquee' });
+
+    const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
+    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+    // Un seul bandeau parle, et c'est celui du bloqueur : deux annonceraient
+    // deux prochaines étapes contradictoires.
+    expect(screen.queryByText(/Priorité non retenue/i)).toBeNull();
+    expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy();
+  });
+
+  it('statut Décision : sans candidat classé, aucun geste n’est dû — le rail ne l’invente pas', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'sans_candidat' });
+
+    const onglet = screen.getByRole('tab', { name: /Décision 21 j/i });
+    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+    expect(screen.queryByText(/Priorité non retenue/i)).toBeNull();
   });
 
   it('statut Réévaluation : un T0 confirmé sans jalon mesuré ne vaut pas « renseignée »', async () => {

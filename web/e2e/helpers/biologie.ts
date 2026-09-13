@@ -34,11 +34,18 @@ export async function confirmerEpisodeT0(page: Page): Promise<void> {
   // LE SIGNAL DU REJEU EST LE RAIL, PAS LE BANDEAU. Sur un épisode rejoué, la
   // fiche n'ouvre plus la phase Décision — elle n'est plus « exigible » — et le
   // bandeau « Épisode T0 confirmé », filtré par phase affichée, peut être monté
-  // hors écran. L'onglet du rail, lui, est visible quelle que soit la phase, et
-  // son libellé « renseignée » dérive de la base (trajectoire) depuis `D-118`.
-  const railRenseigne = page.getByRole('tab', { name: 'Décision 21 j renseignée' });
-  await expect(confirmerT0.or(railRenseigne).first()).toBeVisible();
-  if ((await railRenseigne.count()) > 0) return;
+  // hors écran. L'onglet du rail, lui, est visible quelle que soit la phase.
+  //
+  // L'ONGLET LU EST « ACTIONS », PLUS « DÉCISION 21 J ». Le statut de Décision
+  // ne dérive plus du seul épisode : il lit désormais la sélection de priorité
+  // praticien, que ces fixtures ne posent pas — il dirait « à traiter » ici,
+  // pour toujours. Celui d'Actions, lui, passe de « à ouvrir » à « à traiter »
+  // exactement à la confirmation (`nombreVersions === 0`, aucune version n'étant
+  // enregistrée par ces parcours) : même dérivation depuis `episodeConfirme`,
+  // même garantie, et il ne bouge plus ensuite.
+  const railConfirme = page.getByRole('tab', { name: 'Actions à traiter' });
+  await expect(confirmerT0.or(railConfirme).first()).toBeVisible();
+  if ((await railConfirme.count()) > 0) return;
   await expect(
     confirmerT0,
     'le bouton de confirmation T0 est désactivé : une précondition dure manque '
@@ -54,11 +61,12 @@ export async function confirmerEpisodeT0(page: Page): Promise<void> {
   // préconditions dures sont satisfaites, et l'échec accuse le code au lieu de
   // la course. Observé en CI (Linux) le 2026-09-07.
   //
-  // Le rail est le bon signal, et le seul : son libellé « renseignée » dérive
-  // de `etatRuntime.episodeConfirme` (`FichePatientPanel.tsx`), c'est-à-dire du
-  // MÊME runtime que les appelants interrogeront. Le voir posé, c'est savoir
-  // que la lecture suivante répondra `ready`.
-  await expect(railRenseigne).toBeVisible();
+  // Le rail est le bon signal, et le seul : le libellé « à traiter » de la
+  // phase Actions dérive de `etatRuntime.episodeConfirme`
+  // (`FichePatientPanel.tsx`), c'est-à-dire du MÊME runtime que les appelants
+  // interrogeront. Le voir posé, c'est savoir que la lecture suivante répondra
+  // `ready`.
+  await expect(railConfirme).toBeVisible();
 }
 
 /**

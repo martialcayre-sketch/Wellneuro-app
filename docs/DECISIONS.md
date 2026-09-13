@@ -4,6 +4,53 @@
 
 ## Décisions actives
 
+### D-179 — Le statut d'une phase lit le geste qu'elle porte, pas l'acte qui l'a précédée
+
+- Date : 2026-09-13
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-13
+- Domaine : cockpit praticien — statut de phase, règle D5 de placement
+- Origine : **lecture de production du 2026-09-13**, one-off Scalingo en lecture
+  seule et dé-identifiée. 28 patients, 7 épisodes T0 confirmés, **1 seule
+  sélection de priorité** (2026-09-12), **0 version de protocole C1 jamais
+  enregistrée**. Six dossiers réels sur sept dans l'état décrit ci-dessous.
+- Troisième application de la règle posée par [[D-161]] §10 et reprise le
+  2026-09-13 pour « Données fiables ». Aucun seuil, aucune dose, aucune borne
+  clinique n'est touchée.
+
+**LE MENSONGE, ET SA PREUVE.** `statutPhase('decision')` rendait `'fait'` dès
+`etatRuntime.episodeConfirme` (`web/src/components/FichePatientPanel.tsx`). Or
+l'ancre confirmée est un acte de la phase 3→4 ; le geste que la phase 4 PORTE est
+la sélection d'une priorité par le praticien — `SelectionPrioritePanel`, monté
+sous `affiche('decision')` depuis [[D-127]]. Un dossier ancré sans priorité
+retenue affichait « Décision 21 j : renseignée », pendant que `ProtocolMiniBuilder`
+refusait le protocole faute de cette même priorité.
+
+**CE QUI FAIT DE CE MENSONGE UN DÉFAUT, ET NON UNE IMPRÉCISION.** Le rail sert de
+feu pour passer à la prise de décision ([[D-161]] §10). Le statut alimente
+`phaseDue` au troisième rang : une phase 4 « faite » était SAUTÉE, `actions`
+gagnait, et la fiche s'ouvrait sur l'écran du refus — sans rien qui ramène au
+geste. La cause était nommée dans une phase, le geste vivait dans une autre,
+marquée verte. C'est le motif de [[D-118]] retourné : là-bas l'écran disait
+« en attente » sur un geste posé et le praticien le refaisait ; ici il dit
+« renseignée » sur un geste qui ne l'est pas, et le praticien ne le fait pas.
+
+**LA GARDE EST PARTAGÉE, ET ELLE N'EST PAS « PRIORITÉ ABSENTE ».**
+`isSelectionPrioriteDue` vit dans `decisionGuards.ts`, à côté d'`isDecisionBloquee`
+et pour la même raison : le panneau qui porte le geste et le statut qui y conduit
+doivent répondre à la même question. Trois conditions cumulatives — aucune
+priorité retenue, décision non bloquée, au moins un candidat classé. Les deux
+dernières ne sont pas du zèle : ce sont exactement les cas où le panneau se retire
+de l'écran. Les ignorer aurait déplacé le cul-de-sac d'un cran au lieu de le
+refermer.
+
+**CE QUE LA DÉCISION NE FAIT PAS.** Elle ne change ni le geste, ni la carte de
+décision, ni la borne de trois actions, ni ce que le patient reçoit. Elle ne
+touche pas les cinq autres coupures relevées par l'audit du 2026-09-13 — le
+patient qui ne reçoit qu'une action sur trois, la caducité silencieuse de la
+diffusion, la non-hydratation du constructeur, le contrat V4 sans producteur
+d'écran, `versionsLues` non remonté au rail. Aucune ne bloque un dossier
+aujourd'hui ; celle-ci en bloquait six.
+
 ### D-178 — Une proposition d'orientation s'écarte avec un motif écrit, et se RÉVEILLE sur un motif neuf
 
 - Date : 2026-09-13

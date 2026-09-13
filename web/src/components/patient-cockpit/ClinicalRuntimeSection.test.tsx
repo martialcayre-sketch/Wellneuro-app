@@ -1170,6 +1170,37 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
     });
   });
 
+  it('« sélection de priorité due » est INCONNUE quand la carte ne l’est pas — jamais « rien à faire »', async () => {
+    // Le pendant du banc ci-dessus, et la raison du tri-état : sur ce même
+    // rejeu, l'épisode est confirmé mais AUCUNE carte n'est servie. Répondre
+    // `false` affirmerait qu'aucun geste n'est dû ; le rail doit rendre
+    // « indéterminée » plutôt qu'affirmer (`DC-24`).
+    const onEtatChange = vi.fn();
+    vi.stubGlobal('fetch', fetchParUrl({
+      trajectoire: trajectoireAvecCycle(1),
+      cockpitT0: proposalResponse,
+    }));
+
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={null}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+        onEtatChange={onEtatChange}
+      />,
+    );
+
+    await waitFor(() => {
+      const dernier = onEtatChange.mock.calls.at(-1)?.[0] as {
+        chargement: boolean; episodeConfirme: boolean; selectionPrioriteDue: boolean | null;
+      };
+      expect(dernier?.chargement).toBe(false);
+      expect(dernier?.episodeConfirme).toBe(true);
+      expect(dernier?.selectionPrioriteDue).toBeNull();
+    });
+  });
+
   it('un rejeu ne verrouille pas le jalon dû : le J21 reprend la main sur un T0 rejoué', async () => {
     // T0 confirmé il y a 21 jours : le J21 est dû. Sans la distinction
     // frais/rejoué, la garde Mo4 aurait épinglé l'écran sur la carte T0
