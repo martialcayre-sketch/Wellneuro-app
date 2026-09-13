@@ -1572,7 +1572,19 @@ export function ClinicalRuntimeSection({
           contradictions={runtime?.status === 'ready' ? runtime.contradictions : []}
         />
       )}
-      {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
+      {/* Le relevé de l'épisode accompagne la carte : c'est lui qui traduit un
+          `responseId` de provenance en instrument et en date. Servi à côté, pas
+          dans la carte — `sourceRefs` vit dans le snapshot, et le faire entrer
+          dans `DecisionCard` déplacerait son `inputHash`, donc `versionId`, donc
+          le recoupement de toutes les versions de protocole déjà persistées
+          ([[D-054]] §2). Absent hors `ready` : la liste est alors vide et la
+          rubrique ne s'affiche pas. */}
+      {affiche('decision') && (
+        <DecisionSummaryCard
+          decisionCard={decisionCard}
+          sourceRefs={runtime?.status === 'ready' ? runtime.snapshot?.sourceRefs ?? [] : []}
+        />
+      )}
       {/* CE QUE LA CARTE NE LIT PAS SE DIT SOUS LA CARTE. Un épisode confirmé
           est un INSTANT : les réponses arrivées après n'y entrent pas, et c'est
           ce qui fait d'un `T0` une mesure de départ. Ce qui n'allait pas, c'est
