@@ -603,6 +603,28 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                             {axe.arguments.map((a, j) => <li key={j}>{a}</li>)}
                           </ul>
                         )}
+                        {/* SAISISSABLE DEPUIS TOUJOURS, JAMAIS RELU. L'éditeur
+                            offre « Points à confirmer, un par ligne » sur chaque
+                            axe, et cette vue n'en rendait rien : ce que le
+                            praticien écrivait pour préparer son entretien ne lui
+                            revenait plus une fois l'édition fermée.
+
+                            AUCUNE FUITE OUVERTE ICI. Le field-filter classe ce
+                            champ « praticien (détaillé) + médecin », au même
+                            rang que `questions_entretien` — et le praticien EST
+                            le destinataire de cet écran. La projection PATIENT
+                            n'a pas ces blocs dans son TYPE (`BilanPatient`), et
+                            `bilanPatient.test.ts` échoue si l'un d'eux y
+                            reparaît : la garde opposable est ailleurs, elle
+                            n'est pas l'absence d'affichage ici. */}
+                        {axe.points_a_confirmer?.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">À confirmer en entretien</p>
+                            <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                              {axe.points_a_confirmer.map((p, j) => <li key={j}>{p}</li>)}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -614,6 +636,19 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Points de vigilance</p>
                   <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
                     {selectedSynthese.syntheseJson.points_de_vigilance.map((p, i) => <li key={i}>{p}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {/* Même motif que `points_a_confirmer` ci-dessus : saisissable
+                  dans l'éditeur (« Questions pour la consultation »), jamais
+                  réaffiché en lecture. Le field-filter le réserve au praticien
+                  SEUL — plus étroit que les axes, qui vont aussi au médecin. */}
+              {selectedSynthese.syntheseJson.questions_entretien?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Questions pour la consultation</p>
+                  <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
+                    {selectedSynthese.syntheseJson.questions_entretien.map((q, i) => <li key={i}>{q}</li>)}
                   </ul>
                 </div>
               )}
