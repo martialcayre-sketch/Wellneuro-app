@@ -28,3 +28,13 @@ première lecture annonçait : le déménagement avait orphelin presque tout le 
 Le compilateur est le juge — `tsc --noEmit` vert après retrait, `next lint` sans
 erreur, 961 bancs verts sur 54 fichiers. Aucun comportement ne change : un import
 non utilisé ne s'exécute pas.
+
+**Ce que la garde de fraîcheur a révélé au passage.** Le banc du générateur de
+`MATRICE_CONSOMMATION.md` a rougi sur ce retrait, et il avait raison : la matrice
+comptait `synthese/route.ts` comme surface **directe** de la table de
+contradictions et du corpus clinique de synthèse, uniquement parce que leurs
+constantes y étaient encore importées. Elles ne l'étaient plus qu'en apparence.
+La matrice régénérée range ces deux savoirs en surfaces indirectes seulement — 4
+et 25 — ce qu'ils sont réellement depuis le déménagement du 2026-09-12. Deux
+lignes d'un fichier généré, mais elles disaient une consommation qui n'existait
+pas.
