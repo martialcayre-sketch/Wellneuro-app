@@ -405,6 +405,12 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
     // ci-dessus, avec la même sélection d'anamnèse.
     contradictions: constatsContradictionsPourDossier(reponses, consultation?.anamnese ?? null),
     exclureDejaRepondu: tableArretExploitable(),
+    // L'HORLOGE EST ICI, ET PAS DANS LE MOTEUR — même partage que la table
+    // sœur, dont `statuts.ts` reçoit un `referenceMs` de son appelant. Le
+    // moteur ne lit aucune date courante : il reste pur, rejouable et testable
+    // sur une date fixe, et la fenêtre de fraîcheur n'introduit pas un comportement
+    // qui dépendrait du jour où le banc tourne.
+    maintenantMs: Date.now(),
   });
 
   // Fail-closed explicite : sans composition de pack, on n'affirme aucune

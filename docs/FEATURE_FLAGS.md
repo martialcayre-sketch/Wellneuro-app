@@ -316,7 +316,7 @@ CI ; une table signée neuve absente du tableau aussi.
 
 | Table (fichier sous `web/src/lib/`) | `validationExterne` | `dateValidation` |
 |---|---|---|
-| `clinical/orientationRulesV1.ts` | `true` | `2026-08-06T00:00:00.000Z` |
+| `clinical/orientationRulesV1.ts` | `true` | `2026-09-13T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `biology-library/indicationsBiologieV1.ts` | `true` | `2026-08-17T00:00:00.000Z` |

@@ -1,6 +1,12 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
-import type { OrientationDeclencheur, OrientationDeclencheurFeuille, OrientationRule, OrientationZone } from './orientationRulesV1';
+import type {
+  OrientationDeclencheur,
+  OrientationDeclencheurFeuille,
+  OrientationRule,
+  OrientationZone,
+  RepetitionOrientation,
+} from './orientationRulesV1';
 import { contradictionEstOuverte } from './contradictionFinding';
 import type { ContradictionFinding } from './contradictionFinding';
 import type { StopRule } from './stopRulesV1';
@@ -161,6 +167,21 @@ export type EntreeOrientation = {
    */
   idsQuestionnairesAssignes: string[];
   regles: OrientationRule[];
+  /**
+   * Instant de référence, en millisecondes — l'HORLOGE, fournie par l'appelant.
+   *
+   * LE MOTEUR NE LIT AUCUNE DATE COURANTE, et ce champ est ce qui le permet
+   * tout en rendant la fenêtre de fraîcheur possible. Même partage que la table
+   * sœur, dont `statuts.ts` reçoit un `referenceMs`. Un moteur qui appellerait
+   * `Date.now()` cesserait d'être rejouable : deux évaluations du même dossier
+   * ne seraient plus comparables, et un banc changerait de verdict selon le jour
+   * où il tourne.
+   *
+   * ABSENT = AUCUNE PÉREMPTION, et c'est le sens fail-closed. Sans horloge, une
+   * passation exploitable couvre sa cible comme avant ce lot : on ne re-propose
+   * pas une exploration faute de savoir quel jour on est.
+   */
+  maintenantMs?: number;
   /** Composition réelle des packs (qids) quand elle est connue ; un pack à
    *  composition inconnue n'est jamais marqué `dejaAssigne`. */
   compositionPacks?: Partial<Record<PackId, string[]>>;
@@ -807,7 +828,17 @@ function estAdministrable(entree: EntreeOrientation, questionnaireId: string): b
  * invalide une passation ATTEND une re-passation, et une exclusion aveugle
  * ferait disparaître la recommandation qu'il attend ([[D-053]], arbitrage 7).
  */
-function passationExploitable(dernieres: Map<string, ReponseOrientation>, questionnaireId: string): boolean {
+/** Un jour, en millisecondes — même constante que `statuts.ts` côté biologie. */
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+/** L'horloge et le délai, réunis : les deux vont ensemble ou aucun ne vaut. */
+type FraicheurCible = { delaiJours: number; maintenantMs: number };
+
+function passationExploitable(
+  dernieres: Map<string, ReponseOrientation>,
+  questionnaireId: string,
+  fraicheur?: FraicheurCible
+): boolean {
   const reponse = dernieres.get(questionnaireId);
   if (!reponse) return false;
 
@@ -832,7 +863,32 @@ function passationExploitable(dernieres: Map<string, ReponseOrientation>, questi
   // `dejaRepondu` un filtre sans relire ce statut aurait retourné cette phrase
   // contre elle-même. Seule une passation `VALID` retire donc une
   // recommandation ; toute autre valeur, y compris absente, la laisse.
-  return reponse.statutValidite === 'VALID';
+  if (reponse.statutValidite !== 'VALID') return false;
+
+  // FENÊTRE DE FRAÎCHEUR — au-delà du délai de la règle, la passation cesse de
+  // COUVRIR la cible, et la recommandation revient avec son motif.
+  //
+  // DEUX REPLIS, TOUS DEUX DANS LE SENS « ON NE RE-PROPOSE PAS » : pas de
+  // fenêtre sur la règle, ou pas d'horloge fournie. Dans les deux cas la
+  // passation continue de couvrir, exactement comme avant ce lot.
+  //
+  // IL N'Y EN A PAS DE TROISIÈME, et c'est un banc qui l'a établi. Une première
+  // rédaction gardait ici la `dateReponse` illisible — `Number.isFinite` — en
+  // croyant tenir un repli de plus. Ce garde était MORT : une réponse dont la
+  // date ne se parse pas est écartée en amont par
+  // `derniereReponseParQuestionnaire` (`if (Number.isNaN(date)) continue`), donc
+  // elle n'entre jamais dans `dernieres` et n'atteint jamais cette fonction. La
+  // cible est alors proposée parce qu'AUCUNE passation n'est vue, et ce
+  // comportement précède ce lot. Écrire un garde inatteignable aurait fait
+  // croire à une protection qui n'existe pas.
+  if (!fraicheur) return true;
+  const faitLeMs = Date.parse(reponse.dateReponse);
+
+  // STRICTEMENT SUPÉRIEUR, comme côté biologie : le jour anniversaire du délai
+  // couvre encore. Un `>=` avancerait la réouverture d'un jour sans que rien ne
+  // le motive, et les deux tables cesseraient de se lire pareil.
+  const ageJours = (fraicheur.maintenantMs - faitLeMs) / JOUR_MS;
+  return ageJours <= fraicheur.delaiJours;
 }
 
 /**
@@ -845,12 +901,28 @@ function passationExploitable(dernieres: Map<string, ReponseOrientation>, questi
 function cibleDejaCouverte(
   entree: EntreeOrientation,
   dernieres: Map<string, ReponseOrientation>,
-  cible: CibleExploration
+  cible: CibleExploration,
+  repetition?: RepetitionOrientation
 ): boolean {
-  if (cible.type === 'questionnaire') return passationExploitable(dernieres, cible.questionnaireId);
+  // LA FENÊTRE EST CELLE DE LA RÈGLE QUI PROPOSE, et non un minimum sur toutes
+  // les règles qui visent cette cible. Le prédicat est appelé DANS la boucle,
+  // avant toute agrégation : à cet instant une seule règle parle, et c'est sa
+  // périodicité qui dit si sa propre proposition a encore un objet. Une cible
+  // visée par deux règles aux délais différents se rouvrira donc dès que la
+  // plus impatiente le demande — ce qui est le comportement voulu, et ce que la
+  // fusion par `Math.min` fait déjà pour la priorité.
+  const fraicheur: FraicheurCible | undefined =
+    repetition && typeof entree.maintenantMs === 'number'
+      ? { delaiJours: repetition.delaiJours, maintenantMs: entree.maintenantMs }
+      : undefined;
+
+  if (cible.type === 'questionnaire') return passationExploitable(dernieres, cible.questionnaireId, fraicheur);
   const composition = entree.compositionPacks?.[cible.packId];
   if (!Array.isArray(composition) || composition.length === 0) return false;
-  return composition.every(qid => passationExploitable(dernieres, qid));
+  // UN PACK N'EST COUVERT QUE SI CHACUN DE SES MEMBRES L'EST — la fenêtre
+  // s'applique donc membre par membre : un seul instrument périmé rouvre le
+  // pack entier, ce qui est le sens de `every`.
+  return composition.every(qid => passationExploitable(dernieres, qid, fraicheur));
 }
 
 /** Un pack ne passe que si TOUS ses membres connus sont administrables. */
@@ -926,7 +998,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
         // replanifier ». La ligne ne porte donc pas d'extinction : elle n'est
         // pas produite du tout, et le badge « déjà renseigné » continue de dire
         // le fait administratif sur les cibles qui, elles, restent proposées.
-        if (entree.exclureDejaRepondu && cibleDejaCouverte(entree, dernieres, cible)) continue;
+        if (entree.exclureDejaRepondu && cibleDejaCouverte(entree, dernieres, cible, regle.repetition)) continue;
 
         const cle = cleCible(cible);
         const existante = parCible.get(cle);
