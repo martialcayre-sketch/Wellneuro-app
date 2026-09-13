@@ -49,7 +49,10 @@ on:
           - migrate-only
           - import-cb
 
-# Le checkout est le seul besoin : aucun job n'écrit sur GitHub.
+# Le checkout est le seul besoin du workflow : aucun job n'écrit sur GitHub.
+# `actions: read` n'est PAS posé ici mais sur le seul job qui en a besoin
+# (`resume`) : au niveau du workflow, il élargirait aussi le job qui détient le
+# jeton Scalingo, sans qu'aucune de ses étapes ne lise l'API Actions.
 permissions:
   contents: read
 
@@ -63,12 +66,29 @@ jobs:
   # CE QUE L'APPROBATEUR APPROUVE, écrit avant qu'on le lui demande. Ce job ne
   # porte PAS d'`environment:` : il tourne AVANT le gate et `release` en dépend
   # — le résumé est déjà dans l'onglet Summary quand la demande d'approbation
-  # s'affiche. Sans secret, il ne lit pas la base : il dit ce que ce push
-  # APPORTE, pas ce que `migrate deploy` appliquera. PAS de `continue-on-error`,
-  # arbitrage assumé : un résumé cassé bloque la release plutôt que de faire
-  # approuver à l'aveugle.
+  # s'affiche. Sans secret Scalingo, il ne lit PAS la base : il dérive du dépôt ce
+  # qui est en attente depuis la dernière release réussie, ce qui est une borne
+  # exacte — mais la liste faisante foi reste celle que `migrate deploy` imprime,
+  # après l'approbation. PAS de `continue-on-error`, arbitrage assumé : un résumé
+  # cassé bloque la release plutôt que de faire approuver à l'aveugle.
   resume:
     runs-on: ubuntu-latest
+    # LA SEULE PORTÉE ÉLARGIE DE CE WORKFLOW, et elle est nommée ici plutôt qu'au
+    # niveau du workflow pour qu'elle ne suive pas le job qui détient le jeton
+    # Scalingo. `actions: read` laisse lire les MÉTADONNÉES des runs — de quoi
+    # trouver le dernier `release-db` réussi et son commit de tête. Aucune
+    # écriture : ce bloc REMPLACE les permissions par défaut du job, donc tout ce
+    # qui n'est pas listé ici est refusé, `contents: write` compris.
+    #
+    # Le jeton correspondant est le `GITHUB_TOKEN` automatique du run, éphémère et
+    # borné par ce bloc. C'est la SEULE exception à « `resume` ne voit aucun
+    # secret », et `release-db-invariants.test.mjs` la tient nommément : tout
+    # AUTRE `secrets.*` dans ce job fait rougir le banc. Ce job s'exécutant avant
+    # l'approbation humaine, la frontière que D-087 construit reste que le jeton
+    # SCALINGO — celui qui écrit en production — n'y est pas atteignable.
+    permissions:
+      contents: read
+      actions: read
     # Même condition que `release`. Sans elle, un dispatch hors `main` produirait
     # un résumé engageant — « voici ce qui est proposé » — pendant que
     # `ref-refusee` refuse la ref. Deux messages contradictoires sur la même page.
@@ -81,13 +101,47 @@ jobs:
           # d'un commit.
           fetch-depth: 0
 
+      # LA PLAGE DU RÉSUMÉ EST BORNÉE PAR LA DERNIÈRE RELEASE RÉUSSIE, pas par le
+      # push courant — et c'est la différence entre « ce que ce push ajoute » et
+      # « ce qui va partir ». `migrate deploy` applique TOUTES les migrations en
+      # attente : celles d'un push antérieur dont la release n'a jamais été
+      # approuvée partent avec. Le résumé le disait en avertissement, sans jamais
+      # calculer la liste ; l'approbateur devait donc la reconstituer à la main,
+      # exactement au moment où on lui demande de décider.
+      #
+      # Un run `release-db` réussi signifie que `migrate deploy` a tourné jusqu'à
+      # son commit de tête. Ce qui a été mergé DEPUIS est donc ce que cette release
+      # ajoutera. Quand cette borne n'est pas lisible — premier run, API muette,
+      # historique réécrit —, le résumé retombe sur la plage du push EN LE DISANT,
+      # plutôt que de présenter une liste partielle comme si elle était complète
+      # (`DC-24` : une donnée absente ne se présente pas comme un fait).
       - name: "Résumé pour l'approbateur"
         env:
           AVANT: ${{ github.event.before }}
           APRES: ${{ github.sha }}
           EVENEMENT: ${{ github.event_name }}
           MODE: ${{ inputs.mode }}
+          DEPOT: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Le dernier run RÉUSSI de ce workflow sur `main`. Le run courant est
+          # `in_progress` : le filtre `status=success` l'écarte de lui-même.
+          BORNE=""
+          BORNE_DATE=""
+          if RUNS=$(gh api \
+            "/repos/$DEPOT/actions/workflows/release-db.yml/runs?status=success&branch=main&per_page=1" \
+            2>erreur-runs.txt); then
+            BORNE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].head_sha // empty')
+            BORNE_DATE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].created_at // empty')
+          else
+            echo "— liste des runs de release-db illisible :" >&2
+            cat erreur-runs.txt >&2
+          fi
+          # Une borne qu'on ne peut pas atteindre dans l'historique ne borne rien.
+          if [ -n "$BORNE" ] && ! git cat-file -e "$BORNE^{commit}" 2>/dev/null; then
+            echo "— borne $BORNE inatteignable dans l'historique, ignorée." >&2
+            BORNE=""
+          fi
           {
             echo "## Release DB — ce qui est proposé"
             echo
@@ -97,15 +151,38 @@ jobs:
               echo "Un push clinique SANS migration déclenche aussi cette proposition : le"
               echo "préflight de fraîcheur des claims n'a de sens que contre la production."
               echo "Portée : \`migrate-only\` (l'import NABM reste manuel)."
+            else
+              echo "Déclenchement **manuel** (\`workflow_dispatch\`), mode : \`${MODE:-non précisé}\`."
+            fi
+            echo
+            # LA LISTE EST RENDUE DANS LES DEUX CAS, et le dispatch est justement
+            # celui où elle manquait le plus : c'est le chemin de REPRISE — on y
+            # arrive après un refus, donc avec un reliquat à appliquer par
+            # construction. Le résumé n'en disait alors pas un mot.
+            if [ -n "$BORNE" ]; then
+              PLAGE="$BORNE..$APRES"
+              echo "### Migrations en attente depuis la dernière release réussie"
               echo
+              # Le SHA court et le JOUR seul : l'horodatage ISO complet dans une
+              # phrase française se lit mal, et la minute n'apprend rien ici.
+              echo "Borne : \`$(git rev-parse --short "$BORNE")\` (dernier run \`release-db\`"
+              echo "réussi, le ${BORNE_DATE%%T*}). Un run réussi signifie que"
+              echo "\`migrate deploy\` a tourné jusqu'à son commit de tête : ce qui suit est"
+              echo "donc ce que CETTE release ajoutera, reliquat d'un push antérieur non"
+              echo "approuvé compris."
+              echo
+              echo "> Reste une liste DÉRIVÉE DU DÉPÔT. La liste faisante foi est celle que"
+              echo "> \`migrate deploy\` imprime — après l'approbation. Une migration déjà"
+              echo "> présente dans \`_prisma_migrations\` n'y réapparaîtra pas."
+            else
               echo "### Migrations apportées par ce push"
               echo
-              echo "> ⚠️ **Cette liste n'est PAS la liste de ce qui sera appliqué.**"
-              echo "> \`migrate deploy\` applique TOUTES les migrations en attente dans"
-              echo "> \`_prisma_migrations\`, y compris celles d'un push antérieur dont la"
-              echo "> release n'a jamais été approuvée. Ce résumé dit ce que ce push"
-              echo "> AJOUTE, pas ce qui partira. La liste réelle est celle que"
-              echo "> \`migrate deploy\` imprime — après l'approbation."
+              echo "> ⚠️ **Borne inconnue — cette liste n'est PAS celle de ce qui sera"
+              echo "> appliqué.** Le dernier run \`release-db\` réussi n'a pas pu être lu"
+              echo "> (premier run, API muette, ou commit inatteignable), donc la plage"
+              echo "> retombe sur ce push seul. \`migrate deploy\` applique TOUTES les"
+              echo "> migrations en attente, y compris celles d'un push antérieur dont la"
+              echo "> release n'a jamais été approuvée : le reliquat n'est pas visible ici."
               echo
               # Un `before` de zéros (première poussée) ou un commit devenu
               # inatteignable après réécriture : se rabattre sur le commit de tête
@@ -117,43 +194,50 @@ jobs:
                 echo
                 PLAGE="$APRES^..$APRES"
               fi
-              # `--diff-filter=d` écarte les SUPPRESSIONS : le revert d'une migration
-              # se lirait sinon « migration apportée », et l'approbation qui suivrait
-              # ferait échouer `migrate deploy` sur la dérive. `grep -v` écarte
-              # `migration_lock.toml`, qui vit à la racine du dossier et remonterait
-              # comme s'il était une migration.
-              # Le `if` capture le statut de `git diff` SEUL, et c'est le point :
-              # dans un pipeline, sans `pipefail`, le statut rendu est celui de la
-              # DERNIÈRE commande — ici `sort`, qui réussit toujours. Un `git diff`
-              # en échec passerait donc pour « aucune migration ». Isolé, il
-              # distingue « rien à signaler » de « on ne sait pas ».
-              #
-              # Le `|| true` du filtrage, lui, ne sert à rien aujourd'hui : `grep -v`
-              # rend bien 1 quand il ne reste aucune ligne (push ne touchant que
-              # `migration_lock.toml`), mais `sort` termine le pipeline et avale ce
-              # statut. Il est là pour le jour où quelqu'un ajoutera
-              # `set -o pipefail` : sans lui, ce jour-là, un push sans rien à
-              # signaler bloquerait une release.
-              if BRUT=$(git diff --name-only --diff-filter=d "$PLAGE" -- web/prisma/migrations/); then
-                TROUVEES=$(printf '%s\n' "$BRUT" \
-                  | sed 's|web/prisma/migrations/||;s|/.*||' \
-                  | grep -v -e '^$' -e '^migration_lock\.toml$' \
-                  | sort -u || true)
-                if [ -n "$TROUVEES" ]; then
-                  echo "$TROUVEES" | sed 's/^/- `/;s/$/`/'
-                else
-                  echo "_Aucune migration ajoutée par ce push — push clinique seul"
-                  echo "([[D-044]]), suppression seule, ou \`migration_lock.toml\` seul. Rien"
-                  echo "de neuf à appliquer de ce fait ; un reliquat antérieur peut"
-                  echo "néanmoins partir (voir l'avertissement)._"
-                fi
+            fi
+            echo
+            # `--diff-filter=d` écarte les SUPPRESSIONS : le revert d'une migration
+            # se lirait sinon « migration apportée », et l'approbation qui suivrait
+            # ferait échouer `migrate deploy` sur la dérive. `grep -v` écarte
+            # `migration_lock.toml`, qui vit à la racine du dossier et remonterait
+            # comme s'il était une migration.
+            # Le `if` capture le statut de `git diff` SEUL, et c'est le point :
+            # dans un pipeline, sans `pipefail`, le statut rendu est celui de la
+            # DERNIÈRE commande — ici `sort`, qui réussit toujours. Un `git diff`
+            # en échec passerait donc pour « aucune migration ». Isolé, il
+            # distingue « rien à signaler » de « on ne sait pas ».
+            #
+            # Le `|| true` du filtrage, lui, ne sert à rien aujourd'hui : `grep -v`
+            # rend bien 1 quand il ne reste aucune ligne (push ne touchant que
+            # `migration_lock.toml`), mais `sort` termine le pipeline et avale ce
+            # statut. Il est là pour le jour où quelqu'un ajoutera
+            # `set -o pipefail` : sans lui, ce jour-là, un push sans rien à
+            # signaler bloquerait une release.
+            if BRUT=$(git diff --name-only --diff-filter=d "$PLAGE" -- web/prisma/migrations/); then
+              TROUVEES=$(printf '%s\n' "$BRUT" \
+                | sed 's|web/prisma/migrations/||;s|/.*||' \
+                | grep -v -e '^$' -e '^migration_lock\.toml$' \
+                | sort -u || true)
+              if [ -n "$TROUVEES" ]; then
+                echo "$TROUVEES" | sed 's/^/- `/;s/$/`/'
+              elif [ -n "$BORNE" ]; then
+                # AVEC LA BORNE, CETTE PHRASE DIT BEAUCOUP PLUS : rien n'est en
+                # attente, reliquat compris. C'est le seul cas où le résumé peut
+                # affirmer que `migrate deploy` n'aura rien de neuf à appliquer.
+                echo "_Aucune migration en attente depuis la dernière release réussie."
+                echo "Ce run est alors un push clinique seul ([[D-044]]) : les préflights"
+                echo "et les contrats de lecture sont rejoués contre la production, et"
+                echo "\`migrate deploy\` ne devrait rien avoir à appliquer._"
               else
-                # Distinct du cas « aucune migration » : là, on ne SAIT pas.
-                echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
-                echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
+                echo "_Aucune migration ajoutée par ce push — push clinique seul"
+                echo "([[D-044]]), suppression seule, ou \`migration_lock.toml\` seul. Rien"
+                echo "de neuf à appliquer de ce fait ; un reliquat antérieur peut"
+                echo "néanmoins partir (voir l'avertissement)._"
               fi
             else
-              echo "Déclenchement **manuel** (\`workflow_dispatch\`), mode : \`${MODE:-non précisé}\`."
+              # Distinct du cas « aucune migration » : là, on ne SAIT pas.
+              echo "**Le diff a échoué** — impossible de dire ce que ce push apporte."
+              echo "Ne pas approuver sans avoir regardé le contenu du push à la main."
             fi
             echo
             echo "### Avant d'approuver"
@@ -266,15 +350,49 @@ jobs:
       # l'app (secrets compris) dans le log CI. L'erreur d'`env-get` n'est
       # PLUS avalée : la première répétition a montré qu'un échec d'API muet
       # se lit exactement comme un drapeau absent.
+      # DEUX ÉCHECS DIFFÉRENTS, DEUX MESSAGES DIFFÉRENTS — et les confondre a
+      # coûté une fausse piste le 2026-09-13. La rédaction d'origine avalait le
+      # code de sortie du CLI (`|| true`) puis comparait la sortie à `1` : une
+      # panne d'API transitoire produisait donc le message
+      # « WN_MIGRATIONS_PAR_RELEASE_DB ≠ 1 sur l'app », une affirmation SUR LA
+      # PRODUCTION que l'étape n'était pas en état de faire. Le drapeau valait
+      # bien 1 ; le diagnostic a envoyé chercher une variable mal posée.
+      #
+      # Trois issues, désormais distinctes : lu et égal à 1 (on passe), lu et
+      # différent (refus, et l'affirmation est vraie), PAS LU (refus aussi — un
+      # drapeau qu'on ne sait pas lire n'est pas un drapeau constaté, `DC-24` —
+      # mais avec un message qui dit l'ignorance, après quelques tentatives : une
+      # panne d'API de trois secondes ne doit pas coûter une release.
       - name: "Garde — le postdeploy ne migre plus (drapeau constaté)"
         run: |
-          DRAPEAU=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
-            env-get WN_MIGRATIONS_PAR_RELEASE_DB 2>erreur-env-get.txt || true)
-          if [ "$DRAPEAU" != "1" ]; then
-            if [ -s erreur-env-get.txt ]; then
-              echo "— erreur du CLI pendant la lecture du drapeau :" >&2
-              cat erreur-env-get.txt >&2
+          LU=non
+          for essai in 1 2 3; do
+            # Le code de sortie du CLI est capturé SÉPARÉMENT de sa sortie : c'est
+            # lui, et non le contenu, qui dit si la lecture a eu lieu.
+            if DRAPEAU=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
+              env-get WN_MIGRATIONS_PAR_RELEASE_DB 2>erreur-env-get.txt); then
+              LU=oui
+              break
             fi
+            echo "— lecture du drapeau en échec ($essai/3) :" >&2
+            cat erreur-env-get.txt >&2
+            # `if`, et pas `[ … ] && sleep`. MESURÉ, pas supposé : sous `bash -e`,
+            # les deux formes survivent — `set -e` exempte les commandes d'une
+            # liste `&&` sauf la dernière, et la troisième itération ne fait donc
+            # pas sortir l'étape. La forme explicite est retenue parce qu'elle ne
+            # demande pas au lecteur de connaître cette exemption pour savoir si
+            # le message de refus ci-dessous est atteignable.
+            if [ "$essai" -lt 3 ]; then sleep 5; fi
+          done
+          if [ "$LU" != "oui" ]; then
+            echo "❌ WN_MIGRATIONS_PAR_RELEASE_DB n'a pas pu être LU après 3 tentatives." >&2
+            echo "   Ce n'est PAS « le drapeau est mal posé » : le CLI n'a pas répondu" >&2
+            echo "   (API indisponible, jeton, réseau). L'état du postdeploy est donc" >&2
+            echo "   INCONNU, et un drapeau inconnu ne se traite pas comme constaté." >&2
+            echo "   Vérifier l'état de l'API Scalingo, puis relancer. Aucune écriture." >&2
+            exit 1
+          fi
+          if [ "$DRAPEAU" != "1" ]; then
             echo "❌ WN_MIGRATIONS_PAR_RELEASE_DB ≠ 1 sur l'app : le postdeploy migre" >&2
             echo "   encore de son côté — ce workflow ne serait pas l'unique porte." >&2
             echo "   Poser le drapeau (séquence de mise en service," >&2
@@ -307,8 +425,26 @@ jobs:
       # Aucun privilège nouveau ici : ce job exécute déjà des one-offs
       # arbitraires en production, ce qui est strictement plus puissant que
       # déployer.
+      #
+      # `WN_SHA_ATTENDU` — LE SHA QUE LA RELEASE ATTEND, et il ne se confond pas
+      # avec celui qui a déclenché le run. La rédaction d'origine réaffectait
+      # `GITHUB_SHA="$TETE"` en fin d'étape ; une affectation de variable SHELL ne
+      # survit pas à l'étape, chaque `run:` étant un processus distinct. L'étape
+      # suivante gardait donc l'ancien SHA et pouvait refuser (cas « SAUTÉ ») un
+      # déploiement qui venait d'être déclenché — vingt minutes d'attente pour un
+      # refus certain d'avance, APRÈS le déclenchement.
+      #
+      # Le report passe donc par `$GITHUB_ENV`, et sous un NOM PROPRE plutôt qu'en
+      # écrasant `GITHUB_SHA` : la surcharge d'une variable `GITHUB_*` par ce
+      # canal n'est pas une capacité documentée, et surtout elle ferait mentir
+      # toutes les étapes suivantes sur ce qui a déclenché le run. Deux faits
+      # distincts, deux noms — `GITHUB_SHA` reste le commit APPROUVÉ,
+      # `WN_SHA_ATTENDU` est celui dont on attend le déploiement.
       - name: "Déclenchement du déploiement du commit approuvé"
         run: |
+          # Par défaut, la release attend le commit approuvé. Réécrit plus bas si
+          # la tête a dépassé ce commit sans toucher aux migrations.
+          SHA_ATTENDU="$GITHUB_SHA"
           LISTE=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" \
             deployments 2>/dev/null || true)
           # N'IMPORTE QUEL statut, pas seulement `success` : un build déjà en
@@ -316,6 +452,9 @@ jobs:
           # suivante le dira en expirant.
           if printf '%s\n' "$LISTE" | grep -q "$GITHUB_SHA"; then
             echo "✓ un déploiement de $GITHUB_SHA existe déjà — rien à déclencher."
+            # Ce chemin sort AVANT la fin de l'étape : le report doit s'écrire ici
+            # aussi, sinon l'étape suivante n'aurait aucune valeur à lire.
+            echo "WN_SHA_ATTENDU=$SHA_ATTENDU" >> "$GITHUB_ENV"
             exit 0
           fi
           # `integration-link-manual-deploy` déploie une BRANCHE, pas un SHA.
@@ -363,8 +502,11 @@ jobs:
           if [ "$TETE" != "$GITHUB_SHA" ]; then
             echo "→ La release attend désormais la tête déployée ($TETE), pas le"
             echo "  commit approuvé : le one-off tourne dans l'image du DERNIER build."
-            GITHUB_SHA="$TETE"
+            SHA_ATTENDU="$TETE"
           fi
+          # LE REPORT VERS L'ÉTAPE SUIVANTE. Sans cette ligne, la réaffectation
+          # ci-dessus mourait avec le processus de l'étape.
+          echo "WN_SHA_ATTENDU=$SHA_ATTENDU" >> "$GITHUB_ENV"
 
       # L'approbation autorise le COMMIT APPROUVÉ ; le one-off tourne dans
       # l'image du DERNIER déploiement réussi. Double exigence, sur la sortie
@@ -387,20 +529,35 @@ jobs:
       # Depuis le 2026-09-06, cette boucle peut juger la TÊTE de main plutôt
       # que le commit approuvé : quand la tête n'a fait que dépasser un commit
       # approuvé sans toucher aux migrations, l'étape de déclenchement déploie
-      # la tête et repointe GITHUB_SHA sur elle — un refus (b) peut alors
+      # la tête et publie son SHA dans `WN_SHA_ATTENDU` — un refus (b) peut alors
       # suivre une écriture, qu'il faut vérifier à la main comme un run muet.
-      - name: "Garde — le commit approuvé est le dernier déployé"
+      #
+      # CETTE BOUCLE NE JUGEAIT PAS LA TÊTE, et c'était le défaut : l'étape
+      # précédente réaffectait `GITHUB_SHA` dans son propre shell, valeur perdue
+      # à la fin de l'étape. La garde attendait donc le déploiement du commit
+      # approuvé, que Scalingo ne build jamais pour lui-même quand la tête l'a
+      # dépassé — refus (b) après vingt minutes, sur une propriété qui n'était
+      # pas celle qu'on voulait vérifier.
+      - name: "Garde — le commit attendu est le dernier déployé"
         run: |
+          # Le repli sur `GITHUB_SHA` est le comportement STRICT — celui d'avant
+          # le report. Si la variable manquait, la garde exigerait le commit
+          # approuvé lui-même : jamais plus permissif que ce que l'humain a vu.
+          ATTENDU="${WN_SHA_ATTENDU:-$GITHUB_SHA}"
+          if [ "$ATTENDU" != "$GITHUB_SHA" ]; then
+            echo "→ La garde juge la tête déployée ($ATTENDU) ; commit approuvé :"
+            echo "  $GITHUB_SHA — elle l'a dépassé sans toucher aux migrations."
+          fi
           for i in $(seq 1 40); do
             SUCCES=$(scalingo --app "$SCALINGO_APP" --region "$SCALINGO_REGION" deployments 2>/dev/null \
               | grep 'success' | grep -oE '\b[0-9a-f]{40}\b' || true)
             DERNIER=$(printf '%s\n' "$SUCCES" | head -1)
-            if [ "$DERNIER" = "$GITHUB_SHA" ]; then
-              echo "✓ $GITHUB_SHA est le dernier déploiement réussi."
+            if [ "$DERNIER" = "$ATTENDU" ]; then
+              echo "✓ $ATTENDU est le dernier déploiement réussi."
               exit 0
             fi
-            if printf '%s\n' "$SUCCES" | grep -qx "$GITHUB_SHA"; then
-              echo "❌ $GITHUB_SHA est déployé, mais un déploiement PLUS RÉCENT existe" >&2
+            if printf '%s\n' "$SUCCES" | grep -qx "$ATTENDU"; then
+              echo "❌ $ATTENDU est déployé, mais un déploiement PLUS RÉCENT existe" >&2
               echo "   ($DERNIER) : l'image ne correspond plus au commit approuvé." >&2
               echo "   Relancer release-db depuis le commit de tête de main." >&2
               exit 1
@@ -416,8 +573,8 @@ jobs:
             # LE REFUS RESTE ENTIER, et c'est le point : l'image déploie du
             # code que personne n'a approuvé, la release n'a pas lieu. On
             # échoue seulement PLUS TÔT, et en disant quoi faire.
-            if [ -n "$DERNIER" ] && git merge-base --is-ancestor "$GITHUB_SHA" "$DERNIER" 2>/dev/null; then
-              echo "❌ $GITHUB_SHA a été SAUTÉ : le déploiement réussi le plus récent" >&2
+            if [ -n "$DERNIER" ] && git merge-base --is-ancestor "$ATTENDU" "$DERNIER" 2>/dev/null; then
+              echo "❌ $ATTENDU a été SAUTÉ : le déploiement réussi le plus récent" >&2
               echo "   ($DERNIER) le contient déjà, donc le commit approuvé ne sera" >&2
               echo "   jamais déployé pour lui-même. Deux merges rapprochés sur main." >&2
               echo "   → Relancer release-db en workflow_dispatch sur main (mode" >&2
@@ -425,10 +582,10 @@ jobs:
               echo "     déployée. Aucune écriture n'a eu lieu." >&2
               exit 1
             fi
-            echo "… déploiement de $GITHUB_SHA pas encore réussi ($i/40), attente 30 s."
+            echo "… déploiement de $ATTENDU pas encore réussi ($i/40), attente 30 s."
             sleep 30
           done
-          echo "❌ $GITHUB_SHA jamais déployé en success après 20 min — release refusée." >&2
+          echo "❌ $ATTENDU jamais déployé en success après 20 min — release refusée." >&2
           echo "   Le déploiement a été DÉCLENCHÉ par l'étape précédente (D-102) : ce" >&2
           echo "   délai n'est donc plus une attente passive. Lire le build —" >&2
           echo "   \`scalingo --region $SCALINGO_REGION --app $SCALINGO_APP deployment-logs\`" >&2

@@ -78,18 +78,41 @@ test('`ref-refusee` porte toujours la condition inverse et échoue', () => {
   assert.match(bloc, /exit 1/, 'une ref refusée doit échouer bruyamment, pas être *skipped*');
 });
 
-test('`resume` ne porte aucun environnement et ne voit aucun secret', () => {
+// L'INVARIANT A ÉTÉ RESSERRÉ, PAS LEVÉ, le 2026-09-13. Il interdisait TOUT
+// `secrets.` dans `resume`. Le résumé borne désormais sa plage au dernier run
+// `release-db` réussi — ce qui demande de lire les métadonnées des runs, donc le
+// `GITHUB_TOKEN` automatique. Une exception nommée vaut mieux qu'une garde levée :
+// ce banc liste maintenant ce qui est admis, et tout AUTRE secret rougit. Ce qui
+// est protégé reste ce que D-087 construit — le jeton SCALINGO, celui qui écrit en
+// production, n'est atteignable que derrière l'approbation humaine.
+const SECRETS_ADMIS_DANS_RESUME = Object.freeze(['GITHUB_TOKEN']);
+
+test('`resume` ne porte aucun environnement et aucun secret hors exception nommée', () => {
   const bloc = JOBS.get('resume');
   assert.doesNotMatch(
     bloc,
     /^\s+environment:/m,
     "`resume` doit rester HORS du gate : c'est ce qui lui permet de s'exécuter AVANT l'approbation",
   );
-  assert.doesNotMatch(
-    bloc,
-    /secrets\./,
-    "`resume` s'exécute sans approbation humaine — aucun secret ne doit y être en portée",
+  const cites = [...bloc.matchAll(/secrets\.([A-Za-z0-9_]+)/g)].map(([, nom]) => nom);
+  const interdits = cites.filter((nom) => !SECRETS_ADMIS_DANS_RESUME.includes(nom));
+  assert.deepEqual(
+    interdits,
+    [],
+    "`resume` s'exécute sans approbation humaine : hors `GITHUB_TOKEN`, aucun secret ne doit y être en portée",
   );
+  // Le jeton admis ne vaut que borné. Sans bloc `permissions:` propre au job, il
+  // héritait des permissions du workflow — et un élargissement futur au niveau
+  // workflow lui rendrait silencieusement des droits d'écriture.
+  if (cites.includes('GITHUB_TOKEN')) {
+    const permissions = bloc.match(/^\s+permissions:\n((?:\s+\w+:\s*\w+\n)+)/m);
+    assert.ok(permissions, '`resume` porte un jeton : il doit porter son propre bloc `permissions:`');
+    assert.doesNotMatch(
+      permissions[1],
+      /:\s*write\b/,
+      '`resume` tourne avant l’approbation : aucune permission d’ÉCRITURE ne doit y être posée',
+    );
+  }
 });
 
 test('`release` dépend de `resume`, pour que le résumé précède la demande', () => {
@@ -273,7 +296,17 @@ test('le déclenchement exige que la tête de main soit le commit approuvé', ()
 // Quand la tête acceptée n'est pas le commit approuvé, c'est ELLE que le
 // build déploie : sans repointage, la garde suivante attendrait 20 minutes
 // un déploiement du commit approuvé qui ne viendra jamais.
-test('une tête acceptée à la place du commit approuvé repointe la garde', () => {
+//
+// CE BANC ÉPINGLAIT LE MÉCANISME DÉFECTUEUX, et son intention était juste — c'est
+// ce qu'il exigeait qui ne marchait pas. Il demandait la présence de
+// `GITHUB_SHA="$TETE"` : une affectation de variable SHELL, qui meurt avec le
+// processus de l'étape. L'étape suivante gardait donc l'ancien SHA et pouvait
+// refuser (cas « SAUTÉ ») un déploiement qu'elle venait de déclencher. Corrigé le
+// 2026-09-13 : le report passe par `$GITHUB_ENV`, sous un nom propre plutôt qu'en
+// écrasant `GITHUB_SHA` — deux faits distincts (le commit approuvé, le SHA
+// attendu) méritent deux noms. Le banc épingle désormais le CANAL, seul capable de
+// traverser la frontière d'étape, et son absence.
+test('la tête acceptée est reportée vers l’étape suivante, par $GITHUB_ENV', () => {
   const bloc = JOBS.get('release');
   const debut = bloc.indexOf('Déclenchement du déploiement');
   const fin = bloc.indexOf('Release en one-off');
@@ -281,8 +314,39 @@ test('une tête acceptée à la place du commit approuvé repointe la garde', ()
   const etape = bloc.slice(debut, fin);
   assert.match(
     etape,
-    /GITHUB_SHA="\$TETE"/,
-    'la garde doit attendre la tête déployée, pas le commit approuvé qu’elle a dépassé',
+    /SHA_ATTENDU="\$TETE"/,
+    'la tête acceptée doit devenir le SHA attendu, pas rester le commit qu’elle a dépassé',
+  );
+  assert.match(
+    etape,
+    /echo "WN_SHA_ATTENDU=\$SHA_ATTENDU" >> "\$GITHUB_ENV"/,
+    'sans écriture dans $GITHUB_ENV, le report meurt avec le processus de l’étape',
+  );
+  // Le chemin de sortie anticipée doit reporter AUSSI, sinon l'étape suivante
+  // n'aurait aucune valeur à lire quand un déploiement existait déjà.
+  const reports = etape.match(/WN_SHA_ATTENDU=\$SHA_ATTENDU" >> "\$GITHUB_ENV"/g) ?? [];
+  assert.ok(
+    reports.length >= 2,
+    'chaque sortie de l’étape doit reporter le SHA attendu — y compris le `exit 0` anticipé',
+  );
+  // Et la garde suivante doit le LIRE, avec repli strict sur le commit approuvé.
+  const garde = bloc.slice(bloc.indexOf('Garde — le commit attendu'));
+  assert.match(
+    garde,
+    /ATTENDU="\$\{WN_SHA_ATTENDU:-\$GITHUB_SHA\}"/,
+    'la garde doit lire le SHA attendu, et retomber sur le commit approuvé — jamais plus permissive',
+  );
+  // La comparaison elle-même doit porter sur le SHA ATTENDU. Sans ce cas, lire
+  // `WN_SHA_ATTENDU` puis continuer à comparer `$GITHUB_SHA` passerait le banc.
+  assert.match(
+    garde,
+    /\[ "\$DERNIER" = "\$ATTENDU" \]/,
+    'la garde doit comparer le dernier déploiement au SHA ATTENDU',
+  );
+  assert.doesNotMatch(
+    garde,
+    /\[ "\$DERNIER" = "\$GITHUB_SHA" \]/,
+    'la garde ne doit plus comparer le dernier déploiement au commit approuvé',
   );
 });
 

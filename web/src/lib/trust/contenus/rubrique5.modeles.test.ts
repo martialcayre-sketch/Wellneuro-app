@@ -28,7 +28,8 @@ const DOSSIER = path.join(RACINE, 'docs', 'DOSSIER_RGPD.md');
 /**
  * DETTE DATÉE DU 2026-09-09, ET ELLE NE DOIT QUE RÉTRÉCIR.
  *
- * Dix-sept tables filles de `patients` ne sont pas déclarées en rubrique 5.
+ * Dix-sept tables filles de `patients` n'étaient pas déclarées en rubrique 5 ;
+ * il en reste SEIZE dans cette liste depuis le 2026-09-13 (voir plus bas).
  * Elles NE SONT PAS corrigées ici, et ce n'est pas un oubli : classer une table
  * en « catégorie particulière » au sens de l'article 9 est une qualification
  * juridique, pas une écriture de code — elle appartient au responsable de
@@ -40,11 +41,18 @@ const DOSSIER = path.join(RACINE, 'docs', 'DOSSIER_RGPD.md');
  *
  * Ajouter un nom ici demande une justification écrite dans la PR. Le geste
  * normal est d'en retirer.
+ *
+ * RETIRÉ LE 2026-09-13 : `DecisionPrioritySelection`. Elle est déclarée en
+ * rubrique 5, avec `EcartementProposition` et sous une même entrée — les deux
+ * portent la même nature d'objet (un geste praticien motivé sur un dossier
+ * nommé), et les traiter séparément aurait invité deux qualifications possiblement
+ * divergentes. La DÉCLARATION est faite ; la QUALIFICATION au titre de l'article 9
+ * reste due au responsable de traitement, comme cette dette le dit. Ce banc exige
+ * désormais qu'elle reste déclarée.
  */
 const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([
   'Assignation',
   'CritereDossierConstate',
-  'DecisionPrioritySelection',
   'ProtocolDiffusionApproval',
   'PackProposition',
   'EnvoiBrouillon',
