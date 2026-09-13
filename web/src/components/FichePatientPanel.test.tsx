@@ -2009,6 +2009,16 @@ describe('FichePatientPanel — le statut de « Données fiables »', () => {
     expect(ongletDonnees().textContent).not.toMatch(/en attente du patient/i);
   });
 
+  it('rideau satisfait SANS aucune assignation : « renseignée », pas « à ouvrir »', async () => {
+    // L'ORDRE DES TESTS EST LE SUJET. « Rien d'envoyé » ne se demande qu'APRÈS
+    // le verdict : sinon un dossier dont le rideau est pourtant satisfait
+    // s'afficherait « à ouvrir ». La production ne fabrique pas cet état — les
+    // fixtures si, en semant des passations sans assignation.
+    await rendreFiche({ runtime: 'proposal', rideau: 'satisfait', envois: 'aucun' });
+    expect(ongletDonnees().textContent).toMatch(/renseignée/i);
+    expect(ongletDonnees().textContent).not.toMatch(/à ouvrir/i);
+  });
+
   it('checklist absente : « indéterminée », jamais un verdict inventé', async () => {
     // La route ne calcule les préconditions qu'en visant une ancre. Sans
     // elles, le rideau n'est pas incomplet : il est inconnu (`DC-24`).

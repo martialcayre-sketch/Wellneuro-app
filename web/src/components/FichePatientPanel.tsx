@@ -1079,12 +1079,6 @@ export function FichePatientPanel({
         // retomber la phase — il n'empêche pas de confirmer l'ancre, et la
         // liste des envois le montre déjà pour ce qu'il est.
         if (etatPassations === 'erreur' || etatPassations === 'tronque') return 'inconnu';
-        // RIEN N'A ÉTÉ DEMANDÉ : le geste attendu est PRATICIEN, pas patient.
-        // `en_attente` afficherait « en attente du patient » et reprocherait à
-        // celui-ci un envoi qui n'est jamais parti — cinq dossiers sur douze
-        // en production au 2026-09-12. C'est le défaut de désignation d'acteur
-        // que la requalification de « Compréhension » a corrigé le 2026-09-10.
-        if (envois.assignees === 0) return 'a_ouvrir';
         if (!etatRuntime || etatRuntime.chargement) return 'inconnu';
         // L'ANCRE CONFIRMÉE VAUT VERDICT, et c'est le seul raccourci admis :
         // le rideau complet est une condition DURE de la confirmation, donc un
@@ -1096,7 +1090,20 @@ export function FichePatientPanel({
         // Le verdict du rideau vient du serveur ; absent, il est INCONNU et
         // ne s'invente pas (`DC-24`).
         if (etatRuntime.rideauT0Satisfait === null) return 'inconnu';
-        return etatRuntime.rideauT0Satisfait ? 'fait' : 'en_attente';
+        if (etatRuntime.rideauT0Satisfait) return 'fait';
+        // LE RIDEAU EST INCOMPLET — reste à savoir qui on attend, et l'ORDRE
+        // compte : le verdict d'abord, l'acteur ensuite. Tester « rien
+        // d'envoyé » en tête ferait dire « à ouvrir » à un dossier dont le
+        // rideau est pourtant satisfait — un état que la production ne produit
+        // pas mais que les fixtures, elles, produisent (passations semées sans
+        // assignation).
+        //
+        // RIEN N'A ÉTÉ DEMANDÉ : le geste attendu est PRATICIEN, pas patient.
+        // `en_attente` afficherait « en attente du patient » et reprocherait à
+        // celui-ci un envoi qui n'est jamais parti — cinq dossiers sur douze
+        // en production au 2026-09-12. C'est le défaut de désignation d'acteur
+        // que la requalification de « Compréhension » a corrigé le 2026-09-10.
+        return envois.assignees === 0 ? 'a_ouvrir' : 'en_attente';
       }
       if (id === 'comprehension') {
         // CE QUE LA PHASE CONTIENT, ET NON CE QUI L'ENTOURE. Elle lisait les
