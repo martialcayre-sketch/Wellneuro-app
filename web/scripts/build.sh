@@ -30,6 +30,38 @@ set -euo pipefail
 # le plafond ne vaut que pour le runtime.
 unset NODE_OPTIONS
 
+# LA RELEASE SE GRAVE ICI, PARCE QU'ELLE N'EXISTE QU'ICI.
+#
+# `releaseSha()` retombait sur `'local'` EN PRODUCTION : l'en-tête affichait
+# « build local » et Sentry taguait toutes les erreurs sur une release nommée
+# `local` — impossible de dire quelle version avait produit un défaut
+# (constaté le 2026-09-13 sur une capture de production).
+#
+# POURQUOI AU BUILD ET NON EN VARIABLE SCALINGO. Une variable posée à la main
+# est figée : elle serait juste une fois, puis MENTIRAIT à chaque déploiement
+# suivant — pire que `'local'`, qui au moins n'affirme rien. `SOURCE_VERSION`
+# est posée par Scalingo pour la durée du build et vaut le commit réellement
+# déployé : la graver dans l'image est le seul geste qui reste vrai sans
+# entretien, et il ne redémarre rien.
+#
+# POURQUOI `NEXT_PUBLIC_APP_VERSION` ET NON `WN_RELEASE_SHA`. Un export de ce
+# script ne survit pas au build : le runtime `next start` ne le verrait pas.
+# Les variables `NEXT_PUBLIC_*` sont INLINÉES par Next à la compilation — elles
+# partent dans l'image. Et ce nom précis est déjà le dernier repli des deux
+# chaînes existantes, `releaseSha()` (serveur) comme `clientReleaseSha()`
+# (navigateur) : une seule ligne renseigne les deux, sans toucher à
+# `deploymentEnv.ts`.
+#
+# Hors Scalingo — CI, build local — `SOURCE_VERSION` est absente : rien n'est
+# exporté, le repli `'local'` reste en place. Jamais de variable vide, qui
+# court-circuiterait `??` et afficherait « build » suivi de rien.
+if [ -n "${SOURCE_VERSION:-}" ]; then
+  export NEXT_PUBLIC_APP_VERSION="$SOURCE_VERSION"
+  printf 'Release gravée dans le build : %s\n' "${SOURCE_VERSION:0:7}"
+else
+  printf "SOURCE_VERSION absente — release non gravée, l'application dira « build local ».\n"
+fi
+
 npm run prisma:generate
 next build
 
