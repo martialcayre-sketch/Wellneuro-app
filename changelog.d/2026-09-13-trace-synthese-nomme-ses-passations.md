@@ -1,4 +1,4 @@
-### Synthèse IA — la trace nomme les passations sur lesquelles elle a été écrite, et le prompt continue de les ignorer
+### Synthèse IA — la trace nomme les passations sur lesquelles elle a été écrite, et le prompt continue de les ignorer (2026-09-13)
 
 `donneesEntree.reponses` portait `idQuestionnaire` et `date`. Ce couple désigne
 **presque** toujours la ligne source — et « presque » cesse de suffire dès qu'un

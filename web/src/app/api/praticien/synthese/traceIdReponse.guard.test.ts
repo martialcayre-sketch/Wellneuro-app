@@ -75,8 +75,19 @@ const CONFORME = JSON.stringify({
 // Identifiants volontairement improbables : la recherche de sous-chaîne dans le
 // message n'a de valeur que si la chaîne cherchée ne peut pas y arriver par un
 // autre chemin (un `REP_1` se serait trouvé dans n'importe quel texte).
-const ID_RECENTE = 'REP_TRACE_ZQX9';
-const ID_ANTERIEURE = 'REP_TRACE_WKV4';
+const ID_PREMIERE = 'REP_TRACE_ZQX9';
+const ID_SECONDE = 'REP_TRACE_WKV4';
+
+/**
+ * LE MÊME JOUR, DÉLIBÉRÉMENT — c'est le cas que ce lot existe pour couvrir.
+ *
+ * `donneesEntree.reponses` portait `idQuestionnaire` + `date`. Sur deux dates
+ * différentes, ce couple désigne encore chaque ligne, et un banc construit ainsi
+ * prouverait seulement que l'identifiant est présent, jamais qu'il RÉSOUT quoi
+ * que ce soit. Deux passations du même instrument le même jour rendent le couple
+ * ambigu : seul `idReponse` les distingue alors.
+ */
+const JOUR_PARTAGE = '2026-09-10';
 
 function req(): Request {
   return new Request('http://x/api/praticien/synthese', {
@@ -125,11 +136,11 @@ beforeEach(() => {
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
   prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com' });
   prisma.consultation.findFirst.mockResolvedValue(null);
-  // Deux passations du MÊME instrument : le cas où `idQuestionnaire` + `date`
-  // ne suffisent plus à désigner une ligne si les deux tombent le même jour.
+  // Deux passations du MÊME instrument, le MÊME jour : le couple
+  // `idQuestionnaire` + `date` ne désigne plus une ligne, `idReponse` si.
   prisma.questionnaireReponse.findMany.mockResolvedValue([
-    passation(ID_RECENTE, 'Q_STR_04', '2026-09-10'),
-    passation(ID_ANTERIEURE, 'Q_STR_04', '2026-08-02'),
+    passation(ID_PREMIERE, 'Q_STR_04', JOUR_PARTAGE),
+    passation(ID_SECONDE, 'Q_STR_04', JOUR_PARTAGE),
   ]);
   anthropicCreate.mockResolvedValue({
     content: [{ type: 'text', text: CONFORME }],
@@ -150,18 +161,19 @@ describe('trace d’audit — la synthèse nomme les passations sur lesquelles e
 
     const tracees = reponsesTracees();
     expect(tracees).toHaveLength(2);
-    expect(tracees.map(r => r.idReponse).sort()).toEqual([ID_ANTERIEURE, ID_RECENTE].sort());
+    expect(tracees.map(r => r.idReponse).sort()).toEqual([ID_PREMIERE, ID_SECONDE].sort());
   });
 
-  it('l’identifiant est celui de la LIGNE, pas un dérivé de l’instrument', async () => {
+  it('l’identifiant DÉPARTAGE deux lignes que l’instrument et la date confondent', async () => {
     await POST(req());
 
-    // Deux lignes du même instrument : si l'identifiant était dérivé de
-    // `idQuestionnaire`, les deux porteraient la même valeur et ce banc ne
-    // distinguerait rien.
+    // Le cœur du lot : même instrument, même date, et pourtant deux lignes
+    // distinguables. Si l'identifiant était dérivé de l'un ou de l'autre, les
+    // deux porteraient la même valeur et la trace ne désignerait rien.
     const tracees = reponsesTracees();
-    expect(new Set(tracees.map(r => r.idReponse)).size).toBe(2);
     expect(new Set(tracees.map(r => r.idQuestionnaire)).size).toBe(1);
+    expect(new Set(tracees.map(r => r.date)).size).toBe(1);
+    expect(new Set(tracees.map(r => r.idReponse)).size).toBe(2);
   });
 });
 
@@ -180,8 +192,8 @@ describe('le prompt — l’identifiant de passation N’ATTEINT PAS le modèle'
     // le modèle qu'une clé nommée.
     await POST(req());
 
-    expect(messageEnvoye()).not.toContain(ID_RECENTE);
-    expect(messageEnvoye()).not.toContain(ID_ANTERIEURE);
+    expect(messageEnvoye()).not.toContain(ID_PREMIERE);
+    expect(messageEnvoye()).not.toContain(ID_SECONDE);
   });
 
   it('anti-vacuité : le message contient bien le bloc des passations', async () => {
