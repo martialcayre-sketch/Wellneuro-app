@@ -126,13 +126,24 @@ jobs:
         run: |
           # Le dernier run RÉUSSI de ce workflow sur `main`. Le run courant est
           # `in_progress` : le filtre `status=success` l'écarte de lui-même.
+          #
+          # UN RUN REJETÉ PAR UN RELECTEUR NE PEUT PAS SERVIR DE BORNE, et c'est
+          # CONSTATÉ, pas supposé : le rejet du 2026-09-13 (run 34758433177) a
+          # conclu `cancelled`. Le filtre l'écarte donc. C'était le risque à écarter
+          # — un rejet qui conclurait `success` ferait sauter la borne en avant, et
+          # le résumé sous-listerait SANS LE DIRE, seul sens dangereux puisqu'il
+          # fait approuver.
           BORNE=""
           BORNE_DATE=""
           if RUNS=$(gh api \
             "/repos/$DEPOT/actions/workflows/release-db.yml/runs?status=success&branch=main&per_page=1" \
             2>erreur-runs.txt); then
-            BORNE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].head_sha // empty')
-            BORNE_DATE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].created_at // empty')
+            # `|| true` : sous `bash -e`, un `jq` en échec tuerait l'étape, et
+            # `resume` n'a pas de `continue-on-error` — un hoquet de parsing
+            # bloquerait TOUTE release. Le repli « borne inconnue » existe déjà et
+            # sait le dire ; il vaut mieux y retomber que bloquer.
+            BORNE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].head_sha // empty' || true)
+            BORNE_DATE=$(printf '%s' "$RUNS" | jq -r '.workflow_runs[0].created_at // empty' || true)
           else
             echo "— liste des runs de release-db illisible :" >&2
             cat erreur-runs.txt >&2
@@ -165,8 +176,12 @@ jobs:
               echo
               # Le SHA court et le JOUR seul : l'horodatage ISO complet dans une
               # phrase française se lit mal, et la minute n'apprend rien ici.
+              # « CRÉÉ le », et pas « appliqué le » : `created_at` est la date de
+              # CRÉATION du run. Un run créé le 10 et approuvé le 12 a écrit le 12,
+              # et afficher « release réussie le 10 » ferait chercher la mauvaise
+              # fenêtre dans les journaux.
               echo "Borne : \`$(git rev-parse --short "$BORNE")\` (dernier run \`release-db\`"
-              echo "réussi, le ${BORNE_DATE%%T*}). Un run réussi signifie que"
+              echo "réussi, créé le ${BORNE_DATE%%T*}). Un run réussi signifie que"
               echo "\`migrate deploy\` a tourné jusqu'à son commit de tête : ce qui suit est"
               echo "donc ce que CETTE release ajoutera, reliquat d'un push antérieur non"
               echo "approuvé compris."
@@ -175,22 +190,38 @@ jobs:
               echo "> \`migrate deploy\` imprime — après l'approbation. Une migration déjà"
               echo "> présente dans \`_prisma_migrations\` n'y réapparaîtra pas."
             else
-              echo "### Migrations apportées par ce push"
+              # LE TITRE SUIT L'ÉVÉNEMENT. Sur un dispatch, « apportées par ce push »
+              # désignait un push qui n'existe pas, et le repli parlait de `before`,
+              # que `workflow_dispatch` ne porte pas : l'approbateur lisait un texte
+              # qui ne décrivait pas son déclenchement.
+              if [ "$EVENEMENT" = "push" ]; then
+                echo "### Migrations apportées par ce push"
+              else
+                echo "### Migrations du commit de tête"
+              fi
               echo
               echo "> ⚠️ **Borne inconnue — cette liste n'est PAS celle de ce qui sera"
               echo "> appliqué.** Le dernier run \`release-db\` réussi n'a pas pu être lu"
               echo "> (premier run, API muette, ou commit inatteignable), donc la plage"
-              echo "> retombe sur ce push seul. \`migrate deploy\` applique TOUTES les"
-              echo "> migrations en attente, y compris celles d'un push antérieur dont la"
-              echo "> release n'a jamais été approuvée : le reliquat n'est pas visible ici."
+              echo "> se réduit à ce que ce déclenchement laisse voir. \`migrate deploy\`"
+              echo "> applique TOUTES les migrations en attente, y compris celles d'un"
+              echo "> push antérieur dont la release n'a jamais été approuvée : le"
+              echo "> reliquat n'est pas visible ici."
               echo
               # Un `before` de zéros (première poussée) ou un commit devenu
               # inatteignable après réécriture : se rabattre sur le commit de tête
               # plutôt que de faire échouer le résumé.
               if [ -n "$AVANT" ] && git cat-file -e "$AVANT^{commit}" 2>/dev/null; then
                 PLAGE="$AVANT..$APRES"
-              else
+              elif [ "$EVENEMENT" = "push" ]; then
                 echo "> \`before\` inatteignable — seul le commit de tête est inspecté."
+                echo
+                PLAGE="$APRES^..$APRES"
+              else
+                # `workflow_dispatch` ne porte PAS de `before` : le nommer ici
+                # enverrait chercher une cause qui n'existe pas.
+                echo "> Déclenchement manuel, sans plage de push : seul le commit de tête"
+                echo "> est inspecté."
                 echo
                 PLAGE="$APRES^..$APRES"
               fi
@@ -222,12 +253,20 @@ jobs:
                 echo "$TROUVEES" | sed 's/^/- `/;s/$/`/'
               elif [ -n "$BORNE" ]; then
                 # AVEC LA BORNE, CETTE PHRASE DIT BEAUCOUP PLUS : rien n'est en
-                # attente, reliquat compris. C'est le seul cas où le résumé peut
-                # affirmer que `migrate deploy` n'aura rien de neuf à appliquer.
-                echo "_Aucune migration en attente depuis la dernière release réussie."
+                # attente, reliquat compris.
+                echo "_Aucune migration AJOUTÉE depuis la dernière release réussie."
                 echo "Ce run est alors un push clinique seul ([[D-044]]) : les préflights"
-                echo "et les contrats de lecture sont rejoués contre la production, et"
-                echo "\`migrate deploy\` ne devrait rien avoir à appliquer._"
+                echo "et les contrats de lecture sont rejoués contre la production._"
+                echo
+                # LE TROU DE CETTE PHRASE, DIT PLUTÔT QUE TU : le filtre écarte les
+                # SUPPRESSIONS (voir plus haut — un revert lu comme un ajout ferait
+                # approuver une dérive). Un dossier de migration RETIRÉ depuis la
+                # borne ne remonte donc pas ici, et `migrate deploy` échouera sur la
+                # dérive. Refus franc, aucune écriture — mais la phrase ci-dessus ne
+                # le couvre pas, et le lecteur doit le savoir.
+                echo "> Une migration SUPPRIMÉE depuis la borne n'apparaît pas dans cette"
+                echo "> liste, par construction. \`migrate deploy\` refuserait alors sur la"
+                echo "> dérive — sans écrire."
               else
                 echo "_Aucune migration ajoutée par ce push — push clinique seul"
                 echo "([[D-044]]), suppression seule, ou \`migration_lock.toml\` seul. Rien"
@@ -385,11 +424,29 @@ jobs:
             if [ "$essai" -lt 3 ]; then sleep 5; fi
           done
           if [ "$LU" != "oui" ]; then
+            # DEUX HYPOTHÈSES, ET CETTE GARDE NE SAIT PAS LAQUELLE — [[D-112]], dette
+            # de lecture nommée : `env-get` rend la même erreur pour une variable
+            # ABSENTE et pour un incident d'API. Trancher à sa place serait refaire,
+            # à l'envers, la faute que cette étape vient de corriger : elle affirmait
+            # « ≠ 1 sur l'app » sans savoir ; dire « l'API n'a pas répondu » sans
+            # savoir laisserait croire qu'il n'y a rien à vérifier côté app — alors
+            # qu'un drapeau réellement retiré signifie que le postdeploy migre de
+            # nouveau, donc que D-087 n'est plus tenu.
             echo "❌ WN_MIGRATIONS_PAR_RELEASE_DB n'a pas pu être LU après 3 tentatives." >&2
-            echo "   Ce n'est PAS « le drapeau est mal posé » : le CLI n'a pas répondu" >&2
-            echo "   (API indisponible, jeton, réseau). L'état du postdeploy est donc" >&2
-            echo "   INCONNU, et un drapeau inconnu ne se traite pas comme constaté." >&2
-            echo "   Vérifier l'état de l'API Scalingo, puis relancer. Aucune écriture." >&2
+            echo "   L'état du postdeploy est INCONNU, et un drapeau inconnu ne se" >&2
+            echo "   traite pas comme constaté. DEUX causes sont indiscernables ici" >&2
+            # Pas d'accent grave dans une chaîne entre guillemets : bash y verrait
+            # une substitution de commande, et exécuterait « env-get ».
+            echo "   (D-112 : env-get rend la même erreur pour les deux) :" >&2
+            echo "     a) le drapeau a été RETIRÉ de l'app — redéploiement d'un slug" >&2
+            echo "        antérieur, env-unset, migration d'app. Le postdeploy migre" >&2
+            echo "        alors de nouveau au merge : ce workflow n'est plus l'unique" >&2
+            echo "        porte, et la base a pu être écrite hors approbation." >&2
+            echo "     b) l'API Scalingo n'a pas répondu — incident, jeton, réseau." >&2
+            echo "   LEVER LE DOUTE AVANT DE RELANCER, et commencer par (a) :" >&2
+            echo "     scalingo --region $SCALINGO_REGION --app $SCALINGO_APP env | grep WN_MIGRATIONS" >&2
+            echo "   depuis un poste autorisé — la sortie complète d'\`env\` ne doit pas" >&2
+            echo "   passer par ce log. Aucune écriture n'a eu lieu." >&2
             exit 1
           fi
           if [ "$DRAPEAU" != "1" ]; then
@@ -454,6 +511,24 @@ jobs:
             echo "✓ un déploiement de $GITHUB_SHA existe déjà — rien à déclencher."
             # Ce chemin sort AVANT la fin de l'étape : le report doit s'écrire ici
             # aussi, sinon l'étape suivante n'aurait aucune valeur à lire.
+            #
+            # ET IL REPORTE LE COMMIT APPROUVÉ, JAMAIS LA TÊTE — ce n'est pas un
+            # oubli, et la revue du 2026-09-13 l'a lu comme tel. Sur ce chemin, on
+            # n'a RIEN déployé : l'image reste celle du dernier build réussi, qui
+            # peut être antérieure à la tête. Reporter la tête ferait attendre à la
+            # garde un déploiement que personne n'a déclenché. Le SHA attendu est
+            # donc bien celui dont un build existe.
+            #
+            # CONSÉQUENCE ASSUMÉE, et elle est antérieure à ce lot : si ce build-là a
+            # ÉCHOUÉ et que la tête a bougé depuis, la garde refusera — soit à
+            # l'expiration des 20 minutes, en renvoyant vers les logs de build, soit
+            # tout de suite en « SAUTÉ » si la tête a été déployée entre-temps.
+            # (Les messages ne sont pas cités ici : un invariant de ce workflow
+            # s'ancre sur eux, et une prose qui les recopie le ferait rougir.)
+            # Le refus est juste dans les deux cas : l'image n'est pas celle qui a
+            # été approuvée. La reprise est le `workflow_dispatch` sur `main`, que
+            # les deux messages nomment. Doubler un build en cours serait le seul
+            # autre choix, et le commentaire ci-dessus dit pourquoi on s'y refuse.
             echo "WN_SHA_ATTENDU=$SHA_ATTENDU" >> "$GITHUB_ENV"
             exit 0
           fi
