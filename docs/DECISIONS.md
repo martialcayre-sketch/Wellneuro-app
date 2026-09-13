@@ -4,6 +4,70 @@
 
 ## Décisions actives
 
+### D-177 — L'exploration du sommeil ne s'éteint pas sur un seul instrument : STOP-SOM reste écartée, et ce n'est plus une attente
+
+- Date : 2026-09-13
+- Statut : accepté — **arbitrage du responsable rendu en session le 2026-09-13**,
+  sur trois issues présentées avec leur coût
+- Domaine : clinique — règles d'arrêt (extinction des recommandations)
+- Referme : la condition de retour posée par [[D-053]] arbitrage 4, qui
+  demandait précisément « un arbitrage praticien qui tranche la valeur de PSQI où
+  l'exploration du sommeil cesse d'être justifiée ». Cet arbitrage a eu lieu, et
+  il a répondu **non**.
+- N'amende NI [[D-061]] (la signature de `stopRulesV1`), NI [[D-065]]
+  (`tableArretExploitable`) : `STOP_RULES_SHA256` porte sur `STOP_RULES_V1`
+  seule, et cette décision ne touche que `STOP_RULES_ECARTEES_V1`. Aucun sha ne
+  bouge, aucune signature ne se rouvre, l'extinction publiée et l'exclusion
+  `dejaRepondu` restent exactement où elles étaient.
+
+**LA CONTRADICTION QUI ATTENDAIT UN ARBITRE.** La spécification du lot énonçait
+STOP-SOM sur « PSQI 5 ». C'est exactement la valeur à laquelle la table
+d'orientation **signée** dit que `R-SOM-01` doit s'allumer : sa zone couvre la
+bande `info` du PSQI (5-10, « Troubles du sommeil légers »), et ce choix est
+délibéré — l'en-tête de la règle écrit que commencer à `warning` « aurait laissé
+dehors des patients que le PSQI considère déjà comme mauvais dormeurs ».
+Écrire l'extinction là revenait à éteindre, en V1, une règle signée le mois
+précédent sur la même valeur, sans re-signer la table.
+
+**TROIS ISSUES, ET CE QUE CHACUNE COÛTAIT.**
+
+1. **La bande rassurante seule** — écrire STOP-SOM sur `success` uniquement, en
+   n'éteignant que `R2-SOM-01` et `R2-SOM-02`, les règles nées d'un DÉPISTAGE.
+   C'est le patron exact de STOP-STR, et il dissolvait la contradiction au lieu
+   de l'arbitrer : aucune re-signature. Son coût réel n'était pas là — elle
+   n'était écrivable que si un claim prescriptif attache une CONDUITE à la bande
+   rassurante du PSQI, comme `WN-CL-0051-033` le fait pour le SIIN. Le corpus
+   publie des bandes ; il ne publie pas une conduite pour chacune. STOP-STR a
+   justement été écrite en apprenant cette différence, et la vérification
+   n'était pas faite.
+2. **Remonter `R-SOM-01` à `warning`** pour libérer `info` — refusée. Elle
+   coûtait la bande d'entrée que la règle a délibérément choisie, donc les
+   patients que le PSQI tient déjà pour de mauvais dormeurs, et elle lui faisait
+   perdre les recueils partiels fermés en `info` (allumage sur plancher garanti,
+   [[D-024]]). Elle emportait en plus la relecture des vingt-trois claims et une
+   nouvelle signature de la table d'orientation.
+3. **Ne pas écrire la règle** — retenue. Le motif tient en une phrase :
+   l'exploration du sommeil ne s'éteint pas sur un seul instrument.
+
+**CE QUE ÇA CHANGE POUR LA SUITE, ET C'EST LE VRAI EFFET.** La règle n'était pas
+« en attente d'arbitrage », elle l'est encore moins maintenant : sa condition de
+retour ne nomme plus une DÉCISION mais une SOURCE. Ce qui la rouvrirait est un
+claim prescriptif sur la bande rassurante du PSQI — pas une session, pas un avis.
+Sa seconde jambe resterait à traiter séparément : l'indice /100 de l'agenda
+`Q_SOM_09` est une construction WellNeuro sans validation psychométrique ni
+cohorte de calibration, et [[D-176]] vient d'écarter les agendas de la
+composition des rideaux pour une raison voisine.
+
+**STOP-APN N'EST PAS CONCERNÉE.** Elle est écartée pour un motif d'une autre
+nature — son prédicat « absence de symptômes » n'est pas exprimable dans un
+vocabulaire de déclencheurs qui ne connaît que des tests positifs, et lire une
+liste vide comme « absent » est ce que [[DC-24]] interdit. Sa condition de
+retour, elle, reste ouverte et inchangée.
+
+- Référence : `web/src/lib/clinical/stopRulesV1.ts`
+  (`STOP_RULES_ECARTEES_V1`), `web/src/lib/clinical/orientationRulesV1.ts`
+  (`R-SOM-01`), `changelog.d/2026-09-13-stop-som-reste-ecartee.md`
+
 ### D-176 — Un agenda est un outil d'AJUSTEMENT, pas de constat : il ne compose aucun rideau, ni le premier ni le second
 
 - Date : 2026-09-13
