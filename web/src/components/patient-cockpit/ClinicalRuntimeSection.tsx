@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
+import { isDecisionBloquee, isSelectionPrioriteDue } from '@/lib/clinical-engine/decisionGuards';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel, type ContournementSaisi } from './EpisodeConfirmationPanel';
 import { recoupementsContradictions } from './recoupementContradictions';
@@ -161,6 +161,23 @@ export type EtatRuntimeClinique = {
    * C'est la raison d'être de `lib/` (cf. `praticien/annulabilite.ts`).
    */
   rideauT0Satisfait: boolean | null;
+  /**
+   * Le geste de sélection d'une priorité praticien reste-t-il dû ET offert ?
+   *
+   * TRI-ÉTAT, et `null` porte le même poids qu'au-dessus : la carte de décision
+   * n'existe que sur une réponse `ready`. Un épisode confirmé en base dont
+   * l'écran affiche la proposition d'un AUTRE jalon (le `J21` dû d'un `T0`
+   * rejoué, `D-118`) n'a donc pas de carte — et la sélection n'y est pas
+   * « absente », elle est INCONNUE. Le statut de phase doit rendre
+   * « indéterminée » plutôt qu'affirmer (`DC-24`).
+   *
+   * REMONTÉ PLUTÔT QUE RECALCULÉ, et par la garde partagée
+   * `isSelectionPrioriteDue` : « non sélectionnée » n'est pas « à sélectionner ».
+   * Une décision bloquée ou une table de priorités non signée retirent le geste
+   * de l'écran — le rail qui les ignorerait enverrait le praticien sur une
+   * phase muette.
+   */
+  selectionPrioriteDue: boolean | null;
 };
 
 /**
@@ -1082,6 +1099,9 @@ export function ClinicalRuntimeSection({
   const jalonConfirme: JalonMomentum = jalonDemande;
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const decisionBloquee = isDecisionBloquee(decisionCard);
+  // `null` quand la carte n'est pas lisible — jamais `false`, qui affirmerait
+  // qu'il n'y a rien à faire. Voir la doctrine sur le champ du même nom.
+  const selectionPrioriteDue = decisionCard === null ? null : isSelectionPrioriteDue(decisionCard);
   // Combien de réponses le dossier a reçues APRÈS l'acte confirmé. Lu tel quel
   // depuis le serveur, jamais dérivé ici : l'écran n'a pas l'épisode sous la
   // main, et compter « les réponses absentes de la carte » confondrait ce qui
@@ -1092,12 +1112,19 @@ export function ClinicalRuntimeSection({
     ? runtime.reponsesDepuisConfirmation ?? 0
     : 0;
   // Priorité visée : la sélection praticien quand elle existe, à défaut la
-  // priorité proposée par la carte. Le seul producteur en production pose
-  // `selectionPraticien: null` (cockpit/route.ts) : sans ce repli, la
-  // re-passation ciblée était structurellement inatteignable (revue LOT-07,
-  // B3). Le repli reste sous les mêmes verrous que la carte elle-même —
-  // `proposedMainPriorityId` est nul tant que la table des priorités n'est
-  // pas signée.
+  // priorité proposée par la carte. Le repli reste sous les mêmes verrous que
+  // la carte elle-même — `proposedMainPriorityId` est nul tant que la table des
+  // priorités n'est pas signée.
+  //
+  // LE MOTIF D'ORIGINE DU REPLI A DISPARU, PAS LE REPLI. Il a été posé quand
+  // aucun producteur de sélection n'existait en production (revue LOT-07, B3) :
+  // sans lui, la re-passation ciblée était structurellement inatteignable.
+  // `D-127` a depuis fait de la sélection un acte serveur, et `cockpit/route.ts`
+  // la relit (`construireChaineC1Tolerante`) — la première branche est donc
+  // atteignable depuis le 2026-09-06. Le repli sert désormais ce qu'il dit :
+  // viser la priorité PROPOSÉE tant que le praticien n'a pas tranché. Il ne
+  // vaut que pour la re-passation ciblée : il ne débloque aucun protocole, et
+  // `selectionPrioriteDue` ci-dessus ne s'en sert pas.
   const idCandidatVise = decisionCard
     ? decisionCard.selectedMainPriority?.candidateId ?? decisionCard.proposedMainPriorityId
     : null;
@@ -1134,6 +1161,7 @@ export function ClinicalRuntimeSection({
       decisionBloquee,
       needIdsPrioriteSelectionnee,
       rideauT0Satisfait,
+      selectionPrioriteDue,
     });
   }, [
     onEtatChange,
@@ -1149,6 +1177,7 @@ export function ClinicalRuntimeSection({
     decisionBloquee,
     needIdsPrioriteSelectionnee,
     rideauT0Satisfait,
+    selectionPrioriteDue,
   ]);
 
   // LE GESTE DE SÉLECTION D'UNE PRIORITÉ ([[D-127]]). L'écran transmet un

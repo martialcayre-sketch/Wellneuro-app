@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isDecisionBloquee, type DecisionBloquanteLisible } from './decisionGuards';
+import {
+  isDecisionBloquee,
+  isSelectionPrioriteDue,
+  type DecisionBloquanteLisible,
+  type SelectionPrioriteLisible,
+} from './decisionGuards';
 
 function carte(surcharges: Partial<DecisionBloquanteLisible> = {}): DecisionBloquanteLisible {
   return {
@@ -40,5 +45,53 @@ describe('isDecisionBloquee', () => {
   it('ne bloque pas en l’absence de carte de décision', () => {
     expect(isDecisionBloquee(null)).toBe(false);
     expect(isDecisionBloquee(undefined)).toBe(false);
+  });
+});
+
+function carteSelection(surcharges: Partial<SelectionPrioriteLisible> = {}): SelectionPrioriteLisible {
+  return {
+    ...carte(),
+    priorityCandidates: [{
+      candidateId: 'p1', origin: 'engine', label: 'Priorité', rank: 1, confidence: 'à_documenter',
+      ruleId: 'RULE_VALIDATED', rationale: 'Banc.',
+      provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
+      limitationsRegleSignee: [], limitations: [],
+    }],
+    selectedMainPriority: null,
+    ...surcharges,
+  };
+}
+
+describe('isSelectionPrioriteDue', () => {
+  it('le geste est dû quand rien n’est retenu et qu’un candidat est classé', () => {
+    expect(isSelectionPrioriteDue(carteSelection())).toBe(true);
+  });
+
+  it('n’est plus dû une fois une priorité retenue', () => {
+    expect(isSelectionPrioriteDue(carteSelection({
+      selectedMainPriority: {
+        candidateId: 'p1', selectedAt: '2026-01-01T00:00:00.000Z',
+        selectedBy: 'practitioner', rationale: 'Banc.',
+      },
+    }))).toBe(false);
+  });
+
+  // LES DEUX CAS OÙ LE PANNEAU SE RETIRE. Les réclamer serait envoyer le
+  // praticien sur une phase muette — le cul-de-sac déplacé d'un cran.
+  it('n’est pas dû quand la décision est bloquée : le geste n’est pas offert', () => {
+    expect(isSelectionPrioriteDue(carteSelection({
+      abstention: { status: 'required', ruleIds: ['RULE_A'], limitations: [] },
+    }))).toBe(false);
+    expect(isSelectionPrioriteDue(carteSelection({ safetyFindingIds: ['SAFETY_1'] }))).toBe(false);
+  });
+
+  it('n’est pas dû quand aucun candidat n’est classé — table de priorités non signée', () => {
+    expect(isSelectionPrioriteDue(carteSelection({ priorityCandidates: [] }))).toBe(false);
+  });
+
+  // Même discipline que la garde sœur : une absence de carte ne se lit pas.
+  it('n’affirme rien en l’absence de carte de décision', () => {
+    expect(isSelectionPrioriteDue(null)).toBe(false);
+    expect(isSelectionPrioriteDue(undefined)).toBe(false);
   });
 });

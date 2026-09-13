@@ -1132,7 +1132,31 @@ export function FichePatientPanel({
       // (première mesure absente, chargement en cours ou erreur), le statut est
       // honnêtement « indéterminée » — jamais une affirmation par défaut.
       if (!etatRuntime || etatRuntime.chargement || etatRuntime.erreur !== null) return 'inconnu';
-      if (id === 'decision') return etatRuntime.episodeConfirme ? 'fait' : 'en_attente';
+      if (id === 'decision') {
+        // CE QUE LA PHASE CONTIENT, ET NON CE QUI L'ENTOURE — troisième
+        // application, après `comprehension` (`D-161` §10) et `donnees`. La
+        // phase lisait l'ANCRE CONFIRMÉE, un acte de la phase précédente, pour
+        // statuer sur un geste qu'elle porte seule : la sélection d'une
+        // priorité par le praticien (`SelectionPrioritePanel`, monté sous
+        // `affiche('decision')`). Un dossier ancré sans priorité retenue
+        // s'affichait donc « renseignée », pendant que la phase Actions
+        // refusait le protocole faute de cette même priorité — et `phaseDue`,
+        // sautant une phase verte, y envoyait le praticien.
+        //
+        // Le rail sert de feu pour passer à la prise de décision (`D-161` §10) :
+        // un feu vert sur une phase qui attend un acte n'est pas une
+        // imprécision d'affichage, c'est un feu faux. Mesuré le 2026-09-13 :
+        // six dossiers réels sur sept étaient dans cet état.
+        if (!etatRuntime.episodeConfirme) return 'en_attente';
+        // Carte non lisible sur un épisode pourtant confirmé (rejeu d'un jalon
+        // suivant, `D-118`) : la sélection n'est pas absente, elle est inconnue.
+        if (etatRuntime.selectionPrioriteDue === null) return 'inconnu';
+        // « Renseignée » couvre DEUX situations, et c'est voulu : la priorité
+        // est retenue, ou aucun geste n'est offert (décision bloquée, table des
+        // priorités non signée). Dans le second cas, ce n'est pas ici que le
+        // praticien doit aller — le bandeau bloqueur porte déjà ce cas-là.
+        return etatRuntime.selectionPrioriteDue ? 'en_attente' : 'fait';
+      }
       if (id === 'actions') {
         if (etatRuntime.nombreVersions > 0) return 'fait';
         return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
@@ -2185,6 +2209,48 @@ export function FichePatientPanel({
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Ouvrir la phase Actions
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Même famille que le bandeau ci-dessus, et même motif : la cause est
+          nommée dans une phase, le geste qui la lève vit dans une autre. La
+          phase Actions dit « Protocole indisponible — priorité praticien non
+          sélectionnée » sans dire où aller ; `SelectionPrioritePanel` est monté
+          sous la phase Décision. Mesuré le 2026-09-13 : six dossiers réels sur
+          sept attendaient ce geste.
+
+          Le statut du rail suffirait presque — corrigé, il fait pointer
+          « Prochaine étape » sur Décision. Presque : la mémoire de phase et un
+          lien direct peuvent déposer le praticien sur Actions sans passer par
+          D5, et c'est là qu'il lit le refus. Ce bandeau est la sortie, visible
+          depuis n'importe quel onglet.
+
+          Le bouton nomme le GESTE et non la destination : « Ouvrir la phase
+          Décision 21 j » existe déjà dans `ObjectifNegociePanel`, et deux nœuds
+          de même nom accessible cassent le mode strict des E2E. */}
+      {etatRuntime !== null
+        && !etatRuntime.chargement
+        && etatRuntime.erreur === null
+        && !etatRuntime.decisionBloquee
+        && etatRuntime.selectionPrioriteDue === true && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">Priorité non retenue — le protocole reste indisponible.</span>
+          {!(ongletActif === 'cockpit' && phaseActive === 'decision') && (
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                setPhaseActive('decision');
+              }}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Choisir la priorité
             </button>
           )}
         </div>

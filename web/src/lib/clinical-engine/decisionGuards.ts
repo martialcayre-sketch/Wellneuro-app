@@ -27,3 +27,29 @@ export function isDecisionBloquee(decisionCard: DecisionBloquanteLisible | null 
   if (!decisionCard) return false;
   return decisionCard.abstention.status !== 'not_required' || decisionCard.safetyFindingIds.length > 0;
 }
+
+// Champs lus par la garde de sélection. Même intention que ci-dessus : une
+// `DecisionCard` complète satisfait ce type, sans avoir à en fabriquer une.
+export type SelectionPrioriteLisible = DecisionBloquanteLisible
+  & Pick<DecisionCard, 'priorityCandidates' | 'selectedMainPriority'>;
+
+/**
+ * Le geste de sélection d'une priorité est-il DÛ, et surtout DISPONIBLE ?
+ *
+ * Trois conditions cumulatives : aucune priorité déjà retenue, la décision non
+ * bloquée, et au moins un candidat classé. Les deux dernières ne sont pas du
+ * zèle — ce sont exactement les cas où `SelectionPrioritePanel` se retire de
+ * l'écran. Un rail qui dirait « à traiter » sans elles enverrait le praticien
+ * sur une phase où le geste n'est pas offert : le cul-de-sac de la phase
+ * Actions, déplacé d'un cran plutôt que refermé.
+ *
+ * ÉCRITE ICI, ET PAS DEUX FOIS. Le panneau qui porte le geste et le statut de
+ * phase qui y conduit doivent répondre à la même question ; deux copies
+ * divergeraient le jour où l'une bouge — le défaut que `isDecisionBloquee`
+ * avait déjà fermé au-dessus.
+ */
+export function isSelectionPrioriteDue(decisionCard: SelectionPrioriteLisible | null | undefined): boolean {
+  if (!decisionCard) return false;
+  if (decisionCard.selectedMainPriority !== null) return false;
+  return !isDecisionBloquee(decisionCard) && decisionCard.priorityCandidates.length > 0;
+}
