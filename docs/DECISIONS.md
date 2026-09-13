@@ -4,6 +4,68 @@
 
 ## Décisions actives
 
+### D-176 — Un agenda est un outil d'AJUSTEMENT, pas de constat : il ne compose aucun rideau, ni le premier ni le second
+
+- Date : 2026-09-13
+- Statut : accepté — **arbitrage du responsable rendu en session le 2026-09-13**
+  (« on peut exclure les agendas du deuxième rideau, ce sont des outils
+  d'ajustement »)
+- Domaine : clinique — composition des rideaux d'entrée
+- Amende : [[D-158]], clause de COMPOSITION du second rideau seulement. Ni
+  [[D-052]] (le rideau `T0` lui-même, qui excluait déjà l'agenda du sommeil), ni
+  la règle « rendu se lit sur l'assignation, pas sur la cotabilité » — celle-ci
+  vaut toujours, elle change seulement d'exemple.
+
+**LA DOCTRINE AVAIT DÉJÀ VU LE PROBLÈME — D'UN SEUL CÔTÉ.** `D-052` §1 exclut
+`Q_SOM_09` du premier rideau, et le motive : « un agenda du sommeil sur 21 nuits
+ne peut pas conditionner un point de décision qui se prend à J0 ». Le SECOND
+rideau, écrit six décisions plus tard, n'a hérité d'aucune exclusion — et un
+agenda alimentaire de 21 jours s'y invitait, bloquant le `T0` exactement pour la
+raison que la doctrine avait nommée quelques lignes plus haut.
+
+**CE QUI L'A FAIT VOIR.** Un dossier réel, lu par conteneur le 2026-09-12 :
+agenda alimentaire assigné le 5 août, **deux journées renseignées le jour même
+puis plus rien**, et depuis, un `T0` inconfirmable. Ce n'est pas un cas isolé —
+au 2026-09-13, **cinq dossiers portent un agenda alimentaire en attente**
+(assignés du 5 août au 7 septembre) et **cinq un agenda du sommeil** (du 2 au 12
+septembre).
+
+**LA RAISON EST CLINIQUE, ET ELLE EST DU RESPONSABLE.** Un agenda **accompagne
+une conduite déjà décidée** ; il n'établit pas l'état de départ sur lequel cette
+conduite se décide. Faire garder le point d'entrée par un recueil qui court sur
+trois semaines, c'est faire attendre la décision par l'outil qui devait la
+suivre. La formulation retenue est la sienne : *« ce sont des outils
+d'ajustement »*.
+
+**Décision, en trois points.**
+
+1. **`AGENDAS_HORS_RIDEAU = [Q_SOM_09, Q_ALI_09]`** — la liste vit dans
+   `rideauT0.ts`, à côté de `RIDEAU_T0` et `HORS_RIDEAU_MOTIVE`, parce que c'est
+   le module dont le rôle est la COMPOSITION des rideaux. Les deux identifiants
+   sont IMPORTÉS de leurs domaines (`AGENDA_SOMMEIL_ID`, `AGENDA_ALI_ID`),
+   jamais recopiés : deux listes d'agendas finiraient par diverger.
+2. **L'exclusion porte sur la composition, pas sur l'instrument.** L'agenda reste
+   assigné, se remplit jour après jour, se clôture, et sa passation entre au
+   dossier comme n'importe quelle autre. Il ne GARDE simplement aucun point de
+   décision.
+3. **La fraîcheur suit sans qu'on la touche.** `evaluerSynthese` juge la
+   fraîcheur sur les passations DES RIDEAUX, et les lit par
+   `secondRideauDuDossier` : une journée d'agenda renseignée après une synthèse
+   validée ne la périme donc plus. C'était l'autre moitié du blocage, et elle se
+   ferme par la même ligne.
+
+**CONSÉQUENCE ASSUMÉE, ET ELLE EST PLUS JUSTE QUE L'ÉTAT PRÉCÉDENT.** Un dossier
+dont la SEULE assignation postérieure à la synthèse est un agenda n'a plus de
+second rideau du tout : il lit « reste à composer » au lieu de « incomplet ». Un
+agenda ne constitue pas une exploration, et le message le dit maintenant.
+
+**CE QUE LE BANC §4 PERD, ET CE QU'IL GARDE.** Un banc existant illustrait
+« rendu se lit sur l'assignation, pas sur la cotabilité » avec `Q_ALI_09`. La
+RÈGLE est intacte ; l'EXEMPLE est devenu faux, puisque cet instrument ne compose
+plus aucun rideau. Il porte désormais `Q_ALI_03`, qui ne rend aucun total par
+construction et qui, lui, reste dans le rideau. Le laisser tel quel aurait fait
+passer un banc vert tout en prouvant autre chose que ce qu'il annonce.
+
 ### D-175 — Le fil du jour ne liste que des gestes POSABLES MAINTENANT, et chacun DISPARAÎT quand il est posé ; la condition de disparition ne s'invente pas, elle existe déjà
 
 - Date : 2026-09-12

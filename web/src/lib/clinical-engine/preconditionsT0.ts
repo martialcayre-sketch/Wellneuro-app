@@ -2,7 +2,7 @@ import { ANAMNESE_CHAMP_REQUIS } from '../consultation/anamnese';
 import { scoresRecalculesPourRaisonnement } from '../clinical/orientationService';
 import { statutExcluDuRaisonnement } from '../scoring/validite';
 import { estAncreInitiale } from '../protocol/cycles';
-import { RIDEAU_T0, HORS_RIDEAU_MOTIVE, estDuRideauT0 } from './rideauT0';
+import { RIDEAU_T0, HORS_RIDEAU_MOTIVE, estAgendaHorsRideau, estDuRideauT0 } from './rideauT0';
 
 /**
  * Préconditions de confirmation d'un épisode T0 ([[D-052]]).
@@ -391,6 +391,9 @@ function secondRideauDuDossier(
   const plafond = entrees.confirmationAncreInitiale;
   return entrees.assignations.filter(a =>
     a.statut !== STATUT_ASSIGNATION_ANNULEE
+    // Les agendas ne composent aucun rideau ([[D-176]]) : ils ajustent une
+    // conduite, ils n'établissent pas l'état sur lequel on la décide.
+    && !estAgendaHorsRideau(a.idQuestionnaire)
     && a.dateAssignation.getTime() > borne.getTime()
     && (plafond === null || a.dateAssignation.getTime() <= plafond.getTime()));
 }
