@@ -82,7 +82,7 @@ type Options = {
   //   empêche de confirmer l'ancre, et celui qui a motivé ce compte ;
   // - `tronque` : la route plafonne, le dossier porte plus de lignes ;
   // - `filtreIgnore` : serveur qui n'écho pas l'absence de filtre.
-  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore';
+  envois?: 'defaut' | 'rideauIncomplet' | 'tronque' | 'filtreIgnore' | 'peremption';
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'discordant' | 'enVol';
   // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
   // où un bouton d'assignation peut exister — donc la seule où le garde
@@ -349,6 +349,9 @@ function envoi(
   statut: 'Complété' | 'En attente' | 'Annulée',
   joursDepuisPose: number,
   titre: string,
+  // `aPassation` et `dateLimite` décident du bouton d'annulation et de la
+  // péremption : ils sont surchargeables cas par cas, jamais devinés.
+  surcharges: { aPassation?: boolean; dateLimite?: string | null } = {},
 ) {
   return {
     idAssignation: `ASG_${idQuestionnaire}_${statut}`,
@@ -360,6 +363,13 @@ function envoi(
     idQuestionnaire,
     dateAssignation: new Date(Date.now() - joursDepuisPose * 86_400_000).toISOString(),
     correctionCommentaire: null,
+    // Défauts de l'envoi ORDINAIRE en attente : aucune passation, aucune
+    // échéance — c'est ce que porte le second rideau en production, drapeau
+    // `WN_ECHEANCE_OBLIGATOIRE` éteint.
+    aPassation: false,
+    dateLimite: null as string | null,
+    nbJourneesAgenda: null as number | null,
+    ...surcharges,
   };
 }
 
@@ -379,6 +389,29 @@ const ENVOIS_RIDEAU_INCOMPLET = [
   envoi('Q_INF_03', 'Complété', 4, 'DNST SIIN'),
   envoi('Q_ALI_01', 'En attente', 4, 'Enquête alimentaire SIIN'),
   envoi('Q_STR_05', 'Annulée', 2, 'BMS-10'),
+];
+
+/**
+ * Les quatre cas de la péremption, dans un seul dossier.
+ *
+ * Chaque ligne existe pour prouver un terme du prédicat, et l'écart de jours
+ * est choisi de part et d'autre du seuil — 24 et 30 contre 21 : un banc qui
+ * n'éprouverait que le franchissement laisserait passer une règle qui signale
+ * tout.
+ */
+const ENVOIS_PEREMPTION = [
+  // Sans échéance, 24 jours : périmé. Le cas que la règle existe pour voir.
+  envoi('Q_NEU_11', 'En attente', 24, 'HAD — Anxiété et dépression'),
+  // Sans échéance, 5 jours : trop tôt.
+  envoi('Q_STR_03', 'En attente', 5, 'Questionnaire de stress de Cungi'),
+  // AVEC échéance, 30 jours : le Fil du jour en fait déjà une carte de retard
+  // et le portail a fermé la saisie. Deux horloges diraient deux nombres.
+  envoi('Q_GAS_03', 'En attente', 30, 'Échelle de Bristol', { dateLimite: '2026-08-01' }),
+  // Agenda, 30 jours : sa fenêtre EST de 21 jours. Le signaler périmé le
+  // marquerait pile à sa clôture normale.
+  envoi('Q_SOM_09', 'En attente', 30, 'Agenda du sommeil — 21 nuits'),
+  // Une passation existe déjà : l'envoi ne s'annule plus (`estAnnulable`).
+  envoi('Q_SOM_02', 'En attente', 24, 'Échelle de somnolence d’Epworth', { aPassation: true }),
 ];
 
 function stubFetch(options: Options = {}) {
@@ -431,6 +464,11 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'certification') return ok(REPONSES_CERTIFICATION);
       return ok(REPONSES);
     }
+    // La route d'annulation, sans laquelle une réponse vide se lirait comme un
+    // refus — et la relecture qui suit n'aurait jamais lieu.
+    if (url.includes('/api/praticien/assignations/annulation')) {
+      return ok({ ok: true });
+    }
     if (url.includes('/api/praticien/patients')) {
       const scenario = options.patients ?? 'defaut';
       if (scenario === 'erreur') {
@@ -462,7 +500,11 @@ function stubFetch(options: Options = {}) {
       // C'est cette absence qui l'identifie, jamais son rang d'arrivée.
       if (recherche.get('statutReponses') === null && recherche.get('echeanceDepassee') === null) {
         const scenarioEnvois = options.envois ?? 'defaut';
-        const liste = scenarioEnvois === 'rideauIncomplet' ? ENVOIS_RIDEAU_INCOMPLET : ENVOIS_RIDEAU_COMPLET;
+        const liste = scenarioEnvois === 'rideauIncomplet'
+          ? ENVOIS_RIDEAU_INCOMPLET
+          : scenarioEnvois === 'peremption'
+            ? ENVOIS_PEREMPTION
+            : ENVOIS_RIDEAU_COMPLET;
         return ok({
           assignations: liste,
           assignationsMeta: {
@@ -1849,11 +1891,15 @@ describe('FichePatientPanel — le compte des envois', () => {
   it('nomme l’envoi du rideau T0 qui empêche de confirmer l’ancre, avec son âge', async () => {
     await rendreFiche({ phaseDemandee: 'donnees', envois: 'rideauIncomplet' });
 
-    const blocage = await screen.findByText(/ancre T0 ne peut pas être confirmée/);
-    expect(blocage.textContent).toContain('Q_ALI_01');
+    expect(await screen.findByText(/ancre T0 ne peut pas être confirmée/)).toBeTruthy();
+    // L'identifiant et l'âge vivent sur la LIGNE de l'envoi depuis que la liste
+    // existe (2026-09-13) : le verdict compte, la liste nomme, et c'est sur
+    // cette ligne que se trouve le bouton d'annulation.
+    const ligne = screen.getByText('Q_ALI_01').closest('li');
+    expect(ligne).not.toBeNull();
     // La date d'abord, le nombre de jours ensuite — et le nombre n'est pas
     // arrondi à zéro : quatre jours d'attente doivent se voir.
-    expect(blocage.textContent).toContain('(4 j)');
+    expect(ligne?.textContent).toContain('(4 j)');
     // L'annulée sort du dénominateur — 3 rendus sur 4, pas sur 5 — et elle est
     // dite à part plutôt que passée sous silence.
     expect(screen.getByText(/3 rendus sur 4/)).toBeTruthy();
@@ -1883,5 +1929,101 @@ describe('FichePatientPanel — le compte des envois', () => {
 
     expect(await screen.findByText(/compte des envois est inconnu/)).toBeTruthy();
     expect(screen.queryByText(/rendus sur/)).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANNULER DEPUIS LA FICHE, ET LA PÉREMPTION À 21 JOURS — arbitrage praticien du
+// 2026-09-13.
+//
+// L'annulation est le seul geste qui arrête une attente : `evaluerSecondRideau`
+// lit `Annulée` comme « je ne l'attends plus » et lève sa précondition. Elle
+// n'était atteignable que depuis le tableau des patients — onze annulations en
+// production au 2026-09-12, toutes sur le rideau, aucune sur la cascade qui
+// s'accumule. Le geste manquait là où le praticien constate l'attente.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('FichePatientPanel — annuler un envoi, et le signaler périmé', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('signale périmé le seul envoi qu’aucune autre horloge ne regarde', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'peremption' });
+
+    const badges = await screen.findAllByText(/sans retour au-delà de 21 jours/);
+    // UN seul badge sur cinq envois en attente : c'est la valeur du test.
+    // Q_STR_03 est trop récent ; Q_GAS_03 porte une échéance, donc le Fil du
+    // jour et le portail s'en chargent ; Q_SOM_09 est un agenda, sa fenêtre EST
+    // de 21 jours ; Q_SOM_02 est vieux mais porte une passation.
+    expect(badges).toHaveLength(1);
+    const ligne = badges[0].closest('li');
+    expect(ligne?.textContent).toContain('Q_NEU_11');
+  });
+
+  it('n’offre le bouton qu’aux envois réellement annulables', async () => {
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'peremption' });
+
+    const boutons = await screen.findAllByRole('button', { name: 'Annuler l’envoi' });
+    // Quatre des cinq : `Q_SOM_02` porte une passation, `estAnnulable` la refuse.
+    expect(boutons).toHaveLength(4);
+    const lignes = boutons.map(b => b.closest('li')?.textContent ?? '');
+    expect(lignes.some(t => t.includes('Q_SOM_02'))).toBe(false);
+  });
+
+  it('dit ce qu’annuler veut dire, à côté du geste', async () => {
+    // Sans cette phrase, « annuler » se lit comme « supprimer ». C'est
+    // l'inverse : rien n'est effacé, et c'est ce qui débloque une ancre.
+    await rendreFiche({ phaseDemandee: 'donnees', envois: 'peremption' });
+
+    expect(await screen.findByText(/je ne l’attends plus/)).toBeTruthy();
+    expect(screen.getByText(/reste réassignable/)).toBeTruthy();
+  });
+
+  it('confirme, poste l’annulation, puis relit la liste', async () => {
+    const fetchMock = await rendreFiche({ phaseDemandee: 'donnees', envois: 'peremption' });
+    const avant = urlsPatients(fetchMock).length;
+
+    const boutons = await screen.findAllByRole('button', { name: 'Annuler l’envoi' });
+    fireEvent.click(boutons[0]);
+    fireEvent.click(await screen.findByRole('button', { name: /Annuler l’assignation|Confirmer/ }));
+
+    await waitFor(() => {
+      const appels = fetchMock.mock.calls.map(c => String(c[0]));
+      expect(appels.some(u => u.includes('/api/praticien/assignations/annulation'))).toBe(true);
+    });
+    // LA RELECTURE EST LE POINT : sans elle, l'envoi annulé resterait « en
+    // attente » à l'écran et le dénominateur mentirait dans l'autre sens.
+    await waitFor(() => expect(urlsPatients(fetchMock).length).toBeGreaterThan(avant));
+  });
+
+  it('un refus de la route s’affiche dans la modale, et n’annule rien à l’écran', async () => {
+    const base = stubFetch({ envois: 'peremption' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: unknown) => {
+        const url = String(input);
+        if (url.includes('/api/praticien/assignations/annulation')) {
+          return Promise.resolve({
+            ok: false,
+            status: 409,
+            json: () => Promise.resolve({ ok: false, reason: 'already_filled', error: 'Déjà remplie.' }),
+          });
+        }
+        return base(input);
+      }),
+    );
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="donnees" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+
+    const boutons = await screen.findAllByRole('button', { name: 'Annuler l’envoi' });
+    fireEvent.click(boutons[0]);
+    fireEvent.click(await screen.findByRole('button', { name: /Annuler l’assignation|Confirmer/ }));
+
+    expect(await screen.findByText(/porte déjà une passation/)).toBeTruthy();
   });
 });

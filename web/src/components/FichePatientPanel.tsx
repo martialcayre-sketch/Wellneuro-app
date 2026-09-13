@@ -32,6 +32,13 @@ import { MENTION_NATURE_INDICE_GLOBAL } from '@/lib/equilibre/natureIndiceGlobal
 // que `preconditionsT0.ts` — qui la ré-exporte — tire Prisma par
 // `orientationService`.
 import { estDuRideauT0 } from '@/lib/clinical-engine/rideauT0';
+// Deux feuilles de plus, deux règles partagées et non recopiées : le prédicat
+// d'annulabilité (le même que la route et le tableau des patients) et celui de
+// péremption d'un envoi sans échéance.
+import { estAnnulable } from '@/lib/praticien/annulabilite';
+import { envoiPerime, JOURS_PEREMPTION_ENVOI } from '@/lib/assignations/peremption';
+import { AnnulationAssignationDialog } from '@/components/ui/AnnulationAssignationDialog';
+import type { AnnulationAssignationResponse } from '@/app/api/praticien/assignations/annulation/route';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
@@ -586,6 +593,15 @@ export function FichePatientPanel({
   // ont déjà corrigé trois fois. On le dit, on ne devine pas.
   const [etatPassations, setEtatPassations] = useState<'chargement' | 'chargees' | 'tronque' | 'erreur'>('chargement');
   const generationPassations = useRef(0);
+  // Annulation d'un envoi depuis la fiche — même route, même modale et même
+  // prédicat que le tableau des patients (`PatientsPanel`). Rien n'est
+  // réinventé ici : c'est le MÊME geste, rendu atteignable là où le praticien
+  // constate l'attente.
+  const [annulationCible, setAnnulationCible] = useState<
+    { idAssignation: string; titre: string; emailPatient: string; nbJourneesAgenda: number | null } | null
+  >(null);
+  const [annulationEnCours, setAnnulationEnCours] = useState(false);
+  const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
@@ -904,6 +920,50 @@ export function FichePatientPanel({
   useEffect(() => {
     void chargerPassations();
   }, [chargerPassations]);
+
+  /**
+   * Les cinq refus que la route d'annulation sait rendre, en français.
+   *
+   * Volontairement LOCAL et borné à cette route, plutôt qu'extrait de la table
+   * de `PatientsPanel` : celle-ci couvre une quinzaine de motifs venus de sept
+   * routes (cycle de vie du dossier, jeton portail, création de patient…), dont
+   * aucun ne peut sortir d'ici. La partager obligerait à charger tout son
+   * vocabulaire — et surtout à faire vivre ensemble deux écrans qui n'ont que
+   * ce bouton en commun.
+   */
+  const messageRefusAnnulation = (reason: string, fallback: string): string => {
+    if (reason === 'unauthenticated') return 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.';
+    if (reason === 'not_found') return 'Cet envoi n’existe plus. Rechargez la fiche.';
+    // Le seul refus qui dit quelque chose de CLINIQUE : une passation existe.
+    if (reason === 'already_filled') return 'Cet envoi porte déjà une passation : il ne s’annule plus.';
+    return fallback || 'L’annulation a échoué. Réessayez.';
+  };
+
+  const confirmerAnnulation = useCallback(async () => {
+    if (!annulationCible) return;
+    setAnnulationEnCours(true);
+    setErreurAnnulation(null);
+    try {
+      const reponse = await fetch('/api/praticien/assignations/annulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation: annulationCible.idAssignation }),
+      });
+      const payload = (await reponse.json()) as AnnulationAssignationResponse;
+      if (!payload.ok) {
+        setErreurAnnulation(messageRefusAnnulation(payload.reason, payload.error));
+        return;
+      }
+      setAnnulationCible(null);
+      // La liste EST le compte : sans relecture, l'envoi annulé resterait « en
+      // attente » à l'écran et le dénominateur mentirait dans l'autre sens.
+      await chargerPassations();
+    } catch {
+      setErreurAnnulation('Erreur réseau. Réessayez.');
+    } finally {
+      setAnnulationEnCours(false);
+    }
+  }, [annulationCible, chargerPassations]);
 
   /**
    * Le compte des envois, et ce qui de leur attente bloque l'ancre.
@@ -1613,15 +1673,91 @@ export function FichePatientPanel({
                   pouvait pas le savoir depuis cet écran. */}
               {envois.rideauEnAttente.length > 0 ? (
                 <p className="mt-2 text-status-warning">
-                  L’ancre T0 ne peut pas être confirmée : {envois.rideauEnAttente.length > 1 ? 'ces envois du rideau T0 manquent' : 'cet envoi du rideau T0 manque'}
-                  {' — '}
-                  {envois.rideauEnAttente.map(a => `${a.titre} (${a.idQuestionnaire}), ${anciennete(a.dateAssignation)}`).join(' ; ')}.
+                  L’ancre T0 ne peut pas être confirmée : {envois.rideauEnAttente.length > 1
+                    ? `${envois.rideauEnAttente.length} envois du rideau T0 manquent`
+                    : 'un envoi du rideau T0 manque'}.
                 </p>
               ) : envois.enAttente.length > 0 ? (
                 <p className="mt-2">
                   Le rideau T0 est complet : {envois.enAttente.length > 1 ? 'ces envois' : 'cet envoi'} n’empêche{envois.enAttente.length > 1 ? 'nt' : ''} pas de confirmer l’ancre.
                 </p>
               ) : null}
+
+              {/* LA LISTE, ET LE GESTE AU BOUT DE CHAQUE LIGNE.
+                  Le verdict ci-dessus compte ; ici on nomme. L'annulation est le
+                  seul geste qui arrête une attente — `Annulée` est ce que
+                  `evaluerSecondRideau` lit pour lever sa précondition — et elle
+                  n'était atteignable que depuis le tableau des patients. Onze
+                  annulations en production au 2026-09-12, toutes sur le rideau,
+                  aucune sur ce qui s'accumule : le geste manquait là où le
+                  praticien constate l'attente. */}
+              {envois.enAttente.length > 0 && (
+                <ul className="mt-3 flex flex-col gap-2">
+                  {envois.enAttente.map(a => {
+                    const duRideau = estDuRideauT0(a.idQuestionnaire);
+                    const perime = envoiPerime({
+                      statut: a.statut,
+                      idQuestionnaire: a.idQuestionnaire,
+                      dateAssignation: a.dateAssignation,
+                      dateLimite: a.dateLimite,
+                      aPassation: a.aPassation,
+                    });
+                    // `aPassation` ABSENT N'EST PAS `false` : un serveur qui ne
+                    // publie pas ce fait ne peut pas attester l'absence de
+                    // passation, et `estAnnulable` en dépend. Sans lui, pas de
+                    // bouton — fail-closed, comme le prédicat lui-même.
+                    const annulable = a.aPassation !== undefined && estAnnulable({
+                      statut: a.statut,
+                      statutReponses: a.statutReponses,
+                      aPassation: a.aPassation,
+                    });
+                    return (
+                      <li
+                        key={a.idAssignation}
+                        className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-surface-2 px-3 py-2"
+                      >
+                        <span className="min-w-0 flex-1 text-sm text-foreground">
+                          {a.titre}
+                          <span className="ml-2 font-mono text-xs text-muted-foreground">{a.idQuestionnaire}</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">{anciennete(a.dateAssignation)}</span>
+                        {duRideau && <Badge variant="warning">rideau T0 — bloque l’ancre</Badge>}
+                        {perime && <Badge variant="danger">sans retour au-delà de {JOURS_PEREMPTION_ENVOI} jours</Badge>}
+                        {annulable && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setErreurAnnulation(null);
+                              setAnnulationCible({
+                                idAssignation: a.idAssignation,
+                                titre: a.titre,
+                                emailPatient: a.emailPatient,
+                                nbJourneesAgenda: a.nbJourneesAgenda ?? null,
+                              });
+                            }}
+                            className="min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                          >
+                            Annuler l’envoi
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {/* CE QUE « ANNULER » VEUT DIRE, écrit à côté du geste et non
+                  laissé à la modale : la précondition du second rideau lit
+                  `Annulée` comme « le praticien ne l'attend plus » et cesse
+                  d'attendre cet envoi. C'est ce qui débloque une ancre, et ça
+                  ne se devine pas depuis le mot « annuler ». */}
+              {envois.enAttente.some(a => a.aPassation !== undefined && estAnnulable({
+                statut: a.statut, statutReponses: a.statutReponses, aPassation: a.aPassation,
+              })) && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Annuler un envoi, c’est dire « je ne l’attends plus » : il sort des conditions
+                  de confirmation de l’ancre. Rien n’est effacé, et l’envoi reste réassignable.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -2308,6 +2444,25 @@ export function FichePatientPanel({
           ))}
       </div>
     </div>
+
+    {/* Montée au niveau de la fiche, hors du panneau de phase : Radix portale
+        vers `document.body`, et la modale doit survivre à un changement de
+        phase pendant qu'elle est ouverte. */}
+    <AnnulationAssignationDialog
+      titreQuestionnaire={annulationCible?.titre ?? ''}
+      emailPatient={annulationCible?.emailPatient ?? ''}
+      nbJourneesAgenda={annulationCible?.nbJourneesAgenda ?? null}
+      open={annulationCible !== null}
+      onOpenChange={ouvert => {
+        if (!ouvert && !annulationEnCours) {
+          setAnnulationCible(null);
+          setErreurAnnulation(null);
+        }
+      }}
+      onConfirm={() => void confirmerAnnulation()}
+      enCours={annulationEnCours}
+      erreur={erreurAnnulation}
+    />
     </ModeConsultation>
   );
 }

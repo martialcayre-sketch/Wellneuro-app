@@ -5,8 +5,7 @@ import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { IDS_PASSATION_PRATICIEN } from '@/lib/bibliotheque';
 import { qidsDejaOuverts, verrouillerPatient } from '@/lib/assignations/dedup';
 import { dateJourParis } from '@/lib/dateParis';
-import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
-import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
+import { QIDS_SANS_DATE_LIMITE } from '@/lib/assignations/peremption';
 
 /**
  * Les qids écartés parce que l'instrument est suspendu. Rendu à l'appelant
@@ -79,8 +78,14 @@ export type PackAssignmentOptions = {
  * `assignPackToPatient` ne peut prouver son exemption. Sans cet export, le
  * retirer du Set survivrait à toute la suite — et le jour de l'allumage,
  * l'agenda alimentaire serait tronqué exactement comme celui du sommeil.
+ *
+ * LE SET LUI-MÊME A DÉMÉNAGÉ le 2026-09-13 dans `assignations/peremption.ts`,
+ * une feuille : la règle de péremption d'un envoi sans échéance exempte les
+ * mêmes deux instruments, pour le même motif de fond, et doit se lire dans un
+ * composant client. Une seconde liste aurait divergé. Ce qui reste ici est ce
+ * qui est propre au PACK — ci-dessus —, et le ré-export pour ses lecteurs.
  */
-export const QIDS_SANS_DATE_LIMITE: ReadonlySet<string> = new Set([AGENDA_SOMMEIL_ID, AGENDA_ALI_ID]);
+export { QIDS_SANS_DATE_LIMITE };
 
 /**
  * Délai de rendu du pack de base, en jours.
