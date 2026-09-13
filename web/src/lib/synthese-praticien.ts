@@ -45,7 +45,18 @@ export const VERSION_SYNTHESE_PRATICIEN = 'synthese-praticien-v1';
 export const LIMITE_SYNTHESE_PRATICIEN =
   'Synthèse rédigée par le praticien et soumise à sa validation avant diffusion.';
 
-const PRIORITES = new Set(['eleve', 'modere', 'faible']);
+/**
+ * Les trois niveaux de priorité admis sur un axe, PARTAGÉS avec l'écran.
+ *
+ * Même motif que `MAX_AXES_PRIORITAIRES` ([[D-107]]) : la liste vit avec le
+ * validateur qui la fait respecter, si bien que l'éditeur et le serveur ne
+ * peuvent plus diverger sur ce qu'est une priorité recevable. Une quatrième
+ * valeur ajoutée ici apparaîtrait d'office dans le sélecteur ; ajoutée
+ * seulement à l'écran, elle serait refusée à l'enregistrement.
+ */
+export const PRIORITES_AXE = ['eleve', 'modere', 'faible'] as const;
+
+const PRIORITES = new Set<string>(PRIORITES_AXE);
 
 type ValidationBrouillon =
   | { ok: true; synthese: SyntheseSchema }
