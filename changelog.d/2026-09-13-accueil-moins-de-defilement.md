@@ -18,6 +18,10 @@ chaque panneau est vide.
    disparaître quatre signaux sur cinq. **Une lecture en échec ne se replie
    jamais** — « momentanément indisponible » n'est pas « il n'y a rien », et
    l'inbox ne se replie pas non plus tant que l'ancre a écarté des réponses.
+   Quand titre et état ne tiennent pas côte à côte dans les 268 px utiles du
+   rail — « Correspondance récente » et « Aucun échange consigné » —, l'état
+   passe **sous** le titre : la ligne repliée en fait deux plutôt que de
+   déborder de la carte.
 3. **Le rail se dédouble au-delà de 1536 px** : sur un écran large, la colonne
    principale restait vide pendant que le rail débordait vers le bas. Deux
    colonnes de 300 px y divisent sa hauteur par deux ; sous `2xl`, les deux
