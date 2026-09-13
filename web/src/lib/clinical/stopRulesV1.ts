@@ -197,11 +197,35 @@ export const STOP_RULES_V1: StopRule[] = [
 
 export const STOP_RULES_ECARTEES_V1: StopRuleEcartee[] = [
   {
+    // ARBITRAGE PRATICIEN DU 2026-09-13 — la condition de retour ci-dessous
+    // demandait un arbitrage ; il a eu lieu, et il a répondu NON. La règle reste
+    // écartée, et ce n'est plus une attente : c'est une décision.
+    //
+    // Deux issues étaient sur la table, et la seconde a été refusée. La première
+    // aurait écrit STOP-SOM sur la seule bande RASSURANTE du PSQI, en n'éteignant
+    // que `R2-SOM-01` et `R2-SOM-02` — les règles nées d'un dépistage —, sur le
+    // patron exact de STOP-STR : la contradiction se dissolvait au lieu de
+    // s'arbitrer, et la table d'orientation n'était pas rouverte. La seconde
+    // remontait l'entrée de `R-SOM-01` à `warning` pour libérer `info`.
+    //
+    // C'est la troisième qui est retenue : NE PAS ÉCRIRE LA RÈGLE. Le motif
+    // clinique tient en une phrase — l'exploration du sommeil ne s'éteint pas
+    // sur un seul instrument. Et la première issue, la moins coûteuse, n'était
+    // de toute façon écrivable que sous une condition non vérifiée : il faudrait
+    // qu'un claim attache une CONDUITE à la bande rassurante du PSQI, comme
+    // `WN-CL-0051-033` le fait pour le SIIN. Le corpus publie des bandes ; il ne
+    // publie pas forcément une conduite pour chacune, et STOP-STR a été écrite
+    // en apprenant précisément cette différence.
+    //
+    // CE QUI NE BOUGE PAS, et c'est le point à vérifier avant toute édition ici :
+    // `STOP_RULES_SHA256` porte sur `STOP_RULES_V1` seule. Modifier cette liste
+    // ne déplace donc aucun sha et ne rouvre aucune signature — l'extinction
+    // publiée et l'exclusion `dejaRepondu` restent exactement où elles étaient.
     id: 'STOP-SOM',
     motif:
       "La spécification l'énonce sur « PSQI 5 », valeur à laquelle la table d'orientation SIGNÉE dit que R-SOM-01 doit s'allumer : sa zone couvre la bande `info` du PSQI (5-10, « Troubles du sommeil légers »), délibérément prise au-dessus du seuil de 4 que l'instrument publie. L'écrire reviendrait à éteindre en V1 une règle signée le mois dernier sur la même valeur, sans re-signer la table. Sa seconde jambe, l'agenda du sommeil Q_SOM_09, porte deux réserves propres : son indice /100 est une construction WellNeuro sans validation psychométrique ni cohorte de calibration, et D-052 l'a déjà exclu du rideau T0 au motif qu'un recueil de 21 nuits ne conditionne pas une décision prise à J0 — la même objection vaut en miroir pour une extinction.",
     conditionDeRetour:
-      "Un arbitrage praticien qui tranche la valeur de PSQI où l'exploration du sommeil cesse d'être justifiée, et la re-signature de la table d'orientation qu'il emporte.",
+      "Plus aucun arbitrage praticien n'est attendu : celui du 2026-09-13 a tranché de ne pas écrire la règle. Ce qui la rouvrirait est une SOURCE, pas une décision — un claim prescriptif qui attache une conduite à la bande rassurante du PSQI, ce qui rendrait écrivable une extinction sous la bande d'entrée de R-SOM-01, sans toucher à la table d'orientation signée. La seconde jambe resterait à traiter séparément : l'indice /100 de l'agenda Q_SOM_09 demande une validation psychométrique que WellNeuro ne détient pas.",
   },
   {
     id: 'STOP-APN',
