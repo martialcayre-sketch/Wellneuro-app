@@ -78,21 +78,24 @@ export default function DashboardPage() {
           className="flex flex-col gap-4 lg:w-[300px] lg:shrink-0 2xl:w-[616px] 2xl:flex-row"
         >
           <div className="flex flex-col gap-4 2xl:min-w-0 2xl:flex-1">
-            {/* En tête de colonne : un dossier neuf resté derrière l'une des
-                trois portes de mise en service (e-mail d'accès, entrée au
-                portail, pack de base) n'apparaît nulle part ailleurs — il
-                ressemble partout à un dossier qui commence. */}
+            {/* En tête de rail : un dossier neuf resté derrière l'une des trois
+                portes de mise en service (e-mail d'accès, entrée au portail,
+                pack de base) n'apparaît nulle part ailleurs — il ressemble
+                partout à un dossier qui commence. */}
             <NouveauxPatientsAside />
-            <MeteoAdhesionAside />
-            <AgendasEnCoursAside />
           </div>
 
           {/* Réception en colonne principale, envoi ici : deux blocs
               volontairement séparés (arbitrage propriétaire 2026-08-09 — fusion
-              écartée, deux logiques distinctes). */}
+              écartée, deux logiques distinctes). Le suivi — météo d'adhésion,
+              agendas du sommeil — passe SOUS la correspondance (arbitrage
+              propriétaire 2026-09-13, sur capture) : ce qu'on lit s'empile,
+              ce qu'on met en service reste seul en tête de rail. */}
           <div className="flex flex-col gap-4 2xl:min-w-0 2xl:flex-1">
             <FileEnvoiAside />
             <CorrespondanceRecente />
+            <MeteoAdhesionAside />
+            <AgendasEnCoursAside />
           </div>
         </aside>
       </div>
