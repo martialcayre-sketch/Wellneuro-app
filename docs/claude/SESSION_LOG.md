@@ -5658,3 +5658,27 @@ local » en production et Sentry tague la release `local`. Poser la variable
 redémarre l'application — arbitrage propriétaire en attente.
 
 **Prochaine action.** Constater `adb501d1` en ligne par contenance.
+
+## 2026-09-13 — La release cesse de dire « build local » en production
+
+**Décidé.** `build.sh` grave `SOURCE_VERSION` dans `NEXT_PUBLIC_APP_VERSION`
+avant `next build` : Next l'inline, et ce nom était déjà le dernier repli des
+deux chaînes de `deploymentEnv.ts` — serveur et navigateur. Une ligne, aucun
+redémarrage, rien à maintenir. Mergé `47c1d233` (#1084), déployé et constaté en
+ligne.
+
+**Écarté.** Poser `WN_RELEASE_SHA` à la main sur Scalingo : figée, elle serait
+juste une fois puis mentirait à chaque déploiement suivant. Un SHA périmé est
+pire que `'local'`, qui n'affirme rien.
+
+**Lu, pas supposé.** Trois maillons : le journal de build imprime « Release
+gravée dans le build : 47c1d23 » ; le bundle compilé porte
+`… ?? "<sha>" ?? "local"` avec les deux variables amont absentes de l'app ; le
+déploiement est `success` sur ce ref. `CONTAINER_VERSION` (runtime) porte la
+version du conteneur, pas le SHA — elle ne répondait pas à la question.
+
+**Appris.** `wn-cycle` lit l'état du DÉPÔT : il a nommé une PR d'une autre
+session. Vérifier à qui appartient la PR qu'il cite avant de lui obéir.
+
+**Prochaine action.** Lire l'en-tête de `app.wellneuro.fr/dashboard` — il est
+derrière l'authentification, seule une lecture humaine le confirme.
