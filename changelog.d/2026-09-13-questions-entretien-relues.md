@@ -1,4 +1,4 @@
-### Synthèse — ce que le praticien écrit pour préparer son entretien lui revient enfin
+### Synthèse — ce que le praticien écrit pour préparer son entretien lui revient enfin (2026-09-13)
 
 `axe.points_a_confirmer` et `questions_entretien` étaient saisissables depuis
 toujours dans l'éditeur — « Points à confirmer, un par ligne » sur chaque axe,
