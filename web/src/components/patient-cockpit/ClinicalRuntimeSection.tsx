@@ -144,6 +144,23 @@ export type EtatRuntimeClinique = {
   // la phase Actions : le panneau qui le détaille y est masqué par défaut, et
   // un bloqueur invisible est un bloqueur ignoré.
   decisionBloquee: boolean;
+  /**
+   * Le rideau T0 est-il renseigné ET cotable ? — verdict de `preconditionsT0`,
+   * calculé PAR LE SERVEUR et seulement remonté ici.
+   *
+   * TRI-ÉTAT, et `null` porte tout le poids : la route ne calcule les
+   * préconditions que lorsqu'elle vise une ancre de cycle et hors lecture
+   * datée. Partout ailleurs, le rideau n'est pas « incomplet », il est
+   * INCONNU — et le statut de phase qui le lit doit rendre « indéterminée »
+   * plutôt qu'affirmer (`DC-24`).
+   *
+   * REMONTÉ PLUTÔT QUE RECALCULÉ : « cotable » n'est pas « présent ». Le
+   * prédicat exige une passation exploitable, écarte les statuts de validité
+   * exclus et lit les comptes de recueil — le refaire à l'écran en ferait une
+   * seconde version, qui dériverait de la première le jour où l'une bouge.
+   * C'est la raison d'être de `lib/` (cf. `praticien/annulabilite.ts`).
+   */
+  rideauT0Satisfait: boolean | null;
 };
 
 /**
@@ -1094,6 +1111,16 @@ export function ClinicalRuntimeSection({
   // survit au rechargement de page même quand l'écran affiche la proposition
   // d'un AUTRE jalon (le `J21` dû d'un `T0` confirmé). Booléen value-stable.
   const episodeConfirmeEnBase = (trajectoire?.cycles.length ?? 0) > 0;
+  // Le verdict du rideau, tel que la route l'a calculé — jamais recalculé ici.
+  //
+  // Il n'existe QUE sur la branche `proposal_required` : une fois l'épisode
+  // confirmé, la route ne calcule plus de préconditions, et c'est cohérent —
+  // il n'y a plus rien à autoriser. `null` dans tous les autres cas, y compris
+  // en lecture datée où la checklist est délibérément absente. Le lecteur en
+  // tire ce qu'il veut ; ici on ne remonte que ce que le serveur a dit.
+  const rideauT0Satisfait = runtime?.status === 'proposal_required'
+    ? (runtime.preconditions?.dures.find(c => c.id === 'rideau_t0')?.satisfaite ?? null)
+    : null;
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -1106,6 +1133,7 @@ export function ClinicalRuntimeSection({
       reevaluationMesuree,
       decisionBloquee,
       needIdsPrioriteSelectionnee,
+      rideauT0Satisfait,
     });
   }, [
     onEtatChange,
@@ -1120,6 +1148,7 @@ export function ClinicalRuntimeSection({
     reevaluationMesuree,
     decisionBloquee,
     needIdsPrioriteSelectionnee,
+    rideauT0Satisfait,
   ]);
 
   // LE GESTE DE SÉLECTION D'UNE PRIORITÉ ([[D-127]]). L'écran transmet un
