@@ -606,8 +606,8 @@ function grilleDe(def: any): any[] | null {
     // la même raison, que dans `plancherGaranti.guard.test.ts`. Seule la CIBLE
     // vient d'ici ; tout ce qui est asséré est relu du moteur.
     return [
-      { min: 0, max: 4, label: 'Pas de trouble du sommeil' },
-      { min: 5, max: 10, label: 'Troubles du sommeil légers' },
+      { min: 0, max: 5, label: 'Pas de trouble du sommeil' },
+      { min: 6, max: 10, label: 'Troubles du sommeil légers' },
       { min: 11, max: 16, label: 'Troubles du sommeil modérés' },
       { min: 17, max: 21, label: 'Troubles du sommeil sévères' },
     ];

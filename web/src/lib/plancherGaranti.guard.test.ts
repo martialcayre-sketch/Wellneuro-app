@@ -254,8 +254,8 @@ describe('LA PROPRIÉTÉ ELLE-MÊME — un plancher n\'est jamais dépassé par 
       // du moteur, la dégradation serait silencieuse — `bandeFinale` vient du
       // moteur, seule la CIBLE viendrait d'ici.
       return [
-        { min: 0, max: 4, label: 'Pas de trouble du sommeil' },
-        { min: 5, max: 10, label: 'Troubles du sommeil légers' },
+        { min: 0, max: 5, label: 'Pas de trouble du sommeil' },
+        { min: 6, max: 10, label: 'Troubles du sommeil légers' },
         { min: 11, max: 16, label: 'Troubles du sommeil modérés' },
         { min: 17, max: 21, label: 'Troubles du sommeil sévères' },
       ];
