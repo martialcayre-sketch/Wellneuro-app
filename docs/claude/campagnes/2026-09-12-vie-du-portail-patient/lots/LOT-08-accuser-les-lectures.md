@@ -1,7 +1,7 @@
 ---
 id: "LOT-08"
 titre: "accuser-les-lectures"
-statut: "migration seule — en cours, 2026-09-12"
+statut: "livré — #1061 fusionnée ; table constatée au conteneur, 2 accusés le 2026-09-13"
 dépend_de: "LOT-07 (le fil du jour)"
 ---
 

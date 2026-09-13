@@ -5593,3 +5593,31 @@ cru, sinon elle n'apprend rien.
 merge. Restent ouverts : la clôture de l'agenda alimentaire (`a_transmettre`
 sans CTA), le second `T0`, la lettre DPA, les trois trous du § 7 RGPD, et une
 variable `WN_PORTAIL_JOURNAL` possiblement orpheline côté Scalingo.
+
+## 2026-09-13 — Clôture du fil du jour : les accusés ont écrit en production
+
+**Décidé.** La campagne `2026-09-12-vie-du-portail-patient` est close : quatre PR
+(#1061, #1063, #1066, #1067) dans un ordre contraint — le code quitte la
+production avant la migration destructive. `D-172` est **amendée en tête**, avant
+ses métadonnées, parce que son titre contient l'erreur ; ses points 1 à 6 sont
+conservés tels quels. `D-175` pose la règle unique du fil.
+
+**Constaté au conteneur.** one-off-729 (12/09 19:40) : `portail_journal_reperes`
+rend 0 dans `information_schema` ET dans `pg_class` ; migration finie 17:39:52
+UTC, `rollback=NULL`. one-off-1057 (13/09 10:02) : `portail_lectures_patient`
+porte **2 lignes — 1 bilan, 1 synthèse**. Le chemin d'écriture des accusés, tenu
+hier soir par ses seuls bancs, **a été emprunté en production**. Aucune variable
+`WN_PORTAIL_JOURNAL` orpheline côté Scalingo.
+
+**Écarté.** Corriger `D-172` en place : une décision se lit avec ce qu'elle a cru.
+
+**Erreur consignée.** J'ai déduit d'un 422 que `release-db` n'avait pas de porte
+de relecture, et je l'ai écrit dans quatre documents avant de lire les règles. Le
+responsable avait approuvé lui-même — trace dans `/actions/runs/<id>/approvals`.
+Une configuration se lit, elle ne se déduit pas d'un code d'erreur.
+
+**Prochaine action.** La clôture de l'agenda alimentaire : `a_transmettre` n'a
+pas de CTA, le patient ne peut pas fermer son recueil depuis le fil.
+
+**Questions ouvertes.** Second `T0` ; lettre DPA Anthropic ; trois trous du § 7
+RGPD ; le décompte que `portail_lectures_patient` rend possible (`D-175` § 6).

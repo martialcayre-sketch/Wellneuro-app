@@ -1,12 +1,12 @@
 ---
 id: "2026-09-12-vie-du-portail-patient"
 titre: "La vie du portail patient — consignée, et non rejouée de mémoire"
-statut: "en cours — LOT-12, amendement de la doctrine"
+statut: "terminée — 2026-09-13 ; douze lots, quatre PR, DROP et accusés constatés au conteneur"
 créée_le: "2026-09-12"
-mise_à_jour: "2026-09-12"
-lot_courant: "LOT-12"
+mise_à_jour: "2026-09-13"
+lot_courant: "aucun"
 branche_campagne: "aucune"
-branche_lot_courant: "doctrine-fil-du-jour"
+branche_lot_courant: "aucune"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---

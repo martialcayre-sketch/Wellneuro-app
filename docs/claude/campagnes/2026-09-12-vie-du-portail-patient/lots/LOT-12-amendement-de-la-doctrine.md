@@ -1,7 +1,7 @@
 ---
 id: "LOT-12"
 titre: "amendement-de-la-doctrine"
-statut: "documentation seule — en cours, 2026-09-12"
+statut: "terminé — #1067 fusionnée ; D-175 pris au merge, sans collision"
 dépend_de: "LOT-07 à LOT-11 (le code est renversé ; le registre ne l'était pas)"
 ---
 

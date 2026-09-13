@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "le-fil-du-jour"
-statut: "en cours — 2026-09-12"
+statut: "livré — #1058 fusionnée, 2026-09-12"
 dépend_de: "LOT-02 (le repère de fraîcheur survit et servira)"
 ---
 
