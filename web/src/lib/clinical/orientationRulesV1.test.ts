@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
   feuillesDuDeclencheur,
+  GRILLES_ORIENTATION,
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
   type OrientationRule,
 } from './orientationRulesV1';
+import { BANDES_PSQI } from './bandesPsqi';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
@@ -156,8 +158,50 @@ describe('orientationRulesV1 — verrou v1', () => {
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
   const SHA_SIGNE_2026_09_13 = 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e';
 
-  it('le sha publié correspond au contenu de la table', () => {
-    expect(ORIENTATION_RULES_SHA256).toBe(sha256(JSON.stringify(ORIENTATION_RULES_V1)));
+  // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
+  // d'interprétation y sont entrées. Les zones de cette table citent des
+  // COULEURS et des LIBELLÉS, jamais des nombres — hacher les seules règles
+  // laissait hors signature l'objet qui décide du point d'allumage. Forme
+  // composite `{ regles, grilles }`, reprise de `PRIORITY_RULES_SHA256`
+  // ([[D-062]]).
+  it('le sha publié correspond au contenu de la table, GRILLES COMPRISES', () => {
+    expect(ORIENTATION_RULES_SHA256).toBe(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION })),
+    );
+  });
+
+  // CE QUE LE BANC PRÉCÉDENT NE PEUT PAS DIRE : que les grilles pèsent vraiment.
+  // Une forme composite dont le second terme serait vide, ou constant, hacherait
+  // exactement comme avant tout en ayant l'air d'avoir grandi.
+  it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
+    const avant = ORIENTATION_RULES_SHA256;
+    const grillesMutees = {
+      ...GRILLES_ORIENTATION,
+      Q_SOM_01: [
+        { min: 0, max: 4, label: 'Pas de trouble du sommeil', color: 'success' },
+        { min: 5, max: 10, label: 'Troubles du sommeil légers', color: 'info' },
+        { min: 11, max: 16, label: 'Troubles du sommeil modérés', color: 'warning' },
+        { min: 17, max: 21, label: 'Troubles du sommeil sévères', color: 'danger' },
+      ],
+    };
+    expect(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
+    ).not.toBe(avant);
+  });
+
+  // ET QU'UN LIBELLÉ COMPTE AUTANT QU'UNE BORNE : les zones `interpretation`
+  // citent un libellé verbatim. Renommer une bande éteint une règle aussi
+  // sûrement que déplacer une borne.
+  it('renommer un libellé de bande change le sha', () => {
+    const grillesMutees = {
+      ...GRILLES_ORIENTATION,
+      Q_SOM_01: BANDES_PSQI.map((bande, i) =>
+        i === 1 ? { ...bande, label: 'Troubles du sommeil légers ' } : bande,
+      ),
+    };
+    expect(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
+    ).not.toBe(ORIENTATION_RULES_SHA256);
   });
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {

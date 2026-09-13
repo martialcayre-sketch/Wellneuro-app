@@ -1,5 +1,6 @@
 import type { OrientationClaimRef, OrientationDeclencheur } from '@/lib/clinical/orientationRulesV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import { grillesCitees } from '@/lib/clinical/grillesSignees';
 
 // Table des indications de panels biologiques (LOT-06, D-059 §5) — patron
 // orientation (`orientationRulesV1.ts`), réutilisé à l'identique : conditions
@@ -575,7 +576,36 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   shaPerimetre: 'a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f',
 };
 
-export const INDICATIONS_BIOLOGIE_SHA256 = sha256(JSON.stringify(INDICATIONS_BIOLOGIE_V1));
+/**
+ * LES GRILLES QUE CETTE TABLE LIT — dix-sept instruments, tous cités par une
+ * zone COULEUR.
+ *
+ * Dérivé, jamais écrit à la main : la liste se recalcule depuis les zones
+ * réellement citées, si bien qu'une règle ajoutée demain fait entrer SA grille
+ * dans le périmètre sans qu'on ait à y penser.
+ */
+export const GRILLES_INDICATIONS = grillesCitees(INDICATIONS_BIOLOGIE_V1);
+
+/**
+ * LE PÉRIMÈTRE A GRANDI LE 2026-09-13 : les grilles d'interprétation y sont
+ * entrées, et le sha a donc changé sans qu'aucune règle ne bouge.
+ *
+ * CE QUI L'A MOTIVÉ EST ARRIVÉ À CETTE TABLE-CI. Le même jour, la borne 4/5 du
+ * PSQI a été portée à 5/6 sur arbitrage praticien, dans `questions.ts`, hors de
+ * tout périmètre signé. `BIO-SOM-01` — `publiee`, prescrivant
+ * `PANEL_SOMMEIL_1` — lit la zone couleur `info` sur `Q_SOM_01` : elle a cessé
+ * de prescrire à 5 **sans avoir été éditée, sans re-signature, et sans qu'un
+ * banc rougisse**. La signature du 2026-08-17 continuait d'attester un contenu
+ * dont le comportement avait changé. C'est exactement la péremption que
+ * `shaPerimetre` existe pour rendre détectable, et elle ne l'était pas.
+ *
+ * La forme composite `{ regles, grilles }` reprend celle que
+ * `PRIORITY_RULES_SHA256` porte depuis [[D-062]] pour la procédure
+ * d'abstention.
+ */
+export const INDICATIONS_BIOLOGIE_SHA256 = sha256(
+  JSON.stringify({ regles: INDICATIONS_BIOLOGIE_V1, grilles: GRILLES_INDICATIONS }),
+);
 
 /**
  * La table des indications est-elle RÉELLEMENT signée ? ([[D-063]])

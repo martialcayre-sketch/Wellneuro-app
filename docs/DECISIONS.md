@@ -4,6 +4,51 @@
 
 ## Décisions actives
 
+### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être pour toujours
+
+- Date : 2026-09-13
+- Statut : accepté — arbitrages du praticien rendus en session le 2026-09-13,
+  sur quatre points posés séparément (borne PSQI, rang des instruments, fenêtre
+  de fraîcheur, lecture de production)
+- Domaine : clinique — orientation, table signée `ORIENTATION_RULES_V1`
+- Re-signature attestée par le praticien le 2026-09-13, après relecture du
+  contenu modifié. Les 23 claims de `claimsSource` relus en base de production
+  le même jour (one-off détaché) : 23/23 `VALIDE`, `prescriptif`, `active`,
+  `v1.0`, aucun supplanté.
+
+**TROIS GESTES, UNE SEULE SIGNATURE.**
+
+1. **La borne du PSQI passe de 4/5 à 5/6** dans la grille d'interprétation. Ce
+   n'est pas un ajustement d'affichage : les zones de `R-SOM-01` citent des
+   COULEURS, jamais des nombres, si bien que la grille est le SEUL endroit où le
+   point d'allumage se règle. La règle cesse d'être proposée à un total de 5.
+   Buysse et al. (1989) ne publient aucune stratification de sévérité — le PSQI
+   y est dichotomique, « a global PSQI score greater than 5 » — et l'arbitrage
+   tranche en faveur de la spécificité et du cut-off strict. Les quatre bandes
+   et leurs libellés restent une construction WellNeuro, et le disent désormais.
+
+2. **Le Cungi passe en priorité 1 sur `R-SOM-01`, le HAD en 2.** Le claim
+   `WN-CL-0323-013`, recopié en clair dans la règle, juge le Cungi « plus
+   pertinent et sensible » pour le stress **dans les troubles du sommeil**,
+   contexte exact où cette règle se déclenche. Elle le rangeait second.
+   L'inversion ne se voit que lorsque `R-SOM-01` est seule : quatre autres
+   règles posent le HAD en 1, et la fusion retient le minimum.
+
+3. **Les vingt règles portent une fenêtre de fraîcheur de 365 jours.** Sans
+   elle, l'exclusion `dejaRepondu` ([[D-053]]) fermait une cible SANS HORIZON :
+   la requête ne pose aucun filtre de date, et une passation de n'importe quelle
+   ancienneté la déclarait couverte. `BIO-SOM-01` portait ce geste depuis le
+   début ; la table d'orientation le rattrape. L'horloge est passée par le
+   service, jamais lue dans le moteur — même discipline que `referenceMs` en
+   biologie.
+
+**CE QUE CETTE DÉCISION A RÉVÉLÉ, ET QUI LUI SURVIT.** Le déplacement de borne
+du point 1 a changé le comportement de DEUX tables signées sans faire bouger un
+seul sha : `BANDES_PSQI` vivait hors des deux périmètres, et `BIO-SOM-01` —
+règle `publiee` prescrivant `PANEL_SOMMEIL_1` — lit la même zone couleur sur le
+même instrument. Elle a cessé de prescrire à 5 sans avoir été éditée, sans
+re-signature, et sans qu'un banc rougisse. C'est l'objet de la décision suivante.
+
 ### D-179 — Le statut d'une phase lit le geste qu'elle porte, pas l'acte qui l'a précédée
 
 - Date : 2026-09-13

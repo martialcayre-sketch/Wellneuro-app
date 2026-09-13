@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
 import { sha256 } from './corpusSyntheseV1';
+import { grillesCitees } from './grillesSignees';
 
 // Table de règles d'orientation NNPP2 (campagne certification corpus, lot 7,
 // contrat v2 après intégration de l'audit externe).
@@ -1691,4 +1692,34 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   ],
 };
 
-export const ORIENTATION_RULES_SHA256 = sha256(JSON.stringify(ORIENTATION_RULES_V1));
+/**
+ * LES GRILLES QUE CETTE TABLE LIT, et qui décident du point où ses règles
+ * s'allument.
+ *
+ * Dérivé, jamais écrit à la main : la liste se recalcule depuis les zones
+ * réellement citées, si bien qu'une règle ajoutée demain fait entrer SA grille
+ * dans le périmètre sans qu'on ait à y penser — et referme le verrou jusqu'à
+ * re-signature, ce qui est le comportement voulu.
+ */
+export const GRILLES_ORIENTATION = grillesCitees(ORIENTATION_RULES_V1);
+
+/**
+ * LE PÉRIMÈTRE A GRANDI LE 2026-09-13 (second lot du jour) : les grilles
+ * d'interprétation y sont entrées, et le sha a donc changé sans qu'aucune règle
+ * ne bouge.
+ *
+ * POURQUOI. Les zones de cette table citent des COULEURS et des LIBELLÉS, jamais
+ * des nombres. Hacher les seules règles laissait hors signature l'objet qui
+ * décide — la grille de l'instrument. Le même jour, déplacer la borne 4/5 du
+ * PSQI a changé le comportement de cette table ET de la table des indications
+ * biologiques sans faire bouger un seul sha ([[D-180]]). La forme composite
+ * `{ regles, grilles }` reprend celle que `PRIORITY_RULES_SHA256` porte depuis
+ * [[D-062]] pour la procédure d'abstention.
+ *
+ * CONSÉQUENCE À CONNAÎTRE AVANT DE SIGNER : renommer un libellé de bande ou
+ * déplacer une borne referme désormais ce verrou. C'est le prix, et c'est
+ * l'objet du changement.
+ */
+export const ORIENTATION_RULES_SHA256 = sha256(
+  JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION }),
+);

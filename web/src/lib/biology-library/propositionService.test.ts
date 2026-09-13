@@ -26,6 +26,7 @@ import {
   INDICATIONS_BIOLOGIE_V1,
 } from './indicationsBiologieV1';
 import { sha256 } from '@/lib/clinical/corpusSyntheseV1';
+import { shaPerimetreBiologie } from './statuts';
 import { claimsCitesParLaPropositionBilan, deriverPropositionPourPatient } from './propositionService';
 
 const REFERENCE = '2026-08-17T12:00:00.000Z';
@@ -67,8 +68,13 @@ describe('contrat M-B — la table canonique passe VERBATIM', () => {
     // Le verrou hache `entree.regles` tel qu'il arrive. Si un jour l'appelant
     // recompose la table, ce sha cesse de concorder et le verrou se ferme en
     // production sous un motif trompeur — ce banc le dit d'abord.
-    expect(sha256(JSON.stringify(entree.regles))).toBe(INDICATIONS_BIOLOGIE_SHA256);
-    expect(sha256(JSON.stringify(entree.regles))).toBe(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre);
+    // LE PÉRIMÈTRE PORTE DEUX TERMES depuis le 2026-09-13 : les règles ET les
+    // grilles que leurs zones lisent. Passer les règles sans les grilles
+    // fermerait le verrou — c'est ce que ce contrat vérifie aussi.
+    expect(shaPerimetreBiologie(entree.regles, entree.grilles)).toBe(INDICATIONS_BIOLOGIE_SHA256);
+    expect(shaPerimetreBiologie(entree.regles, entree.grilles)).toBe(
+      INDICATIONS_BIOLOGIE_METADATA.shaPerimetre,
+    );
   });
 
   it('l’ordre de la table n’est pas altéré par l’appel', async () => {
