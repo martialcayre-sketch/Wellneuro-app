@@ -79,6 +79,70 @@ responsable de traitement. Le motif écrit est un raisonnement clinique porté s
 une personne identifiée ; `DecisionPrioritySelection`, de même nature, figure dans
 la dette nommée du 2026-09-09 — une qualification unique trancherait les deux.
 
+**CE QUE LA REVUE A TROUVÉ, ET QUI EST CORRIGÉ DANS LA MÊME MIGRATION.** La
+première rédaction a passé le CI — contrat négatif compris — en portant DEUX
+défauts réels. Le fait mérite d'être consigné tel quel : **un contrat négatif ne
+prouve que ce qu'il TENTE**, et un CI vert sur une migration n'atteste que les cas
+écrits.
+
+1. **Aucun CHECK n'interdisait `supersedes_ecartement_id = id`.** Une ligne qui se
+   supplante elle-même porte un `supersedes` non nul : elle sort donc de l'index
+   PARTIEL de racine, le créneau racine de sa cible reste libre, une seconde ligne
+   s'y installe, et la cible porte DEUX fils. L'affirmation « aucune fourche n'est
+   représentable » était fausse. Le précédent l'écrit pourtant en clair
+   (`cb_resultat_correction_chainee` : « un `supersedes` accepté sans contrôle
+   contournerait la garde anti-doublon autant de fois qu'on veut »), et [[D-127]]
+   porte le CHECK que cette table avait omis.
+2. **`btrim/1` ne retire que l'espace ASCII.** Un motif réduit à des TABULATIONS
+   passait — l'écartement sans motif écrit que la table existe pour refuser. Le
+   piège est documenté depuis [[D-127]], et il a été reproduit avant d'être vu.
+   Corrigé par la liste de caractères explicite, comme là-bas.
+3. Deux gardes de la même famille, ajoutées dans le même geste :
+   `array_length(ARRAY[NULL]::text[], 1)` vaut 1, donc une liste de règles sans
+   AUCUNE règle réelle satisfaisait la garde du réveil ; et `par_email` n'avait
+   aucun CHECK, si bien qu'un écartement pouvait être non attribuable.
+4. **Un cas de contrat passait à vide** : l'espèce hors liste était refusée par le
+   CHECK des règles, pas par celui de l'espèce — `WHEN check_violation` ne
+   distingue pas la contrainte. L'espèce fermée est désormais assertionnée au
+   CATALOGUE. Ajouté aussi un cas POSITIF sur une cible `pack:` réelle : tous les
+   cas `pack:` étaient des refus, si bien qu'un regex faux pour les identifiants
+   du registre aurait laissé le contrat vert.
+
+**LES SIX CONTRÔLES DUS À LA ROUTE SONT ÉCRITS DANS LA MIGRATION**, patron
+[[D-124]] : une obligation qui ne vit dans aucun fichier n'est pas une obligation.
+Les contraintes ferment tout ce qu'une contrainte PEUT fermer ; ce qui reste —
+`supersedes` désignant une ligne existante, de la même cible, du même dossier, qui
+est la tête courante, plus l'alternance des espèces et la nature « règle » des
+identifiants — appartient à la route. Un cycle de longueur 2 reste représentable :
+il produit des lignes qu'aucune racine n'atteint, et la marche de chaîne doit être
+BORNÉE EN PROFONDEUR.
+
+**LA TÊTE SE LIT PAR LA CHAÎNE, JAMAIS PAR `max(fait_le)`.** `fait_le` vaut
+`CURRENT_TIMESTAMP` — horodatage de TRANSACTION — sur une colonne `TIMESTAMP(3)` :
+deux lignes d'une même transaction portent la même valeur, et deux transactions
+rapprochées peuvent partager la milliseconde.
+
+**DEUX ORTHOGRAPHES DE CIBLE, ET LA CANONIQUE EST LA LONGUE.** Le moteur porte
+déjà `cleCible` (`q:<qid>` / `p:<packId>`) ; la base exige
+`questionnaire:` / `pack:`. La forme longue est retenue EN BASE délibérément :
+`cleCible` est une clé de déduplication interne jamais persistée, alors que
+`cible_id` est un enregistrement durable qu'un audit relit des mois plus tard. La
+conversion est explicite et appartient à la route.
+
+**UNE FENÊTRE D'INDISPONIBILITÉ DE L'EFFACEMENT, NOMMÉE PLUTÔT QUE SUBIE**, comme
+[[D-071]] §3 l'a fait pour `panels_biologie_documentes`. Le code part avant la
+migration ([[D-087]]) : entre le déploiement et l'approbation `release-db`,
+`deleteMany` sur cette table lève `42P01` et TOUTE demande d'effacement répond en
+erreur. C'est fail-closed et volontaire — un banc l'éprouve —, et la fenêtre doit
+rester courte.
+
+**UN EFFET DE BORD DU RÉVEIL, ASSUMÉ.** Le réveil se déclenche sur « une règle
+absente de `regles_au_geste` ». Si un identifiant de règle est renommé ou retiré du
+référentiel, tous les écartements qui le citaient se réveillent d'un coup, sans
+fait clinique nouveau. La direction est la bonne — on montre plutôt qu'on cache —
+mais cela ressemblera à un défaut en production : à dire au praticien, et à vérifier
+avant toute re-signature de la table d'orientation.
+
 - Référence : `web/prisma/schema.prisma` (`EcartementProposition`),
   `web/prisma/migrations/20260913120000_orientation_ecartement_v1/`,
   `web/prisma/checks/orientation_ecartement_v1_negatif.sql`,

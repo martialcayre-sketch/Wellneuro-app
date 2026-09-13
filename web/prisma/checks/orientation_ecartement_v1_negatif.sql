@@ -1,7 +1,9 @@
 -- Contrat de `orientation_ecartements` — écartement praticien d'une proposition
 -- d'orientation (arbitrage du 2026-09-13).
 --
--- La table promet NEUF choses, et ce fichier les éprouve TOUTES :
+-- La table promet SEIZE choses, et ce fichier les éprouve TOUTES. Les neuf
+-- premières étaient là dès la première rédaction ; les sept suivantes viennent
+-- de la revue, et deux d'entre elles couvrent des défauts RÉELS de la migration :
 --   1. un écartement valide s'écrit, et se relit ;
 --   2. la FORME DE LA CIBLE est fermée : `Q_SOM_05` nu est REFUSÉ (23514).
 --      Sans ce CHECK, deux espaces de noms se mélangeraient — un qid et un id
@@ -27,6 +29,22 @@
 --   9. la FK vers `patients` est en ON DELETE RESTRICT, et la RLS deny-all est
 --      active et sans policy (posture `D-005`).
 --
+-- ── CE QUE CE FICHIER NE PROUVAIT PAS, ET QUI EST PASSÉ VERT EN CI ──────────
+--
+-- Une première rédaction de ce contrat a tourné VERTE sur une migration qui
+-- portait deux défauts réels, relevés en revue. C'est la leçon la plus utile du
+-- fichier, et elle vaut pour tout contrat négatif : **un contrat ne prouve que
+-- ce qu'il TENTE**. Les deux cas manquants sont désormais là (10 et 11), et
+-- l'un d'eux — la ligne qui se supplante elle-même — vidait l'index de racine
+-- de tout son sens.
+--
+-- UN CAS QUI PASSAIT À VIDE, corrigé de même. Le cas 3 insérait une espèce hors
+-- liste AVEC des règles : or le CHECK `regles_par_espece` est FAUX pour toute
+-- espèce inconnue, si bien que l'INSERT restait refusé même si le CHECK
+-- d'espèce disparaissait. `WHEN check_violation` ne distingue pas la contrainte.
+-- L'espèce fermée est donc assertionnée au CATALOGUE (cas 14), comme l'index
+-- partiel l'était déjà.
+--
 -- CE QUE CE CONTRAT NE PEUT PAS TENIR, et il faut le savoir en le lisant : que
 -- `regles_au_geste` contienne des identifiants de RÈGLES et non de CIBLES.
 -- Aucune contrainte SQL ne le sait — la distinction est celle qui porte tout
@@ -42,6 +60,15 @@ DECLARE
   nb integer;
   racine_id text;
   reprise_id text;
+  reelles text[];
+
+  -- ORDRE ALPHABÉTIQUE OBLIGATOIRE (comparaison à un `array_agg(... ORDER BY
+  -- column_name)`) : une colonne ajoutée à la fin rougirait alors qu'elle est
+  -- déclarée, et le message afficherait deux ensembles identiques au tri près.
+  COLS_ECARTEMENT CONSTANT text[] := ARRAY[
+    'cible_id', 'created_at', 'espece', 'fait_le', 'id', 'id_patient',
+    'motif', 'par_email', 'regles_au_geste', 'supersedes_ecartement_id'
+  ];
 BEGIN
   -- ── 0. Fixture — patient fictif autorisé (identité de fixture du dépôt) ──
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
@@ -233,6 +260,146 @@ BEGIN
       'ÉCARTEMENT: une FOURCHE a été acceptée — deux praticiens croiraient chacun avoir tranché.';
   END IF;
 
+  -- ── 10. UNE LIGNE NE SE SUPPLANTE PAS ELLE-MÊME ──────────────────────────
+  -- LE CAS QUI MANQUAIT, et sans lui l'index de racine ne gardait rien : une
+  -- ligne au `supersedes` non nul est HORS de l'index partiel, donc le créneau
+  -- racine de sa cible reste libre pour une seconde ligne. Deux fils, et un
+  -- geste praticien que rien n'atteint.
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email, supersedes_ecartement_id)
+    VALUES ('ec_reflex', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY['R-SOM-01'], 'je me supplante moi-même', 'praticien@wellneuro.fr', 'ec_reflex');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: une ligne qui SE SUPPLANTE ELLE-MÊME a été acceptée — elle sort de l''index partiel, libère le créneau racine, et la cible porte deux fils.';
+  END IF;
+
+  -- ── 11. UN MOTIF RÉDUIT À DES TABULATIONS EST REFUSÉ ─────────────────────
+  -- SECOND CAS MANQUANT. `btrim/1` ne retire que l'espace ASCII : le cas 4
+  -- ci-dessus, qui n'essayait que des espaces, laissait passer `E'\t'`.
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_tab', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY['R-SOM-01'], E'\t\n\r ', 'praticien@wellneuro.fr');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: un motif fait de TABULATIONS a été accepté — `btrim` a perdu sa liste de caractères.';
+  END IF;
+
+  -- ── 12. LA BORNE HAUTE DU MOTIF MORD, et l'auteur est exigé ──────────────
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_long', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY['R-SOM-01'], repeat('x', 2001), 'praticien@wellneuro.fr');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'ÉCARTEMENT: un motif de 2001 caractères a été accepté.';
+  END IF;
+
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_sansmail', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY['R-SOM-01'], 'un motif valide', E'\t ');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: un écartement SANS AUTEUR lisible a été accepté — il n''est pas attribuable.';
+  END IF;
+
+  -- ── 13. NI ÉLÉMENT NUL, NI CHAÎNE VIDE DANS LA LISTE DE RÈGLES ───────────
+  -- `array_length(ARRAY[NULL]::text[], 1)` vaut 1 : la garde du cas 5 était
+  -- satisfaite par une liste ne contenant AUCUNE règle réelle. Un lecteur SQL
+  -- écrivant `NOT (regle = ANY(...))` obtient alors NULL, la ligne est filtrée,
+  -- et l'écartement ne se réveille jamais.
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_regnull', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY[NULL]::text[], 'un motif valide', 'praticien@wellneuro.fr');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: une règle NULLE a été acceptée dans la liste — l''écartement ne se réveillerait jamais.';
+  END IF;
+
+  refuse := false;
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_regvide', 'PAT_CONTRAT_ECART', 'pack:pack_sommeil_chronobiologie', 'ecartement',
+            ARRAY[''], 'un motif valide', 'praticien@wellneuro.fr');
+  EXCEPTION
+    WHEN check_violation THEN refuse := true;
+  END;
+  IF NOT refuse THEN
+    RAISE EXCEPTION 'ÉCARTEMENT: une règle VIDE a été acceptée dans la liste.';
+  END IF;
+
+  -- ── 14. L'ESPÈCE FERMÉE, ASSERTIONNÉE AU CATALOGUE ───────────────────────
+  -- Elle est INÉPROUVABLE par INSERT : le CHECK `regles_par_espece` refuse déjà
+  -- toute espèce inconnue, quelles que soient les règles fournies. Le cas 3
+  -- resterait donc vert si ce CHECK-ci disparaissait. On lit sa DÉFINITION.
+  SELECT count(*) INTO nb
+  FROM pg_constraint
+  WHERE conname = 'orientation_ecartements_espece_check'
+    AND conrelid = 'public.orientation_ecartements'::regclass
+    AND pg_get_constraintdef(oid) LIKE '%ecartement%'
+    AND pg_get_constraintdef(oid) LIKE '%reprise%';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: le CHECK d''espèce est absent ou ne nomme plus ses deux valeurs — et aucun INSERT ne peut le prouver.';
+  END IF;
+
+  -- ── 15. CAS POSITIF SUR UNE CIBLE `pack:` ────────────────────────────────
+  -- Les autres cas `pack:` de ce fichier sont tous attendus en ÉCHEC : si le jeu
+  -- de caractères du regex était faux pour les vrais identifiants de pack, le
+  -- contrat resterait vert. Celui-ci le prouve dans l'autre sens, sur un id réel
+  -- du registre (`snake_case`).
+  BEGIN
+    INSERT INTO orientation_ecartements
+      (id, id_patient, cible_id, espece, regles_au_geste, motif, par_email)
+    VALUES ('ec_pack_ok', 'PAT_CONTRAT_ECART', 'pack:pack_socle_initial_neuronutrition',
+            'ecartement', ARRAY['R2-SOM-01'], 'Le socle est déjà servi par ailleurs.',
+            'praticien@wellneuro.fr');
+  EXCEPTION
+    WHEN others THEN
+      RAISE EXCEPTION
+        'ÉCARTEMENT: une cible `pack:` VALIDE a été refusée (%) — le regex ne couvre pas les identifiants réels du registre.', SQLERRM;
+  END;
+
+  -- ── 16. LISTE BLANCHE DE COLONNES ────────────────────────────────────────
+  -- Promesse reprise du contrat de [[D-127]] : une colonne arrivée sans arbitrage
+  -- ne se verrait pas autrement. ORDRE ALPHABÉTIQUE OBLIGATOIRE.
+  SELECT array_agg(c.column_name::text ORDER BY c.column_name) INTO reelles
+  FROM information_schema.columns c
+  WHERE c.table_schema = 'public' AND c.table_name = 'orientation_ecartements';
+  IF reelles IS DISTINCT FROM COLS_ECARTEMENT THEN
+    RAISE EXCEPTION
+      'ÉCARTEMENT: colonnes inattendues (%). Attendu exactement % — toute colonne neuve doit être arbitrée.',
+      reelles, COLS_ECARTEMENT;
+  END IF;
+
   -- ── 9. FK en ON DELETE RESTRICT, et RLS deny-all ─────────────────────────
   -- `confdeltype = 'r'`, invisible du drift check.
   SELECT count(*) INTO nb
@@ -276,7 +443,7 @@ BEGIN
       'ÉCARTEMENT: l''index de racine n''est pas PARTIEL — un index total interdirait toute reprise.';
   END IF;
 
-  RAISE NOTICE 'ÉCARTEMENT: écartement valide accepté et relu ; cible non préfixée et préfixe inconnu refusés (23514) ; espèce hors liste refusée ; motif vide et blanc refusés ; écartement SANS RÈGLES refusé ; reprise AVEC règles refusée ; seconde racine refusée (23505) mais reprise et troisième geste acceptés ; fourche refusée ; FK RESTRICT ; RLS deny-all ; index de racine PARTIEL.';
+  RAISE NOTICE 'ÉCARTEMENT (16 cas): écartement valide accepté et relu ; auto-supplantation refusée ; motif en tabulations refusé ; motif de 2001 caractères refusé ; auteur illisible refusé ; règle nulle et règle vide refusées ; espèce fermée assertionnée au catalogue ; cible pack réelle acceptée ; liste blanche de 10 colonnes ; cible non préfixée et préfixe inconnu refusés (23514) ; espèce hors liste refusée ; motif vide et blanc refusés ; écartement SANS RÈGLES refusé ; reprise AVEC règles refusée ; seconde racine refusée (23505) mais reprise et troisième geste acceptés ; fourche refusée ; FK RESTRICT ; RLS deny-all ; index de racine PARTIEL.';
 END $$;
 
 ROLLBACK;
