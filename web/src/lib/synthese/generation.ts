@@ -63,6 +63,7 @@ import {
 } from '@/lib/clinical/orientationService';
 import {
   derniereReponseParQuestionnaire,
+  type RecommandationExploration,
   type ReponseOrientation,
 } from '@/lib/clinical/orientationEngine';
 import {
@@ -177,6 +178,64 @@ function orientationInjectee(orientation: ResultatOrientation | null): boolean {
 }
 
 /**
+ * La table a-t-elle PROPOSÉ quelque chose pour ce dossier, écarté ou non ?
+ *
+ * DEUX QUESTIONS DISTINCTES, DEUX PRÉDICATS — et les confondre faisait changer la
+ * trace d'audit en silence. `orientationInjectee` dit « un bloc est-il parti vers
+ * le modèle » : la réponse reste NON quand toutes les lignes sont écartées, et ce
+ * champ persisté doit continuer à le dire. Mais le garde de restitution, lui, ne
+ * s'arme pas sur « un bloc est parti » — il s'arme sur « la table avait quelque
+ * chose à dire », sans quoi un dossier dont le praticien a tout écarté cesse d'être
+ * mesuré, et l'écart qu'on journalisait depuis [[D-055]] disparaît du jour où le
+ * geste d'écartement existe ([[D-178]]).
+ *
+ * CE PRÉDICAT NE SUFFIT PAS À LUI SEUL, et c'est le point délicat : armer le garde
+ * en laissant l'allowlist vide rouvrirait exactement le défaut que
+ * `orientationInjectee` documente ci-dessus — accuser une synthèse de citer « hors
+ * recommandation » ce qu'aucune recommandation ne lui a présenté. Les trois
+ * fonctions d'allowlist comptent donc les cibles ÉCARTÉES avec les servies : ce que
+ * le garde mesure redevient ce qu'il mesurait avant l'écartement.
+ */
+function orientationAPropose(orientation: ResultatOrientation | null): boolean {
+  return orientation?.actif === true
+    && orientation.recommandations.length + ecarteesDe(orientation).length > 0;
+}
+
+/**
+ * Les propositions écartées EXPLOITABLES, ou une liste vide.
+ *
+ * DÉFENSIF, ET LA PORTÉE DE CETTE DÉFENSE EST BORNÉE — il faut le dire, parce
+ * qu'une première rédaction la présentait comme plus large qu'elle n'est. Le `try`
+ * de la chaîne d'orientation n'enveloppe que l'APPEL au service : `buildBlocOrientation`
+ * et les prédicats ci-dessus le lisent HORS de ce `try`. Un résultat actif privé de
+ * `recommandations` jetterait donc toujours, avant ou après l'appel au modèle. Ce
+ * qui est couvert ici est le champ que ce lot a rendu nécessaire (`ecartees`), et
+ * lui seul : élargir la défense à toute la forme demanderait un arbitrage sur ce
+ * qu'une synthèse doit faire d'un résultat d'orientation qu'elle ne sait pas lire.
+ *
+ * LES ÉLÉMENTS SONT FILTRÉS, pas seulement le tableau. Un `ecartees: [{}]` passait
+ * l'`Array.isArray` puis jetait sur `.cible` — après l'appel au modèle, donc après
+ * l'avoir payé, et la synthèse était perdue. Une défense qui ne protège que
+ * l'enveloppe ne sert qu'à faire passer une charge malformée un cran plus loin.
+ */
+function ecarteesDe(orientation: ResultatOrientation & { actif: true }): { cible: RecommandationExploration['cible'] }[] {
+  // Lu comme `unknown` DÉLIBÉRÉMENT : le type annonce `PropositionEcartee[]`, et
+  // c'est précisément l'hypothèse que cette fonction refuse de faire. Narrower
+  // depuis le type annoncé serait circulaire.
+  const brut: unknown = orientation.ecartees;
+  if (!Array.isArray(brut)) return [];
+  return (brut as unknown[]).filter(
+    (ecartee): ecartee is { cible: RecommandationExploration['cible'] } =>
+      typeof ecartee === 'object'
+      && ecartee !== null
+      && typeof (ecartee as { cible?: unknown }).cible === 'object'
+      && (ecartee as { cible?: { type?: unknown } }).cible !== null
+      && typeof (ecartee as { cible: { type?: unknown } }).cible.type === 'string',
+  );
+}
+
+
+/**
  * Les packs effectivement transmis au modèle — l'allowlist du garde de
  * restitution.
  *
@@ -191,9 +250,42 @@ function orientationInjectee(orientation: ResultatOrientation | null): boolean {
  */
 function packsTransmis(orientation: ResultatOrientation | null): PackId[] {
   if (!orientation || !orientation.actif) return [];
+  // SERVIES SEULEMENT, et c'est ce qui rend le nom vrai. Cette liste est PERSISTÉE
+  // (`orientationPacksTransmis`) : y compter une cible écartée ferait nommer, dans
+  // un dossier patient, un pack jamais parti vers le modèle — et que le praticien
+  // a refusé par écrit. Une première rédaction l'avait élargie avec l'allowlist du
+  // garde, en n'ayant vu qu'un seul champ persisté ; il y en a deux.
   return orientation.recommandations
     .filter(recommandation => recommandation.cible.type === 'pack')
     .map(recommandation => (recommandation.cible as { type: 'pack'; packId: PackId }).packId);
+}
+
+/**
+ * Les cibles ÉCARTÉES par le praticien, séparées par espèce — [[D-181]].
+ *
+ * ELLES NE SONT PAS DANS L'ALLOWLIST, et cet arbitrage a été rendu après revue. La
+ * première rédaction les y mettait, au motif que la table les avait bien proposées
+ * et qu'accuser le modèle de les citer serait faux. Mais cela éteignait le signal le
+ * plus parlant du garde : le modèle ne reçoit PAS une ligne écartée — ni bloc, ni
+ * consigne, ni réponse au dossier — si bien que la voir revenir sous sa plume dit
+ * qu'il RE-PROPOSE ce qu'un soignant a refusé par écrit. Blanchir ce cas le rendait
+ * invisible.
+ *
+ * Ce qui règle l'objection n'est donc pas l'allowlist, c'est le NOM du fait : ces
+ * cibles sont signalées sous un sens propre, `ecartee`, et non comme une infidélité.
+ */
+function ciblesEcartees(orientation: ResultatOrientation | null): {
+  packs: PackId[];
+  questionnaires: string[];
+} {
+  const packs: PackId[] = [];
+  const questionnaires: string[] = [];
+  if (orientation?.actif !== true) return { packs, questionnaires };
+  for (const ecartee of ecarteesDe(orientation)) {
+    if (ecartee.cible.type === 'pack') packs.push(ecartee.cible.packId as PackId);
+    else questionnaires.push(ecartee.cible.questionnaireId);
+  }
+  return { packs, questionnaires };
 }
 
 /**
@@ -218,19 +310,18 @@ const QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE: readonly string[] = [
  * modèle les reçoit dans « Résultats des questionnaires », les citer est son
  * travail — et ceux que la consigne système lui a mis en bouche.
  */
-function questionnairesTransmis(
+function questionnairesCitables(
   orientation: ResultatOrientation | null,
   reponses: ReponseInput[],
 ): string[] {
-  const cibles =
-    orientation?.actif === true
-      ? orientation.recommandations
-          .filter(recommandation => recommandation.cible.type === 'questionnaire')
-          .map(
-            recommandation =>
-              (recommandation.cible as { type: 'questionnaire'; questionnaireId: string }).questionnaireId,
-          )
-      : [];
+  // SERVIES SEULEMENT — les écartées passent par `ciblesEcartees`, hors allowlist
+  // et sous leur propre sens ([[D-181]]).
+  const cibles = (orientation?.actif === true ? orientation.recommandations : [])
+    .filter(recommandation => recommandation.cible.type === 'questionnaire')
+    .map(
+      recommandation =>
+        (recommandation.cible as { type: 'questionnaire'; questionnaireId: string }).questionnaireId,
+    );
   return [
     ...new Set([
       ...cibles,
@@ -250,6 +341,17 @@ function questionnairesTransmis(
  * phrase d'extinction portant sur une autre cible. L'y laisser ferait accuser
  * la prose clinique normale dans les deux sens. L'allowlist de citation
  * (`questionnairesTransmis`), elle, ne change pas.
+ *
+ * LES CIBLES ÉCARTÉES EN SORTENT AUSSI, et pour la même raison — c'est voulu, pas
+ * un oubli de symétrie avec l'allowlist. Cette fonction n'itère que les
+ * recommandations SERVIES : une ligne écartée ([[D-178]]) n'est pas transmise au
+ * modèle, donc aucune présentation n'est attendue d'elle. L'inscrire en
+ * « recommandée » exigerait du modèle qu'il la présente comme vivante alors que le
+ * praticien l'a écartée par écrit ; en « éteinte », qu'il y accole un marqueur
+ * d'extinction qui serait faux — un écartement praticien n'est pas une extinction
+ * clinique. Une citation de cible écartée est signalée ailleurs, sous le sens
+ * `ecartee` (voir `ciblesEcartees`) : présentation non exigée, citation NON
+ * blanchie — deux questions séparées.
  */
 function ciblesParPresentation(
   orientation: ResultatOrientation | null,
@@ -595,8 +697,17 @@ export async function genererSynthesePersistee(
   // pas donné ? On journalise, on ne censure pas — la carte d'orientation et son
   // bouton d'assignation viennent de la route déterministe, jamais d'ici, donc
   // un pack cité à tort dans la prose ne peut rien déclencher.
-  // Le garde ne tourne QUE si un bloc a réellement été injecté : sans bloc, il
-  // n'y a rien à restituer, donc rien à trahir (voir `orientationInjectee`).
+  // Le garde tourne dès que la table a PROPOSÉ quelque chose pour ce dossier,
+  // écarté ou non (`orientationAPropose`) — et non plus seulement quand un bloc
+  // est parti. Sans cette distinction, un dossier dont le praticien a écarté TOUTES
+  // les lignes cessait d'être mesuré : l'écart journalisé depuis [[D-055]]
+  // disparaissait du jour où le geste d'écartement est entré en service ([[D-178]]),
+  // sans que rien ne le dise. L'allowlist compte les cibles écartées avec les
+  // servies, faute de quoi armer le garde produirait la fausse accusation que
+  // `orientationInjectee` documente.
+  //
+  // Table non signée : `actif` vaut faux, les deux prédicats valent faux, et le
+  // garde ne tourne pas — c'est le cas d'origine, inchangé.
   //
   // Les COMPLÉMENTS, eux, se mesurent hors de cette condition : ils ne
   // dépendent d'aucun bloc d'orientation injecté. La liste autorisée est
@@ -604,10 +715,11 @@ export async function genererSynthesePersistee(
   // chaîne, donc aucune intention de complément déterministe n'existe encore
   // au moment où le modèle écrit ([[D-056]], arbitrage 5).
   const complements = { vocabulaire: await chargerVocabulaireIngredients() };
-  const ecartsRestitution = orientationInjectee(args.orientation)
+  const ecartsRestitution = orientationAPropose(args.orientation)
     ? verifierRestitutionOrientation(synthese, {
         packs: packsTransmis(args.orientation),
-        questionnaires: questionnairesTransmis(args.orientation, args.reponsesInput),
+        questionnaires: questionnairesCitables(args.orientation, args.reponsesInput),
+        ecartees: ciblesEcartees(args.orientation),
         // Éteinte ≠ recommandée ([[D-055]]) : le garde mesure aussi la
         // PRÉSENTATION des cibles d'orientation — même régime, journalisé.
         ...ciblesParPresentation(args.orientation, args.reponsesInput),

@@ -5682,3 +5682,36 @@ session. Vérifier à qui appartient la PR qu'il cite avant de lui obéir.
 
 **Prochaine action.** Lire l'en-tête de `app.wellneuro.fr/dashboard` — il est
 derrière l'authentification, seule une lecture humaine le confirme.
+
+## 2026-09-13 — Écarter une proposition d'orientation, et trois défauts de release-db
+
+**Décidé.** `D-178` entre en service : l'écartement porte sur la cible, fige les
+règles qui la motivaient, et se lève dès qu'une règle NOUVELLE motive la même
+cible — c'est ce réveil qui empêche d'éteindre un axe clinique par un geste qui
+n'en visait qu'un autre. La reprise est une espèce, pas une colonne nullable.
+
+**Écarté, et pourquoi.** L'alternance des espèces jugée sur le fil seul : elle
+gelait une ligne réveillée, ni ré-écartable ni reprenable, sur le cas même que
+`D-178` couvre. Elle se juge sur le verdict. L'en-tête de la migration dit encore
+qu'un `ecartement` supplantant un `ecartement` n'a « aucun sens » — prémisse
+fausse ; le fichier n'est pas touché (empreinte Prisma), la correction vit dans la
+route. Écarté aussi : écraser `GITHUB_SHA` pour reporter la tête déployée — deux
+faits distincts méritent deux noms, d'où `WN_SHA_ATTENDU`.
+
+**Appris, deux fois la même leçon sous deux formes.** Un banc peut ne rien tenir :
+retirer le filtre d'appartenance de la route d'écartement laissait ses 26 tests
+verts. Et un banc statique ne voit pas un réordonnancement : déplacer d'une ligne
+le report vers `$GITHUB_ENV` ramenait le défaut d'origine avec 26 invariants verts.
+D'où un banc de COMPORTEMENT qui exécute les étapes du workflow.
+
+**Appris aussi.** Corriger un diagnostic peut le refaire à l'envers : mon message
+remplaçant « ≠ 1 sur l'app » par « le CLI n'a pas répondu » excluait l'hypothèse
+d'un drapeau retiré, que `D-112` dit indiscernable. Une garde doit distinguer les
+deux cas ou dire qu'elle ne le peut pas.
+
+**Prochaine action.** Rejeter les deux propositions `release-db` en attente — elles
+portent le workflow d'avant le correctif — puis relancer en `workflow_dispatch` sur
+`main`. Après le merge, jamais avant : un merge tue un run en attente.
+
+**Question ouverte.** La qualification article 9 des deux tables de gestes
+praticien motivés reste due au responsable de traitement.

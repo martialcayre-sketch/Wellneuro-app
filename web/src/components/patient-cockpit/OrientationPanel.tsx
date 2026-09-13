@@ -453,11 +453,41 @@ export function OrientationPanel({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">{libelleCible(ecartee.cible)}</span>
                 <Badge variant="info">{ecartee.cible.type === 'pack' ? 'pack' : 'questionnaire'}</Badge>
+                {/* DEUX FAITS DE NATURES DIFFÉRENTES, et le repli n'en montrait
+                    qu'un. Une ligne peut être ÉTEINTE par la table d'arrêt ET
+                    écartée par le praticien : écarter ne dé-qualifie pas, et
+                    l'extinction est justement ce qui explique pourquoi
+                    l'exploration avait cessé d'être proposée. Neutre, comme dans
+                    la liste principale — jamais `success` : la peindre en vert
+                    dirait que c'est un résultat normal. */}
+                {ecartee.extinction && <Badge variant="neutral">exploration éteinte</Badge>}
               </div>
               <p className="mt-1 text-2xs text-muted-foreground">
                 {`Écartée le ${jourLisible(ecartee.faitLe)} par ${ecartee.parEmail}`}
               </p>
               <p className="mt-1 text-xs text-foreground">{ecartee.motif}</p>
+              {ecartee.extinction && (
+                // MÊME PROVENANCE QUE DANS LA LISTE PRINCIPALE : conditions et repli
+                // de traçabilité. Une première rédaction n'affichait que le libellé
+                // et le motif — écarter ne dé-qualifie pas, mais cela dé-SOURÇAIT :
+                // l'identifiant de règle d'arrêt et les claims sont ce qui permet,
+                // six mois plus tard, d'expliquer une extinction contestée.
+                <div className="mt-1 rounded-md bg-muted/60 p-2">
+                  <p className="text-2xs font-medium text-foreground">{LIBELLE_EXTINCTION}</p>
+                  <p className="mt-0.5 text-2xs text-muted-foreground">{ecartee.extinction.motif}</p>
+                  <p className="mt-0.5 text-2xs text-muted-foreground">
+                    {ecartee.extinction.conditions.join(' ; ')}
+                  </p>
+                  <details className="mt-0.5 text-2xs text-muted-foreground">
+                    <summary className="cursor-pointer">Traçabilité</summary>
+                    <span>
+                      {ecartee.extinction.stopRuleId}
+                      {ecartee.extinction.claims.length > 0 &&
+                        ` (${ecartee.extinction.claims.map(claim => claim.claimId).join(', ')})`}
+                    </span>
+                  </details>
+                </div>
+              )}
               {formulaire?.cle === cle && formulaire.action === 'reprendre'
                 ? champMotif(cle, 'reprendre')
                 : (

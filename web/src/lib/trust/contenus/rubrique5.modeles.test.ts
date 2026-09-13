@@ -28,8 +28,11 @@ const DOSSIER = path.join(RACINE, 'docs', 'DOSSIER_RGPD.md');
 /**
  * DETTE DATÉE DU 2026-09-09, ET ELLE NE DOIT QUE RÉTRÉCIR.
  *
- * Dix-sept tables filles de `patients` n'étaient pas déclarées en rubrique 5 ;
- * il en reste SEIZE dans cette liste depuis le 2026-09-13 (voir plus bas).
+ * Dix-sept tables filles de `patients` n'étaient pas déclarées en rubrique 5 au
+ * 2026-09-09. ONZE en sont sorties depuis — `FilCardRejection`,
+ * `DecisionPrioritySelection`, et neuf le 2026-09-13 (voir plus bas) : il en reste
+ * SIX. Ce compteur se relit sur la liste elle-même, jamais de mémoire ; trois
+ * artefacts ont annoncé « sept » le 2026-09-13 alors qu'elle en portait six.
  * Elles NE SONT PAS corrigées ici, et ce n'est pas un oubli : classer une table
  * en « catégorie particulière » au sens de l'article 9 est une qualification
  * juridique, pas une écriture de code — elle appartient au responsable de
@@ -49,6 +52,18 @@ const DOSSIER = path.join(RACINE, 'docs', 'DOSSIER_RGPD.md');
  * divergentes. La DÉCLARATION est faite ; la QUALIFICATION au titre de l'article 9
  * reste due au responsable de traitement, comme cette dette le dit. Ce banc exige
  * désormais qu'elle reste déclarée.
+ *
+ * RETIRÉS LE MÊME JOUR, NEUF DE PLUS, et c'était une DETTE PÉRIMÉE : ces noms
+ * étaient déclarés en rubrique 5 — sept sous « Alliance — la parole des deux voix »
+ * ([[D-167]], rattrapage du 2026-09-10), deux sous « Alliance — moteur déterministe
+ * de propositions » — tout en restant dans cette liste. Or un nom listé ici est
+ * DISPENSÉ de la vérification : le banc ne contrôlait donc plus qu'ils le restent,
+ * et une suppression de leur ligne en rubrique 5 n'aurait rien fait rougir. La
+ * dispense achetait un silence qui ne servait plus à rien.
+ *
+ * La dette passe ainsi à SIX. Les six qui restent ne sont réellement pas déclarés —
+ * vérifié nom par nom contre la rubrique —, et leur qualification appartient
+ * toujours au responsable de traitement.
  */
 const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([
   'Assignation',
@@ -57,15 +72,6 @@ const NON_DECLARES_AU_2026_09_09: readonly string[] = Object.freeze([
   'PackProposition',
   'EnvoiBrouillon',
   'RendezVous',
-  'ObjectifNegocie',
-  'EntreeCeQuiCompte',
-  'SyntheseComprehension',
-  'DesaccordComprehension',
-  'RatificationObjectif',
-  'PropositionObjectif',
-  'DispositionProposition',
-  'AmendementObjectif',
-  'ReponseJalonObjectif',
 ]);
 
 /** Les modèles Prisma qui portent une relation vers `Patient` — les tables du dossier. */

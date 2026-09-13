@@ -4,6 +4,129 @@
 
 ## Décisions actives
 
+### D-181 — Le garde de fidélité de synthèse s'arme sur « la table a proposé », pas sur « un bloc est parti »
+
+- Date : 2026-09-13
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-13,
+  sur question posée avec ses trois options
+- Domaine : clinique — garde de restitution de la synthèse IA, trace d'audit
+- Numéro : **D-181, et non D-180**. Le commit `e653dcde` sur `main` annonce
+  « (D-180) » dans son sujet mais ne touche pas ce registre : ce numéro est
+  ANNONCÉ SANS ÊTRE ÉCRIT, et l'entrée reste due par la session qui l'a pris.
+  Reprendre D-180 ici ferait décrire au registre autre chose que ce que
+  l'historique Git affirme — un faux enregistrement, pire que le trou.
+
+**CE QUI CHANGEAIT EN SILENCE.** `ecartsRestitution` était gaté par
+`orientationInjectee`, c'est-à-dire « un bloc d'orientation est-il parti vers le
+modèle ». Depuis que le geste d'écartement existe ([[D-178]]), une ligne écartée
+quitte `recommandations` : un dossier dont le praticien a tout écarté présentait
+donc un tableau vide, et le garde cessait de tourner. L'écart qu'il journalisait
+depuis [[D-055]] — `SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE` — disparaissait le
+jour où le geste est entré en service. Rien pour le patient : ce garde n'a jamais
+censuré la prose du modèle. Mais la TRACE D'AUDIT changeait de comportement sans
+qu'aucune décision ne l'ait voulu, et c'est exactement ce qu'un registre existe
+pour empêcher.
+
+**L'ARBITRAGE SE JOUE EN DEUX TEMPS, ET LE SECOND CORRIGE LE PREMIER.** La réponse
+rendue est « armer sur recommandations + écartées ». Armer le seul gate aurait
+rouvert un défaut que le dépôt documente dans le commentaire d'`orientationInjectee` :
+un garde qui tourne sur une allowlist VIDE accuse la synthèse de citer « hors
+recommandation » ce qu'aucune recommandation ne lui a présenté — une assertion
+fausse écrite dans un dossier patient. D'où une première rédaction qui élargissait
+aussi l'allowlist : les cibles écartées comptaient avec les servies.
+
+**LA REVUE A MONTRÉ QUE CET ÉLARGISSEMENT ÉTEIGNAIT LE SIGNAL LE PLUS PARLANT**, et
+le responsable a tranché de nouveau le même jour. Le modèle ne reçoit PAS une ligne
+écartée — ni bloc, ni consigne, ni réponse au dossier. La voir revenir sous sa plume
+ne dit donc pas qu'il a inventé : elle dit qu'il RE-PROPOSE ce qu'un soignant a
+refusé par écrit, en le motivant. Blanchir ce cas le rendait invisible, sur des
+cibles questionnaire qui sont bien vivantes (les packs, eux, sont dormants depuis
+[[D-030]]).
+
+**CE QUI RÈGLE L'OBJECTION N'EST PAS L'ALLOWLIST, C'EST LE NOM DU FAIT.** Les cibles
+écartées restent HORS allowlist, et leur citation est signalée sous un sens propre,
+`ecartee`, distinct de `pack`/`questionnaire`. Ces deux derniers disent « le modèle a
+cité ce qu'on ne lui a pas donné » — un reproche de fidélité. Le nouveau dit « le
+modèle propose ce qui a été refusé » : un fait à voir, pas une faute. La prose n'est
+pas coupable d'avoir pensé à la même chose que la table.
+
+**DEUX QUESTIONS, DEUX PRÉDICATS.** `orientationInjectee` reste INCHANGÉ et reste
+le champ persisté : il dit « un bloc est-il parti », et la réponse est NON quand
+tout est écarté. `orientationAPropose` dit « la table avait-elle quelque chose à
+dire ». Les confondre était la cause du défaut ; les nommer séparément est le
+correctif.
+
+**SIGNALÉE SANS ÊTRE EXIGIBLE.** Une cible écartée est hors de l'allowlist de
+citation — donc signalée sous `ecartee` si la prose la nomme — ET hors des deux camps
+de présentation (`ciblesParPresentation`, qui n'itère que les lignes servies). Deux
+questions séparées : « peut-on la lire sous sa plume sans rien dire ? » non ; « lui
+impose-t-on une façon de la présenter ? » non plus. L'inscrire en « recommandée »
+exigerait du modèle qu'il la présente comme vivante alors que le praticien l'a
+écartée par écrit ; en « éteinte », qu'il y accole un marqueur d'extinction qui serait
+faux — un écartement praticien n'est pas une extinction clinique.
+
+**DEUX CHAMPS D'AUDIT SONT PERSISTÉS, PAS UN**, et l'avoir cru a produit un défaut
+que la revue a arrêté. `orientationPacksTransmis` passe par la même fonction que
+l'allowlist du garde : l'élargir faisait nommer, dans un dossier patient, un pack
+jamais parti vers le modèle et refusé par écrit. La fonction est scindée — ce qui est
+PARTI se persiste, ce qui est ACCEPTABLE sous la plume du modèle paramètre le garde.
+Deux faits, deux fonctions.
+
+**UN DÉFAUT ATTRAPÉ PAR UNE FIXTURE DU DÉPÔT.** La première rédaction lisait
+`orientation.ecartees.length` sans garde : une charge d'orientation sans ce champ
+faisait JETER la génération. La synthèse est *best-effort* — le bloc d'orientation
+est déjà entouré d'un `try` — et elle ne doit jamais échouer pour une forme
+inattendue. Lecture rendue défensive.
+
+### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être au bout de 365 jours
+
+- Date : 2026-09-13
+- Statut : accepté — deux arbitrages praticien du 2026-09-13, **re-signature de la
+  table attestée par le praticien le même jour**
+- Domaine : clinique — table d'orientation NNPP2, rang des cibles et fraîcheur
+- **ENTRÉE ÉCRITE APRÈS COUP, ET IL FAUT LE DIRE.** Le commit `e653dcde` a livré
+  ces deux arbitrages en annonçant « (D-180) » dans son sujet, mais **sans toucher
+  ce registre** : le numéro était pris sans être écrit. Un numéro ne se libère
+  jamais, et `decisions-numerotation.test.mjs` refuse le trou — cette entrée le
+  comble depuis la seule source que le dépôt porte, le fragment
+  `changelog.d/2026-09-13-orientation-rang-et-fraicheur.md` (101 lignes), qui
+  reste le récit faisant foi. Ce qui suit le résume ; il n'y ajoute rien.
+  `DC-26` est la raison de ne pas laisser le trou : une règle clinique vit au
+  registre, jamais seulement dans le code.
+
+**PREMIER ARBITRAGE — LE RANG SUIT LA SOURCE.** Sur `R-SOM-01`, le Cungi passe en
+priorité 1 et le HAD en 2. Le claim `WN-CL-0323-013` porte les deux seuls
+comparatifs de la source : le Cungi « plus pertinent et sensible » pour le stress
+**dans les troubles du sommeil**, le HAD qui « suffit » pour l'humeur. La règle se
+déclenchant sur une bande de PSQI — le contexte exact où la source privilégie le
+Cungi — elle suivait la source sur l'identité des instruments et la contredisait
+sur leur rang, tout en affirmant « aucune substitution ».
+
+L'inversion ne se voit que sur un dossier où `R-SOM-01` est SEULE à motiver ces
+deux cibles : quatre autres règles posent `Q_NEU_11` en priorité 1, et la fusion
+garde le minimum. L'argument qui plaide pour le rang inverse — le HAD exclut tout
+item somatique, donc moins contaminé chez un mauvais dormeur — n'est adossé à
+AUCUN claim, et le fragment l'écrit comme tel : un rang ne se fonde pas sur un
+raisonnement qui ne vit que dans un commentaire.
+
+**SECOND — UNE FENÊTRE DE FRAÎCHEUR DE 365 JOURS SUR LES VINGT RÈGLES.** Sans
+elle, l'exclusion `dejaRepondu` fermait une cible **sans horizon** : une mesure de
+deux ans la fermait, sans badge ni motif puisque la ligne n'était pas produite. Le
+chiffre est un **arbitrage WellNeuro**, nommé comme tel (`DC-19`/`DC-20`) : aucun
+claim ne fonde une périodicité de re-passation. Il vit sur la RÈGLE et non dans une
+constante globale, pour qu'un affinage instrument par instrument reste local.
+
+**L'HORLOGE EST DANS LE SERVICE, JAMAIS DANS LE MOTEUR.** Un moteur qui lirait
+`Date.now()` cesserait d'être rejouable, et un banc changerait de verdict selon le
+jour. Absence d'horloge = aucune péremption, sens fail-closed.
+
+**CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS**, et le fragment le nomme :
+`BANDES_PSQI` vit dans `questions.ts`, hors des deux périmètres signés, et les
+zones de la table citent des COULEURS. Déplacer une borne de la grille change donc
+le point d'allumage des règles sans faire bouger un seul sha — constaté le même
+jour sur la borne 4/5, avec une conséquence hors de l'orientation (`BIO-SOM-01` a
+cessé de prescrire `PANEL_SOMMEIL_1` à 5 sans avoir été éditée).
+
 ### D-179 — Le statut d'une phase lit le geste qu'elle porte, pas l'acte qui l'a précédée
 
 - Date : 2026-09-13

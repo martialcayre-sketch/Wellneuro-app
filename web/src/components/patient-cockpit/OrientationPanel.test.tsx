@@ -822,6 +822,49 @@ describe('OrientationPanel — écartement praticien', () => {
       .toBe(false);
   });
 
+  it('une ligne ÉTEINTE et écartée garde sa qualification dans le repli', async () => {
+    // PERTE RELEVÉE EN REVUE. Deux faits de natures différentes : l'extinction
+    // vient de la table d'arrêt, l'écartement du praticien. Le repli n'affichait
+    // que le second, si bien qu'écarter une ligne éteinte faisait disparaître de
+    // l'écran la qualification qui explique POURQUOI l'exploration avait cessé
+    // d'être proposée. Écarter ne dé-qualifie pas (`D-055`).
+    stubFetch({
+      ...ACTIF,
+      recommandations: [],
+      ecartees: [{
+        ...CUNGI_ECARTE,
+        extinction: {
+          stopRuleId: 'STOP-STR-01',
+          motif: 'Le stress déclaré est retombé sous le seuil publié.',
+          conditions: ['PSS-10 sous son seuil'],
+          claims: [{ claimId: 'WN-CLM-0042', versionClaim: 'v1.0' }],
+        },
+      }],
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('1 exploration écartée')).toBeTruthy();
+    expect(screen.getByText('exploration éteinte')).toBeTruthy();
+    expect(screen.getByText(/Le stress déclaré est retombé/)).toBeTruthy();
+    // Et le motif d'écartement reste là, distinct de celui de l'extinction.
+    expect(screen.getByText('Le stress est déjà travaillé en consultation.')).toBeTruthy();
+    // LA PROVENANCE AUSSI : écarter ne dé-qualifie pas, et ne doit pas dé-sourcer.
+    // L'identifiant de règle d'arrêt et le claim sont ce qui permet d'expliquer une
+    // extinction contestée des mois plus tard.
+    expect(screen.getByText('PSS-10 sous son seuil')).toBeTruthy();
+    expect(screen.getByText(/STOP-STR-01 \(WN-CLM-0042\)/)).toBeTruthy();
+  });
+
+  it('une écartée SANS extinction ne porte aucun badge d’extinction', async () => {
+    // Contre-épreuve : sans elle, un badge rendu inconditionnellement passerait le
+    // cas ci-dessus et qualifierait d'éteinte toute ligne écartée.
+    stubFetch({ ...ACTIF, recommandations: [], ecartees: [CUNGI_ECARTE] });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('1 exploration écartée')).toBeTruthy();
+    expect(screen.queryByText('exploration éteinte')).toBeNull();
+  });
+
   it('plusieurs écartées : le repli les compte au pluriel', async () => {
     stubFetch({
       ...ACTIF,
