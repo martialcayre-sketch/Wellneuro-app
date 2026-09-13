@@ -632,8 +632,9 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
   });
 
   // Arbitrage du 2026-08-03 : bande d'entrée par instrument. Le PSQI démarre à
-  // `info` (total 5-10), au-dessus du seuil de 4 qu'il publie. Ce banc échoue si
-  // quelqu'un « harmonise » les règles en les faisant toutes partir de warning.
+  // `info` (total 5-10), qui ouvre au cut-off publié sans le dépasser — cf. le
+  // paragraphe « CE QUE CE 5 EST » sur `R-SOM-01`. Ce banc échoue si quelqu'un
+  // « harmonise » les règles en les faisant toutes partir de warning.
   it("R-SOM-01 : un PSQI en bande `info` déclenche déjà", () => {
     const recos = evaluer([
       reponse('Q_SOM_01', { total: 7, interpretation: { label: 'Troubles du sommeil légers', color: 'info' } }),

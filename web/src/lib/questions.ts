@@ -2981,11 +2981,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
     const missing = ITEMS_COTES.length - repondus;
     const recueilIncomplet = missing > 0;
-    // L'échelle de Buysse 1989, sortie de la cascade de ternaires où elle vivait
+    // Les quatre bandes, sorties de la cascade de ternaires où elles vivaient
     // pour prendre la forme `{min, max}` du reste du catalogue. Ce n'est pas un
     // reformatage : `bandePlancher` a besoin des BORNES pour savoir laquelle est
     // la plus basse — la seule qui ne fasse pas un plancher —, et une cascade ne
     // les expose pas. Les quatre bandes et leurs coupures sont inchangées.
+    //
+    // PROVENANCE — corrigé le 2026-09-13 : ce paragraphe disait « l'échelle de
+    // Buysse 1989 ». Il revendiquait une source qui ne porte pas cette grille.
+    // Buysse et al. (Psychiatry Research 28:193-213, 1989) ne publient AUCUNE
+    // stratification de sévérité : le PSQI y est DICHOTOMIQUE — bon dormeur /
+    // mauvais dormeur, une seule frontière, « a global PSQI score greater
+    // than 5 ». Les quatre bandes ci-dessous et leurs libellés sont une
+    // construction WellNeuro. Seule la coupure 4/5 a un répondant dans la
+    // littérature, et décalé d'un point ; 10/11 et 16/17 n'en ont aucun.
     const BANDES_PSQI = [
       {min: 0,  max: 4,  label: 'Pas de trouble du sommeil',    color: 'success'},
       {min: 5,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},

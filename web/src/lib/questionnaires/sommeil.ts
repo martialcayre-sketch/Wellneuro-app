@@ -79,7 +79,9 @@ export const Q_SOM_01 = {
   // `severiteCroissante` : les quatre bandes du PSQI montent avec le total
   // (0-4 « Pas de trouble » → 17-21 « sévères »), et ses sept composantes sont
   // monotones. L'instrument est donc éligible au plancher garanti servi sur
-  // recueil partiel. La grille elle-même reste dans le moteur (Buysse 1989).
+  // recueil partiel. La grille elle-même reste dans le moteur — quatre bandes
+  // WellNeuro, et non une stratification de Buysse 1989, qui n'en publie aucune
+  // (cf. la note PROVENANCE sur `BANDES_PSQI`, `questions.ts`).
   scoring:{type:'psqi', severiteCroissante:true, certification:{source:'drive',status:'certifie'}}
 };
 // MFI-20 (Q_SOM_07). RECONSTRUIT le 2026-07-31 depuis sa source
