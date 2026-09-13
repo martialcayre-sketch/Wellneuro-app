@@ -127,12 +127,18 @@ jobs:
           # Le dernier run RÉUSSI de ce workflow sur `main`. Le run courant est
           # `in_progress` : le filtre `status=success` l'écarte de lui-même.
           #
-          # UN RUN REJETÉ PAR UN RELECTEUR NE PEUT PAS SERVIR DE BORNE, et c'est
-          # CONSTATÉ, pas supposé : le rejet du 2026-09-13 (run 34758433177) a
-          # conclu `cancelled`. Le filtre l'écarte donc. C'était le risque à écarter
-          # — un rejet qui conclurait `success` ferait sauter la borne en avant, et
-          # le résumé sous-listerait SANS LE DIRE, seul sens dangereux puisqu'il
-          # fait approuver.
+          # UN RUN QUI N'A PAS ABOUTI NE PEUT PAS SERVIR DE BORNE, et les DEUX
+          # façons d'échouer sont désormais mesurées — la rédaction précédente les
+          # confondait, en attribuant à un rejet une conclusion qui venait d'autre
+          # chose :
+          #   • REJET par un relecteur → `failure`. Constaté le 2026-09-13 sur le
+          #     run 34756482049, rejeté avec motif écrit.
+          #   • tête de `main` qui bouge pendant l'attente d'approbation →
+          #     `cancelled`. Constaté le même jour sur 34758433177 et 34759307017.
+          # Le filtre `status=success` écarte les deux, et c'était le risque à
+          # écarter : un échec qui compterait pour un succès ferait sauter la borne
+          # en avant, et le résumé sous-listerait SANS LE DIRE — seul sens dangereux,
+          # puisqu'il fait approuver.
           BORNE=""
           BORNE_DATE=""
           if RUNS=$(gh api \
