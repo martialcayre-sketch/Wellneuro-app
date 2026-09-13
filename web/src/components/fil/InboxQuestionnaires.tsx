@@ -10,6 +10,7 @@ import { MOTIF_MAX, MOTIF_MIN } from '@/lib/scoring/invalidation';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import type { ReponseQuestionnaireLisible } from '@/lib/questionnaire-reponses';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 type DetailState = {
   idPatient: string;
@@ -186,19 +187,28 @@ export function InboxQuestionnaires() {
   const reponsesDetail = detail?.payload?.reponses ?? [];
   const validiteActive = detail?.payload?.validiteActive === true;
 
+  // VIDE EXIGE AUSSI QUE L'ANCRE N'AIT RIEN ÉCARTÉ. Replier sur le seul
+  // `lignes.length === 0` aurait caché le dépliant « N réponses reçues avant la
+  // dernière consultation » — le cas le plus fréquent en production, et le seul
+  // endroit de l'accueil qui nomme ce que l'ancre tait.
+  const vide =
+    !loading && data !== null && !data.unavailable
+    && data.lignes.length === 0 && (data.ecartees?.length ?? 0) === 0;
+
   return (
-    <section
-      data-testid="inbox-questionnaires"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">Inbox questionnaires</h3>
-        {data && !data.unavailable && data.lignes.length > 0 && (
+    <PanneauRail
+      testId="inbox-questionnaires"
+      titre="Inbox questionnaires"
+      complement={
+        data && !data.unavailable && data.lignes.length > 0 ? (
           <span className="font-mono text-13 text-muted-foreground">
             {data.lignes.reduce((somme, l) => somme + l.nb, 0)}
           </span>
-        )}
-      </div>
+        ) : null
+      }
+      vide={vide}
+      resumeVide="Aucune réponse en attente"
+    >
       <p className="mt-0.5 text-xs text-muted-foreground">En attente de consultation</p>
 
       {loading ? (
@@ -468,6 +478,6 @@ export function InboxQuestionnaires() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-    </section>
+    </PanneauRail>
   );
 }

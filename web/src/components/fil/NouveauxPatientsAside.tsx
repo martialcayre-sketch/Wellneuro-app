@@ -7,6 +7,7 @@ import { estEnAttente, type EtapeNouveauPatient } from '@/lib/fil/nouveauxPatien
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import { Badge } from '@/components/ui/Badge';
 import type { BadgeVariant } from '@/components/ui/Badge';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 /** Plafond d'affichage de l'encart — le reste vit dans la liste des patients.
  * Le tri de `lignesNouveauxPatients` garantit que ce qui tombe sous le
@@ -65,21 +66,24 @@ export function NouveauxPatientsAside() {
   // d'hydratation à craindre sur une horloge lue au rendu.
   const maintenant = new Date();
 
+  // Une lecture en échec n'est pas « aucun dossier » : elle reste dépliée.
+  const vide = !chargement && data !== null && !data.unavailable && lignes.length === 0;
+
   return (
-    <section
-      data-testid="nouveaux-patients-aside"
-      aria-label="Nouveaux patients"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">Nouveaux patients</h3>
-        {!chargement && !data?.unavailable && nbEnAttente > 0 && (
+    <PanneauRail
+      testId="nouveaux-patients-aside"
+      ariaLabel="Nouveaux patients"
+      titre="Nouveaux patients"
+      complement={
+        !chargement && !data?.unavailable && nbEnAttente > 0 ? (
           <Badge variant="warning">
             {nbEnAttente} en attente
           </Badge>
-        )}
-      </div>
-
+        ) : null
+      }
+      vide={vide}
+      resumeVide={data ? `Aucun depuis ${data.fenetreJours} j` : 'Aucun dossier'}
+    >
       {chargement ? (
         <div className="mt-3 flex flex-col gap-2">
           <div className="h-7 animate-pulse rounded-lg bg-muted" />
@@ -131,6 +135,6 @@ export function NouveauxPatientsAside() {
           Renvoyer un accès depuis la fiche
         </Link>
       </p>
-    </section>
+    </PanneauRail>
   );
 }

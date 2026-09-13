@@ -9,6 +9,7 @@ import type {
 import type { EnvoyerFileResponse } from '@/app/api/praticien/file-envoi/envoyer/route';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 /** Panneau « File d'envoi » de l'aside (demande propriétaire 2026-08-09) :
  * la file de la Bibliothèque devient visible ET validable depuis l'accueil —
@@ -82,17 +83,18 @@ export function FileEnvoiAside() {
     [chargerFile],
   );
 
-  return (
-    <section
-      data-testid="file-envoi-aside"
-      aria-label="File d’envoi des questionnaires"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">File d&apos;envoi</h3>
-        <Badge variant="info">1 mail par patient</Badge>
-      </div>
+  // Une file illisible n'est pas une file vide : `indisponible` reste déplié.
+  const vide = etat === 'chargee' && brouillons.length === 0;
 
+  return (
+    <PanneauRail
+      testId="file-envoi-aside"
+      ariaLabel="File d’envoi des questionnaires"
+      titre={<>File d&apos;envoi</>}
+      complement={<Badge variant="info">1 mail par patient</Badge>}
+      vide={vide}
+      resumeVide="File vide"
+    >
       {etat === 'chargement' ? (
         <div className="mt-3 flex flex-col gap-2">
           <div className="h-7 animate-pulse rounded-lg bg-muted" />
@@ -165,6 +167,6 @@ export function FileEnvoiAside() {
           Gérer la file dans la Bibliothèque
         </Link>
       </p>
-    </section>
+    </PanneauRail>
   );
 }
