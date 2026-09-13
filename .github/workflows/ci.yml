@@ -937,6 +937,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/portail_lectures_patient_v1_negatif.sql
 
+      # Écartement praticien d'une proposition d'orientation. LA PROMESSE QUI
+      # COMPTE LE PLUS EST LA MOINS VISIBLE : un écartement SANS RÈGLES est
+      # refusé. `regles_au_geste` est ce qui permet le RÉVEIL d'une proposition
+      # sur un motif neuf ; sans elle, l'écartement par cible ferait taire un axe
+      # qui n'a rien demandé — l'objection exacte de `D-053` arbitrage 3 — et
+      # rien ne le signalerait. Deux cas vont aussi PAR PAIRE : la seconde racine
+      # est refusée MAIS la reprise qui chaîne est acceptée, ce qui est la seule
+      # façon de prouver que l'index de racine est bien PARTIEL. Plus le motif
+      # vide ET blanc, l'espèce fermée, la forme préfixée de la cible, la
+      # fourche, la FK RESTRICT et la RLS deny-all. Transaction annulée.
+      - name: Orientation ecartement negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/orientation_ecartement_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

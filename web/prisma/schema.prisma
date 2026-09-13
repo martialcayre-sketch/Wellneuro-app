@@ -54,6 +54,7 @@ model Patient {
 
   assessmentEpisodes         AssessmentEpisode[]
   decisionPrioritySelections DecisionPrioritySelection[]
+  ecartementsPropositions    EcartementProposition[]
   protocolDrafts             ProtocolDraft[]
   protocolCheckins           ProtocolCheckin[]
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
@@ -1146,6 +1147,91 @@ model DecisionPrioritySelection {
   @@unique([supersedesSelectionId], map: "c1_selection_priorite_supersedes_unique")
   @@index([idPatient, decisionCardId, selectedAt], map: "c1_selection_priorite_carte_idx")
   @@map("decision_priority_selections")
+}
+
+// ÉCARTEMENT PRATICIEN D'UNE PROPOSITION D'ORIENTATION — le geste qui manquait.
+//
+// Les recommandations sont RECALCULÉES à chaque lecture, depuis la table signée :
+// aucune ligne ne portait l'état d'une proposition, et « je ne veux plus voir
+// celle-ci » n'était donc pas exprimable. La seule sortie existante était
+// d'assigner l'instrument, ou de le laisser dans la liste indéfiniment.
+//
+// UN ÉCARTEMENT NON TRACÉ ÉTAIT LE SEUL À REFUSER. Faire disparaître une
+// proposition motivée par un claim, sans auteur, sans date et sans motif écrit,
+// c'est exactement la suppression silencieuse d'une discordance que [[DC-30]]
+// interdit. D'où la forme : même patron que `DecisionPrioritySelection`
+// ([[D-127]]) — motif obligatoire, auteur et horodatage posés CÔTÉ SERVEUR,
+// chaînage append-only, index partiel de racine dans la migration seule.
+//
+// APPEND-ONLY, ET LA REPRISE EST UNE ESPÈCE, PAS UNE COLONNE NULLABLE. Reprendre
+// une proposition écartée n'est pas l'effacement de l'écartement : c'est un
+// second geste, qui a son propre auteur, sa propre date et son propre motif. Une
+// paire `repris_le`/`repris_par` aurait écrit en place et perdu le premier motif.
+// L'état courant est donc la TÊTE de chaîne : `espece = 'ecartement'` → la cible
+// est écartée ; `espece = 'reprise'` → elle est revenue. Une cible peut être
+// écartée, reprise, puis écartée de nouveau — trois lignes, un seul fil.
+//
+// L'ÉCARTEMENT PORTE SUR LA CIBLE, ET SE RÉVEILLE SUR UN MOTIF NEUF
+// (arbitrage du 2026-09-13). C'est le rôle de `regles_au_geste`, et c'est la
+// colonne qui fait tenir [[DC-30]] : le praticien écarte une LIGNE — le geste
+// qu'il fait réellement —, mais la ligne revient si une règle ABSENTE au moment
+// du geste vient plus tard la motiver. Le Cungi proposé depuis l'axe stress, puis
+// proposé depuis l'axe sommeil, reparaît avec son nouveau motif. Sans cette
+// colonne, l'écartement par cible ferait taire un axe qui n'a rien demandé —
+// l'objection exacte qui fait renoncer à éteindre par cible dans
+// `stopRulesV1.ts` ([[D-053]] arbitrage 3).
+//
+// Table fille de `patients` : entre dans la transaction d'effacement IDP2 DÈS
+// CETTE PR — le banc de complétude dérive du schéma. La LECTURE, elle, arrive
+// dans une PR suivante, après application CONSTATÉE de la migration : le
+// déploiement du code précède la migration ([[D-087]]), et interroger ici une
+// table encore absente ferait échouer le panneau d'orientation entier.
+model EcartementProposition {
+  id        String @id @default(cuid())
+  idPatient String @map("id_patient")
+  // `questionnaire:<qid>` ou `pack:<id de pack>` — les deux espaces de noms que
+  // `RecommandationExploration.cible` distingue déjà. Préfixé plutôt que scindé
+  // en deux colonnes nullables : un couple (type, id) autoriserait une ligne
+  // sans type. CHECK de forme dans la migration.
+  cibleId   String @map("cible_id")
+  // `ecartement` | `reprise`. Espèce FERMÉE par CHECK : ce qui compte comme un
+  // geste sur une proposition est un arbitrage, pas un champ libre.
+  espece    String @map("espece")
+  // Les RÈGLES qui motivaient la ligne à l'instant du geste — jamais les cibles.
+  // Non vide sur un `ecartement` (le moteur garantit au moins un motif), vide sur
+  // une `reprise`, où elle n'aurait aucun sens. Les deux tenus par CHECK.
+  reglesAuGeste String[] @default([]) @map("regles_au_geste")
+  // Le motif écrit du praticien : la décision elle-même, pas une note
+  // facultative — c'est ce qui se relit six semaines plus tard, et ce qui rend
+  // l'écartement défendable. CHECK : non vide, ≤ 2000 — même borne que
+  // `rationale` sur `decision_priority_selections` et `note_courte` sur
+  // `arbitrages_biologiques`, parce que c'est la même nature d'objet.
+  motif     String @map("motif")
+  // E-mail de session, posé CÔTÉ SERVEUR (patron `arbitre_par`) : l'écran ne
+  // transmet ni auteur ni horodatage. Un auteur venu du client serait un auteur
+  // que le client choisit.
+  parEmail  String   @map("par_email")
+  faitLe    DateTime @default(now()) @map("fait_le")
+  // Référence SOUPLE, sans clé étrangère : patron des autres chaînes
+  // `supersedes_*` du dépôt. La ligne visée est validée côté route.
+  supersedesEcartementId String? @map("supersedes_ecartement_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  // Le fil d'une cible est STRICTEMENT LINÉAIRE : deux gestes concurrents sur la
+  // même proposition seraient deux praticiens croyant chacun avoir tranché, et la
+  // base refuse plutôt que d'élire — même resserrement que [[D-127]] §3bis.
+  //
+  // LA GARDE DE RACINE VIT DANS LA MIGRATION SEULE : Prisma ne sait pas exprimer
+  // un index partiel. `orientation_ecartement_racine_unique` est UNIQUE sur
+  // (patient, cible) `WHERE supersedes_ecartement_id IS NULL`. Ne PAS redéclarer
+  // ici un `@@unique([idPatient, cibleId])` : il recréerait l'index TOTAL et
+  // interdirait toute reprise. Ce commentaire n'est pas une garde — c'est le
+  // contrat négatif qui tient la régression.
+  @@unique([supersedesEcartementId], map: "orientation_ecartement_supersedes_unique")
+  @@index([idPatient, cibleId, faitLe], map: "orientation_ecartement_cible_idx")
+  @@map("orientation_ecartements")
 }
 
 // Version append-only du protocole 21 jours. PK = protocolDraftId du contrat.
