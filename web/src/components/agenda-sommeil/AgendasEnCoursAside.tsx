@@ -6,6 +6,7 @@ import type { SuiviAgendasApiResponse } from '@/app/api/praticien/agenda-sommeil
 import type { LigneSuiviAgenda } from '@/lib/agenda-sommeil/suivi';
 import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { JOURS_ENTRE_RELANCES } from '@/lib/agenda-sommeil/relanceEmail';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 /** Panneau « Agendas du sommeil en cours » de l'aside du Fil. Faits datés
  * seulement — nuits notées, dernière nuit reçue — jamais un score de
@@ -106,16 +107,16 @@ export function AgendasEnCoursAside() {
     }
   }
 
+  // Un suivi indisponible n'est pas « aucun agenda » : il reste déplié.
+  const vide = !loading && data !== null && !data.unavailable && data.lignes.length === 0;
+
   return (
-    <section
-      data-testid="agendas-en-cours-aside"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
+    <PanneauRail
+      testId="agendas-en-cours-aside"
+      titre="Agendas du sommeil en cours"
+      vide={vide}
+      resumeVide="Aucun en cours"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">
-          Agendas du sommeil en cours
-        </h3>
-      </div>
       <p className="mt-1 text-xs text-muted-foreground">
         Recueil de {NB_JOURS_AGENDA} nuits — nuits notées et dernière nuit reçue.
       </p>
@@ -170,6 +171,6 @@ export function AgendasEnCoursAside() {
           })}
         </ul>
       )}
-    </section>
+    </PanneauRail>
   );
 }

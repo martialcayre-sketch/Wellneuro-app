@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { CorrespondanceRecentesApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 const LIBELLE_SENS = { sortant: 'Envoi consigné', entrant: 'Réponse transcrite' } as const;
 
@@ -24,14 +25,15 @@ export function CorrespondanceRecente() {
   }, []);
 
   const maintenant = new Date();
+  const vide = !loading && data !== null && !data.unavailable && data.lignes.length === 0;
 
   return (
-    <section
-      data-testid="correspondance-recente"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
+    <PanneauRail
+      testId="correspondance-recente"
+      titre="Correspondance récente"
+      vide={vide}
+      resumeVide="Aucun échange consigné"
     >
-      <h3 className="font-display text-lg font-semibold text-foreground">Correspondance récente</h3>
-
       {loading ? (
         <div className="mt-3 flex flex-col gap-2">
           <div className="h-10 animate-pulse rounded-lg bg-muted" />
@@ -68,6 +70,6 @@ export function CorrespondanceRecente() {
           ))}
         </div>
       )}
-    </section>
+    </PanneauRail>
   );
 }

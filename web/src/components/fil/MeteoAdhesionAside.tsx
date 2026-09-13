@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
+import { PanneauRail } from '@/components/fil/PanneauRail';
 
 const MAX_LIGNES = 8;
 
@@ -22,16 +23,20 @@ export function MeteoAdhesionAside() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <section
-      data-testid="meteo-adhesion-aside"
-      className="rounded-lg border border-border bg-surface p-5 shadow-card"
-    >
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold text-foreground">Météo d&apos;adhésion</h3>
-        <span className="text-xs text-muted-foreground">Jamais montrée aux patients</span>
-      </div>
+  // Vide = chargée, disponible, et sans aucun point d'étape — jamais une
+  // lecture en échec, qui reste dépliée (voir `PanneauRail`).
+  const vide =
+    !loading && data !== null && !data.unavailable
+    && data.determinees.length === 0 && data.nbIndeterminees === 0;
 
+  return (
+    <PanneauRail
+      testId="meteo-adhesion-aside"
+      titre={<>Météo d&apos;adhésion</>}
+      complement={<span className="text-xs text-muted-foreground">Jamais montrée aux patients</span>}
+      vide={vide}
+      resumeVide="Aucun point d'étape"
+    >
       {loading ? (
         <div className="mt-3 flex flex-col gap-2">
           <div className="h-7 animate-pulse rounded-lg bg-muted" />
@@ -80,6 +85,6 @@ export function MeteoAdhesionAside() {
         Signal typé à cause observable citée — jamais un score de risque chiffré, jamais une
         prédiction.
       </p>
-    </section>
+    </PanneauRail>
   );
 }
