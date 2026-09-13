@@ -31,6 +31,10 @@
  * porte sur ce qui décide — et la contrepartie de ce que [[D-180]] a montré.
  */
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import {
+  Q_ALI_01_COURT_14,
+  Q_ALI_01_SIIN_57,
+} from '@/lib/questionnaires/alimentaire';
 import { BANDES_PSQI, type BandeInterpretation } from './bandesPsqi';
 
 export type { BandeInterpretation };
@@ -130,10 +134,21 @@ function grillesDeLInstrument(id: string): unknown {
   const horsCatalogue = GRILLES_HORS_CATALOGUE[id];
   if (horsCatalogue) return horsCatalogue;
 
-  const def = (QUESTIONNAIRE_CATALOGUE as Record<string, DefinitionLue>)[id];
-  const scoring = def?.scoring;
-  if (!scoring) return undefined;
+  if (id === 'Q_ALI_01') {
+    const formes: Record<string, unknown> = {};
+    const court14 = grillesDeScoring((Q_ALI_01_COURT_14 as DefinitionLue).scoring);
+    const siin57 = grillesDeScoring((Q_ALI_01_SIIN_57 as DefinitionLue).scoring);
+    if (court14) formes.COURT_14 = court14;
+    if (siin57) formes.SIIN_57 = siin57;
+    return Object.keys(formes).length > 0 ? formes : undefined;
+  }
 
+  const def = (QUESTIONNAIRE_CATALOGUE as Record<string, DefinitionLue>)[id];
+  return grillesDeScoring(def?.scoring);
+}
+
+function grillesDeScoring(scoring: DefinitionLue['scoring']): unknown {
+  if (!scoring) return undefined;
   const bandes: Record<string, unknown> = {};
   if (grilleNonVide(scoring.interpretation)) bandes.interpretation = scoring.interpretation;
   if (grilleNonVide(scoring.globalInterpretation)) {

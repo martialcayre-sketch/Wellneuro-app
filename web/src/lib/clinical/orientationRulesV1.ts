@@ -1665,11 +1665,10 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`. Aucun claim
   // ajouté ni retiré : seuls un rang et un délai ont changé.
   //
-  // CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS, et qu'il faut savoir en la
-  // lisant : `BANDES_PSQI` vit dans `questions.ts`, hors périmètre. Les zones de
-  // cette table citent des COULEURS, jamais des nombres ; déplacer une borne de
-  // la grille change donc le point d'allumage des règles sans faire bouger ce
-  // sha. C'est exactement ce qui s'est produit le 2026-09-13 sur la borne 4/5.
+  // Le périmètre signé inclut aussi les DEUX formes de `Q_ALI_01` sous une forme
+  // canonique (`COURT_14` + `SIIN_57`), indépendamment de `WN_ALI_01_SIIN57` :
+  // une signature posée dans un environnement doit rester vérifiable dans
+  // l'autre.
   dateValidation: '2026-09-13T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
@@ -1678,7 +1677,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //
   // Ancien sha signé (2026-08-06) :
   // `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`.
-  shaPerimetre: 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e',
+  shaPerimetre: '7d5730e87eaeb69c6c8fa07f1ddbe0983cde7ebb77ba23968a85420329404253',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

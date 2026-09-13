@@ -110,6 +110,14 @@ describe('grilles signées — le périmètre couvre ce qui décide', () => {
     ]);
   });
 
+  it('le périmètre signé de Q_ALI_01 contient les formes COURT_14 et SIIN_57', () => {
+    const orientation = grillesCitees(ORIENTATION_RULES_V1);
+    expect(Object.keys(orientation.Q_ALI_01 as Record<string, unknown>).sort()).toEqual([
+      'COURT_14',
+      'SIIN_57',
+    ]);
+  });
+
   it('la table des indications lit exactement seize instruments, nommés', () => {
     const instruments = instrumentsCitesParUneZone(INDICATIONS_BIOLOGIE_V1 as never);
     expect(instruments).toEqual(INSTRUMENTS_LUS_PAR_LES_INDICATIONS);

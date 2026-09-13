@@ -156,7 +156,7 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-08-04 — `528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603`
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
-  const SHA_SIGNE_2026_09_13 = 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e';
+  const SHA_SIGNE_2026_09_13 = '7d5730e87eaeb69c6c8fa07f1ddbe0983cde7ebb77ba23968a85420329404253';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
@@ -168,6 +168,19 @@ describe('orientationRulesV1 — verrou v1', () => {
     expect(ORIENTATION_RULES_SHA256).toBe(
       sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION })),
     );
+  });
+
+  it('le sha reste identique avec `WN_ALI_01_SIIN57` éteint ou allumé', async () => {
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'false');
+    const court14 = await import('./orientationRulesV1');
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'true');
+    const siin57 = await import('./orientationRulesV1');
+    expect(court14.ORIENTATION_RULES_SHA256).toBe(siin57.ORIENTATION_RULES_SHA256);
+    expect(court14.ORIENTATION_METADATA.shaPerimetre).toBe(siin57.ORIENTATION_METADATA.shaPerimetre);
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   // CE QUE LE BANC PRÉCÉDENT NE PEUT PAS DIRE : que les grilles pèsent vraiment.
