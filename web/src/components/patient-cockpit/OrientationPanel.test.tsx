@@ -34,11 +34,29 @@ function stubFetch(
   payloadAjout?: unknown,
   fileParAppel: Array<unknown | ReponseFile> = [{ brouillons: [] }],
   payloadEnvoi?: unknown,
+  // Cinquième argument en OBJET, et non deux positionnels de plus : les quatre
+  // premiers sont déjà à la limite du lisible. `orientationParAppel` sert
+  // l'écartement ([[D-178]]), où c'est la RELECTURE qui déplace la ligne — un
+  // écran qui rendrait deux fois la même charge ne prouverait rien du geste.
+  options: { ecartement?: unknown; ecartementOk?: boolean; orientationParAppel?: unknown[] } = {},
 ) {
   const appels: { url: string; init?: RequestInit }[] = [];
   let lecturesFile = 0;
+  let lecturesOrientation = 0;
   const mock = vi.fn((url: string, init?: RequestInit) => {
     appels.push({ url, init });
+    // AVANT la route d'orientation : son chemin en est un préfixe, et l'ordre
+    // inverse ferait répondre la charge de lecture à un POST d'écartement.
+    if (url.startsWith('/api/praticien/orientation/ecartement')) {
+      return Promise.resolve(json(
+        options.ecartement ?? { ok: true, ecartementId: 'ec_1' },
+        options.ecartementOk ?? true,
+      ));
+    }
+    if (url.startsWith('/api/praticien/orientation') && options.orientationParAppel) {
+      const index = Math.min(lecturesOrientation++, options.orientationParAppel.length - 1);
+      return Promise.resolve(json(options.orientationParAppel[index]));
+    }
     if (url.startsWith('/api/praticien/file-envoi/envoyer')) {
       return Promise.resolve(json(payloadEnvoi ?? { success: true, count: 1 }));
     }
@@ -112,6 +130,18 @@ const ACTIF = {
   version: 'orientation-nnpp2-v1',
   sha256: 'abc123',
   recommandations: [RECOMMANDATION_PSQI, RECOMMANDATION_CUNGI],
+  // VIDE, jamais absent — c'est le contrat de la route ([[D-178]]).
+  ecartees: [],
+};
+
+/** Une proposition écartée, telle que la route la sert. */
+const CUNGI_ECARTE = {
+  cible: { type: 'questionnaire' as const, questionnaireId: 'Q_STR_03' },
+  ecartementId: 'ec_cungi',
+  motif: 'Le stress est déjà travaillé en consultation.',
+  parEmail: 'praticien@wellneuro.fr',
+  faitLe: '2026-09-13T10:00:00.000Z',
+  reglesAuGeste: ['R-STR-02'],
 };
 
 const BOUTON_AJOUT = { name: /ajouter à la file d’envoi/i };
@@ -558,5 +588,294 @@ describe('OrientationPanel', () => {
     ).toBeTruthy();
     // L'échec n'a pas consommé le brouillon : le geste reste possible.
     expect(await screen.findByRole('button', { name: /envoyer \(1\)/i })).toBeTruthy();
+  });
+});
+
+// ── ÉCARTEMENT PRATICIEN — [[D-178]] ───────────────────────────────────────────
+//
+// Le geste écarte une proposition d'orientation avec un motif écrit obligatoire.
+// Ce que ce banc doit tenir, au-delà du rendu : le corps envoyé ne porte NI
+// règle NI `supersedes` — la route les calcule, et c'est ce qui rend le réveil
+// fiable (`DC-30`). Un écran qui les fournirait pourrait figer une liste
+// couvrant tous les axes et empêcher une proposition de revenir.
+
+const BOUTON_ECARTER = { name: /écarter cette exploration/i };
+
+function ecrireMotif(texte: string) {
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: texte } });
+}
+
+function corpsDesGestes(appels: { url: string; init?: RequestInit }[]): Record<string, unknown>[] {
+  return appels
+    .filter(appel => appel.url.startsWith('/api/praticien/orientation/ecartement'))
+    .map(appel => JSON.parse(String(appel.init?.body)) as Record<string, unknown>);
+}
+
+describe('OrientationPanel — écartement praticien', () => {
+  it('chaque ligne visible porte le geste, et le formulaire exige un motif écrit', async () => {
+    stubFetch(ACTIF);
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    // Sur les DEUX lignes, y compris celle sans bouton d'ajout : le geste porte
+    // sur la proposition, pas sur l'envoi.
+    expect(await screen.findAllByRole('button', BOUTON_ECARTER)).toHaveLength(2);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[0]);
+    const confirmer = screen.getByRole('button', { name: /confirmer l’écartement/i });
+    // Vide, puis espaces, puis TABULATIONS : la même sévérité que la route et
+    // que le CHECK de la base — `btrim/1` ne retire que l'espace ASCII.
+    expect(confirmer.hasAttribute('disabled')).toBe(true);
+    ecrireMotif('   ');
+    expect(confirmer.hasAttribute('disabled')).toBe(true);
+    ecrireMotif('\t\n ');
+    expect(confirmer.hasAttribute('disabled')).toBe(true);
+    ecrireMotif('Déjà exploré en consultation.');
+    expect(confirmer.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('le corps envoyé ne porte NI règle NI `supersedes`, et la cible est la forme LONGUE', async () => {
+    // LE BANC CENTRAL DE CETTE SECTION. `q:Q_STR_03` est la clé interne du
+    // moteur ; la base exige `questionnaire:`. Et les règles viennent du
+    // serveur : les envoyer d'ici serait laisser le client décider de ce qui
+    // pourra réveiller la proposition.
+    const { appels } = stubFetch(ACTIF);
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[1]);
+    ecrireMotif('Le stress est déjà travaillé.');
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’écartement/i }));
+
+    await screen.findByText(/proposition écartée/i);
+    const corps = corpsDesGestes(appels);
+    expect(corps).toHaveLength(1);
+    expect(corps[0]).toEqual({
+      idPatient: 'PAT_SEED_03',
+      cibleId: 'questionnaire:Q_STR_03',
+      action: 'ecarter',
+      motif: 'Le stress est déjà travaillé.',
+    });
+  });
+
+  it('après le geste, c’est la RELECTURE qui déplace la ligne dans le repli', async () => {
+    // Rien n'est déduit localement : le serveur seul sait si la proposition est
+    // encore motivée, et une ligne peut revenir accompagnée d'un réveil.
+    const { appels } = stubFetch(ACTIF, undefined, undefined, undefined, {
+      orientationParAppel: [
+        ACTIF,
+        { ...ACTIF, recommandations: [RECOMMANDATION_PSQI], ecartees: [CUNGI_ECARTE] },
+      ],
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[1]);
+    ecrireMotif('Le stress est déjà travaillé.');
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’écartement/i }));
+
+    expect(await screen.findByText('1 exploration écartée')).toBeTruthy();
+    // Motif, auteur et date voyagent avec la ligne : rien n'est effacé.
+    expect(screen.getByText('Le stress est déjà travaillé en consultation.')).toBeTruthy();
+    expect(screen.getByText(/Écartée le 13\/09\/2026 par praticien@wellneuro\.fr/)).toBeTruthy();
+    // Et la ligne a quitté la liste à traiter.
+    expect(screen.queryAllByRole('button', BOUTON_ECARTER)).toHaveLength(1);
+    expect(appels.filter(a => a.url.startsWith('/api/praticien/orientation?')).length).toBe(2);
+  });
+
+  it('un refus du serveur s’affiche AVEC son texte, et le motif saisi reste', async () => {
+    // « Déjà écartée », « plus proposée », fil illisible : ces refus sont des
+    // faits que le praticien peut avoir à considérer avant de réécrire. Effacer
+    // sa saisie le ferait recommencer.
+    stubFetch(ACTIF, undefined, undefined, undefined, {
+      ecartement: { ok: false, reason: 'not_proposed', error: "Cette exploration n'est plus proposée : il n'y a rien à écarter. Rechargez la fiche." },
+      ecartementOk: false,
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[0]);
+    ecrireMotif('Motif que je ne veux pas réécrire.');
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’écartement/i }));
+
+    expect(await screen.findByText(/n'est plus proposée/)).toBeTruthy();
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value)
+      .toBe('Motif que je ne veux pas réécrire.');
+  });
+
+  it('« Annuler » referme le formulaire sans rien envoyer', async () => {
+    const { appels } = stubFetch(ACTIF);
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[0]);
+    ecrireMotif('Finalement non.');
+    fireEvent.click(screen.getByRole('button', { name: /^annuler$/i }));
+
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(corpsDesGestes(appels)).toHaveLength(0);
+  });
+
+  it('la reprise part du repli, avec son propre motif obligatoire', async () => {
+    const { appels } = stubFetch(
+      { ...ACTIF, recommandations: [RECOMMANDATION_PSQI], ecartees: [CUNGI_ECARTE] },
+      undefined,
+      undefined,
+      undefined,
+      {},
+    );
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /reprendre cette exploration/i }));
+    const confirmer = screen.getByRole('button', { name: /confirmer la reprise/i });
+    // Rouvrir une exploration qu'on avait refusée se justifie autant que
+    // l'avoir refusée.
+    expect(confirmer.hasAttribute('disabled')).toBe(true);
+    ecrireMotif('Le sommeil s’est dégradé depuis.');
+    fireEvent.click(confirmer);
+
+    await screen.findByText(/proposition reprise/i);
+    expect(corpsDesGestes(appels)[0]).toEqual({
+      idPatient: 'PAT_SEED_03',
+      cibleId: 'questionnaire:Q_STR_03',
+      action: 'reprendre',
+      motif: 'Le sommeil s’est dégradé depuis.',
+    });
+  });
+
+  it('un RÉVEIL est signalé, daté, motivé, et sa règle neuve reste en traçabilité', async () => {
+    // LE CAS QUI FAIT TENIR `DC-30`. Une ligne écartée revient quand un AUTRE
+    // axe la motive ; sans ce signal, sa réapparition se lirait comme un défaut
+    // de l'écran alors que c'est le comportement voulu.
+    stubFetch({
+      ...ACTIF,
+      recommandations: [{
+        ...RECOMMANDATION_CUNGI,
+        reveil: {
+          reglesNouvelles: ['R-SOM-01'],
+          ecarteLe: '2026-09-13T10:00:00.000Z',
+          motif: 'Le stress est déjà travaillé en consultation.',
+        },
+      }],
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/revient : une nouvelle indication la motive/i)).toBeTruthy();
+    expect(screen.getByText(/Écartée le 13\/09\/2026 : Le stress est déjà travaillé/)).toBeTruthy();
+    expect(screen.getByText('revenue')).toBeTruthy();
+    // L'identifiant de règle n'est pas du langage praticien (audit 2026-09-02) :
+    // il est présent, en repli, comme partout ailleurs dans ce panneau.
+    expect(screen.getByText('R-SOM-01')).toBeTruthy();
+  });
+
+  it('liste vide AVEC des écartées : l’écran ne dit pas « aucune exploration proposée »', async () => {
+    // Ce serait faux : la table en propose, et c'est le praticien qui les a
+    // écartées. Une absence à l'écran ne doit pas se lire comme une absence de
+    // fait (`DC-24`).
+    stubFetch({ ...ACTIF, recommandations: [], ecartees: [CUNGI_ECARTE] });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/ont toutes été écartées/)).toBeTruthy();
+    expect(screen.queryByText(/Aucune exploration complémentaire n’est proposée/)).toBeNull();
+    // Et le repli est là, sinon le geste serait irréversible depuis cet écran.
+    expect(screen.getByText('1 exploration écartée')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /reprendre cette exploration/i })).toBeTruthy();
+  });
+
+  it('liste vide SANS écartée : la phrase d’origine, et aucun repli', async () => {
+    stubFetch({ ...ACTIF, recommandations: [], ecartees: [] });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText(/Aucune exploration complémentaire n’est proposée/)).toBeTruthy();
+    expect(screen.queryByText(/exploration écartée/)).toBeNull();
+  });
+
+  it('un geste réussi sur le dossier A ne s’annonce PAS sur le dossier B', async () => {
+    // DÉFAUT BLOQUANT TROUVÉ EN REVUE (2026-09-13). `enregistrerGeste` était le
+    // seul appel asynchrone de ce fichier sans garde de péremption, alors que
+    // l'en-tête documente ce défaut exact pour l'ajout à la file. Sans elle,
+    // l'écran du dossier B affichait un message vert affirmant qu'une proposition
+    // venait d'y être écartée — et renvoyant vers un repli qui peut être absent.
+    let resoudrePost: ((valeur: unknown) => void) | undefined;
+    const mock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.startsWith('/api/praticien/orientation/ecartement')) {
+        return new Promise(resoudre => { resoudrePost = resoudre; });
+      }
+      if (url.startsWith('/api/praticien/file-envoi')) {
+        return Promise.resolve(json({ brouillons: [] }));
+      }
+      return Promise.resolve(json(ACTIF));
+    });
+    vi.stubGlobal('fetch', mock);
+
+    const { rerender } = render(<OrientationPanel idPatient="PAT_A" />);
+    fireEvent.click((await screen.findAllByRole('button', BOUTON_ECARTER))[0]);
+    ecrireMotif('Écarté sur le dossier A.');
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’écartement/i }));
+
+    // Le praticien change de dossier AVANT que le POST réponde.
+    rerender(<OrientationPanel idPatient="PAT_B" />);
+    await screen.findAllByRole('button', BOUTON_ECARTER);
+
+    // La réponse arrive maintenant, et elle concerne le dossier A.
+    resoudrePost?.(json({ ok: true, ecartementId: 'ec_1' }));
+    await new Promise(resoudre => setTimeout(resoudre, 0));
+
+    expect(screen.queryByText(/proposition écartée/i)).toBeNull();
+    // Et l'écran de B reste utilisable : `gesteEnCours` n'est pas resté à vrai.
+    expect((await screen.findAllByRole('button', BOUTON_ECARTER))[0].hasAttribute('disabled'))
+      .toBe(false);
+  });
+
+  it('une ligne ÉTEINTE et écartée garde sa qualification dans le repli', async () => {
+    // PERTE RELEVÉE EN REVUE. Deux faits de natures différentes : l'extinction
+    // vient de la table d'arrêt, l'écartement du praticien. Le repli n'affichait
+    // que le second, si bien qu'écarter une ligne éteinte faisait disparaître de
+    // l'écran la qualification qui explique POURQUOI l'exploration avait cessé
+    // d'être proposée. Écarter ne dé-qualifie pas (`D-055`).
+    stubFetch({
+      ...ACTIF,
+      recommandations: [],
+      ecartees: [{
+        ...CUNGI_ECARTE,
+        extinction: {
+          stopRuleId: 'STOP-STR-01',
+          motif: 'Le stress déclaré est retombé sous le seuil publié.',
+          conditions: ['PSS-10 sous son seuil'],
+          claims: [{ claimId: 'WN-CLM-0042', versionClaim: 'v1.0' }],
+        },
+      }],
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('1 exploration écartée')).toBeTruthy();
+    expect(screen.getByText('exploration éteinte')).toBeTruthy();
+    expect(screen.getByText(/Le stress déclaré est retombé/)).toBeTruthy();
+    // Et le motif d'écartement reste là, distinct de celui de l'extinction.
+    expect(screen.getByText('Le stress est déjà travaillé en consultation.')).toBeTruthy();
+    // LA PROVENANCE AUSSI : écarter ne dé-qualifie pas, et ne doit pas dé-sourcer.
+    // L'identifiant de règle d'arrêt et le claim sont ce qui permet d'expliquer une
+    // extinction contestée des mois plus tard.
+    expect(screen.getByText('PSS-10 sous son seuil')).toBeTruthy();
+    expect(screen.getByText(/STOP-STR-01 \(WN-CLM-0042\)/)).toBeTruthy();
+  });
+
+  it('une écartée SANS extinction ne porte aucun badge d’extinction', async () => {
+    // Contre-épreuve : sans elle, un badge rendu inconditionnellement passerait le
+    // cas ci-dessus et qualifierait d'éteinte toute ligne écartée.
+    stubFetch({ ...ACTIF, recommandations: [], ecartees: [CUNGI_ECARTE] });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('1 exploration écartée')).toBeTruthy();
+    expect(screen.queryByText('exploration éteinte')).toBeNull();
+  });
+
+  it('plusieurs écartées : le repli les compte au pluriel', async () => {
+    stubFetch({
+      ...ACTIF,
+      recommandations: [],
+      ecartees: [
+        CUNGI_ECARTE,
+        { ...CUNGI_ECARTE, ecartementId: 'ec_psqi', cible: { type: 'questionnaire' as const, questionnaireId: 'Q_SOM_01' } },
+      ],
+    });
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByText('2 explorations écartées')).toBeTruthy();
   });
 });

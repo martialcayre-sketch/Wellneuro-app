@@ -120,6 +120,20 @@ const ORIENTATION_ACTIVE = {
       ],
     },
   ],
+  // VIDE, JAMAIS ABSENT — c'est le contrat du service ([[D-178]]), et l'omettre
+  // faisait mentir cette fixture sur la forme qu'elle prétend imiter.
+  ecartees: [] as { cible: unknown; ecartementId: string; motif: string; parEmail: string; faitLe: string; reglesAuGeste: string[] }[],
+};
+
+/** Une cible ÉCARTÉE par le praticien, telle que le service la sert. */
+const PACK_ECARTE = {
+  cible: { type: 'pack' as const, packId: 'pack_sommeil_chronobiologie' },
+  idPackBase: 'PACK_SOMMEIL_CHRONO',
+  ecartementId: 'ec_1',
+  motif: 'Le sommeil est déjà travaillé en consultation.',
+  parEmail: 'p@wellneuro.fr',
+  faitLe: '2026-09-13T10:00:00.000Z',
+  reglesAuGeste: ['R-SOM-01'],
 };
 
 const INACTIVE = {
@@ -385,6 +399,149 @@ describe('métadonnées d’audit', () => {
 function codesJournalises(): string[] {
   return loggerWarn.mock.calls.map(appel => appel[0].event);
 }
+
+// ── LE GARDE FACE À L'ÉCARTEMENT PRATICIEN — [[D-178]] ──────────────────────
+//
+// CE QUE CES CAS TIENNENT. Le geste d'écartement retire les lignes de
+// `recommandations` : un dossier dont TOUT est écarté présentait donc un tableau
+// vide, et le garde — armé jusque-là sur « un bloc est-il parti » — cessait de
+// tourner. L'écart journalisé depuis `D-055` disparaissait le jour où le geste est
+// entré en service, sans que rien ne le dise. Le garde s'arme désormais sur « la
+// table a-t-elle proposé quelque chose », écarté ou non.
+//
+// ET L'ALLOWLIST SUIT, faute de quoi le correctif serait pire que le défaut :
+// armer le garde sur une allowlist vide accuserait la synthèse de citer « hors
+// recommandation » ce que la table proposait réellement — une assertion fausse
+// écrite dans un dossier patient.
+describe('garde de restitution — lignes écartées', () => {
+  it('TOUT écarté : le garde tourne encore, et l’écart reste journalisé', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [PACK_ECARTE],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'J’ajoute aussi le pack Stress chronique et burnout.',
+    });
+
+    await POST(req());
+
+    const ecart = loggerWarn.mock.calls.find(
+      appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+    );
+    expect(ecart).toBeTruthy();
+    expect(ecart?.[0].message).toContain('pack:pack_stress_chronique_burnout');
+  });
+
+  it('nommer une cible ÉCARTÉE est signalé — sous un sens propre, pas comme une infidélité', async () => {
+    // ARBITRAGE DU RESPONSABLE, 2026-09-13, APRÈS REVUE. Une première rédaction
+    // blanchissait ce cas : la table avait bien proposé la cible, donc citer ne
+    // serait pas « hors recommandation ». Mais c'était éteindre le signal le plus
+    // parlant du garde — le modèle ne reçoit PAS une ligne écartée, si bien que la
+    // voir revenir sous sa plume dit qu'il RE-PROPOSE ce qu'un soignant a refusé
+    // par écrit. Ce qui règle l'objection n'est pas l'allowlist, c'est le NOM du
+    // fait : `ecartee`, et non `pack`/`questionnaire`.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [PACK_ECARTE],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Le pack Sommeil et chronobiologie reste une piste.',
+    });
+
+    await POST(req());
+
+    const ecart = loggerWarn.mock.calls.find(
+      appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+    );
+    expect(ecart).toBeTruthy();
+    // LE SENS EST DANS LE MESSAGE, et c'est lui qui distingue les deux faits : un
+    // lecteur d'audit ne doit pas lire « infidélité » là où le modèle a seulement
+    // proposé ce qui avait été refusé.
+    expect(ecart?.[0].message).toContain('ecartee:pack:pack_sommeil_chronobiologie');
+    expect(ecart?.[0].message).not.toContain('pack:pack_sommeil_chronobiologie,');
+  });
+
+  it('aucune ligne du tout — ni servie ni écartée : le garde ne tourne pas', async () => {
+    // Le cas d'origine, inchangé : sans rien à restituer, il n'y a rien à trahir,
+    // et un garde qui tournerait comparerait la prose à une allowlist vide.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [],
+    });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'J’ajoute aussi le pack Stress chronique et burnout.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+
+  it('`orientationInjectee` reste FAUX quand tout est écarté — aucun bloc n’est parti', async () => {
+    // DEUX QUESTIONS, DEUX RÉPONSES. Le garde s'arme, mais le champ persisté dit
+    // toujours la vérité : le modèle n'a reçu aucun bloc d'orientation.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [PACK_ECARTE],
+    });
+
+    await POST(req());
+
+    const meta = metadonneesPersistees();
+    expect(meta.orientationInjectee).toBe(false);
+    expect(meta.orientationSha256).toBeNull();
+    // La version en vigueur reste inscrite : elle dit sous quelle table on a rédigé.
+    expect(meta.orientationVersion).toBe('orientation-nnpp2-v1');
+  });
+
+  it('`orientationPacksTransmis` ne nomme PAS un pack écarté — il est persisté', async () => {
+    // CE CAS AURAIT ATTRAPÉ UN DÉFAUT QUE J'AI ÉCRIT (revue du 2026-09-13). Il y a
+    // DEUX champs d'audit persistés, pas un : élargir `packsTransmis` pour servir
+    // l'allowlist du garde faisait nommer, dans un dossier patient, un pack jamais
+    // parti au modèle — et refusé par écrit par le praticien. Le champ dit
+    // « transmis » : il ne doit nommer que ce qui l'a été.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [PACK_ECARTE],
+    });
+
+    await POST(req());
+
+    expect(metadonneesPersistees().orientationPacksTransmis).toEqual([]);
+  });
+
+  it('un pack SERVI reste nommé dans le champ persisté', async () => {
+    // Contre-épreuve : sans elle, un champ figé à `[]` passerait le cas ci-dessus.
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+
+    await POST(req());
+
+    expect(metadonneesPersistees().orientationPacksTransmis)
+      .toEqual(['pack_sommeil_chronobiologie']);
+  });
+
+  it('une ligne écartée n’atteint PAS le prompt du modèle', async () => {
+    // L'invariant de D-178 côté synthèse : proposer au modèle ce que le praticien
+    // a refusé par écrit contredirait son geste.
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [],
+      ecartees: [PACK_ECARTE],
+    });
+
+    await POST(req());
+
+    expect(messageEnvoye()).not.toContain('Sommeil et chronobiologie');
+  });
+});
 
 describe('garde de restitution', () => {
   it('ne journalise rien quand la synthèse restitue fidèlement', async () => {

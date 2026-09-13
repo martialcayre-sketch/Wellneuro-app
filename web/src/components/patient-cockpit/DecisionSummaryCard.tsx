@@ -2,6 +2,7 @@
 
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
+import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
 
 // « PRIORITÉ ET LIMITES » ET NON « DÉCISION CLINIQUE » : la carte vit DANS la
 // phase « Décision 21 j » — le titre y répétait celui de la phase sans rien
@@ -12,7 +13,16 @@ import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 // d'une suspension. « Limites » reprend le mot du dépliant de la carte
 // (« Voir les sources et limites »), et jamais « synthèse », qui désigne un
 // document du dossier.
-export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCard | null }) {
+export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
+  decisionCard: DecisionCard | null;
+  /**
+   * Le relevé des passations de l'épisode, qui traduit un `responseId` en
+   * instrument et en date. Facultatif et vide par défaut : la carte se rend
+   * seule depuis toujours, et une provenance qu'on ne sait pas traduire ne doit
+   * pas empêcher de lire la priorité.
+   */
+  sourceRefs?: readonly { responseId: string; questionnaireId: string; observedAt: string }[];
+}) {
   if (!decisionCard) {
     return (
       <section aria-labelledby="decision-summary-title">
@@ -47,6 +57,9 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
   // DÉRIVÉ D'UN FAIT DÉJÀ PORTÉ PAR LA CARTE (`safetyFindingIds`), jamais
   // recalculé : ce composant ne rejuge rien, il lit.
   const bloqueParSecurite = decisionCard.safetyFindingIds.length > 0;
+  const passations = current
+    ? passationsDuCandidat({ responseIds: current.provenance.responseIds, sourceRefs })
+    : [];
   const status = decisionCard.abstention.status === 'required'
     ? bloqueParSecurite
       ? 'Décision suspendue — signal d’alerte déclaré, avis médical à évaluer en priorité'
@@ -99,6 +112,33 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
         detail={(
           <div className="space-y-3">
             {current && <p>{current.rationale}</p>}
+            {/* LES PASSATIONS QUI FONDENT LE CANDIDAT — `DC-34` (« quelles
+                données patient ») et `DC-01` (la chaîne observation →
+                instrument fait partie de ce qui valide la sortie).
+                `provenance.responseIds` était calculée, validée contre le
+                snapshot, hachée et servie au navigateur sur chaque candidat, et
+                rendue par aucun composant.
+
+                LE TITRE DIT « CE CANDIDAT », PAS « CET ARGUMENT ». Le candidat
+                porte un `rationale` monolithique et un jeu de `responseIds`
+                dédupliqué : il n'existe pas de provenance par argument côté
+                déterministe, et en suggérer une serait un maillon faux. */}
+            {current && passations.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em]">
+                  Passations qui fondent ce candidat
+                </p>
+                <ul className="mt-1 space-y-0.5 font-mono text-xs text-muted-foreground">
+                  {passations.map((passation) => (
+                    <li key={passation.responseId}>
+                      {passation.idQuestionnaire && passation.observeLe
+                        ? `${passation.idQuestionnaire} · ${dateDePassation(passation.observeLe)}`
+                        : 'Source non retrouvée au relevé de l’épisode'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="text-muted-foreground">
               {decisionCard.priorityCandidates.length} candidat(s), {decisionCard.counterfactuals.length} contre-factuel(s).
             </p>

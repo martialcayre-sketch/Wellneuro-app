@@ -4,6 +4,80 @@
 
 ## Décisions actives
 
+### D-181 — Le garde de fidélité de synthèse s'arme sur « la table a proposé », pas sur « un bloc est parti »
+
+- Date : 2026-09-13
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-13,
+  sur question posée avec ses trois options
+- Domaine : clinique — garde de restitution de la synthèse IA, trace d'audit
+- Numéro : **D-181, et non D-180**. Le commit `e653dcde` sur `main` annonce
+  « (D-180) » dans son sujet mais ne touche pas ce registre : ce numéro est
+  ANNONCÉ SANS ÊTRE ÉCRIT, et l'entrée reste due par la session qui l'a pris.
+  Reprendre D-180 ici ferait décrire au registre autre chose que ce que
+  l'historique Git affirme — un faux enregistrement, pire que le trou.
+
+**CE QUI CHANGEAIT EN SILENCE.** `ecartsRestitution` était gaté par
+`orientationInjectee`, c'est-à-dire « un bloc d'orientation est-il parti vers le
+modèle ». Depuis que le geste d'écartement existe ([[D-178]]), une ligne écartée
+quitte `recommandations` : un dossier dont le praticien a tout écarté présentait
+donc un tableau vide, et le garde cessait de tourner. L'écart qu'il journalisait
+depuis [[D-055]] — `SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE` — disparaissait le
+jour où le geste est entré en service. Rien pour le patient : ce garde n'a jamais
+censuré la prose du modèle. Mais la TRACE D'AUDIT changeait de comportement sans
+qu'aucune décision ne l'ait voulu, et c'est exactement ce qu'un registre existe
+pour empêcher.
+
+**L'ARBITRAGE SE JOUE EN DEUX TEMPS, ET LE SECOND CORRIGE LE PREMIER.** La réponse
+rendue est « armer sur recommandations + écartées ». Armer le seul gate aurait
+rouvert un défaut que le dépôt documente dans le commentaire d'`orientationInjectee` :
+un garde qui tourne sur une allowlist VIDE accuse la synthèse de citer « hors
+recommandation » ce qu'aucune recommandation ne lui a présenté — une assertion
+fausse écrite dans un dossier patient. D'où une première rédaction qui élargissait
+aussi l'allowlist : les cibles écartées comptaient avec les servies.
+
+**LA REVUE A MONTRÉ QUE CET ÉLARGISSEMENT ÉTEIGNAIT LE SIGNAL LE PLUS PARLANT**, et
+le responsable a tranché de nouveau le même jour. Le modèle ne reçoit PAS une ligne
+écartée — ni bloc, ni consigne, ni réponse au dossier. La voir revenir sous sa plume
+ne dit donc pas qu'il a inventé : elle dit qu'il RE-PROPOSE ce qu'un soignant a
+refusé par écrit, en le motivant. Blanchir ce cas le rendait invisible, sur des
+cibles questionnaire qui sont bien vivantes (les packs, eux, sont dormants depuis
+[[D-030]]).
+
+**CE QUI RÈGLE L'OBJECTION N'EST PAS L'ALLOWLIST, C'EST LE NOM DU FAIT.** Les cibles
+écartées restent HORS allowlist, et leur citation est signalée sous un sens propre,
+`ecartee`, distinct de `pack`/`questionnaire`. Ces deux derniers disent « le modèle a
+cité ce qu'on ne lui a pas donné » — un reproche de fidélité. Le nouveau dit « le
+modèle propose ce qui a été refusé » : un fait à voir, pas une faute. La prose n'est
+pas coupable d'avoir pensé à la même chose que la table.
+
+**DEUX QUESTIONS, DEUX PRÉDICATS.** `orientationInjectee` reste INCHANGÉ et reste
+le champ persisté : il dit « un bloc est-il parti », et la réponse est NON quand
+tout est écarté. `orientationAPropose` dit « la table avait-elle quelque chose à
+dire ». Les confondre était la cause du défaut ; les nommer séparément est le
+correctif.
+
+**SIGNALÉE SANS ÊTRE EXIGIBLE.** Une cible écartée est hors de l'allowlist de
+citation — donc signalée sous `ecartee` si la prose la nomme — ET hors des deux camps
+de présentation (`ciblesParPresentation`, qui n'itère que les lignes servies). Deux
+questions séparées : « peut-on la lire sous sa plume sans rien dire ? » non ; « lui
+impose-t-on une façon de la présenter ? » non plus. L'inscrire en « recommandée »
+exigerait du modèle qu'il la présente comme vivante alors que le praticien l'a
+écartée par écrit ; en « éteinte », qu'il y accole un marqueur d'extinction qui serait
+faux — un écartement praticien n'est pas une extinction clinique.
+
+**DEUX CHAMPS D'AUDIT SONT PERSISTÉS, PAS UN**, et l'avoir cru a produit un défaut
+que la revue a arrêté. `orientationPacksTransmis` passe par la même fonction que
+l'allowlist du garde : l'élargir faisait nommer, dans un dossier patient, un pack
+jamais parti vers le modèle et refusé par écrit. La fonction est scindée — ce qui est
+PARTI se persiste, ce qui est ACCEPTABLE sous la plume du modèle paramètre le garde.
+Deux faits, deux fonctions.
+
+**UN DÉFAUT ATTRAPÉ PAR UNE FIXTURE DU DÉPÔT.** La première rédaction lisait
+`orientation.ecartees.length` sans garde : une charge d'orientation sans ce champ
+faisait JETER la génération. La synthèse est *best-effort* — le bloc d'orientation
+est déjà entouré d'un `try` — et elle ne doit jamais échouer pour une forme
+inattendue. Lecture rendue défensive.
+
 ### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être pour toujours
 
 - Date : 2026-09-13

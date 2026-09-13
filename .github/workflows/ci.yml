@@ -244,6 +244,18 @@ jobs:
       - name: Invariants du workflow release-db
         run: node --test scripts/release-db-invariants.test.mjs
 
+      # CE QUE LES INVARIANTS NE PEUVENT PAS VOIR, parce qu'ils lisent du TEXTE.
+      # Mesuré le 2026-09-13 : le report du SHA attendu vers l'étape suivante passe
+      # par `$GITHUB_ENV`, et déplacer cette écriture d'une ligne — avant le
+      # repointage — ramenait le défaut d'origine à l'identique, invariants VERTS.
+      # Ce banc EXÉCUTE les étapes sur un dépôt git jouet, avec un `scalingo`
+      # jetable : aucun réseau, aucune API, rien qui puisse toucher la production.
+      # Il dure une douzaine de secondes, dont dix de temporisation réelle de la
+      # garde du drapeau — on ne la raccourcit pas par une variable d'essai : le
+      # chemin d'écriture en production ne porte pas de couture de test.
+      - name: Comportement du workflow release-db
+        run: node --test scripts/release-db-comportement.test.mjs
+
       # L'autre moitié du protocole : les invariants ci-dessus verrouillent ce
       # que le workflow LIT (sentinelles liées au run, jeton borné), ce banc
       # joue ce que les scripts ÉMETTENT — en bash réel, npx factice, chaque

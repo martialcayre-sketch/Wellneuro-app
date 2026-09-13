@@ -94,7 +94,24 @@ export type EcartRestitution =
    * Une discordance portée en tête, CONTREDITE par la prose (`D-057`,
    * arbitrage 3). `identifiant` est le `regleId` du constat trahi.
    */
-  | { type: 'discordance'; identifiant: string };
+  | { type: 'discordance'; identifiant: string }
+  /**
+   * Le modèle nomme une exploration que le praticien a ÉCARTÉE PAR ÉCRIT
+   * ([[D-178]], [[D-181]]) — et ce sens existe pour ne pas appeler « infidélité »
+   * ce qui n'en est pas une.
+   *
+   * DEUX FAITS À NE PAS CONFONDRE. `type: 'pack'` et `type: 'questionnaire'`
+   * ci-dessus disent « le modèle a cité une cible qu'on ne lui a PAS donnée » — un
+   * reproche sur la fidélité. Ici la cible ne lui a pas été donnée non plus (une
+   * ligne écartée n'entre pas dans le bloc), mais le fait intéressant n'est pas
+   * l'invention : c'est que le modèle RE-PROPOSE ce qu'un soignant a refusé par
+   * écrit, en le motivant. Cela mérite d'être vu, et cela ne mérite pas le même
+   * nom : la prose n'est pas fautive d'avoir pensé à la même chose.
+   *
+   * `identifiant` est la cible ; `espece` distingue un pack d'un questionnaire,
+   * que les deux autres types portaient par leur `type` même.
+   */
+  | { type: 'ecartee'; identifiant: string; espece: 'pack' | 'questionnaire' };
 
 // Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
 // chaîne : écrits littéralement dans un littéral d'expression régulière, ces
@@ -431,11 +448,25 @@ export function verifierRestitutionOrientation(
      * vide — la synthèse précède la carte de décision (`D-056`).
      */
     complements?: { vocabulaire: readonly string[]; autorises?: readonly string[] };
+    /**
+     * Les cibles ÉCARTÉES par le praticien ([[D-178]]) — hors allowlist, mais
+     * signalées sous leur propre sens plutôt que comme une infidélité.
+     *
+     * Elles ne sont PAS dans `packs`/`questionnaires` : le modèle ne les a pas
+     * reçues, et le garde doit pouvoir dire qu'il les a vues revenir sous sa
+     * plume. Ce qui change par rapport aux deux autres types est le NOM du fait,
+     * pas sa détection.
+     */
+    ecartees?: { packs: readonly PackId[]; questionnaires: readonly string[] };
   },
 ): EcartRestitution[] {
   const parties = morceaux(synthese);
   const texte = normaliser(parties.join(' \n '));
   const ecarts: EcartRestitution[] = [];
+
+  // Les cibles écartées : hors allowlist, mais nommées sous leur propre sens.
+  const packsEcartes = new Set<PackId>(fournis.ecartees?.packs ?? []);
+  const questionnairesEcartes = new Set<string>(fournis.ecartees?.questionnaires ?? []);
 
   if (texte) {
     const packsAutorises = new Set<PackId>(fournis.packs);
@@ -445,7 +476,9 @@ export function verifierRestitutionOrientation(
       const slug = normaliser(pack.id);
       if (!titre) continue;
       if (citeCommePack(texte, titre) || texte.includes(slug)) {
-        ecarts.push({ type: 'pack', identifiant: pack.id });
+        ecarts.push(packsEcartes.has(pack.id)
+          ? { type: 'ecartee', identifiant: pack.id, espece: 'pack' }
+          : { type: 'pack', identifiant: pack.id });
       }
     }
   }
@@ -459,7 +492,9 @@ export function verifierRestitutionOrientation(
     for (const trouve of partie.match(MOTIF_QUESTIONNAIRE) ?? []) {
       if (questionnairesAutorises.has(trouve) || vus.has(trouve)) continue;
       vus.add(trouve);
-      ecarts.push({ type: 'questionnaire', identifiant: trouve });
+      ecarts.push(questionnairesEcartes.has(trouve)
+        ? { type: 'ecartee', identifiant: trouve, espece: 'questionnaire' }
+        : { type: 'questionnaire', identifiant: trouve });
     }
   }
 
@@ -625,14 +660,19 @@ export function verifierRestitutionDiscordances(
 
 /**
  * Rendu court pour un journal : `pack:slug`, `questionnaire:Q_SOM_09`,
- * `extinction:eteinte_presentee_recommandee:Q_STR_05`.
+ * `extinction:eteinte_presentee_recommandee:Q_STR_05`,
+ * `ecartee:questionnaire:Q_STR_02`.
+ *
+ * L'ESPÈCE EST DANS LA CHAÎNE pour `ecartee`, parce que son `type` ne la porte pas
+ * — sans elle, `ecartee:Q_STR_02` et `ecartee:pack_sommeil_chronobiologie` se
+ * liraient au jugé, là où les deux autres types se nomment eux-mêmes.
  */
 export function formaterEcarts(ecarts: readonly EcartRestitution[]): string {
   return ecarts
-    .map(ecart =>
-      ecart.type === 'extinction'
-        ? `extinction:${ecart.sens}:${ecart.identifiant}`
-        : `${ecart.type}:${ecart.identifiant}`,
-    )
+    .map(ecart => {
+      if (ecart.type === 'extinction') return `extinction:${ecart.sens}:${ecart.identifiant}`;
+      if (ecart.type === 'ecartee') return `ecartee:${ecart.espece}:${ecart.identifiant}`;
+      return `${ecart.type}:${ecart.identifiant}`;
+    })
     .join(', ');
 }

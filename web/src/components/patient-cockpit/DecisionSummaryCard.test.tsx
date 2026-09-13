@@ -150,4 +150,77 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
     });
   });
 
+  // LA PROVENANCE DU CANDIDAT ATTEINT L'ÉCRAN.
+  //
+  // Même position exacte que les limitations d'abstention avant le LOT-05 :
+  // `provenance.responseIds` est calculée, validée contre le snapshot (la
+  // construction JETTE si un identifiant y est absent), hachée dans l'empreinte
+  // et servie au navigateur sur CHAQUE candidat — et rendue par aucun
+  // composant. `DC-34` exige que le praticien puisse ouvrir « quelles données
+  // patient » ; `DC-01` fait de la chaîne observation → instrument une part de
+  // ce qui valide la sortie.
+  describe('les passations qui fondent le candidat', () => {
+    function carteEtReleve() {
+      const { decisionCard, snapshot } = buildValidationErgoC1Fixture();
+      return {
+        carte: { ...decisionCard, proposedMainPriorityId: decisionCard.priorityCandidates[0].candidateId },
+        sourceRefs: snapshot.sourceRefs,
+      };
+    }
+
+    it('l’instrument et la date du relevé sont rendus', () => {
+      const { carte, sourceRefs } = carteEtReleve();
+      render(<DecisionSummaryCard decisionCard={carte} sourceRefs={sourceRefs} />);
+      ouvrirLeDetail();
+
+      expect(screen.getByText('Passations qui fondent ce candidat')).toBeTruthy();
+      expect(screen.getByText('Q_SOM_06 · 01/07/2026')).toBeTruthy();
+    });
+
+    it('le titre dit « ce candidat », jamais « cet argument »', () => {
+      // Le candidat porte UN `rationale` monolithique et UN jeu de
+      // `responseIds` dédupliqué : il n'existe pas de provenance par argument
+      // côté déterministe, et en suggérer une serait un maillon FAUX — ce que
+      // `DC-01` sanctionne plus lourdement qu'un maillon absent.
+      const { carte, sourceRefs } = carteEtReleve();
+      const { container } = render(<DecisionSummaryCard decisionCard={carte} sourceRefs={sourceRefs} />);
+      ouvrirLeDetail();
+
+      expect(container.textContent).not.toMatch(/fondent cet argument/i);
+    });
+
+    it('une source absente du relevé est DITE, pas élidée', () => {
+      // Taire une source qu'on n'a pas su retrouver ferait passer une chaîne
+      // trouée pour une chaîne complète.
+      const { carte } = carteEtReleve();
+      render(<DecisionSummaryCard decisionCard={carte} sourceRefs={[]} />);
+      ouvrirLeDetail();
+
+      expect(screen.getByText('Source non retrouvée au relevé de l’épisode')).toBeTruthy();
+    });
+
+    it('sans relevé fourni, la carte reste lisible', () => {
+      // La prop est facultative : la carte se rend seule depuis toujours, et une
+      // provenance qu'on ne sait pas traduire ne doit pas empêcher de lire la
+      // priorité.
+      const { carte } = carteEtReleve();
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      ouvrirLeDetail();
+
+      expect(screen.getByText('Passations qui fondent ce candidat')).toBeTruthy();
+    });
+
+    it('aucun claim n’est servi sous le candidat', () => {
+      // `D-093` amendé par `D-163` : peindre des claims VALIDE sous un candidat
+      // dont la sélection et le rang ne sont pas signés attacherait une
+      // provenance certifiée à un acte qui ne l'est pas.
+      const { carte, sourceRefs } = carteEtReleve();
+      const { container } = render(<DecisionSummaryCard decisionCard={carte} sourceRefs={sourceRefs} />);
+      ouvrirLeDetail();
+
+      expect(container.textContent).not.toMatch(/WN-CL-/);
+      expect(container.textContent).not.toMatch(/claim/i);
+    });
+  });
+
 });

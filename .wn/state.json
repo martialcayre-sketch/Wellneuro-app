@@ -61,13 +61,13 @@
     "G-TRUST-04 : DÉFINITIVEMENT CLOS depuis D-121 — l'annexe HDS Scalingo a été signée le 2026-08-30 (déclaration du responsable, rendue en session le 2026-08-31). Le 2026-10-21 NE redevient PAS un point de contrôle à ce titre. La fenêtre de moindre couverture ouverte par D-078 le 2026-08-22 s'est refermée par cette signature ; elle aura duré huit jours. Le décommissionnement de Vercel et Supabase n'est plus subordonné à quoi que ce soit : il est INTÉGRALEMENT EXÉCUTÉ — D-080 en posait le terme inconditionnel au 2026-09-01, D-120 en a imposé l'ordre ; projet Supabase supprimé le 2026-09-01 entre 00:12 et 00:18 CEST, zéro projet Vercel constaté à 00:39, et l'outillage a quitté le dépôt le même jour (commit 7c7767d3, −1036 lignes).\n\nRESTE DÛ, ET SEULEMENT CELA — deux pièces administratives, dont aucune ne bloque un lot : (1) archiver l'annexe HDS signée et le DPA (docs/DOSSIER_RGPD.md:611) ; (2) obtenir du support Supabase la confirmation ÉCRITE de l'effacement des sauvegardes automatiques (docs/DOSSIER_RGPD.md:588-591) — relancée, non reçue au 2026-09-07.\n\nSource à jour : docs/DECISIONS.md (D-078, D-080, D-089, D-120, D-121) et docs/GATES_GO_NO_GO.md. NE PAS se fier à CHECKLIST_ACTIVATION_G_TRUST_04.md : son dernier commit est du 2026-08-22, antérieur à D-120 et D-121, et il affirme encore l'inverse. L'historique complet du gate est au registre, pas dans ce champ — corrigé le 2026-09-07, il portait jusque-là un gate levé « MALGRÉ » un état d'exigences que D-089 avait déjà démenti."
   ],
   "recent_decision_ids": [
-    "D-140",
-    "D-139",
-    "D-138",
-    "D-137",
-    "D-136"
+    "D-181",
+    "D-180",
+    "D-179",
+    "D-178",
+    "D-177"
   ],
   "last_session": null,
-  "updated_at": "2026-09-08T09:15:00Z",
+  "updated_at": "2026-09-13T16:13:58Z",
   "parallel_campaigns": []
 }

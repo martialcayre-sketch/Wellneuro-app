@@ -1281,4 +1281,30 @@ describe('ClinicalRuntimeSection — recoupement contradiction ↔ décision (`D
     await screen.findByText(/Épisode T0 confirmé/);
     expect(screen.queryByRole('region', { name: 'Contradictions touchant cette décision' })).toBeNull();
   });
+
+  // LE RELEVÉ SUIT LA CARTE, SOURCE POUR SOURCE — régression relevée en revue.
+  //
+  // `decisionCard` se dérive `fixture?.decisionCard ?? runtime…`. Le relevé des
+  // passations, lui, ne lisait que `runtime` : en mode validation ergonomique,
+  // la carte venait donc de la fixture et sa provenance s'affichait « Source non
+  // retrouvée » sous une fixture qui porte pourtant son snapshot. Deux
+  // dérivations voisines qui ne lisent pas la même origine finissent toujours
+  // par se contredire.
+  it('en mode fixture, la provenance du candidat vient de la fixture, pas d’un runtime absent', () => {
+    const fixture = buildValidationErgoC1Fixture();
+
+    render(
+      <ClinicalRuntimeSection
+        idPatient="PAT_TEST"
+        fixture={fixture}
+        protocolDraft={null}
+        onFixtureReviewed={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText(/Voir les sources et limites/i));
+
+    expect(screen.getByText('Q_SOM_06 · 01/07/2026')).toBeTruthy();
+    expect(screen.queryByText('Source non retrouvée au relevé de l’épisode')).toBeNull();
+  });
 });
