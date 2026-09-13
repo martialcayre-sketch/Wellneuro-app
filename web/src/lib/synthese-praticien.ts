@@ -46,13 +46,29 @@ export const LIMITE_SYNTHESE_PRATICIEN =
   'Synthèse rédigée par le praticien et soumise à sa validation avant diffusion.';
 
 /**
- * Les trois niveaux de priorité admis sur un axe, PARTAGÉS avec l'écran.
+ * Les trois niveaux de priorité admis sur un axe, dans une forme que l'ÉCRAN
+ * peut importer en valeur.
  *
- * Même motif que `MAX_AXES_PRIORITAIRES` ([[D-107]]) : la liste vit avec le
- * validateur qui la fait respecter, si bien que l'éditeur et le serveur ne
- * peuvent plus diverger sur ce qu'est une priorité recevable. Une quatrième
- * valeur ajoutée ici apparaîtrait d'office dans le sélecteur ; ajoutée
- * seulement à l'écran, elle serait refusée à l'enregistrement.
+ * CE N'EST PAS LA SOURCE UNIQUE, et l'écrire serait sur-promettre (relevé en
+ * revue). Le contrat du modèle en porte sa propre liste — `NIVEAUX_PRIORITE`
+ * dans `lib/anthropic.ts`, que `analyserSortieSynthese` fait respecter à la
+ * sortie de génération — et `SyntheseSchema` en porte une troisième forme, son
+ * union de type.
+ *
+ * POURQUOI TROIS ÉCRITURES PLUTÔT QU'UN IMPORT. `lib/anthropic.ts` instancie le
+ * client Anthropic : un composant `'use client'` qui en importerait une VALEUR
+ * tirerait le SDK dans le bundle du navigateur. `synthese-praticien.ts`
+ * n'importe de lui qu'un TYPE, effacé à la compilation — c'est précisément ce
+ * qui rend ce module importable par l'éditeur, et le commentaire de
+ * `MAX_AXES_PRIORITAIRES` le dit déjà.
+ *
+ * CE QUI INTERDIT LA DIVERGENCE, ALORS. Un banc,
+ * `prioritesAxeUneSeuleListe.guard.test.ts` : il compare cette liste à
+ * `NIVEAUX_PRIORITE` et refuse qu'elles s'écartent, dans un fichier de test où
+ * importer `lib/anthropic` ne coûte rien. L'union de `SyntheseSchema`, elle,
+ * est tenue à la compilation par les `Record<NiveauPriorite, …>` exhaustifs de
+ * l'éditeur. Ajouter une quatrième valeur exige donc de toucher les trois —
+ * mais l'oubli rougit, il ne se glisse pas.
  */
 export const PRIORITES_AXE = ['eleve', 'modere', 'faible'] as const;
 

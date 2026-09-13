@@ -1,4 +1,4 @@
-### Synthèse — la priorité d'un axe se choisit, elle ne se présume plus
+### Synthèse — la priorité d’un axe se choisit, elle ne se présume plus (2026-09-13)
 
 `ajouterAxe` semait `niveau_priorite: 'modere'` sur tout axe créé par le
 praticien, et `validerBrouillonPraticien` l'exigeait ensuite comme s'il avait
@@ -14,10 +14,21 @@ avec un message qui dit combien il en reste, pour éviter de les rouvrir un par
 un. Aucune valeur nouvelle n'est introduite : les trois bandes sont les mêmes,
 et aucun seuil ne bouge.
 
-**La liste des priorités rejoint le validateur qui la fait respecter.**
-`PRIORITES_AXE` est désormais exportée de `synthese-praticien.ts` et alimente le
-sélecteur — même motif que `MAX_AXES_PRIORITAIRES` (`D-107`) : l'écran et le
-serveur ne peuvent plus diverger sur ce qu'est une priorité recevable.
+**La liste des priorités devient importable par l'écran, et un banc interdit
+qu'elle diverge.** `PRIORITES_AXE` est exportée de `synthese-praticien.ts` et
+alimente le sélecteur. Ce n'est pas pour autant une source unique — la revue l'a
+relevé, et l'écrire aurait sur-promis : le contrat du modèle porte sa propre
+liste (`NIVEAUX_PRIORITE`, `lib/anthropic.ts`), et `SyntheseSchema` en porte une
+troisième forme, son union de type. La duplication est structurelle :
+`lib/anthropic.ts` instancie le client Anthropic, et un composant client qui en
+importerait une valeur tirerait le SDK dans le bundle.
+
+Ce qui interdit la divergence est donc un banc, `prioritesAxeUneSeuleListe.guard.test.ts`,
+qui compare les deux listes — valeurs ET ordre, parce que l'ordre compose le
+message de violation servi au modèle à la relance — dans un fichier de test où
+importer `lib/anthropic` ne coûte rien. L'union de type, elle, est tenue à la
+compilation par les `Record` exhaustifs de l'éditeur. Ajouter une quatrième
+valeur exige de toucher les trois ; l'oubli rougit au lieu de se glisser.
 
 **Pourquoi la garde vit à l'écran et pas au serveur.** Elle est déjà au serveur
 pour le brouillon praticien : `validerBrouillonPraticien` refuse toute valeur
