@@ -36,7 +36,7 @@ import { estDuRideauT0 } from '@/lib/clinical-engine/rideauT0';
 // d'annulabilité (le même que la route et le tableau des patients) et celui de
 // péremption d'un envoi sans échéance.
 import { estAnnulable } from '@/lib/praticien/annulabilite';
-import { envoiPerime, JOURS_PEREMPTION_ENVOI } from '@/lib/assignations/peremption';
+import { anciennete, envoiPerime, JOURS_PEREMPTION_ENVOI } from '@/lib/assignations/peremption';
 import { AnnulationAssignationDialog } from '@/components/ui/AnnulationAssignationDialog';
 import type { AnnulationAssignationResponse } from '@/app/api/praticien/assignations/annulation/route';
 import type { ScoreSubScore } from '@/lib/scoring/types';
@@ -310,13 +310,6 @@ function libelleStatut(id: IdPhase, statut: StatutPhase): string {
  * Sous un jour, on ne dit PAS « (0 j) » : un envoi du matin n'est pas une
  * attente, et l'afficher comme telle ferait chercher un retard qui n'existe pas.
  */
-function anciennete(dateAssignation: string): string {
-  const pose = new Date(dateAssignation);
-  const lisible = pose.toLocaleDateString('fr-FR');
-  const jours = Math.floor((Date.now() - pose.getTime()) / 86_400_000);
-  return jours >= 1 ? `en attente depuis le ${lisible} (${jours} j)` : `envoyé le ${lisible}`;
-}
-
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;

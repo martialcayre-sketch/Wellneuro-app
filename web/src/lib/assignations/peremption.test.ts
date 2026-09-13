@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  anciennete,
   envoiPerime,
   joursDepuisPose,
   JOURS_PEREMPTION_ENVOI,
@@ -91,5 +92,26 @@ describe('le seuil lui-même', () => {
 
   it('exempte exactement les deux agendas, et rien d’autre', () => {
     expect([...QIDS_SANS_DATE_LIMITE].sort()).toEqual(['Q_ALI_09', 'Q_SOM_09']);
+  });
+});
+
+describe('anciennete — la phrase partagée par les deux écrans', () => {
+  // Elle est rendue à DEUX endroits de la même page : la liste des envois de la
+  // fiche, et le refus « déjà assigné » du panneau d'orientation. Le banc tient
+  // la forme, parce que c'est elle qui garantit qu'un seul nombre circule.
+  it('nomme la date d’abord, le compte de jours ensuite', () => {
+    const phrase = anciennete(ilYA(39), MAINTENANT);
+    expect(phrase).toBe('en attente depuis le 05/08/2026 (39 j)');
+    expect(phrase.indexOf('05/08/2026')).toBeLessThan(phrase.indexOf('39 j'));
+  });
+
+  it('le jour même, elle ne compte pas de jours — elle situe l’envoi', () => {
+    expect(anciennete(ilYA(0), MAINTENANT)).toBe('envoyé le 13/09/2026');
+  });
+
+  it('une pose dans le futur ne rend jamais un compte négatif', () => {
+    // Ce que le calcul local qu'elle remplace ne bornait pas : il aurait rendu
+    // « (-5 j) ». Le formateur s'appuie sur `joursDepuisPose`, qui borne à zéro.
+    expect(anciennete(ilYA(-5), MAINTENANT)).toBe('envoyé le 18/09/2026');
   });
 });
