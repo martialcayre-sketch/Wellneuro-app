@@ -56,16 +56,21 @@ fraîcheur. La cible est alors proposée parce qu'aucune passation n'est vue —
 comportement qui précède ce lot, désormais tenu par un banc qui le nomme, pour
 qu'on ne l'attribue pas plus tard à la fenêtre.
 
-**LA TABLE N'EST PAS SIGNÉE, ET LES DEUX BANCS ROUGES SONT LE VERROU.** Le
-contenu a changé : `ORIENTATION_RULES_SHA256` vaut désormais
-`e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`, et
-`shaPerimetre` porte encore l'empreinte du 2026-08-06. Les deux bancs de
-concordance échouent, et c'est exactement ce qu'ils existent pour faire —
-`tableSignee()` est faux, donc l'orientation resterait fail-closed en production.
-**Rien ici ne pose le sha.** Signer est un acte clinique : il demande la
-relecture du contenu modifié par le praticien et celle des 23 claims en base. Les
-deux bancs repassent au vert à la seule condition que ces deux gestes aient eu
-lieu.
+**LE VERROU A FAIT SON TRAVAIL, PUIS LA SIGNATURE A ÉTÉ REPRISE.** Le contenu
+ayant changé, `ORIENTATION_RULES_SHA256` est passé à
+`e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e` tandis que
+`shaPerimetre` portait encore l'empreinte du 2026-08-06 : les deux bancs de
+concordance ont rougi, `tableSignee()` est devenu faux, et l'orientation serait
+restée fail-closed en production. C'est exactement ce qu'ils existent pour faire,
+et la trace en est gardée ici plutôt que effacée par le commit qui la répare.
+
+**LA SIGNATURE EST CELLE DU PRATICIEN, PAS CELLE DE L'OUTIL.** Les deux lignes
+n'ont été posées qu'après que le praticien a attesté, le 2026-09-13, la relecture
+du contenu modifié : le rang du Cungi sur `R-SOM-01`, et la fenêtre de 365 jours
+sur les vingt règles. `dateValidation` porte ce jour, `shaPerimetre` l'empreinte
+relue, et l'ancienne est conservée en commentaire dans la table comme dans le
+banc. L'ordre prescrit par `D-018` a été tenu : contenu, bancs, claims relus en
+base, date, **et le sha en dernier**.
 
 Le reste de la barrière est vert : `tsc --noEmit`, `next lint`, et 8968 bancs sur
 539 fichiers.
@@ -84,8 +89,13 @@ c'est son VERBATIM — son texte n'est reproduit nulle part dans le dépôt, là
 celui de `WN-CL-0323-013` l'est en commentaire. La moitié de la justification de
 la carte reste donc illisible depuis le code, mais elle n'est pas fantôme.
 
-**CE QU'IL RESTE POUR SIGNER : la relecture du contenu modifié par le praticien,
-et deux lignes.** Dans `ORIENTATION_METADATA` : `shaPerimetre` porté à
-`e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`, et
-`dateValidation` au jour de cette relecture. Les deux bancs rouges repassent au
-vert par ce seul geste ; rien d'autre n'est à toucher.
+**CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS.** `BANDES_PSQI` vit dans
+`questions.ts`, hors des deux périmètres signés, et les zones de la table citent
+des COULEURS. Déplacer une borne de la grille change donc le point d'allumage des
+règles sans faire bouger un seul sha — c'est précisément ce qui s'est produit le
+même jour sur la borne 4/5, et la conséquence n'est pas restée dans
+l'orientation : `BIO-SOM-01`, règle `publiee` d'une table **elle aussi signée**,
+lit la même zone couleur sur le même instrument et a cessé de prescrire
+`PANEL_SOMMEIL_1` à 5 sans avoir été éditée. Le trou est nommé en commentaire à
+côté de la signature, et refermé dans un lot séparé qui fait entrer la grille
+dans les deux périmètres.

@@ -1631,11 +1631,39 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // reste le fait attesté — seule la forme rejoint le standard que les quatre
   // autres tables portent déjà et que le verrou contrôle désormais. `'2026-08-06'`
   // nu passait un `tableSignee()` qui ne contrôlait pas la forme.
-  dateValidation: '2026-08-06T00:00:00.000Z',
-  // Posé le 2026-08-16 ([[D-067]]) : la chaîne hex qu'`ORIENTATION_RULES_SHA256`
-  // valait à la relecture, recopiée telle quelle — JAMAIS la constante (déclarée
-  // après cet objet ; et la comparaison serait tautologique).
-  shaPerimetre: '547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d',
+  //
+  // RE-SIGNÉE LE 2026-09-13. Deux arbitrages praticiens ont changé le contenu
+  // clinique de la table, et le praticien a attesté ce jour-là en avoir fait la
+  // relecture :
+  //   · `R-SOM-01` propose désormais le Cungi (`Q_STR_03`) en priorité 1 et le
+  //     HAD (`Q_NEU_11`) en 2 — le rang suit le claim cité, qui juge le stress
+  //     le plus pertinent dans les troubles du sommeil. L'inversion ne se voit
+  //     que lorsque `R-SOM-01` est seule : quatre autres règles posent le HAD
+  //     en 1, et la fusion retient le minimum.
+  //   · les vingt règles portent une `repetition` de 365 jours — au-delà, une
+  //     passation cesse de couvrir sa cible et la règle la re-propose. Sans ce
+  //     champ, l'exclusion `dejaRepondu` ([[D-053]]) fermait une cible SANS
+  //     HORIZON. `BIO-SOM-01` portait ce geste depuis le début ; la table
+  //     d'orientation le rattrape.
+  // Les 23 claims de `claimsSource` ont été RELUS EN BASE le 2026-09-13 (one-off
+  // Scalingo détaché sur `rag_corpus_claims`) : 23/23 en `statut = 'VALIDE'`,
+  // `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`. Aucun claim
+  // ajouté ni retiré : seuls un rang et un délai ont changé.
+  //
+  // CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS, et qu'il faut savoir en la
+  // lisant : `BANDES_PSQI` vit dans `questions.ts`, hors périmètre. Les zones de
+  // cette table citent des COULEURS, jamais des nombres ; déplacer une borne de
+  // la grille change donc le point d'allumage des règles sans faire bouger ce
+  // sha. C'est exactement ce qui s'est produit le 2026-09-13 sur la borne 4/5.
+  dateValidation: '2026-09-13T00:00:00.000Z',
+  // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
+  // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
+  // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
+  // tautologique).
+  //
+  // Ancien sha signé (2026-08-06) :
+  // `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`.
+  shaPerimetre: 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
