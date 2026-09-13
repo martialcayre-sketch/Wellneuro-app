@@ -632,7 +632,8 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
   });
 
   // Arbitrage du 2026-08-03 : bande d'entrée par instrument. Le PSQI démarre à
-  // `info` (total 5-10), qui ouvre au cut-off publié sans le dépasser — cf. le
+  // `info` (total 6-10 depuis le 2026-09-13), qui ouvre exactement au cut-off
+  // publié — cf. le
   // paragraphe « CE QUE CE 5 EST » sur `R-SOM-01`. Ce banc échoue si quelqu'un
   // « harmonise » les règles en les faisant toutes partir de warning.
   it("R-SOM-01 : un PSQI en bande `info` déclenche déjà", () => {
@@ -640,6 +641,43 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
       reponse('Q_SOM_01', { total: 7, interpretation: { label: 'Troubles du sommeil légers', color: 'info' } }),
     ]);
     expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
+  });
+
+  // ARBITRAGE PRATICIEN DU 2026-09-13 — la borne d'allumage, figée des DEUX
+  // côtés. Elle ne l'était par rien : la suite entière passait au vert quand la
+  // grille est passée de 0-4/5-10 à 0-5/6-10, parce qu'aucun banc n'exerçait un
+  // total de 5. Un déplacement de borne clinique se faisait donc sans bruit.
+  //
+  // POURQUOI DEUX ASSERTIONS ET PAS UNE. Le point d'allumage naît d'un COUPLE :
+  // la grille (`BANDES_PSQI`, `questions.ts`) qui mappe un total sur une
+  // couleur, et la règle qui cite des couleurs. Un banc qui ne tiendrait que la
+  // règle laisserait la grille glisser ; un banc qui ne tiendrait que la grille
+  // laisserait la zone de la règle se resserrer. Les fixtures de totaux sont
+  // relues du VRAI moteur de scoring, jamais écrites à la main.
+  it("R-SOM-01 : la borne est 6, et 5 ne déclenche plus", () => {
+    const BASE: Record<string, number> = {
+      Q1: 23, Q2: 10, Q3: 7, Q4: 8,
+      Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0,
+      Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+      Q6: 0, Q7: 0, Q8: 0, Q9: 0,
+    };
+    // Côté GRILLE : un total de 5 est rassurant, 6 ne l'est plus.
+    const cinq = calculateScore('Q_SOM_01', { ...BASE, Q6: 0, Q7: 3, Q9: 3 }) as Record<string, any>;
+    const six = calculateScore('Q_SOM_01', { ...BASE, Q6: 1, Q7: 3, Q9: 3 }) as Record<string, any>;
+    expect(cinq.total).toBe(5);
+    expect(cinq.interpretation?.color).toBe('success');
+    expect(six.total).toBe(6);
+    expect(six.interpretation?.color).toBe('info');
+
+    // Côté RÈGLE : la bande rassurante ne propose rien, la première bande
+    // défavorable propose les deux cibles.
+    const rassurant = evaluer([reponse('Q_SOM_01', cinq)]).map(r => r.cible);
+    expect(rassurant).not.toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
+    expect(rassurant).not.toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_03' });
+
+    const defavorable = evaluer([reponse('Q_SOM_01', six)]).map(r => r.cible);
+    expect(defavorable).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
+    expect(defavorable).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_03' });
   });
 
   it('R-STR-01 : un PSS-10 défavorable propose le BMS-10', () => {

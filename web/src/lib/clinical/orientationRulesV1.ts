@@ -52,8 +52,8 @@ export type OrientationZone =
   // bandes « Très sévère » (DASS-21), si bien qu'une règle écrite sur
   // `['warning', 'danger']` ignorait les patients les PLUS atteints ; `info`
   // porte des bandes légères mais actionnables (PSQI « Troubles du sommeil
-  // légers », 5-10 — une bande qui OUVRE au cut-off publié sans le dépasser,
-  // cf. `R-SOM-01`), et l'omettre laissait dehors le versant bas.
+  // légers », 6-10 — une bande qui ouvre EXACTEMENT au cut-off publié depuis le
+  // 2026-09-13, cf. `R-SOM-01`), et l'omettre laissait dehors le versant bas.
   //
   // Le banc n'exige pas de citer les quatre : il exige qu'une règle ne
   // s'arrête jamais SOUS la plus sévère. Viser `danger` seul est licite ; viser
@@ -216,8 +216,8 @@ export type OrientationRule = {
 // bandes et son propre seuil publié. Chaque règle motive donc sa bande de
 // départ sur place. En pratique : le PSS-10 et le TFD SIIN n'émettent AUCUNE
 // bande `info`, et `warning` y est déjà leur première bande défavorable ; le
-// PSQI en émet une et elle est PRISE (« Troubles du sommeil légers », 5-10 —
-// une bande qui OUVRE au cut-off publié sans le dépasser, cf. `R-SOM-01`) ;
+// PSQI en émet une et elle est PRISE (« Troubles du sommeil légers », 6-10 —
+// une bande qui ouvre EXACTEMENT au cut-off publié, cf. `R-SOM-01`) ;
 // l'enquête SIIN (`Q_ALI_01`) en émet
 // une et elle est LAISSÉE (« Alimentation plutôt équilibrée, mais
 // insuffisamment protectrice », 51-70 — un libellé qui n'est pas défavorable).
@@ -1107,8 +1107,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // engager un pack sur elle contredirait le claim qu'on cite.
     //
     // C'est le troisième instrument à bande `info` de cette table, et le
-    // deuxième traitement : le PSQI la PREND (elle y couvre 5-10, et ouvre au
-    // cut-off publié sans le dépasser — cf. `R-SOM-01`), `Q_ALI_01` la LAISSE.
+    // deuxième traitement : le PSQI la PREND (elle y couvre 6-10, et ouvre
+    // exactement au cut-off publié — cf. `R-SOM-01`), `Q_ALI_01` la LAISSE.
     // L'en-tête de table
     // annonçait « seul le PSQI émet une bande `info` porteuse de sens » — c'est
     // corrigé là-haut : `Q_ALI_01` en émet une aussi, et elle ne l'est pas.
@@ -1188,24 +1188,38 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // Pittsburgh (« TOTAL > 5 associated with poor sleep quality »). Une
     // lecture concurrente, la feuille d'instructions diffusée avec le
     // questionnaire, range 5 du côté défavorable (« a global sum of 5 or
-    // greater »). Sous la première, s'allumer à 5 est UN POINT EN DESSOUS du
+    // greater »). Sous la première, s'allumer à 5 était UN POINT EN DESSOUS du
     // cut-off ; sous la seconde, exactement dessus. Dans aucune lecture ce
-    // n'est au-dessus.
+    // n'était au-dessus.
     //
-    // CE QUE LA BANDE D'ENTRÉE EST DONC : un ÉLARGISSEMENT vers la sensibilité,
-    // et non une marge de prudence. Elle propose une exploration à des patients
-    // que la lecture stricte classe encore « bons dormeurs ». C'est défendable
-    // pour du REPÉRAGE, et le cut-off publié varie d'ailleurs de 5 à 10 selon
-    // la population — mais c'est un arbitrage WellNeuro, et il doit se lire
-    // comme tel, pas comme une propriété de l'instrument. Commencer à `warning`
-    // aurait à l'inverse laissé dehors des patients que TOUTES les lectures
-    // publiées classent déjà mauvais dormeurs.
+    // ARBITRAGE PRATICIEN DU 2026-09-13 : la règle s'aligne sur le cut-off
+    // STRICT et ne s'allume plus qu'à partir de 6. Le geste n'a PAS eu lieu ici
+    // — cette règle n'a pas changé d'un caractère, et le sha de la table n'a pas
+    // bougé. Il a eu lieu dans la GRILLE (`BANDES_PSQI`, `questions.ts`), dont
+    // la première bande couvre désormais 0-5 et `info` 6-10. C'était la seule
+    // voie qui préserve le plancher garanti : un déclencheur en `plage` ou en
+    // `comparaison` ne se garantit JAMAIS sur un recueil partiel
+    // (`zoneGarantieParLePlancher` le refuse en toutes lettres), et la règle
+    // aurait cessé de voir les passations à trous.
+    //
+    // CE QUE LA BANDE D'ENTRÉE EST DONC, DEPUIS : l'alignement exact sur la
+    // frontière publiée, et non plus un élargissement vers la sensibilité. Le
+    // cut-off publié varie de 5 à 10 selon la population : la règle se tient
+    // désormais à son extrémité la plus sensible, sans la dépasser. Commencer à
+    // `warning` laisserait à l'inverse dehors des patients que TOUTES les
+    // lectures publiées classent déjà mauvais dormeurs.
+    //
+    // CE QUI EN DÉCOULE ET N'EST PAS TRANCHÉ ICI : `D-177` a refusé d'écrire
+    // `STOP-SOM` parce que la spécification l'énonçait sur « PSQI 5 », valeur à
+    // laquelle cette règle s'allumait. Elle ne s'y allume plus. La contradiction
+    // qui fondait ce refus a donc disparu, et la condition de retour de
+    // `STOP-SOM` se relit à neuf — c'est un arbitrage, il n'est pas pris ici.
     //
     // RECUEIL PARTIEL — cette règle s'allume sur un PLANCHER GARANTI depuis le
     // 2026-08-05, et sa condition d'allumage est la FERMETURE : la zone doit
     // contenir toutes les bandes que le score final peut encore atteindre. Elle
     // la contient ici quel que soit le plancher, puisqu'elle cite les quatre
-    // couleurs défavorables et que le PSQI n'en émet que trois (`info` 5-10,
+    // couleurs défavorables et que le PSQI n'en émet que trois (`info` 6-10,
     // `warning` 11-16, `danger` 17-21). Un plancher en `info` allume donc la
     // règle, et le motif servi au praticien porte « au moins ».
     //

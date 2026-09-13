@@ -2861,7 +2861,9 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // renseignée. Sans cette frontière, une seule réponse suffisait à passer la
     // garde de passation vide (#451), et les six autres composantes retombaient
     // sur leurs défauts : Q6 seul, à sa PIRE valeur, rendait 3 + 1 + 1 + 0 + 0 +
-    // 0 + 0 = 5 sur 21, « Troubles du sommeil légers ». Un verdict d'ensemble
+    // 0 + 0 = 5 sur 21 — « Troubles du sommeil légers » alors, et « Pas de
+    // trouble du sommeil » depuis le déplacement de borne du 2026-09-13, ce qui
+    // rend le défaut décrit ici plus rassurant encore. Un verdict d'ensemble
     // tiré d'un septième de l'instrument, et rassurant là où la seule réponse
     // disponible ne l'était pas.
     const ITEMS_C1 = ['Q6'];
@@ -2995,9 +2997,24 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // than 5 ». Les quatre bandes ci-dessous et leurs libellés sont une
     // construction WellNeuro. Seule la coupure 4/5 a un répondant dans la
     // littérature, et décalé d'un point ; 10/11 et 16/17 n'en ont aucun.
+    //
+    // BORNE DÉPLACÉE 4/5 → 5/6 LE 2026-09-13, sur arbitrage praticien. Ce n'est
+    // pas un ajustement d'affichage : c'est ainsi que `R-SOM-01` cesse de
+    // s'allumer à 5. Sa zone cite des COULEURS, pas des nombres ; le seul
+    // endroit où le point d'allumage se règle est donc cette grille — et elle
+    // vit hors du périmètre signé, si bien qu'aucun sha ne bouge. La
+    // conséquence à connaître : `BIO-SOM-01` recopie la même zone couleur sur
+    // le même instrument, et suit ce déplacement sans avoir été éditée.
+    //
+    // CE QUE 5 DEVIENT, ET CE QUE PERSONNE NE PEUT DIRE À SA PLACE. Buysse ne
+    // classe PAS un total de 5 : sa feuille de cotation écrit « TOTAL < 5 »
+    // bon, « TOTAL > 5 » mauvais, et laisse la valeur exacte sans case. Le
+    // ranger en « Pas de trouble du sommeil » est donc un choix WellNeuro, au
+    // même titre que le ranger en « légers » l'était avant — l'arbitrage tranche
+    // en faveur de la spécificité, et de l'alignement sur le cut-off strict.
     const BANDES_PSQI = [
-      {min: 0,  max: 4,  label: 'Pas de trouble du sommeil',    color: 'success'},
-      {min: 5,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
+      {min: 0,  max: 5,  label: 'Pas de trouble du sommeil',    color: 'success'},
+      {min: 6,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
       {min: 11, max: 16, label: 'Troubles du sommeil modérés',  color: 'warning'},
       {min: 17, max: 21, label: 'Troubles du sommeil sévères',  color: 'danger'},
     ];

@@ -77,7 +77,7 @@ export const Q_SOM_01 = {
       ]}
   ],
   // `severiteCroissante` : les quatre bandes du PSQI montent avec le total
-  // (0-4 « Pas de trouble » → 17-21 « sévères »), et ses sept composantes sont
+  // (0-5 « Pas de trouble » → 17-21 « sévères »), et ses sept composantes sont
   // monotones. L'instrument est donc éligible au plancher garanti servi sur
   // recueil partiel. La grille elle-même reste dans le moteur — quatre bandes
   // WellNeuro, et non une stratification de Buysse 1989, qui n'en publie aucune
