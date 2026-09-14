@@ -97,6 +97,37 @@ export type ObjectifExpose = {
   /** La proposition reprise, si c'en est une (6.0-B). `null` sinon — et c'est
    *  le cas ordinaire, jamais un manque. */
   sourcePropositionId: string | null;
+  /**
+   * D'OÙ VIENT LA PRIORITÉ, constatée par relecture serveur ([[D-167]] §6,
+   * `constaterProvenance`). `'proposition_ia'` quand le texte enregistré est
+   * celui que l'appel a proposé, MOT POUR MOT ; `null` dès que le praticien l'a
+   * retouché — « la marque tombe à la réécriture ».
+   *
+   * POURQUOI ELLE REMONTE MAINTENANT. La colonne existait, était écrite, et
+   * n'était servie à personne : `SELECTION_OBJECTIF` ne la demandait pas. Or
+   * l'écran affirmait, sur le seul `sourcePropositionId`, que « la
+   * reformulation et la priorité ci-dessus sont les vôtres ». Les deux marques
+   * peuvent coexister — un énoncé repris d'une proposition citée dont la
+   * priorité est restée celle de l'IA —, et la phrase était alors fausse, dite
+   * à l'auteur lui-même sur ce qu'il a écrit.
+   *
+   * ATTENTION À CE QUE `null` NE DIT PAS. `constaterProvenance` se termine par
+   * `catch { return {} }` : une erreur de relecture efface TOUTES les marques.
+   * `null` couvre donc deux cas indiscernables — « le praticien l'a écrit » et
+   * « on n'a pas su constater ». Aucun écran ne doit en déduire une paternité.
+   */
+  prioriteSource: string | null;
+  /**
+   * D'OÙ VIENT LA REFORMULATION — `'synthese_ia'` quand elle reprend le
+   * narratif du modèle MOT POUR MOT, `null` sinon, avec la même réserve que
+   * ci-dessus sur ce que `null` ne prouve pas.
+   *
+   * Elle remonte EN MÊME TEMPS que sa voisine, et c'est délibéré : la phrase
+   * de reprise parle des deux textes. N'en servir qu'un aurait corrigé la
+   * moitié de l'affirmation fausse et laissé l'autre — constat de revue sur
+   * cette PR même.
+   */
+  reformulationSource: string | null;
 };
 
 /** La trajectoire d'une tête de chaîne : sa version courante puis ses
@@ -294,6 +325,8 @@ const SELECTION_OBJECTIF = {
   creeLe: true,
   supersedesObjectifId: true,
   sourcePropositionId: true,
+  prioriteSource: true,
+  reformulationSource: true,
 } as const;
 
 type LigneLue = {
@@ -307,6 +340,8 @@ type LigneLue = {
   creeLe: Date;
   supersedesObjectifId: string | null;
   sourcePropositionId: string | null;
+  prioriteSource: string | null;
+  reformulationSource: string | null;
 };
 
 function exposer(ligne: LigneLue): ObjectifExpose {
@@ -321,6 +356,8 @@ function exposer(ligne: LigneLue): ObjectifExpose {
     creeLe: ligne.creeLe.toISOString(),
     supersedesObjectifId: ligne.supersedesObjectifId,
     sourcePropositionId: ligne.sourcePropositionId,
+    prioriteSource: ligne.prioriteSource,
+    reformulationSource: ligne.reformulationSource,
   };
 }
 

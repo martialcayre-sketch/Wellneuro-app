@@ -4,10 +4,14 @@
 
 `perimetre-classement`, partie d'`origin/main` à `42691bf2`.
 
-**ORDRE DE MERGE CONTRAINT.** `D-184` vit sur la branche `objectif-priorite-source`
-(PR #1100, verte). Cette branche prend `D-185`. **#1100 doit être mergée AVANT** :
-dans l'ordre inverse, `main` porterait `D-185` avec un trou en `D-184`, que la
-garde du registre refuse.
+**L'ORDRE DE MERGE ÉTAIT CONTRAINT, ET LA GARDE L'A IMPOSÉ.** `D-184` vivait sur
+`objectif-priorite-source` (#1100) ; cette branche prend `D-185`. T1 a rendu
+`✗ la suite est trouée : D-184 manque` tant que #1100 n'était pas mergée — la PR
+n'a donc pas été ouverte avant. #1100 mergée en `30d16e42`, `main` intégré ici,
+le trou est comblé.
+
+**Ce lot porte AUSSI `D-186`**, entrée rétroactive pour #1089 (`f920c916`), mergée
+sans numéro de décision. Sans rapport de fond avec `D-185` : dit plutôt que glissé.
 
 ## Objectif
 

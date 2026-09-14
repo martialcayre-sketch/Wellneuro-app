@@ -47,3 +47,14 @@ Banc `perimetreClassement.guard.test.ts` (7 cas) : l'empreinte figée, l'attesta
 exigée ABSENTE, l'ordre des trois termes, la nature technique du dernier ressort,
 l'unicité des deux motifs, la lecture par le moteur, l'anti-vacuité. Quatre mutations
 appliquées, quatre tuées — dont « attestation fabriquée » et « motifs permutés ».
+
+**Et une entrée de registre due, enfin écrite (`D-186`).** #1089 (« la priorité d'un axe
+se choisit ») a été mergée le 2026-09-13 sans numéro de décision, sur une question posée
+au relecteur restée sans réponse : retirer un défaut sur une *bande* appelle-t-il un
+`D-xxx` ? Réponse rendue le 2026-09-14 — oui, mais **pas parce qu'un nombre a bougé**.
+Aucune valeur n'a changé ; ce qui a changé est le **statut de l'absence**, et c'est
+`DC-24` qui le gouverne : un silence cessait d'être lisible comme tel. L'entrée prend un
+numéro d'aujourd'hui et **dit qu'elle est écrite après coup** — le commit d'origine
+n'annonçait aucun numéro, et lui en attribuer un rétroactivement ferait décrire au
+registre autre chose que ce que l'historique Git affirme. Elle voyage dans ce lot faute
+d'en avoir un à elle, et le dire est préférable à le glisser.

@@ -5748,3 +5748,56 @@ Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
 
 Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
 « motifs d'abstention permutés ».
+## 2026-09-14 — Clôture de la campagne « dossier de travail clinique » (D-183, D-184)
+
+Six lots, deux mesures de production, et deux affirmations de ma part corrigées
+après revue.
+
+**Ce qui est en ligne.** #1086 (la trace nomme ses passations), #1087 (les
+questions d'entretien reviennent au praticien), #1089 (la priorité d'un axe se
+choisit), #1092 (les passations qui fondent un candidat), #1098 / `D-183` (la
+fenêtre de rappel ne s'énonce plus, `synthese-v30`). #1100 / `D-184` ouverte.
+
+**La mesure qui a réfuté son hypothèse.** Sur 55 synthèses, sept périodes
+chiffrables, dont SIX légitimes — la requête de départ attrapait six faux
+positifs pour un vrai. Le défaut réel était d'une autre nature : une assertion
+sur la PORTÉE d'un instrument (« le DASS-21 mesure des états des deux dernières
+semaines, le HAD une semaine »), fausse ET inversée par rapport à la consigne lue
+par le patient, employée pour motiver un refus de comparaison. La conclusion
+était juste, la prémisse fabriquée. Cause : `buildUserMessage` ne projette jamais
+`instructions`, seul endroit où la période de rappel est écrite.
+
+**Le balayage `DC-19` ne trouve pas de second défaut vivant.** Neuf familles :
+les doses sont des restitutions du déclaratif patient (« traitements en cours :
+propranolol 40mg », suivi de « sans proposer d'ajustement »), les seuils des
+restitutions de `interpretation.min/max` — vérifié pièce par pièce,
+`{min:31,max:55}` rendu « seuil ≥31 » et `BANDES_PSQI {min:6}` rendu « seuil > 5 ».
+Les deux « dans les normes » sont en `v4` et `v17`, antérieurs au durcissement.
+**La règle qui s'en dégage** : ce type de défaut naît là où une propriété clinique
+existe dans le dépôt mais n'entre pas dans `buildUserMessage`. La fenêtre de
+rappel était la seule dans ce cas.
+
+**Ce que le périmètre de `DC-19` ne couvre pas, et qu'il faut cesser de croire
+couvert.** `seuilsLitterauxMotives.guard.test.ts` balaie `src/lib` : il lit le
+CODE. Une valeur née à la génération n'est dans aucun littéral. Le garde n'a pas
+failli — son périmètre ne s'étend pas là.
+
+**Deux corrections de mes propres affirmations.** (1) La première rédaction de la
+clause v30 interdisait « aucune période couverte par un instrument » : trop large,
+et démontrablement faux — `Q_SOM_09` transmet sa durée de recueil deux fois
+(`titre` « Agenda du sommeil — 21 nuits », agrégat `AGD_NB_NUITS`), si bien que la
+règle aurait censuré la seule occurrence que ma mesure classait légitime.
+(2) `D-184` corrigeait la moitié de la phrase de reprise et tenait `null` pour la
+preuve d'une réécriture : `constaterProvenance` se termine par
+`catch { return {} }`, donc `null` couvre aussi « on n'a pas su constater ». La
+phrase n'affirme désormais que ce qui est POSITIVEMENT constaté.
+
+**Collision de numéro.** `D-182` est parti à une autre session pendant
+l'ouverture de #1098 ; la décision est passée à `D-183`, avec la note, et le
+sujet de squash a dû être passé explicitement — le commit de branche annonçait
+encore l'ancien numéro.
+
+**Fenêtre ratée, et dite.** #1098 a été mergée sans `SESSION_LOG` ni handoff dans
+son diff. Le présent bloc et le fragment
+`2026-09-14-2000-cloture-campagne-dossier-clinique.md` portent donc la clôture de
+`D-183` en plus de la leur.

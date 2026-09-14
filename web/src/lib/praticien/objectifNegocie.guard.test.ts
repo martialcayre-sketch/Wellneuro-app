@@ -101,7 +101,32 @@ type CleObjectifExpose =
   // qui serait autrement invisible : le praticien a-t-il rédigé cet objectif,
   // ou repris ce que la machine avait cité ? Sans ce champ, le diff
   // proposé↔négocié n'aurait aucun point d'ancrage.
-  | 'sourcePropositionId';
+  | 'sourcePropositionId'
+  // D'OÙ VIENT LA PRIORITÉ — constatée par relecture serveur ([[D-167]] §6),
+  // jamais déclarée par le navigateur.
+  //
+  // ELLE EST ADMISE ICI POUR LA MÊME RAISON QUE SA VOISINE, ET SOUS LA MÊME
+  // RÉSERVE : c'est une MARQUE DE PROVENANCE, pas une mesure. Elle vaut
+  // `'proposition_ia'` ou `null`, jamais un degré, jamais un rang — et le
+  // `prioriteSourceRang` qui vit en base à côté d'elle, lui, N'ENTRE PAS :
+  // c'est un ordre de tirage, donc exactement ce que `DC-19`/`DC-20`
+  // interdisent de servir à un écran qui pourrait en faire un classement.
+  //
+  // CE QUE SON ABSENCE COÛTAIT, constaté le 2026-09-14. La colonne était
+  // écrite et servie à personne. L'écran affirmait donc, sur le seul
+  // `sourcePropositionId`, que « la reformulation ET la priorité ci-dessus
+  // sont les vôtres » — faux dès que les deux marques coexistent, et dit au
+  // PRATICIEN sur ce qu'il a lui-même écrit (`DC-16`).
+  | 'prioriteSource'
+  // LA REFORMULATION AUSSI, ET POUR LA MÊME RAISON — `'synthese_ia'` ou `null`.
+  // Elle entre EN MÊME TEMPS que sa voisine : la phrase de reprise parle des
+  // deux textes, et n'en servir qu'un corrigeait la moitié de l'affirmation
+  // fausse en laissant l'autre (constat de revue, 2026-09-14).
+  //
+  // `enonceSource`, la troisième marque, N'ENTRE PAS : l'énoncé est RECOPIÉ du
+  // fragment par la route, jamais saisi — aucune phrase d'écran ne l'attribue
+  // au praticien, donc rien n'a besoin de la lire.
+  | 'reformulationSource';
 
 /**
  * LA FORME DE L'AMENDEMENT, ÉPINGLÉE ELLE AUSSI (6.0-B, LOT-04, `D-110`).
