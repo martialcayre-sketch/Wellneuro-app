@@ -5851,7 +5851,7 @@ Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée �
 
 ## 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
 
-**Décisions** : `D-187` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,
+**Décisions** : `D-188` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,
 stress, humeur, nutrition). Leurs verdicts `dormante` portaient un réexamen daté au
 2026-09-01, dépassé, et disaient eux-mêmes qu'élargir « est une décision
 praticien ». Mesuré au registre, sources de conduite seules : l'allowlist exposait

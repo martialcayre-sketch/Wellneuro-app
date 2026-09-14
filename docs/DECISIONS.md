@@ -4,26 +4,25 @@
 
 ## Décisions actives
 
-### D-187 — Quatre rayons de corpus s'ouvrent à la lecture : la recherche clinique cesse d'être bornée à trois étagères
+### D-188 — Quatre rayons de corpus s'ouvrent à la lecture : la recherche clinique cesse d'être bornée à trois étagères
 
 - Date : 2026-09-14
 - Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-14, sur
   la question que le registre de dormance posait lui-même.
 - Domaine : corpus clinique — allowlist de la recherche corpus
   (`dashboard/bibliotheque`), campagne « 5. Actions — le protocole assisté », LOT-01.
-- **Numéro : le sujet d'un commit de `main` annonce déjà `D-187`, et cette entrée
-  le prend quand même.** `e3ae732f` est devenu la tête de `main` pendant la
-  rédaction, avec le sujet « `D-187` — le périmètre signé couvre le calcul
-  entier » — mais **son diff ne touche pas ce registre**, qui s'arrêtait à
-  [[D-186]]. J'ai d'abord écrit cette entrée en `D-188` pour laisser le numéro à
-  celui qui l'avait annoncé ; `scripts/lib/decisions-numerotation.mjs` l'a
-  refusé en toutes lettres — « la suite est trouée : `D-187` manque » —, et ce
-  garde a raison contre moi : **un numéro ne se libère jamais.** Le registre
-  tranche, le journal suit. C'est la contrepartie de [[D-186]], qui refusait
-  d'attribuer un numéro à un commit n'en annonçant aucun ; ici un commit en
-  annonce un sans l'écrire, et c'est le même remède — **le registre fait foi**.
-  Le sujet de `e3ae732f` rejoint donc les trois `D-NNN` déjà faux dans le journal
-  Git, dette connue et non réécrite.
+- **Numéro : `D-188`, après une collision réelle avec une session parallèle.**
+  Cette entrée a été écrite `D-187` ; au même moment, `e3ae732f` devenait la tête
+  de `main` avec un sujet annonçant `D-187` **sans toucher ce registre**, qui
+  s'arrêtait alors à [[D-186]]. J'ai renuméroté en `D-188` pour laisser le numéro
+  à celui qui l'annonçait ; `scripts/lib/decisions-numerotation.mjs` a refusé la
+  lacune — « la suite est trouée : `D-187` manque » — et j'ai repris `D-187`. Puis
+  `21503136` a écrit LEUR entrée `D-187` au registre, et la collision est devenue
+  matérielle : deux entrées, un numéro. **Celle-ci passe donc à `D-188`, sans
+  lacune cette fois**, et l'entrée `D-187` ci-dessous est la leur.
+  Ce que l'épisode confirme, et c'est la seule leçon à en tirer : **un numéro ne
+  se réserve pas, il s'acquiert à la fusion** — et un sujet de commit qui en
+  annonce un sans l'écrire au registre ne réserve rien du tout.
 
 **Le constat, et il était écrit dans le dépôt.** Quatre rayons — sommeil, stress,
 humeur, nutrition — portaient un verdict `dormante` dans
@@ -88,6 +87,82 @@ pas pris ici.
   `docs/claude/MATRICE_CONSOMMATION.md` régénérée (quatre lignes passent de
   « aucune — dormante » à la route, sous `WN_RECHERCHE_CORPUS_ENABLED`) ; aucune
   migration, aucun drapeau neuf.
+
+### D-187 — Le périmètre signé couvre le calcul entier, et non plus les seules grilles
+
+- Date de la décision : 2026-09-14 (arbitrage praticien rendu le soir, après
+  contre-audit). Attestation de relecture le même jour — la SECONDE de la
+  journée, la première portant sur les grilles seules ([[D-182]]).
+- Statut : accepté, livré, signé.
+- Domaine : clinique — périmètre de signature des tables `orientationRulesV1` et
+  `indicationsBiologieV1`.
+
+**LE DÉFAUT ÉTAIT DANS LA RÉPARATION DE [[D-180]].** Le périmètre posé par
+[[D-182]] hachait les GRILLES des instruments cités — la dernière étape du
+calcul, `score → couleur`. Celle d'avant, `réponses → score`, restait dehors.
+
+Un contre-audit externe l'a démontré le jour même, sur la table biologique
+réelle et sa signature inchangée : retirer `C1_8` de
+`Q_GAS_01.scoring.subScores[0].items` fait tomber le total de l'axe C1 de 24 à
+21, la couleur globale de `warning` à `success`, et `BIO-DIG-01` cesse de
+proposer `PANEL_DIGESTIF_1`. **Sha identique, signature valide, aucun banc
+rouge** — exactement le scénario de `BIO-SOM-01` au PSQI qui avait motivé
+[[D-182]], reproduit par une autre porte.
+
+**ET `items` N'ÉTAIT QU'UNE PORTE SUR DOUZE.** L'énumération des dix-sept
+instruments cités a rendu : `type` (17 instruments), `maxTotal` (13), `note`
+(6), `dimensions` (2), `subscalesA`/`subscalesD`, `phases`, `minTotal`,
+`bareme`, `sousScoresBesoins`, `subScores[].max` — et **`threshold: 3` sur
+`Q_INF_05`**, un champ qui s'appelle *seuil*, hors d'un périmètre bâti pour
+couvrir les seuils cliniques. En dessous encore, les valeurs d'options :
+`O_PSS_INVERSE` porte l'inversion d'items du PSS dans ses nombres mêmes, et un
+`conditionnel` décide si un item est posé, donc de `missing`, donc de ce que
+`bandePlancher` sert.
+
+**CE QUI EST DÉCIDÉ N'EST PAS D'AJOUTER LES CHAMPS MANQUANTS.** Le périmètre
+hache le bloc `scoring` ENTIER de chaque instrument cité, plus la cotation de
+ses items. Choisir les champs à couvrir était le piège lui-même : une sélection
+est un allowlist, et le jour où le catalogue gagne un champ, il tombe dehors
+**sans que rien ne le dise**. C'est arrivé deux fois en deux jours. Hacher le
+bloc entier inverse la polarité — ce qui s'ajoute entre tout seul, et c'est
+l'EXCLUSION qui devient un geste écrit, donc relu. Le `Q_ALI_01` en SIIN 57 a
+d'ailleurs rendu `bareme` et `sousScoresBesoins`, que l'énumération manuelle
+n'avait pas vus.
+
+**CE QUI RESTE DEHORS EST UNE DÉCISION** : le texte des questions et les
+libellés d'options, qui n'entrent dans aucun calcul. Un banc énumère la
+sérialisation entière pour le vérifier. Les `note`, en revanche, restent DEDANS
+après vérification une par une — `Q_GAS_02` y écrit que FR_Q003 est multiplié
+par 10, `Q_STR_02` y rattache le score 27 au niveau élevé : ce sont des
+décisions de scoring qui ne vivent nulle part ailleurs.
+
+**FORME CANONIQUE.** Les clés d'objets sont triées avant hachage, pour que
+déplacer deux lignes dans un littéral du catalogue ne casse pas deux signatures.
+Les TABLEAUX gardent leur ordre : `interpretRanges` prend la première bande qui
+contient le score, l'ordre des bandes est du contenu clinique. Conséquence
+assumée et documentée : réordonner `subScores` referme les deux verrous.
+
+**CE QUE LE PRATICIEN A RELU AVANT LA RECOPIE**, et dans cet ordre : les vingt
+rattachements `needIds` — quatorze dérivés de `BESOIN_SOURCES` par les
+questionnaires SUGGÉRÉS (jamais par le déclencheur), six arbitrés faute d'union
+—, puis le delta de périmètre sur les dix-huit blocs de scoring. Les claims
+n'ont pas bougé ; leur relecture du matin couvre celle-ci.
+
+**LE LOT PORTE AUSSI**, sans rapport de fond, et le fragment `changelog.d/` fait
+foi : le registre des instruments passe de 2 à 12 identifiants vérifiables sur
+65 ; et trois corrections issues du contre-audit — deux bancs de mutation qui
+mesuraient la FORME de l'objet muté au lieu de sa valeur, un nombre
+bibliographique que son propre banc ne lisait pas, et une réserve métrologique
+devenue fausse le jour où elle a été corroborée.
+
+**RESTE OUVERT, ET CE N'EST PAS DANS CE LOT** : le QDRS servi substitue un
+domaine « Déambulation » au domaine « Humeur » de Galvin 2015 ; l'AQ servi
+remplace le domaine Orientation de Sabbagh 2010 par un bloc comportemental de
+cinq items, abandonne la pondération (27 points publiés contre 21 servis) et
+porte des bandes que l'article de 2010 ne publie pas. Les deux alimentent
+`BIO-NEU-01`, règle `publiee`. **Arbitrage rendu le 2026-09-14 : aligner les
+deux instruments sur leurs publications** — lot à part entière, non commencé,
+cadré dans le handoff du jour.
 
 ### D-186 — Un axe sans priorité choisie ne vaut pas « modéré » — entrée écrite APRÈS COUP
 

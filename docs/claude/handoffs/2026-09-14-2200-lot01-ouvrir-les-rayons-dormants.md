@@ -12,7 +12,7 @@ même jour (#1104). Livré **avant le LOT-00** parce qu'il n'en dépend pas.
 ## Ce qui a été livré
 
 `RAYONS_RECHERCHE_CORPUS` passe de **trois à sept** : + sommeil, stress, humeur,
-nutrition. Décision `D-187`, fragment
+nutrition. Décision `D-188`, fragment
 `changelog.d/2026-09-14-ouvrir-les-rayons-dormants.md`.
 
 **Le fait qui a décidé, et il était écrit dans le dépôt.** Les quatre rayons

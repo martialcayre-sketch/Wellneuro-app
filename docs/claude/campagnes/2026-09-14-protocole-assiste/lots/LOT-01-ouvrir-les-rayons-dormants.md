@@ -98,7 +98,7 @@ Sept rayons servis ; `--strict` en code 0 ; matrice à jour ; décision au regis
 
 ## Résultats
 
-Clos le **2026-09-14**, `D-187`. Livré **avant le LOT-00** parce qu'il n'en dépend
+Clos le **2026-09-14**, `D-188`. Livré **avant le LOT-00** parce qu'il n'en dépend
 pas : c'est le seul lot de la campagne qui change quelque chose le jour même.
 
 - `RAYONS_RECHERCHE_CORPUS` à sept ; `RAYONS_DISPONIBLES` en miroir, les trois

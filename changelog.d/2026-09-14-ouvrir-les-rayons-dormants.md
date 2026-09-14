@@ -35,4 +35,4 @@ Un rayon qui redeviendrait inerte redemanderait le sien.
 constructeur de protocole. Les claims sont à portée, dans un autre onglet — pas
 sous les yeux pendant la saisie. Rapprocher les deux n'est pas fait ici.
 
-Voir [[D-187]].
+Voir [[D-188]].
