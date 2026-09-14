@@ -5791,3 +5791,36 @@ n'existe au dépôt : il se rend dans la campagne.
 
 **Questions ouvertes** : la première ligne signée du barème de charge ; la
 vérification à l'écran de `D-179`, qui demande la session du praticien.
+
+## 2026-09-14 — Le périmètre du classement est posé et ancré, l'attestation reste due (D-185)
+
+`D-162` §5 exigeait un choix — signer d'abord, ou généraliser sans se réclamer
+d'une provenance certifiée. Arbitrage rendu le 2026-09-14 : **signer**, forme
+« périmètre ET ancrage d'un coup ». Ce lot est la première des deux étapes.
+
+**Ce qui restait dehors** : producteur de candidats, classement à trois termes,
+quatre textes `LIMITATION_*`, ordre des deux motifs d'abstention. Tous dans
+`chaineC1.ts`, et `priorityRulesV1.ts` déclarait la dette en toutes lettres.
+`D-182` a signé les grilles d'orientation et de biologie, pas ceci.
+
+**Ce qui distingue ce périmètre d'un document** : `chaineC1.ts` LIT ces données
+au lieu de les réécrire. Un périmètre qui serait une copie ferait porter la
+signature sur un texte que rien n'exécute (`DC-26`) — la forme de la conformité
+sans son effet. Un banc lit la source du moteur et refuse qu'un de ces textes y
+réapparaisse en dur.
+
+**Ce qui n'est PAS fait, et le banc l'exige** : `ATTESTATION_CLASSEMENT` porte
+`relu: false`. Un cas échoue si quelqu'un la remplit sans le décider — parce
+qu'un périmètre posé, haché et gardé RESSEMBLE à un périmètre signé, et que s'en
+réclamer fabriquerait la provenance que `D-162` §5 défend d'invoquer.
+
+**Ce que l'attestation coûtera, dit avant** : l'intitulé « Ajoutées par le moteur
+(hors périmètre signé) » de `DecisionSummaryCard` deviendra faux le jour venu et
+devra bouger dans le même lot, sinon l'écran sous-promet sur du relu.
+
+**Ordre de merge contraint** : `D-184` vit sur `objectif-priorite-source` (#1100).
+Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
+`D-184`.
+
+Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
+« motifs d'abstention permutés ».

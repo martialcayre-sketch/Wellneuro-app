@@ -24,6 +24,10 @@ import type {
   PatientContext,
   QuestionnaireResponseInput,
 } from './types';
+import {
+  LIMITATIONS_CANDIDAT,
+  MOTIF_ABSTENTION,
+} from '@/lib/clinical/perimetreClassementV1';
 
 // CONSTRUCTION DE LA CHAÎNE C1 — snapshot → revue → carte de décision.
 //
@@ -264,18 +268,31 @@ export function plainteDominanteDepuisScores(scores: ScoresLus): PlainteDominant
   return { ...dominante, exAequo: memeValeur.slice(1) };
 }
 
-const LIMITATION_PROPOSITION =
-  'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.';
-const LIMITATION_CLASSEMENT =
-  'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.';
-const LIMITATION_OBJECTIF =
-  'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.';
-const LIMITATION_ETAT_INCONNU =
-  'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.';
+// LES QUATRE TEXTES VIENNENT DÉSORMAIS DU PÉRIMÈTRE RELISABLE, et non plus de
+// littéraux locaux ([[D-162]] §5, étape « périmètre »). Les recopier ici
+// laisserait la signature future porter sur un texte que rien n'exécute — la
+// duplication silencieuse que `DC-26` interdit. Le moteur lit ce que le
+// praticien relira, et réciproquement.
+const LIMITATION_PROPOSITION = LIMITATIONS_CANDIDAT.proposition;
+const LIMITATION_CLASSEMENT = LIMITATIONS_CANDIDAT.classement;
+const LIMITATION_OBJECTIF = LIMITATIONS_CANDIDAT.objectif;
+const LIMITATION_ETAT_INCONNU = LIMITATIONS_CANDIDAT.etatInconnu;
 
-/** Identifiants des deux motifs `required`, tels que la table signée les porte. */
-const MOTIF_SECURITE = 'ABST-SEC-01';
-const MOTIF_CANAL = 'ABST-CAN-01';
+/**
+ * Identifiants des deux motifs `required`, tels que la table signée les porte —
+ * et DANS L'ORDRE OÙ ILS SONT ÉVALUÉS, qui vit désormais au périmètre relisable.
+ *
+ * LIAISON PAR NOM, JAMAIS PAR POSITION. Une première rédaction déstructurait
+ * `ORDRE_EVALUATION_ABSTENTION` — donc rouvrait le finding M1 de la revue du
+ * 2026-08-16 : permuter les deux lignes aurait servi le texte SÉCURITÉ sur la
+ * branche canal, sans qu'aucun banc ne bouge. Relevé en revue, et corrigé ici.
+ *
+ * L'ordre d'évaluation, lui, est celui du `if` plus bas — sécurité d'abord. Le
+ * périmètre le DÉCLARE, et un banc exige que les deux concordent : permuter la
+ * déclaration sans déplacer le `if` fait rougir.
+ */
+const MOTIF_SECURITE = MOTIF_ABSTENTION.securite;
+const MOTIF_CANAL = MOTIF_ABSTENTION.canal;
 
 /**
  * Le motif d'abstention portant cet `id`, ou une ERREUR DE CONSTRUCTION.
