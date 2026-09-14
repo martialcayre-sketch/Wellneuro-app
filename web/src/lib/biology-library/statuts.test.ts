@@ -458,16 +458,29 @@ describe('deriverStatutsBiologie — fail-closed (D-059 §3)', () => {
     expect(shaPerimetreBiologie(INDICATIONS_BIOLOGIE_V1, GRILLES_INDICATIONS)).toBe(
       INDICATIONS_BIOLOGIE_SHA256,
     );
+    const signatureReelle = {
+      validationExterne: true,
+      dateValidation: DATE_REFERENCE,
+      claimsSource: CLAIM_FIXTURE,
+      shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
+    };
     const resultat = deriverStatutsBiologie(entree({
       regles: INDICATIONS_BIOLOGIE_V1,
-      signature: {
-        validationExterne: true,
-        dateValidation: DATE_REFERENCE,
-        claimsSource: CLAIM_FIXTURE,
-        shaPerimetre: INDICATIONS_BIOLOGIE_SHA256,
-      },
+      grilles: GRILLES_INDICATIONS,
+      signature: signatureReelle,
     }));
     expect(resultat.ok).toBe(true);
+
+    // LA CONTRE-ÉPREUVE, et elle vaut mieux qu'une affirmation en commentaire :
+    // le périmètre porte DEUX termes depuis le 2026-09-14, et un appelant qui ne
+    // passerait que les règles hacherait autre chose que ce qui a été signé. Le
+    // verrou doit se fermer — pas s'ouvrir sur un périmètre incomplet. C'est ce
+    // cas-ci qui a d'abord rougi quand la fixture ci-dessus omettait `grilles`.
+    const sansGrilles = deriverStatutsBiologie(entree({
+      regles: INDICATIONS_BIOLOGIE_V1,
+      signature: signatureReelle,
+    }));
+    expect(sansGrilles.ok).toBe(false);
   });
 
   it('drapeaux absents : un déclencheur drapeau n’est jamais atteint', () => {
@@ -503,7 +516,7 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   it('la table est peuplée et signée aux cinq termes — le moteur dérive', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-08-17T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-14T00:00:00.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toHaveLength(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);

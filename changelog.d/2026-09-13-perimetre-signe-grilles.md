@@ -88,16 +88,29 @@ toutes prescriptives — ne se lise pas plus tard comme une anomalie.
 Le périmètre ayant grandi, les deux empreintes ont changé sans qu'aucune règle ne
 bouge :
 
-| table | `shaPerimetre` porté | empreinte du périmètre élargi |
-|---|---|---|
-| `orientationRulesV1` | `e2f087d6…97e427e` (2026-09-13) | `23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db` |
-| `indicationsBiologieV1` | `a2f28c0b…b38acb8f` (2026-08-17) | `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236` |
+**LES DEUX TABLES SONT SIGNÉES DEPUIS LE 2026-09-14**, sur relecture des grilles
+par le praticien. Les empreintes portées :
 
-**Rien ici ne pose ces deux sha.** Signer est un acte clinique, et cette
-signature-ci porte sur un périmètre qui a grandi : elle demande la relecture des
-GRILLES, pas seulement des règles. C'est le geste que la décision rend
-nécessaire, et c'est aussi tout son intérêt — si les bornes ne valaient pas
-d'être relues, elles ne valaient pas d'être signées.
+| table | `shaPerimetre` | ancien périmètre (règles seules) |
+|---|---|---|
+| `orientationRulesV1` | `23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db` | `e2f087d6…97e427e` (2026-09-13) |
+| `indicationsBiologieV1` | `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236` | `a2f28c0b…b38acb8f` (2026-08-17) |
+
+Les 52 claims des deux `claimsSource` ont été relus en base de production le jour
+de la signature : **52/52** `VALIDE`, actifs, `v1.0`, aucun supplanté. Les deux
+seuls non prescriptifs sont `WN-CL-0106-027` et `WN-CL-0107-012`, sur
+`BIO-STR-01`, et la table le dit désormais à l'endroit où on la lit.
+
+**CE QUE CES DEUX SIGNATURES ONT DEMANDÉ, ET QUI N'ÉTAIT PAS LISIBLE DANS UN
+DIFF.** Relire dix-sept grilles dans du TypeScript n'est pas une relecture, c'est
+une signature à l'aveugle. Les grilles ont donc été sorties du périmètre lui-même
+— par le code qui le calcule, jamais recopiées — et rendues lisibles : bornes,
+couleurs servies, libellés verbatim, règles qui les lisent, et les deux drapeaux
+de plancher de chaque instrument. C'est cette page qui a été relue, et la
+signature porte sur elle.
+
+Si les bornes ne valaient pas d'être relues, elles ne valaient pas d'être
+signées.
 
 **LE VERROU A ÉTÉ REFERMÉ PAR UN AGENT, PUIS ROUVERT.** Le 2026-09-13 à 20 h 58,
 `copilot-swe-agent` a poussé un commit qui corrigeait — justement — un défaut

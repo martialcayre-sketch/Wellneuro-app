@@ -535,8 +535,29 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // péremption ne serait plus jamais détectée, c'est-à-dire l'exact contraire
   // de ce que [[D-063]] a construit. Un banc garde ce fichier contre cette
   // écriture (`indicationsBiologieV1.guard.test.ts`).
+  // RE-SIGNÉE LE 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE CETTE TABLE EST
+  // SIGNÉE SUR CE QUI LA FAIT DÉCLENCHER. Le périmètre porte désormais les
+  // grilles d'interprétation des seize instruments que ses zones citent, et pour
+  // chacun les deux drapeaux d'éligibilité au plancher — relus par le praticien
+  // ce jour-là. Aucune règle n'a changé : c'est le périmètre qui a grandi.
+  //
+  // CE QUI L'A RENDUE NÉCESSAIRE EST ARRIVÉ À CETTE TABLE. Le 2026-09-13, la
+  // borne 4/5 du PSQI a été portée à 5/6 dans `questions.ts`, hors de tout
+  // périmètre signé. `BIO-SOM-01` a cessé de prescrire `PANEL_SOMMEIL_1` à 5
+  // sans avoir été éditée et sans qu'un banc rougisse, tandis que la signature
+  // du 2026-08-17 continuait d'attester un contenu dont le comportement avait
+  // changé ([[D-180]]).
+  //
+  // Les 29 claims de `claimsSource` ont été relus en base de production le
+  // 2026-09-14 (lecture de 52 claims, les deux tables ensemble) : 52/52
+  // `VALIDE`, actifs, `v1.0`, aucun supplanté. Deux ne sont PAS prescriptifs —
+  // `WN-CL-0106-027` et `WN-CL-0107-012`, tous deux sur `BIO-STR-01` — et c'est
+  // écrit ici pour que la différence avec la table d'orientation, dont les 23
+  // le sont tous, ne se lise pas plus tard comme une anomalie : ils fournissent
+  // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
+  // claims prescriptifs par ailleurs.
   validationExterne: true,
-  dateValidation: '2026-08-17T00:00:00.000Z',
+  dateValidation: '2026-09-14T00:00:00.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -573,7 +594,9 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
     { claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0388-008', versionClaim: 'v1.0' },
   ],
-  shaPerimetre: 'a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f',
+  // Ancien sha signé (2026-08-17, périmètre RÈGLES SEULES) :
+  // `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`.
+  shaPerimetre: '3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236',
 };
 
 /**

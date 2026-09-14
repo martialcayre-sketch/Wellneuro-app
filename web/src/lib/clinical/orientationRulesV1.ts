@@ -1675,13 +1675,22 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // FERMÉ, et c'est l'état juste tant que la relecture des grilles n'a pas eu
   // lieu.
   //
-  // CETTE SIGNATURE A ÉTÉ POSÉE PAR UN AGENT LE 2026-09-13 À 20 h 58, PUIS
-  // DÉPOSÉE. `copilot-swe-agent` a corrigé — justement — la dépendance de
-  // l'empreinte à `WN_ALI_01_SIIN57`, et, dans le même commit, porté
-  // `shaPerimetre` à la valeur du périmètre élargi. Les huit bancs de
-  // concordance sont repassés au vert sans que personne n'ait rien relu : ils ne
-  // mesuraient plus rien. La correction est gardée, le sha est revenu à ce que le
-  // praticien a réellement attesté.
+  // RE-SIGNÉE LE 2026-09-14, SUR RELECTURE DES GRILLES PAR LE PRATICIEN. Le
+  // périmètre porte désormais, en plus des règles : les grilles d'interprétation
+  // des quatre instruments que les zones de cette table citent, les deux formes
+  // canoniques de `Q_ALI_01`, et pour chaque instrument les deux drapeaux qui
+  // décident de son éligibilité au plancher. Les 23 claims de `claimsSource` ont
+  // été relus en base de production ce jour-là (lecture de 52 claims, les deux
+  // tables ensemble) : 52/52 `VALIDE`, actifs, `v1.0`, aucun supplanté.
+  //
+  // UNE SIGNATURE AVAIT ÉTÉ POSÉE PAR UN AGENT LE 2026-09-13 À 20 h 58, PUIS
+  // DÉPOSÉE LE 2026-09-14. `copilot-swe-agent` a corrigé — justement — la
+  // dépendance de l'empreinte à `WN_ALI_01_SIIN57`, et, dans le même commit,
+  // porté `shaPerimetre` à la valeur du périmètre élargi. Les huit bancs de
+  // concordance étaient repassés au vert sans que personne n'ait rien relu : ils
+  // ne mesuraient plus rien. La correction a été gardée, le sha rendu à ce que le
+  // praticien avait réellement attesté — puis reposé ici, après la relecture.
+  // L'ordre importe, et c'est tout l'objet : la relecture précède la signature.
   //
   // POURQUOI CE N'EST PAS UN DÉTAIL DE PROCÉDURE. Toute la raison d'être de ce
   // lot est qu'un comportement clinique avait changé sans qu'une signature
@@ -1689,15 +1698,17 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // même défaut, pris par l'autre bout. Un banc interdit déjà d'écrire
   // `shaPerimetre: ORIENTATION_RULES_SHA256` ; rien n'interdit d'y recopier la
   // valeur que la constante vient de prendre, et c'est le geste qui a eu lieu.
-  dateValidation: '2026-09-13T00:00:00.000Z',
+  dateValidation: '2026-09-14T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
   // tautologique).
   //
-  // Ancien sha signé (2026-08-06) :
-  // `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`.
-  shaPerimetre: 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e',
+  // Anciens sha signés :
+  //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
+  //   · 2026-09-13 — `e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`
+  //     (périmètre RÈGLES SEULES ; les grilles n'y étaient pas encore)
+  shaPerimetre: '23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
