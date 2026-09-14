@@ -5770,6 +5770,28 @@ son diff. Le présent bloc et le fragment
 `2026-09-14-2000-cloture-campagne-dossier-clinique.md` portent donc la clôture de
 `D-183` en plus de la leur.
 
+## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
+
+**Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
+0 protocole) a reclassé le goulot — il est en amont du formulaire. `D-179` l'a
+levé et est en ligne (`aa2e32f5`, constaté par contenance dans `30d16e42`). Douze
+arbitrages ont cadré la campagne suivante : trois étages (restituer, citer,
+suspendre), quatre rayons de corpus dormants à ouvrir, un barème de charge signé,
+le portail corrigé pour servir les trois actions au lieu d'une.
+
+**Écarté** : la voie générative — un modèle qui choisit type, intitulé et plans —
+sur les trois lentilles ; brancher `D-056` pour l'étage 2, faute de curation ;
+l'étage 3, la table d'interventions, hors périmètre.
+
+**Corrigé** : « six dossiers bénéficiaires » était faux — trois, les signaux de
+rang `vigilance` ne bloquant pas. Et aucun arbitrage du 11/09 sur le geste V4
+n'existe au dépôt : il se rend dans la campagne.
+
+**Prochaine action** : ouvrir `2026-09-14-protocole-assiste`.
+
+**Questions ouvertes** : la première ligne signée du barème de charge ; la
+vérification à l'écran de `D-179`, qui demande la session du praticien.
+
 ## 2026-09-14 — Le périmètre du classement est posé et ancré, l'attestation reste due (D-185)
 
 `D-162` §5 exigeait un choix — signer d'abord, ou généraliser sans se réclamer
@@ -5802,24 +5824,3 @@ Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
 
 Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
 « motifs d'abstention permutés ».
-## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
-
-**Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
-0 protocole) a reclassé le goulot — il est en amont du formulaire. `D-179` l'a
-levé et est en ligne (`aa2e32f5`, constaté par contenance dans `30d16e42`). Douze
-arbitrages ont cadré la campagne suivante : trois étages (restituer, citer,
-suspendre), quatre rayons de corpus dormants à ouvrir, un barème de charge signé,
-le portail corrigé pour servir les trois actions au lieu d'une.
-
-**Écarté** : la voie générative — un modèle qui choisit type, intitulé et plans —
-sur les trois lentilles ; brancher `D-056` pour l'étage 2, faute de curation ;
-l'étage 3, la table d'interventions, hors périmètre.
-
-**Corrigé** : « six dossiers bénéficiaires » était faux — trois, les signaux de
-rang `vigilance` ne bloquant pas. Et aucun arbitrage du 11/09 sur le geste V4
-n'existe au dépôt : il se rend dans la campagne.
-
-**Prochaine action** : ouvrir `2026-09-14-protocole-assiste`.
-
-**Questions ouvertes** : la première ligne signée du barème de charge ; la
-vérification à l'écran de `D-179`, qui demande la session du praticien.
