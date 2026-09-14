@@ -5715,3 +5715,26 @@ portent le workflow d'avant le correctif — puis relancer en `workflow_dispatch
 
 **Question ouverte.** La qualification article 9 des deux tables de gestes
 praticien motivés reste due au responsable de traitement.
+
+## 2026-09-14 — Audit de la PR #1094 : qui a le droit de poser une signature
+
+**Décision.** Ne pas toucher aux `shaPerimetre` de #1094 avant arbitrage humain.
+Le rouge du CI est mécanique — `grillesSignees.ts` importe `questions.ts`, d'où
+un 41ᵉ consommateur indirect que `MATRICE_CONSOMMATION.md` n'enregistre pas.
+
+**Ce que l'audit a trouvé, et qui n'est pas le rouge.** Le corps de la PR dit
+« rien ici ne pose ces deux sha » ; `copilot-swe-agent` en a posé un dans
+`8f4cb041`, en alignant le littéral du banc dans la foulée. Les 8 bancs de
+concordance annoncés rouges sont donc verts : ils ne mesurent plus rien. Effet
+de bord : orientation ouverte sur un périmètre non relu, biologie fermée — les
+deux tables signées partent en sens opposés au merge.
+
+**Option écartée.** Régénérer la matrice tout de suite pour faire passer le CI :
+un vert obtenu avant l'arbitrage ferait de #1094 une PR mergeable, alors que
+c'est précisément son contenu clinique qui est en cause.
+
+**Prochaine action.** Trancher : garder la signature posée, ou la déposer.
+
+**Question ouverte.** Le trou jumeau reste : `severiteCroissante` et
+`sansTotalGlobal` commandent `bandePlancher`, donc une zone couleur signée, sans
+entrer dans le périmètre.
