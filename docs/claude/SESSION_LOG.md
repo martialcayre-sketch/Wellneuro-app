@@ -5794,3 +5794,57 @@ Deux tables re-signées après relecture praticien (seconde attestation du jour)
 
 **Ouvert** : aligner QDRS et AQ sur leurs publications (arbitrage rendu, lot non
 commencé) ; trente-deux instruments à vérifier sur PubMed.
+## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
+
+**Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
+0 protocole) a reclassé le goulot — il est en amont du formulaire. `D-179` l'a
+levé et est en ligne (`aa2e32f5`, constaté par contenance dans `30d16e42`). Douze
+arbitrages ont cadré la campagne suivante : trois étages (restituer, citer,
+suspendre), quatre rayons de corpus dormants à ouvrir, un barème de charge signé,
+le portail corrigé pour servir les trois actions au lieu d'une.
+
+**Écarté** : la voie générative — un modèle qui choisit type, intitulé et plans —
+sur les trois lentilles ; brancher `D-056` pour l'étage 2, faute de curation ;
+l'étage 3, la table d'interventions, hors périmètre.
+
+**Corrigé** : « six dossiers bénéficiaires » était faux — trois, les signaux de
+rang `vigilance` ne bloquant pas. Et aucun arbitrage du 11/09 sur le geste V4
+n'existe au dépôt : il se rend dans la campagne.
+
+**Prochaine action** : ouvrir `2026-09-14-protocole-assiste`.
+
+**Questions ouvertes** : la première ligne signée du barème de charge ; la
+vérification à l'écran de `D-179`, qui demande la session du praticien.
+
+## 2026-09-14 — Le périmètre du classement est posé et ancré, l'attestation reste due (D-185)
+
+`D-162` §5 exigeait un choix — signer d'abord, ou généraliser sans se réclamer
+d'une provenance certifiée. Arbitrage rendu le 2026-09-14 : **signer**, forme
+« périmètre ET ancrage d'un coup ». Ce lot est la première des deux étapes.
+
+**Ce qui restait dehors** : producteur de candidats, classement à trois termes,
+quatre textes `LIMITATION_*`, ordre des deux motifs d'abstention. Tous dans
+`chaineC1.ts`, et `priorityRulesV1.ts` déclarait la dette en toutes lettres.
+`D-182` a signé les grilles d'orientation et de biologie, pas ceci.
+
+**Ce qui distingue ce périmètre d'un document** : `chaineC1.ts` LIT ces données
+au lieu de les réécrire. Un périmètre qui serait une copie ferait porter la
+signature sur un texte que rien n'exécute (`DC-26`) — la forme de la conformité
+sans son effet. Un banc lit la source du moteur et refuse qu'un de ces textes y
+réapparaisse en dur.
+
+**Ce qui n'est PAS fait, et le banc l'exige** : `ATTESTATION_CLASSEMENT` porte
+`relu: false`. Un cas échoue si quelqu'un la remplit sans le décider — parce
+qu'un périmètre posé, haché et gardé RESSEMBLE à un périmètre signé, et que s'en
+réclamer fabriquerait la provenance que `D-162` §5 défend d'invoquer.
+
+**Ce que l'attestation coûtera, dit avant** : l'intitulé « Ajoutées par le moteur
+(hors périmètre signé) » de `DecisionSummaryCard` deviendra faux le jour venu et
+devra bouger dans le même lot, sinon l'écran sous-promet sur du relu.
+
+**Ordre de merge contraint** : `D-184` vit sur `objectif-priorite-source` (#1100).
+Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
+`D-184`.
+
+Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
+« motifs d'abstention permutés ».
