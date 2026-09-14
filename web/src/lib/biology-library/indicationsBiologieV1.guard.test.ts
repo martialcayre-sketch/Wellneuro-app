@@ -45,7 +45,7 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // Aucune règle n'a changé — c'est le périmètre qui a grandi.
 // Ancien sha signé (2026-08-17, périmètre règles seules) :
 // `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`.
-const SHA_CONTENU_2026_09_14 = '3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236';
+const SHA_CONTENU_2026_09_14 = '82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
   it('le sha publié est celui du contenu réellement porté par la table', () => {

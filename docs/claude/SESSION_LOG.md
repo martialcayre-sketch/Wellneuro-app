@@ -5770,6 +5770,30 @@ son diff. Le présent bloc et le fragment
 `2026-09-14-2000-cloture-campagne-dossier-clinique.md` portent donc la clôture de
 `D-183` en plus de la leur.
 
+## 2026-09-14 — Contre-audit, et le périmètre signé descendu jusqu'au calcul
+
+Le périmètre posé la veille hachait les grilles — `score → couleur` — et
+laissait `réponses → score` dehors. Un contre-audit externe l'a démontré sur la
+table biologique réelle : retirer un item de l'axe C1 du TFD fait tomber la
+couleur globale de `warning` à `success` et éteint `BIO-DIG-01`, sha inchangé.
+Le défaut de `D-180` reproduit dans sa réparation.
+
+**Corrigé en changeant de règle, pas en ajoutant des champs.** Le périmètre hache
+désormais le bloc `scoring` entier et la cotation des items. Écartée : la
+sélection de champs, qui se périme en silence quand le catalogue en gagne un —
+c'est arrivé deux fois en deux jours, et douze clés étaient dehors, dont
+`threshold` sur `Q_INF_05`.
+
+**Contre-audit : six constats, six confirmés, zéro réfuté** — deux bancs de
+mutation qui mesuraient la forme, un compte non gardé, une justification devenue
+fausse le jour même. La contre-épreuve « recopié à l'identique → sha inchangé »
+manquait partout.
+
+Deux tables re-signées après relecture praticien (seconde attestation du jour).
+546 fichiers, 9147 bancs verts.
+
+**Ouvert** : aligner QDRS et AQ sur leurs publications (arbitrage rendu, lot non
+commencé) ; trente-deux instruments à vérifier sur PubMed.
 ## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
 
 **Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
