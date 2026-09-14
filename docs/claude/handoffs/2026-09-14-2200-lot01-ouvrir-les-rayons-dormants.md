@@ -1,4 +1,4 @@
-# Handoff — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture (2026-09-14 22:00)
+# Handoff — 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
 
 Premier lot livré de la campagne « 5. Actions — le protocole assisté », ouverte le
 même jour (#1104). Livré **avant le LOT-00** parce qu'il n'en dépend pas.
