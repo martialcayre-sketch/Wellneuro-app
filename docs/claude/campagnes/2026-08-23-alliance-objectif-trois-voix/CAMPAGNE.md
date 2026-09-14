@@ -1,9 +1,9 @@
 ---
 id: "2026-08-23-alliance-objectif-trois-voix"
 titre: "Alliance 6.0-B — l'objectif à trois voix"
-statut: "en_cours"
+statut: "terminée (2026-09-14 — sept lots sur sept livrés ; le BILAN du 2026-08-26, relu en production le 2026-09-12, REFUSE de signer le classement et constate zéro usage de l'appareil livré (D-112). Le créneau primaire s'ouvre ; prochaine campagne : 2026-09-14-protocole-assiste.)"
 créée_le: "2026-08-23"
-mise_à_jour: "2026-08-27"
+mise_à_jour: "2026-09-14"
 lot_courant: "LOT-06"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"

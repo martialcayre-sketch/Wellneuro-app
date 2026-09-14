@@ -5,8 +5,8 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-08-23-alliance-objectif-trois-voix",
-  "active_lot": "LOT-06",
+  "active_campaign": "2026-09-14-protocole-assiste",
+  "active_lot": "LOT-00",
   "last_completed_lot": "2026-08-23-alliance-objectif-trois-voix/LOT-06 — terminé le 2026-08-26 (PR #802) : le bilan REFUSE de signer le classement quand la provenance manque, et ne ferme donc PAS le gate de consolidation. C'est le dernier lot de campagne clos à ce jour ; les six précédents de la même campagne le sont aussi (LOT-00 à LOT-05, du 2026-08-23 au 2026-08-26).\n\nCe champ portait jusqu'au 2026-09-07 les 7 750 caractères de la campagne T0 close le 2026-08-18 — vingt lots de retard. L'histoire n'est pas perdue : elle est au registre (D-068 à D-073) et dans docs/claude/campagnes/2026-08-10-chaine-t0-operationnelle-.../. Un champ de reprise n'est pas une archive.",
   "validation": {
     "overall_status": "passed",
@@ -68,6 +68,6 @@
     "D-177"
   ],
   "last_session": null,
-  "updated_at": "2026-09-13T16:13:58Z",
+  "updated_at": "2026-09-14T20:58:48Z",
   "parallel_campaigns": []
 }
