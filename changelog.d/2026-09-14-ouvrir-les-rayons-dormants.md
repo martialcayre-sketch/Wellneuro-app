@@ -1,4 +1,4 @@
-### Bibliothèque — quatre rayons de corpus s'ouvrent à la recherche clinique
+### Bibliothèque — quatre rayons de corpus s'ouvrent à la recherche clinique (2026-09-14)
 
 La recherche corpus du tableau de bord servait **trois** étagères : cognition,
 douleur, intestin. Quatre autres — **sommeil, stress, humeur, nutrition** — avaient
