@@ -5892,3 +5892,24 @@ lacune, donc on ne cède pas un numéro : on prend le suivant.
 **Prochaine action** : LOT-02, restituer — aucune décision requise.
 
 **Questions ouvertes** : la forme de la vue patient (trois voies, cadrage du 15/09).
+
+## 2026-09-15 — LOT-02 : restituer la décision, et refuser le silence
+
+**Décisions** (aucune `D-xxx` — étage minimal) : la carte de décision se monte une
+seconde fois à côté du constructeur, sous un titre distinct ; le type d'action et la
+charge n'ont plus de valeur par défaut et le refus nomme l'action fautive ; le refus
+prend son propre état, `role="alert"` et `aria-invalid`, et ne s'efface plus à la
+première frappe. Un E2E joue enfin le parcours nominal à l'écran.
+
+**Écarté** : monter la carte sur `affiche('actions')` — en mode « tout » elle est
+déjà à l'écran et ses textes se dédoublent ; désactiver l'option d'absence du
+sélecteur — c'est le refus à l'enregistrement qui garde.
+
+**Pièges** : `npx playwright test` seul ne provisionne aucune base ; Next.js pose son
+propre `role="alert"`, qui viole le mode strict d'un `getByRole` de page entière.
+
+**Prochaine action** : LOT-04 (citer), qui dépend de `D-189` et de ce lot. Le LOT-03
+attend l'arbitrage sur la forme de la vue patient.
+
+**Questions ouvertes** : le marquage « votre patient lira ceci », qui appartient au
+LOT-03 et mentirait aujourd'hui.

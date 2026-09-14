@@ -57,9 +57,24 @@ const LOAD_LABELS: Record<TherapeuticLoad['level'], string> = {
   light: 'Léger', moderate: 'Modéré', loaded: 'Chargé', excessive: 'Excessif',
 };
 
-function emptyAction(actionId: string): ProtocolAction {
+/**
+ * UN BROUILLON ADMET L'ABSENCE, LE CONTRAT NON. `ProtocolAction.type` et
+ * `TherapeuticLoad['level']` sont obligatoires dans le contrat — c'est
+ * précisément pourquoi le brouillon en posait un EN SILENCE (`'food'`,
+ * `'light'`). Une action enregistrée sans que le sélecteur ait été touché
+ * partait « Alimentation », était hachée, persistée, et servie telle quelle au
+ * patient : y compris sur une orientation médicale ou une exploration
+ * biologique. L'absence se représente donc ici par `''`, l'écran la rend
+ * visible, et `collectSubmission` la refuse — `DC-24` : aucun statut favorable
+ * par défaut. Patron de [[D-186]], qui a tranché le même défaut sur la bande de
+ * priorité d'un axe.
+ */
+type BrouillonAction = Omit<ProtocolAction, 'type'> & { type: ProtocolActionType | '' };
+type NiveauChargeBrouillon = TherapeuticLoad['level'] | '';
+
+function emptyAction(actionId: string): BrouillonAction {
   return {
-    actionId, type: 'food', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [],
+    actionId, type: '', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [],
   };
 }
 
@@ -88,11 +103,20 @@ export function ProtocolMiniBuilder({
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
-  const [actions, setActions] = useState<ProtocolAction[]>([]);
-  const [loadLevel, setLoadLevel] = useState<TherapeuticLoad['level']>('light');
+  const [actions, setActions] = useState<BrouillonAction[]>([]);
+  const [loadLevel, setLoadLevel] = useState<NiveauChargeBrouillon>('');
   const [loadJustification, setLoadJustification] = useState('');
   const [reviewed, setReviewed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /**
+   * LE REFUS NE S'EFFACE PAS À LA PREMIÈRE FRAPPE. Il vivait dans `message`,
+   * que `markDirty` vide — le praticien voyait donc le motif de son refus
+   * disparaître au premier caractère tapé, avant toute correction, et sans
+   * qu'aucun champ ne soit marqué. Deux états distincts : `message` porte
+   * l'information et se vide à la frappe, `erreur` porte le refus et ne se lève
+   * qu'à la soumission suivante.
+   */
+  const [erreur, setErreur] = useState<string | null>(null);
   const [nextActionId, setNextActionId] = useState(1);
   const [editedSinceSave, setEditedSinceSave] = useState(false);
 
@@ -141,7 +165,7 @@ export function ProtocolMiniBuilder({
     onClearFoodCompassSelection?.();
   };
 
-  const updateAction = (actionId: string, patch: Partial<ProtocolAction>) => {
+  const updateAction = (actionId: string, patch: Partial<BrouillonAction>) => {
     markDirty();
     setActions(previous => previous.map(action => action.actionId === actionId ? { ...action, ...patch } : action));
   };
@@ -154,30 +178,48 @@ export function ProtocolMiniBuilder({
   const reset = () => {
     const hasContent = purpose || followUpCriterion || actions.length > 0 || loadJustification;
     if (hasContent && !window.confirm('Effacer ce brouillon local non enregistré ?')) return;
-    setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel('light'); setLoadJustification('');
-    setReviewed(false); setMessage(null); setNextActionId(1); setEditedSinceSave(false);
+    setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel(''); setLoadJustification('');
+    setReviewed(false); setMessage(null); setErreur(null); setNextActionId(1); setEditedSinceSave(false);
   };
 
   // Validations locales communes à « Marquer comme relu » et « Enregistrer la
   // version ». Retourne la soumission ou null (en posant un message d'erreur).
+  const refuser = (texte: string): null => {
+    setReviewed(false);
+    setMessage(null);
+    setErreur(texte);
+    return null;
+  };
+
   const collectSubmission = (): RelectureProtocoleSoumission | null => {
     const missingActionField = actions.some(action => (
       !action.title.trim() || !action.idealPlan.trim() || !action.minimalPlan.trim() || !action.rescuePlan.trim()
     ));
     if (!purpose.trim() || !followUpCriterion.trim() || actions.length === 0 || missingActionField) {
-      setReviewed(false);
-      setMessage('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
-      return null;
+      return refuser('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
+    }
+    // Le refus NOMME ce qui manque, et combien : « une action attend son type »
+    // se corrige, « brouillon incomplet » se cherche. Patron de [[D-186]].
+    const sansType = actions.filter(action => action.type === '');
+    if (sansType.length > 0) {
+      const rangs = sansType.map(action => actions.indexOf(action) + 1).join(', ');
+      return refuser(sansType.length === 1
+        ? `L’action ${rangs} n’a pas de type : choisissez-en un. Sans lui, elle serait servie au patient sous un type qu’aucun praticien n’a posé.`
+        : `Les actions ${rangs} n’ont pas de type : choisissez-en un pour chacune. Sans lui, elles seraient servies au patient sous un type qu’aucun praticien n’a posé.`);
+    }
+    if (loadLevel === '') {
+      return refuser('La charge n’est pas déclarée : choisissez-en une. Elle est une saisie du praticien, jamais un calcul — donc jamais un défaut.');
     }
     if (loadLevel === 'excessive' && !loadJustification.trim()) {
-      setReviewed(false);
-      setMessage('Une charge excessive exige une justification du praticien.');
-      return null;
+      return refuser('Une charge excessive exige une justification du praticien.');
     }
+    setErreur(null);
     return {
       purpose,
       followUpCriterion,
-      actions,
+      // Le filtre de type ci-dessus a établi que plus aucune action ne porte
+      // `''` : la conversion est constatée, pas supposée.
+      actions: actions.map(action => ({ ...action, type: action.type as ProtocolActionType })),
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
     };
   };
@@ -243,7 +285,18 @@ export function ProtocolMiniBuilder({
                 <legend className="px-1 text-sm font-medium">Action {index + 1}</legend>
                 <div className="grid gap-2">
                   <label className="text-xs">Type
-                    <select aria-label={`Type de l’action ${index + 1}`} value={action.type} onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm">
+                    <select
+                      aria-label={`Type de l’action ${index + 1}`}
+                      aria-invalid={erreur !== null && action.type === ''}
+                      value={action.type}
+                      onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType | '' })}
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                    >
+                      {/* Option d'absence NON désactivée : elle doit se lire,
+                          et rester atteignable si le praticien veut revenir en
+                          arrière. C'est le refus à l'enregistrement qui garde,
+                          pas la désactivation d'une option. */}
+                      <option value="">Choisir un type…</option>
                       {Object.entries(ACTION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </label>
@@ -277,14 +330,28 @@ export function ProtocolMiniBuilder({
         </div>
 
         <label className="text-sm font-medium">Charge déclarée par le praticien
-          <select aria-label="Charge déclarée par le praticien" value={loadLevel} onChange={event => { markDirty(); setLoadLevel(event.target.value as TherapeuticLoad['level']); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal">
+          <select
+            aria-label="Charge déclarée par le praticien"
+            aria-invalid={erreur !== null && loadLevel === ''}
+            value={loadLevel}
+            onChange={event => { markDirty(); setLoadLevel(event.target.value as NiveauChargeBrouillon); }}
+            className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger"
+          >
+            <option value="">Choisir la charge…</option>
             {Object.entries(LOAD_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
         {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" /></label>}
-        <p className="text-xs text-muted-foreground">Charge : {LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.</p>
+        <p className="text-xs text-muted-foreground">
+          {loadLevel === ''
+            ? 'Charge : non déclarée — saisie manuelle, aucun calcul automatique.'
+            : `Charge : ${LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.`}
+        </p>
       </div>
 
+      {/* `role="alert"` et couleur de danger, comme `SelectionPrioritePanel` :
+          un refus ne se lit pas dans le même registre qu'un accusé de relecture. */}
+      {erreur && <p role="alert" className="mt-4 text-base text-status-danger">{erreur}</p>}
       {message && <p role="status" className="mt-4 text-base text-muted-foreground">{message}</p>}
       {onSaveVersion && (
         <p role="status" className="mt-3 text-base">
