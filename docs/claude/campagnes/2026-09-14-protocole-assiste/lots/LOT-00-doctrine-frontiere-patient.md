@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Doctrine — la frontière patient du protocole 21 jours"
-statut: "à faire"
+statut: "terminé"
 dépend_de: "—"
 ---
 
@@ -94,3 +94,30 @@ Aucun code — validation documentaire.
 
 `D-xxx` actée avec ses cinq points ; fragment posé ; le LOT-03 et le LOT-04 n'ont
 plus de question ouverte.
+
+## Résultats
+
+Clos le **2026-09-15**, `D-189`, avec son cadrage
+`CADRAGE_FRONTIERE_PATIENT_2026-09-15.md` et le fragment
+`changelog.d/2026-09-15-frontiere-patient-du-protocole.md`.
+
+**Quatre des cinq points sont tranchés** : la liste fermée à deux entrées, ce qui ne
+se cite jamais, l'absence de source pour le critère J21, et la garde de registre en
+refus confirmable — avec sa commande d'écran exigée dans le même lot que la garde.
+
+**LE POINT 1 N'EST PAS TRANCHÉ, ET C'EST UN FAIT NOUVEAU.** Le cadrage du 2026-09-14
+avait retenu « brancher le contrat `PatientProtocolView` qui existe déjà », sur la
+prémisse — la mienne — qu'il était « écrit, testé, et simplement jamais appelé ».
+**Vérifié depuis : `buildPatientProtocolView` exige une `DecisionCard`, et il
+n'existe aucune table `decision_cards`.** La carte n'est reconstruite que sur la
+route du cockpit praticien ; la route du portail le disait déjà, c'est la raison
+écrite de son `priorityLabel` « différé ». La question posée le 14 reposait donc sur
+une prémisse fausse, et son arbitrage ne vaut pas.
+
+Trois voies restent, décrites au cadrage — recomposer la carte sur le chemin patient
+(le contrôle de hash dérive dès que le dossier bouge), persister la carte (une
+migration, hors campagne), ou ne pas brancher le contrat et étendre la projection
+existante avec le libellé d'axe re-dérivé au serveur. **Arbitrage du responsable ;
+le LOT-03 attend.**
+
+Le LOT-04, lui, n'attend pas : il dépend des points 2 à 5, tous rendus.
