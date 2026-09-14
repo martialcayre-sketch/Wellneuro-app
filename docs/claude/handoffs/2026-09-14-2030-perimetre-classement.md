@@ -61,3 +61,34 @@ qui lit la source du moteur pour refuser qu'un de ces textes y réapparaisse en 
 - `DEPARTAGE_PLAINTE_EX_AEQUO.arbitrageCliniqueRendu` vaut `false` et doit le
   rester tant qu'aucun arbitrage sur « quelle plainte prime à intensité égale » n'a
   été rendu — `D-054` arbitrage 8.
+
+## Dette de revue P0 — constatée le 2026-09-14, et arbitrée
+
+`POLITIQUE_REVUE.md` classe P0 « clinique/scoring, garde-fous » et exige **une passe
+Codex obligatoire**. Les **sept lots de cette session sont P0**, et **aucun n'a eu sa
+passe** : ni #1086, #1087, #1089, #1092, ni #1098, #1100, ni celle-ci. Le hook
+`gate-codex-p0.mjs` existe précisément pour empêcher cet oubli — il est armé dans
+`settings.json`, et il n'a rien arrêté. Je ne l'avais pas lu avant de merger.
+
+**Arbitrage du responsable, 2026-09-14** — trois options posées, la deuxième retenue :
+
+1. ~~Rien de rétroactif~~ — écartée.
+2. **Une passe sur le seul lot dont la sortie change ce qu'un soignant lit** : `D-183` /
+   `synthese-v30` (#1098). Retenue.
+3. ~~Une passe sur les six~~ — écartée, et la politique la déconseille (« jamais tout le
+   corpus »).
+
+**Deux blocs de briefing ont été rédigés au gabarit `$wellneuro-pr-review`** : #1101
+(première passe, avant merge) et #1098 (première passe, rétroactive, sur lot déjà
+déployé — un finding ouvre un lot de suite, il ne bloque rien).
+
+**Ce qui reste sans passe, et c'est assumé, pas oublié** : #1086, #1087, #1089, #1092 et
+#1100. Sur du déployé, ce qui a du rendement est une mesure de production, pas une
+relecture — c'est ce que les deux mesures de cette session ont montré, l'une en réfutant
+son hypothèse de départ.
+
+**Question ouverte versée à la passe #1098**, parce qu'elle vaut au-delà du lot : j'ai
+conclu qu'un garde de SORTIE sur `DC-19` était impossible **par analogie** avec `DC-09`
+(`verifierRestitutionOrientation`, vocabulaire non fermé). L'analogie n'a pas été testée.
+Une fenêtre de rappel est un vocabulaire nettement plus fermé qu'un glissement probatoire,
+et cette conclusion est peut-être paresseuse.
