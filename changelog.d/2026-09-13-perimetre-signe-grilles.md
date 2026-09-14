@@ -112,6 +112,16 @@ signature porte sur elle.
 Si les bornes ne valaient pas d'être relues, elles ne valaient pas d'être
 signées.
 
+**UN BANC ANTI-DÉRIVE DU DÉPÔT A ARRÊTÉ CE LOT AU CI, ET IL AVAIT RAISON.**
+`specs-drapeau-ali01.test.mjs` exige que tout spec touchant `Q_ALI_01` soit joué
+dans les DEUX positions de `WN_ALI_01_SIIN57` — dans `test:court14`, ou motivé
+dans une allowlist. Le nouveau garde des grilles affirme précisément que
+`Q_ALI_01` est au périmètre signé : c'est exactement un spec que le drapeau fait
+varier, et il n'était joué que dans une position. Ajouté à la liste, pas à
+l'allowlist. Le banc vérifie par ailleurs que chacun de ses marqueurs détecte au
+moins un spec — « un marqueur muet est un marqueur mort » —, la même discipline
+que les gardes de ce lot, écrite avant eux.
+
 **LE VERROU A ÉTÉ REFERMÉ PAR UN AGENT, PUIS ROUVERT.** Le 2026-09-13 à 20 h 58,
 `copilot-swe-agent` a poussé un commit qui corrigeait — justement — un défaut
 réel de ce lot, et qui, dans le même geste, portait `shaPerimetre` à la valeur du
