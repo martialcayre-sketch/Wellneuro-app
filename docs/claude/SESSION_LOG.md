@@ -5959,3 +5959,26 @@ bancs rouges, puis restauration depuis une copie.
 **Prochaine action** : PR 2 du LOT-04 — la citation (points 1 à 3 de `D-189`).
 
 **Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — La citation bute, et pour la même raison que la vue patient
+
+**Constat** : `D-189` §1 dit « la provenance est portée par la version ». Écrit par
+analogie avec `objectifs_negocies`, dont la provenance vit dans neuf colonnes ajoutées
+par migration. `protocol_drafts` n'a aucune colonne équivalente, et `ProtocolDraft`
+aucun champ d'accueil. Le précédent du dépôt : chaque référence de provenance ajoutée
+au payload a reçu son propre contrat (V2, V3, V4).
+
+**Trois voies consignées au lot** : contrat V5 (patron du dépôt, décision étendant
+`D-130`) ; constat à la lecture sans persistance (plus faible, précédent assumé sur
+`syntheses_comprehension`) ; ou différer la citation, l'étage 0 étant livré.
+
+**Ce qui n'est pas une voie** : persister sans contrat ni colonne — sans marque, on ne
+distingue pas « cité » de « réécrit », sauf à refuser la réécriture.
+
+**Deux prémisses fausses en une nuit, même défaut de méthode** : raisonner de
+l'existence d'un patron ailleurs à sa disponibilité ici.
+
+**Prochaine action** : arbitrage du responsable, sur le LOT-03 et sur le LOT-04 PR 2.
+
+**Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
+citation ; la première ligne du barème de charge (LOT-06).

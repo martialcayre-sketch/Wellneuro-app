@@ -223,3 +223,28 @@ servi**, celle-ci décide **qui a le droit de l'écrire**.
   `changelog.d/2026-09-15-frontiere-patient-du-protocole.md` ; ligne ajoutée à la
   carte de `vocabulaire.ts` **dans la PR du chemin** (LOT-04), avec sa garde, son
   régime et son banc de débranchement. Aucune migration, aucun drapeau neuf.
+
+---
+
+## Addendum du 2026-09-15 — une seconde prémisse de `D-189` ne tient pas
+
+`D-189` §1 pose que « la provenance est **portée par la version**, et tombe au premier
+caractère réécrit ». **Cette phrase a été écrite par analogie avec `objectifs_negocies`,
+dont la provenance vit dans NEUF COLONNES ajoutées par une migration.** Vérifié depuis :
+`protocol_drafts` n'a aucune colonne équivalente, et `ProtocolDraft` aucun champ où une
+marque de provenance de `purpose` pourrait se poser.
+
+Le précédent du dépôt est net : **chaque référence de provenance ajoutée au payload a
+reçu son propre contrat** — `foodCompassRef` → V2, `supplementCatalogRef` → V3,
+`interventionStatus` / `waitFor` / `phases` → V4.
+
+**Les points 2 à 5 de `D-189` ne sont pas touchés** : la liste fermée, ce qui ne se
+cite jamais, l'absence de source pour le critère J21, la garde de registre — livrée —
+et la clause de fermeture tiennent tous. Seul le MÉCANISME de marquage du §1 est en
+suspens, et le lot LOT-04 porte les trois voies.
+
+**Deux prémisses fausses en une nuit, et le même défaut de méthode** : raisonner de
+l'EXISTENCE d'un patron ailleurs à sa DISPONIBILITÉ ici. Pour `buildPatientProtocolView`,
+la fonction existait mais son entrée n'était pas persistée ; pour la provenance, les
+colonnes existaient mais sur une autre table. Dans les deux cas, ce qui manquait était
+une lecture jusqu'au bout AVANT de poser la question.
