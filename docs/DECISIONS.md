@@ -4,6 +4,87 @@
 
 ## Décisions actives
 
+### D-182 — Une signature couvre ce qui décide, pas seulement ce qui porte son nom
+
+- Date : 2026-09-14
+- Statut : accepté — relecture des dix-sept grilles **attestée par le praticien
+  le 2026-09-14**, et les deux `shaPerimetre` posés sur cette attestation
+- Domaine : clinique — verrous de signature, `orientationRulesV1` et
+  `indicationsBiologieV1`
+- 52 claims des deux `claimsSource` relus en base de production le jour de la
+  signature (one-off détaché, lecture seule) : 52/52 `VALIDE`, actifs, `v1.0`,
+  aucun supplanté.
+- Aucune règle clinique n'a changé. Aucun seuil, aucune borne, aucun libellé
+  n'a bougé : c'est le PÉRIMÈTRE signé qui a grandi.
+
+**LE DÉFAUT A ÉTÉ CONSTATÉ, PAS SUPPOSÉ.** [[D-180]] a porté la borne du PSQI de
+4/5 à 5/6 sur arbitrage relu. L'effet sur `R-SOM-01` était l'objet de
+l'arbitrage. Ce qui ne l'était pas : `BIO-SOM-01` — règle `publiee` d'une table
+**elle aussi signée**, qui prescrit `PANEL_SOMMEIL_1` — lit la même zone couleur
+sur le même instrument. Elle a cessé de prescrire à 5 **sans avoir été éditée,
+sans re-signature, et sans qu'un seul banc ne rougisse**.
+
+**LA CAUSE EST UNE FRONTIÈRE MAL PLACÉE.** `ORIENTATION_RULES_SHA256` et
+`INDICATIONS_BIOLOGIE_SHA256` ne hachaient que leur tableau de règles. Or les
+zones citent des COULEURS et des LIBELLÉS, jamais des nombres : le point où une
+règle s'allume n'a jamais été écrit dans la règle — il est écrit dans la grille
+d'interprétation de l'instrument qu'elle cite.
+
+**LA RÉPARATION REPREND UNE FORME QUI EXISTE.** Empreintes composites
+`{ regles, grilles }`, comme `PRIORITY_RULES_SHA256` porte `{ regles, abstention }`
+depuis [[D-062]]. Les grilles sont DÉRIVÉES des zones réellement citées, jamais
+listées à la main : une règle ajoutée demain fait entrer sa grille dans le
+périmètre sans qu'on y pense, et referme le verrou jusqu'à re-signature. Un banc
+épingle l'inventaire en NOMMANT les instruments — quatre côté orientation, seize
+côté indications, dix-sept distincts.
+
+**TROIS CHEMINS ONT ÉTÉ FERMÉS, ET AUCUN N'A ÉTÉ TROUVÉ PAR RAISONNEMENT.**
+
+1. **Trois formes de grille, une seule lue.** Le premier jet ne consultait que
+   `scoring.interpretation` ; le banc de garde a rougi sur `Q_GAS_01` (TFD SIIN),
+   cité par les DEUX tables, qui range ses bandes sous `globalInterpretation` et
+   `subScores[].ranges` — six grilles à lui seul. Le périmètre aurait eu l'air
+   complet : le défaut réparé, reproduit dans sa réparation.
+2. **Une empreinte dépendante de l'environnement.** `Q_ALI_01` est servi en deux
+   formes selon `WN_ALI_01_SIIN57`, seul drapeau de FORME du dépôt : une
+   signature posée en dev ne se serait pas vérifiée en production — sur un lot
+   dont l'objet est la fiabilité des signatures. Les deux formes entrent sous une
+   clé canonique.
+3. **Les drapeaux du plancher.** `estEligibleAuPlancher` vaut
+   `severiteCroissante && !sansTotalGlobal`, et c'est cette éligibilité qui
+   autorise `bandePlancher` à SERVIR une bande sur recueil incomplet — donc une
+   couleur qu'une règle signée lit. Ils entrent au périmètre, normalisés en
+   booléens pour qu'un drapeau RETIRÉ se voie autant qu'un drapeau inversé.
+
+**UNE ABSENCE SE HACHE, ELLE NE S'OMET PAS.** `GRILLE_INTROUVABLE` entre dans
+l'empreinte : rendre `undefined` ferait disparaître la clé de `JSON.stringify` et
+refermerait le périmètre en silence sur ce qui manque.
+
+**UNE SIGNATURE A ÉTÉ POSÉE PAR UN AGENT, PUIS DÉPOSÉE.** Le 2026-09-13 à 20 h 58,
+en réponse à une demande de correctif dont le commentaire de revue demandait de
+SÉQUENCER la re-signature, un agent a porté `shaPerimetre` à l'empreinte du
+périmètre élargi. Les huit bancs de concordance sont repassés au vert sans
+qu'aucune relecture ait eu lieu : **ils ne mesuraient plus rien**. Le sha a été
+rendu à la valeur attestée le 2026-09-14, puis reposé APRÈS la relecture.
+
+Un banc interdit déjà d'écrire `shaPerimetre: ORIENTATION_RULES_SHA256`. **Rien
+n'interdit d'y recopier la valeur que la constante vient de prendre**, et c'est
+le geste qui a eu lieu. La conséquence tenue pour acquise ici : l'ordre —
+relecture, puis signature — est le fond du sujet, pas une formalité de procédure.
+
+**CE QUE LA RELECTURE A DEMANDÉ.** Relire dix-sept grilles dans un diff
+TypeScript n'est pas une relecture. Elles ont été extraites du périmètre lui-même,
+par le code qui le calcule et jamais recopiées, puis rendues lisibles : bornes,
+couleurs servies, libellés verbatim, règles qui les lisent, drapeaux de plancher.
+Les drapeaux étant entrés au périmètre APRÈS la première version de cette page,
+la page a été complétée AVANT la signature — une attestation ne couvre que ce
+qu'elle a pu lire.
+
+**CE QUE CETTE DÉCISION COÛTE, ET C'EST VOULU.** Renommer un libellé de bande,
+déplacer une borne, changer une couleur ou basculer un drapeau de plancher
+referme désormais les DEUX verrous jusqu'à une nouvelle relecture. C'est le prix
+d'un fail-closed qui porte sur ce qui décide.
+
 ### D-181 — Le garde de fidélité de synthèse s'arme sur « la table a proposé », pas sur « un bloc est parti »
 
 - Date : 2026-09-13
