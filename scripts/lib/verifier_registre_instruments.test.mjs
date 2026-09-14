@@ -1420,11 +1420,23 @@ test('gouvernance : les chiffres écrits dans le document sont ceux des fichiers
   // Les entrées à identifiant vérifiable sont nommées dans le document : on
   // compare la LISTE, pas le seul compte — deux erreurs qui se compensent
   // passeraient sur un compte.
-  const nommees = doc.match(/entrées seulement\*\* \(([^)]+)\) portent un identifiant vérifiable/);
+  //
+  // ET LE NOMBRE ÉCRIT EN TÊTE DE PHRASE EST COMPARÉ AUSSI, depuis le
+  // contre-audit du 2026-09-14. La capture commençait à « entrées seulement »,
+  // c'est-à-dire APRÈS le nombre : porter « 12 » à « 999 » laissait ce banc
+  // vert, alors même qu'il porte le nom de la vérification des chiffres. La
+  // liste et le nombre sont deux affirmations du document, et un banc qui n'en
+  // lit qu'une laisse l'autre mentir.
+  const nommees = doc.match(/\*\*(\d+) entrées seulement\*\* \(([^)]+)\) portent un identifiant vérifiable/);
   assert.ok(nommees, "la liste des entrées à identifiant vérifiable est introuvable dans le document");
-  const citees = nommees[1].match(/Q_[A-Z]+_\d+/g) ?? [];
+  const citees = nommees[2].match(/Q_[A-Z]+_\d+/g) ?? [];
   const reelles = entrees
     .filter(e => e.references?.doi || e.references?.pmid)
     .map(e => e.questionnaireId);
   assert.deepEqual([...citees].sort(), [...reelles].sort());
+  assert.equal(
+    Number(nommees[1]),
+    reelles.length,
+    'le nombre écrit ne correspond pas au nombre réel d\'entrées à DOI ou PMID',
+  );
 });

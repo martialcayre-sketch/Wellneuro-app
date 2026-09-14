@@ -231,31 +231,66 @@ describe('orientationRulesV1 — verrou v1', () => {
   // CE QUE LE BANC PRÉCÉDENT NE PEUT PAS DIRE : que les grilles pèsent vraiment.
   // Une forme composite dont le second terme serait vide, ou constant, hacherait
   // exactement comme avant tout en ayant l'air d'avoir grandi.
+  // LA MUTATION PRÉSERVE LA STRUCTURE, et ce n'est pas un détail de style.
+  //
+  // Les deux bancs ci-dessous remplaçaient l'entrée `Q_SOM_01` — qui est un
+  // OBJET `{severiteCroissante, sansTotalGlobal, interpretation}` — par un
+  // TABLEAU nu de bandes. Ils passaient donc sur le changement de FORME, et
+  // auraient passé à bandes strictement identiques : contre-épreuve du
+  // contre-audit du 2026-09-14, `Q_SOM_01: BANDES_PSQI` (aucune valeur touchée)
+  // faisait déjà bouger le sha. C'est exactement le défaut relevé le même jour
+  // sur les deux bancs de drapeaux, et non corrigé ici.
+  //
+  // Muter UNE valeur dans la structure réelle est la seule forme qui prouve ce
+  // que le titre annonce. Le banc « recopiée à l'identique » plus bas ferme le
+  // raisonnement dans l'autre sens.
   it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
-    const avant = ORIENTATION_RULES_SHA256;
+    const psqi = GRILLES_ORIENTATION.Q_SOM_01 as { interpretation: typeof BANDES_PSQI };
     const grillesMutees = {
       ...GRILLES_ORIENTATION,
-      Q_SOM_01: [
-        { min: 0, max: 4, label: 'Pas de trouble du sommeil', color: 'success' },
-        { min: 5, max: 10, label: 'Troubles du sommeil légers', color: 'info' },
-        { min: 11, max: 16, label: 'Troubles du sommeil modérés', color: 'warning' },
-        { min: 17, max: 21, label: 'Troubles du sommeil sévères', color: 'danger' },
-      ],
+      // La borne 5/6 ramenée à 4/5 — le geste de D-180 exactement, en sens
+      // inverse. Rien d'autre ne bouge : ni la forme, ni les libellés.
+      Q_SOM_01: {
+        ...psqi,
+        interpretation: psqi.interpretation.map((bande, i) =>
+          i === 0 ? { ...bande, max: 4 } : i === 1 ? { ...bande, min: 5 } : bande,
+        ),
+      },
     };
     expect(
       sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
-    ).not.toBe(avant);
+    ).not.toBe(ORIENTATION_RULES_SHA256);
+  });
+
+  // LA CONTRE-ÉPREUVE, sans laquelle les deux mutations ne prouvent rien.
+  //
+  // Un banc de mutation n'établit son propos que si le NON-mutant passe : sans
+  // elle, « le sha a changé » reste compatible avec « le sha change à tout
+  // coup ». C'est la faute exacte que les deux bancs ci-dessus commettaient.
+  it('… et une grille recopiée à l’identique, structure préservée, ne le change PAS', () => {
+    const psqi = GRILLES_ORIENTATION.Q_SOM_01 as { interpretation: typeof BANDES_PSQI };
+    const grillesRecopiees = {
+      ...GRILLES_ORIENTATION,
+      Q_SOM_01: { ...psqi, interpretation: psqi.interpretation.map((bande) => ({ ...bande })) },
+    };
+    expect(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesRecopiees })),
+    ).toBe(ORIENTATION_RULES_SHA256);
   });
 
   // ET QU'UN LIBELLÉ COMPTE AUTANT QU'UNE BORNE : les zones `interpretation`
   // citent un libellé verbatim. Renommer une bande éteint une règle aussi
   // sûrement que déplacer une borne.
   it('renommer un libellé de bande change le sha', () => {
+    const psqi = GRILLES_ORIENTATION.Q_SOM_01 as { interpretation: typeof BANDES_PSQI };
     const grillesMutees = {
       ...GRILLES_ORIENTATION,
-      Q_SOM_01: BANDES_PSQI.map((bande, i) =>
-        i === 1 ? { ...bande, label: 'Troubles du sommeil légers ' } : bande,
-      ),
+      Q_SOM_01: {
+        ...psqi,
+        interpretation: psqi.interpretation.map((bande, i) =>
+          i === 1 ? { ...bande, label: 'Troubles du sommeil légers ' } : bande,
+        ),
+      },
     };
     expect(
       sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
