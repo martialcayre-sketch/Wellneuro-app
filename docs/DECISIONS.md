@@ -4,6 +4,75 @@
 
 ## Décisions actives
 
+### D-190 — Le praticien SUSPEND une action, il ne l'active pas : `D-056` s'amende dans un seul sens
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-14
+  (question 9 des douze qui cadrent la campagne).
+- Domaine : clinique — contrat V4 du protocole, statut d'intervention.
+- Amende : [[D-056]], et **dans un seul sens** : elle ouvre au praticien le geste
+  de suspendre, et laisse intact tout le reste de la décision.
+
+**LE DÉPÔT SE CONTREDISAIT, ET PERSONNE N'AVAIT TRANCHÉ.**
+`ProtocolMiniBuilder.tsx` rend le statut d'intervention en lecture seule avec ce
+commentaire : « il est posé par la règle de décision, jamais saisi à la main
+(`D-056`) […] sans quoi une intention pourrait naître “active” sans règle
+derrière. » L'en-tête de `e2e/biologie-arbitrage-revision.spec.ts` affirme
+l'inverse : « AUCUN PRODUCTEUR D'INTENTIONS N'EXISTE. […] **c'est le praticien qui
+la pose** en relisant son protocole, par le constructeur de la phase Actions. »
+[[D-130]] disait « le geste d'écran reste dû, et il est nommé ici plutôt que
+supposé livré ». Et `FILE_ATTENTE.md` posait **deux chemins à arbitrer** — brancher
+`D-056` ou offrir le geste au praticien — **sans les départager**.
+
+Vérification faite au cadrage du 2026-09-14 : **aucune décision, aucun fragment,
+aucun handoff ne tranchait**. Ce qui tenait lieu d'arbitrage était un commentaire
+de code et un en-tête de spec qui se contredisaient.
+
+**CE QUE CET ÉTAT COÛTAIT.** La boucle arbitrage biologique → révision de protocole
+est **livrée et testée à trois étages** — domaine, route, E2E — et
+**indéclenchable** : `ArbitrageBiologiquePanel` n'apparaît que si une version
+active porte une action `interventionStatus === 'conditionnelle_biologie'`, et
+aucune surface n'en pose.
+
+**Décision :**
+
+1. **Le praticien peut poser `conditionnelle_biologie` sur une action, avec sa
+   cible d'attente. Il ne peut poser aucun autre statut à la main.** Les actions
+   qu'il ne suspend pas restent `active`.
+2. **Le motif, et il répond directement à la crainte de `D-056`** : cette crainte
+   était qu'« une intention naisse *active* sans règle derrière ». Le geste ouvert
+   ici ne fait que **retenir** — jamais libérer. Il est l'exact opposé du risque
+   nommé. Et l'arbitrage 5 de `D-056` l'avait déjà écrit : `conditionnelle_biologie`
+   **n'est pas une recommandation**, et la restitution doit rendre impossible de la
+   lire ainsi.
+3. **Le geste est borné aux lignes que la proposition de bilan a produites** avec
+   un statut `recommandé`, `à répéter`, ou `conditionnel` **à déclencheur rempli** —
+   jamais un conditionnel non rempli, jamais un optionnel. La condition se porte
+   dans l'**intitulé**, seul champ lu des deux côtés de la frontière patient.
+4. **Le commentaire de `ProtocolMiniBuilder.tsx` est réécrit par cette décision**,
+   et l'en-tête du spec cesse d'être orphelin.
+5. **Ce que la décision N'OUVRE PAS** : poser `active`, `differee`,
+   `contre_indiquee` ou `non_indiquee_actuellement` à la main — les trois derniers
+   restent la sortie d'un arbitrage biologique, pas une saisie ; et brancher le
+   moteur `D-056`, écarté avec son motif ci-dessous.
+
+**POURQUOI LE MOTEUR N'EST PAS BRANCHÉ, ET ce n'est pas un report de confort.**
+`deciderIntentionAvantBiologie` est écrit, testé, et **refuse tout aujourd'hui** :
+`clinical_rules` porte 0 ligne, le catalogue d'alertes n'est pas publié, et le lien
+règle ↔ claim manque ([[D-133]]). Le brancher laisserait la boucle exactement aussi
+indéclenchable qu'avant, en donnant l'illusion contraire.
+
+**DÉFAUT DÉCOUVERT AU CADRAGE, ET CORRIGÉ DANS LE MÊME LOT.**
+`reviserApresArbitrages` appelle `saveVersion` **sans `version`** : la soumission
+retombe alors en V1, et sur une version active V4 la route répond
+**409 `version_contrat_incompatible`**. La boucle n'était donc pas seulement sans
+amorce — **son geste de sortie était incompatible avec le contrat qu'il révise**.
+
+- Conséquences : fragment `changelog.d/2026-09-15-suspendre-une-action.md` ;
+  `RelectureProtocoleSoumission` gagne `version` et le statut porté par l'action ;
+  aucune migration — le contrat V4 vit dans le `payload` JSON versionné
+  (`D-056` arbitrage 6).
+
 ### D-189 — Ce que le protocole 21 jours dit au patient : deux sources citables, et la garde qui manquait sur ce chemin
 
 - Date de l'arbitrage : 2026-09-14. **Date d'écriture au registre : 2026-09-15.**

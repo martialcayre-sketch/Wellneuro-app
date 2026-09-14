@@ -5913,3 +5913,28 @@ attend l'arbitrage sur la forme de la vue patient.
 
 **Questions ouvertes** : le marquage « votre patient lira ceci », qui appartient au
 LOT-03 et mentirait aujourd'hui.
+
+## 2026-09-15 — LOT-05 : une action peut attendre un bilan
+
+**Décisions** : `D-190` amende `D-056` dans un seul sens — le praticien pose
+`conditionnelle_biologie` et rien d'autre. Le geste ne fait que retenir, jamais
+libérer, quand la crainte de `D-056` visait une intention naissant *active* sans
+règle. Le dépôt se contredisait (commentaire du constructeur contre en-tête du spec
+E2E) et aucun arbitrage consigné ne tranchait.
+
+**Écarté** : brancher `D-056`, avec son motif — le moteur refuse tout aujourd'hui
+(`clinical_rules` à 0 ligne, lien règle↔claim manquant) ; le brancher laisserait la
+boucle aussi indéclenchable en donnant l'illusion contraire.
+
+**Défaut corrigé au passage** : `reviserApresArbitrages` appelait `saveVersion` sans
+`version` — la soumission retombait en V1 et la route rendait `409
+version_contrat_incompatible`. La boucle n'était pas seulement sans amorce : son
+geste de sortie était incompatible avec le contrat qu'il révise.
+
+**Rétréci, et dit** : borner le geste aux lignes de la proposition de bilan n'est pas
+fait — la proposition vit dans une autre sous-vue, et le contrat ne vérifie la cible
+contre aucun catalogue. À reprendre avec `BiologyCatalogRef`.
+
+**Prochaine action** : LOT-04 (citer), le plus gros lot restant.
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
