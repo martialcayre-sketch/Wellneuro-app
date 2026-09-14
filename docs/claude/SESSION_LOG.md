@@ -5892,3 +5892,23 @@ attend l'arbitrage sur la forme de la vue patient.
 
 **Questions ouvertes** : le marquage « votre patient lira ceci », qui appartient au
 LOT-03 et mentirait aujourd'hui.
+## 2026-09-15 — LOT-00 : la frontière patient du protocole, et une prémisse qui tombe
+
+**Décisions** : `D-189` ferme la liste des sources citables dans `purpose` à deux
+entrées — libellé d'axe signé (re-dérivé au serveur, sans désignation d'écran) et
+tête de l'objectif négocié actif. Motif praticien et rationale moteur : affichés,
+jamais cités. Aucune source pour le critère J21. La garde de registre anxiogène se
+pose avec, en refus confirmable à jeton, **et sa commande d'écran dans le même lot** —
+celle du booklet était confirmable sans qu'aucun écran ne l'envoie.
+
+**Écarté / corrigé** : le point 1 du cadrage — « brancher le contrat
+`PatientProtocolView` » — ne tient pas. Il exige une `DecisionCard` qu'aucune table
+ne persiste ; la question posée le 14 reposait sur ma prémisse fausse. Trois voies
+sont écrites au cadrage, **le LOT-03 attend l'arbitrage**. Le LOT-04 n'attend rien.
+
+**Numérotation** : `D-187` pris trois fois en une soirée. Le garde refuse toute
+lacune, donc on ne cède pas un numéro : on prend le suivant.
+
+**Prochaine action** : LOT-02, restituer — aucune décision requise.
+
+**Questions ouvertes** : la forme de la vue patient (trois voies, cadrage du 15/09).
