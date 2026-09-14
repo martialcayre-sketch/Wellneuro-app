@@ -11,6 +11,19 @@
   la question que le registre de dormance posait lui-même.
 - Domaine : corpus clinique — allowlist de la recherche corpus
   (`dashboard/bibliotheque`), campagne « 5. Actions — le protocole assisté », LOT-01.
+- **Numéro : le sujet d'un commit de `main` annonce déjà `D-187`, et cette entrée
+  le prend quand même.** `e3ae732f` est devenu la tête de `main` pendant la
+  rédaction, avec le sujet « `D-187` — le périmètre signé couvre le calcul
+  entier » — mais **son diff ne touche pas ce registre**, qui s'arrêtait à
+  [[D-186]]. J'ai d'abord écrit cette entrée en `D-188` pour laisser le numéro à
+  celui qui l'avait annoncé ; `scripts/lib/decisions-numerotation.mjs` l'a
+  refusé en toutes lettres — « la suite est trouée : `D-187` manque » —, et ce
+  garde a raison contre moi : **un numéro ne se libère jamais.** Le registre
+  tranche, le journal suit. C'est la contrepartie de [[D-186]], qui refusait
+  d'attribuer un numéro à un commit n'en annonçant aucun ; ici un commit en
+  annonce un sans l'écrire, et c'est le même remède — **le registre fait foi**.
+  Le sujet de `e3ae732f` rejoint donc les trois `D-NNN` déjà faux dans le journal
+  Git, dette connue et non réécrite.
 
 **Le constat, et il était écrit dans le dépôt.** Quatre rayons — sommeil, stress,
 humeur, nutrition — portaient un verdict `dormante` dans
