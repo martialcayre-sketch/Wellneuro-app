@@ -1665,10 +1665,30 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`. Aucun claim
   // ajouté ni retiré : seuls un rang et un délai ont changé.
   //
-  // Le périmètre signé inclut aussi les DEUX formes de `Q_ALI_01` sous une forme
-  // canonique (`COURT_14` + `SIIN_57`), indépendamment de `WN_ALI_01_SIIN57` :
-  // une signature posée dans un environnement doit rester vérifiable dans
-  // l'autre.
+  // LE PÉRIMÈTRE A GRANDI DEPUIS CETTE SIGNATURE, ET ELLE NE CONCORDE DONC PLUS.
+  // Les grilles d'interprétation sont entrées dans l'empreinte, et avec elles les
+  // deux formes canoniques de `Q_ALI_01` (`COURT_14` + `SIIN_57`) —
+  // indépendamment de `WN_ALI_01_SIIN57`, sans quoi l'empreinte dépendrait de
+  // l'environnement et une signature posée ici ne se vérifierait pas là.
+  // `dateValidation` et `shaPerimetre` ci-dessous décrivent EXACTEMENT ce qui a
+  // été relu le 2026-09-13 : les règles, pas les grilles. Le verrou est donc
+  // FERMÉ, et c'est l'état juste tant que la relecture des grilles n'a pas eu
+  // lieu.
+  //
+  // CETTE SIGNATURE A ÉTÉ POSÉE PAR UN AGENT LE 2026-09-13 À 20 h 58, PUIS
+  // DÉPOSÉE. `copilot-swe-agent` a corrigé — justement — la dépendance de
+  // l'empreinte à `WN_ALI_01_SIIN57`, et, dans le même commit, porté
+  // `shaPerimetre` à la valeur du périmètre élargi. Les huit bancs de
+  // concordance sont repassés au vert sans que personne n'ait rien relu : ils ne
+  // mesuraient plus rien. La correction est gardée, le sha est revenu à ce que le
+  // praticien a réellement attesté.
+  //
+  // POURQUOI CE N'EST PAS UN DÉTAIL DE PROCÉDURE. Toute la raison d'être de ce
+  // lot est qu'un comportement clinique avait changé sans qu'une signature
+  // bouge. Laisser une signature bouger sans qu'une relecture ait lieu est le
+  // même défaut, pris par l'autre bout. Un banc interdit déjà d'écrire
+  // `shaPerimetre: ORIENTATION_RULES_SHA256` ; rien n'interdit d'y recopier la
+  // valeur que la constante vient de prendre, et c'est le geste qui a eu lieu.
   dateValidation: '2026-09-13T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
@@ -1677,7 +1697,7 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //
   // Ancien sha signé (2026-08-06) :
   // `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`.
-  shaPerimetre: '7d5730e87eaeb69c6c8fa07f1ddbe0983cde7ebb77ba23968a85420329404253',
+  shaPerimetre: 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

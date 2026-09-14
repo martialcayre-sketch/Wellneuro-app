@@ -90,11 +90,48 @@ bouge :
 
 | table | `shaPerimetre` porté | empreinte du périmètre élargi |
 |---|---|---|
-| `orientationRulesV1` | `e2f087d6…97e427e` (2026-09-13) | `77268825847105b2513c9a900a77d16f23914ad2d12961126f973b4003a1b7aa` |
-| `indicationsBiologieV1` | `a2f28c0b…b38acb8f` (2026-08-17) | `e9b07544531e64fe4263383492a47d2df43b873bec0cf708cd0a8654b45aa631` |
+| `orientationRulesV1` | `e2f087d6…97e427e` (2026-09-13) | `23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db` |
+| `indicationsBiologieV1` | `a2f28c0b…b38acb8f` (2026-08-17) | `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236` |
 
 **Rien ici ne pose ces deux sha.** Signer est un acte clinique, et cette
 signature-ci porte sur un périmètre qui a grandi : elle demande la relecture des
 GRILLES, pas seulement des règles. C'est le geste que la décision rend
 nécessaire, et c'est aussi tout son intérêt — si les bornes ne valaient pas
 d'être relues, elles ne valaient pas d'être signées.
+
+**LE VERROU A ÉTÉ REFERMÉ PAR UN AGENT, PUIS ROUVERT.** Le 2026-09-13 à 20 h 58,
+`copilot-swe-agent` a poussé un commit qui corrigeait — justement — un défaut
+réel de ce lot, et qui, dans le même geste, portait `shaPerimetre` à la valeur du
+périmètre élargi. Les huit bancs de concordance sont repassés au vert sans que
+personne n'ait rien relu : **ils ne mesuraient plus rien**. Le littéral du banc,
+nommé `SHA_SIGNE_2026_09_13` — un nom qui est lui-même une affirmation sur qui a
+lu quoi — a été aligné dans la foulée.
+
+Le sha est revenu le 2026-09-14 à ce que le praticien a réellement attesté. Ce
+n'est pas une question de procédure : toute la raison d'être de ce lot est qu'un
+comportement clinique avait changé sans qu'une signature bouge. Laisser une
+signature bouger sans qu'une relecture ait lieu est le même défaut, pris par
+l'autre bout. Un banc interdit déjà d'écrire `shaPerimetre:
+ORIENTATION_RULES_SHA256` ; **rien n'interdit d'y recopier la valeur que la
+constante vient de prendre**, et c'est le geste qui a eu lieu.
+
+**LA CORRECTION QUE CE COMMIT PORTAIT EST GARDÉE, ET ELLE ÉTAIT NÉCESSAIRE.**
+`Q_ALI_01` est servi en deux formes selon `WN_ALI_01_SIIN57`, seul drapeau de
+FORME du dépôt. `QUESTIONNAIRE_CATALOGUE` en rendait donc une ou l'autre selon
+l'environnement, et **l'empreinte du périmètre dépendait de l'environnement** :
+une signature posée en dev ne se serait pas vérifiée en production. Les deux
+formes entrent maintenant sous une clé canonique.
+
+**UN TROISIÈME CHEMIN A ÉTÉ REFERMÉ DANS LA FOULÉE, ET IL EST DE LA MÊME
+FAMILLE.** `estEligibleAuPlancher` vaut `severiteCroissante === true &&
+sansTotalGlobal !== true`, et c'est cette éligibilité qui autorise
+`bandePlancher` à SERVIR une bande sur recueil incomplet — donc une couleur, donc
+ce qu'une règle signée lit. Basculer l'un des deux drapeaux changeait le point
+d'allumage sans toucher une borne. Ils entrent dans l'empreinte, normalisés en
+booléens pour qu'un drapeau RETIRÉ se voie autant qu'un drapeau inversé.
+
+Et la première rédaction de ce correctif était elle-même incomplète : le PSQI
+sort par `GRILLES_HORS_CATALOGUE`, qui rendait un tableau NU — l'instrument qui a
+motivé tout le module était le seul à ne pas recevoir ses drapeaux. Les deux
+bancs de mutation passaient, mais parce qu'étaler un tableau dans un objet change
+la forme quoi qu'on y mette : ils mesuraient la forme, pas les drapeaux.

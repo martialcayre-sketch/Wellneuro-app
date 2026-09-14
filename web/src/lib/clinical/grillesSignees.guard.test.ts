@@ -126,15 +126,85 @@ describe('grilles signées — le périmètre couvre ce qui décide', () => {
     expect(instruments).toContain('Q_SOM_01');
   });
 
+  // (2 ter) UN INSTRUMENT INCONNU REND BIEN `GRILLE_INTROUVABLE`.
+  //
+  // LE BANC (2) NE POUVAIT PAS L'ATTRAPER, et la revue du 2026-09-13 l'a dit :
+  // il n'exerce que des tables réelles, où tout se résout. Une régression qui
+  // remplacerait `?? GRILLE_INTROUVABLE` par une omission le laisserait VERT —
+  // la liste des introuvables resterait vide, mais parce que la clé aurait
+  // disparu de l'objet, pas parce que la grille existe. C'est exactement le mode
+  // de défaillance que ce module répare, retourné contre son propre garde.
+  it('un instrument sans grille est HACHÉ comme introuvable, jamais omis', () => {
+    const regleFictive = [{
+      declencheurs: [{
+        type: 'zone',
+        idQuestionnaire: 'Q_INSTRUMENT_QUI_N_EXISTE_PAS',
+        zone: { type: 'couleur', couleurs: ['danger'] },
+      }],
+    }];
+    const perimetre = grillesCitees(regleFictive as never);
+    expect(Object.keys(perimetre)).toEqual(['Q_INSTRUMENT_QUI_N_EXISTE_PAS']);
+    expect(perimetre.Q_INSTRUMENT_QUI_N_EXISTE_PAS).toBe(GRILLE_INTROUVABLE);
+    // Et l'absence PÈSE : deux périmètres qui ne diffèrent que par une grille
+    // trouvée ou non doivent avoir deux empreintes.
+    expect(sha256(JSON.stringify(perimetre))).not.toBe(sha256(JSON.stringify({})));
+  });
+
+  // (2 quater) LES TROIS FORMES SONT RÉELLEMENT PRÉSENTES POUR `Q_GAS_01`.
+  //
+  // C'est le cas qui a fait rougir le premier jet — il ne lisait que
+  // `scoring.interpretation` —, et aucun banc ne vérifiait que la réparation
+  // tient. Un retour en arrière sur `globalInterpretation` ou `subScores`
+  // laisserait (2) vert : l'instrument aurait toujours UNE grille.
+  it('Q_GAS_01 apporte sa grille globale ET ses cinq sous-scores', () => {
+    const g = grillesCitees(ORIENTATION_RULES_V1).Q_GAS_01 as Record<string, unknown>;
+    expect(Object.keys(g)).toContain('globalInterpretation');
+    expect(Object.keys(g)).toContain('sousScores');
+    expect(Object.keys(g.sousScores as object)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5']);
+  });
+
+  // (2 quinquies) LES DEUX DRAPEAUX DU PLANCHER PÈSENT DANS L'EMPREINTE.
+  //
+  // `estEligibleAuPlancher` vaut `severiteCroissante === true &&
+  // sansTotalGlobal !== true`, et c'est cette éligibilité qui autorise une bande
+  // à être SERVIE sur recueil incomplet — donc une couleur à être lue par une
+  // règle signée. Sans ce banc, basculer un drapeau changerait le point
+  // d'allumage sans changer le sha : le défaut réparé, par une autre porte.
+  it('basculer `severiteCroissante` change l’empreinte', () => {
+    const perimetre = grillesCitees(ORIENTATION_RULES_V1);
+    const avant = sha256(JSON.stringify(perimetre));
+    const psqi = perimetre.Q_SOM_01 as Record<string, unknown>;
+    const mute = { ...perimetre, Q_SOM_01: { ...psqi, severiteCroissante: false } };
+    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+  });
+
+  it('poser `sansTotalGlobal` change l’empreinte', () => {
+    const perimetre = grillesCitees(ORIENTATION_RULES_V1);
+    const avant = sha256(JSON.stringify(perimetre));
+    const psqi = perimetre.Q_SOM_01 as Record<string, unknown>;
+    const mute = { ...perimetre, Q_SOM_01: { ...psqi, sansTotalGlobal: true } };
+    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+  });
+
   // (3) LES DEUX TABLES LISENT BIEN LA MÊME GRILLE DU PSQI.
   //
   // C'est le fait qui a rendu le défaut coûteux : une seule grille commandait
   // deux tables signées. Il doit rester VÉRIFIÉ plutôt que rappelé en prose.
   it('la grille du PSQI est dans les deux périmètres, et c’est la même', () => {
-    const orientation = grillesCitees(ORIENTATION_RULES_V1);
-    const biologie = grillesCitees(INDICATIONS_BIOLOGIE_V1 as never);
-    expect(orientation.Q_SOM_01).toBe(BANDES_PSQI);
-    expect(biologie.Q_SOM_01).toBe(BANDES_PSQI);
+    const orientation = grillesCitees(ORIENTATION_RULES_V1) as Record<string, any>;
+    const biologie = grillesCitees(INDICATIONS_BIOLOGIE_V1 as never) as Record<string, any>;
+    expect(orientation.Q_SOM_01.interpretation).toBe(BANDES_PSQI);
+    expect(biologie.Q_SOM_01.interpretation).toBe(BANDES_PSQI);
+  });
+
+  // ET IL PORTE SES DRAPEAUX, comme n'importe quel instrument du catalogue.
+  // Sans ce banc, le PSQI ressortirait nu de `GRILLES_HORS_CATALOGUE` — ce qui a
+  // été le cas à la première rédaction — et les deux bancs de mutation plus haut
+  // passeraient en ne mesurant que la forme de l'objet.
+  it('le PSQI porte `severiteCroissante`, comme tout instrument du catalogue', () => {
+    const psqi = grillesCitees(ORIENTATION_RULES_V1).Q_SOM_01 as Record<string, unknown>;
+    expect(psqi.severiteCroissante).toBe(true);
+    expect(psqi.sansTotalGlobal).toBe(false);
   });
 
   // (4) LE PÉRIMÈTRE EST STABLE SOUS RÉORDONNANCEMENT.

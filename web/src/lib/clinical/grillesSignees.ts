@@ -131,8 +131,25 @@ export function instrumentsCitesParUneZone(
  * sous-couvrir laisse une borne commander une table signée sans être signée.
  */
 function grillesDeLInstrument(id: string): unknown {
+  // HORS CATALOGUE : la grille vient d'ailleurs, MAIS LES DRAPEAUX VIENNENT DU
+  // MÊME ENDROIT QUE POUR LES AUTRES.
+  //
+  // Une première rédaction rendait le tableau de bandes NU. Le PSQI — seul
+  // instrument de cette table, et seul instrument éligible au plancher parmi les
+  // trois que les deux tables partagent — sortait donc du périmètre sans ses
+  // drapeaux, alors même qu'il est le cas qui a motivé tout ce module. Les deux
+  // bancs de mutation passaient, mais parce qu'étaler un TABLEAU dans un objet
+  // change la forme quoi qu'on y mette : ils mesuraient la forme, pas les
+  // drapeaux. Corrigé le 2026-09-14.
   const horsCatalogue = GRILLES_HORS_CATALOGUE[id];
-  if (horsCatalogue) return horsCatalogue;
+  if (horsCatalogue) {
+    const scoring = (QUESTIONNAIRE_CATALOGUE as Record<string, DefinitionLue>)[id]?.scoring;
+    return {
+      severiteCroissante: scoring?.severiteCroissante === true,
+      sansTotalGlobal: scoring?.sansTotalGlobal === true,
+      interpretation: horsCatalogue,
+    };
+  }
 
   if (id === 'Q_ALI_01') {
     const formes: Record<string, unknown> = {};
@@ -150,6 +167,22 @@ function grillesDeLInstrument(id: string): unknown {
 function grillesDeScoring(scoring: DefinitionLue['scoring']): unknown {
   if (!scoring) return undefined;
   const bandes: Record<string, unknown> = {};
+  // LES DEUX DRAPEAUX DU PLANCHER ENTRENT AUSSI, ET CE N'EST PAS UN EXCÈS DE
+  // ZÈLE — c'est le même défaut par une autre porte, relevé à la revue du
+  // 2026-09-13. `estEligibleAuPlancher` (`questions.ts`) vaut
+  // `severiteCroissante === true && sansTotalGlobal !== true`, et c'est cette
+  // éligibilité qui autorise `bandePlancher` à SERVIR une bande sur recueil
+  // incomplet. Or une bande servie est une couleur, et une couleur est ce qu'une
+  // règle signée lit. Basculer l'un des deux drapeaux change donc le point
+  // d'allumage sans toucher une seule borne — chemin plus étroit que la grille
+  // (recueil partiel seulement), même nature exactement.
+  //
+  // NORMALISÉS EN BOOLÉENS, jamais recopiés tels quels : `JSON.stringify` omet
+  // une clé `undefined`, si bien qu'un `severiteCroissante: true` RETIRÉ
+  // laisserait l'empreinte inchangée. C'est la même règle que
+  // `GRILLE_INTROUVABLE` — une absence se hache, elle ne s'omet pas.
+  bandes.severiteCroissante = scoring.severiteCroissante === true;
+  bandes.sansTotalGlobal = scoring.sansTotalGlobal === true;
   if (grilleNonVide(scoring.interpretation)) bandes.interpretation = scoring.interpretation;
   if (grilleNonVide(scoring.globalInterpretation)) {
     bandes.globalInterpretation = scoring.globalInterpretation;
@@ -165,11 +198,19 @@ function grillesDeScoring(scoring: DefinitionLue['scoring']): unknown {
     }
     if (Object.keys(parSousScore).length > 0) bandes.sousScores = parSousScore;
   }
-  return Object.keys(bandes).length > 0 ? bandes : undefined;
+  // Les deux drapeaux étant toujours posés, `bandes` n'est jamais vide : c'est
+  // la PRÉSENCE d'au moins une grille qui décide qu'un instrument est couvert,
+  // sans quoi un questionnaire sans aucune bande passerait pour couvert par deux
+  // booléens.
+  const aUneGrille = 'interpretation' in bandes || 'globalInterpretation' in bandes
+    || 'sousScores' in bandes;
+  return aUneGrille ? bandes : undefined;
 }
 
 type DefinitionLue = {
   scoring?: {
+    severiteCroissante?: unknown;
+    sansTotalGlobal?: unknown;
     interpretation?: unknown;
     globalInterpretation?: unknown;
     subScores?: Array<{ id?: unknown; ranges?: unknown }>;

@@ -156,7 +156,11 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-08-04 — `528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603`
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
-  const SHA_SIGNE_2026_09_13 = '7d5730e87eaeb69c6c8fa07f1ddbe0983cde7ebb77ba23968a85420329404253';
+  // REVENU À LA VALEUR ATTESTÉE le 2026-09-14. Le nom de cette constante est
+  // lui-même une affirmation — « le sha signé le 2026-09-13 » —, et un agent y
+  // avait recopié l'empreinte du périmètre élargi, que personne n'a relu. Le
+  // littéral ne disait plus ce que son nom promet.
+  const SHA_SIGNE_2026_09_13 = 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des
