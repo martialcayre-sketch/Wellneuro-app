@@ -4,6 +4,112 @@
 
 ## Décisions actives
 
+### D-183 — La fenêtre de rappel d'un instrument ne s'énonce pas : elle n'est transmise nulle part
+
+- Date : 2026-09-14
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-14
+  (« Passe à v30 »), sur recommandation appuyée d'une mesure de production
+- Domaine : clinique — consigne système de synthèse IA, `synthese-v30`
+- Numéro : **D-183, et non D-182**. Le numéro se prend au merge, et celui-ci
+  est parti pendant l'ouverture de cette PR — `acd3aeef` l'a pris le même jour
+  pour le périmètre signé des grilles. Un numéro ne se libère jamais : le
+  reprendre ferait décrire au registre autre chose que ce que l'historique Git
+  affirme. La friction est voulue.
+
+**CE QUE LA PRODUCTION MONTRE.** Sur 55 synthèses en base, 32 sous
+`synthese-v29`, sept portent une période chiffrable. Six sont légitimes : la
+durée réelle d'un agenda de trois semaines (`Q_SOM_09`), une reprise du
+déclaratif patient, des questions d'entretien. **La septième ne l'est pas.** Une
+synthèse du 2026-09-12 écrit : « le DASS-21 mesure des états des deux dernières
+semaines, le HAD une semaine ; les items ne sont pas superposables. » Les deux
+durées sont fausses, et **inversées** par rapport à la consigne que le patient a
+lue à l'écran — `Q_STR_04` dit « au cours de la dernière semaine »,
+`Q_NEU_11` « au cours de ces dernières semaines ».
+
+**LA CONCLUSION ÉTAIT JUSTE, LA PRÉMISSE FABRIQUÉE.** DASS-21 et HAD ne sont
+effectivement pas superposables ; le refus de comparer était le bon geste. Mais
+il est MOTIVÉ par deux durées que rien n'a transmises, produites de mémoire
+paramétrique et servies au praticien avec le statut d'un fait. C'est la forme
+exacte que [[DC-19]] nomme — « bornes, cut-offs, pondérations, doses, **durées,
+fenêtres temporelles** » — et [[DC-16]] la classe : une production LLM ne partage
+jamais le statut d'un fait certifié.
+
+**LE BANC QUI GARDE DC-19 NE POUVAIT PAS LA VOIR.**
+`seuilsLitterauxMotives.guard.test.ts` balaie `src/lib` et exige de chaque seuil
+littéral qu'il soit nommé ou motivé. Il lit le CODE. Ici la fenêtre n'est écrite
+dans aucun littéral : elle naît à la génération. Le garde n'a pas failli, son
+périmètre ne couvre pas cette surface — et le dire évite de croire la doctrine
+tenue là où elle ne l'est pas.
+
+**LA CAUSE EST EN AMONT, ET ELLE EST STRUCTURELLE.** `buildUserMessage`
+(`lib/synthese/generation.ts`) projette `idQuestionnaire`, `titre`, `date`,
+`passationCourante`, `scores`, `scorePrincipal`, `interpretation`,
+`miniSynthese`. **Jamais `instructions`**, seul endroit du dépôt où la période
+de RAPPEL d'un instrument est écrite. Et les instruments d'un même dossier ne
+partagent pas la leur : PSQI et PSS disent « le dernier mois », DASS-21 « la
+dernière semaine », `Q_ALI_01` « vos habitudes habituelles », `Q_SOM_06`
+« votre état actuel ». Le modèle n'avait aucun moyen de savoir, et aucun moyen
+de savoir qu'il ne savait pas.
+
+**DEUX SORTES DE DURÉE, ET UNE SEULE EST EN CAUSE — correction de revue
+(Copilot, PR #1098).** Une première rédaction de cette décision et de la clause
+disait « aucune période couverte par un instrument ». **Trop large, et
+démontrablement faux** : une durée de RECUEIL est transmise, quand une période
+de RAPPEL ne l'est pas. `Q_SOM_09` le prouve deux fois — son `titre` est
+« Agenda du sommeil — 21 nuits », et `buildUserMessage` projette `titre` ; son
+agrégat `AGD_NB_NUITS` (« Nombre de nuits renseignées », 0 à 21) part dans les
+scores. La règle ainsi rédigée aurait censuré **la seule occurrence que la
+mesure classait comme légitime sur ce motif** : « les indicateurs de l'agenda
+sur trois semaines », qui ne suppose rien et restitue ce qu'on lui a donné.
+C'est la faute que le dépôt documente déjà sous une autre forme — un paragraphe
+ajouté sans reprendre ce qu'il rend faux. La clause distingue désormais les
+deux, et cite l'exemple plutôt que la seule catégorie : une autorisation
+abstraite laisserait le modèle trancher lui-même ce qui « est porté par les
+données », et il trancherait au plus large.
+
+**DEUX VOIES, ET CELLE QUI EST ÉCARTÉE L'EST POUR UN MOTIF DE DOCTRINE.**
+
+- *Transmettre la fenêtre.* Écartée. `instructions` est un texte long dont les
+  trois quarts sont hors sujet (« il n'y a pas de bonne ou de mauvaise
+  réponse ») ; en dériver un champ propre ne serait pas une modification mais
+  une **campagne d'écriture clinique sur une centaine d'instruments**, chacune
+  due à sa provenance sous [[DC-19]]. Au moins une est indécidable :
+  `Q_GAS_01` porte « 3 derniers mois » en première consultation et « 3 dernières
+  semaines » en suivi, et rien dans le prompt ne dit laquelle s'applique. Cette
+  voie reste ouverte si une mesure ultérieure montre que le modèle a BESOIN de
+  la fenêtre pour faire son travail ; elle ne l'a pas montré.
+- *Interdire de l'énoncer.* Retenue. Une clause du cadre déontologique, au
+  voisinage immédiat de celle qui interdit déjà d'invoquer « norme ni
+  étalonnage de population que les données transmises ne portent pas » — même
+  famille exacte : une propriété de l'instrument qui n'arrive pas au modèle.
+
+**L'INTERDIT EST INCONDITIONNEL, ET C'EST CE QUI LE SÉPARE DU CAS #408.** Le
+dépôt documente une classe de défaut — « une interdiction dont le critère de
+déclenchement n'arrive pas » — où une consigne prohibitive ne peut pas s'armer
+faute de donnée. Celle-ci ne dépend d'aucune donnée : elle s'applique toujours,
+et le modèle n'a rien à consulter pour savoir qu'elle le vise.
+
+**CE QUI RESTE AUTORISÉ EST NOMMÉ, PAS SEULEMENT CE QUI EST INTERDIT.** Le même
+fichier de bancs documente deux fois qu'« une consigne purement prohibitive
+laisse le modèle inventer une formulation de repli ». La clause dit donc ce qui
+se dit toujours : que deux instruments ne sont pas superposables, sans en donner
+une durée comme raison. Et elle borne sa propre portée — une période **déclarée
+par le patient**, ou proposée en question d'entretien, n'est pas la portée d'un
+instrument et ne relève pas de cette règle. Sans cette borne, la règle aurait
+interdit les six occurrences légitimes que la mesure a trouvées.
+
+**BUMP ASSUMÉ ET DÉCLARÉ : `synthese-v29` → `synthese-v30`.** Une synthèse
+rédigée sous v29 a pu dater la portée d'un instrument ; les deux versions ne se
+comparent donc pas sur ce point. Les deux empreintes gardées sont reportées
+ensemble — `promptAlimentaire.guard.test.ts` et
+`anthropic.corpusActif.guard.test.ts` —, les deux ayant rougi avant report,
+comme leur message l'exige.
+
+**CE QUE CETTE DÉCISION NE FAIT PAS.** Elle ne rend pas la fenêtre disponible au
+modèle, donc elle ne lui permet pas de mieux comparer deux instruments : elle
+l'empêche de prétendre le faire. Et elle ne corrige pas la synthèse de
+2026-09-12, déjà écrite et persistée — [[DC-24]] : rien n'est réécrit
+rétroactivement sous un statut plus favorable.
 ### D-182 — Une signature couvre ce qui décide, pas seulement ce qui porte son nom
 
 - Date : 2026-09-14
