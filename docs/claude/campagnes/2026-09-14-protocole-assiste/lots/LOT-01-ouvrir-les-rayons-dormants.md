@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Ouvrir les quatre rayons de corpus dormants"
-statut: "à faire"
+statut: "terminé"
 dépend_de: "—"
 ---
 
@@ -95,3 +95,31 @@ assertion avant d'être réécrits.
 ## Critères de done
 
 Sept rayons servis ; `--strict` en code 0 ; matrice à jour ; décision au registre.
+
+## Résultats
+
+Clos le **2026-09-14**, `D-187`. Livré **avant le LOT-00** parce qu'il n'en dépend
+pas : c'est le seul lot de la campagne qui change quelque chose le jour même.
+
+- `RAYONS_RECHERCHE_CORPUS` à sept ; `RAYONS_DISPONIBLES` en miroir, les trois
+  rayons d'origine gardant leur rang — **le premier élément est le rayon
+  sélectionné au montage**, et un banc existant asserte `rayon=cognition` au
+  premier appel.
+- Les quatre verdicts `dormante` retirés ; `rayon:biologie` est désormais le seul
+  du registre. `--strict` en code 0 ; matrice régénérée (quatre lignes passent de
+  « aucune — dormante » à la route).
+- **Deux bancs ajoutés, non prévus au cadrage.** (1) Un **banc de miroir** entre le
+  sélecteur d'écran et l'allowlist : ce sont deux listes dans deux fichiers, et un
+  rayon proposé mais refusé rendrait un 400 `rayon_invalide` à chaque recherche —
+  une option morte que rien ne signale. (2) Un banc qui vérifie que chaque rayon de
+  l'allowlist désigne bien un notebook. Le banc d'exclusion de `micronutrition` est
+  rendu explicite plutôt que déduit.
+- **Deux pièges rencontrés, à retenir.** `node scripts/wn-matrice-consommation.mjs`
+  **sans `--markdown` n'écrit pas le fichier** — il ne rend que le JSON, et la garde
+  de fraîcheur reste rouge. Et importer la constante (et non plus seulement le
+  *type*) depuis `rayonCorpus` dans un test de composant **tire `@/lib/prisma`**,
+  qui exige `DATABASE_URL` : deux `vi.mock` l'évitent, comme le fait déjà le test du
+  service.
+
+**Ce qui n'est pas fait, et reste vrai** : le panneau vit dans la Bibliothèque, pas
+dans le constructeur.

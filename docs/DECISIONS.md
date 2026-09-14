@@ -4,6 +4,78 @@
 
 ## Décisions actives
 
+### D-187 — Quatre rayons de corpus s'ouvrent à la lecture : la recherche clinique cesse d'être bornée à trois étagères
+
+- Date : 2026-09-14
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-14, sur
+  la question que le registre de dormance posait lui-même.
+- Domaine : corpus clinique — allowlist de la recherche corpus
+  (`dashboard/bibliotheque`), campagne « 5. Actions — le protocole assisté », LOT-01.
+
+**Le constat, et il était écrit dans le dépôt.** Quatre rayons — sommeil, stress,
+humeur, nutrition — portaient un verdict `dormante` dans
+`docs/claude/corpus/consommation_decisions.json` avec un **réexamen daté au
+2026-09-01**, dépassé depuis treize jours. Leurs quatre notebooks sont ingérés et
+validés. Le mécanisme est en production depuis le 2026-08-22
+(`WN_RECHERCHE_CORPUS_ENABLED`, [[D-081]]). Ce qui les retenait était une
+allowlist de trois mots, et la raison inscrite à côté de chacun disait qu'élargir
+« est une décision praticien ».
+
+**Ce que l'allowlist coûtait, mesuré.** Registre des sources d'intervention,
+instantané du 2026-08-03, **sources de conduite seules** : les trois rayons
+ouverts exposaient **60 claims validés** (cognition 60, douleur 0, intestin 0) et
+les quatre fermés en retenaient **986** (sommeil 297, humeur 283, nutrition 291,
+stress 115). Le dossier qui a retenu l'axe sommeil le 2026-09-12 avait donc
+297 claims de conduite validés fermés par une liste blanche.
+
+**Décision.** `RAYONS_RECHERCHE_CORPUS` passe de trois à **sept**, par ajout de
+`sommeil`, `stress`, `humeur` et `nutrition`. Le sélecteur d'écran en est le
+miroir, et un banc tient ce miroir — un rayon proposé à l'écran et absent de
+l'allowlist rendrait un 400 `rayon_invalide` à chaque recherche, une option morte
+que rien ne signale.
+
+**Ce que cette décision NE FAIT PAS, et c'est le fond.** Ouvrir un rayon met des
+claims **sous les yeux du praticien**. Elle n'en fait entrer **aucun** dans une
+action de protocole, dans une proposition, ou dans un texte servi au patient. La
+barrière [[D-003]] est inchangée : la seule voie de récupération reste
+`match_wellneuro_rag_claims`, qui n'expose qu'un claim signé praticien (statut
+VALIDE, actif, non patient, adossé à ≥ 1 verbatim source), et le filtrage par
+notebook reste appliqué **au niveau SQL** via `filter_source_ids` — jamais par un
+tag `metadata.rayon`. Aucun claim n'est validé, invalidé, ni recoté par cette
+décision.
+
+**Ce qui reste fermé, et pourquoi.**
+
+- **`micronutrition` reste hors de cette allowlist.** Il a son propre navigateur
+  de catalogue et il est gardé par `WN_C4_ENABLED` ; l'ajouter ici contournerait
+  ce drapeau. C'est le motif d'existence de l'allowlist, et un banc l'épingle
+  nommément.
+- **`rayon:biologie` reste dormant.** Son réexamen est au **2026-10-01**, non
+  échu, et il a lui aussi son navigateur dédié depuis CB-08. Il est désormais le
+  seul verdict du registre de dormance.
+- **L'allowlist reste plus ÉTROITE que `RAYON_VERS_NOTEBOOK`**, et son banc reste
+  **littéral**. Le dériver de la carte validerait silencieusement tout ajout
+  futur — c'est exactement le défaut bloquant qu'une revue avait trouvé le
+  2026-08-03, quand une regex syntaxique seule laissait passer n'importe quel
+  rayon déclaré.
+
+**Une règle de tenue du registre de dormance, posée ici.** Un verdict `dormante`
+ne se retire pas parce qu'il a expiré : il se retire parce que **sa source a reçu
+un appelant**. Les quatre entrées partent donc, et un rayon qui redeviendrait
+inerte redemanderait la sienne. Le réexamen dépassé n'était pas la cause, il était
+le rappel.
+
+**Réserve, consignée plutôt que tue.** Le panneau de recherche vit dans la
+Bibliothèque (`app/dashboard/bibliotheque/page.tsx`), **pas dans le constructeur
+de protocole**. Cette décision met les claims à portée, dans un autre onglet — pas
+sous les yeux pendant la saisie. Rapprocher les deux est un geste d'écran qui n'est
+pas pris ici.
+
+- Conséquences : fragment `changelog.d/2026-09-14-ouvrir-les-rayons-dormants.md` ;
+  `docs/claude/MATRICE_CONSOMMATION.md` régénérée (quatre lignes passent de
+  « aucune — dormante » à la route, sous `WN_RECHERCHE_CORPUS_ENABLED`) ; aucune
+  migration, aucun drapeau neuf.
+
 ### D-186 — Un axe sans priorité choisie ne vaut pas « modéré » — entrée écrite APRÈS COUP
 
 - Date de la décision : 2026-09-13. **Date d'écriture au registre : 2026-09-14.**
