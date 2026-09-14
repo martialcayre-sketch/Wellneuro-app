@@ -30,6 +30,12 @@ export type RelectureProtocoleSoumission = {
    * d'intervention n'existe qu'en V4.
    */
   version?: typeof VERSION_PROTOCOL_DRAFT_V4;
+  /**
+   * Le jeton rendu par un refus `REGISTRE_ANXIOGENE`, renvoyé tel quel pour
+   * lever ce refus ([[D-189]] §4). Posé par l'appelant, jamais par le
+   * formulaire : le praticien confirme un TEXTE, pas un principe.
+   */
+  confirmerRegistre?: string;
 };
 
 // État de sauvegalde serveur (C2A LOT-03). « Enregistré » n'est jamais affiché
@@ -91,6 +97,8 @@ export function ProtocolMiniBuilder({
   onSaveVersion,
   saveState = 'idle',
   saveError = null,
+  confirmationRegistre = null,
+  onConfirmerRegistre,
   foodCompassSelection = null,
   onClearFoodCompassSelection,
 }: {
@@ -105,6 +113,14 @@ export function ProtocolMiniBuilder({
   onSaveVersion?: (soumission: RelectureProtocoleSoumission) => void;
   saveState?: ProtocolSaveState;
   saveError?: string | null;
+  /**
+   * Refus de registre en attente, avec son message et son jeton. Le bouton de
+   * confirmation part avec la garde : celle du booklet était confirmable
+   * « depuis toujours » et aucun écran ne l'envoyait — un bilan validé le
+   * 16 août n'est jamais parti.
+   */
+  confirmationRegistre?: { message: string; jeton: string } | null;
+  onConfirmerRegistre?: () => void;
   foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
   onClearFoodCompassSelection?: () => void;
 }) {
@@ -427,6 +443,26 @@ export function ProtocolMiniBuilder({
         </p>
       </div>
 
+      {/* LA QUESTION SE POSE COMME UNE QUESTION, PAS COMME UNE ERREUR
+          ([[D-090]]) : le registre anxiogène signale un terme, il n'affirme pas
+          une faute — la garde ne lit pas la négation, et « il n'y a ni urgence
+          ni danger » est signalé comme le reste. D'où le registre
+          d'avertissement, et un second geste EXPLICITE, distinct
+          d'« Enregistrer la version ». */}
+      {confirmationRegistre && (
+        <div role="alert" className="mt-4 rounded-lg border border-accent bg-status-warning/10 p-3">
+          <p className="text-base text-status-warning">{confirmationRegistre.message}</p>
+          {onConfirmerRegistre && (
+            <button
+              type="button"
+              onClick={onConfirmerRegistre}
+              className="mt-2 min-h-11 rounded-lg border border-accent px-3 py-2 text-sm font-medium text-solar-ink hover:bg-accent/10"
+            >
+              Enregistrer ce texte tel quel
+            </button>
+          )}
+        </div>
+      )}
       {/* `role="alert"` et couleur de danger, comme `SelectionPrioritePanel` :
           un refus ne se lit pas dans le même registre qu'un accusé de relecture. */}
       {erreur && <p role="alert" className="mt-4 text-base text-status-danger">{erreur}</p>}

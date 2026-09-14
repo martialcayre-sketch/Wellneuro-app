@@ -5938,3 +5938,24 @@ contre aucun catalogue. À reprendre avec `BiologyCatalogRef`.
 **Prochaine action** : LOT-04 (citer), le plus gros lot restant.
 
 **Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — LOT-04 (1/2) : la garde de registre du protocole
+
+**Décisions** : aucune neuve — application de `D-189` §4. Le lot se coupe en deux PR,
+et l'ordre est doctrinal : `D-160` §4 interdit la citation **sans** garde, pas
+l'inverse. La garde seule est strictement plus sûre, et elle referme une infraction
+en cours : `purpose`, le critère J21, l'intitulé et le plan minimal de chaque action
+sortaient sans qu'aucune garde ne les relise.
+
+**Trouvé en chemin** : le refus de registre partage son code 409 avec
+`version_stale` — sans branchement sur `reason`, un texte signalé aurait dit
+« rechargez l'historique ». Et la soumission doit être mémorisée avant l'envoi pour
+être rejouée telle quelle : la rejouer depuis le formulaire laisserait passer une
+frappe, que le jeton refuserait sans dire pourquoi.
+
+**Vérifié plutôt qu'affirmé** : le banc de débranchement. Garde neutralisée → trois
+bancs rouges, puis restauration depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-04 — la citation (points 1 à 3 de `D-189`).
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.

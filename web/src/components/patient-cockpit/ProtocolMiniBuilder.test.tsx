@@ -371,4 +371,32 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     expect(soumission.actions[1].interventionStatus).toBe('active');
     expect(soumission.actions[1].waitFor).toBeUndefined();
   });
+  // ——— La garde de registre a sa commande d'écran (LOT-04) ———
+  // Celle du booklet était confirmable « depuis toujours » et AUCUN écran
+  // n'envoyait la confirmation : un bilan validé le 16 août n'est jamais parti.
+  // Une garde confirmable sans bouton est une garde bloquante déguisée.
+
+  it('rend le refus de registre et son bouton de confirmation', () => {
+    const onConfirmerRegistre = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={vi.fn()}
+        saveState="idle"
+        confirmationRegistre={{ message: 'La raison d’être emploie « urgente ».', jeton: 'abc' }}
+        onConfirmerRegistre={onConfirmerRegistre}
+      />,
+    );
+    const ui = within(container);
+    expect(ui.getByRole('alert').textContent).toContain('emploie « urgente »');
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer ce texte tel quel' }));
+    expect(onConfirmerRegistre).toHaveBeenCalledTimes(1);
+  });
+
+  it('sans refus en attente, aucun bouton de confirmation n’est proposé', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    expect(within(container).queryByRole('button', { name: 'Enregistrer ce texte tel quel' })).toBeNull();
+  });
 });

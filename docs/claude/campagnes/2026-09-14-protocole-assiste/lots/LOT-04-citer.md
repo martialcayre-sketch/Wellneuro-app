@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Citer — l'écran désigne, le serveur recopie"
-statut: "à faire"
+statut: "en cours"
 dépend_de: "LOT-00, LOT-02"
 ---
 
@@ -88,3 +88,38 @@ T1, T2, T3. Deux bancs sont attendus :
 
 Aucun texte cité ne traverse le navigateur ; la marque tombe à la réécriture ; le
 chemin figure à la carte avec son banc ; la confirmation est atteignable à l'écran.
+
+## Avancement — la garde d'abord (2026-09-15)
+
+**Le lot se livre en deux PR, et l'ordre n'est pas indifférent.** [[D-160]] §4
+interdit de livrer **la citation sans la garde** — « sinon la citation devient le
+chemin sûr et la frappe le chemin sale ». Elle n'interdit pas l'inverse : livrer la
+garde seule est strictement plus sûr, et elle referme une **infraction en cours**.
+
+### PR 1 — la garde de registre : LIVRÉE
+
+- `termeAnxiogene` sur les **quatre champs servis au patient** — `purpose`,
+  `followUpCriterion`, et `title` + `minimalPlan` de **chaque** action. Garder ce
+  que le portail sert *aujourd'hui* (une action) ferait de la garde une dette au
+  jour où il en servira trois.
+- **Refus confirmable** (`409 REGISTRE_ANXIOGENE`), le terme nommé **tel qu'il est
+  écrit**, et un **jeton lié au texte** — préfixé par domaine, patron du document
+  patient biologie : deux gardes qui hacheraient le même texte deviendraient
+  interchangeables.
+- **La commande d'écran part avec la garde.** Celle du booklet était confirmable
+  « depuis toujours » et aucun écran ne l'envoyait.
+- **Un piège fermé** : le refus de registre partage son code `409` avec
+  `version_stale`. Sans branchement sur `reason`, un texte signalé aurait dit au
+  praticien « rechargez l'historique » — ce qui n'y change rien et ne nomme pas le
+  terme.
+- **La ligne du chemin est inscrite à la carte de `vocabulaire.ts`**, dans la PR qui
+  le crée, comme cette carte l'exige.
+- **Banc de débranchement vérifié, pas affirmé** : la garde neutralisée fait rougir
+  **trois** bancs (mutation appliquée, constatée, puis restaurée depuis une copie).
+
+### PR 2 — la citation : À FAIRE
+
+Les points 1 à 3 de [[D-189]] : re-dérivation serveur du libellé d'axe depuis
+`selected_priority_id`, citation de la tête de l'objectif négocié actif par
+identifiant, constat de provenance par comparaison de textes, et le geste de
+désignation à l'écran.
