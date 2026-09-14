@@ -101,6 +101,8 @@ const ligneLue = (partiel: Record<string, unknown> = {}) => ({
   negocieLe: null,
   creeLe: new Date('2026-08-20T09:00:00.000Z'),
   supersedesObjectifId: null,
+  sourcePropositionId: null,
+  prioriteSource: null,
   ...partiel,
 });
 
@@ -402,6 +404,40 @@ describe('/api/praticien/objectifs', () => {
     expect(payload.trajectoires).toHaveLength(1);
     expect(payload.trajectoires[0].idObjectif).toBe('OBJ_2');
     expect(payload.trajectoires[0].lignes.map((l: { id: string }) => l.id)).toEqual(['OBJ_2', 'OBJ_1']);
+  });
+
+  it('SERT la provenance de la priorité — l’écran ne peut pas la deviner', async () => {
+    // LA MOITIÉ DE CHAÎNE QUE LE BANC DU PANNEAU NE PEUT PAS TENIR. Celui-ci
+    // simule `fetch` : si la route cessait de servir `prioriteSource`, ses trois
+    // cas resteraient verts et la phrase « la priorité ci-dessus est la vôtre »
+    // redeviendrait fausse en silence. Constaté en appliquant la mutation le
+    // 2026-09-14 — elle a survécu au banc du composant.
+    //
+    // POURQUOI CETTE COLONNE ET PAS SA VOISINE. `prioriteSourceRang` est écrit
+    // à côté d'elle en base et n'est PAS servi : c'est un ordre de tirage, donc
+    // exactement ce qu'un écran pourrait transformer en classement
+    // (`DC-19`/`DC-20`). L'assertion négative ci-dessous le tient.
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      ligneLue({ sourcePropositionId: 'PROP_1', prioriteSource: 'proposition_ia' }),
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.objectifs[0].prioriteSource).toBe('proposition_ia');
+    expect(payload.trajectoires[0].lignes[0].prioriteSource).toBe('proposition_ia');
+    expect(payload.objectifs[0]).not.toHaveProperty('prioriteSourceRang');
+  });
+
+  it('une priorité retouchée par le praticien est servie SANS marque', async () => {
+    // `D-167` §6 : la marque tombe à la réécriture, et `null` veut dire « ses
+    // mots », jamais « on ne sait pas ». Sans ce cas, l'assertion précédente
+    // serait vraie pour de mauvaises raisons — une route qui poserait la marque
+    // en dur.
+    prisma.objectifNegocie.findMany.mockResolvedValue([
+      ligneLue({ sourcePropositionId: 'PROP_1', prioriteSource: null }),
+    ]);
+
+    const payload = await (await GET(getRequest())).json();
+    expect(payload.objectifs[0].prioriteSource).toBeNull();
   });
 
   it('rend TOUTES les têtes quand deux reformulations concurrentes ont scindé la chaîne', async () => {

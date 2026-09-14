@@ -34,6 +34,7 @@ import {
   type EtatRatification,
 } from '@/lib/praticien/objectifNegocie';
 import { LONGUEUR_MAX_MOTIF_ECART } from '@/lib/praticien/propositionObjectif';
+import { PRIORITE_REPRISE } from '@/lib/objectif/marquesProvenance';
 
 // L'objectif négocié (Alliance 6.0-A, LOT-02) — surface praticien, phase
 // « Compréhension » du poste de pilotage.
@@ -346,9 +347,25 @@ function LigneObjectif({
 
           AUCUN COMPTEUR, aucun taux : l'adhésion se constate, elle ne se
           compte pas. */}
+      {/* LA PHRASE NE PROMET QUE CE QUE LA PROVENANCE CONSTATE.
+          Elle affirmait, sur le seul `sourcePropositionId`, que « la
+          reformulation ET la priorité ci-dessus sont les vôtres ». Or les deux
+          marques sont indépendantes et peuvent coexister : `constaterProvenance`
+          pose `prioriteSource: 'proposition_ia'` quand la priorité enregistrée
+          est celle de l'appel MOT POUR MOT, et elle tombe dès que le praticien
+          l'a retouchée ([[D-167]] §6). Un objectif repris d'une proposition
+          citée dont la priorité est restée celle de l'IA lisait donc, sous sa
+          propre plume, qu'il l'avait choisie.
+
+          LE DESTINATAIRE AGGRAVE, il n'atténue pas : ce panneau est le cockpit
+          PRATICIEN, et c'est à l'auteur qu'on affirmait à tort ce qu'il avait
+          écrit. `DC-16` : une production du modèle ne partage jamais le statut
+          de ce que le praticien a posé. */}
       {ligne.sourcePropositionId && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Repris d’une proposition citée — la reformulation et la priorité ci-dessus sont les vôtres.
+          {ligne.prioriteSource === PRIORITE_REPRISE
+            ? 'Repris d’une proposition citée — la reformulation est la vôtre, la priorité est celle proposée.'
+            : 'Repris d’une proposition citée — la reformulation et la priorité ci-dessus sont les vôtres.'}
         </p>
       )}
       {/* LA SIGNATURE : date d'enregistrement et date de l'accord. L'état de

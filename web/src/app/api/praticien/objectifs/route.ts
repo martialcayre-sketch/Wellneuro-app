@@ -97,6 +97,21 @@ export type ObjectifExpose = {
   /** La proposition reprise, si c'en est une (6.0-B). `null` sinon — et c'est
    *  le cas ordinaire, jamais un manque. */
   sourcePropositionId: string | null;
+  /**
+   * D'OÙ VIENT LA PRIORITÉ, constatée par relecture serveur ([[D-167]] §6,
+   * `constaterProvenance`). `'proposition_ia'` quand le texte enregistré est
+   * celui que l'appel a proposé, MOT POUR MOT ; `null` dès que le praticien l'a
+   * retouché — « la marque tombe à la réécriture ».
+   *
+   * POURQUOI ELLE REMONTE MAINTENANT. La colonne existait, était écrite, et
+   * n'était servie à personne : `SELECTION_OBJECTIF` ne la demandait pas. Or
+   * l'écran affirmait, sur le seul `sourcePropositionId`, que « la
+   * reformulation et la priorité ci-dessus sont les vôtres ». Les deux marques
+   * peuvent coexister — un énoncé repris d'une proposition citée dont la
+   * priorité est restée celle de l'IA —, et la phrase était alors fausse, dite
+   * à l'auteur lui-même sur ce qu'il a écrit.
+   */
+  prioriteSource: string | null;
 };
 
 /** La trajectoire d'une tête de chaîne : sa version courante puis ses
@@ -294,6 +309,7 @@ const SELECTION_OBJECTIF = {
   creeLe: true,
   supersedesObjectifId: true,
   sourcePropositionId: true,
+  prioriteSource: true,
 } as const;
 
 type LigneLue = {
@@ -307,6 +323,7 @@ type LigneLue = {
   creeLe: Date;
   supersedesObjectifId: string | null;
   sourcePropositionId: string | null;
+  prioriteSource: string | null;
 };
 
 function exposer(ligne: LigneLue): ObjectifExpose {
@@ -321,6 +338,7 @@ function exposer(ligne: LigneLue): ObjectifExpose {
     creeLe: ligne.creeLe.toISOString(),
     supersedesObjectifId: ligne.supersedesObjectifId,
     sourcePropositionId: ligne.sourcePropositionId,
+    prioriteSource: ligne.prioriteSource,
   };
 }
 

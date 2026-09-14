@@ -60,6 +60,7 @@ const ligne = (partiel: Record<string, unknown> = {}) => ({
   creeLe: '2026-08-20T09:00:00.000Z',
   supersedesObjectifId: null,
   sourcePropositionId: null,
+  prioriteSource: null,
   ...partiel,
 });
 
@@ -1679,4 +1680,60 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
     expect(document.body.textContent).toMatch(/Prochaine étape \(J42\)/);
   });
 
+});
+
+
+// ── La phrase de reprise ne promet que ce que la provenance constate ────────
+//
+// LE DÉFAUT QU'ELLE PORTAIT, constaté le 2026-09-14. Elle s'affichait sur le
+// seul `sourcePropositionId` et affirmait que « la reformulation ET la priorité
+// ci-dessus sont les vôtres ». Or les deux marques sont indépendantes :
+// `constaterProvenance` pose `prioriteSource: 'proposition_ia'` quand la
+// priorité enregistrée est celle de l'appel MOT POUR MOT, et elle tombe dès que
+// le praticien l'a retouchée ([[D-167]] §6). Un objectif repris d'une
+// proposition citée dont la priorité est restée celle de l'IA lisait donc, sous
+// sa propre plume, qu'il l'avait choisie — et ce panneau est le cockpit
+// PRATICIEN : c'est à l'auteur qu'on l'affirmait (`DC-16`).
+describe('la phrase de reprise dit ce qui est constaté, et rien de plus', () => {
+  async function rendreLigne(partiel: Record<string, unknown>) {
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_1', priorite: 'Premier plan', ...partiel })],
+          trajectoires: [
+            { idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1', priorite: 'Premier plan', ...partiel })] },
+          ],
+          ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
+          reponsesJalon: [],
+          fins: { OBJ_1: FIN_OUVERTE },
+          tetesActives: 1,
+        },
+      }),
+    );
+    await attendreLeDossier();
+  }
+
+  it('priorité reprise de l’IA : la phrase ne la dit PAS du praticien', async () => {
+    await rendreLigne({ sourcePropositionId: 'PROP_1', prioriteSource: 'proposition_ia' });
+    const texte = screen.getByText(/Repris d’une proposition citée/);
+    expect(texte.textContent).toContain('la priorité est celle proposée');
+    expect(texte.textContent).not.toContain('la priorité ci-dessus sont les vôtres');
+  });
+
+  it('priorité retouchée : elle redevient celle du praticien', async () => {
+    // CONTRE-ÉPREUVE, ET ELLE PORTE LE SENS DE `D-167` §6 : la marque TOMBE à
+    // la réécriture. `null` ne veut pas dire « on ne sait pas », il veut dire
+    // « ses mots ». Sans ce cas, l'assertion précédente serait vraie pour de
+    // mauvaises raisons — un composant qui n'afficherait jamais l'autre phrase.
+    await rendreLigne({ sourcePropositionId: 'PROP_1', prioriteSource: null });
+    const texte = screen.getByText(/Repris d’une proposition citée/);
+    expect(texte.textContent).toContain('la reformulation et la priorité ci-dessus sont les vôtres');
+  });
+
+  it('aucune reprise : aucune des deux phrases', async () => {
+    await rendreLigne({ sourcePropositionId: null, prioriteSource: null });
+    expect(screen.queryByText(/Repris d’une proposition citée/)).toBeNull();
+  });
 });
