@@ -4,6 +4,82 @@
 
 ## Décisions actives
 
+### D-185 — Le classement sera signé : son périmètre est posé et ancré, l'attestation reste due
+
+- Date : 2026-09-14
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-14,
+  sur question posée avec ses trois options (« signer le classement », forme
+  « périmètre ET ancrage d'un coup »)
+- Domaine : clinique — périmètre de signature du classement des priorités
+- **Cette décision ne signe rien.** `ATTESTATION_CLASSEMENT` porte `relu: false`,
+  et un banc échoue si quelqu'un la remplit sans le décider.
+
+**CE QUE [[D-162]] §5 DEMANDAIT, ET QUI ÉTAIT RESTÉ SANS RÉPONSE.** La clause
+conditionne toute généralisation à l'entrée du classement, des textes
+`LIMITATION_*` et de l'ordre d'évaluation des motifs d'abstention dans un
+périmètre **signé** : « tant que ce n'est pas fait, aucune généralisation ne peut
+se réclamer d'une provenance certifiée » ([[DC-01]], [[DC-26]]). Elle exige que
+l'amendement qui ouvre le périmètre **dise lequel des deux il fait** — signer
+d'abord, ou généraliser sans se réclamer d'une certification. **Celui-ci signe
+d'abord**, et c'est la première des deux étapes que cela demande.
+
+**CE QUI RESTAIT DEHORS, ET LE DÉPÔT LE DISAIT LUI-MÊME.** `priorityRulesV1.ts`
+déclare sa dette en toutes lettres — producteur de candidats, classement à trois
+termes, quatre textes servis, ordre des deux motifs d'abstention, tous dans
+`lib/clinical-engine/chaineC1.ts`, « aucune ligne signée ne les décrit ».
+[[D-182]] a signé `orientationRulesV1` et `indicationsBiologieV1` ; il n'a pas
+touché à ceci.
+
+**CE QUE LE PÉRIMÈTRE REND RELISABLE, ET POURQUOI CHAQUE PIÈCE Y EST.**
+
+- *Les trois termes de départage*, avec leur NATURE déclarée. Deux sont
+  cliniques, le troisième — l'identifiant de règle — est **technique** : il
+  existe pour que l'ordre ne dépende pas de la position dans le tableau. Le
+  déclarer clinique ferait lire une hiérarchie soignante dans un tri
+  alphabétique, et un banc l'interdit.
+- *Le départage des ex aequo de plainte dominante*, déclaré technique par
+  [[D-054]] arbitrage 8, avec `arbitrageCliniqueRendu: false` — parce qu'il ne
+  l'a pas été, et que l'inscrire comme rendu le fabriquerait.
+- *Les quatre textes servis avec chaque candidat.*
+- *L'ordre d'évaluation des deux motifs `required`.* Il DÉCIDE : le premier
+  motif atteint compose le texte servi, et les deux appellent des gestes
+  opposés — adressage médical contre passation.
+- *Les trois invariants du producteur* : rang séquentiel (et non la priorité de
+  la table, que `buildDecisionCard` refuserait à égalité), confiance fixe à la
+  plus réservée des quatre valeurs ([[D-041]]), et aucune règle écartée ne
+  produit de candidat.
+
+**LE MOTEUR LIT CES DONNÉES, IL N'EN GARDE PAS UNE COPIE — et c'est ce qui sépare
+un périmètre d'un document.** `chaineC1.ts` composait ses quatre limitations
+depuis des littéraux locaux et réécrivait les deux identifiants de motif. Les
+laisser en place aurait donné une signature portant sur un texte que **rien
+n'exécute** : la forme de la conformité sans son effet, c'est-à-dire la
+duplication silencieuse que [[DC-26]] interdit. Un banc lit la source du moteur
+et refuse qu'un de ces textes y réapparaisse en dur.
+
+**POURQUOI L'ANCRE EXISTE AVANT L'ATTESTATION.** Poser le sha maintenant rend
+mesurable ce sur quoi la relecture portera : le jour de l'attestation, le
+praticien relit un objet dont on sait qu'il n'a pas bougé depuis. L'ordre inverse
+— attester puis ancrer — laisse un intervalle où le contenu relu et le contenu
+haché divergent sans trace. C'est exactement le trou que [[D-180]] a montré sur
+les grilles, et que [[D-182]] a refermé.
+
+**CE QUE L'ATTESTATION COÛTERA, DIT MAINTENANT POUR NE PAS ÊTRE DÉCOUVERT
+APRÈS.** Déplacer un terme de départage, réécrire un des quatre textes ou
+permuter les deux motifs refermera le verrou jusqu'à re-signature. Et surtout :
+`DecisionSummaryCard` sert aujourd'hui les quatre limitations sous l'intitulé
+« **Ajoutées par le moteur (hors périmètre signé)** ». Cet intitulé deviendra
+FAUX le jour de l'attestation, et devra bouger dans le même lot — sinon l'écran
+SOUS-promettra sur du relu. C'est l'inverse du défaut habituel, mais c'est un
+écart quand même, et [[D-167]] §6 vaut dans les deux sens : on ne déclare pas
+plus que ce qu'on constate, ni moins.
+
+**CE QUE CETTE DÉCISION NE FAIT PAS.** Aucun comportement ne change : les mêmes
+textes, le même ordre, les mêmes rangs. Les 806 bancs du moteur clinique passent
+sans édition. Et aucune généralisation ne devient possible : tant que
+`ATTESTATION_CLASSEMENT.relu` vaut `false`, [[D-162]] §5 s'applique
+intégralement.
+
 ### D-183 — La fenêtre de rappel d'un instrument ne s'énonce pas : elle n'est transmise nulle part
 
 - Date : 2026-09-14
