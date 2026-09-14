@@ -49,8 +49,13 @@ export type TermeDeClassement = {
  * en silence.
  *
  * AUCUN DES TROIS NE MESURE LA GRAVITÉ. C'est ce que dit déjà
- * `LIMITATION_CLASSEMENT` au praticien, et ce que cette table rend relisable :
- * deux termes sur trois sont explicitement TECHNIQUES.
+ * `LIMITATION_CLASSEMENT` au praticien. Les deux premiers termes sont
+ * CLINIQUES — ils traduisent un jugement soignant, et les déplacer est un
+ * arbitrage ; le troisième est TECHNIQUE, et n'existe que pour rendre l'ordre
+ * stable. (Une première rédaction disait « deux termes sur trois sont
+ * techniques » : faux, et contredit par la table qui suit — relevé en revue.
+ * Une description fausse DANS un périmètre destiné à la relecture est le pire
+ * endroit où se tromper.)
  */
 export const TERMES_DE_CLASSEMENT: readonly TermeDeClassement[] = [
   {
@@ -89,7 +94,19 @@ export const DEPARTAGE_PLAINTE_EX_AEQUO = {
 };
 
 /**
- * LES QUATRE TEXTES SERVIS AVEC CHAQUE CANDIDAT.
+ * LES QUATRE TEXTES QUI PEUVENT ÊTRE SERVIS AVEC UN CANDIDAT — et leurs
+ * conditions, parce que deux d'entre eux sont CONDITIONNELS.
+ *
+ * Une première rédaction disait « les quatre textes servis avec chaque
+ * candidat » : faux, et relevé en revue. Une carte réelle en porte deux, trois
+ * ou quatre selon le dossier :
+ *
+ *   · `proposition` et `classement` — TOUJOURS, sur chaque candidat ;
+ *   · `objectif` — seulement si le patient a déclaré un objectif prioritaire ;
+ *   · `etatInconnu` — seulement si AUCUN état de population n'est déclaré.
+ *
+ * La distinction compte pour la relecture : attester « ce texte est servi » et
+ * attester « ce texte peut l'être, à cette condition » ne sont pas le même acte.
  *
  * Ils arrivent au praticien sous l'intitulé « Ajoutées par le moteur (hors
  * périmètre signé) » — l'intitulé exact que cette relecture rendrait faux, et
@@ -120,7 +137,29 @@ export const LIMITATIONS_CANDIDAT = {
  * Les identifiants sont ceux de la table signée : la liaison se fait par
  * IDENTITÉ, jamais par position (finding M1 de la revue du 2026-08-16).
  */
-export const ORDRE_EVALUATION_ABSTENTION = ['ABST-SEC-01', 'ABST-CAN-01'] as const;
+export const MOTIF_ABSTENTION = {
+  securite: 'ABST-SEC-01',
+  canal: 'ABST-CAN-01',
+} as const;
+
+/**
+ * L'ordre déclaré, composé DEPUIS LES NOMS ci-dessus.
+ *
+ * LE MOTEUR LIE PAR NOM, JAMAIS PAR POSITION, et cette distinction a déjà été
+ * payée une fois : le finding M1 de la revue du 2026-08-16 a montré qu'une
+ * lecture positionnelle servait le texte SÉCURITÉ sur la branche canal dès
+ * qu'on permutait deux lignes. Une première rédaction de ce module
+ * déstructurait `ORDRE_EVALUATION_ABSTENTION` par position dans `chaineC1.ts`
+ * — c'est-à-dire qu'elle ROUVRAIT ce défaut exact. Relevé en revue.
+ *
+ * Ce tableau ne sert donc qu'à DÉCLARER l'ordre pour la relecture, et un banc
+ * exige qu'il corresponde à l'ordre que le moteur code réellement : le
+ * permuter ici sans déplacer le `if` de `chaineC1.ts` fait rougir.
+ */
+export const ORDRE_EVALUATION_ABSTENTION = [
+  MOTIF_ABSTENTION.securite,
+  MOTIF_ABSTENTION.canal,
+] as const;
 
 /**
  * CE QUE LE PRODUCTEUR DE CANDIDATS GARANTIT, quelles que soient les règles.
@@ -144,6 +183,7 @@ export const PERIMETRE_CLASSEMENT_V1 = {
   termesDeClassement: TERMES_DE_CLASSEMENT,
   departagePlainteExAequo: DEPARTAGE_PLAINTE_EX_AEQUO,
   limitationsCandidat: LIMITATIONS_CANDIDAT,
+  motifsAbstention: MOTIF_ABSTENTION,
   ordreEvaluationAbstention: ORDRE_EVALUATION_ABSTENTION,
   invariantsProducteur: INVARIANTS_PRODUCTEUR,
 } as const;

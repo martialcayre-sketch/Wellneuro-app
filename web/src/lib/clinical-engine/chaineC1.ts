@@ -26,7 +26,7 @@ import type {
 } from './types';
 import {
   LIMITATIONS_CANDIDAT,
-  ORDRE_EVALUATION_ABSTENTION,
+  MOTIF_ABSTENTION,
 } from '@/lib/clinical/perimetreClassementV1';
 
 // CONSTRUCTION DE LA CHAÎNE C1 — snapshot → revue → carte de décision.
@@ -282,12 +282,17 @@ const LIMITATION_ETAT_INCONNU = LIMITATIONS_CANDIDAT.etatInconnu;
  * Identifiants des deux motifs `required`, tels que la table signée les porte —
  * et DANS L'ORDRE OÙ ILS SONT ÉVALUÉS, qui vit désormais au périmètre relisable.
  *
- * Cet ordre DÉCIDE : le premier motif atteint compose le texte servi au
- * praticien, et les deux appellent des gestes opposés. Le lire d'ici plutôt que
- * de le réécrire fait que la relecture clinique portera sur ce que le moteur
- * applique vraiment.
+ * LIAISON PAR NOM, JAMAIS PAR POSITION. Une première rédaction déstructurait
+ * `ORDRE_EVALUATION_ABSTENTION` — donc rouvrait le finding M1 de la revue du
+ * 2026-08-16 : permuter les deux lignes aurait servi le texte SÉCURITÉ sur la
+ * branche canal, sans qu'aucun banc ne bouge. Relevé en revue, et corrigé ici.
+ *
+ * L'ordre d'évaluation, lui, est celui du `if` plus bas — sécurité d'abord. Le
+ * périmètre le DÉCLARE, et un banc exige que les deux concordent : permuter la
+ * déclaration sans déplacer le `if` fait rougir.
  */
-const [MOTIF_SECURITE, MOTIF_CANAL] = ORDRE_EVALUATION_ABSTENTION;
+const MOTIF_SECURITE = MOTIF_ABSTENTION.securite;
+const MOTIF_CANAL = MOTIF_ABSTENTION.canal;
 
 /**
  * Le motif d'abstention portant cet `id`, ou une ERREUR DE CONSTRUCTION.

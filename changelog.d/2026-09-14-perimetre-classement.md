@@ -58,3 +58,25 @@ numéro d'aujourd'hui et **dit qu'elle est écrite après coup** — le commit d
 n'annonçait aucun numéro, et lui en attribuer un rétroactivement ferait décrire au
 registre autre chose que ce que l'historique Git affirme. Elle voyage dans ce lot faute
 d'en avoir un à elle, et le dire est préférable à le glisser.
+
+**Cinq corrections de revue, dont une qui rouvrait un défaut déjà fermé.** La première
+rédaction déstructurait `ORDRE_EVALUATION_ABSTENTION` par POSITION dans `chaineC1.ts` —
+c'est-à-dire qu'elle rouvrait le finding M1 de la revue du 2026-08-16, que le commentaire
+du fichier décrit pourtant en toutes lettres : permuter deux lignes aurait servi le texte
+SÉCURITÉ sur la branche canal, sans qu'aucun banc ne bouge. Le moteur lie désormais par
+NOM (`MOTIF_ABSTENTION.securite`), un banc refuse qu'il lise l'ordre, et un autre exige
+que l'ordre déclaré soit celui que le `if` code.
+
+Les quatre autres : le banc ne vérifiait que la longueur et l'unicité des deux
+identifiants, pas leur EXISTENCE dans la table signée — une divergence n'aurait éclaté
+qu'à l'exécution, sur un dossier réel qui s'abstient ; « les quatre textes servis avec
+chaque candidat » était faux, deux sont conditionnels, et la distinction compte pour une
+relecture (attester « est servi » et « peut l'être, à cette condition » ne sont pas le
+même acte) ; « deux termes sur trois sont techniques » contredisait la table juste
+dessous — une description fausse DANS un périmètre destiné à la relecture est le pire
+endroit où se tromper ; et l'entrée de `SESSION_LOG` avait été placée par la fusion AVANT
+une entrée existante du même jour, ce qui réordonne un journal append-only.
+
+Empreinte du périmètre après corrections : `c2fb8332f9527886`. Banc porté à 8 cas, deux
+mutations supplémentaires appliquées et tuées — retour à la liaison positionnelle, et
+identifiant de motif inventé.

@@ -4,11 +4,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ATTESTATION_CLASSEMENT,
   LIMITATIONS_CANDIDAT,
+  MOTIF_ABSTENTION,
   ORDRE_EVALUATION_ABSTENTION,
   PERIMETRE_CLASSEMENT_V1,
   TERMES_DE_CLASSEMENT,
 } from './perimetreClassementV1';
-import { PRIORITY_RULES_V1 } from './priorityRulesV1';
+import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 
 // L'ANCRAGE DU PÉRIMÈTRE DU CLASSEMENT — [[D-162]] §5, étape « périmètre ».
 //
@@ -26,7 +27,21 @@ import { PRIORITY_RULES_V1 } from './priorityRulesV1';
 // montré sur les grilles.
 
 /** L'empreinte du périmètre, figée. Toute édition la fait bouger. */
-const EMPREINTE_PERIMETRE = '3d73b1207d55b99f';
+const EMPREINTE_PERIMETRE = 'c2fb8332f9527886';
+
+/**
+ * La source d'un module, COMMENTAIRES RETIRÉS.
+ *
+ * Nécessaire, et trouvé en écrivant le banc : les commentaires de `chaineC1.ts`
+ * NOMMENT les constantes dont ils expliquent l'usage. Une recherche sur la
+ * source brute y voit un emploi, et le banc échouait sur sa propre explication.
+ * Même patron que `sourceSansCommentaires` dans `objectifNegocie.guard.test.ts`.
+ */
+function sourceSansCommentaires(chemin: URL): string {
+  return readFileSync(chemin, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
 
 function empreinte(): string {
   return createHash('sha256').update(JSON.stringify(PERIMETRE_CLASSEMENT_V1)).digest('hex').slice(0, 16);
@@ -66,13 +81,41 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     expect(dernier?.nature).toBe('technique');
   });
 
-  it('LES DEUX MOTIFS D’ABSTENTION SONT CEUX DE LA TABLE SIGNÉE, dans un ordre déclaré', () => {
-    // La liaison se fait par IDENTITÉ : un identifiant qui n'existerait plus
-    // dans la table signée ferait jeter le moteur à l'exécution
-    // (`motifRequis`), mais seulement sur un dossier qui s'abstient — donc
-    // tard, et sur un vrai patient.
+  it('LES DEUX MOTIFS EXISTENT DANS LA TABLE SIGNÉE — pas seulement deux chaînes distinctes', () => {
+    // LE TROU QUE CE CAS FERME (constat de revue). La première rédaction ne
+    // vérifiait que la LONGUEUR et l'UNICITÉ : deux identifiants inventés
+    // l'auraient passée. La divergence n'aurait alors éclaté qu'à l'exécution,
+    // dans `motifRequis` — c'est-à-dire tard, et sur un dossier réel qui
+    // s'abstient. Un fail-closed qui attend un vrai patient pour se fermer
+    // n'est pas un fail-closed.
+    const idsSignes = ABSTENTION_PROCEDURE_V1.motifsRequired.map(motif => motif.id);
+    for (const id of ORDRE_EVALUATION_ABSTENTION) {
+      expect(idsSignes, `« ${id} » n’existe pas dans ABSTENTION_PROCEDURE_V1`).toContain(id);
+    }
     expect(new Set(ORDRE_EVALUATION_ABSTENTION).size).toBe(ORDRE_EVALUATION_ABSTENTION.length);
-    expect(ORDRE_EVALUATION_ABSTENTION).toHaveLength(2);
+    expect([...ORDRE_EVALUATION_ABSTENTION].sort()).toEqual([...idsSignes].sort());
+  });
+
+  it('L’ORDRE DÉCLARÉ EST CELUI QUE LE MOTEUR CODE — sécurité d’abord', () => {
+    // CE QUE CE CAS TIENT, ET POURQUOI IL EXISTE. Le périmètre DÉCLARE un ordre
+    // d'évaluation ; `chaineC1.ts` le CODE dans un `if`. Rien ne relie
+    // mécaniquement les deux : permuter la déclaration sans déplacer le `if`
+    // ferait attester un ordre que le moteur n'applique pas — la forme de la
+    // conformité sans son effet.
+    //
+    // ET LE MOTEUR LIE PAR NOM, JAMAIS PAR POSITION. Une première rédaction
+    // déstructurait ce tableau dans `chaineC1.ts`, rouvrant le finding M1 de la
+    // revue du 2026-08-16 : permuter deux lignes aurait servi le texte SÉCURITÉ
+    // sur la branche canal, sans qu'aucun banc ne bouge. Relevé en revue.
+    expect(ORDRE_EVALUATION_ABSTENTION).toEqual([MOTIF_ABSTENTION.securite, MOTIF_ABSTENTION.canal]);
+
+    const source = sourceSansCommentaires(new URL('../clinical-engine/chaineC1.ts', import.meta.url));
+    expect(
+      source.includes('ORDRE_EVALUATION_ABSTENTION'),
+      'chaineC1.ts lit l’ORDRE : il doit lire les motifs par NOM (MOTIF_ABSTENTION.securite / .canal), pas par position',
+    ).toBe(false);
+    expect(source).toContain('MOTIF_ABSTENTION.securite');
+    expect(source).toContain('MOTIF_ABSTENTION.canal');
   });
 
   it('LE MOTEUR LIT CES DONNÉES, il n’en garde pas une copie', () => {
@@ -82,10 +125,7 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     // texte que rien n'exécute (`DC-26`) — la forme de la conformité sans son
     // effet. Ce banc lit la SOURCE du moteur et refuse qu'un de ces textes y
     // réapparaisse en dur.
-    const source = readFileSync(
-      new URL('../clinical-engine/chaineC1.ts', import.meta.url),
-      'utf8',
-    );
+    const source = sourceSansCommentaires(new URL('../clinical-engine/chaineC1.ts', import.meta.url));
     for (const texte of Object.values(LIMITATIONS_CANDIDAT)) {
       expect(
         source.includes(texte),
