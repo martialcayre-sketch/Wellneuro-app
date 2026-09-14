@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types :
 // la borne suit le moteur sans traîner `node:crypto` dans le bundle client.
-import { MAX_ACTIONS_PROTOCOLE_21J } from '@/lib/clinical-engine/types';
+import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 import type {
   DecisionCard,
   ProtocolAction,
@@ -23,6 +23,13 @@ export type RelectureProtocoleSoumission = {
   followUpCriterion: string;
   actions: ProtocolAction[];
   therapeuticLoad: TherapeuticLoad;
+  /**
+   * Contrat de payload DEMANDÉ, jamais déduit ([[D-130]]) : la route refuse de
+   * le choisir à la place de qui soumet, et retombe en V1 quand il est absent.
+   * Il n'est porté que lorsqu'au moins une action est suspendue — un statut
+   * d'intervention n'existe qu'en V4.
+   */
+  version?: typeof VERSION_PROTOCOL_DRAFT_V4;
 };
 
 // État de sauvegalde serveur (C2A LOT-03). « Enregistré » n'est jamais affiché
@@ -213,13 +220,38 @@ export function ProtocolMiniBuilder({
     if (loadLevel === 'excessive' && !loadJustification.trim()) {
       return refuser('Une charge excessive exige une justification du praticien.');
     }
+    // Le contrat V4 refuse `conditionnelle_biologie` sans `waitFor`, et une
+    // attente sans cible. Le refuser ICI plutôt que de laisser la route rendre
+    // un `draft_invalid` : le praticien voit quel champ manque, sur quelle action.
+    const attenteSansCible = actions.filter(action =>
+      action.interventionStatus === 'conditionnelle_biologie' && !(action.waitFor?.cible ?? '').trim());
+    if (attenteSansCible.length > 0) {
+      const rangs = attenteSansCible.map(action => actions.indexOf(action) + 1).join(', ');
+      return refuser(attenteSansCible.length === 1
+        ? `L’action ${rangs} attend un bilan sans dire lequel : nommez ce qu’on attend.`
+        : `Les actions ${rangs} attendent un bilan sans dire lequel : nommez ce qu’on attend pour chacune.`);
+    }
     setErreur(null);
+    const suspendues = actions.some(action => action.interventionStatus === 'conditionnelle_biologie');
     return {
       purpose,
       followUpCriterion,
+      // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT ([[D-130]]) : un statut
+      // d'intervention n'existe qu'en V4, et la route refuse de choisir le
+      // contrat à la place de qui soumet. Une soumission SANS suspension reste
+      // en V1 — demander V4 partout ferait basculer des protocoles que rien
+      // n'oblige à changer de contrat, et V4 exige alors un statut sur CHAQUE
+      // action.
+      ...(suspendues ? { version: VERSION_PROTOCOL_DRAFT_V4 } : {}),
       // Le filtre de type ci-dessus a établi que plus aucune action ne porte
-      // `''` : la conversion est constatée, pas supposée.
-      actions: actions.map(action => ({ ...action, type: action.type as ProtocolActionType })),
+      // `''` : la conversion est constatée, pas supposée. En V4, toute action
+      // non suspendue porte `active` — le contrat l'exige sur chacune, et ne
+      // tolère aucun défaut implicite (`DC-24`).
+      actions: actions.map(action => ({
+        ...action,
+        type: action.type as ProtocolActionType,
+        ...(suspendues && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
+      })),
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
     };
   };
@@ -306,18 +338,64 @@ export function ProtocolMiniBuilder({
                     </p>
                   )}
                   {/*
-                    Statut d'intervention en LECTURE SEULE : il est posé par la
-                    règle de décision, jamais saisi à la main (`D-056`). Le
-                    praticien le voit ; il ne le choisit pas, sans quoi une
-                    intention pourrait naître « active » sans règle derrière.
+                    LE PRATICIEN SUSPEND, IL N'ACTIVE PAS. Le seul statut qu'il
+                    pose à la main est `conditionnelle_biologie` : le geste
+                    RETIENT une action en attendant un bilan, il n'en libère
+                    aucune. La crainte de `D-056` — « une intention pourrait
+                    naître *active* sans règle derrière » — visait exactement le
+                    mouvement inverse, et son arbitrage 5 dit déjà que
+                    `conditionnelle_biologie` n'est pas une recommandation.
+                    Les trois autres statuts non-actifs (`differee`,
+                    `contre_indiquee`, `non_indiquee_actuellement`) restent la
+                    SORTIE d'un arbitrage biologique, jamais une saisie : ils
+                    s'affichent ici quand la révision les a posés.
                   */}
-                  {action.interventionStatus !== undefined && action.interventionStatus !== 'active' && (
+                  {action.interventionStatus !== undefined
+                    && action.interventionStatus !== 'active'
+                    && action.interventionStatus !== 'conditionnelle_biologie' && (
                     <p className="text-xs font-medium text-muted-foreground">
                       Statut : {INTERVENTION_STATUS_LABELS[action.interventionStatus]}
-                      {action.waitFor !== undefined && ` — en attente de : ${action.waitFor.cible}`}
                       . Cette intervention n’est pas un conseil ferme en l’état.
                     </p>
                   )}
+                  <div className="rounded-lg border border-border bg-muted/40 p-2">
+                    <label className="flex min-h-11 items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={action.interventionStatus === 'conditionnelle_biologie'}
+                        onChange={event => updateAction(action.actionId, event.target.checked
+                          ? { interventionStatus: 'conditionnelle_biologie', waitFor: { type: 'biologie', cible: '' } }
+                          // Le contrat refuse une attente sans statut ET un
+                          // statut sans attente : les deux se lèvent ensemble.
+                          : { interventionStatus: undefined, waitFor: undefined })}
+                      />
+                      <span>
+                        <span className="block font-medium text-foreground">
+                          {INTERVENTION_STATUS_LABELS.conditionnelle_biologie}
+                        </span>
+                        <span className="block text-muted-foreground">
+                          L’action attend un résultat avant d’être un conseil ferme. Le patient la
+                          lit comme suspendue, et vous l’arbitrez au retour du bilan.
+                        </span>
+                      </span>
+                    </label>
+                    {action.interventionStatus === 'conditionnelle_biologie' && (
+                      <label className="mt-2 block text-xs">
+                        Ce qu’on attend
+                        <input
+                          aria-label={`Ce qu’on attend pour l’action ${index + 1}`}
+                          aria-invalid={erreur !== null && !(action.waitFor?.cible ?? '').trim()}
+                          value={action.waitFor?.cible ?? ''}
+                          onChange={event => updateAction(action.actionId, {
+                            waitFor: { type: 'biologie', cible: event.target.value },
+                          })}
+                          placeholder="Ex. ferritine, TSH, 25-OH vitamine D"
+                          className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                        />
+                      </label>
+                    )}
+                  </div>
                   {(['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {
                     const labels = { title: 'Intitulé', idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
                     return <label key={field} className="text-xs">{labels[field]}<input aria-label={`${labels[field]} de l’action ${index + 1}`} value={action[field]} onChange={event => updateAction(action.actionId, { [field]: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" /></label>;

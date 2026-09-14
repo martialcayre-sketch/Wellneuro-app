@@ -274,4 +274,101 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     expect(soumission.therapeuticLoad.level).toBe('moderate');
     expect(ui.queryByRole('alert')).toBeNull();
   });
+  // ——— Suspendre une action (LOT-05) ———
+  // La boucle arbitrage biologique → révision était livrée, testée à trois
+  // étages, et INDÉCLENCHABLE : `ArbitrageBiologiquePanel` n'apparaît que sur une
+  // action `conditionnelle_biologie`, et aucune surface n'en posait.
+
+  it('suspend une action en attente d’un bilan, et demande V4 avec elle', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT : sans lui la route retombe en V1,
+    // où `interventionStatus` est INTERDIT.
+    expect(soumission.version).toBe('c1-protocol-draft-v4');
+    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
+    expect(soumission.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'Ferritine' });
+  });
+
+  it('refuse une attente qui ne dit pas ce qu’elle attend', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).not.toHaveBeenCalled();
+    expect(ui.getByRole('alert').textContent).toContain('attend un bilan sans dire lequel');
+  });
+
+  it('décocher retire l’attente AVEC le statut — le contrat refuse l’un sans l’autre', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    const bascule = ui.getByRole('checkbox', { name: /En attente du bilan biologique/ });
+    fireEvent.click(bascule);
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
+    fireEvent.click(bascule);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].interventionStatus).toBeUndefined();
+    expect(soumission.actions[0].waitFor).toBeUndefined();
+    // Aucune suspension : la soumission RESTE en V1. Demander V4 partout ferait
+    // basculer des protocoles que rien n'oblige à changer de contrat.
+    expect(soumission.version).toBeUndefined();
+  });
+
+  it('en V4, une action NON suspendue porte « active » — le contrat l’exige sur chacune', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.change(ui.getByLabelText('Type de l’action 2'), { target: { value: 'observation' } });
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 2'), { target: { value: 'Observer' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 2'), { target: { value: 'Idéal' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 2'), { target: { value: 'Minimal' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 2'), { target: { value: 'Secours' } });
+    choisirCharge(container);
+    fireEvent.click(ui.getAllByRole('checkbox', { name: /En attente du bilan biologique/ })[0]);
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'TSH' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
+    expect(soumission.actions[1].interventionStatus).toBe('active');
+    expect(soumission.actions[1].waitFor).toBeUndefined();
+  });
 });

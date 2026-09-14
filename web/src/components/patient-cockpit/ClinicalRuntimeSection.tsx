@@ -57,6 +57,7 @@ import {
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
 // d'une révision après arbitrage biologique — jamais recalculée côté client.
@@ -1352,6 +1353,15 @@ export function ClinicalRuntimeSection({
       followUpCriterion: contenuActif.followUpCriterion,
       actions: appliquerArbitrages(contenuActif.actions, lies),
       therapeuticLoad: contenuActif.therapeuticLoad,
+      // LA RÉVISION DEMANDE LE MÊME CONTRAT QUE CE QU'ELLE RÉVISE. Sans ce
+      // champ, la soumission retombait en V1 ([[D-130]] : la version est
+      // explicite, jamais déduite du payload) et la route répondait
+      // 409 `version_contrat_incompatible` — une version active V4 ne se révise
+      // pas en V1. La boucle arbitrage → révision n'était donc pas seulement
+      // sans amorce : son geste de SORTIE était incompatible avec le contrat
+      // qu'il révise. Elle est atteinte par construction : `lies` n'est non
+      // vide que si des intentions existent, et une intention n'existe qu'en V4.
+      version: VERSION_PROTOCOL_DRAFT_V4,
     });
     await loadArbitrages();
   };
