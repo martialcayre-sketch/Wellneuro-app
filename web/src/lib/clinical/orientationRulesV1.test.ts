@@ -201,7 +201,7 @@ describe('orientationRulesV1 — verrou v1', () => {
   //
   // Anciens sha signés :
   //   · 2026-09-13 — `e2f087d6…97e427e` (périmètre RÈGLES SEULES)
-  const SHA_SIGNE_2026_09_14 = '23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db';
+  const SHA_SIGNE_2026_09_14 = '2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd';
 
   // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
   // d'interprétation y sont entrées. Les zones de cette table citent des

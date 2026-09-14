@@ -49,13 +49,24 @@ pas casser deux signatures. Les TABLEAUX gardent leur ordre — `interpretRanges
 prend la première bande qui contient le score, l'ordre des bandes est du contenu
 clinique. Conséquence assumée : réordonner `subScores` referme les verrous.
 
-**LES DEUX TABLES SONT ÉTEINTES JUSQU'À RE-SIGNATURE**, et sept bancs le disent
-— deux sur l'orientation, cinq sur la biologie. C'est le fail-closed qui
-fonctionne : `orientationActive()` et `deriverStatutsBiologie()` rendent le
-verdict fermé tant que `shaPerimetre` ne concorde pas. Empreintes attendues :
+**LES DEUX TABLES ONT ÉTÉ ÉTEINTES, PUIS RE-SIGNÉES.** Sept bancs ont porté
+l'extinction — deux sur l'orientation, cinq sur la biologie — jusqu'à la
+seconde attestation praticien du 2026-09-14, la première portant sur les grilles
+seules ([[D-182]]). C'est le fail-closed qui fonctionne : `orientationActive()`
+et `deriverStatutsBiologie()` rendent le verdict fermé tant que `shaPerimetre`
+ne concorde pas.
 
 - orientation `2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd`
 - biologie `82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42`
 
-Aucune des deux n'est posée par ce lot. La recopie atteste une relecture, et
-elle n'appartient pas à l'outil.
+**CE QUI A ÉTÉ RELU AVANT LA RECOPIE, ET DANS CET ORDRE** : les vingt
+rattachements `needIds` — dont six arbitrages et six dérivations où le besoin du
+DÉCLENCHEUR diffère du besoin DÉCLARÉ, la dérivation portant sur les
+questionnaires SUGGÉRÉS —, puis le delta de périmètre sur les dix-huit blocs de
+scoring. Les claims n'ont pas bougé ; leur relecture du matin couvre celle-ci.
+
+Les `note` de scoring ont été vérifiées une par une avant d'être laissées dans
+le périmètre : elles ne sont pas des commentaires. `Q_GAS_02` y écrit que
+FR_Q003 est multiplié par 10, `Q_STR_02` y rattache le score 27 au niveau élevé,
+`Q_GEO_06` y porte les 85 % / 90 % sous réserve. Ce sont des décisions de
+scoring qui ne vivent nulle part ailleurs.

@@ -1771,7 +1771,24 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
   //   · 2026-09-13 — `e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`
   //     (périmètre RÈGLES SEULES ; les grilles n'y étaient pas encore)
-  shaPerimetre: '23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db',
+  //   · 2026-09-14 — `23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db`
+  //     (périmètre RÈGLES + GRILLES, attesté le matin sur les dix-sept grilles)
+  //
+  // SECONDE ATTESTATION DU 2026-09-14, ET C'EST LA PREMIÈRE FOIS QUE LE
+  // PÉRIMÈTRE COUVRE LE CALCUL. Un contre-audit a démontré le même jour que le
+  // périmètre du matin s'arrêtait à `score → couleur` : retirer `C1_8` de
+  // `Q_GAS_01.scoring.subScores[0].items` faisait tomber une couleur globale de
+  // `warning` à `success` — sha inchangé, signature valide, aucun banc rouge.
+  // Le périmètre hache désormais le bloc `scoring` ENTIER des instruments cités
+  // et la cotation de leurs items.
+  //
+  // CE QUE LE PRATICIEN A RELU AVANT CETTE RECOPIE, et dans cet ordre : les
+  // vingt rattachements `needIds` — dont quatorze dérivés de `BESOIN_SOURCES`
+  // par les questionnaires SUGGÉRÉS, jamais par le déclencheur, et six où cette
+  // dérivation ne rendait rien —, puis le delta de périmètre sur les dix-huit
+  // blocs de scoring. Les claims n'ont pas bougé : leur relecture du matin
+  // couvre celle-ci.
+  shaPerimetre: '2a1f4840b5fb62f5049ae3ee87f7fa1f06126ba7f8bfd30dce33ecee2d95ddbd',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },

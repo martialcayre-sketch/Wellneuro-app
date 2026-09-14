@@ -329,17 +329,14 @@ CI ; une table signée neuve absente du tableau aussi.
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
-> **AU 2026-09-14, LES DEUX PREMIÈRES LIGNES SONT À LIRE AVEC CE QUI SUIT.**
-> `orientationRulesV1.ts` et `indicationsBiologieV1.ts` portent bien
-> `validationExterne: true` et la date ci-dessus — c'est ce que le tableau
-> mesure, et il ne ment pas. Mais leur **verrou est FERMÉ** : le périmètre signé
-> a été étendu au calcul entier des instruments cités (contre-audit du
-> 2026-09-14), et `shaPerimetre` ne concorde plus avec le contenu. Les deux
-> tables sont donc ÉTEINTES en production — `orientationActive()` rend `false`,
-> `deriverStatutsBiologie()` rend un verdict fermé — et sept bancs le disent.
-> C'est le fail-closed qui fonctionne, pas une panne. Le tableau redeviendra
-> suffisant à lui seul quand les deux `shaPerimetre` auront été recopiés après
-> relecture praticien.
+> **LES DEUX PREMIÈRES LIGNES ONT ÉTÉ SIGNÉES DEUX FOIS LE 2026-09-14.**
+> Une première fois le matin, sur un périmètre étendu aux grilles
+> d'interprétation ([[D-182]]) ; une seconde fois le soir, après qu'un
+> contre-audit eut démontré que ce périmètre s'arrêtait à `score → couleur` et
+> laissait `réponses → score` dehors — un item retiré d'un axe déplaçait une
+> couleur sans faire bouger un sha. Le périmètre couvre depuis le bloc `scoring`
+> entier des instruments cités et la cotation de leurs items. Les deux verrous
+> sont OUVERTS sur cette seconde signature.
 
 
 Trois lectures attentives sur ce tableau :
