@@ -4,6 +4,15 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { RechercheCorpusRayonPanel } from './RechercheCorpusRayonPanel';
 import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 
+// `rayonCorpus` est importé ici pour sa CONSTANTE (le banc de miroir plus bas),
+// pas pour son service — mais le module ouvre une connexion Prisma au chargement
+// et exige DATABASE_URL. Le type seul était effacé à la compilation ; une valeur
+// ne l'est pas. Ces deux mocks n'existent que pour cela.
+vi.mock('@/lib/prisma', () => ({ prisma: { $queryRaw: vi.fn() } }));
+vi.mock('@/lib/rag/embeddings', () => ({ createEmbeddings: vi.fn() }));
+
+import { RAYONS_RECHERCHE_CORPUS } from '@/lib/supplement-library/rayonCorpus';
+
 const fetchMock = vi.fn();
 const json = (payload: unknown, ok = true) => ({ ok, json: async () => payload });
 
@@ -37,6 +46,19 @@ afterEach(() => {
 });
 
 describe('RechercheCorpusRayonPanel', () => {
+  // Le sélecteur et l'allowlist de la route sont DEUX listes, dans deux
+  // fichiers. Un rayon proposé ici et absent de RAYONS_RECHERCHE_CORPUS rendrait
+  // un 400 « rayon_invalide » à chaque recherche — une option morte que rien ne
+  // signale. Ce banc tient le miroir ; il ne remplace pas l'allowlist, qui reste
+  // la garde côté serveur.
+  it('ne propose QUE les rayons que la route accepte, et les propose tous', () => {
+    render(<RechercheCorpusRayonPanel />);
+    const options = Array.from(
+      screen.getByLabelText('Rayon de recherche corpus').querySelectorAll('option'),
+    ).map((o) => (o as HTMLOptionElement).value);
+    expect([...options].sort()).toEqual([...RAYONS_RECHERCHE_CORPUS].sort());
+  });
+
   it("n'interroge rien tant qu'aucune recherche n'est saisie", () => {
     render(<RechercheCorpusRayonPanel />);
     expect(screen.getByText(/saisissez une recherche/i)).toBeTruthy();

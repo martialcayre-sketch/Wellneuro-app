@@ -5848,3 +5848,26 @@ Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
 
 Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
 « motifs d'abstention permutés ».
+
+## 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
+
+**Décisions** : `D-188` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,
+stress, humeur, nutrition). Leurs verdicts `dormante` portaient un réexamen daté au
+2026-09-01, dépassé, et disaient eux-mêmes qu'élargir « est une décision
+praticien ». Mesuré au registre, sources de conduite seules : l'allowlist exposait
+60 claims validés et en retenait 986.
+
+**Écarté** : `micronutrition`, gardé par son propre drapeau — l'ajouter le
+contournerait ; `rayon:biologie`, réexamen au 2026-10-01 non échu. Et dériver le
+banc d'allowlist de la carte rayon → notebook : il valide silencieusement tout
+ajout futur, c'est le défaut bloquant trouvé en revue le 2026-08-03.
+
+**Livré en plus du cadrage** : un banc de miroir entre le sélecteur d'écran et
+l'allowlist — deux listes dans deux fichiers, et un rayon proposé mais refusé rend
+un 400 à chaque recherche.
+
+**Prochaine action** : LOT-00, la décision de frontière patient, qui gate les
+LOT-03 et LOT-04.
+
+**Questions ouvertes** : le panneau vit dans la Bibliothèque, pas dans le
+constructeur — les claims sont à portée, pas sous les yeux pendant la saisie.
