@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from './corpusSyntheseV1';
 import {
   feuillesDuDeclencheur,
+  GRILLES_ORIENTATION,
   ORIENTATION_METADATA,
   ORIENTATION_RULES_SHA256,
   ORIENTATION_RULES_V1,
   type OrientationRule,
 } from './orientationRulesV1';
+import { BANDES_PSQI } from './bandesPsqi';
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
@@ -36,9 +38,12 @@ describe('orientationRulesV1 — verrou v1', () => {
     // le JOUR attesté ne change pas, seule la forme rejoint le standard que le
     // verrou contrôle désormais.
     // RE-SIGNÉE le 2026-09-13 : rang du Cungi sur `R-SOM-01`, et fenêtre de
-    // fraîcheur de 365 jours sur les vingt règles. 23 claims relus en base ce
-    // jour-là — 23/23 VALIDE, prescriptif, actif, v1.0, jeu inchangé.
-    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-09-13T00:00:00.000Z');
+    // fraîcheur de 365 jours sur les vingt règles.
+    // RE-SIGNÉE le 2026-09-14 : le périmètre porte les grilles d'interprétation,
+    // les deux formes canoniques de `Q_ALI_01` et les drapeaux du plancher.
+    // 52 claims relus en base ce jour-là, les deux tables ensemble — 52/52
+    // VALIDE, actifs, v1.0, aucun supplanté.
+    expect(ORIENTATION_METADATA.dateValidation).toBe('2026-09-14T00:00:00.000Z');
     const date = ORIENTATION_METADATA.dateValidation as string;
     expect(new Date(date).toISOString()).toBe(date);
     expect(ORIENTATION_METADATA.claimsSource.length).toBeGreaterThan(0);
@@ -154,15 +159,79 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Anciens sha signés :
   //   · 2026-08-04 — `528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603`
   //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
-  const SHA_SIGNE_2026_09_13 = 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e';
+  // RE-SIGNÉE LE 2026-09-14, sur relecture des grilles par le praticien — et la
+  // constante change de nom avec la date, parce que son nom est une affirmation
+  // sur qui a lu quoi. Un agent y avait recopié l'empreinte du périmètre élargi
+  // le 2026-09-13 sans qu'aucune relecture ait eu lieu : le littéral ne disait
+  // plus ce que son nom promettait. Il a été rendu à la valeur attestée, puis
+  // reposé ici APRÈS la relecture. L'ordre est le fond du sujet.
+  //
+  // Anciens sha signés :
+  //   · 2026-09-13 — `e2f087d6…97e427e` (périmètre RÈGLES SEULES)
+  const SHA_SIGNE_2026_09_14 = '23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db';
 
-  it('le sha publié correspond au contenu de la table', () => {
-    expect(ORIENTATION_RULES_SHA256).toBe(sha256(JSON.stringify(ORIENTATION_RULES_V1)));
+  // LE PÉRIMÈTRE A GRANDI le 2026-09-13 (second lot du jour) : les grilles
+  // d'interprétation y sont entrées. Les zones de cette table citent des
+  // COULEURS et des LIBELLÉS, jamais des nombres — hacher les seules règles
+  // laissait hors signature l'objet qui décide du point d'allumage. Forme
+  // composite `{ regles, grilles }`, reprise de `PRIORITY_RULES_SHA256`
+  // ([[D-062]]).
+  it('le sha publié correspond au contenu de la table, GRILLES COMPRISES', () => {
+    expect(ORIENTATION_RULES_SHA256).toBe(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION })),
+    );
+  });
+
+  it('le sha reste identique avec `WN_ALI_01_SIIN57` éteint ou allumé', async () => {
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'false');
+    const court14 = await import('./orientationRulesV1');
+    vi.resetModules();
+    vi.stubEnv('WN_ALI_01_SIIN57', 'true');
+    const siin57 = await import('./orientationRulesV1');
+    expect(court14.ORIENTATION_RULES_SHA256).toBe(siin57.ORIENTATION_RULES_SHA256);
+    expect(court14.ORIENTATION_METADATA.shaPerimetre).toBe(siin57.ORIENTATION_METADATA.shaPerimetre);
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // CE QUE LE BANC PRÉCÉDENT NE PEUT PAS DIRE : que les grilles pèsent vraiment.
+  // Une forme composite dont le second terme serait vide, ou constant, hacherait
+  // exactement comme avant tout en ayant l'air d'avoir grandi.
+  it('déplacer une borne de grille change le sha — le trou de 2026-09-13 est refermé', () => {
+    const avant = ORIENTATION_RULES_SHA256;
+    const grillesMutees = {
+      ...GRILLES_ORIENTATION,
+      Q_SOM_01: [
+        { min: 0, max: 4, label: 'Pas de trouble du sommeil', color: 'success' },
+        { min: 5, max: 10, label: 'Troubles du sommeil légers', color: 'info' },
+        { min: 11, max: 16, label: 'Troubles du sommeil modérés', color: 'warning' },
+        { min: 17, max: 21, label: 'Troubles du sommeil sévères', color: 'danger' },
+      ],
+    };
+    expect(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
+    ).not.toBe(avant);
+  });
+
+  // ET QU'UN LIBELLÉ COMPTE AUTANT QU'UNE BORNE : les zones `interpretation`
+  // citent un libellé verbatim. Renommer une bande éteint une règle aussi
+  // sûrement que déplacer une borne.
+  it('renommer un libellé de bande change le sha', () => {
+    const grillesMutees = {
+      ...GRILLES_ORIENTATION,
+      Q_SOM_01: BANDES_PSQI.map((bande, i) =>
+        i === 1 ? { ...bande, label: 'Troubles du sommeil légers ' } : bande,
+      ),
+    };
+    expect(
+      sha256(JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: grillesMutees })),
+    ).not.toBe(ORIENTATION_RULES_SHA256);
   });
 
   it('le contenu de la table est EXACTEMENT celui qui a été signé', () => {
     expect(ORIENTATION_RULES_V1.length).toBe(20);
-    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_09_13);
+    expect(ORIENTATION_RULES_SHA256).toBe(SHA_SIGNE_2026_09_14);
   });
 
   // ── DEUX BANCS DE RÉSOLUBILITÉ, ET LE SECOND EST LE SEUL QUI ATTRAPE LE NO-OP

@@ -9,6 +9,7 @@ import type { OrientationClaimRef } from '@/lib/clinical/orientationRulesV1';
 import {
   INDICATIONS_BIOLOGIE_METADATA,
   INDICATIONS_BIOLOGIE_V1,
+  GRILLES_INDICATIONS,
 } from './indicationsBiologieV1';
 import { deriverStatutsBiologie } from './statuts';
 import type { PanelCatalogue, PanelDocumente, PropositionBilan } from './statuts';
@@ -204,6 +205,9 @@ export async function deriverPropositionPourPatient(
     panels: catalogue.panels,
     // VERBATIM — voir l'en-tête de ce module.
     regles: INDICATIONS_BIOLOGIE_V1,
+    // Second terme du périmètre signé depuis le 2026-09-13 : les grilles que les
+    // zones couleur de ces règles lisent. Verbatim pour la même raison.
+    grilles: GRILLES_INDICATIONS,
     signature: INDICATIONS_BIOLOGIE_METADATA,
     reponses,
     // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un

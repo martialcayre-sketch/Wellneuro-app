@@ -1,6 +1,7 @@
 import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
 import { sha256 } from './corpusSyntheseV1';
+import { grillesCitees } from './grillesSignees';
 
 // Table de règles d'orientation NNPP2 (campagne certification corpus, lot 7,
 // contrat v2 après intégration de l'audit externe).
@@ -1359,6 +1360,20 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
       // administrables : Cungi = Q_STR_03, HAD = Q_NEU_11. Aucune substitution —
       // la règle propose exactement ce que le claim désigne.
       { claimId: 'WN-CL-0323-013', versionClaim: 'v1.0' },
+      // « L'exploration du sommeil est systématique dans la démarche de
+      // Neuro-Nutrition. » (`WN-SRC-0323`, typologie « déclaré », prescriptif.)
+      //
+      // RECOPIÉ LE 2026-09-13, APRÈS LECTURE EN BASE DE PRODUCTION. Son texte
+      // n'était reproduit nulle part dans le dépôt, là où celui de son jumeau
+      // l'était juste au-dessus : la moitié de la justification de cette règle
+      // n'était pas relisible depuis le code, et un lot antérieur l'avait même
+      // soupçonné d'être fantôme. Il ne l'est pas — il est VALIDE, actif, v1.0.
+      //
+      // CE QU'IL FONDE, ET QUI N'EST PAS CE QU'ON POUVAIT SUPPOSER. Ce claim ne
+      // dit rien des instruments : il fonde l'EXISTENCE de la règle — que
+      // l'exploration du sommeil soit systématique —, là où `0323-013` fonde le
+      // CHOIX et le RANG de ses deux cibles. Les deux claims ne sont donc pas
+      // redondants, et aucun ne remplacerait l'autre.
       { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
     ],
     niveau: 'socle',
@@ -1650,20 +1665,50 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   // `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`. Aucun claim
   // ajouté ni retiré : seuls un rang et un délai ont changé.
   //
-  // CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS, et qu'il faut savoir en la
-  // lisant : `BANDES_PSQI` vit dans `questions.ts`, hors périmètre. Les zones de
-  // cette table citent des COULEURS, jamais des nombres ; déplacer une borne de
-  // la grille change donc le point d'allumage des règles sans faire bouger ce
-  // sha. C'est exactement ce qui s'est produit le 2026-09-13 sur la borne 4/5.
-  dateValidation: '2026-09-13T00:00:00.000Z',
+  // LE PÉRIMÈTRE A GRANDI DEPUIS CETTE SIGNATURE, ET ELLE NE CONCORDE DONC PLUS.
+  // Les grilles d'interprétation sont entrées dans l'empreinte, et avec elles les
+  // deux formes canoniques de `Q_ALI_01` (`COURT_14` + `SIIN_57`) —
+  // indépendamment de `WN_ALI_01_SIIN57`, sans quoi l'empreinte dépendrait de
+  // l'environnement et une signature posée ici ne se vérifierait pas là.
+  // `dateValidation` et `shaPerimetre` ci-dessous décrivent EXACTEMENT ce qui a
+  // été relu le 2026-09-13 : les règles, pas les grilles. Le verrou est donc
+  // FERMÉ, et c'est l'état juste tant que la relecture des grilles n'a pas eu
+  // lieu.
+  //
+  // RE-SIGNÉE LE 2026-09-14, SUR RELECTURE DES GRILLES PAR LE PRATICIEN. Le
+  // périmètre porte désormais, en plus des règles : les grilles d'interprétation
+  // des quatre instruments que les zones de cette table citent, les deux formes
+  // canoniques de `Q_ALI_01`, et pour chaque instrument les deux drapeaux qui
+  // décident de son éligibilité au plancher. Les 23 claims de `claimsSource` ont
+  // été relus en base de production ce jour-là (lecture de 52 claims, les deux
+  // tables ensemble) : 52/52 `VALIDE`, actifs, `v1.0`, aucun supplanté.
+  //
+  // UNE SIGNATURE AVAIT ÉTÉ POSÉE PAR UN AGENT LE 2026-09-13 À 20 h 58, PUIS
+  // DÉPOSÉE LE 2026-09-14. `copilot-swe-agent` a corrigé — justement — la
+  // dépendance de l'empreinte à `WN_ALI_01_SIIN57`, et, dans le même commit,
+  // porté `shaPerimetre` à la valeur du périmètre élargi. Les huit bancs de
+  // concordance étaient repassés au vert sans que personne n'ait rien relu : ils
+  // ne mesuraient plus rien. La correction a été gardée, le sha rendu à ce que le
+  // praticien avait réellement attesté — puis reposé ici, après la relecture.
+  // L'ordre importe, et c'est tout l'objet : la relecture précède la signature.
+  //
+  // POURQUOI CE N'EST PAS UN DÉTAIL DE PROCÉDURE. Toute la raison d'être de ce
+  // lot est qu'un comportement clinique avait changé sans qu'une signature
+  // bouge. Laisser une signature bouger sans qu'une relecture ait lieu est le
+  // même défaut, pris par l'autre bout. Un banc interdit déjà d'écrire
+  // `shaPerimetre: ORIENTATION_RULES_SHA256` ; rien n'interdit d'y recopier la
+  // valeur que la constante vient de prendre, et c'est le geste qui a eu lieu.
+  dateValidation: '2026-09-14T00:00:00.000Z',
   // Posé le 2026-08-16 ([[D-067]]), repris le 2026-09-13 : la chaîne hex
   // qu'`ORIENTATION_RULES_SHA256` valait à la relecture, recopiée telle quelle —
   // JAMAIS la constante (déclarée après cet objet ; et la comparaison serait
   // tautologique).
   //
-  // Ancien sha signé (2026-08-06) :
-  // `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`.
-  shaPerimetre: 'e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e',
+  // Anciens sha signés :
+  //   · 2026-08-06 — `547119c6868eb59ffbb153b395bf424804c81a91b9f8d970765e27474ce7397d`
+  //   · 2026-09-13 — `e2f087d6c75199a94cf1fde0c76651ee365c0893841d318e74e86acf197e427e`
+  //     (périmètre RÈGLES SEULES ; les grilles n'y étaient pas encore)
+  shaPerimetre: '23e0c9a4bb8a346e3e86b0384f8cae5a11d8d45a86a3c8d7f0660275310d86db',
   claimsSource: [
     { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
@@ -1691,4 +1736,34 @@ export const ORIENTATION_METADATA: OrientationMetadata = {
   ],
 };
 
-export const ORIENTATION_RULES_SHA256 = sha256(JSON.stringify(ORIENTATION_RULES_V1));
+/**
+ * LES GRILLES QUE CETTE TABLE LIT, et qui décident du point où ses règles
+ * s'allument.
+ *
+ * Dérivé, jamais écrit à la main : la liste se recalcule depuis les zones
+ * réellement citées, si bien qu'une règle ajoutée demain fait entrer SA grille
+ * dans le périmètre sans qu'on ait à y penser — et referme le verrou jusqu'à
+ * re-signature, ce qui est le comportement voulu.
+ */
+export const GRILLES_ORIENTATION = grillesCitees(ORIENTATION_RULES_V1);
+
+/**
+ * LE PÉRIMÈTRE A GRANDI LE 2026-09-13 (second lot du jour) : les grilles
+ * d'interprétation y sont entrées, et le sha a donc changé sans qu'aucune règle
+ * ne bouge.
+ *
+ * POURQUOI. Les zones de cette table citent des COULEURS et des LIBELLÉS, jamais
+ * des nombres. Hacher les seules règles laissait hors signature l'objet qui
+ * décide — la grille de l'instrument. Le même jour, déplacer la borne 4/5 du
+ * PSQI a changé le comportement de cette table ET de la table des indications
+ * biologiques sans faire bouger un seul sha ([[D-180]]). La forme composite
+ * `{ regles, grilles }` reprend celle que `PRIORITY_RULES_SHA256` porte depuis
+ * [[D-062]] pour la procédure d'abstention.
+ *
+ * CONSÉQUENCE À CONNAÎTRE AVANT DE SIGNER : renommer un libellé de bande ou
+ * déplacer une borne referme désormais ce verrou. C'est le prix, et c'est
+ * l'objet du changement.
+ */
+export const ORIENTATION_RULES_SHA256 = sha256(
+  JSON.stringify({ regles: ORIENTATION_RULES_V1, grilles: GRILLES_ORIENTATION }),
+);

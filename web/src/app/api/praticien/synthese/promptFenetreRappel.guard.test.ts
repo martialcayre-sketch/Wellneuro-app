@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthropic';
 
 // LE TROU QUE CE BANC REFERME — `DC-19`, mesure de production du 2026-09-14
-// ([[D-182]]).
+// ([[D-183]]).
 //
 // `DC-19` énumère ce qui ne s'invente pas : « bornes, cut-offs, pondérations,
 // doses, **durées, fenêtres temporelles** ». Le banc qui la garde,
@@ -25,7 +25,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 // transmettre supposerait d'ÉCRIRE une fenêtre clinique sur une centaine
 // d'instruments, chacune due à sa provenance — et au moins une est indécidable
 // (`Q_GAS_01` : « 3 derniers mois » en première consultation, « 3 dernières
-// semaines » en suivi). Voir [[D-182]].
+// semaines » en suivi). Voir [[D-183]].
 //
 // CE QUE CE BANC PROUVE, ET CE QU'IL NE PROUVE PAS. Comme ses deux jumeaux
 // (`promptAssociationPreuve`, `promptPassationCourante`), il épingle **la

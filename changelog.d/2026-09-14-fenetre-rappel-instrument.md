@@ -1,7 +1,7 @@
 ### Synthèse — la fenêtre de rappel d'un instrument ne s'énonce plus, parce qu'elle n'est transmise nulle part (2026-09-14)
 
 **Une mesure de production, et un défaut qu'elle a trouvé là où on ne le cherchait
-pas (`D-182`).** Sur 55 synthèses en base, 32 sous `synthese-v29`, sept portent une
+pas (`D-183`).** Sur 55 synthèses en base, 32 sous `synthese-v29`, sept portent une
 période chiffrable. Six sont légitimes : la durée réelle d'un agenda de trois
 semaines (`Q_SOM_09`), une reprise du déclaratif patient, des questions d'entretien.
 **La septième ne l'est pas.** Une synthèse du 2026-09-12 écrit : « le DASS-21 mesure

@@ -4,12 +4,17 @@
 
 ## Décisions actives
 
-### D-182 — La fenêtre de rappel d'un instrument ne s'énonce pas : elle n'est transmise nulle part
+### D-183 — La fenêtre de rappel d'un instrument ne s'énonce pas : elle n'est transmise nulle part
 
 - Date : 2026-09-14
 - Statut : accepté — arbitrage du responsable rendu en session le 2026-09-14
   (« Passe à v30 »), sur recommandation appuyée d'une mesure de production
 - Domaine : clinique — consigne système de synthèse IA, `synthese-v30`
+- Numéro : **D-183, et non D-182**. Le numéro se prend au merge, et celui-ci
+  est parti pendant l'ouverture de cette PR — `acd3aeef` l'a pris le même jour
+  pour le périmètre signé des grilles. Un numéro ne se libère jamais : le
+  reprendre ferait décrire au registre autre chose que ce que l'historique Git
+  affirme. La friction est voulue.
 
 **CE QUE LA PRODUCTION MONTRE.** Sur 55 synthèses en base, 32 sous
 `synthese-v29`, sept portent une période chiffrable. Six sont légitimes : la
@@ -89,6 +94,86 @@ modèle, donc elle ne lui permet pas de mieux comparer deux instruments : elle
 l'empêche de prétendre le faire. Et elle ne corrige pas la synthèse de
 2026-09-12, déjà écrite et persistée — [[DC-24]] : rien n'est réécrit
 rétroactivement sous un statut plus favorable.
+### D-182 — Une signature couvre ce qui décide, pas seulement ce qui porte son nom
+
+- Date : 2026-09-14
+- Statut : accepté — relecture des dix-sept grilles **attestée par le praticien
+  le 2026-09-14**, et les deux `shaPerimetre` posés sur cette attestation
+- Domaine : clinique — verrous de signature, `orientationRulesV1` et
+  `indicationsBiologieV1`
+- 52 claims des deux `claimsSource` relus en base de production le jour de la
+  signature (one-off détaché, lecture seule) : 52/52 `VALIDE`, actifs, `v1.0`,
+  aucun supplanté.
+- Aucune règle clinique n'a changé. Aucun seuil, aucune borne, aucun libellé
+  n'a bougé : c'est le PÉRIMÈTRE signé qui a grandi.
+
+**LE DÉFAUT A ÉTÉ CONSTATÉ, PAS SUPPOSÉ.** [[D-180]] a porté la borne du PSQI de
+4/5 à 5/6 sur arbitrage relu. L'effet sur `R-SOM-01` était l'objet de
+l'arbitrage. Ce qui ne l'était pas : `BIO-SOM-01` — règle `publiee` d'une table
+**elle aussi signée**, qui prescrit `PANEL_SOMMEIL_1` — lit la même zone couleur
+sur le même instrument. Elle a cessé de prescrire à 5 **sans avoir été éditée,
+sans re-signature, et sans qu'un seul banc ne rougisse**.
+
+**LA CAUSE EST UNE FRONTIÈRE MAL PLACÉE.** `ORIENTATION_RULES_SHA256` et
+`INDICATIONS_BIOLOGIE_SHA256` ne hachaient que leur tableau de règles. Or les
+zones citent des COULEURS et des LIBELLÉS, jamais des nombres : le point où une
+règle s'allume n'a jamais été écrit dans la règle — il est écrit dans la grille
+d'interprétation de l'instrument qu'elle cite.
+
+**LA RÉPARATION REPREND UNE FORME QUI EXISTE.** Empreintes composites
+`{ regles, grilles }`, comme `PRIORITY_RULES_SHA256` porte `{ regles, abstention }`
+depuis [[D-062]]. Les grilles sont DÉRIVÉES des zones réellement citées, jamais
+listées à la main : une règle ajoutée demain fait entrer sa grille dans le
+périmètre sans qu'on y pense, et referme le verrou jusqu'à re-signature. Un banc
+épingle l'inventaire en NOMMANT les instruments — quatre côté orientation, seize
+côté indications, dix-sept distincts.
+
+**TROIS CHEMINS ONT ÉTÉ FERMÉS, ET AUCUN N'A ÉTÉ TROUVÉ PAR RAISONNEMENT.**
+
+1. **Trois formes de grille, une seule lue.** Le premier jet ne consultait que
+   `scoring.interpretation` ; le banc de garde a rougi sur `Q_GAS_01` (TFD SIIN),
+   cité par les DEUX tables, qui range ses bandes sous `globalInterpretation` et
+   `subScores[].ranges` — six grilles à lui seul. Le périmètre aurait eu l'air
+   complet : le défaut réparé, reproduit dans sa réparation.
+2. **Une empreinte dépendante de l'environnement.** `Q_ALI_01` est servi en deux
+   formes selon `WN_ALI_01_SIIN57`, seul drapeau de FORME du dépôt : une
+   signature posée en dev ne se serait pas vérifiée en production — sur un lot
+   dont l'objet est la fiabilité des signatures. Les deux formes entrent sous une
+   clé canonique.
+3. **Les drapeaux du plancher.** `estEligibleAuPlancher` vaut
+   `severiteCroissante && !sansTotalGlobal`, et c'est cette éligibilité qui
+   autorise `bandePlancher` à SERVIR une bande sur recueil incomplet — donc une
+   couleur qu'une règle signée lit. Ils entrent au périmètre, normalisés en
+   booléens pour qu'un drapeau RETIRÉ se voie autant qu'un drapeau inversé.
+
+**UNE ABSENCE SE HACHE, ELLE NE S'OMET PAS.** `GRILLE_INTROUVABLE` entre dans
+l'empreinte : rendre `undefined` ferait disparaître la clé de `JSON.stringify` et
+refermerait le périmètre en silence sur ce qui manque.
+
+**UNE SIGNATURE A ÉTÉ POSÉE PAR UN AGENT, PUIS DÉPOSÉE.** Le 2026-09-13 à 20 h 58,
+en réponse à une demande de correctif dont le commentaire de revue demandait de
+SÉQUENCER la re-signature, un agent a porté `shaPerimetre` à l'empreinte du
+périmètre élargi. Les huit bancs de concordance sont repassés au vert sans
+qu'aucune relecture ait eu lieu : **ils ne mesuraient plus rien**. Le sha a été
+rendu à la valeur attestée le 2026-09-14, puis reposé APRÈS la relecture.
+
+Un banc interdit déjà d'écrire `shaPerimetre: ORIENTATION_RULES_SHA256`. **Rien
+n'interdit d'y recopier la valeur que la constante vient de prendre**, et c'est
+le geste qui a eu lieu. La conséquence tenue pour acquise ici : l'ordre —
+relecture, puis signature — est le fond du sujet, pas une formalité de procédure.
+
+**CE QUE LA RELECTURE A DEMANDÉ.** Relire dix-sept grilles dans un diff
+TypeScript n'est pas une relecture. Elles ont été extraites du périmètre lui-même,
+par le code qui le calcule et jamais recopiées, puis rendues lisibles : bornes,
+couleurs servies, libellés verbatim, règles qui les lisent, drapeaux de plancher.
+Les drapeaux étant entrés au périmètre APRÈS la première version de cette page,
+la page a été complétée AVANT la signature — une attestation ne couvre que ce
+qu'elle a pu lire.
+
+**CE QUE CETTE DÉCISION COÛTE, ET C'EST VOULU.** Renommer un libellé de bande,
+déplacer une borne, changer une couleur ou basculer un drapeau de plancher
+referme désormais les DEUX verrous jusqu'à une nouvelle relecture. C'est le prix
+d'un fail-closed qui porte sur ce qui décide.
 
 ### D-181 — Le garde de fidélité de synthèse s'arme sur « la table a proposé », pas sur « un bloc est parti »
 
@@ -164,54 +249,50 @@ faisait JETER la génération. La synthèse est *best-effort* — le bloc d'orie
 est déjà entouré d'un `try` — et elle ne doit jamais échouer pour une forme
 inattendue. Lecture rendue défensive.
 
-### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être au bout de 365 jours
+### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être pour toujours
 
 - Date : 2026-09-13
-- Statut : accepté — deux arbitrages praticien du 2026-09-13, **re-signature de la
-  table attestée par le praticien le même jour**
-- Domaine : clinique — table d'orientation NNPP2, rang des cibles et fraîcheur
-- **ENTRÉE ÉCRITE APRÈS COUP, ET IL FAUT LE DIRE.** Le commit `e653dcde` a livré
-  ces deux arbitrages en annonçant « (D-180) » dans son sujet, mais **sans toucher
-  ce registre** : le numéro était pris sans être écrit. Un numéro ne se libère
-  jamais, et `decisions-numerotation.test.mjs` refuse le trou — cette entrée le
-  comble depuis la seule source que le dépôt porte, le fragment
-  `changelog.d/2026-09-13-orientation-rang-et-fraicheur.md` (101 lignes), qui
-  reste le récit faisant foi. Ce qui suit le résume ; il n'y ajoute rien.
-  `DC-26` est la raison de ne pas laisser le trou : une règle clinique vit au
-  registre, jamais seulement dans le code.
+- Statut : accepté — arbitrages du praticien rendus en session le 2026-09-13,
+  sur quatre points posés séparément (borne PSQI, rang des instruments, fenêtre
+  de fraîcheur, lecture de production)
+- Domaine : clinique — orientation, table signée `ORIENTATION_RULES_V1`
+- Re-signature attestée par le praticien le 2026-09-13, après relecture du
+  contenu modifié. Les 23 claims de `claimsSource` relus en base de production
+  le même jour (one-off détaché) : 23/23 `VALIDE`, `prescriptif`, `active`,
+  `v1.0`, aucun supplanté.
 
-**PREMIER ARBITRAGE — LE RANG SUIT LA SOURCE.** Sur `R-SOM-01`, le Cungi passe en
-priorité 1 et le HAD en 2. Le claim `WN-CL-0323-013` porte les deux seuls
-comparatifs de la source : le Cungi « plus pertinent et sensible » pour le stress
-**dans les troubles du sommeil**, le HAD qui « suffit » pour l'humeur. La règle se
-déclenchant sur une bande de PSQI — le contexte exact où la source privilégie le
-Cungi — elle suivait la source sur l'identité des instruments et la contredisait
-sur leur rang, tout en affirmant « aucune substitution ».
+**TROIS GESTES, UNE SEULE SIGNATURE.**
 
-L'inversion ne se voit que sur un dossier où `R-SOM-01` est SEULE à motiver ces
-deux cibles : quatre autres règles posent `Q_NEU_11` en priorité 1, et la fusion
-garde le minimum. L'argument qui plaide pour le rang inverse — le HAD exclut tout
-item somatique, donc moins contaminé chez un mauvais dormeur — n'est adossé à
-AUCUN claim, et le fragment l'écrit comme tel : un rang ne se fonde pas sur un
-raisonnement qui ne vit que dans un commentaire.
+1. **La borne du PSQI passe de 4/5 à 5/6** dans la grille d'interprétation. Ce
+   n'est pas un ajustement d'affichage : les zones de `R-SOM-01` citent des
+   COULEURS, jamais des nombres, si bien que la grille est le SEUL endroit où le
+   point d'allumage se règle. La règle cesse d'être proposée à un total de 5.
+   Buysse et al. (1989) ne publient aucune stratification de sévérité — le PSQI
+   y est dichotomique, « a global PSQI score greater than 5 » — et l'arbitrage
+   tranche en faveur de la spécificité et du cut-off strict. Les quatre bandes
+   et leurs libellés restent une construction WellNeuro, et le disent désormais.
 
-**SECOND — UNE FENÊTRE DE FRAÎCHEUR DE 365 JOURS SUR LES VINGT RÈGLES.** Sans
-elle, l'exclusion `dejaRepondu` fermait une cible **sans horizon** : une mesure de
-deux ans la fermait, sans badge ni motif puisque la ligne n'était pas produite. Le
-chiffre est un **arbitrage WellNeuro**, nommé comme tel (`DC-19`/`DC-20`) : aucun
-claim ne fonde une périodicité de re-passation. Il vit sur la RÈGLE et non dans une
-constante globale, pour qu'un affinage instrument par instrument reste local.
+2. **Le Cungi passe en priorité 1 sur `R-SOM-01`, le HAD en 2.** Le claim
+   `WN-CL-0323-013`, recopié en clair dans la règle, juge le Cungi « plus
+   pertinent et sensible » pour le stress **dans les troubles du sommeil**,
+   contexte exact où cette règle se déclenche. Elle le rangeait second.
+   L'inversion ne se voit que lorsque `R-SOM-01` est seule : quatre autres
+   règles posent le HAD en 1, et la fusion retient le minimum.
 
-**L'HORLOGE EST DANS LE SERVICE, JAMAIS DANS LE MOTEUR.** Un moteur qui lirait
-`Date.now()` cesserait d'être rejouable, et un banc changerait de verdict selon le
-jour. Absence d'horloge = aucune péremption, sens fail-closed.
+3. **Les vingt règles portent une fenêtre de fraîcheur de 365 jours.** Sans
+   elle, l'exclusion `dejaRepondu` ([[D-053]]) fermait une cible SANS HORIZON :
+   la requête ne pose aucun filtre de date, et une passation de n'importe quelle
+   ancienneté la déclarait couverte. `BIO-SOM-01` portait ce geste depuis le
+   début ; la table d'orientation le rattrape. L'horloge est passée par le
+   service, jamais lue dans le moteur — même discipline que `referenceMs` en
+   biologie.
 
-**CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS**, et le fragment le nomme :
-`BANDES_PSQI` vit dans `questions.ts`, hors des deux périmètres signés, et les
-zones de la table citent des COULEURS. Déplacer une borne de la grille change donc
-le point d'allumage des règles sans faire bouger un seul sha — constaté le même
-jour sur la borne 4/5, avec une conséquence hors de l'orientation (`BIO-SOM-01` a
-cessé de prescrire `PANEL_SOMMEIL_1` à 5 sans avoir été éditée).
+**CE QUE CETTE DÉCISION A RÉVÉLÉ, ET QUI LUI SURVIT.** Le déplacement de borne
+du point 1 a changé le comportement de DEUX tables signées sans faire bouger un
+seul sha : `BANDES_PSQI` vivait hors des deux périmètres, et `BIO-SOM-01` —
+règle `publiee` prescrivant `PANEL_SOMMEIL_1` — lit la même zone couleur sur le
+même instrument. Elle a cessé de prescrire à 5 sans avoir été éditée, sans
+re-signature, et sans qu'un banc rougisse. C'est l'objet de la décision suivante.
 
 ### D-179 — Le statut d'une phase lit le geste qu'elle porte, pas l'acte qui l'a précédée
 
