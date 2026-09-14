@@ -36,9 +36,40 @@ demandait pas `priorite_source` : l'écran n'avait aucun moyen de savoir. Ce
 n'est donc pas une erreur de rédaction mais un maillon manquant — la forme que
 [[DC-01]] traite comme invalidante, et non comme un affaiblissement.
 
-**CE QUI ENTRE AU CONTRAT, ET CE QUI N'Y ENTRE PAS.** `prioriteSource` est une
-MARQUE DE PROVENANCE : `'proposition_ia'` ou `null`, jamais un degré, jamais un
-rang. Son voisin de base `priorite_source_rang` **reste dehors** — c'est un
+**CORRECTION DE REVUE — CETTE DÉCISION DISAIT D'ABORD DEUX CHOSES FAUSSES.**
+
+1. *Elle ne corrigeait que la moitié de la phrase.* Les trois marques de
+   `constaterProvenance` sont INDÉPENDANTES : `reformulationSource` vaut
+   `'synthese_ia'` quand la reformulation reprend le narratif du modèle mot pour
+   mot. Ne servir que `prioriteSource` laissait « la reformulation est la vôtre »
+   exactement aussi faux que ce qu'on venait de corriger.
+
+2. *Elle tenait `null` pour la preuve d'une réécriture.* **Il ne l'est pas**, et
+   le commentaire du schéma qui affirme « NULL veut dire ses mots, pas on ne sait
+   pas » ne l'est pas davantage : `constaterProvenance` se termine par
+   `catch { return {} }` — une erreur de relecture efface TOUTES les marques.
+   `null` couvre donc deux cas indiscernables, et aucun écran ne peut en déduire
+   une paternité.
+
+**D'OÙ LA FORME FINALEMENT RETENUE : DES ASSERTIONS POSITIVES SEULEMENT.** Ce qui
+est constaté se dit — « Repris tel quel de la proposition : la reformulation et
+la priorité » —, et ce qui ne l'est pas **se tait**, plutôt que de devenir un
+compliment à l'auteur. L'écran ne prête plus rien au praticien : il rapporte ce
+que le serveur a su constater, et rien de plus. C'est [[DC-01]] (un maillon faux
+est pire qu'un maillon absent) et [[DC-24]] (aucun statut favorable par défaut)
+appliqués à une phrase de six mots.
+
+Effet de bord bienvenu, qui règle un TROISIÈME constat de la même revue : la
+mention de la priorité disparaît avec sa marque, donc aussi quand aucune priorité
+n'est renseignée — l'écran ne dit plus « la priorité ci-dessus » sous un objectif
+qui n'en affiche aucune.
+
+**CE QUI ENTRE AU CONTRAT, ET CE QUI N'Y ENTRE PAS.** `prioriteSource` et
+`reformulationSource` sont des MARQUES DE PROVENANCE : deux valeurs possibles,
+jamais un degré, jamais un rang. `enonceSource`, la troisième, **n'entre pas** :
+l'énoncé est recopié du fragment par la route, jamais saisi, et aucune phrase
+d'écran ne l'attribue au praticien. Le voisin de base `priorite_source_rang`
+**reste dehors** lui aussi — c'est un
 ordre de tirage, donc exactement ce qu'un écran pourrait transformer en
 classement ([[DC-19]], [[DC-20]]). Un banc de route tient cette exclusion par
 une assertion négative, à côté de celle qui exige la présence.
@@ -49,6 +80,12 @@ servir `null` par la route l'a laissé VERT. Un banc de route a donc été écri
 pour la moitié qu'il ne peut pas voir, et la mutation rejouée le rouge. Sans
 lui, la phrase serait redevenue fausse en silence au premier ménage de
 `SELECTION_OBJECTIF`.
+
+**ET LE `POST` EST COUVERT AUSSI**, quatrième constat de revue : `exposer` sert
+les deux chemins, mais le banc n'éprouvait que le `GET`, et le mock de `create`
+ne rendait pas les marques — une régression les retirant de la réponse de
+création serait restée verte. L'écran qui vient de créer un objectif l'affiche
+depuis cette réponse-là, sans relire.
 
 **CE QUE CETTE DÉCISION NE FAIT PAS.** Elle ne compte rien. `ObjectifNegociePanel`
 porte déjà la consigne « aucun compteur, aucun taux : l'adhésion se constate,

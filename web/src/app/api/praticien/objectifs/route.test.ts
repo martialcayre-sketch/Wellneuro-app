@@ -103,6 +103,7 @@ const ligneLue = (partiel: Record<string, unknown> = {}) => ({
   supersedesObjectifId: null,
   sourcePropositionId: null,
   prioriteSource: null,
+  reformulationSource: null,
   ...partiel,
 });
 
@@ -152,6 +153,10 @@ describe('/api/praticien/objectifs', () => {
         negocieLe: data.negocieLe ?? null,
         supersedesObjectifId: data.supersedesObjectifId ?? null,
         sourcePropositionId: data.sourcePropositionId ?? null,
+        // Les marques de provenance sont POSÉES PAR LA ROUTE (`constaterProvenance`)
+        // et ressortent donc du `data` : le mock reflète ce contrat, pas l'appelant.
+        prioriteSource: data.prioriteSource ?? null,
+        reformulationSource: data.reformulationSource ?? null,
         // La base pose le présent : le mock reflète ce contrat, pas l'appelant.
         creeLe: new Date('2026-08-22T09:00:00.000Z'),
       }),
@@ -418,11 +423,12 @@ describe('/api/praticien/objectifs', () => {
     // exactement ce qu'un écran pourrait transformer en classement
     // (`DC-19`/`DC-20`). L'assertion négative ci-dessous le tient.
     prisma.objectifNegocie.findMany.mockResolvedValue([
-      ligneLue({ sourcePropositionId: 'PROP_1', prioriteSource: 'proposition_ia' }),
+      ligneLue({ sourcePropositionId: 'PROP_1', prioriteSource: 'proposition_ia', reformulationSource: 'synthese_ia' }),
     ]);
 
     const payload = await (await GET(getRequest())).json();
     expect(payload.objectifs[0].prioriteSource).toBe('proposition_ia');
+    expect(payload.objectifs[0].reformulationSource).toBe('synthese_ia');
     expect(payload.trajectoires[0].lignes[0].prioriteSource).toBe('proposition_ia');
     expect(payload.objectifs[0]).not.toHaveProperty('prioriteSourceRang');
   });
@@ -639,6 +645,35 @@ describe('/api/praticien/objectifs', () => {
       expect(data.sourcePropositionId).toBe('PROP_1');
       // La reformulation, elle, appartient au praticien : elle vient bien du corps.
       expect(data.reformulationPraticien).toBe('Sommeil fragmenté en seconde partie de nuit.');
+    });
+
+    it('la RÉPONSE du POST porte les marques de provenance, pas seulement le GET', async () => {
+      // LE TROU QUE CE CAS FERME (constat de revue, 2026-09-14). `exposer` sert
+      // les deux chemins, mais le banc n'éprouvait que le `GET` — et le mock de
+      // `create` ne rendait pas les marques, si bien qu'une régression les
+      // retirant de la réponse `POST` serait restée VERTE. L'écran qui vient de
+      // créer un objectif l'affiche depuis cette réponse-là, sans relire.
+      prisma.objectifNegocie.create.mockResolvedValueOnce({
+        id: 'OBJ_NEUF',
+        enoncePatient: 'Je me réveille à trois heures toutes les nuits.',
+        reformulationPraticien: 'Sommeil fragmenté en seconde partie de nuit.',
+        priorite: null,
+        nonTraiteMotif: null,
+        nonTraiteDepuisLe: null,
+        negocieLe: null,
+        supersedesObjectifId: null,
+        sourcePropositionId: 'PROP_1',
+        prioriteSource: 'proposition_ia',
+        reformulationSource: 'synthese_ia',
+        creeLe: new Date('2026-08-22T09:00:00.000Z'),
+      });
+
+      const corps = await corpsDe(await POST(postRequest(corpsReprise())));
+      const objectif = (corps as { objectif: Record<string, unknown> }).objectif;
+      expect(objectif.prioriteSource).toBe('proposition_ia');
+      expect(objectif.reformulationSource).toBe('synthese_ia');
+      // Et le rang de tirage ne sort toujours pas, par ce chemin non plus.
+      expect(objectif).not.toHaveProperty('prioriteSourceRang');
     });
 
     it('écrit l’objectif ET le geste dans UNE SEULE transaction', async () => {
