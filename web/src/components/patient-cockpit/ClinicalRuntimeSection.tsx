@@ -1765,6 +1765,34 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
+        {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
+            `decisionCard` que deux booléens — « une priorité est-elle
+            retenue ? », « la décision est-elle bloquée ? » — et le praticien
+            composait trois plans SANS avoir sous les yeux l'axe qu'il venait de
+            retenir, ses limitations ni son statut. La carte est PURE (une prop,
+            aucun état, aucun fetch) et `decisionCard` lui est déjà passé :
+            ce second montage ne duplique aucun état.
+            Le titre diffère de celui de la phase Décision — deux nœuds de même
+            nom accessible casseraient le mode strict des E2E. */}
+        {/* `phase === 'actions'` ET NON `affiche('actions')` : en mode « tout »,
+            le cockpit défile d'un bloc et la carte de la phase Décision est déjà
+            à l'écran quelques sections plus haut — la répéter n'ajoute rien et
+            dédouble ses textes. Ce rappel n'existe que parce que les phases sont
+            SÉPARÉES : il rend au praticien, devant le formulaire, ce qu'il ne
+            peut plus voir.
+            Montée conditionnelle, à la différence du constructeur qu'elle
+            surplombe : le conteneur reste MASQUÉ plutôt que démonté parce que
+            `ProtocolMiniBuilder` porte un brouillon local qu'un démontage
+            perdrait. La carte, elle, est pure — la démonter ne coûte rien. */}
+        {phase === 'actions' && (
+          <div className="mb-4">
+            <DecisionSummaryCard
+              decisionCard={decisionCard}
+              sourceRefs={sourceRefsEpisode}
+              titre="Ce que la décision a retenu"
+            />
+          </div>
+        )}
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}

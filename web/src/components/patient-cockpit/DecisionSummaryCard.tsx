@@ -1,8 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
+
+export const TITRE_PAR_DEFAUT = 'Priorité et limites';
 
 // « PRIORITÉ ET LIMITES » ET NON « DÉCISION CLINIQUE » : la carte vit DANS la
 // phase « Décision 21 j » — le titre y répétait celui de la phase sans rien
@@ -13,7 +16,7 @@ import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
 // d'une suspension. « Limites » reprend le mot du dépliant de la carte
 // (« Voir les sources et limites »), et jamais « synthèse », qui désigne un
 // document du dossier.
-export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
+export function DecisionSummaryCard({ decisionCard, sourceRefs = [], titre = TITRE_PAR_DEFAUT }: {
   decisionCard: DecisionCard | null;
   /**
    * Le relevé des passations de l'épisode, qui traduit un `responseId` en
@@ -22,12 +25,23 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
    * pas empêcher de lire la priorité.
    */
   sourceRefs?: readonly { responseId: string; questionnaireId: string; observedAt: string }[];
+  /**
+   * Titre de la rubrique. La carte se monte désormais DEUX fois — dans la phase
+   * « Décision 21 j », où elle est la rubrique elle-même, et à côté du
+   * constructeur de protocole, où elle RAPPELLE ce qui vient d'être décidé. Deux
+   * nœuds portant le même nom accessible casseraient le mode strict des E2E ;
+   * le dépôt a déjà tranché ce cas deux fois en faisant varier le libellé plutôt
+   * qu'en dédoublonnant les sélecteurs (`FichePatientPanel.tsx`, bandeaux de
+   * fiche). L'`id` du titre, lui, est rendu unique par `useId()`.
+   */
+  titre?: string;
 }) {
+  const idTitre = useId();
   if (!decisionCard) {
     return (
-      <section aria-labelledby="decision-summary-title">
-        <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-          Priorité et limites
+      <section aria-labelledby={idTitre}>
+        <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+          {titre}
         </h3>
         {/* Carte de décision 5.0 : liseré primaire (maquette cible). */}
         <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-card">
@@ -96,9 +110,9 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [] }: {
   const limitationsMoteur = toutes.filter((texte) => !signees.has(texte));
 
   return (
-    <section aria-labelledby="decision-summary-title">
-      <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
-        Priorité et limites
+    <section aria-labelledby={idTitre}>
+      <h3 id={idTitre} className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
+        {titre}
       </h3>
       <TwoLevelReading
         label="Voir les sources et limites"
