@@ -117,9 +117,35 @@ garde seule est strictement plus sûr, et elle referme une **infraction en cours
 - **Banc de débranchement vérifié, pas affirmé** : la garde neutralisée fait rougir
   **trois** bancs (mutation appliquée, constatée, puis restaurée depuis une copie).
 
-### PR 2 — la citation : À FAIRE
+### PR 2 — la citation : BLOQUÉE SUR UN ARBITRAGE (2026-09-15)
 
-Les points 1 à 3 de [[D-189]] : re-dérivation serveur du libellé d'axe depuis
-`selected_priority_id`, citation de la tête de l'objectif négocié actif par
-identifiant, constat de provenance par comparaison de textes, et le geste de
-désignation à l'écran.
+**Où la provenance vivrait-elle ?** [[D-189]] §1 dit « la provenance est **portée
+par la version**, et tombe au premier caractère réécrit ». J'ai écrit cette phrase
+par analogie avec `objectifs_negocies` — **dont la provenance vit dans NEUF COLONNES
+ajoutées par une migration**. Vérifié depuis : `protocol_drafts` n'a **aucune colonne
+équivalente**, et `ProtocolDraft` n'a **aucun champ** où une marque de provenance de
+`purpose` pourrait se poser.
+
+**Le précédent du dépôt est sans ambiguïté, et il joue contre l'improvisation** :
+*chaque* référence de provenance ajoutée au payload a reçu **son propre contrat** —
+`foodCompassRef` → V2, `supplementCatalogRef` → V3, `interventionStatus` / `waitFor` /
+`phases` → V4, chacune gardée par un « interdit avant ».
+
+**Trois voies, et elles ne se valent pas :**
+
+1. **Un contrat V5** portant la provenance de `purpose`. C'est le patron du dépôt,
+   et c'est une décision qui étend [[D-130]] — elle engage toute la chaîne protocole.
+2. **Un constat à la LECTURE, sans persistance** : le cockpit recompare `purpose` au
+   libellé d'axe signé et à la tête de l'objectif actif, et n'affiche la marque que
+   si l'égalité tient. Aucune migration, aucun contrat neuf, et la marque tombe au
+   premier caractère réécrit **par construction**. Plus faible, et le dépôt connaît
+   cette faiblesse : `syntheses_comprehension` la documente comme « limite assumée »
+   — on vérifie l'APPARTENANCE d'une source, pas son USAGE.
+3. **Différer la citation.** L'étage 0 (restituer) est livré, et c'est lui qui « rend
+   la chose utile au premier jour » ; la citation est un confort de saisie.
+
+**Ce qui n'est PAS une voie** : persister la provenance sans contrat ni colonne. Sans
+marque persistée, on ne distingue pas « cité verbatim » de « réécrit » — sauf à
+refuser la réécriture, ce qui est pire que de ne rien marquer.
+
+**Arbitrage du responsable.** La garde, elle, est livrée et indépendante.
