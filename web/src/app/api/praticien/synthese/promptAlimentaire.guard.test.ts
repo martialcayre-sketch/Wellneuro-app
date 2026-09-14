@@ -157,7 +157,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // v29 (2026-08-23, D-097, LOT-09) : le cadre déontologique porte `DC-09` —
 // « Une association n'est pas une preuve ». Ce banc a fait ce pour quoi il
 // existe : l'édition de la consigne l'a rougi avant tout le reste.
-const EMPREINTE_V29 = '397c1092ac26a5d8';
+const EMPREINTE_V30 = '79c33a54486e39f6';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce
@@ -279,7 +279,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       "consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici. CE GESTE N'EST PAS MÉCANIQUE — la consigne est du clinique (`DC-17`) : relire ce qui a changé, et si un interdit a bougé, une décision `D-xxx` et un fragment `changelog.d/` sont dus AVANT de reporter l'empreinte. C'est ici que passe une clause affaiblie qu'aucune assertion de vocabulaire ne voit.",
-    ).toEqual({ version: 'synthese-v29', empreinte: EMPREINTE_V29 });
+    ).toEqual({ version: 'synthese-v30', empreinte: EMPREINTE_V30 });
   });
 
   it('ne présente pas les questionnaires comme validés, et dit pourquoi (D-034)', () => {
