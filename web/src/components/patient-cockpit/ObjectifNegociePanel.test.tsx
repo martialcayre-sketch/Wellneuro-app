@@ -60,6 +60,8 @@ const ligne = (partiel: Record<string, unknown> = {}) => ({
   creeLe: '2026-08-20T09:00:00.000Z',
   supersedesObjectifId: null,
   sourcePropositionId: null,
+  prioriteSource: null,
+  reformulationSource: null,
   ...partiel,
 });
 
@@ -1679,4 +1681,108 @@ describe('ObjectifNegociePanel — le récit d’étape', () => {
     expect(document.body.textContent).toMatch(/Prochaine étape \(J42\)/);
   });
 
+});
+
+
+// ── La phrase de reprise n'affirme que ce qui est constaté ──────────────────
+//
+// ELLE DISAIT : « Repris d'une proposition citée — la reformulation ET la
+// priorité ci-dessus sont les vôtres », sur le seul `sourcePropositionId`.
+// Deux défauts, et le second a été trouvé en revue après correction du
+// premier :
+//
+//  · les trois marques de `constaterProvenance` sont INDÉPENDANTES ([[D-167]]
+//    §6) — corriger la priorité seule laissait la reformulation aussi fausse ;
+//  · `constaterProvenance` se termine par `catch { return {} }` : une erreur
+//    de relecture efface toutes les marques, si bien que `null` ne distingue
+//    pas « ses mots » de « on n'a pas su constater ».
+//
+// D'OÙ LE PRINCIPE ÉPINGLÉ ICI : des assertions POSITIVES seulement. Ces bancs
+// vérifient autant ce qui est DIT que ce qui ne l'est plus.
+describe('la phrase de reprise n’affirme que ce qui est constaté', () => {
+  async function rendreLigne(partiel: Record<string, unknown>) {
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_1', priorite: 'Premier plan', ...partiel })],
+          trajectoires: [
+            { idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1', priorite: 'Premier plan', ...partiel })] },
+          ],
+          ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
+          reponsesJalon: [],
+          fins: { OBJ_1: FIN_OUVERTE },
+          tetesActives: 1,
+        },
+      }),
+    );
+    await attendreLeDossier();
+    return screen.getByText(/Repris d’une proposition citée/);
+  }
+
+  it('les deux marques : les deux textes sont nommés', async () => {
+    const texte = await rendreLigne({
+      sourcePropositionId: 'PROP_1',
+      reformulationSource: 'synthese_ia',
+      prioriteSource: 'proposition_ia',
+    });
+    expect(texte.textContent).toContain('Repris tel quel de la proposition : la reformulation et la priorité.');
+  });
+
+  it('la priorité seule : la reformulation n’est PAS nommée', async () => {
+    const texte = await rendreLigne({
+      sourcePropositionId: 'PROP_1',
+      reformulationSource: null,
+      prioriteSource: 'proposition_ia',
+    });
+    expect(texte.textContent).toContain('Repris tel quel de la proposition : la priorité.');
+    expect(texte.textContent).not.toContain('la reformulation');
+  });
+
+  it('la reformulation seule : la priorité n’est PAS nommée', async () => {
+    // LE DÉFAUT QUE LA REVUE A TROUVÉ. La première correction ne lisait que
+    // `prioriteSource` : ce cas-ci affichait donc « la reformulation est la
+    // vôtre » sous un texte repris mot pour mot du narratif du modèle.
+    const texte = await rendreLigne({
+      sourcePropositionId: 'PROP_1',
+      reformulationSource: 'synthese_ia',
+      prioriteSource: null,
+    });
+    expect(texte.textContent).toContain('Repris tel quel de la proposition : la reformulation.');
+    expect(texte.textContent).not.toContain('la priorité');
+  });
+
+  it('AUCUNE marque : l’écran ne prête RIEN au praticien', async () => {
+    // LE CŒUR DE LA RÉÉCRITURE. `null` ne prouve pas la paternité — le `catch`
+    // de `constaterProvenance` rend le même `null` sur une erreur de lecture.
+    // La phrase se tait donc, au lieu de complimenter l'auteur.
+    const texte = await rendreLigne({
+      sourcePropositionId: 'PROP_1',
+      reformulationSource: null,
+      prioriteSource: null,
+    });
+    expect(texte.textContent).toBe('Repris d’une proposition citée.');
+    expect(texte.textContent).not.toMatch(/v[ôo]tres?/i);
+    expect(texte.textContent).not.toContain('Repris tel quel');
+  });
+
+  it('aucune reprise du tout : aucune phrase', async () => {
+    fetchMock.mockImplementation(
+      router({
+        dossier: {
+          ...DOSSIER_VIDE,
+          objectifs: [ligne({ id: 'OBJ_1', sourcePropositionId: null })],
+          trajectoires: [{ idObjectif: 'OBJ_1', lignes: [ligne({ id: 'OBJ_1', sourcePropositionId: null })] }],
+          ratifications: { OBJ_1: 'en_attente' },
+          amendements: [],
+          reponsesJalon: [],
+          fins: { OBJ_1: FIN_OUVERTE },
+          tetesActives: 1,
+        },
+      }),
+    );
+    await attendreLeDossier();
+    expect(screen.queryByText(/Repris d’une proposition citée/)).toBeNull();
+  });
 });

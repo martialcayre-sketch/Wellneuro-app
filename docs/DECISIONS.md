@@ -4,6 +4,96 @@
 
 ## Décisions actives
 
+### D-184 — La phrase de reprise ne promet que ce que la provenance constate
+
+- Date : 2026-09-14
+- Statut : accepté — arbitrage du responsable rendu en session le 2026-09-14
+  (« corriger maintenant »), sur constat vérifié
+- Domaine : clinique — cockpit praticien, objectif négocié, contrat exposé
+- Portée : `ObjectifExpose` gagne **une** clé, `prioriteSource`. Le banc
+  `objectifNegocie.guard.test.ts` déclare que « y toucher est une décision, pas
+  un geste de passage » : cette entrée est ce que ce banc exige.
+
+**LA PHRASE ÉTAIT FAUSSE, ET VÉRIFIABLEMENT.** Sous un objectif repris d'une
+proposition citée, l'écran affichait : « Repris d'une proposition citée — la
+reformulation **et la priorité** ci-dessus sont les vôtres. » Elle s'armait sur
+le seul `sourcePropositionId`. Or les deux marques sont **indépendantes** :
+`constaterProvenance` pose `prioriteSource: 'proposition_ia'` quand la priorité
+enregistrée est celle de l'appel MOT POUR MOT ([[D-167]] §6), et les deux
+colonnes peuvent donc être renseignées ensemble. Dans ce cas — énoncé repris,
+priorité laissée telle quelle — la phrase affirmait au praticien qu'il avait
+choisi une priorité que le modèle avait écrite.
+
+**LE DESTINATAIRE AGGRAVE, IL N'ATTÉNUE PAS.** Ce panneau vit dans
+`FichePatientPanel`, le cockpit **praticien** : c'est à l'auteur qu'on affirmait
+à tort ce qu'il avait écrit. [[DC-16]] pose qu'une production du modèle ne
+partage jamais le statut de ce que le praticien a posé ; une phrase qui attribue
+au praticien la plume du modèle fait exactement l'inverse, et sur la surface où
+il décide.
+
+**LA COLONNE ÉTAIT ÉCRITE ET SERVIE À PERSONNE.** `SELECTION_OBJECTIF` ne
+demandait pas `priorite_source` : l'écran n'avait aucun moyen de savoir. Ce
+n'est donc pas une erreur de rédaction mais un maillon manquant — la forme que
+[[DC-01]] traite comme invalidante, et non comme un affaiblissement.
+
+**CORRECTION DE REVUE — CETTE DÉCISION DISAIT D'ABORD DEUX CHOSES FAUSSES.**
+
+1. *Elle ne corrigeait que la moitié de la phrase.* Les trois marques de
+   `constaterProvenance` sont INDÉPENDANTES : `reformulationSource` vaut
+   `'synthese_ia'` quand la reformulation reprend le narratif du modèle mot pour
+   mot. Ne servir que `prioriteSource` laissait « la reformulation est la vôtre »
+   exactement aussi faux que ce qu'on venait de corriger.
+
+2. *Elle tenait `null` pour la preuve d'une réécriture.* **Il ne l'est pas**, et
+   le commentaire du schéma qui affirme « NULL veut dire ses mots, pas on ne sait
+   pas » ne l'est pas davantage : `constaterProvenance` se termine par
+   `catch { return {} }` — une erreur de relecture efface TOUTES les marques.
+   `null` couvre donc deux cas indiscernables, et aucun écran ne peut en déduire
+   une paternité.
+
+**D'OÙ LA FORME FINALEMENT RETENUE : DES ASSERTIONS POSITIVES SEULEMENT.** Ce qui
+est constaté se dit — « Repris tel quel de la proposition : la reformulation et
+la priorité » —, et ce qui ne l'est pas **se tait**, plutôt que de devenir un
+compliment à l'auteur. L'écran ne prête plus rien au praticien : il rapporte ce
+que le serveur a su constater, et rien de plus. C'est [[DC-01]] (un maillon faux
+est pire qu'un maillon absent) et [[DC-24]] (aucun statut favorable par défaut)
+appliqués à une phrase de six mots.
+
+Effet de bord bienvenu, qui règle un TROISIÈME constat de la même revue : la
+mention de la priorité disparaît avec sa marque, donc aussi quand aucune priorité
+n'est renseignée — l'écran ne dit plus « la priorité ci-dessus » sous un objectif
+qui n'en affiche aucune.
+
+**CE QUI ENTRE AU CONTRAT, ET CE QUI N'Y ENTRE PAS.** `prioriteSource` et
+`reformulationSource` sont des MARQUES DE PROVENANCE : deux valeurs possibles,
+jamais un degré, jamais un rang. `enonceSource`, la troisième, **n'entre pas** :
+l'énoncé est recopié du fragment par la route, jamais saisi, et aucune phrase
+d'écran ne l'attribue au praticien. Le voisin de base `priorite_source_rang`
+**reste dehors** lui aussi — c'est un
+ordre de tirage, donc exactement ce qu'un écran pourrait transformer en
+classement ([[DC-19]], [[DC-20]]). Un banc de route tient cette exclusion par
+une assertion négative, à côté de celle qui exige la présence.
+
+**LES DEUX MOITIÉS DE LA CHAÎNE SONT TENUES, ET LA SECONDE A ÉTÉ PAYÉE PAR UNE
+MUTATION SURVIVANTE.** Le banc du panneau simule `fetch` : la mutation qui fait
+servir `null` par la route l'a laissé VERT. Un banc de route a donc été écrit
+pour la moitié qu'il ne peut pas voir, et la mutation rejouée le rouge. Sans
+lui, la phrase serait redevenue fausse en silence au premier ménage de
+`SELECTION_OBJECTIF`.
+
+**ET LE `POST` EST COUVERT AUSSI**, quatrième constat de revue : `exposer` sert
+les deux chemins, mais le banc n'éprouvait que le `GET`, et le mock de `create`
+ne rendait pas les marques — une régression les retirant de la réponse de
+création serait restée verte. L'écran qui vient de créer un objectif l'affiche
+depuis cette réponse-là, sans relire.
+
+**CE QUE CETTE DÉCISION NE FAIT PAS.** Elle ne compte rien. `ObjectifNegociePanel`
+porte déjà la consigne « aucun compteur, aucun taux : l'adhésion se constate,
+elle ne se compte pas », et servir la marque ne l'entame pas — une ligne dit sa
+propre provenance, aucune n'est agrégée. Et elle ne réécrit aucun objectif
+existant : les lignes déjà enregistrées gardent leurs marques telles quelles,
+c'est leur affichage qui cesse de mentir.
+
 ### D-183 — La fenêtre de rappel d'un instrument ne s'énonce pas : elle n'est transmise nulle part
 
 - Date : 2026-09-14
