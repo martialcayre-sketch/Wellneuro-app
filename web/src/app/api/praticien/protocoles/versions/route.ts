@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -7,6 +8,7 @@ import { refusPreconditionsPersistance } from '@/lib/clinical-engine/preconditio
 import { lireAncresPersistees, refusAncreNonRecevable } from '@/lib/protocol/ancresPersistees';
 import { RAISON_DIVERGENCE, refusChaineC1 } from '@/lib/clinical-engine/verifierChaineC1';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
+import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import type {
   ConfirmedAssessmentEpisode,
   DecisionCard,
@@ -62,6 +64,13 @@ type Submission = {
    * comportement historique. Seul `c1-protocol-draft-v4` peut être demandé.
    */
   version?: ProtocolDraft['version'];
+  /**
+   * Le jeton rendu par un refus `REGISTRE_ANXIOGENE`, renvoyé tel quel pour
+   * lever ce refus ([[D-189]] §4). Il est LIÉ AU TEXTE : un protocole modifié
+   * entre les deux clics re-refuse avec un jeton neuf. L'appelant ne le
+   * fabrique pas — il le reçoit et le rend.
+   */
+  confirmerRegistre?: string;
 };
 
 type PostBody = {
@@ -80,7 +89,7 @@ type PostResponse =
       status: string;
       supersedesDraftId: string | null;
     }
-  | { ok: false; reason: string; error: string };
+  | { ok: false; reason: string; error: string; texteSha256?: string };
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
@@ -382,6 +391,54 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         }
         verifiedActions.push({ ...action, foodCompassRef: expected });
       }
+      // ── GARDE DE REGISTRE ANXIOGÈNE ([[D-189]] §4) ───────────────────────
+      //
+      // CE CHEMIN SORTAIT SANS GARDE. `purpose` est servi au patient en
+      // sous-titre de son écran d'accueil, `title` et `minimalPlan` composent
+      // son action du jour — et rien ne les relisait : le seul contrôle était
+      // « non vide ». La carte de `lib/documents/vocabulaire.ts` dit d'un tel
+      // chemin qu'« il n'a pas le droit d'exister ».
+      //
+      // TOUTES LES ACTIONS, PAS LA PREMIÈRE. La route du portail n'en sert
+      // qu'une aujourd'hui, mais garder ce que le portail sert AUJOURD'HUI
+      // ferait de la garde une dette au jour où il en servira trois.
+      //
+      // RÉGIME CONFIRMABLE ([[D-090]] : le régime suit le geste) — un praticien
+      // est devant l'écran au moment du refus, et un faux positif ne doit pas
+      // rendre un protocole légitime inenregistrable. Le jeton lie la
+      // confirmation À CE TEXTE : un protocole modifié entre les deux clics
+      // re-refuse. Préfixe de domaine plutôt qu'empreinte nue, patron du
+      // document patient biologie — deux gardes qui hacheraient le même texte
+      // deviendraient interchangeables.
+      const champsServisAuPatient: { champ: string; texte: string }[] = [
+        { champ: 'la raison d’être', texte: submission.purpose ?? '' },
+        { champ: 'le critère J21', texte: submission.followUpCriterion ?? '' },
+        ...verifiedActions.flatMap((action, index) => [
+          { champ: `l’intitulé de l’action ${index + 1}`, texte: action.title ?? '' },
+          { champ: `le plan minimal de l’action ${index + 1}`, texte: action.minimalPlan ?? '' },
+        ]),
+      ];
+      const premierTerme = champsServisAuPatient
+        .map(({ champ, texte }) => ({ champ, terme: termeAnxiogene(texte) }))
+        .find(({ terme }) => terme !== null);
+      const jetonRegistre = createHash('sha256')
+        .update(`PROTOCOLE_REGISTRE:${JSON.stringify(champsServisAuPatient.map(c => c.texte))}`, 'utf8')
+        .digest('hex');
+      if (premierTerme && submission.confirmerRegistre !== jetonRegistre) {
+        return NextResponse.json(
+          {
+            ok: false,
+            reason: 'REGISTRE_ANXIOGENE',
+            error: `${premierTerme.champ.charAt(0).toUpperCase()}${premierTerme.champ.slice(1)} `
+              + `emploie « ${premierTerme.terme} ». Ce texte est lu seul par votre patient, `
+              + 'souvent avant la consultation suivante. Reformulez-le, ou confirmez '
+              + 'l’enregistrement de ce texte-ci.',
+            texteSha256: jetonRegistre,
+          },
+          { status: 409 },
+        );
+      }
+
       const baseDraft = buildProtocolDraft({
         protocolDraftId,
         decisionCard,
