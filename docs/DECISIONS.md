@@ -45,11 +45,27 @@ tenue là où elle ne l'est pas.
 (`lib/synthese/generation.ts`) projette `idQuestionnaire`, `titre`, `date`,
 `passationCourante`, `scores`, `scorePrincipal`, `interpretation`,
 `miniSynthese`. **Jamais `instructions`**, seul endroit du dépôt où la période
-d'un instrument est écrite. Et les instruments d'un même dossier ne partagent
-pas la leur : PSQI et PSS disent « le dernier mois », DASS-21 « la dernière
-semaine », `Q_ALI_01` « vos habitudes habituelles », `Q_SOM_06` « votre état
-actuel ». Le modèle n'avait aucun moyen de savoir, et aucun moyen de savoir
-qu'il ne savait pas.
+de RAPPEL d'un instrument est écrite. Et les instruments d'un même dossier ne
+partagent pas la leur : PSQI et PSS disent « le dernier mois », DASS-21 « la
+dernière semaine », `Q_ALI_01` « vos habitudes habituelles », `Q_SOM_06`
+« votre état actuel ». Le modèle n'avait aucun moyen de savoir, et aucun moyen
+de savoir qu'il ne savait pas.
+
+**DEUX SORTES DE DURÉE, ET UNE SEULE EST EN CAUSE — correction de revue
+(Copilot, PR #1098).** Une première rédaction de cette décision et de la clause
+disait « aucune période couverte par un instrument ». **Trop large, et
+démontrablement faux** : une durée de RECUEIL est transmise, quand une période
+de RAPPEL ne l'est pas. `Q_SOM_09` le prouve deux fois — son `titre` est
+« Agenda du sommeil — 21 nuits », et `buildUserMessage` projette `titre` ; son
+agrégat `AGD_NB_NUITS` (« Nombre de nuits renseignées », 0 à 21) part dans les
+scores. La règle ainsi rédigée aurait censuré **la seule occurrence que la
+mesure classait comme légitime sur ce motif** : « les indicateurs de l'agenda
+sur trois semaines », qui ne suppose rien et restitue ce qu'on lui a donné.
+C'est la faute que le dépôt documente déjà sous une autre forme — un paragraphe
+ajouté sans reprendre ce qu'il rend faux. La clause distingue désormais les
+deux, et cite l'exemple plutôt que la seule catégorie : une autorisation
+abstraite laisserait le modèle trancher lui-même ce qui « est porté par les
+données », et il trancherait au plus large.
 
 **DEUX VOIES, ET CELLE QUI EST ÉCARTÉE L'EST POUR UN MOTIF DE DOCTRINE.**
 

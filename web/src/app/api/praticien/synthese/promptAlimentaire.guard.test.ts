@@ -157,7 +157,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, '../../../../lib/synthese/gene
 // v29 (2026-08-23, D-097, LOT-09) : le cadre déontologique porte `DC-09` —
 // « Une association n'est pas une preuve ». Ce banc a fait ce pour quoi il
 // existe : l'édition de la consigne l'a rougi avant tout le reste.
-const EMPREINTE_V30 = '79c33a54486e39f6';
+const EMPREINTE_V30 = 'cf9b90d6d44cdb4e';
 
 /**
  * La seule phrase de la consigne autorisée à attribuer une validité — parce

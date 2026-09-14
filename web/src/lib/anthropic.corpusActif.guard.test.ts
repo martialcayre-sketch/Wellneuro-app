@@ -17,7 +17,7 @@ const TITRE_CORPUS = 'Référentiel clinique SIIN — Snapshot V1';
 // <donnees_declaratives_patient> ajoutée au cadre déontologique.
 // v29 (2026-08-23, D-097, LOT-09) : clause `DC-09` — « Une association n'est
 // pas une preuve » — au cadre déontologique, donc dans les DEUX états.
-const EMPREINTE_PROMPT_ALLUME_V30 = '2c00a83796be91f2';
+const EMPREINTE_PROMPT_ALLUME_V30 = '3b2a4770198bdf4a';
 
 async function chargerAnthropicAvecDrapeau(valeur: string | undefined) {
   vi.resetModules();

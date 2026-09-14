@@ -46,6 +46,17 @@ documente une classe de défaut — « une interdiction dont le critère de déc
 n'arrive pas » — où une consigne prohibitive ne peut pas s'armer faute de donnée.
 Celle-ci ne dépend d'aucune donnée : elle s'applique toujours.
 
+**Deux sortes de durée, et une seule est en cause — correction de revue.** Une première
+rédaction interdisait « aucune période couverte par un instrument ». Trop large, et
+démontrablement faux : une durée de RECUEIL est transmise, quand une période de RAPPEL
+ne l'est pas. `Q_SOM_09` le prouve deux fois — son titre est « Agenda du sommeil —
+21 nuits », et `buildUserMessage` projette `titre` ; son agrégat `AGD_NB_NUITS`
+(« Nombre de nuits renseignées », 0 à 21) part dans les scores. La règle ainsi rédigée
+aurait censuré **la seule occurrence que la mesure classait comme légitime sur ce
+motif**. La clause distingue désormais les deux, et cite l'exemple plutôt que la seule
+catégorie : une autorisation abstraite laisserait le modèle trancher lui-même ce qui
+« est porté par les données », et il trancherait au plus large.
+
 **Ce qui reste autorisé est nommé, et la règle borne sa propre portée.** Une consigne
 purement prohibitive laisse le modèle inventer une formulation de repli — le dépôt le
 documente deux fois. La clause dit donc ce qui se dit toujours : que deux instruments
@@ -66,9 +77,9 @@ l'aide pas à mieux comparer deux instruments, il l'empêche de prétendre le fa
 il ne réécrit pas la synthèse du 2026-09-12, déjà persistée — `DC-24` : rien ne repasse
 rétroactivement sous un statut plus favorable.
 
-Nouveau banc `promptFenetreRappel.guard.test.ts` (7 cas) : la formule citable et son
+Nouveau banc `promptFenetreRappel.guard.test.ts` (8 cas) : la formule citable et son
 unicité, l'OPÉRATEUR d'interdiction séparément du constat, le repli autorisé, la borne
 de portée, la position au-dessus des sections topiques — une clause descendue sous
 « Recommandation d'exploration déterministe » deviendrait discutable sans que son
 texte bouge —, et la clause voisine sur les normes non transmises, qu'une réécriture
-pourrait emporter en la remplaçant. Trois mutations appliquées, trois tuées.
+pourrait emporter en la remplaçant. Quatre mutations appliquées, quatre tuées.

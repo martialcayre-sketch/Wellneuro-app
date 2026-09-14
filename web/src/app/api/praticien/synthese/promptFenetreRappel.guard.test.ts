@@ -67,7 +67,7 @@ describe('consigne système — la fenêtre de rappel d’un instrument ne s’�
     // excuse pour combler le trou de mémoire. L'interdit tient à l'impératif
     // qui suit. Retirer la seule phrase « N'énonce donc aucune période… »
     // laisserait toutes les assertions de vocabulaire vertes.
-    expect(CONSIGNE).toMatch(/n'énonce donc \*\*aucune période couverte par un instrument\*\*/i);
+    expect(CONSIGNE).toMatch(/n'énonce donc \*\*aucune période de rappel d'un instrument\*\*/i);
   });
 
   it('ce qui reste AUTORISÉ est nommé, pas seulement ce qui est interdit', () => {
@@ -80,6 +80,27 @@ describe('consigne système — la fenêtre de rappel d’un instrument ne s’�
     expect(CONSIGNE).toMatch(/ne sont pas superposables/i);
   });
 
+  it('une DURÉE PORTÉE PAR LES DONNÉES reste restituable — Q_SOM_09', () => {
+    // LE DÉFAUT QUE CE TEST FERME, TROUVÉ EN REVUE (Copilot, PR #1098). La
+    // première rédaction interdisait « aucune période couverte par un
+    // instrument ». Trop large : la durée de recueil de `Q_SOM_09` EST
+    // transmise, deux fois — son `titre` est « Agenda du sommeil — 21 nuits »
+    // et `buildUserMessage` projette `titre` ; son agrégat `AGD_NB_NUITS`
+    // (« Nombre de nuits renseignées », 0 à 21) part dans les scores. La règle
+    // aurait donc censuré la SEULE occurrence que la mesure du 2026-09-14
+    // classait comme légitime sur ce motif — « les indicateurs de l'agenda sur
+    // trois semaines », qui ne suppose rien : il restitue ce qu'on lui a donné.
+    //
+    // La ligne de partage est là, et elle est nette : une période de RAPPEL
+    // (sur quoi l'instrument interroge) n'arrive jamais ; une durée de RECUEIL
+    // portée par un titre, un libellé de score ou une date arrive toujours.
+    expect(CONSIGNE).toMatch(/une durée que les données elles-mêmes portent se restitue/i);
+    // L'exemple est cité dans la consigne, pas seulement la catégorie : une
+    // autorisation abstraite laisse le modèle trancher lui-même ce qui « est
+    // porté par les données », et il tranchera au plus large.
+    expect(CONSIGNE).toContain('Agenda du sommeil — 21 nuits');
+  });
+
   it('la règle BORNE sa portée aux instruments, et le dit', () => {
     // SANS CETTE BORNE, LA RÈGLE AURAIT ÉTEINT SIX OCCURRENCES LÉGITIMES sur
     // les sept que la mesure du 2026-09-14 a trouvées : la durée réelle d'un
@@ -88,7 +109,7 @@ describe('consigne système — la fenêtre de rappel d’un instrument ne s’�
     // période que le PATIENT déclare est une donnée ; la portée d'un
     // INSTRUMENT est une propriété non transmise. Les confondre transformerait
     // un garde en censure du récit patient.
-    expect(CONSIGNE).toMatch(/porte sur la portée des INSTRUMENTS, et sur elle seule/);
+    expect(CONSIGNE).toMatch(/porte sur la période de rappel des INSTRUMENTS, et sur elle seule/);
     expect(CONSIGNE).toMatch(/une période que le patient déclare/i);
   });
 
