@@ -594,9 +594,20 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
     { claimId: 'WN-CL-0361-009', versionClaim: 'v1.0' },
     { claimId: 'WN-CL-0388-008', versionClaim: 'v1.0' },
   ],
-  // Ancien sha signé (2026-08-17, périmètre RÈGLES SEULES) :
-  // `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`.
-  shaPerimetre: '3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236',
+  // Anciens sha signés :
+  //   · 2026-08-17 — `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`
+  //     (périmètre RÈGLES SEULES)
+  //   · 2026-09-14 — `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236`
+  //     (périmètre RÈGLES + GRILLES, attesté le matin)
+  //
+  // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
+  // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
+  // un item de l'axe C1 faisait passer un total de 24 à 21 — donc la couleur de
+  // `warning` à `success`, donc `PANEL_DIGESTIF_1` de proposé à non proposé —
+  // sans qu'un seul sha bouge. Le périmètre couvre désormais le bloc `scoring`
+  // entier des seize instruments cités et la cotation de leurs items. Les
+  // vingt-neuf claims n'ont pas bougé depuis la relecture du matin.
+  shaPerimetre: '82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42',
 };
 
 /**

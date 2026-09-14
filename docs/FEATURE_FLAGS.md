@@ -329,6 +329,16 @@ CI ; une table signée neuve absente du tableau aussi.
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
+> **LES DEUX PREMIÈRES LIGNES ONT ÉTÉ SIGNÉES DEUX FOIS LE 2026-09-14.**
+> Une première fois le matin, sur un périmètre étendu aux grilles
+> d'interprétation ([[D-182]]) ; une seconde fois le soir, après qu'un
+> contre-audit eut démontré que ce périmètre s'arrêtait à `score → couleur` et
+> laissait `réponses → score` dehors — un item retiré d'un axe déplaçait une
+> couleur sans faire bouger un sha. Le périmètre couvre depuis le bloc `scoring`
+> entier des instruments cités et la cotation de leurs items. Les deux verrous
+> sont OUVERTS sur cette seconde signature.
+
+
 Trois lectures attentives sur ce tableau :
 
 - **`indicationsBiologieV1.ts` est SIGNÉE aux cinq termes depuis `D-069`**
