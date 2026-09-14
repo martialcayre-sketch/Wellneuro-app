@@ -92,3 +92,31 @@ conclu qu'un garde de SORTIE sur `DC-19` était impossible **par analogie** avec
 (`verifierRestitutionOrientation`, vocabulaire non fermé). L'analogie n'a pas été testée.
 Une fenêtre de rappel est un vocabulaire nettement plus fermé qu'un glissement probatoire,
 et cette conclusion est peut-être paresseuse.
+
+## La passe Codex a bloqué — et #1101 était déjà mergée
+
+Chronologie, dite parce qu'elle explique pourquoi une seconde PR existe :
+
+- **21:18** — #1101 mergée (`4fa98fc7`). `D-185` entre au registre avec sa thèse
+  centrale **fausse**.
+- **après** — la passe Codex rend BLOQUER sur `8107291f`, avec deux P1 ; un finding
+  Copilot était resté ouvert et disait la même chose sous un troisième angle.
+
+Le périmètre défectueux est donc passé en production, et la correction a demandé une
+PR distincte. **La fenêtre de revue a été fermée avant que la revue obligatoire
+n'ait eu lieu** — c'est la conséquence directe de la dette P0 consignée plus haut,
+et elle s'est matérialisée le jour même.
+
+**Ce que les trois findings établissaient**, tous rejoués avant d'être admis :
+
+1. Trois des cinq objets (`TERMES_DE_CLASSEMENT`, `DEPARTAGE_PLAINTE_EX_AEQUO`,
+   `INVARIANTS_PRODUCTEUR`) n'étaient importés par personne.
+2. Les conditions d'affichage vivaient dans un commentaire, hors empreinte.
+3. Le banc de consommation lisait la SOURCE : défait par concaténation, et — pire —
+   laissait passer un texte révisé au périmètre que le moteur ignorait.
+
+**La liaison se fait désormais par COMPORTEMENT** (arbitrage du responsable, trois
+options posées). Empreinte `c2fb8332f9527886` → `da1ba306c0551d7b`.
+
+**Conséquence pour l'attestation** : ne PAS signer sur l'empreinte publiée par
+#1101. Le document de relecture a été republié sur la nouvelle.
