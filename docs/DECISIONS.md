@@ -116,8 +116,45 @@ Arbitrage du responsable, 2026-09-14, sur trois options. Un banc EXÉCUTE le
 moteur (`construireChaineC1`) et compare sa sortie aux données déclarées : textes
 produits identiques — positif, donc insensible à la concaténation —, texte
 conditionnel absent quand sa condition ne tient pas, rang séquentiel et confiance
-issus des invariants, ordre conforme aux trois termes rejoués depuis la table,
-ex æquo nommés.
+issus des invariants, ordre conforme aux trois termes, ex æquo nommés.
+
+**DEUXIÈME PASSE CODEX, ET CE QU'ELLE A ENCORE DÉFAIT — trois mutations, toutes
+vertes sur 46 cas, toutes rejouées avant d'être admises.** La première rédaction
+de ce banc couvrait TROIS des quatre textes, laissait les CONDITIONS sans oracle,
+et rejouait le comparateur sur une fixture qui ne le discriminait pas :
+
+- le texte d'`etatInconnu` révisé au périmètre, l'ancien littéral gardé au
+  moteur, passait — le quatrième texte destiné à la relecture pouvait encore être
+  ignoré en silence ;
+- `etatInconnu.condition` déclarée « toujours » passait, alors que le moteur
+  continue de la conditionner : le périmètre pouvait annoncer une condition
+  différente de celle exécutée, dans la donnée hachée cette fois ;
+- **la priorité intrinsèque INVERSÉE dans le comparateur du moteur passait.** La
+  fixture par défaut a pour dominante `surpoids`, et le premier terme y sépare
+  déjà les deux candidates : le deuxième terme ne tranchait jamais. Un
+  comparateur rejoué ne prouve rien tant que chaque terme n'a pas un dossier où
+  LUI SEUL décide.
+
+**LA CAUSE EST COMMUNE AUX TROIS, et c'est elle qui compte : une assertion écrite
+à la main ne couvre que ce que sa rédaction a pensé à nommer.** Le banc n'est
+donc plus écrit à la main — il ITÈRE SUR LA DONNÉE DÉCLARÉE et exige un oracle
+pour chaque entrée. Les scénarios sont indexés PAR LA CONDITION DÉCLARÉE
+elle-même : réécrire une condition ne trouve plus sa clé et fait rougir. Les
+trois termes sont exercés un par un, chacun sur un dossier construit pour que lui
+seul départage — dominante `surpoids` pour le premier, dominante `fatigue`, qu'
+aucune règle ne porte, pour le second.
+
+**LE TROISIÈME TERME EST DIT INATTEIGNABLE, PAS SIMULÉ.** Il ne tranche qu'entre
+deux règles de même priorité intrinsèque, or les quatre règles publiées en
+portent quatre distinctes. Le fabriquer par une table forgée prouverait le
+comparateur d'une table qui n'existe pas. Ce que le banc garde à la place, c'est
+la CONDITION de cette inatteignabilité : le jour où une cinquième règle reprend
+une priorité déjà prise, le cas rougit et réclame son dossier de départage —
+plutôt que de le découvrir sur un classement faux en production.
+
+**LE PÉRIMÈTRE LUI-MÊME N'A PAS BOUGÉ** : la correction est entièrement dans la
+preuve. L'empreinte `da1ba306c0551d7b` tient, et la surface soumise à
+l'attestation est inchangée.
 
 **ET POUR DEUX DES CINQ OBJETS, C'EST LE SEUL LIEN POSSIBLE.** Le départage des ex
 æquo n'est pas un paramètre : il ÉMERGE de l'ordre de parcours du catalogue. Les

@@ -120,3 +120,31 @@ options posées). Empreinte `c2fb8332f9527886` → `da1ba306c0551d7b`.
 
 **Conséquence pour l'attestation** : ne PAS signer sur l'empreinte publiée par
 #1101. Le document de relecture a été republié sur la nouvelle.
+
+## Deuxième passe Codex — 23:30, sur `b52d21b1`
+
+**BLOQUER de nouveau, et les trois findings tiennent.** Rejoués par mutation, tous
+verts sur 46 cas avant correction :
+
+| Mutation | Avant | Après |
+| --- | --- | --- |
+| Texte d'`etatInconnu` révisé au périmètre, ancien littéral au moteur | 46/46 verts | rouge |
+| `etatInconnu.condition` déclarée « toujours » | 46/46 verts | rouge |
+| Priorité intrinsèque INVERSÉE dans le comparateur du moteur | 46/46 verts | rouge |
+| Départage déclaré « dernier domaine » au lieu de « premier » | (signalé) vert | rouge |
+| Terme 2 déclaré `technique` au lieu de `clinique` | (ajoutée ici) | rouge |
+
+**Ce qui a changé** : le banc n'est plus écrit à la main, il itère sur
+`LIMITATIONS_CANDIDAT` et exige un oracle par entrée, indexé PAR LA CONDITION
+DÉCLARÉE. Les trois termes sont exercés un par un — dominante `surpoids` isole le
+premier, dominante `fatigue` (qu'aucune règle ne porte) isole le second. Le
+troisième est **déclaré inatteignable et gardé comme tel** : quatre règles, quatre
+priorités distinctes.
+
+**Le périmètre n'a pas bougé d'un octet.** `da1ba306c0551d7b` tient, la surface
+d'attestation est inchangée — la correction est entièrement dans la preuve.
+T1 exit 0 ; 816 cas verts sur `clinical` + `clinical-engine`.
+
+**Ce qui reste ouvert et n'est pas dans ce lot** : la passe Codex sur #1098
+(`synthese-v30`, rétroactive), l'attestation du praticien, et le compteur
+d'ouverture de « Voir les sources et limites ».
