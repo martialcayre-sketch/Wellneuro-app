@@ -78,54 +78,50 @@ faisait JETER la génération. La synthèse est *best-effort* — le bloc d'orie
 est déjà entouré d'un `try` — et elle ne doit jamais échouer pour une forme
 inattendue. Lecture rendue défensive.
 
-### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être au bout de 365 jours
+### D-180 — Le rang suit le claim cité, et une cible mesurée cesse de l'être pour toujours
 
 - Date : 2026-09-13
-- Statut : accepté — deux arbitrages praticien du 2026-09-13, **re-signature de la
-  table attestée par le praticien le même jour**
-- Domaine : clinique — table d'orientation NNPP2, rang des cibles et fraîcheur
-- **ENTRÉE ÉCRITE APRÈS COUP, ET IL FAUT LE DIRE.** Le commit `e653dcde` a livré
-  ces deux arbitrages en annonçant « (D-180) » dans son sujet, mais **sans toucher
-  ce registre** : le numéro était pris sans être écrit. Un numéro ne se libère
-  jamais, et `decisions-numerotation.test.mjs` refuse le trou — cette entrée le
-  comble depuis la seule source que le dépôt porte, le fragment
-  `changelog.d/2026-09-13-orientation-rang-et-fraicheur.md` (101 lignes), qui
-  reste le récit faisant foi. Ce qui suit le résume ; il n'y ajoute rien.
-  `DC-26` est la raison de ne pas laisser le trou : une règle clinique vit au
-  registre, jamais seulement dans le code.
+- Statut : accepté — arbitrages du praticien rendus en session le 2026-09-13,
+  sur quatre points posés séparément (borne PSQI, rang des instruments, fenêtre
+  de fraîcheur, lecture de production)
+- Domaine : clinique — orientation, table signée `ORIENTATION_RULES_V1`
+- Re-signature attestée par le praticien le 2026-09-13, après relecture du
+  contenu modifié. Les 23 claims de `claimsSource` relus en base de production
+  le même jour (one-off détaché) : 23/23 `VALIDE`, `prescriptif`, `active`,
+  `v1.0`, aucun supplanté.
 
-**PREMIER ARBITRAGE — LE RANG SUIT LA SOURCE.** Sur `R-SOM-01`, le Cungi passe en
-priorité 1 et le HAD en 2. Le claim `WN-CL-0323-013` porte les deux seuls
-comparatifs de la source : le Cungi « plus pertinent et sensible » pour le stress
-**dans les troubles du sommeil**, le HAD qui « suffit » pour l'humeur. La règle se
-déclenchant sur une bande de PSQI — le contexte exact où la source privilégie le
-Cungi — elle suivait la source sur l'identité des instruments et la contredisait
-sur leur rang, tout en affirmant « aucune substitution ».
+**TROIS GESTES, UNE SEULE SIGNATURE.**
 
-L'inversion ne se voit que sur un dossier où `R-SOM-01` est SEULE à motiver ces
-deux cibles : quatre autres règles posent `Q_NEU_11` en priorité 1, et la fusion
-garde le minimum. L'argument qui plaide pour le rang inverse — le HAD exclut tout
-item somatique, donc moins contaminé chez un mauvais dormeur — n'est adossé à
-AUCUN claim, et le fragment l'écrit comme tel : un rang ne se fonde pas sur un
-raisonnement qui ne vit que dans un commentaire.
+1. **La borne du PSQI passe de 4/5 à 5/6** dans la grille d'interprétation. Ce
+   n'est pas un ajustement d'affichage : les zones de `R-SOM-01` citent des
+   COULEURS, jamais des nombres, si bien que la grille est le SEUL endroit où le
+   point d'allumage se règle. La règle cesse d'être proposée à un total de 5.
+   Buysse et al. (1989) ne publient aucune stratification de sévérité — le PSQI
+   y est dichotomique, « a global PSQI score greater than 5 » — et l'arbitrage
+   tranche en faveur de la spécificité et du cut-off strict. Les quatre bandes
+   et leurs libellés restent une construction WellNeuro, et le disent désormais.
 
-**SECOND — UNE FENÊTRE DE FRAÎCHEUR DE 365 JOURS SUR LES VINGT RÈGLES.** Sans
-elle, l'exclusion `dejaRepondu` fermait une cible **sans horizon** : une mesure de
-deux ans la fermait, sans badge ni motif puisque la ligne n'était pas produite. Le
-chiffre est un **arbitrage WellNeuro**, nommé comme tel (`DC-19`/`DC-20`) : aucun
-claim ne fonde une périodicité de re-passation. Il vit sur la RÈGLE et non dans une
-constante globale, pour qu'un affinage instrument par instrument reste local.
+2. **Le Cungi passe en priorité 1 sur `R-SOM-01`, le HAD en 2.** Le claim
+   `WN-CL-0323-013`, recopié en clair dans la règle, juge le Cungi « plus
+   pertinent et sensible » pour le stress **dans les troubles du sommeil**,
+   contexte exact où cette règle se déclenche. Elle le rangeait second.
+   L'inversion ne se voit que lorsque `R-SOM-01` est seule : quatre autres
+   règles posent le HAD en 1, et la fusion retient le minimum.
 
-**L'HORLOGE EST DANS LE SERVICE, JAMAIS DANS LE MOTEUR.** Un moteur qui lirait
-`Date.now()` cesserait d'être rejouable, et un banc changerait de verdict selon le
-jour. Absence d'horloge = aucune péremption, sens fail-closed.
+3. **Les vingt règles portent une fenêtre de fraîcheur de 365 jours.** Sans
+   elle, l'exclusion `dejaRepondu` ([[D-053]]) fermait une cible SANS HORIZON :
+   la requête ne pose aucun filtre de date, et une passation de n'importe quelle
+   ancienneté la déclarait couverte. `BIO-SOM-01` portait ce geste depuis le
+   début ; la table d'orientation le rattrape. L'horloge est passée par le
+   service, jamais lue dans le moteur — même discipline que `referenceMs` en
+   biologie.
 
-**CE QUE CETTE SIGNATURE NE COUVRE TOUJOURS PAS**, et le fragment le nomme :
-`BANDES_PSQI` vit dans `questions.ts`, hors des deux périmètres signés, et les
-zones de la table citent des COULEURS. Déplacer une borne de la grille change donc
-le point d'allumage des règles sans faire bouger un seul sha — constaté le même
-jour sur la borne 4/5, avec une conséquence hors de l'orientation (`BIO-SOM-01` a
-cessé de prescrire `PANEL_SOMMEIL_1` à 5 sans avoir été éditée).
+**CE QUE CETTE DÉCISION A RÉVÉLÉ, ET QUI LUI SURVIT.** Le déplacement de borne
+du point 1 a changé le comportement de DEUX tables signées sans faire bouger un
+seul sha : `BANDES_PSQI` vivait hors des deux périmètres, et `BIO-SOM-01` —
+règle `publiee` prescrivant `PANEL_SOMMEIL_1` — lit la même zone couleur sur le
+même instrument. Elle a cessé de prescrire à 5 sans avoir été éditée, sans
+re-signature, et sans qu'un banc rougisse. C'est l'objet de la décision suivante.
 
 ### D-179 — Le statut d'une phase lit le geste qu'elle porte, pas l'acte qui l'a précédée
 

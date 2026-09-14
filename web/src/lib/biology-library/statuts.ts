@@ -108,6 +108,29 @@ export type EntreeStatutsBiologie = {
    */
   regles: RegleIndicationPanel[];
   /**
+   * Les GRILLES d'interprétation que les zones de ces règles lisent — second
+   * terme du périmètre signé depuis le 2026-09-13.
+   *
+   * POURQUOI ELLES VOYAGENT AVEC LES RÈGLES. Les zones citent des COULEURS et
+   * des LIBELLÉS, jamais des nombres : le point où une règle s'allume est écrit
+   * dans la grille de l'instrument, pas dans la règle. Hacher les seules règles
+   * laissait donc hors signature l'objet qui décide — et le 2026-09-13, déplacer
+   * la borne 4/5 du PSQI a fait cesser `BIO-SOM-01` de prescrire
+   * `PANEL_SOMMEIL_1` à 5 sans qu'un sha bouge ni qu'un banc rougisse
+   * ([[D-180]]).
+   *
+   * MÊME DISCIPLINE QUE `regles` : passer `GRILLES_INDICATIONS` importée, telle
+   * quelle. Une dérivée, un filtrage ou un objet reconstruit fermeraient le
+   * verrou en permanence.
+   *
+   * OPTIONNEL, ET FAIL-CLOSED QUAND IL MANQUE : `JSON.stringify` omet une clé
+   * `undefined`, si bien qu'un appelant qui ne passe rien hache un périmètre
+   * différent de celui qui a été signé — le verrou se ferme, avec le motif
+   * « périmètre modifié ». C'est le bon défaut : oublier les grilles n'ouvre
+   * jamais, et les bancs qui exercent le verrou FERMÉ n'ont rien à changer.
+   */
+  grilles?: Record<string, unknown>;
+  /**
    * Métadonnées de signature de la table fournie.
    *
    * LES CINQ TERMES, plus le seul booléen ([[D-063]]) : une signature réelle
@@ -290,6 +313,21 @@ function statutDocumente(
  * statut sans règle publiée pour le fonder (`DC-25` : donnée insuffisante ⇒
  * réduire la conclusion, jamais l'inventer).
  */
+/**
+ * L'EMPREINTE DU PÉRIMÈTRE — règles ET grilles, dans cet ordre de clés.
+ *
+ * Exporté pour que les bancs calculent leur `shaPerimetre` de fixture par la
+ * MÊME fonction que le moteur, et non par une recopie de sa formule : c'est
+ * ainsi qu'un élargissement futur du périmètre rougit partout d'un coup au lieu
+ * de laisser des fixtures cohérentes avec une formule périmée.
+ */
+export function shaPerimetreBiologie(
+  regles: RegleIndicationPanel[],
+  grilles?: Record<string, unknown>,
+): string {
+  return sha256(JSON.stringify({ regles, grilles }));
+}
+
 export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): PropositionBilan {
   // LE SHA ATTENDU SE CALCULE DEPUIS LES RÈGLES RÉELLEMENT ÉVALUÉES (finding M4
   // de la revue du 2026-08-16). Il était auparavant INJECTÉ par l'appelant
@@ -298,7 +336,7 @@ export function deriverStatutsBiologie(entree: EntreeStatutsBiologie): Propositi
   // le verrou, et la table dérivée n'était alors couverte par aucune relecture.
   // Le contournement devient inconstructible : le périmètre haché est celui-là
   // même que la boucle ci-dessous applique.
-  if (!signatureIndicationsValide(entree.signature, sha256(JSON.stringify(entree.regles)))) {
+  if (!signatureIndicationsValide(entree.signature, shaPerimetreBiologie(entree.regles, entree.grilles))) {
     return {
       ok: false,
       motif:

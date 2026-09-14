@@ -1,5 +1,10 @@
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import type { Question, QuestionOption } from './questionnaire-types';
+// La grille du PSQI vit dans son propre module depuis le 2026-09-13 : un `const`
+// local au corps de ce calculateur était inatteignable depuis un périmètre de
+// signature, et c'est par là que deux tables signées ont changé de comportement
+// sans qu'un sha bouge ([[D-180]]). Les bornes sont inchangées.
+import { BANDES_PSQI } from './clinical/bandesPsqi';
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_ALI_09, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
@@ -2983,41 +2988,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
     const missing = ITEMS_COTES.length - repondus;
     const recueilIncomplet = missing > 0;
-    // Les quatre bandes, sorties de la cascade de ternaires où elles vivaient
-    // pour prendre la forme `{min, max}` du reste du catalogue. Ce n'est pas un
-    // reformatage : `bandePlancher` a besoin des BORNES pour savoir laquelle est
-    // la plus basse — la seule qui ne fasse pas un plancher —, et une cascade ne
-    // les expose pas. Les quatre bandes et leurs coupures sont inchangées.
-    //
-    // PROVENANCE — corrigé le 2026-09-13 : ce paragraphe disait « l'échelle de
-    // Buysse 1989 ». Il revendiquait une source qui ne porte pas cette grille.
-    // Buysse et al. (Psychiatry Research 28:193-213, 1989) ne publient AUCUNE
-    // stratification de sévérité : le PSQI y est DICHOTOMIQUE — bon dormeur /
-    // mauvais dormeur, une seule frontière, « a global PSQI score greater
-    // than 5 ». Les quatre bandes ci-dessous et leurs libellés sont une
-    // construction WellNeuro. Seule la coupure 4/5 a un répondant dans la
-    // littérature, et décalé d'un point ; 10/11 et 16/17 n'en ont aucun.
-    //
-    // BORNE DÉPLACÉE 4/5 → 5/6 LE 2026-09-13, sur arbitrage praticien. Ce n'est
-    // pas un ajustement d'affichage : c'est ainsi que `R-SOM-01` cesse de
-    // s'allumer à 5. Sa zone cite des COULEURS, pas des nombres ; le seul
-    // endroit où le point d'allumage se règle est donc cette grille — et elle
-    // vit hors du périmètre signé, si bien qu'aucun sha ne bouge. La
-    // conséquence à connaître : `BIO-SOM-01` recopie la même zone couleur sur
-    // le même instrument, et suit ce déplacement sans avoir été éditée.
-    //
-    // CE QUE 5 DEVIENT, ET CE QUE PERSONNE NE PEUT DIRE À SA PLACE. Buysse ne
-    // classe PAS un total de 5 : sa feuille de cotation écrit « TOTAL < 5 »
-    // bon, « TOTAL > 5 » mauvais, et laisse la valeur exacte sans case. Le
-    // ranger en « Pas de trouble du sommeil » est donc un choix WellNeuro, au
-    // même titre que le ranger en « légers » l'était avant — l'arbitrage tranche
-    // en faveur de la spécificité, et de l'alignement sur le cut-off strict.
-    const BANDES_PSQI = [
-      {min: 0,  max: 5,  label: 'Pas de trouble du sommeil',    color: 'success'},
-      {min: 6,  max: 10, label: 'Troubles du sommeil légers',   color: 'info'},
-      {min: 11, max: 16, label: 'Troubles du sommeil modérés',  color: 'warning'},
-      {min: 17, max: 21, label: 'Troubles du sommeil sévères',  color: 'danger'},
-    ];
+    // LES QUATRE BANDES DU PSQI VIVENT DANS `clinical/bandesPsqi.ts` depuis le
+    // 2026-09-13. Elles étaient ici, en `const` local : hors d'atteinte de toute
+    // signature, alors que ce sont ELLES qui décident du point d'allumage de
+    // `R-SOM-01` et de `BIO-SOM-01`, dont les zones citent des couleurs et jamais
+    // des nombres. La provenance — Buysse ne publie aucune stratification de
+    // sévérité, les quatre bandes sont une construction WellNeuro — a suivi la
+    // grille : elle se lit là où la grille se lit.
     const interp = recueilIncomplet ? null : interpretRanges(total, BANDES_PSQI);
     // L'éligibilité se lit sur l'INSTRUMENT, ici comme dans `sum` et `tfd`, alors
     // même que la grille est écrite dans ce fichier : un `true` en dur ferait de
