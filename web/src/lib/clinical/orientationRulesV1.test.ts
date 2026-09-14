@@ -53,6 +53,39 @@ describe('orientationRulesV1 — verrou v1', () => {
     expect(ORIENTATION_METADATA.shaPerimetre).toBe(ORIENTATION_RULES_SHA256);
   });
 
+  // LES VINGT RATTACHEMENTS AUX BESOINS SONT ÉPINGLÉS, PAS SEULEMENT COMPTÉS.
+  //
+  // Le champ a vécu vide depuis l'origine : il promettait un rattachement qui
+  // n'existait nulle part, et `orientationEngine` agrégeait toujours une liste
+  // vide. Une fois renseigné, le défaut symétrique guette — une valeur qui
+  // dérive en silence. Un banc qui compterait « vingt règles ont un needIds »
+  // resterait vert sur un rattachement changé ; celui-ci compare la CARTE.
+  //
+  // Quatorze valeurs sont dérivées de `BESOIN_SOURCES`, six viennent d'un
+  // arbitrage praticien du 2026-09-14 — la provenance est écrite règle par règle
+  // dans la table, parce qu'elles ne s'auditent pas de la même façon.
+  it('chaque règle publiée rattache son exploration à au moins un besoin', () => {
+    const carte = Object.fromEntries(
+      ORIENTATION_RULES_V1.map(regle => [regle.id, regle.needIds ?? []]),
+    );
+    expect(carte).toEqual({
+      'R2-SOM-01': [5], 'R2-SOM-02': [5], 'R2-SOM-03': [5], 'R2-SOM-04': [5],
+      'R2-SOM-05': [5], 'R2-SOM-06': [5],
+      'R2-STR-01': [9], 'R2-STR-02': [9], 'R2-STR-03': [9],
+      'R2-NEU-01': [8], 'R2-NEU-02': [8], 'R2-NEU-03': [8], 'R2-NEU-04': [8],
+      'R2-GAS-01': [4], 'R2-GAS-02': [4], 'R2-ALI-01': [4],
+      'R-SOM-01': [8, 9], 'R-STR-01': [9], 'R-STR-02': [9], 'R-GAS-01': [4],
+    });
+    // Aucune liste vide, aucun besoin hors des douze : un rattachement absent ou
+    // hors domaine se lirait comme une exploration sans objet.
+    for (const [id, besoins] of Object.entries(carte)) {
+      expect(besoins.length, `${id} sans besoin`).toBeGreaterThan(0);
+      for (const b of besoins) expect(b, `${id} : besoin ${b}`).toBeGreaterThanOrEqual(1);
+      for (const b of besoins) expect(b, `${id} : besoin ${b}`).toBeLessThanOrEqual(12);
+      expect([...besoins].sort((x, y) => x - y), `${id} non trié`).toEqual(besoins);
+    }
+  });
+
   // CE QUE LA SIGNATURE COUVRE, ET CE QU'ELLE NE PEUT PAS COUVRIR.
   //
   // Une signature porte sur un PÉRIMÈTRE relu à une date. Sans ce banc, ajouter

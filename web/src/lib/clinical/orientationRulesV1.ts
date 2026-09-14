@@ -188,7 +188,30 @@ export type OrientationRule = {
   /** ET logique : tous les déclencheurs doivent être atteints. */
   declencheurs: OrientationDeclencheur[];
   suggestions: OrientationSuggestion[];
-  /** Besoins (1-12) que l'exploration vise à mesurer ou préciser. */
+  /**
+   * Besoins (1-12) que l'exploration vise à mesurer ou préciser.
+   *
+   * RENSEIGNÉ SUR LES VINGT RÈGLES LE 2026-09-14. Le champ était déclaré depuis
+   * l'origine et vide partout : il promettait un rattachement qui n'existait
+   * nulle part, et `orientationEngine` agrégeait donc toujours une liste vide.
+   *
+   * D'OÙ VIENNENT CES VALEURS, ET POURQUOI LA PROVENANCE EST ÉCRITE RÈGLE PAR
+   * RÈGLE. Quatorze sont DÉRIVÉES de `BESOIN_SOURCES` (`equilibre/constants.ts`),
+   * qui rattache chaque instrument au besoin qu'il source, avec sa justification
+   * clinique au `GUIDE_12_BESOINS_NEURONUTRITION.md` et un garde d'alignement
+   * sur le registre des instruments. Six ne pouvaient PAS l'être et viennent
+   * d'un arbitrage praticien du 2026-09-14.
+   *
+   * LA DÉRIVATION N'EST PAS UNE ÉQUIVALENCE, et c'est la raison des six.
+   * `BESOIN_SOURCES` répond à « quels instruments SOURCENT le score Mon
+   * Équilibre », pas à « que cette règle EXPLORE ». Les deux questions ont la
+   * même forme et pas la même réponse : le questionnaire de Pichot a été RETIRÉ
+   * du besoin 2 délibérément — « la fatigue ne mesure pas la couverture
+   * micronutritionnelle » — ce qui ne dit rien de ce que `R2-SOM-06` explore.
+   * Dériver ces six-là aurait produit une liste vide sur des règles qui
+   * explorent manifestement le sommeil ou le stress. Elles ont donc été
+   * demandées, pas déduites.
+   */
   needIds?: number[];
   categoriesCibles?: FunctionalCategoryId[];
   /**
@@ -541,6 +564,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
@@ -576,6 +601,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0234-011', versionClaim: 'v1.0' },
@@ -608,6 +635,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0315-007', versionClaim: 'v1.0' },
@@ -649,6 +678,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0312-021', versionClaim: 'v1.0' },
@@ -721,6 +752,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
@@ -759,6 +792,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [5],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-012', versionClaim: 'v1.0' },
@@ -790,6 +825,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
@@ -837,6 +874,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
@@ -875,6 +914,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
@@ -904,6 +945,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [8],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0154-013', versionClaim: 'v1.0' },
@@ -938,6 +981,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [8],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0339-010', versionClaim: 'v1.0' },
@@ -992,6 +1037,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [8],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
@@ -1030,6 +1077,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [8],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
@@ -1058,6 +1107,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [4],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
@@ -1115,6 +1166,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [4],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
@@ -1234,6 +1287,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [4],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
@@ -1351,6 +1406,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [8, 9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       // « Le test de stress de Cungi est plus pertinent et sensible pour
@@ -1409,6 +1466,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
@@ -1489,6 +1548,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** arbitrage praticien du 2026-09-14 */
+    needIds: [9],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
@@ -1550,6 +1611,8 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     ],
     // Fenêtre de fraîcheur — arbitrage praticien du 2026-09-13, uniforme sur
     // les vingt règles et aligné sur la table sœur faute de source propre.
+    /** dérivé de `BESOIN_SOURCES` */
+    needIds: [4],
     repetition: { delaiJours: 365 },
     justificationClaims: [
       { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },

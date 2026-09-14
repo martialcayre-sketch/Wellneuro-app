@@ -1,6 +1,6 @@
 {
   "version": "instrument-registry-v2",
-  "dateAudit": "2026-07-30",
+  "dateAudit": "2026-09-14",
   "commentaire": "Registre de certification des instruments du catalogue (campagne 2026-07-25-certification-corpus-questionnaires, lot 1, schéma v2 après intégration de l'audit externe et de la revue indépendante). Une entrée par clé de QUESTIONNAIRE_CATALOGUE. Axes SÉPARÉS, jamais fusionnés : - instrument.formePubliee : ce que décrit la publication d'origine (items, dimensions, bornes). N'affirme RIEN sur ce que l'application administre. - versionServie : ce que l'application administre RÉELLEMENT. `description` reste null tant que le banc de certification (lot 3) ne l'a pas établie contre le catalogue — la renseigner de mémoire ferait disparaître les divergences que la campagne cherche justement à révéler (Berlin, MFI-20, PSQI sont déjà connus divergents). `statutContenu` : verbatim | traduit | adapte | cree_localement | a_auditer. - statutBibliographique : reference_identifiee | a_completer | referentiel_interne_siin. `references.dateVerification` null = auteurs/année NON vérifiés contre la source primaire (identifiés de mémoire) ; ils ne font autorité qu'une fois le PDF source au dossier. - statutCertification (cycle de vie WellNeuro) : repere → source_obtenue → droits_verifies → contenu_verrouille → scoring_verifie → psychometrie_revue → mapping_clinique_approuve → publie ; états terminaux suspendu | remplace. Toutes les entrées démarrent à 'repere'. - cosmin : A | B | C | inconnu — qualité psychométrique publiée (à renseigner depuis measurement_evidence.json). Ne JAMAIS confondre avec les niveaux A/B/C/D WellNeuro : NIVEAU_PREUVE_PAR_SOURCE (web/src/lib/equilibre/constants.ts) reste la source unique de cet axe-là, volontairement non dupliqué ici. - droits.statut : a_verifier | libre | licence_requise | permission_obtenue | restreint. - sourceMonEquilibre : l'instrument alimente BESOIN_SOURCES (fait dérivé de constants.ts, contrôlé par le garde CI). Aucun DOI/PMID n'est renseigné sans vérification (null). Le libellé d'usage est « Validé pour l'usage WellNeuro » avec son périmètre — jamais « certifié médicalement ».",
   "instruments": [
     {
@@ -65,9 +65,9 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "pmid": "6668417",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Health Soc Behav 1983 — A global measure of perceived stress (Cohen, Kamarck & Mermelstein). ATTENTION : ce PMID désigne l'ORIGINE du PSS, à 14 items. La forme SERVIE est le PSS-10, publié par Cohen & Williamson (1988) dans Spacapan & Oskamp (dir.), « The Social Psychology of Health », Claremont Symposium on Applied Social Psychology, Sage, Newbury Park, p. 31-67 — chapitre d'ouvrage NON indexé sur PubMed et sans DOI attribué (recherché le 2026-09-14 ; seul un numéro d'accession PsycNET, 1988-98838-002, existe, et un numéro d'accession n'est pas un identifiant pérenne de document). Aucun identifiant ne désigne donc la forme servie : celui-ci désigne sa source directe."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -358,10 +358,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1080/00325481.1972.11713319",
+        "pmid": "4635613",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Postgrad Med 1972 — Screening depressed patients in family practice. A rapid technic. (forme abrégée 13 items)"
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -846,10 +846,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1111/j.1600-0447.1983.tb09716.x",
+        "pmid": "6880820",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Acta Psychiatr Scand 1983 — The hospital anxiety and depression scale."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -952,10 +952,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/0165-1781(89)90047-4",
+        "pmid": "2748771",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Psychiatry Res 1989 — The Pittsburgh Sleep Quality Index: a new instrument for psychiatric practice and research."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1110,10 +1110,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/s1389-9457(02)00258-7",
+        "pmid": "14592342",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Sleep Med 2003 — Validation of the International Restless Legs Syndrome Study Group rating scale for restless legs syndrome."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1215,8 +1215,8 @@
       "references": {
         "doi": null,
         "pmid": "6524792",
-        "dateVerification": "2026-08-04",
-        "verifiePar": "LOT-07 — vérification assistée, notice ouverte le 2026-08-04 ; non contre-vérifiée par le praticien"
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Ann Med Psychol (Paris) 1984 — Questionnaire bref d’auto-évaluation des dimensions dépressive, asthénique et anxieuse. Revue française sans DOI attribué."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1653,10 +1653,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1046/j.1365-2036.1997.142318000.x",
+        "pmid": "9146781",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Aliment Pharmacol Ther 1997 — The irritable bowel severity scoring system: a simple method of monitoring irritable bowel syndrome and its progress."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2949,10 +2949,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.3233/JAD-2010-101185",
+        "pmid": "20930293",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Alzheimers Dis 2010 — The Alzheimer's questionnaire: a proof of concept study for a new informant-based dementia assessment."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -3000,10 +3000,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/0022-3956(75)90026-6",
+        "pmid": "1202204",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Psychiatr Res 1975 — \"Mini-mental state\". A practical method for grading the cognitive state of patients for the clinician."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -3063,10 +3063,10 @@
         "statutContenu": "adapte"
       },
       "references": {
-        "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "doi": "10.1016/j.dadm.2015.03.003",
+        "pmid": "26140284",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Alzheimers Dement (Amst) 2015 — The Quick Dementia Rating System (QDRS): a rapid dementia staging tool."
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -3115,9 +3115,9 @@
       },
       "references": {
         "doi": null,
-        "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null,
+        "pmid": "12467149",
+        "dateVerification": "2026-09-14",
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — Presse Med 2002 — « Les 5 mots » : un test simple et sensible pour le diagnostic de la maladie d’Alzheimer. Revue française sans DOI attribué.",
         "reserveMetrologique": "RÉSERVE MÉTROLOGIQUE DU 2026-08-02 (décision h de la campagne de certification, arbitrage praticien) : l'affirmation chiffrée de performance servie pour cet instrument — « sensibilité 85 %, spécificité 90 % » pour le rappel différé ≤ 2/5, affichée dans la note de la bande de score — est ATTRIBUÉE à Dubois et al. 2002 et déclarée PROVISOIRE. Elle n'a été confrontée à aucune publication dans ce dépôt : `doi`, `pmid` et `dateVerification` sont nuls ci-dessus. Le texte servi à l'utilisateur porte la mention « non vérifiée contre la source primaire », de sorte que l'application n'affirme pas ce qu'elle n'a pas vérifié — même doctrine que le plafond posé sur Q_GEO_04. Lever cette réserve demande la publication au dossier et le renseignement de `references`."
       },
       "droits": {
