@@ -25,6 +25,7 @@ import type {
   QuestionnaireResponseInput,
 } from './types';
 import {
+  INVARIANTS_PRODUCTEUR,
   LIMITATIONS_CANDIDAT,
   MOTIF_ABSTENTION,
 } from '@/lib/clinical/perimetreClassementV1';
@@ -273,10 +274,10 @@ export function plainteDominanteDepuisScores(scores: ScoresLus): PlainteDominant
 // laisserait la signature future porter sur un texte que rien n'exécute — la
 // duplication silencieuse que `DC-26` interdit. Le moteur lit ce que le
 // praticien relira, et réciproquement.
-const LIMITATION_PROPOSITION = LIMITATIONS_CANDIDAT.proposition;
-const LIMITATION_CLASSEMENT = LIMITATIONS_CANDIDAT.classement;
-const LIMITATION_OBJECTIF = LIMITATIONS_CANDIDAT.objectif;
-const LIMITATION_ETAT_INCONNU = LIMITATIONS_CANDIDAT.etatInconnu;
+const LIMITATION_PROPOSITION = LIMITATIONS_CANDIDAT.proposition.texte;
+const LIMITATION_CLASSEMENT = LIMITATIONS_CANDIDAT.classement.texte;
+const LIMITATION_OBJECTIF = LIMITATIONS_CANDIDAT.objectif.texte;
+const LIMITATION_ETAT_INCONNU = LIMITATIONS_CANDIDAT.etatInconnu.texte;
 
 /**
  * Identifiants des deux motifs `required`, tels que la table signée les porte —
@@ -548,12 +549,12 @@ function construireCandidats(input: {
       // Rang SÉQUENTIEL, jamais la priorité de la table : `buildDecisionCard`
       // exige des rangs uniques, et deux règles de même priorité intrinsèque le
       // feraient jeter.
-      rank: index + 1,
+      rank: index + INVARIANTS_PRODUCTEUR.rangSequentielDepuis,
       // `à_documenter`, la plus réservée des quatre valeurs, et toujours elle :
       // une règle déterministe ne produit aucune gradation de confiance
       // ([[D-041]]). Le champ est obligatoire au contrat C1 ; il dit ici que le
       // praticien reste celui qui documente.
-      confidence: 'à_documenter' as const,
+      confidence: INVARIANTS_PRODUCTEUR.confianceUnique,
       ruleId: declenchee.regle.id,
       rationale: `${declenchee.regle.motif} Déclencheur atteint — ${declenchee.conditions.join(' ; ')}.`,
       // Uniquement des sources RÉELLEMENT présentes au snapshot : `dernieres` est

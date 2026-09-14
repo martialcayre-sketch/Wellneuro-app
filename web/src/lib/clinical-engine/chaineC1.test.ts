@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
 import { construireChaineC1, plainteDominanteDepuisScores } from './chaineC1';
+import {
+  DEPARTAGE_PLAINTE_EX_AEQUO,
+  INVARIANTS_PRODUCTEUR,
+  LIMITATIONS_CANDIDAT,
+  TERMES_DE_CLASSEMENT,
+} from '@/lib/clinical/perimetreClassementV1';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { adaptRuntimeInputs, proposeRuntimeEpisode } from './runtimeFromPrisma';
 import {
@@ -685,5 +691,120 @@ describe('plainteDominanteDepuisScores — l’égalité se dit, elle ne se tran
       ['digestion', 'Digestion', 6],
     ]));
     expect(lu?.domaine).toBe('sommeil');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE PÉRIMÈTRE PILOTE CE QUE LE MOTEUR PRODUIT — [[D-185]], correction de la
+// passe Codex du 2026-09-14.
+//
+// CE QUE CE BLOC REMPLACE, ET POURQUOI. La première rédaction prouvait la
+// consommation du périmètre par un garde de SOURCE : il lisait `chaineC1.ts` et
+// exigeait qu'aucun des quatre textes n'y figure en dur. Codex l'a défait, et
+// les deux réfutations ont été rejouées avant d'être admises :
+//
+//   · deux littéraux CONCATÉNÉS produisant le même texte le laissent vert ;
+//   · un texte révisé au périmètre, l'ancien littéral gardé dans le moteur, le
+//     laisse vert aussi — et c'est le pire des deux : une modification écrite
+//     POUR la relecture n'atteint jamais le praticien.
+//
+// Un garde de source interdit une orthographe. Il ne prouve aucune
+// consommation. Ce qui la prouve, c'est d'EXÉCUTER le moteur et de comparer sa
+// sortie aux données déclarées — ce que fait ce bloc.
+//
+// ET C'EST LE SEUL LIEN POSSIBLE POUR DEUX DES CINQ OBJETS. Le départage des ex
+// æquo n'est pas un paramètre : il ÉMERGE de l'ordre de parcours du catalogue.
+// Les trois termes de classement ne sont pas non plus des valeurs, mais un
+// comparateur. Rien à « brancher » : ce qui les rend non-divergeables, c'est
+// qu'un changement de comportement fasse rougir la description déclarée.
+describe('le périmètre pilote ce que le moteur produit', () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  function candidats(options: Parameters<typeof chaine>[0] = {}) {
+    return chaine(options).decisionCard.priorityCandidates;
+  }
+
+  it('LES TEXTES PRODUITS SONT CEUX DU PÉRIMÈTRE, à la lettre', () => {
+    // Positif, donc insensible à la concaténation : on ne cherche plus l'ABSENCE
+    // d'un littéral dans une source, on exige la PRÉSENCE de la valeur déclarée
+    // dans la sortie. Réviser le texte au périmètre sans toucher au moteur fait
+    // désormais rougir ici.
+    const [premier] = candidats();
+    expect(premier).toBeDefined();
+    expect(premier.limitations).toContain(LIMITATIONS_CANDIDAT.proposition.texte);
+    expect(premier.limitations).toContain(LIMITATIONS_CANDIDAT.classement.texte);
+  });
+
+  it('LA CONDITION DÉCLARÉE EST CELLE QUE LE MOTEUR APPLIQUE — objectif', () => {
+    // `LIMITATIONS_CANDIDAT.objectif.condition` annonce « objectif prioritaire
+    // déclaré par le patient ». Tant que cette condition vivait dans un
+    // COMMENTAIRE, la passer à « TOUJOURS » laissait l'empreinte inchangée
+    // (constat de revue, rejoué). Elle est dans la donnée ; ce cas la tient.
+    const avec = candidats({ objectif: 'Retrouver un confort digestif' });
+    const sans = candidats({ objectif: null });
+    expect(LIMITATIONS_CANDIDAT.objectif.condition).not.toBe('toujours');
+    expect(avec[0].limitations).toContain(LIMITATIONS_CANDIDAT.objectif.texte);
+    expect(sans[0].limitations).not.toContain(LIMITATIONS_CANDIDAT.objectif.texte);
+  });
+
+  it('LES DEUX TEXTES « toujours » LE SONT VRAIMENT, objectif absent compris', () => {
+    // CONTRE-ÉPREUVE du cas précédent : sans elle, un moteur qui ne servirait
+    // AUCUNE limitation sur un dossier sans objectif le passerait.
+    const sans = candidats({ objectif: null });
+    expect(sans[0].limitations).toContain(LIMITATIONS_CANDIDAT.proposition.texte);
+    expect(sans[0].limitations).toContain(LIMITATIONS_CANDIDAT.classement.texte);
+  });
+
+  it('LE RANG ET LA CONFIANCE VIENNENT DES INVARIANTS, pas de littéraux', () => {
+    // `rank` est SÉQUENTIEL depuis `rangSequentielDepuis`, jamais la priorité de
+    // la table — `buildDecisionCard` exige des rangs uniques. `confidence` est
+    // fixe à la plus réservée des quatre valeurs ([[D-041]]) : une règle
+    // déterministe ne produit aucune gradation.
+    const liste = candidats();
+    expect(liste.length).toBeGreaterThan(0);
+    expect(liste.map(c => c.rank)).toEqual(
+      liste.map((_, i) => i + INVARIANTS_PRODUCTEUR.rangSequentielDepuis),
+    );
+    for (const candidat of liste) {
+      expect(candidat.confidence).toBe(INVARIANTS_PRODUCTEUR.confianceUnique);
+    }
+  });
+
+  it('L’ORDRE SUIT LES TROIS TERMES DÉCLARÉS, dans l’ordre déclaré', () => {
+    // LIAISON PAR COMPORTEMENT. Les trois termes ne sont pas des valeurs à
+    // brancher, c'est un comparateur. Ce qui les rend non-divergeables, c'est
+    // qu'un changement d'ordre dans le moteur contredise la description
+    // attestée. On rejoue donc le comparateur DEPUIS la table déclarée et on
+    // exige que la sortie du moteur y soit conforme.
+    const liste = candidats();
+    expect(TERMES_DE_CLASSEMENT.map(t => t.rang)).toEqual([1, 2, 3]);
+
+    // `plainteDominante` est rendue À LA RACINE de `construireChaineC1`, pas
+    // dans le snapshot — une première rédaction lisait `snapshot.plainteDominante`,
+    // donc `undefined`, et le banc rouge accusait le moteur d'un ordre faux.
+    const dominante = chaine().plainteDominante?.domaine ?? null;
+    const attendu = [...liste].sort((g, d) => {
+      const rangPlainte = (c: typeof g) => {
+        const regle = PRIORITY_RULES_V1.find(r => r.id === c.ruleId);
+        return regle?.domainePlainte !== null && regle?.domainePlainte === dominante ? 0 : 1;
+      };
+      const priorite = (c: typeof g) =>
+        PRIORITY_RULES_V1.find(r => r.id === c.ruleId)?.priorite ?? Number.MAX_SAFE_INTEGER;
+      return rangPlainte(g) - rangPlainte(d)
+        || priorite(g) - priorite(d)
+        || (g.ruleId! < d.ruleId! ? -1 : g.ruleId! > d.ruleId! ? 1 : 0);
+    });
+    expect(liste.map(c => c.ruleId)).toEqual(attendu.map(c => c.ruleId));
+  });
+
+  it('LE DÉPARTAGE DES EX ÆQUO EST DIT, et il n’a pas d’arbitrage clinique', () => {
+    // `arbitrageCliniqueRendu: false` n'est pas une formalité : le départage à
+    // intensité égale suit l'ordre de PUBLICATION du catalogue, et la question
+    // « quelle plainte prime » n'a jamais été tranchée ([[D-054]] arbitrage 8).
+    // Ce que le moteur garantit en retour, c'est de NOMMER les ex æquo — les
+    // taire ferait lire une hiérarchie là où il n'y a qu'un ordre de tableau.
+    expect(DEPARTAGE_PLAINTE_EX_AEQUO.arbitrageCliniqueRendu).toBe(false);
+    const dominante = chaine().plainteDominante;
+    if (dominante) expect(Array.isArray(dominante.exAequo)).toBe(true);
   });
 });
