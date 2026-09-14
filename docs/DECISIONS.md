@@ -4,6 +4,82 @@
 
 ## Décisions actives
 
+### D-187 — Le périmètre signé couvre le calcul entier, et non plus les seules grilles
+
+- Date de la décision : 2026-09-14 (arbitrage praticien rendu le soir, après
+  contre-audit). Attestation de relecture le même jour — la SECONDE de la
+  journée, la première portant sur les grilles seules ([[D-182]]).
+- Statut : accepté, livré, signé.
+- Domaine : clinique — périmètre de signature des tables `orientationRulesV1` et
+  `indicationsBiologieV1`.
+
+**LE DÉFAUT ÉTAIT DANS LA RÉPARATION DE [[D-180]].** Le périmètre posé par
+[[D-182]] hachait les GRILLES des instruments cités — la dernière étape du
+calcul, `score → couleur`. Celle d'avant, `réponses → score`, restait dehors.
+
+Un contre-audit externe l'a démontré le jour même, sur la table biologique
+réelle et sa signature inchangée : retirer `C1_8` de
+`Q_GAS_01.scoring.subScores[0].items` fait tomber le total de l'axe C1 de 24 à
+21, la couleur globale de `warning` à `success`, et `BIO-DIG-01` cesse de
+proposer `PANEL_DIGESTIF_1`. **Sha identique, signature valide, aucun banc
+rouge** — exactement le scénario de `BIO-SOM-01` au PSQI qui avait motivé
+[[D-182]], reproduit par une autre porte.
+
+**ET `items` N'ÉTAIT QU'UNE PORTE SUR DOUZE.** L'énumération des dix-sept
+instruments cités a rendu : `type` (17 instruments), `maxTotal` (13), `note`
+(6), `dimensions` (2), `subscalesA`/`subscalesD`, `phases`, `minTotal`,
+`bareme`, `sousScoresBesoins`, `subScores[].max` — et **`threshold: 3` sur
+`Q_INF_05`**, un champ qui s'appelle *seuil*, hors d'un périmètre bâti pour
+couvrir les seuils cliniques. En dessous encore, les valeurs d'options :
+`O_PSS_INVERSE` porte l'inversion d'items du PSS dans ses nombres mêmes, et un
+`conditionnel` décide si un item est posé, donc de `missing`, donc de ce que
+`bandePlancher` sert.
+
+**CE QUI EST DÉCIDÉ N'EST PAS D'AJOUTER LES CHAMPS MANQUANTS.** Le périmètre
+hache le bloc `scoring` ENTIER de chaque instrument cité, plus la cotation de
+ses items. Choisir les champs à couvrir était le piège lui-même : une sélection
+est un allowlist, et le jour où le catalogue gagne un champ, il tombe dehors
+**sans que rien ne le dise**. C'est arrivé deux fois en deux jours. Hacher le
+bloc entier inverse la polarité — ce qui s'ajoute entre tout seul, et c'est
+l'EXCLUSION qui devient un geste écrit, donc relu. Le `Q_ALI_01` en SIIN 57 a
+d'ailleurs rendu `bareme` et `sousScoresBesoins`, que l'énumération manuelle
+n'avait pas vus.
+
+**CE QUI RESTE DEHORS EST UNE DÉCISION** : le texte des questions et les
+libellés d'options, qui n'entrent dans aucun calcul. Un banc énumère la
+sérialisation entière pour le vérifier. Les `note`, en revanche, restent DEDANS
+après vérification une par une — `Q_GAS_02` y écrit que FR_Q003 est multiplié
+par 10, `Q_STR_02` y rattache le score 27 au niveau élevé : ce sont des
+décisions de scoring qui ne vivent nulle part ailleurs.
+
+**FORME CANONIQUE.** Les clés d'objets sont triées avant hachage, pour que
+déplacer deux lignes dans un littéral du catalogue ne casse pas deux signatures.
+Les TABLEAUX gardent leur ordre : `interpretRanges` prend la première bande qui
+contient le score, l'ordre des bandes est du contenu clinique. Conséquence
+assumée et documentée : réordonner `subScores` referme les deux verrous.
+
+**CE QUE LE PRATICIEN A RELU AVANT LA RECOPIE**, et dans cet ordre : les vingt
+rattachements `needIds` — quatorze dérivés de `BESOIN_SOURCES` par les
+questionnaires SUGGÉRÉS (jamais par le déclencheur), six arbitrés faute d'union
+—, puis le delta de périmètre sur les dix-huit blocs de scoring. Les claims
+n'ont pas bougé ; leur relecture du matin couvre celle-ci.
+
+**LE LOT PORTE AUSSI**, sans rapport de fond, et le fragment `changelog.d/` fait
+foi : le registre des instruments passe de 2 à 12 identifiants vérifiables sur
+65 ; et trois corrections issues du contre-audit — deux bancs de mutation qui
+mesuraient la FORME de l'objet muté au lieu de sa valeur, un nombre
+bibliographique que son propre banc ne lisait pas, et une réserve métrologique
+devenue fausse le jour où elle a été corroborée.
+
+**RESTE OUVERT, ET CE N'EST PAS DANS CE LOT** : le QDRS servi substitue un
+domaine « Déambulation » au domaine « Humeur » de Galvin 2015 ; l'AQ servi
+remplace le domaine Orientation de Sabbagh 2010 par un bloc comportemental de
+cinq items, abandonne la pondération (27 points publiés contre 21 servis) et
+porte des bandes que l'article de 2010 ne publie pas. Les deux alimentent
+`BIO-NEU-01`, règle `publiee`. **Arbitrage rendu le 2026-09-14 : aligner les
+deux instruments sur leurs publications** — lot à part entière, non commencé,
+cadré dans le handoff du jour.
+
 ### D-186 — Un axe sans priorité choisie ne vaut pas « modéré » — entrée écrite APRÈS COUP
 
 - Date de la décision : 2026-09-13. **Date d'écriture au registre : 2026-09-14.**
