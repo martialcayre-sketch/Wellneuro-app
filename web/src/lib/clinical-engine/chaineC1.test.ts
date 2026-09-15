@@ -867,6 +867,46 @@ describe('le périmètre pilote ce que le moteur produit', () => {
     expect(ordre).toEqual(['PRIO-DIG-01', 'PRIO-PON-01']);
   });
 
+  it('UNE RÈGLE ÉCARTÉE NE PRODUIT PAS DE CANDIDAT — l’invariant est LU, pas recopié', () => {
+    // TROISIÈME INVARIANT, ET IL N'AVAIT AUCUNE ÉPREUVE. Le cas ci-dessus
+    // couvrait `rangSequentielDepuis` et `confianceUnique` ; celui-ci manquait,
+    // si bien que `regleEcarteeProduitUnCandidat` appartenait au périmètre
+    // ATTESTÉ sans que rien ne le tienne. Mutation rejouée : le passer à `true`
+    // puis réancrer laissait **49 cas sur 49 verts** — le document promettait
+    // qu'une règle écartée ne produit pas de candidat, et le dépôt ne le
+    // prouvait pas. Relevé par contre-expertise Codex, à la relecture, AVANT
+    // signature. C'est exactement ce qu'une relecture doit attraper.
+    //
+    // LA LIAISON SE FAIT EN LISANT LA VALEUR DÉCLARÉE, jamais en la recopiant :
+    // l'attendu ci-dessous EST `INVARIANTS_PRODUCTEUR.regleEcarteeProduitUnCandidat`.
+    // Écrire `.toBe(false)` en dur — ce que fait le banc voisin de la gate de
+    // population, qui garde le COMPORTEMENT et non le périmètre — laisserait la
+    // mutation passer.
+    simulerSignature();
+    const avant = chaine().decisionCard.priorityCandidates;
+    expect(avant.length).toBeGreaterThanOrEqual(2);
+    const cible = avant[0].ruleId!;
+
+    // On écarte la première règle par la gate de population, en déclarant
+    // l'état qui l'exclut. Fixture de banc, sans valeur clinique.
+    EXCLUSIONS_INTERVENTIONS_V1[cible] = [{
+      critere: 'grossesse',
+      valeurExcluante: 'oui',
+      libelle: 'axe non couvert pendant la grossesse',
+      source: 'Source de banc — aucune valeur clinique.',
+    }];
+    const apres = chaine({ etat: { etat_grossesse: 'Oui' } }).decisionCard.priorityCandidates;
+
+    // `false` déclaré ⇒ la règle écartée est ABSENTE. `true` déclaré ⇒ le banc
+    // exigerait sa présence, et rougirait puisque le moteur la retire.
+    expect(apres.some(candidat => candidat.ruleId === cible))
+      .toBe(INVARIANTS_PRODUCTEUR.regleEcarteeProduitUnCandidat);
+
+    // CONTRE-ÉPREUVE, sans quoi un moteur qui ne produirait RIEN passerait :
+    // les autres règles, elles, sont toujours là.
+    expect(apres.length).toBe(avant.length - 1);
+  });
+
   it('TERME 3 — déclaré technique, et AUJOURD’HUI INATTEIGNABLE : dit, pas simulé', () => {
     const terme = TERMES_DE_CLASSEMENT.find(t => t.rang === 3);
     expect(terme?.nom).toBe('identifiant de règle');

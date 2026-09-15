@@ -6292,3 +6292,20 @@ mode auto, sur la forme de la commande et non son contenu.
 
 **Question ouverte** : la campagne « 5. Actions » reste `en_cours` avec 8/8 lots ; sa
 clôture libère le créneau primaire et demande un arbitrage sur la suivante.
+## 2026-09-15 23:10 — Le troisième invariant n'avait aucune épreuve ([[D-197]], amende [[D-185]])
+
+Le responsable a **relu sans signer**, et la contre-expertise a trouvé que
+`regleEcarteeProduitUnCandidat` appartenait au périmètre attesté sans qu'aucune
+épreuve ne le tienne. Muter à `true` puis réancrer laissait **49/50 verts**.
+
+**La correction ne touche pas au périmètre** — c'est le point de procédure : le
+fichier signé ne bouge pas d'un octet, `da1ba306c0551d7b` tient, et la relecture
+déjà faite reste valide. Corriger une preuve n'oblige pas à relire un document.
+
+L'épreuve LIT la valeur déclarée (`toBe(INVARIANTS_PRODUCTEUR....)`) au lieu de
+la recopier ; `.toBe(false)` en dur laisserait la mutation passer.
+
+**Quatrième fois en deux jours** — deux sur `D-185`, une sur `D-194`, celle-ci —
+qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change :
+la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
+pour quoi l'ordre « relire d'abord, signer ensuite » existe.
