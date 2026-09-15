@@ -6271,7 +6271,7 @@ personne n'avait approuvé. Aucune écriture. Même phénomène de course que le
 trois renumérotations de la matinée, une couche plus bas — et ici, c'est une
 garde qui l'a attrapé au lieu d'un humain.
 
-## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-199)
+## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-198)
 
 L'échelle de charge écrite au LOT-06 était mergée **hors service** : `D-195`, rendue
 le même jour par une session parallèle, interdit à l'outil qui a proposé un contenu

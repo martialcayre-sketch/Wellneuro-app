@@ -108,6 +108,32 @@ Une règle de priorité 1 passe derrière une priorité 2 dès que le patient co
 l'autre plus haut, et l'intensité ressentie n'est pas la gravité clinique.
 **Cette question reste ouverte** et appellera son propre arbitrage.
 
+**CE LOT DÉPLACE L'EMPREINTE DE TOUTES LES CARTES DE DÉCISION, ET IL FAUT LE DIRE
+AVANT LE DÉPLOIEMENT.** `limitationsPerimetreClassement` est un champ du candidat,
+`priorityCandidates` entre dans `hashInput` de `buildDecisionCard`, et
+`canonicalSha256` hache **toutes** les clés propres — aucune liste blanche.
+Vérifié par exécution sur le harnais ergonomique : le hash des candidats passe de
+`38ab6a859c80ff54` à `6f652101dec8d209`. Donc `decisionCard.inputHash` bouge sur
+tout dossier.
+
+**CE QUE ÇA CASSE, ET CE QUE ÇA NE CASSE PAS.** `rejeuCarteDecision.ts` nomme déjà
+ce mode de panne en toutes lettres — « un déploiement touchant une table signée
+[…] les interromprait tous à la fois » — et le classe `carte_derivee` : l'écran
+patient s'éteint, **le refus est bruyant côté praticien** et jamais muet
+([[D-160]] §4). L'identité de la carte, elle, ne bouge pas : [[D-173]] §4 l'a
+détachée du contenu, donc rien ne devient orphelin.
+
+**AUCUN BANC NE PEUT ATTRAPER CETTE DÉRIVE**, et c'est normal : tous recalculent
+les deux côtés. Seule une ligne persistée, écrite avant le déploiement, porte
+l'ancienne empreinte.
+
+**LA PORTÉE RÉELLE EST UNE LECTURE DE PRODUCTION, ET ELLE DATE.** La dernière
+([[D-173]], 2026-09-12) donnait **zéro approbation de diffusion** en base : le
+seul chemin qui refuserait sur `carte_derivee` n'a alors aucun client. Cette
+lecture a quatre jours. Elle se **reconstate avant le déploiement**, pas après —
+la reprendre coûte un one-off, et s'en passer coûterait un écran patient éteint
+sans que personne ne l'ait prévu.
+
 - Conséquences : `PORTEE_ATTESTATION` entre dans `PERIMETRE_CLASSEMENT_V1` ;
   `limitationsPerimetreClassement` ajouté au contrat du candidat et renseigné par
   le producteur, avec deux bancs de cohérence (sous-ensemble, et exhaustivité —

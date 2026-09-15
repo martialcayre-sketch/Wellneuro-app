@@ -91,3 +91,20 @@ ajoutés — sous-ensemble, et exhaustivité.
 `DecisionSummaryCardAtteste.test.tsx` double le seul champ `relu`. Sans lui,
 cette branche serait livrée SANS AUCUNE PREUVE et ne s'exercerait pour la
 première fois qu'en production, le jour de la re-signature.
+
+## À CONSTATER AVANT LE DÉPLOIEMENT — la dérive d'empreinte
+
+`limitationsPerimetreClassement` est un champ du candidat, `priorityCandidates`
+entre dans `hashInput`, et `canonicalSha256` hache toutes les clés propres.
+**`decisionCard.inputHash` bouge donc sur tout dossier** — vérifié par exécution :
+`38ab6a859c80ff54` → `6f652101dec8d209` sur le harnais ergonomique.
+
+Aucun banc ne peut l'attraper : ils recalculent les deux côtés. Seule une ligne
+persistée avant le déploiement porte l'ancienne empreinte, et
+`buildPatientProtocolView` la refuserait en `carte_derivee` — écran patient
+éteint, refus bruyant côté praticien.
+
+La dernière lecture de production ([[D-173]], 2026-09-12) donnait **zéro
+approbation de diffusion**. Elle date de quatre jours. **Un one-off avant merge
+la reconstate** ; s'en passer coûterait un écran patient éteint sans que personne
+ne l'ait prévu.
