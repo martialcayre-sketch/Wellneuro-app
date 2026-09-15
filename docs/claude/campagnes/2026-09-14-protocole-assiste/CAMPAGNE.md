@@ -4,7 +4,7 @@ titre: "5. Actions — le protocole assisté"
 statut: "en_cours"
 créée_le: "2026-09-14"
 mise_à_jour: "2026-09-14"
-lot_courant: "LOT-04"
+lot_courant: "LOT-07"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -171,3 +171,26 @@ avant l'étage 3, et demande sa propre décision, que `D-094` §4 a écrite d'av
 Restent également hors périmètre, nommées : l'hydratation du constructeur depuis la
 version active, la caducité silencieuse de la diffusion, `versionsLues` non remonté
 au rail, et `adviceSheetRef` — mort de bout en bout, dette consignée au LOT-03.
+
+---
+
+## ÉTAT AU 2026-09-15 — sept lots sur huit
+
+| Lot | État |
+|---|---|
+| LOT-00 | livré — `D-189` |
+| LOT-01 | livré — `D-188` |
+| LOT-02 | livré |
+| LOT-03 | livré en deux PR — `D-191`, `D-192` |
+| LOT-04 | livré en deux PR — la garde de registre, puis `D-193` |
+| LOT-05 | livré — `D-190` |
+| **LOT-06** | **mécanisme prêt, dix bancs verts — ATTEND la première ligne signée du praticien** |
+| LOT-07 | bilan écrit — **sa mesure au conteneur reste due** |
+
+**Six décisions** rendues : `D-188` à `D-193`. **Zéro migration, zéro drapeau neuf,
+zéro identité patient.**
+
+La campagne reste **`en_cours`** : elle se clôt sur la première ligne de barème, et
+son bilan d'usage reste dû — c'est ce que `D-112` avait prévenu, et ce que ce dossier
+a écrit à son ouverture.
+

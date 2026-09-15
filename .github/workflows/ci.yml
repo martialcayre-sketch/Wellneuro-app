@@ -964,6 +964,29 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/orientation_ecartement_v1_negatif.sql
 
+      # Compteur de « Voir les sources et limites » (D-194) : ce contrat garde
+      # surtout une ABSENCE — la table ne porte aucun identifiant direct, et
+      # aucune granularité plus fine que la journée. Cette garantie ne tient que
+      # par la FORME de la table, donc par ce fichier.
+      #
+      # La liste blanche compare le triplet `nom:type`, et le TYPE compte autant
+      # que le nom : une première rédaction n'agrégeait que les noms, si bien
+      # qu'un `ALTER COLUMN jour TYPE TIMESTAMP(3)` la laissait verte — la
+      # granularité quotidienne disparaissait et la table redevenait le journal
+      # par événement qu'elle s'interdit. Relevé par contre-expertise Codex.
+      # Sans ce cas, une migration future ajoutant `id_patient` ou promouvant
+      # `jour` passerait sans qu'aucun banc ne bronche, et D-194 deviendrait
+      # faux en silence — exactement ce qui est arrivé à D-185.
+      #
+      # Plus : l'espèce fermée, le compte qui ne peut pas devenir négatif (et
+      # rien de plus — `2 -> 1` passe, la monotonie est tenue par la route, pas
+      # par le schéma), l'incrément concurrent qui donne bien 2, la clé primaire
+      # qui empêche d'empiler, et la RLS deny-all. Transaction annulée.
+      - name: Compteur ouverture sources negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/compteur_ouverture_sources_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une

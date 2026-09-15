@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-194 — Une signature clinique atteste une relecture : la déclaration précède la frappe, et l'outil qui a écrit le changement ne peut pas l'attester
+### D-195 — Une signature clinique atteste une relecture : la déclaration précède la frappe, et l'outil qui a écrit le changement ne peut pas l'attester
 
 - Date : 2026-09-15
 - Statut : accepté — attestation du praticien rendue en séance le 2026-09-15,
@@ -63,6 +63,172 @@ seuil, aucun claim, et n'allume rien. `WN_CB_ENABLED` et `WN_CB_PROPOSITION`
 étaient déjà posés ; la table était **ouverte hier et l'est de nouveau
 aujourd'hui**, avec une interruption qui a duré exactement le temps de la
 relecture — ce qui est le comportement voulu de [[D-063]].
+### D-194 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
+
+- Date : 2026-09-15
+- Statut : accepté — troisième des trois suites nommées par le responsable le
+  2026-09-14, après la fenêtre de rappel ([[D-183]]) et la phrase de reprise
+  ([[D-184]]).
+- **Numéro** : cette entrée a été écrite `D-191`, puis `D-192`, puis `D-193`.
+  Les trois ont été pris au merge par la campagne « protocole assisté »
+  (`66c82f85`, `2ef899c3`, `2c4fa0f8`), qui les a **écrits au registre** — à la
+  différence de l'épisode `D-182` du 2026-09-14 où un sujet de commit annonçait
+  un numéro sans l'inscrire, et ne réservait donc rien. Huitième, neuvième et
+  dixième collisions du dépôt, **en une matinée, sur la même entrée**.
+  La leçon ne change pas — **un numéro ne se réserve pas, il s'acquiert à la
+  fusion** — et la friction est voulue : c'est le prix d'un registre unique et
+  ordonné. Ce que l'épisode ajoute est une observation de COÛT, pas une demande
+  de réforme : quand une campagne voisine fusionne plus vite qu'un CI ne rend
+  (≈ 14 min), une PR lente ne gagne jamais la course. Ce qui la débloque n'est
+  pas un numéro de plus, c'est de fusionner dès le vert. Migration **autorisée d'avance** par arbitrage du même jour ; le
+  go de merge reste dû ([[D-087]] §1).
+- Domaine : mesure produit, explicabilité, minimisation.
+- Livraison : migration seule d'abord, code consommateur ensuite.
+
+**CE QUI MANQUAIT.** « Voir les sources et limites » porte la provenance des
+candidats ([[DC-34]]) et les limitations servies ([[DC-35]]) : c'est LA surface
+d'explicabilité de la carte de décision. Le dépôt a beaucoup investi dedans —
+[[D-101]], [[D-185]] et la moitié de cette campagne — et **rien ne dit si elle
+est ouverte.** Une surface d'explicabilité que personne ne déplie a le coût d'une
+garantie et l'effet d'aucune.
+
+**DEUX ESPÈCES, ET C'EST LE CŒUR DE LA DÉCISION.** « 40 ouvertures » se lit comme
+un résultat sans en être un : sans son DÉNOMINATEUR, il ne distingue pas une
+surface consultée systématiquement d'une surface ignorée quatre-vingt-dix-neuf
+fois sur cent. Compter les seules ouvertures aurait produit exactement le nombre
+sans dénominateur que cette campagne poursuit depuis son premier lot. La table
+porte donc `affichage` ET `ouverture`, et le taux est leur quotient.
+
+`tauxOuverture` rend `null` — jamais `0` — quand le dénominateur est nul : zéro se
+lit « personne n'ouvre », l'absence de mesure se lit « on ne sait pas », et les
+confondre ferait porter à la surface un désintérêt qui vient de l'absence de
+mesure ([[DC-24]]). Il rend `null` aussi quand les ouvertures dépassent les
+affichages : ce n'est pas un taux de 120 %, c'est une mesure cassée.
+
+**CE QUE LA TABLE NE PEUT PAS DEVENIR, ET C'EST SA FORME QUI LE TIENT.** Le
+danger d'un compteur d'usage est de devenir un journal de surveillance — ici de
+l'exercice du praticien, et un second registre d'accès sur les patients par-dessus
+`journal_acces_dossiers`. Le dépôt a déjà tranché ce cas exact sur
+`portail_lectures_patient`, qui se prive de TOUTE colonne de date pour que « quand
+le patient a-t-il ouvert son bilan » reste structurellement sans réponse.
+
+Quatre absences, toutes choisies : **aucun `id_patient`** (le quotient ne le
+demande pas), **aucune identité de praticien** (mesurer une surface n'est pas
+mesurer quelqu'un), **aucun instant** (un jour suffit à un taux), **aucune ligne
+par événement** (un agrégat n'a pas de rang à ré-identifier).
+
+**CE QUE CETTE FORME GARANTIT, ET CE QU'ELLE NE GARANTIT PAS — la nuance a été
+payée par une contre-expertise Codex, et la première rédaction était fausse.**
+Elle disait « structurellement incapable » et « aucune donnée personnelle ».
+C'est trop fort. Ce qui est vrai : la table ne porte **aucun identifiant
+direct**, et aucune granularité plus fine que la journée. Ce qui ne l'est pas :
+qu'aucune ré-identification ne soit possible. **Un jour où un seul praticien est
+actif, ses ouvertures lui sont attribuables par croisement avec
+`journal_acces_dossiers`**, qui conserve praticien, dossier et horodatage ; s'il
+n'y a ce jour-là qu'un seul dossier, ce dossier devient identifiable. Aucune
+colonne supplémentaire n'est nécessaire — le croisement suffit, et
+l'anonymisation doit résister aux corrélations et aux inférences, pas seulement
+au retrait des identifiants (doctrine CNIL).
+
+Le risque est donc **réel et borné par le volume d'activité** : il se referme à
+mesure que le cabinet a plusieurs praticiens actifs le même jour, et il est
+maximal aujourd'hui, où il y en a un. La position retenue n'est pas « c'est
+anonyme » mais : la table **n'ajoute aucun identifiant que le dépôt ne détienne
+déjà**, et ce qu'elle rend inférable l'est par la piste d'audit qui, elle, est
+déclarée et motivée. « Ce praticien n'ouvre jamais les limitations » reste une
+phrase que la table seule ne peut pas produire — et c'est cela, exactement, qui
+est garanti.
+
+C'est pourquoi elle s'INCRÉMENTE au lieu de s'empiler — **le seul endroit du dépôt
+où un `UPDATE` vaut mieux qu'un ajout.** Ailleurs l'ajout seul protège une trace
+clinique contestable ; ici, empiler FABRIQUERAIT la granularité qu'on vient de
+refuser. L'incrément passe par un `ON CONFLICT DO UPDATE` : un `findUnique` suivi
+d'un `update` perdrait des incréments dès deux praticiens simultanés, et un
+compteur qui sous-compte en silence est pire qu'un compteur absent — il a l'air
+de fonctionner.
+
+**LA MESURE EST FERMÉE PAR DÉFAUT.** `DecisionSummaryCard` se monte DEUX fois sur
+une même page — la rubrique de la phase « Décision 21 j », et le rappel posé à
+côté du constructeur de protocole. Ouverte par défaut, chaque site d'affichage
+présent ou futur gonflerait le dénominateur en silence et ferait baisser un taux
+déjà publié, sans décision de personne. Un seul montage est déclaré `mesurable`,
+et il l'est explicitement.
+
+Elle est fausse en mode fixture : le harnais de validation ergonomique sert un
+contenu « sans portée clinique » et **ne contacte jamais le réseau** — un banc
+existant de `ClinicalRuntimeSection` l'exige, et il a attrapé la première
+rédaction de ce lot.
+
+**FAIL-OPEN SANS EXCEPTION ([[D-146]]).** Une mesure qui empêcherait de lire les
+sources et limites d'une décision clinique serait un renversement complet : la
+surface passe avant sa mesure. Rien n'est attendu, rien n'est affiché, et un rejet
+réseau est avalé — `fetch` rend une promesse REJETÉE sur coupure, pas un
+`ok: false`, et un `unhandledRejection` ouvrirait un incident au rapporteur
+d'erreurs pour un compteur sans importance.
+
+**CE QUE LA REVUE A DÉJÀ COÛTÉ, dit pour ne pas le rejouer.** Une mutation a
+survécu à la première rédaction : retirer le `.catch()` laissait les bancs verts,
+parce que `vi.fn` attache ses propres `then`/`catch` au promise rendu pour
+alimenter `mock.results` — **l'outil de mesure réparait ce qu'il mesurait.** Le
+cas stubbe désormais `fetch` par une fonction nue. C'est la même leçon que la
+seconde passe Codex sur [[D-185]] : un banc ne prouve que ce que sa rédaction a
+pensé à nommer, et il faut l'attaquer pour le savoir.
+
+**CE QUE LA REVUE INTERNE A TROUVÉ, AVANT CODEX — deux trous, et les deux
+étaient miens.**
+
+**CE QUE LA PASSE CODEX A ENCORE DÉFAIT, après la revue interne.** Deux garanties
+centrales dépassaient ce qui était démontré, et une troisième était fausse :
+
+- **« Structurellement incapable » et « aucune donnée personnelle »** — borné
+  ci-dessus. Le croisement avec `journal_acces_dossiers` suffit quand l'activité
+  est faible.
+- **La liste blanche ne gardait que les NOMS de colonnes.** Un
+  `ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait le contrat entièrement vert :
+  la granularité quotidienne disparaissait, et deux ouvertures du même jour à une
+  seconde d'écart devenaient deux lignes horodatées — la table redevenait le
+  journal par événement qu'elle s'interdit. **Le message d'erreur nommait pourtant
+  « un instant » parmi les interdits, et le contrôle ne pouvait pas le voir.** Le
+  contrat compare désormais le triplet `nom:type`.
+- **« Un compte ne descend pas » était faux.** `CHECK (compte >= 0)` accepte
+  `2 → 1` ; le cas n'éprouvait que `-1`. La monotonie n'est pas tenue par le
+  schéma — elle l'est par la route, seul écrivain, et son `increment`. La
+  promesse est bornée partout où elle était écrite.
+
+Deux inquiétudes de la revue interne ont en revanche été LEVÉES par exécution :
+la liste blanche refuse bien `id_patient` et `"ID_PATIENT"`, et **le glissement
+de jour UTC→`DATE` n'existe pas** — l'adaptateur Prisma transmet `YYYY-MM-DD`
+construit sur les composantes UTC, vérifié dans quatre fuseaux.
+
+1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
+   ([[D-127]], [[D-178]]), et ici il n'est pas décoratif : **sa liste blanche de
+   colonnes est la SEULE chose qui tienne l'affirmation centrale de cette
+   décision.** Sans elle, une migration future ajoute `id_patient` ou
+   `praticien_email`, rien ne bronche, et ce texte devient faux en silence —
+   exactement ce qui est arrivé à [[D-185]], dont l'affirmation centrale a vécu
+   une journée sur `main` sans être vraie. Le contrat éprouve six choses : la
+   liste blanche, l'espèce fermée, le compte qui ne descend pas, l'incrément
+   concurrent qui donne bien 2, la clé primaire qui empêche d'empiler, la RLS
+   deny-all.
+2. **L'absence au registre RGPD était TACITE.** `rubrique5.modeles.test.ts` ne
+   vérifie que les tables filles de `Patient` ; celle-ci n'en est pas une, donc
+   **le banc se tait** — et une ligne absente ne ment pas, elle se tait. La table
+   est déclarée en rubrique 5 avec sa nature réelle : aucun identifiant direct —
+   l'intitulé disait d'abord « aucune donnée personnelle », corrigé après la
+   contre-expertise ci-dessus.
+   La qualification juridique reste au responsable de traitement, comme pour
+   `DecisionPrioritySelection` et `EcartementProposition`.
+
+- Conséquences : migration `20260915080000_compteur_ouverture_sources_v1` (PR
+  seule, [[D-087]]) ; modèle `CompteurOuvertureSources` ; contrat
+  `prisma/checks/compteur_ouverture_sources_v1_negatif.sql` joué au CI ; ligne
+  en rubrique 5 de `DOSSIER_RGPD.md` ; module-feuille
+  `lib/mesure/ouvertureSources.ts` ; route
+  `POST /api/praticien/mesure/ouverture-sources` ; prop `mesurable` sur
+  `DecisionSummaryCard` ; `onOuverture` sur `TwoLevelReading`. Aucun drapeau
+  neuf. Le banc du rejeu de `ClinicalRuntimeSection` est RESSERRÉ, pas relâché :
+  il listait « aucun POST », il liste désormais les destinations, si bien qu'un
+  POST clinique neuf le fait rougir même si personne ne l'a nommé.
 
 ### D-193 — La provenance de la raison d'être se constate à la lecture, elle ne se persiste pas
 
