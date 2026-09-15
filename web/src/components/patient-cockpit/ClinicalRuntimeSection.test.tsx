@@ -1138,8 +1138,22 @@ describe('ClinicalRuntimeSection — rejeu d’un épisode persisté (`D-118`)',
 
     expect(await screen.findByText(/Épisode T0 confirmé/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Confirmer l’épisode/ })).toBeNull();
-    expect(fetchMock.mock.calls.some(appel =>
-      (appel[1] as { method?: string } | undefined)?.method === 'POST')).toBe(false);
+    // AUCUN POST CLINIQUE — et l'assertion est maintenant PLUS étroite qu'un
+    // « aucun POST » global, pas moins.
+    //
+    // Le compteur de « Voir les sources et limites » poste au montage de la
+    // carte ; un rejeu l'affiche, donc il compte, et c'est juste — le praticien
+    // regarde bien le panneau. Écrire `some(... === 'POST')` faisait alors
+    // rougir ce cas pour une mesure qui n'écrit AUCUN état clinique.
+    //
+    // La forme retenue liste les destinations plutôt que d'exclure une route :
+    // un POST vers une route clinique neuve rougit toujours, y compris une que
+    // personne n'a pensé à nommer ici. Relâcher en `!== ROUTE_MESURE` aurait
+    // laissé passer tout ce qui n'est pas elle.
+    const postes = fetchMock.mock.calls
+      .filter(appel => (appel[1] as { method?: string } | undefined)?.method === 'POST')
+      .map(appel => String(appel[0]));
+    expect(postes).toEqual(postes.filter(url => url === '/api/praticien/mesure/ouverture-sources'));
   });
 
   it('« épisode confirmé » dérive de la trajectoire : vrai même quand l’écran montre autre chose', async () => {

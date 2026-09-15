@@ -1,9 +1,10 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
+import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
 
@@ -16,7 +17,12 @@ export const TITRE_PAR_DEFAUT = 'Priorité et limites';
 // d'une suspension. « Limites » reprend le mot du dépliant de la carte
 // (« Voir les sources et limites »), et jamais « synthèse », qui désigne un
 // document du dossier.
-export function DecisionSummaryCard({ decisionCard, sourceRefs = [], titre = TITRE_PAR_DEFAUT }: {
+export function DecisionSummaryCard({
+  decisionCard,
+  sourceRefs = [],
+  titre = TITRE_PAR_DEFAUT,
+  mesurable = false,
+}: {
   decisionCard: DecisionCard | null;
   /**
    * Le relevé des passations de l'épisode, qui traduit un `responseId` en
@@ -35,8 +41,49 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [], titre = TIT
    * fiche). L'`id` du titre, lui, est rendu unique par `useId()`.
    */
   titre?: string;
+  /**
+   * Ce montage-ci entre-t-il dans le compteur de « Voir les sources et
+   * limites » ?
+   *
+   * FERMÉ PAR DÉFAUT, ET C'EST L'INVARIANT. La carte se monte DEUX fois sur une
+   * même page — la rubrique de la phase « Décision 21 j », et le rappel posé à
+   * côté du constructeur de protocole — et un troisième site d'affichage
+   * viendra. Ouvert par défaut, chaque nouveau montage gonflerait le
+   * DÉNOMINATEUR en silence et ferait baisser un taux déjà publié, sans que
+   * personne ait décidé quoi que ce soit. Compter est donc un geste explicite.
+   *
+   * IL EST FAUX EN MODE FIXTURE, et pas seulement pour satisfaire un banc : le
+   * harnais de validation ergonomique sert un contenu 100 % fictif « sans portée
+   * clinique ». Ses affichages dans le dénominateur mesureraient l'usage d'une
+   * page de démonstration.
+   */
+  mesurable?: boolean;
 }) {
   const idTitre = useId();
+
+  // LA MESURE DE LA SURFACE D'EXPLICABILITÉ — et son dénominateur.
+  //
+  // L'AFFICHAGE PART AU MONTAGE, PAS À CHAQUE RENDU. Sans le garde de `ref`, un
+  // re-rendu — un parent qui se met à jour, une sélection praticien qui change —
+  // gonflerait le DÉNOMINATEUR et écraserait le taux vers zéro. Le mode strict
+  // de React monte deux fois en développement, ce que ce même garde absorbe.
+  //
+  // IL NE PART PAS QUAND LA CARTE S'ABSTIENT, et la condition est DANS l'effet,
+  // pas au-dessus. Le `return` anticipé sur `decisionCard === null` se trouve
+  // plus bas — les règles des hooks interdisent de placer un `useEffect` après
+  // lui —, si bien qu'un effet non gardé compterait un affichage sur une carte
+  // qui ne porte AUCUN panneau à déplier. Le dénominateur inclurait alors des
+  // rendus dont le numérateur est structurellement impossible, et le taux
+  // baisserait à mesure que des dossiers non préparés s'ouvrent.
+  const affichageCompte = useRef(false);
+  useEffect(() => {
+    if (!mesurable) return;
+    if (!decisionCard) return;
+    if (affichageCompte.current) return;
+    affichageCompte.current = true;
+    envoyerMesure('affichage');
+  }, [mesurable, decisionCard]);
+
   if (!decisionCard) {
     return (
       <section aria-labelledby={idTitre}>
@@ -116,6 +163,7 @@ export function DecisionSummaryCard({ decisionCard, sourceRefs = [], titre = TIT
       </h3>
       <TwoLevelReading
         label="Voir les sources et limites"
+        onOuverture={mesurable ? () => envoyerMesure('ouverture') : undefined}
         className="border-l-4 border-l-primary shadow-card"
         summary={(
           <div>
