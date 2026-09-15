@@ -6247,3 +6247,26 @@ tenue par la route, seul écrivain, pas par le schéma.
 **Ce que la journée aura montré trois fois** — sur `D-185` deux fois, ici une
 troisième : un banc ne prouve que ce que sa rédaction a pensé à nommer, et il
 faut l'attaquer pour le savoir.
+
+## 2026-09-15 20:45 — Compteur d'ouverture : le lot consommateur ([[D-194]])
+
+**Migration appliquée et CONSTATÉE avant ce lot**, régime `D-087`. Constat par
+one-off lecture seule : `COLS=compte:integer,espece:text,jour:date`, RLS active
+sans policy, trois contraintes, table vide, `_prisma_migrations` renseignée au
+2026-09-15 20:42:40 UTC. **Les types autant que les noms** — c'est ce que la
+contre-expertise Codex avait montré défaillant dans la liste blanche.
+
+**Ce que l'épisode a corrigé dans ma compréhension du dépôt, et c'est le point à
+retenir** : `WN_MIGRATIONS_PAR_RELEASE_DB=1` est posé sur la production, donc
+**le postdeploy ne migre plus**. Merger une PR de migration ne fait que la mettre
+en file ; l'unique porte d'écriture du schéma est l'approbation du workflow
+`release-db`. J'ai affirmé plusieurs fois le contraire au responsable — « merger
+EST l'écriture en production » — et c'était faux : il croyait autoriser une
+écriture, il autorisait une mise en file.
+
+**La première release a échoué, et la garde avait raison.** Le run approuvé
+portait sur `9bbcd13a` ; `067ac22a` a pris la place de l'image entre
+l'approbation et l'exécution, et la garde a refusé de migrer sous un code que
+personne n'avait approuvé. Aucune écriture. Même phénomène de course que les
+trois renumérotations de la matinée, une couche plus bas — et ici, c'est une
+garde qui l'a attrapé au lieu d'un humain.

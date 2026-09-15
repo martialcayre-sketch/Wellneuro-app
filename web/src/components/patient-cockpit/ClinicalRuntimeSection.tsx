@@ -1701,8 +1701,21 @@ export function ClinicalRuntimeSection({
           le recoupement de toutes les versions de protocole déjà persistées
           ([[D-054]] §2). Il est dérivé avec la carte, pas ici : les deux doivent
           venir de la même origine. */}
+      {/* LE SEUL MONTAGE MESURÉ, et c'est celui-ci parce qu'il EST la rubrique
+          d'explicabilité de la phase. Le rappel posé plus bas, à côté du
+          constructeur de protocole, montre la même carte : le compter aussi
+          ferait deux affichages pour une seule consultation, donc un taux
+          d'ouverture divisé par deux sans que rien ait changé à l'écran.
+
+          `!fixture` : le harnais de validation ergonomique sert un contenu
+          fictif sans portée clinique, et il ne contacte jamais le réseau (banc
+          de `ClinicalRuntimeSection`). */}
       {affiche('decision') && (
-        <DecisionSummaryCard decisionCard={decisionCard} sourceRefs={sourceRefsEpisode} />
+        <DecisionSummaryCard
+          decisionCard={decisionCard}
+          sourceRefs={sourceRefsEpisode}
+          mesurable={!fixture}
+        />
       )}
       {/* CE QUE LA CARTE NE LIT PAS SE DIT SOUS LA CARTE. Un épisode confirmé
           est un INSTANT : les réponses arrivées après n'y entrent pas, et c'est
