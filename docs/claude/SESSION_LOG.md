@@ -6151,3 +6151,69 @@ l'existence d'un patron ailleurs à sa disponibilité ici.
 
 **Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
 citation ; la première ligne du barème de charge (LOT-06).
+
+## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-194]])
+
+Troisième des trois suites nommées le 2026-09-14. La surface qui porte la
+provenance et les limitations devient mesurable ; **cette PR pose la table
+seule**, régime `D-087`.
+
+**Deux espèces, et c'est la décision.** Compter les seules ouvertures aurait
+produit le nombre sans dénominateur que cette campagne poursuit depuis son
+premier lot : « 40 ouvertures » ne distingue pas une surface consultée
+systématiquement d'une surface ignorée 99 fois sur 100.
+
+**Quatre absences choisies** : aucun `id_patient`, aucune identité de praticien,
+aucun instant, aucune ligne par événement. La table est structurellement
+incapable de dire « ce praticien n'ouvre jamais les limitations ». Discipline
+reprise de `portail_lectures_patient`, qui se prive de toute date pour ne pas
+devenir un journal de présence ; ici la cible serait le praticien, et un second
+registre d'accès par-dessus `journal_acces_dossiers`.
+
+**Ce que la revue interne a déjà coûté, et qui vaut d'être noté** : une mutation
+a survécu — retirer le `.catch()` d'`envoyerMesure` laissait les bancs verts,
+parce que **`vi.fn` attache ses propres `then`/`catch` au promise rendu** pour
+alimenter `mock.results`. L'outil de mesure réparait ce qu'il mesurait. Le cas
+stubbe désormais `fetch` par une fonction nue. Même leçon que la seconde passe
+Codex sur `D-185`, le même jour : un banc ne prouve que ce que sa rédaction a
+pensé à nommer.
+
+Deux bancs existants ont attrapé la première rédaction, et les deux avaient
+raison : le harnais ergonomique ne doit contacter aucun réseau, et un rejeu ne
+doit poster aucun état clinique. Le second est **resserré, pas relâché** — il
+listait « aucun POST », il liste désormais les destinations.
+
+**Renumérotée TROIS FOIS, `D-191` → `D-192` → `D-193` → `D-194` (2026-09-15).** Les deux
+numéros ont été pris au merge par d'autres sessions — `66c82f85` puis `2ef899c3`
+— puis `2c4fa0f8` — qui les ont **écrits au registre**, à la différence de l'épisode `D-182` de la
+veille où un sujet de commit annonçait un numéro sans l'inscrire, et ne réservait
+donc rien. Huitième, neuvième et dixième collisions, en une matinée, sur la même entrée.
+La campagne voisine fusionne plus vite qu'un CI ne rend : une PR lente ne gagne
+jamais la course, et ce qui la débloque est de fusionner dès le vert.
+Même leçon : un numéro ne se réserve pas, il s'acquiert à la fusion — et la
+friction est voulue.
+
+**Passe Codex — BLOQUER, trois findings fondés (2026-09-15).** La revue interne
+avait trouvé deux trous ; Codex en a trouvé trois de plus.
+
+Le plus grave est structurel : **la liste blanche de colonnes ne gardait que les
+NOMS.** Un `ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait le contrat entièrement
+vert, et la garantie « aucun instant » disparaissait — alors que le message
+d'erreur du contrat nommait « un instant » parmi les interdits. Le contrôle ne
+pouvait pas voir ce qu'il prétendait interdire. Le triplet `nom:type` est
+désormais comparé ; rejoué sous PGlite sur la migration réelle, quatre mutations
+rouges.
+
+Le plus important est doctrinal : **l'absence d'identifiants n'est pas une
+anonymisation.** Un jour où un seul praticien est actif, ses ouvertures lui sont
+attribuables par croisement avec `journal_acces_dossiers`. « Structurellement
+incapable » et « aucune donnée personnelle » dépassaient ce qui était démontré et
+sont bornés partout où ils étaient écrits — décision, registre RGPD, migration.
+
+Et une promesse était simplement fausse : `CHECK (compte >= 0)` accepte `2 → 1`,
+alors que le commentaire disait « un compte ne descend pas ». La monotonie est
+tenue par la route, seul écrivain, pas par le schéma.
+
+**Ce que la journée aura montré trois fois** — sur `D-185` deux fois, ici une
+troisième : un banc ne prouve que ce que sa rédaction a pensé à nommer, et il
+faut l'attaquer pour le savoir.
