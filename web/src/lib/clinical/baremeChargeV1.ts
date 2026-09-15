@@ -60,6 +60,10 @@ export { chevauchementsBareme, mesurerProtocole, suggererDepuisLignes } from './
  *
  * L'ÉCHELLE EST CONTIGUË ET SANS RECOUVREMENT — `lignesBaremeServables` refuse
  * une table qui se recouvre, et le banc de garde le vérifie.
+ *
+ * `CHARGE-01` DIT « AU PLUS UNE », ET PAS « UNE SEULE », parce qu'elle couvre
+ * AUSSI ZÉRO : un protocole dont les trois actions attendent un bilan n'engage
+ * rien, et une phrase qui compterait une action affirmerait faux à l'écran.
  */
 export const BAREME_CHARGE_V1: LigneBaremeCharge[] = [
   {
@@ -68,7 +72,7 @@ export const BAREME_CHARGE_V1: LigneBaremeCharge[] = [
     min: null,
     max: 1,
     niveau: 'light',
-    motif: 'Une seule action engagée : un pas à tenir.',
+    motif: 'Au plus une action engagée : la charge reste minimale.',
     statut: 'publiee',
   },
   {
@@ -107,36 +111,45 @@ export type BaremeChargeMetadata = {
 };
 
 /**
- * CE QUE LA SIGNATURE ATTESTERA, ET CE QU'ELLE N'ATTESTERA PAS : une convention
- * d'organisation relue et acceptée. **Aucune source clinique** ne porte ces
+ * CE QUE LA SIGNATURE ATTESTE, ET CE QU'ELLE N'ATTESTE PAS : une convention
+ * d'organisation relue et déclarée conforme. **Aucune source clinique** ne porte ces
  * bornes, et aucun claim n'y est rattaché — à la différence de
  * `INDICATIONS_BIOLOGIE_V1`, dont la signature couvre vingt-neuf claims. C'est
  * pourquoi ce module n'a pas de champ `claimsSource` : il n'aurait rien à y
  * mettre, et un champ vide se lirait comme un oubli.
  */
 export const BAREME_CHARGE_METADATA: BaremeChargeMetadata = {
-  validationExterne: false,
-  dateValidation: null,
-  shaPerimetre: null,
+  validationExterne: true,
+  dateValidation: '2026-09-15T00:00:00.000Z',
+  shaPerimetre: '40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d',
 };
 
 /**
- * LA SIGNATURE ATTEND LA DÉCLARATION DE CONFORMITÉ DU PRATICIEN ([[D-195]] §1).
+ * LA DÉCLARATION DE CONFORMITÉ QUI PORTE CETTE SIGNATURE — 2026-09-15.
  *
- * L'échelle ci-dessus a été **proposée par l'outil** parmi trois, puis relue et
- * choisie par le praticien. Ce n'est pas encore une attestation : `D-195`, rendue
- * le même jour, a tranché que **la déclaration précède la frappe et qu'elle est
- * le geste attestant** — la recopie de la chaîne hex est mécanique et ne vaut que
- * portée par elle. Et l'obstacle qu'elle nomme est exactement celui-ci : l'outil
- * qui a écrit le contenu à relire ne peut pas l'attester seul, sans quoi le
- * verrou « n'enregistre plus, il ratifie ».
+ * ELLE A ÉTÉ RENDUE EN SÉANCE, APRÈS LECTURE, et c'est elle le geste attestant :
+ * la recopie de la chaîne hex ci-dessous est mécanique et ne vaut que portée par
+ * elle ([[D-195]] §1). La surface relue a été produite AVANT la demande (§2) —
+ * les trois lignes, leurs bornes, et ce que chacune affiche aux QUATRE valeurs
+ * possibles de `nombreActionsFermes`, 0 à 3.
  *
- * CE QUI MANQUE TIENT EN UNE PHRASE du praticien, après lecture des trois lignes.
- * Tant qu'elle n'est pas donnée, `lignesBaremeServables` ne sert RIEN et l'écran
- * n'affiche aucune suggestion — l'échelle est écrite, elle n'est pas en service.
+ * POURQUOI CETTE PRÉCAUTION N'EST PAS UNE FORMALITÉ ICI. L'échelle a été
+ * PROPOSÉE par l'outil parmi trois. `D-195` a tranché le même jour qu'une
+ * empreinte posée seule par celui qui a écrit le contenu « n'enregistre plus,
+ * elle ratifie » — le praticien a donc relu, corrigé, puis déclaré.
  *
- * Le SHA du périmètre au moment de la rédaction, pour la recopie à venir :
- * `e2ac85392712d20858a6f8a69044ea62e05f0d8c665e44b3a6265d80bb969910`.
+ * CE QUE LA RELECTURE A CHANGÉ, ET C'EST LA RAISON DU MOTIF ACTUEL DE
+ * `CHARGE-01` : le texte proposé disait « Une seule action engagée : un pas à
+ * tenir. » À ZÉRO action engagée — les trois suspendues en attente de bilan, ce
+ * que `D-190` rend possible sans plafond — cette phrase affirmait faux. Le
+ * praticien a demandé qu'elle couvre les deux cas.
+ *
+ * LES PÉRIMÈTRES SE RANGENT, ILS NE S'EFFACENT PAS ([[D-195]] §4) :
+ * - `e2ac85392712d20858a6f8a69044ea62e05f0d8c665e44b3a6265d80bb969910` —
+ *   périmètre du texte PROPOSÉ le 2026-09-15, périmé par la reformulation
+ *   ci-dessus. **Jamais signé** : aucune déclaration ne l'a porté.
+ * - `40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d` —
+ *   périmètre DÉCLARÉ CONFORME, recopié en littéral dans les métadonnées.
  */
 
 /** Le périmètre signé : le barème ENTIER, jamais une sélection de champs. */

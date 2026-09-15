@@ -6270,6 +6270,28 @@ l'approbation et l'exécution, et la garde a refusé de migrer sous un code que
 personne n'avait approuvé. Aucune écriture. Même phénomène de course que les
 trois renumérotations de la matinée, une couche plus bas — et ici, c'est une
 garde qui l'a attrapé au lieu d'un humain.
+
+## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-198)
+
+L'échelle de charge écrite au LOT-06 était mergée **hors service** : `D-195`, rendue
+le même jour par une session parallèle, interdit à l'outil qui a proposé un contenu
+d'en poser seul l'empreinte. La signature a donc été retirée avant merge, puis la
+déclaration de conformité demandée séparément, sur une surface produite avant elle —
+les trois lignes et les quatre cas qu'elles couvrent.
+
+**La relecture a servi** : `CHARGE-01` couvre zéro (`min: null`), et son motif proposé
+disait « Une seule action engagée ». Corrigé en « Au plus une action engagée : la
+charge reste minimale. » Le périmètre a changé, la déclaration a été reposée sur le
+texte final ; l'ancien SHA reste écrit, marqué jamais signé.
+
+Écartés : signer sans relecture (refusé la veille), et laisser le motif mentir au cas
+zéro jugé rare. Table enrôlée le jour même au garde du SHA littéral.
+
+**Prochaine action** : la mesure d'usage au conteneur — bloquée par le classifier du
+mode auto, sur la forme de la commande et non son contenu.
+
+**Question ouverte** : la campagne « 5. Actions » reste `en_cours` avec 8/8 lots ; sa
+clôture libère le créneau primaire et demande un arbitrage sur la suivante.
 ## 2026-09-15 23:10 — Le troisième invariant n'avait aucune épreuve ([[D-197]], amende [[D-185]])
 
 Le responsable a **relu sans signer**, et la contre-expertise a trouvé que
