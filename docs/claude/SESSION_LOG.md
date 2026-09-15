@@ -6310,7 +6310,7 @@ qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change 
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
 
-## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-199]])
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-200]])
 
 **Attestation clinique du responsable**, demandée et donnée en toutes lettres.
 Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et

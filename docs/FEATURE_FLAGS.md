@@ -319,7 +319,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/orientationRulesV1.ts` | `true` | `2026-09-14T00:00:00.000Z` |
 | `clinical/contradictionsV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
 | `clinical/stopRulesV1.ts` | `true` | `2026-08-15T00:00:00.000Z` |
-| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-09-15T00:00:00.000Z` |
+| `biology-library/indicationsBiologieV1.ts` | `true` | `2026-09-16T00:00:00.000Z` |
 | `clinical/corpusSyntheseV1.ts` | `true` | `2026-08-22T00:00:00.000Z` |
 | `clinical/priorityRulesV1.ts` | `true` | `2026-08-28T00:00:00.000Z` |
 | `clinical/safetySignalsV1.ts` | `true` | `2026-08-23T00:00:00.000Z` |
@@ -363,6 +363,10 @@ Trois lectures attentives sur ce tableau :
   `Q_GEO_03`, le QDRS `Q_GEO_05`) et leur cotation entre dans le périmètre
   depuis [[D-187]]. Cinq bancs ont rougi seuls ; la table d'orientation, qui
   ne cite ni l'un ni l'autre, n'a pas bougé.
+  **RE-SIGNÉE LE 2026-09-16** — quatrième attestation, déclenchée par une
+  campagne de confrontation des instruments à leurs publications : le BDI-13,
+  l'IRLS et le score de Francis ont été réalignés ([[D-199]]). Là encore aucune
+  règle ni claim n'a bougé, et la table d'orientation n'a pas été reposée.
 
 **POSER LA VARIABLE NE SUFFIT PAS : IL FAUT UN BUILD QUI LA PORTE.** Vercel fige
 les variables dans le déploiement. Or `web/vercel.json` porte

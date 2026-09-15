@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-199 — Une attestation posée, puis retirée le même jour par son propre mécanisme
+### D-200 — Une attestation posée, puis retirée le même jour par son propre mécanisme
 
 - Date : 2026-09-15
 - Statut : accepté — l'attestation a été **posée puis RETIRÉE le même jour**, et
@@ -12,11 +12,12 @@
 - Domaine : clinique — signature du périmètre de classement.
 - Empreinte : `da1ba306c0551d7b` → **`9792c12e72db93d8`**. C'est ce déplacement
   qui a périmé la signature.
-- **Numéro** : écrite `D-198`, renumérotée à la fusion — le numéro a été pris par
-  une autre session qui l'a inscrit au registre. **Onzième collision du dépôt**,
-  et l'entrée voisine porte, le même jour, le même geste : une relecture qui
-  corrige avant de signer. La friction est voulue ; un numéro ne se réserve pas,
-  il s'acquiert à la fusion.
+- **Numéro** : écrite `D-198`, renumérotée `D-199`, puis `D-200` — **doublée deux
+  fois pendant que son CI tournait**. Onzième et douzième collisions du dépôt. La
+  première voisine porte, le même jour, le même geste : une relecture qui corrige
+  avant de signer. La friction est voulue ; un numéro ne se réserve pas, il
+  s'acquiert à la fusion — et la campagne voisine fusionne plus vite qu'un CI ne
+  rend.
 
 **CE QUI S'EST PASSÉ, ET C'EST LE FOND DE CETTE ENTRÉE.** Le responsable a relu
 et attesté `da1ba306c0551d7b`. Une contre-expertise a ensuite trouvé **deux
@@ -164,6 +165,51 @@ sans que personne ne l'ait prévu.
   s'exercerait pour la première fois qu'en production, le jour de la
   re-signature. Aucune migration, aucun drapeau.
 
+### D-199 — Une affirmation de conformité qui ne porte pas d'identifiant n'est pas invérifiée, elle est invérifiable
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage praticien « on aligne sur les publications »,
+  rendu en séance après présentation du lot complet.
+- Domaine : clinique — cotations et bandes d'interprétation de trois instruments
+  cités par une table signée.
+- S'appuie sur [[D-187]] (le périmètre signé porte la cotation) et applique la
+  règle posée le 2026-08-01 en retirant les bandes de `Q_TAB_04`.
+
+**LE CRIBLAGE, ET CE QU'IL A RENDU.** Le registre a été fouillé pour toutes ses
+affirmations de conformité à une publication — « bandes publiées », « conforme à
+la source », « relevée à l'identique ». **Onze entrées.** Trois portaient un
+identifiant permettant de les vérifier : l'AQ, le QDRS, l'IRLS. **Les trois se
+sont révélées fausses le même jour.** Les huit autres n'en portent aucun.
+
+**Décision :**
+
+1. **Là où une publication existe, c'est elle qui fait foi**, et les bornes
+   qu'elle laisse ouvertes se comblent par un arbitrage **épinglé comme tel** —
+   jamais présenté comme une valeur publiée. Appliqué au BDI-13 (aucun arbitrage
+   nécessaire : intervalles contigus), à l'IRLS (trois ancrages) et au score de
+   Francis (deux arbitrages : la borne 75 et le chevauchement des trois bornes
+   intérieures, tranché vers la bande inférieure, même sens que le QDRS).
+2. **Une affirmation de conformité DOIT porter l'identifiant qui permet de la
+   vérifier.** Sans lui, elle n'est pas une affirmation faible : elle est
+   **indécidable**, et la seule chose qu'elle produit est de la confiance. Les
+   huit entrées concernées restent ouvertes et nommées au changelog.
+3. **Un banc qui épingle un libellé faux garde fidèlement une erreur.** Sa mise à
+   jour accompagne le changement clinique, jamais l'inverse — et elle est
+   l'occasion de le **renforcer** : deux assertions de borne ont été ajoutées sur
+   la frontière 15/16 du BDI, qui n'existaient pas et qui sont ce qui vaut d'être
+   gardé.
+4. **Un écart délibéré à Drive s'écrit au mapping**, patron de `Q_URO_01` : les
+   ancres ajoutées à `FR_Q006` ne doivent pas être « rétablies ».
+5. **Ce qui a été trouvé juste se nomme.** PSQI, HAD, PSS-10, Pichot, SARC-F ont
+   été confrontés à leur source et sont conformes. Un silence se lirait comme un
+   oubli — et sur le Pichot, la vérification a **réfuté un soupçon** que j'avais
+   énoncé : la source dit « supérieur à 22 », le servi était juste.
+
+**Ce que cette décision ne fait pas :** elle n'allume rien, ne touche aucun
+drapeau, ne modifie aucune règle des tables signées. Elle déplace des bornes
+d'interprétation et trois ancrages de cotation, ce qui rouvre le verrou de la
+table biologique — l'attestation qui le referme est un geste praticien distinct,
+et [[D-195]] s'applique : la déclaration précède la frappe.
 
 ### D-198 — Le barème de charge est déclaré conforme : la relecture a corrigé une phrase avant de signer
 
