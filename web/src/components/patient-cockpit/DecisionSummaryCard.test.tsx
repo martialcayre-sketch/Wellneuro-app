@@ -5,7 +5,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
-import { ATTESTATION_CLASSEMENT, LIMITATIONS_CANDIDAT, PORTEE_ATTESTATION } from '@/lib/clinical/perimetreClassementV1';
+import {
+  ATTESTATION_CLASSEMENT,
+  LIMITATIONS_CANDIDAT,
+  PORTEE_ATTESTATION,
+  attestationValide,
+} from '@/lib/clinical/perimetreClassementV1';
 
 // LOT-05 « Doctrine exécutable » — LE BANC QUE LE LOT-04 A PAYÉ ([[D-101]]).
 //
@@ -174,7 +179,14 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
       carte.priorityCandidates[0].limitationsPerimetreClassement = [duPerimetre];
       render(<DecisionSummaryCard decisionCard={carte} />);
       fireEvent.click(screen.getByText(/Voir les sources et limites/));
-      if (!ATTESTATION_CLASSEMENT.relu) {
+      // LE PRÉDICAT EST `attestationValide`, PAS `relu` — et cette ligne-ci a
+      // été écrite deux fois. La première branchait sur le seul booléen : sous
+      // une attestation PÉRIMÉE (`relu: true`, sha d'un périmètre antérieur),
+      // ce cas partait dans la branche « relu » et rougissait, alors que
+      // l'écran faisait exactement ce qu'il devait — retomber hors périmètre.
+      // Un banc qui rougit pour la mauvaise raison envoie chercher le défaut
+      // ailleurs. Vérifié par mutation le 2026-09-16.
+      if (!attestationValide(ATTESTATION_CLASSEMENT)) {
         expect(groupeDe(duPerimetre)).toContain('hors périmètre signé');
       } else {
         expect(groupeDe(duPerimetre)).toContain(PORTEE_ATTESTATION.intituleEcran);

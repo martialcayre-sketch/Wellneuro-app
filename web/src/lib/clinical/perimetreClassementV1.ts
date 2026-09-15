@@ -28,8 +28,10 @@
  * donc déplacé l'empreinte, donc **PÉRIMÉ la signature**.
  *
  * C'est la règle, et elle s'est appliquée à son auteur : on n'élargit pas après
- * coup ce qui a été relu. L'attestation est reposée à `relu: false` et
- * redemandée au responsable sur la nouvelle empreinte.
+ * coup ce qui a été relu. L'attestation a été reposée à `relu: false`, puis
+ * REDEMANDÉE et RENDUE le 2026-09-16 sur `9792c12e72db93d8` — le contenu relu
+ * n'avait pas changé ; ce qui s'y est ajouté est la portée explicite de la
+ * signature, c'est-à-dire ce qu'elle NE couvre pas.
  *
  * CE QU'ELLE COUVRIRA, ET CE QU'ELLE NE COUVRIRA PAS, est désormais DANS
  * `PORTEE_ATTESTATION`, donc haché : le praticien atteste une fidélité
@@ -245,20 +247,28 @@ export const PERIMETRE_CLASSEMENT_V1 = {
 } as const;
 
 /**
- * L'ATTESTATION — VIDE, ET C'EST L'ÉTAT JUSTE AUJOURD'HUI.
+ * L'ATTESTATION — RENDUE LE 2026-09-16 par le responsable, sur `9792c12e72db93d8`.
  *
- * `relu: false` dit qu'aucune relecture clinique n'a eu lieu. Aucun verrou ne
- * consulte cet objet : le poser rempli sans attestation fabriquerait exactement
- * la provenance que [[D-162]] §5 interdit de se réclamer.
+ * Elle n'a pas été déduite d'un « relu » : la question a été posée en toutes
+ * lettres, et elle l'avait déjà été deux fois avant — la première a rendu
+ * « j'ai lu, et j'ai des réserves », et la réserve était fondée ([[D-197]]).
+ * Une signature clinique se DÉCIDE ; aucun outil ne la pose à la place du
+ * responsable.
  *
- * CE QUE L'ATTESTATION COÛTERA, quand elle tombera, pour que personne ne le
- * découvre après : déplacer un terme de classement, réécrire un des quatre
- * textes, ou permuter les deux motifs d'abstention refermera le verrou jusqu'à
- * re-signature. Et l'intitulé « Ajoutées par le moteur (hors périmètre signé) »
- * servi par `DecisionSummaryCard` deviendra faux pour les quatre limitations :
- * il devra bouger dans le même lot que l'attestation, sinon l'écran
- * SOUS-promettra sur du relu — l'inverse du défaut habituel, mais un écart
- * quand même.
+ * CE QU'ELLE COÛTE, MAINTENANT QU'ELLE EST TOMBÉE : déplacer un terme de
+ * classement, réécrire un des quatre textes, ou permuter les deux motifs
+ * d'abstention déplace l'empreinte, que `shaRelu` ne suit pas — le verrou se
+ * referme jusqu'à re-signature. Réancrer l'empreinte NE SUFFIT PAS à le faire
+ * taire : c'est le seul gain qui compte, et il a été vérifié par mutation.
+ *
+ * ET L'ÉCRAN A BOUGÉ DANS LE MÊME LOT, comme [[D-185]] l'avait annoncé : les
+ * quatre `LIMITATION_*` ne peuvent plus être servies sous « Ajoutées par le
+ * moteur (hors périmètre signé) », qui SOUS-promettrait sur du relu. Elles
+ * passent sous `PORTEE_ATTESTATION.intituleEcran`, borné exprès.
+ *
+ * `attestationValide` est la seule bonne façon de consulter cet objet : les
+ * trois champs valent ENSEMBLE, et lire le seul `relu` était un défaut réel
+ * ([[D-202]]).
  */
 /**
  * L'EMPREINTE ATTENDUE DU PÉRIMÈTRE — littéral figé, et il vit ICI et non dans
@@ -307,14 +317,20 @@ export function attestationValide(attestation: {
 }
 
 export const ATTESTATION_CLASSEMENT = {
-  relu: false,
-  dateRelecture: null as string | null,
+  relu: true,
+  dateRelecture: '2026-09-16' as string | null,
   /**
    * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ, jamais la constante
    * calculée : la comparaison serait tautologique et la péremption invisible
    * (patron [[D-063]]). C'est ce littéral qui rend l'attestation périssable —
    * le jour où le périmètre bouge, l'empreinte bouge, celui-ci ne suit pas, et
    * le banc réclame une re-signature.
+   *
+   * CE N'EST PAS THÉORIQUE : c'est arrivé le 2026-09-15. La portée de
+   * l'attestation est entrée dans la donnée hachée, l'empreinte est passée de
+   * `da1ba306c0551d7b` à celle-ci, et le verrou a refusé la signature de celui
+   * qui l'avait écrit. L'attestation ci-dessous est la SECONDE, posée sur le
+   * contenu borné.
    */
-  shaRelu: null as string | null,
+  shaRelu: '9792c12e72db93d8' as string | null,
 };

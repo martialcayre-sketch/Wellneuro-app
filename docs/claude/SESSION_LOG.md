@@ -6454,3 +6454,26 @@ du protocole entre-temps. Une prémisse de quatre jours sur une table que
 quelqu'un d'autre alimente n'est pas une prémisse, c'est un souvenir.
 
 Le constat est **daté** : il vaut pour ce déploiement, pas pour le suivant.
+
+## 2026-09-16 01:25 — Le périmètre du classement est ATTESTÉ, pour de bon ([[D-202]])
+
+**« Relu » ne vaut pas signature, et la question a été reposée.** C'est la
+troisième fois de la semaine ; la première avait rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée. Une signature clinique se DÉCIDE — aucun
+outil ne la pose à la place du responsable, et surtout pas sur une formulation
+ambiguë. Réponse explicite obtenue, signature posée sur `9792c12e72db93d8`.
+
+**Le gain a été revérifié sur la signature réelle**, pas sur une hypothèse :
+réécrire un texte du périmètre puis réancrer l'empreinte — le contournement de
+routine — fait taire l'ancre et laisse l'attestation ROUGE. À l'écran,
+`attestationValide` devient faux et les quatre textes retombent d'eux-mêmes hors
+périmètre signé.
+
+**Et cette mutation a trouvé un défaut de plus, dans un banc à moi.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur le seul `relu`.
+Sous une attestation périmée, il rougissait alors que l'écran faisait exactement
+ce qu'il devait. **Un banc qui rougit pour la mauvaise raison envoie chercher le
+défaut ailleurs** — et le moment où ça arrive est précisément celui d'une
+péremption de signature, c'est-à-dire le plus mauvais. C'est la même faute que
+Codex avait relevée dans l'écran, survivant une couche plus bas, dans le
+prédicat du banc qui devait la couvrir.

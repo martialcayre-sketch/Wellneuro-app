@@ -4,11 +4,11 @@
 
 ## Décisions actives
 
-### D-202 — Une attestation posée, puis retirée le même jour par son propre mécanisme
+### D-202 — Une attestation posée, retirée par son propre mécanisme, puis reposée sur le contenu borné
 
-- Date : 2026-09-15
-- Statut : accepté — l'attestation a été **posée puis RETIRÉE le même jour**, et
-  le périmètre est en attente d'une nouvelle relecture.
+- Date : 2026-09-15, complétée le 2026-09-16
+- Statut : accepté — l'attestation a été **posée, RETIRÉE le même jour par le
+  verrou lui-même, puis RENDUE le 2026-09-16** sur `9792c12e72db93d8`.
 - Domaine : clinique — signature du périmètre de classement.
 - Empreinte : `da1ba306c0551d7b` → **`9792c12e72db93d8`**. C'est ce déplacement
   qui a périmé la signature.
@@ -49,6 +49,34 @@ coup ce qui a été relu** — même pour le borner. L'attestation est reposée 
 
 Le mécanisme a donc été éprouvé pour de bon, sur un cas réel et non sur une
 mutation : il a refusé la signature de celui qui l'avait écrit.
+
+**L'ATTESTATION A ÉTÉ REPOSÉE LE 2026-09-16, ET ELLE N'A PAS ÉTÉ DÉDUITE.** Le
+responsable a répondu « relu » — ce qui dit qu'il a lu, pas qu'il signe. La
+question a donc été reposée en toutes lettres, et c'est la troisième fois de la
+semaine : la première avait rendu « j'ai lu, et j'ai des réserves », et la
+réserve était fondée ([[D-197]]). **Une signature clinique se DÉCIDE ; aucun
+outil ne la pose à la place du responsable**, et surtout pas sur une formulation
+ambiguë.
+
+`ATTESTATION_CLASSEMENT` porte désormais `{ relu: true, dateRelecture:
+'2026-09-16', shaRelu: '9792c12e72db93d8' }`. Le contenu relu n'avait pas changé
+depuis la première lecture ; ce qui s'y est ajouté est la PORTÉE, c'est-à-dire ce
+que la signature ne couvre pas.
+
+**LE GAIN A ÉTÉ REVÉRIFIÉ SUR LA SIGNATURE RÉELLE, pas sur une hypothèse.**
+Mutation : réécrire un texte du périmètre, PUIS réancrer l'empreinte — le
+contournement de routine. L'ancre se tait ; **l'attestation reste rouge** et
+réclame une re-signature. À l'écran, `attestationValide` devient faux et les
+quatre textes retombent d'eux-mêmes sous « hors périmètre signé ».
+
+**ET CETTE MUTATION A TROUVÉ UN DÉFAUT DE PLUS, dans un banc.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur
+`ATTESTATION_CLASSEMENT.relu`. Sous une attestation PÉRIMÉE — `relu: true`, sha
+d'un périmètre antérieur — il partait dans la branche « relu » et rougissait,
+alors que l'écran faisait exactement ce qu'il devait. **Un banc qui rougit pour
+la mauvaise raison envoie chercher le défaut ailleurs**, et c'est le pire moment
+pour ça : au milieu d'une péremption de signature. Le prédicat est désormais
+`attestationValide`, comme partout ailleurs.
 
 **LE GESTE, ET SA CHRONOLOGIE — c'est elle qui fait sa valeur.** Le périmètre a
 été posé INERTE le 2026-09-14 ([[D-185]]), haché avant toute relecture pour que

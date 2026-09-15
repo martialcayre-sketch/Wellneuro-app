@@ -147,3 +147,24 @@ pas le voir.
 La campagne voisine l'avait trouvé indépendamment le même jour ([[D-200]]) :
 route, alerte praticien et banc de régression `carte_derivee` sont entrés ici par
 la fusion de `main`.
+
+## L'attestation est RENDUE — 2026-09-16
+
+`ATTESTATION_CLASSEMENT = { relu: true, dateRelecture: '2026-09-16', shaRelu:
+'9792c12e72db93d8' }`.
+
+**Elle n'a pas été déduite.** Le responsable avait répondu « relu » — ce qui dit
+qu'il a lu, pas qu'il signe. La question a été reposée en toutes lettres, pour la
+troisième fois de la semaine ; la première avait rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée.
+
+**Le gain revérifié sur la signature réelle** : réécrire un texte du périmètre
+PUIS réancrer l'empreinte — le contournement de routine — fait taire l'ancre mais
+**pas l'attestation**. À l'écran, `attestationValide` devient faux et les quatre
+textes retombent sous « hors périmètre signé », sans qu'on touche à rien.
+
+**Un défaut de plus, trouvé par cette mutation.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur le seul `relu`.
+Sous une attestation périmée il rougissait alors que l'écran se comportait
+correctement — **un banc qui rougit pour la mauvaise raison envoie chercher le
+défaut ailleurs**, au pire moment. Prédicat corrigé en `attestationValide`.
