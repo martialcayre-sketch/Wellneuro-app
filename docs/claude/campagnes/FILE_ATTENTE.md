@@ -125,6 +125,21 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
+- **La première ligne du barème de charge** — `2026-09-14-protocole-assiste`,
+  LOT-06. Le **mécanisme est écrit et ses dix bancs sont verts** (table signée à
+  quatre termes, refus sur table vide, refus de la discordance) ; la table est
+  **vide**, et rien ne partira sans au moins une ligne écrite et signée par le
+  praticien. `DC-19`/`DC-20` interdisent d'inventer une borne, et la campagne a
+  mesuré ce que devient une table livrée vide : `clinical_rules`, les alertes
+  compléments et les seuils d'ingrédient portent **0 ligne chacune**. La surface de
+  relecture — les quatre termes mesurés, la forme d'une ligne, ce que le mécanisme
+  refuse — est écrite au dossier du lot.
+- **Mesurer l'usage de la campagne « 5. Actions »** — sur dossiers réels, par
+  identifiant, au conteneur (`D-125`), jamais sur fixture. Elle devait être faite au
+  LOT-07 et a été **refusée par le classifieur de sécurité** de la session du
+  2026-09-15 ; elle n'a pas été contournée. Ce que la campagne a livré est vert en CI
+  et constaté en ligne par contenance — son **usage n'est pas mesuré**, et c'est
+  exactement l'avertissement que le dossier portait à l'ouverture.
 - **`adviceSheetRef` est mort de bout en bout** — dette nommée par `D-191`
   (LOT-03 de `2026-09-14-protocole-assiste`), non refermée par lui. Le champ
   existe au contrat de vue patient, la route l'écrit `null` depuis toujours, et

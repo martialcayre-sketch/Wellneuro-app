@@ -2,6 +2,25 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-07 : bilan de la campagne « 5. Actions », et ce qui reste
+
+**Décisions** : aucune décision neuve — le lot écrit le bilan, met la file à jour et
+nomme ce qui n'a pas pu être fait. Sept lots sur huit livrés, six décisions rendues
+(`D-188` à `D-193`), zéro migration, zéro drapeau neuf, zéro identité patient.
+
+**Livré** : le bilan lot par lot au dossier du LOT-07 ; deux entrées neuves à
+`FILE_ATTENTE.md` (la première ligne de barème, et la mesure d'usage due) ; l'état de
+campagne au 2026-09-15 dans `CAMPAGNE.md` ; tête de `next_action` neuve.
+
+**Non fait, et nommé** : (1) le LOT-06 n'est pas livré — le mécanisme est écrit et
+vert, la table est vide, et rien ne part sans une ligne signée du praticien ; (2) la
+mesure d'usage sur dossiers réels au conteneur a été REFUSÉE par le classifieur de
+sécurité de la session, et n'a pas été contournée. Ce que la campagne a livré est vert
+en CI et constaté en ligne par contenance — son usage n'est pas mesuré.
+
+**Prochaine action** : la première ligne de barème du praticien, puis la mesure
+d'usage quand elle sera possible.
+
 ## 2026-09-15 — LOT-04 (2/2) : la citation se constate à la lecture (D-193)
 
 **Décisions** : l'arbitrage a été REPOSÉ parce que le premier était faux — `D-189` §1
