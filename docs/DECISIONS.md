@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-200 — Une consigne clinique se garde par sa PUCE, pas par son vocabulaire : trois mutations vertes sur `synthese-v30`
+### D-201 — Une consigne clinique se garde par sa PUCE, pas par son vocabulaire : trois mutations vertes sur `synthese-v30`
 
 - Date : 2026-09-16
 - Statut : accepté — correction du GARDE seul. **La clause servie au modèle n'a
@@ -77,6 +77,79 @@ connu contre un défaut inconnu.
   puce. Aucun autre fichier touché ; la consigne et sa version sont intactes.
 
 
+### D-200 — La contre-revue adverse a réfuté six affirmations sur vingt-six, et quatre d'entre elles cachaient un défaut vivant
+
+- Date : 2026-09-16
+- Statut : accepté — quatre arbitrages du responsable rendus en séance le 2026-09-16,
+  sur les trouvailles vérifiées une par une dans l'arbre (LOT-08 de la campagne
+  « 5. Actions — le protocole assisté », lot né de cette revue et absent du cadrage).
+- Domaine : protocole 21 jours — surfaces d'écriture, garde de registre, miroir de
+  diffusion. Aucune règle clinique, aucun seuil, aucune migration.
+- Applique le patron de [[D-108]]. Corrige des affirmations de [[D-189]], [[D-191]],
+  [[D-193]]. S'appuie sur [[D-054]] arbitrage 6, `DC-24`, `DC-30`.
+
+**LA REVUE A ÉTÉ LANCÉE AVANT LA CLÔTURE, ET C'EST CE QUI A PAYÉ** — la phrase est de
+`D-108`, et elle s'est vérifiée une seconde fois. Un lot de clôture ne change aucun
+code : il **grave**. Vingt-six affirmations portantes ont été soumises à réfutation par
+quatre relecteurs indépendants, avec consigne de conclure « réfuté » faute de preuve.
+**Six sont tombées, trois ne tiennent que bornées.** Le taux est celui de `D-108`.
+
+**CE QUE LES RÉFUTATIONS ONT MONTRÉ N'EST PAS DU CODE CASSÉ, MAIS DE LA PROSE FAUSSE —
+sauf quatre fois.** « `purpose` ne traverse plus en texte libre » décrivait le plan
+d'origine, alors que `D-193` avait déplacé le constat à la lecture ; « une seule
+description de la vue patient subsiste » en oubliait une seconde ; « `adviceSheetRef`
+est mort de bout en bout » confondait **non alimenté** et **fermé**. Une prose fausse au
+dossier de campagne devient la référence de la session suivante : c'est la raison d'être
+de cette revue, et elle justifie à elle seule son coût.
+
+**LES QUATRE DÉFAUTS RÉELS, ET LE PREMIER EST UNE RÉCIDIVE.** La garde de registre
+anxiogène est confirmable ; son alerte et son bouton vivent dans le constructeur, masqué
+hors de la sous-vue « protocole » — or le geste de révision part de la sous-vue
+« biologie ». Sur un texte signalé, le praticien cliquait « Appliquer les arbitrages » et
+**il ne se passait rien**. C'est mot pour mot le défaut du booklet, que `D-189` §4
+déclarait non négociable : *une garde confirmable sans commande d'écran est une garde
+bloquante déguisée*. Elle avait été fermée sur un chemin, et rouverte sur l'autre.
+
+**Décision :**
+
+1. **Le refus de registre est atteignable d'où que parte le geste.** La branche
+   `REGISTRE_ANXIOGENE` ramène la sous-vue là où le refus se lit et se lève. Gardé par
+   une garde de **source** (`refusRegistreAtteignable.guard.test.ts`) : aucun banc de
+   composant ne traverse `reviserApresArbitrages`, et un banc de rendu ne couvrirait
+   qu'un chemin quand c'est l'invariant qu'il faut tenir.
+2. **Les deux chemins d'écriture ouverts sont fermés.** `POST /api/praticien/protocoles`
+   est **retirée** — aucun appelant applicatif, mais authentifiée, sans drapeau, et
+   acceptant un `ProtocolDraft` entier fabriqué par le client **avec son propre
+   `inputHash`**, hors garde de registre et sans reconstruction serveur : un second
+   chemin vers ce que le patient lit, qui contournait les gardes du premier. Le `GET`
+   reste. `adviceSheetRef` est **forcé à `null`** au serveur : le champ traversait tout
+   le chemin patient sans qu'aucune surface ne le renseigne ni ne le rende.
+3. **Le miroir de diffusion juge les DEUX marches, par la même fonction que le portail.**
+   `vuePatientOuRefus` pose la question « le portail peut-il servir ce protocole ? » à un
+   seul endroit. Le miroir ne regardait que le rejeu de la carte : un protocole que le
+   **contrat** refuse éteignait l'écran du patient pendant que son praticien lisait
+   « Validé pour diffusion ». Un payload illisible vaut « non servi », jamais une
+   exception qui emporte le GET.
+4. **Un protocole diffusé mais inservable n'est pas une absence de protocole.** La route
+   du carnet rendait `protocoleDiffuse: false` sur un refus, que l'écran affiche
+   « Aucun protocole diffusé pour ce patient » — une affirmation fausse, et celle qui
+   empêchait précisément le praticien de comprendre qu'il avait quelque chose à réparer.
+   Le contrat suit désormais celui du portail, à la lettre.
+5. **Le compte transitoire de la suggestion de charge reste tel quel.** Une action pas
+   encore typée est écartée du comptage, donc l'écran peut afficher « Deux actions
+   engagées » sur un brouillon qui en porte trois. L'état dure le temps de choisir un
+   type et se corrige à la frappe suivante ; le refus à l'enregistrement les nomme de
+   toute façon. Arbitré explicitement, non subi.
+
+**Ce que cette décision ne fait pas :** elle ne touche ni règle clinique, ni seuil, ni
+claim, ni questionnaire, et n'ajoute aucune migration. Elle **retire** une surface
+d'écriture et **ferme** un champ ; elle n'en ouvre aucun.
+
+**Dettes nommées, non refermées :** la seconde description de la vue patient
+(`ProtocolConsultationPanel`, inerte en production mais présente, et qui ignore
+`interventionStatus`) ; `projeterSurLeFil` sans banc, alors qu'il décide seul de ce qui
+atteint le navigateur du patient ; le statut `active` posé en silence sur les actions non
+suspendues ; `limitations` projeté au patient et rendu par aucun écran.
 ### D-199 — Une affirmation de conformité qui ne porte pas d'identifiant n'est pas invérifiée, elle est invérifiable
 
 - Date : 2026-09-15

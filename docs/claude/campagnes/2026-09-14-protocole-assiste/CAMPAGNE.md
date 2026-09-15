@@ -4,7 +4,7 @@ titre: "5. Actions — le protocole assisté"
 statut: "en_cours"
 créée_le: "2026-09-14"
 mise_à_jour: "2026-09-14"
-lot_courant: "LOT-06"
+lot_courant: "LOT-08"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -186,9 +186,29 @@ au rail, et `adviceSheetRef` — mort de bout en bout, dette consignée au LOT-0
 | LOT-05 | livré — `D-190` |
 | LOT-06 | livré en deux PR — `D-196` (l'échelle, hors service), puis `D-198` (déclarée conforme, en service) |
 | LOT-07 | bilan écrit — **sa mesure au conteneur reste due** |
+| LOT-08 | **contre-revue adverse de campagne** — hors cadrage, né d'elle (`D-200`) |
 
-**Huit décisions** rendues : `D-188` à `D-193`, puis `D-196` et `D-198`. **Zéro
-migration, zéro drapeau neuf, zéro identité patient.**
+**Neuf décisions** rendues : `D-188` à `D-193`, puis `D-196`, `D-198` et `D-200`.
+**Zéro migration, zéro drapeau neuf, zéro identité patient** — et ces trois affirmations
+se bornent aux huit lots : la contre-revue a montré qu'elles deviennent fausses dès qu'on
+les reprend sans les borner à la fenêtre de la campagne (`D-200`).
+
+## CE QUE LA CONTRE-REVUE A RÉFUTÉ (2026-09-16), et que ce dossier affirmait
+
+Vingt-six affirmations soumises, **six réfutées**. Les corrections tiennent en six lignes,
+et elles remplacent ce que les sections ci-dessus disaient :
+
+1. **Deux descriptions de la vue patient subsistent**, pas une : `ProtocolConsultationPanel`
+   en écrit une à la main et ignore `interventionStatus` ; elle est inerte en production.
+2. **Le refus ne se voyait des deux côtés que sur un motif sur cinq** — corrigé au LOT-08.
+3. **`purpose` traverse toujours en texte libre** : c'est `D-193` qui a déplacé le constat
+   à la lecture. Le dossier décrivait le plan d'origine.
+4. **La garde de registre porte quatre champs** quand la route patient en servait six —
+   `priorityLabel` vient d'un registre signé, `adviceSheetRef` est fermé depuis `D-200`.
+5. **Le constructeur pose encore `active` en silence** sur les actions non suspendues.
+6. **`adviceSheetRef` n'était pas « mort »** mais non alimenté : écriture et service
+   étaient ouverts. Fermés depuis.
+
 
 **Les huit lots sont livrés, et le barème est en service** : la déclaration de
 conformité a été rendue le 2026-09-15 après relecture — qui a d'ailleurs corrigé le

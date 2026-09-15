@@ -125,8 +125,8 @@ type LigneClaim = {
  * notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
  *
  * Le gate produit (quel flag active quel rayon — WN_C4_ENABLED pour
- * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/douleur/intestin,
- * etc.)
+ * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour les sept rayons de
+ * `RAYONS_RECHERCHE_CORPUS` depuis [[D-188]], etc.)
  * n'est PAS ici : il appartient à la couche accès de chaque route appelante
  * (`getPractitionerC4Access`, `getPractitionerRechercheCorpusAccess`…), ET à
  * une allowlist par route (ex. `RAYONS_RECHERCHE_CORPUS` ci-dessous) — ce

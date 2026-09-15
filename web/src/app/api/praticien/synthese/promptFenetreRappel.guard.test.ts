@@ -34,7 +34,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 // obéit ; il garantit qu'on ne lui a pas retiré l'interdit en silence.
 //
 // CE QUE LA PASSE CODEX RÉTROACTIVE DU 2026-09-16 A MONTRÉ, ET QUI A REFAIT CE
-// FICHIER ([[D-200]]). La première rédaction vérifiait des FRAGMENTS
+// FICHIER ([[D-201]]). La première rédaction vérifiait des FRAGMENTS
 // INDÉPENDANTS, jamais une clause cohérente. Deux mutations, jouées ici et
 // vertes sur 55 cas — ré-ancrage des deux empreintes compris, sans quoi on ne
 // teste que l'ancre :
