@@ -181,6 +181,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   });
   const [episode, setEpisode] = useState<FoodObservationEpisode | null>(null);
   const [cycleCharge, setCycleCharge] = useState(false);
+  /** Un protocole EST diffusé, et le portail ne peut pas le servir au patient. */
+  const [protocoleNonServable, setProtocoleNonServable] = useState(false);
   const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
   const [listeTronquee, setListeTronquee] = useState(false);
   const [detailOuvert, setDetailOuvert] = useState<string | null>(null);
@@ -308,9 +310,16 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         const json = (await res.json()) as {
           ok: boolean;
           protocoleDiffuse?: boolean;
+          indisponible?: boolean;
           vue?: VueCyclePraticien | null;
         };
         if (!mounted) return;
+        // DIFFUSÉ MAIS NON SERVI N'EST PAS « AUCUN PROTOCOLE » ([[D-200]]). Le
+        // panneau affichait la même phrase dans les deux cas — « Aucun
+        // protocole diffusé pour ce patient » —, ce qui est faux quand un
+        // protocole existe et que le portail refuse de le servir. Le praticien
+        // ne pouvait pas savoir qu'il avait quelque chose à corriger.
+        setProtocoleNonServable(json.ok === true && json.protocoleDiffuse === true && !json.vue);
         if (!res.ok || !json.ok || !json.protocoleDiffuse || !json.vue) {
           setEpisode(null);
           return;
@@ -592,6 +601,17 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             </p>
           </section>
         ) : (
+          protocoleNonServable ? (
+            <p
+              role="alert"
+              className="rounded-lg px-4 py-2 text-base text-status-warning bg-status-warning/10"
+              data-testid="ja-praticien-cycle-non-servable"
+            >
+              Un protocole est diffusé, mais le portail ne l’affiche plus à votre patient : le
+              dossier a changé depuis sa validation. Revalidez-le pour diffusion depuis la phase
+              Actions.
+            </p>
+          ) : (
           <p
             className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10"
             data-testid="ja-praticien-sans-cycle"
@@ -599,6 +619,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             Aucun protocole diffusé pour ce patient : la saisie reste locale et aucune décision JA
             ne peut être activée.
           </p>
+          )
         )
       )}
 

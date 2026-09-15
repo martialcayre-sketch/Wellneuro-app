@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma, rejouerCarteDecision } = vi.hoisted(() => ({
+const {
+  getServerSession, prisma, rejouerCarteDecision, reconstructProtocolDraft, vuePatientOuRefus,
+} = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   rejouerCarteDecision: vi.fn(),
+  // LE CONTRAT PATIENT EST LA SECONDE MARCHE DU CONSTAT, et il se moque ici pour
+  // la même raison que le rejeu : ce banc juge le MIROIR, pas le contrat — qui a
+  // ses propres bancs. Ce qu'il doit prouver, c'est que le verdict du contrat
+  // arrive bien jusqu'à `servieAuPatient`.
+  reconstructProtocolDraft: vi.fn(),
+  vuePatientOuRefus: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
@@ -15,6 +23,8 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecision }));
+vi.mock('@/lib/protocol/fromPrisma', () => ({ reconstructProtocolDraft }));
+vi.mock('@/lib/protocol/servirAuPatient', () => ({ vuePatientOuRefus }));
 
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
 import { GET, POST } from './route';
@@ -222,6 +232,8 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     vi.clearAllMocks();
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
     rejouerCarteDecision.mockResolvedValue({ ok: true, decisionCard: { inputHash: 'HASH_DEC' }, selectionEcartee: false });
+    reconstructProtocolDraft.mockReturnValue({ protocolDraftId: 'PD_1', inputHash: 'HASH_V1', actions: [] });
+    vuePatientOuRefus.mockReturnValue({ ok: true, vue: {} });
   });
 
   it('retourne l’approbation active et sa caducité', async () => {
@@ -290,6 +302,47 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     // La version approuvée EST la version active : rien de caduc, et pourtant
     // l'écran du patient est vide. Les deux constats sont distincts.
     expect(json.stale).toBe(false);
+    expect(json.servieAuPatient).toBe(false);
+  });
+
+  // LA SECONDE MARCHE, QUE LE MIROIR NE REGARDAIT PAS ([[D-200]]). Le rejeu
+  // réussit — l'empreinte n'a pas dérivé — mais le CONTRAT patient refuse :
+  // statut d'intervention inconnu, action hors liste patient, incohérence
+  // relue. Le portail éteint alors l'écran du patient. Avant cette correction,
+  // `servieAuPatient` valait `rejeu.ok`, donc `true` : le praticien lisait
+  // « Validé pour diffusion » sur un écran patient vide.
+  it('dit « non servi » quand le CONTRAT patient refuse, rejeu réussi', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    rejouerCarteDecision.mockResolvedValue({ ok: true, decisionCard: { inputHash: 'HASH_DEC' }, selectionEcartee: false });
+    vuePatientOuRefus.mockReturnValue({ ok: false, motif: 'contrat_refuse', detail: 'statut inconnu' });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { quelconque: true } },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
+    const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
+    const json = (await res.json()) as { stale: boolean; servieAuPatient: boolean | null };
+    expect(json.stale).toBe(false);
+    expect(json.servieAuPatient).toBe(false);
+    // Le contrat est jugé sur la version APPROUVÉE, reconstruite depuis son payload.
+    expect(reconstructProtocolDraft).toHaveBeenCalledWith({ quelconque: true }, 'HASH_V1');
+  });
+
+  // UN PAYLOAD ILLISIBLE NE FAIT PAS TOMBER L'ÉCRAN DU PRATICIEN : il vaut
+  // « non servi », ce qui est exactement ce que le portail ferait.
+  it('dit « non servi » quand le payload approuvé est illisible', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    reconstructProtocolDraft.mockImplementation(() => { throw new Error('Payload de protocole illisible.'); });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: null },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
+    const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
+    const json = (await res.json()) as { servieAuPatient: boolean | null };
+    expect(res.status).toBe(200);
     expect(json.servieAuPatient).toBe(false);
   });
 

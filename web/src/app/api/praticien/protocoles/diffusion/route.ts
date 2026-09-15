@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { deriveProtocolDraftId, deriveVersionId, resolveActiveVersion } from '@/lib/protocol/versioning';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
+import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
+import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import {
   DIFFUSION_CONFIRMATION,
   isApprovalStale,
@@ -229,6 +231,14 @@ type GetResponse =
       ok: true;
       approval: { approvalId: string; protocolDraftInputHash: string; approvedAt: string } | null;
       stale: boolean;
+      /**
+       * Le portail sert-il RÉELLEMENT ce protocole au patient ? `null` quand
+       * rien n'est diffusé. Déclaré ici parce qu'il ne l'était pas : le constat
+       * voyageait hors du contrat de sa propre route, et le retirer du serveur
+       * laissait `tsc` vert des deux côtés — le défaut même que [[D-191]] a
+       * fermé sur la vue patient.
+       */
+      servieAuPatient: boolean | null;
     }
   | { ok: false; reason: string; error: string };
 
@@ -281,6 +291,9 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         assessmentEpisodeId: true,
         supersedesDraftId: true,
         createdAt: true,
+        // LE PAYLOAD EST LU POUR JUGER LE CONTRAT PATIENT, pas pour l'afficher :
+        // sans lui, le miroir ne voyait qu'une des deux causes de refus.
+        payload: true,
       },
     });
     if (versions.length === 0) {
@@ -324,7 +337,40 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           assessmentEpisodeId: versionApprouvee.assessmentEpisodeId,
           decisionCardInputHash: versionApprouvee.decisionCardInputHash,
         });
-        servieAuPatient = rejeu.ok;
+        // DEUX MARCHES, PAS UNE. Le portail refuse de servir sur DEUX branches :
+        // le rejeu échoue, ou le contrat patient refuse le protocole. Le miroir
+        // ne regardait que la première — un statut d'intervention inconnu ou une
+        // action hors liste patient éteignait donc l'écran du patient pendant
+        // que son praticien lisait « Validé pour diffusion ». Constaté par la
+        // contre-revue adverse du 2026-09-16 ([[D-200]]).
+        if (!rejeu.ok) {
+          servieAuPatient = false;
+        } else {
+          try {
+            const draftApprouve = reconstructProtocolDraft(versionApprouvee.payload, versionApprouvee.inputHash);
+            servieAuPatient = vuePatientOuRefus({
+              decisionCard: rejeu.decisionCard,
+              protocolDraft: draftApprouve,
+              approval: {
+                decisionCardInputHash: versionApprouvee.decisionCardInputHash,
+                protocolDraftInputHash: active.protocolDraftInputHash,
+                approvedAt: (approvals.find(a => a.id === active.id)?.approvedAt ?? new Date()).toISOString(),
+                approvedBy: 'practitioner',
+                confirmation: 'content_approved_for_diffusion',
+              },
+              patientLimitations: [],
+            }).ok;
+          } catch (erreur) {
+            // PAYLOAD ILLISIBLE ⇒ NON SERVI, jamais une exception qui emporte le
+            // GET. Le portail ne saurait pas le servir non plus : le constat est
+            // donc juste, et le praticien le lit au lieu d'une page en erreur.
+            console.warn(
+              '[praticien/protocoles/diffusion GET] protocole approuvé illisible :',
+              erreur instanceof Error ? erreur.message : String(erreur),
+            );
+            servieAuPatient = false;
+          }
+        }
       }
     }
 
