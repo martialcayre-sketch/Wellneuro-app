@@ -159,7 +159,13 @@ describe('api/praticien/ja/cycle', () => {
   // LE PRATICIEN VOIT CE QUE VOIT SON PATIENT — c'est-à-dire rien, et pour la
   // même raison. Servir ici un protocole que le portail refuse lui ferait croire
   // que son patient le lit.
-  it('ne sert rien quand le rejeu refuse, comme la route patient', async () => {
+  //
+  // CE BANC A ÉTÉ RETOURNÉ LE 2026-09-16 ([[D-200]]). Il figeait
+  // `protocoleDiffuse: false` sur un refus, et le carnet rend ce booléen par la
+  // phrase « Aucun protocole diffusé pour ce patient » : le banc gardait donc
+  // une affirmation FAUSSE — un protocole existe, il est simplement inservable.
+  // Le contrat suit désormais celui du portail : diffusé oui, servi non.
+  it('dit « diffusé mais non servi » quand le rejeu refuse, comme la route patient', async () => {
     resolveProtocoleDiffuse.mockResolvedValue({
       protocolDraftId: 'PD_1',
       protocolDraftInputHash: 'abcdef0123456789ZZZZ',
@@ -175,9 +181,14 @@ describe('api/praticien/ja/cycle', () => {
     reconstructProtocolDraft.mockReturnValue({ actions: [] });
     rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
 
-    const json = (await (await GET(new Request(URL_BASE))).json()) as { ok: boolean; protocoleDiffuse: boolean; vue: unknown };
+    const json = (await (await GET(new Request(URL_BASE))).json()) as {
+      ok: boolean; protocoleDiffuse: boolean; indisponible: boolean; vue: unknown;
+    };
     expect(json.ok).toBe(true);
-    expect(json.protocoleDiffuse).toBe(false);
+    // Le protocole EST diffusé — nier la diffusion serait mentir au praticien.
+    expect(json.protocoleDiffuse).toBe(true);
+    expect(json.indisponible).toBe(true);
+    // Et rien n'est servi : le refus du portail vaut refus ici, à la lettre.
     expect(json.vue).toBeNull();
   });
 });

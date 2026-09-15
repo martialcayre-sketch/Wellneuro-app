@@ -124,7 +124,22 @@ régénérer en CI.
 Une seule description de la vue patient subsiste dans le code ; les trois actions
 partent ; les bancs qui figeaient l'amputation gardent désormais le contraire.
 
-**Atteints.** Quatre mutations ont été vues ROUGES avant que quoi que ce soit ne
+**RÉFUTÉ EN PARTIE PAR LA CONTRE-REVUE DU 2026-09-16 ([[D-200]]), et il faut le lire
+avant le reste de cette section.** Deux des affirmations ci-dessus ne tenaient pas :
+
+- **« Une seule description de la vue patient subsiste »** — il en reste DEUX.
+  `ProtocolConsultationPanel` en écrit une à la main depuis `ProtocolDraft`, sans passer
+  par le contrat, et **ignore `interventionStatus`** : une action suspendue s'y lit comme
+  un conseil ferme. Elle est inerte en production (`protocolDraft` forcé à `null` hors
+  fixture), ce qui explique qu'elle ait échappé au lot — mais elle est là. S'y ajoute
+  `projeterSurLeFil`, projection champ à champ **sans aucun banc**, qui décide pourtant
+  seule de ce qui atteint le navigateur du patient.
+- **« Le refus se voit des deux côtés »** — il ne se voyait que sur UN des cinq motifs.
+  Le miroir praticien ne regardait que la dérive d'empreinte ; un refus du contrat
+  éteignait l'écran du patient pendant que le praticien lisait « Validé pour diffusion ».
+  Corrigé au LOT-08, par une fonction partagée entre les deux chemins.
+
+**Atteints pour le reste.** Quatre mutations ont été vues ROUGES avant que quoi que ce soit ne
 soit déclaré vert : projection réduite à une action → trois bancs rouges ; garde de
 fraîcheur neutralisée → un banc rouge ; garde d'abstention neutralisée → un banc
 rouge ; garde de constat de sécurité neutralisée → un banc rouge. Restauration

@@ -23,8 +23,10 @@ const TABLES = [
   // le retard d'une table que D-067 avait précisément nommé (revue de D-084,
   // constat M1).
   { fichier: 'corpusSyntheseV1.ts', constante: 'CORPUS_CLINIQUE_SHA256' },
-  // Enrôlée le jour de sa PREMIÈRE signature ([[D-196]]) — le retard d'enrôlement
-  // est exactement ce que D-067 puis D-084 ont eu à rattraper deux fois.
+  // Enrôlée le jour de sa première signature ([[D-198]]) — et pas à [[D-196]],
+  // qui écrivait l'échelle SANS la signer : `shaPerimetre` valait alors `null`,
+  // la première assertion ci-dessous aurait rougi. Le retard d'enrôlement est
+  // exactement ce que D-067 puis D-084 ont eu à rattraper deux fois.
   { fichier: 'baremeChargeV1.ts', constante: 'BAREME_CHARGE_SHA256' },
 ] as const;
 

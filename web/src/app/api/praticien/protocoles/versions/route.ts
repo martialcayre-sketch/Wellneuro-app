@@ -62,7 +62,6 @@ type Submission = {
   followUpCriterion?: string;
   actions?: ProtocolAction[];
   therapeuticLoad?: TherapeuticLoad;
-  adviceSheetRef?: string | null;
   limitations?: string[];
   /**
    * Le contrat de payload demandé ([[D-130]]). Absent ⇒ `c1-protocol-draft-v1`,
@@ -404,9 +403,9 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       // « non vide ». La carte de `lib/documents/vocabulaire.ts` dit d'un tel
       // chemin qu'« il n'a pas le droit d'exister ».
       //
-      // TOUTES LES ACTIONS, PAS LA PREMIÈRE. La route du portail n'en sert
-      // qu'une aujourd'hui, mais garder ce que le portail sert AUJOURD'HUI
-      // ferait de la garde une dette au jour où il en servira trois.
+      // TOUTES LES ACTIONS, PAS LA PREMIÈRE. Le portail sert les trois depuis
+      // [[D-191]] ; la garde avait été posée d'avance sur toutes, et c'est ce
+      // qui lui a évité de devenir une dette le jour où le portail a changé.
       //
       // RÉGIME CONFIRMABLE ([[D-090]] : le régime suit le geste) — un praticien
       // est devant l'écran au moment du refus, et un faux positif ne doit pas
@@ -451,7 +450,16 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         updatedAt: now,
         purpose: submission.purpose ?? '',
         followUpCriterion: submission.followUpCriterion ?? '',
-        adviceSheetRef: submission.adviceSheetRef ?? null,
+        // `adviceSheetRef` EST FERMÉ À L'ÉCRITURE ([[D-200]]). Le champ
+        // traverse tout le chemin patient — contrat, projection, réponse du
+        // portail — mais AUCUNE surface ne le renseigne et aucun écran patient
+        // ne le rend. Il était pourtant accepté en texte libre non validé, et
+        // la garde de registre anxiogène ne le couvre pas : un second chemin
+        // vers ce que le patient reçoit, hors de la garde posée sur le
+        // premier. Constaté par la contre-revue adverse du 2026-09-16. Le jour
+        // où une vraie fiche conseil existera, elle entrera par une décision,
+        // avec sa garde.
+        adviceSheetRef: null,
         actions: verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
         therapeuticLoad: submission.therapeuticLoad as TherapeuticLoad,
         limitations: submission.limitations ?? [],
