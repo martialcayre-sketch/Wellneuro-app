@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types :
 // la borne suit le moteur sans traîner `node:crypto` dans le bundle client.
@@ -13,6 +13,11 @@ import type {
   TherapeuticLoad,
 } from '@/lib/clinical-engine/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+import {
+  mesurerProtocole,
+  suggererDepuisLignes,
+  type LigneBaremeCharge,
+} from '@/lib/clinical/baremeChargePur';
 import {
   LIBELLE_MARQUE_PURPOSE,
   type ProvenancePurpose,
@@ -108,6 +113,8 @@ export function ProtocolMiniBuilder({
   onClearFoodCompassSelection,
   sourcesCitables = [],
   provenancePurpose = null,
+  baremeCharge = [],
+  chargeVersionActive = null,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -142,12 +149,44 @@ export function ProtocolMiniBuilder({
    * le serveur. `null` = elle ne cite rien, ou plus rien.
    */
   provenancePurpose?: ProvenancePurpose;
+  /**
+   * Les lignes de barème que le SERVEUR a vouchées ([[D-195]]). Liste vide =
+   * barème non signé : aucune suggestion ne s'affiche. Cet écran ne revérifie
+   * pas la signature — il n'en a pas les moyens, et une seconde vérification
+   * finirait par diverger de celle du serveur.
+   */
+  baremeCharge?: LigneBaremeCharge[];
+  /**
+   * La charge portée par la VERSION ACTIVE, ou `null`.
+   *
+   * Elle était écrite, obligatoire, hachée — et relue par AUCUN écran en usage
+   * normal : le seul qui l'affichait recevait `null` et sortait par un retour
+   * anticipé. Le praticien déclarait une charge qu'il ne revoyait jamais.
+   */
+  chargeVersionActive?: TherapeuticLoad | null;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
   const [actions, setActions] = useState<BrouillonAction[]>([]);
   const [loadLevel, setLoadLevel] = useState<NiveauChargeBrouillon>('');
   const [loadJustification, setLoadJustification] = useState('');
+
+  /**
+   * LA SUGGESTION SE RECALCULE PENDANT LA COMPOSITION, sur le BROUILLON — pas
+   * sur la version enregistrée. C'est le sens même d'une aide à la saisie : elle
+   * doit bouger quand une action s'ajoute ou se suspend.
+   *
+   * Les actions sans type ne sont pas mesurables : `mesurerProtocole` lit le
+   * type pour compter les registres distincts, et un type vide en fabriquerait
+   * un. Elles sont donc écartées du comptage — le refus de `collectSubmission`
+   * les nommera de toute façon à l'enregistrement.
+   */
+  const suggestionCharge = useMemo(() => {
+    if (baremeCharge.length === 0) return null;
+    const mesurables = actions.filter((item): item is ProtocolAction => item.type !== '');
+    if (mesurables.length === 0) return null;
+    return suggererDepuisLignes(mesurerProtocole(mesurables), baremeCharge);
+  }, [actions, baremeCharge]);
   const [reviewed, setReviewed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   /**
@@ -474,6 +513,16 @@ export function ProtocolMiniBuilder({
           </div>
         </div>
 
+        {/* CE QUE LA VERSION ACTIVE PORTE — sans quoi le praticien déclare une
+            charge qu'il ne revoit jamais. Même geste que la décision remontée à
+            côté du formulaire au LOT-02. */}
+        {chargeVersionActive && (
+          <p className="text-xs text-muted-foreground">
+            Version active : <span className="font-medium text-foreground">{LOAD_LABELS[chargeVersionActive.level]}</span>
+            {chargeVersionActive.justification ? ` — ${chargeVersionActive.justification}` : ''}
+          </p>
+        )}
+
         <label className="text-sm font-medium">Charge déclarée par le praticien
           <select
             aria-label="Charge déclarée par le praticien"
@@ -487,10 +536,45 @@ export function ProtocolMiniBuilder({
           </select>
         </label>
         {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" /></label>}
+        {/* LE BARÈME PROPOSE, LE PRATICIEN DISPOSE ([[D-195]]).
+            `TherapeuticLoad.source` vaut la constante 'practitioner', posée en
+            dur : le barème ne peut pas devenir l'auteur de la charge sans
+            changer le contrat. Le bouton RECOPIE le niveau dans le champ — il
+            n'enregistre rien, et la valeur qui part reste celle du champ. */}
+        {/* UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT, les trois autres en
+            note discrète ([[D-195]] §2 bis). Le contrat exige déjà une
+            justification écrite quand le praticien DÉCLARE ce niveau : la
+            suggestion le signale du même registre, sans rien bloquer et sans
+            pré-remplir la justification — ouvrir ce champ d'avance pousserait
+            vers un choix que le praticien n'a pas fait. */}
+        {suggestionCharge && (
+          <div className={suggestionCharge.niveau === 'excessive'
+            ? 'rounded-lg border border-status-warning bg-status-warning/10 px-3 py-2'
+            : 'rounded-lg border border-border bg-muted/40 px-3 py-2'}
+          >
+            <p
+              role={suggestionCharge.niveau === 'excessive' ? 'alert' : undefined}
+              className={suggestionCharge.niveau === 'excessive'
+                ? 'text-sm text-status-warning'
+                : 'text-xs text-muted-foreground'}
+            >
+              Le barème suggère <span className="font-medium text-foreground">{LOAD_LABELS[suggestionCharge.niveau]}</span> — {suggestionCharge.motif}
+            </p>
+            {loadLevel !== suggestionCharge.niveau && (
+              <button
+                type="button"
+                onClick={() => { markDirty(); setLoadLevel(suggestionCharge.niveau); }}
+                className="mt-2 min-h-11 rounded-lg border border-border px-3 py-1.5 text-xs font-normal"
+              >
+                Reprendre cette charge
+              </button>
+            )}
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
           {loadLevel === ''
             ? 'Charge : non déclarée — saisie manuelle, aucun calcul automatique.'
-            : `Charge : ${LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.`}
+            : `Charge : ${LOAD_LABELS[loadLevel]} — la valeur enregistrée est la vôtre.`}
         </p>
       </div>
 
