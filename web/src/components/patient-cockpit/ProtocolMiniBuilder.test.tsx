@@ -465,3 +465,154 @@ describe('ProtocolMiniBuilder — citer la raison d’être', () => {
   });
 });
 
+// ── LA CHARGE : RELUE, ET SUGGÉRÉE ([[D-196]]) ─────────────────────────────
+//
+// Elle était écrite, obligatoire, hachée — et relue par AUCUN écran en usage
+// normal : le seul qui l'affichait recevait `null` et sortait par un retour
+// anticipé. Le praticien déclarait une charge qu'il ne revoyait jamais.
+describe('ProtocolMiniBuilder — la charge de la version active, et le barème', () => {
+  const LIGNE = {
+    id: 'CHARGE-BANC',
+    terme: 'nombreActionsFermes' as const,
+    min: 1,
+    max: null,
+    niveau: 'loaded' as const,
+    motif: 'Motif de banc — aucune valeur clinique.',
+    statut: 'publiee' as const,
+  };
+
+  it('rend lisible la charge portée par la version active', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        chargeVersionActive={{ level: 'moderate', source: 'practitioner', justification: 'Deux axes engagés.' }}
+      />,
+    );
+    const ui = within(container);
+    // Scopé à la ligne : « Modéré » est aussi une option du sélecteur, et une
+    // assertion globale confondrait la relecture avec le choix offert.
+    const ligne = ui.getByText(/Version active :/).closest('p') as HTMLElement;
+    expect(within(ligne).getByText('Modéré')).toBeTruthy();
+    expect(ligne.textContent).toMatch(/Deux axes engagés\./);
+  });
+
+  it('n’affirme rien sur la version active quand il n’y en a pas', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
+    expect(within(container).queryByText(/Version active :/)).toBeNull();
+  });
+
+  // BARÈME NON SIGNÉ ⇒ LISTE VIDE ⇒ AUCUNE SUGGESTION. Le serveur est le seul
+  // à tenir le verrou ; cet écran ne revérifie rien, il ne reçoit rien.
+  it('n’affiche AUCUNE suggestion tant que le serveur ne vouche aucune ligne', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} baremeCharge={[]} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByText('Ajouter une action'));
+    fillFirstAction(container);
+    expect(ui.queryByText(/Le barème suggère/)).toBeNull();
+  });
+
+  it('suggère un niveau et son motif dès qu’une ligne vouchée s’applique', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} baremeCharge={[LIGNE]} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByText('Ajouter une action'));
+    fillFirstAction(container);
+    expect(ui.getByText(/Le barème suggère/)).toBeTruthy();
+    expect(ui.getByText(/Motif de banc/)).toBeTruthy();
+  });
+
+  // LE BARÈME PROPOSE, LE PRATICIEN DISPOSE. Le bouton RECOPIE le niveau dans le
+  // champ : `TherapeuticLoad.source` vaut la constante 'practitioner', et la
+  // valeur enregistrée reste celle du champ.
+  it('recopie le niveau suggéré dans le champ, et rien de plus', () => {
+    const recues: RelectureProtocoleSoumission[] = [];
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} baremeCharge={[LIGNE]} onReviewed={s => recues.push(s)} />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByText('Ajouter une action'));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Reprendre cette charge' }));
+    expect((ui.getByLabelText('Charge déclarée par le praticien') as HTMLSelectElement).value).toBe('loaded');
+    // Rien n'est parti : la reprise est une saisie, pas un enregistrement.
+    expect(recues).toHaveLength(0);
+
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    expect(recues).toHaveLength(1);
+    expect(recues[0].therapeuticLoad).toEqual({ level: 'loaded', source: 'practitioner', justification: null });
+  });
+
+  // UNE SUGGESTION QU'ON N'A PAS REPRISE NE S'IMPOSE PAS. Le praticien garde sa
+  // valeur, et c'est elle qui s'enregistre.
+  it('n’écrase JAMAIS une charge que le praticien a déclarée autrement', () => {
+    const recues: RelectureProtocoleSoumission[] = [];
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} baremeCharge={[LIGNE]} onReviewed={s => recues.push(s)} />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByText('Ajouter une action'));
+    fillFirstAction(container);
+    fireEvent.change(ui.getByLabelText('Charge déclarée par le praticien'), { target: { value: 'light' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    expect(recues[0].therapeuticLoad.level).toBe('light');
+    expect(recues[0].therapeuticLoad.source).toBe('practitioner');
+  });
+});
+
+// UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT ([[D-196]]) — les trois autres
+// en note discrète. Le contrat exige déjà une justification écrite quand le
+// praticien DÉCLARE ce niveau ; la suggestion le signale du même registre, sans
+// rien bloquer.
+describe('ProtocolMiniBuilder — le ton du niveau haut', () => {
+  const LIGNE_EXCESSIVE = {
+    id: 'CHARGE-HAUTE', terme: 'nombreActionsFermes' as const, min: 1, max: null,
+    niveau: 'excessive' as const, motif: 'Motif de banc — aucune valeur clinique.',
+    statut: 'publiee' as const,
+  };
+
+  function composerUneAction(container: HTMLElement) {
+    const ui = within(container);
+    fireEvent.click(ui.getByText('Ajouter une action'));
+    fillFirstAction(container);
+  }
+
+  it('signale une suggestion « excessif » en avertissement', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} baremeCharge={[LIGNE_EXCESSIVE]} />,
+    );
+    composerUneAction(container);
+    const alerte = within(container).getByRole('alert');
+    expect(alerte.textContent).toMatch(/Le barème suggère/);
+    expect(alerte.textContent).toMatch(/Excessif/);
+  });
+
+  it('laisse les autres niveaux en note discrète', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        baremeCharge={[{ ...LIGNE_EXCESSIVE, niveau: 'light' }]}
+      />,
+    );
+    composerUneAction(container);
+    const ui = within(container);
+    expect(ui.getByText(/Le barème suggère/)).toBeTruthy();
+    expect(ui.queryByRole('alert')).toBeNull();
+  });
+
+  // OUVRIR LE CHAMP DE JUSTIFICATION D'AVANCE pousserait vers un choix que le
+  // praticien n'a pas fait : il ne s'ouvre que s'il déclare lui-même ce niveau.
+  it('n’ouvre PAS le champ de justification sur une simple suggestion', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} baremeCharge={[LIGNE_EXCESSIVE]} />,
+    );
+    composerUneAction(container);
+    const ui = within(container);
+    expect(ui.queryByLabelText('Justification de la charge excessive')).toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Reprendre cette charge' }));
+    expect(ui.getByLabelText('Justification de la charge excessive')).toBeTruthy();
+  });
+});
+

@@ -59,6 +59,7 @@ import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 import type { ProvenancePurpose, SourceCitablePurpose } from '@/lib/protocol/provenancePurpose';
+import type { LigneBaremeCharge } from '@/lib/clinical/baremeChargePur';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
 // d'une révision après arbitrage biologique — jamais recalculée côté client.
@@ -81,6 +82,11 @@ type VersionsApiResponse = {
    * le `rationale` du moteur n'y entrent — ils s'affichent, ils ne se citent pas.
    */
   sourcesCitables?: SourceCitablePurpose[];
+  /**
+   * Les lignes du barème de charge que le serveur a vouchées ([[D-196]]). Liste
+   * vide = barème non signé : l'écran n'affiche aucune suggestion.
+   */
+  baremeCharge?: LigneBaremeCharge[];
   error?: string;
 };
 
@@ -398,6 +404,8 @@ export function ClinicalRuntimeSection({
   const [servieAuPatient, setServieAuPatient] = useState<boolean | null>(null);
   /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
   const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
+  /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
+  const [baremeCharge, setBaremeCharge] = useState<LigneBaremeCharge[]>([]);
   const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
@@ -510,6 +518,7 @@ export function ClinicalRuntimeSection({
       // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
       // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
       setSourcesCitables(payload.sourcesCitables ?? []);
+      setBaremeCharge(payload.baremeCharge ?? []);
       // La lecture a ABOUTI : les états vides des sous-vues Historique et
       // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
       // `[]` en vol ou après échec est un état INCONNU, pas un vide).
@@ -1882,6 +1891,8 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
           sourcesCitables={fixture ? [] : sourcesCitables}
           provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
+          baremeCharge={fixture ? [] : baremeCharge}
+          chargeVersionActive={fixture ? null : (contenuActif?.therapeuticLoad ?? null)}
         />
       </div>
       {affiche('actions') && (fixture || sousVueActions === 'protocole') && (

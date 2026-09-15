@@ -4,6 +4,128 @@
 
 ## Décisions actives
 
+### D-196 — Le barème de charge PROPOSE, le praticien DÉCLARE — et la charge redevient lisible
+
+- Date : 2026-09-15
+- Statut : accepté — trois arbitrages du responsable rendus en séance le
+  2026-09-15, après vérification en code de ce que la charge fait aujourd'hui
+  (LOT-06 de la campagne « 5. Actions — le protocole assisté »).
+- Domaine : clinique — charge thérapeutique du protocole 21 jours.
+- S'appuie sur [[D-063]] (verrou de signature à plusieurs termes), `DC-19`,
+  `DC-20`, `DC-30`.
+
+**CE QUE LA CHARGE FAIT AUJOURD'HUI, ET LE TROISIÈME FAIT CHANGE LA QUESTION.**
+Elle est **obligatoire et hachée** — le LOT-02 a fermé le silence, elle entre dans
+l'empreinte de la version, et `normalizeLoad` exige déjà une justification écrite
+quand le niveau vaut `excessive` : c'est le **seul** comportement qu'un niveau
+déclenche. Elle **ne part jamais au patient** — le contrat de vue patient l'exclut
+nommément, avec les plans idéal et de secours. Et **personne ne la relit** : le seul
+écran qui affiche « Charge déclarée » est `ProtocolConsultationPanel`, qui reçoit
+`protocolDraft={fixture ? protocolDraft : null}` — donc `null` en usage normal — et
+sort par un retour anticipé. **Le praticien déclarait une charge qu'il ne revoyait
+jamais.**
+
+**Décision :**
+
+1. **Ce que la charge compte est arbitré ; où passent les bornes ne l'est pas.**
+   Quatre termes, tous **DÉRIVÉS** du protocole donc recalculés à chaque lecture :
+   `nombreActions` (suspensions comprises), `nombreActionsFermes` (une action en
+   attente de bilan n'est pas engagée), `typesDistincts`, et
+   `actionsAvecEcartDePlan` — la seule des quatre qui parle de **l'effort** et non du
+   volume, puisque c'est l'écart que le patient vit les jours difficiles.
+   **Ne sont PAS mesurables, et il faut le dire** : la durée et la fréquence. Elles
+   vivent en texte libre dans les trois plans, et rien au dépôt ne les extrait — les
+   « compter » supposerait de lire de la prose, c'est-à-dire d'inventer.
+2. **LE BARÈME PROPOSE, LE PRATICIEN DÉCLARE.** `TherapeuticLoad.source` vaut la
+   constante `'practitioner'`, posée en dur : le barème ne peut pas devenir l'auteur
+   de la charge sans changer le contrat. L'écran affiche le niveau suggéré et son
+   motif ; le bouton **recopie** la valeur dans le champ ; c'est la valeur du champ
+   qui s'enregistre. **Aucun refus** n'est opposé à une déclaration qui s'écarte de
+   la suggestion — un barème à une seule ligne opposerait un refus sur une base très
+   étroite.
+3. **LA CHARGE DE LA VERSION ACTIVE REDEVIENT LISIBLE**, dans le même lot, à côté du
+   champ de saisie — même geste que la décision remontée au LOT-02. Sans cela, le
+   barème alimenterait un champ que personne ne revoit : c'est exactement le défaut
+   du booklet, dont la garde était confirmable « depuis toujours » sans qu'aucun
+   écran ne l'envoie.
+4. **LE VERROU DE SIGNATURE RESTE AU SERVEUR, ET C'EST UN POINT UNIQUE.** La
+   suggestion s'affiche **pendant** la composition, donc dans le navigateur — qui ne
+   peut pas importer la table signée, celle-ci tirant `crypto` (patron
+   `corpusSyntheseV1.ts`). La partie **pure** est donc séparée, et le serveur ne sert
+   que des lignes **déjà vouchées**, ou une liste vide. L'écran ne peut pas se signer
+   un barème à lui-même, et la vérification n'est **pas dupliquée** — deux
+   vérifications finiraient par diverger.
+5. **Quatre termes au verrou**, patron [[D-063]] : booléen de validation externe,
+   date **ISO canonique**, table **non vide**, et SHA de périmètre concordant. Signer
+   zéro ligne n'atteste aucune relecture ; une ligne ajoutée après la signature
+   rouvre le verrou.
+6. **Deux lignes publiées qui prescrivent deux niveaux ⇒ aucune suggestion.** C'est
+   une discordance du barème, et le dépôt refuse de moyenner une discordance
+   (`DC-30`). L'écran n'affiche alors rien, et le praticien déclare comme avant.
+7. **LA FORME RETENUE EST UNE ÉCHELLE SUR UN SEUL TERME, sans trou ni
+   recouvrement** — et « sans recouvrement » devient une **garde**, pas une
+   consigne : deux lignes publiées qui mordent la même plage du même terme ne sont
+   pas un cas clinique, c'est une **table mal écrite**. La servir produirait une
+   discordance SILENCIEUSE sur toute la plage commune, et le praticien lirait
+   « rien » sans savoir que son barème se contredit. `lignesBaremeServables` refuse
+   alors la table entière et le journalise. Les bornes sont inclusives des deux
+   côtés : `[3, null]` et `[null, 3]` se recouvrent en 3.
+8. **Hors barème, le SILENCE.** Un protocole qui ne tombe sous aucune ligne
+   n'appelle aucune mention : un barème qui ne couvre pas ce cas n'a rien à en dire.
+9. **UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT**, les trois autres en note
+   discrète. Le contrat exige déjà une justification écrite quand le praticien
+   DÉCLARE ce niveau ; la suggestion le signale du même registre — sans rien
+   bloquer, et **sans ouvrir d'avance le champ de justification**, ce qui
+   pousserait vers un choix qu'il n'a pas fait.
+
+**LA PREMIÈRE ÉCHELLE, RATIFIÉE LE 2026-09-15 — et ce qu'elle atteste exactement.**
+Trois bandes sur `nombreActionsFermes` : `0–1` léger, `2` modéré, `3` chargé.
+Contiguë, sans trou ni recouvrement.
+
+**Ces bornes n'ont AUCUNE SOURCE CLINIQUE, et la table le dit d'elle-même** (un banc
+textuel l'exige). Rien au dépôt ne traite de la charge thérapeutique, aucun claim ne
+les porte, aucune littérature n'a été invoquée. Ce sont une **convention
+d'organisation** : proposée à l'écran par l'outil parmi trois échelles, relue en
+entier, puis **ratifiée par le praticien**. C'est cette ratification qui fait leur
+provenance, et rien d'autre. D'où l'absence de champ `claimsSource` — à la différence
+d'`INDICATIONS_BIOLOGIE_V1`, dont la signature couvre vingt-neuf claims : ici il
+n'aurait rien à porter, et un champ vide se lirait comme un oubli.
+
+**CE QUI LES CONTRAINT EST STRUCTUREL, PAS CLINIQUE.**
+`MAX_ACTIONS_PROTOCOLE_21J` vaut 3 : les quatre termes sont bornés à 0–3, et une
+échelle sur un terme n'a que quatre valeurs possibles.
+
+**`excessive` N'EST ATTEIGNABLE PAR AUCUNE LIGNE, et c'est l'arbitrage.** Aucun terme
+ne dépasse 3 — mais surtout, « excessif » est un jugement sur CE patient : un comptage
+ne peut pas savoir qu'un protocole de deux actions est excessif pour quelqu'un qui
+traverse un déménagement. Le contrat exige déjà une justification écrite quand le
+praticien le déclare lui-même, et c'est là que ce niveau se pose.
+
+**L'ÉCHELLE EST ÉCRITE, ELLE N'EST PAS EN SERVICE — et c'est [[D-195]] qui l'impose,
+rendue le même jour.** Sa surface de relecture a bien été produite AVANT la demande
+(terme, bornes, niveaux, motifs, présentés à l'écran), et le praticien a choisi cette
+échelle parmi trois. Mais `D-195` §1 tranche que **la déclaration de conformité
+précède la frappe et qu'elle est le geste attestant** : la recopie de la chaîne hex
+est mécanique et ne vaut que portée par elle. Et son obstacle central est exactement
+celui-ci — **l'outil qui a écrit le contenu à relire ne peut pas l'attester seul**,
+sans quoi le verrou « n'enregistre plus, il ratifie ».
+
+Tant que cette déclaration n'est pas donnée, `validationExterne` reste `false`,
+`lignesBaremeServables` ne sert RIEN, et l'écran n'affiche aucune suggestion. Le
+mécanisme est complet, l'échelle est écrite, le verrou est fermé — et c'est le
+comportement voulu de [[D-063]].
+
+**DÉFAUT DE BANC TROUVÉ PAR MUTATION, ET CORRIGÉ.** Le banc du verrou appelait
+`lignesBaremeServables()` sur la table **réelle**, donc vide : neutraliser la garde
+ne le faisait pas rougir — il prouvait le vide, pas le verrou. La fonction est
+désormais paramétrée, et le banc l'exerce sur une table non vide.
+
+- Conséquences : fragment `changelog.d/2026-09-15-bareme-de-charge.md` ;
+  `lib/clinical/baremeChargePur.ts` (pur, lisible des deux côtés) et
+  `lib/clinical/baremeChargeV1.ts` (table + verrou, serveur) ; la ligne du barème
+  entre à `docs/FEATURE_FLAGS.md`, que le banc `verrousSignatureDocumentes` exige ;
+  aucune migration, aucun drapeau, aucune identité patient.
+
 ### D-195 — Une signature clinique atteste une relecture : la déclaration précède la frappe, et l'outil qui a écrit le changement ne peut pas l'attester
 
 - Date : 2026-09-15

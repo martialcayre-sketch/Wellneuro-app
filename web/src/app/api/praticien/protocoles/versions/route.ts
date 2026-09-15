@@ -43,6 +43,7 @@ import { lireSelectionPriorite } from '@/lib/clinical-engine/selectionPrioritePr
 import { resoudreRegleSignee } from '@/lib/praticien/sourceSigneeVerifiee';
 import { lireTeteObjectifCitable } from '@/lib/praticien/teteObjectifCitable';
 import { constaterProvenancePurpose, sourcesCitablesPurpose } from '@/lib/protocol/provenancePurpose';
+import { lignesBaremeServables } from '@/lib/clinical/baremeChargeV1';
 
 // Versionnement du protocole 21 jours (C2A LOT-03). Chaque enregistrement
 // explicite d'un CHANGEMENT CLINIQUE crée une ligne append-only chaînée
@@ -703,6 +704,12 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       ok: true,
       protocolDraftId: rows.length > 0 ? deriveProtocolDraftId(decisionCardId) : null,
       sourcesCitables,
+      // LE BARÈME DE CHARGE, ET LE VERROU RESTE ICI ([[D-196]]). La suggestion
+      // s'affiche PENDANT que le praticien compose, donc dans le navigateur — qui
+      // ne peut pas importer la table signée (elle tire `crypto`). Le serveur ne
+      // sert que des lignes DÉJÀ vouchées, ou une liste vide : l'écran ne peut pas
+      // se signer un barème à lui-même, et la vérification n'est pas dupliquée.
+      baremeCharge: lignesBaremeServables(),
       active: active
         ? {
             versionId: active.id,

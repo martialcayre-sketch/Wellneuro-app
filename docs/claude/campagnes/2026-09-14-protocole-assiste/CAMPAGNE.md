@@ -4,7 +4,7 @@ titre: "5. Actions — le protocole assisté"
 statut: "en_cours"
 créée_le: "2026-09-14"
 mise_à_jour: "2026-09-14"
-lot_courant: "LOT-07"
+lot_courant: "LOT-06"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -184,13 +184,18 @@ au rail, et `adviceSheetRef` — mort de bout en bout, dette consignée au LOT-0
 | LOT-03 | livré en deux PR — `D-191`, `D-192` |
 | LOT-04 | livré en deux PR — la garde de registre, puis `D-193` |
 | LOT-05 | livré — `D-190` |
-| **LOT-06** | **mécanisme prêt, dix bancs verts — ATTEND la première ligne signée du praticien** |
+| **LOT-06** | **livré — `D-196` ; l'échelle est écrite, sa signature attend la déclaration de conformité (`D-195` §1)** |
 | LOT-07 | bilan écrit — **sa mesure au conteneur reste due** |
 
-**Six décisions** rendues : `D-188` à `D-193`. **Zéro migration, zéro drapeau neuf,
-zéro identité patient.**
+**Sept décisions** rendues : `D-188` à `D-193`, puis `D-196`. **Zéro migration, zéro
+drapeau neuf, zéro identité patient.**
 
-La campagne reste **`en_cours`** : elle se clôt sur la première ligne de barème, et
-son bilan d'usage reste dû — c'est ce que `D-112` avait prévenu, et ce que ce dossier
-a écrit à son ouverture.
+**Les huit lots sont livrés.** Deux choses restent, et aucune n'est un lot : la
+**déclaration de conformité** du praticien, qui met le barème en service — l'outil
+ayant proposé l'échelle ne peut pas l'attester seul ([[D-195]] §1) —, et la **mesure
+d'usage**, sur dossiers réels, par identifiant, au conteneur (`D-125`). Elle a été
+refusée par le classifieur de sécurité de la session du 2026-09-15 et n'a pas été
+contournée. C'est ce que `D-112` avait prévenu — « le goulot n'est pas l'ingénierie,
+c'est le temps praticien » — et ce que ce dossier a écrit à son ouverture : la
+campagne se clôt sur ses livrables verts, l'usage se mesure à part.
 

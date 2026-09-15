@@ -2,6 +2,36 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-06 : le barème de charge et sa première échelle ratifiée (D-196)
+
+**Décisions** : six arbitrages rendus après vérification en code de ce que la charge
+fait aujourd'hui — obligatoire et hachée, jamais servie au patient, et **relue par
+AUCUN écran** en usage normal (le seul qui l'affichait recevait `null` et sortait
+aussitôt). Retenus : quatre termes dérivés ; le barème propose et le praticien
+déclare ; la charge de la version active redevient lisible ; une échelle sur un seul
+terme sans trou ni recouvrement — devenu une garde ; silence hors barème ; et un
+niveau « excessif » en registre d'avertissement, sans ouvrir d'avance le champ de
+justification.
+
+**Échelle ratifiée** : trois bandes sur `nombreActionsFermes` — 0-1 léger, 2 modéré,
+3 chargé. **Aucune source clinique ne porte ces bornes, et la table le dit d'elle-même
+(banc textuel)** : c'est une convention d'organisation, proposée parmi trois échelles,
+relue en entier, puis ratifiée. La signature est RECOPIÉE, jamais posée par l'outil.
+`excessive` n'est atteignable par aucune ligne — un comptage ne peut pas savoir qu'un
+protocole de deux actions est excessif pour ce patient-là.
+
+**Trouvé en chemin** : la table signée ne peut pas être lue par l'écran (elle importe
+`crypto`) — partie pure séparée, verrou gardé au serveur en un point unique ; une
+garde du dépôt exige que toute table signée figure à `FEATURE_FLAGS.md` ; un de mes
+bancs ne prouvait rien (verrou exercé sur la table réelle, alors vide), constaté PAR
+MUTATION ; et `suggererCharge` serveur n'avait aucun appelant — retiré.
+
+**Vérifications** : T1 vert ; T2 9 326 bancs unitaires et 198 E2E verts, aucun rouge.
+
+**Prochaine action** : la mesure d'usage, refusée par le classifieur de sécurité de la
+session et non contournée — elle attend une sortie du mode auto ou une règle de
+permission.
+
 ## 2026-09-15 — LOT-07 : bilan de la campagne « 5. Actions », et ce qui reste
 
 **Décisions** : aucune décision neuve — le lot écrit le bilan, met la file à jour et

@@ -326,6 +326,7 @@ CI ; une table signée neuve absente du tableau aussi.
 | `clinical/safetyEffetIndesirableV1.ts` | `false` | `null` |
 | `clinical/gatePopulationV1.ts` | `false` | `null` |
 | `clinical/conflitsSourcesV1.ts` | `true` | `2026-08-24T00:00:00.000Z` |
+| `clinical/baremeChargeV1.ts` | `false` | `null` |
 
 <!-- <<< ETAT_VERROUS_SIGNATURE -->
 
