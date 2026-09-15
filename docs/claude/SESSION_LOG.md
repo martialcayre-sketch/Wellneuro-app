@@ -6310,7 +6310,7 @@ qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change 
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
 
-## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-201]])
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-202]])
 
 **Attestation clinique du responsable**, demandée et donnée en toutes lettres.
 Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et
@@ -6351,6 +6351,43 @@ pas après coup ce qui a été relu, même pour le borner.
 
 Le mécanisme est donc éprouvé sur un cas réel, pas sur une mutation — il a refusé
 la signature de celui qui l'avait écrit.
+## 2026-09-16 00:35 — La passe Codex qu'on devait à #1098, onze jours après ([[D-201]])
+
+**Dette de revue tenue, et elle a rendu.** #1098 est P0 — clinique, production
+LLM — et a été mergée le 2026-09-14 sans la passe que `POLITIQUE_REVUE.md`
+impose. Deux findings, les deux confirmés par exécution.
+
+**Le garde ne gardait pas la clause, il gardait son vocabulaire.** Trois
+mutations vertes sur 55 cas, ré-ancrage des empreintes de prompt compris : une
+exception insérée dans l'opérateur, la même posée en phrase suivante, et
+l'opérateur SEUL déplacé sous une section topique — celle-là sans qu'un seul
+caractère de son texte ne bouge, parce que le test de position ne localisait que
+le CONSTAT.
+
+**La réponse est structurelle, pas lexicale, et c'est le point.** Blacklister
+« sauf si » aurait refait le défaut payé quatre fois en deux jours : une garde qui
+NOMME ce qu'elle interdit sans pouvoir le VOIR. Le banc extrait la PUCE markdown,
+exige ses cinq composants dedans, et l'épingle par empreinte. Une empreinte de
+prompt bouge à chaque édition et se ré-ancre par routine — c'est exactement par
+là que passe une clause affaiblie de bonne foi ; celle de la puce ne bouge que si
+cet interdit-là est touché.
+
+**La consigne servie au modèle n'a pas bougé d'un caractère.** Correction du
+garde seul, donc pas de bump de version. C'est la bonne forme : le défaut était
+dans la preuve, pas dans l'interdit.
+
+**Ce qui reste ouvert est plus grave que ce qui est corrigé.** La clause est
+l'UNIQUE contrôle du contenu produit — `analyserSortieSynthese` ne lit que la
+structure. « Habituellement évalué sur deux semaines » passe le schéma, passe la
+relance, et se persiste. `DC-19` et `DC-16` sont garantis sur la consigne, pas
+sur la sortie. Mesurer demande une lecture de production ; filtrer sans mesurer
+échangerait un défaut connu contre un défaut inconnu. **Arbitrage non rendu.**
+
+**Deux pièges d'environnement, tous deux déjà connus et repayés.** Un worktree
+neuf a `src/generated/prisma/` VIDE : T1 rend 351 erreurs sur une centaine de
+fichiers qu'on n'a pas touchés, `npm run prisma:generate` d'abord. Et
+`npm run check | tail` rend le code de `tail` — T1 s'annonçait vert en étant
+rouge.
 ## 2026-09-16 — La contre-revue adverse avant la clôture (LOT-08, D-200)
 
 Vingt-six affirmations de la campagne « 5. Actions » soumises à réfutation avant d'être
@@ -6376,7 +6413,7 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
 
-## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-201]])
+## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-202]])
 
 **Le banc administrait la preuve du trou qu'il couvrait.** `DecisionSummaryCard`
 décidait sur `ATTESTATION_CLASSEMENT.relu` seul ; son banc injectait
@@ -6393,7 +6430,7 @@ l'écran, et prend l'attestation en PARAMÈTRE — la lire depuis la portée du 
 ferait qu'un banc qui la double prouverait le contraire de ce qu'il croit prouver.
 
 **La réfutation que j'avais demandée est arrivée, et elle était juste.** J'avais
-écrit dans `D-201` un inventaire des consommateurs d'empreinte concluant
+écrit dans `D-202` un inventaire des consommateurs d'empreinte concluant
 « aucune surface n'est silencieuse », et j'avais explicitement demandé qu'on le
 casse. `GET /api/praticien/ja/cycle` rendait `protocoleDiffuse: false` sur
 `carte_derivee` : le carnet praticien efface l'épisode sans un mot.

@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-201 — Une attestation posée, puis retirée le même jour par son propre mécanisme
+### D-202 — Une attestation posée, puis retirée le même jour par son propre mécanisme
 
 - Date : 2026-09-15
 - Statut : accepté — l'attestation a été **posée puis RETIRÉE le même jour**, et
@@ -12,9 +12,11 @@
 - Domaine : clinique — signature du périmètre de classement.
 - Empreinte : `da1ba306c0551d7b` → **`9792c12e72db93d8`**. C'est ce déplacement
   qui a périmé la signature.
-- **Numéro** : écrite `D-198`, renumérotée `D-199`, `D-200`, puis `D-201` — **doublée
-  TROIS fois pendant que son CI tournait**. Onzième, douzième et treizième
-  collisions du dépôt. La première voisine porte, le même jour, le même geste : une relecture qui corrige
+- **Numéro** : écrite `D-198`, elle vaut `D-202` — **doublée QUATRE fois**, à
+  chaque fois pendant que son CI tournait. Onzième à quatorzième collisions du
+  dépôt, en deux jours. La quatorzième est la seule dont je suis l'auteur : c'est
+  `D-201`, la PR voisine de cette même session, fusionnée pendant l'attente. La
+  première voisine porte, le même jour, le même geste : une relecture qui corrige
   avant de signer. La friction est voulue ; un numéro ne se réserve pas, il
   s'acquiert à la fusion — et la campagne voisine fusionne plus vite qu'un CI ne
   rend.
@@ -217,6 +219,78 @@ nouveaux cas — sha périmé et date nulle — et laisse vert le cas d'anti-vac
   le seul champ `relu`** : sans lui, elle serait livrée sans aucune preuve et ne
   s'exercerait pour la première fois qu'en production, le jour de la
   re-signature. Aucune migration, aucun drapeau.
+### D-201 — Une consigne clinique se garde par sa PUCE, pas par son vocabulaire : trois mutations vertes sur `synthese-v30`
+
+- Date : 2026-09-16
+- Statut : accepté — correction du GARDE seul. **La clause servie au modèle n'a
+  pas bougé d'un caractère**, donc aucun bump de `VERSION_PROMPT_SYNTHESE`.
+- Domaine : clinique — consigne système de synthèse, `DC-19`.
+- Origine : **passe Codex RÉTROACTIVE sur la PR #1098**, mergée le 2026-09-14
+  sans la passe P0 que `POLITIQUE_REVUE.md` impose. La dette de revue a été
+  tenue onze jours ; elle a rendu deux findings, tous deux confirmés par
+  exécution.
+- Amende : [[D-183]], qui a posé la clause. Ne touche pas à son contenu.
+
+**CE QUI ÉTAIT FAUX DANS LE GARDE.** `promptFenetreRappel.guard.test.ts`
+vérifiait des FRAGMENTS INDÉPENDANTS — « la formule est là », « l'opérateur est
+là », « l'exception est là » — chacun cherché dans TOUTE la consigne. Aucune
+assertion ne lisait une clause COHÉRENTE. Trois mutations, jouées ici, **avec
+ré-ancrage des deux empreintes de prompt** — sans quoi on ne teste que l'ancre :
+
+| Mutation | Avant | Après |
+| --- | --- | --- |
+| A — « sauf si elle est habituellement admise pour cette échelle » inséré dans l'opérateur | **55/55 verts** | rouge |
+| A-bis — la même exception posée en phrase SUIVANTE, opérateur intact | **verte** | rouge (1 seul cas) |
+| B — l'opérateur SEUL déplacé sous la première section topique | **55/55 verts** | rouge |
+
+La mutation A écrit dans la consigne l'exact comportement que la clause existe
+pour interdire, et rien ne rougissait. La B déplaçait l'interdit sous une section
+que la clause de primauté de « Recommandation d'exploration déterministe » rend
+discutable, **sans qu'un seul caractère de son texte ne change** : le test de
+position ne localisait que le CONSTAT, jamais l'impératif.
+
+**LA RÉPONSE EST STRUCTURELLE, PAS LEXICALE, ET C'EST LE FOND.** Blacklister
+« sauf si » aurait reproduit le défaut que ce dépôt a payé quatre fois en deux
+jours — **une garde qui NOMME ce qu'elle interdit sans pouvoir le VOIR** : la
+liste blanche de colonnes qui citait « un instant » parmi les interdits et
+laissait passer un `TIMESTAMP` ([[D-194]]), la provenance déduite d'une égalité
+de libellé que le contrat voisin interdisait en toutes lettres. Le garde extrait
+donc la PUCE markdown qui porte la clause, et vérifie que ses cinq composants —
+constat, interdit, non-déduction, exception, borne — y vivent TOUS, et que la
+puce entière reste au-dessus des sections topiques.
+
+**UNE EMPREINTE DE PLUS, ET IL FAUT DIRE POURQUOI** — deux gardes hachent déjà le
+prompt entier. Parce qu'elles ne coûtent pas la même chose. L'empreinte du prompt
+bouge à CHAQUE édition de n'importe quelle ligne : la ré-ancrer est un geste de
+routine, **et c'est exactement par là qu'une clause affaiblie de bonne foi
+passe** — les trois mutations ci-dessus sont vertes après un ré-ancrage
+ordinaire. L'empreinte de la puce ne bouge QUE si cette clause-ci est touchée :
+la reporter n'est alors plus une formalité, c'est un acte posé sur un interdit
+`DC-19`. Elle seule tue A-bis.
+
+**CE QUI RESTE OUVERT, ET QUI EST PLUS GRAVE — finding P0 non corrigé.** La
+clause est **l'unique contrôle du contenu produit**. `analyserSortieSynthese` ne
+lit que la STRUCTURE, et le dit en toutes lettres avec sa raison : « une violation
+qui citerait la valeur fautive exfiltrerait du contenu clinique vers les logs ».
+Une sortie écrivant « habituellement évalué sur deux semaines » est donc
+parfaitement conforme au schéma, passe la relance unique, et se persiste sous
+`synthese-v30`. `DC-19`/`DC-20` et `DC-16` ne sont **pas garantis sur la sortie
+réelle** — ils le sont sur la consigne, et sur elle seule.
+
+Ce banc, comme ses deux jumeaux, épingle la CONSIGNE. **Il ne prouve pas que le
+modèle obéit** ; il prouve qu'on ne peut plus lui retirer l'interdit en silence.
+Mesurer l'obéissance demande une lecture de production des synthèses
+`synthese-v30`, comme [[D-183]] l'a fait sur 32 synthèses `synthese-v29`.
+**Arbitrage non rendu** : filtrer la sortie avant persistance protégerait
+`DC-19`, mais un détecteur d'assertion temporelle censurerait les trois cas que
+la borne de la clause protège — l'agenda transmis, le déclaratif patient, la
+question d'entretien. Poser ce filtre sans l'avoir mesuré échangerait un défaut
+connu contre un défaut inconnu.
+
+- Conséquences : `promptFenetreRappel.guard.test.ts` refait — extraction de puce,
+  opérateur épinglé EN ENTIER, cinq composants exigés dans la puce, empreinte de
+  puce. Aucun autre fichier touché ; la consigne et sa version sont intactes.
+
 
 ### D-200 — La contre-revue adverse a réfuté six affirmations sur vingt-six, et quatre d'entre elles cachaient un défaut vivant
 
