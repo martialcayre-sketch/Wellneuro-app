@@ -17,7 +17,7 @@
 -- `affichage` compte les montages de la carte, `ouverture` les dépliements.
 -- Le taux est leur quotient, et il ne se calcule pas autrement.
 --
--- ── CE QUE CETTE TABLE NE PEUT PAS DEVENIR, ET C'EST SA FORME QUI LE TIENT ─
+-- ── CE QUE SA FORME TIENT, ET CE QU'ELLE NE TIENT PAS ─────────────────────
 --
 -- Le dépôt a déjà tranché ce cas exact sur `portail_lectures_patient`, qui se
 -- prive de toute colonne de date pour que « quand le patient a-t-il ouvert son
@@ -38,6 +38,14 @@
 --      journée ; l'heure ne sert qu'à recouper avec autre chose.
 --   4. AUCUNE LIGNE PAR ÉVÉNEMENT. Un agrégat, pas un journal : il n'existe pas
 --      de rang à ré-identifier.
+--
+-- CE QUE CETTE FORME NE TIENT PAS, dit plutôt que laissé croire. Elle n'anonymise
+-- rien : un jour où un seul praticien est actif, ses ouvertures lui sont
+-- attribuables par croisement avec `journal_acces_dossiers`, qui conserve
+-- praticien, dossier et horodatage. Aucune colonne supplémentaire n'est
+-- nécessaire. Le risque est borné par le volume d'activité, et maximal
+-- aujourd'hui. Ce qui reste vrai, et c'est ce qui est garanti : cette table
+-- N'AJOUTE AUCUN IDENTIFIANT que le dossier ne détienne déjà.
 --
 -- C'est pourquoi cette table s'INCRÉMENTE au lieu de s'empiler, et c'est le seul
 -- endroit du dépôt où un `UPDATE` vaut mieux qu'un `append`. Ailleurs l'ajout
@@ -62,8 +70,11 @@ ALTER TABLE "compteur_ouverture_sources"
   ADD CONSTRAINT "compteur_ouverture_sources_espece_check"
   CHECK ("espece" IN ('affichage', 'ouverture'));
 
--- UN COMPTE NE DESCEND PAS. Sans cette contrainte, un décrément fautif passerait
--- inaperçu : la table ne garde aucun événement qui permettrait de le reconstituer.
+-- UN COMPTE N'EST JAMAIS NÉGATIF — et la promesse s'arrête là, il faut le dire.
+-- Ce CHECK accepte `2 -> 1` : la MONOTONIE N'EST PAS TENUE par le schéma. Ce qui
+-- la tient est la route, seul écrivain, et son `increment`. La table ne gardant
+-- aucun événement, un décrément fautif ne serait pas reconstituable — d'où le
+-- garde-fou minimal ici, et la mention explicite de ce qu'il ne couvre pas.
 ALTER TABLE "compteur_ouverture_sources"
   ADD CONSTRAINT "compteur_ouverture_sources_compte_positif"
   CHECK ("compte" >= 0);

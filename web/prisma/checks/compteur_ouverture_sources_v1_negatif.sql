@@ -1,4 +1,4 @@
--- Contrat du compteur de « Voir les sources et limites » ([[D-191]]).
+-- Contrat du compteur de « Voir les sources et limites » ([[D-192]]).
 --
 -- CE FICHIER GARDE UNE ABSENCE, ET C'EST INHABITUEL. Les autres contrats de ce
 -- répertoire éprouvent ce qu'une table PROMET. Celui-ci éprouve surtout ce
@@ -7,7 +7,7 @@
 -- produire, et cette affirmation ne tient que par la FORME de la table.
 --
 -- Sans le cas 1 ci-dessous, une migration future ajouterait `id_patient` ou
--- `praticien_email` sans qu'aucun banc ne bronche, et `D-191` deviendrait faux
+-- `praticien_email` sans qu'aucun banc ne bronche, et `D-192` deviendrait faux
 -- en silence — exactement ce qui est arrivé à `D-185`, dont l'affirmation
 -- centrale a vécu une journée sur `main` sans être vraie.
 --
@@ -18,9 +18,14 @@
 --      arbitrage, pas un champ libre. Sans le CHECK, une surface pourrait
 --      inscrire « connexion » ou « duree », et la table deviendrait le journal
 --      de présence que la décision s'interdit ;
---   3. le compte ne DESCEND pas. La table ne garde aucun événement qui
---      permettrait de reconstituer un décrément fautif : il doit être refusé,
---      pas rattrapé ;
+--   3. le compte ne peut pas devenir NÉGATIF. Promesse bornée à cela, et il faut
+--      le dire : `CHECK (compte >= 0)` accepte parfaitement `2 → 1`. La
+--      MONOTONIE N'EST PAS TENUE PAR LE SCHÉMA — un écrivain futur qui poserait
+--      `compte = X` au lieu d'incrémenter baisserait le compteur sans que rien
+--      ne le voie, la table ne gardant aucun événement qui permettrait de le
+--      reconstituer. Ce qui la tient est la route, seul écrivain, et son
+--      `increment`. Une première rédaction de ce fichier promettait « le compte
+--      ne descend pas » : c'était faux, relevé par contre-expertise Codex ;
 --   4. l'incrément concurrent est ATOMIQUE — deux `ON CONFLICT DO UPDATE` sur
 --      la même clé donnent 2, jamais 1. Un compteur qui sous-compte en silence
 --      est pire qu'un compteur absent : il a l'air de fonctionner ;
@@ -45,17 +50,26 @@ DECLARE
   nb integer;
 BEGIN
   -- ── 1. LISTE BLANCHE DE COLONNES — le cas central ────────────────────────
-  SELECT array_agg(column_name::text ORDER BY column_name)
+  -- NOM *ET* TYPE, et le type n'est pas un raffinement : c'est la moitié de la
+  -- garantie. Une première rédaction n'agrégeait que `column_name`, si bien
+  -- qu'un `ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait ce contrat ENTIÈREMENT
+  -- VERT — la granularité quotidienne disparaissait, deux ouvertures du même
+  -- jour à une seconde d'écart devenaient deux lignes horodatées, et la table
+  -- redevenait le journal par événement qu'elle s'interdit. Défaut relevé par
+  -- contre-expertise Codex et rejoué. Le message d'erreur nommait pourtant
+  -- « un instant » parmi les interdits, et le contrôle ne pouvait pas le voir.
+  SELECT array_agg((column_name || ':' || data_type)::text ORDER BY column_name)
     INTO colonnes
     FROM information_schema.columns
    WHERE table_schema = 'public' AND table_name = 'compteur_ouverture_sources';
 
-  IF colonnes IS DISTINCT FROM ARRAY['compte','espece','jour'] THEN
+  IF colonnes IS DISTINCT FROM ARRAY['compte:integer','espece:text','jour:date'] THEN
     RAISE EXCEPTION
       'compteur_ouverture_sources porte % au lieu des trois colonnes déclarées. '
-      'Une colonne identifiante (id_patient, praticien_email, un instant) rendrait '
-      'FAUSSE l''affirmation centrale de D-191 : que cette table est structurellement '
-      'incapable de dire QUI a ouvert QUOI et QUAND. Toute colonne neuve est un arbitrage.',
+      'Une colonne identifiante (id_patient, praticien_email), OU un `jour` promu en '
+      'timestamp, rendrait FAUSSE la garantie centrale de D-192 : que cette table ne '
+      'porte aucun identifiant direct et aucune granularité plus fine que la journée. '
+      'Toute colonne neuve, ET tout changement de type, sont un arbitrage.',
       colonnes;
   END IF;
 
@@ -76,7 +90,9 @@ BEGIN
   INSERT INTO compteur_ouverture_sources (jour, espece, compte) VALUES (DATE '2026-09-15', 'affichage', 1);
   INSERT INTO compteur_ouverture_sources (jour, espece, compte) VALUES (DATE '2026-09-15', 'ouverture', 1);
 
-  -- ── 3. LE COMPTE NE DESCEND PAS ──────────────────────────────────────────
+  -- ── 3. LE COMPTE NE PEUT PAS DEVENIR NÉGATIF ─────────────────────────────
+  -- Et rien de plus : `2 → 1` passe. Voir l'en-tête — la monotonie n'est pas
+  -- tenue par le schéma, et la dire tenue serait une sur-promesse.
   BEGIN
     UPDATE compteur_ouverture_sources SET compte = -1
      WHERE jour = DATE '2026-09-15' AND espece = 'affichage';

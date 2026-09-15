@@ -54,7 +54,7 @@ et ses 26 cas sont verts en local ; elle attend cette migration.
 
 1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
    (`D-127`, `D-178`), et ici il n'est pas décoratif : **sa liste blanche de
-   colonnes est la seule chose qui tienne l'affirmation centrale de `D-191`.**
+   colonnes est la seule chose qui tienne l'affirmation centrale de `D-192`.**
    Sans elle, une migration future ajoute `id_patient`, rien ne bronche, et la
    décision devient fausse en silence — exactement ce qui est arrivé à `D-185`,
    dont l'affirmation centrale a vécu une journée sur `main` sans être vraie.
@@ -83,3 +83,40 @@ questions, dont trois qui m'inquiètent réellement :
   Postgres du conteneur Scalingo ? Deux quotients faux au lieu d'un, et rien ne
   le signalerait ;
 - la **liste blanche mord-elle vraiment** ? C'est tout le rempart.
+
+## Passe Codex — BLOQUER sur `caacf68c`, trois findings, tous fondés
+
+| Finding | Ce qui était faux | État |
+| --- | --- | --- |
+| **P1-1** | « structurellement incapable », « aucune donnée personnelle » | borné |
+| **P1-2** | la liste blanche ne gardait que les NOMS de colonnes | corrigé |
+| **P2-1** | « un compte ne descend pas » — `CHECK (compte >= 0)` accepte `2 → 1` | borné |
+
+**P1-2 est le plus grave, et c'est le mien.** Un
+`ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait le contrat **entièrement vert** :
+la granularité quotidienne disparaissait, deux ouvertures du même jour à une
+seconde d'écart devenaient deux lignes horodatées, et la table redevenait le
+journal par événement qu'elle s'interdit. **Mon propre message d'erreur nommait
+« un instant » parmi les interdits, et le contrôle ne pouvait pas le voir.** Le
+contrat compare désormais le triplet `nom:type`.
+
+Rejoué localement sous PGlite, migration + contrat réels : base verte, et les
+**quatre** mutations rouges — `jour → TIMESTAMP(3)` (celle de Codex),
+`id_patient` ajoutée, `compte → BIGINT`, CHECK d'espèce retiré.
+
+**P1-1 change la doctrine, pas seulement le texte.** L'absence d'identifiants
+n'est pas une anonymisation : un jour où un seul praticien est actif, ses
+ouvertures lui sont attribuables par croisement avec `journal_acces_dossiers`, et
+s'il n'y a qu'un dossier ce jour-là, ce dossier devient identifiable. Aucune
+colonne supplémentaire n'est nécessaire. Le risque est **borné par le volume
+d'activité, et maximal aujourd'hui**. Ce qui reste garanti, et qui est désormais
+ce qui est écrit : la table **n'ajoute aucun identifiant que le dossier ne
+détienne déjà**.
+
+**Deux inquiétudes levées par Codex, par exécution** : la liste blanche refuse
+bien `id_patient` et `"ID_PATIENT"` ; et **le glissement de jour UTC→`DATE`
+n'existe pas** — l'adaptateur Prisma transmet `YYYY-MM-DD` construit sur les
+composantes UTC, vérifié dans quatre fuseaux.
+
+**Non vérifié, et dit** : aller-retour réel dans Scalingo, concurrence réelle,
+et aucune occurrence de ré-identification cherchée en production.

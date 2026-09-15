@@ -88,6 +88,8 @@ type DiffusionApiResponse = {
   ok: boolean;
   approval: { protocolDraftInputHash: string; approvedAt: string } | null;
   stale: boolean;
+  /** Ce que le patient voit RÉELLEMENT — `null` tant que rien n'est affirmé ([[D-191]]). */
+  servieAuPatient?: boolean | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -382,6 +384,9 @@ export function ClinicalRuntimeSection({
   // Validation « pour diffusion » (C2A LOT-03 Part B).
   const [approvedAt, setApprovedAt] = useState<string | null>(null);
   const [approvalStale, setApprovalStale] = useState(false);
+  // `null` = rien n'est affirmé (pas de diffusion, ou lecture non aboutie). Un
+  // `false` par défaut ferait crier l'écran avant d'avoir lu ([[D-191]]).
+  const [servieAuPatient, setServieAuPatient] = useState<boolean | null>(null);
   const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
@@ -475,6 +480,9 @@ export function ClinicalRuntimeSection({
       if (!response.ok || !payload.ok) return;
       setApprovedAt(payload.approval?.approvedAt ?? null);
       setApprovalStale(payload.stale);
+      // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
+      // faire dire à l'écran « non servie ».
+      setServieAuPatient(payload.servieAuPatient ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
     }
@@ -1889,6 +1897,7 @@ export function ClinicalRuntimeSection({
             approved={approvedAt !== null}
             stale={approvalStale}
             approvedAt={approvedAt}
+            servieAuPatient={servieAuPatient}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}

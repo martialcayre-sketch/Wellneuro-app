@@ -125,6 +125,18 @@ file cesse de laisser croire que rien ne se fait en dehors d'elle.
 
 ## Ce qui n'est PAS en file — des gestes, pas des campagnes
 
+- **`adviceSheetRef` est mort de bout en bout** — dette nommée par `D-191`
+  (LOT-03 de `2026-09-14-protocole-assiste`), non refermée par lui. Le champ
+  existe au contrat de vue patient, la route l'écrit `null` depuis toujours, et
+  **aucun champ du constructeur ne le renseigne**. Le bouton qui promettait « ma
+  fiche conseils » dit désormais ce qu'il fait — il mène au centre TRUST —, mais
+  produire une vraie fiche conseil est une **surface neuve**, pas une correction :
+  elle appelle sa propre décision et son propre lot. Porteur : aucun à ce jour.
+- **Aucune limitation patient n'est servie par le protocole** — même décision.
+  Celles de la carte sont écrites POUR LE PRATICIEN (« aucune priorité ne peut
+  être proposée avant… ») : les traduire serait fabriquer du texte patient, les
+  recopier lui servir un raisonnement interne. Le champ reste au contrat, vide et
+  nommé.
 - **Relancer le recueil 21 jours** du carnet alimentaire (pilote PAT006) :
   seul débloqueur des campagnes existantes `2026-08-04-agenda-alimentaire`
   (LOT-06 barème) et `2026-08-10-chaine-alimentaire` (LOT-02/03) — elles

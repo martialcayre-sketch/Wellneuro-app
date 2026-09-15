@@ -4,12 +4,17 @@
 
 ## Décisions actives
 
-### D-191 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
+### D-192 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
 
 - Date : 2026-09-15
 - Statut : accepté — troisième des trois suites nommées par le responsable le
   2026-09-14, après la fenêtre de rappel ([[D-183]]) et la phrase de reprise
-  ([[D-184]]). Migration **autorisée d'avance** par arbitrage du même jour ; le
+  ([[D-184]]).
+- **Numéro** : cette entrée a été écrite `D-191`. `66c82f85` a pris ce numéro au
+  merge, EN L'ÉCRIVANT au registre — la différence avec l'épisode `D-182` du
+  2026-09-14, où un sujet de commit l'annonçait sans l'inscrire et ne réservait
+  donc rien. Huitième collision du dépôt, et la leçon ne change pas : **un numéro
+  ne se réserve pas, il s'acquiert à la fusion.** Migration **autorisée d'avance** par arbitrage du même jour ; le
   go de merge reste dû ([[D-087]] §1).
 - Domaine : mesure produit, explicabilité, minimisation.
 - Livraison : migration seule d'abord, code consommateur ensuite.
@@ -44,9 +49,29 @@ le patient a-t-il ouvert son bilan » reste structurellement sans réponse.
 Quatre absences, toutes choisies : **aucun `id_patient`** (le quotient ne le
 demande pas), **aucune identité de praticien** (mesurer une surface n'est pas
 mesurer quelqu'un), **aucun instant** (un jour suffit à un taux), **aucune ligne
-par événement** (un agrégat n'a pas de rang à ré-identifier). « Ce praticien
-n'ouvre jamais les limitations » est une phrase que le dépôt doit être incapable
-de produire, et ce n'est pas une intention : c'est la forme de la table.
+par événement** (un agrégat n'a pas de rang à ré-identifier).
+
+**CE QUE CETTE FORME GARANTIT, ET CE QU'ELLE NE GARANTIT PAS — la nuance a été
+payée par une contre-expertise Codex, et la première rédaction était fausse.**
+Elle disait « structurellement incapable » et « aucune donnée personnelle ».
+C'est trop fort. Ce qui est vrai : la table ne porte **aucun identifiant
+direct**, et aucune granularité plus fine que la journée. Ce qui ne l'est pas :
+qu'aucune ré-identification ne soit possible. **Un jour où un seul praticien est
+actif, ses ouvertures lui sont attribuables par croisement avec
+`journal_acces_dossiers`**, qui conserve praticien, dossier et horodatage ; s'il
+n'y a ce jour-là qu'un seul dossier, ce dossier devient identifiable. Aucune
+colonne supplémentaire n'est nécessaire — le croisement suffit, et
+l'anonymisation doit résister aux corrélations et aux inférences, pas seulement
+au retrait des identifiants (doctrine CNIL).
+
+Le risque est donc **réel et borné par le volume d'activité** : il se referme à
+mesure que le cabinet a plusieurs praticiens actifs le même jour, et il est
+maximal aujourd'hui, où il y en a un. La position retenue n'est pas « c'est
+anonyme » mais : la table **n'ajoute aucun identifiant que le dépôt ne détienne
+déjà**, et ce qu'elle rend inférable l'est par la piste d'audit qui, elle, est
+déclarée et motivée. « Ce praticien n'ouvre jamais les limitations » reste une
+phrase que la table seule ne peut pas produire — et c'est cela, exactement, qui
+est garanti.
 
 C'est pourquoi elle s'INCRÉMENTE au lieu de s'empiler — **le seul endroit du dépôt
 où un `UPDATE` vaut mieux qu'un ajout.** Ailleurs l'ajout seul protège une trace
@@ -86,6 +111,29 @@ pensé à nommer, et il faut l'attaquer pour le savoir.
 **CE QUE LA REVUE INTERNE A TROUVÉ, AVANT CODEX — deux trous, et les deux
 étaient miens.**
 
+**CE QUE LA PASSE CODEX A ENCORE DÉFAIT, après la revue interne.** Deux garanties
+centrales dépassaient ce qui était démontré, et une troisième était fausse :
+
+- **« Structurellement incapable » et « aucune donnée personnelle »** — borné
+  ci-dessus. Le croisement avec `journal_acces_dossiers` suffit quand l'activité
+  est faible.
+- **La liste blanche ne gardait que les NOMS de colonnes.** Un
+  `ALTER COLUMN jour TYPE TIMESTAMP(3)` laissait le contrat entièrement vert :
+  la granularité quotidienne disparaissait, et deux ouvertures du même jour à une
+  seconde d'écart devenaient deux lignes horodatées — la table redevenait le
+  journal par événement qu'elle s'interdit. **Le message d'erreur nommait pourtant
+  « un instant » parmi les interdits, et le contrôle ne pouvait pas le voir.** Le
+  contrat compare désormais le triplet `nom:type`.
+- **« Un compte ne descend pas » était faux.** `CHECK (compte >= 0)` accepte
+  `2 → 1` ; le cas n'éprouvait que `-1`. La monotonie n'est pas tenue par le
+  schéma — elle l'est par la route, seul écrivain, et son `increment`. La
+  promesse est bornée partout où elle était écrite.
+
+Deux inquiétudes de la revue interne ont en revanche été LEVÉES par exécution :
+la liste blanche refuse bien `id_patient` et `"ID_PATIENT"`, et **le glissement
+de jour UTC→`DATE` n'existe pas** — l'adaptateur Prisma transmet `YYYY-MM-DD`
+construit sur les composantes UTC, vérifié dans quatre fuseaux.
+
 1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
    ([[D-127]], [[D-178]]), et ici il n'est pas décoratif : **sa liste blanche de
    colonnes est la SEULE chose qui tienne l'affirmation centrale de cette
@@ -99,7 +147,9 @@ pensé à nommer, et il faut l'attaquer pour le savoir.
 2. **L'absence au registre RGPD était TACITE.** `rubrique5.modeles.test.ts` ne
    vérifie que les tables filles de `Patient` ; celle-ci n'en est pas une, donc
    **le banc se tait** — et une ligne absente ne ment pas, elle se tait. La table
-   est déclarée en rubrique 5 avec sa nature réelle : aucune donnée personnelle.
+   est déclarée en rubrique 5 avec sa nature réelle : aucun identifiant direct —
+   l'intitulé disait d'abord « aucune donnée personnelle », corrigé après la
+   contre-expertise ci-dessus.
    La qualification juridique reste au responsable de traitement, comme pour
    `DecisionPrioritySelection` et `EcartementProposition`.
 
@@ -113,6 +163,113 @@ pensé à nommer, et il faut l'attaquer pour le savoir.
   neuf. Le banc du rejeu de `ClinicalRuntimeSection` est RESSERRÉ, pas relâché :
   il listait « aucun POST », il liste désormais les destinations, si bien qu'un
   POST clinique neuf le fait rougir même si personne ne l'a nommé.
+
+### D-191 — La vue patient du protocole est un contrat recomposé, et son refus se voit des deux côtés
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-15, sur
+  trois questions posées après vérification du code (LOT-03 de la campagne
+  « 5. Actions — le protocole assisté »).
+- Domaine : clinique — frontière patient du protocole 21 jours.
+- Applique : [[D-189]] §1 et §2. S'appuie sur [[D-054]] arbitrage 6, [[D-118]],
+  [[D-115]], [[D-127]] §2, [[D-056]] arbitrage 5, [[D-160]] §4.
+
+**CINQ DESCRIPTIONS DE « CE QUE LE PATIENT LIT » COEXISTAIENT, ET AUCUNE NE SE
+VOYAIT.** Le contrat `c1-patient-protocol-view-v2` était écrit, testé, et **sans
+appelant de production**. La route du portail réécrivait à la main une projection
+plus pauvre ; `api/praticien/ja/cycle` recopiait la même, en se déclarant en
+commentaire « miroir exact » ; `PatientCompanionHome` et les deux panneaux du
+carnet alimentaire redéclaraient chacun leur type et **castaient le JSON dedans**.
+`tsc` restait vert : c'est ainsi que `followUpCriterion` a voyagé des mois dans le
+JSON sans qu'aucun écran ne l'affiche.
+
+**CE QUE LE PATIENT NE RECEVAIT PAS.** Le constructeur fait saisir **trois**
+actions ; le portail servait `draft.actions[0]` — **une sur trois**, élue par
+l'ordre d'insertion et par rien d'autre. Ni rang, ni champ « action principale »
+n'existent au contrat. Les deux autres n'atteignaient le patient que si elles
+portaient une référence Boussole, et alors sous forme de fiche alimentaire, pas
+d'action. Il ne lisait pas non plus **sur quel axe on travaillait**, ni son
+**critère à trois semaines**.
+
+**LA CARTE DE DÉCISION N'EST PERSISTÉE NULLE PART.** Le contrat exige une
+`DecisionCard` entière ; il n'existe aucune table `decision_cards`. `protocol_drafts`
+n'en garde que les ancres. **La carte ne fournit d'ailleurs qu'un seul champ à la
+vue** — `priorityLabel` —, et ce champ est `candidate.label`, c'est-à-dire
+exactement `regle.libelle` du registre SIGNÉ des priorités. Tout le reste de la
+carte est de la garde.
+
+**Décision :**
+
+1. **La carte est RECOMPOSÉE à la lecture**, sur le chemin patient, par
+   `rejouerCarteDecision` — la chaîne C1 rejouée depuis la base à l'horodatage de
+   confirmation de l'épisode que le brouillon nomme. Ni persistance, ni migration.
+   **Un seul chemin de construction, trois appelants** : le cockpit rejoue déjà
+   ([[D-118]]), le vérificateur recalcule pour comparer ([[D-054]] arbitrage 5),
+   et ce module rejoue pour servir. Les trois passent par
+   `construireChaineC1Tolerante` et par la **même lecture de dossier** — une
+   quatrième lecture « équivalente » finirait par diverger, et une divergence ici
+   éteint l'écran d'un patient sur une carte honnête ([[D-101]]).
+2. **L'empreinte recomposée est une GARDE DE FRAÎCHEUR.** Si elle n'est plus celle
+   que le praticien a approuvée pour diffusion, **rien n'est servi**. Ce qui est
+   servi repose donc toujours sur le dossier que le praticien avait sous les yeux
+   quand il a validé.
+3. **La dérive est bornée, et elle a été mesurée avant d'être acceptée.** Le
+   snapshot est borné à `episode.includedResponseIds` et l'horodatage vaut
+   `episode.confirmedAt` : **une passation nouvelle ne bouge rien**. Bougent : une
+   retouche d'anamnèse, un signalement d'effet indésirable déposé par le patient,
+   une re-sélection de priorité — trois actes cliniques qui méritent d'interrompre
+   ce qui est servi — et un **déploiement touchant une table signée ou le recalcul
+   de scores**, qui les interromprait tous à la fois. C'est pour ce dernier cas que
+   le point 4 n'est pas négociable.
+4. **LE REFUS SE VOIT DES DEUX CÔTÉS.** Le patient lit « Votre accompagnement n'est
+   pas consultable pour le moment. Votre praticien en est informé. » — distinct de
+   l'attente paisible d'avant-protocole, qu'il aurait autrement prise pour elle. Le
+   praticien lit sur son écran de diffusion « Ce protocole n'est plus affiché à
+   votre patient : le dossier a changé depuis sa validation. » Le constat est
+   calculé **par la même fonction** que la route patient, sur la **version
+   approuvée** — distinct de `stale`, qui compare deux VERSIONS quand celui-ci
+   compare le DOSSIER à lui-même.
+   **La leçon du booklet, non négociable** : une garde que personne ne voit se
+   mesure à zéro. Un refus muet des deux côtés serait le défaut déplacé, pas fermé
+   ([[D-160]] §4).
+5. **Le motif du refus ne traverse jamais jusqu'au patient.** Il nomme un acte du
+   dossier ; l'écran doit appeler une relecture, pas énoncer un diagnostic.
+6. **Aucun repli sur l'ancienne projection.** Servir un protocole que la garde vient
+   d'écarter serait pire que le vide, et sous une forme qui ne sait pas dire qu'une
+   intervention n'est pas ferme.
+7. **Le contrat produit ; une projection écarte ce qui n'a rien à faire dans un
+   navigateur patient** — identifiants d'enveloppe et trois empreintes. Elle est
+   écrite **en un seul endroit**, et les deux routes comme les trois écrans lisent
+   ce type-là. Ce n'est pas une sixième description : c'est la projection DU
+   contrat, sous les yeux de la garde.
+
+**DEUX DÉFAUTS TROUVÉS EN CHEMIN, CORRIGÉS DANS LE MÊME LOT.**
+
+- **Le carnet alimentaire s'ancrait sur `actions[0]`, quel que soit son type.** Le
+  défaut ne se voyait pas tant que le constructeur posait `food` en dur sur toute
+  action neuve ; depuis que le type est un geste praticien ([[D-189]]), la première
+  action peut être une **orientation médecin** — et le carnet ALIMENTAIRE l'aurait
+  affichée comme l'essai à observer. Il s'ancre désormais sur **l'action
+  alimentaire**, ou sur rien.
+- **La fixture du banc du carnet posait `type: 'alimentation'`** — un type qui
+  n'existe à aucun contrat, où l'alimentaire s'écrit `food`. Le champ était typé
+  `string` : le banc passait au vert sur une valeur que la production n'aurait
+  jamais produite. Le type du contrat y entre.
+
+**CE QUE LA DÉCISION N'OUVRE PAS.** `adviceSheetRef` reste `null` : aucun champ du
+constructeur ne le renseigne, et produire une vraie fiche conseil est une surface
+neuve. Le bouton « Ma fiche conseils » — qui mène au centre TRUST et n'a jamais eu
+de rapport avec ce champ — **dit désormais ce qu'il fait** ; la dette, elle, est
+nommée au dossier de campagne, pas refermée par un libellé. Et **aucune limitation
+patient n'est servie** : celles de la carte sont écrites POUR LE PRATICIEN ; les
+traduire serait fabriquer du texte patient, les recopier lui servir un
+raisonnement interne.
+
+- Conséquences : fragment `changelog.d/2026-09-15-vue-patient-recomposee.md` ;
+  `lib/clinical-engine/rejeuCarteDecision.ts` et
+  `lib/protocol/vuePatientSurLeFil.ts` ; `entreesRuntime` exportée de
+  `verifierChaineC1.ts` pour rester **la** lecture partagée ; aucune migration,
+  aucun drapeau, aucune identité patient.
 
 ### D-190 — Le praticien SUSPEND une action, il ne l'active pas : `D-056` s'amende dans un seul sens
 
