@@ -1,4 +1,4 @@
--- Contrat du compteur de « Voir les sources et limites » ([[D-192]]).
+-- Contrat du compteur de « Voir les sources et limites » ([[D-193]]).
 --
 -- CE FICHIER GARDE UNE ABSENCE, ET C'EST INHABITUEL. Les autres contrats de ce
 -- répertoire éprouvent ce qu'une table PROMET. Celui-ci éprouve surtout ce
@@ -7,7 +7,7 @@
 -- produire, et cette affirmation ne tient que par la FORME de la table.
 --
 -- Sans le cas 1 ci-dessous, une migration future ajouterait `id_patient` ou
--- `praticien_email` sans qu'aucun banc ne bronche, et `D-192` deviendrait faux
+-- `praticien_email` sans qu'aucun banc ne bronche, et `D-193` deviendrait faux
 -- en silence — exactement ce qui est arrivé à `D-185`, dont l'affirmation
 -- centrale a vécu une journée sur `main` sans être vraie.
 --
@@ -67,7 +67,7 @@ BEGIN
     RAISE EXCEPTION
       'compteur_ouverture_sources porte % au lieu des trois colonnes déclarées. '
       'Une colonne identifiante (id_patient, praticien_email), OU un `jour` promu en '
-      'timestamp, rendrait FAUSSE la garantie centrale de D-192 : que cette table ne '
+      'timestamp, rendrait FAUSSE la garantie centrale de D-193 : que cette table ne '
       'porte aucun identifiant direct et aucune granularité plus fine que la journée. '
       'Toute colonne neuve, ET tout changement de type, sont un arbitrage.',
       colonnes;

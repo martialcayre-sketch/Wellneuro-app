@@ -2,6 +2,35 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-03 (2/2) : les gardes de la carte opposées à la diffusion (D-192)
+
+**Décisions** : le contrat de vue patient refuse depuis toujours une décision sous
+abstention requise et une décision portant un constat de sécurité ; ces deux refus
+ne mordaient NULLE PART — le contrat n'avait aucun appelant avant `D-191`, et la
+route d'approbation n'a jamais construit de carte. Le producteur de constats, lui,
+est alimenté depuis `D-099`. Le refus tombe désormais sous la main du praticien, au
+moment où il atteste : servi plus tard au portail, il lui apprendrait après coup
+qu'il a validé quelque chose d'invalide, et son patient l'apprendrait en même temps
+que lui par un écran vide.
+
+**Livré** : rejeu de la carte à l'approbation par la MÊME fonction que le chemin
+patient, sur l'épisode et l'empreinte de la version approuvée ; trois refus 409
+(`abstention_requise`, `constat_securite`, `carte_non_rejouable`) ; le message part à
+l'écran sans code neuf, et un banc l'assertionne plutôt que de s'y fier.
+
+**Écarté** : recopier les constats de sécurité dans le message — l'écran de décision
+les porte déjà, et les répéter ferait de cette route une seconde restitution
+clinique, absente de la carte des chemins sortants. Seul le NOMBRE est dit.
+
+**Vérifications** : T1 vert ; T2 rapide 198 verts, aucun rouge. Deux mutations vues
+ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : LOT-04 (2/2), la citation en constat à la lecture.
+
+**Questions ouvertes** : le LOT-06 attend la première ligne de barème signée ; la
+mesure de production du LOT-07 a été refusée par le classifieur de sécurité de la
+session et n'a pas été contournée.
+
 ## 2026-09-15 — LOT-03 (1/2) : la vue patient du protocole est un contrat recomposé (D-191)
 
 **Décisions** : trois questions posées au responsable APRÈS vérification du code —
@@ -6070,7 +6099,7 @@ l'existence d'un patron ailleurs à sa disponibilité ici.
 **Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
 citation ; la première ligne du barème de charge (LOT-06).
 
-## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-192]])
+## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-193]])
 
 Troisième des trois suites nommées le 2026-09-14. La surface qui porte la
 provenance et les limitations devient mesurable ; **cette PR pose la table
@@ -6101,11 +6130,13 @@ raison : le harnais ergonomique ne doit contacter aucun réseau, et un rejeu ne
 doit poster aucun état clinique. Le second est **resserré, pas relâché** — il
 listait « aucun POST », il liste désormais les destinations.
 
-**Renumérotation en `D-192` (2026-09-15).** Cette entrée a été écrite `D-191` ;
-`66c82f85` a pris le numéro au merge **en l'écrivant au registre** — différence
-nette avec l'épisode `D-182` de la veille, où un sujet de commit l'annonçait sans
-l'inscrire, et ne réservait donc rien. Huitième collision du dépôt, même leçon :
-un numéro ne se réserve pas, il s'acquiert à la fusion.
+**Renumérotée DEUX FOIS, `D-191` → `D-192` → `D-193` (2026-09-15).** Les deux
+numéros ont été pris au merge par d'autres sessions — `66c82f85` puis `2ef899c3`
+— qui les ont **écrits au registre**, à la différence de l'épisode `D-182` de la
+veille où un sujet de commit annonçait un numéro sans l'inscrire, et ne réservait
+donc rien. Huitième et neuvième collisions, en une matinée, sur la même entrée.
+Même leçon : un numéro ne se réserve pas, il s'acquiert à la fusion — et la
+friction est voulue.
 
 **Passe Codex — BLOQUER, trois findings fondés (2026-09-15).** La revue interne
 avait trouvé deux trous ; Codex en a trouvé trois de plus.

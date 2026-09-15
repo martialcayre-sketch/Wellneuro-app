@@ -964,7 +964,7 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/orientation_ecartement_v1_negatif.sql
 
-      # Compteur de « Voir les sources et limites » (D-192) : ce contrat garde
+      # Compteur de « Voir les sources et limites » (D-193) : ce contrat garde
       # surtout une ABSENCE — la table ne porte aucun identifiant direct, et
       # aucune granularité plus fine que la journée. Cette garantie ne tient que
       # par la FORME de la table, donc par ce fichier.
@@ -975,7 +975,7 @@ jobs:
       # granularité quotidienne disparaissait et la table redevenait le journal
       # par événement qu'elle s'interdit. Relevé par contre-expertise Codex.
       # Sans ce cas, une migration future ajoutant `id_patient` ou promouvant
-      # `jour` passerait sans qu'aucun banc ne bronche, et D-192 deviendrait
+      # `jour` passerait sans qu'aucun banc ne bronche, et D-193 deviendrait
       # faux en silence — exactement ce qui est arrivé à D-185.
       #
       # Plus : l'espèce fermée, le compte qui ne peut pas devenir négatif (et

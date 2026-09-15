@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Ce que le patient lit vraiment"
-statut: "en cours"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -95,10 +95,12 @@ passation nouvelle ne bouge rien. Détail au registre (`D-191` §3).
 - [x] Dire le refus au patient, et le dire au praticien sur son écran de diffusion.
 - [x] Renommer le bouton ; consigner `adviceSheetRef` en dette.
 - [x] Retourner les bancs ; fragment `changelog.d/` ; décision `D-191`.
-- [ ] **PR 2 — les gardes de la carte à la diffusion** : abstention requise et
-      constat de sécurité ne sont opposés NULLE PART aujourd'hui, pas même à
-      l'approbation, qui lit `decision_card_input_hash` sur la ligne du brouillon
-      sans jamais construire de carte.
+- [x] **PR 2 — les gardes de la carte à la diffusion** (`D-192`) : abstention
+      requise et constat de sécurité n'étaient opposés NULLE PART, pas même à
+      l'approbation, qui lisait `decision_card_input_hash` sur la ligne du
+      brouillon sans jamais construire de carte. Le rejeu y est celui du chemin
+      patient, à la lettre : un protocole approuvé est un protocole que le portail
+      saura servir.
 - [ ] Le marquage « votre patient lira ceci » dans le constructeur — reporté au
       LOT-04, qui touche déjà ces champs pour la citation.
 
@@ -122,7 +124,11 @@ régénérer en CI.
 Une seule description de la vue patient subsiste dans le code ; les trois actions
 partent ; les bancs qui figeaient l'amputation gardent désormais le contraire.
 
-**Atteints à la PR 1**, sauf les gardes de carte à la diffusion (PR 2). Les deux
-bancs de mutation ont été vus ROUGES avant d'être déclarés verts : projection
-réduite à une action → trois bancs rouges ; garde de fraîcheur neutralisée → un banc
-rouge. Restauration depuis une copie, jamais par `git checkout --`.
+**Atteints.** Quatre mutations ont été vues ROUGES avant que quoi que ce soit ne
+soit déclaré vert : projection réduite à une action → trois bancs rouges ; garde de
+fraîcheur neutralisée → un banc rouge ; garde d'abstention neutralisée → un banc
+rouge ; garde de constat de sécurité neutralisée → un banc rouge. Restauration
+depuis une copie à chaque fois, jamais par `git checkout --`.
+
+Reste hors lot, nommé : le marquage « votre patient lira ceci » dans le
+constructeur, reporté au LOT-04 qui touche déjà ces champs.
