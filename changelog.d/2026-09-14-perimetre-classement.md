@@ -80,3 +80,29 @@ une entrée existante du même jour, ce qui réordonne un journal append-only.
 Empreinte du périmètre après corrections : `c2fb8332f9527886`. Banc porté à 8 cas, deux
 mutations supplémentaires appliquées et tuées — retour à la liaison positionnelle, et
 identifiant de motif inventé.
+
+**La passe Codex a bloqué, et elle avait raison sur le point central.** Cette PR
+affirmait que « le moteur lit ces données, il n'en garde pas une copie — c'est ce qui
+sépare un périmètre d'un document ». **C'était vrai pour deux objets sur cinq.**
+`TERMES_DE_CLASSEMENT`, `DEPARTAGE_PLAINTE_EX_AEQUO` et `INVARIANTS_PRODUCTEUR`
+n'étaient importés par personne ; les conditions d'affichage vivaient dans un
+commentaire, hors empreinte ; et le banc censé prouver la consommation lisait la SOURCE
+du moteur — défait par des littéraux concaténés, et plus gravement par un texte révisé
+au périmètre que le moteur ignorait. Les trois réfutations ont été **rejouées** avant
+d'être admises, la politique faisant primer la preuve déterministe sur un vote de
+modèles.
+
+**La liaison se fait désormais par COMPORTEMENT**, sur arbitrage du responsable. Un banc
+EXÉCUTE `construireChaineC1` et compare sa sortie aux données déclarées : textes produits
+identiques (positif, donc insensible à la concaténation), texte conditionnel absent quand
+sa condition ne tient pas, rang et confiance issus des invariants, ordre conforme aux
+trois termes rejoués depuis la table, ex æquo nommés. Pour deux des cinq objets c'est le
+**seul** lien possible : un départage émergent et un comparateur n'ont aucun paramètre à
+brancher.
+
+Empreinte après corrections : `da1ba306c0551d7b`. Les trois réfutations de Codex tuent
+désormais 1, 3 et 2 cas. 813 bancs du moteur clinique verts.
+
+**Une erreur de ma reconstitution, dite parce qu'elle a failli accuser le moteur à tort** :
+le banc d'ordre lisait `snapshot.plainteDominante`, alors que `construireChaineC1` la rend
+à la RACINE. Le rouge initial reprochait au moteur un ordre faux qui était le mien.

@@ -417,13 +417,81 @@ touché à ceci.
   plus réservée des quatre valeurs ([[D-041]]), et aucune règle écartée ne
   produit de candidat.
 
-**LE MOTEUR LIT CES DONNÉES, IL N'EN GARDE PAS UNE COPIE — et c'est ce qui sépare
-un périmètre d'un document.** `chaineC1.ts` composait ses quatre limitations
-depuis des littéraux locaux et réécrivait les deux identifiants de motif. Les
-laisser en place aurait donné une signature portant sur un texte que **rien
-n'exécute** : la forme de la conformité sans son effet, c'est-à-dire la
-duplication silencieuse que [[DC-26]] interdit. Un banc lit la source du moteur
-et refuse qu'un de ces textes y réapparaisse en dur.
+**CE QUI SÉPARE UN PÉRIMÈTRE D'UN DOCUMENT — ET MA PREMIÈRE RÉDACTION ÉTAIT DU
+CÔTÉ DU DOCUMENT.**
+
+Cette décision affirmait : « le moteur LIT ces données, il n'en garde pas une
+copie ». **La passe Codex du 2026-09-14 et la revue Copilot ont établi que c'était
+vrai pour deux objets sur cinq**, et les trois réfutations ont été REJOUÉES avant
+d'être admises :
+
+- `TERMES_DE_CLASSEMENT`, `DEPARTAGE_PLAINTE_EX_AEQUO` et `INVARIANTS_PRODUCTEUR`
+  n'étaient **importés par personne** : le tri, le départage, `rank` et
+  `confidence` restaient en dur. Trois des cinq objets ne pilotaient rien.
+- Les conditions d'affichage des deux textes conditionnels vivaient dans un
+  **commentaire**, donc hors empreinte : passer « si objectif déclaré » à
+  « TOUJOURS » laissait le sha inchangé.
+- Et le banc censé prouver la consommation lisait la SOURCE du moteur pour y
+  refuser les textes en dur. Il se défait en deux coups : des littéraux
+  **concaténés** produisant le même texte le laissent vert, et — pire — un texte
+  révisé au périmètre avec l'ancien littéral gardé au moteur aussi. Une
+  modification écrite POUR la relecture n'atteignait jamais le praticien.
+
+**LA LIAISON SE FAIT DONC PAR COMPORTEMENT, ET C'EST PLUS FORT QU'UN IMPORT.**
+Arbitrage du responsable, 2026-09-14, sur trois options. Un banc EXÉCUTE le
+moteur (`construireChaineC1`) et compare sa sortie aux données déclarées : textes
+produits identiques — positif, donc insensible à la concaténation —, texte
+conditionnel absent quand sa condition ne tient pas, rang séquentiel et confiance
+issus des invariants, ordre conforme aux trois termes, ex æquo nommés.
+
+**DEUXIÈME PASSE CODEX, ET CE QU'ELLE A ENCORE DÉFAIT — trois mutations, toutes
+vertes sur 46 cas, toutes rejouées avant d'être admises.** La première rédaction
+de ce banc couvrait TROIS des quatre textes, laissait les CONDITIONS sans oracle,
+et rejouait le comparateur sur une fixture qui ne le discriminait pas :
+
+- le texte d'`etatInconnu` révisé au périmètre, l'ancien littéral gardé au
+  moteur, passait — le quatrième texte destiné à la relecture pouvait encore être
+  ignoré en silence ;
+- `etatInconnu.condition` déclarée « toujours » passait, alors que le moteur
+  continue de la conditionner : le périmètre pouvait annoncer une condition
+  différente de celle exécutée, dans la donnée hachée cette fois ;
+- **la priorité intrinsèque INVERSÉE dans le comparateur du moteur passait.** La
+  fixture par défaut a pour dominante `surpoids`, et le premier terme y sépare
+  déjà les deux candidates : le deuxième terme ne tranchait jamais. Un
+  comparateur rejoué ne prouve rien tant que chaque terme n'a pas un dossier où
+  LUI SEUL décide.
+
+**LA CAUSE EST COMMUNE AUX TROIS, et c'est elle qui compte : une assertion écrite
+à la main ne couvre que ce que sa rédaction a pensé à nommer.** Le banc n'est
+donc plus écrit à la main — il ITÈRE SUR LA DONNÉE DÉCLARÉE et exige un oracle
+pour chaque entrée. Les scénarios sont indexés PAR LA CONDITION DÉCLARÉE
+elle-même : réécrire une condition ne trouve plus sa clé et fait rougir. Les
+trois termes sont exercés un par un, chacun sur un dossier construit pour que lui
+seul départage — dominante `surpoids` pour le premier, dominante `fatigue`, qu'
+aucune règle ne porte, pour le second.
+
+**LE TROISIÈME TERME EST DIT INATTEIGNABLE, PAS SIMULÉ.** Il ne tranche qu'entre
+deux règles de même priorité intrinsèque, or les quatre règles publiées en
+portent quatre distinctes. Le fabriquer par une table forgée prouverait le
+comparateur d'une table qui n'existe pas. Ce que le banc garde à la place, c'est
+la CONDITION de cette inatteignabilité : le jour où une cinquième règle reprend
+une priorité déjà prise, le cas rougit et réclame son dossier de départage —
+plutôt que de le découvrir sur un classement faux en production.
+
+**LE PÉRIMÈTRE LUI-MÊME N'A PAS BOUGÉ** : la correction est entièrement dans la
+preuve. L'empreinte `da1ba306c0551d7b` tient, et la surface soumise à
+l'attestation est inchangée.
+
+**ET POUR DEUX DES CINQ OBJETS, C'EST LE SEUL LIEN POSSIBLE.** Le départage des ex
+æquo n'est pas un paramètre : il ÉMERGE de l'ordre de parcours du catalogue. Les
+trois termes ne sont pas des valeurs mais un comparateur. Il n'y a rien à
+« brancher » ; ce qui les rend non-divergeables, c'est qu'un changement de
+comportement contredise la description attestée.
+
+**CE QUI EST BRANCHÉ POUR DE BON** : les quatre textes (par `.texte`), les deux
+identifiants de motif (par nom), et les invariants du producteur — `rank` dérive
+de `rangSequentielDepuis`, `confidence` de `confianceUnique`. Les conditions
+d'affichage sont entrées dans la donnée hachée.
 
 **POURQUOI L'ANCRE EXISTE AVANT L'ATTESTATION.** Poser le sha maintenant rend
 mesurable ce sur quoi la relecture portera : le jour de l'attestation, le

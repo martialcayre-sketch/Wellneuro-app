@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/prisma', () => ({ prisma: {} }));
 
 import { construireChaineC1, plainteDominanteDepuisScores } from './chaineC1';
+import {
+  DEPARTAGE_PLAINTE_EX_AEQUO,
+  INVARIANTS_PRODUCTEUR,
+  LIMITATIONS_CANDIDAT,
+  TERMES_DE_CLASSEMENT,
+} from '@/lib/clinical/perimetreClassementV1';
 import { confirmAssessmentEpisode } from './assessmentEpisode';
 import { adaptRuntimeInputs, proposeRuntimeEpisode } from './runtimeFromPrisma';
 import {
@@ -685,5 +691,220 @@ describe('plainteDominanteDepuisScores — l’égalité se dit, elle ne se tran
       ['digestion', 'Digestion', 6],
     ]));
     expect(lu?.domaine).toBe('sommeil');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LE PÉRIMÈTRE PILOTE CE QUE LE MOTEUR PRODUIT — [[D-185]], correction de la
+// passe Codex du 2026-09-14.
+//
+// CE QUE CE BLOC REMPLACE, ET POURQUOI. La première rédaction prouvait la
+// consommation du périmètre par un garde de SOURCE : il lisait `chaineC1.ts` et
+// exigeait qu'aucun des quatre textes n'y figure en dur. Codex l'a défait, et
+// les deux réfutations ont été rejouées avant d'être admises :
+//
+//   · deux littéraux CONCATÉNÉS produisant le même texte le laissent vert ;
+//   · un texte révisé au périmètre, l'ancien littéral gardé dans le moteur, le
+//     laisse vert aussi — et c'est le pire des deux : une modification écrite
+//     POUR la relecture n'atteint jamais le praticien.
+//
+// Un garde de source interdit une orthographe. Il ne prouve aucune
+// consommation. Ce qui la prouve, c'est d'EXÉCUTER le moteur et de comparer sa
+// sortie aux données déclarées — ce que fait ce bloc.
+//
+// DEUXIÈME PASSE CODEX, ET CE QU'ELLE A ENCORE DÉFAIT. La rédaction précédente
+// de ce bloc couvrait TROIS des quatre textes, laissait les CONDITIONS sans
+// oracle, et rejouait le comparateur sur une fixture qui ne le discriminait
+// pas. Trois mutations rejouées, toutes vertes sur 46 cas :
+//
+//   · texte d'`etatInconnu` révisé au périmètre, ancien littéral au moteur ;
+//   · `etatInconnu.condition` passée à « toujours » alors que le moteur
+//     continue de la conditionner ;
+//   · priorité intrinsèque INVERSÉE dans le comparateur du moteur.
+//
+// La cause est commune aux trois : une assertion écrite à la main ne couvre que
+// ce que sa rédaction a pensé à nommer. Ce bloc ne s'écrit donc plus à la main
+// — il ITÈRE SUR LA DONNÉE DÉCLARÉE et exige un oracle pour chaque entrée. Une
+// entrée ajoutée sans oracle, une condition réécrite, un terme dont l'effet
+// change : le cas ne passe plus en silence, il ne compile plus de scénario.
+//
+// ET C'EST LE SEUL LIEN POSSIBLE POUR DEUX DES CINQ OBJETS. Le départage des ex
+// æquo n'est pas un paramètre : il ÉMERGE de l'ordre de parcours du catalogue.
+// Les trois termes de classement ne sont pas non plus des valeurs, mais un
+// comparateur. Rien à « brancher » : ce qui les rend non-divergeables, c'est
+// qu'un changement de comportement fasse rougir la description déclarée.
+describe('le périmètre pilote ce que le moteur produit', () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  function candidats(options: Parameters<typeof chaine>[0] = {}) {
+    return chaine(options).decisionCard.priorityCandidates;
+  }
+
+  /** Un dossier qui DÉCLARE un état de population — « Non » est une réponse. */
+  const ETAT_DECLARE = { etat_grossesse: 'Non' };
+
+  // LES SCÉNARIOS, INDEXÉS PAR LA CONDITION DÉCLARÉE elle-même.
+  //
+  // C'est l'indexation qui fait le lien : réécrire une `condition` dans le
+  // périmètre ne trouve plus sa clé ici et fait rougir, au lieu de laisser la
+  // donnée annoncer une règle que le moteur n'applique pas. Chaque scénario
+  // porte ses deux faces — où le texte DOIT être servi, et où il DOIT être
+  // absent — parce qu'une condition n'est prouvée que par sa contre-épreuve.
+  const SCENARIOS_CONDITION: Record<
+    string,
+    { present: Parameters<typeof chaine>[0][]; absent: Parameters<typeof chaine>[0][] }
+  > = {
+    'toujours': {
+      // Les trois dossiers qui font tomber les DEUX conditionnelles : sans
+      // objectif, avec état déclaré, et les deux à la fois. Un texte annoncé
+      // « toujours » que le moteur conditionnerait rougit sur l'un d'eux.
+      present: [{}, { objectif: null }, { etat: ETAT_DECLARE }, { objectif: null, etat: ETAT_DECLARE }],
+      absent: [],
+    },
+    'objectif prioritaire déclaré par le patient': {
+      present: [{ objectif: 'Retrouver un confort digestif' }],
+      absent: [{ objectif: null }],
+    },
+    'aucun état de population déclaré': {
+      present: [{}],
+      absent: [{ etat: ETAT_DECLARE }],
+    },
+  };
+
+  // UN CAS PAR TEXTE DÉCLARÉ, ENGENDRÉ DEPUIS LA DONNÉE. Ajouter un cinquième
+  // texte au périmètre sans lui écrire de scénario fait rougir le cas engendré
+  // pour lui — c'est ce qui empêche le périmètre de grandir sans preuve.
+  for (const [cle, limitation] of Object.entries(LIMITATIONS_CANDIDAT)) {
+    it(`« ${cle} » — le texte servi et sa condition sont ceux du périmètre`, () => {
+      const scenario = SCENARIOS_CONDITION[limitation.condition];
+      expect(
+        scenario,
+        `condition « ${limitation.condition} » sans oracle : écrire son scénario de présence ET d’absence avant de la déclarer.`,
+      ).toBeDefined();
+
+      // POSITIF, donc insensible à la concaténation : on n'y cherche plus
+      // l'ABSENCE d'un littéral dans une source, on exige la PRÉSENCE de la
+      // valeur déclarée dans la sortie du moteur.
+      for (const options of scenario.present) {
+        const [premier] = candidats(options);
+        expect(premier).toBeDefined();
+        expect(premier.limitations).toContain(limitation.texte);
+      }
+      for (const options of scenario.absent) {
+        const [premier] = candidats(options);
+        expect(premier).toBeDefined();
+        expect(premier.limitations).not.toContain(limitation.texte);
+      }
+    });
+  }
+
+  it('LE RANG ET LA CONFIANCE VIENNENT DES INVARIANTS, pas de littéraux', () => {
+    // `rank` est SÉQUENTIEL depuis `rangSequentielDepuis`, jamais la priorité de
+    // la table — `buildDecisionCard` exige des rangs uniques. `confidence` est
+    // fixe à la plus réservée des quatre valeurs ([[D-041]]) : une règle
+    // déterministe ne produit aucune gradation.
+    const liste = candidats();
+    expect(liste.length).toBeGreaterThan(0);
+    expect(liste.map(c => c.rank)).toEqual(
+      liste.map((_, i) => i + INVARIANTS_PRODUCTEUR.rangSequentielDepuis),
+    );
+    for (const candidat of liste) {
+      expect(candidat.confidence).toBe(INVARIANTS_PRODUCTEUR.confianceUnique);
+    }
+  });
+
+  // ─── LES TROIS TERMES, EXERCÉS UN PAR UN ─────────────────────────────────
+  //
+  // POURQUOI PAS UN SEUL CAS QUI REJOUE LE COMPARATEUR. C'est ce que faisait la
+  // rédaction précédente, et Codex l'a défaite : la fixture par défaut ne
+  // discrimine QUE le premier terme, si bien qu'inverser la priorité
+  // intrinsèque dans le moteur laissait 46 cas verts. Un comparateur rejoué ne
+  // prouve rien tant que chaque terme n'a pas un dossier où LUI SEUL décide.
+  //
+  // Chaque cas ci-dessous nomme donc son terme par son `rang` dans la table
+  // déclarée, et porte un dossier construit pour que ce terme-là tranche.
+
+  it('TERME 1 — la plainte dominante passe DEVANT la priorité intrinsèque', () => {
+    const terme = TERMES_DE_CLASSEMENT.find(t => t.rang === 1);
+    expect(terme?.nom).toBe('plainte dominante');
+    expect(terme?.nature).toBe('clinique');
+
+    // LE DOSSIER QUI ISOLE CE TERME : dominante `surpoids`, et `PRIO-PON-01`
+    // porte ce domaine. Or sa priorité intrinsèque (2) est PLUS FAIBLE que
+    // celle de `PRIO-DIG-01` (1) — si le premier terme ne s'appliquait pas,
+    // l'ordre serait exactement l'inverse. C'est ce renversement qui prouve
+    // que la plainte dominante est bien évaluée EN PREMIER.
+    const { plainteDominante } = chaine();
+    expect(plainteDominante?.domaine).toBe('surpoids');
+    const regleDominante = PRIORITY_RULES_V1.find(r => r.id === 'PRIO-PON-01');
+    const regleAutre = PRIORITY_RULES_V1.find(r => r.id === 'PRIO-DIG-01');
+    expect(regleDominante?.domainePlainte).toBe('surpoids');
+    expect(regleAutre?.priorite).toBeLessThan(regleDominante!.priorite);
+    expect(candidats().map(c => c.ruleId)).toEqual(['PRIO-PON-01', 'PRIO-DIG-01']);
+  });
+
+  it('TERME 2 — à égalité sur la plainte, la priorité de la table départage', () => {
+    const terme = TERMES_DE_CLASSEMENT.find(t => t.rang === 2);
+    expect(terme?.nom).toBe('priorité intrinsèque de la règle');
+    expect(terme?.nature).toBe('clinique');
+
+    // LE DOSSIER QUI ISOLE CE TERME : la fatigue cotée au-dessus de tout.
+    // AUCUNE règle ne porte ce domaine, donc les deux candidates sont ex æquo
+    // sur le premier terme et c'est la priorité seule qui tranche. Inverser le
+    // comparateur du moteur renverse cet ordre — la mutation qui passait avant.
+    const dossier = { plaintes: { ...PLAINTES_DIGESTIF_ET_PONDERAL, Q001: 10 } };
+    expect(chaine(dossier).plainteDominante?.domaine).toBe('fatigue');
+    const ordre = candidats(dossier).map(c => c.ruleId);
+    expect(PRIORITY_RULES_V1.some(r => r.domainePlainte === 'fatigue')).toBe(false);
+    // L'attendu est LU DANS LA TABLE, pas écrit à la main : la règle de plus
+    // petite priorité passe devant.
+    const attendu = [...ordre].sort((g, d) => {
+      const p = (id: string | undefined) =>
+        PRIORITY_RULES_V1.find(r => r.id === id)?.priorite ?? Number.MAX_SAFE_INTEGER;
+      return p(g) - p(d);
+    });
+    expect(ordre).toEqual(attendu);
+    expect(ordre).toEqual(['PRIO-DIG-01', 'PRIO-PON-01']);
+  });
+
+  it('TERME 3 — déclaré technique, et AUJOURD’HUI INATTEIGNABLE : dit, pas simulé', () => {
+    const terme = TERMES_DE_CLASSEMENT.find(t => t.rang === 3);
+    expect(terme?.nom).toBe('identifiant de règle');
+    expect(terme?.nature).toBe('technique');
+
+    // CE CAS NE SIMULE RIEN, ET C'EST DÉLIBÉRÉ. Le troisième terme ne tranche
+    // qu'entre deux règles de MÊME priorité intrinsèque — or les quatre règles
+    // publiées en portent quatre distinctes. Le fabriquer par une table forgée
+    // prouverait le comparateur d'une table qui n'existe pas.
+    //
+    // Ce que ce cas garde en retour, c'est la CONDITION DE SON INATTEIGNABILITÉ.
+    // Le jour où une cinquième règle reprend une priorité déjà prise, le terme
+    // devient décisif et ce cas rougit — en exigeant qu'on lui écrive enfin son
+    // dossier, plutôt que de le découvrir sur un classement faux en production.
+    const priorites = PRIORITY_RULES_V1.map(r => r.priorite);
+    expect(
+      priorites.length - new Set(priorites).size,
+      'deux règles partagent désormais une priorité : le troisième terme DÉCIDE. Lui écrire son cas de départage ici.',
+    ).toBe(0);
+  });
+
+  it('LE DÉPARTAGE DES EX ÆQUO SUIT L’ORDRE DÉCLARÉ, et ne rend aucun arbitrage', () => {
+    // `arbitrageCliniqueRendu: false` n'est pas une formalité : le départage à
+    // intensité égale suit l'ordre de PUBLICATION du catalogue, et la question
+    // « quelle plainte prime » n'a jamais été tranchée ([[D-054]] arbitrage 8).
+    expect(DEPARTAGE_PLAINTE_EX_AEQUO.arbitrageCliniqueRendu).toBe(false);
+    expect(DEPARTAGE_PLAINTE_EX_AEQUO.nature).toBe('technique');
+
+    // LA RÈGLE DÉCLARÉE DIT « LE PREMIER DOMAINE PUBLIÉ », et ce cas l'exerce :
+    // digestion et surpoids cotés à la MÊME intensité, digestion publiée avant
+    // surpoids au catalogue. Déclarer « le dernier » au périmètre ferait passer
+    // la mutation sans ce cas — elle passait, elle a été rejouée.
+    expect(DEPARTAGE_PLAINTE_EX_AEQUO.regle).toContain('premier domaine');
+    const exAequo = { plaintes: { ...PLAINTES_DIGESTIF_ET_PONDERAL, Q003: 9, Q004: 9 } };
+    const dominante = chaine(exAequo).plainteDominante;
+    expect(dominante?.domaine).toBe('digestion');
+    // ET LES EX ÆQUO SONT NOMMÉS : les taire ferait lire une hiérarchie
+    // clinique là où il n'y a qu'un ordre de tableau.
+    expect(dominante?.exAequo).toEqual(['Surpoids']);
   });
 });

@@ -98,12 +98,12 @@ export const DEPARTAGE_PLAINTE_EX_AEQUO = {
  * conditions, parce que deux d'entre eux sont CONDITIONNELS.
  *
  * Une première rédaction disait « les quatre textes servis avec chaque
- * candidat » : faux, et relevé en revue. Une carte réelle en porte deux, trois
- * ou quatre selon le dossier :
- *
- *   · `proposition` et `classement` — TOUJOURS, sur chaque candidat ;
- *   · `objectif` — seulement si le patient a déclaré un objectif prioritaire ;
- *   · `etatInconnu` — seulement si AUCUN état de population n'est déclaré.
+ * candidat » : faux, une carte réelle en porte deux, trois ou quatre. Relevé en
+ * revue — puis relevé DEUX FOIS, parce que la correction laissait les conditions
+ * dans ce commentaire, hors empreinte : passer « si objectif déclaré » à
+ * « TOUJOURS » ne faisait pas bouger le sha. Chaque texte porte donc désormais sa
+ * `condition` DANS LA DONNÉE, et un banc de comportement vérifie que le moteur
+ * la respecte.
  *
  * La distinction compte pour la relecture : attester « ce texte est servi » et
  * attester « ce texte peut l'être, à cette condition » ne sont pas le même acte.
@@ -115,14 +115,26 @@ export const DEPARTAGE_PLAINTE_EX_AEQUO = {
  * après coup.
  */
 export const LIMITATIONS_CANDIDAT = {
-  proposition:
-    'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.',
-  classement:
-    'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.',
-  objectif:
-    'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.',
-  etatInconnu:
-    'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.',
+  proposition: {
+    condition: 'toujours',
+    texte:
+      'Une priorité candidate est une proposition hiérarchisée soumise au praticien : elle n’est ni un diagnostic, ni une prescription.',
+  },
+  classement: {
+    condition: 'toujours',
+    texte:
+      'Le classement est déterministe et sert la lisibilité : il ne mesure ni la gravité, ni l’urgence.',
+  },
+  objectif: {
+    condition: 'objectif prioritaire déclaré par le patient',
+    texte:
+      'L’objectif prioritaire déclaré par le patient est affiché au praticien ; il n’entre pas dans le déclenchement de cette règle.',
+  },
+  etatInconnu: {
+    condition: 'aucun état de population déclaré',
+    texte:
+      'Aucun état de population n’a été déclaré sur ce dossier (grossesse, allaitement, pathologie rénale ou hépatique, chirurgie digestive, maladie cœliaque, exclusion alimentaire) : la gate de population n’avait rien à vérifier.',
+  },
 } as const;
 
 /**

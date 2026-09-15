@@ -5849,6 +5849,49 @@ Cette branche prend `D-185` ; dans l'ordre inverse, `main` porterait un trou en
 Quatre mutations appliquées, quatre tuées — dont « attestation fabriquée » et
 « motifs d'abstention permutés ».
 
+## 2026-09-14 23:35 — Périmètre du classement : deuxième passe Codex ([[D-185]], PR #1105)
+
+**Ce que la première correction laissait passer.** La passe Codex du 2026-09-14
+avait fait remplacer un garde de SOURCE par un banc de COMPORTEMENT. La deuxième
+passe a défait ce banc à son tour : trois mutations, **toutes vertes sur 46
+cas**, toutes rejouées ici avant d'être admises.
+
+- Texte d'`etatInconnu` révisé au périmètre, ancien littéral gardé au moteur :
+  vert. Le quatrième texte n'avait aucune assertion positive — trois sur quatre
+  étaient couverts.
+- `etatInconnu.condition` déclarée « toujours » : vert, alors que le moteur la
+  conditionne. Les conditions étaient entrées dans la donnée hachée, mais
+  **aucune ne portait d'oracle**.
+- **Priorité intrinsèque INVERSÉE dans le comparateur du moteur : vert.** La
+  fixture par défaut a pour dominante `surpoids` ; le premier terme y sépare
+  déjà les deux candidates, donc le deuxième ne tranchait jamais. Rejouer le
+  comparateur dans le banc ne prouvait rien.
+
+**La cause est commune, et c'est le seul enseignement qui se transporte** : une
+assertion écrite à la main ne couvre que ce que sa rédaction a pensé à nommer.
+Le banc itère désormais SUR LA DONNÉE DÉCLARÉE et exige un oracle par entrée ;
+les scénarios sont indexés par la condition déclarée elle-même, si bien qu'une
+condition réécrite ne trouve plus sa clé. Les trois termes sont exercés un par
+un, chacun sur un dossier où lui seul départage.
+
+**Le troisième terme est déclaré inatteignable, pas simulé.** Les quatre règles
+publiées portent quatre priorités distinctes ; le fabriquer par une table forgée
+prouverait le comparateur d'une table qui n'existe pas. Le banc garde à la place
+la CONDITION de l'inatteignabilité : une cinquième règle reprenant une priorité
+déjà prise fait rougir et réclame son dossier.
+
+**Cinq mutations appliquées, cinq tuées** — les trois de Codex, plus « dernier
+domaine » au lieu de « premier » au départage des ex æquo, plus « priorité
+intrinsèque » déclarée technique.
+
+**Le périmètre n'a pas bougé d'un octet** : la correction est entièrement dans la
+preuve. `da1ba306c0551d7b` tient, et la surface d'attestation est inchangée —
+c'est ce qui permet de relire une fois pour toutes.
+
+**Ce que dit la phrase du SESSION_LOG du 2026-09-14 20:30** — « un banc lit la
+source du moteur et refuse qu'un de ces textes y réapparaisse en dur » — décrit
+le garde DÉFAIT, et est fausse depuis #1105. Elle est laissée en place, ce
+journal étant à ajout seul ; c'est cette entrée-ci qui vaut.
 ## 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
 
 **Décisions** : `D-188` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,

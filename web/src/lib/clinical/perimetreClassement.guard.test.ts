@@ -27,7 +27,7 @@ import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 // montré sur les grilles.
 
 /** L'empreinte du périmètre, figée. Toute édition la fait bouger. */
-const EMPREINTE_PERIMETRE = 'c2fb8332f9527886';
+const EMPREINTE_PERIMETRE = 'da1ba306c0551d7b';
 
 /**
  * La source d'un module, COMMENTAIRES RETIRÉS.
@@ -118,25 +118,43 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     expect(source).toContain('MOTIF_ABSTENTION.canal');
   });
 
-  it('LE MOTEUR LIT CES DONNÉES, il n’en garde pas une copie', () => {
-    // LE POINT QUI FAIT LA DIFFÉRENCE ENTRE UN PÉRIMÈTRE ET UN DOCUMENT.
-    // `chaineC1.ts` composait ses quatre limitations depuis des littéraux
-    // locaux. Les laisser en place aurait donné une signature portant sur un
-    // texte que rien n'exécute (`DC-26`) — la forme de la conformité sans son
-    // effet. Ce banc lit la SOURCE du moteur et refuse qu'un de ces textes y
-    // réapparaisse en dur.
-    const source = sourceSansCommentaires(new URL('../clinical-engine/chaineC1.ts', import.meta.url));
-    for (const texte of Object.values(LIMITATIONS_CANDIDAT)) {
-      expect(
-        source.includes(texte),
-        `« ${texte.slice(0, 40)}… » est réécrit en dur dans chaineC1.ts : le périmètre cesserait de décrire ce que le moteur applique`,
-      ).toBe(false);
-    }
+  it('LA PREUVE DE CONSOMMATION N’EST PAS ICI, ET C’EST DÉLIBÉRÉ', () => {
+    // CE QUE LA PREMIÈRE RÉDACTION FAISAIT, ET POURQUOI ELLE A ÉTÉ RETIRÉE.
+    // Un garde lisait la source de `chaineC1.ts` et exigeait qu'aucun des
+    // quatre textes n'y figure en dur. Codex l'a défait en deux coups, et les
+    // deux ont été REJOUÉS ICI avant correction :
+    //
+    //   · remplacer `LIMITATIONS_CANDIDAT.classement` par deux littéraux
+    //     CONCATÉNÉS produisant exactement le même texte — garde vert, 8/8 ;
+    //   · réviser le texte au périmètre en laissant l'ancien littéral dans le
+    //     moteur — garde vert aussi, et c'est le pire : une modification
+    //     destinée à la relecture n'atteint jamais le praticien.
+    //
+    // Un garde de SOURCE interdit une orthographe ; il ne prouve aucune
+    // consommation. La preuve vit donc dans `chaineC1.test.ts`, qui EXÉCUTE le
+    // moteur et compare sa sortie à ces données — voir « le périmètre pilote
+    // ce que le moteur produit ». Ce cas-ci ne fait que l'ancrer, pour qu'un
+    // déplacement du banc de comportement ne laisse pas ce fichier muet.
+    const bancMoteur = readFileSync(
+      new URL('../clinical-engine/chaineC1.test.ts', import.meta.url),
+      'utf8',
+    );
+    expect(
+      bancMoteur.includes('le périmètre pilote ce que le moteur produit'),
+      'le banc de comportement a disparu de chaineC1.test.ts : le périmètre ne serait plus qu’un document',
+    ).toBe(true);
   });
 
   it('ANTI-VACUITÉ : le périmètre n’est pas vide, et la table signée existe toujours', () => {
     // Un banc qui ne compare que des absences resterait vert sur un module vidé.
     expect(Object.keys(LIMITATIONS_CANDIDAT)).toHaveLength(4);
+    // Chaque texte porte sa CONDITION dans la donnée, non dans un commentaire :
+    // c'est ce qui la fait entrer dans l'empreinte. Une condition laissée en
+    // prose se modifiait sans périmer l'ancre — constat de revue, rejoué.
+    for (const [nom, entree] of Object.entries(LIMITATIONS_CANDIDAT)) {
+      expect(typeof entree.texte, `${nom}.texte`).toBe('string');
+      expect(entree.condition.length, `${nom}.condition`).toBeGreaterThan(0);
+    }
     expect(PRIORITY_RULES_V1.length).toBeGreaterThan(0);
   });
 });
