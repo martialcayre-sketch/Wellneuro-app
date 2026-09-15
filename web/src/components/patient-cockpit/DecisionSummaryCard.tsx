@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
+import { ATTESTATION_CLASSEMENT, LIMITATIONS_CANDIDAT } from '@/lib/clinical/perimetreClassementV1';
 import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
@@ -154,7 +155,30 @@ export function DecisionSummaryCard({
     ...(current?.limitations ?? []),
   ])];
   const limitationsRegle = toutes.filter((texte) => signees.has(texte));
-  const limitationsMoteur = toutes.filter((texte) => !signees.has(texte));
+  const duMoteur = toutes.filter((texte) => !signees.has(texte));
+
+  // CE QUE L'ATTESTATION DU 2026-09-15 A CHANGÉ À L'ÉCRAN ([[D-185]] l'avait
+  // annoncé, cette PR l'exécute). Les quatre textes de `LIMITATIONS_CANDIDAT`
+  // sont désormais RELUS par le praticien ; les afficher sous « hors périmètre
+  // signé » ferait SOUS-promettre sur du relu — l'inverse du défaut habituel,
+  // mais un écart quand même.
+  //
+  // MAIS `duMoteur` EST UN MÉLANGE, et c'est ce qui interdit de simplement
+  // renommer l'intitulé : il porte AUSSI le motif de la gate de population, qui
+  // n'appartient à aucun périmètre relu. Une seule étiquette sur les deux
+  // mentirait dans un sens ou dans l'autre. La liste est donc scindée.
+  //
+  // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : le jour où elle
+  // est retirée (périmètre modifié, re-signature due), ces textes retombent
+  // d'eux-mêmes sous « hors périmètre signé ». Une étiquette écrite en dur
+  // resterait à « relu » sur un périmètre qui ne l'est plus.
+  const textesRelus: ReadonlySet<string> = new Set(
+    ATTESTATION_CLASSEMENT.relu
+      ? Object.values(LIMITATIONS_CANDIDAT).map(limitation => limitation.texte)
+      : [],
+  );
+  const limitationsRelues = duMoteur.filter((texte) => textesRelus.has(texte));
+  const limitationsMoteur = duMoteur.filter((texte) => !textesRelus.has(texte));
 
   return (
     <section aria-labelledby={idTitre}>
@@ -229,6 +253,20 @@ export function DecisionSummaryCard({
                 <p className="mt-2 text-xs font-medium text-foreground">Limitations de la règle</p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {limitationsRegle.map(limitation => <li key={limitation}>{limitation}</li>)}
+                </ul>
+              </>
+            )}
+            {limitationsRelues.length > 0 && (
+              <>
+                {/* RELU, ET DATÉ. La date n'est pas décorative : elle dit de
+                    QUAND date la relecture, donc ce qu'elle a pu couvrir. Un
+                    « relu » sans date laisserait croire à une garantie
+                    permanente. */}
+                <p className="mt-2 text-xs font-medium text-foreground">
+                  Périmètre du classement <span className="font-normal text-muted-foreground">(relu le {ATTESTATION_CLASSEMENT.dateRelecture})</span>
+                </p>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {limitationsRelues.map(limitation => <li key={limitation}>{limitation}</li>)}
                 </ul>
               </>
             )}

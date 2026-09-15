@@ -17,15 +17,21 @@
  * c'est-à-dire la duplication silencieuse que [[DC-26]] interdit, et la
  * signature couvrirait un texte que rien n'exécute.
  *
- * IL NE SIGNE RIEN. `ATTESTATION_CLASSEMENT` porte `relu: false` et
- * `shaRelu: null` : aucune relecture clinique n'a eu lieu, et aucun verrou ne
- * consulte encore cet objet. Le périmètre est POSÉ ET INERTE, en attente de
- * l'attestation du praticien — c'est l'ordre que [[D-182]] a suivi sur les
- * dix-sept grilles, et le seul qui ne fabrique pas une provenance.
+ * IL EST SIGNÉ DEPUIS LE 2026-09-15. `ATTESTATION_CLASSEMENT` porte
+ * `relu: true` et `shaRelu: 'da1ba306c0551d7b'` : le responsable a relu cet
+ * objet et l'a attesté, après deux contre-expertises qui ont fait corriger la
+ * PREUVE sans jamais toucher au contenu relu ([[D-185]], [[D-197]]).
  *
- * MODULE-FEUILLE, ET IL DOIT LE RESTER : il n'importe rien. `chaineC1.ts` le lit
- * pour exécuter, le banc le lit pour hacher. Lui faire importer l'un ou l'autre
- * fermerait un cycle — même contrainte que `bandesPsqi.ts`.
+ * CE QUE LA SIGNATURE CHANGE, ET C'EST L'ESSENTIEL : toute édition de ce module
+ * déplace l'empreinte, `shaRelu` ne suit pas, et le banc ROUGIT en réclamant une
+ * re-signature. Le périmètre n'est plus inerte — il est périssable, et c'est ce
+ * que la relecture achète.
+ *
+ * CE QU'ELLE NE COUVRE PAS, dit ici pour que personne ne l'étende. Le
+ * responsable atteste que ce module DÉCRIT FIDÈLEMENT ce que le moteur fait. Il
+ * n'atteste pas que la plainte dominante DOIVE primer sur la priorité
+ * intrinsèque de la règle : cette question clinique reste ouverte, et un
+ * arbitrage la trancherait séparément.
  */
 
 /** Un terme de départage, et ce qu'il est — clinique ou technique. */
@@ -217,12 +223,14 @@ export const PERIMETRE_CLASSEMENT_V1 = {
  * quand même.
  */
 export const ATTESTATION_CLASSEMENT = {
-  relu: false,
-  dateRelecture: null as string | null,
+  relu: true,
+  dateRelecture: '2026-09-15' as string | null,
   /**
-   * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ obligatoire le jour où
-   * il sera posé, jamais la constante calculée : la comparaison serait
-   * tautologique et la péremption invisible (patron [[D-063]]).
+   * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ, jamais la constante
+   * calculée : la comparaison serait tautologique et la péremption invisible
+   * (patron [[D-063]]). C'est ce littéral qui rend l'attestation périssable —
+   * le jour où le périmètre bouge, l'empreinte bouge, celui-ci ne suit pas, et
+   * le banc réclame une re-signature.
    */
-  shaRelu: null as string | null,
+  shaRelu: 'da1ba306c0551d7b' as string | null,
 };
