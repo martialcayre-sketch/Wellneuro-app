@@ -973,10 +973,16 @@ Q_ALI_09,
 // GASTRO-ENTÉROLOGIE
 // ════════════════════════════════════════════════════════
 
-// Certifié v2 — 22/06/2026 — Conforme PDF PRO SIIN Score de Francis
-// Formule Drive : Q002 + (Q003×10) + Q005 + Q006 + Q007 = max 500
-// Seuils : <70 normal · 70-300 significatif · >300 sévère
-// ⚠️ GAP : EVA 0-100% idéale — alternative discrète 0/25/50/75/100 implémentée
+// Score de Francis (IBS-SSS). Formule : Q002 + (Q003×10) + Q005 + Q006 + Q007,
+// maximum 500 — conforme à la publication.
+//
+// SEUILS RÉALIGNÉS LE 2026-09-15 : les bornes Drive (<70 normal · 70-300
+// significatif · >300 sévère) fusionnaient deux catégories publiées. Voir le
+// détail au-dessus de `interpretation`.
+//
+// LE GAP « ÉCHELLE DISCRÈTE » ÉTAIT PÉRIMÉ et est retiré : il annonçait une
+// alternative 0/25/50/75/100, là où le code sert bien une réglette continue au
+// pas de 5. L'affirmation décrivait un état que le code avait cessé d'avoir.
 Q_GAS_02: {
   id:'Q_GAS_02', titre:'Score de Francis — Syndrome de l\'intestin irritable',
   instructions:"Répondez aux questions en vous référant à votre état actuel. Pour la fréquence des douleurs, indiquez le nombre de jours douloureux sur une période de 10 jours.",
@@ -988,17 +994,39 @@ Q_GAS_02: {
         qn('FR_Q003','Veuillez indiquer le nombre de jours au cours desquels vous souffrez sur une période de 10 jours.',0,10,1,'jours / 10'),
         qs('FR_Q004','Souffrez-vous actuellement de problème de distension abdominale, ballonnements, ventre gonflé, tendu ?',[{v:'oui',l:'Oui'},{v:'non',l:'Non'}]),
         qn('FR_Q005',"Si oui, quelle est l'importance de ces problèmes de distension abdominale ?",0,100,5,'/ 100'),
-        qn('FR_Q006','Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ?',0,100,5,'/ 100'),
+        // ANCRES AJOUTÉES 2026-09-15 : la question demande la SATISFACTION,
+        // le moteur compte l'INSATISFACTION, et la réglette ne portait aucune
+        // ancre — le patient ne pouvait pas connaître le sens de son geste.
+        // Un patient très satisfait glissant vers 100 marquait 100 points de
+        // sévérité sur 500, soit un cinquième de l'instrument à contresens.
+        // La source imprime ses ancres sur l'échelle visuelle (« very happy » →
+        // « very unhappy ») ; nous ne montrions rien. Le moteur inverse pourtant
+        // l'identifiant hérité `FR4` (`100 - FR4`) : l'inversion existait, elle
+        // s'est perdue au renommage.
+        qn('FR_Q006','Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ? (0 = très satisfait(e) · 100 = très insatisfait(e))',0,100,5,'/ 100'),
         qn('FR_Q007','Dans quelle mesure votre syndrome de côlon irritable affecte ou perturbe votre vie en général ?',0,100,5,'/ 100'),
       ]},
   ],
   scoring:{
     type:'francis',
     certification:{source:'drive',status:'certifie'},
+    // RÉALIGNÉ SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien).
+    // Francis, Morris & Whorwell 1997 publient QUATRE catégories : rémission
+    // sous 75, léger 75-175, modéré 175-300, sévère 300-500. Étaient servies
+    // TROIS bandes, avec une frontière à 70 et — surtout — léger et modéré
+    // FUSIONNÉS : la distinction qui porte la cible thérapeutique disparaissait.
+    //
+    // DEUX ARBITRAGES, ÉPINGLÉS COMME TELS ET NON COMME DES VALEURS PUBLIÉES :
+    // la source écrit « lower than 75 » pour la rémission, donc 75 rejoint la
+    // bande légère ; et ses trois bornes intérieures se chevauchent (75, 175,
+    // 300 appartiennent à deux catégories à la fois). Le chevauchement est
+    // tranché vers la bande INFÉRIEURE, même sens que l'arbitrage du QDRS à 20
+    // rendu le même jour — sans quoi un trou s'ouvrirait à chaque borne.
     interpretation:[
-      {min:0,   max:69,  label:'Valeurs normales',                    color:'success'},
-      {min:70,  max:300, label:"Troubles fonctionnels significatifs ; l'intensité du trouble ressenti est proportionnelle au score", color:'warning'},
-      {min:301, max:500, label:"Troubles fonctionnels d'intensité sévère",       color:'danger'},
+      {min:0,   max:74,  label:'Rémission',                          color:'success'},
+      {min:75,  max:175, label:'Syndrome de l\'intestin irritable léger',  color:'info'},
+      {min:176, max:300, label:'Syndrome de l\'intestin irritable modéré', color:'warning'},
+      {min:301, max:500, label:'Syndrome de l\'intestin irritable sévère',  color:'danger'},
     ],
     note:'FR_Q001 et FR_Q004 sont des questions filtres non scorées. FR_Q003 est multiplié par 10.'
   }

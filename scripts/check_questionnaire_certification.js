@@ -415,8 +415,26 @@ assertCertification(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 
 
 assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).total, 0, 'Q_NEU_01 score minimal');
 assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 3)).total, 39, 'Q_NEU_01 score maximal');
-assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).interpretation.label, "Variation de l'humeur considérée comme physiologique", 'Q_NEU_01 seuil minimal rattaché');
-assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 2)).interpretation.label, 'Dépression avérée', 'Q_NEU_01 seuil dépression avérée');
+// BANDES RÉALIGNÉES SUR BECK & BECK 1972 LE 2026-09-15 (arbitrage praticien).
+// Ce banc épinglait les libellés de la grille du BDI à 21 ITEMS, servie jusque-là
+// sur la forme à 13 : il les gardait fidèlement, et gardait donc une erreur.
+// Les deux assertions suivantes sont mises à jour AVEC le changement clinique,
+// jamais pour verdir — et deux assertions de BORNE sont ajoutées sous elles,
+// qui n'existaient pas et qui sont ce qui vaut vraiment d'être gardé.
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).interpretation.label, 'Pas de dépression ou dépression minime', 'Q_NEU_01 seuil minimal rattaché');
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 2)).interpretation.label, 'Dépression sévère', 'Q_NEU_01 total 26 — sévère depuis 16');
+// LA BORNE 15/16, QUI EST TOUTE LA CORRECTION. La publication classe 8-15
+// modéré et 16 et plus SÉVÈRE ; la grille retirée lisait « troubles bénins » à
+// 16. Déplacer cette frontière d'un point fait rougir ici.
+const bdi15 = fill('Q_NEU_01', 1);            // 13 items à 1 = 13
+bdi15[questions('Q_NEU_01')[0].id] = 3;       // +2 → 15
+assertEqual(calculateScore('Q_NEU_01', bdi15).total, 15, 'Q_NEU_01 total 15 construit');
+assertEqual(calculateScore('Q_NEU_01', bdi15).interpretation.label, 'Dépression modérée', 'Q_NEU_01 borne 15 — dernier point modéré');
+const bdi16 = fill('Q_NEU_01', 1);
+bdi16[questions('Q_NEU_01')[0].id] = 3;
+bdi16[questions('Q_NEU_01')[1].id] = 2;       // +1 → 16
+assertEqual(calculateScore('Q_NEU_01', bdi16).total, 16, 'Q_NEU_01 total 16 construit');
+assertEqual(calculateScore('Q_NEU_01', bdi16).interpretation.label, 'Dépression sévère', 'Q_NEU_01 borne 16 — premier point sévère');
 assertEqual(questions('Q_NEU_01').length, 13, 'Q_NEU_01 doit contenir 13 items');
 assertEqual(optionLabels('Q_NEU_01', 'B7'), [
   'Je ne pense pas à me faire du mal.',
@@ -424,7 +442,10 @@ assertEqual(optionLabels('Q_NEU_01', 'B7'), [
   "J'ai des plans précis pour me suicider.",
   'Si je le pouvais, je me tuerais.',
 ], 'Q_NEU_01 options vigilance suicide Drive');
-assert(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).note.includes('score calculable 0'), 'Q_NEU_01 doit documenter le rattachement du score 0');
+// Le rattachement du score 0 n'a plus d'objet : la grille publiée commence à 0.
+// Ce que la note doit porter désormais, c'est la PROVENANCE de la grille — sans
+// quoi rien ne distinguerait, dans six mois, des bornes publiées de bornes posées.
+assert(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).note.includes('Beck & Beck 1972'), 'Q_NEU_01 doit documenter la provenance de ses bandes');
 assertCertification(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)), 'certifie', 'Q_NEU_01');
 
 const hadMin = calculateScore('Q_NEU_11', fill('Q_NEU_11', 0));
@@ -781,13 +802,21 @@ assertEqual(calculateScore('Q_GAS_02', {
 assertEqual(calculateScore('Q_GAS_02', francisMax).total, 500, 'Q_GAS_02 score maximal');
 assertEqual(calculateScore('Q_GAS_02', francisMax).components.map(component => component.val), [100, 100, 100, 100, 100], 'Q_GAS_02 composants maximaux');
 assertEqual(optionLabels('Q_GAS_02', 'FR_Q001'), ['Oui', 'Non'], 'Q_GAS_02 options filtre douleur');
+// ÉCART DÉLIBÉRÉ À DRIVE, 2026-09-15 (arbitrage praticien) — même patron que
+// `Q_URO_01`, dont la cotation s'écarte de Drive depuis le 2026-07-26 : NE PAS
+// « rétablir » le libellé Drive de `FR_Q006`. Drive pose la question de la
+// SATISFACTION sur une réglette 0-100 SANS AUCUNE ANCRE, tandis que le moteur
+// compte l'INSATISFACTION — un patient très satisfait glissant vers 100
+// marquait 100 points de sévérité sur 500. La publication imprime ses ancres
+// sur l'échelle visuelle ; nous ne montrions rien. Les ancres sont donc
+// ajoutées au libellé, et ce banc les épingle.
 assertEqual(questions('Q_GAS_02').map(question => question.texte), [
   'Souffrez-vous actuellement de douleurs abdominales ?',
   "Si oui, quelle est l'intensité de ces douleurs abdominales, douleurs au ventre ?",
   'Veuillez indiquer le nombre de jours au cours desquels vous souffrez sur une période de 10 jours.',
   'Souffrez-vous actuellement de problème de distension abdominale, ballonnements, ventre gonflé, tendu ?',
   "Si oui, quelle est l'importance de ces problèmes de distension abdominale ?",
-  'Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ?',
+  'Dans quelle mesure êtes-vous satisfait(e) de la fréquence habituelle de vos selles ? (0 = très satisfait(e) · 100 = très insatisfait(e))',
   'Dans quelle mesure votre syndrome de côlon irritable affecte ou perturbe votre vie en général ?',
 ], 'Q_GAS_02 libellés Francis Drive');
 assertCertification(calculateScore('Q_GAS_02', francisMax), 'certifie', 'Q_GAS_02');

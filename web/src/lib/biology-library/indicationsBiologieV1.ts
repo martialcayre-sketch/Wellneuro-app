@@ -557,7 +557,7 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
   // claims prescriptifs par ailleurs.
   validationExterne: true,
-  dateValidation: '2026-09-15T00:00:00.000Z',
+  dateValidation: '2026-09-16T00:00:00.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -601,6 +601,8 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //     (périmètre RÈGLES + GRILLES, attesté le matin)
   //   · 2026-09-14 — `82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42`
   //     (périmètre ÉLARGI AU CALCUL, attesté le soir — [[D-187]])
+  //   · 2026-09-15 — `d2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049`
+  //     (AQ et QDRS réalignés — [[D-195]])
   //
   // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
   // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
@@ -628,7 +630,40 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // Relue et attestée par le praticien le 2026-09-15, sur la surface de
   // relecture produite AVANT la demande. La recopie de la chaîne hex est le
   // geste de cette relecture — jamais une mise à jour de littéral.
-  shaPerimetre: 'd2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049',
+  //
+  // QUATRIÈME ATTESTATION, LE 2026-09-16, ET C'EST UNE CAMPAGNE QUI L'A
+  // DÉCLENCHÉE. Aucune règle n'a bougé, aucun claim non plus. Trois des seize
+  // instruments cités ont été confrontés à leur publication et réalignés :
+  // le BDI-13 (`Q_NEU_01`), dont la grille servie était celle du BDI à VINGT-ET-UN
+  // items — un score de 16, sévère selon Beck & Beck 1972, s'affichait « troubles
+  // bénins de l'humeur » ; l'IRLS (`Q_SOM_04`), dont trois ancrages divergeaient,
+  // dont celui qui sous-cotait d'un point tout patient soulagé par le mouvement,
+  // c'est-à-dire un critère diagnostique du SJSR ; et le score de Francis
+  // (`Q_GAS_02`), qui fusionnait deux catégories publiées et servait une réglette
+  // 0-100 SANS ANCRE sur une question de satisfaction que le moteur compte en
+  // insatisfaction.
+  //
+  // LE DÉFAUT A ÉTÉ TROUVÉ PAR UN CRIBLAGE, PAS PAR HASARD : le registre a été
+  // fouillé pour ses affirmations de conformité à une publication. Onze entrées,
+  // trois seulement portaient un identifiant permettant de les vérifier, et
+  // LES TROIS ÉTAIENT FAUSSES. Les huit autres restent invérifiables ([[D-199]]).
+  //
+  // UNE EMPREINTE PÉRIMÉE A ÉTÉ PROPOSÉE À L'ATTESTATION, ET LE CAS EST À
+  // GARDER. Une première chaîne (`589804e5…`) avait été relevée, PUIS une note
+  // de provenance ajoutée au bloc `scoring` du BDI — qui entre dans le périmètre,
+  // puisqu'il hache le bloc ENTIER ([[D-187]]). Mesurer avant d'avoir fini
+  // d'écrire produit un nombre qui ne décrit plus rien. Pire : la surface de
+  // relecture était elle-même TRONQUÉE — extraite par fenêtre de caractères, elle
+  // s'arrêtait avant les bandes du BDI, c'est-à-dire avant la correction la plus
+  // lourde du lot, sans le signaler. Une sélection qui se périme en silence, exactement
+  // le défaut que [[D-187]] avait fermé dans le périmètre et que l'outil a refait
+  // dans sa propre page. La surface extrait désormais chaque bloc jusqu'à sa
+  // fermeture et VÉRIFIE que onze marqueurs attendus y figurent, sinon elle échoue.
+  //
+  // Relue et attestée par le praticien le 2026-09-16, sur la surface de relecture
+  // produite AVANT la demande — le réalignement, lui, a été écrit le 2026-09-15 :
+  // la date portée ici est celle de la RELECTURE, jamais celle du code.
+  shaPerimetre: '33894e9c6afbd6b3f59a8bb33396aefa56890f57a120f255908ebaf942adef19',
 };
 
 /**

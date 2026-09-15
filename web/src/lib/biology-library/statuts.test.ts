@@ -516,7 +516,7 @@ describe('la table réelle livrée (indicationsBiologieV1)', () => {
   it('la table est peuplée et signée aux cinq termes — le moteur dérive', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
     expect(INDICATIONS_BIOLOGIE_METADATA.validationExterne).toBe(true);
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-15T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-16T00:00:00.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource).toHaveLength(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);

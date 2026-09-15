@@ -420,9 +420,15 @@ export const Q_GEO_06 = {
     ],
     // Note clinique : un score de rappel différé < 3/5 est hautement spécifique de la MA.
     // Les valeurs chiffrées sont ATTRIBUÉES à Dubois 2002 et déclarées PROVISOIRES
-    // (décision h du 2026-08-02) : le registre ne porte ni doi, ni pmid, ni
-    // dateVerification pour cet instrument — personne dans ce dépôt ne les a
-    // confrontées à la publication. Même doctrine que le plafond de Q_GEO_04.
+    // (décision h du 2026-08-02) : personne dans ce dépôt ne les a confrontées
+    // à la publication. Même doctrine que le plafond de Q_GEO_04.
+    //
+    // CORRIGÉ LE 2026-09-15 — cette réserve disait aussi « le registre ne porte
+    // ni doi, ni pmid, ni dateVerification ». C'EST FAUX depuis le 2026-09-14 :
+    // le registre porte `pmid 12467149`, vérifié ce jour-là. La phrase avait été
+    // corrigée AU REGISTRE sans qu'on cherche ses copies dans le code ; en voici
+    // une. La réserve elle-même TIENT — un identifiant relevé n'est pas une
+    // confrontation des valeurs chiffrées à l'article, et elle n'est pas levée.
     note:'Un score de rappel différé ≤ 2/5 est fortement évocateur de maladie d\'Alzheimer (sensibilité 85 %, spécificité 90 % attribuées à Dubois 2002 — valeurs provisoires, non vérifiées contre la source primaire).'
   }
 };

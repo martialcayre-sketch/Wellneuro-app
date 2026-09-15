@@ -77,6 +77,51 @@ d'écriture et **ferme** un champ ; elle n'en ouvre aucun.
 `interventionStatus`) ; `projeterSurLeFil` sans banc, alors qu'il décide seul de ce qui
 atteint le navigateur du patient ; le statut `active` posé en silence sur les actions non
 suspendues ; `limitations` projeté au patient et rendu par aucun écran.
+### D-199 — Une affirmation de conformité qui ne porte pas d'identifiant n'est pas invérifiée, elle est invérifiable
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage praticien « on aligne sur les publications »,
+  rendu en séance après présentation du lot complet.
+- Domaine : clinique — cotations et bandes d'interprétation de trois instruments
+  cités par une table signée.
+- S'appuie sur [[D-187]] (le périmètre signé porte la cotation) et applique la
+  règle posée le 2026-08-01 en retirant les bandes de `Q_TAB_04`.
+
+**LE CRIBLAGE, ET CE QU'IL A RENDU.** Le registre a été fouillé pour toutes ses
+affirmations de conformité à une publication — « bandes publiées », « conforme à
+la source », « relevée à l'identique ». **Onze entrées.** Trois portaient un
+identifiant permettant de les vérifier : l'AQ, le QDRS, l'IRLS. **Les trois se
+sont révélées fausses le même jour.** Les huit autres n'en portent aucun.
+
+**Décision :**
+
+1. **Là où une publication existe, c'est elle qui fait foi**, et les bornes
+   qu'elle laisse ouvertes se comblent par un arbitrage **épinglé comme tel** —
+   jamais présenté comme une valeur publiée. Appliqué au BDI-13 (aucun arbitrage
+   nécessaire : intervalles contigus), à l'IRLS (trois ancrages) et au score de
+   Francis (deux arbitrages : la borne 75 et le chevauchement des trois bornes
+   intérieures, tranché vers la bande inférieure, même sens que le QDRS).
+2. **Une affirmation de conformité DOIT porter l'identifiant qui permet de la
+   vérifier.** Sans lui, elle n'est pas une affirmation faible : elle est
+   **indécidable**, et la seule chose qu'elle produit est de la confiance. Les
+   huit entrées concernées restent ouvertes et nommées au changelog.
+3. **Un banc qui épingle un libellé faux garde fidèlement une erreur.** Sa mise à
+   jour accompagne le changement clinique, jamais l'inverse — et elle est
+   l'occasion de le **renforcer** : deux assertions de borne ont été ajoutées sur
+   la frontière 15/16 du BDI, qui n'existaient pas et qui sont ce qui vaut d'être
+   gardé.
+4. **Un écart délibéré à Drive s'écrit au mapping**, patron de `Q_URO_01` : les
+   ancres ajoutées à `FR_Q006` ne doivent pas être « rétablies ».
+5. **Ce qui a été trouvé juste se nomme.** PSQI, HAD, PSS-10, Pichot, SARC-F ont
+   été confrontés à leur source et sont conformes. Un silence se lirait comme un
+   oubli — et sur le Pichot, la vérification a **réfuté un soupçon** que j'avais
+   énoncé : la source dit « supérieur à 22 », le servi était juste.
+
+**Ce que cette décision ne fait pas :** elle n'allume rien, ne touche aucun
+drapeau, ne modifie aucune règle des tables signées. Elle déplace des bornes
+d'interprétation et trois ancrages de cotation, ce qui rouvre le verrou de la
+table biologique — l'attestation qui le referme est un geste praticien distinct,
+et [[D-195]] s'applique : la déclaration précède la frappe.
 
 ### D-198 — Le barème de charge est déclaré conforme : la relecture a corrigé une phrase avant de signer
 
