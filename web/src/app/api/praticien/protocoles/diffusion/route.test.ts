@@ -25,9 +25,25 @@ const versionRow = {
   idPatient: 'PAT_1',
   inputHash: 'HASH_V1',
   decisionCardInputHash: 'HASH_DEC',
+  assessmentEpisodeId: 'EPISODE_V1',
   status: 'practitioner_reviewed',
   reviewedAt: new Date('2026-01-02T00:00:00.000Z'),
 };
+
+/** Une carte rejouée SANS bloqueur — le cas nominal de l'approbation. */
+function carteSansBloqueur(surcharges: Record<string, unknown> = {}) {
+  return {
+    ok: true,
+    selectionEcartee: false,
+    decisionCard: {
+      decisionCardId: 'DEC_1',
+      inputHash: 'HASH_DEC',
+      abstention: { status: 'not_required', ruleIds: [], limitations: [] },
+      safetyFindingIds: [],
+      ...surcharges,
+    },
+  };
+}
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/praticien/protocoles/diffusion', {
@@ -43,6 +59,85 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+    rejouerCarteDecision.mockResolvedValue(carteSansBloqueur());
+  });
+
+  // ── LES BLOQUEURS DE LA CARTE ([[D-192]]) ───────────────────────────────
+  //
+  // `buildPatientProtocolView` les refuse depuis toujours, et il n'avait aucun
+  // appelant de production avant `D-191` ; cette route, elle, n'a jamais
+  // construit de carte. Les deux refus les plus graves du moteur clinique ne
+  // mordaient donc nulle part sur le chemin qui les rend opposables.
+
+  it('refuse d’approuver sous abstention requise (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    rejouerCarteDecision.mockResolvedValue(carteSansBloqueur({
+      abstention: { status: 'required', ruleIds: ['R1'], limitations: [] },
+    }));
+
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { ok: boolean; reason: string; error: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('abstention_requise');
+    // LE MESSAGE EST CELUI QUE L'ÉCRAN AFFICHE : `approveForDiffusion` rend
+    // `payload.error` tel quel. Un refus dont le motif reste au serveur serait
+    // la garde du booklet — confirmable depuis toujours, et jamais envoyée.
+    expect(json.error).toMatch(/abstention explicite/i);
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse d’approuver sur un constat de sécurité ouvert (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    rejouerCarteDecision.mockResolvedValue(carteSansBloqueur({
+      safetyFindingIds: ['safety-1', 'safety-2'],
+    }));
+
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { ok: boolean; reason: string; error: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('constat_securite');
+    // LE NOMBRE, JAMAIS LES CONSTATS. L'écran de décision les porte déjà ; les
+    // recopier ici ferait de cette route une seconde restitution clinique,
+    // qu'aucune garde ne relit.
+    expect(json.error).toContain('2 constat');
+    expect(json.error).not.toContain('safety-1');
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  // UN PROTOCOLE APPROUVÉ ICI EST UN PROTOCOLE QUE LE PORTAIL SAURA SERVIR.
+  // Deux verdicts « équivalents » finiraient par diverger, et le praticien
+  // validerait alors un écran qui reste vide.
+  it('refuse d’approuver une décision que le serveur ne sait plus rejouer (409)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+
+    const res = await POST(postRequest(body));
+    const json = (await res.json()) as { reason: string; error: string };
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('carte_non_rejouable');
+    expect(json.error).toMatch(/ne se recalcule plus/i);
+    expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  // LE REJEU EST CELUI DU CHEMIN PATIENT, À LA LETTRE : même épisode, même
+  // empreinte comparée. Un rejeu pris sur une autre ancre rendrait un verdict
+  // sur un autre protocole.
+  it('rejoue la carte sur l’épisode et l’empreinte de LA VERSION approuvée', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findUnique.mockResolvedValue(versionRow);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    prisma.protocolDiffusionApproval.create.mockResolvedValue({ id: 'appr_1' });
+
+    await POST(postRequest(body));
+    expect(rejouerCarteDecision).toHaveBeenCalledWith({
+      idPatient: 'PAT_1',
+      decisionCardId: 'DEC_1',
+      assessmentEpisodeId: 'EPISODE_V1',
+      decisionCardInputHash: 'HASH_DEC',
+    });
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
