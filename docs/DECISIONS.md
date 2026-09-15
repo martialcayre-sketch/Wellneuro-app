@@ -4,6 +4,59 @@
 
 ## Décisions actives
 
+### D-197 — Le troisième invariant du périmètre de classement n'avait aucune épreuve : la relecture l'a trouvé avant la signature
+
+- Date : 2026-09-15
+- Statut : accepté — amende [[D-185]] sur un point, et **ne déplace pas
+  l'empreinte** : `da1ba306c0551d7b` tient, la surface soumise à l'attestation
+  est inchangée au bit près.
+- Domaine : clinique — périmètre du classement, banc de liaison.
+
+**CE QUE LA RELECTURE A TROUVÉ, ET C'EST EXACTEMENT SON OFFICE.** Le responsable
+a relu le périmètre sans le signer, et une contre-expertise a relevé que
+`INVARIANTS_PRODUCTEUR.regleEcarteeProduitUnCandidat` **appartenait au périmètre
+attesté sans qu'aucune épreuve ne le tienne**. Le moteur filtre directement par
+`statut !== 'ecarte'` sans consulter l'invariant, et le banc comportemental de
+[[D-185]] ne couvrait que `rangSequentielDepuis` et `confianceUnique`.
+
+Rejoué avant d'être admis, par la méthode que cette campagne a fini par adopter —
+muter PUIS réancrer : passer l'invariant à `true` et reporter la nouvelle
+empreinte laissait **49 cas sur 49 verts**. Le document promettait qu'une règle
+écartée ne produit pas de candidat ; le dépôt ne le prouvait pas.
+
+**LA CORRECTION LIE PAR COMPORTEMENT, ET SURTOUT NE TOUCHE PAS AU PÉRIMÈTRE.**
+Deux voies étaient ouvertes : retirer l'invariant du périmètre en déclarant
+honnêtement qu'il n'est pas prouvé, ou lui écrire son épreuve. La seconde est
+retenue — elle prouve une propriété clinique réelle (une règle écartée par la
+gate de population ne remonte pas comme candidat) — et elle a une vertu de
+procédure : **le fichier signé ne bouge pas d'un octet, donc la relecture déjà
+faite reste valide.** Corriger la preuve n'oblige pas à relire le document.
+
+L'épreuve LIT la valeur déclarée au lieu de la recopier :
+`expect(...).toBe(INVARIANTS_PRODUCTEUR.regleEcarteeProduitUnCandidat)`. Écrire
+`.toBe(false)` en dur — ce que fait le banc voisin de la gate, qui garde le
+comportement et non le périmètre — laisserait la mutation passer. Contre-épreuve
+jointe : les autres règles restent présentes, sans quoi un moteur ne produisant
+RIEN passerait.
+
+**CE QUE L'ÉPISODE DIT DE LA MÉTHODE, et c'est la quatrième fois en deux jours.**
+Sur [[D-185]] deux fois, sur [[D-194]] une fois, ici une quatrième : un banc ne
+prouve que ce que sa rédaction a pensé à nommer. Le motif est stable — une
+garantie écrite dans le texte, et autre chose vérifié dans le code. Ce qui a
+changé, c'est que la faute est désormais attrapée **avant** la signature clinique
+plutôt qu'après le merge.
+
+**CE QUI N'EST TOUJOURS PAS TRANCHÉ, et ne l'est pas ici** : la légitimité
+CLINIQUE des deux premiers termes de classement — que la plainte dominante passe
+devant la priorité intrinsèque de la règle — relève du jugement soignant, pas
+d'une preuve technique. Le périmètre la décrit fidèlement ; il ne la justifie
+pas, et ne prétend pas le faire.
+
+- Conséquences : un cas de plus dans `chaineC1.test.ts`
+  (« UNE RÈGLE ÉCARTÉE NE PRODUIT PAS DE CANDIDAT »). **Aucune modification de
+  `perimetreClassementV1.ts`** : empreinte inchangée, attestation toujours
+  `relu: false`, en attente du geste du responsable.
+
 ### D-196 — Le barème de charge PROPOSE, le praticien DÉCLARE — et la charge redevient lisible
 
 - Date : 2026-09-15
