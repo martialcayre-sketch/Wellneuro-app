@@ -563,6 +563,14 @@ jobs:
               exit 1
             fi
             if ! git diff --quiet "$GITHUB_SHA" "$TETE" -- web/prisma/migrations/; then
+              if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
+                echo "⚠️ La tête de main ($TETE) a dépassé le commit approuvé" >&2
+                echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles." >&2
+                echo "   Ce run push est désormais obsolète : un run plus récent sur main" >&2
+                echo "   porte déjà cette nouvelle tête et doit être approuvé à sa place." >&2
+                echo "   Aucune écriture n'a eu lieu dans ce run." >&2
+                exit 0
+              fi
               echo "❌ La tête de main ($TETE) n'est plus le commit approuvé" >&2
               echo "   ($GITHUB_SHA) ET apporte des migrations nouvelles : déployer la" >&2
               echo "   branche déploierait du SQL que personne n'a approuvé." >&2
