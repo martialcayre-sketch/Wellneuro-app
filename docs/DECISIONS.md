@@ -139,6 +139,26 @@ RECALCULÉ :
 | `buildPatientProtocolView` via `rejeuCarteDecision` | `carte_derivee` : écran patient éteint | non — refus bruyant côté praticien |
 | `ProtocolConsultationPanel` | le brouillon antérieur devient non éligible à l'approbation | non — visible à l'écran |
 | `POST /api/praticien/protocoles` | `provenance_mismatch`, HTTP 400 | non |
+| `GET /api/praticien/ja/cycle` → `PractitionerFoodObservationPanel` | l'épisode disparaît du carnet | **OUI — et l'inventaire l'avait manqué** |
+
+**CET INVENTAIRE ÉTAIT FAUX, ET SA CONCLUSION AVEC.** Il affirmait « aucune n'est
+silencieuse ». La contre-expertise a produit le contre-exemple : sur
+`carte_derivee`, le miroir praticien du carnet rendait `200 { protocoleDiffuse:
+false, vue: null }`, que le panneau confond avec l'absence de protocole et qui
+efface l'épisode sans un mot — pendant que le patient lit « Votre praticien en
+est informé ». Un protocole réellement diffusé disparaissait d'une surface, sans
+alerte.
+
+**LE DÉFAUT ÉTAIT DÉJÀ FERMÉ QUAND LA RÉFUTATION EST ARRIVÉE, ET PAS PAR MOI.**
+La campagne voisine l'a trouvé indépendamment le même jour ([[D-200]]) : la route
+rend désormais `protocoleDiffuse: true, vue: null, indisponible: true`, le
+panneau porte une alerte praticien, et un banc de régression joue
+`motif: 'carte_derivee'`. La correction est entrée ici par la fusion de `main`.
+
+Ce qui reste à retenir n'est pas la ligne manquante, c'est **comment elle
+manquait** : l'inventaire a été fait en lisant les comparaisons d'empreintes, et
+`ja/cycle` n'en fait aucune — il consomme le REFUS du rejeu. Un balayage qui
+cherche `inputHash` ne pouvait pas le voir.
 
 **La sélection de priorité N'EST PAS touchée** : `lireSelectionPriorite` lit sur
 `(idPatient, decisionCardId)` et ne consulte jamais l'empreinte — ce que [[D-173]]
@@ -151,6 +171,39 @@ seul chemin qui refuserait sur `carte_derivee` n'a alors aucun client. Cette
 lecture a quatre jours. Elle se **reconstate avant le déploiement**, pas après —
 la reprendre coûte un one-off, et s'en passer coûterait un écran patient éteint
 sans que personne ne l'ait prévu.
+
+**L'ÉCRAN NE LISAIT QUE `relu`, ET SON PROPRE BANC EN DONNAIT LA PREUVE.**
+Deuxième finding de la même contre-expertise. `DecisionSummaryCard` décidait sur
+le seul booléen : une attestation gardée d'un périmètre ANTÉRIEUR — `relu: true`,
+sha d'hier — présentait les limitations comme relues, alors que le banc de garde,
+lui, l'aurait refusée. **Deux rédactions de la même règle, et une seule mordait**
+— la duplication que [[DC-26]] interdit, déjà divergente.
+
+Le banc de l'écran administrait la preuve du trou qu'il était censé couvrir : il
+injectait `shaRelu: 'simulé'`, valeur qui ne peut correspondre à aucun périmètre,
+et attendait « relus ».
+
+Et ce n'est pas un cas théorique : **c'est exactement ce qui s'est produit le
+2026-09-15**, quand faire entrer la portée dans la donnée hachée a périmé une
+attestation déjà posée. Si l'écran avait été servi dans cet état, il aurait
+continué d'afficher « relus ».
+
+`attestationValide(attestation)` pose donc les trois questions ENSEMBLE et vit
+dans le périmètre, lu par le banc comme par l'écran. Elle prend l'attestation en
+PARAMÈTRE : la lire depuis la portée du module ferait qu'un banc qui double
+`ATTESTATION_CLASSEMENT` verrait la fonction continuer de lire la vraie
+constante — et prouverait le contraire de ce qu'il croit prouver.
+
+**L'EMPREINTE ATTENDUE DESCEND DANS LE MODULE, et il faut dire pourquoi ce n'est
+pas tautologique.** L'écran tourne dans le navigateur : aucun hachage n'y est
+disponible, il ne peut que comparer deux chaînes. Le littéral doit donc être
+importable. Le lien avec le contenu réel est tenu par un cas de banc, et un seul :
+`EMPREINTE_PERIMETRE_ATTENDUE` doit valoir `empreinte()`. Sans lui, la
+vérification de l'écran serait une égalité entre deux constantes décidées
+ensemble, c'est-à-dire rien ([[D-063]]).
+
+Mutation jouée : rendre à l'écran la lecture du seul booléen tue les deux
+nouveaux cas — sha périmé et date nulle — et laisse vert le cas d'anti-vacuité.
 
 - Conséquences : `PORTEE_ATTESTATION` entre dans `PERIMETRE_CLASSEMENT_V1` ;
   `limitationsPerimetreClassement` ajouté au contrat du candidat et renseigné par

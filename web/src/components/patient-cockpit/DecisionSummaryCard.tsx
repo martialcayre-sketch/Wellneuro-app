@@ -4,7 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
-import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION } from '@/lib/clinical/perimetreClassementV1';
+import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION, attestationValide } from '@/lib/clinical/perimetreClassementV1';
 import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
@@ -175,8 +175,17 @@ export function DecisionSummaryCard({
   //
   // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : retirée, ces
   // textes retombent d'eux-mêmes dans le groupe non relu.
+  //
+  // LA VALIDITÉ SE DEMANDE AU PÉRIMÈTRE, ELLE NE SE DEVINE PAS SUR `relu`.
+  // Cet écran lisait le seul booléen : un `shaRelu` PÉRIMÉ — celui d'un
+  // périmètre antérieur — ou une date nulle présentaient les limitations comme
+  // relues. Relevé en contre-expertise, et le banc de cet écran en donnait
+  // lui-même la preuve : il injectait `shaRelu: 'simulé'` et attendait
+  // « relus ». `attestationValide` pose les trois questions ensemble, au même
+  // endroit que le banc de garde — deux rédactions de la même règle divergent
+  // toujours ([[DC-26]]).
   const duPerimetre = new Set(
-    ATTESTATION_CLASSEMENT.relu ? (current?.limitationsPerimetreClassement ?? []) : [],
+    attestationValide(ATTESTATION_CLASSEMENT) ? (current?.limitationsPerimetreClassement ?? []) : [],
   );
   const limitationsRelues = duMoteur.filter((texte) => duPerimetre.has(texte));
   const limitationsMoteur = duMoteur.filter((texte) => !duPerimetre.has(texte));

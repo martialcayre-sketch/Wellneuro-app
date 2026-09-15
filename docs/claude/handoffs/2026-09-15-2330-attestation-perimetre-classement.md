@@ -114,3 +114,34 @@ La dernière lecture de production ([[D-173]], 2026-09-12) donnait **zéro
 approbation de diffusion**. Elle date de quatre jours. **Un one-off avant merge
 la reconstate** ; s'en passer coûterait un écran patient éteint sans que personne
 ne l'ait prévu.
+
+## Seconde contre-expertise — deux findings, un seul était encore ouvert
+
+**P1-1, ouvert et corrigé.** L'écran ne lisait que `ATTESTATION_CLASSEMENT.relu`.
+Un `shaRelu` périmé ou une date nulle présentaient les limitations comme relues,
+alors que le banc de garde l'aurait refusée. **Le banc de l'écran administrait la
+preuve du trou** : il injectait `shaRelu: 'simulé'` et attendait « relus ».
+
+`attestationValide(attestation)` pose les trois questions ensemble, dans le
+périmètre, lue par le banc comme par l'écran. `EMPREINTE_PERIMETRE_ATTENDUE`
+descend dans le module — l'écran tourne dans le navigateur et ne peut que
+comparer deux chaînes ; un cas de banc, et un seul, prouve que ce littéral vaut
+le hash réel, sans quoi la comparaison serait creuse.
+
+Mutation jouée : rendre à l'écran la lecture du seul booléen tue les deux
+nouveaux cas et laisse vert l'anti-vacuité.
+
+**P1-2, réfutation juste — de mon inventaire, et fermée par ailleurs.**
+`GET /api/praticien/ja/cycle` rendait `protocoleDiffuse: false` sur
+`carte_derivee` ; le carnet praticien le confond avec l'absence de protocole et
+efface l'épisode **sans un mot**. Mon inventaire affirmait « aucune surface n'est
+silencieuse » : faux.
+
+Pourquoi je l'avais manqué — et c'est ce qu'il faut retenir : **l'inventaire a été
+fait en cherchant les comparaisons d'empreintes**, et `ja/cycle` n'en fait
+aucune ; il consomme le REFUS du rejeu. Un balayage sur `inputHash` ne pouvait
+pas le voir.
+
+La campagne voisine l'avait trouvé indépendamment le même jour ([[D-200]]) :
+route, alerte praticien et banc de régression `carte_derivee` sont entrés ici par
+la fusion de `main`.

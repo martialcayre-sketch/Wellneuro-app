@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   ATTESTATION_CLASSEMENT,
+  EMPREINTE_PERIMETRE_ATTENDUE,
   LIMITATIONS_CANDIDAT,
   MOTIF_ABSTENTION,
   ORDRE_EVALUATION_ABSTENTION,
   PERIMETRE_CLASSEMENT_V1,
   PORTEE_ATTESTATION,
   TERMES_DE_CLASSEMENT,
+  attestationValide,
 } from './perimetreClassementV1';
 import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 
@@ -27,8 +29,17 @@ import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 // haché peuvent diverger sans trace. C'est exactement le trou que [[D-180]] a
 // montré sur les grilles.
 
-/** L'empreinte du périmètre, figée. Toute édition la fait bouger. */
-const EMPREINTE_PERIMETRE = '9792c12e72db93d8';
+/**
+ * L'empreinte du périmètre, figée — et elle vit dans le MODULE, plus ici.
+ *
+ * POURQUOI LE DÉPLACEMENT. L'écran doit pouvoir vérifier qu'une attestation
+ * porte bien sur CE périmètre, et il tourne dans le navigateur : aucun hachage
+ * n'y est disponible. Le littéral doit donc être importable. Ce banc reste le
+ * SEUL endroit qui le relie au contenu réel — il calcule le hash et exige
+ * l'égalité. Une copie locale ici aurait recréé la duplication que `DC-26`
+ * interdit, et les deux auraient fini par diverger.
+ */
+const EMPREINTE_PERIMETRE = EMPREINTE_PERIMETRE_ATTENDUE;
 
 /**
  * La source d'un module, COMMENTAIRES RETIRÉS.
@@ -81,6 +92,42 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
       ATTESTATION_CLASSEMENT.shaRelu,
       'ATTESTATION PÉRIMÉE : le périmètre a changé depuis la relecture. Ce n’est PAS une empreinte à reporter — le contenu attesté n’est plus celui qui est relu. Retirer l’attestation (`relu: false`, date et sha à `null`), écrire une décision `D-xxx` qui dit ce qui a bougé, et la redemander au responsable.',
     ).toBe(empreinte());
+  });
+
+  it('`attestationValide` REFUSE un sha périmé et une date nulle, pas seulement `relu: false`', () => {
+    // LE DÉFAUT QUE CE CAS FERME, TROUVÉ EN CONTRE-EXPERTISE SUR LA PR #1125.
+    // `DecisionSummaryCard` ne lisait que `relu`. Une attestation gardée d'un
+    // périmètre ANTÉRIEUR — `relu: true`, sha d'hier — présentait donc les
+    // limitations comme relues alors que ce banc, lui, l'aurait refusée. Deux
+    // lectures de la même règle, et seule l'une des deux mordait.
+    //
+    // La preuve venait du banc de l'écran lui-même : il injectait
+    // `shaRelu: 'simulé'`, valeur qui ne peut correspondre à aucun périmètre,
+    // et attendait « relus ».
+    const valide = { relu: true, dateRelecture: '2026-09-15', shaRelu: EMPREINTE_PERIMETRE_ATTENDUE };
+    expect(attestationValide(valide)).toBe(true);
+
+    // SHA PÉRIMÉ — le cas réel : le périmètre a bougé, l'attestation est restée.
+    expect(attestationValide({ ...valide, shaRelu: '0000000000000000' })).toBe(false);
+    expect(attestationValide({ ...valide, shaRelu: 'simulé' })).toBe(false);
+    expect(attestationValide({ ...valide, shaRelu: null })).toBe(false);
+
+    // DATE NULLE — une signature sans date n'est pas opposable : on ne sait pas
+    // ce qui avait été relu au moment où elle a été posée.
+    expect(attestationValide({ ...valide, dateRelecture: null })).toBe(false);
+    expect(attestationValide({ ...valide, dateRelecture: '' })).toBe(false);
+
+    // ET `relu: false` reste refusé même si les deux autres champs sont remplis.
+    expect(attestationValide({ ...valide, relu: false })).toBe(false);
+  });
+
+  it('LE LITTÉRAL DU MODULE EST LE HASH RÉEL — la comparaison de l’écran n’est pas creuse', () => {
+    // L'ÉCRAN NE HACHE RIEN : il compare `shaRelu` à un littéral importé. Ce
+    // couple ne vaut que si quelqu'un prouve que le littéral est bien le hash du
+    // contenu — sinon la vérification serait une égalité entre deux constantes
+    // décidées ensemble, c'est-à-dire rien ([[D-063]]). C'est ce cas-ci, et
+    // c'est le seul.
+    expect(EMPREINTE_PERIMETRE_ATTENDUE).toBe(empreinte());
   });
 
   it('LA PORTÉE EST DANS LA DONNÉE HACHÉE, pas dans un commentaire', () => {

@@ -260,6 +260,52 @@ export const PERIMETRE_CLASSEMENT_V1 = {
  * SOUS-promettra sur du relu — l'inverse du défaut habituel, mais un écart
  * quand même.
  */
+/**
+ * L'EMPREINTE ATTENDUE DU PÉRIMÈTRE — littéral figé, et il vit ICI et non dans
+ * le banc pour une raison précise : **l'écran doit pouvoir vérifier la validité
+ * d'une attestation**, et il tourne dans le navigateur, où aucun hachage n'est
+ * disponible.
+ *
+ * LE COUPLE N'EST PAS TAUTOLOGIQUE, et c'est tout l'enjeu ([[D-063]]). Ce
+ * littéral ne se calcule pas : c'est `perimetreClassement.guard.test.ts` qui
+ * prouve qu'il vaut le hash RÉEL de `PERIMETRE_CLASSEMENT_V1`. Une édition du
+ * périmètre déplace le hash, le littéral ne suit pas, le banc rougit. À
+ * l'exécution, l'écran ne compare donc que deux chaînes — ce qui est bon marché
+ * et sûr — pendant que le lien avec le contenu réel est tenu au CI.
+ */
+export const EMPREINTE_PERIMETRE_ATTENDUE = '9792c12e72db93d8';
+
+/**
+ * UNE ATTESTATION EST-ELLE VALIDE — la seule question que doit poser un
+ * consommateur, écran compris.
+ *
+ * CE QUE CETTE FONCTION FERME, TROUVÉ EN CONTRE-EXPERTISE. `DecisionSummaryCard`
+ * ne lisait que `relu`. Un `shaRelu` PÉRIMÉ — celui d'un périmètre antérieur,
+ * gardé par oubli — ou une `dateRelecture` nulle présentaient donc les
+ * limitations comme relues. Le banc de l'écran en administrait lui-même la
+ * preuve : il injectait `shaRelu: 'simulé'`, une valeur qui ne peut correspondre
+ * à aucun périmètre, et attendait « relus ».
+ *
+ * LES TROIS CHAMPS VALENT ENSEMBLE, ou l'attestation ne vaut pas. C'est déjà ce
+ * que le banc de garde exige dans les deux sens ; il manquait qu'un consommateur
+ * puisse poser la même question sans le réécrire — et deux rédactions de la même
+ * règle finissent toujours par diverger ([[DC-26]]).
+ *
+ * L'ATTESTATION EST PASSÉE EN PARAMÈTRE, jamais lue depuis la portée du module :
+ * sinon un banc qui double `ATTESTATION_CLASSEMENT` verrait la fonction
+ * continuer de lire la vraie constante, et prouverait le contraire de ce qu'il
+ * croit prouver.
+ */
+export function attestationValide(attestation: {
+  relu: boolean;
+  dateRelecture: string | null;
+  shaRelu: string | null;
+}): boolean {
+  if (!attestation.relu) return false;
+  if (typeof attestation.dateRelecture !== 'string' || attestation.dateRelecture.length === 0) return false;
+  return attestation.shaRelu === EMPREINTE_PERIMETRE_ATTENDUE;
+}
+
 export const ATTESTATION_CLASSEMENT = {
   relu: false,
   dateRelecture: null as string | null,

@@ -6375,3 +6375,31 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
+
+## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-201]])
+
+**Le banc administrait la preuve du trou qu'il couvrait.** `DecisionSummaryCard`
+décidait sur `ATTESTATION_CLASSEMENT.relu` seul ; son banc injectait
+`shaRelu: 'simulé'` — une valeur qui ne peut correspondre à aucun périmètre — et
+attendait « relus ». Une attestation gardée d'un périmètre antérieur présentait
+donc les limitations comme relues, pendant que le banc de garde, lui, l'aurait
+refusée. **Deux rédactions de la même règle, une seule mordait.**
+
+Et ce n'est pas théorique : c'est exactement l'état traversé la veille au soir,
+quand la portée entrée dans la donnée hachée a périmé une attestation posée.
+
+`attestationValide` vit désormais dans le périmètre, lue par le banc comme par
+l'écran, et prend l'attestation en PARAMÈTRE — la lire depuis la portée du module
+ferait qu'un banc qui la double prouverait le contraire de ce qu'il croit prouver.
+
+**La réfutation que j'avais demandée est arrivée, et elle était juste.** J'avais
+écrit dans `D-201` un inventaire des consommateurs d'empreinte concluant
+« aucune surface n'est silencieuse », et j'avais explicitement demandé qu'on le
+casse. `GET /api/praticien/ja/cycle` rendait `protocoleDiffuse: false` sur
+`carte_derivee` : le carnet praticien efface l'épisode sans un mot.
+
+**Comment je l'avais manqué, et c'est la leçon** : l'inventaire a été fait en
+cherchant les COMPARAISONS D'EMPREINTES. `ja/cycle` n'en fait aucune — il
+consomme le REFUS du rejeu. Un balayage sur `inputHash` ne pouvait pas le voir.
+La campagne voisine l'avait trouvé le même jour par l'autre bout ([[D-200]]) ;
+la correction est entrée ici par la fusion de `main`.

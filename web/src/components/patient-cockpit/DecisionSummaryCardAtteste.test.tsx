@@ -20,7 +20,17 @@ vi.mock('@/lib/clinical/perimetreClassementV1', async (importOriginal) => {
   const reel = await importOriginal<typeof import('@/lib/clinical/perimetreClassementV1')>();
   return {
     ...reel,
-    ATTESTATION_CLASSEMENT: { relu: true, dateRelecture: '2026-09-15', shaRelu: 'simulé' },
+    // LE SHA EST LE VRAI, ET CE DÉTAIL A ÉTÉ UN DÉFAUT. Une première rédaction
+    // écrivait `shaRelu: 'simulé'` — une valeur qui ne peut correspondre à aucun
+    // périmètre — et le banc passait quand même : l'écran ne lisait que `relu`.
+    // Ce banc ADMINISTRAIT donc la preuve du trou qu'il était censé couvrir.
+    // Relevé en contre-expertise sur la PR #1125. Les cas de sha périmé et de
+    // date nulle vivent dans `DecisionSummaryCardAttestationInvalide.test.tsx`.
+    ATTESTATION_CLASSEMENT: {
+      relu: true,
+      dateRelecture: '2026-09-15',
+      shaRelu: reel.EMPREINTE_PERIMETRE_ATTENDUE,
+    },
   };
 });
 
