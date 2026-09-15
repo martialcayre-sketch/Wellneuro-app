@@ -244,6 +244,11 @@ export function LectureEtatPassePanel({
                 sortie, explicite — jamais un état daté qui « colle ». */}
             <button
               type="button"
+              // REPÈRE DE MESURE (banc `lecture-datee-reflow`) : l'enregistreur
+              // d'événements doit pouvoir situer ce bouton à chaque phase du
+              // geste, y compris quand le contenu du dessus se résout entre
+              // l'appui et le relâchement. Aucun effet de rendu.
+              data-sortie-presente=""
               onClick={sortirAuPresent}
               className="ml-auto flex min-h-11 shrink-0 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
