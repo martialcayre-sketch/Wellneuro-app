@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Ce que le patient lit vraiment"
-statut: "à faire"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -75,14 +75,44 @@ contredisent. Ce lot les réduit à une : **le contrat**.
   et c'est un banc, pas une convention.
 - Aucun seuil inventé.
 
+## L'arbitrage du 2026-09-15, et la prémisse qu'il a fallu corriger
+
+`buildPatientProtocolView` exige une `DecisionCard` **entière**, et aucune table ne
+la persiste. Trois voies ont été posées au responsable après vérification du code ;
+il a tranché **la recomposition à la lecture** (`D-191` §1), avec le refus visible
+des deux côtés (§4) et les gardes de la carte portées à la diffusion — ce dernier
+point reste à livrer, il fait la seconde PR du lot.
+
+La dérive de l'empreinte a été **mesurée avant** d'être acceptée : le snapshot est
+borné à l'épisode confirmé et l'horodatage vaut sa date de confirmation, donc une
+passation nouvelle ne bouge rien. Détail au registre (`D-191` §3).
+
 ## Étapes
 
-- [ ] Brancher le contrat dans les deux routes.
-- [ ] Re-dériver le libellé d'axe au serveur.
-- [ ] Rendre les trois actions, le libellé et le critère à l'écran patient.
-- [ ] Renommer le bouton ; consigner `adviceSheetRef` en dette.
-- [ ] Poser le marquage dans le constructeur.
-- [ ] Retourner les quatre bancs ; fragment `changelog.d/`.
+- [x] Brancher le contrat dans les deux routes.
+- [x] Recomposer la carte au serveur (`rejeuCarteDecision`) et garder la fraîcheur.
+- [x] Rendre les trois actions, le libellé d'axe et le critère à l'écran patient.
+- [x] Dire le refus au patient, et le dire au praticien sur son écran de diffusion.
+- [x] Renommer le bouton ; consigner `adviceSheetRef` en dette.
+- [x] Retourner les bancs ; fragment `changelog.d/` ; décision `D-191`.
+- [x] **PR 2 — les gardes de la carte à la diffusion** (`D-192`) : abstention
+      requise et constat de sécurité n'étaient opposés NULLE PART, pas même à
+      l'approbation, qui lisait `decision_card_input_hash` sur la ligne du
+      brouillon sans jamais construire de carte. Le rejeu y est celui du chemin
+      patient, à la lettre : un protocole approuvé est un protocole que le portail
+      saura servir.
+- [ ] Le marquage « votre patient lira ceci » dans le constructeur — reporté au
+      LOT-04, qui touche déjà ces champs pour la citation.
+
+## Ce que le lot a trouvé en chemin, et corrigé
+
+1. **Le carnet alimentaire s'ancrait sur `actions[0]`, quel que soit son type.**
+   Invisible tant que toute action neuve naissait `food` ; depuis `D-189`, la
+   première action peut être une orientation médecin.
+2. **La fixture de son banc posait `type: 'alimentation'`** — un type inexistant au
+   contrat, accepté parce que le champ était `string`.
+3. **Trois écrans redéclaraient chacun leur type de vue patient** et y coulaient le
+   JSON : `tsc` restait vert sur un champ servi et rendu nulle part.
 
 ## Tests
 
@@ -93,3 +123,12 @@ régénérer en CI.
 
 Une seule description de la vue patient subsiste dans le code ; les trois actions
 partent ; les bancs qui figeaient l'amputation gardent désormais le contraire.
+
+**Atteints.** Quatre mutations ont été vues ROUGES avant que quoi que ce soit ne
+soit déclaré vert : projection réduite à une action → trois bancs rouges ; garde de
+fraîcheur neutralisée → un banc rouge ; garde d'abstention neutralisée → un banc
+rouge ; garde de constat de sécurité neutralisée → un banc rouge. Restauration
+depuis une copie à chaque fois, jamais par `git checkout --`.
+
+Reste hors lot, nommé : le marquage « votre patient lira ceci » dans le
+constructeur, reporté au LOT-04 qui touche déjà ces champs.

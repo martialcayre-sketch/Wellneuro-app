@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { deriveProtocolDraftId, deriveVersionId, resolveActiveVersion } from '@/lib/protocol/versioning';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import {
   DIFFUSION_CONFIRMATION,
   isApprovalStale,
@@ -79,7 +80,14 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const versionId = deriveVersionId(deriveProtocolDraftId(decisionCardId), protocolDraftInputHash);
     const version = await prisma.protocolDraft.findUnique({
       where: { id: versionId },
-      select: { idPatient: true, inputHash: true, decisionCardInputHash: true, status: true, reviewedAt: true },
+      select: {
+        idPatient: true,
+        inputHash: true,
+        decisionCardInputHash: true,
+        assessmentEpisodeId: true,
+        status: true,
+        reviewedAt: true,
+      },
     });
     if (!version || version.idPatient !== idPatient) {
       return NextResponse.json(
@@ -101,6 +109,70 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: check.reason, error: 'Approbation de diffusion invalide.' },
         { status: 400 },
+      );
+    }
+
+    // ── LES BLOQUEURS DE LA CARTE, OPPOSÉS ICI ET NULLE PART AILLEURS ────────
+    //
+    // LE DÉFAUT QUE CE BLOC FERME ([[D-192]]). `buildPatientProtocolView` refuse
+    // depuis toujours une décision sous abstention requise ou portant un constat
+    // de sécurité — mais il n'avait AUCUN appelant de production jusqu'à
+    // [[D-191]], et cette route-ci n'a jamais construit de carte : elle recopiait
+    // `version.decisionCardInputHash` depuis la ligne du brouillon et signait.
+    // Les deux refus les plus graves du moteur clinique ne mordaient donc nulle
+    // part sur le chemin qui les rend opposables.
+    //
+    // POURQUOI À L'APPROBATION, ET PAS À LA LECTURE PATIENT. C'est ici que le
+    // praticien ATTESTE un contenu pour diffusion : le refus doit tomber sous sa
+    // main, au moment de son geste, avec un motif qu'il peut lever. Le même refus
+    // servi plus tard au portail lui apprendrait après coup qu'il a validé
+    // quelque chose d'invalide — et le patient l'apprendrait en même temps que
+    // lui, par un écran vide.
+    //
+    // LE REJEU EST CELUI DU CHEMIN PATIENT, à la lettre : même fonction, même
+    // empreinte comparée. Un protocole approuvé ici est donc un protocole que le
+    // portail saura servir — deux verdicts « équivalents » finiraient par
+    // diverger, et le praticien validerait alors un écran qui reste vide.
+    const rejeu = await rejouerCarteDecision({
+      idPatient,
+      decisionCardId,
+      assessmentEpisodeId: version.assessmentEpisodeId,
+      decisionCardInputHash: version.decisionCardInputHash,
+    });
+    if (!rejeu.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'carte_non_rejouable',
+          error: 'La décision derrière ce protocole ne se recalcule plus sur ce dossier. '
+            + 'Rechargez le cockpit et relisez la version active avant de la valider.',
+        },
+        { status: 409 },
+      );
+    }
+    if (rejeu.decisionCard.abstention.status !== 'not_required') {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'abstention_requise',
+          error: 'Ce dossier demande une abstention explicite : le protocole ne peut pas être '
+            + 'validé pour diffusion tant que les bloqueurs ne sont pas levés.',
+        },
+        { status: 409 },
+      );
+    }
+    if (rejeu.decisionCard.safetyFindingIds.length > 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'constat_securite',
+          // Le NOMBRE, jamais les constats : l'écran de décision les porte déjà,
+          // et les recopier ici ferait de cette route une seconde restitution
+          // clinique, qu'aucune garde ne relit.
+          error: `Ce dossier porte ${rejeu.decisionCard.safetyFindingIds.length} constat(s) de sécurité `
+            + 'ouvert(s) : le protocole ne peut pas être validé pour diffusion. Traitez-les à la phase Décision.',
+        },
+        { status: 409 },
       );
     }
 
@@ -202,10 +274,17 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const versions = await prisma.protocolDraft.findMany({
       where: { idPatient, decisionCardId },
-      select: { id: true, inputHash: true, decisionCardInputHash: true, supersedesDraftId: true, createdAt: true },
+      select: {
+        id: true,
+        inputHash: true,
+        decisionCardInputHash: true,
+        assessmentEpisodeId: true,
+        supersedesDraftId: true,
+        createdAt: true,
+      },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false });
+      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
@@ -215,6 +294,39 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       select: { id: true, protocolDraftInputHash: true, supersedesApprovalId: true, createdAt: true, approvedAt: true },
     });
     const active = resolveActiveApproval(approvals);
+
+    // CE QUE LE PATIENT VOIT, DIT AU PRATICIEN ([[D-191]]).
+    //
+    // Le chemin patient recompose la carte de décision et REFUSE de servir quand
+    // son empreinte n'est plus celle qui a été approuvée. Ce refus était le
+    // défaut à ne pas reproduire : une garde que personne ne voit se mesure à
+    // zéro — la garde du booklet était confirmable « depuis toujours » et aucun
+    // écran n'envoyait la confirmation.
+    //
+    // Le constat est calculé PAR LA MÊME FONCTION que la route du portail, sur
+    // la même version : deux verdicts « équivalents » finiraient par diverger, et
+    // le praticien lirait « servi » sur un écran patient éteint.
+    //
+    // `null` quand rien n'est diffusé — il n'y a alors rien à servir, et
+    // « non servie » serait un faux constat.
+    let servieAuPatient: boolean | null = null;
+    if (active) {
+      // La version APPROUVÉE, pas la version active : le praticien peut avoir
+      // écrit une version plus récente sans la diffuser, et c'est l'ancienne que
+      // son patient lit. `stale`, juste au-dessus, dit l'écart ; ce constat-ci
+      // dit ce qui est réellement servi.
+      const versionApprouvee =
+        versions.find(version => version.inputHash === active.protocolDraftInputHash) ?? null;
+      if (versionApprouvee) {
+        const rejeu = await rejouerCarteDecision({
+          idPatient,
+          decisionCardId,
+          assessmentEpisodeId: versionApprouvee.assessmentEpisodeId,
+          decisionCardInputHash: versionApprouvee.decisionCardInputHash,
+        });
+        servieAuPatient = rejeu.ok;
+      }
+    }
 
     return NextResponse.json({
       ok: true,
@@ -226,6 +338,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           }
         : null,
       stale: isApprovalStale(active, activeVersion?.inputHash ?? null),
+      servieAuPatient,
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));

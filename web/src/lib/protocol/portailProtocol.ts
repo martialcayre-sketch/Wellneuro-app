@@ -50,6 +50,14 @@ export async function resolveProtocoleDiffuse(
 ): Promise<{
   protocolDraftId: string;
   protocolDraftInputHash: string;
+  /**
+   * L'identifiant de la carte derrière ce protocole. RENDU DEPUIS [[D-191]] :
+   * le chemin patient recompose la carte pour servir le contrat
+   * `c1-patient-protocol-view-v2`, et il ne peut pas la nommer sans lui. Il est
+   * lu sur le BROUILLON APPROUVÉ, pas sur la ligne d'approbation — c'est le
+   * brouillon qui porte l'ancre, et les deux sont déjà recoupés plus haut.
+   */
+  decisionCardId: string;
   decisionCardInputHash: string;
   approvedAt: Date;
   approvedBy: string;
@@ -106,6 +114,7 @@ export async function resolveProtocoleDiffuse(
   return {
     protocolDraftId: row.protocolDraftId,
     protocolDraftInputHash: row.protocolDraftInputHash,
+    decisionCardId: approvedDraft.decisionCardId,
     decisionCardInputHash: row.decisionCardInputHash,
     approvedAt: row.approvedAt,
     approvedBy: row.approvedBy,

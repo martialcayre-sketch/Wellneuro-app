@@ -18,6 +18,7 @@ export function ProtocolDiffusionPanel({
   approved,
   stale,
   approvedAt,
+  servieAuPatient = null,
   state = 'idle',
   error = null,
   onApprove,
@@ -30,6 +31,16 @@ export function ProtocolDiffusionPanel({
   // été enregistrée depuis).
   stale: boolean;
   approvedAt: string | null;
+  /**
+   * Le protocole approuvé est-il RÉELLEMENT servi au patient aujourd'hui ?
+   *
+   * `null` = rien de diffusé, ou constat non lu — on n'affirme alors rien.
+   * `false` = une validation existe et l'écran du patient est vide : la carte de
+   * décision a été recomposée au serveur et son empreinte n'est plus celle qui a
+   * été approuvée ([[D-191]]). Distinct de `stale`, qui compare deux VERSIONS ;
+   * celui-ci compare le DOSSIER à lui-même.
+   */
+  servieAuPatient?: boolean | null;
   state?: DiffusionState;
   error?: string | null;
   onApprove?: () => void;
@@ -69,6 +80,20 @@ export function ProtocolDiffusionPanel({
           </span>
         )}
       </p>
+
+      {/* LE CONSTAT QUI MANQUAIT. Une validation pour diffusion pouvait cesser
+          d'être servie sans que personne ne l'apprenne : le patient lisait une
+          indisponibilité, le praticien lisait « Validé pour diffusion ». Les
+          causes sont peu nombreuses et toutes nommables — une retouche
+          d'anamnèse, un signalement d'effet indésirable déposé par le patient,
+          une re-sélection de priorité. Le motif n'est pas affiché : il nommerait
+          un acte du dossier là où l'écran doit appeler une relecture. */}
+      {approved && servieAuPatient === false && (
+        <p role="alert" className="mt-2 text-base text-status-warning">
+          Ce protocole n’est plus affiché à votre patient : le dossier a changé depuis sa validation.
+          Relisez la version active et re-validez-la pour diffusion.
+        </p>
+      )}
 
       {state === 'error' && (
         <p role="alert" className="mt-2 text-base text-status-danger">{error ?? 'Échec de la validation.'}</p>

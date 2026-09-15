@@ -2,6 +2,113 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-04 (2/2) : la citation se constate à la lecture (D-193)
+
+**Décisions** : l'arbitrage a été REPOSÉ parce que le premier était faux — `D-189` §1
+écrivait « la provenance est portée par la version », par analogie avec
+`objectifs_negocies` dont la provenance vit dans neuf colonnes de migration ;
+`protocol_drafts` n'en a aucune. Trois voies reposées après vérification en code
+(contrat V5 — le patron du dépôt, mais une décision qui étend `D-130` pour une marque
+d'affichage ; constat à la lecture ; différer). Tranché : le **constat à la lecture**,
+le mécanisme même retenu la veille pour la vue patient.
+
+**Livré** : `provenancePurpose.ts` (pur, liste fermée, comparaison stricte au `trim`
+près) ; `teteObjectifCitable.ts` — la lecture partagée plutôt qu'une TROISIÈME copie
+de `SELECTION_OBJECTIF` ; les sources citables et la provenance constatée au GET des
+versions ; « Reprendre » au constructeur, qui ne transmet rien — c'est le texte qui
+fait foi ; le marquage « votre patient la lit », reporté du LOT-03.
+
+**Trouvé en chemin** : une commodité emportait le chemin principal — une erreur de
+base sur la lecture des sources aurait fait tomber tout l'historique du protocole
+pour un bouton « Reprendre ». Elle ne lève plus.
+
+**Écarté** : le contrat V5 (coût disproportionné pour une marque d'affichage) ; citer
+la tête la plus récente quand deux sont actives (une discordance ne se moyenne pas) ;
+citer le motif praticien de sélection ou le `rationale` du moteur — ils s'affichent,
+ils ne partent pas au patient.
+
+**Vérifications** : T1 vert ; T2 rapide 9 293 bancs unitaires et 198 E2E verts.
+Mutation vue ROUGE avant de déclarer vert, restaurée depuis une copie.
+
+**Prochaine action** : le LOT-06 attend la première ligne de barème signée du
+praticien — son mécanisme est écrit et vert sur une branche locale non poussée.
+
+**Questions ouvertes** : la mesure de production du LOT-07 a été refusée par le
+classifieur de sécurité de la session et n'a pas été contournée.
+
+## 2026-09-15 — LOT-03 (2/2) : les gardes de la carte opposées à la diffusion (D-192)
+
+**Décisions** : le contrat de vue patient refuse depuis toujours une décision sous
+abstention requise et une décision portant un constat de sécurité ; ces deux refus
+ne mordaient NULLE PART — le contrat n'avait aucun appelant avant `D-191`, et la
+route d'approbation n'a jamais construit de carte. Le producteur de constats, lui,
+est alimenté depuis `D-099`. Le refus tombe désormais sous la main du praticien, au
+moment où il atteste : servi plus tard au portail, il lui apprendrait après coup
+qu'il a validé quelque chose d'invalide, et son patient l'apprendrait en même temps
+que lui par un écran vide.
+
+**Livré** : rejeu de la carte à l'approbation par la MÊME fonction que le chemin
+patient, sur l'épisode et l'empreinte de la version approuvée ; trois refus 409
+(`abstention_requise`, `constat_securite`, `carte_non_rejouable`) ; le message part à
+l'écran sans code neuf, et un banc l'assertionne plutôt que de s'y fier.
+
+**Écarté** : recopier les constats de sécurité dans le message — l'écran de décision
+les porte déjà, et les répéter ferait de cette route une seconde restitution
+clinique, absente de la carte des chemins sortants. Seul le NOMBRE est dit.
+
+**Vérifications** : T1 vert ; T2 rapide 198 verts, aucun rouge. Deux mutations vues
+ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : LOT-04 (2/2), la citation en constat à la lecture.
+
+**Questions ouvertes** : le LOT-06 attend la première ligne de barème signée ; la
+mesure de production du LOT-07 a été refusée par le classifieur de sécurité de la
+session et n'a pas été contournée.
+
+## 2026-09-15 — LOT-03 (1/2) : la vue patient du protocole est un contrat recomposé (D-191)
+
+**Décisions** : trois questions posées au responsable APRÈS vérification du code —
+la nuit précédente avait produit deux arbitrages rendus sur prémisse fausse, et
+c'est la correction de ce défaut. Établi avant de demander : la `DecisionCard` ne
+fournit qu'UN champ à la vue patient (`priorityLabel` = `regle.libelle` du registre
+signé), ses autres apports sont des GARDES, ces gardes ne sont opposées nulle part
+(la route de diffusion ne construit aucune carte), et la dérive d'empreinte est
+bornée (snapshot borné à l'épisode, horodatage = `confirmedAt` : une passation
+nouvelle ne bouge rien). Le responsable a tranché la **recomposition à la lecture**
+— ce n'était pas la voie recommandée —, les gardes **portées à la diffusion**, et le
+**refus net + signal praticien**.
+
+**Livré** : `rejeuCarteDecision.ts` (chaîne C1 rejouée par la MÊME lecture et la MÊME
+construction que le cockpit et le vérificateur — `entreesRuntime` exportée pour
+cela) ; la garde de fraîcheur ; le contrat branché dans les deux routes, dont
+`praticien/ja/cycle` qui se déclarait « miroir exact » en recopiant le même défaut ;
+`vuePatientSurLeFil.ts`, la projection écrite en UN seul endroit ; l'écran patient
+avec ses trois actions, la phrase d'attente, le libellé d'axe et le critère J21 ; le
+refus visible des deux côtés ; le bouton « Ma fiche conseils » renommé vers ce qu'il
+fait.
+
+**Trouvé en chemin** : le carnet alimentaire s'ancrait sur `actions[0]` quel que soit
+son type — invisible tant que toute action neuve naissait `food`, dangereux depuis
+`D-189` (une orientation médecin aurait été affichée comme l'essai à observer) ; et
+la fixture de son banc posait `type: 'alimentation'`, un type qui n'existe à aucun
+contrat, accepté parce que le champ était `string`.
+
+**Écarté** : brancher le contrat sans recomposer (la voie recommandée, écartée par le
+responsable) ; persister la carte (migration, hors campagne) ; tout repli sur
+l'ancienne projection en cas de refus — servir un protocole que la garde vient
+d'écarter serait pire que le vide.
+
+**Vérifications** : T1 vert après deux gardes d'état (`active_lot`, tête de
+`next_action`) et la matrice régénérée avec `--markdown` ; 9 211 bancs unitaires
+verts ; T3 192 verts, seul rouge la signature `D-049` (WebKit iPhone 13, macOS). Deux
+mutations vues ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-03 — porter à la diffusion les gardes que la carte
+portait (abstention requise, constat de sécurité), opposées nulle part aujourd'hui.
+
+**Questions ouvertes** : le porteur de provenance de la citation (LOT-04 2/2) attend
+toujours l'arbitrage ; le LOT-06 attend la première ligne de barème signée.
+
 ## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
 
 **Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas
