@@ -6271,7 +6271,7 @@ personne n'avait approuvé. Aucune écriture. Même phénomène de course que le
 trois renumérotations de la matinée, une couche plus bas — et ici, c'est une
 garde qui l'a attrapé au lieu d'un humain.
 
-## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-198)
+## 2026-09-15 — Le barème de charge déclaré conforme (LOT-06, D-199)
 
 L'échelle de charge écrite au LOT-06 était mergée **hors service** : `D-195`, rendue
 le même jour par une session parallèle, interdit à l'outil qui a proposé un contenu
@@ -6309,3 +6309,29 @@ la recopier ; `.toBe(false)` en dur laisserait la mutation passer.
 qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change :
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
+
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-199]])
+
+**Attestation clinique du responsable**, demandée et donnée en toutes lettres.
+Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et
+la question a été posée deux fois — la première a rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée ([[D-197]]).
+
+**Trois corrections de la PREUVE, zéro correction du CONTENU relu.** L'empreinte
+`da1ba306c0551d7b` n'a pas bougé depuis [[D-185]] : c'est ce qui a permis de
+corriger trois fois la preuve sans jamais redemander une relecture.
+
+**Le gain réel est la péremption**, vérifié par mutation : éditer le périmètre
+PUIS réancrer l'empreinte — le contournement habituel — laisse désormais
+l'attestation rouge. `shaRelu` est un littéral figé, pas la constante calculée.
+Réancrer ne suffit plus à faire taire le banc.
+
+**L'écran a bougé dans le même lot**, et la nuance trouvée ici mérite d'être
+notée : `limitationsMoteur` est un MÉLANGE — les quatre textes désormais relus et
+le motif de la gate, qui ne l'est pas. Une seule étiquette aurait menti dans un
+sens ou dans l'autre ; la liste est SCINDÉE. Et l'écran LIT l'attestation au lieu
+de recopier son résultat : retirée, les textes retombent d'eux-mêmes sous « hors
+périmètre signé ».
+
+**Ce que la signature ne couvre pas** : que la plainte dominante DOIVE primer sur
+la priorité intrinsèque de la règle. Question clinique ouverte, arbitrage séparé.

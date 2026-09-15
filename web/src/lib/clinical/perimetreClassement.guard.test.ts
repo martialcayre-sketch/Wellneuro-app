@@ -55,17 +55,28 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     ).toBe(EMPREINTE_PERIMETRE);
   });
 
-  it('AUCUNE ATTESTATION N’EST DÉCLARÉE — l’ancre ne vaut pas relecture', () => {
-    // LE DÉFAUT QUE CE CAS INTERDIT. Un périmètre posé, haché et gardé RESSEMBLE
-    // à un périmètre signé : il en a la forme, les bancs et le vocabulaire. S'en
-    // réclamer serait fabriquer la provenance que `D-162` §5 défend justement de
-    // s'attribuer — « aucune généralisation ne peut se réclamer d'une provenance
-    // certifiée tant que ce n'est pas fait ». Ce banc échoue le jour où
-    // quelqu'un remplit l'attestation sans le décider : il faudra alors le
-    // réécrire, ce qui est le point.
-    expect(ATTESTATION_CLASSEMENT.relu).toBe(false);
-    expect(ATTESTATION_CLASSEMENT.dateRelecture).toBeNull();
-    expect(ATTESTATION_CLASSEMENT.shaRelu).toBeNull();
+  it('L’ATTESTATION EST POSÉE, ET ELLE PORTE SUR CE PÉRIMÈTRE-CI', () => {
+    // CE CAS A ÉTÉ RETOURNÉ LE 2026-09-15, ET C'ÉTAIT LE POINT. Il exigeait
+    // l'ABSENCE d'attestation — « ce banc échoue le jour où quelqu'un remplit
+    // l'attestation sans le décider : il faudra alors le réécrire ». Le
+    // responsable a décidé, après avoir relu le périmètre et fait corriger deux
+    // fois sa preuve ([[D-185]], [[D-197]]) ; le voici réécrit.
+    expect(ATTESTATION_CLASSEMENT.relu).toBe(true);
+    expect(ATTESTATION_CLASSEMENT.dateRelecture).toBe('2026-09-15');
+
+    // LE CŒUR DU CAS, ET IL EST NEUF : l'attestation est PÉRISSABLE. `shaRelu`
+    // est un littéral figé, pas la constante calculée — sinon la comparaison
+    // serait tautologique et la péremption invisible (patron [[D-063]], et
+    // c'est le trou exact que [[D-180]] a montré sur les grilles).
+    //
+    // Toute édition du périmètre déplace `empreinte()`, ce littéral ne suit
+    // pas, et ce cas ROUGIT en réclamant une re-signature. Une signature qui ne
+    // sait pas se périmer ne vaut rien : elle couvrirait un contenu que
+    // personne n'a relu.
+    expect(
+      ATTESTATION_CLASSEMENT.shaRelu,
+      'ATTESTATION PÉRIMÉE : le périmètre a changé depuis la relecture du 2026-09-15. Ce n’est PAS une empreinte à reporter — le contenu attesté n’est plus celui qui est relu. Retirer l’attestation (`relu: false`, dates et sha à `null`) et la redemander au responsable, avec une décision `D-xxx` qui dit ce qui a bougé.',
+    ).toBe(empreinte());
   });
 
   it('les trois termes sont ordonnés 1, 2, 3 — sans trou ni doublon', () => {

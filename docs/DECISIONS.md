@@ -4,6 +4,76 @@
 
 ## Décisions actives
 
+### D-199 — Une attestation posée, puis retirée le même jour par son propre mécanisme
+
+- Date : 2026-09-15
+- Statut : accepté — **attestation clinique du responsable**, demandée et donnée
+  en toutes lettres après relecture de la surface produite pour elle.
+- Domaine : clinique — signature du périmètre de classement.
+- Empreinte attestée : `da1ba306c0551d7b`, inchangée depuis [[D-185]].
+
+**LE GESTE, ET SA CHRONOLOGIE — c'est elle qui fait sa valeur.** Le périmètre a
+été posé INERTE le 2026-09-14 ([[D-185]]), haché avant toute relecture pour que
+« ce qui est relu » soit mesurable. Puis, dans l'ordre :
+
+1. une contre-expertise a établi que **trois des cinq objets ne pilotaient
+   rien** — la liaison a été refaite par comportement ;
+2. une seconde a établi que le banc de liaison **ne couvrait que ce que sa
+   rédaction avait pensé à nommer** — trois mutations vertes sur 46 cas ;
+3. le responsable a relu, **et n'a pas signé** : une troisième contre-expertise,
+   sur la surface de relecture, a trouvé que
+   `regleEcarteeProduitUnCandidat` appartenait au périmètre attesté sans aucune
+   épreuve ([[D-197]]) ;
+4. **la correction n'a pas touché au périmètre** — l'empreinte n'a pas bougé,
+   donc la relecture déjà faite est restée valide ;
+5. le responsable a alors attesté.
+
+**Trois corrections de la PREUVE, zéro correction du CONTENU relu.** C'est
+exactement l'ordre que [[D-180]] a montré manquant sur les grilles, et la raison
+d'être de l'ancre posée avant la signature.
+
+**CE QUE L'ATTESTATION CHANGE, ET C'EST LE CŒUR.** `shaRelu` porte un LITTÉRAL
+FIGÉ — jamais la constante calculée, sinon la comparaison serait tautologique et
+la péremption invisible (patron [[D-063]]). Le banc compare ce littéral à
+`empreinte()`. Conséquence, vérifiée par mutation :
+
+| Geste | Avant | Après |
+| --- | --- | --- |
+| Éditer un texte du périmètre | l'ancre rougit | l'ancre **et** l'attestation rougissent |
+| Éditer, puis **réancrer** l'empreinte | tout repasse au vert | **l'attestation rougit toujours** |
+
+Le second cas est le gain réel : **réancrer ne suffit plus à faire taire le
+banc.** Une signature qui ne sait pas se périmer couvrirait un contenu que
+personne n'a relu.
+
+**L'ÉCRAN BOUGE DANS LE MÊME LOT, ET [[D-185]] L'AVAIT ANNONCÉ.** L'intitulé
+« Ajoutées par le moteur (hors périmètre signé) » devient faux pour les quatre
+`LIMITATION_*` : les y laisser ferait SOUS-promettre sur du relu — l'inverse du
+défaut habituel, mais un écart quand même.
+
+**La liste est SCINDÉE, pas renommée**, et la nuance est ce que ce lot a trouvé :
+`limitationsMoteur` est un MÉLANGE — les quatre textes désormais relus, et le
+motif de la gate de population, qui n'appartient à aucun périmètre. Une seule
+étiquette sur les deux aurait menti dans un sens ou dans l'autre.
+
+**L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat.** Le jour où elle est
+retirée, ces textes retombent d'eux-mêmes sous « hors périmètre signé ». Une
+étiquette écrite en dur resterait à « relu » sur un périmètre qui ne l'est plus —
+mutation jouée, banc vu rouge.
+
+**CE QUE LA SIGNATURE NE COUVRE PAS, dit ici pour que personne ne l'étende.** Le
+responsable atteste que ce module **DÉCRIT FIDÈLEMENT** ce que le moteur fait. Il
+n'atteste pas que la plainte dominante DOIVE primer sur la priorité intrinsèque
+de la règle — une règle de priorité 1 passe derrière une priorité 2 dès que le
+patient cote l'autre plus haut, et l'intensité ressentie n'est pas la gravité
+clinique. **Cette question reste ouverte** et appellera son propre arbitrage.
+
+- Conséquences : `ATTESTATION_CLASSEMENT` renseignée ; le cas de garde
+  « AUCUNE ATTESTATION N'EST DÉCLARÉE » **retourné** — il exigeait l'absence, il
+  exige la présence et la non-péremption ; `DecisionSummaryCard` scindé, avec ses
+  deux cas ; en-tête du module réécrit. Aucune migration, aucun drapeau.
+
+
 ### D-198 — Le barème de charge est déclaré conforme : la relecture a corrigé une phrase avant de signer
 
 - Date : 2026-09-15
