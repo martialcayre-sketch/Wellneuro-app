@@ -6310,6 +6310,47 @@ qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change 
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
 
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-202]])
+
+**Attestation clinique du responsable**, demandée et donnée en toutes lettres.
+Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et
+la question a été posée deux fois — la première a rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée ([[D-197]]).
+
+**Trois corrections de la PREUVE, zéro correction du CONTENU relu.** L'empreinte
+`da1ba306c0551d7b` n'a pas bougé depuis [[D-185]] : c'est ce qui a permis de
+corriger trois fois la preuve sans jamais redemander une relecture.
+
+**Le gain réel est la péremption**, vérifié par mutation : éditer le périmètre
+PUIS réancrer l'empreinte — le contournement habituel — laisse désormais
+l'attestation rouge. `shaRelu` est un littéral figé, pas la constante calculée.
+Réancrer ne suffit plus à faire taire le banc.
+
+**L'écran a bougé dans le même lot**, et la nuance trouvée ici mérite d'être
+notée : `limitationsMoteur` est un MÉLANGE — les quatre textes désormais relus et
+le motif de la gate, qui ne l'est pas. Une seule étiquette aurait menti dans un
+sens ou dans l'autre ; la liste est SCINDÉE. Et l'écran LIT l'attestation au lieu
+de recopier son résultat : retirée, les textes retombent d'eux-mêmes sous « hors
+périmètre signé ».
+
+**Ce que la signature ne couvre pas** : que la plainte dominante DOIVE primer sur
+la priorité intrinsèque de la règle. Question clinique ouverte, arbitrage séparé.
+
+**L'attestation a été RETIRÉE le même jour, par son propre mécanisme.** Une
+contre-expertise a trouvé deux défauts. Le premier : l'écran déduisait la
+provenance d'une **égalité de libellé**, si bien qu'un motif de gate homonyme
+d'une limitation attestée s'affichait « relu » — et le dépôt l'interdisait DÉJÀ
+en toutes lettres dans le contrat de `limitationsRegleSignee`. La réponse était
+écrite ; je ne l'avais pas lue. Le second : la **portée** de l'attestation vivait
+dans un commentaire, donc n'était ni opposable ni hachée.
+
+Corriger le second a fait entrer `PORTEE_ATTESTATION` dans le périmètre haché,
+déplacé l'empreinte (`da1ba306c0551d7b → 9792c12e72db93d8`) et **périmé la
+signature**. C'est la règle, et elle s'est appliquée à son auteur : on n'élargit
+pas après coup ce qui a été relu, même pour le borner.
+
+Le mécanisme est donc éprouvé sur un cas réel, pas sur une mutation — il a refusé
+la signature de celui qui l'avait écrit.
 ## 2026-09-16 00:35 — La passe Codex qu'on devait à #1098, onze jours après ([[D-201]])
 
 **Dette de revue tenue, et elle a rendu.** #1098 est P0 — clinique, production
@@ -6372,6 +6413,70 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
 
+## 2026-09-16 01:00 — Seconde contre-expertise sur #1125 : l'écran ne lisait que le booléen ([[D-202]])
+
+**Le banc administrait la preuve du trou qu'il couvrait.** `DecisionSummaryCard`
+décidait sur `ATTESTATION_CLASSEMENT.relu` seul ; son banc injectait
+`shaRelu: 'simulé'` — une valeur qui ne peut correspondre à aucun périmètre — et
+attendait « relus ». Une attestation gardée d'un périmètre antérieur présentait
+donc les limitations comme relues, pendant que le banc de garde, lui, l'aurait
+refusée. **Deux rédactions de la même règle, une seule mordait.**
+
+Et ce n'est pas théorique : c'est exactement l'état traversé la veille au soir,
+quand la portée entrée dans la donnée hachée a périmé une attestation posée.
+
+`attestationValide` vit désormais dans le périmètre, lue par le banc comme par
+l'écran, et prend l'attestation en PARAMÈTRE — la lire depuis la portée du module
+ferait qu'un banc qui la double prouverait le contraire de ce qu'il croit prouver.
+
+**La réfutation que j'avais demandée est arrivée, et elle était juste.** J'avais
+écrit dans `D-202` un inventaire des consommateurs d'empreinte concluant
+« aucune surface n'est silencieuse », et j'avais explicitement demandé qu'on le
+casse. `GET /api/praticien/ja/cycle` rendait `protocoleDiffuse: false` sur
+`carte_derivee` : le carnet praticien efface l'épisode sans un mot.
+
+**Comment je l'avais manqué, et c'est la leçon** : l'inventaire a été fait en
+cherchant les COMPARAISONS D'EMPREINTES. `ja/cycle` n'en fait aucune — il
+consomme le REFUS du rejeu. Un balayage sur `inputHash` ne pouvait pas le voir.
+La campagne voisine l'avait trouvé le même jour par l'autre bout ([[D-200]]) ;
+la correction est entrée ici par la fusion de `main`.
+
+## 2026-09-16 01:16 — Zéro approbation de diffusion, reconstaté avant le merge
+
+`protocol_diffusion_approvals` rend **`0|0|`** en production (`one-off-8972`,
+lecture seule, un seul compte, rien de nominatif). Le seul chemin qui refuserait
+sur `carte_derivee` n'a aucun client : la dérive d'empreinte que ce lot provoque
+ne coûte rien à personne aujourd'hui.
+
+**Pourquoi refaire une lecture qui existait déjà.** La précédente ([[D-173]])
+donnait le même zéro, mais datait du 2026-09-12 — et la campagne voisine a poussé
+du protocole entre-temps. Une prémisse de quatre jours sur une table que
+quelqu'un d'autre alimente n'est pas une prémisse, c'est un souvenir.
+
+Le constat est **daté** : il vaut pour ce déploiement, pas pour le suivant.
+
+## 2026-09-16 01:25 — Le périmètre du classement est ATTESTÉ, pour de bon ([[D-202]])
+
+**« Relu » ne vaut pas signature, et la question a été reposée.** C'est la
+troisième fois de la semaine ; la première avait rendu « j'ai lu, et j'ai des
+réserves », et la réserve était fondée. Une signature clinique se DÉCIDE — aucun
+outil ne la pose à la place du responsable, et surtout pas sur une formulation
+ambiguë. Réponse explicite obtenue, signature posée sur `9792c12e72db93d8`.
+
+**Le gain a été revérifié sur la signature réelle**, pas sur une hypothèse :
+réécrire un texte du périmètre puis réancrer l'empreinte — le contournement de
+routine — fait taire l'ancre et laisse l'attestation ROUGE. À l'écran,
+`attestationValide` devient faux et les quatre textes retombent d'eux-mêmes hors
+périmètre signé.
+
+**Et cette mutation a trouvé un défaut de plus, dans un banc à moi.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur le seul `relu`.
+Sous une attestation périmée, il rougissait alors que l'écran faisait exactement
+ce qu'il devait. **Un banc qui rougit pour la mauvaise raison envoie chercher le
+défaut ailleurs** — et le moment où ça arrive est précisément celui d'une
+péremption de signature, c'est-à-dire le plus mauvais. C'est la même faute que
+Codex avait relevée dans l'écran, survivant une couche plus bas, dans le
+prédicat du banc qui devait la couvrir.
 ## 2026-09-16 — Clôture de « 5. Actions » : l'usage est mesuré, il est à zéro
 
 La mesure due depuis la clôture a été faite, le praticien ayant ouvert une session hors

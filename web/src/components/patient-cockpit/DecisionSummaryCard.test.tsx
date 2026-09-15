@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
+import {
+  ATTESTATION_CLASSEMENT,
+  LIMITATIONS_CANDIDAT,
+  PORTEE_ATTESTATION,
+  attestationValide,
+} from '@/lib/clinical/perimetreClassementV1';
 
 // LOT-05 « Doctrine exécutable » — LE BANC QUE LE LOT-04 A PAYÉ ([[D-101]]).
 //
@@ -97,7 +103,9 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
     // procédure d'abstention — pas sur `lib/clinical-engine`, où vivent le
     // producteur, les quatre `LIMITATION_*` et le motif de la gate. Le praticien
     // lisait du relu et du non relu sans que rien ne les distingue.
-    const carteAvecLimitations = (): DecisionCard => ({
+    const carteAvecLimitations = (
+      limitations: string[] = ['CE QUE LA RÈGLE DIT.', 'CE QUE LE MOTEUR AJOUTE.'],
+    ): DecisionCard => ({
       decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
       reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
       version: 'c1-decision-card-v1', status: 'draft',
@@ -105,14 +113,18 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
         candidateId: 'p1', origin: 'engine', label: 'Axe digestif', rank: 1,
         confidence: 'à_documenter', ruleId: 'PRIO-DIG-01', rationale: 'Fixture.',
         provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
-        limitations: ['CE QUE LA RÈGLE DIT.', 'CE QUE LE MOTEUR AJOUTE.'],
-        limitationsRegleSignee: ['CE QUE LA RÈGLE DIT.'],
+        limitations,
+        limitationsRegleSignee: ['CE QUE LA RÈGLE DIT.'], limitationsPerimetreClassement: [],
       }],
       proposedMainPriorityId: 'p1', selectedMainPriority: null, counterfactuals: [],
       missingDataFindingIds: [], discordanceFindingIds: [], safetyFindingIds: [],
       abstention: { status: 'not_required', ruleIds: ['PRIO-DIG-01'], limitations: ['CADRE SIGNÉ.'] },
       limitations: [], inputHash: 'card-hash',
     });
+
+    /** Une carte dont le seul texte « moteur » est celui qu'on veut éprouver. */
+    const carteAvecLimitation = (texte: string): DecisionCard =>
+      carteAvecLimitations(['CE QUE LA RÈGLE DIT.', texte]);
 
     it('les deux intitulés de provenance sont rendus', () => {
       render(<DecisionSummaryCard decisionCard={carteAvecLimitations()} />);
@@ -122,6 +134,63 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
       // L'INTITULÉ DIT L'ESSENTIEL, et il est factuel : sans « hors périmètre
       // signé », le regroupement se lirait comme un rangement de confort.
       expect(screen.getByText(/hors périmètre signé/)).not.toBeNull();
+    });
+
+    /** L'intitulé du groupe qui contient ce texte. */
+    const groupeDe = (texte: string): string =>
+      screen.getByText(texte).closest('ul')?.previousElementSibling?.textContent ?? '';
+
+    it('LA PROVENANCE VIENT DU PRODUCTEUR, JAMAIS DU LIBELLÉ — le cas de collision', () => {
+      // LE DÉFAUT QUE CE CAS INTERDIT, et il a existé. Une première rédaction
+      // groupait par ÉGALITÉ DE CHAÎNE avec `LIMITATIONS_CANDIDAT` : un motif de
+      // gate portant le même libellé qu'un texte attesté s'affichait « relu ».
+      // Un comportement que personne n'a relu héritait de la provenance
+      // attestée, sans qu'aucun sha ne bouge. Le contrat de
+      // `limitationsRegleSignee` l'interdisait déjà en toutes lettres.
+      //
+      // ICI LES DEUX TEXTES SONT IDENTIQUES AU CARACTÈRE PRÈS, et un seul est
+      // déclaré du périmètre. C'est le producteur qui tranche, pas la chaîne.
+      const collision = LIMITATIONS_CANDIDAT.classement.texte;
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', collision]);
+      // Le producteur ne déclare RIEN du périmètre : ce texte est un motif de
+      // gate qui porte le même libellé.
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [];
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      expect(groupeDe(collision)).toContain('hors périmètre signé');
+      expect(groupeDe(collision)).not.toContain('relu');
+    });
+
+    it('UN TEXTE HORS PÉRIMÈTRE RESTE « hors périmètre signé »', () => {
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', 'MOTIF DE GATE, RELU PAR PERSONNE.']);
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [];
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      expect(groupeDe('MOTIF DE GATE, RELU PAR PERSONNE.')).toContain('hors périmètre signé');
+    });
+
+    it('SANS ATTESTATION, RIEN N’EST PRÉSENTÉ COMME RELU — même déclaré du périmètre', () => {
+      // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat. Tant qu'elle
+      // est retirée, un texte pourtant déclaré du périmètre par le producteur
+      // reste dans le groupe non relu. C'est ce qui rend le retrait effectif à
+      // l'écran sans qu'on ait à y toucher.
+      const duPerimetre = LIMITATIONS_CANDIDAT.proposition.texte;
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', duPerimetre]);
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [duPerimetre];
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      // LE PRÉDICAT EST `attestationValide`, PAS `relu` — et cette ligne-ci a
+      // été écrite deux fois. La première branchait sur le seul booléen : sous
+      // une attestation PÉRIMÉE (`relu: true`, sha d'un périmètre antérieur),
+      // ce cas partait dans la branche « relu » et rougissait, alors que
+      // l'écran faisait exactement ce qu'il devait — retomber hors périmètre.
+      // Un banc qui rougit pour la mauvaise raison envoie chercher le défaut
+      // ailleurs. Vérifié par mutation le 2026-09-16.
+      if (!attestationValide(ATTESTATION_CLASSEMENT)) {
+        expect(groupeDe(duPerimetre)).toContain('hors périmètre signé');
+      } else {
+        expect(groupeDe(duPerimetre)).toContain(PORTEE_ATTESTATION.intituleEcran);
+      }
     });
 
     it('CHAQUE TEXTE TOMBE DANS SON GROUPE — le cadre d’abstention est signé', () => {

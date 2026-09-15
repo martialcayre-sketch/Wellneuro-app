@@ -3,11 +3,14 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   ATTESTATION_CLASSEMENT,
+  EMPREINTE_PERIMETRE_ATTENDUE,
   LIMITATIONS_CANDIDAT,
   MOTIF_ABSTENTION,
   ORDRE_EVALUATION_ABSTENTION,
   PERIMETRE_CLASSEMENT_V1,
+  PORTEE_ATTESTATION,
   TERMES_DE_CLASSEMENT,
+  attestationValide,
 } from './perimetreClassementV1';
 import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 
@@ -26,8 +29,17 @@ import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 // haché peuvent diverger sans trace. C'est exactement le trou que [[D-180]] a
 // montré sur les grilles.
 
-/** L'empreinte du périmètre, figée. Toute édition la fait bouger. */
-const EMPREINTE_PERIMETRE = 'da1ba306c0551d7b';
+/**
+ * L'empreinte du périmètre, figée — et elle vit dans le MODULE, plus ici.
+ *
+ * POURQUOI LE DÉPLACEMENT. L'écran doit pouvoir vérifier qu'une attestation
+ * porte bien sur CE périmètre, et il tourne dans le navigateur : aucun hachage
+ * n'y est disponible. Le littéral doit donc être importable. Ce banc reste le
+ * SEUL endroit qui le relie au contenu réel — il calcule le hash et exige
+ * l'égalité. Une copie locale ici aurait recréé la duplication que `DC-26`
+ * interdit, et les deux auraient fini par diverger.
+ */
+const EMPREINTE_PERIMETRE = EMPREINTE_PERIMETRE_ATTENDUE;
 
 /**
  * La source d'un module, COMMENTAIRES RETIRÉS.
@@ -55,17 +67,85 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     ).toBe(EMPREINTE_PERIMETRE);
   });
 
-  it('AUCUNE ATTESTATION N’EST DÉCLARÉE — l’ancre ne vaut pas relecture', () => {
-    // LE DÉFAUT QUE CE CAS INTERDIT. Un périmètre posé, haché et gardé RESSEMBLE
-    // à un périmètre signé : il en a la forme, les bancs et le vocabulaire. S'en
-    // réclamer serait fabriquer la provenance que `D-162` §5 défend justement de
-    // s'attribuer — « aucune généralisation ne peut se réclamer d'une provenance
-    // certifiée tant que ce n'est pas fait ». Ce banc échoue le jour où
-    // quelqu'un remplit l'attestation sans le décider : il faudra alors le
-    // réécrire, ce qui est le point.
-    expect(ATTESTATION_CLASSEMENT.relu).toBe(false);
-    expect(ATTESTATION_CLASSEMENT.dateRelecture).toBeNull();
-    expect(ATTESTATION_CLASSEMENT.shaRelu).toBeNull();
+  it('L’ATTESTATION EST COHÉRENTE — posée sur CE périmètre, ou absente', () => {
+    // CE CAS SERT LES DEUX ÉTATS, et c'est délibéré : le réécrire à chaque
+    // signature ferait du geste une édition de banc, alors que c'est une
+    // décision clinique. Il dit une seule chose, dans les deux sens — une
+    // attestation ne vaut que pour le contenu EXACT qui a été relu.
+    if (!ATTESTATION_CLASSEMENT.relu) {
+      // NON SIGNÉ. Un périmètre posé, haché et gardé RESSEMBLE à un périmètre
+      // signé : s'en réclamer fabriquerait la provenance que `D-162` §5 défend
+      // de s'attribuer. Les trois champs doivent être vides ENSEMBLE — une date
+      // sans `relu` laisserait croire à une relecture.
+      expect(ATTESTATION_CLASSEMENT.dateRelecture).toBeNull();
+      expect(ATTESTATION_CLASSEMENT.shaRelu).toBeNull();
+      return;
+    }
+
+    // SIGNÉ. `shaRelu` est un LITTÉRAL FIGÉ, jamais la constante calculée —
+    // sinon la comparaison serait tautologique et la péremption invisible
+    // (patron [[D-063]], trou exact montré par [[D-180]]). Toute édition du
+    // périmètre déplace `empreinte()`, le littéral ne suit pas, et ce cas
+    // rougit. Réancrer l'empreinte NE SUFFIT PAS à le faire taire.
+    expect(typeof ATTESTATION_CLASSEMENT.dateRelecture).toBe('string');
+    expect(
+      ATTESTATION_CLASSEMENT.shaRelu,
+      'ATTESTATION PÉRIMÉE : le périmètre a changé depuis la relecture. Ce n’est PAS une empreinte à reporter — le contenu attesté n’est plus celui qui est relu. Retirer l’attestation (`relu: false`, date et sha à `null`), écrire une décision `D-xxx` qui dit ce qui a bougé, et la redemander au responsable.',
+    ).toBe(empreinte());
+  });
+
+  it('`attestationValide` REFUSE un sha périmé et une date nulle, pas seulement `relu: false`', () => {
+    // LE DÉFAUT QUE CE CAS FERME, TROUVÉ EN CONTRE-EXPERTISE SUR LA PR #1125.
+    // `DecisionSummaryCard` ne lisait que `relu`. Une attestation gardée d'un
+    // périmètre ANTÉRIEUR — `relu: true`, sha d'hier — présentait donc les
+    // limitations comme relues alors que ce banc, lui, l'aurait refusée. Deux
+    // lectures de la même règle, et seule l'une des deux mordait.
+    //
+    // La preuve venait du banc de l'écran lui-même : il injectait
+    // `shaRelu: 'simulé'`, valeur qui ne peut correspondre à aucun périmètre,
+    // et attendait « relus ».
+    const valide = { relu: true, dateRelecture: '2026-09-15', shaRelu: EMPREINTE_PERIMETRE_ATTENDUE };
+    expect(attestationValide(valide)).toBe(true);
+
+    // SHA PÉRIMÉ — le cas réel : le périmètre a bougé, l'attestation est restée.
+    expect(attestationValide({ ...valide, shaRelu: '0000000000000000' })).toBe(false);
+    expect(attestationValide({ ...valide, shaRelu: 'simulé' })).toBe(false);
+    expect(attestationValide({ ...valide, shaRelu: null })).toBe(false);
+
+    // DATE NULLE — une signature sans date n'est pas opposable : on ne sait pas
+    // ce qui avait été relu au moment où elle a été posée.
+    expect(attestationValide({ ...valide, dateRelecture: null })).toBe(false);
+    expect(attestationValide({ ...valide, dateRelecture: '' })).toBe(false);
+
+    // ET `relu: false` reste refusé même si les deux autres champs sont remplis.
+    expect(attestationValide({ ...valide, relu: false })).toBe(false);
+  });
+
+  it('LE LITTÉRAL DU MODULE EST LE HASH RÉEL — la comparaison de l’écran n’est pas creuse', () => {
+    // L'ÉCRAN NE HACHE RIEN : il compare `shaRelu` à un littéral importé. Ce
+    // couple ne vaut que si quelqu'un prouve que le littéral est bien le hash du
+    // contenu — sinon la vérification serait une égalité entre deux constantes
+    // décidées ensemble, c'est-à-dire rien ([[D-063]]). C'est ce cas-ci, et
+    // c'est le seul.
+    expect(EMPREINTE_PERIMETRE_ATTENDUE).toBe(empreinte());
+  });
+
+  it('LA PORTÉE EST DANS LA DONNÉE HACHÉE, pas dans un commentaire', () => {
+    // CE QUE LA CONTRE-EXPERTISE A TROUVÉ. `ATTESTATION_CLASSEMENT` ne portait
+    // que `relu`, une date et un sha : la restriction essentielle — fidélité
+    // descriptive seulement — vivait dans un commentaire et dans la décision,
+    // donc n'était ni opposable ni hachée. Le praticien pouvait lire une
+    // validation clinique du classement, et un futur consommateur du booléen
+    // faire la même extension sans garde.
+    expect(PERIMETRE_CLASSEMENT_V1.porteeAttestation).toBe(PORTEE_ATTESTATION);
+    // L'EXCLUSION EST NOMMÉE, pas sous-entendue : l'arbitrage non rendu doit
+    // être lisible dans ce que le praticien signe.
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/plainte dominante/);
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/NON rendu/);
+    // ET L'INTITULÉ D'ÉCRAN EST BORNÉ : ce qui est relu, ce sont les TEXTES qui
+    // décrivent le classement, pas le classement lui-même.
+    expect(PORTEE_ATTESTATION.intituleEcran).not.toMatch(/Périmètre du classement/);
+    expect(PORTEE_ATTESTATION.intituleEcran).toMatch(/descriptifs/);
   });
 
   it('les trois termes sont ordonnés 1, 2, 3 — sans trou ni doublon', () => {

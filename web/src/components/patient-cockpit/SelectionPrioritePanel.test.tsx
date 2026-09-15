@@ -14,7 +14,7 @@ function candidat(over: Partial<DecisionPriorityCandidate> = {}): DecisionPriori
     ruleId: 'P1',
     rationale: 'Plainte pondérale dominante.',
     provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
-    limitationsRegleSignee: [], limitations: [],
+    limitationsRegleSignee: [], limitationsPerimetreClassement: [], limitations: [],
     ...over,
   };
 }

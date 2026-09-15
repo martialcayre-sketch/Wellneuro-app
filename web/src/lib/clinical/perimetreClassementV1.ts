@@ -17,15 +17,25 @@
  * c'est-à-dire la duplication silencieuse que [[DC-26]] interdit, et la
  * signature couvrirait un texte que rien n'exécute.
  *
- * IL NE SIGNE RIEN. `ATTESTATION_CLASSEMENT` porte `relu: false` et
- * `shaRelu: null` : aucune relecture clinique n'a eu lieu, et aucun verrou ne
- * consulte encore cet objet. Le périmètre est POSÉ ET INERTE, en attente de
- * l'attestation du praticien — c'est l'ordre que [[D-182]] a suivi sur les
- * dix-sept grilles, et le seul qui ne fabrique pas une provenance.
+ * IL A ÉTÉ ATTESTÉ LE 2026-09-15, PUIS L'ATTESTATION A ÉTÉ RETIRÉE LE MÊME
+ * JOUR — et le mécanisme a fonctionné exactement comme prévu.
  *
- * MODULE-FEUILLE, ET IL DOIT LE RESTER : il n'importe rien. `chaineC1.ts` le lit
- * pour exécuter, le banc le lit pour hacher. Lui faire importer l'un ou l'autre
- * fermerait un cycle — même contrainte que `bandesPsqi.ts`.
+ * Le responsable avait relu et signé `da1ba306c0551d7b`. Une contre-expertise a
+ * ensuite montré que la PORTÉE de l'attestation — fidélité descriptive
+ * seulement, sans validation de la primauté de la plainte dominante — vivait
+ * dans un commentaire et non dans la donnée hachée : rien ne la rendait
+ * opposable. La corriger a fait entrer `PORTEE_ATTESTATION` dans le périmètre,
+ * donc déplacé l'empreinte, donc **PÉRIMÉ la signature**.
+ *
+ * C'est la règle, et elle s'est appliquée à son auteur : on n'élargit pas après
+ * coup ce qui a été relu. L'attestation a été reposée à `relu: false`, puis
+ * REDEMANDÉE et RENDUE le 2026-09-16 sur `9792c12e72db93d8` — le contenu relu
+ * n'avait pas changé ; ce qui s'y est ajouté est la portée explicite de la
+ * signature, c'est-à-dire ce qu'elle NE couvre pas.
+ *
+ * CE QU'ELLE COUVRIRA, ET CE QU'ELLE NE COUVRIRA PAS, est désormais DANS
+ * `PORTEE_ATTESTATION`, donc haché : le praticien atteste une fidélité
+ * DESCRIPTIVE, jamais la légitimité clinique du classement lui-même.
  */
 
 /** Un terme de départage, et ce qu'il est — clinique ou technique. */
@@ -189,6 +199,41 @@ export const INVARIANTS_PRODUCTEUR = {
   regleEcarteeProduitUnCandidat: false,
 } as const;
 
+/**
+ * LA PORTÉE DE L'ATTESTATION — CE QU'ELLE COUVRE, ET CE QU'ELLE NE COUVRE PAS.
+ *
+ * ELLE EST DANS LA DONNÉE HACHÉE, ET C'EST LE POINT. Une première rédaction la
+ * laissait dans un COMMENTAIRE et dans la décision : `ATTESTATION_CLASSEMENT` ne
+ * portait que `relu`, une date et un sha, si bien qu'aucune restriction n'était
+ * opposable ni hachée. Deux conséquences, relevées en contre-expertise : le
+ * praticien pouvait lire à l'écran une VALIDATION CLINIQUE du classement alors
+ * que cet arbitrage est explicitement ouvert, et tout futur consommateur du
+ * booléen pouvait faire la même extension sans qu'aucune garde ne l'arrête.
+ *
+ * Étant hachée, une réécriture de cette portée déplace l'empreinte et PÉRIME
+ * l'attestation : on ne peut pas élargir après coup ce qui a été relu.
+ */
+export const PORTEE_ATTESTATION = {
+  /**
+   * CE QUI EST ATTESTÉ : que ce module DÉCRIT FIDÈLEMENT ce que le moteur fait.
+   * Rien de plus — une exactitude descriptive, pas un jugement.
+   */
+  couvre: 'La fidélité descriptive : ces données disent ce que le moteur applique réellement.',
+  /**
+   * CE QUI NE L'EST PAS, nommé pour que personne ne l'étende. Le premier terme
+   * fait passer une règle de priorité 1 DERRIÈRE une priorité 2 dès que le
+   * patient cote l'autre plus haut — or l'intensité ressentie n'est pas la
+   * gravité clinique. Cette question appelle son propre arbitrage.
+   */
+  neCouvrePas: 'La légitimité clinique du classement lui-même, et notamment la primauté de la plainte dominante sur la priorité intrinsèque de la règle : arbitrage NON rendu.',
+  /**
+   * L'INTITULÉ SERVI À L'ÉCRAN, et il est borné exprès. « Périmètre du
+   * classement (relu) » se lisait comme une validation du classement ; ce qui
+   * est relu, ce sont les TEXTES qui le décrivent.
+   */
+  intituleEcran: 'Textes descriptifs du classement, relus',
+} as const;
+
 /** L'objet relisable dans son entier — c'est LUI que l'attestation portera. */
 export const PERIMETRE_CLASSEMENT_V1 = {
   version: 'perimetre-classement-v1',
@@ -198,31 +243,94 @@ export const PERIMETRE_CLASSEMENT_V1 = {
   motifsAbstention: MOTIF_ABSTENTION,
   ordreEvaluationAbstention: ORDRE_EVALUATION_ABSTENTION,
   invariantsProducteur: INVARIANTS_PRODUCTEUR,
+  porteeAttestation: PORTEE_ATTESTATION,
 } as const;
 
 /**
- * L'ATTESTATION — VIDE, ET C'EST L'ÉTAT JUSTE AUJOURD'HUI.
+ * L'ATTESTATION — RENDUE LE 2026-09-16 par le responsable, sur `9792c12e72db93d8`.
  *
- * `relu: false` dit qu'aucune relecture clinique n'a eu lieu. Aucun verrou ne
- * consulte cet objet : le poser rempli sans attestation fabriquerait exactement
- * la provenance que [[D-162]] §5 interdit de se réclamer.
+ * Elle n'a pas été déduite d'un « relu » : la question a été posée en toutes
+ * lettres, et elle l'avait déjà été deux fois avant — la première a rendu
+ * « j'ai lu, et j'ai des réserves », et la réserve était fondée ([[D-197]]).
+ * Une signature clinique se DÉCIDE ; aucun outil ne la pose à la place du
+ * responsable.
  *
- * CE QUE L'ATTESTATION COÛTERA, quand elle tombera, pour que personne ne le
- * découvre après : déplacer un terme de classement, réécrire un des quatre
- * textes, ou permuter les deux motifs d'abstention refermera le verrou jusqu'à
- * re-signature. Et l'intitulé « Ajoutées par le moteur (hors périmètre signé) »
- * servi par `DecisionSummaryCard` deviendra faux pour les quatre limitations :
- * il devra bouger dans le même lot que l'attestation, sinon l'écran
- * SOUS-promettra sur du relu — l'inverse du défaut habituel, mais un écart
- * quand même.
+ * CE QU'ELLE COÛTE, MAINTENANT QU'ELLE EST TOMBÉE : déplacer un terme de
+ * classement, réécrire un des quatre textes, ou permuter les deux motifs
+ * d'abstention déplace l'empreinte, que `shaRelu` ne suit pas — le verrou se
+ * referme jusqu'à re-signature. Réancrer l'empreinte NE SUFFIT PAS à le faire
+ * taire : c'est le seul gain qui compte, et il a été vérifié par mutation.
+ *
+ * ET L'ÉCRAN A BOUGÉ DANS LE MÊME LOT, comme [[D-185]] l'avait annoncé : les
+ * quatre `LIMITATION_*` ne peuvent plus être servies sous « Ajoutées par le
+ * moteur (hors périmètre signé) », qui SOUS-promettrait sur du relu. Elles
+ * passent sous `PORTEE_ATTESTATION.intituleEcran`, borné exprès.
+ *
+ * `attestationValide` est la seule bonne façon de consulter cet objet : les
+ * trois champs valent ENSEMBLE, et lire le seul `relu` était un défaut réel
+ * ([[D-202]]).
  */
+/**
+ * L'EMPREINTE ATTENDUE DU PÉRIMÈTRE — littéral figé, et il vit ICI et non dans
+ * le banc pour une raison précise : **l'écran doit pouvoir vérifier la validité
+ * d'une attestation**, et il tourne dans le navigateur, où aucun hachage n'est
+ * disponible.
+ *
+ * LE COUPLE N'EST PAS TAUTOLOGIQUE, et c'est tout l'enjeu ([[D-063]]). Ce
+ * littéral ne se calcule pas : c'est `perimetreClassement.guard.test.ts` qui
+ * prouve qu'il vaut le hash RÉEL de `PERIMETRE_CLASSEMENT_V1`. Une édition du
+ * périmètre déplace le hash, le littéral ne suit pas, le banc rougit. À
+ * l'exécution, l'écran ne compare donc que deux chaînes — ce qui est bon marché
+ * et sûr — pendant que le lien avec le contenu réel est tenu au CI.
+ */
+export const EMPREINTE_PERIMETRE_ATTENDUE = '9792c12e72db93d8';
+
+/**
+ * UNE ATTESTATION EST-ELLE VALIDE — la seule question que doit poser un
+ * consommateur, écran compris.
+ *
+ * CE QUE CETTE FONCTION FERME, TROUVÉ EN CONTRE-EXPERTISE. `DecisionSummaryCard`
+ * ne lisait que `relu`. Un `shaRelu` PÉRIMÉ — celui d'un périmètre antérieur,
+ * gardé par oubli — ou une `dateRelecture` nulle présentaient donc les
+ * limitations comme relues. Le banc de l'écran en administrait lui-même la
+ * preuve : il injectait `shaRelu: 'simulé'`, une valeur qui ne peut correspondre
+ * à aucun périmètre, et attendait « relus ».
+ *
+ * LES TROIS CHAMPS VALENT ENSEMBLE, ou l'attestation ne vaut pas. C'est déjà ce
+ * que le banc de garde exige dans les deux sens ; il manquait qu'un consommateur
+ * puisse poser la même question sans le réécrire — et deux rédactions de la même
+ * règle finissent toujours par diverger ([[DC-26]]).
+ *
+ * L'ATTESTATION EST PASSÉE EN PARAMÈTRE, jamais lue depuis la portée du module :
+ * sinon un banc qui double `ATTESTATION_CLASSEMENT` verrait la fonction
+ * continuer de lire la vraie constante, et prouverait le contraire de ce qu'il
+ * croit prouver.
+ */
+export function attestationValide(attestation: {
+  relu: boolean;
+  dateRelecture: string | null;
+  shaRelu: string | null;
+}): boolean {
+  if (!attestation.relu) return false;
+  if (typeof attestation.dateRelecture !== 'string' || attestation.dateRelecture.length === 0) return false;
+  return attestation.shaRelu === EMPREINTE_PERIMETRE_ATTENDUE;
+}
+
 export const ATTESTATION_CLASSEMENT = {
-  relu: false,
-  dateRelecture: null as string | null,
+  relu: true,
+  dateRelecture: '2026-09-16' as string | null,
   /**
-   * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ obligatoire le jour où
-   * il sera posé, jamais la constante calculée : la comparaison serait
-   * tautologique et la péremption invisible (patron [[D-063]]).
+   * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ, jamais la constante
+   * calculée : la comparaison serait tautologique et la péremption invisible
+   * (patron [[D-063]]). C'est ce littéral qui rend l'attestation périssable —
+   * le jour où le périmètre bouge, l'empreinte bouge, celui-ci ne suit pas, et
+   * le banc réclame une re-signature.
+   *
+   * CE N'EST PAS THÉORIQUE : c'est arrivé le 2026-09-15. La portée de
+   * l'attestation est entrée dans la donnée hachée, l'empreinte est passée de
+   * `da1ba306c0551d7b` à celle-ci, et le verrou a refusé la signature de celui
+   * qui l'avait écrit. L'attestation ci-dessous est la SECONDE, posée sur le
+   * contenu borné.
    */
-  shaRelu: null as string | null,
+  shaRelu: '9792c12e72db93d8' as string | null,
 };
