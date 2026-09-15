@@ -11,11 +11,13 @@ const PROTOCOLE_DIFFUSE = {
   protocoleDiffuse: true,
   vue: {
     purpose: 'Rendre l’action alimentaire praticable les jours chargés.',
-    actionPrincipale: {
-      type: 'alimentation',
-      title: 'Ajouter une source de protéines au petit-déjeuner',
-      minimalPlan: 'Le faire trois fois cette semaine.',
-    },
+    // `food`, et non `'alimentation'` — un type qui n'existe à aucun contrat, et
+    // que `type: string` acceptait ([[D-191]]). Une SEULE action alimentaire
+    // parmi trois : le carnet doit l'élire par son type, jamais par son rang.
+    actions: [
+      { actionId: 'a0', type: 'medical_referral', title: 'Consulter votre médecin', minimalPlan: 'Prendre rendez-vous.' },
+      { actionId: 'a1', type: 'food', title: 'Ajouter une source de protéines au petit-déjeuner', minimalPlan: 'Le faire trois fois cette semaine.' },
+    ],
     cycleRef: 'abcdef0123456789',
     debutCycle: '2026-07-20T08:00:00.000Z',
   },
@@ -27,11 +29,9 @@ const PROTOCOLE_CALIBRAGE = {
   ...{ ok: true, protocoleDiffuse: true },
   vue: {
     purpose: 'Observer trois à cinq journées avant de décider.',
-    actionPrincipale: {
-      type: 'alimentation',
-      title: 'Décrire quelques journées',
-      minimalPlan: 'Trois à cinq journées suffisent.',
-    },
+    actions: [
+      { actionId: 'a1', type: 'food', title: 'Décrire quelques journées', minimalPlan: 'Trois à cinq journées suffisent.' },
+    ],
     cycleRef: 'abcdef0123456789',
     debutCycle: '2026-07-20T08:00:00.000Z',
   },

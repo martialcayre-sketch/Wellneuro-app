@@ -34,6 +34,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
 
 function dateLocale(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -49,12 +50,8 @@ function makeId(prefix: string): string {
 // porte l'identité, jamais le jeton d'URL : c'est aussi ce que
 // `saveJaObservationSnapshot` exige côté serveur (il rejette tout épisode dont
 // le `patientId` ne correspond pas au patient).
-type VueProtocolePatient = {
-  purpose: string;
-  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
-  cycleRef: string;
-  debutCycle: string;
-};
+// Le type vient de la route, et plus d'une copie ([[D-191]]).
+type VueProtocolePatient = VuePatientSurLeFil;
 
 /** Ancre du bilan de calibrage, servie tant qu'aucun protocole n'est diffusé. */
 type AncreCalibrage = { ancre: string; debut: string };

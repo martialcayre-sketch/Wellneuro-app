@@ -2,6 +2,50 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-03 (1/2) : la vue patient du protocole est un contrat recomposé (D-191)
+
+**Décisions** : trois questions posées au responsable APRÈS vérification du code —
+la nuit précédente avait produit deux arbitrages rendus sur prémisse fausse, et
+c'est la correction de ce défaut. Établi avant de demander : la `DecisionCard` ne
+fournit qu'UN champ à la vue patient (`priorityLabel` = `regle.libelle` du registre
+signé), ses autres apports sont des GARDES, ces gardes ne sont opposées nulle part
+(la route de diffusion ne construit aucune carte), et la dérive d'empreinte est
+bornée (snapshot borné à l'épisode, horodatage = `confirmedAt` : une passation
+nouvelle ne bouge rien). Le responsable a tranché la **recomposition à la lecture**
+— ce n'était pas la voie recommandée —, les gardes **portées à la diffusion**, et le
+**refus net + signal praticien**.
+
+**Livré** : `rejeuCarteDecision.ts` (chaîne C1 rejouée par la MÊME lecture et la MÊME
+construction que le cockpit et le vérificateur — `entreesRuntime` exportée pour
+cela) ; la garde de fraîcheur ; le contrat branché dans les deux routes, dont
+`praticien/ja/cycle` qui se déclarait « miroir exact » en recopiant le même défaut ;
+`vuePatientSurLeFil.ts`, la projection écrite en UN seul endroit ; l'écran patient
+avec ses trois actions, la phrase d'attente, le libellé d'axe et le critère J21 ; le
+refus visible des deux côtés ; le bouton « Ma fiche conseils » renommé vers ce qu'il
+fait.
+
+**Trouvé en chemin** : le carnet alimentaire s'ancrait sur `actions[0]` quel que soit
+son type — invisible tant que toute action neuve naissait `food`, dangereux depuis
+`D-189` (une orientation médecin aurait été affichée comme l'essai à observer) ; et
+la fixture de son banc posait `type: 'alimentation'`, un type qui n'existe à aucun
+contrat, accepté parce que le champ était `string`.
+
+**Écarté** : brancher le contrat sans recomposer (la voie recommandée, écartée par le
+responsable) ; persister la carte (migration, hors campagne) ; tout repli sur
+l'ancienne projection en cas de refus — servir un protocole que la garde vient
+d'écarter serait pire que le vide.
+
+**Vérifications** : T1 vert après deux gardes d'état (`active_lot`, tête de
+`next_action`) et la matrice régénérée avec `--markdown` ; 9 211 bancs unitaires
+verts ; T3 192 verts, seul rouge la signature `D-049` (WebKit iPhone 13, macOS). Deux
+mutations vues ROUGES avant de déclarer vert, restaurées depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-03 — porter à la diffusion les gardes que la carte
+portait (abstention requise, constat de sécurité), opposées nulle part aujourd'hui.
+
+**Questions ouvertes** : le porteur de provenance de la citation (LOT-04 2/2) attend
+toujours l'arbitrage ; le LOT-06 attend la première ligne de barème signée.
+
 ## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
 
 **Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas

@@ -1,5 +1,6 @@
 import { createAttentionBudget, createEpisode } from './episode';
 import type { AttentionBudget, FoodObservationEpisode } from './types';
+import type { ProtocolActionType } from '@/lib/clinical-engine/types';
 
 /**
  * Dérivation de l'épisode JA depuis le protocole diffusé (lot 2, item 5).
@@ -8,10 +9,18 @@ import type { AttentionBudget, FoodObservationEpisode } from './types';
  * protéiné servi à tous les patients, une fenêtre de sept jours recalculée à
  * chaque montage, et deux `episodeId` différents pour le même patient. Il vient
  * désormais du dossier : l'hypothèse est la finalité du protocole approuvé,
- * l'action est l'action principale telle qu'elle a été décidée en consultation,
- * la fenêtre part de la date de diffusion.
+ * l'action est celle que le carnet observe, la fenêtre part de la date de
+ * diffusion.
  *
- * Sans protocole diffusé — ou sans action principale — il n'y a rien à dériver,
+ * L'ACTION ALIMENTAIRE, ET PLUS « LA PREMIÈRE » ([[D-191]]). La vue patient ne
+ * servait qu'une action sur trois, élue par l'ordre d'insertion : le carnet
+ * prenait donc celle-là, quel que soit son type. Le défaut ne se voyait pas tant
+ * que le constructeur posait `food` en dur sur toute action neuve ; depuis que le
+ * type est un geste (`D-189`), la première action peut être une orientation
+ * médecin — et le carnet alimentaire l'aurait affichée comme l'essai à observer.
+ * Un journal alimentaire s'ancre sur une action alimentaire, ou sur rien.
+ *
+ * Sans protocole diffusé — ou sans action alimentaire — il n'y a rien à dériver,
  * et la fonction rend `null` plutôt que d'inventer un épisode.
  */
 
@@ -73,12 +82,39 @@ export function buildEpisodeCalibrage(input: {
   });
 }
 
+/**
+ * `type` EST LE TYPE DU CONTRAT, plus un `string` ([[D-191]]). Il était libre, et
+ * la fixture du banc posait `'alimentation'` — un type qui n'existe nulle part au
+ * contrat, où l'alimentaire s'écrit `food`. Le banc passait au vert sur une
+ * valeur que la production n'aurait jamais produite.
+ */
+export type ActionSourceEpisode = {
+  type: ProtocolActionType;
+  title: string;
+  minimalPlan: string;
+};
+
 export type ProtocoleSourceEpisode = {
   purpose: string;
-  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
+  /** LES actions du protocole diffusé, dans l'ordre relu — plus « la première ». */
+  actions: ActionSourceEpisode[];
   cycleRef: string;
   debutCycle: string;
 };
+
+/** Le type d'action qu'un carnet alimentaire a vocation à observer. */
+const TYPE_ALIMENTAIRE: ProtocolActionType = 'food';
+
+/**
+ * L'action alimentaire du protocole, ou `null`.
+ *
+ * La PREMIÈRE de ce type, et non « la seule » : rien au contrat n'interdit deux
+ * actions alimentaires, et le carnet doit rester déterministe plutôt que de
+ * refuser un protocole légitime.
+ */
+export function actionAlimentaire(actions: ActionSourceEpisode[]): ActionSourceEpisode | null {
+  return actions.find(action => action.type === TYPE_ALIMENTAIRE) ?? null;
+}
 
 function ajouterJours(iso: string, jours: number): string {
   const base = new Date(iso);
@@ -102,10 +138,10 @@ export function buildEpisodeDepuisProtocole(input: {
   budget?: AttentionBudget;
 }): FoodObservationEpisode | null {
   const { idPatient, protocole } = input;
-  if (!idPatient || !protocole.actionPrincipale || !protocole.cycleRef) return null;
+  const action = actionAlimentaire(protocole.actions ?? []);
+  if (!idPatient || !action || !protocole.cycleRef) return null;
 
   const debut = protocole.debutCycle.slice(0, 10);
-  const action = protocole.actionPrincipale;
 
   return createEpisode({
     episodeId: episodeIdDepuisCycle(idPatient, protocole.cycleRef),

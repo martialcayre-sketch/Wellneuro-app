@@ -4,6 +4,113 @@
 
 ## Décisions actives
 
+### D-191 — La vue patient du protocole est un contrat recomposé, et son refus se voit des deux côtés
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-15, sur
+  trois questions posées après vérification du code (LOT-03 de la campagne
+  « 5. Actions — le protocole assisté »).
+- Domaine : clinique — frontière patient du protocole 21 jours.
+- Applique : [[D-189]] §1 et §2. S'appuie sur [[D-054]] arbitrage 6, [[D-118]],
+  [[D-115]], [[D-127]] §2, [[D-056]] arbitrage 5, [[D-160]] §4.
+
+**CINQ DESCRIPTIONS DE « CE QUE LE PATIENT LIT » COEXISTAIENT, ET AUCUNE NE SE
+VOYAIT.** Le contrat `c1-patient-protocol-view-v2` était écrit, testé, et **sans
+appelant de production**. La route du portail réécrivait à la main une projection
+plus pauvre ; `api/praticien/ja/cycle` recopiait la même, en se déclarant en
+commentaire « miroir exact » ; `PatientCompanionHome` et les deux panneaux du
+carnet alimentaire redéclaraient chacun leur type et **castaient le JSON dedans**.
+`tsc` restait vert : c'est ainsi que `followUpCriterion` a voyagé des mois dans le
+JSON sans qu'aucun écran ne l'affiche.
+
+**CE QUE LE PATIENT NE RECEVAIT PAS.** Le constructeur fait saisir **trois**
+actions ; le portail servait `draft.actions[0]` — **une sur trois**, élue par
+l'ordre d'insertion et par rien d'autre. Ni rang, ni champ « action principale »
+n'existent au contrat. Les deux autres n'atteignaient le patient que si elles
+portaient une référence Boussole, et alors sous forme de fiche alimentaire, pas
+d'action. Il ne lisait pas non plus **sur quel axe on travaillait**, ni son
+**critère à trois semaines**.
+
+**LA CARTE DE DÉCISION N'EST PERSISTÉE NULLE PART.** Le contrat exige une
+`DecisionCard` entière ; il n'existe aucune table `decision_cards`. `protocol_drafts`
+n'en garde que les ancres. **La carte ne fournit d'ailleurs qu'un seul champ à la
+vue** — `priorityLabel` —, et ce champ est `candidate.label`, c'est-à-dire
+exactement `regle.libelle` du registre SIGNÉ des priorités. Tout le reste de la
+carte est de la garde.
+
+**Décision :**
+
+1. **La carte est RECOMPOSÉE à la lecture**, sur le chemin patient, par
+   `rejouerCarteDecision` — la chaîne C1 rejouée depuis la base à l'horodatage de
+   confirmation de l'épisode que le brouillon nomme. Ni persistance, ni migration.
+   **Un seul chemin de construction, trois appelants** : le cockpit rejoue déjà
+   ([[D-118]]), le vérificateur recalcule pour comparer ([[D-054]] arbitrage 5),
+   et ce module rejoue pour servir. Les trois passent par
+   `construireChaineC1Tolerante` et par la **même lecture de dossier** — une
+   quatrième lecture « équivalente » finirait par diverger, et une divergence ici
+   éteint l'écran d'un patient sur une carte honnête ([[D-101]]).
+2. **L'empreinte recomposée est une GARDE DE FRAÎCHEUR.** Si elle n'est plus celle
+   que le praticien a approuvée pour diffusion, **rien n'est servi**. Ce qui est
+   servi repose donc toujours sur le dossier que le praticien avait sous les yeux
+   quand il a validé.
+3. **La dérive est bornée, et elle a été mesurée avant d'être acceptée.** Le
+   snapshot est borné à `episode.includedResponseIds` et l'horodatage vaut
+   `episode.confirmedAt` : **une passation nouvelle ne bouge rien**. Bougent : une
+   retouche d'anamnèse, un signalement d'effet indésirable déposé par le patient,
+   une re-sélection de priorité — trois actes cliniques qui méritent d'interrompre
+   ce qui est servi — et un **déploiement touchant une table signée ou le recalcul
+   de scores**, qui les interromprait tous à la fois. C'est pour ce dernier cas que
+   le point 4 n'est pas négociable.
+4. **LE REFUS SE VOIT DES DEUX CÔTÉS.** Le patient lit « Votre accompagnement n'est
+   pas consultable pour le moment. Votre praticien en est informé. » — distinct de
+   l'attente paisible d'avant-protocole, qu'il aurait autrement prise pour elle. Le
+   praticien lit sur son écran de diffusion « Ce protocole n'est plus affiché à
+   votre patient : le dossier a changé depuis sa validation. » Le constat est
+   calculé **par la même fonction** que la route patient, sur la **version
+   approuvée** — distinct de `stale`, qui compare deux VERSIONS quand celui-ci
+   compare le DOSSIER à lui-même.
+   **La leçon du booklet, non négociable** : une garde que personne ne voit se
+   mesure à zéro. Un refus muet des deux côtés serait le défaut déplacé, pas fermé
+   ([[D-160]] §4).
+5. **Le motif du refus ne traverse jamais jusqu'au patient.** Il nomme un acte du
+   dossier ; l'écran doit appeler une relecture, pas énoncer un diagnostic.
+6. **Aucun repli sur l'ancienne projection.** Servir un protocole que la garde vient
+   d'écarter serait pire que le vide, et sous une forme qui ne sait pas dire qu'une
+   intervention n'est pas ferme.
+7. **Le contrat produit ; une projection écarte ce qui n'a rien à faire dans un
+   navigateur patient** — identifiants d'enveloppe et trois empreintes. Elle est
+   écrite **en un seul endroit**, et les deux routes comme les trois écrans lisent
+   ce type-là. Ce n'est pas une sixième description : c'est la projection DU
+   contrat, sous les yeux de la garde.
+
+**DEUX DÉFAUTS TROUVÉS EN CHEMIN, CORRIGÉS DANS LE MÊME LOT.**
+
+- **Le carnet alimentaire s'ancrait sur `actions[0]`, quel que soit son type.** Le
+  défaut ne se voyait pas tant que le constructeur posait `food` en dur sur toute
+  action neuve ; depuis que le type est un geste praticien ([[D-189]]), la première
+  action peut être une **orientation médecin** — et le carnet ALIMENTAIRE l'aurait
+  affichée comme l'essai à observer. Il s'ancre désormais sur **l'action
+  alimentaire**, ou sur rien.
+- **La fixture du banc du carnet posait `type: 'alimentation'`** — un type qui
+  n'existe à aucun contrat, où l'alimentaire s'écrit `food`. Le champ était typé
+  `string` : le banc passait au vert sur une valeur que la production n'aurait
+  jamais produite. Le type du contrat y entre.
+
+**CE QUE LA DÉCISION N'OUVRE PAS.** `adviceSheetRef` reste `null` : aucun champ du
+constructeur ne le renseigne, et produire une vraie fiche conseil est une surface
+neuve. Le bouton « Ma fiche conseils » — qui mène au centre TRUST et n'a jamais eu
+de rapport avec ce champ — **dit désormais ce qu'il fait** ; la dette, elle, est
+nommée au dossier de campagne, pas refermée par un libellé. Et **aucune limitation
+patient n'est servie** : celles de la carte sont écrites POUR LE PRATICIEN ; les
+traduire serait fabriquer du texte patient, les recopier lui servir un
+raisonnement interne.
+
+- Conséquences : fragment `changelog.d/2026-09-15-vue-patient-recomposee.md` ;
+  `lib/clinical-engine/rejeuCarteDecision.ts` et
+  `lib/protocol/vuePatientSurLeFil.ts` ; `entreesRuntime` exportée de
+  `verifierChaineC1.ts` pour rester **la** lecture partagée ; aucune migration,
+  aucun drapeau, aucune identité patient.
+
 ### D-190 — Le praticien SUSPEND une action, il ne l'active pas : `D-056` s'amende dans un seul sens
 
 - Date : 2026-09-15

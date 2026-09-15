@@ -27,6 +27,7 @@ import {
   type TraceIssue,
   type TrialTrace,
 } from '@/lib/food-observation';
+import type { VuePatientSurLeFil } from '@/lib/protocol/vuePatientSurLeFil';
 
 function dateLocale(value: Date): string {
   return value.toISOString().slice(0, 10);
@@ -41,12 +42,12 @@ function makeId(prefix: string): string {
 // `episodeId` que celui du panneau patient. Sans protocole diffusé, il n'y a
 // pas d'épisode — l'ancien gabarit annonçait « Version ideale decidee en
 // consultation » sans que rien ne l'y relie.
-type VueCyclePraticien = {
-  purpose: string;
-  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
-  cycleRef: string;
-  debutCycle: string;
-};
+//
+// LE TYPE VIENT DE LA ROUTE, ET PLUS D'UNE COPIE ([[D-191]]) : trois
+// déclarations décrivaient « ce que le patient lit » — ici, dans le panneau
+// patient, et dans chacune des deux routes — sans jamais se voir. `tsc` restait
+// vert pendant qu'un champ servi n'était rendu nulle part.
+type VueCyclePraticien = VuePatientSurLeFil;
 
 type JaSnapshotRecu = {
   draftId: string;

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { deriveProtocolDraftId, deriveVersionId, resolveActiveVersion } from '@/lib/protocol/versioning';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import {
   DIFFUSION_CONFIRMATION,
   isApprovalStale,
@@ -202,10 +203,17 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     const versions = await prisma.protocolDraft.findMany({
       where: { idPatient, decisionCardId },
-      select: { id: true, inputHash: true, decisionCardInputHash: true, supersedesDraftId: true, createdAt: true },
+      select: {
+        id: true,
+        inputHash: true,
+        decisionCardInputHash: true,
+        assessmentEpisodeId: true,
+        supersedesDraftId: true,
+        createdAt: true,
+      },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false });
+      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
@@ -215,6 +223,39 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       select: { id: true, protocolDraftInputHash: true, supersedesApprovalId: true, createdAt: true, approvedAt: true },
     });
     const active = resolveActiveApproval(approvals);
+
+    // CE QUE LE PATIENT VOIT, DIT AU PRATICIEN ([[D-191]]).
+    //
+    // Le chemin patient recompose la carte de décision et REFUSE de servir quand
+    // son empreinte n'est plus celle qui a été approuvée. Ce refus était le
+    // défaut à ne pas reproduire : une garde que personne ne voit se mesure à
+    // zéro — la garde du booklet était confirmable « depuis toujours » et aucun
+    // écran n'envoyait la confirmation.
+    //
+    // Le constat est calculé PAR LA MÊME FONCTION que la route du portail, sur
+    // la même version : deux verdicts « équivalents » finiraient par diverger, et
+    // le praticien lirait « servi » sur un écran patient éteint.
+    //
+    // `null` quand rien n'est diffusé — il n'y a alors rien à servir, et
+    // « non servie » serait un faux constat.
+    let servieAuPatient: boolean | null = null;
+    if (active) {
+      // La version APPROUVÉE, pas la version active : le praticien peut avoir
+      // écrit une version plus récente sans la diffuser, et c'est l'ancienne que
+      // son patient lit. `stale`, juste au-dessus, dit l'écart ; ce constat-ci
+      // dit ce qui est réellement servi.
+      const versionApprouvee =
+        versions.find(version => version.inputHash === active.protocolDraftInputHash) ?? null;
+      if (versionApprouvee) {
+        const rejeu = await rejouerCarteDecision({
+          idPatient,
+          decisionCardId,
+          assessmentEpisodeId: versionApprouvee.assessmentEpisodeId,
+          decisionCardInputHash: versionApprouvee.decisionCardInputHash,
+        });
+        servieAuPatient = rejeu.ok;
+      }
+    }
 
     return NextResponse.json({
       ok: true,
@@ -226,6 +267,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           }
         : null,
       stale: isApprovalStale(active, activeVersion?.inputHash ?? null),
+      servieAuPatient,
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));
