@@ -4,13 +4,43 @@
 
 ## Décisions actives
 
-### D-198 — Le périmètre du classement est ATTESTÉ, et l'attestation sait se périmer
+### D-198 — Une attestation posée, puis retirée le même jour par son propre mécanisme
 
 - Date : 2026-09-15
-- Statut : accepté — **attestation clinique du responsable**, demandée et donnée
-  en toutes lettres après relecture de la surface produite pour elle.
+- Statut : accepté — l'attestation a été **posée puis RETIRÉE le même jour**, et
+  le périmètre est en attente d'une nouvelle relecture.
 - Domaine : clinique — signature du périmètre de classement.
-- Empreinte attestée : `da1ba306c0551d7b`, inchangée depuis [[D-185]].
+- Empreinte : `da1ba306c0551d7b` → **`9792c12e72db93d8`**. C'est ce déplacement
+  qui a périmé la signature.
+
+**CE QUI S'EST PASSÉ, ET C'EST LE FOND DE CETTE ENTRÉE.** Le responsable a relu
+et attesté `da1ba306c0551d7b`. Une contre-expertise a ensuite trouvé **deux
+défauts, et le second a périmé l'attestation** :
+
+1. **L'écran déduisait la provenance d'une ÉGALITÉ DE LIBELLÉ.** Un motif de gate
+   portant le même texte qu'une limitation attestée s'affichait « relu » : un
+   comportement que personne n'a relu héritait de la provenance attestée, sans
+   qu'aucun sha ne bouge. **Le dépôt l'interdisait déjà en toutes lettres** —
+   `limitationsRegleSignee` existe précisément pour ça, et son contrat dit que
+   « la deviner par comparaison de chaînes ferait dépendre une garde de
+   provenance d'une égalité de ponctuation ». La réponse était écrite ; je ne
+   l'avais pas lue. Le producteur déclare désormais
+   `limitationsPerimetreClassement`, et l'écran groupe là-dessus.
+2. **La PORTÉE de l'attestation vivait dans un commentaire.**
+   `ATTESTATION_CLASSEMENT` ne portait que `relu`, une date et un sha : la
+   restriction essentielle — fidélité descriptive seulement — n'était **ni
+   opposable ni hachée**. Le praticien pouvait lire à l'écran une validation
+   clinique du classement, et tout futur consommateur du booléen faire la même
+   extension sans garde.
+
+**LA CORRECTION DU SECOND A PÉRIMÉ LA SIGNATURE, ET C'EST LA RÈGLE QUI S'APPLIQUE
+À SON AUTEUR.** Faire entrer `PORTEE_ATTESTATION` dans le périmètre haché déplace
+l'empreinte ; `shaRelu` ne suit pas ; le banc rougit. **On n'élargit pas après
+coup ce qui a été relu** — même pour le borner. L'attestation est reposée à
+`relu: false` et redemandée sur `9792c12e72db93d8`.
+
+Le mécanisme a donc été éprouvé pour de bon, sur un cas réel et non sur une
+mutation : il a refusé la signature de celui qui l'avait écrit.
 
 **LE GESTE, ET SA CHRONOLOGIE — c'est elle qui fait sa valeur.** Le périmètre a
 été posé INERTE le 2026-09-14 ([[D-185]]), haché avant toute relecture pour que
@@ -61,17 +91,30 @@ retirée, ces textes retombent d'eux-mêmes sous « hors périmètre signé ». 
 étiquette écrite en dur resterait à « relu » sur un périmètre qui ne l'est plus —
 mutation jouée, banc vu rouge.
 
-**CE QUE LA SIGNATURE NE COUVRE PAS, dit ici pour que personne ne l'étende.** Le
-responsable atteste que ce module **DÉCRIT FIDÈLEMENT** ce que le moteur fait. Il
-n'atteste pas que la plainte dominante DOIVE primer sur la priorité intrinsèque
-de la règle — une règle de priorité 1 passe derrière une priorité 2 dès que le
-patient cote l'autre plus haut, et l'intensité ressentie n'est pas la gravité
-clinique. **Cette question reste ouverte** et appellera son propre arbitrage.
+**CE QUE LA SIGNATURE NE COUVRIRA PAS, ET C'EST MAINTENANT DANS LA DONNÉE
+HACHÉE.** `PORTEE_ATTESTATION` porte trois champs — ce qui est couvert (la
+fidélité descriptive), ce qui ne l'est pas (la légitimité clinique du classement,
+et notamment la primauté de la plainte dominante sur la priorité intrinsèque :
+arbitrage NON rendu), et l'intitulé servi à l'écran, **borné exprès** :
+« Textes descriptifs du classement, relus » et non « Périmètre du classement
+(relu) », qui se lisait comme une validation du classement.
 
-- Conséquences : `ATTESTATION_CLASSEMENT` renseignée ; le cas de garde
-  « AUCUNE ATTESTATION N'EST DÉCLARÉE » **retourné** — il exigeait l'absence, il
-  exige la présence et la non-péremption ; `DecisionSummaryCard` scindé, avec ses
-  deux cas ; en-tête du module réécrit. Aucune migration, aucun drapeau.
+Une règle de priorité 1 passe derrière une priorité 2 dès que le patient cote
+l'autre plus haut, et l'intensité ressentie n'est pas la gravité clinique.
+**Cette question reste ouverte** et appellera son propre arbitrage.
+
+- Conséquences : `PORTEE_ATTESTATION` entre dans `PERIMETRE_CLASSEMENT_V1` ;
+  `limitationsPerimetreClassement` ajouté au contrat du candidat et renseigné par
+  le producteur, avec deux bancs de cohérence (sous-ensemble, et exhaustivité —
+  la seconde mutation a survécu à la première rédaction) ;
+  `DecisionSummaryCard` groupe sur cette provenance, jamais sur le libellé ;
+  le cas de garde sert désormais **les deux états** — signé ou non — pour que
+  poser une signature ne demande plus de réécrire un banc.
+
+  **La branche « attestation posée » est prouvée par un fichier dédié qui double
+  le seul champ `relu`** : sans lui, elle serait livrée sans aucune preuve et ne
+  s'exercerait pour la première fois qu'en production, le jour de la
+  re-signature. Aucune migration, aucun drapeau.
 
 ### D-197 — Le troisième invariant du périmètre de classement n'avait aucune épreuve : la relecture l'a trouvé avant la signature
 

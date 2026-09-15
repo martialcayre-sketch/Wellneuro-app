@@ -46,3 +46,48 @@ textes retombent seuls sous « hors périmètre signé ».
 plainte dominante prime sur la priorité intrinsèque — une règle de priorité 1
 passe derrière une priorité 2 dès que le patient cote l'autre plus haut —
 appellera son propre arbitrage. Le périmètre la décrit ; il ne la justifie pas.
+
+## Passe Codex — BLOQUER, deux findings, et le second a périmé la signature
+
+**P1-1 — l'écran déduisait la provenance d'une ÉGALITÉ DE LIBELLÉ.** Un motif de
+gate portant le même texte qu'une limitation attestée s'affichait « relu ».
+Vérifié par exécution : `INTITULE RENDU = "Périmètre du classement (relu le
+2026-09-15)"` sur un texte qui ne venait pas du périmètre.
+
+**Le dépôt l'interdisait DÉJÀ en toutes lettres** — contrat de
+`limitationsRegleSignee` : « la deviner par comparaison de chaînes ferait
+dépendre une garde de provenance d'une égalité de ponctuation ». La réponse était
+écrite dans le fichier que je modifiais.
+
+Corrigé : le producteur déclare `limitationsPerimetreClassement`, l'écran groupe
+là-dessus.
+
+**P1-2 — la PORTÉE vivait dans un commentaire**, donc n'était ni opposable ni
+hachée. `PORTEE_ATTESTATION` entre dans `PERIMETRE_CLASSEMENT_V1`.
+
+**CONSÉQUENCE : `da1ba306c0551d7b` → `9792c12e72db93d8`, ET LA SIGNATURE EST
+PÉRIMÉE.** Le verrou posé le matin même a refusé la signature de celui qui
+l'avait écrite. L'attestation est reposée à `relu: false` et redemandée.
+
+## Mutations
+
+| Mutation | Avant | Après |
+| --- | --- | --- |
+| Écran regroupe par chaîne (le défaut d'origine) | vert | rouge |
+| Producteur oublie une condition côté provenance | **verte** | rouge |
+| Un texte du périmètre servi mais NON déclaré | — | rouge |
+| Intitulé d'écran élargi à « Périmètre du classement » | — | rouge |
+
+La deuxième a survécu à ma première rédaction : rien ne garantissait que
+`limitationsPerimetreClassement` et `limitations` restent cohérentes. Deux bancs
+ajoutés — sous-ensemble, et exhaustivité.
+
+**T1 a attrapé ce que `vitest` laissait passer** : un `Set` de littéraux dont
+`has()` refuse un `string` à la compilation. Banc vert sous vitest, rouge sous
+`tsc`.
+
+## La branche « attestation posée » est prouvée séparément
+
+`DecisionSummaryCardAtteste.test.tsx` double le seul champ `relu`. Sans lui,
+cette branche serait livrée SANS AUCUNE PREUVE et ne s'exercerait pour la
+première fois qu'en production, le jour de la re-signature.

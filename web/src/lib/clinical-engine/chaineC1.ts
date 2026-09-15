@@ -564,6 +564,21 @@ function construireCandidats(input: {
       // Fail-safe par construction : un texte inconnu de cette liste sera rendu
       // comme HORS périmètre signé — sous-promettre plutôt que sur-promettre.
       limitationsRegleSignee: [...declenchee.regle.limitations],
+      // CE QUI VIENT DU PÉRIMÈTRE DE CLASSEMENT RELU, nommé À LA SOURCE ([[D-198]]).
+      //
+      // Le producteur SAIT lesquels des textes servis viennent du périmètre : il
+      // vient de les y lire. L'écran, lui, ne le sait pas — et le deviner par
+      // égalité de chaîne ferait dépendre une garde de provenance d'une égalité
+      // de ponctuation, ce que le contrat de `limitationsRegleSignee` interdit
+      // déjà en toutes lettres. La liste est donc construite ICI, avec les
+      // MÊMES conditions que celles qui gouvernent l'affichage plus bas : un
+      // texte conditionnel absent de `limitations` doit l'être aussi d'ici.
+      limitationsPerimetreClassement: [
+        LIMITATION_PROPOSITION,
+        LIMITATION_CLASSEMENT,
+        ...(input.priorityGoal ? [LIMITATION_OBJECTIF] : []),
+        ...(etatIntegralementInconnu(input.etatPopulation) ? [LIMITATION_ETAT_INCONNU] : []),
+      ],
       limitations: [
         ...declenchee.regle.limitations,
         LIMITATION_PROPOSITION,

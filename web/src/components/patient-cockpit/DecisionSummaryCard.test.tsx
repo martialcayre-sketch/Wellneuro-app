@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
-import { ATTESTATION_CLASSEMENT, LIMITATIONS_CANDIDAT } from '@/lib/clinical/perimetreClassementV1';
+import { ATTESTATION_CLASSEMENT, LIMITATIONS_CANDIDAT, PORTEE_ATTESTATION } from '@/lib/clinical/perimetreClassementV1';
 
 // LOT-05 « Doctrine exécutable » — LE BANC QUE LE LOT-04 A PAYÉ ([[D-101]]).
 //
@@ -109,7 +109,7 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
         confidence: 'à_documenter', ruleId: 'PRIO-DIG-01', rationale: 'Fixture.',
         provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] },
         limitations,
-        limitationsRegleSignee: ['CE QUE LA RÈGLE DIT.'],
+        limitationsRegleSignee: ['CE QUE LA RÈGLE DIT.'], limitationsPerimetreClassement: [],
       }],
       proposedMainPriorityId: 'p1', selectedMainPriority: null, counterfactuals: [],
       missingDataFindingIds: [], discordanceFindingIds: [], safetyFindingIds: [],
@@ -131,43 +131,54 @@ describe('DecisionSummaryCard — le motif de la gate atteint l’écran', () =>
       expect(screen.getByText(/hors périmètre signé/)).not.toBeNull();
     });
 
-    it('UN TEXTE DU PÉRIMÈTRE ATTESTÉ N’EST PLUS « hors périmètre signé »', () => {
-      // CE QUE L'ATTESTATION DU 2026-09-15 A CHANGÉ À L'ÉCRAN. Les quatre textes
-      // de `LIMITATIONS_CANDIDAT` sont relus ; les laisser sous « hors périmètre
-      // signé » ferait SOUS-promettre sur du relu. Le texte servi ici est le
-      // VRAI, lu depuis le périmètre — l'écrire en dur ne prouverait rien.
-      const duPerimetre = LIMITATIONS_CANDIDAT.classement.texte;
-      render(<DecisionSummaryCard decisionCard={carteAvecLimitation(duPerimetre)} />);
-      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+    /** L'intitulé du groupe qui contient ce texte. */
+    const groupeDe = (texte: string): string =>
+      screen.getByText(texte).closest('ul')?.previousElementSibling?.textContent ?? '';
 
-      const groupe = screen.getByText(duPerimetre).closest('ul');
-      const intitule = groupe?.previousElementSibling?.textContent ?? '';
-      if (ATTESTATION_CLASSEMENT.relu) {
-        // LE CAS BRANCHE SUR LA VALEUR DÉCLARÉE, il ne la recopie pas : un écran
-        // qui écrirait « relu » en dur passerait ce cas aujourd'hui et
-        // rougirait le jour où l'attestation est retirée — ce qui est le but.
-        expect(intitule).toContain('Périmètre du classement');
-        expect(intitule).toContain(String(ATTESTATION_CLASSEMENT.dateRelecture));
-        expect(intitule).not.toContain('hors périmètre signé');
-      } else {
-        expect(intitule).toContain('hors périmètre signé');
-      }
+    it('LA PROVENANCE VIENT DU PRODUCTEUR, JAMAIS DU LIBELLÉ — le cas de collision', () => {
+      // LE DÉFAUT QUE CE CAS INTERDIT, et il a existé. Une première rédaction
+      // groupait par ÉGALITÉ DE CHAÎNE avec `LIMITATIONS_CANDIDAT` : un motif de
+      // gate portant le même libellé qu'un texte attesté s'affichait « relu ».
+      // Un comportement que personne n'a relu héritait de la provenance
+      // attestée, sans qu'aucun sha ne bouge. Le contrat de
+      // `limitationsRegleSignee` l'interdisait déjà en toutes lettres.
+      //
+      // ICI LES DEUX TEXTES SONT IDENTIQUES AU CARACTÈRE PRÈS, et un seul est
+      // déclaré du périmètre. C'est le producteur qui tranche, pas la chaîne.
+      const collision = LIMITATIONS_CANDIDAT.classement.texte;
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', collision]);
+      // Le producteur ne déclare RIEN du périmètre : ce texte est un motif de
+      // gate qui porte le même libellé.
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [];
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      expect(groupeDe(collision)).toContain('hors périmètre signé');
+      expect(groupeDe(collision)).not.toContain('relu');
     });
 
-    it('UN TEXTE HORS PÉRIMÈTRE RESTE « hors périmètre signé » — les deux groupes coexistent', () => {
-      // CONTRE-ÉPREUVE, et elle porte la subtilité du lot : `limitationsMoteur`
-      // est un MÉLANGE. Le motif de la gate de population n'appartient à aucun
-      // périmètre relu, et une seule étiquette sur les deux mentirait.
-      const duPerimetre = LIMITATIONS_CANDIDAT.classement.texte;
-      render(<DecisionSummaryCard decisionCard={carteAvecLimitations(
-        ['CE QUE LA RÈGLE DIT.', duPerimetre, 'MOTIF DE GATE, RELU PAR PERSONNE.'],
-      )} />);
+    it('UN TEXTE HORS PÉRIMÈTRE RESTE « hors périmètre signé »', () => {
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', 'MOTIF DE GATE, RELU PAR PERSONNE.']);
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [];
+      render(<DecisionSummaryCard decisionCard={carte} />);
       fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      expect(groupeDe('MOTIF DE GATE, RELU PAR PERSONNE.')).toContain('hors périmètre signé');
+    });
 
-      const horsPerimetre = screen.getByText('MOTIF DE GATE, RELU PAR PERSONNE.').closest('ul');
-      expect(horsPerimetre?.previousElementSibling?.textContent ?? '').toContain('hors périmètre signé');
-      // Et il n'est PAS dans le même groupe que le texte relu.
-      expect(screen.getByText(duPerimetre).closest('ul')).not.toBe(horsPerimetre);
+    it('SANS ATTESTATION, RIEN N’EST PRÉSENTÉ COMME RELU — même déclaré du périmètre', () => {
+      // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat. Tant qu'elle
+      // est retirée, un texte pourtant déclaré du périmètre par le producteur
+      // reste dans le groupe non relu. C'est ce qui rend le retrait effectif à
+      // l'écran sans qu'on ait à y toucher.
+      const duPerimetre = LIMITATIONS_CANDIDAT.proposition.texte;
+      const carte = carteAvecLimitations(['CE QUE LA RÈGLE DIT.', duPerimetre]);
+      carte.priorityCandidates[0].limitationsPerimetreClassement = [duPerimetre];
+      render(<DecisionSummaryCard decisionCard={carte} />);
+      fireEvent.click(screen.getByText(/Voir les sources et limites/));
+      if (!ATTESTATION_CLASSEMENT.relu) {
+        expect(groupeDe(duPerimetre)).toContain('hors périmètre signé');
+      } else {
+        expect(groupeDe(duPerimetre)).toContain(PORTEE_ATTESTATION.intituleEcran);
+      }
     });
 
     it('CHAQUE TEXTE TOMBE DANS SON GROUPE — le cadre d’abstention est signé', () => {

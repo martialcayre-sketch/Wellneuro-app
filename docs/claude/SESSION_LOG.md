@@ -6313,3 +6313,19 @@ périmètre signé ».
 
 **Ce que la signature ne couvre pas** : que la plainte dominante DOIVE primer sur
 la priorité intrinsèque de la règle. Question clinique ouverte, arbitrage séparé.
+
+**L'attestation a été RETIRÉE le même jour, par son propre mécanisme.** Une
+contre-expertise a trouvé deux défauts. Le premier : l'écran déduisait la
+provenance d'une **égalité de libellé**, si bien qu'un motif de gate homonyme
+d'une limitation attestée s'affichait « relu » — et le dépôt l'interdisait DÉJÀ
+en toutes lettres dans le contrat de `limitationsRegleSignee`. La réponse était
+écrite ; je ne l'avais pas lue. Le second : la **portée** de l'attestation vivait
+dans un commentaire, donc n'était ni opposable ni hachée.
+
+Corriger le second a fait entrer `PORTEE_ATTESTATION` dans le périmètre haché,
+déplacé l'empreinte (`da1ba306c0551d7b → 9792c12e72db93d8`) et **périmé la
+signature**. C'est la règle, et elle s'est appliquée à son auteur : on n'élargit
+pas après coup ce qui a été relu, même pour le borner.
+
+Le mécanisme est donc éprouvé sur un cas réel, pas sur une mutation — il a refusé
+la signature de celui qui l'avait écrit.

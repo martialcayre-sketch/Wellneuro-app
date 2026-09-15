@@ -4,7 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 import { TwoLevelReading } from '@/components/ui/TwoLevelReading';
 import { dateDePassation, passationsDuCandidat } from './passationsDuCandidat';
-import { ATTESTATION_CLASSEMENT, LIMITATIONS_CANDIDAT } from '@/lib/clinical/perimetreClassementV1';
+import { ATTESTATION_CLASSEMENT, PORTEE_ATTESTATION } from '@/lib/clinical/perimetreClassementV1';
 import { envoyerMesure } from '@/lib/mesure/envoyerMesure';
 
 export const TITRE_PAR_DEFAUT = 'Priorité et limites';
@@ -157,28 +157,29 @@ export function DecisionSummaryCard({
   const limitationsRegle = toutes.filter((texte) => signees.has(texte));
   const duMoteur = toutes.filter((texte) => !signees.has(texte));
 
-  // CE QUE L'ATTESTATION DU 2026-09-15 A CHANGÉ À L'ÉCRAN ([[D-185]] l'avait
-  // annoncé, cette PR l'exécute). Les quatre textes de `LIMITATIONS_CANDIDAT`
-  // sont désormais RELUS par le praticien ; les afficher sous « hors périmètre
-  // signé » ferait SOUS-promettre sur du relu — l'inverse du défaut habituel,
-  // mais un écart quand même.
+  // CE QUE L'ATTESTATION A CHANGÉ À L'ÉCRAN, et par quel chemin.
   //
-  // MAIS `duMoteur` EST UN MÉLANGE, et c'est ce qui interdit de simplement
-  // renommer l'intitulé : il porte AUSSI le motif de la gate de population, qui
-  // n'appartient à aucun périmètre relu. Une seule étiquette sur les deux
-  // mentirait dans un sens ou dans l'autre. La liste est donc scindée.
+  // Les textes du périmètre sont RELUS ; les afficher sous « hors périmètre
+  // signé » ferait SOUS-promettre sur du relu. Mais `duMoteur` est un MÉLANGE —
+  // il porte aussi le motif de la gate de population, que personne n'a relu —
+  // et une seule étiquette sur les deux mentirait dans un sens ou dans l'autre.
   //
-  // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : le jour où elle
-  // est retirée (périmètre modifié, re-signature due), ces textes retombent
-  // d'eux-mêmes sous « hors périmètre signé ». Une étiquette écrite en dur
-  // resterait à « relu » sur un périmètre qui ne l'est plus.
-  const textesRelus: ReadonlySet<string> = new Set(
-    ATTESTATION_CLASSEMENT.relu
-      ? Object.values(LIMITATIONS_CANDIDAT).map(limitation => limitation.texte)
-      : [],
+  // LE GROUPEMENT SE FAIT SUR LA PROVENANCE DÉCLARÉE PAR LE PRODUCTEUR, JAMAIS
+  // SUR LE LIBELLÉ. Une première rédaction comparait les chaînes à
+  // `LIMITATIONS_CANDIDAT` : un motif de gate portant le même libellé qu'un
+  // texte attesté s'affichait alors « relu » — un comportement que personne n'a
+  // relu héritant de la provenance attestée, sans qu'aucun sha ne bouge.
+  // Relevé en contre-expertise, et le contrat de `limitationsRegleSignee`
+  // l'interdisait DÉJÀ : « la deviner par comparaison de chaînes ferait dépendre
+  // une garde de provenance d'une égalité de ponctuation ».
+  //
+  // L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat : retirée, ces
+  // textes retombent d'eux-mêmes dans le groupe non relu.
+  const duPerimetre = new Set(
+    ATTESTATION_CLASSEMENT.relu ? (current?.limitationsPerimetreClassement ?? []) : [],
   );
-  const limitationsRelues = duMoteur.filter((texte) => textesRelus.has(texte));
-  const limitationsMoteur = duMoteur.filter((texte) => !textesRelus.has(texte));
+  const limitationsRelues = duMoteur.filter((texte) => duPerimetre.has(texte));
+  const limitationsMoteur = duMoteur.filter((texte) => !duPerimetre.has(texte));
 
   return (
     <section aria-labelledby={idTitre}>
@@ -263,7 +264,7 @@ export function DecisionSummaryCard({
                     « relu » sans date laisserait croire à une garantie
                     permanente. */}
                 <p className="mt-2 text-xs font-medium text-foreground">
-                  Périmètre du classement <span className="font-normal text-muted-foreground">(relu le {ATTESTATION_CLASSEMENT.dateRelecture})</span>
+                  {PORTEE_ATTESTATION.intituleEcran} <span className="font-normal text-muted-foreground">(relu le {ATTESTATION_CLASSEMENT.dateRelecture})</span>
                 </p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {limitationsRelues.map(limitation => <li key={limitation}>{limitation}</li>)}

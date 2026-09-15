@@ -7,6 +7,7 @@ import {
   MOTIF_ABSTENTION,
   ORDRE_EVALUATION_ABSTENTION,
   PERIMETRE_CLASSEMENT_V1,
+  PORTEE_ATTESTATION,
   TERMES_DE_CLASSEMENT,
 } from './perimetreClassementV1';
 import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
@@ -27,7 +28,7 @@ import { ABSTENTION_PROCEDURE_V1, PRIORITY_RULES_V1 } from './priorityRulesV1';
 // montré sur les grilles.
 
 /** L'empreinte du périmètre, figée. Toute édition la fait bouger. */
-const EMPREINTE_PERIMETRE = 'da1ba306c0551d7b';
+const EMPREINTE_PERIMETRE = '9792c12e72db93d8';
 
 /**
  * La source d'un module, COMMENTAIRES RETIRÉS.
@@ -55,28 +56,49 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     ).toBe(EMPREINTE_PERIMETRE);
   });
 
-  it('L’ATTESTATION EST POSÉE, ET ELLE PORTE SUR CE PÉRIMÈTRE-CI', () => {
-    // CE CAS A ÉTÉ RETOURNÉ LE 2026-09-15, ET C'ÉTAIT LE POINT. Il exigeait
-    // l'ABSENCE d'attestation — « ce banc échoue le jour où quelqu'un remplit
-    // l'attestation sans le décider : il faudra alors le réécrire ». Le
-    // responsable a décidé, après avoir relu le périmètre et fait corriger deux
-    // fois sa preuve ([[D-185]], [[D-197]]) ; le voici réécrit.
-    expect(ATTESTATION_CLASSEMENT.relu).toBe(true);
-    expect(ATTESTATION_CLASSEMENT.dateRelecture).toBe('2026-09-15');
+  it('L’ATTESTATION EST COHÉRENTE — posée sur CE périmètre, ou absente', () => {
+    // CE CAS SERT LES DEUX ÉTATS, et c'est délibéré : le réécrire à chaque
+    // signature ferait du geste une édition de banc, alors que c'est une
+    // décision clinique. Il dit une seule chose, dans les deux sens — une
+    // attestation ne vaut que pour le contenu EXACT qui a été relu.
+    if (!ATTESTATION_CLASSEMENT.relu) {
+      // NON SIGNÉ. Un périmètre posé, haché et gardé RESSEMBLE à un périmètre
+      // signé : s'en réclamer fabriquerait la provenance que `D-162` §5 défend
+      // de s'attribuer. Les trois champs doivent être vides ENSEMBLE — une date
+      // sans `relu` laisserait croire à une relecture.
+      expect(ATTESTATION_CLASSEMENT.dateRelecture).toBeNull();
+      expect(ATTESTATION_CLASSEMENT.shaRelu).toBeNull();
+      return;
+    }
 
-    // LE CŒUR DU CAS, ET IL EST NEUF : l'attestation est PÉRISSABLE. `shaRelu`
-    // est un littéral figé, pas la constante calculée — sinon la comparaison
-    // serait tautologique et la péremption invisible (patron [[D-063]], et
-    // c'est le trou exact que [[D-180]] a montré sur les grilles).
-    //
-    // Toute édition du périmètre déplace `empreinte()`, ce littéral ne suit
-    // pas, et ce cas ROUGIT en réclamant une re-signature. Une signature qui ne
-    // sait pas se périmer ne vaut rien : elle couvrirait un contenu que
-    // personne n'a relu.
+    // SIGNÉ. `shaRelu` est un LITTÉRAL FIGÉ, jamais la constante calculée —
+    // sinon la comparaison serait tautologique et la péremption invisible
+    // (patron [[D-063]], trou exact montré par [[D-180]]). Toute édition du
+    // périmètre déplace `empreinte()`, le littéral ne suit pas, et ce cas
+    // rougit. Réancrer l'empreinte NE SUFFIT PAS à le faire taire.
+    expect(typeof ATTESTATION_CLASSEMENT.dateRelecture).toBe('string');
     expect(
       ATTESTATION_CLASSEMENT.shaRelu,
-      'ATTESTATION PÉRIMÉE : le périmètre a changé depuis la relecture du 2026-09-15. Ce n’est PAS une empreinte à reporter — le contenu attesté n’est plus celui qui est relu. Retirer l’attestation (`relu: false`, dates et sha à `null`) et la redemander au responsable, avec une décision `D-xxx` qui dit ce qui a bougé.',
+      'ATTESTATION PÉRIMÉE : le périmètre a changé depuis la relecture. Ce n’est PAS une empreinte à reporter — le contenu attesté n’est plus celui qui est relu. Retirer l’attestation (`relu: false`, date et sha à `null`), écrire une décision `D-xxx` qui dit ce qui a bougé, et la redemander au responsable.',
     ).toBe(empreinte());
+  });
+
+  it('LA PORTÉE EST DANS LA DONNÉE HACHÉE, pas dans un commentaire', () => {
+    // CE QUE LA CONTRE-EXPERTISE A TROUVÉ. `ATTESTATION_CLASSEMENT` ne portait
+    // que `relu`, une date et un sha : la restriction essentielle — fidélité
+    // descriptive seulement — vivait dans un commentaire et dans la décision,
+    // donc n'était ni opposable ni hachée. Le praticien pouvait lire une
+    // validation clinique du classement, et un futur consommateur du booléen
+    // faire la même extension sans garde.
+    expect(PERIMETRE_CLASSEMENT_V1.porteeAttestation).toBe(PORTEE_ATTESTATION);
+    // L'EXCLUSION EST NOMMÉE, pas sous-entendue : l'arbitrage non rendu doit
+    // être lisible dans ce que le praticien signe.
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/plainte dominante/);
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/NON rendu/);
+    // ET L'INTITULÉ D'ÉCRAN EST BORNÉ : ce qui est relu, ce sont les TEXTES qui
+    // décrivent le classement, pas le classement lui-même.
+    expect(PORTEE_ATTESTATION.intituleEcran).not.toMatch(/Périmètre du classement/);
+    expect(PORTEE_ATTESTATION.intituleEcran).toMatch(/descriptifs/);
   });
 
   it('les trois termes sont ordonnés 1, 2, 3 — sans trou ni doublon', () => {
