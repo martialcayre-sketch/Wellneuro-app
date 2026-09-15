@@ -1,9 +1,9 @@
 ---
 id: "2026-09-14-protocole-assiste"
 titre: "5. Actions — le protocole assisté"
-statut: "en_cours"
+statut: "terminée (2026-09-16 — neuf lots livrés, contre-revue adverse faite AVANT la clôture (6 réfutations sur 26), et usage MESURÉ au conteneur : zéro version de protocole C1 en production. Le créneau primaire s'ouvre ; son attribution reste un geste du responsable.)"
 créée_le: "2026-09-14"
-mise_à_jour: "2026-09-14"
+mise_à_jour: "2026-09-16"
 lot_courant: "LOT-08"
 branche_campagne: "aucune"
 branche_lot_courant: "aucune"
@@ -185,7 +185,7 @@ au rail, et `adviceSheetRef` — mort de bout en bout, dette consignée au LOT-0
 | LOT-04 | livré en deux PR — la garde de registre, puis `D-193` |
 | LOT-05 | livré — `D-190` |
 | LOT-06 | livré en deux PR — `D-196` (l'échelle, hors service), puis `D-198` (déclarée conforme, en service) |
-| LOT-07 | bilan écrit — **sa mesure au conteneur reste due** |
+| LOT-07 | bilan écrit — **mesure faite le 2026-09-16 : zéro usage** |
 | LOT-08 | **contre-revue adverse de campagne** — hors cadrage, né d'elle (`D-200`) |
 
 **Neuf décisions** rendues : `D-188` à `D-193`, puis `D-196`, `D-198` et `D-200`.
@@ -212,11 +212,34 @@ et elles remplacent ce que les sections ci-dessus disaient :
 
 **Les huit lots sont livrés, et le barème est en service** : la déclaration de
 conformité a été rendue le 2026-09-15 après relecture — qui a d'ailleurs corrigé le
-motif de `CHARGE-01`, lequel affirmait faux à zéro action engagée (`D-198`). Une
-seule chose reste, et ce n'est pas un lot : la **mesure d'usage**, sur dossiers
-réels, par identifiant, au conteneur (`D-125`). Elle a été
-refusée par le classifieur de sécurité de la session du 2026-09-15 et n'a pas été
-contournée. C'est ce que `D-112` avait prévenu — « le goulot n'est pas l'ingénierie,
-c'est le temps praticien » — et ce que ce dossier a écrit à son ouverture : la
-campagne se clôt sur ses livrables verts, l'usage se mesure à part.
+motif de `CHARGE-01`, lequel affirmait faux à zéro action engagée (`D-198`).
+
+## LA CAMPAGNE EST CLOSE LE 2026-09-16, ET SON USAGE EST MESURÉ À ZÉRO
+
+La mesure a été faite au conteneur, comptages seuls, sans champ nominatif — le
+praticien a ouvert une session **hors mode auto** pour lever le refus du classifieur,
+qui portait sur la forme de la commande et non sur son contenu.
+
+| Mesure | Valeur |
+|---|---|
+| Versions de protocole en base | **1** — contrat `ja-food-observation-v1`, du 2026-07-31 |
+| Versions écrites depuis le 2026-09-14 | **0** |
+| Versions relues, approbations de diffusion, points d'étape | **0**, **0**, **0** |
+| Sélections de priorité | **3** (1 au 2026-09-13) |
+| Épisodes T0 | **8** (7 au 2026-09-13) |
+
+**Aucune version de protocole C1 n'existe en production.** L'entonnoir a bougé d'un
+cran — la phase Décision se franchit, c'est ce que `D-179` a débloqué — et il
+s'arrête à la phase Actions, exactement là où cette campagne a travaillé.
+
+**Ce zéro mesure un jour, pas une adoption** : la campagne est déployée depuis le
+2026-09-15 au soir. C'est la **ligne de base** contre laquelle la prochaine lecture
+se comparera, pas un verdict sur les livrables. La requête est conservée au dossier
+du LOT-07, telle quelle, pour qu'aucune reformulation ne déplace la question entre
+deux lectures.
+
+**Ce qu'il confirme** : `D-112` avait raison sur le goulot — « le goulot n'est pas
+l'ingénierie, c'est le temps praticien ». Trois campagnes de suite l'ont désormais
+mesuré. Le créneau primaire s'ouvre ; **son attribution reste un geste du
+responsable**, et l'ouvrir sans peser ce constat serait ouvrir à l'aveugle.
 

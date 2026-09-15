@@ -6334,3 +6334,27 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
+
+## 2026-09-16 — Clôture de « 5. Actions » : l'usage est mesuré, il est à zéro
+
+La mesure due depuis la clôture a été faite, le praticien ayant ouvert une session hors
+mode auto — le classifieur refusait la forme de la commande, pas son contenu.
+
+**Zéro version de protocole C1 en production.** L'unique ligne de `protocol_drafts` date du
+2026-07-31 et porte un contrat d'observation alimentaire. Ce qui bouge depuis le 13 :
+épisodes T0 de 7 à 8, sélections de priorité de 1 à 3 — l'entonnoir franchit la phase
+Décision et s'arrête à la phase Actions.
+
+Ce zéro mesure **un jour** de fonctionnement : c'est une ligne de base, pas un verdict. La
+requête est conservée telle quelle au LOT-07 pour être rejouée à l'identique dans deux
+semaines ; la reformuler déplacerait la question.
+
+Campagne close (neuf lots, neuf décisions), `.wn/state.json` passé à `idle`. Portefeuille
+remis d'aplomb : IDP2 close, JA suspendue avec son LOT-05 nommé en dette, C4 retournée en
+file. Cinq dettes de la contre-revue portées à la file.
+
+**Prochaine action** : aucune. Le créneau primaire est libre et son attribution est un
+geste du responsable.
+
+**Question ouverte** : quel rang l'occupe — et `D-112`, mesuré trois fois de suite, pèse
+contre tout rang qui ajoute une surface.
