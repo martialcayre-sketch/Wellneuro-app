@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-195 — Une signature clinique atteste une relecture : la déclaration précède la frappe, et l'outil qui a écrit le changement ne peut pas l'attester
+
+- Date : 2026-09-15
+- Statut : accepté — attestation du praticien rendue en séance le 2026-09-15,
+  après lecture de la surface produite avant la demande.
+- Domaine : clinique — verrou de signature de `INDICATIONS_BIOLOGIE_METADATA`,
+  troisième attestation.
+- Applique : [[D-187]]. S'appuie sur [[D-180]], [[D-069]], [[D-063]].
+  Ne touche pas [[D-061]].
+
+**CE QUI A DÉCLENCHÉ CETTE SIGNATURE N'EST PAS UNE RÈGLE.** Les quinze règles de
+la table n'ont pas bougé, ni aucun des vingt-neuf claims. Deux des seize
+instruments qu'elle **cite** ont été réalignés sur leurs publications — l'AQ
+(`Q_GEO_03`) et le QDRS (`Q_GEO_05`) — et depuis [[D-187]] le périmètre signé
+porte le bloc `scoring` entier de ces instruments et la cotation de leurs items.
+Cinq bancs ont rougi seuls. **Sous le périmètre d'avant, un réalignement des
+items ET de la pondération serait passé en silence** tant que les bandes
+n'auraient pas bougé : c'est le mode de défaillance que [[D-180]] avait constaté
+après coup sur la borne du PSQI.
+
+**LA PREUVE TIENT AUSSI PAR CE QUI N'A PAS BOUGÉ.** La table d'orientation ne
+cite ni l'AQ ni le QDRS ; son `shaPerimetre` du 2026-09-14 est resté identique au
+bit près et **n'a pas été reposé**. Un périmètre qui éteindrait les deux tables à
+chaque retouche d'instrument ne prouverait rien.
+
+**LA QUESTION TRANCHÉE ICI EST CELLE DE QUI ATTESTE.** Le praticien a demandé
+« signe pour moi ». La frappe n'était pas l'obstacle : le garde
+`shaPerimetreLitteral` interdit le **câblage**, pas la recopie. L'obstacle était
+que **le même outil avait écrit, le matin même, les deux réalignements à relire**.
+Une empreinte qu'il pose seul atteste son propre travail devant lui-même : le
+verrou n'enregistre plus, il ratifie. C'est la forme exacte de l'épisode du
+2026-09-13, où huit bancs sont repassés au vert en devenant muets.
+
+**Décision :**
+
+1. **La déclaration de conformité du praticien précède la frappe**, et elle est
+   le geste attestant. La recopie de la chaîne hex par l'outil est mécanique, et
+   ne vaut que portée par cette déclaration.
+2. **La surface de relecture se produit AVANT la demande d'attestation**, jamais
+   après — ici les champs de scoring, les bandes et la cotation des deux
+   instruments. Demander une signature sans elle revient à demander une
+   confiance, pas une relecture.
+3. **Une autorisation d'outillage ne couvre jamais `shaPerimetre` ni
+   `dateValidation`.** L'autorisation GitHub en cours (commit, push, PR, merge)
+   ne s'y étend pas, et aucune autre ne s'y étendra : ces deux champs décrivent
+   un acte clinique, pas une opération de dépôt.
+4. **Une signature remplacée se range, elle ne s'efface pas.** Les sha du
+   2026-08-17, du 2026-09-14 matin et du 2026-09-14 soir restent écrits dans le
+   fichier au-dessus du nouveau.
+5. **Une signature n'est finie que quand ce que le dépôt en dit l'est aussi.**
+   `verrousSignatureDocumentes.guard.test.ts` a rattrapé la `dateValidation`
+   restée au 14 dans `docs/FEATURE_FLAGS.md` ; le code seul juste ne suffisait
+   pas.
+
+**Ce que cette décision ne fait pas :** elle ne modifie aucune règle, aucun
+seuil, aucun claim, et n'allume rien. `WN_CB_ENABLED` et `WN_CB_PROPOSITION`
+étaient déjà posés ; la table était **ouverte hier et l'est de nouveau
+aujourd'hui**, avec une interruption qui a duré exactement le temps de la
+relecture — ce qui est le comportement voulu de [[D-063]].
 ### D-194 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
 
 - Date : 2026-09-15

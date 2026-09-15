@@ -43,14 +43,22 @@ const CODE_SANS_COMMENTAIRES = SOURCE.split('\n')
 // RE-SIGNÉE LE 2026-09-14 : le périmètre porte les grilles d'interprétation des
 // seize instruments cités et leurs drapeaux de plancher, relus par le praticien.
 // Aucune règle n'a changé — c'est le périmètre qui a grandi.
-// Ancien sha signé (2026-08-17, périmètre règles seules) :
-// `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`.
-const SHA_CONTENU_2026_09_14 = '82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42';
+// RE-SIGNÉE LE 2026-09-15 : aucune règle n'a changé, mais deux instruments
+// cités ont été réalignés sur leurs publications — l'AQ (`Q_GEO_03`) et le
+// QDRS (`Q_GEO_05`) — et leur cotation est dans le périmètre depuis [[D-187]].
+// Ce banc a rougi tout seul le jour où ils ont bougé : c'est ce qu'on lui
+// demande. Le littéral suit la relecture praticien, jamais l'inverse.
+// Anciens sha signés :
+//   · 2026-08-17 (périmètre règles seules) —
+//     `a2f28c0be27051c1c93833197659f9dba19afda2a96305e8b61157ebb38acb8f`
+//   · 2026-09-14 (périmètre élargi au calcul) —
+//     `82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42`
+const SHA_CONTENU_2026_09_15 = 'd2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049';
 
 describe('indications biologie — le verrou de signature ne peut pas être neutralisé', () => {
   it('le sha publié est celui du contenu réellement porté par la table', () => {
     expect(INDICATIONS_BIOLOGIE_V1).toHaveLength(15);
-    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_09_14);
+    expect(INDICATIONS_BIOLOGIE_SHA256).toBe(SHA_CONTENU_2026_09_15);
   });
 
   // Le piège exact de la revue : `shaPerimetre` câblé sur la constante au lieu
@@ -79,7 +87,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
   // changement d'état s'accompagne du tableau de `docs/FEATURE_FLAGS.md`
   // (gardé par `verrousSignatureDocumentes.guard`).
   it('l\'état livré est signé aux cinq termes, et le verdict le dit', () => {
-    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-14T00:00:00.000Z');
+    expect(INDICATIONS_BIOLOGIE_METADATA.dateValidation).toBe('2026-09-15T00:00:00.000Z');
     expect(INDICATIONS_BIOLOGIE_METADATA.claimsSource.length).toBe(29);
     expect(INDICATIONS_BIOLOGIE_METADATA.shaPerimetre).toBe(INDICATIONS_BIOLOGIE_SHA256);
     expect(signatureIndicationsValide(INDICATIONS_BIOLOGIE_METADATA)).toBe(true);
@@ -109,7 +117,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
         validationExterne: true,
         dateValidation: '2026-08-16T00:00:00.000Z',
         claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-        shaPerimetre: SHA_CONTENU_2026_09_14,
+        shaPerimetre: SHA_CONTENU_2026_09_15,
       }),
     ).toBe(true);
   });
@@ -124,7 +132,7 @@ describe('indications biologie — le verrou de signature ne peut pas être neut
           validationExterne: true,
           dateValidation: '2026-08-16T00:00:00.000Z',
           claimsSource: [{ claimId: 'WN-CL-0000-001', versionClaim: 'v1.0' }],
-          shaPerimetre: SHA_CONTENU_2026_09_14,
+          shaPerimetre: SHA_CONTENU_2026_09_15,
         },
         shaApresAjout,
       ),
