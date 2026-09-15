@@ -5,7 +5,7 @@
 **Campagne** : 2026-09-14-protocole-assiste
 **Titre** : 5. Actions — le protocole assisté
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 

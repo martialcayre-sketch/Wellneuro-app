@@ -58,6 +58,7 @@ import type { LimiteProposition } from '@/lib/biology-library/propositionService
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
 import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
+import type { ProvenancePurpose, SourceCitablePurpose } from '@/lib/protocol/provenancePurpose';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
 // d'une révision après arbitrage biologique — jamais recalculée côté client.
@@ -66,12 +67,20 @@ type ContenuVersionActive = {
   followUpCriterion: string;
   therapeuticLoad: TherapeuticLoad;
   actions: ProtocolAction[];
+  /** Constatée à la lecture, jamais persistée — `null` dès qu'un caractère bouge. */
+  provenancePurpose?: ProvenancePurpose;
 };
 
 type VersionsApiResponse = {
   ok: boolean;
   active: { versionId: string; contenu?: ContenuVersionActive | null } | null;
   history: ProtocolVersionItem[];
+  /**
+   * Les deux sources que la raison d'être a le droit de citer, relues au
+   * serveur ([[D-193]]). Liste FERMÉE : ni le motif praticien de sélection, ni
+   * le `rationale` du moteur n'y entrent — ils s'affichent, ils ne se citent pas.
+   */
+  sourcesCitables?: SourceCitablePurpose[];
   error?: string;
 };
 
@@ -387,6 +396,8 @@ export function ClinicalRuntimeSection({
   // `null` = rien n'est affirmé (pas de diffusion, ou lecture non aboutie). Un
   // `false` par défaut ferait crier l'écran avant d'avoir lu ([[D-191]]).
   const [servieAuPatient, setServieAuPatient] = useState<boolean | null>(null);
+  /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
+  const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
   const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
@@ -496,6 +507,9 @@ export function ClinicalRuntimeSection({
       const payload = (await response.json()) as VersionsApiResponse;
       if (!response.ok || !payload.ok) return;
       setVersions(payload.history);
+      // `?? []` et non « garder l'ancienne liste » : une lecture qui aboutit
+      // sans source dit qu'il n'y a rien à citer sur ce dossier-ci.
+      setSourcesCitables(payload.sourcesCitables ?? []);
       // La lecture a ABOUTI : les états vides des sous-vues Historique et
       // Diffusion ont le droit d'affirmer « aucune version » (revue I1 — un
       // `[]` en vol ou après échec est un état INCONNU, pas un vide).
@@ -1866,6 +1880,8 @@ export function ClinicalRuntimeSection({
           onConfirmerRegistre={confirmerRegistreEtEnregistrer}
           foodCompassSelection={foodCompassSelection}
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
+          sourcesCitables={fixture ? [] : sourcesCitables}
+          provenancePurpose={fixture ? null : (contenuActif?.provenancePurpose ?? null)}
         />
       </div>
       {affiche('actions') && (fixture || sousVueActions === 'protocole') && (

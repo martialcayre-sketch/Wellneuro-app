@@ -2,6 +2,40 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-04 (2/2) : la citation se constate à la lecture (D-193)
+
+**Décisions** : l'arbitrage a été REPOSÉ parce que le premier était faux — `D-189` §1
+écrivait « la provenance est portée par la version », par analogie avec
+`objectifs_negocies` dont la provenance vit dans neuf colonnes de migration ;
+`protocol_drafts` n'en a aucune. Trois voies reposées après vérification en code
+(contrat V5 — le patron du dépôt, mais une décision qui étend `D-130` pour une marque
+d'affichage ; constat à la lecture ; différer). Tranché : le **constat à la lecture**,
+le mécanisme même retenu la veille pour la vue patient.
+
+**Livré** : `provenancePurpose.ts` (pur, liste fermée, comparaison stricte au `trim`
+près) ; `teteObjectifCitable.ts` — la lecture partagée plutôt qu'une TROISIÈME copie
+de `SELECTION_OBJECTIF` ; les sources citables et la provenance constatée au GET des
+versions ; « Reprendre » au constructeur, qui ne transmet rien — c'est le texte qui
+fait foi ; le marquage « votre patient la lit », reporté du LOT-03.
+
+**Trouvé en chemin** : une commodité emportait le chemin principal — une erreur de
+base sur la lecture des sources aurait fait tomber tout l'historique du protocole
+pour un bouton « Reprendre ». Elle ne lève plus.
+
+**Écarté** : le contrat V5 (coût disproportionné pour une marque d'affichage) ; citer
+la tête la plus récente quand deux sont actives (une discordance ne se moyenne pas) ;
+citer le motif praticien de sélection ou le `rationale` du moteur — ils s'affichent,
+ils ne partent pas au patient.
+
+**Vérifications** : T1 vert ; T2 rapide 9 293 bancs unitaires et 198 E2E verts.
+Mutation vue ROUGE avant de déclarer vert, restaurée depuis une copie.
+
+**Prochaine action** : le LOT-06 attend la première ligne de barème signée du
+praticien — son mécanisme est écrit et vert sur une branche locale non poussée.
+
+**Questions ouvertes** : la mesure de production du LOT-07 a été refusée par le
+classifieur de sécurité de la session et n'a pas été contournée.
+
 ## 2026-09-15 — LOT-03 (2/2) : les gardes de la carte opposées à la diffusion (D-192)
 
 **Décisions** : le contrat de vue patient refuse depuis toujours une décision sous

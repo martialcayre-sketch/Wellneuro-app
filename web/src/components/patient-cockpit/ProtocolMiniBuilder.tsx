@@ -13,6 +13,11 @@ import type {
   TherapeuticLoad,
 } from '@/lib/clinical-engine/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+import {
+  LIBELLE_MARQUE_PURPOSE,
+  type ProvenancePurpose,
+  type SourceCitablePurpose,
+} from '@/lib/protocol/provenancePurpose';
 
 // Contenu du brouillon au moment où le praticien le marque comme relu.
 // Émis tel quel : la construction du ProtocolDraft (validations et hashes du
@@ -101,6 +106,8 @@ export function ProtocolMiniBuilder({
   onConfirmerRegistre,
   foodCompassSelection = null,
   onClearFoodCompassSelection,
+  sourcesCitables = [],
+  provenancePurpose = null,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -123,6 +130,18 @@ export function ProtocolMiniBuilder({
   onConfirmerRegistre?: () => void;
   foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
   onClearFoodCompassSelection?: () => void;
+  /**
+   * Les deux sources que la raison d'être a le droit de citer ([[D-193]]),
+   * relues au serveur. Liste FERMÉE : ni le motif praticien de sélection, ni le
+   * `rationale` du moteur n'y entrent — ils s'affichent ailleurs, ils ne se
+   * citent pas au patient.
+   */
+  sourcesCitables?: SourceCitablePurpose[];
+  /**
+   * Ce que la raison d'être de la VERSION ACTIVE cite, constaté à la lecture par
+   * le serveur. `null` = elle ne cite rien, ou plus rien.
+   */
+  provenancePurpose?: ProvenancePurpose;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -304,7 +323,39 @@ export function ProtocolMiniBuilder({
       <div className="mt-4 grid gap-4">
         <label className="text-sm font-medium text-foreground">
           Raison d’être
+          <span className="ml-2 font-normal text-xs text-muted-foreground">
+            votre patient la lit en sous-titre de son accueil
+          </span>
           <textarea aria-label="Raison d’être" value={purpose} onChange={event => { markDirty(); setPurpose(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" />
+          {/* CITER, C'EST REPRENDRE UN TEXTE DÉJÀ ÉCRIT — jamais en composer un.
+              Le bouton recopie la source telle quelle dans le champ ; la marque,
+              elle, se constate au serveur et tombe au premier caractère
+              réécrit. Rien n'est envoyé au serveur ici : le texte fait foi, pas
+              le clic ([[D-193]]). */}
+          {sourcesCitables.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Reprendre :</span>
+              {sourcesCitables.map(source => (
+                <button
+                  key={`${source.marque}:${source.idSource}`}
+                  type="button"
+                  onClick={() => { markDirty(); setPurpose(source.texte); }}
+                  title={source.texte}
+                  className="min-h-11 max-w-full truncate rounded-lg border border-border px-3 py-1.5 text-xs font-normal"
+                >
+                  {source.libelle}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* CE QUE LA VERSION ACTIVE CITE. Constaté par comparaison de textes,
+              jamais déclaré par cet écran — une marque que le navigateur
+              annoncerait serait une marque que rien n'a confrontée. */}
+          {provenancePurpose && (
+            <p className="mt-1 text-xs font-normal text-muted-foreground">
+              {LIBELLE_MARQUE_PURPOSE[provenancePurpose.marque]}
+            </p>
+          )}
         </label>
         <label className="text-sm font-medium text-foreground">
           Critère observable à J21
