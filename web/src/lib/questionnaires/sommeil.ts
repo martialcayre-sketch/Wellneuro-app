@@ -277,8 +277,13 @@ export const Q_SOM_04 = {
           [{v:0,l:'Aucun'},{v:1,l:'Léger'},{v:2,l:'Modéré'},{v:3,l:'Sévère'},{v:4,l:'Très sévère'}]),
         qs('IR2','Quel est le besoin de bouger les jambes ou bras lorsque vous êtes au repos ?',
           [{v:0,l:'Aucun'},{v:1,l:'Léger'},{v:2,l:'Modéré'},{v:3,l:'Sévère'},{v:4,l:'Très sévère'}]),
+        // RÉALIGNÉ 2026-09-15 : le 0 de la source est « aucun symptôme à
+        // soulager », et le soulagement COMPLET vaut 1, groupé avec le presque
+        // complet. Servir « soulagement complet » en 0 sous-cotait d'un point
+        // tout patient soulagé par le mouvement — c'est-à-dire le trait le plus
+        // caractéristique du SJSR, et un critère diagnostique.
         qs('IR3','Le mouvement vous soulage-t-il des symptômes ?',
-          [{v:0,l:'Soulagement complet'},{v:1,l:'Soulagement important'},{v:2,l:'Soulagement modéré'},{v:3,l:'Faible soulagement'},{v:4,l:'Aucun soulagement'}]),
+          [{v:0,l:'Aucun symptôme à soulager'},{v:1,l:'Soulagement complet ou presque complet'},{v:2,l:'Soulagement modéré'},{v:3,l:'Faible soulagement'},{v:4,l:'Aucun soulagement'}]),
         qs('IR4','Quelle est la perturbation de votre sommeil due aux symptômes ?',
           [{v:0,l:'Aucune'},{v:1,l:'Légère'},{v:2,l:'Modérée'},{v:3,l:'Sévère'},{v:4,l:'Très sévère'}]),
         qs('IR5','Quelle est votre fatigue ou somnolence diurne due aux symptômes ?',
@@ -286,9 +291,17 @@ export const Q_SOM_04 = {
         qs('IR6','Comment évaluez-vous la sévérité globale de vos symptômes ?',
           [{v:0,l:'Absente'},{v:1,l:'Légère'},{v:2,l:'Modérée'},{v:3,l:'Sévère'},{v:4,l:'Très sévère'}]),
         qs('IR7','À quelle fréquence surviennent vos symptômes ?',
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'1 fois/semaine'},{v:2,l:'1-2 fois/semaine'},{v:3,l:'3-4 fois/semaine'},{v:4,l:'Tous les jours ou presque'}]),
+          // RÉALIGNÉ 2026-09-15 : la source ancre en JOURS PAR SEMAINE — 1 jour
+          // (1), 2-3 (2), 4-5 (3), 6-7 (4). Le découpage servi jusque-là
+          // (< 1, 1-2, 3-4, quasi quotidien) sur-cotait 3 et 5 jours d'un point,
+          // et ne laissait AUCUNE option fidèle à « exactement 1 jour ».
+          [{v:0,l:'Jamais'},{v:1,l:'1 jour par semaine'},{v:2,l:'2 à 3 jours par semaine'},{v:3,l:'4 à 5 jours par semaine'},{v:4,l:'6 à 7 jours par semaine'}]),
         qs('IR8','Quand les symptômes surviennent-ils, quelle est leur durée quotidienne ?',
-          [{v:0,l:'Absents'},{v:1,l:'< 1 heure'},{v:2,l:'1-3 heures'},{v:3,l:'3-8 heures'},{v:4,l:'> 8 heures'}]),
+          // RÉALIGNÉ 2026-09-15 : la source dit « 8 hours OR MORE » au niveau 4.
+          // Servir « > 8 heures » faisait coter 3 à exactement 8 heures, la
+          // borne étant absorbée par « 3-8 heures » — même classe d'erreur que
+          // le chevauchement du QDRS à 20, tranché le même jour.
+          [{v:0,l:'Absents'},{v:1,l:'Moins d\'1 heure par 24 h'},{v:2,l:'1 à 3 heures par 24 h'},{v:3,l:'3 à moins de 8 heures par 24 h'},{v:4,l:'8 heures ou plus par 24 h'}]),
         qs('IR9','Dans quelle mesure les symptômes perturbent-ils vos activités quotidiennes (travail, loisirs, famille) ?',
           [{v:0,l:'Pas du tout'},{v:1,l:'Légèrement'},{v:2,l:'Modérément'},{v:3,l:'Sévèrement'},{v:4,l:'Très sévèrement'}]),
         qs('IR10','Quel est votre niveau d\'irritabilité, dépression ou anxiété lié aux symptômes ?',

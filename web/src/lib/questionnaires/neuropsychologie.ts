@@ -161,13 +161,30 @@ export const Q_NEU_01 = {
     type:'sum', severiteCroissante:true,
     maxTotal:39,
     certification:{source:'drive',status:'certifie'},
-    note:'Source Drive BDI : la table d’interprétation commence à 1 ; le score calculable 0 est rattaché au premier niveau pour éviter un résultat non interprété.',
+    // RÉALIGNÉ SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien).
+    //
+    // CE QUI ÉTAIT SERVI ÉTAIT LA GRILLE DU BDI À 21 ITEMS, POSÉE SUR LA FORME
+    // À 13. Les bornes 1-10 / 11-16 / 17-20 / 21-30 / 31-40 sont celles de
+    // l'inventaire complet, dont le maximum est 63 ; la forme abrégée servie ici
+    // plafonne à 39. C'est la faute nommée le 2026-08-01 en retirant les bandes
+    // de `Q_TAB_04` : une grille validée sur un instrument, posée sur un autre,
+    // ne mesure rien.
+    //
+    // ET ELLE SOUS-ALARMAIT, SUR UN DÉPISTAGE DE DÉPRESSION. Beck & Beck 1972
+    // publient 0-4 nul, 5-7 léger, 8-15 modéré, 16 et plus sévère. Un score de
+    // 16 — dépression SÉVÈRE selon la publication — s'affichait « troubles
+    // bénins de l'humeur », et il fallait atteindre 21 pour lire « dépression
+    // avérée ». Cinq points de retard à la bande la plus grave.
+    //
+    // La source ne laisse AUCUNE borne ouverte ici : les quatre intervalles sont
+    // contigus et couvrent 0 à 39 sans trou ni chevauchement. Aucun arbitrage
+    // n'a donc été nécessaire, contrairement au QDRS.
+    note:'Bandes de Beck & Beck 1972 (forme abrégée 13 items, score 0-39) : 0-4 nul ou minime, 5-7 léger, 8-15 modéré, 16-39 sévère. Réalignées le 2026-09-15 — la grille servie auparavant était celle du BDI à 21 items, dont le maximum est 63.',
     interpretation:[
-      {min:0, max:10, label:'Variation de l\'humeur considérée comme physiologique', color:'success'},
-      {min:11,max:16, label:'Troubles bénins de l\'humeur mais corrections à apporter', color:'info'},
-      {min:17,max:20, label:'Cas limite de dépression clinique', color:'warning'},
-      {min:21,max:30, label:'Dépression avérée', color:'danger'},
-      {min:31,max:39, label:'Dépression grave', color:'danger'},
+      {min:0, max:4,  label:'Pas de dépression ou dépression minime', color:'success'},
+      {min:5, max:7,  label:'Dépression légère', color:'info'},
+      {min:8, max:15, label:'Dépression modérée', color:'warning'},
+      {min:16,max:39, label:'Dépression sévère', color:'danger'},
     ]
   }
 };
