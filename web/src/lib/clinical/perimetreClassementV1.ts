@@ -17,21 +17,23 @@
  * c'est-à-dire la duplication silencieuse que [[DC-26]] interdit, et la
  * signature couvrirait un texte que rien n'exécute.
  *
- * IL EST SIGNÉ DEPUIS LE 2026-09-15. `ATTESTATION_CLASSEMENT` porte
- * `relu: true` et `shaRelu: 'da1ba306c0551d7b'` : le responsable a relu cet
- * objet et l'a attesté, après deux contre-expertises qui ont fait corriger la
- * PREUVE sans jamais toucher au contenu relu ([[D-185]], [[D-197]]).
+ * IL A ÉTÉ ATTESTÉ LE 2026-09-15, PUIS L'ATTESTATION A ÉTÉ RETIRÉE LE MÊME
+ * JOUR — et le mécanisme a fonctionné exactement comme prévu.
  *
- * CE QUE LA SIGNATURE CHANGE, ET C'EST L'ESSENTIEL : toute édition de ce module
- * déplace l'empreinte, `shaRelu` ne suit pas, et le banc ROUGIT en réclamant une
- * re-signature. Le périmètre n'est plus inerte — il est périssable, et c'est ce
- * que la relecture achète.
+ * Le responsable avait relu et signé `da1ba306c0551d7b`. Une contre-expertise a
+ * ensuite montré que la PORTÉE de l'attestation — fidélité descriptive
+ * seulement, sans validation de la primauté de la plainte dominante — vivait
+ * dans un commentaire et non dans la donnée hachée : rien ne la rendait
+ * opposable. La corriger a fait entrer `PORTEE_ATTESTATION` dans le périmètre,
+ * donc déplacé l'empreinte, donc **PÉRIMÉ la signature**.
  *
- * CE QU'ELLE NE COUVRE PAS, dit ici pour que personne ne l'étende. Le
- * responsable atteste que ce module DÉCRIT FIDÈLEMENT ce que le moteur fait. Il
- * n'atteste pas que la plainte dominante DOIVE primer sur la priorité
- * intrinsèque de la règle : cette question clinique reste ouverte, et un
- * arbitrage la trancherait séparément.
+ * C'est la règle, et elle s'est appliquée à son auteur : on n'élargit pas après
+ * coup ce qui a été relu. L'attestation est reposée à `relu: false` et
+ * redemandée au responsable sur la nouvelle empreinte.
+ *
+ * CE QU'ELLE COUVRIRA, ET CE QU'ELLE NE COUVRIRA PAS, est désormais DANS
+ * `PORTEE_ATTESTATION`, donc haché : le praticien atteste une fidélité
+ * DESCRIPTIVE, jamais la légitimité clinique du classement lui-même.
  */
 
 /** Un terme de départage, et ce qu'il est — clinique ou technique. */
@@ -195,6 +197,41 @@ export const INVARIANTS_PRODUCTEUR = {
   regleEcarteeProduitUnCandidat: false,
 } as const;
 
+/**
+ * LA PORTÉE DE L'ATTESTATION — CE QU'ELLE COUVRE, ET CE QU'ELLE NE COUVRE PAS.
+ *
+ * ELLE EST DANS LA DONNÉE HACHÉE, ET C'EST LE POINT. Une première rédaction la
+ * laissait dans un COMMENTAIRE et dans la décision : `ATTESTATION_CLASSEMENT` ne
+ * portait que `relu`, une date et un sha, si bien qu'aucune restriction n'était
+ * opposable ni hachée. Deux conséquences, relevées en contre-expertise : le
+ * praticien pouvait lire à l'écran une VALIDATION CLINIQUE du classement alors
+ * que cet arbitrage est explicitement ouvert, et tout futur consommateur du
+ * booléen pouvait faire la même extension sans qu'aucune garde ne l'arrête.
+ *
+ * Étant hachée, une réécriture de cette portée déplace l'empreinte et PÉRIME
+ * l'attestation : on ne peut pas élargir après coup ce qui a été relu.
+ */
+export const PORTEE_ATTESTATION = {
+  /**
+   * CE QUI EST ATTESTÉ : que ce module DÉCRIT FIDÈLEMENT ce que le moteur fait.
+   * Rien de plus — une exactitude descriptive, pas un jugement.
+   */
+  couvre: 'La fidélité descriptive : ces données disent ce que le moteur applique réellement.',
+  /**
+   * CE QUI NE L'EST PAS, nommé pour que personne ne l'étende. Le premier terme
+   * fait passer une règle de priorité 1 DERRIÈRE une priorité 2 dès que le
+   * patient cote l'autre plus haut — or l'intensité ressentie n'est pas la
+   * gravité clinique. Cette question appelle son propre arbitrage.
+   */
+  neCouvrePas: 'La légitimité clinique du classement lui-même, et notamment la primauté de la plainte dominante sur la priorité intrinsèque de la règle : arbitrage NON rendu.',
+  /**
+   * L'INTITULÉ SERVI À L'ÉCRAN, et il est borné exprès. « Périmètre du
+   * classement (relu) » se lisait comme une validation du classement ; ce qui
+   * est relu, ce sont les TEXTES qui le décrivent.
+   */
+  intituleEcran: 'Textes descriptifs du classement, relus',
+} as const;
+
 /** L'objet relisable dans son entier — c'est LUI que l'attestation portera. */
 export const PERIMETRE_CLASSEMENT_V1 = {
   version: 'perimetre-classement-v1',
@@ -204,6 +241,7 @@ export const PERIMETRE_CLASSEMENT_V1 = {
   motifsAbstention: MOTIF_ABSTENTION,
   ordreEvaluationAbstention: ORDRE_EVALUATION_ABSTENTION,
   invariantsProducteur: INVARIANTS_PRODUCTEUR,
+  porteeAttestation: PORTEE_ATTESTATION,
 } as const;
 
 /**
@@ -223,8 +261,8 @@ export const PERIMETRE_CLASSEMENT_V1 = {
  * quand même.
  */
 export const ATTESTATION_CLASSEMENT = {
-  relu: true,
-  dateRelecture: '2026-09-15' as string | null,
+  relu: false,
+  dateRelecture: null as string | null,
   /**
    * SHA du périmètre effectivement relu. LITTÉRAL FIGÉ, jamais la constante
    * calculée : la comparaison serait tautologique et la péremption invisible
@@ -232,5 +270,5 @@ export const ATTESTATION_CLASSEMENT = {
    * le jour où le périmètre bouge, l'empreinte bouge, celui-ci ne suit pas, et
    * le banc réclame une re-signature.
    */
-  shaRelu: 'da1ba306c0551d7b' as string | null,
+  shaRelu: null as string | null,
 };
