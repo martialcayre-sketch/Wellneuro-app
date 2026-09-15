@@ -62,3 +62,21 @@ une course réelle qui en était la meilleure candidate, sans démontrer qu'elle
 était la cause. Le harnais de reproduction locale, lui, fonctionne désormais de
 bout en bout — base jetable, migrations, `NEXTAUTH_URL` aligné — et les deux
 tests de `fiche-trajectoire-peuplee` passent en local.
+
+**LA RÉFÉRENCE VISUELLE A ÉTÉ REGÉNÉRÉE, ET ELLE DIT LE PRIX.** Réserver une
+hauteur déplace tout ce qui suit : `fiche-trajectoire-onglet` a rougi sur les
+deux projets (29 778 px et 16 154 px, seuil 100). Les huit baselines ont été
+reproduites dans l'environnement de référence ; **six reviennent octet pour
+octet identiques** alors que `--update-snapshots=all` les réécrit sans juger —
+le changement n'a donc fui nulle part ailleurs. Sur les deux qui bougent, la
+bande de lignes touchées commence **juste sous le message de la carte « Ce qui
+compte »** et court jusqu'en bas : la signature d'un bloc qui grandit, et non
+d'un écart dispersé qui l'aurait contredite.
+
+**Ce que la nouvelle référence montre, et qu'il faut dire** : à 1 440 px le
+message d'absence tient sur une ligne, la réserve en vaut trois — la carte porte
+désormais une quarantaine de pixels de blanc sous son texte. À 390 px, la
+largeur où le saut a été mesuré, les trois lignes sont pleines et la carte est
+juste. Le blanc du bureau est le prix du plancher unique ; le régler par
+paliers de largeur reviendrait à deviner une hauteur par point de rupture —
+exactement la sélection qui se périme en silence que ce dépôt paie déjà ailleurs.
