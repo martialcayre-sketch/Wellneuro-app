@@ -4,6 +4,253 @@
 
 ## Décisions actives
 
+### D-202 — Une attestation posée, retirée par son propre mécanisme, puis reposée sur le contenu borné
+
+- Date : 2026-09-15, complétée le 2026-09-16
+- Statut : accepté — l'attestation a été **posée, RETIRÉE le même jour par le
+  verrou lui-même, puis RENDUE le 2026-09-16** sur `9792c12e72db93d8`.
+- Domaine : clinique — signature du périmètre de classement.
+- Empreinte : `da1ba306c0551d7b` → **`9792c12e72db93d8`**. C'est ce déplacement
+  qui a périmé la signature.
+- **Numéro** : écrite `D-198`, elle vaut `D-202` — **doublée QUATRE fois**, à
+  chaque fois pendant que son CI tournait. Onzième à quatorzième collisions du
+  dépôt, en deux jours. La quatorzième est la seule dont je suis l'auteur : c'est
+  `D-201`, la PR voisine de cette même session, fusionnée pendant l'attente. La
+  première voisine porte, le même jour, le même geste : une relecture qui corrige
+  avant de signer. La friction est voulue ; un numéro ne se réserve pas, il
+  s'acquiert à la fusion — et la campagne voisine fusionne plus vite qu'un CI ne
+  rend.
+
+**CE QUI S'EST PASSÉ, ET C'EST LE FOND DE CETTE ENTRÉE.** Le responsable a relu
+et attesté `da1ba306c0551d7b`. Une contre-expertise a ensuite trouvé **deux
+défauts, et le second a périmé l'attestation** :
+
+1. **L'écran déduisait la provenance d'une ÉGALITÉ DE LIBELLÉ.** Un motif de gate
+   portant le même texte qu'une limitation attestée s'affichait « relu » : un
+   comportement que personne n'a relu héritait de la provenance attestée, sans
+   qu'aucun sha ne bouge. **Le dépôt l'interdisait déjà en toutes lettres** —
+   `limitationsRegleSignee` existe précisément pour ça, et son contrat dit que
+   « la deviner par comparaison de chaînes ferait dépendre une garde de
+   provenance d'une égalité de ponctuation ». La réponse était écrite ; je ne
+   l'avais pas lue. Le producteur déclare désormais
+   `limitationsPerimetreClassement`, et l'écran groupe là-dessus.
+2. **La PORTÉE de l'attestation vivait dans un commentaire.**
+   `ATTESTATION_CLASSEMENT` ne portait que `relu`, une date et un sha : la
+   restriction essentielle — fidélité descriptive seulement — n'était **ni
+   opposable ni hachée**. Le praticien pouvait lire à l'écran une validation
+   clinique du classement, et tout futur consommateur du booléen faire la même
+   extension sans garde.
+
+**LA CORRECTION DU SECOND A PÉRIMÉ LA SIGNATURE, ET C'EST LA RÈGLE QUI S'APPLIQUE
+À SON AUTEUR.** Faire entrer `PORTEE_ATTESTATION` dans le périmètre haché déplace
+l'empreinte ; `shaRelu` ne suit pas ; le banc rougit. **On n'élargit pas après
+coup ce qui a été relu** — même pour le borner. L'attestation est reposée à
+`relu: false` et redemandée sur `9792c12e72db93d8`.
+
+Le mécanisme a donc été éprouvé pour de bon, sur un cas réel et non sur une
+mutation : il a refusé la signature de celui qui l'avait écrit.
+
+**L'ATTESTATION A ÉTÉ REPOSÉE LE 2026-09-16, ET ELLE N'A PAS ÉTÉ DÉDUITE.** Le
+responsable a répondu « relu » — ce qui dit qu'il a lu, pas qu'il signe. La
+question a donc été reposée en toutes lettres, et c'est la troisième fois de la
+semaine : la première avait rendu « j'ai lu, et j'ai des réserves », et la
+réserve était fondée ([[D-197]]). **Une signature clinique se DÉCIDE ; aucun
+outil ne la pose à la place du responsable**, et surtout pas sur une formulation
+ambiguë.
+
+`ATTESTATION_CLASSEMENT` porte désormais `{ relu: true, dateRelecture:
+'2026-09-16', shaRelu: '9792c12e72db93d8' }`. Le contenu relu n'avait pas changé
+depuis la première lecture ; ce qui s'y est ajouté est la PORTÉE, c'est-à-dire ce
+que la signature ne couvre pas.
+
+**LE GAIN A ÉTÉ REVÉRIFIÉ SUR LA SIGNATURE RÉELLE, pas sur une hypothèse.**
+Mutation : réécrire un texte du périmètre, PUIS réancrer l'empreinte — le
+contournement de routine. L'ancre se tait ; **l'attestation reste rouge** et
+réclame une re-signature. À l'écran, `attestationValide` devient faux et les
+quatre textes retombent d'eux-mêmes sous « hors périmètre signé ».
+
+**ET CETTE MUTATION A TROUVÉ UN DÉFAUT DE PLUS, dans un banc.**
+`DecisionSummaryCard.test.tsx` branchait son cas à deux états sur
+`ATTESTATION_CLASSEMENT.relu`. Sous une attestation PÉRIMÉE — `relu: true`, sha
+d'un périmètre antérieur — il partait dans la branche « relu » et rougissait,
+alors que l'écran faisait exactement ce qu'il devait. **Un banc qui rougit pour
+la mauvaise raison envoie chercher le défaut ailleurs**, et c'est le pire moment
+pour ça : au milieu d'une péremption de signature. Le prédicat est désormais
+`attestationValide`, comme partout ailleurs.
+
+**LE GESTE, ET SA CHRONOLOGIE — c'est elle qui fait sa valeur.** Le périmètre a
+été posé INERTE le 2026-09-14 ([[D-185]]), haché avant toute relecture pour que
+« ce qui est relu » soit mesurable. Puis, dans l'ordre :
+
+1. une contre-expertise a établi que **trois des cinq objets ne pilotaient
+   rien** — la liaison a été refaite par comportement ;
+2. une seconde a établi que le banc de liaison **ne couvrait que ce que sa
+   rédaction avait pensé à nommer** — trois mutations vertes sur 46 cas ;
+3. le responsable a relu, **et n'a pas signé** : une troisième contre-expertise,
+   sur la surface de relecture, a trouvé que
+   `regleEcarteeProduitUnCandidat` appartenait au périmètre attesté sans aucune
+   épreuve ([[D-197]]) ;
+4. **la correction n'a pas touché au périmètre** — l'empreinte n'a pas bougé,
+   donc la relecture déjà faite est restée valide ;
+5. le responsable a alors attesté.
+
+**Trois corrections de la PREUVE, zéro correction du CONTENU relu.** C'est
+exactement l'ordre que [[D-180]] a montré manquant sur les grilles, et la raison
+d'être de l'ancre posée avant la signature.
+
+**CE QUE L'ATTESTATION CHANGE, ET C'EST LE CŒUR.** `shaRelu` porte un LITTÉRAL
+FIGÉ — jamais la constante calculée, sinon la comparaison serait tautologique et
+la péremption invisible (patron [[D-063]]). Le banc compare ce littéral à
+`empreinte()`. Conséquence, vérifiée par mutation :
+
+| Geste | Avant | Après |
+| --- | --- | --- |
+| Éditer un texte du périmètre | l'ancre rougit | l'ancre **et** l'attestation rougissent |
+| Éditer, puis **réancrer** l'empreinte | tout repasse au vert | **l'attestation rougit toujours** |
+
+Le second cas est le gain réel : **réancrer ne suffit plus à faire taire le
+banc.** Une signature qui ne sait pas se périmer couvrirait un contenu que
+personne n'a relu.
+
+**L'ÉCRAN BOUGE DANS LE MÊME LOT, ET [[D-185]] L'AVAIT ANNONCÉ.** L'intitulé
+« Ajoutées par le moteur (hors périmètre signé) » devient faux pour les quatre
+`LIMITATION_*` : les y laisser ferait SOUS-promettre sur du relu — l'inverse du
+défaut habituel, mais un écart quand même.
+
+**La liste est SCINDÉE, pas renommée**, et la nuance est ce que ce lot a trouvé :
+`limitationsMoteur` est un MÉLANGE — les quatre textes désormais relus, et le
+motif de la gate de population, qui n'appartient à aucun périmètre. Une seule
+étiquette sur les deux aurait menti dans un sens ou dans l'autre.
+
+**L'ÉCRAN LIT L'ATTESTATION, il ne recopie pas son résultat.** Le jour où elle est
+retirée, ces textes retombent d'eux-mêmes sous « hors périmètre signé ». Une
+étiquette écrite en dur resterait à « relu » sur un périmètre qui ne l'est plus —
+mutation jouée, banc vu rouge.
+
+**CE QUE LA SIGNATURE NE COUVRIRA PAS, ET C'EST MAINTENANT DANS LA DONNÉE
+HACHÉE.** `PORTEE_ATTESTATION` porte trois champs — ce qui est couvert (la
+fidélité descriptive), ce qui ne l'est pas (la légitimité clinique du classement,
+et notamment la primauté de la plainte dominante sur la priorité intrinsèque :
+arbitrage NON rendu), et l'intitulé servi à l'écran, **borné exprès** :
+« Textes descriptifs du classement, relus » et non « Périmètre du classement
+(relu) », qui se lisait comme une validation du classement.
+
+Une règle de priorité 1 passe derrière une priorité 2 dès que le patient cote
+l'autre plus haut, et l'intensité ressentie n'est pas la gravité clinique.
+**Cette question reste ouverte** et appellera son propre arbitrage.
+
+**CE LOT DÉPLACE L'EMPREINTE DE TOUTES LES CARTES DE DÉCISION, ET IL FAUT LE DIRE
+AVANT LE DÉPLOIEMENT.** `limitationsPerimetreClassement` est un champ du candidat,
+`priorityCandidates` entre dans `hashInput` de `buildDecisionCard`, et
+`canonicalSha256` hache **toutes** les clés propres — aucune liste blanche.
+Vérifié par exécution sur le harnais ergonomique : le hash des candidats passe de
+`38ab6a859c80ff54` à `6f652101dec8d209`. Donc `decisionCard.inputHash` bouge sur
+tout dossier.
+
+**CE QUE ÇA CASSE, ET CE QUE ÇA NE CASSE PAS.** `rejeuCarteDecision.ts` nomme déjà
+ce mode de panne en toutes lettres — « un déploiement touchant une table signée
+[…] les interromprait tous à la fois » — et le classe `carte_derivee` : l'écran
+patient s'éteint, **le refus est bruyant côté praticien** et jamais muet
+([[D-160]] §4). L'identité de la carte, elle, ne bouge pas : [[D-173]] §4 l'a
+détachée du contenu, donc rien ne devient orphelin.
+
+**AUCUN BANC NE PEUT ATTRAPER CETTE DÉRIVE**, et c'est normal : tous recalculent
+les deux côtés. Seule une ligne persistée, écrite avant le déploiement, porte
+l'ancienne empreinte.
+
+**L'INVENTAIRE DES CONSOMMATEURS A ÉTÉ FAIT, et il réduit beaucoup la portée.**
+La plupart des comparaisons sont PERSISTÉ contre PERSISTÉ — `diffusion.ts`,
+`portailProtocol.ts`, la clôture copilote — et une dérive ne les touche pas : les
+deux côtés sont anciens. Trois surfaces seulement comparent du persisté à du
+RECALCULÉ :
+
+| Surface | Effet d'une dérive | Silencieux ? |
+| --- | --- | --- |
+| `buildPatientProtocolView` via `rejeuCarteDecision` | `carte_derivee` : écran patient éteint | non — refus bruyant côté praticien |
+| `ProtocolConsultationPanel` | le brouillon antérieur devient non éligible à l'approbation | non — visible à l'écran |
+| `POST /api/praticien/protocoles` | `provenance_mismatch`, HTTP 400 | non |
+| `GET /api/praticien/ja/cycle` → `PractitionerFoodObservationPanel` | l'épisode disparaît du carnet | **OUI — et l'inventaire l'avait manqué** |
+
+**CET INVENTAIRE ÉTAIT FAUX, ET SA CONCLUSION AVEC.** Il affirmait « aucune n'est
+silencieuse ». La contre-expertise a produit le contre-exemple : sur
+`carte_derivee`, le miroir praticien du carnet rendait `200 { protocoleDiffuse:
+false, vue: null }`, que le panneau confond avec l'absence de protocole et qui
+efface l'épisode sans un mot — pendant que le patient lit « Votre praticien en
+est informé ». Un protocole réellement diffusé disparaissait d'une surface, sans
+alerte.
+
+**LE DÉFAUT ÉTAIT DÉJÀ FERMÉ QUAND LA RÉFUTATION EST ARRIVÉE, ET PAS PAR MOI.**
+La campagne voisine l'a trouvé indépendamment le même jour ([[D-200]]) : la route
+rend désormais `protocoleDiffuse: true, vue: null, indisponible: true`, le
+panneau porte une alerte praticien, et un banc de régression joue
+`motif: 'carte_derivee'`. La correction est entrée ici par la fusion de `main`.
+
+Ce qui reste à retenir n'est pas la ligne manquante, c'est **comment elle
+manquait** : l'inventaire a été fait en lisant les comparaisons d'empreintes, et
+`ja/cycle` n'en fait aucune — il consomme le REFUS du rejeu. Un balayage qui
+cherche `inputHash` ne pouvait pas le voir.
+
+**La sélection de priorité N'EST PAS touchée** : `lireSelectionPriorite` lit sur
+`(idPatient, decisionCardId)` et ne consulte jamais l'empreinte — ce que [[D-173]]
+§4 a rendu possible en détachant l'identité de la carte de son contenu. C'est
+précisément l'objet dont la production porte un exemplaire.
+
+**LA PORTÉE RÉELLE EST UNE LECTURE DE PRODUCTION, ET ELLE A ÉTÉ REFAITE.** La
+précédente ([[D-173]], 2026-09-12) donnait zéro approbation de diffusion, mais
+elle avait quatre jours — et la campagne voisine a poussé du protocole depuis.
+Reconstatée **avant le merge**, par one-off en lecture seule (`one-off-8972`,
+2026-09-16 01:16) : `protocol_diffusion_approvals` rend **`0|0|`** — zéro
+approbation, zéro patient, aucune date.
+
+Le seul chemin qui refuserait sur `carte_derivee` n'a donc **aucun client**, et
+la dérive d'empreinte ne coûte rien à personne aujourd'hui. Ce constat est daté :
+il vaut pour ce déploiement-ci, pas pour le suivant.
+
+**L'ÉCRAN NE LISAIT QUE `relu`, ET SON PROPRE BANC EN DONNAIT LA PREUVE.**
+Deuxième finding de la même contre-expertise. `DecisionSummaryCard` décidait sur
+le seul booléen : une attestation gardée d'un périmètre ANTÉRIEUR — `relu: true`,
+sha d'hier — présentait les limitations comme relues, alors que le banc de garde,
+lui, l'aurait refusée. **Deux rédactions de la même règle, et une seule mordait**
+— la duplication que [[DC-26]] interdit, déjà divergente.
+
+Le banc de l'écran administrait la preuve du trou qu'il était censé couvrir : il
+injectait `shaRelu: 'simulé'`, valeur qui ne peut correspondre à aucun périmètre,
+et attendait « relus ».
+
+Et ce n'est pas un cas théorique : **c'est exactement ce qui s'est produit le
+2026-09-15**, quand faire entrer la portée dans la donnée hachée a périmé une
+attestation déjà posée. Si l'écran avait été servi dans cet état, il aurait
+continué d'afficher « relus ».
+
+`attestationValide(attestation)` pose donc les trois questions ENSEMBLE et vit
+dans le périmètre, lu par le banc comme par l'écran. Elle prend l'attestation en
+PARAMÈTRE : la lire depuis la portée du module ferait qu'un banc qui double
+`ATTESTATION_CLASSEMENT` verrait la fonction continuer de lire la vraie
+constante — et prouverait le contraire de ce qu'il croit prouver.
+
+**L'EMPREINTE ATTENDUE DESCEND DANS LE MODULE, et il faut dire pourquoi ce n'est
+pas tautologique.** L'écran tourne dans le navigateur : aucun hachage n'y est
+disponible, il ne peut que comparer deux chaînes. Le littéral doit donc être
+importable. Le lien avec le contenu réel est tenu par un cas de banc, et un seul :
+`EMPREINTE_PERIMETRE_ATTENDUE` doit valoir `empreinte()`. Sans lui, la
+vérification de l'écran serait une égalité entre deux constantes décidées
+ensemble, c'est-à-dire rien ([[D-063]]).
+
+Mutation jouée : rendre à l'écran la lecture du seul booléen tue les deux
+nouveaux cas — sha périmé et date nulle — et laisse vert le cas d'anti-vacuité.
+
+- Conséquences : `PORTEE_ATTESTATION` entre dans `PERIMETRE_CLASSEMENT_V1` ;
+  `limitationsPerimetreClassement` ajouté au contrat du candidat et renseigné par
+  le producteur, avec deux bancs de cohérence (sous-ensemble, et exhaustivité —
+  la seconde mutation a survécu à la première rédaction) ;
+  `DecisionSummaryCard` groupe sur cette provenance, jamais sur le libellé ;
+  le cas de garde sert désormais **les deux états** — signé ou non — pour que
+  poser une signature ne demande plus de réécrire un banc.
+
+  **La branche « attestation posée » est prouvée par un fichier dédié qui double
+  le seul champ `relu`** : sans lui, elle serait livrée sans aucune preuve et ne
+  s'exercerait pour la première fois qu'en production, le jour de la
+  re-signature. Aucune migration, aucun drapeau.
 ### D-201 — Une consigne clinique se garde par sa PUCE, pas par son vocabulaire : trois mutations vertes sur `synthese-v30`
 
 - Date : 2026-09-16

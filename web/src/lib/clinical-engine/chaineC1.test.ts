@@ -798,6 +798,50 @@ describe('le périmètre pilote ce que le moteur produit', () => {
     });
   }
 
+  it('LA PROVENANCE DÉCLARÉE EST UN SOUS-ENSEMBLE DE CE QUI EST SERVI', () => {
+    // MUTATION QUI A SURVÉCU À LA PREMIÈRE RÉDACTION. `limitationsPerimetreClassement`
+    // répète les conditions de `limitations` — un texte conditionnel absent de
+    // l'une doit l'être de l'autre. Retirer la condition de l'objectif d'un seul
+    // côté laissait tous les bancs verts, et l'écran aurait alors annoncé comme
+    // RELU un texte qu'il ne servait même pas.
+    //
+    // « UN SOUS-ENSEMBLE, JAMAIS UNE LISTE PARALLÈLE » est le contrat écrit du
+    // champ voisin `limitationsRegleSignee` ; ce cas le tient pour les deux.
+    for (const dossier of [{}, { objectif: null }, { etat: { etat_grossesse: 'Non' } }] as const) {
+      for (const candidat of candidats(dossier)) {
+        for (const texte of candidat.limitationsPerimetreClassement) {
+          expect(
+            candidat.limitations,
+            `« ${texte.slice(0, 40)}… » est déclaré du périmètre mais n’est pas servi : l’écran l’annoncerait relu sans l’afficher.`,
+          ).toContain(texte);
+        }
+        for (const texte of candidat.limitationsRegleSignee) {
+          expect(candidat.limitations).toContain(texte);
+        }
+      }
+    }
+  });
+
+  it('LES QUATRE TEXTES DU PÉRIMÈTRE SONT TOUS DÉCLARÉS — aucun servi en douce', () => {
+    // CONTRE-ÉPREUVE DU CAS PRÉCÉDENT : un sous-ensemble VIDE le passerait.
+    // Ce qui est servi ET vient du périmètre doit être déclaré comme tel, sans
+    // quoi l'écran ferait retomber du relu dans « hors périmètre signé » —
+    // sous-promettre, l'inverse du défaut habituel mais un écart quand même.
+    // `Set<string>` EXPLICITE : `as const` sur le périmètre rend un Set de
+    // littéraux, dont `has()` refuse un `string` à la compilation. Le banc
+    // passait sous `vitest` et rougissait sous `tsc` — c'est T1 qui l'a vu.
+    const textesDuPerimetre: ReadonlySet<string> = new Set<string>(
+      Object.values(LIMITATIONS_CANDIDAT).map(limitation => limitation.texte),
+    );
+    for (const dossier of [{}, { objectif: null }, { etat: { etat_grossesse: 'Non' } }] as const) {
+      for (const candidat of candidats(dossier)) {
+        const servisDuPerimetre = candidat.limitations.filter(t => textesDuPerimetre.has(t));
+        expect([...candidat.limitationsPerimetreClassement].sort())
+          .toEqual([...servisDuPerimetre].sort());
+      }
+    }
+  });
+
   it('LE RANG ET LA CONFIANCE VIENNENT DES INVARIANTS, pas de littéraux', () => {
     // `rank` est SÉQUENTIEL depuis `rangSequentielDepuis`, jamais la priorité de
     // la table — `buildDecisionCard` exige des rangs uniques. `confidence` est
