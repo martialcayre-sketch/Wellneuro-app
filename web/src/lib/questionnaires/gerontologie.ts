@@ -200,9 +200,60 @@ export const Q_GEO_04 = {
 };
 export const Q_GEO_05 = {
   id:'Q_GEO_05', titre:'QDRS — Quick Dementia Rating System (Galvin 2015)',
-  // Référence : Galvin JE (2015). Alzheimers Dement, 11(4), 461-474.
+  // Référence : Galvin JE (2015). Alzheimers Dement (Amst), 1, 249-259.
+  //             PMID 26140284 · DOI 10.1016/j.dadm.2015.03.003.
+  //             Instrument : document officiel du QDRS, copyright 2013
+  //             J. E. Galvin et NYU Langone Medical Center.
+  //
+  // LA RÉFÉRENCE CI-DESSUS ÉTAIT FAUSSE JUSQU'AU 2026-09-15 : elle portait
+  // « Alzheimers Dement, 11(4), 461-474 », c'est-à-dire une autre revue et une
+  // autre pagination. Troisième citation erronée relevée le même jour, après
+  // celle de l'AQ.
+  //
+  // ── RÉALIGNÉ SUR LE DOCUMENT OFFICIEL LE 2026-09-15 (arbitrage praticien) ──
+  //
+  // La forme servie jusque-là divergeait sur trois plans, et un seul avait été
+  // vu avant d'avoir la source en main :
+  //
+  // 1. UN DOMAINE SUBSTITUÉ. La source publie « 9. Mood » et « 10. Attention
+  //    and concentration ». Nous servions Attention en 9 et DÉAMBULATION en 10 :
+  //    l'humeur n'était nulle part, et un déficit de marche pesait sur un score
+  //    de sévérité COGNITIVE. Corrigé.
+  //
+  // 2. DES ANCRAGES ABRÉGÉS, ET DEUX DÉCALÉS D'UN NIVEAU. Les descripteurs
+  //    servis étaient des paraphrases courtes (« Normal / Légèrement distrait /
+  //    Difficultés modérées »), là où la source décrit chaque niveau en une
+  //    phrase clinique complète. Deux domaines ne se contentaient pas
+  //    d'abréger : en « Toilette et hygiène », le niveau 0,5 servi (« quelques
+  //    rappels nécessaires ») correspondait au niveau 1 de la source ; en
+  //    « Comportement et personnalité », le 0,5 servi portait sur l'irritabilité
+  //    et l'anxiété, qui relèvent du domaine HUMEUR et non de celui-là. Les dix
+  //    domaines sont réécrits d'après le texte publié.
+  //
+  // 3. DEUX SOUS-SCORES NON SERVIS, et ils ne le sont toujours pas : la source
+  //    définit un sous-total COGNITIF (domaines 1, 2, 3, 8) et un sous-total
+  //    COMPORTEMENTAL (4, 5, 6, 7, 9, 10), et permet de dériver un CDR sur les
+  //    six premiers domaines. Écart déclaré au registre, non comblé ici —
+  //    `sum_decimal` ne porte pas de sous-scores, et les ajouter est un autre
+  //    lot.
+  //
+  // AUCUNE PASSATION PERDUE : production lue le 2026-09-15 (one-off détaché),
+  // 188 passations sur trente instruments, ZÉRO sur `Q_GEO_05`. Les
+  // identifiants `QD1`-`QD10` sont réattribués dans l'ordre publié sans rien
+  // rendre illisible.
+  //
+  // DROITS — RÉSERVE OUVERTE, ET ELLE EST AU REGISTRE. La politique de
+  // permission de l'ayant droit exclut nommément « the creation of any
+  // derivative works of the QDRS, including translations thereof » et
+  // « incorporation of the QDRS in an electronic medical record application
+  // software ». La forme servie est les deux. Arbitrage praticien du
+  // 2026-09-15 : poursuivre le service au titre du soin clinique au cabinet,
+  // `droits.statut` restant `permission_obtenue` — qui se lit ici « permission
+  // TENUE POUR ACQUISE », jamais « licence obtenue ». La clause contraire est
+  // versée au dossier en toutes lettres.
+  //
   // Informant-based — 10 domaines — valeurs 0/0.5/1/2/3 — score max /30
-  // NOUVEAU TYPE SCORING : sum_decimal (flottants)
+  // TYPE SCORING : sum_decimal (flottants)
   // Mode clinicien posé le 2026-08-16 (revue D-066) : la consigne s'adresse à
   // l'aidant — auto-rempli, la grille rendrait « Démence modérée à sévère »
   // sur un auto-report qu'aucun informant n'a produit (DC-14, DC-28).
@@ -211,48 +262,119 @@ export const Q_GEO_05 = {
   sections:[
     { id:'1', titre:'10 domaines fonctionnels',
       questions:[
-        qs('QD1','Mémoire et apprentissage',
-          [{v:0,l:'Normal'},{v:0.5,l:'Oublis bénins (noms, RDV)'},{v:1,l:'Oublis modérés — impact quotidien'},{v:2,l:'Oublis sévères'},{v:3,l:'Ne retient plus rien de nouveau'}]),
+        qs('QD1','Mémoire et rappel',
+          [{v:0,l:'Aucune perte de mémoire évidente, ou oublis inconstants qui ne gênent pas les activités quotidiennes'},
+           {v:0.5,l:'Oublis légers mais constants, ou souvenirs partiels des événements, pouvant gêner les activités quotidiennes ; répète des questions ou des propos, égare des objets, oublie des rendez-vous'},
+           {v:1,l:'Perte de mémoire légère à modérée ; plus marquée pour les événements récents ; gêne les activités quotidiennes'},
+           {v:2,l:'Perte de mémoire modérée à sévère ; seules les informations très apprises sont retenues ; les informations nouvelles sont rapidement oubliées'},
+           {v:3,l:'Perte de mémoire sévère, mémorisation d\u2019informations nouvelles quasi impossible ; la mémoire ancienne peut être atteinte'}]),
         qs('QD2','Orientation',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légères difficultés'},{v:1,l:'Parfois perdu'},{v:2,l:'Souvent désorienté'},{v:3,l:'Totalement désorienté'}]),
-        qs('QD3','Jugement et résolution de problèmes',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légère incertitude'},{v:1,l:'Difficultés modérées'},{v:2,l:'Difficultés sévères'},{v:3,l:'Incapable'}]),
-        qs('QD4','Activités hors foyer',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légèrement réduit'},{v:1,l:'Assiste mais ne participe pas'},{v:2,l:'Incapable de fonctionner seul'},{v:3,l:'Pas d\'activités'}]),
-        qs('QD5','Vie domestique et passe-temps',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légèrement altéré'},{v:1,l:'Difficultés modérées'},{v:2,l:'Tâches simples seulement'},{v:3,l:'Ne peut plus rien faire'}]),
-        qs('QD6','Soins personnels',
-          [{v:0,l:'Normal'},{v:0.5,l:'Quelques rappels nécessaires'},{v:1,l:'Nécessite aide occasionnelle'},{v:2,l:'Nécessite aide fréquente'},{v:3,l:'Entièrement dépendant'}]),
+          [{v:0,l:'Pleinement orienté dans le temps, l\u2019espace et à l\u2019égard des personnes, presque tout le temps'},
+           {v:0.5,l:'Légère difficulté à suivre le temps ; peut oublier le jour ou la date plus souvent que par le passé'},
+           {v:1,l:'Difficulté légère à modérée à suivre le temps et l\u2019enchaînement des événements ; oublie le mois ou l\u2019année ; orienté dans les lieux familiers mais se trouble en dehors ; se perd ou erre'},
+           {v:2,l:'Difficulté modérée à sévère, habituellement désorienté dans le temps et l\u2019espace (lieux familiers comme inconnus) ; se replonge fréquemment dans le passé'},
+           {v:3,l:'Orienté seulement sur son propre nom, bien qu\u2019il puisse reconnaître les membres de sa famille'}]),
+        qs('QD3','Décision et résolution de problèmes',
+          [{v:0,l:'Résout les problèmes quotidiens sans difficulté ; gère bien ses affaires personnelles et financières ; capacités de décision conformes à ce qu\u2019elles étaient'},
+           {v:0.5,l:'Légère altération, ou met plus de temps à résoudre les problèmes ; difficultés avec les concepts abstraits ; les décisions restent saines'},
+           {v:1,l:'Difficulté modérée à traiter les problèmes et à décider ; s\u2019en remet souvent aux autres ; le jugement social et le comportement peuvent être légèrement altérés ; perte de conscience du trouble'},
+           {v:2,l:'Gravement altéré dans le traitement des problèmes, ne prend plus que des décisions personnelles simples ; jugement social et comportement souvent altérés ; absence de conscience du trouble'},
+           {v:3,l:'Incapable de décider ou de résoudre des problèmes ; les autres prennent presque toutes les décisions à sa place'}]),
+        qs('QD4','Activités hors du domicile',
+          [{v:0,l:'Autonome, au niveau habituel, dans son activité professionnelle, ses courses, ses activités associatives ou religieuses, le bénévolat ou ses groupes sociaux'},
+           {v:0.5,l:'Légère altération de ces activités par rapport à avant ; légère modification de la conduite automobile ; encore capable de faire face à une situation d\u2019urgence'},
+           {v:1,l:'Incapable de fonctionner seul mais peut encore être présent et participer ; paraît «\u00a0normal\u00a0» aux autres ; modifications notables de la conduite ; inquiétude sur sa capacité à faire face à une urgence'},
+           {v:2,l:'Plus aucune autonomie hors du domicile ; paraît assez bien pour être emmené à des activités hors du foyer familial, mais doit généralement être accompagné'},
+           {v:3,l:'Aucune autonomie ni activité ; paraît trop atteint pour être emmené à des activités hors du domicile'}]),
+        qs('QD5','Vie domestique et loisirs',
+          [{v:0,l:'Les tâches ménagères, les loisirs et les centres d\u2019intérêt sont bien maintenus par rapport à avant'},
+           {v:0.5,l:'Légère altération ou moindre intérêt pour ces activités ; difficulté à utiliser les appareils (surtout les nouveaux)'},
+           {v:1,l:'Altération légère mais nette des tâches domestiques et des loisirs ; les tâches les plus difficiles sont abandonnées ; les loisirs et intérêts les plus complexes sont délaissés'},
+           {v:2,l:'Seules les tâches simples sont conservées, intérêt très restreint pour des loisirs mal entretenus'},
+           {v:3,l:'Plus aucune activité significative dans les tâches domestiques ni dans les loisirs antérieurs'}]),
+        qs('QD6','Toilette et hygiène personnelle',
+          [{v:0,l:'Pleinement capable de prendre soin de soi (s\u2019habiller, se coiffer, se laver, se baigner, aller aux toilettes)'},
+           {v:0.5,l:'Légers changements dans ces capacités et dans l\u2019attention portée à ces activités'},
+           {v:1,l:'A besoin d\u2019être incité pour accomplir ces activités, mais peut encore les mener seul'},
+           {v:2,l:'Nécessite une aide partielle pour l\u2019habillage, l\u2019hygiène, la tenue de ses affaires personnelles ; incontinence occasionnelle'},
+           {v:3,l:'Nécessite une aide importante pour les soins et l\u2019hygiène ; incontinence fréquente'}]),
         qs('QD7','Comportement et personnalité',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légère irritabilité ou anxiété'},{v:1,l:'Changements notables'},{v:2,l:'Changements importants'},{v:3,l:'Comportement très problématique'}]),
+          [{v:0,l:'Comportement socialement adapté en public comme en privé ; aucun changement de personnalité'},
+           {v:0.5,l:'Changements douteux ou très légers du comportement, de la personnalité, du contrôle émotionnel ou de la justesse des choix'},
+           {v:1,l:'Changements légers du comportement ou de la personnalité'},
+           {v:2,l:'Changements modérés du comportement ou de la personnalité, qui affectent les relations aux autres ; peut être évité par les amis, les voisins ou la famille éloignée'},
+           {v:3,l:'Changements sévères du comportement ou de la personnalité, rendant les échanges souvent pénibles ou évités'}]),
         qs('QD8','Langage et communication',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légères difficultés de mots'},{v:1,l:'Manque de mots fréquent'},{v:2,l:'Difficultés importantes'},{v:3,l:'Communication très altérée'}]),
-        qs('QD9','Attention et concentration',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légèrement distrait'},{v:1,l:'Difficultés modérées'},{v:2,l:'Difficultés sévères'},{v:3,l:'Incapable de se concentrer'}]),
-        qs('QD10','Déambulation',
-          [{v:0,l:'Normal'},{v:0.5,l:'Légèrement ralenti'},{v:1,l:'Démarche altérée'},{v:2,l:'Aide à la marche nécessaire'},{v:3,l:'Non ambulant'}]),
+          [{v:0,l:'Aucune difficulté de langage, ou recherche de mots occasionnelle ; lit et écrit aussi bien que par le passé'},
+           {v:0.5,l:'Difficultés légères mais constantes à trouver ses mots, recours à des périphrases ou temps plus long pour se faire comprendre, légers troubles de compréhension, conversation appauvrie ; peut retentir sur la lecture et l\u2019écriture'},
+           {v:1,l:'Manque du mot modéré à l\u2019oral, ne parvient plus à nommer les objets, réduction marquée de la production verbale ; compréhension, conversation, écriture et/ou lecture réduites'},
+           {v:2,l:'Atteinte modérée à sévère de la production ou de la compréhension du langage ; peine à communiquer sa pensée ; capacités de lecture et d\u2019écriture limitées'},
+           {v:3,l:'Déficits sévères du langage et de la communication ; production verbale compréhensible faible ou nulle'}]),
+        qs('QD9','Humeur',
+          [{v:0,l:'Aucun changement de l\u2019humeur, de l\u2019intérêt ou du niveau de motivation'},
+           {v:0.5,l:'Tristesse, dépression, anxiété, nervosité ou perte d\u2019intérêt et de motivation occasionnelles'},
+           {v:1,l:'Difficultés légères et quotidiennes de tristesse, dépression, anxiété, nervosité ou perte d\u2019intérêt et de motivation'},
+           {v:2,l:'Difficultés modérées de tristesse, dépression, anxiété, nervosité ou perte d\u2019intérêt et de motivation'},
+           {v:3,l:'Difficultés sévères de tristesse, dépression, anxiété, nervosité ou perte d\u2019intérêt et de motivation'}]),
+        qs('QD10','Attention et concentration',
+          [{v:0,l:'Attention, concentration et interaction avec son environnement normales'},
+           {v:0.5,l:'Troubles légers de l\u2019attention, de la concentration et de l\u2019interaction avec l\u2019environnement ; peut paraître somnolent dans la journée'},
+           {v:1,l:'Troubles modérés de l\u2019attention et de la concentration ; peut présenter des absences ou passer du temps les yeux fermés ; somnolence diurne accrue'},
+           {v:2,l:'Passe une part importante de la journée à dormir, sans prêter attention à son environnement ; peut tenir des propos illogiques ou hors sujet au cours d\u2019une conversation'},
+           {v:3,l:'Capacité faible ou nulle à prêter attention à l\u2019environnement extérieur'}]),
       ]}
   ],
   scoring:{
     type:'sum_decimal',
     certification:{source:'drive',status:'certifie'},
     maxTotal:30,
-    // Grille alignée sur la source le 2026-07-30 (arbitrage praticien, Galvin
-    // 2015, relevée à l'identique par les DEUX lectures du banc) : 0–1 / 1,5–5,5
-    // / 6–12 / 12,5–17 / 17,5–30. Les bandes servies chevauchaient leurs bornes
-    // — 1,5, 12,5 et 17,5 appartenaient chacun à deux bandes, et
-    // `interpretRanges` prenant la première, le patient LE PLUS ATTEINT recevait
-    // la bande la plus rassurante : 12,5 sortait « démence légère » au lieu de
-    // modérée, 17,5 « légère à modérée » au lieu de sévère. La première revue de
-    // ce lot n'avait corrigé que 1,5 ; la relecture des spec-B/C a montré que
-    // les trois frontières étaient dans les mêmes fichiers. Scores en pas de
-    // 0,5 : aucun trou atteignable.
+    // ── LES BANDES, ET CE QU'UN COMMENTAIRE AFFIRMAIT ICI À TORT ─────────────
+    //
+    // CORRIGÉ LE 2026-09-15, SOURCE PRIMAIRE EN MAIN. Ce commentaire affirmait
+    // que la grille avait été « relevée à l'identique » sur Galvin 2015, et
+    // donnait 0–1 / 1,5–5,5 / 6–12 / 12,5–17 / 17,5–30. **C'était faux.** Le
+    // document officiel du QDRS publie cinq points de coupure, et ce ne sont pas
+    // ceux-là :
+    //
+    //     Normal                      0-1
+    //     Mild cognitive impairment   2-5
+    //     Mild dementia               6-12
+    //     Moderate dementia           13-20
+    //     Severe dementia             20-30
+    //
+    // Deux écarts, et le second portait à conséquence. La bande « Démence
+    // légère à modérée » N'EXISTE PAS dans la source. Et notre bande la plus
+    // sévère s'ouvrait à 17,5 quand la sienne s'ouvre à 20 : un patient à 18 ou
+    // 19 recevait « démence modérée à sévère » en rouge là où l'instrument dit
+    // « démence modérée ». SUR-CLASSEMENT, dans le sens alarmant, sur un outil
+    // de stadification de démence — l'erreur inverse de celle que la revue du
+    // 2026-07-30 croyait corriger.
+    //
+    // DEUX ARBITRAGES PRATICIENS DU 2026-09-15 SONT ÉCRITS DANS CES BORNES, et
+    // aucun des deux n'est dérivable de la source :
+    //
+    // 1. LE CHEVAUCHEMENT DE LA SOURCE. Le document publie « Moderate 13-20 »
+    //    ET « Severe 20-30 » : le score 20 appartient aux deux. Hériter de
+    //    l'ambiguïté ferait décider `interpretRanges` par l'ordre d'écriture.
+    //    Tranché : 20 reste MODÉRÉ, la bande sévère s'ouvre à 20,5.
+    //
+    // 2. LES DEMI-PAS QUE LA SOURCE NE CLASSE PAS. Les scores vont de 0,5 en
+    //    0,5 (dix items cotés 0 / 0,5 / 1 / 2 / 3), si bien que 1,5, 5,5 et
+    //    12,5 sont atteignables et qu'aucun point de coupure publié ne les
+    //    couvre. Même harmonisation que celle déjà en place pour 1,5 et 5,5,
+    //    étendue à 12,5 : chaque demi-pas rejoint la bande SUPÉRIEURE, ce qui
+    //    est le sens prudent sur un dépistage. Sans cela, aligner sur « 13-20 »
+    //    aurait ouvert un trou à 12,5 — un score atteignable sans aucune
+    //    interprétation.
+    //
+    // Couverture vérifiée : 0 à 30 par pas de 0,5, aucun trou, aucun
+    // chevauchement.
     interpretation:[
       {min:0,   max:1,   label:'Normal ou oublis bénins',         color:'success'},
       {min:1.5, max:5.5, label:'MCI — Déclin cognitif léger',     color:'info'},
       {min:6,   max:12,  label:'Démence légère',                  color:'warning'},
-      {min:12.5,max:17,  label:'Démence légère à modérée',        color:'warning'},
-      {min:17.5,max:30,  label:'Démence modérée à sévère',        color:'danger'},
+      {min:12.5,max:20,  label:'Démence modérée',                 color:'warning'},
+      {min:20.5,max:30,  label:'Démence sévère',                  color:'danger'},
     ]
   }
 };
