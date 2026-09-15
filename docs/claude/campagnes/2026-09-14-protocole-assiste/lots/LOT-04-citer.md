@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Citer — l'écran désigne, le serveur recopie"
-statut: "en cours"
+statut: "terminé"
 dépend_de: "LOT-00, LOT-02"
 ---
 
@@ -117,35 +117,53 @@ garde seule est strictement plus sûr, et elle referme une **infraction en cours
 - **Banc de débranchement vérifié, pas affirmé** : la garde neutralisée fait rougir
   **trois** bancs (mutation appliquée, constatée, puis restaurée depuis une copie).
 
-### PR 2 — la citation : BLOQUÉE SUR UN ARBITRAGE (2026-09-15)
+### PR 2 — la citation : ARBITRÉE ET LIVRÉE (2026-09-15)
 
-**Où la provenance vivrait-elle ?** [[D-189]] §1 dit « la provenance est **portée
-par la version**, et tombe au premier caractère réécrit ». J'ai écrit cette phrase
-par analogie avec `objectifs_negocies` — **dont la provenance vit dans NEUF COLONNES
-ajoutées par une migration**. Vérifié depuis : `protocol_drafts` n'a **aucune colonne
-équivalente**, et `ProtocolDraft` n'a **aucun champ** où une marque de provenance de
-`purpose` pourrait se poser.
+**La question posée était bâtie sur une prémisse fausse, et elle a été reposée.**
+[[D-189]] §1 écrivait « la provenance est portée par la version » — phrase posée par
+analogie avec `objectifs_negocies`, **dont la provenance vit dans neuf colonnes
+ajoutées par une migration**. `protocol_drafts` n'en a aucune. L'arbitrage rendu sur
+cette base ne valait pas.
 
-**Le précédent du dépôt est sans ambiguïté, et il joue contre l'improvisation** :
-*chaque* référence de provenance ajoutée au payload a reçu **son propre contrat** —
-`foodCompassRef` → V2, `supplementCatalogRef` → V3, `interventionStatus` / `waitFor` /
-`phases` → V4, chacune gardée par un « interdit avant ».
+**Trois voies ont été reposées, vérifiées en code :** un contrat V5 (le patron du
+dépôt — chaque référence ajoutée au payload a reçu le sien : V2, V3, V4 — mais une
+décision qui étend [[D-130]] et engage toute la chaîne, pour une marque
+d'affichage) ; un **constat à la lecture** sans persistance ; ou différer.
 
-**Trois voies, et elles ne se valent pas :**
+**Tranché : le constat à la lecture** ([[D-193]]). Le serveur relit les sources et
+compare les textes ; la marque tombe au premier caractère réécrit **par
+construction**. C'est le mécanisme même que le responsable venait de trancher pour la
+vue patient du LOT-03 — pas un pis-aller, le style de ce chemin.
 
-1. **Un contrat V5** portant la provenance de `purpose`. C'est le patron du dépôt,
-   et c'est une décision qui étend [[D-130]] — elle engage toute la chaîne protocole.
-2. **Un constat à la LECTURE, sans persistance** : le cockpit recompare `purpose` au
-   libellé d'axe signé et à la tête de l'objectif actif, et n'affiche la marque que
-   si l'égalité tient. Aucune migration, aucun contrat neuf, et la marque tombe au
-   premier caractère réécrit **par construction**. Plus faible, et le dépôt connaît
-   cette faiblesse : `syntheses_comprehension` la documente comme « limite assumée »
-   — on vérifie l'APPARTENANCE d'une source, pas son USAGE.
-3. **Différer la citation.** L'étage 0 (restituer) est livré, et c'est lui qui « rend
-   la chose utile au premier jour » ; la citation est un confort de saisie.
+## Ce qui est livré
 
-**Ce qui n'est PAS une voie** : persister la provenance sans contrat ni colonne. Sans
-marque persistée, on ne distingue pas « cité verbatim » de « réécrit » — sauf à
-refuser la réécriture, ce qui est pire que de ne rien marquer.
+- **`lib/protocol/provenancePurpose.ts`** — pur, lisible des deux côtés de la
+  frontière client/serveur : les trois marques, la liste FERMÉE des sources, et la
+  comparaison stricte au `trim` près.
+- **`lib/praticien/teteObjectifCitable.ts`** — la lecture partagée de la tête active,
+  **plutôt qu'une troisième copie de `SELECTION_OBJECTIF`** (il en existe déjà deux,
+  et un `route.ts` Next.js ne peut pas exporter de valeur). Zéro ou plusieurs têtes
+  ⇒ rien de citable : deux têtes sont une discordance que le dépôt refuse de moyenner.
+- **Le GET des versions** sert `sourcesCitables` et, sur la version active,
+  `provenancePurpose` — constaté, jamais persisté.
+- **Le constructeur** propose « Reprendre », recopie le texte tel quel, et affiche ce
+  que la version active cite. **Le clic ne transmet rien** : c'est le texte qui fait
+  foi, pas le geste ([[D-164]]).
+- **Le marquage « votre patient la lit »** sur la raison d'être, reporté du LOT-03 et
+  posé ici, sur le champ effectivement servi.
 
-**Arbitrage du responsable.** La garde, elle, est livrée et indépendante.
+## Un défaut trouvé en chemin
+
+**Une commodité emportait le chemin principal.** La lecture des sources est appelée
+depuis le GET qui porte l'historique du protocole : une erreur de base y aurait fait
+tomber toute la page pour un bouton « Reprendre ». Elle ne lève plus — patron de
+`constaterProvenance`, qui rend une provenance vide plutôt que de faire échouer
+l'enregistrement.
+
+## Bancs
+
+Banc textuel de **liste fermée** (les trois marques épinglées), six bancs sur le
+constat — dont « la marque tombe au premier caractère » —, trois sur la route (tête
+active, discordance à deux têtes, échec de lecture qui n'emporte pas l'historique) et
+cinq sur l'écran. **Mutation vue ROUGE** avant de déclarer vert : comparaison élargie
+à la casse et aux espaces internes → banc rouge, restauration depuis une copie.

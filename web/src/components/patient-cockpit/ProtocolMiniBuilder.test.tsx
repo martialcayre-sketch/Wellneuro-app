@@ -400,3 +400,68 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     expect(within(container).queryByRole('button', { name: 'Enregistrer ce texte tel quel' })).toBeNull();
   });
 });
+
+// ── CITER LA RAISON D'ÊTRE ([[D-193]]) ─────────────────────────────────────
+//
+// Citer, c'est REPRENDRE un texte déjà écrit — jamais en composer un. Le bouton
+// recopie la source telle quelle dans le champ ; la marque, elle, se constate au
+// serveur et tombe au premier caractère réécrit. Rien n'est envoyé au serveur
+// par ce clic : c'est le TEXTE qui fait foi, pas le geste.
+describe('ProtocolMiniBuilder — citer la raison d’être', () => {
+  const SOURCES = [
+    {
+      marque: 'axe_signe' as const,
+      texte: 'Sommeil fragmenté, réveils nocturnes',
+      idSource: 'sommeil-fragmente',
+      libelle: 'L’axe de travail signé',
+    },
+    {
+      marque: 'objectif_priorite' as const,
+      texte: 'Retrouver des nuits entières.',
+      idSource: 'obj_v1',
+      libelle: 'La priorité de l’objectif négocié',
+    },
+  ];
+
+  it('reprend le texte de la source TEL QUEL dans la raison d’être', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} sourcesCitables={SOURCES} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'L’axe de travail signé' }));
+    expect((ui.getByLabelText('Raison d’être') as HTMLTextAreaElement).value)
+      .toBe('Sommeil fragmenté, réveils nocturnes');
+  });
+
+  it('propose CHAQUE source citable, et rien d’autre', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} sourcesCitables={SOURCES} />);
+    const ui = within(container);
+    expect(ui.getByRole('button', { name: 'L’axe de travail signé' })).toBeTruthy();
+    expect(ui.getByRole('button', { name: 'La priorité de l’objectif négocié' })).toBeTruthy();
+    // Le motif praticien de sélection et le `rationale` du moteur ne sont PAS
+    // citables : ils s'affichent ailleurs, ils ne partent pas au patient.
+    expect(ui.queryByRole('button', { name: /Fixture\./ })).toBeNull();
+  });
+
+  it('n’offre aucune reprise quand rien n’est citable sur ce dossier', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} sourcesCitables={[]} />);
+    expect(within(container).queryByText('Reprendre :')).toBeNull();
+  });
+
+  // LA MARQUE VIENT DU SERVEUR, jamais de cet écran : une marque que le
+  // navigateur annoncerait serait une marque que rien n'a confrontée.
+  it('affiche ce que la version active CITE, quand le serveur le constate', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        sourcesCitables={SOURCES}
+        provenancePurpose={{ marque: 'axe_signe', idSource: 'sommeil-fragmente' }}
+      />,
+    );
+    expect(within(container).getByText('Repris de l’axe de travail signé')).toBeTruthy();
+  });
+
+  it('n’affiche aucune marque quand le serveur n’en constate aucune', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} sourcesCitables={SOURCES} />);
+    expect(within(container).queryByText(/^Repris de/)).toBeNull();
+  });
+});
+
