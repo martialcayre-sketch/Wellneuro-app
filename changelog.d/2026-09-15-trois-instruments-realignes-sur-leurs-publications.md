@@ -109,3 +109,27 @@ distinguerait dans six mois des bornes publiées de bornes posées.
 instruments sont cités par la table signée, et leur cotation entre dans le
 périmètre depuis [[D-187]]. La table d'orientation, qui n'en cite aucun, n'a pas
 bougé d'un bit.
+
+## L'outil a refait, dans sa propre page, le défaut qu'il traquait
+
+**UNE EMPREINTE PÉRIMÉE A ÉTÉ PROPOSÉE À L'ATTESTATION.** Une première chaîne
+avait été relevée, **puis** une note de provenance ajoutée au bloc `scoring` du
+BDI — qui entre dans le périmètre, puisque [[D-187]] hache le bloc **entier**.
+Mesurer avant d'avoir fini d'écrire produit un nombre qui ne décrit plus rien.
+
+**ET LA SURFACE DE RELECTURE ÉTAIT TRONQUÉE.** Extraite par fenêtre de
+caractères, elle s'arrêtait **avant les bandes du BDI** — avant la correction la
+plus lourde du lot — et ne le signalait pas. Le praticien a donc relu l'IRLS et
+le score de Francis en entier, et **pas** ce qu'on lui demandait surtout
+d'attester. L'attestation a été refusée en l'état et redemandée après
+reconstruction.
+
+C'est **exactement** le défaut que [[D-187]] a fermé dans le périmètre — une
+sélection qui se périme en silence — refait par l'outil dans la page censée le
+prévenir. La surface extrait désormais chaque bloc **jusqu'à sa fermeture**,
+accolades équilibrées, et **vérifie que onze marqueurs attendus y figurent**,
+sinon sa génération échoue.
+
+**La règle qui en sort** : une surface de relecture se garde comme un banc. Si
+elle ne peut pas prouver qu'elle montre ce qu'elle prétend montrer, l'attestation
+qu'elle recueille ne vaut rien.
