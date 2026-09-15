@@ -4,6 +4,57 @@
 
 ## Décisions actives
 
+### D-192 — L'approbation pour diffusion oppose enfin les bloqueurs de la carte
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-15
+  (question 2 des trois qui cadrent le LOT-03).
+- Domaine : clinique — porte de diffusion du protocole 21 jours.
+- Complète : [[D-191]]. S'appuie sur [[D-099]], [[D-101]], [[D-054]] arbitrage 6.
+
+**DEUX REFUS ÉCRITS, ET OPPOSÉS NULLE PART.** `buildPatientProtocolView` refuse
+depuis toujours une décision **sous abstention requise** (« L'aperçu patient exige
+une décision sans abstention requise. ») et une décision **portant un constat de
+sécurité** (« Les constats de sécurité bloquent la validation pour diffusion. »).
+Ces deux refus n'ont mordu nulle part jusqu'au 2026-09-15 : le contrat n'avait
+**aucun appelant de production** — c'est ce que [[D-191]] vient de fermer — et la
+route d'approbation, elle, **n'a jamais construit de carte**. Elle recopie
+`version.decisionCardInputHash` depuis la ligne du brouillon et signe.
+
+Le producteur de constats de sécurité, lui, est **alimenté** depuis [[D-099]] :
+signaux d'alerte de l'anamnèse et signalements d'effet indésirable du patient.
+Le chemin n'est donc pas théorique — c'est sa porte qui manquait.
+
+**Décision :**
+
+1. **L'approbation pour diffusion rejoue la carte** — par `rejouerCarteDecision`,
+   la MÊME fonction que le chemin patient, sur l'épisode et l'empreinte de **la
+   version approuvée**. Un protocole approuvé est donc un protocole que le portail
+   saura servir : deux verdicts « équivalents » finiraient par diverger, et le
+   praticien validerait alors un écran qui reste vide ([[D-101]]).
+2. **Trois refus, en `409`, chacun avec son motif** : `abstention_requise`,
+   `constat_securite`, `carte_non_rejouable`.
+3. **Le refus tombe SOUS LA MAIN DU PRATICIEN, au moment de son geste.** C'est ici
+   qu'il ATTESTE un contenu pour diffusion ; servir le même refus plus tard au
+   portail lui apprendrait après coup qu'il a validé quelque chose d'invalide — et
+   son patient l'apprendrait en même temps que lui, par un écran vide.
+4. **Le message part à l'écran sans code neuf** : `approveForDiffusion` rend déjà
+   `payload.error` tel quel. La leçon du booklet est tenue par construction, et un
+   banc l'assertionne plutôt que de s'y fier.
+5. **Le nombre de constats, jamais les constats.** L'écran de décision les porte
+   déjà ; les recopier ici ferait de cette route une **seconde restitution
+   clinique**, qu'aucune garde de registre ne relit — et le chemin ne figure pas à
+   la carte de `vocabulaire.ts`.
+
+**CE QUE LA DÉCISION N'OUVRE PAS.** Elle ne lève aucun bloqueur et n'en crée aucun :
+elle branche à l'approbation des refus que le moteur énonçait déjà. Elle ne touche
+ni au producteur de constats, ni à la procédure d'abstention.
+
+- Conséquences : fragment `changelog.d/2026-09-15-gardes-a-la-diffusion.md` ;
+  `assessmentEpisodeId` entre au `select` de la version approuvée ; quatre bancs
+  neufs, dont deux vus ROUGES par mutation avant d'être déclarés verts ; aucune
+  migration, aucun drapeau, aucune identité patient.
+
 ### D-191 — La vue patient du protocole est un contrat recomposé, et son refus se voit des deux côtés
 
 - Date : 2026-09-15
