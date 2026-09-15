@@ -110,10 +110,12 @@ bougent pas. Trois surfaces comparent du persisté à du recalculé —
 silencieuse.** La sélection de priorité, elle, lit sur `decisionCardId` seul :
 elle n'est pas touchée.
 
-La dernière lecture de production ([[D-173]], 2026-09-12) donnait **zéro
-approbation de diffusion**. Elle date de quatre jours. **Un one-off avant merge
-la reconstate** ; s'en passer coûterait un écran patient éteint sans que personne
-ne l'ait prévu.
+**Reconstaté avant le merge** (one-off en lecture seule `one-off-8972`,
+2026-09-16 01:16) : `protocol_diffusion_approvals` rend `0|0|` — zéro
+approbation, zéro patient. Le seul chemin qui refuserait sur `carte_derivee` n'a
+aucun client. La lecture précédente ([[D-173]]) datait de quatre jours, et la
+campagne voisine avait poussé du protocole entre-temps : c'est pour ça qu'on la
+refait, pas par formalisme.
 
 ## Seconde contre-expertise — deux findings, un seul était encore ouvert
 

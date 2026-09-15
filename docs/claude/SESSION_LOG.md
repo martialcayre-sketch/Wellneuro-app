@@ -6440,3 +6440,17 @@ cherchant les COMPARAISONS D'EMPREINTES. `ja/cycle` n'en fait aucune — il
 consomme le REFUS du rejeu. Un balayage sur `inputHash` ne pouvait pas le voir.
 La campagne voisine l'avait trouvé le même jour par l'autre bout ([[D-200]]) ;
 la correction est entrée ici par la fusion de `main`.
+
+## 2026-09-16 01:16 — Zéro approbation de diffusion, reconstaté avant le merge
+
+`protocol_diffusion_approvals` rend **`0|0|`** en production (`one-off-8972`,
+lecture seule, un seul compte, rien de nominatif). Le seul chemin qui refuserait
+sur `carte_derivee` n'a aucun client : la dérive d'empreinte que ce lot provoque
+ne coûte rien à personne aujourd'hui.
+
+**Pourquoi refaire une lecture qui existait déjà.** La précédente ([[D-173]])
+donnait le même zéro, mais datait du 2026-09-12 — et la campagne voisine a poussé
+du protocole entre-temps. Une prémisse de quatre jours sur une table que
+quelqu'un d'autre alimente n'est pas une prémisse, c'est un souvenir.
+
+Le constat est **daté** : il vaut pour ce déploiement, pas pour le suivant.

@@ -167,12 +167,16 @@ cherche `inputHash` ne pouvait pas le voir.
 §4 a rendu possible en détachant l'identité de la carte de son contenu. C'est
 précisément l'objet dont la production porte un exemplaire.
 
-**LA PORTÉE RÉELLE EST UNE LECTURE DE PRODUCTION, ET ELLE DATE.** La dernière
-([[D-173]], 2026-09-12) donnait **zéro approbation de diffusion** en base : le
-seul chemin qui refuserait sur `carte_derivee` n'a alors aucun client. Cette
-lecture a quatre jours. Elle se **reconstate avant le déploiement**, pas après —
-la reprendre coûte un one-off, et s'en passer coûterait un écran patient éteint
-sans que personne ne l'ait prévu.
+**LA PORTÉE RÉELLE EST UNE LECTURE DE PRODUCTION, ET ELLE A ÉTÉ REFAITE.** La
+précédente ([[D-173]], 2026-09-12) donnait zéro approbation de diffusion, mais
+elle avait quatre jours — et la campagne voisine a poussé du protocole depuis.
+Reconstatée **avant le merge**, par one-off en lecture seule (`one-off-8972`,
+2026-09-16 01:16) : `protocol_diffusion_approvals` rend **`0|0|`** — zéro
+approbation, zéro patient, aucune date.
+
+Le seul chemin qui refuserait sur `carte_derivee` n'a donc **aucun client**, et
+la dérive d'empreinte ne coûte rien à personne aujourd'hui. Ce constat est daté :
+il vaut pour ce déploiement-ci, pas pour le suivant.
 
 **L'ÉCRAN NE LISAIT QUE `relu`, ET SON PROPRE BANC EN DONNAIT LA PREUVE.**
 Deuxième finding de la même contre-expertise. `DecisionSummaryCard` décidait sur
