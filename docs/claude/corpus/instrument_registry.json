@@ -2939,11 +2939,11 @@
         "nomOfficiel": "Alzheimer's Questionnaire (AQ)",
         "auteurs": "Sabbagh et al.",
         "anneePublication": 2010,
-        "formePubliee": "21 items",
+        "formePubliee": "21 items, cotation pondérée (6 items à 2 points), score 0-27",
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "21 items en 1 section(s), moteur `sum`. AQ de Sabbagh servi avec ses bandes publiées ; 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "21 items en 5 section(s) — les cinq domaines publiés —, moteur `sum`, cotation pondérée, score 0-27. RÉALIGNÉ SUR LA PUBLICATION LE 2026-09-15 (arbitrage praticien). AVANT CETTE DATE, ET C'EST CORRIGÉ ICI : la forme servie portait vingt-et-un items comme la source, et ce chiffre identique cachait deux inventaires différents — huit items publiés n'étaient pas servis, huit items servis n'étaient pas publiés. Le domaine Orientation de Sabbagh (3 items) manquait en entier ; cinq items comportementaux (irritabilité, dépression, anxiété, hallucinations, personnalité) avaient été ajoutés, alors que l'AQ ne comporte aucun domaine de ce genre. La pondération publiée était abandonnée au profit d'une cotation plate sur 21. DEUX AFFIRMATIONS DE CETTE NOTICE ÉTAIENT FAUSSES et sont retirées : « servi avec ses bandes publiées » — l'article de 2010 ne publie AUCUN seuil — et « bandes et cotation conformes à la source pour le reste », que le code contredisait dans son propre commentaire (« cotation 0/1 vs pondérée originale — GAP documenté »). CE QUI RESTE VRAI : les 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. CE QUI RESTE `adapte` : la traduction française est fidèle au sens de chaque item publié, elle n'est pas une version française validée — aucune identité au mot près n'est affirmée. AUCUNE PASSATION PERDUE : production lue le 2026-09-15 (one-off détaché), 188 passations sur trente instruments, ZÉRO sur Q_GEO_03.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -2952,7 +2952,7 @@
         "doi": "10.3233/JAD-2010-101185",
         "pmid": "20930293",
         "dateVerification": "2026-09-14",
-        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Alzheimers Dis 2010 — The Alzheimer's questionnaire: a proof of concept study for a new informant-based dementia assessment."
+        "verifiePar": "validation praticien du 2026-09-14, sur identifiants relevés le même jour par interrogation directe de PubMed (E-utilities : esearch puis esummary, concordance auteur + année + titre vérifiée article par article) — J Alzheimers Dis 2010 — The Alzheimer's questionnaire: a proof of concept study for a new informant-based dementia assessment. RÉALIGNEMENT DU 2026-09-15 : les vingt-et-un items publiés (table 7) et la pondération à six items doubles sont rétablis ; le DOI et le PMID désignent donc désormais la forme SERVIE, et non plus seulement une référence d\u2019origine. RÉSERVE SUR LES BANDES, NON LEVÉE : les bornes 5 et 15 sont celles qui circulent dans la littérature de l\u2019AQ et portent bien sur l\u2019échelle pondérée à 27 points — c\u2019est pourquoi elles y sont désormais posées —, mais la publication qui les ÉTABLIT n\u2019a pas été lue. L\u2019article de 2010 n\u2019en publie aucune (moyennes de groupe et courbes ROC seulement), et le texte intégral de l\u2019étude de validation (Malek-Ahmadi et al., Age Ageing 2012, PMID 22367356) n\u2019a pas pu être atteint le 2026-09-15. Transposition décidée par arbitrage praticien du 2026-09-15, et déclarée plutôt que tue."
       },
       "droits": {
         "statut": "permission_obtenue",

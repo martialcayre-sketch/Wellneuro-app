@@ -1,48 +1,117 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
+/**
+ * PONDÉRATION DE L'AQ — six items valent 2 points, quinze en valent 1.
+ *
+ * Elle vit dans les VALEURS d'options, pas dans un drapeau de scoring : même
+ * patron que `O_PSS_INVERSE`, dont la clé de correction du PSS est écrite dans
+ * ses nombres. Le moteur `sum` additionne ce que l'option porte, si bien que la
+ * pondération publiée se lit là où elle s'applique.
+ */
+const O_AQ_1 = [{v:0,l:'Non'},{v:1,l:'Oui'}];
+const O_AQ_2 = [{v:0,l:'Non'},{v:2,l:'Oui'}];
+
 export const Q_GEO_03 = {
-  id:'Q_GEO_03', titre:'AQ — Questionnaire Alzheimer (Sabbagh 2010)',
-  // Référence : Sabbagh MN et al. (2010). Alzheimer Dis Assoc Disord, 24(1), 64-70.
-  // Version SIIN simplifiée : cotation 0/1 (vs pondérée originale) — GAP documenté
+  id:'Q_GEO_03', titre:'AQ — Alzheimer\u2019s Questionnaire (Sabbagh 2010)',
+  // Référence : Sabbagh MN et al. (2010). J Alzheimers Dis, 22(3), 1015-1021.
+  //             PMID 20930293 · DOI 10.3233/JAD-2010-101185 · table 7.
+  //
+  // RÉALIGNÉ SUR SA PUBLICATION LE 2026-09-15 (arbitrage praticien). La forme
+  // servie jusque-là portait vingt-et-un items comme la source — et ce chiffre
+  // identique cachait DEUX INVENTAIRES DIFFÉRENTS : huit items publiés n'étaient
+  // pas servis, huit items servis n'étaient pas publiés. Le domaine Orientation
+  // de Sabbagh (trois items, dont le plus lourd de la publication) manquait en
+  // entier ; un bloc comportemental de cinq items — irritabilité, dépression,
+  // anxiété, hallucinations, personnalité — avait été ajouté, alors que l'AQ ne
+  // comporte aucun domaine de ce genre. La pondération publiée était abandonnée
+  // au profit d'une cotation plate.
+  //
+  // POURQUOI C'ÉTAIT GRAVE, ET PAS SEULEMENT INEXACT. Les bandes servies sont
+  // celles de la littérature AQ, établies sur l'instrument publié. Posées sur
+  // d'autres items, elles ne mesuraient rien — c'est la faute nommée le
+  // 2026-08-01 en retirant les bandes de `Q_TAB_04` : « une grille de lecture
+  // validée sur un instrument, posée sur un autre, ne mesure rien ». Les items
+  // sont réalignés AVANT que les bandes ne soient reposées, et pas l'inverse.
+  //
+  // AUCUNE PASSATION N'A ÉTÉ PERDUE : la production a été lue le 2026-09-15
+  // (one-off détaché) — 188 passations sur trente instruments, et ZÉRO sur
+  // `Q_GEO_03`, `Q_GEO_04`, `Q_GEO_05` et `Q_GEO_06`. Les identifiants d'items
+  // `AZ1`-`AZ21` sont donc réattribués sans rien rendre illisible.
+  //
+  // CE QUI RESTE NON VALIDÉ, et le registre le dit : la traduction française.
+  // Elle est fidèle au sens de chaque item publié, elle n'est pas une version
+  // française validée — `traductionValidee` reste « fr — à confirmer ».
+  //
   // Informant-based : à compléter par un proche ou le clinicien. Le mode
   // clinicien est posé le 2026-08-16 (revue D-066) : auto-rempli par le
   // patient, l'instrument répondrait « concernant le patient » À SA PLACE —
   // la population du claim n'est pas respectée (DC-14, DC-28).
   administrationMode: 'clinicien',
-  instructions:'Répondez OUI ou NON à chacune des questions suivantes concernant le patient.',
+  instructions:'Répondez OUI ou NON à chacune des questions suivantes concernant le patient. Certaines questions comptent double, conformément à la cotation publiée.',
   sections:[
-    { id:'1', titre:'Questions 1 à 21',
+    { id:'memoire', titre:'Mémoire',
       questions:[
-        q('AZ1',  "La personne a-t-elle des difficultés à se souvenir de choses récentes ?",           [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ2',  "La personne a-t-elle des difficultés à se souvenir d\'événements récents importants ?", [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ3',  "La personne a-t-elle des difficultés à se souvenir des conversations récentes ?",   [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ4',  "La personne oublie-t-elle des rendez-vous ou des dates ?",                          [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ5',  "La personne pose-t-elle les mêmes questions ou répète-t-elle les mêmes histoires ?", [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ6',  "La personne a-t-elle des difficultés à trouver ses mots ?",                         [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ7',  "La personne a-t-elle du mal à reconnaître des visages familiers ?",                 [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ8',  "La personne a-t-elle du mal à effectuer des tâches ménagères habituelles ?",        [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ9',  "La personne a-t-elle du mal à gérer ses finances (chèques, factures) ?",            [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ10', "La personne a-t-elle du mal à utiliser les transports en commun ou à conduire ?",   [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ11', "La personne se perd-elle dans des endroits familiers ?",                            [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ12', "La personne a-t-elle du mal à prendre des médicaments correctement ?",              [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ13', "La personne a-t-elle des difficultés à utiliser le téléphone ou les appareils électroniques ?", [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ14', "La personne a-t-elle du mal à faire ses courses ?",                                 [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ15', "La personne est-elle moins intéressée par ses activités ou passe-temps habituels ?", [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ16', "La personne est-elle moins motivée pour entreprendre des activités nouvelles ?",    [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ17', "La personne est-elle plus irritable ou agitée qu\'auparavant ?",                   [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ18', "La personne est-elle déprimée ou triste ?",                                         [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ19', "La personne est-elle anxieuse ou inquiète sans raison apparente ?",                 [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ20', "La personne voit-elle ou entend-elle des choses inexistantes (hallucinations) ?",   [{v:0,l:'Non'},{v:1,l:'Oui'}]),
-        q('AZ21', "La personne a-t-elle des changements importants de personnalité ou de comportement ?", [{v:0,l:'Non'},{v:1,l:'Oui'}]),
+        q('AZ1',  "La personne a-t-elle des troubles de la mémoire ?",                                        O_AQ_1),
+        q('AZ2',  "Si oui, sa mémoire est-elle moins bonne qu'il y a quelques années ?",                      O_AQ_1),
+        q('AZ3',  "La personne répète-t-elle des questions, des phrases ou des histoires dans la même journée ?", O_AQ_2),
+        q('AZ4',  "Avez-vous dû prendre en charge le suivi de ses rendez-vous ou de ses échéances ?",          O_AQ_1),
+        q('AZ5',  "La personne égare-t-elle des objets plus d'une fois par mois ?",                            O_AQ_1),
+        q('AZ6',  "La personne soupçonne-t-elle les autres de déplacer, cacher ou voler ses affaires ?",       O_AQ_1),
+      ]},
+    { id:'orientation', titre:'Orientation',
+      questions:[
+        q('AZ7',  "La personne a-t-elle souvent du mal à savoir le jour, la date, le mois, l'année ou l'heure ?", O_AQ_2),
+        q('AZ8',  "La personne se désoriente-t-elle dans des lieux qu'elle ne connaît pas ?",                  O_AQ_1),
+        q('AZ9',  "La personne est-elle plus confuse hors de chez elle ou en déplacement ?",                   O_AQ_1),
+      ]},
+    { id:'fonctionnel', titre:'Capacités fonctionnelles',
+      questions:[
+        q('AZ10', "La personne a-t-elle du mal à manipuler l'argent ?",                                        O_AQ_1),
+        q('AZ11', "La personne a-t-elle du mal à payer ses factures ou à gérer ses comptes ?",                 O_AQ_2),
+        q('AZ12', "La personne a-t-elle du mal à penser à prendre ses médicaments ?",                          O_AQ_1),
+        q('AZ13', "La personne a-t-elle des difficultés à conduire ?",                                         O_AQ_1),
+        q('AZ14', "La personne a-t-elle du mal à utiliser les appareils ménagers ?",                           O_AQ_1),
+        q('AZ15', "La personne a-t-elle des difficultés à effectuer les réparations ou l'entretien du domicile ?", O_AQ_1),
+        q('AZ16', "La personne a-t-elle abandonné ou nettement réduit des activités comme le sport, la danse, l'exercice ou les travaux manuels ?", O_AQ_1),
+      ]},
+    { id:'visuospatial', titre:'Repérage visuo-spatial',
+      questions:[
+        q('AZ17', "La personne se perd-elle dans des lieux familiers ?",                                       O_AQ_2),
+        q('AZ18', "La personne a-t-elle un sens de l'orientation diminué ?",                                   O_AQ_1),
+      ]},
+    { id:'langage', titre:'Langage',
+      questions:[
+        q('AZ19', "La personne a-t-elle du mal à trouver ses mots, en dehors des noms propres ?",              O_AQ_1),
+        q('AZ20', "La personne confond-elle les prénoms de ses proches ou de ses amis ?",                      O_AQ_2),
+        q('AZ21', "La personne a-t-elle du mal à reconnaître des personnes qui lui sont familières ?",         O_AQ_2),
       ]}
   ],
   scoring:{
-    type:'sum', severiteCroissante:true, maxTotal:21,
+    // `maxTotal` 27 et non 21 : quinze items à 1 point et six à 2 points, ce qui
+    // est le maximum publié — confirmé par la revue des auteurs de l'instrument
+    // (Malek-Ahmadi & Sabbagh, J Nat Sci 2015, PMID 25961078 : « The total AQ
+    // score ranges from 0 to 27 »).
+    type:'sum', severiteCroissante:true, maxTotal:27,
     certification:{source:'drive',status:'certifie'},
+    // BANDES : 0-4 / 5-14 / 15-27, sur l'échelle pondérée à 27 points.
+    //
+    // CE QUI EST ÉTABLI ET CE QUI NE L'EST PAS, et la distinction est le tout de
+    // cette note. Les bornes 5 et 15 sont celles qui circulent dans la
+    // littérature de l'AQ, et elles portent sur l'échelle pondérée — c'est
+    // pourquoi elles sont désormais posées sur 27 et non sur 21. Mais la
+    // publication qui les ÉTABLIT n'a pas été lue : l'article de 2010 ne publie
+    // aucun seuil (moyennes de groupe NC 2,12 · MCI 11,06 · MA 17,64 et courbes
+    // ROC seulement), et le texte intégral de l'étude de validation
+    // (Malek-Ahmadi et al., Age Ageing 2012, PMID 22367356) n'a pas pu être
+    // atteint le 2026-09-15. Arbitrage praticien du 2026-09-15 : transposer,
+    // et le DIRE — `motifBibliographique` au registre porte la réserve.
+    //
+    // Les `protocol` sont une CONDUITE AJOUTÉE PAR LE CABINET, absente de la
+    // source, comme le registre le déclare depuis le 2026-07-25.
     interpretation:[
       {min:0,  max:4,  label:'Cognition normale ou doute mineur',   color:'success', protocol:'Suivi annuel recommandé'},
       {min:5,  max:14, label:'Déclin cognitif léger à modéré (MCI probable)', color:'warning', protocol:'Évaluation neuropsychologique + bilan biologique'},
-      {min:15, max:21, label:'Déclin cognitif sévère (démence probable)', color:'danger', protocol:'Consultation neurologique urgente'},
+      {min:15, max:27, label:'Déclin cognitif sévère (démence probable)', color:'danger', protocol:'Consultation neurologique urgente'},
     ]
   }
 };
