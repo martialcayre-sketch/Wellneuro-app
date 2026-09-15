@@ -6025,3 +6025,34 @@ l'existence d'un patron ailleurs à sa disponibilité ici.
 
 **Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
 citation ; la première ligne du barème de charge (LOT-06).
+
+## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-191]])
+
+Troisième des trois suites nommées le 2026-09-14. La surface qui porte la
+provenance et les limitations devient mesurable ; **cette PR pose la table
+seule**, régime `D-087`.
+
+**Deux espèces, et c'est la décision.** Compter les seules ouvertures aurait
+produit le nombre sans dénominateur que cette campagne poursuit depuis son
+premier lot : « 40 ouvertures » ne distingue pas une surface consultée
+systématiquement d'une surface ignorée 99 fois sur 100.
+
+**Quatre absences choisies** : aucun `id_patient`, aucune identité de praticien,
+aucun instant, aucune ligne par événement. La table est structurellement
+incapable de dire « ce praticien n'ouvre jamais les limitations ». Discipline
+reprise de `portail_lectures_patient`, qui se prive de toute date pour ne pas
+devenir un journal de présence ; ici la cible serait le praticien, et un second
+registre d'accès par-dessus `journal_acces_dossiers`.
+
+**Ce que la revue interne a déjà coûté, et qui vaut d'être noté** : une mutation
+a survécu — retirer le `.catch()` d'`envoyerMesure` laissait les bancs verts,
+parce que **`vi.fn` attache ses propres `then`/`catch` au promise rendu** pour
+alimenter `mock.results`. L'outil de mesure réparait ce qu'il mesurait. Le cas
+stubbe désormais `fetch` par une fonction nue. Même leçon que la seconde passe
+Codex sur `D-185`, le même jour : un banc ne prouve que ce que sa rédaction a
+pensé à nommer.
+
+Deux bancs existants ont attrapé la première rédaction, et les deux avaient
+raison : le harnais ergonomique ne doit contacter aucun réseau, et un rejeu ne
+doit poster aucun état clinique. Le second est **resserré, pas relâché** — il
+listait « aucun POST », il liste désormais les destinations.

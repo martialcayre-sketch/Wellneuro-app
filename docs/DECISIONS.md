@@ -4,6 +4,94 @@
 
 ## Décisions actives
 
+### D-191 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
+
+- Date : 2026-09-15
+- Statut : accepté — troisième des trois suites nommées par le responsable le
+  2026-09-14, après la fenêtre de rappel ([[D-183]]) et la phrase de reprise
+  ([[D-184]]). Migration **autorisée d'avance** par arbitrage du même jour ; le
+  go de merge reste dû ([[D-087]] §1).
+- Domaine : mesure produit, explicabilité, minimisation.
+- Livraison : migration seule d'abord, code consommateur ensuite.
+
+**CE QUI MANQUAIT.** « Voir les sources et limites » porte la provenance des
+candidats ([[DC-34]]) et les limitations servies ([[DC-35]]) : c'est LA surface
+d'explicabilité de la carte de décision. Le dépôt a beaucoup investi dedans —
+[[D-101]], [[D-185]] et la moitié de cette campagne — et **rien ne dit si elle
+est ouverte.** Une surface d'explicabilité que personne ne déplie a le coût d'une
+garantie et l'effet d'aucune.
+
+**DEUX ESPÈCES, ET C'EST LE CŒUR DE LA DÉCISION.** « 40 ouvertures » se lit comme
+un résultat sans en être un : sans son DÉNOMINATEUR, il ne distingue pas une
+surface consultée systématiquement d'une surface ignorée quatre-vingt-dix-neuf
+fois sur cent. Compter les seules ouvertures aurait produit exactement le nombre
+sans dénominateur que cette campagne poursuit depuis son premier lot. La table
+porte donc `affichage` ET `ouverture`, et le taux est leur quotient.
+
+`tauxOuverture` rend `null` — jamais `0` — quand le dénominateur est nul : zéro se
+lit « personne n'ouvre », l'absence de mesure se lit « on ne sait pas », et les
+confondre ferait porter à la surface un désintérêt qui vient de l'absence de
+mesure ([[DC-24]]). Il rend `null` aussi quand les ouvertures dépassent les
+affichages : ce n'est pas un taux de 120 %, c'est une mesure cassée.
+
+**CE QUE LA TABLE NE PEUT PAS DEVENIR, ET C'EST SA FORME QUI LE TIENT.** Le
+danger d'un compteur d'usage est de devenir un journal de surveillance — ici de
+l'exercice du praticien, et un second registre d'accès sur les patients par-dessus
+`journal_acces_dossiers`. Le dépôt a déjà tranché ce cas exact sur
+`portail_lectures_patient`, qui se prive de TOUTE colonne de date pour que « quand
+le patient a-t-il ouvert son bilan » reste structurellement sans réponse.
+
+Quatre absences, toutes choisies : **aucun `id_patient`** (le quotient ne le
+demande pas), **aucune identité de praticien** (mesurer une surface n'est pas
+mesurer quelqu'un), **aucun instant** (un jour suffit à un taux), **aucune ligne
+par événement** (un agrégat n'a pas de rang à ré-identifier). « Ce praticien
+n'ouvre jamais les limitations » est une phrase que le dépôt doit être incapable
+de produire, et ce n'est pas une intention : c'est la forme de la table.
+
+C'est pourquoi elle s'INCRÉMENTE au lieu de s'empiler — **le seul endroit du dépôt
+où un `UPDATE` vaut mieux qu'un ajout.** Ailleurs l'ajout seul protège une trace
+clinique contestable ; ici, empiler FABRIQUERAIT la granularité qu'on vient de
+refuser. L'incrément passe par un `ON CONFLICT DO UPDATE` : un `findUnique` suivi
+d'un `update` perdrait des incréments dès deux praticiens simultanés, et un
+compteur qui sous-compte en silence est pire qu'un compteur absent — il a l'air
+de fonctionner.
+
+**LA MESURE EST FERMÉE PAR DÉFAUT.** `DecisionSummaryCard` se monte DEUX fois sur
+une même page — la rubrique de la phase « Décision 21 j », et le rappel posé à
+côté du constructeur de protocole. Ouverte par défaut, chaque site d'affichage
+présent ou futur gonflerait le dénominateur en silence et ferait baisser un taux
+déjà publié, sans décision de personne. Un seul montage est déclaré `mesurable`,
+et il l'est explicitement.
+
+Elle est fausse en mode fixture : le harnais de validation ergonomique sert un
+contenu « sans portée clinique » et **ne contacte jamais le réseau** — un banc
+existant de `ClinicalRuntimeSection` l'exige, et il a attrapé la première
+rédaction de ce lot.
+
+**FAIL-OPEN SANS EXCEPTION ([[D-146]]).** Une mesure qui empêcherait de lire les
+sources et limites d'une décision clinique serait un renversement complet : la
+surface passe avant sa mesure. Rien n'est attendu, rien n'est affiché, et un rejet
+réseau est avalé — `fetch` rend une promesse REJETÉE sur coupure, pas un
+`ok: false`, et un `unhandledRejection` ouvrirait un incident au rapporteur
+d'erreurs pour un compteur sans importance.
+
+**CE QUE LA REVUE A DÉJÀ COÛTÉ, dit pour ne pas le rejouer.** Une mutation a
+survécu à la première rédaction : retirer le `.catch()` laissait les bancs verts,
+parce que `vi.fn` attache ses propres `then`/`catch` au promise rendu pour
+alimenter `mock.results` — **l'outil de mesure réparait ce qu'il mesurait.** Le
+cas stubbe désormais `fetch` par une fonction nue. C'est la même leçon que la
+seconde passe Codex sur [[D-185]] : un banc ne prouve que ce que sa rédaction a
+pensé à nommer, et il faut l'attaquer pour le savoir.
+
+- Conséquences : migration `20260915080000_compteur_ouverture_sources_v1` (PR
+  seule, [[D-087]]) ; modèle `CompteurOuvertureSources` ; module-feuille
+  `lib/mesure/ouvertureSources.ts` ; route
+  `POST /api/praticien/mesure/ouverture-sources` ; prop `mesurable` sur
+  `DecisionSummaryCard` ; `onOuverture` sur `TwoLevelReading`. Aucun drapeau
+  neuf. Le banc du rejeu de `ClinicalRuntimeSection` est RESSERRÉ, pas relâché :
+  il listait « aucun POST », il liste désormais les destinations, si bien qu'un
+  POST clinique neuf le fait rougir même si personne ne l'a nommé.
+
 ### D-190 — Le praticien SUSPEND une action, il ne l'active pas : `D-056` s'amende dans un seul sens
 
 - Date : 2026-09-15
