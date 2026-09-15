@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Ce que le patient lit vraiment"
-statut: "terminé"
+statut: "en cours"
 dépend_de: "LOT-00"
 ---
 
