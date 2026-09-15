@@ -127,6 +127,23 @@ détachée du contenu, donc rien ne devient orphelin.
 les deux côtés. Seule une ligne persistée, écrite avant le déploiement, porte
 l'ancienne empreinte.
 
+**L'INVENTAIRE DES CONSOMMATEURS A ÉTÉ FAIT, et il réduit beaucoup la portée.**
+La plupart des comparaisons sont PERSISTÉ contre PERSISTÉ — `diffusion.ts`,
+`portailProtocol.ts`, la clôture copilote — et une dérive ne les touche pas : les
+deux côtés sont anciens. Trois surfaces seulement comparent du persisté à du
+RECALCULÉ :
+
+| Surface | Effet d'une dérive | Silencieux ? |
+| --- | --- | --- |
+| `buildPatientProtocolView` via `rejeuCarteDecision` | `carte_derivee` : écran patient éteint | non — refus bruyant côté praticien |
+| `ProtocolConsultationPanel` | le brouillon antérieur devient non éligible à l'approbation | non — visible à l'écran |
+| `POST /api/praticien/protocoles` | `provenance_mismatch`, HTTP 400 | non |
+
+**La sélection de priorité N'EST PAS touchée** : `lireSelectionPriorite` lit sur
+`(idPatient, decisionCardId)` et ne consulte jamais l'empreinte — ce que [[D-173]]
+§4 a rendu possible en détachant l'identité de la carte de son contenu. C'est
+précisément l'objet dont la production porte un exemplaire.
+
 **LA PORTÉE RÉELLE EST UNE LECTURE DE PRODUCTION, ET ELLE DATE.** La dernière
 ([[D-173]], 2026-09-12) donnait **zéro approbation de diffusion** en base : le
 seul chemin qui refuserait sur `carte_derivee` n'a alors aucun client. Cette

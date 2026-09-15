@@ -100,9 +100,15 @@ entre dans `hashInput`, et `canonicalSha256` hache toutes les clés propres.
 `38ab6a859c80ff54` → `6f652101dec8d209` sur le harnais ergonomique.
 
 Aucun banc ne peut l'attraper : ils recalculent les deux côtés. Seule une ligne
-persistée avant le déploiement porte l'ancienne empreinte, et
-`buildPatientProtocolView` la refuserait en `carte_derivee` — écran patient
-éteint, refus bruyant côté praticien.
+persistée avant le déploiement porte l'ancienne empreinte.
+
+Inventaire fait : la plupart des comparaisons sont persisté-contre-persisté et ne
+bougent pas. Trois surfaces comparent du persisté à du recalculé —
+`buildPatientProtocolView` (`carte_derivee`, écran patient éteint, refus bruyant),
+`ProtocolConsultationPanel` (brouillon non éligible), `POST
+/api/praticien/protocoles` (`provenance_mismatch`, 400). **Aucune n'est
+silencieuse.** La sélection de priorité, elle, lit sur `decisionCardId` seul :
+elle n'est pas touchée.
 
 La dernière lecture de production ([[D-173]], 2026-09-12) donnait **zéro
 approbation de diffusion**. Elle date de quatre jours. **Un one-off avant merge
