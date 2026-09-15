@@ -4,6 +4,332 @@
 
 ## Décisions actives
 
+### D-190 — Le praticien SUSPEND une action, il ne l'active pas : `D-056` s'amende dans un seul sens
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-14
+  (question 9 des douze qui cadrent la campagne).
+- Domaine : clinique — contrat V4 du protocole, statut d'intervention.
+- Amende : [[D-056]], et **dans un seul sens** : elle ouvre au praticien le geste
+  de suspendre, et laisse intact tout le reste de la décision.
+
+**LE DÉPÔT SE CONTREDISAIT, ET PERSONNE N'AVAIT TRANCHÉ.**
+`ProtocolMiniBuilder.tsx` rend le statut d'intervention en lecture seule avec ce
+commentaire : « il est posé par la règle de décision, jamais saisi à la main
+(`D-056`) […] sans quoi une intention pourrait naître “active” sans règle
+derrière. » L'en-tête de `e2e/biologie-arbitrage-revision.spec.ts` affirme
+l'inverse : « AUCUN PRODUCTEUR D'INTENTIONS N'EXISTE. […] **c'est le praticien qui
+la pose** en relisant son protocole, par le constructeur de la phase Actions. »
+[[D-130]] disait « le geste d'écran reste dû, et il est nommé ici plutôt que
+supposé livré ». Et `FILE_ATTENTE.md` posait **deux chemins à arbitrer** — brancher
+`D-056` ou offrir le geste au praticien — **sans les départager**.
+
+Vérification faite au cadrage du 2026-09-14 : **aucune décision, aucun fragment,
+aucun handoff ne tranchait**. Ce qui tenait lieu d'arbitrage était un commentaire
+de code et un en-tête de spec qui se contredisaient.
+
+**CE QUE CET ÉTAT COÛTAIT.** La boucle arbitrage biologique → révision de protocole
+est **livrée et testée à trois étages** — domaine, route, E2E — et
+**indéclenchable** : `ArbitrageBiologiquePanel` n'apparaît que si une version
+active porte une action `interventionStatus === 'conditionnelle_biologie'`, et
+aucune surface n'en pose.
+
+**Décision :**
+
+1. **Le praticien peut poser `conditionnelle_biologie` sur une action, avec sa
+   cible d'attente. Il ne peut poser aucun autre statut à la main.** Les actions
+   qu'il ne suspend pas restent `active`.
+2. **Le motif, et il répond directement à la crainte de `D-056`** : cette crainte
+   était qu'« une intention naisse *active* sans règle derrière ». Le geste ouvert
+   ici ne fait que **retenir** — jamais libérer. Il est l'exact opposé du risque
+   nommé. Et l'arbitrage 5 de `D-056` l'avait déjà écrit : `conditionnelle_biologie`
+   **n'est pas une recommandation**, et la restitution doit rendre impossible de la
+   lire ainsi.
+3. **Le geste est borné aux lignes que la proposition de bilan a produites** avec
+   un statut `recommandé`, `à répéter`, ou `conditionnel` **à déclencheur rempli** —
+   jamais un conditionnel non rempli, jamais un optionnel. La condition se porte
+   dans l'**intitulé**, seul champ lu des deux côtés de la frontière patient.
+4. **Le commentaire de `ProtocolMiniBuilder.tsx` est réécrit par cette décision**,
+   et l'en-tête du spec cesse d'être orphelin.
+5. **Ce que la décision N'OUVRE PAS** : poser `active`, `differee`,
+   `contre_indiquee` ou `non_indiquee_actuellement` à la main — les trois derniers
+   restent la sortie d'un arbitrage biologique, pas une saisie ; et brancher le
+   moteur `D-056`, écarté avec son motif ci-dessous.
+
+**POURQUOI LE MOTEUR N'EST PAS BRANCHÉ, ET ce n'est pas un report de confort.**
+`deciderIntentionAvantBiologie` est écrit, testé, et **refuse tout aujourd'hui** :
+`clinical_rules` porte 0 ligne, le catalogue d'alertes n'est pas publié, et le lien
+règle ↔ claim manque ([[D-133]]). Le brancher laisserait la boucle exactement aussi
+indéclenchable qu'avant, en donnant l'illusion contraire.
+
+**DÉFAUT DÉCOUVERT AU CADRAGE, ET CORRIGÉ DANS LE MÊME LOT.**
+`reviserApresArbitrages` appelle `saveVersion` **sans `version`** : la soumission
+retombe alors en V1, et sur une version active V4 la route répond
+**409 `version_contrat_incompatible`**. La boucle n'était donc pas seulement sans
+amorce — **son geste de sortie était incompatible avec le contrat qu'il révise**.
+
+- Conséquences : fragment `changelog.d/2026-09-15-suspendre-une-action.md` ;
+  `RelectureProtocoleSoumission` gagne `version` et le statut porté par l'action ;
+  aucune migration — le contrat V4 vit dans le `payload` JSON versionné
+  (`D-056` arbitrage 6).
+
+### D-189 — Ce que le protocole 21 jours dit au patient : deux sources citables, et la garde qui manquait sur ce chemin
+
+- Date de l'arbitrage : 2026-09-14. **Date d'écriture au registre : 2026-09-15.**
+- Statut : accepté — arbitrages du responsable rendus en séance le 2026-09-14
+  (questions 3 et 5 des douze qui cadrent la campagne).
+- Domaine : doctrine produit et frontière patient — protocole 21 jours, campagne
+  « 5. Actions — le protocole assisté », LOT-00.
+- Amende : rien. Elle **applique** le patron de [[D-094]] §1 et de [[D-160]] à un
+  troisième champ, et inscrit un chemin de plus à la carte de `vocabulaire.ts`.
+
+**LE CONSTAT, ET IL EST UNE INFRACTION EN COURS.** `purpose` — la raison d'être du
+protocole — est du **texte libre non gardé** : le navigateur l'écrit, la route le
+persiste tel quel (`purpose: submission.purpose ?? ''`), le seul contrôle est « non
+vide », et il **part au patient**, rendu en sous-titre de son écran d'accueil. Or la
+carte des chemins sortants de `web/src/lib/documents/vocabulaire.ts` énonce sa
+propre règle : « un chemin de texte sortant absent d'ici est un chemin **sans
+garde**, et **il n'a pas le droit d'exister**. C'est le gate des campagnes 6.0. » Le
+protocole n'y figurait pas.
+
+**Décision :**
+
+1. **Une liste FERMÉE de sources citables dans `purpose`, à deux entrées.**
+   - **Le libellé d'axe signé** (`PRIORITY_RULES_V1`, couvert par
+     `PRIORITY_RULES_SHA256`). Il ne se désigne même pas :
+     `protocol_drafts.selected_priority_id` est persisté, et le serveur recopie le
+     libellé par `resoudreRegleSignee` — l'adaptateur borné de [[D-115]] —, en
+     fail-closed : registre non signé ⇒ 503, règle non publiée ⇒ **pas de libellé,
+     jamais de texte fabriqué**.
+   - **La tête de l'objectif négocié ACTIF** (`priorite`, `reformulationPraticien`),
+     citée **par identifiant**, recopiée au serveur. Matériau déjà lu par le patient
+     et sous accord — [[D-161]] §10 en fait la condition du passage à la décision.
+   La provenance est **portée par la version** et se **constate** en comparant les
+   textes, patron de `provenanceVerifiee.ts` : `citeExactement` sur un `trim()` seul,
+   jamais de repli d'espaces ni de casse, et une provenance non constatable n'est pas
+   posée plutôt que de faire lever l'enregistrement. C'est ce mécanisme unique — et
+   non un second — qui fait **tomber la marque au premier caractère réécrit**
+   ([[D-167]] §6).
+
+2. **Ce qui ne se cite JAMAIS dans un champ servi au patient**, et ce n'est pas une
+   prudence de forme : le **motif praticien de sélection**
+   (`DecisionPrioritySelection.rationale`, 2 000 caractères écrits face au rang) et
+   le **rationale du moteur**, qui embarque sa mécanique en clair (« Déclencheur
+   atteint — score 8 ≥ 7 »). Ils s'affichent au praticien ; ils ne partent pas.
+   Le schéma disait de `rationale` que « c'est ce qu'une version de protocole
+   citera » : **cette décision tranche dans l'autre sens**, et l'écrit.
+
+3. **Aucune source pour le critère J21.** Il s'écrit avec le patient. Un axe n'est
+   pas un critère, et une priorité n'est pas un engagement à trois semaines.
+
+4. **La garde de registre anxiogène se pose EN MÊME TEMPS**, et le chemin entre à la
+   carte de `vocabulaire.ts` dans la PR qui le crée, comme cette carte l'exige.
+   - **Portée** : tout champ qu'une route patient sert — `purpose`,
+     `followUpCriterion`, et par action `title` et `minimalPlan`.
+   - **Régime** : **refus confirmable** (`409 REGISTRE_ANXIOGENE`, le terme nommé
+     **tel qu'il est écrit**), levable par un **second geste explicite** du
+     praticien. [[D-090]] : le régime suit le geste, et il y a ici un humain devant
+     l'écran au moment où le refus se produit.
+   - **Jeton** : la confirmation ne vaut que pour CE texte (`texteSha256` préfixé
+     par domaine, patron du document patient biologie) — sinon une confirmation
+     donnée une fois couvrirait une réécriture ultérieure.
+   - **ET LA COMMANDE D'ÉCRAN PART DANS LE MÊME LOT.** La garde du booklet était
+     confirmable « depuis toujours » et **aucun écran n'envoyait
+     `confirmerRegistre`** : un bilan validé le 16 août n'est jamais parti, trois
+     tentatives à 18 h 09, 18 h 10 et 18 h 11 sur un dossier réel, et le journal
+     affichait « Échec d'envoi ». **Une garde confirmable sans bouton est une garde
+     bloquante déguisée.**
+
+5. **Clause de fermeture.** Toute extension de cette liste est une décision `D-xxx`
+   nouvelle, pas un champ de plus.
+
+**CE QUE CETTE DÉCISION N'AUTORISE PAS** : faire rédiger `purpose` par un modèle ;
+recopier un texte reçu du navigateur sous l'étiquette d'une source (l'écran envoie
+un identifiant, et rien d'autre — [[D-115]] a été écrite pour exactement ce défaut) ;
+citer une source absente de la liste ; ni lever la garde autrement que par le geste
+explicite du praticien, tracé.
+
+**CE QUE CETTE DÉCISION NE TRANCHE PAS, et il faut le dire plutôt que le supposer.**
+La **forme de la vue patient** reste ouverte. Le cadrage du 2026-09-14 avait retenu
+« brancher le contrat `PatientProtocolView` qui existe déjà » — la vérification faite
+depuis **invalide la prémisse sur laquelle cette option a été présentée** :
+`buildPatientProtocolView` exige une `DecisionCard`, et il n'existe **aucune table
+`decision_cards`** ; la carte n'est reconstruite que sur la route du cockpit
+praticien. La route du portail le disait déjà, c'est la raison écrite de son
+`priorityLabel` « différé » : « issu de la DecisionCard NON persistée ». Trois voies
+restent, et elles ne se valent pas — recomposer la carte sur le chemin patient (le
+contrôle `decisionCardInputHash` dérive dès que le dossier bouge, donc la vue
+lèverait au lieu de servir) ; persister la carte (une migration, [[D-087]]) ; ou ne
+pas brancher le contrat et étendre la projection existante avec le libellé d'axe
+re-dérivé au serveur, qui ne demande aucune carte. **Arbitrage du responsable.**
+Cette décision ne s'en trouve pas suspendue : la vue patient décide **ce qui est
+servi**, celle-ci décide **qui a le droit de l'écrire**.
+
+- Conséquences : fragment
+  `changelog.d/2026-09-15-frontiere-patient-du-protocole.md` ; ligne ajoutée à la
+  carte de `vocabulaire.ts` **dans la PR du chemin** (LOT-04), avec sa garde, son
+  régime et son banc de débranchement. Aucune migration, aucun drapeau neuf.
+
+### D-188 — Quatre rayons de corpus s'ouvrent à la lecture : la recherche clinique cesse d'être bornée à trois étagères
+
+- Date : 2026-09-14
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-14, sur
+  la question que le registre de dormance posait lui-même.
+- Domaine : corpus clinique — allowlist de la recherche corpus
+  (`dashboard/bibliotheque`), campagne « 5. Actions — le protocole assisté », LOT-01.
+- **Numéro : `D-188`, après une collision réelle avec une session parallèle.**
+  Cette entrée a été écrite `D-187` ; au même moment, `e3ae732f` devenait la tête
+  de `main` avec un sujet annonçant `D-187` **sans toucher ce registre**, qui
+  s'arrêtait alors à [[D-186]]. J'ai renuméroté en `D-188` pour laisser le numéro
+  à celui qui l'annonçait ; `scripts/lib/decisions-numerotation.mjs` a refusé la
+  lacune — « la suite est trouée : `D-187` manque » — et j'ai repris `D-187`. Puis
+  `21503136` a écrit LEUR entrée `D-187` au registre, et la collision est devenue
+  matérielle : deux entrées, un numéro. **Celle-ci passe donc à `D-188`, sans
+  lacune cette fois**, et l'entrée `D-187` ci-dessous est la leur.
+  Ce que l'épisode confirme, et c'est la seule leçon à en tirer : **un numéro ne
+  se réserve pas, il s'acquiert à la fusion** — et un sujet de commit qui en
+  annonce un sans l'écrire au registre ne réserve rien du tout.
+
+**Le constat, et il était écrit dans le dépôt.** Quatre rayons — sommeil, stress,
+humeur, nutrition — portaient un verdict `dormante` dans
+`docs/claude/corpus/consommation_decisions.json` avec un **réexamen daté au
+2026-09-01**, dépassé depuis treize jours. Leurs quatre notebooks sont ingérés et
+validés. Le mécanisme est en production depuis le 2026-08-22
+(`WN_RECHERCHE_CORPUS_ENABLED`, [[D-081]]). Ce qui les retenait était une
+allowlist de trois mots, et la raison inscrite à côté de chacun disait qu'élargir
+« est une décision praticien ».
+
+**Ce que l'allowlist coûtait, mesuré.** Registre des sources d'intervention,
+instantané du 2026-08-03, **sources de conduite seules** : les trois rayons
+ouverts exposaient **60 claims validés** (cognition 60, douleur 0, intestin 0) et
+les quatre fermés en retenaient **986** (sommeil 297, humeur 283, nutrition 291,
+stress 115). Le dossier qui a retenu l'axe sommeil le 2026-09-12 avait donc
+297 claims de conduite validés fermés par une liste blanche.
+
+**Décision.** `RAYONS_RECHERCHE_CORPUS` passe de trois à **sept**, par ajout de
+`sommeil`, `stress`, `humeur` et `nutrition`. Le sélecteur d'écran en est le
+miroir, et un banc tient ce miroir — un rayon proposé à l'écran et absent de
+l'allowlist rendrait un 400 `rayon_invalide` à chaque recherche, une option morte
+que rien ne signale.
+
+**Ce que cette décision NE FAIT PAS, et c'est le fond.** Ouvrir un rayon met des
+claims **sous les yeux du praticien**. Elle n'en fait entrer **aucun** dans une
+action de protocole, dans une proposition, ou dans un texte servi au patient. La
+barrière [[D-003]] est inchangée : la seule voie de récupération reste
+`match_wellneuro_rag_claims`, qui n'expose qu'un claim signé praticien (statut
+VALIDE, actif, non patient, adossé à ≥ 1 verbatim source), et le filtrage par
+notebook reste appliqué **au niveau SQL** via `filter_source_ids` — jamais par un
+tag `metadata.rayon`. Aucun claim n'est validé, invalidé, ni recoté par cette
+décision.
+
+**Ce qui reste fermé, et pourquoi.**
+
+- **`micronutrition` reste hors de cette allowlist.** Il a son propre navigateur
+  de catalogue et il est gardé par `WN_C4_ENABLED` ; l'ajouter ici contournerait
+  ce drapeau. C'est le motif d'existence de l'allowlist, et un banc l'épingle
+  nommément.
+- **`rayon:biologie` reste dormant.** Son réexamen est au **2026-10-01**, non
+  échu, et il a lui aussi son navigateur dédié depuis CB-08. Il est désormais le
+  seul verdict du registre de dormance.
+- **L'allowlist reste plus ÉTROITE que `RAYON_VERS_NOTEBOOK`**, et son banc reste
+  **littéral**. Le dériver de la carte validerait silencieusement tout ajout
+  futur — c'est exactement le défaut bloquant qu'une revue avait trouvé le
+  2026-08-03, quand une regex syntaxique seule laissait passer n'importe quel
+  rayon déclaré.
+
+**Une règle de tenue du registre de dormance, posée ici.** Un verdict `dormante`
+ne se retire pas parce qu'il a expiré : il se retire parce que **sa source a reçu
+un appelant**. Les quatre entrées partent donc, et un rayon qui redeviendrait
+inerte redemanderait la sienne. Le réexamen dépassé n'était pas la cause, il était
+le rappel.
+
+**Réserve, consignée plutôt que tue.** Le panneau de recherche vit dans la
+Bibliothèque (`app/dashboard/bibliotheque/page.tsx`), **pas dans le constructeur
+de protocole**. Cette décision met les claims à portée, dans un autre onglet — pas
+sous les yeux pendant la saisie. Rapprocher les deux est un geste d'écran qui n'est
+pas pris ici.
+
+- Conséquences : fragment `changelog.d/2026-09-14-ouvrir-les-rayons-dormants.md` ;
+  `docs/claude/MATRICE_CONSOMMATION.md` régénérée (quatre lignes passent de
+  « aucune — dormante » à la route, sous `WN_RECHERCHE_CORPUS_ENABLED`) ; aucune
+  migration, aucun drapeau neuf.
+
+### D-187 — Le périmètre signé couvre le calcul entier, et non plus les seules grilles
+
+- Date de la décision : 2026-09-14 (arbitrage praticien rendu le soir, après
+  contre-audit). Attestation de relecture le même jour — la SECONDE de la
+  journée, la première portant sur les grilles seules ([[D-182]]).
+- Statut : accepté, livré, signé.
+- Domaine : clinique — périmètre de signature des tables `orientationRulesV1` et
+  `indicationsBiologieV1`.
+
+**LE DÉFAUT ÉTAIT DANS LA RÉPARATION DE [[D-180]].** Le périmètre posé par
+[[D-182]] hachait les GRILLES des instruments cités — la dernière étape du
+calcul, `score → couleur`. Celle d'avant, `réponses → score`, restait dehors.
+
+Un contre-audit externe l'a démontré le jour même, sur la table biologique
+réelle et sa signature inchangée : retirer `C1_8` de
+`Q_GAS_01.scoring.subScores[0].items` fait tomber le total de l'axe C1 de 24 à
+21, la couleur globale de `warning` à `success`, et `BIO-DIG-01` cesse de
+proposer `PANEL_DIGESTIF_1`. **Sha identique, signature valide, aucun banc
+rouge** — exactement le scénario de `BIO-SOM-01` au PSQI qui avait motivé
+[[D-182]], reproduit par une autre porte.
+
+**ET `items` N'ÉTAIT QU'UNE PORTE SUR DOUZE.** L'énumération des dix-sept
+instruments cités a rendu : `type` (17 instruments), `maxTotal` (13), `note`
+(6), `dimensions` (2), `subscalesA`/`subscalesD`, `phases`, `minTotal`,
+`bareme`, `sousScoresBesoins`, `subScores[].max` — et **`threshold: 3` sur
+`Q_INF_05`**, un champ qui s'appelle *seuil*, hors d'un périmètre bâti pour
+couvrir les seuils cliniques. En dessous encore, les valeurs d'options :
+`O_PSS_INVERSE` porte l'inversion d'items du PSS dans ses nombres mêmes, et un
+`conditionnel` décide si un item est posé, donc de `missing`, donc de ce que
+`bandePlancher` sert.
+
+**CE QUI EST DÉCIDÉ N'EST PAS D'AJOUTER LES CHAMPS MANQUANTS.** Le périmètre
+hache le bloc `scoring` ENTIER de chaque instrument cité, plus la cotation de
+ses items. Choisir les champs à couvrir était le piège lui-même : une sélection
+est un allowlist, et le jour où le catalogue gagne un champ, il tombe dehors
+**sans que rien ne le dise**. C'est arrivé deux fois en deux jours. Hacher le
+bloc entier inverse la polarité — ce qui s'ajoute entre tout seul, et c'est
+l'EXCLUSION qui devient un geste écrit, donc relu. Le `Q_ALI_01` en SIIN 57 a
+d'ailleurs rendu `bareme` et `sousScoresBesoins`, que l'énumération manuelle
+n'avait pas vus.
+
+**CE QUI RESTE DEHORS EST UNE DÉCISION** : le texte des questions et les
+libellés d'options, qui n'entrent dans aucun calcul. Un banc énumère la
+sérialisation entière pour le vérifier. Les `note`, en revanche, restent DEDANS
+après vérification une par une — `Q_GAS_02` y écrit que FR_Q003 est multiplié
+par 10, `Q_STR_02` y rattache le score 27 au niveau élevé : ce sont des
+décisions de scoring qui ne vivent nulle part ailleurs.
+
+**FORME CANONIQUE.** Les clés d'objets sont triées avant hachage, pour que
+déplacer deux lignes dans un littéral du catalogue ne casse pas deux signatures.
+Les TABLEAUX gardent leur ordre : `interpretRanges` prend la première bande qui
+contient le score, l'ordre des bandes est du contenu clinique. Conséquence
+assumée et documentée : réordonner `subScores` referme les deux verrous.
+
+**CE QUE LE PRATICIEN A RELU AVANT LA RECOPIE**, et dans cet ordre : les vingt
+rattachements `needIds` — quatorze dérivés de `BESOIN_SOURCES` par les
+questionnaires SUGGÉRÉS (jamais par le déclencheur), six arbitrés faute d'union
+—, puis le delta de périmètre sur les dix-huit blocs de scoring. Les claims
+n'ont pas bougé ; leur relecture du matin couvre celle-ci.
+
+**LE LOT PORTE AUSSI**, sans rapport de fond, et le fragment `changelog.d/` fait
+foi : le registre des instruments passe de 2 à 12 identifiants vérifiables sur
+65 ; et trois corrections issues du contre-audit — deux bancs de mutation qui
+mesuraient la FORME de l'objet muté au lieu de sa valeur, un nombre
+bibliographique que son propre banc ne lisait pas, et une réserve métrologique
+devenue fausse le jour où elle a été corroborée.
+
+**RESTE OUVERT, ET CE N'EST PAS DANS CE LOT** : le QDRS servi substitue un
+domaine « Déambulation » au domaine « Humeur » de Galvin 2015 ; l'AQ servi
+remplace le domaine Orientation de Sabbagh 2010 par un bloc comportemental de
+cinq items, abandonne la pondération (27 points publiés contre 21 servis) et
+porte des bandes que l'article de 2010 ne publie pas. Les deux alimentent
+`BIO-NEU-01`, règle `publiee`. **Arbitrage rendu le 2026-09-14 : aligner les
+deux instruments sur leurs publications** — lot à part entière, non commencé,
+cadré dans le handoff du jour.
+
 ### D-186 — Un axe sans priorité choisie ne vaut pas « modéré » — entrée écrite APRÈS COUP
 
 - Date de la décision : 2026-09-13. **Date d'écriture au registre : 2026-09-14.**

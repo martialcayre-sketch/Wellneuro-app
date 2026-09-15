@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Suspendre — le praticien met une action en attente d'un bilan"
-statut: "à faire"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -109,3 +109,35 @@ sont déjà couverts ; l'E2E pose l'intention par l'API et peut le rester.
 
 Une intention posée à l'écran fait apparaître le panneau d'arbitrage ; la révision
 s'enregistre sans 409 ; le commentaire du constructeur dit ce que la décision a tranché.
+
+## Résultats
+
+Clos le **2026-09-15**, `D-190` — amendement de [[D-056]] **dans un seul sens**.
+
+- **Le geste** : une case « En attente du bilan biologique » par action, et un champ
+  « Ce qu'on attend ». Aucun autre statut ne se pose à la main ; les trois autres
+  statuts non actifs restent la **sortie** d'un arbitrage et s'affichent quand la
+  révision les a posés.
+- **Le contrat suit le geste** : `RelectureProtocoleSoumission` gagne `version`, portée
+  **uniquement** quand au moins une action est suspendue. Sans suspension, la
+  soumission reste en V1 — demander V4 partout ferait basculer des protocoles que rien
+  n'oblige à changer de contrat, et V4 exige alors un statut sur **chaque** action
+  (les non suspendues reçoivent donc `active`, explicitement).
+- **Deux refus locaux** plutôt qu'un `draft_invalid` de la route : une attente sans
+  cible est refusée en nommant l'action ; décocher retire l'attente **avec** le statut,
+  le contrat refusant l'un sans l'autre.
+- **Le défaut de sortie est corrigé** : `reviserApresArbitrages` appelait `saveVersion`
+  sans `version` — la soumission retombait en V1 et la route rendait
+  `409 version_contrat_incompatible` sur une version active V4.
+- **`ArbitrageBiologiquePanel` reçoit son banc de composant** : il était le seul de son
+  répertoire à n'en avoir aucun, et l'oubli s'explique — il était inatteignable.
+
+**Ce qui n'est PAS fait, et le cadrage le demandait** : borner le geste aux lignes de
+la proposition de bilan (`recommandé` / `à répéter` / `conditionnel` à déclencheur
+rempli). La cible reste une **saisie libre**. Deux raisons : la proposition vit dans
+une autre sous-vue de la phase Actions, et la relier au constructeur est une plomberie
+qui dépasse ce lot ; et le contrat lui-même ne vérifie `waitFor.cible` contre aucun
+catalogue — « refusé plutôt que traduit » ne porte que sur le `type` de l'attente.
+La cible reste praticien : `buildPatientProtocolView` sert une phrase d'attente fixe,
+jamais `waitFor.cible` recopiée. **À reprendre avec `BiologyCatalogRef`**, qui se
+réexamine ici et n'est pas livré.

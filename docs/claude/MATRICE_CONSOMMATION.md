@@ -34,14 +34,14 @@ dit « ce qui est lu sur ce chemin », pas « ce qui suffit à le fermer ».
 | Rayon de corpus « biologie » → notebook 08 — Biologie fonctionnelle | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-09-01) |
 | Rayon de corpus « cognition » → notebook 05 — Cognition et mémoire | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « douleur » → notebook 06 — Douleurs chroniques | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
-| Rayon de corpus « humeur » → notebook 04 — Humeur | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
+| Rayon de corpus « humeur » → notebook 04 — Humeur | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « intestin » → notebook 07 — Axe intestin-cerveau | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Rayon de corpus « micronutrition » → notebook 10 — Micronutrition et compléments | `web/src/app/api/praticien/complements/corpus/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_C4_ENABLED | — | non | — |
-| Rayon de corpus « nutrition » → notebook 09 — Nutrition et aliments vedettes | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
-| Rayon de corpus « sommeil » → notebook 02 — Sommeil et chronobiologie | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
-| Rayon de corpus « stress » → notebook 03 — Stress et burnout | **aucune — dormante** | Claims validés servis pour ce rayon. | — | — | non | dormante (2026-08-05) |
+| Rayon de corpus « nutrition » → notebook 09 — Nutrition et aliments vedettes | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
+| Rayon de corpus « sommeil » → notebook 02 — Sommeil et chronobiologie | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
+| Rayon de corpus « stress » → notebook 03 — Stress et burnout | `web/src/app/api/praticien/corpus/rayons/route.ts` (route-api) | Claims validés servis pour ce rayon. | WN_RECHERCHE_CORPUS_ENABLED | — | non | — |
 | Registre sanitaire des sources — vue par notebook | `web/src/app/api/praticien/corpus/claims/route.ts` (route-api)<br>`web/src/app/api/praticien/corpus/claims/sources/route.ts` (route-api)<br>+ 2 indirecte(s) | Quelles sources bibliographiques adossent un rayon de corpus. | — | — | non | — |
 | Résolution des intentions et compositions (lecture des compléments) | `web/src/app/api/praticien/regles/previsualisation/route.ts` (route-api)<br>+ 21 indirecte(s) | Quels ingrédients une fiche contient réellement, et à quelle dose. | WN_C4_ENABLED | — | non | — |
 
-21 source(s) recensée(s), dont **5 dormante(s)**.
+21 source(s) recensée(s), dont **1 dormante(s)**.
 

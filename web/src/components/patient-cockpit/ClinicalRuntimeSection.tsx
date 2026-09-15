@@ -57,6 +57,7 @@ import {
 import type { LimiteProposition } from '@/lib/biology-library/propositionService';
 import type { LignePanelProposition } from '@/lib/biology-library/statuts';
 import type { ProtocolAction, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import { VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 
 // Contenu de la version active servi par le GET versions (LOT-06) : la matière
 // d'une révision après arbitrage biologique — jamais recalculée côté client.
@@ -273,6 +274,30 @@ export function ClinicalRuntimeSection({
   // Vrai UNE FOIS une lecture des versions aboutie : avant, `versions === []`
   // est un état inconnu, jamais un vide affirmable (revue I1).
   const [versionsLues, setVersionsLues] = useState(false);
+  /**
+   * Le refus de registre en attente de confirmation ([[D-189]] §4), et son
+   * jeton. UNE GARDE CONFIRMABLE SANS COMMANDE D'ÉCRAN EST UNE GARDE BLOQUANTE
+   * DÉGUISÉE : celle du booklet l'était « depuis toujours », et un bilan validé
+   * le 16 août n'est jamais parti — trois tentatives, et un journal qui
+   * affichait « Échec d'envoi ». Le bouton part donc avec la garde.
+   */
+  const [confirmationRegistre, setConfirmationRegistre] = useState<
+    { message: string; jeton: string } | null
+  >(null);
+  const soumissionEnAttente = useRef<RelectureProtocoleSoumission | null>(null);
+
+  /**
+   * Rejoue la soumission refusée, en portant le jeton reçu. Le praticien
+   * confirme un TEXTE, pas un principe : c'est un second geste, distinct de
+   * « Enregistrer la version » ([[D-090]]).
+   */
+  const confirmerRegistreEtEnregistrer = async () => {
+    const enAttente = soumissionEnAttente.current;
+    const jeton = confirmationRegistre?.jeton;
+    if (!enAttente || !jeton) return;
+    setConfirmationRegistre(null);
+    await saveVersion({ ...enAttente, confirmerRegistre: jeton });
+  };
   // ENTRER dans la phase Actions ramène à la sous-vue Protocole (revue I4) :
   // les deux affordances qui promettent le protocole — « Ouvrir la phase
   // Actions » du bandeau bloqueur, « Ajuster » de J21 — font
@@ -1232,6 +1257,11 @@ export function ClinicalRuntimeSection({
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
   const saveVersion = async (submission: RelectureProtocoleSoumission) => {
     if (fixture || !runtime || runtime.status !== 'ready') return;
+    // Mémorisée pour la rejouer telle quelle si le praticien confirme : la
+    // rejouer depuis l'état du formulaire laisserait passer une frappe entre
+    // les deux clics, et le jeton — lié au texte — la refuserait sans dire
+    // pourquoi.
+    soumissionEnAttente.current = submission;
     const episode = runtime.snapshot.assessmentEpisode;
     const decisionCard = runtime.decisionCard;
     setSaveState('saving');
@@ -1242,12 +1272,28 @@ export function ClinicalRuntimeSection({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ episode, decisionCard, submission, baseVersionId: activeVersionId }),
       });
-      const payload = (await response.json()) as { ok: boolean; error?: string };
+      const payload = (await response.json()) as {
+        ok: boolean; error?: string; reason?: string; texteSha256?: string;
+      };
+      // DEUX 409 DISTINCTS, ET LES CONFONDRE SERAIT UN PIÈGE. Le refus de
+      // registre ([[D-189]] §4) partage son code avec `version_stale` : sans ce
+      // branchement, un texte signalé aurait dit au praticien « rechargez
+      // l'historique », ce qui n'y change rien et ne nomme pas le terme.
+      if (response.status === 409 && payload.reason === 'REGISTRE_ANXIOGENE') {
+        setSaveState('idle');
+        setSaveError(null);
+        setConfirmationRegistre({
+          message: payload.error ?? 'Ce texte emploie un terme à reformuler.',
+          jeton: payload.texteSha256 ?? '',
+        });
+        return;
+      }
       if (response.status === 409) {
         setSaveState('stale');
         await loadVersions(decisionCard.decisionCardId);
         return;
       }
+      setConfirmationRegistre(null);
       if (!response.ok || !payload.ok) {
         setSaveState('error');
         setSaveError(payload.error ?? 'Échec de l’enregistrement.');
@@ -1352,6 +1398,15 @@ export function ClinicalRuntimeSection({
       followUpCriterion: contenuActif.followUpCriterion,
       actions: appliquerArbitrages(contenuActif.actions, lies),
       therapeuticLoad: contenuActif.therapeuticLoad,
+      // LA RÉVISION DEMANDE LE MÊME CONTRAT QUE CE QU'ELLE RÉVISE. Sans ce
+      // champ, la soumission retombait en V1 ([[D-130]] : la version est
+      // explicite, jamais déduite du payload) et la route répondait
+      // 409 `version_contrat_incompatible` — une version active V4 ne se révise
+      // pas en V1. La boucle arbitrage → révision n'était donc pas seulement
+      // sans amorce : son geste de SORTIE était incompatible avec le contrat
+      // qu'il révise. Elle est atteinte par construction : `lies` n'est non
+      // vide que si des intentions existent, et une intention n'existe qu'en V4.
+      version: VERSION_PROTOCOL_DRAFT_V4,
     });
     await loadArbitrages();
   };
@@ -1765,12 +1820,42 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions') || (!fixture && sousVueActions !== 'protocole')}>
+        {/* RESTITUER AVANT DE FAIRE SAISIR. Le constructeur ne lisait de
+            `decisionCard` que deux booléens — « une priorité est-elle
+            retenue ? », « la décision est-elle bloquée ? » — et le praticien
+            composait trois plans SANS avoir sous les yeux l'axe qu'il venait de
+            retenir, ses limitations ni son statut. La carte est PURE (une prop,
+            aucun état, aucun fetch) et `decisionCard` lui est déjà passé :
+            ce second montage ne duplique aucun état.
+            Le titre diffère de celui de la phase Décision — deux nœuds de même
+            nom accessible casseraient le mode strict des E2E. */}
+        {/* `phase === 'actions'` ET NON `affiche('actions')` : en mode « tout »,
+            le cockpit défile d'un bloc et la carte de la phase Décision est déjà
+            à l'écran quelques sections plus haut — la répéter n'ajoute rien et
+            dédouble ses textes. Ce rappel n'existe que parce que les phases sont
+            SÉPARÉES : il rend au praticien, devant le formulaire, ce qu'il ne
+            peut plus voir.
+            Montée conditionnelle, à la différence du constructeur qu'elle
+            surplombe : le conteneur reste MASQUÉ plutôt que démonté parce que
+            `ProtocolMiniBuilder` porte un brouillon local qu'un démontage
+            perdrait. La carte, elle, est pure — la démonter ne coûte rien. */}
+        {phase === 'actions' && (
+          <div className="mb-4">
+            <DecisionSummaryCard
+              decisionCard={decisionCard}
+              sourceRefs={sourceRefsEpisode}
+              titre="Ce que la décision a retenu"
+            />
+          </div>
+        )}
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
           onSaveVersion={fixture ? undefined : saveVersion}
           saveState={saveState}
           saveError={saveError}
+          confirmationRegistre={confirmationRegistre}
+          onConfirmerRegistre={confirmerRegistreEtEnregistrer}
           foodCompassSelection={foodCompassSelection}
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />

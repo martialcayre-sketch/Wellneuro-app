@@ -558,6 +558,102 @@ describe('POST /api/praticien/protocoles/versions', () => {
   // `refusResolutionSansArbitrage`) restait inatteignable depuis l'application.
   // Les bancs du domaine passaient, parce qu'ils fabriquaient à la main
   // l'entrée que la route ne savait pas produire.
+  // ─────────────────────────────────────────────────────────────────────────
+  // GARDE DE REGISTRE ANXIOGÈNE ([[D-189]] §4)
+  // ─────────────────────────────────────────────────────────────────────────
+  // CE CHEMIN SORTAIT SANS GARDE. `purpose` est le sous-titre de l'écran
+  // d'accueil du patient ; `title` et `minimalPlan` composent son action du
+  // jour. Le seul contrôle à l'écriture était « non vide ».
+  //
+  // BANC DE DÉBRANCHEMENT : retirer l'appel à `termeAnxiogene` dans la route
+  // fait ROUGIR le premier cas ci-dessous — la carte de `vocabulaire.ts` exige
+  // un banc qui tombe quand la garde tombe.
+  describe('registre anxiogène (`D-189` §4)', () => {
+    it('refuse un `purpose` anxiogène, nomme le terme ET le champ, et rend un jeton', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...submission, purpose: 'Situation urgente à reprendre en main.' },
+      }));
+      expect(res.status).toBe(409);
+      const corps = await res.json();
+      expect(corps.reason).toBe('REGISTRE_ANXIOGENE');
+      // Le terme est rendu TEL QU'IL EST ÉCRIT, jamais la racine.
+      expect(corps.error).toContain('urgente');
+      expect(corps.error).toContain('raison d’être');
+      expect(corps.texteSha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('refuse aussi sur le plan minimal d’une action, et nomme LAQUELLE', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          actions: [{ ...action, minimalPlan: 'En cas de danger, appeler le cabinet.' }],
+        },
+      }));
+      expect(res.status).toBe(409);
+      const corps = await res.json();
+      expect(corps.reason).toBe('REGISTRE_ANXIOGENE');
+      expect(corps.error).toContain('plan minimal de l’action 1');
+    });
+
+    it('laisse passer le jeton RENDU pour ce texte — la confirmation est un second geste', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const soumission = { ...submission, purpose: 'Situation urgente à reprendre en main.' };
+      const refus = await POST(postRequest({ episode, decisionCard, submission: soumission }));
+      const { texteSha256 } = await refus.json();
+
+      const accepte = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...soumission, confirmerRegistre: texteSha256 },
+      }));
+      expect(accepte.status).toBe(200);
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('le jeton est LIÉ AU TEXTE : il ne lève rien sur un protocole modifié depuis', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const refus = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: { ...submission, purpose: 'Situation urgente à reprendre en main.' },
+      }));
+      const { texteSha256 } = await refus.json();
+
+      // Le praticien a retouché le texte entre les deux clics : une
+      // confirmation donnée une fois ne doit pas couvrir une réécriture.
+      const res = await POST(postRequest({
+        episode,
+        decisionCard,
+        submission: {
+          ...submission,
+          purpose: 'Autre situation urgente, reformulée autrement.',
+          confirmerRegistre: texteSha256,
+        },
+      }));
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBe('REGISTRE_ANXIOGENE');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('n’invente aucun refus sur un texte neutre', async () => {
+      getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+      prisma.protocolDraft.findMany.mockResolvedValue([]);
+      const res = await POST(postRequest({ episode, decisionCard, submission }));
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe('contrat de payload V4 (`D-130`)', () => {
     const actionV4: ProtocolAction = {
       ...action,

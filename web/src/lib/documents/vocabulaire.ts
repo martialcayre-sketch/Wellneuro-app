@@ -33,6 +33,21 @@
 // | Synthèse de compréhension (service portail) | `termeAnxiogene` sur le texte servi (`api/portail/comprehension/route.ts`) | journalisant (`PORTAIL_COMPREHENSION_REGISTRE_ANXIOGENE`) | `api/portail/comprehension/route.test.ts` |
 // | Dossier à deux voix (service portail) | `termeAnxiogene` sur les TROIS textes praticien servis — reformulation, priorité, synthèse (`api/portail/dossier/route.ts`) | journalisant (`PORTAIL_DOSSIER_REGISTRE_ANXIOGENE`) | `api/portail/dossier/route.test.ts` |
 // | Document patient biologie (génération, décision F/D-122) | `termeAnxiogene` sur le texte généré avant consignation (`api/praticien/biologie/proposition/document-patient/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`) | `api/praticien/biologie/proposition/document-patient/route.test.ts` |
+// | Protocole 21 jours (enregistrement d'une version) | `termeAnxiogene` sur les quatre champs servis au patient — `purpose`, `followUpCriterion`, et `title` + `minimalPlan` de CHAQUE action (`api/praticien/protocoles/versions/route.ts`) | refus CONFIRMABLE (`REGISTRE_ANXIOGENE`, jeton lié au texte) | `api/praticien/protocoles/versions/route.test.ts` |
+//
+// LE PROTOCOLE SORTAIT SANS GARDE, ET CETTE CARTE LE DISAIT SANS LE SAVOIR
+// ([[D-189]]). `purpose` est le SOUS-TITRE de l'écran d'accueil du patient,
+// `title` et `minimalPlan` composent son action du jour — et le seul contrôle
+// à l'écriture était « non vide ». Le chemin manquait ici depuis l'origine :
+// pas un régime mal choisi, une ABSENCE. C'est exactement ce que la règle
+// trois lignes plus haut qualifie de chemin « qui n'a pas le droit d'exister ».
+//
+// LES QUATRE CHAMPS, ET TOUTES LES ACTIONS. La route du portail n'en sert
+// qu'une aujourd'hui ; garder ce qui sort AUJOURD'HUI ferait de la garde une
+// dette au jour où il en servira trois. `idealPlan`, `rescuePlan` et les
+// limitations internes ne sont pas gardés ici : ils ne franchissent aucune
+// route patient — s'ils le faisaient un jour, ce serait un chemin neuf, et il
+// s'inscrirait ici.
 //
 // LE DOSSIER À DEUX VOIX EST UN CHEMIN NEUF, PAS UN DOUBLON (Alliance LOT-06).
 // Il sert au patient un texte praticien que RIEN d'autre ne lui sert — la

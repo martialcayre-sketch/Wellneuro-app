@@ -17,12 +17,20 @@ function card(): DecisionCard {
   };
 }
 
+// Un brouillon COMPLET pose désormais aussi le type de l'action et la charge :
+// l'un et l'autre n'ont plus de valeur par défaut, et `collectSubmission` les
+// refuse. L'aide les pose donc, comme un praticien le ferait.
 function fillFirstAction(container: HTMLElement) {
   const ui = within(container);
+  fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'food' } });
   fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Action fixture' } });
   fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal fixture' } });
   fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal fixture' } });
   fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours fixture' } });
+}
+
+function choisirCharge(container: HTMLElement, niveau = 'light') {
+  fireEvent.change(within(container).getByLabelText('Charge déclarée par le praticien'), { target: { value: niveau } });
 }
 
 describe('ProtocolMiniBuilder', () => {
@@ -73,6 +81,7 @@ describe('ProtocolMiniBuilder', () => {
     fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
     fillFirstAction(container);
+    choisirCharge(container);
     fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
     expect(onReviewed).toHaveBeenCalledTimes(1);
     const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
@@ -90,7 +99,7 @@ describe('ProtocolMiniBuilder', () => {
     const ui = within(container);
     fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
     expect(onReviewed).not.toHaveBeenCalled();
-    expect(ui.getByRole('status').textContent).toContain('Brouillon incomplet');
+    expect(ui.getByRole('alert').textContent).toContain('Brouillon incomplet');
   });
 
   it('avertit avant de réinitialiser un brouillon local', () => {
@@ -153,6 +162,7 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
     fillFirstAction(container);
+    choisirCharge(container);
     fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
     expect(onSaveVersion).toHaveBeenCalledTimes(1);
     const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
@@ -169,10 +179,224 @@ describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
     fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
     fillFirstAction(container);
+    choisirCharge(container);
     fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
     rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="saved" />);
     expect(ui.getByText(/Version enregistrée sur le serveur/)).not.toBeNull();
     fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Objectif révisé' } });
     expect(ui.getByText(/Modifications locales non enregistrées/)).not.toBeNull();
+  });
+  // ——— Ce que le silence faisait passer (LOT-02) ———
+  // Aucun banc ne couvrait le TYPE d'une action de bout en bout : `fillFirstAction`
+  // ne touchait pas le sélecteur, et le seul test qui le changeait vérifiait
+  // l'avertissement « complément », pas la persistance. Une orientation médicale
+  // enregistrée sans toucher au sélecteur partait donc « Alimentation ».
+
+  it('refuse une action dont le type n’a pas été choisi, et dit LAQUELLE', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    // Tous les plans, mais PAS le type.
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Orienter vers le médecin traitant' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours' } });
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).not.toHaveBeenCalled();
+    expect(ui.getByRole('alert').textContent).toContain('L’action 1 n’a pas de type');
+    expect(ui.getByLabelText('Type de l’action 1').getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('le sélecteur de type s’ouvre SANS valeur, et propose de la choisir', () => {
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    expect((ui.getByLabelText('Type de l’action 1') as HTMLSelectElement).value).toBe('');
+    expect(ui.getByText('Choisir un type…')).not.toBeNull();
+  });
+
+  it('refuse une charge non déclarée, et ne l’affirme pas « légère » entre-temps', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    expect(container.textContent).toContain('Charge : non déclarée');
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).not.toHaveBeenCalled();
+    expect(ui.getByRole('alert').textContent).toContain('La charge n’est pas déclarée');
+  });
+
+  it('le refus ne s’efface PAS à la première frappe', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(ui.getByRole('alert')).not.toBeNull();
+    // Une frappe quelconque : le motif du refus doit rester lisible pendant la
+    // correction — il vivait dans `message`, que `markDirty` vidait.
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'R' } });
+    expect(ui.getByRole('alert').textContent).toContain('Brouillon incomplet');
+  });
+
+  it('un brouillon complet lève le refus et transmet le type choisi', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(ui.getByRole('alert')).not.toBeNull();
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'medical_referral' } });
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 1'), { target: { value: 'Orienter' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 1'), { target: { value: 'Idéal' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 1'), { target: { value: 'Minimal' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 1'), { target: { value: 'Secours' } });
+    choisirCharge(container, 'moderate');
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].type).toBe('medical_referral');
+    expect(soumission.therapeuticLoad.level).toBe('moderate');
+    expect(ui.queryByRole('alert')).toBeNull();
+  });
+  // ——— Suspendre une action (LOT-05) ———
+  // La boucle arbitrage biologique → révision était livrée, testée à trois
+  // étages, et INDÉCLENCHABLE : `ArbitrageBiologiquePanel` n'apparaît que sur une
+  // action `conditionnelle_biologie`, et aucune surface n'en posait.
+
+  it('suspend une action en attente d’un bilan, et demande V4 avec elle', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT : sans lui la route retombe en V1,
+    // où `interventionStatus` est INTERDIT.
+    expect(soumission.version).toBe('c1-protocol-draft-v4');
+    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
+    expect(soumission.actions[0].waitFor).toEqual({ type: 'biologie', cible: 'Ferritine' });
+  });
+
+  it('refuse une attente qui ne dit pas ce qu’elle attend', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    fireEvent.click(ui.getByRole('checkbox', { name: /En attente du bilan biologique/ }));
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).not.toHaveBeenCalled();
+    expect(ui.getByRole('alert').textContent).toContain('attend un bilan sans dire lequel');
+  });
+
+  it('décocher retire l’attente AVEC le statut — le contrat refuse l’un sans l’autre', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    choisirCharge(container);
+    const bascule = ui.getByRole('checkbox', { name: /En attente du bilan biologique/ });
+    fireEvent.click(bascule);
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'Ferritine' } });
+    fireEvent.click(bascule);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].interventionStatus).toBeUndefined();
+    expect(soumission.actions[0].waitFor).toBeUndefined();
+    // Aucune suspension : la soumission RESTE en V1. Demander V4 partout ferait
+    // basculer des protocoles que rien n'oblige à changer de contrat.
+    expect(soumission.version).toBeUndefined();
+  });
+
+  it('en V4, une action NON suspendue porte « active » — le contrat l’exige sur chacune', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.change(ui.getByLabelText('Type de l’action 2'), { target: { value: 'observation' } });
+    fireEvent.change(ui.getByLabelText('Intitulé de l’action 2'), { target: { value: 'Observer' } });
+    fireEvent.change(ui.getByLabelText('Plan idéal de l’action 2'), { target: { value: 'Idéal' } });
+    fireEvent.change(ui.getByLabelText('Plan minimal de l’action 2'), { target: { value: 'Minimal' } });
+    fireEvent.change(ui.getByLabelText('Plan de secours de l’action 2'), { target: { value: 'Secours' } });
+    choisirCharge(container);
+    fireEvent.click(ui.getAllByRole('checkbox', { name: /En attente du bilan biologique/ })[0]);
+    fireEvent.change(ui.getByLabelText('Ce qu’on attend pour l’action 1'), { target: { value: 'TSH' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.actions[0].interventionStatus).toBe('conditionnelle_biologie');
+    expect(soumission.actions[1].interventionStatus).toBe('active');
+    expect(soumission.actions[1].waitFor).toBeUndefined();
+  });
+  // ——— La garde de registre a sa commande d'écran (LOT-04) ———
+  // Celle du booklet était confirmable « depuis toujours » et AUCUN écran
+  // n'envoyait la confirmation : un bilan validé le 16 août n'est jamais parti.
+  // Une garde confirmable sans bouton est une garde bloquante déguisée.
+
+  it('rend le refus de registre et son bouton de confirmation', () => {
+    const onConfirmerRegistre = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        onSaveVersion={vi.fn()}
+        saveState="idle"
+        confirmationRegistre={{ message: 'La raison d’être emploie « urgente ».', jeton: 'abc' }}
+        onConfirmerRegistre={onConfirmerRegistre}
+      />,
+    );
+    const ui = within(container);
+    expect(ui.getByRole('alert').textContent).toContain('emploie « urgente »');
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer ce texte tel quel' }));
+    expect(onConfirmerRegistre).toHaveBeenCalledTimes(1);
+  });
+
+  it('sans refus en attente, aucun bouton de confirmation n’est proposé', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    expect(within(container).queryByRole('button', { name: 'Enregistrer ce texte tel quel' })).toBeNull();
   });
 });

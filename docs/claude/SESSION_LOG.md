@@ -5770,6 +5770,30 @@ son diff. Le présent bloc et le fragment
 `2026-09-14-2000-cloture-campagne-dossier-clinique.md` portent donc la clôture de
 `D-183` en plus de la leur.
 
+## 2026-09-14 — Contre-audit, et le périmètre signé descendu jusqu'au calcul
+
+Le périmètre posé la veille hachait les grilles — `score → couleur` — et
+laissait `réponses → score` dehors. Un contre-audit externe l'a démontré sur la
+table biologique réelle : retirer un item de l'axe C1 du TFD fait tomber la
+couleur globale de `warning` à `success` et éteint `BIO-DIG-01`, sha inchangé.
+Le défaut de `D-180` reproduit dans sa réparation.
+
+**Corrigé en changeant de règle, pas en ajoutant des champs.** Le périmètre hache
+désormais le bloc `scoring` entier et la cotation des items. Écartée : la
+sélection de champs, qui se périme en silence quand le catalogue en gagne un —
+c'est arrivé deux fois en deux jours, et douze clés étaient dehors, dont
+`threshold` sur `Q_INF_05`.
+
+**Contre-audit : six constats, six confirmés, zéro réfuté** — deux bancs de
+mutation qui mesuraient la forme, un compte non gardé, une justification devenue
+fausse le jour même. La contre-épreuve « recopié à l'identique → sha inchangé »
+manquait partout.
+
+Deux tables re-signées après relecture praticien (seconde attestation du jour).
+546 fichiers, 9147 bancs verts.
+
+**Ouvert** : aligner QDRS et AQ sur leurs publications (arbitrage rendu, lot non
+commencé) ; trente-deux instruments à vérifier sur PubMed.
 ## 2026-09-14 — `D-179` clôturé en retard, et la campagne « protocole assisté » cadrée
 
 **Décisions** : la lecture de production du 13/09 (7 épisodes T0, 1 sélection,
@@ -5868,3 +5892,136 @@ c'est ce qui permet de relire une fois pour toutes.
 source du moteur et refuse qu'un de ces textes y réapparaisse en dur » — décrit
 le garde DÉFAIT, et est fausse depuis #1105. Elle est laissée en place, ce
 journal étant à ajout seul ; c'est cette entrée-ci qui vaut.
+## 2026-09-14 — LOT-01 : quatre rayons de corpus s'ouvrent à la lecture
+
+**Décisions** : `D-188` ouvre `RAYONS_RECHERCHE_CORPUS` de trois à sept (+ sommeil,
+stress, humeur, nutrition). Leurs verdicts `dormante` portaient un réexamen daté au
+2026-09-01, dépassé, et disaient eux-mêmes qu'élargir « est une décision
+praticien ». Mesuré au registre, sources de conduite seules : l'allowlist exposait
+60 claims validés et en retenait 986.
+
+**Écarté** : `micronutrition`, gardé par son propre drapeau — l'ajouter le
+contournerait ; `rayon:biologie`, réexamen au 2026-10-01 non échu. Et dériver le
+banc d'allowlist de la carte rayon → notebook : il valide silencieusement tout
+ajout futur, c'est le défaut bloquant trouvé en revue le 2026-08-03.
+
+**Livré en plus du cadrage** : un banc de miroir entre le sélecteur d'écran et
+l'allowlist — deux listes dans deux fichiers, et un rayon proposé mais refusé rend
+un 400 à chaque recherche.
+
+**Prochaine action** : LOT-00, la décision de frontière patient, qui gate les
+LOT-03 et LOT-04.
+
+**Questions ouvertes** : le panneau vit dans la Bibliothèque, pas dans le
+constructeur — les claims sont à portée, pas sous les yeux pendant la saisie.
+
+## 2026-09-15 — LOT-00 : la frontière patient du protocole, et une prémisse qui tombe
+
+**Décisions** : `D-189` ferme la liste des sources citables dans `purpose` à deux
+entrées — libellé d'axe signé (re-dérivé au serveur, sans désignation d'écran) et
+tête de l'objectif négocié actif. Motif praticien et rationale moteur : affichés,
+jamais cités. Aucune source pour le critère J21. La garde de registre anxiogène se
+pose avec, en refus confirmable à jeton, **et sa commande d'écran dans le même lot** —
+celle du booklet était confirmable sans qu'aucun écran ne l'envoie.
+
+**Écarté / corrigé** : le point 1 du cadrage — « brancher le contrat
+`PatientProtocolView` » — ne tient pas. Il exige une `DecisionCard` qu'aucune table
+ne persiste ; la question posée le 14 reposait sur ma prémisse fausse. Trois voies
+sont écrites au cadrage, **le LOT-03 attend l'arbitrage**. Le LOT-04 n'attend rien.
+
+**Numérotation** : `D-187` pris trois fois en une soirée. Le garde refuse toute
+lacune, donc on ne cède pas un numéro : on prend le suivant.
+
+**Prochaine action** : LOT-02, restituer — aucune décision requise.
+
+**Questions ouvertes** : la forme de la vue patient (trois voies, cadrage du 15/09).
+
+## 2026-09-15 — LOT-02 : restituer la décision, et refuser le silence
+
+**Décisions** (aucune `D-xxx` — étage minimal) : la carte de décision se monte une
+seconde fois à côté du constructeur, sous un titre distinct ; le type d'action et la
+charge n'ont plus de valeur par défaut et le refus nomme l'action fautive ; le refus
+prend son propre état, `role="alert"` et `aria-invalid`, et ne s'efface plus à la
+première frappe. Un E2E joue enfin le parcours nominal à l'écran.
+
+**Écarté** : monter la carte sur `affiche('actions')` — en mode « tout » elle est
+déjà à l'écran et ses textes se dédoublent ; désactiver l'option d'absence du
+sélecteur — c'est le refus à l'enregistrement qui garde.
+
+**Pièges** : `npx playwright test` seul ne provisionne aucune base ; Next.js pose son
+propre `role="alert"`, qui viole le mode strict d'un `getByRole` de page entière.
+
+**Prochaine action** : LOT-04 (citer), qui dépend de `D-189` et de ce lot. Le LOT-03
+attend l'arbitrage sur la forme de la vue patient.
+
+**Questions ouvertes** : le marquage « votre patient lira ceci », qui appartient au
+LOT-03 et mentirait aujourd'hui.
+
+## 2026-09-15 — LOT-05 : une action peut attendre un bilan
+
+**Décisions** : `D-190` amende `D-056` dans un seul sens — le praticien pose
+`conditionnelle_biologie` et rien d'autre. Le geste ne fait que retenir, jamais
+libérer, quand la crainte de `D-056` visait une intention naissant *active* sans
+règle. Le dépôt se contredisait (commentaire du constructeur contre en-tête du spec
+E2E) et aucun arbitrage consigné ne tranchait.
+
+**Écarté** : brancher `D-056`, avec son motif — le moteur refuse tout aujourd'hui
+(`clinical_rules` à 0 ligne, lien règle↔claim manquant) ; le brancher laisserait la
+boucle aussi indéclenchable en donnant l'illusion contraire.
+
+**Défaut corrigé au passage** : `reviserApresArbitrages` appelait `saveVersion` sans
+`version` — la soumission retombait en V1 et la route rendait `409
+version_contrat_incompatible`. La boucle n'était pas seulement sans amorce : son
+geste de sortie était incompatible avec le contrat qu'il révise.
+
+**Rétréci, et dit** : borner le geste aux lignes de la proposition de bilan n'est pas
+fait — la proposition vit dans une autre sous-vue, et le contrat ne vérifie la cible
+contre aucun catalogue. À reprendre avec `BiologyCatalogRef`.
+
+**Prochaine action** : LOT-04 (citer), le plus gros lot restant.
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — LOT-04 (1/2) : la garde de registre du protocole
+
+**Décisions** : aucune neuve — application de `D-189` §4. Le lot se coupe en deux PR,
+et l'ordre est doctrinal : `D-160` §4 interdit la citation **sans** garde, pas
+l'inverse. La garde seule est strictement plus sûre, et elle referme une infraction
+en cours : `purpose`, le critère J21, l'intitulé et le plan minimal de chaque action
+sortaient sans qu'aucune garde ne les relise.
+
+**Trouvé en chemin** : le refus de registre partage son code 409 avec
+`version_stale` — sans branchement sur `reason`, un texte signalé aurait dit
+« rechargez l'historique ». Et la soumission doit être mémorisée avant l'envoi pour
+être rejouée telle quelle : la rejouer depuis le formulaire laisserait passer une
+frappe, que le jeton refuserait sans dire pourquoi.
+
+**Vérifié plutôt qu'affirmé** : le banc de débranchement. Garde neutralisée → trois
+bancs rouges, puis restauration depuis une copie.
+
+**Prochaine action** : PR 2 du LOT-04 — la citation (points 1 à 3 de `D-189`).
+
+**Questions ouvertes** : la forme de la vue patient (LOT-03), toujours en attente.
+
+## 2026-09-15 — La citation bute, et pour la même raison que la vue patient
+
+**Constat** : `D-189` §1 dit « la provenance est portée par la version ». Écrit par
+analogie avec `objectifs_negocies`, dont la provenance vit dans neuf colonnes ajoutées
+par migration. `protocol_drafts` n'a aucune colonne équivalente, et `ProtocolDraft`
+aucun champ d'accueil. Le précédent du dépôt : chaque référence de provenance ajoutée
+au payload a reçu son propre contrat (V2, V3, V4).
+
+**Trois voies consignées au lot** : contrat V5 (patron du dépôt, décision étendant
+`D-130`) ; constat à la lecture sans persistance (plus faible, précédent assumé sur
+`syntheses_comprehension`) ; ou différer la citation, l'étage 0 étant livré.
+
+**Ce qui n'est pas une voie** : persister sans contrat ni colonne — sans marque, on ne
+distingue pas « cité » de « réécrit », sauf à refuser la réécriture.
+
+**Deux prémisses fausses en une nuit, même défaut de méthode** : raisonner de
+l'existence d'un patron ailleurs à sa disponibilité ici.
+
+**Prochaine action** : arbitrage du responsable, sur le LOT-03 et sur le LOT-04 PR 2.
+
+**Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
+citation ; la première ligne du barème de charge (LOT-06).

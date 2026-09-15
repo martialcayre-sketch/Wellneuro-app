@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 // Import de VALEUR depuis `types.ts`, qui n'importe lui-même que des types :
 // la borne suit le moteur sans traîner `node:crypto` dans le bundle client.
-import { MAX_ACTIONS_PROTOCOLE_21J } from '@/lib/clinical-engine/types';
+import { MAX_ACTIONS_PROTOCOLE_21J, VERSION_PROTOCOL_DRAFT_V4 } from '@/lib/clinical-engine/types';
 import type {
   DecisionCard,
   ProtocolAction,
@@ -23,6 +23,19 @@ export type RelectureProtocoleSoumission = {
   followUpCriterion: string;
   actions: ProtocolAction[];
   therapeuticLoad: TherapeuticLoad;
+  /**
+   * Contrat de payload DEMANDÉ, jamais déduit ([[D-130]]) : la route refuse de
+   * le choisir à la place de qui soumet, et retombe en V1 quand il est absent.
+   * Il n'est porté que lorsqu'au moins une action est suspendue — un statut
+   * d'intervention n'existe qu'en V4.
+   */
+  version?: typeof VERSION_PROTOCOL_DRAFT_V4;
+  /**
+   * Le jeton rendu par un refus `REGISTRE_ANXIOGENE`, renvoyé tel quel pour
+   * lever ce refus ([[D-189]] §4). Posé par l'appelant, jamais par le
+   * formulaire : le praticien confirme un TEXTE, pas un principe.
+   */
+  confirmerRegistre?: string;
 };
 
 // État de sauvegalde serveur (C2A LOT-03). « Enregistré » n'est jamais affiché
@@ -57,9 +70,24 @@ const LOAD_LABELS: Record<TherapeuticLoad['level'], string> = {
   light: 'Léger', moderate: 'Modéré', loaded: 'Chargé', excessive: 'Excessif',
 };
 
-function emptyAction(actionId: string): ProtocolAction {
+/**
+ * UN BROUILLON ADMET L'ABSENCE, LE CONTRAT NON. `ProtocolAction.type` et
+ * `TherapeuticLoad['level']` sont obligatoires dans le contrat — c'est
+ * précisément pourquoi le brouillon en posait un EN SILENCE (`'food'`,
+ * `'light'`). Une action enregistrée sans que le sélecteur ait été touché
+ * partait « Alimentation », était hachée, persistée, et servie telle quelle au
+ * patient : y compris sur une orientation médicale ou une exploration
+ * biologique. L'absence se représente donc ici par `''`, l'écran la rend
+ * visible, et `collectSubmission` la refuse — `DC-24` : aucun statut favorable
+ * par défaut. Patron de [[D-186]], qui a tranché le même défaut sur la bande de
+ * priorité d'un axe.
+ */
+type BrouillonAction = Omit<ProtocolAction, 'type'> & { type: ProtocolActionType | '' };
+type NiveauChargeBrouillon = TherapeuticLoad['level'] | '';
+
+function emptyAction(actionId: string): BrouillonAction {
   return {
-    actionId, type: 'food', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [],
+    actionId, type: '', title: '', idealPlan: '', minimalPlan: '', rescuePlan: '', limitations: [],
   };
 }
 
@@ -69,6 +97,8 @@ export function ProtocolMiniBuilder({
   onSaveVersion,
   saveState = 'idle',
   saveError = null,
+  confirmationRegistre = null,
+  onConfirmerRegistre,
   foodCompassSelection = null,
   onClearFoodCompassSelection,
 }: {
@@ -83,16 +113,33 @@ export function ProtocolMiniBuilder({
   onSaveVersion?: (soumission: RelectureProtocoleSoumission) => void;
   saveState?: ProtocolSaveState;
   saveError?: string | null;
+  /**
+   * Refus de registre en attente, avec son message et son jeton. Le bouton de
+   * confirmation part avec la garde : celle du booklet était confirmable
+   * « depuis toujours » et aucun écran ne l'envoyait — un bilan validé le
+   * 16 août n'est jamais parti.
+   */
+  confirmationRegistre?: { message: string; jeton: string } | null;
+  onConfirmerRegistre?: () => void;
   foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
   onClearFoodCompassSelection?: () => void;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
-  const [actions, setActions] = useState<ProtocolAction[]>([]);
-  const [loadLevel, setLoadLevel] = useState<TherapeuticLoad['level']>('light');
+  const [actions, setActions] = useState<BrouillonAction[]>([]);
+  const [loadLevel, setLoadLevel] = useState<NiveauChargeBrouillon>('');
   const [loadJustification, setLoadJustification] = useState('');
   const [reviewed, setReviewed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /**
+   * LE REFUS NE S'EFFACE PAS À LA PREMIÈRE FRAPPE. Il vivait dans `message`,
+   * que `markDirty` vide — le praticien voyait donc le motif de son refus
+   * disparaître au premier caractère tapé, avant toute correction, et sans
+   * qu'aucun champ ne soit marqué. Deux états distincts : `message` porte
+   * l'information et se vide à la frappe, `erreur` porte le refus et ne se lève
+   * qu'à la soumission suivante.
+   */
+  const [erreur, setErreur] = useState<string | null>(null);
   const [nextActionId, setNextActionId] = useState(1);
   const [editedSinceSave, setEditedSinceSave] = useState(false);
 
@@ -141,7 +188,7 @@ export function ProtocolMiniBuilder({
     onClearFoodCompassSelection?.();
   };
 
-  const updateAction = (actionId: string, patch: Partial<ProtocolAction>) => {
+  const updateAction = (actionId: string, patch: Partial<BrouillonAction>) => {
     markDirty();
     setActions(previous => previous.map(action => action.actionId === actionId ? { ...action, ...patch } : action));
   };
@@ -154,30 +201,73 @@ export function ProtocolMiniBuilder({
   const reset = () => {
     const hasContent = purpose || followUpCriterion || actions.length > 0 || loadJustification;
     if (hasContent && !window.confirm('Effacer ce brouillon local non enregistré ?')) return;
-    setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel('light'); setLoadJustification('');
-    setReviewed(false); setMessage(null); setNextActionId(1); setEditedSinceSave(false);
+    setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel(''); setLoadJustification('');
+    setReviewed(false); setMessage(null); setErreur(null); setNextActionId(1); setEditedSinceSave(false);
   };
 
   // Validations locales communes à « Marquer comme relu » et « Enregistrer la
   // version ». Retourne la soumission ou null (en posant un message d'erreur).
+  const refuser = (texte: string): null => {
+    setReviewed(false);
+    setMessage(null);
+    setErreur(texte);
+    return null;
+  };
+
   const collectSubmission = (): RelectureProtocoleSoumission | null => {
     const missingActionField = actions.some(action => (
       !action.title.trim() || !action.idealPlan.trim() || !action.minimalPlan.trim() || !action.rescuePlan.trim()
     ));
     if (!purpose.trim() || !followUpCriterion.trim() || actions.length === 0 || missingActionField) {
-      setReviewed(false);
-      setMessage('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
-      return null;
+      return refuser('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
+    }
+    // Le refus NOMME ce qui manque, et combien : « une action attend son type »
+    // se corrige, « brouillon incomplet » se cherche. Patron de [[D-186]].
+    const sansType = actions.filter(action => action.type === '');
+    if (sansType.length > 0) {
+      const rangs = sansType.map(action => actions.indexOf(action) + 1).join(', ');
+      return refuser(sansType.length === 1
+        ? `L’action ${rangs} n’a pas de type : choisissez-en un. Sans lui, elle serait servie au patient sous un type qu’aucun praticien n’a posé.`
+        : `Les actions ${rangs} n’ont pas de type : choisissez-en un pour chacune. Sans lui, elles seraient servies au patient sous un type qu’aucun praticien n’a posé.`);
+    }
+    if (loadLevel === '') {
+      return refuser('La charge n’est pas déclarée : choisissez-en une. Elle est une saisie du praticien, jamais un calcul — donc jamais un défaut.');
     }
     if (loadLevel === 'excessive' && !loadJustification.trim()) {
-      setReviewed(false);
-      setMessage('Une charge excessive exige une justification du praticien.');
-      return null;
+      return refuser('Une charge excessive exige une justification du praticien.');
     }
+    // Le contrat V4 refuse `conditionnelle_biologie` sans `waitFor`, et une
+    // attente sans cible. Le refuser ICI plutôt que de laisser la route rendre
+    // un `draft_invalid` : le praticien voit quel champ manque, sur quelle action.
+    const attenteSansCible = actions.filter(action =>
+      action.interventionStatus === 'conditionnelle_biologie' && !(action.waitFor?.cible ?? '').trim());
+    if (attenteSansCible.length > 0) {
+      const rangs = attenteSansCible.map(action => actions.indexOf(action) + 1).join(', ');
+      return refuser(attenteSansCible.length === 1
+        ? `L’action ${rangs} attend un bilan sans dire lequel : nommez ce qu’on attend.`
+        : `Les actions ${rangs} attendent un bilan sans dire lequel : nommez ce qu’on attend pour chacune.`);
+    }
+    setErreur(null);
+    const suspendues = actions.some(action => action.interventionStatus === 'conditionnelle_biologie');
     return {
       purpose,
       followUpCriterion,
-      actions,
+      // LE CONTRAT EST DEMANDÉ, JAMAIS DÉDUIT ([[D-130]]) : un statut
+      // d'intervention n'existe qu'en V4, et la route refuse de choisir le
+      // contrat à la place de qui soumet. Une soumission SANS suspension reste
+      // en V1 — demander V4 partout ferait basculer des protocoles que rien
+      // n'oblige à changer de contrat, et V4 exige alors un statut sur CHAQUE
+      // action.
+      ...(suspendues ? { version: VERSION_PROTOCOL_DRAFT_V4 } : {}),
+      // Le filtre de type ci-dessus a établi que plus aucune action ne porte
+      // `''` : la conversion est constatée, pas supposée. En V4, toute action
+      // non suspendue porte `active` — le contrat l'exige sur chacune, et ne
+      // tolère aucun défaut implicite (`DC-24`).
+      actions: actions.map(action => ({
+        ...action,
+        type: action.type as ProtocolActionType,
+        ...(suspendues && action.interventionStatus === undefined ? { interventionStatus: 'active' as const } : {}),
+      })),
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
     };
   };
@@ -243,7 +333,18 @@ export function ProtocolMiniBuilder({
                 <legend className="px-1 text-sm font-medium">Action {index + 1}</legend>
                 <div className="grid gap-2">
                   <label className="text-xs">Type
-                    <select aria-label={`Type de l’action ${index + 1}`} value={action.type} onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm">
+                    <select
+                      aria-label={`Type de l’action ${index + 1}`}
+                      aria-invalid={erreur !== null && action.type === ''}
+                      value={action.type}
+                      onChange={event => updateAction(action.actionId, { type: event.target.value as ProtocolActionType | '' })}
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                    >
+                      {/* Option d'absence NON désactivée : elle doit se lire,
+                          et rester atteignable si le praticien veut revenir en
+                          arrière. C'est le refus à l'enregistrement qui garde,
+                          pas la désactivation d'une option. */}
+                      <option value="">Choisir un type…</option>
                       {Object.entries(ACTION_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </label>
@@ -253,18 +354,64 @@ export function ProtocolMiniBuilder({
                     </p>
                   )}
                   {/*
-                    Statut d'intervention en LECTURE SEULE : il est posé par la
-                    règle de décision, jamais saisi à la main (`D-056`). Le
-                    praticien le voit ; il ne le choisit pas, sans quoi une
-                    intention pourrait naître « active » sans règle derrière.
+                    LE PRATICIEN SUSPEND, IL N'ACTIVE PAS. Le seul statut qu'il
+                    pose à la main est `conditionnelle_biologie` : le geste
+                    RETIENT une action en attendant un bilan, il n'en libère
+                    aucune. La crainte de `D-056` — « une intention pourrait
+                    naître *active* sans règle derrière » — visait exactement le
+                    mouvement inverse, et son arbitrage 5 dit déjà que
+                    `conditionnelle_biologie` n'est pas une recommandation.
+                    Les trois autres statuts non-actifs (`differee`,
+                    `contre_indiquee`, `non_indiquee_actuellement`) restent la
+                    SORTIE d'un arbitrage biologique, jamais une saisie : ils
+                    s'affichent ici quand la révision les a posés.
                   */}
-                  {action.interventionStatus !== undefined && action.interventionStatus !== 'active' && (
+                  {action.interventionStatus !== undefined
+                    && action.interventionStatus !== 'active'
+                    && action.interventionStatus !== 'conditionnelle_biologie' && (
                     <p className="text-xs font-medium text-muted-foreground">
                       Statut : {INTERVENTION_STATUS_LABELS[action.interventionStatus]}
-                      {action.waitFor !== undefined && ` — en attente de : ${action.waitFor.cible}`}
                       . Cette intervention n’est pas un conseil ferme en l’état.
                     </p>
                   )}
+                  <div className="rounded-lg border border-border bg-muted/40 p-2">
+                    <label className="flex min-h-11 items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={action.interventionStatus === 'conditionnelle_biologie'}
+                        onChange={event => updateAction(action.actionId, event.target.checked
+                          ? { interventionStatus: 'conditionnelle_biologie', waitFor: { type: 'biologie', cible: '' } }
+                          // Le contrat refuse une attente sans statut ET un
+                          // statut sans attente : les deux se lèvent ensemble.
+                          : { interventionStatus: undefined, waitFor: undefined })}
+                      />
+                      <span>
+                        <span className="block font-medium text-foreground">
+                          {INTERVENTION_STATUS_LABELS.conditionnelle_biologie}
+                        </span>
+                        <span className="block text-muted-foreground">
+                          L’action attend un résultat avant d’être un conseil ferme. Le patient la
+                          lit comme suspendue, et vous l’arbitrez au retour du bilan.
+                        </span>
+                      </span>
+                    </label>
+                    {action.interventionStatus === 'conditionnelle_biologie' && (
+                      <label className="mt-2 block text-xs">
+                        Ce qu’on attend
+                        <input
+                          aria-label={`Ce qu’on attend pour l’action ${index + 1}`}
+                          aria-invalid={erreur !== null && !(action.waitFor?.cible ?? '').trim()}
+                          value={action.waitFor?.cible ?? ''}
+                          onChange={event => updateAction(action.actionId, {
+                            waitFor: { type: 'biologie', cible: event.target.value },
+                          })}
+                          placeholder="Ex. ferritine, TSH, 25-OH vitamine D"
+                          className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm aria-[invalid=true]:border-status-danger"
+                        />
+                      </label>
+                    )}
+                  </div>
                   {(['title', 'idealPlan', 'minimalPlan', 'rescuePlan'] as const).map(field => {
                     const labels = { title: 'Intitulé', idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
                     return <label key={field} className="text-xs">{labels[field]}<input aria-label={`${labels[field]} de l’action ${index + 1}`} value={action[field]} onChange={event => updateAction(action.actionId, { [field]: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" /></label>;
@@ -277,14 +424,48 @@ export function ProtocolMiniBuilder({
         </div>
 
         <label className="text-sm font-medium">Charge déclarée par le praticien
-          <select aria-label="Charge déclarée par le praticien" value={loadLevel} onChange={event => { markDirty(); setLoadLevel(event.target.value as TherapeuticLoad['level']); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal">
+          <select
+            aria-label="Charge déclarée par le praticien"
+            aria-invalid={erreur !== null && loadLevel === ''}
+            value={loadLevel}
+            onChange={event => { markDirty(); setLoadLevel(event.target.value as NiveauChargeBrouillon); }}
+            className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal aria-[invalid=true]:border-status-danger"
+          >
+            <option value="">Choisir la charge…</option>
             {Object.entries(LOAD_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
         {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" /></label>}
-        <p className="text-xs text-muted-foreground">Charge : {LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.</p>
+        <p className="text-xs text-muted-foreground">
+          {loadLevel === ''
+            ? 'Charge : non déclarée — saisie manuelle, aucun calcul automatique.'
+            : `Charge : ${LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.`}
+        </p>
       </div>
 
+      {/* LA QUESTION SE POSE COMME UNE QUESTION, PAS COMME UNE ERREUR
+          ([[D-090]]) : le registre anxiogène signale un terme, il n'affirme pas
+          une faute — la garde ne lit pas la négation, et « il n'y a ni urgence
+          ni danger » est signalé comme le reste. D'où le registre
+          d'avertissement, et un second geste EXPLICITE, distinct
+          d'« Enregistrer la version ». */}
+      {confirmationRegistre && (
+        <div role="alert" className="mt-4 rounded-lg border border-accent bg-status-warning/10 p-3">
+          <p className="text-base text-status-warning">{confirmationRegistre.message}</p>
+          {onConfirmerRegistre && (
+            <button
+              type="button"
+              onClick={onConfirmerRegistre}
+              className="mt-2 min-h-11 rounded-lg border border-accent px-3 py-2 text-sm font-medium text-solar-ink hover:bg-accent/10"
+            >
+              Enregistrer ce texte tel quel
+            </button>
+          )}
+        </div>
+      )}
+      {/* `role="alert"` et couleur de danger, comme `SelectionPrioritePanel` :
+          un refus ne se lit pas dans le même registre qu'un accusé de relecture. */}
+      {erreur && <p role="alert" className="mt-4 text-base text-status-danger">{erreur}</p>}
       {message && <p role="status" className="mt-4 text-base text-muted-foreground">{message}</p>}
       {onSaveVersion && (
         <p role="status" className="mt-3 text-base">

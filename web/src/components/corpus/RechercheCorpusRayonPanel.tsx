@@ -11,14 +11,22 @@ import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 // rayon compléments (catalogue de 140 148 fiches produit), il n'y a ici ni
 // facette, ni pagination, ni fiche produit : juste la barrière D-003
 // (match_wellneuro_rag_claims) exposée pour les rayons sans navigateur de
-// catalogue dédié (cognition, douleur, intestin — d'autres pourront
-// s'ajouter ici sans nouvel écran, à condition d'étendre
-// RAYONS_RECHERCHE_CORPUS côté service).
+// catalogue dédié. Cette liste doit rester le MIROIR de
+// RAYONS_RECHERCHE_CORPUS côté service : un rayon proposé ici et absent de
+// l'allowlist rendrait un 400 « rayon_invalide » à chaque recherche.
+//
+// L'ordre n'est pas décoratif : le premier élément est le rayon sélectionné au
+// montage. Les quatre rayons ouverts le 2026-09-14 sont donc ajoutés APRÈS les
+// trois premiers, qui gardent leur rang.
 
 const RAYONS_DISPONIBLES: ReadonlyArray<{ valeur: string; libelle: string }> = [
   { valeur: 'cognition', libelle: 'Cognition et mémoire' },
   { valeur: 'douleur', libelle: 'Douleurs chroniques' },
   { valeur: 'intestin', libelle: 'Axe intestin-cerveau' },
+  { valeur: 'sommeil', libelle: 'Sommeil et chronobiologie' },
+  { valeur: 'stress', libelle: 'Stress et burnout' },
+  { valeur: 'humeur', libelle: 'Humeur' },
+  { valeur: 'nutrition', libelle: 'Nutrition et aliments vedettes' },
 ];
 
 const MESSAGE_REQUETE_ATTENDUE = 'Saisissez une recherche pour afficher les claims validés de ce rayon.';

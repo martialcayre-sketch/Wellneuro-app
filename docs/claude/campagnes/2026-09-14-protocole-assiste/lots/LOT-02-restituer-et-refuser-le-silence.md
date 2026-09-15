@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Restituer, et refuser le silence"
-statut: "à faire"
+statut: "terminé"
 dépend_de: "—"
 ---
 
@@ -95,3 +95,49 @@ régénérées en CI.
 
 Une fois en ligne : le dossier qui a retenu sa priorité le 2026-09-12 pose-t-il son
 protocole ? La réponse ne conditionne pas les lots suivants — elle alimente le bilan.
+
+## Résultats
+
+Clos le **2026-09-15**. Aucune décision — l'« étage minimal » que [[D-160]] décrit
+comme « ce qui rend la chose utile au premier jour ».
+
+**Ce qui est livré :**
+
+- **La décision est restituée** à côté du formulaire : `DecisionSummaryCard` se monte
+  une seconde fois dans `#protocol-version-builder`, sous le titre « Ce que la
+  décision a retenu ». Le composant gagne une prop `titre` et un `useId()` — son
+  titre et son `id` étaient codés en dur **à deux endroits**, et deux nœuds de même
+  nom accessible cassent le mode strict des E2E.
+- **Plus de type d'action posé en silence.** `emptyAction` ne pose plus `'food'` ; le
+  sélecteur s'ouvre sur « Choisir un type… » et `collectSubmission` refuse en
+  **nommant l'action** fautive. Même traitement pour la charge (« Choisir la
+  charge… », et la ligne de rappel dit « non déclarée » au lieu d'affirmer
+  « Léger »).
+- **Le refus se voit et survit à la frappe.** Il vivait dans `message`, que
+  `markDirty` vide : le motif disparaissait au premier caractère tapé, avant toute
+  correction. Deux états distincts désormais — `message` pour l'information,
+  `erreur` pour le refus —, `role="alert"`, couleur de danger, et `aria-invalid` sur
+  les champs fautifs.
+- **L'E2E du parcours nominal** (`e2e/protocole-constructeur.spec.ts`) : confirmation
+  T0 → sélection de priorité **à l'écran** → refus d'un type manquant → type posé →
+  « Version enregistrée sur le serveur ». Il n'existait aucun spec contenant
+  « Ajouter une action » ni « Enregistrer la version ».
+
+**Trois décisions de conception prises en chemin, et leur motif :**
+
+1. La carte se monte sur `phase === 'actions'`, **et non `affiche('actions')`** : en
+   mode « tout », le cockpit défile d'un bloc et la carte de la phase Décision est
+   déjà à l'écran — la répéter n'ajoute rien et dédouble ses textes.
+2. Elle est montée **conditionnellement**, là où le conteneur du constructeur est
+   seulement *masqué* : le constructeur porte un brouillon local qu'un démontage
+   perdrait ; la carte est pure.
+3. L'option d'absence du sélecteur n'est **pas désactivée** — elle doit se lire et
+   rester atteignable. C'est le refus à l'enregistrement qui garde, pas la
+   désactivation d'une option. Patron de [[D-186]].
+
+**Un piège d'E2E rencontré** : Next.js pose son propre `role="alert"`
+(`__next-route-announcer__`). Un `getByRole('alert')` de page entière viole le mode
+strict ; le sélecteur se borne au conteneur du constructeur.
+
+**Ce qui n'est pas fait** : le marquage « votre patient lira ceci » appartient au
+LOT-03 — posé ici, il mentirait, le portail ne servant encore qu'une action sur trois.

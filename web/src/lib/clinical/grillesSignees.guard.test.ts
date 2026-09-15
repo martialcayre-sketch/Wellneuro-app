@@ -19,17 +19,21 @@ import { INDICATIONS_BIOLOGIE_V1 } from '@/lib/biology-library/indicationsBiolog
 // été éditée, sans re-signature, et sans qu'un seul des bancs du jour ne
 // rougisse.
 //
-// La cause n'était pas un oubli mais une FRONTIÈRE MAL PLACÉE : les deux sha ne
-// hachaient que leur tableau de règles, alors que les zones citent des COULEURS
-// et des LIBELLÉS — jamais des nombres. Le point d'allumage n'a jamais été dans
-// la règle ; il est dans la grille de l'instrument.
+// PUIS LE MÊME DÉFAUT A ÉTÉ TROUVÉ DANS LA RÉPARATION. La première frontière ne
+// couvrait que les GRILLES : la dernière étape du calcul, `score → couleur`. Le
+// contre-audit du 2026-09-14 a montré que celle d'avant, `réponses → score`,
+// restait dehors — retirer `C1_8` de `Q_GAS_01.scoring.subScores[0].items` fait
+// tomber la couleur globale de `warning` à `success` et éteint `BIO-DIG-01`,
+// sha inchangé. Le périmètre couvre depuis le `scoring` ENTIER et la cotation
+// des items.
 //
-// CE BANC GARDE LES TROIS FAÇONS DONT LA RÉPARATION POURRAIT MENTIR : un
-// périmètre qui aurait l'air d'avoir grandi sans peser, une dérivation qui
-// oublierait un instrument en silence, et une lecture des déclencheurs qui
-// divergerait de celle des bancs anti-dérive.
+// CE BANC GARDE LES FAÇONS DONT LA RÉPARATION POURRAIT MENTIR : un périmètre
+// qui aurait l'air d'avoir grandi sans peser, une dérivation qui oublierait un
+// instrument en silence, une lecture des déclencheurs qui divergerait des bancs
+// anti-dérive — et une empreinte qui changerait à tout coup, ce qui ne
+// garderait rien non plus.
 
-// L'inventaire des instruments dont les GRILLES commandent une prescription de
+// L'inventaire des instruments dont le CALCUL commande une prescription de
 // panel. Épinglé, parce qu'une liste comptée ne dit pas laquelle a bougé.
 const INSTRUMENTS_LUS_PAR_LES_INDICATIONS = [
   'Q_CAR_01',
@@ -50,14 +54,18 @@ const INSTRUMENTS_LUS_PAR_LES_INDICATIONS = [
   'Q_STR_05',
 ];
 
-describe('grilles signées — le périmètre couvre ce qui décide', () => {
+/** Copie profonde — muter le périmètre dérivé, jamais le catalogue vivant. */
+const copie = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+const empreinte = (v: unknown) => sha256(JSON.stringify(v));
+
+describe('périmètre signé — il couvre ce qui décide', () => {
   // (1) LA LECTURE DES DÉCLENCHEURS NE DIVERGE PAS.
   //
   // `grillesSignees` marche sur les deux tables, dont une seule expose
   // `feuillesDuDeclencheur`. Sa lecture est donc structurelle et indépendante
   // des types — ce qui la rend libre de dériver. Sans ce banc, une disjonction
   // d'une forme nouvelle serait lue par un côté et pas par l'autre, et des
-  // grilles sortiraient du périmètre sans que rien ne le dise.
+  // instruments sortiraient du périmètre sans que rien ne le dise.
   it('lit les mêmes feuilles que `feuillesDuDeclencheur` sur la table d’orientation', () => {
     const parLeModule = instrumentsCitesParUneZone(ORIENTATION_RULES_V1);
     const parLaTable = new Set<string>();
@@ -77,30 +85,20 @@ describe('grilles signées — le périmètre couvre ce qui décide', () => {
     expect(parLeModule.length).toBeGreaterThan(0);
   });
 
-  // (2) AUCUNE GRILLE N'EST SILENCIEUSEMENT ABSENTE.
-  //
-  // C'est LE défaut de classe : `GRILLES_HORS_CATALOGUE` ne porte qu'une entrée,
-  // et si un futur instrument échappait lui aussi au `scoring.interpretation` de
-  // son questionnaire, son absence se hacherait en `GRILLE_INTROUVABLE` — donc
-  // se verrait ici — au lieu de disparaître de l'objet.
+  // (2) AUCUN INSTRUMENT N'EST SILENCIEUSEMENT ABSENT.
   it.each([
     ['orientation', ORIENTATION_RULES_V1],
     ['indications biologiques', INDICATIONS_BIOLOGIE_V1],
-  ])('chaque instrument cité par une zone de la table %s a une grille', (_nom, regles) => {
+  ])('chaque instrument cité par une zone de la table %s entre au périmètre', (_nom, regles) => {
     const perimetre = grillesCitees(regles as never);
     const introuvables = Object.entries(perimetre)
-      .filter(([, grille]) => grille === GRILLE_INTROUVABLE)
+      .filter(([, bloc]) => bloc === GRILLE_INTROUVABLE)
       .map(([id]) => id);
     expect(introuvables).toEqual([]);
     expect(Object.keys(perimetre).length).toBeGreaterThan(0);
   });
 
   // (2 bis) L'INVENTAIRE EST ÉPINGLÉ, ET C'EST CE QUI REND LA CROISSANCE VISIBLE.
-  //
-  // Le compte seul (« > 0 ») laisserait une règle ajoutée demain faire entrer un
-  // instrument dans le périmètre en silence — donc casser les deux signatures
-  // sans que le diff dise lequel. Nommer les instruments oblige à écrire le
-  // changement au moment où il se fait.
   it('la table d’orientation lit exactement quatre instruments', () => {
     expect(instrumentsCitesParUneZone(ORIENTATION_RULES_V1)).toEqual([
       'Q_ALI_01',
@@ -121,20 +119,20 @@ describe('grilles signées — le périmètre couvre ce qui décide', () => {
   it('la table des indications lit exactement seize instruments, nommés', () => {
     const instruments = instrumentsCitesParUneZone(INDICATIONS_BIOLOGIE_V1 as never);
     expect(instruments).toEqual(INSTRUMENTS_LUS_PAR_LES_INDICATIONS);
-    // `Q_SOM_01` y est, et c'est le fait qui a coûté : la même grille commande
-    // une orientation ET une prescription de panel.
+    // `Q_SOM_01` y est, et c'est le fait qui a coûté : le même instrument
+    // commande une orientation ET une prescription de panel.
     expect(instruments).toContain('Q_SOM_01');
   });
 
   // (2 ter) UN INSTRUMENT INCONNU REND BIEN `GRILLE_INTROUVABLE`.
   //
-  // LE BANC (2) NE POUVAIT PAS L'ATTRAPER, et la revue du 2026-09-13 l'a dit :
-  // il n'exerce que des tables réelles, où tout se résout. Une régression qui
-  // remplacerait `?? GRILLE_INTROUVABLE` par une omission le laisserait VERT —
-  // la liste des introuvables resterait vide, mais parce que la clé aurait
-  // disparu de l'objet, pas parce que la grille existe. C'est exactement le mode
-  // de défaillance que ce module répare, retourné contre son propre garde.
-  it('un instrument sans grille est HACHÉ comme introuvable, jamais omis', () => {
+  // LE BANC (2) NE PEUT PAS L'ATTRAPER : il n'exerce que des tables réelles, où
+  // tout se résout. Une régression qui remplacerait `?? GRILLE_INTROUVABLE` par
+  // une omission le laisserait VERT — la liste des introuvables resterait vide,
+  // mais parce que la clé aurait disparu de l'objet, pas parce que l'instrument
+  // existe. C'est le mode de défaillance que ce module répare, retourné contre
+  // son propre garde.
+  it('un instrument sans scoring est HACHÉ comme introuvable, jamais omis', () => {
     const regleFictive = [{
       declencheurs: [{
         type: 'zone',
@@ -145,89 +143,140 @@ describe('grilles signées — le périmètre couvre ce qui décide', () => {
     const perimetre = grillesCitees(regleFictive as never);
     expect(Object.keys(perimetre)).toEqual(['Q_INSTRUMENT_QUI_N_EXISTE_PAS']);
     expect(perimetre.Q_INSTRUMENT_QUI_N_EXISTE_PAS).toBe(GRILLE_INTROUVABLE);
-    // Et l'absence PÈSE : deux périmètres qui ne diffèrent que par une grille
-    // trouvée ou non doivent avoir deux empreintes.
-    expect(sha256(JSON.stringify(perimetre))).not.toBe(sha256(JSON.stringify({})));
+    // Et l'absence PÈSE : deux périmètres qui ne diffèrent que par un instrument
+    // trouvé ou non doivent avoir deux empreintes.
+    expect(empreinte(perimetre)).not.toBe(empreinte({}));
   });
 
-  // (2 quater) LES TROIS FORMES SONT RÉELLEMENT PRÉSENTES POUR `Q_GAS_01`.
+  // ── CE QUE LE PÉRIMÈTRE CONTIENT, NOMMÉ ────────────────────────────────────
   //
-  // C'est le cas qui a fait rougir le premier jet — il ne lisait que
-  // `scoring.interpretation` —, et aucun banc ne vérifiait que la réparation
-  // tient. Un retour en arrière sur `globalInterpretation` ou `subScores`
-  // laisserait (2) vert : l'instrument aurait toujours UNE grille.
-  it('Q_GAS_01 apporte sa grille globale ET ses cinq sous-scores', () => {
-    const g = grillesCitees(ORIENTATION_RULES_V1).Q_GAS_01 as Record<string, unknown>;
-    expect(Object.keys(g)).toContain('globalInterpretation');
-    expect(Object.keys(g)).toContain('sousScores');
-    expect(Object.keys(g.sousScores as object)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5']);
+  // L'inventaire épinglé est la seule forme qui aurait attrapé les deux défauts
+  // de ce chantier : la première version ne lisait que `scoring.interpretation`
+  // et `Q_GAS_01` en ressortait vide ; la seconde recopiait six champs et en
+  // laissait douze dehors. Un champ ajouté demain au catalogue fait rougir ce
+  // banc — c'est le but : il entre au périmètre, donc il appelle une
+  // re-signature, donc quelqu'un doit l'écrire.
+  it('Q_GAS_01 apporte son scoring ENTIER et la cotation de ses items', () => {
+    const g = grillesCitees(ORIENTATION_RULES_V1).Q_GAS_01 as Record<string, any>;
+    expect(Object.keys(g)).toEqual(['options', 'scoring']);
+    expect(Object.keys(g.scoring)).toEqual([
+      'certification',
+      'globalInterpretation',
+      'note',
+      'severiteCroissante',
+      'subScores',
+      'type',
+    ]);
+    expect(g.scoring.subScores.map((s: any) => s.id)).toEqual(['C1', 'C2', 'C3', 'C4', 'C5']);
+    // LES ITEMS DE CHAQUE AXE, qui manquaient au périmètre du 2026-09-13.
+    expect(g.scoring.subScores[0].items).toEqual([
+      'C1_1', 'C1_2', 'C1_3', 'C1_4', 'C1_5', 'C1_6', 'C1_7', 'C1_8',
+    ]);
+    // ET LA COTATION : quatre valeurs de 0 à 3 par item du TFD.
+    expect(g.options.C1_1).toEqual({ type: 'likert', valeurs: [0, 1, 2, 3] });
   });
 
-  // (2 quinquies) LES DEUX DRAPEAUX DU PLANCHER PÈSENT DANS L'EMPREINTE.
+  // LE TEXTE DES QUESTIONS RESTE DEHORS, et c'est une décision, pas un oubli :
+  // corriger une coquille ne doit pas éteindre deux tables signées. Ce banc
+  // énumère plutôt qu'il n'échantillonne — il relit toute la sérialisation.
+  it('aucun libellé de question n’entre dans l’empreinte', () => {
+    const serialise = JSON.stringify(grillesCitees(ORIENTATION_RULES_V1));
+    expect(serialise).not.toContain("J'ai la bouche sèche");
+    expect(serialise).not.toContain('Jamais, cela ne me concerne pas');
+    // Contre-épreuve : ce qui DOIT y être y est, sans quoi le banc ci-dessus
+    // passerait sur une sérialisation vide.
+    expect(serialise).toContain('C1_8');
+  });
+
+  // ── LES MUTATIONS, ET LEUR CONTRE-ÉPREUVE ──────────────────────────────────
   //
-  // `estEligibleAuPlancher` vaut `severiteCroissante === true &&
-  // sansTotalGlobal !== true`, et c'est cette éligibilité qui autorise une bande
-  // à être SERVIE sur recueil incomplet — donc une couleur à être lue par une
-  // règle signée. Sans ce banc, basculer un drapeau changerait le point
-  // d'allumage sans changer le sha : le défaut réparé, par une autre porte.
-  it('basculer `severiteCroissante` change l’empreinte', () => {
+  // Un banc de mutation n'établit son propos que si le NON-mutant passe : sans
+  // lui, « le sha a changé » reste compatible avec « le sha change à tout coup ».
+  // Deux bancs du 2026-09-13 ont commis exactement cette faute, en remplaçant un
+  // objet par un tableau — ils mesuraient la forme. La copie profonde ci-dessous
+  // est donc la première chose à vérifier.
+  it('recopier le périmètre à l’identique ne change PAS l’empreinte', () => {
     const perimetre = grillesCitees(ORIENTATION_RULES_V1);
-    const avant = sha256(JSON.stringify(perimetre));
-    const psqi = perimetre.Q_SOM_01 as Record<string, unknown>;
-    const mute = { ...perimetre, Q_SOM_01: { ...psqi, severiteCroissante: false } };
-    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+    expect(empreinte(copie(perimetre))).toBe(empreinte(perimetre));
   });
 
-  it('poser `sansTotalGlobal` change l’empreinte', () => {
+  it.each([
+    ['retirer un item d’un axe — le cas du contre-audit', (p: any) => {
+      p.Q_GAS_01.scoring.subScores[0].items.pop();
+    }],
+    ['déplacer une borne de sous-score', (p: any) => {
+      p.Q_GAS_01.scoring.subScores[0].ranges[0].max = 8;
+    }],
+    ['renommer une bande globale', (p: any) => {
+      p.Q_GAS_01.scoring.globalInterpretation[0].label += ' ';
+    }],
+    ['recoter une option', (p: any) => {
+      p.Q_GAS_01.options.C1_1.valeurs[3] = 5;
+    }],
+    ['déplacer une borne du PSQI, hors catalogue', (p: any) => {
+      p.Q_SOM_01.grilleHorsCatalogue[0].max = 4;
+    }],
+    ['basculer `severiteCroissante`', (p: any) => {
+      p.Q_SOM_01.scoring.severiteCroissante = false;
+    }],
+    ['RETIRER `severiteCroissante` — une absence ne s’omet pas', (p: any) => {
+      delete p.Q_SOM_01.scoring.severiteCroissante;
+    }],
+    ['poser `sansTotalGlobal`', (p: any) => {
+      p.Q_SOM_01.scoring.sansTotalGlobal = true;
+    }],
+    ['changer le moteur de scoring', (p: any) => {
+      p.Q_SOM_01.scoring.type = 'sum';
+    }],
+  ])('%s change l’empreinte', (_nom, muter) => {
     const perimetre = grillesCitees(ORIENTATION_RULES_V1);
-    const avant = sha256(JSON.stringify(perimetre));
-    const psqi = perimetre.Q_SOM_01 as Record<string, unknown>;
-    const mute = { ...perimetre, Q_SOM_01: { ...psqi, sansTotalGlobal: true } };
-    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+    const mute = copie(perimetre);
+    muter(mute);
+    // La mutation s'est bien appliquée — sans quoi l'égalité des deux
+    // empreintes se lirait comme une régression du périmètre.
+    expect(JSON.stringify(mute)).not.toBe(JSON.stringify(perimetre));
+    expect(empreinte(mute)).not.toBe(empreinte(perimetre));
   });
 
-  // (3) LES DEUX TABLES LISENT BIEN LA MÊME GRILLE DU PSQI.
+  // LE SEUIL QUI PORTE SON NOM. `Q_INF_05` est cité par la table des
+  // indications, et son `scoring.threshold` valait 3 hors de tout périmètre
+  // signé — un champ nommé *seuil*, dehors d'une signature bâtie pour couvrir
+  // les seuils cliniques.
+  it('le `threshold` de Q_INF_05 pèse dans l’empreinte de la table biologique', () => {
+    const perimetre = grillesCitees(INDICATIONS_BIOLOGIE_V1 as never);
+    expect((perimetre.Q_INF_05 as any).scoring.threshold).toBe(3);
+    const mute = copie(perimetre);
+    (mute.Q_INF_05 as any).scoring.threshold = 4;
+    expect(empreinte(mute)).not.toBe(empreinte(perimetre));
+  });
+
+  // (3) LES DEUX TABLES LISENT BIEN LE MÊME PSQI.
   //
-  // C'est le fait qui a rendu le défaut coûteux : une seule grille commandait
+  // C'est le fait qui a rendu le défaut coûteux : un seul instrument commandait
   // deux tables signées. Il doit rester VÉRIFIÉ plutôt que rappelé en prose.
-  it('la grille du PSQI est dans les deux périmètres, et c’est la même', () => {
+  it('le PSQI est dans les deux périmètres, et c’est le même', () => {
     const orientation = grillesCitees(ORIENTATION_RULES_V1) as Record<string, any>;
     const biologie = grillesCitees(INDICATIONS_BIOLOGIE_V1 as never) as Record<string, any>;
-    expect(orientation.Q_SOM_01.interpretation).toBe(BANDES_PSQI);
-    expect(biologie.Q_SOM_01.interpretation).toBe(BANDES_PSQI);
+    expect(orientation.Q_SOM_01.grilleHorsCatalogue).toEqual(BANDES_PSQI);
+    expect(orientation.Q_SOM_01).toEqual(biologie.Q_SOM_01);
   });
 
-  // ET IL PORTE SES DRAPEAUX, comme n'importe quel instrument du catalogue.
-  // Sans ce banc, le PSQI ressortirait nu de `GRILLES_HORS_CATALOGUE` — ce qui a
-  // été le cas à la première rédaction — et les deux bancs de mutation plus haut
-  // passeraient en ne mesurant que la forme de l'objet.
   it('le PSQI porte `severiteCroissante`, comme tout instrument du catalogue', () => {
-    const psqi = grillesCitees(ORIENTATION_RULES_V1).Q_SOM_01 as Record<string, unknown>;
-    expect(psqi.severiteCroissante).toBe(true);
-    expect(psqi.sansTotalGlobal).toBe(false);
+    const psqi = grillesCitees(ORIENTATION_RULES_V1).Q_SOM_01 as Record<string, any>;
+    expect(psqi.scoring.severiteCroissante).toBe(true);
+    expect(psqi.scoring.sansTotalGlobal).toBeUndefined();
   });
 
   // (4) LE PÉRIMÈTRE EST STABLE SOUS RÉORDONNANCEMENT.
   //
   // `JSON.stringify` respecte l'ordre d'INSERTION des clés. Sans le tri de
-  // `instrumentsCitesParUneZone`, déplacer une règle dans le tableau changerait
-  // le sha — une signature cassée par un geste qui ne touche à aucun contenu
-  // clinique, et donc une incitation à « rattraper le sha » plutôt qu'à signer.
-  it('déplacer une règle ne change pas l’empreinte des grilles', () => {
-    const avant = sha256(JSON.stringify(grillesCitees(ORIENTATION_RULES_V1)));
+  // `instrumentsCitesParUneZone` et la forme canonique, déplacer une règle dans
+  // le tableau changerait le sha — une signature cassée par un geste qui ne
+  // touche à aucun contenu clinique, et donc une incitation à « rattraper le
+  // sha » plutôt qu'à signer.
+  it('déplacer une règle ne change pas l’empreinte du périmètre', () => {
+    const avant = empreinte(grillesCitees(ORIENTATION_RULES_V1));
     const permutees = [...ORIENTATION_RULES_V1].reverse();
-    expect(sha256(JSON.stringify(grillesCitees(permutees)))).toBe(avant);
-  });
-
-  // (5) ET LA CONTRE-ÉPREUVE, qui est la seule à prouver que (4) garde quelque
-  // chose : une grille RÉELLEMENT modifiée change bien l'empreinte.
-  it('déplacer une borne change l’empreinte des grilles', () => {
-    const perimetre = grillesCitees(ORIENTATION_RULES_V1);
-    const avant = sha256(JSON.stringify(perimetre));
-    const mute = {
-      ...perimetre,
-      Q_SOM_01: BANDES_PSQI.map((bande, i) => (i === 0 ? { ...bande, max: 4 } : bande)),
-    };
-    expect(sha256(JSON.stringify(mute))).not.toBe(avant);
+    expect(empreinte(grillesCitees(permutees))).toBe(avant);
   });
 });

@@ -7,7 +7,12 @@ const { prisma, createEmbeddings } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/embeddings', () => ({ createEmbeddings }));
 
-import { servirRayonCorpus, RAYON_VERS_NOTEBOOK, RAYONS_RECHERCHE_CORPUS } from './rayonCorpus';
+import {
+  servirRayonCorpus,
+  RAYON_MICRONUTRITION,
+  RAYON_VERS_NOTEBOOK,
+  RAYONS_RECHERCHE_CORPUS,
+} from './rayonCorpus';
 import {
   estSourceEnQuarantaine,
   sansSourcesEnQuarantaine,
@@ -87,8 +92,27 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
   // dans l'allowlist RAYONS_RECHERCHE_CORPUS que chaque route doit appliquer
   // (route.test.ts) — servirRayonCorpus lui-même ne restreint plus rien.
 
-  it('RAYONS_RECHERCHE_CORPUS ne contient QUE cognition, douleur et intestin (allowlist de la route dédiée)', () => {
-    expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(['cognition', 'douleur', 'intestin']);
+  // Élargie de trois à sept le 2026-09-14 : les quatre rayons ajoutés portaient
+  // une décision de dormance au réexamen dépassé. Ce banc reste LITTÉRAL et ne
+  // se dérive pas de RAYON_VERS_NOTEBOOK : l'allowlist doit rester PLUS ÉTROITE
+  // que la carte, et une liste dérivée validerait silencieusement l'ajout d'un
+  // rayon — micronutrition compris, ce qui contournerait WN_C4_ENABLED.
+  it('RAYONS_RECHERCHE_CORPUS ne contient QUE les sept rayons ouverts (allowlist de la route dédiée)', () => {
+    expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(
+      ['cognition', 'douleur', 'humeur', 'intestin', 'nutrition', 'sommeil', 'stress'],
+    );
+  });
+
+  it('RAYONS_RECHERCHE_CORPUS n’expose PAS micronutrition, gardé par WN_C4_ENABLED', () => {
+    expect(RAYONS_RECHERCHE_CORPUS).not.toContain(RAYON_MICRONUTRITION);
+  });
+
+  // Chaque rayon de l'allowlist doit désigner un notebook : sans cela la route
+  // accepterait la requête puis échouerait au filtrage par source.
+  it('chaque rayon de l’allowlist est déclaré dans RAYON_VERS_NOTEBOOK', () => {
+    for (const rayon of RAYONS_RECHERCHE_CORPUS) {
+      expect(RAYON_VERS_NOTEBOOK[rayon]).toBeTruthy();
+    }
   });
 
   it('sans requête : ne fait aucun appel, rend corpusVide sans erreur', async () => {
