@@ -381,6 +381,25 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.queryByTestId('ja-patient-transmettre')).toBeNull();
   });
 
+  // UN PROTOCOLE INDISPONIBLE NE REMET PAS LE PATIENT EN CALIBRAGE ([[D-191]]).
+  //
+  // Le bilan de calibrage est l'épisode d'AVANT le protocole. Le rouvrir parce
+  // que la carte a dérivé ferait reculer un patient qui a DÉJÀ son protocole —
+  // et lui ferait saisir des journées repères sous un épisode que son praticien
+  // ne relira jamais. La route sert `calibrage: null` dans ce cas, et c'est ce
+  // `null` que ce banc garde : il tient par construction, et rien ne le disait.
+  it('ne rouvre AUCUN bilan de calibrage quand le protocole est indisponible', async () => {
+    mockRoutes({
+      protocole: { ok: true, protocoleDiffuse: true, finDeCycle: false, vue: null, indisponible: true, calibrage: null },
+    });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-sans-cycle');
+    expect(screen.queryByTestId('ja-patient-calibrage')).toBeNull();
+    expect(screen.queryByTestId('ja-patient-journee')).toBeNull();
+    expect(screen.queryByTestId('ja-patient-transmettre')).toBeNull();
+  });
+
   it('enregistre une journée et la transmet sous l’épisode de calibrage', async () => {
     mockRoutes({ calibrage: { ancre: 'ASS_1', debut: '2026-07-20' } });
     await rendrePret();

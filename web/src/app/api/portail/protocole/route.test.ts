@@ -222,12 +222,17 @@ describe('GET /api/portail/protocole', () => {
     rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
 
     const json = (await (await GET(request(proprioCookie()))).json()) as {
-      ok: boolean; protocoleDiffuse: boolean; indisponible: boolean; vue: unknown;
+      ok: boolean; protocoleDiffuse: boolean; indisponible: boolean; vue: unknown; calibrage: unknown;
     };
     expect(json.ok).toBe(true);
     expect(json.protocoleDiffuse).toBe(true);
     expect(json.indisponible).toBe(true);
     expect(json.vue).toBeNull();
+    // ET AUCUNE ANCRE DE CALIBRAGE. Le bilan de calibrage est l'épisode d'AVANT
+    // le protocole : le rouvrir ici ferait reculer un patient qui a déjà le
+    // sien, et lui ferait saisir des journées repères sous un épisode que son
+    // praticien ne relira jamais.
+    expect(json.calibrage).toBeNull();
   });
 
   // LE CONTRAT REFUSE UN STATUT QU'IL NE SAIT PAS DIRE. Servir l'action sans sa
