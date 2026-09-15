@@ -557,7 +557,7 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // la LECTURE d'un seuil, pas une conduite, et la règle s'appuie sur cinq
   // claims prescriptifs par ailleurs.
   validationExterne: true,
-  dateValidation: '2026-09-14T00:00:00.000Z',
+  dateValidation: '2026-09-15T00:00:00.000Z',
   // Les 29 claims distincts cités par les quinze règles — dont les deux qui
   // fondent la répétition annuelle (`0312-018`, `0389-004`) : le seul chiffre
   // paramétrique de la table est DANS le périmètre signé (revue D-069). Le
@@ -599,6 +599,8 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   //     (périmètre RÈGLES SEULES)
   //   · 2026-09-14 — `3d692ff54cc61c9f4dbdb259e86daf64143c1dd19d4bc9f88695f822a83de236`
   //     (périmètre RÈGLES + GRILLES, attesté le matin)
+  //   · 2026-09-14 — `82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42`
+  //     (périmètre ÉLARGI AU CALCUL, attesté le soir — [[D-187]])
   //
   // SECONDE ATTESTATION DU 2026-09-14. C'est sur CETTE table que le défaut a
   // été démontré : `BIO-DIG-01` lit la couleur globale de `Q_GAS_01`, et retirer
@@ -607,7 +609,26 @@ export const INDICATIONS_BIOLOGIE_METADATA: IndicationsBiologieMetadata = {
   // sans qu'un seul sha bouge. Le périmètre couvre désormais le bloc `scoring`
   // entier des seize instruments cités et la cotation de leurs items. Les
   // vingt-neuf claims n'ont pas bougé depuis la relecture du matin.
-  shaPerimetre: '82ef86f0b025f572dcaefa30419e8af545619b0b95001d24a1e0e63250bd0e42',
+  //
+  // TROISIÈME ATTESTATION, LE 2026-09-15, ET C'EST LE PÉRIMÈTRE QUI L'A
+  // DÉCLENCHÉE. Aucune règle n'a bougé, aucun claim non plus : deux des seize
+  // instruments cités ont été réalignés sur leurs publications — l'AQ
+  // (`Q_GEO_03` : vingt-et-un items publiés, pondération à six items doubles,
+  // maximum 27, bandes 0-4 / 5-14 / 15-27) et le QDRS (`Q_GEO_05` : dix
+  // domaines dans l'ordre publié, Humeur en 9, Attention en 10, Déambulation
+  // retirée) — et cinq bancs ont rougi à la seconde où leur cotation a changé.
+  //
+  // C'EST LA DÉMONSTRATION EN VRAIE GRANDEUR DE [[D-187]]. `BIO-NEU-01` lit
+  // `Q_GEO_03` ; sous le périmètre d'avant — les grilles d'interprétation
+  // seules — un réalignement des items ET de la pondération serait passé EN
+  // SILENCE tant que les bandes n'auraient pas bougé. Symétriquement, la table
+  // d'orientation, qui ne cite ni l'un ni l'autre, n'a pas bougé d'un bit : le
+  // périmètre n'éteint que ce qui lit.
+  //
+  // Relue et attestée par le praticien le 2026-09-15, sur la surface de
+  // relecture produite AVANT la demande. La recopie de la chaîne hex est le
+  // geste de cette relecture — jamais une mise à jour de littéral.
+  shaPerimetre: 'd2499f426e66fecd957d7f0557dfdecc1b2999eedba81200739a0783b4142049',
 };
 
 /**

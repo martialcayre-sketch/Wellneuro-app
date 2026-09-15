@@ -465,7 +465,7 @@ describe('ProtocolMiniBuilder — citer la raison d’être', () => {
   });
 });
 
-// ── LA CHARGE : RELUE, ET SUGGÉRÉE ([[D-195]]) ─────────────────────────────
+// ── LA CHARGE : RELUE, ET SUGGÉRÉE ([[D-196]]) ─────────────────────────────
 //
 // Elle était écrite, obligatoire, hachée — et relue par AUCUN écran en usage
 // normal : le seul qui l'affichait recevait `null` et sortait par un retour
@@ -562,7 +562,7 @@ describe('ProtocolMiniBuilder — la charge de la version active, et le barème'
   });
 });
 
-// UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT ([[D-195]]) — les trois autres
+// UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT ([[D-196]]) — les trois autres
 // en note discrète. Le contrat exige déjà une justification écrite quand le
 // praticien DÉCLARE ce niveau ; la suggestion le signale du même registre, sans
 // rien bloquer.

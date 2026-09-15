@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Le barème de charge — mécanisme signé, première ligne du praticien"
-statut: "terminé"
+statut: "échelle écrite — attend la déclaration de conformité"
 dépend_de: "LOT-02"
 ---
 
@@ -85,7 +85,7 @@ saisie praticien reste souveraine.
 
 ## LIVRÉ LE 2026-09-15 — mécanisme, surface, et première échelle ratifiée
 
-### L'échelle signée
+### L'échelle écrite — NON encore en service
 
 Trois bandes sur `nombreActionsFermes`, contiguës, sans trou ni recouvrement :
 
@@ -94,6 +94,11 @@ Trois bandes sur `nombreActionsFermes`, contiguës, sans trou ni recouvrement :
 | `null` – 1 | léger | « Une seule action engagée : un pas à tenir. » |
 | 2 – 2 | modéré | « Deux actions engagées en parallèle. » |
 | 3 – 3 | chargé | « Trois actions engagées, le maximum que le protocole permet. » |
+
+**La signature attend la déclaration de conformité du praticien** ([[D-195]] §1,
+rendue le même jour) : l'outil qui a proposé le contenu ne peut pas l'attester seul.
+Tant qu'elle manque, `lignesBaremeServables` ne sert RIEN et l'écran n'affiche aucune
+suggestion.
 
 **Ces bornes n'ont aucune source clinique, et la table le dit d'elle-même** — un banc
 textuel l'exige. Rien au dépôt ne traite de la charge thérapeutique, aucun claim ne

@@ -83,7 +83,7 @@ type VersionsApiResponse = {
    */
   sourcesCitables?: SourceCitablePurpose[];
   /**
-   * Les lignes du barème de charge que le serveur a vouchées ([[D-195]]). Liste
+   * Les lignes du barème de charge que le serveur a vouchées ([[D-196]]). Liste
    * vide = barème non signé : l'écran n'affiche aucune suggestion.
    */
   baremeCharge?: LigneBaremeCharge[];

@@ -704,7 +704,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       ok: true,
       protocolDraftId: rows.length > 0 ? deriveProtocolDraftId(decisionCardId) : null,
       sourcesCitables,
-      // LE BARÈME DE CHARGE, ET LE VERROU RESTE ICI ([[D-195]]). La suggestion
+      // LE BARÈME DE CHARGE, ET LE VERROU RESTE ICI ([[D-196]]). La suggestion
       // s'affiche PENDANT que le praticien compose, donc dans le navigateur — qui
       // ne peut pas importer la table signée (elle tire `crypto`). Le serveur ne
       // sert que des lignes DÉJÀ vouchées, ou une liste vide : l'écran ne peut pas

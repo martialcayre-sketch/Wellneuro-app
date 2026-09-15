@@ -107,15 +107,7 @@ export type BaremeChargeMetadata = {
 };
 
 /**
- * L'ATTESTATION DU PRATICIEN, RECOPIÉE — jamais posée par l'outil.
- *
- * Le garde interdit le câblage d'une signature, pas la recopie d'une attestation
- * donnée. Ce qui a été relu, en séance le 2026-09-15 : les trois lignes
- * ci-dessus — terme, bornes, niveaux et motifs —, présentées à l'écran avant
- * toute écriture. Le praticien a choisi cette échelle parmi trois proposées, et
- * a ratifié.
- *
- * CE QUE CETTE SIGNATURE ATTESTE, ET CE QU'ELLE N'ATTESTE PAS : une convention
+ * CE QUE LA SIGNATURE ATTESTERA, ET CE QU'ELLE N'ATTESTERA PAS : une convention
  * d'organisation relue et acceptée. **Aucune source clinique** ne porte ces
  * bornes, et aucun claim n'y est rattaché — à la différence de
  * `INDICATIONS_BIOLOGIE_V1`, dont la signature couvre vingt-neuf claims. C'est
@@ -123,14 +115,29 @@ export type BaremeChargeMetadata = {
  * mettre, et un champ vide se lirait comme un oubli.
  */
 export const BAREME_CHARGE_METADATA: BaremeChargeMetadata = {
-  validationExterne: true,
-  dateValidation: '2026-09-15T00:00:00.000Z',
-  // SURTOUT PAS `BAREME_CHARGE_SHA256` — déclaré plus bas, et la comparaison
-  // serait tautologique. La chaîne ci-dessous est celle que le SHA valait au
-  // moment de la relecture, recopiée telle quelle : toute ligne retouchée
-  // ensuite rouvrira le verrou, comme [[D-063]] l'exige.
-  shaPerimetre: 'e2ac85392712d20858a6f8a69044ea62e05f0d8c665e44b3a6265d80bb969910',
+  validationExterne: false,
+  dateValidation: null,
+  shaPerimetre: null,
 };
+
+/**
+ * LA SIGNATURE ATTEND LA DÉCLARATION DE CONFORMITÉ DU PRATICIEN ([[D-195]] §1).
+ *
+ * L'échelle ci-dessus a été **proposée par l'outil** parmi trois, puis relue et
+ * choisie par le praticien. Ce n'est pas encore une attestation : `D-195`, rendue
+ * le même jour, a tranché que **la déclaration précède la frappe et qu'elle est
+ * le geste attestant** — la recopie de la chaîne hex est mécanique et ne vaut que
+ * portée par elle. Et l'obstacle qu'elle nomme est exactement celui-ci : l'outil
+ * qui a écrit le contenu à relire ne peut pas l'attester seul, sans quoi le
+ * verrou « n'enregistre plus, il ratifie ».
+ *
+ * CE QUI MANQUE TIENT EN UNE PHRASE du praticien, après lecture des trois lignes.
+ * Tant qu'elle n'est pas donnée, `lignesBaremeServables` ne sert RIEN et l'écran
+ * n'affiche aucune suggestion — l'échelle est écrite, elle n'est pas en service.
+ *
+ * Le SHA du périmètre au moment de la rédaction, pour la recopie à venir :
+ * `e2ac85392712d20858a6f8a69044ea62e05f0d8c665e44b3a6265d80bb969910`.
+ */
 
 /** Le périmètre signé : le barème ENTIER, jamais une sélection de champs. */
 export const BAREME_CHARGE_SHA256 = sha256(JSON.stringify(BAREME_CHARGE_V1));

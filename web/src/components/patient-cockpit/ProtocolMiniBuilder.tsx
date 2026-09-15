@@ -150,7 +150,7 @@ export function ProtocolMiniBuilder({
    */
   provenancePurpose?: ProvenancePurpose;
   /**
-   * Les lignes de barème que le SERVEUR a vouchées ([[D-195]]). Liste vide =
+   * Les lignes de barème que le SERVEUR a vouchées ([[D-196]]). Liste vide =
    * barème non signé : aucune suggestion ne s'affiche. Cet écran ne revérifie
    * pas la signature — il n'en a pas les moyens, et une seconde vérification
    * finirait par diverger de celle du serveur.
@@ -536,13 +536,13 @@ export function ProtocolMiniBuilder({
           </select>
         </label>
         {loadLevel === 'excessive' && <label className="text-sm font-medium">Justification de la charge excessive<input aria-label="Justification de la charge excessive" value={loadJustification} onChange={event => { markDirty(); setLoadJustification(event.target.value); }} className="mt-1 w-full rounded-lg border border-border bg-background p-2 font-normal" /></label>}
-        {/* LE BARÈME PROPOSE, LE PRATICIEN DISPOSE ([[D-195]]).
+        {/* LE BARÈME PROPOSE, LE PRATICIEN DISPOSE ([[D-196]]).
             `TherapeuticLoad.source` vaut la constante 'practitioner', posée en
             dur : le barème ne peut pas devenir l'auteur de la charge sans
             changer le contrat. Le bouton RECOPIE le niveau dans le champ — il
             n'enregistre rien, et la valeur qui part reste celle du champ. */}
         {/* UN NIVEAU « EXCESSIF » SE LIT EN AVERTISSEMENT, les trois autres en
-            note discrète ([[D-195]] §2 bis). Le contrat exige déjà une
+            note discrète ([[D-196]] §2 bis). Le contrat exige déjà une
             justification écrite quand le praticien DÉCLARE ce niveau : la
             suggestion le signale du même registre, sans rien bloquer et sans
             pré-remplir la justification — ouvrir ce champ d'avance pousserait

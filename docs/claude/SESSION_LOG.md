@@ -2,7 +2,7 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
-## 2026-09-15 — LOT-06 : le barème de charge et sa première échelle ratifiée (D-195)
+## 2026-09-15 — LOT-06 : le barème de charge et sa première échelle ratifiée (D-196)
 
 **Décisions** : six arbitrages rendus après vérification en code de ce que la charge
 fait aujourd'hui — obligatoire et hachée, jamais servie au patient, et **relue par

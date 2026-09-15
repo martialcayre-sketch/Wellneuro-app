@@ -38,9 +38,12 @@ Le contrat exige déjà une justification écrite quand le praticien déclare ce
 la suggestion le signale du même registre, sans rien bloquer et sans ouvrir d'avance
 le champ de justification — ce qui pousserait vers un choix qu'il n'a pas fait.
 
-**La première échelle est signée : trois bandes sur le nombre d'actions engagées** —
+**La première échelle est écrite : trois bandes sur le nombre d'actions engagées** —
 une seule action est légère, deux modérée, trois chargée. Contiguë, sans trou ni
-recouvrement.
+recouvrement. **Elle n'est pas encore en service** : sa signature attend la
+déclaration de conformité du praticien, parce que l'outil qui a proposé le contenu ne
+peut pas l'attester seul. Tant qu'elle manque, rien n'est servi et l'écran n'affiche
+aucune suggestion — le mécanisme est complet, le verrou est fermé.
 
 **Ces bornes n'ont aucune source clinique, et la table le dit d'elle-même.** Rien au
 dépôt ne traite de la charge thérapeutique et aucun claim ne les porte : ce sont une
@@ -62,4 +65,4 @@ avec la justification écrite que le contrat exige déjà.
 la table réelle, donc vide : neutraliser la garde ne le faisait pas rougir. Il prouve
 désormais le verrou, pas le vide.
 
-Voir [[D-195]].
+Voir [[D-196]].

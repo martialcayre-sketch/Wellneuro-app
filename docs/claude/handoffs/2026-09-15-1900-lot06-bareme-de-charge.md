@@ -65,4 +65,4 @@ Refusée par le classifieur de sécurité de la session — et le refus porte su
 **forme** de la commande, pas son contenu : un simple `count(*)` sans champ nominatif
 a été bloqué de la même façon. Non contournée.
 
-Voir [[D-195]].
+Voir [[D-196]].

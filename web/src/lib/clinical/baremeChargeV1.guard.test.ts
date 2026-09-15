@@ -46,13 +46,18 @@ const SIGNATURE_BANC = (lignes: LigneBaremeCharge[]) => ({
 });
 
 describe('barème de charge — le verrou de signature', () => {
-  // LA TABLE RÉELLE EST SIGNÉE, ET SA SIGNATURE SE RECOUPE. Le banc l'exerce sur
-  // le contenu VRAI : une ligne retouchée sans re-signature fait rougir ici, et
-  // c'est tout l'objet du SHA de périmètre ([[D-063]]).
-  it('la table réelle est signée, et son SHA concorde', () => {
-    expect(BAREME_CHARGE_METADATA.validationExterne).toBe(true);
-    expect(BAREME_CHARGE_METADATA.dateValidation).toBe('2026-09-15T00:00:00.000Z');
-    expect(baremeChargeSigne()).toBe(true);
+  // L'ÉCHELLE EST ÉCRITE, ELLE N'EST PAS EN SERVICE. La signature attend la
+  // DÉCLARATION DE CONFORMITÉ du praticien ([[D-195]] §1) : l'outil qui a
+  // proposé le contenu ne peut pas l'attester seul, sans quoi le verrou
+  // « n'enregistre plus, il ratifie ».
+  it('l’échelle est écrite et NON signée — le verrou reste fermé', () => {
+    expect(BAREME_CHARGE_V1).toHaveLength(3);
+    expect(BAREME_CHARGE_METADATA.validationExterne).toBe(false);
+    expect(BAREME_CHARGE_METADATA.dateValidation).toBeNull();
+    expect(BAREME_CHARGE_METADATA.shaPerimetre).toBeNull();
+    expect(baremeChargeSigne()).toBe(false);
+    // Conséquence directe : rien n'est servi, donc aucune suggestion n'existe.
+    expect(lignesBaremeServables()).toEqual([]);
   });
 
   // L'ÉCHELLE RATIFIÉE : un seul terme, contiguë, sans trou ni recouvrement, et
@@ -184,8 +189,8 @@ describe('barème de charge — ce que le serveur a le droit de servir à un éc
     // rougir personne tant que l'assertion portait sur la table réelle.
     expect(lignesBaremeServables(lignes, BAREME_CHARGE_METADATA)).toEqual([]);
     expect(lignesBaremeServables(lignes, SIGNATURE_BANC(lignes))).toEqual(lignes);
-    // La table RÉELLE, elle, est signée : ses trois lignes publiées sortent.
-    expect(lignesBaremeServables()).toHaveLength(3);
+    // La table RÉELLE, elle, est écrite mais NON signée : rien ne sort.
+    expect(lignesBaremeServables()).toEqual([]);
   });
 
   it('ne sert jamais une ligne en brouillon, même sous une signature valide', () => {
@@ -205,7 +210,7 @@ describe('barème de charge — ce que le serveur a le droit de servir à un éc
   });
 });
 
-// ── UNE TABLE QUI SE CONTREDIT NE SORT PAS ([[D-195]]) ────────────────────
+// ── UNE TABLE QUI SE CONTREDIT NE SORT PAS ([[D-196]]) ────────────────────
 //
 // L'arbitrage a retenu une ÉCHELLE SUR UN SEUL TERME, sans trou ni
 // recouvrement. Un recouvrement n'est donc pas un cas clinique à gérer : c'est
