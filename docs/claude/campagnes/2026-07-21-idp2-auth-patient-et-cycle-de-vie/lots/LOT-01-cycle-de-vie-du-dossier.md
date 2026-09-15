@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Cycle de vie du dossier — clôture de suivi et effacement"
-statut: "clos — socle (#189) et surface (#194) mergés sur main le 2026-07-21"
+statut: "livré — socle (#189) et surface (#194) mergés sur main le 2026-07-21"
 dépend_de: "aucun"
 ---
 
