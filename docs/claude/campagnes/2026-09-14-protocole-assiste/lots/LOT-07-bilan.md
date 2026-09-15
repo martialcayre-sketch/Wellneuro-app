@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Bilan — ce qui a été livré, et ce qui a été mesuré"
-statut: "à faire"
+statut: "terminé — la mesure au conteneur reste due"
 dépend_de: "tous"
 ---
 
@@ -55,3 +55,64 @@ Aucun code.
 
 Le bilan distingue livré et utilisé ; la file ne porte plus d'entrée soldée ; la
 clôture est écrite avant le merge, pas après.
+
+---
+
+## BILAN DE CAMPAGNE (2026-09-15)
+
+### Ce que chaque lot a livré, et ce qu'il a laissé
+
+| Lot | Livré | Laissé, nommé |
+|---|---|---|
+| **LOT-00** | `D-189` — la frontière patient du protocole : liste fermée des sources citables, garde de registre à la carte, clause de fermeture | Son §1 portait **une prémisse fausse** (« la provenance est portée par la version »), corrigée par `D-193` |
+| **LOT-01** | `D-188` — quatre rayons de corpus ouverts : 60 claims exposés deviennent 1 046 | Le panneau vit dans la Bibliothèque, pas sous les yeux pendant la saisie — fait, pas défaut |
+| **LOT-02** | La décision restituée à côté du formulaire ; plus aucun type ni charge posé en silence ; refus visible ; E2E nominal du constructeur | — |
+| **LOT-03** | `D-191` puis `D-192` — les trois actions, l'axe, le critère J21 ; la carte recomposée à la lecture ; le refus visible des deux côtés ; les bloqueurs opposés à la diffusion | `adviceSheetRef` mort de bout en bout ; aucune limitation patient servie |
+| **LOT-04** | La garde de registre sur les quatre champs servis au patient ; puis `D-193` — la citation constatée à la lecture | La marque constate l'**appartenance** d'un texte à une source, jamais son **usage** — limite assumée |
+| **LOT-05** | `D-190` — le praticien suspend une action ; la boucle d'arbitrage devient déclenchable ; le défaut de sortie V1/V4 corrigé | Le moteur `D-056` reste débranché : `clinical_rules` porte 0 ligne |
+| **LOT-06** | Le **mécanisme** du barème : table signée à quatre termes, fail-closed, refus de la discordance — **dix bancs verts** | **Non livré** : il attend la première ligne signée du praticien |
+| **LOT-07** | Ce bilan | **Sa mesure au conteneur n'a pas pu être faite** |
+
+### Ce qui n'a pas pu être mesuré, et pourquoi
+
+Le bilan devait se poser **sur dossiers réels, par identifiant, au conteneur**
+(`D-125`) — jamais sur fixture. La lecture de production a été **refusée par le
+classifieur de sécurité de la session**, et elle n'a pas été contournée. Ce que la
+campagne a livré est donc **vert en CI et constaté en ligne par contenance**, mais
+son **usage n'est pas mesuré**.
+
+C'est exactement l'avertissement que `CAMPAGNE.md` portait à l'ouverture : « le
+goulot n'est pas l'ingénierie, c'est le temps praticien », et « l'usage se mesure
+dans un bilan séparé ». Ce bilan-là reste dû.
+
+**La mesure à faire, quand elle sera possible** : nombre de versions de protocole C1
+écrites depuis le 2026-09-15 (1 seule ligne existait, du 2026-07-31, sous un contrat
+d'observation alimentaire) ; nombre d'approbations pour diffusion ; nombre de
+sélections de priorité (1 au 2026-09-13) ; et, sur les dossiers portant un protocole
+diffusé, combien passent le rejeu de carte — c'est-à-dire combien de patients voient
+réellement leur protocole.
+
+### Ce que la campagne a trouvé sans le chercher
+
+1. **Une orientation médicale partait au patient sous le libellé « Alimentation ».**
+   `emptyAction` posait `type: 'food'` en dur, et rien ne le refusait.
+2. **La boucle arbitrage → révision était sans issue autant que sans amorce** :
+   `reviserApresArbitrages` appelait `saveVersion` sans `version`, et la route
+   refusait en 409 la version qu'elle révisait.
+3. **Le protocole sortait sans garde**, sur un chemin dont la carte de
+   `vocabulaire.ts` dit qu'« il n'a pas le droit d'exister ». Une absence, pas un
+   régime mal choisi.
+4. **Le carnet alimentaire s'ancrait sur la première action**, quel que soit son
+   type — invisible tant que toute action neuve naissait `food`.
+5. **Cinq descriptions de « ce que le patient lit »** coexistaient sans se voir, et
+   `tsc` restait vert sur un champ servi et rendu nulle part.
+6. **Les deux refus les plus graves du moteur clinique** — abstention requise,
+   constat de sécurité — n'étaient opposés **nulle part**.
+
+### Deux arbitrages rendus sur une prémisse fausse, et ce qui a changé
+
+La nuit du 14 au 15, deux questions ont été portées au praticien sur des prémisses
+que le code démentait — les deux fois, la réfutation était **dans un commentaire du
+fichier cité**, non lu jusqu'au bout. Les deux arbitrages ont été **reposés le
+2026-09-15 après vérification en code** (`D-191`, `D-193`), et les trois faits
+établis avant chaque question sont écrits au registre.
