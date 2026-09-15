@@ -4,6 +4,80 @@
 
 ## Décisions actives
 
+### D-203 — La plainte dominante prime, et l'alternative a été écartée sur un FAIT : elle rendait le terme inatteignable
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrage clinique rendu par le responsable**, après être
+  resté ouvert deux jours et avoir été explicitement EXCLU de la signature du
+  2026-09-16 ([[D-202]]).
+- Domaine : clinique — ordre des termes de classement des priorités candidates.
+- Empreinte : `9792c12e72db93d8` → **`9f17a4a658e4fca6`**. L'attestation de
+  [[D-202]] est donc PÉRIMÉE et retirée : inscrire l'arbitrage dans la donnée
+  hachée déplace le périmètre, et on ne complète pas après coup ce qui a été relu.
+- **Le moteur ne change pas d'une ligne.** Ce qui change est que le comportement
+  cesse d'être un non-choix.
+
+**LA QUESTION, POSÉE DEPUIS DEUX JOURS.** Le premier terme fait passer une règle
+de priorité intrinsèque 1 DERRIÈRE une priorité 2 dès que le patient cote l'autre
+domaine plus haut. L'intensité RESSENTIE n'est pas la gravité CLINIQUE.
+`PORTEE_ATTESTATION` excluait explicitement ce point de ce qui était signé — la
+signature portait la fidélité descriptive, jamais cette légitimité-là.
+
+**LA RÉPONSE D'ABORD DONNÉE ÉTAIT L'AUTRE, ET ELLE A ÉTÉ REPRISE SUR UN FAIT.**
+Le responsable a d'abord tranché « priorité intrinsèque d'abord, la plainte ne
+départageant qu'à priorité égale » — le choix prudent en apparence. **Vérification
+avant écriture : il rendait la plainte dominante définitivement inopérante.** Les
+quatre règles portent quatre priorités DISTINCTES (1, 2, 3, 4), lu dans la table,
+pas supposé : l'égalité qui donnerait la parole à la plainte ne se produit jamais.
+
+Le classement serait devenu un ordre FIXE, identique pour tout patient —
+digestion, surpoids, sommeil, douleurs — et `PRIO-DIG-01` aurait été proposée à
+chaque déclenchement quoi que le patient ait coté. Un terme déclaré actif mais
+INATTEIGNABLE est une sur-promesse ([[DC-34]], [[DC-35]]) ; le dépôt en porte
+déjà un, le troisième, et il le dit en toutes lettres.
+
+**CE N'EST PAS UN DÉTAIL D'IMPLÉMENTATION, c'est le contenu de l'arbitrage.**
+L'option décrivait « la plainte ne départage qu'à priorité égale » : vrai en
+principe, faux en fait. Remise au responsable avec le chiffre, elle a été
+retirée. La question a donc été posée DEUX FOIS, et la seconde fois seulement
+avec ce qu'il fallait pour y répondre.
+
+**CE QUI EST TRANCHÉ.** La plainte dominante reste en tête. Le praticien reçoit
+le patient là où celui-ci se plaint, **en connaissance du coût** — une règle de
+priorité 1 passe derrière une priorité 2 sur une cotation déclarative. La
+priorité intrinsèque garde le dernier mot partout où la plainte ne dit rien,
+c'est-à-dire chaque fois qu'aucune règle ne porte le domaine dominant.
+
+`proposedMainPriorityId` reste le rang 1, confirmé dans le même geste : le moteur
+continue de DÉSIGNER un candidat par défaut, et `selectedMainPriority` reste à
+`null` tant que le praticien n'a pas choisi.
+
+**L'ARBITRAGE EST HACHÉ, ET IL EST LIÉ.** `ARBITRAGE_PRIMAUTE_PLAINTE` entre dans
+`PERIMETRE_CLASSEMENT_V1`. Ce module a déjà payé deux fois la donnée posée que
+rien n'oblige ([[D-185]], puis [[D-197]]) : un banc exige donc que
+`termeRetenu` soit le terme que `TERMES_DE_CLASSEMENT` place au rang 1, LU des
+deux côtés, jamais recopié.
+
+**ET LE MOTIF DU REJET EST GARDÉ COMME UN FAIT, pas comme une préférence.** Un
+second banc relit la table et rougit le jour où deux règles partagent une
+priorité — l'égalité rendrait alors la plainte opérante en second terme, et la
+justification de cet arbitrage deviendrait fausse **sans que personne n'ait
+touché au périmètre**. Mutation jouée : `PRIO-SOM-01` de 3 à 2 fait rougir ce cas
+avec le message qui renvoie au responsable.
+
+**CE QUI RESTE HORS SIGNATURE, et la liste n'est pas vide** : la table des
+priorités elle-même, qui porte sa propre signature ([[D-061]], 2026-08-15), et le
+départage de deux plaintes cotées À ÉGALITÉ, qui reste technique
+(`DEPARTAGE_PLAINTE_EX_AEQUO.arbitrageCliniqueRendu: false`). La rendre vide
+aurait été la sur-promesse que cette relecture existe pour éviter.
+
+- Conséquences : `ARBITRAGE_PRIMAUTE_PLAINTE` ajouté au périmètre haché ;
+  `PORTEE_ATTESTATION.neCouvrePas` réécrit — l'arbitrage n'y figure plus, ce qui
+  reste dehors y est nommé ; `ATTESTATION_CLASSEMENT` retirée à `relu: false` et
+  redemandée sur `9f17a4a658e4fca6` ; deux bancs de liaison ajoutés, tués par
+  mutation. Aucun changement du moteur, aucune migration, aucun drapeau.
+
+
 ### D-202 — Une attestation posée, retirée par son propre mécanisme, puis reposée sur le contenu borné
 
 - Date : 2026-09-15, complétée le 2026-09-16

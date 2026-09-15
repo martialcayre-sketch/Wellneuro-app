@@ -8,6 +8,7 @@ import {
   MOTIF_ABSTENTION,
   ORDRE_EVALUATION_ABSTENTION,
   PERIMETRE_CLASSEMENT_V1,
+  ARBITRAGE_PRIMAUTE_PLAINTE,
   PORTEE_ATTESTATION,
   TERMES_DE_CLASSEMENT,
   attestationValide,
@@ -138,14 +139,62 @@ describe('périmètre du classement — l’ancre existe, la signature non', () 
     // validation clinique du classement, et un futur consommateur du booléen
     // faire la même extension sans garde.
     expect(PERIMETRE_CLASSEMENT_V1.porteeAttestation).toBe(PORTEE_ATTESTATION);
-    // L'EXCLUSION EST NOMMÉE, pas sous-entendue : l'arbitrage non rendu doit
-    // être lisible dans ce que le praticien signe.
-    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/plainte dominante/);
+    // L'EXCLUSION EST NOMMÉE, pas sous-entendue : ce qui reste hors signature
+    // doit être lisible dans ce que le praticien signe.
+    //
+    // CE CAS A ÉTÉ RÉÉCRIT LE 2026-09-16, et il faut dire pourquoi plutôt que de
+    // le laisser croire affaibli. Il exigeait littéralement « plainte
+    // dominante » et « NON rendu » — l'état d'alors. L'arbitrage ayant été
+    // RENDU, exiger encore ces mots aurait forcé la donnée signée à continuer
+    // d'annoncer une question ouverte qui ne l'est plus. Ce qu'on garde est
+    // l'exigence de FOND : l'exclusion nomme au moins un objet réel et se
+    // termine sur un arbitrage non rendu, faute de quoi elle serait décorative.
     expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/NON rendu/);
+    expect(PORTEE_ATTESTATION.neCouvrePas.length).toBeGreaterThan(60);
+    // ANTI-VACUITÉ : une exclusion vide ou réduite à une formule creuse
+    // sur-promettrait. Elle doit citer ce qui reste dehors.
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/table des priorités/);
+    expect(PORTEE_ATTESTATION.neCouvrePas).toMatch(/À ÉGALITÉ/);
     // ET L'INTITULÉ D'ÉCRAN EST BORNÉ : ce qui est relu, ce sont les TEXTES qui
     // décrivent le classement, pas le classement lui-même.
     expect(PORTEE_ATTESTATION.intituleEcran).not.toMatch(/Périmètre du classement/);
     expect(PORTEE_ATTESTATION.intituleEcran).toMatch(/descriptifs/);
+  });
+
+  it('L’ARBITRAGE EST LIÉ AU MOTEUR — il nomme le terme que la table place en tête', () => {
+    // LE DÉFAUT QUE CE CAS FERME PAR AVANCE, et ce module l'a déjà payé deux
+    // fois ([[D-185]], puis [[D-197]]) : une donnée posée dans le périmètre
+    // signé que RIEN n'oblige. `ARBITRAGE_PRIMAUTE_PLAINTE.termeRetenu` doit
+    // être le terme que `TERMES_DE_CLASSEMENT` place au rang 1 — sinon
+    // l'arbitrage décrirait un classement que le moteur n'applique pas, et la
+    // signature couvrirait une décision sans effet.
+    //
+    // La liaison se fait en LISANT les deux valeurs, jamais en recopiant l'une
+    // des deux : permuter les termes dans la table fait rougir ici.
+    expect(ARBITRAGE_PRIMAUTE_PLAINTE.rendu).toBe(true);
+    expect(TERMES_DE_CLASSEMENT.find(terme => terme.rang === 1)?.nom)
+      .toBe(ARBITRAGE_PRIMAUTE_PLAINTE.termeRetenu);
+  });
+
+  it('LE MOTIF DU REJET RESTE VRAI — les priorités de la table sont toutes DISTINCTES', () => {
+    // CE CAS GARDE UN FAIT, PAS UNE PRÉFÉRENCE. L'arbitrage a écarté « la
+    // priorité intrinsèque en tête » pour une raison vérifiable : les quatre
+    // règles portent quatre priorités distinctes, donc l'égalité qui donnerait
+    // la parole à la plainte ne se produit jamais, et le terme aurait été
+    // déclaré actif tout en étant INATTEIGNABLE.
+    //
+    // Le jour où deux règles partagent une priorité, cette justification
+    // devient fausse sans que personne n'ait touché au périmètre — et
+    // l'alternative écartée redeviendrait défendable. Ce cas rougit alors, et
+    // c'est exactement ce qu'on veut : l'arbitrage doit être RELU, pas hérité.
+    const priorites = PRIORITY_RULES_V1
+      .filter(regle => regle.domainePlainte !== null)
+      .map(regle => regle.priorite);
+    expect(priorites.length).toBeGreaterThanOrEqual(2);
+    expect(
+      new Set(priorites).size,
+      'DEUX RÈGLES PARTAGENT UNE PRIORITÉ : le motif de rejet de `ARBITRAGE_PRIMAUTE_PLAINTE` ne tient plus — la plainte dominante DEVIENDRAIT opérante en second terme. Relire l’arbitrage avec le responsable avant de toucher à quoi que ce soit ici.',
+    ).toBe(priorites.length);
   });
 
   it('les trois termes sont ordonnés 1, 2, 3 — sans trou ni doublon', () => {
