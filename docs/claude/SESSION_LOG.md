@@ -6310,7 +6310,7 @@ qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change 
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
 
-## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-200]])
+## 2026-09-15 23:30 — Le périmètre du classement est ATTESTÉ ([[D-201]])
 
 **Attestation clinique du responsable**, demandée et donnée en toutes lettres.
 Elle n'a pas été déduite d'un « relue » : le dépôt exige qu'elle soit DÉCIDÉE, et
@@ -6351,3 +6351,27 @@ pas après coup ce qui a été relu, même pour le borner.
 
 Le mécanisme est donc éprouvé sur un cas réel, pas sur une mutation — il a refusé
 la signature de celui qui l'avait écrit.
+## 2026-09-16 — La contre-revue adverse avant la clôture (LOT-08, D-200)
+
+Vingt-six affirmations de la campagne « 5. Actions » soumises à réfutation avant d'être
+gravées (patron `D-108`). **Six réfutées, trois vraies seulement bornées.** Toutes les
+réfutations portaient sur de la prose écrite par l'outil — mais quatre cachaient un défaut
+vivant en production.
+
+Le plus grave est une récidive : le refus de registre anxiogène était **invisible sur le
+chemin de révision**, l'alerte vivant dans un conteneur masqué hors de la sous-vue d'où
+part le geste. Défaut du booklet à l'identique. Corrigé, et gardé par une garde de source
+— aucun banc de composant ne traverse ce chemin.
+
+Fermés aussi : une route d'écriture sans appelant qui acceptait un protocole fabriqué par
+le client, et `adviceSheetRef`. Le carnet alimentaire cesse d'affirmer « Aucun protocole
+diffusé » sur un protocole diffusé mais inservable.
+
+Écarté sur arbitrage : le compte transitoire de la suggestion de charge (action non encore
+typée) — état qui se corrige à la frappe suivante.
+
+**Prochaine action** : la mesure d'usage au conteneur, qui attend une session hors mode
+auto. Le créneau primaire reste vide par décision jusque-là.
+
+**Question ouverte** : la clôture formelle de la campagne, désormais possible — la
+contre-revue qu'elle attendait est faite.

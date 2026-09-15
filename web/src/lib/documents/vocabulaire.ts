@@ -42,9 +42,16 @@
 // pas un régime mal choisi, une ABSENCE. C'est exactement ce que la règle
 // trois lignes plus haut qualifie de chemin « qui n'a pas le droit d'exister ».
 //
-// LES QUATRE CHAMPS, ET TOUTES LES ACTIONS. La route du portail n'en sert
-// qu'une aujourd'hui ; garder ce qui sort AUJOURD'HUI ferait de la garde une
-// dette au jour où il en servira trois. `idealPlan`, `rescuePlan` et les
+// LES QUATRE CHAMPS, ET TOUTES LES ACTIONS. Le portail sert les TROIS actions
+// depuis [[D-191]] — cette ligne disait encore « il n'en sert qu'une », ce qui
+// est faux depuis le 2026-09-15 ; la garde, elle, avait été posée d'avance sur
+// toutes, et c'est ce qui la sauve.
+//
+// LES DEUX AUTRES CHAMPS QUE LE PORTAIL SERT NE SONT PAS DES TEXTES PRATICIEN,
+// et c'est pourquoi ils ne sont pas gardés ici : `priorityLabel` est re-dérivé
+// au serveur depuis le registre signé — le garder reviendrait à surveiller la
+// prose d'une table relue —, et `adviceSheetRef` est FERMÉ à l'écriture depuis
+// [[D-200]], la route le force à `null`. `idealPlan`, `rescuePlan` et les
 // limitations internes ne sont pas gardés ici : ils ne franchissent aucune
 // route patient — s'ils le faisaient un jour, ce serait un chemin neuf, et il
 // s'inscrirait ici.

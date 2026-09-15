@@ -7,7 +7,7 @@ import {
 } from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
-import { buildPatientProtocolView } from '@/lib/clinical-engine/patientProtocolView';
+import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
 import {
   LONGUEUR_CYCLE_REF,
@@ -183,35 +183,33 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       });
     }
 
-    let vue: VuePatientSurLeFil;
-    try {
-      vue = projeterSurLeFil({
-        vue: buildPatientProtocolView({
-          decisionCard: rejeu.decisionCard,
-          protocolDraft: draft,
-          approval,
-          // AUCUNE LIMITATION PATIENT AUJOURD'HUI, et c'est une absence, pas un
-          // vide : celles de la carte sont écrites POUR LE PRATICIEN
-          // (« aucune priorité ne peut être proposée avant… »). Les traduire
-          // serait fabriquer du texte patient ; les recopier serait lui servir
-          // un raisonnement interne. Dette nommée au dossier de campagne.
-          patientLimitations: [],
-        }),
-        boussoles,
-        cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
-        debutCycle: diffuse.approvedAt.toISOString(),
-      });
-    } catch (erreur) {
-      // Le contrat REFUSE (statut d'intervention inconnu, action hors liste
-      // patient, incohérence relue). Fail-closed, et bruyant côté serveur.
-      console.warn(
-        '[portail/protocole GET] le contrat patient refuse ce protocole :',
-        erreur instanceof Error ? erreur.message : String(erreur),
-      );
+    // LE CONTRAT ACCEPTE-T-IL ? La question est posée par `vuePatientOuRefus`,
+    // partagé avec le miroir praticien de la diffusion — deux descriptions de
+    // la même règle auraient dérivé ([[D-200]]).
+    const service = vuePatientOuRefus({
+      decisionCard: rejeu.decisionCard,
+      protocolDraft: draft,
+      approval,
+      // AUCUNE LIMITATION PATIENT AUJOURD'HUI, et c'est une absence, pas un
+      // vide : celles de la carte sont écrites POUR LE PRATICIEN (« aucune
+      // priorité ne peut être proposée avant… »). Les traduire serait fabriquer
+      // du texte patient ; les recopier serait lui servir un raisonnement
+      // interne. Dette nommée au dossier de campagne.
+      patientLimitations: [],
+    });
+    if (!service.ok) {
+      console.warn('[portail/protocole GET] le contrat patient refuse ce protocole :', service.detail);
       return NextResponse.json({
         ok: true, protocoleDiffuse: true, finDeCycle, vue: null, indisponible: true, calibrage: null,
       });
     }
+
+    const vue = projeterSurLeFil({
+      vue: service.vue,
+      boussoles,
+      cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
+      debutCycle: diffuse.approvedAt.toISOString(),
+    });
 
     return NextResponse.json({
       ok: true, protocoleDiffuse: true, finDeCycle, vue, indisponible: false, calibrage: null,

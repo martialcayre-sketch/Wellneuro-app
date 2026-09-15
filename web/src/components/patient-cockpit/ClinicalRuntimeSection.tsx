@@ -1313,6 +1313,15 @@ export function ClinicalRuntimeSection({
       if (response.status === 409 && payload.reason === 'REGISTRE_ANXIOGENE') {
         setSaveState('idle');
         setSaveError(null);
+        // LE REFUS DOIT ÊTRE ATTEIGNABLE D'OÙ QUE PARTE LE GESTE ([[D-200]]).
+        // L'alerte et son bouton « Enregistrer ce texte tel quel » vivent dans
+        // le constructeur, masqué hors de la sous-vue « protocole » ; or
+        // `reviserApresArbitrages` part de la sous-vue « biologie ». Le
+        // praticien cliquait « Appliquer les arbitrages » et il ne se passait
+        // RIEN : la garde confirmable redevenait bloquante déguisée, le défaut
+        // exact du booklet que `D-189` §4 déclarait non négociable. On ramène
+        // donc la sous-vue là où le refus se lit et se lève.
+        setSousVueActions('protocole');
         setConfirmationRegistre({
           message: payload.error ?? 'Ce texte emploie un terme à reformuler.',
           jeton: payload.texteSha256 ?? '',

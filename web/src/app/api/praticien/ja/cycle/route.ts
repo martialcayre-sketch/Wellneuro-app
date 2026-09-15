@@ -83,7 +83,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       select: { payload: true, inputHash: true, assessmentEpisodeId: true },
     });
     if (!row) {
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, vue: null });
+      // Une approbation existe mais sa version a disparu : ce n'est pas une
+      // absence de diffusion, c'est une anomalie. Le praticien doit lire
+      // « diffusé, non servi », pas « aucun protocole ».
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
     }
 
     const draft = reconstructProtocolDraft(row.payload, row.inputHash);
@@ -97,8 +100,14 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       // LE PRATICIEN VOIT CE QUE LE PATIENT VOIT — c'est-à-dire rien, et pour la
       // même raison. Servir ici un protocole que le portail refuse ferait croire
       // au praticien que son patient le lit.
+      // UN PROTOCOLE DIFFUSÉ QU'ON NE PEUT PAS SERVIR N'EST PAS UNE ABSENCE DE
+      // PROTOCOLE ([[D-200]]). Cette route rendait `protocoleDiffuse: false`,
+      // que le carnet affiche « Aucun protocole diffusé pour ce patient » : une
+      // affirmation FAUSSE, et exactement celle qui empêche le praticien de
+      // comprendre pourquoi son patient ne voit rien. Le contrat suit désormais
+      // celui du portail, à la lettre : diffusé oui, servi non.
       console.warn('[praticien/ja/cycle GET] protocole diffusé non servi :', rejeu.motif);
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, vue: null });
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
     }
 
     const approval: ProtocolDiffusionApproval = {
@@ -128,10 +137,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         '[praticien/ja/cycle GET] le contrat patient refuse ce protocole :',
         erreur instanceof Error ? erreur.message : String(erreur),
       );
-      return NextResponse.json({ ok: true, protocoleDiffuse: false, vue: null });
+      return NextResponse.json({ ok: true, protocoleDiffuse: true, vue: null, indisponible: true });
     }
 
-    return NextResponse.json({ ok: true, protocoleDiffuse: true, vue });
+    return NextResponse.json({ ok: true, protocoleDiffuse: true, vue, indisponible: false });
   } catch (error) {
     if (error instanceof ProtocolPayloadIntegrityError) {
       return NextResponse.json(
