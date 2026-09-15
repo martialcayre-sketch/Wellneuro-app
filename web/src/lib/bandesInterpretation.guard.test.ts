@@ -335,11 +335,31 @@ describe('frontières du 2026-07-30 — alignées sur la source, ou arbitrées e
       .interpretation?.label).toContain('excessive');
   });
 
-  it('QDRS : les TROIS bornes chevauchées vont à la bande la plus atteinte', () => {
-    // Grille source, relevée à l'identique par les deux lectures du banc :
-    // 0-1 / 1,5-5,5 / 6-12 / 12,5-17 / 17,5-30. Avant : 1,5 sortait « Normal »,
-    // 12,5 « Démence légère », 17,5 « légère à modérée » — le patient le plus
-    // atteint recevait la bande la plus rassurante, à chaque borne partagée.
+  it('QDRS : les bornes de la SOURCE, et les deux arbitrages qui la complètent', () => {
+    // CE COMMENTAIRE AFFIRMAIT UNE CHOSE FAUSSE, et le banc épinglait les valeurs
+    // qu'il décrivait. Il disait : « Grille source, relevée à l'identique par les
+    // deux lectures du banc : 0-1 / 1,5-5,5 / 6-12 / 12,5-17 / 17,5-30 ». Le
+    // document officiel du QDRS, lu le 2026-09-15, publie tout autre chose :
+    //
+    //     Normal 0-1 · MCI 2-5 · Mild dementia 6-12
+    //     Moderate dementia 13-20 · Severe dementia 20-30
+    //
+    // La bande « légère à modérée » n'existe pas dans la source, et la bande la
+    // plus sévère s'y ouvre à 20, non à 17,5 : un score de 18 ou 19 recevait
+    // « modérée à sévère » en rouge là où l'instrument dit « démence modérée ».
+    // SUR-CLASSEMENT — l'erreur inverse de celle que ce banc croyait garder.
+    //
+    // LA MÊME FAUSSETÉ ÉTAIT ÉCRITE DEUX FOIS : ici, et dans le commentaire de
+    // `Q_GEO_05.scoring`. Deux lectures d'un banc ne valent pas une lecture de la
+    // source — c'est ce que ce cas établit.
+    //
+    // DEUX ARBITRAGES PRATICIENS DU 2026-09-15 complètent la source, et le banc
+    // les épingle EN TANT QU'ARBITRAGES, pas en tant que valeurs publiées :
+    //   · le chevauchement de la source à 20 (« Moderate 13-20 » ET « Severe
+    //     20-30 ») est tranché vers MODÉRÉ, la bande sévère s'ouvrant à 20,5 ;
+    //   · les demi-pas que la source ne classe pas — 1,5 · 5,5 · 12,5, tous
+    //     atteignables — rejoignent la bande SUPÉRIEURE, sens prudent sur un
+    //     dépistage. Sans cela, aligner sur « 13-20 » ouvrait un trou à 12,5.
     const items = itemsDe('Q_GEO_05');
     const totalDe = (t: number) => {
       // scores en pas de 0,5 : répartir t sur les items (max 3 chacun)
@@ -349,9 +369,15 @@ describe('frontières du 2026-07-30 — alignées sur la source, ou arbitrées e
       return r;
     };
     const cas: Array<[number, string]> = [
-      [1, 'Normal'], [1.5, 'MCI'], [5.5, 'MCI'], [6, 'Démence légère'],
-      [12, 'Démence légère'], [12.5, 'légère à modérée'], [17, 'légère à modérée'],
-      [17.5, 'modérée à sévère'],
+      // Bornes PUBLIÉES.
+      [1, 'Normal'], [6, 'Démence légère'], [12, 'Démence légère'],
+      [13, 'Démence modérée'], [20, 'Démence modérée'], [30, 'Démence sévère'],
+      // Arbitrages : demi-pas non classés par la source, bande supérieure.
+      [1.5, 'MCI'], [5.5, 'MCI'], [12.5, 'Démence modérée'],
+      // Arbitrage : le chevauchement de la source à 20 va au MODÉRÉ.
+      [20.5, 'Démence sévère'],
+      // LE CAS QUI A COÛTÉ : 18 et 19 étaient servis « modérée à sévère ».
+      [18, 'Démence modérée'], [19, 'Démence modérée'],
     ];
     for (const [t, attendu] of cas) {
       const r: any = calculateScore('Q_GEO_05', totalDe(t));
