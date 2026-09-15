@@ -6310,6 +6310,43 @@ qu'un banc ne prouve que ce que sa rédaction a pensé à nommer. Ce qui change 
 la faute est attrapée AVANT la signature clinique, pas après le merge. C'est ce
 pour quoi l'ordre « relire d'abord, signer ensuite » existe.
 
+## 2026-09-16 00:35 — La passe Codex qu'on devait à #1098, onze jours après ([[D-201]])
+
+**Dette de revue tenue, et elle a rendu.** #1098 est P0 — clinique, production
+LLM — et a été mergée le 2026-09-14 sans la passe que `POLITIQUE_REVUE.md`
+impose. Deux findings, les deux confirmés par exécution.
+
+**Le garde ne gardait pas la clause, il gardait son vocabulaire.** Trois
+mutations vertes sur 55 cas, ré-ancrage des empreintes de prompt compris : une
+exception insérée dans l'opérateur, la même posée en phrase suivante, et
+l'opérateur SEUL déplacé sous une section topique — celle-là sans qu'un seul
+caractère de son texte ne bouge, parce que le test de position ne localisait que
+le CONSTAT.
+
+**La réponse est structurelle, pas lexicale, et c'est le point.** Blacklister
+« sauf si » aurait refait le défaut payé quatre fois en deux jours : une garde qui
+NOMME ce qu'elle interdit sans pouvoir le VOIR. Le banc extrait la PUCE markdown,
+exige ses cinq composants dedans, et l'épingle par empreinte. Une empreinte de
+prompt bouge à chaque édition et se ré-ancre par routine — c'est exactement par
+là que passe une clause affaiblie de bonne foi ; celle de la puce ne bouge que si
+cet interdit-là est touché.
+
+**La consigne servie au modèle n'a pas bougé d'un caractère.** Correction du
+garde seul, donc pas de bump de version. C'est la bonne forme : le défaut était
+dans la preuve, pas dans l'interdit.
+
+**Ce qui reste ouvert est plus grave que ce qui est corrigé.** La clause est
+l'UNIQUE contrôle du contenu produit — `analyserSortieSynthese` ne lit que la
+structure. « Habituellement évalué sur deux semaines » passe le schéma, passe la
+relance, et se persiste. `DC-19` et `DC-16` sont garantis sur la consigne, pas
+sur la sortie. Mesurer demande une lecture de production ; filtrer sans mesurer
+échangerait un défaut connu contre un défaut inconnu. **Arbitrage non rendu.**
+
+**Deux pièges d'environnement, tous deux déjà connus et repayés.** Un worktree
+neuf a `src/generated/prisma/` VIDE : T1 rend 351 erreurs sur une centaine de
+fichiers qu'on n'a pas touchés, `npm run prisma:generate` d'abord. Et
+`npm run check | tail` rend le code de `tail` — T1 s'annonçait vert en étant
+rouge.
 ## 2026-09-16 — La contre-revue adverse avant la clôture (LOT-08, D-200)
 
 Vingt-six affirmations de la campagne « 5. Actions » soumises à réfutation avant d'être
