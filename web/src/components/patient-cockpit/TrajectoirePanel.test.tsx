@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { TrajectoirePanel } from './TrajectoirePanel';
@@ -513,6 +513,70 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retour au présent' }));
     expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
     expect(screen.queryByText('Sommeil insuffisant')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  // TOUTE SORTIE VERS LE PRÉSENT RAMÈNE AU PRÉSENT — et ce banc garde la
+  // CLASSE du défaut, pas l'instance. Il énumère les boutons du bandeau daté
+  // dont le nom promet le présent et les éprouve un à un : une troisième sortie
+  // ajoutée demain, qui réinitialiserait l'état local sans prévenir le parent,
+  // le fera rougir sans qu'on ait à y penser.
+  //
+  // Le défaut reproduit avant correctif : « Revenir au présent » (pied du
+  // bandeau) appelait `revenirAuPresent` SEUL. En mode piloté, le parent garde
+  // la sélection, l'effet de synchronisation voit `repereInitial !==
+  // repereActif` et ROUVRE la lecture datée. Le praticien demande le présent et
+  // l'écran lui réaffirme un état passé — sur la seule surface dont le rôle est
+  // d'empêcher cette confusion. Et l'échec est SILENCIEUX : aucune erreur, un
+  // bandeau qui « colle ».
+  it('chaque sortie du bandeau daté ramène au présent — aucune ne rouvre la lecture', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.startsWith('/api/praticien/reperes')) {
+        return Promise.resolve(
+          json({ ok: true, reperes: [{ date: '2026-01-01T00:00:00.000Z', source: 'episode', libelle: 'Épisode T0 confirmé' }] }),
+        );
+      }
+      if (url.startsWith('/api/praticien/relecture-notes')) return Promise.resolve(json({ ok: true, notes: [] }));
+      if (url.startsWith('/api/praticien/trajectoire') && url.includes('etatAu=')) {
+        return Promise.resolve(json({ ok: true, trajectoire, modeViePresent: null, modeVieT0CycleCourant: null, etatDate: null }));
+      }
+      return Promise.resolve(json({ asOf: '2026-01-01T00:00:00.000Z', proposal: { candidateResponses: [{}] } }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const ouvrirLaLectureDatee = async () => {
+      fireEvent.click(screen.getByRole('button', { name: /T0 · 01\/01\/2026/ }));
+      await screen.findByText(/Vous lisez l’état du 01\/01\/2026/);
+    };
+
+    render(<TrajectoirePanel trajectoire={trajectoire} idPatient="PAT_SEED_03" />);
+    await ouvrirLaLectureDatee();
+
+    // Les sorties telles que l'écran les offre — découvertes, jamais listées en
+    // dur : une sortie ajoutée sans être nommée ici doit quand même être éprouvée.
+    const sorties = screen
+      .getAllByRole('button')
+      .map(bouton => bouton.textContent?.trim() ?? '')
+      .filter(nom => /au présent$/.test(nom));
+    expect(sorties.length).toBeGreaterThanOrEqual(2);
+
+    for (const nom of sorties) {
+      if (screen.queryByText(/Vous lisez l’état du/) === null) await ouvrirLaLectureDatee();
+      const asOfAvant = fetchMock.mock.calls.filter(([u]) => String(u).includes('asOf=')).length;
+
+      fireEvent.click(screen.getByRole('button', { name: nom }));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Vous lisez l’état du/), `« ${nom} » laisse le bandeau daté`).toBeNull();
+      });
+      // Rouvrir est la forme la plus trompeuse de l'échec : l'écran réaffirme
+      // un état passé APRÈS qu'on a demandé le présent.
+      expect(
+        fetchMock.mock.calls.filter(([u]) => String(u).includes('asOf=')).length,
+        `« ${nom} » relance une relecture datée`,
+      ).toBe(asOfAvant);
+    }
+
     vi.unstubAllGlobals();
   });
 
