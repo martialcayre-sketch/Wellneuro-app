@@ -4,11 +4,7 @@
 
 ## Décisions actives
 
-<<<<<<< HEAD
 ### D-199 — Une attestation posée, puis retirée le même jour par son propre mécanisme
-=======
-### D-198 — Une attestation posée, puis retirée le même jour par son propre mécanisme
->>>>>>> f3225e0d (codex : la provenance ne se devine pas au libelle, et la portee doit etre hachee (D-198))
 
 - Date : 2026-09-15
 - Statut : accepté — l'attestation a été **posée puis RETIRÉE le même jour**, et
