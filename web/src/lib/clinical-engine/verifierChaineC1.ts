@@ -58,8 +58,15 @@ function estIsoCanonique(valeur: unknown): valeur is string {
  * Le `route.ts` du cockpit ne peut pas exporter de valeur (Next.js casse au
  * build sans que `tsc --noEmit` le voie) : la lecture est donc écrite ici, et
  * `adaptRuntimeInputs` — la seule pièce qui TRADUIT — reste partagée.
+ *
+ * EXPORTÉE POUR LE REJEU PATIENT (`rejeuCarteDecision.ts`), et c'est la même
+ * raison qui l'impose : le portail recompose la carte qu'il sert, et une
+ * troisième lecture du dossier — même « équivalente » — finirait par diverger.
+ * Le jour où elle divergerait, l'écran du patient s'éteindrait sur une carte
+ * honnête. Ce module n'a d'autorité que sur la LECTURE ; ni l'authentification
+ * ni l'appartenance ne s'y trouvent, et l'appelant les pose avant.
  */
-async function entreesRuntime(idPatient: string) {
+export async function entreesRuntime(idPatient: string) {
   const [responses, consultation] = await Promise.all([
     prisma.questionnaireReponse.findMany({
       where: { idPatient },

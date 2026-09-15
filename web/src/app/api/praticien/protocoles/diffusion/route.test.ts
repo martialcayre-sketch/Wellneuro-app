@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma } = vi.hoisted(() => ({
+const { getServerSession, prisma, rejouerCarteDecision } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  rejouerCarteDecision: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
@@ -13,6 +14,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/clinical-engine/rejeuCarteDecision', () => ({ rejouerCarteDecision }));
 
 import { deriveProtocolDraftId, deriveVersionId } from '@/lib/protocol/versioning';
 import { GET, POST } from './route';
@@ -124,23 +126,33 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+    rejouerCarteDecision.mockResolvedValue({ ok: true, decisionCard: { inputHash: 'HASH_DEC' }, selectionEcartee: false });
   });
 
   it('retourne l’approbation active et sa caducité', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     // La version active porte HASH_V2, l'approbation ancre HASH_V1 → caduque.
     prisma.protocolDraft.findMany.mockResolvedValue([
-      { id: 'v2', inputHash: 'HASH_V2', decisionCardInputHash: 'HASH_DEC', supersedesDraftId: 'v1', createdAt: new Date('2026-01-05T00:00:00.000Z') },
-      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z') },
+      { id: 'v2', inputHash: 'HASH_V2', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V2', supersedesDraftId: 'v1', createdAt: new Date('2026-01-05T00:00:00.000Z') },
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z') },
     ]);
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
       { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
     ]);
     const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
-    const json = (await res.json()) as { ok: boolean; approval: { protocolDraftInputHash: string } | null; stale: boolean };
+    const json = (await res.json()) as { ok: boolean; approval: { protocolDraftInputHash: string } | null; stale: boolean; servieAuPatient: boolean | null };
     expect(res.status).toBe(200);
     expect(json.approval?.protocolDraftInputHash).toBe('HASH_V1');
     expect(json.stale).toBe(true);
+    // LE CONSTAT EST PRIS SUR LA VERSION APPROUVÉE, pas sur la version active :
+    // c'est l'ancienne que le patient lit tant que la nouvelle n'est pas
+    // diffusée. `stale` compare deux VERSIONS ; ce constat-ci compare le
+    // DOSSIER à lui-même ([[D-191]]).
+    expect(rejouerCarteDecision).toHaveBeenCalledWith(expect.objectContaining({
+      idPatient: 'PAT_1', decisionCardId: 'DEC_1', decisionCardInputHash: 'HASH_DEC',
+      assessmentEpisodeId: 'EPISODE_V1',
+    }));
+    expect(json.servieAuPatient).toBe(true);
     // Le GET accessible journalise la lecture au gabarit littéral (G-TRUST-04).
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
@@ -157,9 +169,33 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.protocolDraft.findMany.mockResolvedValue([]);
     const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
-    const json = (await res.json()) as { approval: null; stale: boolean };
+    const json = (await res.json()) as { approval: null; stale: boolean; servieAuPatient: boolean | null };
     expect(json.approval).toBeNull();
     expect(json.stale).toBe(false);
+    // `null`, et non `false` : sans rien de diffusé il n'y a rien à servir, et
+    // « non servie » serait un faux constat.
+    expect(json.servieAuPatient).toBeNull();
+    expect(rejouerCarteDecision).not.toHaveBeenCalled();
+  });
+
+  // LE CONSTAT QUI MANQUAIT. Une validation pour diffusion pouvait cesser d'être
+  // servie sans que personne ne l'apprenne : le patient lisait une
+  // indisponibilité, le praticien lisait « Validé pour diffusion ».
+  it('dit au praticien que son protocole n’est plus affiché au patient', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z') },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
+    const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
+    const json = (await res.json()) as { stale: boolean; servieAuPatient: boolean | null };
+    // La version approuvée EST la version active : rien de caduc, et pourtant
+    // l'écran du patient est vide. Les deux constats sont distincts.
+    expect(json.stale).toBe(false);
+    expect(json.servieAuPatient).toBe(false);
   });
 
   it('refuse la lecture du patient d’un autre praticien (403)', async () => {
