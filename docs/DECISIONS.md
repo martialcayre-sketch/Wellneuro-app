@@ -4,6 +4,72 @@
 
 ## Décisions actives
 
+### D-198 — Le barème de charge est déclaré conforme : la relecture a corrigé une phrase avant de signer
+
+- Date : 2026-09-15
+- Statut : accepté — **déclaration de conformité du praticien rendue en séance
+  le 2026-09-15**, après lecture des trois lignes et des quatre cas qu'elles
+  couvrent (LOT-06 de la campagne « 5. Actions — le protocole assisté »).
+- Domaine : clinique — première signature de `BAREME_CHARGE_V1`.
+- Applique [[D-195]] §1, §2, §4 et §5. Met en service ce que [[D-196]] a écrit.
+  S'appuie sur [[D-063]], `DC-17`, `DC-18`, `DC-19`, `DC-20`.
+
+**CE QUI SE SIGNE ICI N'EST PAS UNE RÈGLE SOURCÉE, et le dire fait partie de la
+signature.** Aucune littérature ne porte ces bornes, aucun claim n'y est
+rattaché — à la différence des vingt-neuf que couvre `INDICATIONS_BIOLOGIE_V1`.
+C'est une **convention d'organisation**, et sa provenance est exactement la
+déclaration ci-dessous : rien d'autre. Un lecteur qui la prendrait pour une
+règle clinique se tromperait, et le module le dit sur place.
+
+**LA SIGNATURE A ÉTÉ RETIRÉE UNE FOIS AVANT D'ÊTRE POSÉE.** L'outil avait écrit
+l'échelle, puis recopié l'attestation dans la foulée ; `D-195`, rendue le même
+jour par une session parallèle, a tranché que l'empreinte posée seule par celui
+qui a écrit le contenu « n'enregistre plus, elle ratifie ». La signature a donc
+été défaite sur la branche, l'échelle mergée **hors service** (`#1122`), et la
+déclaration demandée séparément — sur une surface produite AVANT la demande
+(§2) : les trois lignes, leurs bornes, et la phrase affichée à chacune des
+quatre valeurs possibles de `nombreActionsFermes`.
+
+**ET LA RELECTURE A SERVI, ce qui est la seule preuve qu'elle a eu lieu.** Le
+texte proposé disait, pour `CHARGE-01` : « Une seule action engagée : un pas à
+tenir. » Or `CHARGE-01` a `min: null` — elle couvre donc **zéro**, et un
+protocole dont les trois actions attendent un bilan ([[D-190]], sans plafond sur
+le nombre de suspensions) n'engage rien. La phrase affirmait faux à l'écran dans
+ce cas-là. Le praticien a demandé qu'elle couvre les deux : « **Au plus une
+action engagée : la charge reste minimale.** » Le périmètre a changé, et la
+déclaration a été reposée sur le texte final — jamais sur l'ancien.
+
+**Décision :**
+
+1. **L'échelle déclarée conforme est celle-ci, et elle porte sur un seul terme —
+   `nombreActionsFermes`, les actions réellement engagées** :
+   `CHARGE-01` jusqu'à 1 ⇒ **léger** ; `CHARGE-02` à 2 ⇒ **modéré** ;
+   `CHARGE-03` à 3 ⇒ **chargé**. Bornes incluses, `null` valant « pas de borne de
+   ce côté ». Contiguë de 0 à `MAX_ACTIONS_PROTOCOLE_21J`, sans trou ni
+   recouvrement.
+2. **`excessive` n'est atteignable par aucune ligne, et le restera tant qu'une
+   décision ne le change pas.** Un comptage ne peut pas savoir qu'un protocole de
+   deux actions est excessif pour quelqu'un qui traverse un déménagement. Le
+   registre d'avertissement écrit à l'écran pour ce niveau est donc **dormant** —
+   nommé comme tel dans le code, exercé sur fixture seulement, armé le jour où
+   une ligne l'atteindra.
+3. **Le périmètre signé est `40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d`**,
+   recopié en littéral figé, `dateValidation: '2026-09-15T00:00:00.000Z'`.
+   Le périmètre du texte proposé — `e2ac8539…bb969910` — reste écrit au-dessus,
+   marqué **jamais signé** ([[D-195]] §4) : aucune déclaration ne l'a porté.
+4. **La table est enrôlée au garde `shaPerimetreLitteral.guard.test.ts` le jour
+   de sa première signature**, et non plus tard. Le retard d'enrôlement est
+   exactement ce que `D-067` puis `D-084` ont eu à rattraper après coup.
+5. **Le barème propose, le praticien déclare.** `TherapeuticLoad.source` vaut la
+   constante `'practitioner'`, posée en dur ; le bouton « Reprendre cette charge »
+   recopie un niveau dans le champ et n'enregistre rien.
+
+**Ce que cette décision ne fait pas :** elle ne pose aucun seuil clinique, ne
+touche aucune règle, aucun claim, aucun questionnaire, et ne change rien de ce
+que le patient lit — le contrat de vue patient exclut la charge nommément. Elle
+n'allume aucun drapeau : le verrou de signature EST l'interrupteur, et il vient
+de s'ouvrir sur ce périmètre-là, sur lui seul.
+
 ### D-196 — Le barème de charge PROPOSE, le praticien DÉCLARE — et la charge redevient lisible
 
 - Date : 2026-09-15

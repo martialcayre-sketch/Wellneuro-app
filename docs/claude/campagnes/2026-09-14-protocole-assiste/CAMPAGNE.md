@@ -184,16 +184,17 @@ au rail, et `adviceSheetRef` — mort de bout en bout, dette consignée au LOT-0
 | LOT-03 | livré en deux PR — `D-191`, `D-192` |
 | LOT-04 | livré en deux PR — la garde de registre, puis `D-193` |
 | LOT-05 | livré — `D-190` |
-| **LOT-06** | **livré — `D-196` ; l'échelle est écrite, sa signature attend la déclaration de conformité (`D-195` §1)** |
+| LOT-06 | livré en deux PR — `D-196` (l'échelle, hors service), puis `D-198` (déclarée conforme, en service) |
 | LOT-07 | bilan écrit — **sa mesure au conteneur reste due** |
 
-**Sept décisions** rendues : `D-188` à `D-193`, puis `D-196`. **Zéro migration, zéro
-drapeau neuf, zéro identité patient.**
+**Huit décisions** rendues : `D-188` à `D-193`, puis `D-196` et `D-198`. **Zéro
+migration, zéro drapeau neuf, zéro identité patient.**
 
-**Les huit lots sont livrés.** Deux choses restent, et aucune n'est un lot : la
-**déclaration de conformité** du praticien, qui met le barème en service — l'outil
-ayant proposé l'échelle ne peut pas l'attester seul ([[D-195]] §1) —, et la **mesure
-d'usage**, sur dossiers réels, par identifiant, au conteneur (`D-125`). Elle a été
+**Les huit lots sont livrés, et le barème est en service** : la déclaration de
+conformité a été rendue le 2026-09-15 après relecture — qui a d'ailleurs corrigé le
+motif de `CHARGE-01`, lequel affirmait faux à zéro action engagée (`D-198`). Une
+seule chose reste, et ce n'est pas un lot : la **mesure d'usage**, sur dossiers
+réels, par identifiant, au conteneur (`D-125`). Elle a été
 refusée par le classifieur de sécurité de la session du 2026-09-15 et n'a pas été
 contournée. C'est ce que `D-112` avait prévenu — « le goulot n'est pas l'ingénierie,
 c'est le temps praticien » — et ce que ce dossier a écrit à son ouverture : la

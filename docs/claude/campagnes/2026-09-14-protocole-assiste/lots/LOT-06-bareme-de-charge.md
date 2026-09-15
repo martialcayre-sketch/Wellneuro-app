@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Le barème de charge — mécanisme signé, première ligne du praticien"
-statut: "échelle écrite — attend la déclaration de conformité"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -67,10 +67,11 @@ posé en dur et inchangé.
 
 ## Étapes
 
-- [ ] Rendre la décision (périmètre, champs, signature) + fragment.
-- [ ] Écrire la table, son moteur, sa vérification à cinq termes.
-- [ ] Recevoir la première ligne signée du praticien.
-- [ ] Brancher en proposition ; enrôler dans les bancs de garde.
+- [x] Rendre la décision (périmètre, champs, signature) + fragment — [[D-196]].
+- [x] Écrire la table, son moteur, sa vérification à cinq termes.
+- [x] Recevoir la déclaration de conformité du praticien — [[D-198]], après une
+      signature retirée puis reposée sur une surface de relecture.
+- [x] Brancher en proposition ; enrôler dans les bancs de garde.
 
 ## Tests
 
@@ -85,20 +86,21 @@ saisie praticien reste souveraine.
 
 ## LIVRÉ LE 2026-09-15 — mécanisme, surface, et première échelle ratifiée
 
-### L'échelle écrite — NON encore en service
+### L'échelle écrite — mise en service le 2026-09-15 par la déclaration du praticien
 
 Trois bandes sur `nombreActionsFermes`, contiguës, sans trou ni recouvrement :
 
 | Bornes (inclusives) | Niveau | Motif |
 |---|---|---|
-| `null` – 1 | léger | « Une seule action engagée : un pas à tenir. » |
+| `null` – 1 | léger | « Au plus une action engagée : la charge reste minimale. » |
 | 2 – 2 | modéré | « Deux actions engagées en parallèle. » |
 | 3 – 3 | chargé | « Trois actions engagées, le maximum que le protocole permet. » |
 
-**La signature attend la déclaration de conformité du praticien** ([[D-195]] §1,
-rendue le même jour) : l'outil qui a proposé le contenu ne peut pas l'attester seul.
-Tant qu'elle manque, `lignesBaremeServables` ne sert RIEN et l'écran n'affiche aucune
-suggestion.
+**La signature a d'abord été RETIRÉE, puis posée par une déclaration séparée**
+([[D-195]] §1, rendue le même jour) : l'outil qui a proposé le contenu ne pouvait pas
+l'attester seul. L'échelle est donc partie **hors service** dans la PR #1122, puis la
+déclaration a été demandée sur une surface produite avant elle ([[D-198]]). Le motif
+de `CHARGE-01` porte la trace de cette relecture — voir la dernière section.
 
 **Ces bornes n'ont aucune source clinique, et la table le dit d'elle-même** — un banc
 textuel l'exige. Rien au dépôt ne traite de la charge thérapeutique, aucun claim ne
@@ -206,3 +208,54 @@ périmètre, je reporte votre attestation et sa date, et je pousse la PR. Je ne 
 jamais la signature moi-même — le garde interdit le câblage, pas la recopie, et
 c'est la recopie d'une attestation que vous avez donnée.
 
+
+---
+
+## DÉCLARÉE CONFORME LE 2026-09-15 — et la relecture a corrigé une phrase
+
+La déclaration de conformité a été rendue en séance, après lecture des trois lignes
+**et de ce que chacune affiche aux quatre valeurs possibles** de
+`nombreActionsFermes` — la surface exigée par [[D-195]] §2, produite avant la demande
+et non après.
+
+### Ce que la relecture a trouvé, et c'est la preuve qu'elle a eu lieu
+
+`CHARGE-01` a `min: null` : elle couvre donc **zéro**. Or un protocole dont les trois
+actions attendent un bilan ([[D-190]], sans plafond sur le nombre de suspensions)
+n'engage rien — et le motif proposé, « Une seule action engagée : un pas à tenir »,
+affirmait alors faux à l'écran. Le praticien a demandé une phrase qui couvre les deux
+cas : « **Au plus une action engagée : la charge reste minimale.** »
+
+Le périmètre a changé avec elle. L'ancien SHA — `e2ac8539…bb969910` — reste écrit
+au-dessus du nouveau dans le module, **marqué jamais signé** ([[D-195]] §4) : aucune
+déclaration ne l'a porté. Le périmètre déclaré conforme est
+`40f5057e…3dd4757d`, recopié en littéral figé avec
+`dateValidation: '2026-09-15T00:00:00.000Z'`.
+
+### Les quatre cas, tels qu'ils s'affichent
+
+| Actions engagées | Niveau suggéré | Phrase |
+|---|---|---|
+| 0 | léger | « Au plus une action engagée : la charge reste minimale. » |
+| 1 | léger | « Au plus une action engagée : la charge reste minimale. » |
+| 2 | modéré | « Deux actions engagées en parallèle. » |
+| 3 | chargé | « Trois actions engagées, le maximum que le protocole permet. » |
+
+Un banc les parcourt sur la **table réelle signée**, pas sur une fixture : il rougit
+si une borne ou un motif bouge sans que la déclaration soit reposée.
+
+### Deux gestes de garde posés le même jour
+
+- **Enrôlement immédiat** de la table dans `shaPerimetreLitteral.guard.test.ts`, le
+  jour de sa première signature — le retard d'enrôlement est ce que `D-067` puis
+  `D-084` ont eu à rattraper après coup.
+- **Le registre d'avertissement « excessif » est nommé DORMANT** dans le code :
+  aucune ligne ne l'atteint, aucun banc ne l'exerce sur la table réelle. Il s'arme le
+  jour où une ligne y montera — l'arbitrage a préféré le garder écrit plutôt que
+  d'avoir à re-décider le registre à ce moment-là.
+
+### Ce qui reste dû, et n'appartient pas à ce lot
+
+La **mesure d'usage** : savoir si un praticien reprend ou écarte la suggestion se lit
+en production, par identifiant, au conteneur — et la forme `run -d -- bash -c "psql …"`
+est refusée par le classifier du mode auto. Dette portée par le bilan de campagne.

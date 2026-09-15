@@ -39,6 +39,11 @@ function ligne(surcharges: Partial<LigneBaremeCharge> = {}): LigneBaremeCharge {
   };
 }
 
+// LE VERROU FERMÉ RESTE EXERÇABLE APRÈS LA SIGNATURE. Les bancs de refus
+// jouaient `BAREME_CHARGE_METADATA` comme fixture « non signée » : depuis la
+// déclaration du 2026-09-15 elle est signée, et ils ne prouveraient plus rien.
+const NON_SIGNEE = { validationExterne: false, dateValidation: null, shaPerimetre: null };
+
 const SIGNATURE_BANC = (lignes: LigneBaremeCharge[]) => ({
   validationExterne: true,
   dateValidation: '2026-09-15T10:00:00.000Z',
@@ -46,18 +51,23 @@ const SIGNATURE_BANC = (lignes: LigneBaremeCharge[]) => ({
 });
 
 describe('barème de charge — le verrou de signature', () => {
-  // L'ÉCHELLE EST ÉCRITE, ELLE N'EST PAS EN SERVICE. La signature attend la
-  // DÉCLARATION DE CONFORMITÉ du praticien ([[D-195]] §1) : l'outil qui a
-  // proposé le contenu ne peut pas l'attester seul, sans quoi le verrou
-  // « n'enregistre plus, il ratifie ».
-  it('l’échelle est écrite et NON signée — le verrou reste fermé', () => {
+  // L'ÉCHELLE EST EN SERVICE DEPUIS LA DÉCLARATION DE CONFORMITÉ DU PRATICIEN,
+  // rendue en séance le 2026-09-15 après lecture des trois lignes et des quatre
+  // cas qu'elles couvrent ([[D-195]] §1 et §2). L'outil a proposé le contenu ;
+  // il ne l'a pas attesté — sans quoi le verrou « n'enregistre plus, il
+  // ratifie ».
+  it('l’échelle est SIGNÉE — le verrou est ouvert sur ce périmètre-là', () => {
     expect(BAREME_CHARGE_V1).toHaveLength(3);
-    expect(BAREME_CHARGE_METADATA.validationExterne).toBe(false);
-    expect(BAREME_CHARGE_METADATA.dateValidation).toBeNull();
-    expect(BAREME_CHARGE_METADATA.shaPerimetre).toBeNull();
-    expect(baremeChargeSigne()).toBe(false);
-    // Conséquence directe : rien n'est servi, donc aucune suggestion n'existe.
-    expect(lignesBaremeServables()).toEqual([]);
+    expect(BAREME_CHARGE_METADATA.validationExterne).toBe(true);
+    expect(BAREME_CHARGE_METADATA.dateValidation).toBe('2026-09-15T00:00:00.000Z');
+    // LE LITTÉRAL FIGÉ, recopié — jamais `BAREME_CHARGE_SHA256`, que
+    // `shaPerimetreLitteral.guard.test.ts` interdit au source. L'épingler ici
+    // fait rougir toute réécriture d'une ligne non re-déclarée.
+    expect(BAREME_CHARGE_METADATA.shaPerimetre)
+      .toBe('40f5057e6f3c17c5c67a6a65025a579790b3e39574a033eac5cd74873dd4757d');
+    expect(baremeChargeSigne()).toBe(true);
+    // Conséquence directe : les trois lignes sortent vers l'écran.
+    expect(lignesBaremeServables()).toEqual(BAREME_CHARGE_V1);
   });
 
   // L'ÉCHELLE RATIFIÉE : un seul terme, contiguë, sans trou ni recouvrement, et
@@ -129,6 +139,46 @@ describe('barème de charge — ce qu’il mesure et ce qu’il suggère', () =>
     expect(mesure.typesDistincts).toBe(2);
   });
 
+  // LA SURFACE EXACTE DÉCLARÉE CONFORME LE 2026-09-15 — quatre valeurs
+  // possibles de `nombreActionsFermes`, quatre phrases. Ce banc est la
+  // relecture rendue exécutable : il rougit si une borne ou un motif bouge sans
+  // que la déclaration soit reposée.
+  //
+  // LE CAS ZÉRO EST LE POINT DÉLICAT, et c'est la relecture qui l'a trouvé : un
+  // protocole dont les trois actions attendent un bilan n'engage RIEN, et le
+  // motif proposé disait « Une seule action engagée ». `CHARGE-01` couvre zéro
+  // parce que `min` vaut `null` — la phrase devait donc couvrir zéro aussi.
+  it('sert, sur la table signée, la phrase déclarée pour chacun des quatre cas', () => {
+    const CAS = [
+      { fermes: 0, niveau: 'light', motif: 'Au plus une action engagée : la charge reste minimale.' },
+      { fermes: 1, niveau: 'light', motif: 'Au plus une action engagée : la charge reste minimale.' },
+      { fermes: 2, niveau: 'moderate', motif: 'Deux actions engagées en parallèle.' },
+      { fermes: 3, niveau: 'loaded', motif: 'Trois actions engagées, le maximum que le protocole permet.' },
+    ] as const;
+    for (const cas of CAS) {
+      const actions = Array.from({ length: MAX_ACTIONS_PROTOCOLE_21J }, (_, rang) => action({
+        actionId: `a${rang}`,
+        ...(rang < cas.fermes ? {} : {
+          interventionStatus: 'conditionnelle_biologie' as const,
+          waitFor: { type: 'biologie' as const, cible: 'Ferritine' },
+        }),
+      }));
+      const mesure = mesurerProtocole(actions);
+      expect(mesure.nombreActionsFermes, `${cas.fermes} engagées`).toBe(cas.fermes);
+      const suggestion = suggererDepuisLignes(mesure, lignesBaremeServables());
+      expect(suggestion?.niveau, `${cas.fermes} engagées`).toBe(cas.niveau);
+      expect(suggestion?.motif, `${cas.fermes} engagées`).toBe(cas.motif);
+    }
+    // À zéro, aucune phrase servie ne peut annoncer une action engagée.
+    const toutesSuspendues = Array.from({ length: MAX_ACTIONS_PROTOCOLE_21J }, (_, rang) => action({
+      actionId: `s${rang}`,
+      interventionStatus: 'conditionnelle_biologie' as const,
+      waitFor: { type: 'biologie' as const, cible: 'Ferritine' },
+    }));
+    expect(suggererDepuisLignes(mesurerProtocole(toutesSuspendues), lignesBaremeServables())?.motif)
+      .not.toMatch(/une seule action/i);
+  });
+
   // L'ÉCART ENTRE PLAN IDÉAL ET PLAN MINIMAL est la seule des quatre mesures
   // qui parle de l'effort plutôt que du volume : c'est lui que le patient vit
   // les jours difficiles.
@@ -187,10 +237,10 @@ describe('barème de charge — ce que le serveur a le droit de servir à un éc
     // SUR UNE TABLE NON VIDE, sinon le banc prouverait le vide et non le verrou :
     // constaté par mutation le 2026-09-15 — neutraliser la garde ne faisait
     // rougir personne tant que l'assertion portait sur la table réelle.
-    expect(lignesBaremeServables(lignes, BAREME_CHARGE_METADATA)).toEqual([]);
+    expect(lignesBaremeServables(lignes, NON_SIGNEE)).toEqual([]);
     expect(lignesBaremeServables(lignes, SIGNATURE_BANC(lignes))).toEqual(lignes);
-    // La table RÉELLE, elle, est écrite mais NON signée : rien ne sort.
-    expect(lignesBaremeServables()).toEqual([]);
+    // La table RÉELLE, elle, est signée : ses trois lignes publiées sortent.
+    expect(lignesBaremeServables()).toEqual(BAREME_CHARGE_V1);
   });
 
   it('ne sert jamais une ligne en brouillon, même sous une signature valide', () => {
@@ -206,7 +256,7 @@ describe('barème de charge — ce que le serveur a le droit de servir à un éc
     // lui donne.
     expect(suggererDepuisLignes(mesure, lignes)?.niveau).toBe('loaded');
     // Le chemin SERVEUR, lui, ne lui donne rien à lire.
-    expect(suggererDepuisLignes(mesure, lignesBaremeServables(lignes, BAREME_CHARGE_METADATA))).toBeNull();
+    expect(suggererDepuisLignes(mesure, lignesBaremeServables(lignes, NON_SIGNEE))).toBeNull();
   });
 });
 

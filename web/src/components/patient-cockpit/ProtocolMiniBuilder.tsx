@@ -546,7 +546,16 @@ export function ProtocolMiniBuilder({
             justification écrite quand le praticien DÉCLARE ce niveau : la
             suggestion le signale du même registre, sans rien bloquer et sans
             pré-remplir la justification — ouvrir ce champ d'avance pousserait
-            vers un choix que le praticien n'a pas fait. */}
+            vers un choix que le praticien n'a pas fait.
+
+            CETTE BRANCHE EST DORMANTE, ET C'EST DÉLIBÉRÉ : l'échelle signée le
+            2026-09-15 ne monte pas jusqu'à « excessif » — aucune ligne ne peut
+            donc la déclencher aujourd'hui. Elle s'arme le jour où une ligne
+            l'atteindra, et l'arbitrage a préféré la garder écrite plutôt que
+            d'avoir à re-décider le registre d'alerte à ce moment-là. Un
+            relecteur ne doit pas la lire comme du code en service : aucun banc
+            ne l'exerce sur la table réelle, seulement sur une ligne de
+            fixture. */}
         {suggestionCharge && (
           <div className={suggestionCharge.niveau === 'excessive'
             ? 'rounded-lg border border-status-warning bg-status-warning/10 px-3 py-2'
