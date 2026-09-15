@@ -54,7 +54,7 @@ et ses 26 cas sont verts en local ; elle attend cette migration.
 
 1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
    (`D-127`, `D-178`), et ici il n'est pas décoratif : **sa liste blanche de
-   colonnes est la seule chose qui tienne l'affirmation centrale de `D-193`.**
+   colonnes est la seule chose qui tienne l'affirmation centrale de `D-194`.**
    Sans elle, une migration future ajoute `id_patient`, rien ne bronche, et la
    décision devient fausse en silence — exactement ce qui est arrivé à `D-185`,
    dont l'affirmation centrale a vécu une journée sur `main` sans être vraie.

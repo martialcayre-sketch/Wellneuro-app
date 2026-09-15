@@ -39,6 +39,10 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import type { VerdictArbitrage } from '@/lib/biology-library/arbitrage';
 import { refusResolutionSansArbitrage } from '@/lib/biology-library/revision';
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { lireSelectionPriorite } from '@/lib/clinical-engine/selectionPrioritePrisma';
+import { resoudreRegleSignee } from '@/lib/praticien/sourceSigneeVerifiee';
+import { lireTeteObjectifCitable } from '@/lib/praticien/teteObjectifCitable';
+import { constaterProvenancePurpose, sourcesCitablesPurpose } from '@/lib/protocol/provenancePurpose';
 
 // Versionnement du protocole 21 jours (C2A LOT-03). Chaque enregistrement
 // explicite d'un CHANGEMENT CLINIQUE crée une ligne append-only chaînée
@@ -638,6 +642,34 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
 
+    // ── LES SOURCES CITABLES, ET LE CONSTAT DE PROVENANCE ([[D-193]]) ────────
+    //
+    // LA PROVENANCE SE CONSTATE À LA LECTURE, elle ne se persiste pas.
+    // `objectifs_negocies` porte la sienne dans neuf colonnes ajoutées par une
+    // migration ; `protocol_drafts` n'en a aucune, et au dépôt chaque référence
+    // ajoutée au payload a reçu son propre contrat (V2, V3, V4). Les deux voies
+    // coûtaient une migration ou une version de contrat pour une marque
+    // d'affichage. Le serveur relit donc les sources et compare — même
+    // mécanisme que la vue patient recomposée de [[D-191]].
+    //
+    // CE QUE LE SERVEUR NE LIT JAMAIS : une déclaration de provenance venue du
+    // navigateur. C'est le défaut que [[D-164]] a fermé ailleurs, et le rouvrir
+    // ici porterait plus loin — `purpose` est le sous-titre que le PATIENT lit.
+    //
+    // LA LECTURE EST BORNÉE au dossier déjà prouvé accessible quelques lignes
+    // plus haut, et elle ne sert que des textes que le praticien a lui-même
+    // écrits ou signés. Aucune route du rail n'est touchée :
+    // `objectifs/etat-phase` refuse de servir la prose, et ce refus tient.
+    const selection = await lireSelectionPriorite(idPatient, decisionCardId);
+    const regleSignee = selection
+      ? resoudreRegleSignee(selection.candidateId.replace(/^priority:/, ''))
+      : null;
+    const objectifCitable = await lireTeteObjectifCitable(idPatient);
+    const sourcesCitables = sourcesCitablesPurpose({
+      libelleAxe: regleSignee ? { texte: regleSignee.texte, idRegle: regleSignee.regle } : null,
+      objectif: objectifCitable,
+    });
+
     const active = resolveActiveVersion(rows);
 
     // Contenu de la version active (LOT-06) : ce que l'écran d'arbitrage
@@ -658,6 +690,9 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
           followUpCriterion: draftActif.followUpCriterion,
           therapeuticLoad: draftActif.therapeuticLoad,
           actions: draftActif.actions,
+          // LA MARQUE TOMBE AU PREMIER CARACTÈRE RÉÉCRIT, par construction : il
+          // n'y a rien à retirer, elle ne se pose simplement plus.
+          provenancePurpose: constaterProvenancePurpose(draftActif.purpose, sourcesCitables),
         };
       } catch {
         contenuActif = null;
@@ -667,6 +702,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     return NextResponse.json({
       ok: true,
       protocolDraftId: rows.length > 0 ? deriveProtocolDraftId(decisionCardId) : null,
+      sourcesCitables,
       active: active
         ? {
             versionId: active.id,

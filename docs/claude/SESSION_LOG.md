@@ -2,6 +2,40 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-09-15 — LOT-04 (2/2) : la citation se constate à la lecture (D-193)
+
+**Décisions** : l'arbitrage a été REPOSÉ parce que le premier était faux — `D-189` §1
+écrivait « la provenance est portée par la version », par analogie avec
+`objectifs_negocies` dont la provenance vit dans neuf colonnes de migration ;
+`protocol_drafts` n'en a aucune. Trois voies reposées après vérification en code
+(contrat V5 — le patron du dépôt, mais une décision qui étend `D-130` pour une marque
+d'affichage ; constat à la lecture ; différer). Tranché : le **constat à la lecture**,
+le mécanisme même retenu la veille pour la vue patient.
+
+**Livré** : `provenancePurpose.ts` (pur, liste fermée, comparaison stricte au `trim`
+près) ; `teteObjectifCitable.ts` — la lecture partagée plutôt qu'une TROISIÈME copie
+de `SELECTION_OBJECTIF` ; les sources citables et la provenance constatée au GET des
+versions ; « Reprendre » au constructeur, qui ne transmet rien — c'est le texte qui
+fait foi ; le marquage « votre patient la lit », reporté du LOT-03.
+
+**Trouvé en chemin** : une commodité emportait le chemin principal — une erreur de
+base sur la lecture des sources aurait fait tomber tout l'historique du protocole
+pour un bouton « Reprendre ». Elle ne lève plus.
+
+**Écarté** : le contrat V5 (coût disproportionné pour une marque d'affichage) ; citer
+la tête la plus récente quand deux sont actives (une discordance ne se moyenne pas) ;
+citer le motif praticien de sélection ou le `rationale` du moteur — ils s'affichent,
+ils ne partent pas au patient.
+
+**Vérifications** : T1 vert ; T2 rapide 9 293 bancs unitaires et 198 E2E verts.
+Mutation vue ROUGE avant de déclarer vert, restaurée depuis une copie.
+
+**Prochaine action** : le LOT-06 attend la première ligne de barème signée du
+praticien — son mécanisme est écrit et vert sur une branche locale non poussée.
+
+**Questions ouvertes** : la mesure de production du LOT-07 a été refusée par le
+classifieur de sécurité de la session et n'a pas été contournée.
+
 ## 2026-09-15 — LOT-03 (2/2) : les gardes de la carte opposées à la diffusion (D-192)
 
 **Décisions** : le contrat de vue patient refuse depuis toujours une décision sous
@@ -6099,7 +6133,7 @@ l'existence d'un patron ailleurs à sa disponibilité ici.
 **Questions ouvertes** : la forme de la vue patient ; le mécanisme de marquage de la
 citation ; la première ligne du barème de charge (LOT-06).
 
-## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-193]])
+## 2026-09-15 08:00 — Compteur de « Voir les sources et limites » : la table seule ([[D-194]])
 
 Troisième des trois suites nommées le 2026-09-14. La surface qui porte la
 provenance et les limitations devient mesurable ; **cette PR pose la table
@@ -6130,11 +6164,13 @@ raison : le harnais ergonomique ne doit contacter aucun réseau, et un rejeu ne
 doit poster aucun état clinique. Le second est **resserré, pas relâché** — il
 listait « aucun POST », il liste désormais les destinations.
 
-**Renumérotée DEUX FOIS, `D-191` → `D-192` → `D-193` (2026-09-15).** Les deux
+**Renumérotée TROIS FOIS, `D-191` → `D-192` → `D-193` → `D-194` (2026-09-15).** Les deux
 numéros ont été pris au merge par d'autres sessions — `66c82f85` puis `2ef899c3`
-— qui les ont **écrits au registre**, à la différence de l'épisode `D-182` de la
+— puis `2c4fa0f8` — qui les ont **écrits au registre**, à la différence de l'épisode `D-182` de la
 veille où un sujet de commit annonçait un numéro sans l'inscrire, et ne réservait
-donc rien. Huitième et neuvième collisions, en une matinée, sur la même entrée.
+donc rien. Huitième, neuvième et dixième collisions, en une matinée, sur la même entrée.
+La campagne voisine fusionne plus vite qu'un CI ne rend : une PR lente ne gagne
+jamais la course, et ce qui la débloque est de fusionner dès le vert.
 Même leçon : un numéro ne se réserve pas, il s'acquiert à la fusion — et la
 friction est voulue.
 

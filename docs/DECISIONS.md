@@ -4,20 +4,24 @@
 
 ## Décisions actives
 
-### D-193 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
+### D-194 — Mesurer une surface d'explicabilité sans pouvoir mesurer celui qui la consulte
 
 - Date : 2026-09-15
 - Statut : accepté — troisième des trois suites nommées par le responsable le
   2026-09-14, après la fenêtre de rappel ([[D-183]]) et la phrase de reprise
   ([[D-184]]).
-- **Numéro** : cette entrée a été écrite `D-191`, puis `D-192`, et les deux ont
-  été pris au merge par d'autres sessions — `66c82f85` puis `2ef899c3` — qui les
-  ont **écrits au registre**, à la différence de l'épisode `D-182` du 2026-09-14
-  où un sujet de commit annonçait un numéro sans l'inscrire, et ne réservait donc
-  rien. Huitième et neuvième collisions du dépôt, en une matinée, sur la même
-  entrée. La leçon ne change pas — **un numéro ne se réserve pas, il s'acquiert à
-  la fusion** — et la friction est voulue : c'est le prix d'un registre unique et
-  ordonné, pas un défaut à réparer en l'éclatant. Migration **autorisée d'avance** par arbitrage du même jour ; le
+- **Numéro** : cette entrée a été écrite `D-191`, puis `D-192`, puis `D-193`.
+  Les trois ont été pris au merge par la campagne « protocole assisté »
+  (`66c82f85`, `2ef899c3`, `2c4fa0f8`), qui les a **écrits au registre** — à la
+  différence de l'épisode `D-182` du 2026-09-14 où un sujet de commit annonçait
+  un numéro sans l'inscrire, et ne réservait donc rien. Huitième, neuvième et
+  dixième collisions du dépôt, **en une matinée, sur la même entrée**.
+  La leçon ne change pas — **un numéro ne se réserve pas, il s'acquiert à la
+  fusion** — et la friction est voulue : c'est le prix d'un registre unique et
+  ordonné. Ce que l'épisode ajoute est une observation de COÛT, pas une demande
+  de réforme : quand une campagne voisine fusionne plus vite qu'un CI ne rend
+  (≈ 14 min), une PR lente ne gagne jamais la course. Ce qui la débloque n'est
+  pas un numéro de plus, c'est de fusionner dès le vert. Migration **autorisée d'avance** par arbitrage du même jour ; le
   go de merge reste dû ([[D-087]] §1).
 - Domaine : mesure produit, explicabilité, minimisation.
 - Livraison : migration seule d'abord, code consommateur ensuite.
@@ -166,6 +170,80 @@ construit sur les composantes UTC, vérifié dans quatre fuseaux.
   neuf. Le banc du rejeu de `ClinicalRuntimeSection` est RESSERRÉ, pas relâché :
   il listait « aucun POST », il liste désormais les destinations, si bien qu'un
   POST clinique neuf le fait rougir même si personne ne l'a nommé.
+
+### D-193 — La provenance de la raison d'être se constate à la lecture, elle ne se persiste pas
+
+- Date : 2026-09-15
+- Statut : accepté — arbitrage du responsable rendu en séance le 2026-09-15, après
+  vérification en code des trois voies possibles (LOT-04 de la campagne
+  « 5. Actions — le protocole assisté »).
+- Domaine : clinique — frontière patient du protocole 21 jours, sources citables.
+- Applique : [[D-189]] §3. S'appuie sur [[D-167]] §6, [[D-164]], [[D-115]],
+  [[D-191]], [[D-130]].
+
+**LA PRÉMISSE QUI ÉTAIT FAUSSE, ET QUI EST CORRIGÉE ICI.** [[D-189]] §1 écrit « la
+provenance est **portée par la version** ». Cette phrase a été posée **par analogie**
+avec `objectifs_negocies`, dont la provenance vit dans **neuf colonnes ajoutées par
+une migration**. Vérification faite : `protocol_drafts` n'a **aucune colonne
+équivalente**, et `ProtocolDraft` n'a **aucun champ** où une marque de provenance de
+`purpose` pourrait se poser. L'arbitrage rendu sur cette base ne valait pas, et il a
+été reposé.
+
+**LE PRÉCÉDENT DU DÉPÔT, ET POURQUOI IL NE TRANCHE PAS SEUL.** *Chaque* référence de
+provenance ajoutée au payload a reçu **son propre contrat** — `foodCompassRef` → V2,
+`supplementCatalogRef` → V3, `interventionStatus` / `waitFor` / `phases` → V4. Un
+contrat V5 était donc la voie « du dépôt ». Elle coûte une décision qui étend
+[[D-130]] et engage toute la chaîne protocole — route, boucle de révision, garde de
+compatibilité — **pour une marque d'affichage**.
+
+**Décision :**
+
+1. **Le serveur RELIT les sources à chaque lecture et compare les textes.** Aucune
+   colonne, aucun contrat neuf, aucune migration.
+2. **La marque tombe au premier caractère réécrit PAR CONSTRUCTION** : il n'y a rien
+   à retirer, elle ne se pose simplement plus. [[D-167]] §6 exigeait les deux clauses
+   — « la provenance se constate » et « un texte modifié perd sa marque » — ; ici un
+   **seul mécanisme** les tient, donc aucun chemin où l'une vaudrait sans l'autre.
+3. **La comparaison est stricte au `trim` près.** Replier les espaces internes ou la
+   casse ferait passer pour « cité verbatim » un texte que le praticien a retouché :
+   ce serait poser la marque sur ses mots à lui, le faux symétrique de celui que
+   [[D-167]] §6 nomme.
+4. **Aucune déclaration de provenance n'est lue du navigateur.** C'est le défaut que
+   [[D-164]] a fermé ailleurs, et le rouvrir ici porterait plus loin : `purpose` est
+   le sous-titre que le **patient** lit. Le clic « Reprendre » ne transmet rien — il
+   recopie un texte dans un champ, et c'est le **texte** qui fait foi.
+5. **La liste est FERMÉE à deux sources**, et un banc textuel l'épingle : le libellé
+   d'axe **signé**, re-dérivé du registre (registre non signé ⇒ pas de libellé,
+   jamais de texte fabriqué, [[D-115]]) ; et la **tête active** de l'objectif
+   négocié — sa priorité, sa reformulation praticien —, citée par identifiant de
+   **version**, jamais de racine de chaîne.
+   **Jamais citables** : le motif praticien de sélection et le `rationale` du moteur.
+   Ils s'affichent au praticien, ils ne partent pas au patient. **Aucune source** non
+   plus pour le critère J21 : il s'écrit AVEC le patient, et un axe n'est pas un
+   critère.
+6. **Zéro ou plusieurs têtes actives ⇒ aucune source d'objectif.** Deux têtes sont
+   une **discordance**, et le dépôt refuse de la moyenner (`DC-30`) : citer « la plus
+   récente » ferait disparaître en silence l'autre parole négociée.
+7. **Une commodité n'emporte jamais le chemin principal.** La lecture des sources ne
+   lève pas : une erreur de base rend une liste vide, et l'historique du protocole
+   reste servi. Le praticien ne perd pas sa page parce qu'un bouton « Reprendre »
+   n'a pas pu s'afficher.
+
+**CE QUE CETTE FORME NE PROMET PAS, ET IL FAUT LE DIRE.** Elle constate
+l'**appartenance** d'un texte à une source, jamais son **usage** : un praticien qui
+écrirait de lui-même exactement le libellé d'axe verrait la marque.
+`syntheses_comprehension` documente déjà cette limite comme assumée. Le mécanisme est
+celui de la vue patient recomposée de [[D-191]] — c'est devenu le style de ce chemin,
+et non un pis-aller.
+
+**CLAUSE DE FERMETURE.** Toute source ajoutée à la liste est une `D-xxx` neuve. Toute
+persistance de la marque — colonne ou contrat — l'est aussi.
+
+- Conséquences : fragment `changelog.d/2026-09-15-citer-la-raison-detre.md` ;
+  `lib/protocol/provenancePurpose.ts` (pur, lisible des deux côtés) et
+  `lib/praticien/teteObjectifCitable.ts` (la lecture partagée, plutôt qu'une
+  troisième copie de `SELECTION_OBJECTIF`) ; aucune migration, aucun drapeau, aucune
+  identité patient.
 
 ### D-192 — L'approbation pour diffusion oppose enfin les bloqueurs de la carte
 
