@@ -1,9 +1,9 @@
 ---
 id: "2026-07-21-idp2-auth-patient-et-cycle-de-vie"
 titre: "IDP2 — Compte patient et cycle de vie du dossier"
-statut: "en_cours"
+statut: "terminée (clôture documentaire du 2026-09-16 — ses TROIS lots étaient livrés et mergés depuis le 2026-07-22 : LOT-01 (#189, #194), LOT-02 (#200, #202 migration déployée), LOT-03 (03a→03d, activation). Le statut était resté « en_cours » huit semaines, et `wn-campaign status` annonçait donc du travail vivant qui ne l'était pas. Aucun code n'est touché par cette clôture.)"
 créée_le: "2026-07-21"
-mise_à_jour: "2026-07-21"
+mise_à_jour: "2026-09-16"
 lot_courant: "LOT-03"
 ---
 

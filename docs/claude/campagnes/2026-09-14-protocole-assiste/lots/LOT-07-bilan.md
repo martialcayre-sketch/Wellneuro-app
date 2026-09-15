@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Bilan — ce qui a été livré, et ce qui a été mesuré"
-statut: "terminé — la mesure au conteneur reste due"
+statut: "terminé — la mesure au conteneur est faite le 2026-09-16 : zéro usage"
 dépend_de: "tous"
 ---
 
@@ -116,3 +116,48 @@ que le code démentait — les deux fois, la réfutation était **dans un commen
 fichier cité**, non lu jusqu'au bout. Les deux arbitrages ont été **reposés le
 2026-09-15 après vérification en code** (`D-191`, `D-193`), et les trois faits
 établis avant chaque question sont écrits au registre.
+
+---
+
+## LA MESURE, FAITE LE 2026-09-16 — et elle dit zéro
+
+Lue au conteneur (`scalingo run -d`), comptages seuls, aucun champ nominatif. C'est
+ce que le LOT-07 devait produire et qui était resté dû : le classifieur du mode auto
+refusait la **forme** de la commande, et le praticien a ouvert une session hors mode
+auto pour la lever.
+
+| Mesure | Valeur |
+|---|---|
+| Versions de protocole en base | **1** — contrat `ja-food-observation-v1`, du 2026-07-31 |
+| Versions écrites depuis le 2026-09-14 | **0** |
+| Versions relues par le praticien | **0** |
+| Approbations pour diffusion | **0** |
+| Points d'étape de protocole | **0** |
+| Patients portant une version | **1** |
+| Sélections de priorité | **3** |
+| Épisodes T0 | **8** |
+
+**AUCUNE VERSION DE PROTOCOLE C1 N'EXISTE EN PRODUCTION.** L'unique ligne de
+`protocol_drafts` est celle d'avant la campagne, et elle ne porte même pas le contrat
+C1. Neuf lots livrés, neuf décisions rendues, et le formulaire que tout cela sert n'a
+pas été rempli une seule fois.
+
+**L'entonnoir a bougé d'un cran, et il s'arrête au même endroit.** Contre la mesure
+du 2026-09-13 : les épisodes T0 passent de 7 à **8**, les sélections de priorité de 1
+à **3**. La phase Décision se franchit donc — c'est ce que `D-179` avait débloqué.
+La phase Actions, non.
+
+**CE QUE CE ZÉRO EST, ET CE QU'IL N'EST PAS.** La campagne est déployée depuis le
+2026-09-15 au soir, son dernier lot depuis le 2026-09-16 — ce chiffre mesure **un
+jour**, pas une adoption. Ce n'est pas un verdict sur les livrables : c'est la
+**ligne de base** contre laquelle la prochaine lecture se comparera. Ce qui serait
+malhonnête serait de ne pas l'écrire, ou de le lire comme un échec des lots.
+
+**CE QU'IL CONFIRME, EN REVANCHE** : `D-112` avait raison sur le goulot — « le goulot
+n'est pas l'ingénierie, c'est le temps praticien ». Trois campagnes de suite l'ont
+maintenant mesuré. Une quatrième qui ajouterait une surface sans ré-interroger ce
+constat ouvrirait à l'aveugle.
+
+**À RELIRE APRÈS DEUX SEMAINES DE FONCTIONNEMENT** — la même requête, les mêmes neuf
+comptages, et la comparaison fait le constat. Elle est conservée telle quelle pour
+qu'aucune reformulation ne vienne déplacer la question entre deux lectures.

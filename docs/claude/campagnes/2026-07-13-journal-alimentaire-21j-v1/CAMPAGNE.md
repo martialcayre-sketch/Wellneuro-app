@@ -1,9 +1,9 @@
 ---
 id: "2026-07-13-journal-alimentaire-21j-v1"
 titre: "JA — Ma spirale alimentaire (journal alimentaire recadré 5.0)"
-statut: "en cours — JA5-05 démarré (activation protocole JA sans migration)"
+statut: "suspendue (2026-09-16 — 5 lots sur 6 terminés ; le LOT-05 « activation protocole JA sans migration » est RÉELLEMENT inachevé et sans porteur depuis le 2026-07-18. Il est nommé en dette à `FILE_ATTENTE.md` plutôt que laissé sous un statut « en cours » que plus rien n'alimentait : une campagne qui se dit vivante sans l'être fait lire du travail en cours à chaque session qui passe.)"
 créée_le: "2026-07-13"
-mise_à_jour: "2026-07-17"
+mise_à_jour: "2026-09-16"
 lot_courant: "LOT-05"
 ---
 

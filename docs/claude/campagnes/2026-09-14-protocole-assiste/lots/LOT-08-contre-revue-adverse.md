@@ -1,7 +1,7 @@
 ---
 id: "LOT-08"
 titre: "Ce que la contre-revue adverse a trouvé"
-statut: "en cours"
+statut: "terminé"
 dépend_de: "LOT-07"
 ---
 
