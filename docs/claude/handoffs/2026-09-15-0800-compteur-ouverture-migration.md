@@ -49,3 +49,37 @@ et ses 26 cas sont verts en local ; elle attend cette migration.
   `ClinicalRuntimeSection`, qui a attrapé la première rédaction).
 - **Fail-open sans exception** (`D-146`) : une mesure qui empêcherait de lire les
   limitations d'une décision clinique renverserait l'ordre des choses.
+
+## Revue interne — deux trous trouvés, tous deux miens
+
+1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
+   (`D-127`, `D-178`), et ici il n'est pas décoratif : **sa liste blanche de
+   colonnes est la seule chose qui tienne l'affirmation centrale de `D-191`.**
+   Sans elle, une migration future ajoute `id_patient`, rien ne bronche, et la
+   décision devient fausse en silence — exactement ce qui est arrivé à `D-185`,
+   dont l'affirmation centrale a vécu une journée sur `main` sans être vraie.
+   `compteur_ouverture_sources_v1_negatif.sql` éprouve six choses et tourne au CI.
+
+2. **L'absence au registre RGPD était TACITE.** `rubrique5.modeles.test.ts` ne
+   vérifie que les tables filles de `Patient` ; celle-ci n'en est pas une, donc
+   **le banc se tait**. Une ligne absente ne ment pas, elle se tait — le défaut
+   que ce dépôt a déjà nommé deux fois. La table est déclarée en rubrique 5 avec
+   sa nature réelle (aucune donnée personnelle), la qualification juridique
+   restant au responsable de traitement.
+
+## Passe Codex — OBLIGATOIRE avant merge
+
+`POLITIQUE_REVUE.md` classe P0 « migration », « données sensibles » et
+« production » : cette PR coche les trois, et le tableau des budgets dit **une
+passe obligatoire**. Le bloc est prêt (`scratchpad/codex-1113.txt`) et pose six
+questions, dont trois qui m'inquiètent réellement :
+
+- la **ré-identification par croisement** — un praticien seul actif un jour donné
+  rend le compteur quotidien nominatif de fait, par recoupement avec
+  `journal_acces_dossiers`. L'affirmation « incapable de dire qui » est peut-être
+  trop forte et devrait être bornée dans le texte ;
+- le **glissement de jour** — `jourDeMesure` calcule en UTC, Prisma écrit dans un
+  `DATE` : la conversion peut-elle décaler d'un jour selon le fuseau de session
+  Postgres du conteneur Scalingo ? Deux quotients faux au lieu d'un, et rien ne
+  le signalerait ;
+- la **liste blanche mord-elle vraiment** ? C'est tout le rempart.

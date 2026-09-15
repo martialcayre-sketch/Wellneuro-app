@@ -83,8 +83,30 @@ cas stubbe désormais `fetch` par une fonction nue. C'est la même leçon que la
 seconde passe Codex sur [[D-185]] : un banc ne prouve que ce que sa rédaction a
 pensé à nommer, et il faut l'attaquer pour le savoir.
 
+**CE QUE LA REVUE INTERNE A TROUVÉ, AVANT CODEX — deux trous, et les deux
+étaient miens.**
+
+1. **Aucun contrat négatif.** Le patron d'une PR de migration en exige un
+   ([[D-127]], [[D-178]]), et ici il n'est pas décoratif : **sa liste blanche de
+   colonnes est la SEULE chose qui tienne l'affirmation centrale de cette
+   décision.** Sans elle, une migration future ajoute `id_patient` ou
+   `praticien_email`, rien ne bronche, et ce texte devient faux en silence —
+   exactement ce qui est arrivé à [[D-185]], dont l'affirmation centrale a vécu
+   une journée sur `main` sans être vraie. Le contrat éprouve six choses : la
+   liste blanche, l'espèce fermée, le compte qui ne descend pas, l'incrément
+   concurrent qui donne bien 2, la clé primaire qui empêche d'empiler, la RLS
+   deny-all.
+2. **L'absence au registre RGPD était TACITE.** `rubrique5.modeles.test.ts` ne
+   vérifie que les tables filles de `Patient` ; celle-ci n'en est pas une, donc
+   **le banc se tait** — et une ligne absente ne ment pas, elle se tait. La table
+   est déclarée en rubrique 5 avec sa nature réelle : aucune donnée personnelle.
+   La qualification juridique reste au responsable de traitement, comme pour
+   `DecisionPrioritySelection` et `EcartementProposition`.
+
 - Conséquences : migration `20260915080000_compteur_ouverture_sources_v1` (PR
-  seule, [[D-087]]) ; modèle `CompteurOuvertureSources` ; module-feuille
+  seule, [[D-087]]) ; modèle `CompteurOuvertureSources` ; contrat
+  `prisma/checks/compteur_ouverture_sources_v1_negatif.sql` joué au CI ; ligne
+  en rubrique 5 de `DOSSIER_RGPD.md` ; module-feuille
   `lib/mesure/ouvertureSources.ts` ; route
   `POST /api/praticien/mesure/ouverture-sources` ; prop `mesurable` sur
   `DecisionSummaryCard` ; `onOuverture` sur `TwoLevelReading`. Aucun drapeau

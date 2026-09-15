@@ -964,6 +964,21 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/orientation_ecartement_v1_negatif.sql
 
+      # Compteur de « Voir les sources et limites » (D-191) : ce contrat garde
+      # surtout une ABSENCE. La décision affirme que « ce praticien n'ouvre
+      # jamais les limitations » est une phrase que le dépôt est INCAPABLE de
+      # produire, et cette affirmation ne tient que par la forme de la table.
+      # Sans la liste blanche de colonnes, une migration future ajouterait
+      # `id_patient` ou `praticien_email` sans qu'aucun banc ne bronche, et
+      # D-191 deviendrait faux en silence — ce qui est exactement arrivé à
+      # D-185. Plus : l'espèce fermée, le compte qui ne descend pas,
+      # l'incrément concurrent qui donne bien 2, la clé primaire qui empêche
+      # d'empiler, et la RLS deny-all. Transaction annulée.
+      - name: Compteur ouverture sources negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/compteur_ouverture_sources_v1_negatif.sql
+
       # Ancrage de provenance des correspondances médecin (LOT-06, D-073) : les
       # deux CHECK doivent MORDRE — SHA sans version, version sans SHA, SHA de
       # longueur invalide —, une ancre COMPLÈTE doit passer, et une
