@@ -14,6 +14,16 @@ détail ; `/wn-merge` charge ce fichier entier.
 Rien n'a été réécrit lors du déplacement : le texte ci-dessous est celui qui
 était dans `CLAUDE.md` jusqu'au 2026-08-07.
 
+> **À lire avec ce document : `.claude/rules/pr-revue-et-release-db.md`.** Il
+> porte ce qui manque ici et ne se voit pas au vert — **les commentaires de
+> revue** (les lire est un geste distinct du CI ; les commentaires *en ligne*
+> n'apparaissent ni dans `reviews` ni dans `gh pr view --comments` ; trois
+> verdicts, et aucun commentaire n'en sort sans) et **l'ordre de `release-db`**
+> (une migration mergée n'est pas une migration appliquée). Le 2026-09-16,
+> quatre PR ont été mergées sur CI vert sans lire la revue : quatre constats
+> réels y attendaient. Ce fichier est armé sur `.github/**` et `web/prisma/**` ;
+> **au moment de merger, le charger explicitement** — ce chemin-là ne l'arme pas.
+
 ## Attendre le CI d'une PR — un script, plus un idiome
 
 ```bash
@@ -152,10 +162,16 @@ session/token (périmètre repris tel quel par `/wn-merge`) :
    aucune ligne fautive à pointer : le défaut était ce que la migration **ne
    faisait pas**. Une revue de diff ne voit pas cette classe-là.
 2. **Après le merge, vérifier la base de production** — la migration s'est-elle
-   appliquée, et le backfill a-t-il fait ce qu'il annonçait ? Une lecture
-   `execute_sql` suffit (voir « Lire la base de production » dans `CLAUDE.md`).
-   Sans cela, un `migrate deploy` ou un import qui a échoué à mi-course lors de
-   la release (`release-db`) ne se voit nulle part ailleurs.
+   appliquée, et le backfill a-t-il fait ce qu'il annonçait ? La lecture se fait
+   **par conteneur** : `scalingo --app wellneuro run -d "npx prisma migrate
+   status"` (l'`execute_sql` MCP Supabase cité ici jusqu'au 2026-09-16 vise une
+   base décommissionnée le 2026-09-01, `D-120` — détail :
+   `.claude/rules/db-prisma.md`). Sans cela, un `migrate deploy` ou un import qui
+   a échoué à mi-course lors de la release (`release-db`) ne se voit nulle part
+   ailleurs. **Et le merge n'applique rien** : l'ordre complet — approbation
+   humaine, sentinelle `WN_RELEASE_DB_OK`, constat par conteneur avant que le
+   code consommateur parte — est dans
+   `.claude/rules/pr-revue-et-release-db.md` §3.
 
 Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
 l'authentification ou une migration se compte en accès patients rompus.
