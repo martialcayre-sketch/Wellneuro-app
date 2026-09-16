@@ -6371,3 +6371,22 @@ auto. Le créneau primaire reste vide par décision jusque-là.
 
 **Question ouverte** : la clôture formelle de la campagne, désormais possible — la
 contre-revue qu'elle attendait est faite.
+
+## 2026-09-16 — Reflow clos, corpus rendu désignable, MMSE mesuré
+
+**#1130 mergée** (`c4464a51`) : plancher de hauteur des deux côtés de `CeQuiComptePanel`,
+saut 50 px → 0. Le banc instrumenté a **réfuté** le mécanisme proposé (l'ancrage de
+défilement compense ; le clic atteint sa cible) tout en confirmant la chronologie — **la
+cause du flake CI reste inconnue**, écrit tel quel. Options écartées : réserver par du texte
+invisible (le garde clinique a rougi, à raison) et plancher d'un seul côté (50 → 2 px,
+rejoué à l'envers).
+
+**#1132 ouverte, CI en cours** : 25 identifiants écrits, entrées à DOI/PMID de 12 à 37 sur
+65. Le recroisement PubMed a rattrapé un faux positif sur le HIT-6. Trois négatifs
+consignés, dont la Conners 3 — aucune publication n'existe. MMSE : la HAS n'écrit pas les
+quatre bandes servies ; aucune bande touchée, arbitrage nommé au registre.
+
+**Prochaine action** : lire `ci-1132.log`, merger sur `WN-CI-EXIT=0` seul.
+
+**Ouvert** : bandes MMSE, `Q_ALI_03`, ELFE, Conners 3, agenda sommeil, `Q_ALI_09` ; quatre
+réserves qui n'attendent qu'une lecture de source, dont deux portent des chiffres affichés.
