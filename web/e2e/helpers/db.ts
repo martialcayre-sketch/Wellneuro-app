@@ -12,6 +12,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, type Prisma } from '../../src/generated/prisma';
 import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
 import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
+import { documentsRequerantAccuse } from '../../src/lib/trust/avantDeCommencer';
 import { PRATICIEN_EMAIL } from './auth';
 // Dossier de référence qui PASSE les préconditions T0. RÉUTILISÉ, jamais
 // recopié : son en-tête dit pourquoi il existe — « sans lui, chacune [des
@@ -161,8 +162,40 @@ export async function provisionnerDossierDeuxVoix(idPatient: string): Promise<{
 }
 
 /**
- * Pose l'accusé de lecture du cadre d'accompagnement, celui que la séquence
- * « Avant de commencer » produit.
+ * Pose, pour ce patient, un accusé « pris connaissance » sur CHAQUE document que
+ * la porte du portail exige — la liste partagée, jamais une copie.
+ *
+ * POURQUOI LA LISTE ET PAS UNE CLÉ ÉCRITE À LA MAIN, et c'est un constat du
+ * 2026-09-16 : ces trois fixtures posaient `cadre_accompagnement` et lui seul,
+ * parce que la porte ne regardait que lui. Le jour où un deuxième document a
+ * exigé un accusé, vingt tests E2E sont tombés d'un coup — non sur leur sujet,
+ * mais sur la séquence « Avant de commencer » qui s'interposait. Une fixture
+ * qui recopie la règle de la porte se périme en silence à la première
+ * divergence ; celle-ci la LIT.
+ *
+ * Version et hash viennent du registre : un littéral cesserait de satisfaire la
+ * route au premier document révisé, et les specs rougiraient sans que rien de
+ * leur sujet n'ait bougé.
+ */
+async function poserAccusesPorteTrust(idPatient: string, contentHash?: string): Promise<void> {
+  for (const cle of documentsRequerantAccuse()) {
+    const document = getDocumentCourant(cle);
+    await prisma.trustAcknowledgement.deleteMany({ where: { idPatient, documentKey: cle } });
+    await prisma.trustAcknowledgement.create({
+      data: {
+        idPatient,
+        documentKey: cle,
+        documentVersion: document.version,
+        contentHash: contentHash ?? document.hash,
+        type: 'pris_connaissance',
+      },
+    });
+  }
+}
+
+/**
+ * Pose les accusés de lecture que la séquence « Avant de commencer » produit,
+ * après avoir effacé tout accusé antérieur de ce patient.
  *
  * POURQUOI, ET C'EST UN CONSTAT DU LOT-06 : le hub du portail rend cette
  * séquence AVANT tout le reste (`questionnaires/page.tsx`, `avantRequis`) —
@@ -175,25 +208,14 @@ export async function provisionnerDossierDeuxVoix(idPatient: string): Promise<{
  * de la séquence de confiance — qui rougirait pour une raison étrangère à son
  * sujet le jour où elle change.
  *
- * La VERSION vient du registre, jamais d'un littéral : une version figée ici
- * cesserait de satisfaire la route au premier document révisé, et le spec
- * rougirait sans que rien de son sujet n'ait bougé.
+ * La liste des documents et leurs versions viennent du registre, jamais d'un
+ * littéral : voir `poserAccusesPorteTrust` pour ce que cette recopie a coûté.
  */
-export async function provisionnerAccuseCadre(idPatient: string): Promise<void> {
-  const cadre = getDocumentCourant('cadre_accompagnement');
+export async function provisionnerAccusesPorteTrust(idPatient: string): Promise<void> {
+  // Table rase d'abord : ce helper sert les specs qui veulent un état de
+  // confiance connu, pas seulement franchi.
   await prisma.trustAcknowledgement.deleteMany({ where: { idPatient } });
-  await prisma.trustAcknowledgement.create({
-    data: {
-      idPatient,
-      documentKey: 'cadre_accompagnement',
-      documentVersion: cadre.version,
-      // Le hash vient du registre lui aussi : la route de lecture le pose
-      // ainsi (), et un littéral divergerait au
-      // premier document révisé.
-      contentHash: cadre.hash,
-      type: 'pris_connaissance',
-    },
-  });
+  await poserAccusesPorteTrust(idPatient);
 }
 
 /** Les ratifications posées par le parcours, dans l'ordre où elles ont été
@@ -296,45 +318,22 @@ export async function preparerReprisePourTest(idPatient: string): Promise<void> 
     data: { dateReponse: new Date('2025-01-01T00:00:00.000Z') },
   });
 
-  const cadre = getDocumentCourant('cadre_accompagnement');
-  await prisma.trustAcknowledgement.deleteMany({
-    where: { idPatient, documentKey: 'cadre_accompagnement' },
-  });
-  await prisma.trustAcknowledgement.create({
-    data: {
-      idPatient,
-      documentKey: 'cadre_accompagnement',
-      documentVersion: cadre.version,
-      contentHash: 'e2e-reprise',
-      type: 'pris_connaissance',
-    },
-  });
+  await poserAccusesPorteTrust(idPatient, 'e2e-reprise');
 
   await prisma.packProposition.deleteMany({ where: { idPatient } });
 }
 
 /**
- * Pose l'accusé de lecture du cadre TRUST, et rien d'autre.
+ * Franchit la porte TRUST, et rien d'autre.
  *
- * `resetPortailState` l'efface, si bien qu'un spec qui ouvre le hub tombe sur
- * la séquence « Avant de commencer » (4 écrans) au lieu de l'écran qu'il teste.
- * `preparerReprisePourTest` le pose aussi, mais en antidatant les réponses —
- * ce qui déclencherait la bannière de reprise. D'où ce helper minimal.
+ * `resetPortailState` efface les accusés, si bien qu'un spec qui ouvre le hub
+ * tombe sur la séquence « Avant de commencer » (4 écrans) au lieu de l'écran
+ * qu'il teste. `preparerReprisePourTest` les pose aussi, mais en antidatant les
+ * réponses — ce qui déclencherait la bannière de reprise. D'où ce helper
+ * minimal, qui ne touche qu'aux accusés exigés par la porte.
  */
-export async function accuserCadreTrust(idPatient: string): Promise<void> {
-  const cadre = getDocumentCourant('cadre_accompagnement');
-  await prisma.trustAcknowledgement.deleteMany({
-    where: { idPatient, documentKey: 'cadre_accompagnement' },
-  });
-  await prisma.trustAcknowledgement.create({
-    data: {
-      idPatient,
-      documentKey: 'cadre_accompagnement',
-      documentVersion: cadre.version,
-      contentHash: 'e2e-cadre',
-      type: 'pris_connaissance',
-    },
-  });
+export async function accuserPorteTrust(idPatient: string): Promise<void> {
+  await poserAccusesPorteTrust(idPatient, 'e2e-cadre');
 }
 
 /**

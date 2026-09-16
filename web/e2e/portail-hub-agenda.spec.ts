@@ -11,7 +11,7 @@
 // `fullyParallel: false` : aucun autre spec ne tourne pendant celui-ci.
 import { test, expect } from '@playwright/test';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
-import { resetPortailState, accuserCadreTrust, closePrisma } from './helpers/db';
+import { resetPortailState, accuserPorteTrust, closePrisma } from './helpers/db';
 
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
@@ -25,7 +25,7 @@ test.describe('Hub patient — agenda du sommeil', () => {
   }) => {
     await resetPortailState(PATIENT.idPatient);
     // Sans l'accusé, le hub est masqué par « Avant de commencer » (4 écrans).
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
 
     // Un agenda ET un questionnaire ordinaire : c'est la coexistence qui rend
     // le test discriminant — sans le second, n'importe quelle mise en avant
