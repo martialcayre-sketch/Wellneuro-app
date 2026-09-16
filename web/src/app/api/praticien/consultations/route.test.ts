@@ -94,6 +94,98 @@ describe('GET /api/praticien/consultations', () => {
       },
     });
   });
+
+  // ── LA FICHE SIGNALÉTIQUE ET L'ANAMNÈSE SORTENT ENFIN DE LA BASE ──────────
+  //
+  // Elles y étaient écrites depuis toujours par le portail, et cette route —
+  // la seule qui lise les consultations côté praticien — les jetait au mapping.
+  // Aucune surface praticien ne pouvait donc les afficher.
+
+  it('sert la fiche signalétique et l’anamnèse, NORMALISÉES', async () => {
+    prisma.consultation.findMany.mockResolvedValue([
+      {
+        idConsultation: 'CONS_1',
+        idPatient: 'PAT_1',
+        motif: 'Suivi',
+        statut: 'validee',
+        dateValidation: new Date('2026-07-02T00:00:00.000Z'),
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        ficheSignaletique: { profession: '  Infirmière  ', champ_inconnu: 'à jeter' },
+        anamnese: { motif_principal: 'Fatigue', champ_inconnu: 'à jeter' },
+        consentement: 'donne',
+        consentementHorodatage: new Date('2026-06-30T00:00:00.000Z'),
+        consentementVersion: 'v2',
+        finaliteConsentement: 'suivi',
+      },
+    ]);
+    const res = await GET(getRequest());
+    const payload = await res.json();
+    const [consultation] = payload.consultations;
+
+    // Normalisé, jamais servi brut : le champ connu est trimé, l'inconnu est
+    // retiré. C'est la même porte que celle de l'écriture au portail.
+    expect(consultation.ficheSignaletique).toEqual({ profession: 'Infirmière' });
+    expect(consultation.anamnese).toEqual({ motif_principal: 'Fatigue' });
+    expect(consultation.consentement).toBe('donne');
+    expect(consultation.consentementVersion).toBe('v2');
+    expect(consultation.consentementHorodatage).toBe('2026-06-30T00:00:00.000Z');
+    expect(consultation.finaliteConsentement).toBe('suivi');
+  });
+
+  // LE BANC QUI COMPTE : `null` et `{}` ne disent pas la même chose. `null` =
+  // rien n'a jamais été déposé ; `{}` = un dépôt a eu lieu dont la
+  // normalisation n'a rien retenu. Les confondre ferait dire « aucun
+  // renseignement » sur un dossier qui en porte — et le normaliseur, appelé
+  // sur `null`, rend précisément `{}`.
+  it('colonne vide ⇒ `null`, et JAMAIS un objet vide', async () => {
+    prisma.consultation.findMany.mockResolvedValue([
+      {
+        idConsultation: 'CONS_1',
+        idPatient: 'PAT_1',
+        motif: null,
+        statut: 'creee',
+        dateValidation: null,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        ficheSignaletique: null,
+        anamnese: null,
+        consentement: 'non_donne',
+        consentementHorodatage: null,
+        consentementVersion: null,
+        finaliteConsentement: null,
+      },
+    ]);
+    const res = await GET(getRequest());
+    const [consultation] = (await res.json()).consultations;
+
+    expect(consultation.ficheSignaletique).toBeNull();
+    expect(consultation.anamnese).toBeNull();
+  });
+
+  it('un dépôt dont rien n’est retenu rend `{}`, distinct de `null`', async () => {
+    prisma.consultation.findMany.mockResolvedValue([
+      {
+        idConsultation: 'CONS_1',
+        idPatient: 'PAT_1',
+        motif: null,
+        statut: 'en_cours',
+        dateValidation: null,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        // Un JSON historique dont aucun champ n'appartient au descripteur
+        // courant : le dépôt a EU LIEU, il ne reste rien à en montrer.
+        ficheSignaletique: { champ_disparu: 'valeur' },
+        anamnese: { autre_champ_disparu: 'valeur' },
+        consentement: 'donne',
+        consentementHorodatage: null,
+        consentementVersion: null,
+        finaliteConsentement: null,
+      },
+    ]);
+    const res = await GET(getRequest());
+    const [consultation] = (await res.json()).consultations;
+
+    expect(consultation.ficheSignaletique).toEqual({});
+    expect(consultation.anamnese).toEqual({});
+  });
 });
 
 // Régression E8 — la plus grave des trois : sans garde, cette route levait la
