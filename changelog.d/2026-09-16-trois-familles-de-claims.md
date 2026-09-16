@@ -29,3 +29,10 @@ les deux ferment, un banc le prouve séparément, et l'appelant peut dire lequel
 relecture — identifiants lus en production, comptes du registre vérifiés exacts à
 l'unité. Ce qui reste à attester n'est plus leur existence, c'est ce que chacun
 fonde.
+
+**Et un défaut silencieux rattrapé en revue.** La clé d'un claim s'écrivait
+`claimId@versionClaim` — séparateur du contrat de fraîcheur, mais **pas celui du
+module de validité**, qui produit justement l'ensemble consommé ici. Chaque
+recherche aurait manqué : le catalogue n'aurait plus rien servi, en silence et
+pour toujours, sans qu'aucun test ne rougisse. Un banc de source épingle
+désormais la clé dans les deux modules.

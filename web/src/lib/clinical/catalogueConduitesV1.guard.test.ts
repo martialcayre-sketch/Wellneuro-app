@@ -22,6 +22,7 @@ import {
 // mort.
 
 const SOURCE = readFileSync(join(__dirname, 'catalogueConduitesV1.ts'), 'utf8');
+const SOURCE_VALIDITE = readFileSync(join(__dirname, '..', 'rag', 'claims', 'validite.ts'), 'utf8');
 
 const LIGNE: LigneConduite = {
   cleTableau: 'tableau_de_banc',
@@ -229,6 +230,26 @@ describe('catalogue de conduites — la doctrine tenue par la source', () => {
     for (const champ of ['claimsIndication', 'claimsInstrument', 'claimsSecurite']) {
       expect(SOURCE).toMatch(new RegExp(`${champ}: readonly ClaimRef\\[\\];`));
     }
+  });
+
+  // LA CLÉ DOIT ÊTRE CELLE DU MODULE QUI JUGE LA VALIDITÉ, et ce banc est le seul
+  // qui puisse le garantir. `claimsValidesAuCorpus` (`rag/claims/validite.ts`)
+  // PRODUIT l'ensemble que `lignesConduitesServables` consomme, avec ses propres
+  // clés. Un séparateur qui diverge ne casse rien de visible : chaque recherche
+  // manque, et le catalogue ne sert plus RIEN, en silence et pour toujours.
+  //
+  // LE DÉFAUT A EXISTÉ. La première version de ce module écrivait `@`, séparateur
+  // du contrat de fraîcheur et de `rag/claims/store.ts` — mais pas celui du module
+  // de VALIDITÉ, qui est la source de l'ensemble consommé ici. Rattrapé en revue,
+  // pas par un test : d'où ce banc.
+  //
+  // LECTURE DU TEXTE, PAS IMPORT : `validite.ts` instancie un client Prisma au
+  // chargement. Même raison que `claimsEpinglesFraicheur.guard.test.ts`, qui lit
+  // les tables signées comme du texte plutôt que de les importer.
+  it('la clé de claim est exactement celle du module de validité', () => {
+    const motif = /return `\$\{[A-Za-z.]+claimId\}::\$\{[A-Za-z.]+versionClaim\}`;/;
+    expect(SOURCE).toMatch(motif);
+    expect(SOURCE_VALIDITE).toMatch(motif);
   });
 
   // Une ligne DÉSIGNE. Si un jour un champ de prose clinique apparaît, ce banc

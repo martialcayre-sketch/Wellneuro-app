@@ -69,6 +69,20 @@ Il reste utile, il ne suffit pas.
 et ce terme ne se déduit pas de l'égalité des périmètres : une ligne ne citant
 qu'un claim d'instrument y passerait sans que rien ne fonde son QUAND.
 
+**UN DÉFAUT SILENCIEUX, RATTRAPÉ EN REVUE ET NON PAR UN BANC.** La première
+version écrivait la clé d'un claim `claimId@versionClaim`. C'est le séparateur du
+contrat de fraîcheur et de `rag/claims/store.ts` — **mais pas celui du module de
+VALIDITÉ**, `rag/claims/validite.ts`, qui utilise `::` et qui est précisément le
+producteur de l'ensemble que `lignesConduitesServables` consomme
+(`claimsValidesAuCorpus`). Chaque recherche aurait manqué : le catalogue n'aurait
+plus rien servi, **en silence et pour toujours**, sans qu'aucun test ne rougisse.
+La revue Copilot l'a vu avant la fusion.
+
+Un banc de source l'épingle désormais dans les deux modules — lecture du texte et
+non import, `validite.ts` instanciant un client Prisma au chargement. Importer la
+fonction plutôt que la dupliquer aurait été mieux encore ; c'est impossible sans
+faire entrer Prisma dans une table signée, et le banc est le second choix assumé.
+
 **CE QUI RESTE À VOUS.** Les trois lignes ont leurs claims **désignés** dans
 `SURFACE_RELECTURE_CATALOGUE_CONDUITES_2026-09-16.md` — identifiants lus en
 production, comptes du registre vérifiés exacts à l'unité (20, 29, 7). Ce que
