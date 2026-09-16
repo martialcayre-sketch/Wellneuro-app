@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Clôture"
-statut: "à faire"
+statut: "terminé (2026-09-17)"
 dépend_de: "tous"
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "La fiche administrative s'écrit"
-statut: "à faire"
+statut: "terminé (2026-09-17, PR #1166)"
 dépend_de: "LOT-03 appliqué en production"
 ---
 

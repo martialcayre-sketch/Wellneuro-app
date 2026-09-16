@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Le document servi au patient"
-statut: "à faire"
+statut: "terminé (2026-09-16, PR #1163 ; la v8 est partie au LOT-05, sa phrase n'était pas encore vraie)"
 dépend_de: "LOT-03"
 ---
 

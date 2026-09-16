@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Cadrage"
-statut: "en cours"
+statut: "terminé (2026-09-16, PR #1150)"
 dépend_de: "—"
 ---
 

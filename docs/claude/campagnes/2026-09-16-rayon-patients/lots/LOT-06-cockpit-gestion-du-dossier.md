@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Le cockpit porte la gestion du dossier"
-statut: "à faire"
+statut: "terminé (2026-09-17, PR #1170)"
 dépend_de: "LOT-02, LOT-05"
 ---
 

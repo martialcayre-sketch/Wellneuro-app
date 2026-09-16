@@ -6947,3 +6947,26 @@ sans lequel un brouillon s'affiche comme une ligne publiée.
 
 Prochaine action : lire les revues de **#1167** et **#1168**, corriger, merger —
 et vérifier le numéro `D-216`, l'autre session ayant pris `D-215`.
+
+## 2026-09-17 — Clôture de la campagne « Le rayon Patients »
+
+Huit lots, sept PR mergées, deux décisions (**D-219** l'architecture et le
+dossier, **D-220** le NIR déclaré). La migration additive est appliquée et
+constatée en production depuis le 2026-09-16 à 20 h 41 ; la fenêtre
+d'indisponibilité a duré huit minutes.
+
+Écartées en route : publier la v8 au LOT-04 (sa phrase — « le praticien saisit
+lui-même » — n'était vraie qu'après le LOT-05, et un banc de dépendance de
+release tient désormais cette porte) ; masquer le NIR à l'affichage (cela
+n'aurait trompé que le praticien).
+
+Trouvés sans les chercher : `requiresAcknowledgement` était un champ mort ;
+`idPatient` ne filtrait que les assignations ; le panneau d'édition sans `key`
+écrivait l'identité d'un patient sur le dossier d'un autre.
+
+Prochaine action : aucune côté campagne — le créneau primaire est libre, son
+attribution appartient au responsable. Reste dû après déploiement : le constat
+d'usage au conteneur.
+
+Question ouverte : `D-049`, trois occurrences cette nuit, cause racine non
+trouvée.
