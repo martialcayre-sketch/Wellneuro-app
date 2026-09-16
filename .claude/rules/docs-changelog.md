@@ -26,8 +26,10 @@ paths:
   **problèmes ouverts** ; prochaine action exacte ; **interdits encore actifs**.
   Elles sont listées dans `/wn-handoff` — mais ce skill porte
   `disable-model-invocation`, donc un handoff **écrit à la main** n'en hérite
-  pas : les trois en gras sont précisément celles qui manquaient aux deux
-  handoffs du 2026-09-16, et une revue l'a relevé (`D-214`). Un handoff qui
+  pas. Les trois en gras sont celles qu'une revue a trouvées manquantes le
+  2026-09-16, sur le handoff qu'elle examinait (`D-214`) ; elles y ont été
+  ajoutées dans la même PR. Elles manquent **toujours** à celui du même jour à
+  21 h 54, non réécrit — un handoff passé ne se réinterprète pas. Un handoff qui
   s'arrête à la prochaine action laisse la session suivante sans ce qui a été
   vérifié, ni ce qui reste ouvert.
 - **La clôture passe avant la PR** : `/wn-finish` puis `/wn-handoff write`

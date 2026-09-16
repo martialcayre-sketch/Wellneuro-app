@@ -47,8 +47,10 @@ Au CI : à constater sur la PR, `head=` du SNAPSHOT comparé à la tête réelle
 
 - **Aucun pour ce lot.** Les deux réserves de `D-214` sont fermées, l'une par
   correction, l'autre par réfutation sur pièces.
-- Le constat de #1161 portait sur **deux** handoffs du jour ; celui de 21 h 54
-  est mergé et **n'est pas réécrit** — `handoffs/README.md` interdit de
+- Le constat de #1161 visait **un seul** handoff — celui qu'elle examinait,
+  corrigé dans la même PR (`7ce8e5d7`), qui porte donc les trois rubriques
+  depuis. Le même manque a **ensuite** été observé sur celui du même jour à
+  21 h 54 : mergé, et **non réécrit** — `handoffs/README.md` interdit de
   réinterpréter un handoff passé pour le faire entrer dans un format posé après
   lui. La règle vaut pour les suivants.
 

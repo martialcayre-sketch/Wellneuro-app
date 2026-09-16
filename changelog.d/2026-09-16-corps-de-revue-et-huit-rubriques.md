@@ -15,7 +15,9 @@ constat relevé sur #1161 — trois rubriques manquantes — avait été lu comm
 défaut de classe : rien ne contrôlerait le gabarit. Vérification faite,
 **c'est faux** : `/wn-handoff` liste les huit. Mais le skill porte
 `disable-model-invocation`, donc un handoff **écrit à la main** n'en hérite pas —
-et les deux handoffs du 2026-09-16 ont été écrits ainsi. La liste entre donc dans
+et les deux handoffs du 2026-09-16 l'ont été. La revue n'en avait vu qu'un, celui
+qu'elle examinait (corrigé dans sa PR) ; le second, mergé à 21 h 54, n'est pas
+réécrit. La liste entre donc dans
 `.claude/rules/docs-changelog.md`, armé sur `docs/**`, qui se charge quand on
 écrit un handoff. Aucun banc ajouté : le gabarit existait, c'est sa portée qui
 manquait.
