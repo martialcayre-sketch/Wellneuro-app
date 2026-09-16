@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { isMotifValide } from '@/lib/consultation/motifs';
+import { normaliserFiche } from '@/lib/consultation/fiche';
+import { normaliserAnamnese, type AnamneseValeurs } from '@/lib/consultation/anamnese';
 import { sendPortailLinkEmail, type EnvoiAcces } from '@/lib/consultation/email';
 import { emettreLienMagiquePourPraticien } from '@/lib/portail/emissionLienMagique';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
@@ -17,6 +19,33 @@ export type Consultation = {
   statut: string;
   dateValidation: string | null;
   createdAt: string;
+
+  // ── CE QUE LE PATIENT A ÉCRIT, ENFIN SERVI AU PRATICIEN ────────────────────
+  //
+  // La fiche signalétique et l'anamnèse sont déposées au portail à l'ouverture
+  // de l'espace patient, et stockées en JSON sur la consultation depuis
+  // toujours. AUCUNE SURFACE PRATICIEN NE LES LISAIT : seule
+  // `lib/synthese/generation.ts` y touchait, pour fabriquer un texte. Le
+  // praticien ne pouvait pas relire ce que son patient avait écrit.
+  //
+  // `null` ET `{}` NE DISENT PAS LA MÊME CHOSE, et l'écran doit pouvoir les
+  // distinguer : `null` = la colonne est vide, rien n'a jamais été déposé ;
+  // `{}` = un dépôt a eu lieu dont la normalisation n'a rien retenu. Confondre
+  // les deux ferait dire « aucun renseignement » sur un dossier qui en porte.
+  //
+  // NORMALISÉ EN SORTIE, jamais servi brut : les JSON stockés ne sont pas
+  // garantis conformes au schéma (données historiques, saisie partielle), et
+  // `normaliserFiche` / `normaliserAnamnese` bornent déjà les champs connus et
+  // les longueurs. C'est la même porte que celle de l'écriture au portail.
+  ficheSignaletique: Record<string, string> | null;
+  anamnese: AnamneseValeurs | null;
+
+  // Le consentement de CETTE consultation — sa portée RGPD. Il n'était visible
+  // sur aucune surface praticien non plus.
+  consentement: string;
+  consentementHorodatage: string | null;
+  consentementVersion: string | null;
+  finaliteConsentement: string | null;
 };
 
 export type ConsultationsApiResponse = {
@@ -98,6 +127,17 @@ export async function GET(req: Request): Promise<NextResponse<ConsultationsApiRe
       statut: c.statut,
       dateValidation: c.dateValidation ? c.dateValidation.toISOString() : null,
       createdAt: c.createdAt.toISOString(),
+      // `== null` couvre `null` ET `undefined` en un test : Prisma rend `null`
+      // pour une colonne Json vide, mais un `select` partiel rendrait
+      // `undefined`, et les deux valent « rien n'a été déposé ». Le
+      // normaliseur, lui, rendrait `{}` dans les deux cas — d'où le test AVANT
+      // l'appel, et non après.
+      ficheSignaletique: c.ficheSignaletique == null ? null : normaliserFiche(c.ficheSignaletique),
+      anamnese: c.anamnese == null ? null : normaliserAnamnese(c.anamnese),
+      consentement: c.consentement,
+      consentementHorodatage: c.consentementHorodatage ? c.consentementHorodatage.toISOString() : null,
+      consentementVersion: c.consentementVersion,
+      finaliteConsentement: c.finaliteConsentement,
     }));
     return NextResponse.json({ consultations });
   } catch {
