@@ -164,7 +164,7 @@ export function cleClaim(claim: ClaimRef): string {
 }
 
 /**
- * SIX TERMES, et les deux termes de non-vacuité ne sont pas une redite de
+ * HUIT TERMES, et les deux termes de non-vacuité ne sont pas une redite de
  * l'égalité.
  *
  * L'ÉGALITÉ EXACTE NE FERME PAS SUR UNE TABLE VIDE, et c'est un piège démontré
