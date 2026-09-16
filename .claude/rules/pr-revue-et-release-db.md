@@ -121,7 +121,7 @@ Chaque étape a un état **à constater**, jamais à supposer.
 | 2 | **Choisir le créneau** | Geste du responsable : la fenêtre de panne s'ouvre sciemment |
 | 3 | Merger | Le push sur `main` touchant `web/prisma/migrations/**` propose automatiquement le run |
 | 4 | Scalingo déploie le **code seul** | Le `postdeploy` ne migre plus sous `WN_MIGRATIONS_PAR_RELEASE_DB=1` |
-| 5 | **Approuver** — humain, dans l'environnement protégé | Sentinelle `WN_RELEASE_DB_OK` dans les logs du one-off |
+| 5 | **Approuver** — humain, dans l'environnement protégé | Sentinelle `WN_RELEASE_DB_OK id=<run>` dans les logs du one-off — **liée à CE run** : un `OK` nu laissé par un run antérieur ne prouve rien |
 | 6 | Constater **par conteneur** | `scalingo --app wellneuro run -d "npx prisma migrate status"` → *up to date* |
 | 7 | Le code consommateur part — et seulement là | Lot suivant |
 
@@ -173,7 +173,10 @@ approbations est la seule preuve de qui a ouvert la porte.
    continue pendant que le workflow s'affiche annulé. Seul
    `scalingo one-off-stop <conteneur>` l'arrête.
 4. **Aucune sentinelle après le délai ⇒ état INCONNU**, jamais « échec ». On lit
-   l'état de la base au conteneur ; on ne relance pas à l'aveugle.
+   l'état de la base au conteneur ; on ne relance pas à l'aveugle. La sentinelle
+   se cherche **avec l'identifiant du run** (`WN_RELEASE_DB_OK id=…`) : le
+   protocole de sortie est lié au run précisément pour qu'un `OK` laissé par un
+   run antérieur ne se lise pas comme celui qu'on attend.
 5. **Un run rouge après déploiement laisse code neuf + schéma ancien.** Le filet
    « postdeploy en échec = déploiement annulé » n'existe plus sous le drapeau. La
    sortie — correctif en avant, ou rollback de slug — est un **arbitrage du
