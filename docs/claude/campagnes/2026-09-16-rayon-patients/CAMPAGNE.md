@@ -1,0 +1,156 @@
+---
+id: "2026-09-16-rayon-patients"
+titre: "Le rayon Patients — le dossier rendu au praticien"
+statut: "ouverte (2026-09-16 — créneau primaire attribué par le responsable)"
+créée_le: "2026-09-16"
+mise_à_jour: "2026-09-16"
+lot_courant: "LOT-00"
+branche_campagne: "aucune"
+branche_lot_courant: "wn-rayon-patients-lot00-2026-09-16"
+cible_pr_lot: "main"
+cible_pr_campagne: "main"
+---
+
+# Le rayon Patients — le dossier rendu au praticien
+
+*Le cockpit ouvre sur une phase « Patient » qui affiche deux lignes.*
+
+## Objectif
+
+Rendre au praticien **le dossier de son patient** : l'identité complète et
+corrigeable, les gestes qui pèsent sur l'accès et sur la fin de parcours, et ce
+que le patient a écrit lui-même à l'ouverture de son espace.
+
+Trois manques, constatés dans le code le 2026-09-16, et non déduits :
+
+1. **Le dossier ne se modifie pas.** `PATCH /api/praticien/patients` n'accepte
+   que `telephone` et `actif`. Nom, prénom, date de naissance et e-mail sont
+   saisis à la création et ne se corrigent plus jamais.
+2. **Quatre renseignements n'existent nulle part** — adresse, NIR, nom et
+   coordonnées du médecin traitant. Le seul médecin du schéma est
+   `CorrespondanceMedecin.medecinLibelle` : un texte libre **par lettre**,
+   jamais un médecin attaché au dossier.
+3. **La fiche signalétique et l'anamnèse sont invisibles au praticien.** Le
+   patient les remplit à l'ouverture de son espace ; elles sont écrites en JSON
+   sur `consultations.fiche_signaletique` et `consultations.anamnese`.
+   Recherche exhaustive dans `web/src` : **aucune surface praticien ne les
+   lit**. `lib/synthese/generation.ts` seul y touche, pour fabriquer un texte.
+
+## Ce qui a causé cette campagne
+
+Une demande du responsable, le 2026-09-16, captures à l'appui : la phase
+« 1. Patient » du poste de pilotage n'affiche qu'un nom et un e-mail, tandis que
+la gestion des dossiers vit sur une page d'héritage 4.0 — « Questionnaires &
+packs » — où elle cohabite avec l'assignation de questionnaires et les packs.
+Deux métiers sans rapport sur un même écran, et le métier du dossier n'est
+présent nulle part ailleurs.
+
+## Résultat observable
+
+1. Un rayon **Patients** dans le rail, sous « Le Fil du jour » — la gestion des
+   dossiers quitte l'héritage 4.0, qui disparaît de la navigation ; assignations
+   et packs rejoignent la Bibliothèque, déjà 5.0.
+2. Le praticien **corrige** un nom, une date de naissance, un e-mail — et
+   changer l'e-mail ne rend muette aucune réponse déjà reçue.
+3. Le dossier porte **l'adresse, le NIR et le médecin traitant**, et ces trois
+   ajouts sont déclarés au dossier RGPD comme au document servi au patient.
+4. La fiche signalétique et l'anamnèse se **relisent** depuis le cockpit, telles
+   que déposées, sans agrégat ni interprétation — et leur absence se dit.
+5. La phase « Patient » du poste de pilotage porte le dossier ET ses gestes, au
+   lieu de deux lignes.
+
+## Les six arbitrages du 2026-09-16
+
+| # | Question | Tranché |
+|---|---|---|
+| 1 | URL et rail | `/dashboard/patients` devient le rayon Patients ; « Questionnaires & packs » disparaît du rail |
+| 2 | Où vont assignations et packs | Dans la Bibliothèque, en rayon |
+| 3 | Périmètre du rayon | Liste, Nouveau patient, Nouvelle consultation, « Gérer le dossier » |
+| 4 | Fiche signalétique et anamnèse | Instrument à tiroir **plus** une ligne d'état permanente |
+| 5 | Document patient | v8, **accusé exigé** (`requiresAcknowledgement: true`) |
+| 6 | NIR | Stocké **en clair**, comme toute donnée patient |
+
+## Ce que le cadrage a établi, et qui n'était pas attendu
+
+1. **L'e-mail est recopié dans cinq tables.** `Consultation`, `Assignation`,
+   `QuestionnaireReponse`, `SyntheseIA` portent `email_patient` ; `BookletEnvoi`
+   porte `email_patient_masque`. Et `GET /api/praticien/reponses` interroge
+   **par e-mail**, comme trois autres routes. Rendre l'e-mail modifiable sans
+   réécrire ces copies rendrait muettes toutes les réponses déjà reçues. La
+   trace masquée du booklet, elle, ne se réécrit pas : elle atteste un envoi
+   réellement parti à cette adresse-là.
+2. **La migration ouvre une fenêtre d'indisponibilité.** Prisma sélectionne
+   explicitement toutes les colonnes scalaires d'un modèle : dès que
+   `schema.prisma` déclare `adresse`, la moindre requête `patient` échoue tant
+   que la colonne n'existe pas. Or `D-087` impose **code déployé d'abord,
+   migration approuvée ensuite**. La fenêtre existe, elle se choisit.
+3. **Aucune garde mécanique ne tient « migration seule ».** Ni hook, ni banc, ni
+   CI ne refusent une PR mixte. La discipline repose sur le hook de
+   confirmation, la revue et le fragment changelog. T3 et la CI ne vérifient que
+   la **parité schéma ↔ migrations**.
+4. **Le rail a un jumeau mobile** — `MobileBottomNav.tsx` — et **ni lui ni
+   `SidebarRail` n'ont de test unitaire**. Leur seul filet est
+   `e2e/trajectoires.spec.ts:38`, qui ne tourne que sur Desktop Chromium.
+5. **Un texte visible renverra vers un écran disparu** :
+   `TrajectoiresPanel.tsx:91`, état vide — « Créez un patient depuis
+   "Questionnaires & packs" ». Aucun test ne le couvre : il se corrige à la main
+   ou il ment.
+6. **Trois baselines visuelles vont rougir, et trois seulement** :
+   `fiche-cockpit`, `fiche-tiroir-besoins`, `fiche-trajectoire-onglet`, en
+   `Desktop-Chromium-linux` — les jumelles iPhone 13 ne portent pas le rail.
+   `scripts/seuil-visuel.test.mjs` interdit de desserrer le seuil : la seule
+   voie est la régénération par workflow.
+7. **`GET /api/praticien/consultations` existe et n'a aucun appelant.** Il
+   charge déjà les lignes entières et journalise déjà l'accès : servir la fiche
+   signalétique et l'anamnèse y tient en quelques lignes de mapping, sans route
+   neuve.
+
+## Ce qui rend la campagne plus petite qu'attendu
+
+- La route des patients sert **déjà** les deux formes dont la scission a besoin
+  (`page` absent = liste complète pour les sélecteurs ; `page` présent = tableau
+  paginé) : la scission ne touche aucune route.
+- `FICHE_SECTIONS` et `ANAMNESE_SECTIONS` portent déjà libellés, types et
+  options ; `normaliserFiche` et `normaliserAnamnese` bornent déjà le JSON
+  stocké. La lecture praticien **consomme** ces descripteurs, elle n'en écrit
+  aucun.
+- `MenuActions`, `DossierConfirmDialog`, `PanneauSuperpose` et `InstrumentTiroir`
+  couvrent toute la mécanique d'écran : aucune primitive neuve.
+- La migration est **additive** : quatre colonnes nullables, sans défaut, sans
+  index — rien à rétro-remplir, rien à reconstruire au retour arrière.
+
+## Ce qui est mesuré, et ce qui ne l'est pas
+
+La campagne se clôt sur ses livrables verts en CI. L'usage se constate ensuite,
+sur dossiers réels lus par identifiant au conteneur — combien de dossiers
+portent une fiche signalétique et une anamnèse réellement lisibles. Même
+séparation que `2026-09-14-protocole-assiste`, et pour la raison que `D-112` a
+établie : confondre « livré » et « utilisé » ment.
+
+## Les lots
+
+| Lot | Titre | Migration | Dépend de |
+|---|---|---|---|
+| LOT-00 | Cadrage | non | — |
+| LOT-01 | Le rayon Patients dans le rail | non | — |
+| LOT-02 | Fiche signalétique et anamnèse, relisibles | non | — |
+| LOT-03 | Migration seule — quatre colonnes | **oui** | — |
+| LOT-04 | Le document servi au patient | non | LOT-03 |
+| LOT-05 | La fiche administrative s'écrit | non | LOT-03 appliqué |
+| LOT-06 | Le cockpit porte la gestion du dossier | non | LOT-02, LOT-05 |
+| LOT-07 | Clôture | non | tous |
+
+**L'ordre place le LOT-02 avant la migration**, et ce n'est pas un détail de
+séquence : c'est le manque le plus net de la demande, il ne dépend d'aucune
+colonne neuve, et il part sans attendre la porte `release-db`.
+
+## Hors périmètre, nommé
+
+- **La qualification du NIR au titre de l'article 9.** Elle appartient au
+  responsable de traitement, et le dossier RGPD refuse explicitement de la poser
+  dans le code.
+- **Le raccord du médecin traitant au rayon Correspondance** (pré-remplissage de
+  `CorrespondanceMedecin.medecinLibelle`). Le champ le rend possible ; le
+  chantier est distinct et se nomme à la clôture.
+- **Tout libellé de `anamnese.ts` et `fiche.ts`** — des règles cliniques les
+  apparient verbatim, et deux bancs l'exigent.
