@@ -4,6 +4,82 @@
 
 ## Décisions actives
 
+### D-204 — La clause de la fenêtre de rappel est MESURÉE en production, et le filtre de sortie est écarté sur ce constat
+
+- Date : 2026-09-16
+- Statut : accepté — **mesure de production**, et arbitrage rendu sur le finding
+  P0 laissé ouvert par la passe Codex rétroactive de [[D-201]].
+- Domaine : clinique — consigne système de synthèse, `DC-19`.
+- Aucun changement de code. Cette entrée est un CONSTAT DATÉ et la décision qui
+  en découle.
+
+**CE QUI ÉTAIT OUVERT.** La clause `synthese-v30` est l'UNIQUE contrôle du
+contenu produit : `analyserSortieSynthese` ne lit que la structure, et le dit
+avec sa raison — citer la valeur fautive exfiltrerait du clinique vers les logs.
+Une sortie écrivant « habituellement évalué sur deux semaines » passe le schéma,
+passe la relance unique, et se persiste. Codex proposait de **filtrer la sortie
+avant persistance**. Rien n'était mesuré.
+
+**LA MESURE.** Lecture par conteneur, agrégée, aucun texte clinique sorti pour le
+comptage :
+
+| Version | Synthèses | Avec une formulation de durée |
+| --- | --- | --- |
+| `synthese-v29` | 31 | 27 |
+| `synthese-v30` | **6** | **6** |
+
+**LE 6 SUR 6 N'EST PAS UN ÉCHEC, ET C'EST TOUT L'ENJEU.** Le motif de recherche
+attrape TOUTE durée. À la lecture des fragments, les six relèvent des trois cas
+que la borne de la clause AUTORISE explicitement : le déclaratif patient (une
+durée d'évolution, un arrêt d'activité), la question d'entretien, et la durée de
+RECUEIL de l'agenda portée par la donnée. **Aucune fenêtre de rappel d'instrument
+n'est énoncée** — pas une, là où [[D-183]] en avait trouvé une sur 32 synthèses
+`v29`, fausse et inversée.
+
+**UN SEUIL A FAILLI DEVENIR UN FINDING, ET LA VÉRIFICATION L'A DISSOUS.** Deux
+synthèses écrivent « recueil insuffisant pour un indice global (< 14 nuits
+exploitables) ». Un seuil numérique servi comme une règle est du `DC-19`, et il
+est PIRE qu'une fenêtre inventée : le chiffre étant juste, personne ne le
+relève. La chaîne a été remontée jusqu'au bout :
+
+1. `MIN_NUITS_INDICE = 14` existe dans le code — la valeur n'est pas inventée ;
+2. le moteur ne transmet qu'un drapeau binaire `AGD_INDICE_ELIGIBLE` ;
+3. `interpretation` est NULL sur la passation lue — pas par là ;
+4. **mais `scores_json` porte la note en toutes lettres** — « Moins de 14 nuits
+   exploitables — recueil transmis sans indice global » ;
+5. et `scoresPourPrompt` ne retire que `conduite`, `protocol` et quatre quantités
+   non étalonnées : **la note survit au filtre et atteint le modèle.**
+
+Le modèle a donc RESTITUÉ une donnée transmise. C'est noté ici parce qu'un
+finding a été évité de peu sur un chiffre correct : une alerte remontée à l'étape
+3 aurait été fausse.
+
+**DÉCISION : LE FILTRE DE SORTIE N'EST PAS POSÉ.** Deux raisons, dans cet ordre.
+
+1. **Sans gain mesuré** — zéro occurrence à attraper sur la population observée.
+2. **Coûteux, et démontré tel par la mesure elle-même** — il aurait dû trancher
+   six fois entre une durée légitime et une durée fabriquée. « 14 nuits » de
+   l'agenda et « 14 nuits » du seuil sont **la même chaîne, servie pour deux
+   raisons différentes** ; aucun détecteur lexical ne les sépare. Poser ce filtre
+   échangerait un défaut non observé contre une censure du récit patient, des
+   questions d'entretien et de l'agenda transmis — les six occurrences
+   légitimes.
+
+**CE QUI SURVEILLE À LA PLACE : cette mesure, rejouée.** Elle ne coûte qu'un
+one-off agrégé et ne sort aucun texte pour son comptage.
+
+**CE QUE CE CONSTAT NE DIT PAS, et il faut le lire avec.** Six synthèses ne
+prouvent pas un comportement — c'est la population réelle depuis la mise en
+service de `v30`, pas un échantillon choisi. Et **une seule dimension a été
+mesurée** : les durées. La clause est tenue sur ce qu'on lui demande ; le reste
+de ce que le modèle écrit n'est pas mesuré, et `analyserSortieSynthese` continue
+de ne lire que la structure.
+
+- Conséquences : aucune ligne de code. Le finding P0 de [[D-201]] est **traité
+  par la mesure, pas par un garde** — et c'est la première fois que ce dépôt
+  répond à un finding de contenu LLM autrement qu'en ajoutant un interdit.
+
+
 ### D-203 — La plainte dominante prime, et l'alternative a été écartée sur un FAIT : elle rendait le terme inatteignable
 
 - Date : 2026-09-16

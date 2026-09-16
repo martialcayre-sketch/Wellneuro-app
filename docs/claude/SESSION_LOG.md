@@ -6604,3 +6604,44 @@ quelles.
 **Prochaine action** : les deux lectures qui portent des chiffres affichés au praticien
 (`Q_GEO_06`, `Q_GEO_03`). Trois des huit chantiers touchent la logique clinique et exigent
 chacun une décision `D-xxx` + un fragment ; le mandat est acquis par cet arbitrage.
+
+## 2026-09-16 03:00 — La clause `DC-19` mesurée, et le filtre écarté ([[D-204]])
+
+**Première fois que ce dépôt répond à un finding de contenu LLM par une mesure
+plutôt que par un interdit de plus.** Sur les six synthèses `v30` en production,
+aucune n'énonce de fenêtre de rappel d'instrument — les six formulations de durée
+relèvent des trois cas que la clause autorise. `v29` en portait une fabriquée.
+
+**Un finding évité de peu, et c'est ce que je retiens.** Deux synthèses citent
+« < 14 nuits exploitables ». Trois étapes de vérification donnaient toutes
+« le modèle a inventé un seuil » : la valeur existe en code, seul un drapeau
+binaire est transmis, `interpretation` est NULL. La quatrième — `scores_json` —
+porte la note en toutes lettres, et le filtre ne la retire pas. **S'arrêter une
+étape trop tôt aurait produit une alerte fausse sur un chiffre correct.**
+
+**Le filtre de sortie est écarté, et la mesure dit pourquoi mieux qu'un
+raisonnement** : « 14 nuits » de l'agenda et « 14 nuits » du seuil sont la même
+chaîne servie pour deux raisons différentes. Un détecteur lexical censurerait six
+occurrences légitimes pour zéro fabriquée.
+
+Limites dites : six synthèses ne prouvent pas un comportement, et une seule
+dimension a été mesurée.
+
+## 2026-09-16 — Clôture de session : quatre décisions, trois signatures, deux périmées
+
+**Décisions.** `D-201` la clause `DC-19` se garde par sa puce, pas par son
+vocabulaire ; `D-202` le périmètre du classement attesté, et l'attestation sait
+se périmer ; `D-203` la primauté de la plainte dominante arbitrée ; `D-204` la
+clause mesurée en production.
+
+**Écarté, et pourquoi.** Le filtre de sortie LLM — zéro occurrence à attraper sur
+six synthèses, et « 14 nuits » de l'agenda est la même chaîne que « 14 nuits » du
+seuil : il aurait censuré six cas légitimes pour zéro fabriqué. La priorité
+intrinsèque en tête — elle rendait la plainte dominante inatteignable, les quatre
+priorités étant distinctes. Le blacklistage de « sauf si » — une garde qui nomme
+ce qu'elle ne peut pas voir.
+
+**Prochaine action.** Merger #1139, verte et `CLEAN`.
+
+**Ouvert.** `analyserSortieSynthese` ne lit que la structure : assumé, pas oublié.
+Six synthèses ne prouvent pas un comportement.
