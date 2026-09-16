@@ -17,6 +17,13 @@ vi.mock('@/components/biologie/RayonBiologiePanel', () => ({
 vi.mock('@/components/corpus/RechercheCorpusRayonPanel', () => ({
   RechercheCorpusRayonPanel: () => <div data-testid="recherche-corpus-panel" />,
 }));
+// Rayon arrivé le 2026-09-16, depuis la page d'héritage « Questionnaires &
+// packs ». Il n'est PAS gardé par un drapeau — il est monté inconditionnellement
+// — mais il doit être stubbé comme les autres : il lit trois routes au montage,
+// et sans ce témoin ses `fetch` casseraient les onze cas de drapeau ci-dessous.
+vi.mock('@/components/bibliotheque/AssignationsPacksPanel', () => ({
+  AssignationsPacksPanel: () => <div data-testid="assignations-packs-panel" />,
+}));
 vi.mock('@/lib/bibliotheque', () => ({ listeBibliotheque: () => [] }));
 
 import BibliothequePage from './page';
@@ -26,6 +33,22 @@ afterEach(() => {
   delete process.env.WN_C4_ENABLED;
   delete process.env.WN_CB_ENABLED;
   delete process.env.WN_RECHERCHE_CORPUS_ENABLED;
+});
+
+describe('BibliothequePage — le rayon assignations et packs', () => {
+  // Il n'a PAS de drapeau, et c'est précisément pourquoi il a besoin d'un banc :
+  // rien d'autre ne dirait qu'il a disparu de la page. Son ancienne maison —
+  // `/dashboard/patients`, alors « Questionnaires & packs » — ne le monte plus,
+  // et le rail ne mène plus nulle part ailleurs.
+  it('est monté sans condition de drapeau', () => {
+    delete process.env.WN_C4_ENABLED;
+    delete process.env.WN_CB_ENABLED;
+    delete process.env.WN_RECHERCHE_CORPUS_ENABLED;
+    render(<BibliothequePage />);
+
+    expect(screen.getByTestId('assignations-packs-panel')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Assignations et packs' })).toBeTruthy();
+  });
 });
 
 describe('BibliothequePage — garde-fou du rayon compléments', () => {

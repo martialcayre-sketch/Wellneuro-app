@@ -88,7 +88,7 @@ export function TrajectoiresPanel() {
   if (lignes.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
-        Aucun patient dans le cabinet pour l’instant. Créez un patient depuis « Questionnaires &amp; packs ».
+        Aucun patient dans le cabinet pour l’instant. Créez un dossier depuis « Patients ».
       </div>
     );
   }

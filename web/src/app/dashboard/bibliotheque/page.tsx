@@ -1,4 +1,5 @@
 import { BibliothequePanel } from '@/components/BibliothequePanel';
+import { AssignationsPacksPanel } from '@/components/bibliotheque/AssignationsPacksPanel';
 import { RayonBiologiePanel } from '@/components/biologie/RayonBiologiePanel';
 import { RayonComplementsPanel } from '@/components/complements/RayonComplementsPanel';
 import { RechercheCorpusRayonPanel } from '@/components/corpus/RechercheCorpusRayonPanel';
@@ -47,6 +48,27 @@ export default function BibliothequePage() {
         </p>
       </div>
       <BibliothequePanel entrees={entrees} rayonBiologieOuvert={rayonBiologieActif} />
+
+      <section aria-labelledby="rayon-assignations-titre" className="flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+            Rayon assignations et packs · ce qui est envoyé, et à qui
+          </p>
+          <h3
+            id="rayon-assignations-titre"
+            className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground"
+          >
+            Assignations et packs
+          </h3>
+          <p className="mt-1 max-w-2xl text-base text-muted-foreground">
+            Assigner un questionnaire à un dossier, composer les packs, et relire les assignations
+            récentes. Ce rayon a quitté la page d’héritage « Questionnaires &amp; packs » le
+            2026-09-16 : la gestion des dossiers, qui y cohabitait, vit désormais dans « Patients ».
+          </p>
+        </div>
+
+        <AssignationsPacksPanel />
+      </section>
 
       <section aria-labelledby="rayon-complements-titre" className="flex flex-col gap-4">
         <div>
