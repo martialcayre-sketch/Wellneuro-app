@@ -160,7 +160,7 @@ function estIsoCanonique(valeur: string | null): valeur is string {
 }
 
 export function cleClaim(claim: ClaimRef): string {
-  return `${claim.claimId}@${claim.versionClaim}`;
+  return `${claim.claimId}::${claim.versionClaim}`;
 }
 
 /**

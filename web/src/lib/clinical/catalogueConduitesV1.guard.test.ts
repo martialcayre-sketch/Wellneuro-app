@@ -184,7 +184,7 @@ describe('catalogue de conduites — un claim qui cesse d’être VALIDE retire 
   });
 
   it('une version de claim qui ne correspond pas ne vaut pas validité', () => {
-    const autreVersion = new Set(['WN-CL-0000-001@v2.0', 'WN-CL-0000-002@v1.0', 'WN-CL-0000-003@v1.0']);
+    const autreVersion = new Set(['WN-CL-0000-001::v2.0', 'WN-CL-0000-002::v1.0', 'WN-CL-0000-003::v1.0']);
     expect(lignesConduitesServables(autreVersion, signatureBanc([LIGNE]), [LIGNE])).toEqual([]);
   });
 });
