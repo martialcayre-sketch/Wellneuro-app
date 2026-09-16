@@ -122,7 +122,16 @@ export function FicheAdministrativePanel({
 }: {
   patient: PatientDossier;
   onEnregistre: () => void | Promise<void>;
-  onFermer: () => void;
+  /**
+   * Referme le panneau. FACULTATIF, et son absence change le bouton plutôt que
+   * de le laisser inerte (constat de revue, 2026-09-17) : dans le cockpit, ce
+   * panneau EST le contenu de la phase — il n'y a rien à refermer, et passer
+   * une fonction vide laissait à l'écran un bouton « Annuler » qui ne faisait
+   * rien. Sans `onFermer`, le bouton devient « Réinitialiser » et rend au
+   * formulaire les valeurs du dossier : un praticien qui a tapé par erreur doit
+   * pouvoir revenir en arrière, sur les deux surfaces.
+   */
+  onFermer?: () => void;
 }) {
   const [form, setForm] = useState<Formulaire>(() => formulaireDepuis(patient));
   const [envoi, setEnvoi] = useState(false);
@@ -228,8 +237,11 @@ export function FicheAdministrativePanel({
         <Button onClick={enregistrer} disabled={envoi}>
           {envoi ? 'Enregistrement…' : 'Enregistrer'}
         </Button>
-        <Button variant="outline" onClick={onFermer}>
-          Annuler
+        <Button
+          variant="outline"
+          onClick={() => (onFermer ? onFermer() : setForm(formulaireDepuis(patient)))}
+        >
+          {onFermer ? 'Annuler' : 'Réinitialiser'}
         </Button>
         {retour && (
           <span

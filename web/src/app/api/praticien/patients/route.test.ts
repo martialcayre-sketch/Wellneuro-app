@@ -1047,3 +1047,42 @@ describe('GET — `idPatient` restreint aussi la liste des dossiers (LOT-06)', (
     expect(where.praticienEmail).toEqual({ equals: 'p@wellneuro.fr', mode: 'insensitive' });
   });
 });
+
+describe('GET — la restriction par dossier tient sur LES DEUX branches', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.assignation.count.mockResolvedValue(0);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
+  });
+
+  it('★ `page` ne contourne pas la restriction — sinon elle ne restreint rien', async () => {
+    // CONSTAT DE REVUE DU 2026-09-17. La restriction ne vivait que sur la
+    // branche non paginée : `?page=1&idPatient=X` sortait par l'autre, dont le
+    // `where` ne portait que le praticien et la recherche. Il suffisait donc
+    // d'ajouter un paramètre d'AFFICHAGE pour recevoir de nouveau la fiche de
+    // toute la patientèle, NIR compris.
+    await GET(get('page=1&pageSize=10&idPatient=PAT_SEED_03'));
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.idPatient).toBe('PAT_SEED_03');
+    expect(where.praticienEmail).toEqual({ equals: 'p@wellneuro.fr', mode: 'insensitive' });
+  });
+
+  it('le compte porte le MÊME where que la liste — sinon la pagination ment', async () => {
+    await GET(get('page=1&pageSize=10&idPatient=PAT_SEED_03'));
+    expect(prisma.patient.count.mock.calls[0][0].where).toEqual(
+      prisma.patient.findMany.mock.calls[0][0].where,
+    );
+  });
+
+  it('la recherche et la restriction se cumulent, l’une n’efface pas l’autre', async () => {
+    await GET(get('page=1&idPatient=PAT_SEED_03&search=nicola'));
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.idPatient).toBe('PAT_SEED_03');
+    expect(where.OR).toBeTruthy();
+  });
+});

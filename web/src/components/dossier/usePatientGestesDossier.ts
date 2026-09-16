@@ -82,6 +82,13 @@ export function usePatientGestesDossier({
     'resend' | 'revoke' | 'copier' | 'lien_magique' | null
   >(null);
   const [retour, setRetour] = useState<RetourGeste | null>(null);
+  // LE DERNIER GESTE RÉUSSI, ET POURQUOI IL FAUT LE DIRE (constat de revue,
+  // 2026-09-17). Après un EFFACEMENT, le dossier n'existe plus : la surface qui
+  // se recharge ne le trouve pas, et rendait cette absence ATTENDUE comme une
+  // erreur de lecture — « la fiche n'a pas pu être lue », sur un dossier que le
+  // praticien vient délibérément de détruire. Une absence voulue et une lecture
+  // en panne ne se disent pas de la même façon.
+  const [dernierGeste, setDernierGeste] = useState<ModeConfirmation | null>(null);
 
   // `retablirAcces` : ce renvoi vient d'une confirmation de rétablissement — le
   // refus et le succès se rendent alors DANS le dialogue, pas derrière lui.
@@ -294,6 +301,7 @@ export function usePatientGestesDossier({
             : 'Suivi rouvert.',
     });
     setConfirmation(null);
+    setDernierGeste(mode === 'effacement' ? 'effacement' : mode === 'cloture' ? 'cloture' : 'reprise');
     await apresSucces();
   };
 
@@ -382,6 +390,9 @@ export function usePatientGestesDossier({
     tokenAction,
     retour,
     setRetour,
+    /** Le dernier geste mené à son terme — `'effacement'` change ce qu'une
+     *  absence de dossier veut dire à la lecture suivante. */
+    dernierGeste,
     agir,
     renvoyerLien,
   };

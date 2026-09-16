@@ -503,6 +503,14 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'certification') return ok(REPONSES_CERTIFICATION);
       return ok(REPONSES);
     }
+    // Le cycle de vie du dossier, atteignable depuis le cockpit depuis le
+    // LOT-06. Sans cette branche, l'effacement retombait sur le fourre-tout et
+    // le banc du cas positif ne pouvait pas voir la confirmation aboutir.
+    // PLACÉE AVANT la branche `/api/praticien/patients`, dont l'URL est un
+    // préfixe de celle-ci.
+    if (url.includes('/api/praticien/patients/cycle-de-vie')) {
+      return ok({ success: true, action: 'effacement', lignesSupprimees: 7 });
+    }
     // La route d'annulation, sans laquelle une réponse vide se lirait comme un
     // refus — et la relecture qui suit n'aurait jamais lieu.
     if (url.includes('/api/praticien/assignations/annulation')) {
@@ -2377,5 +2385,96 @@ describe('Cockpit — les gestes du dossier passent par leur confirmation', () =
     fireEvent.click(await screen.findByRole('button', { name: /gérer le dossier/i }));
     const renvoyer = await screen.findByText(/renvoyer le lien/i);
     expect(renvoyer.getAttribute('aria-disabled')).toBe('true');
+  });
+});
+
+// ═══ SUITE DE LA REVUE DU 2026-09-17 (PR #1170) ═══════════════════════════
+describe('Cockpit — les quatre constats de revue', () => {
+  afterEach(cleanup);
+
+  it('★ l’EFFACEMENT ne se rend pas comme une erreur de lecture', async () => {
+    // Après un effacement, le dossier n'existe plus : la relecture ne le trouve
+    // pas, et cette absence ATTENDUE s'affichait « la fiche n'a pas pu être
+    // lue » — sur un dossier que le praticien venait délibérément de détruire,
+    // à côté d'un nom et d'un e-mail qui n'existent plus en base.
+    stubFetch({ dossier: 'absent' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" />
+      </C5FeatureProvider>,
+    );
+    // Sans geste d'effacement, l'absence reste bien une erreur.
+    const alertes = await screen.findAllByRole('alert');
+    expect(alertes.some(a => /n’a pas pu être lue/i.test(a.textContent ?? ''))).toBe(true);
+    expect(screen.queryByText(/effacé définitivement/i)).toBeNull();
+  });
+
+  it('★ ET LE CAS POSITIF : un effacement mené à son terme se DIT effacé', async () => {
+    // Le banc précédent prouve qu'une absence SANS effacement reste une erreur.
+    // Celui-ci prouve l'autre moitié — sans quoi la branche pourrait ne jamais
+    // s'afficher et les deux bancs resteraient verts.
+    const fetchMock = stubFetch();
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" />
+      </C5FeatureProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /gérer le dossier/i }));
+    fireEvent.click(await screen.findByText(/effacer définitivement/i));
+
+    const champ = await screen.findByLabelText(/saisissez/i);
+    fireEvent.change(champ, { target: { value: 'EFFACER' } });
+    fireEvent.click(screen.getByRole('button', { name: /^effacer définitivement$/i }));
+
+    expect(await screen.findByText(/effacé définitivement/i)).toBeTruthy();
+    expect(screen.getByRole('link', { name: /revenir à la liste des patients/i })).toBeTruthy();
+    // Et surtout : plus aucun champ à saisir sur un dossier qui n'existe plus.
+    expect(screen.queryByLabelText(/adresse postale/i)).toBeNull();
+    expect(
+      fetchMock.mock.calls.some(a => String(a[0]).includes('cycle-de-vie')),
+    ).toBe(true);
+  });
+
+  it('★ le menu porte « Lien à usage unique » quand le drapeau est levé', async () => {
+    // La PR promettait « les mêmes neuf gestes » ; sans le drapeau, le cockpit
+    // n'en offrait que huit, là où le rayon en offre neuf.
+    stubFetch();
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" lienMagiqueActif />
+      </C5FeatureProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /gérer le dossier/i }));
+    expect(await screen.findByText(/lien à usage unique/i)).toBeTruthy();
+  });
+
+  it('drapeau baissé : la neuvième action n’apparaît pas', async () => {
+    stubFetch();
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" phaseDemandee="patient" />
+      </C5FeatureProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /gérer le dossier/i }));
+    expect(screen.queryByText(/lien à usage unique/i)).toBeNull();
+  });
+
+  it('★ aucun bouton inerte : le cockpit propose « Réinitialiser », pas « Annuler »', async () => {
+    // « Annuler » dans le cockpit ne refermait rien — le panneau EST le contenu
+    // de la phase. Un contrôle visible qui ne fait rien est pire qu'absent.
+    await rendreFiche({ phaseDemandee: 'patient' });
+    expect(await screen.findByRole('button', { name: /^réinitialiser$/i })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^annuler$/i })).toBeNull();
+  });
+
+  it('« Réinitialiser » rend au formulaire les valeurs du dossier', async () => {
+    await rendreFiche({ phaseDemandee: 'patient' });
+    const champ = (await screen.findByLabelText(/adresse postale/i)) as HTMLInputElement;
+    fireEvent.change(champ, { target: { value: 'saisie par erreur' } });
+    expect(champ.value).toBe('saisie par erreur');
+    fireEvent.click(screen.getByRole('button', { name: /^réinitialiser$/i }));
+    expect((screen.getByLabelText(/adresse postale/i) as HTMLInputElement).value).toBe(
+      '12 rue des Fictifs, 75000 Paris',
+    );
   });
 });

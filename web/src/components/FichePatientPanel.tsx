@@ -506,6 +506,7 @@ export function FichePatientPanel({
   ongletInitial,
   phaseDemandee,
   fixtureValidationErgo = null,
+  lienMagiqueActif = false,
 }: {
   idPatient: string;
   /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
@@ -518,6 +519,9 @@ export function FichePatientPanel({
    */
   phaseDemandee?: PhaseFiche;
   fixtureValidationErgo?: ValidationErgoC1Fixture | null;
+  /** Drapeau G4, lu au serveur par la page. Sans lui, le menu du cockpit perd
+   *  « Lien à usage unique (24 h) » que le rayon, lui, propose. */
+  lienMagiqueActif?: boolean;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1678,7 +1682,27 @@ export function FichePatientPanel({
 
               Une lecture en ÉCHEC ne se rend jamais comme un dossier vide : le
               praticien conclurait que rien n'a été saisi. */}
-          {etatDossier === 'erreur' ? (
+          {gestesDossier.dernierGeste === 'effacement' ? (
+            /* LE DOSSIER A ÉTÉ EFFACÉ, ET C'EST VOULU. Sans cette branche, la
+               relecture ne trouvait plus le dossier et rendait son absence comme
+               une ERREUR DE LECTURE — « la fiche n'a pas pu être lue » —, sur un
+               dossier que le praticien venait délibérément de détruire, à côté
+               d'un nom et d'un e-mail qui n'existent plus en base. Une absence
+               voulue et une lecture en panne ne se disent pas de la même façon
+               (constat de revue, 2026-09-17). */
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <p role="status" className="text-base text-foreground">
+                Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.
+              </p>
+              <p className="mt-2 text-base text-muted-foreground">
+                Cette page ne désigne plus aucun dossier.{' '}
+                <Link href="/dashboard/patients" className="underline">
+                  Revenir à la liste des patients
+                </Link>
+                .
+              </p>
+            </div>
+          ) : etatDossier === 'erreur' ? (
             <div className="rounded-xl border border-border bg-surface p-4">
               <p role="alert" className="text-base text-status-warning">
                 La fiche administrative n’a pas pu être lue. Ce n’est pas une absence : ce dossier
@@ -1696,7 +1720,6 @@ export function FichePatientPanel({
                 key={dossier.idPatient}
                 patient={dossier}
                 onEnregistre={chargerPassations}
-                onFermer={() => {}}
               />
               <div className="rounded-xl border border-border bg-surface p-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1719,6 +1742,7 @@ export function FichePatientPanel({
                     patient: dossier as PatientRowData,
                     onAction: gestesDossier.agir,
                     actionAccesEnCours: gestesDossier.tokenAction !== null,
+                    lienMagiqueActif,
                   })}
                 />
               </div>

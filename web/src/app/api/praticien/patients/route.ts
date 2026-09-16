@@ -271,6 +271,14 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
 
       const where = {
         ...filtrePatientsDuPraticien(email),
+        // `idPatient` RESTREINT ICI AUSSI, et son absence annulait la
+        // restriction (constat de revue, 2026-09-17) : `?page=1&idPatient=X`
+        // sort par cette branche-ci, dont le `where` ne portait que le
+        // praticien et la recherche — la charge emportait donc de nouveau la
+        // fiche de toute la patientèle, NIR compris. Une minimisation qui ne
+        // tient que sur une branche ne minimise rien : il suffit d'ajouter un
+        // paramètre d'affichage pour la contourner.
+        ...(idPatientDemande ? { idPatient: idPatientDemande } : {}),
         ...(search
           ? {
               OR: [
