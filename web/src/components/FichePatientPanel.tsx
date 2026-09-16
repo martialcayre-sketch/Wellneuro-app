@@ -9,6 +9,7 @@ import {
   Check,
   ChevronRight,
   Circle,
+  ClipboardList,
   Clock,
   FileText,
   HelpCircle,
@@ -57,6 +58,11 @@ import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
 import { PractitionerFoodObservationPanel } from '@/components/food-observation/PractitionerFoodObservationPanel';
 import { CorrespondanceMedecinPanel } from '@/components/correspondance/CorrespondanceMedecinPanel';
+import {
+  RenseignementsPatientPanel,
+  phraseEtatRenseignements,
+  useRenseignementsPatient,
+} from '@/components/patient-cockpit/RenseignementsPatientPanel';
 import {
   ClinicalRuntimeSection,
   type EtatRuntimeClinique,
@@ -641,6 +647,17 @@ export function FichePatientPanel({
   // Sous-vue de la phase Compréhension (audit 2026-09-02) — voir le bloc de
   // rendu : bascule par `hidden`, jamais par démontage.
   const [sousVueComprehension, setSousVueComprehension] = useState<'objectif' | 'comprehension'>('objectif');
+
+  // FICHE SIGNALÉTIQUE ET ANAMNÈSE — une seule lecture pour deux lecteurs : la
+  // ligne d'état de la zone focale « Patient » et l'instrument à tiroir. Elle
+  // ne part PAS au montage de la fiche, qui déclenche déjà une trentaine de
+  // requêtes : la phase « Patient » l'amorce (effet ci-dessous), et le tiroir
+  // la déclenche s'il est ouvert depuis une autre phase.
+  const renseignements = useRenseignementsPatient(idPatient);
+  const { etat: etatRenseignements, charger: chargerRenseignements } = renseignements;
+  useEffect(() => {
+    if (phaseActive === 'patient' && etatRenseignements === 'repos') void chargerRenseignements();
+  }, [phaseActive, etatRenseignements, chargerRenseignements]);
   // UN DEEP-LINK VAUT UNE NAVIGATION DU PRATICIEN : sans cela, la règle D5
   // s'exécuterait dès l'état runtime établi et écraserait la phase demandée par
   // celle qu'elle juge due — le lien partagé afficherait alors autre chose que
@@ -1598,6 +1615,34 @@ export function FichePatientPanel({
             <p className="text-base text-foreground">{nomComplet}</p>
             <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
           </div>
+          {/* ── CE QUE LE PATIENT A DÉPOSÉ, DIT ICI MÊME ─────────────────────
+              Le détail vit dans l'instrument « Renseignements du patient » —
+              dix sections ne s'empilent pas dans une zone focale. Mais le
+              FAIT, lui, reste visible sans ouvrir quoi que ce soit : sans
+              cette ligne, un dossier sans anamnèse se lirait exactement comme
+              un dossier dont personne n'a pensé à ouvrir le tiroir.
+
+              Une lecture en échec ne dit JAMAIS « aucun renseignement » : elle
+              le dit, et le dit comme une erreur. */}
+          <div className="rounded-xl border border-border bg-surface p-4">
+            {etatRenseignements === 'erreur' ? (
+              <p role="alert" className="text-base text-status-warning">
+                {renseignements.erreur} Ce n’est pas une absence : ce dossier peut porter une fiche
+                signalétique et une anamnèse.
+              </p>
+            ) : etatRenseignements === 'chargee' ? (
+              <p className="text-base text-muted-foreground">
+                {phraseEtatRenseignements(renseignements.consultations)}{' '}
+                <span className="text-foreground">
+                  Le détail s’ouvre dans l’instrument « Renseignements du patient ».
+                </span>
+              </p>
+            ) : (
+              <p role="status" className="text-base text-muted-foreground">
+                Lecture des renseignements du dossier...
+              </p>
+            )}
+          </div>
           {assignationsModif.length > 0 && (
             <section aria-label="Demandes de correction de questionnaire en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
               {assignationsModif.map(a => (
@@ -2437,6 +2482,26 @@ export function FichePatientPanel({
                 {cartesObjetsCliniques}
               </InstrumentTiroir>
               <TiroirSyntheseInline idPatient={idPatient} />
+              {/* CE QUE LE PATIENT A ÉCRIT LUI-MÊME, à l'ouverture de son
+                  espace. Il l'avait déposé ; aucune surface praticien ne le
+                  lisait. Large comme les tableaux denses : trois sections de
+                  fiche signalétique et sept d'anamnèse.
+
+                  `onOpenChange` ne recharge PAS ce qui est déjà là : la phase
+                  « Patient » a pu déclencher la lecture pour sa ligne d'état,
+                  et ouvrir l'instrument depuis une autre phase doit alors
+                  suffire à la déclencher. D'où le test sur `'repos'`. */}
+              <InstrumentTiroir
+                libelle="Renseignements du patient"
+                description="Fiche signalétique et anamnèse, telles que le patient les a déposées à l’ouverture de son espace. Rien n’est agrégé ni interprété."
+                icone={ClipboardList}
+                large
+                onOpenChange={ouvert => {
+                  if (ouvert && renseignements.etat === 'repos') void renseignements.charger();
+                }}
+              >
+                <RenseignementsPatientPanel {...renseignements} />
+              </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Agenda du sommeil"
                 description="Recueil nuit par nuit (Q_SOM_09) : chronogramme, durée, efficacité, régularité."
