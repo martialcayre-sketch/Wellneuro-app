@@ -84,3 +84,62 @@ describe('ProtocolDiffusionPanel', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/n’est plus affiché à votre patient/);
   });
 });
+
+// L'APERÇU AVANT LE GESTE ([[D-200]] dette 1). Le praticien validait pour
+// diffusion sans avoir jamais vu une ligne de ce que son patient lirait : le
+// seul aperçu du cockpit vivait sur fixture.
+describe('ProtocolDiffusionPanel — l’aperçu de ce que le patient lira', () => {
+  const contenu = {
+    priorityLabel: 'Axe signé',
+    purpose: 'Raison patient.',
+    followUpCriterion: 'Critère patient.',
+    adviceSheetRef: null,
+    limitations: [],
+    actions: [
+      { actionId: 'a1', type: 'food' as const, title: 'Action ferme', minimalPlan: 'Plan minimal.' },
+      {
+        actionId: 'a2', type: 'biological_exploration' as const, title: 'Bilan', minimalPlan: 'Plan minimal bilan.',
+        interventionStatus: 'conditionnelle_biologie' as const, attente: 'En attente de confirmation par votre bilan.',
+      },
+    ],
+  };
+
+  it('montre le contenu patient, phrase d’attente comprise', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove
+        approved={false}
+        stale={false}
+        approvedAt={null}
+        apercu={{ ok: true, contenu }}
+      />,
+    );
+    expect(screen.getByText(/Axe signé/)).toBeTruthy();
+    expect(screen.getByText('Plan minimal.')).toBeTruthy();
+    expect(screen.getByText('En attente de confirmation par votre bilan.')).toBeTruthy();
+  });
+
+  // UN REFUS DIT POURQUOI. Un aperçu vide apprendrait au praticien qu'il n'a
+  // rien à montrer, jamais qu'il a quelque chose à lever.
+  it('affiche le motif quand le contrat refuse', () => {
+    render(
+      <ProtocolDiffusionPanel
+        canApprove={false}
+        approved={false}
+        stale={false}
+        approvedAt={null}
+        apercu={{ ok: false, motif: 'contrat_refuse', detail: 'Le protocole doit être relu par le praticien avant diffusion.' }}
+      />,
+    );
+    expect(screen.getByText(/Aucun aperçu patient pour la version active/)).toBeTruthy();
+    expect(screen.getByText(/doit être relu par le praticien/)).toBeTruthy();
+  });
+
+  it('ne montre rien tant que la lecture n’a pas abouti', () => {
+    render(
+      <ProtocolDiffusionPanel canApprove={false} approved={false} stale={false} approvedAt={null} />,
+    );
+    expect(screen.queryByText(/Vu par votre patient/)).toBeNull();
+    expect(screen.queryByText(/Aucun aperçu patient/)).toBeNull();
+  });
+});

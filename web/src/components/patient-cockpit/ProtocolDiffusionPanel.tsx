@@ -5,6 +5,9 @@
 // qu'une nouvelle version est enregistrée. Elle ne déclenche AUCUN envoi patient
 // (« Non transmis » reste affiché) — la transmission relève d'un lot ultérieur.
 
+import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
+import { ApercuPatientProtocole } from './ApercuPatientProtocole';
+
 export type DiffusionState = 'idle' | 'saving' | 'error';
 
 function formatDate(iso: string): string {
@@ -19,6 +22,7 @@ export function ProtocolDiffusionPanel({
   stale,
   approvedAt,
   servieAuPatient = null,
+  apercu = null,
   state = 'idle',
   error = null,
   onApprove,
@@ -41,6 +45,16 @@ export function ProtocolDiffusionPanel({
    * celui-ci compare le DOSSIER à lui-même.
    */
   servieAuPatient?: boolean | null;
+  /**
+   * CE QUE LE PATIENT LIRA de la version active, projeté par le contrat
+   * ([[D-200]] dette 1). `null` = lecture non aboutie : on ne montre rien.
+   *
+   * Il porte sur la version que le bouton ci-dessous validerait, pas sur celle
+   * déjà validée — c'est un aperçu AVANT le geste, et c'était le seul manquant :
+   * l'unique aperçu patient du cockpit vivait sur fixture, débranché de tout
+   * dossier réel.
+   */
+  apercu?: ApercuPatientServi | null;
   state?: DiffusionState;
   error?: string | null;
   onApprove?: () => void;
@@ -97,6 +111,21 @@ export function ProtocolDiffusionPanel({
 
       {state === 'error' && (
         <p role="alert" className="mt-2 text-base text-status-danger">{error ?? 'Échec de la validation.'}</p>
+      )}
+
+      {/* L'APERÇU, SOUS LA MAIN DU PRATICIEN ET AVANT SON GESTE. Un refus dit son
+          motif : il y a alors quelque chose à lever, et un aperçu vide ne
+          l'aurait pas appris. */}
+      {apercu && (
+        <div className="mt-4">
+          {apercu.ok ? (
+            <ApercuPatientProtocole contenu={apercu.contenu} />
+          ) : (
+            <p className="rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
+              Aucun aperçu patient pour la version active : {apercu.detail}
+            </p>
+          )}
+        </div>
       )}
 
       {onApprove && (canApprove || stale) && (

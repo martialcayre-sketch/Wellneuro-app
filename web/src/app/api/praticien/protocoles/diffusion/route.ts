@@ -6,6 +6,8 @@ import { deriveProtocolDraftId, deriveVersionId, resolveActiveVersion } from '@/
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { rejouerCarteDecision } from '@/lib/clinical-engine/rejeuCarteDecision';
 import { vuePatientOuRefus } from '@/lib/protocol/servirAuPatient';
+import { apercuContenuPatient } from '@/lib/clinical-engine/contenuPatientProtocole';
+import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import {
   DIFFUSION_CONFIRMATION,
@@ -239,6 +241,21 @@ type GetResponse =
        * fermé sur la vue patient.
        */
       servieAuPatient: boolean | null;
+      /**
+       * CE QUE LE PATIENT LIRA, AVANT QUE LE PRATICIEN NE DIFFUSE ([[D-200]]
+       * dette 1). Porte sur la version ACTIVE — celle que « Valider pour
+       * diffusion » approuverait —, pas sur celle déjà approuvée : un aperçu
+       * qui montre l'ancienne version est un aperçu qui ment sur le geste à
+       * venir.
+       *
+       * Projeté par le contrat patient lui-même, jamais recomposé : c'est la
+       * seule façon qu'une intervention suspendue s'y lise comme telle. Un
+       * refus porte son motif — le praticien a quelque chose à lever, et un
+       * aperçu vide ne le lui dirait pas.
+       *
+       * `null` quand aucune version n'existe encore.
+       */
+      apercu: ApercuPatientServi | null;
     }
   | { ok: false; reason: string; error: string };
 
@@ -297,10 +314,29 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       },
     });
     if (versions.length === 0) {
-      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null });
+      return NextResponse.json({ ok: true, approval: null, stale: false, servieAuPatient: null, apercu: null });
     }
     const decisionCardInputHash = versions[0].decisionCardInputHash;
     const activeVersion = resolveActiveVersion(versions);
+
+    // Le rejeu de la carte est une LECTURE DE DOSSIER, et deux versions du même
+    // protocole s'ancrent presque toujours sur la même — mémoïser évite de la
+    // refaire pour l'aperçu quand la version active est celle qui est approuvée.
+    // La clé porte les deux entrées qui font varier le résultat.
+    const rejeux = new Map<string, Awaited<ReturnType<typeof rejouerCarteDecision>>>();
+    const rejeuDe = async (version: { assessmentEpisodeId: string | null; decisionCardInputHash: string }) => {
+      const cle = `${version.assessmentEpisodeId}\u0000${version.decisionCardInputHash}`;
+      const connu = rejeux.get(cle);
+      if (connu) return connu;
+      const rejeu = await rejouerCarteDecision({
+        idPatient,
+        decisionCardId,
+        assessmentEpisodeId: version.assessmentEpisodeId,
+        decisionCardInputHash: version.decisionCardInputHash,
+      });
+      rejeux.set(cle, rejeu);
+      return rejeu;
+    };
 
     const approvals = await prisma.protocolDiffusionApproval.findMany({
       where: { idPatient, decisionCardInputHash },
@@ -331,12 +367,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       const versionApprouvee =
         versions.find(version => version.inputHash === active.protocolDraftInputHash) ?? null;
       if (versionApprouvee) {
-        const rejeu = await rejouerCarteDecision({
-          idPatient,
-          decisionCardId,
-          assessmentEpisodeId: versionApprouvee.assessmentEpisodeId,
-          decisionCardInputHash: versionApprouvee.decisionCardInputHash,
-        });
+        const rejeu = await rejeuDe(versionApprouvee);
         // DEUX MARCHES, PAS UNE. Le portail refuse de servir sur DEUX branches :
         // le rejeu échoue, ou le contrat patient refuse le protocole. Le miroir
         // ne regardait que la première — un statut d'intervention inconnu ou une
@@ -374,6 +405,61 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       }
     }
 
+    // ── L'APERÇU DE CE QUE LE PATIENT LIRA ([[D-200]] dette 1) ───────────────
+    //
+    // LE DÉFAUT QUE CE BLOC FERME. Le seul aperçu patient du cockpit vivait dans
+    // `ProtocolConsultationPanel`, alimenté par une fixture et débranché hors
+    // d'elle : sur un dossier RÉEL, le praticien validait pour diffusion sans
+    // avoir jamais vu une ligne de ce que son patient allait lire. La garde du
+    // booklet à nouveau — une surface qui existe et ne sert nulle part se mesure
+    // à zéro.
+    //
+    // SUR LA VERSION ACTIVE, PAS SUR L'APPROUVÉE. `servieAuPatient`, juste
+    // au-dessus, dit ce qui est servi AUJOURD'HUI ; celui-ci montre ce qui le
+    // sera APRÈS le geste. Les deux se répondent, et confondre les deux ferait
+    // valider une version en en lisant une autre.
+    //
+    // AUCUNE ATTESTATION N'EST FABRIQUÉE ICI. Le contrat de diffusion exige une
+    // approbation praticien et la signe ; un aperçu n'en a pas et n'en invente
+    // pas. Seul le CONTENU est projeté, par le même code — un statut
+    // d'intervention non ferme y porte donc sa phrase d'attente, et un contenu
+    // que le contrat refuse dit pourquoi au lieu de se taire.
+    let apercu: ApercuPatientServi | null = null;
+    if (activeVersion) {
+      const rejeuActif = await rejeuDe(activeVersion);
+      if (!rejeuActif.ok) {
+        apercu = {
+          ok: false,
+          motif: 'carte_non_rejouable',
+          detail: 'La décision derrière ce protocole ne se recalcule plus sur ce dossier. '
+            + 'Rechargez le cockpit et relisez la version active.',
+        };
+      } else {
+        try {
+          const draftActif = reconstructProtocolDraft(activeVersion.payload, activeVersion.inputHash);
+          apercu = apercuContenuPatient({
+            decisionCard: rejeuActif.decisionCard,
+            protocolDraft: draftActif,
+            // AUCUNE LIMITATION PATIENT AUJOURD'HUI — la route du portail n'en
+            // sert aucune non plus. Un aperçu qui en montrerait serait faux.
+            patientLimitations: [],
+          });
+        } catch (erreur) {
+          // Payload illisible ⇒ pas d'aperçu, jamais une exception qui emporte
+          // le GET : le reste de l'état de diffusion reste servi.
+          console.warn(
+            '[praticien/protocoles/diffusion GET] version active illisible :',
+            erreur instanceof Error ? erreur.message : String(erreur),
+          );
+          apercu = {
+            ok: false,
+            motif: 'payload_illisible',
+            detail: 'Le contenu de la version active ne se relit pas : aucun aperçu ne peut être montré.',
+          };
+        }
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       approval: active
@@ -385,6 +471,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         : null,
       stale: isApprovalStale(active, activeVersion?.inputHash ?? null),
       servieAuPatient,
+      apercu,
     });
   } catch (err) {
     console.error('[praticien/protocoles/diffusion GET]', err instanceof Error ? err.message : String(err));

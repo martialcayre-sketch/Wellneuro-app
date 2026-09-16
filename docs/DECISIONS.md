@@ -9197,7 +9197,11 @@ près**.
 (`DC-12`).** Un constat de rang `adressage` fait passer l'abstention en
 `required` ; `construireCandidats` rend alors `[]` — la table des priorités se
 tait —, la carte est bloquée, et `ProtocolConsultationPanel` refuse la
-diffusion ([`decisionCard.safetyFindingIds.length === 0`](web/src/components/patient-cockpit/ProtocolConsultationPanel.tsx)). Le candidat est **retiré**, pas affiché sous un bandeau.
+diffusion. **Le refus n'est plus recopié dans l'écran** : depuis la fermeture de
+la dette 1 de [[D-200]], il est celui du contrat patient
+([`decisionCard.safetyFindingIds.length > 0`](web/src/lib/clinical-engine/contenuPatientProtocole.ts)),
+que le panneau consulte — la condition y était écrite à la main, et une seconde
+description finit toujours par diverger de la première. Le candidat est **retiré**, pas affiché sous un bandeau.
 
 **Décision 3 bis — et le praticien lit POURQUOI** (correctif apporté après la
 revue du lot, constat C1). Les deux motifs d'abstention appellent des gestes

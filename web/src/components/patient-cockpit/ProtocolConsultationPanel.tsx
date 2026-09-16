@@ -1,7 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { apercuContenuPatient } from '@/lib/clinical-engine/contenuPatientProtocole';
 import type { DecisionCard, ProtocolDraft } from '@/lib/clinical-engine/types';
+import { ApercuPatientProtocole } from './ApercuPatientProtocole';
+
+// Clôture de consultation sur FIXTURE : résumé praticien, validation locale, et
+// aperçu de ce que le patient lira. La validation n'écrit rien et ne transmet
+// rien — elle ne déverrouille que l'aperçu.
+//
+// L'APERÇU PASSE PAR LE CONTRAT ([[D-200]] dette 1). Il était construit ici à la
+// main depuis `ProtocolDraft`, et la liste des conditions de validation y était
+// recopiée condition par condition. Deux conséquences, toutes deux vues :
+// `interventionStatus` n'était pas rendu — une intervention suspendue se lisait
+// comme un conseil ferme — et les deux descriptions pouvaient diverger sans que
+// `tsc` bronche. Le verdict d'éligibilité EST désormais celui du contrat, et le
+// motif de son refus est affiché tel quel : c'est ce que le praticien a à lever.
 
 const LOAD_LABELS: Record<ProtocolDraft['therapeuticLoad']['level'], string> = {
   light: 'Léger', moderate: 'Modéré', loaded: 'Chargé', excessive: 'Excessif',
@@ -10,9 +24,18 @@ const LOAD_LABELS: Record<ProtocolDraft['therapeuticLoad']['level'], string> = {
 export function ProtocolConsultationPanel({
   decisionCard,
   protocolDraft,
+  apercuEnDiffusion = false,
 }: {
   decisionCard: DecisionCard | null;
   protocolDraft: ProtocolDraft | null;
+  /**
+   * Hors fixture, ce panneau n'a JAMAIS de protocole — il reste monté pour son
+   * état prudent, et l'aperçu réel vit dans la sous-vue « Diffusion », sur la
+   * version active du dossier. Sans ce renvoi, l'écran promet un aperçu que ni
+   * la relecture ni la validation ne feront apparaître ICI : la promesse est
+   * exactement ce que [[D-200]] reprochait à cette surface.
+   */
+  apercuEnDiffusion?: boolean;
 }) {
   const [approvedFingerprint, setApprovedFingerprint] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -26,6 +49,11 @@ export function ProtocolConsultationPanel({
         <div className="rounded-xl border border-border bg-surface p-4">
           <p className="text-base font-semibold text-foreground">Aperçu du protocole indisponible — protocole relu et validation pour diffusion requis</p>
           <p className="mt-1 text-base text-muted-foreground">Aucun contenu n’est transmis au patient.</p>
+          {apercuEnDiffusion && (
+            <p className="mt-2 text-base text-muted-foreground">
+              L’aperçu de ce que votre patient lira se trouve en sous-vue « Diffusion », sur la version active.
+            </p>
+          )}
         </div>
       </section>
     );
@@ -34,19 +62,14 @@ export function ProtocolConsultationPanel({
   const selected = decisionCard.priorityCandidates.find(
     candidate => candidate.candidateId === decisionCard.selectedMainPriority?.candidateId
   );
-  const eligible = protocolDraft.status === 'practitioner_reviewed'
-    && protocolDraft.review !== null
-    && selected !== undefined
-    && decisionCard.abstention.status === 'not_required'
-    && decisionCard.safetyFindingIds.length === 0
-    && protocolDraft.decisionCardId === decisionCard.decisionCardId
-    && protocolDraft.decisionCardInputHash === decisionCard.inputHash
-    && protocolDraft.selectedPriorityId === selected.candidateId;
+  // LE CONTRAT TRANCHE, l'écran n'ajoute aucune condition. Un refus porte son
+  // motif, et c'est ce motif qui est rendu au praticien.
+  const apercu = apercuContenuPatient({ decisionCard, protocolDraft });
   const fingerprint = `${decisionCard.inputHash}:${protocolDraft.inputHash}`;
-  const approved = eligible && approvedFingerprint === fingerprint;
+  const approved = apercu.ok && approvedFingerprint === fingerprint;
 
   const approve = () => {
-    if (!eligible) return;
+    if (!apercu.ok) return;
     setApprovedFingerprint(fingerprint);
     setPreviewOpen(false);
   };
@@ -79,14 +102,14 @@ export function ProtocolConsultationPanel({
           ))}
         </ol>
         {!approved && (
-          <button type="button" onClick={approve} disabled={!eligible} className="mt-4 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={approve} disabled={!apercu.ok} className="mt-4 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
             Valider pour diffusion
           </button>
         )}
         <p role="status" className="mt-2 text-xs text-muted-foreground">
           {approved
             ? 'Validation locale enregistrée pour cette version — contenu non transmis.'
-            : eligible ? 'La validation déverrouille uniquement l’aperçu local.' : 'Le protocole doit être relu et sans bloqueur avant validation.'}
+            : apercu.ok ? 'La validation déverrouille uniquement l’aperçu local.' : apercu.detail}
         </p>
       </section>
 
@@ -99,22 +122,9 @@ export function ProtocolConsultationPanel({
             <button type="button" onClick={() => setPreviewOpen(open => !open)} aria-expanded={previewOpen} aria-controls="patient-protocol-preview-content" className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
               {previewOpen ? 'Fermer l’aperçu patient' : 'Ouvrir l’aperçu patient'}
             </button>
-            {previewOpen && (
-              <div id="patient-protocol-preview-content" className="mt-4 rounded-lg bg-muted p-4 text-base">
-                <p className="font-semibold">Votre priorité actuelle</p>
-                <p className="mt-1">{selected?.label}</p>
-                <p className="mt-4 font-semibold">Ce que nous mettons en place</p>
-                <p className="mt-1">{protocolDraft.purpose}</p>
-                <ol className="mt-3 list-decimal space-y-3 pl-5">
-                  {protocolDraft.actions.map(action => (
-                    <li key={action.actionId}>
-                      <span className="font-medium">{action.title}</span>
-                      <p>Plan minimal : {action.minimalPlan}</p>
-                    </li>
-                  ))}
-                </ol>
-                {protocolDraft.adviceSheetRef && <p className="mt-4">Fiche conseil : {protocolDraft.adviceSheetRef}</p>}
-                <p className="mt-4"><span className="font-semibold">Point à observer à J21 :</span> {protocolDraft.followUpCriterion}</p>
+            {previewOpen && apercu.ok && (
+              <div id="patient-protocol-preview-content" className="mt-4">
+                <ApercuPatientProtocole contenu={apercu.contenu} />
               </div>
             )}
           </>
