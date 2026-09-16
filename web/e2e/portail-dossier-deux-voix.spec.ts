@@ -26,7 +26,7 @@ import {
   nettoyerDossierDeuxVoix,
   provisionAncreJalon,
   provisionnerRatification,
-  provisionnerAccuseCadre,
+  provisionnerAccusesPorteTrust,
   provisionnerDossierDeuxVoix,
 } from './helpers/db';
 import { patientPortailSessionCookie } from './helpers/auth';
@@ -47,7 +47,7 @@ test.describe.serial('Portail — mon dossier à deux voix', () => {
   test.beforeAll(async () => {
     ({ idObjectif } = await provisionnerDossierDeuxVoix(PATIENT.idPatient));
     // Sans lui, le hub rend « Avant de commencer » et la nav n'existe pas.
-    await provisionnerAccuseCadre(PATIENT.idPatient);
+    await provisionnerAccusesPorteTrust(PATIENT.idPatient);
   });
 
   test.afterAll(async () => {
@@ -215,7 +215,7 @@ test.describe.serial('Portail — où j’en suis, à cette étape', () => {
 
   test.beforeAll(async () => {
     ({ idObjectif } = await provisionnerDossierDeuxVoix(PATIENT.idPatient));
-    await provisionnerAccuseCadre(PATIENT.idPatient);
+    await provisionnerAccusesPorteTrust(PATIENT.idPatient);
     // T0 confirmé il y a 21 jours : la fenêtre du J21 est ouverte MAINTENANT.
     await provisionAncreJalon(PATIENT.idPatient, 21);
     // La question ne se pose que sur un objectif dont le patient a dit qu'il

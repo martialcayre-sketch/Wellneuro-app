@@ -586,9 +586,10 @@ export default function PortailPage() {
     setIdPatient(data.patient.idPatient);
     setConsultation(data.consultation);
     setPremiere(data.premiereAssignation);
-    // Séquence TRUST « Avant de commencer » : requise tant que la version
-    // courante du cadre n'a pas d'accusé de lecture (patients existants
-    // inclus, une fois). Jamais bloquante en cas d'erreur réseau : le
+    // Séquence TRUST « Avant de commencer » : requise tant qu'un des documents
+    // exigeant un accusé n'en a pas un sur sa version courante (patients
+    // existants inclus, une fois). La règle n'est plus « le cadre » depuis le
+    // 2026-09-16 — la route la calcule, cette page ne fait que la lire. Jamais bloquante en cas d'erreur réseau : le
     // parcours de soin continue. Une réponse non-ok juste après l'ouverture
     // de session peut n'être qu'un défaut de propagation du cookie (WebKit,
     // serveur rapide) : brefs réessais bornés avant de dégrader — sinon la

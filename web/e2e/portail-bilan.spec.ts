@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
 import { patientPortailSessionCookie } from './helpers/auth';
 import {
   resetPortailState,
-  accuserCadreTrust,
+  accuserPorteTrust,
   provisionBilanTransmis,
   rejeterBilanTransmis,
   annoterApresEnvoi,
@@ -43,7 +43,7 @@ test.describe('Portail — Mon bilan', () => {
     await resetPortailState(PATIENT.idPatient);
     await cleanupBilanTransmis();
     // Sans l'accusé, le hub est masqué par « Avant de commencer » (4 écrans).
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
     await page.context().addCookies([
       patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email),
     ]);
@@ -91,7 +91,7 @@ test.describe('Portail — Mon bilan', () => {
   // filtrée reste invisible.
   test('un envoi échoué ne rend rien visible — le patient ne l’a pas reçu', async ({ page }) => {
     await resetPortailState(PATIENT.idPatient);
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
     await provisionBilanTransmis(PATIENT.idPatient, PATIENT.email, { statutEnvoi: 'Erreur' });
     await page.context().addCookies([
       patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email),
@@ -114,7 +114,7 @@ test.describe('Portail — Mon bilan', () => {
   // juillet ». La colonne `note_transmise` fige ce qui est réellement parti.
   test('annoter après l’envoi ne change rien pour le patient', async ({ page }) => {
     await resetPortailState(PATIENT.idPatient);
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
     await provisionBilanTransmis(PATIENT.idPatient, PATIENT.email);
     await page.context().addCookies([
       patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email),
@@ -144,7 +144,7 @@ test.describe('Portail — Mon bilan', () => {
     page,
   }) => {
     await resetPortailState(PATIENT.idPatient);
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
     await provisionBilanTransmis(PATIENT.idPatient, PATIENT.email);
     await page.context().addCookies([
       patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email),

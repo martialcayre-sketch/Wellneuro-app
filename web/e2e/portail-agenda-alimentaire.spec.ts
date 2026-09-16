@@ -26,7 +26,7 @@
 // que pour le code Node du test, jamais pour le serveur Next qui répond.
 import { test, expect, type Page } from '@playwright/test';
 import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
-import { resetPortailState, accuserCadreTrust, closePrisma } from './helpers/db';
+import { resetPortailState, accuserPorteTrust, closePrisma } from './helpers/db';
 
 const PATIENT = { idPatient: 'PAT_SEED_03', email: 'michel.dogne@fictif.wellneuro.fr' };
 
@@ -68,7 +68,7 @@ test.describe('Agenda alimentaire — parcours patient', () => {
   test('assigné, l’agenda se voit au hub, s’ouvre, se note et se relit', async ({ page }) => {
     await resetPortailState(PATIENT.idPatient);
     // Sans l'accusé, le hub est masqué par « Avant de commencer » (4 écrans).
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
 
     await page.context().addCookies([await praticienSessionCookie()]);
     const idAssignation = await assignerAgenda(page);
@@ -227,7 +227,7 @@ test.describe('Agenda alimentaire — parcours patient', () => {
     page,
   }) => {
     await resetPortailState(PATIENT.idPatient);
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
 
     // Un agenda ET un questionnaire ordinaire : c'est la coexistence qui rend
     // le test discriminant — sans le second, n'importe quelle mise en avant
@@ -300,7 +300,7 @@ test.describe('Agenda alimentaire — parcours patient', () => {
   // clôture, pas par le seed.
   test('le praticien clôture l’agenda depuis l’écran, et la passation entre au dossier en « Historique »', async ({ page }) => {
     await resetPortailState(PATIENT.idPatient);
-    await accuserCadreTrust(PATIENT.idPatient);
+    await accuserPorteTrust(PATIENT.idPatient);
 
     await page.context().addCookies([await praticienSessionCookie()]);
     const idAssignation = await assignerAgenda(page);

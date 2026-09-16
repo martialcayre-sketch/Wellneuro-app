@@ -6,16 +6,22 @@ import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { documentsRequerantAccuse } from '@/lib/trust/avantDeCommencer';
 
 /**
  * Séquence « Avant de commencer » (TRUST LOT-02) — quatre écrans courts
  * présentés après la vérification d'identité et avant tout recueil de
  * données de santé. Le bouton final enregistre un accusé « j'ai pris
- * connaissance » (jamais « j'accepte tout ») sur les documents cadre et
- * limites & sécurité, dans leur version courante résolue côté serveur.
- * Reprise possible : tant que l'accusé n'existe pas, la séquence se
- * représente au prochain accès — sans jamais bloquer la consultation des
+ * connaissance » (jamais « j'accepte tout ») sur les documents que
+ * `documentsRequerantAccuse()` désigne, dans leur version courante résolue
+ * côté serveur. Reprise possible : tant que l'accusé n'existe pas, la séquence
+ * se représente au prochain accès — sans jamais bloquer la consultation des
  * réponses existantes.
+ *
+ * LES DOCUMENTS NE SONT PLUS ÉCRITS EN DUR ICI (2026-09-16). Ils l'étaient —
+ * cadre et limites & sécurité —, tandis que la porte du portail n'en regardait
+ * qu'un. Un document pouvait donc réclamer un accusé sans que rien ne le pose,
+ * et c'est ce qui arrivait à « Vos données personnelles ».
  */
 export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () => void }) {
   const [ecran, setEcran] = useState(0);
@@ -36,7 +42,15 @@ export function AvantDeCommencer({ token, onDone }: { token: string; onDone: () 
     setErreur('');
     setEnvoi(true);
     try {
-      for (const documentKey of ['cadre_accompagnement', 'limites_securite'] as const) {
+      // LA MÊME LISTE QUE LA PORTE, et jamais une copie (2026-09-16). Deux
+      // documents étaient écrits en dur ici pendant que la porte n'en regardait
+      // qu'un : le troisième — « Vos données personnelles » — pouvait réclamer
+      // un accusé sans que rien ne le pose ni ne le vérifie.
+      //
+      // Si cette liste et celle de la porte divergeaient, le patient boucherait
+      // sans fin : quatre écrans, une validation, un retour, et les quatre
+      // écrans à nouveau. `documentsRequerantAccuse` est leur unique source.
+      for (const documentKey of documentsRequerantAccuse()) {
         const res = await fetch('/api/portail/trust/lecture', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
