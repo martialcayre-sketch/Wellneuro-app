@@ -23,6 +23,15 @@ export const PATIENT = {
   actif: 'OUI',
   suiviClotureLe: null as string | null,
   accesRevoque: false,
+  // LE DOSSIER ADMINISTRATIF (LOT-05). Vides, et PRÉSENTS : la fiche rend des
+  // champs contrôlés, et une valeur absente les ferait basculer en non
+  // contrôlés — React le signale, puis la saisie se comporte autrement qu'en
+  // production. Une fixture amputée du DTO ment sur ce que la route sert.
+  dateNaissance: null as string | null,
+  adresse: '',
+  nir: '',
+  medecinTraitantNom: '',
+  medecinTraitantCoordonnees: '',
 };
 
 export const AUTRE_PATIENT = {
@@ -34,6 +43,15 @@ export const AUTRE_PATIENT = {
   actif: 'OUI',
   suiviClotureLe: null as string | null,
   accesRevoque: false,
+  // LE DOSSIER ADMINISTRATIF (LOT-05). Vides, et PRÉSENTS : la fiche rend des
+  // champs contrôlés, et une valeur absente les ferait basculer en non
+  // contrôlés — React le signale, puis la saisie se comporte autrement qu'en
+  // production. Une fixture amputée du DTO ment sur ce que la route sert.
+  dateNaissance: null as string | null,
+  adresse: '',
+  nir: '',
+  medecinTraitantNom: '',
+  medecinTraitantCoordonnees: '',
 };
 
 /**

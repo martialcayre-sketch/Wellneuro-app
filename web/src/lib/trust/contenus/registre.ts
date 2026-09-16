@@ -775,6 +775,58 @@ const DONNEES_CONFIDENTIALITE_V7: VersionDocumentTrust = {
   hash: '1cb0d9ec0491cb99cb1a2a983381107b3fbbca0982f9ca1f5b748722c8f309e1',
 };
 
+const DONNEES_CONFIDENTIALITE_V8: VersionDocumentTrust = {
+  key: 'donnees_confidentialite',
+  type: 'privacy',
+  version: 'v8',
+  titre: 'Vos données personnelles et leur confidentialité',
+  resume:
+    'Quelles données sont recueillies, pourquoi, qui peut y accéder, où elles sont hébergées, et comment exercer vos droits.',
+  sections: [
+    ...DONNEES_CONFIDENTIALITE_V7.sections.map(section => {
+      if (section.titre === 'Quelles données sont recueillies ?') {
+        return {
+          ...section,
+          // LA PREMIÈRE PHRASE DE CETTE SECTION DIT « les informations que VOUS
+          // transmettez ». Elle reste vraie, et c'est précisément pourquoi ce
+          // qui suit doit être écrit à part : ces trois renseignements-ci ne
+          // viennent PAS du patient. Les glisser dans la même phrase aurait
+          // laissé croire qu'il les a donnés lui-même.
+          //
+          // Insérées AVANT la dernière (« Nous recueillons uniquement les
+          // informations nécessaires… »), qui conclut la section et le reste.
+          paragraphes: [
+            ...section.paragraphes.slice(0, -1),
+            'Votre praticien tient aussi, dans votre dossier, des renseignements administratifs qu’il saisit lui-même : votre adresse postale, votre numéro de sécurité sociale, et le nom et les coordonnées de votre médecin traitant. Ils servent à vous identifier sans ambiguïté et à préparer les courriers qui vous concernent.',
+            'Aucun de ces trois renseignements n’est obligatoire : votre accompagnement se déroule exactement de la même façon si vous préférez ne pas les communiquer, et vous pouvez demander à tout moment qu’ils soient corrigés ou retirés.',
+            'Noter le nom de votre médecin traitant ne veut pas dire lui écrire. Rien ne lui est adressé sans un choix explicite de votre part, comme le rappelle « Qui peut accéder à vos données ? ».',
+            ...section.paragraphes.slice(-1),
+          ],
+        };
+      }
+      return section;
+    }),
+  ],
+  changeLevel: 'information_substantielle',
+  changeSummary:
+    'Trois renseignements nouveaux sont désormais tenus dans votre dossier, et ils sont saisis par votre praticien et non par vous : votre adresse postale, votre numéro de sécurité sociale, et le nom et les coordonnées de votre médecin traitant. Aucun n’est obligatoire, et noter le nom de votre médecin traitant ne veut pas dire lui écrire.',
+  publieLe: '2026-09-16',
+  // CELLE-CI CHANGE DE RÉGIME, et c'est le premier écart depuis la v2.
+  //
+  // Les v3 à v7 s'en dispensaient toutes pour le même motif, écrit chaque fois :
+  // elles DÉCRIVAIENT — un prestataire de plus, une catégorie déjà recueillie,
+  // un usage qui s'élargit — sans rien recueillir de neuf. Ici, trois données
+  // nouvelles entrent au dossier, dont un numéro de sécurité sociale.
+  //
+  // Arbitrage du responsable, 2026-09-16 : accusé EXIGÉ. Le mur d'écran que les
+  // versions précédentes refusaient d'ériger se justifie quand ce qui change
+  // n'est pas la description du traitement mais son ASSIETTE — et il porte ici
+  // quelque chose d'actionnable pour le patient, puisque les trois
+  // renseignements sont facultatifs et qu'il peut demander leur retrait.
+  requiresAcknowledgement: true,
+  hash: '9b8563a2a6fe507e2616ed93ac142bb31cecacf177114df44de0db934d175d9d',
+};
+
 /** Toutes les versions, les plus récentes en premier par clé. */
 export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.freeze([
   CADRE_ACCOMPAGNEMENT_V1,
@@ -786,6 +838,7 @@ export const REGISTRE_DOCUMENTS_TRUST: readonly VersionDocumentTrust[] = Object.
   DONNEES_CONFIDENTIALITE_V5,
   DONNEES_CONFIDENTIALITE_V6,
   DONNEES_CONFIDENTIALITE_V7,
+  DONNEES_CONFIDENTIALITE_V8,
   USAGE_IA_V1,
   USAGE_IA_V2,
   DROITS_PATIENT_V1,

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { jourCourantLocal } from '@/lib/patient-access';
+import { messageNirInvalide, verifierNir } from '@/lib/patient/nir';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -59,6 +60,21 @@ type Patient = {
   // l'encart « Nouveaux patients », borné à 30 jours — au 31ᵉ, le praticien ne
   // voyait plus l'état qu'un envoi de lien allait lever.
   accesRevoque: boolean;
+  // LE DOSSIER ADMINISTRATIF (LOT-05). Cinq champs qui étaient saisis à la
+  // création et ne se corrigeaient plus jamais, ou qui n'existaient pas du
+  // tout. Tous NULLABLES et servis en chaîne vide quand ils manquent — sauf
+  // `dateNaissance`, servie `null`, parce qu'une date vide n'est pas une date
+  // et qu'un champ date ne sait pas afficher « ».
+  //
+  // `nir` EST SERVI EN CLAIR, comme toute autre donnée du dossier : arbitrage
+  // du responsable, 2026-09-16. Ce qui le protège est ce qui protège le reste —
+  // RLS deny-all, garde d'appartenance, journal des accès —, pas un masquage
+  // d'affichage qui n'aurait trompé que le praticien.
+  dateNaissance: string | null;
+  adresse: string;
+  nir: string;
+  medecinTraitantNom: string;
+  medecinTraitantCoordonnees: string;
 };
 
 type Assignation = {
@@ -145,7 +161,16 @@ export type CreatePatientResponse = {
 export type PatchPatientResponse = {
   success: boolean;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
+  // `duplicate_email` s'ajoute au LOT-05, avec l'e-mail modifiable : même
+  // motif que celui de `POST`, et le MÊME nom — l'écran ne doit pas avoir à
+  // savoir si le conflit vient d'une création ou d'une correction.
+  reason?:
+    | 'unauthenticated'
+    | 'invalid_payload'
+    | 'patient_not_found'
+    | 'forbidden'
+    | 'duplicate_email'
+    | 'exception';
 };
 
 // Il n'y a PAS de `DeletePatientResponse` ni de handler `DELETE` ici, et c'est
@@ -345,6 +370,11 @@ function patientToDto(p: {
   actif: boolean;
   suiviClotureLe: Date | null;
   accessTokenRevoked: boolean;
+  dateNaissance: string | null;
+  adresse: string | null;
+  nir: string | null;
+  medecinTraitantNom: string | null;
+  medecinTraitantCoordonnees: string | null;
 }): Patient {
   return {
     idPatient: p.idPatient,
@@ -358,6 +388,14 @@ function patientToDto(p: {
     // (`SourceNouveauPatient.accesRevoque`) : deux noms pour le même fait
     // obligeraient l'écran à savoir de quelle route vient sa ligne.
     accesRevoque: p.accessTokenRevoked,
+    // `dateNaissance` est stockée en chaîne `AAAA-MM-JJ` (pas en `DateTime`) :
+    // elle est servie telle quelle, sans passer par un fuseau qui la déplacerait
+    // d'un jour. `null` quand elle manque, jamais '' — voir le DTO.
+    dateNaissance: p.dateNaissance,
+    adresse: p.adresse ?? '',
+    nir: p.nir ?? '',
+    medecinTraitantNom: p.medecinTraitantNom ?? '',
+    medecinTraitantCoordonnees: p.medecinTraitantCoordonnees ?? '',
   };
 }
 
@@ -541,6 +579,16 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
         suiviClotureLe: null,
         // Le défaut Prisma (`@default(false)`) : un dossier neuf n'est jamais révoqué.
         accesRevoque: false,
+        dateNaissance: dateNaissance || null,
+        // Le dossier administratif ne se saisit pas à la création : il se
+        // renseigne ensuite, par `PATCH`. Ces quatre champs partent donc vides,
+        // et ils partent quand même — un client qui reçoit un DTO amputé devrait
+        // deviner s'il manque parce que c'est vide ou parce que la route est
+        // ancienne.
+        adresse: '',
+        nir: '',
+        medecinTraitantNom: '',
+        medecinTraitantCoordonnees: '',
       },
     });
   } catch (err) {
@@ -563,9 +611,35 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
 
 type PatchPatientPayload = {
   idPatient?: string;
+  prenom?: string;
+  nom?: string;
+  email?: string;
+  dateNaissance?: string;
   telephone?: string;
+  adresse?: string;
+  nir?: string;
+  medecinTraitantNom?: string;
+  medecinTraitantCoordonnees?: string;
   actif?: 'OUI' | 'NON';
 };
+
+// LES CHAMPS TEXTE FACULTATIFS DU DOSSIER, ET LEUR BORNE.
+//
+// La borne n'est pas décorative : la base porte un `CHECK` par champ
+// (`patients_adresse_non_vide` et ses deux voisins, LOT-03) qui refuse au-delà.
+// Tronquer ici plutôt que laisser la base rejeter, c'est la différence entre
+// « adresse trop longue » et une erreur technique opaque — et c'est le même
+// geste que `POST` fait déjà sur prénom, nom et téléphone.
+//
+// UNE CHAÎNE VIDE EFFACE, elle ne bloque pas. Le `CHECK` refuse `''` mais
+// accepte `NULL` : un praticien qui vide le champ veut retirer le
+// renseignement, pas déclencher une erreur. `|| null` fait cette traduction, et
+// c'est la seule façon de RETIRER une adresse une fois saisie.
+const BORNES_DOSSIER = {
+  adresse: 500,
+  medecinTraitantNom: 200,
+  medecinTraitantCoordonnees: 500,
+} as const;
 
 export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResponse>> {
   const session = await getServerSession(authOptions);
@@ -589,6 +663,67 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   const idPatient = (payload.idPatient ?? '').trim();
   const telephone = (payload.telephone ?? '').trim().slice(0, 30);
   const actif = payload.actif;
+
+  // TOUS CES CHAMPS SONT FACULTATIFS AU PAYLOAD, ET C'EST CE QUI PERMET AUX
+  // ANCIENS APPELANTS DE SURVIVRE. `undefined` veut dire « ne touche pas », `''`
+  // veut dire « efface » : le formulaire de désactivation n'envoie qu'`actif`, et
+  // il ne doit pas effacer l'adresse au passage. Chaque champ est donc lu avec
+  // `payload.x !== undefined` plus bas, jamais par la vérité de sa valeur.
+  const prenom = payload.prenom === undefined ? undefined : payload.prenom.trim().slice(0, 100);
+  const nom = payload.nom === undefined ? undefined : payload.nom.trim().slice(0, 100);
+  const email =
+    payload.email === undefined ? undefined : payload.email.trim().toLowerCase().slice(0, 254);
+  const dateNaissance =
+    payload.dateNaissance === undefined ? undefined : payload.dateNaissance.trim();
+  const nirSaisi = payload.nir === undefined ? undefined : payload.nir.trim();
+
+  // PRÉNOM ET NOM NE S'EFFACENT PAS. Le modèle les porte en `String` non
+  // nullable, et un dossier sans nom n'est plus un dossier : il faudrait alors
+  // le retrouver par son seul identifiant. `POST` les exige à la création pour
+  // la même raison ; les vider par `PATCH` aurait contourné cette exigence.
+  if ((prenom !== undefined && !prenom) || (nom !== undefined && !nom)) {
+    return NextResponse.json(
+      { success: false, reason: 'invalid_payload', error: 'Prénom et nom ne peuvent pas être vidés.' },
+      { status: 400 }
+    );
+  }
+  if (email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json(
+      { success: false, reason: 'invalid_payload', error: 'Email invalide.' },
+      { status: 400 }
+    );
+  }
+  if (dateNaissance !== undefined && dateNaissance && !/^\d{4}-\d{2}-\d{2}$/.test(dateNaissance)) {
+    return NextResponse.json(
+      {
+        success: false,
+        reason: 'invalid_payload',
+        error: 'Date de naissance invalide (format attendu : AAAA-MM-JJ).',
+      },
+      { status: 400 }
+    );
+  }
+
+  // LE NIR EST REFUSÉ SUR SA CLÉ, PAS SEULEMENT SUR SA FORME — et c'est tout
+  // l'intérêt. La base garde la forme ; un numéro bien formé et faux passerait,
+  // et finirait sur un courrier ou une demande de prise en charge. Le message
+  // distingue les deux motifs : le praticien doit savoir s'il a mal compté les
+  // chiffres ou mal recopié la clé.
+  let nir: string | null | undefined;
+  if (nirSaisi !== undefined) {
+    if (!nirSaisi) {
+      nir = null;
+    } else {
+      const verdict = verifierNir(nirSaisi);
+      if (!verdict.valide) {
+        return NextResponse.json(
+          { success: false, reason: 'invalid_payload', error: messageNirInvalide(verdict.motif) },
+          { status: 400 }
+        );
+      }
+      nir = verdict.nir;
+    }
+  }
 
   // Même forme d'identifiant que `DELETE` (plus bas) et que la route
   // `cycle-de-vie` : `/^PAT\d+$/` rejetait les identifiants à tiret bas, dont
@@ -617,10 +752,111 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
 
   try {
     const maintenant = new Date();
+
+    // `undefined` = « ne touche pas », `''` = « efface ». Le formulaire de
+    // désactivation n'envoie qu'`actif` : sans cette distinction, enregistrer
+    // une désactivation viderait l'adresse et le médecin traitant au passage.
+    const borner = (brut: string, max: number) => brut.trim().slice(0, max) || null;
     const donneesPatient = {
+      ...(prenom !== undefined && { prenom }),
+      ...(nom !== undefined && { nom }),
+      ...(email !== undefined && { email }),
+      ...(dateNaissance !== undefined && { dateNaissance: dateNaissance || null }),
       ...(payload.telephone !== undefined && { telephone: telephone || null }),
+      ...(payload.adresse !== undefined && {
+        adresse: borner(payload.adresse, BORNES_DOSSIER.adresse),
+      }),
+      ...(nir !== undefined && { nir }),
+      ...(payload.medecinTraitantNom !== undefined && {
+        medecinTraitantNom: borner(payload.medecinTraitantNom, BORNES_DOSSIER.medecinTraitantNom),
+      }),
+      ...(payload.medecinTraitantCoordonnees !== undefined && {
+        medecinTraitantCoordonnees: borner(
+          payload.medecinTraitantCoordonnees,
+          BORNES_DOSSIER.medecinTraitantCoordonnees,
+        ),
+      }),
       ...(actif !== undefined && { actif: actif === 'OUI' }),
     };
+
+    // L'E-MAIL EST RECOPIÉ DANS CINQ TABLES, ET UNE ROUTE PRATICIEN INTERROGE
+    // PAR LUI. C'est le fait qui rend ce changement-là différent de tous les
+    // autres champs de ce formulaire.
+    //
+    // `GET /api/praticien/reponses` filtre `questionnaireReponse` sur
+    // `emailPatient` (route.ts). Changer l'adresse du dossier sans réécrire les
+    // copies rendrait donc MUETTES toutes les réponses déjà reçues : le
+    // praticien verrait une liste vide, et rien ne lui dirait que ses données
+    // sont là mais introuvables. Quatre tables portent `email_patient` —
+    // `consultations`, `assignations`, `questionnaire_reponses`,
+    // `syntheses_ia` — et les quatre se réécrivent ici.
+    //
+    // `booklet_envois.email_patient_masque` N'EST PAS TOUCHÉ, et ce n'est pas un
+    // oubli. Cette colonne atteste qu'un envoi est RÉELLEMENT PARTI à cette
+    // adresse-là, à cette date-là. La réécrire falsifierait une trace : le
+    // livret est parti à l'ancienne adresse, et c'est ce qui s'est passé.
+    //
+    // La lecture de l'ancienne adresse n'a lieu QUE si le payload en porte une :
+    // le formulaire de désactivation et la correction d'un téléphone ne paient
+    // pas une requête de plus pour un champ qu'ils ne touchent pas.
+    const ancien =
+      email === undefined
+        ? null
+        : await prisma.patient.findUnique({ where: { idPatient }, select: { email: true } });
+    // Une adresse RÉÉCRITE À L'IDENTIQUE n'est pas un changement : réécrire les
+    // quatre tables pour rien ferait payer N écritures à un simple ré-
+    // enregistrement du formulaire.
+    const emailChange = ancien !== null && email !== ancien.email;
+
+    if (emailChange) {
+      // Le contrôle explicite sert le MESSAGE ; la contrainte unique sert la
+      // COURSE. Deux enregistrements simultanés vers la même adresse passeraient
+      // tous deux ce test — d'où le `P2002` rattrapé plus bas, qui rend le même
+      // 409 plutôt qu'une erreur technique.
+      const occupe = await prisma.patient.findUnique({
+        where: { email: email as string },
+        select: { idPatient: true },
+      });
+      if (occupe && occupe.idPatient !== idPatient) {
+        return NextResponse.json(
+          {
+            success: false,
+            reason: 'duplicate_email',
+            error: 'Un autre patient utilise déjà cet email.',
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // LES QUATRE COPIES, RÉÉCRITES DANS LA MÊME TRANSACTION QUE LE DOSSIER.
+    // `updateMany` et non `update` : il y a N lignes par patient, et zéro est un
+    // cas normal — un dossier neuf n'a ni consultation ni réponse.
+    //
+    // Le filtre est `idPatient` et NON l'ancienne adresse : c'est le dossier qui
+    // fait foi. Filtrer sur `emailPatient: ancien.email` aurait laissé sur place
+    // toute ligne dont la copie avait déjà dérivé — exactement les lignes qu'il
+    // faut réparer.
+    const reecrituresEmail = emailChange
+      ? [
+          prisma.consultation.updateMany({
+            where: { idPatient },
+            data: { emailPatient: email as string },
+          }),
+          prisma.assignation.updateMany({
+            where: { idPatient },
+            data: { emailPatient: email as string },
+          }),
+          prisma.questionnaireReponse.updateMany({
+            where: { idPatient },
+            data: { emailPatient: email as string },
+          }),
+          prisma.syntheseIA.updateMany({
+            where: { idPatient },
+            data: { emailPatient: email as string },
+          }),
+        ]
+      : [];
 
     if (actif === 'NON') {
       // DÉSACTIVER, C'EST FERMER LES LIENS EN VOL. Le dialogue de confirmation
@@ -663,15 +899,28 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       // prennent donc leurs verrous dans le même sens — pas d'interblocage.
       await prisma.$transaction([
         prisma.patient.update({ where: { idPatient }, data: donneesPatient }),
+        ...reecrituresEmail,
         prisma.portailMagicLink.updateMany({
           where: { idPatient, consommeLe: null, expireLe: { gt: maintenant } },
           data: { expireLe: maintenant },
         }),
       ]);
+    } else if (reecrituresEmail.length > 0) {
+      // MÊME EXIGENCE DE TRANSACTION, POUR UNE AUTRE RAISON. Ici rien ne se
+      // ferme ; ce qui compte est qu'aucun lecteur ne voie le dossier porter la
+      // nouvelle adresse pendant que ses réponses portent encore l'ancienne.
+      // Entre ces deux écritures, `GET /api/praticien/reponses` interrogé sur
+      // la nouvelle adresse rendrait une liste VIDE — et un praticien lisant
+      // une liste vide conclut qu'il n'y a rien, pas qu'il est arrivé au
+      // mauvais moment.
+      await prisma.$transaction([
+        prisma.patient.update({ where: { idPatient }, data: donneesPatient }),
+        ...reecrituresEmail,
+      ]);
     } else {
-      // Réactivation, ou téléphone seul : l'écriture d'origine, inchangée. La
-      // réactivation ne défait RIEN — un lien fermé ne se rouvre pas, il se
-      // réémet (`api/praticien/token`). Voir `D-126`.
+      // Réactivation, ou champs du dossier seuls : l'écriture d'origine,
+      // inchangée. La réactivation ne défait RIEN — un lien fermé ne se rouvre
+      // pas, il se réémet (`api/praticien/token`). Voir `D-126`.
       await prisma.patient.update({ where: { idPatient }, data: donneesPatient });
     }
 
@@ -681,6 +930,20 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       return NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 }
+      );
+    }
+    // LA COURSE QUE LE CONTRÔLE EXPLICITE NE COUVRE PAS. Deux enregistrements
+    // simultanés vers la même adresse passent tous deux le `findUnique` ; c'est
+    // la contrainte unique qui tranche, et son refus doit dire la même chose
+    // que l'autre chemin plutôt qu'« erreur technique ».
+    if ((err as { code?: string }).code === 'P2002') {
+      return NextResponse.json(
+        {
+          success: false,
+          reason: 'duplicate_email',
+          error: 'Un autre patient utilise déjà cet email.',
+        },
+        { status: 409 }
       );
     }
     console.error('[patients PATCH]', err instanceof Error ? err.message : String(err));

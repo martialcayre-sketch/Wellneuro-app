@@ -21,7 +21,7 @@ describe('registre des documents TRUST', () => {
     }
   });
 
-  it('expose les treize documents attendus', () => {
+  it('expose les quatorze documents attendus', () => {
     const cles = REGISTRE_DOCUMENTS_TRUST.map(d => `${d.key}@${d.version}`);
     expect(cles).toEqual([
       'cadre_accompagnement@v1',
@@ -35,6 +35,10 @@ describe('registre des documents TRUST', () => {
       'donnees_confidentialite@v6',
       // `D-167` — le rôle d'Anthropic s'élargit à la proposition de priorité.
       'donnees_confidentialite@v7',
+      // Le dossier administratif : adresse, NIR, médecin traitant. Première
+      // version de confidentialité à EXIGER un accusé depuis la v2 — les v3
+      // à v7 décrivaient sans rien recueillir de neuf.
+      'donnees_confidentialite@v8',
       'usage_ia@v1',
       // `D-167` — la v1 disait « le seul usage actuel » ; il y en a deux.
       'usage_ia@v2',
@@ -85,7 +89,7 @@ describe('registre des documents TRUST', () => {
     // La version courante avance à chaque publication ; ce banc ne porte pas
     // sur son numéro mais sur ce que le document servi dit — l'assertion de
     // version n'est là que pour qu'un oubli de publication se voie.
-    expect(courant.version).toBe('v7');
+    expect(courant.version).toBe('v8');
     const points = courant.sections.flatMap(sec => sec.points ?? []);
     expect(points.some(p => p.includes('jamais des patients'))).toBe(false);
     expect(points.some(p => p.includes('si vous le choisissez, votre propre connexion'))).toBe(true);
@@ -157,13 +161,45 @@ describe('registre des documents TRUST', () => {
     expect(paragraphes.some(p => p.includes('enregistrées pendant douze mois'))).toBe(true);
   });
 
-  it('la v4 ne redemande AUCUN accusé aux patients déjà consentants', () => {
-    // LE PIÈGE DE CET ITEM. `AvantDeCommencer` ne s'ajoute pas : il REMPLACE la
-    // page. Exiger un accusé remettrait quatre écrans devant tous les patients
-    // en cours — y compris celui qui note sa quatorzième nuit sur vingt et une
-    // — pour un texte qui ne parle même pas de Google. Et aucun banc ne
-    // l'aurait vu : les fixtures e2e résolvent la version depuis le registre.
-    expect(getDocumentCourant('donnees_confidentialite').requiresAcknowledgement).toBe(false);
+  it('les v3 à v7 ne redemandaient AUCUN accusé, et c’était la règle', () => {
+    // LE PIÈGE QUE CET ITEM GARDE. `AvantDeCommencer` ne s'ajoute pas : il
+    // REMPLACE la page. Exiger un accusé remet quatre écrans devant tous les
+    // patients en cours — y compris celui qui note sa quatorzième nuit sur
+    // vingt et une. Les v3 à v7 s'en dispensaient toutes pour le même motif :
+    // elles DÉCRIVAIENT — un prestataire de plus, une catégorie déjà
+    // recueillie, un usage qui s'élargit — sans rien recueillir de neuf.
+    for (const version of ['v3', 'v4', 'v5', 'v6', 'v7']) {
+      const doc = getVersion('donnees_confidentialite', version);
+      expect(doc?.requiresAcknowledgement, version).toBe(false);
+    }
+  });
+
+  it('la v8 EXIGE un accusé, et c’est une exception motivée', () => {
+    // ELLE NE DÉCRIT PAS, ELLE RECUEILLE. Trois données nouvelles entrent au
+    // dossier — adresse postale, numéro de sécurité sociale, médecin traitant —
+    // dont un NIR. Le mur d'écran que les cinq versions précédentes refusaient
+    // d'ériger se justifie quand ce qui change n'est pas la description du
+    // traitement mais son ASSIETTE. Arbitrage du responsable, 2026-09-16.
+    const v8 = getVersion('donnees_confidentialite', 'v8');
+    expect(v8?.requiresAcknowledgement).toBe(true);
+    expect(getDocumentCourant('donnees_confidentialite').version).toBe('v8');
+  });
+
+  it('la v8 NOMME les trois renseignements, et dit qu’ils sont facultatifs', () => {
+    // UN ACCUSÉ SUR UN TEXTE QUI NE DIT PAS CE QUI CHANGE N'EST QU'UNE
+    // FORMALITÉ. Le patient doit lire les trois données en toutes lettres, et
+    // lire aussi qu'il peut les refuser — sans quoi « exiger un accusé »
+    // revient à faire cliquer sur une porte fermée.
+    const paragraphes = getDocumentCourant('donnees_confidentialite').sections.flatMap(
+      s => s.paragraphes ?? [],
+    );
+    const texte = paragraphes.join(' ');
+    expect(texte).toContain('adresse postale');
+    expect(texte).toContain('numéro de sécurité sociale');
+    expect(texte).toContain('médecin traitant');
+    expect(texte).toContain('n’est obligatoire');
+    // Noter un médecin n'est pas lui écrire : la confusion serait grave.
+    expect(texte).toContain('ne veut pas dire lui écrire');
   });
 
   it('la v6 nomme les résultats d’analyses ET dit ce qui n’en est pas fait', () => {

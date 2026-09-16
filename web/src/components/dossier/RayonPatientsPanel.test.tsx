@@ -275,6 +275,11 @@ describe('RayonPatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     // L'état reste LISIBLE, il n'est plus modifiable ici.
     expect(screen.getByText(/se change au menu de la ligne/i)).toBeTruthy();
 
+    // IL FAUT MODIFIER QUELQUE CHOSE POUR QUE LA FICHE POSTE (LOT-05) : elle
+    // n'envoie que les champs qui ont changé, et ne poste rien quand rien n'a
+    // bougé. Sans cette saisie, ce banc mesurerait ce silence-là, pas l'absence
+    // d'`actif`.
+    fireEvent.change(screen.getByLabelText(/^téléphone$/i), { target: { value: '0600000000' } });
     fireEvent.click(await screen.findByRole('button', { name: /^enregistrer$/i }));
     await waitFor(() => {
       const patch = appels.find(a => a.method === 'PATCH');
