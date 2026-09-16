@@ -6823,3 +6823,30 @@ Consigne posée pour la suite : **lire la revue avant chaque merge**, la vérifi
 constat par constat, et dire lesquels sont retenus et lesquels sont réfutés.
 
 Prochaine action : **LOT-03**, verrou technique de LOT-04.
+
+## 2026-09-16 — Les deux règles qui ne se voient pas au vert sont posées
+
+Consigne du responsable transformée en règle armée :
+`.claude/rules/pr-revue-et-release-db.md` (`.github/**`, `web/prisma/**`), renvoi
+depuis `docs/claude/REGLES_PR_MERGE.md` que `/wn-merge` charge en entier, et cinq
+lignes dans `CLAUDE.md`.
+
+Deux trous fermés. **Un commentaire de revue n'est pas un check** : les
+commentaires en ligne ne sont que dans `pulls/<N>/comments`, et chacun sort
+désormais avec un verdict — corrigé, écarté avec motif, routé avec adresse. Le
+geste devient **bloquant dans `/wn-merge`**, en étape propre. **Une migration
+mergée n'est pas appliquée** : l'ordre de `release-db` est écrit en sept étapes
+avec l'état qui clôt chacune, plus le timing (panne entre merge et approbation)
+et les cinq pièges déjà payés.
+
+Rien de réarbitré — `D-087` et `docs/DEPLOIEMENT_RELEASE_DB.md` restent la
+source. Deux renvois périmés corrigés au passage : `/wn-merge` et
+`REGLES_PR_MERGE.md` envoyaient vérifier la production par l'`execute_sql` MCP
+Supabase, base décommissionnée le 2026-09-01 (`D-120`).
+
+Option écartée : prendre un `D-214`. C'est une consolidation de doctrine
+existante, pas un arbitrage neuf, et le numéro ne se réserve qu'au merge — sept
+collisions en deux jours cette semaine. Question ouverte pour le responsable : le
+veut-il enregistré comme décision ?
+
+Prochaine action : PR, lecture de la revue Copilot avec verdicts, merge.

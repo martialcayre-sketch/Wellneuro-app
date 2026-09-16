@@ -176,6 +176,14 @@ node scripts/wn-etat-reel.mjs      # état réel du dépôt — rapporte, ne ré
 - Revue, merge et suppression des branches appartiennent à Copilot, sauf
   autorisation transitoire en cours. Détail :
   `docs/claude/REGLES_PR_MERGE.md`.
+- **Lire les commentaires de revue avant de merger — ce n'est pas un check.**
+  Les commentaires *en ligne* ne sont ni dans le rollup, ni dans
+  `gh pr view --comments` : `gh api repos/{owner}/{repo}/pulls/<N>/comments`.
+  Trois verdicts, aucun commentaire sans l'un d'eux : corrigé, écarté **avec
+  motif**, routé **avec adresse**. Et **merger une migration ne l'applique
+  pas** — `release-db` approuvée, sentinelle, constat par conteneur, puis
+  seulement le code consommateur. Détail :
+  `.claude/rules/pr-revue-et-release-db.md`.
 
 ## Documentation de référence
 

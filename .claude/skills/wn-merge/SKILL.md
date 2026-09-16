@@ -10,6 +10,7 @@ effort: medium
 ## Contexte
 
 !`cd "$(git rev-parse --show-toplevel)" && cat docs/claude/REGLES_PR_MERGE.md`
+!`cd "$(git rev-parse --show-toplevel)" && cat .claude/rules/pr-revue-et-release-db.md`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
@@ -44,7 +45,7 @@ dernière session.
    poussant un commit sous le compte du dépôt.
 4. **Déduire le régime courant** du texte chargé ci-dessus :
    - la section « Période transitoire » y est toujours présente et décrit une
-     autorisation active → cycle complet possible (étapes 7-8) ;
+     autorisation active → cycle complet possible (étapes 8-9) ;
    - elle a été retirée ou remplacée → s'arrêter après l'étape 3, annoncer
      l'état du CI, laisser la revue et le merge à Copilot.
 5. **Exception migration ou authentification** — si le diff touche
@@ -52,13 +53,43 @@ dernière session.
    l'authentification — praticien (`web/src/lib/auth.ts`, routes `api/auth`)
    **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
    session, `patients.access_token`), ou plus largement tout chemin touchant
-   session/token : une revue adversariale indépendante — `Agent(subagent_type:
-   "wn-reviewer")`, agent épinglé Opus/high — est obligatoire
-   avant le merge si elle n'a pas déjà eu lieu, et une vérification de la base
-   de production (`execute_sql` MCP Supabase — jamais `psql`, jamais une
-   commande Bash) après. Ces deux passes s'appliquent même en régime
-   transitoire ; ne jamais les sauter sur ce périmètre.
-6. **Clôture opposable — se lit dans les `files` de la PR, pas en local.** Le
+   session/token : deux passes, **et une seule conditionne le merge**.
+
+   - **Avant le merge, bloquant** : une revue adversariale indépendante —
+     `Agent(subagent_type: "wn-reviewer")`, agent épinglé Opus/high —
+     obligatoire si elle n'a pas déjà eu lieu. C'est *elle seule* que l'étape 9
+     exige.
+   - **Après le merge, dû** : vérifier la base de production **par conteneur** —
+     `scalingo --app wellneuro run -d "npx prisma migrate status"`, sortie relue
+     par `scalingo logs --filter one-off-N`. (L'`execute_sql` MCP Supabase que
+     ce skill nommait jusqu'au 2026-09-16 vise une base **décommissionnée** le
+     2026-09-01, `D-120`.) Sur une migration, ce constat ne peut pas aboutir
+     avant que `release-db` ait été approuvée et la sentinelle
+     `WN_RELEASE_DB_OK id=<run>` constatée — **merger n'applique pas** : c'est
+     une obligation de suite, jamais une condition de merge, sinon aucune PR de
+     migration ne pourrait être mergée. Ordre complet :
+     `.claude/rules/pr-revue-et-release-db.md` §3.
+
+   Les deux s'appliquent même en régime transitoire ; ne jamais les sauter sur
+   ce périmètre.
+6. **Lire les commentaires de revue — geste distinct du CI, et bloquant.** Un
+   `verify` vert ne dit rien d'eux. Deux lectures : `gh pr view <N> --json
+   reviews,comments`, **et** `gh api --paginate --slurp
+   repos/{owner}/{repo}/pulls/<N>/comments` redirigé vers un fichier puis relu —
+   les commentaires **en ligne** n'apparaissent dans aucune des deux autres vues.
+   **La pagination n'est pas optionnelle** : l'endpoint rend 30 éléments par
+   défaut, et une page manquée ferait annoncer « chaque commentaire a son
+   verdict » sur une liste tronquée. `--slurp` rend un tableau **de pages** :
+   l'aplatir à la lecture. Chaque commentaire reçoit un
+   verdict écrit dans la PR : **corrigé** (le commit qui le répare est nommé),
+   **écarté avec motif** (sur pièces — ligne, banc, `D-xxx` ; « non pertinent »
+   seul n'en est pas un), ou **routé** (`FILE_ATTENTE.md` ou dette nommée, avec
+   son adresse). Aucun commentaire sans verdict ne passe le merge : le squash
+   efface la branche. Un constat touchant au clinique, à une signature de
+   périmètre ou à une migration **remonte en arbitrage**, il ne se corrige pas
+   dans la foulée. Détail et précédents :
+   `.claude/rules/pr-revue-et-release-db.md`.
+7. **Clôture opposable — se lit dans les `files` de la PR, pas en local.** Le
    snapshot de l'étape 2 ne porte pas les `files` : les lire en un seul
    `gh pr view <N> --json files` au moment de ce contrôle — c'est le seul
    `gh pr view` du cycle. La
@@ -70,12 +101,15 @@ dernière session.
    doc qui répare une fenêtre déjà ratée (verdict de cycle en sortie `1`) porte
    précisément cette clôture, donc elle passe le contrôle par construction — et
    c'est la seule forme acceptée de PR de rattrapage.
-7. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
-   présence de `verify`, régime déduit, applicabilité de l'exception, verdict de
-   clôture (étape 6) — puis la commande exacte à lancer.
-8. **Avec `apply`**, et seulement si l'étape 4 autorise le cycle complet, si
-   l'étape 5 est satisfaite quand elle s'applique, et si l'étape 6 est
-   satisfaite :
+8. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
+   présence de `verify`, régime déduit, applicabilité de l'exception, verdicts de
+   revue (étape 6), verdict de clôture (étape 7) — puis la commande exacte à
+   lancer.
+9. **Avec `apply`**, et seulement si l'étape 4 autorise le cycle complet, si
+   la passe **avant le merge** de l'étape 5 est faite quand elle s'applique (la
+   vérification de production, elle, est due **après** et ne conditionne rien),
+   si tout commentaire de revue
+   porte son verdict (étape 6) et si l'étape 7 est satisfaite :
    ```bash
    gh pr merge <N> --squash --delete-branch
    ```
@@ -99,7 +133,9 @@ contourner.
    `CLAUDE.md` qui le justifie.
 3. Exception migration/auth : applicable ou non ; si oui, revue adversariale
    déjà faite ou restant à faire.
-4. Clôture opposable : `SESSION_LOG.md` et fragment de handoff présents dans la
+4. **Commentaires de revue** : leur nombre, et pour chacun son verdict — corrigé
+   (commit), écarté (motif), routé (adresse). Aucun sans verdict.
+5. Clôture opposable : `SESSION_LOG.md` et fragment de handoff présents dans la
    PR, ou merge refusé avec le geste de rattrapage.
-5. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
+6. Sans `apply` : commande exacte à lancer pour merger. Avec `apply` : résultat
    du merge et du nettoyage.
