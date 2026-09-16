@@ -26,9 +26,18 @@ import type { CorrespondanceCompteurApiResponse } from '@/app/api/praticien/corr
 // (artifact canonique, décision propriétaire 2026-07-22) : trois groupes —
 // La Spirale (surfaces 5.0), Héritage 4.0 — inchangé (surfaces historiques,
 // tag « 4.0 »), Réglages. `badge: 'fil'` affiche le compteur RÉEL de cartes
-// du Fil ; `badge: 'correspondance'` le nombre de consignations des 7 derniers
-// jours (accueil-observatoire LOT-02). Aucun chiffre inventé ; rien en cas
-// d'erreur réseau.
+// du Fil.
+//
+// `badge: 'correspondance'` désigne une TÂCHE, pas un historique : le nombre de
+// dossiers dont le DERNIER échange consigné est un envoi remontant à plus de
+// sept jours — on a écrit, rien n'est revenu ([[D-210]]). Il comptait jusqu'au
+// 2026-09-16 les consignations des sept derniers jours, tous sens confondus,
+// donc les gestes de son propre lecteur : transcrire une réponse le faisait
+// MONTER. Il la fait maintenant descendre. Ce commentaire était resté sur
+// l'ancien contrat — constat de revue de la PR #1148, retenu.
+//
+// Le délai n'est pas fixé ici : il vient du serveur, et l'écran le rapporte.
+// Aucun chiffre inventé ; rien en cas d'erreur réseau.
 type NavItem = {
   href: string;
   label: string;

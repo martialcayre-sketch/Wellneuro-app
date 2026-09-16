@@ -70,22 +70,46 @@ export async function GET(): Promise<NextResponse<CorrespondanceCompteurApiRespo
 
   try {
     const email = emailPraticien(session) ?? '';
-    // UNE LIGNE PAR DOSSIER, la plus récente. `distinct` sur `idPatient` avec un
-    // tri décroissant sur `consigneLe` retient la première rencontrée, donc la
-    // dernière consignée. `texte` et `medecinLibelle` ne sont pas sélectionnés.
-    const dernieres = await prisma.correspondanceMedecin.findMany({
-      where: { praticienEmail: email },
-      select: { idPatient: true, sens: true, consigneLe: true },
-      orderBy: [{ idPatient: 'asc' }, { consigneLe: 'desc' }],
-      distinct: ['idPatient'],
-    });
-
     const seuil = new Date(Date.now() - DELAI_ATTENTE_JOURS * JOUR_MS);
-    const nbEnAttente = dernieres.filter(
-      ligne => ligne.sens === 'sortant' && ligne.consigneLe < seuil,
-    ).length;
 
-    return NextResponse.json({ ok: true, nbEnAttente, delaiJours: DELAI_ATTENTE_JOURS });
+    // LA DÉDUPLICATION SE FAIT EN BASE, ET SEUL UN ENTIER REMONTE.
+    //
+    // La première écriture de ce compteur ramenait TOUTES les lignes du
+    // praticien (`findMany` + `distinct`), puis triait et filtrait en Node. La
+    // requête n'était bornée par rien : elle croissait avec chaque ligne
+    // d'historique, et le rail la déclenche à chaque montage — deux instances
+    // par page. Constat de revue de la PR #1148, retenu.
+    //
+    // `DISTINCT ON (id_patient)` avec `ORDER BY id_patient, consigne_le DESC`
+    // retient la dernière ligne de chaque dossier ; le filtre extérieur ne garde
+    // que celles qui sont un envoi antérieur au seuil. Une seule ligne traverse
+    // le réseau.
+    //
+    // `sens` est comparé au littéral `'sortant'` : une valeur hors vocabulaire
+    // n'est donc jamais comptée — une attente ne s'invente pas sur une donnée
+    // illisible ([[DC-24]]). La colonne n'a aucun CHECK.
+    //
+    // RÉSERVE : `praticien_email` ne porte AUCUN index (le seul index de la
+    // table est `(id_patient, consigne_le)`). Le balayage reste donc séquentiel.
+    // Sur un cabinet mono-praticien la colonne ne discrimine rien et l'index ne
+    // servirait à rien ; il deviendra utile le jour d'un second compte, et c'est
+    // une migration — donc un arbitrage distinct, pas un effet de bord.
+    const [ligne] = await prisma.$queryRaw<{ nb: number }[]>`
+      SELECT count(*)::int AS nb
+      FROM (
+        SELECT DISTINCT ON (id_patient) id_patient, sens, consigne_le
+        FROM correspondances_medecin
+        WHERE praticien_email = ${email}
+        ORDER BY id_patient, consigne_le DESC
+      ) AS dernieres
+      WHERE sens = 'sortant' AND consigne_le < ${seuil}
+    `;
+
+    return NextResponse.json({
+      ok: true,
+      nbEnAttente: ligne?.nb ?? 0,
+      delaiJours: DELAI_ATTENTE_JOURS,
+    });
   } catch (err) {
     console.error(
       '[correspondance recentes compteur GET]',

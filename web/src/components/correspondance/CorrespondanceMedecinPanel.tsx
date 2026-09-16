@@ -368,7 +368,20 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
                 praticien. L'appariement reste par DOSSIER, jamais par médecin —
                 `medecinLibelle` est du texte libre.
               */}
-              {dernierMedecin && medecinLibelle.length === 0 && (
+              {/*
+                `trim()`, COMME LA VALIDATION. Avec un simple `length === 0`, un
+                espace laissé dans le champ coinçait le praticien : la validation
+                trimait, donc « Consigner » restait désactivé, pendant que
+                l'offre de reprise disparaissait — le dernier médecin n'était
+                plus reprenable sans effacer l'espace à la main. Constat de revue
+                de la PR #1151, retenu.
+
+                Le compteur de caractères plus bas, lui, ne trime PAS, et c'est
+                voulu : `maxLength` tronque sur la longueur BRUTE. Le faire
+                trimer ferait annoncer de la marge là où le navigateur coupe
+                déjà.
+              */}
+              {dernierMedecin && medecinLibelle.trim().length === 0 && (
                 <button
                   type="button"
                   onClick={() => setMedecinLibelle(dernierMedecin)}
