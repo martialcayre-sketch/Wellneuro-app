@@ -17,18 +17,9 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 // sont `rightsStatus: to_verify` et non relues. Une ligne porte un identifiant de
 // source et des identifiants de claim — jamais une phrase du corpus.
 
-export type ClaimFondateur = {
+export type ClaimRef = {
   claimId: string;
   versionClaim: string;
-  /**
-   * CE QUE LE CLAIM FONDE, et pourquoi ce discriminant existe. Le régime de
-   * `WN-CL-0287-009` (`orientationRulesV1.ts:1127`) distingue explicitement le
-   * claim qui fonde l'INDICATION de celui qui fonde l'INSTRUMENT de tête : les
-   * deux y sont cités côte à côte, et les confondre ferait passer une règle pour
-   * fondée là où elle ne l'est pas. Au LOT-01 une seule valeur est admise —
-   * élargir demandera un arbitrage, pas une accolade.
-   */
-  fonde: 'indication';
 };
 
 export type LigneConduite = {
@@ -37,11 +28,38 @@ export type LigneConduite = {
   /** Source désignée (`WN-SRC-nnnn`). Le contenu reste hors dépôt. */
   sourceId: string;
   /**
-   * AU PLURIEL, et ce n'est pas une commodité. `R2-GAS-02` cite deux claims sans
-   * les composer ; passer du singulier au pluriel plus tard changerait le type,
-   * donc le sha, donc rejouerait l'attestation entière.
+   * TROIS LISTES PLATES, ET LE NOM DU CHAMP EST LE DISCRIMINANT — arbitrage du
+   * 2026-09-16. Une première version portait un champ `fonde` sur chaque claim ;
+   * dès que chaque catégorie a reçu son champ, ce discriminant est devenu
+   * redondant, et une énumération qu'on doit maintenir vaut moins qu'un nom qui
+   * se lit. Les cinq tables signées du dépôt n'en portent aucun : ce qu'un claim
+   * fonde y vit en prose, hors de toute vérification. Ces trois champs le
+   * ramènent DANS le périmètre haché, sans énumération à faire vivre.
+   *
+   * Ce qui fonde QUAND la conduite s'applique. **Au moins un** — une ligne sans
+   * indication fondée n'est pas une ligne.
    */
-  claimsIndication: readonly ClaimFondateur[];
+  claimsIndication: readonly ClaimRef[];
+  /**
+   * Ce qui fonde l'INSTRUMENT de tête dont le déclencheur lit le score. Patron
+   * `WN-CL-0228-010` dans `orientationRulesV1.ts:510` : les deux y sont cités
+   * côte à côte, et le commentaire dit lequel fait quoi. Peut être vide.
+   */
+  claimsInstrument: readonly ClaimRef[];
+  /**
+   * Ce qui fonde une RÈGLE DE SÉCURITÉ portée par la conduite — une
+   * contre-indication, une interdiction, un « ne pas traiter isolément ».
+   *
+   * ELLE S'AFFICHE, ELLE NE BLOQUE PAS (arbitrage du 2026-09-16). La ligne se
+   * propose, et sa règle de sécurité se lit avec elle ; le praticien décide.
+   * Bloquer aurait demandé un prédicat de « levée », donc un second moteur de
+   * règles à côté de `orientationRulesV1` — écarté.
+   *
+   * Le champ est SÉPARÉ plutôt que noyé dans `claimsIndication` pour qu'un banc
+   * puisse exiger qu'une ligne qui en porte un l'affiche : une sécurité qu'on ne
+   * sait pas distinguer est une sécurité qu'aucun écran ne peut mettre en avant.
+   */
+  claimsSecurite: readonly ClaimRef[];
   /**
    * CE QUE LA LIGNE AJOUTE AU-DELÀ DE SES CLAIMS, nommé ICI et non dans un
    * commentaire ([[D-206]] A1 : « un raccourci clinique assumé, nommé sur place,
@@ -57,6 +75,11 @@ export type LigneConduite = {
   statut: 'publiee' | 'brouillon';
 };
 
+/** Les claims d'une ligne, toutes catégories confondues. */
+export function claimsDeLaLigne(ligne: LigneConduite): readonly ClaimRef[] {
+  return [...ligne.claimsIndication, ...ligne.claimsInstrument, ...ligne.claimsSecurite];
+}
+
 /**
  * LA TABLE, VIDE — et le fail-closed la rend inoffensive tant qu'elle l'est.
  *
@@ -71,7 +94,7 @@ export const CATALOGUE_CONDUITES_V1: readonly LigneConduite[] = [];
 export type CatalogueConduitesMetadata = {
   validationExterne: boolean;
   dateValidation: string | null;
-  claimsSource: readonly { claimId: string; versionClaim: string }[];
+  claimsSource: readonly ClaimRef[];
   /**
    * SURTOUT PAS la constante recalculée : la comparaison deviendrait
    * tautologique — recalculée à chaque chargement des deux côtés — et toute ligne
@@ -136,12 +159,12 @@ function estIsoCanonique(valeur: string | null): valeur is string {
   return date.toISOString() === valeur;
 }
 
-function cleClaim(claim: { claimId: string; versionClaim: string }): string {
-  return `${claim.claimId}@${claim.versionClaim}`;
+export function cleClaim(claim: ClaimRef): string {
+  return `${claim.claimId}::${claim.versionClaim}`;
 }
 
 /**
- * SIX TERMES, et les deux termes de non-vacuité ne sont pas une redite de
+ * HUIT TERMES, et les deux termes de non-vacuité ne sont pas une redite de
  * l'égalité.
  *
  * L'ÉGALITÉ EXACTE NE FERME PAS SUR UNE TABLE VIDE, et c'est un piège démontré
@@ -159,12 +182,16 @@ export function catalogueConduitesSigne(
   if (!estIsoCanonique(signature.dateValidation)) return false;
   if (lignes.length === 0) return false;
   if (signature.claimsSource.length === 0) return false;
+  // Une ligne sans indication fondée n'est pas une ligne — et ce terme ne se
+  // déduit pas de l'égalité ci-dessous : une ligne ne citant qu'un claim
+  // d'instrument y passerait sans que rien ne fonde son QUAND.
+  if (lignes.some(ligne => ligne.claimsIndication.length === 0)) return false;
 
   // Le périmètre relu est EXACTEMENT l'union des claims que les lignes citent :
   // ni un claim gardé qu'aucune ligne n'invoque, ni un claim invoqué que le
   // contrat de fraîcheur ne garderait pas.
   const declares = [...new Set(signature.claimsSource.map(cleClaim))].sort();
-  const cites = [...new Set(lignes.flatMap(ligne => ligne.claimsIndication.map(cleClaim)))].sort();
+  const cites = [...new Set(lignes.flatMap(ligne => claimsDeLaLigne(ligne).map(cleClaim)))].sort();
   if (declares.length !== cites.length) return false;
   if (declares.some((claim, index) => claim !== cites[index])) return false;
 
@@ -179,6 +206,23 @@ export function catalogueConduitesSigne(
  * même — `clinical_rules` et le catalogue d'alertes portent zéro ligne chacun, et
  * leurs lecteurs ont continué de servir comme si de rien n'était.
  *
+ * `claimsValides` EST UN PARAMÈTRE, ET C'EST LA DOCTRINE DU DÉPÔT — patron de
+ * `gatePopulationV1`, dont la table de curation est un paramètre pour qu'un banc
+ * exerce toutes les branches sans qu'aucune donnée non relue n'existe hors du
+ * test. Ce module ne lit aucune base : l'appelant fournit les clés
+ * `claimId@versionClaim` des claims **VALIDE et actifs**, et porte le coût de la
+ * lecture.
+ *
+ * UNE LIGNE DONT UN CLAIM N'EST PLUS VALIDE CESSE D'ÊTRE SERVIE (arbitrage du
+ * 2026-09-16). Les trois catégories comptent : une sécurité retirée pèse autant
+ * qu'une indication retirée — davantage même, puisque c'est elle qui devait
+ * s'afficher.
+ *
+ * `null` = STATUTS NON LUS, et ce n'est pas `new Set()`. Les deux ferment, mais
+ * pas pour la même raison : « je n'ai pas pu lire » n'est pas « aucun claim n'est
+ * valide ». L'appelant doit pouvoir le dire au praticien ; confondre les deux est
+ * le silence que `DC-24` interdit.
+ *
  * AUCUN APPELANT DE PRODUCTION AU LOT-01, et c'est dit plutôt que masqué. Le
  * dépôt a déjà SUPPRIMÉ une fonction de ce profil (`suggererCharge` serveur,
  * motif écrit dans `baremeChargeV1.ts`). La différence est bornée et vérifiable :
@@ -187,9 +231,15 @@ export function catalogueConduitesSigne(
  * fonction se supprime — elle ne se reconduit pas.
  */
 export function lignesConduitesServables(
+  claimsValides: ReadonlySet<string> | null,
   signature: CatalogueConduitesMetadata = CATALOGUE_CONDUITES_METADATA,
   lignes: readonly LigneConduite[] = CATALOGUE_CONDUITES_V1,
 ): readonly LigneConduite[] {
+  if (claimsValides === null) return [];
   if (!catalogueConduitesSigne(signature, lignes)) return [];
-  return lignes.filter(ligne => ligne.statut === 'publiee');
+  return lignes.filter(
+    ligne =>
+      ligne.statut === 'publiee'
+      && claimsDeLaLigne(ligne).every(claim => claimsValides.has(cleClaim(claim))),
+  );
 }

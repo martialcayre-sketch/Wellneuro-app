@@ -9,6 +9,11 @@ relues, que leurs claims soient **désignés**, et que la métadonnée soit édi
 
 ## CE QUE LE DÉPÔT NE PEUT PAS FAIRE, ET C'EST LA RAISON DE CE DOCUMENT
 
+> **Mis à jour le 2026-09-16 après lecture autorisée de la production.** Les
+> identifiants sont désormais connus et désignés ci-dessous ; les comptes du
+> registre se sont révélés **exacts à l'unité** (20, 29 et 7). Ce qui reste à
+> vous n'est plus de trouver les claims, mais d'attester **ce que chacun fonde**.
+
 Le dépôt sait **combien** de claims sont validés par source — le registre
 d'interventions le porte, à l'instantané du **2026-08-03** :
 
@@ -45,8 +50,14 @@ le fait qu'un périmètre signé se hache en entier.
   veut signée avant les autres.
 - **Désignée deux fois indépendamment** dans le corpus (`WN-SRC-0315` et une
   branche de `WN-SRC-0318`).
-- **À fournir** : le ou les `claimId` qui fondent l'indication, parmi les 20
-  validés de la source.
+- **Claims désignés — lus en production le 2026-09-16, à confirmer par vous** :
+  - `claimsIndication` : **`WN-CL-0315-001`** (le trouble du sommeil parmi les
+    critères de la dépression majeure — la porte d'entrée) et
+    **`WN-CL-0315-002`** (la forme : réveil précoce, insomnie de fin de nuit).
+  - `claimsInstrument` : **`WN-CL-0320-002`** (le HAD dans le bilan d'une
+    insomnie sans cause identifiée) — c'est lui qui fonde le déclencheur.
+  - `claimsSecurite` : **`WN-CL-0315-006`** — la règle qui fait de cette ligne la
+    première à signer. Elle s'affichera au praticien avec la proposition.
 
 ### 2. `insomnie_anxiete` — `WN-SRC-0316`
 
@@ -55,7 +66,18 @@ le fait qu'un périmètre signé se hache en entier.
 - **Déclencheur disponible** : sous-score `A` du même instrument — autre échelle,
   donc pas de recouvrement avec la ligne 1.
 - **Désignée deux fois** (`WN-SRC-0316` et une branche de `WN-SRC-0318`).
-- **À fournir** : le ou les `claimId`, parmi les 29 validés.
+- **Claims désignés — à confirmer** :
+  - `claimsIndication` : **`WN-CL-0316-001`** (insomnie d'endormissement avec
+    anxiété anticipative au coucher) et **`WN-CL-0316-002`** (latence élevée,
+    boucle auto-entretenue).
+  - `claimsInstrument` : **`WN-CL-0320-002`**, le même appui que la ligne 1.
+  - `claimsSecurite` : **`WN-CL-0316-006`** — une contre-indication explicite
+    dans l'insomnie psychophysiologique.
+- **Le premier `raccourciAssume` du catalogue s'écrit ici.**
+  `WN-CL-0316-002` fonde l'indication sur une **latence d'endormissement**, or
+  la latence n'est exposée par aucun indicateur lisible : l'agenda 21 nuits
+  l'exclut explicitement. Le déclencheur retenu est le sous-score anxieux du
+  HAD, qui n'est pas ce que le claim dit. **C'est un raccourci, il se déclare.**
 
 ### 3. `insomnie_jambes_sans_repos` — `WN-SRC-0320`
 
@@ -65,7 +87,12 @@ le fait qu'un périmètre signé se hache en entier.
 - **La mieux fondée du lot** : trois documents indépendants la désignent
   (`WN-SRC-0318`, `WN-SRC-0320`, bornée par `WN-SRC-0295`), et sa conduite tient
   en une action.
-- **À fournir** : le ou les `claimId`, parmi les 7 validés.
+- **Claims désignés — à confirmer** :
+  - `claimsIndication` : **`WN-CL-0320-003`**, seul. Il fonde **l'indication et
+    la conduite à la fois** — le syndrome comme cause d'insomnie secondaire, et
+    le dosage de ferritine qui en découle. La ligne la plus propre du lot.
+  - `claimsInstrument` : **`WN-CL-0320-002`**.
+  - `claimsSecurite` : aucune — le champ reste vide, et c'est une déclaration.
 
 ## HUIT TABLEAUX ÉCARTÉS, et chacun pour un motif nommé
 
@@ -95,8 +122,10 @@ jamais par la forme — c'est délibéré.
 
 ## CE QUE L'ATTESTATION DEMANDERA, exactement
 
-1. Pour chaque ligne : le ou les `claimId` + `versionClaim` qui fondent son
-   indication, et pour chacun la confirmation qu'il est `VALIDE` et actif.
+1. Pour chaque ligne : **confirmer les désignations ci-dessus** — ce que chaque
+   claim fonde, catégorie par catégorie. Les identifiants et leur version
+   (`v1.0`) ont été lus en production le 2026-09-16 ; leur validité est établie,
+   leur RÔLE est ce que vous attestez.
 2. Pour chaque ligne : ce qu'elle **ajoute** au-delà de ses claims, écrit dans le
    champ `raccourciAssume` — ou `null` si elle n'ajoute rien. Ce champ est dans le
    périmètre haché : le reformuler périmera l'attestation, et c'est voulu.
