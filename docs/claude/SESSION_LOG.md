@@ -6889,3 +6889,34 @@ explicitement.
 
 Séquence terminée : règles posées (`ad6c8057`), gravées (`D-214`, `f5a06e9c`),
 réserves fermées. Aucune suite due.
+
+## 2026-09-16 — LOT-03 : la lettre posable, et l'ancrage à deux tables
+
+**D-215**, PR #1162 mergée. Le rendu HTML du courrier biologie était calculé
+puis jeté : il est servi, l'aperçu s'imprime, la zone de texte reste dessous —
+la transcription à la main est un chemin de remise, pas un pis-aller. La lettre
+est signée : le bloc quitte les quatre gabarits du registre pour un module
+partagé, les quatre empreintes du hash-lock prouvant que les corps ne bougent
+pas.
+
+Deux arbitrages rendus : **« échange interprofessionnel »** (et non
+« confraternel », sur un papier signé par un pharmacien) ; **le signataire entre
+dans le texte généré**, pas dans le gabarit d'impression — sinon il manque à la
+lettre transcrite et échappe à la garde de vocabulaire.
+
+Le verrou de LOT-04 est posé : `verdictAncrage` se rend par la version portée
+par la ligne, et une version inconnue rend `reference_inconnue`, jamais
+`perimee`.
+
+**La revue Copilot avait raison deux fois**, lue avant le merge cette fois. Le
+premier constat était le défaut que D-209 avait fermé, rouvert par l'autre bout :
+le libellé « Courrier préparé » posé sur la seule fiche laissait l'accueil dire
+« Envoi consigné » de la même ligne. `/recentes` sert désormais le verdict ; le
+calcul vit dans un module serveur partagé. Second constat : le câblage du bouton
+d'impression n'était éprouvé par rien.
+
+Collision de numéro au merge : `main` a pris D-214 pendant l'écriture.
+
+Prochaine action : **LOT-04**, la lettre d'adressage — son ancrage doit ajouter
+sa ligne dans `SHA_ATTENDU_PAR_VERSION`, sans quoi ses lettres liront
+`reference_inconnue`.
