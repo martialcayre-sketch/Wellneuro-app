@@ -104,3 +104,72 @@ l'utilisateur** — c'est le geste le plus rentable de la suite.
 Six migrations appliquées et seed rejoué sur la base de dev locale (`127.0.0.1`), et une
 base jetable `wn_e2e_repro` — **conservée volontairement** : c'est elle qui fait marcher le
 harnais de reproduction E2E, désormais fonctionnel de bout en bout.
+
+---
+
+# Arbitrages rendus en clôture de session (2026-09-16, praticien)
+
+Huit questions posées, huit tranchées. **Trois vont contre la recommandation de
+l'assistant** — c'est noté comme tel, sans rediscussion : la recommandation était
+un avis, la décision appartient au praticien.
+
+## Ce qui est décidé
+
+| # | Objet | Décision | Écart à la reco |
+|---|---|---|---|
+| 1 | **Bandes du MMSE** (`Q_GEO_04`) | **Garder les quatre bandes, CESSER de les attribuer à la HAS** — les déclarer arbitrage du cabinet, épinglé comme tel | conforme |
+| 2 | **Réserves à lire** | **Les QUATRE**, pas seulement les deux affichées | plus large que la reco |
+| 3 | **Conners 3** (`Q_PED_03`) | **Acquérir la licence MHS** | contre la reco (retrait) |
+| 4 | **Q_ALI_03** colonne calorique | **Vérifier**, au même étalon que la colonne protéique | conforme |
+| 5 | **ELFE** (`Q_FIB_03`) | **Réaligner sur la source** : 7 items, échelle 0-10, vrai scoring | contre la reco (retrait) |
+| 6 | **Agenda du sommeil** (`Q_SOM_09`) | **Réaligner les DEUX écarts** : qualité en 1-10, ET recueil de la qualité de l'éveil | conforme |
+| 7 | **Q_ALI_09** droits | **Déclaration du praticien** à rédiger puis signer | conforme |
+| 8 | **Flake CI** | **Observer les prochains runs** avant de rouvrir la chasse | conforme |
+
+## Ce que chaque décision engage concrètement
+
+**1 — MMSE.** Aucun seuil ne bouge : il s'agit de corriger une PROVENANCE fausse,
+pas une borne. Les commentaires de `gerontologie.ts` qui annoncent « Seuils
+HAS 2011 » et l'entrée de registre doivent dire ce que les bandes sont
+réellement. Doctrine `D-199` : une borne ouverte se comble par un arbitrage
+**pinné en tant qu'arbitrage**. L'escalade SIIN du 2026-07-25 peut être refermée
+sans objet — on sait désormais ce que la HAS écrit, et ce n'est pas ça.
+
+**2 — Les quatre lectures.** `Q_GEO_06` (85 %/90 % attribués à Dubois, Presse Med
+2002) · `Q_GEO_03` (bornes 5 et 15, PMID 22367356) · `Q_GEO_01` (borne 26 contre
+≥ 24, JAGS 1986 **sans abrégé indexé** — il faudra le texte intégral) ·
+`Q_NEU_08` ECAB (introuvable par Crossref ET PubMed : une autre voie est à
+trouver, ce n'est pas une simple requête à refaire). Les deux premières portent
+des chiffres **affichés aujourd'hui au praticien** : à traiter en premier.
+
+**3 — Conners 3.** Démarche et coût à la main du praticien ; l'assistant ne peut
+ni engager ni évaluer cet achat. Une fois le manuel MHS au dossier, la
+confrontation de la version servie (108 items) redevient possible — c'est la
+SEULE voie, la passe du 2026-09-16 ayant établi qu'aucun article de
+développement n'existe. L'instrument reste `suspendu` d'ici là.
+
+**4, 5, 6 — trois chantiers qui touchent la logique clinique.** Chacun exige une
+**décision `D-xxx` et un fragment `changelog.d/`**, le mandat explicite étant
+désormais acquis par le présent arbitrage. Pour `Q_SOM_09`, noter que l'ajout de
+l'axe « qualité de l'éveil » modifie un formulaire **déjà rempli par des
+patients** : la compatibilité des réponses existantes est à traiter, pas à
+supposer.
+
+**7 — Q_ALI_09.** L'assistant rédige la déclaration ; **la signature reste au
+praticien** — une autorisation d'outillage ne couvre jamais une déclaration de
+droits. Ferme le dernier `a_verifier` du registre et le dernier barreau `repere`.
+
+**8 — Flake CI.** Ne rien rouvrir pour l'instant. Surveiller les runs `iPhone 13`
+de `fiche-trajectoire-peuplee` : plusieurs verts consécutifs trancheraient à coût
+nul. **Le défaut n'est PAS classé traité** — affirmer la causalité serait
+affirmer ce que la mesure ne montre pas.
+
+## Ordre suggéré pour la reprise
+
+1. Les deux lectures qui portent des chiffres affichés (`Q_GEO_06`, `Q_GEO_03`).
+2. La correction de provenance du MMSE — pas de seuil touché, donc peu risquée.
+3. La déclaration de droits `Q_ALI_09`, à faire signer.
+4. Les trois réalignements cliniques (`Q_ALI_03`, `Q_FIB_03`, `Q_SOM_09`), un lot
+   chacun, décision + fragment.
+5. `Q_GEO_01` et `Q_NEU_08`, qui demandent l'un un texte intégral, l'autre une
+   voie de recherche neuve.
