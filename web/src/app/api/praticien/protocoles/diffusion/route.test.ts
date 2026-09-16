@@ -361,3 +361,127 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });
+
+// ── L'APERÇU DE CE QUE LE PATIENT LIRA ([[D-200]] dette 1) ──────────────────
+//
+// Le seul aperçu patient du cockpit vivait dans `ProtocolConsultationPanel`,
+// alimenté par une fixture et débranché hors d'elle : sur un dossier réel, le
+// praticien validait pour diffusion sans avoir jamais vu une ligne de ce que
+// son patient allait lire.
+//
+// `apercuContenuPatient` N'EST PAS MOQUÉ ICI, à la différence de
+// `vuePatientOuRefus` : ce que ce banc doit prouver, c'est que le contenu servi
+// SORT DU CONTRAT — phrase d'attente comprise —, et non qu'un verdict voyage.
+describe('GET /api/praticien/protocoles/diffusion — aperçu patient', () => {
+  const carteRejouee = {
+    ok: true,
+    selectionEcartee: false,
+    decisionCard: {
+      decisionCardId: 'DEC_1',
+      inputHash: 'HASH_DEC',
+      abstention: { status: 'not_required', ruleIds: [], limitations: [] },
+      safetyFindingIds: [],
+      selectedMainPriority: { candidateId: 'priority-1' },
+      priorityCandidates: [{ candidateId: 'priority-1', label: 'Axe signé' }],
+    },
+  };
+
+  function draft(surcharges: Record<string, unknown> = {}) {
+    return {
+      protocolDraftId: 'PD_1', decisionCardId: 'DEC_1', decisionCardInputHash: 'HASH_DEC',
+      selectedPriorityId: 'priority-1', status: 'practitioner_reviewed',
+      review: { reviewedAt: '2026-01-02T00:00:00.000Z', reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
+      purpose: 'Raison patient.', followUpCriterion: 'Critère patient.', adviceSheetRef: null,
+      actions: [{
+        actionId: 'a1', type: 'biological_exploration', title: 'Bilan',
+        idealPlan: 'Idéal interne.', minimalPlan: 'Plan minimal patient.', rescuePlan: 'Secours interne.',
+        limitations: [], interventionStatus: 'conditionnelle_biologie',
+      }],
+      ...surcharges,
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([]);
+    rejouerCarteDecision.mockResolvedValue(carteRejouee);
+    reconstructProtocolDraft.mockReturnValue(draft());
+    vuePatientOuRefus.mockReturnValue({ ok: true, vue: {} });
+  });
+
+  function requete(): Request {
+    return new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1');
+  }
+
+  // L'INTERVENTION SUSPENDUE PORTE SA PHRASE, et c'est tout l'objet du lot :
+  // l'aperçu fait main ne lisait jamais `interventionStatus`.
+  it('projette le contenu patient par le contrat, phrase d’attente comprise', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    const json = (await (await GET(requete())).json()) as {
+      apercu: { ok: boolean; contenu?: { priorityLabel: string; actions: { attente?: string; minimalPlan: string }[] } };
+    };
+    expect(json.apercu.ok).toBe(true);
+    expect(json.apercu.contenu?.priorityLabel).toBe('Axe signé');
+    expect(json.apercu.contenu?.actions[0].minimalPlan).toBe('Plan minimal patient.');
+    expect(json.apercu.contenu?.actions[0].attente).toBe('En attente de confirmation par votre bilan.');
+  });
+
+  // SUR LA VERSION ACTIVE, PAS SUR L'APPROUVÉE. `servieAuPatient` dit ce qui est
+  // servi aujourd'hui ; l'aperçu montre ce qui le sera après le geste. Montrer
+  // l'ancienne version ferait valider une version en en lisant une autre.
+  it('porte sur la version ACTIVE quand une version plus ancienne est approuvée', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v2', inputHash: 'HASH_V2', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V2', supersedesDraftId: 'v1', createdAt: new Date('2026-01-05T00:00:00.000Z'), payload: { version: 2 } },
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { version: 1 } },
+    ]);
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftInputHash: 'HASH_V1', supersedesApprovalId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), approvedAt: new Date('2026-01-03T12:00:00.000Z') },
+    ]);
+    const json = (await (await GET(requete())).json()) as { stale: boolean; apercu: { ok: boolean } };
+    expect(json.stale).toBe(true);
+    expect(json.apercu.ok).toBe(true);
+    expect(reconstructProtocolDraft).toHaveBeenCalledWith({ version: 2 }, 'HASH_V2');
+  });
+
+  it('rend le motif du contrat plutôt qu’un aperçu vide', async () => {
+    reconstructProtocolDraft.mockReturnValue(draft({ status: 'draft', review: null }));
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean; motif?: string; detail?: string } };
+    expect(json.apercu.ok).toBe(false);
+    expect(json.apercu.motif).toBe('contrat_refuse');
+    expect(json.apercu.detail).toContain('relu par le praticien');
+  });
+
+  it('dit que la carte ne se rejoue plus, sans emporter le reste de l’état', async () => {
+    rejouerCarteDecision.mockResolvedValue({ ok: false, motif: 'carte_derivee' });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: { p: 1 } },
+    ]);
+    const res = await GET(requete());
+    const json = (await res.json()) as { ok: boolean; apercu: { ok: boolean; motif?: string } };
+    expect(res.status).toBe(200);
+    expect(json.ok).toBe(true);
+    expect(json.apercu.motif).toBe('carte_non_rejouable');
+  });
+
+  it('dit que le contenu de la version active ne se relit pas', async () => {
+    reconstructProtocolDraft.mockImplementation(() => { throw new Error('Payload de protocole illisible.'); });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'v1', inputHash: 'HASH_V1', decisionCardInputHash: 'HASH_DEC', assessmentEpisodeId: 'EPISODE_V1', supersedesDraftId: null, createdAt: new Date('2026-01-03T00:00:00.000Z'), payload: null },
+    ]);
+    const json = (await (await GET(requete())).json()) as { apercu: { ok: boolean; motif?: string } };
+    expect(json.apercu.motif).toBe('payload_illisible');
+  });
+
+  it('ne rend aucun aperçu sans version', async () => {
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const json = (await (await GET(requete())).json()) as { apercu: unknown };
+    expect(json.apercu).toBeNull();
+  });
+});

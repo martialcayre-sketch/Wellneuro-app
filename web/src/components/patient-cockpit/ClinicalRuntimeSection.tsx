@@ -20,6 +20,7 @@ import { ConstatCriteresPanel, type ConstatState } from './ConstatCriteresPanel'
 import type { CritereConstatable } from '@/lib/supplement-library/constatsCriteres';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
+import type { ApercuPatientServi } from '@/lib/clinical-engine/contenuPatientProtocole';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
 import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
@@ -105,6 +106,8 @@ type DiffusionApiResponse = {
   stale: boolean;
   /** Ce que le patient voit RÉELLEMENT — `null` tant que rien n'est affirmé ([[D-191]]). */
   servieAuPatient?: boolean | null;
+  /** Ce que le patient LIRA de la version active, projeté par le contrat ([[D-200]]). */
+  apercu?: ApercuPatientServi | null;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -402,6 +405,12 @@ export function ClinicalRuntimeSection({
   // `null` = rien n'est affirmé (pas de diffusion, ou lecture non aboutie). Un
   // `false` par défaut ferait crier l'écran avant d'avoir lu ([[D-191]]).
   const [servieAuPatient, setServieAuPatient] = useState<boolean | null>(null);
+  /**
+   * L'aperçu de ce que le patient LIRA de la version active ([[D-200]] dette 1).
+   * `null` = lecture non aboutie ou aucune version — l'écran ne montre alors
+   * rien plutôt qu'un aperçu vide qui passerait pour un protocole vide.
+   */
+  const [apercuPatient, setApercuPatient] = useState<ApercuPatientServi | null>(null);
   /** Ce que la raison d'être a le droit de citer — relu au serveur ([[D-193]]). */
   const [sourcesCitables, setSourcesCitables] = useState<SourceCitablePurpose[]>([]);
   /** Lignes de barème vouchées par le serveur — vide tant qu'il n'est pas signé. */
@@ -502,6 +511,7 @@ export function ClinicalRuntimeSection({
       // `?? null` et non `?? false` : un serveur qui ne sait pas ne doit pas
       // faire dire à l'écran « non servie ».
       setServieAuPatient(payload.servieAuPatient ?? null);
+      setApercuPatient(payload.apercu ?? null);
     } catch {
       // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
     }
@@ -1918,7 +1928,11 @@ export function ClinicalRuntimeSection({
         />
       </div>
       {affiche('actions') && (fixture || sousVueActions === 'protocole') && (
-        <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+        <ProtocolConsultationPanel
+          decisionCard={decisionCard}
+          protocolDraft={fixture ? protocolDraft : null}
+          apercuEnDiffusion={!fixture}
+        />
       )}
       {/* Historique et Diffusion : panneaux SANS état local (vérifié en
           revue) — le montage conditionnel ne leur perd rien. Les états vides
@@ -1947,6 +1961,7 @@ export function ClinicalRuntimeSection({
             stale={approvalStale}
             approvedAt={approvedAt}
             servieAuPatient={servieAuPatient}
+            apercu={apercuPatient}
             state={diffusionState}
             error={diffusionError}
             onApprove={approveForDiffusion}
