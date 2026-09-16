@@ -4,6 +4,77 @@
 
 ## Décisions actives
 
+### D-205 — Ce qu'une session a produit ne vaut que si c'est écrit : trois sujets cadrés, un audit consigné par ses mesures, un catalogue qui n'ouvre pas
+
+- Date : 2026-09-16
+- Statut : accepté — **cadrage et routage**. Aucun changement de code.
+- Domaine : portefeuille, corpus, protocole 21 jours.
+- Porte sur : `CADRAGE_PROTOCOLE_DEPUIS_LE_CORPUS_2026-09-16.md`,
+  `CADRAGE_BOUSSOLE_ASSIETTE_2026-09-16.md`,
+  `MESURES_AUDIT_CORPUS_2026-09-16.md`, `FILE_ATTENTE.md`.
+
+**LE CONSTAT QUI CAUSE CETTE ENTRÉE.** La session du 2026-09-16 a fermé la dette
+1 de [[D-200]], cadré les deux curations routées et clos la campagne « 5. Actions ».
+Trois autres sujets y sont nés, et **aucun n'avait de véhicule** : ni ligne en
+file, ni dossier, ni trace au dépôt. Le plus gros — un audit du corpus, 123
+documents, 1258 ancres re-vérifiées — n'existait que dans un fichier de
+scratchpad de 1,4 Mo. **Il serait mort avec la session.** Ce n'est pas un risque
+théorique : le portefeuille a déjà connu une campagne menée et livrée sans jamais
+entrer dans la table (réconciliation du 2026-08-27).
+
+**CE QUI EST DÉCIDÉ.**
+
+**1. Les trois sujets reçoivent un cadrage et une ligne en file.** Le protocole
+assisté tiré du corpus ; la Boussole alimentaire ; les trois défauts vivants du
+moteur de protocole. Aucun `CAMPAGNE.md` n'est posé — **cadrer n'est pas
+ouvrir**, et l'ouverture reste un geste du responsable.
+
+**2. L'audit du corpus se consigne par ses MESURES, jamais par ses extraits.**
+Les 507 notices sont `rightsStatus: to_verify` et
+`clinicalReviewStatus: not_reviewed`, G6 n'est pas ouvert : aucun texte clinique
+n'entre. Ne sont écrits que des comptes et des identifiants de source, déjà
+présents au dépôt. Le fichier brut reste hors dépôt et se rejoue.
+
+**3. Les deux réfutations de l'audit sont écrites AVEC ses chiffres, dans le même
+document.** C'est le point de méthode de cette entrée. « Trois actions est la
+taille native d'une conduite » est **circulaire** : l'extraction a été cadrée sur
+un contrat qui borne à 3, et le chiffre relit la règle qu'on lui a appliquée.
+« 123 tableaux cliniques distincts sur 123 documents » ne mesure **rien** : le
+champ est de la prose libre, compter les distincts compte des rédactions. Séparer
+ces réserves des chiffres qu'elles réfutent aurait garanti qu'on cite les chiffres
+sans elles.
+
+**4. Le catalogue de conduites n'ouvre pas avant son arbitrage A1** — une ligne
+porte-t-elle un `claimId` ? Raison : le **seul** chemin corpus → table signée →
+runtime qui existe au dépôt, `WN-CL-0287-009` (`orientationRulesV1.ts:1127`),
+passe par un claim, et son régime est écrit sur place — les claims fondent
+l'indication, et ce que la table ajoute au-delà est un raccourci assumé, nommé
+là. Une ligne sans `claimId` ne saute pas une formalité : elle court-circuite la
+couche où vit la signature clinique.
+
+**5. La substitution proposée pour la Boussole est REFUSÉE, et les rôles sont
+séparés.** L'assiette devient l'unité qui peut porter une action ; l'aliment
+vedette devient le contenu d'un plan ; la Boussole reste une surface de
+compréhension patient. **Le fait qui rend l'arbitrage bon marché** :
+`attachFoodCompassRef` — le mécanisme qui attache un aliment à une action — est
+appelé par **aucune route et aucun composant**, seul son banc le lance. Rien
+n'est à défaire en production. Et `C5B_RECOMMENDED_PLATES` porte déjà un
+catalogue d'assiettes haché, dont l'unique consommateur est le panneau
+d'**observation** — jamais le protocole.
+
+**6. Trois défauts vivants sont nommés, et le premier est rangé en tête.**
+`phases` est absent de `clinicalContentHash` (`protocol/versioning.ts:58-70`) :
+le premier praticien qui n'écrirait que des phases recevrait `unchanged: true` et
+perdrait sa saisie. **Une ligne, aucun arbitrage.** Suivent le `null` ambigu de
+`suggererDepuisLignes` — trois causes, un seul `null` — et `patientLimitations`,
+paramètre ouvert dont les quatre appelants de production passent `[]` vers un
+champ qu'aucun écran ne rend.
+
+**CE QUE CETTE ENTRÉE NE DÉCIDE PAS.** Ni A1 à A5, ni B1 à B4 : ce sont des
+arbitrages du responsable, et un cadrage les **nomme** sans les prendre. Elle ne
+mesure pas non plus combien de situations cliniques distinctes porte le corpus —
+voir la réserve 2 ci-dessus.
+
 ### D-204 — La clause de la fenêtre de rappel est MESURÉE en production, et le filtre de sortie est écarté sur ce constat
 
 - Date : 2026-09-16
