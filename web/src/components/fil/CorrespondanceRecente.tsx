@@ -57,7 +57,13 @@ export function CorrespondanceRecente() {
           {data.lignes.map(ligne => (
             <Link
               key={ligne.id}
-              href={`/dashboard/patients/${ligne.idPatient}`}
+              // DÉPOSE SUR L'ONGLET, pas sur la fiche. Sans ce paramètre, le
+              // clic atterrissait sur le poste de pilotage — ou pire, sur
+              // l'onglet mémorisé en localStorage — et il fallait connaître
+              // l'existence de l'onglet « Correspondance » pour y revenir.
+              // La garde serveur existe depuis SP-TRAJ (`estOngletFiche`) et
+              // prime sur la mémoire d'onglet.
+              href={`/dashboard/patients/${ligne.idPatient}?onglet=correspondance`}
               className="rounded-lg border border-border px-3 py-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <span className="flex items-baseline justify-between gap-2">

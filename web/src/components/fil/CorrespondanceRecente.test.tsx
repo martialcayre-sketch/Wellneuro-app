@@ -30,8 +30,12 @@ describe('CorrespondanceRecente', () => {
     render(<CorrespondanceRecente />);
     await waitFor(() => expect(screen.getByText('Sophie Nicola')).toBeTruthy());
     expect(screen.getByText(/Réponse transcrite — Dr Exemple/)).toBeTruthy();
+    // DÉPOSE SUR L'ONGLET. L'adresse nue menait au poste de pilotage — ou à
+    // l'onglet mémorisé en localStorage — et il fallait connaître l'existence
+    // de l'onglet « Correspondance » pour y revenir. Ce banc défend la nouvelle
+    // adresse ; il figeait la précédente comme un attendu du produit.
     expect(screen.getByRole('link', { name: /Sophie Nicola/ }).getAttribute('href')).toBe(
-      '/dashboard/patients/PAT_SEED_01',
+      '/dashboard/patients/PAT_SEED_01?onglet=correspondance',
     );
   });
 

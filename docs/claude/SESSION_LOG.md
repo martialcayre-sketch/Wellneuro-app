@@ -6719,3 +6719,34 @@ règle interdit — d'où les fragments de rattrapage poussés par Copilot, une 
 changée et un `verify` de plus.
 
 Prochaine action : **LOT-00**, dont ce lot est le préalable.
+
+## 2026-09-16 — LOT-00 : le rayon Correspondance sort du différé
+
+Second lot de la campagne, décision **D-210**. La page `/dashboard/correspondance`
+affichait « Module différé » pendant que le rail y accolait un compteur calculé
+sur des lignes réelles, et promettait des pièces jointes que `D-122` interdit —
+l'écran contredisait donc une décision du registre, pas seulement une intention.
+
+Deux choix de fond. **La page oriente plutôt que de dupliquer** : le plan disait
+« monter le composant qui existe déjà », mais `PanneauRail` est dimensionné pour
+l'aside de 300 px et se replie en une ligne quand il est vide. Le patron juste
+était à côté — `dashboard/biologie/page.tsx`. Et allonger la liste aurait rouvert
+la question de journalisation que `D-209` §3 laisse ouverte : la page rend les
+mêmes cinq lignes que l'accueil, rien de plus.
+
+**Le badge désigne une tâche au lieu de refléter son lecteur.** Il comptait
+toutes les consignations sur sept jours, sans filtre de sens ; les deux sens
+étant des gestes du praticien, transcrire une réponse le faisait *monter*. Il
+compte désormais les dossiers dont la dernière ligne est un envoi antérieur au
+délai — transcrire la réponse le fait descendre. Écarté : l'éteindre, seule trace
+visible que la table bouge tant qu'aucune mesure n'est instrumentée.
+
+Trois réserves écrites : appariement par dossier et jamais par médecin, rail qui
+ne se rafraîchit pas en cours de session, délai de sept jours qui est un repère
+produit et non clinique.
+
+T1 et T2 verts, 64 bancs, mutant tué sur deux assertions. Un e2e visite enfin
+cette adresse — aucun des vingt-neuf spécifications ne le faisait.
+
+Prochaine action : **LOT-02**, puis **LOT-03** qui verrouille **LOT-04**, la
+lettre d'adressage.

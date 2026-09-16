@@ -4,6 +4,65 @@
 
 ## Décisions actives
 
+### D-210 — Le rayon Correspondance sort du différé, et son badge désigne une tâche au lieu de refléter son lecteur
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrage du responsable**, rendu en session sur la
+  question ouverte du LOT-00 (campagne « ouverture du rayon Correspondance »).
+- Domaine : correspondance médecin, navigation, signaux poussés.
+- Porte sur : la décision propriétaire du 2026-07-22 qui a créé
+  `/dashboard/correspondance` en écran réservé, et celle du 2026-07-23 qui a
+  allumé le badge du rail. Prolonge [[D-209]], dont elle est le lot suivant.
+  Ne touche ni le fil, ni la consignation, ni le schéma.
+
+**1. UN COMPTEUR RÉEL POINTAIT VERS UNE PAGE QUI N'EN MONTRAIT AUCUN.** Le rail
+accolait à « Correspondance » une pastille calculée sur des lignes réelles, et
+le lien menait à une bannière « Module différé ». La fonction, elle, était en
+service **sans drapeau depuis le 2026-07-22**, dans l'onglet de la fiche
+patient. Le motif d'origine de l'écran réservé — le mur HDS — est mort le
+2026-08-31 ([[D-121]]) ; le texte de la bannière avait été corrigé, la page non.
+
+**Elle oriente, elle ne duplique pas.** Patron de `dashboard/biologie/page.tsx`
+([[D-122]] §2) : le geste vit sur le dossier, et il n'y a pas de dossier courant
+sur une page de rayon. **Écarté : y monter une liste transversale plus longue**
+— cela rouvrirait la question de journalisation que [[D-209]] §3 laisse
+explicitement ouverte, `recentes` nommant cinq dossiers sans écrire au journal
+d'accès. La page rend les mêmes cinq lignes que l'accueil, et rien de plus.
+
+**2. LA PROMESSE DE PIÈCES JOINTES ÉTAIT LA CONTRADICTION D'UNE DÉCISION.**
+L'écran annonçait que « la réponse du médecin traitant et ses pièces jointes
+reviennent par le même canal ». [[D-122]] les interdit tant que la frontière
+n'est pas rouverte, et l'interdit est **structurel** : aucun champ fichier au
+modèle ni dans les types. Le motif a changé — de l'hébergement vers la frontière
+produit — mais il n'a jamais été levé.
+
+**3. LE BADGE COMPTAIT SON PROPRE LECTEUR.** Il recensait toutes les
+consignations du praticien sur sept jours glissants, **sans filtre de sens** —
+or les deux sens sont des gestes du praticien : l'application n'envoie rien et
+ne reçoit rien. La pastille comptait donc ce que son lecteur venait de taper,
+retombait à zéro toute seule au huitième jour sans qu'aucune action n'ait été
+faite, et **montait** quand une réponse était transcrite. Une pastille chiffrée
+à côté d'une entrée de navigation se lit « il est arrivé quelque chose » : elle
+ne désignait aucune tâche.
+
+Elle désigne désormais les dossiers dont la **dernière** ligne est un envoi
+antérieur au délai — on a écrit, rien n'est revenu. C'est la seule attente que
+cette table sache exprimer, et transcrire la réponse la fait maintenant
+descendre. **Écarté : éteindre le badge** — il est la seule trace visible que la
+table bouge, tant qu'aucune mesure n'est instrumentée.
+
+**Le délai de sept jours est un repère produit, pas clinique.** Il reprend la
+fenêtre du compteur précédent, seul point de comparaison disponible. Aucun fait
+ne l'appuie ; il se révisera au premier constat d'usage et n'a aucune valeur de
+recommandation.
+
+**4. DEUX RÉSERVES NOMMÉES.** L'appariement se fait par **dossier** et jamais
+par médecin : `medecinLibelle` est du texte libre dont la seule garde est le
+refus du caractère « @ » — deux courriers au même dossier, adressés à deux
+médecins différents, ne se distinguent pas. Et le rail **ne se rafraîchit pas en
+cours de session** (`useEffect` sans dépendance, deux instances qui lisent
+chacune la leur) : une relance traitée reste affichée jusqu'au rechargement.
+
 ### D-209 — Le sens d'un échange se lit une seule fois, et l'accueil cesse de citer le dossier
 
 - Date : 2026-09-16
