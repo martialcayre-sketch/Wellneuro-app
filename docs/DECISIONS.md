@@ -4,6 +4,77 @@
 
 ## Décisions actives
 
+### D-206 — Le catalogue de conduites est arbitré : le tableau clinique pour unité, le régime `WN-CL-0287-009` pour signature, et un seul lot borné pour véhicule
+
+- Date : 2026-09-16
+- Statut : accepté — **arbitrage praticien**, rendu sur les quatre questions
+  posées par [[D-205]]. Aucun changement de code.
+- Domaine : clinique — catalogue de conduites, protocole 21 jours.
+- Porte sur : `CADRAGE_PROTOCOLE_DEPUIS_LE_CORPUS_2026-09-16.md` (A1, A2, A3) et
+  le véhicule. A4, A5 et B1→B4 restent ouverts.
+
+**A1 — CE QUI SIGNE UNE LIGNE : le régime `WN-CL-0287-009`, et lui seul.** Un
+claim signé **fonde l'indication** de la ligne et dit où mène la règle ; ce que
+la ligne ajoute au-delà de lui est un **raccourci clinique assumé, nommé sur
+place, avec ses appuis**. C'est le régime déjà écrit dans
+`orientationRulesV1.ts:1127`, le seul chemin corpus → table signée → runtime qui
+existe au dépôt. Écarté : l'attestation praticien sur la table entière (régime du
+barème, [[D-198]]) — elle aurait débloqué les cinq axes non curés au prix de la
+couche où vit la signature clinique.
+
+**CONSÉQUENCE DIRECTE, ET ELLE DÉSIGNE L'AXE DE DÉPART.** Exiger au moins un
+claim par ligne ferme les axes sans claim validé — mémoire et troubles cognitifs,
+TDAH et scolarité, autisme, douleurs chroniques, intestin-cerveau. **La première
+table ne peut naître que sur un axe déjà curé** : sommeil (297 claims validés) ou
+humeur (283). Elle ne s'ouvre pas ailleurs, et ce n'est pas une préférence de
+sujet — c'est la conséquence mécanique de A1.
+
+**A2 — L'UNITÉ EST LE TABLEAU CLINIQUE.** Écartés : l'indication (65 des 123
+documents ne posent aucun critère d'entrée individuel) et l'assiette (elle ne
+couvre que le domaine alimentaire, laissant chronobiologie, respiration,
+mouvement, biologie et orientation sans catalogue).
+
+**LE FAIT QUI PORTE CE CHOIX.** `WN-SRC-0315`, `WN-SRC-0316` et `WN-SRC-0317`
+traitent tous l'insomnie et proposent **trois conduites différentes**, départagées
+par le tableau — insomnie et dépression, insomnie et anxiété, insomnie récente
+sur stress modéré. Elles ne se contredisent pas : elles se départagent sur autre
+chose que la plainte, et **un axe ne peut pas arbitrer entre elles**.
+
+**LA RÉSERVE TIENT, ET ELLE EST REPORTÉE AU LOT.** Le nombre de tableaux
+cliniques distincts que porte le corpus **n'est pas mesuré** : le champ est de la
+prose libre, et compter les distincts compterait des rédactions ([[D-205]] §3).
+Le lot devra normaliser avant de dimensionner sa table, et non l'inverse.
+
+**A3 — LE PLAN MINIMAL EST DÉRIVÉ DE L'IDÉAL PAR UNE RÈGLE.** Écartés : la saisie
+praticien action par action, et le champ laissé vide.
+
+**CE QUE CET ARBITRAGE EXIGE AVANT LA PREMIÈRE LIGNE DE CODE, et ce n'est pas
+négociable.** Le plan minimal est le champ que `projeterContenuPatient` sert **au
+patient**. Une règle qui le produit est donc du contenu clinique produit par
+l'outil sur une surface patient, et trois conditions l'encadrent :
+
+1. **La dérivation SÉLECTIONNE, elle ne compose pas.** Elle ne peut que retenir
+   un sous-ensemble du texte du plan idéal — déjà relu par le praticien — jamais
+   écrire une phrase clinique neuve. Composer violerait `DC-01` et l'invariant de
+   provenance certifiée.
+2. **Elle est déterministe et testable** (`D-003`), et son résultat est **affiché
+   au praticien, modifiable par lui**, avant toute diffusion. `DC-24` interdit de
+   poser par défaut la valeur la plus engageante.
+3. **Elle demande sa propre décision `D-xxx`**, et probablement une règle `DC` :
+   cette entrée arbitre le PRINCIPE, elle n'autorise aucune implémentation.
+
+**LE VÉHICULE — pas de campagne, un seul lot borné.** La forme d'une ligne et une
+première table sur un axe curé, livrées en une PR, puis relecture au vu du
+résultat. Raison : [[D-112]] pèse maintenant sur trois campagnes de suite, et la
+dernière — « 5. Actions » — a été close à **usage mesuré zéro**. Le goulot
+constaté n'est pas l'ingénierie ; ouvrir une quatrième campagne ajouterait une
+surface de plus. Le lot entre en **chantier hors file**, sans `CAMPAGNE.md` et
+sans créneau primaire.
+
+**CE QUI RESTE OUVERT.** A4 (les 514 « à ne pas faire » sans propriétaire), A5
+(pré-remplissage modifiable ou cité), et les quatre arbitrages de la Boussole
+B1→B4.
+
 ### D-205 — Ce qu'une session a produit ne vaut que si c'est écrit : trois sujets cadrés, un audit consigné par ses mesures, un catalogue qui n'ouvre pas
 
 - Date : 2026-09-16

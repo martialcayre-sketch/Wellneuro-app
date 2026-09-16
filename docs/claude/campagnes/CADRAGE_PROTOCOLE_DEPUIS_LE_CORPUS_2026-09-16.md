@@ -1,7 +1,10 @@
 # Cadrage — Le protocole assisté tiré du corpus
 
-*Rédigé le 2026-09-16. Cadrage, pas ouverture. **Un arbitrage bloque
-l'ouverture** — il est nommé en A1.*
+*Rédigé le 2026-09-16. Cadrage, pas ouverture.*
+
+> **ARBITRÉ LE 2026-09-16 — [[D-206]].** A1, A2 et A3 sont tranchés, et le
+> véhicule aussi : **pas de campagne, un seul lot borné**. Ce qui reste ouvert
+> est A4 et A5. Les lots ci-dessous sont réécrits en conséquence.
 
 Ce document cadre un sujet **né en session le 2026-09-16 et sans véhicule** : la
 campagne « 5. Actions — le protocole assisté » a été close le matin même, à usage
@@ -71,25 +74,30 @@ court-circuite la couche où vit la signature clinique. C'est l'objet de A1.
 
 ## Les arbitrages
 
-| # | Arbitrage | Bloque |
+| # | Arbitrage | État |
 | --- | --- | --- |
-| **A1** | **Une ligne de catalogue porte-t-elle un `claimId` ?** Si oui, le catalogue attend la curation des axes concernés — or cinq axes n'ont **aucun** claim validé. Si non, à quelles conditions une première table sans claim est-elle acceptable ? | **tout** |
-| A2 | Quelle est **l'unité** du catalogue : le tableau clinique, l'indication, ou l'assiette ? Le brainstorm du 2026-09-16 n'a laissé **aucune position intacte** (7 « ne tient pas », 5 « tient borné », 0 « tient »). | LOT-02 et suivants |
-| A3 | **Qui écrit le plancher ?** Le corpus ne le donne pas dans 81 % des cas. Trois voies : le praticien le saisit action par action ; une règle le dérive de l'idéal ; le champ reste vide et l'écran patient le dit. | LOT-03 |
-| A4 | Les **514 « à ne pas faire »** n'ont d'autre propriétaire que la situation qui les porte. Entrent-ils au catalogue, à la gate de population, ou nulle part pour l'instant ? | LOT-05 |
-| A5 | Le pré-remplissage est-il **proposé et modifiable**, ou **cité sans réécriture possible** ? `DC-24` refuse déjà de poser par défaut la valeur la plus engageante. | LOT-04 |
+| **A1** | **Qu'est-ce qui signe une ligne ?** | **TRANCHÉ — régime `WN-CL-0287-009`.** Un claim signé fonde l'**indication** ; ce que la ligne ajoute au-delà est un **raccourci assumé, nommé sur place**. Écarté : l'attestation praticien sur la table entière (régime du barème, `D-198`). **Conséquence mécanique** : la première table ne peut naître que sur un axe déjà curé — **sommeil** (297 claims validés) ou **humeur** (283). |
+| **A2** | **Quelle est l'unité ?** | **TRANCHÉ — le tableau clinique.** Écartés : l'indication (65 des 123 documents ne posent aucun critère d'entrée individuel) et l'assiette (elle ne couvre que l'alimentaire). **Réserve reportée au lot** : le nombre de tableaux distincts n'est pas mesuré — normaliser AVANT de dimensionner la table. |
+| **A3** | **Qui écrit le plan minimal ?** | **TRANCHÉ — une règle le dérive de l'idéal.** Trois conditions encadrent le principe, et aucune n'est négociable : la dérivation **sélectionne dans le texte du plan idéal, elle ne compose pas** ; elle est déterministe, affichée au praticien et **modifiable par lui** avant diffusion ; elle demande **sa propre décision `D-xxx`**. `D-206` arbitre le principe, il n'autorise aucune implémentation. |
+| A4 | Les **514 « à ne pas faire »** n'ont d'autre propriétaire que la situation qui les porte. Entrent-ils au catalogue, à la gate de population, ou nulle part pour l'instant ? | **ouvert** — bloque le LOT-05 |
+| A5 | Le pré-remplissage est-il **proposé et modifiable**, ou **cité sans réécriture possible** ? `DC-24` refuse déjà de poser par défaut la valeur la plus engageante. | **ouvert** — bloque le LOT-04 |
 
-## Les lots
+## Les lots — réécrits par [[D-206]]
+
+**Pas de campagne.** `D-112` pèse sur trois campagnes de suite et la dernière a
+été close à usage mesuré zéro : le premier lot part en **chantier hors file**,
+sans `CAMPAGNE.md` et sans créneau primaire. Les suivants ne s'écrivent qu'au vu
+de son résultat.
 
 | Lot | Objet | Décision requise | Dépend de |
 | --- | --- | --- | --- |
-| LOT-00 | **La forme d'une ligne de catalogue** : sa clé, ses champs, son régime de signature. Ne contient aucune ligne. | **oui — A1, A2** | — |
-| LOT-01 | **Le pointeur, jamais le contenu.** Une ligne désigne une source et un libellé de conduite ; le texte clinique reste hors dépôt. **Le patron existe déjà** : `C5B_RECOMMENDED_PLATES` (`plates.ts`) porte un catalogue de trois assiettes avec version, `contentHash` par entrée et hachage de catalogue, sous la mention « aucune composition n'est inventée ici ». | non | LOT-00 |
-| LOT-02 | **La première table**, petite et stable, sur un seul axe curé. | **oui** — première ligne signée | LOT-00, LOT-01 |
-| LOT-03 | **Le plancher**, et l'écran patient quand il manque. | **oui — A3** | LOT-02 |
-| LOT-04 | **Le pré-remplissage au constructeur** : le praticien voit d'où vient chaque proposition et peut la refuser. | **oui — A5** | LOT-02 |
-| LOT-05 | **`adviceSheetRef` reçoit enfin un référent** : les douze fiches d'assiette appariées du corpus. | non | LOT-01 |
-| LOT-06 | Bilan d'usage, sur le patron du LOT-07 de la campagne close. | non | tous |
+| **LOT-01** | **Le seul lot ouvert.** La forme d'une ligne — clé de tableau clinique, champs, `claimId` fondant l'indication, emplacement du raccourci assumé — **et** une première table sur `sommeil` ou `humeur`. Une PR. La normalisation des tableaux cliniques se fait ici, avant de dimensionner. | non — `D-206` a tranché | — |
+| LOT-02 | **Le pointeur, jamais le contenu.** Une ligne désigne une source et un libellé de conduite ; le texte clinique reste hors dépôt. **Le patron existe déjà** : `C5B_RECOMMENDED_PLATES` (`plates.ts`) porte un catalogue de trois assiettes avec version, `contentHash` par entrée et hachage de catalogue, sous la mention « aucune composition n'est inventée ici ». | non | LOT-01 |
+| LOT-03 | **La règle de dérivation du plan minimal**, sous les trois conditions de `D-206`. | **oui — `D-xxx` propre** | LOT-01 |
+| LOT-04 | **Le pré-remplissage au constructeur** : le praticien voit d'où vient chaque proposition et peut la refuser. | **oui — A5** | LOT-01 |
+| LOT-05 | **Les 514 « à ne pas faire »** reçoivent un propriétaire. | **oui — A4** | LOT-01 |
+| LOT-06 | **`adviceSheetRef` reçoit enfin un référent** : les douze fiches d'assiette appariées du corpus. | non | LOT-02 |
+| LOT-07 | Bilan d'usage, sur le patron du LOT-07 de la campagne close. | non | tous |
 
 ## Contraintes non négociables
 
